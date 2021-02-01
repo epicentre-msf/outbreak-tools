@@ -1,0 +1,8 @@
+#!/bin/sh
+
+# PRE-COMMIT file
+
+python .git/hooks/pre-commit-VBA.py
+
+git add --update
+git add -- ./*.VBA || :
