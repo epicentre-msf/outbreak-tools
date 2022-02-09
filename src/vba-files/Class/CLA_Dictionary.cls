@@ -2,16 +2,16 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "Dictionary"
+Attribute VB_Name = "CLA_Dictionary"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = True
 Attribute VB_Description = "Drop-in replacement for Scripting.Dictionary on Mac\r\n(c) Tim Hall - https://github.com/vba-tools/vba-dictionary"
-''
-' # Dictionary
+''Cree plus de problme qu'il en rŽsoud !
+' # scripting.dictionary
 '
-' Drop-in replacement for Scripting.Dictionary on Mac
+' Drop-in replacement for scripting.dictionary on Mac
 '
 ' @class Dictionary
 ' @author tim.hall.engr@gmail.com
@@ -104,7 +104,7 @@ End Property
 
 Public Property Let Item(key As Variant, value As Variant)
 #If Mac Or Not UseScriptingDictionaryIfAvailable Then
-    If Me.exists(key) Then
+    If Me.Exists(key) Then
         dict_ReplaceKeyValue dict_GetKeyValue(key), key, value
     Else
         dict_AddKeyValue key, value
@@ -116,7 +116,7 @@ End Property
 
 Public Property Set Item(key As Variant, value As Variant)
 #If Mac Or Not UseScriptingDictionaryIfAvailable Then
-    If Me.exists(key) Then
+    If Me.Exists(key) Then
         dict_ReplaceKeyValue dict_GetKeyValue(key), key, value
     Else
         dict_AddKeyValue key, value
@@ -146,17 +146,17 @@ End Property
 ' @param {Variant} Key
 ' @param {Variant} Item
 ' --------------------------------------------- '
-Public Sub add(key As Variant, Item As Variant)
-Attribute add.VB_Description = "Add a new key and item to the dictionary."
+Public Sub Add(key As Variant, Item As Variant)
+Attribute Add.VB_Description = "Add a new key and item to the dictionary."
 #If Mac Or Not UseScriptingDictionaryIfAvailable Then
-    If Not Me.exists(key) Then
+    If Not Me.Exists(key) Then
         dict_AddKeyValue key, Item
     Else
         ' This key is already associated with an element of this collection
         Err.Raise 457
     End If
 #Else
-    dict_pDictionary.add key, Item
+    dict_pDictionary.Add key, Item
 #End If
 End Sub
 
@@ -166,12 +166,12 @@ End Sub
 ' @param {Variant} Key
 ' @return {Boolean}
 ' --------------------------------------------- '
-Public Function exists(key As Variant) As Boolean
-Attribute exists.VB_Description = "Determine if a given key is in the dictionary."
+Public Function Exists(key As Variant) As Boolean
+Attribute Exists.VB_Description = "Determine if a given key is in the dictionary."
 #If Mac Or Not UseScriptingDictionaryIfAvailable Then
-    exists = Not isEmpty(dict_GetKeyValue(key))
+    Exists = Not isEmpty(dict_GetKeyValue(key))
 #Else
-    exists = dict_pDictionary.exists(key)
+    Exists = dict_pDictionary.Exists(key)
 #End If
 End Function
 
@@ -250,41 +250,41 @@ Attribute RemoveAll.VB_Description = "Remove all information from the dictionary
 #End If
 End Sub
 
-Public Function SortByKey() As Dictionary
+Public Function SortByKey() As Scripting.Dictionary
 
      'On Error GoTo ErrorSort
 
-     Dim D As Dictionary
-     Dim P As Variant
+     Dim d As Scripting.Dictionary
+     Dim p As Variant
      Dim A() As Variant
      Dim O As Variant
-     Dim I As Long
+     Dim i As Long
      Dim j As Long
 
      ReDim A(0 To Me.Count - 1)
      
-     For I = 0 To Me.Count - 1
-        A(I) = Me.Keys(I)
-     Next I
+     For i = 0 To Me.Count - 1
+        A(i) = Me.Keys(i)
+     Next i
      
-     For I = LBound(A) To UBound(A) - 1
-         For j = I + 1 To UBound(A)
-             If A(I) > A(j) Then
+     For i = LBound(A) To UBound(A) - 1
+         For j = i + 1 To UBound(A)
+             If A(i) > A(j) Then
                  O = A(j)
-                 A(j) = A(I)
-                 A(I) = O
+                 A(j) = A(i)
+                 A(i) = O
              End If
          Next j
-     Next I
+     Next i
      
-     Set D = New Dictionary
+     Set d = New Scripting.Dictionary
      
-     For I = LBound(A) To UBound(A)
-         P = A(I)
-         D.add key:=P, Item:=Me.Item(P)
-     Next I
+     For i = LBound(A) To UBound(A)
+         p = A(i)
+         d.Add key:=p, Item:=Me.Item(p)
+     Next i
      
-     Set SortByKey = D
+     Set SortByKey = d
      
      Exit Function
 ErreurTri:
@@ -299,7 +299,7 @@ End Function
 Private Function dict_GetKeyValue(dict_Key As Variant) As Variant
     On Error Resume Next
     dict_GetKeyValue = dict_pKeyValues(dict_GetFormattedKey(dict_Key))
-    Err.clear
+    Err.Clear
 End Function
 
 Private Sub dict_AddKeyValue(dict_Key As Variant, dict_Value As Variant, Optional dict_Index As Long = -1)
@@ -335,7 +335,7 @@ Private Sub dict_AddKeyValue(dict_Key As Variant, dict_Value As Variant, Optiona
         End If
 
         ' Add key-value at proper index
-        dict_pKeyValues.add Array(dict_FormattedKey, dict_Key, dict_Value), dict_FormattedKey, before:=dict_Index + 1
+        dict_pKeyValues.Add Array(dict_FormattedKey, dict_Key, dict_Value), dict_FormattedKey, before:=dict_Index + 1
     Else
         ' Add key-value as last item
         If VBA.IsObject(dict_Key) Then
@@ -349,7 +349,7 @@ Private Sub dict_AddKeyValue(dict_Key As Variant, dict_Value As Variant, Optiona
             dict_pItems(UBound(dict_pItems)) = dict_Value
         End If
 
-        dict_pKeyValues.add Array(dict_FormattedKey, dict_Key, dict_Value), dict_FormattedKey
+        dict_pKeyValues.Add Array(dict_FormattedKey, dict_Key, dict_Value), dict_FormattedKey
     End If
 End Sub
 
@@ -448,7 +448,7 @@ Private Function dict_GetObjectKey(dict_ObjKey As Variant) As String
         End If
     Next dict_i
 
-    dict_pObjectKeys.add dict_ObjKey
+    dict_pObjectKeys.Add dict_ObjKey
     dict_GetObjectKey = "__object__" & dict_pObjectKeys.Count
 End Function
 
@@ -489,11 +489,11 @@ Attribute NewEnum.VB_UserMemId = -4
 
     #If Mac Or Not UseScriptingDictionaryIfAvailable Then
         For Each elem In dict_pKeyValues
-            Coll.add elem
+            Coll.Add elem
         Next elem
     #Else
         For Each elem In dict_pDictionary.Keys
-            Coll.add elem
+            Coll.Add elem
         Next elem
     #End If
     
@@ -508,7 +508,7 @@ Private Sub Class_Initialize()
     Erase dict_pItems
     Set dict_pObjectKeys = New Collection
 #Else
-    Set dict_pDictionary = CreateObject("Scripting.Dictionary")
+    Set dict_pDictionary = CreateObject("scripting.dictionary")
 #End If
 End Sub
 
