@@ -2,3 +2,11 @@
 logs
 /xvba_excel_backup
 .gitignore
+
+# built html documentation files from the Rmd
+*.Rmd
+*.R
+
+# eventual temporary files lying arround
+^temp.*
+
