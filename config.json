@@ -1,0 +1,14 @@
+{
+    "app_name": "Outbreak-Tools",
+    "description": "Quick Linelist Designer",
+    "author": "Epi-DS epicentre",
+    "email": "",
+    "create_ate": "2021",
+    "excel_file": "linelist_designer.xlsb",
+    "vba_folder": "src/vba-files",
+    "ribbon_file": "linelist-designer-ribbon",
+    "ribbon_folder": "src/ribbons",
+    "logs": "on",
+    "xvba_packages": {},
+    "xvba_dev_packages": {}
+}
