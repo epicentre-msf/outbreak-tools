@@ -40,8 +40,8 @@ Sub chargerGeo(iGeoType As Byte)
     Application.ScreenUpdating = False
     Call ClearGeo
     bHaveToDo = False
-    [F_GEO].Height = 360
-    [F_GEO].Width = 606
+    [F_Geo].Height = 360
+    [F_Geo].Width = 606
 
     If Not Sheets("geo").[T_adm0].ListObject.DataBodyRange Is Nothing Then
         If IsEmptyTable(T_geo0) Or iCountLineAdm1 <> Sheets("geo").[T_adm0].Rows.Count Then
@@ -60,8 +60,8 @@ Sub chargerGeo(iGeoType As Byte)
             bHaveToDo = True
         End If
     
-        [F_GEO].[LST_Adm1].List = T_aff0
-        [F_GEO].[LST_AdmF1].List = T_aff0
+        [F_Geo].[LST_Adm1].List = T_aff0
+        [F_Geo].[LST_AdmF1].List = T_aff0
         iLastLevel = 0
     End If
 
@@ -73,8 +73,8 @@ Sub chargerGeo(iGeoType As Byte)
         End If
         iNbMax = UBound(T_geo1, 1)
         iLastLevel = 1
-        F_GEO.LBL_Adm1.Caption = Sheets("geo").[T_adm0].ListObject.HeaderRowRange.Item(2).value
-        F_GEO.LBL_Adm1F.Caption = Sheets("geo").[T_adm0].ListObject.HeaderRowRange.Item(2).value
+        F_Geo.LBL_Adm1.Caption = Sheets("geo").[T_adm0].ListObject.HeaderRowRange.Item(2).value
+        F_Geo.LBL_Adm1F.Caption = Sheets("geo").[T_adm0].ListObject.HeaderRowRange.Item(2).value
     End If
 
     If Not Sheets("geo").[T_adm2].ListObject.DataBodyRange Is Nothing Then
@@ -85,8 +85,8 @@ Sub chargerGeo(iGeoType As Byte)
         End If
         iNbMax = UBound(T_geo2, 1)
         iLastLevel = 2
-        F_GEO.LBL_Adm2.Caption = Sheets("geo").[T_adm1].ListObject.HeaderRowRange.Item(2).value
-        F_GEO.LBL_Adm2F.Caption = Sheets("geo").[T_adm1].ListObject.HeaderRowRange.Item(2).value
+        F_Geo.LBL_Adm2.Caption = Sheets("geo").[T_adm1].ListObject.HeaderRowRange.Item(2).value
+        F_Geo.LBL_Adm2F.Caption = Sheets("geo").[T_adm1].ListObject.HeaderRowRange.Item(2).value
     End If
 
     If Not Sheets("geo").[T_adm3].ListObject.DataBodyRange Is Nothing Then
@@ -97,8 +97,8 @@ Sub chargerGeo(iGeoType As Byte)
         End If
         iNbMax = UBound(T_geo3, 1)
         iLastLevel = 3
-        F_GEO.LBL_Adm3.Caption = Sheets("geo").[T_adm2].ListObject.HeaderRowRange.Item(2).value
-        F_GEO.LBL_Adm3F.Caption = Sheets("geo").[T_adm2].ListObject.HeaderRowRange.Item(2).value
+        F_Geo.LBL_Adm3.Caption = Sheets("geo").[T_adm2].ListObject.HeaderRowRange.Item(2).value
+        F_Geo.LBL_Adm3F.Caption = Sheets("geo").[T_adm2].ListObject.HeaderRowRange.Item(2).value
     End If
 
     If Not Sheets("geo").[T_facility].ListObject.DataBodyRange Is Nothing Then
@@ -108,8 +108,8 @@ Sub chargerGeo(iGeoType As Byte)
             bHaveToDo = True
         End If
         iNbMaxF = UBound(T_fac, 1)
-        F_GEO.LBL_Adm4.Caption = Sheets("geo").[T_adm3].ListObject.HeaderRowRange.Item(2).value
-        F_GEO.LBL_Adm4F.Caption = Sheets("geo").[T_facility].ListObject.HeaderRowRange.Item(2).value
+        F_Geo.LBL_Adm4.Caption = Sheets("geo").[T_adm3].ListObject.HeaderRowRange.Item(2).value
+        F_Geo.LBL_Adm4F.Caption = Sheets("geo").[T_facility].ListObject.HeaderRowRange.Item(2).value
     End If
 
     'creation du tableau concat
@@ -159,10 +159,10 @@ Sub chargerGeo(iGeoType As Byte)
         If Not IsEmptyTable(T_concat) Then
             '[F_GEO].LST_ListeAgre.list = TriBulle(T_concat)
             Call QuickSort(T_concat, LBound(T_concat), UBound(T_concat))
-            [F_GEO].LST_ListeAgre.List = T_concat
+            [F_Geo].LST_ListeAgre.List = T_concat
         End If
     Else
-        [F_GEO].LST_ListeAgre.List = T_concat
+        [F_Geo].LST_ListeAgre.List = T_concat
     End If
 
     If IsEmptyTable(T_concatF) Or bHaveToDo Then
@@ -215,10 +215,10 @@ Sub chargerGeo(iGeoType As Byte)
         If Not IsEmptyTable(T_concatF) Then
             '[F_GEO].LST_ListeAgreF.list = TriBulle(T_concatF)
             Call QuickSort(T_concatF, LBound(T_concatF), UBound(T_concatF))
-            [F_GEO].LST_ListeAgreF.List = T_concatF
+            [F_Geo].LST_ListeAgreF.List = T_concatF
         End If
     Else
-        [F_GEO].LST_ListeAgreF.List = T_concatF
+        [F_Geo].LST_ListeAgreF.List = T_concatF
     End If
 
     'Creation de l'histo
@@ -230,7 +230,7 @@ Sub chargerGeo(iGeoType As Byte)
         Else
             T_histo(0) = [T_HistoGeo]
         End If
-        [F_GEO].LST_Histo.List = T_histo
+        [F_Geo].LST_Histo.List = T_histo
     End If
 
     If Not Sheets("geo").[T_HistoFacil].ListObject.DataBodyRange Is Nothing Then
@@ -241,27 +241,27 @@ Sub chargerGeo(iGeoType As Byte)
         Else
             T_histoF(0) = [T_HistoFacil]
         End If
-        [F_GEO].LST_HistoF.List = T_histoF
+        [F_Geo].LST_HistoF.List = T_histoF
     End If
 
     '
     Select Case iGeoType
     Case 0
-        [F_GEO].FRM_Facility.Visible = False
-        [F_GEO].FRM_Geo.Visible = True
-        [F_GEO].LBL_Fac1.Visible = False
-        [F_GEO].LBL_Geo1.Visible = True
+        [F_Geo].FRM_Facility.Visible = False
+        [F_Geo].FRM_Geo.Visible = True
+        [F_Geo].LBL_Fac1.Visible = False
+        [F_Geo].LBL_Geo1.Visible = True
     Case 1
-        [F_GEO].FRM_Facility.Visible = True
-        [F_GEO].FRM_Geo.Visible = False
-        [F_GEO].LBL_Fac1.Visible = True
-        [F_GEO].LBL_Geo1.Visible = False
+        [F_Geo].FRM_Facility.Visible = True
+        [F_Geo].FRM_Geo.Visible = False
+        [F_Geo].LBL_Fac1.Visible = True
+        [F_Geo].LBL_Geo1.Visible = False
     End Select
     Application.ScreenUpdating = True
 
     'Call TranslateForm("F_Geo")
     'the show must go on
-    [F_GEO].Show
+    [F_Geo].Show
 
 End Sub
 
@@ -270,9 +270,9 @@ Sub ShowLst2(sPlace As String)
     Dim i As Integer
     Dim j As Integer
 
-    [F_GEO].LST_Adm2.Clear
-    [F_GEO].LST_Adm3.Clear
-    [F_GEO].LST_Adm4.Clear
+    [F_Geo].LST_Adm2.Clear
+    [F_Geo].LST_Adm3.Clear
+    [F_Geo].LST_Adm4.Clear
 
     If Not IsEmptyTable(T_geo1) Then
         i = 1
@@ -289,10 +289,10 @@ Sub ShowLst2(sPlace As String)
     End If
     
     If Not IsEmptyTable(T_aff2) Then
-        [F_GEO].LST_Adm2.List = T_aff2
-        [F_GEO].TXT_Msg.value = sPlace
+        [F_Geo].LST_Adm2.List = T_aff2
+        [F_Geo].TXT_Msg.value = sPlace
     Else
-        [F_GEO].TXT_Msg.value = sPlace           '& " : Pas de niveau2"
+        [F_Geo].TXT_Msg.value = sPlace           '& " : Pas de niveau2"
     End If
 
 End Sub
@@ -303,9 +303,9 @@ Sub ShowLstF2(sPlace As String)
     Dim j As Integer
     Dim bFound As Boolean
 
-    [F_GEO].LST_AdmF2.Clear
-    [F_GEO].LST_AdmF3.Clear
-    [F_GEO].LST_AdmF4.Clear
+    [F_Geo].LST_AdmF2.Clear
+    [F_Geo].LST_AdmF3.Clear
+    [F_Geo].LST_AdmF4.Clear
 
     bFound = False
     If Not IsEmptyTable(T_fac) Then
@@ -349,10 +349,10 @@ Sub ShowLstF2(sPlace As String)
     End If
     
     If Not IsEmptyTable(T_aff2) Then
-        [F_GEO].LST_AdmF2.List = T_aff2
-        [F_GEO].TXT_Msg.value = sPlace
+        [F_Geo].LST_AdmF2.List = T_aff2
+        [F_Geo].TXT_Msg.value = sPlace
     Else
-        [F_GEO].TXT_Msg.value = sPlace           '& " : Pas de niveau2"
+        [F_Geo].TXT_Msg.value = sPlace           '& " : Pas de niveau2"
     End If
 
 End Sub
@@ -362,8 +362,8 @@ Sub ShowLst3(sPlace As String)
     Dim i As Integer
     Dim j As Integer
 
-    [F_GEO].LST_Adm3.Clear
-    [F_GEO].LST_Adm4.Clear
+    [F_Geo].LST_Adm3.Clear
+    [F_Geo].LST_Adm4.Clear
 
     If Not IsEmptyTable(T_geo2) Then
         i = 1
@@ -380,10 +380,10 @@ Sub ShowLst3(sPlace As String)
     End If
     
     If Not IsEmptyTable(T_aff3) Then
-        [F_GEO].LST_Adm3.List = T_aff3
-        [F_GEO].TXT_Msg.value = [F_GEO].LST_Adm1.value & " | " & [F_GEO].LST_Adm2.value
+        [F_Geo].LST_Adm3.List = T_aff3
+        [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value
     Else
-        [F_GEO].TXT_Msg.value = [F_GEO].LST_Adm1.value & " | " & [F_GEO].LST_Adm2.value '& " : Pas de niveau 3"
+        [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value '& " : Pas de niveau 3"
     End If
 
 End Sub
@@ -394,8 +394,8 @@ Sub ShowLstF3(sPlace As String)
     Dim j As Integer
     Dim bFound As Boolean
 
-    [F_GEO].LST_AdmF3.Clear
-    [F_GEO].LST_AdmF4.Clear
+    [F_Geo].LST_AdmF3.Clear
+    [F_Geo].LST_AdmF4.Clear
 
     bFound = False
     If Not IsEmptyTable(T_fac) Then
@@ -439,10 +439,10 @@ Sub ShowLstF3(sPlace As String)
     End If
     
     If Not IsEmptyTable(T_aff3) Then
-        [F_GEO].LST_AdmF3.List = T_aff3
-        [F_GEO].TXT_Msg.value = [F_GEO].LST_AdmF2.value & " | " & [F_GEO].LST_AdmF1.value
+        [F_Geo].LST_AdmF3.List = T_aff3
+        [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
     Else
-        [F_GEO].TXT_Msg.value = [F_GEO].LST_AdmF2.value & " | " & [F_GEO].LST_AdmF1.value '& " : Pas de niveau 3"
+        [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value '& " : Pas de niveau 3"
     End If
 
 End Sub
@@ -452,7 +452,7 @@ Sub ShowLst4(sPlace As String)
     Dim i As Integer
     Dim j As Integer
 
-    [F_GEO].LST_Adm4.Clear
+    [F_Geo].LST_Adm4.Clear
 
     If Not IsEmptyTable(T_geo3) Then
         i = 1
@@ -469,11 +469,11 @@ Sub ShowLst4(sPlace As String)
     End If
     
     If Not IsEmptyTable(T_aff4) Then
-        [F_GEO].LST_Adm4.List = T_aff4
-        [F_GEO].TXT_Msg.value = [F_GEO].LST_Adm1.value & " | " & [F_GEO].LST_Adm2.value & " | " & [F_GEO].LST_Adm3.value
+        [F_Geo].LST_Adm4.List = T_aff4
+        [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value
     
     Else
-        [F_GEO].TXT_Msg.value = [F_GEO].LST_Adm1.value & " | " & [F_GEO].LST_Adm2.value & " | " & [F_GEO].LST_Adm3.value '& " : Pas de niveau 4"
+        [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value '& " : Pas de niveau 4"
     End If
 
 End Sub
@@ -484,7 +484,7 @@ Sub ShowLstF4(sPlace As String)
     Dim j As Integer
     Dim bFound As Boolean
 
-    [F_GEO].LST_AdmF4.Clear
+    [F_Geo].LST_AdmF4.Clear
 
     bFound = False
     If Not IsEmptyTable(T_fac) Then
@@ -528,28 +528,28 @@ Sub ShowLstF4(sPlace As String)
     End If
 
     If Not IsEmptyTable(T_aff4) Then
-        [F_GEO].LST_AdmF4.List = T_aff4
-        [F_GEO].TXT_Msg.value = [F_GEO].LST_AdmF3.value & " | " & [F_GEO].LST_AdmF2.value & " | " & [F_GEO].LST_AdmF1.value
+        [F_Geo].LST_AdmF4.List = T_aff4
+        [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF3.value & " | " & [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
     Else
-        [F_GEO].TXT_Msg.value = [F_GEO].LST_AdmF3.value & " | " & [F_GEO].LST_AdmF2.value & " | " & [F_GEO].LST_AdmF1.value '& " : Pas de niveau 4"
+        [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF3.value & " | " & [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value '& " : Pas de niveau 4"
     End If
 
 End Sub
 
 Sub ClearGeo()
 
-    [F_GEO].LST_Adm1.Clear
-    [F_GEO].LST_Adm2.Clear
-    [F_GEO].LST_Adm3.Clear
-    [F_GEO].LST_Adm4.Clear
-    [F_GEO].LST_ListeAgre.Clear
-    [F_GEO].LST_AdmF1.Clear
-    [F_GEO].LST_AdmF2.Clear
-    [F_GEO].LST_AdmF3.Clear
-    [F_GEO].LST_AdmF4.Clear
-    [F_GEO].LST_ListeAgreF.Clear
+    [F_Geo].LST_Adm1.Clear
+    [F_Geo].LST_Adm2.Clear
+    [F_Geo].LST_Adm3.Clear
+    [F_Geo].LST_Adm4.Clear
+    [F_Geo].LST_ListeAgre.Clear
+    [F_Geo].LST_AdmF1.Clear
+    [F_Geo].LST_AdmF2.Clear
+    [F_Geo].LST_AdmF3.Clear
+    [F_Geo].LST_AdmF4.Clear
+    [F_Geo].LST_ListeAgreF.Clear
 
-    [F_GEO].TXT_Msg.value = ""
+    [F_Geo].TXT_Msg.value = ""
 
 End Sub
 
@@ -577,15 +577,15 @@ Sub SearchValue(T_concat, sSearchedValue As String)
         If Not IsEmptyTable(T_result) Then
             '[F_GEO].LST_ListeAgre.list = TriBulle(T_result)
             Call QuickSort(T_result, LBound(T_result), UBound(T_result))
-            [F_GEO].LST_ListeAgre.List = T_result
+            [F_Geo].LST_ListeAgre.List = T_result
         Else
-            If [F_GEO].LST_ListeAgre.ListCount - 1 <> UBound(T_concat) Then
-                [F_GEO].LST_ListeAgre.List = T_concat
+            If [F_Geo].LST_ListeAgre.ListCount - 1 <> UBound(T_concat) Then
+                [F_Geo].LST_ListeAgre.List = T_concat
             End If
         End If
     Else
-        If [F_GEO].LST_ListeAgre.ListCount - 1 <> UBound(T_concat) Then
-            [F_GEO].LST_ListeAgre.List = T_concat
+        If [F_Geo].LST_ListeAgre.ListCount - 1 <> UBound(T_concat) Then
+            [F_Geo].LST_ListeAgre.List = T_concat
         End If
     End If
 
@@ -615,15 +615,15 @@ Sub SeachHistoValue(T_histo, sSearchedValue As String)
         If Not IsEmptyTable(T_result) Then
             '[F_GEO].LST_Histo.list = TriBulle(T_result)
             Call QuickSort(T_result, LBound(T_result), UBound(T_result))
-            [F_GEO].LST_Histo.List = T_result
+            [F_Geo].LST_Histo.List = T_result
         Else
-            If [F_GEO].LST_Histo.ListCount - 1 <> UBound(T_histo) Then
-                [F_GEO].LST_Histo.List = T_histo
+            If [F_Geo].LST_Histo.ListCount - 1 <> UBound(T_histo) Then
+                [F_Geo].LST_Histo.List = T_histo
             End If
         End If
     Else
-        If [F_GEO].LST_Histo.ListCount - 1 <> UBound(T_histo) Then
-            [F_GEO].LST_Histo.List = T_histo
+        If [F_Geo].LST_Histo.ListCount - 1 <> UBound(T_histo) Then
+            [F_Geo].LST_Histo.List = T_histo
         End If
     End If
 
@@ -651,15 +651,15 @@ Sub SearchValueF(T_concatF, sSearchedValue As String)
         If Not IsEmptyTable(T_result) Then
             '[F_GEO].LST_ListeAgreF.list = TriBulle(T_result)
             Call QuickSort(T_result, LBound(T_result), UBound(T_result))
-            [F_GEO].LST_ListeAgreF.List = T_result
+            [F_Geo].LST_ListeAgreF.List = T_result
         Else
-            If [F_GEO].LST_ListeAgreF.ListCount - 1 <> UBound(T_concatF) Then
-                [F_GEO].LST_ListeAgreF.List = T_concatF
+            If [F_Geo].LST_ListeAgreF.ListCount - 1 <> UBound(T_concatF) Then
+                [F_Geo].LST_ListeAgreF.List = T_concatF
             End If
         End If
     Else
-        If [F_GEO].LST_ListeAgreF.ListCount - 1 <> UBound(T_concatF) Then
-            [F_GEO].LST_ListeAgreF.List = T_concatF
+        If [F_Geo].LST_ListeAgreF.ListCount - 1 <> UBound(T_concatF) Then
+            [F_Geo].LST_ListeAgreF.List = T_concatF
         End If
     End If
 
@@ -687,15 +687,15 @@ Sub SeachHistoValueF(T_histoF, sSearchedValue As String)
         If Not IsEmptyTable(T_result) Then
             '[F_GEO].LST_HistoF.list = TriBulle(T_result)
             Call QuickSort(T_result, LBound(T_result), UBound(T_result))
-            [F_GEO].LST_HistoF.List = T_result
+            [F_Geo].LST_HistoF.List = T_result
         Else
-            If [F_GEO].LST_HistoF.ListCount - 1 <> UBound(T_histoF) Then
-                [F_GEO].LST_HistoF.List = T_histo
+            If [F_Geo].LST_HistoF.ListCount - 1 <> UBound(T_histoF) Then
+                [F_Geo].LST_HistoF.List = T_histo
             End If
         End If
     Else
-        If [F_GEO].LST_HistoF.ListCount - 1 <> UBound(T_histoF) Then
-            [F_GEO].LST_HistoF.List = T_histo
+        If [F_Geo].LST_HistoF.ListCount - 1 <> UBound(T_histoF) Then
+            [F_Geo].LST_HistoF.List = T_histo
         End If
     End If
 
