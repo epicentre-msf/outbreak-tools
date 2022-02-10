@@ -33,13 +33,14 @@ Sub LoadGeoFile()
     Dim oSheet As Object
     Dim T_Adm  As BetterArray                    'Table for admin loading this is a variant
     Dim T_header As BetterArray                  'Table for the headers of the listobjects
-    Dim outputRange As Range
+    Dim outputAdress As String
+    Dim outputHeaderAdress As String
     Dim objectName As String 'name of the listobject in the geo sheet
     
     'Defining the adm and headers array
     Set T_Adm = New BetterArray
     Set T_header = New BetterArray
-    set xlsApp = New Excel.Application
+    Set xlsApp = New Excel.Application
     
     sFilePath = LoadPathWindow
     
@@ -68,6 +69,7 @@ Sub LoadGeoFile()
             For Each oSheet In xlsApp.Worksheets
                 [RNG_Msg].value = TranslateMsg("MSG_EnCours") & oSheet.Name
                 T_Adm.Clear
+                T_header.Clear
                 'loading the data in memory
                 T_Adm.FromExcelRange oSheet.Range("A2"), True, True
                 'The headers
@@ -87,15 +89,13 @@ Sub LoadGeoFile()
                 End Select
                 
                 ' Check if the sheet is the admin exists sheet before writing in the adm table
-                With Sheets(geoSheet).ListObjects(objectName)
-                    'writing the data body
-                    Set outputRange = Range(Cells(T_Adm.LowerBound + 1, .Range.Column), Cells(T_Adm.UpperBound + 1, .Range.Column + T_Adm.Length))
-                    T_Adm.ToExcelRange (outputRange)
-                    .Resize outputRange
-                    'Writing the headers
-                    Set outputRange = .HeaderRowRange
-                    T_header.ToExcelRange outputRange
-                End With
+               With Sheets(geoSheet).ListObjects(objectName)
+                    outputAdress = Cells(T_Adm.LowerBound + 1, .Range.Column).Address
+                    outputHeaderAdress = Cells(T_Adm.LowerBound, .Range.Column).Address
+               End With
+
+                T_header.ToExcelRange Destination:=Sheets(geoSheet).Range(outputHeaderAdress), TransposeValues:=True
+                T_Adm.ToExcelRange Destination:=Sheets(geoSheet).Range(outputAdress)
             Next
             Sheets("MAIN").Range("RNG_GEO").value = .ActiveWorkbook.Name
             
@@ -118,129 +118,7 @@ Sub LoadGeoFile()
     End If
 
 End Sub
-'
-'Sub LoadGeoFile()
-'
-'    Dim sFilePath As String
-'    Dim xlsApp As New Excel.Application
-'    Dim oSheet As Object
-'    Dim T_Adm
-'    Dim iLastLine As Long
-'    Dim i As Long
-'    Dim j As Long
-'    Dim oListO As Object
-'
-'    sFilePath = LoadPathWindow
-'
-'    If sFilePath <> "" Then
-'        With xlsApp
-'            .ScreenUpdating = False
-'            .Workbooks.Open sFilePath
-'        
-'            'un coup de menage sur les precedentes data
-'            Sheets("main").Range("RNG_Msg").value = TranslateMsg("MSG_NetoPrec")
-'            i = 0
-'            While i <= 3
-'                If Not Sheets("GEO").ListObjects("T_adm" & i).DataBodyRange Is Nothing Then
-'                    Sheets("GEO").ListObjects("T_adm" & i).DataBodyRange.Delete
-'                End If
-'        
-'                i = i + 1
-'            Wend
-'            If Not Sheets("GEO").ListObjects("T_facility").DataBodyRange Is Nothing Then
-'                Sheets("GEO").ListObjects("T_facility").DataBodyRange.Delete
-'            End If
-'        
-'            'et on repompe le tout...
-'            For Each oSheet In xlsApp.Worksheets
-'                Sheets("main").Range("RNG_Msg").value = TranslateMsg("MSG_EnCours") & oSheet.Name
-'                iLastLine = oSheet.Cells(1, 1).End(xlDown).Row
-'                ReDim T_Adm(iLastLine, 1)
-'                j = 0
-'                i = 2
-'                While i <= iLastLine
-'                    T_Adm(j, 0) = oSheet.Cells(i, 1).value
-'                    T_Adm(j, 1) = oSheet.Cells(i, 2).value
-'                    i = i + 1
-'                    j = j + 1
-'                Wend
-'            
-'                If InStr(1, oSheet.Name, "HF") = 0 And InStr(1, oSheet.Name, "NAMES") = 0 Then
-'                    If Not Sheets("GEO").ListObjects("T_" & Left(oSheet.Name, 4)).DataBodyRange Is Nothing Then
-'                        Sheets("GEO").ListObjects("T_" & Left(oSheet.Name, 4)).DataBodyRange.Delete
-'                    End If
-'
-'                    Sheets("GEO").ListObjects("T_" & Left(oSheet.Name, 4)).Resize Range(Cells(LBound(T_Adm, 2) + 1, Sheets("GEO").ListObjects("T_" & Left(oSheet.Name, 4)).Range.Column), Cells(UBound(T_Adm, 1), Sheets("GEO").ListObjects("T_" & Left(oSheet.Name, 4)).Range.Column + 1))
-'                    Sheets("GEO").ListObjects("T_" & Left(oSheet.Name, 4)).DataBodyRange = T_Adm
-'                    Sheets("GEO").ListObjects("T_" & Left(oSheet.Name, 4)).HeaderRowRange(2) = oSheet.Cells(1, 2).value
-'                
-'                ElseIf InStr(1, oSheet.Name, "HF") > 0 Then
-'                    If Not Sheets("GEO").ListObjects("T_facility").DataBodyRange Is Nothing Then
-'                        Sheets("GEO").ListObjects("T_facility").DataBodyRange.Delete
-'                    End If
-'            
-'                    Sheets("GEO").ListObjects("T_facility").Resize Range(Cells(LBound(T_Adm, 2) + 1, Sheets("GEO").ListObjects("T_facility").Range.Column), Cells(UBound(T_Adm, 1), Sheets("GEO").ListObjects("T_facility").Range.Column + 1))
-'                    Sheets("GEO").ListObjects("T_facility").DataBodyRange = T_Adm
-'                    Sheets("GEO").ListObjects("T_facility").HeaderRowRange(1) = oSheet.Cells(1, 1).value 'pour savoir a quel niveau est rattach� le facility
-'                    Sheets("GEO").ListObjects("T_facility").HeaderRowRange(2) = oSheet.Cells(1, 2).value
-'                ElseIf InStr(1, oSheet.Name, "NAMES") > 0 Then
-'                    ReDim T_Adm(iLastLine, 2)
-'                    i = 1
-'                    While i <= Sheets(oSheet.Name).Cells(1, 1).End(xlDown).Row
-'                        T_Adm(j, 0) = oSheet.Cells(i, 1).value
-'                        T_Adm(j, 1) = oSheet.Cells(i, 2).value
-'                        T_Adm(j, 2) = oSheet.Cells(i, 3).value
-'                
-'                        For Each oListO In Sheets("GEO").ListObjects
-'                            If InStr(1, oListO.HeaderRowRange(2), Sheets(oSheet.Name).Cells(i, 1).value) > 0 Then
-'                                oListO.HeaderRowRange(2) = Sheets(oSheet.Name).Cells(i, 1).value 'a revoir avec la Translation
-'                
-'                            End If
-'                        Next
-'                        i = i + 1
-'                    Wend
-'                    Sheets("GEO").ListObjects("T_geoTrad").DataBodyRange = T_Adm
-'                End If
-'            Next
-'        
-'            Sheets("MAIN").Range("RNG_GEO").value = .ActiveWorkbook.Name
-'        
-'            .ScreenUpdating = True
-'            .Workbooks.Close
-'            xlsApp.Quit
-'            Set xlsApp = Nothing
-'            
-'            Sheets("main").Range("RNG_Msg").value = TranslateMsg("MSG_Fini")
-'        
-'        End With
-'    Else
-'        Sheets("main").Range("RNG_Msg").value = TranslateMsg("MSG_OpeAnnule")
-'
-'    End If
-'
-'    If Not Sheets("GEO").ListObjects("T_HistoGeo").DataBodyRange Is Nothing Then
-'        Sheets("GEO").ListObjects("T_HistoGeo").DataBodyRange.Delete
-'    End If
-'    If Not Sheets("GEO").ListObjects("T_HistoFacil").DataBodyRange Is Nothing Then
-'        Sheets("GEO").ListObjects("T_HistoFacil").DataBodyRange.Delete
-'    End If
-'
-'    ReDim T_geo0(0)
-'    ReDim T_aff0(0)
-'    ReDim T_geo1(0)
-'    ReDim T_aff1(0)
-'    ReDim T_geo2(0)
-'    ReDim T_aff2(0)
-'    ReDim T_geo3(0)
-'    ReDim T_aff3(0)
-'    ReDim T_concat(0)
-'    ReDim T_histo(0)
-'    ReDim T_fac(0)
-'    ReDim T_histoF(0)
-'    ReDim T_concatF(0)
-'
-'End Sub
-'
+
 Sub GenerateData()
 
     Dim xlsApp As New Excel.Application
