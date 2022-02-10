@@ -4,16 +4,16 @@ Option Explicit
 
 Public Function IsEmptyTable(T_aTest) As Boolean
 
-Dim test As Variant
+    Dim test As Variant
 
-IsEmptyTable = False
-On Error GoTo crash
-test = UBound(T_aTest)
-On Error GoTo 0
-Exit Function
+    IsEmptyTable = False
+    On Error GoTo crash
+    test = UBound(T_aTest)
+    On Error GoTo 0
+    Exit Function
 
 crash:
-IsEmptyTable = True
+    IsEmptyTable = True
 
 End Function
 
@@ -73,57 +73,57 @@ End Sub
 
 Public Function LoadPathWindow() As String
 
-Dim fDialog As Office.FileDialog
+    Dim fDialog As Office.FileDialog
 
-LoadPathWindow = ""
-Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
-With fDialog
-    .AllowMultiSelect = False
-    .Title = "Chose your file"  'MSG_ChooseFile
-    .Filters.Clear
-    .Filters.Add "Feuille de calcul Excel", "*.xlsx, *.xlsm, *.xlsb,  *.xls"        'MSG_ExcelFile
+    LoadPathWindow = ""
+    Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
+    With fDialog
+        .AllowMultiSelect = False
+        .Title = "Chose your file"               'MSG_ChooseFile
+        .Filters.Clear
+        .Filters.Add "Feuille de calcul Excel", "*.xlsx, *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
 
-    If .Show = True Then
-        LoadPathWindow = .SelectedItems(1)
-    End If
-End With
-Set fDialog = Nothing
+        If .Show = True Then
+            LoadPathWindow = .SelectedItems(1)
+        End If
+    End With
+    Set fDialog = Nothing
 
 End Function
 
 Public Function LoadFolderWindow() As String
 
-Dim fDialog As Office.FileDialog
+    Dim fDialog As Office.FileDialog
 
-LoadFolderWindow = ""
-Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
-With fDialog
-    .AllowMultiSelect = False
-    .Title = "Chose your directory"     'MSG_ChooseDir
-    .Filters.Clear
+    LoadFolderWindow = ""
+    Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
+    With fDialog
+        .AllowMultiSelect = False
+        .Title = "Chose your directory"          'MSG_ChooseDir
+        .Filters.Clear
     
-    If .Show = True Then
-        LoadFolderWindow = .SelectedItems(1)
-    End If
-End With
-Set fDialog = Nothing
+        If .Show = True Then
+            LoadFolderWindow = .SelectedItems(1)
+        End If
+    End With
+    Set fDialog = Nothing
 
 End Function
 
-Public Function CleanSpecLettersInName(sName As String) As String     'supp tous les caract spéciaux du nom
+Public Function CleanSpecLettersInName(sName As String) As String 'supp tous les caract spéciaux du nom
 
-Dim T_Caract
-Dim i As Integer
-Dim sRes As String
+    Dim T_Caract
+    Dim i As Integer
+    Dim sRes As String
 
-sRes = sName
-T_Caract = [T_ascii]
-i = 1
-While i <= UBound(T_Caract, 1)
-    sName = Replace(sName, T_Caract(i, 2), "")
-    i = i + 1
-Wend
-CleanSpecLettersInName = sName
+    sRes = sName
+    T_Caract = [T_ascii]
+    i = 1
+    While i <= UBound(T_Caract, 1)
+        sName = Replace(sName, T_Caract(i, 2), "")
+        i = i + 1
+    Wend
+    CleanSpecLettersInName = sName
 
 End Function
 
@@ -148,24 +148,25 @@ Public Function Epiweek(jour As Long) As Long
     annee = Year(jour)
     
     Select Case annee
-     Case 2014
+    Case 2014
         Epiweek = 1 + Int((jour - Jour0_2014) / 7)
-     Case 2015
+    Case 2015
         Epiweek = 1 + Int((jour - Jour0_2015) / 7)
-     Case 2016
+    Case 2016
         Epiweek = 1 + Int((jour - Jour0_2016) / 7)
-     Case 2017
+    Case 2017
         Epiweek = 1 + Int((jour - Jour0_2017) / 7)
-     Case 2018
+    Case 2018
         Epiweek = 1 + Int((jour - Jour0_2018) / 7)
-     Case 2019
+    Case 2019
         Epiweek = 1 + Int((jour - Jour0_2019) / 7)
-     Case 2020
+    Case 2020
         Epiweek = 1 + Int((jour - Jour0_2020) / 7)
-     Case 2021
+    Case 2021
         Epiweek = 1 + Int((jour - Jour0_2021) / 7)
     Case 2022
         Epiweek = 1 + Int((jour - Jour0_2022) / 7)
     End Select
     
 End Function
+
