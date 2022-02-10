@@ -14,6 +14,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
+
 Option Explicit
 
 Private Sub CMD_ChoicesFac_Click()
@@ -178,7 +179,7 @@ Private Sub CMD_Copier_Click()
         
     End Select
 
-    [F_GEO].Hide
+    [F_Geo].Hide
 
 End Sub
 
@@ -219,7 +220,7 @@ End Sub
 
 Private Sub LST_Adm4_Click()
 
-    sPlaceSelection = [F_GEO].LST_Adm1.value & " | " & [F_GEO].LST_Adm2.value & " | " & [F_GEO].LST_Adm3.value & " | " & [F_GEO].LST_Adm4.value
+    sPlaceSelection = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value & " | " & [F_Geo].LST_Adm4.value
 
     TXT_Msg.value = sPlaceSelection
 
@@ -251,7 +252,7 @@ End Sub
 
 Private Sub LST_AdmF4_Click()
 
-    sPlaceSelection = ReverseString([F_GEO].LST_AdmF1.value & " | " & [F_GEO].LST_AdmF2.value & " | " & [F_GEO].LST_AdmF3.value & " | " & [F_GEO].LST_AdmF4.value)
+    sPlaceSelection = ReverseString([F_Geo].LST_AdmF1.value & " | " & [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF3.value & " | " & [F_Geo].LST_AdmF4.value)
 
     TXT_Msg.value = sPlaceSelection
 
@@ -290,25 +291,25 @@ End Sub
 
 Private Sub TXT_Recherche_Change()
 
-    Call SearchValue(T_concat, F_GEO.TXT_Recherche.value)
+    Call SearchValue(T_concat, F_Geo.TXT_Recherche.value)
 
 End Sub
 
 Private Sub TXT_RechercheF_Change()
 
-    Call SearchValueF(T_concatF, F_GEO.TXT_RechercheF.value)
+    Call SearchValueF(T_concatF, F_Geo.TXT_RechercheF.value)
 
 End Sub
 
 Private Sub TXT_RechercheHisto_Change()
 
-    Call SeachHistoValue(T_histo, F_GEO.TXT_RechercheHisto.value)
+    Call SeachHistoValue(T_histo, F_Geo.TXT_RechercheHisto.value)
 
 End Sub
 
 Private Sub TXT_RechercheHistoF_Change()
 
-    Call SeachHistoValueF(T_histoF, F_GEO.TXT_RechercheHisto.value)
+    Call SeachHistoValueF(T_histoF, F_Geo.TXT_RechercheHisto.value)
 
 End Sub
 
