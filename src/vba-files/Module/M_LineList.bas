@@ -75,11 +75,11 @@ Sub clicCmdGeoApps()
         Select Case LCase(sType)
         Case "geo"
             iGeoType = 0
-            Call chargerGeo(iGeoType)
+            Call LoadGeo(iGeoType)
     
         Case "hf"
             iGeoType = 1
-            Call chargerGeo(iGeoType)
+            Call LoadGeo(iGeoType)
     
         Case Else
             MsgBox "Vous n'etes pas sur la bonne cellule" 'MSG_WrongCells
@@ -152,13 +152,14 @@ Sub clicExport()
 
 End Sub
 
-'                                                          -
+'Trigerring event when the linelist sheet has some values within                                                          -
 Sub EventSheetLineListPatient(oRange As Range)
-
+    
     Dim i As Long
     Dim IsGeo As Boolean
     Dim T_geo
     Dim iInfLimit As Long
+    
 
     Application.ScreenUpdating = False
     If Not IsLockedForProcess Then
@@ -166,7 +167,7 @@ Sub EventSheetLineListPatient(oRange As Range)
         ActiveSheet.Unprotect (C_PWD)
     
         If oRange.Row > C_TitleCol Then
-            On Error GoTo suivant                'dans le cas ou la géo ne survive pas
+            On Error GoTo suivant                'if it is not geo for example or something with geo does not work
             If LCase(LetDataDic(Cells(C_TitleCol, oRange.Column).Name.Name, "Control")) = "geo" Then
                 'on controle qu'on a bien ecrit une data geo et remplissage de la colonne +1
                 oRange.Offset(, 1).Validation.Delete
@@ -177,13 +178,13 @@ Sub EventSheetLineListPatient(oRange As Range)
                 oRange.Offset(, 3).value = ""
                        
                 If oRange.value <> "" Then
-                    T_geo = [T_adm0]
+                    T_geo = Sheets("GEO").ListObjects("T_ADM2").DataBodyRange
                     i = 1
-                    While i <= UBound(T_geo, 1) And T_geo(i, 2) <> oRange.value
+                    While i <= UBound(T_geo, 1) And T_geo(i, 1) <> oRange.value
                         i = i + 1
                     Wend
-                    If T_geo(i, 2) = oRange.value Then 'je suis bien une geo !
-                        T_geo = [T_adm1]
+                    If T_geo(i, 1) = oRange.value Then 'je suis bien une geo !
+                        T_geo = Sheets("GEO").ListObjects("T_ADM2").DataBodyRange
                         i = 1
                         While i < UBound(T_geo, 1) And T_geo(i, 1) <> oRange.value
                             i = i + 1
@@ -194,7 +195,7 @@ Sub EventSheetLineListPatient(oRange As Range)
                                 i = i + 1
                             Wend
                 
-                            Call creerListeGeo(oRange, "T_adm1", iInfLimit, i)
+                            Call BuildListGeo(oRange.Offset(, 1), "T_ADM2", iInfLimit, i, 2)
                 
                         End If
                     End If
@@ -208,24 +209,24 @@ Sub EventSheetLineListPatient(oRange As Range)
                 oRange.Offset(, 2).value = ""
         
                 If oRange.value <> "" Then
-                    T_geo = [T_adm1]
+                    T_geo = Sheets("GEO").ListObjects("T_ADM3").DataBodyRange
                     i = 1
                     While i <= UBound(T_geo, 1) And T_geo(i, 2) <> oRange.value
                         i = i + 1
                     Wend
                     If T_geo(i, 2) = oRange.value Then 'je suis bien une geo !
-                        T_geo = [T_adm2]
+                        T_geo = Sheets("GEO").ListObjects("T_ADM3").DataBodyRange
                         i = 1
-                        While i < UBound(T_geo, 1) And T_geo(i, 1) <> oRange.value
+                        While i < UBound(T_geo, 1) And T_geo(i, 2) <> oRange.value
                             i = i + 1
                         Wend
-                        If T_geo(i, 1) = oRange.value Then 'on borne la zone a afficher en liste de validation
+                        If T_geo(i, 2) = oRange.value Then 'on borne la zone a afficher en liste de validation
                             iInfLimit = i
-                            While T_geo(i, 1) = oRange.value
+                            While T_geo(i, 2) = oRange.value
                                 i = i + 1
                             Wend
-                
-                            Call creerListeGeo(oRange, "T_adm2", iInfLimit, i)
+                            
+                            Call BuildListGeo(oRange.Offset(, 1), "T_ADM3", iInfLimit, i, 3)
                 
                         End If
                     End If
@@ -237,24 +238,24 @@ Sub EventSheetLineListPatient(oRange As Range)
                 oRange.Offset(, 1).value = ""
         
                 If oRange.value <> "" Then
-                    T_geo = [T_adm2]
+                    T_geo = Sheets("GEO").ListObjects("T_ADM4").DataBodyRange
                     i = 1
-                    While i <= UBound(T_geo, 1) And T_geo(i, 2) <> oRange.value
+                    While i <= UBound(T_geo, 1) And T_geo(i, 3) <> oRange.value
                         i = i + 1
                     Wend
-                    If T_geo(i, 2) = oRange.value Then 'je suis bien une geo !
-                        T_geo = [T_adm3]
+                    If T_geo(i, 3) = oRange.value Then 'je suis bien une geo !
+                        T_geo = Sheets("GEO").ListObjects("T_ADM4").DataBodyRange
                         i = 1
-                        While i < UBound(T_geo, 1) And T_geo(i, 1) <> oRange.value
+                        While i < UBound(T_geo, 1) And T_geo(i, 3) <> oRange.value
                             i = i + 1
                         Wend
-                        If T_geo(i, 1) = oRange.value Then 'on borne la zone a afficher en liste de validation
+                        If T_geo(i, 3) = oRange.value Then 'on borne la zone a afficher en liste de validation
                             iInfLimit = i
-                            While T_geo(i, 1) = oRange.value
+                            While T_geo(i, 3) = oRange.value
                                 i = i + 1
                             Wend
                 
-                            Call creerListeGeo(oRange, "T_adm3", iInfLimit, i)
+                            Call BuildListGeo(oRange.Offset(, 1), "T_ADM4", iInfLimit, i, 4)
                 
                         End If
                     End If
@@ -262,6 +263,7 @@ Sub EventSheetLineListPatient(oRange As Range)
             End If
         
 suivant:
+'Testing color for dates and numeric values (maybe directly in the validation?)
             If LCase(LetDataDic(Cells(C_TitleCol, oRange.Column).Name.Name, "type")) = "date" Then
                 If Not IsDate(oRange.value) Then
                     oRange.Interior.Color = vbRed
@@ -271,8 +273,6 @@ suivant:
                     oRange.Interior.Color = vbRed
                 End If
             End If
-    
-            'oRange.EntireColumn.AutoFit
     
         End If
     
@@ -285,15 +285,18 @@ suivant:
 
 End Sub
 
-Sub creerListeGeo(oRange As Range, sNameTab As String, iLigneDeb As Long, iLigneFin As Long)
+'Build the dropdown validation list for the geo
+Sub BuildListGeo(oRange As Range, sNameTab As String, iLigneDeb As Long, iLigneFin As Long, icol As Long)
 
     Dim sCol As String
     Dim sAdresse As String
 
-    sCol = Split(Sheets("geo").Range(sNameTab).Columns(2).Address, "$")(1)
+    sCol = Split(Sheets("GEO").Range(sNameTab).Columns(icol).Address, "$")(1)
+    
+    'The + 1 is to take in account the headers of each of the tables
     sAdresse = sCol & iLigneDeb + 1 & ":" & sCol & iLigneFin
 
-    With oRange.Offset(, 1).Validation
+    With oRange.Validation
         .Delete
         .Add Type:=xlValidateList, AlertStyle:=xlValidAlertWarning, Operator:=xlBetween, _
              Formula1:="=GEO!" & sAdresse
@@ -308,5 +311,8 @@ Sub creerListeGeo(oRange As Range, sNameTab As String, iLigneDeb As Long, iLigne
     End With
     
 End Sub
+
+
+
 
 

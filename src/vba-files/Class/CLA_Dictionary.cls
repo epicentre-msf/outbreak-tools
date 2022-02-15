@@ -80,7 +80,7 @@ Public Property Get Item(key As Variant) As Variant
         Dim dict_KeyValue As Variant
         dict_KeyValue = dict_GetKeyValue(key)
 
-        If Not isEmpty(dict_KeyValue) Then
+        If Not IsEmpty(dict_KeyValue) Then
             If VBA.IsObject(dict_KeyValue(2)) Then
                 Set Item = dict_KeyValue(2)
             Else
@@ -127,7 +127,7 @@ Public Property Let key(Previous As Variant, Updated As Variant)
         Dim dict_KeyValue As Variant
         dict_KeyValue = dict_GetKeyValue(Previous)
 
-        If Not VBA.isEmpty(dict_KeyValue) Then
+        If Not VBA.IsEmpty(dict_KeyValue) Then
             dict_ReplaceKeyValue dict_KeyValue, Updated, dict_KeyValue(2)
         End If
     #Else
@@ -162,7 +162,7 @@ End Sub
 ' --------------------------------------------- '
 Public Function Exists(key As Variant) As Boolean
     #If Mac Or Not UseScriptingDictionaryIfAvailable Then
-        Exists = Not isEmpty(dict_GetKeyValue(key))
+        Exists = Not IsEmpty(dict_GetKeyValue(key))
     #Else
         Exists = dict_pDictionary.Exists(key)
     #End If
@@ -214,7 +214,7 @@ Public Sub Remove(key As Variant)
         Dim dict_KeyValue As Variant
         dict_KeyValue = dict_GetKeyValue(key)
 
-        If Not VBA.isEmpty(dict_KeyValue) Then
+        If Not VBA.IsEmpty(dict_KeyValue) Then
             dict_RemoveKeyValue dict_KeyValue
         Else
             ' Application-defined or object-defined error

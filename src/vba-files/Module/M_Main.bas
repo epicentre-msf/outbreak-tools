@@ -1,19 +1,22 @@
 Attribute VB_Name = "M_Main"
 Option Explicit
+Option Base 1
 
 Const C_SheetNameDic As String = "Dictionary"
 Const C_SheetNameChoices As String = "Choices"
 Const C_SheetNameExport As String = "Exports"
 
+'Loading the Dictionnary file
 Sub LoadFileDic()
 
-    Dim sFilePath As String
-
+    Dim sFilePath As String                      'Path to the dictionnary
+    
+    'LoadPathWindow is the procedure for loading the path to the dictionnary
     sFilePath = LoadPathWindow
-
+    
+    'Update messages if the file path is correct
     If sFilePath <> "" Then
         [RNG_Dico].value = sFilePath
-
         [RNG_Msg].value = TranslateMsg("MSG_ChemFich")
         [RNG_Dico].Interior.Color = vbWhite
     Else
@@ -27,46 +30,45 @@ End Sub
 ' will be in use instead of the first one
 Sub LoadGeoFile()
     Dim geoSheet As String
-    geoSheet = "GEO"
+    geoSheet = "GEO"                             'geoSheet in the designer
     Dim sFilePath As String                      'File path to the geo file
-    Dim xlsApp As Excel.Application
+    Dim xlsapp As Excel.Application
     Dim oSheet As Object
-    Dim T_Adm  As BetterArray                    'Table for admin loading this is a variant
+    Dim T_Adm  As BetterArray                    'Table for admin levels
     Dim T_header As BetterArray                  'Table for the headers of the listobjects
     Dim outputAdress As String
     Dim outputHeaderAdress As String
-    Dim objectName As String 'name of the listobject in the geo sheet
+    Dim AdmNames As BetterArray                  'Array of the sheetnames
+    Dim i As Integer                             'iterator
+    
+    'Sheet names
+    Set AdmNames = New BetterArray
+    AdmNames.LowerBound = 1
+    AdmNames.Push "ADM1", "ADM2", "ADM3", "ADM4", "HF", "NAMES" 'Names of each sheet
     
     'Defining the adm and headers array
     Set T_Adm = New BetterArray
     Set T_header = New BetterArray
-    Set xlsApp = New Excel.Application
+    Set xlsapp = New Excel.Application
     
     sFilePath = LoadPathWindow
     
     If sFilePath <> "" Then
-        With xlsApp
+        With xlsapp
             .ScreenUpdating = False
             .Workbooks.Open sFilePath
             
             'Cleaning the previous Data in case the ranges are not Empty
             [RNG_Msg].value = TranslateMsg("MSG_NetoPrec")
-            
-            'Adm
-            If Not Sheets(geoSheet).ListObjects("T_Adm").DataBodyRange Is Nothing Then
-                Sheets(geoSheet).ListObjects("T_adm").DataBodyRange.Delete
-            End If
-            'Facility
-            If Not Sheets(geoSheet).ListObjects("T_Facility").DataBodyRange Is Nothing Then
-                Sheets(geoSheet).ListObjects("T_Facility").DataBodyRange.Delete
-            End If
-            'Translations
-            If Not Sheets(geoSheet).ListObjects("T_GeoTrad").DataBodyRange Is Nothing Then
-                Sheets(geoSheet).ListObjects("T_GeoTrad").DataBodyRange.Delete
-            End If
-            
+            For i = 1 To AdmNames.Length
+                'Adms
+                If Not Sheets(geoSheet).ListObjects("T" & "_" & AdmNames.Items(i)).DataBodyRange Is Nothing Then
+                    Sheets(geoSheet).ListObjects("T" & "_" & AdmNames.Items(i)).DataBodyRange.Delete
+                End If
+            Next
+
             'Reloading the data from the Geobase
-            For Each oSheet In xlsApp.Worksheets
+            For Each oSheet In xlsapp.Worksheets
                 [RNG_Msg].value = TranslateMsg("MSG_EnCours") & oSheet.Name
                 T_Adm.Clear
                 T_header.Clear
@@ -75,34 +77,34 @@ Sub LoadGeoFile()
                 'The headers
                 T_header.FromExcelRange oSheet.Range("A1"), False, True
                 
-                'keeping the object names for writing the data
-                Select Case oSheet.Name
-                Case "ADM"
-                    objectName = "T_Adm"
-                Case "HF"
-                    objectName = "T_Facility"
-                Case "NAMES"
-                    objectName = "T_GeoTrad"
-                Case Else
+                'Be sure my sheetnames are correct
+                If Not AdmNames.Includes(oSheet.Name) Then
                     [RNG_Msg].value = TranslateMsg("MSG_Error_Sheet") & oSheet.Name
                     Exit Sub
-                End Select
+                End If
                 
-                ' Check if the sheet is the admin exists sheet before writing in the adm table
-               With Sheets(geoSheet).ListObjects(objectName)
+                'Check if the sheet is the admin exists sheet before writing in the adm table
+                With Sheets(geoSheet).ListObjects("T" & "_" & oSheet.Name)
                     outputAdress = Cells(T_Adm.LowerBound + 1, .Range.Column).Address
                     outputHeaderAdress = Cells(T_Adm.LowerBound, .Range.Column).Address
-               End With
 
-                T_header.ToExcelRange Destination:=Sheets(geoSheet).Range(outputHeaderAdress), TransposeValues:=True
-                T_Adm.ToExcelRange Destination:=Sheets(geoSheet).Range(outputAdress)
+                    T_header.ToExcelRange Destination:=Sheets(geoSheet).Range(outputHeaderAdress), TransposeValues:=True
+                    T_Adm.ToExcelRange Destination:=Sheets(geoSheet).Range(outputAdress)
+                    
+                    'resizing the Table
+                    .Resize .Range.CurrentRegion
+                End With
             Next
-            Sheets("MAIN").Range("RNG_GEO").value = .ActiveWorkbook.Name
             
+            Sheets("MAIN").Range("RNG_GEO").value = .ActiveWorkbook.Name
             .ScreenUpdating = True
             .Workbooks.Close
-            xlsApp.Quit
-            Set xlsApp = Nothing
+            xlsapp.Quit
+            Set xlsapp = Nothing
+            Set T_Adm = Nothing
+            Set T_header = Nothing
+            Set AdmNames = Nothing
+            
             [RNG_Msg].value = TranslateMsg("MSG_Fini")
         End With
         
@@ -110,6 +112,7 @@ Sub LoadGeoFile()
         If Not Sheets(geoSheet).ListObjects("T_HistoGeo").DataBodyRange Is Nothing Then
             Sheets(geoSheet).ListObjects("T_HistoGeo").DataBodyRange.Delete
         End If
+        
         If Not Sheets(geoSheet).ListObjects("T_HistoHF").DataBodyRange Is Nothing Then
             Sheets(geoSheet).ListObjects("T_HistoHF").DataBodyRange.Delete
         End If
@@ -119,67 +122,71 @@ Sub LoadGeoFile()
 
 End Sub
 
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'This is the Sub for generating the data of the linelist using the input in the designer
+' The main entry point is the BuildList function which creates the Linelist-patient sheet as
+' well as all the forms in the linelist
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub GenerateData()
 
-    Dim xlsApp As New Excel.Application
+    Dim xlsapp As Excel.Application
     Dim D_TitleDic As Scripting.Dictionary
     Dim T_dataDic
     Dim D_Choices As Scripting.Dictionary
     Dim T_Choices
     Dim T_Export
     
+    Set xlsapp = New Excel.Application
+    
     Application.DisplayAlerts = False
-    Sheets("Main").Range("a1").Select
+    Application.ScreenUpdating = False
+    
+    'return to the create button
     Call ShowHideCmdValidation(False)
     
     'On Error GoTo ErrLectureFichier
-    '
     With ThisWorkbook.Sheets("Main").Range("RNG_Msg")
-        xlsApp.Workbooks.Open [RNG_Dico].value
-        xlsApp.ScreenUpdating = False
-        xlsApp.Visible = False
+        xlsapp.ScreenUpdating = False
+        xlsapp.Visible = False
+        xlsapp.Workbooks.Open [RNG_Dico].value
+        
         .value = TranslateMsg("MSG_LectDico")
-        Set D_TitleDic = CreateDicoColVar(xlsApp, C_SheetNameDic, 2)
-        T_dataDic = CreateTabDataVar(xlsApp, C_SheetNameDic, D_TitleDic, 3)
+        'create the Dictionnary of the linelist patient sheet
+        Set D_TitleDic = CreateDicoColVar(xlsapp, C_SheetNameDic, 2)
+        'create the data table of linelist patient using the dictionnary
+        T_dataDic = CreateTabDataVar(xlsapp, C_SheetNameDic, D_TitleDic, 3)
     
         .value = TranslateMsg("MSG_LectListe")
-        Set D_Choices = CreateDicoColChoi(xlsApp, C_SheetNameChoices)
-        T_Choices = CreateTabDataChoi(xlsApp, C_SheetNameChoices)
+        'Create the dictionnary for the choices sheet
+        Set D_Choices = CreateDicoColChoi(xlsapp, C_SheetNameChoices)
+        'Create the table for the choices
+        T_Choices = CreateTabDataChoi(xlsapp, C_SheetNameChoices)
     
         .value = TranslateMsg("MSG_LectExport")
-        T_Export = CreateParamExport(xlsApp)
+        'create parameters for export
+        T_Export = CreateParamExport(xlsapp)
 
-        xlsApp.ActiveWorkbook.Close
-        xlsApp.Quit
-        Set xlsApp = Nothing
-    
-        'On Error GoTo errCreatLL
-        '
+        xlsapp.ActiveWorkbook.Close
+        xlsapp.Quit
+        Set xlsapp = Nothing
+        
         .value = TranslateMsg("MSG_CreationLL")
+        
+        'Creating the linelist using the dictionnary and choices data as well as export data
+        ' The BuildList procedure is in the
         Call BuildList(D_TitleDic, T_dataDic, D_Choices, T_Choices, T_Export)
         DoEvents
     
         .value = TranslateMsg("MSG_toutFbie")
-        Application.DisplayAlerts = True
-    
-        Exit Sub
     End With
     
-ErrLectureFichier:
-    '[RNG_Msg].Value = "Une erreur s'est produite � la lecture du dico"
-    'Exit Sub
-    
-errCreatLL:
-    '[RNG_Msg].Value = "Une erreur s'est produite � la cr�ation de la LineList"
-    'Exit Sub
-    
+    Application.DisplayAlerts = True
+    Application.ScreenUpdating = True
 End Sub
 
 Sub CancelGenerate()
 
     Sheets("Main").Shapes("SHP_CtrlNouv").Visible = True
-
-    Sheets("Main").Range("a1").Select
     Call ShowHideCmdValidation(False)
 
 End Sub
@@ -214,6 +221,7 @@ Sub CtrlNew()
 
 End Sub
 
+'Show or hide the generate the linelist shape
 Private Sub ShowHideCmdValidation(EstVisible As Boolean)
 
     Sheets("Main").Shapes("SHP_Generer").Visible = EstVisible
@@ -247,24 +255,24 @@ Public Sub ShowCmdValidation()
 
 End Sub
 
-Private Function CreateParamExport(xlsApp As Object)
+Private Function CreateParamExport(xlsapp As Object)
 
     Dim i As Byte
     Dim j As Byte
     Dim T_temp
 
-    With xlsApp.Sheets(C_SheetNameExport)
+    With xlsapp.Sheets(C_SheetNameExport)
         i = 1
-        j = 0
-        ReDim T_temp(4, 0)
+        j = 1
+        ReDim T_temp(5, 1)
         While i <= .Cells(1, 1).End(xlDown).Row
             If LCase(.Cells(i, 4).value) = "active" Then
-                ReDim Preserve T_temp(4, j)
-                T_temp(0, j) = .Cells(i, 1).value
-                T_temp(1, j) = .Cells(i, 2).value
-                T_temp(2, j) = .Cells(i, 3).value
-                T_temp(3, j) = .Cells(i, 4).value
-                T_temp(4, j) = .Cells(i, 5).value
+                ReDim Preserve T_temp(5, j)
+                T_temp(1, j) = .Cells(i, 1).value
+                T_temp(2, j) = .Cells(i, 2).value
+                T_temp(3, j) = .Cells(i, 3).value
+                T_temp(4, j) = .Cells(i, 4).value
+                T_temp(5, j) = .Cells(i, 5).value
                 j = j + 1
             End If
             i = i + 1
