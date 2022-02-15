@@ -1,250 +1,146 @@
 Attribute VB_Name = "M_Geo"
 Option Explicit
-'M_Geo
-Public T_geo0
-Public T_aff0
-Public T_geo1
-Public T_aff1
-Public T_geo2
-Public T_aff2
-Public T_geo3
-Public T_aff3
-Public T_concat
-Public T_histo
+Option Base 1
+'Module Geo: This is where the geo form and data are managed as well ass all geographic data
+'-------------------------------------------------------------------------------------------------------------------------------------------------------------------
+'We keep the following data are public, so we can make some checks on their content even after initialization
+'Geobases at country level
+Public T_Adm1 As BetterArray                     'Administrative boundaries for level 1 (admin1) and 2 (admin2)
+Public T_Adm2 As BetterArray                     'Administrative boundaries for level 2 (admin2) and 3 (admin3)
+Public T_Adm3 As BetterArray                     'Administrative boundaries for level 3 (admin 3) and 4 (admin3)
+Public T_Adm4 As BetterArray                     'Administrative boundaries table from in the geo database
+Public T_HistoGeo As BetterArray                 'Historic of Geo
+Public T_Concat As BetterArray                   'Binding everything for the concatenate for the Geo database
 
-Public T_fac
-Public T_concatF
-Public T_histoF
+'Health facilities
+Public T_HF As BetterArray                       'Health Facility data in the geo base
+Public T_HF0 As BetterArray                      'Administrative boundaries for level 1 and 2 for Heath Facility
+Public T_HF1 As BetterArray                      'administrative boundaries for level 2 and 3 for health facility
+Public T_HF2 As BetterArray                      'Administrative boundaries for level 3 and 4 for health facility
+Public T_HF3 As BetterArray                      'Administrative boundaries for level 3 and 4 for health facility
+Public T_HistoHF As BetterArray                  'Historic of health facility
+Public T_ConcatHF   As BetterArray               'Health Facility concatenated
 
 Public sPlaceSelection As String
 
-Public iCountLineAdm1 As Long
-Public iCountLineAdm2 As Long
-Public iCountLineAdm3 As Long
-Public iCountLineAdm4 As Long
-Public iCountLineFac As Long
-Public bHaveToDo As Boolean
+'Those are number of rows of admin from 1 to 4. The goal is to use them to check if an update has been made in the geo sheet
+Public iGeoType As Byte
 
-Public iGeoType As Byte                          'geo 0 ou facility 1 ?
-
-Sub chargerGeo(iGeoType As Byte)
-
-    Dim i As Long
-    Dim iNbMax As Long
-    Dim iNbMaxF As Long
-    Dim iLastLevel As Long
-    Dim j As Integer
-    Dim k As Integer
-    Dim l As Integer
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'This sub loads the geodata from the Geo form to on form in the linenist. There are two types of data:
+'Facility iGeoType = 1 or Geographical informations: iGeotype = 0 Some frame are hidden when one
+'type of geodata should be load (facility) or (geographical informations)
+'
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo = 0 or Facility = 1
+    Dim geoSheet As String
+    Dim transValue As Variant                    'transitional value for storing results
+    geoSheet = "GEO"
+    Dim i As Integer
+    Dim T_HFTable As Variant
+    
+    Set T_Adm1 = New BetterArray
+    Set T_Adm2 = New BetterArray
+    Set T_Adm3 = New BetterArray
+    Set T_Adm4 = New BetterArray
+    Set T_Concat = New BetterArray
+    Set T_HistoGeo = New BetterArray
+    
+    Set T_HF = New BetterArray
+    Set T_ConcatHF = New BetterArray
+    Set T_HistoHF = New BetterArray
+    Set T_HF0 = New BetterArray
+    Set T_HF1 = New BetterArray
+    Set T_HF2 = New BetterArray
+    Set T_HF3 = New BetterArray
 
     Application.ScreenUpdating = False
-    Call ClearGeo
-    bHaveToDo = False
+
+    ' width and height of the geo formulaire
     [F_Geo].Height = 360
     [F_Geo].Width = 606
 
-    If Not Sheets("geo").[T_adm0].ListObject.DataBodyRange Is Nothing Then
-        If IsEmptyTable(T_geo0) Or iCountLineAdm1 <> Sheets("geo").[T_adm0].Rows.Count Then
-            T_geo0 = Sheets("geo").[T_adm0]
-            iNbMax = UBound(T_geo0, 1)
-            'remplit LST_Adm
-            ReDim T_aff0(iNbMax - 1)
-            i = 1
-            j = 0
-            While i <= iNbMax
-                T_aff0(j) = T_geo0(i, 2)
-                i = i + 1
-                j = j + 1
-            Wend
-            iCountLineAdm1 = UBound(T_aff0) + 1
-            bHaveToDo = True
+    'Before doing the whole all thing, we need to test if the T_Adm data is empty or not
+        If (Not Sheets(geoSheet).ListObjects("T_ADM1").DataBodyRange Is Nothing) Then
+            T_Adm1.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM1").DataBodyRange
         End If
     
-        [F_Geo].[LST_Adm1].List = T_aff0
-        [F_Geo].[LST_AdmF1].List = T_aff0
-        iLastLevel = 0
-    End If
-
-    If Not Sheets("geo").[T_adm1].ListObject.DataBodyRange Is Nothing Then
-        If IsEmptyTable(T_geo1) Or iCountLineAdm2 <> Sheets("geo").[T_adm1].Rows.Count Then
-            T_geo1 = Sheets("geo").[T_adm1]
-            iCountLineAdm2 = UBound(T_geo1, 1)
-            bHaveToDo = True
+        If (Not Sheets(geoSheet).ListObjects("T_ADM2").DataBodyRange Is Nothing) Then
+            T_Adm2.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM2").DataBodyRange
         End If
-        iNbMax = UBound(T_geo1, 1)
-        iLastLevel = 1
-        F_Geo.LBL_Adm1.Caption = Sheets("geo").[T_adm0].ListObject.HeaderRowRange.Item(2).value
-        F_Geo.LBL_Adm1F.Caption = Sheets("geo").[T_adm0].ListObject.HeaderRowRange.Item(2).value
-    End If
-
-    If Not Sheets("geo").[T_adm2].ListObject.DataBodyRange Is Nothing Then
-        If IsEmptyTable(T_geo2) Or Sheets("geo").[T_adm2].Rows.Count <> iCountLineAdm3 Then
-            T_geo2 = Sheets("geo").[T_adm2]
-            iCountLineAdm3 = UBound(T_geo2, 1)
-            bHaveToDo = True
-        End If
-        iNbMax = UBound(T_geo2, 1)
-        iLastLevel = 2
-        F_Geo.LBL_Adm2.Caption = Sheets("geo").[T_adm1].ListObject.HeaderRowRange.Item(2).value
-        F_Geo.LBL_Adm2F.Caption = Sheets("geo").[T_adm1].ListObject.HeaderRowRange.Item(2).value
-    End If
-
-    If Not Sheets("geo").[T_adm3].ListObject.DataBodyRange Is Nothing Then
-        If IsEmptyTable(T_geo3) Or iCountLineAdm4 <> Sheets("geo").[T_adm3].Rows.Count Then
-            T_geo3 = Sheets("geo").[T_adm3].ListObject.DataBodyRange
-            iCountLineAdm4 = UBound(T_geo3, 1)
-            bHaveToDo = True
-        End If
-        iNbMax = UBound(T_geo3, 1)
-        iLastLevel = 3
-        F_Geo.LBL_Adm3.Caption = Sheets("geo").[T_adm2].ListObject.HeaderRowRange.Item(2).value
-        F_Geo.LBL_Adm3F.Caption = Sheets("geo").[T_adm2].ListObject.HeaderRowRange.Item(2).value
-    End If
-
-    If Not Sheets("geo").[T_facility].ListObject.DataBodyRange Is Nothing Then
-        If IsEmptyTable(T_fac) Or iCountLineFac <> Sheets("geo").[T_facility].Rows.Count Then
-            T_fac = Sheets("geo").[T_facility]
-            iCountLineFac = UBound(T_fac, 1)
-            bHaveToDo = True
-        End If
-        iNbMaxF = UBound(T_fac, 1)
-        F_Geo.LBL_Adm4.Caption = Sheets("geo").[T_adm3].ListObject.HeaderRowRange.Item(2).value
-        F_Geo.LBL_Adm4F.Caption = Sheets("geo").[T_facility].ListObject.HeaderRowRange.Item(2).value
-    End If
-
-    'creation du tableau concat
-    If IsEmptyTable(T_concat) Or bHaveToDo Then
-        ReDim T_concat(iNbMax)                   'attention a la desynchro de -1
-        i = 1
-        While i <= iNbMax
-            Select Case iLastLevel
-            Case 0
-                T_concat(i - 1) = T_geo0(i, 2)
     
-            Case 1
-                T_concat(i - 1) = T_geo1(i, 1) & " | " & T_geo1(i, 2)
-    
-            Case 2
-                T_concat(i - 1) = T_geo2(i, 1) & " | " & T_geo2(i, 2)
-            
-                j = 1
-                While j <= UBound(T_geo1, 1)
-                    If T_geo1(j, 2) = T_geo2(i, 1) Then
-                        T_concat(i - 1) = T_geo1(j, 1) & " | " & T_concat(i - 1)
-                    End If
-                    j = j + 1
-                Wend
-            
-            Case 3
-                T_concat(i - 1) = T_geo3(i, 1) & " | " & T_geo3(i, 2)
-            
-                j = 1
-                While j <= UBound(T_geo2, 1)
-                    If T_geo2(j, 2) = T_geo3(i, 1) Then
-                        T_concat(i - 1) = T_geo2(j, 1) & " | " & T_concat(i - 1)
-                    
-                        k = 1
-                        While k <= UBound(T_geo1, 1)
-                            If T_geo1(k, 2) = T_geo2(j, 1) Then
-                                T_concat(i - 1) = T_geo1(k, 1) & " | " & T_concat(i - 1)
-                            End If
-                            k = k + 1
-                        Wend
-                    End If
-                    j = j + 1
-                Wend
-            End Select
-            i = i + 1
-        Wend
-        If Not IsEmptyTable(T_concat) Then
-            '[F_GEO].LST_ListeAgre.list = TriBulle(T_concat)
-            Call QuickSort(T_concat, LBound(T_concat), UBound(T_concat))
-            [F_Geo].LST_ListeAgre.List = T_concat
+        If (Not Sheets(geoSheet).ListObjects("T_ADM3").DataBodyRange Is Nothing) Then
+            T_Adm3.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM3").DataBodyRange
         End If
-    Else
-        [F_Geo].LST_ListeAgre.List = T_concat
-    End If
-
-    If IsEmptyTable(T_concatF) Or bHaveToDo Then
-        ReDim T_concatF(iNbMaxF)                 'meme manip pour facility
-        i = 1
-        While i <= iNbMaxF
-            Select Case iLastLevel
-            Case 0
-                T_concatF(i - 1) = T_geo0(i, 1)
+    
+        If (Not Sheets(geoSheet).ListObjects("T_ADM4").DataBodyRange Is Nothing) Then
+            T_Adm4.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM4").DataBodyRange
+        End If
+       
         
-            Case 1
-                'T_concatF(i - 1) = T_geo1(i, 1) & " | " & T_geo1(i, 2)
-                T_concatF(i - 1) = T_geo1(i, 2) & " | " & T_geo1(i, 1)
-    
-            Case 2
-                'T_concatF(i - 1) = T_fac(i, 1) & " | " & T_fac(i, 2)
-                T_concatF(i - 1) = T_fac(i, 2) & " | " & T_fac(i, 1)
-                j = 1
-                While j <= UBound(T_geo2, 1)
-                    If T_fac(i, 1) = T_geo2(j, 2) Then
-                        'T_concatF(i - 1) = T_geo2(j, 1) & " | " & T_concatF(i - 1)
-                        T_concatF(i - 1) = T_concatF(i - 1) & " | " & T_geo2(j, 1)
-                    End If
-                    j = j + 1
-                Wend
+        '----- Fill the list of the admins with the unique values for adm1
+        [F_Geo].[LST_Adm1].List = T_Adm1.ExtractSegment(ColumnIndex:=1)
         
-            Case 3
-                'T_concatF(i - 1) = T_fac(i, 1) & " | " & T_fac(i, 2)
-                T_concatF(i - 1) = T_fac(i, 2) & " | " & T_fac(i, 1)
-            
-                j = 1
-                While j <= UBound(T_geo2, 1)
-                    If T_geo2(j, 2) = T_fac(i, 1) Then
-                        'T_concatF(i - 1) = T_geo2(j, 1) & " | " & T_concatF(i - 1)
-                        T_concatF(i - 1) = T_concatF(i - 1) & " | " & T_geo2(j, 1)
-                        k = 1
-                        While k <= UBound(T_geo1, 1)
-                            If T_geo1(k, 2) = T_geo2(j, 1) Then
-                                'T_concatF(i - 1) = T_geo1(k, 1) & " | " & T_concatF(i - 1)
-                                T_concatF(i - 1) = T_concatF(i - 1) & " | " & T_geo1(k, 1)
-                            End If
-                            k = k + 1
-                        Wend
-                    End If
-                    j = j + 1
-                Wend
-            End Select
-            i = i + 1
-        Wend
-        If Not IsEmptyTable(T_concatF) Then
-            '[F_GEO].LST_ListeAgreF.list = TriBulle(T_concatF)
-            Call QuickSort(T_concatF, LBound(T_concatF), UBound(T_concatF))
-            [F_Geo].LST_ListeAgreF.List = T_concatF
+        '----- Add Caption for  each adminstrative leveles in the form
+        F_Geo.LBL_Adm1.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(1).value
+        F_Geo.LBL_Adm2.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(2).value
+        F_Geo.LBL_Adm3.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(3).value
+        F_Geo.LBL_Adm4.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(4).value
+        
+        '------- Concatenate all the tables for the geo
+        For i = T_Adm4.LowerBound To T_Adm4.UpperBound
+            'binding all the lines together
+            transValue = T_Adm4.Item(i)           'This is oneline of the adm
+            T_Concat.Item(i) = CStr(transValue(1)) & " | " & CStr(transValue(2)) & " | " & CStr(transValue(3)) & " | " & CStr(transValue(4))
+        Next
+        T_Concat.Sort
+        '------ Once the concat is created, add it to the list in the form
+        [F_Geo].LST_ListeAgre.List = T_Concat.Items
+    
+    ' Now health facility ----------------------------------------------------------------------------------------------------------
+        If (Not Sheets(geoSheet).ListObjects("T_HF").DataBodyRange Is Nothing) Then
+       
+            T_HFTable = Sheets(geoSheet).ListObjects("T_HF").DataBodyRange
+            T_HF.Items = T_HFTable
+      
+            'unique admin 1
+            T_HF0.Items = GetUnique(T_HFTable, 4)
+            T_HF1.Items = GetUnique(T_HFTable, 4, 3)
+            T_HF2.Items = GetUnique(T_HFTable, 3, 2)
+            T_HF3.Items = GetUnique(T_HFTable, 2, 1)
+         
+            ReDim T_HFTable(1)
+                         
+            ' ----- Fill the list of the admins with the unique values of adm1
+            [F_Geo].[LST_AdmF1].List = T_HF0.Items
+                
+            '-------- Adding caption for each admnistrative levels in the form of the health facility
+            F_Geo.LBL_Adm1F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(4).value
+            F_Geo.LBL_Adm2F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(3).value
+            F_Geo.LBL_Adm3F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(2).value
+            F_Geo.LBL_Adm4F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(1).value
+        
+            'Creating the concatenate for the Health facility
+            For i = T_HF.LowerBound To T_HF.UpperBound
+                transValue = T_HF.Item(i)
+                T_ConcatHF.Item(i) = CStr(transValue(1)) & " | " & CStr(transValue(2)) & " | " & CStr(transValue(3)) & " | " & CStr(transValue(4))
+            Next i
+            T_ConcatHF.Sort
+            '---- Once the concat is created, add it to the HF form using the list for the concat part
+            [F_Geo].LST_ListeAgreF.List = T_ConcatHF.Items
         End If
-    Else
-        [F_Geo].LST_ListeAgreF.List = T_concatF
-    End If
-
-    'Creation de l'histo
-    If Not Sheets("geo").[T_HistoGeo].ListObject.DataBodyRange Is Nothing Then
-        i = 1
-        ReDim T_histo(i)
-        If [T_HistoGeo].Count > 1 Then
-            T_histo = [T_HistoGeo]
-        Else
-            T_histo(0) = [T_HistoGeo]
+    'Historic for geographic data and facility data
+        If Not Sheets(geoSheet).ListObjects("T_HistoGeo").DataBodyRange Is Nothing Then
+            T_HistoGeo.FromExcelRange Sheets(geoSheet).ListObjects("T_HistoGeo").DataBodyRange
+            [F_Geo].LST_Histo.List = T_HistoGeo.Items
         End If
-        [F_Geo].LST_Histo.List = T_histo
-    End If
 
-    If Not Sheets("geo").[T_HistoFacil].ListObject.DataBodyRange Is Nothing Then
-        i = 1
-        ReDim T_histoF(i)
-        If [T_HistoFacil].Count > 1 Then
-            T_histoF = [T_HistoFacil]
-        Else
-            T_histoF(0) = [T_HistoFacil]
+        If Not Sheets(geoSheet).ListObjects("T_HistoHF").DataBodyRange Is Nothing Then
+            T_HistoHF.FromExcelRange Sheets(geoSheet).ListObjects("T_HistoHF").DataBodyRange
+            [F_Geo].LST_HistoF.List = T_HistoHF.Items
         End If
-        [F_Geo].LST_HistoF.List = T_histoF
-    End If
 
-    '
+    'Showing the form in case of Geo or Health Facility. Geo and Facility are in different frames.
     Select Case iGeoType
     Case 0
         [F_Geo].FRM_Facility.Visible = False
@@ -258,286 +154,146 @@ Sub chargerGeo(iGeoType As Byte)
         [F_Geo].LBL_Geo1.Visible = False
     End Select
     Application.ScreenUpdating = True
-
-    'Call TranslateForm("F_Geo")
-    'the show must go on
+    
     [F_Geo].Show
-
 End Sub
 
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'
+'This sub shows the list of the selected values in the geo frame (second list) given a place sPlace
+'
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'This function shows the second list for the Geo
 Sub ShowLst2(sPlace As String)
-
-    Dim i As Integer
-    Dim j As Integer
-
+    'clear the forms if there is something
     [F_Geo].LST_Adm2.Clear
     [F_Geo].LST_Adm3.Clear
     [F_Geo].LST_Adm4.Clear
-
-    If Not IsEmptyTable(T_geo1) Then
-        i = 1
-        j = 0
-        ReDim T_aff2(0)
-        While i <= UBound(T_geo1)
-            If T_geo1(i, 1) = sPlace Then
-                ReDim Preserve T_aff2(j)
-                T_aff2(j) = T_geo1(i, 2)
-                j = j + 1
-            End If
-            i = i + 1
-        Wend
+    Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
+    Set T_Aff = New BetterArray
+    
+    'Search if the value exists in the 2 dimensional table T_Adm1 previously initialized
+    If T_Adm2.Length > 0 Then
+        Set T_Aff = GetFilter(T_Adm2, 1, sPlace)
     End If
     
-    If Not IsEmptyTable(T_aff2) Then
-        [F_Geo].LST_Adm2.List = T_aff2
-        [F_Geo].TXT_Msg.value = sPlace
-    Else
-        [F_Geo].TXT_Msg.value = sPlace           '& " : Pas de niveau2"
+    [F_Geo].TXT_Msg.value = sPlace
+    'update if only next level is available
+    If T_Aff.Length > 0 Then
+        [F_Geo].LST_Adm2.List = T_Aff.ExtractSegment(, ColumnIndex:=2)
     End If
-
+    'Clear to reuse when showing the health facility
+    T_Aff.Clear
 End Sub
 
+'Show second list for the facility
 Sub ShowLstF2(sPlace As String)
 
-    Dim i As Integer
-    Dim j As Integer
-    Dim bFound As Boolean
-
+    'Clear the forms
     [F_Geo].LST_AdmF2.Clear
     [F_Geo].LST_AdmF3.Clear
     [F_Geo].LST_AdmF4.Clear
+    Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
+    Set T_Aff = New BetterArray
 
-    bFound = False
-    If Not IsEmptyTable(T_fac) Then
-        i = 1
-        j = 0
-        ReDim T_aff2(0)
-        While i <= UBound(T_fac)
-            If T_fac(i, 1) = sPlace Then
-                ReDim Preserve T_aff2(j)
-                T_aff2(j) = T_fac(i, 2)
-                bFound = True
-                j = j + 1
-            End If
-            i = i + 1
-        Wend
-        If Not bFound Then
-            i = 1
-            j = 0
-            ReDim T_aff2(0)
-            While i <= UBound(T_geo1)
-                If T_geo1(i, 1) = sPlace Then
-                    ReDim Preserve T_aff2(j)
-                    T_aff2(j) = T_geo1(i, 2)
-                    j = j + 1
-                End If
-                i = i + 1
-            Wend
-        End If
-    Else
-        i = 1
-        j = 0
-        ReDim T_aff2(0)
-        While i <= UBound(T_geo1)
-            If T_geo1(i, 1) = sPlace Then
-                ReDim Preserve T_aff2(j)
-                T_aff2(j) = T_geo1(i, 2)
-                j = j + 1
-            End If
-            i = i + 1
-        Wend
+    If T_HF1.Length > 0 Then
+        Set T_Aff = GetFilter(T_HF1, 1, sPlace)
     End If
     
-    If Not IsEmptyTable(T_aff2) Then
-        [F_Geo].LST_AdmF2.List = T_aff2
+    If T_Aff.Length > 0 Then
+        [F_Geo].LST_AdmF2.List = T_Aff.ExtractSegment(, ColumnIndex:=2)
         [F_Geo].TXT_Msg.value = sPlace
     Else
-        [F_Geo].TXT_Msg.value = sPlace           '& " : Pas de niveau2"
+        [F_Geo].TXT_Msg.value = sPlace           'No levels
     End If
-
+    T_Aff.Clear
 End Sub
 
+'This function shows the third list for the geobase
 Sub ShowLst3(sPlace As String)
-
-    Dim i As Integer
-    Dim j As Integer
-
+     
+    'Clear the two remaining forms
     [F_Geo].LST_Adm3.Clear
     [F_Geo].LST_Adm4.Clear
+    
+    Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
+    Set T_Aff = New BetterArray
 
-    If Not IsEmptyTable(T_geo2) Then
-        i = 1
-        j = 0
-        ReDim T_aff3(0)
-        While i <= UBound(T_geo2)
-            If T_geo2(i, 1) = sPlace Then
-                ReDim Preserve T_aff3(j)
-                T_aff3(j) = T_geo2(i, 2)
-                j = j + 1
-            End If
-            i = i + 1
-        Wend
+    If T_Adm3.Length > 0 Then
+        Set T_Aff = GetFilter(T_Adm3, 2, sPlace)
     End If
     
-    If Not IsEmptyTable(T_aff3) Then
-        [F_Geo].LST_Adm3.List = T_aff3
+    'Update the adm3 list in the geoform if the T_Aff3 is not missing
+    If T_Aff.Length > 0 Then
+        [F_Geo].LST_Adm3.List = T_Aff.ExtractSegment(, ColumnIndex:=3)
         [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value
     Else
-        [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value '& " : Pas de niveau 3"
+        [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value 'No lower level related
     End If
-
+    T_Aff.Clear
 End Sub
 
+'Show the third list of geobase, pretty much the same as before
 Sub ShowLstF3(sPlace As String)
-
-    Dim i As Integer
-    Dim j As Integer
-    Dim bFound As Boolean
 
     [F_Geo].LST_AdmF3.Clear
     [F_Geo].LST_AdmF4.Clear
-
-    bFound = False
-    If Not IsEmptyTable(T_fac) Then
-        i = 1
-        j = 0
-        ReDim T_aff3(0)
-        While i <= UBound(T_fac)
-            If T_fac(i, 1) = sPlace Then
-                ReDim Preserve T_aff3(j)
-                T_aff3(j) = T_fac(i, 2)
-                bFound = True
-                j = j + 1
-            End If
-            i = i + 1
-        Wend
-        If Not bFound Then
-            i = 1
-            j = 0
-            ReDim T_aff3(0)
-            While i <= UBound(T_geo2)
-                If T_geo2(i, 1) = sPlace Then
-                    ReDim Preserve T_aff3(j)
-                    T_aff3(j) = T_geo2(i, 2)
-                    j = j + 1
-                End If
-                i = i + 1
-            Wend
-        End If
-    Else
-        i = 1
-        j = 0
-        ReDim T_aff3(0)
-        While i <= UBound(T_geo2)
-            If T_geo2(i, 1) = sPlace Then
-                ReDim Preserve T_aff3(j)
-                T_aff3(j) = T_geo2(i, 2)
-                j = j + 1
-            End If
-            i = i + 1
-        Wend
+    Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
+    Set T_Aff = New BetterArray
+    
+    If T_HF2.Length > 0 Then
+        Set T_Aff = GetFilter(T_HF2, 1, sPlace)
     End If
     
-    If Not IsEmptyTable(T_aff3) Then
-        [F_Geo].LST_AdmF3.List = T_aff3
+    If T_Aff.Length > 0 Then
+        [F_Geo].LST_AdmF3.List = T_Aff.ExtractSegment(, ColumnIndex:=2)
         [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
     Else
         [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value '& " : Pas de niveau 3"
     End If
-
+    
+    T_Aff.Clear
 End Sub
 
+'This function shows the fourth list for the Geo (pretty much the same thing as done previously)
 Sub ShowLst4(sPlace As String)
-
-    Dim i As Integer
-    Dim j As Integer
-
     [F_Geo].LST_Adm4.Clear
-
-    If Not IsEmptyTable(T_geo3) Then
-        i = 1
-        j = 0
-        ReDim T_aff4(0)
-        While i <= UBound(T_geo3)
-            If T_geo3(i, 1) = sPlace Then
-                ReDim Preserve T_aff4(j)
-                T_aff4(j) = T_geo3(i, 2)
-                j = j + 1
-            End If
-            i = i + 1
-        Wend
-    End If
+    Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
+    Set T_Aff = New BetterArray
     
-    If Not IsEmptyTable(T_aff4) Then
-        [F_Geo].LST_Adm4.List = T_aff4
+    If T_Adm4.Length > 0 Then
+        Set T_Aff = GetFilter(T_Adm4, 3, sPlace)
+    End If
+    If T_Aff.Length > 0 Then
+        [F_Geo].LST_Adm4.List = T_Aff.ExtractSegment(, ColumnIndex:=4)
         [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value
-    
     Else
-        [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value '& " : Pas de niveau 4"
+        [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value 'No level found
     End If
-
+    T_Aff.Clear
 End Sub
 
+'Fourth list of health facility
 Sub ShowLstF4(sPlace As String)
 
-    Dim i As Integer
-    Dim j As Integer
-    Dim bFound As Boolean
-
     [F_Geo].LST_AdmF4.Clear
-
-    bFound = False
-    If Not IsEmptyTable(T_fac) Then
-        i = 1
-        j = 0
-        ReDim T_aff4(0)
-        While i <= UBound(T_fac)
-            If T_fac(i, 1) = sPlace Then
-                ReDim Preserve T_aff4(j)
-                T_aff4(j) = T_fac(i, 2)
-                bFound = True
-                j = j + 1
-            End If
-            i = i + 1
-        Wend
-        If Not bFound Then
-            i = 1
-            j = 0
-            ReDim T_aff4(0)
-            While i <= UBound(T_geo3)
-                If T_geo3(i, 1) = sPlace Then
-                    ReDim Preserve T_aff4(j)
-                    T_aff4(j) = T_geo3(i, 2)
-                    j = j + 1
-                End If
-                i = i + 1
-            Wend
-        End If
-    Else
-        i = 1
-        j = 0
-        ReDim T_aff4(0)
-        While i <= UBound(T_geo3)
-            If T_geo3(i, 1) = sPlace Then
-                ReDim Preserve T_aff4(j)
-                T_aff4(j) = T_geo3(i, 2)
-                j = j + 1
-            End If
-            i = i + 1
-        Wend
+    Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
+    Set T_Aff = New BetterArray
+    
+    If T_HF3.Length > 0 Then
+        Set T_Aff = GetFilter(T_HF3, 1, sPlace)
     End If
 
-    If Not IsEmptyTable(T_aff4) Then
-        [F_Geo].LST_AdmF4.List = T_aff4
+    If T_Aff.Length > 0 Then
+        [F_Geo].LST_AdmF4.List = T_Aff.ExtractSegment(, ColumnIndex:=2)
         [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF3.value & " | " & [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
     Else
         [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF3.value & " | " & [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value '& " : Pas de niveau 4"
     End If
-
 End Sub
 
 Sub ClearGeo()
-
+    ' Clear all elements in the geo form
     [F_Geo].LST_Adm1.Clear
     [F_Geo].LST_Adm2.Clear
     [F_Geo].LST_Adm3.Clear
@@ -548,177 +304,162 @@ Sub ClearGeo()
     [F_Geo].LST_AdmF3.Clear
     [F_Geo].LST_AdmF4.Clear
     [F_Geo].LST_ListeAgreF.Clear
-
     [F_Geo].TXT_Msg.value = ""
-
 End Sub
 
-Sub SearchValue(T_concat, sSearchedValue As String)
-
-    Dim T_result
-    Dim i As Long
-    Dim j As Long
-
-    '[F_Geo].LST_ListeAgre.Clear
-
-    If Len(sSearchedValue) >= 3 Then
-        i = 0
-        j = 0
-        ReDim T_result(j)
-        While i <= UBound(T_concat)
-            If InStr(1, LCase(T_concat(i)), LCase(sSearchedValue)) > 0 Then
-                ReDim Preserve T_result(j)
-                T_result(j) = T_concat(i)
-                j = j + 1
-            End If
-            i = i + 1
-        Wend
-    
-        If Not IsEmptyTable(T_result) Then
-            '[F_GEO].LST_ListeAgre.list = TriBulle(T_result)
-            Call QuickSort(T_result, LBound(T_result), UBound(T_result))
-            [F_Geo].LST_ListeAgre.List = T_result
-        Else
-            If [F_Geo].LST_ListeAgre.ListCount - 1 <> UBound(T_concat) Then
-                [F_Geo].LST_ListeAgre.List = T_concat
-            End If
-        End If
-    Else
-        If [F_Geo].LST_ListeAgre.ListCount - 1 <> UBound(T_concat) Then
-            [F_Geo].LST_ListeAgre.List = T_concat
-        End If
-    End If
-
-End Sub
-
-Sub SeachHistoValue(T_histo, sSearchedValue As String)
-
-    Dim T_result
-    Dim i As Long
-    Dim j As Long
-
-    '[F_Geo].LST_ListeAgre.Clear
-
-    If Len(sSearchedValue) >= 3 Then
-        i = 0
-        j = 0
-        ReDim T_result(j)
-        While i <= UBound(T_histo)
-            If InStr(1, LCase(T_histo(i)), LCase(sSearchedValue)) > 0 Then
-                ReDim Preserve T_result(j)
-                T_result(j) = T_histo(i)
-                j = j + 1
-            End If
-            i = i + 1
-        Wend
-    
-        If Not IsEmptyTable(T_result) Then
-            '[F_GEO].LST_Histo.list = TriBulle(T_result)
-            Call QuickSort(T_result, LBound(T_result), UBound(T_result))
-            [F_Geo].LST_Histo.List = T_result
-        Else
-            If [F_Geo].LST_Histo.ListCount - 1 <> UBound(T_histo) Then
-                [F_Geo].LST_Histo.List = T_histo
-            End If
-        End If
-    Else
-        If [F_Geo].LST_Histo.ListCount - 1 <> UBound(T_histo) Then
-            [F_Geo].LST_Histo.List = T_histo
-        End If
-    End If
-
-End Sub
-
-Sub SearchValueF(T_concatF, sSearchedValue As String)
-
-    Dim T_result
-    Dim i As Long
-    Dim j As Long
-
-    If Len(sSearchedValue) >= 3 Then
-        i = 0
-        j = 0
-        ReDim T_result(j)
-        While i <= UBound(T_concatF)
-            If InStr(1, LCase(T_concatF(i)), LCase(sSearchedValue)) > 0 Then
-                ReDim Preserve T_result(j)
-                T_result(j) = T_concatF(i)
-                j = j + 1
-            End If
-            i = i + 1
-        Wend
-    
-        If Not IsEmptyTable(T_result) Then
-            '[F_GEO].LST_ListeAgreF.list = TriBulle(T_result)
-            Call QuickSort(T_result, LBound(T_result), UBound(T_result))
-            [F_Geo].LST_ListeAgreF.List = T_result
-        Else
-            If [F_Geo].LST_ListeAgreF.ListCount - 1 <> UBound(T_concatF) Then
-                [F_Geo].LST_ListeAgreF.List = T_concatF
-            End If
-        End If
-    Else
-        If [F_Geo].LST_ListeAgreF.ListCount - 1 <> UBound(T_concatF) Then
-            [F_Geo].LST_ListeAgreF.List = T_concatF
-        End If
-    End If
-
-End Sub
-
-Sub SeachHistoValueF(T_histoF, sSearchedValue As String)
-
-    Dim T_result
-    Dim i As Long
-    Dim j As Long
-
-    If Len(sSearchedValue) >= 3 Then
-        i = 0
-        j = 0
-        ReDim T_result(j)
-        While i <= UBound(T_histoF)
-            If InStr(1, LCase(T_histoF(i)), LCase(sSearchedValue)) > 0 Then
-                ReDim Preserve T_result(j)
-                T_result(j) = T_histoF(i)
-                j = j + 1
-            End If
-            i = i + 1
-        Wend
-    
-        If Not IsEmptyTable(T_result) Then
-            '[F_GEO].LST_HistoF.list = TriBulle(T_result)
-            Call QuickSort(T_result, LBound(T_result), UBound(T_result))
-            [F_Geo].LST_HistoF.List = T_result
-        Else
-            If [F_Geo].LST_HistoF.ListCount - 1 <> UBound(T_histoF) Then
-                [F_Geo].LST_HistoF.List = T_histo
-            End If
-        End If
-    Else
-        If [F_Geo].LST_HistoF.ListCount - 1 <> UBound(T_histoF) Then
-            [F_Geo].LST_HistoF.List = T_histo
-        End If
-    End If
-
-End Sub
-
-Function ReverseString(sChaine As String)
-
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'Search values in the search box
+'T_Concat is The concatenate data
+'Search value is the string to search from Those type of functions are pretty much the same:
+'1 - search in the concatenated table
+'2- Add values where there are some matches in another table
+'3- Render the table if it is not empty
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub SearchValue(T_Concat, ByVal sSearchedValue As String)
+    Dim T_result As BetterArray
+    Set T_result = New BetterArray
     Dim i As Integer
-    Dim T_temp
-    Dim sRes As String
-
-    ReverseString = ""
-    T_temp = Split(sChaine, " | ")
-    i = UBound(T_temp)
-    While i >= 0
-        If i = UBound(T_temp) Then
-            sRes = T_temp(i)
+    
+    'Create a table of the found values (called T_result)
+    If Len(sSearchedValue) >= 3 Then
+        i = 1
+        While i <= T_Concat.UpperBound
+            If InStr(1, LCase(T_Concat.Item(i)), LCase(sSearchedValue)) > 0 Then
+                T_result.Push T_Concat.Item(i)
+            End If
+            i = i + 1
+        Wend
+        
+        'Render the table if some values are found
+        If T_result.Length > 0 Then
+            T_result.Sort
+            [F_Geo].LST_ListeAgre.List = T_result.Items
         Else
-            sRes = sRes & " | " & T_temp(i)
+            'If Not, check if there have been some input in the concat and render
+            If [F_Geo].LST_ListeAgre.ListCount - 1 <> T_Concat.UpperBound Then
+                [F_Geo].LST_ListeAgre.List = T_Concat.Items
+            End If
         End If
-        i = i - 1
-    Wend
+    Else
+        If [F_Geo].LST_ListeAgre.ListCount - 1 <> T_Concat.UpperBound Then
+            [F_Geo].LST_ListeAgre.List = T_Concat.Items
+        End If
+    End If
+    
+    Set T_result = Nothing
+End Sub
+
+Sub SeachHistoValue(T_HistoGeo, sSearchedValue As String)
+    Dim T_result As BetterArray
+    Dim i As Integer
+    
+    If Len(sSearchedValue) >= 3 Then
+        Set T_result = New BetterArray
+        i = 1
+        While i <= T_HistoGeo.UpperBound
+            If InStr(1, LCase(T_HistoGeo.Item(i)), LCase(sSearchedValue)) > 0 Then
+                T_result.Push T_HistoGeo(i)
+            End If
+            i = i + 1
+        Wend
+    
+        If T_result.Length > 0 Then
+            T_result.Sort
+            [F_Geo].LST_Histo.List = T_result.Items
+        Else
+            If [F_Geo].LST_Histo.ListCount - 1 <> T_HistoGeo.UpperBound Then
+                [F_Geo].LST_Histo.List = T_HistoGeo.Items
+            End If
+        End If
+    Else
+        If [F_Geo].LST_Histo.ListCount - 1 <> T_Histo.UpperBound Then
+            [F_Geo].LST_Histo.List = T_HistoGeo.Items
+        End If
+    End If
+
+Set T_result = Nothing
+End Sub
+
+Sub SearchValueF(T_ConcatHF, sSearchedValue As String)
+    Dim T_result As BetterArray
+    Dim i As Integer
+
+    If Len(sSearchedValue) >= 3 Then
+        Set T_result = New BetterArray
+        i = 1
+        While i <= T_ConcatHF.UpperBound
+            If InStr(1, LCase(T_ConcatHF.Item(i)), LCase(sSearchedValue)) > 0 Then
+                T_result.Push T_ConcatHF.Item(i)
+            End If
+            i = i + 1
+        Wend
+    
+        If T_result.Length > 0 Then
+            T_result.Sort
+            [F_Geo].LST_ListeAgreF.List = T_result.Items
+        Else
+            If [F_Geo].LST_ListeAgreF.ListCount - 1 <> T_ConcatHF.UpperBound Then
+                [F_Geo].LST_ListeAgreF.List = T_ConcatHF.Items
+            End If
+        End If
+    Else
+        If [F_Geo].LST_ListeAgreF.ListCount - 1 <> T_ConcatHF.UpperBound Then
+            [F_Geo].LST_ListeAgreF.List = T_ConcatHF.Items
+        End If
+    End If
+
+Set T_result = Nothing
+End Sub
+
+Sub SeachHistoValueF(T_HistoHF, sSearchedValue As String)
+
+    Dim T_result As BetterArray
+    Dim i As Integer
+
+    If Len(sSearchedValue) >= 3 Then
+        i = 1
+        Set T_result = New BetterArray
+        
+        While i <= T_HistoHF.UpperBound
+            If InStr(1, LCase(T_HistoHF.Item(i)), LCase(sSearchedValue)) > 0 Then
+                T_result.Push T_HistoHF.Item(i)
+            End If
+            i = i + 1
+        Wend
+    
+        If T_result.Length > 0 Then
+            T_result.Sort
+            [F_Geo].LST_HistoF.List = T_result.Items
+        Else
+            If [F_Geo].LST_HistoF.ListCount - 1 <> T_HistoHF.UpperBound Then
+                [F_Geo].LST_HistoF.List = T_HistoHF.Items
+            End If
+        End If
+    Else
+        If [F_Geo].LST_HistoF.ListCount - 1 <> T_HistoHF.UpperBound Then
+            [F_Geo].LST_HistoF.List = T_HistoHF.Items
+        End If
+    End If
+
+Set T_result = Nothing
+End Sub
+
+' This function reverses a string using the | as separator, like in the final selection of the
+' Health facility form.
+Function ReverseString(sChaine As String)
+    Dim i As Integer
+    Dim T_temp As BetterArray
+    Set T_temp = New BetterArray
+    T_temp.LowerBound = 1
+    Dim sRes As String
+    
+    ReverseString = ""
+    T_temp.Items = Split(sChaine, " | ")
+    sRes = T_temp.Items(1)
+    For i = T_temp.LowerBound + 1 To T_temp.UpperBound
+            sRes = T_temp.Items(i) & " | " & sRes
+    Next
+     
     ReverseString = sRes
-
+    Set T_temp = Nothing
 End Function
-

@@ -116,7 +116,7 @@ Sub Export(iTypeExport As Byte)
 
     Dim i As Integer
     Dim j As Integer
-    Dim xlsApp As New Excel.Application
+    Dim xlsapp As New Excel.Application
     Dim T_data
     Dim T_dataValid
     Dim sNameListO As String
@@ -135,7 +135,7 @@ Sub Export(iTypeExport As Byte)
     Dim oCell As Object
 
     ActiveSheet.Unprotect (C_PWD)
-    With xlsApp
+    With xlsapp
         .ScreenUpdating = False
         .Visible = False
         .Workbooks.Add
@@ -238,8 +238,8 @@ Sub Export(iTypeExport As Byte)
         '    .ActiveWindow.WindowState = xlMaximized
     End With
 
-    xlsApp.Quit
-    Set xlsApp = Nothing
+    xlsapp.Quit
+    Set xlsapp = Nothing
         
     ActiveSheet.Protect Password:=C_PWD, DrawingObjects:=True, Contents:=True, Scenarios:=True _
                                                                                            , AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True

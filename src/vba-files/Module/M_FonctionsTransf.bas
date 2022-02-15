@@ -1,5 +1,6 @@
 Attribute VB_Name = "M_FonctionsTransf"
 Option Explicit
+Option Base 1
 'M_FonctionsTransf
 
 Public Function IsEmptyTable(T_aTest) As Boolean
@@ -36,7 +37,7 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
     lngLo = lngMin
     lngHi = lngMax
     Do
-        ' Chercher, ˆ partir de lngHi, une valeur < strMidValue
+        ' Chercher, ï¿½ partir de lngHi, une valeur < strMidValue
         Do While T_aTrier(lngHi) >= strMidValue
             lngHi = lngHi - 1
             If lngHi <= lngLo Then Exit Do
@@ -49,7 +50,7 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
         ' Echanger les valeurs lngLo et lngHi
         T_aTrier(lngLo) = T_aTrier(lngHi)
  
-        ' Chercher ˆ partir de lngLo une valeur >= strMidValue
+        ' Chercher ï¿½ partir de lngLo une valeur >= strMidValue
         lngLo = lngLo + 1
         Do While T_aTrier(lngLo) < strMidValue
             lngLo = lngLo + 1
@@ -110,7 +111,7 @@ Public Function LoadFolderWindow() As String
 
 End Function
 
-Public Function CleanSpecLettersInName(sName As String) As String 'supp tous les caract spŽciaux du nom
+Public Function CleanSpecLettersInName(sName As String) As String 'supp tous les caract spï¿½ciaux du nom
 
     Dim T_Caract
     Dim i As Integer
@@ -168,5 +169,149 @@ Public Function Epiweek(jour As Long) As Long
         Epiweek = 1 + Int((jour - Jour0_2022) / 7)
     End Select
     
+End Function
+
+Public Sub initialize(val As Variant, Optional init As Integer = -1)
+    If (IsMissing(val)) Then
+        val = -1
+    End If
+End Sub
+
+'This function gets unique values from a table of two dimensions converted to a BetterArray table
+' Get unique values from a table on two dimensions (or more)
+Public Function GetUnique(ByVal T_table As Variant, Optional ByVal col1 As Integer = -99, Optional ByVal col2 As Integer = -99, Optional ByVal index As Variant) As Variant
+
+    Dim i, k, j As Long                          'for the first line
+    Dim outCol As New Collection                 'I will stock pair values here
+    Dim bindValues                               'all binded values
+    Dim outTable
+    Dim indexCols
+    
+    'If the table is empty, return empty table
+    If IsEmptyTable(T_table) Then
+        ReDim outTable(0)
+        GetUnique = outTable
+        Exit Function
+    End If
+    
+    'If you give nothing, I will check on all the columns
+    If col1 = -99 And col2 = -99 And IsEmptyTable(index) Then
+        ' you can end up here with a one dimensional table, we need to be sure we have two dimensional table
+        ReDim indexCols(UBound(T_table, 2))
+        i = 1
+        While i <= UBound(indexCols)
+            indexCols(i) = i
+            i = i + 1
+        Wend
+    ElseIf col2 = -99 And IsEmptyTable(index) Then
+        ReDim indexCols(1)
+        indexCols(1) = col1
+    ElseIf IsEmptyTable(index) Then
+        ReDim indexCols(2)
+        indexCols(1) = col1
+        indexCols(2) = col2
+    ElseIf Not IsEmptyTable(index) Then
+        indexCols = index
+    End If
+    
+    ' Check the table index is not empty before entering the whole cycle
+    If Not IsEmptyTable(indexCols) Then
+    
+        'Stock elements in a table by binding them I guess the binding character will be most
+        'of the time absent from my data. The binding character here is (&123&;
+        
+        'Bind everything in the indexCols
+        
+        ReDim bindValues(UBound(T_table))
+        i = 1
+        While i <= UBound(T_table)
+            k = 1
+            bindValues(i) = ""
+            While k <= UBound(indexCols)
+                bindValues(i) = bindValues(i) & "(&123&;" & CStr(T_table(i, indexCols(k)))
+                k = k + 1
+            Wend
+            i = i + 1
+        Wend
+        
+        On Error Resume Next
+        'Now quick sort the table first
+        Call QuickSort(bindValues, LBound(bindValues), UBound(bindValues))
+        On Error GoTo 0
+        
+        k = 1
+        'adding the first unique values
+        While k <= UBound(indexCols)
+            outCol.Add Split(bindValues(1), "(&123&;")(k)
+            'Count the number items
+            k = k + 1
+        Wend
+        
+        i = 1
+        ' adding the other unique values
+        While i < UBound(bindValues)
+            If (bindValues(i) <> bindValues(i + 1)) Then
+                k = 1
+                While k <= UBound(indexCols)
+                    outCol.Add Split(bindValues(i + 1), "(&123&;")(k)
+                    k = k + 1
+                Wend
+            End If
+            i = i + 1
+        Wend
+        'Returning the table; (outCol.Cout / UBound(indexCols) is the number of unique values
+        ReDim outTable((outCol.Count / UBound(indexCols)), UBound(indexCols))
+        
+        i = 1                                    'will slice over unique number of values
+        j = 1                                    'will slice over all the values of outCol
+        While i <= (outCol.Count / UBound(indexCols))
+            k = 1
+            While (k <= UBound(indexCols))
+                outTable(i, k) = outCol.Item(j)
+                k = k + 1
+                j = j + 1
+            Wend
+            i = i + 1
+        Wend
+        GetUnique = outTable
+    Else
+        'If the column table is empty, return an empty table
+        ReDim outTable(0)
+        GetUnique = outTable
+    End If
+End Function
+
+' Function to filter on value of one column, on a two dimensional array
+Public Function GetFilter(ByVal T_table As BetterArray, ByVal icol As Integer, ByVal sValue As String) As BetterArray
+
+    Dim targetColumn As BetterArray
+    Dim fCol As Long                             'First and last columns
+    Dim lCol As Long
+    Dim i As Long
+    Dim filteredTable As New BetterArray
+    
+    Set targetColumn = New BetterArray
+    Set filteredTable = New BetterArray
+    
+    T_table.Sort SortColumn:=icol
+    
+    'target column items
+    targetColumn.Items = T_table.ExtractSegment(, ColumnIndex:=icol)
+    targetColumn.LowerBound = 1
+    fCol = targetColumn.IndexOf(sValue)
+    lCol = targetColumn.LastIndexOf(sValue)
+    
+    filteredTable.Clear
+    filteredTable.LowerBound = 1
+    'Extract the lines of table for each of values found
+    If fCol > 0 And lCol > 0 Then
+        For i = fCol To lCol
+            filteredTable.Item(i) = T_table.ExtractSegment(RowIndex:=i)
+        Next i
+        Set GetFilter = filteredTable.Clone
+    Else
+        'return the whole table if you where not able to find a match
+        Set GetFilter = T_table.Clone
+    End If
 End Function
 

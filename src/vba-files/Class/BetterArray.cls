@@ -164,13 +164,13 @@ End Property
 
 '@DefaultMember
 '@Description("Returns the element in the array stored at the specified index.")
-Public Property Get Item(ByVal Index As Long) As Variant
-    If Index <= This.Length Then
+Public Property Get Item(ByVal index As Long) As Variant
+    If index <= This.Length Then
         ' not using letOrSetElement here as it might try to access the Items letter
-        If IsObject(This.Items(Index)) Then
-            Set Item = This.Items(Index)
+        If IsObject(This.Items(index)) Then
+            Set Item = This.Items(index)
         Else
-            Item = This.Items(Index)
+            Item = This.Items(index)
         End If
     Else
         '@Ignore FunctionReturnValueDiscarded
@@ -179,13 +179,13 @@ Public Property Get Item(ByVal Index As Long) As Variant
 End Property
 
 '@Description("Assigns the passed element to the array at the specified index.")
-Public Property Let Item(ByVal Index As Long, ByVal Element As Variant)
-    If Me.UpperBound >= Index Then
-        If Index < This.LowerBound Then
+Public Property Let Item(ByVal index As Long, ByVal Element As Variant)
+    If Me.UpperBound >= index Then
+        If index < This.LowerBound Then
             '@Ignore FunctionReturnValueDiscarded
             Me.Unshift Element
         Else
-            LetOrSetElement This.Items(Index), Element
+            LetOrSetElement This.Items(index), Element
         End If
     Else
         '@Ignore FunctionReturnValueDiscarded
@@ -234,7 +234,7 @@ Public Property Let Items(ByVal Values As Variant)
         ' If Values is not an array then clear our internal array and push the Values arg
         ' NOTE: this possibly violates PoLA - assess for refactor
         '@Ignore FunctionReturnValueDiscarded
-        If isEmpty(Values) And This.ArrayType = ArrayTypes.BA_UNDEFINED Then
+        If IsEmpty(Values) And This.ArrayType = ArrayTypes.BA_UNDEFINED Then
             RaiseError EC_EXPECTED_ARRAY, "Items", "Values"
         Else
             Me.Clear.Push Values
@@ -1034,20 +1034,20 @@ Public Function LastIndexOf( _
 End Function
 
 '@Description("Removes the item at the specified index. Returns the new length of the array")
-Public Function Remove(ByVal Index As Long) As Long
+Public Function Remove(ByVal index As Long) As Long
     Dim RelativeIndex As Long
     Dim LocalType As ArrayTypes
     
     RelativeIndex = MISSING_LONG
     LocalType = This.ArrayType
     
-    If Index >= This.LowerBound Then
-        If Index <= Me.UpperBound Then
-            RelativeIndex = Index
+    If index >= This.LowerBound Then
+        If index <= Me.UpperBound Then
+            RelativeIndex = index
         End If
     Else
-        If Index < 0 Then
-            RelativeIndex = Me.UpperBound + Index
+        If index < 0 Then
+            RelativeIndex = Me.UpperBound + index
             If RelativeIndex < This.LowerBound Then RelativeIndex = MISSING_LONG
         End If
     End If
@@ -2035,7 +2035,7 @@ Private Function EscapeCharInString( _
         ByVal Escape As String, _
         Optional ByVal BothSides As Boolean _
         ) As String
-    Dim Index As Long
+    Dim index As Long
     Dim TargetLength As Long
     Dim EscapeLength As String
     Dim Result As String
@@ -2043,17 +2043,17 @@ Private Function EscapeCharInString( _
     TargetLength = Len(Target)
     EscapeLength = Len(Escape)
     Result = Destination
-    Index = 1
+    index = 1
     Do
-        Index = VBA.Strings.InStr(Index, Destination, Target)
-        If Index Then
-            Result = InsertIntoStringAtIndex(Result, Escape, Index)
-            inc Index, EscapeLength + TargetLength
+        index = VBA.Strings.InStr(index, Destination, Target)
+        If index Then
+            Result = InsertIntoStringAtIndex(Result, Escape, index)
+            inc index, EscapeLength + TargetLength
             If BothSides Then
-                Result = InsertIntoStringAtIndex(Result, Escape, Index)
+                Result = InsertIntoStringAtIndex(Result, Escape, index)
             End If
         End If
-    Loop While Index > 0
+    Loop While index > 0
     
     EscapeCharInString = Result
 End Function
@@ -2062,16 +2062,16 @@ End Function
 Private Function InsertIntoStringAtIndex( _
         ByVal Destination As String, _
         ByVal Source As String, _
-        ByVal Index As Long _
+        ByVal index As Long _
         ) As String
     Dim Front As String
     Dim Back As String
-    If Index > 1 Then
-        Front = Left$(Destination, Index)
+    If index > 1 Then
+        Front = Left$(Destination, index)
     End If
     
-    If Index < Len(Destination) Then
-        Back = Right$(Destination, Len(Destination) - Index)
+    If index < Len(Destination) Then
+        Back = Right$(Destination, Len(Destination) - index)
     End If
     InsertIntoStringAtIndex = Front & Source & Back
 End Function
@@ -2123,17 +2123,17 @@ Private Function ConcatDelegate(ByRef First() As Variant, ParamArray Args() As V
 End Function
 
 '@Description("Places the Values in Source within Destination starting at Index")
-Private Sub InsertArrayAtIndex(ByRef Destination() As Variant, ByRef Source() As Variant, ByRef Index As Long)
+Private Sub InsertArrayAtIndex(ByRef Destination() As Variant, ByRef Source() As Variant, ByRef index As Long)
     Dim Offset As Long
     Dim SourceLength As Long
     Dim StartingIndex As Long
     If IsArrayAllocated(Source) Then
-        StartingIndex = Index
+        StartingIndex = index
         Offset = StartingIndex - LBound(Source)
         SourceLength = GetArrayLength(Source)
-        Do While Index < StartingIndex + SourceLength
-            LetOrSetElement Destination(Index), Source(Index - Offset)
-            inc Index
+        Do While index < StartingIndex + SourceLength
+            LetOrSetElement Destination(index), Source(index - Offset)
+            inc index
         Loop
     End If
 End Sub
@@ -2207,15 +2207,15 @@ Private Function TrimRowsMultidimensionArray(ByRef Original() As Variant, ByVal 
 End Function
 
 '@Description("Increments an index")
-Private Function inc(ByRef Index As Long, Optional ByVal value As Long = 1) As Long
-    Index = Index + value
-    inc = Index
+Private Function inc(ByRef index As Long, Optional ByVal value As Long = 1) As Long
+    index = index + value
+    inc = index
 End Function
 
 '@Description("Decrements an index")
-Private Function dec(ByRef Index As Long, Optional ByVal value As Long = 1) As Long
-    Index = Index - value
-    dec = Index
+Private Function dec(ByRef index As Long, Optional ByVal value As Long = 1) As Long
+    index = index - value
+    dec = index
 End Function
 
 '@Description("Populates TString Types")
@@ -2622,7 +2622,7 @@ Private Function RecursiveMax(ByRef SourceArray() As Variant) As Variant
                 Dim NestedResult As Variant
                 NestedArray = SourceArray(i)
                 NestedResult = RecursiveMax(NestedArray)
-                If isEmpty(Result) Then
+                If IsEmpty(Result) Then
                     Result = NestedResult
                 Else
                     If NestedResult > Result Then Result = NestedResult
@@ -2631,7 +2631,7 @@ Private Function RecursiveMax(ByRef SourceArray() As Variant) As Variant
                 Dim CurrentValue As Variant
                 CurrentValue = GetScalarRepresentation(SourceArray(i))
                 If CurrentValue <> OBJECT_REPR Then
-                    If isEmpty(Result) Then
+                    If IsEmpty(Result) Then
                         Result = CurrentValue
                     Else
                         If CurrentValue > Result Then Result = CurrentValue
@@ -2657,7 +2657,7 @@ Private Function RecursiveMin(ByRef SourceArray() As Variant) As Variant
                 Dim NestedResult As Variant
                 NestedArray = SourceArray(i)
                 NestedResult = RecursiveMin(NestedArray)
-                If isEmpty(Result) Then
+                If IsEmpty(Result) Then
                     Result = NestedResult
                 Else
                     If NestedResult < Result Then Result = NestedResult
@@ -2666,7 +2666,7 @@ Private Function RecursiveMin(ByRef SourceArray() As Variant) As Variant
                 Dim CurrentValue As Variant
                 CurrentValue = GetScalarRepresentation(SourceArray(i))
                 If CurrentValue <> OBJECT_REPR Then
-                    If isEmpty(Result) Then
+                    If IsEmpty(Result) Then
                         Result = CurrentValue
                     Else
                         If CurrentValue < Result Then Result = CurrentValue
@@ -2826,8 +2826,8 @@ Private Function ElementsAreEqual( _
                 Result = CurrentlyEqual
             End If
         End If
-    ElseIf isEmpty(Expected) Or isEmpty(Actual) Then
-        If isEmpty(Expected) And isEmpty(Actual) Then Result = True
+    ElseIf IsEmpty(Expected) Or IsEmpty(Actual) Then
+        If IsEmpty(Expected) And IsEmpty(Actual) Then Result = True
     ElseIf IsObject(Expected) Or IsObject(Actual) Then
         If IsObject(Expected) And IsObject(Actual) Then
             If Expected Is Actual Then Result = True
@@ -3224,42 +3224,42 @@ End Function
 Private Sub ApplySortMethod( _
         ByRef SourceArray() As Variant, _
         ByVal LocalArrayType As ArrayTypes, _
-        Optional ByVal Col As Long _
+        Optional ByVal col As Long _
         )
     Select Case This.SortMethod
     Case SortMethods.SM_TIMSORT
-        TimSort SourceArray, LocalArrayType, Col
+        TimSort SourceArray, LocalArrayType, col
     Case SortMethods.SM_QUICKSORT_RECURSIVE
         QuickSortRecursive _
         SourceArray, _
         LBound(SourceArray), _
         UBound(SourceArray), _
         LocalArrayType, _
-        Col
+        col
     Case SortMethods.SM_QUICKSORT_ITERATIVE
         QuickSortIterative _
         SourceArray, _
         LBound(SourceArray), _
         UBound(SourceArray), _
         LocalArrayType, _
-        Col
+        col
     End Select
 End Sub
 
 '@Description("Returns an field of a one dimension or two dimension jagged array")
 Private Function GetComparisonItem( _
         ByRef Source() As Variant, _
-        ByVal Index As Long, _
-        ByVal Col As Long, _
+        ByVal index As Long, _
+        ByVal col As Long, _
         ByVal LocalArrayType As ArrayTypes _
         ) As Variant
-    If IsObject(Source(Index)) Then
-        GetComparisonItem = ObjPtr(Source(Index))
+    If IsObject(Source(index)) Then
+        GetComparisonItem = ObjPtr(Source(index))
     Else
         If LocalArrayType = BA_JAGGED Then
-            GetComparisonItem = Source(Index)(Col)
+            GetComparisonItem = Source(index)(col)
         Else
-            GetComparisonItem = Source(Index)
+            GetComparisonItem = Source(index)
         End If
     End If
 End Function
@@ -3270,7 +3270,7 @@ Private Sub InsertionSort( _
         ByVal LeftIndex As Variant, _
         ByVal RightIndex As Variant, _
         ByVal LocalArrayType As ArrayTypes, _
-        Optional ByVal Col As Long _
+        Optional ByVal col As Long _
         )
     Dim i As Long
     Dim j As Long
@@ -3286,7 +3286,7 @@ Private Sub InsertionSort( _
         ' This is the element we want to position in its
         ' correct place
         LetOrSetElement Pivot, Source(i)
-        PivotCompVal = GetComparisonItem(Source, i, Col, LocalArrayType)
+        PivotCompVal = GetComparisonItem(Source, i, col, LocalArrayType)
         ' Initialize the variable that will be used to
         ' find the correct position of the element referenced
         ' by `key_item`
@@ -3297,7 +3297,7 @@ Private Sub InsertionSort( _
         ' if the `key_item` is smaller than its adjacent values.
         Do While j >= LeftIndex
             LetOrSetElement Current, Source(j)
-            CurrentCompval = GetComparisonItem(Source, j, Col, LocalArrayType)
+            CurrentCompval = GetComparisonItem(Source, j, col, LocalArrayType)
             If CurrentCompval > PivotCompVal Then
                 ' Shift the value one position to the left
                 ' and reposition `j` to point to the next element
@@ -3323,7 +3323,7 @@ Private Sub MergeSort( _
         ByVal MidIndex As Long, _
         ByVal EndIndex As Long, _
         ByVal LocalArrayType As ArrayTypes, _
-        Optional ByVal Col As Long _
+        Optional ByVal col As Long _
         )
     ' Original array is broken in two parts
     ' left and right array
@@ -3362,8 +3362,8 @@ Private Sub MergeSort( _
     ' in larger sub array
     i = StartIndex
     Do While LowIndex < LowLength And HighIndex < HighLength
-        LowItem = GetComparisonItem(LowPartition, LowIndex, Col, LocalArrayType)
-        HighItem = GetComparisonItem(HighPartition, HighIndex, Col, LocalArrayType)
+        LowItem = GetComparisonItem(LowPartition, LowIndex, col, LocalArrayType)
+        HighItem = GetComparisonItem(HighPartition, HighIndex, col, LocalArrayType)
         If LowItem <= HighItem Then
             LetOrSetElement Source(i), LowPartition(LowIndex)
             inc LowIndex
@@ -3392,7 +3392,7 @@ End Sub
 Private Sub TimSort( _
         ByRef Source() As Variant, _
         ByVal LocalArrayType As ArrayTypes, _
-        Optional ByVal Col As Long _
+        Optional ByVal col As Long _
         )
     Const MIN_RUN As Long = 32
     Dim i As Long
@@ -3400,7 +3400,7 @@ Private Sub TimSort( _
     SourceLength = GetArrayLength(Source)
     ' Sort individual subarrays of size RUN
     For i = LBound(Source) To UBound(Source) Step MIN_RUN
-        InsertionSort Source, i, Min((i + MIN_RUN - 1), UBound(Source)), LocalArrayType, Col
+        InsertionSort Source, i, Min((i + MIN_RUN - 1), UBound(Source)), LocalArrayType, col
     Next
     
     ' Now you can start merging the sorted slices.
@@ -3429,7 +3429,7 @@ Private Sub TimSort( _
             ' The `left` array should go from `start` to
             ' `midpoint + 1`, while the `right` array should
             ' go from `midpoint + 1` to `end + 1`.
-            MergeSort Source, Start, Midpoint, Endpoint, LocalArrayType, Col
+            MergeSort Source, Start, Midpoint, Endpoint, LocalArrayType, col
             inc Start, Size * 2
         Loop
         ' Each iteration should double the size of your arrays
@@ -3444,13 +3444,13 @@ Private Sub QuickSortRecursive( _
         ByVal Low As Long, _
         ByVal High As Long, _
         ByVal LocalArrayType As ArrayTypes, _
-        Optional ByVal Col As Long _
+        Optional ByVal col As Long _
         )
     Dim PartitionIndex As Long
     If Low < High Then
-        PartitionIndex = QsPartition(SourceArray, Low, High, LocalArrayType, Col)
-        QuickSortRecursive SourceArray, Low, PartitionIndex - 1, LocalArrayType, Col
-        QuickSortRecursive SourceArray, PartitionIndex + 1, High, LocalArrayType, Col
+        PartitionIndex = QsPartition(SourceArray, Low, High, LocalArrayType, col)
+        QuickSortRecursive SourceArray, Low, PartitionIndex - 1, LocalArrayType, col
+        QuickSortRecursive SourceArray, PartitionIndex + 1, High, LocalArrayType, col
     End If
 End Sub
 
@@ -3460,7 +3460,7 @@ Private Sub QuickSortIterative( _
         ByVal Low As Long, _
         ByVal High As Long, _
         ByVal LocalArrayType As ArrayTypes, _
-        Optional ByVal Col As Long _
+        Optional ByVal col As Long _
         )
     Dim PartitionIndex As Long
     Dim Stack() As Long
@@ -3488,7 +3488,7 @@ Private Sub QuickSortIterative( _
         dec Top
         ' Set pivot element at its correct position
         ' in sorted array
-        PartitionIndex = QsPartition(SourceArray, LocalLow, LocalHigh, LocalArrayType, Col)
+        PartitionIndex = QsPartition(SourceArray, LocalLow, LocalHigh, LocalArrayType, col)
         
         ' If there are elements on left side of pivot,
         ' then push left side to stack
@@ -3514,18 +3514,18 @@ Private Function QsPartition( _
         ByVal Low As Long, _
         ByVal High As Long, _
         ByVal LocalArrayType As ArrayTypes, _
-        Optional ByVal Col As Long _
+        Optional ByVal col As Long _
         ) As Long
     Dim i As Long
     Dim j As Long
     Dim Pivot As Variant
     Dim Current As Variant
     
-    Pivot = GetComparisonItem(SourceArray, High, Col, LocalArrayType)
+    Pivot = GetComparisonItem(SourceArray, High, col, LocalArrayType)
     
     i = Low - 1
     For j = Low To High - 1
-        Current = GetComparisonItem(SourceArray, j, Col, LocalArrayType)
+        Current = GetComparisonItem(SourceArray, j, col, LocalArrayType)
         If Current <= Pivot Then
             inc i
             Swap SourceArray, i, j
@@ -3652,14 +3652,14 @@ Private Function GetScalarRepresentation( _
         Result = Element
         On Error GoTo 0
         ' if there is no default member or it returns an object result = Empty
-        If isEmpty(Result) Then
+        If IsEmpty(Result) Then
             Result = OBJECT_REPR
         End If
     Else
         Result = Element
     End If
     ' if the element is array or default member returns an array then convert tostring
-    If IsArray(Result) And Not isEmpty(Result) Then
+    If IsArray(Result) And Not IsEmpty(Result) Then
         Dim PassThruArray() As Variant
         PassThruArray = Result
         StringBuilder NewString:=True
@@ -3690,7 +3690,7 @@ Private Function GetArrayType(ByVal SourceArray As Variant) As ArrayTypes
             End If
         End If
     Else
-        If isEmpty(SourceArray) Then
+        If IsEmpty(SourceArray) Then
             Result = BA_UNDEFINED
         Else
             RaiseError EC_EXPECTED_ARRAY, "getArrayType", "sourceArray"
@@ -4582,4 +4582,6 @@ Private Function CreateMultidimensionalArray(ByRef Crumb() As Variant) As Varian
 End Function
 
 'v1.7.6
+
+
 
