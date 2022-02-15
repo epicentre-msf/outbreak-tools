@@ -1,44 +1,42 @@
 Attribute VB_Name = "M_Dico"
 Option Explicit
-'
 'Const C_NomFeuille = "variables"
 
-Function CreateDicoColVar(xlsApp As Excel.Application, sSheet As String, iDicStartLine As Byte) As Scripting.Dictionary
-    'stock l'emplacement de chaque colonne
+Function CreateDicoColVar(xlsapp As Excel.Application, ssheet As String, iDicStartLine As Byte) As Scripting.Dictionary
+    'extract column names in the dictionnary
 
     Dim D_Col As New Scripting.Dictionary
     Dim i As Integer
 
     D_Col.RemoveAll
-    With xlsApp.Sheets(sSheet)
+    With xlsapp.Sheets(ssheet)
         i = 1
         While .Cells(iDicStartLine, i).value <> ""
-            D_Col.Add xlsApp.Sheets(sSheet).Cells(iDicStartLine, i).value, i
+            D_Col.Add xlsapp.Sheets(ssheet).Cells(iDicStartLine, i).value, i
             i = i + 1
         Wend
         Set CreateDicoColVar = D_Col
         Set D_Col = Nothing
     End With
-
 End Function
 
-Function CreateTabDataVar(xlsApp As Excel.Application, sSheetName As String, D_Col As Scripting.Dictionary, iDicStartLine As Byte)
-    'construit le tableau des variables
+'Function to build the data table for the dictionnary sheet in the set-up
+Function CreateTabDataVar(xlsapp As Excel.Application, sSheetName As String, D_Col As Scripting.Dictionary, iDicStartLine As Byte)
 
-    Dim i As Integer                             'cpt feuille
-    Dim j As Integer                             'cpt tab
-    Dim iLastLine As Integer
+    Dim i As Integer                             'iterator for the line values
+    Dim j As Integer                             'iterator for the column values (values are transposed in the T_data) output
+    Dim iLastLine As Integer                     'lastline of the dictionnary sheet
     Dim T_data
-    'Dim D_col As New scripting.dictionary
 
-    'Set D_col = CreateDicoColVar("Variables")
-
-    With xlsApp.Sheets(sSheetName)
+    With xlsapp.Sheets(sSheetName)
         iLastLine = .Cells(1, 1).End(xlDown).Row
-        i = iDicStartLine                        'ligne début
+        i = iDicStartLine                        'StartLine of the dictionnary
         j = 0
+        'Each row of the table T_Data contains data on one column of the dictionnary
         ReDim T_data(D_Col.Count, iLastLine - i)
+        
         While i <= iLastLine
+        
             'Name and labels
             T_data(D_Col("Variable name") - 1, j) = .Cells(i, D_Col("Variable name")).value
             T_data(D_Col("Main label") - 1, j) = .Cells(i, D_Col("Main label")).value
@@ -79,23 +77,17 @@ Function CreateTabDataVar(xlsApp As Excel.Application, sSheetName As String, D_C
             j = j + 1
             i = i + 1
         Wend
-
     End With
+    
+    'The output of the function is a variant
     CreateTabDataVar = T_data
-
-    'Set D_col = Nothing
-
 End Function
 
 Function LetDecString(iDecNb As Integer) As String
-
     'Dim iDecNb As Integer
     Dim i As Integer
     Dim sNbDeci As String
-
     LetDecString = ""
-
-    'iDecNb = Right(T_data(D_Title("type") - 1, i), 1)
     i = 0
     While i < iDecNb
         sNbDeci = "0" & sNbDeci
@@ -105,15 +97,13 @@ Function LetDecString(iDecNb As Integer) As String
 
 End Function
 
-'                                            Choices
-Function CreateDicoColChoi(xlsApp As Excel.Application, sSheet As String) As Scripting.Dictionary
-    'stock l'emplacement de chaque colonne
+'Function to create dictionnary for choices table (the headers of the table in the choices sheet)
+Function CreateDicoColChoi(xlsapp As Excel.Application, ssheet As String) As Scripting.Dictionary
 
     Dim D_Col As New Scripting.Dictionary
     Dim i As Integer
-
     i = 1
-    With xlsApp.Sheets(sSheet)
+    With xlsapp.Sheets(ssheet)
         While .Cells(1, i).value <> ""
             D_Col.Add .Cells(1, i).value, i
             i = i + 1
@@ -124,7 +114,8 @@ Function CreateDicoColChoi(xlsApp As Excel.Application, sSheet As String) As Scr
 
 End Function
 
-Function CreateTabDataChoi(xlsApp As Excel.Application, sSheetName As String)
+'Function to create the table choices (the values in the choices sheet)
+Function CreateTabDataChoi(xlsapp As Excel.Application, sSheetName As String)
 
     Dim i As Integer                             'cpt feuille
     Dim j As Integer                             'cpt tab
@@ -132,12 +123,12 @@ Function CreateTabDataChoi(xlsApp As Excel.Application, sSheetName As String)
     Dim T_data
     Dim D_Col As New Scripting.Dictionary
 
-    Set D_Col = CreateDicoColChoi(xlsApp, sSheetName)
+    Set D_Col = CreateDicoColChoi(xlsapp, sSheetName)
 
-    With xlsApp.Sheets(sSheetName)
+    With xlsapp.Sheets(sSheetName)
         iLastLine = .Cells(1, 1).End(xlDown).Row
-        i = 2                                    'ligne début
-        j = 0
+        i = 2                                    'starting line
+        j = 0                                    'one row of the table is one column in the choice sheet
         ReDim T_data(D_Col.Count, iLastLine - i)
         While i <= iLastLine
             T_data(D_Col("list_name") - 1, j) = .Cells(i, D_Col("list_name")).value
@@ -153,36 +144,28 @@ Function CreateTabDataChoi(xlsApp As Excel.Application, sSheetName As String)
 
     CreateTabDataChoi = T_data
     Set D_Col = Nothing
-    ReDim T_data(0)
-
 End Function
 
-Function GetValidationName(T_data, D_Col As Scripting.Dictionary, sValidation As String) As String 'attention typage sValidation... Excel fait nimp'
-
+'Extracts the list of choices for one variable
+Function GetValidationName(T_data, D_Col As Scripting.Dictionary, sValidation As String) As String
+    'T_Data: the choices data
+    'D_Col: dictionnary of choices headers
+    'sValidation:  variable
     Dim i As Integer
-    'Dim T_data
-    'Dim D_Col As scripting.dictionary
     Dim sWording As String
-
-    'Set D_col = CreateDicoColChoi(xlsapp, C_SheetNameChoices)
-    'T_data = CreateTabDataChoi(xlsapp)
-
+    
     i = 0
     While i <= UBound(T_data, 2)
         If T_data(D_Col("list_name") - 1, i) = sValidation Then
             If sWording = "" Then
                 sWording = T_data(D_Col("label") - 1, i)
             Else
-                'sWording = sWording & ";" & T_data(D_Col("label") - 1, i)
                 sWording = sWording & Application.International(xlListSeparator) & T_data(D_Col("label") - 1, i)
             End If
         End If
         i = i + 1
     Wend
-
-    'ReDim T_data(0)
     GetValidationName = sWording
-    'Set D_Col = Nothing
 
 End Function
 

@@ -7,7 +7,7 @@ Const C_TitleLine As Byte = 5
 
 Sub clicExportMigration()
 
-    Dim xlsApp As New Excel.Application
+    Dim xlsapp As New Excel.Application
 
     Dim i As Integer
     Dim j As Integer
@@ -17,8 +17,8 @@ Sub clicExportMigration()
     Dim T_dataLL
     Dim T_dico
 
-    Dim T_histo
-    Dim T_histoF
+    Dim T_Histo
+    Dim T_HistoF
 
     Dim T_admin
 
@@ -27,7 +27,7 @@ Sub clicExportMigration()
 
     Dim sSheetName As String
 
-    With xlsApp
+    With xlsapp
         .Visible = True
         .ScreenUpdating = True
         .Workbook.Add
@@ -42,14 +42,14 @@ Sub clicExportMigration()
 
         'histo
         .Sheets.Add.Name = "Histo"
-        T_histo = Sheets("geo").[T_HistoGeo]
-        T_histoF = Sheets("geo").[T_HistoFacil]
+        T_Histo = Sheets("geo").[T_HistoGeo]
+        T_HistoF = Sheets("geo").[T_HistoFacil]
 
-        If Not IsEmptyTable(T_histo) Then
-            Sheets("histo").Range("A1").Resize(UBound(T_histo, 1), UBound(T_histo, 2)) = T_histo
+        If Not IsEmptyTable(T_Histo) Then
+            Sheets("histo").Range("A1").Resize(UBound(T_Histo, 1), UBound(T_Histo, 2)) = T_Histo
         End If
-        If Not IsEmptyTable(T_histoF) Then
-            Sheets("histo").Range("D1").Resize(UBound(T_histoF, 1), UBound(T_histoF, 2)) = T_histoF
+        If Not IsEmptyTable(T_HistoF) Then
+            Sheets("histo").Range("D1").Resize(UBound(T_HistoF, 1), UBound(T_HistoF, 2)) = T_HistoF
         End If
     
         'admin
@@ -83,7 +83,7 @@ Sub clicExportMigration()
             i = i + 1
         Wend
 
-        If Not IsEmptyTable(T_histoF) Then
+        If Not IsEmptyTable(T_HistoF) Then
             .Sheets("admin").Range("A1").Resize(UBound(T_admin, 1), UBound(T_admin, 2)) = T_admin
         End If
 
