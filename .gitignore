@@ -9,3 +9,5 @@ logs
 # temporary files
 *.temporary
 temp
+*.temp
+*temp\\.?*
