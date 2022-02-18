@@ -17,10 +17,10 @@ Sub LoadFileDic()
     'Update messages if the file path is correct
     If sFilePath <> "" Then
         [RNG_Dico].value = sFilePath
-        [RNG_Msg].value = TranslateMsg("MSG_ChemFich")
+        [RNG_Edition].value = TranslateMsg("MSG_ChemFich")
         [RNG_Dico].Interior.Color = vbWhite
     Else
-        [RNG_Msg].value = TranslateMsg("MSG_OpeAnnule")
+        [RNG_Edition].value = TranslateMsg("MSG_OpeAnnule")
     End If
 
 End Sub
@@ -59,7 +59,7 @@ Sub LoadGeoFile()
             .Workbooks.Open sFilePath
             
             'Cleaning the previous Data in case the ranges are not Empty
-            [RNG_Msg].value = TranslateMsg("MSG_NetoPrec")
+            [RNG_Edition].value = TranslateMsg("MSG_NetoPrec")
             For i = 1 To AdmNames.Length
                 'Adms
                 If Not Sheets(geoSheet).ListObjects("T" & "_" & AdmNames.Items(i)).DataBodyRange Is Nothing Then
@@ -69,7 +69,7 @@ Sub LoadGeoFile()
 
             'Reloading the data from the Geobase
             For Each oSheet In xlsapp.Worksheets
-                [RNG_Msg].value = TranslateMsg("MSG_EnCours") & oSheet.Name
+                [RNG_Edition].value = TranslateMsg("MSG_EnCours") & oSheet.Name
                 T_Adm.Clear
                 T_header.Clear
                 'loading the data in memory
@@ -79,7 +79,7 @@ Sub LoadGeoFile()
                 
                 'Be sure my sheetnames are correct
                 If Not AdmNames.Includes(oSheet.Name) Then
-                    [RNG_Msg].value = TranslateMsg("MSG_Error_Sheet") & oSheet.Name
+                    [RNG_Edition].value = TranslateMsg("MSG_Error_Sheet") & oSheet.Name
                     Exit Sub
                 End If
                 
@@ -96,7 +96,7 @@ Sub LoadGeoFile()
                 End With
             Next
             
-            Sheets("MAIN").Range("RNG_GEO").value = .ActiveWorkbook.Name
+            Sheets("MAIN").Range("RNG_Geo").value = sFilePath
             .ScreenUpdating = True
             .Workbooks.Close
             xlsapp.Quit
@@ -105,7 +105,7 @@ Sub LoadGeoFile()
             Set T_header = Nothing
             Set AdmNames = Nothing
             
-            [RNG_Msg].value = TranslateMsg("MSG_Fini")
+            [RNG_Edition].value = TranslateMsg("MSG_Fini")
         End With
         
         'Remove the historic of the Geo and the facility if not empty
@@ -117,7 +117,7 @@ Sub LoadGeoFile()
             Sheets(geoSheet).ListObjects("T_HistoHF").DataBodyRange.Delete
         End If
     Else
-        [RNG_Msg].value = TranslateMsg("MSG_OpeAnnule")
+        [RNG_Edition].value = TranslateMsg("MSG_OpeAnnule")
     End If
 
 End Sub
@@ -198,24 +198,24 @@ Sub CtrlNew()
         If Dir([RNG_Dico].value) <> "" Then
             If [RNG_Geo].value <> "" Then
                 If Not IsWksOpened([RNG_Dico].value) Then
-                    [RNG_Msg].value = TranslateMsg("MSG_ToutEstBon")
+                    [RNG_Edition].value = TranslateMsg("MSG_ToutEstBon")
                     Call ShowHideCmdValidation(True) '
                     [RNG_Geo].Interior.Color = vbWhite
                     [RNG_Dico].Interior.Color = vbWhite
                 Else
-                    [RNG_Msg].value = TranslateMsg("MSG_FermerDico")
+                    [RNG_Edition].value = TranslateMsg("MSG_FermerDico")
                 End If
             Else
-                [RNG_Msg].value = TranslateMsg("MSG_VeriFichGeo")
+                [RNG_Edition].value = TranslateMsg("MSG_VeriFichGeo")
                 [RNG_Geo].Interior.Color = LetColor("RedEpi")
             End If
         Else
-            [RNG_Msg].value = TranslateMsg("MSG_VeriChemDico")
+            [RNG_Edition].value = TranslateMsg("MSG_VeriChemDico")
             [RNG_Dico].Interior.Color = LetColor("RedEpi")
     
         End If
     Else
-        [RNG_Msg].value = TranslateMsg("MSG_VeriChemDico")
+        [RNG_Edition].value = TranslateMsg("MSG_VeriChemDico")
         [RNG_Dico].Interior.Color = LetColor("RedEpi")
     End If
 

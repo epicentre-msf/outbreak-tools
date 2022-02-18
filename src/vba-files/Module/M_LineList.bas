@@ -263,7 +263,7 @@ Sub EventSheetLineListPatient(oRange As Range)
             End If
         
 suivant:
-'Testing color for dates and numeric values (maybe directly in the validation?)
+            'Testing color for dates and numeric values (maybe directly in the validation?)
             If LCase(LetDataDic(Cells(C_TitleCol, oRange.Column).Name.Name, "type")) = "date" Then
                 If Not IsDate(oRange.value) Then
                     oRange.Interior.Color = vbRed
@@ -286,12 +286,12 @@ suivant:
 End Sub
 
 'Build the dropdown validation list for the geo
-Sub BuildListGeo(oRange As Range, sNameTab As String, iLigneDeb As Long, iLigneFin As Long, icol As Long)
+Sub BuildListGeo(oRange As Range, sNameTab As String, iLigneDeb As Long, iLigneFin As Long, iCol As Long)
 
     Dim sCol As String
     Dim sAdresse As String
 
-    sCol = Split(Sheets("GEO").Range(sNameTab).Columns(icol).Address, "$")(1)
+    sCol = Split(Sheets("GEO").Range(sNameTab).Columns(iCol).Address, "$")(1)
     
     'The + 1 is to take in account the headers of each of the tables
     sAdresse = sCol & iLigneDeb + 1 & ":" & sCol & iLigneFin
@@ -311,8 +311,5 @@ Sub BuildListGeo(oRange As Range, sNameTab As String, iLigneDeb As Long, iLigneF
     End With
     
 End Sub
-
-
-
 
 
