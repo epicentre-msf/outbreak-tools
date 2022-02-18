@@ -144,7 +144,7 @@ Sub clicExport()
         .Height = iHeight
         .Width = 168
     
-        .Show
+        .show
     End With
 
     ActiveSheet.Protect Password:=C_PWD, DrawingObjects:=True, Contents:=True, Scenarios:=True _

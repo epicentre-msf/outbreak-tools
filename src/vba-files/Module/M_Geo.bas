@@ -155,7 +155,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     End Select
     Application.ScreenUpdating = True
     
-    [F_Geo].Show
+    [F_Geo].show
 End Sub
 
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

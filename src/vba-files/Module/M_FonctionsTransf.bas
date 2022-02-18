@@ -84,7 +84,7 @@ Public Function LoadFile() As String
         .Filters.Clear
         .Filters.Add "Feuille de calcul Excel", "*.xlsx, *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
 
-        If .Show = True Then
+        If .show = True Then
             LoadFile = .SelectedItems(1)
         End If
     End With
@@ -103,7 +103,7 @@ Public Function LoadFolder() As String
         .Title = "Chose your directory"          'MSG_ChooseDir
         .Filters.Clear
     
-        If .Show = True Then
+        If .show = True Then
             LoadFolder = .SelectedItems(1)
         End If
     End With
@@ -315,13 +315,3 @@ Public Function GetFilter(ByVal T_table As BetterArray, ByVal iCol As Integer, B
     End If
 End Function
 
-'check if a range is named
-Public Function isNamed(rng As Range) As Boolean
-    On Error GoTo no:
-        test = rng.Name.Name
-        If Not IsEmpty(test) Then
-        isNamed = False
-        
-    
-End Function
-End Function
