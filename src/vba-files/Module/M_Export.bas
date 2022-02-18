@@ -206,14 +206,14 @@ Sub Export(iTypeExport As Byte)
             Wend
             Set D_dico = Nothing
             sPath = Replace(Replace(Replace(sPath & "__" & Range("RNG_PublicKey").value & "__" & Format(Now, "yyyymmdd-HhNn"), " ", ""), "+", "__"), Chr(34), "")
-            sDirectory = LoadFolderWindow
+            sDirectory = LoadFolder
             If sDirectory <> "" Then
                 sPath = sDirectory & Application.PathSeparator & sPath & ".xlsb"
             
                 i = 0
                 While Len(sPath) >= 255 And i < 3 'MSG_PathTooLong
                     MsgBox "The path of the export file is too long so the file name gets truncated. Please select a folder higher in the hierarchy to save the export (ex: Desktop, Downloads, Documents etc.)"
-                    sDirectory = LoadFolderWindow
+                    sDirectory = LoadFolder
                     If sDirectory <> "" Then
                         sPath = sDirectory & Application.PathSeparator & sPath
                     End If
