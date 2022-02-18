@@ -10,13 +10,13 @@ Attribute VB_Exposed = True
 Option Explicit
 
 Private Sub Worksheet_Change(ByVal Target As Range)
-    If Target.Name.Name = "RNG_LangDesigner" Then
-        StartTranslate
-    End If
-    
+    'If does not have a name property do nothing
+    On Error GoTo no
+        If Target.Name.Name = "RNG_LangDesigner" Then
+            StartTranslate
+        End If
+        Exit Sub
+no:
 End Sub
 
-Private Sub Worksheet_SelectionChange(ByVal Target As Range)
-
-End Sub
 

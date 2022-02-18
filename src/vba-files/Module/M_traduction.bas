@@ -15,7 +15,7 @@ Function GetLanguageCode(sString As String) As String
     
     GetLanguageCode = ""
     
-    T_data.FromExcelRange designer_translation.ListObjects("T_Lang").DataBodyRange 'Language table
+    T_data.FromExcelRange SheetDesignerTranslation.ListObjects("T_Lang").DataBodyRange 'Language table
     T_values.Items = T_data.ExtractSegment(ColumnIndex:=1) 'language values
     T_codes.Items = T_data.ExtractSegment(ColumnIndex:=2) 'language codes
     
@@ -33,14 +33,14 @@ Sub TranslateShape(oShape As Object, sValue As String)
     bVis = oShape.Visible
     'be sure the shape is visible before updating its text
     oShape.Visible = -1
-    Sheets("MAIN").Shapes(oShape.Name).Select
-    'keeping the previous font selected
-    sFont = Selection.Font.Name
-    Selection.Characters.Text = sValue
-    Selection.Font.Name = "calibri"
-    Selection.Font.Name = sFont
+    With Sheets("MAIN").Shapes(oShape.Name)
+        'keeping the previous font selected
+        sFont = .TextFrame.Characters.Font.Name
+        .TextFrame.Characters.Text = sValue
+        .TextFrame.Characters.Font.Name = sFont
+    End With
     oShape.Visible = bVis
-    Sheets("MAIN").Cells(1, 1).Select
+
 End Sub
 
 Sub TranslateRange(rngCode As String, rngValue As String)
@@ -77,9 +77,9 @@ Sub TranslateDesigner()
         Application.ScreenUpdating = False
            
         'First Get done the Translation of Shapes ----------------------------------------
-        T_data.FromExcelRange designer_translation.ListObjects("T_tradShape").DataBodyRange
+        T_data.FromExcelRange SheetDesignerTranslation.ListObjects("T_tradShape").DataBodyRange
         'language codes
-        T_codes.FromExcelRange designer_translation.ListObjects("T_tradShape").HeaderRowRange
+        T_codes.FromExcelRange SheetDesignerTranslation.ListObjects("T_tradShape").HeaderRowRange
         i = T_codes.IndexOf(sString)             'Column index of the language code
         T_codes.Clear
                 
@@ -106,9 +106,9 @@ Sub TranslateDesigner()
         T_codes.Clear
         T_values.Clear
         'pour les range
-        T_data.FromExcelRange designer_translation.ListObjects("T_tradRange").DataBodyRange
+        T_data.FromExcelRange SheetDesignerTranslation.ListObjects("T_tradRange").DataBodyRange
         'language codes
-        T_codes.FromExcelRange designer_translation.ListObjects("T_tradRange").HeaderRowRange
+        T_codes.FromExcelRange SheetDesignerTranslation.ListObjects("T_tradRange").HeaderRowRange
         i = T_codes.IndexOf(sString)             'Column index of the language code
         T_codes.Clear
         'Be sure the index is of the language positif because if the value is not found, it returns -9999
@@ -119,7 +119,7 @@ Sub TranslateDesigner()
             T_values.Items = T_data.ExtractSegment(ColumnIndex:=i)
             T_data.Clear
             
-            On Error Resume Next 'In case the range is not found or not set, just resume
+            On Error Resume Next                 'In case the range is not found or not set, just resume
             For k = 1 To T_values.UpperBound
                 TranslateRange T_codes.Item(k), T_values.Item(k)
             Next
@@ -154,8 +154,8 @@ Function TranslateMsg(sMsgId As String) As String
     T_codes.LowerBound = 1
     
     TranslateMsg = ""
-    T_data.FromExcelRange designer_translation.ListObjects("T_tradMsg").DataBodyRange
-    T_codes.FromExcelRange designer_translation.ListObjects("T_tradMsg").HeaderRowRange
+    T_data.FromExcelRange SheetDesignerTranslation.ListObjects("T_tradMsg").DataBodyRange
+    T_codes.FromExcelRange SheetDesignerTranslation.ListObjects("T_tradMsg").HeaderRowRange
     slCod = GetLanguageCode([RNG_LangDesigner].value)
     
     If slCod <> "" Then
@@ -191,12 +191,12 @@ Public Sub StartTranslate()
     Application.ScreenUpdating = False
     slCod = GetLanguageCode(Sheets("Main").Range("RNG_LangDesigner").value)
     If slCod <> "" Then
-        T_codes.FromExcelRange designer_translation.ListObjects("T_tradShape").HeaderRowRange
+        T_codes.FromExcelRange SheetDesignerTranslation.ListObjects("T_tradShape").HeaderRowRange
         indexLangCod = T_codes.IndexOf(slCod)    'index of the language code
         T_codes.Clear
         'updating one shape: Translation shape
         If (indexLangCod > 0) Then               'we are sure the index column is present
-            T_data.FromExcelRange designer_translation.ListObjects("T_tradShape").DataBodyRange
+            T_data.FromExcelRange SheetDesignerTranslation.ListObjects("T_tradShape").DataBodyRange
             T_values.Items = T_data.ExtractSegment(ColumnIndex:=indexLangCod)
             T_codes.Items = T_data.ExtractSegment(ColumnIndex:=1) 'index of all the shapes codes
             'where the shape of the code is
@@ -208,7 +208,7 @@ Public Sub StartTranslate()
             T_data.Clear
             T_values.Clear
             T_codes.Clear
-            T_data.FromExcelRange designer_translation.ListObjects("T_tradRange").DataBodyRange
+            T_data.FromExcelRange SheetDesignerTranslation.ListObjects("T_tradRange").DataBodyRange
             T_values.Items = T_data.ExtractSegment(ColumnIndex:=indexLangCod)
             'index of all the Ranges codes is 1
             T_codes.Items = T_data.ExtractSegment(ColumnIndex:=1)
