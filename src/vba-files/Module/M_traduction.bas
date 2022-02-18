@@ -26,6 +26,27 @@ Function GetLanguageCode(sString As String) As String
     
 End Function
 
+'Translate one shape using informations on languages
+Sub TranslateShape(oShape As Object, sValue As String)
+    Dim bVis As Integer                          'visibility of the shape
+    Dim sFont As String                          'actual font of the shape
+    bVis = oShape.Visible
+    'be sure the shape is visible before updating its text
+    oShape.Visible = -1
+    Sheets("MAIN").Shapes(oShape.Name).Select
+    'keeping the previous font selected
+    sFont = Selection.Font.Name
+    Selection.Characters.Text = sValue
+    Selection.Font.Name = "calibri"
+    Selection.Font.Name = sFont
+    oShape.Visible = bVis
+    Sheets("MAIN").Cells(1, 1).Select
+End Sub
+
+Sub TranslateRange(rngCode As String, rngValue As String)
+    Sheets("MAIN").Range(rngCode).value = rngValue
+End Sub
+
 Sub TranslateDesigner()
 
     Dim oShape As Object
@@ -35,8 +56,7 @@ Sub TranslateDesigner()
     Dim T_values As BetterArray                  'Array of headings or values of languages)
     Dim T_codes As BetterArray                   'array of values of languages, shapes codes or ranges codes
     Dim sString As String                        'A string used as a temporary variable
-    Dim bVis As Integer                          'visibility of the shape
-    Dim sFont As String                          'actual font of the shape
+   
     'Initializing
     Set T_data = New BetterArray
     T_data.LowerBound = 1
@@ -73,19 +93,8 @@ Sub TranslateDesigner()
                    
             For Each oShape In Sheets("MAIN").Shapes
                 If T_codes.Includes(oShape.Name) Then
-                    'no need to recheck k is positive
-                    'saving the visibility of the shape
-                    bVis = oShape.Visible
-                    'be sure the shape is visible before updating its text
-                    oShape.Visible = -1
                     k = T_codes.IndexOf(oShape.Name)
-                    Sheets("MAIN").Shapes(oShape.Name).Select
-                    'keeping the previous font selected
-                    sFont = Selection.Font.Name
-                    Selection.Characters.Text = T_values.Item(k)
-                    Selection.Font.Name = "calibri"
-                    Selection.Font.Name = sFont
-                    oShape.Visible = bVis
+                    TranslateShape oShape, T_values.Item(k)
                 End If
             Next
         Else
@@ -112,7 +121,7 @@ Sub TranslateDesigner()
             
             On Error Resume Next 'In case the range is not found or not set, just resume
             For k = 1 To T_values.UpperBound
-                Sheets("Main").Range(T_codes.Item(k)).value = T_values.Item(k)
+                TranslateRange T_codes.Item(k), T_values.Item(k)
             Next
             On Error GoTo 0
         Else
@@ -132,7 +141,7 @@ Function TranslateMsg(sMsgId As String) As String
     Dim T_data As BetterArray                    'Array of messages and languages data
     Dim T_values As BetterArray                  'value of the message translated
     Dim T_codes As BetterArray                   'Array of messages and languages codes
-    Dim sString As String                        'String for the code of the language
+    Dim slCod As String                          'String for the code of the language
     Dim i As Integer                             'value index for the column
     Dim k As Integer
     
@@ -147,10 +156,10 @@ Function TranslateMsg(sMsgId As String) As String
     TranslateMsg = ""
     T_data.FromExcelRange designer_translation.ListObjects("T_tradMsg").DataBodyRange
     T_codes.FromExcelRange designer_translation.ListObjects("T_tradMsg").HeaderRowRange
-    sString = GetLanguageCode([RNG_LangDesigner].value)
+    slCod = GetLanguageCode([RNG_LangDesigner].value)
     
-    If sString <> "" Then
-        i = T_codes.IndexOf(sString)
+    If slCod <> "" Then
+        i = T_codes.IndexOf(slCod)
         T_codes.Clear
         If (i > 0) Then                          'if the index is found then continue
             T_codes.Items = T_data.ExtractSegment(ColumnIndex:=1)
@@ -163,6 +172,59 @@ Function TranslateMsg(sMsgId As String) As String
         End If
     End If
 End Function
+
+'This is just to translate the translation shape and headers to help for translation
+Public Sub StartTranslate()
+    
+    Dim slCod As String                          'Language code
+    Dim T_data As BetterArray                    'data of the Shapes
+    Dim T_codes As BetterArray                   'codes
+    Dim T_values As BetterArray                  'values
+    Dim indexShapeCode As Integer                'index of the shape
+    Dim indexRangeCode As Integer                'index of the range
+    Dim indexLangCod As Integer                  'index of the language
+
+    Set T_data = New BetterArray
+    Set T_codes = New BetterArray
+    Set T_values = New BetterArray
+        
+    Application.ScreenUpdating = False
+    slCod = GetLanguageCode(Sheets("Main").Range("RNG_LangDesigner").value)
+    If slCod <> "" Then
+        T_codes.FromExcelRange designer_translation.ListObjects("T_tradShape").HeaderRowRange
+        indexLangCod = T_codes.IndexOf(slCod)    'index of the language code
+        T_codes.Clear
+        'updating one shape: Translation shape
+        If (indexLangCod > 0) Then               'we are sure the index column is present
+            T_data.FromExcelRange designer_translation.ListObjects("T_tradShape").DataBodyRange
+            T_values.Items = T_data.ExtractSegment(ColumnIndex:=indexLangCod)
+            T_codes.Items = T_data.ExtractSegment(ColumnIndex:=1) 'index of all the shapes codes
+            'where the shape of the code is
+            indexShapeCode = T_codes.IndexOf("SHP_Trad")
+            If (indexShapeCode > 0) Then
+                TranslateShape Sheets("Main").Shapes("SHP_Trad"), T_values.Item(indexShapeCode)
+            End If
+            'Then do the same for the range above the RNG_Designer
+            T_data.Clear
+            T_values.Clear
+            T_codes.Clear
+            T_data.FromExcelRange designer_translation.ListObjects("T_tradRange").DataBodyRange
+            T_values.Items = T_data.ExtractSegment(ColumnIndex:=indexLangCod)
+            'index of all the Ranges codes is 1
+            T_codes.Items = T_data.ExtractSegment(ColumnIndex:=1)
+            indexRangeCode = T_codes.IndexOf("RNG_LabLangDesigner")
+            If (indexRangeCode > 0) Then
+                TranslateRange "RNG_LabLangDesigner", T_values.Item(indexRangeCode)
+            End If
+            Sheets("Main").Range("RNG_LangSetup").value = ""
+            Sheets("Main").Range("RNG_LangGeo").value = ""
+        End If
+    End If
+    Set T_data = Nothing
+    Set T_values = Nothing
+    Set T_codes = Nothing
+    Application.ScreenUpdating = True
+End Sub
 
 Sub TranslateForm(sNameForm As String)
 
