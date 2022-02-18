@@ -6,24 +6,36 @@ Const C_SheetNameDic As String = "Dictionary"
 Const C_SheetNameChoices As String = "Choices"
 Const C_SheetNameExport As String = "Exports"
 
-'Loading the Dictionnary file
+'Logic behind Loading the Dictionnary file
 Sub LoadFileDic()
 
     Dim sFilePath As String                      'Path to the dictionnary
     
-    'LoadPathWindow is the procedure for loading the path to the dictionnary
-    sFilePath = LoadPathWindow
+    'LoadFile is the procedure for loading the path to the dictionnary
+    sFilePath = LoadFile
     
     'Update messages if the file path is correct
     If sFilePath <> "" Then
-        [RNG_Dico].value = sFilePath
+        [RNG_PathDico].value = sFilePath
         [RNG_Edition].value = TranslateMsg("MSG_ChemFich")
-        [RNG_Dico].Interior.Color = vbWhite
+        [RNG_PathDico].Interior.Color = vbWhite
     Else
         [RNG_Edition].value = TranslateMsg("MSG_OpeAnnule")
     End If
-
 End Sub
+'Logic behind specifying the linelist directory
+Sub LinelistDir()
+    Dim sfolder As String
+    sfolder = LoadFolder
+    [RNG_LLDir] = ""
+    If (sfolder <> "") Then
+     [RNG_LLDir].value = sfolder
+    Else
+     [RNG_Edition].value = TranslateMsg("MSG_OpeAnnule")
+    End If
+End Sub
+
+
 
 ' Adding a new load geo for the Geo file, in a new sheet called Geo2
 ' we have two functions for loading the geodatabase, but the second one
@@ -51,7 +63,7 @@ Sub LoadGeoFile()
     Set T_header = New BetterArray
     Set xlsapp = New Excel.Application
     
-    sFilePath = LoadPathWindow
+    sFilePath = LoadFile
     
     If sFilePath <> "" Then
         With xlsapp
@@ -220,6 +232,7 @@ Sub CtrlNew()
     End If
 
 End Sub
+
 
 'Show or hide the generate the linelist shape
 Private Sub ShowHideCmdValidation(EstVisible As Boolean)

@@ -72,11 +72,11 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
     
 End Sub
 
-Public Function LoadPathWindow() As String
+Public Function LoadFile() As String
 
     Dim fDialog As Office.FileDialog
 
-    LoadPathWindow = ""
+    LoadFile = ""
     Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
     With fDialog
         .AllowMultiSelect = False
@@ -85,18 +85,18 @@ Public Function LoadPathWindow() As String
         .Filters.Add "Feuille de calcul Excel", "*.xlsx, *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
 
         If .Show = True Then
-            LoadPathWindow = .SelectedItems(1)
+            LoadFile = .SelectedItems(1)
         End If
     End With
     Set fDialog = Nothing
 
 End Function
 
-Public Function LoadFolderWindow() As String
+Public Function LoadFolder() As String
 
     Dim fDialog As Office.FileDialog
 
-    LoadFolderWindow = ""
+    LoadFolder = ""
     Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
     With fDialog
         .AllowMultiSelect = False
@@ -104,7 +104,7 @@ Public Function LoadFolderWindow() As String
         .Filters.Clear
     
         If .Show = True Then
-            LoadFolderWindow = .SelectedItems(1)
+            LoadFolder = .SelectedItems(1)
         End If
     End With
     Set fDialog = Nothing
@@ -315,3 +315,13 @@ Public Function GetFilter(ByVal T_table As BetterArray, ByVal iCol As Integer, B
     End If
 End Function
 
+'check if a range is named
+Public Function isNamed(rng As Range) As Boolean
+    On Error GoTo no:
+        test = rng.Name.Name
+        If Not IsEmpty(test) Then
+        isNamed = False
+        
+    
+End Function
+End Function
