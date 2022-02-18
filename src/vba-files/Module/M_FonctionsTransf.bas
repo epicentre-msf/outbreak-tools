@@ -282,7 +282,7 @@ Public Function GetUnique(ByVal T_table As Variant, Optional ByVal col1 As Integ
 End Function
 
 ' Function to filter on value of one column, on a two dimensional array
-Public Function GetFilter(ByVal T_table As BetterArray, ByVal icol As Integer, ByVal sValue As String) As BetterArray
+Public Function GetFilter(ByVal T_table As BetterArray, ByVal iCol As Integer, ByVal sValue As String) As BetterArray
 
     Dim targetColumn As BetterArray
     Dim fCol As Long                             'First and last columns
@@ -293,10 +293,10 @@ Public Function GetFilter(ByVal T_table As BetterArray, ByVal icol As Integer, B
     Set targetColumn = New BetterArray
     Set filteredTable = New BetterArray
     
-    T_table.Sort SortColumn:=icol
+    T_table.Sort SortColumn:=iCol
     
     'target column items
-    targetColumn.Items = T_table.ExtractSegment(, ColumnIndex:=icol)
+    targetColumn.Items = T_table.ExtractSegment(, ColumnIndex:=iCol)
     targetColumn.LowerBound = 1
     fCol = targetColumn.IndexOf(sValue)
     lCol = targetColumn.LastIndexOf(sValue)

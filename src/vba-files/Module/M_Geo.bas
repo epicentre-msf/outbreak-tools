@@ -61,84 +61,84 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     [F_Geo].Width = 606
 
     'Before doing the whole all thing, we need to test if the T_Adm data is empty or not
-        If (Not Sheets(geoSheet).ListObjects("T_ADM1").DataBodyRange Is Nothing) Then
-            T_Adm1.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM1").DataBodyRange
-        End If
+    If (Not Sheets(geoSheet).ListObjects("T_ADM1").DataBodyRange Is Nothing) Then
+        T_Adm1.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM1").DataBodyRange
+    End If
     
-        If (Not Sheets(geoSheet).ListObjects("T_ADM2").DataBodyRange Is Nothing) Then
-            T_Adm2.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM2").DataBodyRange
-        End If
+    If (Not Sheets(geoSheet).ListObjects("T_ADM2").DataBodyRange Is Nothing) Then
+        T_Adm2.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM2").DataBodyRange
+    End If
     
-        If (Not Sheets(geoSheet).ListObjects("T_ADM3").DataBodyRange Is Nothing) Then
-            T_Adm3.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM3").DataBodyRange
-        End If
+    If (Not Sheets(geoSheet).ListObjects("T_ADM3").DataBodyRange Is Nothing) Then
+        T_Adm3.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM3").DataBodyRange
+    End If
     
-        If (Not Sheets(geoSheet).ListObjects("T_ADM4").DataBodyRange Is Nothing) Then
-            T_Adm4.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM4").DataBodyRange
-        End If
+    If (Not Sheets(geoSheet).ListObjects("T_ADM4").DataBodyRange Is Nothing) Then
+        T_Adm4.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM4").DataBodyRange
+    End If
        
         
-        '----- Fill the list of the admins with the unique values for adm1
-        [F_Geo].[LST_Adm1].List = T_Adm1.ExtractSegment(ColumnIndex:=1)
+    '----- Fill the list of the admins with the unique values for adm1
+    [F_Geo].[LST_Adm1].List = T_Adm1.ExtractSegment(ColumnIndex:=1)
         
-        '----- Add Caption for  each adminstrative leveles in the form
-        F_Geo.LBL_Adm1.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(1).value
-        F_Geo.LBL_Adm2.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(2).value
-        F_Geo.LBL_Adm3.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(3).value
-        F_Geo.LBL_Adm4.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(4).value
+    '----- Add Caption for  each adminstrative leveles in the form
+    F_Geo.LBL_Adm1.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(1).value
+    F_Geo.LBL_Adm2.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(2).value
+    F_Geo.LBL_Adm3.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(3).value
+    F_Geo.LBL_Adm4.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(4).value
         
-        '------- Concatenate all the tables for the geo
-        For i = T_Adm4.LowerBound To T_Adm4.UpperBound
-            'binding all the lines together
-            transValue = T_Adm4.Item(i)           'This is oneline of the adm
-            T_Concat.Item(i) = CStr(transValue(1)) & " | " & CStr(transValue(2)) & " | " & CStr(transValue(3)) & " | " & CStr(transValue(4))
-        Next
-        T_Concat.Sort
-        '------ Once the concat is created, add it to the list in the form
-        [F_Geo].LST_ListeAgre.List = T_Concat.Items
+    '------- Concatenate all the tables for the geo
+    For i = T_Adm4.LowerBound To T_Adm4.UpperBound
+        'binding all the lines together
+        transValue = T_Adm4.Item(i)              'This is oneline of the adm
+        T_Concat.Item(i) = CStr(transValue(1)) & " | " & CStr(transValue(2)) & " | " & CStr(transValue(3)) & " | " & CStr(transValue(4))
+    Next
+    T_Concat.Sort
+    '------ Once the concat is created, add it to the list in the form
+    [F_Geo].LST_ListeAgre.List = T_Concat.Items
     
     ' Now health facility ----------------------------------------------------------------------------------------------------------
-        If (Not Sheets(geoSheet).ListObjects("T_HF").DataBodyRange Is Nothing) Then
+    If (Not Sheets(geoSheet).ListObjects("T_HF").DataBodyRange Is Nothing) Then
        
-            T_HFTable = Sheets(geoSheet).ListObjects("T_HF").DataBodyRange
-            T_HF.Items = T_HFTable
+        T_HFTable = Sheets(geoSheet).ListObjects("T_HF").DataBodyRange
+        T_HF.Items = T_HFTable
       
-            'unique admin 1
-            T_HF0.Items = GetUnique(T_HFTable, 4)
-            T_HF1.Items = GetUnique(T_HFTable, 4, 3)
-            T_HF2.Items = GetUnique(T_HFTable, 3, 2)
-            T_HF3.Items = GetUnique(T_HFTable, 2, 1)
+        'unique admin 1
+        T_HF0.Items = GetUnique(T_HFTable, 4)
+        T_HF1.Items = GetUnique(T_HFTable, 4, 3)
+        T_HF2.Items = GetUnique(T_HFTable, 3, 2)
+        T_HF3.Items = GetUnique(T_HFTable, 2, 1)
          
-            ReDim T_HFTable(1)
+        ReDim T_HFTable(1)
                          
-            ' ----- Fill the list of the admins with the unique values of adm1
-            [F_Geo].[LST_AdmF1].List = T_HF0.Items
+        ' ----- Fill the list of the admins with the unique values of adm1
+        [F_Geo].[LST_AdmF1].List = T_HF0.Items
                 
-            '-------- Adding caption for each admnistrative levels in the form of the health facility
-            F_Geo.LBL_Adm1F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(4).value
-            F_Geo.LBL_Adm2F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(3).value
-            F_Geo.LBL_Adm3F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(2).value
-            F_Geo.LBL_Adm4F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(1).value
+        '-------- Adding caption for each admnistrative levels in the form of the health facility
+        F_Geo.LBL_Adm1F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(4).value
+        F_Geo.LBL_Adm2F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(3).value
+        F_Geo.LBL_Adm3F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(2).value
+        F_Geo.LBL_Adm4F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(1).value
         
-            'Creating the concatenate for the Health facility
-            For i = T_HF.LowerBound To T_HF.UpperBound
-                transValue = T_HF.Item(i)
-                T_ConcatHF.Item(i) = CStr(transValue(1)) & " | " & CStr(transValue(2)) & " | " & CStr(transValue(3)) & " | " & CStr(transValue(4))
-            Next i
-            T_ConcatHF.Sort
-            '---- Once the concat is created, add it to the HF form using the list for the concat part
-            [F_Geo].LST_ListeAgreF.List = T_ConcatHF.Items
-        End If
+        'Creating the concatenate for the Health facility
+        For i = T_HF.LowerBound To T_HF.UpperBound
+            transValue = T_HF.Item(i)
+            T_ConcatHF.Item(i) = CStr(transValue(1)) & " | " & CStr(transValue(2)) & " | " & CStr(transValue(3)) & " | " & CStr(transValue(4))
+        Next i
+        T_ConcatHF.Sort
+        '---- Once the concat is created, add it to the HF form using the list for the concat part
+        [F_Geo].LST_ListeAgreF.List = T_ConcatHF.Items
+    End If
     'Historic for geographic data and facility data
-        If Not Sheets(geoSheet).ListObjects("T_HistoGeo").DataBodyRange Is Nothing Then
-            T_HistoGeo.FromExcelRange Sheets(geoSheet).ListObjects("T_HistoGeo").DataBodyRange
-            [F_Geo].LST_Histo.List = T_HistoGeo.Items
-        End If
+    If Not Sheets(geoSheet).ListObjects("T_HistoGeo").DataBodyRange Is Nothing Then
+        T_HistoGeo.FromExcelRange Sheets(geoSheet).ListObjects("T_HistoGeo").DataBodyRange
+        [F_Geo].LST_Histo.List = T_HistoGeo.Items
+    End If
 
-        If Not Sheets(geoSheet).ListObjects("T_HistoHF").DataBodyRange Is Nothing Then
-            T_HistoHF.FromExcelRange Sheets(geoSheet).ListObjects("T_HistoHF").DataBodyRange
-            [F_Geo].LST_HistoF.List = T_HistoHF.Items
-        End If
+    If Not Sheets(geoSheet).ListObjects("T_HistoHF").DataBodyRange Is Nothing Then
+        T_HistoHF.FromExcelRange Sheets(geoSheet).ListObjects("T_HistoHF").DataBodyRange
+        [F_Geo].LST_HistoF.List = T_HistoHF.Items
+    End If
 
     'Showing the form in case of Geo or Health Facility. Geo and Facility are in different frames.
     Select Case iGeoType
@@ -377,7 +377,7 @@ Sub SeachHistoValue(T_HistoGeo, sSearchedValue As String)
         End If
     End If
 
-Set T_result = Nothing
+    Set T_result = Nothing
 End Sub
 
 Sub SearchValueF(T_ConcatHF, sSearchedValue As String)
@@ -408,7 +408,7 @@ Sub SearchValueF(T_ConcatHF, sSearchedValue As String)
         End If
     End If
 
-Set T_result = Nothing
+    Set T_result = Nothing
 End Sub
 
 Sub SeachHistoValueF(T_HistoHF, sSearchedValue As String)
@@ -441,7 +441,7 @@ Sub SeachHistoValueF(T_HistoHF, sSearchedValue As String)
         End If
     End If
 
-Set T_result = Nothing
+    Set T_result = Nothing
 End Sub
 
 ' This function reverses a string using the | as separator, like in the final selection of the
@@ -457,9 +457,10 @@ Function ReverseString(sChaine As String)
     T_temp.Items = Split(sChaine, " | ")
     sRes = T_temp.Items(1)
     For i = T_temp.LowerBound + 1 To T_temp.UpperBound
-            sRes = T_temp.Items(i) & " | " & sRes
+        sRes = T_temp.Items(i) & " | " & sRes
     Next
      
     ReverseString = sRes
     Set T_temp = Nothing
 End Function
+
