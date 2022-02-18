@@ -140,41 +140,54 @@ End Sub
 ' well as all the forms in the linelist
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub GenerateData()
-
+    Dim bGood As Boolean
+    bGood = ControlForGenerate()
+    
+    If Not bGood Then
+        ShowHideCmdValidation show:=False
+        Exit Sub
+    End If
+    
     Dim xlsapp As Excel.Application
     Dim D_TitleDic As Scripting.Dictionary
     Dim T_dataDic
     Dim D_Choices As Scripting.Dictionary
     Dim T_Choices
     Dim T_Export
+    Dim sPath As String
     
     Set xlsapp = New Excel.Application
     
     Application.DisplayAlerts = False
     Application.ScreenUpdating = False
     
-    'return to the create button
-    Call ShowHideCmdValidation(False)
+    'Be sure the actual Workbook is not opened
+    If IsWkbOpened([RNG_LLName].value & ".xlb") Then
+        [RNG_Edition].value = TranslateMsg("MSG_CloseLL")
+        [RNG_LLName].Interior.Color = LetColor("RedEpi")
+        Exit Sub
+    End If
     
     'On Error GoTo ErrLectureFichier
-    With ThisWorkbook.Sheets("Main").Range("RNG_Msg")
+    With ThisWorkbook.Sheets("Main").Range("RNG_Edition")
         xlsapp.ScreenUpdating = False
         xlsapp.Visible = False
-        xlsapp.Workbooks.Open [RNG_Dico].value
+        xlsapp.Workbooks.Open [RNG_PathDico].value
         
-        .value = TranslateMsg("MSG_LectDico")
+        .value = TranslateMsg("MSG_ReadDic")
         'create the Dictionnary of the linelist patient sheet
         Set D_TitleDic = CreateDicoColVar(xlsapp, C_SheetNameDic, 2)
         'create the data table of linelist patient using the dictionnary
         T_dataDic = CreateTabDataVar(xlsapp, C_SheetNameDic, D_TitleDic, 3)
     
-        .value = TranslateMsg("MSG_LectListe")
+        .value = TranslateMsg("MSG_ReadList")
         'Create the dictionnary for the choices sheet
         Set D_Choices = CreateDicoColChoi(xlsapp, C_SheetNameChoices)
         'Create the table for the choices
         T_Choices = CreateTabDataChoi(xlsapp, C_SheetNameChoices)
-    
-        .value = TranslateMsg("MSG_LectExport")
+        
+        'Export sheet
+        .value = TranslateMsg("MSG_ReadExport")
         'create parameters for export
         T_Export = CreateParamExport(xlsapp)
 
@@ -182,14 +195,17 @@ Sub GenerateData()
         xlsapp.Quit
         Set xlsapp = Nothing
         
-        .value = TranslateMsg("MSG_CreationLL")
+        .value = TranslateMsg("MSG_BuildLL")
         
         'Creating the linelist using the dictionnary and choices data as well as export data
-        ' The BuildList procedure is in the
-        Call BuildList(D_TitleDic, T_dataDic, D_Choices, T_Choices, T_Export)
+        'The BuildList procedure is in the linelist
+        sPath = [RNG_LLDir].value & Application.PathSeparator & [RNG_LLName] & ".xlsb"
+        Call BuildList(D_TitleDic, T_dataDic, D_Choices, T_Choices, T_Export, sPath)
         DoEvents
     
-        .value = TranslateMsg("MSG_toutFbie")
+        .value = TranslateMsg("MSG_LLCreated")
+        [RNG_LLName].Interior.Color = vbWhite
+        Sheets("Main").Shapes("SHP_OpenLL").Visible = msoTrue
     End With
     
     Application.DisplayAlerts = True
@@ -202,6 +218,7 @@ Sub CancelGenerate()
     
     If answer = vbYes Then
         ShowHideCmdValidation show:=False
+        Sheets("Main").Shapes("SHP_OpenLL").Visible = msoFalse
         End
     End If
     
@@ -209,62 +226,87 @@ Sub CancelGenerate()
     
 End Sub
 
-'A control Sub to be sure that everything is fine for linelist Generation
-Sub ControlForGenerate()
-   
+Sub Control()
+    Dim bGood As Boolean
+    'Control to be sure we can generate a linelist
+    bGood = ControlForGenerate()
+    If Not bGood Then
+        Exit Sub
+    Else
+        'Now that everything is fine, continue to generation process
+        [RNG_Edition].value = TranslateMsg("MSG_Correct")
+        ShowHideCmdValidation True
+        [RNG_PathGeo].Interior.Color = vbWhite
+        [RNG_PathDico].Interior.Color = vbWhite
+        [RNG_LLName].Interior.Color = vbWhite
+        [RNG_LLDir].Interior.Color = vbWhite
+    End If
+End Sub
+
+'A control function to be sure that everything is fine for linelist Generation
+Private Function ControlForGenerate() As Boolean
+   ControlForGenerate = False
     'Hide the shapes for linelist generation
     ShowHideCmdValidation False
     
     'Be sure the dictionary path is not empty
     If [RNG_PathDico].value = "" Then
-        [RNG_Edition].value = TranslateMsg("MSG_PathDic")
-        [RNG_PathDico].Interior.Color = LetColor("RedEpi")
-        Exit Sub
+       [RNG_Edition].value = TranslateMsg("MSG_PathDic")
+       [RNG_PathDico].Interior.Color = LetColor("RedEpi")
+       Exit Function
     End If
     
     'Now check if the file exists
     If Dir([RNG_PathDico].value) = "" Then
         [RNG_Edition].value = TranslateMsg("MSG_PathDic")
         [RNG_PathDico].Interior.Color = LetColor("RedEpi")
-        Exit Sub
+        Exit Function
     End If
      
     'Be sure the dictionnary is not opened
-    If IsWkbOpened([RNG_PathDico].value) Then
+    If IsWkbOpened(Dir([RNG_PathDico].value)) Then
         [RNG_Edition].value = TranslateMsg("MSG_CloseDic")
-        Exit Sub
+        Exit Function
     End If
     
     'Test the linelist directory is not empty
     If [RNG_LLDir].value = "" Then
         [RNG_Edition].value = TranslateMsg("MSG_PathLL")
         [RNG_LLDir].Interior.Color = LetColor("RedEpi")
-        Exit Sub
+        Exit Function
     End If
     
     'be sure the directory for the linelist exists
     If Dir([RNG_LLDir].value, vbDirectory) = "" Then
         [RNG_Edition].value = TranslateMsg("MSG_PathLL")
         [RNG_LLDir].Interior.Color = LetColor("RedEpi")
-        Exit Sub
+        Exit Function
     End If
     
     'be sure the linelist name is not empty
     If [RNG_LLName] = "" Then
         [RNG_Edition].value = TranslateMsg("MSG_LLName")
         [RNG_LLName].Interior.Color = LetColor("RedEpi")
-        Exit Sub
+        Exit Function
     End If
     
-    'Now that everything is fine, continue to generation process
-    [RNG_Edition].value = TranslateMsg("MSG_Correct")
-    ShowHideCmdValidation True
-    [RNG_PathGeo].Interior.Color = vbWhite
-    [RNG_PathDico].Interior.Color = vbWhite
-    [RNG_LLName].Interior.Color = vbWhite
-    [RNG_LLDir].Interior.Color = vbWhite
+    'Be sure the linelist workbook is not already opened
+    If IsWkbOpened([RNG_LLName].value & ".xlsb") Then
+        [RNG_Edition].value = TranslateMsg("MSG_CloseLL")
+        [RNG_LLName].Interior.Color = LetColor("RedEpi")
+        Exit Function
+    End If
+    
+    'Be sure the linelist does not exits
+    'If Dir([RNG_LLDir].value & Application.PathSeparator & [RNG_LLName].value & ".xlsb") <> "" Then
+    '    [RNG_Edition].value = TranslateMsg("MSG_exists")
+     '   [RNG_LLName].Interior.Color = LetColor("RedEpi")
+     '   Exit Function
+    'End If
+    
+    ControlForGenerate = True
 
-End Sub
+End Function
 
 'Show or hide the generate the linelist shape
 Private Sub ShowHideCmdValidation(show As Boolean)
@@ -273,6 +315,40 @@ Private Sub ShowHideCmdValidation(show As Boolean)
     Sheets("Main").Shapes("SHP_Annuler").Visible = show
     Sheets("Main").Shapes("SHP_CtrlNouv").Visible = Not show
 
+End Sub
+Sub OpenLL()
+    'Be sure that the directory and the linelist name are not empty
+    If [RNG_LLDir].value = "" Then
+        [RNG_Edition].value = TranslateMsg("MSG_PathLL")
+        [RNG_LLDir].Interior.Color = LetColor("RedEpi")
+        Exit Sub
+    End If
+    
+    If [RNG_LLName].value = "" Then
+        [RNG_Edition].value = TranslateMsg("MSG_LLName")
+        [RNG_LLName].Interior.Color = LetColor("RedEpi")
+        Exit Sub
+    End If
+    
+    'Be sure the workbook is not already opened
+    If IsWkbOpened([RNG_LLName].value & ".xlsb") Then
+        [RNG_Edition].value = TranslateMsg("MSG_CloseLL")
+        [RNG_LLName].Interior.Color = LetColor("RedEpi")
+        Exit Sub
+    End If
+    
+    'Be sure the workbook exits
+    If Dir([RNG_LLDir].value & Application.PathSeparator & [RNG_LLName].value & ".xlsb") = "" Then
+        [RNG_Edition].value = TranslateMsg("MSG_CheckLL")
+        [RNG_LLName].Interior.Color = LetColor("RedEpi")
+        [RNG_LLDir].Interior.Color = LetColor("RedEpi")
+        ShowHideCmdValidation show:=False
+        Sheets("Main").Shapes("SHP_OpenLL").Visible = msoFalse
+        Exit Sub
+    End If
+    
+    'Then open it
+    Application.Workbooks.Open Filename:=[RNG_LLDir].value & Application.PathSeparator & [RNG_LLName].value & ".xlsb", ReadOnly:=False
 End Sub
 
 'Check if a workbook is Opened
@@ -284,11 +360,6 @@ Private Function IsWkbOpened(sName As String) As Boolean
     On Error GoTo 0
 End Function
 
-Public Sub ShowCmdValidation()
-
-    ShowHideCmdValidation show:=False
-
-End Sub
 
 Private Function CreateParamExport(xlsapp As Object)
 

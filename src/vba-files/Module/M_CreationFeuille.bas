@@ -16,7 +16,7 @@ Const C_PWD As String = "1234"
 'T_Choices: The choices data
 'T_Export: The export data
 
-Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Scripting.Dictionary, T_Choices, T_Export)
+Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Scripting.Dictionary, T_Choices, T_Export, sPath As String)
     'c'est parti pour le fichier de sortie !
 
     Dim xlsapp As New Excel.Application          'will contain the linelist
@@ -100,7 +100,6 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
         'TransfertSheet is for sending worksheets from the actual workbook to another
         Call TransfertSheet(xlsapp, "GEO")
         Call TransfertSheet(xlsapp, "PASSWORD")
-        Call TransfertSheet(xlsapp, "Translation")
         'on a besoin de la table ascii
         Call TransfertSheet(xlsapp, "ControleFormule")
     
@@ -619,16 +618,16 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
     Call Add200Lines(xlsapp)
 
     'on (presque) conclue !
-    Application.ActiveWindow.WindowState = xlMinimized
+   'Application.ActiveWindow.WindowState = xlMinimized
     With xlsapp
         .Sheets("admin").Columns(2).EntireColumn.AutoFit
         .Sheets(6).Select
         .Sheets(6).Range("A1").Select
         .DisplayAlerts = True
         .ScreenUpdating = True
-        .Visible = True
+        '.Visible = True
         .ActiveWindow.DisplayZeros = True
-        .ActiveWindow.WindowState = xlMaximized
+        '.ActiveWindow.WindowState = xlMaximized
     End With
     DoEvents
 
@@ -647,7 +646,10 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
 
     'ecriture de l'evenement "change" dans la feuille de resultat
     Call TransferCodeWks(xlsapp, "linelist-patient", "linelist_sheet_change")
-
+    
+    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12
+    xlsapp.Quit
+    Set xlsapp = Nothing
 End Sub
 
 Private Sub Add200Lines(xlsapp As Excel.Application)
