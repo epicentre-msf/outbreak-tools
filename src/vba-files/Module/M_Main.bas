@@ -31,6 +31,7 @@ Sub LinelistDir()
     [RNG_LLDir] = ""
     If (sfolder <> "") Then
         [RNG_LLDir].value = sfolder
+        [RNG_LLDir].Interior.Color = vbWhite
     Else
         [RNG_Edition].value = TranslateMsg("MSG_OpeAnnule")
     End If
@@ -196,7 +197,16 @@ Sub GenerateData()
 End Sub
 
 Sub CancelGenerate()
-    ShowHideCmdValidation show:=False
+    Dim answer As Integer
+    answer = MsgBox(TranslateMsg("MSG_ConfCancel"), vbYesNo)
+    
+    If answer = vbYes Then
+        ShowHideCmdValidation show:=False
+        End
+    End If
+    
+    MsgBox TranslateMsg("MSG_Continue")
+    
 End Sub
 
 'A control Sub to be sure that everything is fine for linelist Generation
@@ -225,11 +235,34 @@ Sub ControlForGenerate()
         Exit Sub
     End If
     
+    'Test the linelist directory is not empty
+    If [RNG_LLDir].value = "" Then
+        [RNG_Edition].value = TranslateMsg("MSG_PathLL")
+        [RNG_LLDir].Interior.Color = LetColor("RedEpi")
+        Exit Sub
+    End If
+    
+    'be sure the directory for the linelist exists
+    If Dir([RNG_LLDir].value, vbDirectory) = "" Then
+        [RNG_Edition].value = TranslateMsg("MSG_PathLL")
+        [RNG_LLDir].Interior.Color = LetColor("RedEpi")
+        Exit Sub
+    End If
+    
+    'be sure the linelist name is not empty
+    If [RNG_LLName] = "" Then
+        [RNG_Edition].value = TranslateMsg("MSG_LLName")
+        [RNG_LLName].Interior.Color = LetColor("RedEpi")
+        Exit Sub
+    End If
+    
     'Now that everything is fine, continue to generation process
     [RNG_Edition].value = TranslateMsg("MSG_Correct")
     ShowHideCmdValidation True
     [RNG_PathGeo].Interior.Color = vbWhite
     [RNG_PathDico].Interior.Color = vbWhite
+    [RNG_LLName].Interior.Color = vbWhite
+    [RNG_LLDir].Interior.Color = vbWhite
 
 End Sub
 
