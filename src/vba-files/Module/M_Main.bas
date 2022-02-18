@@ -23,19 +23,18 @@ Sub LoadFileDic()
         [RNG_Edition].value = TranslateMsg("MSG_OpeAnnule")
     End If
 End Sub
+
 'Logic behind specifying the linelist directory
 Sub LinelistDir()
     Dim sfolder As String
     sfolder = LoadFolder
     [RNG_LLDir] = ""
     If (sfolder <> "") Then
-     [RNG_LLDir].value = sfolder
+        [RNG_LLDir].value = sfolder
     Else
-     [RNG_Edition].value = TranslateMsg("MSG_OpeAnnule")
+        [RNG_Edition].value = TranslateMsg("MSG_OpeAnnule")
     End If
 End Sub
-
-
 
 ' Adding a new load geo for the Geo file, in a new sheet called Geo2
 ' we have two functions for loading the geodatabase, but the second one
@@ -108,7 +107,7 @@ Sub LoadGeoFile()
                 End With
             Next
             
-            Sheets("MAIN").Range("RNG_Geo").value = sFilePath
+            Sheets("MAIN").Range("RNG_PathGeo").value = sFilePath
             .ScreenUpdating = True
             .Workbooks.Close
             xlsapp.Quit
@@ -197,74 +196,64 @@ Sub GenerateData()
 End Sub
 
 Sub CancelGenerate()
-
-    Sheets("Main").Shapes("SHP_CtrlNouv").Visible = True
-    Call ShowHideCmdValidation(False)
-
+    ShowHideCmdValidation show:=False
 End Sub
 
-Sub CtrlNew()
-
-    Call ShowHideCmdValidation(False)
-    If [RNG_Dico].value <> "" Then
-        If Dir([RNG_Dico].value) <> "" Then
-            If [RNG_Geo].value <> "" Then
-                If Not IsWksOpened([RNG_Dico].value) Then
-                    [RNG_Edition].value = TranslateMsg("MSG_ToutEstBon")
-                    Call ShowHideCmdValidation(True) '
-                    [RNG_Geo].Interior.Color = vbWhite
-                    [RNG_Dico].Interior.Color = vbWhite
-                Else
-                    [RNG_Edition].value = TranslateMsg("MSG_FermerDico")
-                End If
-            Else
-                [RNG_Edition].value = TranslateMsg("MSG_VeriFichGeo")
-                [RNG_Geo].Interior.Color = LetColor("RedEpi")
-            End If
-        Else
-            [RNG_Edition].value = TranslateMsg("MSG_VeriChemDico")
-            [RNG_Dico].Interior.Color = LetColor("RedEpi")
+'A control Sub to be sure that everything is fine for linelist Generation
+Sub ControlForGenerate()
+   
+    'Hide the shapes for linelist generation
+    ShowHideCmdValidation False
     
-        End If
-    Else
-        [RNG_Edition].value = TranslateMsg("MSG_VeriChemDico")
-        [RNG_Dico].Interior.Color = LetColor("RedEpi")
+    'Be sure the dictionary path is not empty
+    If [RNG_PathDico].value = "" Then
+        [RNG_Edition].value = TranslateMsg("MSG_PathDic")
+        [RNG_PathDico].Interior.Color = LetColor("RedEpi")
+        Exit Sub
     End If
+    
+    'Now check if the file exists
+    If Dir([RNG_PathDico].value) = "" Then
+        [RNG_Edition].value = TranslateMsg("MSG_PathDic")
+        [RNG_PathDico].Interior.Color = LetColor("RedEpi")
+        Exit Sub
+    End If
+     
+    'Be sure the dictionnary is not opened
+    If IsWkbOpened([RNG_PathDico].value) Then
+        [RNG_Edition].value = TranslateMsg("MSG_CloseDic")
+        Exit Sub
+    End If
+    
+    'Now that everything is fine, continue to generation process
+    [RNG_Edition].value = TranslateMsg("MSG_Correct")
+    ShowHideCmdValidation True
+    [RNG_PathGeo].Interior.Color = vbWhite
+    [RNG_PathDico].Interior.Color = vbWhite
 
 End Sub
-
 
 'Show or hide the generate the linelist shape
-Private Sub ShowHideCmdValidation(EstVisible As Boolean)
+Private Sub ShowHideCmdValidation(show As Boolean)
 
-    Sheets("Main").Shapes("SHP_Generer").Visible = EstVisible
-    Sheets("Main").Shapes("SHP_Annuler").Visible = EstVisible
-    Sheets("Main").Shapes("SHP_validation").Visible = EstVisible
+    Sheets("Main").Shapes("SHP_Generer").Visible = show
+    Sheets("Main").Shapes("SHP_Annuler").Visible = show
+    Sheets("Main").Shapes("SHP_CtrlNouv").Visible = Not show
 
 End Sub
 
-Private Function IsWksOpened(sNameClasseur As String) As Boolean
-       
-    Dim oWks As Object
-    Dim i As Byte
-
-    IsWksOpened = False
-    i = 1
-    While i <= Application.Workbooks.Count
-        Set oWks = Application.Workbooks(i)
-        If InStr(1, oWks.Name, Split(sNameClasseur, "\")(UBound(Split(sNameClasseur, "\")))) > 0 Then
-            IsWksOpened = True
-            Exit Function
-        End If
-        Set oWks = Nothing
-        i = i + 1
-    Wend
-
+'Check if a workbook is Opened
+Private Function IsWkbOpened(sName As String) As Boolean
+    Dim oWkb As Workbook                         'Just try to set the workbook if it fails it is closed
+    On Error Resume Next
+    Set oWkb = Application.Workbooks.Item(sName)
+    IsWkbOpened = (Not oWkb Is Nothing)
+    On Error GoTo 0
 End Function
 
 Public Sub ShowCmdValidation()
 
-    Call ShowHideCmdValidation(False)
+    ShowHideCmdValidation show:=False
 
 End Sub
 
