@@ -623,8 +623,8 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
         .Sheets("admin").Columns(2).EntireColumn.AutoFit
         .Sheets(6).Select
         .Sheets(6).Range("A1").Select
-        .DisplayAlerts = True
-        .ScreenUpdating = True
+        .DisplayAlerts = False
+        .ScreenUpdating = False
         '.Visible = True
         .ActiveWindow.DisplayZeros = True
         '.ActiveWindow.WindowState = xlMaximized
@@ -647,7 +647,7 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
     'ecriture de l'evenement "change" dans la feuille de resultat
     Call TransferCodeWks(xlsapp, "linelist-patient", "linelist_sheet_change")
     
-    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12
+    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, ConflictResolution:=xlLocalSessionChanges
     xlsapp.Quit
     Set xlsapp = Nothing
 End Sub

@@ -19,6 +19,7 @@ Attribute VB_Exposed = False
 
 
 
+
 Option Explicit
 
 Private Sub CMD_ChoicesFac_Click()
@@ -62,6 +63,7 @@ Private Sub CMD_Copier_Click()
                 T_HistoGeo.ToExcelRange Destination:=Sheets(geoSheet).Range(Cells(2, .Range.Column).Address)
                 'resize the list object
                 .Resize .Range.CurrentRegion
+                .DataBodyRange.RemoveDuplicates Columns:=1, Header:=xlYes
             End If
         End With
         'Writing the selected data in the linelist sheet
@@ -69,6 +71,8 @@ Private Sub CMD_Copier_Click()
         T_temp.Items = Split([TXT_Msg].value, " | ")
         If T_temp.Length > 0 Then
             Application.EnableEvents = False
+            'Clear the cells before filling
+            Range(ActiveCell.Address, ActiveCell.Offset(, 4)).value = ""
             T_temp.ToExcelRange Destination:=Range(ActiveCell.Address), TransposeValues:=True
             Application.EnableEvents = True
         End If
@@ -94,6 +98,7 @@ Private Sub CMD_Copier_Click()
                 T_HistoHF.ToExcelRange Destination:=Sheets(geoSheet).Range(Cells(2, .Range.Column).Address)
                 'resize the list object
                 .Resize .Range.CurrentRegion
+                .DataBodyRange.RemoveDuplicates Columns:=1, Header:=xlYes
             End If
         End With
         'writing the selected value
@@ -187,13 +192,14 @@ End Sub
 
 Private Sub TXT_RechercheHisto_Change()
     'In case there is a change in the historic geographic Search list
-    Call SeachHistoValue(T_Histo, F_Geo.TXT_RechercheHisto.value)
+    Call SeachHistoValue(T_HistoGeo, F_Geo.TXT_RechercheHisto.value)
 
 End Sub
 
 Private Sub TXT_RechercheHistoF_Change()
     'In case there is a change in the historic data
-    Call SeachHistoValueF(T_HistoHF, F_Geo.TXT_RechercheHisto.value)
+    Call SeachHistoValueF(T_HistoHF, F_Geo.TXT_RechercheHistoF.value)
 
 End Sub
+
 
