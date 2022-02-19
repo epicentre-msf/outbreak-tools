@@ -72,11 +72,11 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
     
 End Sub
 
-Public Function LoadPathWindow() As String
+Public Function LoadFile() As String
 
     Dim fDialog As Office.FileDialog
 
-    LoadPathWindow = ""
+    LoadFile = ""
     Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
     With fDialog
         .AllowMultiSelect = False
@@ -84,27 +84,27 @@ Public Function LoadPathWindow() As String
         .Filters.Clear
         .Filters.Add "Feuille de calcul Excel", "*.xlsx, *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
 
-        If .Show = True Then
-            LoadPathWindow = .SelectedItems(1)
+        If .show = True Then
+            LoadFile = .SelectedItems(1)
         End If
     End With
     Set fDialog = Nothing
 
 End Function
 
-Public Function LoadFolderWindow() As String
+Public Function LoadFolder() As String
 
     Dim fDialog As Office.FileDialog
 
-    LoadFolderWindow = ""
+    LoadFolder = ""
     Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
     With fDialog
         .AllowMultiSelect = False
         .Title = "Chose your directory"          'MSG_ChooseDir
         .Filters.Clear
     
-        If .Show = True Then
-            LoadFolderWindow = .SelectedItems(1)
+        If .show = True Then
+            LoadFolder = .SelectedItems(1)
         End If
     End With
     Set fDialog = Nothing
@@ -282,7 +282,7 @@ Public Function GetUnique(ByVal T_table As Variant, Optional ByVal col1 As Integ
 End Function
 
 ' Function to filter on value of one column, on a two dimensional array
-Public Function GetFilter(ByVal T_table As BetterArray, ByVal icol As Integer, ByVal sValue As String) As BetterArray
+Public Function GetFilter(ByVal T_table As BetterArray, iCol As Integer, sValue As String) As BetterArray
 
     Dim targetColumn As BetterArray
     Dim fCol As Long                             'First and last columns
@@ -293,25 +293,27 @@ Public Function GetFilter(ByVal T_table As BetterArray, ByVal icol As Integer, B
     Set targetColumn = New BetterArray
     Set filteredTable = New BetterArray
     
-    T_table.Sort SortColumn:=icol
-    
     'target column items
-    targetColumn.Items = T_table.ExtractSegment(, ColumnIndex:=icol)
+    targetColumn.Items = T_table.ExtractSegment(, ColumnIndex:=iCol)
+    targetColumn.Sort
     targetColumn.LowerBound = 1
     fCol = targetColumn.IndexOf(sValue)
     lCol = targetColumn.LastIndexOf(sValue)
+    targetColumn.Clear
+    Set targetColumn = Nothing
     
     filteredTable.Clear
     filteredTable.LowerBound = 1
     'Extract the lines of table for each of values found
     If fCol > 0 And lCol > 0 Then
         For i = fCol To lCol
-            filteredTable.Item(i) = T_table.ExtractSegment(RowIndex:=i)
-        Next i
+            filteredTable.Push T_table.Item(i)
+        Next
         Set GetFilter = filteredTable.Clone
     Else
         'return the whole table if you where not able to find a match
         Set GetFilter = T_table.Clone
     End If
 End Function
+
 

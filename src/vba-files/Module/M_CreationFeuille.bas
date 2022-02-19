@@ -16,7 +16,7 @@ Const C_PWD As String = "1234"
 'T_Choices: The choices data
 'T_Export: The export data
 
-Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Scripting.Dictionary, T_Choices, T_Export)
+Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Scripting.Dictionary, T_Choices, T_Export, sPath As String)
     'c'est parti pour le fichier de sortie !
 
     Dim xlsapp As New Excel.Application          'will contain the linelist
@@ -100,7 +100,6 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
         'TransfertSheet is for sending worksheets from the actual workbook to another
         Call TransfertSheet(xlsapp, "GEO")
         Call TransfertSheet(xlsapp, "PASSWORD")
-        Call TransfertSheet(xlsapp, "Translation")
         'on a besoin de la table ascii
         Call TransfertSheet(xlsapp, "ControleFormule")
     
@@ -619,16 +618,16 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
     Call Add200Lines(xlsapp)
 
     'on (presque) conclue !
-    Application.ActiveWindow.WindowState = xlMinimized
+   'Application.ActiveWindow.WindowState = xlMinimized
     With xlsapp
         .Sheets("admin").Columns(2).EntireColumn.AutoFit
         .Sheets(6).Select
         .Sheets(6).Range("A1").Select
-        .DisplayAlerts = True
-        .ScreenUpdating = True
-        .Visible = True
+        .DisplayAlerts = False
+        .ScreenUpdating = False
+        '.Visible = True
         .ActiveWindow.DisplayZeros = True
-        .ActiveWindow.WindowState = xlMaximized
+        '.ActiveWindow.WindowState = xlMaximized
     End With
     DoEvents
 
@@ -647,7 +646,10 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
 
     'ecriture de l'evenement "change" dans la feuille de resultat
     Call TransferCodeWks(xlsapp, "linelist-patient", "linelist_sheet_change")
-
+    
+    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, ConflictResolution:=xlLocalSessionChanges
+    xlsapp.Quit
+    Set xlsapp = Nothing
 End Sub
 
 Private Sub Add200Lines(xlsapp As Excel.Application)
@@ -804,7 +806,7 @@ End Sub
 
 'The purpose of this procedure is to create the geo columns using the geo data  (its also adds the first dropdowns)
 ' we shift the columns to the right until we reached the number of columns required
-Sub Add4GeoCol(xlsapp As Excel.Application, sSheetName As String, sLib As String, sNameCell As String, icol As Integer, sMessage As String)
+Sub Add4GeoCol(xlsapp As Excel.Application, sSheetName As String, sLib As String, sNameCell As String, iCol As Integer, sMessage As String)
 
     'sSheetName: Sheet name
     'sNameCell: Name of the cell
@@ -819,30 +821,30 @@ Sub Add4GeoCol(xlsapp As Excel.Application, sSheetName As String, sLib As String
     With xlsapp.Sheets(sSheetName)
         i = 4
         While i > 1
-            .Columns(icol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
-            .Cells(C_TitleLine, icol + 1).value = LetWordingWithSpace(xlsapp, Sheets("GEO").ListObjects("T_ADM" & i).HeaderRowRange.Item(i).value, CStr(sSheetName))
-            .Cells(C_TitleLine, icol + 1).Name = "adm" & i & "_" & sNameCell
-            .Cells(C_TitleLine, icol + 1).Interior.Color = vbWhite
-            .Cells(C_TitleLine, icol + 1).Locked = False
+            .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
+            .Cells(C_TitleLine, iCol + 1).value = LetWordingWithSpace(xlsapp, Sheets("GEO").ListObjects("T_ADM" & i).HeaderRowRange.Item(i).value, CStr(sSheetName))
+            .Cells(C_TitleLine, iCol + 1).Name = "adm" & i & "_" & sNameCell
+            .Cells(C_TitleLine, iCol + 1).Interior.Color = vbWhite
+            .Cells(C_TitleLine, iCol + 1).Locked = False
             i = i - 1
         Wend
-        .Cells(C_TitleLine, icol).value = LetWordingWithSpace(xlsapp, Sheets("GEO").ListObjects("T_ADM" & i).HeaderRowRange.Item(1).value, CStr(sSheetName))
-        .Range(.Cells(C_StartLineTitle2, icol), .Cells(C_StartLineTitle2, icol + 3)).Merge
+        .Cells(C_TitleLine, iCol).value = LetWordingWithSpace(xlsapp, Sheets("GEO").ListObjects("T_ADM" & i).HeaderRowRange.Item(1).value, CStr(sSheetName))
+        .Range(.Cells(C_StartLineTitle2, iCol), .Cells(C_StartLineTitle2, iCol + 3)).Merge
     
         'ajout des formules de validation
-        .Cells(C_TitleLine + 1, icol).Validation.Delete
+        .Cells(C_TitleLine + 1, iCol).Validation.Delete
 
-        .Cells(C_TitleLine + 1, icol).Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertWarning, Operator:=xlBetween, _
+        .Cells(C_TitleLine + 1, iCol).Validation.Add Type:=xlValidateList, AlertStyle:=xlValidAlertWarning, Operator:=xlBetween, _
                                                      Formula1:="=GEO!" & xlsapp.Sheets("GEO").Range("T_ADM1").Columns(1).Address
      
-        .Cells(C_TitleLine + 1, icol).Validation.IgnoreBlank = True
-        .Cells(C_TitleLine + 1, icol).Validation.InCellDropdown = True
-        .Cells(C_TitleLine + 1, icol).Validation.InputTitle = ""
-        .Cells(C_TitleLine + 1, icol).Validation.errorTitle = ""
-        .Cells(C_TitleLine + 1, icol).Validation.InputMessage = ""
-        .Cells(C_TitleLine + 1, icol).Validation.ErrorMessage = sMessage
-        .Cells(C_TitleLine + 1, icol).Validation.ShowInput = True
-        .Cells(C_TitleLine + 1, icol).Validation.ShowError = True
+        .Cells(C_TitleLine + 1, iCol).Validation.IgnoreBlank = True
+        .Cells(C_TitleLine + 1, iCol).Validation.InCellDropdown = True
+        .Cells(C_TitleLine + 1, iCol).Validation.InputTitle = ""
+        .Cells(C_TitleLine + 1, iCol).Validation.errorTitle = ""
+        .Cells(C_TitleLine + 1, iCol).Validation.InputMessage = ""
+        .Cells(C_TitleLine + 1, iCol).Validation.ErrorMessage = sMessage
+        .Cells(C_TitleLine + 1, iCol).Validation.ShowInput = True
+        .Cells(C_TitleLine + 1, iCol).Validation.ShowError = True
     End With
 
 End Sub
