@@ -30,9 +30,9 @@ End Sub
 ' sNameModule the name of the module we want to copy code from
 Sub TransferCodeWks(xlsapp As Excel.Application, sSheetName As String, sNameModule As String)
 
-    Dim sNouvCode As String 'a string to contain code to add
+    Dim sNouvCode As String                      'a string to contain code to add
     Dim sheetComp As String
-    Dim vbProj As Object 'component, project and modules
+    Dim vbProj As Object                         'component, project and modules
     Dim vbComp As Object
     Dim codeMod As Object
     
@@ -49,9 +49,9 @@ Sub TransferCodeWks(xlsapp As Excel.Application, sSheetName As String, sNameModu
     
     'Adding the code
     With codeMod
-            .DeleteLines 1, .CountOfLines
-            DoEvents
-            .AddFromString sNouvCode
+        .DeleteLines 1, .CountOfLines
+        DoEvents
+        .AddFromString sNouvCode
     End With
     
     'With xlsApp.ActiveWorkbook.VBProject.VBComponents(sCodeName).CodeModule
