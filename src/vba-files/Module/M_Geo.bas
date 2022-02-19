@@ -17,7 +17,6 @@ Public T_HF As BetterArray                       'Health Facility data in the ge
 Public T_HF0 As BetterArray                      'Administrative boundaries for level 1 and 2 for Heath Facility
 Public T_HF1 As BetterArray                      'administrative boundaries for level 2 and 3 for health facility
 Public T_HF2 As BetterArray                      'Administrative boundaries for level 3 and 4 for health facility
-Public T_HF3 As BetterArray                      'Administrative boundaries for level 3 and 4 for health facility
 Public T_HistoHF As BetterArray                  'Historic of health facility
 Public T_ConcatHF   As BetterArray               'Health Facility concatenated
 
@@ -52,7 +51,6 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     Set T_HF0 = New BetterArray
     Set T_HF1 = New BetterArray
     Set T_HF2 = New BetterArray
-    Set T_HF3 = New BetterArray
 
     Application.ScreenUpdating = False
 
@@ -106,8 +104,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
         'unique admin 1
         T_HF0.Items = GetUnique(T_HFTable, 4)
         T_HF1.Items = GetUnique(T_HFTable, 4, 3)
-        T_HF2.Items = GetUnique(T_HFTable, 3, 2)
-        T_HF3.Items = GetUnique(T_HFTable, 2, 1)
+        T_HF2.Items = GetUnique(T_table:=T_HFTable, index:=Array(4, 3, 2))
          
         ReDim T_HFTable(1)
                          
@@ -170,6 +167,7 @@ Sub ShowLst2(sPlace As String)
     [F_Geo].LST_Adm3.Clear
     [F_Geo].LST_Adm4.Clear
     Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
+
     Set T_Aff = New BetterArray
     
     'Search if the value exists in the 2 dimensional table T_Adm1 previously initialized
@@ -182,7 +180,7 @@ Sub ShowLst2(sPlace As String)
     If T_Aff.Length > 0 Then
         [F_Geo].LST_Adm2.List = T_Aff.ExtractSegment(, ColumnIndex:=2)
     End If
-    'Clear to reuse when showing the health facility
+    'Clear
     T_Aff.Clear
 End Sub
 
@@ -215,12 +213,23 @@ Sub ShowLst3(sPlace As String)
     'Clear the two remaining forms
     [F_Geo].LST_Adm3.Clear
     [F_Geo].LST_Adm4.Clear
+    Dim sAdm1 As String 'Selected admin 1
     
-    Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
+    Dim T_Aff1 As BetterArray                     'Aff is for rendering filtered values withing the list
+    Set T_Aff1 = New BetterArray
+    
+    Dim T_Aff As BetterArray
     Set T_Aff = New BetterArray
-
+    
+    sAdm1 = [F_Geo].LST_Adm1.value
+    
     If T_Adm3.Length > 0 Then
-        Set T_Aff = GetFilter(T_Adm3, 2, sPlace)
+        'Filter on the adm 1 firts
+        Set T_Aff1 = GetFilter(T_Adm3, 1, sAdm1)
+        'Then filter on adm2
+        Set T_Aff = GetFilter(T_Aff1, 2, sPlace)
+        T_Aff1.Clear
+        Set T_Aff1 = Nothing
     End If
     
     'Update the adm3 list in the geoform if the T_Aff3 is not missing
@@ -238,18 +247,32 @@ Sub ShowLstF3(sPlace As String)
 
     [F_Geo].LST_AdmF3.Clear
     [F_Geo].LST_AdmF4.Clear
-    Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
+    
+    'first level
+    Dim T_Aff1 As BetterArray                     'Aff is for rendering filtered values withing the list
+    Set T_Aff1 = New BetterArray
+    
+    'second and last level
+    Dim T_Aff As BetterArray
     Set T_Aff = New BetterArray
     
+    Dim sAdm As String
+    sAdm = [F_Geo].LST_AdmF1.value
+    
     If T_HF2.Length > 0 Then
-        Set T_Aff = GetFilter(T_HF2, 1, sPlace)
+        'Filter on Adm1
+        Set T_Aff1 = GetFilter(T_HF2, 1, sAdm)
+        'Then filter on Adm2
+        Set T_Aff = GetFilter(T_Aff1, 2, sPlace)
+        T_Aff1.Clear
+        Set T_Aff1 = Nothing
     End If
     
     If T_Aff.Length > 0 Then
-        [F_Geo].LST_AdmF3.List = T_Aff.ExtractSegment(, ColumnIndex:=2)
+        [F_Geo].LST_AdmF3.List = T_Aff.ExtractSegment(, ColumnIndex:=3)
         [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
     Else
-        [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value '& " : Pas de niveau 3"
+        [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value 'No level 3
     End If
     
     T_Aff.Clear
@@ -257,13 +280,31 @@ End Sub
 
 'This function shows the fourth list for the Geo (pretty much the same thing as done previously)
 Sub ShowLst4(sPlace As String)
+
     [F_Geo].LST_Adm4.Clear
+    
+    Dim T_Aff1 As BetterArray
+    Set T_Aff1 = New BetterArray
+    
     Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
     Set T_Aff = New BetterArray
     
+    Dim sAdm As String         'Adms selected previously
+    sAdm = [F_Geo].LST_Adm1.value
     If T_Adm4.Length > 0 Then
-        Set T_Aff = GetFilter(T_Adm4, 3, sPlace)
+    'Filter on adm1
+        Set T_Aff = GetFilter(T_Adm4, 1, sAdm)
+        sAdm = [F_Geo].LST_Adm2.value
+        'Then filter result on adm2
+        Set T_Aff1 = GetFilter(T_Aff, 2, sAdm)
+        T_Aff.Clear
+        
+        'Then filter on selected adm3
+        Set T_Aff = GetFilter(T_Aff1, 3, sPlace)
+        T_Aff1.Clear
+        Set T_Aff1 = Nothing
     End If
+    
     If T_Aff.Length > 0 Then
         [F_Geo].LST_Adm4.List = T_Aff.ExtractSegment(, ColumnIndex:=4)
         [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value
@@ -280,12 +321,28 @@ Sub ShowLstF4(sPlace As String)
     Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
     Set T_Aff = New BetterArray
     
-    If T_HF3.Length > 0 Then
-        Set T_Aff = GetFilter(T_HF3, 1, sPlace)
+    Dim T_Aff1 As BetterArray
+    Set T_Aff1 = New BetterArray
+    
+    Dim sAdm As String 'previously selected admin levels
+    sAdm = [F_Geo].LST_AdmF1.value
+    
+    If T_HF.Length > 0 Then
+        'Filter on adm1
+        Set T_Aff = GetFilter(T_HF, 4, sAdm)
+        'Filter on adm2
+        sAdm = [F_Geo].LST_AdmF2.value
+        Set T_Aff1 = GetFilter(T_Aff, 3, sAdm)
+        T_Aff.Clear
+        'now on adm3
+        sAdm = [F_Geo].LST_AdmF3.value
+        Set T_Aff = GetFilter(T_Aff1, 2, sAdm)
+        T_Aff1.Clear
+        Set T_Aff1 = Nothing
     End If
 
     If T_Aff.Length > 0 Then
-        [F_Geo].LST_AdmF4.List = T_Aff.ExtractSegment(, ColumnIndex:=2)
+        [F_Geo].LST_AdmF4.List = T_Aff.ExtractSegment(, ColumnIndex:=1)
         [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF3.value & " | " & [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
     Else
         [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF3.value & " | " & [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value '& " : Pas de niveau 4"
@@ -358,7 +415,7 @@ Sub SeachHistoValue(T_HistoGeo, sSearchedValue As String)
         i = 1
         While i <= T_HistoGeo.UpperBound
             If InStr(1, LCase(T_HistoGeo.Item(i)), LCase(sSearchedValue)) > 0 Then
-                T_result.Push T_HistoGeo(i)
+                T_result.Push T_HistoGeo.Item(i)
             End If
             i = i + 1
         Wend
@@ -372,7 +429,7 @@ Sub SeachHistoValue(T_HistoGeo, sSearchedValue As String)
             End If
         End If
     Else
-        If [F_Geo].LST_Histo.ListCount - 1 <> T_Histo.UpperBound Then
+        If [F_Geo].LST_Histo.ListCount - 1 <> T_HistoGeo.UpperBound Then
             [F_Geo].LST_Histo.List = T_HistoGeo.Items
         End If
     End If
@@ -463,4 +520,6 @@ Function ReverseString(sChaine As String)
     ReverseString = sRes
     Set T_temp = Nothing
 End Function
+
+
 
