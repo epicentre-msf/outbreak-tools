@@ -24,34 +24,23 @@ Attribute VB_Exposed = False
 
 
 Option Explicit
+Option Base 1
 
 Private Sub CMD_Fermer_Click()
-
     F_NomVisible.Hide
-
+    WriteVisibility
 End Sub
 
 Private Sub LST_NomChamp_Click()
-
-    If Not bLockActu Then
-        Call IsVisibleDataName(LST_NomChamp.value)
-    End If
-
+    UpdateVisibilityStatus LST_NomChamp.ListIndex
 End Sub
 
 Private Sub OPT_Affiche_Click()
-
-    If Not bLockActu Then
-        Call ShowDataCol(LST_NomChamp.ListIndex)
-    End If
-
+    ShowHideLogic LST_NomChamp.ListIndex
 End Sub
 
 Private Sub OPT_Masque_Click()
-
-    If Not bLockActu Then
-        Call HideDataCol(LST_NomChamp.ListIndex)
-    End If
-
+    ShowHideLogic LST_NomChamp.ListIndex
 End Sub
+
 

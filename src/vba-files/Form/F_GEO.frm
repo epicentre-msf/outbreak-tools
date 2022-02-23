@@ -22,6 +22,7 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
+Const C_PWD As String = "1234"
 Private Sub CMD_ChoicesFac_Click()
 
 End Sub
@@ -38,6 +39,8 @@ Private Sub CMD_Copier_Click()
     Dim geoSheet As String
     geoSheet = "GEO"
     Set T_temp = New BetterArray
+
+    ActiveSheet.Unprotect (C_PWD)
 
     Select Case iGeoType
         'In case you selected the Geo data
@@ -105,6 +108,9 @@ Private Sub CMD_Copier_Click()
         Selection.value = TXT_Msg.value
     End Select
     [F_Geo].Hide
+    'Protecting the worksheet
+     ActiveSheet.Protect Password:=C_PWD, DrawingObjects:=True, Contents:=True, Scenarios:=True _
+        , AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
 End Sub
 
 'Closing the Geoapp
