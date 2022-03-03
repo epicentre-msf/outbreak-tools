@@ -1,7 +1,5 @@
 # Préambule et description du répertoire
 
-
-
 Cette Section contient une description des codes et de la structure
 du répertoire github associé au développement du projet.
 
