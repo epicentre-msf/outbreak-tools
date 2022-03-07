@@ -28,7 +28,7 @@ End Sub
 'Transfert code from one module to a worksheet to trigger some events
 ' sSheetName the sheet name we want to transfer to
 ' sNameModule the name of the module we want to copy code from
-Sub TransferCodeWks(xlsapp As Excel.Application, sSheetName As String, sNameModule As String)
+Sub TransferCodeWks(xlsapp As Excel.Application, sSheetname As String, sNameModule As String)
 
     Dim sNouvCode As String                      'a string to contain code to add
     Dim sheetComp As String
@@ -43,7 +43,7 @@ Sub TransferCodeWks(xlsapp As Excel.Application, sSheetName As String, sNameModu
     
     With xlsapp
         Set vbProj = .ActiveWorkbook.VBProject
-        Set vbComp = vbProj.VBComponents(.Sheets(sSheetName).CodeName)
+        Set vbComp = vbProj.VBComponents(.Sheets(sSheetname).CodeName)
         Set codeMod = vbComp.CodeModule
     End With
     

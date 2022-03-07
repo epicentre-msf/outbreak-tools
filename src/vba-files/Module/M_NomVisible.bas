@@ -161,7 +161,7 @@ Sub ClicCmdVisibleName()
     F_NomVisible.Width = 450
     F_NomVisible.Height = 270
     F_NomVisible.CMD_Fermer.SetFocus
-    F_NomVisible.Show
+    F_NomVisible.show
 
     ActiveSheet.Protect Password:=C_PWD, DrawingObjects:=True, Contents:=True, Scenarios:=True _
                                                                                            , AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True

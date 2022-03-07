@@ -57,7 +57,7 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
     Dim T_Formula
     Dim sFormula As String
     Dim O As Byte
-    Dim sSheetName As String
+    Dim sSheetname As String
     Dim sFormulaMin As String
     Dim sFormulaMax As String
 
@@ -510,11 +510,11 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
                 If Not IsEmptyTable(T_Formula) Then
                     With xlsapp
                         If T_Formula(0) <> "" Then
-                            sSheetName = T_dataDic(D_TitleDic("Sheet") - 1, i)
+                            sSheetname = T_dataDic(D_TitleDic("Sheet") - 1, i)
                             j = 0                'on transcrit la formule
                             While j <= UBound(T_Formula)
                                 If InStr(1, UCase(sFormula), T_Formula(j)) > 0 Then
-                                    sFormula = Replace(UCase(sFormula), UCase(T_Formula(j)), Split(.Cells(, LetColNumberByDataName(xlsapp, CStr(T_Formula(j)), sSheetName)).Address, "$")(1) & C_ligneDeb)
+                                    sFormula = Replace(UCase(sFormula), UCase(T_Formula(j)), Split(.Cells(, LetColNumberByDataName(xlsapp, CStr(T_Formula(j)), sSheetname)).Address, "$")(1) & C_ligneDeb)
                                 End If
                                 j = j + 1
                             Wend
@@ -525,12 +525,12 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
                                 j = j + 1
                             Wend
                             If .Sheets(T_dataDic(D_TitleDic("Sheet") - 1, i)).Cells(C_TitleLine, j).Name.Name = T_dataDic(D_TitleDic("Variable name") - 1, i) Then
-                                .Sheets(sSheetName).Cells(6, j).NumberFormat = "General"
-                                .Sheets(sSheetName).Cells(6, j).Formula = "=" & sFormula
+                                .Sheets(sSheetname).Cells(6, j).NumberFormat = "General"
+                                .Sheets(sSheetname).Cells(6, j).Formula = "=" & sFormula
                                 On Error Resume Next
-                                .Sheets(sSheetName).Cells(6, j).Formula2 = "=" & sFormula 'etrange... facultatif sur certaines machines
+                                .Sheets(sSheetname).Cells(6, j).Formula2 = "=" & sFormula 'etrange... facultatif sur certaines machines
                                 On Error GoTo 0
-                                .Sheets(sSheetName).Cells(6, j).Locked = True
+                                .Sheets(sSheetname).Cells(6, j).Locked = True
                             End If
                         Else
                             MsgBox "Invalid formula will be ignored : " & sFormula 'MSG_InvalidFormula
@@ -557,14 +557,14 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
                 Else
                     T_Formula = ControlValidationFormula(sFormulaMin, T_dataDic, D_TitleDic, True)
                     If Not IsEmptyTable(T_Formula) Then
-                        sSheetName = T_dataDic(D_TitleDic("Sheet") - 1, i)
+                        sSheetname = T_dataDic(D_TitleDic("Sheet") - 1, i)
                         j = 0
                         While j <= UBound(T_Formula)
                             If T_Formula(j) <> "" Then
                                 If InStr(1, T_Formula(j), Chr(124)) Then
                                     sFormulaMin = Replace(UCase(sFormulaMin), Split(T_Formula(j), Chr(124))(0), Split(T_Formula(j), Chr(124))(1)) 's'il y a un pipe (alt 6) : c'est forcement une formule. On remplace donc l'ancienne par la fonction propre au systeme
                                 ElseIf InStr(1, UCase(sFormulaMin), T_Formula(j)) > 0 And Not IsAFunction(CStr(T_Formula(j))) Then
-                                    sFormulaMin = Replace(UCase(sFormulaMin), UCase(T_Formula(j)), Split(xlsapp.Cells(, LetColNumberByDataName(xlsapp, CStr(T_Formula(j)), sSheetName)).Address, "$")(1) & C_ligneDeb) 'sans pipe, c'est un nom de variable, on recupere uniquement la colonne
+                                    sFormulaMin = Replace(UCase(sFormulaMin), UCase(T_Formula(j)), Split(xlsapp.Cells(, LetColNumberByDataName(xlsapp, CStr(T_Formula(j)), sSheetname)).Address, "$")(1) & C_ligneDeb) 'sans pipe, c'est un nom de variable, on recupere uniquement la colonne
                                 End If
                             End If
                             j = j + 1
@@ -583,13 +583,13 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
                 Else
                     T_Formula = ControlValidationFormula(sFormulaMax, T_dataDic, D_TitleDic, True)
                     If Not IsEmptyTable(T_Formula) Then
-                        sSheetName = T_dataDic(D_TitleDic("Sheet") - 1, i)
+                        sSheetname = T_dataDic(D_TitleDic("Sheet") - 1, i)
                         j = 0
                         While j <= UBound(T_Formula)
                             If InStr(1, T_Formula(j), Chr(124)) Then
                                 sFormulaMax = Replace(UCase(sFormulaMax), Split(T_Formula(j), Chr(124))(0), Split(T_Formula(j), Chr(124))(1)) 's'il y a un pipe (alt 6) : c'est forcement une formule. On remplace donc l'ancienne par la fonction propre au systeme
                             ElseIf InStr(1, UCase(sFormulaMax), T_Formula(j)) > 0 And Not IsAFunction(CStr(T_Formula(j))) Then
-                                sFormulaMax = Replace(UCase(sFormulaMax), UCase(T_Formula(j)), Split(xlsapp.Cells(, LetColNumberByDataName(xlsapp, CStr(T_Formula(j)), sSheetName)).Address, "$")(1) & C_ligneDeb) 'sans pipe, c'est un nom de variable, on recupere uniquement la colonne
+                                sFormulaMax = Replace(UCase(sFormulaMax), UCase(T_Formula(j)), Split(xlsapp.Cells(, LetColNumberByDataName(xlsapp, CStr(T_Formula(j)), sSheetname)).Address, "$")(1) & C_ligneDeb) 'sans pipe, c'est un nom de variable, on recupere uniquement la colonne
                             End If
                             j = j + 1
                         Wend
@@ -600,11 +600,11 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
                 If sFormulaMin <> "" And sFormulaMax <> "" Then
                     With xlsapp
                         j = 1
-                        While j <= .Sheets(sSheetName).Cells(C_TitleLine, 1).End(xlToRight).Column And T_dataDic(D_TitleDic("Variable name") - 1, i) <> .Sheets(sSheetName).Cells(C_TitleLine, j).Name.Name
+                        While j <= .Sheets(sSheetname).Cells(C_TitleLine, 1).End(xlToRight).Column And T_dataDic(D_TitleDic("Variable name") - 1, i) <> .Sheets(sSheetname).Cells(C_TitleLine, j).Name.Name
                             j = j + 1
                         Wend
-                        If T_dataDic(D_TitleDic("Variable name") - 1, i) = .Sheets(sSheetName).Cells(C_TitleLine, j).Name.Name Then
-                            Call BuildValidationMinMax(.Sheets(sSheetName).Cells(6, j), "=" & sFormulaMin, "=" & sFormulaMax, LetValidationLockType(CStr(T_dataDic(D_TitleDic("Alert") - 1, i))), CStr(T_dataDic(D_TitleDic("Type") - 1, i)), CStr(T_dataDic(D_TitleDic("Message") - 1, i)))
+                        If T_dataDic(D_TitleDic("Variable name") - 1, i) = .Sheets(sSheetname).Cells(C_TitleLine, j).Name.Name Then
+                            Call BuildValidationMinMax(.Sheets(sSheetname).Cells(6, j), "=" & sFormulaMin, "=" & sFormulaMax, LetValidationLockType(CStr(T_dataDic(D_TitleDic("Alert") - 1, i))), CStr(T_dataDic(D_TitleDic("Type") - 1, i)), CStr(T_dataDic(D_TitleDic("Message") - 1, i)))
                             '.Sheets(sSheetName).Cells(6, j).Locked = True  'verouille les dates ?
                         End If
                     End With
@@ -806,7 +806,7 @@ End Sub
 
 'The purpose of this procedure is to create the geo columns using the geo data  (its also adds the first dropdowns)
 ' we shift the columns to the right until we reached the number of columns required
-Sub Add4GeoCol(xlsapp As Excel.Application, sSheetName As String, sLib As String, sNameCell As String, iCol As Integer, sMessage As String)
+Sub Add4GeoCol(xlsapp As Excel.Application, sSheetname As String, sLib As String, sNameCell As String, iCol As Integer, sMessage As String)
 
     'sSheetName: Sheet name
     'sNameCell: Name of the cell
@@ -818,17 +818,17 @@ Sub Add4GeoCol(xlsapp As Excel.Application, sSheetName As String, sLib As String
     Dim j As Byte
     Dim sTemp As String
 
-    With xlsapp.Sheets(sSheetName)
+    With xlsapp.Sheets(sSheetname)
         i = 4
         While i > 1
             .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
-            .Cells(C_TitleLine, iCol + 1).value = LetWordingWithSpace(xlsapp, Sheets("GEO").ListObjects("T_ADM" & i).HeaderRowRange.Item(i).value, CStr(sSheetName))
+            .Cells(C_TitleLine, iCol + 1).value = LetWordingWithSpace(xlsapp, Sheets("GEO").ListObjects("T_ADM" & i).HeaderRowRange.Item(i).value, CStr(sSheetname))
             .Cells(C_TitleLine, iCol + 1).Name = "adm" & i & "_" & sNameCell
             .Cells(C_TitleLine, iCol + 1).Interior.Color = vbWhite
             .Cells(C_TitleLine, iCol + 1).Locked = False
             i = i - 1
         Wend
-        .Cells(C_TitleLine, iCol).value = LetWordingWithSpace(xlsapp, Sheets("GEO").ListObjects("T_ADM" & i).HeaderRowRange.Item(1).value, CStr(sSheetName))
+        .Cells(C_TitleLine, iCol).value = LetWordingWithSpace(xlsapp, Sheets("GEO").ListObjects("T_ADM" & i).HeaderRowRange.Item(1).value, CStr(sSheetname))
         .Range(.Cells(C_StartLineTitle2, iCol), .Cells(C_StartLineTitle2, iCol + 3)).Merge
     
         'ajout des formules de validation
@@ -849,11 +849,11 @@ Sub Add4GeoCol(xlsapp As Excel.Application, sSheetName As String, sLib As String
 
 End Sub
 
-Private Sub TransfertSheet(xlsapp As Object, sSheetName As String)
+Private Sub TransfertSheet(xlsapp As Object, sSheetname As String)
     
     'Since We can't move worksheet from one instance to another
     'we need to save as a temporary file and then move it to another app
-    ThisWorkbook.Sheets(sSheetName).Copy
+    ThisWorkbook.Sheets(sSheetname).Copy
     DoEvents
     
     ActiveWorkbook.SaveAs "C:\LineListeApp\tampon.xlsx"
@@ -863,15 +863,15 @@ Private Sub TransfertSheet(xlsapp As Object, sSheetName As String)
     With xlsapp
         .Workbooks.Open Filename:="C:\LineListeApp\tampon.xlsx", UpdateLinks:=False
         
-        .Sheets(sSheetName).Select
-        .Sheets(sSheetName).Copy After:=.Workbooks(1).Sheets(1)
+        .Sheets(sSheetname).Select
+        .Sheets(sSheetname).Copy After:=.Workbooks(1).Sheets(1)
         
         'Sheets PASSWORD and CONTROLEFORMULE have some hidden properties to update
-        Select Case UCase(sSheetName)
+        Select Case UCase(sSheetname)
         Case "PASSWORD"
-            .Sheets(sSheetName).Visible = xlSheetVeryHidden
+            .Sheets(sSheetname).Visible = xlSheetVeryHidden
         Case "CONTROLEFORMULE"
-            .Sheets(sSheetName).Visible = False
+            .Sheets(sSheetname).Visible = False
         End Select
         
         DoEvents
@@ -883,36 +883,36 @@ Private Sub TransfertSheet(xlsapp As Object, sSheetName As String)
 
 End Sub
 
-Private Function LetColNumberByDataName(xlsapp As Excel.Application, sDataName As String, sSheetName As String) As Integer
+Private Function LetColNumberByDataName(xlsapp As Excel.Application, sDataName As String, sSheetname As String) As Integer
 
     Dim i As Integer
 
     'T_dataDic(D_TitleDic("Choices") - 1, i)
     With xlsapp
         i = 1
-        While i <= .Sheets(sSheetName).Cells(C_TitleLine, 1).End(xlToRight).Column And UCase(.Sheets(sSheetName).Cells(C_TitleLine, i).Name.Name) <> sDataName
+        While i <= .Sheets(sSheetname).Cells(C_TitleLine, 1).End(xlToRight).Column And UCase(.Sheets(sSheetname).Cells(C_TitleLine, i).Name.Name) <> sDataName
             i = i + 1
         Wend
-        If UCase(.Sheets(sSheetName).Cells(C_TitleLine, i).Name.Name) = sDataName Then
+        If UCase(.Sheets(sSheetname).Cells(C_TitleLine, i).Name.Name) = sDataName Then
             LetColNumberByDataName = i
         End If
     End With
 
 End Function
 
-Private Function LetWordingWithSpace(xlsapp As Excel.Application, sDataWording As String, sSheetName As String)
+Private Function LetWordingWithSpace(xlsapp As Excel.Application, sDataWording As String, sSheetname As String)
     'The goal of this function is to add space to duplicates labels so that excels does not force a unique name with number at the end
     Dim i As Integer
 
     LetWordingWithSpace = ""
     With xlsapp
         i = 1
-        While i <= .Sheets(sSheetName).Cells(C_TitleLine, 1).End(xlToRight).Column And Replace(UCase(.Sheets(sSheetName).Cells(C_TitleLine, i).value), " ", "") <> Replace(UCase(sDataWording), " ", "")
+        While i <= .Sheets(sSheetname).Cells(C_TitleLine, 1).End(xlToRight).Column And Replace(UCase(.Sheets(sSheetname).Cells(C_TitleLine, i).value), " ", "") <> Replace(UCase(sDataWording), " ", "")
             i = i + 1
         Wend
         
-        If Replace(UCase(xlsapp.Sheets(sSheetName).Cells(C_TitleLine, i).value), " ", "") = Replace(UCase(sDataWording), " ", "") Then
-            LetWordingWithSpace = xlsapp.Sheets(sSheetName).Cells(C_TitleLine, i).value & " "
+        If Replace(UCase(xlsapp.Sheets(sSheetname).Cells(C_TitleLine, i).value), " ", "") = Replace(UCase(sDataWording), " ", "") Then
+            LetWordingWithSpace = xlsapp.Sheets(sSheetname).Cells(C_TitleLine, i).value & " "
         Else
             LetWordingWithSpace = sDataWording
         End If
