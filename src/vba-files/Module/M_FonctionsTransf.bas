@@ -82,7 +82,7 @@ Public Function LoadFile() As String
         .AllowMultiSelect = False
         .Title = "Chose your file"               'MSG_ChooseFile
         .Filters.Clear
-        .Filters.Add "Feuille de calcul Excel", "*.xlsx, *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
+        .Filters.Add "Feuille de calcul Excel", "*.xlsx, *.xlsm, *.xlsb, *.xls" 'MSG_ExcelFile
 
         If .show = True Then
             LoadFile = .SelectedItems(1)
