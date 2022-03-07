@@ -25,7 +25,7 @@ Sub clicExportMigration()
     Dim D_title As Scripting.Dictionary
     Dim bSheetAdminExist As Boolean
 
-    Dim sSheetName As String
+    Dim sSheetname As String
 
     With xlsapp
         .Visible = True
@@ -55,7 +55,7 @@ Sub clicExportMigration()
         'admin
         i = 0
         j = 0
-        sSheetName = ""
+        sSheetname = ""
         Set D_title = createDicoTitle
         While i <= UBound(T_dico, 1)
             If LCase(T_dico(i, D_title("sheet"))) = "admin" Then
