@@ -1,6 +1,7 @@
 Attribute VB_Name = "M_Main"
 Option Explicit
 Option Base 1
+'Test
 
 Const C_SheetNameDic As String = "Dictionary"
 Const C_SheetNameChoices As String = "Choices"
@@ -12,7 +13,7 @@ Sub LoadFileDic()
     Dim sFilePath As String                      'Path to the dictionnary
     
     'LoadFile is the procedure for loading the path to the dictionnary
-    sFilePath = LoadFile
+    sFilePath = LoadFile("*.xlsb") 'lla
     
     'Update messages if the file path is correct
     If sFilePath <> "" Then
@@ -63,7 +64,7 @@ Sub LoadGeoFile()
     Set T_header = New BetterArray
     Set xlsapp = New Excel.Application
     
-    sFilePath = LoadFile
+    sFilePath = LoadFile("*.xlsx")
     
     If sFilePath <> "" Then
         With xlsapp
@@ -249,6 +250,10 @@ Private Function ControlForGenerate() As Boolean
     'Hide the shapes for linelist generation
     ShowHideCmdValidation False
     
+    On Error Resume Next
+    
+    '****** dictionary
+    
     'Be sure the dictionary path is not empty
     If [RNG_PathDico].value = "" Then
        [RNG_Edition].value = TranslateMsg("MSG_PathDic")
@@ -266,8 +271,38 @@ Private Function ControlForGenerate() As Boolean
     'Be sure the dictionnary is not opened
     If IsWkbOpened(Dir([RNG_PathDico].value)) Then
         [RNG_Edition].value = TranslateMsg("MSG_CloseDic")
+        [RNG_PathDico].Interior.Color = LetColor("RedEpi")
         Exit Function
     End If
+    
+    [RNG_PathDico].Interior.Color = LetColor("White") 'if path is OK
+    
+    '****** geo
+    
+    'Be sure the geo path is not empty
+    If [RNG_PathGeo].value = "" Then
+       [RNG_Edition].value = TranslateMsg("MSG_PathDic")
+       [RNG_PathGeo].Interior.Color = LetColor("RedEpi")
+       Exit Function
+    End If
+    
+    'Now check if the file exists
+    If Dir([RNG_PathGeo].value) = "" Then
+        [RNG_Edition].value = TranslateMsg("MSG_PathDic")
+        [RNG_PathGeo].Interior.Color = LetColor("RedEpi")
+        Exit Function
+    End If
+     
+    'Be sure the geo is not opened
+    If IsWkbOpened(Dir([RNG_PathGeo].value)) Then
+        [RNG_Edition].value = TranslateMsg("MSG_CloseDic")
+        [RNG_PathGeo].Interior.Color = LetColor("RedEpi")
+        Exit Function
+    End If
+
+    [RNG_PathGeo].Interior.Color = LetColor("White") 'if path is OK
+    
+    '****** linelist
     
     'Test the linelist directory is not empty
     If [RNG_LLDir].value = "" Then
@@ -275,13 +310,17 @@ Private Function ControlForGenerate() As Boolean
         [RNG_LLDir].Interior.Color = LetColor("RedEpi")
         Exit Function
     End If
-    
+
     'be sure the directory for the linelist exists
     If Dir([RNG_LLDir].value, vbDirectory) = "" Then
         [RNG_Edition].value = TranslateMsg("MSG_PathLL")
         [RNG_LLDir].Interior.Color = LetColor("RedEpi")
         Exit Function
     End If
+    
+    [RNG_LLDir].Interior.Color = LetColor("White") 'if path is OK
+
+    '****** linelist name
     
     'be sure the linelist name is not empty
     If [RNG_LLName] = "" Then
@@ -296,6 +335,8 @@ Private Function ControlForGenerate() As Boolean
         [RNG_LLName].Interior.Color = LetColor("RedEpi")
         Exit Function
     End If
+    
+    [RNG_LLName].Interior.Color = LetColor("White") 'if path is OK
     
     'Be sure the linelist does not exits
     'If Dir([RNG_LLDir].value & Application.PathSeparator & [RNG_LLName].value & ".xlsb") <> "" Then
