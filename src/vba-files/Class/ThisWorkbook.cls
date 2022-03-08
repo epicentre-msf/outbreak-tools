@@ -9,10 +9,13 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 
 
-
-
-
-
+'clear the path ranges once the workbook opens
+Private Sub Workbook_Open()
+  SheetMain.Range(C_RngPathDic).value = ""
+  SheetMain.Range(C_RngPathGeo).value = ""
+  SheetMain.Range(C_RngLLName).value = ""
+  SheetMain.Range(C_RngLLDir).value = ""
+End Sub
 
 
 
