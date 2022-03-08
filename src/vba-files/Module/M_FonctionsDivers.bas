@@ -106,6 +106,8 @@ Function LetColor(sColorCode As String)
         LetColor = RGB(198, 224, 180)
     Case "Orange"
         LetColor = RGB(248, 203, 173)
+    Case "White"
+        LetColor = RGB(255, 255, 255) 'lla
     End Select
 
 End Function
