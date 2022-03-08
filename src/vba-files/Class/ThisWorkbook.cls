@@ -11,10 +11,10 @@ Attribute VB_Exposed = True
 
 'clear the path ranges once the workbook opens
 Private Sub Workbook_Open()
-  SheetMain.Range(C_RngPathDic).value = ""
-  SheetMain.Range(C_RngPathGeo).value = ""
-  SheetMain.Range(C_RngLLName).value = ""
-  SheetMain.Range(C_RngLLDir).value = ""
+  SheetMain.Range(C_sRngPathDic).value = ""
+  SheetMain.Range(C_sRngPathGeo).value = ""
+  SheetMain.Range(C_sRngLLName).value = ""
+  SheetMain.Range(C_sRngLLDir).value = ""
 End Sub
 
 
