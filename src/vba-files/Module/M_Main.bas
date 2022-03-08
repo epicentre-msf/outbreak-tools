@@ -1,7 +1,6 @@
 Attribute VB_Name = "M_Main"
 Option Explicit
 Option Base 1
-'Test
 
 Const C_SheetNameDic As String = "Dictionary"
 Const C_SheetNameChoices As String = "Choices"
