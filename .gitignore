@@ -11,3 +11,4 @@ logs
 temp
 *.temp
 *temp\\.?*
+config.json
