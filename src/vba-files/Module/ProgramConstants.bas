@@ -120,7 +120,7 @@ Public Const C_DesignerPassword = "1234"         'Default password for the desig
 
 
 'INTEGERS CONSTANTS ============================================================
-
+Public Const C_iNumberOfBars = 40
 
 
 

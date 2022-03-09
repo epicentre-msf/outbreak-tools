@@ -64,7 +64,10 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
     Dim p As Integer                             'cpt Admin
 
     Dim sPrevSheetNameSHP As String
-
+    
+    Dim sCpte As Single 'increase status ProgressBar
+    Dim sIterPG As Single 'counter in loop for status ProgressBar
+    
     With xlsapp
         .DisplayAlerts = False
         .ScreenUpdating = False
@@ -94,7 +97,9 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
         Call TransferCode(xlsapp, "M_Traduction", "M")
         Call TransferCode(xlsapp, "M_Migration", "M")
         Call TransferCode(xlsapp, "BetterArray", "C")
-    
+        
+StatusBar_Updater (15)
+
         DoEvents
     
         'TransfertSheet is for sending worksheets from the actual workbook to another
@@ -108,6 +113,8 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
         RmDir ("C:\LineListeApp\")
         On Error GoTo 0
         
+StatusBar_Updater (20)
+
         '-------------- Creating the dictionnary sheet
         .Sheets.Add.Name = "Dico"
         i = 1
@@ -117,7 +124,9 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
         Next oKey
         .Sheets("dico").Range("A2").Resize(UBound(T_dataDic, 2) + 1, D_TitleDic.Count) = .WorksheetFunction.Transpose(T_dataDic)
         .Sheets("dico").Visible = False
-    
+        
+StatusBar_Updater (25)
+
         '-------------- Creating the export sheet
         .Sheets.Add.Name = "Export"
         .Sheets("Export").Cells(1, 1).value = "ID"
@@ -127,7 +136,9 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
         .Sheets("Export").Cells(1, 5).value = "FileName"
         .Sheets("Export").Range("A2").Resize(UBound(T_Export, 2) + 1, UBound(T_Export, 1) + 1) = .WorksheetFunction.Transpose(T_Export)
         .Sheets("Export").Visible = False
-    
+        
+StatusBar_Updater (28)
+        
         '--------------- adding the other sheets in the dictionary
         i = 1
         j = 0
@@ -163,6 +174,8 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
         Wend
     End With
 
+StatusBar_Updater (30)
+
     sPrevSheetName = ""                          'Checking if we moved from one sheet to another
     sTitle1 = ""                                 'First title on the linelist-patient sheet (or on every other sheet)
     sTitle2 = ""                                 'Second title on the linelist-patient sheet (or on every other sheet)
@@ -176,7 +189,14 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
     i = 0                                        'Dictionnary iterator (columns of the dictionnary)
     l = 0                                        'iterators for the number of colums in one sheet
     p = C_TitleLine
+    
+    sIterPG = 0
+
     While i <= UBound(T_dataDic, 2)
+    
+sIterPG = sIterPG + (40 / UBound(T_dataDic, 2))
+StatusBar_Updater (30 + sIterPG)
+
         With xlsapp.Sheets(T_dataDic(D_TitleDic("Sheet") - 1, i))
             If LCase(T_dataDic(D_TitleDic("Sheet") - 1, i)) <> "admin" Then
                 
@@ -226,6 +246,7 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
                     bSheetEvent = False
                 
                 End If
+                
             
                 'Headers
                 .Cells(C_TitleLine, j).Name = Replace(T_dataDic(D_TitleDic("Variable name") - 1, i), " ", "_")
@@ -292,6 +313,7 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
                         Call WriteBorderLines(.Range(.Cells(C_StartLineTitle1, iPrevColS1), .Cells(C_StartLineTitle2, j)))
                     End If
                 End If
+                
             
                 If sTitle2 <> T_dataDic(D_TitleDic("Sub-section") - 1, i) Then
                     'si le titre change, on fusionne les prec cellules
@@ -497,11 +519,19 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
 
         End With
     Wend
-
+    
+StatusBar_Updater (70)
+    
     sPrevSheetName = ""
 
     i = 0
+    sIterPG = 0
+    
     While i <= UBound(T_dataDic, 2)
+    
+sIterPG = sIterPG + (20 / UBound(T_dataDic, 2))
+StatusBar_Updater (75 + sIterPG)
+        
         If LCase(T_dataDic(D_TitleDic("Control") - 1, i)) = "formula" Then 'pav� pour le controle de formule
             If T_dataDic(D_TitleDic("Formula") - 1, i) <> "" Then
                 'sFormula = UCase(Replace(T_dataDic(D_TitleDic("Formula") - 1, i), " ", ""))
@@ -614,7 +644,9 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
     
         i = i + 1
     Wend
-
+    
+    StatusBar_Updater (95)
+    
     Call Add200Lines(xlsapp)
 
     'on (presque) conclue !
@@ -650,6 +682,9 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
     xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, ConflictResolution:=xlLocalSessionChanges
     xlsapp.Quit
     Set xlsapp = Nothing
+    
+    StatusBar_Updater (100)
+    
 End Sub
 
 Private Sub Add200Lines(xlsapp As Excel.Application)
