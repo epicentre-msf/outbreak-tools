@@ -1,6 +1,52 @@
 Attribute VB_Name = "LinelistHelpersFunctions"
 Option Explicit
 
+'Clear a String to remove inconsistencies
+Public Function ClearString(sString As String) As String
+    Dim sValue As String
+    sValue = Replace(sString, "-", " ")
+    sValue = Replace(sSvalue, "_", " ")
+    sValue = Replace(sValue, "?", " ")
+    sValue = Replace(sValue, "/", " ")
+    sValue = Replace(sValue, "    ", " ")
+    sValue = Replace(sValue, "   ", " ")
+    sValue = Replace(sValue, "  ", " ")
+    sValue = Trim(sValue)
+    ClearString = LCase(sValue)
+End Function
+
+'Get the headers of one sheet from one line
+Function GetHeaders(xlsapp As Excel.Application, ssheet As String, StartLine As Byte) As BetterArray
+    'Extract column names in one sheet starting from one line
+    Dim Headers As BetterArray
+    Dim i As Integer
+    Set Headers = New BetterArray
+    Headers.LowerBound = 1
+    
+    With xlsapp.Sheets(ssheet)
+        i = 1
+        While .Cells(StartLine, i).value <> ""
+        'Clear the values in the sheet when adding thems
+            Headers.Push ClearString(xlsapp.Sheets(ssheet).Cells(StartLine, i).value)
+            i = i + 1
+        Wend
+        Set GetHeaders = Headers
+        'Clear everything
+        Set Headers = Nothing
+    End With
+End Function
+'Get the data from one sheet starting from one line
+Function GetData(xlsapp As Excel.Application, sSheetname As String, StartLine As Byte) As BetterArray
+    Dim Data As BetterArray
+    Set Data = New BetterArray
+    Data.LowerBound = 1
+    Data.FromExcelRange xlsapp.Sheets(sSheetname).Cells(StartLine, 1), DetectLastRow:=True, DetectLastColumn:=True
+    'The output of the function is a variant
+    GetData = Data
+    Set Data = Nothing
+End Function
+
+
 Public Function IsEmptyTable(T_aTest) As Boolean
 
     Dim test As Variant
@@ -70,7 +116,7 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
     
 End Sub
 
-Public Function LoadFile(Optional sFilters As String) As String 'lla
+Public Function DesLoadFile(Optional sFilters As String) As String 'lla
 
     Dim fDialog As Office.FileDialog
 
@@ -87,10 +133,10 @@ Public Function LoadFile(Optional sFilters As String) As String 'lla
         End If
     End With
     Set fDialog = Nothing
-
 End Function
 
-Public Function LoadFolder() As String
+
+Public Function DesLoadFolder() As String
 
     Dim fDialog As Office.FileDialog
 
@@ -168,12 +214,6 @@ Public Function Epiweek(jour As Long) As Long
     End Select
     
 End Function
-
-Public Sub initialize(val As Variant, Optional init As Integer = -1)
-    If (IsMissing(val)) Then
-        val = -1
-    End If
-End Sub
 
 'This function gets unique values from a table of two dimensions converted to a BetterArray table
 ' Get unique values from a table on two dimensions (or more)

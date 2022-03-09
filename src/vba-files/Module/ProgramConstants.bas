@@ -53,31 +53,31 @@ Public Const C_sDictHeaderCondFormat    As String = "conditional formating"
 
 'Sheet Types ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Public Const C_sDictSheetTypeLL as string = "linelist"
-Public Const C_sDictSheetTypeAdm as string = "admin"
+Public Const C_sDictSheetTypeLL As String = "linelist"
+Public Const C_sDictSheetTypeAdm As String = "admin"
 
 'Status ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Public Const C_sDictStatusMan as string = "mandatory"
-Public Const C_sDictStatusOpt as string = "optional"
-Public Const C_sDictStatusHid as string = "hidden"
+Public Const C_sDictStatusMan As String = "mandatory"
+Public Const C_sDictStatusOpt As String = "optional"
+Public Const C_sDictStatusHid As String = "hidden"
 
 'Control --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Public Const C_sDictControlHf as string = "hf"
-Public Const C_sDictControlForm as string = "formula"
-Public Const C_sDictControlCho as string = "choices"
-Public Const C_sDictControlGeo as string = "geo"
+Public Const C_sDictControlHf As String = "hf"
+Public Const C_sDictControlForm As String = "formula"
+Public Const C_sDictControlCho As String = "choices"
+Public Const C_sDictControlGeo As String = "geo"
 
 'YesNo ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Public Const C_sDictYes as string = "yes"
-Public Const C_sDictNo as string = "no"
+Public Const C_sDictYes As String = "yes"
+Public Const C_sDictNo As String = "no"
 
 'Alert ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Public Const C_sDictAlertWar as string = "warning"
-Public Const C_sDictAlertErr as string = "error"
+Public Const C_sDictAlertWar As String = "warning"
+Public Const C_sDictAlertErr As String = "error"
 
 'MODULES ==========================================================================================================================================================================
 Public Const C_sModMain                 As String = "M_Main"                             'Main module of the designer
@@ -194,12 +194,16 @@ Public Const C_iLLButtonHeight As Integer = 25 'Row height of the first two rows
 
 'Startlines for data in various source files
 Public Enum C_StartLines
-    C_eStartLinesDict = 3                                                                      'Starting lines for dictionary
+    C_eStartLinesDictHeaders = 2                                                               'Starting lines for dictionary headers
+    C_eStartLinesDictData = 3                                                                  'Starting lines for dictionary data
     C_eStartLinesLLTitle1 = 3                                                                  'Starting lines for first title of the linelist
     C_eStartLinesLLTitle2 = 4                                                                  'Starting lines for second title of the linelist
     C_eStartLinesLLData = 5                                                                    'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                                                               'Starting lines for export titles
     C_eStartLinesExportSource = 5                                                              'Starting lines for export sources
+    C_eStartLinesChoicesHeaders = 1
+    C_eStartLinesChoicesData = 2
+    C_eStartLinesExportData = 2
 End Enum
 
 
