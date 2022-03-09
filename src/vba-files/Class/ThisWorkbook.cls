@@ -15,6 +15,11 @@ Private Sub Workbook_Open()
   SheetMain.Range(C_sRngPathGeo).value = ""
   SheetMain.Range(C_sRngLLName).value = ""
   SheetMain.Range(C_sRngLLDir).value = ""
+  SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgSet)
+End Sub
+
+Sub test()
+MsgBox TranslateMsg(C_sMsgSet)
 End Sub
 
 
