@@ -1,7 +1,6 @@
 Attribute VB_Name = "M_Main"
 Option Explicit
 Option Base 1
-'Test
 
 Const C_SheetNameDic As String = "Dictionary"
 Const C_SheetNameChoices As String = "Choices"
@@ -157,6 +156,10 @@ Sub GenerateData()
     Dim T_Export
     Dim sPath As String
     
+    Application.StatusBar = "[" & Space(C_iNumberOfBars) & "]" 'create status ProgressBar
+    
+StatusBar_Updater (1)
+    
     Set xlsapp = New Excel.Application
     
     Application.DisplayAlerts = False
@@ -180,7 +183,7 @@ Sub GenerateData()
         Set D_TitleDic = CreateDicoColVar(xlsapp, C_SheetNameDic, 2)
         'create the data table of linelist patient using the dictionnary
         T_dataDic = CreateTabDataVar(xlsapp, C_SheetNameDic, D_TitleDic, 3)
-    
+
         .value = TranslateMsg("MSG_ReadList")
         'Create the dictionnary for the choices sheet
         Set D_Choices = CreateDicoColChoi(xlsapp, C_SheetNameChoices)
@@ -201,6 +204,9 @@ Sub GenerateData()
         'Creating the linelist using the dictionnary and choices data as well as export data
         'The BuildList procedure is in the linelist
         sPath = [RNG_LLDir].value & Application.PathSeparator & [RNG_LLName] & ".xlsb"
+        
+StatusBar_Updater (5)
+        
         Call BuildList(D_TitleDic, T_dataDic, D_Choices, T_Choices, T_Export, sPath)
         DoEvents
     
@@ -208,6 +214,8 @@ Sub GenerateData()
         [RNG_LLName].Interior.Color = vbWhite
         Sheets("Main").Shapes("SHP_OpenLL").Visible = msoTrue
     End With
+    
+    Application.StatusBar = "" 'close status ProgressBar
     
     Application.DisplayAlerts = True
     Application.ScreenUpdating = True

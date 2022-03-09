@@ -415,7 +415,7 @@ Public Function ToString( _
     Dim LocalItems() As Variant
     Dim Sep As String
     
-    Sep = IIf(PrettyPrint, Separator & SPACE(1), Separator)
+    Sep = IIf(PrettyPrint, Separator & Space(1), Separator)
     
     LocalItems = InternalItems
     LocalArrayType = GetArrayType(LocalItems)
@@ -1921,11 +1921,11 @@ Private Function BuildCSVString( _
         ) As String
     Dim i As Long
     Dim j As Long
-    Dim LastRow As Long
+    Dim lastrow As Long
     Dim LastCol As Long
     Dim ValidRow As Boolean
     
-    LastRow = UBound(Records)
+    lastrow = UBound(Records)
     LastCol = UBound(Records, 2)
     StringBuilder NewString:=True
     For i = LBound(Records) To UBound(Records)
@@ -1941,7 +1941,7 @@ Private Function BuildCSVString( _
             For j = LBound(Records, 2) To UBound(Records, 2)
                 StringBuilder Records(i, j)
                 If j = LastCol Then
-                    If i <> LastRow Then
+                    If i <> lastrow Then
                         StringBuilder RowDelimiter
                     End If
                 Else
@@ -2367,7 +2367,7 @@ Private Function ParseCSV( _
     Dim ColumnIndex As Long
     Dim CountColumns As Long
     Dim CountRows As Long
-    Dim LastRow As Long
+    Dim lastrow As Long
     Dim LastColumn As Long
     Dim StartRow As Long
     Dim InQuote As Boolean
@@ -2402,16 +2402,16 @@ Private Function ParseCSV( _
         StartRow = 0
     End If
     
-    LastRow = Base + CountRows - 1 - StartRow
+    lastrow = Base + CountRows - 1 - StartRow
     LastColumn = Base + CountColumns - 1
     If ReturnJagged Then
         ReDim JaggedRow(Base To LastColumn)
-        ReDim Results(Base To LastRow)
+        ReDim Results(Base To lastrow)
     Else
-        ReDim Results(Base To LastRow, Base To LastColumn)
+        ReDim Results(Base To lastrow, Base To LastColumn)
     End If
     
-    For i = StartRow To LastRow
+    For i = StartRow To lastrow
         ColumnIndex = Base
         Buffer = CSVRows(i)
         Cursor = 1
@@ -3621,12 +3621,12 @@ Private Sub RecursiveToString( _
             Dim Nested() As Variant
             Nested = SourceArray(i)
             If PrettyPrint Then
-                StringBuilder vbCrLf & SPACE(TabWidth * Tabs)
+                StringBuilder vbCrLf & Space(TabWidth * Tabs)
             End If
             RecursiveToString Nested, PrettyPrint, Separator, OpeningDelimiter, ClosingDelimiter, QuoteStrings, Tabs + 1
             If i = UBound(SourceArray) And PrettyPrint Then
                 StringBuilder vbCrLf
-                StringBuilder SPACE(TabWidth * (Tabs - 1))
+                StringBuilder Space(TabWidth * (Tabs - 1))
             End If
             StringBuilder Sep
         Else
