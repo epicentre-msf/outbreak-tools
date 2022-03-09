@@ -23,7 +23,6 @@ Function GetLanguageCode(sString As String) As String
         'The Language code
         GetLanguageCode = T_codes.Item(T_values.IndexOf(sString))
     End If
-    
 End Function
 
 'Translate one shape using informations on languages
@@ -40,7 +39,6 @@ Sub TranslateShape(oShape As Object, sValue As String)
         .TextFrame.Characters.Font.Name = sFont
     End With
     oShape.Visible = bVis
-
 End Sub
 
 Sub TranslateRange(rngCode As String, rngValue As String)
