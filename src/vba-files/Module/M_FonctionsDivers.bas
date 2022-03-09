@@ -112,4 +112,15 @@ Function LetColor(sColorCode As String)
 
 End Function
 
+Sub StatusBar_Updater(sCpte As Single)
+'increase the status progressBar
 
+    Dim CurrentStatus As Integer
+    Dim pctDone As Integer
+
+    CurrentStatus = (C_iNumberOfBars / 100) * Round(sCpte, 1)
+    Application.StatusBar = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "% Création du fichier linelist"
+
+    DoEvents
+    
+End Sub
