@@ -191,7 +191,6 @@ Public Const C_iLLButtonHeight As Integer = 25 'Row height of the first two rows
 
 
 'ENUMERATION LISTS ================================================================================================================================================================
-
 'Startlines for data in various source files
 Public Enum C_StartLines
     C_eStartLinesDictHeaders = 2                                                               'Starting lines for dictionary headers
