@@ -72,7 +72,7 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
     
 End Sub
 
-Public Function LoadFile() As String
+Public Function LoadFile(Optional sFilters As String) As String 'lla
 
     Dim fDialog As Office.FileDialog
 
@@ -82,7 +82,7 @@ Public Function LoadFile() As String
         .AllowMultiSelect = False
         .Title = "Chose your file"               'MSG_ChooseFile
         .Filters.Clear
-        .Filters.Add "Feuille de calcul Excel", "*.xlsx, *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
+        .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile'lla
 
         If .show = True Then
             LoadFile = .SelectedItems(1)

@@ -21,14 +21,14 @@ Function CreateDicoColVar(xlsapp As Excel.Application, ssheet As String, iDicSta
 End Function
 
 'Function to build the data table for the dictionnary sheet in the set-up
-Function CreateTabDataVar(xlsapp As Excel.Application, sSheetName As String, D_Col As Scripting.Dictionary, iDicStartLine As Byte)
+Function CreateTabDataVar(xlsapp As Excel.Application, sSheetname As String, D_Col As Scripting.Dictionary, iDicStartLine As Byte)
 
     Dim i As Integer                             'iterator for the line values
     Dim j As Integer                             'iterator for the column values (values are transposed in the T_data) output
     Dim iLastLine As Integer                     'lastline of the dictionnary sheet
     Dim T_data
 
-    With xlsapp.Sheets(sSheetName)
+    With xlsapp.Sheets(sSheetname)
         iLastLine = .Cells(1, 1).End(xlDown).Row
         i = iDicStartLine                        'StartLine of the dictionnary
         j = 0
@@ -115,7 +115,7 @@ Function CreateDicoColChoi(xlsapp As Excel.Application, ssheet As String) As Scr
 End Function
 
 'Function to create the table choices (the values in the choices sheet)
-Function CreateTabDataChoi(xlsapp As Excel.Application, sSheetName As String)
+Function CreateTabDataChoi(xlsapp As Excel.Application, sSheetname As String)
 
     Dim i As Integer                             'cpt feuille
     Dim j As Integer                             'cpt tab
@@ -123,9 +123,9 @@ Function CreateTabDataChoi(xlsapp As Excel.Application, sSheetName As String)
     Dim T_data
     Dim D_Col As New Scripting.Dictionary
 
-    Set D_Col = CreateDicoColChoi(xlsapp, sSheetName)
+    Set D_Col = CreateDicoColChoi(xlsapp, sSheetname)
 
-    With xlsapp.Sheets(sSheetName)
+    With xlsapp.Sheets(sSheetname)
         iLastLine = .Cells(1, 1).End(xlDown).Row
         i = 2                                    'starting line
         j = 0                                    'one row of the table is one column in the choice sheet
