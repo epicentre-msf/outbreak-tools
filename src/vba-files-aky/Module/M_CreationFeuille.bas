@@ -864,7 +864,7 @@ Private Sub TransfertSheet(xlsapp As Object, sSheetname As String)
         .Workbooks.Open Filename:="C:\LineListeApp\tampon.xlsx", UpdateLinks:=False
         
         .Sheets(sSheetname).Select
-        .Sheets(sSheetname).Copy After:=.Workbooks(1).Sheets(1)
+        .Sheets(sSheetname).Copy after:=.Workbooks(1).Sheets(1)
         
         'Sheets PASSWORD and CONTROLEFORMULE have some hidden properties to update
         Select Case UCase(sSheetname)
