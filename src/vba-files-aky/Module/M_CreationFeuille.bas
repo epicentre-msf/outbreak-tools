@@ -775,13 +775,13 @@ Sub WriteBorderLines(oRange As Range)
 
 End Sub
 
-Sub AddCmd(xlsapp As Excel.Application, ssheet As String, iLeft As Integer, iTop As Integer, sName As String, sText As String, iCmdWidth As Integer, iCmdHeight As Integer)
+Sub AddCmd(xlsapp As Excel.Application, sSheet As String, iLeft As Integer, iTop As Integer, sName As String, sText As String, iCmdWidth As Integer, iCmdHeight As Integer)
 
     Dim oShape As Object
     Dim bShapeExist As Boolean
 
     bShapeExist = False
-    For Each oShape In xlsapp.Sheets(ssheet).Shapes
+    For Each oShape In xlsapp.Sheets(sSheet).Shapes
         If oShape.Name = sName Then
             bShapeExist = True
             Exit For
@@ -789,7 +789,7 @@ Sub AddCmd(xlsapp As Excel.Application, ssheet As String, iLeft As Integer, iTop
     Next
 
     If Not bShapeExist Then
-        With xlsapp.Sheets(ssheet)
+        With xlsapp.Sheets(sSheet)
             .Shapes.AddShape(msoShapeRectangle, iLeft + 3, iTop + 3, iCmdWidth, iCmdHeight).Name = sName
             .Shapes(sName).Placement = xlFreeFloating
             .Shapes(sName).TextFrame2.TextRange.Characters.Text = sText
@@ -797,7 +797,7 @@ Sub AddCmd(xlsapp As Excel.Application, ssheet As String, iLeft As Integer, iTop
             .Shapes(sName).TextFrame2.VerticalAnchor = msoAnchorMiddle
             .Shapes(sName).TextFrame2.WordWrap = msoFalse
             .Shapes(sName).TextFrame2.TextRange.Font.Size = 9
-            xlsapp.Sheets(ssheet).Shapes(sName).TextFrame2.TextRange.Font.Fill.ForeColor.RGB = vbBlack
+            xlsapp.Sheets(sSheet).Shapes(sName).TextFrame2.TextRange.Font.Fill.ForeColor.RGB = vbBlack
             '.Shapes(sName).ShapeStyle = msoShapeStylePreset30
         End With
     End If

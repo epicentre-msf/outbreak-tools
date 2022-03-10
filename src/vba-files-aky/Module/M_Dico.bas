@@ -2,17 +2,17 @@ Attribute VB_Name = "M_Dico"
 Option Explicit
 'Const C_NomFeuille = "variables"
 
-Function CreateDicoColVar(xlsapp As Excel.Application, ssheet As String, iDicStartLine As Byte) As Scripting.Dictionary
+Function CreateDicoColVar(xlsapp As Excel.Application, sSheet As String, iDicStartLine As Byte) As Scripting.Dictionary
     'extract column names in the dictionnary
 
     Dim D_Col As New Scripting.Dictionary
     Dim i As Integer
 
     D_Col.RemoveAll
-    With xlsapp.Sheets(ssheet)
+    With xlsapp.Sheets(sSheet)
         i = 1
         While .Cells(iDicStartLine, i).value <> ""
-            D_Col.Add xlsapp.Sheets(ssheet).Cells(iDicStartLine, i).value, i
+            D_Col.Add xlsapp.Sheets(sSheet).Cells(iDicStartLine, i).value, i
             i = i + 1
         Wend
         Set CreateDicoColVar = D_Col
@@ -98,12 +98,12 @@ Function LetDecString(iDecNb As Integer) As String
 End Function
 
 'Function to create dictionnary for choices table (the headers of the table in the choices sheet)
-Function CreateDicoColChoi(xlsapp As Excel.Application, ssheet As String) As Scripting.Dictionary
+Function CreateDicoColChoi(xlsapp As Excel.Application, sSheet As String) As Scripting.Dictionary
 
     Dim D_Col As New Scripting.Dictionary
     Dim i As Integer
     i = 1
-    With xlsapp.Sheets(ssheet)
+    With xlsapp.Sheets(sSheet)
         While .Cells(1, i).value <> ""
             D_Col.Add .Cells(1, i).value, i
             i = i + 1
