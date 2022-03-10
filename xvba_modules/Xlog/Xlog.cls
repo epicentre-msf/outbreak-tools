@@ -75,7 +75,7 @@ Public Function ErrorHandller(filePath As String, macro As String)
     messageLog = Err.Description & "  [" & Err.Number & "] Macro:" & macro
    
     Call LogMessages(0, filePath, messageLog)
-    ThisWorkbook.Close SaveChanges:=False
+    ThisWorkbook.Close savechanges:=False
   
 End Function
 
