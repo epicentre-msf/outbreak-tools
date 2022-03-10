@@ -27,7 +27,7 @@ Public Const C_sDictHeaderMainLab       As String = "main label"                
 Public Const C_sDictHeaderSubLab        As String = "sub label"                          'Variable Sub Label (sub label of the variable name in gray)
 Public Const C_sDictHeaderNote          As String = "note"                               'Notes to show for the variable
 Public Const C_sDictHeaderSheetName     As String = "sheet name"                         'Name of the sheet to add to the linelist
-Public Const C_sDictHeaderSheetType     As String = "Sheet Type"                         'Type of the sheet to add to the linelist
+Public Const C_sDictHeaderSheetType     As String = "sheet type"                         'Type of the sheet to add to the linelist
 Public Const C_sDictHeaderMainSec       As String = "main section"                       'Main Section of the variable (to show in heading)
 Public Const C_sDictHeaderSubSec        As String = "sub section"                        'Sub Section of the variable to show under the headings
 Public Const C_sDictHeaderStatus        As String = "status"                             'Status of the variable
@@ -129,6 +129,7 @@ Public Const C_sMsgCheckLLName          As String = "MSG_LLName"                
 Public Const C_sMsgCheckExits           As String = "MSG_exists"                         'Check the linelist exists in the folder
 Public Const C_sMsgCheckPathLL          As String = "MSG_PathLL"
 Public Const C_sMsgCheckSheetType       As String = "MSG_SheetType"                      'Ask the user to check the type of one sheet in the setup file
+Public Const C_sMsgCreatedSheet         As String = "MSG_LLCreated"
 
 'Inform the designer user something is going on
 
@@ -201,7 +202,7 @@ Public Const C_sDesignerPassword         As String = "1234"                     
 
 'INTEGERS CONSTANTS ===============================================================================================================================================================
 
-Public Const C_iLLButtonHeight           As Integer = 25                                    'Row height of the first two rows on one sheet of type Linelist for buttons
+Public Const C_iLLButtonsRowHeight       As Integer = 25                                    'Row height of the first two rows on one sheet of type Linelist for buttons
 Public Const C_iNumberOfBars             As Integer = 40                                    'Number of bars in the Progressbar in the designer
 
 'ENUMERATION LISTS ================================================================================================================================================================

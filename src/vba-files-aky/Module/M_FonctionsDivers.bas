@@ -16,6 +16,7 @@ Sub TransferCode(xlsapp As Application, sNameModule As String, sType As String)
     Case "C"
         Set oNouvM = xlsapp.ActiveWorkbook.VBProject.VBComponents.Add(vbext_ct_ClassModule)
     End Select
+    
     oNouvM.Name = sNameModule
     With xlsapp.ActiveWorkbook.VBProject.VBComponents(oNouvM.Name).CodeModule
         .DeleteLines 1, .CountOfLines

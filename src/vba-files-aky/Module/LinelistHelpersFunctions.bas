@@ -5,7 +5,7 @@ Option Explicit
 Public Function ClearString(sString As String) As String
     Dim sValue As String
     sValue = Replace(sString, "-", " ")
-    sValue = Replace(sSvalue, "_", " ")
+    sValue = Replace(sValue, "_", " ")
     sValue = Replace(sValue, "?", " ")
     sValue = Replace(sValue, "/", " ")
     sValue = Replace(sValue, "    ", " ")
@@ -16,18 +16,18 @@ Public Function ClearString(sString As String) As String
 End Function
 
 'Get the headers of one sheet from one line
-Function GetHeaders(xlsapp As Excel.Application, ssheet As String, StartLine As Byte) As BetterArray
+Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Byte) As BetterArray
     'Extract column names in one sheet starting from one line
     Dim Headers As BetterArray
     Dim i As Integer
     Set Headers = New BetterArray
     Headers.LowerBound = 1
     
-    With xlsapp.Sheets(ssheet)
+    With Wkb.Worksheets(sSheet)
         i = 1
         While .Cells(StartLine, i).value <> ""
         'Clear the values in the sheet when adding thems
-            Headers.Push ClearString(xlsapp.Sheets(ssheet).Cells(StartLine, i).value)
+            Headers.Push ClearString(.Cells(StartLine, i).value)
             i = i + 1
         Wend
         Set GetHeaders = Headers
@@ -36,13 +36,13 @@ Function GetHeaders(xlsapp As Excel.Application, ssheet As String, StartLine As 
     End With
 End Function
 'Get the data from one sheet starting from one line
-Function GetData(xlsapp As Excel.Application, sSheetname As String, StartLine As Byte) As BetterArray
+Function GetData(Wkb As Workbook, sSheetname As String, StartLine As Byte) As BetterArray
     Dim Data As BetterArray
     Set Data = New BetterArray
     Data.LowerBound = 1
-    Data.FromExcelRange xlsapp.Sheets(sSheetname).Cells(StartLine, 1), DetectLastRow:=True, DetectLastColumn:=True
+    Data.FromExcelRange Wkb.Worksheets(sSheetname).Cells(StartLine, 1), DetectLastRow:=True, DetectLastColumn:=True
     'The output of the function is a variant
-    GetData = Data
+    Set GetData = Data
     Set Data = Nothing
 End Function
 

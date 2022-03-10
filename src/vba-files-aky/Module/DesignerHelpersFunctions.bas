@@ -1,7 +1,7 @@
 Attribute VB_Name = "DesignerHelpersFunctions"
 Option Explicit
 
-Sub TransferCode(xlsapp As Application, sNameModule As String, sType As String)
+Sub DesTransferCode(xlsapp As Application, sNameModule As String, sType As String)
 
     Dim oNouvM As Object 'New module name
     Dim sNouvCode As String 'New module code
@@ -32,7 +32,7 @@ End Sub
 'Transfert code from one module to a worksheet to trigger some events
 ' sSheetName the sheet name we want to transfer to
 ' sNameModule the name of the module we want to copy code from
-Sub TransferCodeWks(xlsapp As Excel.Application, sSheetname As String, sNameModule As String)
+Sub DesTransferCodeWks(xlsapp As Excel.Application, sSheetname As String, sNameModule As String)
 
     Dim sNouvCode As String                      'a string to contain code to add
     Dim sheetComp As String
@@ -60,18 +60,17 @@ Sub TransferCodeWks(xlsapp As Excel.Application, sSheetname As String, sNameModu
 
 End Sub
 
-Sub TransferForm(xlsapp As Application, sFormName As String)
+Sub DesTransferForm(xlsapp As Application, sFormName As String)
     
     'The form is sent to the C:\LinelisteApp folder
     DoEvents
 
-    ThisWorkbook.VBProject.VBComponents(sFormName).Export "C:\LineListeApp\CopieUsf.frm"
-    xlsapp.ActiveWorkbook.VBProject.VBComponents.Import "C:\LineListeApp\CopieUsf.frm"
+    ThisWorkbook.VBProject.VBComponents(sFormName).Export Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm"
+    xlsapp.ActiveWorkbook.VBProject.VBComponents.Import Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm"
     
     DoEvents
 
-    Kill "C:\LineListeApp\CopieUsf.frm"
-    Kill "C:\LineListeApp\CopieUsf.frx"
+    Kill (Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm")
 End Sub
 
 
