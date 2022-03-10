@@ -1,25 +1,29 @@
-Attribute VB_Name = "M_FonctionsDivers"
+Attribute VB_Name = "DesignerHelpersFunctions"
 Option Explicit
 
 Sub TransferCode(xlsapp As Application, sNameModule As String, sType As String)
 
-    Dim oNouvM As Object
-    Dim sNouvCode As String
+    Dim oNouvM As Object 'New module name
+    Dim sNouvCode As String 'New module code
 
+    'get all the values within the actual module to transfer
     With ThisWorkbook.VBProject.VBComponents(sNameModule).CodeModule
         sNouvCode = .Lines(1, .CountOfLines)
     End With
     
+    'create to code or module if needed
     Select Case sType
-    Case "M"
+    Case "Module"
         Set oNouvM = xlsapp.ActiveWorkbook.VBProject.VBComponents.Add(vbext_ct_StdModule)
-    Case "C"
+    Case "Class"
         Set oNouvM = xlsapp.ActiveWorkbook.VBProject.VBComponents.Add(vbext_ct_ClassModule)
     End Select
+
+    'keep the name and add the codes
     oNouvM.Name = sNameModule
     With xlsapp.ActiveWorkbook.VBProject.VBComponents(oNouvM.Name).CodeModule
         .DeleteLines 1, .CountOfLines
-        DoEvents
+         DoEvents
         .AddFromString sNouvCode
     End With
 
@@ -53,16 +57,6 @@ Sub TransferCodeWks(xlsapp As Excel.Application, sSheetname As String, sNameModu
         DoEvents
         .AddFromString sNouvCode
     End With
-    
-    'With xlsApp.ActiveWorkbook.VBProject.VBComponents(sCodeName).CodeModule
-    'With xlsApp.ActiveWorkbook.VBProject.VBComponents(17).CodeModule
-    'With xlsApp.ActiveWorkbook.VBProject.VBComponents("feuil6").CodeModule
-
-    '.InsertLines 1, "Private Sub Worksheet_Change(ByVal Target As Range)"
-    '.InsertLines 2, "call EventFeuille" & sCodeName & "(target)"
-    '.InsertLines 2, "call EventSheetLineListPatient(target)"
-    '.InsertLines 3, "End Sub"
-    'End With
 
 End Sub
 
@@ -80,34 +74,26 @@ Sub TransferForm(xlsapp As Application, sFormName As String)
     Kill "C:\LineListeApp\CopieUsf.frx"
 End Sub
 
-'Sub AddOpeningEvent(xlsApp As Excel.Application)
-'
-'    With xlsApp.ActiveWorkbook.VBProject.VBComponents(xlsApp.ActiveWorkbook.CodeName).CodeModule
-'        .InsertLines Line:=.CreateEventProc("Open", "Workbook") + 1, _
-'        String:=vbCrLf & "call OuGreenure"
-'    End With
-'
-'End Sub
 
-Function LetColor(sColorCode As String)
+Function DesLetColor(sColorCode As String)
 
     Select Case sColorCode
     Case "BlueEpi"
-        LetColor = RGB(45, 85, 158)
+        DesLetColor = RGB(45, 85, 158)
     Case "RedEpi"
-        LetColor = RGB(240, 64, 66)
+        DesLetColor = RGB(252, 228, 214)
     Case "LightBlueTitle"
-        LetColor = RGB(217, 225, 242)
+        DesLetColor = RGB(217, 225, 242)
     Case "DarkBlueTitle"
-        LetColor = RGB(142, 169, 219)
+        DesLetColor = RGB(142, 169, 219)
     Case "Grey"
-        LetColor = RGB(128, 128, 128)
+        DesLetColor = RGB(235, 232, 232)
     Case "Green"
-        LetColor = RGB(198, 224, 180)
+        DesLetColor = RGB(198, 224, 180)
     Case "Orange"
-        LetColor = RGB(248, 203, 173)
+        DesLetColor = RGB(248, 203, 173)
     Case "White"
-        LetColor = RGB(255, 255, 255) 'lla
+        DesLetColor = RGB(255, 255, 255)
     End Select
 
 End Function
