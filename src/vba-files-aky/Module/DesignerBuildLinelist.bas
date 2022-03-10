@@ -152,6 +152,13 @@ Sub DesBuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHea
          'i will hep move from one values of dictionnary data to another
         While i <= DictData.UpperBound
             If sPrevSheetName <> DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)) Then
+            
+                If sPrevSheetName = "" Then
+                .Worksheets(1).Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                Else
+                .Worksheets.Add(after:=.Worksheets(sPrevSheetName)).Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                End If
+                
                 'I am on a new sheet name, I update values
                 sPrevSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
                 
@@ -161,11 +168,10 @@ Sub DesBuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHea
                 Select Case LCase(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType)))
                     Case "admin"
                         'This is a admin Sheet, just add it like that
-                        .Worksheets.Add.Name = sPrevSheetName
+                       
                     Case "linelist"
                         'I am on a new linelist type sheet
                         LLSheetNameData.Push sPrevSheetName
-                        .Worksheets.Add.Name = sPrevSheetName
                         j = j + 1
                         'LLNbColData is a table with number columns for each sheet item(1) the number of columns
                         'of first sheet (linelist-patient).
@@ -901,7 +907,7 @@ Private Sub TransfertSheet(xlsapp As Object, sSheetname As String)
         .Workbooks.Open Filename:=(Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "tampon.xlsx"), UpdateLinks:=False
         
         .Sheets(sSheetname).Select
-        .Sheets(sSheetname).Copy After:=.Workbooks(1).Sheets(1)
+        .Sheets(sSheetname).Copy after:=.Workbooks(1).Sheets(1)
         
         DoEvents
         .Workbooks("tampon.xlsx").Close
