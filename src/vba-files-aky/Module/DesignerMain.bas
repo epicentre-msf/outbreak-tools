@@ -1,7 +1,7 @@
 Attribute VB_Name = "DesignerMain"
 Option Explicit
 
-Dim bGeoLoaded As Boolean
+Dim bGeoLoaded As Boolean 'This will check if the Geodata is loaded or Not: The user have to load a Geobase
 'Logic for loading files and folders ==============================================================================================================================================
 
 'Loading the Dictionnary file ----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -399,7 +399,8 @@ Sub DesGenerateData()
     DoEvents
     
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
-    SheetMain.Range(C_sRngLLName).Interior.Color = vbWhite
+    
+    Call SetInputRangesToWhite
     SheetMain.Shapes("SHP_OpenLL").Visible = msoTrue
     
     Application.ScreenUpdating = True

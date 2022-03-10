@@ -8,7 +8,7 @@ Attribute VB_Name = "ProgramConstants"
 Public Const C_sSheetGeo                As String = "Geo"                                'Sheet for storing the geo data // Feuille des donnees geo
 Public Const C_sSheetAdmin              As String = "Admin"                              'Name of the sheet for admin data (metadata on a linelist)
 Public Const C_sSheetDesTrans           As String = "designer-translation"               'Sheet for management of designer translation
-Public Const C_sSheetPassWord           As String = "Password"                           'sheet for password management
+Public Const C_sSheetPassword           As String = "Password"                           'sheet for password management
 Public Const C_sSheetFormulas           As String = "ControleFormule"                    'Sheet for formula management (mainly in the validation)
 
 'Sheets in the setup file: The all starts with Param
@@ -82,7 +82,8 @@ Public Const C_sDictAlertErr As String = "error"
 'MODULES ==========================================================================================================================================================================
 
 Public Const C_sModMain                 As String = "M_Main"                             'Main module of the designer
-Public Const C_sModTrans                As String = "M_traduction"                       'Translation module for the designer
+Public Const C_sModDesTrans             As String = "M_traduction"                       'Translation module for the designer
+Public Const C_sLLTrans                 As String = ""                                   'Translation module for the linelist
 Public Const C_sModExport               As String = "M_Export"                           'Export module in the linelist
 Public Const C_sModGeo                  As String = "M_Geo"                              'Geo module in the linelist for geo formula design
 Public Const C_sModLinelist             As String = "M_linelist"                         'Events and buttons in one sheet of type linelist
@@ -90,7 +91,12 @@ Public Const C_sModMigration            As String = "M_Migration"               
 Public Const C_sModShowHide             As String = "M_NomVisible"                       'ShowHide logic
 Public Const C_sModValidation           As String = "M_validation"                       'Validation of the formulas
 Public Const C_sModConstants            As String = "ProgramConstants"                   'Constants of the program
+Public Const C_sModDesHelpers           As String = "M_FonctionsTransf"
+Public Const C_sModLLHelpers            As String = "M_FonctionsDivers"
 Public Const C_sLLChange                As String = "linelist_sheet_change"              'Change Event linked to one sheet of type linelist
+
+'CLASSES ==========================================================================================================================================================================
+Public Const C_sClaBA                   As String = "BetterArray"
 
 'FORMS ============================================================================================================================================================================
 
