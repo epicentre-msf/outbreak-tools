@@ -1,27 +1,27 @@
 Attribute VB_Name = "DesignerHelpersFunctions"
 Option Explicit
 
-Sub DesTransferCode(xlsapp As Application, sNameModule As String, sType As String)
+Sub DesTransferCode(Wkb As Workbook, sNameModule As String, sType As String)
 
     Dim oNouvM As Object 'New module name
     Dim sNouvCode As String 'New module code
 
     'get all the values within the actual module to transfer
-    With ThisWorkbook.VBProject.VBComponents(sNameModule).CodeModule
+    With DesignerWorkbook.VBProject.VBComponents(sNameModule).CodeModule
         sNouvCode = .Lines(1, .CountOfLines)
     End With
     
     'create to code or module if needed
     Select Case sType
     Case "Module"
-        Set oNouvM = xlsapp.ActiveWorkbook.VBProject.VBComponents.Add(vbext_ct_StdModule)
+        Set oNouvM = Wkb.VBProject.VBComponents.Add(vbext_ct_StdModule)
     Case "Class"
-        Set oNouvM = xlsapp.ActiveWorkbook.VBProject.VBComponents.Add(vbext_ct_ClassModule)
+        Set oNouvM = Wkb.VBProject.VBComponents.Add(vbext_ct_ClassModule)
     End Select
 
     'keep the name and add the codes
     oNouvM.Name = sNameModule
-    With xlsapp.ActiveWorkbook.VBProject.VBComponents(oNouvM.Name).CodeModule
+    With Wkb.VBProject.VBComponents(oNouvM.Name).CodeModule
         .DeleteLines 1, .CountOfLines
          DoEvents
         .AddFromString sNouvCode
@@ -60,14 +60,16 @@ Sub DesTransferCodeWks(xlsapp As Excel.Application, sSheetname As String, sNameM
 
 End Sub
 
-Sub DesTransferForm(xlsapp As Application, sFormName As String)
+Sub DesTransferForm(Wkb As Workbook, sFormName As String)
     
-    'The form is sent to the C:\LinelisteApp folder
+    'The form is sent to the LinelisteApp folder
+    On Error Resume Next
+    Kill (Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm")
+    On Error GoTo 0
+    
     DoEvents
-
-    ThisWorkbook.VBProject.VBComponents(sFormName).Export Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm"
-    xlsapp.ActiveWorkbook.VBProject.VBComponents.Import Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm"
-    
+    DesignerWorkbook.VBProject.VBComponents(sFormName).Export Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm"
+    Wkb.VBProject.VBComponents.Import Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm"
     DoEvents
 
     Kill (Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm")
