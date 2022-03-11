@@ -2,11 +2,15 @@ Attribute VB_Name = "LinelistHelpersFunctions"
 Option Explicit
 
 'Clear a String to remove inconsistencies
-Public Function ClearString(sString As String) As String
+Public Function ClearString(sString As String, Optional bremoveHiphen as boolean = True) As String
     Dim sValue As String
-    sValue = Replace(sString, "-", " ")
-    sValue = Replace(sValue, "_", " ")
-    sValue = Replace(sValue, "?", " ")
+    sValue = Replace(sString, "?", " ")
+
+    If bremoveHiphen Then
+        sValue = Replace(sSValue, "-", " ")
+        sValue = Replace(sValue, "_", " ")
+    End If
+   
     sValue = Replace(sValue, "/", " ")
     sValue = Replace(sValue, "    ", " ")
     sValue = Replace(sValue, "   ", " ")
@@ -35,6 +39,7 @@ Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Byte) As Bet
         Set Headers = Nothing
     End With
 End Function
+
 'Get the data from one sheet starting from one line
 Function GetData(Wkb As Workbook, sSheetname As String, StartLine As Byte) As BetterArray
     Dim Data As BetterArray
@@ -45,6 +50,30 @@ Function GetData(Wkb As Workbook, sSheetname As String, StartLine As Byte) As Be
     Set GetData = Data
     Set Data = Nothing
 End Function
+
+
+'Get the list of validations from the Choices data
+Function GetValidationList(ChoicesListData as BetterArray, ChoicesLabelsData as BetterArray, sValidation as String) As string
+
+    Dim iChoiceIndex as Integer
+    Dim iChoiceLastIndex as Integer
+    Dim i as integer 'iterator to get the values
+    Dim sValidationList as String 'Validation List
+
+    sValidationList = ""
+
+    iChoiceIndex = ChoicesListData.indexOf(sValidation)
+    iChoiceLastIndex = ChoicesListData.LastIndexOf(sValidation)
+
+    If (iChoiceIndex > 0) Then
+        sValidationList = ChoicesLabelsData.Items(iChoiceIndex)
+        For i = iChoiceIndex + 1 To iChoiceLastIndex
+            sValidationList = sValidationList & Application.International(xlListSeparator) & ChoicesLabelsData.Items(i)
+        Next
+    End if
+
+    GetValidationList = sValidationList
+End function
 
 
 Public Function IsEmptyTable(T_aTest) As Boolean
