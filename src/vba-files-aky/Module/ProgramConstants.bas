@@ -5,7 +5,7 @@ Attribute VB_Name = "ProgramConstants"
 
 'Sheets in the designer file
 
-Public Const C_sSheetGeo                As String = "Geo"                                'Sheet for storing the geo data // Feuille des donnees geo
+Public Const C_sSheetGeo                As String = "GEO"                                'Sheet for storing the geo data // Feuille des donnees geo
 Public Const C_sSheetAdmin              As String = "Admin"                              'Name of the sheet for admin data (metadata on a linelist)
 Public Const C_sSheetDesTrans           As String = "designer-translation"               'Sheet for management of designer translation
 Public Const C_sSheetPassword           As String = "Password"                           'sheet for password management
