@@ -43,6 +43,8 @@ End Sub
 '
 Sub DesLoadGeoFile()
     Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    
     bGeoLoaded = False
     
     Dim sFilePath As String                      'File path to the geo file
@@ -131,6 +133,7 @@ Sub DesLoadGeoFile()
     End If
     
     Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
 End Sub
 
 'Adding some controls before generating the linelist  =============================================================================================================================

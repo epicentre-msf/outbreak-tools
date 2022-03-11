@@ -9,17 +9,53 @@ Const C_ligneDeb As Byte = 6
 Const C_CmdWidht As Byte = 60
 Const C_PWD As String = "1234"
 
-'Preliminary functions for building the linelist
+'Preliminary functions for building the linelist ==================================================================================================================================
+
+Private Sub TransfertSheet(xlsapp As Excel.Application, sSheetname As String)
+    
+    'Since We can't move worksheet from one instance to another
+    'we need to save as a temporary file and then move it to another instance.
+    DesignerWorkbook.Worksheets(sSheetname).Copy
+    
+    DoEvents
+    
+    On Error Resume Next
+    Kill Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx"
+    On Error GoTo 0
+    
+    ActiveWorkbook.SaveAs Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx"
+    ActiveWorkbook.Close
+    
+    DoEvents
+
+    With xlsapp
+        .Workbooks.Open Filename:=Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx", UpdateLinks:=False
+        
+        .Sheets(sSheetname).Select
+        .Sheets(sSheetname).Copy after:=.Workbooks(1).Sheets(1)
+        
+        DoEvents
+        .Workbooks("Temp.xlsx").Close
+    End With
+    
+    DoEvents
+    
+    Kill Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx"
+
+End Sub
 
 'Tranfer some designers modules
 
-Private Sub TransferDesignerObjects(Wkb As Workbook)
+Private Sub TransferDesignerCodes(xlsapp As Excel.Application)
 
     On Error Resume Next
     Kill (Environ("Temp") & Application.PathSeparator & "LinelistApp")
     MkDir (Environ("Temp") & Application.PathSeparator & "LinelistApp") 'create a folder for sending all the data from designer
     On Error GoTo 0
-        
+    
+    Dim Wkb As Workbook
+    Set Wkb = xlsapp.ActiveWorkbook
+    
     DoEvents
         
     'Transfert form is for sending forms from the actual excel workbook to another
@@ -38,22 +74,13 @@ Private Sub TransferDesignerObjects(Wkb As Workbook)
     Call DesTransferCode(Wkb, C_sModConstants, "Module")
     Call DesTransferCode(Wkb, C_sClaBA, "Class")
     
-    DoEvents
+    Set Wkb = Nothing
     
-    'TransfertSheet is for sending worksheets from the actual workbook to another
-    Call TransfertSheet(Wkb, C_sSheetGeo)
-    Call TransfertSheet(Wkb, C_sSheetPassword)
-    Call TransfertSheet(Wkb, C_sSheetFormulas)  'on a besoin de la table ascii
-    
-    DoEvents
-    
-    On Error Resume Next
-    Kill (Environ("Temp") & Application.PathSeparator & "LinelistApp")
-    On Error GoTo 0
 End Sub
 
+
 'Create the required Sheet and put those required to veryHidden
-Private Sub CreateSheetsInLL(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterArray, _
+Private Sub CreateSheetsInLL(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders As BetterArray, _
                             ExportData As BetterArray, LLNbColData As BetterArray, LLSheetNameData As BetterArray, _
                             Optional bNotHideSheets As Boolean = False)
                             
@@ -62,7 +89,7 @@ Private Sub CreateSheetsInLL(Wkb As Workbook, DictData As BetterArray, DictHeade
     
     Dim sPrevSheetName As String 'Previous sheet name
         
-    With Wkb
+    With xlsapp
     
         'Workbook already contains the Geo, Password and formula sheets. Hide them
         .Worksheets(C_sSheetPassword).Visible = xlVeryHidden
@@ -128,11 +155,11 @@ Private Sub CreateSheetsInLL(Wkb As Workbook, DictData As BetterArray, DictHeade
                     'Set the rowheight of the first two rows of a linelist type sheet
                     .Worksheets(sPrevSheetName).Rows("1:2").RowHeight = C_iLLButtonsRowHeight
                     'Now I split at starting lines and freeze the pane
-                    .Worksheets(sPrevSheetName).Activate
-                    ActiveWindow.DisplayZeros = False
-                    ActiveWindow.SplitColumn = 2
-                    ActiveWindow.SplitRow = C_eStartLinesLLData 'freeze a the starting lines of the linelist data
-                    ActiveWindow.FreezePanes = True
+                    '.Worksheets(sPrevSheetName).Activate
+                    .ActiveWindow.DisplayZeros = False
+                    .ActiveWindow.SplitColumn = 2
+                    .ActiveWindow.SplitRow = C_eStartLinesLLData 'freeze a the starting lines of the linelist data
+                    .ActiveWindow.FreezePanes = True
                 Case Else
                     SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgCheckSheetType)
                     Exit Sub
@@ -163,7 +190,7 @@ End Sub
 
 Sub DesBuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeaders As BetterArray, ChoicesData As BetterArray, ExportData As BetterArray, sPath As String)
 
-    Dim Wkb As Workbook                          'will contain the linelist
+    Dim xlsapp As Excel.Application
     Dim sExitPath As String
     Dim i As Integer                             'cpt result
     Dim j As Integer                             'cpt source
@@ -219,19 +246,38 @@ Sub DesBuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHea
     Set FormulaData = New BetterArray
     Set LLSheetNameData = New BetterArray        'Names of sheets of type linelist
 
-   
-    Application.DisplayAlerts = False
-    Application.ScreenUpdating = False
-    Application.AutoCorrect.DisplayAutoCorrectOptions = False
-    Set Wkb = Workbooks.Add
+    Set xlsapp = New Excel.Application
+
+    With xlsapp
+        .ScreenUpdating = True
+        .DisplayAlerts = False
+        .Visible = True
+        .AutoCorrect.DisplayAutoCorrectOptions = False
+        .Workbooks.Add
+    End With
     
     DoEvents
     
-    'Now Transferring some designers objects (codes, modules and some sheets) to the workbook we want to create
-    Call TransferDesignerObjects(Wkb)
+    'Now Transferring some designers objects (codes, modules) to the workbook we want to create
+    Call TransferDesignerCodes(xlsapp)
     
+    DoEvents
+    'TransfertSheet is for sending worksheets from the actual workbook to the first workbook of the instance
+    Call TransfertSheet(xlsapp, C_sSheetGeo)
+    Call TransfertSheet(xlsapp, C_sSheetPassword)
+    Call TransfertSheet(xlsapp, C_sSheetFormulas)
+    
+    DoEvents
     'Create all the required Sheets in the workbook (Dictionnary, Export, Password, Geo and other sheets defined by the user)
-    Call CreateSheetsInLL(Wkb, DictData, DictHeaders, ExportData, LLNbColData, LLSheetNameData, bNotHideSheets:=True)
+    Call CreateSheetsInLL(xlsapp, DictData, DictHeaders, ExportData, LLNbColData, LLSheetNameData, bNotHideSheets:=True)
+    
+    DoEvents
+    On Error Resume Next
+    Kill (Environ("Temp") & Application.PathSeparator & "LinelistApp")
+    On Error GoTo 0
+    
+    DoEvents
+    
     
     'At this step all the sheets in the linelist are created
     
@@ -720,9 +766,9 @@ Sub DesBuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHea
     ' 'ecriture de l'evenement "change" dans la feuille de resultat
     ' Call TransferCodeWks(xlsapp, "linelist-patient", "linelist_sheet_change")
     '
-    ' xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, ConflictResolution:=xlLocalSessionChanges
-    ' xlsapp.Quit
-    ' Set xlsapp = Nothing
+    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, ConflictResolution:=xlLocalSessionChanges
+    xlsapp.Quit
+    Set xlsapp = Nothing
 End Sub
 
 Private Sub Add200Lines(xlsapp As Excel.Application)
@@ -922,12 +968,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, sSheetname As String, sLib As String
 
 End Sub
 
-Private Sub TransfertSheet(Wkb As Workbook, sSheetname As String)
-    
-    'Copy one sheet from the designer workbook to another workbook
-    DesignerWorkbook.Sheets(sSheetname).Copy after:=Wkb.Sheets(1)
 
-End Sub
 
 Private Function LetColNumberByDataName(xlsapp As Excel.Application, sDataName As String, sSheetname As String) As Integer
 
