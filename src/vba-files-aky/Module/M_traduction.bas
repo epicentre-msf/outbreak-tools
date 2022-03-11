@@ -32,7 +32,7 @@ Sub TranslateShape(oShape As Object, sValue As String)
     Dim sFont As String                          'actual font of the shape
     bVis = oShape.Visible
     'be sure the shape is visible before updating its text
-    oShape.Visible = -1
+    oShape.Visible = msoTrue
     With Sheets("MAIN").Shapes(oShape.Name)
         'keeping the previous font selected
         sFont = .TextFrame.Characters.Font.Name
@@ -210,7 +210,8 @@ Public Sub StartTranslate()
             T_codes.Clear
             T_data.FromExcelRange SheetDesTranslation.ListObjects("T_tradRange").DataBodyRange
             T_values.Items = T_data.ExtractSegment(ColumnIndex:=indexLangCod)
-            'index of all the Ranges codes is 1
+            
+            'Index of all the Ranges codes is 1
             T_codes.Items = T_data.ExtractSegment(ColumnIndex:=1)
             indexRangeCode = T_codes.IndexOf("RNG_LabLangDesigner")
             If (indexRangeCode > 0) Then
