@@ -136,6 +136,124 @@ Sub DesLoadGeoFile()
     Application.Calculation = xlCalculationAutomatic
 End Sub
 
+
+
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'This is the Sub for generating the data of the linelist using the input in the designer
+' The main entry point is the BuildList function which creates the Linelist-patient sheet as
+' well as all the forms in the linelist
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sub DesGenerateData()
+    Dim bGood As Boolean
+    bGood = DesControlForGenerate()
+   
+    If Not bGood Then
+        DesShowHideCmdValidation show:=False
+        Exit Sub
+    End If
+    
+    Dim xlsapp          As Excel.Application    'New application to use for the xlsapp
+    Dim DictHeaders     As BetterArray          'Dictionary headers
+    Dim DictData        As BetterArray          'Dictionary data
+    Dim ChoicesHeaders  As BetterArray          'Choices headers
+    Dim ChoicesData     As BetterArray          'Choices data
+    Dim ExportData      As BetterArray          'Export data
+    Dim sPath           As String
+    Dim Wkb             As Workbook
+    
+    Application.ScreenUpdating = False
+    
+    'Be sure the actual Workbook is not opened
+    
+    If IsWkbOpened(SheetMain.Range(C_sRngLLName).value & ".xlsb") Then
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseLL")
+        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
+        Exit Sub
+    End If
+                                          
+    Set Wkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
+    
+    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadDic")
+    
+    'Create the Dictionnary data
+    Set DictHeaders = GetHeaders(Wkb, C_sParamSheetDict, C_eStartLinesDictHeaders)
+    
+    'Create the data table of linelist patient using the dictionnary
+    Set DictData = GetData(Wkb, C_sParamSheetDict, C_eStartLinesDictData)
+    
+    'Create the choices data
+    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadList")
+    
+    'Create the dictionnary for the choices sheet
+    Set ChoicesHeaders = GetHeaders(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesHeaders)
+    
+    'Create the table for the choices
+    Set ChoicesData = GetData(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesData)
+
+       
+
+    'Reading the export sheet
+    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadExport")
+    
+    'Create parameters for export
+    Set ExportData = GetData(Wkb, C_sParamSheetExport, C_eStartLinesExportData)
+
+    Wkb.Close savechanges:=False
+    
+    Set Wkb = Nothing
+        
+    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
+        
+    'Creating the linelist using the dictionnary and choices data as well as export data
+    'The BuildList procedure is in the linelist
+    sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName) & ".xlsb"
+    
+    Call DesBuildList(DictHeaders, DictData, ChoicesHeaders, ChoicesData, ExportData, sPath)
+    
+    DoEvents
+    
+    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
+    
+    Call SetInputRangesToWhite
+    SheetMain.Shapes("SHP_OpenLL").Visible = msoTrue
+    
+    Application.ScreenUpdating = True
+End Sub
+
+Sub DesOpenLL()
+    'Be sure that the directory and the linelist name are not empty
+    If SheetMain.Range(C_sRngLLDir).value = "" Then
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathLL")
+        SheetMain.Range(C_sRngLLDir).Interior.Color = DesLetColor("RedEpi")
+        Exit Sub
+    End If
+    
+    If SheetMain.Range(C_sRngLLName).value = "" Then
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLName")
+        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
+        Exit Sub
+    End If
+    
+    'Be sure the workbook is not already opened
+    If IsWkbOpened(SheetMain.Range(C_sRngLLName).value & ".xlsb") Then
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseLL")
+        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
+        Exit Sub
+    End If
+    
+    'Be sure the workbook exits
+    If Dir(SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb") = "" Then
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CheckLL")
+        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
+        SheetMain.Range(C_sRngLLDir).Interior.Color = DesLetColor("RedEpi")
+        DesShowHideCmdValidation show:=False
+        Sheets("Main").Shapes("SHP_OpenLL ").Visible = msoFalse
+        Exit Sub
+    End If
+    
+    'Then open it
+    Application.Workbooks.Open Filename:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
+End Sub
 'Adding some controls before generating the linelist  =============================================================================================================================
 
 'Get the file extension of a file
@@ -329,120 +447,7 @@ Private Sub DesControl()
 End Sub
 
 
-'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-'This is the Sub for generating the data of the linelist using the input in the designer
-' The main entry point is the BuildList function which creates the Linelist-patient sheet as
-' well as all the forms in the linelist
-'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Sub DesGenerateData()
-    Dim bGood As Boolean
-    bGood = DesControlForGenerate()
-   
-    If Not bGood Then
-        DesShowHideCmdValidation show:=False
-        Exit Sub
-    End If
-    
-    Dim xlsapp          As Excel.Application    'New application to use for the xlsapp
-    Dim DictHeaders     As BetterArray          'Dictionary headers
-    Dim DictData        As BetterArray          'Dictionary data
-    Dim ChoicesHeaders  As BetterArray          'Choices headers
-    Dim ChoicesData     As BetterArray          'Choices data
-    Dim ExportData      As BetterArray          'Export data
-    Dim sPath           As String
-    Dim Wkb             As Workbook
-    
-    Application.ScreenUpdating = False
-    
-    'Be sure the actual Workbook is not opened
-    
-    If IsWkbOpened(SheetMain.Range(C_sRngLLName).value & ".xlsb") Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseLL")
-        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
-        Exit Sub
-    End If
-                                          
-    Set Wkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
-    
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadDic")
-    
-    'Create the Dictionnary data
-    Set DictHeaders = GetHeaders(Wkb, C_sParamSheetDict, C_eStartLinesDictHeaders)
-    
-    'Create the data table of linelist patient using the dictionnary
-    Set DictData = GetData(Wkb, C_sParamSheetDict, C_eStartLinesDictData)
-    
-    'Create the choices data
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadList")
-    
-    'Create the dictionnary for the choices sheet
-    Set ChoicesHeaders = GetHeaders(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesHeaders)
-    
-    'Create the table for the choices
-    Set ChoicesData = GetData(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesData)
-        
-    'Reading the export sheet
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadExport")
-    
-    'Create parameters for export
-    Set ExportData = GetData(Wkb, C_sParamSheetExport, C_eStartLinesExportData)
 
-    Wkb.Close savechanges:=False
-    
-    Set Wkb = Nothing
-        
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
-        
-    'Creating the linelist using the dictionnary and choices data as well as export data
-    'The BuildList procedure is in the linelist
-    sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName) & ".xlsb"
-    
-    Call DesBuildList(DictHeaders, DictData, ChoicesHeaders, ChoicesData, ExportData, sPath)
-    
-    DoEvents
-    
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
-    
-    Call SetInputRangesToWhite
-    SheetMain.Shapes("SHP_OpenLL").Visible = msoTrue
-    
-    Application.ScreenUpdating = True
-End Sub
-
-Sub DesOpenLL()
-    'Be sure that the directory and the linelist name are not empty
-    If SheetMain.Range(C_sRngLLDir).value = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathLL")
-        SheetMain.Range(C_sRngLLDir).Interior.Color = DesLetColor("RedEpi")
-        Exit Sub
-    End If
-    
-    If SheetMain.Range(C_sRngLLName).value = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLName")
-        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
-        Exit Sub
-    End If
-    
-    'Be sure the workbook is not already opened
-    If IsWkbOpened(SheetMain.Range(C_sRngLLName).value & ".xlsb") Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseLL")
-        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
-        Exit Sub
-    End If
-    
-    'Be sure the workbook exits
-    If Dir(SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb") = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CheckLL")
-        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
-        SheetMain.Range(C_sRngLLDir).Interior.Color = DesLetColor("RedEpi")
-        DesShowHideCmdValidation show:=False
-        Sheets("Main").Shapes("SHP_OpenLL ").Visible = msoFalse
-        Exit Sub
-    End If
-    
-    'Then open it
-    Application.Workbooks.Open Filename:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
-End Sub
 
 
 

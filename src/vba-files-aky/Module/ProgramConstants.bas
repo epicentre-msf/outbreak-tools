@@ -68,6 +68,7 @@ Public Const C_sDictControlHf As String = "hf"
 Public Const C_sDictControlForm As String = "formula"
 Public Const C_sDictControlCho As String = "choices"
 Public Const C_sDictControlGeo As String = "geo"
+Public Const C_sDictControlCustom as String = "custom"
 
 'YesNo ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -78,6 +79,18 @@ Public Const C_sDictNo As String = "no"
 
 Public Const C_sDictAlertWar As String = "warning"
 Public Const C_sDictAlertErr As String = "error"
+
+'Types
+Public Const C_sDictTypeInt as String = "integer"
+Public Const C_sDictTypeText as String = "text"
+Public Const C_sDictTypeDate as String = "date"
+Public Const C_sDictTypeDec as string = "decimal"
+
+'CHOICES PARAMETERS ==========================================================================
+
+Public Const C_sChoiHeaderLab as string = "label" 'Choice label name headers
+Public Const C_sChoiHeaderList as string = "list_name" 'Choice list headers
+
 
 'MODULES ==========================================================================================================================================================================
 
@@ -205,12 +218,14 @@ Public Const C_sTabASCII                 As String = "T_ascii"                  
 
 Public Const C_sLinelistPassword         As String = "1234"                                'Default password for the linelist file (if no one is set)
 Public Const C_sDesignerPassword         As String = "1234"                                'Default password for the designer
+Public Const C_sLLTableStyle             As String = "TableStyleLight16"                   'Default table style of a linelist object
 
 'INTEGERS CONSTANTS ===============================================================================================================================================================
 
 Public Const C_iLLButtonsRowHeight       As Integer = 25                                    'Row height of the first two rows on one sheet of type Linelist for buttons
 Public Const C_iNumberOfBars             As Integer = 40                                    'Number of bars in the Progressbar in the designer
-
+Public Const C_iLLSheetFontSize          As Integer = 9                                      'Default font size on a linelist sheet
+Public Const C_iLLSubLabFontSize         As Integer = 8
 'ENUMERATION LISTS ================================================================================================================================================================
 
 'Startlines for data in various source files
@@ -218,8 +233,8 @@ Public Const C_iNumberOfBars             As Integer = 40                        
 Public Enum C_StartLines
     C_eStartLinesDictHeaders = 2                                                             'Starting lines for dictionary headers
     C_eStartLinesDictData = 3                                                                'Starting lines for dictionary data
-    C_eStartLinesLLTitle1 = 3                                                                'Starting lines for first title of the linelist
-    C_eStartLinesLLTitle2 = 4                                                                'Starting lines for second title of the linelist
+    C_eStartLinesLLMainSec = 3                                                                'Starting lines for first title of the linelist
+    C_eStartLinesLLSubSec = 4                                                                'Starting lines for second title of the linelist
     C_eStartLinesLLData = 5                                                                  'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                                                             'Starting lines for export titles
     C_eStartLinesExportSource = 5                                                            'Starting lines for export sources
