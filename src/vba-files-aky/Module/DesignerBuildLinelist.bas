@@ -83,7 +83,9 @@ End Sub
 Private Sub CreateSheetsInLL(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders As BetterArray, _
                             ExportData As BetterArray, LLNbColData As BetterArray, LLSheetNameData As BetterArray, _
                             Optional bNotHideSheets As Boolean = False)
-                            
+    'LLNbColData: Number of columns for a sheet of type linelist
+    'LLSheetNameData: Name of a sheet of type linelist
+
     Dim i As Integer 'iterators
     Dim j As Integer
     
@@ -142,10 +144,10 @@ Private Sub CreateSheetsInLL(xlsapp As Excel.Application, DictData As BetterArra
                 SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgCreatedSheet) & " " & sPrevSheetName
                 'adding sheets depending on the type of the sheet
                 Select Case LCase(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType)))
-                Case "admin"
+                Case C_sDictSheetTypeAdm
                     'This is a admin Sheet, just add it like that (or maybe do some other stuffs later on)
                        
-                Case "linelist"
+                Case C_sDictSheetTypeLL
                     'I am on a new linelist type sheet
                     LLSheetNameData.Push sPrevSheetName
                     j = j + 1
@@ -168,14 +170,296 @@ Private Sub CreateSheetsInLL(xlsapp As Excel.Application, DictData As BetterArra
                 'I am on a previous sheet name, I will upate in that case the number of columns of the linelist type
                 'I will use a select case to anticipate if whe have to deal with another type of sheet
                 Select Case LCase(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType)))
-                Case "linelist"
-                    LLNbColData.Item(j) = LLNbColData.Item(j) + 1
+                Case C_sDictSheetTypeLL
+                    Select Case LCase(DictData.items(i, DictHeaders.indexOf(C_sDictHeaderSheetControl)))
+                    
+                    Case C_sDictControlGeo
+                        'Geo columns induce a 4 column to add for each admnistrative levels
+                        LLNbColData.Item(j) = LLNbColData.Item(j) + 4
+                    Case Else
+                        LLNbColData.Item(j) = LLNbColData.Item(j) + 1
+                    End Select
                 Case Else
                 End Select
             End If
             i = i + 1
         Wend
     End With
+End Sub
+
+
+Private Sub CreateSheetDataEntry(xlsapp as Excel.Application, sSheetName as String, iSheetStartLine as integer _
+                                 DictData as BetterArray, DictHeaders as BetterArray, LLSheetNameData as BetterArray,
+                                 LLNbColData as BetterArray, ChoicesListData as BetterArray, ChoicesLabelsData as BetterArray)
+
+    'DictData: Dictionary data
+    'DictHeaders: Dictionary Headers
+    'sSheetName: the actual sheet on which we need to do some stuffs
+    'iSheetStartLine: Starting line of the sheet in the Dictionnary
+
+    Dim sPrevMainSec       As String 'Previous mainlabel and sub label titles to track if the labels have changed
+    Dim sPrevSubSec        As String  
+    Dim iCounterSheetLLCol      As Integer 'Counter of Columns in one Sheet in the linelist
+    Dim iCounterDictSheetLine   As Integer 'Counter of lines in the dictionnary sheet corresponding to values
+    Dim iPrevColMainSec         As Integer 'Previous column where the main label stops
+    Dim iPrevColSubSec          As Integer 'Previous column where the sub label stops
+    Dim iTotalLLSheetColumns    As integer 'Total number of columns to add on one sheet of type Linelist
+
+    'Those variables are for readability in the future
+    Dim sActualMainLab As String 'Actual main label of a linelist type sheet
+    Dim sActualSubLab As String 'Actual sub label of a linelist type sheet
+    Dim sActualVarName As String 'Actual variable name of a linelist type sheet
+    Dim sActualMainSec As string 'Actual main section the linelist
+    Dim sActualSubSec As string 'Actual sub section of the linelist
+    Dim sActualNote As string
+    Dim sActualType as string
+    Dim sActualControl as string
+    Dim iDecType as integer 'Decimal type number
+    Dim sValidationList as String 'List of validations to use for choices
+    Dim sActualChoice as String  'current choose choice
+ 
+
+    If (LLSheetNameData.indexof(sSheetName) < 0 ) Then
+      Msgbox "Something went wrong in" & sSheetName 'unable to find the sheet in linelist sheet types
+      End
+    End if
+    
+    
+    'Here I am really sure it is a linelist sheet type
+     iCounterSheetLLCol = 1
+     iCounterDictSheetLine = iSheetStartLine
+     iPrevColMainSec = 1
+     iPreColSubSec = 1
+     iTotalLLSheetColumns = LLNbColData.Items(LLSheetNameData.Indexof(sSheetName))
+     sPrevMainSec = DictData.Items(iCounterDictSheetLine, DictHeaders.indexof(C_sDictHeaderMainSec))
+     sPrevSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.indexof(C_sDictHeaderSubSec))
+
+
+
+    'Continue adding the columns unless the total number of columns to add is reached
+    While (iCounterSheetLLCol <= iTotalLLSheetColumns)
+
+        With xlsapp.Worksheets(sSheetName)
+
+        'Creating the TableObject that will contain the data entry
+        .ListObjects.Add(xlSrcRange, .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_eStartLinesLLData, iTotalLLSheetColumns)), , xlYes).Name = "o" & sSheetName
+        .ListObjects("o" & sSheetName).TableStyle = C_sLLTableStyle
+
+        'All the cells font size at 9
+        .Cells.Font.Size = C_iLLSheetFontSize
+        
+        'Adding the Headers with sections, Mainlabel and sub labels
+        'First, accessing those values ussing the dicitonary data and its corrresponding headers
+        sActualMainSec = DictData.Items(iCounterDictSheetLine, DictHeaders.Indexof(C_sDictHeaderMainSec))
+        sActualSubSec  = DictData.Items(iCounterDictSheetLine, DictHeaders.Indexof(C_sDictHeaderSubSec))
+        sActualVarName = DictData.Items(iCounterDictSheetLine, DictHeaders.Indexof(C_sDictHeaderVarName))
+        sActualMainLab = DictData.Items(iCounterDictSheetLine, DictHeaders.Indexof(C_sDictHeaderMainLab))
+        sActualSubLab  = DictData.Items(iCounterDictSheetLine, DictHeaders.Indexof(C_sDictHeaderSubLab))
+        sActualNote    = DictData.Items(iCounterDictSheetLine, DictHeaders.Indexof(C_sDictHeaderNote))
+        sActualControl = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.Indexof(C_sDictHeaderControl)))
+
+        'Befor doing some changes, we need to update the main label or sub-label correspondingly 
+        'in case whe have the geo control
+
+        'Geo Titles or Customs --------------------------------------------------------------------------
+        Select Case sActualControl
+            Case C_sDictControlGeo
+                If sActualSubSec = "" Then
+                    sActualSubSec = sActualMainLab
+                End If
+            Case C_sDictControlCustom
+                'In case we have custom variables, let the headers as free text for future
+                'modifications
+                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Locked = False
+        End Select
+
+        'Adding the headers ------------------------------------------------------------------------
+        .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Name = sActualVarName
+        .Cells(C_eStartLinesLLData, iCounterSheetLLCol).value = LetWordingWithSpace(xlsapp, sActualMainLab, sSheetName)
+        .Cells(C_eStartLinesLLData, iCounterSheetLLCol).VerticalAlignment = xlTop
+
+       'Adding the sub-label if needed Chr(10) is the return to line character the sublabel is in gray------------------
+        If sActualSubLab <> "" Then
+            .Cells(C_eStartLinesLLData, iCounterSheetLLCol).value = .Cells(C_eStartLinesLLData, iCounterSheetLLCol).value & Chr(10) & sActualSubLab
+    
+            'Changing the fontsize of the sublabels
+            .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Characters(Start:=Len(sActualMainLab)) + 1, Length:=Len(sActualSubLab)) + 1).Font.Size = C_iLLSubLabFontSize
+            .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Characters(Start:=Len(sActualMainLab)) + 1, Length:=Len(sActualSubLab)) + 1).Font.Color = LetColor("Grey")
+        End If
+        
+        'Adding the notes if needed
+        If sActualNote <> "" Then
+            .Cells(C_eStartLinesLLData, iCounterSheetLLCol).AddComment
+            .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Comment.Text Text:= sActualNote
+            .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Comment.Visible = False
+        End If
+
+
+        'Adding the sections and sub-section and merging
+
+         If sPrevMainSec <> sActualMainSec Then
+            'I am on a new Main Section, update the value of the section
+            .Cells(C_eStartLinesLLMainSec, iCounterSheetLLCol).value = sActualMainSec
+            
+            
+            'Merge the previous area
+            Call BuildMergeArea(xlsapp.Worksheets(sSheetName), C_eStartLinesLLMainSec, iPrevColMainSec, iCounterSheetLLCol, C_eStartLinesLLSubSec)
+
+            'Update the previous columns
+            sPrevMainSec = sActualMainSec
+            iPrevColMainSec = iCounterSheetLLCol
+        Else
+        'I am on the same main section, I will test if I am not on the column, if it is the case, merge the area
+            if (iCounterSheetLLCol = iTotalLLSheetColumns) then
+                Call BuildMergeArea(xlsapp.Worksheets(sSheetName), C_eStartLinesLLMainSec, iPrevColMainSec, iCounterSheetLLCol  + 1, C_eStartLinesLLSubSec)
+            End if
+        End if
+
+
+        'Do the same for the sub sections
+        If sPrevSubSec <> sActualSubSec Then
+            'I am on a new sub section
+            .Cells(C_eStartLinesLLSubSec, iCounterSheetLLCol).value = sActualSubSec
+            'Merge the sub sections area
+            'I have to test I am not on the first column since it is possible that initialized value differed from 
+            'the actual first value due to changes (taking in account the geo)
+
+            If (iCounterSheetLLCol = 1) Then 'The first column is a geoColumn with no value for the sublabel
+                Call BuildMergeArea(xlsapp.Worksheets(sSheetName), C_eStartLinesLLSubSec, iPrevColSubSec, iCounterSheetLLCol + 1)
+            Else
+            'Otherwise to the same as before but mergin only the sub section part
+                Call BuildMergeArea(xlsapp.Worksheets(sSheetName), C_eStartLinesLLSubSec, iPrevColSubSec, iCounterSheetLLCol)
+            End if
+
+           'update previous columns
+            sPrevSubSec = sActualSubSec
+            iPrevColSubSec = iCounterSheetLLCol
+        End if
+
+        'Updating the notes according to the column's Status ----------------------------------------------------------------------------
+        Select Case ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderStatus)))
+            Case C_sDictStatusMan
+                If sActualNote <> "" Then
+                    'Update the notes to add the Status
+                    .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Comment.Text Text:= "Mandatory data" & Chr(10) & sActualNote
+                Else
+                    .Cells(C_eStartLinesLLData, iCounterSheetLLCol).AddComment
+                    .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Comment.Text Text:="Mandatory data"
+                    .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Comment.Visible = False
+                    'Add comment on status
+                End if
+            Case C_sDictStatusHid
+                'Hidden, hid the actual column
+                .Columns(j).EntireColumn.Hidden = True
+            Case C_sDictStatusOpt
+            'Do nothing for the moment for optional status
+        End Select
+
+        'Formating the Column according to the Column's type-------------------------------------------------------------------------------------------
+
+        sActualType = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.indexOf(C_sDictHeaderType)))
+
+        'Check to be sure that the actual type contains decimal
+        If InStr(1, sActualType, C_sDictTypeDec) Then
+            iDecType = CInt(Replace(sActualType, C_sDictTypeDec, ""))
+            sActualType = C_sDictTypeDec
+        End if
+
+        Select Case  sActualType
+            'Text Type
+            Case C_sDictTypeText
+                .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).NumberFormat = "@"
+            'Integer Type
+            Case C_sDictTypeInt
+                .Cells(C_eStarLinesLLData + 1, iCounterSheetLLCol).NumberFormat = "0"
+            'Date Type
+            Case C_sDictTypeDate
+                .Cells(C_eStarLinesLLData + 1, iCounterSheetLLCol).NumberFormat = "d-mmm-yyy"
+            'Decimal Type
+            Case C_sDictTypeDec
+              .Cells(C_eStarLinesLLData + 1, iCounterSheetLLCol).NumberFormat = "0." & LetDecString(iDecType)
+            Case Else
+            'It it is not in the previous types, put it in text
+               .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).NumberFormat = "@"
+        End Select
+
+        'Building the Column Controls ----------------------------------------------------------------------------
+        sActualValidationType = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.indexOf(C_sDictHeaderAlert)))
+        sActualValidationMessage = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMessage))
+        'For actual choices, we can tolerate _ or - in the string names
+        sActualChoice = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.indexOf(C_sDictHeaderChoices)), bremoveHiphen := False)
+
+        Select Case sActualControl
+
+            Case C_sDictControlCho
+            'Add list if the choice is not emptyy
+            If sActualChoice <> "" Then
+                sValidationList = GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoice)
+                If sValidationList <> "" Then
+                    Call LetValidationList(.Cells(C_eStarLinesLLData + 1, iCounterSheetLLCol), sValidationList, LetValidationLockType(), CStr(DictData(DictHeaders("Message") - 1, i)))
+                End If
+            End if
+
+
+
+
+
+
+
+
+        End Select
+
+        'After input every headers, auto fit the columns and unlock data entry part
+        .Columns(iCounterSheetLLCol).EntireColumn.Autofit
+        .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Locked = False
+
+        End with
+
+
+        'Updating the counters
+
+        iCounterSheetLLCol = iCounterSheetLLCol + 1
+        iCounterDictSheetLine = iCounterDictSheetLine + 1
+    End while
+
+End Sub
+
+
+
+
+Private Sub BuildMergeArea(Wksh as Worksheet, iStartLineOne as integer, iPrevColumn as Integer, Optional iActualColumn as Integer = -1, Optional iStartLineTwo as integer = -1, Optional sColorMainSec as String = "DarkBlueTitle", Optional sColorSubSec as String = "LightBlueTitle")
+
+    Dim oCell as Object
+
+    With Wksh
+
+        If iActualColumn = -1 then
+            .Cells(iStartLineOne, iPrevColumn).HorizontalAlignment = xlCenter
+            .Cells(iStartLineOne, iPrevColumn).Interior.Color = LetColor(sColorSubSec)
+            Call WriteBorderLines(.Cells(iStartLineOne, iPrevColumn))
+            Exit sub
+        End If
+
+        .Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineOne, iActualColumn-1)).Merge
+        .Cells(iStartLineOne, iPrevColumn).MergeArea.HorizontalAlignment = xlCenter
+
+        If (iStartLineTwo <> -1) Then 
+             .Range(.Cells(iStartLineOne,iPrevColumn), .Cells(iStartLineOne, iActualColumn - 1)).Interior.Color = LetColor(sColorMainSec)
+            'For the sub sections, if nothing is mentionned, just put them in blue (or the same color as the main sections)
+            For Each oCell In .Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineTwo, iActualColumn - 1))
+                  If oCell.value = "" Then
+                    oCell.Interior.Color = LetColor(sColorMainSec)
+                  End If
+            Next
+            Set oCell = Nothing
+            'Write borders to the ranges including the subsection
+            Call WriteBorderLines(.Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineTwo, iActualColumn - 1)))
+        Else
+            .Range(.Cells(iStartLineOne,iPrevColumn), .Cells(iStartLineOne, iPrevColumn - 1)).Interior.Color = LetColor(sColorSubSec)
+            Call WriteBorderLines(.Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineOne, iActualColumn - 1)))           
+        End if
+    End With
+
 End Sub
 
 
@@ -199,6 +483,10 @@ Sub DesBuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHea
     Dim LLSheetNameData As BetterArray           'Names of sheets of type linelist
     Dim sPrevSheetName As String
     Dim sEnviron As String
+
+    
+    Dim ChoicesListData As BetterArray          'Choices list
+    Dim ChoicesLabelsData As BetterArray        'Choices labels
 
     Dim oCell As Object                          'pour colors of titles
     Dim iPrevColS1 As Integer
@@ -269,7 +557,23 @@ Sub DesBuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHea
     
     DoEvents
     'Create all the required Sheets in the workbook (Dictionnary, Export, Password, Geo and other sheets defined by the user)
-    Call CreateSheetsInLL(xlsapp, DictData, DictHeaders, ExportData, LLNbColData, LLSheetNameData, bNotHideSheets:=True)
+    Call CreateSheetsInLL(xlsapp, DictData, DictHeaders, ExportData, LLNbColData, LLSheetNameData, bNotHideSheets:=False)
+
+    'Choices data'Setting the Choices labels and lists
+    Set ChoicesListData = New BetterArray
+    Set ChoicesLabelsData = New BetterArray
+    ChoicesListData.LowerBound = 1
+    ChoicesLabelsData.LowerBound = 1
+
+    'Update the values of the labels and list! here I have to make sure my Headers contains those values
+
+    If (ChoicesHeaders.indexOf(C_sChoiHeaderList) <= 0 or  ChoicesHeaders.indexOf(C_sChoiHeaderLab) <= 0) Then
+        Exit Sub
+    End if
+
+
+    ChoicesListData.Items = ChoicesData.ExtractSegment(columnIndex := ChoicesHeaders.indexOf(C_sChoiHeaderList))
+    ChoicesLabelsData.Items = ChoicesData.ExtractSegment(columnIndex := ChoicesHeaders.indexOf(C_sChoiHeaderLab))
     
     DoEvents
     On Error Resume Next
@@ -278,6 +582,8 @@ Sub DesBuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHea
     
     DoEvents
     
+
+     
     
     'At this step all the sheets in the linelist are created
     
@@ -329,16 +635,15 @@ Sub DesBuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHea
     '                 j = 1
     '                 l = l + 1
     '                 sPrevSheetName = DictData(DictHeaders("Sheet") - 1, i)
-    '                 .ListObjects.Add(xlSrcRange, .Range(.Cells(C_TitleLine, 1), .Cells(C_TitleLine, LLNbColData(l))), , xlYes).Name = "o" & DictData(DictHeaders("Sheet") - 1, i)
-    '                 .ListObjects("o" & DictData(DictHeaders("Sheet") - 1, i)).TableStyle = "TableStyleLight16"
+    '                 
     '
-    '                 .Cells.Font.Size = 9
+    '                 
     '
     '                 iPrevStartS1 = 1
     '
     '                 'First title
-    '                 sTitle1 = DictData(DictHeaders("Main section") - 1, i)
-    '                 .Cells(C_StartLineTitle1, j).value = DictData(DictHeaders("Main section") - 1, i)
+    '   
+    '                
     '
     '                 bCmdGeoExist = False
     '                 bCmdVisibleNameExist = False
@@ -346,137 +651,20 @@ Sub DesBuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHea
     '
     '             End If
     '
-    '             'Headers
-    '             .Cells(C_TitleLine, j).Name = Replace(DictData(DictHeaders("Variable name") - 1, i), " ", "_")
-    '             .Cells(C_TitleLine, j).value = LetWordingWithSpace(xlsapp, CStr(DictData(DictHeaders("Main label") - 1, i)), CStr(DictData(DictHeaders("Sheet") - 1, i)))
-    '             .Cells(C_TitleLine, j).VerticalAlignment = xlTop
+    '             
     '
-    '             'Adding the sub-label if needed Chr(10) is the return to line character the sublabel is in gray
-    '             If DictData(DictHeaders("Sub-label") - 1, i) <> "" Then
-    '                 .Cells(C_TitleLine, j).value = .Cells(C_TitleLine, j).value & Chr(10) & DictData(DictHeaders("Sub-label") - 1, i)
+    '             
     '
-    '                 'Changing the fontsize of the sublabels
-    '                 .Cells(C_TitleLine, j).Characters(Start:=Len(DictData(DictHeaders("Main label") - 1, i)) + 1, Length:=Len(DictData(DictHeaders("Sub-label") - 1, i)) + 1).Font.Size = 8
-    '                 .Cells(C_TitleLine, j).Characters(Start:=Len(DictData(DictHeaders("Main label") - 1, i)) + 1, Length:=Len(DictData(DictHeaders("Sub-label") - 1, i)) + 1).Font.Color = LetColor("Grey")
-    '             End If
+   
     '
-    '             'Adding the notes as comment
-    '             If DictData(DictHeaders("Note") - 1, i) <> "" Then
-    '                 .Cells(C_TitleLine, j).AddComment
-    '                 .Cells(C_TitleLine, j).Comment.Text Text:=DictData(DictHeaders("Note") - 1, i)
-    '                 .Cells(C_TitleLine, j).Comment.Visible = False
-    '             End If
+    '             
     '
-    '             'Geo Titles or Customs
-    '             Select Case LCase(DictData(DictHeaders("Control") - 1, i))
-    '             Case "geo"
-    '                 If DictData(DictHeaders("Sub-section") - 1, i) = "" Then
-    '                     DictData(DictHeaders("Sub-section") - 1, i) = DictData(DictHeaders("Main label") - 1, i)
-    '                 End If
-    '             Case "custom"
-    '                 .Cells(C_TitleLine, j).Locked = False
-    '             End Select
+    '             
+    '            
     '
-    '             'Now the sections
-    '             If sTitle1 <> DictData(DictHeaders("Main section") - 1, i) Then
+    
     '
-    '                 'Merge previous cells if the title changes
-    '                 .Cells(C_StartLineTitle1, j).value = DictData(DictHeaders("Main section") - 1, i)
-    '                 sTitle1 = DictData(DictHeaders("Main section") - 1, i)
-    '
-    '                 .Range(.Cells(C_StartLineTitle1, iPrevColS1), .Cells(C_StartLineTitle1, j - 1)).Merge
-    '                 .Cells(C_StartLineTitle1, iPrevColS1).MergeArea.HorizontalAlignment = xlCenter
-    '                 .Range(.Cells(C_StartLineTitle1, iPrevColS1), .Cells(C_StartLineTitle1, j - 1)).Interior.Color = LetColor("DarkBlueTitle")
-    '
-    '                 For Each oCell In .Range(.Cells(C_StartLineTitle2, iPrevColS1), .Cells(C_StartLineTitle2, j - 1))
-    '                     If oCell.value = "" Then
-    '                         oCell.Interior.Color = LetColor("DarkBlueTitle")
-    '                     End If
-    '                 Next
-    '                 Set oCell = Nothing
-    '                 Call WriteBorderLines(.Range(.Cells(C_StartLineTitle1, iPrevColS1), .Cells(C_StartLineTitle2, j - 1)))
-    '
-    '                 iPrevColS1 = j
-    '             Else
-    '                 If i = UBound(DictData, 2) Then 'Derniere case
-    '                     .Range(.Cells(C_StartLineTitle1, iPrevColS1), .Cells(C_StartLineTitle1, j)).Merge
-    '                     .Cells(C_StartLineTitle1, iPrevColS1).MergeArea.HorizontalAlignment = xlCenter
-    '                     .Range(.Cells(C_StartLineTitle1, iPrevColS1), .Cells(C_StartLineTitle1, j)).Interior.Color = LetColor("DarkBlueTitle")
-    '                     For Each oCell In .Range(.Cells(C_StartLineTitle2, iPrevColS1), .Cells(C_StartLineTitle2, j)) 'coloriage
-    '                         If oCell.value = "" Then
-    '                             oCell.Interior.Color = LetColor("DarkBlueTitle")
-    '                         End If
-    '                     Next
-    '                     Set oCell = Nothing
-    '                     Call WriteBorderLines(.Range(.Cells(C_StartLineTitle1, iPrevColS1), .Cells(C_StartLineTitle2, j)))
-    '                 End If
-    '             End If
-    '
-    '             If sTitle2 <> DictData(DictHeaders("Sub-section") - 1, i) Then
-    '                 'si le titre change, on fusionne les prec cellules
-    '                 .Cells(C_StartLineTitle2, j).value = DictData(DictHeaders("Sub-section") - 1, i)
-    '
-    '                 sTitle2 = DictData(DictHeaders("Sub-section") - 1, i)
-    '                 If j > 1 Then
-    '                     If .Cells(C_StartLineTitle2, iPrevColS2) <> "" Then
-    '                         .Range(.Cells(C_StartLineTitle2, iPrevColS2), .Cells(C_StartLineTitle2, j - 1)).Merge
-    '                         .Cells(C_StartLineTitle2, iPrevColS2).MergeArea.HorizontalAlignment = xlCenter
-    '                         .Range(.Cells(C_StartLineTitle2, iPrevColS2), .Cells(C_StartLineTitle2, j - 1)).Interior.Color = LetColor("LightBlueTitle")
-    '                         Call WriteBorderLines(.Range(.Cells(C_StartLineTitle2, iPrevColS2), .Cells(C_StartLineTitle2, j - 1)))
-    '                     End If
-    '                 Else
-    '                     If .Cells(C_StartLineTitle2, iPrevColS2) <> "" Then
-    '                         .Cells(C_StartLineTitle2, iPrevColS2).HorizontalAlignment = xlCenter
-    '                         .Cells(C_StartLineTitle2, iPrevColS2).Interior.Color = LetColor("LightBlueTitle")
-    '                         Call WriteBorderLines(.Cells(C_StartLineTitle2, iPrevColS2))
-    '                     End If
-    '                 End If
-    '                 iPrevColS2 = j
-    '             End If
-    '
-    '             .Columns(j).EntireColumn.AutoFit
-    '
-    '             'Status champ obligatoire
-    '             Select Case LCase(DictData(DictHeaders("Status") - 1, i))
-    '             Case "mandatory"
-    '                 If DictData(DictHeaders("Note") - 1, i) <> "" Then
-    '                     .Cells(C_TitleLine, j).Comment.Text Text:="Mandatory data" & Chr(10) & DictData(DictHeaders("Note") - 1, i)
-    '                 Else
-    '                     .Cells(C_TitleLine, j).AddComment
-    '                     .Cells(C_TitleLine, j).Comment.Text Text:="Mandatory data"
-    '                     .Cells(C_TitleLine, j).Comment.Visible = False
-    '                 End If
-    '             Case "optional"
-    '
-    '             Case "hidden"
-    '                 .Columns(j).EntireColumn.Hidden = True
-    '
-    '             End Select
-    '
-    '             'Protection of the following cell (normally C_TitleLine+1)?
-    '             .Cells(6, j).Locked = False
-    '
-    '             'typage
-    '             If DictData(DictHeaders("Type") - 1, i) <> "" Then
-    '                 Select Case LCase(DictData(DictHeaders("Type") - 1, i))
-    '                 Case "text"
-    '                     .Cells(6, j).NumberFormat = "@"
-    '                 Case "date"
-    '                     .Cells(6, j).NumberFormat = "d-mmm-yyyy"
-    '                 Case "integer"
-    '                     .Cells(6, j).NumberFormat = "0"
-    '                 Case Else
-    '                     If InStr(1, LCase(DictData(DictHeaders("Type") - 1, i)), "decimal") > 0 Then 'decimal
-    '                         iDecNb = Right(DictData(DictHeaders("Type") - 1, i), 1)
-    '                         k = 0
-    '                         While k < iDecNb
-    '                             k = k + 1
-    '                         Wend
-    '                         'Only the last character is extracted, so you can have up to 9 digits maximum
-    '                         .Cells(6, j).NumberFormat = "0." & LetDecString(Right(DictData(DictHeaders("Type") - 1, i), 1))
-    '                     End If
-    '                 End Select
-    '             End If
+ 
     '
     '             'Choices / geo et HF
     '             If DictData(DictHeaders("Control") - 1, i) <> "" Then
