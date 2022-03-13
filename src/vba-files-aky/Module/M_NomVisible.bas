@@ -232,7 +232,7 @@ End Sub
 
 'This procedures hides or shows one column from the One sheet given the variable name selected
 'in the visibility form
-Sub ShowHideColumnSheet(sSheetname As String, ByVal sVarname As String, Optional bhide As Boolean = True)
+Sub ShowHideColumnSheet(sSheetName As String, ByVal sVarname As String, Optional bhide As Boolean = True)
     'bhide is a boolean to hide or show one column
     Dim indexCol As Integer                      'Column The index of the column to Hide
     Dim T_headers As BetterArray                 'Temporary data for headers
@@ -253,8 +253,8 @@ Sub ShowHideColumnSheet(sSheetname As String, ByVal sVarname As String, Optional
     ActiveSheet.Unprotect (C_PWD)
     
     'varname index on the actual sheet
-    For i = 1 To Sheets(sSheetname).Cells(C_TitleCol, 1).End(xlToRight).Column
-        T_headers.Push Sheets(sSheetname).Cells(C_TitleCol, i).Name.Name
+    For i = 1 To Sheets(sSheetName).Cells(C_TitleCol, 1).End(xlToRight).Column
+        T_headers.Push Sheets(sSheetName).Cells(C_TitleCol, i).Name.Name
     Next
     indexCol = T_headers.IndexOf(sVarname)
     
@@ -263,8 +263,8 @@ Sub ShowHideColumnSheet(sSheetname As String, ByVal sVarname As String, Optional
     T_headers.Push "Sheet"
     Set T_headers = ExtractDicColumns(T_headers)
     T_headers.Flatten
-    ifSheetRow = T_headers.IndexOf(sSheetname)
-    ilSheetRow = T_headers.LastIndexOf(sSheetname)
+    ifSheetRow = T_headers.IndexOf(sSheetName)
+    ilSheetRow = T_headers.LastIndexOf(sSheetName)
     
     'Extract the control column
     T_headers.Clear
@@ -297,12 +297,12 @@ Sub ShowHideColumnSheet(sSheetname As String, ByVal sVarname As String, Optional
     
     If indexCol > 0 Then
         'Now hiding
-        Sheets(sSheetname).Columns(indexCol).Hidden = bhide
+        Sheets(sSheetName).Columns(indexCol).Hidden = bhide
         'Testing if it is a geo column and hide the following
         If bisGeo Then
-            Sheets(sSheetname).Columns(indexCol + 1).Hidden = bhide
-            Sheets(sSheetname).Columns(indexCol + 2).Hidden = bhide
-            Sheets(sSheetname).Columns(indexCol + 3).Hidden = bhide
+            Sheets(sSheetName).Columns(indexCol + 1).Hidden = bhide
+            Sheets(sSheetName).Columns(indexCol + 2).Hidden = bhide
+            Sheets(sSheetName).Columns(indexCol + 3).Hidden = bhide
         End If
     End If
     
@@ -356,11 +356,11 @@ Sub ShowHideLogic(iIndex As Integer)
                 '// --- Here I update the Data to show "Hidden"
                 UpdateFormData T_table:=T_formdata, index:=iIndex, bhide:=True
                 '//--- Actually hide the column
-                ShowHideColumnSheet sSheetname:=ActiveSheet.Name, sVarname:=T_formdata.Items(iIndex + 1, 2), bhide:=True
+                ShowHideColumnSheet sSheetName:=ActiveSheet.Name, sVarname:=T_formdata.Items(iIndex + 1, 2), bhide:=True
             Else
                 '// --- Here I udpate the data to show "Shown"
                 UpdateFormData T_table:=T_formdata, index:=iIndex, bhide:=False
-                ShowHideColumnSheet sSheetname:=ActiveSheet.Name, sVarname:=T_formdata.Items(iIndex + 1, 2), bhide:=False
+                ShowHideColumnSheet sSheetName:=ActiveSheet.Name, sVarname:=T_formdata.Items(iIndex + 1, 2), bhide:=False
             End If
         End If
     

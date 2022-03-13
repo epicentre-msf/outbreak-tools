@@ -2,12 +2,12 @@ Attribute VB_Name = "LinelistHelpersFunctions"
 Option Explicit
 
 'Clear a String to remove inconsistencies
-Public Function ClearString(sString As String, Optional bremoveHiphen as boolean = True) As String
+Public Function ClearString(ByVal sString As String, Optional bremoveHiphen As Boolean = True) As String
     Dim sValue As String
     sValue = Replace(sString, "?", " ")
 
     If bremoveHiphen Then
-        sValue = Replace(sSValue, "-", " ")
+        sValue = Replace(sValue, "-", " ")
         sValue = Replace(sValue, "_", " ")
     End If
    
@@ -41,11 +41,11 @@ Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Byte) As Bet
 End Function
 
 'Get the data from one sheet starting from one line
-Function GetData(Wkb As Workbook, sSheetname As String, StartLine As Byte) As BetterArray
+Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Byte) As BetterArray
     Dim Data As BetterArray
     Set Data = New BetterArray
     Data.LowerBound = 1
-    Data.FromExcelRange Wkb.Worksheets(sSheetname).Cells(StartLine, 1), DetectLastRow:=True, DetectLastColumn:=True
+    Data.FromExcelRange Wkb.Worksheets(sSheetName).Cells(StartLine, 1), DetectLastRow:=True, DetectLastColumn:=True
     'The output of the function is a variant
     Set GetData = Data
     Set Data = Nothing
@@ -53,16 +53,16 @@ End Function
 
 
 'Get the list of validations from the Choices data
-Function GetValidationList(ChoicesListData as BetterArray, ChoicesLabelsData as BetterArray, sValidation as String) As string
+Function GetValidationList(ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, sValidation As String) As String
 
-    Dim iChoiceIndex as Integer
-    Dim iChoiceLastIndex as Integer
-    Dim i as integer 'iterator to get the values
-    Dim sValidationList as String 'Validation List
+    Dim iChoiceIndex As Integer
+    Dim iChoiceLastIndex As Integer
+    Dim i As Integer 'iterator to get the values
+    Dim sValidationList As String 'Validation List
 
     sValidationList = ""
 
-    iChoiceIndex = ChoicesListData.indexOf(sValidation)
+    iChoiceIndex = ChoicesListData.IndexOf(sValidation)
     iChoiceLastIndex = ChoicesListData.LastIndexOf(sValidation)
 
     If (iChoiceIndex > 0) Then
@@ -70,10 +70,10 @@ Function GetValidationList(ChoicesListData as BetterArray, ChoicesLabelsData as 
         For i = iChoiceIndex + 1 To iChoiceLastIndex
             sValidationList = sValidationList & Application.International(xlListSeparator) & ChoicesLabelsData.Items(i)
         Next
-    End if
+    End If
 
     GetValidationList = sValidationList
-End function
+End Function
 
 
 Public Function IsEmptyTable(T_aTest) As Boolean

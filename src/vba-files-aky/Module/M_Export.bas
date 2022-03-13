@@ -8,7 +8,7 @@ Const C_PWD As String = "1234"
 'on va avoir besoin de CreateDicTitle dans M_LineList
 'on fonctionne par exclusion
 
-Private Function creationTabChamp(iTypeExport As Byte, sSheetname As String)
+Private Function creationTabChamp(iTypeExport As Byte, sSheetName As String)
 
     Dim i As Integer
     Dim j As Integer
@@ -25,7 +25,7 @@ Private Function creationTabChamp(iTypeExport As Byte, sSheetname As String)
     j = 0
     i = 1
     While i <= Sheets("Dico").Cells(1, 1).End(xlDown).Row
-        If LCase(Sheets("Dico").Cells(i, D_title("Export " & iTypeExport)).value) = "yes" And Sheets("Dico").Cells(i, D_title("Sheet")).value = sSheetname Then
+        If LCase(Sheets("Dico").Cells(i, D_title("Export " & iTypeExport)).value) = "yes" And Sheets("Dico").Cells(i, D_title("Sheet")).value = sSheetName Then
             ReDim Preserve T_data(1, j)
             T_data(0, j) = LetPosDataName(Sheets("Dico").Cells(i, D_title("Variable name")).value)
             'T_data(1, j) = Sheets("Dico").Cells(i, D_Title("Variable name")).value
@@ -120,7 +120,7 @@ Sub Export(iTypeExport As Byte)
     Dim T_data
     Dim T_dataValid
     Dim sNameListO As String
-    Dim sSheetname As String
+    Dim sSheetName As String
 
     Dim T_dico
     Dim D_dico As Scripting.Dictionary
@@ -139,18 +139,18 @@ Sub Export(iTypeExport As Byte)
         .ScreenUpdating = False
         .Visible = False
         .Workbooks.Add
-        sSheetname = ActiveSheet.Name
-        .Sheets(1).Name = sSheetname
+        sSheetName = ActiveSheet.Name
+        .Sheets(1).Name = sSheetName
         'pour la feuille a exporter
         If IsValidSheetForExport(ActiveSheet.Name) Then
-            T_dataValid = creationTabChamp(iTypeExport, sSheetname)
+            T_dataValid = creationTabChamp(iTypeExport, sSheetName)
             If Not IsEmptyTable(T_dataValid) Then
-                sNameListO = "o" & Replace(sSheetname, "-", "_")
+                sNameListO = "o" & Replace(sSheetName, "-", "_")
                 i = 1
                 While i <= UBound(T_dataValid, 2)
                     T_data = ActiveSheet.ListObjects("olinelist-patient").ListColumns(T_dataValid(0, i)).Range
-                    .Sheets(sSheetname).Cells(C_TitleCol, i).Resize(UBound(T_data)) = T_data
-                    .Sheets(sSheetname).Cells(C_TitleCol, i).value = T_dataValid(1, i)
+                    .Sheets(sSheetName).Cells(C_TitleCol, i).Resize(UBound(T_data)) = T_data
+                    .Sheets(sSheetName).Cells(C_TitleCol, i).value = T_dataValid(1, i)
            
                     i = i + 1
                 Wend
