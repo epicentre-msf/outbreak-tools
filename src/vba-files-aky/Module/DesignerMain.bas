@@ -191,7 +191,6 @@ Sub DesGenerateData()
     Set ChoicesData = GetData(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesData)
 
        
-
     'Reading the export sheet
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadExport")
     

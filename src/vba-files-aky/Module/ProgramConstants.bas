@@ -68,7 +68,7 @@ Public Const C_sDictControlHf As String = "hf"
 Public Const C_sDictControlForm As String = "formula"
 Public Const C_sDictControlCho As String = "choices"
 Public Const C_sDictControlGeo As String = "geo"
-Public Const C_sDictControlCustom as String = "custom"
+Public Const C_sDictControlCustom As String = "custom"
 
 'YesNo ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -81,15 +81,15 @@ Public Const C_sDictAlertWar As String = "warning"
 Public Const C_sDictAlertErr As String = "error"
 
 'Types
-Public Const C_sDictTypeInt as String = "integer"
-Public Const C_sDictTypeText as String = "text"
-Public Const C_sDictTypeDate as String = "date"
-Public Const C_sDictTypeDec as string = "decimal"
+Public Const C_sDictTypeInt As String = "integer"
+Public Const C_sDictTypeText As String = "text"
+Public Const C_sDictTypeDate As String = "date"
+Public Const C_sDictTypeDec As String = "decimal"
 
 'CHOICES PARAMETERS ==========================================================================
 
-Public Const C_sChoiHeaderLab as string = "label" 'Choice label name headers
-Public Const C_sChoiHeaderList as string = "list_name" 'Choice list headers
+Public Const C_sChoiHeaderLab As String = "label" 'Choice label name headers
+Public Const C_sChoiHeaderList As String = "list name" 'Choice list headers
 
 
 'MODULES ==========================================================================================================================================================================
@@ -226,6 +226,10 @@ Public Const C_iLLButtonsRowHeight       As Integer = 25                        
 Public Const C_iNumberOfBars             As Integer = 40                                    'Number of bars in the Progressbar in the designer
 Public Const C_iLLSheetFontSize          As Integer = 9                                      'Default font size on a linelist sheet
 Public Const C_iLLSubLabFontSize         As Integer = 8
+Public Const C_iCmdWidth                 As Integer = 60                                    'Width of command added  on one sheet
+Public Const C_iCmdHeight                As Integer = 20                                    'Height of command added on one sheet
+Public Const C_iNbLinesLLData           As Integer = 200                                    'Number of linest to add by default
+
 'ENUMERATION LISTS ================================================================================================================================================================
 
 'Startlines for data in various source files
@@ -237,6 +241,7 @@ Public Enum C_StartLines
     C_eStartLinesLLSubSec = 4                                                                'Starting lines for second title of the linelist
     C_eStartLinesLLData = 5                                                                  'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                                                             'Starting lines for export titles
+    C_eStartLinesAdmData = 10                                                                 'Starting lines for a Adm data
     C_eStartLinesExportSource = 5                                                            'Starting lines for export sources
     C_eStartLinesChoicesHeaders = 1                                                          'Starting lines of the choices Headers
     C_eStartLinesChoicesData = 2                                                             'Starting lines of the choices Data
