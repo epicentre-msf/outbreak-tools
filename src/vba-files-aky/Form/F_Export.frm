@@ -1,9 +1,9 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_Export 
    Caption         =   "Export"
-   ClientHeight    =   5925
-   ClientLeft      =   90
-   ClientTop       =   270
+   ClientHeight    =   5928
+   ClientLeft      =   96
+   ClientTop       =   276
    ClientWidth     =   3540
    OleObjectBlob   =   "F_Export.frx":0000
    StartUpPosition =   1  'CenterOwner
@@ -13,6 +13,9 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
+
+
 
 
 

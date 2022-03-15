@@ -95,6 +95,12 @@ Function DesLetColor(sColorCode As String)
         DesLetColor = RGB(248, 203, 173)
     Case "White"
         DesLetColor = RGB(255, 255, 255)
+    Case "MainLabBlue"
+        DesLetColor = RGB(47, 117, 181)
+    Case "SubLabBlue"
+        DesLetColor = RGB(221, 235, 247)
+    Case "NotesBlue"
+        DesLetColor = RGB(142, 169, 219)
     End Select
 
 End Function

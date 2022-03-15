@@ -18,6 +18,14 @@ Private Sub Workbook_Open()
   
   Call SetInputRangesToWhite
   SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgSet)
+  
+  SheetGeo.ListObjects(C_sTabADM1).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabADM2).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabADM3).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabADM4).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabHF).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabNames).DataBodyRange.Clear
+  
 End Sub
 
 

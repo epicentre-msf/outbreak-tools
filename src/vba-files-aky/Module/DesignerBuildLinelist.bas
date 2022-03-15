@@ -81,14 +81,15 @@ End Sub
 
 'Create the required Sheet and put those required to veryHidden
 Private Sub CreateSheetsInLL(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders As BetterArray, _
-                            ExportData As BetterArray, LLNbColData As BetterArray, LLSheetNameData As BetterArray, _
-                            Optional bNotHideSheets As Boolean = False)
+                            ExportData As BetterArray, LLNbColData As BetterArray, ColumnIndexData As BetterArray, _
+                            LLSheetNameData As BetterArray, Optional bNotHideSheets As Boolean = False)
     'LLNbColData: Number of columns for a sheet of type linelist
     'LLSheetNameData: Name of a sheet of type linelist
 
     Dim i As Integer 'iterators
     Dim j As Integer
-    
+    ColumnIndexData.LowerBound = 1
+
     Dim sPrevSheetName As String 'Previous sheet name
         
     With xlsapp
@@ -129,7 +130,7 @@ Private Sub CreateSheetsInLL(xlsapp As Excel.Application, DictData As BetterArra
         'i will hep move from one values of dictionnary data to another
         While i <= DictData.UpperBound
             If sPrevSheetName <> DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)) Then
-                
+
                 If sPrevSheetName = "" Then
                     .Worksheets(1).Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
                 Else
@@ -140,6 +141,9 @@ Private Sub CreateSheetsInLL(xlsapp As Excel.Application, DictData As BetterArra
                 sPrevSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
                 
                 j = j + 1
+                'Here, the column index is the index number of each column in one sheet. I update it when I am on
+                'a new sheet
+                ColumnIndexData.Item(i) = 1
                 LLNbColData.Item(j) = 1
                 LLSheetNameData.Push sPrevSheetName
                 
@@ -167,9 +171,18 @@ Private Sub CreateSheetsInLL(xlsapp As Excel.Application, DictData As BetterArra
                 'I am on a previous sheet name, I will upate in that case the number of columns of the linelist type
                 'I will use a select case to anticipate if whe have to deal with another type of sheet
                LLNbColData.Item(j) = LLNbColData.Item(j) + 1
+                'Here I need to take in account the Geo for the exact column number in one sheet
             End If
+
+            'Updating the column index data (that is the index of each variable names)
+            Select Case ClearString(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderControl)))
+                Case C_sDictControlGeo
+                        ColumnIndexData.Item(i + 1) = ColumnIndexData.Items(i) + 4
+                Case Else
+                        ColumnIndexData.Item(i + 1) = ColumnIndexData.Items(i) + 1
+            End Select
+
             i = i + 1
-            
         Wend
     End With
 End Sub
@@ -177,7 +190,9 @@ End Sub
 
 Private Sub CreateSheetDataEntry(xlsapp As Excel.Application, sSheetName As String, iSheetStartLine As Integer, _
                                  DictData As BetterArray, DictHeaders As BetterArray, LLSheetNameData As BetterArray, _
-                                 LLNbColData As BetterArray, ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray)
+                                 LLNbColData As BetterArray, ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, _
+                                 VarnameData As BetterArray, ColumnIndexData As BetterArray, FormulaData As BetterArray, _
+                                 SpecCharData As BetterArray)
 
     'DictData: Dictionary data
     'DictHeaders: Dictionary Headers
@@ -210,6 +225,10 @@ Private Sub CreateSheetDataEntry(xlsapp As Excel.Application, sSheetName As Stri
     Dim sActualValidationMessage As String
     Dim sActualStatus As String
     Dim bCmdGeoExist As Boolean
+    Dim sActualFormula As String
+    Dim sFormula As String 'Formula after correcting and cleaning
+    Dim sFormulaMin As String 'Formula for min
+    Dim sFormulaMax As String 'Formula for max
 
 
     'Update the existence of the Geo button
@@ -233,31 +252,34 @@ Private Sub CreateSheetDataEntry(xlsapp As Excel.Application, sSheetName As Stri
 
     'Continue adding the columns unless the total number of columns to add is reached
     With xlsapp.Worksheets(sSheetName)
-    
+         .Select
+         xlsapp.ActiveWindow.DisplayGridlines = False
+         .Cells(1, 1).Select
+         xlsapp.CutCopyMode = False
+         
         'Creating the TableObject that will contain the data entry
         .ListObjects.Add(xlSrcRange, .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_eStartLinesLLData, iTotalLLSheetColumns)), , xlYes).Name = "o" & ClearString(sSheetName)
         .ListObjects("o" & ClearString(sSheetName)).TableStyle = C_sLLTableStyle
-        
+         
         'Adding required buttons
         
             'Show Hide column
         Call AddCmd(xlsapp, sSheetName, .Cells(2, 1).Left, .Cells(2, 1).Top, "SHP_NomVisibleApps", "Show/Hide", C_iCmdWidth, C_iCmdHeight)
-        .Shapes("SHP_NomVisibleApps").Fill.ForeColor.RGB = LetColor("DarkBlueTitle")
-        .Shapes("SHP_NomVisibleApps").Fill.BackColor.RGB = LetColor("DarkBlueTitle")
+        .Shapes("SHP_NomVisibleApps").Fill.ForeColor.RGB = DesLetColor("DarkBlueTitle")
+        .Shapes("SHP_NomVisibleApps").Fill.BackColor.RGB = DesLetColor("DarkBlueTitle")
         '.Shapes("SHP_NomVisibleApps").Fill.TwoColorGradient msoGradientHorizontal, 1
         .Shapes("SHP_NomVisibleApps").OnAction = "ClicCmdVisibleName"
         
         Call AddCmd(xlsapp, sSheetName, .Cells(1, 1).Left + C_iCmdWidth + 10, .Cells(1, 2).Top, "SHP_Ajout200L", "Add rows", C_iCmdWidth, C_iCmdHeight)
-        .Shapes("SHP_Ajout200L").Fill.ForeColor.RGB = LetColor("DarkBlueTitle")
-        .Shapes("SHP_Ajout200L").Fill.BackColor.RGB = LetColor("DarkBlueTitle")
+        .Shapes("SHP_Ajout200L").Fill.ForeColor.RGB = DesLetColor("DarkBlueTitle")
+        .Shapes("SHP_Ajout200L").Fill.BackColor.RGB = DesLetColor("DarkBlueTitle")
         '.Shapes("SHP_Ajout200L").Fill.TwoColorGradient msoGradientHorizontal, 1
         .Shapes("SHP_Ajout200L").OnAction = "clicAdd200L"
         
+        'All the cells font size at 9
+        .Cells.Font.Size = C_iLLSheetFontSize
         
         While (iCounterDictSheetLine <= iSheetStartLine + iTotalLLSheetColumns - 1)
-
-            'All the cells font size at 9
-            .Cells.Font.Size = C_iLLSheetFontSize
         
             'Adding the Headers with sections, Mainlabel and sub labels
             'First, accessing those values ussing the dicitonary data and its corrresponding headers
@@ -267,14 +289,13 @@ Private Sub CreateSheetDataEntry(xlsapp As Excel.Application, sSheetName As Stri
             sActualMainLab = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainLab))
             sActualSubLab = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubLab))
             sActualNote = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderNote))
-            sActualControl = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderControl))
-            sActualControl = ClearString(sActualControl)
+            sActualControl = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderControl)))
             sActualMin = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMin))
             sActualMax = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMax))
             sActualStatus = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderStatus)))
             sActualChoice = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderChoices))
-            'sActualStatus = ClearString(sActualStatus)
-
+            sActualFormula = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderFormula))
+            
             'Befor doing some changes, we need to update the main label or sub-label correspondingly
             'in case whe have the geo control
 
@@ -297,11 +318,14 @@ Private Sub CreateSheetDataEntry(xlsapp As Excel.Application, sSheetName As Stri
 
             'Adding the sub-label if needed Chr(10) is the return to line character the sublabel is in gray------------------
             If sActualSubLab <> "" Then
-                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).value = .Cells(C_eStartLinesLLData, iCounterSheetLLCol).value & Chr(10) & sActualSubLab
+                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).value = _
+                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).value & Chr(10) & sActualSubLab
     
                 'Changing the fontsize of the sublabels
-                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Characters(Start:=Len(sActualMainLab) + 1, Length:=Len(sActualSubLab) + 1).Font.Size = C_iLLSubLabFontSize
-                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Characters(Start:=Len(sActualMainLab) + 1, Length:=Len(sActualSubLab) + 1).Font.Color = LetColor("Grey")
+                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Characters(Start:=Len(sActualMainLab) + 1, _
+                       Length:=Len(sActualSubLab) + 1).Font.Size = C_iLLSheetFontSize - 2
+                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Characters(Start:=Len(sActualMainLab) + 1, _
+                       Length:=Len(sActualSubLab) + 1).Font.Color = DesLetColor("NotesBlue")
             End If
         
             'Adding the notes if needed
@@ -328,10 +352,12 @@ Private Sub CreateSheetDataEntry(xlsapp As Excel.Application, sSheetName As Stri
                 'the actual first value due to changes (taking in account the geo)
 
                 If (iCounterSheetLLCol = 1) Then 'The first column is a geoColumn with no value for the sublabel
-                    Call BuildMergeArea(xlsapp.Worksheets(sSheetName), C_eStartLinesLLSubSec, iPrevColSubSec, iCounterSheetLLCol + 1)
+                    Call BuildMergeArea(xlsapp.Worksheets(sSheetName), C_eStartLinesLLSubSec, _
+                                        iPrevColSubSec, iCounterSheetLLCol + 1)
                 Else
                     'Otherwise to the same as before but mergin only the sub section part
-                    Call BuildMergeArea(xlsapp.Worksheets(sSheetName), C_eStartLinesLLSubSec, iPrevColSubSec, iCounterSheetLLCol)
+                    Call BuildMergeArea(xlsapp.Worksheets(sSheetName), C_eStartLinesLLSubSec, _
+                                        iPrevColSubSec, iCounterSheetLLCol)
                 End If
 
                 'update previous columns
@@ -345,7 +371,8 @@ Private Sub CreateSheetDataEntry(xlsapp As Excel.Application, sSheetName As Stri
                 .Cells(C_eStartLinesLLMainSec, iCounterSheetLLCol).value = sActualMainSec
                 
                 'Merge the previous area
-                Call BuildMergeArea(xlsapp.Worksheets(sSheetName), C_eStartLinesLLMainSec, iPrevColMainSec, iCounterSheetLLCol, C_eStartLinesLLSubSec)
+                Call BuildMergeArea(xlsapp.Worksheets(sSheetName), C_eStartLinesLLMainSec, iPrevColMainSec, _
+                                    iCounterSheetLLCol, C_eStartLinesLLSubSec)
                 
                 'Update the previous columns
                 sPrevMainSec = sActualMainSec
@@ -353,7 +380,8 @@ Private Sub CreateSheetDataEntry(xlsapp As Excel.Application, sSheetName As Stri
             Else
                 'I am on the same main section, I will test if I am not on the column, if it is the case, merge the area
                 If (iCounterDictSheetLine = iSheetStartLine + iTotalLLSheetColumns - 1) Then
-                    Call BuildMergeArea(xlsapp.Worksheets(sSheetName), C_eStartLinesLLMainSec, iPrevColMainSec, iCounterSheetLLCol + 1, C_eStartLinesLLSubSec)
+                    Call BuildMergeArea(xlsapp.Worksheets(sSheetName), C_eStartLinesLLMainSec, iPrevColMainSec, _
+                                         iCounterSheetLLCol + 1, C_eStartLinesLLSubSec)
                 End If
             End If
 
@@ -420,24 +448,28 @@ Private Sub CreateSheetDataEntry(xlsapp As Excel.Application, sSheetName As Stri
                 If sActualChoice <> "" Then
                     sValidationList = GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoice)
                     If sValidationList <> "" Then
-                        Call LetValidationList(.Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol), sValidationList, LetValidationLockType(sActualValidationAlert), sActualValidationMessage)
+                        Call LetValidationList(.Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol), _
+                                               sValidationList, LetValidationLockType(sActualValidationAlert), _
+                                              sActualValidationMessage)
                     End If
                 End If
                 'Insert the other columns in case we are with a geo
             Case C_sDictControlGeo
                 'First, Geocolumns are in orange
-                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = LetColor("Orange")
+                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = DesLetColor("Orange")
                 'update the columns only for the geo
-                Call Add4GeoCol(xlsapp, sSheetName, sActualMainLab, sActualVarName, iCounterSheetLLCol, sActualValidationMessage)
+                Call Add4GeoCol(xlsapp, sSheetName, sActualMainLab, sActualVarName, _
+                                iCounterSheetLLCol, sActualValidationMessage)
                 iCounterSheetLLCol = iCounterSheetLLCol + 3
 
                 'You add a Geo command if it does not exists
                 If Not bCmdGeoExist Then
-                    Call AddCmd(xlsapp, sSheetName, .Cells(1, 1).Left, .Cells(1, 1).Top, "SHP_GeoApps", UCase(C_sDictControlGeo), C_iCmdWidth, C_iCmdHeight)
+                    Call AddCmd(xlsapp, sSheetName, .Cells(1, 1).Left, .Cells(1, 1).Top, _
+                                "SHP_GeoApps", UCase(C_sDictControlGeo), C_iCmdWidth, C_iCmdHeight)
                     With .Shapes("SHP_GeoApps").Fill
                         .Visible = msoTrue
-                        .ForeColor.RGB = LetColor("Orange")
-                        .BackColor.RGB = LetColor("Orange")
+                        .ForeColor.RGB = DesLetColor("Orange")
+                        .BackColor.RGB = DesLetColor("Orange")
                         '.TwoColorGradient msoGradientHorizontal, 1
                     End With
 
@@ -447,15 +479,45 @@ Private Sub CreateSheetDataEntry(xlsapp As Excel.Application, sSheetName As Stri
                 End If
 
             Case C_sDictControlHf
-                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = LetColor("Orange")
+                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = DesLetColor("Orange")
+            Case C_sDictControlForm 'Formulas, are reported to the formula function
+                If (sActualFormula <> "") Then
+                    sFormula = DesControlValidationFormula(sActualFormula, VarnameData, ColumnIndexData, _
+                                                        FormulaData, SpecCharData)
+                End If
+                'Testing before writing the formula
+                If (sFormula <> "") Then
+                    .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).NumberFormat = "General"
+                    .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Formula = "=" & sFormula
+                    On Error Resume Next
+                    .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Formula2 = "=" & sFormula 'Seems like formula only induce error on some computers
+                    On Error GoTo 0
+                    .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Locked = True
+                Else
+                    MsgBox "Invalid formula will be ignored : " & sActualFormula & "/" & sActualVarName  'MSG_InvalidFormula
+                End If
             End Select
 
             'Building Min/Max Validation ----------------------------------------------------------------------------
             If sActualMin <> "" And sActualMax <> "" Then
 
                 'Testing if it is numeric
-                If IsNumeric(sActualMin) And IsNumeric(sActualMax) Then
-                    Call BuildValidationMinMax(.Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol), sActualMin, sActualMax, LetValidationLockType(sActualValidationAlert), sActualType, sActualValidationMessage)
+                sFormulaMin = DesControlValidationFormula(sActualMin, VarnameData, ColumnIndexData, FormulaData, SpecCharData)
+                If sFormulaMin = "" Then
+                        MsgBox "Invalid formula will be ignored : " & sActualMin & " / " & sActualVarName
+                Else
+                        sFormulaMax = DesControlValidationFormula(sActualMax, VarnameData, ColumnIndexData, FormulaData, SpecCharData)
+                        If sFormulaMax = "" Then
+                            MsgBox "Invalid formula will be ignored : " & sFormulaMax & " / " & sActualVarName
+                        End If
+                    If (sFormulaMin <> "" And sFormulaMax <> "") Then
+                        sFormulaMin = "=" & sFormulaMin
+                        sFormulaMax = "=" & sFormulaMax
+                        Call BuildValidationMinMax(.Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol), _
+                                            sFormulaMin, sFormulaMax, _
+                                            LetValidationLockType(sActualValidationAlert), _
+                                            sActualType, sActualValidationMessage)
+                    End If
                 End If
             End If
 
@@ -463,14 +525,19 @@ Private Sub CreateSheetDataEntry(xlsapp As Excel.Application, sSheetName As Stri
             .Columns(iCounterSheetLLCol).EntireColumn.Autofit
             .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Locked = False
 
-
             'Updating the counters
             iCounterSheetLLCol = iCounterSheetLLCol + 1
             iCounterDictSheetLine = iCounterDictSheetLine + 1
         Wend
         
         'Resize for 200 lines entry
-        .ListObjects("o" & ClearString(sSheetName)).Resize .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_iNbLinesLLData + C_eStartLinesLLData, .Cells(C_eStartLinesLLData, 1).End(xlToRight).Column))
+        .ListObjects("o" & ClearString(sSheetName)).Resize .Range(.Cells(C_eStartLinesLLData, 1), _
+        .Cells(C_iNbLinesLLData + C_eStartLinesLLData, .Cells(C_eStartLinesLLData, 1).End(xlToRight).Column))
+        
+        'Now Protect the sheet
+        .Protect Password:=SheetMain.Range(C_sRngLLPassword), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
+        
     End With
 
 End Sub
@@ -487,6 +554,7 @@ Private Sub CreateSheetAdmEntry(xlsapp As Excel.Application, sSheetName As Strin
     Dim sActualControl As String
     Dim sActualValidationAlert As String
     Dim sActualValidationMessage As String
+    Dim sActualSubLab As String
     
     Dim iCounterSheetAdmLine As Integer
     Dim iCounterDictSheetLine As Integer
@@ -501,21 +569,24 @@ Private Sub CreateSheetAdmEntry(xlsapp As Excel.Application, sSheetName As Strin
         'Adding the buttons
         
         'Export migration buttons
-         Call AddCmd(xlsapp, sSheetName, .Cells(2, 10).Left, .Cells(2, 1).Top, "SHP_ExportMig", "Export for" & Chr(10) & "migration", C_iCmdWidth + 10, C_iCmdHeight + 10)
-        .Shapes("SHP_ExportMig").Fill.ForeColor.RGB = LetColor("DarkBlueTitle")
-        .Shapes("SHP_ExportMig").Fill.BackColor.RGB = LetColor("DarkBlueTitle")
+         Call AddCmd(xlsapp, sSheetName, .Cells(2, 10).Left, .Cells(2, 1).Top, "SHP_ExportMig", _
+                    "Export for" & Chr(10) & "migration", C_iCmdWidth + 10, C_iCmdHeight + 10)
+        .Shapes("SHP_ExportMig").Fill.ForeColor.RGB = DesLetColor("DarkBlueTitle")
+        .Shapes("SHP_ExportMig").Fill.BackColor.RGB = DesLetColor("DarkBlueTitle")
         .Shapes("SHP_ExportMig").OnAction = "clicExportMigration"
                 
          'Import migration buttons
-         Call AddCmd(xlsapp, sSheetName, .Cells(2, 10).Left + C_iCmdWidth + 20, .Cells(2, 1).Top, "SHP_ImportMig", "Import from" & Chr(10) & "migration", C_iCmdWidth + 10, C_iCmdHeight + 10)
-        .Shapes("SHP_ImportMig").Fill.ForeColor.RGB = LetColor("DarkBlueTitle")
-        .Shapes("SHP_ImportMig").Fill.BackColor.RGB = LetColor("DarkBlueTitle")
+         Call AddCmd(xlsapp, sSheetName, .Cells(2, 10).Left + C_iCmdWidth + 20, .Cells(2, 1).Top, "SHP_ImportMig", _
+          "Import from" & Chr(10) & "migration", C_iCmdWidth + 10, C_iCmdHeight + 10)
+        .Shapes("SHP_ImportMig").Fill.ForeColor.RGB = DesLetColor("DarkBlueTitle")
+        .Shapes("SHP_ImportMig").Fill.BackColor.RGB = DesLetColor("DarkBlueTitle")
         .Shapes("SHP_ImportMig").OnAction = "clicImportMigration"
         
         'Export Button
-        Call AddCmd(xlsapp, sSheetName, .Cells(2, 10).Left + 2 * C_iCmdWidth + 40, .Cells(2, 1).Top, "SHP_Export", "Export", C_iCmdWidth + 10, C_iCmdHeight + 10)
-        .Shapes("SHP_Export").Fill.ForeColor.RGB = LetColor("DarkBlueTitle")
-        .Shapes("SHP_Export").Fill.BackColor.RGB = LetColor("DarkBlueTitle")
+        Call AddCmd(xlsapp, sSheetName, .Cells(2, 10).Left + 2 * C_iCmdWidth + 40, .Cells(2, 1).Top, "SHP_Export", _
+         "Export", C_iCmdWidth + 10, C_iCmdHeight + 10)
+        .Shapes("SHP_Export").Fill.ForeColor.RGB = DesLetColor("DarkBlueTitle")
+        .Shapes("SHP_Export").Fill.BackColor.RGB = DesLetColor("DarkBlueTitle")
         '.Shapes("SHP_Export").Fill.TwoColorGradient msoGradientHorizontal, 1
         .Shapes("SHP_Export").OnAction = "clicExport"
         
@@ -528,11 +599,13 @@ Private Sub CreateSheetAdmEntry(xlsapp As Excel.Application, sSheetName As Strin
         'Validations will not work if don't deselect
         .Cells(1, 1).Select
         xlsapp.CutCopyMode = False
+        .Cells.Font.Size = C_iAdmSheetFontSize
         
         'Updating the values
         While (iCounterDictSheetLine <= iSheetStartLine + iTotalSheetAdmColumns - 1)
         
             sActualMainLab = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainLab))
+            sActualSubLab = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubLab))
             sActualVarName = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderVarName))
             sActualChoice = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderChoices))
             sActualControl = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderControl))
@@ -541,23 +614,35 @@ Private Sub CreateSheetAdmEntry(xlsapp As Excel.Application, sSheetName As Strin
         
         
             .Cells(iCounterSheetAdmLine, 2).value = sActualMainLab
-            .Cells(iCounterSheetAdmLine, 2).Interior.Color = LetColor("LightBlueTitle")
+            .Cells(iCounterSheetAdmLine, 2).Interior.Color = DesLetColor("SubLabBlue")
+            .Cells(iCounterSheetAdmLine, 2).Font.Color = DesLetColor("MainLabBlue")
             .Cells(iCounterSheetAdmLine, 3).Name = sActualVarName
             Call WriteBorderLines(.Cells(iCounterSheetAdmLine, 3))
+
+            If sActualControl = C_sDictControlTitle Then
+                'Huge title
+                .Cells(iCounterSheetAdmLine - 5, 2).value = sActualMainLab
+                .Cells(iCounterSheetAdmLine - 5, 2).Font.Size = C_iAdmTitleFontSize
+                .Cells(iCounterSheetAdmLine - 5, 2).Font.Bold = True
+                
+                'Sub title
+                .Cells(iCounterSheetAdmLine - 3, 2).value = sActualSubLab
+                .Cells(iCounterSheetAdmLine - 3, 2).Font.Size = C_iAdmTitleFontSize - 5
+                .Cells(iCounterSheetAdmLine - 3, 2).Font.Italic = True
+            End If
         
             If sActualControl = C_sDictControlCho Then
                 'Add list if the choice is not emptyy
                 If sActualChoice <> "" Then
                      sValidationList = GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoice)
                     If sValidationList <> "" Then
-                    Debug.Print sActualValidationMessage
-                    Debug.Print sActualValidationAlert
-                    Debug.Print sActualChoice
-                       Call LetValidationList(.Cells(iCounterSheetAdmLine, 3), sValidationList, LetValidationLockType(sActualValidationAlert), sActualValidationMessage)
+                       Call LetValidationList(.Cells(iCounterSheetAdmLine, 3), sValidationList, _
+                       LetValidationLockType(sActualValidationAlert), sActualValidationMessage)
                    End If
                 End If
             End If
             .Cells(iCounterSheetAdmLine, 2).EntireColumn.Autofit
+            .Cells(iCounterSheetAdmLine, 3).ColumnWidth = 30
             iCounterSheetAdmLine = iCounterSheetAdmLine + 1
             iCounterDictSheetLine = iCounterDictSheetLine + 1
         Wend
@@ -565,7 +650,10 @@ Private Sub CreateSheetAdmEntry(xlsapp As Excel.Application, sSheetName As Strin
 
 End Sub
 
-Private Sub BuildMergeArea(Wksh As Worksheet, iStartLineOne As Integer, iPrevColumn As Integer, Optional iActualColumn As Integer = -1, Optional iStartLineTwo As Integer = -1, Optional sColorMainSec As String = "DarkBlueTitle", Optional sColorSubSec As String = "LightBlueTitle")
+Private Sub BuildMergeArea(Wksh As Worksheet, iStartLineOne As Integer, iPrevColumn As Integer, _
+                        Optional iActualColumn As Integer = -1, Optional iStartLineTwo As Integer = -1, _
+                        Optional sColorMainSec As String = "MainLabBlue", _
+                        Optional sColorSubSec As String = "SubLabBlue")
 
     Dim oCell As Object
 
@@ -573,7 +661,7 @@ Private Sub BuildMergeArea(Wksh As Worksheet, iStartLineOne As Integer, iPrevCol
 
         If iActualColumn = -1 Then
             .Cells(iStartLineOne, iPrevColumn).HorizontalAlignment = xlCenter
-            .Cells(iStartLineOne, iPrevColumn).Interior.Color = LetColor(sColorSubSec)
+            .Cells(iStartLineOne, iPrevColumn).Interior.Color = DesLetColor(sColorSubSec)
             Call WriteBorderLines(.Cells(iStartLineOne, iPrevColumn))
             Exit Sub
         End If
@@ -582,19 +670,28 @@ Private Sub BuildMergeArea(Wksh As Worksheet, iStartLineOne As Integer, iPrevCol
         .Cells(iStartLineOne, iPrevColumn).MergeArea.HorizontalAlignment = xlCenter
 
         If (iStartLineTwo <> -1) Then
-             .Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineOne, iActualColumn - 1)).Interior.Color = LetColor(sColorMainSec)
+            With .Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineOne, iActualColumn - 1))
+                .Interior.Color = DesLetColor(sColorMainSec)
+                .Font.Color = vbWhite
+                .Font.Bold = True
+                .Font.Size = C_iLLMainLabFontSize
+            End With
             'For the sub sections, if nothing is mentionned,
-            'just put them in blue (or the same color as the main sections)
+            'just put them in white (or the same color as the main sections)
             For Each oCell In .Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineTwo, iActualColumn - 1))
                   If oCell.value = "" Then
-                    oCell.Interior.Color = LetColor(sColorMainSec)
+                    oCell.Interior.Color = vbWhite
                   End If
             Next
             Set oCell = Nothing
             'Write borders to the ranges including the subsection
             Call WriteBorderLines(.Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineTwo, iActualColumn - 1)))
         Else
-            .Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineOne, iActualColumn - 1)).Interior.Color = LetColor(sColorSubSec)
+            With .Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineOne, iActualColumn - 1))
+                .Interior.Color = DesLetColor(sColorSubSec)
+                .Font.Color = DesLetColor(sColorMainSec)
+                .Font.Size = C_iLLSubLabFontSize
+            End With
             Call WriteBorderLines(.Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineOne, iActualColumn - 1)))
         End If
     End With
@@ -617,20 +714,35 @@ Sub DesBuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHea
     Dim LLNbColData As BetterArray               'Number of columns of a Sheet of type linelist
     Dim LLSheetNameData As BetterArray           'Names of sheets of type linelist
     Dim ChoicesListData As BetterArray           'Choices list
-    Dim ChoicesLabelsData As BetterArray        ' Choices labels
-    Dim iCounterSheet As Integer 'counter for one Sheet
-    Dim iSheetStartLine As Integer 'Counter for starting line of the sheet in the dictionary
+    Dim ChoicesLabelsData As BetterArray         ' Choices labels
+    Dim VarnameSheetData As BetterArray
+    Dim VarnameData As BetterArray
+    Dim ColumnIndexData As BetterArray
+    Dim ColumnSheetIndexData As BetterArray
+    Dim FormulaData As BetterArray
+    Dim SpecCharData As BetterArray
+
+
+    Dim iCounterSheet As Integer                'counter for one Sheet
+    Dim iSheetStartLine As Integer              'Counter for starting line of the sheet in the dictionary
 
     'Instanciating the betterArrays
     Set LLNbColData = New BetterArray
-    Set LLSheetNameData = New BetterArray        'Names of sheets of type linelist
+    Set LLSheetNameData = New BetterArray       'Names of sheets of type linelist
+    Set ColumnIndexData = New BetterArray
+    Set ColumnSheetIndexData = New BetterArray
+    Set FormulaData = New BetterArray
+    Set SpecCharData = New BetterArray
+    Set VarnameSheetData = New BetterArray
+    Set VarnameData = New BetterArray
 
     Set xlsapp = New Excel.Application
+    Application.ScreenUpdating = False
 
     With xlsapp
-        .ScreenUpdating = True
+        .ScreenUpdating = False
         .DisplayAlerts = False
-        .Visible = True
+        .Visible = False
         .AutoCorrect.DisplayAutoCorrectOptions = False
         .Workbooks.Add
     End With
@@ -647,18 +759,28 @@ Sub DesBuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHea
     Call TransfertSheet(xlsapp, C_sSheetFormulas)
 
     DoEvents
-    'Create all the required Sheets in the workbook (Dictionnary, Export, Password, Geo and other sheets defined by the user)
-    Call CreateSheetsInLL(xlsapp, DictData, DictHeaders, ExportData, LLNbColData, LLSheetNameData, bNotHideSheets:=False)
 
-    SheetMain.Range(C_sRngEdition).value = "Created the Sheets"
+    'Create special characters data
+    FormulaData.FromExcelRange SheetFormulas.ListObjects(C_sTabExcelFunctions).ListColumns("ENG").DataBodyRange, DetectLastColumn:=False
+    SpecCharData.FromExcelRange SheetFormulas.ListObjects(C_sTabASCII).ListColumns("TEXT").DataBodyRange, DetectLastColumn:=False
+    VarnameData.Items = DictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderVarName))
+
+
+    'Create all the required Sheets in the workbook (Dictionnary, Export, Password, Geo and other sheets defined by the user)
+    Call CreateSheetsInLL(xlsapp, DictData, DictHeaders, ExportData, LLNbColData, _
+                          ColumnIndexData, LLSheetNameData, bNotHideSheets:=False)
+
+    'SheetMain.Range(C_sRngEdition).value = "Created the Sheets"
 
     'Choices data'Setting the Choices labels and lists
     Set ChoicesListData = New BetterArray
     Set ChoicesLabelsData = New BetterArray
+    Set VarnameSheetData = New BetterArray
+    
     ChoicesListData.LowerBound = 1
     ChoicesLabelsData.LowerBound = 1
 
-    'Update the values of the labels and list! here I have to make sure my Headers contains those values
+    'Update the values of the labels and list! here I must make sure my Headers contains those values
 
     If (ChoicesHeaders.IndexOf(C_sChoiHeaderList) <= 0 Or ChoicesHeaders.IndexOf(C_sChoiHeaderLab) <= 0) Then
         SheetMain.Range(C_sRngEdition).value = "Error 1"
@@ -667,180 +789,44 @@ Sub DesBuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHea
 
     ChoicesListData.Items = ChoicesData.ExtractSegment(ColumnIndex:=ChoicesHeaders.IndexOf(C_sChoiHeaderList))
     ChoicesLabelsData.Items = ChoicesData.ExtractSegment(ColumnIndex:=ChoicesHeaders.IndexOf(C_sChoiHeaderLab))
-    
+
     iSheetStartLine = 1
     For iCounterSheet = 1 To LLSheetNameData.UpperBound
-    
+        VarnameSheetData.Items = VarnameData.Slice(iSheetStartLine, iSheetStartLine + LLNbColData.Item(iCounterSheet))
+        ColumnSheetIndexData.Items = ColumnIndexData.Slice(iSheetStartLine, iSheetStartLine + LLNbColData.Item(iCounterSheet))
+
+
         Select Case DictData.Items(iSheetStartLine, DictHeaders.IndexOf(C_sDictHeaderSheetType))
             'On linelist type, build a data entry form
             Case C_sDictSheetTypeLL
                 'Create a sheet for data Entry in one sheet of type linelist
-                Call CreateSheetDataEntry(xlsapp, LLSheetNameData.Item(iCounterSheet), iSheetStartLine, DictData, DictHeaders, LLSheetNameData, LLNbColData, ChoicesListData, ChoicesLabelsData)
-                
+                Call CreateSheetDataEntry(xlsapp, LLSheetNameData.Item(iCounterSheet), iSheetStartLine, DictData, _
+                                         DictHeaders, LLSheetNameData, LLNbColData, ChoicesListData, ChoicesLabelsData, _
+                                         VarnameSheetData, ColumnSheetIndexData, FormulaData, SpecCharData)
             Case C_sDictSheetTypeAdm
                 'Create a sheet of type admin entry
-                Call CreateSheetAdmEntry(xlsapp, LLSheetNameData.Item(iCounterSheet), iSheetStartLine, DictData, DictHeaders, LLSheetNameData, LLNbColData, ChoicesListData, ChoicesLabelsData)
+                Call CreateSheetAdmEntry(xlsapp, LLSheetNameData.Item(iCounterSheet), iSheetStartLine, DictData, _
+                                        DictHeaders, LLSheetNameData, LLNbColData, _
+                                        ChoicesListData, ChoicesLabelsData)
         End Select
-        
-        iSheetStartLine = iSheetStartLine + LLNbColData.Items(iCounterSheet)
+        iSheetStartLine = iSheetStartLine + LLNbColData.Item(iCounterSheet)
     Next
-
-  
-    '
-    ' sPrevSheetName = ""
-    '
-    ' i = 0
-    ' While i <= UBound(DictData, 2)
-    '     If LCase(DictData(DictHeaders("Control") - 1, i)) = "formula" Then 'pavï¿½ pour le controle de formule
-    '         If DictData(DictHeaders("Formula") - 1, i) <> "" Then
-    '             'sFormula = UCase(Replace(DictData(DictHeaders("Formula") - 1, i), " ", ""))
-    '             sFormula = DictData(DictHeaders("Formula") - 1, i)
-    '             FormulaData = ControlValidationFormula(sFormula, DictData, DictHeaders, False)
-    '             If Not IsEmptyTable(FormulaData) Then
-    '                 With xlsapp
-    '                     If FormulaData(0) <> "" Then
-    '                         sSheetname = DictData(DictHeaders("Sheet") - 1, i)
-    '                         j = 0                'on transcrit la formule
-    '                         While j <= UBound(FormulaData)
-    '                             If InStr(1, UCase(sFormula), FormulaData(j)) > 0 Then
-    '                                 sFormula = Replace(UCase(sFormula), UCase(FormulaData(j)), Split(.Cells(, LetColNumberByDataName(xlsapp, CStr(FormulaData(j)), sSheetname)).Address, "$")(1) & C_ligneDeb)
-    '                             End If
-    '                             j = j + 1
-    '                         Wend
-    '                         'on ecrit la formule a la bonne place
-    '                         j = 1
-    '                         While j <= .Sheets(DictData(DictHeaders("Sheet") - 1, i)).Cells(C_TitleLine, 1).End(xlToRight).Column _
-    '     And .Sheets(DictData(DictHeaders("Sheet") - 1, i)).Cells(C_TitleLine, j).Name.Name <> DictData(DictHeaders("Variable name") - 1, i)
-    '                             j = j + 1
-    '                         Wend
-    '                         If .Sheets(DictData(DictHeaders("Sheet") - 1, i)).Cells(C_TitleLine, j).Name.Name = DictData(DictHeaders("Variable name") - 1, i) Then
-    '                             .Sheets(sSheetname).Cells(6, j).NumberFormat = "General"
-    '                             .Sheets(sSheetname).Cells(6, j).Formula = "=" & sFormula
-    '                             On Error Resume Next
-    '                             .Sheets(sSheetname).Cells(6, j).Formula2 = "=" & sFormula 'etrange... facultatif sur certaines machines
-    '                             On Error GoTo 0
-    '                             .Sheets(sSheetname).Cells(6, j).Locked = True
-    '                         End If
-    '                     Else
-    '                         MsgBox "Invalid formula will be ignored : " & sFormula 'MSG_InvalidFormula
-    '                     End If
-    '                 End With
-    '             Else
-    '                 MsgBox "Invalid formula will be ignored : " & sFormula 'MSG_InvalidFormula
-    '
-    '             End If
-    '         End If
-    '     End If
-    '     'min / max en formule
-    '     If DictData(DictHeaders("Min") - 1, i) <> "" And DictData(DictHeaders("Max") - 1, i) <> "" Then
-    '         If Not IsNumeric(DictData(DictHeaders("Min") - 1, i)) And Not IsNumeric(DictData(DictHeaders("Max") - 1, i)) Then
-    '             'sFormulaMin = UCase(Replace(DictData(DictHeaders("Min") - 1, i), " ", "")) 'min
-    '             sFormulaMin = DictData(DictHeaders("Min") - 1, i)
-    '             If IsAFunction(Replace(sFormulaMin, "()", "")) Then
-    '
-    '                 sFormulaMin = LetInternationalFormula(sFormulaMin)
-    '
-    '                 If Right(sFormulaMin, 2) <> "()" Then
-    '                     sFormulaMin = sFormulaMin & "()"
-    '                 End If
-    '             Else
-    '                 FormulaData = ControlValidationFormula(sFormulaMin, DictData, DictHeaders, True)
-    '                 If Not IsEmptyTable(FormulaData) Then
-    '                     sSheetname = DictData(DictHeaders("Sheet") - 1, i)
-    '                     j = 0
-    '                     While j <= UBound(FormulaData)
-    '                         If FormulaData(j) <> "" Then
-    '                             If InStr(1, FormulaData(j), Chr(124)) Then
-    '                                 sFormulaMin = Replace(UCase(sFormulaMin), Split(FormulaData(j), Chr(124))(0), Split(FormulaData(j), Chr(124))(1)) 's'il y a un pipe (alt 6) : c'est forcement une formule. On remplace donc l'ancienne par la fonction propre au systeme
-    '                             ElseIf InStr(1, UCase(sFormulaMin), FormulaData(j)) > 0 And Not IsAFunction(CStr(FormulaData(j))) Then
-    '                                 sFormulaMin = Replace(UCase(sFormulaMin), UCase(FormulaData(j)), Split(xlsapp.Cells(, LetColNumberByDataName(xlsapp, CStr(FormulaData(j)), sSheetname)).Address, "$")(1) & C_ligneDeb) 'sans pipe, c'est un nom de variable, on recupere uniquement la colonne
-    '                             End If
-    '                         End If
-    '                         j = j + 1
-    '                     Wend
-    '                 End If
-    '             End If
-    '
-    '             'sFormulaMax = UCase(Replace(DictData(DictHeaders("Max") - 1, i), " ", "")) 'max
-    '             sFormulaMax = DictData(DictHeaders("Max") - 1, i)
-    '             If IsAFunction(Replace(sFormulaMax, "()", "")) Then
-    '                 sFormulaMax = LetInternationalFormula(Replace(sFormulaMax, "()", ""))
-    '
-    '                 If Right(sFormulaMax, 2) <> "()" Then
-    '                     sFormulaMax = sFormulaMax & "()"
-    '                 End If
-    '             Else
-    '                 FormulaData = ControlValidationFormula(sFormulaMax, DictData, DictHeaders, True)
-    '                 If Not IsEmptyTable(FormulaData) Then
-    '                     sSheetname = DictData(DictHeaders("Sheet") - 1, i)
-    '                     j = 0
-    '                     While j <= UBound(FormulaData)
-    '                         If InStr(1, FormulaData(j), Chr(124)) Then
-    '                             sFormulaMax = Replace(UCase(sFormulaMax), Split(FormulaData(j), Chr(124))(0), Split(FormulaData(j), Chr(124))(1)) 's'il y a un pipe (alt 6) : c'est forcement une formule. On remplace donc l'ancienne par la fonction propre au systeme
-    '                         ElseIf InStr(1, UCase(sFormulaMax), FormulaData(j)) > 0 And Not IsAFunction(CStr(FormulaData(j))) Then
-    '                             sFormulaMax = Replace(UCase(sFormulaMax), UCase(FormulaData(j)), Split(xlsapp.Cells(, LetColNumberByDataName(xlsapp, CStr(FormulaData(j)), sSheetname)).Address, "$")(1) & C_ligneDeb) 'sans pipe, c'est un nom de variable, on recupere uniquement la colonne
-    '                         End If
-    '                         j = j + 1
-    '                     Wend
-    '                 End If
-    '             End If
-    '
-    '             'pour ecrire la validation min/max, on recherche la position de champ dans le fichier final
-    '             If sFormulaMin <> "" And sFormulaMax <> "" Then
-    '                 With xlsapp
-    '                     j = 1
-    '                     While j <= .Sheets(sSheetname).Cells(C_TitleLine, 1).End(xlToRight).Column And DictData(DictHeaders("Variable name") - 1, i) <> .Sheets(sSheetname).Cells(C_TitleLine, j).Name.Name
-    '                         j = j + 1
-    '                     Wend
-    '                     If DictData(DictHeaders("Variable name") - 1, i) = .Sheets(sSheetname).Cells(C_TitleLine, j).Name.Name Then
-    '                         Call BuildValidationMinMax(.Sheets(sSheetname).Cells(6, j), "=" & sFormulaMin, "=" & sFormulaMax, LetValidationLockType(CStr(DictData(DictHeaders("Alert") - 1, i))), CStr(DictData(DictHeaders("Type") - 1, i)), CStr(DictData(DictHeaders("Message") - 1, i)))
-    '                         '.Sheets(sSheetName).Cells(6, j).Locked = True  'verouille les dates ?
-    '                     End If
-    '                 End With
-    '             End If
-    '         End If
-    '     End If
-    '
-    '     i = i + 1
-    ' Wend
-    '
-    '
-    ' 'on (presque) conclue !
-    ''Application.ActiveWindow.WindowState = xlMinimized
-    ' With xlsapp
-    '     .Sheets("admin").Columns(2).EntireColumn.AutoFit
-    '     .Sheets(6).Select
-    '     .Sheets(6).Range("A1").Select
-    '     .DisplayAlerts = False
-    '     .ScreenUpdating = False
-    '     '.Visible = True
-    '     .ActiveWindow.DisplayZeros = True
-    '     '.ActiveWindow.WindowState = xlMaximized
-    ' End With
-    ' DoEvents
-    '
-    ' sPrevSheetName = ""
-    ' i = 0
-    ' While i <= UBound(DictData, 2)
-    '     If sPrevSheetName <> DictData(DictHeaders("Sheet") - 1, i) Then
-    '         If LCase(DictData(DictHeaders("Sheet") - 1, i)) <> "admin" Then
-    '             xlsapp.Sheets(DictData(DictHeaders("Sheet") - 1, i)).Protect Password:=C_PWD, DrawingObjects:=True, Contents:=True, Scenarios:=True _
-    '                                                                                                                                             , AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
-    '         End If
-    '         sPrevSheetName = DictData(DictHeaders("Sheet") - 1, i)
-    '     End If
-    '     i = i + 1
-    ' Wend
-    '
-    ' 'ecriture de l'evenement "change" dans la feuille de resultat
-    ' Call TransferCodeWks(xlsapp, "linelist-patient", "linelist_sheet_change")
-    '
+    
+    Set LLNbColData = Nothing
+    Set LLSheetNameData = Nothing      'Names of sheets of type linelist
+    Set ColumnIndexData = Nothing
+    Set ColumnSheetIndexData = Nothing
+    Set FormulaData = Nothing
+    Set SpecCharData = Nothing
+    Set VarnameSheetData = Nothing
+    Set VarnameData = Nothing
+    Set ChoicesListData = Nothing
+    Set ChoicesLabelsData = Nothing
+ 
     xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, ConflictResolution:=xlLocalSessionChanges
     xlsapp.Quit
     Set xlsapp = Nothing
 End Sub
-
-
 
 'Set the type of a validation of a cell giving the name of the validation in the
 'dictionary
@@ -1010,7 +996,6 @@ Private Function LetColNumberByDataName(xlsapp As Excel.Application, sDataName A
 
     Dim i As Integer
 
-    'DictData(DictHeaders("Choices") - 1, i)
     With xlsapp
         i = 1
         While i <= .Sheets(sSheetName).Cells(C_TitleLine, 1).End(xlToRight).Column And UCase(.Sheets(sSheetName).Cells(C_TitleLine, i).Name.Name) <> sDataName
@@ -1024,7 +1009,8 @@ Private Function LetColNumberByDataName(xlsapp As Excel.Application, sDataName A
 End Function
 
 Private Function LetWordingWithSpace(xlsapp As Excel.Application, sDataWording As String, sSheetName As String)
-    'The goal of this function is to add space to duplicates labels so that excels does not force a unique name with number at the end
+    'The goal of this function is to add space to duplicates labels so that excels does not force a unique name with number at the end in
+    'the listcolumn
     Dim i As Integer
 
     LetWordingWithSpace = ""
