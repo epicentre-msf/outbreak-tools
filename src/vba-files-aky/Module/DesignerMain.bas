@@ -146,6 +146,9 @@ End Sub
 Sub DesGenerateData()
     Dim bGood As Boolean
     bGood = DesControlForGenerate()
+
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
    
     If Not bGood Then
         DesShowHideCmdValidation show:=False
@@ -160,8 +163,6 @@ Sub DesGenerateData()
     Dim ExportData      As BetterArray          'Export data
     Dim sPath           As String
     Dim Wkb             As Workbook
-    
-    Application.ScreenUpdating = False
     
     'Be sure the actual Workbook is not opened
     
@@ -189,7 +190,6 @@ Sub DesGenerateData()
     
     'Create the table for the choices
     Set ChoicesData = GetData(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesData)
-
        
     'Reading the export sheet
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadExport")
@@ -200,7 +200,7 @@ Sub DesGenerateData()
     Wkb.Close savechanges:=False
     
     Set Wkb = Nothing
-        
+    
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
         
     'Creating the linelist using the dictionnary and choices data as well as export data
@@ -214,9 +214,11 @@ Sub DesGenerateData()
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
     
     Call SetInputRangesToWhite
+    
     SheetMain.Shapes("SHP_OpenLL").Visible = msoTrue
     
     Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationManual
 End Sub
 
 Sub DesOpenLL()

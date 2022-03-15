@@ -72,11 +72,11 @@ Public Function ControlValidationFormula(sFormula As String, T_dataDic, D_TitleD
 
     Dim sLetter As String
 
-    Dim IsError As Boolean
+    Dim isError As Boolean
     Dim T_res
     Dim T_Formula                                'sert pour la Translation pour les validations
 
-    IsError = False
+    isError = False
     Set D_Name = BuildDicDic(D_TitleDic, T_dataDic)
     Set D_Formula = BuildFormulaDic
     Set D_CaracSpec = BuildCaractDic
@@ -117,7 +117,7 @@ Public Function ControlValidationFormula(sFormula As String, T_dataDic, D_TitleD
     End If
 
     If iNbParentO <> iNbParentF Then
-        IsError = True
+        isError = True
     Else
         j = 0
         ReDim T_res(j)
@@ -126,7 +126,7 @@ Public Function ControlValidationFormula(sFormula As String, T_dataDic, D_TitleD
             If Not D_Name.Exists(T_String(i)) And Not D_Formula.Exists(T_String(i)) And Not IsNumeric(T_String(i)) Then
                 If T_String(i) <> "" Then
                     If Asc(T_String(i)) <> 34 Then 's'il ne s'agit pas d'une chaine de texte a afficher : c'est donc une formule volante non identifiée
-                        IsError = True
+                        isError = True
                     End If
                 End If
             Else
@@ -149,7 +149,7 @@ Public Function ControlValidationFormula(sFormula As String, T_dataDic, D_TitleD
     Set D_Formula = Nothing
     Set D_CaracSpec = Nothing
 
-    If Not IsError Then
+    If Not isError Then
         ControlValidationFormula = T_res
     End If
 

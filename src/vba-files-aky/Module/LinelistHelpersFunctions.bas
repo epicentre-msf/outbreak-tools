@@ -4,18 +4,14 @@ Option Explicit
 'Clear a String to remove inconsistencies
 Public Function ClearString(ByVal sString As String, Optional bremoveHiphen As Boolean = True) As String
     Dim sValue As String
-    sValue = Replace(sString, "?", " ")
-
+    sValue = sString
     If bremoveHiphen Then
+        sValue = Replace(sValue, "?", " ")
         sValue = Replace(sValue, "-", " ")
         sValue = Replace(sValue, "_", " ")
+        sValue = Replace(sValue, "/", " ")
     End If
-   
-    sValue = Replace(sValue, "/", " ")
-    sValue = Replace(sValue, "    ", " ")
-    sValue = Replace(sValue, "   ", " ")
-    sValue = Replace(sValue, "  ", " ")
-    sValue = Trim(sValue)
+    sValue = Application.WorksheetFunction.Trim(sValue)
     ClearString = LCase(sValue)
 End Function
 
@@ -26,12 +22,15 @@ Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Byte) As Bet
     Dim i As Integer
     Set Headers = New BetterArray
     Headers.LowerBound = 1
+    Dim sValue As String
     
     With Wkb.Worksheets(sSheet)
         i = 1
         While .Cells(StartLine, i).value <> ""
         'Clear the values in the sheet when adding thems
-            Headers.Push ClearString(.Cells(StartLine, i).value)
+            sValue = .Cells(StartLine, i).value 'The argument is passed byval to clearstring
+            sValue = ClearString(sValue)
+            Headers.Push sValue
             i = i + 1
         Wend
         Set GetHeaders = Headers

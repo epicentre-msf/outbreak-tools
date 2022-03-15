@@ -53,64 +53,64 @@ Private Function BuildCaractDic() As Scripting.Dictionary
 
 End Function
 
-Public Function ControlValidationFormula(sFormula As String, T_dataDic, D_TitleDic As Scripting.Dictionary, IsValidation As Boolean)
-    'renvoie un tableau de la dŽcomposition de la formule envoyŽe
+Public Function ControlValidationFormula(sFormula As String, DictData as betterArray, DictHeaders as betterArray, VarNameData as BetterArray, IsValidation As Boolean)
+    'renvoie un tableau de la dï¿½composition de la formule envoyï¿½e
 
     Dim sFormulaATest As String
+    Dim sAlphaValue as string
 
     Dim i As Integer
     Dim iPrevBreak As Integer
-    Dim T_String
+ 
     Dim j As Integer
 
-    Dim D_Formula As Scripting.Dictionary
-    Dim D_CaracSpec As Scripting.Dictionary
-    Dim D_Name As Scripting.Dictionary
+    Dim FormulaData As BetterArray 'Array of formulas
+    Dim SpecCharData as BetterArray 'Array of special characters
+    Dim VarNameData  As BetterArray 'Array of varnames data
+    Dim FormulaAlphaData as betterArray
+    Dim FormulaResult as BetterArray
 
-    Dim iNbParentO As Integer
-    Dim iNbParentF As Integer
+    Dim iNbParentO As Integer 'Number of left parenthesis
+    Dim iNbParentF As Integer 'Number of right parenthesis
 
     Dim sLetter As String
 
     Dim IsError As Boolean
-    Dim T_res
-    Dim T_Formula                                'sert pour la Translation pour les validations
-
+                              
     IsError = False
-    Set D_Name = BuildDicDic(D_TitleDic, T_dataDic)
-    Set D_Formula = BuildFormulaDic
-    Set D_CaracSpec = BuildCaractDic
+    Set FormulaData = new betterArray
+    Set SpecCharData = new betterArray
+    Set FormulaAlphaData = new betterArray 'Alphanumeric values of one formula
+    Set FormulaResult = new betterArray 'Result of formula after going throughout the checking process
+    FormulaAlphaData.lowerbound = 1
 
-    sFormulaATest = UCase(Replace(sFormula, " ", ""))
+    FormulaData.fromExcelRange SheetFormulas.ListObjects(C_sTabExcelFunctions).listcolumns("ENG").range, detectlastcolumn:=False
+    SpecCharData.fromExcelRange SheetFormulas.listobjects(C_sTabASCII).listcolumns("TEXT").range, detectlastcolumn:=False
+
+    sFormulaATest = Replace(sFormula, " ", "")
 
     iNbParentO = 0
     iNbParentF = 0
-    If D_Name.Exists(sFormulaATest) Then
-        'pour les noms simples
-        ReDim T_String(0)
-        T_String(0) = sFormulaATest
-    Else                                         'pour les formules composŽes
-        j = 0
-        ReDim T_String(j)
-        i = 1
-        iPrevBreak = 1
+    iPrevBreak = 1
+    i = 1
+
+    If VarNameData.Includes(sFormulaATest) Then
+        FormulaAlphaData.push sFormulaATest
+    Else                                         'pour les formules composï¿½es
         While i <= Len(sFormulaATest)
             sLetter = UCase(Mid(sFormulaATest, i, 1))
         
-            If D_CaracSpec.Exists(sLetter) Then  'si c'est un caratere sŽpcial
+            If SpecCharData.includes(sLetter) Then  'si c'est un caratere sï¿½pcial
                 If sLetter = Chr(40) Then
                     iNbParentO = iNbParentO + 1
                 End If
                 If sLetter = Chr(41) Then
                     iNbParentF = iNbParentF + 1
                 End If
-        
-                ReDim Preserve T_String(j)
                 If Mid(sFormulaATest, iPrevBreak, i - iPrevBreak) <> "" Then
-                    T_String(j) = UCase(Mid(sFormulaATest, iPrevBreak, i - iPrevBreak))
+                    FormulaAlphaData.push Mid(sFormulaATest, iPrevBreak, i - iPrevBreak))
                 End If
                 iPrevBreak = i + 1
-                j = j + 1
             End If
             i = i + 1
         Wend
@@ -119,24 +119,24 @@ Public Function ControlValidationFormula(sFormula As String, T_dataDic, D_TitleD
     If iNbParentO <> iNbParentF Then
         IsError = True
     Else
-        j = 0
-        ReDim T_res(j)
-        i = 0
-        While i <= UBound(T_String)
-            If Not D_Name.Exists(T_String(i)) And Not D_Formula.Exists(T_String(i)) And Not IsNumeric(T_String(i)) Then
-                If T_String(i) <> "" Then
-                    If Asc(T_String(i)) <> 34 Then 's'il ne s'agit pas d'une chaine de texte a afficher : c'est donc une formule volante non identifiŽe
+        i = 1
+        While i <= FormulaAlphaData.UpperBound
+            sAlphaValue = FormulaAlphaData.item(i)
+            If Not VarNameData.Includes(sAlphaValue) And Not FormulaData.Includes(UCase(sAlphavalue)) And Not IsNumeric(sAlphaValue) Then
+                If sAlphaValue <> "" Then
+                    If Asc(sAlphaValue) <> 34 Then 's'il ne s'agit pas d'une chaine de texte a afficher : c'est donc une formule volante non identifiï¿½e
                         IsError = True
                     End If
                 End If
             Else
-                If D_Name.Exists(T_String(i)) Then 'on est pas en validation : on est fonction normale /on ne stock pas le nom de fonction puisque Excel va faire a Translation dans la bonne langue
+                If VarNameData.Includes(sAlphaValue) Then 'on est pas en validation : on est fonction normale /on ne stock pas le nom de fonction puisque Excel va faire a Translation dans la bonne langue
                     ReDim Preserve T_res(j)
                     T_res(j) = T_String(i)
                     j = j + 1
                 ElseIf D_Formula.Exists(T_String(i)) And IsValidation Then
                     ReDim Preserve T_res(j)
-                    T_res(j) = T_String(i) & Chr(124) & LetInternationalFormula(T_String(i)) 'on stock la fonction dans le format : Ancienne fonction | fonction traduite
+                    T_res(j) = T_String(i) & Chr(124) & LetInternationalFormula(T_String(i)) 
+                    'on stock la fonction dans le format : Ancienne fonction | fonction traduite
                 
                     j = j + 1
                 End If
@@ -173,7 +173,7 @@ Public Function LetInternationalFormula(sFormula As Variant)
     Dim T_Formula
     Dim i As Integer
 
-    T_Formula = [T_xlsfonctions]
+    T_Formula = SheetFormulas.listobject(C_sTabExcelFunctions).Databodyrange
     i = 1
     While i < UBound(T_Formula, 1) And UCase(T_Formula(i, 2)) <> UCase(sFormula)
         i = i + 1
