@@ -3715,7 +3715,7 @@ Private Function IsArrayAllocated(ByVal SourceArray As Variant) As Boolean
     On Error Resume Next
     IsArrayAllocated = ( _
                        IsArray(SourceArray) And _
-                       Not IsError(LBound(SourceArray, 1)) And _
+                       Not isError(LBound(SourceArray, 1)) And _
                        LBound(SourceArray, 1) <= UBound(SourceArray, 1) _
                        )
     On Error GoTo 0

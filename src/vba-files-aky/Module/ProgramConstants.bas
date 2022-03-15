@@ -69,6 +69,7 @@ Public Const C_sDictControlForm As String = "formula"
 Public Const C_sDictControlCho As String = "choices"
 Public Const C_sDictControlGeo As String = "geo"
 Public Const C_sDictControlCustom As String = "custom"
+Public Const C_sDictControlTitle As String = "title"
 
 'YesNo ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -131,7 +132,7 @@ Public Const C_sRngLabLangDes            As String = "RNG_LabLangDesigner"      
 Public Const C_sRngLangGeo               As String = "RNG_LangGeo"                       'Range for the language of the headings of the geo
 Public Const C_sRngPathGeo               As String = "RNG_PathGeo"                       'Range to the path to the geo file
 Public Const C_sRngLLFormLang            As String = "RNG_LLForm"                        'Languages for the forms in the linelist
-
+Public Const C_sRngLLPassword           As String = "RNG_LLPassword"                     'Password for debugging the linelist
 'Ranges in the linelist sheet
 
 Public Const C_sRngPublickey             As String = "RNG_PublicKey"                     'Name of the range for publickey
@@ -216,7 +217,7 @@ Public Const C_sTabASCII                 As String = "T_ascii"                  
 
 'STRING CONSTANTS =================================================================================================================================================================
 
-Public Const C_sLinelistPassword         As String = "1234"                                'Default password for the linelist file (if no one is set)
+Public Const C_sLLPassword         As String = "1234"                                'Default password for the linelist file (if no one is set)
 Public Const C_sDesignerPassword         As String = "1234"                                'Default password for the designer
 Public Const C_sLLTableStyle             As String = "TableStyleLight16"                   'Default table style of a linelist object
 
@@ -225,10 +226,13 @@ Public Const C_sLLTableStyle             As String = "TableStyleLight16"        
 Public Const C_iLLButtonsRowHeight       As Integer = 25                                    'Row height of the first two rows on one sheet of type Linelist for buttons
 Public Const C_iNumberOfBars             As Integer = 40                                    'Number of bars in the Progressbar in the designer
 Public Const C_iLLSheetFontSize          As Integer = 9                                      'Default font size on a linelist sheet
-Public Const C_iLLSubLabFontSize         As Integer = 8
+Public Const C_iLLSubLabFontSize         As Integer = 10
+Public Const C_iLLMainLabFontSize        As Integer = 10
 Public Const C_iCmdWidth                 As Integer = 60                                    'Width of command added  on one sheet
 Public Const C_iCmdHeight                As Integer = 20                                    'Height of command added on one sheet
 Public Const C_iNbLinesLLData           As Integer = 200                                    'Number of linest to add by default
+Public Const C_iAdmSheetFontSize        As Integer = 14
+Public Const C_iAdmTitleFontSize As Integer = 20
 
 'ENUMERATION LISTS ================================================================================================================================================================
 
@@ -241,7 +245,7 @@ Public Enum C_StartLines
     C_eStartLinesLLSubSec = 4                                                                'Starting lines for second title of the linelist
     C_eStartLinesLLData = 5                                                                  'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                                                             'Starting lines for export titles
-    C_eStartLinesAdmData = 10                                                                 'Starting lines for a Adm data
+    C_eStartLinesAdmData = 15                                                                'Starting lines for a Adm data
     C_eStartLinesExportSource = 5                                                            'Starting lines for export sources
     C_eStartLinesChoicesHeaders = 1                                                          'Starting lines of the choices Headers
     C_eStartLinesChoicesData = 2                                                             'Starting lines of the choices Data
