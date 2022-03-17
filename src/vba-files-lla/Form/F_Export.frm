@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_Export 
    Caption         =   "Export"
-   ClientHeight    =   5925
-   ClientLeft      =   90
-   ClientTop       =   270
-   ClientWidth     =   3540
+   ClientHeight    =   3060
+   ClientLeft      =   -300
+   ClientTop       =   -1230
+   ClientWidth     =   2220
    OleObjectBlob   =   "F_Export.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -13,8 +13,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
-
+Option Explicit
 
 Private Sub CMD_Export2_Click()
 
@@ -58,3 +57,9 @@ Private Sub CMD_Retour_Click()
 
 End Sub
 
+Private Sub UserForm_Initialize() 'lla
+'Manage language
+
+    Call TranslateForm(Me, Sheets("linelist-translation").[T_F_Export])
+    
+End Sub

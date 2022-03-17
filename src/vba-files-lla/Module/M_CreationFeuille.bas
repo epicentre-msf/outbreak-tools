@@ -6,7 +6,7 @@ Const C_StartLineTitle2 As Byte = 4
 Const C_TitleLine As Byte = 5
 Const C_ligneDeb As Byte = 6
 
-Const C_CmdWidht As Byte = 60
+Const C_CmdWidht As Integer = 120 'lla
 Const C_PWD As String = "1234"
 
 'Building the linelist from the different input data
@@ -105,8 +105,10 @@ StatusBar_Updater (15)
         'TransfertSheet is for sending worksheets from the actual workbook to another
         Call TransfertSheet(xlsapp, "GEO")
         Call TransfertSheet(xlsapp, "PASSWORD")
+        
         'on a besoin de la table ascii
         Call TransfertSheet(xlsapp, "ControleFormule")
+        Call TransfertSheet(xlsapp, "linelist-translation") 'lla
     
         DoEvents
         On Error Resume Next
@@ -489,13 +491,13 @@ StatusBar_Updater (30 + sIterPG)
                     End If
                 End If
             
-                If Not bCmdExportMigration Then
-                    Call AddCmd(xlsapp, CStr(T_dataDic(D_TitleDic("Sheet") - 1, i)), .Cells(1, 5).Left + 10, .Cells(2, 1).Top, "SHP_ExportMig", "Export for" & Chr(10) & "migration", C_CmdWidht + 10, 30)
+                If Not bCmdExportMigration Then 'lla
+                    Call AddCmd(xlsapp, CStr(T_dataDic(D_TitleDic("Sheet") - 1, i)), .Cells(1, 5).Left + 10, .Cells(2, 1).Top, "SHP_ExportMig", "Export for migration", C_CmdWidht, 30) 'lla
                     .Shapes("SHP_ExportMig").Fill.ForeColor.RGB = LetColor("DarkBlueTitle")
                     .Shapes("SHP_ExportMig").Fill.BackColor.RGB = LetColor("DarkBlueTitle")
                     .Shapes("SHP_ExportMig").OnAction = "clicExportMigration"
-                
-                    Call AddCmd(xlsapp, CStr(T_dataDic(D_TitleDic("Sheet") - 1, i)), .Cells(1, 5).Left + 20 + .Shapes("SHP_ExportMig").Width, .Cells(2, 1).Top, "SHP_ImportMig", "Import from" & Chr(10) & "migration", C_CmdWidht + 10, 30)
+                    'lla
+                    Call AddCmd(xlsapp, CStr(T_dataDic(D_TitleDic("Sheet") - 1, i)), .Cells(1, 5).Left + 20 + .Shapes("SHP_ExportMig").Width, .Cells(2, 1).Top, "SHP_ImportMig", "Import from migration", C_CmdWidht, 30) 'lla
                     .Shapes("SHP_ImportMig").Fill.ForeColor.RGB = LetColor("DarkBlueTitle")
                     .Shapes("SHP_ImportMig").Fill.BackColor.RGB = LetColor("DarkBlueTitle")
                     .Shapes("SHP_ImportMig").OnAction = "clicImportMigration"
@@ -645,7 +647,7 @@ StatusBar_Updater (75 + sIterPG)
         i = i + 1
     Wend
     
-    StatusBar_Updater (95)
+StatusBar_Updater (95)
     
     Call Add200Lines(xlsapp)
 
@@ -653,8 +655,8 @@ StatusBar_Updater (75 + sIterPG)
    'Application.ActiveWindow.WindowState = xlMinimized
     With xlsapp
         .Sheets("admin").Columns(2).EntireColumn.AutoFit
-        .Sheets(6).Select
-        .Sheets(6).Range("A1").Select
+        .Sheets("linelist-patient").Select 'lla
+        .Sheets("linelist-patient").Range("A1").Select
         .DisplayAlerts = False
         .ScreenUpdating = False
         '.Visible = True
@@ -694,8 +696,8 @@ Private Sub Add200Lines(xlsapp As Excel.Application)
     Dim oSheet As Object
 
     With xlsapp
-        For Each oSheet In .ActiveWorkbook.Sheets 'on se cr�e les 200 premieres lignes
-            If oSheet.Name <> "GEO" And oSheet.Name <> "TRANSLATION" And oSheet.Name <> "Dico" And oSheet.Name <> "Password" And oSheet.Name <> "ControleFormule" Then
+        For Each oSheet In .ActiveWorkbook.Sheets 'on se cr�e les 200 premieres lignes 'lla
+            If oSheet.Name <> "GEO" And oSheet.Name <> "TRANSLATION" And oSheet.Name <> "Dico" And oSheet.Name <> "Password" And oSheet.Name <> "ControleFormule" And oSheet.Name <> "linelist-translation" Then
                 For Each oLstobj In oSheet.ListObjects
                     'maybe check here to be sure the listobject is a table first?
                     oLstobj.Resize oSheet.Range(oSheet.Cells(C_TitleLine, 1), oSheet.Cells(200 + C_TitleLine, oSheet.Cells(C_TitleLine, 1).End(xlToRight).Column))
@@ -810,11 +812,11 @@ Sub WriteBorderLines(oRange As Range)
 
 End Sub
 
-Sub AddCmd(xlsapp As Excel.Application, ssheet As String, iLeft As Integer, iTop As Integer, sName As String, sText As String, iCmdWidth As Integer, iCmdHeight As Integer)
+Sub AddCmd(xlsapp As Excel.Application, ssheet As String, iLeft As Integer, iTop As Integer, sName As String, stext As String, iCmdWidth As Integer, iCmdHeight As Integer)
 
     Dim oShape As Object
     Dim bShapeExist As Boolean
-
+    
     bShapeExist = False
     For Each oShape In xlsapp.Sheets(ssheet).Shapes
         If oShape.Name = sName Then
@@ -822,12 +824,15 @@ Sub AddCmd(xlsapp As Excel.Application, ssheet As String, iLeft As Integer, iTop
             Exit For
         End If
     Next
+    
+    stext = translate_LineList(stext, Sheets("linelist-translation").[T_tradShapeLL])
 
     If Not bShapeExist Then
         With xlsapp.Sheets(ssheet)
             .Shapes.AddShape(msoShapeRectangle, iLeft + 3, iTop + 3, iCmdWidth, iCmdHeight).Name = sName
             .Shapes(sName).Placement = xlFreeFloating
-            .Shapes(sName).TextFrame2.TextRange.Characters.Text = sText
+            'lla
+            .Shapes(sName).TextFrame2.TextRange.Characters.Text = stext
             .Shapes(sName).TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
             .Shapes(sName).TextFrame2.VerticalAnchor = msoAnchorMiddle
             .Shapes(sName).TextFrame2.WordWrap = msoFalse
@@ -901,12 +906,14 @@ Private Sub TransfertSheet(xlsapp As Object, sSheetname As String)
         .Sheets(sSheetname).Select
         .Sheets(sSheetname).Copy After:=.Workbooks(1).Sheets(1)
         
-        'Sheets PASSWORD and CONTROLEFORMULE have some hidden properties to update
+        'Sheets PASSWORD, LINELIST-TRANSLATION and CONTROLEFORMULE have some hidden properties to update
         Select Case UCase(sSheetname)
         Case "PASSWORD"
             .Sheets(sSheetname).Visible = xlSheetVeryHidden
         Case "CONTROLEFORMULE"
             .Sheets(sSheetname).Visible = False
+        Case "LINELIST-TRANSLATION" 'lla
+            .Sheets(sSheetname).Visible = xlSheetVeryHidden
         End Select
         
         DoEvents
@@ -949,10 +956,34 @@ Private Function LetWordingWithSpace(xlsapp As Excel.Application, sDataWording A
         If Replace(UCase(xlsapp.Sheets(sSheetname).Cells(C_TitleLine, i).value), " ", "") = Replace(UCase(sDataWording), " ", "") Then
             LetWordingWithSpace = xlsapp.Sheets(sSheetname).Cells(C_TitleLine, i).value & " "
         Else
-            LetWordingWithSpace = sDataWording
+            LetWordingWithSpace = sDataWording 'translate_LineList(sDataWording, Sheets("linelist-translation").[T_tradeRangeLL])
         End If
     End With
 
 End Function
 
+Function translate_LineList(stext As String, rgPlage As Range) 'lla
+'management of the translation of the Linelist Patient
 
+    Dim sLanguage As String
+    Dim iNumCol As Integer
+    
+    sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_Language].value, _
+    Sheets("linelist-translation").[T_Lang2], 2, False)
+
+    Select Case sLanguage
+        Case "ENG"
+            Exit Function
+        Case "FRA"
+            iNumCol = 2
+        Case "POR"
+            iNumCol = 3
+        Case "ARA"
+            iNumCol = 4
+        Case "SPA"
+            iNumCol = 5
+    End Select
+    
+    translate_LineList = Application.WorksheetFunction.VLookup(stext, rgPlage, iNumCol, False)
+
+End Function
