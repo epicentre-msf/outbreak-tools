@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_Geo 
    Caption         =   "GEO Apps"
-   ClientHeight    =   9570.001
-   ClientLeft      =   45
-   ClientTop       =   -345
-   ClientWidth     =   10200
+   ClientHeight    =   4620
+   ClientLeft      =   -345
+   ClientTop       =   -1845
+   ClientWidth     =   8340.001
    OleObjectBlob   =   "F_Geo.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -13,24 +13,10 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
-
-
-
-
-
-
-
 Option Explicit
 
 Const C_PWD As String = "1234"
-Private Sub CMD_ChoicesFac_Click()
 
-End Sub
-
-Private Sub CMD_ChoicesGeo_Click()
-
-End Sub
 
 'This command is at the end, when you close the geoapp
 'It basically update all the required data and input selected data in the linelist worksheet
@@ -207,6 +193,13 @@ Private Sub TXT_RechercheHistoF_Change()
     'In case there is a change in the historic data
     Call SeachHistoValueF(T_HistoHF, F_Geo.TXT_RechercheHistoF.value)
 
+End Sub
+
+Private Sub UserForm_Initialize() 'lla
+'Manage language
+
+    Call TranslateForm(Me, Sheets("linelist-translation").[T_F_Geo])
+    
 End Sub
 
 
