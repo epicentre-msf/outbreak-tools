@@ -1,16 +1,16 @@
 Attribute VB_Name = "DesignerMain"
 Option Explicit
-
 Dim bGeoLoaded As Boolean 'This will check if the Geodata is loaded or Not: The user have to load a Geobase
-'Logic for loading files and folders ==============================================================================================================================================
+ 
+'LOADING FILES AND FOLDERS ==============================================================================================================================================
 
 'Loading the Dictionnary file ----------------------------------------------------------------------------------------------------------------------------------------------------
-Sub DesLoadFileDic()
+Sub LoadFileDic()
 
     Dim sFilePath As String                      'Path to the dictionnary
     
     'LoadFile is the procedure for loading the path to the dictionnary
-    sFilePath = DesLoadFile("*.xlsb") 'The
+    sFilePath = Helpers.LoadFile("*.xlsb") 'The
     
     'Update messages if the file path is correct
     If sFilePath <> "" Then
@@ -23,9 +23,10 @@ Sub DesLoadFileDic()
 End Sub
 
 'Loading the Lineist directory ---------------------------------------------------------------------------------------------------------------------------------------------------
-Sub DesLinelistDir()
+Sub LinelistDir()
     Dim sfolder As String
-    sfolder = LoadFolder
+
+    sfolder = Helpers.LoadFolder
     SheetMain.Range(C_sRngLLDir) = ""
     If (sfolder <> "") Then
         SheetMain.Range(C_sRngLLDir).value = sfolder
@@ -41,19 +42,19 @@ End Sub
 ' we have two functions for loading the geodatabase, but the second one
 ' will be in use instead of the first one.
 '
-Sub DesLoadGeoFile()
-    Application.ScreenUpdating = False
-    Application.Calculation = xlCalculationManual
+Sub LoadGeoFile()
     
+    Call Helpers.BeginWork(Application)
+
     bGeoLoaded = False
     
-    Dim sFilePath As String                      'File path to the geo file
-    Dim oSheet As Object
-    Dim AdmData  As BetterArray                  'Table for admin levels
-    Dim AdmHeader As BetterArray                 'Table for the headers of the listobjects
-    Dim AdmNames As BetterArray                  'Array of the sheetnames
-    Dim i As Integer                             'iterator
-    Dim Wkb As Workbook
+    Dim sFilePath   As String                      'File path to the geo file
+    Dim oSheet      As Object
+    Dim AdmData     As BetterArray                  'Table for admin levels
+    Dim AdmHeader   As BetterArray                 'Table for the headers of the listobjects
+    Dim AdmNames    As BetterArray                  'Array of the sheetnames
+    Dim i           As Integer                             'iterator
+    Dim Wkb         As Workbook
     'Sheet names
     Set AdmNames = New BetterArray
     AdmNames.LowerBound = 1
@@ -65,7 +66,7 @@ Sub DesLoadGeoFile()
     Set AdmHeader = New BetterArray
     AdmHeader.LowerBound = 1
     'Set xlsapp = New Excel.Application
-    sFilePath = DesLoadFile("*.xlsx")
+    sFilePath = Helpers.LoadFile("*.xlsx")
     
     If sFilePath <> "" Then
         'Open the geo workbook and hide the windows
@@ -95,7 +96,7 @@ Sub DesLoadGeoFile()
             If Not AdmNames.Includes(oSheet.Name) Then
                 SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Error_Sheet") & oSheet.Name
                 
-                Application.ScreenUpdating = True
+                Call EndWork(Application)
                 Exit Sub
             End If
                 
@@ -117,7 +118,7 @@ Sub DesLoadGeoFile()
         Set Wkb = Nothing
             
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Fini")
-        SheetMain.Range(C_sRngPathGeo).Interior.Color = DesLetColor("White")
+        SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White")
         bGeoLoaded = True
         
         'Remove the historic of the Geo and the facility if not empty
@@ -132,30 +133,27 @@ Sub DesLoadGeoFile()
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
     
-    Application.ScreenUpdating = True
-    Application.Calculation = xlCalculationAutomatic
+    Call EndWork(Application)
 End Sub
 
-
+'GENERATE THE LINELIST DATA =========================================================================================
 
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 'This is the Sub for generating the data of the linelist using the input in the designer
 ' The main entry point is the BuildList function which creates the Linelist-patient sheet as
 ' well as all the forms in the linelist
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Sub DesGenerateData()
+Sub GenerateData()
     Dim bGood As Boolean
-    bGood = DesControlForGenerate()
+    bGood = DesignerMainHelpers.ControlForGenerate(bGeoLoaded)
 
-    Application.ScreenUpdating = False
-    Application.Calculation = xlCalculationManual
+    BeginWork xlsapp:=Application
    
     If Not bGood Then
-        DesShowHideCmdValidation show:=False
+        DesignerMainHelpers.ShowHideCmdValidation show:=False
         Exit Sub
     End If
     
-    Dim xlsapp          As Excel.Application    'New application to use for the xlsapp
     Dim DictHeaders     As BetterArray          'Dictionary headers
     Dim DictData        As BetterArray          'Dictionary data
     Dim ChoicesHeaders  As BetterArray          'Choices headers
@@ -168,34 +166,36 @@ Sub DesGenerateData()
     
     If IsWkbOpened(SheetMain.Range(C_sRngLLName).value & ".xlsb") Then
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseLL")
-        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
+        SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
                                           
     Set Wkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
     
+    EndWork xlsapp:=Application
+    
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadDic")
     
     'Create the Dictionnary data
-    Set DictHeaders = GetHeaders(Wkb, C_sParamSheetDict, C_eStartLinesDictHeaders)
+    Set DictHeaders = Helpers.GetHeaders(Wkb, C_sParamSheetDict, C_eStartLinesDictHeaders)
     
     'Create the data table of linelist patient using the dictionnary
-    Set DictData = GetData(Wkb, C_sParamSheetDict, C_eStartLinesDictData)
+    Set DictData = Helpers.GetData(Wkb, C_sParamSheetDict, C_eStartLinesDictData)
     
     'Create the choices data
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadList")
     
     'Create the dictionnary for the choices sheet
-    Set ChoicesHeaders = GetHeaders(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesHeaders)
+    Set ChoicesHeaders = Helpers.GetHeaders(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesHeaders)
     
     'Create the table for the choices
-    Set ChoicesData = GetData(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesData)
+    Set ChoicesData = Helpers.GetData(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesData)
        
     'Reading the export sheet
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadExport")
     
     'Create parameters for export
-    Set ExportData = GetData(Wkb, C_sParamSheetExport, C_eStartLinesExportData)
+    Set ExportData = Helpers.GetData(Wkb, C_sParamSheetExport, C_eStartLinesExportData)
 
     Wkb.Close savechanges:=False
     
@@ -207,7 +207,7 @@ Sub DesGenerateData()
     'The BuildList procedure is in the linelist
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName) & ".xlsb"
     
-    Call DesBuildList(DictHeaders, DictData, ChoicesHeaders, ChoicesData, ExportData, sPath)
+    Call DesignerBuildList.BuildList(DictHeaders, DictData, ChoicesHeaders, ChoicesData, ExportData, sPath)
     
     DoEvents
     
@@ -217,217 +217,18 @@ Sub DesGenerateData()
     
     SheetMain.Shapes("SHP_OpenLL").Visible = msoTrue
     
-    Application.ScreenUpdating = True
-    Application.Calculation = xlCalculationManual
 End Sub
 
-Sub DesOpenLL()
-    'Be sure that the directory and the linelist name are not empty
-    If SheetMain.Range(C_sRngLLDir).value = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathLL")
-        SheetMain.Range(C_sRngLLDir).Interior.Color = DesLetColor("RedEpi")
-        Exit Sub
-    End If
-    
-    If SheetMain.Range(C_sRngLLName).value = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLName")
-        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
-        Exit Sub
-    End If
-    
-    'Be sure the workbook is not already opened
-    If IsWkbOpened(SheetMain.Range(C_sRngLLName).value & ".xlsb") Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseLL")
-        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
-        Exit Sub
-    End If
-    
-    'Be sure the workbook exits
-    If Dir(SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb") = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CheckLL")
-        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
-        SheetMain.Range(C_sRngLLDir).Interior.Color = DesLetColor("RedEpi")
-        DesShowHideCmdValidation show:=False
-        Sheets("Main").Shapes("SHP_OpenLL ").Visible = msoFalse
-        Exit Sub
-    End If
-    
-    'Then open it
-    Application.Workbooks.Open Filename:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
-End Sub
+
 'Adding some controls before generating the linelist  =============================================================================================================================
-
-'Get the file extension of a file
-Private Function GetFileExtenstion(sString As String) As String
-    
-    GetFileExtension = ""
-    
-    Dim iDotPos As Integer
-    Dim sExt As String 'extension
-    'Find the position of the dot at the end
-    iDotPos = InStrRev(sString, ".")
-    
-    sExt = Right(sString, Len(sString) - iDotPos)
-    
-    If (sExt <> "") Then
-        GetFileExtension = sExt
-    End If
-    
-End Function
-
-'Check if a Workbook is Opened
-
-Private Function IsWkbOpened(sName As String) As Boolean
-    Dim oWkb As Workbook                         'Just try to set the workbook if it fails it is closed
-    On Error Resume Next
-    Set oWkb = Application.Workbooks.Item(sName)
-    IsWkbOpened = (Not oWkb Is Nothing)
-    On Error GoTo 0
-End Function
-
-'Set input ranges to white
-Sub SetInputRangesToWhite()
-    
-    SheetMain.Range(C_sRngPathGeo).Interior.Color = vbWhite
-    SheetMain.Range(C_sRngPathDic).Interior.Color = vbWhite
-    SheetMain.Range(C_sRngLLName).Interior.Color = vbWhite
-    SheetMain.Range(C_sRngLLDir).Interior.Color = vbWhite
-    SheetMain.Range(C_sRngEdition).Interior.Color = vbWhite
-
-End Sub
-
-'Cancel for the Linelist Generation Process
-Sub DesCancelGenerate()
-    Dim answer As Integer
-    
-    answer = MsgBox(TranslateMsg("MSG_ConfCancel"), vbYesNo)
-    
-    
-    If answer = vbYes Then
-        Call SetInputRangesToWhite
-        DesShowHideCmdValidation show:=False
-        SheetMain.Shapes("SHP_OpenLL ").Visible = msoFalse
-        End
-    End If
-    
-    MsgBox TranslateMsg("MSG_Continue")
-    
-End Sub
-
-'Show/Hide the forms for generation of the linelist
-'Show or hide the generate the linelist shape
-Private Sub DesShowHideCmdValidation(show As Boolean)
-
-    SheetMain.Shapes("SHP_Generer").Visible = show
-    SheetMain.Shapes("SHP_Annuler").Visible = show
-    SheetMain.Shapes("SHP_CtrlNouv").Visible = Not show
-
-End Sub
-
-'A Control Function to be sure that everything is fine for linelist Generation
-Private Function DesControlForGenerate() As Boolean
-    
-    DesControlForGenerate = False
-    'Hide the shapes for linelist generation
-    DesShowHideCmdValidation show:=False
-    
-    'Checking coherence of the Dictionnary --------------------------------------------------------
-    
-    'Be sure the dictionary path is not empty
-    If SheetMain.Range(C_sRngPathDic).value = "" Then
-       SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathDic")
-       SheetMain.Range(C_sRngPathDic).Interior.Color = DesLetColor("RedEpi")
-       Exit Function
-    End If
-    
-    'Now check if the file exists
-    If Dir(SheetMain.Range(C_sRngPathDic).value) = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathDic")
-        SheetMain.Range(C_sRngPathDic).Interior.Color = DesLetColor("RedEpi")
-        Exit Function
-    End If
-     
-    'Be sure the dictionnary is not opened
-    If IsWkbOpened(Dir(SheetMain.Range(C_sRngPathDic).value)) Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseDic")
-        SheetMain.Range(C_sRngPathDic).Interior.Color = DesLetColor("RedEpi")
-        Exit Function
-    End If
-    
-    SheetMain.Range(C_sRngPathDic).Interior.Color = DesLetColor("White") 'if path is OK
-    
-    'Checking coherence of the GEO (maybe remove?) ------------------------------------------------
-    
-    'Be sure the geo path is not empty
-    If SheetMain.Range(C_sRngPathGeo).value = "" Then
-       SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathDic")
-       SheetMain.Range(C_sRngPathGeo).Interior.Color = DesLetColor("RedEpi")
-       Exit Function
-    End If
-    
-    'Now check if the file exists
-    If Dir(SheetMain.Range(C_sRngPathGeo).value) = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathGeo")
-        SheetMain.Range(C_sRngPathGeo).Interior.Color = DesLetColor("RedEpi")
-        Exit Function
-    End If
-     
-    'Be sure the geo has been loaded correctly
-    If Not bGeoLoaded Then 'bGeoLoaded is a global variable resticted to this module only
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LoadGeo")
-        SheetMain.Range(C_sRngPathGeo).Interior.Color = DesLetColor("RedEpi")
-    End If
-
-    SheetMain.Range(C_sRngPathGeo).Interior.Color = DesLetColor("White") 'if path is OK
-    
-    'Checking coherence of the Linelist File ------------------------------------------------------
-    
-    'Be sure the linelist directory is not empty
-    If SheetMain.Range(C_sRngLLDir).value = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathLL")
-        SheetMain.Range(C_sRngLLDir).Interior.Color = DesLetColor("RedEpi")
-        Exit Function
-    End If
-
-    'Be sure the directory for the linelist exists
-    If Dir(SheetMain.Range(C_sRngLLDir).value, vbDirectory) = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathLL")
-        SheetMain.Range(C_sRngLLDir).Interior.Color = DesLetColor("RedEpi")
-        Exit Function
-    End If
-    
-    SheetMain.Range(C_sRngLLDir).Interior.Color = DesLetColor("White") 'if path is OK
-
-    'Checking coherence of the linelist name ------------------------------------------------------
-    
-    'be sure the linelist name is not empty
-    If SheetMain.Range(C_sRngLLName) = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLName")
-        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
-        Exit Function
-    End If
-    
-    'Be sure the linelist workbook is not already opened
-    If IsWkbOpened(SheetMain.Range(C_sRngLLName).value & ".xlsb") Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseLL")
-        SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("RedEpi")
-        Exit Function
-    End If
-    
-    SheetMain.Range(C_sRngLLName).Interior.Color = DesLetColor("White") 'If path is OK
-    DesControlForGenerate = True
-
-End Function
-
-'Control the linelist generation process to be sure we can generate the ll
-Private Sub DesControl()
+Public Sub Control()
     'Put every range in white before the control
     
     Call SetInputRangesToWhite
     
     Dim bGood As Boolean
     'Control to be sure we can generate a linelist
-    bGood = DesControlForGenerate()
+    bGood = DesignerMainHelpers.ControlForGenerate(bGeoLoaded)
     If Not bGood Then
         Exit Sub
     Else
@@ -437,15 +238,55 @@ Private Sub DesControl()
         
         If Dir(SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb") <> "" Then
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Correct") & ": " & SheetMain.Range(C_sRngLLName).value & ".xlsb " & TranslateMsg("MSG_Exists")
-            SheetMain.Range(C_sRngEdition).Interior.Color = DesLetColor("Grey")
+            SheetMain.Range(C_sRngEdition).Interior.Color = Helpers.GetColor("Grey")
         Else
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Correct")
         End If
         
-        DesShowHideCmdValidation True
+        DesignerMainHelpers.ShowHideCmdValidation True
         
     End If
 End Sub
+
+
+'OPEN THE GENERATED LINELIST ==========================================================================================
+
+Sub OpenLL()
+    'Be sure that the directory and the linelist name are not empty
+    If SheetMain.Range(C_sRngLLDir).value = "" Then
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathLL")
+        SheetMain.Range(C_sRngLLDir).Interior.Color = Helpers.GetColor("RedEpi")
+        Exit Sub
+    End If
+    
+    If SheetMain.Range(C_sRngLLName).value = "" Then
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLName")
+        SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
+        Exit Sub
+    End If
+    
+    'Be sure the workbook is not already opened
+    If IsWkbOpened(SheetMain.Range(C_sRngLLName).value & ".xlsb") Then
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseLL")
+        SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
+        Exit Sub
+    End If
+    
+    'Be sure the workbook exits
+    If Dir(SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb") = "" Then
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CheckLL")
+        SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
+        SheetMain.Range(C_sRngLLDir).Interior.Color = Helpers.GetColor("RedEpi")
+        ShowHideCmdValidation show:=False
+        Sheets("Main").Shapes("SHP_OpenLL ").Visible = msoFalse
+        Exit Sub
+    End If
+    
+    'Then open it
+    Application.Workbooks.Open Filename:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
+End Sub
+
+
 
 
 

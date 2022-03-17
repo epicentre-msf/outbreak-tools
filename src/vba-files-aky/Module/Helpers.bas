@@ -1,10 +1,148 @@
-Attribute VB_Name = "LinelistHelpersFunctions"
+Attribute VB_Name = "Helpers"
+
+
+'Basic Helper functions used in the creation of the linelist and other stuffs
+'Most of them are explicit functions. Contains all the ancillary sub/
+'Functions used when creating the linelist and also in the linelist
+'itself
+
 Option Explicit
+
+
+Public Function GetColor(sColorCode As String)
+
+    Select Case sColorCode
+    Case "BlueEpi"
+        GetColor = RGB(45, 85, 158)
+    Case "RedEpi"
+        GetColor = RGB(252, 228, 214)
+    Case "LightBlueTitle"
+        GetColor = RGB(217, 225, 242)
+    Case "DarkBlueTitle"
+        GetColor = RGB(142, 169, 219)
+    Case "Grey"
+        GetColor = RGB(235, 232, 232)
+    Case "Green"
+        GetColor = RGB(198, 224, 180)
+    Case "Orange"
+        GetColor = RGB(248, 203, 173)
+    Case "White"
+        GetColor = RGB(255, 255, 255)
+    Case "MainSecBlue"
+        GetColor = RGB(47, 117, 181)
+    Case "SubSecBlue"
+        GetColor = RGB(221, 235, 247)
+    Case "SubLabBlue"
+        GetColor = RGB(142, 169, 219)
+    End Select
+
+End Function
+
+
+'This will set the actual application properties to be able to work correctly
+Public Sub BeginWork(xlsapp As Excel.Application, Optional bvisbility As Boolean = True)
+    xlsapp.ScreenUpdating = False
+    xlsapp.Calculation = xlCalculationManual
+End Sub
+
+
+Public Sub EndWork(xlsapp As Excel.Application, Optional bvisbility As Boolean = True)
+    xlsapp.ScreenUpdating = False
+    xlsapp.Calculation = xlCalculationManual
+End Sub
+
+'Load files and folders
+Public Function LoadFile(Optional sFilters As String) As String 'lla
+
+    Dim fDialog As Office.FileDialog
+
+    LoadFile = ""
+    Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
+    With fDialog
+        .AllowMultiSelect = False
+        .Title = "Chose your file"               'MSG_ChooseFile
+        .Filters.Clear
+        .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile'lla
+
+        If .show = True Then
+            LoadFile = .SelectedItems(1)
+        End If
+    End With
+    Set fDialog = Nothing
+
+End Function
+
+Public Function LoadFolder() As String
+
+    Dim fDialog As Office.FileDialog
+
+    LoadFolder = ""
+    Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
+    With fDialog
+        .AllowMultiSelect = False
+        .Title = "Chose your directory"          'MSG_ChooseDir
+        .Filters.Clear
+    
+        If .show = True Then
+            LoadFolder = .SelectedItems(1)
+        End If
+    End With
+    Set fDialog = Nothing
+
+End Function
+
+'Get the file extension of a string
+'Get the file extension of a file
+Private Function GetFileExtension(sString As String) As String
+    
+    GetFileExtension = ""
+    
+    Dim iDotPos As Integer
+    Dim sExt As String 'extension
+    'Find the position of the dot at the end
+    iDotPos = InStrRev(sString, ".")
+    
+    sExt = Right(sString, Len(sString) - iDotPos)
+    
+    If (sExt <> "") Then
+        GetFileExtension = sExt
+    End If
+    
+End Function
+
+'Check if a Workbook is Opened
+
+Public Function IsWkbOpened(sName As String) As Boolean
+    Dim oWkb As Workbook                         'Just try to set the workbook if it fails it is closed
+    On Error Resume Next
+    Set oWkb = Application.Workbooks.Item(sName)
+    IsWkbOpened = (Not oWkb Is Nothing)
+    On Error GoTo 0
+End Function
+
+
+'Write lines for borders
+
+Public Sub WriteBorderLines(oRange As Range)
+
+    Dim i As Integer
+    For i = 7 To 10
+        With oRange.Borders(i)
+            .LineStyle = xlContinuous
+            .ColorIndex = xlAutomatic
+            .TintAndShade = 0
+            .Weight = xlThin
+        End With
+    Next
+
+End Sub
+
 
 'Clear a String to remove inconsistencies
 Public Function ClearString(ByVal sString As String, Optional bremoveHiphen As Boolean = True) As String
     Dim sValue As String
     sValue = sString
+
     If bremoveHiphen Then
         sValue = Replace(sValue, "?", " ")
         sValue = Replace(sValue, "-", " ")
@@ -15,7 +153,11 @@ Public Function ClearString(ByVal sString As String, Optional bremoveHiphen As B
     ClearString = LCase(sValue)
 End Function
 
-'Get the headers of one sheet from one line
+'Get headers and data from one worksheet of a workbook
+
+'Get the headers of one sheet from one line (probablly the first line)
+'The headers are cleaned
+
 Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Byte) As BetterArray
     'Extract column names in one sheet starting from one line
     Dim Headers As BetterArray
@@ -51,6 +193,34 @@ Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Byte) As Be
 End Function
 
 
+
+'Set validation list on a range
+
+Sub SetValidation(oRange As Range, sValidList As String, sAlertType As Byte, sMessage As String)
+
+    With oRange.Validation
+        .Delete
+        Select Case sAlertType
+        Case 1                                   '"error"
+            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:=sValidList
+        Case 2                                   '"warning"
+            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertWarning, Operator:=xlBetween, Formula1:=sValidList
+        Case Else                                'for all the others, add an information alert
+            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertInformation, Operator:=xlBetween, Formula1:=sValidList
+        End Select
+        
+        .IgnoreBlank = True
+        .InCellDropdown = True
+        .InputTitle = ""
+        .errorTitle = ""
+        .InputMessage = ""
+        .ErrorMessage = sMessage
+        .ShowInput = True
+        .ShowError = True
+    End With
+End Sub
+
+'Get the validation list using Choices data and choices labels
 'Get the list of validations from the Choices data
 Function GetValidationList(ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, sValidation As String) As String
 
@@ -75,133 +245,21 @@ Function GetValidationList(ChoicesListData As BetterArray, ChoicesLabelsData As 
 End Function
 
 
-Public Function IsEmptyTable(T_aTest) As Boolean
+Function GetValidationType(sValidationType As String) As Byte
 
-    Dim test As Variant
-
-    IsEmptyTable = False
-    On Error GoTo crash
-    test = UBound(T_aTest)
-    On Error GoTo 0
-    Exit Function
-
-crash:
-    IsEmptyTable = True
-
-End Function
-
-Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
- 
-    Dim strMidValue As String
-    Dim lngHi As Long
-    Dim lngLo As Long
-    Dim lngIndex As Long
-  
-    If lngMin >= lngMax Then Exit Sub
-  
-    ' Valeur de partionnement
-    lngIndex = Int((lngMax - lngMin + 1) * Rnd + lngMin)
-    strMidValue = T_aTrier(lngIndex)
- 
-    ' Echanger les valeurs
-    T_aTrier(lngIndex) = T_aTrier(lngMin)
- 
-    lngLo = lngMin
-    lngHi = lngMax
-    Do
-        ' Chercher,   partir de lngHi, une valeur < strMidValue
-        Do While T_aTrier(lngHi) >= strMidValue
-            lngHi = lngHi - 1
-            If lngHi <= lngLo Then Exit Do
-        Loop
-        If lngHi <= lngLo Then
-            T_aTrier(lngLo) = strMidValue
-            Exit Do
-        End If
- 
-        ' Echanger les valeurs lngLo et lngHi
-        T_aTrier(lngLo) = T_aTrier(lngHi)
- 
-        ' Chercher   partir de lngLo une valeur >= strMidValue
-        lngLo = lngLo + 1
-        Do While T_aTrier(lngLo) < strMidValue
-            lngLo = lngLo + 1
-            If lngLo >= lngHi Then Exit Do
-        Loop
-        If lngLo >= lngHi Then
-            lngLo = lngHi
-            T_aTrier(lngHi) = strMidValue
-            Exit Do
-        End If
- 
-        ' Echanger les valeurs lngLo et lngHi
-        T_aTrier(lngHi) = T_aTrier(lngLo)
-    Loop
- 
-    ' Trier les 2 sous-T_aTrieres
-    QuickSort T_aTrier, lngMin, lngLo - 1
-    QuickSort T_aTrier, lngLo + 1, lngMax
+    GetValidationType = 3                    'list of validation info, warning or error
+    If sValidationType <> "" Then
+        Select Case LCase(sValidationType)
+        Case "warning"
+            GetValidationType = 2
+        Case "error"
+            GetValidationType = 1
+        End Select
+    End If
     
-End Sub
-
-Public Function DesLoadFile(Optional sFilters As String) As String 'lla
-
-    Dim fDialog As Office.FileDialog
-
-    DesLoadFile = ""
-    Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
-    With fDialog
-        .AllowMultiSelect = False
-        .Title = "Chose your file"               'MSG_ChooseFile
-        .Filters.Clear
-        .Filters.Add "Feuille de calcul Excel", sFilters 'MSG_excel file
-
-        If .show = True Then
-            DesLoadFile = .SelectedItems(1)
-        End If
-    End With
-    Set fDialog = Nothing
 End Function
 
-
-Public Function DesLoadFolder() As String
-
-    Dim fDialog As Office.FileDialog
-
-    LoadFolder = ""
-    Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
-    With fDialog
-        .AllowMultiSelect = False
-        .Title = "Chose your directory"          'MSG_ChooseDir
-        .Filters.Clear
-    
-        If .show = True Then
-            LoadFolder = .SelectedItems(1)
-        End If
-    End With
-    Set fDialog = Nothing
-
-End Function
-
-Public Function CleanSpecLettersInName(sName As String) As String 'supp tous les caract sp ciaux du nom
-
-    Dim T_Caract
-    Dim i As Integer
-    Dim sRes As String
-
-    sRes = sName
-    T_Caract = [T_ascii]
-    i = 1
-    While i <= UBound(T_Caract, 1)
-        sName = Replace(sName, T_Caract(i, 2), "")
-        i = i + 1
-    Wend
-    CleanSpecLettersInName = sName
-
-End Function
-
-'                                                                       '
-'_________________________ Liste des fonctions _________________________'
+'Epicemiological week function
 
 Public Function Epiweek(jour As Long) As Long
     
@@ -243,11 +301,85 @@ Public Function Epiweek(jour As Long) As Long
     
 End Function
 
+Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
+ 
+    Dim strMidValue As String
+    Dim lngHi As Long
+    Dim lngLo As Long
+    Dim lngIndex As Long
+  
+    If lngMin >= lngMax Then Exit Sub
+  
+    ' Valeur de partionnement
+    lngIndex = Int((lngMax - lngMin + 1) * Rnd + lngMin)
+    strMidValue = T_aTrier(lngIndex)
+ 
+    ' Echanger les valeurs
+    T_aTrier(lngIndex) = T_aTrier(lngMin)
+ 
+    lngLo = lngMin
+    lngHi = lngMax
+    Do
+        ' Chercher, � partir de lngHi, une valeur < strMidValue
+        Do While T_aTrier(lngHi) >= strMidValue
+            lngHi = lngHi - 1
+            If lngHi <= lngLo Then Exit Do
+        Loop
+        If lngHi <= lngLo Then
+            T_aTrier(lngLo) = strMidValue
+            Exit Do
+        End If
+ 
+        ' Echanger les valeurs lngLo et lngHi
+        T_aTrier(lngLo) = T_aTrier(lngHi)
+ 
+        ' Chercher � partir de lngLo une valeur >= strMidValue
+        lngLo = lngLo + 1
+        Do While T_aTrier(lngLo) < strMidValue
+            lngLo = lngLo + 1
+            If lngLo >= lngHi Then Exit Do
+        Loop
+        If lngLo >= lngHi Then
+            lngLo = lngHi
+            T_aTrier(lngHi) = strMidValue
+            Exit Do
+        End If
+ 
+        ' Echanger les valeurs lngLo et lngHi
+        T_aTrier(lngHi) = T_aTrier(lngLo)
+    Loop
+ 
+    ' Trier les 2 sous-T_aTrieres
+    QuickSort T_aTrier, lngMin, lngLo - 1
+    QuickSort T_aTrier, lngLo + 1, lngMax
+    
+End Sub
+
+Public Function IsEmptyTable(T_aTest) As Boolean
+
+    Dim test As Variant
+
+    IsEmptyTable = False
+    On Error GoTo crash
+    test = UBound(T_aTest)
+    On Error GoTo 0
+    Exit Function
+
+crash:
+    IsEmptyTable = True
+
+End Function
+
+
+
+
 'This function gets unique values from a table of two dimensions converted to a BetterArray table
 ' Get unique values from a table on two dimensions (or more)
 Public Function GetUnique(ByVal T_table As Variant, Optional ByVal col1 As Integer = -99, Optional ByVal col2 As Integer = -99, Optional ByVal index As Variant) As Variant
 
-    Dim i, k, j As Long                          'for the first line
+    Dim i As Long
+    Dim k As Long
+    Dim j As Long                          'for the first line
     Dim outCol As New Collection                 'I will stock pair values here
     Dim bindValues                               'all binded values
     Dim outTable
@@ -383,3 +515,56 @@ Public Function GetFilter(ByVal T_table As BetterArray, iCol As Integer, sValue 
 End Function
 
 
+'Find the index of sValue on column iCol of a BetterArray T_table
+Public Function FindIndex(T_table As BetterArray, iCol As Integer, sValue As String) As Integer
+    Dim T_data As BetterArray
+    Set T_data = New BetterArray
+    T_data.Items = T_table.ExtractSegment(ColumnIndex:=iCol)
+    FindIndex = T_data.IndexOf(sValue)
+    Set T_data = Nothing
+End Function
+
+
+'Find the value of one variable for one column in a sheet
+
+Public Function FindDicColumnValue(sVarName, sSheetName, sColumn)
+
+    FindDicColumnValue = ""
+
+    Dim VarNameData As BetterArray
+    Dim SheetNameData As BetterArray
+    Dim sListobjectName As String
+
+    Set VarNameData = New BetterArray
+    Set SheetNameData = New BetterArray
+    
+    VarNameData.LowerBound = 1
+    SheetNameData.LowerBound = 1
+    
+    sListobjectName = "o" & ClearString(C_sParamSheetDict)
+    With ThisWorkbook.Worksheets(C_sParamSheetDict)
+        SheetNameData.FromExcelRange .ListObjects(sListobjectName).ListColumns(C_sDictHeaderSheetName).DataBodyRange, _
+                                     DetectLastRow:=True, DetectLastColumn:=False
+                                     
+        Debug.Print SheetNameData.IndexOf(sSheetName)
+
+        If (SheetNameData.Includes(sSheetName)) Then
+           
+                VarNameData.FromExcelRange .Range("A" & (SheetNameData.IndexOf(sSheetName) + 1) & ":" & "A" & (SheetNameData.LastIndexOf(sSheetName) + 1)), _
+                                                 DetectLastRow:=False, DetectLastColumn:=False
+    
+                If VarNameData.Includes(sVarName) Then
+                
+                FindDicColumnValue = .Cells(SheetNameData.IndexOf(sSheetName) + VarNameData.IndexOf(sVarName), .ListObjects(sListobjectName).ListColumns(sColumn).index).value
+                 
+                End If
+           
+        End If
+
+    End With
+
+    Set VarNameData = Nothing
+    Set SheetNameData = Nothing
+
+
+End Function

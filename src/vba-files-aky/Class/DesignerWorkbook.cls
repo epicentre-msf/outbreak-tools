@@ -9,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = True
 
 
+Option Explicit
 'clear the path ranges once the workbook opens
 Private Sub Workbook_Open()
   SheetMain.Range(C_sRngPathDic).value = ""
