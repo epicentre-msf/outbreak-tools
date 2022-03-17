@@ -1,4 +1,4 @@
-Attribute VB_Name = "M_traduction"
+Attribute VB_Name = "DesignerTranslation"
 Option Explicit
 
 Function GetLanguageCode(sString As String) As String
@@ -227,26 +227,4 @@ Public Sub StartTranslate()
     Application.ScreenUpdating = True
 End Sub
 
-Sub TranslateForm(sNameForm As String)
-
-    Dim i As Integer
-    Dim T_data
-    Dim D_data As Scripting.Dictionary
-
-    T_data = ThisWorkbook.Sheets("translation").[T_tradForm]
-
-    i = 1
-    While i <= UBound(T_data, 1) And sNameForm <> T_data(0, i)
-        i = i + 1
-    Wend
-
-    If sNameForm = T_data(0, i) Then
-        While sNameForm = T_data(0, i)
-
-            ThisWorkbook.VBProject.VBComponents(sNameForm).Controls(T_data(1, i)).value = T_data(2, i)
-            i = i + 1
-        Wend
-    End If
-
-End Sub
 
