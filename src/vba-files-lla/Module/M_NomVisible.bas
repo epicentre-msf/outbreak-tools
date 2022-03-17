@@ -84,83 +84,83 @@ End Function
 
 Sub ClicCmdVisibleName()
 
-    Dim T_mainlab As BetterArray                 'main label table
-    Dim T_varname As BetterArray                 'varname table
-    Dim T_status As BetterArray                  'status table
-    Dim T_headers As BetterArray                 'headers of the dictionary table
-    Dim T_data As BetterArray                    'temporary data for storing the values
-    Dim wks As Worksheet                         'Setting a temporary variable for dictionary selection
-    Dim i As Integer
-    
-    'Setting and initializing the tables
-    Set T_mainlab = New BetterArray
-    Set T_varname = New BetterArray
-    Set T_status = New BetterArray
-    Set T_data = New BetterArray
-    Set T_headers = New BetterArray
-    
-    T_varname.LowerBound = 1
-    T_mainlab.LowerBound = 1
-    T_status.LowerBound = 1
-    T_headers.LowerBound = 1
-    T_data.LowerBound = 1
-    
-    ActiveSheet.Unprotect (C_PWD)
-    Set wks = ThisWorkbook.Worksheets("Dico")
-    
-    'Get the headers
-    Set T_headers = CreateDicTitle
-    'Now update the mainlabel, status and variable name
-    
-    i = 1
-    While (i <= wks.Cells(1, 1).End(xlDown).Row)
-        If ActiveSheet.Name = wks.Cells(i, T_headers.IndexOf("Sheet")) Then
-            'update only on non hidden variables
-            If LCase(wks.Cells(i, T_headers.IndexOf("Status")).value) <> "hidden" Then
-                T_mainlab.Push wks.Cells(i, T_headers.IndexOf("Main label")).value
-                T_varname.Push wks.Cells(i, T_headers.IndexOf("Variable name")).value
-                
-                If LCase(wks.Cells(i, T_headers.IndexOf("Status")).value) = "mandatory" Then
-                    T_status.Push "Mandatory"
-                ElseIf LCase(wks.Cells(i, T_headers.IndexOf("Visibility")).value) = "hidden by user" Then
-                    T_status.Push ""
-                Else
-                    T_status.Push "Shown"
-                End If
-            Else
-                wks.Cells(i, T_headers.IndexOf("Visibility")).value = "Hidden by designer"
-            End If
-        End If
-        i = i + 1
-    Wend
-    Set T_headers = Nothing
-    
-    T_data.Item(1) = T_mainlab.Items
-    Set T_mainlab = Nothing
-    T_data.Item(2) = T_varname.Items
-    Set T_varname = Nothing
-    T_data.Item(3) = T_status.Items
-    Set T_status = Nothing
-    
-    Application.EnableEvents = False
-    T_data.ArrayType = BA_MULTIDIMENSION
-    Set T_data = T_data.Clone
-    T_data.Transpose
-    
-    F_NomVisible.LST_NomChamp.ColumnCount = 3
-    F_NomVisible.LST_NomChamp.BoundColumn = 2
-    F_NomVisible.LST_NomChamp.List = T_data.Items
-    'Setting objects to nothing
-
-    Set wks = Nothing
-    Set T_data = Nothing
-    
-    Application.EnableEvents = True
-    F_NomVisible.FRM_AffMas.Visible = True
-    F_NomVisible.FRM_AffMas.Width = 90
-    F_NomVisible.Width = 450
-    F_NomVisible.Height = 270
-    F_NomVisible.CMD_Fermer.SetFocus
+'    Dim T_mainlab As BetterArray                 'main label table
+'    Dim T_varname As BetterArray                 'varname table
+'    Dim T_status As BetterArray                  'status table
+'    Dim T_headers As BetterArray                 'headers of the dictionary table
+'    Dim T_data As BetterArray                    'temporary data for storing the values
+'    Dim wks As Worksheet                         'Setting a temporary variable for dictionary selection
+'    Dim i As Integer
+'
+'    'Setting and initializing the tables
+'    Set T_mainlab = New BetterArray
+'    Set T_varname = New BetterArray
+'    Set T_status = New BetterArray
+'    Set T_data = New BetterArray
+'    Set T_headers = New BetterArray
+'
+'    T_varname.LowerBound = 1
+'    T_mainlab.LowerBound = 1
+'    T_status.LowerBound = 1
+'    T_headers.LowerBound = 1
+'    T_data.LowerBound = 1
+'
+'    ActiveSheet.Unprotect (C_PWD)
+'    Set wks = ThisWorkbook.Worksheets("Dico")
+'
+'    'Get the headers
+'    Set T_headers = CreateDicTitle
+'    'Now update the mainlabel, status and variable name
+'
+'    i = 1
+'    While (i <= wks.Cells(1, 1).End(xlDown).Row)
+'        If ActiveSheet.Name = wks.Cells(i, T_headers.IndexOf("Sheet")) Then
+'            'update only on non hidden variables
+'            If LCase(wks.Cells(i, T_headers.IndexOf("Status")).value) <> "hidden" Then
+'                T_mainlab.Push wks.Cells(i, T_headers.IndexOf("Main label")).value
+'                T_varname.Push wks.Cells(i, T_headers.IndexOf("Variable name")).value
+'
+'                If LCase(wks.Cells(i, T_headers.IndexOf("Status")).value) = "mandatory" Then
+'                    T_status.Push "Mandatory"
+'                ElseIf LCase(wks.Cells(i, T_headers.IndexOf("Visibility")).value) = "hidden by user" Then
+'                    T_status.Push ""
+'                Else
+'                    T_status.Push "Shown"
+'                End If
+'            Else
+'                wks.Cells(i, T_headers.IndexOf("Visibility")).value = "Hidden by designer"
+'            End If
+'        End If
+'        i = i + 1
+'    Wend
+'    Set T_headers = Nothing
+'
+'    T_data.Item(1) = T_mainlab.Items
+'    Set T_mainlab = Nothing
+'    T_data.Item(2) = T_varname.Items
+'    Set T_varname = Nothing
+'    T_data.Item(3) = T_status.Items
+'    Set T_status = Nothing
+'
+'    Application.EnableEvents = False
+'    T_data.ArrayType = BA_MULTIDIMENSION
+'    Set T_data = T_data.Clone
+'    T_data.Transpose
+'
+'    F_NomVisible.LST_NomChamp.ColumnCount = 3
+'    F_NomVisible.LST_NomChamp.BoundColumn = 2
+'    F_NomVisible.LST_NomChamp.List = T_data.Items
+'    'Setting objects to nothing
+'
+'    Set wks = Nothing
+'    Set T_data = Nothing
+'
+'    Application.EnableEvents = True
+'    F_NomVisible.FRM_AffMas.Visible = True
+'    F_NomVisible.FRM_AffMas.Width = 90
+'    F_NomVisible.Width = 450
+'    F_NomVisible.Height = 270
+'    F_NomVisible.CMD_Fermer.SetFocus
     F_NomVisible.show
 
     ActiveSheet.Protect Password:=C_PWD, DrawingObjects:=True, Contents:=True, Scenarios:=True _
