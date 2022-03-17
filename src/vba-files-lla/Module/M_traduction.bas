@@ -226,26 +226,67 @@ Public Sub StartTranslate()
     Application.ScreenUpdating = True
 End Sub
 
-Sub TranslateForm(sNameForm As String)
+'Sub TranslateForm(sNameForm As String)
+'
+'    Dim i As Integer
+'    Dim T_data
+'    Dim D_data As Scripting.Dictionary
+'
+'    T_data = ThisWorkbook.Sheets("translation").[T_tradForm]
+'
+'    i = 1
+'    While i <= UBound(T_data, 1) And sNameForm <> T_data(0, i)
+'        i = i + 1
+'    Wend
+'
+'    If sNameForm = T_data(0, i) Then
+'        While sNameForm = T_data(0, i)
+'
+'            ThisWorkbook.VBProject.VBComponents(sNameForm).Controls(T_data(1, i)).value = T_data(2, i)
+'            i = i + 1
+'        Wend
+'    End If
+'
+'End Sub
 
-    Dim i As Integer
-    Dim T_data
-    Dim D_data As Scripting.Dictionary
+Sub TranslateForm(UserFrm As UserForm, rgPlage As Range) 'lla
+'management of the translation of the form captions
 
-    T_data = ThisWorkbook.Sheets("translation").[T_tradForm]
+    Dim sLanguage As String
+    Dim iNumCol As Integer, i As Integer
+    Dim cControl As Control
+    
+    sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_Language].value, _
+    Sheets("linelist-translation").[T_Lang2], 2, False)
 
-    i = 1
-    While i <= UBound(T_data, 1) And sNameForm <> T_data(0, i)
-        i = i + 1
-    Wend
-
-    If sNameForm = T_data(0, i) Then
-        While sNameForm = T_data(0, i)
-
-            ThisWorkbook.VBProject.VBComponents(sNameForm).Controls(T_data(1, i)).value = T_data(2, i)
-            i = i + 1
-        Wend
-    End If
-
+    Select Case sLanguage
+        Case "ENG"
+            Exit Sub
+        Case "FRA"
+            iNumCol = 3
+        Case "POR"
+            iNumCol = 4
+        Case "ARA"
+            iNumCol = 5
+        Case "SPA"
+            iNumCol = 6
+    End Select
+    
+    For Each cControl In UserFrm.Controls
+        If TypeOf cControl Is MSForms.CommandButton Or (TypeOf cControl Is MSForms.Label) Or (TypeOf cControl Is MSForms.OptionButton) _
+        Or (TypeOf cControl Is MSForms.Page) Or (TypeOf cControl Is MSForms.MultiPage) Or (TypeOf cControl Is MSForms.Frame) Then
+            If TypeOf cControl Is MSForms.MultiPage Then
+                For i = 0 To cControl.Pages.Count - 1
+                    If cControl.Name = "MultiPage1" Then UserFrm.MultiPage1.Pages(i).Caption = _
+                    Application.WorksheetFunction.VLookup(UserFrm.MultiPage1.Pages(i).Name, rgPlage, iNumCol, False)
+                    If cControl.Name = "MultiPage2" Then UserFrm.MultiPage2.Pages(i).Caption = _
+                    Application.WorksheetFunction.VLookup(UserFrm.MultiPage2.Pages(i).Name, rgPlage, iNumCol, False)
+                Next i
+            Else
+                If Trim(cControl.Caption) <> "" Then _
+                cControl.Caption = Application.WorksheetFunction.VLookup(cControl.Name, rgPlage, iNumCol, False)
+            End If
+        End If
+    Next cControl
+    
 End Sub
-
