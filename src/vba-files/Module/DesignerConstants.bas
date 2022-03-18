@@ -22,6 +22,7 @@ Public Const C_sModEsthConstants          As String = "EstheticConstants" 'Const
 Public Const C_sModDesHelpers           As String = "DesignerMainHelpers"
 Public Const C_sModHelpers              As String = "Helpers"
 Public Const C_sModLLChange                As String = "LinelistChange" 'Change Event linked to one sheet of type linelist
+Public Const C_sModLLTrans               As String = "LinelistTranslation"
 
 'CLASSES ==========================================================================================================================================================================
 Public Const C_sClaBA                   As String = "BetterArray"

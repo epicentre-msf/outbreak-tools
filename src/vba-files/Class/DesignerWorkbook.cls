@@ -27,6 +27,10 @@ Private Sub Workbook_Open()
   SheetGeo.ListObjects(C_sTabHF).DataBodyRange.Clear
   SheetGeo.ListObjects(C_sTabNames).DataBodyRange.Clear
   
+  'lla
+  Sheets("linelist-translation").[RNG_Language].value = [RNG_LLForm].value 'check Language of linelist's forms
+  
+  
 End Sub
 
 

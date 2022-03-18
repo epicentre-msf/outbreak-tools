@@ -6,6 +6,7 @@ Public Const C_sSheetGeo                As String = "GEO"                       
 Public Const C_sSheetAdmin              As String = "Admin"                              'Name of the sheet for admin data (metadata on a linelist)
 Public Const C_sSheetPassword           As String = "Password"                           'sheet for password management
 Public Const C_sSheetFormulas           As String = "ControleFormule"                    'Sheet for formula management (mainly in the validation)
+Public Const C_sSheetLLTranslation      As String = "linelist-translation"
 
 'Sheets in the setup file: The all starts with Param
 

@@ -61,3 +61,10 @@ Private Sub OPT_Masque_Click()
 End Sub
 
 
+Private Sub UserForm_Initialize() 'lla
+'Manage language
+
+    Call TranslateForm(Me, Sheets("linelist-translation").[T_F_NomVisible])
+    
+End Sub
+
