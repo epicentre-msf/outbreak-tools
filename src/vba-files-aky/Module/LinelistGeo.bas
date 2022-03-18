@@ -1,4 +1,5 @@
-Attribute VB_Name = "M_Geo"
+Attribute VB_Name = "LinelistGeo"
+
 Option Explicit
 Option Base 1
 'Module Geo: This is where the geo form and data are managed as well ass all geographic data

@@ -1,25 +1,29 @@
-Attribute VB_Name = "M_FonctionsDivers"
+Attribute VB_Name = "DesignerHelpersFunctions"
 Option Explicit
 
 Sub TransferCode(xlsapp As Application, sNameModule As String, sType As String)
 
-    Dim oNouvM As Object
-    Dim sNouvCode As String
+    Dim oNouvM As Object 'New module name
+    Dim sNouvCode As String 'New module code
 
+    'get all the values within the actual module to transfer
     With ThisWorkbook.VBProject.VBComponents(sNameModule).CodeModule
         sNouvCode = .Lines(1, .CountOfLines)
     End With
     
+    'create to code or module if needed
     Select Case sType
-    Case "M"
+    Case "Module"
         Set oNouvM = xlsapp.ActiveWorkbook.VBProject.VBComponents.Add(vbext_ct_StdModule)
-    Case "C"
+    Case "Class"
         Set oNouvM = xlsapp.ActiveWorkbook.VBProject.VBComponents.Add(vbext_ct_ClassModule)
     End Select
+
+    'keep the name and add the codes
     oNouvM.Name = sNameModule
     With xlsapp.ActiveWorkbook.VBProject.VBComponents(oNouvM.Name).CodeModule
         .DeleteLines 1, .CountOfLines
-        DoEvents
+         DoEvents
         .AddFromString sNouvCode
     End With
 
@@ -53,16 +57,6 @@ Sub TransferCodeWks(xlsapp As Excel.Application, sSheetname As String, sNameModu
         DoEvents
         .AddFromString sNouvCode
     End With
-    
-    'With xlsApp.ActiveWorkbook.VBProject.VBComponents(sCodeName).CodeModule
-    'With xlsApp.ActiveWorkbook.VBProject.VBComponents(17).CodeModule
-    'With xlsApp.ActiveWorkbook.VBProject.VBComponents("feuil6").CodeModule
-
-    '.InsertLines 1, "Private Sub Worksheet_Change(ByVal Target As Range)"
-    '.InsertLines 2, "call EventFeuille" & sCodeName & "(target)"
-    '.InsertLines 2, "call EventSheetLineListPatient(target)"
-    '.InsertLines 3, "End Sub"
-    'End With
 
 End Sub
 
@@ -80,14 +74,6 @@ Sub TransferForm(xlsapp As Application, sFormName As String)
     Kill "C:\LineListeApp\CopieUsf.frx"
 End Sub
 
-'Sub AddOpeningEvent(xlsApp As Excel.Application)
-'
-'    With xlsApp.ActiveWorkbook.VBProject.VBComponents(xlsApp.ActiveWorkbook.CodeName).CodeModule
-'        .InsertLines Line:=.CreateEventProc("Open", "Workbook") + 1, _
-'        String:=vbCrLf & "call OuGreenure"
-'    End With
-'
-'End Sub
 
 Function LetColor(sColorCode As String)
 
@@ -112,15 +98,4 @@ Function LetColor(sColorCode As String)
 
 End Function
 
-Sub StatusBar_Updater(sCpte As Single)
-'increase the status progressBar
 
-    Dim CurrentStatus As Integer
-    Dim pctDone As Integer
-
-    CurrentStatus = (C_iNumberOfBars / 100) * Round(sCpte, 1)
-    Application.StatusBar = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "% Création du fichier linelist"
-
-    DoEvents
-    
-End Sub
