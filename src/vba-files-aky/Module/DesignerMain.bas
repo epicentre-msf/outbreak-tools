@@ -147,7 +147,7 @@ Sub GenerateData()
     Dim bGood As Boolean
     bGood = DesignerMainHelpers.ControlForGenerate(bGeoLoaded)
 
-    BeginWork xlsapp:=Application
+   BeginWork xlsapp:=Application
    
     If Not bGood Then
         DesignerMainHelpers.ShowHideCmdValidation show:=False
@@ -172,7 +172,6 @@ Sub GenerateData()
                                           
     Set Wkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
     
-    EndWork xlsapp:=Application
     
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadDic")
     
@@ -206,18 +205,20 @@ Sub GenerateData()
     'Creating the linelist using the dictionnary and choices data as well as export data
     'The BuildList procedure is in the linelist
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName) & ".xlsb"
+
     
     Call DesignerBuildList.BuildList(DictHeaders, DictData, ChoicesHeaders, ChoicesData, ExportData, sPath)
     
     DoEvents
-    
+
+    EndWork xlsapp:=Application
+
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
     
     Call SetInputRangesToWhite
     
     SheetMain.Shapes("SHP_OpenLL").Visible = msoTrue
 
-    EndWork xlsapp:=Application
     
 End Sub
 
