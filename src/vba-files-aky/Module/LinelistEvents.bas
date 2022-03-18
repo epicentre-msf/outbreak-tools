@@ -1,4 +1,5 @@
 Attribute VB_Name = "LinelistEvents"
+
 Option Explicit
 
 Public IsLockedForProcess As Boolean
@@ -12,9 +13,9 @@ Sub ClicCmdGeoApp()
     ActiveSheet.Unprotect (C_sLLPassword)
     'On Error GoTo fin
     If ActiveCell.Row > C_eStartLinesLLData Then
-        sType = FindDicColumnValue(ActiveSheet.Cells(C_eStartLinesLLData, iNumCol).Name.Name, _
-                                ActiveSheet.Name, C_sDictHeaderControl) 'parce qu'un seul .Name ne suffit pas...
-        
+        sType = FindDicColumnValue(ActiveSheet.Cells(C_eStartLinesLLData, iNumCol).Name.Name, C_sDictHeaderControl) 'parce qu'un seul .Name ne suffit pas...
+        Debug.Print sType & "1"
+        Debug.Print ActiveSheet.Cells(C_eStartLinesLLData, iNumCol).Name.Name
         Select Case LCase(sType)
         Case "geo"
             iGeoType = 0
@@ -84,7 +85,7 @@ Sub ClicCmdExport()
         iHeight = .CMD_Retour.Top + .CMD_Retour.Height + 24 + 10
         .Height = iHeight
         .Width = 168
-        .show
+        .Show
     End With
 End Sub
 
@@ -96,17 +97,15 @@ Sub EventSheetLineListPatient(oRange As Range)
     Dim T_list As BetterArray
     Set T_geo = New BetterArray
     Set T_list = New BetterArray
+    
+    ActiveSheet.Unprotect (C_sLLPassword)
    
     If Not IsLockedForProcess Then
         IsLockedForProcess = True
-        Call BeginWork (Application)
-
-        ActiveSheet.Unprotect (C_sLLPassword)
-    
+        
         If oRange.Row > C_eStartLinesLLData Then
             On Error GoTo suivant                'if it is not geo for example or something with geo does not work
-            If FindDicColumnValue(ActiveSheet.Cells(C_eStartLinesLLData, oRange.Column).Name.Name, _
-                                ActiveSheet.Name, C_sDictHeaderControl) = C_sDictControlGeo Then
+            If FindDicColumnValue(ActiveSheet.Cells(C_eStartLinesLLData, oRange.Column).Name.Name, C_sDictHeaderControl) = C_sDictControlGeo Then
                 'on controle qu'on a bien ecrit une data geo et remplissage de la colonne +1
                 oRange.Offset(, 1).Validation.Delete
                 oRange.Offset(, 1).value = ""
@@ -127,8 +126,7 @@ Sub EventSheetLineListPatient(oRange As Range)
                     T_geo.Clear
                     Set T_geo = Nothing
                 End If
-            ElseIf FindDicColumnValue(ActiveSheet.Cells(C_eStartLinesLLData, oRange.Column - 1).Name.Name, _
-                                      ActiveSheet.Name, C_sDictHeaderControl) = C_sDictControlGeo Then
+            ElseIf FindDicColumnValue(ActiveSheet.Cells(C_eStartLinesLLData, oRange.Column - 1).Name.Name, C_sDictHeaderControl) = C_sDictControlGeo Then
                 'on controle qu'on a bien ecrit une data geo et remplissage de la colonne +2
                 oRange.Offset(, 1).Validation.Delete
                 oRange.Offset(, 1).value = ""
@@ -152,7 +150,7 @@ Sub EventSheetLineListPatient(oRange As Range)
                 End If
         
             ElseIf FindDicColumnValue(ActiveSheet.Cells(C_eStartLinesLLData, oRange.Column - 2).Name.Name, _
-                                      ActiveSheet.Name, C_sDictHeaderControl) = C_sDictControlGeo Then
+                                    C_sDictHeaderControl) = C_sDictControlGeo Then
                 'on controle qu'on a bien ecrit une data geo et remplissage de la colonne +3
                 oRange.Offset(, 1).Validation.Delete
                 oRange.Offset(, 1).value = ""
@@ -175,28 +173,15 @@ Sub EventSheetLineListPatient(oRange As Range)
                     Set T_list = Nothing
                 End If
             End If
-            
-'suivant:
-'            'Testing color for dates and numeric values (maybe directly in the validation?)
-'            If LCase(LetDataDic(Cells( C_eStartLinesLLData, oRange.Column).Name.Name, "type")) = "date" Then
-'                If Not IsDate(oRange.value) Then
-'                    oRange.Interior.Color = vbRed
-'                End If
-'            ElseIf LCase(LetDataDic(Cells( C_eStartLinesLLData, oRange.Column).Name.Name, "type")) = "interger" Or InStr(1, LCase(LetDataDic(Cells( C_eStartLinesLLData, oRange.Column).Name.Name, "type")), "decimal") > 0 Then
-'                If Not IsNumeric(oRange.value) Then
-'                    oRange.Interior.Color = vbRed
-'                End If
-'            End If
-'
+suivant:
+        
         End If
     
-       ActiveSheet.Protect Password:=C_sLLPassword, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        IsLockedForProcess = False
+         ActiveSheet.Protect Password:=C_sLLPassword, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                          AllowFormattingColumns:=True
-    
-        IsLockedForProcess = False
     End If
-    Call EndWork (Application)
 End Sub
 
 'Build the dropdown validation list for the geo
@@ -216,13 +201,14 @@ Sub BuildListGeo(oRange As Range, T_list As BetterArray) 'sNameTab As String, iL
         .IgnoreBlank = True
         .InCellDropdown = True
         .InputTitle = ""
-        .errorTitle = ""
+        .ErrorTitle = ""
         .InputMessage = ""
         .ErrorMessage = ""
         .ShowInput = True
         .ShowError = True
     End With
 End Sub
+
 
 
 

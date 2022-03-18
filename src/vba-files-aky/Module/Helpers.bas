@@ -1,6 +1,5 @@
 Attribute VB_Name = "Helpers"
 
-
 'Basic Helper functions used in the creation of the linelist and other stuffs
 'Most of them are explicit functions. Contains all the ancillary sub/
 'Functions used when creating the linelist and also in the linelist
@@ -48,7 +47,7 @@ End Sub
 
 Public Sub EndWork(xlsapp As Excel.Application, Optional bvisbility As Boolean = True)
     xlsapp.ScreenUpdating = False
-    xlsapp.Calculation = xlCalculationManual
+    xlsapp.Calculation = xlCalculationAutomatic
 End Sub
 
 'Load files and folders
@@ -64,7 +63,7 @@ Public Function LoadFile(Optional sFilters As String) As String 'lla
         .Filters.Clear
         .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile'lla
 
-        If .show = True Then
+        If .Show = True Then
             LoadFile = .SelectedItems(1)
         End If
     End With
@@ -83,7 +82,7 @@ Public Function LoadFolder() As String
         .Title = "Chose your directory"          'MSG_ChooseDir
         .Filters.Clear
     
-        If .show = True Then
+        If .Show = True Then
             LoadFolder = .SelectedItems(1)
         End If
     End With
@@ -212,7 +211,7 @@ Sub SetValidation(oRange As Range, sValidList As String, sAlertType As Byte, sMe
         .IgnoreBlank = True
         .InCellDropdown = True
         .InputTitle = ""
-        .errorTitle = ""
+        .ErrorTitle = ""
         .InputMessage = ""
         .ErrorMessage = sMessage
         .ShowInput = True
@@ -320,7 +319,7 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
     lngLo = lngMin
     lngHi = lngMax
     Do
-        ' Chercher, � partir de lngHi, une valeur < strMidValue
+        ' Chercher, ï¿½ partir de lngHi, une valeur < strMidValue
         Do While T_aTrier(lngHi) >= strMidValue
             lngHi = lngHi - 1
             If lngHi <= lngLo Then Exit Do
@@ -333,7 +332,7 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
         ' Echanger les valeurs lngLo et lngHi
         T_aTrier(lngLo) = T_aTrier(lngHi)
  
-        ' Chercher � partir de lngLo une valeur >= strMidValue
+        ' Chercher ï¿½ partir de lngLo une valeur >= strMidValue
         lngLo = lngLo + 1
         Do While T_aTrier(lngLo) < strMidValue
             lngLo = lngLo + 1
@@ -357,11 +356,11 @@ End Sub
 
 Public Function IsEmptyTable(T_aTest) As Boolean
 
-    Dim test As Variant
+    Dim Test As Variant
 
     IsEmptyTable = False
     On Error GoTo crash
-    test = UBound(T_aTest)
+    Test = UBound(T_aTest)
     On Error GoTo 0
     Exit Function
 
@@ -371,15 +370,11 @@ crash:
 End Function
 
 
-
-
 'This function gets unique values from a table of two dimensions converted to a BetterArray table
 ' Get unique values from a table on two dimensions (or more)
 Public Function GetUnique(ByVal T_table As Variant, Optional ByVal col1 As Integer = -99, Optional ByVal col2 As Integer = -99, Optional ByVal index As Variant) As Variant
 
-    Dim i As Long
-    Dim k As Long
-    Dim j As Long                          'for the first line
+    Dim i, k, j As Long                          'for the first line
     Dim outCol As New Collection                 'I will stock pair values here
     Dim bindValues                               'all binded values
     Dim outTable
@@ -479,6 +474,7 @@ Public Function GetUnique(ByVal T_table As Variant, Optional ByVal col1 As Integ
     End If
 End Function
 
+
 ' Function to filter on value of one column, on a two dimensional array
 Public Function GetFilter(ByVal T_table As BetterArray, iCol As Integer, sValue As String) As BetterArray
 
@@ -527,44 +523,25 @@ End Function
 
 'Find the value of one variable for one column in a sheet
 
-Public Function FindDicColumnValue(sVarName, sSheetName, sColumn)
-
+Public Function FindDicColumnValue(sVarname, sColumn)
     FindDicColumnValue = ""
-
     Dim VarNameData As BetterArray
-    Dim SheetNameData As BetterArray
-    Dim sListobjectName As String
-
+    Dim sListObjectName As String
     Set VarNameData = New BetterArray
-    Set SheetNameData = New BetterArray
     
-    VarNameData.LowerBound = 1
-    SheetNameData.LowerBound = 1
-    
-    sListobjectName = "o" & ClearString(C_sParamSheetDict)
+    VarNameData.LowerBound = 2 'Because the first line of dictionary is the header
+    sListObjectName = "o" & ClearString(C_sParamSheetDict)
     With ThisWorkbook.Worksheets(C_sParamSheetDict)
-        SheetNameData.FromExcelRange .ListObjects(sListobjectName).ListColumns(C_sDictHeaderSheetName).DataBodyRange, _
+        VarNameData.FromExcelRange .ListObjects(sListObjectName).ListColumns(C_sDictHeaderVarName).DataBodyRange, _
                                      DetectLastRow:=True, DetectLastColumn:=False
-                                     
-        Debug.Print SheetNameData.IndexOf(sSheetName)
-
-        If (SheetNameData.Includes(sSheetName)) Then
-           
-                VarNameData.FromExcelRange .Range("A" & (SheetNameData.IndexOf(sSheetName) + 1) & ":" & "A" & (SheetNameData.LastIndexOf(sSheetName) + 1)), _
-                                                 DetectLastRow:=False, DetectLastColumn:=False
-    
-                If VarNameData.Includes(sVarName) Then
-                
-                FindDicColumnValue = .Cells(SheetNameData.IndexOf(sSheetName) + VarNameData.IndexOf(sVarName), .ListObjects(sListobjectName).ListColumns(sColumn).index).value
-                 
+                If VarNameData.Includes(sVarname) Then
+                    FindDicColumnValue = .Cells(VarNameData.IndexOf(sVarname), .ListObjects(sListObjectName).ListColumns(sColumn).index).value
                 End If
-           
-        End If
-
     End With
-
     Set VarNameData = Nothing
-    Set SheetNameData = Nothing
-
-
 End Function
+
+
+
+
+
