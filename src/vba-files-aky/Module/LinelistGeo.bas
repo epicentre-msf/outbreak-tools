@@ -1,7 +1,7 @@
 Attribute VB_Name = "LinelistGeo"
+
 Option Explicit
 Option Base 1
-
 'Module Geo: This is where the geo form and data are managed as well ass all geographic data
 '-------------------------------------------------------------------------------------------------------------------------------------------------------------------
 'We keep the following data are public, so we can make some checks on their content even after initialization
@@ -33,8 +33,9 @@ Public iGeoType As Byte
 '
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo = 0 or Facility = 1
-    Dim c_sSheetGeo As String
+    Dim geoSheet As String
     Dim transValue As Variant                    'transitional value for storing results
+    geoSheet = "GEO"
     Dim i As Integer
     Dim T_HFTable As Variant
     
@@ -59,20 +60,20 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     [F_Geo].Width = 606
 
     'Before doing the whole all thing, we need to test if the T_Adm data is empty or not
-    If (Not Sheets(C_sSheetGeo).ListObjects("T_ADM1").DataBodyRange Is Nothing) Then
-        T_Adm1.FromExcelRange Sheets(c_sSheetGeo).ListObjects("T_ADM1").DataBodyRange
+    If (Not Sheets(geoSheet).ListObjects("T_ADM1").DataBodyRange Is Nothing) Then
+        T_Adm1.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM1").DataBodyRange
     End If
     
-    If (Not Sheets(c_sSheetGeo).ListObjects("T_ADM2").DataBodyRange Is Nothing) Then
-        T_Adm2.FromExcelRange Sheets(c_sSheetGeo).ListObjects("T_ADM2").DataBodyRange
+    If (Not Sheets(geoSheet).ListObjects("T_ADM2").DataBodyRange Is Nothing) Then
+        T_Adm2.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM2").DataBodyRange
     End If
     
-    If (Not Sheets(c_sSheetGeo).ListObjects("T_ADM3").DataBodyRange Is Nothing) Then
-        T_Adm3.FromExcelRange Sheets(c_sSheetGeo).ListObjects("T_ADM3").DataBodyRange
+    If (Not Sheets(geoSheet).ListObjects("T_ADM3").DataBodyRange Is Nothing) Then
+        T_Adm3.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM3").DataBodyRange
     End If
     
-    If (Not Sheets(c_sSheetGeo).ListObjects("T_ADM4").DataBodyRange Is Nothing) Then
-        T_Adm4.FromExcelRange Sheets(c_sSheetGeo).ListObjects("T_ADM4").DataBodyRange
+    If (Not Sheets(geoSheet).ListObjects("T_ADM4").DataBodyRange Is Nothing) Then
+        T_Adm4.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM4").DataBodyRange
     End If
        
         
@@ -80,10 +81,10 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     [F_Geo].[LST_Adm1].List = T_Adm1.ExtractSegment(ColumnIndex:=1)
         
     '----- Add Caption for  each adminstrative leveles in the form
-    F_Geo.LBL_Adm1.Caption = Sheets(c_sSheetGeo).ListObjects("T_ADM4").HeaderRowRange.Item(1).value
-    F_Geo.LBL_Adm2.Caption = Sheets(c_sSheetGeo).ListObjects("T_ADM4").HeaderRowRange.Item(2).value
-    F_Geo.LBL_Adm3.Caption = Sheets(c_sSheetGeo).ListObjects("T_ADM4").HeaderRowRange.Item(3).value
-    F_Geo.LBL_Adm4.Caption = Sheets(c_sSheetGeo).ListObjects("T_ADM4").HeaderRowRange.Item(4).value
+    F_Geo.LBL_Adm1.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(1).value
+    F_Geo.LBL_Adm2.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(2).value
+    F_Geo.LBL_Adm3.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(3).value
+    F_Geo.LBL_Adm4.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(4).value
         
     '------- Concatenate all the tables for the geo
     For i = T_Adm4.LowerBound To T_Adm4.UpperBound
@@ -96,14 +97,13 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     [F_Geo].LST_ListeAgre.List = T_Concat.Items
     
     ' Now health facility ----------------------------------------------------------------------------------------------------------
-    If (Not Sheets(c_sSheetGeo).ListObjects("T_HF").DataBodyRange Is Nothing) Then
+    If (Not Sheets(geoSheet).ListObjects("T_HF").DataBodyRange Is Nothing) Then
        
-        T_HFTable = Sheets(c_sSheetGeo).ListObjects("T_HF").DataBodyRange
+        T_HFTable = Sheets(geoSheet).ListObjects("T_HF").DataBodyRange
         T_HF.Items = T_HFTable
       
         'unique admin 1
         T_HF0.Items = GetUnique(T_HFTable, 4)
-        T_HF0.Flatten
         T_HF1.Items = GetUnique(T_HFTable, 4, 3)
         T_HF2.Items = GetUnique(T_table:=T_HFTable, index:=Array(4, 3, 2))
          
@@ -113,10 +113,10 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
         [F_Geo].[LST_AdmF1].List = T_HF0.Items
                 
         '-------- Adding caption for each admnistrative levels in the form of the health facility
-        F_Geo.LBL_Adm1F.Caption = Sheets(c_sSheetGeo).ListObjects("T_HF").HeaderRowRange.Item(4).value
-        F_Geo.LBL_Adm2F.Caption = Sheets(c_sSheetGeo).ListObjects("T_HF").HeaderRowRange.Item(3).value
-        F_Geo.LBL_Adm3F.Caption = Sheets(c_sSheetGeo).ListObjects("T_HF").HeaderRowRange.Item(2).value
-        F_Geo.LBL_Adm4F.Caption = Sheets(c_sSheetGeo).ListObjects("T_HF").HeaderRowRange.Item(1).value
+        F_Geo.LBL_Adm1F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(4).value
+        F_Geo.LBL_Adm2F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(3).value
+        F_Geo.LBL_Adm3F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(2).value
+        F_Geo.LBL_Adm4F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(1).value
         
         'Creating the concatenate for the Health facility
         For i = T_HF.LowerBound To T_HF.UpperBound
@@ -128,13 +128,13 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
         [F_Geo].LST_ListeAgreF.List = T_ConcatHF.Items
     End If
     'Historic for geographic data and facility data
-    If Not Sheets(c_sSheetGeo).ListObjects("T_HistoGeo").DataBodyRange Is Nothing Then
-        T_HistoGeo.FromExcelRange Sheets(c_sSheetGeo).ListObjects("T_HistoGeo").DataBodyRange
+    If Not Sheets(geoSheet).ListObjects("T_HistoGeo").DataBodyRange Is Nothing Then
+        T_HistoGeo.FromExcelRange Sheets(geoSheet).ListObjects("T_HistoGeo").DataBodyRange
         [F_Geo].LST_Histo.List = T_HistoGeo.Items
     End If
 
-    If Not Sheets(c_sSheetGeo).ListObjects("T_HistoHF").DataBodyRange Is Nothing Then
-        T_HistoHF.FromExcelRange Sheets(c_sSheetGeo).ListObjects("T_HistoHF").DataBodyRange
+    If Not Sheets(geoSheet).ListObjects("T_HistoHF").DataBodyRange Is Nothing Then
+        T_HistoHF.FromExcelRange Sheets(geoSheet).ListObjects("T_HistoHF").DataBodyRange
         [F_Geo].LST_HistoF.List = T_HistoHF.Items
     End If
 

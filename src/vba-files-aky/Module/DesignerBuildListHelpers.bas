@@ -28,6 +28,7 @@ Public Sub TransferDesignerCodes(xlsapp As Excel.Application)
     Call TransferCode(Wkb, C_sModLLMigration, "Module")
     Call TransferCode(Wkb, C_sModLLConstants, "Module")
     Call TransferCode(Wkb, C_sModEsthConstants, "Module")
+    Call TransferCode(Wkb, C_sModLLExport, "Module")
     Call TransferCode(Wkb, C_sClaBA, "Class")
     
     Set Wkb = Nothing
@@ -367,15 +368,15 @@ End Sub
 
 
 'Add Geo
-Sub AddGeo(xlsapp As Excel.Application, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
-          iSheetSubSecStartLine As Integer, sVarName As String, sMessage As String)
+Sub AddGeo(xlsapp As Excel.Application, DictData As BetterArray, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
+          iSheetSubSecStartLine As Integer, iDictLine As Integer, sVarName As String, sMessage As String)
 
     With xlsapp.Worksheets(sSheetName)
         .Cells(iSheetStartLine, iCol).Interior.Color = GetColor("Orange")
                         'update the columns only for the geo
-        Call Add4GeoCol(xlsapp, sSheetName, sVarName, iSheetStartLine, _
+        Call Add4GeoCol(xlsapp, DictData, sSheetName, sVarName, iSheetStartLine, _
                         iCol, sMessage, _
-                        iSheetSubSecStartLine)
+                        iSheetSubSecStartLine, iDictLine)
 
     End With
 End Sub
@@ -393,10 +394,20 @@ End Sub
 '@iStartLine: Starting line of Data in the Linelist
 '@iStartLineSubLab: Starting line of the Sub label
 
-Sub Add4GeoCol(xlsapp As Excel.Application, sSheetName As String, sVarName As String, iStartLine As Integer, iCol As Integer, sMessage As String, iStartLineSubLab As Integer)
+Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, sSheetName As String, sVarName As String, iStartLine As Integer, iCol As Integer, _
+            sMessage As String, iStartLineSubLab As Integer, iDictLine As Integer)
 
 
     Dim sLab As String 'Temporary variable, label of the Admin level
+    Dim LineValues As BetterArray
+    Static iNbshifted As Integer
+    Dim iRow As Integer
+      
+    Set LineValues = New BetterArray
+    LineValues.LowerBound = 1
+    
+    iRow = iDictLine + iNbshifted
+    
     With xlsapp.Worksheets(sSheetName)
 
         'Admin 4
@@ -405,7 +416,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, sSheetName As String, sVarName As St
         .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "4" & "_" & sVarName
         .Cells(iStartLine, iCol + 1).Interior.Color = vbWhite
-        .Cells(iStartLine, iCol + 1).Locked = False
+        .Cells(iStartLine + 1, iCol + 1).Locked = False
 
         'Admin 3
         sLab = SheetGeo.ListObjects(C_sTabADM3).HeaderRowRange.Item(3).value
@@ -413,7 +424,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, sSheetName As String, sVarName As St
         .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "3" & "_" & sVarName
         .Cells(iStartLine, iCol + 1).Interior.Color = vbWhite
-        .Cells(iStartLine, iCol + 1).Locked = False
+        .Cells(iStartLine + 1, iCol + 1).Locked = False
 
         'Admin 2
         sLab = SheetGeo.ListObjects(C_sTabADM2).HeaderRowRange.Item(2).value
@@ -421,14 +432,14 @@ Sub Add4GeoCol(xlsapp As Excel.Application, sSheetName As String, sVarName As St
         .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "2" & "_" & sVarName
         .Cells(iStartLine, iCol + 1).Interior.Color = vbWhite
-        .Cells(iStartLine, iCol + 1).Locked = False
+        .Cells(iStartLine +1, iCol + 1).Locked = False
 
         'Admin 1
         sLab = SheetGeo.ListObjects(C_sTabADM1).HeaderRowRange.Item(1).value
         .Cells(iStartLine, iCol).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol).Name = C_sAdmName & "1" & "_" & sVarName
         .Cells(iStartLine, iCol).Interior.Color = GetColor("Orange")
-        .Cells(iStartLine, iCol).Locked = False
+        .Cells(iStartLine +1, iCol).Locked = False
 
     
         'ajout des formules de validation
@@ -436,7 +447,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, sSheetName As String, sVarName As St
 
         .Cells(iStartLine + 1, iCol).Validation.Add Type:=xlValidateList, _
                          AlertStyle:=xlValidAlertWarning, Operator:=xlBetween, _
-                         Formula1:= "=" & C_sSheetGeo & "!" & SheetGeo.Range(C_sTabADM1).Columns(1).Address
+                         Formula1:="=" & C_sSheetGeo & "!" & SheetGeo.Range(C_sTabADM1).Columns(1).Address
      
         .Cells(iStartLine + 1, iCol).Validation.IgnoreBlank = True
         .Cells(iStartLine + 1, iCol).Validation.InCellDropdown = True
@@ -446,6 +457,29 @@ Sub Add4GeoCol(xlsapp As Excel.Application, sSheetName As String, sVarName As St
         .Cells(iStartLine + 1, iCol).Validation.ErrorMessage = sMessage
         .Cells(iStartLine + 1, iCol).Validation.ShowInput = True
         .Cells(iStartLine + 1, iCol).Validation.ShowError = True
+    End With
+    
+    'Updating the Dictionary for future uses
+    With xlsapp.Worksheets(C_sParamSheetDict)
+        'Admin 4
+        LineValues.Items = DictData.ExtractSegment(RowIndex:=iDictLine)
+        .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+        LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
+        .Cells(iRow + 2, 1).value = ""
+        'Admin 3
+        .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+        LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
+        .Cells(iRow + 2, 1).value = ""
+        'Admin 2
+        .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+        LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
+        .Cells(iRow + 2, 1).value = ""
+        'Admin 1
+         '.Cells(iRow + 1, 1).value = C_sAdmName & "1" & "_" & sVarName
+         
+         iNbshifted = iNbshifted + 3
+         
+         Set LineValues = Nothing
     End With
 End Sub
 
@@ -699,4 +733,3 @@ Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAler
     End With
 
 End Sub
-

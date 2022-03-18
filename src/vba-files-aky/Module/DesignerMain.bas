@@ -216,6 +216,8 @@ Sub GenerateData()
     Call SetInputRangesToWhite
     
     SheetMain.Shapes("SHP_OpenLL").Visible = msoTrue
+
+    EndWork xlsapp:=Application
     
 End Sub
 
