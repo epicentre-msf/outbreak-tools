@@ -15,7 +15,7 @@ Public Const C_iAdmTitleFontSize            As Integer = 20
 
 
 'Command buttons
-Public Const C_iCmdWidth                    As Integer = 60                                    'Width of command added  on one sheet
+Public Const C_iCmdWidth                    As Integer = 120                                    'Width of command added  on one sheet
 Public Const C_iCmdHeight                   As Integer = 20                                    'Height of command added on one sheet
 
 'Table Styles

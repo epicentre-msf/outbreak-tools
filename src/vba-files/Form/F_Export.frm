@@ -73,3 +73,9 @@ Private Sub CMD_Retour_Click()
 
 End Sub
 
+Private Sub UserForm_Initialize() 'lla
+'Manage language
+
+    Call TranslateForm(Me, Sheets("linelist-translation").[T_F_Export])
+    
+End Sub

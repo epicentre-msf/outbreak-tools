@@ -65,6 +65,8 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeader
     Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetGeo)
     Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetPassword)
     Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetFormulas)
+    Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetLLTranslation)
+    
 
     DoEvents
 
@@ -185,6 +187,15 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeader
     Set ChoicesListData = Nothing
     Set ChoicesLabelsData = Nothing
     Set DictVarName = Nothing
+    
+    With xlsapp
+        .Sheets("linelist-patient").Select 'lla
+        .Sheets("linelist-patient").Range("A1").Select
+        .DisplayAlerts = False
+        .ScreenUpdating = False
+        '.Visible = True
+        .ActiveWindow.DisplayZeros = True
+    End With
  
     xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     xlsapp.Quit
@@ -221,6 +232,7 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
         'Workbook already contains Password and formula sheets. Hide them
         .Worksheets(C_sSheetPassword).Visible = xlVeryHidden
         .Worksheets(C_sSheetFormulas).Visible = xlVeryHidden
+        .Worksheets(C_sSheetLLTranslation).Visible = xlVeryHidden
         
         '-------------- Creating the dictionnary sheet from setup
         .Worksheets.Add.Name = C_sParamSheetDict
@@ -709,9 +721,9 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                     'Testing before writing the formula
                     If (sFormula <> "") Then
                         .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).NumberFormat = "General"
-                        .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Formula = "=" & sFormula
+                        .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Formula = "= " & sFormula 'The space here is important
                         On Error Resume Next
-                        .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Formula2 = "=" & sFormula 'Seems like formula only induce error on some computers
+                        .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Formula2 = "= " & sFormula 'Seems like formula only induce error on some computers
                         On Error GoTo 0
                         bLockData = True  'Lock data for formulas
                         .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Calculate
@@ -733,8 +745,8 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                             'MsgBox "Invalid formula will be ignored : " & sFormulaMax & " / " & sActualVarName
                     End If
                     If (sFormulaMin <> "" And sFormulaMax <> "") Then
-                        sFormulaMin = "=" & sFormulaMin
-                        sFormulaMax = "=" & sFormulaMax
+                        sFormulaMin = "= " & sFormulaMin
+                        sFormulaMax = "= " & sFormulaMax
                         Call DesignerBuildListHelpers.BuildValidationMinMax(.Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol), _
                                             sFormulaMin, sFormulaMax, _
                                             GetValidationType(sActualValidationAlert), _
