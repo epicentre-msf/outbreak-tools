@@ -8,7 +8,7 @@ Sub TestValidation()
 
     Dim sFormula As String
     Dim iSheetStartLine As Integer
-    Dim VarnameData As New BetterArray
+    Dim VarNameData As New BetterArray
     Dim ColumnIndexData As New BetterArray
     Dim IsValidation As Boolean
     Dim FormulaData As New BetterArray
@@ -17,13 +17,13 @@ Sub TestValidation()
     FormulaData.FromExcelRange SheetFormulas.ListObjects(C_sTabExcelFunctions).ListColumns("ENG").DataBodyRange, DetectLastColumn:=False
     SpecCharData.FromExcelRange SheetFormulas.ListObjects(C_sTabASCII).ListColumns("TEXT").DataBodyRange, DetectLastColumn:=False
     
-    VarnameData.Push "date_notification", "var2", "deceased"
+    VarNameData.Push "date_notification", "var2", "deceased"
     ColumnIndexData.Push 5, 5, 3
     iSheetStartLine = 1
     sFormula = "IF(ISBLANK(date_notification)," & Chr(34) & Chr(34) & ",EPIWEEK(date_notification))"
     IsValidation = False
     
-    Debug.Print ValidationFormula(sFormula, VarnameData, ColumnIndexData, FormulaData, SpecCharData)
+    Debug.Print ValidationFormula(sFormula, VarNameData, ColumnIndexData, FormulaData, SpecCharData)
 
 End Sub
 
@@ -32,4 +32,4 @@ End Sub
 
 
 
-'Test for the 
+'Test for the

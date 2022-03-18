@@ -81,11 +81,12 @@ Public Const C_sDictNo As String = "no"
 Public Const C_sDictAlertWar As String = "warning"
 Public Const C_sDictAlertErr As String = "error"
 
-'Types
+'Data Types
 Public Const C_sDictTypeInt As String = "integer"
 Public Const C_sDictTypeText As String = "text"
 Public Const C_sDictTypeDate As String = "date"
 Public Const C_sDictTypeDec As String = "decimal"
+
 
 'CHOICES PARAMETERS ==========================================================================
 
@@ -130,7 +131,7 @@ Public Const C_sCmdAddRowsName = "ClicCmdAddRows"
 Public Const C_sCmdShowGeoApp = "ClicCmdGeoApp"
 Public Const C_sCmdExportMigration = "ClicExportMigration"
 Public Const C_sCmdImportMigration = "ClicImportMigration"
-Public Const C_sCmdExport = "ClicExport"
+Public Const C_sCmdExport = "ClicCmdExport"
 
 'TABLES LISTOBJECTS ===============================================================================================================================================================
 
