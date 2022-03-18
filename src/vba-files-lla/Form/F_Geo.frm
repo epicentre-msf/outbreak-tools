@@ -2,9 +2,9 @@ VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_Geo 
    Caption         =   "GEO Apps"
    ClientHeight    =   4620
-   ClientLeft      =   -345
-   ClientTop       =   -1845
-   ClientWidth     =   8340.001
+   ClientLeft      =   -390
+   ClientTop       =   -1995
+   ClientWidth     =   5565
    OleObjectBlob   =   "F_Geo.frx":0000
    StartUpPosition =   1  'CenterOwner
 End

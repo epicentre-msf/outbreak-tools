@@ -2,9 +2,9 @@ VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_Export 
    Caption         =   "Export"
    ClientHeight    =   3060
-   ClientLeft      =   -300
-   ClientTop       =   -1230
-   ClientWidth     =   2220
+   ClientLeft      =   -345
+   ClientTop       =   -1380
+   ClientWidth     =   1485
    OleObjectBlob   =   "F_Export.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
