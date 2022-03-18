@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_NomVisible 
    Caption         =   "ShowNameApps"
-   ClientHeight    =   3500
-   ClientLeft      =   -495
-   ClientTop       =   -2265
-   ClientWidth     =   5850
+   ClientHeight    =   3495
+   ClientLeft      =   -525
+   ClientTop       =   -2415
+   ClientWidth     =   3885
    OleObjectBlob   =   "F_NomVisible.frx":0000
    StartUpPosition =   1  'CenterOwner
 End

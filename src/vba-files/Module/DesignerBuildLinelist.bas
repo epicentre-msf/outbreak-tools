@@ -1,4 +1,4 @@
-Attribute VB_Name = "M_CreationFeuille"
+Attribute VB_Name = "DesignerBuildLinelist"
 Option Explicit
 
 Const C_StartLineTitle1 As Byte = 3
@@ -10,21 +10,22 @@ Const C_CmdWidht As Byte = 60
 Const C_PWD As String = "1234"
 
 'Building the linelist from the different input data
-'D_TitleDic: The headers of the dictionnary sheet
-'T_dataDic: Dictionnary data
-'D_Choices: The headers of the Choices sheet
-'T_Choices: The choices data
-'T_Export: The export data
+'DictHeaders: The headers of the dictionnary sheet
+'DictData: Dictionnary data
+'ChoicesHeaders: The headers of the Choices sheet
+'ChoicesData: The choices data
+'ExportData: The export data
 
-Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Scripting.Dictionary, T_Choices, T_Export, sPath As String)
-    'c'est parti pour le fichier de sortie !
+
+Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeaders As BetterArray, ChoicesData As BetterArray, ExportData As BetterArray, sPath As String)
 
     Dim xlsapp As New Excel.Application          'will contain the linelist
     Dim sExitPath As String
     Dim i As Integer                             'cpt result
     Dim j As Integer                             'cpt source
     Dim l As Integer                             'cpt nbcolonne
-    Dim T_NbCol                                  'tab nb colonne dans une feuille determin�e
+    Dim LLNbColData As BetterArray               'Number of columns of a Sheet of type linelist
+    Dim LLSheetNameData As BetterArray           'Names of sheets of type linelist
     Dim sPrevSheetName As String
 
     Dim oCell As Object                          'pour colors of titles
@@ -45,36 +46,41 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
     Dim bCmdExport As Boolean
     Dim bSheetEvent As Boolean
     Dim bCmdExportMigration As Boolean
+    Dim bAddedSheetAdmin As Boolean
 
     Dim oKey As Variant
 
     Dim iPrevStartS1 As Integer
 
-    Dim T_RowToHide
+    Dim HiddenRowsData As BetterArray
     Dim m As Byte
     Dim n As Byte
 
-    Dim T_Formula
+    Dim FormulaData As BetterArray
     Dim sFormula As String
     Dim O As Byte
     Dim sSheetname As String
     Dim sFormulaMin As String
     Dim sFormulaMax As String
+    
 
     Dim p As Integer                             'cpt Admin
 
     Dim sPrevSheetNameSHP As String
     
-    Dim sCpte As Single 'increase status ProgressBar
-    Dim sIterPG As Single 'counter in loop for status ProgressBar
-    
+    'Instanciating the betterArrays
+    Set LLNbColData = New BetterArray
+    Set HiddenRowsData = New BetterArray
+    Set FormulaData = New BetterArray
+    Set LLSheetNameData = New BetterArray            'Names of sheets of type linelist
+
     With xlsapp
         .DisplayAlerts = False
-        .ScreenUpdating = False
-        .Visible = False
+        .ScreenUpdating = True
+        .Visible = True
         .AutoCorrect.DisplayAutoCorrectOptions = False
         .Workbooks.Add
-        .ActiveWorkbook.VBProject.References.AddFromFile ("C:\windows\system32\scrrun.dll") 'Using the scripting dictionnary dll
+        '.ActiveWorkbook.VBProject.References.AddFromFile ("C:\windows\system32\scrrun.dll") 'Using the scripting dictionnary dll
     
         DoEvents
         On Error Resume Next
@@ -82,99 +88,108 @@ Sub BuildList(D_TitleDic As Scripting.Dictionary, T_dataDic, D_Choices As Script
         On Error GoTo 0
         DoEvents
         
-        'TransferCode is for sending modules  (M) or classes (C) from actual excel workbook to another excel workbook
-        Call TransferCode(xlsapp, "M_LineList", "M")
-        
         'Transfert form is for sending forms from the actual excel workbook to another
         Call TransferForm(xlsapp, "F_Geo")
         Call TransferForm(xlsapp, "F_NomVisible")
         Call TransferForm(xlsapp, "F_Export")
-    
-        Call TransferCode(xlsapp, "M_Geo", "M")
-        Call TransferCode(xlsapp, "M_NomVisible", "M")
-        Call TransferCode(xlsapp, "M_FonctionsTransf", "M")
-        Call TransferCode(xlsapp, "M_Export", "M")
-        Call TransferCode(xlsapp, "M_Traduction", "M")
-        Call TransferCode(xlsapp, "M_Migration", "M")
-        Call TransferCode(xlsapp, "BetterArray", "C")
-        
-StatusBar_Updater (15)
 
+        'TransferCode is for sending modules  (Modules) or classes (Classes) from actual excel workbook to another excel workbook
+        Call TransferCode(xlsapp, "M_LineList", "Module")
+        Call TransferCode(xlsapp, "M_Geo", "Module")
+        Call TransferCode(xlsapp, "M_NomVisible", "Module")
+        Call TransferCode(xlsapp, "M_FonctionsTransf", "Module")
+        Call TransferCode(xlsapp, "M_Export", "Module")
+        Call TransferCode(xlsapp, "M_Traduction", "Module")
+        Call TransferCode(xlsapp, "M_Migration", "Module")
+        Call TransferCode(xlsapp, "ProgramConstants", "Module")
+        Call TransferCode(xlsapp, "BetterArray", "Class")
+    
         DoEvents
     
         'TransfertSheet is for sending worksheets from the actual workbook to another
         Call TransfertSheet(xlsapp, "GEO")
         Call TransfertSheet(xlsapp, "PASSWORD")
-        'on a besoin de la table ascii
-        Call TransfertSheet(xlsapp, "ControleFormule")
+        Call TransfertSheet(xlsapp, "ControleFormule") 'on a besoin de la table ascii
     
         DoEvents
         On Error Resume Next
         RmDir ("C:\LineListeApp\")
         On Error GoTo 0
         
-StatusBar_Updater (20)
-
         '-------------- Creating the dictionnary sheet
-        .Sheets.Add.Name = "Dico"
-        i = 1
-        For Each oKey In D_TitleDic.Keys
-            .Sheets("dico").Cells(1, i).value = oKey
-            i = i + 1
-        Next oKey
-        .Sheets("dico").Range("A2").Resize(UBound(T_dataDic, 2) + 1, D_TitleDic.Count) = .WorksheetFunction.Transpose(T_dataDic)
-        .Sheets("dico").Visible = False
-        
-StatusBar_Updater (25)
-
+        .Sheets.Add.Name = C_sParamSheetDict
+        'Headers of the disctionary
+        DictHeaders.ToExcelRange Destination:=.Sheets(C_sParamSheetDict).Cells(1, 1), TransposeValues:=True
+        'Data of the dictionary
+        DictData.ToExcelRange Destination:=.Sheets(CsParamSheetDict).Cells(2, 1)
+        .Sheets(C_sParamSheetDict).Visible = xlSheetVeryHidden
+    
         '-------------- Creating the export sheet
-        .Sheets.Add.Name = "Export"
-        .Sheets("Export").Cells(1, 1).value = "ID"
-        .Sheets("Export").Cells(1, 2).value = "Lbl"
-        .Sheets("Export").Cells(1, 3).value = "Pwd"
-        .Sheets("Export").Cells(1, 4).value = "Actif"
-        .Sheets("Export").Cells(1, 5).value = "FileName"
-        .Sheets("Export").Range("A2").Resize(UBound(T_Export, 2) + 1, UBound(T_Export, 1) + 1) = .WorksheetFunction.Transpose(T_Export)
-        .Sheets("Export").Visible = False
+        .Sheets.Add.Name = C_sParamSheetExport
+        'Headers of the export options
+        .Sheets(C_sParamSheetExport).Cells(1, 1).value = "ID"
+        .Sheets(C_sParamSheetExport).Cells(1, 2).value = "Lbl"
+        .Sheets(C_sParamSheetExport).Cells(1, 3).value = "Pwd"
+        .Sheets(C_sParamSheetExport).Cells(1, 4).value = "Actif"
+        .Sheets(C_sParamSheetExport).Cells(1, 5).value = "FileName"
         
-StatusBar_Updater (28)
-        
-        '--------------- adding the other sheets in the dictionary
+        'Adding the data on export parameters
+        ExportData.ToExcelRange Destination:=.Sheets(csParamSheetExport).Cells(2, 1)
+        .Sheets(csParamSheetExport).Visible = xlSheetVeryHidden
+    
+        '--------------- adding the other the other sheets in the dictionary to the linelist
         i = 1
         j = 0
-        ReDim T_NbCol(j)
         sPrevSheetName = ""
-        While i <= UBound(T_dataDic, 2)
-            If LCase(T_dataDic(D_TitleDic("Sheet") - 1, i)) = "admin" Then
-                .Sheets(1).Name = "Admin"
+        
+        'Setting the lower bound before entering the loop
+        LLNbColData.LowerBound = 1
+        LLSheetNameData.LowerBound = 1
+         'i will hep move from one values of dictionnary data to another
+        While i <= DictData.UpperBound
+            If sPrevSheetName <> DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)) Then
+                'I am on a new sheet name, I update values
+                sPrevSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                
+                'Tell the use we have created one sheet
+                SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgCreatedSheet) & " " & sPrevSheetName
+                'adding sheets depending on the type of the sheet
+                Select Case LCase(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType)))
+                    Case "admin"
+                        'This is a admin Sheet, just add it like that
+                        .Worksheets.Add.Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                    Case "linelist"
+                        'I am on a new linelist type sheet
+                        LLSheetNameData.Push sPrevSheetName
+                        j = j + 1
+                        'LLNbColData is a table with number columns for each sheet item(1) the number of columns
+                        'of first sheet (linelist-patient).
+                        LLNbColData.Item(j) = 1
+                        'Set the rowheight of the first two rows of a linelist type sheet
+                        .Worksheets(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))).Rows("1:2").RowHeight = C_iLLButtonsRowHeight
+                        'Now I split at starting lines and freeze the pane
+                        .ActiveWindow.DisplayZeros = False
+                        .ActiveWindow.SplitColumn = 2
+                        .ActiveWindow.SplitRow = C_eStartLinesLLData 'freeze a the starting lines of the linelist data
+                        .ActiveWindow.FreezePanes = True
+                    Case Else
+                        SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgCheckSheetType)
+                        Exit Sub
+                End Select
             Else
-                If sPrevSheetName <> T_dataDic(D_TitleDic("Sheet") - 1, i) Then
-                    j = j + 1
-                    'T_NbCol is a table with number columns for each sheet T(1) the number of columns
-                    'of first sheet (linelist-patient).
-                    ReDim Preserve T_NbCol(j)
-                    T_NbCol(j) = 1
-                    .Worksheets.Add.Name = T_dataDic(D_TitleDic("Sheet") - 1, i)
-                    .Worksheets(T_dataDic(D_TitleDic("Sheet") - 1, i)).Rows("1:2").RowHeight = 25
-                
-                    .ActiveWindow.DisplayZeros = False
-                    .ActiveWindow.SplitColumn = 2
-                    .ActiveWindow.SplitRow = 5
-                    .ActiveWindow.FreezePanes = True
-                
-                    sPrevSheetName = T_dataDic(D_TitleDic("Sheet") - 1, i)
-                    ReDim Preserve T_NbCol(UBound(T_NbCol) + 1)
-                Else
-                    T_NbCol(j) = T_NbCol(j) + 1
-                End If
+                'I am on a previous sheet name, I will upate in that case the number of columns of the linelist type
+                'I will use a select case to anticipate if whe have to deal with another type of sheet
+                Select Case LCase(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType)))
+                    Case "linelist"
+                        LLNbColData.Item(j) = LLNbColData.Item(j) + 1
+                    Case Else
+                End Select
             End If
-            'i will hep move from one values of dictionnary data to another But here
-            'we focus mainly on the Sheet column
             i = i + 1
         Wend
     End With
-
-StatusBar_Updater (30)
+    'At this step all the sheets in the linelist are created
+    
 
     sPrevSheetName = ""                          'Checking if we moved from one sheet to another
     sTitle1 = ""                                 'First title on the linelist-patient sheet (or on every other sheet)
@@ -183,24 +198,17 @@ StatusBar_Updater (30)
     iPrevColS1 = 1                               'Counter for previous columns for the mainlabel
     iPrevColS2 = 1                               'Counter for previous columns for the sub-section
 
-    ReDim T_RowToHide(0)                         'Table for the number of columns to hide
+    ReDim HiddenRowsData(0)                         'Table for the number of columns to hide
 
     j = 1                                        'cpt result
     i = 0                                        'Dictionnary iterator (columns of the dictionnary)
     l = 0                                        'iterators for the number of colums in one sheet
     p = C_TitleLine
-    
-    sIterPG = 0
-
-    While i <= UBound(T_dataDic, 2)
-    
-sIterPG = sIterPG + (40 / UBound(T_dataDic, 2))
-StatusBar_Updater (30 + sIterPG)
-
-        With xlsapp.Sheets(T_dataDic(D_TitleDic("Sheet") - 1, i))
-            If LCase(T_dataDic(D_TitleDic("Sheet") - 1, i)) <> "admin" Then
+    While i <= UBound(DictData, 2)
+        With xlsapp.Sheets(DictData(DictHeaders("Sheet") - 1, i))
+            If LCase(DictData(DictHeaders("Sheet") - 1, i)) <> "admin" Then
                 
-                If sPrevSheetName <> T_dataDic(D_TitleDic("Sheet") - 1, i) Then 'only on new sheet
+                If sPrevSheetName <> DictData(DictHeaders("Sheet") - 1, i) Then 'only on new sheet
                     If sPrevSheetName <> "" Then 'only if the sheet name is not empty
                         With xlsapp.Sheets(sPrevSheetName)
                         
@@ -229,62 +237,61 @@ StatusBar_Updater (30 + sIterPG)
                     'Creation of the list object for the first time on one Sheet
                     j = 1
                     l = l + 1
-                    sPrevSheetName = T_dataDic(D_TitleDic("Sheet") - 1, i)
-                    .ListObjects.Add(xlSrcRange, .Range(.Cells(C_TitleLine, 1), .Cells(C_TitleLine, T_NbCol(l))), , xlYes).Name = "o" & T_dataDic(D_TitleDic("Sheet") - 1, i)
-                    .ListObjects("o" & T_dataDic(D_TitleDic("Sheet") - 1, i)).TableStyle = "TableStyleLight16"
+                    sPrevSheetName = DictData(DictHeaders("Sheet") - 1, i)
+                    .ListObjects.Add(xlSrcRange, .Range(.Cells(C_TitleLine, 1), .Cells(C_TitleLine, LLNbColData(l))), , xlYes).Name = "o" & DictData(DictHeaders("Sheet") - 1, i)
+                    .ListObjects("o" & DictData(DictHeaders("Sheet") - 1, i)).TableStyle = "TableStyleLight16"
                 
                     .Cells.Font.Size = 9
                             
                     iPrevStartS1 = 1
                     
                     'First title
-                    sTitle1 = T_dataDic(D_TitleDic("Main section") - 1, i)
-                    .Cells(C_StartLineTitle1, j).value = T_dataDic(D_TitleDic("Main section") - 1, i)
+                    sTitle1 = DictData(DictHeaders("Main section") - 1, i)
+                    .Cells(C_StartLineTitle1, j).value = DictData(DictHeaders("Main section") - 1, i)
                 
                     bCmdGeoExist = False
                     bCmdVisibleNameExist = False
                     bSheetEvent = False
                 
                 End If
-                
             
                 'Headers
-                .Cells(C_TitleLine, j).Name = Replace(T_dataDic(D_TitleDic("Variable name") - 1, i), " ", "_")
-                .Cells(C_TitleLine, j).value = LetWordingWithSpace(xlsapp, CStr(T_dataDic(D_TitleDic("Main label") - 1, i)), CStr(T_dataDic(D_TitleDic("Sheet") - 1, i)))
+                .Cells(C_TitleLine, j).Name = Replace(DictData(DictHeaders("Variable name") - 1, i), " ", "_")
+                .Cells(C_TitleLine, j).value = LetWordingWithSpace(xlsapp, CStr(DictData(DictHeaders("Main label") - 1, i)), CStr(DictData(DictHeaders("Sheet") - 1, i)))
                 .Cells(C_TitleLine, j).VerticalAlignment = xlTop
                 
                 'Adding the sub-label if needed Chr(10) is the return to line character the sublabel is in gray
-                If T_dataDic(D_TitleDic("Sub-label") - 1, i) <> "" Then
-                    .Cells(C_TitleLine, j).value = .Cells(C_TitleLine, j).value & Chr(10) & T_dataDic(D_TitleDic("Sub-label") - 1, i)
+                If DictData(DictHeaders("Sub-label") - 1, i) <> "" Then
+                    .Cells(C_TitleLine, j).value = .Cells(C_TitleLine, j).value & Chr(10) & DictData(DictHeaders("Sub-label") - 1, i)
                     
                     'Changing the fontsize of the sublabels
-                    .Cells(C_TitleLine, j).Characters(Start:=Len(T_dataDic(D_TitleDic("Main label") - 1, i)) + 1, Length:=Len(T_dataDic(D_TitleDic("Sub-label") - 1, i)) + 1).Font.Size = 8
-                    .Cells(C_TitleLine, j).Characters(Start:=Len(T_dataDic(D_TitleDic("Main label") - 1, i)) + 1, Length:=Len(T_dataDic(D_TitleDic("Sub-label") - 1, i)) + 1).Font.Color = LetColor("Grey")
+                    .Cells(C_TitleLine, j).Characters(Start:=Len(DictData(DictHeaders("Main label") - 1, i)) + 1, Length:=Len(DictData(DictHeaders("Sub-label") - 1, i)) + 1).Font.Size = 8
+                    .Cells(C_TitleLine, j).Characters(Start:=Len(DictData(DictHeaders("Main label") - 1, i)) + 1, Length:=Len(DictData(DictHeaders("Sub-label") - 1, i)) + 1).Font.Color = LetColor("Grey")
                 End If
             
                 'Adding the notes as comment
-                If T_dataDic(D_TitleDic("Note") - 1, i) <> "" Then
+                If DictData(DictHeaders("Note") - 1, i) <> "" Then
                     .Cells(C_TitleLine, j).AddComment
-                    .Cells(C_TitleLine, j).Comment.Text Text:=T_dataDic(D_TitleDic("Note") - 1, i)
+                    .Cells(C_TitleLine, j).Comment.Text Text:=DictData(DictHeaders("Note") - 1, i)
                     .Cells(C_TitleLine, j).Comment.Visible = False
                 End If
             
                 'Geo Titles or Customs
-                Select Case LCase(T_dataDic(D_TitleDic("Control") - 1, i))
+                Select Case LCase(DictData(DictHeaders("Control") - 1, i))
                 Case "geo"
-                    If T_dataDic(D_TitleDic("Sub-section") - 1, i) = "" Then
-                        T_dataDic(D_TitleDic("Sub-section") - 1, i) = T_dataDic(D_TitleDic("Main label") - 1, i)
+                    If DictData(DictHeaders("Sub-section") - 1, i) = "" Then
+                        DictData(DictHeaders("Sub-section") - 1, i) = DictData(DictHeaders("Main label") - 1, i)
                     End If
                 Case "custom"
                     .Cells(C_TitleLine, j).Locked = False
                 End Select
                 
                 'Now the sections
-                If sTitle1 <> T_dataDic(D_TitleDic("Main section") - 1, i) Then
+                If sTitle1 <> DictData(DictHeaders("Main section") - 1, i) Then
                 
                     'Merge previous cells if the title changes
-                    .Cells(C_StartLineTitle1, j).value = T_dataDic(D_TitleDic("Main section") - 1, i)
-                    sTitle1 = T_dataDic(D_TitleDic("Main section") - 1, i)
+                    .Cells(C_StartLineTitle1, j).value = DictData(DictHeaders("Main section") - 1, i)
+                    sTitle1 = DictData(DictHeaders("Main section") - 1, i)
                 
                     .Range(.Cells(C_StartLineTitle1, iPrevColS1), .Cells(C_StartLineTitle1, j - 1)).Merge
                     .Cells(C_StartLineTitle1, iPrevColS1).MergeArea.HorizontalAlignment = xlCenter
@@ -300,7 +307,7 @@ StatusBar_Updater (30 + sIterPG)
                 
                     iPrevColS1 = j
                 Else
-                    If i = UBound(T_dataDic, 2) Then 'Derniere case
+                    If i = UBound(DictData, 2) Then 'Derniere case
                         .Range(.Cells(C_StartLineTitle1, iPrevColS1), .Cells(C_StartLineTitle1, j)).Merge
                         .Cells(C_StartLineTitle1, iPrevColS1).MergeArea.HorizontalAlignment = xlCenter
                         .Range(.Cells(C_StartLineTitle1, iPrevColS1), .Cells(C_StartLineTitle1, j)).Interior.Color = LetColor("DarkBlueTitle")
@@ -313,13 +320,12 @@ StatusBar_Updater (30 + sIterPG)
                         Call WriteBorderLines(.Range(.Cells(C_StartLineTitle1, iPrevColS1), .Cells(C_StartLineTitle2, j)))
                     End If
                 End If
-                
             
-                If sTitle2 <> T_dataDic(D_TitleDic("Sub-section") - 1, i) Then
+                If sTitle2 <> DictData(DictHeaders("Sub-section") - 1, i) Then
                     'si le titre change, on fusionne les prec cellules
-                    .Cells(C_StartLineTitle2, j).value = T_dataDic(D_TitleDic("Sub-section") - 1, i)
+                    .Cells(C_StartLineTitle2, j).value = DictData(DictHeaders("Sub-section") - 1, i)
                 
-                    sTitle2 = T_dataDic(D_TitleDic("Sub-section") - 1, i)
+                    sTitle2 = DictData(DictHeaders("Sub-section") - 1, i)
                     If j > 1 Then
                         If .Cells(C_StartLineTitle2, iPrevColS2) <> "" Then
                             .Range(.Cells(C_StartLineTitle2, iPrevColS2), .Cells(C_StartLineTitle2, j - 1)).Merge
@@ -340,10 +346,10 @@ StatusBar_Updater (30 + sIterPG)
                 .Columns(j).EntireColumn.AutoFit
             
                 'Status champ obligatoire
-                Select Case LCase(T_dataDic(D_TitleDic("Status") - 1, i))
+                Select Case LCase(DictData(DictHeaders("Status") - 1, i))
                 Case "mandatory"
-                    If T_dataDic(D_TitleDic("Note") - 1, i) <> "" Then
-                        .Cells(C_TitleLine, j).Comment.Text Text:="Mandatory data" & Chr(10) & T_dataDic(D_TitleDic("Note") - 1, i)
+                    If DictData(DictHeaders("Note") - 1, i) <> "" Then
+                        .Cells(C_TitleLine, j).Comment.Text Text:="Mandatory data" & Chr(10) & DictData(DictHeaders("Note") - 1, i)
                     Else
                         .Cells(C_TitleLine, j).AddComment
                         .Cells(C_TitleLine, j).Comment.Text Text:="Mandatory data"
@@ -360,8 +366,8 @@ StatusBar_Updater (30 + sIterPG)
                 .Cells(6, j).Locked = False
             
                 'typage
-                If T_dataDic(D_TitleDic("Type") - 1, i) <> "" Then
-                    Select Case LCase(T_dataDic(D_TitleDic("Type") - 1, i))
+                If DictData(DictHeaders("Type") - 1, i) <> "" Then
+                    Select Case LCase(DictData(DictHeaders("Type") - 1, i))
                     Case "text"
                         .Cells(6, j).NumberFormat = "@"
                     Case "date"
@@ -369,27 +375,27 @@ StatusBar_Updater (30 + sIterPG)
                     Case "integer"
                         .Cells(6, j).NumberFormat = "0"
                     Case Else
-                        If InStr(1, LCase(T_dataDic(D_TitleDic("Type") - 1, i)), "decimal") > 0 Then 'decimal
-                            iDecNb = Right(T_dataDic(D_TitleDic("Type") - 1, i), 1)
+                        If InStr(1, LCase(DictData(DictHeaders("Type") - 1, i)), "decimal") > 0 Then 'decimal
+                            iDecNb = Right(DictData(DictHeaders("Type") - 1, i), 1)
                             k = 0
                             While k < iDecNb
                                 k = k + 1
                             Wend
                             'Only the last character is extracted, so you can have up to 9 digits maximum
-                            .Cells(6, j).NumberFormat = "0." & LetDecString(Right(T_dataDic(D_TitleDic("Type") - 1, i), 1))
+                            .Cells(6, j).NumberFormat = "0." & LetDecString(Right(DictData(DictHeaders("Type") - 1, i), 1))
                         End If
                     End Select
                 End If
             
                 'Choices / geo et HF
-                If T_dataDic(D_TitleDic("Control") - 1, i) <> "" Then
-                    Select Case LCase(T_dataDic(D_TitleDic("Control") - 1, i))
+                If DictData(DictHeaders("Control") - 1, i) <> "" Then
+                    Select Case LCase(DictData(DictHeaders("Control") - 1, i))
                     Case "choices"
     
-                        If T_dataDic(D_TitleDic("Choices") - 1, i) <> "" Then
-                            sValidationList = GetValidationName(T_Choices, D_Choices, CStr(T_dataDic(D_TitleDic("Choices") - 1, i)))
+                        If DictData(DictHeaders("Choices") - 1, i) <> "" Then
+                            sValidationList = GetValidationName(ChoicesData, ChoicesHeaders, CStr(DictData(DictHeaders("Choices") - 1, i)))
                             If sValidationList <> "" Then
-                                Call LetValidationList(.Cells(6, j), sValidationList, LetValidationLockType(CStr(T_dataDic(D_TitleDic("Alert") - 1, i))), CStr(T_dataDic(D_TitleDic("Message") - 1, i)))
+                                Call LetValidationList(.Cells(6, j), sValidationList, LetValidationLockType(CStr(DictData(DictHeaders("Alert") - 1, i))), CStr(DictData(DictHeaders("Message") - 1, i)))
                             End If
                         End If
         
@@ -397,14 +403,14 @@ StatusBar_Updater (30 + sIterPG)
                         'ajouter colonnes  pour geo
                         .Cells(C_TitleLine, j).Interior.Color = LetColor("Orange")
                         'update the columns only for the geo and do nothing for health facility
-                        If LCase(T_dataDic(D_TitleDic("Control") - 1, i)) = "geo" Then
-                            Call Add4GeoCol(xlsapp, CStr(T_dataDic(D_TitleDic("Sheet") - 1, i)), CStr(T_dataDic(D_TitleDic("Main label") - 1, i)), Replace(T_dataDic(D_TitleDic("Variable name") - 1, i), " ", "_"), j, CStr(T_dataDic(D_TitleDic("Message") - 1, i)))
+                        If LCase(DictData(DictHeaders("Control") - 1, i)) = "geo" Then
+                            Call Add4GeoCol(xlsapp, CStr(DictData(DictHeaders("Sheet") - 1, i)), CStr(DictData(DictHeaders("Main label") - 1, i)), Replace(DictData(DictHeaders("Variable name") - 1, i), " ", "_"), j, CStr(DictData(DictHeaders("Message") - 1, i)))
                             j = j + 3
                         End If
                     
                         'adding the button command for the geo only one time
                         If Not bCmdGeoExist Then
-                            Call AddCmd(xlsapp, CStr(T_dataDic(D_TitleDic("Sheet") - 1, i)), .Cells(1, 1).Left, .Cells(1, 1).Top, "SHP_GeoApps", "Geo", C_CmdWidht, 20)
+                            Call AddCmd(xlsapp, CStr(DictData(DictHeaders("Sheet") - 1, i)), .Cells(1, 1).Left, .Cells(1, 1).Top, "SHP_GeoApps", "Geo", C_CmdWidht, 20)
                             With .Shapes("SHP_GeoApps").Fill
                                 .Visible = msoTrue
                                 .ForeColor.RGB = LetColor("Orange")
@@ -421,16 +427,16 @@ StatusBar_Updater (30 + sIterPG)
                 End If
         
                 'min max simple / Les complexes sont en dessous
-                If T_dataDic(D_TitleDic("Min") - 1, i) <> "" And T_dataDic(D_TitleDic("Max") - 1, i) <> "" Then
-                    If IsNumeric(T_dataDic(D_TitleDic("Min") - 1, i)) And IsNumeric(T_dataDic(D_TitleDic("Max") - 1, i)) Then
-                        Call BuildValidationMinMax(.Cells(6, j), CStr(T_dataDic(D_TitleDic("Min") - 1, i)), CStr(T_dataDic(D_TitleDic("Max") - 1, i)), LetValidationLockType(CStr(T_dataDic(D_TitleDic("Alert") - 1, i))), CStr(T_dataDic(D_TitleDic("Type") - 1, i)), CStr(T_dataDic(D_TitleDic("Message") - 1, i)))
+                If DictData(DictHeaders("Min") - 1, i) <> "" And DictData(DictHeaders("Max") - 1, i) <> "" Then
+                    If IsNumeric(DictData(DictHeaders("Min") - 1, i)) And IsNumeric(DictData(DictHeaders("Max") - 1, i)) Then
+                        Call BuildValidationMinMax(.Cells(6, j), CStr(DictData(DictHeaders("Min") - 1, i)), CStr(DictData(DictHeaders("Max") - 1, i)), LetValidationLockType(CStr(DictData(DictHeaders("Alert") - 1, i))), CStr(DictData(DictHeaders("Type") - 1, i)), CStr(DictData(DictHeaders("Message") - 1, i)))
                         .Cells(6, j).Locked = False
                     End If
                 End If
                     
                 'buttons for show/hide
                 If Not bCmdVisibleNameExist Then
-                    Call AddCmd(xlsapp, CStr(T_dataDic(D_TitleDic("Sheet") - 1, i)), .Cells(2, 1).Left, .Cells(2, 1).Top, "SHP_NomVisibleApps", "Show/Hide", C_CmdWidht, 20)
+                    Call AddCmd(xlsapp, CStr(DictData(DictHeaders("Sheet") - 1, i)), .Cells(2, 1).Left, .Cells(2, 1).Top, "SHP_NomVisibleApps", "Show/Hide", C_CmdWidht, 20)
                     .Shapes("SHP_NomVisibleApps").Fill.ForeColor.RGB = LetColor("DarkBlueTitle")
                     .Shapes("SHP_NomVisibleApps").Fill.BackColor.RGB = LetColor("DarkBlueTitle")
                     '.Shapes("SHP_NomVisibleApps").Fill.TwoColorGradient msoGradientHorizontal, 1
@@ -439,7 +445,7 @@ StatusBar_Updater (30 + sIterPG)
                 End If
                 'buttons for adding 200 lines
                 If Not bCmdAddLine Then
-                    Call AddCmd(xlsapp, CStr(T_dataDic(D_TitleDic("Sheet") - 1, i)), .Cells(1, 1).Left + C_CmdWidht + 10, .Cells(1, 2).Top, "SHP_Ajout200L", "Add rows", C_CmdWidht, 20)
+                    Call AddCmd(xlsapp, CStr(DictData(DictHeaders("Sheet") - 1, i)), .Cells(1, 1).Left + C_CmdWidht + 10, .Cells(1, 2).Top, "SHP_Ajout200L", "Add rows", C_CmdWidht, 20)
                     .Shapes("SHP_Ajout200L").Fill.ForeColor.RGB = LetColor("DarkBlueTitle")
                     .Shapes("SHP_Ajout200L").Fill.BackColor.RGB = LetColor("DarkBlueTitle")
                     '.Shapes("SHP_Ajout200L").Fill.TwoColorGradient msoGradientHorizontal, 1
@@ -448,7 +454,7 @@ StatusBar_Updater (30 + sIterPG)
                 End If
                 'button for export
                 If Not bCmdExport Then
-                    Call AddCmd(xlsapp, CStr(T_dataDic(D_TitleDic("Sheet") - 1, i)), .Cells(2, 1).Left + C_CmdWidht + 10, .Cells(2, 2).Top, "SHP_Export", "Export", C_CmdWidht, 20)
+                    Call AddCmd(xlsapp, CStr(DictData(DictHeaders("Sheet") - 1, i)), .Cells(2, 1).Left + C_CmdWidht + 10, .Cells(2, 2).Top, "SHP_Export", "Export", C_CmdWidht, 20)
                     .Shapes("SHP_Export").Fill.ForeColor.RGB = LetColor("DarkBlueTitle")
                     .Shapes("SHP_Export").Fill.BackColor.RGB = LetColor("DarkBlueTitle")
                     '.Shapes("SHP_Export").Fill.TwoColorGradient msoGradientHorizontal, 1
@@ -475,27 +481,27 @@ StatusBar_Updater (30 + sIterPG)
                 End If
 
                 'creating admin layout
-                .Cells(p, 2).value = T_dataDic(D_TitleDic("Main label") - 1, i)
+                .Cells(p, 2).value = DictData(DictHeaders("Main label") - 1, i)
                 .Cells(p, 2).Interior.Color = LetColor("LightBlueTitle")
-                .Cells(p, 3).Name = T_dataDic(D_TitleDic("Variable name") - 1, i)
+                .Cells(p, 3).Name = DictData(DictHeaders("Variable name") - 1, i)
                 Call WriteBorderLines(.Cells(p, 3))
             
-                If LCase(T_dataDic(D_TitleDic("Control") - 1, i)) = "choices" Then
-                    If T_dataDic(D_TitleDic("Choices") - 1, i) <> "" Then
-                        sValidationList = GetValidationName(T_Choices, D_Choices, CStr(T_dataDic(D_TitleDic("Choices") - 1, i)))
+                If LCase(DictData(DictHeaders("Control") - 1, i)) = "choices" Then
+                    If DictData(DictHeaders("Choices") - 1, i) <> "" Then
+                        sValidationList = GetValidationName(ChoicesData, ChoicesHeaders, CStr(DictData(DictHeaders("Choices") - 1, i)))
                         If sValidationList <> "" Then
-                            Call LetValidationList(.Cells(p, 3), sValidationList, LetValidationLockType(CStr(T_dataDic(D_TitleDic("Alert") - 1, i))), CStr(T_dataDic(D_TitleDic("Message") - 1, i)))
+                            Call LetValidationList(.Cells(p, 3), sValidationList, LetValidationLockType(CStr(DictData(DictHeaders("Alert") - 1, i))), CStr(DictData(DictHeaders("Message") - 1, i)))
                         End If
                     End If
                 End If
             
                 If Not bCmdExportMigration Then
-                    Call AddCmd(xlsapp, CStr(T_dataDic(D_TitleDic("Sheet") - 1, i)), .Cells(1, 5).Left + 10, .Cells(2, 1).Top, "SHP_ExportMig", "Export for" & Chr(10) & "migration", C_CmdWidht + 10, 30)
+                    Call AddCmd(xlsapp, CStr(DictData(DictHeaders("Sheet") - 1, i)), .Cells(1, 5).Left + 10, .Cells(2, 1).Top, "SHP_ExportMig", "Export for" & Chr(10) & "migration", C_CmdWidht + 10, 30)
                     .Shapes("SHP_ExportMig").Fill.ForeColor.RGB = LetColor("DarkBlueTitle")
                     .Shapes("SHP_ExportMig").Fill.BackColor.RGB = LetColor("DarkBlueTitle")
                     .Shapes("SHP_ExportMig").OnAction = "clicExportMigration"
                 
-                    Call AddCmd(xlsapp, CStr(T_dataDic(D_TitleDic("Sheet") - 1, i)), .Cells(1, 5).Left + 20 + .Shapes("SHP_ExportMig").Width, .Cells(2, 1).Top, "SHP_ImportMig", "Import from" & Chr(10) & "migration", C_CmdWidht + 10, 30)
+                    Call AddCmd(xlsapp, CStr(DictData(DictHeaders("Sheet") - 1, i)), .Cells(1, 5).Left + 20 + .Shapes("SHP_ExportMig").Width, .Cells(2, 1).Top, "SHP_ImportMig", "Import from" & Chr(10) & "migration", C_CmdWidht + 10, 30)
                     .Shapes("SHP_ImportMig").Fill.ForeColor.RGB = LetColor("DarkBlueTitle")
                     .Shapes("SHP_ImportMig").Fill.BackColor.RGB = LetColor("DarkBlueTitle")
                     .Shapes("SHP_ImportMig").OnAction = "clicImportMigration"
@@ -503,10 +509,10 @@ StatusBar_Updater (30 + sIterPG)
                     'pour le logo
                     sPrevSheetNameSHP = xlsapp.ActiveSheet.Name
                     Sheets("Main").Shapes("SHP_Logo").Copy
-                    xlsapp.Sheets(T_dataDic(D_TitleDic("Sheet") - 1, i)).Select
-                    xlsapp.Sheets(T_dataDic(D_TitleDic("Sheet") - 1, i)).Range("A1").Select
-                    xlsapp.Sheets(T_dataDic(D_TitleDic("Sheet") - 1, i)).Paste
-                    xlsapp.Sheets(T_dataDic(D_TitleDic("Sheet") - 1, i)).Range("C5").Select
+                    xlsapp.Sheets(DictData(DictHeaders("Sheet") - 1, i)).Select
+                    xlsapp.Sheets(DictData(DictHeaders("Sheet") - 1, i)).Range("A1").Select
+                    xlsapp.Sheets(DictData(DictHeaders("Sheet") - 1, i)).Paste
+                    xlsapp.Sheets(DictData(DictHeaders("Sheet") - 1, i)).Range("C5").Select
                     xlsapp.Sheets(sPrevSheetName).Select
                     Sheets("Main").Range("a1").Select
                     bCmdExportMigration = True
@@ -519,42 +525,34 @@ StatusBar_Updater (30 + sIterPG)
 
         End With
     Wend
-    
-StatusBar_Updater (70)
-    
+
     sPrevSheetName = ""
 
     i = 0
-    sIterPG = 0
-    
-    While i <= UBound(T_dataDic, 2)
-    
-sIterPG = sIterPG + (20 / UBound(T_dataDic, 2))
-StatusBar_Updater (75 + sIterPG)
-        
-        If LCase(T_dataDic(D_TitleDic("Control") - 1, i)) = "formula" Then 'pav� pour le controle de formule
-            If T_dataDic(D_TitleDic("Formula") - 1, i) <> "" Then
-                'sFormula = UCase(Replace(T_dataDic(D_TitleDic("Formula") - 1, i), " ", ""))
-                sFormula = T_dataDic(D_TitleDic("Formula") - 1, i)
-                T_Formula = ControlValidationFormula(sFormula, T_dataDic, D_TitleDic, False)
-                If Not IsEmptyTable(T_Formula) Then
+    While i <= UBound(DictData, 2)
+        If LCase(DictData(DictHeaders("Control") - 1, i)) = "formula" Then 'pavï¿½ pour le controle de formule
+            If DictData(DictHeaders("Formula") - 1, i) <> "" Then
+                'sFormula = UCase(Replace(DictData(DictHeaders("Formula") - 1, i), " ", ""))
+                sFormula = DictData(DictHeaders("Formula") - 1, i)
+                FormulaData = ControlValidationFormula(sFormula, DictData, DictHeaders, False)
+                If Not IsEmptyTable(FormulaData) Then
                     With xlsapp
-                        If T_Formula(0) <> "" Then
-                            sSheetname = T_dataDic(D_TitleDic("Sheet") - 1, i)
+                        If FormulaData(0) <> "" Then
+                            sSheetname = DictData(DictHeaders("Sheet") - 1, i)
                             j = 0                'on transcrit la formule
-                            While j <= UBound(T_Formula)
-                                If InStr(1, UCase(sFormula), T_Formula(j)) > 0 Then
-                                    sFormula = Replace(UCase(sFormula), UCase(T_Formula(j)), Split(.Cells(, LetColNumberByDataName(xlsapp, CStr(T_Formula(j)), sSheetname)).Address, "$")(1) & C_ligneDeb)
+                            While j <= UBound(FormulaData)
+                                If InStr(1, UCase(sFormula), FormulaData(j)) > 0 Then
+                                    sFormula = Replace(UCase(sFormula), UCase(FormulaData(j)), Split(.Cells(, LetColNumberByDataName(xlsapp, CStr(FormulaData(j)), sSheetname)).Address, "$")(1) & C_ligneDeb)
                                 End If
                                 j = j + 1
                             Wend
                             'on ecrit la formule a la bonne place
                             j = 1
-                            While j <= .Sheets(T_dataDic(D_TitleDic("Sheet") - 1, i)).Cells(C_TitleLine, 1).End(xlToRight).Column _
-        And .Sheets(T_dataDic(D_TitleDic("Sheet") - 1, i)).Cells(C_TitleLine, j).Name.Name <> T_dataDic(D_TitleDic("Variable name") - 1, i)
+                            While j <= .Sheets(DictData(DictHeaders("Sheet") - 1, i)).Cells(C_TitleLine, 1).End(xlToRight).Column _
+        And .Sheets(DictData(DictHeaders("Sheet") - 1, i)).Cells(C_TitleLine, j).Name.Name <> DictData(DictHeaders("Variable name") - 1, i)
                                 j = j + 1
                             Wend
-                            If .Sheets(T_dataDic(D_TitleDic("Sheet") - 1, i)).Cells(C_TitleLine, j).Name.Name = T_dataDic(D_TitleDic("Variable name") - 1, i) Then
+                            If .Sheets(DictData(DictHeaders("Sheet") - 1, i)).Cells(C_TitleLine, j).Name.Name = DictData(DictHeaders("Variable name") - 1, i) Then
                                 .Sheets(sSheetname).Cells(6, j).NumberFormat = "General"
                                 .Sheets(sSheetname).Cells(6, j).Formula = "=" & sFormula
                                 On Error Resume Next
@@ -573,10 +571,10 @@ StatusBar_Updater (75 + sIterPG)
             End If
         End If
         'min / max en formule
-        If T_dataDic(D_TitleDic("Min") - 1, i) <> "" And T_dataDic(D_TitleDic("Max") - 1, i) <> "" Then
-            If Not IsNumeric(T_dataDic(D_TitleDic("Min") - 1, i)) And Not IsNumeric(T_dataDic(D_TitleDic("Max") - 1, i)) Then
-                'sFormulaMin = UCase(Replace(T_dataDic(D_TitleDic("Min") - 1, i), " ", "")) 'min
-                sFormulaMin = T_dataDic(D_TitleDic("Min") - 1, i)
+        If DictData(DictHeaders("Min") - 1, i) <> "" And DictData(DictHeaders("Max") - 1, i) <> "" Then
+            If Not IsNumeric(DictData(DictHeaders("Min") - 1, i)) And Not IsNumeric(DictData(DictHeaders("Max") - 1, i)) Then
+                'sFormulaMin = UCase(Replace(DictData(DictHeaders("Min") - 1, i), " ", "")) 'min
+                sFormulaMin = DictData(DictHeaders("Min") - 1, i)
                 If IsAFunction(Replace(sFormulaMin, "()", "")) Then
                 
                     sFormulaMin = LetInternationalFormula(sFormulaMin)
@@ -585,16 +583,16 @@ StatusBar_Updater (75 + sIterPG)
                         sFormulaMin = sFormulaMin & "()"
                     End If
                 Else
-                    T_Formula = ControlValidationFormula(sFormulaMin, T_dataDic, D_TitleDic, True)
-                    If Not IsEmptyTable(T_Formula) Then
-                        sSheetname = T_dataDic(D_TitleDic("Sheet") - 1, i)
+                    FormulaData = ControlValidationFormula(sFormulaMin, DictData, DictHeaders, True)
+                    If Not IsEmptyTable(FormulaData) Then
+                        sSheetname = DictData(DictHeaders("Sheet") - 1, i)
                         j = 0
-                        While j <= UBound(T_Formula)
-                            If T_Formula(j) <> "" Then
-                                If InStr(1, T_Formula(j), Chr(124)) Then
-                                    sFormulaMin = Replace(UCase(sFormulaMin), Split(T_Formula(j), Chr(124))(0), Split(T_Formula(j), Chr(124))(1)) 's'il y a un pipe (alt 6) : c'est forcement une formule. On remplace donc l'ancienne par la fonction propre au systeme
-                                ElseIf InStr(1, UCase(sFormulaMin), T_Formula(j)) > 0 And Not IsAFunction(CStr(T_Formula(j))) Then
-                                    sFormulaMin = Replace(UCase(sFormulaMin), UCase(T_Formula(j)), Split(xlsapp.Cells(, LetColNumberByDataName(xlsapp, CStr(T_Formula(j)), sSheetname)).Address, "$")(1) & C_ligneDeb) 'sans pipe, c'est un nom de variable, on recupere uniquement la colonne
+                        While j <= UBound(FormulaData)
+                            If FormulaData(j) <> "" Then
+                                If InStr(1, FormulaData(j), Chr(124)) Then
+                                    sFormulaMin = Replace(UCase(sFormulaMin), Split(FormulaData(j), Chr(124))(0), Split(FormulaData(j), Chr(124))(1)) 's'il y a un pipe (alt 6) : c'est forcement une formule. On remplace donc l'ancienne par la fonction propre au systeme
+                                ElseIf InStr(1, UCase(sFormulaMin), FormulaData(j)) > 0 And Not IsAFunction(CStr(FormulaData(j))) Then
+                                    sFormulaMin = Replace(UCase(sFormulaMin), UCase(FormulaData(j)), Split(xlsapp.Cells(, LetColNumberByDataName(xlsapp, CStr(FormulaData(j)), sSheetname)).Address, "$")(1) & C_ligneDeb) 'sans pipe, c'est un nom de variable, on recupere uniquement la colonne
                                 End If
                             End If
                             j = j + 1
@@ -602,8 +600,8 @@ StatusBar_Updater (75 + sIterPG)
                     End If
                 End If
         
-                'sFormulaMax = UCase(Replace(T_dataDic(D_TitleDic("Max") - 1, i), " ", "")) 'max
-                sFormulaMax = T_dataDic(D_TitleDic("Max") - 1, i)
+                'sFormulaMax = UCase(Replace(DictData(DictHeaders("Max") - 1, i), " ", "")) 'max
+                sFormulaMax = DictData(DictHeaders("Max") - 1, i)
                 If IsAFunction(Replace(sFormulaMax, "()", "")) Then
                     sFormulaMax = LetInternationalFormula(Replace(sFormulaMax, "()", ""))
                 
@@ -611,15 +609,15 @@ StatusBar_Updater (75 + sIterPG)
                         sFormulaMax = sFormulaMax & "()"
                     End If
                 Else
-                    T_Formula = ControlValidationFormula(sFormulaMax, T_dataDic, D_TitleDic, True)
-                    If Not IsEmptyTable(T_Formula) Then
-                        sSheetname = T_dataDic(D_TitleDic("Sheet") - 1, i)
+                    FormulaData = ControlValidationFormula(sFormulaMax, DictData, DictHeaders, True)
+                    If Not IsEmptyTable(FormulaData) Then
+                        sSheetname = DictData(DictHeaders("Sheet") - 1, i)
                         j = 0
-                        While j <= UBound(T_Formula)
-                            If InStr(1, T_Formula(j), Chr(124)) Then
-                                sFormulaMax = Replace(UCase(sFormulaMax), Split(T_Formula(j), Chr(124))(0), Split(T_Formula(j), Chr(124))(1)) 's'il y a un pipe (alt 6) : c'est forcement une formule. On remplace donc l'ancienne par la fonction propre au systeme
-                            ElseIf InStr(1, UCase(sFormulaMax), T_Formula(j)) > 0 And Not IsAFunction(CStr(T_Formula(j))) Then
-                                sFormulaMax = Replace(UCase(sFormulaMax), UCase(T_Formula(j)), Split(xlsapp.Cells(, LetColNumberByDataName(xlsapp, CStr(T_Formula(j)), sSheetname)).Address, "$")(1) & C_ligneDeb) 'sans pipe, c'est un nom de variable, on recupere uniquement la colonne
+                        While j <= UBound(FormulaData)
+                            If InStr(1, FormulaData(j), Chr(124)) Then
+                                sFormulaMax = Replace(UCase(sFormulaMax), Split(FormulaData(j), Chr(124))(0), Split(FormulaData(j), Chr(124))(1)) 's'il y a un pipe (alt 6) : c'est forcement une formule. On remplace donc l'ancienne par la fonction propre au systeme
+                            ElseIf InStr(1, UCase(sFormulaMax), FormulaData(j)) > 0 And Not IsAFunction(CStr(FormulaData(j))) Then
+                                sFormulaMax = Replace(UCase(sFormulaMax), UCase(FormulaData(j)), Split(xlsapp.Cells(, LetColNumberByDataName(xlsapp, CStr(FormulaData(j)), sSheetname)).Address, "$")(1) & C_ligneDeb) 'sans pipe, c'est un nom de variable, on recupere uniquement la colonne
                             End If
                             j = j + 1
                         Wend
@@ -630,11 +628,11 @@ StatusBar_Updater (75 + sIterPG)
                 If sFormulaMin <> "" And sFormulaMax <> "" Then
                     With xlsapp
                         j = 1
-                        While j <= .Sheets(sSheetname).Cells(C_TitleLine, 1).End(xlToRight).Column And T_dataDic(D_TitleDic("Variable name") - 1, i) <> .Sheets(sSheetname).Cells(C_TitleLine, j).Name.Name
+                        While j <= .Sheets(sSheetname).Cells(C_TitleLine, 1).End(xlToRight).Column And DictData(DictHeaders("Variable name") - 1, i) <> .Sheets(sSheetname).Cells(C_TitleLine, j).Name.Name
                             j = j + 1
                         Wend
-                        If T_dataDic(D_TitleDic("Variable name") - 1, i) = .Sheets(sSheetname).Cells(C_TitleLine, j).Name.Name Then
-                            Call BuildValidationMinMax(.Sheets(sSheetname).Cells(6, j), "=" & sFormulaMin, "=" & sFormulaMax, LetValidationLockType(CStr(T_dataDic(D_TitleDic("Alert") - 1, i))), CStr(T_dataDic(D_TitleDic("Type") - 1, i)), CStr(T_dataDic(D_TitleDic("Message") - 1, i)))
+                        If DictData(DictHeaders("Variable name") - 1, i) = .Sheets(sSheetname).Cells(C_TitleLine, j).Name.Name Then
+                            Call BuildValidationMinMax(.Sheets(sSheetname).Cells(6, j), "=" & sFormulaMin, "=" & sFormulaMax, LetValidationLockType(CStr(DictData(DictHeaders("Alert") - 1, i))), CStr(DictData(DictHeaders("Type") - 1, i)), CStr(DictData(DictHeaders("Message") - 1, i)))
                             '.Sheets(sSheetName).Cells(6, j).Locked = True  'verouille les dates ?
                         End If
                     End With
@@ -644,9 +642,7 @@ StatusBar_Updater (75 + sIterPG)
     
         i = i + 1
     Wend
-    
-    StatusBar_Updater (95)
-    
+
     Call Add200Lines(xlsapp)
 
     'on (presque) conclue !
@@ -665,13 +661,13 @@ StatusBar_Updater (75 + sIterPG)
 
     sPrevSheetName = ""
     i = 0
-    While i <= UBound(T_dataDic, 2)
-        If sPrevSheetName <> T_dataDic(D_TitleDic("Sheet") - 1, i) Then
-            If LCase(T_dataDic(D_TitleDic("Sheet") - 1, i)) <> "admin" Then
-                xlsapp.Sheets(T_dataDic(D_TitleDic("Sheet") - 1, i)).Protect Password:=C_PWD, DrawingObjects:=True, Contents:=True, Scenarios:=True _
+    While i <= UBound(DictData, 2)
+        If sPrevSheetName <> DictData(DictHeaders("Sheet") - 1, i) Then
+            If LCase(DictData(DictHeaders("Sheet") - 1, i)) <> "admin" Then
+                xlsapp.Sheets(DictData(DictHeaders("Sheet") - 1, i)).Protect Password:=C_PWD, DrawingObjects:=True, Contents:=True, Scenarios:=True _
                                                                                                                                                 , AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
             End If
-            sPrevSheetName = T_dataDic(D_TitleDic("Sheet") - 1, i)
+            sPrevSheetName = DictData(DictHeaders("Sheet") - 1, i)
         End If
         i = i + 1
     Wend
@@ -682,9 +678,6 @@ StatusBar_Updater (75 + sIterPG)
     xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, ConflictResolution:=xlLocalSessionChanges
     xlsapp.Quit
     Set xlsapp = Nothing
-    
-    StatusBar_Updater (100)
-    
 End Sub
 
 Private Sub Add200Lines(xlsapp As Excel.Application)
@@ -694,7 +687,7 @@ Private Sub Add200Lines(xlsapp As Excel.Application)
     Dim oSheet As Object
 
     With xlsapp
-        For Each oSheet In .ActiveWorkbook.Sheets 'on se cr�e les 200 premieres lignes
+        For Each oSheet In .ActiveWorkbook.Sheets 'on se crï¿½e les 200 premieres lignes
             If oSheet.Name <> "GEO" And oSheet.Name <> "TRANSLATION" And oSheet.Name <> "Dico" And oSheet.Name <> "Password" And oSheet.Name <> "ControleFormule" Then
                 For Each oLstobj In oSheet.ListObjects
                     'maybe check here to be sure the listobject is a table first?
@@ -922,7 +915,7 @@ Private Function LetColNumberByDataName(xlsapp As Excel.Application, sDataName A
 
     Dim i As Integer
 
-    'T_dataDic(D_TitleDic("Choices") - 1, i)
+    'DictData(DictHeaders("Choices") - 1, i)
     With xlsapp
         i = 1
         While i <= .Sheets(sSheetname).Cells(C_TitleLine, 1).End(xlToRight).Column And UCase(.Sheets(sSheetname).Cells(C_TitleLine, i).Name.Name) <> sDataName
@@ -954,5 +947,6 @@ Private Function LetWordingWithSpace(xlsapp As Excel.Application, sDataWording A
     End With
 
 End Function
+
 
 

@@ -1,18 +1,13 @@
-Attribute VB_Name = "M_Main"
+Attribute VB_Name = "DesignerMain"
 Option Explicit
-Option Base 1
-
-Const C_SheetNameDic As String = "Dictionary"
-Const C_SheetNameChoices As String = "Choices"
-Const C_SheetNameExport As String = "Exports"
 
 'Logic behind Loading the Dictionnary file
-Sub LoadFileDic()
+Sub DesLoadFileDic()
 
     Dim sFilePath As String                      'Path to the dictionnary
     
     'LoadFile is the procedure for loading the path to the dictionnary
-    sFilePath = LoadFile("*.xlsb") 'lla
+    sFilePath = DesLoadFile("*.xlsb") 'lla
     
     'Update messages if the file path is correct
     If sFilePath <> "" Then
@@ -25,7 +20,7 @@ Sub LoadFileDic()
 End Sub
 
 'Logic behind specifying the linelist directory
-Sub LinelistDir()
+Sub DesLinelistDir()
     Dim sfolder As String
     sfolder = LoadFolder
     [RNG_LLDir] = ""
@@ -40,9 +35,7 @@ End Sub
 ' Adding a new load geo for the Geo file, in a new sheet called Geo2
 ' we have two functions for loading the geodatabase, but the second one
 ' will be in use instead of the first one
-Sub LoadGeoFile()
-    Dim geoSheet As String
-    geoSheet = "GEO"                             'geoSheet in the designer
+Sub DesLoadGeoFile()
     Dim sFilePath As String                      'File path to the geo file
     Dim xlsapp As Excel.Application
     Dim oSheet As Object
@@ -74,8 +67,8 @@ Sub LoadGeoFile()
             [RNG_Edition].value = TranslateMsg("MSG_NetoPrec")
             For i = 1 To AdmNames.Length
                 'Adms
-                If Not Sheets(geoSheet).ListObjects("T" & "_" & AdmNames.Items(i)).DataBodyRange Is Nothing Then
-                    Sheets(geoSheet).ListObjects("T" & "_" & AdmNames.Items(i)).DataBodyRange.Delete
+                If Not SheetGeo.ListObjects("T" & "_" & AdmNames.Items(i)).DataBodyRange Is Nothing Then
+                    SheetGeo.ListObjects("T" & "_" & AdmNames.Items(i)).DataBodyRange.Delete
                 End If
             Next
 
@@ -96,19 +89,19 @@ Sub LoadGeoFile()
                 End If
                 
                 'Check if the sheet is the admin exists sheet before writing in the adm table
-                With Sheets(geoSheet).ListObjects("T" & "_" & oSheet.Name)
+                With SheetGeo.ListObjects("T" & "_" & oSheet.Name)
                     outputAdress = Cells(T_Adm.LowerBound + 1, .Range.Column).Address
                     outputHeaderAdress = Cells(T_Adm.LowerBound, .Range.Column).Address
 
-                    T_header.ToExcelRange Destination:=Sheets(geoSheet).Range(outputHeaderAdress), TransposeValues:=True
-                    T_Adm.ToExcelRange Destination:=Sheets(geoSheet).Range(outputAdress)
+                    T_header.ToExcelRange Destination:=SheetGeo.Range(outputHeaderAdress), TransposeValues:=True
+                    T_Adm.ToExcelRange Destination:=SheetGeo.Range(outputAdress)
                     
                     'resizing the Table
                     .Resize .Range.CurrentRegion
                 End With
             Next
             
-            Sheets("MAIN").Range("RNG_PathGeo").value = sFilePath
+            SheetMain.Range("RNG_PathGeo").value = sFilePath
             .ScreenUpdating = True
             .Workbooks.Close
             xlsapp.Quit
@@ -139,7 +132,7 @@ End Sub
 ' The main entry point is the BuildList function which creates the Linelist-patient sheet as
 ' well as all the forms in the linelist
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Sub GenerateData()
+Sub DesGenerateData()
     Dim bGood As Boolean
     bGood = ControlForGenerate()
     
@@ -148,74 +141,64 @@ Sub GenerateData()
         Exit Sub
     End If
     
-    Dim xlsapp As Excel.Application
-    Dim D_TitleDic As Scripting.Dictionary
-    Dim T_dataDic
-    Dim D_Choices As Scripting.Dictionary
-    Dim T_Choices
-    Dim T_Export
+    Dim xlsapp As Excel.Application 'Actual excel application
+    Dim DictHeaders As BetterArray 'Dictionary headers
+    Dim DictData As BetterArray 'Dictionary data
+    Dim ChoicesHeaders As BetterArray 'Choices headers
+    Dim ChoicesData As BetterArray 'Choices data
+    Dim ExportData As BetterArray 'Export data
     Dim sPath As String
-    
-    Application.StatusBar = "[" & Space(C_iNumberOfBars) & "]" 'create status ProgressBar
-    
-StatusBar_Updater (1)
     
     Set xlsapp = New Excel.Application
     
     Application.DisplayAlerts = False
-    Application.ScreenUpdating = False
+    'Application.ScreenUpdating = False
     
     'Be sure the actual Workbook is not opened
-    If IsWkbOpened([RNG_LLName].value & ".xlb") Then
+    If IsWkbOpened([RNG_LLName].value & ".xlsb") Then
         [RNG_Edition].value = TranslateMsg("MSG_CloseLL")
         [RNG_LLName].Interior.Color = LetColor("RedEpi")
         Exit Sub
     End If
+        
+    xlsapp.ScreenUpdating = False
+    xlsapp.Visible = False
+    xlsapp.Workbooks.Open SheetMain.Range(C_sRngLLName).value
+    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadDic")
     
-    'On Error GoTo ErrLectureFichier
-    With ThisWorkbook.Sheets("Main").Range("RNG_Edition")
-        xlsapp.ScreenUpdating = False
-        xlsapp.Visible = False
-        xlsapp.Workbooks.Open [RNG_PathDico].value
-        
-        .value = TranslateMsg("MSG_ReadDic")
-        'create the Dictionnary of the linelist patient sheet
-        Set D_TitleDic = CreateDicoColVar(xlsapp, C_SheetNameDic, 2)
-        'create the data table of linelist patient using the dictionnary
-        T_dataDic = CreateTabDataVar(xlsapp, C_SheetNameDic, D_TitleDic, 3)
-
-        .value = TranslateMsg("MSG_ReadList")
-        'Create the dictionnary for the choices sheet
-        Set D_Choices = CreateDicoColChoi(xlsapp, C_SheetNameChoices)
-        'Create the table for the choices
-        T_Choices = CreateTabDataChoi(xlsapp, C_SheetNameChoices)
-        
-        'Export sheet
-        .value = TranslateMsg("MSG_ReadExport")
-        'create parameters for export
-        T_Export = CreateParamExport(xlsapp)
-
-        xlsapp.ActiveWorkbook.Close
-        xlsapp.Quit
-        Set xlsapp = Nothing
-        
-        .value = TranslateMsg("MSG_BuildLL")
-        
-        'Creating the linelist using the dictionnary and choices data as well as export data
-        'The BuildList procedure is in the linelist
-        sPath = [RNG_LLDir].value & Application.PathSeparator & [RNG_LLName] & ".xlsb"
-        
-StatusBar_Updater (5)
-        
-        Call BuildList(D_TitleDic, T_dataDic, D_Choices, T_Choices, T_Export, sPath)
-        DoEvents
+    'create the Dictionnary data
+    Set DictHeaders = GetHeaders(xlsapp, C_sParamSheetDict, eStartLinesDictHeaders)
+    'create the data table of linelist patient using the dictionnary
+    Set DictData = GetData(xlsapp, C_sSheetNameDic, eStartLinesDictData)
     
-        .value = TranslateMsg("MSG_LLCreated")
+    'Create the choices data
+    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadList")
+    'Create the dictionnary for the choices sheet
+    Set ChoicesHeaders = GetHeaders(xlsapp, C_sParamSheetChoices, C_eStartLinesChoicesHeaders)
+    'Create the table for the choices
+    Set ChoicesData = GetData(xlsapp, C_sParamSheetChoices, C_eStartLinesChoicesData)
+        
+    'Reading the export sheet
+    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadExport")
+    'create parameters for export
+     ExportData = GetData(xlsapp, C_sParamSheetExport, C_eStartLinesExportData)
+
+     xlsapp.ActiveWorkbook.Close
+     xlsapp.Quit
+     Set xlsapp = Nothing
+        
+     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
+        
+    'Creating the linelist using the dictionnary and choices data as well as export data
+     'The BuildList procedure is in the linelist
+     sPath = [RNG_LLDir].value & Application.PathSeparator & [RNG_LLName] & ".xlsb"
+     Call BuildList(DictHeaders, DictData, ChoicesHeaders, ChoicesData, ExportData, sPath)
+    DoEvents
+    
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
         [RNG_LLName].Interior.Color = vbWhite
         Sheets("Main").Shapes("SHP_OpenLL").Visible = msoTrue
     End With
-    
-    Application.StatusBar = "" 'close status ProgressBar
     
     Application.DisplayAlerts = True
     Application.ScreenUpdating = True
@@ -253,12 +236,10 @@ Sub Control()
 End Sub
 
 'A control function to be sure that everything is fine for linelist Generation
-Private Function ControlForGenerate() As Boolean
+Private Function DesControlForGenerate() As Boolean
    ControlForGenerate = False
     'Hide the shapes for linelist generation
     ShowHideCmdValidation False
-    
-    On Error Resume Next
     
     '****** dictionary
     
