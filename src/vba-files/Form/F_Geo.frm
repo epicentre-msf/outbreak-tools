@@ -226,3 +226,10 @@ Private Sub TXT_RechercheHistoF_Change()
 End Sub
 
 
+Private Sub UserForm_Initialize() 'lla
+'Manage language
+
+    Call TranslateForm(Me, Sheets("linelist-translation").[T_F_Geo])
+    
+End Sub
+

@@ -29,6 +29,7 @@ Public Sub TransferDesignerCodes(xlsapp As Excel.Application)
     Call TransferCode(Wkb, C_sModLLConstants, "Module")
     Call TransferCode(Wkb, C_sModEsthConstants, "Module")
     Call TransferCode(Wkb, C_sModLLExport, "Module")
+    Call TransferCode(Wkb, C_sModLLTrans, "Module")
     Call TransferCode(Wkb, C_sClaBA, "Class")
     
     Set Wkb = Nothing
@@ -214,14 +215,14 @@ End Function
 '@sShpTextColor: color of the text for each of the shapes
 
 Sub AddCmd(xlsapp As Excel.Application, sSheetName As String, iLeft As Integer, iTop As Integer, _
-           sShpName As String, sText As String, iCmdWidth As Integer, iCmdHeight As Integer, _
+           sShpName As String, stext As String, iCmdWidth As Integer, iCmdHeight As Integer, _
            sCommand As String, Optional sShpColor As String = "MainSecBlue", _
            Optional sShpTextColor As String = "White")
 
     With xlsapp.Sheets(sSheetName)
         .Shapes.AddShape(msoShapeRectangle, iLeft + 3, iTop + 3, iCmdWidth, iCmdHeight).Name = sShpName
         .Shapes(sShpName).Placement = xlFreeFloating
-        .Shapes(sShpName).TextFrame2.TextRange.Characters.Text = sText
+        .Shapes(sShpName).TextFrame2.TextRange.Characters.Text = stext
         .Shapes(sShpName).TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
         .Shapes(sShpName).TextFrame2.VerticalAnchor = msoAnchorMiddle
         .Shapes(sShpName).TextFrame2.WordWrap = msoFalse
