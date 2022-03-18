@@ -26,6 +26,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeader
     Dim SpecCharData As BetterArray
     Dim DictVarName As BetterArray
     Dim iPastingRow As Integer
+    Dim sCpte As Integer
     
 
     Dim iCounterSheet As Integer                'counter for one Sheet
@@ -100,8 +101,11 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeader
     ChoicesLabelsData.Items = ChoicesData.ExtractSegment(ColumnIndex:=ChoicesHeaders.IndexOf(C_sChoiHeaderLab))
 
     iSheetStartLine = 1
+    sCpte = 0
+    StatusBar_Updater (sCpte)
 
     For iCounterSheet = 1 To LLSheetNameData.UpperBound
+        sCpte = Round(100 * iCounterSheet / LLSheetNameData.UpperBound, 1) 
         'Vector of varnames for one sheet
         VarnameSheetData.Clear
         VarnameSheetData.Items = VarNameData.Slice(iSheetStartLine, iSheetStartLine + LLNbColData.Item(iCounterSheet))
@@ -135,6 +139,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeader
                         DictVarName.Clear
                      End With
             Case C_sDictSheetTypeAdm
+              
                 'Create a sheet of type admin entry
                 Call CreateSheetAdmEntry(xlsapp, LLSheetNameData.Item(iCounterSheet), iSheetStartLine, DictData, _
                                         DictHeaders, LLSheetNameData, LLNbColData, _
@@ -159,6 +164,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeader
         iSheetStartLine = iSheetStartLine + LLNbColData.Item(iCounterSheet)
         
         DoEvents
+    StatusBar_Updater (sCpte)
     Next
     
     'Put the dictionnary in a table format
@@ -180,7 +186,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeader
     Set ChoicesLabelsData = Nothing
     Set DictVarName = Nothing
  
-    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, ConflictResolution:=xlLocalSessionChanges
+    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     xlsapp.Quit
     Set xlsapp = Nothing
 End Sub
@@ -193,7 +199,6 @@ End Sub
 '@DictData: Dictionary Data
 '@DictHeaders: Headers of the dictionary
 '@ExportData: Export Data
-'
 '@LLNbColData: This is a vector that will be updated. It counts for each sheet, the number of columns
 '@ColumnIndexData: This a vector that will be updated. It count for each column, the index in the sheet where the column should be
 '@LLSheetName: This is a vector that will contain le name of all the sheets
@@ -709,6 +714,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                         .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Formula2 = "=" & sFormula 'Seems like formula only induce error on some computers
                         On Error GoTo 0
                         bLockData = True  'Lock data for formulas
+                        .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Calculate
                     Else
                         'MsgBox "Invalid formula will be ignored : " & sActualFormula & "/" & sActualVarName  'MSG_InvalidFormula
                     End If
@@ -751,7 +757,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
         .ListObjects("o" & ClearString(sSheetName)).Resize .Range(.Cells(C_eStartLinesLLData, 1), _
         .Cells(C_iNbLinesLLData + C_eStartLinesLLData, .Cells(C_eStartLinesLLData, 1).End(xlToRight).Column))
 
-
+        .Calculate
         'Now Protect the sheet
         .Protect Password:=(C_sLLPassword), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True

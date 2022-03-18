@@ -41,13 +41,17 @@ End Function
 'This will set the actual application properties to be able to work correctly
 Public Sub BeginWork(xlsapp As Excel.Application, Optional bvisbility As Boolean = True)
     xlsapp.ScreenUpdating = False
-    xlsapp.Calculation = xlCalculationManual
+   ' xlsapp.DisplayAlerts = False
+    'xlsapp.Calculation = xlCalculationManual
+    'xlsapp.Cursor = xlWait
 End Sub
 
 
 Public Sub EndWork(xlsapp As Excel.Application, Optional bvisbility As Boolean = True)
-    xlsapp.ScreenUpdating = False
-    xlsapp.Calculation = xlCalculationAutomatic
+    xlsapp.ScreenUpdating = True
+    'xlsapp.DisplayAlerts = True
+    'xlsapp.Cursor = xlDefault
+    'xlsapp.Calculation = xlCalculationAutomatic
 End Sub
 
 'Load files and folders
@@ -540,6 +544,22 @@ Public Function FindDicColumnValue(sVarname, sColumn)
     End With
     Set VarNameData = Nothing
 End Function
+
+
+
+Sub StatusBar_Updater(sCpte As Single)
+'increase the status progressBar
+
+    Dim CurrentStatus As Integer
+    Dim pctDone As Integer
+
+    CurrentStatus = (C_iNumberOfBars) * Round(sCpte / 100, 1)
+    Application.StatusBar = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "%"  & TranslateMSg("MSG_BuildLL")
+
+    DoEvents
+    
+End Sub
+
 
 
 
