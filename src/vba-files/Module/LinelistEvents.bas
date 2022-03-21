@@ -67,12 +67,12 @@ Sub ClicCmdExport()
     With F_Export
         i = 2
         While i <= 6
-            If Not isError(Sheets("Export").Cells(i, 4).value) Then 'lla
-                If LCase(Sheets("Export").Cells(i, 4).value) <> "active" Then
+            If Not isError(Sheets("Exports").Cells(i, 4).value) Then 'lla
+                If LCase(Sheets("Exports").Cells(i, 4).value) <> "active" Then
                     .Controls("CMD_Export" & i - 1).Visible = False
                 Else
                     .Controls("CMD_Export" & i - 1).Visible = True
-                    .Controls("CMD_Export" & i - 1).Caption = Sheets("Export").Cells(i, 2).value
+                    .Controls("CMD_Export" & i - 1).Caption = Sheets("Exports").Cells(i, 2).value
                     iHeight = iHeight + 24 + C_CmdHeight
                 End If
             End If
