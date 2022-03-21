@@ -545,8 +545,6 @@ Public Function FindDicColumnValue(sVarname, sColumn)
     Set VarNameData = Nothing
 End Function
 
-
-
 Sub StatusBar_Updater(sCpte As Single)
 'increase the status progressBar
 
@@ -554,7 +552,7 @@ Sub StatusBar_Updater(sCpte As Single)
     Dim pctDone As Integer
 
     CurrentStatus = (C_iNumberOfBars) * Round(sCpte / 100, 1)
-    Application.StatusBar = "[" & String(CurrentStatus, "|") & SPACE(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "%" & TranslateMsg("MSG_BuildLL")
+    Application.StatusBar = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "%" & TranslateMsg("MSG_BuildLL")
 
     DoEvents
     

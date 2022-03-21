@@ -55,7 +55,7 @@ Function translate_LineList(stext As String, rgPlage As Range) 'lla
 
     Select Case sLanguage
         Case "ENG"
-            Exit Function
+            iNumCol = 1
         Case "FRA"
             iNumCol = 2
         Case "POR"
