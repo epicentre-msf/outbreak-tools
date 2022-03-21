@@ -1921,11 +1921,11 @@ Private Function BuildCSVString( _
         ) As String
     Dim i As Long
     Dim j As Long
-    Dim lastrow As Long
+    Dim LastRow As Long
     Dim LastCol As Long
     Dim ValidRow As Boolean
     
-    lastrow = UBound(Records)
+    LastRow = UBound(Records)
     LastCol = UBound(Records, 2)
     StringBuilder NewString:=True
     For i = LBound(Records) To UBound(Records)
@@ -1941,7 +1941,7 @@ Private Function BuildCSVString( _
             For j = LBound(Records, 2) To UBound(Records, 2)
                 StringBuilder Records(i, j)
                 If j = LastCol Then
-                    If i <> lastrow Then
+                    If i <> LastRow Then
                         StringBuilder RowDelimiter
                     End If
                 Else
@@ -2367,7 +2367,7 @@ Private Function ParseCSV( _
     Dim ColumnIndex As Long
     Dim CountColumns As Long
     Dim CountRows As Long
-    Dim lastrow As Long
+    Dim LastRow As Long
     Dim LastColumn As Long
     Dim StartRow As Long
     Dim InQuote As Boolean
@@ -2402,16 +2402,16 @@ Private Function ParseCSV( _
         StartRow = 0
     End If
     
-    lastrow = Base + CountRows - 1 - StartRow
+    LastRow = Base + CountRows - 1 - StartRow
     LastColumn = Base + CountColumns - 1
     If ReturnJagged Then
         ReDim JaggedRow(Base To LastColumn)
-        ReDim Results(Base To lastrow)
+        ReDim Results(Base To LastRow)
     Else
-        ReDim Results(Base To lastrow, Base To LastColumn)
+        ReDim Results(Base To LastRow, Base To LastColumn)
     End If
     
-    For i = StartRow To lastrow
+    For i = StartRow To LastRow
         ColumnIndex = Base
         Buffer = CSVRows(i)
         Cursor = 1
@@ -3715,7 +3715,7 @@ Private Function IsArrayAllocated(ByVal SourceArray As Variant) As Boolean
     On Error Resume Next
     IsArrayAllocated = ( _
                        IsArray(SourceArray) And _
-                       Not IsError(LBound(SourceArray, 1)) And _
+                       Not isError(LBound(SourceArray, 1)) And _
                        LBound(SourceArray, 1) <= UBound(SourceArray, 1) _
                        )
     On Error GoTo 0

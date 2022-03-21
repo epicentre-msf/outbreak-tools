@@ -219,6 +219,9 @@ Sub AddCmd(xlsapp As Excel.Application, sSheetName As String, iLeft As Integer, 
            sCommand As String, Optional sShpColor As String = "MainSecBlue", _
            Optional sShpTextColor As String = "White")
 
+    
+    stext = translate_LineList(stext, Sheets("linelist-translation").[T_tradShapeLL])
+
     With xlsapp.Sheets(sSheetName)
         .Shapes.AddShape(msoShapeRectangle, iLeft + 3, iTop + 3, iCmdWidth, iCmdHeight).Name = sShpName
         .Shapes(sShpName).Placement = xlFreeFloating
