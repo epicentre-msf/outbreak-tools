@@ -44,10 +44,12 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeader
     Set VarNameData = New BetterArray
     Set DictVarName = New BetterArray
     
-
+    'lla
+    Application.StatusBar = "[" & Space(C_iNumberOfBars) & "]" 'create status ProgressBar
+    
     Set xlsapp = New Excel.Application
 
-    With xlsapp
+    With xlsapp 'lla
         .ScreenUpdating = False
         .DisplayAlerts = False
         .Visible = False
@@ -200,6 +202,9 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeader
     xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     xlsapp.Quit
     Set xlsapp = Nothing
+    
+    Application.StatusBar = "" 'close status ProgressBar
+    
 End Sub
 
 'CREATE SHEETS IN A LINELIST ============================================================================================
@@ -363,14 +368,14 @@ End Sub
         'Import migration buttons
           Call DesignerBuildListHelpers.AddCmd(xlsapp, sSheetName, _
             .Cells(2, 10).Left, .Cells(2, 1).Top, C_sShpImpMigration, _
-            "Import for" & Chr(10) & "Migration", _
+            "Import for Migration", _
             C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdImportMigration)
         
         
         'Export migration buttons
          Call DesignerBuildListHelpers.AddCmd(xlsapp, sSheetName, _
             .Cells(2, 10).Left + C_iCmdWidth + 20, .Cells(2, 1).Top, C_sShpExpMigration, _
-            "Export for" & Chr(10) & "Migration", _
+            "Export for Migration", _
             C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdExportMigration)
 
         
