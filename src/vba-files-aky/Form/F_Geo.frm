@@ -13,39 +13,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 Option Explicit
-
-Const C_PWD As String = "1234"
-Private Sub CMD_ChoicesFac_Click()
-
-End Sub
-
-Private Sub CMD_ChoicesGeo_Click()
-
-End Sub
 
 'This command is at the end, when you close the geoapp
 'It basically update all the required data and input selected data in the linelist worksheet
@@ -224,4 +192,14 @@ Private Sub TXT_RechercheHistoF_Change()
 
 End Sub
 
+
+Private Sub UserForm_Initialize() 'lla
+'Manage language
+
+    Call TranslateForm(Me, Sheets("linelist-translation").[T_F_Geo])
+        
+    Me.Width = 637
+    Me.Height = 370
+
+End Sub
 
