@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_NomVisible 
    Caption         =   "ShowNameApps"
-   ClientHeight    =   3495
-   ClientLeft      =   -525
-   ClientTop       =   -2415
-   ClientWidth     =   3885
+   ClientHeight    =   5880
+   ClientLeft      =   -30
+   ClientTop       =   -165
+   ClientWidth     =   8295.001
    OleObjectBlob   =   "F_NomVisible.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -18,7 +18,7 @@ Option Base 1
 
 Private Sub CMD_Fermer_Click()
     F_NomVisible.Hide
-    WriteVisibility
+    Call WriteVisibility
 End Sub
 
 Private Sub LST_NomChamp_Click()
@@ -33,11 +33,14 @@ Private Sub OPT_Masque_Click()
     ShowHideLogic LST_NomChamp.ListIndex
 End Sub
 
+
 Private Sub UserForm_Initialize() 'lla
 'Manage language
 
     Call TranslateForm(Me, Sheets("linelist-translation").[T_F_NomVisible])
-    
-End Sub
+        
+    Me.Width = 440
+    Me.Height = 280
 
+End Sub
 
