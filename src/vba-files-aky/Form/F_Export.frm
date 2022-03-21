@@ -14,20 +14,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
-
-
-
-
-
-
-
-
-
-
-
 Option Explicit
-
-
 
 
 Private Sub CMD_Export2_Click()
@@ -72,3 +59,12 @@ Private Sub CMD_Retour_Click()
 
 End Sub
 
+Private Sub UserForm_Initialize() 'lla
+'Manage language
+
+    Call TranslateForm(Me, Sheets("linelist-translation").[T_F_Export])
+    
+    Me.Width = 172
+    Me.Height = 270
+
+End Sub
