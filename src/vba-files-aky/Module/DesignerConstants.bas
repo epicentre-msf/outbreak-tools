@@ -18,11 +18,11 @@ Public Const C_sModLinelist             As String = "LinelistEvents"        'Eve
 Public Const C_sModLLMigration          As String = "LinelistMigration"     'Migration of the linelist
 Public Const C_sModLLShowHide           As String = "LinelistShowHide"      'ShowHide logic
 Public Const C_sModLLConstants          As String = "LinelistConstants"     'Constants of the linelist program
-Public Const C_sModEsthConstants          As String = "EstheticConstants"   'Constants for esthetic things in program
+Public Const C_sModEsthConstants        As String = "EstheticConstants"   'Constants for esthetic things in program
 Public Const C_sModDesHelpers           As String = "DesignerMainHelpers"
 Public Const C_sModHelpers              As String = "Helpers"
-Public Const C_sModLLChange                As String = "LinelistChange"     'Change Event linked to one sheet of type linelist
-Public Const C_sModLLTrans               As String = "LinelistTranslation"
+Public Const C_sModLLChange             As String = "LinelistChange"     'Change Event linked to one sheet of type linelist
+Public Const C_sModLLTrans              As String = "LinelistTranslation"
 
 'CLASSES ==========================================================================================================================================================================
 Public Const C_sClaBA                   As String = "BetterArray"
@@ -41,7 +41,7 @@ Public Const C_sRngLabLangDes            As String = "RNG_LabLangDesigner" 'Rang
 Public Const C_sRngLangGeo               As String = "RNG_LangGeo" 'Range for the language of the headings of the geo
 Public Const C_sRngPathGeo               As String = "RNG_PathGeo" 'Range to the path to the geo file
 Public Const C_sRngLLFormLang            As String = "RNG_LLForm" 'Languages for the forms in the linelist
-Public Const C_sRngLLPassword           As String = "RNG_LLPassword" 'Password for debugging the linelist
+Public Const C_sRngLLPassword            As String = "RNG_LLPassword" 'Password for debugging the linelist
 
 'Messages in the designer ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
