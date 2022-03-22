@@ -11,7 +11,9 @@ Option Explicit
 '@ExportData: The export data
 
 
-Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeaders As BetterArray, ChoicesData As BetterArray, ExportData As BetterArray, sPath As String)
+Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As BetterArray, _
+              ChoicesHeaders As BetterArray, ChoicesData As BetterArray, _
+              TransData As BetterArray, sPath As String)
 
     Dim xlsapp As Excel.Application
     Dim LLNbColData As BetterArray               'Number of columns of a Sheet of type linelist
@@ -27,6 +29,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeader
     Dim DictVarName As BetterArray
     Dim iPastingRow As Integer
     Dim sCpte As Integer
+    Dim LoRng As Range 'List object's range
     
 
     Dim iCounterSheet As Integer                'counter for one Sheet
@@ -81,8 +84,9 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeader
 
     'Create all the required Sheets in the workbook (Dictionnary, Export, Password, Geo and other sheets defined by the user)
     Call CreateSheets(xlsapp, DictData, DictHeaders, ExportData, _
-                          LLNbColData, ColumnIndexData, LLSheetNameData, _
-                          bNotHideSheets:=False)
+                      ChoicesHeaders, ChoicesData, TransData, _
+                      LLNbColData, ColumnIndexData, LLSheetNameData, _
+                      bNotHideSheets:=False)
     DoEvents
     'SheetMain.Range(C_sRngEdition).value = "Created the Sheets"
 
@@ -221,8 +225,10 @@ End Sub
 '@bNotHideSheets: For debugging purpose (hide or not dicitonary and Export sheets)
 
 Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders As BetterArray, _
-                            ExportData As BetterArray, LLNbColData As BetterArray, ColumnIndexData As BetterArray, _
-                            LLSheetNameData As BetterArray, Optional bNotHideSheets As Boolean = False)
+                        ExportData As BetterArray, ChoicesHeaders As BetterArray, _
+                        ChoicesData As BetterArray, TransData As BetterArray, _
+                        LLNbColData As BetterArray, ColumnIndexData As BetterArray, _
+                        LLSheetNameData As BetterArray, Optional bNotHideSheets As Boolean = False)
     'LLNbColData: Number of columns for a sheet of type linelist
     'LLSheetNameData: Name of a sheet of type linelist
 
@@ -231,14 +237,13 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
     ColumnIndexData.LowerBound = 1
 
     Dim sPrevSheetName As String 'Previous sheet name
-        
+
     With xlsapp
-    
         'Workbook already contains Password and formula sheets. Hide them
         .Worksheets(C_sSheetPassword).Visible = xlVeryHidden
         .Worksheets(C_sSheetFormulas).Visible = xlVeryHidden
         .Worksheets(C_sSheetLLTranslation).Visible = xlVeryHidden
-        
+
         '-------------- Creating the dictionnary sheet from setup
         .Worksheets.Add.Name = C_sParamSheetDict
         'Headers of the disctionary
@@ -248,7 +253,7 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
         'Transforming the dictionary in a listobject Table
         .Worksheets(C_sParamSheetDict).Columns(1).ClearContents
         .Worksheets(C_sParamSheetDict).Visible = bNotHideSheets
-        
+
         '-------------- Creating the export sheet
         .Worksheets.Add.Name = C_sParamSheetExport
         'Headers of the export options
@@ -257,11 +262,20 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
         .Worksheets(C_sParamSheetExport).Cells(1, 3).value = "Pwd"
         .Worksheets(C_sParamSheetExport).Cells(1, 4).value = "Actif"
         .Worksheets(C_sParamSheetExport).Cells(1, 5).value = "FileName"
-        
+
         'Adding the data on export parameters
         ExportData.ToExcelRange Destination:=.Sheets(C_sParamSheetExport).Cells(2, 1)
         .Sheets(C_sParamSheetExport).Visible = bNotHideSheets 'xlSheetVeryHidden
-    
+
+        '--------- Creating the Choices Sheet
+        .Worksheets.Add.Name = C_sParamSheetChoices
+        ChoicesHeaders.ToExcelRange Destination:=.Sheets(C_sParamSheetChoices).Cells(1, 1), TransposeValues:=True
+        ChoicesData.ToExcelRange Destination:=.Sheets(C_sParamSheetChoices).Cells(2, 1)
+
+        '--------- Creating the translation sheet
+        .Worksheets.Add.Name = C_sParamSheetTranslation
+        TransData.ToExcelRange Destination:=.Sheets(C_sParamSheetTranslation).Cells(1, 1)
+
         '--------------- adding the other the other sheets in the dictionary to the linelist
         i = 1
         sPrevSheetName = ""
@@ -378,7 +392,6 @@ End Sub
             "Export for Migration", _
             C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdExportMigration)
 
-        
         'Export Button
         Call DesignerBuildListHelpers.AddCmd(xlsapp, sSheetName, _
             .Cells(2, 10).Left + 2 * C_iCmdWidth + 40, .Cells(2, 1).Top, C_sShpExport, _
@@ -447,10 +460,9 @@ End Sub
             iCounterDictSheetLine = iCounterDictSheetLine + 1
         Wend
     End With
-
 End Sub
- 
- 
+
+
 'SHEET OF TYPE LINELIST CREATION ==================================================================================================================================
 
 Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As String, iSheetStartLine As Integer, _
@@ -494,7 +506,8 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
     Dim sFormula As String 'Formula after correcting and cleaning
     Dim sFormulaMin As String 'Formula for min
     Dim sFormulaMax As String 'Formula for max
-
+    Dim LoRng As Range 'Range of the listobject for one table
+    
     Dim bLockData As Boolean
 
 
@@ -526,10 +539,6 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
          .Cells(1, 1).Select
          xlsapp.CutCopyMode = False
          
-        'Creating the TableObject that will contain the data entry
-        .ListObjects.Add(xlSrcRange, .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_eStartLinesLLData, iTotalLLSheetColumns)), , xlYes).Name = "o" & ClearString(sSheetName)
-        .ListObjects("o" & ClearString(sSheetName)).TableStyle = C_sLLTableStyle
-         
         'Adding required buttons
         
         'Show Hide Button
@@ -554,7 +563,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
         
         
         While (iCounterDictSheetLine <= iSheetStartLine + iTotalLLSheetColumns - 1)
-            bLockData = False
+            bLockData = False 'lock or not the data in one cell
             
             'First, accessing actual values ussing the dicitonary data and its corrresponding headers
             sActualVarName = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderVarName))
@@ -675,10 +684,6 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                                     C_eStartLinesLLData, iCounterSheetLLCol, sActualNote, _
                                     sActualStatus, "Mandatory data")
 
-            'Formating the Column according to the Column's type-------------------------------------------------------------------------------------------
-            Call DesignerBuildListHelpers.AddType(xlsapp.Worksheets(sSheetName), _
-                                    C_eStartLinesLLData, iCounterSheetLLCol, sActualType)
-
             'Building the Column Controls ----------------------------------------------------------------------------
             'For actual choices, we can tolerate _ or - in the string names
             sActualChoice = ClearString(sActualChoice, bremoveHiphen:=False)
@@ -712,40 +717,40 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                                              C_iCmdWidth, C_iCmdHeight, _
                                              C_sCmdShowGeoApp, "Orange", "Black")
                         bCmdGeoExist = True
-
                     End If
 
                 Case C_sDictControlHf
                     .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = GetColor("Orange")
-
                 Case C_sDictControlForm 'Formulas, are reported to the formula function
                     If (sActualFormula <> "") Then
                         sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, VarNameData, ColumnIndexData, _
-                                                            FormulaData, SpecCharData)
+                                                            FormulaData, SpecCharData, False)
                     End If
                     'Testing before writing the formula
                     If (sFormula <> "") Then
                         .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).NumberFormat = "General"
-                        .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Formula = "= " & sFormula 'The space here is important
-                        On Error Resume Next
-                        .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Formula2 = "= " & sFormula 'Seems like formula only induce error on some computers
-                        On Error GoTo 0
+                        .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).formula = "=" & sFormula
                         bLockData = True  'Lock data for formulas
-                        .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Calculate
                     Else
                         'MsgBox "Invalid formula will be ignored : " & sActualFormula & "/" & sActualVarName  'MSG_InvalidFormula
                     End If
             End Select
 
+            'The type is added after formula validation because we need to take in account the formula before
+            'setting the type
+            'Formating the Column according to the Column's type -------------------------------------------------------------------------------------------
+            Call DesignerBuildListHelpers.AddType(xlsapp.Worksheets(sSheetName), _
+                                    C_eStartLinesLLData, iCounterSheetLLCol, sActualType)
+
             'Building Min/Max Validation ----------------------------------------------------------------------------
             If sActualMin <> "" And sActualMax <> "" Then
 
                 'Testing if it is numeric
-                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, VarNameData, ColumnIndexData, FormulaData, SpecCharData)
+                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, VarNameData, ColumnIndexData, FormulaData, SpecCharData, False)
                 If sFormulaMin = "" Then
                        'MsgBox "Invalid formula will be ignored : " & sActualMin & " / " & sActualVarName
                 Else
-                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, VarNameData, ColumnIndexData, FormulaData, SpecCharData)
+                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, VarNameData, ColumnIndexData, FormulaData, SpecCharData, False)
                     If sFormulaMax = "" Then
                             'MsgBox "Invalid formula will be ignored : " & sFormulaMax & " / " & sActualVarName
                     End If
@@ -770,15 +775,21 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
             DoEvents
         Wend
         
-        'Resize for 200 lines entry
-        .ListObjects("o" & ClearString(sSheetName)).Resize .Range(.Cells(C_eStartLinesLLData, 1), _
-        .Cells(C_iNbLinesLLData + C_eStartLinesLLData, .Cells(C_eStartLinesLLData, 1).End(xlToRight).Column))
+        'Range of the listobject
+        Set LoRng = .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_eStartLinesLLData + 1, .Cells(C_eStartLinesLLData, Columns.Count).End(xlToLeft).Column))
 
-        .Calculate
-        'Now Protect the sheet
+        'Creating the TableObject that will contain the data entry
+        .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = "o" & ClearString(sSheetName)
+        .ListObjects("o" & ClearString(sSheetName)).TableStyle = C_sLLTableStyle
+        
+        'Set the new range for the table
+        Set LoRng = .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_iNbLinesLLData + C_eStartLinesLLData, .Cells(C_eStartLinesLLData, Columns.Count).End(xlToLeft).Column))
+        'Resize for 200 lines entrie
+        .ListObjects("o" & ClearString(sSheetName)).Resize LoRng
+        
+        'Now Protect the sheet,
         .Protect Password:=(C_sLLPassword), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
-
         'Update the custom dictionary
     End With
 
