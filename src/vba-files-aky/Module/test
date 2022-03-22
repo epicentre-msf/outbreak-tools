@@ -1,0 +1,92 @@
+Const TitleDesc As String = "DESCRIPTION"
+Const TitleLocation As String = "LOCATION"
+Const TitleActn As String = "ACTION"
+Const TitleQty As String = "QUANTITY"
+Const SheetRecords As String = "Record"
+Const SheetSmartFilter As String = "SmartFilter"
+Const RowFilter As Long = 2
+Const ColDataToPaste As Long = 2
+Const RowDataToPaste As Long = 7
+Const RangeInResult As String = "K1"
+Const RangeOutResult As String = "K2"
+Sub Inventory_Filter()
+Dim ColDesc As Long: ColDesc = General_Functions_Find_Title(SheetSmartFilter, TitleDesc, IsNeededToExist:=True, IsWhole:=True).Column
+Dim ColLocation As Long: ColLocation = General_Functions_Find_Title(SheetSmartFilter, TitleLocation, IsNeededToExist:=True, IsWhole:=True).Column
+Dim ColActn As Long: ColActn = General_Functions_Find_Title(SheetSmartFilter, TitleActn, IsNeededToExist:=True, IsWhole:=True).Column
+Dim ColQty As Long: ColQty = General_Functions_Find_Title(SheetSmartFilter, TitleQty, IsNeededToExist:=True, IsWhole:=True).Column
+Dim CounterQty As Long
+Dim TotalQty As Long
+Dim TotalIn As Long
+Dim TotalOut As Long
+Dim RangeFiltered As Range
+    Call Select_Sheet(SheetSmartFilter)
+    If Cells(Rows.Count, ColDataToPaste).End(xlUp).Row > RowDataToPaste - 1 Then Rows(RowDataToPaste & ":" & Cells(Rows.Count, "B").End(xlUp).Row).Delete
+    Sheets(SheetRecords).AutoFilterMode = False
+    If Cells(RowFilter, ColDesc).Value <> "" Or Cells(RowFilter, ColLocation).Value <> "" Or Cells(RowFilter, ColActn).Value <> "" Then ' 1. If Cells(RowFilter, ColDesc).Value <> "" Or Cells(RowFilter, ColLocation).Value <> "" Or Cells(RowFilter, ColActn).Value <> ""
+    With Sheets(SheetRecords).UsedRange
+    If Sheets(SheetSmartFilter).Cells(RowFilter, ColDesc).Value <> "" Then .AutoFilter Field:=General_Functions_Find_Title(SheetRecords, TitleDesc, IsNeededToExist:=True, IsWhole:=True).Column, Criteria1:=Sheets(SheetSmartFilter).Cells(RowFilter, ColDesc).Value
+    If Sheets(SheetSmartFilter).Cells(RowFilter, ColLocation).Value <> "" Then .AutoFilter Field:=General_Functions_Find_Title(SheetRecords, TitleLocation, IsNeededToExist:=True, IsWhole:=True).Column, Criteria1:=Sheets(SheetSmartFilter).Cells(RowFilter, ColLocation).Value
+    If Sheets(SheetSmartFilter).Cells(RowFilter, ColActn).Value <> "" Then .AutoFilter Field:=General_Functions_Find_Title(SheetRecords, TitleActn, IsNeededToExist:=True, IsWhole:=True).Column, Criteria1:=Sheets(SheetSmartFilter).Cells(RowFilter, ColActn).Value
+    'If we don't use a filter we would need to use a cycle For/to or For/Each Cell in range
+    'to determine whether or not the row meets the criteria that we are looking and then
+    'save it on an array, collection, dictionary, etc
+    'IG: For CounterRow = 2 To TotalRows
+    'If Sheets(SheetSmartFilter).Cells(RowFilter, ColDesc).Value <> "" and Sheets(SheetRecords).cells(CounterRow,ColDescInRecords).Value= Sheets(SheetSmartFilter).Cells(RowFilter, ColDesc).Value then
+    'Redim Preserve MyUnecessaryArray(UnecessaryNumber) ''Save to array: (UnecessaryNumber)=MyUnecessaryArray. Or in a dictionary, etc. At the end, we would transpose this values into the sheet, at the end
+    'both are the same, but, just try to see the time invested on each logic.
+    If .Cells(1, 1).End(xlDown).Value <> "" Then Set RangeFiltered = .Rows("2:" & Sheets(SheetRecords).Cells(Rows.Count, "A").End(xlUp).Row).SpecialCells(xlCellTypeVisible)
+    'If it is not <>"" means that there was not filtered data!
+    If RangeFiltered Is Nothing Then MsgBox "Err01Inventory_Filter: No data was found with the given criteria!", vbCritical: Call ExcelNormal: End
+    RangeFiltered.Copy Destination:=Cells(RowDataToPaste, ColDataToPaste)
+    TotalQty = Cells(Rows.Count, ColQty).End(xlUp).Row
+    For CounterQty = RowDataToPaste + 1 To TotalQty
+    If Cells(CounterQty, ColActn).Value = "In" Then ' 2. If Cells(CounterQty, ColActn).Value = "In"
+    TotalIn = Cells(CounterQty, ColQty).Value + TotalIn
+    ElseIf Cells(CounterQty, ColActn).Value = "Out" Then ' 2. If Cells(CounterQty, ColActn).Value = "In"
+    TotalOut = Cells(CounterQty, ColQty).Value + TotalOut
+    End If ' 2. If Cells(CounterQty, ColActn).Value = "In"
+    Next CounterQty
+    Range(RangeInResult).Value = TotalIn
+    Range(RangeOutResult).Value = -(TotalOut)
+    End With
+    End If ' 1. If Cells(RowFilter, ColDesc).Value <> "" Or Cells(RowFilter, ColLocation).Value <> "" Or Cells(RowFilter, ColActn).Value <> ""
+End Sub
+
+
+https://devtut.github.io/excelvba/
+
+
+
+
+Sub Select_Sheet(NameSheet As String, Optional VerifyExistanceOnly As Boolean)
+    On Error GoTo Err01Select_Sheet
+    Sheets(NameSheet).Visible = True
+    If VerifyExistanceOnly = False Then ' 1. If VerifyExistanceOnly = False
+    Sheets(NameSheet).Select
+    Sheets(NameSheet).AutoFilterMode = False
+    Sheets(NameSheet).Cells.EntireRow.Hidden = False
+    Sheets(NameSheet).Cells.EntireColumn.Hidden = False
+    End If ' 1. If VerifyExistanceOnly = False
+    If 1 = 2 Then '99. If error
+Err01Select_Sheet:
+    MsgBox "Err01Select_Sheet: Sheet " & NameSheet & " doesn't exist!", vbCritical: Call ExcelNormal: On Error GoTo -1: End
+    End If '99. If error
+End Sub
+
+
+Function General_Functions_Find_Title(InSheet As String, TitleToFind As String, Optional InRange As Range, Optional IsNeededToExist As Boolean, Optional IsWhole As Boolean) As Range
+Dim DummyRange As Range
+    On Error GoTo Err01General_Functions_Find_Title
+    If InRange Is Nothing Then ' 1. If InRange Is Nothing
+        Set DummyRange = IIf(IsWhole = True, Sheets(InSheet).Cells.Find(TitleToFind, LookAt:=xlWhole), Sheets(InSheet).Cells.Find(TitleToFind, LookAt:=xlPart))
+    Else ' 1. If InRange Is Nothing
+        Set DummyRange = IIf(IsWhole = True, Sheets(InSheet).Range(InRange.Address).Find(TitleToFind, LookAt:=xlWhole), Sheets(InSheet).Range(InRange.Address).Find(TitleToFind, LookAt:=xlPart))
+    End If ' 1. If InRange Is Nothing
+    Set General_Functions_Find_Title = DummyRange
+    If 1 = 2 Or DummyRange Is Nothing Then '99. If error
+Err01General_Functions_Find_Title:
+        If IsNeededToExist = True Then MsgBox "Err01General_Functions_Find_Title: Ttile '" & TitleToFind & "' was not found in sheet '" & InSheet & "'", vbCritical: Call ExcelNormal: On Error GoTo -1: End
+    End If '99. If error
+End Function
+
+
