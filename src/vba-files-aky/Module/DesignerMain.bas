@@ -43,7 +43,6 @@ End Sub
 ' will be in use instead of the first one.
 '
 Sub LoadGeoFile()
-    
     Call Helpers.BeginWork(Application)
 
     bGeoLoaded = False
@@ -136,18 +135,19 @@ Sub LoadGeoFile()
     Call EndWork(Application)
 End Sub
 
-'GENERATE THE LINELIST DATA =========================================================================================
+'GENERATE THE LINELIST DATA  =========================================================================================================================
 
-'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 'This is the Sub for generating the data of the linelist using the input in the designer
 ' The main entry point is the BuildList function which creates the Linelist-patient sheet as
 ' well as all the forms in the linelist
-'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Sub GenerateData()
     Dim bGood As Boolean
     bGood = DesignerMainHelpers.ControlForGenerate(bGeoLoaded)
 
-   BeginWork xlsapp:=Application
+    BeginWork xlsapp:=Application
    
     If Not bGood Then
         DesignerMainHelpers.ShowHideCmdValidation show:=False
@@ -159,8 +159,10 @@ Sub GenerateData()
     Dim ChoicesHeaders  As BetterArray          'Choices headers
     Dim ChoicesData     As BetterArray          'Choices data
     Dim ExportData      As BetterArray          'Export data
+    Dim TransData       As BetterArray          'Translation data
     Dim sPath           As String
     Dim Wkb             As Workbook
+    Dim iOpenLL         As Integer
     
     'Be sure the actual Workbook is not opened
     
@@ -169,74 +171,81 @@ Sub GenerateData()
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
-                                          
+                                                                                
     Set Wkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
-    
-    
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadDic")
-    
     'Create the Dictionnary data
     Set DictHeaders = Helpers.GetHeaders(Wkb, C_sParamSheetDict, C_eStartLinesDictHeaders)
-    
     'Create the data table of linelist patient using the dictionnary
     Set DictData = Helpers.GetData(Wkb, C_sParamSheetDict, C_eStartLinesDictData)
-    
     'Create the choices data
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadList")
-    
     'Create the dictionnary for the choices sheet
     Set ChoicesHeaders = Helpers.GetHeaders(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesHeaders)
-    
     'Create the table for the choices
     Set ChoicesData = Helpers.GetData(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesData)
-       
     'Reading the export sheet
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadExport")
-    
     'Create parameters for export
     Set ExportData = Helpers.GetData(Wkb, C_sParamSheetExport, C_eStartLinesExportData)
+    'Translation data
+    Set TransData = New BetterArray
+    With Wkb.Sheets(C_sParamSheetTranslation)
+        TransData.FromExcelRange .Cells(C_eStartlinestransdata, 2), DetectLastRow:=True, DetectLastColumn:=True
+    End With
 
     Wkb.Close savechanges:=False
-    
     Set Wkb = Nothing
     
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
-        
+    
     'Creating the linelist using the dictionnary and choices data as well as export data
     'The BuildList procedure is in the linelist
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName) & ".xlsb"
 
-    
-    Call DesignerBuildList.BuildList(DictHeaders, DictData, ChoicesHeaders, ChoicesData, ExportData, sPath)
-    
+    Call DesignerBuildList.BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, sPath)
     DoEvents
-
+    
     EndWork xlsapp:=Application
-
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
     
     Call SetInputRangesToWhite
-    
+
     SheetMain.Shapes("SHP_OpenLL").Visible = msoTrue
 
-    
+    iOpenLL = MsgBox TranslateMsg("MSG_OpenLL") , vbQuestion + vbYesNo, "Linelist"
+
+    If iOpenLL = vbYes Then
+        Call OpenLL()
+    End If
+
+    'Setting the memory data to nothing
+    Set DictHeaders = Nothing
+    Set DictData = Nothing
+    Set ChoicesHeaders = Nothing
+    Set ChoicesData = Nothing
+    Set ExportData = Nothing
+    Set TransData = Nothing
+
 End Sub
 
+'Adding some controls before generating the linelist  ==============================================================================================================================
 
-'Adding some controls before generating the linelist  =============================================================================================================================
 Public Sub Control()
+    
     'Put every range in white before the control
-    
     Call SetInputRangesToWhite
-    
     Dim bGood As Boolean
+    
     'Control to be sure we can generate a linelist
     bGood = DesignerMainHelpers.ControlForGenerate(bGeoLoaded)
     If Not bGood Then
         Exit Sub
     Else
+    
         'Now that everything is fine, continue to generation process but issue a warning in case it will
         'replace the previous existing file
+        
         Call SetInputRangesToWhite
         
         If Dir(SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb") <> "" Then
@@ -247,12 +256,10 @@ Public Sub Control()
         End If
         
         DesignerMainHelpers.ShowHideCmdValidation True
-        
     End If
 End Sub
 
-
-'OPEN THE GENERATED LINELIST ==========================================================================================
+'OPEN THE GENERATED LINELIST =========================================================================================================================================================
 
 Sub OpenLL()
     'Be sure that the directory and the linelist name are not empty
@@ -288,11 +295,6 @@ Sub OpenLL()
     'Then open it
     Application.Workbooks.Open Filename:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
 End Sub
-
-
-
-
-
 
 
 

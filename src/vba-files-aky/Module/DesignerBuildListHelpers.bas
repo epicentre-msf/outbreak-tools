@@ -188,7 +188,7 @@ Public Function AddSpaceToHeaders(xlsapp As Excel.Application, _
     AddSpaceToHeaders = ""
     With xlsapp
         i = 1
-        While i <= .Sheets(sSheetName).Cells(iStartLine, 1).End(xlToRight).Column And Replace(UCase(.Sheets(sSheetName).Cells(iStartLine, i).value), " ", "") <> Replace(UCase(sHeader), " ", "")
+        While i <= .Sheets(sSheetName).Cells(iStartLine, Columns.Count).End(xlToLeft).Column And Replace(UCase(.Sheets(sSheetName).Cells(iStartLine, i).value), " ", "") <> Replace(UCase(sHeader), " ", "")
             i = i + 1
         Wend
         If Replace(UCase(xlsapp.Sheets(sSheetName).Cells(iStartLine, i).value), " ", "") = Replace(UCase(sHeader), " ", "") Then
@@ -560,7 +560,7 @@ End Sub
 
 Public Function ValidationFormula(sFormula As String, VarNameData As BetterArray, _
                                          ColumnIndexData As BetterArray, FormulaData As BetterArray, _
-                                         SpecCharData As BetterArray) As String
+                                         SpecCharData As BetterArray, Optional bLocal As Boolean = True) As String
     'Returns a string of cleared formula
 
     ValidationFormula = ""
@@ -638,7 +638,11 @@ Public Function ValidationFormula(sFormula As String, VarNameData As BetterArray
                             icolNumb = ColumnIndexData.Item(VarNameData.IndexOf(sAlphaValue))
                             sAlphaValue = Cells(C_eStartLinesLLData + 1, icolNumb).Address(False, True)
                         ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
-                            sAlphaValue = GetInternationalFormula(sAlphaValue)
+                            If bLocal Then
+                                sAlphaValue = GetInternationalFormula(sAlphaValue)
+                            Else
+                                sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
+                            End If
                         End If
                     End If
                     FormulaAlphaData.Push sAlphaValue, sLetter
@@ -666,27 +670,26 @@ Public Function ValidationFormula(sFormula As String, VarNameData As BetterArray
 End Function
 
 
-Public Function GetInternationalFormula(sFormula As String)
+Public Function GetInternationalFormula(sFormula As String) As String
+    
+    Dim sprevformula As String
+    Dim slocalformula As String
 
-    Dim T_Formula
-    Dim i As Integer
+    GetInternationalFormula = ""
 
-    T_Formula = SheetFormulas.ListObjects(C_sTabExcelFunctions).DataBodyRange
-    i = 1
-    While i < UBound(T_Formula, 1) And UCase(T_Formula(i, 2)) <> UCase(sFormula)
-        i = i + 1
-    Wend
-    If UCase(T_Formula(i, 2)) = UCase(sFormula) Then
-        Select Case Application.International(xlCountryCode)
-        Case 33                                  'FR
-            GetInternationalFormula = T_Formula(i, 1)
-        Case 44, 1                               'EN US
-            GetInternationalFormula = T_Formula(i, 2)
-        Case 34                                  'ES
-            GetInternationalFormula = T_Formula(i, 3)
-        End Select
+    'The formula is in English, I need to take the international
+    'value of the formula, and avoid using the table of formulas
+
+    If (sFormula <> "") Then
+        sprevformula = Range(A1).formula
+        'Setting the formula to a range
+        Range(A1).formula = sFormula
+        'retrieving the local formula
+        GetInternationalFormula = Range(A1).formulalocal
     End If
-    ReDim T_Formula(0)
+        'Reseting the previous formula
+    Range(A1).formula = sprevformula
+
 End Function
 
 
@@ -696,7 +699,7 @@ Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAler
     With oRange.Validation
         .Delete
         Select Case LCase(sTypeValidation)
-        Case "integer"                           'numerique
+        Case "integer"                           'if the validation should be for integer
             Select Case iAlertType
             Case 1                               '"error"
                 .Add Type:=xlValidateWholeNumber, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:=iMin, Formula2:=iMax
@@ -705,7 +708,7 @@ Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAler
             Case Else
                 .Add Type:=xlValidateWholeNumber, AlertStyle:=xlValidAlertInformation, Operator:=xlBetween, Formula1:=iMin, Formula2:=iMax
             End Select
-        Case "date"                              'date
+        Case "date"                              'Date
             Select Case iAlertType
             Case 1                               '"error"
                 .Add Type:=xlValidateDate, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:=iMin, Formula2:=iMax
@@ -714,7 +717,7 @@ Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAler
             Case Else
                 .Add Type:=xlValidateDate, AlertStyle:=xlValidAlertInformation, Operator:=xlBetween, Formula1:=iMin, Formula2:=iMax
             End Select
-        Case Else                                'decimal
+        Case Else                                'Decimals
             If InStr(1, LCase(sTypeValidation), "decimal") > 0 Then
                 Select Case iAlertType
                 Case 1                           '"error"
