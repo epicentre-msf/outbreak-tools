@@ -9,20 +9,20 @@ Public Const C_sSheetDesTrans           As String = "designer-translation" 'Shee
 
 'MODULES ==========================================================================================================================================================================
 
-Public Const C_sModMain                 As String = "DesignerMain" 'Main module of the designer
-Public Const C_sModDesTrans             As String = "DesignerTranslation" 'Translation module for the designer
-Public Const C_sLLTrans                 As String = "" 'Translation module for the linelist
-Public Const C_sModLLExport             As String = "LinelistExport" 'Export module in the linelist
-Public Const C_sModLLGeo                As String = "LinelistGeo" 'Geo module in the linelist for geo formula design
-Public Const C_sModLinelist             As String = "LinelistEvents" 'Events and buttons in one sheet of type linelist
-Public Const C_sModLLMigration          As String = "LinelistMigration" 'Migration of the linelist
-Public Const C_sModLLShowHide           As String = "LinelistShowHide" 'ShowHide logic
-Public Const C_sModLLConstants          As String = "LinelistConstants" 'Constants of the linelist program
-Public Const C_sModEsthConstants          As String = "EstheticConstants" 'Constants for esthetic things in program
+Public Const C_sModMain                 As String = "DesignerMain"          'Main module of the designer
+Public Const C_sModDesTrans             As String = "DesignerTranslation"   'Translation module for the designer
+Public Const C_sLLTrans                 As String = ""                      'Translation module for the linelist
+Public Const C_sModLLExport             As String = "LinelistExport"        'Export module in the linelist
+Public Const C_sModLLGeo                As String = "LinelistGeo"           'Geo module in the linelist for geo formula design
+Public Const C_sModLinelist             As String = "LinelistEvents"        'Events and buttons in one sheet of type linelist
+Public Const C_sModLLMigration          As String = "LinelistMigration"     'Migration of the linelist
+Public Const C_sModLLShowHide           As String = "LinelistShowHide"      'ShowHide logic
+Public Const C_sModLLConstants          As String = "LinelistConstants"     'Constants of the linelist program
+Public Const C_sModEsthConstants        As String = "EstheticConstants"   'Constants for esthetic things in program
 Public Const C_sModDesHelpers           As String = "DesignerMainHelpers"
 Public Const C_sModHelpers              As String = "Helpers"
-Public Const C_sModLLChange                As String = "LinelistChange" 'Change Event linked to one sheet of type linelist
-Public Const C_sModLLTrans               As String = "LinelistTranslation"
+Public Const C_sModLLChange             As String = "LinelistChange"     'Change Event linked to one sheet of type linelist
+Public Const C_sModLLTrans              As String = "LinelistTranslation"
 
 'CLASSES ==========================================================================================================================================================================
 Public Const C_sClaBA                   As String = "BetterArray"
@@ -31,27 +31,27 @@ Public Const C_sClaBA                   As String = "BetterArray"
 
 'Ranges in the main sheet of the designer
 
-Public Const C_sRngPathDic               As String = "RNG_PathDico" 'Range with path to the dictionary
-Public Const C_sRngEdition               As String = "RNG_Edition" 'Range for messages and editions
-Public Const C_sRngLLDir                 As String = "RNG_LLDir" 'Range for the linelist Dir (where to save the linelist)
-Public Const C_sRngLLName                As String = "RNG_LLName" 'Range for the linelist name in the designer
+Public Const C_sRngPathDic               As String = "RNG_PathDico"     'Range with path to the dictionary
+Public Const C_sRngEdition               As String = "RNG_Edition"      'Range for messages and editions
+Public Const C_sRngLLDir                 As String = "RNG_LLDir"        'Range for the linelist Dir (where to save the linelist)
+Public Const C_sRngLLName                As String = "RNG_LLName"       'Range for the linelist name in the designer
 Public Const C_sRngLangDes               As String = "RNG_LangDesigner" 'Range for the language of the designer
 Public Const C_sRngLangSetup             As String = "RNG_LangSetup" 'Range for the language of the setup file
 Public Const C_sRngLabLangDes            As String = "RNG_LabLangDesigner" 'Range for label for designer language
 Public Const C_sRngLangGeo               As String = "RNG_LangGeo" 'Range for the language of the headings of the geo
 Public Const C_sRngPathGeo               As String = "RNG_PathGeo" 'Range to the path to the geo file
 Public Const C_sRngLLFormLang            As String = "RNG_LLForm" 'Languages for the forms in the linelist
-Public Const C_sRngLLPassword           As String = "RNG_LLPassword" 'Password for debugging the linelist
+Public Const C_sRngLLPassword            As String = "RNG_LLPassword" 'Password for debugging the linelist
 
 'Messages in the designer ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
 'Inform the designer's user to check for incoherences
 
 Public Const C_sMsgCheckErrorSheet      As String = "MSG_ErrorSheet" 'Something wrong with the one sheet
-Public Const C_sMsgCheckCloseLL         As String = "MSG_CloseLL" 'Inform designer user to close the linelist
-Public Const C_sMsgCheckLL              As String = "MSG_CheckLL" 'Check the linelist (if something is weird or it will be replaced)
-Public Const C_sMsgCheckLLName          As String = "MSG_LLName" 'Check the linelist name
-Public Const C_sMsgCheckExits           As String = "MSG_exists" 'Check the linelist exists in the folder
+Public Const C_sMsgCheckCloseLL         As String = "MSG_CloseLL"   'Inform designer user to close the linelist
+Public Const C_sMsgCheckLL              As String = "MSG_CheckLL"   'Check the linelist (if something is weird or it will be replaced)
+Public Const C_sMsgCheckLLName          As String = "MSG_LLName"    'Check the linelist name
+Public Const C_sMsgCheckExits           As String = "MSG_exists"    'Check the linelist exists in the folder
 Public Const C_sMsgCheckPathLL          As String = "MSG_PathLL"
 Public Const C_sMsgCheckSheetType       As String = "MSG_SheetType" 'Ask the user to check the type of one sheet in the setup file
 Public Const C_sMsgCreatedSheet         As String = "MSG_LLCreated"
