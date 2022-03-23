@@ -63,6 +63,8 @@ Public Const C_sDictSheetTypeAdm        As String = "admin"
 Public Const C_sDictStatusMan As String = "mandatory"
 Public Const C_sDictStatusOpt As String = "optional"
 Public Const C_sDictStatusHid As String = "hidden"
+Public Const C_sDictStatusUserHid as string = "hidden by user"
+Public Const C_sDictStatusDesHid as string = "hidden by designer"
 
 'Control --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 

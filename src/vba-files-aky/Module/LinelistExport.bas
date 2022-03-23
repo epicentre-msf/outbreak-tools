@@ -209,7 +209,7 @@ Sub Export(iTypeExport As Byte)
             i = 1
             While i <= PathData.UpperBound
                 PathData.Item(i) = Replace(xlsapp.WorksheetFunction.Trim(PathData.Items(i)), "+", "")
-                Debug.Print VarNameData.Includes(PathData.Items(i))
+
                 If VarNameData.Includes(PathData.Items(i)) Then
                     sSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
                     PathData.Item(i) = Sheets(sSheetName).Range(PathData.Items(i)).value
@@ -247,8 +247,6 @@ Sub Export(iTypeExport As Byte)
     xlsapp.Quit
     Set xlsapp = Nothing
 
-   ' ActiveSheet.Protect Password:=C_PWD, DrawingObjects:=True, Contents:=True, Scenarios:=True _
-    '                                                                                       , AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
 End Sub
 
 
