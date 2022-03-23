@@ -1,5 +1,4 @@
 Attribute VB_Name = "Helpers"
-
 'Basic Helper functions used in the creation of the linelist and other stuffs
 'Most of them are explicit functions. Contains all the ancillary sub/
 'Functions used when creating the linelist and also in the linelist
@@ -38,20 +37,27 @@ Public Function GetColor(sColorCode As String)
 End Function
 
 
+Public Sub ProtectSheet(optional pwd as String = C_sLLPassword)
+     ActiveSheet.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
+                         AllowFormattingColumns:=True
+
+End Sub
+
 'This will set the actual application properties to be able to work correctly
-Public Sub BeginWork(xlsapp As Excel.Application, Optional bvisbility As Boolean = True)
+Public Sub BeginWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean = True)
     xlsapp.ScreenUpdating = False
-   ' xlsapp.DisplayAlerts = False
-    'xlsapp.Calculation = xlCalculationManual
-    'xlsapp.Cursor = xlWait
+    xlsapp.DisplayAlerts = False
+    xlsapp.Calculation = xlCalculationManual
+    xlsapp.DisplayStatusbar = bstatusbar
 End Sub
 
 
-Public Sub EndWork(xlsapp As Excel.Application, Optional bvisbility As Boolean = True)
+Public Sub EndWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean = True)
     xlsapp.ScreenUpdating = True
-    'xlsapp.DisplayAlerts = True
-    'xlsapp.Cursor = xlDefault
-    'xlsapp.Calculation = xlCalculationAutomatic
+    xlsapp.DisplayAlerts = True
+    xlsapp.Calculation = xlCalculationAutomatic
+    xlsapp.DisplayStatusbar = bstatusbar
 End Sub
 
 'Load files and folders
@@ -67,7 +73,7 @@ Public Function LoadFile(Optional sFilters As String) As String 'lla
         .Filters.Clear
         .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile'lla
 
-        If .show = True Then
+        If .Show = True Then
             LoadFile = .SelectedItems(1)
         End If
     End With
@@ -86,7 +92,7 @@ Public Function LoadFolder() As String
         .Title = "Chose your directory"          'MSG_ChooseDir
         .Filters.Clear
     
-        If .show = True Then
+        If .Show = True Then
             LoadFolder = .SelectedItems(1)
         End If
     End With
@@ -195,11 +201,9 @@ Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Byte) As Be
     Set Data = Nothing
 End Function
 
-
-
 'Set validation list on a range
 
-Sub SetValidation(oRange As Range, sValidList As String, sAlertType As Byte, sMessage As String)
+Sub SetValidation(oRange As Range, sValidList As String, sAlertType As Byte, Optional sMessage As String = vbNullString)
 
     With oRange.Validation
         .Delete
@@ -215,7 +219,7 @@ Sub SetValidation(oRange As Range, sValidList As String, sAlertType As Byte, sMe
         .IgnoreBlank = True
         .InCellDropdown = True
         .InputTitle = ""
-        .errorTitle = ""
+        .ErrorTitle = ""
         .InputMessage = ""
         .ErrorMessage = sMessage
         .ShowInput = True
@@ -323,7 +327,7 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
     lngLo = lngMin
     lngHi = lngMax
     Do
-        ' Chercher, ï¿½ partir de lngHi, une valeur < strMidValue
+        ' Chercher, Ã¯Â¿Â½ partir de lngHi, une valeur < strMidValue
         Do While T_aTrier(lngHi) >= strMidValue
             lngHi = lngHi - 1
             If lngHi <= lngLo Then Exit Do
@@ -336,7 +340,7 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
         ' Echanger les valeurs lngLo et lngHi
         T_aTrier(lngLo) = T_aTrier(lngHi)
  
-        ' Chercher ï¿½ partir de lngLo une valeur >= strMidValue
+        ' Chercher Ã¯Â¿Â½ partir de lngLo une valeur >= strMidValue
         lngLo = lngLo + 1
         Do While T_aTrier(lngLo) < strMidValue
             lngLo = lngLo + 1
@@ -360,11 +364,11 @@ End Sub
 
 Public Function IsEmptyTable(T_aTest) As Boolean
 
-    Dim Test As Variant
+    Dim test As Variant
 
     IsEmptyTable = False
     On Error GoTo crash
-    Test = UBound(T_aTest)
+    test = UBound(T_aTest)
     On Error GoTo 0
     Exit Function
 
@@ -373,177 +377,129 @@ crash:
 
 End Function
 
+'Filter a table listobject on one condition and get the values of that table or all the unique values of one column
+Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 As String, _
+                             Optional iFiltindex2 As Integer = 0, Optional sValue2 As String = vbNullString, _
+                             Optional iFiltindex3 As Integer = 0, Optional sValue3 As String = vbNullString, _
+                             Optional returnIndex As Integer = -99, _
+                             Optional bAllData As Boolean = True) As BetterArray
+    Dim Rng As Range
+    Dim Data As BetterArray
+    Dim breturnAllData As Boolean
 
-'This function gets unique values from a table of two dimensions converted to a BetterArray table
-' Get unique values from a table on two dimensions (or more)
-Public Function GetUnique(ByVal T_table As Variant, Optional ByVal col1 As Integer = -99, Optional ByVal col2 As Integer = -99, Optional ByVal index As Variant) As Variant
-
-    Dim i, k, j As Long                          'for the first line
-    Dim outCol As New Collection                 'I will stock pair values here
-    Dim bindValues                               'all binded values
-    Dim outTable
-    Dim indexCols
+    With lo.Range
     
-    'If the table is empty, return empty table
-    If IsEmptyTable(T_table) Then
-        ReDim outTable(0)
-        GetUnique = outTable
-        Exit Function
-    End If
-    
-    'If you give nothing, I will check on all the columns
-    If col1 = -99 And col2 = -99 And IsEmptyTable(index) Then
-        ' you can end up here with a one dimensional table, we need to be sure we have two dimensional table
-        ReDim indexCols(UBound(T_table, 2))
-        i = 1
-        While i <= UBound(indexCols)
-            indexCols(i) = i
-            i = i + 1
-        Wend
-    ElseIf col2 = -99 And IsEmptyTable(index) Then
-        ReDim indexCols(1)
-        indexCols(1) = col1
-    ElseIf IsEmptyTable(index) Then
-        ReDim indexCols(2)
-        indexCols(1) = col1
-        indexCols(2) = col2
-    ElseIf Not IsEmptyTable(index) Then
-        indexCols = index
-    End If
-    
-    ' Check the table index is not empty before entering the whole cycle
-    If Not IsEmptyTable(indexCols) Then
-    
-        'Stock elements in a table by binding them I guess the binding character will be most
-        'of the time absent from my data. The binding character here is (&123&;
+        .AutoFilter Field:=iFiltindex1, Criteria1:=sValue1
         
-        'Bind everything in the indexCols
+        'Add other Filters if required
+        If iFiltindex2 > 0 Then
+            .AutoFilter Field:=iFiltindex2, Criteria1:=sValue2
+        End If
         
-        ReDim bindValues(UBound(T_table))
-        i = 1
-        While i <= UBound(T_table)
-            k = 1
-            bindValues(i) = ""
-            While k <= UBound(indexCols)
-                bindValues(i) = bindValues(i) & "(&123&;" & CStr(T_table(i, indexCols(k)))
-                k = k + 1
-            Wend
-            i = i + 1
-        Wend
-        
-        On Error Resume Next
-        'Now quick sort the table first
-        Call QuickSort(bindValues, LBound(bindValues), UBound(bindValues))
-        On Error GoTo 0
-        
-        k = 1
-        'adding the first unique values
-        While k <= UBound(indexCols)
-            outCol.Add Split(bindValues(1), "(&123&;")(k)
-            'Count the number items
-            k = k + 1
-        Wend
-        
-        i = 1
-        ' adding the other unique values
-        While i < UBound(bindValues)
-            If (bindValues(i) <> bindValues(i + 1)) Then
-                k = 1
-                While k <= UBound(indexCols)
-                    outCol.Add Split(bindValues(i + 1), "(&123&;")(k)
-                    k = k + 1
-                Wend
-            End If
-            i = i + 1
-        Wend
-        'Returning the table; (outCol.Cout / UBound(indexCols) is the number of unique values
-        ReDim outTable((outCol.Count / UBound(indexCols)), UBound(indexCols))
-        
-        i = 1                                    'will slice over unique number of values
-        j = 1                                    'will slice over all the values of outCol
-        While i <= (outCol.Count / UBound(indexCols))
-            k = 1
-            While (k <= UBound(indexCols))
-                outTable(i, k) = outCol.Item(j)
-                k = k + 1
-                j = j + 1
-            Wend
-            i = i + 1
-        Wend
-        GetUnique = outTable
-    Else
-        'If the column table is empty, return an empty table
-        ReDim outTable(0)
-        GetUnique = outTable
-    End If
-End Function
-
-
-' Function to filter on value of one column, on a two dimensional array
-Public Function GetFilter(ByVal T_table As BetterArray, iCol As Integer, sValue As String) As BetterArray
-
-    Dim targetColumn As BetterArray
-    Dim fCol As Long                             'First and last columns
-    Dim lCol As Long
-    Dim i As Long
-    Dim filteredTable As New BetterArray
+        If iFiltindex3 > 0 Then
+            .AutoFilter Field:=iFiltindex3, Criteria1:=sValue3
+        End If
     
-    Set targetColumn = New BetterArray
-    Set filteredTable = New BetterArray
-    
-    'target column items
-    targetColumn.Items = T_table.ExtractSegment(, ColumnIndex:=iCol)
-    targetColumn.Sort
-    targetColumn.LowerBound = 1
-    fCol = targetColumn.IndexOf(sValue)
-    lCol = targetColumn.LastIndexOf(sValue)
-    targetColumn.Clear
-    Set targetColumn = Nothing
-    
-    filteredTable.Clear
-    filteredTable.LowerBound = 1
-    'Extract the lines of table for each of values found
-    If fCol > 0 And lCol > 0 Then
-        For i = fCol To lCol
-            filteredTable.Push T_table.Item(i)
-        Next
-        Set GetFilter = filteredTable.Clone
-    Else
-        'return the whole table if you where not able to find a match
-        Set GetFilter = T_table.Clone
-    End If
-End Function
-
-
-'Find the index of sValue on column iCol of a BetterArray T_table
-Public Function FindIndex(T_table As BetterArray, iCol As Integer, sValue As String) As Integer
-    Dim T_data As BetterArray
-    Set T_data = New BetterArray
-    T_data.Items = T_table.ExtractSegment(ColumnIndex:=iCol)
-    FindIndex = T_data.IndexOf(sValue)
-    Set T_data = Nothing
-End Function
-
-
-'Find the value of one variable for one column in a sheet
-
-Public Function FindDicColumnValue(sVarname, sColumn)
-    FindDicColumnValue = ""
-    Dim VarNameData As BetterArray
-    Dim sListObjectName As String
-    Set VarNameData = New BetterArray
-    
-    VarNameData.LowerBound = 2 'Because the first line of dictionary is the header
-    sListObjectName = "o" & ClearString(C_sParamSheetDict)
-    With ThisWorkbook.Worksheets(C_sParamSheetDict)
-        VarNameData.FromExcelRange .ListObjects(sListObjectName).ListColumns(C_sDictHeaderVarName).DataBodyRange, _
-                                     DetectLastRow:=True, DetectLastColumn:=False
-                If VarNameData.Includes(sVarname) Then
-                    FindDicColumnValue = .Cells(VarNameData.IndexOf(sVarname), .ListObjects(sListObjectName).ListColumns(sColumn).index).value
-                End If
     End With
-    Set VarNameData = Nothing
+    
+    Set Rng = lo.Range.SpecialCells(xlCellTypeVisible)
+    
+    If returnIndex > 0 Then
+        breturnAllData = False
+    ElseIf bAllData Then
+        breturnAllData = True
+    Else
+        breturnAllData = True
+    End If
+        
+    'Copy and paste to temp
+    With ThisWorkbook.Worksheets(C_sSheetTemp)
+            .Visible = xlSheetHidden
+            .Cells.Clear
+            
+            Rng.Copy Destination:=.Cells(1, 1)
+            
+            Set Data = New BetterArray
+            Data.LowerBound = 1
+            
+            If breturnAllData Then
+                Data.FromExcelRange .Cells(2, 1), DetectLastColumn:=True, DetectLastRow:=True
+            ElseIf returnIndex > 0 Then
+                Data.FromExcelRange .Cells(2, returnIndex), DetectLastColumn:=False, DetectLastRow:=True
+            End If
+            
+            .Cells.Clear
+            .Visible = xlSheetVeryHidden
+    End With
+    
+    lo.AutoFilter.ShowAllData
+    
+    Set FilterLoTable = Data.Clone()
 End Function
+
+'Get unique values of one range in a listobject
+Function GetUniquelo(lo As ListObject, iIndex As Integer) As BetterArray
+
+    Dim Rng As Range
+    Dim Data As BetterArray
+    
+    Set Rng = lo.ListColumns(iIndex).DataBodyRange
+    
+    'Copy and paste to temp
+    With ThisWorkbook.Worksheets(C_sSheetTemp)
+            .Visible = xlSheetHidden
+            .Cells.Clear
+            
+            Rng.Copy Destination:=.Cells(1, 1)
+            
+            Set Data = New BetterArray
+            Data.LowerBound = 1
+            
+            .Range(.Cells(1, 1), .Cells(.Cells(.Rows.Count, 1).End(xlUp).Row, .Cells(1, .Columns.Count).End(xlToLeft).Column)).RemoveDuplicates Columns:=1, Header:=xlNo
+            
+            Data.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
+            .Cells.Clear
+            .Visible = xlSheetVeryHidden
+    End With
+    
+    Set GetUniquelo = Data.Clone()
+    
+    Set Data = Nothing
+    Set Rng = Nothing
+    
+End Function
+
+'Unique of a betteray sorted
+Function GetUniqueBA(BA As BetterArray) As BetterArray
+Dim sval As String
+ Dim i As Integer
+   Dim Outable As BetterArray
+   
+    BA.Sort
+    
+  
+    Set Outable = New BetterArray
+    Outable.LowerBound = 1
+    
+   sval = BA.Item(BA.LowerBound)
+   Outable.Push sval
+   
+    If BA.Length > 0 Then
+        For i = BA.LowerBound To BA.UpperBound
+        If sval <> BA.Item(i) Then
+            sval = BA.Item(i)
+            Outable.Push sval
+        End If
+        Next
+    End If
+    
+    Set GetUniqueBA = Outable.Clone()
+    Set Outable = Nothing
+
+End Function
+
+    
+
 
 Sub StatusBar_Updater(sCpte As Single)
 'increase the status progressBar
@@ -557,6 +513,8 @@ Sub StatusBar_Updater(sCpte As Single)
     DoEvents
     
 End Sub
+
+
 
 
 
