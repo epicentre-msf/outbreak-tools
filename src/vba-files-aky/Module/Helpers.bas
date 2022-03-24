@@ -5,6 +5,7 @@ Attribute VB_Name = "Helpers"
 'itself
 
 Option Explicit
+Public DebugMode
 
 
 Public Function GetColor(sColorCode As String)
@@ -38,9 +39,11 @@ End Function
 
 
 Public Sub ProtectSheet(Optional pwd As String = C_sLLPassword)
-     ActiveSheet.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+    If Not DebugMode Then
+        ActiveSheet.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                          AllowFormattingColumns:=True
+    End If
 
 End Sub
 
