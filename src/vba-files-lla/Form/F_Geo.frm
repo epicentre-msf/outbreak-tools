@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_Geo 
    Caption         =   "GEO Apps"
-   ClientHeight    =   4620
-   ClientLeft      =   -390
-   ClientTop       =   -1995
-   ClientWidth     =   5565
+   ClientHeight    =   9570.001
+   ClientLeft      =   45
+   ClientTop       =   -345
+   ClientWidth     =   10200
    OleObjectBlob   =   "F_Geo.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -14,9 +14,6 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Option Explicit
-
-Const C_PWD As String = "1234"
-
 
 'This command is at the end, when you close the geoapp
 'It basically update all the required data and input selected data in the linelist worksheet
@@ -195,11 +192,14 @@ Private Sub TXT_RechercheHistoF_Change()
 
 End Sub
 
+
 Private Sub UserForm_Initialize() 'lla
 'Manage language
 
     Call TranslateForm(Me, Sheets("linelist-translation").[T_F_Geo])
-    
-End Sub
+        
+    Me.Width = 637
+    Me.Height = 370
 
+End Sub
 

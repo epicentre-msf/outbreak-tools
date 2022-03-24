@@ -1,6 +1,8 @@
 Attribute VB_Name = "DesignerMain"
 Option Explicit
-Dim bGeoLoaded As Boolean 'This will check if the Geodata is loaded or Not: The user have to load a Geobase
+
+    Dim bGeoLoaded As Boolean 'This will check if the Geodata is loaded or Not: The user have to load a Geobase
+    Dim sNameFile As String   'for control name file
  
 'LOADING FILES AND FOLDERS ==============================================================================================================================================
 
@@ -133,6 +135,8 @@ Sub LoadGeoFile()
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
     
+    Call translateHeadGeo 'lla
+    
     Call EndWork(Application)
 End Sub
 
@@ -204,7 +208,8 @@ Sub GenerateData()
         
     'Creating the linelist using the dictionnary and choices data as well as export data
     'The BuildList procedure is in the linelist
-    sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName) & ".xlsb"
+    
+    sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
 
     
     Call DesignerBuildList.BuildList(DictHeaders, DictData, ChoicesHeaders, ChoicesData, ExportData, sPath)
@@ -238,10 +243,18 @@ Public Sub Control()
         'Now that everything is fine, continue to generation process but issue a warning in case it will
         'replace the previous existing file
         Call SetInputRangesToWhite
+
+        SheetMain.Range(C_sRngLLName).value = FileNameControl(SheetMain.Range(C_sRngLLName).value)
         
         If Dir(SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb") <> "" Then
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Correct") & ": " & SheetMain.Range(C_sRngLLName).value & ".xlsb " & TranslateMsg("MSG_Exists")
             SheetMain.Range(C_sRngEdition).Interior.Color = Helpers.GetColor("Grey")
+            If MsgBox(SheetMain.Range(C_sRngLLName).value & ".xlsb " & TranslateMsg("MSG_Exists") & Chr(10) & TranslateMsg("MSG_Question"), vbYesNo, _
+            TranslateMsg("MSG_Title")) = vbNo Then
+                SheetMain.Range(C_sRngLLName).value = ""
+                SheetMain.Range(C_sRngLLName).Interior.Color = GetColor("RedEpi")
+                Exit Sub
+            End If
         Else
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Correct")
         End If
@@ -289,8 +302,57 @@ Sub OpenLL()
     Application.Workbooks.Open Filename:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
 End Sub
 
+Function FileNameControl(sName As String) 'lla
+'In the file name, replace forbidden characters with an underscore
 
+    sName = Replace(sName, "<", "_")
+    sName = Replace(sName, ">", "_")
+    sName = Replace(sName, ":", "_")
+    sName = Replace(sName, "|", "_")
+    sName = Replace(sName, "?", "_")
+    sName = Replace(sName, "/", "_")
+    sName = Replace(sName, "\", "_")
+    sName = Replace(sName, "*", "_")
+    sName = Replace(sName, ".", "_")
+    sName = Replace(sName, """", "_")
+    
+    FileNameControl = Trim(sName)
+    
+End Function
 
+Function translateHeadGeo()
+'translation of column headers in the GEO tab
+
+    Dim sIsoCountry As String, sCountry As String, sSubCounty As String, sWard As String, sPlace As String, sFacility As String
+
+    Select Case [RNG_LLForm].value
+        Case "English"
+            sIsoCountry = "ENG"
+        Case "Français"
+            sIsoCountry = "FRA"
+        Case "Español"
+            sIsoCountry = "SPA"
+        Case "Portugués"
+            sIsoCountry = "POR"
+        Case Else
+            sIsoCountry = "ARA"
+    End Select
+
+    sCountry = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 2, False)
+    sSubCounty = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 3, False)
+    sWard = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 4, False)
+    sPlace = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 5, False)
+    sFacility = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 6, False)
+        
+    Sheets("GEO").Range("A1,E1,J1,P1,Z1").value = sCountry
+    Sheets("GEO").Range("F1,K1,Q1,Y1").value = sSubCounty
+    Sheets("GEO").Range("L1,R1,X1").value = sWard
+    Sheets("GEO").Range("S1").value = sPlace
+    Sheets("GEO").Range("W1").value = sFacility
+    
+    Sheets("linelist-translation").[RNG_Language].value = [RNG_LLForm].value 'check Language of linelist's forms
+
+End Function
 
 
 
