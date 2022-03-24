@@ -13,6 +13,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
+
+
+
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -20,17 +25,17 @@ Option Explicit
 Private Sub CMD_Copier_Click()
 
     Dim T_temp As BetterArray
-    Dim geoSheet As String
-    geoSheet = "GEO"
     Set T_temp = New BetterArray
+    Dim geosheet As String
+    Dim Rng As Range
 
-    ActiveSheet.Unprotect (C_PWD)
+    ActiveSheet.Unprotect (C_sLLPassword)
 
     Select Case iGeoType
         'In case you selected the Geo data
     Case 0
         'updating the histo data if needed
-        With Sheets(geoSheet).ListObjects("T_HistoGeo")
+        With ThisWorkbook.worksheets(C_sSheetGeo).ListObjects(C_sTabHistoGeo)
             If Not .DataBodyRange Is Nothing Then
                 T_temp.FromExcelRange .DataBodyRange
                 T_temp.Sort
@@ -47,7 +52,7 @@ Private Sub CMD_Copier_Click()
             'Now rewrite the histo data in the list object
             If T_HistoGeo.Length > 0 Then
                 T_HistoGeo.Sort
-                T_HistoGeo.ToExcelRange Destination:=Sheets(geoSheet).Range(Cells(2, .Range.Column).Address)
+                T_HistoGeo.ToExcelRange Destination:=ThisWorkbook.worksheets(C_sSheetGeo).Range(Cells(2, .Range.Column).Address)
                 'resize the list object
                 .Resize .Range.CurrentRegion
                 .DataBodyRange.RemoveDuplicates Columns:=1, Header:=xlYes
@@ -66,7 +71,7 @@ Private Sub CMD_Copier_Click()
         T_temp.Clear
         'In Case we are dealing with the health facility (basically the same thing with little modifications)
     Case 1
-        With Sheets(geoSheet).ListObjects("T_HistoHF")
+        With ThisWorkbook.worksheets(C_sSheetGeo).ListObjects(C_sTabHistoHF)
             If Not .DataBodyRange Is Nothing Then
                 T_temp.FromExcelRange .DataBodyRange
                 T_temp.Sort
@@ -82,7 +87,7 @@ Private Sub CMD_Copier_Click()
             'Now rewrite the histo data in the list object
             If (T_HistoHF.Length > 0) Then
                 T_HistoHF.Sort
-                T_HistoHF.ToExcelRange Destination:=Sheets(geoSheet).Range(Cells(2, .Range.Column).Address)
+                T_HistoHF.ToExcelRange Destination:=ThisWorkbook.worksheets(C_sSheetGeo).Range(Cells(2, .Range.Column).Address)
                 'resize the list object
                 .Resize .Range.CurrentRegion
                 .DataBodyRange.RemoveDuplicates Columns:=1, Header:=xlYes
@@ -93,8 +98,7 @@ Private Sub CMD_Copier_Click()
     End Select
     [F_Geo].Hide
     'Protecting the worksheet
-     ActiveSheet.Protect Password:=C_PWD, DrawingObjects:=True, Contents:=True, Scenarios:=True _
-        , AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
+    Call ProtectSheet
 End Sub
 
 'Closing the Geoapp
@@ -171,24 +175,24 @@ End Sub
 
 Private Sub TXT_Recherche_Change()
     'Search any value in geo data
-    Call SearchValue(T_Concat, F_Geo.TXT_Recherche.value)
+    Call SearchValue(F_Geo.TXT_Recherche.value)
 End Sub
 
 Private Sub TXT_RechercheF_Change()
     'Search any value in health facility
-    Call SearchValueF(T_ConcatHF, F_Geo.TXT_RechercheF.value)
+    Call SearchValueF(F_Geo.TXT_RechercheF.value)
 
 End Sub
 
 Private Sub TXT_RechercheHisto_Change()
     'In case there is a change in the historic geographic Search list
-    Call SeachHistoValue(T_HistoGeo, F_Geo.TXT_RechercheHisto.value)
+    Call SeachHistoValue(F_Geo.TXT_RechercheHisto.value)
 
 End Sub
 
 Private Sub TXT_RechercheHistoF_Change()
     'In case there is a change in the historic data
-    Call SeachHistoValueF(T_HistoHF, F_Geo.TXT_RechercheHistoF.value)
+    Call SeachHistoValueF(F_Geo.TXT_RechercheHistoF.value)
 
 End Sub
 

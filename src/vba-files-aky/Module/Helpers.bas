@@ -37,7 +37,7 @@ Public Function GetColor(sColorCode As String)
 End Function
 
 
-Public Sub ProtectSheet(optional pwd as String = C_sLLPassword)
+Public Sub ProtectSheet(Optional pwd As String = C_sLLPassword)
      ActiveSheet.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                          AllowFormattingColumns:=True
@@ -73,7 +73,7 @@ Public Function LoadFile(Optional sFilters As String) As String 'lla
         .Filters.Clear
         .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile'lla
 
-        If .Show = True Then
+        If .show = True Then
             LoadFile = .SelectedItems(1)
         End If
     End With
@@ -92,7 +92,7 @@ Public Function LoadFolder() As String
         .Title = "Chose your directory"          'MSG_ChooseDir
         .Filters.Clear
     
-        If .Show = True Then
+        If .show = True Then
             LoadFolder = .SelectedItems(1)
         End If
     End With
@@ -175,7 +175,7 @@ Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Byte) As Bet
     Headers.LowerBound = 1
     Dim sValue As String
     
-    With Wkb.Worksheets(sSheet)
+    With Wkb.worksheets(sSheet)
         i = 1
         While .Cells(StartLine, i).value <> ""
         'Clear the values in the sheet when adding thems
@@ -195,7 +195,7 @@ Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Byte) As Be
     Dim Data As BetterArray
     Set Data = New BetterArray
     Data.LowerBound = 1
-    Data.FromExcelRange Wkb.Worksheets(sSheetName).Cells(StartLine, 1), DetectLastRow:=True, DetectLastColumn:=True
+    Data.FromExcelRange Wkb.worksheets(sSheetName).Cells(StartLine, 1), DetectLastRow:=True, DetectLastColumn:=True
     'The output of the function is a variant
     Set GetData = Data
     Set Data = Nothing
@@ -219,7 +219,7 @@ Sub SetValidation(oRange As Range, sValidList As String, sAlertType As Byte, Opt
         .IgnoreBlank = True
         .InCellDropdown = True
         .InputTitle = ""
-        .ErrorTitle = ""
+        .errorTitle = ""
         .InputMessage = ""
         .ErrorMessage = sMessage
         .ShowInput = True
@@ -327,7 +327,7 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
     lngLo = lngMin
     lngHi = lngMax
     Do
-        ' Chercher, Ã¯Â¿Â½ partir de lngHi, une valeur < strMidValue
+        ' Chercher, ï¿½ partir de lngHi, une valeur < strMidValue
         Do While T_aTrier(lngHi) >= strMidValue
             lngHi = lngHi - 1
             If lngHi <= lngLo Then Exit Do
@@ -340,7 +340,7 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
         ' Echanger les valeurs lngLo et lngHi
         T_aTrier(lngLo) = T_aTrier(lngHi)
  
-        ' Chercher Ã¯Â¿Â½ partir de lngLo une valeur >= strMidValue
+        ' Chercher ï¿½ partir de lngLo une valeur >= strMidValue
         lngLo = lngLo + 1
         Do While T_aTrier(lngLo) < strMidValue
             lngLo = lngLo + 1
@@ -364,11 +364,11 @@ End Sub
 
 Public Function IsEmptyTable(T_aTest) As Boolean
 
-    Dim test As Variant
+    Dim Test As Variant
 
     IsEmptyTable = False
     On Error GoTo crash
-    test = UBound(T_aTest)
+    Test = UBound(T_aTest)
     On Error GoTo 0
     Exit Function
 
@@ -413,7 +413,7 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
     End If
         
     'Copy and paste to temp
-    With ThisWorkbook.Worksheets(C_sSheetTemp)
+    With ThisWorkbook.worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
             
@@ -446,7 +446,7 @@ Function GetUniquelo(lo As ListObject, iIndex As Integer) As BetterArray
     Set Rng = lo.ListColumns(iIndex).DataBodyRange
     
     'Copy and paste to temp
-    With ThisWorkbook.Worksheets(C_sSheetTemp)
+    With ThisWorkbook.worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
             

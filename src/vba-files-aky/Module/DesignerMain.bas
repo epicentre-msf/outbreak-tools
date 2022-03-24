@@ -1,6 +1,8 @@
 Attribute VB_Name = "DesignerMain"
 Option Explicit
-Dim bGeoLoaded As Boolean 'This will check if the Geodata is loaded or Not: The user have to load a Geobase
+
+    Dim bGeoLoaded As Boolean 'This will check if the Geodata is loaded or Not: The user have to load a Geobase
+    Dim sNameFile As String   'for control name file
  
 'LOADING FILES AND FOLDERS ==============================================================================================================================================
 
@@ -43,6 +45,7 @@ End Sub
 ' will be in use instead of the first one.
 '
 Sub LoadGeoFile()
+    
     Call Helpers.BeginWork(Application)
 
     bGeoLoaded = False
@@ -82,7 +85,7 @@ Sub LoadGeoFile()
         Next
             
         'Reloading the data from the Geobase
-        For Each oSheet In Wkb.Worksheets
+        For Each oSheet In Wkb.worksheets
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_EnCours") & oSheet.Name
             AdmData.Clear
             AdmHeader.Clear
@@ -132,22 +135,23 @@ Sub LoadGeoFile()
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
     
+    Call translateHeadGeo 'lla
+    
     EndWork xlsapp:=Application
 End Sub
 
-'GENERATE THE LINELIST DATA  =========================================================================================================================
+'GENERATE THE LINELIST DATA =========================================================================================
 
-'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 'This is the Sub for generating the data of the linelist using the input in the designer
 ' The main entry point is the BuildList function which creates the Linelist-patient sheet as
 ' well as all the forms in the linelist
-'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub GenerateData()
     Dim bGood As Boolean
     bGood = DesignerMainHelpers.ControlForGenerate(bGeoLoaded)
 
-    BeginWork xlsapp:=Application
+   BeginWork xlsapp:=Application
    
     If Not bGood Then
         DesignerMainHelpers.ShowHideCmdValidation show:=False
@@ -173,19 +177,28 @@ Sub GenerateData()
     End If
                                                                                 
     Set Wkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
+    
+    
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadDic")
+    
     'Create the Dictionnary data
     Set DictHeaders = Helpers.GetHeaders(Wkb, C_sParamSheetDict, C_eStartLinesDictHeaders)
+    
     'Create the data table of linelist patient using the dictionnary
     Set DictData = Helpers.GetData(Wkb, C_sParamSheetDict, C_eStartLinesDictData)
+    
     'Create the choices data
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadList")
+    
     'Create the dictionnary for the choices sheet
     Set ChoicesHeaders = Helpers.GetHeaders(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesHeaders)
+    
     'Create the table for the choices
     Set ChoicesData = Helpers.GetData(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesData)
+       
     'Reading the export sheet
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadExport")
+    
     'Create parameters for export
     Set ExportData = Helpers.GetData(Wkb, C_sParamSheetExport, C_eStartLinesExportData)
     'Translation data
@@ -195,13 +208,15 @@ Sub GenerateData()
     End With
 
     Wkb.Close savechanges:=False
+    
     Set Wkb = Nothing
     
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
-    
+        
     'Creating the linelist using the dictionnary and choices data as well as export data
     'The BuildList procedure is in the linelist
-    sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName) & ".xlsb"
+    
+    sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
 
     Call DesignerBuildList.BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, sPath)
     DoEvents
@@ -210,7 +225,7 @@ Sub GenerateData()
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
     
     Call SetInputRangesToWhite
-
+    
     SheetMain.Shapes("SHP_OpenLL").Visible = msoTrue
 
     iOpenLL = MsgBox(TranslateMsg("MSG_OpenLL") & " " & sPath & " ?", vbQuestion + vbYesNo, "Linelist")
@@ -233,10 +248,13 @@ End Sub
 
 'Adding some controls before generating the linelist  ==================================================================================================================================
 
+'Adding some controls before generating the linelist  =============================================================================================================================
 Public Sub Control()
+    'Put every range in white before the control
     
     'Put every range in white before the control
     Call SetInputRangesToWhite
+    
     Dim bGood As Boolean
     
     'Control to be sure we can generate a linelist
@@ -249,15 +267,24 @@ Public Sub Control()
         'replace the previous existing file
         
         Call SetInputRangesToWhite
+
+        SheetMain.Range(C_sRngLLName).value = FileNameControl(SheetMain.Range(C_sRngLLName).value)
         
         If Dir(SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb") <> "" Then
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Correct") & ": " & SheetMain.Range(C_sRngLLName).value & ".xlsb " & TranslateMsg("MSG_Exists")
             SheetMain.Range(C_sRngEdition).Interior.Color = Helpers.GetColor("Grey")
+            If MsgBox(SheetMain.Range(C_sRngLLName).value & ".xlsb " & TranslateMsg("MSG_Exists") & Chr(10) & TranslateMsg("MSG_Question"), vbYesNo, _
+            TranslateMsg("MSG_Title")) = vbNo Then
+                SheetMain.Range(C_sRngLLName).value = ""
+                SheetMain.Range(C_sRngLLName).Interior.Color = GetColor("RedEpi")
+                Exit Sub
+            End If
         Else
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Correct")
         End If
         
         DesignerMainHelpers.ShowHideCmdValidation True
+        
     End If
 End Sub
 
@@ -289,6 +316,7 @@ Sub OpenLL()
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CheckLL")
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         SheetMain.Range(C_sRngLLDir).Interior.Color = Helpers.GetColor("RedEpi")
+        ShowHideCmdValidation show:=False
         Sheets("Main").Shapes("SHP_OpenLL ").Visible = msoFalse
         Exit Sub
     End If
@@ -296,6 +324,65 @@ Sub OpenLL()
     'Then open it
     Application.Workbooks.Open Filename:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
 End Sub
+
+
+
+Function FileNameControl(sName As String) 'lla
+'In the file name, replace forbidden characters with an underscore
+
+    sName = Replace(sName, "<", "_")
+    sName = Replace(sName, ">", "_")
+    sName = Replace(sName, ":", "_")
+    sName = Replace(sName, "|", "_")
+    sName = Replace(sName, "?", "_")
+    sName = Replace(sName, "/", "_")
+    sName = Replace(sName, "\", "_")
+    sName = Replace(sName, "*", "_")
+    sName = Replace(sName, ".", "_")
+    sName = Replace(sName, """", "_")
+    
+    FileNameControl = Trim(sName)
+    
+End Function
+
+Function translateHeadGeo()
+'translation of column headers in the GEO tab
+
+    Dim sIsoCountry As String, sCountry As String, sSubCounty As String, sWard As String, sPlace As String, sFacility As String
+    
+    
+    'J'ai des problËmes d'encodage et probablement il va y en avoir sur d'autres pcs liÈs aux noms des langues
+    sIsoCountry = GetLanguageCode(SheetMain.Range(C_sRngLLFormLang).value)
+    'Select Case [RNG_LLForm].value
+     '   Case "English"
+           ' sIsoCountry = "ENG"
+      '  Case "Fran√ßais"
+          '  sIsoCountry = "FRA"
+       ' Case "Espa√±ol"
+         '   sIsoCountry = "SPA"
+       ' Case "Portugu√©s"
+        '    sIsoCountry = "POR"
+        'Case Else
+         '   sIsoCountry = "ARA"
+    'End Select
+
+    sCountry = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 2, False)
+    sSubCounty = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 3, False)
+    sWard = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 4, False)
+    sPlace = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 5, False)
+    sFacility = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 6, False)
+        
+    Sheets("GEO").Range("A1,E1,J1,P1,Z1").value = sCountry
+    Sheets("GEO").Range("F1,K1,Q1,Y1").value = sSubCounty
+    Sheets("GEO").Range("L1,R1,X1").value = sWard
+    Sheets("GEO").Range("S1").value = sPlace
+    Sheets("GEO").Range("W1").value = sFacility
+    
+    Sheets("linelist-translation").[RNG_Language].value = [RNG_LLForm].value 'check Language of linelist's forms
+
+End Function
+
+
 
 
 
