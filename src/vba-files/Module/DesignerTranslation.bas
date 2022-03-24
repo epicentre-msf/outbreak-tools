@@ -131,6 +131,9 @@ Sub TranslateDesigner()
         T_values.Clear
         T_codes.Clear
         Sheets("Main").Range("RNG_Edition").value = TranslateMsg("MSG_Traduit")
+        
+        Sheets("Main").Range("RNG_LLName").NoteText TranslateMsg("NoteText_Forbidden_Caracteres") 'lla
+        
         Application.ScreenUpdating = True
     End If
 End Sub
