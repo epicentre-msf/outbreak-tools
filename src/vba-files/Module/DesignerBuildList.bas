@@ -198,7 +198,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ChoicesHeader
         '.Visible = True
         .ActiveWindow.DisplayZeros = True
     End With
- 
+
     xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     xlsapp.Quit
     Set xlsapp = Nothing
