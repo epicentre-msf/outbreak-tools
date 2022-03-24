@@ -85,6 +85,38 @@ Function GetDictionaryData() As BetterArray
     Set DictData = Nothing
 End Function
 
+'Retrieve all the Choices data, excluding the headers
+Function GetChoicesData() As BetterArray
+    Dim ChoicesData As BetterArray
+    Set ChoicesData = New BetterArray
+    ChoicesData.LowerBound = 1
+    
+    With ThisWorkbook.Worksheets(C_sParamSheetChoices)
+        .visible = xlSheetHidden
+         ChoicesData.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
+         .visible = xlSheetVeryHidden
+    End With
+    
+    Set GetChoicesData = ChoicesData.Clone
+    Set ChoicesData = Nothing
+End Function
+
+'Retrieve all the Trans data, excluding the headers
+Function GetTransData() As BetterArray
+    Dim TransData As BetterArray
+    Set TransData = New BetterArray
+    TransData.LowerBound = 1
+    
+    With ThisWorkbook.Worksheets(C_sParamSheetTranslation)
+        .visible = xlSheetHidden
+         TransData.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
+         .visible = xlSheetVeryHidden
+    End With
+    
+    Set GetTransData = TransData.Clone
+    Set TransData = Nothing
+End Function
+
 'Retrieve the variable names of the dictionnary on one condition on a variable
 'Here the condition is only equallity (a kind of filter, but for the
 'dictionary only)

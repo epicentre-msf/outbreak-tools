@@ -112,6 +112,8 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     iSheetStartLine = 1
     sCpte = 0
     StatusBar_Updater (sCpte)
+    
+    iNbshifted = 0
 
     For iCounterSheet = 1 To LLSheetNameData.UpperBound
         sCpte = Round(100 * iCounterSheet / LLSheetNameData.UpperBound, 1)
@@ -121,7 +123,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
         'Vector of columnIndexes for one sheet (used for the linelist type sheet)
         ColumnSheetIndexData.Clear
         ColumnSheetIndexData.Items = ColumnIndexData.Slice(iSheetStartLine, iSheetStartLine + LLNbColData.Item(iCounterSheet))
-        iNbshifted = 0
 
         Select Case DictData.Items(iSheetStartLine, DictHeaders.IndexOf(C_sDictHeaderSheetType))
             'On linelist type, build a data entry form
