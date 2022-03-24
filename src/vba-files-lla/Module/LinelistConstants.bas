@@ -152,6 +152,7 @@ Public Const C_sShpGeo = "SHP_GeoApps"
 Public Const C_sShpExpMigration = "SHP_ExportMig"
 Public Const C_sShpImpMigration = "SHP_ImportMig"
 Public Const C_sShpExport = "SHP_Export"
+Public Const C_sShpDebug = "SHP_Debug"
 
 'Ranges in the linelist sheet
 Public Const C_sRngPublickey             As String = "RNG_PublicKey"                     'Name of the range for publickey

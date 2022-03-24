@@ -7,7 +7,7 @@
     "excel_file": "linelist_designer.xlsb",
     "vba_folder_lla": "src/vba-files-lla",
     "vba_folder_aky": "src/vba-files-aky",
-    "vba_folder": "src/vba-files",
+    "vba_folder": "src/vba-files-lla",
     "ribbon_file": "linelist-designer-ribbon",
     "ribbon_folder": "src/ribbons",
     "logs": "on",

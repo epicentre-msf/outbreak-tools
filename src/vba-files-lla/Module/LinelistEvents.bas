@@ -96,19 +96,21 @@ Sub ClicCmdExport()
     End With
 End Sub
 
+
 Sub ClicCmdDebug()
-    dim pwd as string
-    dim sh as worksheet
+    DebugMode = True
+    Dim pwd As String
+    Dim sh As Worksheet
     pwd = Inputbox("Provide the debugging password", "DEBUG MODE", "1234")
 
     If pwd = C_sLLPassword Then
-        for each sh in ThisWorkbook.Worksheets
-            If sh.protectcontents = True then
-                sh.unprotect pwd
-            end if
-        next
+        For Each sh In ThisWorkbook.worksheets
+            If sh.protectcontents = True Then
+                sh.Unprotect pwd
+            End If
+        Next
     Else
-        Msgbox("wrong pasword", vbok, "DEBUG MODE")
+        MsgBox "Wrong Password!", vbok, "DEBUG MODE"
     End If
 End Sub
 
