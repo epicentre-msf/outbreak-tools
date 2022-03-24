@@ -14,12 +14,13 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
+
 Option Explicit
 Option Base 1
 
 Private Sub CMD_Fermer_Click()
     F_NomVisible.Hide
-    Call WriteVisibility
+    'Call WriteVisibility
 End Sub
 
 Private Sub LST_NomChamp_Click()

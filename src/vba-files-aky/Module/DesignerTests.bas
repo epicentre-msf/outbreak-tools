@@ -23,13 +23,55 @@ Sub TestValidation()
     sFormula = "IF(ISBLANK(date_notification)," & Chr(34) & Chr(34) & ",EPIWEEK(date_notification))"
     IsValidation = False
     
-    Debug.Print ValidationFormula(sFormula, VarNameData, ColumnIndexData, FormulaData, SpecCharData)
+    Debug.Print ValidationFormula(sFormula, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
 
 End Sub
 
  
 'Test of Opening the Control for Generate with different scenario
+Sub TestInternationalFormula()
+
+    Dim sFormula As String
+    
+    sFormula = "TODAY() - 365"
+    Debug.Print GetInternationalFormula(sFormula)
+
+End Sub
 
 
+'Test for the dictionary
 
-'Test for the
+Sub TesHeaders()
+
+Dim test As BetterArray
+Set test = GetDataFromCondition("Status", "mandatory", True)
+
+Debug.Print isInDictHeaders("Variable name")
+
+End Sub
+
+Sub TestFilterLo()
+
+Dim lo As ListObject
+Dim test As BetterArray
+
+Set lo = ThisWorkbook.Worksheets("Geo").ListObjects("T_ADM4")
+
+Set test = FilterTableLo(lo, 1, "Baringo", 2, "Baringo Central", 3, "Ewalel/Chapchap", returnIndex:=4)
+
+Debug.Print test.Item(1)
+
+End Sub
+
+Sub TestUniquelo()
+
+Dim lo As ListObject
+Dim test As BetterArray
+
+Set lo = ThisWorkbook.Worksheets("Geo").ListObjects("T_ADM4")
+
+Set test = GetUniquelo(lo, 4)
+Debug.Print test.Item(1)
+
+End Sub
+

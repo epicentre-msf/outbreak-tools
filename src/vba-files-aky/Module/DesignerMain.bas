@@ -95,7 +95,7 @@ Sub LoadGeoFile()
             If Not AdmNames.Includes(oSheet.Name) Then
                 SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Error_Sheet") & oSheet.Name
                 
-                Call EndWork(Application)
+                EndWork xlsapp:=Application
                 Exit Sub
             End If
                 
@@ -132,7 +132,7 @@ Sub LoadGeoFile()
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
     
-    Call EndWork(Application)
+    EndWork xlsapp:=Application
 End Sub
 
 'GENERATE THE LINELIST DATA  =========================================================================================================================
@@ -213,11 +213,13 @@ Sub GenerateData()
 
     SheetMain.Shapes("SHP_OpenLL").Visible = msoTrue
 
-    iOpenLL = MsgBox TranslateMsg("MSG_OpenLL") , vbQuestion + vbYesNo, "Linelist"
+    iOpenLL = MsgBox(TranslateMsg("MSG_OpenLL") & " " & sPath & " ?", vbQuestion + vbYesNo, "Linelist")
 
     If iOpenLL = vbYes Then
-        Call OpenLL()
+        Call OpenLL
     End If
+
+    ShowHideCmdValidation True
 
     'Setting the memory data to nothing
     Set DictHeaders = Nothing
@@ -229,7 +231,7 @@ Sub GenerateData()
 
 End Sub
 
-'Adding some controls before generating the linelist  ==============================================================================================================================
+'Adding some controls before generating the linelist  ==================================================================================================================================
 
 Public Sub Control()
     
@@ -287,7 +289,6 @@ Sub OpenLL()
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CheckLL")
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         SheetMain.Range(C_sRngLLDir).Interior.Color = Helpers.GetColor("RedEpi")
-        ShowHideCmdValidation show:=False
         Sheets("Main").Shapes("SHP_OpenLL ").Visible = msoFalse
         Exit Sub
     End If
