@@ -19,6 +19,8 @@ Attribute VB_Exposed = False
 
 
 
+
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -65,7 +67,7 @@ Private Sub CMD_Copier_Click()
         If T_temp.Length > 0 Then
             Application.EnableEvents = False
             'Clear the cells before filling
-            Range(ActiveCell.Address, ActiveCell.Offset(, 4)).value = ""
+            Range(ActiveCell.Address, ActiveCell.Offset(, 3)).value = ""
             T_temp.ToExcelRange Destination:=Range(ActiveCell.Address), TransposeValues:=True
             Application.EnableEvents = True
         End If

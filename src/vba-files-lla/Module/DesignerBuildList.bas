@@ -691,6 +691,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
             End If
 
         'STATUS, TYPE and CONTROLS ==================================================================================================
+            .Columns(iCounterSheetLLCol).EntireColumn.Autofit
 
             'Updating the notes according to the column's Status ----------------------------------------------------------------------------
             Call DesignerBuildListHelpers.AddStatus(xlsapp.worksheets(sSheetName), _
@@ -779,7 +780,6 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
             End If
 
             'After input every headers, auto fit the columns and unlock data entry part
-            .Columns(iCounterSheetLLCol).EntireColumn.Autofit
             .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Locked = bLockData
 
             'Updating the counters
@@ -790,8 +790,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
         
         'Range of the listobject
         Set LoRng = .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_eStartLinesLLData + 1, .Cells(C_eStartLinesLLData, Columns.Count).End(xlToLeft).Column))
-
-        'Creating the TableObject that will contain the data entry
+'        'Creating the TableObject that will contain the data entry
         .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = "o" & ClearString(sSheetName)
         .ListObjects("o" & ClearString(sSheetName)).TableStyle = C_sLLTableStyle
         
@@ -799,8 +798,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
         Set LoRng = .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_iNbLinesLLData + C_eStartLinesLLData, .Cells(C_eStartLinesLLData, Columns.Count).End(xlToLeft).Column))
         'Resize for 200 lines entrie
         .ListObjects("o" & ClearString(sSheetName)).Resize LoRng
-        
-        'Now Protect the sheet,
+     '   Now Protect the sheet,
         .Protect Password:=(C_sLLPassword), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
         'Update the custom dictionary
