@@ -65,7 +65,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
             transValue.Clear
             'binding all the lines together
             transValue.Items = T_Adm4.Item(i)              'This is oneline of the adm
-            T_Concat.Item(i) = transValue.ToString(Separator:="|", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
+            T_Concat.Item(i) = transValue.Item(1) & " | " & transValue.Item(2) & " | " & transValue.Item(3) & " | " & transValue.Item(4)
         Next
 
         T_Concat.Sort

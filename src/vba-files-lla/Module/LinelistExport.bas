@@ -53,7 +53,7 @@ Private Function GetExportValues(iType As Byte, sSheetName As String) As BetterA
 
     For i = 1 To YesNoExportData.UpperBound
         If YesNoExportData.Item(i) = "yes" And SheetNameData.Item(i) = sSheetName Then
-            ExportHeadersData.Push ThisWorkbook.worksheets(C_sParamSheetDict).Cells(i, 1).value 'Take the varname
+            ExportHeadersData.Push ThisWorkbook.worksheets(C_sParamSheetDict).Cells(i + 1, 1).value 'Take the varname
         End If
     Next
 
@@ -67,9 +67,22 @@ Private Function GetExportValues(iType As Byte, sSheetName As String) As BetterA
         End If
     Next
 
+    On Error GoTo errTranspose
     ExportTableData.ArrayType = BA_MULTIDIMENSION
     ExportTableData.Transpose
     Set GetExportValues = ExportTableData.Clone()
+   
+    Set ExportTableData = Nothing       'Table of all the export data
+    Set ExportColumn = Nothing        'one column of a data to export
+    Set SheetVarNamesData = Nothing   'will contains all the variables for one sheet
+    Set VarNameData = Nothing
+    Set YesNoExportData = Nothing
+    Set ExportHeadersData = Nothing
+    Set SheetNameData = Nothing
+
+    Exit Function
+errTranspose:
+    MsgBox "Unable to transpose Export Table", vbokOnly + vbcritical, "ERROR"
 End Function
 
 
@@ -129,6 +142,7 @@ Sub Export(iTypeExport As Byte)
         i = i + 1
     Wend
     
+    On Error GoTo exportErrHand
     With xlsapp
         .ScreenUpdating = False
         .Visible = False
@@ -210,6 +224,10 @@ Sub Export(iTypeExport As Byte)
     Set ChoicesData = Nothing
     Set TransData = Nothing
 
+    Exit Sub
+exportErrHand:
+    MsgBox "Errors during export", vbokOnly + vbcritical, "ERROR"
+    Exit Sub
 End Sub
 
 
