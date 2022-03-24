@@ -136,6 +136,7 @@ Public Const C_sCmdShowGeoApp = "ClicCmdGeoApp"
 Public Const C_sCmdExportMigration = "ClicExportMigration"
 Public Const C_sCmdImportMigration = "ClicImportMigration"
 Public Const C_sCmdExport = "ClicCmdExport"
+Public Const C_sCmdDebug = "ClicCmdDebug"
 
 'TABLES LISTOBJECTS ===============================================================================================================================================================
 
