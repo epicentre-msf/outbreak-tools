@@ -6,137 +6,113 @@ Option Base 1
 '-------------------------------------------------------------------------------------------------------------------------------------------------------------------
 'We keep the following data are public, so we can make some checks on their content even after initialization
 'Geobases at country level
-Public T_Adm1 As BetterArray                     'Administrative boundaries for level 1 (admin1) and 2 (admin2)
-Public T_Adm2 As BetterArray                     'Administrative boundaries for level 2 (admin2) and 3 (admin3)
-Public T_Adm3 As BetterArray                     'Administrative boundaries for level 3 (admin 3) and 4 (admin3)
-Public T_Adm4 As BetterArray                     'Administrative boundaries table from in the geo database
+Public T_Adm4 As BetterArray                     'Administrative boundaries for level 1 (admin1) and 2 (admin2)
 Public T_HistoGeo As BetterArray                 'Historic of Geo
 Public T_Concat As BetterArray                   'Binding everything for the concatenate for the Geo database
 
 'Health facilities
 Public T_HF As BetterArray                       'Health Facility data in the geo base
-Public T_HF0 As BetterArray                      'Administrative boundaries for level 1 and 2 for Heath Facility
-Public T_HF1 As BetterArray                      'administrative boundaries for level 2 and 3 for health facility
-Public T_HF2 As BetterArray                      'Administrative boundaries for level 3 and 4 for health facility
 Public T_HistoHF As BetterArray                  'Historic of health facility
 Public T_ConcatHF   As BetterArray               'Health Facility concatenated
 
 Public sPlaceSelection As String
-
-'Those are number of rows of admin from 1 to 4. The goal is to use them to check if an update has been made in the geo sheet
-Public iGeoType As Byte
 
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 'This sub loads the geodata from the Geo form to on form in the linenist. There are two types of data:
 'Facility iGeoType = 1 or Geographical informations: iGeotype = 0 Some frame are hidden when one
 'type of geodata should be load (facility) or (geographical informations)
 '
-'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo = 0 or Facility = 1
-    Dim geoSheet As String
-    Dim transValue As Variant                    'transitional value for storing results
-    geoSheet = "GEO"
+    Dim transValue As BetterArray
     Dim i As Integer
-    Dim T_HFTable As Variant
-    
-    Set T_Adm1 = New BetterArray
-    Set T_Adm2 = New BetterArray
-    Set T_Adm3 = New BetterArray
     Set T_Adm4 = New BetterArray
     Set T_Concat = New BetterArray
     Set T_HistoGeo = New BetterArray
-    
+    Set transValue = New BetterArray
+
     Set T_HF = New BetterArray
     Set T_ConcatHF = New BetterArray
     Set T_HistoHF = New BetterArray
-    Set T_HF0 = New BetterArray
-    Set T_HF1 = New BetterArray
-    Set T_HF2 = New BetterArray
+    Set transValue = New BetterArray
 
-    Application.ScreenUpdating = False
+    BeginWork xlsapp:=Application, bstatusbar:=False
 
     ' width and height of the geo formulaire
     [F_Geo].Height = 360
     [F_Geo].Width = 606
+    
+    With ThisWorkbook.worksheets(C_sSheetGeo)
+        'Before doing the whole all thing, we need to test if the T_Adm data is empty or not
+        If (Not .ListObjects(C_sTabADM4).DataBodyRange Is Nothing) Then
+            T_Adm4.FromExcelRange .ListObjects(C_sTabADM4).DataBodyRange
+        End If
 
-    'Before doing the whole all thing, we need to test if the T_Adm data is empty or not
-    If (Not Sheets(geoSheet).ListObjects("T_ADM1").DataBodyRange Is Nothing) Then
-        T_Adm1.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM1").DataBodyRange
-    End If
-    
-    If (Not Sheets(geoSheet).ListObjects("T_ADM2").DataBodyRange Is Nothing) Then
-        T_Adm2.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM2").DataBodyRange
-    End If
-    
-    If (Not Sheets(geoSheet).ListObjects("T_ADM3").DataBodyRange Is Nothing) Then
-        T_Adm3.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM3").DataBodyRange
-    End If
-    
-    If (Not Sheets(geoSheet).ListObjects("T_ADM4").DataBodyRange Is Nothing) Then
-        T_Adm4.FromExcelRange Sheets(geoSheet).ListObjects("T_ADM4").DataBodyRange
-    End If
-       
-        
-    '----- Fill the list of the admins with the unique values for adm1
-    [F_Geo].[LST_Adm1].List = T_Adm1.ExtractSegment(ColumnIndex:=1)
-        
-    '----- Add Caption for  each adminstrative leveles in the form
-    F_Geo.LBL_Adm1.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(1).value
-    F_Geo.LBL_Adm2.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(2).value
-    F_Geo.LBL_Adm3.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(3).value
-    F_Geo.LBL_Adm4.Caption = Sheets(geoSheet).ListObjects("T_ADM4").HeaderRowRange.Item(4).value
-        
-    '------- Concatenate all the tables for the geo
-    For i = T_Adm4.LowerBound To T_Adm4.UpperBound
-        'binding all the lines together
-        transValue = T_Adm4.Item(i)              'This is oneline of the adm
-        T_Concat.Item(i) = CStr(transValue(1)) & " | " & CStr(transValue(2)) & " | " & CStr(transValue(3)) & " | " & CStr(transValue(4))
-    Next
-    T_Concat.Sort
-    '------ Once the concat is created, add it to the list in the form
-    [F_Geo].LST_ListeAgre.List = T_Concat.Items
-    
-    ' Now health facility ----------------------------------------------------------------------------------------------------------
-    If (Not Sheets(geoSheet).ListObjects("T_HF").DataBodyRange Is Nothing) Then
-       
-        T_HFTable = Sheets(geoSheet).ListObjects("T_HF").DataBodyRange
-        T_HF.Items = T_HFTable
-      
-        'unique admin 1
-        T_HF0.Items = GetUnique(T_HFTable, 4)
-        T_HF1.Items = GetUnique(T_HFTable, 4, 3)
-        T_HF2.Items = GetUnique(T_table:=T_HFTable, index:=Array(4, 3, 2))
-         
-        ReDim T_HFTable(1)
-                         
-        ' ----- Fill the list of the admins with the unique values of adm1
-        [F_Geo].[LST_AdmF1].List = T_HF0.Items
-                
-        '-------- Adding caption for each admnistrative levels in the form of the health facility
-        F_Geo.LBL_Adm1F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(4).value
-        F_Geo.LBL_Adm2F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(3).value
-        F_Geo.LBL_Adm3F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(2).value
-        F_Geo.LBL_Adm4F.Caption = Sheets(geoSheet).ListObjects("T_HF").HeaderRowRange.Item(1).value
-        
-        'Creating the concatenate for the Health facility
-        For i = T_HF.LowerBound To T_HF.UpperBound
-            transValue = T_HF.Item(i)
-            T_ConcatHF.Item(i) = CStr(transValue(1)) & " | " & CStr(transValue(2)) & " | " & CStr(transValue(3)) & " | " & CStr(transValue(4))
-        Next i
-        T_ConcatHF.Sort
-        '---- Once the concat is created, add it to the HF form using the list for the concat part
-        [F_Geo].LST_ListeAgreF.List = T_ConcatHF.Items
-    End If
-    'Historic for geographic data and facility data
-    If Not Sheets(geoSheet).ListObjects("T_HistoGeo").DataBodyRange Is Nothing Then
-        T_HistoGeo.FromExcelRange Sheets(geoSheet).ListObjects("T_HistoGeo").DataBodyRange
-        [F_Geo].LST_Histo.List = T_HistoGeo.Items
-    End If
+        '----- Fill the list of the admins with the unique values for adm1
+        transValue.FromExcelRange .ListObjects(C_sTabADM4).ListColumns(1).DataBodyRange
+        Set transValue = GetUniqueBA(transValue)
 
-    If Not Sheets(geoSheet).ListObjects("T_HistoHF").DataBodyRange Is Nothing Then
-        T_HistoHF.FromExcelRange Sheets(geoSheet).ListObjects("T_HistoHF").DataBodyRange
-        [F_Geo].LST_HistoF.List = T_HistoHF.Items
-    End If
+        [F_Geo].[LST_Adm1].List = transValue.Items
+
+        '----- Add Caption for  each adminstrative leveles in the form
+        F_Geo.LBL_Adm1.Caption = .ListObjects(C_sTabADM4).HeaderRowRange.Item(1).value
+        F_Geo.LBL_Adm2.Caption = .ListObjects(C_sTabADM4).HeaderRowRange.Item(2).value
+        F_Geo.LBL_Adm3.Caption = .ListObjects(C_sTabADM4).HeaderRowRange.Item(3).value
+        F_Geo.LBL_Adm4.Caption = .ListObjects(C_sTabADM4).HeaderRowRange.Item(4).value
+    
+        '------- Concatenate all the tables for the geo
+        For i = T_Adm4.LowerBound To T_Adm4.UpperBound
+            transValue.Clear
+            'binding all the lines together
+            transValue.Items = T_Adm4.Item(i)              'This is oneline of the adm
+            T_Concat.Item(i) = transValue.ToString(Separator:="|", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
+        Next
+
+        T_Concat.Sort
+        '------ Once the concat is created, add it to the list in the form
+        [F_Geo].LST_ListeAgre.List = T_Concat.Items
+
+        ' Now health facility ----------------------------------------------------------------------------------------------------------
+        If (Not .ListObjects(C_sTabHF).DataBodyRange Is Nothing) Then
+
+            T_HF.FromExcelRange .ListObjects(C_sTabHF).DataBodyRange
+
+            transValue.Clear
+            'unique admin 1
+            transValue.FromExcelRange .ListObjects(C_sTabHF).ListColumns(4).DataBodyRange
+            Set transValue = GetUniqueBA(transValue)
+
+            ' ----- Fill the list of the admins with the unique values of adm1
+            [F_Geo].[LST_AdmF1].List = transValue.Items
+
+            '-------- Adding caption for each admnistrative levels in the form of the health facility
+            F_Geo.LBL_Adm1F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(4).value
+            F_Geo.LBL_Adm2F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(3).value
+            F_Geo.LBL_Adm3F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(2).value
+            F_Geo.LBL_Adm4F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(1).value
+
+            'Creating the concatenate for the Health facility
+            For i = T_HF.LowerBound To T_HF.UpperBound
+                transValue.Clear
+                transValue.Items = T_HF.Item(i)
+                T_ConcatHF.Item(i) = transValue.ToString(Separator:="|", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
+            Next i
+
+            T_ConcatHF.Sort
+            '---- Once the concat is created, add it to the HF form using the list for the concat part
+            [F_Geo].LST_ListeAgreF.List = T_ConcatHF.Items
+        End If
+        'Historic for geographic data and facility data
+        If Not .ListObjects(C_sTabHistoGeo).DataBodyRange Is Nothing Then
+            T_HistoGeo.FromExcelRange .ListObjects(C_sTabHistoGeo).DataBodyRange
+            [F_Geo].LST_Histo.List = T_HistoGeo.Items
+        End If
+
+        If Not .ListObjects(C_sTabHistoHF).DataBodyRange Is Nothing Then
+            T_HistoHF.FromExcelRange .ListObjects(C_sTabHistoHF).DataBodyRange
+            [F_Geo].LST_HistoF.List = T_HistoHF.Items
+        End If
+    End With
 
     'Showing the form in case of Geo or Health Facility. Geo and Facility are in different frames.
     Select Case iGeoType
@@ -151,8 +127,10 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
         [F_Geo].LBL_Fac1.Visible = True
         [F_Geo].LBL_Geo1.Visible = False
     End Select
-    Application.ScreenUpdating = True
-    
+
+    EndWork xlsapp:=Application
+
+    Set transValue = Nothing
     [F_Geo].show
 End Sub
 
@@ -167,22 +145,24 @@ Sub ShowLst2(sPlace As String)
     [F_Geo].LST_Adm2.Clear
     [F_Geo].LST_Adm3.Clear
     [F_Geo].LST_Adm4.Clear
-    Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
+    Dim T_Aff As BetterArray
+    Dim wksh As Worksheet                     'Aff is for rendering filtered values withing the list
 
     Set T_Aff = New BetterArray
-    
+    Set wksh = ThisWorkbook.worksheets(C_sSheetGeo)
+
     'Search if the value exists in the 2 dimensional table T_Adm1 previously initialized
-    If T_Adm2.Length > 0 Then
-        Set T_Aff = GetFilter(T_Adm2, 1, sPlace)
-    End If
-    
+    Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabADM2), 1, sPlace, returnIndex:=2)
+
     [F_Geo].TXT_Msg.value = sPlace
     'update if only next level is available
     If T_Aff.Length > 0 Then
-        [F_Geo].LST_Adm2.List = T_Aff.ExtractSegment(, ColumnIndex:=2)
+        [F_Geo].LST_Adm2.List = T_Aff.Items
     End If
+
     'Clear
-    T_Aff.Clear
+    Set T_Aff = Nothing
+    Set wksh = Nothing
 End Sub
 
 'Show second list for the facility
@@ -193,161 +173,129 @@ Sub ShowLstF2(sPlace As String)
     [F_Geo].LST_AdmF3.Clear
     [F_Geo].LST_AdmF4.Clear
     Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
-    Set T_Aff = New BetterArray
+    Dim wksh As Worksheet
 
-    If T_HF1.Length > 0 Then
-        Set T_Aff = GetFilter(T_HF1, 1, sPlace)
-    End If
-    
+    Set T_Aff = New BetterArray
+    Set wksh = ThisWorkbook.worksheets(C_sSheetGeo)
+
+    'Just filter and show
+    Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabHF), 4, sPlace, returnIndex:=3)
+    Set T_Aff = GetUniqueBA(T_Aff)
+
+    [F_Geo].TXT_Msg.value = sPlace
+
     If T_Aff.Length > 0 Then
-        [F_Geo].LST_AdmF2.List = T_Aff.ExtractSegment(, ColumnIndex:=2)
-        [F_Geo].TXT_Msg.value = sPlace
-    Else
-        [F_Geo].TXT_Msg.value = sPlace           'No levels
+        [F_Geo].LST_AdmF2.List = T_Aff.Items
     End If
-    T_Aff.Clear
+
+    Set T_Aff = Nothing
+    Set wksh = Nothing
 End Sub
 
 'This function shows the third list for the geobase
-Sub ShowLst3(sPlace As String)
+Sub ShowLst3(sAdm2 As String)
      
     'Clear the two remaining forms
     [F_Geo].LST_Adm3.Clear
     [F_Geo].LST_Adm4.Clear
+    
     Dim sAdm1 As String 'Selected admin 1
-    
-    Dim T_Aff1 As BetterArray                     'Aff is for rendering filtered values withing the list
-    Set T_Aff1 = New BetterArray
-    
     Dim T_Aff As BetterArray
-    Set T_Aff = New BetterArray
-    
+    Dim wksh As Worksheet
+
+    Set wksh = ThisWorkbook.worksheets(C_sSheetGeo)
     sAdm1 = [F_Geo].LST_Adm1.value
+
+    'Just filter and show
+    Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabADM3), 1, sAdm1, 2, sAdm2, returnIndex:=3)
     
-    If T_Adm3.Length > 0 Then
-        'Filter on the adm 1 firts
-        Set T_Aff1 = GetFilter(T_Adm3, 1, sAdm1)
-        'Then filter on adm2
-        Set T_Aff = GetFilter(T_Aff1, 2, sPlace)
-        T_Aff1.Clear
-        Set T_Aff1 = Nothing
-    End If
-    
+    [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value
     'Update the adm3 list in the geoform if the T_Aff3 is not missing
     If T_Aff.Length > 0 Then
-        [F_Geo].LST_Adm3.List = T_Aff.ExtractSegment(, ColumnIndex:=3)
-        [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value
-    Else
-        [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value 'No lower level related
+        [F_Geo].LST_Adm3.List = T_Aff.Items
     End If
-    T_Aff.Clear
+
+    Set T_Aff = Nothing
+    Set wksh = Nothing
 End Sub
 
 'Show the third list of geobase, pretty much the same as before
-Sub ShowLstF3(sPlace As String)
+Sub ShowLstF3(sAdm2 As String)
 
     [F_Geo].LST_AdmF3.Clear
     [F_Geo].LST_AdmF4.Clear
     
-    'first level
-    Dim T_Aff1 As BetterArray                     'Aff is for rendering filtered values withing the list
-    Set T_Aff1 = New BetterArray
-    
-    'second and last level
+    Dim sAdm1 As String
     Dim T_Aff As BetterArray
-    Set T_Aff = New BetterArray
+    Dim wksh As Worksheet
     
-    Dim sAdm As String
-    sAdm = [F_Geo].LST_AdmF1.value
+    Set wksh = ThisWorkbook.worksheets(C_sSheetGeo)
+    sAdm1 = [F_Geo].LST_AdmF1.value
     
-    If T_HF2.Length > 0 Then
-        'Filter on Adm1
-        Set T_Aff1 = GetFilter(T_HF2, 1, sAdm)
-        'Then filter on Adm2
-        Set T_Aff = GetFilter(T_Aff1, 2, sPlace)
-        T_Aff1.Clear
-        Set T_Aff1 = Nothing
-    End If
+    Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabHF), 4, sAdm1, 3, sAdm2, returnIndex:=2)
     
+    [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
+    Set T_Aff = GetUniqueBA(T_Aff)
+
     If T_Aff.Length > 0 Then
-        [F_Geo].LST_AdmF3.List = T_Aff.ExtractSegment(, ColumnIndex:=3)
-        [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
-    Else
-        [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value 'No level 3
+        [F_Geo].LST_AdmF3.List = T_Aff.Items
     End If
-    
-    T_Aff.Clear
+
+    Set T_Aff = Nothing
+    Set wksh = Nothing
 End Sub
 
 'This function shows the fourth list for the Geo (pretty much the same thing as done previously)
-Sub ShowLst4(sPlace As String)
+Sub ShowLst4(sAdm3 As String)
 
     [F_Geo].LST_Adm4.Clear
+
+    Dim T_Aff As BetterArray
+    Dim wksh As Worksheet
+    Dim sAdm1 As String
+    Dim sAdm2 As String
+
+    sAdm1 = [F_Geo].LST_Adm1.value
+    sAdm2 = [F_Geo].LST_Adm2.value
+
+    [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value
     
-    Dim T_Aff1 As BetterArray
-    Set T_Aff1 = New BetterArray
-    
-    Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
-    Set T_Aff = New BetterArray
-    
-    Dim sAdm As String         'Adms selected previously
-    sAdm = [F_Geo].LST_Adm1.value
-    If T_Adm4.Length > 0 Then
-    'Filter on adm1
-        Set T_Aff = GetFilter(T_Adm4, 1, sAdm)
-        sAdm = [F_Geo].LST_Adm2.value
-        'Then filter result on adm2
-        Set T_Aff1 = GetFilter(T_Aff, 2, sAdm)
-        T_Aff.Clear
-        
-        'Then filter on selected adm3
-        Set T_Aff = GetFilter(T_Aff1, 3, sPlace)
-        T_Aff1.Clear
-        Set T_Aff1 = Nothing
-    End If
-    
+    Set wksh = ThisWorkbook.worksheets(C_sSheetGeo)
+    Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabADM4), 1, sAdm1, 2, sAdm2, 3, sAdm3, returnIndex:=4)
+ 
+
     If T_Aff.Length > 0 Then
-        [F_Geo].LST_Adm4.List = T_Aff.ExtractSegment(, ColumnIndex:=4)
-        [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value
-    Else
-        [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value 'No level found
+        [F_Geo].LST_Adm4.List = T_Aff.Items
     End If
-    T_Aff.Clear
+
+    Set T_Aff = Nothing
+    Set wksh = Nothing
 End Sub
 
 'Fourth list of health facility
-Sub ShowLstF4(sPlace As String)
+Sub ShowLstF4(sAdm3 As String)
 
     [F_Geo].LST_AdmF4.Clear
-    Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
-    Set T_Aff = New BetterArray
-    
-    Dim T_Aff1 As BetterArray
-    Set T_Aff1 = New BetterArray
-    
-    Dim sAdm As String 'previously selected admin levels
-    sAdm = [F_Geo].LST_AdmF1.value
-    
-    If T_HF.Length > 0 Then
-        'Filter on adm1
-        Set T_Aff = GetFilter(T_HF, 4, sAdm)
-        'Filter on adm2
-        sAdm = [F_Geo].LST_AdmF2.value
-        Set T_Aff1 = GetFilter(T_Aff, 3, sAdm)
-        T_Aff.Clear
-        'now on adm3
-        sAdm = [F_Geo].LST_AdmF3.value
-        Set T_Aff = GetFilter(T_Aff1, 2, sAdm)
-        T_Aff1.Clear
-        Set T_Aff1 = Nothing
-    End If
+
+    Dim T_Aff As BetterArray
+    Dim wksh As Worksheet
+    Dim sAdm1 As String
+    Dim sAdm2 As String
+
+    sAdm1 = [F_Geo].LST_AdmF1.value
+    sAdm2 = [F_Geo].LST_AdmF2.value
+
+    Set wksh = ThisWorkbook.worksheets(C_sSheetGeo)
+    Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabHF), 4, sAdm1, 3, sAdm2, 2, sAdm3, returnIndex:=1)
+
+    [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF3.value & " | " & [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
 
     If T_Aff.Length > 0 Then
-        [F_Geo].LST_AdmF4.List = T_Aff.ExtractSegment(, ColumnIndex:=1)
-        [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF3.value & " | " & [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
-    Else
-        [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF3.value & " | " & [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value '& " : Pas de niveau 4"
+        [F_Geo].LST_AdmF4.List = T_Aff.Items
     End If
+
+    Set T_Aff = Nothing
+    Set wksh = Nothing
 End Sub
 
 Sub ClearGeo()
@@ -373,7 +321,7 @@ End Sub
 '2- Add values where there are some matches in another table
 '3- Render the table if it is not empty
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Sub SearchValue(T_Concat, ByVal sSearchedValue As String)
+Sub SearchValue(ByVal sSearchedValue As String)
     Dim T_result As BetterArray
     Set T_result = New BetterArray
     Dim i As Integer
@@ -407,7 +355,7 @@ Sub SearchValue(T_Concat, ByVal sSearchedValue As String)
     Set T_result = Nothing
 End Sub
 
-Sub SeachHistoValue(T_HistoGeo, sSearchedValue As String)
+Sub SeachHistoValue(sSearchedValue As String)
     Dim T_result As BetterArray
     Dim i As Integer
     
@@ -438,7 +386,7 @@ Sub SeachHistoValue(T_HistoGeo, sSearchedValue As String)
     Set T_result = Nothing
 End Sub
 
-Sub SearchValueF(T_ConcatHF, sSearchedValue As String)
+Sub SearchValueF(sSearchedValue As String)
     Dim T_result As BetterArray
     Dim i As Integer
 
@@ -469,7 +417,7 @@ Sub SearchValueF(T_ConcatHF, sSearchedValue As String)
     Set T_result = Nothing
 End Sub
 
-Sub SeachHistoValueF(T_HistoHF, sSearchedValue As String)
+Sub SeachHistoValueF(sSearchedValue As String)
 
     Dim T_result As BetterArray
     Dim i As Integer

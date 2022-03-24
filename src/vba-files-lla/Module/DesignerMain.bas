@@ -85,7 +85,7 @@ Sub LoadGeoFile()
         Next
             
         'Reloading the data from the Geobase
-        For Each oSheet In Wkb.Worksheets
+        For Each oSheet In Wkb.worksheets
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_EnCours") & oSheet.Name
             AdmData.Clear
             AdmHeader.Clear
@@ -98,7 +98,7 @@ Sub LoadGeoFile()
             If Not AdmNames.Includes(oSheet.Name) Then
                 SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Error_Sheet") & oSheet.Name
                 
-                Call EndWork(Application)
+                EndWork xlsapp:=Application
                 Exit Sub
             End If
                 
@@ -137,7 +137,7 @@ Sub LoadGeoFile()
     
     Call translateHeadGeo 'lla
     
-    Call EndWork(Application)
+    EndWork xlsapp:=Application
 End Sub
 
 'GENERATE THE LINELIST DATA =========================================================================================
@@ -163,8 +163,10 @@ Sub GenerateData()
     Dim ChoicesHeaders  As BetterArray          'Choices headers
     Dim ChoicesData     As BetterArray          'Choices data
     Dim ExportData      As BetterArray          'Export data
+    Dim TransData       As BetterArray          'Translation data
     Dim sPath           As String
     Dim Wkb             As Workbook
+    Dim iOpenLL         As Integer
     
     'Be sure the actual Workbook is not opened
     
@@ -173,7 +175,7 @@ Sub GenerateData()
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
-                                          
+                                                                                
     Set Wkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
     
     
@@ -199,6 +201,11 @@ Sub GenerateData()
     
     'Create parameters for export
     Set ExportData = Helpers.GetData(Wkb, C_sParamSheetExport, C_eStartLinesExportData)
+    'Translation data
+    Set TransData = New BetterArray
+    With Wkb.Sheets(C_sParamSheetTranslation)
+        TransData.FromExcelRange .Cells(C_eStartlinestransdata, 2), DetectLastRow:=True, DetectLastColumn:=True
+    End With
 
     Wkb.Close savechanges:=False
     
@@ -211,37 +218,54 @@ Sub GenerateData()
     
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
 
-    
-    Call DesignerBuildList.BuildList(DictHeaders, DictData, ChoicesHeaders, ChoicesData, ExportData, sPath)
-    
+    Call DesignerBuildList.BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, sPath)
     DoEvents
-
+    
     EndWork xlsapp:=Application
-
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
     
     Call SetInputRangesToWhite
     
     SheetMain.Shapes("SHP_OpenLL").Visible = msoTrue
 
-    
+    iOpenLL = MsgBox(TranslateMsg("MSG_OpenLL") & " " & sPath & " ?", vbQuestion + vbYesNo, "Linelist")
+
+    If iOpenLL = vbYes Then
+        Call OpenLL
+    End If
+
+    ShowHideCmdValidation True
+
+    'Setting the memory data to nothing
+    Set DictHeaders = Nothing
+    Set DictData = Nothing
+    Set ChoicesHeaders = Nothing
+    Set ChoicesData = Nothing
+    Set ExportData = Nothing
+    Set TransData = Nothing
+
 End Sub
 
+'Adding some controls before generating the linelist  ==================================================================================================================================
 
 'Adding some controls before generating the linelist  =============================================================================================================================
 Public Sub Control()
     'Put every range in white before the control
     
+    'Put every range in white before the control
     Call SetInputRangesToWhite
     
     Dim bGood As Boolean
+    
     'Control to be sure we can generate a linelist
     bGood = DesignerMainHelpers.ControlForGenerate(bGeoLoaded)
     If Not bGood Then
         Exit Sub
     Else
+    
         'Now that everything is fine, continue to generation process but issue a warning in case it will
         'replace the previous existing file
+        
         Call SetInputRangesToWhite
 
         SheetMain.Range(C_sRngLLName).value = FileNameControl(SheetMain.Range(C_sRngLLName).value)
@@ -264,8 +288,7 @@ Public Sub Control()
     End If
 End Sub
 
-
-'OPEN THE GENERATED LINELIST ==========================================================================================
+'OPEN THE GENERATED LINELIST =========================================================================================================================================================
 
 Sub OpenLL()
     'Be sure that the directory and the linelist name are not empty
@@ -302,6 +325,8 @@ Sub OpenLL()
     Application.Workbooks.Open Filename:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
 End Sub
 
+
+
 Function FileNameControl(sName As String) 'lla
 'In the file name, replace forbidden characters with an underscore
 
@@ -324,19 +349,22 @@ Function translateHeadGeo()
 'translation of column headers in the GEO tab
 
     Dim sIsoCountry As String, sCountry As String, sSubCounty As String, sWard As String, sPlace As String, sFacility As String
-
-    Select Case [RNG_LLForm].value
-        Case "English"
-            sIsoCountry = "ENG"
-        Case "Français"
-            sIsoCountry = "FRA"
-        Case "Español"
-            sIsoCountry = "SPA"
-        Case "Portugués"
-            sIsoCountry = "POR"
-        Case Else
-            sIsoCountry = "ARA"
-    End Select
+    
+    
+    'J'ai des problèmes d'encodage et probablement il va y en avoir sur d'autres pcs liés aux noms des langues
+    sIsoCountry = GetLanguageCode(SheetMain.Range(C_sRngLLFormLang).value)
+    'Select Case [RNG_LLForm].value
+     '   Case "English"
+           ' sIsoCountry = "ENG"
+      '  Case "FranÃ§ais"
+          '  sIsoCountry = "FRA"
+       ' Case "EspaÃ±ol"
+         '   sIsoCountry = "SPA"
+       ' Case "PortuguÃ©s"
+        '    sIsoCountry = "POR"
+        'Case Else
+         '   sIsoCountry = "ARA"
+    'End Select
 
     sCountry = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 2, False)
     sSubCounty = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 3, False)

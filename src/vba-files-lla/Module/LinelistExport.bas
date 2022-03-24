@@ -2,61 +2,18 @@ Attribute VB_Name = "LinelistExport"
 
 Option Explicit
 
-'on va avoir besoin de CreateDicTitle dans M_LineList
-'on fonctionne par exclusion
-
-Private Function GetExportHeaders(iTypeExport As Byte, sSheetName As String, _
-                    DictHeaders As BetterArray, DictData As BetterArray, _
-                    VarNamesData As BetterArray) As BetterArray
-
-    Dim ExportHeadersData As BetterArray
-    Dim sExportName As String
-    Dim iFirstIndex As Integer                                'Iterator
-    Dim iLastIndex  As Integer
-    Dim i As Integer
-    Dim sActualExportValue As String
-
-
-
-    Set ExportHeadersData = New BetterArray
-
-
-    iFirstIndex = SheetNameData.IndexOf(sSheetName)
-    iLastIndex = SheetNameData.LastIndexOf(sSheetName)
-
-    If iFirstIndex > 0 And iLastIndex > 0 Then
-
-        For i = iFirstIndex To iLastIndex
-
-            sActualExportValue = ClearString(DictData.Items(i, DictHeaders.IndexOf(sExportName)))
-
-            If sActualExportValue = C_sYes Then
-                'push adms with the variable names
-                ExportHeadersData.Push VarNamesData.Items(i)
-            End If
-        Next
-    End If
-
-    Set GetExportHeaders = ExportHeadersData.Clone
-    Set ExportHeadersData = Nothing
-End Function
-
-
 Private Function GetExportValues(iType As Byte, sSheetName As String) As BetterArray
 
-    Dim SheetNameData As BetterArray 'Will contain all the sheetnames
     Dim ExportTableData As BetterArray   'Table of all the export data
     Dim ExportColumn As BetterArray 'one column of a data to export
     Dim SheetVarNamesData As BetterArray 'will contains all the variables for one sheet
     Dim VarNameData As BetterArray
     Dim YesNoExportData As BetterArray
     Dim ExportHeadersData As BetterArray
+    Dim SheetNameData As BetterArray
 
     Dim sExportName As String 'the header of the export
     Dim i As Integer 'iterator
-    Dim findex As Integer
-    Dim lindex As Integer
-
 
     Set SheetNameData = New BetterArray
     Set ExportTableData = New BetterArray
@@ -90,37 +47,29 @@ Private Function GetExportValues(iType As Byte, sSheetName As String) As BetterA
          sExportName = C_sDictHeaderExport1
     End Select
 
-
-    YesNoExportData.FromExcelRange Sheets(C_sParamSheetDict).ListObjects("o" & ClearString(C_sParamSheetDict)).ListColumns(sExportName).DataBodyRange
-    SheetNameData.FromExcelRange Sheets(C_sParamSheetDict).ListObjects("o" & ClearString(C_sParamSheetDict)).ListColumns(C_sDictHeaderSheetName).DataBodyRange
+    Set YesNoExportData = GetDictionaryColumn(sExportName)
+    Set SheetNameData = GetDictionaryColumn(C_sDictHeaderSheetName)
+    Set SheetVarNamesData = GetDictDataFromCondition(C_sDictHeaderSheetName, sSheetName, True)
 
     For i = 1 To YesNoExportData.UpperBound
         If YesNoExportData.Item(i) = "yes" And SheetNameData.Item(i) = sSheetName Then
-            ExportHeadersData.Push Sheets(C_sParamSheetDict).Cells(i, 1).value 'take the varname
+            ExportHeadersData.Push ThisWorkbook.worksheets(C_sParamSheetDict).Cells(i, 1).value 'Take the varname
         End If
     Next
 
-
-    findex = SheetNameData.IndexOf(sSheetName)
-    lindex = SheetNameData.LastIndexOf(sSheetName)
-
-    If (findex > 0 And lindex > 0) Then
-        VarNameData.FromExcelRange Sheets(C_sParamSheetDict).ListObjects("o" & ClearString(C_sParamSheetDict)).ListColumns(C_sDictHeaderVarName).DataBodyRange
-        SheetVarNamesData.Items = VarNameData.Slice(findex, lindex)
-        
-        For i = 1 To ExportHeadersData.UpperBound
-        
-            If SheetVarNamesData.Includes(ExportHeadersData.Item(i)) Then
-                With Sheets(sSheetName).ListObjects("o" & ClearString(sSheetName))
-                    ExportColumn.FromExcelRange .ListColumns(SheetVarNamesData.IndexOf(ExportHeadersData.Item(i))).DataBodyRange, DetectLastColumn:=False, DetectLastRow:=True
+    For i = 1 To ExportHeadersData.UpperBound
+        If SheetVarNamesData.Includes(ExportHeadersData.Item(i)) Then
+            With ThisWorkbook.worksheets(sSheetName)
+                    ExportColumn.FromExcelRange .Cells(C_eStartLinesLLData, SheetVarNamesData.IndexOf(ExportHeadersData.Item(i))), DetectLastColumn:=False, DetectLastRow:=True
                     ExportTableData.Item(i) = ExportColumn.Items
                     ExportColumn.Clear
-                End With
-            End If
-        Next
-      End If
-     ExportTableData.ArrayType = BA_MULTIDIMENSION
-    Set GetExportValues = ExportTableData
+            End With
+        End If
+    Next
+
+    ExportTableData.ArrayType = BA_MULTIDIMENSION
+    ExportTableData.Transpose
+    Set GetExportValues = ExportTableData.Clone()
 End Function
 
 
@@ -134,6 +83,8 @@ Sub Export(iTypeExport As Byte)
     Dim PathData As BetterArray 'Path to exports
     Dim VarNameData As BetterArray
     Dim ExportHeader As BetterArray
+    Dim ChoicesData As BetterArray
+    Dim TransData As BetterArray
 
 
     Dim i As Integer 'Iterator
@@ -160,10 +111,12 @@ Sub Export(iTypeExport As Byte)
     Set xlsapp = New Excel.Application
 
     'Get all the sheets of type Linelist
-    DictHeaders.FromExcelRange Sheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=False
-    DictData.FromExcelRange Sheets(C_sParamSheetDict).ListObjects("o" & ClearString(C_sParamSheetDict)).DataBodyRange
-    VarNameData.FromExcelRange Sheets(C_sParamSheetDict).ListObjects("o" & ClearString(C_sParamSheetDict)).ListColumns(C_sDictHeaderVarName).DataBodyRange, DetectLastColumn:=False, DetectLastRow:=True
-    
+    Set DictHeaders = GetDictionaryHeaders()
+    Set DictData = GetDictionaryData()
+    Set VarNameData = GetDictionaryColumn(C_sDictHeaderVarName)
+    Set ChoicesData = GetChoicesData()
+    Set TransData = GetTransData()
+
     i = 1
     sPrevSheetName = ""
     While i <= DictData.Length
@@ -182,37 +135,44 @@ Sub Export(iTypeExport As Byte)
         .Workbooks.Add
 
         'Adding the sheets for export
-        .Worksheets(1).Name = C_sParamSheetDict
+        .worksheets(1).Name = C_sParamSheetDict
 
         'Writing the dictionary data
-        DictHeaders.ToExcelRange .Worksheets(C_sParamSheetDict).Cells(1, 1), TransposeValues:=True
-        DictData.ToExcelRange .Worksheets(C_sParamSheetDict).Cells(2, 1)
+        DictHeaders.ToExcelRange .worksheets(C_sParamSheetDict).Cells(1, 1), TransposeValues:=True
+        DictData.ToExcelRange .worksheets(C_sParamSheetDict).Cells(2, 1)
+
+        'Translation and choices sheets
+        .worksheets.Add(after:=.worksheets(C_sParamSheetDict)).Name = C_sParamSheetChoices
+        ChoicesData.ToExcelRange .worksheets(C_sParamSheetChoices).Cells(1, 1)
+
+        .worksheets.Add(after:=.worksheets(C_sParamSheetChoices)).Name = C_sParamSheetTranslation
+        TransData.ToExcelRange .worksheets(C_sParamSheetTranslation).Cells(1, 1)
 
         sPrevSheetName = C_sParamSheetDict
 
         i = 1
         While i <= LLSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = LLSheetData.Items(i)
+            .worksheets.Add(before:=.worksheets(sPrevSheetName)).Name = LLSheetData.Items(i)
             sPrevSheetName = LLSheetData.Items(i)
             ExportData.Clear
 
             Set ExportData = GetExportValues(iTypeExport, sPrevSheetName)
-            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
+            ExportData.ToExcelRange .worksheets(sPrevSheetName).Cells(1, 1)
             i = i + 1
         Wend
 
         'pour l'enregistrement
-        sPath = Sheets(C_sParamSheetExport).Cells(iTypeExport + 1, 5).value
+        sPath = ThisWorkbook.worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, 5).value
 
         If sPath <> "" Then
             PathData.Items = Split(sPath, "+")
             i = 1
             While i <= PathData.UpperBound
                 PathData.Item(i) = Replace(xlsapp.WorksheetFunction.Trim(PathData.Items(i)), "+", "")
-                Debug.Print VarNameData.Includes(PathData.Items(i))
+
                 If VarNameData.Includes(PathData.Items(i)) Then
                     sSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
-                    PathData.Item(i) = Sheets(sSheetName).Range(PathData.Items(i)).value
+                    PathData.Item(i) = ThisWorkbook.worksheets(sSheetName).Range(PathData.Items(i)).value
                 Else
                     PathData.Item(i) = Replace(PathData.Items(i), Chr(34), "")
                 End If
@@ -246,9 +206,10 @@ Sub Export(iTypeExport As Byte)
 
     xlsapp.Quit
     Set xlsapp = Nothing
+    Set DictData = Nothing
+    Set ChoicesData = Nothing
+    Set TransData = Nothing
 
-   ' ActiveSheet.Protect Password:=C_PWD, DrawingObjects:=True, Contents:=True, Scenarios:=True _
-    '                                                                                       , AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
 End Sub
 
 

@@ -42,7 +42,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     [F_Geo].Height = 360
     [F_Geo].Width = 606
     
-    With ThisWorkbook.Worksheets(C_sSheetGeo)
+    With ThisWorkbook.worksheets(C_sSheetGeo)
         'Before doing the whole all thing, we need to test if the T_Adm data is empty or not
         If (Not .ListObjects(C_sTabADM4).DataBodyRange Is Nothing) Then
             T_Adm4.FromExcelRange .ListObjects(C_sTabADM4).DataBodyRange
@@ -131,7 +131,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     EndWork xlsapp:=Application
 
     Set transValue = Nothing
-    [F_Geo].Show
+    [F_Geo].show
 End Sub
 
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -149,7 +149,7 @@ Sub ShowLst2(sPlace As String)
     Dim wksh As Worksheet                     'Aff is for rendering filtered values withing the list
 
     Set T_Aff = New BetterArray
-    Set wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
+    Set wksh = ThisWorkbook.worksheets(C_sSheetGeo)
 
     'Search if the value exists in the 2 dimensional table T_Adm1 previously initialized
     Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabADM2), 1, sPlace, returnIndex:=2)
@@ -176,7 +176,7 @@ Sub ShowLstF2(sPlace As String)
     Dim wksh As Worksheet
 
     Set T_Aff = New BetterArray
-    Set wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
+    Set wksh = ThisWorkbook.worksheets(C_sSheetGeo)
 
     'Just filter and show
     Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabHF), 4, sPlace, returnIndex:=3)
@@ -203,7 +203,7 @@ Sub ShowLst3(sAdm2 As String)
     Dim T_Aff As BetterArray
     Dim wksh As Worksheet
 
-    Set wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
+    Set wksh = ThisWorkbook.worksheets(C_sSheetGeo)
     sAdm1 = [F_Geo].LST_Adm1.value
 
     'Just filter and show
@@ -229,7 +229,7 @@ Sub ShowLstF3(sAdm2 As String)
     Dim T_Aff As BetterArray
     Dim wksh As Worksheet
     
-    Set wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
+    Set wksh = ThisWorkbook.worksheets(C_sSheetGeo)
     sAdm1 = [F_Geo].LST_AdmF1.value
     
     Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabHF), 4, sAdm1, 3, sAdm2, returnIndex:=2)
@@ -260,7 +260,7 @@ Sub ShowLst4(sAdm3 As String)
 
     [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value
     
-    Set wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
+    Set wksh = ThisWorkbook.worksheets(C_sSheetGeo)
     Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabADM4), 1, sAdm1, 2, sAdm2, 3, sAdm3, returnIndex:=4)
  
 
@@ -285,7 +285,7 @@ Sub ShowLstF4(sAdm3 As String)
     sAdm1 = [F_Geo].LST_AdmF1.value
     sAdm2 = [F_Geo].LST_AdmF2.value
 
-    Set wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
+    Set wksh = ThisWorkbook.worksheets(C_sSheetGeo)
     Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabHF), 4, sAdm1, 3, sAdm2, 2, sAdm3, returnIndex:=1)
 
     [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF3.value & " | " & [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
