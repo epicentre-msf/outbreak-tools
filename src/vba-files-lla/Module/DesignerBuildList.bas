@@ -405,11 +405,13 @@ End Sub
             .Cells(2, 10).Left + 2 * C_iCmdWidth + 40, .Cells(2, 1).Top, C_sShpExport, _
             "Export", _
             C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdExport)
-        
+
+         
         Call DesignerBuildListHelpers.AddCmd(xlsapp, sSheetName, _
-            .Cells(2, 10).Left + 3 * C_iCmdWidth + 60, .Cells(2, 1).Top, C_sShpExport, _
+            .Cells(2, 10).Left + 3 * C_iCmdWidth + 60, .Cells(2, 1).Top, C_sShpDebug, _
             "Debug", _
-            C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdDebug, sShpColor:="Orange")
+            C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdDebug, sShpColor:="Orange", sShpTextColor:="Black")
+        
         
         'Logo (copy from the sheet main)
         SheetMain.Shapes("SHP_Logo").Copy
