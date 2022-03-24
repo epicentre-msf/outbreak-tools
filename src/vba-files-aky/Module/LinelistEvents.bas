@@ -72,7 +72,7 @@ Sub ClicCmdExport()
     With F_Export
         i = 2
         While i <= 6
-            If Not IsError(Sheets("Exports").Cells(i, 4).value) Then 'lla
+            If Not isError(Sheets("Exports").Cells(i, 4).value) Then 'lla
                 If LCase(Sheets("Exports").Cells(i, 4).value) <> "active" Then
                     .Controls("CMD_Export" & i - 1).Visible = False
                 Else
@@ -92,7 +92,7 @@ Sub ClicCmdExport()
         iHeight = .CMD_Retour.Top + .CMD_Retour.Height + 24 + 10
         .Height = iHeight
         .Width = 168
-        .Show
+        .show
     End With
 End Sub
 
@@ -119,7 +119,7 @@ Sub EventSheetLineListPatient(oRange As Range)
                 
                 If oRange.value <> "" Then
                     'Filter on adm1
-                    Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabADM2), 1, oRange.value, returnIndex:=2)
+                    Set T_geo = FilterLoTable(ThisWorkbook.worksheets(C_sSheetGeo).ListObjects(C_sTabADM2), 1, oRange.value, returnIndex:=2)
                     'Build the validation list for adm2
                     sList = T_geo.ToString(Separator:=",", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
                     Call Helpers.SetValidation(oRange.Offset(, 1), sList, 2)
@@ -134,7 +134,7 @@ Sub EventSheetLineListPatient(oRange As Range)
         
                 If oRange.value <> vbNullString Then
                     'Take the adm3 table
-                    Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabADM3), 1, oRange.Offset(, -1).value, 2, oRange.value, returnIndex:=3)
+                    Set T_geo = FilterLoTable(ThisWorkbook.worksheets(C_sSheetGeo).ListObjects(C_sTabADM3), 1, oRange.Offset(, -1).value, 2, oRange.value, returnIndex:=3)
                     sList = T_geo.ToString(Separator:=",", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
                     Call Helpers.SetValidation(oRange.Offset(, 1), sList, 2)
                     T_geo.Clear
@@ -148,7 +148,7 @@ Sub EventSheetLineListPatient(oRange As Range)
         
                 If oRange.value <> vbNullString Then
                     'Take the adm4 table
-                    Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabADM4), 1, _
+                    Set T_geo = FilterLoTable(ThisWorkbook.worksheets(C_sSheetGeo).ListObjects(C_sTabADM4), 1, _
                                              oRange.Offset(, -2).value, 2, oRange.Offset(, -1).value, 3, oRange.value, returnIndex:=4)
 
                     sList = T_geo.ToString(Separator:=",", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)

@@ -84,7 +84,7 @@ Public Sub TransferSheet(xlsapp As Excel.Application, sSheetName As String)
     'DesignerWorkbook is the actual workbook we want to copy from
 
 
-    DesignerWorkbook.Worksheets(sSheetName).Copy
+    DesignerWorkbook.worksheets(sSheetName).Copy
     DoEvents
 
     On Error Resume Next
@@ -369,13 +369,13 @@ End Sub
 
 
 'Add Geo
-Sub AddGeo(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders as BetterArray, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
-          iSheetSubSecStartLine As Integer, iDictLine As Integer, sVarname As String, sMessage As String, iNbshifted as Integer)
+Sub AddGeo(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders As BetterArray, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
+          iSheetSubSecStartLine As Integer, iDictLine As Integer, sVarName As String, sMessage As String, iNbshifted As Integer)
 
-    With xlsapp.Worksheets(sSheetName)
+    With xlsapp.worksheets(sSheetName)
         .Cells(iSheetStartLine, iCol).Interior.Color = GetColor("Orange")
                         'update the columns only for the geo
-        Call Add4GeoCol(xlsapp, DictData, DictHeaders, sSheetName, sVarname, iSheetStartLine, _
+        Call Add4GeoCol(xlsapp, DictData, DictHeaders, sSheetName, sVarName, iSheetStartLine, _
                         iCol, sMessage, _
                         iSheetSubSecStartLine, iDictLine, iNbshifted)
 
@@ -395,9 +395,9 @@ End Sub
 '@iStartLine: Starting line of Data in the Linelist
 '@iStartLineSubLab: Starting line of the Sub label
 
-Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders as BetterArray, _ 
-            sSheetName As String, sVarname As String, iStartLine As Integer, iCol As Integer, _
-            sMessage As String, iStartLineSubLab As Integer, iDictLine As Integer, iNbshifted as Integer)
+Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders As BetterArray, _
+            sSheetName As String, sVarName As String, iStartLine As Integer, iCol As Integer, _
+            sMessage As String, iStartLineSubLab As Integer, iDictLine As Integer, iNbshifted As Integer)
 
 
     Dim sLab As String 'Temporary variable, label of the Admin level
@@ -409,13 +409,13 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
     
     iRow = iDictLine + iNbshifted
     
-    With xlsapp.Worksheets(sSheetName)
+    With xlsapp.worksheets(sSheetName)
 
         'Admin 4
         sLab = SheetGeo.ListObjects(C_sTabADM4).HeaderRowRange.Item(4).value
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
         .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
-        .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "4" & "_" & sVarname
+        .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "4" & "_" & sVarName
         .Cells(iStartLine, iCol + 1).Interior.Color = vbWhite
         .Cells(iStartLine + 1, iCol + 1).Locked = False
 
@@ -423,7 +423,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
         sLab = SheetGeo.ListObjects(C_sTabADM3).HeaderRowRange.Item(3).value
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
         .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
-        .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "3" & "_" & sVarname
+        .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "3" & "_" & sVarName
         .Cells(iStartLine, iCol + 1).Interior.Color = vbWhite
         .Cells(iStartLine + 1, iCol + 1).Locked = False
 
@@ -431,14 +431,14 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
         sLab = SheetGeo.ListObjects(C_sTabADM2).HeaderRowRange.Item(2).value
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
         .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
-        .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "2" & "_" & sVarname
+        .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "2" & "_" & sVarName
         .Cells(iStartLine, iCol + 1).Interior.Color = vbWhite
         .Cells(iStartLine + 1, iCol + 1).Locked = False
 
         'Admin 1
         sLab = SheetGeo.ListObjects(C_sTabADM1).HeaderRowRange.Item(1).value
         .Cells(iStartLine, iCol).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
-        .Cells(iStartLine, iCol).Name = C_sAdmName & "1" & "_" & sVarname
+        .Cells(iStartLine, iCol).Name = C_sAdmName & "1" & "_" & sVarName
         .Cells(iStartLine, iCol).Interior.Color = GetColor("Orange")
         .Cells(iStartLine + 1, iCol).Locked = False
 
@@ -460,7 +460,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
     End With
     
     'Updating the Dictionary for future uses
-    With xlsapp.Worksheets(C_sParamSheetDict)
+    With xlsapp.worksheets(C_sParamSheetDict)
         'Admin 4
         LineValues.Items = DictData.ExtractSegment(RowIndex:=iDictLine)
         LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "4"

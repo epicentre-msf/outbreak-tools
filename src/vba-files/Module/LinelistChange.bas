@@ -6,6 +6,8 @@ Attribute VB_Name = "LinelistChange"
 Option Explicit
 
 Private Sub Worksheet_Change(ByVal Target As Range)
+    Application.EnableEvents = False
     Call EventSheetLineListPatient(Target)
+    Application.EnableEvents = True
 End Sub
 

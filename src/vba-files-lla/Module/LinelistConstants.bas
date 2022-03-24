@@ -7,13 +7,14 @@ Public Const C_sSheetAdmin              As String = "Admin"                     
 Public Const C_sSheetPassword           As String = "Password"                           'sheet for password management
 Public Const C_sSheetFormulas           As String = "ControleFormule"                    'Sheet for formula management (mainly in the validation)
 Public Const C_sSheetLLTranslation      As String = "linelist-translation"
+Public Const C_sSheetTemp               As String = "Temp"                              'Temporary sheet for data manipulation things
 
 'Sheets in the setup file: The all starts with Param
 
 Public Const C_sParamSheetDict          As String = "Dictionary"                         'Dictionnary Sheet in the setup file
 Public Const C_sParamSheetExport        As String = "Exports"                            'Sheet with configurations for the export  in the setup filefile
-Public Const C_sParamSheetChoices       As String = "Choices"                            'Sheet with configurations for the choices in the setup file
-Public Const C_sParamSheetAdminName     As String = "Admin"                              'Name of a sheet of type admin for metadata on linelist
+Public Const C_sParamSheetChoices       As String = "Choices"                            'Sheet with configurations for the choices in the setup file                             'Name of a sheet of type admin for metadata on linelist
+Public Const C_sParamSheetTranslation   As String = "Translations"                        'Translation Sheet in the setup file
 
 'DICTIONARY PARAMETERS ============================================================================================================================================================
 
@@ -62,6 +63,8 @@ Public Const C_sDictSheetTypeAdm        As String = "admin"
 Public Const C_sDictStatusMan As String = "mandatory"
 Public Const C_sDictStatusOpt As String = "optional"
 Public Const C_sDictStatusHid As String = "hidden"
+Public Const C_sDictStatusUserHid As String = "hidden by user"
+Public Const C_sDictStatusDesHid As String = "hidden by designer"
 
 'Control --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -179,5 +182,6 @@ Public Enum C_StartLines
     C_eStartLinesChoicesHeaders = 1                                                          'Starting lines of the choices Headers
     C_eStartLinesChoicesData = 2                                                             'Starting lines of the choices Data
     C_eStartLinesExportData = 2                                                              'Starting lines of the export data
+    C_eStartlinestransdata = 4                                                               'Starting lines for the translation data
 End Enum
 
