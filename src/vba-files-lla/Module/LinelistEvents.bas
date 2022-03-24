@@ -96,6 +96,22 @@ Sub ClicCmdExport()
     End With
 End Sub
 
+Sub ClicCmdDebug()
+    dim pwd as string
+    dim sh as worksheet
+    pwd = Inputbox("Provide the debugging password", "DEBUG MODE", "1234")
+
+    If pwd = C_sLLPassword Then
+        for each sh in ThisWorkbook.Worksheets
+            If sh.protectcontents = True then
+                sh.unprotect pwd
+            end if
+        next
+    Else
+        Msgbox("wrong pasword", vbok, "DEBUG MODE")
+    End If
+End Sub
+
 'Trigerring event when the linelist sheet has some values within                                                          -
 Sub EventSheetLineListPatient(oRange As Range)
 

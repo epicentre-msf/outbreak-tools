@@ -675,7 +675,7 @@ Public Function GetInternationalFormula(sFormula As String) As String
     
 
     GetInternationalFormula = ""
-    Set wksh = ThisWorkbook.ActiveSheet
+    Set wksh = SheetMain
     
 
     'The formula is in English, I need to take the international
