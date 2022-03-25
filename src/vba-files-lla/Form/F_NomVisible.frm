@@ -44,7 +44,7 @@ End Sub
 Private Sub UserForm_Initialize() 'lla
 'Manage language
 
-    Call TranslateForm(Me, Sheets("linelist-translation").[T_F_NomVisible])
+    Call TranslateForm(Me, ThisWorkbook.worksheets("linelist-translation").[T_F_NomVisible])
         
     Me.Width = 440
     Me.Height = 280

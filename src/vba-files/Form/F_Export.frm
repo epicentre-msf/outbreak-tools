@@ -18,6 +18,7 @@ Attribute VB_Exposed = False
 
 
 
+
 Option Explicit
 
 
@@ -66,7 +67,7 @@ End Sub
 Private Sub UserForm_Initialize() 'lla
 'Manage language
 
-    Call TranslateForm(Me, Sheets("linelist-translation").[T_F_Export])
+    Call TranslateForm(Me, ThisWorkbook.worksheets("linelist-translation").[T_F_Export])
     
     Me.Width = 172
     Me.Height = 270
