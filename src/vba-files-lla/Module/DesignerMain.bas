@@ -1,7 +1,6 @@
 Attribute VB_Name = "DesignerMain"
 Option Explicit
 
-    Dim bGeoLoaded As Boolean 'This will check if the Geodata is loaded or Not: The user have to load a Geobase
     Dim sNameFile As String   'for control name file
  
 'LOADING FILES AND FOLDERS ==============================================================================================================================================
@@ -47,8 +46,6 @@ End Sub
 Sub LoadGeoFile()
     
     Call Helpers.BeginWork(Application)
-
-    bGeoLoaded = False
     
     Dim sFilePath   As String                      'File path to the geo file
     Dim oSheet      As Object
@@ -121,7 +118,6 @@ Sub LoadGeoFile()
             
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Fini")
         SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White")
-        bGeoLoaded = True
         
         'Remove the historic of the Geo and the facility if not empty
         If Not SheetGeo.ListObjects(C_sTabHistoGeo).DataBodyRange Is Nothing Then
@@ -149,7 +145,7 @@ End Sub
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub GenerateData()
     Dim bGood As Boolean
-    bGood = DesignerMainHelpers.ControlForGenerate(bGeoLoaded)
+    bGood = DesignerMainHelpers.ControlForGenerate()
 
    BeginWork xlsapp:=Application
    
@@ -258,7 +254,7 @@ Public Sub Control()
     Dim bGood As Boolean
     
     'Control to be sure we can generate a linelist
-    bGood = DesignerMainHelpers.ControlForGenerate(bGeoLoaded)
+    bGood = DesignerMainHelpers.ControlForGenerate()
     If Not bGood Then
         Exit Sub
     Else
@@ -317,7 +313,7 @@ Sub OpenLL()
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         SheetMain.Range(C_sRngLLDir).Interior.Color = Helpers.GetColor("RedEpi")
         ShowHideCmdValidation show:=False
-        Sheets("Main").Shapes("SHP_OpenLL ").Visible = msoFalse
+        SheetMain.Shapes("SHP_OpenLL ").Visible = msoFalse
         Exit Sub
     End If
     
@@ -341,7 +337,7 @@ Function FileNameControl(sName As String) 'lla
     sName = Replace(sName, ".", "_")
     sName = Replace(sName, """", "_")
     
-    FileNameControl = Trim(sName)
+    FileNameControl = Application.WorksheetFunction.Trim(sName)
     
 End Function
 
@@ -349,22 +345,8 @@ Function translateHeadGeo()
 'translation of column headers in the GEO tab
 
     Dim sIsoCountry As String, sCountry As String, sSubCounty As String, sWard As String, sPlace As String, sFacility As String
-    
-    
-    'J'ai des problËmes d'encodage et probablement il va y en avoir sur d'autres pcs liÈs aux noms des langues
+
     sIsoCountry = GetLanguageCode(SheetMain.Range(C_sRngLLFormLang).value)
-    'Select Case [RNG_LLForm].value
-     '   Case "English"
-           ' sIsoCountry = "ENG"
-      '  Case "Fran√ßais"
-          '  sIsoCountry = "FRA"
-       ' Case "Espa√±ol"
-         '   sIsoCountry = "SPA"
-       ' Case "Portugu√©s"
-        '    sIsoCountry = "POR"
-        'Case Else
-         '   sIsoCountry = "ARA"
-    'End Select
 
     sCountry = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 2, False)
     sSubCounty = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 3, False)

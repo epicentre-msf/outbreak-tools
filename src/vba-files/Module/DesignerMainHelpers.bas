@@ -46,8 +46,10 @@ End Sub
 
 'Control for Linelist generation
 'A Control Function to be sure that everything is fine for linelist Generation
-Public Function ControlForGenerate(bGeoLoaded As Boolean) As Boolean
+Public Function ControlForGenerate() As Boolean
     
+    Dim bGeo As Boolean
+
     ControlForGenerate = False
     'Hide the shapes for linelist generation
     ShowHideCmdValidation show:=False
@@ -72,17 +74,19 @@ Public Function ControlForGenerate(bGeoLoaded As Boolean) As Boolean
     If Helpers.IsWkbOpened(Dir(SheetMain.Range(C_sRngPathDic).value)) Then
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseDic")
         SheetMain.Range(C_sRngPathDic).Interior.Color = GetColor("RedEpi")
+        MsgBox TranslateMsg("MSG_AlreadyOpen"), vbExclamation + vbokOnly, TranslateMsg("MSG_Title_Dictionnary")
         Exit Function
     End If
     
     SheetMain.Range(C_sRngPathDic).Interior.Color = GetColor("White") 'if path is OK
     
-    'Checking coherence of the GEO (maybe remove?) ------------------------------------------------
+    'Checking coherence of the GEO  ------------------------------------------------
     
     'Be sure the geo path is not empty
     If SheetMain.Range(C_sRngPathGeo).value = "" Then
-       SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathDic")
+       SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathGeo")
        SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("RedEpi")
+       MsgBox TranslateMsg("MSG_PathGeo"), vbExclamation + vbokOnly, TranslateMsg("MSG_TitleGeo")
        Exit Function
     End If
     
@@ -90,13 +94,22 @@ Public Function ControlForGenerate(bGeoLoaded As Boolean) As Boolean
     If Dir(SheetMain.Range(C_sRngPathGeo).value) = "" Then
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathGeo")
         SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("RedEpi")
+         MsgBox TranslateMsg("MSG_PathGeo"), vbExclamation + vbokOnly, TranslateMsg("MSG_TitleGeo")
         Exit Function
     End If
-     
-    'Be sure the geo has been loaded correctly
-    If Not bGeoLoaded Then 'bGeoLoaded is a global variable resticted to this module only
+
+    bGeo = (SheetGeo.ListObjects(C_sTabADM1).DataBodyRange Is Nothing) Or _
+            (SheetGeo.ListObjects(C_sTabADM2).DataBodyRange Is Nothing) Or _
+            (SheetGeo.ListObjects(C_sTabADM3).DataBodyRange Is Nothing) Or _
+            (SheetGeo.ListObjects(C_sTabADM4).DataBodyRange Is Nothing)
+
+    'Be sure the geo has been loaded correctly ie the geo data is not empty
+    If bGeo Then
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LoadGeo")
         SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("RedEpi")
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathGeo")
+        MsgBox TranslateMsg("MSG_GeoNotLoaded"), vbExclamation + vbokOnly, TranslateMsg("MSG_TitleGeo")
+        Exit Function
     End If
 
     SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White") 'if path is OK
@@ -107,6 +120,7 @@ Public Function ControlForGenerate(bGeoLoaded As Boolean) As Boolean
     If SheetMain.Range(C_sRngLLDir).value = "" Then
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathLL")
         SheetMain.Range(C_sRngLLDir).Interior.Color = GetColor("RedEpi")
+        MsgBox TranslateMsg("MSG_PathLL"), vbExclamation + vbokOnly, TranslateMsg("MSG_TitleLL")
         Exit Function
     End If
 
@@ -114,6 +128,7 @@ Public Function ControlForGenerate(bGeoLoaded As Boolean) As Boolean
     If Dir(SheetMain.Range(C_sRngLLDir).value, vbDirectory) = "" Then
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathLL")
         SheetMain.Range(C_sRngLLDir).Interior.Color = GetColor("RedEpi")
+        MsgBox TranslateMsg("MSG_PathLL"), vbExclamation + vbokOnly, TranslateMsg("MSG_TitleLL")
         Exit Function
     End If
     

@@ -131,6 +131,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     EndWork xlsapp:=Application
 
     Set transValue = Nothing
+    [F_Geo].TXT_Msg.value = ""
     [F_Geo].show
 End Sub
 
