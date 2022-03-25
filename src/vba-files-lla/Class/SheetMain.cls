@@ -15,7 +15,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     
     On Error GoTo no
         If Target.Name.Name = "RNG_LangDesigner" Then
-            StartTranslate
+          Call TranslateDesigner
         ElseIf Target.Name.Name = "RNG_LLForm" Then 'lla
         
             Call translateHeadGeo 'lla

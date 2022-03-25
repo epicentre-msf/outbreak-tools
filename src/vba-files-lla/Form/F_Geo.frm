@@ -99,6 +99,8 @@ Private Sub CMD_Copier_Click()
         'writing the selected value
         Selection.value = TXT_Msg.value
     End Select
+
+    [F_Geo].TXT_Msg.value = ""
     [F_Geo].Hide
     'Protecting the worksheet
     Call ProtectSheet
@@ -203,7 +205,7 @@ End Sub
 Private Sub UserForm_Initialize() 'lla
 'Manage language
 
-    Call TranslateForm(Me, Sheets("linelist-translation").[T_F_Geo])
+    Call TranslateForm(Me, ThisWorkbook.worksheets("linelist-translation").[T_F_Geo])
         
     Me.Width = 637
     Me.Height = 370

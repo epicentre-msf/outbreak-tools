@@ -80,10 +80,12 @@ Sub ClicCmdShowHide()
 
                     If LCase(wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderStatus)).value) = C_sDictStatusMan Then
                         T_status.Push "Mandatory"
+                        wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = C_sDictStatusMan
                     ElseIf LCase(wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value) = C_sDictStatusUserHid Then
-                        T_status.Push ""
+                        T_status.Push "Hidden"
                     Else
                         T_status.Push "Shown"
+                        wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = "Shown"
                     End If
                 End If
 
@@ -153,7 +155,7 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
         F_NomVisible.OPT_Affiche.Top = 20
 
         F_NomVisible.OPT_Masque.Visible = False
-    Case ""                                'It is hidden, show masking
+    Case "hidden"                                'It is hidden, show masking
         TriggerShowHide = False
         F_NomVisible.OPT_Affiche.value = 0
         F_NomVisible.OPT_Affiche.Caption = "Show"
@@ -235,7 +237,7 @@ Sub UpdateFormData(ByRef T_table As BetterArray, index As Integer, Optional bhid
     T_values.Items = T_table.Item(index + 1)     'the index starts at -1 on a listbox
     'Update the visibility status
     If bhide Then
-        T_values.Item(3) = ""
+        T_values.Item(3) = "Hidden"
     Else
         T_values.Item(3) = "Shown"
     End If
