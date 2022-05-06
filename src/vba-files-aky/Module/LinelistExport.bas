@@ -53,13 +53,13 @@ Private Function GetExportValues(iType As Byte, sSheetName As String) As BetterA
 
     For i = 1 To YesNoExportData.UpperBound
         If YesNoExportData.Item(i) = "yes" And SheetNameData.Item(i) = sSheetName Then
-            ExportHeadersData.Push ThisWorkbook.worksheets(C_sParamSheetDict).Cells(i + 1, 1).value 'Take the varname
+            ExportHeadersData.Push ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(i + 1, 1).value 'Take the varname
         End If
     Next
 
     For i = 1 To ExportHeadersData.UpperBound
         If SheetVarNamesData.Includes(ExportHeadersData.Item(i)) Then
-            With ThisWorkbook.worksheets(sSheetName)
+            With ThisWorkbook.Worksheets(sSheetName)
                     ExportColumn.FromExcelRange .Cells(C_eStartLinesLLData, SheetVarNamesData.IndexOf(ExportHeadersData.Item(i))), DetectLastColumn:=False, DetectLastRow:=True
                     ExportTableData.Item(i) = ExportColumn.Items
                     ExportColumn.Clear
@@ -82,7 +82,7 @@ Private Function GetExportValues(iType As Byte, sSheetName As String) As BetterA
 
     Exit Function
 errTranspose:
-    MsgBox "Unable to transpose Export Table", vbokOnly + vbcritical, "ERROR"
+    MsgBox "Unable to transpose Export Table", vbOKOnly + vbCritical, "ERROR"
 End Function
 
 
@@ -149,34 +149,34 @@ Sub Export(iTypeExport As Byte)
         .Workbooks.Add
 
         'Adding the sheets for export
-        .worksheets(1).Name = C_sParamSheetDict
+        .Worksheets(1).Name = C_sParamSheetDict
 
         'Writing the dictionary data
-        DictHeaders.ToExcelRange .worksheets(C_sParamSheetDict).Cells(1, 1), TransposeValues:=True
-        DictData.ToExcelRange .worksheets(C_sParamSheetDict).Cells(2, 1)
+        DictHeaders.ToExcelRange .Worksheets(C_sParamSheetDict).Cells(1, 1), TransposeValues:=True
+        DictData.ToExcelRange .Worksheets(C_sParamSheetDict).Cells(2, 1)
 
         'Translation and choices sheets
-        .worksheets.Add(after:=.worksheets(C_sParamSheetDict)).Name = C_sParamSheetChoices
-        ChoicesData.ToExcelRange .worksheets(C_sParamSheetChoices).Cells(1, 1)
+        .Worksheets.Add(After:=.Worksheets(C_sParamSheetDict)).Name = C_sParamSheetChoices
+        ChoicesData.ToExcelRange .Worksheets(C_sParamSheetChoices).Cells(1, 1)
 
-        .worksheets.Add(after:=.worksheets(C_sParamSheetChoices)).Name = C_sParamSheetTranslation
-        TransData.ToExcelRange .worksheets(C_sParamSheetTranslation).Cells(1, 1)
+        .Worksheets.Add(After:=.Worksheets(C_sParamSheetChoices)).Name = C_sParamSheetTranslation
+        TransData.ToExcelRange .Worksheets(C_sParamSheetTranslation).Cells(1, 1)
 
         sPrevSheetName = C_sParamSheetDict
 
         i = 1
         While i <= LLSheetData.UpperBound
-            .worksheets.Add(before:=.worksheets(sPrevSheetName)).Name = LLSheetData.Items(i)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = LLSheetData.Items(i)
             sPrevSheetName = LLSheetData.Items(i)
             ExportData.Clear
 
             Set ExportData = GetExportValues(iTypeExport, sPrevSheetName)
-            ExportData.ToExcelRange .worksheets(sPrevSheetName).Cells(1, 1)
+            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1)
             i = i + 1
         Wend
 
         'pour l'enregistrement
-        sPath = ThisWorkbook.worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, 5).value
+        sPath = ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, 5).value
 
         If sPath <> "" Then
             PathData.Items = Split(sPath, "+")
@@ -186,7 +186,7 @@ Sub Export(iTypeExport As Byte)
 
                 If VarNameData.Includes(PathData.Items(i)) Then
                     sSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
-                    PathData.Item(i) = ThisWorkbook.worksheets(sSheetName).Range(PathData.Items(i)).value
+                    PathData.Item(i) = ThisWorkbook.Worksheets(sSheetName).Range(PathData.Items(i)).value
                 Else
                     PathData.Item(i) = Replace(PathData.Items(i), Chr(34), "")
                 End If
@@ -226,7 +226,7 @@ Sub Export(iTypeExport As Byte)
 
     Exit Sub
 exportErrHand:
-    MsgBox "Errors during export", vbokOnly + vbcritical, "ERROR"
+    MsgBox "Errors during export", vbOKOnly + vbCritical, "ERROR"
     Exit Sub
 End Sub
 
