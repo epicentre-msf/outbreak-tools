@@ -54,7 +54,7 @@ Sub ClicCmdShowHide()
 
     ActiveSheet.Unprotect (C_sLLPassword)
     
-    Set wksh = ThisWorkbook.worksheets(C_sParamSheetDict)
+    Set wksh = ThisWorkbook.Worksheets(C_sParamSheetDict)
 
     'Get the headers
     Set T_DictHeaders = CreateDicTitle
@@ -209,12 +209,12 @@ Sub ShowHideColumnSheet(sSheetName As String, ByVal sVarName As String, Optional
     'Hidding
     If indexCol > 0 Then
         'Now hiding
-        ThisWorkbook.worksheets(sSheetName).Columns(indexCol).Hidden = bhide
+        ThisWorkbook.Worksheets(sSheetName).Columns(indexCol).Hidden = bhide
         'Testing if it is a geo column and hide the followings
         If sControl = C_sDictControlGeo Then
-            ThisWorkbook.worksheets(sSheetName).Columns(indexCol + 1).Hidden = bhide
-            ThisWorkbook.worksheets(sSheetName).Columns(indexCol + 2).Hidden = bhide
-            ThisWorkbook.worksheets(sSheetName).Columns(indexCol + 3).Hidden = bhide
+            ThisWorkbook.Worksheets(sSheetName).Columns(indexCol + 1).Hidden = bhide
+            ThisWorkbook.Worksheets(sSheetName).Columns(indexCol + 2).Hidden = bhide
+            ThisWorkbook.Worksheets(sSheetName).Columns(indexCol + 3).Hidden = bhide
         End If
     End If
 
@@ -307,9 +307,9 @@ Sub WriteShowHide(sSheetName As String, ByVal sVarName As String, visibility As 
             T_DictVarnames.LowerBound = 2
             iVarnameIndex = T_DictVarnames.IndexOf(sVarName)
             If visibility = 0 Then
-                ThisWorkbook.worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).value = C_sDictStatusUserHid
+                ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).value = C_sDictStatusUserHid
             ElseIf visibility = 1 Then
-                ThisWorkbook.worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).value = "Shown"
+                ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).value = "Shown"
             End If
         End If
     End If

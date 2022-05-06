@@ -64,7 +64,7 @@ Public Sub EndWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean =
 End Sub
 
 'Load files and folders
-Public Function LoadFile(Optional sFilters As String) As String 'lla
+Public Function LoadFile(sFilters As String, sType As String) As String
 
     Dim fDialog As Office.FileDialog
 
@@ -74,10 +74,11 @@ Public Function LoadFile(Optional sFilters As String) As String 'lla
         .AllowMultiSelect = False
         .Title = "Chose your file"               'MSG_ChooseFile
         .Filters.Clear
-        .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile'lla
+        .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
 
         If .show = True Then
             LoadFile = .SelectedItems(1)
+            If sType = "Setup" Then Call ImportLanguage(LoadFile)
         End If
     End With
     Set fDialog = Nothing
@@ -178,7 +179,7 @@ Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Byte) As Bet
     Headers.LowerBound = 1
     Dim sValue As String
     
-    With Wkb.worksheets(sSheet)
+    With Wkb.Worksheets(sSheet)
         i = 1
         While .Cells(StartLine, i).value <> ""
         'Clear the values in the sheet when adding thems
@@ -198,7 +199,7 @@ Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Byte) As Be
     Dim Data As BetterArray
     Set Data = New BetterArray
     Data.LowerBound = 1
-    Data.FromExcelRange Wkb.worksheets(sSheetName).Cells(StartLine, 1), DetectLastRow:=True, DetectLastColumn:=True
+    Data.FromExcelRange Wkb.Worksheets(sSheetName).Cells(StartLine, 1), DetectLastRow:=True, DetectLastColumn:=True
     'The output of the function is a variant
     Set GetData = Data
     Set Data = Nothing
@@ -416,7 +417,7 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
     End If
         
     'Copy and paste to temp
-    With ThisWorkbook.worksheets(C_sSheetTemp)
+    With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
             
@@ -449,7 +450,7 @@ Function GetUniquelo(lo As ListObject, iIndex As Integer) As BetterArray
     Set Rng = lo.ListColumns(iIndex).DataBodyRange
     
     'Copy and paste to temp
-    With ThisWorkbook.worksheets(C_sSheetTemp)
+    With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
             
@@ -500,9 +501,6 @@ Dim sval As String
     Set Outable = Nothing
 
 End Function
-
-    
-
 
 Sub StatusBar_Updater(sCpte As Single)
 'increase the status progressBar
