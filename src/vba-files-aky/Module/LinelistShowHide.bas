@@ -53,7 +53,7 @@ Sub ClicCmdShowHide()
     T_data.LowerBound = 1
 
     ActiveSheet.Unprotect (C_sLLPassword)
-    
+
     Set wksh = ThisWorkbook.Worksheets(C_sParamSheetDict)
 
     'Get the headers
@@ -69,7 +69,7 @@ Sub ClicCmdShowHide()
             bremoveFromGeo = wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "2" Or _
                              wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "3" Or _
                              wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "4"
-            
+
             'update only on non hidden variables
             If wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderStatus)).value <> C_sDictStatusHid Then
 
@@ -100,7 +100,7 @@ Sub ClicCmdShowHide()
     T_data.Item(1) = T_mainlab.Items
     T_data.Item(2) = T_varname.Items
     T_data.Item(3) = T_status.Items
-    
+
     Set T_varname = Nothing
     Set T_mainlab = Nothing
     Set T_status = Nothing
@@ -192,7 +192,7 @@ Sub ShowHideColumnSheet(sSheetName As String, ByVal sVarName As String, Optional
     Dim indexCol As Integer                      'Column The index of the column to Hide
     Dim T_DictHeaders As BetterArray                 'Temporary data for headers
     Dim sControl As String                 'Extracting the control label to be sure we can hide all the geos
-    
+
     BeginWork xlsapp:=Application
     ActiveSheet.Unprotect (C_sLLPassword)
 
@@ -257,7 +257,7 @@ Sub ShowHideLogic(iIndex As Integer)
 
         Dim T_FormData As BetterArray
         Set T_FormData = New BetterArray
-        
+
         T_FormData.Items = F_NomVisible.LST_NomChamp.List
         T_FormData.LowerBound = 1
 
@@ -314,7 +314,7 @@ Sub WriteShowHide(sSheetName As String, ByVal sVarName As String, visibility As 
         End If
     End If
 
-    
+
     Set T_DictVarnames = Nothing
     Set T_DictSheetNames = Nothing
 End Sub

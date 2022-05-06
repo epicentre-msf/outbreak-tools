@@ -47,6 +47,7 @@ Public Sub ProtectSheet(Optional pwd As String = C_sLLPassword)
 
 End Sub
 
+
 'This will set the actual application properties to be able to work correctly
 Public Sub BeginWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean = True)
     xlsapp.ScreenUpdating = False
@@ -95,7 +96,7 @@ Public Function LoadFolder() As String
         .AllowMultiSelect = False
         .Title = "Chose your directory"          'MSG_ChooseDir
         .Filters.Clear
-    
+
         If .show = True Then
             LoadFolder = .SelectedItems(1)
         End If
@@ -107,20 +108,20 @@ End Function
 'Get the file extension of a string
 'Get the file extension of a file
 Private Function GetFileExtension(sString As String) As String
-    
+
     GetFileExtension = ""
-    
+
     Dim iDotPos As Integer
     Dim sExt As String 'extension
     'Find the position of the dot at the end
     iDotPos = InStrRev(sString, ".")
-    
+
     sExt = Right(sString, Len(sString) - iDotPos)
-    
+
     If (sExt <> "") Then
         GetFileExtension = sExt
     End If
-    
+
 End Function
 
 'Check if a Workbook is Opened
@@ -133,11 +134,9 @@ Public Function IsWkbOpened(sName As String) As Boolean
     On Error GoTo 0
 End Function
 
-
 'Write lines for borders
 
 Public Sub WriteBorderLines(oRange As Range)
-
     Dim i As Integer
     For i = 7 To 10
         With oRange.Borders(i)
@@ -147,9 +146,7 @@ Public Sub WriteBorderLines(oRange As Range)
             .Weight = xlThin
         End With
     Next
-
 End Sub
-
 
 'Clear a String to remove inconsistencies
 Public Function ClearString(ByVal sString As String, Optional bremoveHiphen As Boolean = True) As String
@@ -178,7 +175,7 @@ Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Byte) As Bet
     Set Headers = New BetterArray
     Headers.LowerBound = 1
     Dim sValue As String
-    
+
     With Wkb.Worksheets(sSheet)
         i = 1
         While .Cells(StartLine, i).value <> ""
@@ -219,7 +216,7 @@ Sub SetValidation(oRange As Range, sValidList As String, sAlertType As Byte, Opt
         Case Else                                'for all the others, add an information alert
             .Add Type:=xlValidateList, AlertStyle:=xlValidAlertInformation, Operator:=xlBetween, Formula1:=sValidList
         End Select
-        
+
         .IgnoreBlank = True
         .InCellDropdown = True
         .InputTitle = ""
@@ -267,15 +264,15 @@ Function GetValidationType(sValidationType As String) As Byte
             GetValidationType = 1
         End Select
     End If
-    
+
 End Function
 
 'Epicemiological week function
 
 Public Function Epiweek(jour As Long) As Long
-    
+
     Dim annee As Long
-    
+
     Dim Jour0_2014, Jour0_2015, Jour0_2016, Jour0_2017, Jour0_2018, Jour0_2019, Jour0_2020, Jour0_2021, Jour0_2022 As Long
 
     Jour0_2014 = 41638
@@ -288,7 +285,7 @@ Public Function Epiweek(jour As Long) As Long
     Jour0_2021 = 44193
     Jour0_2022 = 44557
     annee = Year(jour)
-    
+
     Select Case annee
     Case 2014
         Epiweek = 1 + Int((jour - Jour0_2014) / 7)
@@ -309,25 +306,25 @@ Public Function Epiweek(jour As Long) As Long
     Case 2022
         Epiweek = 1 + Int((jour - Jour0_2022) / 7)
     End Select
-    
+
 End Function
 
 Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
- 
+
     Dim strMidValue As String
     Dim lngHi As Long
     Dim lngLo As Long
     Dim lngIndex As Long
-  
+
     If lngMin >= lngMax Then Exit Sub
-  
+
     ' Valeur de partionnement
     lngIndex = Int((lngMax - lngMin + 1) * Rnd + lngMin)
     strMidValue = T_aTrier(lngIndex)
- 
+
     ' Echanger les valeurs
     T_aTrier(lngIndex) = T_aTrier(lngMin)
- 
+
     lngLo = lngMin
     lngHi = lngMax
     Do
@@ -340,10 +337,10 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
             T_aTrier(lngLo) = strMidValue
             Exit Do
         End If
- 
+
         ' Echanger les valeurs lngLo et lngHi
         T_aTrier(lngLo) = T_aTrier(lngHi)
- 
+
         ' Chercher ï¿½ partir de lngLo une valeur >= strMidValue
         lngLo = lngLo + 1
         Do While T_aTrier(lngLo) < strMidValue
@@ -355,15 +352,15 @@ Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
             T_aTrier(lngHi) = strMidValue
             Exit Do
         End If
- 
+
         ' Echanger les valeurs lngLo et lngHi
         T_aTrier(lngHi) = T_aTrier(lngLo)
     Loop
- 
+
     ' Trier les 2 sous-T_aTrieres
     QuickSort T_aTrier, lngMin, lngLo - 1
     QuickSort T_aTrier, lngLo + 1, lngMax
-    
+
 End Sub
 
 Public Function IsEmptyTable(T_aTest) As Boolean
@@ -381,6 +378,36 @@ crash:
 
 End Function
 
+'Move a plage of data from the setup sheet to the designer sheet
+Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As String, sStartCell As Integer)
+
+    Dim sData As BetterArray
+    Dim DestWksh As Worksheet
+    Dim sheetExists As Boolean
+
+    Set sData = New BetterArray
+    sData.FromExcelRange SourceWkb.Worksheets(sSheetName).Range("A" & CStr(sStartCell)), DetectLastRow:=True, DetectLastColumn:=True
+    sheetExists = False
+
+    For Each DestWksh In DestWkb.Worksheets
+        If DestWksh.Name = sSheetName Then sheetExists = True
+    Next
+
+    'Clear the contents if the sheet exists, or create a new sheet if Not
+    If sheetExists Then
+        DestWkb.Worksheets(sSheetName).Activate
+        Cells.Clear
+    Else
+        DestWkb.Worksheets.Add.Name = sSheetName
+    End If
+
+    'Copy the data Now
+    sData.ToExcelRange DestWkb.Worksheets(sSheetName).Range("A1")
+    DestWkb.Worksheets(sSheetName).Visible = xlSheetHidden
+    Set sData = Nothing
+End Sub
+
+
 'Filter a table listobject on one condition and get the values of that table or all the unique values of one column
 Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 As String, _
                              Optional iFiltindex2 As Integer = 0, Optional sValue2 As String = vbNullString, _
@@ -392,22 +419,22 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
     Dim breturnAllData As Boolean
 
     With lo.Range
-    
+
         .AutoFilter Field:=iFiltindex1, Criteria1:=sValue1
-        
+
         'Add other Filters if required
         If iFiltindex2 > 0 Then
             .AutoFilter Field:=iFiltindex2, Criteria1:=sValue2
         End If
-        
+
         If iFiltindex3 > 0 Then
             .AutoFilter Field:=iFiltindex3, Criteria1:=sValue3
         End If
-    
+
     End With
-    
+
     Set Rng = lo.Range.SpecialCells(xlCellTypeVisible)
-    
+
     If returnIndex > 0 Then
         breturnAllData = False
     ElseIf bAllData Then
@@ -415,29 +442,29 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
     Else
         breturnAllData = True
     End If
-        
+
     'Copy and paste to temp
     With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
-            
+
             Rng.Copy Destination:=.Cells(1, 1)
-            
+
             Set Data = New BetterArray
             Data.LowerBound = 1
-            
+
             If breturnAllData Then
                 Data.FromExcelRange .Cells(2, 1), DetectLastColumn:=True, DetectLastRow:=True
             ElseIf returnIndex > 0 Then
                 Data.FromExcelRange .Cells(2, returnIndex), DetectLastColumn:=False, DetectLastRow:=True
             End If
-            
+
             .Cells.Clear
             .Visible = xlSheetVeryHidden
     End With
-    
+
     lo.AutoFilter.ShowAllData
-    
+
     Set FilterLoTable = Data.Clone()
 End Function
 
@@ -446,31 +473,31 @@ Function GetUniquelo(lo As ListObject, iIndex As Integer) As BetterArray
 
     Dim Rng As Range
     Dim Data As BetterArray
-    
+
     Set Rng = lo.ListColumns(iIndex).DataBodyRange
-    
+
     'Copy and paste to temp
     With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
-            
+
             Rng.Copy Destination:=.Cells(1, 1)
-            
+
             Set Data = New BetterArray
             Data.LowerBound = 1
-            
+
             .Range(.Cells(1, 1), .Cells(.Cells(.Rows.Count, 1).End(xlUp).Row, .Cells(1, .Columns.Count).End(xlToLeft).Column)).RemoveDuplicates Columns:=1, Header:=xlNo
-            
+
             Data.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
             .Cells.Clear
             .Visible = xlSheetVeryHidden
     End With
-    
+
     Set GetUniquelo = Data.Clone()
-    
+
     Set Data = Nothing
     Set Rng = Nothing
-    
+
 End Function
 
 'Unique of a betteray sorted
@@ -478,16 +505,16 @@ Function GetUniqueBA(BA As BetterArray) As BetterArray
 Dim sval As String
  Dim i As Integer
    Dim Outable As BetterArray
-   
+
     BA.Sort
-    
-  
+
+
     Set Outable = New BetterArray
     Outable.LowerBound = 1
-    
+
    sval = BA.Item(BA.LowerBound)
    Outable.Push sval
-   
+
     If BA.Length > 0 Then
         For i = BA.LowerBound To BA.UpperBound
         If sval <> BA.Item(i) Then
@@ -496,7 +523,7 @@ Dim sval As String
         End If
         Next
     End If
-    
+
     Set GetUniqueBA = Outable.Clone()
     Set Outable = Nothing
 
@@ -512,7 +539,7 @@ Sub StatusBar_Updater(sCpte As Single)
     Application.StatusBar = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "%" & TranslateMsg("MSG_BuildLL")
 
     DoEvents
-    
+
 End Sub
 
 

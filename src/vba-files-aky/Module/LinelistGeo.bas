@@ -41,7 +41,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     ' width and height of the geo formulaire
     [F_Geo].Height = 360
     [F_Geo].Width = 606
-    
+
     With ThisWorkbook.Worksheets(C_sSheetGeo)
         'Before doing the whole all thing, we need to test if the T_Adm data is empty or not
         If (Not .ListObjects(C_sTabADM4).DataBodyRange Is Nothing) Then
@@ -59,7 +59,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
         F_Geo.LBL_Adm2.Caption = .ListObjects(C_sTabADM4).HeaderRowRange.Item(2).value
         F_Geo.LBL_Adm3.Caption = .ListObjects(C_sTabADM4).HeaderRowRange.Item(3).value
         F_Geo.LBL_Adm4.Caption = .ListObjects(C_sTabADM4).HeaderRowRange.Item(4).value
-    
+
         '------- Concatenate all the tables for the geo
         For i = T_Adm4.LowerBound To T_Adm4.UpperBound
             transValue.Clear
@@ -195,11 +195,11 @@ End Sub
 
 'This function shows the third list for the geobase
 Sub ShowLst3(sAdm2 As String)
-     
+
     'Clear the two remaining forms
     [F_Geo].LST_Adm3.Clear
     [F_Geo].LST_Adm4.Clear
-    
+
     Dim sAdm1 As String 'Selected admin 1
     Dim T_Aff As BetterArray
     Dim wksh As Worksheet
@@ -209,7 +209,7 @@ Sub ShowLst3(sAdm2 As String)
 
     'Just filter and show
     Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabADM3), 1, sAdm1, 2, sAdm2, returnIndex:=3)
-    
+
     [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value
     'Update the adm3 list in the geoform if the T_Aff3 is not missing
     If T_Aff.Length > 0 Then
@@ -225,16 +225,16 @@ Sub ShowLstF3(sAdm2 As String)
 
     [F_Geo].LST_AdmF3.Clear
     [F_Geo].LST_AdmF4.Clear
-    
+
     Dim sAdm1 As String
     Dim T_Aff As BetterArray
     Dim wksh As Worksheet
-    
+
     Set wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
     sAdm1 = [F_Geo].LST_AdmF1.value
-    
+
     Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabHF), 4, sAdm1, 3, sAdm2, returnIndex:=2)
-    
+
     [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
     Set T_Aff = GetUniqueBA(T_Aff)
 
@@ -260,10 +260,10 @@ Sub ShowLst4(sAdm3 As String)
     sAdm2 = [F_Geo].LST_Adm2.value
 
     [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value
-    
+
     Set wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
     Set T_Aff = FilterLoTable(wksh.ListObjects(C_sTabADM4), 1, sAdm1, 2, sAdm2, 3, sAdm3, returnIndex:=4)
- 
+
 
     If T_Aff.Length > 0 Then
         [F_Geo].LST_Adm4.List = T_Aff.Items
@@ -326,7 +326,7 @@ Sub SearchValue(ByVal sSearchedValue As String)
     Dim T_result As BetterArray
     Set T_result = New BetterArray
     Dim i As Integer
-    
+
     'Create a table of the found values (called T_result)
     If Len(sSearchedValue) >= 3 Then
         i = 1
@@ -336,7 +336,7 @@ Sub SearchValue(ByVal sSearchedValue As String)
             End If
             i = i + 1
         Wend
-        
+
         'Render the table if some values are found
         If T_result.Length > 0 Then
             T_result.Sort
@@ -352,14 +352,14 @@ Sub SearchValue(ByVal sSearchedValue As String)
             [F_Geo].LST_ListeAgre.List = T_Concat.Items
         End If
     End If
-    
+
     Set T_result = Nothing
 End Sub
 
 Sub SeachHistoValue(sSearchedValue As String)
     Dim T_result As BetterArray
     Dim i As Integer
-    
+
     If Len(sSearchedValue) >= 3 Then
         Set T_result = New BetterArray
         i = 1
@@ -369,7 +369,7 @@ Sub SeachHistoValue(sSearchedValue As String)
             End If
             i = i + 1
         Wend
-    
+
         If T_result.Length > 0 Then
             T_result.Sort
             [F_Geo].LST_Histo.List = T_result.Items
@@ -400,7 +400,7 @@ Sub SearchValueF(sSearchedValue As String)
             End If
             i = i + 1
         Wend
-    
+
         If T_result.Length > 0 Then
             T_result.Sort
             [F_Geo].LST_ListeAgreF.List = T_result.Items
@@ -426,14 +426,14 @@ Sub SeachHistoValueF(sSearchedValue As String)
     If Len(sSearchedValue) >= 3 Then
         i = 1
         Set T_result = New BetterArray
-        
+
         While i <= T_HistoHF.UpperBound
             If InStr(1, LCase(T_HistoHF.Item(i)), LCase(sSearchedValue)) > 0 Then
                 T_result.Push T_HistoHF.Item(i)
             End If
             i = i + 1
         Wend
-    
+
         If T_result.Length > 0 Then
             T_result.Sort
             [F_Geo].LST_HistoF.List = T_result.Items
@@ -459,14 +459,14 @@ Function ReverseString(sChaine As String)
     Set T_temp = New BetterArray
     T_temp.LowerBound = 1
     Dim sRes As String
-    
+
     ReverseString = ""
     T_temp.Items = Split(sChaine, " | ")
     sRes = T_temp.Items(1)
     For i = T_temp.LowerBound + 1 To T_temp.UpperBound
         sRes = T_temp.Items(i) & " | " & sRes
     Next
-     
+
     ReverseString = sRes
     Set T_temp = Nothing
 End Function

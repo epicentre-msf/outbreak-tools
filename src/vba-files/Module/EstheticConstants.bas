@@ -20,7 +20,7 @@ Public Const C_iCmdHeight                   As Integer = 20                     
 
 'Table Styles
 Public Const C_sLLTableStyle                As String = "TableStyleLight16"                   'Default table style of a linelist object
-    
+
 
 
 
