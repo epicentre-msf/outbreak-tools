@@ -11,7 +11,7 @@ Sub LoadFileDic()
     Dim sFilePath As String                      'Path to the dictionnary
     
     'LoadFile is the procedure for loading the path to the dictionnary
-    sFilePath = Helpers.LoadFile("*.xlsb") 'The
+    sFilePath = Helpers.LoadFile("*.xlsb", "Setup") 'The
     
     'Update messages if the file path is correct
     If sFilePath <> "" Then
@@ -21,6 +21,24 @@ Sub LoadFileDic()
     Else
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
+End Sub
+
+'Loading a linelist file ----------------------------------------------------------------------------------------------------------------------------------------------------
+Sub LoadFileLL()
+
+    Dim sFilePath As String                      'Path to the linelist
+    
+    'LoadFile is the procedure for loading the path to the linelist
+    sFilePath = Helpers.LoadFile("*.xlsb", "LineList") 'The
+    
+    If sFilePath = "" Then Exit Sub
+    
+    On Error GoTo ErrorManage
+    Application.Workbooks.Open Filename:=sFilePath, ReadOnly:=False
+    
+    Exit Sub
+ErrorManage:
+    MsgBox TranslateMsg("MSG_TitlePassWord"), vbCritical, TranslateMsg("MSG_PassWord")
 End Sub
 
 'Loading the Lineist directory ---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -65,7 +83,7 @@ Sub LoadGeoFile()
     Set AdmHeader = New BetterArray
     AdmHeader.LowerBound = 1
     'Set xlsapp = New Excel.Application
-    sFilePath = Helpers.LoadFile("*.xlsx")
+    sFilePath = Helpers.LoadFile("*.xlsx", "Geo")
     
     If sFilePath <> "" Then
         'Open the geo workbook and hide the windows
@@ -82,7 +100,7 @@ Sub LoadGeoFile()
         Next
             
         'Reloading the data from the Geobase
-        For Each oSheet In Wkb.worksheets
+        For Each oSheet In Wkb.Worksheets
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_EnCours") & oSheet.Name
             AdmData.Clear
             AdmHeader.Clear
@@ -131,7 +149,7 @@ Sub LoadGeoFile()
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
     
-    Call translateHeadGeo 'lla
+    Call translateHeadGeo
     
     EndWork xlsapp:=Application
 End Sub
@@ -150,7 +168,6 @@ Sub GenerateData()
    BeginWork xlsapp:=Application
    
     If Not bGood Then
-        DesignerMainHelpers.ShowHideCmdValidation show:=False
         Exit Sub
     End If
     
@@ -222,15 +239,11 @@ Sub GenerateData()
     
     Call SetInputRangesToWhite
     
-    SheetMain.Shapes("SHP_OpenLL").Visible = msoTrue
-
     iOpenLL = MsgBox(TranslateMsg("MSG_OpenLL") & " " & sPath & " ?", vbQuestion + vbYesNo, "Linelist")
 
     If iOpenLL = vbYes Then
         Call OpenLL
     End If
-
-    ShowHideCmdValidation True
 
     'Setting the memory data to nothing
     Set DictHeaders = Nothing
@@ -279,7 +292,7 @@ Public Sub Control()
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Correct")
         End If
         
-        DesignerMainHelpers.ShowHideCmdValidation True
+        Call GenerateData
         
     End If
 End Sub
@@ -312,8 +325,6 @@ Sub OpenLL()
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CheckLL")
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         SheetMain.Range(C_sRngLLDir).Interior.Color = Helpers.GetColor("RedEpi")
-        ShowHideCmdValidation show:=False
-        SheetMain.Shapes("SHP_OpenLL ").Visible = msoFalse
         Exit Sub
     End If
     
@@ -323,7 +334,7 @@ End Sub
 
 
 
-Function FileNameControl(sName As String) 'lla
+Function FileNameControl(sName As String)
 'In the file name, replace forbidden characters with an underscore
 
     sName = Replace(sName, "<", "_")
@@ -364,7 +375,21 @@ Function translateHeadGeo()
 
 End Function
 
+Sub ResetField()
 
+    SheetMain.Range(C_sRngPathDic).value = ""
+    SheetMain.Range(C_sRngPathGeo).value = ""
+    SheetMain.Range(C_sRngLLName).value = ""
+    SheetMain.Range(C_sRngLLDir).value = ""
+    SheetMain.Range(C_sRngEdition).value = ""
+    
+    SheetMain.Range(C_sRngPathGeo).Interior.Color = vbWhite
+    SheetMain.Range(C_sRngPathDic).Interior.Color = vbWhite
+    SheetMain.Range(C_sRngLLName).Interior.Color = vbWhite
+    SheetMain.Range(C_sRngLLDir).Interior.Color = vbWhite
+    SheetMain.Range(C_sRngEdition).Interior.Color = vbWhite
+
+End Sub
 
 
 

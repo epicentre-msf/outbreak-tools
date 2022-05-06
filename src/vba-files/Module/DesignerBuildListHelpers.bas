@@ -83,8 +83,7 @@ Public Sub TransferSheet(xlsapp As Excel.Application, sSheetName As String)
     'we need to save as a temporary file and then move it to another instance.
     'DesignerWorkbook is the actual workbook we want to copy from
 
-
-    DesignerWorkbook.worksheets(sSheetName).Copy
+    DesignerWorkbook.Worksheets(sSheetName).Copy
     DoEvents
 
     On Error Resume Next
@@ -100,7 +99,7 @@ Public Sub TransferSheet(xlsapp As Excel.Application, sSheetName As String)
         .Workbooks.Open Filename:=Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx", UpdateLinks:=False
         
         .Sheets(sSheetName).Select
-        .Sheets(sSheetName).Copy after:=.Workbooks(1).Sheets(1)
+        .Sheets(sSheetName).Copy After:=.Workbooks(1).Sheets(1)
         
         DoEvents
         .Workbooks("Temp.xlsx").Close
@@ -216,17 +215,17 @@ End Function
 '@sShpTextColor: color of the text for each of the shapes
 
 Sub AddCmd(xlsapp As Excel.Application, sSheetName As String, iLeft As Integer, iTop As Integer, _
-           sShpName As String, stext As String, iCmdWidth As Integer, iCmdHeight As Integer, _
+           sShpName As String, sText As String, iCmdWidth As Integer, iCmdHeight As Integer, _
            sCommand As String, Optional sShpColor As String = "MainSecBlue", _
            Optional sShpTextColor As String = "White")
 
     
-    stext = translate_LineList(stext, Sheets("linelist-translation").[T_tradShapeLL])
+    sText = translate_LineList(sText, Sheets("linelist-translation").[T_tradShapeLL])
 
     With xlsapp.Sheets(sSheetName)
         .Shapes.AddShape(msoShapeRectangle, iLeft + 3, iTop + 3, iCmdWidth, iCmdHeight).Name = sShpName
         .Shapes(sShpName).Placement = xlFreeFloating
-        .Shapes(sShpName).TextFrame2.TextRange.Characters.Text = stext
+        .Shapes(sShpName).TextFrame2.TextRange.Characters.Text = sText
         .Shapes(sShpName).TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
         .Shapes(sShpName).TextFrame2.VerticalAnchor = msoAnchorMiddle
         .Shapes(sShpName).TextFrame2.WordWrap = msoFalse
@@ -372,7 +371,7 @@ End Sub
 Sub AddGeo(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders As BetterArray, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
           iSheetSubSecStartLine As Integer, iDictLine As Integer, sVarName As String, sMessage As String, iNbshifted As Integer)
 
-    With xlsapp.worksheets(sSheetName)
+    With xlsapp.Worksheets(sSheetName)
         .Cells(iSheetStartLine, iCol).Interior.Color = GetColor("Orange")
                         'update the columns only for the geo
         Call Add4GeoCol(xlsapp, DictData, DictHeaders, sSheetName, sVarName, iSheetStartLine, _
@@ -409,7 +408,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
     
     iRow = iDictLine + iNbshifted
     
-    With xlsapp.worksheets(sSheetName)
+    With xlsapp.Worksheets(sSheetName)
 
         'Admin 4
         sLab = SheetGeo.ListObjects(C_sTabADM4).HeaderRowRange.Item(4).value
@@ -460,7 +459,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
     End With
     
     'Updating the Dictionary for future uses
-    With xlsapp.worksheets(C_sParamSheetDict)
+    With xlsapp.Worksheets(C_sParamSheetDict)
         'Admin 4
         LineValues.Items = DictData.ExtractSegment(RowIndex:=iDictLine)
         LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "4"
