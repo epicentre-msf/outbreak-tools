@@ -26,7 +26,7 @@ Function GetDictionaryHeaders() As BetterArray
 
     Set DictHeaders = New BetterArray
     DictHeaders.LowerBound = 1
-    
+
     Set Wkb = ThisWorkbook
     DictHeaders.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=False
     'Set the Array
@@ -58,7 +58,7 @@ Function GetDictionaryColumn(sColname As String) As BetterArray
     Dim ColumnData As BetterArray
     Set ColumnData = New BetterArray
     ColumnData.LowerBound = 1
-    
+
     'Then we check if the colname is in the headers, if not, you end up with
     'Empty BetterArray
 
@@ -76,11 +76,11 @@ Function GetDictionaryData() As BetterArray
     Dim DictData As BetterArray
     Set DictData = New BetterArray
     DictData.LowerBound = 1
-    
+
     With ThisWorkbook.Worksheets(C_sParamSheetDict)
          DictData.FromExcelRange .Cells(2, 1), DetectLastRow:=True, DetectLastColumn:=True
     End With
-    
+
     Set GetDictionaryData = DictData.Clone
     Set DictData = Nothing
 End Function
@@ -90,13 +90,13 @@ Function GetChoicesData() As BetterArray
     Dim ChoicesData As BetterArray
     Set ChoicesData = New BetterArray
     ChoicesData.LowerBound = 1
-    
+
     With ThisWorkbook.Worksheets(C_sParamSheetChoices)
         .Visible = xlSheetHidden
          ChoicesData.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
          .Visible = xlSheetVeryHidden
     End With
-    
+
     Set GetChoicesData = ChoicesData.Clone
     Set ChoicesData = Nothing
 End Function
@@ -106,13 +106,13 @@ Function GetTransData() As BetterArray
     Dim TransData As BetterArray
     Set TransData = New BetterArray
     TransData.LowerBound = 1
-    
+
     With ThisWorkbook.Worksheets(C_sParamSheetTranslation)
         .Visible = xlSheetHidden
          TransData.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
          .Visible = xlSheetVeryHidden
     End With
-    
+
     Set GetTransData = TransData.Clone
     Set TransData = Nothing
 End Function
@@ -137,7 +137,7 @@ Function GetDictDataFromCondition(sColumnName As String, sCondition As String, O
             End With
             Set Rng = .ListObjects("o" & ClearString(C_sParamSheetDict)).Range.SpecialCells(xlCellTypeVisible)
         End With
-        
+
         'Take the special cells and copy the data
         With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
@@ -150,7 +150,7 @@ Function GetDictDataFromCondition(sColumnName As String, sCondition As String, O
             Else
                 ColumnData.FromExcelRange .Cells(2, 1), DetectLastColumn:=True, DetectLastRow:=True
             End If
-            
+
             .Cells.Clear
             .Visible = xlSheetVeryHidden
         End With
