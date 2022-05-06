@@ -7,7 +7,7 @@ Sub TranslateForm(UserFrm As UserForm, rgPlage As Range)
     Dim sLanguage As String
     Dim iNumCol As Integer, i As Integer
     Dim cControl As Control
-    
+
     sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_Language].value, _
     Sheets("linelist-translation").[T_Lang2], 2, False)
 
@@ -23,7 +23,7 @@ Sub TranslateForm(UserFrm As UserForm, rgPlage As Range)
         Case "SPA"
             iNumCol = 6
     End Select
-    
+
     For Each cControl In UserFrm.Controls
         If TypeOf cControl Is MSForms.CommandButton Or (TypeOf cControl Is MSForms.Label) Or (TypeOf cControl Is MSForms.OptionButton) _
         Or (TypeOf cControl Is MSForms.Page) Or (TypeOf cControl Is MSForms.MultiPage) Or (TypeOf cControl Is MSForms.Frame) Then
@@ -40,7 +40,7 @@ Sub TranslateForm(UserFrm As UserForm, rgPlage As Range)
             End If
         End If
     Next cControl
-    
+
 End Sub
 
 
@@ -49,7 +49,7 @@ Function translate_LineList(sText As String, rgPlage As Range)
 
     Dim sLanguage As String
     Dim iNumCol As Integer
-    
+
     sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_Language].value, _
     Sheets("linelist-translation").[T_Lang2], 2, False)
 
@@ -65,7 +65,7 @@ Function translate_LineList(sText As String, rgPlage As Range)
         Case "SPA"
             iNumCol = 5
     End Select
-    
+
     translate_LineList = Application.WorksheetFunction.VLookup(sText, rgPlage, iNumCol, False)
 
 End Function
@@ -74,41 +74,41 @@ Sub ImportLanguage(sPath As String)
 'Import languages from the setup file and sheet Translation
 
     Dim sAdr1 As String, sAdr2 As String, sNomFic As String
-    
+
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
 
     SheetDesTranslation.Select
     SheetDesTranslation.[T_Lst_Lang].Select
     SheetDesTranslation.Range([T_Lst_Lang], Selection.End(xlToRight)).ClearContents
-    
+
     SheetSetTranslation.Select
     Cells.Delete
 
     Workbooks.Open Filename:=sPath
     Sheets("Translations").Range("Tab_Translations[#Headers]").Copy
-    
+
     sNomFic = Dir(sPath)
-    
+
     DesignerWorkbook.Activate
     SheetDesTranslation.[T_Lst_Lang].PasteSpecial
-    
+
     Windows(sNomFic).Activate
     Sheets("Translations").Select
     Cells.Copy
-    
+
     DesignerWorkbook.Activate
     SheetSetTranslation.Range("A1").PasteSpecial
 
     Windows(sNomFic).Close
 
-       
+
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
 
     sAdr1 = SheetDesTranslation.[T_Lst_Lang].Address
     sAdr2 = SheetDesTranslation.[T_Lst_Lang].End(xlToRight).Address
-    
+
     SheetMain.Select
     SheetMain.[RNG_LangSetup].value = ""
     SheetMain.[RNG_LangSetup].Select
@@ -133,12 +133,12 @@ Function F_TransLL_Create(ByVal sText As String, iNumCol As Integer, Optional sT
 
     Dim i As Integer, iStart As Integer
     Dim sFormula As String, sLabelTranlate As String
-    
+
     If SheetMain.[RNG_LangSetup].value = "" Then
         F_TransLL_Create = sText
         Exit Function
     End If
-    
+
     If iNumCol = 2 Or sText = "" Then
         F_TransLL_Create = sText
     Else
@@ -169,5 +169,5 @@ Function F_TransLL_Create(ByVal sText As String, iNumCol As Integer, Optional sT
             End If
         End If
     End If
-    
+
 End Function
