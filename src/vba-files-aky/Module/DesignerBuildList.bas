@@ -282,14 +282,9 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
         '-------------- Creating the export sheet
         .Worksheets.Add.Name = C_sParamSheetExport
         'Headers of the export options
-        .Worksheets(C_sParamSheetExport).Cells(1, 1).value = "ID"
-        .Worksheets(C_sParamSheetExport).Cells(1, 2).value = "Lbl"
-        .Worksheets(C_sParamSheetExport).Cells(1, 3).value = "Pwd"
-        .Worksheets(C_sParamSheetExport).Cells(1, 4).value = "Actif"
-        .Worksheets(C_sParamSheetExport).Cells(1, 5).value = "FileName"
 
         'Adding the data on export parameters
-        ExportData.ToExcelRange Destination:=.Sheets(C_sParamSheetExport).Cells(2, 1)
+        ExportData.ToExcelRange Destination:=.Worksheets(C_sParamSheetExport).Cells(1, 1)
 
         'search in linelist language
         iColLang = IIf([RNG_LangSetup].value <> "", SheetSetTranslation.Rows(4).Find(What:=SheetMain.[RNG_LangSetup].value, LookAt:=xlWhole).Column, 2)

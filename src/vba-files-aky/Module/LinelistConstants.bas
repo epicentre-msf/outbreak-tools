@@ -101,7 +101,6 @@ Public Const C_sChoiHeaderList As String = "list name" 'Choice list headers
 Public Const C_sExportActive As String = "active"
 Public Const C_sExportInactive As String = "inactive"
 
-
 'FORMS ============================================================================================================================================================================
 
 Public Const C_sFormExport               As String = "F_Export"                          'Export Frame
@@ -165,6 +164,8 @@ Public Const C_sLLPassword               As String = "1234"                     
 Public Const C_sAdmName                  As String = "adm"   'Name of administrative levels names
 Public Const C_sYes                     As String = "yes"
 Public Const C_sNo                      As String = "no"
+Public Const C_sGeobase                 As String = "export_geobase"
+Public Const C_sDatabase                As String = "export_data"
 
 'INTEGERS CONSTANTS ===============================================================================================================================================================
 Public Const C_iNbLinesLLData           As Integer = 200                                    'Number of linest to add by default
