@@ -10,7 +10,7 @@ Sub LoadFileDic()
 
     Dim sFilePath As String                      'Path to the dictionnary
 
-    BeginWork xlsapp:= Application
+    BeginWork xlsapp:=Application
 
     'LoadFile is the procedure for loading the path to the dictionnary
     sFilePath = Helpers.LoadFile("*.xlsb", "Setup") 'The
@@ -24,7 +24,7 @@ Sub LoadFileDic()
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
 
-    EndWork xlsapp:= Application
+    EndWork xlsapp:=Application
 End Sub
 
 'Loading a linelist file ----------------------------------------------------------------------------------------------------------------------------------------------------

@@ -212,7 +212,6 @@ Sub Export(iTypeExport As Byte)
 
     If AbleToExport Then
         BeginWork xlsapp:=Application
-        iWindowState = Application.WindowState
         Application.WindowState = xlMinimized
 
         Set Wkb = Workbooks.Add
@@ -360,7 +359,6 @@ Sub Export(iTypeExport As Byte)
 
     Wkb.Close
     F_Export.Hide
-    Application.WindowState = iWindowState
     EndWork xlsapp:=Application
 
     Set Wkb = Nothing
@@ -432,7 +430,7 @@ Sub ExportForMigration()
     Dim LLSheetData     As BetterArray 'Vector of all sheets of type linelist
     Dim AdmSheetData    As BetterArray
     Dim Wkb             As Workbook
-    Dim Wksh            As Worksheet 'Worksheet for the Geo
+    Dim wksh            As Worksheet 'Worksheet for the Geo
 
     'Those are data for the export
     Dim ExportHeader    As BetterArray
@@ -450,7 +448,6 @@ Sub ExportForMigration()
     Dim sFirstSheetName As String 'Name of the first sheet, will remove it afterwards
 
     Dim i As Integer 'iterator
-    Dim iWindowState As Integer 'Window state
 
     Set LLSheetData = New BetterArray
     Set AdmSheetData = New BetterArray
@@ -518,8 +515,6 @@ Sub ExportForMigration()
 
         'Now I am able to Export, try to write each data to a workbook
         BeginWork xlsapp:=Application
-        iWindowState = Application.WindowState
-        Application.WindowState = xlMinimized
         Application.DisplayAlerts = False
 
         'Writing the linelist Data (with all the databases, dictionary, export, translation and choices)
@@ -596,12 +591,12 @@ Sub ExportForMigration()
 
             'Add the worksheets for each of the ADM and Histo Levels
 
-            Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
+            Set wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
 
             'Histo HF
             .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabHistoHF
 
-            ExportData.FromExcelRange Wksh.ListObjects(C_sTabHistoHF).Range
+            ExportData.FromExcelRange wksh.ListObjects(C_sTabHistoHF).Range
 
             ExportData.ToExcelRange .Worksheets(C_sTabHistoHF).Cells(1, 1)
             sPrevSheetName = C_sTabHistoHF
@@ -609,7 +604,7 @@ Sub ExportForMigration()
             'Histo Geo
             .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabHistoGeo
 
-            ExportData.FromExcelRange Wksh.ListObjects(C_sTabHistoGeo).Range
+            ExportData.FromExcelRange wksh.ListObjects(C_sTabHistoGeo).Range
 
             ExportData.ToExcelRange .Worksheets(C_sTabHistoGeo).Cells(1, 1)
             sPrevSheetName = C_sTabHistoGeo
@@ -617,7 +612,7 @@ Sub ExportForMigration()
             'HF
             .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabHF
 
-            ExportData.FromExcelRange Wksh.ListObjects(C_sTabHF).Range
+            ExportData.FromExcelRange wksh.ListObjects(C_sTabHF).Range
 
             ExportData.ToExcelRange .Worksheets(C_sTabHF).Cells(1, 1)
             sPrevSheetName = C_sTabHF
@@ -626,7 +621,7 @@ Sub ExportForMigration()
             .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabNames
 
 
-            ExportData.FromExcelRange Wksh.ListObjects(C_sTabNames).Range
+            ExportData.FromExcelRange wksh.ListObjects(C_sTabNames).Range
 
             ExportData.ToExcelRange .Worksheets(C_sTabNames).Cells(1, 1)
             sPrevSheetName = C_sTabNames
@@ -635,7 +630,7 @@ Sub ExportForMigration()
             .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabADM4
 
 
-            ExportData.FromExcelRange Wksh.ListObjects(C_sTabADM4).Range
+            ExportData.FromExcelRange wksh.ListObjects(C_sTabADM4).Range
             ExportData.ToExcelRange .Worksheets(C_sTabADM4).Cells(1, 1)
             sPrevSheetName = C_sTabADM4
 
@@ -643,7 +638,7 @@ Sub ExportForMigration()
             .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabADM3
 
 
-            ExportData.FromExcelRange Wksh.ListObjects(C_sTabADM3).Range
+            ExportData.FromExcelRange wksh.ListObjects(C_sTabADM3).Range
 
             ExportData.ToExcelRange .Worksheets(C_sTabADM3).Cells(1, 1)
             sPrevSheetName = C_sTabADM3
@@ -652,14 +647,14 @@ Sub ExportForMigration()
             .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabADM2
 
 
-            ExportData.FromExcelRange Wksh.ListObjects(C_sTabADM2).Range
+            ExportData.FromExcelRange wksh.ListObjects(C_sTabADM2).Range
             ExportData.ToExcelRange .Worksheets(C_sTabADM2).Cells(1, 1)
             sPrevSheetName = C_sTabADM2
 
             'ADM1
             .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabADM1
 
-            ExportData.FromExcelRange Wksh.ListObjects(C_sTabADM1).Range
+            ExportData.FromExcelRange wksh.ListObjects(C_sTabADM1).Range
             ExportData.ToExcelRange .Worksheets(C_sTabADM1).Cells(1, 1)
             sPrevSheetName = C_sTabADM1
 
@@ -670,6 +665,10 @@ Sub ExportForMigration()
         Wkb.Close
 
     End If
+    
+    'Return previous sate of the application
+    Application.DisplayAlerts = True
+    EndWork xlsapp:=Application
 
     Set Wkb = Nothing
     Set ExportData = Nothing
@@ -677,11 +676,5 @@ Sub ExportForMigration()
     Set DictHeaders = Nothing
     Set LLSheetData = Nothing
     Set AdmSheetData = Nothing
-
-
-    'Return previous sate of the application
-    Application.WindowState = iWindowState
-    Application.DisplayAlerts = True
-    EndWork xlsapp:=Application
 End Sub
 

@@ -11,7 +11,7 @@ Option Explicit
 
 Private Sub Worksheet_Change(ByVal Target As Range)
 
-BeginWork xlsapp := Application
+BeginWork xlsapp:=Application
     'If does not have a name property do nothing
 '    Dim sIsoCountry As String, sCountry As String, sSubCounty As String, sWard As String, sPlace As String, sFacility As String
     
@@ -26,5 +26,5 @@ BeginWork xlsapp := Application
         Exit Sub
 no:
 
-EndWork xlsapp:= Application
+EndWork xlsapp:=Application
 End Sub
