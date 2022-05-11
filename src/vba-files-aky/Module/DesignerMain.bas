@@ -10,6 +10,8 @@ Sub LoadFileDic()
 
     Dim sFilePath As String                      'Path to the dictionnary
 
+    BeginWork xlsapp:= Application
+
     'LoadFile is the procedure for loading the path to the dictionnary
     sFilePath = Helpers.LoadFile("*.xlsb", "Setup") 'The
 
@@ -21,6 +23,8 @@ Sub LoadFileDic()
     Else
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
+
+    EndWork xlsapp:= Application
 End Sub
 
 'Loading a linelist file ----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -121,7 +125,8 @@ Sub LoadGeoFile()
             With SheetGeo.ListObjects("T" & "_" & oSheet.Name)
                 AdmHeader.ToExcelRange Destination:=SheetGeo.Cells(1, .Range.Column), TransposeValues:=True
                 AdmData.ToExcelRange Destination:=SheetGeo.Cells(2, .Range.Column)
-                'resizing the Table
+
+                'Resizing the Table
                 .Resize .Range.CurrentRegion
             End With
         Next
@@ -190,7 +195,7 @@ Sub GenerateData()
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
-    
+
     Set DesWkb = DesignerWorkbook
     Set SetupWkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
 
@@ -206,7 +211,7 @@ Sub GenerateData()
 
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadDic")
 
-    '--------------- Getting all required the Data
+    '---------------------------- Getting all required the Data
 
     'Create the Dictionnary data
     Set DictHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetDict, 1)
@@ -223,7 +228,8 @@ Sub GenerateData()
     'Create parameters for export
     Set ExportData = Helpers.GetData(DesWkb, C_sParamSheetExport, 1)
     'Create the translation Data
-    Set TransData = Helpers.GetData(DesWkb, C_sParamSheetTranslation, C_eStartlinestransdata)
+    Set TransData = New BetterArray
+    TransData.FromExcelRange DesWkb.Worksheets(C_sParamSheetTranslation).Cells(C_eStartlinestransdata, 2), DetectLastRow:=True, DetectLastColumn:=True
 
     Set DesWkb = Nothing
 
