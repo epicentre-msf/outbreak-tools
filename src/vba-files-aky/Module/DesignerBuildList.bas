@@ -226,7 +226,7 @@ StatusBar_Updater (100)
         .ActiveWindow.DisplayZeros = True
     End With
 
-    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, Password:=Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, fileformat:=xlExcel12, Password:=Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     xlsapp.Quit
     Set xlsapp = Nothing
 
