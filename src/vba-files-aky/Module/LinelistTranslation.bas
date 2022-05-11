@@ -73,48 +73,41 @@ End Function
 Sub ImportLanguage(sPath As String)
 'Import languages from the setup file and sheet Translation
 
-    Dim sAdr1 As String, sAdr2 As String, sNomFic As String
+    Dim sAdr1 As String, sAdr2 As String
+    Dim Wkb As Workbook
+    Dim src As Range 'Source range
+    Dim dest As Range 'Destination range
 
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
+    
+    With SheetDesTranslation
+        .Range(.Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").Column), _
+               .Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").End(xlToRight).Column)).ClearContents
+    End With
 
-    SheetDesTranslation.Select
-    SheetDesTranslation.[T_Lst_Lang].Select
-    SheetDesTranslation.Range([T_Lst_Lang], Selection.End(xlToRight)).ClearContents
+    SheetSetTranslation.Cells.Clear
+    
+    BeginWork xlsapp:=Application
+    
+    Set Wkb = Workbooks.Open(Filename:=sPath)
+    Set src = Wkb.Worksheets("Translations").ListObjects("Tab_Translations").HeaderRowRange
+    Set dest = SheetDesTranslation.Range("T_Lst_Lang")
 
-    SheetSetTranslation.Select
-    Cells.Delete
+    src.Copy dest
+    
+    Set src = Wkb.Worksheets("Translations").ListObjects("Tab_Translations").Range
+    Set dest = SheetSetTranslation.Range("A" & C_eStartlinestransdata)
+    
+    src.Copy dest
 
-    Workbooks.Open Filename:=sPath
-    Sheets("Translations").Range("Tab_Translations[#Headers]").Copy
+    sAdr1 = SheetDesTranslation.Range("T_Lst_Lang").Address
+    sAdr2 = SheetDesTranslation.Range("T_Lst_Lang").End(xlToRight).Address
 
-    sNomFic = Dir(sPath)
-
-    DesignerWorkbook.Activate
-    SheetDesTranslation.[T_Lst_Lang].PasteSpecial
-
-    Windows(sNomFic).Activate
-    Sheets("Translations").Select
-    Cells.Copy
-
-    DesignerWorkbook.Activate
-    SheetSetTranslation.Range("A1").PasteSpecial
-
-    Windows(sNomFic).Close
-
-
-    Application.ScreenUpdating = True
-    Application.DisplayAlerts = True
-
-    sAdr1 = SheetDesTranslation.[T_Lst_Lang].Address
-    sAdr2 = SheetDesTranslation.[T_Lst_Lang].End(xlToRight).Address
-
-    SheetMain.Select
-    SheetMain.[RNG_LangSetup].value = ""
-    SheetMain.[RNG_LangSetup].Select
-    With Selection.Validation
+    SheetMain.Range(C_sRngLangSetup).value = ""
+    
+    
+    With SheetMain.Range(C_sRngLangSetup).Validation
         .Delete
-        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:= _
+       .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:= _
         xlBetween, Formula1:="='" & SheetDesTranslation.Name & "'!" & sAdr1 & ":" & sAdr2
         .IgnoreBlank = True
         .InCellDropdown = True
@@ -125,7 +118,11 @@ Sub ImportLanguage(sPath As String)
         .ShowInput = True
         .ShowError = True
     End With
+    
+    Wkb.Close
+    Set Wkb = Nothing
 
+    EndWork xlsapp:=Application
 End Sub
 
 Function F_TransLL_Create(ByVal sText As String, iNumCol As Integer, Optional sType As String)
