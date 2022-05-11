@@ -10,6 +10,8 @@ Attribute VB_Exposed = True
 Option Explicit
 
 Private Sub Worksheet_Change(ByVal Target As Range)
+
+BeginWork xlsapp := Application
     'If does not have a name property do nothing
 '    Dim sIsoCountry As String, sCountry As String, sSubCounty As String, sWard As String, sPlace As String, sFacility As String
     
@@ -23,4 +25,6 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         End If
         Exit Sub
 no:
+
+EndWork xlsapp:= Application
 End Sub
