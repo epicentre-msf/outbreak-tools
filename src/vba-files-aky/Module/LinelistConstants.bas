@@ -106,19 +106,23 @@ Public Const C_sExportInactive As String = "inactive"
 Public Const C_sFormExport               As String = "F_Export"                          'Export Frame
 Public Const C_sFormGeo                  As String = "F_Geo"                             'Geo Frame
 Public Const C_sFormShowHide             As String = "F_NomVisible"                      'ShowHide Frame
+Public Const C_sFormExportMig           As String = "F_ExportMig" 'Export for Migration form
+Public Const C_sFormImportMig           As String = "F_ImportMig" 'Import for Migration form
+
 
 'TABLES LISTOBJECTS ===============================================================================================================================================================
 
 'Admin levels tables in the Geo Sheet
 
-Public Const C_sTabADM1                  As String = "T_ADM1"                              'ADM1 Table name
-Public Const C_sTabADM2                  As String = "T_ADM2"                              'ADM2 Table name
-Public Const C_sTabADM3                  As String = "T_ADM3"                              'ADM3 Table name
-Public Const C_sTabADM4                  As String = "T_ADM4"                              'ADM4 Table name
+Public Const C_sTabadm1                  As String = "T_ADM1"                              'ADM1 Table name
+Public Const C_sTabAdm2                  As String = "T_ADM2"                              'ADM2 Table name
+Public Const C_sTabAdm3                  As String = "T_ADM3"                              'ADM3 Table name
+Public Const C_sTabAdm4                  As String = "T_ADM4"                              'ADM4 Table name
 Public Const C_sTabHF                    As String = "T_HF"                                'Health Facility Table
 Public Const C_sTabNames                 As String = "T_NAMES"
 Public Const C_sTabHistoGeo              As String = "T_HistoGeo"                          'Historic data for the geo
-Public Const C_sTabHistoHF               As String = "T_HistoHF"                          'Historic data for the Health Facility
+Public Const C_sTabHistoHF               As String = "T_HistoHF"                           'Historic data for the Health Facility
+Public Const C_sTabGeoMetadata As String = "T_Metadata"
 
 'Formulas and functions tables
 
@@ -129,13 +133,14 @@ Public Const C_sTabASCII                 As String = "T_ascii"                  
 'PROGRAM NAMES ==================================================================================
 'Program names are used for setting programs to buttons added in the linelist
 
-Public Const C_sCmdShowHideName = "ClicCmdShowHide" 'ShowHideCommand
-Public Const C_sCmdAddRowsName = "ClicCmdAddRows"
-Public Const C_sCmdShowGeoApp = "ClicCmdGeoApp"
-Public Const C_sCmdExportMigration = "ClicExportMigration"
-Public Const C_sCmdImportMigration = "ClicImportMigration"
-Public Const C_sCmdExport = "ClicCmdExport"
-Public Const C_sCmdDebug = "ClicCmdDebug"
+Public Const C_sCmdShowHideName As String = "ClicCmdShowHide" 'ShowHideCommand
+Public Const C_sCmdAddRowsName As String = "ClicCmdAddRows"
+Public Const C_sCmdShowGeoApp As String = "ClicCmdGeoApp"
+Public Const C_sCmdExportMigration As String = "ClicExportMigration"
+Public Const C_sCmdImportMigration As String = "ClicImportMigration"
+Public Const C_sCmdExport As String = "ClicCmdExport"
+Public Const C_sCmdDebug As String = "ClicCmdDebug"
+Public Const C_sAdmName As String = "adm"
 
 'TABLES LISTOBJECTS ===============================================================================================================================================================
 
@@ -145,27 +150,38 @@ Public Const C_sTabkeys = "T_Keys"
 'RANGES, MESSAGES AND SHAPES =======================================================================================================================================================
 
 'Shapes----------------------------------------------------------
-Public Const C_sShpShowHide = "SHP_ShowHide"
-Public Const C_sShpAddRows = "SHP_Add200L"
-Public Const C_sShpGeo = "SHP_GeoApps"
-Public Const C_sShpExpMigration = "SHP_ExportMig"
-Public Const C_sShpImpMigration = "SHP_ImportMig"
-Public Const C_sShpExport = "SHP_Export"
-Public Const C_sShpDebug = "SHP_Debug"
+Public Const C_sShpShowHide As String = "SHP_ShowHide"
+Public Const C_sShpAddRows As String = "SHP_Add200L"
+Public Const C_sShpGeo As String = "SHP_GeoApps"
+Public Const C_sShpExpMigration As String = "SHP_ExportMig"
+Public Const C_sShpImpMigration As String = "SHP_ImportMig"
+Public Const C_sShpExport As String = "SHP_Export"
+Public Const C_sShpDebug As String = "SHP_Debug"
 
 'Ranges in the linelist sheet
 Public Const C_sRngPublickey             As String = "RNG_PublicKey"                     'Name of the range for publickey
 Public Const C_sRngPrivatekey            As String = "RNG_PrivateKey"                    'Name of the range for the private key
-
-
+Public Const C_sRngGeoName               As String = "RNG_GeoName"
+Public Const C_sRngLLLanguageCode       As String = "RNG_LLLanguageCode"                        'Where the name of the geofile is stored in the GeoSheet
+Public Const C_sRngLLLanguage As String = "RNG_LLLanguage"
 
 'STRING CONSTANTS =================================================================================================================================================================
-Public Const C_sLLPassword               As String = "1234"                                'Default password for the linelist file (if no one is set)                                'Default password for the designer
-Public Const C_sAdmName                  As String = "adm"   'Name of administrative levels names
+Public Const C_sLLPassword              As String = "1234"                                'Default password for the linelist file (if no one is set)                                'Default password for the designer
 Public Const C_sYes                     As String = "yes"
 Public Const C_sNo                      As String = "no"
 Public Const C_sGeobase                 As String = "export_geobase"
 Public Const C_sDatabase                As String = "export_data"
+
+'Name of the sheets for each admin levels
+Public Const C_sAdm1  As String = "ADM1"
+Public Const C_sAdm2 As String = "ADM2"
+Public Const C_sAdm3 As String = "ADM3"
+Public Const C_sAdm4 As String = "ADM4"
+Public Const C_sHF As String = "HF"
+Public Const C_sNames As String = "NAMES"
+Public Const C_sHistoHF As String = "HistoHF"
+Public Const C_sHistoGeo As String = "HistoGeo"
+Public Const C_sGeoMetadata As String = "Metadata"
 
 'INTEGERS CONSTANTS ===============================================================================================================================================================
 Public Const C_iNbLinesLLData           As Integer = 200                                    'Number of linest to add by default
@@ -176,7 +192,7 @@ Public Const C_iNbLinesLLData           As Integer = 200                        
 Public Enum C_StartLines
     C_eStartLinesDictHeaders = 2                                                             'Starting lines for dictionary headers
     C_eStartLinesDictData = 3                                                                'Starting lines for dictionary data
-    C_eStartLinesLLMainSec = 3                                                                'Starting lines for first title of the linelist
+    C_eStartLinesLLMainSec = 3                                                               'Starting lines for first title of the linelist
     C_eStartLinesLLSubSec = 4                                                                'Starting lines for second title of the linelist
     C_eStartLinesLLData = 5                                                                  'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                                                             'Starting lines for export titles

@@ -18,11 +18,11 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Dim xlsapp          As Excel.Application
     Dim LLNbColData     As BetterArray               'Number of columns of a Sheet of type linelist
     Dim LLSheetNameData As BetterArray           'Names of sheets of type linelist
-    Dim ChoicesListData As BetterArray           'Choices list
-    Dim ChoicesLabelsData As BetterArray         ' Choices labels
-    Dim VarnameSheetData As BetterArray
-    Dim VarNameData As BetterArray
-    Dim ColumnIndexData As BetterArray
+    Dim ChoicesListData     As BetterArray           'Choices list
+    Dim ChoicesLabelsData   As BetterArray         ' Choices labels
+    Dim VarnameSheetData    As BetterArray
+    Dim VarNameData         As BetterArray
+    Dim ColumnIndexData     As BetterArray
     Dim ColumnSheetIndexData As BetterArray
     Dim FormulaData As BetterArray
     Dim SpecCharData As BetterArray
@@ -93,7 +93,6 @@ StatusBar_Updater (20)
     SpecCharData.FromExcelRange SheetFormulas.ListObjects(C_sTabASCII).ListColumns("TEXT").DataBodyRange, DetectLastColumn:=False
 
     VarNameData.Items = DictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderVarName))
-
 
     'Create all the required Sheets in the workbook (Dictionnary, Export, Password, Geo and other sheets defined by the user)
     Call CreateSheets(xlsapp, DictData, DictHeaders, ExportData, _
@@ -344,13 +343,13 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
             If sPrevSheetName <> DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)) Then
 
                 If sPrevSheetName = "" Then
-                    .Worksheets(1).Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                    .Worksheets(1).Name = EnsureGoodSheetName(DictData.Items(1, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
                 Else
                     .Worksheets.Add(After:=.Worksheets(sPrevSheetName)).Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
                 End If
 
                 'I am on a new sheet name, I update values
-                sPrevSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                sPrevSheetName = EnsureGoodSheetName(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
 
                 j = j + 1
                 'Here, the column index is the index number of each column in one sheet. I update it when I am on
@@ -794,7 +793,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                     .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = GetColor("Orange")
                 Case C_sDictControlForm 'Formulas, are reported to the formula function
                     If (sActualFormula <> "") Then
-                        sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, VarNameData, ColumnIndexData, _
+                        sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, sSheetName, VarNameData, ColumnIndexData, _
                                                             FormulaData, SpecCharData, False)
                     End If
                     'Testing before writing the formula
@@ -817,11 +816,11 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
             If sActualMin <> "" And sActualMax <> "" Then
 
                 'Testing if it is numeric
-                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
+                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
                 If sFormulaMin = "" Then
                        'MsgBox "Invalid formula will be ignored : " & sActualMin & " / " & sActualVarName
                 Else
-                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
+                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
                     If sFormulaMax = "" Then
                             'MsgBox "Invalid formula will be ignored : " & sFormulaMax & " / " & sActualVarName
                     End If
@@ -863,3 +862,4 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
     Call DesignerBuildListHelpers.TransferCodeWks(xlsapp, sSheetName, C_sModLLChange)
 
 End Sub
+
