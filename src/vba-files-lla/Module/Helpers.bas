@@ -49,7 +49,7 @@ End Sub
 
 'This will set the actual application properties to be able to work correctly
 Public Sub BeginWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean = True)
-    xlsapp.ScreenUpdating = False
+    xlsapp.ScreenUpdating = False 'lla
     xlsapp.DisplayAlerts = False
     xlsapp.Calculation = xlCalculationManual
     xlsapp.DisplayStatusbar = bstatusbar
@@ -64,7 +64,7 @@ Public Sub EndWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean =
 End Sub
 
 'Load files and folders
-Public Function LoadFile(Optional sFilters As String) As String 'lla
+Public Function LoadFile(sFilters As String, sType As String) As String
 
     Dim fDialog As Office.FileDialog
 
@@ -74,10 +74,11 @@ Public Function LoadFile(Optional sFilters As String) As String 'lla
         .AllowMultiSelect = False
         .Title = "Chose your file"               'MSG_ChooseFile
         .Filters.Clear
-        .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile'lla
+        .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
 
         If .show = True Then
             LoadFile = .SelectedItems(1)
+            If sType = "Setup" Then Call ImportLangAnalysis(LoadFile)
         End If
     End With
     Set fDialog = Nothing
@@ -132,11 +133,9 @@ Public Function IsWkbOpened(sName As String) As Boolean
     On Error GoTo 0
 End Function
 
-
 'Write lines for borders
 
 Public Sub WriteBorderLines(oRange As Range)
-
     Dim i As Integer
     For i = 7 To 10
         With oRange.Borders(i)
@@ -146,9 +145,7 @@ Public Sub WriteBorderLines(oRange As Range)
             .Weight = xlThin
         End With
     Next
-
 End Sub
-
 
 'Clear a String to remove inconsistencies
 Public Function ClearString(ByVal sString As String, Optional bremoveHiphen As Boolean = True) As String
@@ -178,7 +175,7 @@ Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Byte) As Bet
     Headers.LowerBound = 1
     Dim sValue As String
     
-    With Wkb.worksheets(sSheet)
+    With Wkb.Worksheets(sSheet)
         i = 1
         While .Cells(StartLine, i).value <> ""
         'Clear the values in the sheet when adding thems
@@ -198,7 +195,7 @@ Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Byte) As Be
     Dim Data As BetterArray
     Set Data = New BetterArray
     Data.LowerBound = 1
-    Data.FromExcelRange Wkb.worksheets(sSheetName).Cells(StartLine, 1), DetectLastRow:=True, DetectLastColumn:=True
+    Data.FromExcelRange Wkb.Worksheets(sSheetName).Cells(StartLine, 1), DetectLastRow:=True, DetectLastColumn:=True
     'The output of the function is a variant
     Set GetData = Data
     Set Data = Nothing
@@ -367,11 +364,11 @@ End Sub
 
 Public Function IsEmptyTable(T_aTest) As Boolean
 
-    Dim Test As Variant
+    Dim test As Variant
 
     IsEmptyTable = False
     On Error GoTo crash
-    Test = UBound(T_aTest)
+    test = UBound(T_aTest)
     On Error GoTo 0
     Exit Function
 
@@ -379,6 +376,36 @@ crash:
     IsEmptyTable = True
 
 End Function
+
+'Move a plage of data from the setup sheet to the designer sheet
+Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As String, sStartCell As Integer)
+
+    Dim sData As BetterArray
+    Dim DestWksh As Worksheet
+    Dim sheetExists As Boolean
+
+    Set sData = New BetterArray
+    sData.FromExcelRange SourceWkb.Worksheets(sSheetName).Range("A" & CStr(sStartCell)), DetectLastRow:=True, DetectLastColumn:=True
+    sheetExists = False
+
+    For Each DestWksh In DestWkb.Worksheets
+        If DestWksh.Name = sSheetName Then sheetExists = True
+    Next
+
+    'Clear the contents if the sheet exists, or create a new sheet if Not
+    If sheetExists Then
+        DestWkb.Worksheets(sSheetName).Activate
+        Cells.Clear
+    Else
+        DestWkb.Worksheets.Add.Name = sSheetName
+    End If
+
+    'Copy the data Now
+    sData.ToExcelRange DestWkb.Worksheets(sSheetName).Range("A1")
+    DestWkb.Worksheets(sSheetName).Visible = xlSheetHidden
+    Set sData = Nothing
+End Sub
+
 
 'Filter a table listobject on one condition and get the values of that table or all the unique values of one column
 Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 As String, _
@@ -416,7 +443,7 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
     End If
         
     'Copy and paste to temp
-    With ThisWorkbook.worksheets(C_sSheetTemp)
+    With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
             
@@ -449,7 +476,7 @@ Function GetUniquelo(lo As ListObject, iIndex As Integer) As BetterArray
     Set Rng = lo.ListColumns(iIndex).DataBodyRange
     
     'Copy and paste to temp
-    With ThisWorkbook.worksheets(C_sSheetTemp)
+    With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
             
@@ -500,9 +527,6 @@ Dim sval As String
     Set Outable = Nothing
 
 End Function
-
-    
-
 
 Sub StatusBar_Updater(sCpte As Single)
 'increase the status progressBar
