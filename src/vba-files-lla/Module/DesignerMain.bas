@@ -11,7 +11,7 @@ Sub LoadFileDic()
     Dim sFilePath As String                      'Path to the dictionnary
     
     'LoadFile is the procedure for loading the path to the dictionnary
-    sFilePath = Helpers.LoadFile("*.xlsb") 'The
+    sFilePath = Helpers.LoadFile("*.xlsb", "Setup") 'The
     
     'Update messages if the file path is correct
     If sFilePath <> "" Then
@@ -21,6 +21,24 @@ Sub LoadFileDic()
     Else
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
+End Sub
+
+'Loading a linelist file ----------------------------------------------------------------------------------------------------------------------------------------------------
+Sub LoadFileLL()
+
+    Dim sFilePath As String                      'Path to the linelist
+    
+    'LoadFile is the procedure for loading the path to the linelist
+    sFilePath = Helpers.LoadFile("*.xlsb", "LineList") 'The
+    
+    If sFilePath = "" Then Exit Sub
+    
+    On Error GoTo ErrorManage
+    Application.Workbooks.Open Filename:=sFilePath, ReadOnly:=False
+    
+    Exit Sub
+ErrorManage:
+    MsgBox TranslateMsg("MSG_TitlePassWord"), vbCritical, TranslateMsg("MSG_PassWord")
 End Sub
 
 'Loading the Lineist directory ---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -65,7 +83,7 @@ Sub LoadGeoFile()
     Set AdmHeader = New BetterArray
     AdmHeader.LowerBound = 1
     'Set xlsapp = New Excel.Application
-    sFilePath = Helpers.LoadFile("*.xlsx")
+    sFilePath = Helpers.LoadFile("*.xlsx", "Geo")
     
     If sFilePath <> "" Then
         'Open the geo workbook and hide the windows
@@ -82,7 +100,7 @@ Sub LoadGeoFile()
         Next
             
         'Reloading the data from the Geobase
-        For Each oSheet In Wkb.worksheets
+        For Each oSheet In Wkb.Worksheets
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_EnCours") & oSheet.Name
             AdmData.Clear
             AdmHeader.Clear
@@ -131,7 +149,7 @@ Sub LoadGeoFile()
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
     
-    Call translateHeadGeo 'lla
+    Call translateHeadGeo
     
     EndWork xlsapp:=Application
 End Sub
@@ -150,7 +168,6 @@ Sub GenerateData()
    BeginWork xlsapp:=Application
    
     If Not bGood Then
-        DesignerMainHelpers.ShowHideCmdValidation show:=False
         Exit Sub
     End If
     
@@ -161,8 +178,10 @@ Sub GenerateData()
     Dim ExportData      As BetterArray          'Export data
     Dim TransData       As BetterArray          'Translation data
     Dim sPath           As String
-    Dim Wkb             As Workbook
+    Dim SetupWkb        As Workbook
+    Dim DesWkb          As Workbook
     Dim iOpenLL         As Integer
+    Dim i               As Integer
     
     'Be sure the actual Workbook is not opened
     
@@ -172,46 +191,60 @@ Sub GenerateData()
         Exit Sub
     End If
                                                                                 
-    Set Wkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
-    
-    
+    Set DesWkb = DesignerWorkbook
+    Set SetupWkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
+
+    'Move the dictionary data
+    Call Helpers.MoveData(SetupWkb, DesWkb, C_sParamSheetDict, C_eStartLinesDictHeaders)
+    'Move the Choices data
+    Call Helpers.MoveData(SetupWkb, DesWkb, C_sParamSheetChoices, C_eStartLinesChoicesHeaders)
+    'Move the Export data
+    Call Helpers.MoveData(SetupWkb, DesWkb, C_sParamSheetExport, C_eStartLinesExportTitle)
+
+    SetupWkb.Close savechanges:=False
+    Set SetupWkb = Nothing
+
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadDic")
     
+
+    'translation of the Export, Dictionary and Choice sheets for the linelist
+    Call Translate_Manage
+    
+
+    '--------------- Getting all required the Data
+
     'Create the Dictionnary data
-    Set DictHeaders = Helpers.GetHeaders(Wkb, C_sParamSheetDict, C_eStartLinesDictHeaders)
-    
+    Set DictHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetDict & "_LL", 1)
     'Create the data table of linelist patient using the dictionnary
-    Set DictData = Helpers.GetData(Wkb, C_sParamSheetDict, C_eStartLinesDictData)
-    
+    Set DictData = Helpers.GetData(DesWkb, C_sParamSheetDict & "_LL", 2)
     'Create the choices data
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadList")
-    
     'Create the dictionnary for the choices sheet
-    Set ChoicesHeaders = Helpers.GetHeaders(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesHeaders)
-    
+    Set ChoicesHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetChoices & "_LL", 1)
     'Create the table for the choices
-    Set ChoicesData = Helpers.GetData(Wkb, C_sParamSheetChoices, C_eStartLinesChoicesData)
-       
+    Set ChoicesData = Helpers.GetData(DesWkb, C_sParamSheetChoices & "_LL", 2)
     'Reading the export sheet
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadExport")
-    
     'Create parameters for export
-    Set ExportData = Helpers.GetData(Wkb, C_sParamSheetExport, C_eStartLinesExportData)
-    'Translation data
-    Set TransData = New BetterArray
-    With Wkb.Sheets(C_sParamSheetTranslation)
-        TransData.FromExcelRange .Cells(C_eStartlinestransdata, 2), DetectLastRow:=True, DetectLastColumn:=True
-    End With
-
-    Wkb.Close savechanges:=False
+    Set ExportData = Helpers.GetData(DesWkb, C_sParamSheetExport & "_LL", 1)
+    'Create the translation Data
+    Set TransData = Helpers.GetData(DesWkb, C_sParamSheetTranslation, C_eStartlinestransdata)
     
-    Set Wkb = Nothing
+    Set DesWkb = Nothing
+
+    'removal of Export, Dictionary and Choice sheets for the linelist
+    i = ActiveWorkbook.Sheets.Count - 2
+    
+    Do While i <= ActiveWorkbook.Sheets.Count
+        Application.DisplayAlerts = False
+        Sheets(i).Delete
+        Application.DisplayAlerts = True
+    Loop
+    
     
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
         
     'Creating the linelist using the dictionnary and choices data as well as export data
-    'The BuildList procedure is in the linelist
-    
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
 
     Call DesignerBuildList.BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, sPath)
@@ -222,15 +255,11 @@ Sub GenerateData()
     
     Call SetInputRangesToWhite
     
-    SheetMain.Shapes("SHP_OpenLL").Visible = msoTrue
-
     iOpenLL = MsgBox(TranslateMsg("MSG_OpenLL") & " " & sPath & " ?", vbQuestion + vbYesNo, "Linelist")
 
     If iOpenLL = vbYes Then
         Call OpenLL
     End If
-
-    ShowHideCmdValidation True
 
     'Setting the memory data to nothing
     Set DictHeaders = Nothing
@@ -279,7 +308,7 @@ Public Sub Control()
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Correct")
         End If
         
-        DesignerMainHelpers.ShowHideCmdValidation True
+        Call GenerateData
         
     End If
 End Sub
@@ -312,8 +341,6 @@ Sub OpenLL()
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CheckLL")
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         SheetMain.Range(C_sRngLLDir).Interior.Color = Helpers.GetColor("RedEpi")
-        ShowHideCmdValidation show:=False
-        SheetMain.Shapes("SHP_OpenLL ").Visible = msoFalse
         Exit Sub
     End If
     
@@ -323,7 +350,7 @@ End Sub
 
 
 
-Function FileNameControl(sName As String) 'lla
+Function FileNameControl(sName As String)
 'In the file name, replace forbidden characters with an underscore
 
     sName = Replace(sName, "<", "_")
@@ -346,7 +373,11 @@ Function translateHeadGeo()
 
     Dim sIsoCountry As String, sCountry As String, sSubCounty As String, sWard As String, sPlace As String, sFacility As String
 
-    sIsoCountry = GetLanguageCode(SheetMain.Range(C_sRngLLFormLang).value)
+    Sheets("linelist-translation").[RNG_Language].value = [RNG_LLForm].value 'check Language of linelist's forms
+
+    sIsoCountry = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_Language].value, _
+    Sheets("linelist-translation").[T_Lang2], 2, False)
+
 
     sCountry = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 2, False)
     sSubCounty = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 3, False)
@@ -360,11 +391,24 @@ Function translateHeadGeo()
     Sheets("GEO").Range("S1").value = sPlace
     Sheets("GEO").Range("W1").value = sFacility
     
-    Sheets("linelist-translation").[RNG_Language].value = [RNG_LLForm].value 'check Language of linelist's forms
 
 End Function
 
+Sub ResetField()
 
+    SheetMain.Range(C_sRngPathDic).value = ""
+    SheetMain.Range(C_sRngPathGeo).value = ""
+    SheetMain.Range(C_sRngLLName).value = ""
+    SheetMain.Range(C_sRngLLDir).value = ""
+    SheetMain.Range(C_sRngEdition).value = ""
+    
+    SheetMain.Range(C_sRngPathGeo).Interior.Color = vbWhite
+    SheetMain.Range(C_sRngPathDic).Interior.Color = vbWhite
+    SheetMain.Range(C_sRngLLName).Interior.Color = vbWhite
+    SheetMain.Range(C_sRngLLDir).Interior.Color = vbWhite
+    SheetMain.Range(C_sRngEdition).Interior.Color = vbWhite
+
+End Sub
 
 
 
