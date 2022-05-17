@@ -132,7 +132,7 @@ Sub TranslateDesigner()
         T_codes.Clear
         SheetMain.Range("RNG_Edition").value = TranslateMsg("MSG_Traduit")
         
-        SheetMain.Range("RNG_LLName").NoteText TranslateMsg("NoteText_Forbidden_Caracteres") 'lla
+        SheetMain.Range("RNG_LLName").NoteText TranslateMsg("NoteText_Forbidden_Caracteres")
         
         Application.ScreenUpdating = True
     End If
