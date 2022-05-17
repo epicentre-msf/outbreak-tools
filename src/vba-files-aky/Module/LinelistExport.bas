@@ -1,7 +1,7 @@
 Attribute VB_Name = "LinelistExport"
 Option Explicit
 
-Private Function GetExportHeaders(sExportName As String, sSheetName As String, Optional isMigration As Boolean = False) As BetterArray
+Function GetExportHeaders(sExportName As String, sSheetName As String, Optional isMigration As Boolean = False) As BetterArray
     Dim ExportHeaders As BetterArray
     Dim SheetNameData As BetterArray
     Dim YesNoExportData As BetterArray
@@ -34,7 +34,7 @@ Private Function GetExportHeaders(sExportName As String, sSheetName As String, O
     Set ExportHeaders = Nothing
 End Function
 
-Private Function GetExportValues(ExportHeadersData As BetterArray, sSheetName As String, Optional iDataType As Integer = 1) As BetterArray
+Function GetExportValues(ExportHeadersData As BetterArray, sSheetName As String, Optional iDataType As Integer = 1) As BetterArray
 
     'iDataType = 1, then it is a linelist, if iDataType = 2 then it is an admin
     'ExportHeadersData, data of the headers with columns to export.
@@ -100,7 +100,7 @@ Private Function GetExportValues(ExportHeadersData As BetterArray, sSheetName As
 
     Exit Function
 errTranspose:
-    MsgBox "Unable to transpose Export Table", vbOKOnly + vbCritical, "ERROR"
+    MsgBox "Unable to transpose Export Table", vbOKOnly + VbCritical, "ERROR"
 End Function
 
 
@@ -376,13 +376,13 @@ Sub Export(iTypeExport As Byte)
     Exit Sub
 
 exportErrHandExport:
-    MsgBox "Errors during export, unable to export to corresponding path", vbOKOnly + vbCritical, "ERROR"
+    MsgBox "Errors during export, unable to export to corresponding path", vbOKOnly + VbCritical, "ERROR"
     Exit Sub
 exportErrHandData:
-    MsgBox "Errors during export, problems while getting the data", vbOKOnly + vbCritical, "ERROR"
+    MsgBox "Errors during export, problems while getting the data", vbOKOnly + VbCritical, "ERROR"
     Exit Sub
 exportErrHandWrite:
-    MsgBox "Errors during export, unable to write data to corresponding directory, please choose another one", vbOKOnly + vbCritical, "ERROR"
+    MsgBox "Errors during export, unable to write data to corresponding directory, please choose another one", vbOKOnly + VbCritical, "ERROR"
     Exit Sub
 End Sub
 
@@ -419,262 +419,4 @@ Function LetKey(bPriv As Boolean) As Long
 
 End Function
 
-
-'================ Export for Migrations =======================================
-
-Sub ExportForMigration()
-
-
-    Dim DictHeaders     As BetterArray 'Headers of the dictionary
-    Dim DictData        As BetterArray 'Values of the dictionary
-    Dim LLSheetData     As BetterArray 'Vector of all sheets of type linelist
-    Dim AdmSheetData    As BetterArray
-    Dim Wkb             As Workbook
-    Dim wksh            As Worksheet 'Worksheet for the Geo
-
-    'Those are data for the export
-    Dim ExportHeader    As BetterArray
-    Dim ExportData      As BetterArray
-
-
-    'boolean for controling the expot
-    Dim AbleToExport As Boolean
-
-
-    Dim sDirectory As String 'Folder for export
-    Dim sLLPath As String 'Linelist file
-    Dim sGeoPath As String 'Geo File
-    Dim sPrevSheetName As String 'Use for previous sheet names in loops
-    Dim sFirstSheetName As String 'Name of the first sheet, will remove it afterwards
-
-    Dim i As Integer 'iterator
-
-    Set LLSheetData = New BetterArray
-    Set AdmSheetData = New BetterArray
-    Set ExportHeader = New BetterArray
-    Set ExportData = New BetterArray
-
-    LLSheetData.LowerBound = 1
-    AdmSheetData.LowerBound = 1
-
-    'Select the Folder
-    AbleToExport = False
-    sDirectory = Helpers.LoadFolder
-
-    i = 0
-    If sDirectory <> "" Then
-        sLLPath = sDirectory & Application.PathSeparator & "linelist" & ".xlsb"
-        sGeoPath = sDirectory & Application.PathSeparator & "geo" & ".xlsb"
-        While Len(sLLPath) >= 255 And Len(sGeoPath) >= 255 And i < 3 'MSG_PathTooLong
-            MsgBox "The path of the export folder is too long so the file names gets truncated. Please select a folder higher in the hierarchy to save the export (ex: Desktop, Downloads, Documents etc.)"
-            sDirectory = Helpers.LoadFolder
-            If sDirectory <> "" Then
-                sLLPath = sDirectory & Application.PathSeparator & "linelist" & ".xlsb"
-                sGeoPath = sDirectory & Application.PathSeparator & "geo" & ".xlsb"
-            End If
-            i = i + 1
-        Wend
-        If i < 3 Then
-           AbleToExport = True
-        Else
-        'Unable to export, leave the program
-         F_Export.Hide
-         Exit Sub
-        End If
-    End If
-
-    'Add here error handling when the export is not working.
-
-    If AbleToExport Then
-
-        'Initialize ditionary headers and values
-        Set DictHeaders = GetDictionaryHeaders()
-        Set DictData = GetDictionaryData()
-
-        i = 1
-        While i <= DictData.Length
-
-            'Get the list of all the Sheets of type linelist
-            If (DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType))) = C_sDictSheetTypeLL Then
-                If (DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))) <> sPrevSheetName Then
-                    sPrevSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
-                    LLSheetData.Push sPrevSheetName
-                End If
-            End If
-
-            'Get the list of all the sheets if type admin
-            If (DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType))) = C_sDictSheetTypeAdm Then
-                If (DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))) <> sPrevSheetName Then
-                    sPrevSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
-                    AdmSheetData.Push sPrevSheetName
-                End If
-            End If
-            i = i + 1
-        Wend
-
-
-        'Now I am able to Export, try to write each data to a workbook
-        BeginWork xlsapp:=Application
-        Application.DisplayAlerts = False
-
-        'Writing the linelist Data (with all the databases, dictionary, export, translation and choices)
-        Set Wkb = Workbooks.Add
-
-        With Wkb
-            sPrevSheetName = .Worksheets(1).Name
-            sFirstSheetName = .Worksheets(1).Name
-
-            'Writing the translation data
-            Set ExportData = GetTransData()
-             .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sParamSheetTranslation
-            ExportData.ToExcelRange .Worksheets(C_sParamSheetTranslation).Cells(1, 1)
-            sPrevSheetName = C_sParamSheetTranslation
-
-            'Writing the choice data
-            Set ExportData = GetChoicesData()
-            'Choices Sheet
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sParamSheetChoices
-            ExportData.ToExcelRange .Worksheets(C_sParamSheetChoices).Cells(1, 1)
-            sPrevSheetName = C_sParamSheetChoices
-
-            'Writing the dictionary
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sParamSheetDict
-            DictHeaders.ToExcelRange .Worksheets(C_sParamSheetDict).Cells(1, 1), TransposeValues:=True
-            DictData.ToExcelRange .Worksheets(C_sParamSheetDict).Cells(2, 1)
-            sPrevSheetName = C_sParamSheetDict
-
-            'Sheets of type linelist
-            i = 1
-            While i <= LLSheetData.UpperBound
-                .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = LLSheetData.Items(i)
-                sPrevSheetName = LLSheetData.Items(i)
-                ExportData.Clear
-                ExportHeader.Clear
-
-                Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
-                Set ExportData = GetExportValues(ExportHeader, sPrevSheetName)
-                ExportHeader.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1), TransposeValues:=True
-                ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
-                i = i + 1
-            Wend
-
-            'Sheets of type Admin
-            i = 1
-            While i <= AdmSheetData.UpperBound
-                .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = AdmSheetData.Items(i)
-                sPrevSheetName = AdmSheetData.Items(i)
-                ExportData.Clear
-                ExportHeader.Clear
-
-                Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
-                Set ExportData = GetExportValues(ExportHeader, sPrevSheetName, 2)
-                .Worksheets(sPrevSheetName).Cells(1, 1).value = "Variable"
-                .Worksheets(sPrevSheetName).Cells(1, 2).value = "Value"
-                ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
-                i = i + 1
-            Wend
-
-            .Worksheets(sFirstSheetName).Delete
-        End With
-
-        'Write an error handling for writing the file here
-        Wkb.SaveAs Filename:=sLLPath, fileformat:=xlExcel12, CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-        Wkb.Close
-        'Error handing for Geo writing
-
-        'Geo
-        Set Wkb = Workbooks.Add
-
-        With Wkb
-
-            sPrevSheetName = sFirstSheetName
-
-            'Add the worksheets for each of the ADM and Histo Levels
-
-            Set wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
-
-            'Histo HF
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabHistoHF
-
-            ExportData.FromExcelRange wksh.ListObjects(C_sTabHistoHF).Range
-
-            ExportData.ToExcelRange .Worksheets(C_sTabHistoHF).Cells(1, 1)
-            sPrevSheetName = C_sTabHistoHF
-
-            'Histo Geo
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabHistoGeo
-
-            ExportData.FromExcelRange wksh.ListObjects(C_sTabHistoGeo).Range
-
-            ExportData.ToExcelRange .Worksheets(C_sTabHistoGeo).Cells(1, 1)
-            sPrevSheetName = C_sTabHistoGeo
-
-            'HF
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabHF
-
-            ExportData.FromExcelRange wksh.ListObjects(C_sTabHF).Range
-
-            ExportData.ToExcelRange .Worksheets(C_sTabHF).Cells(1, 1)
-            sPrevSheetName = C_sTabHF
-
-            'NAMES
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabNames
-
-
-            ExportData.FromExcelRange wksh.ListObjects(C_sTabNames).Range
-
-            ExportData.ToExcelRange .Worksheets(C_sTabNames).Cells(1, 1)
-            sPrevSheetName = C_sTabNames
-
-            'ADM4
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabADM4
-
-
-            ExportData.FromExcelRange wksh.ListObjects(C_sTabADM4).Range
-            ExportData.ToExcelRange .Worksheets(C_sTabADM4).Cells(1, 1)
-            sPrevSheetName = C_sTabADM4
-
-            'ADM3
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabADM3
-
-
-            ExportData.FromExcelRange wksh.ListObjects(C_sTabADM3).Range
-
-            ExportData.ToExcelRange .Worksheets(C_sTabADM3).Cells(1, 1)
-            sPrevSheetName = C_sTabADM3
-
-            'ADM2
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabADM2
-
-
-            ExportData.FromExcelRange wksh.ListObjects(C_sTabADM2).Range
-            ExportData.ToExcelRange .Worksheets(C_sTabADM2).Cells(1, 1)
-            sPrevSheetName = C_sTabADM2
-
-            'ADM1
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sTabADM1
-
-            ExportData.FromExcelRange wksh.ListObjects(C_sTabADM1).Range
-            ExportData.ToExcelRange .Worksheets(C_sTabADM1).Cells(1, 1)
-            sPrevSheetName = C_sTabADM1
-
-        End With
-
-        'Writing the Geo
-        Wkb.SaveAs Filename:=sGeoPath, fileformat:=xlExcel12, CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-        Wkb.Close
-
-    End If
-    
-    'Return previous sate of the application
-    Application.DisplayAlerts = True
-    EndWork xlsapp:=Application
-
-    Set Wkb = Nothing
-    Set ExportData = Nothing
-    Set ExportHeader = Nothing
-    Set DictHeaders = Nothing
-    Set LLSheetData = Nothing
-    Set AdmSheetData = Nothing
-End Sub
 
