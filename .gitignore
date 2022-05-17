@@ -12,3 +12,5 @@ temp
 *temp\\.?*
 config.json
 *.test
+output_test
+migration

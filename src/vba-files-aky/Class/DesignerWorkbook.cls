@@ -19,14 +19,14 @@ Private Sub Workbook_Open()
   Call SetInputRangesToWhite
   SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgSet)
   
-  SheetGeo.ListObjects(C_sTabADM1).DataBodyRange.Clear
-  SheetGeo.ListObjects(C_sTabADM2).DataBodyRange.Clear
-  SheetGeo.ListObjects(C_sTabADM3).DataBodyRange.Clear
-  SheetGeo.ListObjects(C_sTabADM4).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabadm1).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabAdm2).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabAdm3).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabAdm4).DataBodyRange.Clear
   SheetGeo.ListObjects(C_sTabHF).DataBodyRange.Clear
   SheetGeo.ListObjects(C_sTabNames).DataBodyRange.Clear
   
-  Worksheets("linelist-translation").[RNG_Language].value = [RNG_LLForm].value 'check Language of linelist's forms
+  Worksheets("linelist-translation").[RNG_LLLanguage].value = [RNG_LLForm].value 'check Language of linelist's forms
   
 End Sub
 
