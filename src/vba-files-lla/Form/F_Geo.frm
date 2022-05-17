@@ -38,7 +38,7 @@ Private Sub CMD_Copier_Click()
         'In case you selected the Geo data
     Case 0
         'updating the histo data if needed
-        With ThisWorkbook.worksheets(C_sSheetGeo).ListObjects(C_sTabHistoGeo)
+        With ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabHistoGeo)
             If Not .DataBodyRange Is Nothing Then
                 T_temp.FromExcelRange .DataBodyRange
                 T_temp.Sort
@@ -55,7 +55,7 @@ Private Sub CMD_Copier_Click()
             'Now rewrite the histo data in the list object
             If T_HistoGeo.Length > 0 Then
                 T_HistoGeo.Sort
-                T_HistoGeo.ToExcelRange Destination:=ThisWorkbook.worksheets(C_sSheetGeo).Range(Cells(2, .Range.Column).Address)
+                T_HistoGeo.ToExcelRange Destination:=ThisWorkbook.Worksheets(C_sSheetGeo).Range(Cells(2, .Range.Column).Address)
                 'resize the list object
                 .Resize .Range.CurrentRegion
                 .DataBodyRange.RemoveDuplicates Columns:=1, Header:=xlYes
@@ -74,7 +74,7 @@ Private Sub CMD_Copier_Click()
         T_temp.Clear
         'In Case we are dealing with the health facility (basically the same thing with little modifications)
     Case 1
-        With ThisWorkbook.worksheets(C_sSheetGeo).ListObjects(C_sTabHistoHF)
+        With ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabHistoHF)
             If Not .DataBodyRange Is Nothing Then
                 T_temp.FromExcelRange .DataBodyRange
                 T_temp.Sort
@@ -90,7 +90,7 @@ Private Sub CMD_Copier_Click()
             'Now rewrite the histo data in the list object
             If (T_HistoHF.Length > 0) Then
                 T_HistoHF.Sort
-                T_HistoHF.ToExcelRange Destination:=ThisWorkbook.worksheets(C_sSheetGeo).Range(Cells(2, .Range.Column).Address)
+                T_HistoHF.ToExcelRange Destination:=ThisWorkbook.Worksheets(C_sSheetGeo).Range(Cells(2, .Range.Column).Address)
                 'resize the list object
                 .Resize .Range.CurrentRegion
                 .DataBodyRange.RemoveDuplicates Columns:=1, Header:=xlYes
@@ -202,10 +202,10 @@ Private Sub TXT_RechercheHistoF_Change()
 End Sub
 
 
-Private Sub UserForm_Initialize() 'lla
+Private Sub UserForm_Initialize()
 'Manage language
 
-    Call TranslateForm(Me, ThisWorkbook.worksheets("linelist-translation").[T_F_Geo])
+    Call TranslateForm(Me, ThisWorkbook.Worksheets("linelist-translation").[T_F_Geo])
         
     Me.Width = 637
     Me.Height = 370
