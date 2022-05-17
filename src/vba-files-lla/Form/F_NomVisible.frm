@@ -13,13 +13,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
-
-
-
-
-
-
 Option Explicit
 Option Base 1
 
@@ -41,10 +34,10 @@ Private Sub OPT_Masque_Click()
 End Sub
 
 
-Private Sub UserForm_Initialize() 'lla
+Private Sub UserForm_Initialize()
 'Manage language
 
-    Call TranslateForm(Me, ThisWorkbook.worksheets("linelist-translation").[T_F_NomVisible])
+    Call TranslateForm(Me, ThisWorkbook.Worksheets("linelist-translation").[T_F_NomVisible])
         
     Me.Width = 440
     Me.Height = 280
