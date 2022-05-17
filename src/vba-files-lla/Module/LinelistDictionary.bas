@@ -28,7 +28,7 @@ Function GetDictionaryHeaders() As BetterArray
     DictHeaders.LowerBound = 1
     
     Set Wkb = ThisWorkbook
-    DictHeaders.FromExcelRange Wkb.worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=False
+    DictHeaders.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=False
     'Set the Array
 
     Set GetDictionaryHeaders = DictHeaders.Clone()
@@ -63,7 +63,7 @@ Function GetDictionaryColumn(sColname As String) As BetterArray
     'Empty BetterArray
 
     If isInDictHeaders(sColname) Then
-        With ThisWorkbook.worksheets(C_sParamSheetDict)
+        With ThisWorkbook.Worksheets(C_sParamSheetDict)
             ColumnData.FromExcelRange .ListObjects("o" & ClearString(C_sParamSheetDict)).ListColumns(sColname).DataBodyRange
         End With
     End If
@@ -77,7 +77,7 @@ Function GetDictionaryData() As BetterArray
     Set DictData = New BetterArray
     DictData.LowerBound = 1
     
-    With ThisWorkbook.worksheets(C_sParamSheetDict)
+    With ThisWorkbook.Worksheets(C_sParamSheetDict)
          DictData.FromExcelRange .Cells(2, 1), DetectLastRow:=True, DetectLastColumn:=True
     End With
     
@@ -91,7 +91,7 @@ Function GetChoicesData() As BetterArray
     Set ChoicesData = New BetterArray
     ChoicesData.LowerBound = 1
     
-    With ThisWorkbook.worksheets(C_sParamSheetChoices)
+    With ThisWorkbook.Worksheets(C_sParamSheetChoices)
         .Visible = xlSheetHidden
          ChoicesData.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
          .Visible = xlSheetVeryHidden
@@ -107,7 +107,7 @@ Function GetTransData() As BetterArray
     Set TransData = New BetterArray
     TransData.LowerBound = 1
     
-    With ThisWorkbook.worksheets(C_sParamSheetTranslation)
+    With ThisWorkbook.Worksheets(C_sParamSheetTranslation)
         .Visible = xlSheetHidden
          TransData.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
          .Visible = xlSheetVeryHidden
@@ -131,7 +131,7 @@ Function GetDictDataFromCondition(sColumnName As String, sCondition As String, O
         iColIndex = GetDictionaryIndex(sColumnName)
 
         'First be sure the dictionnary is filtered on column name:
-        With ThisWorkbook.worksheets(C_sParamSheetDict)
+        With ThisWorkbook.Worksheets(C_sParamSheetDict)
             With .ListObjects("o" & ClearString(C_sParamSheetDict)).Range
                .AutoFilter Field:=iColIndex, Criteria1:=sCondition
             End With
@@ -139,7 +139,7 @@ Function GetDictDataFromCondition(sColumnName As String, sCondition As String, O
         End With
         
         'Take the special cells and copy the data
-        With ThisWorkbook.worksheets(C_sSheetTemp)
+        With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
             Rng.Copy Destination:=.Cells(1, 1)
