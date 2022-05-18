@@ -123,14 +123,14 @@ StatusBar_Updater (20)
 
     iSheetStartLine = 1
 
-StatusBar_Updater (25)
+    StatusBar_Updater (25)
 
     iNbshifted = 0
 
     For iCounterSheet = 1 To LLSheetNameData.UpperBound
 
         sCpte = (30 * iCounterSheet)
-StatusBar_Updater (sCpte)
+        StatusBar_Updater (sCpte)
 
         'Vector of varnames for one sheet
         VarnameSheetData.Clear
@@ -147,8 +147,9 @@ StatusBar_Updater (sCpte)
                                          DictHeaders, LLSheetNameData, LLNbColData, ChoicesListData, ChoicesLabelsData, _
                                          VarnameSheetData, ColumnSheetIndexData, FormulaData, SpecCharData, iNbshifted)
                     DoEvents
+                    
                     sCpte = sCpte + 5
-StatusBar_Updater (sCpte)
+                    StatusBar_Updater (sCpte)
 
                     'update the variable names for writing in the dictionary sheet
                     i = 1
@@ -165,6 +166,7 @@ StatusBar_Updater (sCpte)
                         DictVarName.ToExcelRange Destination:=.Cells(iPastingRow + 1, 1)
                         DictVarName.Clear
                      End With
+                     
             Case C_sDictSheetTypeAdm
 
                 'Create a sheet of type admin entry
@@ -226,7 +228,7 @@ StatusBar_Updater (100)
         .ActiveWindow.DisplayZeros = True
     End With
 
-    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, Password:=Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, fileformat:=xlExcel12, Password:=Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     xlsapp.Quit
     Set xlsapp = Nothing
 

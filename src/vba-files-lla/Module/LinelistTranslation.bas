@@ -7,7 +7,7 @@ Sub TranslateForm(UserFrm As UserForm, rgPlage As Range)
     Dim sLanguage As String
     Dim iNumCol As Integer, i As Integer
     Dim cControl As Control
-    
+
     sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_Language].value, _
     Sheets("linelist-translation").[T_Lang2], 2, False)
 
@@ -23,7 +23,7 @@ Sub TranslateForm(UserFrm As UserForm, rgPlage As Range)
         Case "SPA"
             iNumCol = 6
     End Select
-    
+
     For Each cControl In UserFrm.Controls
         If TypeOf cControl Is MSForms.CommandButton Or (TypeOf cControl Is MSForms.Label) Or (TypeOf cControl Is MSForms.OptionButton) _
         Or (TypeOf cControl Is MSForms.Page) Or (TypeOf cControl Is MSForms.MultiPage) Or (TypeOf cControl Is MSForms.Frame) Then
@@ -40,7 +40,7 @@ Sub TranslateForm(UserFrm As UserForm, rgPlage As Range)
             End If
         End If
     Next cControl
-    
+
 End Sub
 
 
@@ -49,8 +49,8 @@ Function translate_LineList(sText As String, rgPlage As Range)
 
     Dim sLanguage As String
     Dim iNumCol As Integer
-    
-    sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_Language].value, _
+
+    sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_LLLanguage].value, _
     Sheets("linelist-translation").[T_Lang2], 2, False)
 
     Select Case sLanguage
@@ -65,7 +65,7 @@ Function translate_LineList(sText As String, rgPlage As Range)
         Case "SPA"
             iNumCol = 5
     End Select
-    
+
     translate_LineList = Application.WorksheetFunction.VLookup(sText, rgPlage, iNumCol, False)
 
 End Function
@@ -74,36 +74,36 @@ Sub ImportLangAnalysis(sPath As String)
 'Import languages from the setup file and sheets Translation and Analysis
 
     Dim sAdr1 As String, sAdr2 As String, sNomFic As String
-    
+
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
 
     SheetDesTranslation.Select
     SheetDesTranslation.[T_Lst_Lang].Select
     SheetDesTranslation.Range([T_Lst_Lang], Selection.End(xlToRight)).ClearContents
-    
+
     SheetSetTranslation.Select
     SheetSetTranslation.Unprotect C_sDesignerPassword 'Default password for the designer
     Cells.Delete
 
     SheetAnalysis.Cells.Delete
-    
+
     Workbooks.Open Filename:=sPath
     Sheets("Translations").Range("Tab_Translations[#Headers]").Copy
-    
+
     sNomFic = Dir(sPath)
-    
+
     DesignerWorkbook.Activate
     SheetDesTranslation.[T_Lst_Lang].PasteSpecial
-    
+
     Windows(sNomFic).Activate
     Sheets("Translations").Select
     Cells.Copy
-    
+
     DesignerWorkbook.Activate
     SheetSetTranslation.Range("A1").PasteSpecial
     SheetSetTranslation.Protect C_sDesignerPassword 'Default password for the designer
-    
+
     Windows(sNomFic).Activate
     Sheets("Analysis").Select
     Cells.Copy
@@ -112,13 +112,13 @@ Sub ImportLangAnalysis(sPath As String)
     SheetAnalysis.Range("A1").PasteSpecial
 
     Windows(sNomFic).Close
-       
+
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
 
     sAdr1 = SheetDesTranslation.[T_Lst_Lang].Address
     sAdr2 = SheetDesTranslation.[T_Lst_Lang].End(xlToRight).Address
-    
+
     SheetMain.Select
     SheetMain.[RNG_LangSetup].value = ""
     SheetMain.[RNG_LangSetup].Select
@@ -137,7 +137,7 @@ Sub ImportLangAnalysis(sPath As String)
     End With
 
     SheetMain.[RNG_LangSetup].value = SheetSetTranslation.Cells(4, 2).value
-    
+
 End Sub
 
 Sub Translate_Manage()
@@ -150,13 +150,13 @@ Sub Translate_Manage()
     Dim SheetActive As Worksheet
 
     Application.ScreenUpdating = False
-    
+
     'search in linelist language
     iColLang = IIf([RNG_LangSetup].value <> "", SheetSetTranslation.Rows(4).Find(What:=SheetMain.[RNG_LangSetup].value, LookAt:=xlWhole).Column, 2)
 
 'level sheet
     For iCptSheet = 1 To 3
-        
+
         Select Case iCptSheet
             Case 1
                 arrColumn = Split(sCstColDictionary, "|")
@@ -174,28 +174,26 @@ Sub Translate_Manage()
                 Set SheetActive = Sheets("Exports (2)")
                 SheetActive.Name = "Exports_LL"
         End Select
-        
+
 '***********************************************************************
 'il faut virer les 2 lignes de codes suivantes *************************
 '***********************************************************************
 
 '        If SheetMain.[RNG_LangSetup].value = "" Then Exit For
-    
-    
 '        If iColLang = 2 Then Exit For
 
         iCptRow = 1
-        
+
         Do While SheetActive.Cells(iCptRow, 1).value <> ""
             iCptRow = iCptRow + 1
         Loop
 
     'level column
         For iCptCol = LBound(arrColumn, 1) To UBound(arrColumn, 1)
-        
+
             If Not SheetActive.Rows(1).Find(What:=arrColumn(iCptCol), LookAt:=xlWhole) Is Nothing Then _
             iCol = SheetActive.Rows(1).Find(What:=arrColumn(iCptCol), LookAt:=xlWhole).Column
-            
+
             i = 2
         'level Row
             Do While i < iCptRow
@@ -227,11 +225,11 @@ Sub Translate_Manage()
                 End If
                 i = i + 1
             Loop
-            
+
         Next iCptCol
 
     Next iCptSheet
-    
+
     Application.ScreenUpdating = True
 
 End Sub

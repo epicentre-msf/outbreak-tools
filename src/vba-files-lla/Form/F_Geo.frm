@@ -21,6 +21,14 @@ Attribute VB_Exposed = False
 
 
 
+
+
+
+
+
+
+
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -205,7 +213,7 @@ End Sub
 Private Sub UserForm_Initialize()
 'Manage language
 
-    Call TranslateForm(Me, ThisWorkbook.Worksheets("linelist-translation").[T_F_Geo])
+    'Call TranslateForm(Me, ThisWorkbook.Worksheets("linelist-translation").[T_F_Geo])
         
     Me.Width = 637
     Me.Height = 370

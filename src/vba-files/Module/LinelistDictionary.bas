@@ -101,7 +101,7 @@ Function GetChoicesData() As BetterArray
     Set ChoicesData = Nothing
 End Function
 
-'Retrieve all the Trans data, excluding the headers
+'Retrieve all the Translation data, excluding the headers
 Function GetTransData() As BetterArray
     Dim TransData As BetterArray
     Set TransData = New BetterArray
@@ -116,6 +116,8 @@ Function GetTransData() As BetterArray
     Set GetTransData = TransData.Clone
     Set TransData = Nothing
 End Function
+
+
 
 'Retrieve the variable names of the dictionnary on one condition on a variable
 'Here the condition is only equallity (a kind of filter, but for the
@@ -178,49 +180,4 @@ Function GetDictColumnValue(sVarName As String, sColname As String) As String
     Set ColnameData = Nothing
     Set VarNameData = Nothing
 End Function
-
-'Retrieve two variable names from Two conditions
-
-'Function Get2VarNamesFromCondition(sColumnName1 As String, sColumnName2 As String, _
-'                                 sCondition1 As String, sCondition2 As String, Optional bVarNameonly = False) As BetterArray
-'    Dim ColumnsData As BetterArray
-'    Dim iColIndex1 As Integer
-'    Dim icolIndex2 As Integer
-'    Dim Rng As Range
-'
-'    If isInDictHeaders(sColumName1) And isInDictHeaders(sColumnName2) Then
-'        'Get the indexes
-'        iColIndex1 = GetDictionaryIndex(sColunmName1)
-'        icolIndex2 = GetDictionaryIndex(sColumnName2)
-'
-'        'Set the filters
-'        With ThisWorkbook.Worksheets(C_sParamSheetDict)
-'
-'            With .ListObjects("o" & ClearString(C_sParamSheetDict)).Range
-'               .AutoFilter Field:=iColIndex1, Criteria1:=sCondition1
-'               .AutoFilter Field:=icolIndex2, Critera1:=sCondition2
-'            End With
-'            Set Rng = .ListObjects("o" & ClearString(C_sParamSheetDict)).Range.SpecialCells(xlCellTypeVisible)
-'            ColumnData.FromExcelRange Rng, DetectLastColumn:=False, DetectLastRow:=False
-'        End With
-'
-'          'Take the special cells
-'        'With ThisWorkbook.Worksheets(C_sSheetTemp)
-'            '.Visible = xlSheetHidden
-'            '.Cells.Clear
-'            'Rng.Copy Destination:=.Cells(1, 1)
-'            'Set ColumnData = New BetterArray
-'            'ColumnData.FromExcelRange .Cells(2, iColIndex), DetectLastColumn:=False, DetectLastRow:=True
-'            '.Cells.Clear
-'            '.Visible = xlSheetVeryHidden
-'        'End With
-'
-'
-'
-'    End If
-'
-'
-'
-'End Function
-'
 
