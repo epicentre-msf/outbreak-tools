@@ -11,11 +11,12 @@ Option Explicit
 
 Private Sub Worksheet_Change(ByVal Target As Range)
 
-BeginWork xlsapp:=Application
     'If does not have a name property do nothing
 '    Dim sIsoCountry As String, sCountry As String, sSubCounty As String, sWard As String, sPlace As String, sFacility As String
 
     On Error GoTo no
+        Application.ScreenUpdating = False
+        
         If Target.Name.Name = "RNG_LangDesigner" Then
           Call TranslateDesigner
         ElseIf Target.Name.Name = "RNG_LLForm" Then
@@ -23,8 +24,8 @@ BeginWork xlsapp:=Application
             Call translateHeadGeo
 
         End If
+        
+        Application.ScreenUpdating = True
         Exit Sub
 no:
-
-EndWork xlsapp:=Application
 End Sub

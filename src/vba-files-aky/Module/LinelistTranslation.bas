@@ -50,7 +50,7 @@ Function translate_LineList(sText As String, rgPlage As Range)
     Dim sLanguage As String
     Dim iNumCol As Integer
 
-    sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_Language].value, _
+    sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_LLLanguage].value, _
     Sheets("linelist-translation").[T_Lang2], 2, False)
 
     Select Case sLanguage
@@ -180,8 +180,6 @@ Sub Translate_Manage()
 '***********************************************************************
 
 '        If SheetMain.[RNG_LangSetup].value = "" Then Exit For
-
-
 '        If iColLang = 2 Then Exit For
 
         iCptRow = 1

@@ -206,7 +206,6 @@ Sub GenerateData()
     'translation of the Export, Dictionary and Choice sheets for the linelist
     Call Translate_Manage
 
-
     '--------------- Getting all required the Data
 
     'Create the Dictionnary data

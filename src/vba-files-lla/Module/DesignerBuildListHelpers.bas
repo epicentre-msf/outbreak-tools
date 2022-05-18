@@ -9,12 +9,12 @@ Public Sub TransferDesignerCodes(xlsapp As Excel.Application)
     Kill (Environ("Temp") & Application.PathSeparator & "LinelistApp")
     MkDir (Environ("Temp") & Application.PathSeparator & "LinelistApp") 'create a folder for sending all the data from designer
     On Error GoTo 0
-    
+
     Dim Wkb As Workbook
     Set Wkb = xlsapp.ActiveWorkbook
-    
+
     DoEvents
-        
+
     'Transfert form is for sending forms from the actual excel workbook to another
     Call TransferForm(Wkb, C_sFormGeo)
     Call TransferForm(Wkb, C_sFormShowHide)
@@ -34,9 +34,9 @@ Public Sub TransferDesignerCodes(xlsapp As Excel.Application)
     Call TransferCode(Wkb, C_sModLLTrans, "Module")
     Call TransferCode(Wkb, C_sModLLDict, "Module")
     Call TransferCode(Wkb, C_sClaBA, "Class")
-    
+
     Set Wkb = Nothing
-    
+
 End Sub
 
 
@@ -52,18 +52,18 @@ Sub TransferCodeWks(xlsapp As Excel.Application, sSheetName As String, _
     Dim vbProj As Object                         'component, project and modules
     Dim vbComp As Object
     Dim codeMod As Object
-    
+
     'save the code module in the string sNouvCode
     With DesignerWorkbook.VBProject.VBComponents(sNameModule).CodeModule
         sNouvCode = .Lines(1, .CountOfLines)
     End With
-    
+
     With xlsapp
         Set vbProj = .ActiveWorkbook.VBProject
         Set vbComp = vbProj.VBComponents(.Sheets(sSheetName).CodeName)
         Set codeMod = vbComp.CodeModule
     End With
-    
+
     'Adding the code
     With codeMod
         .DeleteLines 1, .CountOfLines
@@ -99,16 +99,16 @@ Public Sub TransferSheet(xlsapp As Excel.Application, sSheetName As String)
 
     With xlsapp
         .Workbooks.Open Filename:=Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx", UpdateLinks:=False
-        
+
         .Sheets(sSheetName).Select
         .Sheets(sSheetName).Copy After:=.Workbooks(1).Sheets(1)
- 
+
         DoEvents
         .Workbooks("Temp.xlsx").Close
     End With
-    
+
     DoEvents
-    
+
     Kill Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx"
 
 End Sub
@@ -119,12 +119,12 @@ End Sub
 '@sFormName: The name of the form to transfert
 
 Sub TransferForm(Wkb As Workbook, sFormName As String)
-    
+
     'The form is sent to the LinelisteApp folder
     On Error Resume Next
     Kill (Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm")
     On Error GoTo 0
-    
+
     DoEvents
     DesignerWorkbook.VBProject.VBComponents(sFormName).Export Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm"
     Wkb.VBProject.VBComponents.Import Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm"
@@ -150,7 +150,7 @@ Sub TransferCode(Wkb As Workbook, sNameModule As String, sType As String)
     With DesignerWorkbook.VBProject.VBComponents(sNameModule).CodeModule
         sNouvCode = .Lines(1, .CountOfLines)
     End With
-    
+
     'create to code or module if needed
     Select Case sType
     Case "Module"
@@ -221,7 +221,7 @@ Sub AddCmd(xlsapp As Excel.Application, sSheetName As String, iLeft As Integer, 
            sCommand As String, Optional sShpColor As String = "MainSecBlue", _
            Optional sShpTextColor As String = "White")
 
-    
+
     sText = translate_LineList(sText, Sheets("linelist-translation").[T_tradShapeLL])
 
     With xlsapp.Sheets(sSheetName)
@@ -250,14 +250,12 @@ Sub AddSubLab(Wksh As Worksheet, iSheetStartLine As Integer, _
     With Wksh
         .Cells(iSheetStartLine, iCol).value = _
         .Cells(iSheetStartLine, iCol).value & Chr(10) & sSubLab
-    
+
                 'Changing the fontsize of the sublabels
         .Cells(iSheetStartLine, iCol).Characters(Start:=Len(sMainLab) + 1, _
                Length:=Len(sSubLab) + 1).Font.Size = C_iLLSheetFontSize - 2
         .Cells(iSheetStartLine, iCol).Characters(Start:=Len(sMainLab) + 1, _
                Length:=Len(sSubLab) + 1).Font.Color = Helpers.GetColor(sSubLabColor)
-
-
     End With
 
 End Sub
@@ -352,7 +350,7 @@ End Sub
 Sub AddChoices(Wksh As Worksheet, iSheetStartLine As Integer, iCol As Integer, _
              ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, _
              sChoice As String, sAlert As String, sMessage As String)
-    
+
     Dim sValidationList As String
     With Wksh
         sValidationList = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sChoice)
@@ -364,7 +362,6 @@ Sub AddChoices(Wksh As Worksheet, iSheetStartLine As Integer, iCol As Integer, _
         End If
     End With
 End Sub
-
 
 'Add Geo
 Sub AddGeo(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders As BetterArray, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
@@ -401,12 +398,12 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
     Dim sLab As String 'Temporary variable, label of the Admin level
     Dim LineValues As BetterArray
     Dim iRow As Integer
-      
+
     Set LineValues = New BetterArray
     LineValues.LowerBound = 1
-    
+
     iRow = iDictLine + iNbshifted
-    
+
     With xlsapp.Worksheets(sSheetName)
 
         'Admin 4
@@ -456,7 +453,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
         .Cells(iStartLine + 1, iCol).Validation.ShowInput = True
         .Cells(iStartLine + 1, iCol).Validation.ShowError = True
     End With
-    
+
     'Updating the Dictionary for future uses
     With xlsapp.Worksheets(C_sParamSheetDict)
         'Admin 4
@@ -475,12 +472,10 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
          LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "2"
         LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
         .Cells(iRow + 2, 1).value = ""
-         
+
          Set LineValues = Nothing
     End With
 End Sub
-
-
 
 
 'Build a merge area for subsections and sections
@@ -564,13 +559,13 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
     Dim scolAddress As String                    'address of one column used in a formula
 
     Dim FormulaAlphaData As BetterArray          'Table of alphanumeric data in one formula
-    
+
     Dim i As Integer
     Dim iPrevBreak As Integer
     Dim iNbParentO As Integer                    'Number of left parenthesis
     Dim iNbParentF As Integer                    'Number of right parenthesis
     Dim icolNumb As Integer                      'Column number on one sheet of one column used in a formual
-   
+
 
     Dim isError As Boolean
     Dim OpenedQuotes As Boolean                  'Test if the formula has opened some quotes
@@ -598,12 +593,12 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
     Else
         Do While (i <= Len(sFormulaATest))
             QuotedCharacter = False
-            
+
             sLetter = Mid(sFormulaATest, i, 1)
             If sLetter = Chr(34) Then
                 OpenedQuotes = Not OpenedQuotes
             End If
-            
+
             If Not OpenedQuotes And SpecCharData.Includes(sLetter) Then 'A special character, not in quotes
                 If sLetter = Chr(40) Then
                     iNbParentO = iNbParentO + 1
@@ -624,7 +619,7 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
                             QuotedCharacter = True
                         End If
                     End If
-                            
+
                     If Not isError And Not QuotedCharacter Then
                         'It is either a variable name or a formula
                         If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
@@ -639,7 +634,7 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
                     'I have a special character, at the value sLetter But nothing between this special character and previous one, just add it
                     FormulaAlphaData.Push sLetter
                 End If
-                
+
                 iPrevBreak = i + 1
             End If
             i = i + 1
@@ -659,11 +654,10 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
             ValidationFormula = "=" & sAlphaValue
         End If
     End If
-    
+
     Set FormulaAlphaData = Nothing
 
 End Function
-
 
 
 
@@ -714,7 +708,6 @@ Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAler
         .ShowError = True
     End With
 End Sub
-
 
 
 'Ensure a sheet name has good name

@@ -53,7 +53,7 @@ Public Sub BeginWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean
     xlsapp.ScreenUpdating = False
     xlsapp.DisplayAlerts = False
     xlsapp.Calculation = xlCalculationManual
-    xlsapp.DisplayStatusbar = bstatusbar
+    xlsapp.DisplayStatusBar = bstatusbar
 End Sub
 
 
@@ -61,7 +61,7 @@ Public Sub EndWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean =
     xlsapp.ScreenUpdating = True
     xlsapp.DisplayAlerts = True
     xlsapp.Calculation = xlCalculationAutomatic
-    xlsapp.DisplayStatusbar = bstatusbar
+    xlsapp.DisplayStatusBar = bstatusbar
 End Sub
 
 'Load files and folders

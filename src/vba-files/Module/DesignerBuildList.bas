@@ -18,11 +18,11 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Dim xlsapp          As Excel.Application
     Dim LLNbColData     As BetterArray               'Number of columns of a Sheet of type linelist
     Dim LLSheetNameData As BetterArray           'Names of sheets of type linelist
-    Dim ChoicesListData As BetterArray           'Choices list
-    Dim ChoicesLabelsData As BetterArray         ' Choices labels
-    Dim VarnameSheetData As BetterArray
-    Dim VarNameData As BetterArray
-    Dim ColumnIndexData As BetterArray
+    Dim ChoicesListData     As BetterArray           'Choices list
+    Dim ChoicesLabelsData   As BetterArray         ' Choices labels
+    Dim VarnameSheetData    As BetterArray
+    Dim VarNameData         As BetterArray
+    Dim ColumnIndexData     As BetterArray
     Dim ColumnSheetIndexData As BetterArray
     Dim FormulaData As BetterArray
     Dim SpecCharData As BetterArray
@@ -65,6 +65,7 @@ StatusBar_Updater (0)
     DoEvents
 StatusBar_Updater (5)
 
+
     'Now Transferring some designers objects (codes, modules) to the workbook we want to create
     Call DesignerBuildListHelpers.TransferDesignerCodes(xlsapp)
 
@@ -94,7 +95,6 @@ StatusBar_Updater (20)
 
     VarNameData.Items = DictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderVarName))
 
-
     'Create all the required Sheets in the workbook (Dictionnary, Export, Password, Geo and other sheets defined by the user)
     Call CreateSheets(xlsapp, DictData, DictHeaders, ExportData, _
                       ChoicesHeaders, ChoicesData, TransData, _
@@ -123,14 +123,14 @@ StatusBar_Updater (20)
 
     iSheetStartLine = 1
 
-StatusBar_Updater (25)
+    StatusBar_Updater (25)
 
     iNbshifted = 0
 
     For iCounterSheet = 1 To LLSheetNameData.UpperBound
 
         sCpte = (30 * iCounterSheet)
-StatusBar_Updater (sCpte)
+        StatusBar_Updater (sCpte)
 
         'Vector of varnames for one sheet
         VarnameSheetData.Clear
@@ -147,8 +147,9 @@ StatusBar_Updater (sCpte)
                                          DictHeaders, LLSheetNameData, LLNbColData, ChoicesListData, ChoicesLabelsData, _
                                          VarnameSheetData, ColumnSheetIndexData, FormulaData, SpecCharData, iNbshifted)
                     DoEvents
+                    
                     sCpte = sCpte + 5
-StatusBar_Updater (sCpte)
+                    StatusBar_Updater (sCpte)
 
                     'update the variable names for writing in the dictionary sheet
                     i = 1
@@ -165,6 +166,7 @@ StatusBar_Updater (sCpte)
                         DictVarName.ToExcelRange Destination:=.Cells(iPastingRow + 1, 1)
                         DictVarName.Clear
                      End With
+                     
             Case C_sDictSheetTypeAdm
 
                 'Create a sheet of type admin entry
@@ -226,7 +228,7 @@ StatusBar_Updater (100)
         .ActiveWindow.DisplayZeros = True
     End With
 
-    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, Password:=Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, fileformat:=xlExcel12, Password:=Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     xlsapp.Quit
     Set xlsapp = Nothing
 
@@ -282,14 +284,9 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
         '-------------- Creating the export sheet
         .Worksheets.Add.Name = C_sParamSheetExport
         'Headers of the export options
-        .Worksheets(C_sParamSheetExport).Cells(1, 1).value = "ID"
-        .Worksheets(C_sParamSheetExport).Cells(1, 2).value = "Lbl"
-        .Worksheets(C_sParamSheetExport).Cells(1, 3).value = "Pwd"
-        .Worksheets(C_sParamSheetExport).Cells(1, 4).value = "Actif"
-        .Worksheets(C_sParamSheetExport).Cells(1, 5).value = "FileName"
 
         'Adding the data on export parameters
-        ExportData.ToExcelRange Destination:=.Sheets(C_sParamSheetExport).Cells(2, 1)
+        ExportData.ToExcelRange Destination:=.Worksheets(C_sParamSheetExport).Cells(1, 1)
 
         'search in linelist language
         iColLang = IIf([RNG_LangSetup].value <> "", SheetSetTranslation.Rows(4).Find(What:=SheetMain.[RNG_LangSetup].value, LookAt:=xlWhole).Column, 2)
@@ -297,7 +294,7 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
         i = 2
         Do While .Worksheets(C_sParamSheetExport).Cells(i, 1).value <> ""
             If .Worksheets(C_sParamSheetExport).Cells(i, 2).value <> "" Then
-                .Worksheets(C_sParamSheetExport).Cells(i, 2).value = F_TransLL_Create(.Worksheets(C_sParamSheetExport).Cells(i, 2).value, iColLang)
+                .Worksheets(C_sParamSheetExport).Cells(i, 2).value = .Worksheets(C_sParamSheetExport).Cells(i, 2).value
 
             End If
             i = i + 1
@@ -314,11 +311,11 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
         Do While .Worksheets(C_sParamSheetChoices).Cells(i, 1).value <> ""
             If .Worksheets(C_sParamSheetChoices).Cells(i, 4).value <> "" Then
                 If .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = .Worksheets(C_sParamSheetChoices).Cells(i, 5).value Then
-                    .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = F_TransLL_Create(.Worksheets(C_sParamSheetChoices).Cells(i, 4).value, iColLang)
+                    .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = .Worksheets(C_sParamSheetChoices).Cells(i, 4).value
                     .Worksheets(C_sParamSheetChoices).Cells(i, 5).value = .Worksheets(C_sParamSheetChoices).Cells(i, 4).value
                 Else
-                    .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = F_TransLL_Create(.Worksheets(C_sParamSheetChoices).Cells(i, 4).value, iColLang)
-                    .Worksheets(C_sParamSheetChoices).Cells(i, 5).value = F_TransLL_Create(.Worksheets(C_sParamSheetChoices).Cells(i, 5).value, iColLang)
+                    .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = .Worksheets(C_sParamSheetChoices).Cells(i, 4).value
+                    .Worksheets(C_sParamSheetChoices).Cells(i, 5).value = .Worksheets(C_sParamSheetChoices).Cells(i, 5).value
                 End If
 
             End If
@@ -349,13 +346,13 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
             If sPrevSheetName <> DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)) Then
 
                 If sPrevSheetName = "" Then
-                    .Worksheets(1).Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                    .Worksheets(1).Name = EnsureGoodSheetName(DictData.Items(1, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
                 Else
                     .Worksheets.Add(After:=.Worksheets(sPrevSheetName)).Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
                 End If
 
                 'I am on a new sheet name, I update values
-                sPrevSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                sPrevSheetName = EnsureGoodSheetName(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
 
                 j = j + 1
                 'Here, the column index is the index number of each column in one sheet. I update it when I am on
@@ -599,8 +596,8 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
     iPrevColMainSec = 1
     iPrevColSubSec = 1
     iTotalLLSheetColumns = LLNbColData.Items(LLSheetNameData.IndexOf(sSheetName))
-    sPrevMainSec = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec)), iColLang)
-    sPrevSubSec = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec)), iColLang)
+    sPrevMainSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
+    sPrevSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
 
 
     'Continue adding the columns unless the total number of columns to add is reached
@@ -641,17 +638,17 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
 
             'First, accessing actual values ussing the dicitonary data and its corrresponding headers
             sActualVarName = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderVarName))
-            sActualMainLab = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainLab)), iColLang)
+            sActualMainLab = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainLab))
             sActualSubLab = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubLab))
-            sActualNote = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderNote)), iColLang)
+            sActualNote = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderNote))
 
-            sActualMainSec = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec)), iColLang)
-            sActualSubSec = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec)), iColLang)
+            sActualMainSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
+            sActualSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
             sActualStatus = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderStatus)))
 
             sActualType = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderType)))
             sActualControl = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderControl)))
-            sActualFormula = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderFormula)), iColLang, "Formula")
+            sActualFormula = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderFormula))
             sActualChoice = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderChoices))
 
 
@@ -799,7 +796,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                     .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = GetColor("Orange")
                 Case C_sDictControlForm 'Formulas, are reported to the formula function
                     If (sActualFormula <> "") Then
-                        sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, VarNameData, ColumnIndexData, _
+                        sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, sSheetName, VarNameData, ColumnIndexData, _
                                                             FormulaData, SpecCharData, False)
                     End If
                     'Testing before writing the formula
@@ -822,11 +819,11 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
             If sActualMin <> "" And sActualMax <> "" Then
 
                 'Testing if it is numeric
-                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
+                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
                 If sFormulaMin = "" Then
                        'MsgBox "Invalid formula will be ignored : " & sActualMin & " / " & sActualVarName
                 Else
-                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
+                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
                     If sFormulaMax = "" Then
                             'MsgBox "Invalid formula will be ignored : " & sFormulaMax & " / " & sActualVarName
                     End If
@@ -868,3 +865,4 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
     Call DesignerBuildListHelpers.TransferCodeWks(xlsapp, sSheetName, C_sModLLChange)
 
 End Sub
+
