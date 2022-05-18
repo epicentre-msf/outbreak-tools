@@ -65,6 +65,7 @@ StatusBar_Updater (0)
     DoEvents
 StatusBar_Updater (5)
 
+
     'Now Transferring some designers objects (codes, modules) to the workbook we want to create
     Call DesignerBuildListHelpers.TransferDesignerCodes(xlsapp)
 
@@ -225,7 +226,7 @@ StatusBar_Updater (100)
         .ActiveWindow.DisplayZeros = True
     End With
 
-    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, fileformat:=xlExcel12, Password:=Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, Password:=Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     xlsapp.Quit
     Set xlsapp = Nothing
 
@@ -291,7 +292,7 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
         i = 2
         Do While .Worksheets(C_sParamSheetExport).Cells(i, 1).value <> ""
             If .Worksheets(C_sParamSheetExport).Cells(i, 2).value <> "" Then
-                .Worksheets(C_sParamSheetExport).Cells(i, 2).value = F_TransLL_Create(.Worksheets(C_sParamSheetExport).Cells(i, 2).value, iColLang)
+                .Worksheets(C_sParamSheetExport).Cells(i, 2).value = .Worksheets(C_sParamSheetExport).Cells(i, 2).value
 
             End If
             i = i + 1
@@ -308,11 +309,11 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
         Do While .Worksheets(C_sParamSheetChoices).Cells(i, 1).value <> ""
             If .Worksheets(C_sParamSheetChoices).Cells(i, 4).value <> "" Then
                 If .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = .Worksheets(C_sParamSheetChoices).Cells(i, 5).value Then
-                    .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = F_TransLL_Create(.Worksheets(C_sParamSheetChoices).Cells(i, 4).value, iColLang)
+                    .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = .Worksheets(C_sParamSheetChoices).Cells(i, 4).value
                     .Worksheets(C_sParamSheetChoices).Cells(i, 5).value = .Worksheets(C_sParamSheetChoices).Cells(i, 4).value
                 Else
-                    .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = F_TransLL_Create(.Worksheets(C_sParamSheetChoices).Cells(i, 4).value, iColLang)
-                    .Worksheets(C_sParamSheetChoices).Cells(i, 5).value = F_TransLL_Create(.Worksheets(C_sParamSheetChoices).Cells(i, 5).value, iColLang)
+                    .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = .Worksheets(C_sParamSheetChoices).Cells(i, 4).value
+                    .Worksheets(C_sParamSheetChoices).Cells(i, 5).value = .Worksheets(C_sParamSheetChoices).Cells(i, 5).value
                 End If
 
             End If
@@ -593,8 +594,8 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
     iPrevColMainSec = 1
     iPrevColSubSec = 1
     iTotalLLSheetColumns = LLNbColData.Items(LLSheetNameData.IndexOf(sSheetName))
-    sPrevMainSec = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec)), iColLang)
-    sPrevSubSec = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec)), iColLang)
+    sPrevMainSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
+    sPrevSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
 
 
     'Continue adding the columns unless the total number of columns to add is reached
@@ -635,17 +636,17 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
 
             'First, accessing actual values ussing the dicitonary data and its corrresponding headers
             sActualVarName = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderVarName))
-            sActualMainLab = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainLab)), iColLang)
+            sActualMainLab = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainLab))
             sActualSubLab = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubLab))
-            sActualNote = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderNote)), iColLang)
+            sActualNote = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderNote))
 
-            sActualMainSec = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec)), iColLang)
-            sActualSubSec = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec)), iColLang)
+            sActualMainSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
+            sActualSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
             sActualStatus = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderStatus)))
 
             sActualType = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderType)))
             sActualControl = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderControl)))
-            sActualFormula = F_TransLL_Create(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderFormula)), iColLang, "Formula")
+            sActualFormula = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderFormula))
             sActualChoice = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderChoices))
 
 

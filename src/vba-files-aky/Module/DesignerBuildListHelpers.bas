@@ -203,6 +203,8 @@ Public Function AddSpaceToHeaders(xlsapp As Excel.Application, _
 End Function
 
 '----
+
+
 'Add a Button command to a Sheet (create the button and addit)
 '@xlsapp: excel applicaiton
 '@sSheet: The Sheet we want to add the button
@@ -452,7 +454,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
         .Cells(iStartLine + 1, iCol).Validation.ShowError = True
     End With
 
-'Updating the Dictionary for future uses
+    'Updating the Dictionary for future uses
     With xlsapp.Worksheets(C_sParamSheetDict)
         'Admin 4
         LineValues.Items = DictData.ExtractSegment(RowIndex:=iDictLine)

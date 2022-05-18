@@ -12,6 +12,8 @@ Option Explicit
 
 Sub ImportMigrationData()
 
+'Import exported data into the linelist
+
     Dim wbkexp As Workbook, wbkLL As Workbook
     Dim shData As Worksheet, shSource As Worksheet, shTarget As Worksheet
     Dim lstobj  As ListObject
@@ -20,17 +22,17 @@ Sub ImportMigrationData()
     Dim rgResult As Range
     Dim sLabel As String, sPath As String, sSearchLabel As String, sSearchLabelo As String
 
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
-
     Set wbkLL = ActiveWorkbook
 
     iLastSh = wbkLL.Sheets.Count
     iLastexp = iLastSh
 
-     sPath = LoadFile("*.xlsx", "")
+    sPath = LoadFile("*.xlsx, *.xlsb", "")
 
     If sPath = "" Then Exit Sub
+
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
 
     Workbooks.Open Filename:=sPath, Password:=Range("RNG_PrivateKey").value
 
@@ -62,7 +64,8 @@ Sub ImportMigrationData()
 
         If LCase(shSource.Name) = "admin_exp" Then
 
-            shSource.Range("B1:B7").Copy
+            iRows = shSource.Cells(2, 1).End(xlDown).Row
+            shSource.Range(Cells(2, 2), Cells(iRows, 2)).Copy
             shTarget.Select
             Range("C15").Select
             ActiveSheet.Paste
@@ -73,22 +76,27 @@ Sub ImportMigrationData()
             iRows = shSource.Cells(1, 1).End(xlDown).Row
             iStart = shTarget.Cells.Find("*", SearchOrder:=xlByRows, SearchDirection:=xlPrevious, LookIn:=xlValues).Row + 1
 
+            shTarget.Select
+
             For Each lstobj In shTarget.ListObjects
                 If lstobj.Name = "o" & shTarget.Name Then
                     iRowTarget = shTarget.ListObjects(lstobj.Name).ListRows.Count
-                    Exit For
+                    If iRowTarget < iRows Then
+                        ActiveSheet.Unprotect (C_sLLPassword)
+                        Application.EnableEvents = False
+                        lstobj.Resize Range(Cells(iStart - 1, 1), Cells(iRows + iStart, Cells(iStart - 1, 1).End(xlToRight).Column))
+                        Call ProtectSheet
+                        Application.EnableEvents = True
+                        iRowTarget = shTarget.ListObjects(lstobj.Name).ListRows.Count
+                        Exit For
+                    End If
                 End If
             Next
 
-            shTarget.Select
-
-            Do While (iRowTarget - (iStart - 5)) < iRows
-                Call ClicCmdAddRows
-                iRowTarget = shTarget.ListObjects(lstobj.Name).ListRows.Count
-            Loop
-
             Sheets("admin").Select
+
             j = 1
+
 
             Do While j <= iCols 'Number of columns in source file
 
@@ -151,6 +159,8 @@ Sub ImportMigrationData()
 
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
+
+
 
 End Sub
 
