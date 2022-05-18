@@ -8,7 +8,7 @@ Sub TranslateForm(UserFrm As UserForm, rgPlage As Range)
     Dim iNumCol As Integer, i As Integer
     Dim cControl As Control
 
-    sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_Language].value, _
+    sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_LLLanguage].value, _
     Sheets("linelist-translation").[T_Lang2], 2, False)
 
     Select Case sLanguage

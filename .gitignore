@@ -13,4 +13,5 @@ temp
 config.json
 *.test
 output_test
+output
 migration

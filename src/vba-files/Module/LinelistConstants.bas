@@ -8,6 +8,7 @@ Public Const C_sSheetPassword           As String = "Password"                  
 Public Const C_sSheetFormulas           As String = "ControleFormule"                    'Sheet for formula management (mainly in the validation)
 Public Const C_sSheetLLTranslation      As String = "linelist-translation"
 Public Const C_sSheetTemp               As String = "Temp"                              'Temporary sheet for data manipulation things
+Public Const C_sSheetMetadata           As String = "metadata"
 
 'Sheets in the setup file: The all starts with Param
 
