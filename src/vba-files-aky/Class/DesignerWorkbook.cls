@@ -15,6 +15,7 @@ Private Sub Workbook_Open()
   SheetMain.Range(C_sRngPathGeo).value = ""
   SheetMain.Range(C_sRngLLName).value = ""
   SheetMain.Range(C_sRngLLDir).value = ""
+  SheetMain.[RNG_LangSetup].value = ""
   
   Call SetInputRangesToWhite
   SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgSet)
@@ -26,10 +27,14 @@ Private Sub Workbook_Open()
   SheetGeo.ListObjects(C_sTabHF).DataBodyRange.Clear
   SheetGeo.ListObjects(C_sTabNames).DataBodyRange.Clear
   
-  Worksheets("linelist-translation").[RNG_LLLanguage].value = [RNG_LLForm].value 'check Language of linelist's forms
-  
+  SheetLLTranslation.[RNG_Language].value = [RNG_LLForm].value 'check Language of linelist's forms
+
+
+
+  With SheetDesTranslation
+        .Range(.Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").Column), _
+               .Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").End(xlToRight).Column)).ClearContents
+  End With
+
 End Sub
-
-
-
 

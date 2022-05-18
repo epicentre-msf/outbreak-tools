@@ -50,7 +50,8 @@ Function translate_LineList(sText As String, rgPlage As Range)
     Dim sLanguage As String
     Dim iNumCol As Integer
 
-    sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_LLLanguage].value, Sheets("linelist-translation").[T_Lang2], 2, False)
+    sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_Language].value, _
+    Sheets("linelist-translation").[T_Lang2], 2, False)
 
     Select Case sLanguage
         Case "ENG"
@@ -69,44 +70,61 @@ Function translate_LineList(sText As String, rgPlage As Range)
 
 End Function
 
-Sub ImportLanguage(sPath As String)
-'Import languages from the setup file and sheet Translation
+Sub ImportLangAnalysis(sPath As String)
+'Import languages from the setup file and sheets Translation and Analysis
 
-    Dim sAdr1 As String, sAdr2 As String
-    Dim Wkb As Workbook
-    Dim src As Range 'Source range
-    Dim dest As Range 'Destination range
+    Dim sAdr1 As String, sAdr2 As String, sNomFic As String
 
-    
-    With SheetDesTranslation
-        .Range(.Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").Column), _
-               .Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").End(xlToRight).Column)).ClearContents
-    End With
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
 
-    SheetSetTranslation.Cells.Clear
-    
-    BeginWork xlsapp:=Application
-    
-    Set Wkb = Workbooks.Open(Filename:=sPath)
-    Set src = Wkb.Worksheets("Translations").ListObjects("Tab_Translations").HeaderRowRange
-    Set dest = SheetDesTranslation.Range("T_Lst_Lang")
+    SheetDesTranslation.Select
+    SheetDesTranslation.[T_Lst_Lang].Select
+    SheetDesTranslation.Range([T_Lst_Lang], Selection.End(xlToRight)).ClearContents
 
-    src.Copy dest
-    
-    Set src = Wkb.Worksheets("Translations").ListObjects("Tab_Translations").Range
-    Set dest = SheetSetTranslation.Range("A" & C_eStartlinestransdata)
-    
-    src.Copy dest
+    SheetSetTranslation.Select
+    SheetSetTranslation.Unprotect C_sDesignerPassword 'Default password for the designer
+    Cells.Delete
 
-    sAdr1 = SheetDesTranslation.Range("T_Lst_Lang").Address
-    sAdr2 = SheetDesTranslation.Range("T_Lst_Lang").End(xlToRight).Address
+    SheetAnalysis.Cells.Delete
 
-    SheetMain.Range(C_sRngLangSetup).value = ""
-    
-    
-    With SheetMain.Range(C_sRngLangSetup).Validation
+    Workbooks.Open Filename:=sPath
+    Sheets("Translations").Range("Tab_Translations[#Headers]").Copy
+
+    sNomFic = Dir(sPath)
+
+    DesignerWorkbook.Activate
+    SheetDesTranslation.[T_Lst_Lang].PasteSpecial
+
+    Windows(sNomFic).Activate
+    Sheets("Translations").Select
+    Cells.Copy
+
+    DesignerWorkbook.Activate
+    SheetSetTranslation.Range("A1").PasteSpecial
+    SheetSetTranslation.Protect C_sDesignerPassword 'Default password for the designer
+
+    Windows(sNomFic).Activate
+    Sheets("Analysis").Select
+    Cells.Copy
+
+    DesignerWorkbook.Activate
+    SheetAnalysis.Range("A1").PasteSpecial
+
+    Windows(sNomFic).Close
+
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+
+    sAdr1 = SheetDesTranslation.[T_Lst_Lang].Address
+    sAdr2 = SheetDesTranslation.[T_Lst_Lang].End(xlToRight).Address
+
+    SheetMain.Select
+    SheetMain.[RNG_LangSetup].value = ""
+    SheetMain.[RNG_LangSetup].Select
+    With Selection.Validation
         .Delete
-       .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:= _
+        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:= _
         xlBetween, Formula1:="='" & SheetDesTranslation.Name & "'!" & sAdr1 & ":" & sAdr2
         .IgnoreBlank = True
         .InCellDropdown = True
@@ -117,53 +135,104 @@ Sub ImportLanguage(sPath As String)
         .ShowInput = True
         .ShowError = True
     End With
-    
-    Wkb.Close
-    Set Wkb = Nothing
 
-    EndWork xlsapp:=Application
+    SheetMain.[RNG_LangSetup].value = SheetSetTranslation.Cells(4, 2).value
+
 End Sub
 
-Function F_TransLL_Create(ByVal sText As String, iNumCol As Integer, Optional sType As String)
-'translation of the linelist according to the chosen dictionary language
+Sub Translate_Manage()
+'translation of the Export, Dictionary and Choice sheets for the linelist
 
-    Dim i As Integer, iStart As Integer
-    Dim sFormula As String, sLabelTranlate As String
+    Dim iCol As Integer, iStart As Integer, i As Integer, j As Integer, iColLang As Integer, iRow As Integer
+    Dim iCptRow As Integer, iCptCol As Integer, iCptSheet As Integer
+    Dim sText As String, sFormula As String, sLabelTranlate As String
+    Dim arrColumn() As String
+    Dim SheetActive As Worksheet
 
-    If SheetMain.[RNG_LangSetup].value = "" Then
-        F_TransLL_Create = sText
-        Exit Function
-    End If
+    Application.ScreenUpdating = False
 
-    If iNumCol = 2 Or sText = "" Then
-        F_TransLL_Create = sText
-    Else
-        If sType = "Formula" Then
-            sFormula = sText
-            sFormula = Replace(sFormula, Chr(34) & Chr(34), "")
-            If InStr(1, sFormula, Chr(34), 1) > 0 Then
-                For i = 1 To Len(sFormula)
-                    If Mid(sFormula, i, 1) = Chr(34) Then
-                        If iStart = 0 Then
-                            iStart = i + 1
-                        Else
-                            sLabelTranlate = Application.WorksheetFunction.VLookup(Mid(sFormula, iStart, i - iStart), Sheets("Translation").[Tab_Translations].value, iNumCol - 1, False)
-                            If sLabelTranlate <> "" Then sText = Replace(sText, Mid(sFormula, iStart, i - iStart), sLabelTranlate)
-                            iStart = 0
-                        End If
+    'search in linelist language
+    iColLang = IIf([RNG_LangSetup].value <> "", SheetSetTranslation.Rows(4).Find(What:=SheetMain.[RNG_LangSetup].value, LookAt:=xlWhole).Column, 2)
+
+'level sheet
+    For iCptSheet = 1 To 3
+
+        Select Case iCptSheet
+            Case 1
+                arrColumn = Split(sCstColDictionary, "|")
+                Sheets("Dictionary").Copy After:=Sheets(Sheets.Count)
+                Set SheetActive = Sheets("Dictionary (2)")
+                SheetActive.Name = "Dictionary_LL"
+            Case 2
+                arrColumn = Split(sCstColChoices, "|")
+                Sheets("Choices").Copy After:=Sheets(Sheets.Count)
+                Set SheetActive = Sheets("Choices (2)")
+                SheetActive.Name = "Choices_LL"
+            Case 3
+                arrColumn = Split(sCstColExport, "|")
+                Sheets("Exports").Copy After:=Sheets(Sheets.Count)
+                Set SheetActive = Sheets("Exports (2)")
+                SheetActive.Name = "Exports_LL"
+        End Select
+
+'***********************************************************************
+'il faut virer les 2 lignes de codes suivantes *************************
+'***********************************************************************
+
+'        If SheetMain.[RNG_LangSetup].value = "" Then Exit For
+
+
+'        If iColLang = 2 Then Exit For
+
+        iCptRow = 1
+
+        Do While SheetActive.Cells(iCptRow, 1).value <> ""
+            iCptRow = iCptRow + 1
+        Loop
+
+    'level column
+        For iCptCol = LBound(arrColumn, 1) To UBound(arrColumn, 1)
+
+            If Not SheetActive.Rows(1).Find(What:=arrColumn(iCptCol), LookAt:=xlWhole) Is Nothing Then _
+            iCol = SheetActive.Rows(1).Find(What:=arrColumn(iCptCol), LookAt:=xlWhole).Column
+
+            i = 2
+        'level Row
+            Do While i < iCptRow
+                If SheetActive.Cells(i, iCol).value <> "" Then
+                    sText = SheetActive.Cells(i, iCol).value
+                    If arrColumn(iCptCol) = "Formula" Then 'in case of formula
+                        sFormula = sText
+                        sFormula = Replace(sFormula, Chr(34) & Chr(34), "")
+                        If InStr(1, sFormula, Chr(34), 1) > 0 Then
+                            For j = 1 To Len(sFormula)
+                                If Mid(sFormula, j, 1) = Chr(34) Then
+                                    If iStart = 0 Then
+                                        iStart = j + 1
+                                    Else
+                                        sLabelTranlate = Application.WorksheetFunction.VLookup(Mid(sFormula, iStart, j - iStart), SheetSetTranslation.[Tab_Translations].value, iColLang - 1, False)
+                                        If sLabelTranlate <> "" Then sText = Replace(sText, Mid(sFormula, iStart, j - iStart), sLabelTranlate)
+                                        iStart = 0
+                                    End If
+                                End If
+                            Next j
+                            SheetActive.Cells(i, iCol).value = sText
+                         End If
+                    Else
+                        iRow = SheetSetTranslation.[Tab_Translations].Find(What:=sText, LookAt:=xlWhole).Row
+                        If SheetSetTranslation.Cells(iRow, iColLang).value <> "" Then _
+                        SheetActive.Cells(i, iCol).value = SheetSetTranslation.Cells(iRow, iColLang).value
+
                     End If
-                Next i
-                F_TransLL_Create = sText
-            Else
-                F_TransLL_Create = sText
-            End If
-        Else
-            If Application.WorksheetFunction.VLookup(sText, Sheets("Translation").[Tab_Translations].value, iNumCol - 1, False) <> "" Then
-                F_TransLL_Create = Application.WorksheetFunction.VLookup(sText, Sheets("Translation").[Tab_Translations].value, iNumCol - 1, False)
-            Else
-                F_TransLL_Create = sText
-            End If
-        End If
-    End If
+                End If
+                i = i + 1
+            Loop
 
-End Function
+        Next iCptCol
+
+    Next iCptSheet
+
+    Application.ScreenUpdating = True
+
+End Sub
+

@@ -49,7 +49,7 @@ End Sub
 
 'This will set the actual application properties to be able to work correctly
 Public Sub BeginWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean = True)
-    xlsapp.ScreenUpdating = False 'lla
+    xlsapp.ScreenUpdating = False
     xlsapp.DisplayAlerts = False
     xlsapp.Calculation = xlCalculationManual
     xlsapp.DisplayStatusbar = bstatusbar
@@ -308,74 +308,11 @@ Public Function Epiweek(jour As Long) As Long
     
 End Function
 
-Sub QuickSort(T_aTrier, ByVal lngMin As Long, ByVal lngMax As Long)
- 
-    Dim strMidValue As String
-    Dim lngHi As Long
-    Dim lngLo As Long
-    Dim lngIndex As Long
-  
-    If lngMin >= lngMax Then Exit Sub
-  
-    ' Valeur de partionnement
-    lngIndex = Int((lngMax - lngMin + 1) * Rnd + lngMin)
-    strMidValue = T_aTrier(lngIndex)
- 
-    ' Echanger les valeurs
-    T_aTrier(lngIndex) = T_aTrier(lngMin)
- 
-    lngLo = lngMin
-    lngHi = lngMax
-    Do
-        ' Chercher, ï¿½ partir de lngHi, une valeur < strMidValue
-        Do While T_aTrier(lngHi) >= strMidValue
-            lngHi = lngHi - 1
-            If lngHi <= lngLo Then Exit Do
-        Loop
-        If lngHi <= lngLo Then
-            T_aTrier(lngLo) = strMidValue
-            Exit Do
-        End If
- 
-        ' Echanger les valeurs lngLo et lngHi
-        T_aTrier(lngLo) = T_aTrier(lngHi)
- 
-        ' Chercher ï¿½ partir de lngLo une valeur >= strMidValue
-        lngLo = lngLo + 1
-        Do While T_aTrier(lngLo) < strMidValue
-            lngLo = lngLo + 1
-            If lngLo >= lngHi Then Exit Do
-        Loop
-        If lngLo >= lngHi Then
-            lngLo = lngHi
-            T_aTrier(lngHi) = strMidValue
-            Exit Do
-        End If
- 
-        ' Echanger les valeurs lngLo et lngHi
-        T_aTrier(lngHi) = T_aTrier(lngLo)
-    Loop
- 
-    ' Trier les 2 sous-T_aTrieres
-    QuickSort T_aTrier, lngMin, lngLo - 1
-    QuickSort T_aTrier, lngLo + 1, lngMax
-    
-End Sub
 
-Public Function IsEmptyTable(T_aTest) As Boolean
 
-    Dim test As Variant
 
-    IsEmptyTable = False
-    On Error GoTo crash
-    test = UBound(T_aTest)
-    On Error GoTo 0
-    Exit Function
 
-crash:
-    IsEmptyTable = True
 
-End Function
 
 'Move a plage of data from the setup sheet to the designer sheet
 Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As String, sStartCell As Integer)
@@ -542,8 +479,188 @@ Sub StatusBar_Updater(sCpte As Single)
 End Sub
 
 
+'Transform one formula to a formula for analysis.
+'Wkb is a workbook where we can find the dictionary, the special character
+'data and the name of all 'friendly' functions
+
+Public Function AnalysisFormula(sFormula As String, Wkb As Workbook) As String
+    'Returns a string of cleared formula
+
+    AnalysisFormula = ""
+
+    Dim sFormulaATest As String                  'same formula, with all the spaces replaced with
+    Dim sAlphaValue As String                    'Alpha numeric values in a formula
+    Dim sLetter As String                        'counter for every letter in one formula
+    Dim scolAddress As String                    'address of one column used in a formula
+
+    Dim FormulaAlphaData As BetterArray          'Table of alphanumeric data in one formula
+    Dim FormulaData      As BetterArray
+    Dim VarNameData  As BetterArray              'List of all variable names
+    Dim SpecCharData As BetterArray              'List of Special Characters data
+    Dim DictHeaders As BetterArray
+    Dim SheetNameData As BetterArray
+    Dim VarMainLabelData As BetterArray
 
 
+    Dim i As Integer
+    Dim iPrevBreak As Integer
+    Dim iNbParentO As Integer                    'Number of left parenthesis
+    Dim iNbParentF As Integer                    'Number of right parenthesis
+    Dim icolNumb As Integer                      'Column number on one sheet of one column used in a formual
+
+
+    Dim isError As Boolean
+    Dim OpenedQuotes As Boolean                  'Test if the formula has opened some quotes
+    Dim QuotedCharacter As Boolean
+    Dim NoErrorAndNoEnd As Boolean
+
+    Set FormulaAlphaData = New BetterArray       'Alphanumeric values of one formula
+    Set FormulaData = New BetterArray
+    Set VarNameData = New BetterArray       'The list of all Variable Names
+    Set SpecCharData = New BetterArray       'The list of all special characters
+    Set DictHeaders = New BetterArray
+    Set VarMainLabelData = New BetterArray
+    Set SheetNameData = New BetterArray
+
+    FormulaAlphaData.LowerBound = 1
+    VarNameData.LowerBound = 1
+    SpecCharData.LowerBound = 1
+    DictHeaders.LowerBound = 1
+
+    'squish the formula (removing multiple spaces) to avoid problems related to
+    'space collapsing and upper/lower cases
+    sFormulaATest = "(" & Application.WorksheetFunction.Trim(sFormula) & ")"
+
+    'Initialisations:
+
+    iNbParentO = 0                               'Number of open brakets
+    iNbParentF = 0                               'Number of closed brackets
+    iPrevBreak = 1
+    OpenedQuotes = False
+    NoErrorAndNoEnd = True
+    QuotedCharacter = False
+    i = 1
+
+    Set DictHeaders = GetHeaders(Wkb, C_sParamSheetDict, 1)
+    VarNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=False, DetectLastRow:=True
+    FormulaData.FromExcelRange Wkb.Worksheets(C_sSheetFormulas).ListObjects(C_sTabExcelFunctions).ListColumns("ENG").DataBodyRange, DetectLastColumn:=False
+    SpecCharData.FromExcelRange Wkb.Worksheets(C_sSheetFormulas).ListObjects(C_sTabASCII).ListColumns("TEXT").DataBodyRange, DetectLastColumn:=False
+
+    'Test if you have variable name in the dictionary
+    If DictHeaders.IndexOf(C_sDictHeaderSheetName) < 0 Or DictHeaders.IndexOf(C_sDictHeaderMainLab) < 0 Then
+        Exit Function
+    End If
+
+
+    SheetNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderSheetName)), DetectLastColumn:=False, DetectLastRow:=True
+    VarMainLabelData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderMainLab)), DetectLastColumn:=False, DetectLastRow:=True
+
+
+    If VarNameData.Includes(sFormulaATest) Then
+        AnalysisFormula = "" 'We have to aggregate
+        Exit Function
+    Else
+        Do While (i <= Len(sFormulaATest))
+            QuotedCharacter = False
+
+            sLetter = Mid(sFormulaATest, i, 1)
+            If sLetter = Chr(34) Then
+                OpenedQuotes = Not OpenedQuotes
+            End If
+
+            If Not OpenedQuotes And SpecCharData.Includes(sLetter) Then 'A special character, not in quotes
+                If sLetter = Chr(40) Then
+                    iNbParentO = iNbParentO + 1
+                End If
+                If sLetter = Chr(41) Then
+                    iNbParentF = iNbParentF + 1
+                End If
+
+                sAlphaValue = Application.WorksheetFunction.Trim(Mid(sFormulaATest, iPrevBreak, i - iPrevBreak))
+                If sAlphaValue <> "" Then
+                    'It is either a formula or a variable name or a quoted string
+                    If Not VarNameData.Includes(LCase(sAlphaValue)) And Not FormulaData.Includes(UCase(sAlphaValue)) And Not IsNumeric(sAlphaValue) Then
+                        'Testing if not opened the quotes
+                        If Mid(sAlphaValue, 1, 1) <> Chr(34) Then
+                            isError = True
+                            Exit Do
+                        Else
+                            QuotedCharacter = True
+                        End If
+                    End If
+
+                    If Not isError And Not QuotedCharacter Then
+                        'It is either a variable name or a formula
+                        If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
+                            icolNumb = VarNameData.IndexOf(sAlphaValue)
+                            sAlphaValue = "o" & ClearString(SheetNameData.Item(icolNumb)) & "['" & VarMainLabelData.Item(icolNumb) & "']"
+                        ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
+                                sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
+                        End If
+                    End If
+                    FormulaAlphaData.Push sAlphaValue, sLetter
+                Else
+                    'I have a special character, at the value sLetter But nothing between this special character and previous one, just add it
+                    FormulaAlphaData.Push sLetter
+                End If
+
+                iPrevBreak = i + 1
+            End If
+            i = i + 1
+        Loop
+    End If
+
+    If iNbParentO <> iNbParentF Then
+        isError = True
+    End If
+
+    If Not isError Then
+        sAlphaValue = FormulaAlphaData.ToString(Separator:="", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
+        AnalysisFormula = sAlphaValue
+    Else
+     MsgBox "Error in analysis formula: " & sFormula
+    End If
+
+    Set FormulaAlphaData = Nothing  'Alphanumeric values of one formula
+    Set VarNameData = Nothing       'The list of all Variable Names
+    Set SpecCharData = Nothing      'The list of all special characters
+    Set DictHeaders = Nothing
+    Set VarMainLabelData = Nothing
+    Set SheetNameData = New BetterArray
+
+End Function
+
+
+Public Function GetInternationalFormula(sFormula As String) As String
+
+    Dim sprevformula As String
+    Dim slocalformula As String
+    Dim Wksh As Worksheet
+
+
+    GetInternationalFormula = ""
+    Set Wksh = SheetMain
+
+
+    'The formula is in English, I need to take the international
+    'value of the formula, and avoid using the table of formulas
+
+    If (sFormula <> "") Then
+        sprevformula = Wksh.Range("A1").Formula
+        'Setting the formula to a range
+        Wksh.Range("A1").Formula = "=" & sFormula
+        'retrieving the local formula
+        GetInternationalFormula = Wksh.Range("A1").FormulaLocal
+    End If
+        'Reseting the previous formula
+    Wksh.Range("A1").Formula = sprevformula
+End Function
+
+
+Public Function DATE_RANGE(DateRng As Range) As String
+    DATE_RANGE = Format(Application.WorksheetFunction.Min(DateRng), "DD/MM/YYYY") & _
+     " - " & Format(Application.WorksheetFunction.Max(DateRng), "DD/MM/YYYY")
+End Function
 
 
 

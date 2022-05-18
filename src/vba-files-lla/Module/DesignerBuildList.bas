@@ -15,14 +15,14 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
               ChoicesHeaders As BetterArray, ChoicesData As BetterArray, _
               TransData As BetterArray, sPath As String)
 
-    Dim xlsapp As Excel.Application
-    Dim LLNbColData As BetterArray               'Number of columns of a Sheet of type linelist
+    Dim xlsapp          As Excel.Application
+    Dim LLNbColData     As BetterArray               'Number of columns of a Sheet of type linelist
     Dim LLSheetNameData As BetterArray           'Names of sheets of type linelist
-    Dim ChoicesListData As BetterArray           'Choices list
-    Dim ChoicesLabelsData As BetterArray         ' Choices labels
-    Dim VarnameSheetData As BetterArray
-    Dim VarNameData As BetterArray
-    Dim ColumnIndexData As BetterArray
+    Dim ChoicesListData     As BetterArray           'Choices list
+    Dim ChoicesLabelsData   As BetterArray         ' Choices labels
+    Dim VarnameSheetData    As BetterArray
+    Dim VarNameData         As BetterArray
+    Dim ColumnIndexData     As BetterArray
     Dim ColumnSheetIndexData As BetterArray
     Dim FormulaData As BetterArray
     Dim SpecCharData As BetterArray
@@ -57,7 +57,7 @@ StatusBar_Updater (0)
     With xlsapp 'lla
         .ScreenUpdating = False
         .DisplayAlerts = False
-        .Visible = True
+        .Visible = False
         .AutoCorrect.DisplayAutoCorrectOptions = False
         .Workbooks.Add
     End With
@@ -282,15 +282,14 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
         '-------------- Creating the export sheet
         .Worksheets.Add.Name = C_sParamSheetExport
         'Headers of the export options
-        .Worksheets(C_sParamSheetExport).Cells(1, 1).value = "ID"
-        .Worksheets(C_sParamSheetExport).Cells(1, 2).value = "Lbl"
-        .Worksheets(C_sParamSheetExport).Cells(1, 3).value = "Pwd"
-        .Worksheets(C_sParamSheetExport).Cells(1, 4).value = "Actif"
-        .Worksheets(C_sParamSheetExport).Cells(1, 5).value = "FileName"
+
 
         'Adding the data on export parameters
-        ExportData.ToExcelRange Destination:=.Sheets(C_sParamSheetExport).Cells(2, 1)
-        
+        ExportData.ToExcelRange Destination:=.Worksheets(C_sParamSheetExport).Cells(1, 1)
+
+        'search in linelist language
+        iColLang = IIf([RNG_LangSetup].value <> "", SheetSetTranslation.Rows(4).Find(What:=SheetMain.[RNG_LangSetup].value, LookAt:=xlWhole).Column, 2)
+
         i = 2
         Do While .Worksheets(C_sParamSheetExport).Cells(i, 1).value <> ""
             If .Worksheets(C_sParamSheetExport).Cells(i, 2).value <> "" Then
@@ -346,14 +345,14 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
             If sPrevSheetName <> DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)) Then
 
                 If sPrevSheetName = "" Then
-                    .Worksheets(1).Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                    .Worksheets(1).Name = EnsureGoodSheetName(DictData.Items(1, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
                 Else
                     .Worksheets.Add(After:=.Worksheets(sPrevSheetName)).Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
                 End If
                 
                 'I am on a new sheet name, I update values
-                sPrevSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
-                
+                sPrevSheetName = EnsureGoodSheetName(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
+
                 j = j + 1
                 'Here, the column index is the index number of each column in one sheet. I update it when I am on
                 'a new sheet
@@ -796,7 +795,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                     .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = GetColor("Orange")
                 Case C_sDictControlForm 'Formulas, are reported to the formula function
                     If (sActualFormula <> "") Then
-                        sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, VarNameData, ColumnIndexData, _
+                        sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, sSheetName, VarNameData, ColumnIndexData, _
                                                             FormulaData, SpecCharData, False)
                     End If
                     'Testing before writing the formula
@@ -819,11 +818,11 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
             If sActualMin <> "" And sActualMax <> "" Then
 
                 'Testing if it is numeric
-                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
+                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
                 If sFormulaMin = "" Then
                        'MsgBox "Invalid formula will be ignored : " & sActualMin & " / " & sActualVarName
                 Else
-                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
+                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
                     If sFormulaMax = "" Then
                             'MsgBox "Invalid formula will be ignored : " & sFormulaMax & " / " & sActualVarName
                     End If

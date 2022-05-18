@@ -79,7 +79,7 @@ Public Function LoadFile(sFilters As String, sType As String) As String
 
         If .show = True Then
             LoadFile = .SelectedItems(1)
-            If sType = "Setup" Then Call ImportLanguage(LoadFile)
+            If sType = "Setup" Then Call ImportLangAnalysis(LoadFile)
         End If
     End With
     Set fDialog = Nothing
@@ -308,6 +308,7 @@ Public Function Epiweek(jour As Long) As Long
     End Select
 
 End Function
+
 
 'Move a plage of data from the setup sheet to the designer sheet
 Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As String, sStartCell As Integer)
@@ -624,6 +625,8 @@ Public Function AnalysisFormula(sFormula As String, Wkb As Workbook) As String
     Set SheetNameData = New BetterArray
 
 End Function
+
+
 
 
 Public Function GetInternationalFormula(sFormula As String) As String

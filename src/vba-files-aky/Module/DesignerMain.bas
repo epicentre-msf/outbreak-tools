@@ -126,6 +126,8 @@ Sub LoadGeoFile()
                 End With
 
             End If
+
+
         Next
 
         SheetMain.Range(C_sRngPathGeo).value = sFilePath
@@ -138,6 +140,7 @@ Sub LoadGeoFile()
 
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Fini")
         SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White")
+
     Else
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
@@ -174,7 +177,7 @@ Sub GenerateData()
     Dim SetupWkb        As Workbook
     Dim DesWkb          As Workbook
     Dim iOpenLL         As Integer
-
+    Dim i               As Integer
 
     'Be sure the actual Workbook is not opened
 
@@ -199,27 +202,42 @@ Sub GenerateData()
 
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadDic")
 
-    '---------------------------- Getting all required the Data
+
+    'translation of the Export, Dictionary and Choice sheets for the linelist
+    Call Translate_Manage
+
+
+    '--------------- Getting all required the Data
 
     'Create the Dictionnary data
-    Set DictHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetDict, 1)
+    Set DictHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetDict & "_LL", 1)
     'Create the data table of linelist patient using the dictionnary
-    Set DictData = Helpers.GetData(DesWkb, C_sParamSheetDict, 2)
+    Set DictData = Helpers.GetData(DesWkb, C_sParamSheetDict & "_LL", 2)
     'Create the choices data
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadList")
     'Create the dictionnary for the choices sheet
-    Set ChoicesHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetChoices, 1)
+    Set ChoicesHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetChoices & "_LL", 1)
     'Create the table for the choices
-    Set ChoicesData = Helpers.GetData(DesWkb, C_sParamSheetChoices, 2)
+    Set ChoicesData = Helpers.GetData(DesWkb, C_sParamSheetChoices & "_LL", 2)
     'Reading the export sheet
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadExport")
     'Create parameters for export
-    Set ExportData = Helpers.GetData(DesWkb, C_sParamSheetExport, 1)
+    Set ExportData = Helpers.GetData(DesWkb, C_sParamSheetExport & "_LL", 1)
     'Create the translation Data
     Set TransData = New BetterArray
     TransData.FromExcelRange DesWkb.Worksheets(C_sParamSheetTranslation).Cells(C_eStartlinestransdata, 2), DetectLastRow:=True, DetectLastColumn:=True
 
     Set DesWkb = Nothing
+
+    'removal of Export, Dictionary and Choice sheets for the linelist
+    i = ActiveWorkbook.Sheets.Count - 2
+
+    Do While i <= ActiveWorkbook.Sheets.Count
+        Application.DisplayAlerts = False
+        Sheets(i).Delete
+        Application.DisplayAlerts = True
+    Loop
+
 
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
 

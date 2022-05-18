@@ -67,10 +67,10 @@ Public Function ControlForGenerate() As Boolean
         Exit Function
     End If
 
-    bGeo = (SheetGeo.ListObjects(C_sTabADM1).DataBodyRange Is Nothing) Or _
-            (SheetGeo.ListObjects(C_sTabADM2).DataBodyRange Is Nothing) Or _
-            (SheetGeo.ListObjects(C_sTabADM3).DataBodyRange Is Nothing) Or _
-            (SheetGeo.ListObjects(C_sTabADM4).DataBodyRange Is Nothing)
+    bGeo = (SheetGeo.ListObjects(C_sTabadm1).DataBodyRange Is Nothing) Or _
+            (SheetGeo.ListObjects(C_sTabAdm2).DataBodyRange Is Nothing) Or _
+            (SheetGeo.ListObjects(C_sTabAdm3).DataBodyRange Is Nothing) Or _
+            (SheetGeo.ListObjects(C_sTabAdm4).DataBodyRange Is Nothing)
 
     'Be sure the geo has been loaded correctly ie the geo data is not empty
     If bGeo Then
