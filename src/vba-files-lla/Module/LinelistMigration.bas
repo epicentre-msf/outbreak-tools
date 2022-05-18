@@ -501,6 +501,17 @@ Private Sub ExportMigrationData(sLLPath As String)
             ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
             i = i + 1
         Wend
+        
+        'Add The metadata Sheet
+        
+         .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sSheetMetadata
+         sPrevSheetName = C_sSheetMetadata
+        .Worksheets(sPrevSheetName).Cells(1, 1).value = "variable"
+        .Worksheets(sPrevSheetName).Cells(1, 2).value = "value"
+        'Writing informations for metadata
+        .Worksheets(sPrevSheetName).Cells(2, 1).value = "language"
+        .Worksheets(sPrevSheetName).Cells(2, 2).value = ThisWorkbook.Worksheets(C_sSheetLLTranslation).Range(C_sRngLLLanguage)
+        'Will add other metadata in the future
     End With
 
     'Write an error handling for writing the file here
@@ -580,12 +591,12 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
         'I need the same headers as the geobase for the admin part
         ExportHeader.Clear
         ExportHeader.Push LCase(C_sAdm1) & "_name", LCase(C_sAdm2) & "_name", LCase(C_sAdm3) & "_name", LCase(C_sAdm4) & "_name"
-
         'ADM4
         .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sAdm4
         ExportData.FromExcelRange WkshGeo.ListObjects(C_sTabAdm4).Range
         ExportData.ToExcelRange .Worksheets(C_sAdm4).Cells(1, 1)
         ExportHeader.ToExcelRange .Worksheets(C_sAdm4).Cells(1, 1), TransposeValues:=True
+        .Worksheets(C_sAdm4).Cells(1, 5).value = LCase(C_sAdm4) & "_pop"
         sPrevSheetName = C_sAdm4
         ExportData.Clear
 
