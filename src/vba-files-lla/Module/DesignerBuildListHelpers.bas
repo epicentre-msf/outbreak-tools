@@ -548,7 +548,7 @@ End Sub
 
 Public Function ValidationFormula(sFormula As String, sSheetName As String, VarNameData As BetterArray, _
                                     ColumnIndexData As BetterArray, FormulaData As BetterArray, _
-                                    SpecCharData As BetterArray, Optional bLocal As Boolean = True) As String
+                                    SpecCharData As BetterArray, Wksh As Worksheet, Optional bLocal As Boolean = True) As String
     'Returns a string of cleared formula
 
     ValidationFormula = ""
@@ -649,7 +649,7 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
         sAlphaValue = FormulaAlphaData.ToString(Separator:="", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
         'If local, get the local formula
         If (bLocal) Then
-            ValidationFormula = Helpers.GetInternationalFormula(sAlphaValue)
+            ValidationFormula = Helpers.GetInternationalFormula(sAlphaValue, Wksh)
         Else
             ValidationFormula = "=" & sAlphaValue
         End If
@@ -658,7 +658,6 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
     Set FormulaAlphaData = Nothing
 
 End Function
-
 
 
 
@@ -716,7 +715,8 @@ Public Function EnsureGoodSheetName(ByVal sSheetName As String) As String
     EnsureGoodSheetName = sSheetName
 
     If sSheetName = C_sSheetGeo Or sSheetName = C_sSheetFormulas Or sSheetName = C_sSheetPassword Or sSheetName = C_sSheetTemp Or sSheetName = C_sSheetLLTranslation Or _
-                     sSheetName = C_sParamSheetDict Or sSheetName = C_sParamSheetExport Or sSheetName = C_sParamSheetChoices Or sSheetName = C_sParamSheetTranslation Then
+                     sSheetName = C_sParamSheetDict Or sSheetName = C_sParamSheetExport Or sSheetName = C_sParamSheetChoices Or sSheetName = C_sParamSheetTranslation Or _
+                     sSheetName = C_sSheetMetadata Then
         EnsureGoodSheetName = sSheetName & "_"
     End If
 

@@ -43,7 +43,7 @@ End Sub
 Private Sub UserForm_Initialize()
 'Manage language
 
-    'Call TranslateForm(Me, ThisWorkbook.Worksheets("linelist-translation").[T_F_NomVisible])
+    Call TranslateForm(Me, ThisWorkbook.Worksheets("linelist-translation").[T_F_NomVisible])
         
     Me.Width = 440
     Me.Height = 280

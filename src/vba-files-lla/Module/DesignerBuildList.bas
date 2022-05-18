@@ -50,7 +50,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
 
     Application.StatusBar = "[" & Space(C_iNumberOfBars) & "]" 'create status ProgressBar
-StatusBar_Updater (0)
+    StatusBar_Updater (0)
 
     Set xlsapp = New Excel.Application
 
@@ -63,14 +63,14 @@ StatusBar_Updater (0)
     End With
 
     DoEvents
-StatusBar_Updater (5)
+    StatusBar_Updater (5)
 
 
     'Now Transferring some designers objects (codes, modules) to the workbook we want to create
     Call DesignerBuildListHelpers.TransferDesignerCodes(xlsapp)
 
     DoEvents
-StatusBar_Updater (10)
+    StatusBar_Updater (10)
 
     'DesignerBuildListHelpers.TransterSheet is for sending worksheets from the actual workbook to the first workbook of the instance
 
@@ -79,7 +79,7 @@ StatusBar_Updater (10)
         Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetGeo)
         Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetPassword)
 
-StatusBar_Updater (15)
+        StatusBar_Updater (15)
 
         Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetFormulas)
         Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetLLTranslation)
@@ -87,7 +87,7 @@ StatusBar_Updater (15)
     Application.ScreenUpdating = True
 
     DoEvents
-StatusBar_Updater (20)
+    StatusBar_Updater (20)
 
     'Create special characters data
     FormulaData.FromExcelRange SheetFormulas.ListObjects(C_sTabExcelFunctions).ListColumns("ENG").DataBodyRange, DetectLastColumn:=False
@@ -182,20 +182,20 @@ StatusBar_Updater (20)
                     End With
 
                      'Now writing the data of varnames to the dictionary
-
                      With xlsapp.Worksheets(C_sParamSheetDict)
                         iPastingRow = .Cells(.Rows.Count, 1).End(xlUp).Row
                         DictVarName.ToExcelRange Destination:=.Cells(iPastingRow + 1, 1)
                         DictVarName.Clear
                      End With
             DoEvents
+            
             sCpte = sCpte + 10
-StatusBar_Updater (sCpte)
+            StatusBar_Updater (sCpte)
         End Select
         iSheetStartLine = iSheetStartLine + LLNbColData.Item(iCounterSheet)
 
         DoEvents
-StatusBar_Updater (sCpte + 5)
+        StatusBar_Updater (sCpte + 5)
     Next
 
     'Put the dictionnary in a table format
@@ -217,7 +217,7 @@ StatusBar_Updater (sCpte + 5)
     Set ChoicesLabelsData = Nothing
     Set DictVarName = Nothing
 
-StatusBar_Updater (100)
+    StatusBar_Updater (100)
 
     With xlsapp
         '.workSheets("linelist-patient").Select 'lla. On ne sait pas a priori que c'est la feuile linelist-patient. On ne connait pas le nom des feuilles.
@@ -715,7 +715,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                                          C_eStartLinesLLSubSec, _
                                         iPrevColSubSec, iCounterSheetLLCol + 1)
                 Else
-                    'Otherwise to the same as before but mergin only the sub section part
+                    'Otherwise do the same as before but mergin only the sub section part
                     Call DesignerBuildListHelpers.BuildMergeArea(xlsapp.Worksheets(sSheetName), _
                                         C_eStartLinesLLSubSec, _
                                         iPrevColSubSec, iCounterSheetLLCol)
@@ -797,7 +797,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                 Case C_sDictControlForm 'Formulas, are reported to the formula function
                     If (sActualFormula <> "") Then
                         sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, sSheetName, VarNameData, ColumnIndexData, _
-                                                            FormulaData, SpecCharData, False)
+                                                            FormulaData, SpecCharData, xlsapp.Worksheets(sSheetName), False)
                     End If
                     'Testing before writing the formula
                     If (sFormula <> "") Then
@@ -819,11 +819,11 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
             If sActualMin <> "" And sActualMax <> "" Then
 
                 'Testing if it is numeric
-                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
+                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, xlsapp.Worksheets(sSheetName), True)
                 If sFormulaMin = "" Then
                        'MsgBox "Invalid formula will be ignored : " & sActualMin & " / " & sActualVarName
                 Else
-                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
+                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, xlsapp.Worksheets(sSheetName), True)
                     If sFormulaMax = "" Then
                             'MsgBox "Invalid formula will be ignored : " & sFormulaMax & " / " & sActualVarName
                     End If

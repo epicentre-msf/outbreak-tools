@@ -629,19 +629,15 @@ End Function
 
 
 
-Public Function GetInternationalFormula(sFormula As String) As String
+Public Function GetInternationalFormula(sFormula As String, Wksh As Worksheet) As String
 
     Dim sprevformula As String
     Dim slocalformula As String
-    Dim Wksh As Worksheet
-
 
     GetInternationalFormula = ""
-    Set Wksh = SheetMain
-
 
     'The formula is in English, I need to take the international
-    'value of the formula, and avoid using the table of formulas
+    'value of the formula, and avoid using the table of formulas only when I deal with Validations
 
     If (sFormula <> "") Then
         sprevformula = Wksh.Range("A1").Formula
@@ -652,6 +648,7 @@ Public Function GetInternationalFormula(sFormula As String) As String
     End If
         'Reseting the previous formula
     Wksh.Range("A1").Formula = sprevformula
+    Set Wksh = Nothing
 End Function
 
 
