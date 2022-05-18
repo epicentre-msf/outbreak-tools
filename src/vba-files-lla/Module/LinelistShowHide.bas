@@ -35,7 +35,7 @@ Sub ClicCmdShowHide()
     Dim T_status As BetterArray                  'status table
     Dim T_DictHeaders As BetterArray                 'headers of the dictionary table
     Dim T_data As BetterArray                    'temporary data for storing the values
-    Dim wksh As Worksheet                         'Setting a temporary variable for dictionary selection
+    Dim Wksh As Worksheet                         'Setting a temporary variable for dictionary selection
     Dim i As Integer
     Dim bremoveFromGeo As Boolean
 
@@ -53,8 +53,8 @@ Sub ClicCmdShowHide()
     T_data.LowerBound = 1
 
     ActiveSheet.Unprotect (C_sLLPassword)
-    
-    Set wksh = ThisWorkbook.Worksheets(C_sParamSheetDict)
+
+    Set Wksh = ThisWorkbook.Worksheets(C_sParamSheetDict)
 
     'Get the headers
     Set T_DictHeaders = CreateDicTitle
@@ -63,34 +63,34 @@ Sub ClicCmdShowHide()
     i = 1
     bremoveFromGeo = False
 
-     While (i <= wksh.Cells(wksh.Rows.Count, 1).End(xlUp).Row)
+     While (i <= Wksh.Cells(Wksh.Rows.Count, 1).End(xlUp).Row)
 
-        If ActiveSheet.Name = wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderSheetName)) Then
-            bremoveFromGeo = wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "2" Or _
-                             wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "3" Or _
-                             wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "4"
-            
+        If ActiveSheet.Name = Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderSheetName)) Then
+            bremoveFromGeo = Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "2" Or _
+                             Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "3" Or _
+                             Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "4"
+
             'update only on non hidden variables
-            If wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderStatus)).value <> C_sDictStatusHid Then
+            If Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderStatus)).value <> C_sDictStatusHid Then
 
                 'avoid adding the other Geos
                 If Not bremoveFromGeo Then
-                    T_mainlab.Push wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderMainLab)).value
-                    T_varname.Push wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVarName)).value
+                    T_mainlab.Push Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderMainLab)).value
+                    T_varname.Push Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVarName)).value
 
-                    If LCase(wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderStatus)).value) = C_sDictStatusMan Then
+                    If LCase(Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderStatus)).value) = C_sDictStatusMan Then
                         T_status.Push "Mandatory"
-                        wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = C_sDictStatusMan
-                    ElseIf LCase(wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value) = C_sDictStatusUserHid Then
+                        Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = C_sDictStatusMan
+                    ElseIf LCase(Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value) = C_sDictStatusUserHid Then
                         T_status.Push "Hidden"
                     Else
                         T_status.Push "Shown"
-                        wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = "Shown"
+                        Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = "Shown"
                     End If
                 End If
 
             Else
-                wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = C_sDictStatusDesHid
+                Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = C_sDictStatusDesHid
             End If
         End If
         i = i + 1
@@ -100,7 +100,7 @@ Sub ClicCmdShowHide()
     T_data.Item(1) = T_mainlab.Items
     T_data.Item(2) = T_varname.Items
     T_data.Item(3) = T_status.Items
-    
+
     Set T_varname = Nothing
     Set T_mainlab = Nothing
     Set T_status = Nothing
@@ -116,7 +116,7 @@ Sub ClicCmdShowHide()
     F_NomVisible.LST_NomChamp.List = T_data.Items
     'Setting objects to nothing
 
-    Set wksh = Nothing
+    Set Wksh = Nothing
     Set T_data = Nothing
 
     Application.EnableEvents = True
@@ -192,7 +192,7 @@ Sub ShowHideColumnSheet(sSheetName As String, ByVal sVarName As String, Optional
     Dim indexCol As Integer                      'Column The index of the column to Hide
     Dim T_DictHeaders As BetterArray                 'Temporary data for headers
     Dim sControl As String                 'Extracting the control label to be sure we can hide all the geos
-    
+
     BeginWork xlsapp:=Application
     ActiveSheet.Unprotect (C_sLLPassword)
 
@@ -257,7 +257,7 @@ Sub ShowHideLogic(iIndex As Integer)
 
         Dim T_FormData As BetterArray
         Set T_FormData = New BetterArray
-        
+
         T_FormData.Items = F_NomVisible.LST_NomChamp.List
         T_FormData.LowerBound = 1
 
@@ -314,7 +314,7 @@ Sub WriteShowHide(sSheetName As String, ByVal sVarName As String, visibility As 
         End If
     End If
 
-    
+
     Set T_DictVarnames = Nothing
     Set T_DictSheetNames = Nothing
 End Sub

@@ -113,3 +113,7 @@ Public Const C_sDesignerPassword         As String = "1234" 'Default password fo
 
 'ENUMERATION LISTS ================================================================================================================================================================
 
+'constant linked to the different columns to be translated in the workbook sheets
+Public Const sCstColDictionary As String = "Main label|Sub-label|Note|Sheet Name|Main section|Sub-section|Formula|Message"
+Public Const sCstColChoices As String = "label_short|label"
+Public Const sCstColExport As String = "Label button"
