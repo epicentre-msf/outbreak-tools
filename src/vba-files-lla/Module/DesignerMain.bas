@@ -9,7 +9,9 @@ Option Explicit
 Sub LoadFileDic()
 
     Dim sFilePath As String                      'Path to the dictionnary
-    
+
+    BeginWork xlsapp:=Application
+
     'LoadFile is the procedure for loading the path to the dictionnary
     sFilePath = Helpers.LoadFile("*.xlsb", "Setup") 'The
     
@@ -21,6 +23,8 @@ Sub LoadFileDic()
     Else
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
+
+    EndWork xlsapp:=Application
 End Sub
 
 'Loading a linelist file ----------------------------------------------------------------------------------------------------------------------------------------------------
@@ -38,7 +42,7 @@ Sub LoadFileLL()
     
     Exit Sub
 ErrorManage:
-    MsgBox TranslateMsg("MSG_TitlePassWord"), vbCritical, TranslateMsg("MSG_PassWord")
+    MsgBox TranslateMsg("MSG_TitlePassWord"), VbCritical, TranslateMsg("MSG_PassWord")
 End Sub
 
 'Loading the Lineist directory ---------------------------------------------------------------------------------------------------------------------------------------------------
@@ -62,9 +66,9 @@ End Sub
 ' will be in use instead of the first one.
 '
 Sub LoadGeoFile()
-    
-    Call Helpers.BeginWork(Application)
-    
+
+    BeginWork xlsapp:=Application
+
     Dim sFilePath   As String                      'File path to the geo file
     Dim oSheet      As Object
     Dim AdmData     As BetterArray                  'Table for admin levels
@@ -74,28 +78,27 @@ Sub LoadGeoFile()
     Dim Wkb         As Workbook
     'Sheet names
     Set AdmNames = New BetterArray
-    AdmNames.LowerBound = 1
-    AdmNames.Push "ADM1", "ADM2", "ADM3", "ADM4", "HF", "NAMES" 'Names of each sheet
-    
-    'Defining the adm and headers array
     Set AdmData = New BetterArray
-    AdmData.LowerBound = 1
     Set AdmHeader = New BetterArray
-    AdmHeader.LowerBound = 1
+
+    AdmNames.LowerBound = 1
+    AdmNames.Push C_sAdm1, C_sAdm2, C_sAdm3, C_sAdm4, C_sHF, C_sNames, C_sHistoHF, C_sHistoGeo, C_sGeoMetadata
+
     'Set xlsapp = New Excel.Application
     sFilePath = Helpers.LoadFile("*.xlsx", "Geo")
     
     If sFilePath <> "" Then
         'Open the geo workbook and hide the windows
         Set Wkb = Workbooks.Open(sFilePath)
-        'Windows(Wkb.Name).Visible = False
-            
+        'Write the filename of the geobase somewhere for the export
+        SheetGeo.Range(C_sRngGeoName).value = Dir(sFilePath)
+
         'Cleaning the previous Data in case the ranges are not Empty
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_NetoPrec")
         For i = 1 To AdmNames.Length
             'Adms (Maybe come back to work on the names?)
-            If Not SheetGeo.ListObjects("T" & "_" & AdmNames.Items(i)).DataBodyRange Is Nothing Then
-                SheetGeo.ListObjects("T" & "_" & AdmNames.Items(i)).DataBodyRange.Delete
+            If Not SheetGeo.ListObjects("T_" & AdmNames.Items(i)).DataBodyRange Is Nothing Then
+                SheetGeo.ListObjects("T_" & AdmNames.Items(i)).DataBodyRange.Delete
             End If
         Next
             
@@ -104,26 +107,27 @@ Sub LoadGeoFile()
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_EnCours") & oSheet.Name
             AdmData.Clear
             AdmHeader.Clear
-            'loading the data in memory
-            AdmData.FromExcelRange oSheet.Range("A2"), DetectLastRow:=True, DetectLastColumn:=True
-            'The headers
-            AdmHeader.FromExcelRange oSheet.Range("A1"), DetectLastRow:=False, DetectLastColumn:=True
-                
-            'Be sure my sheetnames are correct
-            If Not AdmNames.Includes(oSheet.Name) Then
-                SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Error_Sheet") & oSheet.Name
-                
-                EndWork xlsapp:=Application
-                Exit Sub
+
+            'Be sure my sheetnames are correct before loading the data
+            If AdmNames.Includes(oSheet.Name) Then
+
+                'loading the data in memory
+                AdmData.FromExcelRange oSheet.Range("A2"), DetectLastRow:=True, DetectLastColumn:=True
+                'The headers
+                AdmHeader.FromExcelRange oSheet.Range("A1"), DetectLastRow:=False, DetectLastColumn:=True
+
+                'Check if the sheet is the admin exists sheet before writing in the adm table
+                With SheetGeo.ListObjects("T_" & oSheet.Name)
+                    AdmHeader.ToExcelRange Destination:=SheetGeo.Cells(1, .Range.Column), TransposeValues:=True
+                    AdmData.ToExcelRange Destination:=SheetGeo.Cells(2, .Range.Column)
+
+                    'Resizing the Table
+                    .Resize .Range.CurrentRegion
+                End With
+
             End If
                 
-            'Check if the sheet is the admin exists sheet before writing in the adm table
-            With SheetGeo.ListObjects("T" & "_" & oSheet.Name)
-                AdmHeader.ToExcelRange Destination:=SheetGeo.Cells(1, .Range.Column), TransposeValues:=True
-                AdmData.ToExcelRange Destination:=SheetGeo.Cells(2, .Range.Column)
-                'resizing the Table
-                .Resize .Range.CurrentRegion
-            End With
+
         Next
             
         SheetMain.Range(C_sRngPathGeo).value = sFilePath
@@ -136,15 +140,7 @@ Sub LoadGeoFile()
             
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Fini")
         SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White")
-        
-        'Remove the historic of the Geo and the facility if not empty
-        If Not SheetGeo.ListObjects(C_sTabHistoGeo).DataBodyRange Is Nothing Then
-            SheetGeo.ListObjects(C_sTabHistoGeo).DataBodyRange.Delete
-        End If
-        
-        If Not SheetGeo.ListObjects(C_sTabHistoHF).DataBodyRange Is Nothing Then
-            SheetGeo.ListObjects(C_sTabHistoHF).DataBodyRange.Delete
-        End If
+ 
     Else
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
@@ -154,7 +150,7 @@ Sub LoadGeoFile()
     EndWork xlsapp:=Application
 End Sub
 
-'GENERATE THE LINELIST DATA =========================================================================================
+'GENERATE THE LINELIST DATA =================================================================================================
 
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 'This is the Sub for generating the data of the linelist using the input in the designer
@@ -228,8 +224,9 @@ Sub GenerateData()
     'Create parameters for export
     Set ExportData = Helpers.GetData(DesWkb, C_sParamSheetExport & "_LL", 1)
     'Create the translation Data
-    Set TransData = Helpers.GetData(DesWkb, C_sParamSheetTranslation, C_eStartlinestransdata)
-    
+    Set TransData = New BetterArray
+    TransData.FromExcelRange DesWkb.Worksheets(C_sParamSheetTranslation).Cells(C_eStartlinestransdata, 2), DetectLastRow:=True, DetectLastColumn:=True
+
     Set DesWkb = Nothing
 
     'removal of Export, Dictionary and Choice sheets for the linelist
@@ -373,24 +370,24 @@ Function translateHeadGeo()
 
     Dim sIsoCountry As String, sCountry As String, sSubCounty As String, sWard As String, sPlace As String, sFacility As String
 
-    Sheets("linelist-translation").[RNG_Language].value = [RNG_LLForm].value 'check Language of linelist's forms
+    sIsoCountry = GetLanguageCode(SheetMain.Range(C_sRngLLFormLang).value)
 
-    sIsoCountry = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_Language].value, _
-    Sheets("linelist-translation").[T_Lang2], 2, False)
+    'Get the isoCode for the linelist
+    SheetLLTranslation.Range(C_sRngLLLanguageCode).value = sIsoCountry
 
+    sCountry = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 2, False)
+    sSubCounty = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 3, False)
+    sWard = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 4, False)
+    sPlace = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 5, False)
+    sFacility = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 6, False)
 
-    sCountry = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 2, False)
-    sSubCounty = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 3, False)
-    sWard = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 4, False)
-    sPlace = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 5, False)
-    sFacility = Application.WorksheetFunction.HLookup(sIsoCountry, Sheets("GEO").[T_NAMES_GEO], 6, False)
-        
-    Sheets("GEO").Range("A1,E1,J1,P1,Z1").value = sCountry
-    Sheets("GEO").Range("F1,K1,Q1,Y1").value = sSubCounty
-    Sheets("GEO").Range("L1,R1,X1").value = sWard
-    Sheets("GEO").Range("S1").value = sPlace
-    Sheets("GEO").Range("W1").value = sFacility
-    
+    SheetGeo.Range("A1,E1,J1,P1,Z1").value = sCountry
+    SheetGeo.Range("F1,K1,Q1,Y1").value = sSubCounty
+    SheetGeo.Range("L1,R1,X1").value = sWard
+    SheetGeo.Range("S1").value = sPlace
+    SheetGeo.Range("W1").value = sFacility
+
+   SheetLLTranslation.Range(C_sRngLLLanguage).value = SheetMain.Range(C_sRngLLFormLang) 'check Language of linelist's forms
 
 End Function
 

@@ -18,23 +18,23 @@ Private Sub Workbook_Open()
   SheetMain.[RNG_LangSetup].value = ""
   
   Call SetInputRangesToWhite
+
   SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgSet)
   
-  SheetGeo.ListObjects(C_sTabADM1).DataBodyRange.Clear
-  SheetGeo.ListObjects(C_sTabADM2).DataBodyRange.Clear
-  SheetGeo.ListObjects(C_sTabADM3).DataBodyRange.Clear
-  SheetGeo.ListObjects(C_sTabADM4).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabadm1).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabAdm2).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabAdm3).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabAdm4).DataBodyRange.Clear
   SheetGeo.ListObjects(C_sTabHF).DataBodyRange.Clear
   SheetGeo.ListObjects(C_sTabNames).DataBodyRange.Clear
   
   SheetLLTranslation.[RNG_Language].value = [RNG_LLForm].value 'check Language of linelist's forms
 
-  
-  SheetDesTranslation.Select
-  SheetDesTranslation.Range([T_Lst_Lang], Selection.End(xlToRight)).Select
-  Selection.ClearContents 'clears the list of languages from the dictionary file
-  
-  SheetMain.Select
-  
+
+  With SheetDesTranslation
+        .Range(.Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").Column), _
+               .Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").End(xlToRight).Column)).ClearContents
+  End With
+
 End Sub
 

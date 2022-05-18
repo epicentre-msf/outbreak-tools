@@ -118,6 +118,7 @@ Function GetTransData() As BetterArray
 End Function
 
 
+
 'Retrieve the variable names of the dictionnary on one condition on a variable
 'Here the condition is only equallity (a kind of filter, but for the
 'dictionary only)
