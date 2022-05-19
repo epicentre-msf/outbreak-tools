@@ -163,6 +163,7 @@ Public Function ClearString(ByVal sString As String, Optional bremoveHiphen As B
     ClearString = LCase(sValue)
 End Function
 
+
 'Get headers and data from one worksheet of a workbook
 
 'Get the headers of one sheet from one line (probablly the first line)
