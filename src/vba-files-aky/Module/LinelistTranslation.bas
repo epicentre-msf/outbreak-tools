@@ -73,7 +73,7 @@ End Function
 Sub ImportLangAnalysis(sPath As String)
 'Import languages from the setup file and sheets Translation and Analysis
 
-    Dim sAdr1 As String, sAdr2 As String, sNomFic As String
+   Dim sAdr1 As String, sAdr2 As String, sNomFic As String
 
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
@@ -88,7 +88,12 @@ Sub ImportLangAnalysis(sPath As String)
 
     SheetAnalysis.Cells.Delete
 
-    Workbooks.Open Filename:=sPath
+    SheetMain.Select
+
+    Application.EnableEvents = False
+        Workbooks.Open Filename:=sPath
+    Application.EnableEvents = True
+
     Sheets("Translations").Range("Tab_Translations[#Headers]").Copy
 
     sNomFic = Dir(sPath)
@@ -113,9 +118,6 @@ Sub ImportLangAnalysis(sPath As String)
 
     Windows(sNomFic).Close
 
-    Application.ScreenUpdating = True
-    Application.DisplayAlerts = True
-
     sAdr1 = SheetDesTranslation.[T_Lst_Lang].Address
     sAdr2 = SheetDesTranslation.[T_Lst_Lang].End(xlToRight).Address
 
@@ -138,6 +140,8 @@ Sub ImportLangAnalysis(sPath As String)
 
     SheetMain.[RNG_LangSetup].value = SheetSetTranslation.Cells(4, 2).value
 
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
 End Sub
 
 Sub Translate_Manage()
@@ -160,19 +164,13 @@ Sub Translate_Manage()
         Select Case iCptSheet
             Case 1
                 arrColumn = Split(sCstColDictionary, "|")
-                Sheets("Dictionary").Copy After:=Sheets(Sheets.Count)
-                Set SheetActive = Sheets("Dictionary (2)")
-                SheetActive.Name = "Dictionary_LL"
+                Set SheetActive = DesignerWorkbook.Worksheets(C_sParamSheetDict)
             Case 2
                 arrColumn = Split(sCstColChoices, "|")
-                Sheets("Choices").Copy After:=Sheets(Sheets.Count)
-                Set SheetActive = Sheets("Choices (2)")
-                SheetActive.Name = "Choices_LL"
+                Set SheetActive = DesignerWorkbook.Worksheets(C_sParamSheetChoices)
             Case 3
                 arrColumn = Split(sCstColExport, "|")
-                Sheets("Exports").Copy After:=Sheets(Sheets.Count)
-                Set SheetActive = Sheets("Exports (2)")
-                SheetActive.Name = "Exports_LL"
+                Set SheetActive = DesignerWorkbook.Worksheets(C_sParamSheetExport)
         End Select
 
 '***********************************************************************

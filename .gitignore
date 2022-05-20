@@ -15,3 +15,6 @@ config.json
 output_test
 output
 migration
+*Sheet1.cls
+*Sheet2.cls
+*Sheet3.cls
