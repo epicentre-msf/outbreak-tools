@@ -98,7 +98,7 @@ End Sub
 
 
 Sub ClicCmdDebug()
-    DebugMode = True
+    Static DebugMode As Boolean
     Dim pwd As String
     Dim sh As Worksheet
     pwd = Inputbox("Provide the debugging password", "DEBUG MODE", "1234")
@@ -199,7 +199,7 @@ Sub ClicExportMigration()
         'For subsequent clicks, just show what have been ticked
         [F_ExportMig].CHK_ExportMigData.value = True
         [F_ExportMig].CHK_ExportMigGeo.value = True
-        [F_ExportMig].CHK_ExportMigGeoHistoric.value = False
+        [F_ExportMig].CHK_ExportMigGeoHistoric.value = True
         [F_ExportMig].show
         AfterFirstClicMig = True
     End If

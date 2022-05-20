@@ -183,7 +183,7 @@ Public Const C_sHF As String = "HF"
 Public Const C_sNames As String = "NAMES"
 Public Const C_sHistoHF As String = "HistoHF"
 Public Const C_sHistoGeo As String = "HistoGeo"
-Public Const C_sGeoMetadata As String = "Metadata"
+Public Const C_sGeoMetadata As String = "metadata"
 
 'INTEGERS CONSTANTS ===============================================================================================================================================================
 Public Const C_iNbLinesLLData           As Integer = 200                                    'Number of linest to add by default
@@ -194,9 +194,9 @@ Public Const C_iNbLinesLLData           As Integer = 200                        
 Public Enum C_StartLines
     C_eStartLinesDictHeaders = 2                                                             'Starting lines for dictionary headers
     C_eStartLinesDictData = 3                                                                'Starting lines for dictionary data
-    C_eStartLinesLLMainSec = 3                                                               'Starting lines for first title of the linelist
-    C_eStartLinesLLSubSec = 4                                                                'Starting lines for second title of the linelist
-    C_eStartLinesLLData = 5                                                                  'Starting lines for the linelist data
+    C_eStartLinesLLMainSec = 4                                                              'Starting lines for first title of the linelist
+    C_eStartLinesLLSubSec = 5                                                                'Starting lines for second title of the linelist
+    C_eStartLinesLLData = 6                                                                  'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                                                             'Starting lines for export titles
     C_eStartLinesAdmData = 15                                                                'Starting lines for a Adm data
     C_eStartLinesExportSource = 5                                                            'Starting lines for export sources
