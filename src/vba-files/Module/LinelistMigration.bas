@@ -14,6 +14,8 @@ Sub ImportMigrationData()
 
 'Import exported data into the linelist
 
+   'Import exported data into the linelist
+
     Dim wbkexp As Workbook, wbkLL As Workbook
     Dim shData As Worksheet, shSource As Worksheet, shTarget As Worksheet
     Dim lstobj  As ListObject
@@ -42,11 +44,17 @@ Sub ImportMigrationData()
 
         If shData.Name <> "Dictionary" And shData.Name <> "Choices" And shData.Name <> "Translations" Then
 
-            Sheets(shData.Name).Copy After:=wbkLL.Sheets(iLastexp)
-            ActiveSheet.Name = shData.Name & "_Exp"
+            For i = 1 To wbkLL.Sheets.Count
 
-            iLastexp = iLastexp + 1
-            wbkexp.Activate
+                If UCase(wbkLL.Sheets(i).Name) = UCase(shData.Name) Then
+                    Sheets(shData.Name).Copy After:=wbkLL.Sheets(iLastexp)
+                    ActiveSheet.Name = shData.Name & "_Exp"
+                    iLastexp = iLastexp + 1
+                    wbkexp.Activate
+                    Exit For
+                End If
+
+            Next i
 
         End If
 
@@ -64,6 +72,7 @@ Sub ImportMigrationData()
 
         If LCase(shSource.Name) = "admin_exp" Then
 
+            shSource.Select
             iRows = shSource.Cells(2, 1).End(xlDown).Row
             shSource.Range(Cells(2, 2), Cells(iRows, 2)).Copy
             shTarget.Select
@@ -77,15 +86,14 @@ Sub ImportMigrationData()
             iStart = shTarget.Cells.Find("*", SearchOrder:=xlByRows, SearchDirection:=xlPrevious, LookIn:=xlValues).Row + 1
 
             shTarget.Select
+            ActiveSheet.Unprotect (C_sLLPassword)
 
             For Each lstobj In shTarget.ListObjects
                 If lstobj.Name = "o" & shTarget.Name Then
                     iRowTarget = shTarget.ListObjects(lstobj.Name).ListRows.Count
                     If iRowTarget < iRows Then
-                        ActiveSheet.Unprotect (C_sLLPassword)
                         Application.EnableEvents = False
                         lstobj.Resize Range(Cells(iStart - 1, 1), Cells(iRows + iStart, Cells(iStart - 1, 1).End(xlToRight).Column))
-                        Call ProtectSheet
                         Application.EnableEvents = True
                         iRowTarget = shTarget.ListObjects(lstobj.Name).ListRows.Count
                         Exit For
@@ -101,6 +109,12 @@ Sub ImportMigrationData()
             Do While j <= iCols 'Number of columns in source file
 
                 If shTarget.Cells(5, j).value = "" Then Exit Do
+                Dim BlHidden As Boolean
+
+                If shTarget.Columns(j).Hidden = True Then
+                    shTarget.Columns(j).Hidden = False
+                    BlHidden = True
+                End If
 
                 sSearchLabelo = shTarget.Cells(5, j).value
                 sSearchLabel = sSearchLabelo
@@ -129,19 +143,26 @@ Sub ImportMigrationData()
 
                 End If
 
-                iColExp = shSource.Rows(1).Find(What:=sLabel, LookAt:=xlWhole).Column
-                shSource.Select
-                shSource.Range(Cells(2, iColExp), Cells(iRows, iColExp)).Copy
+                If Not shSource.Rows(1).Find(What:=sLabel, LookAt:=xlWhole) Is Nothing Then
 
-                shTarget.Select
+                    iColExp = shSource.Rows(1).Find(What:=sLabel, LookAt:=xlWhole).Column
+                    shSource.Select
 
-                iColTarget = 0
-                iColTarget = shTarget.Rows(5).Find(What:=sSearchLabelo, LookAt:=xlWhole).Column
+                    iColTarget = 0
+                    iColTarget = shTarget.Rows(5).Find(What:=sSearchLabelo, LookAt:=xlWhole).Column
 
-                If iColTarget > 0 And Not shTarget.Cells(6, j).HasFormula Then
-                    shTarget.Cells(iStart, iColTarget).Select
-                    ActiveSheet.Paste
-                    Columns(iColTarget).EntireColumn.AutoFit
+                    If iColTarget > 0 And Not shTarget.Cells(6, j).HasFormula Then
+                        Application.EnableEvents = False
+                            shSource.Range(Cells(2, iColExp), Cells(iRows, iColExp)).Copy Destination:=shTarget.Cells(iStart, iColTarget)
+                        Application.EnableEvents = True
+                        Columns(iColTarget).EntireColumn.AutoFit
+                    End If
+
+                End If
+
+                If BlHidden Then
+                    shTarget.Columns(j).Hidden = True
+                    BlHidden = False
                 End If
 
                 j = j + 1
@@ -150,8 +171,10 @@ Sub ImportMigrationData()
         End If
 
         Application.DisplayAlerts = False
-        shSource.Delete
+            shSource.Delete
         Application.DisplayAlerts = True
+
+        Call ProtectSheet
 
     Next i
 
@@ -159,8 +182,6 @@ Sub ImportMigrationData()
 
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
-
-
 
 End Sub
 
@@ -476,8 +497,8 @@ Private Sub ExportMigrationData(sLLPath As String)
         'Sheets of type linelist
         i = 1
         While i <= LLSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = LLSheetData.Items(i)
-            sPrevSheetName = LLSheetData.Items(i)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
+            sPrevSheetName = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
             ExportData.Clear
             ExportHeader.Clear
             Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
@@ -490,8 +511,8 @@ Private Sub ExportMigrationData(sLLPath As String)
         'Sheets of type Admin
         i = 1
         While i <= AdmSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = AdmSheetData.Items(i)
-            sPrevSheetName = AdmSheetData.Items(i)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
+            sPrevSheetName = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
             ExportData.Clear
             ExportHeader.Clear
             Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
@@ -501,9 +522,9 @@ Private Sub ExportMigrationData(sLLPath As String)
             ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
             i = i + 1
         Wend
-        
+
         'Add The metadata Sheet
-        
+
          .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sSheetMetadata
          sPrevSheetName = C_sSheetMetadata
         .Worksheets(sPrevSheetName).Cells(1, 1).value = "variable"

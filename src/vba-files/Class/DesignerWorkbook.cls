@@ -11,22 +11,17 @@ Option Explicit
 
 'clear the path ranges once the workbook opens
 Private Sub Workbook_Open()
-  SheetMain.Range(C_sRngPathDic).value = ""
-  SheetMain.Range(C_sRngPathGeo).value = ""
-  SheetMain.Range(C_sRngLLName).value = ""
-  SheetMain.Range(C_sRngLLDir).value = ""
-  SheetMain.Range(C_sRngLangSetup).value = ""
-  
-  Call SetInputRangesToWhite
+
+  Call ResetField
   SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgSet)
-  
+
   SheetGeo.ListObjects(C_sTabadm1).DataBodyRange.Clear
   SheetGeo.ListObjects(C_sTabAdm2).DataBodyRange.Clear
   SheetGeo.ListObjects(C_sTabAdm3).DataBodyRange.Clear
   SheetGeo.ListObjects(C_sTabAdm4).DataBodyRange.Clear
   SheetGeo.ListObjects(C_sTabHF).DataBodyRange.Clear
   SheetGeo.ListObjects(C_sTabNames).DataBodyRange.Clear
-  
+
   SheetLLTranslation.Range(C_sRngLLLanguage).value = SheetMain.Range(C_sRngLLFormLang).value 'check Language of linelist's forms
 
   With SheetDesTranslation
@@ -35,6 +30,10 @@ Private Sub Workbook_Open()
   End With
 
 End Sub
+
+
+
+
 
 
 

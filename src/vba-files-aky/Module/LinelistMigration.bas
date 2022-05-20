@@ -497,7 +497,7 @@ Private Sub ExportMigrationData(sLLPath As String)
         'Sheets of type linelist
         i = 1
         While i <= LLSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(LLSheetData.Items(i), bremoveHiphen:= False)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
             sPrevSheetName = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
             ExportData.Clear
             ExportHeader.Clear
@@ -511,8 +511,8 @@ Private Sub ExportMigrationData(sLLPath As String)
         'Sheets of type Admin
         i = 1
         While i <= AdmSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(AdmSheetData.Items(i), bremoveHiphen := False)
-            sPrevSheetName = ClearString(AdmSheetData.Items(i), bremoveHiphen := False)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
+            sPrevSheetName = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
             ExportData.Clear
             ExportHeader.Clear
             Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
