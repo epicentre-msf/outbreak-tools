@@ -328,8 +328,7 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
 
     'Clear the contents if the sheet exists, or create a new sheet if Not
     If sheetExists Then
-        DestWkb.Worksheets(sSheetName).Activate
-        Cells.Clear
+        DestWkb.Worksheets(sSheetName).Cells.Clear
     Else
         DestWkb.Worksheets.Add.Name = sSheetName
     End If
@@ -469,7 +468,7 @@ Sub StatusBar_Updater(sCpte As Single)
     Dim pctDone As Integer
 
     CurrentStatus = (C_iNumberOfBars) * Round(sCpte / 100, 1)
-    Application.StatusBar = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "%" & TranslateMsg("MSG_BuildLL")
+    SheetMain.Range(C_sRngUpdate).value = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "%" & TranslateMsg("MSG_BuildLL")
 
     DoEvents
 
