@@ -209,33 +209,24 @@ Sub GenerateData()
     '--------------- Getting all required the Data
 
     'Create the Dictionnary data
-    Set DictHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetDict & "_LL", 1)
+    Set DictHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetDict, 1)
     'Create the data table of linelist patient using the dictionnary
-    Set DictData = Helpers.GetData(DesWkb, C_sParamSheetDict & "_LL", 2)
+    Set DictData = Helpers.GetData(DesWkb, C_sParamSheetDict, 2)
     'Create the choices data
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadList")
     'Create the dictionnary for the choices sheet
-    Set ChoicesHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetChoices & "_LL", 1)
+    Set ChoicesHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetChoices, 1)
     'Create the table for the choices
-    Set ChoicesData = Helpers.GetData(DesWkb, C_sParamSheetChoices & "_LL", 2)
+    Set ChoicesData = Helpers.GetData(DesWkb, C_sParamSheetChoices, 2)
     'Reading the export sheet
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadExport")
     'Create parameters for export
-    Set ExportData = Helpers.GetData(DesWkb, C_sParamSheetExport & "_LL", 1)
+    Set ExportData = Helpers.GetData(DesWkb, C_sParamSheetExport, 1)
     'Create the translation Data
     Set TransData = New BetterArray
     TransData.FromExcelRange DesWkb.Worksheets(C_sParamSheetTranslation).Cells(C_eStartlinestransdata, 2), DetectLastRow:=True, DetectLastColumn:=True
 
     Set DesWkb = Nothing
-
-    'removal of Export, Dictionary and Choice sheets for the linelist
-    i = ActiveWorkbook.Sheets.Count - 2
-
-    Do While i <= ActiveWorkbook.Sheets.Count
-        Application.DisplayAlerts = False
-        Sheets(i).Delete
-        Application.DisplayAlerts = True
-    Loop
 
 
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
@@ -340,8 +331,12 @@ Sub OpenLL()
         Exit Sub
     End If
 
+    On Error GoTo no
     'Then open it
     Application.Workbooks.Open Filename:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
+no:
+    Exit Sub
+
 End Sub
 
 
@@ -397,12 +392,14 @@ Sub ResetField()
     SheetMain.Range(C_sRngLLName).value = ""
     SheetMain.Range(C_sRngLLDir).value = ""
     SheetMain.Range(C_sRngEdition).value = ""
+    SheetMain.Range(C_sRngUpdate).value = ""
 
     SheetMain.Range(C_sRngPathGeo).Interior.Color = vbWhite
     SheetMain.Range(C_sRngPathDic).Interior.Color = vbWhite
     SheetMain.Range(C_sRngLLName).Interior.Color = vbWhite
     SheetMain.Range(C_sRngLLDir).Interior.Color = vbWhite
     SheetMain.Range(C_sRngEdition).Interior.Color = vbWhite
+    SheetMain.Range(C_sRngUpdate).Interior.Color = vbWhite
 
 End Sub
 

@@ -16,7 +16,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
 
     On Error GoTo no
         Application.ScreenUpdating = False
-        
+
         If Target.Name.Name = "RNG_LangDesigner" Then
           Call TranslateDesigner
         ElseIf Target.Name.Name = "RNG_LLForm" Then
@@ -24,7 +24,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
             Call translateHeadGeo
 
         End If
-        
+
         Application.ScreenUpdating = True
         Exit Sub
 no:

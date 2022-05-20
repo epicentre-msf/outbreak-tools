@@ -328,22 +328,21 @@ Sub AddType(Wksh As Worksheet, iSheetStartLine As Integer, _
         Select Case sType
             'Text Type
             Case C_sDictTypeText
-                .Cells(iSheetStartLine + 1, iCol).NumberFormat = "@"
+                .Cells(iSheetStartLine + 2, iCol).NumberFormat = "@"
                 'Integer
             Case C_sDictTypeInt
-                 .Cells(iSheetStartLine + 1, iCol).NumberFormat = "0"
+                 .Cells(iSheetStartLine + 2, iCol).NumberFormat = "0"
                 'Date Type
             Case C_sDictTypeDate
-                 .Cells(iSheetStartLine + 1, iCol).NumberFormat = "d-mmm-yyy"
+                 .Cells(iSheetStartLine + 2, iCol).NumberFormat = "d-mmm-yyy"
                 'Decimal
             Case C_sDictTypeDec
-                 .Cells(iSheetStartLine + 1, iCol).NumberFormat = "0." & sNbDeci
+                 .Cells(iSheetStartLine + 2, iCol).NumberFormat = "0." & sNbDeci
             Case Else
             'If I don't know the type, put in text
-             .Cells(iSheetStartLine + 1, iCol).NumberFormat = "@"
+             .Cells(iSheetStartLine + 2, iCol).NumberFormat = "@"
         End Select
     End With
-
 End Sub
 
 'Add the choices
@@ -355,7 +354,7 @@ Sub AddChoices(Wksh As Worksheet, iSheetStartLine As Integer, iCol As Integer, _
     With Wksh
         sValidationList = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sChoice)
         If sValidationList <> "" Then
-             Call Helpers.SetValidation(.Cells(iSheetStartLine + 1, iCol), _
+             Call Helpers.SetValidation(.Cells(iSheetStartLine + 2, iCol), _
                                             sValidationList, _
                                             Helpers.GetValidationType(sAlert), _
                                             sMessage)
@@ -411,47 +410,68 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
         .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "4" & "_" & sVarName
-        .Cells(iStartLine, iCol + 1).Interior.Color = vbWhite
-        .Cells(iStartLine + 1, iCol + 1).Locked = False
+        .Cells(iStartLine + 1, iCol + 1).Interior.Color = vbWhite
+        .Cells(iStartLine + 1, iCol + 1).Font.Color = vbWhite
+
+        .Cells(iStartLine + 2, iCol + 1).Locked = False
 
         'Admin 3
         sLab = SheetGeo.ListObjects(C_sTabAdm3).HeaderRowRange.Item(3).value
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
         .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "3" & "_" & sVarName
-        .Cells(iStartLine, iCol + 1).Interior.Color = vbWhite
-        .Cells(iStartLine + 1, iCol + 1).Locked = False
+        .Cells(iStartLine + 1, iCol + 1).Interior.Color = vbWhite
+        .Cells(iStartLine + 1, iCol + 1).Font.Color = vbWhite
+        .Cells(iStartLine + 1, iCol + 1).value = C_sAdmName & "3" & "_" & sVarName
+
+        Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
+
+        .Cells(iStartLine + 2, iCol + 1).Locked = False
 
         'Admin 2
         sLab = SheetGeo.ListObjects(C_sTabAdm2).HeaderRowRange.Item(2).value
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
         .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "2" & "_" & sVarName
-        .Cells(iStartLine, iCol + 1).Interior.Color = vbWhite
-        .Cells(iStartLine + 1, iCol + 1).Locked = False
+        .Cells(iStartLine + 1, iCol + 1).Interior.Color = vbWhite
+        .Cells(iStartLine + 1, iCol + 1).Font.Color = vbWhite
+        .Cells(iStartLine + 1, iCol + 1).value = C_sAdmName & "2" & "_" & sVarName
+
+        Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
+
+        .Cells(iStartLine + 2, iCol + 1).Locked = False
 
         'Admin 1
         sLab = SheetGeo.ListObjects(C_sTabadm1).HeaderRowRange.Item(1).value
         .Cells(iStartLine, iCol).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol).Name = C_sAdmName & "1" & "_" & sVarName
         .Cells(iStartLine, iCol).Interior.Color = GetColor("Orange")
-        .Cells(iStartLine + 1, iCol).Locked = False
+        .Cells(iStartLine + 1, iCol).value = C_sAdmName & "1" & "_" & sVarName
+        .Cells(iStartLine + 1, iCol).Interior.Color = vbWhite
+        .Cells(iStartLine + 1, iCol).Font.Color = vbWhite
+
+        Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
+
+        .Cells(iStartLine + 2, iCol).Locked = False
 
         'ajout des formules de validation
-        .Cells(iStartLine + 1, iCol).Validation.Delete
+        .Cells(iStartLine + 2, iCol).Validation.Delete
 
-        .Cells(iStartLine + 1, iCol).Validation.Add Type:=xlValidateList, _
+        .Cells(iStartLine + 2, iCol).Validation.Add Type:=xlValidateList, _
                          AlertStyle:=xlValidAlertWarning, Operator:=xlBetween, _
                          Formula1:="=" & C_sSheetGeo & "!" & SheetGeo.Range(C_sTabadm1).Columns(1).Address
 
-        .Cells(iStartLine + 1, iCol).Validation.IgnoreBlank = True
-        .Cells(iStartLine + 1, iCol).Validation.InCellDropdown = True
-        .Cells(iStartLine + 1, iCol).Validation.InputTitle = ""
-        .Cells(iStartLine + 1, iCol).Validation.errorTitle = ""
-        .Cells(iStartLine + 1, iCol).Validation.InputMessage = ""
-        .Cells(iStartLine + 1, iCol).Validation.ErrorMessage = sMessage
-        .Cells(iStartLine + 1, iCol).Validation.ShowInput = True
-        .Cells(iStartLine + 1, iCol).Validation.ShowError = True
+        .Cells(iStartLine + 2, iCol).Validation.IgnoreBlank = True
+        .Cells(iStartLine + 2, iCol).Validation.InCellDropdown = True
+        .Cells(iStartLine + 2, iCol).Validation.InputTitle = ""
+        .Cells(iStartLine + 2, iCol).Validation.errorTitle = ""
+        .Cells(iStartLine + 2, iCol).Validation.InputMessage = ""
+        .Cells(iStartLine + 2, iCol).Validation.ErrorMessage = sMessage
+        .Cells(iStartLine + 2, iCol).Validation.ShowInput = True
+
+        Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol), .Cells(iStartLine + 1, iCol)))
+
+        .Cells(iStartLine + 2, iCol).Validation.ShowError = True
     End With
 
     'Updating the Dictionary for future uses
@@ -624,7 +644,7 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
                         'It is either a variable name or a formula
                         If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
                             icolNumb = ColumnIndexData.Item(VarNameData.IndexOf(sAlphaValue))
-                            sAlphaValue = "'" & sSheetName & "'!" & Cells(C_eStartLinesLLData + 1, icolNumb).Address(False, True)
+                            sAlphaValue = "'" & sSheetName & "'!" & Cells(C_eStartLinesLLData + 2, icolNumb).Address(False, True)
                         ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
                                 sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
                         End If
