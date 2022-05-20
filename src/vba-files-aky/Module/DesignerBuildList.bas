@@ -49,7 +49,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Set DictVarName = New BetterArray
 
 
-    Application.StatusBar = "[" & Space(C_iNumberOfBars) & "]" 'create status ProgressBar
     StatusBar_Updater (0)
 
     Set xlsapp = New Excel.Application
@@ -79,7 +78,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
         Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetGeo)
         Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetPassword)
 
-        StatusBar_Updater (15)
 
         Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetFormulas)
         Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetLLTranslation)
@@ -87,7 +85,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Application.ScreenUpdating = True
 
     DoEvents
-    StatusBar_Updater (20)
+    StatusBar_Updater (35)
 
     'Create special characters data
     FormulaData.FromExcelRange SheetFormulas.ListObjects(C_sTabExcelFunctions).ListColumns("ENG").DataBodyRange, DetectLastColumn:=False
@@ -230,8 +228,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     xlsapp.Quit
     Set xlsapp = Nothing
 
-    Application.StatusBar = "" 'close status ProgressBar
-
 End Sub
 
 'CREATE SHEETS IN A LINELIST ============================================================================================
@@ -360,7 +356,6 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
                 LLSheetNameData.Push sPrevSheetName
 
                 'Tell the use we have created one sheet
-                SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgCreatedSheet) & " " & sPrevSheetName
                 'adding sheets depending on the type of the sheet
                 Select Case LCase(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType)))
                 Case C_sDictSheetTypeAdm
@@ -655,6 +650,12 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
             sActualValidationAlert = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderAlert)))
             sActualValidationMessage = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMessage))
 
+            'Adding the control
+            .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).value = sActualControl
+            .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).Font.Color = vbWhite
+            .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).FormulaHidden = True
+            .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).Locked = True
+
 
          'SETTING HEADERS ===================================================================================================================
 
@@ -855,7 +856,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
 
         'Range of the listobject
         Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 2, .Cells(C_eStartLinesLLData + 1, Columns.Count).End(xlToLeft).Column))
-'        'Creating the TableObject that will contain the data entry
+        'Creating the TableObject that will contain the data entry
         .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = "o" & ClearString(sSheetName)
         .ListObjects("o" & ClearString(sSheetName)).TableStyle = C_sLLTableStyle
 
