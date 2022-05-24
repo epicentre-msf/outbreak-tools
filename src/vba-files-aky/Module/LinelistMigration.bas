@@ -500,11 +500,8 @@ Private Sub ExportMigrationData(sLLPath As String)
             .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(LLSheetData.Items(i), bremoveHiphen:= False)
             sPrevSheetName = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
             ExportData.Clear
-            ExportHeader.Clear
-            Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
-            Set ExportData = GetExportValues(ExportHeader, sPrevSheetName)
-            ExportHeader.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1), TransposeValues:=True
-            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
+            ExportData.FromExcelRange ThisWorkbook.Worksheets(LLSheetData.Items(i)).listobjects("o" & sPrevSheetName).Range
+            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1)
             i = i + 1
         Wend
 
