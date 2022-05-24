@@ -10,40 +10,25 @@ Sub ClicCmdGeoApp()
     Dim sType As String
 
     iNumCol = ActiveCell.Column
-    ActiveSheet.Unprotect (C_sLLPassword)
 
-    'On Error GoTo fin
-    If ActiveCell.Row > C_eStartLinesLLData Then
+    If ActiveCell.Row > C_eStartLinesLLData + 1 Then
 
-        sType = GetDictColumnValue(ActiveSheet.Cells(C_eStartLinesLLData, iNumCol).Name.Name, C_sDictHeaderControl) 'parce qu'un seul .Name ne suffit pas...
-
+        sType =  ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).value
         Select Case sType
+            Case C_sDictControlGeo
+                iGeoType = 0
+                Call LoadGeo(iGeoType)
 
-        Case C_sDictControlGeo
-            iGeoType = 0
-            Call LoadGeo(iGeoType)
+            Case C_sDictControlHf
+                iGeoType = 1
+                Call LoadGeo(iGeoType)
 
-        Case C_sDictControlHf
-            iGeoType = 1
-            Call LoadGeo(iGeoType)
-
-        Case Else
-            MsgBox "Vous n'etes pas sur la bonne cellule" 'MSG_WrongCells
-            Call ProtectSheet
-
+            Case Else
+                MsgBox "Vous n'etes pas sur la bonne cellule" 'MSG_WrongCells
         End Select
     Else
         MsgBox "Vous n'etes pas sur la bonne cellule" 'MSG_WrongCells
-        Call ProtectSheet
-
     End If
-
-    Exit Sub
-    Call ProtectSheet
-
-fin:
-    MsgBox "Vous n'etes pas sur la bonne cellule" 'MSG_WrongCells
-    Call ProtectSheet
 End Sub
 
 Sub ClicCmdAddRows()

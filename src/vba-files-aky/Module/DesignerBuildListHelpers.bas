@@ -412,6 +412,11 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "4" & "_" & sVarName
         .Cells(iStartLine + 1, iCol + 1).Interior.Color = vbWhite
         .Cells(iStartLine + 1, iCol + 1).Font.Color = vbWhite
+        'Add the type
+        .Cells(C_eStartLinesLLMainSec  - 1, iCol + 1).value = C_sDictControlGeo & "4"
+        'Put in bold
+        .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
+
 
         .Cells(iStartLine + 2, iCol + 1).Locked = False
 
@@ -425,6 +430,8 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
         .Cells(iStartLine + 1, iCol + 1).value = C_sAdmName & "3" & "_" & sVarName
 
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
+        .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
+        .Cells(C_eStartLinesLLMainSec  - 1, iCol + 1).value = C_sDictControlGeo & "3"
 
         .Cells(iStartLine + 2, iCol + 1).Locked = False
 
@@ -438,6 +445,8 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
         .Cells(iStartLine + 1, iCol + 1).value = C_sAdmName & "2" & "_" & sVarName
 
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
+        .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
+        .Cells(C_eStartLinesLLMainSec  - 1, iCol + 1).value = C_sDictControlGeo & "2"
 
         .Cells(iStartLine + 2, iCol + 1).Locked = False
 
@@ -451,6 +460,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
         .Cells(iStartLine + 1, iCol).Font.Color = vbWhite
 
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
+        .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
 
         .Cells(iStartLine + 2, iCol).Locked = False
 
