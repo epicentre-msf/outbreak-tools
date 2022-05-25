@@ -100,7 +100,7 @@ Sub ClicCmdDebug()
 End Sub
 
 'Trigerring event when the linelist sheet has some values within                                                          -
-Sub EventSheetLineListPatient(oRange As Range)
+Sub EventValueChangeLinelist(oRange As Range)
 
     Dim T_geo As BetterArray
     Set T_geo = New BetterArray
@@ -206,6 +206,87 @@ Sub EventSheetLineListPatient(oRange As Range)
 
 errHand:
 
+End Sub
+
+Sub EventOpenLinelist()
+    Dim iNbCols As Integer
+    Dim Wksh As Worksheet
+    Dim i As Integer
+    Dim hasData As Boolean
+    Dim LLEnteredData As BetterArray
+    Dim ListAutoData As BetterArray
+    Dim LoRng As Range
+    Dim sVarName As String
+    Dim sAutoVariable As String
+    Dim sAutoSheetName As String
+    Dim iAutoColumn As Integer
+    Dim sList As String
+    Dim iDataLength As Integer
+
+    Set Wksh = ActiveSheet
+    hasData = False
+    iDataLength = 0
+
+    With Wksh
+        BeginWork xlsapp:=Application
+        '.Unprotect (C_sLLPassword)
+
+        iNbCols = .Cells(C_eStartLinesLLData, Columns.Count).End(xlToLeft).Column
+
+        For i = 1 To iNbCols
+
+            If .Cells(C_eStartLinesLLMainSec - 1, i).value = C_sDictControlChoiceAuto Then
+
+                'First take the data in memory (we need it since we don't know the data entered by the operator)
+                If Not hasData Then
+                    Set LLEnteredData = New BetterArray
+                    LLEnteredData.FromExcelRange .Cells(C_eStartLinesLLData + 2, 1), DetectLastRow:=True, DetectLastColumn:=True
+                    iDataLength = LLEnteredData.Length
+                    'Resize the listObject to the current entered data + 1
+                    Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(iDataLength + C_eStartLinesLLData + 2, iNbCols))
+                    .ListObjects("o" & ClearString(.Name)).Resize LoRng
+                    hasData = True
+                End If
+
+                'Do all this only if there is Data in the sheet
+
+                If iDataLength > 2 Then
+                    'VarName of the actual sheet
+                    sVarName = .Cells(C_eStartLinesLLData + 1, i).value
+                    'Get the entered list of the listauto
+                    sAutoVariable = GetDictColumnValue(sVarName, C_sDictHeaderChoices)
+
+                    'Get the SheetName of the auto
+                    sAutoSheetName = GetDictColumnValue(sAutoVariable, C_sDictHeaderSheetName)
+
+                    'Get the Column of the auto
+                    iAutoColumn = GetDictColumnValue(sAutoVariable, C_sDictHeaderIndex)
+
+                    If iAutoColumn > 0 Then
+                        'Get the entered values for the auto
+                        Set ListAutoData = New BetterArray
+                        ListAutoData.FromExcelRange ThisWorkbook.Worksheets(sAutoSheetName).Cells(C_eStartLinesLLData + 2, iAutoColumn), DetectLastColumn:=False, DetectLastRow:=True
+                        ListAutoData.Reverse
+                        'Get validation list
+                        sList = ListAutoData.ToString(Separator:=",", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
+
+                        'Set the validation list
+                        Call Helpers.SetValidation(.Cells(iDataLength + 1, i), sList, 2)
+                    End If
+                End If
+
+            End If
+        Next
+
+        If hasData Then
+            'resize because data has been updated
+            Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_iNbLinesLLData + C_eStartLinesLLData - 1, iNbCols))
+            .ListObjects("o" & ClearString(.Name)).Resize LoRng
+        End If
+
+        'Call ProtectSheet
+        EndWork xlsapp:=Application
+    End With
 End Sub
 
 Sub ClicImportMigration()
