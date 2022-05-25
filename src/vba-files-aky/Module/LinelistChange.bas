@@ -7,7 +7,12 @@ Option Explicit
 
 Private Sub Worksheet_Change(ByVal Target As Range)
     Application.EnableEvents = False
-    Call EventSheetLineListPatient(Target)
+    Call EventValueChangeLinelist(Target)
     Application.EnableEvents = True
 End Sub
 
+Private Sub Worksheet_Activate()
+    'Application.EnableEvents = False
+    'Call EventOpenLinelist()
+    'Application.EnableEvents = True
+End Sub
