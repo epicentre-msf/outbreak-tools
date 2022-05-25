@@ -6,7 +6,7 @@ Attribute VB_Name = "LinelistDictionary"
 'and Find the values of one variable of the dictionary given a condition
 'on another variable. The Goal is to ease as much as possible the process
 'behind acessing values of the dictionary so that we don't border ourselves
-'with that. If you also wan to get an array instead of a BetterArray you
+'with that. If you also want to get an array instead of a BetterArray you
 'can just convert the betterarray to array by retrieving the items of the
 'BetterArray:
 'Dim myArray()
@@ -117,8 +117,6 @@ Function GetTransData() As BetterArray
     Set TransData = Nothing
 End Function
 
-
-
 'Retrieve the variable names of the dictionnary on one condition on a variable
 'Here the condition is only equallity (a kind of filter, but for the
 'dictionary only)
@@ -181,3 +179,30 @@ Function GetDictColumnValue(sVarName As String, sColname As String) As String
     Set VarNameData = Nothing
 End Function
 
+
+'Change value of one variable and one column in the dictionary
+
+Sub UpdateDictionaryValue(sVarName as String, sColname as String, sNewValue as String)
+
+    Dim VarNameData as BetterArray
+    Dim ColnameData as BetterArray
+    Dim iRow as Integer
+    Dim iColumn as Integer
+
+    Set VarNameData = GetDictionaryColumn(C_sDictHeaderVarName)
+
+    If VarNameData.Includes(sVarName) Then
+        If isInDictHeaders(sColname) Then
+            iColumn = GetDictionaryIndex(sColname)
+            iRow = VarNameData.IndexOf(sVarName) + 1
+
+            If iRow > 0 And iColumn > 0 Then
+                With ThisWorkbook.Worksheets(C_sParamSheetDict)
+                    .Cells(iRow, iColumn).value = Application.WorksheetFunction.Trim(sNewValue)
+                End With
+            End If
+
+        End If
+    End If
+
+End Sub
