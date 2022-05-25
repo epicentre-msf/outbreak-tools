@@ -105,66 +105,107 @@ Sub EventSheetLineListPatient(oRange As Range)
     Dim T_geo As BetterArray
     Set T_geo = New BetterArray
     Dim sList As String
+    Dim sControlType As String 'Control type
+    Dim sLabel As String
+    Dim sCustomVarName As String
+    Dim sNote As String
+    Dim iNumCol As Integer
 
-    BeginWork xlsapp:=Application
-    ActiveSheet.Unprotect (C_sLLPassword)
-        If oRange.Row > C_eStartLinesLLData Then
-            On Error GoTo errHand                'if it is not geo for example or something with geo does not work
-            If GetDictColumnValue(ActiveSheet.Cells(C_eStartLinesLLData, oRange.Column).Name.Name, C_sDictHeaderControl) = C_sDictControlGeo Then
-                'on controle qu'on a bien ecrit une data geo et remplissage de la colonne +1
+    On Error GoTo errHand
+    iNumCol = oRange.Column
+    sControlType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).value
+
+    If oRange.Row > C_eStartLinesLLData + 1 Then
+
+        Select Case sControlType
+
+            Case C_sDictControlGeo
+                ' adm1 has been modified, we will correct and set validation to adm2
+
+                BeginWork xlsapp:=Application
+                ActiveSheet.Unprotect (C_sLLPassword)
+
                 oRange.Offset(, 1).Validation.Delete
                 oRange.Offset(, 1).value = ""
                 oRange.Offset(, 2).Validation.Delete
                 oRange.Offset(, 2).value = ""
                 oRange.Offset(, 3).Validation.Delete
                 oRange.Offset(, 3).value = ""
-                'First Geo adm1
 
-                If oRange.value <> "" Then
+                If oRange.value <> vbNullString Then
+
                     'Filter on adm1
                     Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm2), 1, oRange.value, returnIndex:=2)
                     'Build the validation list for adm2
                     sList = T_geo.ToString(Separator:=",", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
+                    'Set the validation list on adm2
                     Call Helpers.SetValidation(oRange.Offset(, 1), sList, 2)
                     T_geo.Clear
                 End If
-            ElseIf GetDictColumnValue(ActiveSheet.Cells(C_eStartLinesLLData, oRange.Column - 1).Name.Name, C_sDictHeaderControl) = C_sDictControlGeo Then
-                'on controle qu'on a bien ecrit une data geo et remplissage de la colonne +2
+
+                Call ProtectSheet
+                EndWork xlsapp:=Application
+
+            Case C_sDictControlGeo & "2"
+
+                'Adm2 has been modified, we will correct and filter adm3
+                BeginWork xlsapp:=Application
+                ActiveSheet.Unprotect (C_sLLPassword)
+
                 oRange.Offset(, 1).Validation.Delete
                 oRange.Offset(, 1).value = vbNullString
                 oRange.Offset(, 2).Validation.Delete
                 oRange.Offset(, 2).value = vbNullString
 
                 If oRange.value <> vbNullString Then
-                    'Take the adm3 table
                     Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm3), 1, oRange.Offset(, -1).value, 2, oRange.value, returnIndex:=3)
                     sList = T_geo.ToString(Separator:=",", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
                     Call Helpers.SetValidation(oRange.Offset(, 1), sList, 2)
                     T_geo.Clear
                 End If
 
-            ElseIf GetDictColumnValue(ActiveSheet.Cells(C_eStartLinesLLData, oRange.Column - 2).Name.Name, _
-                                    C_sDictHeaderControl) = C_sDictControlGeo Then
-                'on controle qu'on a bien ecrit une data geo et remplissage de la colonne +3
+                Call ProtectSheet
+                EndWork xlsapp:=Application
+
+            Case C_sDictControlGeo & "3"
+                'Adm 3 has been modified, correct and filter adm4
+                BeginWork xlsapp:=Application
+                ActiveSheet.Unprotect (C_sLLPassword)
+
                 oRange.Offset(, 1).Validation.Delete
                 oRange.Offset(, 1).value = vbNullString
 
                 If oRange.value <> vbNullString Then
                     'Take the adm4 table
                     Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm4), 1, _
-                                             oRange.Offset(, -2).value, 2, oRange.Offset(, -1).value, 3, oRange.value, returnIndex:=4)
-
+                                            oRange.Offset(, -2).value, 2, oRange.Offset(, -1).value, 3, oRange.value, returnIndex:=4)
                     sList = T_geo.ToString(Separator:=",", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
                     Call Helpers.SetValidation(oRange.Offset(, 1), sList, 2)
                     T_geo.Clear
                 End If
-            End If
+
+                Call ProtectSheet
+                EndWork xlsapp:=Application
+
+
+            Case Else
+
+        End Select
+    End If
+
+    If oRange.Row = C_eStartLinesLLData And sControlType = C_sDictControlCustom Then
+        'The name of custom variables has been updated, update the dictionary
+        sCustomVarName = ActiveSheet.Cells(C_eStartLinesLLData + 1, iNumCol).Value
+        sNote = GetDictColumnValue(sCustomVarName, C_sDictHeaderSubLab)
+        sLabel = Replace(oRange.Value, sNote, "")
+        sLabel = Replace(sLabel, Chr(10), "")
+
+        Call UpdateDictionaryValue(sCustomVarName, C_sDictHeaderMainLab, sLabel)
+
+    End If
+
 errHand:
 
-        End If
-
-    Call ProtectSheet
-    EndWork xlsapp:=Application
 End Sub
 
 Sub ClicImportMigration()
