@@ -31,11 +31,13 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Dim sCpte As Integer
     Dim LoRng As Range                          'List object's range
     Dim iNbshifted As Integer
+    'For updating sheet names in the dictionary worksheet
+    Dim i As Integer 'iterator
+    Dim iSheetNameColumn As Integer
 
 
     Dim iCounterSheet As Integer                'counter for one Sheet
     Dim iSheetStartLine As Integer              'Counter for starting line of the sheet in the dictionary
-    Dim i As Integer
 
     'Instanciating the betterArrays
     Set LLNbColData = New BetterArray
@@ -77,7 +79,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
         Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetGeo)
         Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetPassword)
-
 
         Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetFormulas)
         Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetLLTranslation)
@@ -121,7 +122,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
     iSheetStartLine = 1
 
-    StatusBar_Updater (25)
 
     iNbshifted = 0
 
@@ -200,6 +200,12 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     'Put the dictionnary in a table format
     With xlsapp.Worksheets(C_sParamSheetDict)
         .Cells(1, 1).value = C_sDictHeaderVarName
+        'Update values of the Sheet Names with correct spelling
+        For i = 2 To .Cells(Rows.Count, 1).End(xlUp).Row
+            iSheetNameColumn = DictHeaders.IndexOf(C_sDictHeaderSheetName)
+            .Cells(i, iSheetNameColumn).value = EnsureGoodSheetName(.Cells(i, iSheetNameColumn).value)
+        Next
+        
         .ListObjects.Add(xlSrcRange, .Range(.Cells(1, 1), .Cells(DictData.Length, DictHeaders.Length + 1)), , xlYes).Name = "o" & ClearString(C_sParamSheetDict)
         .ListObjects("o" & ClearString(C_sParamSheetDict)).Resize .ListObjects("o" & ClearString(C_sParamSheetDict)).Range.CurrentRegion
     End With
@@ -253,71 +259,41 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
 
     Dim i As Integer 'iterators
     Dim j As Integer
-    Dim iColLang As Integer 'number of column to search in linelist language
+    Dim sNewSheetName As String 'New sheet name
+    Dim sPrevSheetName As String 'Previous sheet name
 
     ColumnIndexData.LowerBound = 1
-
-    Dim sPrevSheetName As String 'Previous sheet name
+  
 
     With xlsapp
         'Workbook already contains Password and formula sheets. Hide them
         .Worksheets(C_sSheetPassword).Visible = xlVeryHidden
         .Worksheets(C_sSheetFormulas).Visible = xlVeryHidden
         .Worksheets(C_sSheetLLTranslation).Visible = xlVeryHidden
-
-        '-------------- Creating the dictionnary sheet from setup
+        
+        'Creating the dictionnary sheet from setup
         .Worksheets.Add.Name = C_sParamSheetDict
         'Headers of the disctionary
-        DictHeaders.ToExcelRange Destination:=.Sheets(C_sParamSheetDict).Cells(1, 1), TransposeValues:=True
+        DictHeaders.ToExcelRange Destination:=.Worksheets(C_sParamSheetDict).Cells(1, 1), TransposeValues:=True
         'Data of the dictionary
-        DictData.ToExcelRange Destination:=.Sheets(C_sParamSheetDict).Cells(2, 1)
-        'Transforming the dictionary in a listobject Table
+        DictData.ToExcelRange Destination:=.Worksheets(C_sParamSheetDict).Cells(2, 1)
         .Worksheets(C_sParamSheetDict).Columns(1).ClearContents
+        'Adding the column index to the Dictionary Sheet
+        .Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.Length + 1).value = C_sDictHeaderIndex
+        ColumnIndexData.ToExcelRange .Worksheets(C_sParamSheetDict).Cells(2, DictHeaders.Length + 1)
         .Worksheets(C_sParamSheetDict).Visible = bNotHideSheets
+        
+        'Creating the Choices Sheet
+        .Worksheets.Add.Name = C_sParamSheetChoices
+        ChoicesHeaders.ToExcelRange Destination:=.Worksheets(C_sParamSheetChoices).Cells(1, 1), TransposeValues:=True
+        ChoicesData.ToExcelRange Destination:=.Worksheets(C_sParamSheetChoices).Cells(2, 1)
+        .Worksheets(C_sParamSheetChoices).Visible = bNotHideSheets
 
         '-------------- Creating the export sheet
         .Worksheets.Add.Name = C_sParamSheetExport
-        'Headers of the export options
-
-        'Adding the data on export parameters
         ExportData.ToExcelRange Destination:=.Worksheets(C_sParamSheetExport).Cells(1, 1)
-
-        'search in linelist language
-        iColLang = IIf([RNG_LangSetup].value <> "", SheetSetTranslation.Rows(4).Find(What:=SheetMain.[RNG_LangSetup].value, LookAt:=xlWhole).Column, 2)
-
-        i = 2
-        Do While .Worksheets(C_sParamSheetExport).Cells(i, 1).value <> ""
-            If .Worksheets(C_sParamSheetExport).Cells(i, 2).value <> "" Then
-                .Worksheets(C_sParamSheetExport).Cells(i, 2).value = .Worksheets(C_sParamSheetExport).Cells(i, 2).value
-
-            End If
-            i = i + 1
-        Loop
-
         .Worksheets(C_sParamSheetExport).Visible = xlSheetVeryHidden
-
-        '--------- Creating the Choices Sheet
-        .Worksheets.Add.Name = C_sParamSheetChoices
-        ChoicesHeaders.ToExcelRange Destination:=.Sheets(C_sParamSheetChoices).Cells(1, 1), TransposeValues:=True
-        ChoicesData.ToExcelRange Destination:=.Sheets(C_sParamSheetChoices).Cells(2, 1)
-
-        i = 2
-        Do While .Worksheets(C_sParamSheetChoices).Cells(i, 1).value <> ""
-            If .Worksheets(C_sParamSheetChoices).Cells(i, 4).value <> "" Then
-                If .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = .Worksheets(C_sParamSheetChoices).Cells(i, 5).value Then
-                    .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = .Worksheets(C_sParamSheetChoices).Cells(i, 4).value
-                    .Worksheets(C_sParamSheetChoices).Cells(i, 5).value = .Worksheets(C_sParamSheetChoices).Cells(i, 4).value
-                Else
-                    .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = .Worksheets(C_sParamSheetChoices).Cells(i, 4).value
-                    .Worksheets(C_sParamSheetChoices).Cells(i, 5).value = .Worksheets(C_sParamSheetChoices).Cells(i, 5).value
-                End If
-
-            End If
-            i = i + 1
-        Loop
-
-
-        .Worksheets(C_sParamSheetChoices).Visible = bNotHideSheets
+       
 
         '--------- Creating the translation sheet
         .Worksheets.Add.Name = C_sParamSheetTranslation
@@ -337,16 +313,17 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
         LLSheetNameData.LowerBound = 1
         'i will hep move from one values of dictionnary data to another
         While i <= DictData.UpperBound
-            If sPrevSheetName <> DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)) Then
+            sNewSheetName = EnsureGoodSheetName(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
 
+            If sPrevSheetName <> sNewSheetName Then
                 If sPrevSheetName = "" Then
-                    .Worksheets(1).Name = EnsureGoodSheetName(DictData.Items(1, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
+                    .Worksheets(1).Name = sNewSheetName
                 Else
-                    .Worksheets.Add(After:=.Worksheets(sPrevSheetName)).Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                    .Worksheets.Add(After:=.Worksheets(sPrevSheetName)).Name = sNewSheetName
                 End If
 
                 'I am on a new sheet name, I update values
-                sPrevSheetName = EnsureGoodSheetName(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
+                sPrevSheetName = sNewSheetName
 
                 j = j + 1
                 'Here, the column index is the index number of each column in one sheet. I update it when I am on
@@ -391,12 +368,8 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
 
             i = i + 1
         Wend
-
-        'Adding the column index to the Dictionary Sheet
-        .Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.Length + 1).value = C_sDictHeaderIndex
-        ColumnIndexData.ToExcelRange .Worksheets(C_sParamSheetDict).Cells(2, DictHeaders.Length + 1)
-
     End With
+
 End Sub
 
 

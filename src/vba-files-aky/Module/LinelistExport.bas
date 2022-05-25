@@ -123,6 +123,7 @@ Sub Export(iTypeExport As Byte)
     Dim iWindowState As Integer
 
     Dim sPrevSheetName As String
+    Dim sFirstSheet As String
     Dim sPath As String
     Dim sDirectory As String
     Dim sSheetName As String
@@ -242,6 +243,7 @@ Sub Export(iTypeExport As Byte)
 
             'Adding the worksheets
             sPrevSheetName = .Worksheets(1).Name
+            sFirstSheet = .Worksheets(1).Name
 
 
             'Add Translation
@@ -320,6 +322,8 @@ Sub Export(iTypeExport As Byte)
             ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
             i = i + 1
         Wend
+
+        .Worksheets(sFirstSheet).delete
     End With
     End If
 

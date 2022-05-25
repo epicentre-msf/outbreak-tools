@@ -504,8 +504,8 @@ Private Sub ExportMigrationData(sLLPath As String)
         'Sheets of type linelist
         i = 1
         While i <= LLSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
-            sPrevSheetName = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = LLSheetData.Items(i)
+            sPrevSheetName = LLSheetData.Items(i)
             ExportData.Clear
             ExportData.FromExcelRange ThisWorkbook.Worksheets(LLSheetData.Items(i)).ListObjects("o" & sPrevSheetName).Range
             ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1)
@@ -515,8 +515,8 @@ Private Sub ExportMigrationData(sLLPath As String)
         'Sheets of type Admin
         i = 1
         While i <= AdmSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
-            sPrevSheetName = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = AdmSheetData.Items(i)
+            sPrevSheetName = AdmSheetData.Items(i)
             ExportData.Clear
             ExportHeader.Clear
             Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
@@ -750,8 +750,9 @@ Sub ExportForMigration()
 
     If sDirectory <> "" Then
         'Export the Data of the linelist
-        sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name), ".xlsb", "") & _
-             "_export_data"
+        sLLPath = sDirectory & Application.PathSeparator & _
+                Replace(ClearString(ThisWorkbook.Name, bremoveHiphen := False), ".xlsb", "") & _
+                "_export_data"
 
         'Export the full geobase
 
