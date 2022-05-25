@@ -13,7 +13,7 @@ Sub ClicCmdGeoApp()
 
     If ActiveCell.Row > C_eStartLinesLLData + 1 Then
 
-        sType =  ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).value
+        sType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).value
         Select Case sType
             Case C_sDictControlGeo
                 iGeoType = 0
@@ -195,9 +195,9 @@ Sub EventSheetLineListPatient(oRange As Range)
 
     If oRange.Row = C_eStartLinesLLData And sControlType = C_sDictControlCustom Then
         'The name of custom variables has been updated, update the dictionary
-        sCustomVarName = ActiveSheet.Cells(C_eStartLinesLLData + 1, iNumCol).Value
+        sCustomVarName = ActiveSheet.Cells(C_eStartLinesLLData + 1, iNumCol).value
         sNote = GetDictColumnValue(sCustomVarName, C_sDictHeaderSubLab)
-        sLabel = Replace(oRange.Value, sNote, "")
+        sLabel = Replace(oRange.value, sNote, "")
         sLabel = Replace(sLabel, Chr(10), "")
 
         Call UpdateDictionaryValue(sCustomVarName, C_sDictHeaderMainLab, sLabel)
