@@ -323,7 +323,7 @@ Sub Export(iTypeExport As Byte)
             i = i + 1
         Wend
 
-        .Worksheets(sFirstSheet).delete
+        .Worksheets(sFirstSheet).Delete
     End With
     End If
 
