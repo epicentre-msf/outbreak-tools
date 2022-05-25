@@ -690,7 +690,6 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
 End Function
 
 
-
 'Setting the min and the max validation
 Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAlertType As Byte, sTypeValidation As String, sMessage As String)
 
@@ -742,12 +741,11 @@ End Sub
 'Ensure a sheet name has good name
 Public Function EnsureGoodSheetName(ByVal sSheetName As String) As String
 
-    EnsureGoodSheetName = sSheetName
+    EnsureGoodSheetName = Application.WorksheetFunction.Trim(UCase(Mid(sSheetName, 1, 1)) & Mid(sSheetName, 2, Len(sSheetName)))
 
     If sSheetName = C_sSheetGeo Or sSheetName = C_sSheetFormulas Or sSheetName = C_sSheetPassword Or sSheetName = C_sSheetTemp Or sSheetName = C_sSheetLLTranslation Or _
                      sSheetName = C_sParamSheetDict Or sSheetName = C_sParamSheetExport Or sSheetName = C_sParamSheetChoices Or sSheetName = C_sParamSheetTranslation Or _
                      sSheetName = C_sSheetMetadata Then
         EnsureGoodSheetName = sSheetName & "_"
     End If
-
 End Function
