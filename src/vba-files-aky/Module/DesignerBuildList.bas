@@ -317,7 +317,7 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
         Loop
 
 
-        .Worksheets(C_sParamSheetChoices).Visible = xlSheetVeryHidden
+        .Worksheets(C_sParamSheetChoices).Visible = bNotHideSheets
 
         '--------- Creating the translation sheet
         .Worksheets.Add.Name = C_sParamSheetTranslation
