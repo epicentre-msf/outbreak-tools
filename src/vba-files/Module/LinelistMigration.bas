@@ -14,13 +14,14 @@ Sub ImportMigrationData()
 
 'Import exported data into the linelist
 
+   'Import exported data into the linelist
+
     Dim wbkexp As Workbook, wbkLL As Workbook
     Dim shData As Worksheet, shSource As Worksheet, shTarget As Worksheet
     Dim lstobj  As ListObject
-    Dim iLastSh As Integer, iLastexp As Integer, i As Integer, j As Integer, iPpos As Integer
+    Dim iLastSh As Integer, iLastexp As Integer, i As Integer, j As Integer
     Dim iRows As Integer, iCols As Integer, iStart As Integer, iColExp As Integer, iRowTarget As Integer, iColTarget As Integer
-    Dim rgResult As Range
-    Dim sLabel As String, sPath As String, sSearchLabel As String, sSearchLabelo As String
+    Dim sLabel As String, sPath As String
 
     Set wbkLL = ActiveWorkbook
 
@@ -42,11 +43,17 @@ Sub ImportMigrationData()
 
         If shData.Name <> "Dictionary" And shData.Name <> "Choices" And shData.Name <> "Translations" Then
 
-            Sheets(shData.Name).Copy After:=wbkLL.Sheets(iLastexp)
-            ActiveSheet.Name = shData.Name & "_Exp"
+            For i = 1 To wbkLL.Sheets.Count
 
-            iLastexp = iLastexp + 1
-            wbkexp.Activate
+                If UCase(wbkLL.Sheets(i).Name) = UCase(shData.Name) Then
+                    Sheets(shData.Name).Copy After:=wbkLL.Sheets(iLastexp)
+                    ActiveSheet.Name = shData.Name & "_Exp"
+                    iLastexp = iLastexp + 1
+                    wbkexp.Activate
+                    Exit For
+                End If
+
+            Next i
 
         End If
 
@@ -64,6 +71,7 @@ Sub ImportMigrationData()
 
         If LCase(shSource.Name) = "admin_exp" Then
 
+            shSource.Select
             iRows = shSource.Cells(2, 1).End(xlDown).Row
             shSource.Range(Cells(2, 2), Cells(iRows, 2)).Copy
             shTarget.Select
@@ -77,15 +85,14 @@ Sub ImportMigrationData()
             iStart = shTarget.Cells.Find("*", SearchOrder:=xlByRows, SearchDirection:=xlPrevious, LookIn:=xlValues).Row + 1
 
             shTarget.Select
+            ActiveSheet.Unprotect (C_sLLPassword)
 
             For Each lstobj In shTarget.ListObjects
                 If lstobj.Name = "o" & shTarget.Name Then
                     iRowTarget = shTarget.ListObjects(lstobj.Name).ListRows.Count
                     If iRowTarget < iRows Then
-                        ActiveSheet.Unprotect (C_sLLPassword)
                         Application.EnableEvents = False
                         lstobj.Resize Range(Cells(iStart - 1, 1), Cells(iRows + iStart, Cells(iStart - 1, 1).End(xlToRight).Column))
-                        Call ProtectSheet
                         Application.EnableEvents = True
                         iRowTarget = shTarget.ListObjects(lstobj.Name).ListRows.Count
                         Exit For
@@ -100,48 +107,67 @@ Sub ImportMigrationData()
 
             Do While j <= iCols 'Number of columns in source file
 
-                If shTarget.Cells(5, j).value = "" Then Exit Do
+                If shTarget.Cells(6, j).value = "" Then Exit Do
+                Dim BlHidden As Boolean
 
-                sSearchLabelo = shTarget.Cells(5, j).value
-                sSearchLabel = sSearchLabelo
-
-                iPpos = InStr(sSearchLabel, Chr(10))
-
-                If iPpos > 0 Then
-                    sSearchLabel = Left(sSearchLabel, iPpos - 1)
+                If shTarget.Columns(j).Hidden = True Then
+                    shTarget.Columns(j).Hidden = False
+                    BlHidden = True
                 End If
 
-                Set rgResult = Sheets("Dictionary").Columns(2).Find(What:=sSearchLabel, LookAt:=xlValue)
+                sLabel = shSource.Cells(1, j).value
 
-                If Not rgResult Is Nothing Then
-                    Do
-                        If Sheets("Dictionary").Cells(rgResult.Row, 5).value = shTarget.Name Then
-                            sLabel = Sheets("Dictionary").Cells(rgResult.Row, 1).value
-                            Exit Do
-                        Else
-                            Set rgResult = Sheets("Dictionary").Columns(2).FindNext(rgResult)
-                        End If
+                If Not shTarget.Rows(7).Find(What:=sLabel, LookAt:=xlWhole) Is Nothing Then
 
-                    Loop While Not rgResult Is Nothing
+                    iColExp = shSource.Rows(1).Find(What:=sLabel, LookAt:=xlWhole).Column
+
+                    shSource.Select
+
+                    iColTarget = shTarget.Rows(7).Find(What:=sLabel, LookAt:=xlWhole).Column
+
+                    If iColTarget > 0 And Not shTarget.Cells(8, j).HasFormula Then
+                        Application.EnableEvents = False
+                            shSource.Range(Cells(2, iColExp), Cells(iRows, iColExp)).Copy Destination:=shTarget.Cells(iStart, iColTarget)
+                        Application.EnableEvents = True
+                        shTarget.Columns(iColTarget).EntireColumn.AutoFit
+                    End If
+
                 Else
 
-                    sLabel = shSource.Cells(1, j).value
+                    If Not Sheets("Dictionary").Columns(1).Find(What:=sLabel, LookAt:=xlWhole) Is Nothing Then
+
+                        Dim sOtherSheet As String
+                        Dim iRowOther As Integer
+
+                        iRowOther = Sheets("Dictionary").Columns(1).Find(What:=sLabel, LookAt:=xlWhole).Row
+                        sOtherSheet = Sheets("Dictionary").Cells(iRowOther, 5).value
+
+                        If SheetExist(sOtherSheet) = True Then
+
+                            If Not Sheets(sOtherSheet).Rows(7).Find(What:=sLabel, LookAt:=xlWhole) Is Nothing Then
+
+                                    shSource.Select
+
+                                    iColTarget = Sheets(sOtherSheet).Rows(7).Find(What:=sLabel, LookAt:=xlWhole).Column
+                                    iColExp = shSource.Rows(1).Find(What:=sLabel, LookAt:=xlWhole).Column
+
+                                    If iColTarget > 0 And Not shSource.Cells(8, j).HasFormula Then
+                                        Application.EnableEvents = False
+                                            shSource.Range(Cells(2, iColExp), Cells(iRows, iColExp)).Copy Destination:=Sheets(sOtherSheet).Cells(iStart, iColTarget)
+                                        Application.EnableEvents = True
+                                        Sheets(sOtherSheet).Columns(iColTarget).EntireColumn.AutoFit
+                                    End If
+                                End If
+
+                            End If
+
+                    End If
 
                 End If
 
-                iColExp = shSource.Rows(1).Find(What:=sLabel, LookAt:=xlWhole).Column
-                shSource.Select
-                shSource.Range(Cells(2, iColExp), Cells(iRows, iColExp)).Copy
-
-                shTarget.Select
-
-                iColTarget = 0
-                iColTarget = shTarget.Rows(5).Find(What:=sSearchLabelo, LookAt:=xlWhole).Column
-
-                If iColTarget > 0 And Not shTarget.Cells(6, j).HasFormula Then
-                    shTarget.Cells(iStart, iColTarget).Select
-                    ActiveSheet.Paste
-                    Columns(iColTarget).EntireColumn.AutoFit
+                If BlHidden Then
+                    shTarget.Columns(j).Hidden = True
+                    BlHidden = False
                 End If
 
                 j = j + 1
@@ -150,8 +176,10 @@ Sub ImportMigrationData()
         End If
 
         Application.DisplayAlerts = False
-        shSource.Delete
+            shSource.Delete
         Application.DisplayAlerts = True
+
+        Call ProtectSheet
 
     Next i
 
@@ -160,7 +188,7 @@ Sub ImportMigrationData()
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
 
-
+    MsgBox "Import terminé"
 
 End Sub
 
@@ -476,22 +504,19 @@ Private Sub ExportMigrationData(sLLPath As String)
         'Sheets of type linelist
         i = 1
         While i <= LLSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = LLSheetData.Items(i)
-            sPrevSheetName = LLSheetData.Items(i)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
+            sPrevSheetName = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
             ExportData.Clear
-            ExportHeader.Clear
-            Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
-            Set ExportData = GetExportValues(ExportHeader, sPrevSheetName)
-            ExportHeader.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1), TransposeValues:=True
-            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
+            ExportData.FromExcelRange ThisWorkbook.Worksheets(LLSheetData.Items(i)).ListObjects("o" & sPrevSheetName).Range
+            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1)
             i = i + 1
         Wend
 
         'Sheets of type Admin
         i = 1
         While i <= AdmSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = AdmSheetData.Items(i)
-            sPrevSheetName = AdmSheetData.Items(i)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
+            sPrevSheetName = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
             ExportData.Clear
             ExportHeader.Clear
             Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
@@ -501,9 +526,9 @@ Private Sub ExportMigrationData(sLLPath As String)
             ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
             i = i + 1
         Wend
-        
+
         'Add The metadata Sheet
-        
+
          .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sSheetMetadata
          sPrevSheetName = C_sSheetMetadata
         .Worksheets(sPrevSheetName).Cells(1, 1).value = "variable"
@@ -802,3 +827,18 @@ Sub ExportForMigration()
     Set ExportPath = Nothing
 End Sub
 
+Public Function SheetExist(SheetName As String) As Boolean
+'check sheet exist
+
+    Dim shSheet As Variant
+
+    SheetExist = False
+
+    For Each shSheet In Sheets
+        If UCase(shSheet.Name) = UCase(SheetName) Then
+            SheetExist = True
+            Exit Function
+        End If
+    Next shSheet
+
+End Function
