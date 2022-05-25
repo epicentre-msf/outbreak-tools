@@ -75,6 +75,7 @@ Public Const C_sDictControlChoice As String = "choices"
 Public Const C_sDictControlGeo As String = "geo"
 Public Const C_sDictControlCustom As String = "custom"
 Public Const C_sDictControlTitle As String = "title"
+Public Const C_sDictControlChoiceAuto As String = "list_auto"
 
 'YesNo ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 

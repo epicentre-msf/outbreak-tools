@@ -343,9 +343,7 @@ Sub SearchValue(ByVal sSearchedValue As String)
             [F_Geo].LST_ListeAgre.List = T_result.Items
         Else
             'If Not, check if there have been some input in the concat and render
-            If [F_Geo].LST_ListeAgre.ListCount - 1 <> T_Concat.UpperBound Then
-                [F_Geo].LST_ListeAgre.List = T_Concat.Items
-            End If
+            [F_Geo].LST_ListeAgre.Clear
         End If
     Else
         If [F_Geo].LST_ListeAgre.ListCount - 1 <> T_Concat.UpperBound Then
@@ -374,9 +372,7 @@ Sub SeachHistoValue(sSearchedValue As String)
             T_result.Sort
             [F_Geo].LST_Histo.List = T_result.Items
         Else
-            If [F_Geo].LST_Histo.ListCount - 1 <> T_HistoGeo.UpperBound Then
-                [F_Geo].LST_Histo.List = T_HistoGeo.Items
-            End If
+            [F_Geo].LST_Histo.Clear
         End If
     Else
         If [F_Geo].LST_Histo.ListCount - 1 <> T_HistoGeo.UpperBound Then
@@ -405,9 +401,7 @@ Sub SearchValueF(sSearchedValue As String)
             T_result.Sort
             [F_Geo].LST_ListeAgreF.List = T_result.Items
         Else
-            If [F_Geo].LST_ListeAgreF.ListCount - 1 <> T_ConcatHF.UpperBound Then
-                [F_Geo].LST_ListeAgreF.List = T_ConcatHF.Items
-            End If
+            [F_Geo].LST_ListeAgreF.Clear
         End If
     Else
         If [F_Geo].LST_ListeAgreF.ListCount - 1 <> T_ConcatHF.UpperBound Then
@@ -438,9 +432,7 @@ Sub SeachHistoValueF(sSearchedValue As String)
             T_result.Sort
             [F_Geo].LST_HistoF.List = T_result.Items
         Else
-            If [F_Geo].LST_HistoF.ListCount - 1 <> T_HistoHF.UpperBound Then
-                [F_Geo].LST_HistoF.List = T_HistoHF.Items
-            End If
+            [F_Geo].LST_HistoF.Clear
         End If
     Else
         If [F_Geo].LST_HistoF.ListCount - 1 <> T_HistoHF.UpperBound Then
@@ -470,6 +462,34 @@ Function ReverseString(sChaine As String)
     ReverseString = sRes
     Set T_temp = Nothing
 End Function
+
+Sub ClearOneHistoricGeobase(iGeoType As Byte)
+    Dim WkshGeo As Worksheet
+    Dim ShouldDelete As Integer
+
+    Set WkshGeo = ThisWorkbook.Worksheets(C_sSheetGeo)
+
+    ShouldDelete = MsgBox("Your historic geographic data  in the current workbook will be completely deleted, this action is irreversible. Proceed?", vbExclamation + vbYesNo, "Delete Historic")
+
+    If ShouldDelete = vbYes Then
+        If iGeoType = 0 Then
+            If Not WkshGeo.ListObjects(C_sTabHistoGeo).DataBodyRange Is Nothing Then
+                WkshGeo.ListObjects(C_sTabHistoGeo).DataBodyRange.Delete
+                [F_Geo].LST_Histo.Clear
+            End If
+        End If
+        If iGeoType = 1 Then
+            If Not WkshGeo.ListObjects(C_sTabHistoHF).DataBodyRange Is Nothing Then
+                WkshGeo.ListObjects(C_sTabHistoHF).DataBodyRange.Delete
+                [F_Geo].LST_HistoF.Clear
+            End If
+        End If
+        
+        MsgBox "Done", vbinformation, "Delete Historic"
+    End If
+    'Add a message to say it is done
+    Set WkshGeo = Nothing
+End Sub
 
 
 
