@@ -827,3 +827,18 @@ Sub ExportForMigration()
     Set ExportPath = Nothing
 End Sub
 
+Public Function SheetExist(SheetName As String) As Boolean
+'check sheet exist
+
+    Dim shSheet As Variant
+
+    SheetExist = False
+
+    For Each shSheet In Sheets
+        If UCase(shSheet.Name) = UCase(SheetName) Then
+            SheetExist = True
+            Exit Function
+        End If
+    Next shSheet
+
+End Function

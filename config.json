@@ -5,7 +5,7 @@
     "email": "",
     "create_ate": "2021",
     "excel_file": "linelist_designer_aky.xlsb",
-    "vba_folder": "src/vba-files-aky",
+    "vba_folder": "src/vba-files-lla",
     "ribbon_file": "linelist-designer-ribbon",
     "ribbon_folder": "src/ribbons",
     "logs": "on",
