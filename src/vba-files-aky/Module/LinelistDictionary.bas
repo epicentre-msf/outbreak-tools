@@ -182,12 +182,12 @@ End Function
 
 'Change value of one variable and one column in the dictionary
 
-Sub UpdateDictionaryValue(sVarName as String, sColname as String, sNewValue as String)
+Sub UpdateDictionaryValue(sVarName As String, sColname As String, sNewValue As String)
 
-    Dim VarNameData as BetterArray
-    Dim ColnameData as BetterArray
-    Dim iRow as Integer
-    Dim iColumn as Integer
+    Dim VarNameData As BetterArray
+    Dim ColnameData As BetterArray
+    Dim iRow As Integer
+    Dim iColumn As Integer
 
     Set VarNameData = GetDictionaryColumn(C_sDictHeaderVarName)
 

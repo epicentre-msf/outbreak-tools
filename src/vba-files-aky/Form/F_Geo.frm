@@ -32,6 +32,7 @@ Attribute VB_Exposed = False
 
 
 
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -115,6 +116,10 @@ Private Sub CMD_Copier_Click()
     [F_Geo].Hide
     'Protecting the worksheet
     Call ProtectSheet
+End Sub
+
+Private Sub CMD_GeoClearHisto_Click()
+    Call ClearOneHistoricGeobase(iGeoType)
 End Sub
 
 'Closing the Geoapp
