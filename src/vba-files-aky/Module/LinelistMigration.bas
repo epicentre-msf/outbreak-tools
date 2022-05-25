@@ -497,10 +497,10 @@ Private Sub ExportMigrationData(sLLPath As String)
         'Sheets of type linelist
         i = 1
         While i <= LLSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(LLSheetData.Items(i), bremoveHiphen:= False)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
             sPrevSheetName = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
             ExportData.Clear
-            ExportData.FromExcelRange ThisWorkbook.Worksheets(LLSheetData.Items(i)).listobjects("o" & sPrevSheetName).Range
+            ExportData.FromExcelRange ThisWorkbook.Worksheets(LLSheetData.Items(i)).ListObjects("o" & sPrevSheetName).Range
             ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1)
             i = i + 1
         Wend
@@ -508,8 +508,8 @@ Private Sub ExportMigrationData(sLLPath As String)
         'Sheets of type Admin
         i = 1
         While i <= AdmSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(AdmSheetData.Items(i), bremoveHiphen := False)
-            sPrevSheetName = ClearString(AdmSheetData.Items(i), bremoveHiphen := False)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
+            sPrevSheetName = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
             ExportData.Clear
             ExportHeader.Clear
             Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
