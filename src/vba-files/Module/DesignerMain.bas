@@ -13,13 +13,16 @@ Sub LoadFileDic()
     BeginWork xlsapp:=Application
 
     'LoadFile is the procedure for loading the path to the dictionnary
-    sFilePath = Helpers.LoadFile("*.xlsb", "Setup") 'The
+    sFilePath = Helpers.LoadFile("*.xlsb") 'The
 
     'Update messages if the file path is correct
     If sFilePath <> "" Then
         SheetMain.Range(C_sRngPathDic).value = sFilePath
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ChemFich")
         SheetMain.Range(C_sRngPathDic).Interior.Color = vbWhite
+
+        'Import the languages after loading the setup file
+        Call ImportLangAnalysis(sFilePath)
     Else
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
@@ -33,7 +36,7 @@ Sub LoadFileLL()
     Dim sFilePath As String                      'Path to the linelist
 
     'LoadFile is the procedure for loading the path to the linelist
-    sFilePath = Helpers.LoadFile("*.xlsb", "LineList") 'The
+    sFilePath = Helpers.LoadFile("*.xlsb") 'The
 
     If sFilePath = "" Then Exit Sub
 
@@ -84,8 +87,7 @@ Sub LoadGeoFile()
     AdmNames.LowerBound = 1
     AdmNames.Push C_sAdm1, C_sAdm2, C_sAdm3, C_sAdm4, C_sHF, C_sNames, C_sHistoHF, C_sHistoGeo, C_sGeoMetadata
 
-    'Set xlsapp = New Excel.Application
-    sFilePath = Helpers.LoadFile("*.xlsx", "Geo")
+    sFilePath = Helpers.LoadFile("*.xlsx")
 
     If sFilePath <> "" Then
         'Open the geo workbook and hide the windows
@@ -341,8 +343,10 @@ End Sub
 
 
 
-Function FileNameControl(sName As String)
+Function FileNameControl(sName As String) As String
 'In the file name, replace forbidden characters with an underscore
+
+    FileNameControl = vbNullString
 
     sName = Replace(sName, "<", "_")
     sName = Replace(sName, ">", "_")

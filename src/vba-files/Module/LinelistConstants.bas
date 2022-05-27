@@ -9,6 +9,7 @@ Public Const C_sSheetFormulas           As String = "ControleFormule"           
 Public Const C_sSheetLLTranslation      As String = "linelist-translation"
 Public Const C_sSheetTemp               As String = "Temp"                              'Temporary sheet for data manipulation things
 Public Const C_sSheetMetadata           As String = "metadata"
+Public Const C_sSheetListAuto           As String = "list_auto_"
 
 'Sheets in the setup file: The all starts with Param
 
@@ -133,7 +134,7 @@ Public Const C_sTabExcelFunctions        As String = "T_XlsFonctions"           
 Public Const C_sTabASCII                 As String = "T_ascii"                             'Ascii characters table
 
 
-'PROGRAM NAMES ==================================================================================
+'PROGRAM NAMES ===============================================================================================================
 'Program names are used for setting programs to buttons added in the linelist
 
 Public Const C_sCmdShowHideName As String = "ClicCmdShowHide" 'ShowHideCommand
