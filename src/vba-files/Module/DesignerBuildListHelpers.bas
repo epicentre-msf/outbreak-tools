@@ -3,17 +3,7 @@ Option Explicit
 '-------
 'Transfert Codes and forms to the designer
 
-Public Sub TransferDesignerCodes(xlsapp As Excel.Application)
-
-    On Error Resume Next
-    Kill (Environ("Temp") & Application.PathSeparator & "LinelistApp")
-    MkDir (Environ("Temp") & Application.PathSeparator & "LinelistApp") 'create a folder for sending all the data from designer
-    On Error GoTo 0
-
-    Dim Wkb As Workbook
-    Set Wkb = xlsapp.ActiveWorkbook
-
-    DoEvents
+Public Sub TransferDesignerCodes(Wkb As Workbook)
 
     'Transfert form is for sending forms from the actual excel workbook to another
     Call TransferForm(Wkb, C_sFormGeo)
@@ -35,8 +25,6 @@ Public Sub TransferDesignerCodes(xlsapp As Excel.Application)
     Call TransferCode(Wkb, C_sModLLDict, "Module")
     Call TransferCode(Wkb, C_sClaBA, "Class")
 
-    Set Wkb = Nothing
-
 End Sub
 
 
@@ -44,7 +32,7 @@ End Sub
 '@sSheetName the sheet name we want to transfer to
 '@sNameModule the name of the module we want to copy code from
 
-Sub TransferCodeWks(xlsapp As Excel.Application, sSheetName As String, _
+Sub TransferCodeWks(Wkb As Workbook, sSheetName As String, _
                     sNameModule As String)
 
     Dim sNouvCode As String                      'a string to contain code to add
@@ -58,8 +46,8 @@ Sub TransferCodeWks(xlsapp As Excel.Application, sSheetName As String, _
         sNouvCode = .Lines(1, .CountOfLines)
     End With
 
-    With xlsapp
-        Set vbProj = .ActiveWorkbook.VBProject
+    With Wkb
+        Set vbProj = .VBProject
         Set vbComp = vbProj.VBComponents(.Sheets(sSheetName).CodeName)
         Set codeMod = vbComp.CodeModule
     End With
@@ -76,40 +64,40 @@ End Sub
 'Transfert a Worksheet from the current designer to another
 'Excel workbook. (in one application)
 
-'@xlsapp: excel application we want to move
+'@Wkb: a workbook
 '@sSheetName: the name of the Sheet in the designer we want to move
 
-Public Sub TransferSheet(xlsapp As Excel.Application, sSheetName As String)
+Public Sub TransferSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String)
 
     'Since We can't move worksheet from one instance to another
     'we need to save as a temporary file and then move it to another instance.
     'DesignerWorkbook is the actual workbook we want to copy from
 
-    DesignerWorkbook.Worksheets(sSheetName).Copy
-    DoEvents
-
-    On Error Resume Next
-        Kill Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx"
-    On Error GoTo 0
-
-    ActiveWorkbook.SaveAs Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx"
-    ActiveWorkbook.Close
-
-    DoEvents
-
-    With xlsapp
-        .Workbooks.Open Filename:=Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx", UpdateLinks:=False
-
-        .Sheets(sSheetName).Select
-        .Sheets(sSheetName).Copy After:=.Workbooks(1).Sheets(1)
-
-        DoEvents
-        .Workbooks("Temp.xlsx").Close
-    End With
-
-    DoEvents
-
-    Kill Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx"
+    DesignerWorkbook.Worksheets(sSheetName).Copy After:=Wkb.Worksheets(sPrevSheetName)
+    'DoEvents
+'
+    'On Error Resume Next
+    '    Kill Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx"
+    'On Error GoTo 0
+'
+    'ActiveWorkbook.SaveAs Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx"
+    'ActiveWorkbook.Close
+'
+    'DoEvents
+'
+    'With xlsapp
+    '    .Workbooks.Open Filename:=Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx", UpdateLinks:=False
+'
+    '    .Sheets(sSheetName).Select
+    '    .Sheets(sSheetName).Copy After:=.Workbooks(1).Sheets(1)
+'
+    '    DoEvents
+    '    .Workbooks("Temp.xlsx").Close
+    'End With
+'
+    'DoEvents
+'
+    'Kill Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx"
 
 End Sub
 
@@ -177,24 +165,24 @@ End Sub
 'The goal of this function is to add space to duplicates labels so that excels
 'does not force a unique name with number at the end in listcolumn header
 
-'@xlsapp an excel application
+'@Wkb a Workbook
 'sHeader the String we want to add space (in case) to
 'sSheetName: The concernec SheetName
 'iStartLine: Integer, the line where the table listobject starts
 
-Public Function AddSpaceToHeaders(xlsapp As Excel.Application, _
+Public Function AddSpaceToHeaders(Wkb As Workbook, _
                                   sHeader As String, _
                                   sSheetName As String, iStartLine As Integer)
     Dim i As Integer
 
     AddSpaceToHeaders = ""
-    With xlsapp
+    With Wkb
         i = 1
-        While i <= .Sheets(sSheetName).Cells(iStartLine, Columns.Count).End(xlToLeft).Column And Replace(UCase(.Sheets(sSheetName).Cells(iStartLine, i).value), " ", "") <> Replace(UCase(sHeader), " ", "")
+        While i <= .Worksheets(sSheetName).Cells(iStartLine, Columns.Count).End(xlToLeft).Column And Replace(UCase(.Sheets(sSheetName).Cells(iStartLine, i).value), " ", "") <> Replace(UCase(sHeader), " ", "")
             i = i + 1
         Wend
-        If Replace(UCase(xlsapp.Sheets(sSheetName).Cells(iStartLine, i).value), " ", "") = Replace(UCase(sHeader), " ", "") Then
-            AddSpaceToHeaders = xlsapp.Sheets(sSheetName).Cells(iStartLine, i).value & " "
+        If Replace(UCase(Wkb.Worksheets(sSheetName).Cells(iStartLine, i).value), " ", "") = Replace(UCase(sHeader), " ", "") Then
+            AddSpaceToHeaders = Wkb.Worksheets(sSheetName).Cells(iStartLine, i).value & " "
         Else
             AddSpaceToHeaders = sHeader
         End If
@@ -206,7 +194,7 @@ End Function
 
 
 'Add a Button command to a Sheet (create the button and addit)
-'@xlsapp: excel applicaiton
+'@Wkb: a Workbook
 '@sSheet: The Sheet we want to add the button
 '@sShpName: The name we want to give to the shape (Shape Name)
 '@sText: The text to put on the button
@@ -216,7 +204,7 @@ End Function
 '@sShpColor: The color of the Shape
 '@sShpTextColor: color of the text for each of the shapes
 
-Sub AddCmd(xlsapp As Excel.Application, sSheetName As String, iLeft As Integer, iTop As Integer, _
+Sub AddCmd(Wkb As Workbook, sSheetName As String, iLeft As Integer, iTop As Integer, _
            sShpName As String, sText As String, iCmdWidth As Integer, iCmdHeight As Integer, _
            sCommand As String, Optional sShpColor As String = "MainSecBlue", _
            Optional sShpTextColor As String = "White")
@@ -224,7 +212,7 @@ Sub AddCmd(xlsapp As Excel.Application, sSheetName As String, iLeft As Integer, 
 
     sText = translate_LineList(sText, Sheets("linelist-translation").[T_tradShapeLL])
 
-    With xlsapp.Sheets(sSheetName)
+    With Wkb.Worksheets(sSheetName)
         .Shapes.AddShape(msoShapeRectangle, iLeft + 3, iTop + 3, iCmdWidth, iCmdHeight).Name = sShpName
         .Shapes(sShpName).Placement = xlFreeFloating
         .Shapes(sShpName).TextFrame2.TextRange.Characters.Text = sText
@@ -363,13 +351,13 @@ Sub AddChoices(Wksh As Worksheet, iSheetStartLine As Integer, iCol As Integer, _
 End Sub
 
 'Add Geo
-Sub AddGeo(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders As BetterArray, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
+Sub AddGeo(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterArray, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
           iSheetSubSecStartLine As Integer, iDictLine As Integer, sVarName As String, sMessage As String, iNbshifted As Integer)
 
-    With xlsapp.Worksheets(sSheetName)
+    With Wkb.Worksheets(sSheetName)
         .Cells(iSheetStartLine, iCol).Interior.Color = GetColor("Orange")
                         'update the columns only for the geo
-        Call Add4GeoCol(xlsapp, DictData, DictHeaders, sSheetName, sVarName, iSheetStartLine, _
+        Call Add4GeoCol(Wkb, DictData, DictHeaders, sSheetName, sVarName, iSheetStartLine, _
                         iCol, sMessage, _
                         iSheetSubSecStartLine, iDictLine, iNbshifted)
 
@@ -389,7 +377,7 @@ End Sub
 '@iStartLine: Starting line of Data in the Linelist
 '@iStartLineSubLab: Starting line of the Sub label
 
-Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders As BetterArray, _
+Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterArray, _
             sSheetName As String, sVarName As String, iStartLine As Integer, iCol As Integer, _
             sMessage As String, iStartLineSubLab As Integer, iDictLine As Integer, iNbshifted As Integer)
 
@@ -403,12 +391,12 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
 
     iRow = iDictLine + iNbshifted
 
-    With xlsapp.Worksheets(sSheetName)
+    With Wkb.Worksheets(sSheetName)
 
         'Admin 4
         sLab = SheetGeo.ListObjects(C_sTabAdm4).HeaderRowRange.Item(4).value
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
-        .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
+        .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(Wkb, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "4" & "_" & sVarName
         .Cells(iStartLine + 1, iCol + 1).Interior.Color = vbWhite
         .Cells(iStartLine + 1, iCol + 1).Font.Color = vbWhite
@@ -423,7 +411,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
         'Admin 3
         sLab = SheetGeo.ListObjects(C_sTabAdm3).HeaderRowRange.Item(3).value
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
-        .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
+        .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(Wkb, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "3" & "_" & sVarName
         .Cells(iStartLine + 1, iCol + 1).Interior.Color = vbWhite
         .Cells(iStartLine + 1, iCol + 1).Font.Color = vbWhite
@@ -438,7 +426,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
         'Admin 2
         sLab = SheetGeo.ListObjects(C_sTabAdm2).HeaderRowRange.Item(2).value
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
-        .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
+        .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(Wkb, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "2" & "_" & sVarName
         .Cells(iStartLine + 1, iCol + 1).Interior.Color = vbWhite
         .Cells(iStartLine + 1, iCol + 1).Font.Color = vbWhite
@@ -452,7 +440,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
 
         'Admin 1
         sLab = SheetGeo.ListObjects(C_sTabadm1).HeaderRowRange.Item(1).value
-        .Cells(iStartLine, iCol).value = AddSpaceToHeaders(xlsapp, sLab, sSheetName, iStartLine)
+        .Cells(iStartLine, iCol).value = AddSpaceToHeaders(Wkb, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol).Name = C_sAdmName & "1" & "_" & sVarName
         .Cells(iStartLine, iCol).Interior.Color = GetColor("Orange")
         .Cells(iStartLine + 1, iCol).value = C_sAdmName & "1" & "_" & sVarName
@@ -485,7 +473,7 @@ Sub Add4GeoCol(xlsapp As Excel.Application, DictData As BetterArray, DictHeaders
     End With
 
     'Updating the Dictionary for future uses
-    With xlsapp.Worksheets(C_sParamSheetDict)
+    With Wkb.Worksheets(C_sParamSheetDict)
         'Admin 4
         LineValues.Items = DictData.ExtractSegment(RowIndex:=iDictLine)
         LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "4"
