@@ -433,7 +433,7 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         'ajout des formules de validation
         .Cells(iStartLine + 2, iCol).Validation.Delete
         'Add name and reference for adm1 (in case someone adds one adm1)
-        Wkb.Names.Add Name:= C_sAdmName & "1" & "_column", RefersToR1C1:= "=" & C_sTabadm1 & "[" & SheetGeo.Cells(1, 1).value & "]"
+        Wkb.Names.Add Name:=C_sAdmName & "1" & "_column", RefersToR1C1:="=" & C_sTabadm1 & "[" & SheetGeo.Cells(1, 1).value & "]"
 
         .Cells(iStartLine + 2, iCol).Validation.Add Type:=xlValidateList, _
                          AlertStyle:=xlValidAlertWarning, Operator:=xlBetween, _
@@ -723,11 +723,11 @@ Public Sub UpdateChoiceAutoHeaders(Wkb As Workbook, ChoiceAutoVarData As BetterA
             If ChoiceAutoVarData.Includes(sVarName) Then
                 sSheetName = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)).value
                 iIndex = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.Length + 1).value
-                .Worksheets(sSheetName).Unprotect (C_sLLPassword)
+                .Worksheets(sSheetName).Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).value = C_sDictControlChoiceAuto & "_origin"
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).Font.Color = vbWhite
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).FormulaHidden = True
-                  .Worksheets(sSheetName).Protect Password:=(C_sLLPassword), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                  .Worksheets(sSheetName).Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
             End If
             i = i + 1
@@ -735,6 +735,9 @@ Public Sub UpdateChoiceAutoHeaders(Wkb As Workbook, ChoiceAutoVarData As BetterA
         Wend
     End With
 End Sub
+
+
+'Insert Lines in at the end of a specific module
 
 
 'Ensure a sheet name has good name

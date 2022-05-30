@@ -560,7 +560,7 @@ End Sub
             iCounterSheetAdmLine = iCounterSheetAdmLine + 1
             iCounterDictSheetLine = iCounterDictSheetLine + 1
         Wend
-        .Protect Password:=(C_sLLPassword), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
     End With
 End Sub
@@ -923,7 +923,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         'Resize for 200 lines entrie
         .ListObjects("o" & ClearString(sSheetName)).Resize LoRng
      '   Now Protect the sheet,
-        .Protect Password:=(C_sLLPassword), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
 
 

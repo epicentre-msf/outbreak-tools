@@ -38,13 +38,14 @@ Public Function GetColor(sColorCode As String)
 End Function
 
 
-Public Sub ProtectSheet(Optional pwd As String = C_sLLPassword)
+Public Sub ProtectSheet()
+    Dim pwd As String
     If Not DebugMode Then
+        pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
         ActiveSheet.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                          AllowFormattingColumns:=True
     End If
-
 End Sub
 
 

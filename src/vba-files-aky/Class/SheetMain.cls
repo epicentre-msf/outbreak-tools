@@ -22,7 +22,8 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         ElseIf Target.Name.Name = "RNG_LLForm" Then
 
             Call translateHeadGeo
-
+        ElseIf Target.Name.Name = "RNG_LLPassword" Then
+            SheetPassword.Range("RNG_DebuggingPassword").value = Target.value
         End If
 
         Application.ScreenUpdating = True

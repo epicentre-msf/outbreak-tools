@@ -168,9 +168,10 @@ Public Const C_sRngPrivatekey            As String = "RNG_PrivateKey"           
 Public Const C_sRngGeoName               As String = "RNG_GeoName"
 Public Const C_sRngLLLanguageCode       As String = "RNG_LLLanguageCode"                        'Where the name of the geofile is stored in the GeoSheet
 Public Const C_sRngLLLanguage           As String = "RNG_LLLanguage"
+Public Const C_sRngDebuggingPassWord    As String = "RNG_DebuggingPassword"
 
 'STRING CONSTANTS =================================================================================================================================================================
-Public Const C_sLLPassword              As String = "1234"                                'Default password for the linelist file (if no one is set)                                'Default password for the designer
+Public Const C_sLLPasword             As String = "1234"                                'Default password for the linelist file (if no one is set)                                'Default password for the designer
 Public Const C_sYes                     As String = "yes"
 Public Const C_sNo                      As String = "no"
 Public Const C_sGeobase                 As String = "export_geobase"
