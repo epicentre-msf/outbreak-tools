@@ -24,7 +24,7 @@ Sub ImportMigrationData()
     Dim sLabel As String, sPath As String, sMessage As String
 
     Set ShMain = Sheets(ActiveSheet.Name)
-    
+
     Set wbkLL = ActiveWorkbook
 
     iLastSh = wbkLL.Sheets.Count
@@ -133,11 +133,11 @@ Sub ImportMigrationData()
                         Application.EnableEvents = True
                         shTarget.Columns(iColTarget).EntireColumn.AutoFit
                     End If
-                    
+
                 Else
 
                     sMessage = sMessage & " / " & sLabel & " (Sheet " & Replace(shSource.Name, "_Exp", "") & ")"
-                    
+
                 End If
 
                 If BlHidden Then
@@ -163,7 +163,8 @@ Sub ImportMigrationData()
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
 
-    MsgBox "the following data :" & Chr(10) & Right(sMessage, Len(sMessage) - 3) & Chr(10) & "could not be imported.", vbInformation, "File import"
+    MsgBox "the following data :" & Chr(10) & Right(sMessage, Len(sMessage) - 3) & Chr(10) & "could not be imported.", vbinformation, "File import"
+
 
 End Sub
 
@@ -382,7 +383,7 @@ Sub ClearHistoricGeobase()
         If Not WkshGeo.ListObjects(C_sTabHistoHF).DataBodyRange Is Nothing Then
             WkshGeo.ListObjects(C_sTabHistoHF).DataBodyRange.Delete
         End If
-        MsgBox "Done", vbInformation, "Delete Historic"
+        MsgBox "Done", vbinformation, "Delete Historic"
     End If
 
 
@@ -479,22 +480,19 @@ Private Sub ExportMigrationData(sLLPath As String)
         'Sheets of type linelist
         i = 1
         While i <= LLSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
-            sPrevSheetName = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = LLSheetData.Items(i)
+            sPrevSheetName = LLSheetData.Items(i)
             ExportData.Clear
-            ExportHeader.Clear
-            Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
-            Set ExportData = GetExportValues(ExportHeader, sPrevSheetName)
-            ExportHeader.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1), TransposeValues:=True
-            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
+            ExportData.FromExcelRange ThisWorkbook.Worksheets(LLSheetData.Items(i)).ListObjects("o" & sPrevSheetName).Range
+            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1)
             i = i + 1
         Wend
 
         'Sheets of type Admin
         i = 1
         While i <= AdmSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
-            sPrevSheetName = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = AdmSheetData.Items(i)
+            sPrevSheetName = AdmSheetData.Items(i)
             ExportData.Clear
             ExportHeader.Clear
             Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
@@ -728,8 +726,9 @@ Sub ExportForMigration()
 
     If sDirectory <> "" Then
         'Export the Data of the linelist
-        sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name), ".xlsb", "") & _
-             "_export_data"
+        sLLPath = sDirectory & Application.PathSeparator & _
+                Replace(ClearString(ThisWorkbook.Name, bremoveHiphen:=False), ".xlsb", "") & _
+                "_export_data"
 
         'Export the full geobase
 
@@ -809,14 +808,14 @@ Public Function SheetExist(SheetName As String) As Boolean
 'check sheet exist
 
     Dim shSheet As Variant
-    
+
     SheetExist = False
-    
+
     For Each shSheet In Sheets
         If UCase(shSheet.Name) = UCase(SheetName) Then
             SheetExist = True
             Exit Function
         End If
     Next shSheet
-    
+
 End Function

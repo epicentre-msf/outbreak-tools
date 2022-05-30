@@ -43,6 +43,7 @@ Public Const C_sRngLangGeo               As String = "RNG_LangGeo" 'Range for th
 Public Const C_sRngPathGeo               As String = "RNG_PathGeo" 'Range to the path to the geo file
 Public Const C_sRngLLFormLang            As String = "RNG_LLForm" 'Languages for the forms in the linelist
 Public Const C_sRngLLPassword            As String = "RNG_LLPassword" 'Password for debugging the linelist
+Public Const C_sRngUpdate                As String = "RNG_Update"
 
 'Messages in the designer ---------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -55,7 +56,6 @@ Public Const C_sMsgCheckLLName          As String = "MSG_LLName"    'Check the l
 Public Const C_sMsgCheckExits           As String = "MSG_exists"    'Check the linelist exists in the folder
 Public Const C_sMsgCheckPathLL          As String = "MSG_PathLL"
 Public Const C_sMsgCheckSheetType       As String = "MSG_SheetType" 'Ask the user to check the type of one sheet in the setup file
-Public Const C_sMsgCreatedSheet         As String = "MSG_LLCreated"
 
 'Inform the designer user something is going on
 
@@ -67,7 +67,6 @@ Public Const C_sMsgReadDic              As String = "MSG_ReadDic" 'Edition messa
 Public Const C_sMsgReadList             As String = "MSG_ReadList" 'Edition message for reading the Lists
 Public Const C_sMsgReadExport           As String = "MSG_ReadExport" 'Edition message for reading the export
 Public Const C_sMsgBuildLL              As String = "MSG_BuildLL" 'Edition message building the linelist
-Public Const C_sMsgCreatedLL            As String = "MSG_LLCreated" 'Edition message to inform linelist is created
 Public Const C_sMsgOngoing              As String = "MSG_EnCours" 'Message for something ongoing
 Public Const C_sMsgTrans                As String = "MSG_Traduit" 'Message for translation done
 Public Const C_sMsgInvForm              As String = "MSG_InvalidFormula" 'Message for invalid formula
@@ -113,3 +112,7 @@ Public Const C_sDesignerPassword         As String = "1234" 'Default password fo
 
 'ENUMERATION LISTS ================================================================================================================================================================
 
+'constant linked to the different columns to be translated in the workbook sheets
+Public Const sCstColDictionary As String = "Main label|Sub-label|Note|Sheet Name|Main section|Sub-section|Formula|Message"
+Public Const sCstColChoices As String = "label_short|label"
+Public Const sCstColExport As String = "Label button"

@@ -56,6 +56,18 @@ Public Sub BeginWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean
     xlsapp.DisplayStatusBar = bstatusbar
 End Sub
 
+Public Sub RemoveGridLines(Wksh As Worksheet)
+    Dim View As WorksheetView
+
+    For Each View In Wksh.Parent.Windows(1).SheetViews
+        If View.Sheet.Name = Wksh.Name Then
+            View.DisplayGridlines = False
+            View.DisplayZeros = False
+            Exit Sub
+        End If
+    Next
+End Sub
+
 
 Public Sub EndWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean = True)
     xlsapp.ScreenUpdating = True
@@ -64,12 +76,150 @@ Public Sub EndWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean =
     xlsapp.DisplayStatusBar = bstatusbar
 End Sub
 
+
+'----- File and folder selections depending on the OS
+
+Public Function LoadFolder() As String
+    LoadFolder = vbNullString
+    If Not Application.OperatingSystem Like "*Mac*" Then
+        'We are on windows DOS
+        LoadFolder = SelectFolderOnWindows()
+    Else
+        'We are on Mac, need to test the version of excel running
+        If Val(Application.Version) > 14 Then
+            LoadFolder = SelectFolderOnMac()
+        End If
+    End If
+
+End Function
+
 'Load files and folders
-Public Function LoadFile(sFilters As String, sType As String) As String
+Public Function LoadFile(sFilters As String) As String
+    LoadFile = vbNullString
+    If Not Application.OperatingSystem Like "*Mac*" Then
+        'We are on windows DOS
+        LoadFile = SelectFileOnWindows(sFilters)
+    Else
+        'We are on Mac, need to test the version of excel running
+        If Val(Application.Version) > 14 Then
+            LoadFile = SelectFileOnMac(sFilters)
+        End If
+    End If
+End Function
+
+'The selection process depends on the operating system. Here is a simple
+'code for Mac, using applescript:
+
+'----------------------------- FOLDER SELECTION --------------------------------
+Private Function SelectFolderOnMac() As String
+    Dim FolderPath As String
+    Dim RootFolder As String
+    Dim Scriptstr As String
+
+    On Error Resume Next
+
+    'Enter the Start Folder, Desktop in this example,
+    'Use the second line to enter your own path
+    RootFolder = MacScript("return POSIX path of (path to documents folder) as string")
+
+    'Make the path Colon seperated for using in MacScript
+    RootFolder = MacScript("return POSIX file (""" & RootFolder & """) as string")
+    'Make the Script string
+        Scriptstr = "return POSIX path of (choose folder with prompt ""Select the folder""" & _
+            " default location alias """ & RootFolder & """) as string"
+
+    'Run the Script
+    FolderPath = MacScript(Scriptstr)
+
+    If CInt(Split(Application.Version, ".")(0)) >= 15 Then 'excel 2016 support
+        FolderPath = Replace(FolderPath, ":", "/")
+        FolderPath = Replace(FolderPath, "Macintosh HD", "", Count:=1)
+    End If
+
+    On Error GoTo 0
+
+    If FolderPath <> "" Then
+        'Remove the last ":" or "/"
+        SelectFolderOnMac = Mid(FolderPath, 1, (Len(FolderPath) - 1))
+    End If
+End Function
+
+'Now Select a folder on Windows
+
+Private Function SelectFolderOnWindows() As String
 
     Dim fDialog As Office.FileDialog
 
-    LoadFile = ""
+    SelectFolderOnWindows = vbNullString
+
+    Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
+    With fDialog
+        .AllowMultiSelect = False
+        .Title = "Chose your directory"          'MSG_ChooseDir
+        .Filters.Clear
+
+        If .show = True Then
+            SelectFolderOnWindows = .SelectedItems(1)
+        End If
+    End With
+    Set fDialog = Nothing
+
+End Function
+
+
+'------------------------------ FILE SELECTION ---------------------------------
+
+Function SelectFileOnMac(sFilter)
+
+    Dim sMacFilter As String
+    Dim MyPath As String
+    Dim MyScript As String
+    Dim MyFiles As String
+
+
+    Select Case sFilter
+        Case "*.xls"
+            sMacFilter = " {""com.microsoft.Excel.xls""} "
+        Case "*.xlsx"
+            sMacFilter = " {""org.openxmlformats.spreadsheetml.sheet""} "
+        Case "*.xlsb"
+            sMacFilter = " {""com.microsoft.Excel.sheet.binary.macroenabled""} "
+        Case "*.xlsb, *.xlsx"
+            sMacFilter = " {""com.microsoft.excel.xls"",""public.comma-separated-values-text""} "
+        Case Else
+            sMacFilter = " {""com.microsoft.Excel.xls""} "
+    End Select
+
+    SelectFileOnMac = vbNullString
+    On Error Resume Next
+       MyPath = MacScript("return (path to documents folder) as String")
+       MyScript = _
+       "set applescript's text item delimiters to "","" " & vbNewLine & _
+        "set theFiles to (choose file of type " & _
+        sMacFilter & _
+        "with prompt ""Please select a file or files"" default location alias """ & _
+        MyPath & """ multiple selections allowed false) as string" & vbNewLine & _
+        "set applescript's text item delimiters to """" " & vbNewLine & _
+        "return theFiles"
+    MyFiles = MacScript(MyScript)
+
+      If CInt(Split(Application.Version, ".")(0)) >= 15 Then 'excel 2016 support
+        MyFiles = Replace(MyFiles, ":", "/")
+        MyFiles = Replace(MyFiles, "Macintosh HD", "", Count:=1)
+    End If
+
+    On Error GoTo 0
+
+   SelectFileOnMac = MyFiles
+
+End Function
+
+Function SelectFileOnWindows(sFilters)
+
+    Dim fDialog As Office.FileDialog
+
+    SelectFileOnWindows = vbNullString
+
     Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
     With fDialog
         .AllowMultiSelect = False
@@ -78,32 +228,13 @@ Public Function LoadFile(sFilters As String, sType As String) As String
         .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
 
         If .show = True Then
-            LoadFile = .SelectedItems(1)
-            If sType = "Setup" Then Call ImportLangAnalysis(LoadFile)
+            SelectFileOnWindows = .SelectedItems(1)
         End If
     End With
-    Set fDialog = Nothing
 
+    Set fDialog = Nothing
 End Function
 
-Public Function LoadFolder() As String
-
-    Dim fDialog As Office.FileDialog
-
-    LoadFolder = ""
-    Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
-    With fDialog
-        .AllowMultiSelect = False
-        .Title = "Chose your directory"          'MSG_ChooseDir
-        .Filters.Clear
-
-        If .show = True Then
-            LoadFolder = .SelectedItems(1)
-        End If
-    End With
-    Set fDialog = Nothing
-
-End Function
 
 'Get the file extension of a string
 'Get the file extension of a file
@@ -246,7 +377,7 @@ Function GetValidationList(ChoicesListData As BetterArray, ChoicesLabelsData As 
     If (iChoiceIndex > 0) Then
         sValidationList = ChoicesLabelsData.Items(iChoiceIndex)
         For i = iChoiceIndex + 1 To iChoiceLastIndex
-            sValidationList = sValidationList & Application.International(xlListSeparator) & ChoicesLabelsData.Items(i)
+            sValidationList = sValidationList & "," & ChoicesLabelsData.Items(i)
         Next
     End If
 
@@ -466,11 +597,16 @@ Sub StatusBar_Updater(sCpte As Single)
 
     Dim CurrentStatus As Integer
     Dim pctDone As Integer
+    Dim bCurrEvent As Boolean
+
+    bCurrEvent = Application.ScreenUpdating
+
+    Application.ScreenUpdating = True
 
     CurrentStatus = (C_iNumberOfBars) * Round(sCpte / 100, 1)
-    SheetMain.Range(C_sRngUpdate).value = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "%" & TranslateMsg("MSG_BuildLL")
+    SheetMain.Range(C_sRngUpdate).value = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "% " & TranslateMsg("MSG_BuildLL")
 
-    DoEvents
+    Application.ScreenUpdating = bCurrEvent
 
 End Sub
 

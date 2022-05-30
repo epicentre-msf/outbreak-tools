@@ -1,0 +1,2 @@
+- Seems like we need to set the international / or not international formula in validation.
+- Need to add a error / Branching logic, so that international formulas are taken in account (in case of error)

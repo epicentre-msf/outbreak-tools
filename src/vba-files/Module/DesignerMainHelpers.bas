@@ -94,7 +94,7 @@ Public Function ControlForGenerate() As Boolean
     End If
 
     'Be sure the dictionnary is not opened
-    If Helpers.IsWkbOpened(Dir(SheetMain.Range(C_sRngLLDir).value & "\" & SheetMain.Range(C_sRngLLName).value & ".xlsb")) Then
+    If Helpers.IsWkbOpened(Dir(SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb")) Then
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseOutPut")
         SheetMain.Range(C_sRngLLDir).Interior.Color = GetColor("RedEpi")
         MsgBox TranslateMsg("MSG_CloseOutPut"), vbExclamation + vbOKOnly, TranslateMsg("MSG_Title_OutPut")
@@ -102,7 +102,8 @@ Public Function ControlForGenerate() As Boolean
     End If
 
     'Be sure the directory for the linelist exists
-    If Dir(SheetMain.Range(C_sRngLLDir).value, vbDirectory) = "" Then
+    'Seems like this step is not working on Mac
+    If Dir(SheetMain.Range(C_sRngLLDir).value & "*", vbDirectory) = vbNullString Then
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathLL")
         SheetMain.Range(C_sRngLLDir).Interior.Color = GetColor("RedEpi")
         MsgBox TranslateMsg("MSG_PathLL"), vbExclamation + vbOKOnly, TranslateMsg("MSG_TitleLL")

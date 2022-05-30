@@ -12,6 +12,16 @@ temp
 *temp\\.?*
 config.json
 *.test
+output_test
 output
+migration
+migrations
+outputs
+*Sheet1.cls
+*Sheet2.cls
+*Sheet3.cls
+config.json
 src/vba-files-aky
 src/vba-files-lla
+linelist_designer_aky.xlsb
+linelist_designer_lla.xlsb

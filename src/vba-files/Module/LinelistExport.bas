@@ -64,7 +64,7 @@ Function GetExportValues(ExportHeadersData As BetterArray, sSheetName As String,
                 If SheetVarNamesData.Includes(ExportHeadersData.Item(i)) Then
                     With ThisWorkbook.Worksheets(sSheetName)
                             'Column of filled data
-                            ExportColumn.FromExcelRange .Cells(C_eStartLinesLLData + 2, SheetVarNamesData.IndexOf(ExportHeadersData.Item(i))), DetectLastColumn:=False, DetectLastRow:=True
+                            ExportColumn.FromExcelRange .Cells(C_eStartlinesLLData + 2, SheetVarNamesData.IndexOf(ExportHeadersData.Item(i))), DetectLastColumn:=False, DetectLastRow:=True
                             'Adding the column
                             ExportTableData.Item(i) = ExportColumn.Items
                             ExportColumn.Clear
@@ -123,6 +123,7 @@ Sub Export(iTypeExport As Byte)
     Dim iWindowState As Integer
 
     Dim sPrevSheetName As String
+    Dim sFirstSheet As String
     Dim sPath As String
     Dim sDirectory As String
     Dim sSheetName As String
@@ -242,6 +243,7 @@ Sub Export(iTypeExport As Byte)
 
             'Adding the worksheets
             sPrevSheetName = .Worksheets(1).Name
+            sFirstSheet = .Worksheets(1).Name
 
 
             'Add Translation
@@ -320,6 +322,8 @@ Sub Export(iTypeExport As Byte)
             ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
             i = i + 1
         Wend
+
+        .Worksheets(sFirstSheet).Delete
     End With
     End If
 
