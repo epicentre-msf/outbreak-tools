@@ -163,7 +163,7 @@ Sub ImportMigrationData()
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
 
-    MsgBox "the following data :" & Chr(10) & Right(sMessage, Len(sMessage) - 3) & Chr(10) & "could not be imported.", vbInformation, "File import"
+    MsgBox "the following data :" & Chr(10) & Right(sMessage, Len(sMessage) - 3) & Chr(10) & "could not be imported.", vbinformation, "File import"
 
 
 End Sub
