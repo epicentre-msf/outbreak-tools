@@ -11,7 +11,7 @@ Sub ClicCmdGeoApp()
 
     iNumCol = ActiveCell.Column
 
-    If ActiveCell.Row > C_eStartLinesLLData + 1 Then
+    If ActiveCell.Row > C_eStartlinesLLData + 1 Then
 
         sType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).value
         Select Case sType
@@ -39,7 +39,7 @@ Sub ClicCmdAddRows()
     Application.EnableEvents = False
 
     For Each oLstobj In ActiveSheet.ListObjects
-        oLstobj.Resize Range(Cells(C_eStartLinesLLData, 1), Cells(oLstobj.DataBodyRange.Rows.Count + C_iNbLinesLLData + C_eStartLinesLLData, Cells(C_eStartLinesLLData, 1).End(xlToRight).Column))
+        oLstobj.Resize Range(Cells(C_eStartlinesLLData + 1, 1), Cells(oLstobj.DataBodyRange.Rows.Count + C_iNbLinesLLData + C_eStartlinesLLData + 1, Cells(C_eStartlinesLLData + 1, 1).End(xlToRight).Column))
     Next
 
     Call ProtectSheet
@@ -115,7 +115,7 @@ Sub EventValueChangeLinelist(oRange As Range)
     iNumCol = oRange.Column
     sControlType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).value
 
-    If oRange.Row > C_eStartLinesLLData + 1 Then
+    If oRange.Row > C_eStartlinesLLData + 1 Then
 
         Select Case sControlType
 
@@ -193,9 +193,9 @@ Sub EventValueChangeLinelist(oRange As Range)
         End Select
     End If
 
-    If oRange.Row = C_eStartLinesLLData And sControlType = C_sDictControlCustom Then
+    If oRange.Row = C_eStartlinesLLData And sControlType = C_sDictControlCustom Then
         'The name of custom variables has been updated, update the dictionary
-        sCustomVarName = ActiveSheet.Cells(C_eStartLinesLLData + 1, iNumCol).value
+        sCustomVarName = ActiveSheet.Cells(C_eStartlinesLLData + 1, iNumCol).value
         sNote = GetDictColumnValue(sCustomVarName, C_sDictHeaderSubLab)
         sLabel = Replace(oRange.value, sNote, "")
         sLabel = Replace(sLabel, Chr(10), "")
@@ -231,7 +231,7 @@ Sub EventOpenLinelist()
         BeginWork xlsapp:=Application
         '.Unprotect (C_sLLPassword)
 
-        iNbCols = .Cells(C_eStartLinesLLData, Columns.Count).End(xlToLeft).Column
+        iNbCols = .Cells(C_eStartlinesLLData, Columns.Count).End(xlToLeft).Column
 
         For i = 1 To iNbCols
 
@@ -240,10 +240,10 @@ Sub EventOpenLinelist()
                 'First take the data in memory (we need it since we don't know the data entered by the operator)
                 If Not hasData Then
                     Set LLEnteredData = New BetterArray
-                    LLEnteredData.FromExcelRange .Cells(C_eStartLinesLLData + 2, 1), DetectLastRow:=True, DetectLastColumn:=True
+                    LLEnteredData.FromExcelRange .Cells(C_eStartlinesLLData + 2, 1), DetectLastRow:=True, DetectLastColumn:=True
                     iDataLength = LLEnteredData.Length
                     'Resize the listObject to the current entered data + 1
-                    Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(iDataLength + C_eStartLinesLLData + 2, iNbCols))
+                    Set LoRng = .Range(.Cells(C_eStartlinesLLData + 1, 1), .Cells(iDataLength + C_eStartlinesLLData + 2, iNbCols))
                     .ListObjects("o" & ClearString(.Name)).Resize LoRng
                     hasData = True
                 End If
@@ -252,7 +252,7 @@ Sub EventOpenLinelist()
 
                 If iDataLength > 2 Then
                     'VarName of the actual sheet
-                    sVarName = .Cells(C_eStartLinesLLData + 1, i).value
+                    sVarName = .Cells(C_eStartlinesLLData + 1, i).value
                     'Get the entered list of the listauto
                     sAutoVariable = GetDictColumnValue(sVarName, C_sDictHeaderChoices)
 
@@ -265,7 +265,7 @@ Sub EventOpenLinelist()
                     If iAutoColumn > 0 Then
                         'Get the entered values for the auto
                         Set ListAutoData = New BetterArray
-                        ListAutoData.FromExcelRange ThisWorkbook.Worksheets(sAutoSheetName).Cells(C_eStartLinesLLData + 2, iAutoColumn), DetectLastColumn:=False, DetectLastRow:=True
+                        ListAutoData.FromExcelRange ThisWorkbook.Worksheets(sAutoSheetName).Cells(C_eStartlinesLLData + 2, iAutoColumn), DetectLastColumn:=False, DetectLastRow:=True
                         ListAutoData.Reverse
                         'Get validation list
                         sList = ListAutoData.ToString(Separator:=",", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
@@ -280,7 +280,7 @@ Sub EventOpenLinelist()
 
         If hasData Then
             'resize because data has been updated
-            Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_iNbLinesLLData + C_eStartLinesLLData - 1, iNbCols))
+            Set LoRng = .Range(.Cells(C_eStartlinesLLData + 1, 1), .Cells(C_iNbLinesLLData + C_eStartlinesLLData - 1, iNbCols))
             .ListObjects("o" & ClearString(.Name)).Resize LoRng
         End If
 

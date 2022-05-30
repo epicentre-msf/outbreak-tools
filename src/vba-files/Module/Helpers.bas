@@ -58,7 +58,7 @@ End Sub
 
 Public Sub RemoveGridLines(Wksh As Worksheet)
     Dim View As WorksheetView
-    
+
     For Each View In Wksh.Parent.Windows(1).SheetViews
         If View.Sheet.Name = Wksh.Name Then
             View.DisplayGridlines = False
@@ -110,7 +110,7 @@ End Function
 'The selection process depends on the operating system. Here is a simple
 'code for Mac, using applescript:
 
-'------------ FOLDER SELECTION ------------------------------------------------
+'----------------------------- FOLDER SELECTION --------------------------------
 Private Function SelectFolderOnMac() As String
     Dim FolderPath As String
     Dim RootFolder As String
@@ -130,10 +130,17 @@ Private Function SelectFolderOnMac() As String
 
     'Run the Script
     FolderPath = MacScript(Scriptstr)
+
+    If CInt(Split(Application.Version, ".")(0)) >= 15 Then 'excel 2016 support
+        FolderPath = Replace(FolderPath, ":", "/")
+        FolderPath = Replace(FolderPath, "Macintosh HD", "", Count:=1)
+    End If
+
     On Error GoTo 0
 
     If FolderPath <> "" Then
-        SelectFolderOnMac = FolderPath
+        'Remove the last ":" or "/"
+        SelectFolderOnMac = Mid(FolderPath, 1, (Len(FolderPath) - 1))
     End If
 End Function
 
@@ -142,7 +149,7 @@ End Function
 Private Function SelectFolderOnWindows() As String
 
     Dim fDialog As Office.FileDialog
-    
+
     SelectFolderOnWindows = vbNullString
 
     Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
@@ -160,7 +167,7 @@ Private Function SelectFolderOnWindows() As String
 End Function
 
 
-'-------------------------- FILE SELECTION -------------------------------------
+'------------------------------ FILE SELECTION ---------------------------------
 
 Function SelectFileOnMac(sFilter)
 
@@ -195,6 +202,12 @@ Function SelectFileOnMac(sFilter)
         "set applescript's text item delimiters to """" " & vbNewLine & _
         "return theFiles"
     MyFiles = MacScript(MyScript)
+
+      If CInt(Split(Application.Version, ".")(0)) >= 15 Then 'excel 2016 support
+        MyFiles = Replace(MyFiles, ":", "/")
+        MyFiles = Replace(MyFiles, "Macintosh HD", "", Count:=1)
+    End If
+
     On Error GoTo 0
 
    SelectFileOnMac = MyFiles
@@ -584,11 +597,16 @@ Sub StatusBar_Updater(sCpte As Single)
 
     Dim CurrentStatus As Integer
     Dim pctDone As Integer
+    Dim bCurrEvent As Boolean
+
+    bCurrEvent = Application.ScreenUpdating
+
+    Application.ScreenUpdating = True
 
     CurrentStatus = (C_iNumberOfBars) * Round(sCpte / 100, 1)
-    SheetMain.Range(C_sRngUpdate).value = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "%" & TranslateMsg("MSG_BuildLL")
+    SheetMain.Range(C_sRngUpdate).value = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "% " & TranslateMsg("MSG_BuildLL")
 
-    DoEvents
+    Application.ScreenUpdating = bCurrEvent
 
 End Sub
 

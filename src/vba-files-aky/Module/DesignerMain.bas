@@ -13,13 +13,16 @@ Sub LoadFileDic()
     BeginWork xlsapp:=Application
 
     'LoadFile is the procedure for loading the path to the dictionnary
-    sFilePath = Helpers.LoadFile("*.xlsb", "Setup") 'The
+    sFilePath = Helpers.LoadFile("*.xlsb") 'The
 
     'Update messages if the file path is correct
     If sFilePath <> "" Then
         SheetMain.Range(C_sRngPathDic).value = sFilePath
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ChemFich")
         SheetMain.Range(C_sRngPathDic).Interior.Color = vbWhite
+
+        'Import the languages after loading the setup file
+        Call ImportLangAnalysis(sFilePath)
     Else
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
@@ -33,7 +36,7 @@ Sub LoadFileLL()
     Dim sFilePath As String                      'Path to the linelist
 
     'LoadFile is the procedure for loading the path to the linelist
-    sFilePath = Helpers.LoadFile("*.xlsb", "LineList") 'The
+    sFilePath = Helpers.LoadFile("*.xlsb") 'The
 
     If sFilePath = "" Then Exit Sub
 
@@ -84,8 +87,7 @@ Sub LoadGeoFile()
     AdmNames.LowerBound = 1
     AdmNames.Push C_sAdm1, C_sAdm2, C_sAdm3, C_sAdm4, C_sHF, C_sNames, C_sHistoHF, C_sHistoGeo, C_sGeoMetadata
 
-    'Set xlsapp = New Excel.Application
-    sFilePath = Helpers.LoadFile("*.xlsx", "Geo")
+    sFilePath = Helpers.LoadFile("*.xlsx")
 
     If sFilePath <> "" Then
         'Open the geo workbook and hide the windows
@@ -204,7 +206,7 @@ Sub GenerateData()
 
 
     'translation of the Export, Dictionary and Choice sheets for the linelist
-    Call Translate_Manage
+    'Call Translate_Manage
 
     '--------------- Getting all required the Data
 
@@ -233,12 +235,22 @@ Sub GenerateData()
 
     'Creating the linelist using the dictionnary and choices data as well as export data
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
+    
+    'required temporary folder for analysis
+    On Error Resume Next
+        RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
+        MkDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" 'create a folder for sending all the data from designer
+    On Error GoTo 0
 
     Call DesignerBuildList.BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, sPath)
     DoEvents
 
     EndWork xlsapp:=Application
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
+    
+    On Error Resume Next
+        RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
+    On Error GoTo 0
 
     Call SetInputRangesToWhite
 
@@ -247,7 +259,7 @@ Sub GenerateData()
     If iOpenLL = vbYes Then
         Call OpenLL
     End If
-
+    
     'Setting the memory data to nothing
     Set DictHeaders = Nothing
     Set DictData = Nothing
@@ -341,8 +353,10 @@ End Sub
 
 
 
-Function FileNameControl(sName As String)
+Function FileNameControl(sName As String) As String
 'In the file name, replace forbidden characters with an underscore
+
+    FileNameControl = vbNullString
 
     sName = Replace(sName, "<", "_")
     sName = Replace(sName, ">", "_")

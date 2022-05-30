@@ -196,9 +196,9 @@ Public Const C_iNbLinesLLData           As Integer = 200                        
 Public Enum C_StartLines
     C_eStartLinesDictHeaders = 2                                                             'Starting lines for dictionary headers
     C_eStartLinesDictData = 3                                                                'Starting lines for dictionary data
-    C_eStartLinesLLMainSec = 4                                                              'Starting lines for first title of the linelist
-    C_eStartLinesLLSubSec = 5                                                                'Starting lines for second title of the linelist
-    C_eStartLinesLLData = 6                                                                  'Starting lines for the linelist data
+    C_eStartLinesLLMainSec = 5                                                              'Starting lines for first title of the linelist
+    C_eStartLinesLLSubSec = 6                                                                'Starting lines for second title of the linelist
+    C_eStartlinesLLData = 7                                                                  'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                                                             'Starting lines for export titles
     C_eStartLinesAdmData = 15                                                                'Starting lines for a Adm data
     C_eStartLinesExportSource = 5                                                            'Starting lines for export sources
