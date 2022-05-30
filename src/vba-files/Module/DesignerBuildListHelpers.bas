@@ -5,6 +5,7 @@ Option Explicit
 
 Public Sub TransferDesignerCodes(Wkb As Workbook)
 
+
     'Transfert form is for sending forms from the actual excel workbook to another
     Call TransferForm(Wkb, C_sFormGeo)
     Call TransferForm(Wkb, C_sFormShowHide)
@@ -68,37 +69,7 @@ End Sub
 '@sSheetName: the name of the Sheet in the designer we want to move
 
 Public Sub TransferSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String)
-
-    'Since We can't move worksheet from one instance to another
-    'we need to save as a temporary file and then move it to another instance.
-    'DesignerWorkbook is the actual workbook we want to copy from
-
     DesignerWorkbook.Worksheets(sSheetName).Copy After:=Wkb.Worksheets(sPrevSheetName)
-    'DoEvents
-'
-    'On Error Resume Next
-    '    Kill Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx"
-    'On Error GoTo 0
-'
-    'ActiveWorkbook.SaveAs Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx"
-    'ActiveWorkbook.Close
-'
-    'DoEvents
-'
-    'With xlsapp
-    '    .Workbooks.Open Filename:=Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx", UpdateLinks:=False
-'
-    '    .Sheets(sSheetName).Select
-    '    .Sheets(sSheetName).Copy After:=.Workbooks(1).Sheets(1)
-'
-    '    DoEvents
-    '    .Workbooks("Temp.xlsx").Close
-    'End With
-'
-    'DoEvents
-'
-    'Kill Environ("Temp") & Application.PathSeparator & "LinelistApp" & Application.PathSeparator & "Temp.xlsx"
-
 End Sub
 
 '-----
@@ -110,15 +81,19 @@ Sub TransferForm(Wkb As Workbook, sFormName As String)
 
     'The form is sent to the LinelisteApp folder
     On Error Resume Next
-    Kill (Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm")
+        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
+        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frx"
     On Error GoTo 0
 
     DoEvents
-    DesignerWorkbook.VBProject.VBComponents(sFormName).Export Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm"
-    Wkb.VBProject.VBComponents.Import Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm"
+    DesignerWorkbook.VBProject.VBComponents(sFormName).Export SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
+    Wkb.VBProject.VBComponents.Import SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
     DoEvents
 
-    Kill (Environ("Temp") & Application.PathSeparator & "LinelistApp" & "CopieUsf.frm")
+    On Error Resume Next
+        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
+        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frx"
+    On Error GoTo 0
 End Sub
 
 
@@ -642,7 +617,7 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
                         'It is either a variable name or a formula
                         If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
                             icolNumb = ColumnIndexData.Item(VarNameData.IndexOf(sAlphaValue))
-                            sAlphaValue = "'" & sSheetName & "'!" & Cells(C_eStartLinesLLData + 2, icolNumb).Address(False, True)
+                            sAlphaValue = "'" & sSheetName & "'!" & Cells(C_eStartlinesLLData + 2, icolNumb).Address(False, True)
                         ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
                                 sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
                         End If
@@ -680,7 +655,8 @@ End Function
 
 'Setting the min and the max validation
 Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAlertType As Byte, sTypeValidation As String, sMessage As String)
-
+    
+    On Error Resume Next
     With oRange.Validation
         .Delete
         Select Case LCase(sTypeValidation)
@@ -723,6 +699,7 @@ Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAler
         .ShowInput = True
         .ShowError = True
     End With
+    On Error GoTo 0
 End Sub
 
 

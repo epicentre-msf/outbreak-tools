@@ -1,6 +1,2 @@
-- Reduce the screen flickering when opening a workbook (find a way to hide it)
-- Solve the problem related to validation when the window is minimized (and/ or test it)
-- Avoid moving between windows when copying a worksheet
-- Split the panes for a sheet of type linelist
-- Seems like the application.international(xllistseparator) is not working
-when dealing with workbook only (try to find why.)
+- Seems like we need to set the international / or not international formula in validation.
+- Need to add a error / Branching logic, so that international formulas are taken in account (in case of error)

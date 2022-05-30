@@ -30,6 +30,8 @@ End Sub
 
 'Test of Opening the Control for Generate with different scenario
 
-
+Sub test()
+ LoadFile ("*.xlsx")
+End Sub
 
 'Test for the
