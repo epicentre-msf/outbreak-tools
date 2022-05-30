@@ -155,7 +155,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
                     i = 1
                     With Wkb.Worksheets(LLSheetNameData.Item(iCounterSheet))
                         While (.Cells(C_eStartlinesLLData, i).value <> "")
-                            DictVarName.Push .Cells(C_eStartlinesLLData, i).Name.Name
+                            DictVarName.Push .Cells(C_eStartlinesLLData + 1, i).value
                             i = i + 1
                         Wend
                     End With

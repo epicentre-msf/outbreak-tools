@@ -227,9 +227,9 @@ Sub GenerateData()
     'Create the translation Data
     Set TransData = New BetterArray
     TransData.FromExcelRange DesWkb.Worksheets(C_sParamSheetTranslation).Cells(C_eStartlinestransdata, 2), DetectLastRow:=True, DetectLastColumn:=True
-
+    
+    DoEvents
     Set DesWkb = Nothing
-
 
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
 
