@@ -9,7 +9,7 @@ Public Const C_sSheetFormulas           As String = "ControleFormule"           
 Public Const C_sSheetLLTranslation      As String = "linelist-translation"
 Public Const C_sSheetTemp               As String = "Temp"                              'Temporary sheet for data manipulation things
 Public Const C_sSheetMetadata           As String = "metadata"
-Public Const C_sSheetListAuto           As String = "list_auto_"
+Public Const C_sSheetChoiceAuto           As String = "list_auto_"
 
 'Sheets in the setup file: The all starts with Param
 
@@ -198,7 +198,7 @@ Public Enum C_StartLines
     C_eStartLinesDictData = 3                                                                'Starting lines for dictionary data
     C_eStartLinesLLMainSec = 5                                                              'Starting lines for first title of the linelist
     C_eStartLinesLLSubSec = 6                                                                'Starting lines for second title of the linelist
-    C_eStartlinesLLData = 7                                                                  'Starting lines for the linelist data
+    C_estartlineslldata = 7                                                                  'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                                                             'Starting lines for export titles
     C_eStartLinesAdmData = 15                                                                'Starting lines for a Adm data
     C_eStartLinesExportSource = 5                                                            'Starting lines for export sources
@@ -206,5 +206,6 @@ Public Enum C_StartLines
     C_eStartLinesChoicesData = 2                                                             'Starting lines of the choices Data
     C_eStartLinesExportData = 2                                                              'Starting lines of the export data
     C_eStartlinestransdata = 4                                                               'Starting lines for the translation data
+    C_eStartlinesListAuto = 1
 End Enum
 

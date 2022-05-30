@@ -93,6 +93,10 @@ Public Function LoadFolder() As String
 
 End Function
 
+Public Function isMac()
+isMac = Application.OperatingSystem Like "*Mac*"
+End Function
+
 'Load files and folders
 Public Function LoadFile(sFilters As String) As String
     LoadFile = vbNullString

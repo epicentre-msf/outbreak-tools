@@ -43,6 +43,10 @@ Attribute VB_Exposed = False
 
 
 
+
+
+
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -52,7 +56,7 @@ Private Sub CMD_Copier_Click()
     Dim T_temp As BetterArray
     Set T_temp = New BetterArray
     Dim geosheet As String
-    Dim Rng As Range
+    Dim rng As Range
 
     ActiveSheet.Unprotect (C_sLLPassword)
 

@@ -325,6 +325,9 @@ Sub AddChoices(Wksh As Worksheet, iSheetStartLine As Integer, iCol As Integer, _
     End With
 End Sub
 
+
+
+
 'Add Geo
 Sub AddGeo(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterArray, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
           iSheetSubSecStartLine As Integer, iDictLine As Integer, sVarName As String, sMessage As String, iNbshifted As Integer)
@@ -429,10 +432,12 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
 
         'ajout des formules de validation
         .Cells(iStartLine + 2, iCol).Validation.Delete
+        'Add name and reference for adm1 (in case someone adds one adm1)
+        Wkb.Names.Add Name:= C_sAdmName & "1" & "_column", RefersToR1C1:= "=" & C_sTabadm1 & "[" & SheetGeo.Cells(1, 1).value & "]"
 
         .Cells(iStartLine + 2, iCol).Validation.Add Type:=xlValidateList, _
                          AlertStyle:=xlValidAlertWarning, Operator:=xlBetween, _
-                         Formula1:="=" & C_sSheetGeo & "!" & SheetGeo.Range(C_sTabadm1).Columns(1).Address
+                         Formula1:="=" & C_sAdmName & 1 & "_column"
 
         .Cells(iStartLine + 2, iCol).Validation.IgnoreBlank = True
         .Cells(iStartLine + 2, iCol).Validation.InCellDropdown = True
@@ -455,16 +460,19 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
         LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
         .Cells(iRow + 2, 1).value = ""
+        .Cells(iRow + 2, DictHeaders.Length + 1).value = iDictLine + 4
         'Admin 3
         .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
          LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "3"
         LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
         .Cells(iRow + 2, 1).value = ""
+        .Cells(iRow + 2, DictHeaders.Length + 1).value = iDictLine + 3
         'Admin 2
         .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
          LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "2"
         LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
         .Cells(iRow + 2, 1).value = ""
+        .Cells(iRow + 2, DictHeaders.Length + 1).value = iDictLine + 2
 
          Set LineValues = Nothing
     End With
@@ -617,7 +625,7 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
                         'It is either a variable name or a formula
                         If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
                             icolNumb = ColumnIndexData.Item(VarNameData.IndexOf(sAlphaValue))
-                            sAlphaValue = "'" & sSheetName & "'!" & Cells(C_eStartlinesLLData + 2, icolNumb).Address(False, True)
+                            sAlphaValue = "'" & sSheetName & "'!" & Cells(C_estartlineslldata + 2, icolNumb).Address(False, True)
                         ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
                                 sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
                         End If
@@ -641,7 +649,7 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
     If Not isError Then
         sAlphaValue = FormulaAlphaData.ToString(Separator:="", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
         'If local, get the local formula
-        If (bLocal) Then
+        If (bLocal) And Not isMac() Then
             ValidationFormula = Helpers.GetInternationalFormula(sAlphaValue, Wksh)
         Else
             ValidationFormula = "=" & sAlphaValue
@@ -702,6 +710,32 @@ Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAler
     On Error GoTo 0
 End Sub
 
+Public Sub UpdateChoiceAutoHeaders(Wkb As Workbook, ChoiceAutoVarData As BetterArray, DictHeaders As BetterArray)
+
+    Dim i As Integer
+    Dim sVarName As String
+    Dim sSheetName As String
+    Dim iIndex As Integer
+    i = 1
+    With Wkb
+        sVarName = .Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderVarName)).value
+        While (sVarName <> vbNullString)
+            If ChoiceAutoVarData.Includes(sVarName) Then
+                sSheetName = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)).value
+                iIndex = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.Length + 1).value
+                .Worksheets(sSheetName).Unprotect (C_sLLPassword)
+                .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).value = C_sDictControlChoiceAuto & "_origin"
+                .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).Font.Color = vbWhite
+                .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).FormulaHidden = True
+                  .Worksheets(sSheetName).Protect Password:=(C_sLLPassword), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
+            End If
+            i = i + 1
+            sVarName = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.IndexOf(C_sDictHeaderVarName)).value
+        Wend
+    End With
+End Sub
+
 
 'Ensure a sheet name has good name
 Public Function EnsureGoodSheetName(ByVal sSheetName As String) As String
@@ -714,3 +748,4 @@ Public Function EnsureGoodSheetName(ByVal sSheetName As String) As String
         EnsureGoodSheetName = sSheetName & "_"
     End If
 End Function
+

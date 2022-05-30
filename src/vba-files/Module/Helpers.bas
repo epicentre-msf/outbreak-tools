@@ -93,6 +93,10 @@ Public Function LoadFolder() As String
 
 End Function
 
+Public Function isMac()
+isMac = Application.OperatingSystem Like "*Mac*"
+End Function
+
 'Load files and folders
 Public Function LoadFile(sFilters As String) As String
     LoadFile = vbNullString
@@ -454,7 +458,10 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
     sheetExists = False
 
     For Each DestWksh In DestWkb.Worksheets
-        If DestWksh.Name = sSheetName Then sheetExists = True
+        If DestWksh.Name = sSheetName Then
+            sheetExists = True
+            Exit For
+        End If
     Next
 
     'Clear the contents if the sheet exists, or create a new sheet if Not
@@ -477,7 +484,7 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
                              Optional iFiltindex3 As Integer = 0, Optional sValue3 As String = vbNullString, _
                              Optional returnIndex As Integer = -99, _
                              Optional bAllData As Boolean = True) As BetterArray
-    Dim Rng As Range
+    Dim rng As Range
     Dim Data As BetterArray
     Dim breturnAllData As Boolean
 
@@ -496,7 +503,7 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
 
     End With
 
-    Set Rng = lo.Range.SpecialCells(xlCellTypeVisible)
+    Set rng = lo.Range.SpecialCells(xlCellTypeVisible)
 
     If returnIndex > 0 Then
         breturnAllData = False
@@ -511,7 +518,7 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
             .Visible = xlSheetHidden
             .Cells.Clear
 
-            Rng.Copy Destination:=.Cells(1, 1)
+            rng.Copy Destination:=.Cells(1, 1)
 
             Set Data = New BetterArray
             Data.LowerBound = 1
@@ -534,17 +541,17 @@ End Function
 'Get unique values of one range in a listobject
 Function GetUniquelo(lo As ListObject, iIndex As Integer) As BetterArray
 
-    Dim Rng As Range
+    Dim rng As Range
     Dim Data As BetterArray
 
-    Set Rng = lo.ListColumns(iIndex).DataBodyRange
+    Set rng = lo.ListColumns(iIndex).DataBodyRange
 
     'Copy and paste to temp
     With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
 
-            Rng.Copy Destination:=.Cells(1, 1)
+            rng.Copy Destination:=.Cells(1, 1)
 
             Set Data = New BetterArray
             Data.LowerBound = 1
@@ -559,7 +566,7 @@ Function GetUniquelo(lo As ListObject, iIndex As Integer) As BetterArray
     Set GetUniquelo = Data.Clone()
 
     Set Data = Nothing
-    Set Rng = Nothing
+    Set rng = Nothing
 
 End Function
 
