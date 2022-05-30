@@ -6,7 +6,7 @@ Attribute VB_Name = "LinelistDictionary"
 'and Find the values of one variable of the dictionary given a condition
 'on another variable. The Goal is to ease as much as possible the process
 'behind acessing values of the dictionary so that we don't border ourselves
-'with that. If you also wan to get an array instead of a BetterArray you
+'with that. If you also want to get an array instead of a BetterArray you
 'can just convert the betterarray to array by retrieving the items of the
 'BetterArray:
 'Dim myArray()
@@ -26,9 +26,9 @@ Function GetDictionaryHeaders() As BetterArray
 
     Set DictHeaders = New BetterArray
     DictHeaders.LowerBound = 1
-    
+
     Set Wkb = ThisWorkbook
-    DictHeaders.FromExcelRange Wkb.worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=False
+    DictHeaders.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=False
     'Set the Array
 
     Set GetDictionaryHeaders = DictHeaders.Clone()
@@ -58,12 +58,12 @@ Function GetDictionaryColumn(sColname As String) As BetterArray
     Dim ColumnData As BetterArray
     Set ColumnData = New BetterArray
     ColumnData.LowerBound = 1
-    
+
     'Then we check if the colname is in the headers, if not, you end up with
     'Empty BetterArray
 
     If isInDictHeaders(sColname) Then
-        With ThisWorkbook.worksheets(C_sParamSheetDict)
+        With ThisWorkbook.Worksheets(C_sParamSheetDict)
             ColumnData.FromExcelRange .ListObjects("o" & ClearString(C_sParamSheetDict)).ListColumns(sColname).DataBodyRange
         End With
     End If
@@ -76,11 +76,11 @@ Function GetDictionaryData() As BetterArray
     Dim DictData As BetterArray
     Set DictData = New BetterArray
     DictData.LowerBound = 1
-    
-    With ThisWorkbook.worksheets(C_sParamSheetDict)
+
+    With ThisWorkbook.Worksheets(C_sParamSheetDict)
          DictData.FromExcelRange .Cells(2, 1), DetectLastRow:=True, DetectLastColumn:=True
     End With
-    
+
     Set GetDictionaryData = DictData.Clone
     Set DictData = Nothing
 End Function
@@ -90,29 +90,29 @@ Function GetChoicesData() As BetterArray
     Dim ChoicesData As BetterArray
     Set ChoicesData = New BetterArray
     ChoicesData.LowerBound = 1
-    
-    With ThisWorkbook.worksheets(C_sParamSheetChoices)
+
+    With ThisWorkbook.Worksheets(C_sParamSheetChoices)
         .Visible = xlSheetHidden
          ChoicesData.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
          .Visible = xlSheetVeryHidden
     End With
-    
+
     Set GetChoicesData = ChoicesData.Clone
     Set ChoicesData = Nothing
 End Function
 
-'Retrieve all the Trans data, excluding the headers
+'Retrieve all the Translation data, excluding the headers
 Function GetTransData() As BetterArray
     Dim TransData As BetterArray
     Set TransData = New BetterArray
     TransData.LowerBound = 1
-    
-    With ThisWorkbook.worksheets(C_sParamSheetTranslation)
+
+    With ThisWorkbook.Worksheets(C_sParamSheetTranslation)
         .Visible = xlSheetHidden
          TransData.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
          .Visible = xlSheetVeryHidden
     End With
-    
+
     Set GetTransData = TransData.Clone
     Set TransData = Nothing
 End Function
@@ -131,15 +131,15 @@ Function GetDictDataFromCondition(sColumnName As String, sCondition As String, O
         iColIndex = GetDictionaryIndex(sColumnName)
 
         'First be sure the dictionnary is filtered on column name:
-        With ThisWorkbook.worksheets(C_sParamSheetDict)
+        With ThisWorkbook.Worksheets(C_sParamSheetDict)
             With .ListObjects("o" & ClearString(C_sParamSheetDict)).Range
                .AutoFilter Field:=iColIndex, Criteria1:=sCondition
             End With
             Set Rng = .ListObjects("o" & ClearString(C_sParamSheetDict)).Range.SpecialCells(xlCellTypeVisible)
         End With
-        
+
         'Take the special cells and copy the data
-        With ThisWorkbook.worksheets(C_sSheetTemp)
+        With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
             Rng.Copy Destination:=.Cells(1, 1)
@@ -150,7 +150,7 @@ Function GetDictDataFromCondition(sColumnName As String, sCondition As String, O
             Else
                 ColumnData.FromExcelRange .Cells(2, 1), DetectLastColumn:=True, DetectLastRow:=True
             End If
-            
+
             .Cells.Clear
             .Visible = xlSheetVeryHidden
         End With
@@ -179,48 +179,30 @@ Function GetDictColumnValue(sVarName As String, sColname As String) As String
     Set VarNameData = Nothing
 End Function
 
-'Retrieve two variable names from Two conditions
 
-'Function Get2VarNamesFromCondition(sColumnName1 As String, sColumnName2 As String, _
-'                                 sCondition1 As String, sCondition2 As String, Optional bVarNameonly = False) As BetterArray
-'    Dim ColumnsData As BetterArray
-'    Dim iColIndex1 As Integer
-'    Dim icolIndex2 As Integer
-'    Dim Rng As Range
-'
-'    If isInDictHeaders(sColumName1) And isInDictHeaders(sColumnName2) Then
-'        'Get the indexes
-'        iColIndex1 = GetDictionaryIndex(sColunmName1)
-'        icolIndex2 = GetDictionaryIndex(sColumnName2)
-'
-'        'Set the filters
-'        With ThisWorkbook.Worksheets(C_sParamSheetDict)
-'
-'            With .ListObjects("o" & ClearString(C_sParamSheetDict)).Range
-'               .AutoFilter Field:=iColIndex1, Criteria1:=sCondition1
-'               .AutoFilter Field:=icolIndex2, Critera1:=sCondition2
-'            End With
-'            Set Rng = .ListObjects("o" & ClearString(C_sParamSheetDict)).Range.SpecialCells(xlCellTypeVisible)
-'            ColumnData.FromExcelRange Rng, DetectLastColumn:=False, DetectLastRow:=False
-'        End With
-'
-'          'Take the special cells
-'        'With ThisWorkbook.Worksheets(C_sSheetTemp)
-'            '.Visible = xlSheetHidden
-'            '.Cells.Clear
-'            'Rng.Copy Destination:=.Cells(1, 1)
-'            'Set ColumnData = New BetterArray
-'            'ColumnData.FromExcelRange .Cells(2, iColIndex), DetectLastColumn:=False, DetectLastRow:=True
-'            '.Cells.Clear
-'            '.Visible = xlSheetVeryHidden
-'        'End With
-'
-'
-'
-'    End If
-'
-'
-'
-'End Function
-'
+'Change value of one variable and one column in the dictionary
 
+Sub UpdateDictionaryValue(sVarName As String, sColname As String, sNewValue As String)
+
+    Dim VarNameData As BetterArray
+    Dim ColnameData As BetterArray
+    Dim iRow As Integer
+    Dim iColumn As Integer
+
+    Set VarNameData = GetDictionaryColumn(C_sDictHeaderVarName)
+
+    If VarNameData.Includes(sVarName) Then
+        If isInDictHeaders(sColname) Then
+            iColumn = GetDictionaryIndex(sColname)
+            iRow = VarNameData.IndexOf(sVarName) + 1
+
+            If iRow > 0 And iColumn > 0 Then
+                With ThisWorkbook.Worksheets(C_sParamSheetDict)
+                    .Cells(iRow, iColumn).value = Application.WorksheetFunction.Trim(sNewValue)
+                End With
+            End If
+
+        End If
+    End If
+
+End Sub
