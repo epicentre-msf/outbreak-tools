@@ -12,3 +12,6 @@ temp
 *temp\\.?*
 config.json
 *.test
+output
+src/vba-files-aky
+src/vba-files-lla
