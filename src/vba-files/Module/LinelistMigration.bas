@@ -17,11 +17,13 @@ Sub ImportMigrationData()
    'Import exported data into the linelist
 
     Dim wbkexp As Workbook, wbkLL As Workbook
-    Dim shData As Worksheet, shSource As Worksheet, shTarget As Worksheet
+    Dim shData As Worksheet, shSource As Worksheet, shTarget As Worksheet, ShMain As Worksheet
     Dim lstobj  As ListObject
-    Dim iLastSh As Integer, iLastexp As Integer, i As Integer, j As Integer
-    Dim iRows As Integer, iCols As Integer, iStart As Integer, iColExp As Integer, iRowTarget As Integer, iColTarget As Integer
-    Dim sLabel As String, sPath As String
+    Dim iLastSh As Integer, iLastexp As Integer, i As Long, j As Long
+    Dim lgRows As Long, iCols As Integer, lgStart As Long, iColExp As Integer, lgRowTarget As Long, iColTarget As Integer
+    Dim sLabel As String, sPath As String, sMessage As String
+
+    Set ShMain = Sheets(ActiveSheet.Name)
 
     Set wbkLL = ActiveWorkbook
 
@@ -41,7 +43,7 @@ Sub ImportMigrationData()
 
     For Each shData In wbkexp.Sheets
 
-        If shData.Name <> "Dictionary" And shData.Name <> "Choices" And shData.Name <> "Translations" Then
+        If LCase(shData.Name) <> "dictionary" And LCase(shData.Name) <> "choices" And LCase(shData.Name) <> "translation" Then
 
             For i = 1 To wbkLL.Sheets.Count
 
@@ -72,8 +74,8 @@ Sub ImportMigrationData()
         If LCase(shSource.Name) = "admin_exp" Then
 
             shSource.Select
-            iRows = shSource.Cells(2, 1).End(xlDown).Row
-            shSource.Range(Cells(2, 2), Cells(iRows, 2)).Copy
+            lgRows = shSource.Cells(2, 1).End(xlDown).Row
+            shSource.Range(Cells(2, 2), Cells(lgRows, 2)).Copy
             shTarget.Select
             Range("C15").Select
             ActiveSheet.Paste
@@ -81,26 +83,26 @@ Sub ImportMigrationData()
         Else
 
             iCols = shSource.Cells(1, 1).End(xlToRight).Column
-            iRows = shSource.Cells(1, 1).End(xlDown).Row
-            iStart = shTarget.Cells.Find("*", SearchOrder:=xlByRows, SearchDirection:=xlPrevious, LookIn:=xlValues).Row + 1
+            lgRows = shSource.Cells(1, 1).End(xlDown).Row
+            lgStart = shTarget.Cells.Find("*", SearchOrder:=xlByRows, SearchDirection:=xlPrevious, LookIn:=xlValues).Row + 1
 
             shTarget.Select
             ActiveSheet.Unprotect (C_sLLPassword)
 
             For Each lstobj In shTarget.ListObjects
                 If lstobj.Name = "o" & shTarget.Name Then
-                    iRowTarget = shTarget.ListObjects(lstobj.Name).ListRows.Count
-                    If iRowTarget < iRows Then
+                    lgRowTarget = shTarget.ListObjects(lstobj.Name).ListRows.Count
+                    If lgRowTarget < lgRows Then
                         Application.EnableEvents = False
-                        lstobj.Resize Range(Cells(iStart - 1, 1), Cells(iRows + iStart, Cells(iStart - 1, 1).End(xlToRight).Column))
+                        lstobj.Resize Range(Cells(lgStart - 1, 1), Cells(lgRows + lgStart, Cells(lgStart - 1, 1).End(xlToRight).Column))
                         Application.EnableEvents = True
-                        iRowTarget = shTarget.ListObjects(lstobj.Name).ListRows.Count
+                        lgRowTarget = shTarget.ListObjects(lstobj.Name).ListRows.Count
                         Exit For
                     End If
                 End If
             Next
 
-            Sheets("admin").Select
+            ShMain.Select
 
             j = 1
 
@@ -127,41 +129,14 @@ Sub ImportMigrationData()
 
                     If iColTarget > 0 And Not shTarget.Cells(8, j).HasFormula Then
                         Application.EnableEvents = False
-                            shSource.Range(Cells(2, iColExp), Cells(iRows, iColExp)).Copy Destination:=shTarget.Cells(iStart, iColTarget)
+                            shSource.Range(Cells(2, iColExp), Cells(lgRows, iColExp)).Copy Destination:=shTarget.Cells(lgStart, iColTarget)
                         Application.EnableEvents = True
                         shTarget.Columns(iColTarget).EntireColumn.AutoFit
                     End If
 
                 Else
 
-                    If Not Sheets("Dictionary").Columns(1).Find(What:=sLabel, LookAt:=xlWhole) Is Nothing Then
-
-                        Dim sOtherSheet As String
-                        Dim iRowOther As Integer
-
-                        iRowOther = Sheets("Dictionary").Columns(1).Find(What:=sLabel, LookAt:=xlWhole).Row
-                        sOtherSheet = Sheets("Dictionary").Cells(iRowOther, 5).value
-
-                        If SheetExist(sOtherSheet) = True Then
-
-                            If Not Sheets(sOtherSheet).Rows(7).Find(What:=sLabel, LookAt:=xlWhole) Is Nothing Then
-
-                                    shSource.Select
-
-                                    iColTarget = Sheets(sOtherSheet).Rows(7).Find(What:=sLabel, LookAt:=xlWhole).Column
-                                    iColExp = shSource.Rows(1).Find(What:=sLabel, LookAt:=xlWhole).Column
-
-                                    If iColTarget > 0 And Not shSource.Cells(8, j).HasFormula Then
-                                        Application.EnableEvents = False
-                                            shSource.Range(Cells(2, iColExp), Cells(iRows, iColExp)).Copy Destination:=Sheets(sOtherSheet).Cells(iStart, iColTarget)
-                                        Application.EnableEvents = True
-                                        Sheets(sOtherSheet).Columns(iColTarget).EntireColumn.AutoFit
-                                    End If
-                                End If
-
-                            End If
-
-                    End If
+                    sMessage = sMessage & " / " & sLabel & " (Sheet " & Replace(shSource.Name, "_Exp", "") & ")"
 
                 End If
 
@@ -183,12 +158,13 @@ Sub ImportMigrationData()
 
     Next i
 
-    Sheets("admin").Select
+    ShMain.Select
 
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
 
-    MsgBox "Import terminé"
+    MsgBox "the following data :" & Chr(10) & Right(sMessage, Len(sMessage) - 3) & Chr(10) & "could not be imported.", vbinformation, "File import"
+
 
 End Sub
 
