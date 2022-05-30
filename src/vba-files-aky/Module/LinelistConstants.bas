@@ -9,6 +9,7 @@ Public Const C_sSheetFormulas           As String = "ControleFormule"           
 Public Const C_sSheetLLTranslation      As String = "linelist-translation"
 Public Const C_sSheetTemp               As String = "Temp"                              'Temporary sheet for data manipulation things
 Public Const C_sSheetMetadata           As String = "metadata"
+Public Const C_sSheetListAuto           As String = "list_auto_"
 
 'Sheets in the setup file: The all starts with Param
 
@@ -133,7 +134,7 @@ Public Const C_sTabExcelFunctions        As String = "T_XlsFonctions"           
 Public Const C_sTabASCII                 As String = "T_ascii"                             'Ascii characters table
 
 
-'PROGRAM NAMES ==================================================================================
+'PROGRAM NAMES ===============================================================================================================
 'Program names are used for setting programs to buttons added in the linelist
 
 Public Const C_sCmdShowHideName As String = "ClicCmdShowHide" 'ShowHideCommand
@@ -195,9 +196,9 @@ Public Const C_iNbLinesLLData           As Integer = 200                        
 Public Enum C_StartLines
     C_eStartLinesDictHeaders = 2                                                             'Starting lines for dictionary headers
     C_eStartLinesDictData = 3                                                                'Starting lines for dictionary data
-    C_eStartLinesLLMainSec = 4                                                              'Starting lines for first title of the linelist
-    C_eStartLinesLLSubSec = 5                                                                'Starting lines for second title of the linelist
-    C_eStartLinesLLData = 6                                                                  'Starting lines for the linelist data
+    C_eStartLinesLLMainSec = 5                                                              'Starting lines for first title of the linelist
+    C_eStartLinesLLSubSec = 6                                                                'Starting lines for second title of the linelist
+    C_eStartlinesLLData = 7                                                                  'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                                                             'Starting lines for export titles
     C_eStartLinesAdmData = 15                                                                'Starting lines for a Adm data
     C_eStartLinesExportSource = 5                                                            'Starting lines for export sources

@@ -73,58 +73,44 @@ End Function
 Sub ImportLangAnalysis(sPath As String)
 'Import languages from the setup file and sheets Translation and Analysis
 
-   Dim sAdr1 As String, sAdr2 As String, sNomFic As String
 
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
+    Dim Wkb As Workbook
+    Dim sAdr1 As String
+    Dim sAdr2 As String
+    Dim src As Range
+    Dim dest As Range
 
-    SheetDesTranslation.Select
-    SheetDesTranslation.[T_Lst_Lang].Select
-    SheetDesTranslation.Range([T_Lst_Lang], Selection.End(xlToRight)).ClearContents
+    With SheetDesTranslation
+        .Range(.Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").Column), _
+               .Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").End(xlToRight).Column)).ClearContents
+    End With
 
-    SheetSetTranslation.Select
-    SheetSetTranslation.Unprotect C_sDesignerPassword 'Default password for the designer
-    Cells.Delete
+    SheetSetTranslation.Cells.Clear
 
-    SheetAnalysis.Cells.Delete
-
-    SheetMain.Select
-
+    BeginWork xlsapp:=Application
     Application.EnableEvents = False
-        Workbooks.Open Filename:=sPath
-    Application.EnableEvents = True
+    Application.EnableAnimations = False
 
-    Sheets("Translations").Range("Tab_Translations[#Headers]").Copy
+    Set Wkb = Workbooks.Open(Filename:=sPath)
 
-    sNomFic = Dir(sPath)
+    'Copy the languages
+    Set src = Wkb.Worksheets("Translations").ListObjects("Tab_Translations").HeaderRowRange
+    Set dest = SheetDesTranslation.Range("T_Lst_Lang")
+    src.Copy dest
 
-    DesignerWorkbook.Activate
-    SheetDesTranslation.[T_Lst_Lang].PasteSpecial
 
-    Windows(sNomFic).Activate
-    Sheets("Translations").Select
-    Cells.Copy
+    'Copy the translation data
+    Set src = Wkb.Worksheets("Translations").ListObjects("Tab_Translations").Range
+    Set dest = SheetSetTranslation.Range("A" & C_eStartlinestransdata)
+    src.Copy dest
 
-    DesignerWorkbook.Activate
-    SheetSetTranslation.Range("A1").PasteSpecial
-    SheetSetTranslation.Protect C_sDesignerPassword 'Default password for the designer
+    'DesignerWorkbook.Activate
+    'SheetAnalysis.Range("A1").PasteSpecial
 
-    Windows(sNomFic).Activate
-    Sheets("Analysis").Select
-    Cells.Copy
+    sAdr1 = SheetDesTranslation.Range("T_Lst_Lang").Address
+    sAdr2 = SheetDesTranslation.Range("T_Lst_Lang").End(xlToRight).Address
 
-    DesignerWorkbook.Activate
-    SheetAnalysis.Range("A1").PasteSpecial
-
-    Windows(sNomFic).Close
-
-    sAdr1 = SheetDesTranslation.[T_Lst_Lang].Address
-    sAdr2 = SheetDesTranslation.[T_Lst_Lang].End(xlToRight).Address
-
-    SheetMain.Select
-    SheetMain.[RNG_LangSetup].value = ""
-    SheetMain.[RNG_LangSetup].Select
-    With Selection.Validation
+    With SheetMain.Range(C_sRngLangSetup).Validation
         .Delete
         .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:= _
         xlBetween, Formula1:="='" & SheetDesTranslation.Name & "'!" & sAdr1 & ":" & sAdr2
@@ -138,10 +124,15 @@ Sub ImportLangAnalysis(sPath As String)
         .ShowError = True
     End With
 
-    SheetMain.[RNG_LangSetup].value = SheetSetTranslation.Cells(4, 2).value
+    Wkb.Close
+    Set Wkb = Nothing
+    Set src = Nothing
+    Set dest = Nothing
 
-    Application.ScreenUpdating = True
-    Application.DisplayAlerts = True
+    SheetMain.Range(C_sRngLangSetup).value = SheetSetTranslation.Cells(C_eStartlinestransdata, 1).value
+    EndWork xlsapp:=Application
+    Application.EnableEvents = True
+    Application.EnableAnimations = True
 End Sub
 
 Sub Translate_Manage()

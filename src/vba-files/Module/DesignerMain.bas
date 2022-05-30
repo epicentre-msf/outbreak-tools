@@ -206,7 +206,7 @@ Sub GenerateData()
 
 
     'translation of the Export, Dictionary and Choice sheets for the linelist
-    Call Translate_Manage
+    'Call Translate_Manage
 
     '--------------- Getting all required the Data
 
@@ -235,12 +235,22 @@ Sub GenerateData()
 
     'Creating the linelist using the dictionnary and choices data as well as export data
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
+    
+    'required temporary folder for analysis
+    On Error Resume Next
+        RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
+        MkDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" 'create a folder for sending all the data from designer
+    On Error GoTo 0
 
     Call DesignerBuildList.BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, sPath)
     DoEvents
 
     EndWork xlsapp:=Application
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
+    
+    On Error Resume Next
+        RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
+    On Error GoTo 0
 
     Call SetInputRangesToWhite
 
@@ -249,7 +259,7 @@ Sub GenerateData()
     If iOpenLL = vbYes Then
         Call OpenLL
     End If
-
+    
     'Setting the memory data to nothing
     Set DictHeaders = Nothing
     Set DictData = Nothing
