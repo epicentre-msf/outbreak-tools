@@ -5,28 +5,28 @@ Option Explicit
 Public iGeoType As Byte
 
 Sub ClicCmdGeoApp()
-    
+
     Dim iNumCol As Integer
     Dim sType As String
 
     iNumCol = ActiveCell.Column
     ActiveSheet.Unprotect (C_sLLPassword)
-    
+
     'On Error GoTo fin
     If ActiveCell.Row > C_eStartLinesLLData Then
-        
+
         sType = GetDictColumnValue(ActiveSheet.Cells(C_eStartLinesLLData, iNumCol).Name.Name, C_sDictHeaderControl) 'parce qu'un seul .Name ne suffit pas...
-        
+
         Select Case sType
-        
+
         Case C_sDictControlGeo
             iGeoType = 0
             Call LoadGeo(iGeoType)
-    
+
         Case C_sDictControlHf
             iGeoType = 1
             Call LoadGeo(iGeoType)
-    
+
         Case Else
             MsgBox "Vous n'etes pas sur la bonne cellule" 'MSG_WrongCells
             Call ProtectSheet
@@ -52,11 +52,11 @@ Sub ClicCmdAddRows()
 
     ActiveSheet.Unprotect (C_sLLPassword)
     Application.EnableEvents = False
-    
+
     For Each oLstobj In ActiveSheet.ListObjects
         oLstobj.Resize Range(Cells(C_eStartLinesLLData, 1), Cells(oLstobj.DataBodyRange.Rows.Count + C_iNbLinesLLData + C_eStartLinesLLData, Cells(C_eStartLinesLLData, 1).End(xlToRight).Column))
     Next
-    
+
     Call ProtectSheet
     Application.EnableEvents = True
 End Sub
@@ -72,7 +72,7 @@ Sub ClicCmdExport()
     With F_Export
         i = 2
         While i <= 6
-            If Not isError(Sheets("Exports").Cells(i, 4).value) Then 'lla
+            If Not isError(Sheets("Exports").Cells(i, 4).value) Then
                 If LCase(Sheets("Exports").Cells(i, 4).value) <> "active" Then
                     .Controls("CMD_Export" & i - 1).Visible = False
                 Else
@@ -86,7 +86,7 @@ Sub ClicCmdExport()
         .CMD_NouvCle.Top = iHeight + 5
         '.CMD_NouvCle.Visible = True
         iHeight = iHeight + 24 + C_iCmdHeight
-    
+
         .CMD_Retour.Top = iHeight + 5
         '.CMD_Retour.Visible = True
         iHeight = .CMD_Retour.Top + .CMD_Retour.Height + 24 + 10
@@ -98,13 +98,13 @@ End Sub
 
 
 Sub ClicCmdDebug()
-    DebugMode = True
+    Static DebugMode As Boolean
     Dim pwd As String
     Dim sh As Worksheet
     pwd = Inputbox("Provide the debugging password", "DEBUG MODE", "1234")
 
     If pwd = C_sLLPassword Then
-        For Each sh In ThisWorkbook.worksheets
+        For Each sh In ThisWorkbook.Worksheets
             If sh.protectcontents = True Then
                 sh.Unprotect pwd
             End If
@@ -120,7 +120,7 @@ Sub EventSheetLineListPatient(oRange As Range)
     Dim T_geo As BetterArray
     Set T_geo = New BetterArray
     Dim sList As String
-    
+
     BeginWork xlsapp:=Application
     ActiveSheet.Unprotect (C_sLLPassword)
         If oRange.Row > C_eStartLinesLLData Then
@@ -134,10 +134,10 @@ Sub EventSheetLineListPatient(oRange As Range)
                 oRange.Offset(, 3).Validation.Delete
                 oRange.Offset(, 3).value = ""
                 'First Geo adm1
-                
+
                 If oRange.value <> "" Then
                     'Filter on adm1
-                    Set T_geo = FilterLoTable(ThisWorkbook.worksheets(C_sSheetGeo).ListObjects(C_sTabADM2), 1, oRange.value, returnIndex:=2)
+                    Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm2), 1, oRange.value, returnIndex:=2)
                     'Build the validation list for adm2
                     sList = T_geo.ToString(Separator:=",", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
                     Call Helpers.SetValidation(oRange.Offset(, 1), sList, 2)
@@ -149,24 +149,24 @@ Sub EventSheetLineListPatient(oRange As Range)
                 oRange.Offset(, 1).value = vbNullString
                 oRange.Offset(, 2).Validation.Delete
                 oRange.Offset(, 2).value = vbNullString
-        
+
                 If oRange.value <> vbNullString Then
                     'Take the adm3 table
-                    Set T_geo = FilterLoTable(ThisWorkbook.worksheets(C_sSheetGeo).ListObjects(C_sTabADM3), 1, oRange.Offset(, -1).value, 2, oRange.value, returnIndex:=3)
+                    Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm3), 1, oRange.Offset(, -1).value, 2, oRange.value, returnIndex:=3)
                     sList = T_geo.ToString(Separator:=",", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
                     Call Helpers.SetValidation(oRange.Offset(, 1), sList, 2)
                     T_geo.Clear
                 End If
-        
+
             ElseIf GetDictColumnValue(ActiveSheet.Cells(C_eStartLinesLLData, oRange.Column - 2).Name.Name, _
                                     C_sDictHeaderControl) = C_sDictControlGeo Then
                 'on controle qu'on a bien ecrit une data geo et remplissage de la colonne +3
                 oRange.Offset(, 1).Validation.Delete
                 oRange.Offset(, 1).value = vbNullString
-        
+
                 If oRange.value <> vbNullString Then
                     'Take the adm4 table
-                    Set T_geo = FilterLoTable(ThisWorkbook.worksheets(C_sSheetGeo).ListObjects(C_sTabADM4), 1, _
+                    Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm4), 1, _
                                              oRange.Offset(, -2).value, 2, oRange.Offset(, -1).value, 3, oRange.value, returnIndex:=4)
 
                     sList = T_geo.ToString(Separator:=",", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
@@ -175,15 +175,32 @@ Sub EventSheetLineListPatient(oRange As Range)
                 End If
             End If
 errHand:
-        
+
         End If
-    
+
     Call ProtectSheet
     EndWork xlsapp:=Application
 End Sub
 
+Sub ClicImportMigration()
+'Import exported data into the linelist
+    F_ImportMig.show
+End Sub
 
 
+Sub ClicExportMigration()
 
+    Static AfterFirstClicMig As Boolean
 
-
+    If AfterFirstClicMig Then
+        [F_ExportMig].show
+    Else
+        'For the first click Thick Migration and Geo and put historic to false
+        'For subsequent clicks, just show what have been ticked
+        [F_ExportMig].CHK_ExportMigData.value = True
+        [F_ExportMig].CHK_ExportMigGeo.value = True
+        [F_ExportMig].CHK_ExportMigGeoHistoric.value = True
+        [F_ExportMig].show
+        AfterFirstClicMig = True
+    End If
+End Sub

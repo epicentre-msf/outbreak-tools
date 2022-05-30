@@ -15,23 +15,23 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
               ChoicesHeaders As BetterArray, ChoicesData As BetterArray, _
               TransData As BetterArray, sPath As String)
 
-    Dim xlsapp As Excel.Application
-    Dim LLNbColData As BetterArray               'Number of columns of a Sheet of type linelist
+    Dim xlsapp          As Excel.Application
+    Dim LLNbColData     As BetterArray               'Number of columns of a Sheet of type linelist
     Dim LLSheetNameData As BetterArray           'Names of sheets of type linelist
-    Dim ChoicesListData As BetterArray           'Choices list
-    Dim ChoicesLabelsData As BetterArray         ' Choices labels
-    Dim VarnameSheetData As BetterArray
-    Dim VarNameData As BetterArray
-    Dim ColumnIndexData As BetterArray
+    Dim ChoicesListData     As BetterArray           'Choices list
+    Dim ChoicesLabelsData   As BetterArray         ' Choices labels
+    Dim VarnameSheetData    As BetterArray
+    Dim VarNameData         As BetterArray
+    Dim ColumnIndexData     As BetterArray
     Dim ColumnSheetIndexData As BetterArray
     Dim FormulaData As BetterArray
     Dim SpecCharData As BetterArray
     Dim DictVarName As BetterArray
     Dim iPastingRow As Integer
     Dim sCpte As Integer
-    Dim LoRng As Range 'List object's range
+    Dim LoRng As Range                          'List object's range
     Dim iNbshifted As Integer
-    
+
 
     Dim iCounterSheet As Integer                'counter for one Sheet
     Dim iSheetStartLine As Integer              'Counter for starting line of the sheet in the dictionary
@@ -47,10 +47,10 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Set VarnameSheetData = New BetterArray
     Set VarNameData = New BetterArray
     Set DictVarName = New BetterArray
-    
-    'lla
-    Application.StatusBar = "[" & Space(C_iNumberOfBars) & "]" 'create status ProgressBar
-    
+
+
+    StatusBar_Updater (0)
+
     Set xlsapp = New Excel.Application
 
     With xlsapp 'lla
@@ -60,28 +60,38 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
         .AutoCorrect.DisplayAutoCorrectOptions = False
         .Workbooks.Add
     End With
-    
+
     DoEvents
+    StatusBar_Updater (5)
+
+
     'Now Transferring some designers objects (codes, modules) to the workbook we want to create
     Call DesignerBuildListHelpers.TransferDesignerCodes(xlsapp)
-    
+
     DoEvents
+    StatusBar_Updater (10)
+
     'DesignerBuildListHelpers.TransterSheet is for sending worksheets from the actual workbook to the first workbook of the instance
 
-    Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetGeo)
-    Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetPassword)
-    Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetFormulas)
-    Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetLLTranslation)
-    
+    Application.ScreenUpdating = False
+
+        Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetGeo)
+        Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetPassword)
+
+
+        Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetFormulas)
+        Call DesignerBuildListHelpers.TransferSheet(xlsapp, C_sSheetLLTranslation)
+
+    Application.ScreenUpdating = True
 
     DoEvents
+    StatusBar_Updater (35)
 
     'Create special characters data
     FormulaData.FromExcelRange SheetFormulas.ListObjects(C_sTabExcelFunctions).ListColumns("ENG").DataBodyRange, DetectLastColumn:=False
     SpecCharData.FromExcelRange SheetFormulas.ListObjects(C_sTabASCII).ListColumns("TEXT").DataBodyRange, DetectLastColumn:=False
-    
-    VarNameData.Items = DictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderVarName))
 
+    VarNameData.Items = DictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderVarName))
 
     'Create all the required Sheets in the workbook (Dictionnary, Export, Password, Geo and other sheets defined by the user)
     Call CreateSheets(xlsapp, DictData, DictHeaders, ExportData, _
@@ -95,7 +105,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Set ChoicesListData = New BetterArray
     Set ChoicesLabelsData = New BetterArray
     Set VarnameSheetData = New BetterArray
-    
+
     ChoicesListData.LowerBound = 1
     ChoicesLabelsData.LowerBound = 1
 
@@ -110,13 +120,16 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     ChoicesLabelsData.Items = ChoicesData.ExtractSegment(ColumnIndex:=ChoicesHeaders.IndexOf(C_sChoiHeaderLab))
 
     iSheetStartLine = 1
-    sCpte = 0
-    StatusBar_Updater (sCpte)
-    
+
+    StatusBar_Updater (25)
+
     iNbshifted = 0
 
     For iCounterSheet = 1 To LLSheetNameData.UpperBound
-        sCpte = Round(100 * iCounterSheet / LLSheetNameData.UpperBound, 1)
+
+        sCpte = (30 * iCounterSheet)
+        StatusBar_Updater (sCpte)
+
         'Vector of varnames for one sheet
         VarnameSheetData.Clear
         VarnameSheetData.Items = VarNameData.Slice(iSheetStartLine, iSheetStartLine + LLNbColData.Item(iCounterSheet))
@@ -132,58 +145,65 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
                                          DictHeaders, LLSheetNameData, LLNbColData, ChoicesListData, ChoicesLabelsData, _
                                          VarnameSheetData, ColumnSheetIndexData, FormulaData, SpecCharData, iNbshifted)
                     DoEvents
-                    
+
+                    sCpte = sCpte + 5
+                    StatusBar_Updater (sCpte)
+
                     'update the variable names for writing in the dictionary sheet
                     i = 1
-                    With xlsapp.worksheets(LLSheetNameData.Item(iCounterSheet))
+                    With xlsapp.Worksheets(LLSheetNameData.Item(iCounterSheet))
                         While (.Cells(C_eStartLinesLLData, i).value <> "")
                             DictVarName.Push .Cells(C_eStartLinesLLData, i).Name.Name
                             i = i + 1
                         Wend
                     End With
-                    
+
                      'Now writing the data of varnames to the dictionary
-                     With xlsapp.worksheets(C_sParamSheetDict)
+                     With xlsapp.Worksheets(C_sParamSheetDict)
                         iPastingRow = .Cells(.Rows.Count, 1).End(xlUp).Row
                         DictVarName.ToExcelRange Destination:=.Cells(iPastingRow + 1, 1)
                         DictVarName.Clear
                      End With
+
             Case C_sDictSheetTypeAdm
-              
+
                 'Create a sheet of type admin entry
                 Call CreateSheetAdmEntry(xlsapp, LLSheetNameData.Item(iCounterSheet), iSheetStartLine, DictData, _
                                         DictHeaders, LLSheetNameData, LLNbColData, _
                                         ChoicesListData, ChoicesLabelsData)
                      i = 0
-                    With xlsapp.worksheets(LLSheetNameData.Item(iCounterSheet))
+                    With xlsapp.Worksheets(LLSheetNameData.Item(iCounterSheet))
                         While (.Cells(C_eStartLinesAdmData + i, 2).value <> "")
                             DictVarName.Push .Cells(C_eStartLinesAdmData + i, 3).Name.Name
                             i = i + 1
                         Wend
                     End With
-        
+
                      'Now writing the data of varnames to the dictionary
-                     
-                     With xlsapp.worksheets(C_sParamSheetDict)
+                     With xlsapp.Worksheets(C_sParamSheetDict)
                         iPastingRow = .Cells(.Rows.Count, 1).End(xlUp).Row
                         DictVarName.ToExcelRange Destination:=.Cells(iPastingRow + 1, 1)
                         DictVarName.Clear
                      End With
             DoEvents
+
+            sCpte = sCpte + 10
+            StatusBar_Updater (sCpte)
         End Select
+
         iSheetStartLine = iSheetStartLine + LLNbColData.Item(iCounterSheet)
-        
+
         DoEvents
-    StatusBar_Updater (sCpte)
+        StatusBar_Updater (sCpte + 5)
     Next
-    
+
     'Put the dictionnary in a table format
-    With xlsapp.worksheets(C_sParamSheetDict)
+    With xlsapp.Worksheets(C_sParamSheetDict)
         .Cells(1, 1).value = C_sDictHeaderVarName
         .ListObjects.Add(xlSrcRange, .Range(.Cells(1, 1), .Cells(DictData.Length, DictHeaders.Length + 1)), , xlYes).Name = "o" & ClearString(C_sParamSheetDict)
         .ListObjects("o" & ClearString(C_sParamSheetDict)).Resize .ListObjects("o" & ClearString(C_sParamSheetDict)).Range.CurrentRegion
     End With
-    
+
     Set LLNbColData = Nothing
     Set LLSheetNameData = Nothing      'Names of sheets of type linelist
     Set ColumnIndexData = Nothing
@@ -195,22 +215,19 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Set ChoicesListData = Nothing
     Set ChoicesLabelsData = Nothing
     Set DictVarName = Nothing
-    
+
+    StatusBar_Updater (100)
+
     With xlsapp
-        '.workSheets("linelist-patient").Select 'lla. On ne sait pas a priori que c'est la feuile linelist-patient. On ne connait pas le nom des feuilles.
-        '.workSheets("linelist-patient").Range("A1").Select
         .DisplayAlerts = False
         .ScreenUpdating = False
-        '.Visible = True
         .ActiveWindow.DisplayZeros = True
     End With
- 
-    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, FileFormat:=xlExcel12, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+
+    xlsapp.ActiveWorkbook.SaveAs Filename:=sPath, fileformat:=xlExcel12, Password:=Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     xlsapp.Quit
     Set xlsapp = Nothing
-    
-    Application.StatusBar = "" 'close status ProgressBar
-    
+
 End Sub
 
 'CREATE SHEETS IN A LINELIST ============================================================================================
@@ -236,53 +253,80 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
 
     Dim i As Integer 'iterators
     Dim j As Integer
+    Dim iColLang As Integer 'number of column to search in linelist language
+
     ColumnIndexData.LowerBound = 1
 
     Dim sPrevSheetName As String 'Previous sheet name
 
     With xlsapp
         'Workbook already contains Password and formula sheets. Hide them
-        .worksheets(C_sSheetPassword).Visible = xlVeryHidden
-        .worksheets(C_sSheetFormulas).Visible = xlVeryHidden
-        .worksheets(C_sSheetLLTranslation).Visible = xlVeryHidden
+        .Worksheets(C_sSheetPassword).Visible = xlVeryHidden
+        .Worksheets(C_sSheetFormulas).Visible = xlVeryHidden
+        .Worksheets(C_sSheetLLTranslation).Visible = xlVeryHidden
 
         '-------------- Creating the dictionnary sheet from setup
-        .worksheets.Add.Name = C_sParamSheetDict
+        .Worksheets.Add.Name = C_sParamSheetDict
         'Headers of the disctionary
         DictHeaders.ToExcelRange Destination:=.Sheets(C_sParamSheetDict).Cells(1, 1), TransposeValues:=True
         'Data of the dictionary
         DictData.ToExcelRange Destination:=.Sheets(C_sParamSheetDict).Cells(2, 1)
         'Transforming the dictionary in a listobject Table
-        .worksheets(C_sParamSheetDict).Columns(1).ClearContents
-        .worksheets(C_sParamSheetDict).Visible = bNotHideSheets
+        .Worksheets(C_sParamSheetDict).Columns(1).ClearContents
+        .Worksheets(C_sParamSheetDict).Visible = bNotHideSheets
 
         '-------------- Creating the export sheet
-        .worksheets.Add.Name = C_sParamSheetExport
+        .Worksheets.Add.Name = C_sParamSheetExport
         'Headers of the export options
-        .worksheets(C_sParamSheetExport).Cells(1, 1).value = "ID"
-        .worksheets(C_sParamSheetExport).Cells(1, 2).value = "Lbl"
-        .worksheets(C_sParamSheetExport).Cells(1, 3).value = "Pwd"
-        .worksheets(C_sParamSheetExport).Cells(1, 4).value = "Actif"
-        .worksheets(C_sParamSheetExport).Cells(1, 5).value = "FileName"
 
         'Adding the data on export parameters
-        ExportData.ToExcelRange Destination:=.Sheets(C_sParamSheetExport).Cells(2, 1)
-        .worksheets(C_sParamSheetExport).Visible = xlSheetVeryHidden
+        ExportData.ToExcelRange Destination:=.Worksheets(C_sParamSheetExport).Cells(1, 1)
+
+        'search in linelist language
+        iColLang = IIf([RNG_LangSetup].value <> "", SheetSetTranslation.Rows(4).Find(What:=SheetMain.[RNG_LangSetup].value, LookAt:=xlWhole).Column, 2)
+
+        i = 2
+        Do While .Worksheets(C_sParamSheetExport).Cells(i, 1).value <> ""
+            If .Worksheets(C_sParamSheetExport).Cells(i, 2).value <> "" Then
+                .Worksheets(C_sParamSheetExport).Cells(i, 2).value = .Worksheets(C_sParamSheetExport).Cells(i, 2).value
+
+            End If
+            i = i + 1
+        Loop
+
+        .Worksheets(C_sParamSheetExport).Visible = xlSheetVeryHidden
 
         '--------- Creating the Choices Sheet
-        .worksheets.Add.Name = C_sParamSheetChoices
+        .Worksheets.Add.Name = C_sParamSheetChoices
         ChoicesHeaders.ToExcelRange Destination:=.Sheets(C_sParamSheetChoices).Cells(1, 1), TransposeValues:=True
         ChoicesData.ToExcelRange Destination:=.Sheets(C_sParamSheetChoices).Cells(2, 1)
-        .worksheets(C_sParamSheetChoices).Visible = xlSheetVeryHidden
+
+        i = 2
+        Do While .Worksheets(C_sParamSheetChoices).Cells(i, 1).value <> ""
+            If .Worksheets(C_sParamSheetChoices).Cells(i, 4).value <> "" Then
+                If .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = .Worksheets(C_sParamSheetChoices).Cells(i, 5).value Then
+                    .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = .Worksheets(C_sParamSheetChoices).Cells(i, 4).value
+                    .Worksheets(C_sParamSheetChoices).Cells(i, 5).value = .Worksheets(C_sParamSheetChoices).Cells(i, 4).value
+                Else
+                    .Worksheets(C_sParamSheetChoices).Cells(i, 4).value = .Worksheets(C_sParamSheetChoices).Cells(i, 4).value
+                    .Worksheets(C_sParamSheetChoices).Cells(i, 5).value = .Worksheets(C_sParamSheetChoices).Cells(i, 5).value
+                End If
+
+            End If
+            i = i + 1
+        Loop
+
+
+        .Worksheets(C_sParamSheetChoices).Visible = xlSheetVeryHidden
 
         '--------- Creating the translation sheet
-        .worksheets.Add.Name = C_sParamSheetTranslation
+        .Worksheets.Add.Name = C_sParamSheetTranslation
         TransData.ToExcelRange Destination:=.Sheets(C_sParamSheetTranslation).Cells(1, 1)
-        .worksheets(C_sParamSheetTranslation).Visible = xlSheetVeryHidden
-        
+        .Worksheets(C_sParamSheetTranslation).Visible = xlSheetVeryHidden
+
         '--------- Adding a temporary sheet for computations
-        .worksheets.Add.Name = C_sSheetTemp
-        .worksheets(C_sSheetTemp).Visible = xlSheetVeryHidden
+        .Worksheets.Add.Name = C_sSheetTemp
+        .Worksheets(C_sSheetTemp).Visible = xlSheetVeryHidden
 
         '--------------- adding the other the other sheets in the dictionary to the linelist
         i = 1
@@ -296,36 +340,35 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
             If sPrevSheetName <> DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)) Then
 
                 If sPrevSheetName = "" Then
-                    .worksheets(1).Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                    .Worksheets(1).Name = EnsureGoodSheetName(DictData.Items(1, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
                 Else
-                    .worksheets.Add(after:=.worksheets(sPrevSheetName)).Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                    .Worksheets.Add(After:=.Worksheets(sPrevSheetName)).Name = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
                 End If
-                
+
                 'I am on a new sheet name, I update values
-                sPrevSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
-                
+                sPrevSheetName = EnsureGoodSheetName(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
+
                 j = j + 1
                 'Here, the column index is the index number of each column in one sheet. I update it when I am on
                 'a new sheet
                 ColumnIndexData.Item(i) = 1
                 LLNbColData.Item(j) = 1
                 LLSheetNameData.Push sPrevSheetName
-                
+
                 'Tell the use we have created one sheet
-                SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgCreatedSheet) & " " & sPrevSheetName
                 'adding sheets depending on the type of the sheet
                 Select Case LCase(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType)))
                 Case C_sDictSheetTypeAdm
                     'This is a admin Sheet, just add it like that (or maybe do some other stuffs later on)
-                       
+
                 Case C_sDictSheetTypeLL
                     'Set the rowheight of the first two rows of a linelist type sheet
-                    .worksheets(sPrevSheetName).Rows("1:2").RowHeight = C_iLLButtonsRowHeight
+                    .Worksheets(sPrevSheetName).Rows("1:2").RowHeight = C_iLLButtonsRowHeight
                     'Now I split at starting lines and freeze the pane
                     '.Worksheets(sPrevSheetName).Activate
                     .ActiveWindow.DisplayZeros = False
                     .ActiveWindow.SplitColumn = 2
-                    .ActiveWindow.SplitRow = C_eStartLinesLLData 'freeze a the starting lines of the linelist data
+                    .ActiveWindow.SplitRow = C_eStartLinesLLData + 1 'freeze a the starting lines of the linelist data + 1
                     .ActiveWindow.FreezePanes = True
                 Case Else
                     SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgCheckSheetType)
@@ -350,9 +393,9 @@ Private Sub CreateSheets(xlsapp As Excel.Application, DictData As BetterArray, D
         Wend
 
         'Adding the column index to the Dictionary Sheet
-        .worksheets(C_sParamSheetDict).Cells(1, DictHeaders.Length + 1).value = C_sDictHeaderIndex
-        ColumnIndexData.ToExcelRange .worksheets(C_sParamSheetDict).Cells(2, DictHeaders.Length + 1)
-       
+        .Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.Length + 1).value = C_sDictHeaderIndex
+        ColumnIndexData.ToExcelRange .Worksheets(C_sParamSheetDict).Cells(2, DictHeaders.Length + 1)
+
     End With
 End Sub
 
@@ -372,28 +415,28 @@ End Sub
     Dim sActualValidationAlert As String
     Dim sActualValidationMessage As String
     Dim sActualSubLab As String
-    
-    
+
+
     Dim iCounterSheetAdmLine As Integer
     Dim iCounterDictSheetLine As Integer
     Dim iTotalSheetAdmColumns As Integer
-    
-    
+
+
     iCounterSheetAdmLine = C_eStartLinesAdmData
     iCounterDictSheetLine = iSheetStartLine
     iTotalSheetAdmColumns = LLNbColData.Items(LLSheetNameData.IndexOf(sSheetName))
 
 
-    With xlsapp.worksheets(sSheetName)
+    With xlsapp.Worksheets(sSheetName)
         'Adding the buttons
-        
+
         'Import migration buttons
           Call DesignerBuildListHelpers.AddCmd(xlsapp, sSheetName, _
             .Cells(2, 10).Left, .Cells(2, 1).Top, C_sShpImpMigration, _
             "Import for Migration", _
             C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdImportMigration)
-        
-        
+
+
         'Export migration buttons
          Call DesignerBuildListHelpers.AddCmd(xlsapp, sSheetName, _
             .Cells(2, 10).Left + C_iCmdWidth + 20, .Cells(2, 1).Top, C_sShpExpMigration, _
@@ -406,13 +449,13 @@ End Sub
             "Export", _
             C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdExport)
 
-         
+
         Call DesignerBuildListHelpers.AddCmd(xlsapp, sSheetName, _
             .Cells(2, 10).Left + 3 * C_iCmdWidth + 60, .Cells(2, 1).Top, C_sShpDebug, _
             "Debug", _
             C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdDebug, sShpColor:="Orange", sShpTextColor:="Black")
-        
-        
+
+
         'Logo (copy from the sheet main)
         SheetMain.Shapes("SHP_Logo").Copy
         .Select
@@ -425,10 +468,10 @@ End Sub
 
         'FontSizes of Adms
         .Cells.Font.Size = C_iAdmSheetFontSize
-        
+
         'Updating the values
         While (iCounterDictSheetLine <= iSheetStartLine + iTotalSheetAdmColumns - 1)
-        
+
             sActualMainLab = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainLab))
             sActualSubLab = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubLab))
             sActualVarName = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderVarName))
@@ -436,8 +479,8 @@ End Sub
             sActualControl = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderControl))
             sActualValidationAlert = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderAlert)))
             sActualValidationMessage = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMessage))
-        
-        
+
+
             Call WriteBorderLines(.Cells(iCounterSheetAdmLine, 3))
 
             If sActualControl = C_sDictControlTitle Then
@@ -446,7 +489,7 @@ End Sub
                 .Cells(iCounterSheetAdmLine - 5, 2).value = sActualMainLab
                 .Cells(iCounterSheetAdmLine - 5, 2).Font.Size = C_iAdmTitleFontSize
                 .Cells(iCounterSheetAdmLine - 5, 2).Font.Bold = True
-                
+
                 'Sub title
                 .Cells(iCounterSheetAdmLine - 3, 2).value = sActualSubLab
                 .Cells(iCounterSheetAdmLine - 3, 2).Font.Size = C_iAdmTitleFontSize - 5
@@ -458,7 +501,7 @@ End Sub
                 .Cells(iCounterSheetAdmLine, 2).Font.Color = Helpers.GetColor("MainSecBlue")
                 .Cells(iCounterSheetAdmLine, 3).Name = sActualVarName
             End If
-        
+
             If sActualControl = C_sDictControlChoice Then
                 'Add list if the choice is not emptyy
                 If sActualChoice <> "" Then
@@ -469,11 +512,14 @@ End Sub
                    End If
                 End If
             End If
-            .Cells(iCounterSheetAdmLine, 2).EntireColumn.Autofit
+            .Cells(iCounterSheetAdmLine, 2).EntireColumn.AutoFit
             .Cells(iCounterSheetAdmLine, 3).ColumnWidth = 30
+            .Cells(iCounterSheetAdmLine, 3).Locked = False
             iCounterSheetAdmLine = iCounterSheetAdmLine + 1
             iCounterDictSheetLine = iCounterDictSheetLine + 1
         Wend
+        .Protect Password:=(C_sLLPassword), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
     End With
 End Sub
 
@@ -522,7 +568,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
     Dim sFormulaMin As String 'Formula for min
     Dim sFormulaMax As String 'Formula for max
     Dim LoRng As Range 'Range of the listobject for one table
-    
+    Dim iColLang As Integer 'number of column to search in linelist language
     Dim bLockData As Boolean
 
 
@@ -533,6 +579,9 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
         SheetMain.Range(C_sRngEdition).value = "Error 2"
         Exit Sub
     End If
+
+    'search in linelist language
+    iColLang = IIf([RNG_LangSetup].value <> "", SheetSetTranslation.Rows(4).Find(What:=SheetMain.[RNG_LangSetup].value, LookAt:=xlWhole).Column, 2)
 
     'Here I am really sure it is a linelist sheet Type before going foward
     iCounterSheetLLCol = 1
@@ -545,7 +594,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
 
 
     'Continue adding the columns unless the total number of columns to add is reached
-    With xlsapp.worksheets(sSheetName)
+    With xlsapp.Worksheets(sSheetName)
 
         'INITIALISATIONS AND ADDING COMMANDS ========================================================================================
 
@@ -553,32 +602,33 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
          xlsapp.ActiveWindow.DisplayGridlines = False
          .Cells(1, 1).Select
          xlsapp.CutCopyMode = False
-         
+
         'Adding required buttons
-        
+
         'Show Hide Button
         Call DesignerBuildListHelpers.AddCmd(xlsapp, sSheetName, _
-                                            .Cells(2, 1).Left, _
-                                            .Cells(2, 1).Top, _
+                                            .Cells(1, 1).Left + C_iCmdWidth + 10, _
+                                            .Cells(1, 1).Top, _
                                             C_sShpShowHide, _
                                             "Show/Hide", _
                                             C_iCmdWidth, C_iCmdHeight, _
                                             C_sCmdShowHideName)
         'Add 200 Rows Button
         Call DesignerBuildListHelpers.AddCmd(xlsapp, sSheetName, _
-                                            .Cells(1, 1).Left + C_iCmdWidth + 10, _
-                                            .Cells(1, 2).Top, _
+                                            .Cells(1, 1).Left, _
+                                            .Cells(1, 1).Top, _
                                             C_sShpAddRows, _
                                              "Add rows", _
                                              C_iCmdWidth, C_iCmdHeight, _
                                              C_sCmdAddRowsName)
- 
+
         'All the cells font size at 9
         .Cells.Font.Size = C_iLLSheetFontSize
-        
+
+
         While (iCounterDictSheetLine <= iSheetStartLine + iTotalLLSheetColumns - 1)
             bLockData = False 'lock or not the data in one cell
-            
+
             'First, accessing actual values ussing the dicitonary data and its corrresponding headers
             sActualVarName = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderVarName))
             sActualMainLab = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainLab))
@@ -588,26 +638,32 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
             sActualMainSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
             sActualSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
             sActualStatus = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderStatus)))
-            
+
             sActualType = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderType)))
             sActualControl = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderControl)))
             sActualFormula = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderFormula))
             sActualChoice = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderChoices))
 
-           
+
             sActualMin = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMin))
             sActualMax = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMax))
             sActualValidationAlert = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderAlert)))
             sActualValidationMessage = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMessage))
-            
-            
+
+            'Adding the control
+            .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).value = sActualControl
+            .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).Font.Color = vbWhite
+            .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).FormulaHidden = True
+            .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).Locked = True
+
+
          'SETTING HEADERS ===================================================================================================================
-        
+
             'Before doing some changes, we need to update the sub-section correspondingly
             'in case whe have the geo control. When the Control is Geo, the subsection label is
             'The main section label if there is no one
 
-            'Geo Titles or Customs --------------------------------------------------------------------------
+            'Geo Titles or Customs --------------------------------------------------------------------------------------------------------
             Select Case sActualControl
                 Case C_sDictControlGeo
                     If sActualSubSec = "" Then
@@ -619,33 +675,33 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                     .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Locked = False
             End Select
 
-            'Adding the headers of the table ------------------------------------------------------------------------
+            'Adding the headers of the table ---------------------------------------------------------------------------------------------------------
             .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Name = sActualVarName
             .Cells(C_eStartLinesLLData, iCounterSheetLLCol).value = DesignerBuildListHelpers.AddSpaceToHeaders(xlsapp, sActualMainLab, sSheetName, C_eStartLinesLLData)
             .Cells(C_eStartLinesLLData, iCounterSheetLLCol).VerticalAlignment = xlTop
 
             'Adding the sub-label if needed Chr(10) is the return to line character the sublabel is in gray------------------
             If sActualSubLab <> "" Then
-                Call DesignerBuildListHelpers.AddSubLab(xlsapp.worksheets(sSheetName), C_eStartLinesLLData, _
+                Call DesignerBuildListHelpers.AddSubLab(xlsapp.Worksheets(sSheetName), C_eStartLinesLLData, _
                                                    iCounterSheetLLCol, sActualMainLab, _
                                                    sActualSubLab)
             End If
 
             'Adding the notes
             If sActualNote <> "" Then
-                Call DesignerBuildListHelpers.AddNotes(xlsapp.worksheets(sSheetName), C_eStartLinesLLData, _
+                Call DesignerBuildListHelpers.AddNotes(xlsapp.Worksheets(sSheetName), C_eStartLinesLLData, _
                                                   iCounterSheetLLCol, sActualNote)
             End If
-            
-            
+
+
             'Adding the sections and sub-section and merging
-            
+
             'First, update the values the first time encounter thems
             If iCounterSheetLLCol = 1 Then
                 .Cells(C_eStartLinesLLSubSec, iCounterSheetLLCol).value = sActualSubSec
                 .Cells(C_eStartLinesLLMainSec, iCounterSheetLLCol).value = sActualMainSec
             End If
-            
+
             If sPrevSubSec <> sActualSubSec Then
                 'I am on a new sub section for the same section
                 .Cells(C_eStartLinesLLSubSec, iCounterSheetLLCol).value = sActualSubSec
@@ -654,12 +710,12 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                 'the actual first value due to changes (taking in account the geo)
 
                 If (iCounterSheetLLCol = 1) Then 'The first column is a geoColumn with no value for the sublabel
-                    Call DesignerBuildListHelpers.BuildMergeArea(xlsapp.worksheets(sSheetName), _
+                    Call DesignerBuildListHelpers.BuildMergeArea(xlsapp.Worksheets(sSheetName), _
                                          C_eStartLinesLLSubSec, _
                                         iPrevColSubSec, iCounterSheetLLCol + 1)
                 Else
-                    'Otherwise to the same as before but mergin only the sub section part
-                    Call DesignerBuildListHelpers.BuildMergeArea(xlsapp.worksheets(sSheetName), _
+                    'Otherwise do the same as before but mergin only the sub section part
+                    Call DesignerBuildListHelpers.BuildMergeArea(xlsapp.Worksheets(sSheetName), _
                                         C_eStartLinesLLSubSec, _
                                         iPrevColSubSec, iCounterSheetLLCol)
                 End If
@@ -673,28 +729,28 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
             If sPrevMainSec <> sActualMainSec Then
                 'I am on a new Main Section, update the value of the section
                 .Cells(C_eStartLinesLLMainSec, iCounterSheetLLCol).value = sActualMainSec
-                
+
                 'Merge the previous area
-                Call DesignerBuildListHelpers.BuildMergeArea(xlsapp.worksheets(sSheetName), C_eStartLinesLLMainSec, iPrevColMainSec, _
+                Call DesignerBuildListHelpers.BuildMergeArea(xlsapp.Worksheets(sSheetName), C_eStartLinesLLMainSec, iPrevColMainSec, _
                                     iCounterSheetLLCol, C_eStartLinesLLSubSec)
-                
+
                 'Update the previous columns
                 sPrevMainSec = sActualMainSec
                 iPrevColMainSec = iCounterSheetLLCol
             Else
                 'I am on the same main section, I will test if I am not on the column, if it is the case, merge the area
                 If (iCounterDictSheetLine = iSheetStartLine + iTotalLLSheetColumns - 1) Then
-                    Call DesignerBuildListHelpers.BuildMergeArea(xlsapp.worksheets(sSheetName), _
+                    Call DesignerBuildListHelpers.BuildMergeArea(xlsapp.Worksheets(sSheetName), _
                                          C_eStartLinesLLMainSec, iPrevColMainSec, _
                                          iCounterSheetLLCol + 1, C_eStartLinesLLSubSec)
                 End If
             End If
 
-        'STATUS, TYPE and CONTROLS ==================================================================================================
-            .Columns(iCounterSheetLLCol).EntireColumn.Autofit
+        'STATUS, TYPE and CONTROLS =========================================================================================================
+            .Columns(iCounterSheetLLCol).EntireColumn.AutoFit
 
             'Updating the notes according to the column's Status ----------------------------------------------------------------------------
-            Call DesignerBuildListHelpers.AddStatus(xlsapp.worksheets(sSheetName), _
+            Call DesignerBuildListHelpers.AddStatus(xlsapp.Worksheets(sSheetName), _
                                     C_eStartLinesLLData, iCounterSheetLLCol, sActualNote, _
                                     sActualStatus, "Mandatory data")
 
@@ -707,7 +763,7 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                 Case C_sDictControlChoice
                     'Add list if the choice is not emptyy
                     If sActualChoice <> "" Then
-                       Call DesignerBuildListHelpers.AddChoices(xlsapp.worksheets(sSheetName), _
+                       Call DesignerBuildListHelpers.AddChoices(xlsapp.Worksheets(sSheetName), _
                                         C_eStartLinesLLData, iCounterSheetLLCol, _
                                         ChoicesListData, ChoicesLabelsData, sActualChoice, _
                                         sActualValidationAlert, sActualValidationMessage)
@@ -715,19 +771,20 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                     'Insert the other columns in case we are with a geo
                 Case C_sDictControlGeo
                     'First, Geocolumns are in orange
-                    DesignerBuildListHelpers.AddGeo xlsapp, DictData, DictHeaders, sSheetName, _
+                    Call DesignerBuildListHelpers.AddGeo(xlsapp, DictData, DictHeaders, sSheetName, _
                                         C_eStartLinesLLData, iCounterSheetLLCol, _
                                         C_eStartLinesLLSubSec, iCounterDictSheetLine, sActualVarName, sActualValidationMessage, _
-                                        iNbshifted
+                                        iNbshifted)
 
                     'The geocolumn induce four new columns (I will add 3, keeping the 1 at the end)
                     iCounterSheetLLCol = iCounterSheetLLCol + 3
                     iNbshifted = iNbshifted + 3
+                    sActualVarName = C_sAdmName & "4" & "_" & sActualVarName
 
-                    'Add the GeoButton
+                    'Add the GeoButton only one time
                     If Not bCmdGeoExist Then
                         Call DesignerBuildListHelpers.AddCmd(xlsapp, sSheetName, _
-                                           .Cells(1, 1).Left, .Cells(1, 1).Top, _
+                                           .Cells(1, 1).Left, .Cells(2, 1).Top, _
                                              C_sShpGeo, _
                                              "GEO", _
                                              C_iCmdWidth, C_iCmdHeight, _
@@ -739,13 +796,13 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
                     .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = GetColor("Orange")
                 Case C_sDictControlForm 'Formulas, are reported to the formula function
                     If (sActualFormula <> "") Then
-                        sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, VarNameData, ColumnIndexData, _
-                                                            FormulaData, SpecCharData, False)
+                        sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, sSheetName, VarNameData, ColumnIndexData, _
+                                                            FormulaData, SpecCharData, xlsapp.Worksheets(sSheetName), False)
                     End If
                     'Testing before writing the formula
                     If (sFormula <> "") Then
-                        .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).NumberFormat = "General"
-                        .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Formula = sFormula
+                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).NumberFormat = "General"
+                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Formula = sFormula
                         bLockData = True  'Lock data for formulas
                     Else
                         'MsgBox "Invalid formula will be ignored : " & sActualFormula & "/" & sActualVarName  'MSG_InvalidFormula
@@ -755,23 +812,23 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
             'The type is added after formula validation because we need to take in account the formula before
             'setting the type
             'Formating the Column according to the Column's type -------------------------------------------------------------------------------------------
-            Call DesignerBuildListHelpers.AddType(xlsapp.worksheets(sSheetName), _
+            Call DesignerBuildListHelpers.AddType(xlsapp.Worksheets(sSheetName), _
                                     C_eStartLinesLLData, iCounterSheetLLCol, sActualType)
 
             'Building Min/Max Validation ----------------------------------------------------------------------------
             If sActualMin <> "" And sActualMax <> "" Then
 
                 'Testing if it is numeric
-                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
+                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, xlsapp.Worksheets(sSheetName), True)
                 If sFormulaMin = "" Then
                        'MsgBox "Invalid formula will be ignored : " & sActualMin & " / " & sActualVarName
                 Else
-                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, VarNameData, ColumnIndexData, FormulaData, SpecCharData, True)
+                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, xlsapp.Worksheets(sSheetName), True)
                     If sFormulaMax = "" Then
                             'MsgBox "Invalid formula will be ignored : " & sFormulaMax & " / " & sActualVarName
                     End If
                     If (sFormulaMin <> "" And sFormulaMax <> "") Then
-                        Call DesignerBuildListHelpers.BuildValidationMinMax(.Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol), _
+                        Call DesignerBuildListHelpers.BuildValidationMinMax(.Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol), _
                                             sFormulaMin, sFormulaMax, _
                                             GetValidationType(sActualValidationAlert), _
                                             sActualType, sActualValidationMessage)
@@ -780,22 +837,31 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
             End If
 
             'After input every headers, auto fit the columns and unlock data entry part
-            .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Locked = bLockData
+            .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).value = sActualVarName
+            .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Locked = True
+            .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).FormulaHidden = True
+            .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Interior.Color = vbWhite
+            .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Font.Color = vbWhite
+            .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Font.Bold = True
+
+            .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Locked = bLockData
+            Call Helpers.WriteBorderLines(.Range(.Cells(C_eStartLinesLLData, iCounterSheetLLCol), .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol)))
+
 
             'Updating the counters
             iCounterSheetLLCol = iCounterSheetLLCol + 1 'Counter of column on one Sheet of type Linelist
             iCounterDictSheetLine = iCounterDictSheetLine + 1 'Counter of lines in the dictionary
             DoEvents
         Wend
-        
+
         'Range of the listobject
-        Set LoRng = .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_eStartLinesLLData + 1, .Cells(C_eStartLinesLLData, Columns.Count).End(xlToLeft).Column))
-'        'Creating the TableObject that will contain the data entry
+        Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 2, .Cells(C_eStartLinesLLData + 1, Columns.Count).End(xlToLeft).Column))
+        'Creating the TableObject that will contain the data entry
         .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = "o" & ClearString(sSheetName)
         .ListObjects("o" & ClearString(sSheetName)).TableStyle = C_sLLTableStyle
-        
+
         'Set the new range for the table
-        Set LoRng = .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_iNbLinesLLData + C_eStartLinesLLData, .Cells(C_eStartLinesLLData, Columns.Count).End(xlToLeft).Column))
+        Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_iNbLinesLLData + C_eStartLinesLLData + 1, .Cells(C_eStartLinesLLData + 1, Columns.Count).End(xlToLeft).Column))
         'Resize for 200 lines entrie
         .ListObjects("o" & ClearString(sSheetName)).Resize LoRng
      '   Now Protect the sheet,
@@ -808,3 +874,4 @@ Private Sub CreateSheetLLDataEntry(xlsapp As Excel.Application, sSheetName As St
     Call DesignerBuildListHelpers.TransferCodeWks(xlsapp, sSheetName, C_sModLLChange)
 
 End Sub
+

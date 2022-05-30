@@ -11,25 +11,28 @@ Option Explicit
 
 'clear the path ranges once the workbook opens
 Private Sub Workbook_Open()
-  SheetMain.Range(C_sRngPathDic).value = ""
-  SheetMain.Range(C_sRngPathGeo).value = ""
-  SheetMain.Range(C_sRngLLName).value = ""
-  SheetMain.Range(C_sRngLLDir).value = ""
-  
-  Call SetInputRangesToWhite
+
+  Call ResetField
   SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgSet)
-  
-  SheetGeo.ListObjects(C_sTabADM1).DataBodyRange.Clear
-  SheetGeo.ListObjects(C_sTabADM2).DataBodyRange.Clear
-  SheetGeo.ListObjects(C_sTabADM3).DataBodyRange.Clear
-  SheetGeo.ListObjects(C_sTabADM4).DataBodyRange.Clear
+
+  SheetGeo.ListObjects(C_sTabadm1).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabAdm2).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabAdm3).DataBodyRange.Clear
+  SheetGeo.ListObjects(C_sTabAdm4).DataBodyRange.Clear
   SheetGeo.ListObjects(C_sTabHF).DataBodyRange.Clear
   SheetGeo.ListObjects(C_sTabNames).DataBodyRange.Clear
-  
-  'lla
-  worksheets("linelist-translation").[RNG_Language].value = [RNG_LLForm].value 'check Language of linelist's forms
-  
+
+  SheetLLTranslation.Range(C_sRngLLLanguage).value = SheetMain.Range(C_sRngLLFormLang).value 'check Language of linelist's forms
+
+  With SheetDesTranslation
+        .Range(.Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").Column), _
+               .Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").End(xlToRight).Column)).ClearContents
+  End With
+
 End Sub
+
+
+
 
 
 
