@@ -13,7 +13,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
 
     'If does not have a name property do nothing
 '    Dim sIsoCountry As String, sCountry As String, sSubCounty As String, sWard As String, sPlace As String, sFacility As String
-
+    
     On Error GoTo no
         Application.ScreenUpdating = False
 
@@ -22,7 +22,8 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         ElseIf Target.Name.Name = "RNG_LLForm" Then
 
             Call translateHeadGeo
-
+        ElseIf Target.Name.Name = "RNG_LLPassword" Then
+            SheetPassword.Range("RNG_DebuggingPassword").value = Target.value
         End If
 
         Application.ScreenUpdating = True

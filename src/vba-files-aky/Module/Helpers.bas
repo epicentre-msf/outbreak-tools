@@ -38,13 +38,14 @@ Public Function GetColor(sColorCode As String)
 End Function
 
 
-Public Sub ProtectSheet(Optional pwd As String = C_sLLPassword)
+Public Sub ProtectSheet()
+    Dim pwd As String
     If Not DebugMode Then
+        pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
         ActiveSheet.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                          AllowFormattingColumns:=True
     End If
-
 End Sub
 
 
@@ -484,7 +485,7 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
                              Optional iFiltindex3 As Integer = 0, Optional sValue3 As String = vbNullString, _
                              Optional returnIndex As Integer = -99, _
                              Optional bAllData As Boolean = True) As BetterArray
-    Dim Rng As Range
+    Dim rng As Range
     Dim Data As BetterArray
     Dim breturnAllData As Boolean
 
@@ -503,7 +504,7 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
 
     End With
 
-    Set Rng = lo.Range.SpecialCells(xlCellTypeVisible)
+    Set rng = lo.Range.SpecialCells(xlCellTypeVisible)
 
     If returnIndex > 0 Then
         breturnAllData = False
@@ -518,7 +519,7 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
             .Visible = xlSheetHidden
             .Cells.Clear
 
-            Rng.Copy Destination:=.Cells(1, 1)
+            rng.Copy Destination:=.Cells(1, 1)
 
             Set Data = New BetterArray
             Data.LowerBound = 1
@@ -541,17 +542,17 @@ End Function
 'Get unique values of one range in a listobject
 Function GetUniquelo(lo As ListObject, iIndex As Integer) As BetterArray
 
-    Dim Rng As Range
+    Dim rng As Range
     Dim Data As BetterArray
 
-    Set Rng = lo.ListColumns(iIndex).DataBodyRange
+    Set rng = lo.ListColumns(iIndex).DataBodyRange
 
     'Copy and paste to temp
     With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
 
-            Rng.Copy Destination:=.Cells(1, 1)
+            rng.Copy Destination:=.Cells(1, 1)
 
             Set Data = New BetterArray
             Data.LowerBound = 1
@@ -566,7 +567,7 @@ Function GetUniquelo(lo As ListObject, iIndex As Integer) As BetterArray
     Set GetUniquelo = Data.Clone()
 
     Set Data = Nothing
-    Set Rng = Nothing
+    Set rng = Nothing
 
 End Function
 

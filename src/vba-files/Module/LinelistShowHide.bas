@@ -52,7 +52,7 @@ Sub ClicCmdShowHide()
     T_DictHeaders.LowerBound = 1
     T_data.LowerBound = 1
 
-    ActiveSheet.Unprotect (C_sLLPassword)
+    ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
     Set Wksh = ThisWorkbook.Worksheets(C_sParamSheetDict)
 
@@ -194,7 +194,7 @@ Sub ShowHideColumnSheet(sSheetName As String, ByVal sVarName As String, Optional
     Dim sControl As String                 'Extracting the control label to be sure we can hide all the geos
 
     BeginWork xlsapp:=Application
-    ActiveSheet.Unprotect (C_sLLPassword)
+    ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
     'First, Get the values of the headers names
     Set T_DictHeaders = New BetterArray
