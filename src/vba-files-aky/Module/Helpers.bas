@@ -454,7 +454,10 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
     sheetExists = False
 
     For Each DestWksh In DestWkb.Worksheets
-        If DestWksh.Name = sSheetName Then sheetExists = True
+        If DestWksh.Name = sSheetName Then
+            sheetExists = True
+            Exit For
+        End If
     Next
 
     'Clear the contents if the sheet exists, or create a new sheet if Not
