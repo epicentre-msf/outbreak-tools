@@ -11,7 +11,7 @@ Sub ClicCmdGeoApp()
 
     iNumCol = ActiveCell.Column
 
-    If ActiveCell.Row > C_eStartlinesLLData + 1 Then
+    If ActiveCell.Row > C_estartlineslldata + 1 Then
 
         sType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).value
         Select Case sType
@@ -39,7 +39,7 @@ Sub ClicCmdAddRows()
     Application.EnableEvents = False
 
     For Each oLstobj In ActiveSheet.ListObjects
-        oLstobj.Resize Range(Cells(C_eStartlinesLLData + 1, 1), Cells(oLstobj.DataBodyRange.Rows.Count + C_iNbLinesLLData + C_eStartlinesLLData + 1, Cells(C_eStartlinesLLData + 1, 1).End(xlToRight).Column))
+        oLstobj.Resize Range(Cells(C_estartlineslldata + 1, 1), Cells(oLstobj.DataBodyRange.Rows.Count + C_iNbLinesLLData + C_estartlineslldata + 1, Cells(C_estartlineslldata + 1, 1).End(xlToRight).Column))
     Next
 
     Call ProtectSheet
@@ -100,6 +100,7 @@ Sub ClicCmdDebug()
 End Sub
 
 'Trigerring event when the linelist sheet has some values within                                                          -
+'Trigerring event when the linelist sheet has some values within                                                          -
 Sub EventValueChangeLinelist(oRange As Range)
 
     Dim T_geo As BetterArray
@@ -109,13 +110,21 @@ Sub EventValueChangeLinelist(oRange As Range)
     Dim sLabel As String
     Dim sCustomVarName As String
     Dim sNote As String
+    Dim sListAutoType As String
+    Dim sVarName As String
     Dim iNumCol As Integer
+    Dim iChoiceCol As Integer
+    Dim choiceLo As ListObject
+    Dim sChoiceAutoType As String
+    Dim iRow As Integer
+    Dim rng As Range
 
     On Error GoTo errHand
     iNumCol = oRange.Column
     sControlType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).value
+    sChoiceAutoType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 2, iNumCol).value
 
-    If oRange.Row > C_eStartlinesLLData + 1 Then
+    If oRange.Row > C_estartlineslldata + 1 Then
 
         Select Case sControlType
 
@@ -191,11 +200,46 @@ Sub EventValueChangeLinelist(oRange As Range)
             Case Else
 
         End Select
+
+        Select Case sChoiceAutoType
+
+            Case C_sDictControlChoiceAuto & "_origin"
+                BeginWork xlsapp:=Application
+                sVarName = ActiveSheet.Cells(C_estartlineslldata + 1, iNumCol).value
+                With ThisWorkbook.Worksheets(C_sSheetChoiceAuto)
+                    Set choiceLo = .ListObjects("o" & C_sDictControlChoiceAuto & "_" & sVarName)
+
+                    iChoiceCol = choiceLo.DataBodyRange.Column
+                    iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
+
+                    'A simple safeguard agains empty values
+                    If .Cells(iRow, iChoiceCol).value = vbNullString Then
+                        iRow = iRow - 1
+                    End If
+                    .Cells(iRow + 1, iChoiceCol).value = oRange.value
+
+                    choiceLo.Resize Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow + 1, iChoiceCol))
+                    choiceLo.DataBodyRange.RemoveDuplicates Columns:=1, Header:=xlYes
+
+                    Set rng = choiceLo.ListColumns(1).Range
+                    With choiceLo.Sort
+                        .SortFields.Clear
+                        .SortFields.Add Key:=rng, SortOn:=xlSortOnValues, Order:=xlDescending
+                        .Header = xlYes
+                        .Apply
+                    End With
+                End With
+                EndWork xlsapp:=Application
+            Case Else
+
+        End Select
+
+
     End If
 
-    If oRange.Row = C_eStartlinesLLData And sControlType = C_sDictControlCustom Then
+    If oRange.Row = C_estartlineslldata And sControlType = C_sDictControlCustom Then
         'The name of custom variables has been updated, update the dictionary
-        sCustomVarName = ActiveSheet.Cells(C_eStartlinesLLData + 1, iNumCol).value
+        sCustomVarName = ActiveSheet.Cells(C_estartlineslldata + 1, iNumCol).value
         sNote = GetDictColumnValue(sCustomVarName, C_sDictHeaderSubLab)
         sLabel = Replace(oRange.value, sNote, "")
         sLabel = Replace(sLabel, Chr(10), "")
@@ -208,86 +252,6 @@ errHand:
 
 End Sub
 
-Sub EventOpenLinelist()
-    Dim iNbCols As Integer
-    Dim Wksh As Worksheet
-    Dim i As Integer
-    Dim hasData As Boolean
-    Dim LLEnteredData As BetterArray
-    Dim ListAutoData As BetterArray
-    Dim LoRng As Range
-    Dim sVarName As String
-    Dim sAutoVariable As String
-    Dim sAutoSheetName As String
-    Dim iAutoColumn As Integer
-    Dim sList As String
-    Dim iDataLength As Integer
-
-    Set Wksh = ActiveSheet
-    hasData = False
-    iDataLength = 0
-
-    With Wksh
-        BeginWork xlsapp:=Application
-        '.Unprotect (C_sLLPassword)
-
-        iNbCols = .Cells(C_eStartlinesLLData, Columns.Count).End(xlToLeft).Column
-
-        For i = 1 To iNbCols
-
-            If .Cells(C_eStartLinesLLMainSec - 1, i).value = C_sDictControlChoiceAuto Then
-
-                'First take the data in memory (we need it since we don't know the data entered by the operator)
-                If Not hasData Then
-                    Set LLEnteredData = New BetterArray
-                    LLEnteredData.FromExcelRange .Cells(C_eStartlinesLLData + 2, 1), DetectLastRow:=True, DetectLastColumn:=True
-                    iDataLength = LLEnteredData.Length
-                    'Resize the listObject to the current entered data + 1
-                    Set LoRng = .Range(.Cells(C_eStartlinesLLData + 1, 1), .Cells(iDataLength + C_eStartlinesLLData + 2, iNbCols))
-                    .ListObjects("o" & ClearString(.Name)).Resize LoRng
-                    hasData = True
-                End If
-
-                'Do all this only if there is Data in the sheet
-
-                If iDataLength > 2 Then
-                    'VarName of the actual sheet
-                    sVarName = .Cells(C_eStartlinesLLData + 1, i).value
-                    'Get the entered list of the listauto
-                    sAutoVariable = GetDictColumnValue(sVarName, C_sDictHeaderChoices)
-
-                    'Get the SheetName of the auto
-                    sAutoSheetName = GetDictColumnValue(sAutoVariable, C_sDictHeaderSheetName)
-
-                    'Get the Column of the auto
-                    iAutoColumn = GetDictColumnValue(sAutoVariable, C_sDictHeaderIndex)
-
-                    If iAutoColumn > 0 Then
-                        'Get the entered values for the auto
-                        Set ListAutoData = New BetterArray
-                        ListAutoData.FromExcelRange ThisWorkbook.Worksheets(sAutoSheetName).Cells(C_eStartlinesLLData + 2, iAutoColumn), DetectLastColumn:=False, DetectLastRow:=True
-                        ListAutoData.Reverse
-                        'Get validation list
-                        sList = ListAutoData.ToString(Separator:=",", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
-
-                        'Set the validation list
-                        Call Helpers.SetValidation(.Cells(iDataLength + 1, i), sList, 2)
-                    End If
-                End If
-
-            End If
-        Next
-
-        If hasData Then
-            'resize because data has been updated
-            Set LoRng = .Range(.Cells(C_eStartlinesLLData + 1, 1), .Cells(C_iNbLinesLLData + C_eStartlinesLLData - 1, iNbCols))
-            .ListObjects("o" & ClearString(.Name)).Resize LoRng
-        End If
-
-        'Call ProtectSheet
-        EndWork xlsapp:=Application
-    End With
-End Sub
 
 Sub ClicImportMigration()
 'Import exported data into the linelist
