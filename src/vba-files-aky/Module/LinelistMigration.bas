@@ -87,7 +87,7 @@ Sub ImportMigrationData()
             lgStart = shTarget.Cells.Find("*", SearchOrder:=xlByRows, SearchDirection:=xlPrevious, LookIn:=xlValues).Row + 1
 
             shTarget.Select
-            ActiveSheet.Unprotect (C_sLLPassword)
+            ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
             For Each lstobj In shTarget.ListObjects
                 If lstobj.Name = "o" & shTarget.Name Then

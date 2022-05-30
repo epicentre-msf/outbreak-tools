@@ -123,7 +123,7 @@ End Function
 
 Function GetDictDataFromCondition(sColumnName As String, sCondition As String, Optional bVarNamesOnly As Boolean = False) As BetterArray
     Dim ColumnData As BetterArray
-    Dim Rng As Range
+    Dim rng As Range
     Dim iColIndex As Integer
 
     'Be sure the sColumnName is present in the headers
@@ -135,14 +135,14 @@ Function GetDictDataFromCondition(sColumnName As String, sCondition As String, O
             With .ListObjects("o" & ClearString(C_sParamSheetDict)).Range
                .AutoFilter Field:=iColIndex, Criteria1:=sCondition
             End With
-            Set Rng = .ListObjects("o" & ClearString(C_sParamSheetDict)).Range.SpecialCells(xlCellTypeVisible)
+            Set rng = .ListObjects("o" & ClearString(C_sParamSheetDict)).Range.SpecialCells(xlCellTypeVisible)
         End With
 
         'Take the special cells and copy the data
         With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
-            Rng.Copy Destination:=.Cells(1, 1)
+            rng.Copy Destination:=.Cells(1, 1)
             Set ColumnData = New BetterArray
             ColumnData.LowerBound = 1
             If bVarNamesOnly Then
@@ -155,7 +155,7 @@ Function GetDictDataFromCondition(sColumnName As String, sCondition As String, O
             .Visible = xlSheetVeryHidden
         End With
 
-        Set Rng = Nothing
+        Set rng = Nothing
         Set GetDictDataFromCondition = ColumnData.Clone()
         Set ColumnData = Nothing
     End If

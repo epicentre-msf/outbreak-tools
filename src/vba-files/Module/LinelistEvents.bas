@@ -35,7 +35,7 @@ Sub ClicCmdAddRows()
 
     Dim oLstobj As Object
 
-    ActiveSheet.Unprotect (C_sLLPassword)
+    ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
     Application.EnableEvents = False
 
     For Each oLstobj In ActiveSheet.ListObjects
@@ -83,21 +83,73 @@ End Sub
 
 
 Sub ClicCmdDebug()
+    'Debug Mode logic
     Static DebugMode As Boolean
     Dim pwd As String
     Dim sh As Worksheet
-    pwd = Inputbox("Provide the debugging password", "DEBUG MODE", "1234")
+    Dim SheetsOfTypeLLData As BetterArray
+    Dim DictHeaders As BetterArray
+    Dim i As Integer
+    Dim iNbVar As Integer
+    Dim sPrevSheetName As String
+    Dim DebugWksh As Worksheet
 
-    If pwd = C_sLLPassword Then
+    BeginWork xlsapp:=Application
+    pwd = InputBox("Provide the debugging password", "DEBUG MODE", "1234")
+    Set DebugWksh = Worksheets(ActiveSheet.Name)
+
+    'Unprotect All Sheets
+    If Not DebugMode Then
+        If pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value Then
+            For Each sh In ThisWorkbook.Worksheets
+                If sh.ProtectContents = True Then
+                    sh.Unprotect pwd
+                End If
+            Next
+            DebugMode = True
+            DebugWksh.Shapes(C_sShpDebug).Fill.ForeColor.RGB = Helpers.GetColor("Green")
+            DebugWksh.Shapes(C_sShpDebug).Fill.BackColor.RGB = Helpers.GetColor("Green")
+            DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.Text = "Protect"
+            DebugWksh.Select
+        Else
+            MsgBox "Wrong Password!", vbOK, "DEBUG MODE"
+        End If
+    Else
+        With ThisWorkbook.Worksheets(C_sParamSheetDict)
+        'Protect All Sheets of Type LL
+            iNbVar = .Cells(Rows.Count, 1).End(xlUp).Row
+            Set DictHeaders = GetDictionaryHeaders()
+            Set SheetsOfTypeLLData = New BetterArray
+            For i = 1 To iNbVar
+                If .Cells(i, DictHeaders.IndexOf(C_sDictHeaderSheetType)) = C_sDictSheetTypeLL And .Cells(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)) <> sPrevSheetName Then
+                    sPrevSheetName = .Cells(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                    SheetsOfTypeLLData.Push sPrevSheetName
+                End If
+            Next
+        End With
+
         For Each sh In ThisWorkbook.Worksheets
-            If sh.protectcontents = True Then
-                sh.Unprotect pwd
+            If SheetsOfTypeLLData.Includes(sh.Name) Then
+
+             sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
+                         AllowFormattingColumns:=True
+
+
             End If
         Next
-    Else
-        MsgBox "Wrong Password!", vbok, "DEBUG MODE"
+
+        'Debug Mode is False
+        DebugMode = False
+        ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value = pwd
+        DebugWksh.Shapes(C_sShpDebug).Fill.ForeColor.RGB = Helpers.GetColor("Orange")
+        DebugWksh.Shapes(C_sShpDebug).Fill.BackColor.RGB = Helpers.GetColor("Orange")
+        DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.Text = "Debug"
     End If
+
+    EndWork xlsapp:=Application
 End Sub
+
 
 'Trigerring event when the linelist sheet has some values within                                                          -
 'Trigerring event when the linelist sheet has some values within                                                          -
@@ -132,7 +184,7 @@ Sub EventValueChangeLinelist(oRange As Range)
                 ' adm1 has been modified, we will correct and set validation to adm2
 
                 BeginWork xlsapp:=Application
-                ActiveSheet.Unprotect (C_sLLPassword)
+                ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
                 oRange.Offset(, 1).Validation.Delete
                 oRange.Offset(, 1).value = ""
@@ -159,7 +211,7 @@ Sub EventValueChangeLinelist(oRange As Range)
 
                 'Adm2 has been modified, we will correct and filter adm3
                 BeginWork xlsapp:=Application
-                ActiveSheet.Unprotect (C_sLLPassword)
+                ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
                 oRange.Offset(, 1).Validation.Delete
                 oRange.Offset(, 1).value = vbNullString
@@ -179,7 +231,7 @@ Sub EventValueChangeLinelist(oRange As Range)
             Case C_sDictControlGeo & "3"
                 'Adm 3 has been modified, correct and filter adm4
                 BeginWork xlsapp:=Application
-                ActiveSheet.Unprotect (C_sLLPassword)
+                ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
                 oRange.Offset(, 1).Validation.Delete
                 oRange.Offset(, 1).value = vbNullString
