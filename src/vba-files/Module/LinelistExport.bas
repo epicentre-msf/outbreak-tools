@@ -100,7 +100,7 @@ Function GetExportValues(ExportHeadersData As BetterArray, sSheetName As String,
 
     Exit Function
 errTranspose:
-    MsgBox "Unable to transpose Export Table", vbOKOnly + VbCritical, "ERROR"
+    MsgBox "Unable to transpose Export Table", vbOKOnly + vbCritical, "ERROR"
 End Function
 
 
@@ -380,13 +380,13 @@ Sub Export(iTypeExport As Byte)
     Exit Sub
 
 exportErrHandExport:
-    MsgBox "Errors during export, unable to export to corresponding path", vbOKOnly + VbCritical, "ERROR"
+    MsgBox "Errors during export, unable to export to corresponding path", vbOKOnly + vbCritical, "ERROR"
     Exit Sub
 exportErrHandData:
-    MsgBox "Errors during export, problems while getting the data", vbOKOnly + VbCritical, "ERROR"
+    MsgBox "Errors during export, problems while getting the data", vbOKOnly + vbCritical, "ERROR"
     Exit Sub
 exportErrHandWrite:
-    MsgBox "Errors during export, unable to write data to corresponding directory, please choose another one", vbOKOnly + VbCritical, "ERROR"
+    MsgBox "Errors during export, unable to write data to corresponding directory, please choose another one", vbOKOnly + vbCritical, "ERROR"
     Exit Sub
 End Sub
 

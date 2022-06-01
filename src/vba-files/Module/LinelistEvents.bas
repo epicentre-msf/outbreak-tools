@@ -77,7 +77,7 @@ Sub ClicCmdExport()
         iHeight = .CMD_Retour.Top + .CMD_Retour.Height + 24 + 10
         .Height = iHeight
         .Width = 168
-        .show
+        .Show
     End With
 End Sub
 
@@ -255,7 +255,7 @@ End Sub
 
 Sub ClicImportMigration()
 'Import exported data into the linelist
-    F_ImportMig.show
+    F_ImportMig.Show
 End Sub
 
 
@@ -264,14 +264,14 @@ Sub ClicExportMigration()
     Static AfterFirstClicMig As Boolean
 
     If AfterFirstClicMig Then
-        [F_ExportMig].show
+        [F_ExportMig].Show
     Else
         'For the first click Thick Migration and Geo and put historic to false
         'For subsequent clicks, just show what have been ticked
         [F_ExportMig].CHK_ExportMigData.value = True
         [F_ExportMig].CHK_ExportMigGeo.value = True
         [F_ExportMig].CHK_ExportMigGeoHistoric.value = True
-        [F_ExportMig].show
+        [F_ExportMig].Show
         AfterFirstClicMig = True
     End If
 End Sub
