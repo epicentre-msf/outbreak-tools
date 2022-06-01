@@ -145,6 +145,7 @@ Public Const C_sCmdImportMigration As String = "ClicImportMigration"
 Public Const C_sCmdExport As String = "ClicCmdExport"
 Public Const C_sCmdDebug As String = "ClicCmdDebug"
 Public Const C_sAdmName As String = "adm"
+Public Const C_sResetData As String = "ClicResetData"
 
 'TABLES LISTOBJECTS ===============================================================================================================================================================
 
@@ -161,6 +162,7 @@ Public Const C_sShpExpMigration As String = "SHP_ExportMig"
 Public Const C_sShpImpMigration As String = "SHP_ImportMig"
 Public Const C_sShpExport As String = "SHP_Export"
 Public Const C_sShpDebug As String = "SHP_Debug"
+Public Const C_sShpReset As String = "SHP_Reset"
 
 'Ranges in the linelist sheet
 Public Const C_sRngPublickey             As String = "RNG_PublicKey"                     'Name of the range for publickey

@@ -79,13 +79,13 @@ Sub ClicCmdShowHide()
                     T_varname.Push Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVarName)).value
 
                     If LCase(Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderStatus)).value) = C_sDictStatusMan Then
-                        T_status.Push "Mandatory"
+                        T_status.Push translate_LineList("Mandatory", Sheets("linelist-translation").[T_tradRange])
                         Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = C_sDictStatusMan
                     ElseIf LCase(Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value) = C_sDictStatusUserHid Then
-                        T_status.Push "Hidden"
+                        T_status.Push translate_LineList("Hidden", Sheets("linelist-translation").[T_tradRange])
                     Else
-                        T_status.Push "Shown"
-                        Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = "Shown"
+                        T_status.Push translate_LineList("Shown", Sheets("linelist-translation").[T_tradRange])
+                        Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = translate_LineList("Shown", Sheets("linelist-translation").[T_tradRange])
                     End If
                 End If
 
@@ -126,7 +126,7 @@ Sub ClicCmdShowHide()
     F_NomVisible.Width = 450
     F_NomVisible.Height = 270
     F_NomVisible.CMD_Fermer.SetFocus
-    F_NomVisible.show
+    F_NomVisible.Show
 
     Call ProtectSheet
 End Sub
@@ -140,25 +140,29 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
     Set T_FormData = New BetterArray
     T_FormData.LowerBound = 1
     T_FormData.Items = F_NomVisible.LST_NomChamp.List
+    Dim sCase(1) As String
 
     BeginWork xlsapp:=Application
     Application.EnableEvents = False
 
+    sCase(0) = LCase(translate_LineList("mandatory", Sheets("linelist-translation").[T_tradRange]))
+    sCase(1) = LCase(translate_LineList("hidden", Sheets("linelist-translation").[T_tradRange]))
+
     F_NomVisible.FRM_AffMas.Visible = True
     Select Case LCase(T_FormData.Items(iIndex + 1, 3))
-    Case "mandatory"
+    Case sCase(0)
         TriggerShowHide = False
         F_NomVisible.OPT_Affiche.value = 1
-        F_NomVisible.OPT_Affiche.Caption = "Show/Mandatory"
+        F_NomVisible.OPT_Affiche.Caption = translate_LineList("Show/Mandatory", Sheets("linelist-translation").[T_tradRange])
         F_NomVisible.OPT_Affiche.Width = 80
         F_NomVisible.OPT_Affiche.Left = 0
         F_NomVisible.OPT_Affiche.Top = 20
 
         F_NomVisible.OPT_Masque.Visible = False
-    Case "hidden"                                'It is hidden, show masking
+    Case sCase(1)                                'It is hidden, show masking
         TriggerShowHide = False
         F_NomVisible.OPT_Affiche.value = 0
-        F_NomVisible.OPT_Affiche.Caption = "Show"
+        F_NomVisible.OPT_Affiche.Caption = translate_LineList("Show", Sheets("linelist-translation").[T_tradRange])
         F_NomVisible.OPT_Affiche.Width = 45
         F_NomVisible.OPT_Affiche.Left = 10
         F_NomVisible.OPT_Affiche.Top = 6
@@ -169,7 +173,7 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
     Case Else
         TriggerShowHide = False                                   'It is shown if not
         F_NomVisible.OPT_Affiche.value = 1
-        F_NomVisible.OPT_Affiche.Caption = "Show"
+        F_NomVisible.OPT_Affiche.Caption = translate_LineList("Show", Sheets("linelist-translation").[T_tradRange])
         F_NomVisible.OPT_Affiche.Width = 45
         F_NomVisible.OPT_Affiche.Left = 10
         F_NomVisible.OPT_Affiche.Top = 6
@@ -237,9 +241,9 @@ Sub UpdateFormData(ByRef T_table As BetterArray, index As Integer, Optional bhid
     T_values.Items = T_table.Item(index + 1)     'the index starts at -1 on a listbox
     'Update the visibility status
     If bhide Then
-        T_values.Item(3) = "Hidden"
+        T_values.Item(3) = translate_LineList("Hidden", Sheets("linelist-translation").[T_tradRange])
     Else
-        T_values.Item(3) = "Shown"
+        T_values.Item(3) = translate_LineList("Shown", Sheets("linelist-translation").[T_tradRange])
     End If
     'Mutate in the form table
     T_table.Item(index + 1) = T_values.Items
@@ -309,7 +313,7 @@ Sub WriteShowHide(sSheetName As String, ByVal sVarName As String, visibility As 
             If visibility = 0 Then
                 ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).value = C_sDictStatusUserHid
             ElseIf visibility = 1 Then
-                ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).value = "Shown"
+                ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).value = translate_LineList("Shown", Sheets("linelist-translation").[T_tradRange])
             End If
         End If
     End If
