@@ -7,12 +7,18 @@ Option Explicit
 
 Private Sub Worksheet_Change(ByVal Target As Range)
     Application.EnableEvents = False
+    Application.Cursor = xlNorthwestArrow
     Call EventValueChangeLinelist(Target)
+    Application.EnableEvents = True
+    Application.Cursor = xlDefault
+End Sub
+
+Private Sub Worksheet_Deactivate()
+    Application.EnableEvents = False
+    Dim sSheetName As String
+    sSheetName = Me.Name
+    Call EventDesactivateLinelist(sSheetName)
     Application.EnableEvents = True
 End Sub
 
-Private Sub Worksheet_Activate()
-    'Application.EnableEvents = False
-    'Call EventOpenLinelist()
-    'Application.EnableEvents = True
-End Sub
+
