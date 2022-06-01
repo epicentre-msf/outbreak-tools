@@ -132,7 +132,7 @@ Public Function ControlForGenerate() As Boolean
 
     SheetMain.Range(C_sRngLLName).value = FileNameControl(SheetMain.Range(C_sRngLLName).value)
 
-    Call SetInputRangesToWhite
+    'Call SetInputRangesToWhite
     ControlForGenerate = True
 
 End Function
