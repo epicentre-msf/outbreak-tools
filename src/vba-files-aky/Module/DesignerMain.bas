@@ -160,6 +160,8 @@ End Sub
 ' well as all the forms in the linelist
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub GenerateData()
+    BeginWork xlsapp:=Application
+    
     Dim bGood As Boolean
     bGood = DesignerMainHelpers.ControlForGenerate()
 
@@ -182,8 +184,7 @@ Sub GenerateData()
 
     iUpdateCpt = 0
     
-    BeginWork xlsapp:=Application
-    SheetMain.Range(C_sRngUpdate).value = vbNullString
+    'SheetMain.Range(C_sRngUpdate).value = vbNullString
 
     'Be sure the actual Workbook is not opened
 
@@ -192,8 +193,6 @@ Sub GenerateData()
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
-    
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_MovingData")
 
     Set DesWkb = DesignerWorkbook
     Set SetupWkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
@@ -208,9 +207,9 @@ Sub GenerateData()
     SetupWkb.Close savechanges:=False
     Set SetupWkb = Nothing
 
-    iUpdateCpt = iUpdateCpt + 5
+    'iUpdateCpt = iUpdateCpt + 5
 
-    StatusBar_Updater (iUpdateCpt)
+    'StatusBar_Updater (iUpdateCpt)
 
     'translation of the Export, Dictionary and Choice sheets for the linelist
     'Call Translate_Manage
