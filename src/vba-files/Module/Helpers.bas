@@ -470,11 +470,11 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
         DestWkb.Worksheets(sSheetName).Cells.Clear
     Else
         DestWkb.Worksheets.Add.Name = sSheetName
+        DestWkb.Worksheets(sSheetName).Visible = xlSheetHidden
     End If
 
     'Copy the data Now
     sData.ToExcelRange DestWkb.Worksheets(sSheetName).Range("A1")
-    DestWkb.Worksheets(sSheetName).Visible = xlSheetHidden
     Set sData = Nothing
 End Sub
 

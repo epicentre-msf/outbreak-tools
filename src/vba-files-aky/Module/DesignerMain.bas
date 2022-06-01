@@ -160,6 +160,7 @@ End Sub
 ' well as all the forms in the linelist
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub GenerateData()
+    
     Dim bGood As Boolean
     bGood = DesignerMainHelpers.ControlForGenerate()
 
@@ -180,13 +181,12 @@ Sub GenerateData()
     Dim iOpenLL         As Integer
     Dim i               As Integer
 
-    iUpdateCpt = 0
-    
-    BeginWork xlsapp:=Application
-    SheetMain.Range(C_sRngUpdate).value = vbNullString
 
     'Be sure the actual Workbook is not opened
-
+    
+    
+    SheetMain.Range(C_sRngUpdate).value = vbNullString
+    
     If IsWkbOpened(SheetMain.Range(C_sRngLLName).value & ".xlsb") Then
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseLL")
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
@@ -194,6 +194,11 @@ Sub GenerateData()
     End If
     
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_MovingData")
+    
+    iUpdateCpt = 0
+    StatusBar_Updater (iUpdateCpt)
+    
+    BeginWork xlsapp:=Application
 
     Set DesWkb = DesignerWorkbook
     Set SetupWkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
@@ -209,11 +214,8 @@ Sub GenerateData()
     Set SetupWkb = Nothing
 
     iUpdateCpt = iUpdateCpt + 5
-
     StatusBar_Updater (iUpdateCpt)
 
-    'translation of the Export, Dictionary and Choice sheets for the linelist
-    'Call Translate_Manage
 
     '--------------- Getting all required the Data
 
