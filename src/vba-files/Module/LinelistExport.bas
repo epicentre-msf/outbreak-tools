@@ -379,13 +379,13 @@ Sub Export(iTypeExport As Byte)
     Exit Sub
 
 exportErrHandExport:
-    MsgBox "Errors during export, unable to export to corresponding path", vbOKOnly + vbCritical, "ERROR"
+    MsgBox TranslateLLMsg("MSG_ErrHandExport"), vbOKOnly + vbCritical, "ERROR"
     Exit Sub
 exportErrHandData:
-    MsgBox "Errors during export, problems while getting the data", vbOKOnly + vbCritical, "ERROR"
+    MsgBox TranslateLLMsg("MSG_exportErrHandData"), vbOKOnly + vbCritical, "ERROR"
     Exit Sub
 exportErrHandWrite:
-    MsgBox "Errors during export, unable to write data to corresponding directory, please choose another one", vbOKOnly + vbCritical, "ERROR"
+    MsgBox TranslateLLMsg("MSG_exportErrHandWrite"), vbOKOnly + vbCritical, "ERROR"
     Exit Sub
 End Sub
 
@@ -406,7 +406,7 @@ Sub NewKey()
     ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngPublickey).value = T_Cle(i, 1)
     ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngPrivatekey).value = T_Cle(i, 2)
 
-    MsgBox "My new password : " & T_Cle(i, 2)    'MSG_NewPass
+    MsgBox TranslateLLMsg("MSG_Password") & T_Cle(i, 2)    'MSG_NewPass
 
     ThisWorkbook.Worksheets(C_sSheetPassword).Visible = xlSheetVeryHidden
 

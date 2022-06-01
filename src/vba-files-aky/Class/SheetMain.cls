@@ -16,17 +16,21 @@ Private Sub Worksheet_Change(ByVal Target As Range)
 
     On Error GoTo no
         Application.ScreenUpdating = False
+        Application.EnableAnimations = False
+        Application.EnableEvents = False
 
         If Target.Name.Name = "RNG_LangDesigner" Then
           Call TranslateDesigner
         ElseIf Target.Name.Name = "RNG_LLForm" Then
 
-            Call translateHeadGeo
+           Call TranslateHeadGeo
         ElseIf Target.Name.Name = "RNG_LLPassword" Then
             SheetPassword.Range("RNG_DebuggingPassword").value = Target.value
         End If
 
         Application.ScreenUpdating = True
+        Application.EnableAnimations = True
+        Application.EnableEvents = True
         Exit Sub
 no:
 End Sub

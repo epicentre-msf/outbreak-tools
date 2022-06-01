@@ -133,12 +133,12 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
 
     Set transValue = Nothing
     [F_Geo].TXT_Msg.value = vbNullString
-    [F_Geo].show
+    [F_Geo].Show
 
     Exit Sub
 
-    ErrLoadGeo:
-        MsgBox "Error, Unable to Load the GeoApp"
+ErrLoadGeo:
+        MsgBox TranslateLLMsg("MSG_ErrGeo"), vbOKOnly + vbCritical, "ERROR"
         EndWork xlsapp:=Application
         Exit Sub
 End Sub
@@ -493,7 +493,7 @@ Sub ClearOneHistoricGeobase(iGeoType As Byte)
             End If
         End If
 
-        MsgBox "Done", vbinformation, "Delete Historic"
+        MsgBox "Done", vbInformation, "Delete Historic"
     End If
     'Add a message to say it is done
     Set WkshGeo = Nothing

@@ -127,7 +127,10 @@ Public Const C_sTabNames                 As String = "T_NAMES"
 Public Const C_sTabHistoGeo              As String = "T_HistoGeo"                          'Historic data for the geo
 Public Const C_sTabHistoHF               As String = "T_HistoHF"                           'Historic data for the Health Facility
 Public Const C_sTabGeoMetadata As String = "T_Metadata"
-
+Public Const C_sTabTradLLMsg As String = "T_TradLLMsg"
+Public Const C_sTabTradLLShapes As String = "T_TradLLShapes"
+Public Const C_sTabTradLLForms  As String = "T_TradLLForms"
+Public Const C_sTabLLLang As String = "T_LLLang"
 'Formulas and functions tables
 
 Public Const C_sTabExcelFunctions        As String = "T_XlsFonctions"                      'Excel functions to keep in formulas
@@ -173,7 +176,7 @@ Public Const C_sRngLLLanguage           As String = "RNG_LLLanguage"
 Public Const C_sRngDebuggingPassWord    As String = "RNG_DebuggingPassword"
 
 'STRING CONSTANTS =================================================================================================================================================================
-Public Const C_sLLPasword             As String = "1234"                                'Default password for the linelist file (if no one is set)                                'Default password for the designer
+Public Const C_sLLPassword             As String = "1234"                                'Default password for the linelist file (if no one is set)                                'Default password for the designer
 Public Const C_sYes                     As String = "yes"
 Public Const C_sNo                      As String = "no"
 Public Const C_sGeobase                 As String = "export_geobase"

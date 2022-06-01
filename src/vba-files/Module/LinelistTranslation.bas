@@ -1,78 +1,86 @@
 Attribute VB_Name = "LinelistTranslation"
 Option Explicit
 
-Sub TranslateForm(UserFrm As UserForm, rgPlage As Range)
-'management of the translation of the form captions
+Function GetLanguageCode(sString As String) As String
+    Dim T_data As BetterArray                    'array of languages
+    Dim T_codes As BetterArray                   'array of languages codes
+    Dim T_values As BetterArray                  'values of languages
+
+    Set T_data = New BetterArray
+    T_data.LowerBound = 1
+    Set T_codes = New BetterArray
+    T_codes.LowerBound = 1
+    Set T_values = New BetterArray
+    T_values.LowerBound = 1
+
+    GetLanguageCode = ""
+
+    T_data.FromExcelRange SheetLLTranslation.ListObjects(C_sTabLLLang).DataBodyRange 'Language table
+    T_values.Items = T_data.ExtractSegment(ColumnIndex:=1) 'language values
+    T_codes.Items = T_data.ExtractSegment(ColumnIndex:=2) 'language codes
+
+    If T_values.Includes(sString) Then
+        'The Language code
+        GetLanguageCode = T_codes.Item(T_values.IndexOf(sString))
+    End If
+
+End Function
+
+
+Sub TranslateForm(UserFrm As UserForm)
+    'management of the translation of the form captions
 
     Dim sLanguage As String
-    Dim iNumCol As Integer, i As Integer
+    Dim i As Integer
     Dim cControl As Control
-
-    sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_LLLanguage].value, _
-    Sheets("linelist-translation").[T_Lang2], 2, False)
-
-    Select Case sLanguage
-        Case "ENG"
-            Exit Sub
-        Case "FRA"
-            iNumCol = 3
-        Case "POR"
-            iNumCol = 4
-        Case "ARA"
-            iNumCol = 5
-        Case "SPA"
-            iNumCol = 6
-    End Select
-
+        
     For Each cControl In UserFrm.Controls
         If TypeOf cControl Is MSForms.CommandButton Or (TypeOf cControl Is MSForms.Label) Or (TypeOf cControl Is MSForms.OptionButton) _
-        Or (TypeOf cControl Is MSForms.Page) Or (TypeOf cControl Is MSForms.MultiPage) Or (TypeOf cControl Is MSForms.Frame) Then
+        Or (TypeOf cControl Is MSForms.Page) Or (TypeOf cControl Is MSForms.MultiPage) Or (TypeOf cControl Is MSForms.Frame) Or (TypeOf cControl Is MSForms.CheckBox) Then
             If TypeOf cControl Is MSForms.MultiPage Then
                 For i = 0 To cControl.Pages.Count - 1
-                    If cControl.Name = "MultiPage1" Then UserFrm.MultiPage1.Pages(i).Caption = _
-                    Application.WorksheetFunction.VLookup(UserFrm.MultiPage1.Pages(i).Name, rgPlage, iNumCol, False)
-                    If cControl.Name = "MultiPage2" Then UserFrm.MultiPage2.Pages(i).Caption = _
-                    Application.WorksheetFunction.VLookup(UserFrm.MultiPage2.Pages(i).Name, rgPlage, iNumCol, False)
+                    If cControl.Name = "MultiPage1" Then UserFrm.MultiPage1.Pages(i).Caption = TranslateLineList(UserFrm.MultiPage1.Pages(i).Name, C_sTabTradLLForms)
+                    If cControl.Name = "MultiPage2" Then UserFrm.MultiPage2.Pages(i).Caption = TranslateLineList(UserFrm.MultiPage2.Pages(i).Name, C_sTabTradLLForms)
                 Next i
             Else
-                If Trim(cControl.Caption) <> "" Then _
-                cControl.Caption = Application.WorksheetFunction.VLookup(cControl.Name, rgPlage, iNumCol, False)
+                If Trim(cControl.Caption) <> "" Then cControl.Caption = TranslateLineList(cControl.Name, C_sTabTradLLForms)
             End If
         End If
     Next cControl
-
 End Sub
 
 
-Function translate_LineList(sText As String, rgPlage As Range)
-'management of the translation of the Linelist Patient
+Function TranslateLineList(sText As String, sRngName As String)
+    'Management of the translation of the Linelist
 
     Dim sLanguage As String
     Dim iNumCol As Integer
-
-    sLanguage = Application.WorksheetFunction.VLookup(Sheets("linelist-translation").[RNG_LLLanguage].value, _
-    Sheets("linelist-translation").[T_Lang2], 2, False)
-
-    Select Case sLanguage
-        Case "ENG"
-            iNumCol = 1
-        Case "FRA"
-            iNumCol = 2
-        Case "POR"
-            iNumCol = 3
-        Case "ARA"
-            iNumCol = 4
-        Case "SPA"
-            iNumCol = 5
-    End Select
-
-    translate_LineList = Application.WorksheetFunction.VLookup(sText, rgPlage, iNumCol, False)
-
+    Dim HeadersData As BetterArray
+    Dim TransWksh As Worksheet
+    Dim Rng As Range
+    
+    Set HeadersData = New BetterArray
+    Set TransWksh = ThisWorkbook.Worksheets(C_sSheetLLTranslation)
+    Set Rng = TransWksh.ListObjects(sRngName).Range
+    
+    TranslateLineList = vbNullString
+    
+    HeadersData.FromExcelRange TransWksh.ListObjects(sRngName).HeaderRowRange
+    sLanguage = TransWksh.Range(C_sRngLLLanguageCode)
+    iNumCol = HeadersData.IndexOf(sLanguage)
+    
+    On Error Resume Next
+    
+    If iNumCol > 0 Then
+         TranslateLineList = Application.WorksheetFunction.VLookup(sText, Rng, iNumCol, False)
+    End If
+    
+    On Error GoTo 0
+    Set HeadersData = Nothing
 End Function
 
 Sub ImportLangAnalysis(sPath As String)
 'Import languages from the setup file and sheets Translation and Analysis
-
 
     Dim Wkb As Workbook
     Dim sAdr1 As String
@@ -104,25 +112,11 @@ Sub ImportLangAnalysis(sPath As String)
     Set dest = SheetSetTranslation.Range("A" & C_eStartlinestransdata)
     src.Copy dest
 
-    'DesignerWorkbook.Activate
-    'SheetAnalysis.Range("A1").PasteSpecial
-
     sAdr1 = SheetDesTranslation.Range("T_Lst_Lang").Address
     sAdr2 = SheetDesTranslation.Range("T_Lst_Lang").End(xlToRight).Address
-
-    With SheetMain.Range(C_sRngLangSetup).Validation
-        .Delete
-        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:= _
-        xlBetween, Formula1:="='" & SheetDesTranslation.Name & "'!" & sAdr1 & ":" & sAdr2
-        .IgnoreBlank = True
-        .InCellDropdown = True
-        .InputTitle = ""
-        .errorTitle = ""
-        .InputMessage = ""
-        .ErrorMessage = ""
-        .ShowInput = True
-        .ShowError = True
-    End With
+    
+    'Set Validation, 1 is Error
+    Call Helpers.SetValidation(SheetMain.Range(C_sRngLangSetup), "='" & SheetDesTranslation.Name & "'!" & sAdr1 & ":" & sAdr2, 1)
 
     Wkb.Close
     Set Wkb = Nothing
@@ -134,6 +128,11 @@ Sub ImportLangAnalysis(sPath As String)
     Application.EnableEvents = True
     Application.EnableAnimations = True
 End Sub
+
+'Translate a message in the linelist (corresponding to the choosen language)
+Function TranslateLLMsg(sMsgCode As String) As String
+    TranslateLLMsg = TranslateLineList(sMsgCode, C_sTabTradLLMsg)
+End Function
 
 Sub Translate_Manage()
 'translation of the Export, Dictionary and Choice sheets for the linelist

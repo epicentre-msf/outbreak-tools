@@ -185,7 +185,7 @@ Sub AddCmd(Wkb As Workbook, sSheetName As String, iLeft As Integer, iTop As Inte
            Optional sShpTextColor As String = "White")
 
 
-    sText = translate_LineList(sText, Sheets("linelist-translation").[T_tradShapeLL])
+    sText = TranslateLineList(sShpName, C_sTabTradLLShapes)
 
     With Wkb.Worksheets(sSheetName)
         .Shapes.AddShape(msoShapeRectangle, iLeft + 3, iTop + 3, iCmdWidth, iCmdHeight).Name = sShpName

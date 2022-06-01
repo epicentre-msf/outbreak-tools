@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_NomVisible 
    Caption         =   "ShowNameApps"
-   ClientHeight    =   5880
+   ClientHeight    =   6015
    ClientLeft      =   -30
    ClientTop       =   -165
-   ClientWidth     =   8295.001
+   ClientWidth     =   9165.001
    OleObjectBlob   =   "F_NomVisible.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -13,6 +13,12 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
+
+
+
+
+
 
 
 
@@ -62,10 +68,10 @@ End Sub
 Private Sub UserForm_Initialize()
 'Manage language
 
-    Call TranslateForm(Me, ThisWorkbook.Worksheets("linelist-translation").[T_F_NomVisible])
-        
-    Me.Width = 440
-    Me.Height = 280
+    Call TranslateForm(Me)
+
+    Me.Width = 430
+    Me.Height = 330
 
 End Sub
 
