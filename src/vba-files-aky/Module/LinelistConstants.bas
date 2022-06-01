@@ -127,7 +127,10 @@ Public Const C_sTabNames                 As String = "T_NAMES"
 Public Const C_sTabHistoGeo              As String = "T_HistoGeo"                          'Historic data for the geo
 Public Const C_sTabHistoHF               As String = "T_HistoHF"                           'Historic data for the Health Facility
 Public Const C_sTabGeoMetadata As String = "T_Metadata"
-
+Public Const C_sTabTradLLMsg As String = "T_TradLLMsg"
+Public Const C_sTabTradLLShapes As String = "T_TradLLShapes"
+Public Const C_sTabTradLLForms  As String = "T_TradLLForms"
+Public Const C_sTabLLLang As String = "T_LLLang"
 'Formulas and functions tables
 
 Public Const C_sTabExcelFunctions        As String = "T_XlsFonctions"                      'Excel functions to keep in formulas
@@ -145,6 +148,7 @@ Public Const C_sCmdImportMigration As String = "ClicImportMigration"
 Public Const C_sCmdExport As String = "ClicCmdExport"
 Public Const C_sCmdDebug As String = "ClicCmdDebug"
 Public Const C_sAdmName As String = "adm"
+Public Const C_sResetData As String = "ClicResetData"
 
 'TABLES LISTOBJECTS ===============================================================================================================================================================
 
@@ -161,6 +165,7 @@ Public Const C_sShpExpMigration As String = "SHP_ExportMig"
 Public Const C_sShpImpMigration As String = "SHP_ImportMig"
 Public Const C_sShpExport As String = "SHP_Export"
 Public Const C_sShpDebug As String = "SHP_Debug"
+Public Const C_sShpReset As String = "SHP_Reset"
 
 'Ranges in the linelist sheet
 Public Const C_sRngPublickey             As String = "RNG_PublicKey"                     'Name of the range for publickey
@@ -171,7 +176,7 @@ Public Const C_sRngLLLanguage           As String = "RNG_LLLanguage"
 Public Const C_sRngDebuggingPassWord    As String = "RNG_DebuggingPassword"
 
 'STRING CONSTANTS =================================================================================================================================================================
-Public Const C_sLLPasword             As String = "1234"                                'Default password for the linelist file (if no one is set)                                'Default password for the designer
+Public Const C_sLLPassword             As String = "1234"                                'Default password for the linelist file (if no one is set)                                'Default password for the designer
 Public Const C_sYes                     As String = "yes"
 Public Const C_sNo                      As String = "no"
 Public Const C_sGeobase                 As String = "export_geobase"

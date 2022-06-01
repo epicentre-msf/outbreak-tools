@@ -128,7 +128,32 @@ Public Function ControlForGenerate() As Boolean
         Exit Function
     End If
 
-    SheetMain.Range(C_sRngLLName).Interior.Color = GetColor("White") 'If path is OK
+    'Be sure the linelist name is well written
+
+    SheetMain.Range(C_sRngLLName).value = FileNameControl(SheetMain.Range(C_sRngLLName).value)
+
+    Call SetInputRangesToWhite
     ControlForGenerate = True
+
+End Function
+
+
+Function FileNameControl(ByVal sName As String) As String
+'In the file name, replace forbidden characters with an underscore
+
+    FileNameControl = vbNullString
+
+    sName = Replace(sName, "<", "_")
+    sName = Replace(sName, ">", "_")
+    sName = Replace(sName, ":", "_")
+    sName = Replace(sName, "|", "_")
+    sName = Replace(sName, "?", "_")
+    sName = Replace(sName, "/", "_")
+    sName = Replace(sName, "\", "_")
+    sName = Replace(sName, "*", "_")
+    sName = Replace(sName, ".", "_")
+    sName = Replace(sName, """", "_")
+
+    FileNameControl = Application.WorksheetFunction.Trim(sName)
 
 End Function

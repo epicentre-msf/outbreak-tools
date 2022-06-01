@@ -15,7 +15,7 @@ End Sub
 
 Private Sub Worksheet_Deactivate()
     Application.EnableEvents = False
-    Dim sSheetName as String
+    Dim sSheetName As String
     sSheetName = Me.Name
     Call EventDesactivateLinelist(sSheetName)
     Application.EnableEvents = True

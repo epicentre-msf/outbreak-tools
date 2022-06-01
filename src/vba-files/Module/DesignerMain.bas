@@ -1,7 +1,7 @@
 Attribute VB_Name = "DesignerMain"
 Option Explicit
 
-    Dim sNameFile As String   'for control name file
+Public iUpdateCpt As Integer
 
 'LOADING FILES AND FOLDERS ==============================================================================================================================================
 
@@ -147,7 +147,7 @@ Sub LoadGeoFile()
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
 
-    Call translateHeadGeo
+    Call TranslateHeadGeo
 
     EndWork xlsapp:=Application
 End Sub
@@ -163,8 +163,6 @@ Sub GenerateData()
     Dim bGood As Boolean
     bGood = DesignerMainHelpers.ControlForGenerate()
 
-   BeginWork xlsapp:=Application
-
     If Not bGood Then
         Exit Sub
     End If
@@ -175,11 +173,17 @@ Sub GenerateData()
     Dim ChoicesData     As BetterArray          'Choices data
     Dim ExportData      As BetterArray          'Export data
     Dim TransData       As BetterArray          'Translation data
+    Dim GlobalSumData   As BetterArray
     Dim sPath           As String
     Dim SetupWkb        As Workbook
     Dim DesWkb          As Workbook
     Dim iOpenLL         As Integer
     Dim i               As Integer
+
+    iUpdateCpt = 0
+    
+    BeginWork xlsapp:=Application
+    SheetMain.Range(C_sRngUpdate).value = vbNullString
 
     'Be sure the actual Workbook is not opened
 
@@ -188,10 +192,12 @@ Sub GenerateData()
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
+    
+    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_MovingData")
 
     Set DesWkb = DesignerWorkbook
     Set SetupWkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
-
+    
     'Move the dictionary data
     Call Helpers.MoveData(SetupWkb, DesWkb, C_sParamSheetDict, C_eStartLinesDictHeaders)
     'Move the Choices data
@@ -202,8 +208,9 @@ Sub GenerateData()
     SetupWkb.Close savechanges:=False
     Set SetupWkb = Nothing
 
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadDic")
+    iUpdateCpt = iUpdateCpt + 5
 
+    StatusBar_Updater (iUpdateCpt)
 
     'translation of the Export, Dictionary and Choice sheets for the linelist
     'Call Translate_Manage
@@ -227,7 +234,6 @@ Sub GenerateData()
     'Create the translation Data
     Set TransData = New BetterArray
     TransData.FromExcelRange DesWkb.Worksheets(C_sParamSheetTranslation).Cells(C_eStartlinestransdata, 2), DetectLastRow:=True, DetectLastColumn:=True
-    
     DoEvents
     Set DesWkb = Nothing
 
@@ -235,7 +241,7 @@ Sub GenerateData()
 
     'Creating the linelist using the dictionnary and choices data as well as export data
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
-    
+
     'required temporary folder for analysis
     On Error Resume Next
         RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
@@ -247,19 +253,21 @@ Sub GenerateData()
 
     EndWork xlsapp:=Application
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
-    
+
     On Error Resume Next
         RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
     On Error GoTo 0
 
     Call SetInputRangesToWhite
 
+    StatusBar_Updater (100)
+
     iOpenLL = MsgBox(TranslateMsg("MSG_OpenLL") & " " & sPath & " ?", vbQuestion + vbYesNo, "Linelist")
 
     If iOpenLL = vbYes Then
         Call OpenLL
     End If
-    
+
     'Setting the memory data to nothing
     Set DictHeaders = Nothing
     Set DictData = Nothing
@@ -352,52 +360,6 @@ no:
 End Sub
 
 
-
-Function FileNameControl(sName As String) As String
-'In the file name, replace forbidden characters with an underscore
-
-    FileNameControl = vbNullString
-
-    sName = Replace(sName, "<", "_")
-    sName = Replace(sName, ">", "_")
-    sName = Replace(sName, ":", "_")
-    sName = Replace(sName, "|", "_")
-    sName = Replace(sName, "?", "_")
-    sName = Replace(sName, "/", "_")
-    sName = Replace(sName, "\", "_")
-    sName = Replace(sName, "*", "_")
-    sName = Replace(sName, ".", "_")
-    sName = Replace(sName, """", "_")
-
-    FileNameControl = Application.WorksheetFunction.Trim(sName)
-
-End Function
-
-Function translateHeadGeo()
-'translation of column headers in the GEO tab
-
-    Dim sIsoCountry As String, sCountry As String, sSubCounty As String, sWard As String, sPlace As String, sFacility As String
-
-    sIsoCountry = GetLanguageCode(SheetMain.Range(C_sRngLLFormLang).value)
-
-    'Get the isoCode for the linelist
-    SheetLLTranslation.Range(C_sRngLLLanguageCode).value = sIsoCountry
-
-    sCountry = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 2, False)
-    sSubCounty = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 3, False)
-    sWard = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 4, False)
-    sPlace = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 5, False)
-    sFacility = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 6, False)
-
-    SheetGeo.Range("A1,E1,J1,P1,Z1").value = sCountry
-    SheetGeo.Range("F1,K1,Q1,Y1").value = sSubCounty
-    SheetGeo.Range("L1,R1,X1").value = sWard
-    SheetGeo.Range("S1").value = sPlace
-    SheetGeo.Range("W1").value = sFacility
-
-   SheetLLTranslation.Range(C_sRngLLLanguage).value = SheetMain.Range(C_sRngLLFormLang) 'check Language of linelist's forms
-
-End Function
 
 Sub ResetField()
 

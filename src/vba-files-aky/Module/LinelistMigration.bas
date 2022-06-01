@@ -20,8 +20,9 @@ Sub ImportMigrationData()
     Dim shData As Worksheet, shSource As Worksheet, shTarget As Worksheet, ShMain As Worksheet
     Dim lstobj  As ListObject
     Dim iLastSh As Integer, iLastexp As Integer, i As Long, j As Long
-    Dim lgRows As Long, iCols As Integer, lgStart As Long, iColExp As Integer, lgRowTarget As Long, iColTarget As Integer
+    Dim lgRows As Long, iCols As Integer, lgStart As Long, iColExp As Integer, lgRowTarget As Long, iColTarget As Integer, lgNbData As Long
     Dim sLabel As String, sPath As String, sMessage As String
+    Dim iRep As Integer
 
     Set ShMain = Sheets(ActiveSheet.Name)
 
@@ -34,8 +35,43 @@ Sub ImportMigrationData()
 
     If sPath = "" Then Exit Sub
 
+    For Each shData In wbkLL.Sheets
+        If shData.Visible = xlSheetVisible And LCase(shData.Name) <> "geo" And LCase(shData.Name) <> "admin" Then
+            For Each lstobj In shData.ListObjects
+                If LCase(lstobj.Name) = "o" & LCase(shData.Name) Then
+                    lgRowTarget = shData.ListObjects(lstobj.Name).ListRows.Count + 8
+                    iColTarget = shData.ListObjects(lstobj.Name).ListColumns.Count
+                    Application.ScreenUpdating = False
+                        shData.Activate
+                            lgNbData = WorksheetFunction.CountA(shData.Range(Cells(8, 1), Cells(lgRowTarget, iColTarget)))
+                        ShMain.Activate
+                    Application.ScreenUpdating = True
+                    If lgNbData > 0 Then
+                        If iRep = 0 Then iRep = MsgBox("There is data in the sheets. Want to keep them or delete them ?", vbQuestion + vbYesNo, "Import Data")
+                        If iRep = vbYes Then
+                            Application.EnableEvents = False
+                                shData.Unprotect (C_sLLPassword)
+                                    lstobj.DataBodyRange.Delete
+                                Call ProtectSheet
+                            Application.EnableEvents = True
+                        End If
+                    End If
+                End If
+            Next
+        End If
+    Next
+
+    If iRep = vbYes Then
+        iRep = 0
+        lgRows = ShMain.Cells(15, 2).End(xlDown).Row
+        ShMain.Unprotect (C_sLLPassword)
+            ShMain.Range(Cells(15, 3), Cells(lgRows, 3)).ClearContents
+        Call ProtectSheet
+    End If
+
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
+
 
     Workbooks.Open Filename:=sPath, Password:=Range("RNG_PrivateKey").value
 
@@ -73,12 +109,15 @@ Sub ImportMigrationData()
 
         If LCase(shSource.Name) = "admin_exp" Then
 
+            shTarget.Unprotect (C_sLLPassword)
             shSource.Select
             lgRows = shSource.Cells(2, 1).End(xlDown).Row
-            shSource.Range(Cells(2, 2), Cells(lgRows, 2)).Copy
-            shTarget.Select
-            Range("C15").Select
-            ActiveSheet.Paste
+
+            For j = 2 To lgRows
+                Application.EnableEvents = False
+                    If shTarget.Cells(j + 13, 3).value = "" Then shSource.Cells(j, 2).Copy Destination:=shTarget.Cells(j + 13, 3)
+                Application.EnableEvents = True
+            Next j
 
         Else
 
@@ -163,11 +202,9 @@ Sub ImportMigrationData()
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
 
-    MsgBox "the following data :" & Chr(10) & Right(sMessage, Len(sMessage) - 3) & Chr(10) & "could not be imported.", vbinformation, "File import"
-
+    MsgBox "the following data :" & Chr(10) & Right(sMessage, Len(sMessage) - 3) & Chr(10) & "could not be imported.", vbInformation, "File import"
 
 End Sub
-
 'Function to import a Geobase.
 'Import the full Geobase
 
@@ -244,7 +281,7 @@ Sub ImportGeobase()
 
         Call TranslateImportGeoHead
 
-        ShouldQuit = MsgBox("Finished imported geobase data, do you want to quit?", vbQuestion + vbYesNo, "Import GeoData")
+        ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportGeo"), vbQuestion + vbYesNo, "Import GeoData")
 
         If ShouldQuit = vbYes Then
             F_ImportMig.Hide
@@ -353,7 +390,7 @@ Sub ImportHistoricGeobase()
         'Add a message box to say it is over
     End If
 
-    ShouldQuit = MsgBox("Finished Imported historic data, do you want to quit?", vbQuestion + vbYesNo, "Import Historic")
+    ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportHistoricGeo"), vbQuestion + vbYesNo, "Import Historic")
 
     If ShouldQuit = vbYes Then
         F_ImportMig.Hide
@@ -368,8 +405,8 @@ Sub ImportHistoricGeobase()
 
     Exit Sub
 
-    errImportHistoric:
-        MsgBox "Error, Unable to import historic geobase"
+errImportHistoric:
+        MsgBox TranslateLLMsg("MSG_ErrHistoricGeo")
         EndWork xlsapp:=Application
         Exit Sub
 
@@ -383,9 +420,9 @@ Sub ClearHistoricGeobase()
 
     Set WkshGeo = ThisWorkbook.Worksheets(C_sSheetGeo)
 
-    On Error Goto errClearHistoric
+    On Error GoTo errClearHistoric
 
-    ShouldDelete = MsgBox("Your historic geographic data  in the current workbook will be completely deleted, this action is irreversible. Proceed?", vbExclamation + vbYesNo, "Delete Historic")
+    ShouldDelete = MsgBox(TranslateLLMsg("MSG_HistoricDelete"), vbExclamation + vbYesNo, "Delete Historic")
 
     If ShouldDelete = vbYes Then
         If Not WkshGeo.ListObjects(C_sTabHistoGeo).DataBodyRange Is Nothing Then
@@ -395,7 +432,7 @@ Sub ClearHistoricGeobase()
         If Not WkshGeo.ListObjects(C_sTabHistoHF).DataBodyRange Is Nothing Then
             WkshGeo.ListObjects(C_sTabHistoHF).DataBodyRange.Delete
         End If
-        MsgBox "Done", vbinformation, "Delete Historic"
+        MsgBox "Done", vbInformation, "Delete Historic"
     End If
 
     'Add a message to say it is done
@@ -403,8 +440,8 @@ Sub ClearHistoricGeobase()
 
     Exit Sub
 
-    errClearHistoric:
-        Msgbox "Error, Unable to clear the historic of geobase"
+errClearHistoric:
+        MsgBox TranslateLLMsg("MSG_ErrCleanHistoric")
         EndWork xlsapp:=Application
         Exit Sub
 End Sub
@@ -500,19 +537,22 @@ Private Sub ExportMigrationData(sLLPath As String)
         'Sheets of type linelist
         i = 1
         While i <= LLSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = LLSheetData.Items(i)
-            sPrevSheetName = LLSheetData.Items(i)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
+            sPrevSheetName = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
             ExportData.Clear
-            ExportData.FromExcelRange ThisWorkbook.Worksheets(LLSheetData.Items(i)).ListObjects("o" & sPrevSheetName).Range
-            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1)
+            ExportHeader.Clear
+            Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
+            Set ExportData = GetExportValues(ExportHeader, sPrevSheetName)
+            ExportHeader.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1), TransposeValues:=True
+            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
             i = i + 1
         Wend
 
         'Sheets of type Admin
         i = 1
         While i <= AdmSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = AdmSheetData.Items(i)
-            sPrevSheetName = AdmSheetData.Items(i)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
+            sPrevSheetName = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
             ExportData.Clear
             ExportHeader.Clear
             Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
@@ -553,8 +593,8 @@ Private Sub ExportMigrationData(sLLPath As String)
 
     Exit Sub
 
-    errExportMig:
-        MsgBox "Error, unable to export data"
+errExportMig:
+        MsgBox TranslateLLMsg("MSG_ErrExportData")
         EndWork xlsapp:=Application
         Exit Sub
 End Sub
@@ -574,7 +614,7 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
     BeginWork xlsapp:=Application
     Application.DisplayAlerts = False
 
-    On Error Goto errExportMigGeo
+    On Error GoTo errExportMigGeo
 
     Set Wkb = Workbooks.Add
     Set WkshGeo = ThisWorkbook.Worksheets(C_sSheetGeo)
@@ -672,8 +712,8 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
 
     Exit Sub
 
-    errExportMigGeo:
-        Msgbox "Error, unable to Export Geobase"
+errExportMigGeo:
+        MsgBox TranslateLLMsg("MSG_ErrExportGeo")
         EndWork xlsapp:=Application
         Exit Sub
 End Sub
@@ -737,8 +777,8 @@ Private Sub ExportMigrationHistoricGeo(sGeoPath As String)
 
     Exit Sub
 
-    ErrExportHistGeo:
-        Msgbox "Error, unable to export the historic of the geobase"
+ErrExportHistGeo:
+        MsgBox TranslateLLMsg("MSG_ErrExportHistoricGeo")
         EndWork xlsapp:=Application
         Exit Sub
 End Sub
@@ -772,9 +812,8 @@ Sub ExportForMigration()
 
     If sDirectory <> "" Then
         'Export the Data of the linelist
-        sLLPath = sDirectory & Application.PathSeparator & _
-                Replace(ClearString(ThisWorkbook.Name, bremoveHiphen:=False), ".xlsb", "") & _
-                "_export_data"
+        sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name), ".xlsb", "") & _
+             "_export_data"
 
         'Export the full geobase
 
@@ -787,7 +826,7 @@ Sub ExportForMigration()
 
         i = 0
         While Len(sLLPath) >= 255 And Len(sGeoPath) >= 255 And Len(sGeoHistoPath) >= 255 And i < 3 'MSG_PathTooLong
-            MsgBox "The path of the export folder is too long so the file names gets truncated. Please select a folder higher in the hierarchy to save the export (ex: Desktop, Downloads, Documents etc.)"
+            MsgBox TranslateLLMsg("MSG_PathTooLong")
             sDirectory = Helpers.LoadFolder
             If sDirectory <> "" Then
                  sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name), ".xlsb", "") & _
@@ -813,7 +852,7 @@ Sub ExportForMigration()
         End If
     End If
 
-    On Error Goto 0
+    On Error GoTo 0
 
     'Add here error handling when the export is not working.
 
@@ -823,7 +862,7 @@ Sub ExportForMigration()
         Application.DisplayAlerts = False
 
         If Not [F_ExportMig].CHK_ExportMigGeo And Not [F_ExportMig].CHK_ExportMigData And Not [F_ExportMig].CHK_ExportMigGeoHistoric Then
-            MsgBox "No Export Selected, Please selectOne", VbCritical, "Export for Migration"
+            MsgBox "No Export Selected, Please selectOne", vbCritical, "Export for Migration"
         End If
 
         If [F_ExportMig].CHK_ExportMigGeo Then
@@ -842,7 +881,7 @@ Sub ExportForMigration()
         Application.DisplayAlerts = True
         EndWork xlsapp:=Application
 
-        ShouldQuit = MsgBox("Finished Exports, do you want to quit?", vbQuestion + vbYesNo, "Export for Migration")
+        ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishedExports"), vbQuestion + vbYesNo, "Migration")
         If ShouldQuit = vbYes Then
             F_ExportMig.Hide
         End If
@@ -852,8 +891,9 @@ Sub ExportForMigration()
     Set ExportPath = Nothing
 
     Exit Sub
-    ErrPath :
-        MsgBox "Error, unable to set the paths for the export"
+
+ErrPath:
+        MsgBox TranslateLLMsg("MSG_ErrExportPath")
         EndWork xlsapp:=Application
         Exit Sub
 End Sub
@@ -873,3 +913,6 @@ Public Function SheetExist(SheetName As String) As Boolean
     Next shSheet
 
 End Function
+
+
+

@@ -1,30 +1,6 @@
 Attribute VB_Name = "DesignerTranslation"
 Option Explicit
 
-Function GetLanguageCode(sString As String) As String
-    Dim T_data As BetterArray                    'array of languages
-    Dim T_codes As BetterArray                   'array of languages codes
-    Dim T_values As BetterArray                  'values of languages
-
-    Set T_data = New BetterArray
-    T_data.LowerBound = 1
-    Set T_codes = New BetterArray
-    T_codes.LowerBound = 1
-    Set T_values = New BetterArray
-    T_values.LowerBound = 1
-
-    GetLanguageCode = ""
-
-    T_data.FromExcelRange SheetDesTranslation.ListObjects(C_sTabLang).DataBodyRange 'Language table
-    T_values.Items = T_data.ExtractSegment(ColumnIndex:=1) 'language values
-    T_codes.Items = T_data.ExtractSegment(ColumnIndex:=2) 'language codes
-
-    If T_values.Includes(sString) Then
-        'The Language code
-        GetLanguageCode = T_codes.Item(T_values.IndexOf(sString))
-    End If
-
-End Function
 
 'Translate one shape using informations on languages
 Sub TranslateShape(oShape As Object, sValue As String)
@@ -176,58 +152,30 @@ Function TranslateMsg(sMsgId As String) As String
     End If
 End Function
 
-'This is just to translate the translation shape and headers to help for translation
-' Public Sub StartTranslate()
+Sub TranslateHeadGeo()
+'translation of column headers in the GEO tab
 
-'     Dim slCod As String                          'Language code
-'     Dim T_data As BetterArray                    'data of the Shapes
-'     Dim T_codes As BetterArray                   'codes
-'     Dim T_values As BetterArray                  'values
-'     Dim indexShapeCode As Integer                'index of the shape
-'     Dim indexRangeCode As Integer                'index of the range
-'     Dim indexLangCod As Integer                  'index of the language
+    Dim sIsoCountry As String, sCountry As String, sSubCounty As String, sWard As String, sPlace As String, sFacility As String
 
-'     Set T_data = New BetterArray
-'     Set T_codes = New BetterArray
-'     Set T_values = New BetterArray
+    sIsoCountry = GetLanguageCode(SheetMain.Range(C_sRngLLFormLang).value)
 
-'     Application.ScreenUpdating = False
-'     slCod = GetLanguageCode(SheetMain.Range("RNG_LangDesigner").value)
-'     If slCod <> "" Then
-'         T_codes.FromExcelRange SheetDesTranslation.ListObjects("T_tradShape").HeaderRowRange
-'         indexLangCod = T_codes.IndexOf(slCod)    'index of the language code
-'         T_codes.Clear
-'         'updating one shape: Translation shape
-'         If (indexLangCod > 0) Then               'we are sure the index column is present
-'             T_data.FromExcelRange SheetDesTranslation.ListObjects("T_tradShape").DataBodyRange
-'             T_values.Items = T_data.ExtractSegment(ColumnIndex:=indexLangCod)
-'             T_codes.Items = T_data.ExtractSegment(ColumnIndex:=1) 'index of all the shapes codes
-'             'where the shape of the code is
-'             indexShapeCode = T_codes.IndexOf("SHP_Trad")
-'             If (indexShapeCode > 0) Then
-'                 TranslateShape SheetMain.Shapes("SHP_Trad"), T_values.Item(indexShapeCode)
-'             End If
-'             'Then do the same for the range above the RNG_Designer
-'             T_data.Clear
-'             T_values.Clear
-'             T_codes.Clear
-'             T_data.FromExcelRange SheetDesTranslation.ListObjects("T_tradRange").DataBodyRange
-'             T_values.Items = T_data.ExtractSegment(ColumnIndex:=indexLangCod)
+    'Get the isoCode for the linelist
+    SheetLLTranslation.Range(C_sRngLLLanguageCode).value = sIsoCountry
 
-'             'Index of all the Ranges codes is 1
-'             T_codes.Items = T_data.ExtractSegment(ColumnIndex:=1)
-'             indexRangeCode = T_codes.IndexOf("RNG_LabLangDesigner")
-'             If (indexRangeCode > 0) Then
-'                 TranslateRange "RNG_LabLangDesigner", T_values.Item(indexRangeCode)
-'             End If
-'             SheetMain.Range("RNG_LangSetup").value = ""
-'             SheetMain.Range("RNG_LangGeo").value = ""
-'         End If
-'     End If
-'     Set T_data = Nothing
-'     Set T_values = Nothing
-'     Set T_codes = Nothing
-'     Application.ScreenUpdating = True
-' End Sub
+    sCountry = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 2, False)
+    sSubCounty = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 3, False)
+    sWard = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 4, False)
+    sPlace = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 5, False)
+    sFacility = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 6, False)
+
+    SheetGeo.Range("A1,E1,J1,P1,Z1").value = sCountry
+    SheetGeo.Range("F1,K1,Q1,Y1").value = sSubCounty
+    SheetGeo.Range("L1,R1,X1").value = sWard
+    SheetGeo.Range("S1").value = sPlace
+    SheetGeo.Range("W1").value = sFacility
+
+   SheetLLTranslation.Range(C_sRngLLLanguage).value = SheetMain.Range(C_sRngLLFormLang) 'check Language of linelist's forms
+
+End Sub
 
 

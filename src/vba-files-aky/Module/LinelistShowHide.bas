@@ -4,6 +4,25 @@ Option Explicit
 ' Retrieving the heading of the dictionnary (names of columns)
 Public TriggerShowHide As Boolean
 
+'Show/Hidden Variables
+Dim sShown As String
+Dim sHidden As String
+Dim sShowMandatory As String
+Dim sMandatory As String
+Dim sDesHidden As String
+
+
+'Initialize the Hidden/Mandatory variables
+Sub SetHiddenMandatory()
+
+    sShown = TranslateLLMsg("MSG_Show")  ' translate_LineList("Show", Sheets("linelist-translation").[T_tradRange])
+    sHidden = TranslateLLMsg("MSG_Hide") 'translate_LineList("Hidden", Sheets("linelist-translation").[T_tradRange])
+    sMandatory = TranslateLLMsg("MSG_Mandatory") 'translate_LineList("mandatory", Sheets("linelist-translation").[T_tradRange])
+    sShowMandatory = TranslateLLMsg("MSG_ShowMandatory") 'translate_LineList("Show/Mandatory", Sheets("linelist-translation").[T_tradRange])
+    sDesHidden = TranslateLLMsg("MSG_DesHidden")
+
+End Sub
+
 
 Function CreateDicTitle() As BetterArray
     Dim T_DictHeaders As BetterArray                 'headers: colnames of the dictionary
@@ -16,7 +35,7 @@ Function CreateDicTitle() As BetterArray
     If Not T_DictHeaders.Includes(C_sDictHeaderVisibility) Then
         T_DictHeaders.Push C_sDictHeaderVisibility
         'add the visibility
-        Sheets(C_sParamSheetDict).Cells(1, T_DictHeaders.UpperBound).value = C_sDictHeaderVisibility
+        ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(1, T_DictHeaders.UpperBound).value = C_sDictHeaderVisibility
     End If
 
     Set CreateDicTitle = T_DictHeaders.Clone
@@ -58,6 +77,9 @@ Sub ClicCmdShowHide()
 
     Set Wksh = ThisWorkbook.Worksheets(C_sParamSheetDict)
 
+    'Set Hidden and Show values depending on the language
+    Call SetHiddenMandatory
+
     'Get the headers
     Set T_DictHeaders = CreateDicTitle
     'Now update the mainlabel, status and variable name
@@ -81,18 +103,18 @@ Sub ClicCmdShowHide()
                     T_varname.Push Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVarName)).value
 
                     If LCase(Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderStatus)).value) = C_sDictStatusMan Then
-                        T_status.Push "Mandatory"
-                        Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = C_sDictStatusMan
-                    ElseIf LCase(Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value) = C_sDictStatusUserHid Then
-                        T_status.Push "Hidden"
+                        T_status.Push sMandatory
+                        Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = sMandatory
+                    ElseIf Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = sHidden Then
+                        T_status.Push sHidden
                     Else
-                        T_status.Push "Shown"
-                        Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = "Shown"
+                        T_status.Push sShown
+                        Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = sShown
                     End If
                 End If
 
             Else
-                Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = C_sDictStatusDesHid
+                Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = sDesHidden
             End If
         End If
         i = i + 1
@@ -128,14 +150,14 @@ Sub ClicCmdShowHide()
     F_NomVisible.Width = 450
     F_NomVisible.Height = 270
     F_NomVisible.CMD_Fermer.SetFocus
-    F_NomVisible.show
+    F_NomVisible.Show
 
     Call ProtectSheet
 
     Exit Sub
 
-    errShowHide:
-        MsgBox "Error, Unable to run Show/Hide"
+errShowHide:
+        MsgBox TranslateLLMsg("MSG_UnableShowHide")
         Call ProtectSheet
         EndWork xlsapp:=Application
         Exit Sub
@@ -154,22 +176,23 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
     BeginWork xlsapp:=Application
     Application.EnableEvents = False
 
+
     F_NomVisible.FRM_AffMas.Visible = True
-    Select Case LCase(T_FormData.Items(iIndex + 1, 3))
-    Case "mandatory"
+    Select Case T_FormData.Items(iIndex + 1, 3)
+    Case sMandatory
         TriggerShowHide = False
         F_NomVisible.OPT_Affiche.value = 1
-        F_NomVisible.OPT_Affiche.Caption = "Show/Mandatory"
+        F_NomVisible.OPT_Affiche.Caption = sShowMandatory
         F_NomVisible.OPT_Affiche.Width = 80
         F_NomVisible.OPT_Affiche.Left = 0
         F_NomVisible.OPT_Affiche.Top = 20
 
         F_NomVisible.OPT_Masque.Visible = False
-    Case "hidden"                                'It is hidden, show masking
+    Case sHidden                                'It is hidden, show masking
         TriggerShowHide = False
         F_NomVisible.OPT_Affiche.value = 0
-        F_NomVisible.OPT_Affiche.Caption = "Show"
-        F_NomVisible.OPT_Affiche.Width = 45
+        F_NomVisible.OPT_Affiche.Caption = sShown
+        F_NomVisible.OPT_Affiche.Width = 70
         F_NomVisible.OPT_Affiche.Left = 10
         F_NomVisible.OPT_Affiche.Top = 6
 
@@ -179,8 +202,8 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
     Case Else
         TriggerShowHide = False                                   'It is shown if not
         F_NomVisible.OPT_Affiche.value = 1
-        F_NomVisible.OPT_Affiche.Caption = "Show"
-        F_NomVisible.OPT_Affiche.Width = 45
+        F_NomVisible.OPT_Affiche.Caption = sShown
+        F_NomVisible.OPT_Affiche.Width = 70
         F_NomVisible.OPT_Affiche.Left = 10
         F_NomVisible.OPT_Affiche.Top = 6
 
@@ -247,9 +270,9 @@ Sub UpdateFormData(ByRef T_table As BetterArray, index As Integer, Optional bhid
     T_values.Items = T_table.Item(index + 1)     'the index starts at -1 on a listbox
     'Update the visibility status
     If bhide Then
-        T_values.Item(3) = "Hidden"
+        T_values.Item(3) = sHidden
     Else
-        T_values.Item(3) = "Shown"
+        T_values.Item(3) = sShown
     End If
     'Mutate in the form table
     T_table.Item(index + 1) = T_values.Items
@@ -274,7 +297,7 @@ Sub ShowHideLogic(iIndex As Integer)
         T_FormData.LowerBound = 1
 
         'Update data in form
-        If LCase(T_FormData.Items(iIndex + 1, 2)) <> "mandatory" Then
+        If LCase(T_FormData.Items(iIndex + 1, 2)) <> sMandatory Then
 
             'For mutating, we can only use the item method. Items with s, read only values,
             'we can't set values with items
@@ -305,8 +328,8 @@ Sub ShowHideLogic(iIndex As Integer)
 
     Exit Sub
 
-    errShowHide:
-        MsgBox "Error, Unable to run Show/Hide"
+errShowHide:
+        MsgBox TranslateLLMsg("MSG_ErrShowHide")
         Call ProtectSheet
         Application.EnableEvents = True
         EndWork xlsapp:=Application
@@ -328,9 +351,9 @@ Sub WriteShowHide(sSheetName As String, ByVal sVarName As String, visibility As 
             T_DictVarnames.LowerBound = 2
             iVarnameIndex = T_DictVarnames.IndexOf(sVarName)
             If visibility = 0 Then
-                ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).value = C_sDictStatusUserHid
+                ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).value = sHidden
             ElseIf visibility = 1 Then
-                ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).value = "Shown"
+                ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).value = sShown
             End If
         End If
     End If
