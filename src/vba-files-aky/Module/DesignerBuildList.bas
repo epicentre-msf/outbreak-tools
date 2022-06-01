@@ -82,16 +82,15 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     sFirstSheetName = Wkb.Worksheets(1).Name
     Call DesignerBuildListHelpers.TransferSheet(Wkb, C_sSheetGeo, sFirstSheetName)
     Call DesignerBuildListHelpers.TransferSheet(Wkb, C_sSheetPassword, C_sSheetGeo)
-    iUpdateCpt = iUpdateCpt + 5
-    StatusBar_Updater (iUpdateCpt)
     Call DesignerBuildListHelpers.TransferSheet(Wkb, C_sSheetFormulas, C_sSheetPassword)
     Call DesignerBuildListHelpers.TransferSheet(Wkb, C_sSheetLLTranslation, C_sSheetFormulas)
+    
+    DoEvents
+    iUpdateCpt = iUpdateCpt + 5
+    StatusBar_Updater (iUpdateCpt)
 
 
     DoEvents
-
-    iUpdateCpt = iUpdateCpt + 5
-    StatusBar_Updater (iUpdateCpt)
 
     'Create special characters data
     FormulaData.FromExcelRange SheetFormulas.ListObjects(C_sTabExcelFunctions).ListColumns("ENG").DataBodyRange, DetectLastColumn:=False
