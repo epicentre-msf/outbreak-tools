@@ -54,6 +54,8 @@ Sub ClicCmdShowHide()
 
     ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
+    On Error GoTo errShowHide
+
     Set Wksh = ThisWorkbook.Worksheets(C_sParamSheetDict)
 
     'Get the headers
@@ -129,6 +131,14 @@ Sub ClicCmdShowHide()
     F_NomVisible.show
 
     Call ProtectSheet
+
+    Exit Sub
+
+    errShowHide:
+        MsgBox "Error, Unable to run Show/Hide"
+        Call ProtectSheet
+        EndWork xlsapp:=Application
+        Exit Sub
 End Sub
 
 
@@ -249,6 +259,8 @@ End Sub
 'Logic behind the show/hide click
 Sub ShowHideLogic(iIndex As Integer)
 
+    On Error GoTo errShowHide
+
     If Not TriggerShowHide Or iIndex < 0 Then    'when the form is shown at the begining, nothing is selected and index can be -1
         Exit Sub
     Else
@@ -290,6 +302,15 @@ Sub ShowHideLogic(iIndex As Integer)
         Application.EnableEvents = True
         EndWork xlsapp:=Application
     End If
+
+    Exit Sub
+
+    errShowHide:
+        MsgBox "Error, Unable to run Show/Hide"
+        Call ProtectSheet
+        Application.EnableEvents = True
+        EndWork xlsapp:=Application
+        Exit Sub
 End Sub
 
 Sub WriteShowHide(sSheetName As String, ByVal sVarName As String, visibility As Byte)
