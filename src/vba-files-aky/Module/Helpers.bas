@@ -573,23 +573,25 @@ End Function
 
 'Unique of a betteray sorted
 Function GetUniqueBA(BA As BetterArray) As BetterArray
-Dim sval As String
- Dim i As Integer
-   Dim Outable As BetterArray
+    Dim sval As String
+    Dim i As Integer
+    Dim Outable As BetterArray
 
     BA.Sort
-
 
     Set Outable = New BetterArray
     Outable.LowerBound = 1
 
-   sval = BA.Item(BA.LowerBound)
-   Outable.Push sval
+   sval = Application.WorksheetFunction.Trim(BA.Item(BA.LowerBound))
+
+   If sval <> VbNullString Then
+    Outable.Push sval
+   End If
 
     If BA.Length > 0 Then
         For i = BA.LowerBound To BA.UpperBound
-        If sval <> BA.Item(i) Then
-            sval = BA.Item(i)
+        If sval <> Application.WorksheetFunction.Trim(BA.Item(i)) And Application.WorksheetFunction.Trim(BA.Item(i)) <> vbNullString Then
+            sval = Application.WorksheetFunction.Trim(BA.Item(i))
             Outable.Push sval
         End If
         Next

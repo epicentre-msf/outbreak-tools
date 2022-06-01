@@ -16,6 +16,10 @@ Public T_HistoHF As BetterArray                  'Historic of health facility
 Public T_ConcatHF   As BetterArray               'Health Facility concatenated
 
 Public sPlaceSelection As String
+Public NbLinesAdm4 As Integer
+Public NbLinesHF   As Integer
+Public NbLinesAdm4Histo As Integer
+Public NbLinesAHFHisto As Integer
 
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 'This sub loads the geodata from the Geo form to on form in the linenist. There are two types of data:
@@ -26,6 +30,7 @@ Public sPlaceSelection As String
 Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo = 0 or Facility = 1
     Dim transValue As BetterArray
     Dim i As Integer
+    Dim Proceed As Boolean 'Proceed?
     Set T_Adm4 = New BetterArray
     Set T_Concat = New BetterArray
     Set T_HistoGeo = New BetterArray
@@ -36,103 +41,146 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     Set T_HistoHF = New BetterArray
     Set transValue = New BetterArray
 
-    BeginWork xlsapp:=Application, bstatusbar:=False
+    On Error GoTo ErrLoadGeo
 
-    ' width and height of the geo formulaire
-    [F_Geo].Height = 360
-    [F_Geo].Width = 606
-
+    BeginWork xlsapp:=Application
     With ThisWorkbook.Worksheets(C_sSheetGeo)
-        'Before doing the whole all thing, we need to test if the T_Adm data is empty or not
-        If (Not .ListObjects(C_sTabAdm4).DataBodyRange Is Nothing) Then
-            T_Adm4.FromExcelRange .ListObjects(C_sTabAdm4).DataBodyRange
-        End If
 
-        '----- Fill the list of the admins with the unique values for adm1
-        transValue.FromExcelRange .ListObjects(C_sTabAdm4).ListColumns(1).DataBodyRange
-        Set transValue = GetUniqueBA(transValue)
+        Select Case iGeoType
 
-        [F_Geo].[LST_Adm1].List = transValue.Items
+            'Load Geo informations
+            Case 0
 
-        '----- Add Caption for  each adminstrative leveles in the form
-        F_Geo.LBL_Adm1.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(1).value
-        F_Geo.LBL_Adm2.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(2).value
-        F_Geo.LBL_Adm3.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(3).value
-        F_Geo.LBL_Adm4.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(4).value
+            'Add Caption for  each adminstrative leveles in the form
+            F_Geo.LBL_Adm1.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(1).value
+            F_Geo.LBL_Adm2.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(2).value
+            F_Geo.LBL_Adm3.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(3).value
+            F_Geo.LBL_Adm4.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(4).value
 
-        '------- Concatenate all the tables for the geo
-        For i = T_Adm4.LowerBound To T_Adm4.UpperBound
-            transValue.Clear
-            'binding all the lines together
-            transValue.Items = T_Adm4.Item(i)              'This is oneline of the adm
-            T_Concat.Item(i) = transValue.Item(1) & " | " & transValue.Item(2) & " | " & transValue.Item(3) & " | " & transValue.Item(4)
-        Next
 
-        T_Concat.Sort
-        '------ Once the concat is created, add it to the list in the form
-        [F_Geo].LST_ListeAgre.List = T_Concat.Items
+            'Before doing the whole all thing, we need to test if the T_Adm data is empty or not
+            If (Not .ListObjects(C_sTabAdm4).DataBodyRange Is Nothing) Then
+                Proceed = False
+                If isEmpty(NbLinesAdm4) Or NbLinesAdm4 = 0 Then
+                    Proceed = True
+                    NbLinesAdm4 = .ListObjects(C_sTabAdm4).DataBodyRange.Rows.Count
+                Else
+                    If NbLinesAdm4 < .ListObjects(C_sTabAdm4).DataBodyRange.Rows.Count Then
+                        Proceed = True
+                    End If
+                End If
 
-        ' Now health facility ----------------------------------------------------------------------------------------------------------
-        If (Not .ListObjects(C_sTabHF).DataBodyRange Is Nothing) Then
+                Debug.Print Proceed
+                Debug.Print NbLinesAdm4
+                Debug.Print .ListObjects(C_sTabAdm4).DataBodyRange.Rows.Count
 
-            T_HF.FromExcelRange .ListObjects(C_sTabHF).DataBodyRange
+                '----- Fill the list of the admins with the unique values for adm1
+                If Proceed Then
+                    T_Adm4.FromExcelRange .ListObjects(C_sTabAdm4).DataBodyRange
 
-            transValue.Clear
-            'unique admin 1
-            transValue.FromExcelRange .ListObjects(C_sTabHF).ListColumns(4).DataBodyRange
-            Set transValue = GetUniqueBA(transValue)
+                    transValue.FromExcelRange .ListObjects(C_sTabAdm4).ListColumns(1).DataBodyRange
+                    transValue.Sort
 
-            ' ----- Fill the list of the admins with the unique values of adm1
-            [F_Geo].[LST_AdmF1].List = transValue.Items
+                    Set transValue = GetUniqueBA(transValue)
 
+                    [F_Geo].[LST_Adm1].List = transValue.Items
+                    '------- Concatenate all the tables for the geo
+                    For i = T_Adm4.LowerBound To T_Adm4.UpperBound
+                        transValue.Clear
+                        'binding all the lines together
+                        transValue.Items = T_Adm4.Item(i)              'This is oneline of the adm
+                        T_Concat.Item(i) = transValue.Item(1) & " | " & transValue.Item(2) & " | " & transValue.Item(3) & " | " & transValue.Item(4)
+                    Next
+
+                    T_Concat.Sort
+                    '------ Once the concat is created, add it to the list in the form
+                    [F_Geo].LST_ListeAgre.List = T_Concat.Items
+                End If
+            End If
+
+            'Historic for geographic data and facility data
+            If Not .ListObjects(C_sTabHistoGeo).DataBodyRange Is Nothing Then
+                T_HistoGeo.FromExcelRange .ListObjects(C_sTabHistoGeo).DataBodyRange
+                [F_Geo].LST_Histo.List = T_HistoGeo.Items
+            End If
+
+            [F_Geo].FRM_Facility.Visible = False
+            [F_Geo].FRM_Geo.Visible = True
+            [F_Geo].LBL_Fac1.Visible = False
+            [F_Geo].LBL_Geo1.Visible = True
+
+            'Load Health Facility
+
+            Case 1
             '-------- Adding caption for each admnistrative levels in the form of the health facility
             F_Geo.LBL_Adm1F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(4).value
             F_Geo.LBL_Adm2F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(3).value
             F_Geo.LBL_Adm3F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(2).value
             F_Geo.LBL_Adm4F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(1).value
 
-            'Creating the concatenate for the Health facility
-            For i = T_HF.LowerBound To T_HF.UpperBound
-                transValue.Clear
-                transValue.Items = T_HF.Item(i)
-                T_ConcatHF.Item(i) = transValue.ToString(Separator:="|", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
-            Next i
+            'Now health facility ----------------------------------------------------------------------------------------------------------
+            If (Not .ListObjects(C_sTabHF).DataBodyRange Is Nothing) Then
+                Proceed = False
 
-            T_ConcatHF.Sort
-            '---- Once the concat is created, add it to the HF form using the list for the concat part
-            [F_Geo].LST_ListeAgreF.List = T_ConcatHF.Items
-        End If
-        'Historic for geographic data and facility data
-        If Not .ListObjects(C_sTabHistoGeo).DataBodyRange Is Nothing Then
-            T_HistoGeo.FromExcelRange .ListObjects(C_sTabHistoGeo).DataBodyRange
-            [F_Geo].LST_Histo.List = T_HistoGeo.Items
-        End If
+                If isEmpty(NbLinesHF) Then
+                    Proceed = True
+                    NbLinesHF = .ListObjects(C_sTabHF).DataBodyRange.Rows.Count
+                Else
+                    If NbLinesHF < .ListObjects(C_sTabHF).DataBodyRange.Rows.Count Then
+                        Proceed = True
+                    End If
+                End If
 
-        If Not .ListObjects(C_sTabHistoHF).DataBodyRange Is Nothing Then
-            T_HistoHF.FromExcelRange .ListObjects(C_sTabHistoHF).DataBodyRange
-            [F_Geo].LST_HistoF.List = T_HistoHF.Items
-        End If
+                If Proceed Then
+                    T_HF.FromExcelRange .ListObjects(C_sTabHF).DataBodyRange
+                    transValue.Clear
+                    'unique admin 1
+                    transValue.FromExcelRange .ListObjects(C_sTabHF).ListColumns(4).DataBodyRange
+                    Set transValue = GetUniqueBA(transValue)
+
+                    ' ----- Fill the list of the admins with the unique values of adm1
+                    [F_Geo].[LST_AdmF1].List = transValue.Items
+
+                    'Creating the concatenate for the Health facility
+                    For i = T_HF.LowerBound To T_HF.UpperBound
+                        transValue.Clear
+                        transValue.Items = T_HF.Item(i)
+                        T_ConcatHF.Item(i) = transValue.ToString(Separator:="|", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
+                    Next i
+
+                    T_ConcatHF.Sort
+                    '---- Once the concat is created, add it to the HF form using the list for the concat part
+                    [F_Geo].LST_ListeAgreF.List = T_ConcatHF.Items
+                End If
+            End If
+
+            'Historic HF
+            If Not .ListObjects(C_sTabHistoHF).DataBodyRange Is Nothing Then
+                T_HistoHF.FromExcelRange .ListObjects(C_sTabHistoHF).DataBodyRange
+                [F_Geo].LST_HistoF.List = T_HistoHF.Items
+            End If
+
+            [F_Geo].FRM_Facility.Visible = True
+            [F_Geo].FRM_Geo.Visible = False
+            [F_Geo].LBL_Fac1.Visible = True
+            [F_Geo].LBL_Geo1.Visible = False
+
+        End Select
+
     End With
-
-    'Showing the form in case of Geo or Health Facility. Geo and Facility are in different frames.
-    Select Case iGeoType
-    Case 0
-        [F_Geo].FRM_Facility.Visible = False
-        [F_Geo].FRM_Geo.Visible = True
-        [F_Geo].LBL_Fac1.Visible = False
-        [F_Geo].LBL_Geo1.Visible = True
-    Case 1
-        [F_Geo].FRM_Facility.Visible = True
-        [F_Geo].FRM_Geo.Visible = False
-        [F_Geo].LBL_Fac1.Visible = True
-        [F_Geo].LBL_Geo1.Visible = False
-    End Select
 
     EndWork xlsapp:=Application
 
     Set transValue = Nothing
-    [F_Geo].TXT_Msg.value = ""
+    [F_Geo].TXT_Msg.value = vbNullString
     [F_Geo].show
+
+    Exit Sub
+
+    ErrLoadGeo:
+        MsgBox "Error, Unable to Load the GeoApp"
+        EndWork xlsapp:=Application
+        Exit Sub
 End Sub
 
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -484,12 +532,9 @@ Sub ClearOneHistoricGeobase(iGeoType As Byte)
                 [F_Geo].LST_HistoF.Clear
             End If
         End If
-        
+
         MsgBox "Done", vbinformation, "Delete Historic"
     End If
     'Add a message to say it is done
     Set WkshGeo = Nothing
 End Sub
-
-
-
