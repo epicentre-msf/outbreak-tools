@@ -61,7 +61,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     'iWindowState = Application.WindowState
 
     Application.EnableAnimations = False
-    Application.EnableMacroAnimations = False
+    Application.EnableMacroanimations = False
     Application.EnableEvents = False
     Application.Cursor = xlDefault
 
@@ -256,7 +256,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
             .ScreenUpdating = False
             .DisplayAlerts = False
             .EnableAnimations = False
-            .EnableMacroAnimations = False
+            .EnableMacroanimations = False
             .EnableEvents = False
 
             Set Wkb = .Workbooks.Open(SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb")
@@ -292,7 +292,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     EndWork xlsapp:=Application
 
     Application.EnableAnimations = True
-    Application.EnableMacroAnimations = True
+    Application.EnableMacroanimations = True
     Application.EnableEvents = True
     Application.Cursor = xlDefault
 
