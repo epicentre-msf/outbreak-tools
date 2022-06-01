@@ -30,7 +30,7 @@ Sub ImportMigrationData()
     iLastSh = wbkLL.Sheets.Count
     iLastexp = iLastSh
 
-    sPath = LoadFile("*.xlsx, *.xlsb", "")
+    sPath = LoadFile("*.xlsx, *.xlsb")
 
     If sPath = "" Then Exit Sub
 
@@ -196,7 +196,7 @@ Sub ImportGeobase()
     AdmNames.Push C_sAdm1, C_sAdm2, C_sAdm3, C_sAdm4, C_sHF, C_sNames, C_sHistoHF, C_sHistoGeo, C_sGeoMetadata  'Names of each sheet
 
     'Set xlsapp = New Excel.Application
-    sFilePath = Helpers.LoadFile("*.xlsx", "Geo")
+    sFilePath = Helpers.LoadFile("*.xlsx")
 
     If sFilePath <> "" Then
         'Open the geo workbook and hide the windows
@@ -237,6 +237,7 @@ Sub ImportGeobase()
 
             End If
         Next
+
 
         Wkb.Close savechanges:=False
 
@@ -295,6 +296,8 @@ End Sub
 'Import the only the Historic Data
 Sub ImportHistoricGeobase()
 
+    On Error GoTo errImportHistoric
+
     BeginWork xlsapp:=Application
 
     Dim sFilePath   As String                      'File path to the geo file
@@ -313,7 +316,7 @@ Sub ImportHistoricGeobase()
     AdmNames.LowerBound = 1
     AdmNames.Push C_sHistoHF, C_sHistoGeo, C_sGeoMetadata 'Names of each sheet
 
-    sFilePath = Helpers.LoadFile("*.xlsx", "Geo")
+    sFilePath = Helpers.LoadFile("*.xlsx")
 
     If sFilePath <> "" Then
         'Open the geo workbook and hide the windows
@@ -363,6 +366,13 @@ Sub ImportHistoricGeobase()
 
     EndWork xlsapp:=Application
 
+    Exit Sub
+
+    errImportHistoric:
+        MsgBox "Error, Unable to import historic geobase"
+        EndWork xlsapp:=Application
+        Exit Sub
+
 End Sub
 
 'Clear the historic Data
@@ -372,6 +382,8 @@ Sub ClearHistoricGeobase()
     Dim ShouldDelete As Integer
 
     Set WkshGeo = ThisWorkbook.Worksheets(C_sSheetGeo)
+
+    On Error Goto errClearHistoric
 
     ShouldDelete = MsgBox("Your historic geographic data  in the current workbook will be completely deleted, this action is irreversible. Proceed?", vbExclamation + vbYesNo, "Delete Historic")
 
@@ -386,10 +398,15 @@ Sub ClearHistoricGeobase()
         MsgBox "Done", vbinformation, "Delete Historic"
     End If
 
-
-
     'Add a message to say it is done
     Set WkshGeo = Nothing
+
+    Exit Sub
+
+    errClearHistoric:
+        Msgbox "Error, Unable to clear the historic of geobase"
+        EndWork xlsapp:=Application
+        Exit Sub
 End Sub
 
 
@@ -400,6 +417,7 @@ End Sub
 'Export the data
 
 Private Sub ExportMigrationData(sLLPath As String)
+
 
     'Dictionary headers and data
     Dim DictHeaders As BetterArray
@@ -423,6 +441,8 @@ Private Sub ExportMigrationData(sLLPath As String)
     Set AdmSheetData = New BetterArray
     Set ExportData = New BetterArray
     Set ExportHeader = New BetterArray
+
+    On Error GoTo errExportMig
 
     LLSheetData.LowerBound = 1
     AdmSheetData.LowerBound = 1
@@ -530,6 +550,13 @@ Private Sub ExportMigrationData(sLLPath As String)
 
     Application.DisplayAlerts = True
     EndWork xlsapp:=Application
+
+    Exit Sub
+
+    errExportMig:
+        MsgBox "Error, unable to export data"
+        EndWork xlsapp:=Application
+        Exit Sub
 End Sub
 
 'Export the Full Geobase (including historic)
@@ -546,6 +573,8 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
 
     BeginWork xlsapp:=Application
     Application.DisplayAlerts = False
+
+    On Error Goto errExportMigGeo
 
     Set Wkb = Workbooks.Add
     Set WkshGeo = ThisWorkbook.Worksheets(C_sSheetGeo)
@@ -641,6 +670,12 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
     Application.DisplayAlerts = True
     EndWork xlsapp:=Application
 
+    Exit Sub
+
+    errExportMigGeo:
+        Msgbox "Error, unable to Export Geobase"
+        EndWork xlsapp:=Application
+        Exit Sub
 End Sub
 
 
@@ -654,6 +689,8 @@ Private Sub ExportMigrationHistoricGeo(sGeoPath As String)
 
 
     Dim sPrevSheetName As String
+
+    On Error GoTo ErrExportHistGeo
 
     BeginWork xlsapp:=Application
     Application.DisplayAlerts = False
@@ -697,6 +734,13 @@ Private Sub ExportMigrationHistoricGeo(sGeoPath As String)
 
     Application.DisplayAlerts = True
     EndWork xlsapp:=Application
+
+    Exit Sub
+
+    ErrExportHistGeo:
+        Msgbox "Error, unable to export the historic of the geobase"
+        EndWork xlsapp:=Application
+        Exit Sub
 End Sub
 
 
@@ -723,6 +767,8 @@ Sub ExportForMigration()
     'Select the Folder
     AbleToExport = False
     sDirectory = Helpers.LoadFolder
+
+    On Error GoTo ErrPath
 
     If sDirectory <> "" Then
         'Export the Data of the linelist
@@ -767,6 +813,8 @@ Sub ExportForMigration()
         End If
     End If
 
+    On Error Goto 0
+
     'Add here error handling when the export is not working.
 
     If AbleToExport Then
@@ -802,6 +850,12 @@ Sub ExportForMigration()
     End If
 
     Set ExportPath = Nothing
+
+    Exit Sub
+    ErrPath :
+        MsgBox "Error, unable to set the paths for the export"
+        EndWork xlsapp:=Application
+        Exit Sub
 End Sub
 
 Public Function SheetExist(SheetName As String) As Boolean
