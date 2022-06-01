@@ -163,7 +163,7 @@ Private Function SelectFolderOnWindows() As String
         .Title = "Chose your directory"          'MSG_ChooseDir
         .Filters.Clear
 
-        If .show = True Then
+        If .Show = True Then
             SelectFolderOnWindows = .SelectedItems(1)
         End If
     End With
@@ -232,7 +232,7 @@ Function SelectFileOnWindows(sFilters)
         .Filters.Clear
         .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
 
-        If .show = True Then
+        If .Show = True Then
             SelectFileOnWindows = .SelectedItems(1)
         End If
     End With

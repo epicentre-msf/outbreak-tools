@@ -493,7 +493,7 @@ Sub ClearOneHistoricGeobase(iGeoType As Byte)
             End If
         End If
 
-        MsgBox "Done", vbinformation, "Delete Historic"
+        MsgBox "Done", vbInformation, "Delete Historic"
     End If
     'Add a message to say it is done
     Set WkshGeo = Nothing
