@@ -55,6 +55,8 @@ Public Sub BeginWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean
     xlsapp.DisplayAlerts = False
     xlsapp.Calculation = xlCalculationManual
     xlsapp.DisplayStatusBar = bstatusbar
+    xlsapp.EnableAnimations = False
+    xlsapp.EnableMacroAnimations = False
 End Sub
 
 Public Sub RemoveGridLines(Wksh As Worksheet)
@@ -75,6 +77,8 @@ Public Sub EndWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean =
     xlsapp.DisplayAlerts = True
     xlsapp.Calculation = xlCalculationAutomatic
     xlsapp.DisplayStatusBar = bstatusbar
+    xlsapp.EnableAnimations = True
+    xlsapp.EnableMacroAnimations = True
 End Sub
 
 
