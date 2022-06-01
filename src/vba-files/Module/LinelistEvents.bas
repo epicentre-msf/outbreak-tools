@@ -35,6 +35,8 @@ Sub ClicCmdAddRows()
 
     Dim oLstobj As Object
 
+    On Error GoTo errAddRows
+
     ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
     Application.EnableEvents = False
 
@@ -44,6 +46,13 @@ Sub ClicCmdAddRows()
 
     Call ProtectSheet
     Application.EnableEvents = True
+
+    Exit Sub
+
+errAddRows:
+        Application.EnableEvents = True
+        MsgBox "Error, unable to add Rows"
+        Exit Sub
 End Sub
 
 Sub ClicCmdExport()
@@ -53,6 +62,8 @@ Sub ClicCmdExport()
     Const C_CmdHeight As Integer = 6
 
     iHeight = 1
+
+    On Error GoTo errLoadExp
 
     With F_Export
         i = 2
@@ -79,6 +90,15 @@ Sub ClicCmdExport()
         .Width = 168
         .show
     End With
+
+    Exit Sub
+
+errLoadExp:
+        MsgBox "Error, Unable to Load Export form"
+        EndWork xlsapp:=Application
+        Exit Sub
+
+
 End Sub
 
 
@@ -95,8 +115,12 @@ Sub ClicCmdDebug()
     Dim DebugWksh As Worksheet
 
     BeginWork xlsapp:=Application
+
+    On Error GoTo errDebug
+
     pwd = InputBox("Provide the debugging password", "DEBUG MODE", "1234")
     Set DebugWksh = Worksheets(ActiveSheet.Name)
+
 
     'Unprotect All Sheets
     If Not DebugMode Then
@@ -147,6 +171,13 @@ Sub ClicCmdDebug()
         DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.Text = "Debug"
     End If
 
+    Exit Sub
+
+errDebug:
+        MsgBox ("Error, unable to run Debug/Protect Please contact the Admin")
+        EndWork xlsapp:=Application
+        Exit Sub
+
     EndWork xlsapp:=Application
 End Sub
 
@@ -174,7 +205,6 @@ Sub EventValueChangeLinelist(oRange As Range)
     On Error GoTo errHand
     iNumCol = oRange.Column
     sControlType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).value
-    sChoiceAutoType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 2, iNumCol).value
 
     If oRange.Row > C_estartlineslldata + 1 Then
 
@@ -253,40 +283,6 @@ Sub EventValueChangeLinelist(oRange As Range)
 
         End Select
 
-        Select Case sChoiceAutoType
-
-            Case C_sDictControlChoiceAuto & "_origin"
-                BeginWork xlsapp:=Application
-                sVarName = ActiveSheet.Cells(C_estartlineslldata + 1, iNumCol).value
-                With ThisWorkbook.Worksheets(C_sSheetChoiceAuto)
-                    Set choiceLo = .ListObjects("o" & C_sDictControlChoiceAuto & "_" & sVarName)
-
-                    iChoiceCol = choiceLo.DataBodyRange.Column
-                    iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
-
-                    'A simple safeguard agains empty values
-                    If .Cells(iRow, iChoiceCol).value = vbNullString Then
-                        iRow = iRow - 1
-                    End If
-                    .Cells(iRow + 1, iChoiceCol).value = oRange.value
-
-                    choiceLo.Resize Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow + 1, iChoiceCol))
-                    choiceLo.DataBodyRange.RemoveDuplicates Columns:=1, Header:=xlYes
-
-                    Set rng = choiceLo.ListColumns(1).Range
-                    With choiceLo.Sort
-                        .SortFields.Clear
-                        .SortFields.Add Key:=rng, SortOn:=xlSortOnValues, Order:=xlDescending
-                        .Header = xlYes
-                        .Apply
-                    End With
-                End With
-                EndWork xlsapp:=Application
-            Case Else
-
-        End Select
-
-
     End If
 
     If oRange.Row = C_estartlineslldata And sControlType = C_sDictControlCustom Then
@@ -326,4 +322,79 @@ Sub ClicExportMigration()
         [F_ExportMig].show
         AfterFirstClicMig = True
     End If
+End Sub
+
+'Event to update the list_auto when a sheet containing a list_auto is desactivated
+Public Sub EventDesactivateLinelist(ByVal sSheetName As String)
+
+    Dim iChoiceCol As Integer
+    Dim choiceLo As ListObject
+    Dim sVarName As String
+    Dim iRow As Integer
+    Dim i As Integer
+    Dim arrTable As BetterArray
+    Dim PrevWksh As Worksheet
+    Dim rng As Range
+
+    Set arrTable = New BetterArray
+
+    On Error GoTo errHand
+
+    i = 1
+
+    Set PrevWksh = ThisWorkbook.Worksheets(sSheetName)
+
+    With PrevWksh
+
+        BeginWork xlsapp:=Application
+
+            While (.Cells(C_estartlineslldata, i) <> vbNullString)
+
+                Select Case .Cells(C_eStartLinesLLMainSec - 2, i).value
+
+                    Case C_sDictControlChoiceAuto & "_origin"
+
+                        sVarName = .Cells(C_estartlineslldata + 1, i).value
+                        arrTable.FromExcelRange .Cells(C_estartlineslldata + 2, i), DetectLastColumn:=False, DetectLastRow:=True
+
+                        'Unique values (removing the spaces and the Null strings and keeping the case (The remove duplicates doesn't do that))
+                        Set arrTable = GetUniqueBA(arrTable)
+
+                        With ThisWorkbook.Worksheets(C_sSheetChoiceAuto)
+
+                            Set choiceLo = .ListObjects("o" & C_sDictControlChoiceAuto & "_" & sVarName)
+                            iChoiceCol = choiceLo.Range.Column
+                            choiceLo.DataBodyRange.Delete
+                            arrTable.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
+                            iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
+
+                            choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
+
+                            'Sort in descending order
+                            Set rng = choiceLo.ListColumns(1).Range
+                            With choiceLo.Sort
+                                .SortFields.Clear
+                                .SortFields.Add Key:=rng, SortOn:=xlSortOnValues, Order:=xlDescending
+                                .Header = xlYes
+                                .Apply
+                            End With
+
+                        End With
+                    Case Else
+                End Select
+                i = i + 1
+            Wend
+
+        EndWork xlsapp:=Application
+
+    End With
+
+    Set arrTable = Nothing
+    Set PrevWksh = Nothing
+
+    Exit Sub
+
+errHand:
+        EndWork xlsapp:=Application
+        Exit Sub
 End Sub
