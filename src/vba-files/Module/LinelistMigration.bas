@@ -23,9 +23,9 @@ Sub ImportMigrationData()
     Dim lgRows As Long, iCols As Integer, lgStart As Long, iColExp As Integer, lgRowTarget As Long, iColTarget As Integer, lgNbData As Long
     Dim sLabel As String, sPath As String, sMessage As String
     Dim iRep As Integer
-    
+
     Set ShMain = Sheets(ActiveSheet.Name)
-    
+
     Set wbkLL = ActiveWorkbook
 
     iLastSh = wbkLL.Sheets.Count
@@ -60,7 +60,7 @@ Sub ImportMigrationData()
             Next
         End If
     Next
-    
+
     If iRep = vbYes Then
         iRep = 0
         lgRows = ShMain.Cells(15, 2).End(xlDown).Row
@@ -108,11 +108,11 @@ Sub ImportMigrationData()
         Set shTarget = Sheets(Left(Sheets(i).Name, Len(Sheets(i).Name) - 4))
 
         If LCase(shSource.Name) = "admin_exp" Then
-        
+
             shTarget.Unprotect (C_sLLPassword)
             shSource.Select
             lgRows = shSource.Cells(2, 1).End(xlDown).Row
-            
+
             For j = 2 To lgRows
                 Application.EnableEvents = False
                     If shTarget.Cells(j + 13, 3).value = "" Then shSource.Cells(j, 2).Copy Destination:=shTarget.Cells(j + 13, 3)
@@ -172,11 +172,11 @@ Sub ImportMigrationData()
                         Application.EnableEvents = True
                         shTarget.Columns(iColTarget).EntireColumn.AutoFit
                     End If
-                    
+
                 Else
 
                     sMessage = sMessage & " / " & sLabel & " (Sheet " & Replace(shSource.Name, "_Exp", "") & ")"
-                    
+
                 End If
 
                 If BlHidden Then
@@ -281,7 +281,7 @@ Sub ImportGeobase()
 
         Call TranslateImportGeoHead
 
-        ShouldQuit = MsgBox("Finished imported geobase data, do you want to quit?", vbQuestion + vbYesNo, "Import GeoData")
+        ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportGeo"), vbQuestion + vbYesNo, "Import GeoData")
 
         If ShouldQuit = vbYes Then
             F_ImportMig.Hide
@@ -390,7 +390,7 @@ Sub ImportHistoricGeobase()
         'Add a message box to say it is over
     End If
 
-    ShouldQuit = MsgBox("Finished Imported historic data, do you want to quit?", vbQuestion + vbYesNo, "Import Historic")
+    ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportHistoricGeo"), vbQuestion + vbYesNo, "Import Historic")
 
     If ShouldQuit = vbYes Then
         F_ImportMig.Hide
@@ -406,7 +406,7 @@ Sub ImportHistoricGeobase()
     Exit Sub
 
 errImportHistoric:
-        MsgBox "Error, Unable to import historic geobase"
+        MsgBox TranslateLLMsg("MSG_ErrHistoricGeo")
         EndWork xlsapp:=Application
         Exit Sub
 
@@ -422,7 +422,7 @@ Sub ClearHistoricGeobase()
 
     On Error GoTo errClearHistoric
 
-    ShouldDelete = MsgBox("Your historic geographic data  in the current workbook will be completely deleted, this action is irreversible. Proceed?", vbExclamation + vbYesNo, "Delete Historic")
+    ShouldDelete = MsgBox(TranslateLLMsg("MSG_HistoricDelete"), vbExclamation + vbYesNo, "Delete Historic")
 
     If ShouldDelete = vbYes Then
         If Not WkshGeo.ListObjects(C_sTabHistoGeo).DataBodyRange Is Nothing Then
@@ -441,7 +441,7 @@ Sub ClearHistoricGeobase()
     Exit Sub
 
 errClearHistoric:
-        MsgBox "Error, Unable to clear the historic of geobase"
+        MsgBox TranslateLLMsg("MSG_ErrCleanHistoric")
         EndWork xlsapp:=Application
         Exit Sub
 End Sub
@@ -594,7 +594,7 @@ Private Sub ExportMigrationData(sLLPath As String)
     Exit Sub
 
 errExportMig:
-        MsgBox "Error, unable to export data"
+        MsgBox TranslateLLMsg("MSG_ErrExportData")
         EndWork xlsapp:=Application
         Exit Sub
 End Sub
@@ -713,7 +713,7 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
     Exit Sub
 
 errExportMigGeo:
-        MsgBox "Error, unable to Export Geobase"
+        MsgBox TranslateLLMsg("MSG_ErrExportGeo")
         EndWork xlsapp:=Application
         Exit Sub
 End Sub
@@ -778,7 +778,7 @@ Private Sub ExportMigrationHistoricGeo(sGeoPath As String)
     Exit Sub
 
 ErrExportHistGeo:
-        MsgBox "Error, unable to export the historic of the geobase"
+        MsgBox TranslateLLMsg("MSG_ErrExportHistoricGeo")
         EndWork xlsapp:=Application
         Exit Sub
 End Sub
@@ -826,7 +826,7 @@ Sub ExportForMigration()
 
         i = 0
         While Len(sLLPath) >= 255 And Len(sGeoPath) >= 255 And Len(sGeoHistoPath) >= 255 And i < 3 'MSG_PathTooLong
-            MsgBox "The path of the export folder is too long so the file names gets truncated. Please select a folder higher in the hierarchy to save the export (ex: Desktop, Downloads, Documents etc.)"
+            MsgBox TranslateLLMsg("MSG_PathTooLong")
             sDirectory = Helpers.LoadFolder
             If sDirectory <> "" Then
                  sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name), ".xlsb", "") & _
@@ -881,7 +881,7 @@ Sub ExportForMigration()
         Application.DisplayAlerts = True
         EndWork xlsapp:=Application
 
-        ShouldQuit = MsgBox("Finished Exports, do you want to quit?", vbQuestion + vbYesNo, "Export for Migration")
+        ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishedExports"), vbQuestion + vbYesNo, "Migration")
         If ShouldQuit = vbYes Then
             F_ExportMig.Hide
         End If
@@ -891,8 +891,9 @@ Sub ExportForMigration()
     Set ExportPath = Nothing
 
     Exit Sub
+
 ErrPath:
-        MsgBox "Error, unable to set the paths for the export"
+        MsgBox TranslateLLMsg("MSG_ErrExportPath")
         EndWork xlsapp:=Application
         Exit Sub
 End Sub
@@ -901,16 +902,16 @@ Public Function SheetExist(SheetName As String) As Boolean
 'check sheet exist
 
     Dim shSheet As Variant
-    
+
     SheetExist = False
-    
+
     For Each shSheet In Sheets
         If UCase(shSheet.Name) = UCase(SheetName) Then
             SheetExist = True
             Exit Function
         End If
     Next shSheet
-    
+
 End Function
 
 

@@ -163,7 +163,7 @@ Private Function SelectFolderOnWindows() As String
         .Title = "Chose your directory"          'MSG_ChooseDir
         .Filters.Clear
 
-        If .show = True Then
+        If .Show = True Then
             SelectFolderOnWindows = .SelectedItems(1)
         End If
     End With
@@ -232,7 +232,7 @@ Function SelectFileOnWindows(sFilters)
         .Filters.Clear
         .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
 
-        If .show = True Then
+        If .Show = True Then
             SelectFileOnWindows = .SelectedItems(1)
         End If
     End With
@@ -485,7 +485,7 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
                              Optional iFiltindex3 As Integer = 0, Optional sValue3 As String = vbNullString, _
                              Optional returnIndex As Integer = -99, _
                              Optional bAllData As Boolean = True) As BetterArray
-    Dim rng As Range
+    Dim Rng As Range
     Dim Data As BetterArray
     Dim breturnAllData As Boolean
 
@@ -504,7 +504,7 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
 
     End With
 
-    Set rng = lo.Range.SpecialCells(xlCellTypeVisible)
+    Set Rng = lo.Range.SpecialCells(xlCellTypeVisible)
 
     If returnIndex > 0 Then
         breturnAllData = False
@@ -519,7 +519,7 @@ Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 
             .Visible = xlSheetHidden
             .Cells.Clear
 
-            rng.Copy Destination:=.Cells(1, 1)
+            Rng.Copy Destination:=.Cells(1, 1)
 
             Set Data = New BetterArray
             Data.LowerBound = 1
@@ -542,17 +542,17 @@ End Function
 'Get unique values of one range in a listobject
 Function GetUniquelo(lo As ListObject, iIndex As Integer) As BetterArray
 
-    Dim rng As Range
+    Dim Rng As Range
     Dim Data As BetterArray
 
-    Set rng = lo.ListColumns(iIndex).DataBodyRange
+    Set Rng = lo.ListColumns(iIndex).DataBodyRange
 
     'Copy and paste to temp
     With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
 
-            rng.Copy Destination:=.Cells(1, 1)
+            Rng.Copy Destination:=.Cells(1, 1)
 
             Set Data = New BetterArray
             Data.LowerBound = 1
@@ -567,7 +567,7 @@ Function GetUniquelo(lo As ListObject, iIndex As Integer) As BetterArray
     Set GetUniquelo = Data.Clone()
 
     Set Data = Nothing
-    Set rng = Nothing
+    Set Rng = Nothing
 
 End Function
 
@@ -584,7 +584,7 @@ Function GetUniqueBA(BA As BetterArray) As BetterArray
 
    sval = Application.WorksheetFunction.Trim(BA.Item(BA.LowerBound))
 
-   If sval <> VbNullString Then
+   If sval <> vbNullString Then
     Outable.Push sval
    End If
 

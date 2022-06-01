@@ -30,7 +30,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Dim SpecCharData As BetterArray
     Dim DictVarName As BetterArray
     Dim iPastingRow As Integer
-    Dim sCpte As Integer
     Dim LoRng As Range                          'List object's range
     Dim iNbshifted As Integer
     'For updating sheet names in the dictionary worksheet
@@ -39,6 +38,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Dim sFirstSheetName As String 'Previous sheet names where to copy data to:
     Dim iWindowState As Integer
     Dim Wksh As Worksheet
+    Dim iPerc As Integer
 
 
     Dim iCounterSheet As Integer                'counter for one Sheet
@@ -70,25 +70,28 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Application.WindowState = xlMinimized
     BeginWork xlsapp:=Application
 
-    StatusBar_Updater (0)
+    iUpdateCpt = iUpdateCpt + 5
+    StatusBar_Updater (iUpdateCpt)
 
     'Now Transferring some designers objects (codes, modules) to the workbook we want to create
     Call DesignerBuildListHelpers.TransferDesignerCodes(Wkb)
 
-    StatusBar_Updater (5)
     DoEvents
 
     'DesignerBuildListHelpers.TransterSheet is for sending worksheets from the actual workbook to the first workbook of the instance
     sFirstSheetName = Wkb.Worksheets(1).Name
     Call DesignerBuildListHelpers.TransferSheet(Wkb, C_sSheetGeo, sFirstSheetName)
     Call DesignerBuildListHelpers.TransferSheet(Wkb, C_sSheetPassword, C_sSheetGeo)
-    StatusBar_Updater (10)
+    iUpdateCpt = iUpdateCpt + 5
+    StatusBar_Updater (iUpdateCpt)
     Call DesignerBuildListHelpers.TransferSheet(Wkb, C_sSheetFormulas, C_sSheetPassword)
     Call DesignerBuildListHelpers.TransferSheet(Wkb, C_sSheetLLTranslation, C_sSheetFormulas)
 
 
     DoEvents
-    StatusBar_Updater (35)
+
+    iUpdateCpt = iUpdateCpt + 5
+    StatusBar_Updater (iUpdateCpt)
 
     'Create special characters data
     FormulaData.FromExcelRange SheetFormulas.ListObjects(C_sTabExcelFunctions).ListColumns("ENG").DataBodyRange, DetectLastColumn:=False
@@ -130,10 +133,12 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Windows(Wkb.Name).Visible = False
     Application.WindowState = iWindowState
 
-    For iCounterSheet = 1 To LLSheetNameData.UpperBound
+    iPerc = 90 - iUpdateCpt
 
-        sCpte = (30 * iCounterSheet)
-        StatusBar_Updater (sCpte)
+    iPerc = Round(iPerc / LLSheetNameData.Length, 1)
+
+
+    For iCounterSheet = 1 To LLSheetNameData.UpperBound
 
         'Vector of varnames for one sheet
         VarnameSheetData.Clear
@@ -151,8 +156,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
                                          VarnameSheetData, ColumnSheetIndexData, FormulaData, SpecCharData, ChoiceAutoVarData, iNbshifted)
                     DoEvents
 
-                    sCpte = sCpte + 5
-                    StatusBar_Updater (sCpte)
 
                     'update the variable names for writing in the dictionary sheet
                     i = 1
@@ -193,15 +196,13 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
                         DictVarName.Clear
                      End With
             DoEvents
-
-            sCpte = sCpte + 10
-            StatusBar_Updater (sCpte)
         End Select
 
         iSheetStartLine = iSheetStartLine + LLNbColData.Item(iCounterSheet)
 
         DoEvents
-        StatusBar_Updater (sCpte + 5)
+        iUpdateCpt = iUpdateCpt + iPerc
+        StatusBar_Updater (iUpdateCpt)
     Next
 
     'Put the dictionnary in a table format
@@ -217,7 +218,11 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
         .ListObjects("o" & ClearString(C_sParamSheetDict)).Resize .ListObjects("o" & ClearString(C_sParamSheetDict)).Range.CurrentRegion
     End With
 
+    iUpdateCpt = iUpdateCpt + 2
+
     Call DesignerBuildListHelpers.UpdateChoiceAutoHeaders(Wkb, ChoiceAutoVarData, DictHeaders)
+
+    StatusBar_Updater (iUpdateCpt)
 
     #If Mac Then
         'Mac users will have to endure screen flickering, no choice
@@ -274,6 +279,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
         Wkb.Close
         Set Wkb = Nothing
 
+
         Myxlsapp.Quit
         Set Myxlsapp = Nothing
 
@@ -284,7 +290,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     #End If
 
     EndWork xlsapp:=Application
-    StatusBar_Updater (100)
 
     Application.EnableAnimations = True
     Application.EnableMacroanimations = True
@@ -497,7 +502,7 @@ End Sub
             .Cells(2, 10).Left + 3 * C_iCmdWidth + 60, .Cells(2, 1).Top, C_sShpDebug, _
             "Debug", _
             C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdDebug, sShpColor:="Orange", sShpTextColor:="Black")
-        
+
         'Reset Button
         Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
             .Cells(2, 10).Left, .Cells(6, 1).Top, C_sShpReset, _
@@ -668,9 +673,9 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
 
         While (iCounterDictSheetLine <= iSheetStartLine + iTotalLLSheetColumns - 1)
-        
+
             Wkb.Worksheets(C_sParamSheetDict).Cells(iCounterDictSheetLine + 1, DictHeaders.Length + 1).value = iCounterSheetLLCol
-            
+
             bLockData = False 'lock or not the data in one cell
 
             'First, accessing actual values ussing the dicitonary data and its corrresponding headers
@@ -821,8 +826,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                                         iNbshifted)
 
                     'The geocolumn induce four new columns (I will add 3, keeping the 1 at the end of the loop for next variable)
-                
-                    
+
+
                     iCounterSheetLLCol = iCounterSheetLLCol + 3
                     iNbshifted = iNbshifted + 3
                     sActualVarName = C_sAdmName & "4" & "_" & sActualVarName
@@ -843,18 +848,18 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                     With Wkb.Worksheets(C_sSheetChoiceAuto)
                         iChoiceCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
                         sChoiceAutoName = C_sDictControlChoiceAuto & "_" & sActualChoice
-                        
+
                         .Cells(C_eStartlinesListAuto, iChoiceCol + 1).value = sChoiceAutoName
-                        
+
                         Set LoRng = Range(.Cells(C_eStartlinesListAuto, iChoiceCol + 1), .Cells(C_eStartlinesListAuto + 1, iChoiceCol + 1))
                          .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = "o" & sChoiceAutoName
                          ChoiceAutoVarData.Push sActualChoice
                          Wkb.Names.Add Name:=sChoiceAutoName, RefersToR1C1:="=o" & sChoiceAutoName & "[" & sChoiceAutoName & "]"
                     End With
-                    
+
                     'Set the validation for list auto
                     Call Helpers.SetValidation(.Cells(C_estartlineslldata + 2, iCounterSheetLLCol), "=" & sChoiceAutoName, Helpers.GetValidationType(sActualValidationAlert), sActualValidationMessage)
-                    
+
                 Case C_sDictControlHf
                     .Cells(C_estartlineslldata, iCounterSheetLLCol).Interior.Color = GetColor("Orange")
                 Case C_sDictControlForm 'Formulas, are reported to the formula function

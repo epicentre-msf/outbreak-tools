@@ -48,6 +48,12 @@ Attribute VB_Exposed = False
 
 
 
+
+
+
+
+
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -57,7 +63,7 @@ Private Sub CMD_Copier_Click()
     Dim T_temp As BetterArray
     Set T_temp = New BetterArray
     Dim geosheet As String
-    Dim rng As Range
+    Dim Rng As Range
 
     ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
@@ -236,10 +242,10 @@ End Sub
 Private Sub UserForm_Initialize()
 'Manage language
 
-    Call TranslateForm(Me, ThisWorkbook.Worksheets("linelist-translation").[T_F_Geo])
-        
-    Me.Width = 637
-    Me.Height = 370
+    Call TranslateForm(Me)
+
+    Me.Width = 650
+    Me.Height = 450
 
 End Sub
 

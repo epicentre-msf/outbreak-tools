@@ -24,10 +24,10 @@ Sub ClicCmdGeoApp()
                 Call LoadGeo(iGeoType)
 
             Case Else
-                MsgBox "Vous n'etes pas sur la bonne cellule" 'MSG_WrongCells
+                MsgBox TranslateLLMsg("MSG_WrongCells")
         End Select
     Else
-        MsgBox "Vous n'etes pas sur la bonne cellule" 'MSG_WrongCells
+        MsgBox TranslateLLMsg("MSG_WrongCells"), vbOKOnly + vbCritical, "ERROR"
     End If
 End Sub
 
@@ -49,9 +49,9 @@ Sub ClicCmdAddRows()
 
     Exit Sub
 
-    errAddRows:
+errAddRows:
         Application.EnableEvents = True
-        Msgbox "Error, unable to add Rows"
+        MsgBox TranslateLLMsg("MSG_ErrAddRows"), vbOKOnly + vbCritical, "ERROR"
         Exit Sub
 End Sub
 
@@ -59,7 +59,7 @@ Sub ClicCmdExport()
 
     Dim i As Byte
     Dim iHeight As Integer
-    Const C_CmdHeight As Integer = 6
+    Const C_CmdHeight As Integer = 40
 
     iHeight = 1
 
@@ -87,14 +87,14 @@ Sub ClicCmdExport()
         '.CMD_Retour.Visible = True
         iHeight = .CMD_Retour.Top + .CMD_Retour.Height + 24 + 10
         .Height = iHeight
-        .Width = 168
-        .show
+        .Width = 200
+        .Show
     End With
 
     Exit Sub
 
-    errLoadExp:
-        Msgbox "Error, Unable to Load Export form"
+errLoadExp:
+        MsgBox TranslateLLMsg("MSG_ErrLoadExport"), vbOKOnly + vbCritical, "ERROR"
         EndWork xlsapp:=Application
         Exit Sub
 
@@ -133,10 +133,10 @@ Sub ClicCmdDebug()
             DebugMode = True
             DebugWksh.Shapes(C_sShpDebug).Fill.ForeColor.RGB = Helpers.GetColor("Green")
             DebugWksh.Shapes(C_sShpDebug).Fill.BackColor.RGB = Helpers.GetColor("Green")
-            DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.Text = "Protect"
+            DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.Text = TranslateLLMsg("MSG_Protect")
             DebugWksh.Select
         Else
-            MsgBox "Wrong Password!", vbOK, "DEBUG MODE"
+            MsgBox TranslateLLMsg("MSG_WrongPassword"), vbOK, "DEBUG MODE"
         End If
     Else
         With ThisWorkbook.Worksheets(C_sParamSheetDict)
@@ -168,13 +168,13 @@ Sub ClicCmdDebug()
         ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value = pwd
         DebugWksh.Shapes(C_sShpDebug).Fill.ForeColor.RGB = Helpers.GetColor("Orange")
         DebugWksh.Shapes(C_sShpDebug).Fill.BackColor.RGB = Helpers.GetColor("Orange")
-        DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.Text = "Debug"
+        DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.Text = TranslateLLMsg("MSG_Debug")
     End If
 
     Exit Sub
 
-    errDebug:
-        MsgBox ("Error, unable to run Debug/Protect Please contact the Admin")
+errDebug:
+        MsgBox TranslateLLMsg("MSG_ErrDebug"), vbOKOnly + vbCritical, "ERROR"
         EndWork xlsapp:=Application
         Exit Sub
 
@@ -200,7 +200,7 @@ Sub EventValueChangeLinelist(oRange As Range)
     Dim choiceLo As ListObject
     Dim sChoiceAutoType As String
     Dim iRow As Integer
-    Dim rng As Range
+    Dim Rng As Range
 
     On Error GoTo errHand
     iNumCol = oRange.Column
@@ -303,7 +303,7 @@ End Sub
 
 Sub ClicImportMigration()
 'Import exported data into the linelist
-    F_ImportMig.show
+    F_ImportMig.Show
 End Sub
 
 
@@ -312,33 +312,33 @@ Sub ClicExportMigration()
     Static AfterFirstClicMig As Boolean
 
     If AfterFirstClicMig Then
-        [F_ExportMig].show
+        [F_ExportMig].Show
     Else
         'For the first click Thick Migration and Geo and put historic to false
         'For subsequent clicks, just show what have been ticked
         [F_ExportMig].CHK_ExportMigData.value = True
         [F_ExportMig].CHK_ExportMigGeo.value = True
         [F_ExportMig].CHK_ExportMigGeoHistoric.value = True
-        [F_ExportMig].show
+        [F_ExportMig].Show
         AfterFirstClicMig = True
     End If
 End Sub
 
 'Event to update the list_auto when a sheet containing a list_auto is desactivated
-Public Sub EventDesactivateLinelist(ByVal sSheetName as String)
+Public Sub EventDesactivateLinelist(ByVal sSheetName As String)
 
     Dim iChoiceCol As Integer
     Dim choiceLo As ListObject
-    Dim sVarName as String
+    Dim sVarName As String
     Dim iRow As Integer
-    Dim i as Integer
-    Dim arrTable as BetterArray
-    Dim PrevWksh as Worksheet
-    Dim rng as Range
+    Dim i As Integer
+    Dim arrTable As BetterArray
+    Dim PrevWksh As Worksheet
+    Dim Rng As Range
 
     Set arrTable = New BetterArray
 
-    On Error Goto errHand
+    On Error GoTo errHand
 
     i = 1
 
@@ -348,14 +348,14 @@ Public Sub EventDesactivateLinelist(ByVal sSheetName as String)
 
         BeginWork xlsapp:=Application
 
-            While(.Cells(C_estartlineslldata, i) <> vbNullString)
+            While (.Cells(C_estartlineslldata, i) <> vbNullString)
 
                 Select Case .Cells(C_eStartLinesLLMainSec - 2, i).value
 
                     Case C_sDictControlChoiceAuto & "_origin"
 
                         sVarName = .Cells(C_estartlineslldata + 1, i).value
-                        arrTable.FromExcelRange .Cells(C_estartlineslldata + 2, i), DetectLastColumn:=False, DetectLastRow := True
+                        arrTable.FromExcelRange .Cells(C_estartlineslldata + 2, i), DetectLastColumn:=False, DetectLastRow:=True
 
                         'Unique values (removing the spaces and the Null strings and keeping the case (The remove duplicates doesn't do that))
                         Set arrTable = GetUniqueBA(arrTable)
@@ -364,17 +364,17 @@ Public Sub EventDesactivateLinelist(ByVal sSheetName as String)
 
                             Set choiceLo = .ListObjects("o" & C_sDictControlChoiceAuto & "_" & sVarName)
                             iChoiceCol = choiceLo.Range.Column
-                            choiceLo.DataBodyRange.Delete
+                            If Not choiceLo.DataBodyRange Is Nothing Then choiceLo.DataBodyRange.Delete
                             arrTable.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
                             iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
 
                             choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
 
                             'Sort in descending order
-                            Set rng = choiceLo.ListColumns(1).Range
+                            Set Rng = choiceLo.ListColumns(1).Range
                             With choiceLo.Sort
                                 .SortFields.Clear
-                                .SortFields.Add Key:=rng, SortOn:=xlSortOnValues, Order:=xlDescending
+                                .SortFields.Add Key:=Rng, SortOn:=xlSortOnValues, Order:=xlDescending
                                 .Header = xlYes
                                 .Apply
                             End With
@@ -394,7 +394,7 @@ Public Sub EventDesactivateLinelist(ByVal sSheetName as String)
 
     Exit Sub
 
-    errHand:
+errHand:
         EndWork xlsapp:=Application
         Exit Sub
 End Sub

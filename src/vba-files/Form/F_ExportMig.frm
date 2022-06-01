@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_ExportMig 
    Caption         =   "Export For Migration"
-   ClientHeight    =   3630
+   ClientHeight    =   5415
    ClientLeft      =   120
    ClientTop       =   465
-   ClientWidth     =   2955
+   ClientWidth     =   3765
    OleObjectBlob   =   "F_ExportMig.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -13,11 +13,6 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
-
-
-
-
 
 
 
@@ -55,5 +50,16 @@ End Sub
 
 
 Private Sub UserForm_Click()
+
+End Sub
+
+
+Private Sub UserForm_Initialize()
+'Manage language
+
+    Call TranslateForm(Me)
+
+    Me.Width = 200
+    Me.Height = 300
 
 End Sub

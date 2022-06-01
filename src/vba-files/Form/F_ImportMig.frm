@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_ImportMig 
    Caption         =   "Import For Migration"
-   ClientHeight    =   3480
+   ClientHeight    =   5415
    ClientLeft      =   120
    ClientTop       =   465
-   ClientWidth     =   2955
+   ClientWidth     =   3765
    OleObjectBlob   =   "F_ImportMig.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -13,6 +13,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+
+
+
+
+
 
 
 
@@ -57,4 +62,15 @@ End Sub
 Private Sub CMD_ImportMigQuit_Click()
     Me.Hide
 End Sub
+
+Private Sub UserForm_Initialize()
+'Manage language
+
+    Call TranslateForm(Me)
+    
+    Me.Width = 200
+    Me.Height = 300
+
+End Sub
+
 
