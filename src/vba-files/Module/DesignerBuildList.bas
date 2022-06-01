@@ -497,6 +497,12 @@ End Sub
             .Cells(2, 10).Left + 3 * C_iCmdWidth + 60, .Cells(2, 1).Top, C_sShpDebug, _
             "Debug", _
             C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdDebug, sShpColor:="Orange", sShpTextColor:="Black")
+        
+        'Reset Button
+        Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
+            .Cells(2, 10).Left, .Cells(6, 1).Top, C_sShpReset, _
+            "Reset Data", _
+            C_iCmdWidth + 10, C_iCmdHeight + 20, C_sResetData)
 
         On Error Resume Next
 

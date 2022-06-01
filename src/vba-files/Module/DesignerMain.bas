@@ -45,7 +45,7 @@ Sub LoadFileLL()
 
     Exit Sub
 ErrorManage:
-    MsgBox TranslateMsg("MSG_TitlePassWord"), VbCritical, TranslateMsg("MSG_PassWord")
+    MsgBox TranslateMsg("MSG_TitlePassWord"), vbCritical, TranslateMsg("MSG_PassWord")
 End Sub
 
 'Loading the Lineist directory ---------------------------------------------------------------------------------------------------------------------------------------------------
