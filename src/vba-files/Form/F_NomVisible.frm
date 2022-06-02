@@ -46,6 +46,7 @@ Attribute VB_Exposed = False
 
 
 
+
 Option Explicit
 Option Base 1
 
@@ -72,8 +73,8 @@ Private Sub UserForm_Initialize()
 
     Call TranslateForm(Me)
 
-    Me.Width = 430
-    Me.Height = 330
+    Me.Width = 450
+    Me.Height = 400
 
 End Sub
 
