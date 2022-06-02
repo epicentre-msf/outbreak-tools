@@ -104,7 +104,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
                       LLNbColData, ColumnIndexData, LLSheetNameData, _
                       bNotHideSheets:=False)
     DoEvents
-    'SheetMain.Range(C_sRngEdition).value = "Created the Sheets"
 
     'Choices data'Setting the Choices labels and lists
     Set ChoicesListData = New BetterArray

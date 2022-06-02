@@ -99,6 +99,7 @@ Public Const C_sDictTypeDec As String = "decimal"
 
 Public Const C_sChoiHeaderLab As String = "label" 'Choice label name headers
 Public Const C_sChoiHeaderList As String = "list name" 'Choice list headers
+Public Const C_sChoiHeaderLabShort As String = "label short"
 
 'EXPORTS PARAMETERS ===========================================================================
 Public Const C_sExportActive As String = "active"
@@ -131,6 +132,8 @@ Public Const C_sTabTradLLMsg As String = "T_TradLLMsg"
 Public Const C_sTabTradLLShapes As String = "T_TradLLShapes"
 Public Const C_sTabTradLLForms  As String = "T_TradLLForms"
 Public Const C_sTabLLLang As String = "T_LLLang"
+Public Const C_sTabTranslation As String = "Tab_Translations"
+
 'Formulas and functions tables
 
 Public Const C_sTabExcelFunctions        As String = "T_XlsFonctions"                      'Excel functions to keep in formulas
@@ -211,7 +214,8 @@ Public Enum C_StartLines
     C_eStartLinesChoicesHeaders = 1                                                          'Starting lines of the choices Headers
     C_eStartLinesChoicesData = 2                                                             'Starting lines of the choices Data
     C_eStartLinesExportData = 2                                                              'Starting lines of the export data
-    C_eStartlinestransdata = 4                                                               'Starting lines for the translation data
+    C_eStartLinesTransdata = 4                                                               'Starting lines for the translation data
+    C_eStartcolumntransdata = 1                                                              'Starting column for the translation data
     C_eStartlinesListAuto = 1
 End Enum
 

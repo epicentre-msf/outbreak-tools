@@ -470,11 +470,11 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
         DestWkb.Worksheets(sSheetName).Cells.Clear
     Else
         DestWkb.Worksheets.Add.Name = sSheetName
-        DestWkb.Worksheets(sSheetName).Visible = xlSheetHidden
     End If
 
     'Copy the data Now
     sData.ToExcelRange DestWkb.Worksheets(sSheetName).Range("A1")
+    DestWkb.Worksheets(sSheetName).Visible = xlSheetHidden
     Set sData = Nothing
 End Sub
 
@@ -573,7 +573,7 @@ End Function
 
 'Unique of a betteray sorted
 Function GetUniqueBA(BA As BetterArray) As BetterArray
-    Dim sval As String
+    Dim sVal As String
     Dim i As Integer
     Dim Outable As BetterArray
 
@@ -582,17 +582,17 @@ Function GetUniqueBA(BA As BetterArray) As BetterArray
     Set Outable = New BetterArray
     Outable.LowerBound = 1
 
-   sval = Application.WorksheetFunction.Trim(BA.Item(BA.LowerBound))
+   sVal = Application.WorksheetFunction.Trim(BA.Item(BA.LowerBound))
 
-   If sval <> vbNullString Then
-    Outable.Push sval
+   If sVal <> vbNullString Then
+    Outable.Push sVal
    End If
 
     If BA.Length > 0 Then
         For i = BA.LowerBound To BA.UpperBound
-        If sval <> Application.WorksheetFunction.Trim(BA.Item(i)) And Application.WorksheetFunction.Trim(BA.Item(i)) <> vbNullString Then
-            sval = Application.WorksheetFunction.Trim(BA.Item(i))
-            Outable.Push sval
+        If sVal <> Application.WorksheetFunction.Trim(BA.Item(i)) And Application.WorksheetFunction.Trim(BA.Item(i)) <> vbNullString Then
+            sVal = Application.WorksheetFunction.Trim(BA.Item(i))
+            Outable.Push sVal
         End If
         Next
     End If

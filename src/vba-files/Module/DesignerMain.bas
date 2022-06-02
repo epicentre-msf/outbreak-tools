@@ -160,7 +160,7 @@ End Sub
 ' well as all the forms in the linelist
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub GenerateData()
-    
+
     Dim bGood As Boolean
     bGood = DesignerMainHelpers.ControlForGenerate()
 
@@ -183,26 +183,26 @@ Sub GenerateData()
 
 
     'Be sure the actual Workbook is not opened
-    
-    
+
+
     SheetMain.Range(C_sRngUpdate).value = vbNullString
-    
+
     If IsWkbOpened(SheetMain.Range(C_sRngLLName).value & ".xlsb") Then
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseLL")
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
-    
+
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_MovingData")
-    
+
     iUpdateCpt = 0
     StatusBar_Updater (iUpdateCpt)
-    
+
     BeginWork xlsapp:=Application
 
     Set DesWkb = DesignerWorkbook
     Set SetupWkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
-    
+
     'Move the dictionary data
     Call Helpers.MoveData(SetupWkb, DesWkb, C_sParamSheetDict, C_eStartLinesDictHeaders)
     'Move the Choices data
@@ -215,7 +215,9 @@ Sub GenerateData()
 
     iUpdateCpt = iUpdateCpt + 5
     StatusBar_Updater (iUpdateCpt)
-
+    
+    'Translate
+    Call TranslateLinelistData
 
     '--------------- Getting all required the Data
 
@@ -235,7 +237,7 @@ Sub GenerateData()
     Set ExportData = Helpers.GetData(DesWkb, C_sParamSheetExport, 1)
     'Create the translation Data
     Set TransData = New BetterArray
-    TransData.FromExcelRange DesWkb.Worksheets(C_sParamSheetTranslation).Cells(C_eStartlinestransdata, 2), DetectLastRow:=True, DetectLastColumn:=True
+    TransData.FromExcelRange DesWkb.Worksheets(C_sParamSheetTranslation).Cells(C_eStartLinesTransdata, 2), DetectLastRow:=True, DetectLastColumn:=True
     DoEvents
     Set DesWkb = Nothing
 
