@@ -72,8 +72,8 @@ Private Sub UserForm_Initialize()
 
     Call TranslateForm(Me)
 
-    Me.Width = 450
-    Me.Height = 400
+    Me.Width = 430
+    Me.Height = 330
 
 End Sub
 
