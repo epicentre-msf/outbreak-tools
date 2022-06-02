@@ -478,6 +478,33 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
     End With
 End Sub
 
+Sub BuildGotoArea(Wkb as Workbook, sSheetName As String)
+
+    With Wkb.Worksheets(sSheetName)
+        'Firs row
+        .Cells(1, C_eSectionsLookupColumns).value = TranslateLLMsg("MSG_GoToSec")
+        .Cells(1, C_eSectionsLookupColumns).Font.Bold = True
+        .Cells(1, C_eSectionsLookupColumns).Locked = False
+        .Cells(1, C_eSectionsLookupColumns).HorizontalAlignment = xlCenter
+        .Cells(1, C_eSectionsLookupColumns).VerticalAlignment = xlCenter
+        .Cells(1, C_eSectionsLookupColumns).Interior.Color = Helpers.GetColor("MainSecBlue")
+        .Cells(1,  C_eSectionsLookupColumns).Font.Color = Helpers.GetColor("White")
+        .Cells(1, C_eSectionsLookupColumns).Font.Size = 10
+        .Cells(1, C_eSectionsLookupColumns).Font.Bold = True
+
+        'Second Row
+        .Cells(2, C_eSectionsLookupColumns).Locked = False
+        .Cells(2, C_eSectionsLookupColumns).value = ""
+        .Cells(2, C_eSectionsLookupColumns).Name = sSheetName & "_" & C_sGotoSection
+        .Cells(2, C_eSectionsLookupColumns).Font.Size = 12
+        .Cells(2, C_eSectionsLookupColumns).Font.Bold = True
+        .Cells(2, C_eSectionsLookupColumns).HorizontalAlignment = xlCenter
+        .Cells(2, C_eSectionsLookupColumns).VerticalAlignment = xlCenter
+
+    End With
+
+End Sub
+
 
 'Build a merge area for subsections and sections
 'Wksh the workheet on which we want to build the merge area
