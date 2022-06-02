@@ -1,11 +1,7 @@
 Attribute VB_Name = "DesignerTests"
 Option Explicit
 Sub test()
-    Dim sText As String
-    
-   sText = TranslateLLMsg("MSG_PathTooLong")
-   
-    Debug.Print sText
+    Call TranslateDictionary
 End Sub
 
 'Test for the
