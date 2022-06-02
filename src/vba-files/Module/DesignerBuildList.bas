@@ -84,7 +84,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Call DesignerBuildListHelpers.TransferSheet(Wkb, C_sSheetPassword, C_sSheetGeo)
     Call DesignerBuildListHelpers.TransferSheet(Wkb, C_sSheetFormulas, C_sSheetPassword)
     Call DesignerBuildListHelpers.TransferSheet(Wkb, C_sSheetLLTranslation, C_sSheetFormulas)
-    
+
     DoEvents
     iUpdateCpt = iUpdateCpt + 5
     StatusBar_Updater (iUpdateCpt)
@@ -622,6 +622,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     Dim LoRng As Range 'Range of the listobject for one table
     Dim bLockData As Boolean
     Dim sChoiceAutoName As String
+    Dim sSectionsList As String
 
 
     'Update the existence of the Geo button
@@ -640,6 +641,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     iTotalLLSheetColumns = LLNbColData.Items(LLSheetNameData.IndexOf(sSheetName))
     sPrevMainSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
     sPrevSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
+
+    sSectionsList = sPrevMainSec
 
 
     'Continue adding the columns unless the total number of columns to add is reached
@@ -669,6 +672,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         'All the cells font size at 9
         .Cells.Font.Size = C_iLLSheetFontSize
 
+        Call DesignerBuildListHelpers.BuildGotoArea(Wkb, sSheetName)
 
         While (iCounterDictSheetLine <= iSheetStartLine + iTotalLLSheetColumns - 1)
 
@@ -776,6 +780,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             If sPrevMainSec <> sActualMainSec Then
                 'I am on a new Main Section, update the value of the section
                 .Cells(C_eStartLinesLLMainSec, iCounterSheetLLCol).value = sActualMainSec
+                sSectionsList = sActualMainSec & "," & sSectionsList
 
                 'Merge the previous area
                 Call DesignerBuildListHelpers.BuildMergeArea(Wkb.Worksheets(sSheetName), C_eStartLinesLLMainSec, iPrevColMainSec, _
@@ -919,6 +924,10 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             iCounterDictSheetLine = iCounterDictSheetLine + 1 'Counter of lines in the dictionary
             DoEvents
         Wend
+
+
+        'Set Validation to the Section Cell
+        Call Helpers.SetValidation(.Cells(2, C_eSectionsLookupColumns), sSectionsList, 1, TranslateLLMsg("MSG_SectionNotExist"))
 
 
         'Range of the listobject
