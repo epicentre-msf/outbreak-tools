@@ -33,4 +33,4 @@ Public Const C_sLLTableStyle                As String = "TableStyleLight16"     
 
 Public Const C_iLLButtonsRowHeight       As Integer = 25                                    'Row height of the first two rows on one sheet of type Linelist for buttons
 Public Const C_iNumberOfBars             As Integer = 40                                    'Number of bars in the Progressbar in the designer
-Public Const C_iLLSplitColumn           As Integer = 4                                      'Where to split columns of type linelist
+Public Const C_iLLSplitColumn           As Integer = 5                                      'Where to split columns of type linelist

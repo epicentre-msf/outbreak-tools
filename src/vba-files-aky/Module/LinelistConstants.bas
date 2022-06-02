@@ -184,6 +184,7 @@ Public Const C_sYes                     As String = "yes"
 Public Const C_sNo                      As String = "no"
 Public Const C_sGeobase                 As String = "export_geobase"
 Public Const C_sDatabase                As String = "export_data"
+Public Const C_sGotoSection             As String = "go_to_section"
 
 'Name of the sheets for each admin levels
 Public Const C_sAdm1  As String = "ADM1"
@@ -217,5 +218,6 @@ Public Enum C_StartLines
     C_eStartLinesTransdata = 4                                                               'Starting lines for the translation data
     C_eStartcolumntransdata = 1                                                              'Starting column for the translation data
     C_eStartlinesListAuto = 1
+    C_eSectionsLookupColumns = 4                                                              'Columns where to insert GoTo
 End Enum
 

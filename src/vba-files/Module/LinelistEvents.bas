@@ -296,6 +296,18 @@ Sub EventValueChangeLinelist(oRange As Range)
 
     End If
 
+    If oRange.Name.Name = ActiveSheet.Name & "_" & C_sGotoSection Then
+
+      Set Rng = ActiveSheet.Rows(C_eStartLinesLLMainSec).Find(What:=oRange.value, _
+       LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByColumns, _
+        SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False)
+
+        If Not Rng Is Nothing Then
+            Rng.Activate
+        End If
+
+    End If
+
 errHand:
 
 End Sub
