@@ -15,22 +15,20 @@ Public Const C_iAdmTitleFontSize            As Integer = 20
 
 
 'Command buttons
-Public Const C_iCmdWidth                    As Integer = 120                                    'Width of command added  on one sheet
+Public Const C_iCmdWidth                    As Integer = 85                                   'Width of command added  on one sheet
 Public Const C_iCmdHeight                   As Integer = 20                                    'Height of command added on one sheet
 
 'Table Styles
 Public Const C_sLLTableStyle                As String = "TableStyleLight16"                   'Default table style of a linelist object
 
-
-
-
-'Colors
+'COLORS   =========================================================================================================================================================================
 
 
 
 
 'INTEGERS CONSTANTS ===============================================================================================================================================================
 
-Public Const C_iLLButtonsRowHeight       As Integer = 25                                    'Row height of the first two rows on one sheet of type Linelist for buttons
-Public Const C_iNumberOfBars             As Integer = 40                                    'Number of bars in the Progressbar in the designer
-Public Const C_iLLSplitColumn           As Integer = 5                                      'Where to split columns of type linelist
+Public Const C_iLLButtonsRowHeight          As Integer = 25                                    'Row height of the first two rows on one sheet of type Linelist for buttons
+Public Const C_iNumberOfBars                As Integer = 40                                    'Number of bars in the Progressbar in the designer
+Public Const C_iLLSplitColumn               As Integer = 3                                      'Where to split columns of type linelist
+Public Const C_iLLFirstColumnsWidth         As Integer = 20

@@ -467,6 +467,11 @@ End Sub
     Dim iCounterDictSheetLine As Integer
     Dim iTotalSheetAdmColumns As Integer
 
+    Const iCmdWidthFactor As Integer = C_iCmdWidth
+    Const iCmdHeightFactor As Integer = 30
+
+
+
 
     iCounterSheetAdmLine = C_eStartLinesAdmData
     iCounterDictSheetLine = iSheetStartLine
@@ -480,32 +485,30 @@ End Sub
           Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
             .Cells(2, 10).Left, .Cells(2, 1).Top, C_sShpImpMigration, _
             "Import for Migration", _
-            C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdImportMigration)
+            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdImportMigration, _
+            iTextFontSize:=12)
 
 
         'Export migration buttons
          Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
-            .Cells(2, 10).Left + C_iCmdWidth + 20, .Cells(2, 1).Top, C_sShpExpMigration, _
+            .Cells(2, 10).Left + C_iCmdWidth + iCmdWidthFactor + 10, .Cells(2, 1).Top, C_sShpExpMigration, _
             "Export for Migration", _
-            C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdExportMigration)
+            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdExportMigration, _
+            iTextFontSize:=12)
 
         'Export Button
         Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
-            .Cells(2, 10).Left + 2 * C_iCmdWidth + 40, .Cells(2, 1).Top, C_sShpExport, _
+            .Cells(2, 10).Left + 2 * C_iCmdWidth + 2 * iCmdWidthFactor + 20, .Cells(2, 1).Top, C_sShpExport, _
             "Export", _
-            C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdExport)
+            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdExport, _
+            iTextFontSize:=12)
 
 
         Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
-            .Cells(2, 10).Left + 3 * C_iCmdWidth + 60, .Cells(2, 1).Top, C_sShpDebug, _
+            .Cells(2, 10).Left + 3 * C_iCmdWidth + 3 * iCmdWidthFactor + 30, .Cells(2, 1).Top, C_sShpDebug, _
             "Debug", _
-            C_iCmdWidth + 10, C_iCmdHeight + 20, C_sCmdDebug, sShpColor:="Orange", sShpTextColor:="Black")
-
-        ' 'Reset Button
-        ' Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
-        '     .Cells(2, 10).Left, .Cells(6, 1).Top, C_sShpReset, _
-        '     "Reset Data", _
-        '     C_iCmdWidth + 10, C_iCmdHeight + 20, C_sResetData)
+            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdDebug, sShpColor:="Orange", sShpTextColor:="Black", _
+            iTextFontSize:=12)
 
         On Error Resume Next
 
@@ -566,7 +569,7 @@ End Sub
             End If
 
             .Cells(iCounterSheetAdmLine, 2).EntireColumn.AutoFit
-            .Cells(iCounterSheetAdmLine, 3).ColumnWidth = 30
+            .Cells(iCounterSheetAdmLine, 3).columnWidth = 30
             .Cells(iCounterSheetAdmLine, 3).Locked = False
 
             'Add the Column index for those variable
@@ -649,7 +652,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     sPrevMainSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
     sPrevSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
 
-    sSectionsList = sPrevMainSec
+    sSectionsList = TranslateLLMsg("MSG_SelectSection") & ": " & sPrevMainSec
 
 
     'Continue adding the columns unless the total number of columns to add is reached
@@ -661,7 +664,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
         'Show Hide Button
         Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
-                                            .Cells(1, 1).Left + C_iCmdWidth + 10, _
+                                            .Cells(1, 1).Left + C_iCmdWidth + 20, _
                                             .Cells(1, 1).Top, _
                                             C_sShpShowHide, _
                                             "Show/Hide", _
@@ -787,7 +790,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             If sPrevMainSec <> sActualMainSec Then
                 'I am on a new Main Section, update the value of the section
                 .Cells(C_eStartLinesLLMainSec, iCounterSheetLLCol).value = sActualMainSec
-                sSectionsList = sActualMainSec & "," & sSectionsList
+                sSectionsList = sSectionsList & "," & TranslateLLMsg("MSG_SelectSection") & ": " & sActualMainSec
 
                 'Merge the previous area
                 Call DesignerBuildListHelpers.BuildMergeArea(Wkb.Worksheets(sSheetName), C_eStartLinesLLMainSec, iPrevColMainSec, _
@@ -937,6 +940,9 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             DoEvents
         Wend
 
+        'Set Column Width of First and Second Column
+        .Columns(1).columnWidth = C_iLLFirstColumnsWidth
+        .Columns(2).columnWidth = C_iLLFirstColumnsWidth
 
         'Set Validation to the Section Cell
         Call Helpers.SetValidation(.Cells(2, C_eSectionsLookupColumns), sSectionsList, 1, TranslateLLMsg("MSG_SectionNotExist"))

@@ -307,10 +307,11 @@ Sub EventValueChangeLinelist(oRange As Range)
 
     End If
 
-    If oRange.Name.Name = ActiveSheet.Name & "_" & C_sGotoSection Then
+    If oRange.Name.Name = ClearString(ActiveSheet.Name) & "_" & C_sGotoSection Then
+        sLabel = Replace(oRange.value, TranslateLLMsg("MSG_SelectSection") & ": ", "")
 
-      Set Rng = ActiveSheet.Rows(C_eStartLinesLLMainSec).Find(What:=oRange.value, _
-       LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByColumns, _
+        Set Rng = ActiveSheet.Rows(C_eStartLinesLLMainSec).Find(What:=sLabel, _
+        LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByColumns, _
         SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False)
 
         If Not Rng Is Nothing Then
