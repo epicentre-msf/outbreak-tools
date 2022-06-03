@@ -218,6 +218,6 @@ Public Enum C_StartLines
     C_eStartLinesTransdata = 4                                                               'Starting lines for the translation data
     C_eStartcolumntransdata = 1                                                              'Starting column for the translation data
     C_eStartlinesListAuto = 1
-    C_eSectionsLookupColumns = 4                                                              'Columns where to insert GoTo
+    C_eSectionsLookupColumns = 2                                                              'Columns where to insert GoTo
 End Enum
 

@@ -182,7 +182,7 @@ End Function
 Sub AddCmd(Wkb As Workbook, sSheetName As String, iLeft As Integer, iTop As Integer, _
            sShpName As String, sText As String, iCmdWidth As Integer, iCmdHeight As Integer, _
            sCommand As String, Optional sShpColor As String = "MainSecBlue", _
-           Optional sShpTextColor As String = "White")
+           Optional sShpTextColor As String = "White", Optional iTextFontSize As Integer = 9)
 
 
     sText = TranslateLineList(sShpName, C_sTabTradLLShapes)
@@ -194,7 +194,7 @@ Sub AddCmd(Wkb As Workbook, sSheetName As String, iLeft As Integer, iTop As Inte
         .Shapes(sShpName).TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
         .Shapes(sShpName).TextFrame2.VerticalAnchor = msoAnchorMiddle
         .Shapes(sShpName).TextFrame2.WordWrap = msoFalse
-        .Shapes(sShpName).TextFrame2.TextRange.Font.Size = 9
+        .Shapes(sShpName).TextFrame2.TextRange.Font.Size = iTextFontSize
         .Shapes(sShpName).TextFrame2.TextRange.Font.Fill.ForeColor.RGB = Helpers.GetColor(sShpTextColor)
         .Shapes(sShpName).Fill.ForeColor.RGB = Helpers.GetColor(sShpColor)
         .Shapes(sShpName).Fill.BackColor.RGB = Helpers.GetColor(sShpColor)
@@ -479,26 +479,14 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
 End Sub
 
 Sub BuildGotoArea(Wkb As Workbook, sSheetName As String)
-
     With Wkb.Worksheets(sSheetName)
-        'Firs row
-        .Cells(1, C_eSectionsLookupColumns).value = TranslateLLMsg("MSG_GoToSec")
-        .Cells(1, C_eSectionsLookupColumns).Font.Bold = True
-        .Cells(1, C_eSectionsLookupColumns).Locked = False
-        .Cells(1, C_eSectionsLookupColumns).HorizontalAlignment = xlCenter
-        .Cells(1, C_eSectionsLookupColumns).VerticalAlignment = xlCenter
-        .Cells(1, C_eSectionsLookupColumns).Interior.Color = Helpers.GetColor("MainSecBlue")
-        .Cells(1, C_eSectionsLookupColumns).Font.Color = Helpers.GetColor("White")
-        .Cells(1, C_eSectionsLookupColumns).Font.Size = 9
-        .Cells(1, C_eSectionsLookupColumns).Font.Bold = True
-
         'Second Row
         .Cells(2, C_eSectionsLookupColumns).Locked = False
         .Cells(2, C_eSectionsLookupColumns).value = TranslateLLMsg("MSG_SelectSection")
-        .Cells(2, C_eSectionsLookupColumns).Name = sSheetName & "_" & C_sGotoSection
+        .Cells(2, C_eSectionsLookupColumns).Name = ClearString(sSheetName) & "_" & C_sGotoSection
         .Cells(2, C_eSectionsLookupColumns).Font.Size = 10
-        .Cells(2, C_eSectionsLookupColumns).HorizontalAlignment = xlCenter
-        .Cells(2, C_eSectionsLookupColumns).VerticalAlignment = xlCenter
+        .Cells(2, C_eSectionsLookupColumns).HorizontalAlignment = xlHAlignLeft
+        .Cells(2, C_eSectionsLookupColumns).VerticalAlignment = xlVAlignCenter
         .Cells(2, C_eSectionsLookupColumns).FormulaHidden = True
     End With
 
@@ -689,7 +677,7 @@ End Function
 
 'Setting the min and the max validation
 Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAlertType As Byte, sTypeValidation As String, sMessage As String)
-    
+
     On Error Resume Next
     With oRange.Validation
         .Delete
