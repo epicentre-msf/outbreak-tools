@@ -396,9 +396,9 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Cells(iStartLine + 1, iCol + 1).value = C_sAdmName & "3" & "_" & sVarName
 
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
+
         .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
         .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).value = C_sDictControlGeo & "3"
-
         .Cells(iStartLine + 2, iCol + 1).Locked = False
 
         'Admin 2
@@ -425,8 +425,8 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Cells(iStartLine + 1, iCol).Interior.Color = vbWhite
         .Cells(iStartLine + 1, iCol).Font.Color = vbWhite
 
-        Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
-        .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
+        Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol), .Cells(iStartLine + 1, iCol)))
+        .Range(.Cells(iStartLine, iCol), .Cells(iStartLine + 1, iCol)).Font.Bold = True
 
         .Cells(iStartLine + 2, iCol).Locked = False
 
@@ -460,19 +460,19 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
         LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
         .Cells(iRow + 2, 1).value = ""
-        .Cells(iRow + 2, DictHeaders.Length + 1).value = iDictLine + 4
+        .Cells(iRow + 2, DictHeaders.Length + 1).value = .Cells(iRow + 1, DictHeaders.Length + 1).value + 3
         'Admin 3
         .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
          LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "3"
         LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
         .Cells(iRow + 2, 1).value = ""
-        .Cells(iRow + 2, DictHeaders.Length + 1).value = iDictLine + 3
+        .Cells(iRow + 2, DictHeaders.Length + 1).value = .Cells(iRow + 1, DictHeaders.Length + 1).value + 2
         'Admin 2
         .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
          LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "2"
         LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
         .Cells(iRow + 2, 1).value = ""
-        .Cells(iRow + 2, DictHeaders.Length + 1).value = iDictLine + 2
+        .Cells(iRow + 2, DictHeaders.Length + 1).value = .Cells(iRow + 1, DictHeaders.Length + 1).value + 1
 
          Set LineValues = Nothing
     End With
@@ -489,18 +489,17 @@ Sub BuildGotoArea(Wkb As Workbook, sSheetName As String)
         .Cells(1, C_eSectionsLookupColumns).VerticalAlignment = xlCenter
         .Cells(1, C_eSectionsLookupColumns).Interior.Color = Helpers.GetColor("MainSecBlue")
         .Cells(1, C_eSectionsLookupColumns).Font.Color = Helpers.GetColor("White")
-        .Cells(1, C_eSectionsLookupColumns).Font.Size = 10
+        .Cells(1, C_eSectionsLookupColumns).Font.Size = 9
         .Cells(1, C_eSectionsLookupColumns).Font.Bold = True
 
         'Second Row
         .Cells(2, C_eSectionsLookupColumns).Locked = False
-        .Cells(2, C_eSectionsLookupColumns).value = ""
+        .Cells(2, C_eSectionsLookupColumns).value = TranslateLLMsg("MSG_SelectSection")
         .Cells(2, C_eSectionsLookupColumns).Name = sSheetName & "_" & C_sGotoSection
-        .Cells(2, C_eSectionsLookupColumns).Font.Size = 12
-        .Cells(2, C_eSectionsLookupColumns).Font.Bold = True
+        .Cells(2, C_eSectionsLookupColumns).Font.Size = 10
         .Cells(2, C_eSectionsLookupColumns).HorizontalAlignment = xlCenter
         .Cells(2, C_eSectionsLookupColumns).VerticalAlignment = xlCenter
-
+        .Cells(2, C_eSectionsLookupColumns).FormulaHidden = True
     End With
 
 End Sub
@@ -652,7 +651,7 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
                         'It is either a variable name or a formula
                         If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
                             icolNumb = ColumnIndexData.Item(VarNameData.IndexOf(sAlphaValue))
-                            sAlphaValue = "'" & sSheetName & "'!" & Cells(C_estartlineslldata + 2, icolNumb).Address(False, True)
+                            sAlphaValue = "'" & sSheetName & "'!" & Cells(C_eStartLinesLLData + 2, icolNumb).Address(False, True)
                         ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
                                 sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
                         End If

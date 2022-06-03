@@ -11,7 +11,7 @@ Sub ClicCmdGeoApp()
 
     iNumCol = ActiveCell.Column
 
-    If ActiveCell.Row > C_estartlineslldata + 1 Then
+    If ActiveCell.Row > C_eStartLinesLLData + 1 Then
 
         sType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).value
         Select Case sType
@@ -27,31 +27,42 @@ Sub ClicCmdGeoApp()
                 MsgBox TranslateLLMsg("MSG_WrongCells")
         End Select
     Else
-        MsgBox TranslateLLMsg("MSG_WrongCells"), vbOKOnly + vbCritical, "ERROR"
+        MsgBox TranslateLLMsg("MSG_WrongCells"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
     End If
 End Sub
 
 Sub ClicCmdAddRows()
 
     Dim oLstobj As Object
+    Dim iLastRow As Integer
+    Dim iLastCol As Integer
+    Dim LoRng As Range
 
     On Error GoTo errAddRows
 
     ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
     Application.EnableEvents = False
+    Set oLstobj = ActiveSheet.ListObjects("o" & ClearString(ActiveSheet.Name))
 
-    For Each oLstobj In ActiveSheet.ListObjects
-        oLstobj.Resize Range(Cells(C_estartlineslldata + 1, 1), Cells(oLstobj.DataBodyRange.Rows.Count + C_iNbLinesLLData + C_estartlineslldata + 1, Cells(C_estartlineslldata + 1, 1).End(xlToRight).Column))
-    Next
+    If Not oLstobj.DataBodyRange Is Nothing Then
+        iLastRow = oLstobj.DataBodyRange.Rows.Count + C_eStartLinesLLData + 1 + C_iNbLinesLLData
+    Else
+        iLastRow = FindLastRow(ActiveSheet) + C_iNbLinesLLData
+    End If
 
+    iLastCol = Cells(C_eStartLinesLLData + 1, 1).End(xlToRight).Column
+
+    Set LoRng = Range(Cells(C_eStartLinesLLData + 1, 1), Cells(iLastRow, iLastCol))
+    oLstobj.Resize LoRng
+
+    Set LoRng = Nothing
     Call ProtectSheet
     Application.EnableEvents = True
-
     Exit Sub
 
 errAddRows:
         Application.EnableEvents = True
-        MsgBox TranslateLLMsg("MSG_ErrAddRows"), vbOKOnly + vbCritical, "ERROR"
+        MsgBox TranslateLLMsg("MSG_ErrAddRows"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
         Exit Sub
 End Sub
 
@@ -94,7 +105,7 @@ Sub ClicCmdExport()
     Exit Sub
 
 errLoadExp:
-        MsgBox TranslateLLMsg("MSG_ErrLoadExport"), vbOKOnly + vbCritical, "ERROR"
+        MsgBox TranslateLLMsg("MSG_ErrLoadExport"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
         EndWork xlsapp:=Application
         Exit Sub
 
@@ -118,7 +129,7 @@ Sub ClicCmdDebug()
 
     On Error GoTo errDebug
 
-    pwd = InputBox("Provide the debugging password", "DEBUG MODE", "1234")
+    pwd = InputBox(TranslateLLMsg("MSG_ProvidePassword"), TranslateLLMsg("MSG_DebugMode"), "1234")
     Set DebugWksh = Worksheets(ActiveSheet.Name)
 
 
@@ -174,7 +185,7 @@ Sub ClicCmdDebug()
     Exit Sub
 
 errDebug:
-        MsgBox TranslateLLMsg("MSG_ErrDebug"), vbOKOnly + vbCritical, "ERROR"
+        MsgBox TranslateLLMsg("MSG_ErrDebug"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
         EndWork xlsapp:=Application
         Exit Sub
 
@@ -206,7 +217,7 @@ Sub EventValueChangeLinelist(oRange As Range)
     iNumCol = oRange.Column
     sControlType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).value
 
-    If oRange.Row > C_estartlineslldata + 1 Then
+    If oRange.Row > C_eStartLinesLLData + 1 Then
 
         Select Case sControlType
 
@@ -285,9 +296,9 @@ Sub EventValueChangeLinelist(oRange As Range)
 
     End If
 
-    If oRange.Row = C_estartlineslldata And sControlType = C_sDictControlCustom Then
+    If oRange.Row = C_eStartLinesLLData And sControlType = C_sDictControlCustom Then
         'The name of custom variables has been updated, update the dictionary
-        sCustomVarName = ActiveSheet.Cells(C_estartlineslldata + 1, iNumCol).value
+        sCustomVarName = ActiveSheet.Cells(C_eStartLinesLLData + 1, iNumCol).value
         sNote = GetDictColumnValue(sCustomVarName, C_sDictHeaderSubLab)
         sLabel = Replace(oRange.value, sNote, "")
         sLabel = Replace(sLabel, Chr(10), "")
@@ -298,11 +309,11 @@ Sub EventValueChangeLinelist(oRange As Range)
 
     If oRange.Name.Name = ActiveSheet.Name & "_" & C_sGotoSection Then
 
-      Set Rng =  ActiveSheet.Rows(C_eStartLinesLLMainSec).Find(What:=oRange.value, _
-       LookIn:= xlValues, LookAt:=xlWhole, SearchOrder:=xlByColumns, _
-        SearchDirection:= xlNext, MatchCase:=True, SearchFormat:=False)
+      Set Rng = ActiveSheet.Rows(C_eStartLinesLLMainSec).Find(What:=oRange.value, _
+       LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByColumns, _
+        SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False)
 
-        If Not Rng is Nothing Then
+        If Not Rng Is Nothing Then
             Rng.Activate
         End If
 
@@ -360,14 +371,14 @@ Public Sub EventDesactivateLinelist(ByVal sSheetName As String)
 
         BeginWork xlsapp:=Application
 
-            While (.Cells(C_estartlineslldata, i) <> vbNullString)
+            While (.Cells(C_eStartLinesLLData, i) <> vbNullString)
 
                 Select Case .Cells(C_eStartLinesLLMainSec - 2, i).value
 
                     Case C_sDictControlChoiceAuto & "_origin"
 
-                        sVarName = .Cells(C_estartlineslldata + 1, i).value
-                        arrTable.FromExcelRange .Cells(C_estartlineslldata + 2, i), DetectLastColumn:=False, DetectLastRow:=True
+                        sVarName = .Cells(C_eStartLinesLLData + 1, i).value
+                        arrTable.FromExcelRange .Cells(C_eStartLinesLLData + 2, i), DetectLastColumn:=False, DetectLastRow:=True
 
                         'Unique values (removing the spaces and the Null strings and keeping the case (The remove duplicates doesn't do that))
                         Set arrTable = GetUniqueBA(arrTable)

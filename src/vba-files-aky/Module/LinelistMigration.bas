@@ -2,40 +2,341 @@ Attribute VB_Name = "LinelistMigration"
 Option Explicit
 
 
+'ClearAllData()
 
-'Need to add and clean the import for the data.
+Sub ControlClearData()
 
+    Dim ShouldProceed As Byte
+    Dim sLLName As String
+
+    ShouldProceed = MsgBox(TranslateLLMsg("MSG_DeleteAllData"), vbExclamation + vbYesNo, TranslateLLMsg("MSG_Delete"))
+
+    If ShouldProceed = vbYes Then
+        sLLName = InputBox(TranslateLLMsg("MSG_LLName"), TranslateLLMsg("MSG_Delete"), TranslateLLMsg("MSG_EnterWkbName"))
+        If sLLName = Replace(ThisWorkbook.Name, "." & GetFileExtension(ThisWorkbook.Name), "") Then
+            'Proceed only if the user is able to provide the name of the actual workbook name, we can delete
+            Call ClearData
+        Else
+            MsgBox TranslateLLMsg("MSG_BadLLName"), vbOKOnly, TranslateLLMsg("MSG_Delete")
+            Exit Sub
+        End If
+
+        ShouldProceed = MsgBox(TranslateLLMsg("MSG_FinishedClear"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
+        If ShouldProceed = vbYes Then
+            [F_ImportMig].Hide
+        End If
+    Else
+        MsgBox TranslateLLMsg("MSG_DelCancel"), vbOKOnly, TranslateLLMsg("MSG_Delete")
+        Exit Sub
+    End If
+
+End Sub
+
+
+'Clear all the Linelist and Adm Data
+
+Sub ClearData()
+
+    Dim Wksh As Worksheet
+    Dim sSheetType As String
+    Dim iLastRow As Integer
+    Dim i As Integer
+
+    BeginWork xlsapp:=Application
+    Application.EnableEvents = False
+
+    For Each Wksh In ThisWorkbook.Worksheets
+        sSheetType = FindSheetType(Wksh.Name)
+        Select Case sSheetType
+
+            Case C_sDictSheetTypeLL
+                 Wksh.Unprotect ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
+
+                With Wksh.ListObjects("o" & ClearString(Wksh.Name))
+
+                    If Not .DataBodyRange Is Nothing Then
+                        'Delete the data body range
+                        .DataBodyRange.Delete
+                    End If
+                End With
+
+                Wksh.Protect Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value, _
+                     DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                     AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
+                     AllowFormattingColumns:=True
+
+            Case C_sDictSheetTypeAdm
+                'Find Last row of Adm Data
+                With Wksh
+                    iLastRow = .Cells(.Rows.Count, 2).End(xlUp).Row
+                    For i = C_eStartLinesAdmData To iLastRow
+                        .Cells(i, 3).value = vbNullString
+                    Next
+                End With
+
+            Case Else
+
+        End Select
+    Next
+
+    ThisWorkbook.save
+    EndWork xlsapp:=Application
+    Application.EnableEvents = True
+
+End Sub
 
 '=========================== IMPORTS MIGRATIONS ================================
 
-'Import Migration Data
+Function LLhasData() As Boolean
+
+    Dim hasData As Boolean
+    Dim shLL As Worksheet
+    Dim WkbLL As Workbook
+    Dim TabLL As BetterArray
+    Dim ShouldProceed As Byte
+    Dim sLLName As String
+    Dim NotGood As Boolean
+
+    hasData = False
+
+    Set TabLL = New BetterArray
+    Set WkbLL = ThisWorkbook
+
+    For Each shLL In WkbLL.Worksheets
+        If FindSheetType(shLL.Name) = C_sDictSheetTypeLL Then
+
+            If  FindLastRow(shLL) > C_eStartLinesLLData + 2 Then
+                hasData = True
+                Exit For
+            End If
+
+        End If
+    Next
+
+    If hasData Then
+        'Add message to as the user if he wants to delete
+        ShouldProceed = MsgBox(TranslateLLMsg("MSG_DeleteForImport"), vbExclamation + vbYesNo, TranslateLLMsg("MSG_Delete"))
+        If ShouldProceed = vbYes Then
+            'A simple logic to test if the linelist name is not good
+            NotGood = True
+            Do While NotGood
+                sLLName = InputBox(TranslateLLMsg("MSG_LLName"), TranslateLLMsg("MSG_Delete"), TranslateLLMsg("MSG_EnterWkbName"))
+                If sLLName = WkbLL.Name Then
+                    'Proceed only if the user is able to provide the name of the actual workbook name, we can delete
+                    Call ClearData
+                    hasData = False
+                    NotGood = False
+                Else
+                    ShouldProceed = MsgBox(TranslateLLMsg("MSG_BadLLNameQ"), vbExclamation + vbYesNo, TranslateLLMsg("MSG_Delete"))
+
+                    If ShouldProceed = vbNo Then NotGood = False
+
+                End If
+            Loop
+        End If
+    End If
+
+
+    'If you were not able to clear the data, Set it to table lenth
+    LLhasData = hasData
+
+    Set TabLL = Nothing
+    Set shLL = Nothing
+    Set WkbLL = Nothing
+End Function
+
+'Import Data between two sheets:
+'Check if we have to take in account data in the sheet where we have to import
+'Check if a variable in the sheet to import is present in the sheet Where we have
+'to paste data, if it is the case
+'paste either at the end of previous data, or at the top
+'If not, just skeep
+'Two different procedures for sheets of type Linelist and those of type Adm
+
+
+Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean, ColumnIndexData As BetterArray, VarNamesData As BetterArray)
+
+    Dim sSheetType As String 'Sheet type (different procedures will apply)
+    Dim iLastRowImp As Integer 'LastRow (when needed for import sheet)
+    Dim iLastColImp As Integer 'Last Column for Import data of Type LL
+    Dim WkbLL As Workbook
+    Dim i As Integer 'Counter, for variables
+    Dim iRowIndex As Integer 'Row index for sheets of type Adm
+    Dim iColIndex As Integer 'Col index for sheets of type LL
+    Dim iLastRow As Integer
+
+    Dim sVal As String
+
+    Dim rngImp As Range 'Range in the Import sheet
+    Dim rngLL As Range 'Range in the LL sheet
+
+    'First, sheet of type Adm
+
+    Set WkbLL = ThisWorkbook 'The workbook of Linelist
+    sSheetType = FindSheetType(sSheetName)
+
+    With WkbLL.Worksheets(sSheetName)
+
+        Select Case sSheetType
+            'Import Data of Type Adm (No choice, we have to delete previous values)
+
+            Case C_sDictSheetTypeAdm
+                iLastRowImp = shImp.Cells(shImp.Rows.Count, 1).End(xlUp).Row
+
+                For i = 2 To iLastRowImp '2 because the first row is for headers
+                    sVal = shImp.Cells(i, 1)
+                    If VarNamesData.Includes(sVal) Then
+                        'Get the row Index here
+                        iRowIndex = ColumnIndexData.Items(VarNamesData.IndexOf(sVal))
+                        .Cells(iRowIndex, 3).value = shImp.Cells(i, 2).value 'On sheets of type Adm, the third column contains values
+                    End If
+                Next
+
+            Case C_sDictSheetTypeLL
+
+            'Import Data on a Sheet of Type LL
+
+            'First, un protect the sheet were we need to paste the data before proceeding
+            .Unprotect WkbLL.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
+
+            'Last column of Import Data
+            iLastColImp = shImp.Cells(1, shImp.Columns.Count).End(xlToLeft).Column
+            iLastRow = C_eStartLinesLLData + 2
+
+            If hasData Then
+                iLastRow = FindLastRow(WkbLL.Worksheets(sSheetName))
+            End If
+
+            'Now test
+            For i = 1 To iLastColImp
+                sVal = shImp.Cells(1, i)
+                If VarNamesData.Includes(sVal) Then
+                    'The variable is in the sheet, just paste the values to last row
+                    iColIndex = ColumnIndexData.Items(VarNamesData.IndexOf(sVal))
+
+                    If .Cells(C_eStartLinesLLMainSec - 1, iColIndex).value <> C_sDictControlForm Then
+                        'Don't Import columns of Type formulas
+                        With shImp
+                            iLastRowImp = .Cells(.Rows.Count, i).End(xlUp).Row
+                            Set rngImp = .Range(.Cells(2, i), .Cells(iLastRowImp, i))  '2 because first row if for headers ie varnames
+                        End With
+                        'Take one because of the headers in the import Sheet
+                        iLastRowImp = iLastRowImp - 1
+                        'Update only if there is data
+                        If iLastRowImp > 0 Then
+                            Set rngLL = .Range(.Cells(iLastRow, iColIndex), .Cells(iLastRow + iLastRowImp - 1, iColIndex))
+                            'Copy by values, more safe
+                            rngLL.Value = rngImp.value
+                        End If
+                    End If
+                End If
+            Next
+
+            .Protect Password:=WkbLL.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value, _
+                     DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                     AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
+                     AllowFormattingColumns:=True
+        End Select
+    End With
+    Set rngImp = Nothing
+End Sub
 
 Sub ImportMigrationData()
 
-'Import exported data into the linelist
+    Dim WkbImp As Workbook 'Workbook Import
 
-   'Import exported data into the linelist
+    Dim shImp As Worksheet 'Sheet Import
+    Dim TabSheetLL As BetterArray 'List of sheets in the linelist
+    Dim VarNamesData As BetterArray
+    Dim ColumnIndexData As BetterArray
+    Dim sActSht As String
+    Dim ShouldQuit As Byte
 
-    Dim wbkexp As Workbook, wbkLL As Workbook
-    Dim shData As Worksheet, shSource As Worksheet, shTarget As Worksheet, ShMain As Worksheet
+    Dim sPath As String
+    Dim hasData As Boolean
+    hasData = False
+
+    sActSht = ActiveSheet.Name
+
+    'Proceed by loading the files
+    sPath = LoadFile("*.xlsx, *.xlsb")
+
+    On Error GoTo errImport
+
+    If sPath = vbNullString Then
+        MsgBox TranslateLLMsg("MSG_PathImport"), vbOKOnly, TranslateLLMsg("MSG_Imports")
+        Exit Sub
+    End If
+
+    hasData = LLhasData() 'Here we know if data is cleared or Not
+
+    BeginWork xlsapp:=Application
+    Application.EnableEvents = False
+    Set WkbImp = Workbooks.Open(sPath)
+
+    'Get All the sheets in the linelist
+    Set TabSheetLL = GetDictionaryColumn(C_sDictHeaderSheetName)
+    Set ColumnIndexData = GetDictionaryColumn(C_sDictHeaderIndex)
+    Set VarNamesData = GetDictionaryColumn(C_sDictHeaderVarName)
+
+    'For each sheet in the imported workbook, if the sheet is in the linelist
+    'Import the data the two sheets, keeping in mind We can add at the end, or
+    'Just at the begining
+
+    For Each shImp In WkbImp.Worksheets
+        If TabSheetLL.Includes(shImp.Name) Then
+            Call ImportSheetData(shImp.Name, shImp, hasData, ColumnIndexData, VarNamesData)
+        End If
+    Next
+
+    WkbImp.Close savechanges:=False
+    Set WkbImp = Nothing
+
+    ThisWorkbook.Worksheets(sActSht).Activate
+    EndWork xlsapp:=Application
+    Application.EnableEvents = True
+
+    ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImport"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
+
+    If ShouldQuit = vbYes Then
+        F_ImportMig.Hide
+    End If
+
+    Exit Sub
+
+errImport:
+    Msgbox TranslateLLMsg("MSG_ErrorImport"), vbCritical + vbOKOnly, TranslateLLMsg("MSG_Imports")
+    EndWork xlsapp:=Application
+    Application.EnableEvents = True
+    Exit Sub
+End Sub
+
+
+'Import Migration Data
+
+Sub LLImportMigrationData()
+
+    'Import exported data into the linelist
+
+    Dim WbkImp As Workbook, WbkLL As Workbook
+
+    Dim shData As Worksheet, shSource As Worksheet
     Dim lstobj  As ListObject
     Dim iLastSh As Integer, iLastexp As Integer, i As Long, j As Long
+
     Dim lgRows As Long, iCols As Integer, lgStart As Long, iColExp As Integer, lgRowTarget As Long, iColTarget As Integer, lgNbData As Long
     Dim sLabel As String, sPath As String, sMessage As String
     Dim iRep As Integer
 
-    Set ShMain = Sheets(ActiveSheet.Name)
 
-    Set wbkLL = ActiveWorkbook
-
-    iLastSh = wbkLL.Sheets.Count
+    iLastSh = WbkLL.Sheets.Count
     iLastexp = iLastSh
 
     sPath = LoadFile("*.xlsx, *.xlsb")
 
     If sPath = "" Then Exit Sub
 
-    For Each shData In wbkLL.Sheets
+    For Each shData In WbkLL.Sheets
         If shData.Visible = xlSheetVisible And LCase(shData.Name) <> "geo" And LCase(shData.Name) <> "admin" Then
             For Each lstobj In shData.ListObjects
                 If LCase(lstobj.Name) = "o" & LCase(shData.Name) Then
@@ -81,10 +382,10 @@ Sub ImportMigrationData()
 
         If LCase(shData.Name) <> "dictionary" And LCase(shData.Name) <> "choices" And LCase(shData.Name) <> "translation" Then
 
-            For i = 1 To wbkLL.Sheets.Count
+            For i = 1 To WbkLL.Sheets.Count
 
-                If UCase(wbkLL.Sheets(i).Name) = UCase(shData.Name) Then
-                    Sheets(shData.Name).Copy After:=wbkLL.Sheets(iLastexp)
+                If UCase(WbkLL.Sheets(i).Name) = UCase(shData.Name) Then
+                    Sheets(shData.Name).Copy After:=WbkLL.Sheets(iLastexp)
                     ActiveSheet.Name = shData.Name & "_Exp"
                     iLastexp = iLastexp + 1
                     wbkexp.Activate
@@ -100,7 +401,7 @@ Sub ImportMigrationData()
     wbkexp.Close
 
     Set wbkexp = Nothing
-    Set wbkLL = Nothing
+    Set WbkLL = Nothing
 
     For i = iLastexp To iLastSh + 1 Step -1
 
@@ -205,6 +506,11 @@ Sub ImportMigrationData()
     MsgBox "the following data :" & Chr(10) & Right(sMessage, Len(sMessage) - 3) & Chr(10) & "could not be imported.", vbInformation, "File import"
 
 End Sub
+
+
+'----------------------------------- GEOBASE IMPORT   ------------------------------------------------
+
+
 'Function to import a Geobase.
 'Import the full Geobase
 
@@ -422,7 +728,7 @@ Sub ClearHistoricGeobase()
 
     On Error GoTo errClearHistoric
 
-    ShouldDelete = MsgBox(TranslateLLMsg("MSG_HistoricDelete"), vbExclamation + vbYesNo, "Delete Historic")
+    ShouldDelete = MsgBox(TranslateLLMsg("MSG_HistoricDelete"), vbExclamation + vbYesNo, TranslateLLMsg("MSG_DeleteHistoric"))
 
     If ShouldDelete = vbYes Then
         If Not WkshGeo.ListObjects(C_sTabHistoGeo).DataBodyRange Is Nothing Then
@@ -432,7 +738,7 @@ Sub ClearHistoricGeobase()
         If Not WkshGeo.ListObjects(C_sTabHistoHF).DataBodyRange Is Nothing Then
             WkshGeo.ListObjects(C_sTabHistoHF).DataBodyRange.Delete
         End If
-        MsgBox "Done", vbInformation, "Delete Historic"
+        MsgBox TranslateLLMsg("MSG_Done"), vbInformation,  TranslateLLMsg("MSG_DeleteHistoric"))
     End If
 
     'Add a message to say it is done
@@ -537,22 +843,19 @@ Private Sub ExportMigrationData(sLLPath As String)
         'Sheets of type linelist
         i = 1
         While i <= LLSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
-            sPrevSheetName = ClearString(LLSheetData.Items(i), bremoveHiphen:=False)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = LLSheetData.Items(i)
+            sPrevSheetName = LLSheetData.Items(i)
             ExportData.Clear
-            ExportHeader.Clear
-            Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
-            Set ExportData = GetExportValues(ExportHeader, sPrevSheetName)
-            ExportHeader.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1), TransposeValues:=True
-            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
+            ExportData.FromExcelRange ThisWorkbook.Worksheets(sPrevSheetName).ListObjects("o" & ClearString(sPrevSheetName, False)).Range
+            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1)
             i = i + 1
         Wend
 
         'Sheets of type Admin
         i = 1
         While i <= AdmSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
-            sPrevSheetName = ClearString(AdmSheetData.Items(i), bremoveHiphen:=False)
+            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = AdmSheetData.Items(i)
+            sPrevSheetName = AdmSheetData.Items(i)
             ExportData.Clear
             ExportHeader.Clear
             Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
@@ -862,7 +1165,8 @@ Sub ExportForMigration()
         Application.DisplayAlerts = False
 
         If Not [F_ExportMig].CHK_ExportMigGeo And Not [F_ExportMig].CHK_ExportMigData And Not [F_ExportMig].CHK_ExportMigGeoHistoric Then
-            MsgBox "No Export Selected, Please selectOne", vbCritical, "Export for Migration"
+            MsgBox TranslateLLMsg("MSG_NoExport"), vbCritical,  TranslateLLMsg("MSG_Migration")
+            Exit Sub
         End If
 
         If [F_ExportMig].CHK_ExportMigGeo Then
@@ -881,7 +1185,7 @@ Sub ExportForMigration()
         Application.DisplayAlerts = True
         EndWork xlsapp:=Application
 
-        ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishedExports"), vbQuestion + vbYesNo, "Migration")
+        ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishedExports"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Migration"))
         If ShouldQuit = vbYes Then
             F_ExportMig.Hide
         End If
@@ -893,7 +1197,7 @@ Sub ExportForMigration()
     Exit Sub
 
 ErrPath:
-        MsgBox TranslateLLMsg("MSG_ErrExportPath")
+        MsgBox TranslateLLMsg("MSG_ErrExportPath"), vbCritical + vbOKOnly,  TranslateLLMsg("MSG_Migration")
         EndWork xlsapp:=Application
         Exit Sub
 End Sub
@@ -913,6 +1217,3 @@ Public Function SheetExist(SheetName As String) As Boolean
     Next shSheet
 
 End Function
-
-
-
