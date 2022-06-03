@@ -138,7 +138,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     Exit Sub
 
 ErrLoadGeo:
-        MsgBox TranslateLLMsg("MSG_ErrGeo"), vbOKOnly + vbCritical, "ERROR"
+        MsgBox TranslateLLMsg("MSG_ErrGeo"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
         EndWork xlsapp:=Application
         Exit Sub
 End Sub

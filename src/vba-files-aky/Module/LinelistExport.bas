@@ -64,7 +64,7 @@ Function GetExportValues(ExportHeadersData As BetterArray, sSheetName As String,
                 If SheetVarNamesData.Includes(ExportHeadersData.Item(i)) Then
                     With ThisWorkbook.Worksheets(sSheetName)
                             'Column of filled data
-                            ExportColumn.FromExcelRange .Cells(C_estartlineslldata + 2, SheetVarNamesData.IndexOf(ExportHeadersData.Item(i))), DetectLastColumn:=False, DetectLastRow:=True
+                            ExportColumn.FromExcelRange .Cells(C_eStartLinesLLData + 2, SheetVarNamesData.IndexOf(ExportHeadersData.Item(i))), DetectLastColumn:=False, DetectLastRow:=True
                             'Adding the column
                             ExportTableData.Item(i) = ExportColumn.Items
                             ExportColumn.Clear
@@ -100,7 +100,7 @@ Function GetExportValues(ExportHeadersData As BetterArray, sSheetName As String,
 
     Exit Function
 errTranspose:
-    MsgBox "Unable to transpose Export Table", vbOKOnly + vbCritical, "ERROR"
+    MsgBox "Unable to transpose Export Table", vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
 End Function
 
 
@@ -379,13 +379,13 @@ Sub Export(iTypeExport As Byte)
     Exit Sub
 
 exportErrHandExport:
-    MsgBox TranslateLLMsg("MSG_ErrHandExport"), vbOKOnly + vbCritical, "ERROR"
+    MsgBox TranslateLLMsg("MSG_ErrHandExport"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
     Exit Sub
 exportErrHandData:
-    MsgBox TranslateLLMsg("MSG_exportErrHandData"), vbOKOnly + vbCritical, "ERROR"
+    MsgBox TranslateLLMsg("MSG_exportErrHandData"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
     Exit Sub
 exportErrHandWrite:
-    MsgBox TranslateLLMsg("MSG_exportErrHandWrite"), vbOKOnly + vbCritical, "ERROR"
+    MsgBox TranslateLLMsg("MSG_exportErrHandWrite"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
     Exit Sub
 End Sub
 

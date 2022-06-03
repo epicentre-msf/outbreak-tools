@@ -118,7 +118,7 @@ Function GetTransData() As BetterArray
 End Function
 
 'Retrieve the variable names of the dictionnary on one condition on a variable
-'Here the condition is only equallity (a kind of filter, but for the
+'Here the condition is only equality (a kind of filter, but for the
 'dictionary only)
 
 Function GetDictDataFromCondition(sColumnName As String, sCondition As String, Optional bVarNamesOnly As Boolean = False) As BetterArray
@@ -181,7 +181,6 @@ End Function
 
 
 'Change value of one variable and one column in the dictionary
-
 Sub UpdateDictionaryValue(sVarName As String, sColname As String, sNewValue As String)
 
     Dim VarNameData As BetterArray
@@ -204,5 +203,25 @@ Sub UpdateDictionaryValue(sVarName As String, sColname As String, sNewValue As S
 
         End If
     End If
-
 End Sub
+
+'Find the Type of one sheet in the workbook
+
+Function FindSheetType(ByVal sSheetName As String) As String
+    'Filter the sheet Name and one done,
+    FindSheetType = vbNullString
+
+    Dim SheetNameData As BetterArray
+    Dim SheetTypeData As BetterArray
+
+    'Now Get all the Sheets
+    Set SheetNameData = GetDictionaryColumn(C_sDictHeaderSheetName)
+    If SheetNameData.Includes(sSheetName) Then
+        Set SheetTypeData = GetDictionaryColumn(C_sDictHeaderSheetType)
+        FindSheetType = SheetTypeData.Item(SheetNameData.IndexOf(sSheetName))
+    End If
+
+    Set SheetNameData = Nothing
+    Set SheetTypeData = Nothing
+
+End Function
