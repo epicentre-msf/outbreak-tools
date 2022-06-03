@@ -237,7 +237,7 @@ Sub GenerateData()
     Set ExportData = Helpers.GetData(DesWkb, C_sParamSheetExport, 1)
     'Create the translation Data
     Set TransData = New BetterArray
-    TransData.FromExcelRange DesWkb.Worksheets(C_sParamSheetTranslation).Cells(C_eStartLinesTransdata, 2), DetectLastRow:=True, DetectLastColumn:=True
+    TransData.FromExcelRange DesWkb.Worksheets(C_sParamSheetTranslation).Cells(C_eStartLinesTransdata, 1), DetectLastRow:=True, DetectLastColumn:=True
     DoEvents
     Set DesWkb = Nothing
 

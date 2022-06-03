@@ -1,7 +1,7 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_ImportMig 
    Caption         =   "Import For Migration"
-   ClientHeight    =   5415
+   ClientHeight    =   6420
    ClientLeft      =   120
    ClientTop       =   465
    ClientWidth     =   3765
@@ -44,7 +44,12 @@ Attribute VB_Exposed = False
 
 
 
+
 Option Explicit
+
+Private Sub CMD_ClearData_Click()
+    Call ControlClearData
+End Sub
 
 Private Sub CMD_ClearGeo_Click()
     Call ClearHistoricGeobase
@@ -70,9 +75,9 @@ Private Sub UserForm_Initialize()
 'Manage language
 
     Call TranslateForm(Me)
-    
+
     Me.Width = 200
-    Me.Height = 300
+    Me.Height = 350
 
 End Sub
 

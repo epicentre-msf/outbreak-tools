@@ -243,7 +243,7 @@ End Function
 
 'Get the file extension of a string
 'Get the file extension of a file
-Private Function GetFileExtension(sString As String) As String
+Public Function GetFileExtension(sString As String) As String
 
     GetFileExtension = ""
 
@@ -387,6 +387,36 @@ Function GetValidationList(ChoicesListData As BetterArray, ChoicesLabelsData As 
     End If
 
     GetValidationList = sValidationList
+End Function
+
+'We need a function to test if there is data in a sheet of type linelist (unable to do That with the BetterArray)
+Function FindLastRow(shLL As Worksheet) As Integer
+
+    Dim i As Integer
+    Dim iLastRow As Integer
+    Dim iLastCol As Integer
+    Dim LoRng As Range
+    Dim DestRng As Range
+    Dim shTemp As Worksheet
+
+    FindLastRow = C_eStartLinesLLData + 2
+    iLastCol = shLL.Cells(C_eStartLinesLLData, Columns.Count).End(xlToLeft).Column
+    iLastRow = C_eStartLinesLLData + 1
+
+    Set shTemp = ThisWorkbook.Worksheets(C_sSheetTemp)
+    Set LoRng = shLL.ListObjects("o" & ClearString(shLL.Name)).Range
+    Set DestRng = shTemp.Range(LoRng.Address)
+
+    DestRng.value = LoRng.value
+
+    For i = 1 To iLastCol
+        If iLastRow < shTemp.Cells(Rows.Count, i).End(xlUp).Row Then iLastRow = shTemp.Cells(Rows.Count, i).End(xlUp).Row
+    Next
+
+    iLastRow = iLastRow + 1
+
+    FindLastRow = iLastRow
+    shTemp.Cells.Clear
 End Function
 
 
