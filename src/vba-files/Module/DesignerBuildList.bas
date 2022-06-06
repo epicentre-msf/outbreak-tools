@@ -672,8 +672,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                                             C_sCmdShowHideName)
         'Add 200 Rows Button
         Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
-                                            .Cells(1, 1).Left, _
-                                            .Cells(1, 1).Top, _
+                                            .Cells(2, 1).Left + C_iCmdWidth + 20, _
+                                            .Cells(2, 1).Top, _
                                             C_sShpAddRows, _
                                              "Add rows", _
                                              C_iCmdWidth, C_iCmdHeight, _
@@ -945,7 +945,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         .Columns(2).columnWidth = C_iLLFirstColumnsWidth
 
         'Set Validation to the Section Cell
-        Call Helpers.SetValidation(.Cells(2, C_eSectionsLookupColumns), sSectionsList, 1, TranslateLLMsg("MSG_SectionNotExist"))
+        Call Helpers.SetValidation(.Cells(1, C_eSectionsLookupColumns), sSectionsList, 1, TranslateLLMsg("MSG_SectionNotExist"))
 
 
         'Range of the listobject
