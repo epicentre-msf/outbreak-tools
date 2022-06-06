@@ -211,6 +211,7 @@ Public Enum C_StartLines
     C_eStartLinesLLData = 7                                                                  'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                                                             'Starting lines for export titles
     C_eStartLinesAdmData = 15                                                                'Starting lines for a Adm data
+    C_eStartColumnAdmData = 2                                                                'Starting columns for sheets of type Adm
     C_eStartLinesExportSource = 5                                                            'Starting lines for export sources
     C_eStartLinesChoicesHeaders = 1                                                          'Starting lines of the choices Headers
     C_eStartLinesChoicesData = 2                                                             'Starting lines of the choices Data
@@ -218,6 +219,6 @@ Public Enum C_StartLines
     C_eStartLinesTransdata = 4                                                               'Starting lines for the translation data
     C_eStartcolumntransdata = 1                                                              'Starting column for the translation data
     C_eStartlinesListAuto = 1
-    C_eSectionsLookupColumns = 2                                                              'Columns where to insert GoTo
+    C_eSectionsLookupColumns = 1                                                              'Columns where to insert GoTo
 End Enum
 
