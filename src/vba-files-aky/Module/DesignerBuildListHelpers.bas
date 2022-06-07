@@ -494,6 +494,20 @@ Sub BuildGotoArea(Wkb As Workbook, sSheetName As String)
 
 End Sub
 
+'Build adm Merge area for sub sections or main sections for sheets of type "Adm"
+Sub BuildVerticalMergeArea(Wksh As Worksheet, iStartColumn As Integer, iPrevLine As Integer, iActualLine As Integer)
+
+
+    With Wksh
+        .Range(.Cells(iPrevLine, iStartColumn), .Cells(iActualLine, iStartColumn)).Merge
+        .Cells(iPrevLine, iStartColumn).MergeArea.HorizontalAlignment = xlCenter
+    End With
+
+End Sub
+
+
+
+
 
 'Build a merge area for subsections and sections
 'Wksh the workheet on which we want to build the merge area
@@ -506,6 +520,7 @@ Sub BuildMergeArea(Wksh As Worksheet, iStartLineOne As Integer, iPrevColumn As I
 
     With Wksh
 
+        'iActual column = -1 is for subsections
         If iActualColumn = -1 Then
             .Cells(iStartLineOne, iPrevColumn).HorizontalAlignment = xlCenter
             .Cells(iStartLineOne, iPrevColumn).Interior.Color = Helpers.GetColor(sColorSubSec)

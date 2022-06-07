@@ -187,7 +187,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
                      i = 0
                     With Wkb.Worksheets(LLSheetNameData.Item(iCounterSheet))
                         While (.Cells(C_eStartLinesAdmData + i, 2).value <> "")
-                            DictVarName.Push .Cells(C_eStartLinesAdmData + i, 3).Name.Name
+                            DictVarName.Push .Cells(C_eStartLinesAdmData + i, C_eStartColumnAdmData + 3).Name.Name
                             i = i + 1
                         Wend
                     End With
@@ -462,15 +462,25 @@ End Sub
     Dim sActualValidationAlert As String
     Dim sActualValidationMessage As String
     Dim sActualSubLab As String
+    Dim sActualMainSec As String
+    Dim sActualSubSec As String
+
+    'Previous sections and sub sections
+    Dim sPrevMainSec As String
+    Dim sPrevSubSec As String
 
     Dim iCounterSheetAdmLine As Integer
     Dim iCounterDictSheetLine As Integer
     Dim iTotalSheetAdmColumns As Integer
 
-    iCounterSheetAdmLine = C_eStartLinesAdmData
-    iCounterDictSheetLine = iSheetStartLine
-    iTotalSheetAdmColumns = LLNbColData.Items(LLSheetNameData.IndexOf(sSheetName))
+    Dim iPrevLineSubSec As Integer
+    Dim iPrevLineMainSec As Integer
 
+
+    iPrevLineSubSec = C_eStartLinesAdmData
+    iPrevLineMainSec = C_eStartLinesAdmData
+
+    'Add the logo for the first time
     If Not AddedLogo Then
         'Add the Logo
         With Wkb.Worksheets(C_sSheetAdmin)
@@ -489,6 +499,12 @@ End Sub
         End With
     End If
 
+    iCounterSheetAdmLine = C_eStartLinesAdmData
+    iCounterDictSheetLine = iSheetStartLine
+    iTotalSheetAdmColumns = LLNbColData.Items(LLSheetNameData.IndexOf(sSheetName))
+
+    sPrevMainSec = DictData.Items(iCounterSheetAdmLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
+    sPrevSubSec = DictData.Items(iCounterSheetAdmLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
 
     With Wkb.Worksheets(sSheetName)
 
@@ -505,27 +521,47 @@ End Sub
             sActualControl = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderControl))
             sActualValidationAlert = ClearString(DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderAlert)))
             sActualValidationMessage = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMessage))
+            sActualMainSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
+            sActualSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
 
 
-            Call WriteBorderLines(.Cells(iCounterSheetAdmLine, 3))
+            Call WriteBorderLines(.Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3))
 
-            If sActualControl = C_sDictControlTitle Then
+            'Update the previous sub sections and
 
-                'Huge title
-                .Cells(iCounterSheetAdmLine - 5, 2).value = sActualMainLab
-                .Cells(iCounterSheetAdmLine - 5, 2).Font.Size = C_iAdmTitleFontSize
-                .Cells(iCounterSheetAdmLine - 5, 2).Font.Bold = True
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).value = sActualMainLab
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Interior.Color = Helpers.GetColor("SubSecBlue")
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Font.Color = Helpers.GetColor("MainSecBlue")
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).Name = sActualVarName
 
-                'Sub title
-                .Cells(iCounterSheetAdmLine - 3, 2).value = sActualSubLab
-                .Cells(iCounterSheetAdmLine - 3, 2).Font.Size = C_iAdmTitleFontSize - 5
-                .Cells(iCounterSheetAdmLine - 3, 2).Font.Italic = True
-                iCounterSheetAdmLine = iCounterSheetAdmLine - 1
-            Else
-                .Cells(iCounterSheetAdmLine, 2).value = sActualMainLab
-                .Cells(iCounterSheetAdmLine, 2).Interior.Color = Helpers.GetColor("SubSecBlue")
-                .Cells(iCounterSheetAdmLine, 2).Font.Color = Helpers.GetColor("MainSecBlue")
-                .Cells(iCounterSheetAdmLine, 3).Name = sActualVarName
+            'Update values for the first time we have the sections
+            If iCounterSheetAdmLine = C_eStartLinesAdmData Then
+                .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData).value = sActualMainSec
+                .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 1).value = sActualSubSec
+            End If
+
+            'Test if we are on a new sub section
+            If sPrevSubSec <> sActualSubSec Then
+                'New sub section
+                .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 1).value = sActualSubSec
+
+                'Build a new Sub section merge area
+                Call BuildVerticalMergeArea(Wkb.Worksheets(sSheetName), C_eStartColumnAdmData + 1, _
+                    iPrevLineSubSec, iCounterSheetAdmLine)
+
+                sPrevSubSec = sActualSubSec
+                iPrevLineSubSec = iCounterSheetAdmLine + 1
+            End If
+
+            If sPrevMainSec <> sActualMainSec Then
+                'I am on a main section, update
+
+                .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData).value = sActualMainSec
+                'Call BuildVerticalMergeArea(Wkb.Worksheets(sSheetName), C_eStartColumnAdmData, _
+                        'iPrevLineMainSec, iCounterSheetAdmLine)
+
+                sPrevMainSec = sActualMainSec
+                iPrevLineMainSec = iCounterSheetAdmLine + 1
             End If
 
 
@@ -534,15 +570,17 @@ End Sub
                 If sActualChoice <> "" Then
                      sValidationList = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoice)
                     If sValidationList <> "" Then
-                       Call Helpers.SetValidation(.Cells(iCounterSheetAdmLine, 3), sValidationList, _
+                       Call Helpers.SetValidation(.Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3), sValidationList, _
                        GetValidationType(sActualValidationAlert), sActualValidationMessage)
                    End If
                 End If
             End If
 
-            .Cells(iCounterSheetAdmLine, 2).EntireColumn.AutoFit
-            .Cells(iCounterSheetAdmLine, 3).columnWidth = 30
-            .Cells(iCounterSheetAdmLine, 3).Locked = False
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData).EntireColumn.AutoFit
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 1).EntireColumn.AutoFit
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).EntireColumn.AutoFit
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).columnWidth = 30
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).Locked = False
 
             'Add the Column index for those variable
             Wkb.Worksheets(C_sParamSheetDict).Cells(iCounterDictSheetLine + 1, DictHeaders.Length + 1).value = iCounterSheetAdmLine '+1 on lines because of headers of the dictionary
@@ -766,14 +804,15 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 sSectionsList = sSectionsList & "," & TranslateLLMsg("MSG_SelectSection") & ": " & sActualMainSec
 
                 'Merge the previous area
-                Call DesignerBuildListHelpers.BuildMergeArea(Wkb.Worksheets(sSheetName), C_eStartLinesLLMainSec, iPrevColMainSec, _
+                Call DesignerBuildListHelpers.BuildMergeArea(Wkb.Worksheets(sSheetName), _
+                 C_eStartLinesLLMainSec, iPrevColMainSec, _
                                     iCounterSheetLLCol, C_eStartLinesLLSubSec)
 
                 'Update the previous columns
                 sPrevMainSec = sActualMainSec
                 iPrevColMainSec = iCounterSheetLLCol
             Else
-                'I am on the same main section, I will test if I am not on the column, if it is the case, merge the area
+                'I am on the same main section, I will test if I am not on the last column, if it is the case, merge the area
                 If (iCounterDictSheetLine = iSheetStartLine + iTotalLLSheetColumns - 1) Then
                     Call DesignerBuildListHelpers.BuildMergeArea(Wkb.Worksheets(sSheetName), _
                                          C_eStartLinesLLMainSec, iPrevColMainSec, _
