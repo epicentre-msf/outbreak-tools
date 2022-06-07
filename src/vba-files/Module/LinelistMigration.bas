@@ -700,7 +700,7 @@ Sub ClearHistoricGeobase()
         If Not WkshGeo.ListObjects(C_sTabHistoHF).DataBodyRange Is Nothing Then
             WkshGeo.ListObjects(C_sTabHistoHF).DataBodyRange.Delete
         End If
-        MsgBox TranslateLLMsg("MSG_Done"), vbInformation,  TranslateLLMsg("MSG_DeleteHistoric"))
+        MsgBox TranslateLLMsg("MSG_Done"), vbInformation, TranslateLLMsg("MSG_DeleteHistoric")
     End If
 
     'Add a message to say it is done

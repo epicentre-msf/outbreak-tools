@@ -113,9 +113,9 @@ Public Const C_sExportInactive As String = "inactive"
 Public Const C_sFormExport               As String = "F_Export"                          'Export Frame
 Public Const C_sFormGeo                  As String = "F_Geo"                             'Geo Frame
 Public Const C_sFormShowHide             As String = "F_NomVisible"                      'ShowHide Frame
-Public Const C_sFormExportMig           As String = "F_ExportMig" 'Export for Migration form
-Public Const C_sFormImportMig           As String = "F_ImportMig" 'Import for Migration form
-Public Const C_sFormImportRep           As String = "F_ImportRep"
+Public Const C_sFormExportMig            As String = "F_ExportMig" 'Export for Migration form
+Public Const C_sFormImportMig            As String = "F_ImportMig" 'Import for Migration form
+Public Const C_sFormImportRep            As String = "F_ImportRep"
 
 'TABLES LISTOBJECTS ===============================================================================================================================================================
 
@@ -173,31 +173,37 @@ Public Const C_sShpDebug As String = "SHP_Debug"
 Public Const C_sShpReset As String = "SHP_Reset"
 
 'Ranges in the linelist sheet
-Public Const C_sRngPublickey             As String = "RNG_PublicKey"                     'Name of the range for publickey
-Public Const C_sRngPrivatekey            As String = "RNG_PrivateKey"                    'Name of the range for the private key
-Public Const C_sRngGeoName               As String = "RNG_GeoName"
+Public Const C_sRngPublickey            As String = "RNG_PublicKey"                     'Name of the range for publickey
+Public Const C_sRngPrivatekey           As String = "RNG_PrivateKey"                    'Name of the range for the private key
+Public Const C_sRngGeoName              As String = "RNG_GeoName"
 Public Const C_sRngLLLanguageCode       As String = "RNG_LLLanguageCode"                        'Where the name of the geofile is stored in the GeoSheet
 Public Const C_sRngLLLanguage           As String = "RNG_LLLanguage"
 Public Const C_sRngDebuggingPassWord    As String = "RNG_DebuggingPassword"
 
 'STRING CONSTANTS =================================================================================================================================================================
-Public Const C_sLLPassword             As String = "1234"                                'Default password for the linelist file (if no one is set)                                'Default password for the designer
+
+Public Const C_sLLPassword              As String = "1234"                                'Default password for the linelist file (if no one is set)                                'Default password for the designer
 Public Const C_sYes                     As String = "yes"
 Public Const C_sNo                      As String = "no"
 Public Const C_sGeobase                 As String = "export_geobase"
 Public Const C_sDatabase                As String = "export_data"
 Public Const C_sGotoSection             As String = "go_to_section"
+Public Const C_sVariable                As String = "variable"                           'Variable and values for metadata sheet
+Public Const C_sValue                   As String = "value"
+Public Const C_sLanguage                As String = "language"
+Public Const C_sLLDate                  As String = "linelist_creation_date"
 
-'Name of the sheets for each admin levels
-Public Const C_sAdm1  As String = "ADM1"
-Public Const C_sAdm2 As String = "ADM2"
-Public Const C_sAdm3 As String = "ADM3"
-Public Const C_sAdm4 As String = "ADM4"
-Public Const C_sHF As String = "HF"
-Public Const C_sNames As String = "NAMES"
-Public Const C_sHistoHF As String = "HistoHF"
-Public Const C_sHistoGeo As String = "HistoGeo"
-Public Const C_sGeoMetadata As String = "metadata"
+
+
+Public Const C_sAdm1                    As String = "ADM1"
+Public Const C_sAdm2                    As String = "ADM2"
+Public Const C_sAdm3                    As String = "ADM3"
+Public Const C_sAdm4                    As String = "ADM4"
+Public Const C_sHF                      As String = "HF"
+Public Const C_sNames                   As String = "NAMES"
+Public Const C_sHistoHF                 As String = "HistoHF"
+Public Const C_sHistoGeo                As String = "HistoGeo"
+Public Const C_sGeoMetadata             As String = "metadata"
 
 'INTEGERS CONSTANTS ===============================================================================================================================================================
 Public Const C_iNbLinesLLData           As Integer = 200                                    'Number of linest to add by default
