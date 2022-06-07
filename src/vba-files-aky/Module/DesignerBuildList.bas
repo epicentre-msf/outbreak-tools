@@ -10,10 +10,13 @@ Option Explicit
 '@ChoicesData: The choices data
 '@ExportData: The export data
 
+Dim AddedLogo As Boolean 'Added Logo?
+
 
 Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As BetterArray, _
               ChoicesHeaders As BetterArray, ChoicesData As BetterArray, _
               TransData As BetterArray, sPath As String)
+
 
     Dim Wkb As Workbook
     Dim LLNbColData         As BetterArray               'Number of columns of a Sheet of type linelist
@@ -56,6 +59,8 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Set DictVarName = New BetterArray
     Set SheetsOfTypeLLData = New BetterArray
     Set ChoiceAutoVarData = New BetterArray
+
+    AddedLogo = False
 
     BeginWork xlsapp:=Application
     'iWindowState = Application.WindowState
@@ -377,9 +382,12 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
         'Add the temporary sheets for computation and stuffs
         Call DesignerBuildListHelpers.AddTemporarySheets(Wkb)
 
+        'Add a Sheet called Admin for buttons and managements
+        Call DesignerBuildListHelpers.AddAdminSheet(Wkb)
+
         '--------------- adding the other the other sheets in the dictionary to the linelist
         i = 1
-        sPrevSheetName = vbNullString
+        sPrevSheetName = C_sSheetAdmin
         j = 0
         'Setting the lower bound before entering the loop
         LLNbColData.LowerBound = 1
@@ -389,12 +397,7 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
             sNewSheetName = EnsureGoodSheetName(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
 
             If sPrevSheetName <> sNewSheetName Then
-                If sPrevSheetName = vbNullString Then
-                    .Worksheets(1).Name = sNewSheetName
-                Else
-                    .Worksheets.Add(After:=.Worksheets(sPrevSheetName)).Name = sNewSheetName
-                    'Remove gridlines and zeros
-                End If
+                .Worksheets.Add(After:=.Worksheets(sPrevSheetName)).Name = sNewSheetName
 
                 'Remove the gridlines in this new Sheetname
                 Call RemoveGridLines(.Worksheets(sNewSheetName))
@@ -460,63 +463,34 @@ End Sub
     Dim sActualValidationMessage As String
     Dim sActualSubLab As String
 
-
     Dim iCounterSheetAdmLine As Integer
     Dim iCounterDictSheetLine As Integer
     Dim iTotalSheetAdmColumns As Integer
-
-    Const iCmdWidthFactor As Integer = C_iCmdWidth
-    Const iCmdHeightFactor As Integer = 30
-
-
-
 
     iCounterSheetAdmLine = C_eStartLinesAdmData
     iCounterDictSheetLine = iSheetStartLine
     iTotalSheetAdmColumns = LLNbColData.Items(LLSheetNameData.IndexOf(sSheetName))
 
+    If Not AddedLogo Then
+        'Add the Logo
+        With Wkb.Worksheets(C_sSheetAdmin)
+
+            On Error Resume Next
+            'Logo (copy from the sheet main, copy can fail, you just continue)
+            Application.CutCopyMode = False
+            SheetMain.Shapes("SHP_Logo").Copy
+            .Paste Destination:=Wkb.Worksheets(C_sSheetAdmin).Cells(2, 2)
+            Application.CutCopyMode = True
+            On Error GoTo 0
+
+            AddedLogo = True
+            .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                             AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
+        End With
+    End If
+
 
     With Wkb.Worksheets(sSheetName)
-        'Adding the buttons
-
-        'Import migration buttons
-          Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
-            .Cells(2, 10).Left, .Cells(2, 1).Top, C_sShpImpMigration, _
-            "Import for Migration", _
-            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdImportMigration, _
-            iTextFontSize:=12)
-
-
-        'Export migration buttons
-         Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
-            .Cells(2, 10).Left + C_iCmdWidth + iCmdWidthFactor + 10, .Cells(2, 1).Top, C_sShpExpMigration, _
-            "Export for Migration", _
-            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdExportMigration, _
-            iTextFontSize:=12)
-
-        'Export Button
-        Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
-            .Cells(2, 10).Left + 2 * C_iCmdWidth + 2 * iCmdWidthFactor + 20, .Cells(2, 1).Top, C_sShpExport, _
-            "Export", _
-            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdExport, _
-            iTextFontSize:=12)
-
-
-        Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
-            .Cells(2, 10).Left + 3 * C_iCmdWidth + 3 * iCmdWidthFactor + 30, .Cells(2, 1).Top, C_sShpDebug, _
-            "Debug", _
-            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdDebug, sShpColor:="Orange", sShpTextColor:="Black", _
-            iTextFontSize:=12)
-
-        On Error Resume Next
-
-        'Logo (copy from the sheet main, copy can fail, you just continue)
-        Application.CutCopyMode = False
-        SheetMain.Shapes("SHP_Logo").Copy
-        .Paste Destination:=.Cells(2, 2)
-        Application.CutCopyMode = True
-
-        On Error GoTo 0
 
         'FontSizes of Adms
         .Cells.Font.Size = C_iAdmSheetFontSize

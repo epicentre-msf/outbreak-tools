@@ -674,7 +674,7 @@ Dim DebugMode As Boolean
             sSheetName = C_sParamSheetDict Or sSheetName = C_sParamSheetExport Or _
             sSheetName = C_sParamSheetChoices Or sSheetName = C_sParamSheetTranslation Or _
             sSheetName = C_sSheetMetadata Or sSheetName = C_sSheetAnalysisTemp Or _
-            sSheetName = C_sSheetImportTemp)
+            sSheetName = C_sSheetImportTemp Or sSheetName = C_sSheetAdmin)
 
     End Function
 
