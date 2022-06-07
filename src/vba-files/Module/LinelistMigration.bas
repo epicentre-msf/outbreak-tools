@@ -1,8 +1,8 @@
 Attribute VB_Name = "LinelistMigration"
 Option Explicit
 
-
-'ClearAllData()
+Dim ImportReport As Boolean
+Dim ImportVarData As BetterArray
 
 Sub ControlClearData()
 
@@ -121,7 +121,7 @@ Function LLhasData() As Boolean
             NotGood = True
             Do While NotGood
                 sLLName = InputBox(TranslateLLMsg("MSG_LLName"), TranslateLLMsg("MSG_Delete"), TranslateLLMsg("MSG_EnterWkbName"))
-                If sLLName = WkbLL.Name Then
+                If sLLName = Replace(ThisWorkbook.Name, "." & GetFileExtension(ThisWorkbook.Name), "") Then
                     'Proceed only if the user is able to provide the name of the actual workbook name, we can delete
                     Call ClearData
                     hasData = False
@@ -160,7 +160,8 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
     Dim iLastRowImp As Integer 'LastRow (when needed for import sheet)
     Dim iLastColImp As Integer 'Last Column for Import data of Type LL
     Dim WkbLL As Workbook
-    Dim i As Integer 'Counter, for variables
+    Dim i As Integer 'Counter, for All variables
+    Dim k As Integer 'Counter, unfound variables
     Dim iRowIndex As Integer 'Row index for sheets of type Adm
     Dim iColIndex As Integer 'Col index for sheets of type LL
     Dim iLastRow As Integer
@@ -185,10 +186,14 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
 
                 For i = 2 To iLastRowImp '2 because the first row is for headers
                     sVal = shImp.Cells(i, 1)
+
+                    ImportVarData.Push sVal
                     If VarNamesData.Includes(sVal) Then
                         'Get the row Index here
                         iRowIndex = ColumnIndexData.Items(VarNamesData.IndexOf(sVal))
                         .Cells(iRowIndex, 3).value = shImp.Cells(i, 2).value 'On sheets of type Adm, the third column contains values
+                    Else
+                        '
                     End If
                 Next
 
@@ -207,9 +212,11 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                 iLastRow = FindLastRow(WkbLL.Worksheets(sSheetName))
             End If
 
-            'Now test
+            k = 1
             For i = 1 To iLastColImp
                 sVal = shImp.Cells(1, i)
+                ImportVarData.Push sVal
+
                 If VarNamesData.Includes(sVal) Then
                     'The variable is in the sheet, just paste the values to last row
                     iColIndex = ColumnIndexData.Items(VarNamesData.IndexOf(sVal))
@@ -229,6 +236,15 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                             rngLL.value = rngImp.value
                         End If
                     End If
+                Else
+                    If Not ImportReport Then ImportReport = True
+                    With ThisWorkbook.Worksheets(C_sSheetImportTemp)
+
+                         k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
+
+                        .Cells(k, 3).value = sVal
+                        .Cells(k, 4).value = sSheetName
+                    End With
                 End If
             Next
 
@@ -249,12 +265,26 @@ Sub ImportMigrationData()
     Dim TabSheetLL As BetterArray 'List of sheets in the linelist
     Dim VarNamesData As BetterArray
     Dim ColumnIndexData As BetterArray
+
+    Dim VarNamesLLData As BetterArray
+    Dim ColumnIndexLLData As BetterArray
+
     Dim sActSht As String
+    Dim shpTemp As Worksheet
     Dim ShouldQuit As Byte
+    Dim iStartSheet As Integer
+    Dim iEndSheet As Integer
+    Dim k As Integer 'Counter
+    Dim iRow As Integer
+    Dim sVarName As String 'Varname value
+    Dim sVarControlType  As String 'Control of a varname
+    Dim iVarIndex  As Integer   'Index of a variable
+    Dim sVal As String
 
     Dim sPath As String
     Dim hasData As Boolean
     hasData = False
+
 
     sActSht = ActiveSheet.Name
 
@@ -278,28 +308,92 @@ Sub ImportMigrationData()
     Set TabSheetLL = GetDictionaryColumn(C_sDictHeaderSheetName)
     Set ColumnIndexData = GetDictionaryColumn(C_sDictHeaderIndex)
     Set VarNamesData = GetDictionaryColumn(C_sDictHeaderVarName)
+    Set VarNamesLLData = New BetterArray
+    Set ColumnIndexLLData = New BetterArray
+    Set ImportVarData = New BetterArray
 
     'For each sheet in the imported workbook, if the sheet is in the linelist
     'Import the data the two sheets, keeping in mind We can add at the end, or
     'Just at the begining
 
+    k = 1
+    ImportReport = False
+
+    'Set and update the temp sheet for Edition
+    Set shpTemp = ThisWorkbook.Worksheets(C_sSheetImportTemp)
+    sVal = shpTemp.Cells(1, 9)
+    shpTemp.Cells.Clear
+    shpTemp.Cells(1, 8).value = Format(Now, "yyyy-mm-dd Hh:Nn")
+    If sVal <> vbNullString Then shpTemp.Cells(1, 9).value = sVal
+
     For Each shImp In WkbImp.Worksheets
         If TabSheetLL.Includes(shImp.Name) Then
-            Call ImportSheetData(shImp.Name, shImp, hasData, ColumnIndexData, VarNamesData)
+            VarNamesLLData.Clear
+            ColumnIndexLLData.Clear
+
+            iStartSheet = TabSheetLL.IndexOf(shImp.Name)
+            iEndSheet = TabSheetLL.LastIndexOf(shImp.Name) + 1
+
+            VarNamesLLData.Items = VarNamesData.Slice(iStartSheet, iEndSheet)
+            ColumnIndexLLData.Items = ColumnIndexData.Slice(iStartSheet, iEndSheet)
+
+            Call ImportSheetData(shImp.Name, shImp, hasData, ColumnIndexLLData, VarNamesLLData)
+        Else
+            'Set import report to true
+            If Not ImportReport Then ImportReport = True
+            'Test if this is valid worksheet before writing
+            If EnsureGoodSheetName(shImp.Name, TrimName:=False) = shImp.Name Then
+                shpTemp.Cells(k, 1).value = shImp.Name
+                k = k + 1
+            End If
         End If
     Next
 
-    WkbImp.Close savechanges:=False
-    Set WkbImp = Nothing
+    'Test if there are variables in Linelist not in imported sheet
+    For k = 1 To VarNamesData.Length
+        sVarName = VarNamesData.Item(k)
+        iVarIndex = ColumnIndexData.Item(k)
+
+        sVarControlType = ThisWorkbook.Worksheets(TabSheetLL.Item(k)).Cells(C_eStartLinesLLMainSec - 1, iVarIndex).value
+
+        If ImportVarData.Length > 0 And Not ImportVarData.Includes(sVarName) And sVarControlType <> C_sDictControlForm Then
+            'Update report status
+            If Not ImportReport Then ImportReport = True
+            With shpTemp
+                iRow = .Cells(.Rows.Count, 6).End(xlUp).Row
+                iRow = iRow + 1
+                .Cells(iRow, 6).value = VarNamesData.Item(k)
+                .Cells(iRow, 7).value = TabSheetLL.Item(k)
+            End With
+        End If
+    Next
 
     ThisWorkbook.Worksheets(sActSht).Activate
+    WkbImp.Close savechanges:=False
+
+    Set WkbImp = Nothing
+    Set ColumnIndexData = Nothing
+    Set VarNamesData = Nothing
+    Set VarNamesLLData = Nothing
+    Set ColumnIndexLLData = Nothing
+
     EndWork xlsapp:=Application
     Application.EnableEvents = True
 
-    ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImport"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
 
-    If ShouldQuit = vbYes Then
-        F_ImportMig.Hide
+    If Not ImportReport Then
+        ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImport"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
+
+        If ShouldQuit = vbYes Then
+            F_ImportMig.Hide
+        End If
+    Else
+        ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportRep"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
+
+        If ShouldQuit = vbYes Then
+            F_ImportMig.Hide
+            Call ShowImportReport
+        End If
     End If
 
     Exit Sub
@@ -309,203 +403,70 @@ errImport:
     EndWork xlsapp:=Application
     Application.EnableEvents = True
     Exit Sub
+
 End Sub
 
+' Show Import Report ---------------------------------------------------------
 
-'Import Migration Data
+Sub ShowImportReport()
 
-Sub LLImportMigrationData()
+    Dim TabRep As BetterArray
+    Dim shp As Worksheet
+    Dim iRow As Integer
+    Dim i As Integer
 
-    'Import exported data into the linelist
+    Set TabRep = New BetterArray
+    Set shp = ThisWorkbook.Worksheets(C_sSheetImportTemp)
 
-    Dim WbkImp As Workbook, WbkLL As Workbook
+    'Sheet not found
+    With shp
+        iRow = .Cells(Rows.Count, 1).End(xlUp).Row
 
-    Dim shData As Worksheet, shSource As Worksheet
-    Dim lstobj  As ListObject
-    Dim iLastSh As Integer, iLastexp As Integer, i As Long, j As Long
-
-    Dim lgRows As Long, iCols As Integer, lgStart As Long, iColExp As Integer, lgRowTarget As Long, iColTarget As Integer, lgNbData As Long
-    Dim sLabel As String, sPath As String, sMessage As String
-    Dim iRep As Integer
-
-
-    iLastSh = WbkLL.Sheets.Count
-    iLastexp = iLastSh
-
-    sPath = LoadFile("*.xlsx, *.xlsb")
-
-    If sPath = "" Then Exit Sub
-
-    For Each shData In WbkLL.Sheets
-        If shData.Visible = xlSheetVisible And LCase(shData.Name) <> "geo" And LCase(shData.Name) <> "admin" Then
-            For Each lstobj In shData.ListObjects
-                If LCase(lstobj.Name) = "o" & LCase(shData.Name) Then
-                    lgRowTarget = shData.ListObjects(lstobj.Name).ListRows.Count + 8
-                    iColTarget = shData.ListObjects(lstobj.Name).ListColumns.Count
-                    Application.ScreenUpdating = False
-                        shData.Activate
-                            lgNbData = WorksheetFunction.CountA(shData.Range(Cells(8, 1), Cells(lgRowTarget, iColTarget)))
-                        ShMain.Activate
-                    Application.ScreenUpdating = True
-                    If lgNbData > 0 Then
-                        If iRep = 0 Then iRep = MsgBox("There is data in the sheets. Want to keep them or delete them ?", vbQuestion + vbYesNo, "Import Data")
-                        If iRep = vbYes Then
-                            Application.EnableEvents = False
-                                shData.Unprotect (C_sLLPassword)
-                                    lstobj.DataBodyRange.Delete
-                                Call ProtectSheet
-                            Application.EnableEvents = True
-                        End If
-                    End If
-                End If
-            Next
-        End If
-    Next
-
-    If iRep = vbYes Then
-        iRep = 0
-        lgRows = ShMain.Cells(15, 2).End(xlDown).Row
-        ShMain.Unprotect (C_sLLPassword)
-            ShMain.Range(Cells(15, 3), Cells(lgRows, 3)).ClearContents
-        Call ProtectSheet
-    End If
-
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
-
-
-    Workbooks.Open Filename:=sPath, Password:=Range("RNG_PrivateKey").value
-
-    Set wbkexp = ActiveWorkbook
-
-    For Each shData In wbkexp.Sheets
-
-        If LCase(shData.Name) <> "dictionary" And LCase(shData.Name) <> "choices" And LCase(shData.Name) <> "translation" Then
-
-            For i = 1 To WbkLL.Sheets.Count
-
-                If UCase(WbkLL.Sheets(i).Name) = UCase(shData.Name) Then
-                    Sheets(shData.Name).Copy After:=WbkLL.Sheets(iLastexp)
-                    ActiveSheet.Name = shData.Name & "_Exp"
-                    iLastexp = iLastexp + 1
-                    wbkexp.Activate
-                    Exit For
-                End If
-
-            Next i
-
+        If iRow >= 1 Then
+            TabRep.FromExcelRange .Range(.Cells(1, 1), .Cells(1, iRow))
+            F_ImportRep.LST_ImpRepSheet.ColumnCount = 1
+            F_ImportRep.LST_ImpRepSheet.List = TabRep.Items
         End If
 
-    Next shData
+        'Variable not imported
+        iRow = .Cells(.Rows.Count, 3).End(xlUp).Row
 
-    wbkexp.Close
+        If iRow >= 1 Then
+            TabRep.Clear
+            TabRep.FromExcelRange .Range(.Cells(1, 3), .Cells(iRow, 4))
+            F_ImportRep.LST_ImpRepVarImp.ColumnCount = 2
+            F_ImportRep.LST_ImpRepVarImp.List = TabRep.Items
+        End If
 
-    Set wbkexp = Nothing
-    Set WbkLL = Nothing
+        iRow = .Cells(.Rows.Count, 6).End(xlUp).Row
 
-    For i = iLastexp To iLastSh + 1 Step -1
+        If iRow >= 1 Then
+            TabRep.Clear
+            TabRep.FromExcelRange .Range(.Cells(1, 6), .Cells(iRow, 7))
+            F_ImportRep.LST_ImpRepVarLL.ColumnCount = 2
+            F_ImportRep.LST_ImpRepVarLL.List = TabRep.Items
+        End If
 
-        Set shSource = Sheets(Sheets(i).Name)
-        Set shTarget = Sheets(Left(Sheets(i).Name, Len(Sheets(i).Name) - 4))
-
-        If LCase(shSource.Name) = "admin_exp" Then
-
-            shTarget.Unprotect (C_sLLPassword)
-            shSource.Select
-            lgRows = shSource.Cells(2, 1).End(xlDown).Row
-
-            For j = 2 To lgRows
-                Application.EnableEvents = False
-                    If shTarget.Cells(j + 13, 3).value = "" Then shSource.Cells(j, 2).Copy Destination:=shTarget.Cells(j + 13, 3)
-                Application.EnableEvents = True
-            Next j
-
+        If .Cells(1, 8).value <> vbNullString Then
+            F_ImportRep.TXT_ImportRepData.value = TranslateLLMsg("MSG_ImportDone") & " " & .Cells(1, 8).value
         Else
-
-            iCols = shSource.Cells(1, 1).End(xlToRight).Column
-            lgRows = shSource.Cells(1, 1).End(xlDown).Row
-            lgStart = shTarget.Cells.Find("*", SearchOrder:=xlByRows, SearchDirection:=xlPrevious, LookIn:=xlValues).Row + 1
-
-            shTarget.Select
-            ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
-
-            For Each lstobj In shTarget.ListObjects
-                If lstobj.Name = "o" & shTarget.Name Then
-                    lgRowTarget = shTarget.ListObjects(lstobj.Name).ListRows.Count
-                    If lgRowTarget < lgRows Then
-                        Application.EnableEvents = False
-                        lstobj.Resize Range(Cells(lgStart - 1, 1), Cells(lgRows + lgStart, Cells(lgStart - 1, 1).End(xlToRight).Column))
-                        Application.EnableEvents = True
-                        lgRowTarget = shTarget.ListObjects(lstobj.Name).ListRows.Count
-                        Exit For
-                    End If
-                End If
-            Next
-
-            ShMain.Select
-
-            j = 1
-
-
-            Do While j <= iCols 'Number of columns in source file
-
-                If shTarget.Cells(6, j).value = "" Then Exit Do
-                Dim BlHidden As Boolean
-
-                If shTarget.Columns(j).Hidden = True Then
-                    shTarget.Columns(j).Hidden = False
-                    BlHidden = True
-                End If
-
-                sLabel = shSource.Cells(1, j).value
-
-                If Not shTarget.Rows(7).Find(What:=sLabel, LookAt:=xlWhole) Is Nothing Then
-
-                    iColExp = shSource.Rows(1).Find(What:=sLabel, LookAt:=xlWhole).Column
-
-                    shSource.Select
-
-                    iColTarget = shTarget.Rows(7).Find(What:=sLabel, LookAt:=xlWhole).Column
-
-                    If iColTarget > 0 And Not shTarget.Cells(8, j).HasFormula Then
-                        Application.EnableEvents = False
-                            shSource.Range(Cells(2, iColExp), Cells(lgRows, iColExp)).Copy Destination:=shTarget.Cells(lgStart, iColTarget)
-                        Application.EnableEvents = True
-                        shTarget.Columns(iColTarget).EntireColumn.AutoFit
-                    End If
-
-                Else
-
-                    sMessage = sMessage & " / " & sLabel & " (Sheet " & Replace(shSource.Name, "_Exp", "") & ")"
-
-                End If
-
-                If BlHidden Then
-                    shTarget.Columns(j).Hidden = True
-                    BlHidden = False
-                End If
-
-                j = j + 1
-            Loop
-
+             F_ImportRep.TXT_ImportRepData.value = TranslateLLMsg("MSG_NoImportDone")
         End If
 
-        Application.DisplayAlerts = False
-            shSource.Delete
-        Application.DisplayAlerts = True
+        If .Cells(1, 9).value <> vbNullString Then
+            F_ImportRep.TXT_ImportRepGeo.value = TranslateLLMsg("MSG_ImportGeoDone") & " " & .Cells(1, 9).value
+        Else
+             F_ImportRep.TXT_ImportRepGeo.value = TranslateLLMsg("MSG_NoImportGeoDone")
+        End If
 
-        Call ProtectSheet
+    End With
 
-    Next i
-
-    ShMain.Select
-
-    Application.ScreenUpdating = True
-    Application.DisplayAlerts = True
-
-    MsgBox "the following data :" & Chr(10) & Right(sMessage, Len(sMessage) - 3) & Chr(10) & "could not be imported.", vbInformation, "File import"
+    'Show Import report
+    F_ImportRep.Show
+    Set TabRep = Nothing
 
 End Sub
+
 
 
 '----------------------------------- GEOBASE IMPORT   ------------------------------------------------
@@ -586,6 +547,7 @@ Sub ImportGeobase()
 
 
         Call TranslateImportGeoHead
+        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 9).value = Format(Now, "yyyy-mm-dd Hh:Nn")
 
         ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportGeo"), vbQuestion + vbYesNo, "Import GeoData")
 

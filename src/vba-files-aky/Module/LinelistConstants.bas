@@ -6,10 +6,12 @@ Public Const C_sSheetGeo                As String = "GEO"                       
 Public Const C_sSheetAdmin              As String = "Admin"                              'Name of the sheet for admin data (metadata on a linelist)
 Public Const C_sSheetPassword           As String = "Password"                           'sheet for password management
 Public Const C_sSheetFormulas           As String = "ControleFormule"                    'Sheet for formula management (mainly in the validation)
-Public Const C_sSheetLLTranslation      As String = "linelist-translation"
-Public Const C_sSheetTemp               As String = "Temp"                              'Temporary sheet for data manipulation things
+Public Const C_sSheetLLTranslation      As String = "LinelistTranslation"
+Public Const C_sSheetTemp               As String = "temp_"                              'Temporary sheet for data manipulation and doing stuffs
 Public Const C_sSheetMetadata           As String = "metadata"
-Public Const C_sSheetChoiceAuto           As String = "list_auto_"
+Public Const C_sSheetChoiceAuto         As String = "list_auto_"
+Public Const C_sSheetAnalysisTemp       As String = "ana_temp_"                          'Temporary sheet for analysis and stuffs
+Public Const C_sSheetImportTemp         As String = "import_temp_"
 
 'Sheets in the setup file: The all starts with Param
 
@@ -113,7 +115,7 @@ Public Const C_sFormGeo                  As String = "F_Geo"                    
 Public Const C_sFormShowHide             As String = "F_NomVisible"                      'ShowHide Frame
 Public Const C_sFormExportMig           As String = "F_ExportMig" 'Export for Migration form
 Public Const C_sFormImportMig           As String = "F_ImportMig" 'Import for Migration form
-
+Public Const C_sFormImportRep           As String = "F_ImportRep"
 
 'TABLES LISTOBJECTS ===============================================================================================================================================================
 

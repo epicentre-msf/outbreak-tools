@@ -100,7 +100,7 @@ Function GetExportValues(ExportHeadersData As BetterArray, sSheetName As String,
 
     Exit Function
 errTranspose:
-    MsgBox "Unable to transpose Export Table", vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
+    MsgBox "Unable to transpose Export Table", vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
 End Function
 
 
@@ -379,13 +379,13 @@ Sub Export(iTypeExport As Byte)
     Exit Sub
 
 exportErrHandExport:
-    MsgBox TranslateLLMsg("MSG_ErrHandExport"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
+    MsgBox TranslateLLMsg("MSG_ErrHandExport"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
     Exit Sub
 exportErrHandData:
-    MsgBox TranslateLLMsg("MSG_exportErrHandData"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
+    MsgBox TranslateLLMsg("MSG_exportErrHandData"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
     Exit Sub
 exportErrHandWrite:
-    MsgBox TranslateLLMsg("MSG_exportErrHandWrite"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
+    MsgBox TranslateLLMsg("MSG_exportErrHandWrite"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
     Exit Sub
 End Sub
 

@@ -45,6 +45,12 @@ Attribute VB_Exposed = False
 
 
 
+
+
+
+
+
+
 Option Explicit
 
 Private Sub CMD_ClearData_Click()
@@ -69,6 +75,11 @@ End Sub
 
 Private Sub CMD_ImportMigQuit_Click()
     Me.Hide
+End Sub
+
+Private Sub CMD_ImportMigRep_Click()
+    Me.Hide
+    Call ShowImportReport
 End Sub
 
 Private Sub UserForm_Initialize()

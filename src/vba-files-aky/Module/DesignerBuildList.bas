@@ -371,9 +371,16 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
         TransData.ToExcelRange Destination:=.Sheets(C_sParamSheetTranslation).Cells(1, 1)
         .Worksheets(C_sParamSheetTranslation).Visible = xlSheetVeryHidden
 
-        '--------- Adding a temporary sheet for computations
+        '--------- Adding a temporary sheets for computations
         .Worksheets.Add.Name = C_sSheetTemp
         .Worksheets(C_sSheetTemp).Visible = xlSheetVeryHidden
+
+        .Worksheets.Add.Name = C_sSheetAnalysisTemp
+        .Worksheets(C_sSheetAnalysisTemp).Visible = xlSheetVeryHidden
+
+        .Worksheets.Add.Name = C_sSheetImportTemp
+        .Worksheets(C_sSheetImportTemp).Visible = xlSheetVeryHidden
+
 
         'Add list auto sheet
         .Worksheets.Add.Name = C_sSheetChoiceAuto
@@ -381,7 +388,7 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
 
         '--------------- adding the other the other sheets in the dictionary to the linelist
         i = 1
-        sPrevSheetName = ""
+        sPrevSheetName = vbNullString
         j = 0
         'Setting the lower bound before entering the loop
         LLNbColData.LowerBound = 1
@@ -498,7 +505,7 @@ End Sub
 
         'Export Button
         Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
-            .Cells(2, 10).Left + 2 * C_iCmdWidth + 2*iCmdWidthFactor + 20, .Cells(2, 1).Top, C_sShpExport, _
+            .Cells(2, 10).Left + 2 * C_iCmdWidth + 2 * iCmdWidthFactor + 20, .Cells(2, 1).Top, C_sShpExport, _
             "Export", _
             C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdExport, _
             iTextFontSize:=12)
@@ -569,7 +576,7 @@ End Sub
             End If
 
             .Cells(iCounterSheetAdmLine, 2).EntireColumn.AutoFit
-            .Cells(iCounterSheetAdmLine, 3).ColumnWidth = 30
+            .Cells(iCounterSheetAdmLine, 3).columnWidth = 30
             .Cells(iCounterSheetAdmLine, 3).Locked = False
 
             'Add the Column index for those variable
@@ -586,6 +593,7 @@ End Sub
 
 
 'SHEET OF TYPE LINELIST CREATION ==================================================================================================================================
+
 
 Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer, _
                                  DictData As BetterArray, DictHeaders As BetterArray, LLSheetNameData As BetterArray, _
