@@ -276,7 +276,7 @@ Sub Export(iTypeExport As Byte)
                 'Add Metadata
                 ExportData.Clear
                 .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sSheetMetadata
-               ExportData.FromExcelRange ThisWorkbook.Worksheets(C_sSheetMetadata).Cells(1, 1), DetectLastColumn:= True, DetectLastRow:=True
+               ExportData.FromExcelRange ThisWorkbook.Worksheets(C_sSheetMetadata).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=True
                ExportData.ToExcelRange .Worksheets(C_sSheetMetadata).Cells(1, 1)
                 sPrevSheetName = C_sSheetMetadata
             End If
