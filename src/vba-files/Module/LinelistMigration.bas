@@ -342,7 +342,7 @@ Sub ImportMigrationData()
             'Set import report to true
             If Not ImportReport Then ImportReport = True
             'Test if this is valid worksheet before writing
-            If EnsureGoodSheetName(shImp.Name, TrimName:=False) = shImp.Name Then
+            If Not SheetNameIsBad(shImp.Name) Then
                 shpTemp.Cells(k, 1).value = shImp.Name
                 k = k + 1
             End If
@@ -829,15 +829,11 @@ Private Sub ExportMigrationData(sLLPath As String)
         Wend
 
         'Add The metadata Sheet
-
          .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sSheetMetadata
          sPrevSheetName = C_sSheetMetadata
-        .Worksheets(sPrevSheetName).Cells(1, 1).value = "variable"
-        .Worksheets(sPrevSheetName).Cells(1, 2).value = "value"
-        'Writing informations for metadata
-        .Worksheets(sPrevSheetName).Cells(2, 1).value = "language"
-        .Worksheets(sPrevSheetName).Cells(2, 2).value = ThisWorkbook.Worksheets(C_sSheetLLTranslation).Range(C_sRngLLLanguage)
-        'Will add other metadata in the future
+         ExportData.Clear
+         ExportData.FromExcelRange ThisWorkbook.Worksheets(C_sSheetMetadata).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=True
+         ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1)
     End With
 
     'Write an error handling for writing the file here

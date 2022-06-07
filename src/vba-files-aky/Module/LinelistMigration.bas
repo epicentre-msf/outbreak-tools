@@ -342,7 +342,7 @@ Sub ImportMigrationData()
             'Set import report to true
             If Not ImportReport Then ImportReport = True
             'Test if this is valid worksheet before writing
-            If EnsureGoodSheetName(shImp.Name, TrimName:=False) = shImp.Name Then
+            If Not SheetNameIsBad(shImp.Name) Then
                 shpTemp.Cells(k, 1).value = shImp.Name
                 k = k + 1
             End If
