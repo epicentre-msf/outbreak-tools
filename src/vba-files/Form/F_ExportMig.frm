@@ -41,11 +41,9 @@ Attribute VB_Exposed = False
 
 
 
+
+
 Option Explicit
-
-Private Sub CHK_ExportMigGeo_Click()
-
-End Sub
 
 Private Sub CMD_ExportMig_Click()
     Call ExportForMigration
@@ -54,11 +52,6 @@ End Sub
 
 Private Sub CMD_ExportMigQuit_Click()
     Me.Hide
-End Sub
-
-
-Private Sub UserForm_Click()
-
 End Sub
 
 
