@@ -811,3 +811,53 @@ Public Sub AddTemporarySheets(Wkb As Workbook)
         .Worksheets(C_sSheetChoiceAuto).Visible = xlSheetVeryHidden
     End With
 End Sub
+
+
+Public Sub AddAdminSheet(Wkb As Workbook)
+
+    Const iCmdWidthFactor As Integer = C_iCmdWidth
+    Const iCmdHeightFactor As Integer = 30
+
+
+    Wkb.Worksheets(1).Name = C_sSheetAdmin
+    Call RemoveGridLines(Wkb.Worksheets(C_sSheetAdmin))
+
+    'ADD BUTTONS
+
+    With Wkb.Worksheets(C_sSheetAdmin)
+        'Import migration buttons
+          Call AddCmd(Wkb, C_sSheetAdmin, _
+            .Cells(2, 10).Left, .Cells(2, 1).Top, C_sShpImpMigration, _
+            "Import for Migration", _
+            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
+            C_sCmdImportMigration, iTextFontSize:=12)
+
+        'Export migration buttons
+         Call AddCmd(Wkb, C_sSheetAdmin, _
+            .Cells(2, 10).Left + C_iCmdWidth + iCmdWidthFactor + 10, _
+            .Cells(2, 1).Top, C_sShpExpMigration, _
+            "Export for Migration", _
+            C_iCmdWidth + iCmdWidthFactor, _
+            C_iCmdHeight + iCmdHeightFactor, C_sCmdExportMigration, _
+            iTextFontSize:=12)
+
+        'Export Button
+        Call AddCmd(Wkb, C_sSheetAdmin, _
+            .Cells(2, 10).Left + 2 * C_iCmdWidth + 2 * iCmdWidthFactor + 20, _
+            .Cells(2, 1).Top, C_sShpExport, _
+            "Export", _
+            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdExport, _
+            iTextFontSize:=12)
+
+
+        Call AddCmd(Wkb, C_sSheetAdmin, _
+            .Cells(2, 10).Left + 3 * C_iCmdWidth + 3 * iCmdWidthFactor + 30, _
+            .Cells(2, 1).Top, C_sShpDebug, _
+            "Debug", _
+            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
+            C_sCmdDebug, sShpColor:="Orange", sShpTextColor:="Black", _
+            iTextFontSize:=12)
+
+    End With
+
+End Sub
