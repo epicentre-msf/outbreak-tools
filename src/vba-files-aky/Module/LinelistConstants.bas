@@ -218,7 +218,7 @@ Public Enum C_StartLines
     C_eStartLinesLLSubSec = 6                                                                'Starting lines for second title of the linelist
     C_eStartLinesLLData = 7                                                                  'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                                                             'Starting lines for export titles
-    C_eStartLinesAdmData = 15                                                                'Starting lines for a Adm data
+    C_eStartLinesAdmData = 4                                                                'Starting lines for a Adm data
     C_eStartColumnAdmData = 2                                                                'Starting columns for sheets of type Adm
     C_eStartLinesExportSource = 5                                                            'Starting lines for export sources
     C_eStartLinesChoicesHeaders = 1                                                          'Starting lines of the choices Headers
