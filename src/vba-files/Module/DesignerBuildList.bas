@@ -371,20 +371,11 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
         TransData.ToExcelRange Destination:=.Sheets(C_sParamSheetTranslation).Cells(1, 1)
         .Worksheets(C_sParamSheetTranslation).Visible = xlSheetVeryHidden
 
-        '--------- Adding a temporary sheets for computations
-        .Worksheets.Add.Name = C_sSheetTemp
-        .Worksheets(C_sSheetTemp).Visible = xlSheetVeryHidden
+        'Add the metadata sheet
+        Call DesignerBuildListHelpers.AddMetadataSheet(Wkb)
 
-        .Worksheets.Add.Name = C_sSheetAnalysisTemp
-        .Worksheets(C_sSheetAnalysisTemp).Visible = xlSheetVeryHidden
-
-        .Worksheets.Add.Name = C_sSheetImportTemp
-        .Worksheets(C_sSheetImportTemp).Visible = xlSheetVeryHidden
-
-
-        'Add list auto sheet
-        .Worksheets.Add.Name = C_sSheetChoiceAuto
-        .Worksheets(C_sSheetChoiceAuto).Visible = xlSheetVeryHidden
+        'Add the temporary sheets for computation and stuffs
+        Call DesignerBuildListHelpers.AddTemporarySheets(Wkb)
 
         '--------------- adding the other the other sheets in the dictionary to the linelist
         i = 1
@@ -398,7 +389,7 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
             sNewSheetName = EnsureGoodSheetName(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
 
             If sPrevSheetName <> sNewSheetName Then
-                If sPrevSheetName = "" Then
+                If sPrevSheetName = vbNullString Then
                     .Worksheets(1).Name = sNewSheetName
                 Else
                     .Worksheets.Add(After:=.Worksheets(sPrevSheetName)).Name = sNewSheetName

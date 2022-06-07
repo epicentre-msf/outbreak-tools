@@ -751,3 +751,63 @@ Public Sub UpdateChoiceAutoHeaders(Wkb As Workbook, ChoiceAutoVarData As BetterA
         Wend
     End With
 End Sub
+
+'Add the metadata Sheet
+Public Sub AddMetadataSheet(Wkb As Workbook)
+    Dim iRow As Integer
+
+    iRow = 0
+
+    With Wkb
+    'Metadata sheet
+        .Worksheets.Add.Name = C_sSheetMetadata
+
+        With SheetGeo.ListObjects(C_sTabGeoMetadata)
+            If Not .DataBodyRange Is Nothing Then iRow = .DataBodyRange.Rows.Count
+        End With
+
+        'Add metadata of the Geo
+        With .Worksheets(C_sSheetMetadata)
+            .Cells(1, 1).value = C_sVariable
+            .Cells(1, 2).value = C_sValue
+            If iRow > 0 Then
+                .Range(.Cells(2, 1), .Cells(2 + iRow, 2)).value = SheetGeo.ListObjects(C_sTabGeoMetadata).DataBodyRange.value
+            Else
+                iRow = 1
+            End If
+            'Add other informations to the metadata sheet:
+
+            'language
+            .Cells(iRow + 1, 1).value = C_sLanguage
+            .Cells(iRow + 1, 2).value = SheetLLTranslation.Range(C_sRngLLLanguage).value
+
+            'linelist creation date
+            .Cells(iRow + 2, 1).value = C_sLLDate
+            .Cells(iRow + 2, 2).value = Format(Now, "yyyy/mm/dd Hh:Nn")
+
+            'linelist version... Other infos will be added
+
+            .Visible = xlSheetVeryHidden
+        End With
+    End With
+End Sub
+
+
+'Add the temporary sheets for computation and stuffs
+Public Sub AddTemporarySheets(Wkb As Workbook)
+    With Wkb
+         '--------- Adding a temporary sheets for computations
+        'temp sheet
+        .Worksheets.Add.Name = C_sSheetTemp
+        .Worksheets(C_sSheetTemp).Visible = xlSheetVeryHidden
+        'temporary sheet for analysis
+        .Worksheets.Add.Name = C_sSheetAnalysisTemp
+        .Worksheets(C_sSheetAnalysisTemp).Visible = xlSheetVeryHidden
+        'temporary sheet for imports report
+        .Worksheets.Add.Name = C_sSheetImportTemp
+        .Worksheets(C_sSheetImportTemp).Visible = xlSheetVeryHidden
+        'Add list auto temporary sheet
+        .Worksheets.Add.Name = C_sSheetChoiceAuto
+        .Worksheets(C_sSheetChoiceAuto).Visible = xlSheetVeryHidden
+    End With
+End Sub

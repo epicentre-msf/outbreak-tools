@@ -665,21 +665,26 @@ Dim DebugMode As Boolean
 
     End Function
 
-    'Ensure a sheet name has good name
-    Public Function EnsureGoodSheetName(ByVal sSheetName As String, Optional TrimName As Boolean = True) As String
+    'Check if a worksheet name is correct
+    Public Function SheetNameIsBad(sSheetName As String) As Boolean
 
-        EnsureGoodSheetName = sSheetName
-
-        If TrimName Then EnsureGoodSheetName = Application.WorksheetFunction.Trim(UCase(Mid(sSheetName, 1, 1)) & Mid(sSheetName, 2, Len(sSheetName)))
-
-        If sSheetName = C_sSheetGeo Or sSheetName = C_sSheetFormulas Or _
+        SheetNameIsBad = (sSheetName = C_sSheetGeo Or sSheetName = C_sSheetFormulas Or _
             sSheetName = C_sSheetPassword Or sSheetName = C_sSheetTemp Or _
             sSheetName = C_sSheetLLTranslation Or sSheetName = C_sSheetChoiceAuto Or _
             sSheetName = C_sParamSheetDict Or sSheetName = C_sParamSheetExport Or _
             sSheetName = C_sParamSheetChoices Or sSheetName = C_sParamSheetTranslation Or _
             sSheetName = C_sSheetMetadata Or sSheetName = C_sSheetAnalysisTemp Or _
-            sSheetName = C_sSheetImportTemp Then
-            EnsureGoodSheetName = sSheetName & "_"
+            sSheetName = C_sSheetImportTemp)
+
+    End Function
+
+    'Ensure a sheet name has good name
+    Public Function EnsureGoodSheetName(ByVal sSheetName As String) As String
+        Dim NewName As String
+        NewName = Application.WorksheetFunction.Trim(UCase(Mid(sSheetName, 1, 1)) & Mid(sSheetName, 2, Len(sSheetName)))
+        EnsureGoodSheetName = NewName
+        If SheetNameIsBad(NewName) Then
+            EnsureGoodSheetName = NewName & "_"
         End If
     End Function
 
