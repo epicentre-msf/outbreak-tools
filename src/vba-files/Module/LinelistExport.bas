@@ -256,7 +256,7 @@ Sub Export(iTypeExport As Byte)
                  sPrevSheetName = C_sParamSheetTranslation
             End If
 
-            i = LLExportHeader.IndexOf("export dictionary")
+            i = LLExportHeader.IndexOf("export metadata")
 
             'Add Choice
             If (ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).value = "yes") Then
@@ -268,11 +268,17 @@ Sub Export(iTypeExport As Byte)
                 sPrevSheetName = C_sParamSheetChoices
 
                 'Add Dictionary
-                'Writing the dictionary data
                 .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sParamSheetDict
                 DictHeaders.ToExcelRange .Worksheets(C_sParamSheetDict).Cells(1, 1), TransposeValues:=True
                 DictData.ToExcelRange .Worksheets(C_sParamSheetDict).Cells(2, 1)
                 sPrevSheetName = C_sParamSheetDict
+
+                'Add Metadata
+                ExportData.Clear
+                .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sSheetMetadata
+               ExportData.FromExcelRange ThisWorkbook.Worksheets(C_sSheetMetadata).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=True
+               ExportData.ToExcelRange .Worksheets(C_sSheetMetadata).Cells(1, 1)
+                sPrevSheetName = C_sSheetMetadata
             End If
 
         'Adding the others sheets (Admin, linelist)
