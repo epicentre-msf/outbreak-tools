@@ -494,6 +494,20 @@ Sub BuildGotoArea(Wkb As Workbook, sSheetName As String)
 
 End Sub
 
+'Build adm Merge area for sub sections or main sections for sheets of type "Adm"
+Sub BuildVerticalMergeArea(Wksh As Worksheet, iStartColumn As Integer, iPrevLine As Integer, iActualLine As Integer)
+
+
+    With Wksh
+        .Range(.Cells(iPrevLine, iStartColumn), .Cells(iActualLine, iStartColumn)).Merge
+        .Cells(iPrevLine, iStartColumn).MergeArea.HorizontalAlignment = xlCenter
+    End With
+
+End Sub
+
+
+
+
 
 'Build a merge area for subsections and sections
 'Wksh the workheet on which we want to build the merge area
@@ -506,6 +520,7 @@ Sub BuildMergeArea(Wksh As Worksheet, iStartLineOne As Integer, iPrevColumn As I
 
     With Wksh
 
+        'iActual column = -1 is for subsections
         If iActualColumn = -1 Then
             .Cells(iStartLineOne, iPrevColumn).HorizontalAlignment = xlCenter
             .Cells(iStartLineOne, iPrevColumn).Interior.Color = Helpers.GetColor(sColorSubSec)
@@ -810,4 +825,54 @@ Public Sub AddTemporarySheets(Wkb As Workbook)
         .Worksheets.Add.Name = C_sSheetChoiceAuto
         .Worksheets(C_sSheetChoiceAuto).Visible = xlSheetVeryHidden
     End With
+End Sub
+
+
+Public Sub AddAdminSheet(Wkb As Workbook)
+
+    Const iCmdWidthFactor As Integer = C_iCmdWidth
+    Const iCmdHeightFactor As Integer = 30
+
+
+    Wkb.Worksheets(1).Name = C_sSheetAdmin
+    Call RemoveGridLines(Wkb.Worksheets(C_sSheetAdmin))
+
+    'ADD BUTTONS
+
+    With Wkb.Worksheets(C_sSheetAdmin)
+        'Import migration buttons
+          Call AddCmd(Wkb, C_sSheetAdmin, _
+            .Cells(2, 10).Left, .Cells(2, 1).Top, C_sShpImpMigration, _
+            "Import for Migration", _
+            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
+            C_sCmdImportMigration, iTextFontSize:=12)
+
+        'Export migration buttons
+         Call AddCmd(Wkb, C_sSheetAdmin, _
+            .Cells(2, 10).Left + C_iCmdWidth + iCmdWidthFactor + 10, _
+            .Cells(2, 1).Top, C_sShpExpMigration, _
+            "Export for Migration", _
+            C_iCmdWidth + iCmdWidthFactor, _
+            C_iCmdHeight + iCmdHeightFactor, C_sCmdExportMigration, _
+            iTextFontSize:=12)
+
+        'Export Button
+        Call AddCmd(Wkb, C_sSheetAdmin, _
+            .Cells(2, 10).Left + 2 * C_iCmdWidth + 2 * iCmdWidthFactor + 20, _
+            .Cells(2, 1).Top, C_sShpExport, _
+            "Export", _
+            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdExport, _
+            iTextFontSize:=12)
+
+
+        Call AddCmd(Wkb, C_sSheetAdmin, _
+            .Cells(2, 10).Left + 3 * C_iCmdWidth + 3 * iCmdWidthFactor + 30, _
+            .Cells(2, 1).Top, C_sShpDebug, _
+            "Debug", _
+            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
+            C_sCmdDebug, sShpColor:="Orange", sShpTextColor:="Black", _
+            iTextFontSize:=12)
+
+    End With
+
 End Sub
