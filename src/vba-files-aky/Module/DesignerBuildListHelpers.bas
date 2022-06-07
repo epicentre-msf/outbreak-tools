@@ -12,6 +12,7 @@ Public Sub TransferDesignerCodes(Wkb As Workbook)
     Call TransferForm(Wkb, C_sFormExport)
     Call TransferForm(Wkb, C_sFormExportMig)
     Call TransferForm(Wkb, C_sFormImportMig)
+    Call TransferForm(Wkb, C_sFormImportRep)
 
     'TransferCode is for sending modules  (Modules) or classes (Classes) from actual excel workbook to another excel workbook
     Call TransferCode(Wkb, C_sModLinelist, "Module")
@@ -33,7 +34,7 @@ End Sub
 '@sSheetName the sheet name we want to transfer to
 '@sNameModule the name of the module we want to copy code from
 
-Sub TransferCodeWks(Wkb As Workbook, sSheetName As String, _
+Public Sub TransferCodeWks(Wkb As Workbook, sSheetName As String, _
                     sNameModule As String)
 
     Dim sNouvCode As String                      'a string to contain code to add
@@ -77,7 +78,7 @@ End Sub
 '@Wkb : A workbook
 '@sFormName: The name of the form to transfert
 
-Sub TransferForm(Wkb As Workbook, sFormName As String)
+Private Sub TransferForm(Wkb As Workbook, sFormName As String)
 
     'The form is sent to the LinelisteApp folder
     On Error Resume Next
@@ -104,7 +105,7 @@ End Sub
 '@sType the type of the code to transfer (Module or Class)
 '@sModule: The Name of the module to transfer
 
-Sub TransferCode(Wkb As Workbook, sNameModule As String, sType As String)
+Private Sub TransferCode(Wkb As Workbook, sNameModule As String, sType As String)
 
     Dim oNouvM As Object 'New module name
     Dim sNouvCode As String 'New module code
@@ -750,20 +751,3 @@ Public Sub UpdateChoiceAutoHeaders(Wkb As Workbook, ChoiceAutoVarData As BetterA
         Wend
     End With
 End Sub
-
-
-'Insert Lines in at the end of a specific module
-
-
-'Ensure a sheet name has good name
-Public Function EnsureGoodSheetName(ByVal sSheetName As String) As String
-
-    EnsureGoodSheetName = Application.WorksheetFunction.Trim(UCase(Mid(sSheetName, 1, 1)) & Mid(sSheetName, 2, Len(sSheetName)))
-
-    If sSheetName = C_sSheetGeo Or sSheetName = C_sSheetFormulas Or sSheetName = C_sSheetPassword Or sSheetName = C_sSheetTemp Or sSheetName = C_sSheetLLTranslation Or _
-                     sSheetName = C_sParamSheetDict Or sSheetName = C_sParamSheetExport Or sSheetName = C_sParamSheetChoices Or sSheetName = C_sParamSheetTranslation Or _
-                     sSheetName = C_sSheetMetadata Then
-        EnsureGoodSheetName = sSheetName & "_"
-    End If
-End Function
-

@@ -11,7 +11,6 @@ Public Const C_sSheetDesTrans           As String = "designer-translation" 'Shee
 
 Public Const C_sModMain                 As String = "DesignerMain"          'Main module of the designer
 Public Const C_sModDesTrans             As String = "DesignerTranslation"   'Translation module for the designer
-Public Const C_sLLTrans                 As String = ""                      'Translation module for the linelist
 Public Const C_sModLLExport             As String = "LinelistExport"        'Export module in the linelist
 Public Const C_sModLLGeo                As String = "LinelistGeo"           'Geo module in the linelist for geo formula design
 Public Const C_sModLinelist             As String = "LinelistEvents"        'Events and buttons in one sheet of type linelist
