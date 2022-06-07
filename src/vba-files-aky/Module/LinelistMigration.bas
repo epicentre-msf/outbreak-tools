@@ -277,7 +277,7 @@ Sub ImportMigrationData()
     Dim k As Integer 'Counter
     Dim iRow As Integer
     Dim sVarName As String 'Varname value
-    Dim sVarControlType  As String'Control of a varname
+    Dim sVarControlType  As String 'Control of a varname
     Dim iVarIndex  As Integer   'Index of a variable
     Dim sVal As String
 
