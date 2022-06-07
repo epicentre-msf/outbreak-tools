@@ -17,12 +17,12 @@ Public Const C_sSheetImportTemp         As String = "import_temp_"
 
 Public Const C_sParamSheetDict          As String = "Dictionary"                         'Dictionnary Sheet in the setup file
 Public Const C_sParamSheetExport        As String = "Exports"                            'Sheet with configurations for the export  in the setup filefile
-Public Const C_sParamSheetChoices       As String = "Choices"                            'Sheet with configurations for the choices in the setup file                             'Name of a sheet of type admin for metadata on linelist
+Public Const C_sParamSheetChoices       As String = "Choices"                            'Sheet with configurations for the choices in the setup file
 Public Const C_sParamSheetTranslation   As String = "Translation"                        'Translation Sheet in the setup file
 
-'DICTIONARY PARAMETERS ============================================================================================================================================================
+'DICTIONARY PARAMETERS ================================================================================================================================================================================
 
-'Headers of the dictionnary in the setup file Headers are fixed -------------------------------------------------------------------------------------------------------------------
+'Headers of the dictionnary in the setup file Headers are fixed________________________________________________________________________________________________________________________________________
 
 Public Const C_sDictHeaderVarName       As String = "variable name"                      'Variable Name (unique identifier of a variable in lowercase without spaces)
 Public Const C_sDictHeaderMainLab       As String = "main label"                         'Variable Label
@@ -64,21 +64,21 @@ Public Const C_sDictSheetTypeAdm        As String = "admin"
 
 'Status ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Public Const C_sDictStatusMan As String = "mandatory"
-Public Const C_sDictStatusOpt As String = "optional"
-Public Const C_sDictStatusHid As String = "hidden"
-Public Const C_sDictStatusUserHid As String = "hidden by user"
-Public Const C_sDictStatusDesHid As String = "hidden by designer"
+Public Const C_sDictStatusMan           As String = "mandatory"
+Public Const C_sDictStatusOpt           As String = "optional"
+Public Const C_sDictStatusHid           As String = "hidden"
+Public Const C_sDictStatusUserHid       As String = "hidden by user"
+Public Const C_sDictStatusDesHid        As String = "hidden by designer"
 
 'Control --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Public Const C_sDictControlHf As String = "hf"
-Public Const C_sDictControlForm As String = "formula"
-Public Const C_sDictControlChoice As String = "choices"
-Public Const C_sDictControlGeo As String = "geo"
-Public Const C_sDictControlCustom As String = "custom"
-Public Const C_sDictControlTitle As String = "title"
-Public Const C_sDictControlChoiceAuto As String = "list_auto"
+Public Const C_sDictControlHf           As String = "hf"
+Public Const C_sDictControlForm         As String = "formula"
+Public Const C_sDictControlChoice       As String = "choices"
+Public Const C_sDictControlGeo          As String = "geo"
+Public Const C_sDictControlCustom       As String = "custom"
+Public Const C_sDictControlTitle        As String = "title"
+Public Const C_sDictControlChoiceAuto   As String = "list_auto"
 
 'YesNo ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -129,12 +129,12 @@ Public Const C_sTabHF                    As String = "T_HF"                     
 Public Const C_sTabNames                 As String = "T_NAMES"
 Public Const C_sTabHistoGeo              As String = "T_HistoGeo"                          'Historic data for the geo
 Public Const C_sTabHistoHF               As String = "T_HistoHF"                           'Historic data for the Health Facility
-Public Const C_sTabGeoMetadata As String = "T_Metadata"
-Public Const C_sTabTradLLMsg As String = "T_TradLLMsg"
-Public Const C_sTabTradLLShapes As String = "T_TradLLShapes"
-Public Const C_sTabTradLLForms  As String = "T_TradLLForms"
-Public Const C_sTabLLLang As String = "T_LLLang"
-Public Const C_sTabTranslation As String = "Tab_Translations"
+Public Const C_sTabGeoMetadata           As String = "T_Metadata"
+Public Const C_sTabTradLLMsg             As String = "T_TradLLMsg"
+Public Const C_sTabTradLLShapes          As String = "T_TradLLShapes"
+Public Const C_sTabTradLLForms           As String = "T_TradLLForms"
+Public Const C_sTabLLLang                As String = "T_LLLang"
+Public Const C_sTabTranslation           As String = "Tab_Translations"
 
 'Formulas and functions tables
 
@@ -145,15 +145,15 @@ Public Const C_sTabASCII                 As String = "T_ascii"                  
 'PROGRAM NAMES ===============================================================================================================
 'Program names are used for setting programs to buttons added in the linelist
 
-Public Const C_sCmdShowHideName As String = "ClicCmdShowHide" 'ShowHideCommand
-Public Const C_sCmdAddRowsName As String = "ClicCmdAddRows"
-Public Const C_sCmdShowGeoApp As String = "ClicCmdGeoApp"
-Public Const C_sCmdExportMigration As String = "ClicExportMigration"
-Public Const C_sCmdImportMigration As String = "ClicImportMigration"
-Public Const C_sCmdExport As String = "ClicCmdExport"
-Public Const C_sCmdDebug As String = "ClicCmdDebug"
-Public Const C_sAdmName As String = "adm"
-Public Const C_sResetData As String = "ClicResetData"
+Public Const C_sCmdShowHideName         As String = "ClicCmdShowHide" 'ShowHideCommand
+Public Const C_sCmdAddRowsName          As String = "ClicCmdAddRows"
+Public Const C_sCmdShowGeoApp           As String = "ClicCmdGeoApp"
+Public Const C_sCmdExportMigration      As String = "ClicExportMigration"
+Public Const C_sCmdImportMigration      As String = "ClicImportMigration"
+Public Const C_sCmdExport               As String = "ClicCmdExport"
+Public Const C_sCmdDebug                As String = "ClicCmdDebug"
+Public Const C_sAdmName                 As String = "adm"
+Public Const C_sResetData               As String = "ClicResetData"
 
 'TABLES LISTOBJECTS ===============================================================================================================================================================
 
@@ -163,14 +163,14 @@ Public Const C_sTabkeys = "T_Keys"
 'RANGES, MESSAGES AND SHAPES =======================================================================================================================================================
 
 'Shapes----------------------------------------------------------
-Public Const C_sShpShowHide As String = "SHP_ShowHide"
-Public Const C_sShpAddRows As String = "SHP_Add200L"
-Public Const C_sShpGeo As String = "SHP_GeoApps"
-Public Const C_sShpExpMigration As String = "SHP_ExportMig"
-Public Const C_sShpImpMigration As String = "SHP_ImportMig"
-Public Const C_sShpExport As String = "SHP_Export"
-Public Const C_sShpDebug As String = "SHP_Debug"
-Public Const C_sShpReset As String = "SHP_Reset"
+Public Const C_sShpShowHide             As String = "SHP_ShowHide"
+Public Const C_sShpAddRows              As String = "SHP_Add200L"
+Public Const C_sShpGeo                  As String = "SHP_GeoApps"
+Public Const C_sShpExpMigration         As String = "SHP_ExportMig"
+Public Const C_sShpImpMigration         As String = "SHP_ImportMig"
+Public Const C_sShpExport               As String = "SHP_Export"
+Public Const C_sShpDebug                As String = "SHP_Debug"
+Public Const C_sShpReset                As String = "SHP_Reset"
 
 'Ranges in the linelist sheet
 Public Const C_sRngPublickey            As String = "RNG_PublicKey"                     'Name of the range for publickey
