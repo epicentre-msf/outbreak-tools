@@ -27,7 +27,7 @@ Sub ClicCmdGeoApp()
                 MsgBox TranslateLLMsg("MSG_WrongCells")
         End Select
     Else
-        MsgBox TranslateLLMsg("MSG_WrongCells"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
+        MsgBox TranslateLLMsg("MSG_WrongCells"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
     End If
 End Sub
 
@@ -62,7 +62,7 @@ Sub ClicCmdAddRows()
 
 errAddRows:
         Application.EnableEvents = True
-        MsgBox TranslateLLMsg("MSG_ErrAddRows"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
+        MsgBox TranslateLLMsg("MSG_ErrAddRows"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         Exit Sub
 End Sub
 
@@ -105,7 +105,7 @@ Sub ClicCmdExport()
     Exit Sub
 
 errLoadExp:
-        MsgBox TranslateLLMsg("MSG_ErrLoadExport"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
+        MsgBox TranslateLLMsg("MSG_ErrLoadExport"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         EndWork xlsapp:=Application
         Exit Sub
 
@@ -185,7 +185,7 @@ Sub ClicCmdDebug()
     Exit Sub
 
 errDebug:
-        MsgBox TranslateLLMsg("MSG_ErrDebug"), vbOKOnly + vbCritical, TranslateLLmsg("MSG_Error")
+        MsgBox TranslateLLMsg("MSG_ErrDebug"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         EndWork xlsapp:=Application
         Exit Sub
 
