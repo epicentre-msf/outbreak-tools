@@ -150,7 +150,7 @@ Sub ClicCmdDebug()
             MsgBox TranslateLLMsg("MSG_WrongPassword"), vbOK, "DEBUG MODE"
         End If
     Else
-        pwd =  ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
+        pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
         With ThisWorkbook.Worksheets(C_sParamSheetDict)
         'Protect All Sheets of Type LL
             iNbVar = .Cells(Rows.Count, 1).End(xlUp).Row
@@ -193,7 +193,7 @@ errDebug:
 End Sub
 
 'Protect sheet of type linelist
-Public Sub ProtectSheet
+Public Sub ProtectSheet()
     Dim pwd As String
     Dim sh As Worksheet
     Set sh = ActiveSheet

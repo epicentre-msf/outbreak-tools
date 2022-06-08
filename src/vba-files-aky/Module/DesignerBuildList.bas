@@ -186,7 +186,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
                                         ChoicesListData, ChoicesLabelsData)
                      i = 0
                     With Wkb.Worksheets(LLSheetNameData.Item(iCounterSheet))
-                        While (.Cells(C_eStartLinesAdmData + i, 2).value <> "")
+                        While (.Cells(C_eStartLinesAdmData + i, C_eStartColumnAdmData + 2).value <> "")
                             DictVarName.Push .Cells(C_eStartLinesAdmData + i, C_eStartColumnAdmData + 3).Name.Name
                             i = i + 1
                         Wend
@@ -684,7 +684,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         'Add 200 Rows Button
         Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
                                             .Cells(2, 1).Left + C_iCmdWidth + 20, _
-                                            .Cells(2, 1).Top, _
+                                            .Cells(2, 1).Top + 5, _
                                             C_sShpAddRows, _
                                              "Add rows", _
                                              C_iCmdWidth, C_iCmdHeight, _
@@ -860,7 +860,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                     'Add the GeoButton only one time
                     If Not bCmdGeoExist Then
                         Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
-                                           .Cells(1, 1).Left, .Cells(2, 1).Top, _
+                                           .Cells(1, 1).Left + 5, .Cells(2, 1).Top + 5, _
                                              C_sShpGeo, _
                                              "GEO", _
                                              C_iCmdWidth, C_iCmdHeight, _
