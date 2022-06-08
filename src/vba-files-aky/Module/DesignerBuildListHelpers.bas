@@ -509,28 +509,61 @@ Sub MergeArea(Wksh As Worksheet, iLineFrom As Integer, iLineTo As Integer, iColF
 End Sub
 
 
-'Build adm Merge area for sub sections or main sections for sheets of type "Adm"
-Sub BuildVerticalMergeArea(Wksh As Worksheet, iStartColumn As Integer, iPrevLine As Integer, iActualLine As Integer)
+'Main Section Vertical Merge
+Sub BuildMainSectionVMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As Integer, _
+                           iColumnFrom As Integer, iColumnTo As Integer, _
+                           Optional sColorMainSec As String = "MainSecBlue")
 
+    Dim oCell As Object
+
+    'Merge
+    MergeArea Wksh, iLineFrom:=iLineFrom, iLineTo:=iLineTo - 1, iColFrom:=iColumnFrom, iColTo:=iColumnFrom
 
     With Wksh
-        .Range(.Cells(iPrevLine, iStartColumn), .Cells(iActualLine, iStartColumn)).Merge
-        .Cells(iPrevLine, iStartColumn).MergeArea.HorizontalAlignment = xlCenter
+        With .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom))
+            .Interior.Color = Helpers.GetColor(sColorMainSec)
+            .Font.Color = Helpers.GetColor("White")
+            .Font.Bold = True
+            .Font.Size = C_iLLMainSecFontSize
+        End With
+
+        For Each oCell In .Range(.Cells(iLineFrom, iColumnTo), .Cells(iLineTo - 1, iColumnTo))
+            If oCell.value = vbNullString Then oCell.Interior.Color = vbWhite
+        Next
+
+        'Write the borders line
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnTo))
     End With
 
+    Set oCell = Nothing
 End Sub
 
-'Build Sections vertical Merge
-Sub BuildSectionVMerge()
+'Sub Section Vertical Merge
+Sub BuildSubSectionVMerge(Wksh As Worksheet, iColumn As Integer, iLineFrom As Integer, _
+                          iLineTo As Integer, Optional sColorSubSec As String = "SubSecBlue", _
+                          Optional sColorMainSec As String = "MainSecBlue")
 
+    Dim iLastLine As Integer
+    'Last Column can be 1, in that case move to the first column
+    iLastLine = IIf(iLineTo <= 1, 1, iLineTo - 1)
+
+    'Merge Area for Worksheet
+    MergeArea Wksh, iLineFrom:=iLineFrom, iLineTo:=iLastLine, iColFrom:=iColumn, iColTo:=iColumn
+
+    With Wksh
+        With .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn))
+            .Interior.Color = Helpers.GetColor(sColorSubSec)
+            .Font.Color = Helpers.GetColor(sColorMainSec)
+            .Font.Size = C_iLLSubSecFontSize
+        End With
+
+        'Draw borders
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn))
+    End With
 End Sub
 
-'Build Sub sections vertical merge
-
-Sub BuildSubSectionVMerge()
 
 
-End Sub
 
 ' Build sections horizontal merge area
 Sub BuildMainSectionHMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As Integer, _
