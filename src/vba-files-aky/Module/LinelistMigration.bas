@@ -35,7 +35,7 @@ Sub ControlClearData()
     Exit Sub
 
 ErrClearData:
-    Msgbox TranslateLLMsg("ErrClearData")
+    MsgBox TranslateLLMsg("ErrClearData")
     EndWork xlsapp:=Application
     Application.EnableEvents = True
     Exit Sub
@@ -285,7 +285,7 @@ Sub ImportMigrationData()
     Dim ShouldQuit As Byte
     Dim iStartSheet As Integer
     Dim iEndSheet As Integer
-    Dim k As Integer 'Counter
+    Dim k as Integer 'counter
     Dim iRow As Integer
     Dim sVarName As String 'Varname value
     Dim sVarControlType  As String 'Control of a varname
@@ -327,7 +327,6 @@ Sub ImportMigrationData()
     'Import the data the two sheets, keeping in mind We can add at the end, or
     'Just at the begining
 
-    k = 1
     ImportReport = False
 
     'Set and update the temp sheet for Edition
@@ -354,8 +353,10 @@ Sub ImportMigrationData()
             If Not ImportReport Then ImportReport = True
             'Test if this is valid worksheet before writing
             If Not SheetNameIsBad(shImp.Name) Then
-                shpTemp.Cells(k, 1).value = shImp.Name
-                k = k + 1
+                With shpTemp
+                    iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+                    .Cells(iRow + 1, 1).value = shImp.Name
+                End With
             End If
         End If
     Next
@@ -431,10 +432,10 @@ Sub ShowImportReport()
 
     'Sheet not found
     With shp
-        iRow = .Cells(Rows.Count, 1).End(xlUp).Row
+        iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
 
         If iRow >= 1 Then
-            TabRep.FromExcelRange .Range(.Cells(1, 1), .Cells(1, iRow))
+            TabRep.FromExcelRange .Range(.Cells(1, 1), .Cells(iRow, 1))
             F_ImportRep.LST_ImpRepSheet.ColumnCount = 1
             F_ImportRep.LST_ImpRepSheet.List = TabRep.Items
         End If
@@ -458,17 +459,17 @@ Sub ShowImportReport()
             F_ImportRep.LST_ImpRepVarLL.List = TabRep.Items
         End If
 
-        If .Cells(1, 8).value <> vbNullString Then
-            F_ImportRep.TXT_ImportRepData.value = TranslateLLMsg("MSG_ImportDone") & " " & .Cells(1, 8).value
-        Else
-             F_ImportRep.TXT_ImportRepData.value = TranslateLLMsg("MSG_NoImportDone")
-        End If
-
-        If .Cells(1, 9).value <> vbNullString Then
-            F_ImportRep.TXT_ImportRepGeo.value = TranslateLLMsg("MSG_ImportGeoDone") & " " & .Cells(1, 9).value
-        Else
-             F_ImportRep.TXT_ImportRepGeo.value = TranslateLLMsg("MSG_NoImportGeoDone")
-        End If
+        'If .Cells(1, 8).value <> vbNullString Then
+        '    F_ImportRep.TXT_ImportRepData.value = TranslateLLMsg("MSG_ImportDone") & " " & .Cells(1, 8).value
+        'Else
+        '     F_ImportRep.TXT_ImportRepData.value = TranslateLLMsg("MSG_NoImportDone")
+        'End If
+        '
+        'If .Cells(1, 9).value <> vbNullString Then
+        '    F_ImportRep.TXT_ImportRepGeo.value = TranslateLLMsg("MSG_ImportGeoDone") & " " & .Cells(1, 9).value
+        'Else
+        '     F_ImportRep.TXT_ImportRepGeo.value = TranslateLLMsg("MSG_NoImportGeoDone")
+        'End If
 
     End With
 
