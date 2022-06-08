@@ -486,7 +486,10 @@ Sub BuildGotoArea(Wkb As Workbook, sSheetName As String)
         .Cells(1, C_eSectionsLookupColumns).value = TranslateLLMsg("MSG_SelectSection")
         .Cells(1, C_eSectionsLookupColumns).Name = ClearString(sSheetName) & "_" & C_sGotoSection
         .Cells(1, C_eSectionsLookupColumns).Font.Size = 10
-        .Cells(1, C_eSectionsLookupColumns).HorizontalAlignment = xlHAlignLeft
+        .Cells(1, C_eSectionsLookupColumns).HorizontalAlignment = xlHAlignCenter
+        .Cells(1, C_eSectionsLookupColumns).Interior.Color = Helpers.GetColor("MainSecBlue")
+        .Cells(1, C_eSectionsLookupColumns).Font.Color = vbWhite
+        .Cells(1, C_eSectionsLookupColumns).Font.Bold = True
         .Cells(1, C_eSectionsLookupColumns).VerticalAlignment = xlVAlignCenter
         .Cells(1, C_eSectionsLookupColumns).FormulaHidden = True
         .Cells(1, C_eSectionsLookupColumns).WrapText = True
