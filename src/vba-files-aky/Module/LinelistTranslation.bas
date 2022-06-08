@@ -115,10 +115,11 @@ Sub ImportLangAnalysis(sPath As String)
     sAdr1 = SheetDesTranslation.Range("T_Lst_Lang").Address
     sAdr2 = SheetDesTranslation.Range("T_Lst_Lang").End(xlToRight).Address
 
+    Wkb.Close
+
     'Set Validation, 1 is Error
     Call Helpers.SetValidation(SheetMain.Range(C_sRngLangSetup), "='" & SheetDesTranslation.Name & "'!" & sAdr1 & ":" & sAdr2, 1)
 
-    Wkb.Close
     Set Wkb = Nothing
     Set src = Nothing
     Set dest = Nothing
@@ -154,12 +155,12 @@ Function GetTranslatedValue(ByVal sText As String) As String
     With DesignerWorkbook.Worksheets(C_sParamSheetTranslation)
         Set rngTrans = .ListObjects(C_sTabTranslation).DataBodyRange
     End With
-    
+
     On Error Resume Next
         iRow = rngTrans.Find(What:=sText, LookAt:=xlWhole).Row
         GetTranslatedValue = SheetSetTranslation.Cells(iRow, iColLang).value
     On Error GoTo 0
-    
+
 End Function
 
 Sub TranslateColumn(iCol As Integer, sSheetName As String)
@@ -168,13 +169,13 @@ Sub TranslateColumn(iCol As Integer, sSheetName As String)
     Dim i
     Dim sText As String
     Dim rngTrans As Range
-    
+
     If iCol > 0 Then 'Be sure the column exists
         Set Wksh = DesignerWorkbook.Worksheets(sSheetName)
         iLastRow = Wksh.Cells(Rows.Count, 1).End(xlUp).Row
-    
+
         i = 2
-    
+
         Do While i <= iLastRow
             If Wksh.Cells(i, iCol).value <> vbNullString Then
                 sText = Wksh.Cells(i, iCol).value
@@ -338,7 +339,7 @@ Sub TranslateLinelistData()
     Call TranslateChoices
     'Exports
     Call TranslateExports
-    
+
     'Analysis...
 
 
