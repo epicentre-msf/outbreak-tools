@@ -395,6 +395,10 @@ Option Explicit
             GetColor = RGB(221, 235, 247)
         Case "SubLabBlue"
             GetColor = RGB(142, 169, 219)
+        Case "AdmEntry"
+            GetColor = RGB(242, 236, 225)
+        Case "AdmFont"
+            GetColor = RGB(132, 58, 34)
         End Select
 
     End Function
