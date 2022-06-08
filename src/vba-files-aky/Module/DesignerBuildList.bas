@@ -774,6 +774,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 .Cells(C_eStartLinesLLMainSec, iCounterSheetLLCol).value = sActualMainSec
             End If
 
+
             If sPrevSubSec <> sActualSubSec Then
                 'I am on a new sub section for the same section
                 .Cells(C_eStartLinesLLSubSec, iCounterSheetLLCol).value = sActualSubSec
@@ -781,16 +782,19 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 'I have to test I am not on the first column since it is possible that initialized value differed from
                 'the actual first value due to changes (taking in account the geo)
 
-                If (iCounterSheetLLCol = 1) Then 'The first column is a geoColumn with no value for the sublabel
-                    Call DesignerBuildListHelpers.BuildMergeArea(Wkb.Worksheets(sSheetName), _
-                                         C_eStartLinesLLSubSec, _
-                                        iPrevColSubSec, iCounterSheetLLCol + 1)
-                Else
-                    'Otherwise do the same as before but mergin only the sub section part
-                    Call DesignerBuildListHelpers.BuildMergeArea(Wkb.Worksheets(sSheetName), _
-                                        C_eStartLinesLLSubSec, _
-                                        iPrevColSubSec, iCounterSheetLLCol)
-                End If
+                BuildSubSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLine:=C_eStartLinesLLSubSec, iColumnFrom:=iPrevColSubSec, _
+                                     iColumnTo:=iCounterSheetLLCol
+
+                'update previous columns
+                sPrevSubSec = sActualSubSec
+                iPrevColSubSec = iCounterSheetLLCol
+
+            ElseIf sPrevMainSec <> sActualMainSec Then
+                'Update sub sections on new Main sections too
+
+                .Cells(C_eStartLinesLLSubSec, iCounterSheetLLCol).value = sActualSubSec
+                BuildSubSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLine:=C_eStartLinesLLSubSec, iColumnFrom:=iPrevColSubSec, _
+                                     iColumnTo:=iCounterSheetLLCol
 
                 'update previous columns
                 sPrevSubSec = sActualSubSec
@@ -801,12 +805,13 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             If sPrevMainSec <> sActualMainSec Then
                 'I am on a new Main Section, update the value of the section
                 .Cells(C_eStartLinesLLMainSec, iCounterSheetLLCol).value = sActualMainSec
+
+                'Here I update the list to set as validation for the "GOTO"
                 sSectionsList = sSectionsList & "," & TranslateLLMsg("MSG_SelectSection") & ": " & sActualMainSec
 
                 'Merge the previous area
-                Call DesignerBuildListHelpers.BuildMergeArea(Wkb.Worksheets(sSheetName), _
-                 C_eStartLinesLLMainSec, iPrevColMainSec, _
-                                    iCounterSheetLLCol, C_eStartLinesLLSubSec)
+                BuildMainSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLineFrom:=C_eStartLinesLLMainSec, _
+                                        iColumnFrom:=iPrevColMainSec, iLineTo:=C_eStartLinesLLSubSec, iColumnTo:=iCounterSheetLLCol
 
                 'Update the previous columns
                 sPrevMainSec = sActualMainSec
@@ -814,9 +819,9 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             Else
                 'I am on the same main section, I will test if I am not on the last column, if it is the case, merge the area
                 If (iCounterDictSheetLine = iSheetStartLine + iTotalLLSheetColumns - 1) Then
-                    Call DesignerBuildListHelpers.BuildMergeArea(Wkb.Worksheets(sSheetName), _
-                                         C_eStartLinesLLMainSec, iPrevColMainSec, _
-                                         iCounterSheetLLCol + 1, C_eStartLinesLLSubSec)
+                    BuildMainSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), _
+                                         iLineFrom:=C_eStartLinesLLMainSec, iColumnFrom:=iPrevColMainSec, _
+                                         iColumnTo:=iCounterSheetLLCol + 1, iLineTo:=C_eStartLinesLLSubSec
                 End If
             End If
 
