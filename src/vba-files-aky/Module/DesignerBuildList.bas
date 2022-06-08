@@ -477,8 +477,6 @@ End Sub
     Dim iPrevLineMainSec As Integer
 
 
-    iPrevLineSubSec = C_eStartLinesAdmData
-    iPrevLineMainSec = C_eStartLinesAdmData
 
     'Add the logo for the first time
     If Not AddedLogo Then
@@ -499,12 +497,14 @@ End Sub
         End With
     End If
 
+    iPrevLineMainSec = C_eStartLinesAdmData
+    iPrevLineSubSec = C_eStartLinesAdmData
     iCounterSheetAdmLine = C_eStartLinesAdmData
     iCounterDictSheetLine = iSheetStartLine
     iTotalSheetAdmColumns = LLNbColData.Items(LLSheetNameData.IndexOf(sSheetName))
 
-    sPrevMainSec = DictData.Items(iCounterSheetAdmLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
-    sPrevSubSec = DictData.Items(iCounterSheetAdmLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
+    sPrevMainSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
+    sPrevSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
 
     With Wkb.Worksheets(sSheetName)
 
@@ -525,13 +525,14 @@ End Sub
             sActualSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
 
 
-            WriteBorderLines .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3)
+            WriteBorderLines .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3), iWeight:=xlHairline, iColorIndex:=30
 
             'Update the previous sub sections and
 
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).value = sActualMainLab
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Interior.Color = Helpers.GetColor("AdmEntry")
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Font.Color = Helpers.GetColor("AdmFont")
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Interior.Color = vbWhite
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Font.Color = Helpers.GetColor("VMainSecFont")
+            WriteBorderLines .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2), iWeight:=xlHairline, iColorIndex:=30
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).Name = sActualVarName
 
             'Update values for the first time we have the sections
@@ -570,10 +571,11 @@ End Sub
             If sPrevMainSec <> sActualMainSec Then
                 'I am on a new Main Section, update the value of the section
                 .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData).value = sActualMainSec
-
+                
+                Debug.Print iPrevLineMainSec
                 'Merge the previous area
                 BuildMainSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), iLineFrom:=iPrevLineMainSec, _
-                                        iColumnFrom:=C_eStartColumnAdmData, iLineTo:=iCounterSheetAdmLine, iColumnTo:=C_eStartColumnAdmData + 1
+                                        iColumnFrom:=C_eStartColumnAdmData, iLineTo:=iCounterSheetAdmLine
 
                 'Update the previous columns
                 sPrevMainSec = sActualMainSec
@@ -583,7 +585,7 @@ End Sub
                 If (iCounterDictSheetLine = iSheetStartLine + iTotalSheetAdmColumns - 1) Then
                     BuildMainSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), _
                                          iLineFrom:=iPrevLineMainSec, iColumnFrom:=C_eStartColumnAdmData, _
-                                         iColumnTo:=C_eStartColumnAdmData, iLineTo:=iCounterSheetAdmLine + 1
+                                         iLineTo:=iCounterSheetAdmLine + 1
                 End If
             End If
             
@@ -591,7 +593,7 @@ End Sub
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 1).EntireColumn.AutoFit
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).EntireColumn.AutoFit
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).columnWidth = 30
-            '.Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).Locked = False
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).Locked = False
 
 
             If sActualControl = C_sDictControlChoice Then
@@ -613,6 +615,8 @@ End Sub
             iCounterSheetAdmLine = iCounterSheetAdmLine + 1
             iCounterDictSheetLine = iCounterDictSheetLine + 1
         Wend
+        
+        WriteBorderLines .Range(.Cells(C_eStartLinesAdmData, C_eStartColumnAdmData), .Cells(iCounterSheetAdmLine - 1, C_eStartColumnAdmData + 3)), iWeight:=xlThin, iColorIndex:=30
         .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
     End With

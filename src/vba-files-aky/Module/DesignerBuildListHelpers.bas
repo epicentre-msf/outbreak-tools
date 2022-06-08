@@ -511,20 +511,22 @@ End Sub
 
 'Main Section Vertical Merge
 Sub BuildMainSectionVMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As Integer, _
-                           iColumnFrom As Integer, iColumnTo As Integer, _
-                           Optional sColorMainSec As String = "MainSecBlue")
+                           iColumnFrom As Integer)
 
     Dim oCell As Object
+    Dim iColumnTo As Integer
+    
+    iColumnTo = iColumnFrom + 1
 
     'Merge
     MergeArea Wksh, iLineFrom:=iLineFrom, iLineTo:=iLineTo - 1, iColFrom:=iColumnFrom, iColTo:=iColumnFrom
 
     With Wksh
         With .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom))
-            .Interior.Color = Helpers.GetColor(sColorMainSec)
-            .Font.Color = Helpers.GetColor("White")
+            .Interior.Color = Helpers.GetColor("VMainSecFill")
+            .Font.Color = Helpers.GetColor("VMainSecFont")
             .Font.Bold = True
-            .Font.Size = C_iLLMainSecFontSize
+            .Font.Size = 12
         End With
 
         For Each oCell In .Range(.Cells(iLineFrom, iColumnTo), .Cells(iLineTo - 1, iColumnTo))
@@ -532,7 +534,10 @@ Sub BuildMainSectionVMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As I
         Next
 
         'Write the borders line
-        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnTo))
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnTo)), iWeight:=xlHairline, iColorIndex:=30
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom)), iWeight:=xlHairline, iColorIndex:=30
+        'Entire main section
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom + 3)), iWeight:=xlThin, iColorIndex:=30
     End With
 
     Set oCell = Nothing
@@ -540,8 +545,7 @@ End Sub
 
 'Sub Section Vertical Merge
 Sub BuildSubSectionVMerge(Wksh As Worksheet, iColumn As Integer, iLineFrom As Integer, _
-                          iLineTo As Integer, Optional sColorSubSec As String = "SubSecBlue", _
-                          Optional sColorMainSec As String = "MainSecBlue")
+                          iLineTo As Integer)
 
     Dim iLastLine As Integer
     'Last Column can be 1, in that case move to the first column
@@ -552,13 +556,15 @@ Sub BuildSubSectionVMerge(Wksh As Worksheet, iColumn As Integer, iLineFrom As In
 
     With Wksh
         With .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn))
-            .Interior.Color = Helpers.GetColor(sColorSubSec)
-            .Font.Color = Helpers.GetColor(sColorMainSec)
-            .Font.Size = C_iLLSubSecFontSize
+            .Interior.Color = Helpers.GetColor("VSubSecFill")
+            .Font.Color = Helpers.GetColor("VMainSecFont")
+            .Font.Bold = True
+            .Font.Size = 10
         End With
 
         'Draw borders
-        WriteBorderLines .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn))
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn)), iWeight:=xlHairline, iColorIndex:=30
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn + 2)), iWeight:=xlHairline, iColorIndex:=30
     End With
 End Sub
 

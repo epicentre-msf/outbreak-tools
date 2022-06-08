@@ -32,3 +32,4 @@ Public Const C_iLLButtonsRowHeight          As Integer = 30                     
 Public Const C_iNumberOfBars                As Integer = 40                                    'Number of bars in the Progressbar in the designer
 Public Const C_iLLSplitColumn               As Integer = 2                                      'Where to split columns of type linelist
 Public Const C_iLLFirstColumnsWidth         As Integer = 22
+Public Const C_iAdmLinesColor               As Integer = 32
