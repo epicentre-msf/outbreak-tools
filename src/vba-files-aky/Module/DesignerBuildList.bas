@@ -525,13 +525,13 @@ End Sub
             sActualSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
 
 
-            Call WriteBorderLines(.Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3))
+            WriteBorderLines .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3)
 
             'Update the previous sub sections and
 
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).value = sActualMainLab
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Interior.Color = Helpers.GetColor("SubSecBlue")
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Font.Color = Helpers.GetColor("MainSecBlue")
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Interior.Color = Helpers.GetColor("AdmEntry")
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Font.Color = Helpers.GetColor("AdmFont")
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).Name = sActualVarName
 
             'Update values for the first time we have the sections
@@ -540,29 +540,58 @@ End Sub
                 .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 1).value = sActualSubSec
             End If
 
-            'Test if we are on a new sub section
             If sPrevSubSec <> sActualSubSec Then
-                'New sub section
+                'I am on a new sub section for the same section
                 .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 1).value = sActualSubSec
+                'Merge the sub sections area
+                'I have to test I am not on the first column since it is possible that initialized value differed from
+                'the actual first value due to changes (taking in account the geo)
 
-                'Build a new Sub section merge area
-                Call BuildVerticalMergeArea(Wkb.Worksheets(sSheetName), C_eStartColumnAdmData + 1, _
-                    iPrevLineSubSec, iCounterSheetAdmLine)
+                BuildSubSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), iColumn:=C_eStartColumnAdmData + 1, iLineFrom:=iPrevLineSubSec, _
+                                     iLineTo:=iCounterSheetAdmLine
 
+                'update previous columns
                 sPrevSubSec = sActualSubSec
-                iPrevLineSubSec = iCounterSheetAdmLine + 1
+                iPrevLineSubSec = iCounterSheetAdmLine
+
+            ElseIf sPrevMainSec <> sActualMainSec Then
+                'Update sub sections on new Main sections too
+
+                .Cells(iCounterSheetAdmLine, C_eStartLinesAdmData + 1).value = sActualSubSec
+                BuildSubSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), iColumn:=C_eStartColumnAdmData + 1, iLineFrom:=iPrevLineSubSec, _
+                                      iLineTo:=iCounterSheetAdmLine
+
+                'update previous columns
+                sPrevSubSec = sActualSubSec
+                iPrevLineSubSec = iCounterSheetAdmLine
             End If
 
+            'Do the same for the section
             If sPrevMainSec <> sActualMainSec Then
-                'I am on a main section, update
-
+                'I am on a new Main Section, update the value of the section
                 .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData).value = sActualMainSec
-                'Call BuildVerticalMergeArea(Wkb.Worksheets(sSheetName), C_eStartColumnAdmData, _
-                        'iPrevLineMainSec, iCounterSheetAdmLine)
 
+                'Merge the previous area
+                BuildMainSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), iLineFrom:=iPrevLineMainSec, _
+                                        iColumnFrom:=C_eStartColumnAdmData, iLineTo:=iCounterSheetAdmLine, iColumnTo:=C_eStartColumnAdmData + 1
+
+                'Update the previous columns
                 sPrevMainSec = sActualMainSec
-                iPrevLineMainSec = iCounterSheetAdmLine + 1
+                iPrevLineMainSec = iCounterSheetAdmLine
+            Else
+                'I am on the same main section, I will test if I am not on the last column, if it is the case, merge the area
+                If (iCounterDictSheetLine = iSheetStartLine + iTotalSheetAdmColumns - 1) Then
+                    BuildMainSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), _
+                                         iLineFrom:=iPrevLineMainSec, iColumnFrom:=C_eStartColumnAdmData, _
+                                         iColumnTo:=C_eStartColumnAdmData, iLineTo:=iCounterSheetAdmLine + 1
+                End If
             End If
+            
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData).EntireColumn.AutoFit
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 1).EntireColumn.AutoFit
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).EntireColumn.AutoFit
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).columnWidth = 30
+            '.Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).Locked = False
 
 
             If sActualControl = C_sDictControlChoice Then
@@ -575,12 +604,7 @@ End Sub
                    End If
                 End If
             End If
-
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData).EntireColumn.AutoFit
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 1).EntireColumn.AutoFit
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).EntireColumn.AutoFit
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).columnWidth = 30
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).Locked = False
+            
 
             'Add the Column index for those variable
             Wkb.Worksheets(C_sParamSheetDict).Cells(iCounterDictSheetLine + 1, DictHeaders.Length + 1).value = iCounterSheetAdmLine '+1 on lines because of headers of the dictionary
