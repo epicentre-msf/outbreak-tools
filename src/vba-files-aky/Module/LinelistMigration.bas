@@ -285,7 +285,7 @@ Sub ImportMigrationData()
     Dim ShouldQuit As Byte
     Dim iStartSheet As Integer
     Dim iEndSheet As Integer
-    Dim k as Integer 'counter
+    Dim k As Integer 'counter
     Dim iRow As Integer
     Dim sVarName As String 'Varname value
     Dim sVarControlType  As String 'Control of a varname
