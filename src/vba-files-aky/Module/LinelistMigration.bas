@@ -9,6 +9,8 @@ Sub ControlClearData()
     Dim ShouldProceed As Byte
     Dim sLLName As String
 
+    On Error GoTo ErrClearData
+
     ShouldProceed = MsgBox(TranslateLLMsg("MSG_DeleteAllData"), vbExclamation + vbYesNo, TranslateLLMsg("MSG_Delete"))
 
     If ShouldProceed = vbYes Then
@@ -30,6 +32,14 @@ Sub ControlClearData()
         Exit Sub
     End If
 
+    Exit Sub
+
+ErrClearData:
+    Msgbox TranslateLLMsg("ErrClearData")
+    EndWork xlsapp:=Application
+    Application.EnableEvents = True
+    Exit Sub
+
 End Sub
 
 
@@ -44,6 +54,7 @@ Sub ClearData()
 
     BeginWork xlsapp:=Application
     Application.EnableEvents = False
+
 
     For Each Wksh In ThisWorkbook.Worksheets
         sSheetType = FindSheetType(Wksh.Name)
@@ -496,6 +507,8 @@ Sub ImportGeobase()
     Set AdmData = New BetterArray
     Set AdmHeader = New BetterArray
 
+    On Error GoTo ErrImportGeo
+
     AdmNames.LowerBound = 1
     AdmNames.Push C_sAdm1, C_sAdm2, C_sAdm3, C_sAdm4, C_sHF, C_sNames, C_sHistoHF, C_sHistoGeo, C_sGeoMetadata  'Names of each sheet
 
@@ -564,6 +577,13 @@ Sub ImportGeobase()
     Set WkshGeo = Nothing
 
     EndWork xlsapp:=Application
+
+    Exit Sub
+
+ErrImportGeo:
+    MsgBox TranslateLLMsg("MSG_ErrImportGeo")
+    EndWork xlsapp:=Application
+    Exit Sub
 End Sub
 
 
@@ -716,13 +736,11 @@ End Sub
 
 
 
-'============================= EXPORTS MIGRATIONS ==============================
-
+'=================================================================== EXPORTS MIGRATIONS ===============================================================================================================
 
 'Export the data
 
 Private Sub ExportMigrationData(sLLPath As String)
-
 
     'Dictionary headers and data
     Dim DictHeaders As BetterArray
