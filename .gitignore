@@ -23,3 +23,6 @@ outputs
 config.json
 src/vba-files-lla
 linelist_designer_lla.xlsb
+local
+
+.DS_Store
