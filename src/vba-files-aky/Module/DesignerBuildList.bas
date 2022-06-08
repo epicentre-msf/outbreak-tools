@@ -413,7 +413,7 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
 
                 'Tell the use we have created one sheet
                 'adding sheets depending on the type of the sheet
-                Select Case LCase(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType)))
+                Select Case DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType))
                 Case C_sDictSheetTypeAdm
                     'This is a admin Sheet, just add it like that (or maybe do some other stuffs later on)
 
