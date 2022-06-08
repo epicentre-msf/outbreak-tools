@@ -5,13 +5,6 @@ Attribute VB_Name = "Helpers"
 'itself
 
 Option Explicit
-Dim DebugMode As Boolean
-
-
-
-
-
-
 
 
 
@@ -272,17 +265,6 @@ Dim DebugMode As Boolean
         xlsapp.DisplayAlerts = True
         xlsapp.Calculation = xlCalculationAutomatic
         xlsapp.DisplayStatusBar = bstatusbar
-    End Sub
-
-    'Protect sheet of type linelist
-    Public Sub ProtectSheet()
-        Dim pwd As String
-        If Not DebugMode Then
-            pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
-            ActiveSheet.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
-                            AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
-                            AllowFormattingColumns:=True
-        End If
     End Sub
 
     'Remove Gridlines in a worksheet
