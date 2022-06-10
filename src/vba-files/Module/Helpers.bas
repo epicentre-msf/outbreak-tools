@@ -950,6 +950,44 @@ EndMacro:
         " - " & Format(Application.WorksheetFunction.Max(DateRng), "DD/MM/YYYY")
     End Function
 
+    Public Function VALUE_OF(Rng As Range, RngLook As Range, RngVal As Range) As String
+
+        Dim sValLook As String
+        Dim sSheetLook As String 'Sheet name where to look for values
+        Dim sSheetVal As String     'Sheet name where to return the values
+
+        Dim ColRngLook As Range 'Column Range where to look for
+        Dim ColRngVal  As Range 'Column Range where to return the value from
+
+        Dim iColLook As Long 'columns to look and return values
+        Dim sVal As String
+        Dim iColVal As Long
+
+        sValLook = Rng.value
+
+        sVal = vbNullString
+
+        If sValLook <> vbNullString Then
+            sSheetLook = RngLook.Worksheet.Name
+            sSheetVal = RngVal.Worksheet.Name
+
+            iColLook = RngLook.Column
+            iColVal = RngVal.Column
+
+            Set ColRngLook = ThisWorkbook.Worksheets(sSheetLook).ListObjects("o" & ClearString(sSheetLook)).ListColumns(iColLook).Range
+            Set ColRngVal = ThisWorkbook.Worksheets(sSheetVal).ListObjects("o" & ClearString(sSheetVal)).ListColumns(iColVal).Range
+
+            On Error Resume Next
+            With Application.WorksheetFunction
+                sVal = .index(ColRngVal, .Match(sValLook, ColRngLook, 0))
+            End With
+            On Error GoTo 0
+        End If
+
+        VALUE_OF = sVal
+    End Function
+
+
 
 
 
