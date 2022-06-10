@@ -1,7 +1,7 @@
 Attribute VB_Name = "DesignerBuildList"
 Option Explicit
 
-'BUILD THE LINELIST ====================================================================================================
+'BUILD THE LINELIST ===================================================================================================================================================================================
 
 'Building the linelist from the different input data
 '@DictHeaders: The headers of the dictionnary sheet
@@ -19,29 +19,29 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
 
     Dim Wkb As Workbook
-    Dim LLNbColData         As BetterArray               'Number of columns of a Sheet of type linelist
-    Dim LLSheetNameData     As BetterArray           'Names of sheets
-    Dim ChoicesListData     As BetterArray           'Choices list
-    Dim ChoicesLabelsData   As BetterArray         ' Choices labels
-    Dim VarnameSheetData    As BetterArray          'Varnames of one sheet
-    Dim VarNameData         As BetterArray
-    Dim ColumnIndexData     As BetterArray
-    Dim ColumnSheetIndexData As BetterArray
-    Dim SheetsOfTypeLLData   As BetterArray
-    Dim ChoiceAutoVarData    As BetterArray
-    Dim FormulaData As BetterArray
-    Dim SpecCharData As BetterArray
-    Dim DictVarName As BetterArray
-    Dim iPastingRow As Integer
-    Dim LoRng As Range                          'List object's range
-    Dim iNbshifted As Integer
+    Dim LLNbColData             As BetterArray               'Number of columns of a Sheet of type linelist
+    Dim LLSheetNameData         As BetterArray           'Names of sheets
+    Dim ChoicesListData         As BetterArray           'Choices list
+    Dim ChoicesLabelsData       As BetterArray         ' Choices labels
+    Dim VarnameSheetData        As BetterArray          'Varnames of one sheet
+    Dim VarNameData             As BetterArray
+    Dim ColumnIndexData         As BetterArray
+    Dim ColumnSheetIndexData    As BetterArray
+    Dim SheetsOfTypeLLData      As BetterArray
+    Dim ChoiceAutoVarData       As BetterArray
+    Dim FormulaData             As BetterArray
+    Dim SpecCharData            As BetterArray
+    Dim DictVarName             As BetterArray
+    Dim iPastingRow             As Integer
+    Dim LoRng                   As Range                          'List object's range
+    Dim iNbshifted              As Integer
     'For updating sheet names in the dictionary worksheet
-    Dim i As Integer 'iterator
-    Dim iSheetNameColumn As Integer
-    Dim sFirstSheetName As String 'Previous sheet names where to copy data to:
-    Dim iWindowState As Integer
-    Dim Wksh As Worksheet
-    Dim iPerc As Integer
+    Dim i                       As Integer 'iterator
+    Dim iSheetNameColumn        As Integer
+    Dim sFirstSheetName         As String 'Previous sheet names where to copy data to:
+    Dim iWindowState            As Integer
+    Dim Wksh                    As Worksheet
+    Dim iPerc                   As Integer
 
 
     Dim iCounterSheet As Integer                'counter for one Sheet
@@ -93,7 +93,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     DoEvents
     iUpdateCpt = iUpdateCpt + 5
     StatusBar_Updater (iUpdateCpt)
-
 
     DoEvents
 
@@ -186,7 +185,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
                                         ChoicesListData, ChoicesLabelsData)
                      i = 0
                     With Wkb.Worksheets(LLSheetNameData.Item(iCounterSheet))
-                        While (.Cells(C_eStartLinesAdmData + i, 2).value <> "")
+                        While (.Cells(C_eStartLinesAdmData + i, C_eStartColumnAdmData + 2).value <> "")
                             DictVarName.Push .Cells(C_eStartLinesAdmData + i, C_eStartColumnAdmData + 3).Name.Name
                             i = i + 1
                         Wend
@@ -314,7 +313,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
 End Sub
 
-'CREATE SHEETS IN A LINELIST ============================================================================================
+'CREATE SHEETS IN A LINELIST ==========================================================================================================================================================================
 
 'Create the required Sheet and Hide some of them
 
@@ -413,7 +412,7 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
 
                 'Tell the use we have created one sheet
                 'adding sheets depending on the type of the sheet
-                Select Case LCase(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType)))
+                Select Case DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType))
                 Case C_sDictSheetTypeAdm
                     'This is a admin Sheet, just add it like that (or maybe do some other stuffs later on)
 
@@ -477,8 +476,6 @@ End Sub
     Dim iPrevLineMainSec As Integer
 
 
-    iPrevLineSubSec = C_eStartLinesAdmData
-    iPrevLineMainSec = C_eStartLinesAdmData
 
     'Add the logo for the first time
     If Not AddedLogo Then
@@ -499,12 +496,14 @@ End Sub
         End With
     End If
 
+    iPrevLineMainSec = C_eStartLinesAdmData
+    iPrevLineSubSec = C_eStartLinesAdmData
     iCounterSheetAdmLine = C_eStartLinesAdmData
     iCounterDictSheetLine = iSheetStartLine
     iTotalSheetAdmColumns = LLNbColData.Items(LLSheetNameData.IndexOf(sSheetName))
 
-    sPrevMainSec = DictData.Items(iCounterSheetAdmLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
-    sPrevSubSec = DictData.Items(iCounterSheetAdmLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
+    sPrevMainSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
+    sPrevSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
 
     With Wkb.Worksheets(sSheetName)
 
@@ -525,13 +524,14 @@ End Sub
             sActualSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
 
 
-            Call WriteBorderLines(.Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3))
+            WriteBorderLines .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3), iWeight:=xlHairline, sColor:="DarkBlue"
 
             'Update the previous sub sections and
 
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).value = sActualMainLab
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Interior.Color = Helpers.GetColor("SubSecBlue")
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Font.Color = Helpers.GetColor("MainSecBlue")
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Interior.Color = vbWhite
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Font.Color = Helpers.GetColor("BlueButton")
+            WriteBorderLines .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2), iWeight:=xlHairline, sColor:="DarkBlue"
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).Name = sActualVarName
 
             'Update values for the first time we have the sections
@@ -540,29 +540,66 @@ End Sub
                 .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 1).value = sActualSubSec
             End If
 
-            'Test if we are on a new sub section
             If sPrevSubSec <> sActualSubSec Then
-                'New sub section
+                'I am on a new sub section for the same section
                 .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 1).value = sActualSubSec
+                'Merge the sub sections area
+                'I have to test I am not on the first column since it is possible that initialized value differed from
+                'the actual first value due to changes (taking in account the geo)
 
-                'Build a new Sub section merge area
-                Call BuildVerticalMergeArea(Wkb.Worksheets(sSheetName), C_eStartColumnAdmData + 1, _
-                    iPrevLineSubSec, iCounterSheetAdmLine)
+                BuildSubSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), _
+                                      iColumn:=C_eStartColumnAdmData + 1, iLineFrom:=iPrevLineSubSec, _
+                                      iLineTo:=iCounterSheetAdmLine
 
+                'update previous columns
                 sPrevSubSec = sActualSubSec
-                iPrevLineSubSec = iCounterSheetAdmLine + 1
+                iPrevLineSubSec = iCounterSheetAdmLine
+
+            ElseIf sPrevMainSec <> sActualMainSec Then
+                'Update sub sections on new Main sections too
+
+                .Cells(iCounterSheetAdmLine, C_eStartLinesAdmData + 1).value = sActualSubSec
+                BuildSubSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), _
+                                      iColumn:=C_eStartColumnAdmData + 1, iLineFrom:=iPrevLineSubSec, _
+                                      iLineTo:=iCounterSheetAdmLine
+
+                'update previous columns
+                sPrevSubSec = sActualSubSec
+                iPrevLineSubSec = iCounterSheetAdmLine
+
+            'Build last section
+            ElseIf (iCounterDictSheetLine = iSheetStartLine + iTotalSheetAdmColumns - 1) Then
+
+                BuildSubSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), _
+                                      iColumn:=C_eStartColumnAdmData + 1, iLineFrom:=iPrevLineSubSec, _
+                                      iLineTo:=iCounterSheetAdmLine + 1
             End If
 
+            'Do the same for the section
             If sPrevMainSec <> sActualMainSec Then
-                'I am on a main section, update
-
+                'I am on a new Main Section, update the value of the section
                 .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData).value = sActualMainSec
-                'Call BuildVerticalMergeArea(Wkb.Worksheets(sSheetName), C_eStartColumnAdmData, _
-                        'iPrevLineMainSec, iCounterSheetAdmLine)
 
+                'Merge the previous area
+                BuildMainSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), iLineFrom:=iPrevLineMainSec, _
+                                        iColumnFrom:=C_eStartColumnAdmData, iLineTo:=iCounterSheetAdmLine
+
+                'Update the previous columns
                 sPrevMainSec = sActualMainSec
-                iPrevLineMainSec = iCounterSheetAdmLine + 1
+                iPrevLineMainSec = iCounterSheetAdmLine
+            ElseIf (iCounterDictSheetLine = iSheetStartLine + iTotalSheetAdmColumns - 1) Then
+
+                'I am on the same main section, I will test if I am not on the last column, if it is the case, merge the area
+                    BuildMainSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), _
+                                         iLineFrom:=iPrevLineMainSec, iColumnFrom:=C_eStartColumnAdmData, _
+                                         iLineTo:=iCounterSheetAdmLine + 1
             End If
+
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData).EntireColumn.AutoFit
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 1).EntireColumn.AutoFit
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).EntireColumn.AutoFit
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).columnWidth = 30
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).Locked = False
 
 
             If sActualControl = C_sDictControlChoice Then
@@ -576,11 +613,6 @@ End Sub
                 End If
             End If
 
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData).EntireColumn.AutoFit
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 1).EntireColumn.AutoFit
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).EntireColumn.AutoFit
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).columnWidth = 30
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).Locked = False
 
             'Add the Column index for those variable
             Wkb.Worksheets(C_sParamSheetDict).Cells(iCounterDictSheetLine + 1, DictHeaders.Length + 1).value = iCounterSheetAdmLine '+1 on lines because of headers of the dictionary
@@ -589,6 +621,10 @@ End Sub
             iCounterSheetAdmLine = iCounterSheetAdmLine + 1
             iCounterDictSheetLine = iCounterDictSheetLine + 1
         Wend
+
+        WriteBorderLines .Range(.Cells(C_eStartLinesAdmData, C_eStartColumnAdmData), .Cells(iCounterSheetAdmLine - 1, C_eStartColumnAdmData + 3)), _
+                         iWeight:=xlThin, sColor:="DarkBlue"
+
         .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
     End With
@@ -669,7 +705,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     'Continue adding the columns unless the total number of columns to add is reached
     With Wkb.Worksheets(sSheetName)
 
-        'INITIALISATIONS AND ADDING COMMANDS ========================================================================================
+        'INITIALISATIONS AND ADDING COMMANDS___________________________________________________________________________________________________________________________________________________________
 
         'Adding required buttons
 
@@ -684,7 +720,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         'Add 200 Rows Button
         Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
                                             .Cells(2, 1).Left + C_iCmdWidth + 20, _
-                                            .Cells(2, 1).Top, _
+                                            .Cells(2, 1).Top + 5, _
                                             C_sShpAddRows, _
                                              "Add rows", _
                                              C_iCmdWidth, C_iCmdHeight, _
@@ -729,7 +765,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).Locked = True
 
 
-         'SETTING HEADERS ===================================================================================================================
+         'SETTING HEADERS _____________________________________________________________________________________________________________________________________________________________________________
 
             'Before doing some changes, we need to update the sub-section correspondingly
             'in case whe have the geo control. When the Control is Geo, the subsection label is
@@ -774,6 +810,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 .Cells(C_eStartLinesLLMainSec, iCounterSheetLLCol).value = sActualMainSec
             End If
 
+
             If sPrevSubSec <> sActualSubSec Then
                 'I am on a new sub section for the same section
                 .Cells(C_eStartLinesLLSubSec, iCounterSheetLLCol).value = sActualSubSec
@@ -781,43 +818,49 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 'I have to test I am not on the first column since it is possible that initialized value differed from
                 'the actual first value due to changes (taking in account the geo)
 
-                If (iCounterSheetLLCol = 1) Then 'The first column is a geoColumn with no value for the sublabel
-                    Call DesignerBuildListHelpers.BuildMergeArea(Wkb.Worksheets(sSheetName), _
-                                         C_eStartLinesLLSubSec, _
-                                        iPrevColSubSec, iCounterSheetLLCol + 1)
-                Else
-                    'Otherwise do the same as before but mergin only the sub section part
-                    Call DesignerBuildListHelpers.BuildMergeArea(Wkb.Worksheets(sSheetName), _
-                                        C_eStartLinesLLSubSec, _
-                                        iPrevColSubSec, iCounterSheetLLCol)
-                End If
+                BuildSubSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLine:=C_eStartLinesLLSubSec, iColumnFrom:=iPrevColSubSec, _
+                                     iColumnTo:=iCounterSheetLLCol
 
                 'update previous columns
                 sPrevSubSec = sActualSubSec
                 iPrevColSubSec = iCounterSheetLLCol
+
+            ElseIf sPrevMainSec <> sActualMainSec Then
+                'Update sub sections on new Main sections too
+
+                .Cells(C_eStartLinesLLSubSec, iCounterSheetLLCol).value = sActualSubSec
+                BuildSubSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLine:=C_eStartLinesLLSubSec, iColumnFrom:=iPrevColSubSec, _
+                                     iColumnTo:=iCounterSheetLLCol
+
+                'update previous columns
+                sPrevSubSec = sActualSubSec
+                iPrevColSubSec = iCounterSheetLLCol
+            'Build last Section on last column
+            ElseIf iCounterDictSheetLine = iSheetStartLine + iTotalLLSheetColumns - 1 Then
+                BuildSubSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLine:=C_eStartLinesLLSubSec, iColumnFrom:=iPrevColSubSec, _
+                                     iColumnTo:=iCounterSheetLLCol + 1
             End If
 
             'Do the same for the section
             If sPrevMainSec <> sActualMainSec Then
                 'I am on a new Main Section, update the value of the section
                 .Cells(C_eStartLinesLLMainSec, iCounterSheetLLCol).value = sActualMainSec
+
+                'Here I update the list to set as validation for the "GOTO"
                 sSectionsList = sSectionsList & "," & TranslateLLMsg("MSG_SelectSection") & ": " & sActualMainSec
 
                 'Merge the previous area
-                Call DesignerBuildListHelpers.BuildMergeArea(Wkb.Worksheets(sSheetName), _
-                 C_eStartLinesLLMainSec, iPrevColMainSec, _
-                                    iCounterSheetLLCol, C_eStartLinesLLSubSec)
+                BuildMainSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLineFrom:=C_eStartLinesLLMainSec, _
+                                        iColumnFrom:=iPrevColMainSec, iLineTo:=C_eStartLinesLLSubSec, iColumnTo:=iCounterSheetLLCol
 
                 'Update the previous columns
                 sPrevMainSec = sActualMainSec
                 iPrevColMainSec = iCounterSheetLLCol
-            Else
+            ElseIf (iCounterDictSheetLine = iSheetStartLine + iTotalLLSheetColumns - 1) Then
                 'I am on the same main section, I will test if I am not on the last column, if it is the case, merge the area
-                If (iCounterDictSheetLine = iSheetStartLine + iTotalLLSheetColumns - 1) Then
-                    Call DesignerBuildListHelpers.BuildMergeArea(Wkb.Worksheets(sSheetName), _
-                                         C_eStartLinesLLMainSec, iPrevColMainSec, _
-                                         iCounterSheetLLCol + 1, C_eStartLinesLLSubSec)
-                End If
+                    BuildMainSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), _
+                                         iLineFrom:=C_eStartLinesLLMainSec, iColumnFrom:=iPrevColMainSec, _
+                                         iColumnTo:=iCounterSheetLLCol + 1, iLineTo:=C_eStartLinesLLSubSec
             End If
 
         'STATUS, TYPE and CONTROLS =========================================================================================================
@@ -860,7 +903,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                     'Add the GeoButton only one time
                     If Not bCmdGeoExist Then
                         Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
-                                           .Cells(1, 1).Left, .Cells(2, 1).Top, _
+                                           .Cells(1, 1).Left + 5, .Cells(2, 1).Top + 5, _
                                              C_sShpGeo, _
                                              "GEO", _
                                              C_iCmdWidth, C_iCmdHeight, _

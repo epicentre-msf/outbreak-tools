@@ -78,7 +78,7 @@ Function GetExportValues(ExportHeadersData As BetterArray, sSheetName As String,
                 If SheetVarNamesData.Includes(ExportHeadersData.Item(i)) Then
                     With ThisWorkbook.Worksheets(sSheetName)
                             'Column of filled data
-                            tempData.Push .Cells(C_eStartLinesAdmData + i - 1, 3) 'values
+                            tempData.Push .Cells(C_eStartLinesAdmData + i - 1, C_eStartColumnAdmData + 3) 'values
                             ExportColumn.Push ExportHeadersData.Item(i) 'variables
                     End With
                 End If
@@ -179,7 +179,7 @@ Sub Export(iTypeExport As Byte)
             i = i + 1
         Wend
 
-        sPath = PathData.ToString(Separator:="_", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False) & _
+        sPath = PathData.ToString(Separator:="_", OpeningDelimiter:=vbNullString, ClosingDelimiter:=vbNullString, QuoteStrings:=False) & _
                         "__" & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PublicKey").value & "__" & Format(Now, "yyyymmdd-HhNn")
 
         sDirectory = Helpers.LoadFolder
@@ -218,7 +218,7 @@ Sub Export(iTypeExport As Byte)
         Set Wkb = Workbooks.Add
 
         i = 1
-        sPrevSheetName = ""
+        sPrevSheetName = vbNullString
         While i <= DictData.Length
             'Get the list of all the Sheets of type linelist
             If (DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType))) = C_sDictSheetTypeLL Then
@@ -323,8 +323,8 @@ Sub Export(iTypeExport As Byte)
 
             Set ExportHeader = GetExportHeaders(sExportName, sPrevSheetName)
             Set ExportData = GetExportValues(ExportHeader, sPrevSheetName, 2)
-            .Worksheets(sPrevSheetName).Cells(1, 1).value = "Variable"
-            .Worksheets(sPrevSheetName).Cells(1, 2).value = "Value"
+            .Worksheets(sPrevSheetName).Cells(1, 1).value = C_sVariable
+            .Worksheets(sPrevSheetName).Cells(1, 2).value = C_sValue
             ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
             i = i + 1
         Wend

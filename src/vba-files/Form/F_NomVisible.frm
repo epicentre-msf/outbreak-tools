@@ -56,6 +56,14 @@ Attribute VB_Exposed = False
 
 
 
+
+
+
+
+
+
+
+
 Option Explicit
 Option Base 1
 
@@ -78,7 +86,8 @@ End Sub
 
 
 Private Sub UserForm_Initialize()
-'Manage language
+    'Manage language
+    Me.Caption = TranslateLLMsg(Me.Name)
 
     Call TranslateForm(Me)
 

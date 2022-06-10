@@ -183,7 +183,7 @@ End Function
 Sub AddCmd(Wkb As Workbook, sSheetName As String, iLeft As Integer, iTop As Integer, _
            sShpName As String, sText As String, iCmdWidth As Integer, iCmdHeight As Integer, _
            sCommand As String, Optional sShpColor As String = "MainSecBlue", _
-           Optional sShpTextColor As String = "White", Optional iTextFontSize As Integer = 9)
+           Optional sShpTextColor As String = "White", Optional iTextFontSize As Integer = 10)
 
 
     sText = TranslateLineList(sShpName, C_sTabTradLLShapes)
@@ -196,10 +196,11 @@ Sub AddCmd(Wkb As Workbook, sSheetName As String, iLeft As Integer, iTop As Inte
         .Shapes(sShpName).TextFrame2.VerticalAnchor = msoAnchorMiddle
         .Shapes(sShpName).TextFrame2.WordWrap = msoFalse
         .Shapes(sShpName).TextFrame2.TextRange.Font.Size = iTextFontSize
+        .Shapes(sShpName).TextFrame2.TextRange.Font.Bold = False
         .Shapes(sShpName).TextFrame2.TextRange.Font.Fill.ForeColor.RGB = Helpers.GetColor(sShpTextColor)
         .Shapes(sShpName).Fill.ForeColor.RGB = Helpers.GetColor(sShpColor)
         .Shapes(sShpName).Fill.BackColor.RGB = Helpers.GetColor(sShpColor)
-        '.Shapes("SHP_NomVisibleApps").Fill.TwoColorGradient msoGradientHorizontal, 1
+        .Shapes(sShpName).Shadow.Type = msoShadow24
         .Shapes(sShpName).OnAction = sCommand
     End With
 
@@ -486,7 +487,10 @@ Sub BuildGotoArea(Wkb As Workbook, sSheetName As String)
         .Cells(1, C_eSectionsLookupColumns).value = TranslateLLMsg("MSG_SelectSection")
         .Cells(1, C_eSectionsLookupColumns).Name = ClearString(sSheetName) & "_" & C_sGotoSection
         .Cells(1, C_eSectionsLookupColumns).Font.Size = 10
-        .Cells(1, C_eSectionsLookupColumns).HorizontalAlignment = xlHAlignLeft
+        .Cells(1, C_eSectionsLookupColumns).HorizontalAlignment = xlHAlignCenter
+        .Cells(1, C_eSectionsLookupColumns).Interior.Color = Helpers.GetColor("MainSecBlue")
+        .Cells(1, C_eSectionsLookupColumns).Font.Color = vbWhite
+        .Cells(1, C_eSectionsLookupColumns).Font.Bold = True
         .Cells(1, C_eSectionsLookupColumns).VerticalAlignment = xlVAlignCenter
         .Cells(1, C_eSectionsLookupColumns).FormulaHidden = True
         .Cells(1, C_eSectionsLookupColumns).WrapText = True
@@ -494,71 +498,136 @@ Sub BuildGotoArea(Wkb As Workbook, sSheetName As String)
 
 End Sub
 
-'Build adm Merge area for sub sections or main sections for sheets of type "Adm"
-Sub BuildVerticalMergeArea(Wksh As Worksheet, iStartColumn As Integer, iPrevLine As Integer, iActualLine As Integer)
 
+'Merging Areas on Sheets of type LL and Adms ___________________________________________________________________________________________________________________________________________________________
+
+Sub MergeArea(Wksh As Worksheet, iLineFrom As Integer, iLineTo As Integer, iColFrom As Integer, iColTo As Integer)
+    With Wksh
+        .Range(.Cells(iLineFrom, iColFrom), .Cells(iLineTo, iColTo)).Merge
+        .Cells(iLineFrom, iColFrom).MergeArea.HorizontalAlignment = xlCenter
+        .Cells(iLineFrom, iColFrom).MergeArea.VerticalAlignment = xlCenter
+    End With
+End Sub
+
+
+'Main Section Vertical Merge
+Sub BuildMainSectionVMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As Integer, _
+                           iColumnFrom As Integer)
+
+    Dim oCell As Object
+    Dim iColumnTo As Integer
+
+    iColumnTo = iColumnFrom + 1
+
+    'Merge
+    MergeArea Wksh, iLineFrom:=iLineFrom, iLineTo:=iLineTo - 1, iColFrom:=iColumnFrom, iColTo:=iColumnFrom
 
     With Wksh
-        .Range(.Cells(iPrevLine, iStartColumn), .Cells(iActualLine, iStartColumn)).Merge
-        .Cells(iPrevLine, iStartColumn).MergeArea.HorizontalAlignment = xlCenter
+        With .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom))
+            .Interior.Color = Helpers.GetColor("MainSecBlue")
+            .Font.Color = Helpers.GetColor("White")
+            .Font.Bold = True
+            .Font.Size = 12
+        End With
+
+        For Each oCell In .Range(.Cells(iLineFrom, iColumnTo), .Cells(iLineTo - 1, iColumnTo))
+            If oCell.value = vbNullString Then oCell.Interior.Color = vbWhite
+        Next
+
+        'Write the borders line
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnTo)), iWeight:=xlHairline, sColor:="DarkBlue"
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom)), iWeight:=xlHairline, sColor:="DarkBlue"
+        'Entire main section
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom + 3)), iWeight:=xlThin, sColor:="DarkBlue"
     End With
 
+    Set oCell = Nothing
+End Sub
+
+'Sub Section Vertical Merge
+Sub BuildSubSectionVMerge(Wksh As Worksheet, iColumn As Integer, iLineFrom As Integer, _
+                          iLineTo As Integer)
+
+    Dim iLastLine As Integer
+    'Last Column can be 1, in that case move to the first column
+    iLastLine = IIf(iLineTo <= 1, 1, iLineTo - 1)
+
+    'Merge Area for Worksheet
+    MergeArea Wksh, iLineFrom:=iLineFrom, iLineTo:=iLastLine, iColFrom:=iColumn, iColTo:=iColumn
+
+    With Wksh
+        With .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn))
+            .Interior.Color = Helpers.GetColor("SubSecBlue")
+            .Font.Color = Helpers.GetColor("BlueButton")
+            .Font.Bold = True
+            .Font.Size = 10
+        End With
+
+        'Draw borders
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn)), iWeight:=xlHairline, sColor:="DarkBlue"
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn + 2)), iWeight:=xlHairline, sColor:="DarkBlue"
+    End With
 End Sub
 
 
 
 
-
-'Build a merge area for subsections and sections
-'Wksh the workheet on which we want to build the merge area
-Sub BuildMergeArea(Wksh As Worksheet, iStartLineOne As Integer, iPrevColumn As Integer, _
-                        Optional iActualColumn As Integer = -1, Optional iStartLineTwo As Integer = -1, _
-                        Optional sColorMainSec As String = "MainSecBlue", _
-                        Optional sColorSubSec As String = "SubSecBlue")
+' Build sections horizontal merge area
+Sub BuildMainSectionHMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As Integer, _
+                           iColumnFrom As Integer, iColumnTo As Integer, _
+                           Optional sColorMainSec As String = "MainSecBlue")
 
     Dim oCell As Object
 
+    'Merge
+    MergeArea Wksh, iLineFrom:=iLineFrom, iLineTo:=iLineFrom, iColFrom:=iColumnFrom, iColTo:=iColumnTo - 1
+
     With Wksh
+        With .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineFrom, iColumnTo - 1))
+            .Interior.Color = Helpers.GetColor(sColorMainSec)
+            .Font.Color = Helpers.GetColor("White")
+            .Font.Bold = True
+            .Font.Size = C_iLLMainSecFontSize
+        End With
 
-        'iActual column = -1 is for subsections
-        If iActualColumn = -1 Then
-            .Cells(iStartLineOne, iPrevColumn).HorizontalAlignment = xlCenter
-            .Cells(iStartLineOne, iPrevColumn).Interior.Color = Helpers.GetColor(sColorSubSec)
-            Call Helpers.WriteBorderLines(.Cells(iStartLineOne, iPrevColumn))
-            Exit Sub
-        End If
+        For Each oCell In .Range(.Cells(iLineTo, iColumnFrom), .Cells(iLineTo, iColumnTo - 1))
+            If oCell.value = vbNullString Then oCell.Interior.Color = vbWhite
+        Next
 
-        .Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineOne, iActualColumn - 1)).Merge
-        .Cells(iStartLineOne, iPrevColumn).MergeArea.HorizontalAlignment = xlCenter
-
-        If (iStartLineTwo <> -1) Then
-            With .Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineOne, iActualColumn - 1))
-                .Interior.Color = Helpers.GetColor(sColorMainSec)
-                .Font.Color = Helpers.GetColor("White")
-                .Font.Bold = True
-                .Font.Size = C_iLLMainSecFontSize
-            End With
-            'For the sub sections, if nothing is mentionned,
-            'just put them in white (or the same color as the main sections)
-            For Each oCell In .Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineTwo, iActualColumn - 1))
-                  If oCell.value = "" Then
-                    oCell.Interior.Color = Helpers.GetColor("White")
-                  End If
-            Next
-            Set oCell = Nothing
-            'Write borders to the ranges including the subsection
-            Call Helpers.WriteBorderLines(.Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineTwo, iActualColumn - 1)))
-        Else
-            With .Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineOne, iActualColumn - 1))
-                .Interior.Color = Helpers.GetColor(sColorSubSec)
-                .Font.Color = Helpers.GetColor(sColorMainSec)
-                .Font.Size = C_iLLSubSecFontSize
-            End With
-            Call Helpers.WriteBorderLines(.Range(.Cells(iStartLineOne, iPrevColumn), .Cells(iStartLineOne, iActualColumn - 1)))
-        End If
+        'Write the borders line
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo, iColumnTo - 1))
     End With
 
+    Set oCell = Nothing
 End Sub
+
+
+'Build subsections horizontal merge area
+
+Sub BuildSubSectionHMerge(Wksh As Worksheet, iLine As Integer, iColumnFrom As Integer, _
+                          iColumnTo As Integer, Optional sColorSubSec As String = "SubSecBlue", _
+                          Optional sColorMainSec As String = "MainSecBlue")
+
+    Dim iLastCol As Integer
+    'Last Column can be 1, in that case move to the first column
+    iLastCol = IIf(iColumnTo <= 1, 1, iColumnTo - 1)
+
+    'Merge Area for Worksheet
+    MergeArea Wksh, iLineFrom:=iLine, iLineTo:=iLine, iColFrom:=iColumnFrom, iColTo:=iLastCol
+
+    With Wksh
+        With .Range(.Cells(iLine, iColumnFrom), .Cells(iLine, iLastCol))
+            .Interior.Color = Helpers.GetColor(sColorSubSec)
+            .Font.Color = Helpers.GetColor(sColorMainSec)
+            .Font.Size = C_iLLSubSecFontSize
+        End With
+
+        'Draw borders
+        WriteBorderLines .Range(.Cells(iLine, iColumnFrom), .Cells(iLine, iLastCol))
+    End With
+End Sub
+
+
 
 
 'Get the Validation Formulas

@@ -59,8 +59,8 @@ Public Const C_sDictHeaderVisibility    As String = "visibility"
 
 'Sheet Types ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Public Const C_sDictSheetTypeLL         As String = "linelist"
-Public Const C_sDictSheetTypeAdm        As String = "admin"
+Public Const C_sDictSheetTypeLL         As String = "hlist2D"
+Public Const C_sDictSheetTypeAdm        As String = "vlist1D"
 
 'Status ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 

@@ -1,7 +1,7 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_ImportRep 
    Caption         =   "Import Summary"
-   ClientHeight    =   11415
+   ClientHeight    =   10410
    ClientLeft      =   120
    ClientTop       =   465
    ClientWidth     =   5760
@@ -23,15 +23,24 @@ Attribute VB_Exposed = False
 
 
 
+
+
+
+
+
+
+
+
 Option Explicit
 
 Private Sub UserForm_Initialize()
     'Manage language
+    Me.Caption = TranslateLLMsg(Me.Name)
 
     Call TranslateForm(Me)
 
     Me.Width = 300
-    Me.Height = 600
+    Me.Height = 550
 
 End Sub
 
