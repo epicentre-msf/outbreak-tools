@@ -297,7 +297,7 @@ Option Explicit
             With oRange.Borders(i)
                 .LineStyle = xlContinuous
                 .Color = Helpers.GetColor(sColor)
-                .TintAndShade = 0.8
+                .TintAndShade = 0.4
                 .Weight = iWeight
             End With
         Next
@@ -417,6 +417,8 @@ Option Explicit
             GetColor = RGB(0, 0, 0)
         Case "DarkBlue"
             GetColor = RGB(0, 0, 139)
+        Case "LightBlue"
+            GetColor = RGB(221, 235, 245)
         Case Else
             GetColor = vbWhite
         End Select
@@ -724,7 +726,7 @@ EndMacro:
         End If
     End Function
 
-'FORMULAS AND VALIDATIONS ======================================================
+'FORMULAS AND VALIDATIONS =============================================================================================================================================================================
 
     'Transform one formula to a formula for analysis.
     'Wkb is a workbook where we can find the dictionary, the special character
@@ -798,10 +800,7 @@ EndMacro:
             Exit Function
         End If
 
-
         SheetNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderSheetName)), DetectLastColumn:=False, DetectLastRow:=True
-        VarMainLabelData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderMainLab)), DetectLastColumn:=False, DetectLastRow:=True
-
 
         If VarNameData.Includes(sFormulaATest) Then
             AnalysisFormula = "" 'We have to aggregate
@@ -840,7 +839,7 @@ EndMacro:
                             'It is either a variable name or a formula
                             If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
                                 icolNumb = VarNameData.IndexOf(sAlphaValue)
-                                sAlphaValue = "o" & ClearString(SheetNameData.Item(icolNumb)) & "['" & VarMainLabelData.Item(icolNumb) & "']"
+                                sAlphaValue = "o" & ClearString(SheetNameData.Item(icolNumb)) & "[" & VarNameData.Item(icolNumb) & "]"
                             ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
                                     sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
                             End If
@@ -863,9 +862,9 @@ EndMacro:
 
         If Not isError Then
             sAlphaValue = FormulaAlphaData.ToString(Separator:="", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
-            AnalysisFormula = sAlphaValue
+            AnalysisFormula = "=" & sAlphaValue
         Else
-        MsgBox "Error in analysis formula: " & sFormula
+        'MsgBox "Error in analysis formula: " & sFormula
         End If
 
         Set FormulaAlphaData = Nothing  'Alphanumeric values of one formula
@@ -901,7 +900,7 @@ EndMacro:
     End Function
 
 
-'CUSTOM HELPERS FUNCTIONS ======================================================
+'CUSTOM HELPERS FUNCTIONS =============================================================================================================================================================================
 
     'Epicemiological week function
 
