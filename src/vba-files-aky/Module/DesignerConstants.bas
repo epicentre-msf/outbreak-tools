@@ -101,7 +101,7 @@ Public Const C_sTabLang                  As String = "T_Lang" 'Languages table
 Public Const C_sTabTransRange            As String = "T_tradRange" 'Ranges translation table
 Public Const C_sTabTransMsg              As String = "T_tradMsg" 'Messages translation table
 Public Const C_sTabTransShapes           As String = "T_tradShape" 'Shapes translation table
-
+Public Const C_sTabGlobalSummary         As String = "Tab_global_summary"
 
 'STRING CONSTANTS =================================================================================================================================================================
 

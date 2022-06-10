@@ -15,7 +15,7 @@ Dim AddedLogo As Boolean 'Added Logo?
 
 Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As BetterArray, _
               ChoicesHeaders As BetterArray, ChoicesData As BetterArray, _
-              TransData As BetterArray, sPath As String)
+              TransData As BetterArray, GlobalSummaryData As BetterArray, sPath As String)
 
 
     Dim Wkb As Workbook
@@ -217,6 +217,8 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
     Call DesignerBuildListHelpers.UpdateChoiceAutoHeaders(Wkb, ChoiceAutoVarData, DictHeaders)
 
+    Call DesignerAnalysis.BuildAnalysis(Wkb, GlobalSummaryData)
+
     StatusBar_Updater (iUpdateCpt)
 
     #If Mac Then
@@ -375,6 +377,10 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
 
         'Add a Sheet called Admin for buttons and managements
         Call DesignerBuildListHelpers.AddAdminSheet(Wkb)
+
+        'Add Analysis
+        .Worksheets.Add(After:=.Worksheets(C_sSheetAdmin)).Name = C_sSheetAnalysis
+        Call RemoveGridLines(.Worksheets(C_sSheetAnalysis))
 
         '--------------- adding the other the other sheets in the dictionary to the linelist
         i = 1
