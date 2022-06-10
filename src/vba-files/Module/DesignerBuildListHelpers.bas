@@ -873,7 +873,7 @@ Public Sub AddMetadataSheet(Wkb As Workbook)
 
             'linelist version... Other infos will be added
 
-            .Visible = xlSheetVeryHidden
+            .Visible = xlSheetHidden
         End With
     End With
 End Sub
