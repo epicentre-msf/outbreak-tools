@@ -201,6 +201,15 @@ Option Explicit
         On Error GoTo 0
     End Function
 
+    'Check if a Sheet Exists
+    Public Function SheetExistsInWkb(Wkb As Workbook, sSheetName As String) As Boolean
+        SheetExistsInWkb = False
+        Dim Wksh As Worksheet                         'Just try to set the workbook if it fails it is closed
+        On Error Resume Next
+        Set Wksh = Wkb.Worksheets(sSheetName)
+        SheetExistsInWkb = (Not Wksh Is Nothing)
+        On Error GoTo 0
+    End Function
 
 
 
@@ -249,7 +258,8 @@ Option Explicit
 
 
 
-'APPLICATION SPEEDUP, WORKSHEET PROTECTION AND RANGE MANAGEMENT =================
+
+'APPLICATION SPEEDUP, WORKSHEET PROTECTION AND RANGE MANAGEMENT =======================================================================================================================================
 
     'Speed up before a work
     Public Sub BeginWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean = True)
@@ -369,7 +379,7 @@ Option Explicit
 
 
 
-'DESIGN, FONTS AND COLORS=================================================
+'DESIGN, FONTS AND COLORS==============================================================================================================================================================================
 
     Public Function GetColor(sColorCode As String)
         Select Case sColorCode
@@ -413,7 +423,7 @@ Option Explicit
 
     End Function
 
-'STRING AND DATA MANIPULATION =================================================
+'STRING AND DATA MANIPULATION =========================================================================================================================================================================
 
     'Clear a String to remove inconsistencies
     Public Function ClearString(ByVal sString As String, Optional bremoveHiphen As Boolean = True) As String
@@ -616,6 +626,7 @@ Option Explicit
                 Set Data = New BetterArray
                 Data.LowerBound = 1
 
+                'This is not case sensitive though
                 .Range(.Cells(1, 1), .Cells(.Cells(.Rows.Count, 1).End(xlUp).Row, .Cells(1, .Columns.Count).End(xlToLeft).Column)).RemoveDuplicates Columns:=1, Header:=xlNo
 
                 Data.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
@@ -629,6 +640,35 @@ Option Explicit
         Set Rng = Nothing
 
     End Function
+
+    'Remove duplicates values from one range and excluding also null values
+
+    Sub RemoveRangeDuplicates(Rng As Range)
+
+        Dim iRow As Long
+        Dim Cellvalue As Variant
+
+        On Error GoTo EndMacro
+        BeginWork xlsapp:=Application
+
+        For iRow = 1 To Rng.Rows.Count
+
+            Cellvalue = Rng.Cells(iRow, 1).value
+            If Cellvalue = vbNullString Then
+                    Rng.Rows(iRow).EntireRow.Delete
+            Else
+                If Application.WorksheetFunction.CountIf(Rng.Columns(1), Cellvalue) > 1 Then
+                    Rng.Rows(iRow).EntireRow.Delete
+                End If
+            End If
+        Next
+        EndWork xlsapp:=Application
+        Exit Sub
+
+EndMacro:
+        EndWork xlsapp:=Application
+    End Sub
+
 
     'Unique of a betteray sorted
     Function GetUniqueBA(BA As BetterArray) As BetterArray
