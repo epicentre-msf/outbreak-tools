@@ -183,7 +183,7 @@ End Function
 Sub AddCmd(Wkb As Workbook, sSheetName As String, iLeft As Integer, iTop As Integer, _
            sShpName As String, sText As String, iCmdWidth As Integer, iCmdHeight As Integer, _
            sCommand As String, Optional sShpColor As String = "MainSecBlue", _
-           Optional sShpTextColor As String = "White", Optional iTextFontSize As Integer = 9)
+           Optional sShpTextColor As String = "White", Optional iTextFontSize As Integer = 10)
 
 
     sText = TranslateLineList(sShpName, C_sTabTradLLShapes)
@@ -196,10 +196,11 @@ Sub AddCmd(Wkb As Workbook, sSheetName As String, iLeft As Integer, iTop As Inte
         .Shapes(sShpName).TextFrame2.VerticalAnchor = msoAnchorMiddle
         .Shapes(sShpName).TextFrame2.WordWrap = msoFalse
         .Shapes(sShpName).TextFrame2.TextRange.Font.Size = iTextFontSize
+        .Shapes(sShpName).TextFrame2.TextRange.Font.Bold = False
         .Shapes(sShpName).TextFrame2.TextRange.Font.Fill.ForeColor.RGB = Helpers.GetColor(sShpTextColor)
         .Shapes(sShpName).Fill.ForeColor.RGB = Helpers.GetColor(sShpColor)
         .Shapes(sShpName).Fill.BackColor.RGB = Helpers.GetColor(sShpColor)
-        '.Shapes("SHP_NomVisibleApps").Fill.TwoColorGradient msoGradientHorizontal, 1
+        .Shapes(sShpName).Shadow.Type = msoShadow24
         .Shapes(sShpName).OnAction = sCommand
     End With
 
@@ -515,7 +516,7 @@ Sub BuildMainSectionVMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As I
 
     Dim oCell As Object
     Dim iColumnTo As Integer
-    
+
     iColumnTo = iColumnFrom + 1
 
     'Merge
@@ -523,8 +524,8 @@ Sub BuildMainSectionVMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As I
 
     With Wksh
         With .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom))
-            .Interior.Color = Helpers.GetColor("VMainSecFill")
-            .Font.Color = Helpers.GetColor("VMainSecFont")
+            .Interior.Color = Helpers.GetColor("MainSecBlue")
+            .Font.Color = Helpers.GetColor("White")
             .Font.Bold = True
             .Font.Size = 12
         End With
@@ -534,10 +535,10 @@ Sub BuildMainSectionVMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As I
         Next
 
         'Write the borders line
-        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnTo)), iWeight:=xlHairline, iColorIndex:=30
-        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom)), iWeight:=xlHairline, iColorIndex:=30
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnTo)), iWeight:=xlHairline, sColor:="DarkBlue"
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom)), iWeight:=xlHairline, sColor:="DarkBlue"
         'Entire main section
-        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom + 3)), iWeight:=xlThin, iColorIndex:=30
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom + 3)), iWeight:=xlThin, sColor:="DarkBlue"
     End With
 
     Set oCell = Nothing
@@ -556,15 +557,15 @@ Sub BuildSubSectionVMerge(Wksh As Worksheet, iColumn As Integer, iLineFrom As In
 
     With Wksh
         With .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn))
-            .Interior.Color = Helpers.GetColor("VSubSecFill")
-            .Font.Color = Helpers.GetColor("VMainSecFont")
+            .Interior.Color = Helpers.GetColor("SubSecBlue")
+            .Font.Color = Helpers.GetColor("BlueButton")
             .Font.Bold = True
             .Font.Size = 10
         End With
 
         'Draw borders
-        WriteBorderLines .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn)), iWeight:=xlHairline, iColorIndex:=30
-        WriteBorderLines .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn + 2)), iWeight:=xlHairline, iColorIndex:=30
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn)), iWeight:=xlHairline, sColor:="DarkBlue"
+        WriteBorderLines .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn + 2)), iWeight:=xlHairline, sColor:="DarkBlue"
     End With
 End Sub
 

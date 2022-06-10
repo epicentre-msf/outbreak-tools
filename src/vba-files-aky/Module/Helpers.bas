@@ -281,12 +281,12 @@ Option Explicit
     End Sub
 
     'Draw lines arround a range
-    Public Sub WriteBorderLines(oRange As Range, Optional iWeight As Integer = xlThin, Optional iColorIndex As Integer = xlAutomatic)
+    Public Sub WriteBorderLines(oRange As Range, Optional iWeight As Integer = xlThin, Optional sColor As String = "Black")
         Dim i As Integer
         For i = 7 To 10
             With oRange.Borders(i)
                 .LineStyle = xlContinuous
-                .ColorIndex = iColorIndex
+                .Color = Helpers.GetColor(sColor)
                 .TintAndShade = 0.8
                 .Weight = iWeight
             End With
@@ -373,6 +373,8 @@ Option Explicit
 
     Public Function GetColor(sColorCode As String)
         Select Case sColorCode
+        Case "BlueButton"
+            GetColor = RGB(45, 85, 151)
         Case "BlueEpi"
             GetColor = RGB(45, 85, 158)
         Case "RedEpi"
@@ -401,6 +403,10 @@ Option Explicit
             GetColor = RGB(132, 58, 34)
         Case "VSubSecFill"
             GetColor = RGB(249, 243, 243)
+        Case "Black"
+            GetColor = RGB(0, 0, 0)
+        Case "DarkBlue"
+            GetColor = RGB(0, 0, 139)
         Case Else
             GetColor = vbWhite
         End Select
