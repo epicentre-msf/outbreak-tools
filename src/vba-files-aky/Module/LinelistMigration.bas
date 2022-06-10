@@ -96,7 +96,7 @@ Sub ClearData()
 
 End Sub
 
-'=========================== IMPORTS MIGRATIONS ================================
+'IMPORTS MIGRATIONS ===================================================================================================================================================================================
 
 Function LLhasData() As Boolean
 
@@ -154,6 +154,74 @@ Function LLhasData() As Boolean
     Set TabLL = Nothing
     Set shLL = Nothing
     Set WkbLL = Nothing
+End Function
+
+
+'Add Some Test on the language in the workbook
+
+Function TestImportLanguage(Wkb As Workbook) As Boolean
+
+    Dim VarColumn As BetterArray
+    Dim sActualLanguage As String
+    Dim sImportedLanguage As String
+    Dim index As Integer 'index of the language
+
+
+    Dim Quit As Byte
+
+    Set VarColumn = New BetterArray
+    VarColumn.LowerBound = 1
+    'Add Tests on the languages
+
+    'First test if the sheet metadata exists in the workbook
+    If Not SheetExistsInWkb(WkbImp, C_sSheetMetadata) Then
+
+        Quit = MsgBox(TranslateLLMsg("MSG_NoMetadata"), vbExclamation + vbYesNo, TranslateLLMsg("MSG_Imports"))
+
+        If Quit Then
+            TestImportLanguage = False
+            Exit Function
+        End If
+
+    Else
+        'There is a metadata sheet
+
+        VarColumn.FromExcelRange WkbImp.Worksheets(C_sSheetMetadata).Cells(1, 1), DetectLastRow := True, DetectLastColumn := False
+
+        If VarColumn.Includes(C_sLanguage) Then
+            index = VarColumn.IndexOf(C_sLanguage)
+            sImportedLanguage = WkbImp.Worksheets(C_sSheetMetadata).Cells(index, 2).value
+            sActualLanguage = ThisWorkbook.Worksheets(C_sSheetLLTranslation).Range("RNG_LLLanguage")
+
+            'Test and ask the user if he wants to abort
+            If sActualLanguage <> sImportedLanguage Then
+                Quit = MsgBox(TranslateLLMsg("MSG_ActualLanguage") & " " & sActualLanguage & _
+                              TranslateLLMsg("MSG_ImportLanguage") & " " & sImportedLanguage & _
+                              TranslateLLMsg("MSG_QuitImport"), vbExclamation + vbYesNo,  _
+                              TranslateLLMsg("MSG_LanguageDifferent"))
+                If Quit Then
+                    TestImportLanguage = False
+                    Set VarColumn = Nothing
+                    Exit Function
+                End If
+            End If
+        Else
+            'There is no language at all in the metadata, as the user if he wants to quit
+            Quit = MsgBox(TranslateLLMsg("MSG_NoLanguage"), vbExclamation + vbYesNo, TranslateLLMsg("MSG_Imports"))
+
+            If Quit Then
+
+                TestImportLanguage = False
+                Set VarColumn = Nothing
+                Exit Function
+
+            End If
+
+        End If
+    End If
+
+    Set VarColumn = Nothing
+    TestImportLanguage = True
 End Function
 
 'Import Data between two sheets:
@@ -249,6 +317,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                     End If
                 Else
                     If Not ImportReport Then ImportReport = True
+
                     With ThisWorkbook.Worksheets(C_sSheetImportTemp)
 
                          k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
@@ -256,6 +325,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                         .Cells(k, 3).value = sVal
                         .Cells(k, 4).value = sSheetName
                     End With
+
                 End If
             Next
 
@@ -309,19 +379,33 @@ Sub ImportMigrationData()
         Exit Sub
     End If
 
+
     hasData = LLhasData() 'Here we know if data is cleared or Not
 
     BeginWork xlsapp:=Application
     Application.EnableEvents = False
     Set WkbImp = Workbooks.Open(sPath)
 
+    Set VarNamesLLData = New BetterArray
+    Set ColumnIndexLLData = New BetterArray
+    Set ImportVarData = New BetterArray
+
+    'Test If we have the same language and ask the user if he really want to import.
+
+    If Not TestImportLanguage(WkbImp) Then
+
+        'If the user wants to abort imports because of the differences of language
+        WkbImp.Close
+        Set WkbImp = Nothing
+        EndWork xlsapp:=Application
+        Application.EnableEvents = True
+        Exit Sub
+    End If
+
     'Get All the sheets in the linelist
     Set TabSheetLL = GetDictionaryColumn(C_sDictHeaderSheetName)
     Set ColumnIndexData = GetDictionaryColumn(C_sDictHeaderIndex)
     Set VarNamesData = GetDictionaryColumn(C_sDictHeaderVarName)
-    Set VarNamesLLData = New BetterArray
-    Set ColumnIndexLLData = New BetterArray
-    Set ImportVarData = New BetterArray
 
     'For each sheet in the imported workbook, if the sheet is in the linelist
     'Import the data the two sheets, keeping in mind We can add at the end, or
@@ -737,7 +821,7 @@ End Sub
 
 
 
-'=================================================================== EXPORTS MIGRATIONS ===============================================================================================================
+'EXPORTS MIGRATIONS ===================================================================================================================================================================================
 
 'Export the data
 

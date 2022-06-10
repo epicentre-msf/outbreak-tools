@@ -202,6 +202,16 @@ Option Explicit
     End Function
 
 
+    Public Function SheetExistsInWkb(Wkb As Workbook, sSheetName As String) As Boolean
+        SheetExistsInWkb = False
+        Dim Wksh As WorkSheet                         'Just try to set the workbook if it fails it is closed
+        On Error Resume Next
+        Set Wksh = Wkb.Worksheets(sSheetName)
+        SheetExistsInWkb = (Not Wksh Is Nothing)
+        On Error GoTo 0
+    End Function
+
+
 
 
 
