@@ -9,6 +9,8 @@ Sub ControlClearData()
     Dim ShouldProceed As Byte
     Dim sLLName As String
 
+    On Error GoTo ErrClearData
+
     ShouldProceed = MsgBox(TranslateLLMsg("MSG_DeleteAllData"), vbExclamation + vbYesNo, TranslateLLMsg("MSG_Delete"))
 
     If ShouldProceed = vbYes Then
@@ -30,6 +32,14 @@ Sub ControlClearData()
         Exit Sub
     End If
 
+    Exit Sub
+
+ErrClearData:
+    MsgBox TranslateLLMsg("ErrClearData")
+    EndWork xlsapp:=Application
+    Application.EnableEvents = True
+    Exit Sub
+
 End Sub
 
 
@@ -44,6 +54,7 @@ Sub ClearData()
 
     BeginWork xlsapp:=Application
     Application.EnableEvents = False
+
 
     For Each Wksh In ThisWorkbook.Worksheets
         sSheetType = FindSheetType(Wksh.Name)
@@ -274,7 +285,7 @@ Sub ImportMigrationData()
     Dim ShouldQuit As Byte
     Dim iStartSheet As Integer
     Dim iEndSheet As Integer
-    Dim k As Integer 'Counter
+    Dim k As Integer 'counter
     Dim iRow As Integer
     Dim sVarName As String 'Varname value
     Dim sVarControlType  As String 'Control of a varname
@@ -316,7 +327,6 @@ Sub ImportMigrationData()
     'Import the data the two sheets, keeping in mind We can add at the end, or
     'Just at the begining
 
-    k = 1
     ImportReport = False
 
     'Set and update the temp sheet for Edition
@@ -343,8 +353,10 @@ Sub ImportMigrationData()
             If Not ImportReport Then ImportReport = True
             'Test if this is valid worksheet before writing
             If Not SheetNameIsBad(shImp.Name) Then
-                shpTemp.Cells(k, 1).value = shImp.Name
-                k = k + 1
+                With shpTemp
+                    iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+                    .Cells(iRow + 1, 1).value = shImp.Name
+                End With
             End If
         End If
     Next
@@ -420,10 +432,10 @@ Sub ShowImportReport()
 
     'Sheet not found
     With shp
-        iRow = .Cells(Rows.Count, 1).End(xlUp).Row
+        iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
 
         If iRow >= 1 Then
-            TabRep.FromExcelRange .Range(.Cells(1, 1), .Cells(1, iRow))
+            TabRep.FromExcelRange .Range(.Cells(1, 1), .Cells(iRow, 1))
             F_ImportRep.LST_ImpRepSheet.ColumnCount = 1
             F_ImportRep.LST_ImpRepSheet.List = TabRep.Items
         End If
@@ -447,17 +459,17 @@ Sub ShowImportReport()
             F_ImportRep.LST_ImpRepVarLL.List = TabRep.Items
         End If
 
-        If .Cells(1, 8).value <> vbNullString Then
-            F_ImportRep.TXT_ImportRepData.value = TranslateLLMsg("MSG_ImportDone") & " " & .Cells(1, 8).value
-        Else
-             F_ImportRep.TXT_ImportRepData.value = TranslateLLMsg("MSG_NoImportDone")
-        End If
-
-        If .Cells(1, 9).value <> vbNullString Then
-            F_ImportRep.TXT_ImportRepGeo.value = TranslateLLMsg("MSG_ImportGeoDone") & " " & .Cells(1, 9).value
-        Else
-             F_ImportRep.TXT_ImportRepGeo.value = TranslateLLMsg("MSG_NoImportGeoDone")
-        End If
+        'If .Cells(1, 8).value <> vbNullString Then
+        '    F_ImportRep.TXT_ImportRepData.value = TranslateLLMsg("MSG_ImportDone") & " " & .Cells(1, 8).value
+        'Else
+        '     F_ImportRep.TXT_ImportRepData.value = TranslateLLMsg("MSG_NoImportDone")
+        'End If
+        '
+        'If .Cells(1, 9).value <> vbNullString Then
+        '    F_ImportRep.TXT_ImportRepGeo.value = TranslateLLMsg("MSG_ImportGeoDone") & " " & .Cells(1, 9).value
+        'Else
+        '     F_ImportRep.TXT_ImportRepGeo.value = TranslateLLMsg("MSG_NoImportGeoDone")
+        'End If
 
     End With
 
@@ -495,6 +507,8 @@ Sub ImportGeobase()
     Set AdmNames = New BetterArray
     Set AdmData = New BetterArray
     Set AdmHeader = New BetterArray
+
+    On Error GoTo ErrImportGeo
 
     AdmNames.LowerBound = 1
     AdmNames.Push C_sAdm1, C_sAdm2, C_sAdm3, C_sAdm4, C_sHF, C_sNames, C_sHistoHF, C_sHistoGeo, C_sGeoMetadata  'Names of each sheet
@@ -564,6 +578,13 @@ Sub ImportGeobase()
     Set WkshGeo = Nothing
 
     EndWork xlsapp:=Application
+
+    Exit Sub
+
+ErrImportGeo:
+    MsgBox TranslateLLMsg("MSG_ErrImportGeo")
+    EndWork xlsapp:=Application
+    Exit Sub
 End Sub
 
 
@@ -716,13 +737,11 @@ End Sub
 
 
 
-'============================= EXPORTS MIGRATIONS ==============================
-
+'=================================================================== EXPORTS MIGRATIONS ===============================================================================================================
 
 'Export the data
 
 Private Sub ExportMigrationData(sLLPath As String)
-
 
     'Dictionary headers and data
     Dim DictHeaders As BetterArray

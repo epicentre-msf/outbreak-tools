@@ -3,6 +3,7 @@ Attribute VB_Name = "LinelistEvents"
 Option Explicit
 
 Public iGeoType As Byte
+Dim DebugMode As Boolean
 
 Sub ClicCmdGeoApp()
 
@@ -114,8 +115,7 @@ End Sub
 
 
 Sub ClicCmdDebug()
-    'Debug Mode logic
-    Static DebugMode As Boolean
+
     Dim pwd As String
     Dim sh As Worksheet
     Dim SheetsOfTypeLLData As BetterArray
@@ -129,12 +129,12 @@ Sub ClicCmdDebug()
 
     On Error GoTo errDebug
 
-    pwd = InputBox(TranslateLLMsg("MSG_ProvidePassword"), TranslateLLMsg("MSG_DebugMode"), "1234")
     Set DebugWksh = Worksheets(ActiveSheet.Name)
 
 
     'Unprotect All Sheets
     If Not DebugMode Then
+        pwd = InputBox(TranslateLLMsg("MSG_ProvidePassword"), TranslateLLMsg("MSG_DebugMode"), "1234")
         If pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value Then
             For Each sh In ThisWorkbook.Worksheets
                 If sh.ProtectContents = True Then
@@ -150,6 +150,7 @@ Sub ClicCmdDebug()
             MsgBox TranslateLLMsg("MSG_WrongPassword"), vbOK, "DEBUG MODE"
         End If
     Else
+        pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
         With ThisWorkbook.Worksheets(C_sParamSheetDict)
         'Protect All Sheets of Type LL
             iNbVar = .Cells(Rows.Count, 1).End(xlUp).Row
@@ -165,7 +166,6 @@ Sub ClicCmdDebug()
 
         For Each sh In ThisWorkbook.Worksheets
             If SheetsOfTypeLLData.Includes(sh.Name) Then
-
              sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                          AllowFormattingColumns:=True
@@ -190,6 +190,21 @@ errDebug:
         Exit Sub
 
     EndWork xlsapp:=Application
+End Sub
+
+'Protect sheet of type linelist
+Public Sub ProtectSheet()
+    Dim pwd As String
+    Dim sh As Worksheet
+    Set sh = ActiveSheet
+
+    If Not DebugMode Then
+        pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
+        sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                    AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
+                    AllowFormattingColumns:=True
+    End If
+
 End Sub
 
 
@@ -228,11 +243,11 @@ Sub EventValueChangeLinelist(oRange As Range)
                 ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
                 oRange.Offset(, 1).Validation.Delete
-                oRange.Offset(, 1).value = ""
+                oRange.Offset(, 1).value = vbNullString
                 oRange.Offset(, 2).Validation.Delete
-                oRange.Offset(, 2).value = ""
+                oRange.Offset(, 2).value = vbNullString
                 oRange.Offset(, 3).Validation.Delete
-                oRange.Offset(, 3).value = ""
+                oRange.Offset(, 3).value = vbNullString
 
                 If oRange.value <> vbNullString Then
 

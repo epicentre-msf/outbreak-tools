@@ -5,13 +5,6 @@ Attribute VB_Name = "Helpers"
 'itself
 
 Option Explicit
-Dim DebugMode As Boolean
-
-
-
-
-
-
 
 
 
@@ -274,17 +267,6 @@ Dim DebugMode As Boolean
         xlsapp.DisplayStatusBar = bstatusbar
     End Sub
 
-    'Protect sheet of type linelist
-    Public Sub ProtectSheet()
-        Dim pwd As String
-        If Not DebugMode Then
-            pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
-            ActiveSheet.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
-                            AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
-                            AllowFormattingColumns:=True
-        End If
-    End Sub
-
     'Remove Gridlines in a worksheet
     Public Sub RemoveGridLines(Wksh As Worksheet)
         Dim View As WorksheetView
@@ -299,14 +281,14 @@ Dim DebugMode As Boolean
     End Sub
 
     'Draw lines arround a range
-    Public Sub WriteBorderLines(oRange As Range)
+    Public Sub WriteBorderLines(oRange As Range, Optional iWeight As Integer = xlThin, Optional sColor As String = "Black")
         Dim i As Integer
         For i = 7 To 10
             With oRange.Borders(i)
                 .LineStyle = xlContinuous
-                .ColorIndex = xlAutomatic
-                .TintAndShade = 0
-                .Weight = xlThin
+                .Color = Helpers.GetColor(sColor)
+                .TintAndShade = 0.8
+                .Weight = iWeight
             End With
         Next
     End Sub
@@ -391,6 +373,8 @@ Dim DebugMode As Boolean
 
     Public Function GetColor(sColorCode As String)
         Select Case sColorCode
+        Case "BlueButton"
+            GetColor = RGB(45, 85, 151)
         Case "BlueEpi"
             GetColor = RGB(45, 85, 158)
         Case "RedEpi"
@@ -413,6 +397,18 @@ Dim DebugMode As Boolean
             GetColor = RGB(221, 235, 247)
         Case "SubLabBlue"
             GetColor = RGB(142, 169, 219)
+        Case "VMainSecFill"
+            GetColor = RGB(242, 236, 225)
+        Case "VMainSecFont"
+            GetColor = RGB(132, 58, 34)
+        Case "VSubSecFill"
+            GetColor = RGB(249, 243, 243)
+        Case "Black"
+            GetColor = RGB(0, 0, 0)
+        Case "DarkBlue"
+            GetColor = RGB(0, 0, 139)
+        Case Else
+            GetColor = vbWhite
         End Select
 
     End Function
