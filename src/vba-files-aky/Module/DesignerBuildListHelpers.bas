@@ -647,7 +647,7 @@ End Sub
 '@SpecCharData: The data with all the special characters
 
 
-Public Function ValidationFormula(sFormula As String, sSheetName As String, VarNameData As BetterArray, _
+Public Function ValidationFormula(sFormula As String, AllSheetNamesData As BetterArray, VarNameData As BetterArray, _
                                     ColumnIndexData As BetterArray, FormulaData As BetterArray, _
                                     SpecCharData As BetterArray, Wksh As Worksheet, Optional bLocal As Boolean = True) As String
     'Returns a string of cleared formula
@@ -666,6 +666,7 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
     Dim iNbParentO As Integer                    'Number of left parenthesis
     Dim iNbParentF As Integer                    'Number of right parenthesis
     Dim icolNumb As Integer                      'Column number on one sheet of one column used in a formual
+    Dim sSheetName As String
 
 
     Dim isError As Boolean
@@ -725,6 +726,7 @@ Public Function ValidationFormula(sFormula As String, sSheetName As String, VarN
                         'It is either a variable name or a formula
                         If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
                             icolNumb = ColumnIndexData.Item(VarNameData.IndexOf(sAlphaValue))
+                            sSheetName = EnsureGoodSheetName(AllSheetNamesData.Item(VarNameData.IndexOf(sAlphaValue)))
                             sAlphaValue = "'" & sSheetName & "'!" & Cells(C_eStartLinesLLData + 2, icolNumb).Address(False, True)
                         ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
                                 sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)

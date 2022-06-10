@@ -23,15 +23,14 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Dim LLSheetNameData         As BetterArray           'Names of sheets
     Dim ChoicesListData         As BetterArray           'Choices list
     Dim ChoicesLabelsData       As BetterArray         ' Choices labels
-    Dim VarnameSheetData        As BetterArray          'Varnames of one sheet
     Dim VarNameData             As BetterArray
     Dim ColumnIndexData         As BetterArray
-    Dim ColumnSheetIndexData    As BetterArray
     Dim SheetsOfTypeLLData      As BetterArray
     Dim ChoiceAutoVarData       As BetterArray
     Dim FormulaData             As BetterArray
     Dim SpecCharData            As BetterArray
     Dim DictVarName             As BetterArray
+    Dim DictSheetNames          As BetterArray
     Dim iPastingRow             As Integer
     Dim LoRng                   As Range                          'List object's range
     Dim iNbshifted              As Integer
@@ -51,14 +50,13 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Set LLNbColData = New BetterArray
     Set LLSheetNameData = New BetterArray       'Names of sheets of type linelist
     Set ColumnIndexData = New BetterArray
-    Set ColumnSheetIndexData = New BetterArray
     Set FormulaData = New BetterArray
     Set SpecCharData = New BetterArray
-    Set VarnameSheetData = New BetterArray
     Set VarNameData = New BetterArray
     Set DictVarName = New BetterArray
     Set SheetsOfTypeLLData = New BetterArray
     Set ChoiceAutoVarData = New BetterArray
+    Set DictSheetNames = New BetterArray
 
     AddedLogo = False
 
@@ -101,6 +99,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     SpecCharData.FromExcelRange SheetFormulas.ListObjects(C_sTabASCII).ListColumns("TEXT").DataBodyRange, DetectLastColumn:=False
 
     VarNameData.Items = DictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderVarName))
+    DictSheetNames.Items = DictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderSheetName))
 
     'Create all the required Sheets in the workbook (Dictionnary, Export, Password, Geo and other sheets defined by the user)
     Call CreateSheets(Wkb, DictData, DictHeaders, ExportData, _
@@ -112,7 +111,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     'Choices data'Setting the Choices labels and lists
     Set ChoicesListData = New BetterArray
     Set ChoicesLabelsData = New BetterArray
-    Set VarnameSheetData = New BetterArray
 
     ChoicesListData.LowerBound = 1
     ChoicesLabelsData.LowerBound = 1
@@ -142,12 +140,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
     For iCounterSheet = 1 To LLSheetNameData.UpperBound
 
-        'Vector of varnames for one sheet
-        VarnameSheetData.Clear
-        VarnameSheetData.Items = VarNameData.Slice(iSheetStartLine, iSheetStartLine + LLNbColData.Item(iCounterSheet))
-        'Vector of columnIndexes for one sheet (used for the linelist type sheet)
-        ColumnSheetIndexData.Clear
-        ColumnSheetIndexData.Items = ColumnIndexData.Slice(iSheetStartLine, iSheetStartLine + LLNbColData.Item(iCounterSheet))
 
         Select Case DictData.Items(iSheetStartLine, DictHeaders.IndexOf(C_sDictHeaderSheetType))
             'On linelist type, build a data entry form
@@ -155,7 +147,8 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
                 'Create a sheet for data Entry in one sheet of type linelist
                 Call CreateSheetLLDataEntry(Wkb, LLSheetNameData.Item(iCounterSheet), iSheetStartLine, DictData, _
                                          DictHeaders, LLSheetNameData, LLNbColData, ChoicesListData, ChoicesLabelsData, _
-                                         VarnameSheetData, ColumnSheetIndexData, FormulaData, SpecCharData, ChoiceAutoVarData, iNbshifted)
+                                         VarNameData, ColumnIndexData, FormulaData, SpecCharData, ChoiceAutoVarData, _
+                                         DictSheetNames, iNbshifted)
                     DoEvents
 
 
@@ -301,14 +294,13 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Set LLNbColData = Nothing
     Set LLSheetNameData = Nothing      'Names of sheets of type linelist
     Set ColumnIndexData = Nothing
-    Set ColumnSheetIndexData = Nothing
     Set FormulaData = Nothing
     Set SpecCharData = Nothing
-    Set VarnameSheetData = Nothing
     Set VarNameData = Nothing
     Set ChoicesListData = Nothing
     Set ChoicesLabelsData = Nothing
     Set DictVarName = Nothing
+    Set DictSheetNames = Nothing
     Set SheetsOfTypeLLData = Nothing
 
 End Sub
@@ -447,7 +439,7 @@ End Sub
 
 
 
-'SHEET OF TYPE ADM CREATION (Adaptation from lionel's work) =============================================================================================
+'SHEET OF TYPE ADM CREATION (Adaptation from lionel's work) ===========================================================================================================================================
 
  Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer, _
                                  DictData As BetterArray, DictHeaders As BetterArray, LLSheetNameData As BetterArray, _
@@ -631,14 +623,15 @@ End Sub
 End Sub
 
 
-'SHEET OF TYPE LINELIST CREATION ==================================================================================================================================
+'SHEET OF TYPE LINELIST CREATION ======================================================================================================================================================================
 
 
 Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer, _
                                  DictData As BetterArray, DictHeaders As BetterArray, LLSheetNameData As BetterArray, _
                                  LLNbColData As BetterArray, ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, _
                                  VarNameData As BetterArray, ColumnIndexData As BetterArray, FormulaData As BetterArray, _
-                                 SpecCharData As BetterArray, ChoiceAutoVarData As BetterArray, ByRef iNbshifted As Integer)
+                                 SpecCharData As BetterArray, ChoiceAutoVarData As BetterArray, AllSheetNamesData As BetterArray, _
+                                 ByRef iNbshifted As Integer)
 
     'DictData: Dictionary data
     'DictHeaders: Dictionary Headers
@@ -771,7 +764,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             'in case whe have the geo control. When the Control is Geo, the subsection label is
             'The main section label if there is no one
 
-            'Geo Titles or Customs --------------------------------------------------------------------------------------------------------
+            'Geo Titles or Customs --------------------------------------------------------------------------------------------------------------------------------------------------------------------
             Select Case sActualControl
                 Case C_sDictControlGeo
                     If sActualSubSec = "" Then
@@ -863,7 +856,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                                          iColumnTo:=iCounterSheetLLCol + 1, iLineTo:=C_eStartLinesLLSubSec
             End If
 
-        'STATUS, TYPE and CONTROLS =========================================================================================================
+        'STATUS, TYPE and CONTROLS ====================================================================================================================================================================
             .Columns(iCounterSheetLLCol).EntireColumn.AutoFit
 
             'Updating the notes according to the column's Status ----------------------------------------------------------------------------
@@ -932,7 +925,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                     .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = GetColor("Orange")
                 Case C_sDictControlForm 'Formulas, are reported to the formula function
                     If (sActualFormula <> "") Then
-                        sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, sSheetName, VarNameData, ColumnIndexData, _
+                        sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, AllSheetNamesData, VarNameData, ColumnIndexData, _
                                                             FormulaData, SpecCharData, Wkb.Worksheets(sSheetName), False)
                     End If
                     'Testing before writing the formula
@@ -955,11 +948,11 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             If sActualMin <> "" And sActualMax <> "" Then
 
                 'Testing if it is numeric
-                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, Wkb.Worksheets(sSheetName), True)
+                sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, AllSheetNamesData, VarNameData, ColumnIndexData, FormulaData, SpecCharData, Wkb.Worksheets(sSheetName), True)
                 If sFormulaMin = "" Then
                        'MsgBox "Invalid formula will be ignored : " & sActualMin & " / " & sActualVarName
                 Else
-                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, sSheetName, VarNameData, ColumnIndexData, FormulaData, SpecCharData, Wkb.Worksheets(sSheetName), True)
+                    sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, AllSheetNamesData, VarNameData, ColumnIndexData, FormulaData, SpecCharData, Wkb.Worksheets(sSheetName), True)
                     If sFormulaMax = "" Then
                             'MsgBox "Invalid formula will be ignored : " & sFormulaMax & " / " & sActualVarName
                     End If
