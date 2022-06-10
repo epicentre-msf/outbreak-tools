@@ -3,9 +3,9 @@ Option Explicit
 
 Public iUpdateCpt As Integer
 
-'LOADING FILES AND FOLDERS ==============================================================================================================================================
+'LOADING FILES AND FOLDERS ============================================================================================================================================================================
 
-'Loading the Dictionnary file ----------------------------------------------------------------------------------------------------------------------------------------------------
+'Loading the Dictionnary file__________________________________________________________________________________________________________________________________________________________________________
 Sub LoadFileDic()
 
     Dim sFilePath As String                      'Path to the dictionnary
@@ -367,12 +367,13 @@ End Sub
 
 Sub ResetField()
 
-    SheetMain.Range(C_sRngPathDic).value = ""
-    SheetMain.Range(C_sRngPathGeo).value = ""
-    SheetMain.Range(C_sRngLLName).value = ""
-    SheetMain.Range(C_sRngLLDir).value = ""
-    SheetMain.Range(C_sRngEdition).value = ""
-    SheetMain.Range(C_sRngUpdate).value = ""
+    SheetMain.Range(C_sRngPathDic).value = vbNullString
+    SheetMain.Range(C_sRngPathGeo).value = vbNullString
+    SheetMain.Range(C_sRngLLName).value = vbNullString
+    SheetMain.Range(C_sRngLLDir).value = vbNullString
+    SheetMain.Range(C_sRngEdition).value = vbNullString
+    SheetMain.Range(C_sRngUpdate).value = vbNullString
+    SheetMain.Range(C_sRngLangSetup).value = vbNullString
 
     SheetMain.Range(C_sRngPathGeo).Interior.Color = vbWhite
     SheetMain.Range(C_sRngPathDic).Interior.Color = vbWhite
