@@ -7,11 +7,11 @@ Public Const C_sSheetAdmin              As String = "Admin"                     
 Public Const C_sSheetPassword           As String = "Password"                           'sheet for password management
 Public Const C_sSheetFormulas           As String = "ControleFormule"                    'Sheet for formula management (mainly in the validation)
 Public Const C_sSheetLLTranslation      As String = "LinelistTranslation"
-Public Const C_sSheetTemp               As String = "temp_"                              'Temporary sheet for data manipulation and doing stuffs
-Public Const C_sSheetMetadata           As String = "metadata"
-Public Const C_sSheetChoiceAuto         As String = "list_auto_"
-Public Const C_sSheetAnalysisTemp       As String = "ana_temp_"                          'Temporary sheet for analysis and stuffs
-Public Const C_sSheetImportTemp         As String = "import_temp_"
+Public Const C_sSheetTemp               As String = "Temp_"                              'Temporary sheet for data manipulation and doing stuffs
+Public Const C_sSheetMetadata           As String = "Metadata"
+Public Const C_sSheetChoiceAuto         As String = "List_auto_"
+Public Const C_sSheetAnalysisTemp       As String = "Ana_temp_"                          'Temporary sheet for analysis and stuffs
+Public Const C_sSheetImportTemp         As String = "Import_temp_"
 
 'Sheets in the setup file: The all starts with Param
 
@@ -57,12 +57,12 @@ Public Const C_sDictHeaderCondFormat    As String = "conditional formating"
 Public Const C_sDictHeaderIndex         As String = "column index"
 Public Const C_sDictHeaderVisibility    As String = "visibility"
 
-'Sheet Types ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+'Sheet Types __________________________________________________________________________________________________________________________________________________________________________________________
 
 Public Const C_sDictSheetTypeLL         As String = "hlist2D"
 Public Const C_sDictSheetTypeAdm        As String = "vlist1D"
 
-'Status ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+'Status _______________________________________________________________________________________________________________________________________________________________________________________________
 
 Public Const C_sDictStatusMan           As String = "mandatory"
 Public Const C_sDictStatusOpt           As String = "optional"
@@ -70,7 +70,7 @@ Public Const C_sDictStatusHid           As String = "hidden"
 Public Const C_sDictStatusUserHid       As String = "hidden by user"
 Public Const C_sDictStatusDesHid        As String = "hidden by designer"
 
-'Control --------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+'Control ______________________________________________________________________________________________________________________________________________________________________________________________
 
 Public Const C_sDictControlHf           As String = "hf"
 Public Const C_sDictControlForm         As String = "formula"
@@ -80,35 +80,36 @@ Public Const C_sDictControlCustom       As String = "custom"
 Public Const C_sDictControlTitle        As String = "title"
 Public Const C_sDictControlChoiceAuto   As String = "list_auto"
 
-'YesNo ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+'YesNo ________________________________________________________________________________________________________________________________________________________________________________________________
 
-Public Const C_sDictYes As String = "yes"
-Public Const C_sDictNo As String = "no"
+Public Const C_sDictYes                 As String = "yes"
+Public Const C_sDictNo                  As String = "no"
 
-'Alert ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+'Alert ________________________________________________________________________________________________________________________________________________________________________________________________
 
-Public Const C_sDictAlertWar As String = "warning"
-Public Const C_sDictAlertErr As String = "error"
+Public Const C_sDictAlertWar            As String = "warning"
+Public Const C_sDictAlertErr            As String = "error"
 
 'Data Types
-Public Const C_sDictTypeInt As String = "integer"
-Public Const C_sDictTypeText As String = "text"
-Public Const C_sDictTypeDate As String = "date"
-Public Const C_sDictTypeDec As String = "decimal"
+Public Const C_sDictTypeInt             As String = "integer"
+Public Const C_sDictTypeText            As String = "text"
+Public Const C_sDictTypeDate            As String = "date"
+Public Const C_sDictTypeDec             As String = "decimal"
 
 
-'CHOICES PARAMETERS ==========================================================================
+'CHOICES PARAMETERS ===================================================================================================================================================================================
 
-Public Const C_sChoiHeaderLab As String = "label" 'Choice label name headers
-Public Const C_sChoiHeaderList As String = "list name" 'Choice list headers
-Public Const C_sChoiHeaderLabShort As String = "label short"
+Public Const C_sChoiHeaderLab           As String = "label" 'Choice label name headers
+Public Const C_sChoiHeaderList          As String = "list name" 'Choice list headers
+Public Const C_sChoiHeaderLabShort      As String = "label short"
 
-'EXPORTS PARAMETERS ===========================================================================
+'EXPORTS PARAMETERS ===================================================================================================================================================================================
+
 Public Const C_sExportActive As String = "active"
 Public Const C_sExportInactive As String = "inactive"
 
 
-'FORMS ============================================================================================================================================================================
+'FORMS ================================================================================================================================================================================================
 
 Public Const C_sFormExport               As String = "F_Export"                          'Export Frame
 Public Const C_sFormGeo                  As String = "F_Geo"                             'Geo Frame
@@ -117,7 +118,7 @@ Public Const C_sFormExportMig            As String = "F_ExportMig" 'Export for M
 Public Const C_sFormImportMig            As String = "F_ImportMig" 'Import for Migration form
 Public Const C_sFormImportRep            As String = "F_ImportRep"
 
-'TABLES LISTOBJECTS ===============================================================================================================================================================
+'TABLES LISTOBJECTS ===================================================================================================================================================================================
 
 'Admin levels tables in the Geo Sheet
 
@@ -142,7 +143,8 @@ Public Const C_sTabExcelFunctions        As String = "T_XlsFonctions"           
 Public Const C_sTabASCII                 As String = "T_ascii"                             'Ascii characters table
 
 
-'PROGRAM NAMES ===============================================================================================================
+'PROGRAM NAMES ========================================================================================================================================================================================
+
 'Program names are used for setting programs to buttons added in the linelist
 
 Public Const C_sCmdShowHideName         As String = "ClicCmdShowHide" 'ShowHideCommand
@@ -155,12 +157,12 @@ Public Const C_sCmdDebug                As String = "ClicCmdDebug"
 Public Const C_sAdmName                 As String = "adm"
 Public Const C_sResetData               As String = "ClicResetData"
 
-'TABLES LISTOBJECTS ===============================================================================================================================================================
+'TABLES LISTOBJECTS ===================================================================================================================================================================================
 
 Public Const C_sTabkeys = "T_Keys"
 
 
-'RANGES, MESSAGES AND SHAPES =======================================================================================================================================================
+'RANGES, MESSAGES AND SHAPES ==========================================================================================================================================================================
 
 'Shapes----------------------------------------------------------
 Public Const C_sShpShowHide             As String = "SHP_ShowHide"
@@ -180,9 +182,9 @@ Public Const C_sRngLLLanguageCode       As String = "RNG_LLLanguageCode"        
 Public Const C_sRngLLLanguage           As String = "RNG_LLLanguage"
 Public Const C_sRngDebuggingPassWord    As String = "RNG_DebuggingPassword"
 
-'STRING CONSTANTS =================================================================================================================================================================
+'STRING CONSTANTS =====================================================================================================================================================================================
 
-Public Const C_sLLPassword              As String = "1234"                                'Default password for the linelist file (if no one is set)                                'Default password for the designer
+Public Const C_sLLPassword              As String = "1234"                                'Default password for the linelist file (if no one is set)
 Public Const C_sYes                     As String = "yes"
 Public Const C_sNo                      As String = "no"
 Public Const C_sGeobase                 As String = "export_geobase"
@@ -203,30 +205,30 @@ Public Const C_sHF                      As String = "HF"
 Public Const C_sNames                   As String = "NAMES"
 Public Const C_sHistoHF                 As String = "HistoHF"
 Public Const C_sHistoGeo                As String = "HistoGeo"
-Public Const C_sGeoMetadata             As String = "metadata"
+Public Const C_sGeoMetadata             As String = "Metadata"
 
-'INTEGERS CONSTANTS ===============================================================================================================================================================
+'INTEGERS CONSTANTS ===================================================================================================================================================================================
 Public Const C_iNbLinesLLData           As Integer = 200                                    'Number of linest to add by default
 
 
 'Startlines for data in various source files
 
 Public Enum C_StartLines
-    C_eStartLinesDictHeaders = 2                                                             'Starting lines for dictionary headers
-    C_eStartLinesDictData = 3                                                                'Starting lines for dictionary data
-    C_eStartLinesLLMainSec = 5                                                              'Starting lines for first title of the linelist
-    C_eStartLinesLLSubSec = 6                                                                'Starting lines for second title of the linelist
-    C_eStartLinesLLData = 7                                                                  'Starting lines for the linelist data
-    C_eStartLinesExportTitle = 1                                                             'Starting lines for export titles
-    C_eStartLinesAdmData = 4                                                                'Starting lines for a Adm data
-    C_eStartColumnAdmData = 2                                                                'Starting columns for sheets of type Adm
-    C_eStartLinesExportSource = 5                                                            'Starting lines for export sources
+    C_eStartLinesDictHeaders = 2                                                                'Starting lines for dictionary headers
+    C_eStartLinesDictData = 3                                                                      'Starting lines for dictionary data
+    C_eStartLinesLLMainSec = 5                                                                   'Starting lines for first title of the linelist
+    C_eStartLinesLLSubSec = 6                                                                      'Starting lines for second title of the linelist
+    C_eStartLinesLLData = 7                                                                          'Starting lines for the linelist data
+    C_eStartLinesExportTitle = 1                                                                'Starting lines for export titles
+    C_eStartLinesAdmData = 4                                                                       'Starting lines for a Adm data
+    C_eStartColumnAdmData = 2                                                                      'Starting columns for sheets of type Adm
+    C_eStartLinesExportSource = 5                                                              'Starting lines for export sources
     C_eStartLinesChoicesHeaders = 1                                                          'Starting lines of the choices Headers
-    C_eStartLinesChoicesData = 2                                                             'Starting lines of the choices Data
-    C_eStartLinesExportData = 2                                                              'Starting lines of the export data
-    C_eStartLinesTransdata = 4                                                               'Starting lines for the translation data
-    C_eStartcolumntransdata = 1                                                              'Starting column for the translation data
+    C_eStartLinesChoicesData = 2                                                                'Starting lines of the choices Data
+    C_eStartLinesExportData = 2                                                                  'Starting lines of the export data
+    C_eStartLinesTransdata = 4                                                                    'Starting lines for the translation data
+    C_eStartcolumntransdata = 1                                                                  'Starting column for the translation data
     C_eStartlinesListAuto = 1
-    C_eSectionsLookupColumns = 1                                                              'Columns where to insert GoTo
+    C_eSectionsLookupColumns = 1                                                                 'Columns where to insert GoTo
 End Enum
 

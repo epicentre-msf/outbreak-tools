@@ -118,7 +118,7 @@ Sub ClicCmdDebug()
 
     Dim pwd As String
     Dim sh As Worksheet
-    Dim SheetsOfTypeLLData As BetterArray
+    Dim SheetsToProtect As BetterArray
     Dim DictHeaders As BetterArray
     Dim i As Integer
     Dim iNbVar As Integer
@@ -128,6 +128,7 @@ Sub ClicCmdDebug()
     BeginWork xlsapp:=Application
 
     On Error GoTo errDebug
+    sPrevSheetName = vbNullString
 
     Set DebugWksh = Worksheets(ActiveSheet.Name)
 
@@ -151,21 +152,11 @@ Sub ClicCmdDebug()
         End If
     Else
         pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
-        With ThisWorkbook.Worksheets(C_sParamSheetDict)
-        'Protect All Sheets of Type LL
-            iNbVar = .Cells(Rows.Count, 1).End(xlUp).Row
-            Set DictHeaders = GetDictionaryHeaders()
-            Set SheetsOfTypeLLData = New BetterArray
-            For i = 1 To iNbVar
-                If .Cells(i, DictHeaders.IndexOf(C_sDictHeaderSheetType)) = C_sDictSheetTypeLL And .Cells(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)) <> sPrevSheetName Then
-                    sPrevSheetName = .Cells(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
-                    SheetsOfTypeLLData.Push sPrevSheetName
-                End If
-            Next
-        End With
+        Set SheetsToProtect = New BetterArray
+        Set SheetsToProtect = GetDictionaryColumn(C_sDictHeaderSheetName)
 
         For Each sh In ThisWorkbook.Worksheets
-            If SheetsOfTypeLLData.Includes(sh.Name) Then
+            If SheetsToProtect.Includes(sh.Name) Then
              sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                          AllowFormattingColumns:=True
@@ -182,6 +173,7 @@ Sub ClicCmdDebug()
         DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.Text = TranslateLLMsg("MSG_Debug")
     End If
 
+    Set SheetsToProtect = Nothing
     Exit Sub
 
 errDebug:
@@ -322,6 +314,14 @@ Sub EventValueChangeLinelist(oRange As Range)
 
     End If
 
+
+    If oRange.Row > C_eStartLinesLLData + 1 And _
+        ActiveSheet.Cells(C_eStartLinesLLMainSec - 2, iNumCol).value = C_sDictControlChoiceAuto & "_origin" And _
+        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).value <> "list_auto_change_yes" Then
+             ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).value = "list_auto_change_yes"
+    End If
+
+
     If oRange.Name.Name = ClearString(ActiveSheet.Name) & "_" & C_sGotoSection Then
         sLabel = Replace(oRange.value, TranslateLLMsg("MSG_SelectSection") & ": ", "")
 
@@ -366,6 +366,27 @@ End Sub
 'Event to update the list_auto when a sheet containing a list_auto is desactivated
 Public Sub EventDesactivateLinelist(ByVal sSheetName As String)
 
+    Dim PrevWksh As Worksheet
+
+    On Error GoTo errHand
+
+    If ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).value = "list_auto_change_yes" Then
+
+        Set PrevWksh = ThisWorkbook.Worksheets(sSheetName)
+        UpdateListAuto PrevWksh
+        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).value = "list_auto_change_no"
+        Exit Sub
+
+    End If
+errHand:
+        EndWork xlsapp:=Application
+End Sub
+
+
+'Update the list Auto of one Sheet
+
+Public Sub UpdateListAuto(Wksh As Worksheet)
+
     Dim iChoiceCol As Integer
     Dim choiceLo As ListObject
     Dim sVarName As String
@@ -376,39 +397,25 @@ Public Sub EventDesactivateLinelist(ByVal sSheetName As String)
     Dim Rng As Range
 
     Set arrTable = New BetterArray
-
-    On Error GoTo errHand
-
     i = 1
 
-    Set PrevWksh = ThisWorkbook.Worksheets(sSheetName)
-
-    With PrevWksh
-
+    With Wksh
         BeginWork xlsapp:=Application
 
             While (.Cells(C_eStartLinesLLData, i) <> vbNullString)
-
                 Select Case .Cells(C_eStartLinesLLMainSec - 2, i).value
-
                     Case C_sDictControlChoiceAuto & "_origin"
-
                         sVarName = .Cells(C_eStartLinesLLData + 1, i).value
                         arrTable.FromExcelRange .Cells(C_eStartLinesLLData + 2, i), DetectLastColumn:=False, DetectLastRow:=True
-
                         'Unique values (removing the spaces and the Null strings and keeping the case (The remove duplicates doesn't do that))
                         Set arrTable = GetUniqueBA(arrTable)
-
                         With ThisWorkbook.Worksheets(C_sSheetChoiceAuto)
-
                             Set choiceLo = .ListObjects("o" & C_sDictControlChoiceAuto & "_" & sVarName)
                             iChoiceCol = choiceLo.Range.Column
                             If Not choiceLo.DataBodyRange Is Nothing Then choiceLo.DataBodyRange.Delete
                             arrTable.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
                             iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
-
                             choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
-
                             'Sort in descending order
                             Set Rng = choiceLo.ListColumns(1).Range
                             With choiceLo.Sort
@@ -417,7 +424,6 @@ Public Sub EventDesactivateLinelist(ByVal sSheetName As String)
                                 .Header = xlYes
                                 .Apply
                             End With
-
                         End With
                     Case Else
                 End Select
@@ -425,15 +431,6 @@ Public Sub EventDesactivateLinelist(ByVal sSheetName As String)
             Wend
 
         EndWork xlsapp:=Application
-
     End With
 
-    Set arrTable = Nothing
-    Set PrevWksh = Nothing
-
-    Exit Sub
-
-errHand:
-        EndWork xlsapp:=Application
-        Exit Sub
 End Sub

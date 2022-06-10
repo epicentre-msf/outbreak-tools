@@ -35,7 +35,7 @@ Sub ControlClearData()
     Exit Sub
 
 ErrClearData:
-    MsgBox TranslateLLMsg("ErrClearData")
+    MsgBox TranslateLLMsg("MSG_ErrClearData")
     EndWork xlsapp:=Application
     Application.EnableEvents = True
     Exit Sub
@@ -81,7 +81,7 @@ Sub ClearData()
                 With Wksh
                     iLastRow = .Cells(.Rows.Count, 2).End(xlUp).Row
                     For i = C_eStartLinesAdmData To iLastRow
-                        .Cells(i, 3).value = vbNullString
+                        .Cells(i, C_eStartColumnAdmData + 3).value = vbNullString
                     Next
                 End With
 
@@ -96,7 +96,7 @@ Sub ClearData()
 
 End Sub
 
-'=========================== IMPORTS MIGRATIONS ================================
+'IMPORTS MIGRATIONS ===================================================================================================================================================================================
 
 Function LLhasData() As Boolean
 
@@ -156,6 +156,74 @@ Function LLhasData() As Boolean
     Set WkbLL = Nothing
 End Function
 
+
+'Add Some Test on the language in the workbook
+
+Function TestImportLanguage(WkbImp As Workbook) As Boolean
+
+    Dim VarColumn As BetterArray
+    Dim sActualLanguage As String
+    Dim sImportedLanguage As String
+    Dim index As Integer 'index of the language
+
+
+    Dim Quit As Byte
+
+    Set VarColumn = New BetterArray
+    VarColumn.LowerBound = 1
+    'Add Tests on the languages
+
+    'First test if the sheet metadata exists in the workbook
+    If Not SheetExistsInWkb(WkbImp, C_sSheetMetadata) Then
+
+        Quit = MsgBox(TranslateLLMsg("MSG_NoMetadata"), vbExclamation + vbYesNo, TranslateLLMsg("MSG_Imports"))
+
+        If Quit = vbYes Then
+            TestImportLanguage = False
+            Exit Function
+        End If
+
+    Else
+        'There is a metadata sheet
+
+        VarColumn.FromExcelRange WkbImp.Worksheets(C_sSheetMetadata).Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=False
+
+        If VarColumn.Includes(C_sLanguage) Then
+            index = VarColumn.IndexOf(C_sLanguage)
+            sImportedLanguage = WkbImp.Worksheets(C_sSheetMetadata).Cells(index, 2).value
+            sActualLanguage = ThisWorkbook.Worksheets(C_sSheetLLTranslation).Range("RNG_LLLanguage")
+
+            'Test and ask the user if he wants to abort
+            If sActualLanguage <> sImportedLanguage Then
+                Quit = MsgBox(TranslateLLMsg("MSG_ActualLanguage") & " " & sActualLanguage & _
+                              TranslateLLMsg("MSG_ImportLanguage") & " " & sImportedLanguage & _
+                              TranslateLLMsg("MSG_QuitImports"), vbExclamation + vbYesNo, _
+                              TranslateLLMsg("MSG_LanguageDifferent"))
+                If Quit = vbYes Then
+                    TestImportLanguage = False
+                    Set VarColumn = Nothing
+                    Exit Function
+                End If
+            End If
+        Else
+            'There is no language at all in the metadata, as the user if he wants to quit
+            Quit = MsgBox(TranslateLLMsg("MSG_NoLanguage"), vbExclamation + vbYesNo, TranslateLLMsg("MSG_Imports"))
+
+            If Quit = vbYes Then
+
+                TestImportLanguage = False
+                Set VarColumn = Nothing
+                Exit Function
+
+            End If
+
+        End If
+    End If
+
+    Set VarColumn = Nothing
+    TestImportLanguage = True
+End Function
+
 'Import Data between two sheets:
 'Check if we have to take in account data in the sheet where we have to import
 'Check if a variable in the sheet to import is present in the sheet Where we have
@@ -202,7 +270,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                     If VarNamesData.Includes(sVal) Then
                         'Get the row Index here
                         iRowIndex = ColumnIndexData.Items(VarNamesData.IndexOf(sVal))
-                        .Cells(iRowIndex, 3).value = shImp.Cells(i, 2).value 'On sheets of type Adm, the third column contains values
+                        .Cells(iRowIndex, C_eStartColumnAdmData + 3).value = shImp.Cells(i, 2).value 'On sheets of type Adm, the third column contains values
                     Else
                         '
                     End If
@@ -249,6 +317,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                     End If
                 Else
                     If Not ImportReport Then ImportReport = True
+
                     With ThisWorkbook.Worksheets(C_sSheetImportTemp)
 
                          k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
@@ -256,8 +325,12 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                         .Cells(k, 3).value = sVal
                         .Cells(k, 4).value = sSheetName
                     End With
+
                 End If
             Next
+
+            'Update the list auto on imports
+            UpdateListAuto WkbLL.Worksheets(sSheetName)
 
             .Protect Password:=WkbLL.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value, _
                      DrawingObjects:=True, Contents:=True, Scenarios:=True, _
@@ -292,6 +365,8 @@ Sub ImportMigrationData()
     Dim iVarIndex  As Integer   'Index of a variable
     Dim sVal As String
 
+    Dim IsSameLanguage As Boolean
+
     Dim sPath As String
     Dim hasData As Boolean
     hasData = False
@@ -309,19 +384,40 @@ Sub ImportMigrationData()
         Exit Sub
     End If
 
-    hasData = LLhasData() 'Here we know if data is cleared or Not
+    'Test if the workbook to import is already opened
+    If IsWkbOpened(sPath) Then
+        MsgBox TranslateLLMsg("MSG_CloseImportFile"), vbOKOnly, TranslateLLMsg("MSG_Imports")
+        Exit Sub
+    End If
 
+    hasData = LLhasData() 'Here we know if data is cleared or Not
     BeginWork xlsapp:=Application
     Application.EnableEvents = False
+
     Set WkbImp = Workbooks.Open(sPath)
+
+    Set VarNamesLLData = New BetterArray
+    Set ColumnIndexLLData = New BetterArray
+    Set ImportVarData = New BetterArray
+
+    'Test If we have the same language and ask the user if he really want to import.
+
+    IsSameLanguage = TestImportLanguage(WkbImp)
+
+    If Not IsSameLanguage Then
+
+        'If the user wants to abort imports because of the differences of language
+        WkbImp.Close
+        Set WkbImp = Nothing
+        EndWork xlsapp:=Application
+        Application.EnableEvents = True
+        Exit Sub
+    End If
 
     'Get All the sheets in the linelist
     Set TabSheetLL = GetDictionaryColumn(C_sDictHeaderSheetName)
     Set ColumnIndexData = GetDictionaryColumn(C_sDictHeaderIndex)
     Set VarNamesData = GetDictionaryColumn(C_sDictHeaderVarName)
-    Set VarNamesLLData = New BetterArray
-    Set ColumnIndexLLData = New BetterArray
-    Set ImportVarData = New BetterArray
 
     'For each sheet in the imported workbook, if the sheet is in the linelist
     'Import the data the two sheets, keeping in mind We can add at the end, or
@@ -331,10 +427,15 @@ Sub ImportMigrationData()
 
     'Set and update the temp sheet for Edition
     Set shpTemp = ThisWorkbook.Worksheets(C_sSheetImportTemp)
+
+    'Updates dates for last imports (just in case)
     sVal = shpTemp.Cells(1, 9)
     shpTemp.Cells.Clear
     shpTemp.Cells(1, 8).value = Format(Now, "yyyy-mm-dd Hh:Nn")
     If sVal <> vbNullString Then shpTemp.Cells(1, 9).value = sVal
+
+    'Set the list_auto to true
+    shpTemp.Cells(1, 15).value = "list_auto_change_yes"
 
     For Each shImp In WkbImp.Worksheets
         If TabSheetLL.Includes(shImp.Name) Then
@@ -418,7 +519,7 @@ errImport:
 
 End Sub
 
-' Show Import Report ---------------------------------------------------------
+' Show Import Report __________________________________________________________________________________________________________________________________________________________________________________
 
 Sub ShowImportReport()
 
@@ -582,7 +683,7 @@ Sub ImportGeobase()
     Exit Sub
 
 ErrImportGeo:
-    MsgBox TranslateLLMsg("MSG_ErrImportGeo")
+    MsgBox TranslateLLMsg("MSG_ErrImportGeo"), vbCritical + vbOKOnly, TranslateLLMsg("MSG_Imports")
     EndWork xlsapp:=Application
     Exit Sub
 End Sub
@@ -737,7 +838,7 @@ End Sub
 
 
 
-'=================================================================== EXPORTS MIGRATIONS ===============================================================================================================
+'EXPORTS MIGRATIONS ===================================================================================================================================================================================
 
 'Export the data
 
