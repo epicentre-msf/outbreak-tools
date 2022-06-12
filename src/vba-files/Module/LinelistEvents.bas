@@ -373,8 +373,12 @@ Public Sub EventDesactivateLinelist(ByVal sSheetName As String)
     If ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).value = "list_auto_change_yes" Then
 
         Set PrevWksh = ThisWorkbook.Worksheets(sSheetName)
+        BeginWork xlsapp:=Application
+
         UpdateListAuto PrevWksh
         ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).value = "list_auto_change_no"
+
+        EndWork xlsapp:=Application
         Exit Sub
 
     End If
@@ -390,8 +394,8 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
     Dim iChoiceCol As Integer
     Dim choiceLo As ListObject
     Dim sVarName As String
-    Dim iRow As Integer
-    Dim i As Integer
+    Dim iRow As Long
+    Dim i As Long
     Dim arrTable As BetterArray
     Dim PrevWksh As Worksheet
     Dim Rng As Range
@@ -400,37 +404,35 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
     i = 1
 
     With Wksh
-        BeginWork xlsapp:=Application
 
-            While (.Cells(C_eStartLinesLLData, i) <> vbNullString)
-                Select Case .Cells(C_eStartLinesLLMainSec - 2, i).value
-                    Case C_sDictControlChoiceAuto & "_origin"
-                        sVarName = .Cells(C_eStartLinesLLData + 1, i).value
-                        arrTable.FromExcelRange .Cells(C_eStartLinesLLData + 2, i), DetectLastColumn:=False, DetectLastRow:=True
-                        'Unique values (removing the spaces and the Null strings and keeping the case (The remove duplicates doesn't do that))
-                        Set arrTable = GetUniqueBA(arrTable)
-                        With ThisWorkbook.Worksheets(C_sSheetChoiceAuto)
-                            Set choiceLo = .ListObjects("o" & C_sDictControlChoiceAuto & "_" & sVarName)
-                            iChoiceCol = choiceLo.Range.Column
-                            If Not choiceLo.DataBodyRange Is Nothing Then choiceLo.DataBodyRange.Delete
-                            arrTable.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
-                            iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
-                            choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
-                            'Sort in descending order
-                            Set Rng = choiceLo.ListColumns(1).Range
-                            With choiceLo.Sort
-                                .SortFields.Clear
-                                .SortFields.Add Key:=Rng, SortOn:=xlSortOnValues, Order:=xlDescending
-                                .Header = xlYes
-                                .Apply
-                            End With
+
+        While (.Cells(C_eStartLinesLLData, i) <> vbNullString)
+            Select Case .Cells(C_eStartLinesLLMainSec - 2, i).value
+                Case C_sDictControlChoiceAuto & "_origin"
+                    sVarName = .Cells(C_eStartLinesLLData + 1, i).value
+                    arrTable.FromExcelRange .Cells(C_eStartLinesLLData + 2, i), DetectLastColumn:=False, DetectLastRow:=True
+                    'Unique values (removing the spaces and the Null strings and keeping the case (The remove duplicates doesn't do that))
+                    Set arrTable = GetUniqueBA(arrTable)
+                    With ThisWorkbook.Worksheets(C_sSheetChoiceAuto)
+                        Set choiceLo = .ListObjects("o" & C_sDictControlChoiceAuto & "_" & sVarName)
+                        iChoiceCol = choiceLo.Range.Column
+                        If Not choiceLo.DataBodyRange Is Nothing Then choiceLo.DataBodyRange.Delete
+                        arrTable.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
+                        iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
+                        choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
+                        'Sort in descending order
+                        Set Rng = choiceLo.ListColumns(1).Range
+                        With choiceLo.Sort
+                            .SortFields.Clear
+                            .SortFields.Add Key:=Rng, SortOn:=xlSortOnValues, Order:=xlDescending
+                            .Header = xlYes
+                            .Apply
                         End With
-                    Case Else
-                End Select
-                i = i + 1
-            Wend
-
-        EndWork xlsapp:=Application
+                    End With
+                Case Else
+            End Select
+            i = i + 1
+        Wend
     End With
 
 End Sub
