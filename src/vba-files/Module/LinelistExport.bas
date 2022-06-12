@@ -341,7 +341,7 @@ Sub Export(iTypeExport As Byte)
 
         Select Case ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).value
         Case "xlsx"
-            fileformat = xlOpenXMLStrictWorkbook
+            fileformat = xlOpenXMLWorkbook
         Case "xlsb"
             fileformat = xlExcel12
         Case Else
