@@ -726,6 +726,74 @@ EndMacro:
         End If
     End Function
 
+    'Move Worksheet from one Workbook to another
+    Public Function MoveWksh(SrcWkb As Workbook, DestWkb As Workbook, sSheetName As String)
+
+        Dim Wksh As Worksheet
+
+        BeginWork xlsapp:=Application
+        Application.EnableEvents = False
+        Set ActvSh = ActiveSheet
+
+        'Now move the sheet if it only exists in the source workbook
+        If Not SheetExistsInWkb(SrcWkb, sSheetName) Then Exit Function
+
+        'First Test if the sheet exists in the destination workbook
+        Set Wksh = DestWkb.Worksheets.Add(After:=DestWkb.Worksheets(DestWkb.Worksheets.Count))
+        If SheetExistsInWkb(DestWkb, sSheetName) Then DestWkb.Worksheets(sSheetName).Delete
+
+        SrcWkb.Worksheets(sSheetName).Copy After:=Wksh
+        Wksh.Delete
+
+
+        Set Wksh = Nothing
+
+        EndWork xlsapp:=Application
+        Application.EnableEvents = True
+
+    End Function
+
+    'Move analysis Data from the analysis Sheet to the DesignerWorkbook
+    Public Function MoveAnalysis(SrcWkb As Workbook)
+
+        'Source And Destination Range
+        Dim SrcRng As Range
+        Dim DestRng As Range
+
+        Dim iLastRow As Long
+        Dim iLastColumn As Long
+
+        'Filter Table___________________________________________________________
+
+        'Global Summary Table___________________________________________________
+
+        If Not SheetExistsInWkb(SrcWkb, C_sSheetAnalysis) Then Exit Function
+
+        DesignerWorkbook.Worksheets(C_sSheetAnalysis).Cells.Clear
+
+        'On Error GoTo ErrAna
+        With SrcWkb.Worksheets(C_sSheetAnalysis)
+            iLastRow = .Cells(C_eStartLinesAnaGS, 1).End(xlDown).Row
+            iLastColumn = .Cells(C_eStartLinesAnaGS, 1).End(xlToRight).Column
+
+            Set SrcRng = .Range(.Cells(C_eStartLinesAnaGS, 1), .Cells(iLastRow, iLastColumn))
+        End With
+
+        With DesignerWorkbook.Worksheets(C_sSheetAnalysis)
+            Set DestRng = .Range(.Cells(C_eStartLinesAnaGS, 1), .Cells(iLastRow, iLastColumn))
+             DestRng.value = SrcRng.value
+             Set DestRng = .Range(.Cells(C_eStartLinesAnaGS + 1, 1), .Cells(iLastRow, iLastColumn))
+            'Add listobject for Global summary
+            .Listobjects.Add(xlSrcRange, DestRng, xlYes).Name = C_sTabGlobalSummary
+        End With
+
+        'ErrAna:
+
+
+        Set DestRng = Nothing
+        Set SrcRng = Nothing
+    End Function
+
 'FORMULAS AND VALIDATIONS =============================================================================================================================================================================
 
     'Transform one formula to a formula for analysis.

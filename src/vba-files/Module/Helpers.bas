@@ -297,7 +297,7 @@ Option Explicit
             With oRange.Borders(i)
                 .LineStyle = xlContinuous
                 .Color = Helpers.GetColor(sColor)
-                .TintAndShade = 0.8
+                .TintAndShade = 0.4
                 .Weight = iWeight
             End With
         Next
@@ -417,6 +417,8 @@ Option Explicit
             GetColor = RGB(0, 0, 0)
         Case "DarkBlue"
             GetColor = RGB(0, 0, 139)
+        Case "LightBlue"
+            GetColor = RGB(221, 235, 245)
         Case Else
             GetColor = vbWhite
         End Select
@@ -724,7 +726,75 @@ EndMacro:
         End If
     End Function
 
-'FORMULAS AND VALIDATIONS ======================================================
+    'Move Worksheet from one Workbook to another
+    Public Function MoveWksh(SrcWkb As Workbook, DestWkb As Workbook, sSheetName As String)
+
+        Dim Wksh As Worksheet
+
+        BeginWork xlsapp:=Application
+        Application.EnableEvents = False
+        Set ActvSh = ActiveSheet
+
+        'Now move the sheet if it only exists in the source workbook
+        If Not SheetExistsInWkb(SrcWkb, sSheetName) Then Exit Function
+
+        'First Test if the sheet exists in the destination workbook
+        Set Wksh = DestWkb.Worksheets.Add(After:=DestWkb.Worksheets(DestWkb.Worksheets.Count))
+        If SheetExistsInWkb(DestWkb, sSheetName) Then DestWkb.Worksheets(sSheetName).Delete
+
+        SrcWkb.Worksheets(sSheetName).Copy After:=Wksh
+        Wksh.Delete
+
+
+        Set Wksh = Nothing
+
+        EndWork xlsapp:=Application
+        Application.EnableEvents = True
+
+    End Function
+
+    'Move analysis Data from the analysis Sheet to the DesignerWorkbook
+    Public Function MoveAnalysis(SrcWkb As Workbook)
+
+        'Source And Destination Range
+        Dim SrcRng As Range
+        Dim DestRng As Range
+
+        Dim iLastRow As Long
+        Dim iLastColumn As Long
+
+        'Filter Table___________________________________________________________
+
+        'Global Summary Table___________________________________________________
+
+        If Not SheetExistsInWkb(SrcWkb, C_sSheetAnalysis) Then Exit Function
+
+        DesignerWorkbook.Worksheets(C_sSheetAnalysis).Cells.Clear
+
+        'On Error GoTo ErrAna
+        With SrcWkb.Worksheets(C_sSheetAnalysis)
+            iLastRow = .Cells(C_eStartLinesAnaGS, 1).End(xlDown).Row
+            iLastColumn = .Cells(C_eStartLinesAnaGS, 1).End(xlToRight).Column
+
+            Set SrcRng = .Range(.Cells(C_eStartLinesAnaGS, 1), .Cells(iLastRow, iLastColumn))
+        End With
+
+        With DesignerWorkbook.Worksheets(C_sSheetAnalysis)
+            Set DestRng = .Range(.Cells(C_eStartLinesAnaGS, 1), .Cells(iLastRow, iLastColumn))
+             DestRng.value = SrcRng.value
+             Set DestRng = .Range(.Cells(C_eStartLinesAnaGS + 1, 1), .Cells(iLastRow, iLastColumn))
+            'Add listobject for Global summary
+            .ListObjects.Add(xlSrcRange, DestRng, xlYes).Name = C_sTabGlobalSummary
+        End With
+
+        'ErrAna:
+
+
+        Set DestRng = Nothing
+        Set SrcRng = Nothing
+    End Function
+
+'FORMULAS AND VALIDATIONS =============================================================================================================================================================================
 
     'Transform one formula to a formula for analysis.
     'Wkb is a workbook where we can find the dictionary, the special character
@@ -798,10 +868,7 @@ EndMacro:
             Exit Function
         End If
 
-
         SheetNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderSheetName)), DetectLastColumn:=False, DetectLastRow:=True
-        VarMainLabelData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderMainLab)), DetectLastColumn:=False, DetectLastRow:=True
-
 
         If VarNameData.Includes(sFormulaATest) Then
             AnalysisFormula = "" 'We have to aggregate
@@ -840,7 +907,7 @@ EndMacro:
                             'It is either a variable name or a formula
                             If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
                                 icolNumb = VarNameData.IndexOf(sAlphaValue)
-                                sAlphaValue = "o" & ClearString(SheetNameData.Item(icolNumb)) & "['" & VarMainLabelData.Item(icolNumb) & "']"
+                                sAlphaValue = "o" & ClearString(SheetNameData.Item(icolNumb)) & "[" & VarNameData.Item(icolNumb) & "]"
                             ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
                                     sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
                             End If
@@ -863,9 +930,9 @@ EndMacro:
 
         If Not isError Then
             sAlphaValue = FormulaAlphaData.ToString(Separator:="", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
-            AnalysisFormula = sAlphaValue
+            AnalysisFormula = "=" & sAlphaValue
         Else
-        MsgBox "Error in analysis formula: " & sFormula
+        'MsgBox "Error in analysis formula: " & sFormula
         End If
 
         Set FormulaAlphaData = Nothing  'Alphanumeric values of one formula
@@ -901,7 +968,7 @@ EndMacro:
     End Function
 
 
-'CUSTOM HELPERS FUNCTIONS ======================================================
+'CUSTOM HELPERS FUNCTIONS =============================================================================================================================================================================
 
     'Epicemiological week function
 

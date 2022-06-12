@@ -217,7 +217,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
     Call DesignerBuildListHelpers.UpdateChoiceAutoHeaders(Wkb, ChoiceAutoVarData, DictHeaders)
 
-    Call DesignerAnalysis.BuildAnalysis(Wkb, GlobalSummaryData)
+    Call BuildAnalysis(Wkb, GlobalSummaryData)
 
     StatusBar_Updater (iUpdateCpt)
 
