@@ -109,7 +109,7 @@ Sub ImportLangAnalysis(sPath As String)
         Set dest = .Range(.Cells(C_eStartLinesTransdata, 1), .Cells(C_eStartLinesTransdata + src.Rows.Count, src.Columns.Count))
         dest.value = src.value
         Set dest = .Range(.Cells(C_eStartLinesTransdata + 1, 1), .Cells(C_eStartLinesTransdata + src.Rows.Count, src.Columns.Count))
-        .Listobjects.Add(xlSrcRange, dest, xlYes).Name = C_sTabTranslation
+        .ListObjects.Add(xlSrcRange, dest, xlYes).Name = C_sTabTranslation
     End With
 
     'Now Add the list object
