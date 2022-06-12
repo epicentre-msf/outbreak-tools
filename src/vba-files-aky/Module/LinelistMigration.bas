@@ -1098,7 +1098,7 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
     End With
 
     'Writing the Geo
-    Wkb.SaveAs Filename:=sGeoPath, fileformat:=xlOpenXMLStrictWorkbook, _
+    Wkb.SaveAs Filename:=sGeoPath, fileformat:=xlOpenXMLWorkbook, _
                CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     Wkb.Close
 
@@ -1159,7 +1159,7 @@ Private Sub ExportMigrationHistoricGeo(sGeoPath As String)
     End With
 
     'Writing the Geo
-    Wkb.SaveAs Filename:=sGeoPath, fileformat:=xlOpenXMLStrictWorkbook, _
+    Wkb.SaveAs Filename:=sGeoPath, fileformat:=xlOpenXMLWorkbook, _
                CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     Wkb.Close
 

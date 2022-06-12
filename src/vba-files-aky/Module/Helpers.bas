@@ -268,7 +268,6 @@ Option Explicit
         xlsapp.Calculation = xlCalculationManual
         xlsapp.DisplayStatusBar = bstatusbar
         xlsapp.EnableAnimations = False
-        xlsapp.EnableMacroAnimations = False
     End Sub
 
     'Return previous state
@@ -277,8 +276,7 @@ Option Explicit
         xlsapp.DisplayAlerts = True
         xlsapp.Calculation = xlCalculationAutomatic
         xlsapp.DisplayStatusBar = bstatusbar
-         xlsapp.EnableAnimations = True
-        xlsapp.EnableMacroAnimations = True
+        xlsapp.EnableAnimations = True
     End Sub
 
     'Remove Gridlines in a worksheet
