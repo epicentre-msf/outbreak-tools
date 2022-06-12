@@ -2,10 +2,11 @@ Attribute VB_Name = "DesignerMain"
 Option Explicit
 
 Public iUpdateCpt As Integer
+Public bGeobaseIsImported As Boolean
 
 'LOADING FILES AND FOLDERS ============================================================================================================================================================================
 
-'Loading the Dictionnary file__________________________________________________________________________________________________________________________________________________________________________
+'Loading the Dictionnary File _________________________________________________________________________________________________________________________________________________________________________
 Sub LoadFileDic()
 
     Dim sFilePath As String                      'Path to the dictionnary
@@ -30,7 +31,7 @@ Sub LoadFileDic()
     EndWork xlsapp:=Application
 End Sub
 
-'Loading a linelist file ----------------------------------------------------------------------------------------------------------------------------------------------------
+'Loading a linelist File ______________________________________________________________________________________________________________________________________________________________________________
 Sub LoadFileLL()
 
     Dim sFilePath As String                      'Path to the linelist
@@ -48,7 +49,7 @@ ErrorManage:
     MsgBox TranslateMsg("MSG_TitlePassWord"), vbCritical, TranslateMsg("MSG_PassWord")
 End Sub
 
-'Loading the Lineist directory ---------------------------------------------------------------------------------------------------------------------------------------------------
+'Loading the Lineist Directory ________________________________________________________________________________________________________________________________________________________________________
 Sub LinelistDir()
     Dim sfolder As String
 
@@ -62,7 +63,7 @@ Sub LinelistDir()
     End If
 End Sub
 
-'Loading the Geobase --------------------------------------------------------------------------------------------------------------------------------------------------------------
+'Loading the Geobase  _________________________________________________________________________________________________________________________________________________________________________________
 '
 ' Adding a new load geo for the Geo file, in a new sheet called Geo2
 ' we have two functions for loading the geodatabase, but the second one
@@ -70,9 +71,25 @@ End Sub
 '
 Sub LoadGeoFile()
 
-    BeginWork xlsapp:=Application
-
     Dim sFilePath   As String                      'File path to the geo file
+    sFilePath = Helpers.LoadFile("*.xlsx")
+
+    If sFilePath <> vbNullString Then
+        'Open the geo workbook and hide the windows
+        SheetMain.Range(C_sRngPathGeo).value = sFilePath
+        Call ImportGeobase
+        bGeobaseIsImported = True
+    Else
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
+    End If
+End Sub
+
+
+'Function to import the geobase
+
+Public Sub ImportGeobase()
+
+    Dim sFilePath As String
     Dim oSheet      As Object
     Dim AdmData     As BetterArray                  'Table for admin levels
     Dim AdmHeader   As BetterArray                 'Table for the headers of the listobjects
@@ -84,82 +101,71 @@ Sub LoadGeoFile()
     Set AdmData = New BetterArray
     Set AdmHeader = New BetterArray
 
+    BeginWork xlsapp:=Application
+
     AdmNames.LowerBound = 1
     AdmNames.Push C_sAdm1, C_sAdm2, C_sAdm3, C_sAdm4, C_sHF, C_sNames, C_sHistoHF, C_sHistoGeo, C_sGeoMetadata
 
-    sFilePath = Helpers.LoadFile("*.xlsx")
+    'Path to the geobase
+    sFilePath = SheetMain.Range(C_sRngPathGeo).value
 
-    If sFilePath <> "" Then
-        'Open the geo workbook and hide the windows
-        Set Wkb = Workbooks.Open(sFilePath)
-        'Write the filename of the geobase somewhere for the export
-        SheetGeo.Range(C_sRngGeoName).value = Dir(sFilePath)
-
-        'Cleaning the previous Data in case the ranges are not Empty
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_NetoPrec")
-        For i = 1 To AdmNames.Length
-            'Adms (Maybe come back to work on the names?)
-            If Not SheetGeo.ListObjects("T_" & AdmNames.Items(i)).DataBodyRange Is Nothing Then
-                SheetGeo.ListObjects("T_" & AdmNames.Items(i)).DataBodyRange.Delete
-            End If
-        Next
-
-        'Reloading the data from the Geobase
-        For Each oSheet In Wkb.Worksheets
-            SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_EnCours") & oSheet.Name
-            AdmData.Clear
-            AdmHeader.Clear
-
-            'Be sure my sheetnames are correct before loading the data
-            If AdmNames.Includes(oSheet.Name) Then
-
-                'loading the data in memory
-                AdmData.FromExcelRange oSheet.Range("A2"), DetectLastRow:=True, DetectLastColumn:=True
-                'The headers
-                AdmHeader.FromExcelRange oSheet.Range("A1"), DetectLastRow:=False, DetectLastColumn:=True
-
-                'Check if the sheet is the admin exists sheet before writing in the adm table
-                With SheetGeo.ListObjects("T_" & oSheet.Name)
-                    AdmHeader.ToExcelRange Destination:=SheetGeo.Cells(1, .Range.Column), TransposeValues:=True
-                    AdmData.ToExcelRange Destination:=SheetGeo.Cells(2, .Range.Column)
-
-                    'Resizing the Table
-                    .Resize .Range.CurrentRegion
-                End With
-
-            End If
+    'Be sure there is a geobase before proceeding, otherwhise, build the linelist without a geobase
+    If sFilePath = vbNullString Then Exit Sub
 
 
-        Next
+    SheetGeo.Range(C_sRngGeoName).value = Dir(sFilePath)
 
-        SheetMain.Range(C_sRngPathGeo).value = sFilePath
-        Wkb.Close savechanges:=False
+    Set Wkb = Workbooks.Open(sFilePath)
+    'Write the filename of the geobase somewhere for the export
+    'Cleaning the previous Data in case the ranges are not Empty
+    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_NetoPrec")
+    For i = 1 To AdmNames.Length
+        'Adms (Maybe come back to work on the names?)
+        If Not SheetGeo.ListObjects("T_" & AdmNames.Items(i)).DataBodyRange Is Nothing Then
+            SheetGeo.ListObjects("T_" & AdmNames.Items(i)).DataBodyRange.Delete
+        End If
+    Next
+    'Reloading the data from the Geobase
+    For Each oSheet In Wkb.Worksheets
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_EnCours") & oSheet.Name
+        AdmData.Clear
+        AdmHeader.Clear
+        'Be sure my sheetnames are correct before loading the data
+        If AdmNames.Includes(oSheet.Name) Then
+            'loading the data in memory
+            AdmData.FromExcelRange oSheet.Range("A2"), DetectLastRow:=True, DetectLastColumn:=True
+            'The headers
+            AdmHeader.FromExcelRange oSheet.Range("A1"), DetectLastRow:=False, DetectLastColumn:=True
+            'Check if the sheet is the admin exists sheet before writing in the adm table
+            With SheetGeo.ListObjects("T_" & oSheet.Name)
+                AdmHeader.ToExcelRange Destination:=SheetGeo.Cells(1, .Range.Column), TransposeValues:=True
+                AdmData.ToExcelRange Destination:=SheetGeo.Cells(2, .Range.Column)
+                'Resizing the Table
+                .Resize .Range.CurrentRegion
+            End With
+        End If
+    Next
 
-        Set AdmData = Nothing
-        Set AdmHeader = Nothing
-        Set AdmNames = Nothing
-        Set Wkb = Nothing
-
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Fini")
-        SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White")
-
-    Else
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
-    End If
+    Wkb.Close savechanges:=False
+    Set AdmData = Nothing
+    Set AdmHeader = Nothing
+    Set AdmNames = Nothing
+    Set Wkb = Nothing
+    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Fini")
+    SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White")
 
     Call TranslateHeadGeo
-
     EndWork xlsapp:=Application
 End Sub
 
-'GENERATE THE LINELIST DATA =================================================================================================
+'GENERATE THE LINELIST DATA ===========================================================================================================================================================================
 
-'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-'This is the Sub for generating the data of the linelist using the input in the designer
-' The main entry point is the BuildList function which creates the Linelist-patient sheet as
-' well as all the forms in the linelist
-'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Sub GenerateData()
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'This is the Sub for generating the data of the linelist using the input in the designer. The main entry point is the BuildList function which creates the Linelist-patient sheet as well as all
+'the forms in the linelist
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Sub GenerateData(Optional iAsk As Byte = 0)
 
     Dim bGood As Boolean
     bGood = DesignerMainHelpers.ControlForGenerate()
@@ -167,6 +173,9 @@ Sub GenerateData()
     If Not bGood Then
         Exit Sub
     End If
+
+    'Import the geobase if it is not imported
+    If Not bGeobaseIsImported Then Call ImportGeobase
 
     Dim DictHeaders     As BetterArray          'Dictionary headers
     Dim DictData        As BetterArray          'Dictionary data
@@ -180,7 +189,6 @@ Sub GenerateData()
     Dim DesWkb          As Workbook
     Dim iOpenLL         As Integer
     Dim i               As Integer
-
 
     'Be sure the actual Workbook is not opened
 
@@ -209,21 +217,22 @@ Sub GenerateData()
     Call Helpers.MoveData(SetupWkb, DesWkb, C_sParamSheetChoices, C_eStartLinesChoicesHeaders)
     'Move the Export data
     Call Helpers.MoveData(SetupWkb, DesWkb, C_sParamSheetExport, C_eStartLinesExportTitle)
-    
-    Set GSData = New BetterArray
-    GSData.LowerBound = 1
-    GSData.FromExcelRange SetupWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabGlobalSummary).DataBodyRange
+
+    Call Helpers.MoveAnalysis(SetupWkb)
 
     SetupWkb.Close savechanges:=False
     Set SetupWkb = Nothing
 
     iUpdateCpt = iUpdateCpt + 5
     StatusBar_Updater (iUpdateCpt)
-    
+
+    'Translating the linelist
+    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Translating")
+
     'Translate
     Call TranslateLinelistData
 
-    '--------------- Getting all required the Data
+    ' Getting all required the Data ___________________________________________________________________________________________________________________________________________________________________
 
     'Create the Dictionnary data
     Set DictHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetDict, 1)
@@ -242,7 +251,16 @@ Sub GenerateData()
     'Create the translation Data
     Set TransData = New BetterArray
     TransData.FromExcelRange DesWkb.Worksheets(C_sParamSheetTranslation).Cells(C_eStartLinesTransdata, 1), DetectLastRow:=True, DetectLastColumn:=True
+
+    'Filters data for analysis
+
+    'Global summary data for analysis
+    Set GSData = New BetterArray
+    GSData.LowerBound = 1
+    GSData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabGlobalSummary).DataBodyRange
+
     DoEvents
+
     Set DesWkb = Nothing
 
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
@@ -256,7 +274,9 @@ Sub GenerateData()
         MkDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" 'create a folder for sending all the data from designer
     On Error GoTo 0
 
-    Call DesignerBuildList.BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, GSData, sPath)
+
+    Call BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, GSData, sPath)
+
     DoEvents
 
     EndWork xlsapp:=Application
@@ -270,10 +290,13 @@ Sub GenerateData()
 
     StatusBar_Updater (100)
 
-    iOpenLL = MsgBox(TranslateMsg("MSG_OpenLL") & " " & sPath & " ?", vbQuestion + vbYesNo, "Linelist")
+    If iAsk = 1 Then
+        iOpenLL = MsgBox(TranslateMsg("MSG_OpenLL") & " " & sPath & " ?", vbQuestion + vbYesNo, "Linelist")
 
-    If iOpenLL = vbYes Then
-        Call OpenLL
+        If iOpenLL = vbYes Then
+            Call OpenLL
+        End If
+
     End If
 
     'Setting the memory data to nothing
@@ -287,9 +310,9 @@ Sub GenerateData()
 
 End Sub
 
-'Adding some controls before generating the linelist  ==================================================================================================================================
+'Adding some controls before generating the linelist  =================================================================================================================================================
 
-'Adding some controls before generating the linelist  =============================================================================================================================
+'Adding some controls before generating the linelist  =================================================================================================================================================
 Public Sub Control()
     'Put every range in white before the control
 
@@ -324,12 +347,12 @@ Public Sub Control()
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Correct")
         End If
 
-        Call GenerateData
+        Call GenerateData(1)
 
     End If
 End Sub
 
-'OPEN THE GENERATED LINELIST =========================================================================================================================================================
+'OPEN THE GENERATED LINELIST ==========================================================================================================================================================================
 
 Sub OpenLL()
     'Be sure that the directory and the linelist name are not empty

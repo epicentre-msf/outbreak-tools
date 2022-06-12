@@ -12,13 +12,14 @@ Public Const C_sSheetMetadata           As String = "Metadata"
 Public Const C_sSheetChoiceAuto         As String = "List_auto_"
 Public Const C_sSheetAnalysisTemp       As String = "Ana_temp_"                          'Temporary sheet for analysis and stuffs
 Public Const C_sSheetImportTemp         As String = "Import_temp_"
+Public Const C_sSheetAnalysis           As String = "Analysis"
 
 'Sheets in the setup file: The all starts with Param
 
 Public Const C_sParamSheetDict          As String = "Dictionary"                         'Dictionnary Sheet in the setup file
 Public Const C_sParamSheetExport        As String = "Exports"                            'Sheet with configurations for the export  in the setup filefile
 Public Const C_sParamSheetChoices       As String = "Choices"                            'Sheet with configurations for the choices in the setup file
-Public Const C_sParamSheetTranslation   As String = "Translation"                        'Translation Sheet in the setup file
+Public Const C_sParamSheetTranslation   As String = "Translations"                        'Translation Sheet in the setup file
 
 'DICTIONARY PARAMETERS ================================================================================================================================================================================
 
@@ -230,5 +231,13 @@ Public Enum C_StartLines
     C_eStartcolumntransdata = 1                                                                  'Starting column for the translation data
     C_eStartlinesListAuto = 1
     C_eSectionsLookupColumns = 1                                                                 'Columns where to insert GoTo
+
+    C_eStartLinesAnalysis = 4
+    C_eStartColumnAnalysis = 2
+
+    'Analysis columns in the setup
+
+    C_eStartLinesAnaGS = 2
+    C_eStartLinesAnaFil = 1
 End Enum
 

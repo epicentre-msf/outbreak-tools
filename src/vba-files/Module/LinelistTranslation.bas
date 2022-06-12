@@ -101,16 +101,18 @@ Sub ImportLangAnalysis(sPath As String)
 
     Set Wkb = Workbooks.Open(Filename:=sPath)
 
+    SheetSetTranslation.Cells.Clear
+
     'Copy the languages
-    Set src = Wkb.Worksheets("Translations").ListObjects("Tab_Translations").HeaderRowRange
-    Set dest = SheetDesTranslation.Range("T_Lst_Lang")
-    src.Copy dest
+    Set src = Wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).Range
+    With SheetSetTranslation
+        Set dest = .Range(.Cells(C_eStartLinesTransdata, 1), .Cells(C_eStartLinesTransdata + src.Rows.Count, src.Columns.Count))
+        dest.value = src.value
+        Set dest = .Range(.Cells(C_eStartLinesTransdata + 1, 1), .Cells(C_eStartLinesTransdata + src.Rows.Count, src.Columns.Count))
+        .ListObjects.Add(xlSrcRange, dest, xlYes).Name = C_sTabTranslation
+    End With
 
-
-    'Copy the translation data
-    Set src = Wkb.Worksheets("Translations").ListObjects("Tab_Translations").Range
-    Set dest = SheetSetTranslation.Range("A" & C_eStartLinesTransdata)
-    src.Copy dest
+    'Now Add the list object
 
     sAdr1 = SheetDesTranslation.Range("T_Lst_Lang").Address
     sAdr2 = SheetDesTranslation.Range("T_Lst_Lang").End(xlToRight).Address

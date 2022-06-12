@@ -19,7 +19,7 @@ Public Const C_sSheetAnalysis           As String = "Analysis"
 Public Const C_sParamSheetDict          As String = "Dictionary"                         'Dictionnary Sheet in the setup file
 Public Const C_sParamSheetExport        As String = "Exports"                            'Sheet with configurations for the export  in the setup filefile
 Public Const C_sParamSheetChoices       As String = "Choices"                            'Sheet with configurations for the choices in the setup file
-Public Const C_sParamSheetTranslation   As String = "Translation"                        'Translation Sheet in the setup file
+Public Const C_sParamSheetTranslation   As String = "Translations"                        'Translation Sheet in the setup file
 
 'DICTIONARY PARAMETERS ================================================================================================================================================================================
 
@@ -234,5 +234,10 @@ Public Enum C_StartLines
 
     C_eStartLinesAnalysis = 4
     C_eStartColumnAnalysis = 2
+
+    'Analysis columns in the setup
+
+    C_eStartLinesAnaGS = 2
+    C_eStartLinesAnaFil = 1
 End Enum
 

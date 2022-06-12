@@ -4,7 +4,7 @@ Option Explicit
 
 Public Sub BuildAnalysis(Wkb As Workbook, GlobalSummaryData As BetterArray)
 
-    'Add commands
+    'Add commands Buttons  for filters
 
 
     With Wkb
@@ -65,7 +65,7 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GlobalSummaryData As BetterArray)
             .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis).value = GlobalSummaryData.Items(i, 1)
             .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis).Font.Color = Helpers.GetColor("DarkBlue")
             .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis).Interior.Color = Helpers.GetColor("LightBlue")
-            
+
             sFormula = GlobalSummaryData.Items(i, 2)
 
             sConvertedFormula = AnalysisFormula(sFormula, Wkb)
@@ -82,7 +82,7 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GlobalSummaryData As BetterArray)
 
         Next
         On Error GoTo 0
-        
+
         .Columns(C_eStartColumnAnalysis).EntireColumn.AutoFit
         .Columns(C_eStartColumnAnalysis + 1).EntireColumn.AutoFit
         .Columns(C_eStartColumnAnalysis + 2).EntireColumn.AutoFit
@@ -91,11 +91,11 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GlobalSummaryData As BetterArray)
         WriteBorderLines .Range(.Cells(C_eStartLinesAnalysis + 1, C_eStartColumnAdmData), _
                                 .Cells(C_eStartLinesAnalysis + iSumLength, C_eStartColumnAdmData + 2)), _
                          iWeight:=xlThin, sColor:="DarkBlue"
-                         
+
         WriteBorderLines .Range(.Cells(C_eStartLinesAnalysis + 1, C_eStartColumnAdmData), _
                                 .Cells(C_eStartLinesAnalysis + iSumLength, C_eStartColumnAdmData)), _
                          iWeight:=xlThin, sColor:="DarkBlue"
-                         
+
         WriteBorderLines .Range(.Cells(C_eStartLinesAnalysis + 1, C_eStartColumnAdmData + 1), _
                                 .Cells(C_eStartLinesAnalysis + iSumLength, C_eStartColumnAdmData + 1)), _
                          iWeight:=xlThin, sColor:="DarkBlue"
