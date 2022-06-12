@@ -267,6 +267,8 @@ Option Explicit
         xlsapp.DisplayAlerts = False
         xlsapp.Calculation = xlCalculationManual
         xlsapp.DisplayStatusBar = bstatusbar
+        xlsapp.EnableAnimations = False
+        xlsapp.EnableMacroAnimations = False
     End Sub
 
     'Return previous state
@@ -275,6 +277,8 @@ Option Explicit
         xlsapp.DisplayAlerts = True
         xlsapp.Calculation = xlCalculationAutomatic
         xlsapp.DisplayStatusBar = bstatusbar
+         xlsapp.EnableAnimations = True
+        xlsapp.EnableMacroAnimations = True
     End Sub
 
     'Remove Gridlines in a worksheet
@@ -329,11 +333,11 @@ Option Explicit
     End Sub
 
     'Find The last on empty row of a sheet of type linelist
-    Function FindLastRow(shLL As Worksheet) As Integer
+    Function FindLastRow(shLL As Worksheet) As Long
 
-        Dim i As Integer
-        Dim iLastRow As Integer
-        Dim iLastCol As Integer
+        Dim i As Long
+        Dim iLastRow As Long
+        Dim iLastCol As Long
         Dim LoRng As Range
         Dim DestRng As Range
         Dim shTemp As Worksheet
@@ -448,7 +452,7 @@ Option Explicit
     Public Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Byte) As BetterArray
         'Extract column names in one sheet starting from one line
         Dim Headers As BetterArray
-        Dim i As Integer
+        Dim i As Long
         Set Headers = New BetterArray
         Headers.LowerBound = 1
         Dim sValue As String
@@ -589,7 +593,7 @@ Option Explicit
                 .Visible = xlSheetHidden
                 .Cells.Clear
 
-                Rng.Copy Destination:=.Cells(1, 1)
+                Rng.copy Destination:=.Cells(1, 1)
 
                 Set Data = New BetterArray
                 Data.LowerBound = 1
@@ -623,7 +627,7 @@ Option Explicit
                 .Visible = xlSheetHidden
                 .Cells.Clear
 
-                Rng.Copy Destination:=.Cells(1, 1)
+                Rng.copy Destination:=.Cells(1, 1)
 
                 Set Data = New BetterArray
                 Data.LowerBound = 1
@@ -675,7 +679,7 @@ EndMacro:
     'Unique of a betteray sorted
     Function GetUniqueBA(BA As BetterArray) As BetterArray
         Dim sVal As String
-        Dim i As Integer
+        Dim i As Long
         Dim Outable As BetterArray
 
         BA.Sort
@@ -742,7 +746,7 @@ EndMacro:
         Set Wksh = DestWkb.Worksheets.Add(After:=DestWkb.Worksheets(DestWkb.Worksheets.Count))
         If SheetExistsInWkb(DestWkb, sSheetName) Then DestWkb.Worksheets(sSheetName).Delete
 
-        SrcWkb.Worksheets(sSheetName).Copy After:=Wksh
+        SrcWkb.Worksheets(sSheetName).copy After:=Wksh
         Wksh.Delete
 
 
@@ -782,13 +786,11 @@ EndMacro:
         With DesignerWorkbook.Worksheets(C_sSheetAnalysis)
             Set DestRng = .Range(.Cells(C_eStartLinesAnaGS, 1), .Cells(iLastRow, iLastColumn))
              DestRng.value = SrcRng.value
-             Set DestRng = .Range(.Cells(C_eStartLinesAnaGS + 1, 1), .Cells(iLastRow, iLastColumn))
             'Add listobject for Global summary
-            .ListObjects.Add(xlSrcRange, DestRng, xlYes).Name = C_sTabGlobalSummary
+            .ListObjects.Add(xlSrcRange, DestRng, , xlYes).Name = C_sTabGlobalSummary
         End With
 
         'ErrAna:
-
 
         Set DestRng = Nothing
         Set SrcRng = Nothing
@@ -819,11 +821,11 @@ EndMacro:
         Dim VarMainLabelData As BetterArray
 
 
-        Dim i As Integer
-        Dim iPrevBreak As Integer
-        Dim iNbParentO As Integer                    'Number of left parenthesis
-        Dim iNbParentF As Integer                    'Number of right parenthesis
-        Dim icolNumb As Integer                      'Column number on one sheet of one column used in a formual
+        Dim i As Long
+        Dim iPrevBreak As Long
+        Dim iNbParentO As Long                    'Number of left parenthesis
+        Dim iNbParentF As Long                    'Number of right parenthesis
+        Dim icolNumb As Long                      'Column number on one sheet of one column used in a formual
 
 
         Dim isError As Boolean

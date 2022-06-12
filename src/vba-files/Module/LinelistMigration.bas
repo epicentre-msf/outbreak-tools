@@ -49,8 +49,8 @@ Sub ClearData()
 
     Dim Wksh As Worksheet
     Dim sSheetType As String
-    Dim iLastRow As Integer
-    Dim i As Integer
+    Dim iLastRow As Long
+    Dim i As Long
 
     BeginWork xlsapp:=Application
     Application.EnableEvents = False
@@ -164,7 +164,7 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
     Dim VarColumn As BetterArray
     Dim sActualLanguage As String
     Dim sImportedLanguage As String
-    Dim index As Integer 'index of the language
+    Dim index As Long 'index of the language
 
 
     Dim Quit As Byte
@@ -236,14 +236,14 @@ End Function
 Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean, ColumnIndexData As BetterArray, VarNamesData As BetterArray)
 
     Dim sSheetType As String 'Sheet type (different procedures will apply)
-    Dim iLastRowImp As Integer 'LastRow (when needed for import sheet)
-    Dim iLastColImp As Integer 'Last Column for Import data of Type LL
+    Dim iLastRowImp As Long 'LastRow (when needed for import sheet)
+    Dim iLastColImp As Long 'Last Column for Import data of Type LL
     Dim WkbLL As Workbook
-    Dim i As Integer 'Counter, for All variables
-    Dim k As Integer 'Counter, unfound variables
-    Dim iRowIndex As Integer 'Row index for sheets of type Adm
-    Dim iColIndex As Integer 'Col index for sheets of type LL
-    Dim iLastRow As Integer
+    Dim i As Long 'Counter, for All variables
+    Dim k As Long 'Counter, unfound variables
+    Dim iRowIndex As Long 'Row index for sheets of type Adm
+    Dim iColIndex As Long 'Col index for sheets of type LL
+    Dim iLastRow As Long
 
     Dim sVal As String
 
@@ -272,7 +272,15 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                         iRowIndex = ColumnIndexData.Items(VarNamesData.IndexOf(sVal))
                         .Cells(iRowIndex, C_eStartColumnAdmData + 3).value = shImp.Cells(i, 2).value 'On sheets of type Adm, the third column contains values
                     Else
-                        '
+                        'Report variables not imported
+                        If Not ImportReport Then ImportReport = True
+
+                        With ThisWorkbook.Worksheets(C_sSheetImportTemp)
+                            k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
+                            .Cells(k, 3).value = sVal
+                            .Cells(k, 4).value = sSheetName
+                        End With
+
                     End If
                 Next
 
@@ -316,6 +324,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                         End If
                     End If
                 Else
+                    'Report variables not imported
                     If Not ImportReport Then ImportReport = True
 
                     With ThisWorkbook.Worksheets(C_sSheetImportTemp)
@@ -356,14 +365,15 @@ Sub ImportMigrationData()
     Dim sActSht As String
     Dim shpTemp As Worksheet
     Dim ShouldQuit As Byte
-    Dim iStartSheet As Integer
-    Dim iEndSheet As Integer
-    Dim k As Integer 'counter
-    Dim iRow As Integer
+    Dim iStartSheet As Long
+    Dim iEndSheet As Long
+    Dim k As Long 'counter
+    Dim iRow As Long
     Dim sVarName As String 'Varname value
     Dim sVarControlType  As String 'Control of a varname
-    Dim iVarIndex  As Integer   'Index of a variable
+    Dim iVarIndex  As Long   'Index of a variable
     Dim sVal As String
+    Dim iWindowState As Integer
 
     Dim IsSameLanguage As Boolean
 
@@ -391,17 +401,14 @@ Sub ImportMigrationData()
     End If
 
     hasData = LLhasData() 'Here we know if data is cleared or Not
+
     BeginWork xlsapp:=Application
     Application.EnableEvents = False
 
     Set WkbImp = Workbooks.Open(sPath)
-
-    Set VarNamesLLData = New BetterArray
-    Set ColumnIndexLLData = New BetterArray
-    Set ImportVarData = New BetterArray
+    Application.WindowState = xlMinimized
 
     'Test If we have the same language and ask the user if he really want to import.
-
     IsSameLanguage = TestImportLanguage(WkbImp)
 
     If Not IsSameLanguage Then
@@ -413,6 +420,11 @@ Sub ImportMigrationData()
         Application.EnableEvents = True
         Exit Sub
     End If
+
+    Set VarNamesLLData = New BetterArray
+    Set ColumnIndexLLData = New BetterArray
+    Set ImportVarData = New BetterArray
+
 
     'Get All the sheets in the linelist
     Set TabSheetLL = GetDictionaryColumn(C_sDictHeaderSheetName)
@@ -462,6 +474,9 @@ Sub ImportMigrationData()
         End If
     Next
 
+    ThisWorkbook.Worksheets(sActSht).Activate
+
+
     'Test if there are variables in Linelist not in imported sheet
     For k = 1 To VarNamesData.Length
         sVarName = VarNamesData.Item(k)
@@ -481,14 +496,14 @@ Sub ImportMigrationData()
         End If
     Next
 
-    ThisWorkbook.Worksheets(sActSht).Activate
-    WkbImp.Close savechanges:=False
-
-    Set WkbImp = Nothing
     Set ColumnIndexData = Nothing
     Set VarNamesData = Nothing
     Set VarNamesLLData = Nothing
     Set ColumnIndexLLData = Nothing
+
+
+    WkbImp.Close savechanges:=False
+    Set WkbImp = Nothing
 
     EndWork xlsapp:=Application
     Application.EnableEvents = True
@@ -525,8 +540,7 @@ Sub ShowImportReport()
 
     Dim TabRep As BetterArray
     Dim shp As Worksheet
-    Dim iRow As Integer
-    Dim i As Integer
+    Dim iRow As Long
 
     Set TabRep = New BetterArray
     Set shp = ThisWorkbook.Worksheets(C_sSheetImportTemp)
@@ -600,10 +614,10 @@ Sub ImportGeobase()
     Dim AdmData     As BetterArray                  'Table for admin levels
     Dim AdmHeader   As BetterArray                 'Table for the headers of the listobjects
     Dim AdmNames    As BetterArray                  'Array of the sheetnames
-    Dim i           As Integer                             'iterator
+    Dim i           As Long                             'iterator
     Dim Wkb         As Workbook
     Dim WkshGeo     As Worksheet
-    Dim ShouldQuit As Integer
+    Dim ShouldQuit As Long
     'Sheet names
     Set AdmNames = New BetterArray
     Set AdmData = New BetterArray
@@ -731,10 +745,10 @@ Sub ImportHistoricGeobase()
     Dim oSheet      As Object
     Dim AdmData     As BetterArray                  'Table for admin levels
     Dim AdmNames    As BetterArray                  'Array of the sheetnames
-    Dim i           As Integer                             'iterator
+    Dim i           As Long                             'iterator
     Dim Wkb         As Workbook
     Dim WkshGeo     As Worksheet
-    Dim ShouldQuit As Integer
+    Dim ShouldQuit As Long
 
     'Sheet names
     Set AdmNames = New BetterArray
@@ -806,7 +820,7 @@ End Sub
 
 Sub ClearHistoricGeobase()
     Dim WkshGeo As Worksheet
-    Dim ShouldDelete As Integer
+    Dim ShouldDelete As Long
 
     Set WkshGeo = ThisWorkbook.Worksheets(C_sSheetGeo)
 
@@ -857,7 +871,7 @@ Private Sub ExportMigrationData(sLLPath As String)
     Dim ExportData As BetterArray
     Dim ExportHeader As BetterArray
 
-    Dim i As Integer 'iterator
+    Dim i As Long 'iterator
     Dim sPrevSheetName As String 'Previous sheet name  used as temporary variable
 
     Dim Wkb As Workbook
@@ -1181,7 +1195,7 @@ Sub ExportForMigration()
     Dim sPath As String
     Dim ShouldQuit As Byte
 
-    Dim i As Integer 'iterator
+    Dim i As Long 'iterator
 
     Set ExportPath = New BetterArray
 
@@ -1193,8 +1207,8 @@ Sub ExportForMigration()
 
     If sDirectory <> "" Then
         'Export the Data of the linelist
-        sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name), ".xlsb", "") & _
-             "_export_data"
+        sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name, False), ".xlsb", "") & _
+             "_export_data_" & Format(Now, "yyyymmdd-HhNn")
 
         'Export the full geobase
 
@@ -1210,8 +1224,8 @@ Sub ExportForMigration()
             MsgBox TranslateLLMsg("MSG_PathTooLong")
             sDirectory = Helpers.LoadFolder
             If sDirectory <> "" Then
-                 sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name), ".xlsb", "") & _
-                    "_export_data"
+                 sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name, False), ".xlsb", "") & _
+                    "_export_data_" & Format(Now, "yyyymmdd-HhNn")
 
                     'Export the full geobase
 

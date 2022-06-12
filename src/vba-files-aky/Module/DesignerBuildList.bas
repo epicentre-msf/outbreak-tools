@@ -64,7 +64,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     'iWindowState = Application.WindowState
 
     Application.EnableAnimations = False
-    Application.EnableMacroanimations = False
+    Application.EnableMacroAnimations = False
     Application.EnableEvents = False
     Application.Cursor = xlDefault
 
@@ -253,7 +253,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
             .ScreenUpdating = False
             .DisplayAlerts = False
             .EnableAnimations = False
-            .EnableMacroanimations = False
+            .EnableMacroAnimations = False
             .EnableEvents = False
 
             Set Wkb = .Workbooks.Open(SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb")
@@ -289,7 +289,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     EndWork xlsapp:=Application
 
     Application.EnableAnimations = True
-    Application.EnableMacroanimations = True
+    Application.EnableMacroAnimations = True
     Application.EnableEvents = True
     Application.Cursor = xlDefault
 
@@ -483,7 +483,7 @@ End Sub
             On Error Resume Next
             'Logo (copy from the sheet main, copy can fail, you just continue)
             Application.CutCopyMode = False
-            SheetMain.Shapes("SHP_Logo").Copy
+            SheetMain.Shapes("SHP_Logo").copy
             .Paste Destination:=Wkb.Worksheets(C_sSheetAdmin).Cells(2, 2)
             Application.CutCopyMode = True
             On Error GoTo 0

@@ -108,11 +108,10 @@ Sub ImportLangAnalysis(sPath As String)
     With SheetSetTranslation
         Set dest = .Range(.Cells(C_eStartLinesTransdata, 1), .Cells(C_eStartLinesTransdata + src.Rows.Count, src.Columns.Count))
         dest.value = src.value
-        Set dest = .Range(.Cells(C_eStartLinesTransdata + 1, 1), .Cells(C_eStartLinesTransdata + src.Rows.Count, src.Columns.Count))
-        .ListObjects.Add(xlSrcRange, dest, xlYes).Name = C_sTabTranslation
+        .ListObjects.Add(xlSrcRange, dest, , xlYes).Name = C_sTabTranslation
     End With
-
-    'Now Add the list object
+    Set src = Wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).HeaderRowRange
+    src.copy SheetDesTranslation.Range("T_Lst_Lang")
 
     sAdr1 = SheetDesTranslation.Range("T_Lst_Lang").Address
     sAdr2 = SheetDesTranslation.Range("T_Lst_Lang").End(xlToRight).Address
@@ -335,14 +334,14 @@ Sub TranslateLinelistData()
 
     BeginWork xlsapp:=Application
 
-    'Dictionary
-    Call TranslateDictionary
-    'Choices
-    Call TranslateChoices
-    'Exports
-    Call TranslateExports
+        'Dictionary
+        Call TranslateDictionary
+        'Choices
+        Call TranslateChoices
+        'Exports
+        Call TranslateExports
 
-    'Analysis...
+        'Analysis...
 
 
     EndWork xlsapp:=Application
