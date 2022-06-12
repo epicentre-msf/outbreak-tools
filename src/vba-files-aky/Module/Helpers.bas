@@ -784,7 +784,7 @@ EndMacro:
              DestRng.value = SrcRng.value
              Set DestRng = .Range(.Cells(C_eStartLinesAnaGS + 1, 1), .Cells(iLastRow, iLastColumn))
             'Add listobject for Global summary
-            .Listobjects.Add(xlSrcRange, DestRng, xlYes).Name = C_sTabGlobalSummary
+            .ListObjects.Add(xlSrcRange, DestRng, xlYes).Name = C_sTabGlobalSummary
         End With
 
         'ErrAna:

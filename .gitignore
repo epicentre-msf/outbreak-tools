@@ -20,6 +20,8 @@ outputs
 *Sheet1.cls
 *Sheet2.cls
 *Sheet3.cls
+*Sheet4.cls
+*Sheet5.cls
 config.json
 src/vba-files-lla
 linelist_designer_lla.xlsb
