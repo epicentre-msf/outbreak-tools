@@ -287,7 +287,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     EndWork xlsapp:=Application
 
     Application.EnableAnimations = True
-    Application.EnableMacroAnimations = True
     Application.EnableEvents = True
     Application.Cursor = xlDefault
 
