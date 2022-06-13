@@ -46,7 +46,7 @@ Option Explicit
         isMac = Application.OperatingSystem Like "*Mac*"
     End Function
 
-    'Folder selection depending on the OS   ----------------------------------------
+    'Folder selection depending on the OS   ------------------------------------
 
     'Folder on Mac
     Private Function SelectFolderOnMac() As String
@@ -457,7 +457,7 @@ Option Explicit
 
         With Wkb.Worksheets(sSheet)
             i = 1
-            While .Cells(StartLine, i).value <> ""
+            While .Cells(StartLine, i).value <> vbNullString
             'Clear the values in the sheet when adding thems
                 sValue = .Cells(StartLine, i).value 'The argument is passed byval to clearstring
                 sValue = ClearString(sValue)

@@ -23,7 +23,7 @@ Sub LoadFileDic()
         SheetMain.Range(C_sRngPathDic).Interior.Color = vbWhite
 
         'Import the languages after loading the setup file
-        Call ImportLangAnalysis(sFilePath)
+        Call ImportLang
     Else
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
     End If
