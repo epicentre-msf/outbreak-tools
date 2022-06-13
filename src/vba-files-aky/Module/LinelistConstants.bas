@@ -211,7 +211,7 @@ Public Const C_sHF                      As String = "HF"
 Public Const C_sNames                   As String = "NAMES"
 Public Const C_sHistoHF                 As String = "HistoHF"
 Public Const C_sHistoGeo                As String = "HistoGeo"
-Public Const C_sGeoMetadata             As String = "Metadata"
+Public Const C_sGeoMetadata             As String = "METADATA"
 
 'INTEGERS CONSTANTS ===================================================================================================================================================================================
 Public Const C_iNbLinesLLData           As Integer = 200                                    'Number of linest to add by default
