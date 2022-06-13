@@ -79,7 +79,7 @@ Function TranslateLineList(sText As String, sRngName As String)
     Set HeadersData = Nothing
 End Function
 
-Sub ImportLangAnalysis(sPath As String)
+Sub ImportLang()
 'Import languages from the setup file and sheets Translation and Analysis
 
     Dim Wkb As Workbook
@@ -99,7 +99,7 @@ Sub ImportLangAnalysis(sPath As String)
     Application.EnableEvents = False
     Application.EnableAnimations = False
 
-    Set Wkb = Workbooks.Open(Filename:=sPath)
+    Set Wkb = Workbooks.Open(Filename:=SheetMain.Range(C_sRngPathDic).value)
 
     SheetSetTranslation.Cells.Clear
 
@@ -164,8 +164,7 @@ Function GetTranslatedValue(ByVal sText As String) As String
 
 End Function
 
-Sub TranslateColumn(iCol As Integer, sSheetName As String)
-    Dim iLastRow As Integer
+Sub TranslateColumn(iCol As Integer, sSheetName As String, iLastRow As Long, Optional iStartRow As Integer = 2)
     Dim Wksh As Worksheet
     Dim i
     Dim sText As String
@@ -173,9 +172,8 @@ Sub TranslateColumn(iCol As Integer, sSheetName As String)
 
     If iCol > 0 Then 'Be sure the column exists
         Set Wksh = DesignerWorkbook.Worksheets(sSheetName)
-        iLastRow = Wksh.Cells(Rows.Count, 1).End(xlUp).Row
 
-        i = 2
+        i = iStartRow
 
         Do While i <= iLastRow
             If Wksh.Cells(i, iCol).value <> vbNullString Then
@@ -228,17 +226,15 @@ End Function
 
 
 
-Sub TranslateColumnFormula(iCol As Integer, sSheetName As String)
+Sub TranslateColumnFormula(iCol As Integer, sSheetName As String, iLastRow As Long, Optional iStartRow As Integer = 2)
 
     Dim i As Integer
-    Dim iLastRow As Integer
     Dim sText As String
     Dim Wksh As Worksheet
 
     Set Wksh = DesignerWorkbook.Worksheets(sSheetName)
-    iLastRow = Wksh.Cells(Rows.Count, 1).End(xlUp).Row
 
-    i = 2
+    i = iStartRow
 
     Do While i <= iLastRow
         sText = Wksh.Cells(i, iCol).value
@@ -259,37 +255,40 @@ Sub TranslateDictionary()
     'List of columns to Translate
     Dim DictHeaders As BetterArray
     Dim iCol As Integer
+    Dim iLastRow As Long
 
     Set DictHeaders = New BetterArray
     Set DictHeaders = GetHeaders(DesignerWorkbook, C_sParamSheetDict, 1)
+
+    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetDict).Cells(Rows.Count, 1).End(xlUp).Row
 
     'Translate different columns
 
     'Main label
     iCol = DictHeaders.IndexOf(C_sDictHeaderMainLab)
-    Call TranslateColumn(iCol, C_sParamSheetDict)
+    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
     'Sub-label
     iCol = DictHeaders.IndexOf(C_sDictHeaderSubLab)
-    Call TranslateColumn(iCol, C_sParamSheetDict)
+    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
     'Note
     iCol = DictHeaders.IndexOf(C_sDictHeaderNote)
-    Call TranslateColumn(iCol, C_sParamSheetDict)
+    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
     'Sheet Name
     iCol = DictHeaders.IndexOf(C_sDictHeaderSheetName)
-    Call TranslateColumn(iCol, C_sParamSheetDict)
+    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
     'Main Section
     iCol = DictHeaders.IndexOf(C_sDictHeaderMainSec)
-    Call TranslateColumn(iCol, C_sParamSheetDict)
+    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
     'Sub Section
     iCol = DictHeaders.IndexOf(C_sDictHeaderSubSec)
-    Call TranslateColumn(iCol, C_sParamSheetDict)
+    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
     'Message
     iCol = DictHeaders.IndexOf(C_sDictHeaderMessage)
-    Call TranslateColumn(iCol, C_sParamSheetDict)
+    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
 
     'Formula
     iCol = DictHeaders.IndexOf(C_sDictHeaderFormula)
-    Call TranslateColumnFormula(iCol, C_sParamSheetDict)
+    Call TranslateColumnFormula(iCol, C_sParamSheetDict, iLastRow)
 
     Set DictHeaders = Nothing
 
@@ -302,17 +301,20 @@ Sub TranslateChoices()
 
     Dim ChoiceHeaders As BetterArray
     Dim iCol As Integer
+    Dim iLastRow As Long
+
+    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetChoices).Cells(Rows.Count, 1).End(xlUp).Row
 
     Set ChoiceHeaders = New BetterArray
     Set ChoiceHeaders = GetHeaders(DesignerWorkbook, C_sParamSheetChoices, 1)
 
     'Label Short
     iCol = ChoiceHeaders.IndexOf(C_sChoiHeaderLabShort)
-    Call TranslateColumn(iCol, C_sParamSheetChoices)
+    Call TranslateColumn(iCol, C_sParamSheetChoices, iLastRow)
 
     'Label
     iCol = ChoiceHeaders.IndexOf(C_sChoiHeaderLab)
-    Call TranslateColumn(iCol, C_sParamSheetChoices)
+    Call TranslateColumn(iCol, C_sParamSheetChoices, iLastRow)
 
 End Sub
 
@@ -320,17 +322,48 @@ End Sub
 'Translation of the Exports
 
 Sub TranslateExports()
+    Dim iLastRow As Long
+
+    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetExport).Cells(Rows.Count, 1).End(xlUp).Row
 
     'Second column is for label button (I hope)
-    Call TranslateColumn(2, C_sParamSheetExport)
+    Call TranslateColumn(2, C_sParamSheetExport, iLastRow)
+End Sub
+
+Sub TranslateAnalysis()
+
+    Dim iLast As Long
+    Dim iCol As Integer
+    Dim Wksh As Worksheet
+    Dim Headers As BetterArray
+    Dim i As Integer
+
+    Set Headers = New BetterArray
+    Headers.LowerBound = 1
+
+    Set Wksh = DesignerWorkbook.Worksheets(C_sParamSheetAnalysis)
+
+    'GLOBAL SUMMARY ============================================================
+
+    With Wksh.ListObjects(C_sTabGlobalSummary)
+         iLast = .DataBodyRange.Rows.Count + C_eStartLinesAnaGS
+        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, C_eStartLinesAnaGS)
+    End With
+
+    'Translate the column of label
+    iCol = Headers.IndexOf(C_sAnaGSLabel)
+    If iCol < 0 Then Exit Sub
+    Call TranslateColumn(iCol, C_sParamSheetAnalysis, iLast, C_eStartLinesAnaGS)
+
+    'Translate the column of formulas
+    iCol = Headers.IndexOf(C_sAnaGSForm)
+    If iCol < 0 Then Exit Sub
+    Call TranslateColumnFormula(iCol, C_sParamSheetAnalysis, iLast, C_eStartLinesAnaGS)
 
 End Sub
 
-
-
-
 Sub TranslateLinelistData()
-'translation of the Export, Dictionary and Choice sheets for the linelist
+    'translation of the Export, Dictionary and Choice sheets for the linelist
 
     BeginWork xlsapp:=Application
 
@@ -340,8 +373,8 @@ Sub TranslateLinelistData()
         Call TranslateChoices
         'Exports
         Call TranslateExports
-
         'Analysis...
+        Call TranslateAnalysis
 
 
     EndWork xlsapp:=Application
