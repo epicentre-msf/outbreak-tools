@@ -24,8 +24,12 @@ Wkb.Worksheets("Main").Range("RNG_PathDico").value  = SetupPath
 Wkb.Worksheets("Main").Range("RNG_PathGeo").value   = GeoPath
 Wkb.Worksheets("Main").Range("RNG_LLDir").value     = LLDir
 Wkb.Worksheets("Main").Range("RNG_LLName").value    = LLName
-Wkb.Worksheets("Main").Range("RNG_LangSetup").value = SetupLang
 Wkb.Worksheets("Main").Range("RNG_LLForm").value = LLLang
+
+'Import the language
+xlsApp.Run Wkb.Name & "!" & "ImportLang"
+'Set up language
+Wkb.Worksheets("Main").Range("RNG_LangSetup").value = SetupLang
 
 'Generate linelist data
 xlsApp.Run  Wkb.Name & "!" & "GenerateData"

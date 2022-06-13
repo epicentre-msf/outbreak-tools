@@ -29,7 +29,7 @@ linelist_lang <- shQuote("English") # Language of the linelist interface
 
 # Sending code to the designer
 
-cmd <- glue::glue("./rundesigner.vbs {designer_path} {geo_path} {setup_path} {output_dir} {linelist_name} {setup_lang} {linelist_lang}")
+cmd <- glue::glue("{outbreak_tools_path}/Rscripts/rundesigner.vbs {designer_path} {geo_path} {setup_path} {output_dir} {linelist_name} {setup_lang} {linelist_lang}")
 
 
 # run the shell command

@@ -20,6 +20,7 @@ Public Const C_sParamSheetDict          As String = "Dictionary"                
 Public Const C_sParamSheetExport        As String = "Exports"                            'Sheet with configurations for the export  in the setup filefile
 Public Const C_sParamSheetChoices       As String = "Choices"                            'Sheet with configurations for the choices in the setup file
 Public Const C_sParamSheetTranslation   As String = "Translations"                        'Translation Sheet in the setup file
+Public Const C_sParamSheetAnalysis      As String = "Analysis"
 
 'DICTIONARY PARAMETERS ================================================================================================================================================================================
 
@@ -100,23 +101,27 @@ Public Const C_sDictTypeDec             As String = "decimal"
 
 'CHOICES PARAMETERS ===================================================================================================================================================================================
 
-Public Const C_sChoiHeaderLab           As String = "label" 'Choice label name headers
-Public Const C_sChoiHeaderList          As String = "list name" 'Choice list headers
+Public Const C_sChoiHeaderLab           As String = "label"                             'Choice label name headers
+Public Const C_sChoiHeaderList          As String = "list name"                         'Choice list headers
 Public Const C_sChoiHeaderLabShort      As String = "label short"
 
 'EXPORTS PARAMETERS ===================================================================================================================================================================================
 
-Public Const C_sExportActive As String = "active"
-Public Const C_sExportInactive As String = "inactive"
+Public Const C_sExportActive            As String = "active"
+Public Const C_sExportInactive          As String = "inactive"
 
+'ANALYSIS PARAMETERS ==================================================================================================================================================================================
+
+Public Const C_sAnaGSLabel       As String = "summary label"
+Public Const C_sAnaGSForm        As String = "summary function"
 
 'FORMS ================================================================================================================================================================================================
 
 Public Const C_sFormExport               As String = "F_Export"                          'Export Frame
 Public Const C_sFormGeo                  As String = "F_Geo"                             'Geo Frame
 Public Const C_sFormShowHide             As String = "F_NomVisible"                      'ShowHide Frame
-Public Const C_sFormExportMig            As String = "F_ExportMig" 'Export for Migration form
-Public Const C_sFormImportMig            As String = "F_ImportMig" 'Import for Migration form
+Public Const C_sFormExportMig            As String = "F_ExportMig"                       'Export for Migration form
+Public Const C_sFormImportMig            As String = "F_ImportMig"                       'Import for Migration form
 Public Const C_sFormImportRep            As String = "F_ImportRep"
 
 'TABLES LISTOBJECTS ===================================================================================================================================================================================
