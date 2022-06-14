@@ -35,8 +35,8 @@ End Sub
 Sub ClicCmdAddRows()
 
     Dim oLstobj As Object
-    Dim iLastRow As Integer
-    Dim iLastCol As Integer
+    Dim iLastRow As Long
+    Dim iLastCol As Long
     Dim LoRng As Range
 
     On Error GoTo errAddRows
