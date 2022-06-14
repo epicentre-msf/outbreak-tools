@@ -46,7 +46,7 @@ Option Explicit
         isMac = Application.OperatingSystem Like "*Mac*"
     End Function
 
-    'Folder selection depending on the OS   ------------------------------------
+    'Folder selection depending on the OS   ----------------------------------------------------------------------------
 
     'Folder on Mac
     Private Function SelectFolderOnMac() As String
@@ -122,9 +122,9 @@ Option Explicit
             Case "*.xlsb"
                 sMacFilter = " {""com.microsoft.Excel.sheet.binary.macroenabled""} "
             Case "*.xlsb, *.xlsx"
-                sMacFilter = " {""com.microsoft.excel.xls"",""public.comma-separated-values-text""} "
+                sMacFilter = " {""org.openxmlformats.spreadsheetml.sheet"",""com.microsoft.Excel.sheet.binary.macroenabled""} "
             Case Else
-                sMacFilter = " {""com.microsoft.Excel.xls""} "
+                sMacFilter = " {""org.openxmlformats.spreadsheetml.sheet""} "
         End Select
 
         SelectFileOnMac = vbNullString
@@ -741,10 +741,10 @@ EndMacro:
         If Not SheetExistsInWkb(SrcWkb, sSheetName) Then Exit Function
 
         'First Test if the sheet exists in the destination workbook
-        Set Wksh = DestWkb.Worksheets.Add(After:=DestWkb.Worksheets(DestWkb.Worksheets.Count))
+        Set Wksh = DestWkb.Worksheets.Add(after:=DestWkb.Worksheets(DestWkb.Worksheets.Count))
         If SheetExistsInWkb(DestWkb, sSheetName) Then DestWkb.Worksheets(sSheetName).Delete
 
-        SrcWkb.Worksheets(sSheetName).copy After:=Wksh
+        SrcWkb.Worksheets(sSheetName).copy after:=Wksh
         Wksh.Delete
 
 

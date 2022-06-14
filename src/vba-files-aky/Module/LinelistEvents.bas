@@ -35,8 +35,8 @@ End Sub
 Sub ClicCmdAddRows()
 
     Dim oLstobj As Object
-    Dim iLastRow As Integer
-    Dim iLastCol As Integer
+    Dim iLastRow As Long
+    Dim iLastCol As Long
     Dim LoRng As Range
 
     On Error GoTo errAddRows
@@ -61,7 +61,7 @@ Sub ClicCmdAddRows()
     Application.EnableEvents = True
     Exit Sub
 
-errAddRows:
+    errAddRows:
         Application.EnableEvents = True
         MsgBox TranslateLLMsg("MSG_ErrAddRows"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         Exit Sub
