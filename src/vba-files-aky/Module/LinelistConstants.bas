@@ -109,6 +109,14 @@ Public Const C_sChoiHeaderLabShort      As String = "label short"
 
 Public Const C_sExportActive            As String = "active"
 Public Const C_sExportInactive          As String = "inactive"
+Public Const C_sExportHeaderExport      As String = "export"
+Public Const C_sExportHeaderLabelButton As String = "label button"
+Public Const C_sExportHeaderPassword    As String = "password"
+Public Const C_sExportHeaderStatus      As String = "status"
+Public Const C_sExportHeaderMetadata    As String = "export metadata"
+Public Const C_sExportHeaderTranslation  As String = "export translation"
+Public Const C_sExportHeaderFileFormat  As String = "file format"
+Public Const C_sExportHeaderFileName    As String = "file name"
 
 'ANALYSIS PARAMETERS ==================================================================================================================================================================================
 

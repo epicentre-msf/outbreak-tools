@@ -862,56 +862,29 @@ Private Sub ExportMigrationData(sLLPath As String)
     Dim DictHeaders As BetterArray
     Dim DictData As BetterArray
 
-    'Linelist and Admin Sheets data
-
-    Dim LLSheetData As BetterArray
-    Dim AdmSheetData As BetterArray
-
     'Export data and headers
     Dim ExportData As BetterArray
     Dim ExportHeader As BetterArray
 
     Dim i As Long 'iterator
     Dim sPrevSheetName As String 'Previous sheet name  used as temporary variable
+    Dim sSheetName As String 'Actual Sheet Name
+
+    Dim iControlIndex As Integer
+    Dim iSheetNameIndex As Integer
 
     Dim Wkb As Workbook
-
-    Set LLSheetData = New BetterArray
-    Set AdmSheetData = New BetterArray
     Set ExportData = New BetterArray
     Set ExportHeader = New BetterArray
 
     On Error GoTo errExportMig
 
-    LLSheetData.LowerBound = 1
-    AdmSheetData.LowerBound = 1
-
     'Now I am able to Export, try to write each data to a workbook
     BeginWork xlsapp:=Application
-    Application.DisplayAlerts = False
 
     'Initialize ditionary headers and values
     Set DictHeaders = GetDictionaryHeaders()
     Set DictData = GetDictionaryData()
-
-    i = 1
-    While i <= DictData.Length
-        'Get the list of all the Sheets of type linelist
-        If (DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType))) = C_sDictSheetTypeLL Then
-            If (DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))) <> sPrevSheetName Then
-                sPrevSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
-                LLSheetData.Push sPrevSheetName
-            End If
-        End If
-        'Get the list of all the sheets if type admin
-        If (DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetType))) = C_sDictSheetTypeAdm Then
-            If (DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))) <> sPrevSheetName Then
-                sPrevSheetName = DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName))
-                AdmSheetData.Push sPrevSheetName
-            End If
-        End If
-        i = i + 1
-    Wend
 
     'Writing the linelist Data (with all the databases, dictionary, export, translation and choices)
     Set Wkb = Workbooks.Add
@@ -936,39 +909,49 @@ Private Sub ExportMigrationData(sLLPath As String)
         DictData.ToExcelRange .Worksheets(C_sParamSheetDict).Cells(2, 1)
         sPrevSheetName = C_sParamSheetDict
 
-        'Sheets of type linelist
-        i = 1
-        While i <= LLSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = LLSheetData.Items(i)
-            sPrevSheetName = LLSheetData.Items(i)
-            ExportData.Clear
-            ExportData.FromExcelRange ThisWorkbook.Worksheets(sPrevSheetName).ListObjects("o" & ClearString(sPrevSheetName, False)).Range
-            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1)
-            i = i + 1
-        Wend
-
-        'Sheets of type Admin
-        i = 1
-        While i <= AdmSheetData.UpperBound
-            .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = AdmSheetData.Items(i)
-            sPrevSheetName = AdmSheetData.Items(i)
-            ExportData.Clear
-            ExportHeader.Clear
-            Set ExportHeader = GetExportHeaders("Migration", sPrevSheetName, isMigration:=True)
-            Set ExportData = GetExportValues(ExportHeader, sPrevSheetName, 2)
-            .Worksheets(sPrevSheetName).Cells(1, 1).value = "variable"
-            .Worksheets(sPrevSheetName).Cells(1, 2).value = "value"
-            ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(2, 1)
-            i = i + 1
-        Wend
-
-        'Add The metadata Sheet
-         .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sSheetMetadata
-         sPrevSheetName = C_sSheetMetadata
-         ExportData.Clear
-         ExportData.FromExcelRange ThisWorkbook.Worksheets(C_sSheetMetadata).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=True
-         ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1)
+        'Add metadata
+        .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sSheetMetadata
+        sPrevSheetName = C_sSheetMetadata
+        ExportData.Clear
+        ExportData.FromExcelRange ThisWorkbook.Worksheets(C_sSheetMetadata).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=True
+        ExportData.ToExcelRange .Worksheets(sPrevSheetName).Cells(1, 1)
     End With
+
+    iControlIndex = DictHeaders.IndexOf(C_sDictHeaderSheetType)
+    iSheetNameIndex = DictHeaders.IndexOf(C_sDictHeaderSheetName)
+
+    'No more need export data and headers
+    Set ExportData = Nothing
+    Set ExportHeader = Nothing
+
+    i = 1
+    While i <= DictData.Length
+
+        If DictData.Items(i, iSheetNameIndex) <> sPrevSheetName Then
+            'Update sheetname
+            sSheetName = DictData.Items(i, iSheetNameIndex)
+
+            Select Case DictData.Items(i, iControlIndex)
+
+                Case C_sDictSheetTypeLL
+
+                'Add Sheet of type Linelist if needed
+                 Call AddLLSheet(Wkb, sSheetName, sPrevSheetName)
+
+                Case C_sDictSheetTypeAdm
+
+                'Add sheet of type Adm
+                 Call AddAdmSheet(Wkb, sSheetName, sPrevSheetName)
+
+            End Select
+
+            'Update previous sheetName
+            sPrevSheetName = sSheetName
+        End If
+
+        i = i + 1
+    Wend
+
 
     'Write an error handling for writing the file here
     Wkb.SaveAs Filename:=sLLPath, fileformat:=xlExcel12, CreateBackup:=False, _
@@ -976,10 +959,6 @@ Private Sub ExportMigrationData(sLLPath As String)
     Wkb.Close
 
     Set Wkb = Nothing
-    Set ExportData = Nothing
-    Set ExportHeader = Nothing
-    Set LLSheetData = Nothing
-    Set AdmSheetData = Nothing
     Set DictData = Nothing
     Set DictHeaders = Nothing
 
@@ -992,6 +971,55 @@ errExportMig:
         MsgBox TranslateLLMsg("MSG_ErrExportData")
         EndWork xlsapp:=Application
         Exit Sub
+End Sub
+
+'Add sheet of type linelist
+Private Sub AddLLSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String)
+
+    Dim src As Range
+    Dim dest As Range
+
+    Set src = ThisWorkbook.Worksheets(sSheetName).ListObjects("o" & ClearString(sSheetName)).Range
+    Wkb.Worksheets.Add(after:=Wkb.Worksheets(sPrevSheetName)).Name = sSheetName
+
+    With Wkb.Worksheets(sSheetName)
+        Set dest = .Range(.Cells(1, 1), .Cells(src.Rows.Count, src.Columns.Count))
+    End With
+
+    'copy by value
+    dest.value = src.value
+
+    Set dest = Nothing
+    Set src = Nothing
+End Sub
+
+'Add sheet of type Adm
+
+Private Sub AddAdmSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String)
+    Dim iLastRow As Long
+    Dim i As Long 'iterator for Adm sheet
+    Dim k As Long 'iterator for export workbook
+    Dim Wksh As Worksheet 'New adm worksheet, for code readability
+
+    With ThisWorkbook.Worksheets(sSheetName)
+        iLastRow = .Cells(.Rows.Count, C_eStartColumnAdmData).End(xlUp).Row
+    End With
+
+    Wkb.Worksheets.Add(after:=Wkb.Worksheets(sPrevSheetName)).Name = sSheetName
+    Set Wksh = Wkb.Worksheets(sSheetName)
+
+    Wksh.Cells(1, 1).value = C_sVariable
+    Wksh.Cells(1, 2).value = C_sValue
+
+    'Add values to export sheet from the second line
+    k = 2
+    With ThisWorkbook.Worksheets(sSheetName)
+        For i = C_eStartLinesAdmData To iLastRow
+            Wksh.Cells(k, 1).value = .Cells(i, C_eStartColumnAdmData + 3).Name.Name
+            Wksh.Cells(k, 2).value = .Cells(i, C_eStartColumnAdmData + 3).value
+            k = k + 1
+        Next
+    End With
 End Sub
 
 'Export the Full Geobase (including historic)
@@ -1293,19 +1321,3 @@ ErrPath:
         EndWork xlsapp:=Application
         Exit Sub
 End Sub
-
-Public Function SheetExist(SheetName As String) As Boolean
-'check sheet exist
-
-    Dim shSheet As Variant
-
-    SheetExist = False
-
-    For Each shSheet In Sheets
-        If UCase(shSheet.Name) = UCase(SheetName) Then
-            SheetExist = True
-            Exit Function
-        End If
-    Next shSheet
-
-End Function
