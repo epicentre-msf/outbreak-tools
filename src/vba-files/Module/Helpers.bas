@@ -46,7 +46,7 @@ Option Explicit
         isMac = Application.OperatingSystem Like "*Mac*"
     End Function
 
-    'Folder selection depending on the OS   ------------------------------------
+    'Folder selection depending on the OS   ----------------------------------------------------------------------------
 
     'Folder on Mac
     Private Function SelectFolderOnMac() As String
@@ -122,9 +122,9 @@ Option Explicit
             Case "*.xlsb"
                 sMacFilter = " {""com.microsoft.Excel.sheet.binary.macroenabled""} "
             Case "*.xlsb, *.xlsx"
-                sMacFilter = " {""com.microsoft.excel.xls"",""public.comma-separated-values-text""} "
+                sMacFilter = " {""org.openxmlformats.spreadsheetml.sheet"",""com.microsoft.Excel.sheet.binary.macroenabled""} "
             Case Else
-                sMacFilter = " {""com.microsoft.Excel.xls""} "
+                sMacFilter = " {""org.openxmlformats.spreadsheetml.sheet""} "
         End Select
 
         SelectFileOnMac = vbNullString
