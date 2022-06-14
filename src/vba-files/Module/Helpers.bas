@@ -741,10 +741,10 @@ EndMacro:
         If Not SheetExistsInWkb(SrcWkb, sSheetName) Then Exit Function
 
         'First Test if the sheet exists in the destination workbook
-        Set Wksh = DestWkb.Worksheets.Add(After:=DestWkb.Worksheets(DestWkb.Worksheets.Count))
+        Set Wksh = DestWkb.Worksheets.Add(after:=DestWkb.Worksheets(DestWkb.Worksheets.Count))
         If SheetExistsInWkb(DestWkb, sSheetName) Then DestWkb.Worksheets(sSheetName).Delete
 
-        SrcWkb.Worksheets(sSheetName).copy After:=Wksh
+        SrcWkb.Worksheets(sSheetName).copy after:=Wksh
         Wksh.Delete
 
 
