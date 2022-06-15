@@ -11,7 +11,7 @@ Public Sub TransferDesignerCodes(Wkb As Workbook)
     Call TransferForm(Wkb, C_sFormShowHide)
     Call TransferForm(Wkb, C_sFormExport)
     Call TransferForm(Wkb, C_sFormExportMig)
-    Call TransferForm(Wkb, C_sFormImportMig)
+    Call TransferForm(Wkb, C_sFormAdvanced)
     Call TransferForm(Wkb, C_sFormImportRep)
 
     'TransferCode is for sending modules  (Modules) or classes (Classes) from actual excel workbook to another excel workbook
@@ -70,7 +70,7 @@ End Sub
 '@sSheetName: the name of the Sheet in the designer we want to move
 
 Public Sub TransferSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String)
-    DesignerWorkbook.Worksheets(sSheetName).copy After:=Wkb.Worksheets(sPrevSheetName)
+    DesignerWorkbook.Worksheets(sSheetName).copy after:=Wkb.Worksheets(sPrevSheetName)
 End Sub
 
 '-----

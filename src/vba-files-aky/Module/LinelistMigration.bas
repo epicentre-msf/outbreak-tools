@@ -25,7 +25,7 @@ Sub ControlClearData()
 
         ShouldProceed = MsgBox(TranslateLLMsg("MSG_FinishedClear"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
         If ShouldProceed = vbYes Then
-            [F_ImportMig].Hide
+            [F_Advanced].Hide
         End If
     Else
         MsgBox TranslateLLMsg("MSG_DelCancel"), vbOKOnly, TranslateLLMsg("MSG_Delete")
@@ -513,13 +513,13 @@ Sub ImportMigrationData()
         ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImport"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
 
         If ShouldQuit = vbYes Then
-            F_ImportMig.Hide
+            F_Advanced.Hide
         End If
     Else
         ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportRep"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
 
         If ShouldQuit = vbYes Then
-            F_ImportMig.Hide
+            F_Advanced.Hide
             Call ShowImportReport
         End If
     End If
@@ -681,7 +681,7 @@ Sub ImportGeobase()
         ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportGeo"), vbQuestion + vbYesNo, "Import GeoData")
 
         If ShouldQuit = vbYes Then
-            F_ImportMig.Hide
+            F_Advanced.Hide
         End If
     End If
 
@@ -797,7 +797,7 @@ Sub ImportHistoricGeobase()
     ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportHistoricGeo"), vbQuestion + vbYesNo, "Import Historic")
 
     If ShouldQuit = vbYes Then
-        F_ImportMig.Hide
+        F_Advanced.Hide
     End If
 
     Set AdmData = Nothing

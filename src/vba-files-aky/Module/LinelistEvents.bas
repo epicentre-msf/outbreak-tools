@@ -61,7 +61,7 @@ Sub ClicCmdAddRows()
     Application.EnableEvents = True
     Exit Sub
 
-    errAddRows:
+errAddRows:
         Application.EnableEvents = True
         MsgBox TranslateLLMsg("MSG_ErrAddRows"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         Exit Sub
@@ -342,7 +342,7 @@ End Sub
 
 Sub ClicImportMigration()
 'Import exported data into the linelist
-    F_ImportMig.Show
+    F_Advanced.Show
 End Sub
 
 
