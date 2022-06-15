@@ -351,13 +351,13 @@ Sub Export(iTypeExport As Byte)
 
     Exit Sub
 
-    exportErrHandExport:
+exportErrHandExport:
         MsgBox TranslateLLMsg("MSG_ErrHandExport"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         Exit Sub
-    exportErrHandData:
+exportErrHandData:
         MsgBox TranslateLLMsg("MSG_exportErrHandData"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         Exit Sub
-    exportErrHandWrite:
+exportErrHandWrite:
         MsgBox TranslateLLMsg("MSG_exportErrHandWrite"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         Exit Sub
 End Sub

@@ -376,7 +376,7 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
         Call DesignerBuildListHelpers.AddAdminSheet(Wkb)
 
         'Add Analysis
-        .Worksheets.Add(After:=.Worksheets(C_sSheetAdmin)).Name = C_sSheetAnalysis
+        .Worksheets.Add(after:=.Worksheets(C_sSheetAdmin)).Name = C_sSheetAnalysis
         Call RemoveGridLines(.Worksheets(C_sSheetAnalysis))
 
         '--------------- adding the other the other sheets in the dictionary to the linelist
@@ -391,7 +391,7 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
             sNewSheetName = EnsureGoodSheetName(DictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
 
             If sPrevSheetName <> sNewSheetName Then
-                .Worksheets.Add(After:=.Worksheets(sPrevSheetName)).Name = sNewSheetName
+                .Worksheets.Add(after:=.Worksheets(sPrevSheetName)).Name = sNewSheetName
 
                 'Remove the gridlines in this new Sheetname
                 Call RemoveGridLines(.Worksheets(sNewSheetName))
