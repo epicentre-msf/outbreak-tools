@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_ImportRep 
    Caption         =   "Import Summary"
-   ClientHeight    =   10410
+   ClientHeight    =   8415.001
    ClientLeft      =   120
    ClientTop       =   465
-   ClientWidth     =   5760
+   ClientWidth     =   10755
    OleObjectBlob   =   "F_ImportRep.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
@@ -38,7 +38,9 @@ Attribute VB_Exposed = False
 
 
 
+
 Option Explicit
+
 
 Private Sub UserForm_Initialize()
     'Manage language
@@ -46,8 +48,8 @@ Private Sub UserForm_Initialize()
 
     Call TranslateForm(Me)
 
-    Me.Width = 300
-    Me.Height = 550
+    Me.Width = 550
+    Me.Height = 450
 
 End Sub
 

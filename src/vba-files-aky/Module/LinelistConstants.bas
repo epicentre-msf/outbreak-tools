@@ -129,7 +129,7 @@ Public Const C_sFormExport               As String = "F_Export"                 
 Public Const C_sFormGeo                  As String = "F_Geo"                             'Geo Frame
 Public Const C_sFormShowHide             As String = "F_NomVisible"                      'ShowHide Frame
 Public Const C_sFormExportMig            As String = "F_ExportMig"                       'Export for Migration form
-Public Const C_sFormImportMig            As String = "F_ImportMig"                       'Import for Migration form
+Public Const C_sFormAdvanced            As String = "F_Advanced"                       'Import for Migration form
 Public Const C_sFormImportRep            As String = "F_ImportRep"
 
 'TABLES LISTOBJECTS ===================================================================================================================================================================================
