@@ -345,7 +345,7 @@ Option Explicit
         iLastRow = C_eStartLinesLLData + 1
 
         Set shTemp = ThisWorkbook.Worksheets(C_sSheetTemp)
-        Set LoRng = shLL.ListObjects("o" & ClearString(shLL.Name)).Range
+        Set LoRng = shLL.ListObjects(SheetListObjectName(shLL.Name)).Range
         Set DestRng = shTemp.Range(LoRng.Address)
 
         DestRng.value = LoRng.value
@@ -471,14 +471,28 @@ Option Explicit
     End Function
 
     'Get the data from one sheet starting from one line
-    Public Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Byte) As BetterArray
+    Public Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Long, Optional EndColumn As Long = 0) As BetterArray
         Dim Data As BetterArray
+        Dim Rng As Range
+
+        Dim iLastRow As Long
+        Dim iLastCol As Long
         Set Data = New BetterArray
         Data.LowerBound = 1
-        Data.FromExcelRange Wkb.Worksheets(sSheetName).Cells(StartLine, 1), DetectLastRow:=True, DetectLastColumn:=True
+
+        With Wkb.Worksheets(sSheetName)
+
+            iLastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+            iLastCol = EndColumn
+            If EndColumn = 0 Then iLastCol = .Cells(StartLine, .Columns.Count).End(xlToLeft).Column
+            Set Rng = .Range(.Cells(StartLine, 1), .Cells(iLastRow, iLastCol))
+        End With
+
+        Data.FromExcelRange Rng
         'The output of the function is a variant
         Set GetData = Data
         Set Data = Nothing
+        Set Rng = Nothing
     End Function
 
     'Get the validation list using Choices data and choices labels
@@ -728,6 +742,16 @@ EndMacro:
         End If
     End Function
 
+    Public Function  SheetListObjectName(sSVal As String) As String
+
+        Dim NewName As String
+        NewName = ClearString(sSVal)
+        NewName = Replace(NewName, " ", "_")
+        NewName = "o" & NewName
+        SheetListObjectName = NewName
+
+    End Function
+
     'Move Worksheet from one Workbook to another
     Public Function MoveWksh(SrcWkb As Workbook, DestWkb As Workbook, sSheetName As String)
 
@@ -803,7 +827,7 @@ EndMacro:
     Public Function AnalysisFormula(sFormula As String, Wkb As Workbook) As String
         'Returns a string of cleared formula
 
-        AnalysisFormula = ""
+        AnalysisFormula = vbNullString
 
         Dim sFormulaATest As String                  'same formula, with all the spaces replaced with
         Dim sAlphaValue As String                    'Alpha numeric values in a formula
@@ -907,7 +931,7 @@ EndMacro:
                             'It is either a variable name or a formula
                             If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
                                 icolNumb = VarNameData.IndexOf(sAlphaValue)
-                                sAlphaValue = "o" & ClearString(SheetNameData.Item(icolNumb)) & "[" & VarNameData.Item(icolNumb) & "]"
+                                sAlphaValue = SheetListObjectName(SheetNameData.Item(icolNumb)) & "[" & VarNameData.Item(icolNumb) & "]"
                             ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
                                     sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
                             End If
@@ -1041,8 +1065,8 @@ EndMacro:
             iColLook = RngLook.Column
             iColVal = RngVal.Column
 
-            Set ColRngLook = ThisWorkbook.Worksheets(sSheetLook).ListObjects("o" & ClearString(sSheetLook)).ListColumns(iColLook).Range
-            Set ColRngVal = ThisWorkbook.Worksheets(sSheetVal).ListObjects("o" & ClearString(sSheetVal)).ListColumns(iColVal).Range
+            Set ColRngLook = ThisWorkbook.Worksheets(sSheetLook).ListObjects(SheetListObjectName(sSheetLook)).ListColumns(iColLook).Range
+            Set ColRngVal = ThisWorkbook.Worksheets(sSheetVal).ListObjects(SheetListObjectName(sSheetVal)).ListColumns(iColVal).Range
 
             On Error Resume Next
             With Application.WorksheetFunction
