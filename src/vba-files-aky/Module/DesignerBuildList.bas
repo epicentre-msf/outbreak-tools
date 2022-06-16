@@ -208,8 +208,8 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
             .Cells(i, iSheetNameColumn).value = EnsureGoodSheetName(.Cells(i, iSheetNameColumn).value)
         Next
 
-        .ListObjects.Add(xlSrcRange, .Range(.Cells(1, 1), .Cells(DictData.Length, DictHeaders.Length + 1)), , xlYes).Name = "o" & ClearString(C_sParamSheetDict)
-        .ListObjects("o" & ClearString(C_sParamSheetDict)).Resize .ListObjects("o" & ClearString(C_sParamSheetDict)).Range.CurrentRegion
+        .ListObjects.Add(xlSrcRange, .Range(.Cells(1, 1), .Cells(DictData.Length, DictHeaders.Length + 1)), , xlYes).Name = SheetListObjectName(C_sParamSheetDict)
+        .ListObjects(SheetListObjectName(C_sParamSheetDict)).Resize .ListObjects(SheetListObjectName(C_sParamSheetDict)).Range.CurrentRegion
     End With
 
     iUpdateCpt = iUpdateCpt + 2
@@ -246,41 +246,37 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
         Set Wkb = Nothing
         Dim Myxlsapp As Excel.Application
         Set Myxlsapp = New Excel.Application
-
-        With Myxlsapp
-            .Visible = False
-            .ScreenUpdating = False
-            .DisplayAlerts = False
-            .EnableAnimations = False
-            .EnableEvents = False
-
-            Set Wkb = .Workbooks.Open(SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb")
-            .Windows(Wkb.Name).Visible = True
-            '.Windows(Wkb.Name).WindowState = xlMaximized
-
-            For Each Wksh In Wkb.Worksheets
-                If SheetsOfTypeLLData.Includes(Wksh.Name) Then
-                    Wksh.Activate
-                    With .ActiveWindow
-                    .SplitColumn = C_iLLSplitColumn
-                    .SplitRow = C_eStartLinesLLData + 1
-                    .FreezePanes = True
-                    End With
-                End If
-            Next
-        End With
-
-        Wkb.SaveAs Filename:=sPath, fileformat:=xlExcel12, Password:=SheetMain.Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-        Wkb.Close
-        Set Wkb = Nothing
+       With Myxlsapp
+        .Visible = False
+        .ScreenUpdating = False
+        .DisplayAlerts = False
+        .EnableAnimations = False
+        .EnableEvents = False
+        Set Wkb = .Workbooks.Open(SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb")
+        .Windows(Wkb.Name).Visible = True
+        '.Windows(Wkb.Name).WindowState = xlMaximized
+           For Each Wksh In Wkb.Worksheets
+            If SheetsOfTypeLLData.Includes(Wksh.Name) Then
+                Wksh.Activate
+                With .ActiveWindow
+                .SplitColumn = C_iLLSplitColumn
+                .SplitRow = C_eStartLinesLLData + 1
+                .FreezePanes = True
+                End With
+            End If
+        Next
+    End With
+       Wkb.SaveAs Filename:=sPath, fileformat:=xlExcel12, Password:=SheetMain.Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+    Wkb.Close
+    Set Wkb = Nothing
 
 
-        Myxlsapp.Quit
-        Set Myxlsapp = Nothing
+    Myxlsapp.Quit
+       Set Myxlsapp = Nothing
 
-        On Error Resume Next
-            Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb"
-        On Error GoTo 0
+    On Error Resume Next
+           Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb"
+       On Error GoTo 0
 
     #End If
 
@@ -1002,13 +998,13 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         'Range of the listobject
         Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 2, .Cells(C_eStartLinesLLData + 1, Columns.Count).End(xlToLeft).Column))
         'Creating the TableObject that will contain the data entry
-        .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = "o" & ClearString(sSheetName)
-        .ListObjects("o" & ClearString(sSheetName)).TableStyle = C_sLLTableStyle
+        .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = SheetListObjectName(sSheetName)
+        .ListObjects(SheetListObjectName(sSheetName)).TableStyle = C_sLLTableStyle
 
         'Set the new range for the table
         Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_iNbLinesLLData + C_eStartLinesLLData + 1, .Cells(C_eStartLinesLLData + 1, Columns.Count).End(xlToLeft).Column))
         'Resize for 200 lines entrie
-        .ListObjects("o" & ClearString(sSheetName)).Resize LoRng
+        .ListObjects(SheetListObjectName(sSheetName)).Resize LoRng
      '   Now Protect the sheet,
         .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True

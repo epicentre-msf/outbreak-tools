@@ -43,7 +43,7 @@ Sub ClicCmdAddRows()
 
     ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
     Application.EnableEvents = False
-    Set oLstobj = ActiveSheet.ListObjects("o" & ClearString(ActiveSheet.Name))
+    Set oLstobj = ActiveSheet.ListObjects(SheetListObjectName(ActiveSheet.Name))
 
     If Not oLstobj.DataBodyRange Is Nothing Then
         iLastRow = oLstobj.DataBodyRange.Rows.Count + C_eStartLinesLLData + 1 + C_iNbLinesLLData
@@ -322,7 +322,7 @@ Sub EventValueChangeLinelist(oRange As Range)
     End If
 
 
-    If oRange.Name.Name = ClearString(ActiveSheet.Name) & "_" & C_sGotoSection Then
+    If oRange.Name.Name = Replace(ClearString(ActiveSheet.Name), " ", "") & "_" & C_sGotoSection Then
         sLabel = Replace(oRange.value, TranslateLLMsg("MSG_SelectSection") & ": ", "")
 
         Set Rng = ActiveSheet.Rows(C_eStartLinesLLMainSec).Find(What:=sLabel, _

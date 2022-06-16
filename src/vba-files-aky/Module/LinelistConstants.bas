@@ -13,6 +13,7 @@ Public Const C_sSheetChoiceAuto         As String = "List_auto_"
 Public Const C_sSheetAnalysisTemp       As String = "Ana_temp_"                          'Temporary sheet for analysis and stuffs
 Public Const C_sSheetImportTemp         As String = "Import_temp_"
 Public Const C_sSheetAnalysis           As String = "Analysis"
+Public Const C_sSheetDebug              As String = "Debug___"
 
 'Sheets in the setup file: The all starts with Param
 
@@ -182,8 +183,7 @@ Public Const C_sTabkeys = "T_Keys"
 Public Const C_sShpShowHide             As String = "SHP_ShowHide"
 Public Const C_sShpAddRows              As String = "SHP_Add200L"
 Public Const C_sShpGeo                  As String = "SHP_GeoApps"
-Public Const C_sShpExpMigration         As String = "SHP_ExportMig"
-Public Const C_sShpImpMigration         As String = "SHP_ImportMig"
+Public Const C_sShpAdvanced         As String = "SHP_Advanced"
 Public Const C_sShpExport               As String = "SHP_Export"
 Public Const C_sShpDebug                As String = "SHP_Debug"
 Public Const C_sShpReset                As String = "SHP_Reset"
