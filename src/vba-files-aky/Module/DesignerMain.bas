@@ -268,13 +268,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Creating the linelist using the dictionnary and choices data as well as export data
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
 
-    'required temporary folder for analysis
-    On Error Resume Next
-        RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
-        MkDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" 'create a folder for sending all the data from designer
-    On Error GoTo 0
-
-
+    Call PrepareTemporaryFolder
     Call BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, GSData, sPath)
 
     DoEvents
@@ -282,9 +276,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     EndWork xlsapp:=Application
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
 
-    On Error Resume Next
-        RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
-    On Error GoTo 0
+    Call PrepareTemporaryFolder(Create := False)
 
     Call SetInputRangesToWhite
 

@@ -157,3 +157,23 @@ Function FileNameControl(ByVal sName As String) As String
     FileNameControl = Application.WorksheetFunction.Trim(sName)
 
 End Function
+
+'Prepare temporary folder for the linelist generation process, to avoid 
+'conflicts with various files
+
+Public Sub PrepareTemporaryFolder(Optional Create As Boolean = True)
+
+'required temporary folder for analysis
+    On Error Resume Next
+        Workbooks("Temp.xlsb").Close savechanges := False
+        Workbooks("Temp").Close savechanges := False
+        Kill  SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb"
+        Kill  SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "*.frm"
+        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "*.frx"
+        RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
+        If Create Then MkDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" 'create a folder for sending all the data from designer
+    On Error GoTo 0
+
+End Sub
+
+
