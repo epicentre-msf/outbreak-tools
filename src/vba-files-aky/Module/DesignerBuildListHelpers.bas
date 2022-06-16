@@ -327,9 +327,6 @@ Sub AddChoices(Wksh As Worksheet, iSheetStartLine As Integer, iCol As Integer, _
     End With
 End Sub
 
-
-
-
 'Add Geo
 Sub AddGeo(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterArray, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
           iSheetSubSecStartLine As Integer, iDictLine As Integer, sVarName As String, sMessage As String, iNbshifted As Integer)
@@ -485,7 +482,7 @@ Sub BuildGotoArea(Wkb As Workbook, sSheetName As String)
         'Second Row
         .Cells(1, C_eSectionsLookupColumns).Locked = False
         .Cells(1, C_eSectionsLookupColumns).value = TranslateLLMsg("MSG_SelectSection")
-        .Cells(1, C_eSectionsLookupColumns).Name = ClearString(sSheetName) & "_" & C_sGotoSection
+        .Cells(1, C_eSectionsLookupColumns).Name = Replace(ClearString(sSheetName), " ", "") & "_" & C_sGotoSection
         .Cells(1, C_eSectionsLookupColumns).Font.Size = 10
         .Cells(1, C_eSectionsLookupColumns).HorizontalAlignment = xlHAlignCenter
         .Cells(1, C_eSectionsLookupColumns).Interior.Color = Helpers.GetColor("MainSecBlue")
@@ -881,7 +878,27 @@ End Sub
 
 'Add the temporary sheets for computation and stuffs
 Public Sub AddTemporarySheets(Wkb As Workbook)
+
+    Const iCmdWidthFactor As Integer = C_iCmdWidth
+    Const iCmdHeightFactor As Integer = 30
+
     With Wkb
+        'Add Debug sheet
+        .Worksheets.Add.Name = C_sSheetDebug
+        .Worksheets(C_sSheetDebug).Visible = xlSheetHidden
+        'Add de bug command on the debug sheet
+
+        With Wkb.Worksheets(C_sSheetDebug)
+                'Debug button
+            Call AddCmd(Wkb, C_sSheetDebug, _
+                .Cells(2, 10).Left + 3 * C_iCmdWidth + 3 * iCmdWidthFactor + 30, _
+                .Cells(2, 1).Top, C_sShpDebug, _
+                "Debug", _
+                C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
+                C_sCmdDebug, sShpColor:="Orange", sShpTextColor:="Black", _
+                iTextFontSize:=12)
+        End With
+
          '--------- Adding a temporary sheets for computations
         'temp sheet
         .Worksheets.Add.Name = C_sSheetTemp
@@ -913,35 +930,17 @@ Public Sub AddAdminSheet(Wkb As Workbook)
     With Wkb.Worksheets(C_sSheetAdmin)
         'Import migration buttons
           Call AddCmd(Wkb, C_sSheetAdmin, _
-            .Cells(2, 10).Left, .Cells(2, 1).Top, C_sShpImpMigration, _
+            .Cells(2, 12).Left, .Cells(2, 1).Top, C_sShpAdvanced, _
             "Import for Migration", _
             C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
             C_sCmdImportMigration, iTextFontSize:=12)
 
-        'Export migration buttons
-         Call AddCmd(Wkb, C_sSheetAdmin, _
-            .Cells(2, 10).Left + C_iCmdWidth + iCmdWidthFactor + 10, _
-            .Cells(2, 1).Top, C_sShpExpMigration, _
-            "Export for Migration", _
-            C_iCmdWidth + iCmdWidthFactor, _
-            C_iCmdHeight + iCmdHeightFactor, C_sCmdExportMigration, _
-            iTextFontSize:=12)
-
         'Export Button
         Call AddCmd(Wkb, C_sSheetAdmin, _
-            .Cells(2, 10).Left + 2 * C_iCmdWidth + 2 * iCmdWidthFactor + 20, _
+           .Cells(2, 12).Left + C_iCmdWidth + iCmdWidthFactor + 15, _
             .Cells(2, 1).Top, C_sShpExport, _
             "Export", _
             C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdExport, _
-            iTextFontSize:=12)
-
-
-        Call AddCmd(Wkb, C_sSheetAdmin, _
-            .Cells(2, 10).Left + 3 * C_iCmdWidth + 3 * iCmdWidthFactor + 30, _
-            .Cells(2, 1).Top, C_sShpDebug, _
-            "Debug", _
-            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
-            C_sCmdDebug, sShpColor:="Orange", sShpTextColor:="Black", _
             iTextFontSize:=12)
 
     End With

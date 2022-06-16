@@ -71,6 +71,7 @@ Attribute VB_Exposed = False
 
 
 
+
 Option Explicit
 
 Private Sub CMD_ClearData_Click()
@@ -79,6 +80,11 @@ End Sub
 
 Private Sub CMD_ClearGeo_Click()
     Call ClearHistoricGeobase
+End Sub
+
+Private Sub CMD_ExportData_Click()
+    F_Advanced.Hide
+    Call ClicExportMigration
 End Sub
 
 Private Sub CMD_ImportData_Click()

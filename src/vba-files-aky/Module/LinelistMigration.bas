@@ -63,7 +63,7 @@ Sub ClearData()
             Case C_sDictSheetTypeLL
                  Wksh.Unprotect ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
 
-                With Wksh.ListObjects("o" & ClearString(Wksh.Name))
+                With Wksh.ListObjects(SheetListObjectName(Wksh.Name))
 
                     If Not .DataBodyRange Is Nothing Then
                         'Delete the data body range
@@ -979,7 +979,7 @@ Private Sub AddLLSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As 
     Dim src As Range
     Dim dest As Range
 
-    Set src = ThisWorkbook.Worksheets(sSheetName).ListObjects("o" & ClearString(sSheetName)).Range
+    Set src = ThisWorkbook.Worksheets(sSheetName).ListObjects(SheetListObjectName(sSheetName)).Range
     Wkb.Worksheets.Add(after:=Wkb.Worksheets(sPrevSheetName)).Name = sSheetName
 
     With Wkb.Worksheets(sSheetName)
