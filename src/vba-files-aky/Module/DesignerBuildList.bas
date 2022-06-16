@@ -272,11 +272,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
 
     Myxlsapp.Quit
-       Set Myxlsapp = Nothing
-
-    On Error Resume Next
-           Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb"
-       On Error GoTo 0
+    Set Myxlsapp = Nothing
 
     #End If
 
