@@ -742,7 +742,7 @@ EndMacro:
         End If
     End Function
 
-    Public Function  SheetListObjectName(sSVal As String) As String
+    Public Function SheetListObjectName(sSVal As String) As String
 
         Dim NewName As String
         NewName = ClearString(sSVal)
