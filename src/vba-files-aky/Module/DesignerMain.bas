@@ -276,7 +276,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     EndWork xlsapp:=Application
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
 
-    Call PrepareTemporaryFolder(Create := False)
+    Call PrepareTemporaryFolder(Create:=False)
 
     Call SetInputRangesToWhite
 
