@@ -152,7 +152,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
 
                     'update the variable names for writing in the dictionary sheet
-                    i = 1
+                   i = 1
                     With Wkb.Worksheets(LLSheetNameData.Item(iCounterSheet))
                         While (.Cells(C_eStartLinesLLData, i).value <> "")
                             DictVarName.Push .Cells(C_eStartLinesLLData + 1, i).value
@@ -254,7 +254,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
         .EnableEvents = False
         Set Wkb = .Workbooks.Open(SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb")
         .Windows(Wkb.Name).Visible = True
-        '.Windows(Wkb.Name).WindowState = xlMaximized
            For Each Wksh In Wkb.Worksheets
             If SheetsOfTypeLLData.Includes(Wksh.Name) Then
                 Wksh.Activate
@@ -717,7 +716,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         'All the cells font size at 9
         .Cells.Font.Size = C_iLLSheetFontSize
 
-        Call DesignerBuildListHelpers.BuildGotoArea(Wkb, sSheetName)
+        'Call DesignerBuildListHelpers.BuildGotoArea(Wkb, sSheetName)
 
         While (iCounterDictSheetLine <= iSheetStartLine + iTotalLLSheetColumns - 1)
 
@@ -987,8 +986,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         .Columns(1).columnWidth = C_iLLFirstColumnsWidth
         .Columns(2).columnWidth = C_iLLFirstColumnsWidth
 
-        'Set Validation to the Section Cell
-        Call Helpers.SetValidation(.Cells(1, C_eSectionsLookupColumns), sSectionsList, 1, TranslateLLMsg("MSG_SectionNotExist"))
+        'Set Validation to the Section goto Cell
+        'Call Helpers.SetValidation(.Cells(1, C_eSectionsLookupColumns), sSectionsList, 1, TranslateLLMsg("MSG_SectionNotExist"))
 
 
         'Range of the listobject
