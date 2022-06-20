@@ -428,7 +428,10 @@ Option Explicit
     End Function
 
 'STRING AND DATA MANIPULATION =========================================================================================================================================================================
-
+    'Safely delete databodyrange of a listobject
+    Public Sub DeleteLoDataBodyRange(lo As ListObject)
+        If Not lo.DataBodyRange Is Nothing Then lo.DataBodyRange.Delete
+    End Sub
     'Clear a String to remove inconsistencies
     Public Function ClearString(ByVal sString As String, Optional bremoveHiphen As Boolean = True) As String
         Dim sValue As String
@@ -497,26 +500,34 @@ Option Explicit
 
     'Get the validation list using Choices data and choices labels
     'Get the list of validations from the Choices data
-    Public Function GetValidationList(ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, sValidation As String) As String
+    Public Function GetValidationList(ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, sValidation As String) As BetterArray
 
         Dim iChoiceIndex As Integer
         Dim iChoiceLastIndex As Integer
         Dim i As Integer 'iterator to get the values
-        Dim sValidationList As String 'Validation List
+        Dim ValidationList As BetterArray 'Validation List
 
-        sValidationList = ""
+        Set ValidationList = New BetterArray
+        ValidationList.LowerBound = 1
 
         iChoiceIndex = ChoicesListData.IndexOf(sValidation)
         iChoiceLastIndex = ChoicesListData.LastIndexOf(sValidation)
 
         If (iChoiceIndex > 0) Then
-            sValidationList = ChoicesLabelsData.Items(iChoiceIndex)
-            For i = iChoiceIndex + 1 To iChoiceLastIndex
-                sValidationList = sValidationList & "," & ChoicesLabelsData.Items(i)
-            Next
+            ValidationList.Items = ChoicesLabelsData.Slice(iChoiceIndex, iChoiceLastIndex + 1)
         End If
+        Set GetValidationList = ValidationList.Clone()
+    End Function
 
-        GetValidationList = sValidationList
+    'Test if a listobject exists
+    Public Function ListObjectExists(Wksh As Worksheet, sListObjectName As String) As Boolean
+        ListObjectExists = False
+        Dim lo As ListObject
+        On Error Resume Next
+        Set lo = Wksh.ListObjects(sListObjectName)
+        ListObjectExists = (Not lo Is Nothing)
+        On Error GoTo 0
+        Set lo = Nothing
     End Function
 
     'Get validation type
@@ -742,14 +753,11 @@ EndMacro:
         End If
     End Function
 
-    Public Function SheetListObjectName(sSVal As String) As String
-
-        Dim NewName As String
-        NewName = ClearString(sSVal)
-        NewName = Replace(NewName, " ", "_")
-        NewName = "o" & NewName
-        SheetListObjectName = NewName
-
+    Public Function SheetListObjectName(sSheetName As String) As String
+        SheetListObjectName = vbNullString
+        On Error Resume Next
+        SheetListObjectName = ThisWorkbook.Worksheets(sSheetName).ListObjects(1).Name
+        On Error GoTo 0
     End Function
 
     'Move Worksheet from one Workbook to another
@@ -839,7 +847,7 @@ EndMacro:
         Dim VarNameData  As BetterArray              'List of all variable names
         Dim SpecCharData As BetterArray              'List of Special Characters data
         Dim DictHeaders As BetterArray
-        Dim SheetNameData As BetterArray
+        Dim TableNameData As BetterArray
         Dim VarMainLabelData As BetterArray
 
 
@@ -861,7 +869,7 @@ EndMacro:
         Set SpecCharData = New BetterArray       'The list of all special characters
         Set DictHeaders = New BetterArray
         Set VarMainLabelData = New BetterArray
-        Set SheetNameData = New BetterArray
+        Set TableNameData = New BetterArray
 
         FormulaAlphaData.LowerBound = 1
         VarNameData.LowerBound = 1
@@ -888,11 +896,11 @@ EndMacro:
         SpecCharData.FromExcelRange Wkb.Worksheets(C_sSheetFormulas).ListObjects(C_sTabASCII).ListColumns("TEXT").DataBodyRange, DetectLastColumn:=False
 
         'Test if you have variable name in the dictionary
-        If DictHeaders.IndexOf(C_sDictHeaderSheetName) < 0 Or DictHeaders.IndexOf(C_sDictHeaderMainLab) < 0 Then
+        If DictHeaders.IndexOf(C_sDictHeaderTableName) < 0 Then
             Exit Function
         End If
 
-        SheetNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderSheetName)), DetectLastColumn:=False, DetectLastRow:=True
+        TableNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderTableName)), DetectLastColumn:=False, DetectLastRow:=True
 
         If VarNameData.Includes(sFormulaATest) Then
             AnalysisFormula = "" 'We have to aggregate
@@ -931,7 +939,7 @@ EndMacro:
                             'It is either a variable name or a formula
                             If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
                                 icolNumb = VarNameData.IndexOf(sAlphaValue)
-                                sAlphaValue = SheetListObjectName(SheetNameData.Item(icolNumb)) & "[" & VarNameData.Item(icolNumb) & "]"
+                                sAlphaValue = TableNameData.Item(icolNumb) & "[" & VarNameData.Item(icolNumb) & "]"
                             ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
                                     sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
                             End If
@@ -964,7 +972,7 @@ EndMacro:
         Set SpecCharData = Nothing      'The list of all special characters
         Set DictHeaders = Nothing
         Set VarMainLabelData = Nothing
-        Set SheetNameData = New BetterArray
+        Set TableNameData = Nothing
 
     End Function
 

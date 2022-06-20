@@ -157,3 +157,62 @@ Function FileNameControl(ByVal sName As String) As String
     FileNameControl = Application.WorksheetFunction.Trim(sName)
 
 End Function
+
+'Prepare temporary folder for the linelist generation process, to avoid
+'conflicts with various files
+
+Public Sub PrepareTemporaryFolder(Optional Create As Boolean = True)
+
+'required temporary folder for analysis
+    On Error Resume Next
+        Workbooks("Temp.xlsb").Close savechanges:=False
+        Workbooks("Temp").Close savechanges:=False
+        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb"
+        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "*.frm"
+        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "*.frx"
+        RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
+        If Create Then MkDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" 'create a folder for sending all the data from designer
+    On Error GoTo 0
+
+End Sub
+
+Public Sub AddTableNames()
+    Dim iCol As Long
+    Dim iRow As Long
+    Dim iSheetNameCol As Integer
+    Dim sPrevSheetName As String
+    Dim sTableName As String
+    Dim DictHeaders As BetterArray
+    Dim i As Long
+    Dim iTableIndex As Long
+
+    Set DictHeaders = New BetterArray
+    Set DictHeaders = GetHeaders(ThisWorkbook, C_sParamSheetDict, 1)
+
+    iSheetNameCol = DictHeaders.IndexOf(C_sDictHeaderSheetName)
+
+    With ThisWorkbook.Worksheets(C_sParamSheetDict)
+        iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+        iCol = DictHeaders.Length + 1
+        iTableIndex = 1
+
+        sPrevSheetName = .Cells(2, iSheetNameCol).value
+        sTableName = "table" & iTableIndex
+        Set DictHeaders = Nothing
+
+        .Cells(1, iCol).value = C_sDictHeaderTableName
+        For i = 2 To iRow
+            If sPrevSheetName <> .Cells(i, iSheetNameCol).value Then
+                'New sheet name, new table
+                sPrevSheetName = .Cells(i, iSheetNameCol).value
+                iTableIndex = iTableIndex + 1
+                sTableName = "table" & iTableIndex
+            End If
+
+            .Cells(i, iCol).value = sTableName
+        Next
+        
+    End With
+End Sub
+
+

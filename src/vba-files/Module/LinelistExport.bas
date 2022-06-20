@@ -108,7 +108,7 @@ Private Function AddExportLLSheet(Wkb As Workbook, sSheetName As String, sPrevSh
         sVarName = DictExportData.Items(k, iVarnameIndex)
 
         With ThisWorkbook.Worksheets(sSheetName)
-            Set src = .ListObjects("o" & ClearString(sSheetName)).ListColumns(sVarName).Range
+            Set src = .ListObjects(SheetListObjectName(sSheetName)).ListColumns(sVarName).Range
         End With
 
         iLastRow = src.Rows.Count

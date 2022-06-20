@@ -11,7 +11,7 @@ Public Sub TransferDesignerCodes(Wkb As Workbook)
     Call TransferForm(Wkb, C_sFormShowHide)
     Call TransferForm(Wkb, C_sFormExport)
     Call TransferForm(Wkb, C_sFormExportMig)
-    Call TransferForm(Wkb, C_sFormImportMig)
+    Call TransferForm(Wkb, C_sFormAdvanced)
     Call TransferForm(Wkb, C_sFormImportRep)
 
     'TransferCode is for sending modules  (Modules) or classes (Classes) from actual excel workbook to another excel workbook
@@ -311,24 +311,65 @@ Sub AddType(Wksh As Worksheet, iSheetStartLine As Integer, _
 End Sub
 
 'Add the choices
-Sub AddChoices(Wksh As Worksheet, iSheetStartLine As Integer, iCol As Integer, _
+Sub AddChoices(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
              ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, _
              sChoice As String, sAlert As String, sMessage As String)
 
-    Dim sValidationList As String
-    With Wksh
-        sValidationList = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sChoice)
-        If sValidationList <> "" Then
-             Call Helpers.SetValidation(.Cells(iSheetStartLine + 2, iCol), _
-                                            sValidationList, _
-                                            Helpers.GetValidationType(sAlert), _
-                                            sMessage)
-        End If
+    Dim ValidationList As BetterArray
+    Dim iChoiceCol As Long
+    Dim iChoiceRow As Long
+    Dim sListObjectName As String
+    Dim WkshChoice As Worksheet
+    Dim WkshLL As Worksheet
+    Dim LoRng As Range
+
+    'Set the differents worksheets
+    Set WkshChoice = Wkb.Worksheets(C_sSheetChoiceAuto)
+    Set WkshLL = Wkb.Worksheets(sSheetName)
+
+    sListObjectName = "lo" & "_" & sChoice
+
+    'Add the list object if it does not exists
+    If Not ListObjectExists(WkshChoice, sListObjectName) Then
+        With WkshChoice
+            iChoiceCol = .Cells(1, .Columns.Count).End(xlToLeft).Column + 2
+            .Cells(C_eStartlinesListAuto, iChoiceCol).value = sChoice
+
+            'Get the validation list
+            Set ValidationList = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sChoice)
+
+            'Write it to the worksheet and free memory
+            ValidationList.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
+            Set ValidationList = Nothing
+
+            'Add the list object to the worksheet
+            iChoiceRow = .Cells(.Rows.Count, iChoiceCol).End(xlUp).Row
+
+            Set LoRng = .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iChoiceRow, iChoiceCol))
+
+            'Add the list object here
+            .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = sListObjectName
+        End With
+
+        'Now Add dynamic name for the choice
+        Wkb.Names.Add Name:=sChoice, RefersToR1C1:="=" & sListObjectName & "[" & sChoice & "]"
+    End If
+
+    'Add the validation
+    With WkshLL
+        Call Helpers.SetValidation(.Cells(iSheetStartLine, iCol), _
+                                 "=" & sChoice, Helpers.GetValidationType(sAlert), _
+                                 sMessage)
     End With
+
+
+    Set WkshLL = Nothing
+    Set WkshChoice = Nothing
+    Set LoRng = Nothing
+
 End Sub
 
-
-
+'Add The GoTo Section for a worksheet
 
 'Add Geo
 Sub AddGeo(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterArray, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
@@ -384,9 +425,8 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).value = C_sDictControlGeo & "4"
         'Put in bold
         .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
-
-
         .Cells(iStartLine + 2, iCol + 1).Locked = False
+        Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol + 1), "=" & C_sAdmName & "_4_" & "dropdown", 2, sMessage)
 
         'Admin 3
         sLab = SheetGeo.ListObjects(C_sTabAdm3).HeaderRowRange.Item(3).value
@@ -396,12 +436,15 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Cells(iStartLine + 1, iCol + 1).Interior.Color = vbWhite
         .Cells(iStartLine + 1, iCol + 1).Font.Color = vbWhite
         .Cells(iStartLine + 1, iCol + 1).value = C_sAdmName & "3" & "_" & sVarName
-
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
 
         .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
         .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).value = C_sDictControlGeo & "3"
         .Cells(iStartLine + 2, iCol + 1).Locked = False
+        
+        'Set validation for admin 3
+         Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol + 1), "=" & C_sAdmName & "_3_" & "dropdown", 2, sMessage)
+        
 
         'Admin 2
         sLab = SheetGeo.ListObjects(C_sTabAdm2).HeaderRowRange.Item(2).value
@@ -415,8 +458,10 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
         .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
         .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).value = C_sDictControlGeo & "2"
-
         .Cells(iStartLine + 2, iCol + 1).Locked = False
+        
+        'Set validation for admin 2
+        Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol + 1), "=" & C_sAdmName & "_2_" & "dropdown", 2, sMessage)
 
         'Admin 1
         sLab = SheetGeo.ListObjects(C_sTabadm1).HeaderRowRange.Item(1).value
@@ -429,29 +474,15 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
 
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol), .Cells(iStartLine + 1, iCol)))
         .Range(.Cells(iStartLine, iCol), .Cells(iStartLine + 1, iCol)).Font.Bold = True
-
         .Cells(iStartLine + 2, iCol).Locked = False
 
         'ajout des formules de validation
         .Cells(iStartLine + 2, iCol).Validation.Delete
         'Add name and reference for adm1 (in case someone adds one adm1)
         Wkb.Names.Add Name:=C_sAdmName & "1" & "_column", RefersToR1C1:="=" & C_sTabadm1 & "[" & SheetGeo.Cells(1, 1).value & "]"
-
-        .Cells(iStartLine + 2, iCol).Validation.Add Type:=xlValidateList, _
-                         AlertStyle:=xlValidAlertWarning, Operator:=xlBetween, _
-                         Formula1:="=" & C_sAdmName & 1 & "_column"
-
-        .Cells(iStartLine + 2, iCol).Validation.IgnoreBlank = True
-        .Cells(iStartLine + 2, iCol).Validation.InCellDropdown = True
-        .Cells(iStartLine + 2, iCol).Validation.InputTitle = ""
-        .Cells(iStartLine + 2, iCol).Validation.errorTitle = ""
-        .Cells(iStartLine + 2, iCol).Validation.InputMessage = ""
-        .Cells(iStartLine + 2, iCol).Validation.ErrorMessage = sMessage
-        .Cells(iStartLine + 2, iCol).Validation.ShowInput = True
-
+        
+        Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol), "=" & C_sAdmName & 1 & "_column", 2, sMessage)
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol), .Cells(iStartLine + 1, iCol)))
-
-        .Cells(iStartLine + 2, iCol).Validation.ShowError = True
     End With
 
     'Updating the Dictionary for future uses
@@ -480,12 +511,18 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
     End With
 End Sub
 
-Sub BuildGotoArea(Wkb As Workbook, sSheetName As String)
+Sub BuildGotoArea(Wkb As Workbook, sTableName As String, sSheetName As String, iGoToCol As Long)
+
+    Dim iChoiceRow As Long
+    Dim LoRng As Range
+    Dim sListObjectName As String
+    Dim sGoToSourceName As String
+
     With Wkb.Worksheets(sSheetName)
         'Second Row
         .Cells(1, C_eSectionsLookupColumns).Locked = False
         .Cells(1, C_eSectionsLookupColumns).value = TranslateLLMsg("MSG_SelectSection")
-        .Cells(1, C_eSectionsLookupColumns).Name = ClearString(sSheetName) & "_" & C_sGotoSection
+        .Cells(1, C_eSectionsLookupColumns).Name = sTableName & "_" & C_sGotoSection
         .Cells(1, C_eSectionsLookupColumns).Font.Size = 10
         .Cells(1, C_eSectionsLookupColumns).HorizontalAlignment = xlHAlignCenter
         .Cells(1, C_eSectionsLookupColumns).Interior.Color = Helpers.GetColor("MainSecBlue")
@@ -496,6 +533,27 @@ Sub BuildGotoArea(Wkb As Workbook, sSheetName As String)
         .Cells(1, C_eSectionsLookupColumns).WrapText = True
     End With
 
+    sListObjectName = "lo" & "_" & sTableName & "_" & C_sGotoSection
+    sGoToSourceName = sTableName & "_" & C_sGotoSection & "_" & "source"
+
+    With Wkb.Worksheets(C_sSheetChoiceAuto)
+
+        .Cells(C_eStartlinesListAuto, iGoToCol).value = sGoToSourceName
+        'Add the list object to the worksheet
+        iChoiceRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
+        Set LoRng = .Range(.Cells(C_eStartlinesListAuto, iGoToCol), .Cells(iChoiceRow, iGoToCol))
+
+        'Add the list object here
+        .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = sListObjectName
+    End With
+
+    'Add the validation
+    Wkb.Names.Add Name:=sGoToSourceName, RefersToR1C1:="=" & sListObjectName & "[" & sGoToSourceName & "]"
+
+    'Add the validation
+    With Wkb.Worksheets(sSheetName)
+        Call Helpers.SetValidation(.Cells(1, C_eSectionsLookupColumns), "=" & sGoToSourceName, 1, TranslateLLMsg("MSG_SectionNotExist"))
+    End With
 End Sub
 
 
@@ -812,6 +870,9 @@ Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAler
     On Error GoTo 0
 End Sub
 
+'Update the headers of the choice auto when everything is done.
+'For each sheet, write a list_auto_origin on top of the mainsection if there is a list
+'auto in the sheet, so that we can use them later on for updating things.
 Public Sub UpdateChoiceAutoHeaders(Wkb As Workbook, ChoiceAutoVarData As BetterArray, DictHeaders As BetterArray)
 
     Dim i As Integer
@@ -881,8 +942,29 @@ End Sub
 
 'Add the temporary sheets for computation and stuffs
 Public Sub AddTemporarySheets(Wkb As Workbook)
+
+    Const iCmdWidthFactor As Integer = C_iCmdWidth
+    Const iCmdHeightFactor As Integer = 30
+    Dim LoRng As Range
+
     With Wkb
-         '--------- Adding a temporary sheets for computations
+        'Add Debug sheet
+        .Worksheets.Add.Name = C_sSheetDebug
+        .Worksheets(C_sSheetDebug).Visible = xlSheetHidden
+        'Add de bug command on the debug sheet
+
+        With Wkb.Worksheets(C_sSheetDebug)
+            'Debug button
+            Call AddCmd(Wkb, C_sSheetDebug, _
+                        .Cells(2, 10).Left + 3 * C_iCmdWidth + 3 * iCmdWidthFactor + 30, _
+                        .Cells(2, 1).Top, C_sShpDebug, _
+                        "Debug", _
+                        C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
+                        C_sCmdDebug, sShpColor:="Orange", sShpTextColor:="Black", _
+                        iTextFontSize:=12)
+        End With
+
+        '--------- Adding a temporary sheets for computations
         'temp sheet
         .Worksheets.Add.Name = C_sSheetTemp
         .Worksheets(C_sSheetTemp).Visible = xlSheetVeryHidden
@@ -895,6 +977,40 @@ Public Sub AddTemporarySheets(Wkb As Workbook)
         'Add list auto temporary sheet
         .Worksheets.Add.Name = C_sSheetChoiceAuto
         .Worksheets(C_sSheetChoiceAuto).Visible = xlSheetVeryHidden
+        
+        'Add in choice auto list for the Geo dropdowns
+        With .Worksheets(C_sSheetChoiceAuto)
+        
+            .Cells(1, 1).value = C_sAdmName & "_2_" & "dropdown"
+            .Cells(1, 3).value = C_sAdmName & "_3_" & "dropdown"
+            .Cells(1, 5).value = C_sAdmName & "_4_" & "dropdown"
+            
+            'Add the listObjects
+            
+            'Adm 2
+            Set LoRng = .Range(.Cells(1, 1), .Cells(2, 1))
+            'Add the list object here
+            .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = C_sTabAdm2 & "_dropdown"
+            
+            'Adm3
+            Set LoRng = .Range(.Cells(1, 3), .Cells(2, 3))
+            'Add the list object here
+            .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = C_sTabAdm3 & "_dropdown"
+            
+            'Adm4
+            Set LoRng = .Range(.Cells(1, 5), .Cells(2, 5))
+            'Add the list object here
+            .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = C_sTabAdm4 & "_dropdown"
+            
+            'Adm 2
+            Wkb.Names.Add Name:=C_sAdmName & "_2_" & "dropdown", RefersToR1C1:="=" & C_sTabAdm2 & "_dropdown" & "[" & C_sAdmName & "_2_" & "dropdown" & "]"
+            'Adm3
+            Wkb.Names.Add Name:=C_sAdmName & "_3_" & "dropdown", RefersToR1C1:="=" & C_sTabAdm3 & "_dropdown" & "[" & C_sAdmName & "_3_" & "dropdown" & "]"
+            'Adm 4
+            Wkb.Names.Add Name:=C_sAdmName & "_4_" & "dropdown", RefersToR1C1:="=" & C_sTabAdm4 & "_dropdown" & "[" & C_sAdmName & "_4_" & "dropdown" & "]"
+        End With
+        
+        Set LoRng = Nothing
     End With
 End Sub
 
@@ -913,35 +1029,17 @@ Public Sub AddAdminSheet(Wkb As Workbook)
     With Wkb.Worksheets(C_sSheetAdmin)
         'Import migration buttons
           Call AddCmd(Wkb, C_sSheetAdmin, _
-            .Cells(2, 10).Left, .Cells(2, 1).Top, C_sShpImpMigration, _
+            .Cells(2, 12).Left, .Cells(2, 1).Top, C_sShpAdvanced, _
             "Import for Migration", _
             C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
             C_sCmdImportMigration, iTextFontSize:=12)
 
-        'Export migration buttons
-         Call AddCmd(Wkb, C_sSheetAdmin, _
-            .Cells(2, 10).Left + C_iCmdWidth + iCmdWidthFactor + 10, _
-            .Cells(2, 1).Top, C_sShpExpMigration, _
-            "Export for Migration", _
-            C_iCmdWidth + iCmdWidthFactor, _
-            C_iCmdHeight + iCmdHeightFactor, C_sCmdExportMigration, _
-            iTextFontSize:=12)
-
         'Export Button
         Call AddCmd(Wkb, C_sSheetAdmin, _
-            .Cells(2, 10).Left + 2 * C_iCmdWidth + 2 * iCmdWidthFactor + 20, _
+           .Cells(2, 12).Left + C_iCmdWidth + iCmdWidthFactor + 15, _
             .Cells(2, 1).Top, C_sShpExport, _
             "Export", _
             C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdExport, _
-            iTextFontSize:=12)
-
-
-        Call AddCmd(Wkb, C_sSheetAdmin, _
-            .Cells(2, 10).Left + 3 * C_iCmdWidth + 3 * iCmdWidthFactor + 30, _
-            .Cells(2, 1).Top, C_sShpDebug, _
-            "Debug", _
-            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
-            C_sCmdDebug, sShpColor:="Orange", sShpTextColor:="Black", _
             iTextFontSize:=12)
 
     End With

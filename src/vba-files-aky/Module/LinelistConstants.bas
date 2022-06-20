@@ -55,6 +55,7 @@ Public Const C_sDictHeaderAlert         As String = "alert"
 Public Const C_sDictHeaderMessage       As String = "message"
 Public Const C_sDictHeaderBranchLogic   As String = "branching logic"
 Public Const C_sDictHeaderCondFormat    As String = "conditional formating"
+Public Const C_sDictHeaderTableName     As String = "table name"
 
 'Added headers to the dictionnary
 Public Const C_sDictHeaderIndex         As String = "column index"

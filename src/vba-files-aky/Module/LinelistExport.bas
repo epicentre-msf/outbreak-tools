@@ -200,7 +200,7 @@ Sub Export(iTypeExport As Byte)
 
         BeginWork xlsapp:=Application
 
-        Set DictLo = ThisWorkbook.Worksheets(C_sParamSheetDict).ListObjects(SheetListObjectName(C_sParamSheetDict))
+        Set DictLo = ThisWorkbook.Worksheets(C_sParamSheetDict).ListObjects("o" & ClearString(C_sParamSheetDict))
 
         'Get the type of the export
         Select Case iTypeExport
