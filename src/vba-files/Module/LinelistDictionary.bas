@@ -225,3 +225,24 @@ Function FindSheetType(ByVal sSheetName As String) As String
     Set SheetTypeData = Nothing
 
 End Function
+
+'Find the table name from the dictionary
+Function FindSheetTable(ByVal sSheetName As String) As String
+    'Filter the sheet Name and one done,
+    FindSheetTable = vbNullString
+
+    Dim SheetNameData As BetterArray
+    Dim TableNameData As BetterArray
+
+    'Now Get all the Sheets
+    Set SheetNameData = GetDictionaryColumn(C_sDictHeaderSheetName)
+    If SheetNameData.Includes(sSheetName) Then
+        Set TableNameData = GetDictionaryColumn(C_sDictHeaderTableName)
+        FindSheetTable = TableNameData.Item(SheetNameData.IndexOf(sSheetName))
+    End If
+
+    Set SheetNameData = Nothing
+    Set TableNameData = Nothing
+End Function
+
+

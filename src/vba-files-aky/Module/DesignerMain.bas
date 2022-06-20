@@ -232,6 +232,9 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Translate
     Call TranslateLinelistData
 
+    'Add the tables for every Sheets
+    Call DesignerMainHelpers.AddTableNames
+
     ' Getting all required the Data ___________________________________________________________________________________________________________________________________________________________________
 
     'Create the Dictionnary data

@@ -232,25 +232,28 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Translate
     Call TranslateLinelistData
 
+    'Add the tables for every Sheets
+    Call DesignerMainHelpers.AddTableNames
+
     ' Getting all required the Data ___________________________________________________________________________________________________________________________________________________________________
 
     'Create the Dictionnary data
     Set DictHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetDict, 1)
     'Create the data table of linelist patient using the dictionnary
-    Set DictData = Helpers.GetData(DesWkb, C_sParamSheetDict, 2)
+    Set DictData = Helpers.GetData(DesWkb, C_sParamSheetDict, 2, DictHeaders.Length)
     'Create the choices data
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadList")
     'Create the dictionnary for the choices sheet
     Set ChoicesHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetChoices, 1)
     'Create the table for the choices
-    Set ChoicesData = Helpers.GetData(DesWkb, C_sParamSheetChoices, 2)
+    Set ChoicesData = Helpers.GetData(DesWkb, C_sParamSheetChoices, 2, ChoicesHeaders.Length)
     'Reading the export sheet
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadExport")
     'Create parameters for export
     Set ExportData = Helpers.GetData(DesWkb, C_sParamSheetExport, 1)
     'Create the translation Data
     Set TransData = New BetterArray
-    TransData.FromExcelRange DesWkb.Worksheets(C_sParamSheetTranslation).Cells(C_eStartLinesTransdata, 1), DetectLastRow:=True, DetectLastColumn:=True
+    TransData.FromExcelRange DesWkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).Range
 
     'Filters data for analysis
 
@@ -268,13 +271,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Creating the linelist using the dictionnary and choices data as well as export data
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
 
-    'required temporary folder for analysis
-    On Error Resume Next
-        RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
-        MkDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" 'create a folder for sending all the data from designer
-    On Error GoTo 0
-
-
+    Call PrepareTemporaryFolder
     Call BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, GSData, sPath)
 
     DoEvents
@@ -282,9 +279,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     EndWork xlsapp:=Application
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
 
-    On Error Resume Next
-        RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
-    On Error GoTo 0
+    Call PrepareTemporaryFolder(Create:=False)
 
     Call SetInputRangesToWhite
 

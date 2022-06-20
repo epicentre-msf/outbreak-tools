@@ -13,6 +13,7 @@ Public Const C_sSheetChoiceAuto         As String = "List_auto_"
 Public Const C_sSheetAnalysisTemp       As String = "Ana_temp_"                          'Temporary sheet for analysis and stuffs
 Public Const C_sSheetImportTemp         As String = "Import_temp_"
 Public Const C_sSheetAnalysis           As String = "Analysis"
+Public Const C_sSheetDebug              As String = "Debug___"
 
 'Sheets in the setup file: The all starts with Param
 
@@ -54,6 +55,7 @@ Public Const C_sDictHeaderAlert         As String = "alert"
 Public Const C_sDictHeaderMessage       As String = "message"
 Public Const C_sDictHeaderBranchLogic   As String = "branching logic"
 Public Const C_sDictHeaderCondFormat    As String = "conditional formating"
+Public Const C_sDictHeaderTableName     As String = "table name"
 
 'Added headers to the dictionnary
 Public Const C_sDictHeaderIndex         As String = "column index"
@@ -129,7 +131,7 @@ Public Const C_sFormExport               As String = "F_Export"                 
 Public Const C_sFormGeo                  As String = "F_Geo"                             'Geo Frame
 Public Const C_sFormShowHide             As String = "F_NomVisible"                      'ShowHide Frame
 Public Const C_sFormExportMig            As String = "F_ExportMig"                       'Export for Migration form
-Public Const C_sFormImportMig            As String = "F_ImportMig"                       'Import for Migration form
+Public Const C_sFormAdvanced            As String = "F_Advanced"                       'Import for Migration form
 Public Const C_sFormImportRep            As String = "F_ImportRep"
 
 'TABLES LISTOBJECTS ===================================================================================================================================================================================
@@ -182,8 +184,7 @@ Public Const C_sTabkeys = "T_Keys"
 Public Const C_sShpShowHide             As String = "SHP_ShowHide"
 Public Const C_sShpAddRows              As String = "SHP_Add200L"
 Public Const C_sShpGeo                  As String = "SHP_GeoApps"
-Public Const C_sShpExpMigration         As String = "SHP_ExportMig"
-Public Const C_sShpImpMigration         As String = "SHP_ImportMig"
+Public Const C_sShpAdvanced         As String = "SHP_Advanced"
 Public Const C_sShpExport               As String = "SHP_Export"
 Public Const C_sShpDebug                As String = "SHP_Debug"
 Public Const C_sShpReset                As String = "SHP_Reset"

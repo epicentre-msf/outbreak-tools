@@ -25,7 +25,7 @@ Sub ControlClearData()
 
         ShouldProceed = MsgBox(TranslateLLMsg("MSG_FinishedClear"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
         If ShouldProceed = vbYes Then
-            [F_ImportMig].Hide
+            [F_Advanced].Hide
         End If
     Else
         MsgBox TranslateLLMsg("MSG_DelCancel"), vbOKOnly, TranslateLLMsg("MSG_Delete")
@@ -63,7 +63,7 @@ Sub ClearData()
             Case C_sDictSheetTypeLL
                  Wksh.Unprotect ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
 
-                With Wksh.ListObjects("o" & ClearString(Wksh.Name))
+                With Wksh.ListObjects(SheetListObjectName(Wksh.Name))
 
                     If Not .DataBodyRange Is Nothing Then
                         'Delete the data body range
@@ -357,6 +357,7 @@ Sub ImportMigrationData()
     Dim shImp As Worksheet 'Sheet Import
     Dim TabSheetLL As BetterArray 'List of sheets in the linelist
     Dim VarNamesData As BetterArray
+    Dim TabSheetsTouched As BetterArray
     Dim ColumnIndexData As BetterArray
 
     Dim VarNamesLLData As BetterArray
@@ -374,6 +375,7 @@ Sub ImportMigrationData()
     Dim iVarIndex  As Long   'Index of a variable
     Dim sVal As String
     Dim iWindowState As Integer
+    
 
     Dim IsSameLanguage As Boolean
 
@@ -424,6 +426,7 @@ Sub ImportMigrationData()
     Set VarNamesLLData = New BetterArray
     Set ColumnIndexLLData = New BetterArray
     Set ImportVarData = New BetterArray
+    Set TabSheetsTouched = New BetterArray
 
 
     'Get All the sheets in the linelist
@@ -461,6 +464,7 @@ Sub ImportMigrationData()
             ColumnIndexLLData.Items = ColumnIndexData.Slice(iStartSheet, iEndSheet)
 
             Call ImportSheetData(shImp.Name, shImp, hasData, ColumnIndexLLData, VarNamesLLData)
+            TabSheetsTouched.Push shImp.Name
         Else
             'Set import report to true
             If Not ImportReport Then ImportReport = True
@@ -476,6 +480,20 @@ Sub ImportMigrationData()
 
     ThisWorkbook.Worksheets(sActSht).Activate
 
+    'Test if There are Sheets Not touched
+    sVal = vbNullString
+    For k = 1 To TabSheetLL.Length
+        If Not TabSheetsTouched.Includes(TabSheetLL.Item(k)) And sVal <> TabSheetLL.Item(k) Then
+            If Not ImportReport Then ImportReport = True
+            sVal = TabSheetLL.Item(k)
+            With shpTemp
+             iRow = .Cells(.Rows.Count, 11).End(xlUp).Row
+             iRow = iRow + 1
+             .Cells(iRow, 11).value = TabSheetLL.Item(k)
+            End With
+
+        End If
+    Next
 
     'Test if there are variables in Linelist not in imported sheet
     For k = 1 To VarNamesData.Length
@@ -500,7 +518,7 @@ Sub ImportMigrationData()
     Set VarNamesData = Nothing
     Set VarNamesLLData = Nothing
     Set ColumnIndexLLData = Nothing
-
+    Set TabSheetsTouched = Nothing
 
     WkbImp.Close savechanges:=False
     Set WkbImp = Nothing
@@ -513,13 +531,13 @@ Sub ImportMigrationData()
         ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImport"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
 
         If ShouldQuit = vbYes Then
-            F_ImportMig.Hide
+            F_Advanced.Hide
         End If
     Else
         ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportRep"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
 
         If ShouldQuit = vbYes Then
-            F_ImportMig.Hide
+            F_Advanced.Hide
             Call ShowImportReport
         End If
     End If
@@ -572,6 +590,16 @@ Sub ShowImportReport()
             TabRep.FromExcelRange .Range(.Cells(1, 6), .Cells(iRow, 7))
             F_ImportRep.LST_ImpRepVarLL.ColumnCount = 2
             F_ImportRep.LST_ImpRepVarLL.List = TabRep.Items
+        End If
+
+        'Sheets not touched
+        iRow = .Cells(.Rows.Count, 11).End(xlUp).Row
+
+        If iRow >= 1 Then
+            TabRep.Clear
+            TabRep.FromExcelRange .Range(.Cells(1, 11), .Cells(iRow, 11))
+            F_ImportRep.LST_ImpLLSheet.ColumnCount = 1
+            F_ImportRep.LST_ImpLLSheet.List = TabRep.Items
         End If
 
         'If .Cells(1, 8).value <> vbNullString Then
@@ -681,7 +709,7 @@ Sub ImportGeobase()
         ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportGeo"), vbQuestion + vbYesNo, "Import GeoData")
 
         If ShouldQuit = vbYes Then
-            F_ImportMig.Hide
+            F_Advanced.Hide
         End If
     End If
 
@@ -797,7 +825,7 @@ Sub ImportHistoricGeobase()
     ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportHistoricGeo"), vbQuestion + vbYesNo, "Import Historic")
 
     If ShouldQuit = vbYes Then
-        F_ImportMig.Hide
+        F_Advanced.Hide
     End If
 
     Set AdmData = Nothing
@@ -979,7 +1007,7 @@ Private Sub AddLLSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As 
     Dim src As Range
     Dim dest As Range
 
-    Set src = ThisWorkbook.Worksheets(sSheetName).ListObjects("o" & ClearString(sSheetName)).Range
+    Set src = ThisWorkbook.Worksheets(sSheetName).ListObjects(SheetListObjectName(sSheetName)).Range
     Wkb.Worksheets.Add(after:=Wkb.Worksheets(sPrevSheetName)).Name = sSheetName
 
     With Wkb.Worksheets(sSheetName)
