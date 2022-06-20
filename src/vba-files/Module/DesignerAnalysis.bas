@@ -14,8 +14,6 @@ Public Sub BuildAnalysis(Wkb As Workbook, GlobalSummaryData As BetterArray)
 
     End With
 
-
-
 End Sub
 
 

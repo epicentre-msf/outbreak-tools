@@ -152,7 +152,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
 
                     'update the variable names for writing in the dictionary sheet
-                    i = 1
+                   i = 1
                     With Wkb.Worksheets(LLSheetNameData.Item(iCounterSheet))
                         While (.Cells(C_eStartLinesLLData, i).value <> "")
                             DictVarName.Push .Cells(C_eStartLinesLLData + 1, i).value
@@ -246,41 +246,32 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
         Set Wkb = Nothing
         Dim Myxlsapp As Excel.Application
         Set Myxlsapp = New Excel.Application
-
-        With Myxlsapp
-            .Visible = False
-            .ScreenUpdating = False
-            .DisplayAlerts = False
-            .EnableAnimations = False
-            .EnableEvents = False
-
-            Set Wkb = .Workbooks.Open(SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb")
-            .Windows(Wkb.Name).Visible = True
-            '.Windows(Wkb.Name).WindowState = xlMaximized
-
-            For Each Wksh In Wkb.Worksheets
-                If SheetsOfTypeLLData.Includes(Wksh.Name) Then
-                    Wksh.Activate
-                    With .ActiveWindow
-                    .SplitColumn = C_iLLSplitColumn
-                    .SplitRow = C_eStartLinesLLData + 1
-                    .FreezePanes = True
-                    End With
-                End If
-            Next
-        End With
-
-        Wkb.SaveAs Filename:=sPath, fileformat:=xlExcel12, Password:=SheetMain.Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-        Wkb.Close
-        Set Wkb = Nothing
+       With Myxlsapp
+        .Visible = False
+        .ScreenUpdating = False
+        .DisplayAlerts = False
+        .EnableAnimations = False
+        .EnableEvents = False
+        Set Wkb = .Workbooks.Open(SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb")
+        .Windows(Wkb.Name).Visible = True
+           For Each Wksh In Wkb.Worksheets
+            If SheetsOfTypeLLData.Includes(Wksh.Name) Then
+                Wksh.Activate
+                With .ActiveWindow
+                .SplitColumn = C_iLLSplitColumn
+                .SplitRow = C_eStartLinesLLData + 1
+                .FreezePanes = True
+                End With
+            End If
+        Next
+    End With
+       Wkb.SaveAs Filename:=sPath, fileformat:=xlExcel12, Password:=SheetMain.Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+    Wkb.Close
+    Set Wkb = Nothing
 
 
-        Myxlsapp.Quit
-        Set Myxlsapp = Nothing
-
-        On Error Resume Next
-            Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb"
-        On Error GoTo 0
+    Myxlsapp.Quit
+    Set Myxlsapp = Nothing
 
     #End If
 
@@ -598,14 +589,10 @@ End Sub
 
 
             If sActualControl = C_sDictControlChoice Then
-                'Add list if the choice is not emptyy
-                If sActualChoice <> "" Then
-                     sValidationList = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoice)
-                    If sValidationList <> "" Then
-                       Call Helpers.SetValidation(.Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3), sValidationList, _
-                       GetValidationType(sActualValidationAlert), sActualValidationMessage)
-                   End If
-                End If
+                'Add list if the choice is not empty
+                Call AddChoices(Wkb, sSheetName, iCounterSheetAdmLine, C_eStartColumnAdmData + 3, _
+                            ChoicesListData, ChoicesLabelsData, sActualChoice, _
+                            sActualValidationAlert, sActualValidationMessage)
             End If
 
 
@@ -649,6 +636,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     Dim iPrevColSubSec          As Integer       'Previous column where the sub label stops
     Dim iTotalLLSheetColumns    As Integer       'Total number of columns to add on one sheet of type Linelist
     Dim iChoiceCol              As Integer
+    Dim iGoToCol                As Long 'Column for the Goto in the choice auto sheet
+    Dim iGoToRow                As Long  'Row for the Goto section in the choice auto sheet
 
     'Those variables are for readability in the future
     Dim sActualMainLab As String                 'Actual main label of a linelist type sheet
@@ -677,12 +666,14 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     Dim sChoiceAutoName As String
     Dim sSectionsList As String
 
+    'The table name of the listobject
+    Dim sTableName As String
 
     'Update the existence of the Geo button
     bCmdGeoExist = False
 
     If (LLSheetNameData.IndexOf(sSheetName) < 0) Then
-        SheetMain.Range(C_sRngEdition).value = "Error 2"
+        SheetMain.Range(C_sRngEdition).value = "Logging Error 2"
         Exit Sub
     End If
 
@@ -694,9 +685,16 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     iTotalLLSheetColumns = LLNbColData.Items(LLSheetNameData.IndexOf(sSheetName))
     sPrevMainSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
     sPrevSubSec = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
+    sTableName = DictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderTableName))
 
-    sSectionsList = TranslateLLMsg("MSG_SelectSection") & ": " & sPrevMainSec
-
+            'Column for the GoTo Section
+    With Wkb.Worksheets(C_sSheetChoiceAuto)
+        iGoToCol = .Cells(C_eStartlinesListAuto, .Columns.Count).End(xlToLeft).Column + 2
+        'Rows for the GotTo Section
+        iGoToRow = C_eStartlinesListAuto + 1
+        .Cells(iGoToRow, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") & ": " & sPrevMainSec
+        .Cells(iGoToRow - 1, iGoToCol).value = "GoTo" 'This will probably change in the future
+    End With
 
     'Continue adding the columns unless the total number of columns to add is reached
     With Wkb.Worksheets(sSheetName)
@@ -724,8 +722,6 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
         'All the cells font size at 9
         .Cells.Font.Size = C_iLLSheetFontSize
-
-        Call DesignerBuildListHelpers.BuildGotoArea(Wkb, sSheetName)
 
         While (iCounterDictSheetLine <= iSheetStartLine + iTotalLLSheetColumns - 1)
 
@@ -836,14 +832,16 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 BuildSubSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLine:=C_eStartLinesLLSubSec, iColumnFrom:=iPrevColSubSec, _
                                      iColumnTo:=iCounterSheetLLCol + 1
             End If
-
+            
+            'NEW SECTION
             'Do the same for the section
             If sPrevMainSec <> sActualMainSec Then
                 'I am on a new Main Section, update the value of the section
                 .Cells(C_eStartLinesLLMainSec, iCounterSheetLLCol).value = sActualMainSec
 
-                'Here I update the list to set as validation for the "GOTO"
-                sSectionsList = sSectionsList & "," & TranslateLLMsg("MSG_SelectSection") & ": " & sActualMainSec
+                'GOTO : Here I update the list to set as validation for the "GOTO"
+                iGoToRow = iGoToRow + 1
+                Wkb.Worksheets(C_sSheetChoiceAuto).Cells(iGoToRow, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") & ": " & sActualMainSec
 
                 'Merge the previous area
                 BuildMainSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLineFrom:=C_eStartLinesLLMainSec, _
@@ -876,8 +874,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 Case C_sDictControlChoice
                     'Add list if the choice is not emptyy
                     If sActualChoice <> "" Then
-                       Call DesignerBuildListHelpers.AddChoices(Wkb.Worksheets(sSheetName), _
-                                        C_eStartLinesLLData, iCounterSheetLLCol, _
+                       Call DesignerBuildListHelpers.AddChoices(Wkb, sSheetName, _
+                                        C_eStartLinesLLData + 2, iCounterSheetLLCol, _
                                         ChoicesListData, ChoicesLabelsData, sActualChoice, _
                                         sActualValidationAlert, sActualValidationMessage)
                     End If
@@ -979,6 +977,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             'Hide rows for Control (The row of control type is just before Main Section)
             '.Rows(C_eStartLinesLLMainSec - 1).EntireRow.Hidden = True
             '.Rows(C_eStartLinesLLMainSec - 2).EntireRow.Hidden = True 'hide the list_auto row
+
             'List Auto is updated at the end of the buildList process
 
             .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Locked = bLockData
@@ -995,20 +994,19 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         .Columns(1).columnWidth = C_iLLFirstColumnsWidth
         .Columns(2).columnWidth = C_iLLFirstColumnsWidth
 
-        'Set Validation to the Section Cell
-        Call Helpers.SetValidation(.Cells(1, C_eSectionsLookupColumns), sSectionsList, 1, TranslateLLMsg("MSG_SectionNotExist"))
-
+        'Set Validation to the Section goto Cell
+        Call DesignerBuildListHelpers.BuildGotoArea(Wkb, sTableName, sSheetName, iGoToCol)
 
         'Range of the listobject
-        Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 2, .Cells(C_eStartLinesLLData + 1, Columns.Count).End(xlToLeft).Column))
+        Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol - 1))
         'Creating the TableObject that will contain the data entry
-        .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = "o" & ClearString(sSheetName)
-        .ListObjects("o" & ClearString(sSheetName)).TableStyle = C_sLLTableStyle
+        .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = sTableName
+        .ListObjects(sTableName).TableStyle = C_sLLTableStyle
 
         'Set the new range for the table
-        Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_iNbLinesLLData + C_eStartLinesLLData + 1, .Cells(C_eStartLinesLLData + 1, Columns.Count).End(xlToLeft).Column))
+        Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_iNbLinesLLData + C_eStartLinesLLData + 1, iCounterSheetLLCol - 1))
         'Resize for 200 lines entrie
-        .ListObjects("o" & ClearString(sSheetName)).Resize LoRng
+        .ListObjects(sTableName).Resize LoRng
      '   Now Protect the sheet,
         .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                          AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True

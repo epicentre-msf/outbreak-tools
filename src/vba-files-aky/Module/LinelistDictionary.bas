@@ -64,7 +64,7 @@ Function GetDictionaryColumn(sColname As String) As BetterArray
 
     If isInDictHeaders(sColname) Then
         With ThisWorkbook.Worksheets(C_sParamSheetDict)
-            ColumnData.FromExcelRange .ListObjects(SheetListObjectName(C_sParamSheetDict)).ListColumns(sColname).DataBodyRange
+            ColumnData.FromExcelRange .ListObjects("o" & ClearString(C_sParamSheetDict)).ListColumns(sColname).DataBodyRange
         End With
     End If
     Set GetDictionaryColumn = ColumnData.Clone()
@@ -132,10 +132,10 @@ Function GetDictDataFromCondition(sColumnName As String, sCondition As String, O
 
         'First be sure the dictionnary is filtered on column name:
         With ThisWorkbook.Worksheets(C_sParamSheetDict)
-            With .ListObjects(SheetListObjectName(C_sParamSheetDict)).Range
+            With .ListObjects("o" & ClearString(C_sParamSheetDict)).Range
                .AutoFilter Field:=iColIndex, Criteria1:=sCondition
             End With
-            Set Rng = .ListObjects(SheetListObjectName(C_sParamSheetDict)).Range.SpecialCells(xlCellTypeVisible)
+            Set Rng = .ListObjects("o" & ClearString(C_sParamSheetDict)).Range.SpecialCells(xlCellTypeVisible)
         End With
 
         'Take the special cells and copy the data
@@ -225,3 +225,24 @@ Function FindSheetType(ByVal sSheetName As String) As String
     Set SheetTypeData = Nothing
 
 End Function
+
+'Find the table name from the dictionary
+Function FindSheetTable(ByVal sSheetName As String) As String
+    'Filter the sheet Name and one done,
+    FindSheetTable = vbNullString
+
+    Dim SheetNameData As BetterArray
+    Dim TableNameData As BetterArray
+
+    'Now Get all the Sheets
+    Set SheetNameData = GetDictionaryColumn(C_sDictHeaderSheetName)
+    If SheetNameData.Includes(sSheetName) Then
+        Set TableNameData = GetDictionaryColumn(C_sDictHeaderTableName)
+        FindSheetTable = TableNameData.Item(SheetNameData.IndexOf(sSheetName))
+    End If
+
+    Set SheetNameData = Nothing
+    Set TableNameData = Nothing
+End Function
+
+
