@@ -14,17 +14,17 @@ Attribute Translate_Manage.VB_ProcData.VB_Invoke_Func = " \n14"
     Dim SheetActive As Worksheet
 
     Application.ScreenUpdating = False
-
+    
     sheetTranslation.Unprotect C_sPassword
-
+    
     iRow = sheetTranslation.[T_Translate_Start].Row
     iColStart = sheetTranslation.[T_Translate_Start].Column
     iLastRow = sheetTranslation.[Tab_Translations].Rows.Count + iRow
     iWrite = IIf(sheetTranslation.Cells(5, 2).Value = "", iLastRow, iLastRow + 1)
-
+    
 'level sheet
     For iCptSheet = 1 To 4
-
+        
         Select Case iCptSheet
             Case 1
                 arrColumn = Split(sCstColDictionary, "|")
@@ -50,12 +50,12 @@ Attribute Translate_Manage.VB_ProcData.VB_Invoke_Func = " \n14"
 
     'level column
         For iCptCol = LBound(arrColumn, 1) To UBound(arrColumn, 1)
-
+        
             If Not SheetActive.Rows(iRowStart - 1).Find(What:=arrColumn(iCptCol), LookAt:=xlWhole) Is Nothing Then _
             iCol = SheetActive.Rows(iRowStart - 1).Find(What:=arrColumn(iCptCol), LookAt:=xlWhole).Column
-
+            
             iCptRow = iRowStart
-
+            
         'level Row
             Do While iCptRow <= iLastRow
                 If SheetActive.Cells(iCptRow, iCol).Value <> "" Then
@@ -80,11 +80,11 @@ Attribute Translate_Manage.VB_ProcData.VB_Invoke_Func = " \n14"
                 End If
                 iCptRow = iCptRow + 1
             Loop
-
+            
         Next iCptCol
-
+    
     Next iCptSheet
-
+    
 'removal of unnecessary labels
     iCptRow = sheetTranslation.[T_Translate_Start].Row + 1
 
@@ -107,11 +107,11 @@ Attribute Translate_Manage.VB_ProcData.VB_Invoke_Func = " \n14"
     Loop
 
     iRow = sheetTranslation.[T_Translate_Start].Row + 1
-
+    
     sheetTranslation.Select
     sheetTranslation.Range(Cells(iRow, iColStart - 1), Cells(iCptRow - 1, iColStart - 1)).ClearContents
-
-
+    
+    
 'sheet Sorting
     sheetTranslation.Sort.SortFields.Clear
     sheetTranslation.Sort.SortFields.Add2 key:=sheetTranslation.[Tab_Translations_Sort], _
@@ -124,11 +124,11 @@ Attribute Translate_Manage.VB_ProcData.VB_Invoke_Func = " \n14"
         .SortMethod = xlPinYin
         .Apply
     End With
-
+    
 'Lock the first Column
 Call LockFirstColumn
 Call ProtectTranslationSheet
-
+    
 'elaboration of the user message
 
     j = 0
@@ -136,7 +136,7 @@ Call ProtectTranslationSheet
     For i = 0 To UBound(iCptTranslate)
         j = j + iCptTranslate(i)
     Next i
-
+    
     If j = 0 Then
         sMessage = "The update of the translations sheet is correct."
         Application.ScreenUpdating = True
@@ -144,30 +144,30 @@ Call ProtectTranslationSheet
         ActiveWorkbook.Save
         Exit Sub
     End If
-
+    
     'if there are no columns to translate
     If sheetTranslation.Cells(iRow - 1, iColStart + 1).Value = "" Then
         ActiveWorkbook.Save
         Exit Sub
     End If
-
+    
     For i = 0 To UBound(iCptTranslate)
         If iCptTranslate(i) > 0 Then _
         sMessage = sMessage & iCptTranslate(i) & " labels are missing for column " & _
         sheetTranslation.Cells(iRow - 1, iColStart + (i + 1)).Value & "." & Chr(10)
     Next i
-
+    
     Application.ScreenUpdating = True
-
+    
     If sType = "Close" Then
         Reponse = MsgBox(sMessage & Chr(10) & "Do you want to continue to close the workbook ?", vbYesNo, "verification of translation tags")
     Else
         MsgBox sMessage, vbCritical, "verification of translation tags"
         bUpdate = False
     End If
-
+    
     'Lock the first column
-
+    
     ActiveWorkbook.Save
 
 End Sub
@@ -188,13 +188,13 @@ End Sub
 Sub LockFirstColumn()
     Dim iLastRow As Integer
     Dim rngFirstColumn As Range
-
+    
     iLastRow = sheetTranslation.Cells(Rows.Count, 2).End(xlUp).Row
-
+    
     With sheetTranslation
         Set rngFirstColumn = .Range(.Cells(5, 2), .Cells(iLastRow, 2))
     End With
-
+    
     rngFirstColumn.Locked = True
 End Sub
 

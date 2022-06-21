@@ -7,9 +7,9 @@ Sub ClicCmdAddRows()
     Dim iRow1 As Integer, iRow2 As Integer, iRowHearder As Integer
 
     Application.EnableEvents = False
-
+    
     ActiveSheet.Unprotect C_sPassword
-
+    
     For Each oLstobj In ActiveSheet.ListObjects
         iRowHearder = oLstobj.DataBodyRange.Row - 1
         oLstobj.Resize Range(Cells(iRowHearder, 1), Cells(oLstobj.DataBodyRange.Rows.Count + C_iNbLinesLLData + iRowHearder, Cells(iRowHearder, 1).End(xlToRight).Column))
@@ -17,7 +17,7 @@ Sub ClicCmdAddRows()
 
         iRow2 = iRow1 + C_iNbLinesLLData - 1
     Next
-
+    
     Rows(iRow1 - 1).Copy
 
     Rows(iRow1 & ":" & iRow2).Select
@@ -25,11 +25,11 @@ Sub ClicCmdAddRows()
     Application.CutCopyMode = False
 
     Cells(iRow1, 1).Select
-
+    
     Call ProtectSheet
-
+    
     Application.EnableEvents = True
-
+    
 End Sub
 
 
