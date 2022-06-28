@@ -1,0 +1,3 @@
+[submodule "input/outbreak-tools-setup"]
+	path = input/outbreak-tools-setup
+	url = https://github.com/epicentre-msf/outbreak-tools-setup.git
