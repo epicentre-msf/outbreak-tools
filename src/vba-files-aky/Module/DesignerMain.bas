@@ -146,7 +146,7 @@ Public Sub ImportGeobase()
         End If
     Next
 
-    Wkb.Close savechanges:=False
+    Wkb.Close SaveChanges:=False
     Set AdmData = Nothing
     Set AdmHeader = Nothing
     Set AdmNames = Nothing
@@ -220,7 +220,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
 
     Call Helpers.MoveAnalysis(SetupWkb)
 
-    SetupWkb.Close savechanges:=False
+    SetupWkb.Close SaveChanges:=False
     Set SetupWkb = Nothing
 
     iUpdateCpt = iUpdateCpt + 5
