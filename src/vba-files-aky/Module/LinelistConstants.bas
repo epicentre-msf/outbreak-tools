@@ -170,8 +170,8 @@ Public Const C_sCmdExportMigration      As String = "ClicExportMigration"
 Public Const C_sCmdImportMigration      As String = "ClicImportMigration"
 Public Const C_sCmdExport               As String = "ClicCmdExport"
 Public Const C_sCmdDebug                As String = "ClicCmdDebug"
-Public Const C_sAdmName                 As String = "adm"
 Public Const C_sResetData               As String = "ClicResetData"
+Public Const C_sCmdComputeFilter        As String = "AnalysisOnFilter"
 
 'TABLES LISTOBJECTS ===================================================================================================================================================================================
 
@@ -184,10 +184,11 @@ Public Const C_sTabkeys = "T_Keys"
 Public Const C_sShpShowHide             As String = "SHP_ShowHide"
 Public Const C_sShpAddRows              As String = "SHP_Add200L"
 Public Const C_sShpGeo                  As String = "SHP_GeoApps"
-Public Const C_sShpAdvanced         As String = "SHP_Advanced"
+Public Const C_sShpAdvanced             As String = "SHP_Advanced"
 Public Const C_sShpExport               As String = "SHP_Export"
 Public Const C_sShpDebug                As String = "SHP_Debug"
 Public Const C_sShpReset                As String = "SHP_Reset"
+Public Const C_sShpFilter               As String = "SHP_Filter"
 
 'Ranges in the linelist sheet
 Public Const C_sRngPublickey            As String = "RNG_PublicKey"                     'Name of the range for publickey
@@ -196,6 +197,7 @@ Public Const C_sRngGeoName              As String = "RNG_GeoName"
 Public Const C_sRngLLLanguageCode       As String = "RNG_LLLanguageCode"                        'Where the name of the geofile is stored in the GeoSheet
 Public Const C_sRngLLLanguage           As String = "RNG_LLLanguage"
 Public Const C_sRngDebuggingPassWord    As String = "RNG_DebuggingPassword"
+Public Const C_sAdmName                 As String = "adm"
 
 'STRING CONSTANTS =====================================================================================================================================================================================
 
@@ -229,7 +231,7 @@ Public Const C_iNbLinesLLData           As Integer = 200                        
 'Startlines for data in various source files
 
 Public Enum C_StartLines
-    C_eStartLinesDictHeaders = 2                                                                'Starting lines for dictionary headers
+    C_eStartLinesDictHeaders = 4                                                                'Starting lines for dictionary headers
     C_eStartLinesDictData = 3                                                                      'Starting lines for dictionary data
     C_eStartLinesLLMainSec = 5                                                                   'Starting lines for first title of the linelist
     C_eStartLinesLLSubSec = 6                                                                      'Starting lines for second title of the linelist
@@ -238,7 +240,7 @@ Public Enum C_StartLines
     C_eStartLinesAdmData = 4                                                                       'Starting lines for a Adm data
     C_eStartColumnAdmData = 2                                                                      'Starting columns for sheets of type Adm
     C_eStartLinesExportSource = 5                                                              'Starting lines for export sources
-    C_eStartLinesChoicesHeaders = 1                                                          'Starting lines of the choices Headers
+    C_eStartLinesChoicesHeaders = 2                                                          'Starting lines of the choices Headers
     C_eStartLinesChoicesData = 2                                                                'Starting lines of the choices Data
     C_eStartLinesExportData = 2                                                                  'Starting lines of the export data
     C_eStartLinesTransdata = 4                                                                    'Starting lines for the translation data
@@ -246,12 +248,11 @@ Public Enum C_StartLines
     C_eStartlinesListAuto = 1
     C_eSectionsLookupColumns = 1                                                                 'Columns where to insert GoTo
 
+    'Start Lines for the analysis in the linelist
     C_eStartLinesAnalysis = 4
     C_eStartColumnAnalysis = 2
 
     'Analysis columns in the setup
-
-    C_eStartLinesAnaGS = 2
-    C_eStartLinesAnaFil = 1
+    C_eStartLinesAnaGS = 4
 End Enum
 

@@ -807,14 +807,14 @@ EndMacro:
 
         'On Error GoTo ErrAna
         With SrcWkb.Worksheets(C_sSheetAnalysis)
-            iLastRow = .Cells(C_eStartLinesAnaGS, 1).End(xlDown).Row
-            iLastColumn = .Cells(C_eStartLinesAnaGS, 1).End(xlToRight).Column
+            iLastRow = .Cells(C_eStartLinesAnaGS, 2).End(xlDown).Row
+            iLastColumn = .Cells(C_eStartLinesAnaGS, 2).End(xlToRight).Column
 
-            Set SrcRng = .Range(.Cells(C_eStartLinesAnaGS, 1), .Cells(iLastRow, iLastColumn))
+            Set SrcRng = .Range(.Cells(C_eStartLinesAnaGS, 2), .Cells(iLastRow, iLastColumn))
         End With
 
         With DesignerWorkbook.Worksheets(C_sSheetAnalysis)
-            Set DestRng = .Range(.Cells(C_eStartLinesAnaGS, 1), .Cells(iLastRow, iLastColumn))
+            Set DestRng = .Range(.Cells(C_eStartLinesAnaGS, 2), .Cells(iLastRow, iLastColumn))
              DestRng.value = SrcRng.value
             'Add listobject for Global summary
             .ListObjects.Add(xlSrcRange, DestRng, , xlYes).Name = C_sTabGlobalSummary

@@ -464,7 +464,7 @@ Sub ImportMigrationData()
             ColumnIndexLLData.Items = ColumnIndexData.Slice(iStartSheet, iEndSheet)
 
             Call ImportSheetData(shImp.Name, shImp, hasData, ColumnIndexLLData, VarNamesLLData)
-            TabSheetsTouched.push shImp.Name
+            TabSheetsTouched.Push shImp.Name
         Else
             'Set import report to true
             If Not ImportReport Then ImportReport = True
@@ -520,7 +520,7 @@ Sub ImportMigrationData()
     Set ColumnIndexLLData = Nothing
     Set TabSheetsTouched = Nothing
 
-    WkbImp.Close savechanges:=False
+    WkbImp.Close SaveChanges:=False
     Set WkbImp = Nothing
 
     EndWork xlsapp:=Application
@@ -700,7 +700,7 @@ Sub ImportGeobase()
         Next
 
 
-        Wkb.Close savechanges:=False
+        Wkb.Close SaveChanges:=False
 
 
         Call TranslateImportGeoHead
@@ -818,7 +818,7 @@ Sub ImportHistoricGeobase()
 
             End If
         Next
-        Wkb.Close savechanges:=False
+        Wkb.Close SaveChanges:=False
         'Add a message box to say it is over
     End If
 
