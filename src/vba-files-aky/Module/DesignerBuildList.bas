@@ -384,6 +384,10 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
             If sPrevSheetName <> sNewSheetName Then
                 .Worksheets.Add(after:=.Worksheets(sPrevSheetName)).Name = sNewSheetName
 
+                'Add Filtered Data sheet for filtered data
+                .Worksheets.Add(after := .Worksheets(sNewSheetName)).Name = "Filt " & sNewSheetName
+                .Worksheets("Filt " & sNewSheetName).Visible = xlSheetVeryHidden
+
                 'Remove the gridlines in this new Sheetname
                 Call RemoveGridLines(.Worksheets(sNewSheetName))
                 'I am on a new sheet name, I update values
