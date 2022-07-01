@@ -253,6 +253,6 @@ Public Enum C_StartLines
     C_eStartColumnAnalysis = 2
 
     'Analysis columns in the setup
-    C_eStartLinesAnaGS = 4
+    C_eStartLinesAnaGS = 5
 End Enum
 

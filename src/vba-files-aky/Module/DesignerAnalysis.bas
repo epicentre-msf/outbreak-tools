@@ -8,26 +8,12 @@ Public Sub BuildAnalysis(Wkb As Workbook, GlobalSummaryData As BetterArray)
 
 
     With Wkb
-
         'Add global summary first column
         AddGlobalSummary Wkb, GlobalSummaryData
 
     End With
 
 End Sub
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -49,14 +35,6 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GlobalSummaryData As BetterArray)
 
     With Wkb.Worksheets(C_sSheetAnalysis)
 
-        'Add command for filtering
-        Call AddCmd(Wkb, C_sSheetAnalysis, _
-                .Cells(C_eStartLinesAnalysis - 1, C_eStartColumnAnalysis).Left, _
-                .Cells(C_eStartLinesAnalysis - 1, C_eStartColumnAnalysis).Top, _
-                C_sShpFilter, _
-                "Calculate on filtered data", _
-                C_iCmdWidth, C_iCmdHeight, _
-                C_sCmdComputeFilter)
 
         .Cells.Font.Size = C_iAnalysisFontSize
 
@@ -68,22 +46,23 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GlobalSummaryData As BetterArray)
         End With
 
 
-
-        With .Cells(C_eStartLinesAnalysis, 3)
+        With .Cells(C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1)
             .value = TranslateLLMsg("MSG_AllData")
             .Font.Bold = True
             .Font.Color = Helpers.GetColor("DarkBlue")
+            .Interior.Color = Helpers.GetColor("LightBlue")
         End With
 
-        With .Cells(C_eStartLinesAnalysis, 4)
+        With .Cells(C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2)
             .value = TranslateLLMsg("MSG_FilteredData")
             .Font.Bold = True
             .Font.Color = Helpers.GetColor("DarkBlue")
             .Interior.Color = Helpers.GetColor("LightBlue")
         End With
 
-        WriteBorderLines .Range(.Cells(C_eStartLinesAnalysis, 3), _
-                                .Cells(C_eStartLinesAnalysis, 4)), _
+        WriteBorderLines .Cells(C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1), _
+                         iWeight:=xlThin, sColor:="DarkBlue"
+        WriteBorderLines .Cells(C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2), _
                          iWeight:=xlThin, sColor:="DarkBlue"
 
         On Error Resume Next
@@ -126,6 +105,15 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GlobalSummaryData As BetterArray)
         WriteBorderLines .Range(.Cells(C_eStartLinesAnalysis + 1, C_eStartColumnAdmData + 1), _
                                 .Cells(C_eStartLinesAnalysis + iSumLength, C_eStartColumnAdmData + 1)), _
                          iWeight:=xlThin, sColor:="DarkBlue"
+
+        'Add command for filtering
+        Call AddCmd(Wkb, C_sSheetAnalysis, _
+                .Cells(C_eStartLinesAnalysis, C_eStartColumnAnalysis + 3).Left, _
+                .Cells(C_eStartLinesAnalysis, C_eStartColumnAnalysis + 3).Top, _
+                C_sShpFilter, _
+                "Calculate on filtered data", _
+                C_iCmdWidth + 10, C_iCmdHeight + 5, _
+                C_sCmdComputeFilter)
     End With
 
 End Sub
