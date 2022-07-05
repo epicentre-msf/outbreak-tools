@@ -70,7 +70,7 @@ End Sub
 '@sSheetName: the name of the Sheet in the designer we want to move
 
 Public Sub TransferSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String)
-    DesignerWorkbook.Worksheets(sSheetName).copy after:=Wkb.Worksheets(sPrevSheetName)
+    DesignerWorkbook.Worksheets(sSheetName).Copy after:=Wkb.Worksheets(sPrevSheetName)
 End Sub
 
 '-----

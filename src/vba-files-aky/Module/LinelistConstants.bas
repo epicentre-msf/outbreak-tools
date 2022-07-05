@@ -122,8 +122,9 @@ Public Const C_sExportHeaderFileName    As String = "file name"
 
 'ANALYSIS PARAMETERS ==================================================================================================================================================================================
 
-Public Const C_sAnaGSLabel       As String = "summary label"
-Public Const C_sAnaGSForm        As String = "summary function"
+Public Const C_sAnaSumLabel             As String = "summary label"
+Public Const C_sAnaSumFunction          As String = "summary function"
+Public Const C_sAnaSection              As String = "section"
 
 'FORMS ================================================================================================================================================================================================
 
@@ -131,7 +132,7 @@ Public Const C_sFormExport               As String = "F_Export"                 
 Public Const C_sFormGeo                  As String = "F_Geo"                             'Geo Frame
 Public Const C_sFormShowHide             As String = "F_NomVisible"                      'ShowHide Frame
 Public Const C_sFormExportMig            As String = "F_ExportMig"                       'Export for Migration form
-Public Const C_sFormAdvanced            As String = "F_Advanced"                       'Import for Migration form
+Public Const C_sFormAdvanced             As String = "F_Advanced"                       'Import for Migration form
 Public Const C_sFormImportRep            As String = "F_ImportRep"
 
 'TABLES LISTOBJECTS ===================================================================================================================================================================================
