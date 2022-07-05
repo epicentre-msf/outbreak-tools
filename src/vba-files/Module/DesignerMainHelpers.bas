@@ -165,8 +165,8 @@ Public Sub PrepareTemporaryFolder(Optional Create As Boolean = True)
 
 'required temporary folder for analysis
     On Error Resume Next
-        Workbooks("Temp.xlsb").Close savechanges:=False
-        Workbooks("Temp").Close savechanges:=False
+        Workbooks("Temp.xlsb").Close SaveChanges:=False
+        Workbooks("Temp").Close SaveChanges:=False
         Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb"
         Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "*.frm"
         Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "*.frx"

@@ -111,7 +111,7 @@ Sub ImportLang()
         .ListObjects.Add(xlSrcRange, dest, , xlYes).Name = C_sTabTranslation
     End With
     Set src = Wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).HeaderRowRange
-    src.copy SheetDesTranslation.Range("T_Lst_Lang")
+    src.Copy SheetDesTranslation.Range("T_Lst_Lang")
 
     sAdr1 = SheetDesTranslation.Range("T_Lst_Lang").Address
     sAdr2 = SheetDesTranslation.Range("T_Lst_Lang").End(xlToRight).Address
@@ -164,7 +164,7 @@ Function GetTranslatedValue(ByVal sText As String) As String
 
 End Function
 
-Sub TranslateColumn(iCol As Integer, sSheetName As String, iLastRow As Long, Optional iStartRow As Integer = 2)
+Sub TranslateColumn(iCol As Integer, sSheetName As String, iLastRow As Long, Optional iStartRow As Long = 2)
     Dim Wksh As Worksheet
     Dim i
     Dim sText As String
@@ -226,7 +226,7 @@ End Function
 
 
 
-Sub TranslateColumnFormula(iCol As Integer, sSheetName As String, iLastRow As Long, Optional iStartRow As Integer = 2)
+Sub TranslateColumnFormula(iCol As Integer, sSheetName As String, iLastRow As Long, Optional iStartRow As Long = 2)
 
     Dim i As Integer
     Dim sText As String
@@ -336,29 +336,78 @@ Sub TranslateAnalysis()
     Dim iCol As Integer
     Dim Wksh As Worksheet
     Dim Headers As BetterArray
-    Dim i As Integer
+    Dim iStartLine As Long
 
     Set Headers = New BetterArray
     Headers.LowerBound = 1
 
     Set Wksh = DesignerWorkbook.Worksheets(C_sParamSheetAnalysis)
 
+
+
     'GLOBAL SUMMARY ============================================================
 
-    With Wksh.ListObjects(C_sTabGlobalSummary)
-         iLast = .DataBodyRange.Rows.Count + C_eStartLinesAnaGS
-        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, C_eStartLinesAnaGS)
+    With Wksh.ListObjects(C_sTabGS)
+        iStartLine = .Range.Row
+         iLast = .DataBodyRange.Rows.Count + iStartLine
+        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine)
     End With
 
     'Translate the column of label
-    iCol = Headers.IndexOf(C_sAnaGSLabel)
+    iCol = Headers.IndexOf(C_sAnaSumLabel)
     If iCol < 0 Then Exit Sub
-    Call TranslateColumn(iCol, C_sParamSheetAnalysis, iLast, C_eStartLinesAnaGS)
+    Call TranslateColumn(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
 
     'Translate the column of formulas
-    iCol = Headers.IndexOf(C_sAnaGSForm)
+    iCol = Headers.IndexOf(C_sAnaSumFunction)
     If iCol < 0 Then Exit Sub
-    Call TranslateColumnFormula(iCol, C_sParamSheetAnalysis, iLast, C_eStartLinesAnaGS)
+    Call TranslateColumnFormula(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
+
+    'UNIVARIATE ANALYSIS =======================================================
+     With Wksh.ListObjects(C_sTabUA)
+        iStartLine = .Range.Row
+         iLast = .DataBodyRange.Rows.Count + iStartLine
+        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine)
+    End With
+
+    'Translate the column of label
+    iCol = Headers.IndexOf(C_sAnaSumLabel)
+    If iCol < 0 Then Exit Sub
+    Call TranslateColumn(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
+
+    'Translate the column of formulas
+    iCol = Headers.IndexOf(C_sAnaSumFunction)
+    If iCol < 0 Then Exit Sub
+    Call TranslateColumnFormula(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
+
+    'Translate the column of section
+    iCol = Headers.IndexOf(C_sAnaSection)
+    If iCol < 0 Then Exit Sub
+    Call TranslateColumnFormula(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
+
+    'BIVARIATE ANALYSIS ========================================================
+     With Wksh.ListObjects(C_sTabBA)
+        iStartLine = .Range.Row
+         iLast = .DataBodyRange.Rows.Count + iStartLine
+        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine)
+    End With
+
+    'Translate the column of label
+    iCol = Headers.IndexOf(C_sAnaSumLabel)
+    If iCol < 0 Then Exit Sub
+    Call TranslateColumn(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
+
+    'Translate the column of formulas
+    iCol = Headers.IndexOf(C_sAnaSumFunction)
+    If iCol < 0 Then Exit Sub
+    Call TranslateColumnFormula(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
+
+    'Translate the column of section
+    iCol = Headers.IndexOf(C_sAnaSection)
+    If iCol < 0 Then Exit Sub
+    Call TranslateColumnFormula(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
+
+    Set Headers = Nothing
 
 End Sub
 
