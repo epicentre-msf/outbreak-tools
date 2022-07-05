@@ -185,10 +185,15 @@ errDebug:
 End Sub
 
 'Protect sheet of type linelist
-Public Sub ProtectSheet()
+Public Sub ProtectSheet(Optional sSheetName As String = "_Active")
     Dim pwd As String
     Dim sh As Worksheet
-    Set sh = ActiveSheet
+
+    If sSheetName = "_Active" Then
+        Set sh = ActiveSheet
+    Else
+        Set sh = ThisWorkbook.Worksheets(sSheetName)
+    End If
 
     If Not DebugMode Then
         pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
@@ -431,3 +436,38 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
     End With
 
 End Sub
+
+
+
+'Compute data on Filtered values ===================================================================================
+
+Public Sub AnalysisOnFilter()
+
+    Dim Wksh As Worksheet
+    Dim FiltData As BetterArray
+    Dim sTableName As String
+    Dim Rng As Range
+    
+    BeginWork xlsapp:=Application
+
+    Set FiltData = New BetterArray
+    For Each Wksh In ThisWorkbook.Worksheets
+        If FindSheetType(Wksh.Name) = C_sDictSheetTypeLL Then
+            
+            Wksh.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
+            
+            sTableName = FindSheetTable(Wksh.Name)
+            Set Rng = Wksh.ListObjects(sTableName).DataBodyRange.SpecialCells(xlCellTypeVisible)
+            FiltData.FromExcelRange Rng
+            FiltData.ToExcelRange ThisWorkbook.Worksheets(C_sFiltered & Wksh.Name).Cells(C_eStartLinesLLData + 2, 1)
+            
+            ProtectSheet Wksh.Name
+        End If
+    Next
+
+    Set FiltData = Nothing
+    
+    EndWork xlsapp:=Application
+End Sub
+
+
