@@ -385,7 +385,7 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
                 .Worksheets.Add(after:=.Worksheets(sPrevSheetName)).Name = sNewSheetName
 
                 'Add Filtered Data sheet for filtered data
-                .Worksheets.Add(after := .Worksheets(sNewSheetName)).Name = "Filt " & sNewSheetName
+                .Worksheets.Add(after:=.Worksheets(sNewSheetName)).Name = "Filt " & sNewSheetName
                 .Worksheets("Filt " & sNewSheetName).Visible = xlSheetVeryHidden
 
                 'Remove the gridlines in this new Sheetname
@@ -475,7 +475,7 @@ End Sub
             On Error Resume Next
             'Logo (copy from the sheet main, copy can fail, you just continue)
             Application.CutCopyMode = False
-            SheetMain.Shapes("SHP_Logo").copy
+            SheetMain.Shapes("SHP_Logo").Copy
             .Paste Destination:=Wkb.Worksheets(C_sSheetAdmin).Cells(2, 2)
             Application.CutCopyMode = True
             On Error GoTo 0

@@ -142,7 +142,7 @@ Function GetDictDataFromCondition(sColumnName As String, sCondition As String, O
         With ThisWorkbook.Worksheets(C_sSheetTemp)
             .Visible = xlSheetHidden
             .Cells.Clear
-            Rng.copy Destination:=.Cells(1, 1)
+            Rng.Copy Destination:=.Cells(1, 1)
             Set ColumnData = New BetterArray
             ColumnData.LowerBound = 1
             If bVarNamesOnly Then
