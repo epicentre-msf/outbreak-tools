@@ -847,7 +847,7 @@ EndMacro:
     'Wkb is a workbook where we can find the dictionary, the special character
     'data and the name of all 'friendly' functions
 
-    Public Function AnalysisFormula(sFormula As String, Wkb As Workbook) As String
+    Public Function AnalysisFormula(sFormula As String, Wkb As Workbook, Optional isFiltered As Boolean = False) As String
         'Returns a string of cleared formula
 
         AnalysisFormula = vbNullString
@@ -955,6 +955,10 @@ EndMacro:
                             If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
                                 icolNumb = VarNameData.IndexOf(sAlphaValue)
                                 sAlphaValue = TableNameData.Item(icolNumb) & "[" & VarNameData.Item(icolNumb) & "]"
+
+                                'Add  condition for filtered data
+                                If isFiltered Then sAlphaValue = C_sFiltered & sAlphaValue
+
                             ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
                                     sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
                             End If
