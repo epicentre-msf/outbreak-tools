@@ -212,6 +212,7 @@ Public Const C_sVariable                As String = "variable"                  
 Public Const C_sValue                   As String = "value"
 Public Const C_sLanguage                As String = "language"
 Public Const C_sLLDate                  As String = "linelist_creation_date"
+Public Const C_sFiltered                As String = "filt_"                              'Just to know if we are on a filtered/Not filtered sheet or table
 
 
 
@@ -250,10 +251,8 @@ Public Enum C_StartLines
     C_eSectionsLookupColumns = 1                                                                 'Columns where to insert GoTo
 
     'Start Lines for the analysis in the linelist
-    C_eStartLinesAnalysis = 4
+    C_eStartLinesAnalysis = 6
     C_eStartColumnAnalysis = 2
 
-    'Analysis columns in the setup
-    C_eStartLinesAnaGS = 5
 End Enum
 

@@ -6,15 +6,27 @@ Public Sub BuildAnalysis(Wkb As Workbook, GlobalSummaryData As BetterArray)
 
     'Add commands Buttons  for filters
 
+     With Wkb.Worksheets(C_sSheetAnalysis)
+        .Cells.Font.Size = C_iAnalysisFontSize
 
-    With Wkb
-        'Add global summary first column
-        AddGlobalSummary Wkb, GlobalSummaryData
+        .Rows("1:2").RowHeight = C_iLLButtonsRowHeight
+        .Columns(1).ColumnWidth = C_iLLFirstColumnsWidth + 20
+         .Columns(1).ColumnWidth = C_iLLFirstColumnsWidth + 20
 
+         'Add command for filtering
+        Call AddCmd(Wkb, C_sSheetAnalysis, _
+                .Cells(1, 1).Left, _
+                .Cells(1, 1).Top, _
+                C_sShpFilter, _
+                "Calculate on filtered data", _
+                C_iCmdWidth, C_iCmdHeight + 10, _
+                C_sCmdComputeFilter)
     End With
 
-End Sub
+    'Add global summary first column
+    AddGlobalSummary Wkb, GlobalSummaryData
 
+End Sub
 
 
 
@@ -28,15 +40,13 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GlobalSummaryData As BetterArray)
     Dim iSumLength As Integer
     Dim sFormula As String
     Dim sConvertedFormula As String
+    Dim sConvertedFilteredFormula As String
     Dim i As Integer 'counter
 
     iSumLength = GlobalSummaryData.Length
 
 
     With Wkb.Worksheets(C_sSheetAnalysis)
-
-
-        .Cells.Font.Size = C_iAnalysisFontSize
 
         With .Cells(C_eStartLinesAnalysis - 2, C_eStartColumnAnalysis)
             .value = TranslateLLMsg("MSG_GlobalSummary")
@@ -75,12 +85,20 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GlobalSummaryData As BetterArray)
             sFormula = GlobalSummaryData.Items(i, 2)
 
             sConvertedFormula = AnalysisFormula(sFormula, Wkb)
+            sConvertedFilteredFormula = AnalysisFormula(sFormula, Wkb, isFiltered:=True)
 
             If sConvertedFormula <> vbNullString Then
                 .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1).Formula = sConvertedFormula
             End If
-                .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1).HorizontalAlignment = xlHAlignRight
-                .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1).Font.Size = C_iAnalysisFontSize - 2
+
+            If sConvertedFilteredFormula <> vbNullString Then
+                .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2).Formula = sConvertedFilteredFormula
+            End If
+
+            .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1).HorizontalAlignment = xlHAlignRight
+            .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1).Font.Size = C_iAnalysisFontSize - 2
+            .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2).HorizontalAlignment = xlHAlignRight
+            .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2).Font.Size = C_iAnalysisFontSize - 2
             'Write boder lines
              WriteBorderLines .Range(.Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis), _
                                 .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2)), _
@@ -106,14 +124,9 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GlobalSummaryData As BetterArray)
                                 .Cells(C_eStartLinesAnalysis + iSumLength, C_eStartColumnAdmData + 1)), _
                          iWeight:=xlThin, sColor:="DarkBlue"
 
-        'Add command for filtering
-        Call AddCmd(Wkb, C_sSheetAnalysis, _
-                .Cells(C_eStartLinesAnalysis, C_eStartColumnAnalysis + 3).Left, _
-                .Cells(C_eStartLinesAnalysis, C_eStartColumnAnalysis + 3).Top, _
-                C_sShpFilter, _
-                "Calculate on filtered data", _
-                C_iCmdWidth + 10, C_iCmdHeight + 5, _
-                C_sCmdComputeFilter)
     End With
 
 End Sub
+
+
+
