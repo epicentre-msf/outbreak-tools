@@ -384,6 +384,10 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
             If sPrevSheetName <> sNewSheetName Then
                 .Worksheets.Add(after:=.Worksheets(sPrevSheetName)).Name = sNewSheetName
 
+                'Add Filtered Data sheet for filtered data
+                .Worksheets.Add(after:=.Worksheets(sNewSheetName)).Name = C_sFiltered & sNewSheetName
+                .Worksheets(C_sFiltered & sNewSheetName).Visible = xlSheetVeryHidden
+
                 'Remove the gridlines in this new Sheetname
                 Call RemoveGridLines(.Worksheets(sNewSheetName))
                 'I am on a new sheet name, I update values
@@ -471,7 +475,7 @@ End Sub
             On Error Resume Next
             'Logo (copy from the sheet main, copy can fail, you just continue)
             Application.CutCopyMode = False
-            SheetMain.Shapes("SHP_Logo").copy
+            SheetMain.Shapes("SHP_Logo").Copy
             .Paste Destination:=Wkb.Worksheets(C_sSheetAdmin).Cells(2, 2)
             Application.CutCopyMode = True
             On Error GoTo 0
@@ -584,7 +588,7 @@ End Sub
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData).EntireColumn.AutoFit
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 1).EntireColumn.AutoFit
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).EntireColumn.AutoFit
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).columnWidth = 30
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).ColumnWidth = 30
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).Locked = False
 
 
@@ -662,6 +666,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     Dim sFormulaMin As String 'Formula for min
     Dim sFormulaMax As String 'Formula for max
     Dim LoRng As Range 'Range of the listobject for one table
+    Dim LoFiltRng As Range 'Range of the listobject in the filtered table
     Dim bLockData As Boolean
     Dim sChoiceAutoName As String
     Dim sSectionsList As String
@@ -991,8 +996,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         Wend
 
         'Set Column Width of First and Second Column
-        .Columns(1).columnWidth = C_iLLFirstColumnsWidth
-        .Columns(2).columnWidth = C_iLLFirstColumnsWidth
+        .Columns(1).ColumnWidth = C_iLLFirstColumnsWidth
+        .Columns(2).ColumnWidth = C_iLLFirstColumnsWidth
 
         'Set Validation to the Section goto Cell
         Call DesignerBuildListHelpers.BuildGotoArea(Wkb, sTableName, sSheetName, iGoToCol)
@@ -1017,5 +1022,16 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     'Tranfert Event code to the worksheet
     Call DesignerBuildListHelpers.TransferCodeWks(Wkb, sSheetName, C_sModLLChange)
 
+    'Now on the filtered sheet copy the range of the list object
+    With Wkb.Worksheets(C_sFiltered & sSheetName)
+        Set LoFiltRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_iNbLinesLLData + C_eStartLinesLLData + 1, iCounterSheetLLCol - 1))
+        LoFiltRng.value = LoRng.value
+        .ListObjects.Add(xlSrcRange, LoFiltRng, , xlYes).Name = C_sFiltered & sTableName
+        .ListObjects(C_sFiltered & sTableName).TableStyle = C_sLLTableStyle
+    End With
+
+
+    Set LoFiltRng = Nothing
+    Set LoRng = Nothing
 End Sub
 

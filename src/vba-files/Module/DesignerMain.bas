@@ -146,7 +146,7 @@ Public Sub ImportGeobase()
         End If
     Next
 
-    Wkb.Close savechanges:=False
+    Wkb.Close SaveChanges:=False
     Set AdmData = Nothing
     Set AdmHeader = Nothing
     Set AdmNames = Nothing
@@ -183,12 +183,15 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     Dim ChoicesData     As BetterArray          'Choices data
     Dim ExportData      As BetterArray          'Export data
     Dim TransData       As BetterArray          'Translation data
-    Dim GSData          As BetterArray
+    Dim GSData          As BetterArray          'Global Summary Data
+    Dim UAData          As BetterArray          'Univariate Analaysis Data
+    Dim BAData          As BetterArray          'Bivariate Analysis DAta
     Dim sPath           As String
     Dim SetupWkb        As Workbook
     Dim DesWkb          As Workbook
     Dim iOpenLL         As Integer
     Dim i               As Integer
+    Dim previousSecurity As Byte
 
     'Be sure the actual Workbook is not opened
 
@@ -209,6 +212,11 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     BeginWork xlsapp:=Application
 
     Set DesWkb = DesignerWorkbook
+    
+    previousSecurity = Application.AutomationSecurity
+    'Set security before opening  the setup workbook
+    Application.AutomationSecurity = msoAutomationSecurityForceDisable
+    
     Set SetupWkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
 
     'Move the dictionary data
@@ -220,8 +228,10 @@ Sub GenerateData(Optional iAsk As Byte = 0)
 
     Call Helpers.MoveAnalysis(SetupWkb)
 
-    SetupWkb.Close savechanges:=False
+    SetupWkb.Close SaveChanges:=False
     Set SetupWkb = Nothing
+    
+    Application.AutomationSecurity = previousSecurity
 
     iUpdateCpt = iUpdateCpt + 5
     StatusBar_Updater (iUpdateCpt)
@@ -260,7 +270,17 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Global summary data for analysis
     Set GSData = New BetterArray
     GSData.LowerBound = 1
-    GSData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabGlobalSummary).DataBodyRange
+    GSData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabGS).DataBodyRange
+
+    'Bivariate and Univariate Analysis data for Analysis
+    Set UAData = New BetterArray
+    UAData.LowerBound = 1
+    UAData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabUA).DataBodyRange
+
+    Set BAData = New BetterArray
+    BAData.LowerBound = 1
+    BAData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabBA).DataBodyRange
+
 
     DoEvents
 
@@ -302,6 +322,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     Set ExportData = Nothing
     Set TransData = Nothing
     Set GSData = Nothing
+    Set BAData = Nothing
 
 End Sub
 

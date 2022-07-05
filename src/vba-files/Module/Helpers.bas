@@ -429,8 +429,8 @@ Option Explicit
 
 'STRING AND DATA MANIPULATION =========================================================================================================================================================================
     'Safely delete databodyrange of a listobject
-    Public Sub DeleteLoDataBodyRange(lo As ListObject)
-        If Not lo.DataBodyRange Is Nothing Then lo.DataBodyRange.Delete
+    Public Sub DeleteLoDataBodyRange(Lo As ListObject)
+        If Not Lo.DataBodyRange Is Nothing Then Lo.DataBodyRange.Delete
     End Sub
     'Clear a String to remove inconsistencies
     Public Function ClearString(ByVal sString As String, Optional bremoveHiphen As Boolean = True) As String
@@ -450,7 +450,7 @@ Option Explicit
     'Get the headers of one sheet from one line (probablly the first line)
     'The headers are cleaned
 
-    Public Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Byte) As BetterArray
+    Public Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Long) As BetterArray
         'Extract column names in one sheet starting from one line
         Dim Headers As BetterArray
         Dim i As Long
@@ -522,12 +522,12 @@ Option Explicit
     'Test if a listobject exists
     Public Function ListObjectExists(Wksh As Worksheet, sListObjectName As String) As Boolean
         ListObjectExists = False
-        Dim lo As ListObject
+        Dim Lo As ListObject
         On Error Resume Next
-        Set lo = Wksh.ListObjects(sListObjectName)
-        ListObjectExists = (Not lo Is Nothing)
+        Set Lo = Wksh.ListObjects(sListObjectName)
+        ListObjectExists = (Not Lo Is Nothing)
         On Error GoTo 0
-        Set lo = Nothing
+        Set Lo = Nothing
     End Function
 
     'Get validation type
@@ -577,7 +577,7 @@ Option Explicit
     End Sub
 
     'Filter a table listobject on one condition and get the values of that table or all the unique values of one column
-    Public Function FilterLoTable(lo As ListObject, iFiltindex1 As Integer, sValue1 As String, _
+    Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 As String, _
                                 Optional iFiltindex2 As Integer = 0, Optional sValue2 As String = vbNullString, _
                                 Optional iFiltindex3 As Integer = 0, Optional sValue3 As String = vbNullString, _
                                 Optional returnIndex As Integer = -99, _
@@ -586,7 +586,7 @@ Option Explicit
         Dim Data As BetterArray
         Dim breturnAllData As Boolean
 
-        With lo.Range
+        With Lo.Range
 
             .AutoFilter Field:=iFiltindex1, Criteria1:=sValue1
 
@@ -601,7 +601,7 @@ Option Explicit
 
         End With
 
-        Set Rng = lo.Range.SpecialCells(xlCellTypeVisible)
+        Set Rng = Lo.Range.SpecialCells(xlCellTypeVisible)
 
         If returnIndex > 0 Then
             breturnAllData = False
@@ -616,7 +616,7 @@ Option Explicit
                 .Visible = xlSheetHidden
                 .Cells.Clear
 
-                Rng.copy Destination:=.Cells(1, 1)
+                Rng.Copy Destination:=.Cells(1, 1)
 
                 Set Data = New BetterArray
                 Data.LowerBound = 1
@@ -631,26 +631,26 @@ Option Explicit
                 .Visible = xlSheetVeryHidden
         End With
 
-        lo.AutoFilter.ShowAllData
+        Lo.AutoFilter.ShowAllData
 
         Set FilterLoTable = Data.Clone()
     End Function
 
 
     'Get unique values of one range in a listobject
-    Function GetUniquelo(lo As ListObject, iIndex As Integer) As BetterArray
+    Function GetUniquelo(Lo As ListObject, iIndex As Integer) As BetterArray
 
         Dim Rng As Range
         Dim Data As BetterArray
 
-        Set Rng = lo.ListColumns(iIndex).DataBodyRange
+        Set Rng = Lo.ListColumns(iIndex).DataBodyRange
 
         'Copy and paste to temp
         With ThisWorkbook.Worksheets(C_sSheetTemp)
                 .Visible = xlSheetHidden
                 .Cells.Clear
 
-                Rng.copy Destination:=.Cells(1, 1)
+                Rng.Copy Destination:=.Cells(1, 1)
 
                 Set Data = New BetterArray
                 Data.LowerBound = 1
@@ -776,7 +776,7 @@ EndMacro:
         Set Wksh = DestWkb.Worksheets.Add(after:=DestWkb.Worksheets(DestWkb.Worksheets.Count))
         If SheetExistsInWkb(DestWkb, sSheetName) Then DestWkb.Worksheets(sSheetName).Delete
 
-        SrcWkb.Worksheets(sSheetName).copy after:=Wksh
+        SrcWkb.Worksheets(sSheetName).Copy after:=Wksh
         Wksh.Delete
 
 
@@ -790,40 +790,55 @@ EndMacro:
     'Move analysis Data from the analysis Sheet to the DesignerWorkbook
     Public Function MoveAnalysis(SrcWkb As Workbook)
 
-        'Source And Destination Range
-        Dim SrcRng As Range
-        Dim DestRng As Range
+        Dim DesRng As Range 'Range to resize the new list object in the designer
+        Dim SetupRng As Range 'Range in the setup file
 
+        Dim iPasteRow As Long
+        Dim iPasteColumn As Long
         Dim iLastRow As Long
         Dim iLastColumn As Long
 
-        'Filter Table___________________________________________________________
+        Dim SetupWksh As Worksheet
+        Dim DesWksh As Worksheet
 
-        'Global Summary Table___________________________________________________
+        Dim Lo As ListObject
 
         If Not SheetExistsInWkb(SrcWkb, C_sSheetAnalysis) Then Exit Function
 
-        DesignerWorkbook.Worksheets(C_sSheetAnalysis).Cells.Clear
+        Set SetupWksh = SrcWkb.Worksheets(C_sSheetAnalysis)
+        Set DesWksh = DesignerWorkbook.Worksheets(C_sSheetAnalysis)
 
-        'On Error GoTo ErrAna
-        With SrcWkb.Worksheets(C_sSheetAnalysis)
-            iLastRow = .Cells(C_eStartLinesAnaGS, 1).End(xlDown).Row
-            iLastColumn = .Cells(C_eStartLinesAnaGS, 1).End(xlToRight).Column
+        DesWksh.Cells.Clear
 
-            Set SrcRng = .Range(.Cells(C_eStartLinesAnaGS, 1), .Cells(iLastRow, iLastColumn))
-        End With
+        For Each Lo In SetupWksh.ListObjects
 
-        With DesignerWorkbook.Worksheets(C_sSheetAnalysis)
-            Set DestRng = .Range(.Cells(C_eStartLinesAnaGS, 1), .Cells(iLastRow, iLastColumn))
-             DestRng.value = SrcRng.value
-            'Add listobject for Global summary
-            .ListObjects.Add(xlSrcRange, DestRng, , xlYes).Name = C_sTabGlobalSummary
-        End With
+            iPasteRow = Lo.Range.Row
+            iPasteColumn = Lo.Range.Column
 
-        'ErrAna:
+            SetupWksh.Cells(iPasteRow - 2, iPasteColumn).Copy DesWksh.Cells(iPasteRow - 2, iPasteColumn)
 
-        Set DestRng = Nothing
-        Set SrcRng = Nothing
+            'Find where data is entered from the first column
+            iLastRow = SetupWksh.Cells(iPasteRow, iPasteColumn).End(xlDown).Row
+            iLastColumn = SetupWksh.Cells(iPasteRow, iPasteColumn).End(xlToRight).Column
+
+            With SetupWksh
+                Set SetupRng = .Range(.Cells(iPasteRow, iPasteColumn), .Cells(iLastRow, iLastColumn))
+            End With
+
+            With DesWksh
+                Set DesRng = .Range(.Cells(iPasteRow, iPasteColumn), .Cells(iLastRow, iLastColumn))
+                DesRng.value = SetupRng.value
+                .ListObjects.Add(xlSrcRange, DesRng, , xlYes).Name = Lo.Name
+            End With
+
+        Next
+
+
+        Set DesRng = Nothing
+        Set SetupRng = Nothing
+        Set Lo = Nothing
+        Set SetupWksh = Nothing
+        Set DesWksh = Nothing
     End Function
 
 'FORMULAS AND VALIDATIONS =============================================================================================================================================================================
@@ -832,7 +847,7 @@ EndMacro:
     'Wkb is a workbook where we can find the dictionary, the special character
     'data and the name of all 'friendly' functions
 
-    Public Function AnalysisFormula(sFormula As String, Wkb As Workbook) As String
+    Public Function AnalysisFormula(sFormula As String, Wkb As Workbook, Optional isFiltered As Boolean = False) As String
         'Returns a string of cleared formula
 
         AnalysisFormula = vbNullString
@@ -940,6 +955,10 @@ EndMacro:
                             If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
                                 icolNumb = VarNameData.IndexOf(sAlphaValue)
                                 sAlphaValue = TableNameData.Item(icolNumb) & "[" & VarNameData.Item(icolNumb) & "]"
+
+                                'Add  condition for filtered data
+                                If isFiltered Then sAlphaValue = C_sFiltered & sAlphaValue
+
                             ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
                                     sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
                             End If

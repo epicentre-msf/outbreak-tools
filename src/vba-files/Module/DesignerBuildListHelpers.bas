@@ -70,7 +70,7 @@ End Sub
 '@sSheetName: the name of the Sheet in the designer we want to move
 
 Public Sub TransferSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String)
-    DesignerWorkbook.Worksheets(sSheetName).copy after:=Wkb.Worksheets(sPrevSheetName)
+    DesignerWorkbook.Worksheets(sSheetName).Copy after:=Wkb.Worksheets(sPrevSheetName)
 End Sub
 
 '-----
@@ -194,7 +194,7 @@ Sub AddCmd(Wkb As Workbook, sSheetName As String, iLeft As Integer, iTop As Inte
         .Shapes(sShpName).TextFrame2.TextRange.Characters.Text = sText
         .Shapes(sShpName).TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
         .Shapes(sShpName).TextFrame2.VerticalAnchor = msoAnchorMiddle
-        .Shapes(sShpName).TextFrame2.WordWrap = msoFalse
+        .Shapes(sShpName).TextFrame2.WordWrap = msoTrue
         .Shapes(sShpName).TextFrame2.TextRange.Font.Size = iTextFontSize
         .Shapes(sShpName).TextFrame2.TextRange.Font.Bold = False
         .Shapes(sShpName).TextFrame2.TextRange.Font.Fill.ForeColor.RGB = Helpers.GetColor(sShpTextColor)
