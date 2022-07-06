@@ -441,10 +441,10 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
         .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).value = C_sDictControlGeo & "3"
         .Cells(iStartLine + 2, iCol + 1).Locked = False
-        
+
         'Set validation for admin 3
          Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol + 1), "=" & C_sAdmName & "_3_" & "dropdown", 2, sMessage)
-        
+
 
         'Admin 2
         sLab = SheetGeo.ListObjects(C_sTabAdm2).HeaderRowRange.Item(2).value
@@ -459,7 +459,7 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
         .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).value = C_sDictControlGeo & "2"
         .Cells(iStartLine + 2, iCol + 1).Locked = False
-        
+
         'Set validation for admin 2
         Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol + 1), "=" & C_sAdmName & "_2_" & "dropdown", 2, sMessage)
 
@@ -480,7 +480,7 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Cells(iStartLine + 2, iCol).Validation.Delete
         'Add name and reference for adm1 (in case someone adds one adm1)
         Wkb.Names.Add Name:=C_sAdmName & "1" & "_column", RefersToR1C1:="=" & C_sTabadm1 & "[" & SheetGeo.Cells(1, 1).value & "]"
-        
+
         Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol), "=" & C_sAdmName & 1 & "_column", 2, sMessage)
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol), .Cells(iStartLine + 1, iCol)))
     End With
@@ -977,31 +977,31 @@ Public Sub AddTemporarySheets(Wkb As Workbook)
         'Add list auto temporary sheet
         .Worksheets.Add.Name = C_sSheetChoiceAuto
         .Worksheets(C_sSheetChoiceAuto).Visible = xlSheetVeryHidden
-        
+
         'Add in choice auto list for the Geo dropdowns
         With .Worksheets(C_sSheetChoiceAuto)
-        
+
             .Cells(1, 1).value = C_sAdmName & "_2_" & "dropdown"
             .Cells(1, 3).value = C_sAdmName & "_3_" & "dropdown"
             .Cells(1, 5).value = C_sAdmName & "_4_" & "dropdown"
-            
+
             'Add the listObjects
-            
+
             'Adm 2
             Set LoRng = .Range(.Cells(1, 1), .Cells(2, 1))
             'Add the list object here
             .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = C_sTabAdm2 & "_dropdown"
-            
+
             'Adm3
             Set LoRng = .Range(.Cells(1, 3), .Cells(2, 3))
             'Add the list object here
             .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = C_sTabAdm3 & "_dropdown"
-            
+
             'Adm4
             Set LoRng = .Range(.Cells(1, 5), .Cells(2, 5))
             'Add the list object here
             .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = C_sTabAdm4 & "_dropdown"
-            
+
             'Adm 2
             Wkb.Names.Add Name:=C_sAdmName & "_2_" & "dropdown", RefersToR1C1:="=" & C_sTabAdm2 & "_dropdown" & "[" & C_sAdmName & "_2_" & "dropdown" & "]"
             'Adm3
@@ -1009,7 +1009,7 @@ Public Sub AddTemporarySheets(Wkb As Workbook)
             'Adm 4
             Wkb.Names.Add Name:=C_sAdmName & "_4_" & "dropdown", RefersToR1C1:="=" & C_sTabAdm4 & "_dropdown" & "[" & C_sAdmName & "_4_" & "dropdown" & "]"
         End With
-        
+
         Set LoRng = Nothing
     End With
 End Sub
