@@ -173,6 +173,7 @@ Public Const C_sCmdExport               As String = "ClicCmdExport"
 Public Const C_sCmdDebug                As String = "ClicCmdDebug"
 Public Const C_sResetData               As String = "ClicResetData"
 Public Const C_sCmdComputeFilter        As String = "AnalysisOnFilter"
+Public Const C_sCmdClearFilters         As String = "ClearAllFilters"
 
 'TABLES LISTOBJECTS ===================================================================================================================================================================================
 
@@ -190,6 +191,7 @@ Public Const C_sShpExport               As String = "SHP_Export"
 Public Const C_sShpDebug                As String = "SHP_Debug"
 Public Const C_sShpReset                As String = "SHP_Reset"
 Public Const C_sShpFilter               As String = "SHP_Filter"
+Public Const C_sShpClearFilters         As String = "SHP_ClearFilters"
 
 'Ranges in the linelist sheet
 Public Const C_sRngPublickey            As String = "RNG_PublicKey"                     'Name of the range for publickey
@@ -235,9 +237,9 @@ Public Const C_iNbLinesLLData           As Integer = 200                        
 Public Enum C_StartLines
     C_eStartLinesDictHeaders = 4                                                                'Starting lines for dictionary headers
     C_eStartLinesDictData = 3                                                                      'Starting lines for dictionary data
-    C_eStartLinesLLMainSec = 5                                                                   'Starting lines for first title of the linelist
-    C_eStartLinesLLSubSec = 6                                                                      'Starting lines for second title of the linelist
-    C_eStartLinesLLData = 7                                                                          'Starting lines for the linelist data
+    C_eStartLinesLLMainSec = 6                                                                  'Starting lines for first title of the linelist
+    C_eStartLinesLLSubSec = 7                                                                     'Starting lines for second title of the linelist
+    C_eStartLinesLLData = 8                                                                          'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                                                                'Starting lines for export titles
     C_eStartLinesAdmData = 4                                                                       'Starting lines for a Adm data
     C_eStartColumnAdmData = 2                                                                      'Starting columns for sheets of type Adm
