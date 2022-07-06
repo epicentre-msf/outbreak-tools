@@ -447,27 +447,52 @@ Public Sub AnalysisOnFilter()
     Dim FiltData As BetterArray
     Dim sTableName As String
     Dim Rng As Range
-    
+
     BeginWork xlsapp:=Application
 
     Set FiltData = New BetterArray
     For Each wksh In ThisWorkbook.Worksheets
         If FindSheetType(wksh.Name) = C_sDictSheetTypeLL Then
-            
+
             wksh.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
-            
+
             sTableName = FindSheetTable(wksh.Name)
             Set Rng = wksh.ListObjects(sTableName).DataBodyRange.SpecialCells(xlCellTypeVisible)
             FiltData.FromExcelRange Rng
             FiltData.ToExcelRange ThisWorkbook.Worksheets(C_sFiltered & wksh.Name).Cells(C_eStartLinesLLData + 2, 1)
-            
+
             ProtectSheet wksh.Name
         End If
     Next
 
     Set FiltData = Nothing
-    
+
     EndWork xlsapp:=Application
 End Sub
 
+
+'Clear All the filters on current sheet =====================================================================
+
+Sub ClearAllFilters()
+    Dim wksh As Worksheet
+    Set wksh = ActiveSheet
+
+
+    If Not wksh.AutoFilter is Nothing Then
+
+        BeginWork xlsapp := Application
+
+        'Unprotect current worksheet
+        wksh.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
+        'remove the filters
+        wksh.AutoFilter.ShowAllData
+        ProtectSheet wksh.Name
+
+        EndWork xlsapp := Application
+
+    End If
+
+    Set wksh = Nothing
+
+End Sub
 
