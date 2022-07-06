@@ -408,7 +408,7 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
 
                 Case C_sDictSheetTypeLL
                     'Set the rowheight of the first two rows of a linelist type sheet
-                    .Worksheets(sPrevSheetName).Rows("1:2").RowHeight = C_iLLButtonsRowHeight
+                    .Worksheets(sPrevSheetName).Rows("1:4").RowHeight = C_iLLButtonsRowHeight
                     'Now I split at starting lines and freeze the pane
                 Case Else
                     SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgCheckSheetType)
@@ -724,6 +724,15 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                                              "Add rows", _
                                              C_iCmdWidth, C_iCmdHeight, _
                                              C_sCmdAddRowsName)
+
+        'Add Command to clear filters
+        Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
+                                            .Cells(3, 1).Left + C_iCmdWidth + 20, _
+                                            .Cells(3, 1).Top + 10, _
+                                            C_sShpClearFilters, _
+                                             "Add rows", _
+                                             C_iCmdWidth, C_iCmdHeight + 5, _
+                                             C_sCmdClearFilters)
 
         'All the cells font size at 9
         .Cells.Font.Size = C_iLLSheetFontSize
