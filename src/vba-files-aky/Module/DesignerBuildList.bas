@@ -15,7 +15,8 @@ Dim AddedLogo As Boolean 'Added Logo?
 
 Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As BetterArray, _
               ChoicesHeaders As BetterArray, ChoicesData As BetterArray, _
-              TransData As BetterArray, GlobalSummaryData As BetterArray, sPath As String)
+              TransData As BetterArray, GSData As BetterArray, UAData As BetterArray, BAData As BetterArray, _
+              sPath As String)
 
 
     Dim Wkb As Workbook
@@ -216,7 +217,11 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
     Call DesignerBuildListHelpers.UpdateChoiceAutoHeaders(Wkb, ChoiceAutoVarData, DictHeaders)
 
-    Call BuildAnalysis(Wkb, GlobalSummaryData)
+    '======== Build the Analysis ===============================================================
+
+    Call BuildAnalysis(Wkb, GSData, UAData, BAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData)
+
+
 
     StatusBar_Updater (iUpdateCpt)
 
@@ -938,7 +943,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
                 Case C_sDictControlHf
                     .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = GetColor("Orange")
-                Case C_sDictControlForm 'Formulas, are reported to the formula function
+
+                Case C_sDictControlForm, C_sDictControlFormChoices 'Formulas, are reported to the formula function
                     If (sActualFormula <> "") Then
                         sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, AllSheetNamesData, VarNameData, ColumnIndexData, _
                                                             FormulaData, SpecCharData, Wkb.Worksheets(sSheetName), False)
