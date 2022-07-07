@@ -443,7 +443,7 @@ End Sub
 
 Public Sub AnalysisOnFilter()
 
-    Dim wksh As Worksheet
+    Dim Wksh As Worksheet
     Dim FiltData As BetterArray
     Dim sTableName As String
     Dim Rng As Range
@@ -451,17 +451,17 @@ Public Sub AnalysisOnFilter()
     BeginWork xlsapp:=Application
 
     Set FiltData = New BetterArray
-    For Each wksh In ThisWorkbook.Worksheets
-        If FindSheetType(wksh.Name) = C_sDictSheetTypeLL Then
+    For Each Wksh In ThisWorkbook.Worksheets
+        If FindSheetType(Wksh.Name) = C_sDictSheetTypeLL Then
 
-            wksh.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
+            Wksh.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
-            sTableName = FindSheetTable(wksh.Name)
-            Set Rng = wksh.ListObjects(sTableName).DataBodyRange.SpecialCells(xlCellTypeVisible)
+            sTableName = FindSheetTable(Wksh.Name)
+            Set Rng = Wksh.ListObjects(sTableName).DataBodyRange.SpecialCells(xlCellTypeVisible)
             FiltData.FromExcelRange Rng
-            FiltData.ToExcelRange ThisWorkbook.Worksheets(C_sFiltered & wksh.Name).Cells(C_eStartLinesLLData + 2, 1)
+            FiltData.ToExcelRange ThisWorkbook.Worksheets(C_sFiltered & Wksh.Name).Cells(C_eStartLinesLLData + 2, 1)
 
-            ProtectSheet wksh.Name
+            ProtectSheet Wksh.Name
         End If
     Next
 
@@ -474,25 +474,25 @@ End Sub
 'Clear All the filters on current sheet =====================================================================
 
 Sub ClearAllFilters()
-    Dim wksh As Worksheet
-    Set wksh = ActiveSheet
+    Dim Wksh As Worksheet
+    Set Wksh = ActiveSheet
 
 
-    If Not wksh.AutoFilter is Nothing Then
+    If Not Wksh.AutoFilter Is Nothing Then
 
-        BeginWork xlsapp := Application
+        BeginWork xlsapp:=Application
 
         'Unprotect current worksheet
-        wksh.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
+        Wksh.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
         'remove the filters
-        wksh.AutoFilter.ShowAllData
-        ProtectSheet wksh.Name
+        Wksh.AutoFilter.ShowAllData
+        ProtectSheet Wksh.Name
 
-        EndWork xlsapp := Application
+        EndWork xlsapp:=Application
 
     End If
 
-    Set wksh = Nothing
+    Set Wksh = Nothing
 
 End Sub
 
