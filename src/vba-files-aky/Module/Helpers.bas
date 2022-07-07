@@ -7,9 +7,6 @@ Attribute VB_Name = "Helpers"
 Option Explicit
 
 
-
-
-
 'FILES, FOLDERS AND OS =========================================================
 
     'Load Folder  and File -----------------------------------------------------
@@ -295,7 +292,7 @@ Option Explicit
     'Draw lines arround a range
     Public Sub WriteBorderLines(oRange As Range, Optional iWeight As Integer = xlThin, Optional sColor As String = "Black")
         Dim i As Integer
-        For i = 7 To 10
+        For i = 7 To 10 'xltop, left, right and bottom
             With oRange.Borders(i)
                 .LineStyle = xlContinuous
                 .Color = Helpers.GetColor(sColor)
@@ -360,26 +357,6 @@ Option Explicit
         shTemp.Cells.Clear
     End Function
 
-    'update the progress status
-    Sub StatusBar_Updater(sCpte As Single)
-
-        Dim CurrentStatus As Integer
-        Dim pctDone As Integer
-        Dim bCurrEvent As Boolean
-
-        bCurrEvent = Application.ScreenUpdating
-
-        Application.ScreenUpdating = True
-
-        CurrentStatus = (C_iNumberOfBars) * Round(sCpte / 100, 1)
-        SheetMain.Range(C_sRngUpdate).value = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "% " & TranslateMsg("MSG_BuildLL")
-
-        Application.ScreenUpdating = bCurrEvent
-
-    End Sub
-
-
-
 
 'DESIGN, FONTS AND COLORS==============================================================================================================================================================================
 
@@ -421,6 +398,12 @@ Option Explicit
             GetColor = RGB(0, 0, 139)
         Case "LightBlue"
             GetColor = RGB(221, 235, 245)
+        Case "VeryLightBlue"
+            GetColor = RGB(240, 249, 255)
+        Case "GreyBlue"
+            GetColor = RGB(68, 88, 94)
+        Case "VeryLightGreyBlue"
+            GetColor = RGB(233, 238, 240)
         Case Else
             GetColor = vbWhite
         End Select
@@ -787,215 +770,9 @@ EndMacro:
 
     End Function
 
-    'Move analysis Data from the analysis Sheet to the DesignerWorkbook
-    Public Function MoveAnalysis(SrcWkb As Workbook)
+'FORMULAS AND VALIDATIONS ==============================================================================================================================================================================
 
-        Dim DesRng As Range 'Range to resize the new list object in the designer
-        Dim SetupRng As Range 'Range in the setup file
-
-        Dim iPasteRow As Long
-        Dim iPasteColumn As Long
-        Dim iLastRow As Long
-        Dim iLastColumn As Long
-
-        Dim SetupWksh As Worksheet
-        Dim DesWksh As Worksheet
-
-        Dim Lo As ListObject
-
-        If Not SheetExistsInWkb(SrcWkb, C_sSheetAnalysis) Then Exit Function
-
-        Set SetupWksh = SrcWkb.Worksheets(C_sSheetAnalysis)
-        Set DesWksh = DesignerWorkbook.Worksheets(C_sSheetAnalysis)
-
-        DesWksh.Cells.Clear
-
-        For Each Lo In SetupWksh.ListObjects
-
-            iPasteRow = Lo.Range.Row
-            iPasteColumn = Lo.Range.Column
-
-            SetupWksh.Cells(iPasteRow - 2, iPasteColumn).Copy DesWksh.Cells(iPasteRow - 2, iPasteColumn)
-
-            'Find where data is entered from the first column
-            iLastRow = SetupWksh.Cells(iPasteRow, iPasteColumn).End(xlDown).Row
-            iLastColumn = SetupWksh.Cells(iPasteRow, iPasteColumn).End(xlToRight).Column
-
-            With SetupWksh
-                Set SetupRng = .Range(.Cells(iPasteRow, iPasteColumn), .Cells(iLastRow, iLastColumn))
-            End With
-
-            With DesWksh
-                Set DesRng = .Range(.Cells(iPasteRow, iPasteColumn), .Cells(iLastRow, iLastColumn))
-                DesRng.value = SetupRng.value
-                .ListObjects.Add(xlSrcRange, DesRng, , xlYes).Name = Lo.Name
-            End With
-
-        Next
-
-
-        Set DesRng = Nothing
-        Set SetupRng = Nothing
-        Set Lo = Nothing
-        Set SetupWksh = Nothing
-        Set DesWksh = Nothing
-    End Function
-
-'FORMULAS AND VALIDATIONS =============================================================================================================================================================================
-
-    'Transform one formula to a formula for analysis.
-    'Wkb is a workbook where we can find the dictionary, the special character
-    'data and the name of all 'friendly' functions
-
-    Public Function AnalysisFormula(sFormula As String, Wkb As Workbook, Optional isFiltered As Boolean = False) As String
-        'Returns a string of cleared formula
-
-        AnalysisFormula = vbNullString
-
-        Dim sFormulaATest As String                  'same formula, with all the spaces replaced with
-        Dim sAlphaValue As String                    'Alpha numeric values in a formula
-        Dim sLetter As String                        'counter for every letter in one formula
-        Dim scolAddress As String                    'address of one column used in a formula
-
-        Dim FormulaAlphaData As BetterArray          'Table of alphanumeric data in one formula
-        Dim FormulaData      As BetterArray
-        Dim VarNameData  As BetterArray              'List of all variable names
-        Dim SpecCharData As BetterArray              'List of Special Characters data
-        Dim DictHeaders As BetterArray
-        Dim TableNameData As BetterArray
-        Dim VarMainLabelData As BetterArray
-
-
-        Dim i As Long
-        Dim iPrevBreak As Long
-        Dim iNbParentO As Long                    'Number of left parenthesis
-        Dim iNbParentF As Long                    'Number of right parenthesis
-        Dim icolNumb As Long                      'Column number on one sheet of one column used in a formual
-
-
-        Dim isError As Boolean
-        Dim OpenedQuotes As Boolean                  'Test if the formula has opened some quotes
-        Dim QuotedCharacter As Boolean
-        Dim NoErrorAndNoEnd As Boolean
-
-        Set FormulaAlphaData = New BetterArray       'Alphanumeric values of one formula
-        Set FormulaData = New BetterArray
-        Set VarNameData = New BetterArray       'The list of all Variable Names
-        Set SpecCharData = New BetterArray       'The list of all special characters
-        Set DictHeaders = New BetterArray
-        Set VarMainLabelData = New BetterArray
-        Set TableNameData = New BetterArray
-
-        FormulaAlphaData.LowerBound = 1
-        VarNameData.LowerBound = 1
-        SpecCharData.LowerBound = 1
-        DictHeaders.LowerBound = 1
-
-        'squish the formula (removing multiple spaces) to avoid problems related to
-        'space collapsing and upper/lower cases
-        sFormulaATest = "(" & Application.WorksheetFunction.Trim(sFormula) & ")"
-
-        'Initialisations:
-
-        iNbParentO = 0                               'Number of open brakets
-        iNbParentF = 0                               'Number of closed brackets
-        iPrevBreak = 1
-        OpenedQuotes = False
-        NoErrorAndNoEnd = True
-        QuotedCharacter = False
-        i = 1
-
-        Set DictHeaders = GetHeaders(Wkb, C_sParamSheetDict, 1)
-        VarNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=False, DetectLastRow:=True
-        FormulaData.FromExcelRange Wkb.Worksheets(C_sSheetFormulas).ListObjects(C_sTabExcelFunctions).ListColumns("ENG").DataBodyRange, DetectLastColumn:=False
-        SpecCharData.FromExcelRange Wkb.Worksheets(C_sSheetFormulas).ListObjects(C_sTabASCII).ListColumns("TEXT").DataBodyRange, DetectLastColumn:=False
-
-        'Test if you have variable name in the dictionary
-        If DictHeaders.IndexOf(C_sDictHeaderTableName) < 0 Then
-            Exit Function
-        End If
-
-        TableNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderTableName)), DetectLastColumn:=False, DetectLastRow:=True
-
-        If VarNameData.Includes(sFormulaATest) Then
-            AnalysisFormula = "" 'We have to aggregate
-            Exit Function
-        Else
-            Do While (i <= Len(sFormulaATest))
-                QuotedCharacter = False
-
-                sLetter = Mid(sFormulaATest, i, 1)
-                If sLetter = Chr(34) Then
-                    OpenedQuotes = Not OpenedQuotes
-                End If
-
-                If Not OpenedQuotes And SpecCharData.Includes(sLetter) Then 'A special character, not in quotes
-                    If sLetter = Chr(40) Then
-                        iNbParentO = iNbParentO + 1
-                    End If
-                    If sLetter = Chr(41) Then
-                        iNbParentF = iNbParentF + 1
-                    End If
-
-                    sAlphaValue = Application.WorksheetFunction.Trim(Mid(sFormulaATest, iPrevBreak, i - iPrevBreak))
-                    If sAlphaValue <> "" Then
-                        'It is either a formula or a variable name or a quoted string
-                        If Not VarNameData.Includes(LCase(sAlphaValue)) And Not FormulaData.Includes(UCase(sAlphaValue)) And Not IsNumeric(sAlphaValue) Then
-                            'Testing if not opened the quotes
-                            If Mid(sAlphaValue, 1, 1) <> Chr(34) Then
-                                isError = True
-                                Exit Do
-                            Else
-                                QuotedCharacter = True
-                            End If
-                        End If
-
-                        If Not isError And Not QuotedCharacter Then
-                            'It is either a variable name or a formula
-                            If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
-                                icolNumb = VarNameData.IndexOf(sAlphaValue)
-                                sAlphaValue = TableNameData.Item(icolNumb) & "[" & VarNameData.Item(icolNumb) & "]"
-
-                                'Add  condition for filtered data
-                                If isFiltered Then sAlphaValue = C_sFiltered & sAlphaValue
-
-                            ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
-                                    sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
-                            End If
-                        End If
-                        FormulaAlphaData.Push sAlphaValue, sLetter
-                    Else
-                        'I have a special character, at the value sLetter But nothing between this special character and previous one, just add it
-                        FormulaAlphaData.Push sLetter
-                    End If
-
-                    iPrevBreak = i + 1
-                End If
-                i = i + 1
-            Loop
-        End If
-
-        If iNbParentO <> iNbParentF Then
-            isError = True
-        End If
-
-        If Not isError Then
-            sAlphaValue = FormulaAlphaData.ToString(Separator:="", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
-            AnalysisFormula = "=" & sAlphaValue
-        Else
-        'MsgBox "Error in analysis formula: " & sFormula
-        End If
-
-        Set FormulaAlphaData = Nothing  'Alphanumeric values of one formula
-        Set VarNameData = Nothing       'The list of all Variable Names
-        Set SpecCharData = Nothing      'The list of all special characters
-        Set DictHeaders = Nothing
-        Set VarMainLabelData = Nothing
-        Set TableNameData = Nothing
-
-    End Function
-
-
+    'Depending on language settings, find correct translation of excel formulas
     Public Function GetInternationalFormula(sFormula As String, Wksh As Worksheet) As String
 
         Dim sprevformula As String
@@ -1004,7 +781,8 @@ EndMacro:
         GetInternationalFormula = ""
 
         'The formula is in English, I need to take the international
-        'value of the formula, and avoid using the table of formulas only when I deal with Validations
+        'value of the formula, and avoid using the table of formulas only
+        'when I deal with Validations
 
         If (sFormula <> "") Then
             sprevformula = Wksh.Range("A1").Formula
@@ -1019,7 +797,7 @@ EndMacro:
     End Function
 
 
-'CUSTOM HELPERS FUNCTIONS =============================================================================================================================================================================
+'CUSTOM HELPERS FUNCTIONS ==============================================================================================================================================================================
 
     'Epicemiological week function
 

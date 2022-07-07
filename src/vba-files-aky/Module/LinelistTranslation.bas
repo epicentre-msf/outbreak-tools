@@ -39,18 +39,20 @@ Sub TranslateForm(UserFrm As UserForm)
         Or (TypeOf cControl Is MSForms.Page) Or (TypeOf cControl Is MSForms.MultiPage) Or (TypeOf cControl Is MSForms.Frame) Or (TypeOf cControl Is MSForms.CheckBox) Then
             If TypeOf cControl Is MSForms.MultiPage Then
                 For i = 0 To cControl.Pages.Count - 1
-                    If cControl.Name = "MultiPage1" Then UserFrm.MultiPage1.Pages(i).Caption = TranslateLineList(UserFrm.MultiPage1.Pages(i).Name, C_sTabTradLLForms)
-                    If cControl.Name = "MultiPage2" Then UserFrm.MultiPage2.Pages(i).Caption = TranslateLineList(UserFrm.MultiPage2.Pages(i).Name, C_sTabTradLLForms)
+                    If cControl.Name = "MultiPage1" Then UserFrm.MultiPage1.Pages(i).Caption = LineListTranslatedValue(UserFrm.MultiPage1.Pages(i).Name, C_sTabTradLLForms)
+                    If cControl.Name = "MultiPage2" Then UserFrm.MultiPage2.Pages(i).Caption = LineListTranslatedValue(UserFrm.MultiPage2.Pages(i).Name, C_sTabTradLLForms)
                 Next i
             Else
-                If Trim(cControl.Caption) <> "" Then cControl.Caption = TranslateLineList(cControl.Name, C_sTabTradLLForms)
+                If Trim(cControl.Caption) <> "" Then cControl.Caption = LineListTranslatedValue(cControl.Name, C_sTabTradLLForms)
             End If
         End If
     Next cControl
 End Sub
 
 
-Function TranslateLineList(sText As String, sRngName As String)
+'Find correponding values in one listobject of the linelist translation sheet and translate them
+
+Function LineListTranslatedValue(sText As String, sRngName As String)
     'Management of the translation of the Linelist
 
     Dim sLanguage As String
@@ -63,7 +65,7 @@ Function TranslateLineList(sText As String, sRngName As String)
     Set TransWksh = ThisWorkbook.Worksheets(C_sSheetLLTranslation)
     Set Rng = TransWksh.ListObjects(sRngName).Range
 
-    TranslateLineList = vbNullString
+    LineListTranslatedValue = vbNullString
 
     HeadersData.FromExcelRange TransWksh.ListObjects(sRngName).HeaderRowRange
     sLanguage = TransWksh.Range(C_sRngLLLanguageCode)
@@ -72,361 +74,17 @@ Function TranslateLineList(sText As String, sRngName As String)
     On Error Resume Next
 
     If iNumCol > 0 Then
-         TranslateLineList = Application.WorksheetFunction.VLookup(sText, Rng, iNumCol, False)
+         LineListTranslatedValue = Application.WorksheetFunction.VLookup(sText, Rng, iNumCol, False)
     End If
 
     On Error GoTo 0
     Set HeadersData = Nothing
 End Function
 
-Sub ImportLang()
-'Import languages from the setup file and sheets Translation and Analysis
-
-    Dim Wkb As Workbook
-    Dim sAdr1 As String
-    Dim sAdr2 As String
-    Dim src As Range
-    Dim dest As Range
-
-    With SheetDesTranslation
-        .Range(.Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").Column), _
-               .Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").End(xlToRight).Column)).ClearContents
-    End With
-
-    SheetSetTranslation.Cells.Clear
-
-    BeginWork xlsapp:=Application
-    Application.EnableEvents = False
-    Application.EnableAnimations = False
-
-    Set Wkb = Workbooks.Open(Filename:=SheetMain.Range(C_sRngPathDic).value)
-
-    SheetSetTranslation.Cells.Clear
-
-    'Copy the languages
-    Set src = Wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).Range
-    With SheetSetTranslation
-        Set dest = .Range(.Cells(C_eStartLinesTransdata, 1), .Cells(C_eStartLinesTransdata + src.Rows.Count, src.Columns.Count))
-        dest.value = src.value
-        .ListObjects.Add(xlSrcRange, dest, , xlYes).Name = C_sTabTranslation
-    End With
-    Set src = Wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).HeaderRowRange
-    src.Copy SheetDesTranslation.Range("T_Lst_Lang")
-
-    sAdr1 = SheetDesTranslation.Range("T_Lst_Lang").Address
-    sAdr2 = SheetDesTranslation.Range("T_Lst_Lang").End(xlToRight).Address
-
-    Wkb.Close
-
-    'Set Validation, 1 is Error
-    Call Helpers.SetValidation(SheetMain.Range(C_sRngLangSetup), "='" & SheetDesTranslation.Name & "'!" & sAdr1 & ":" & sAdr2, 1)
-
-    Set Wkb = Nothing
-    Set src = Nothing
-    Set dest = Nothing
-
-    SheetMain.Range(C_sRngLangSetup).value = SheetSetTranslation.Cells(C_eStartLinesTransdata, 1).value
-    EndWork xlsapp:=Application
-    Application.EnableEvents = True
-    Application.EnableAnimations = True
-End Sub
 
 'Translate a message in the linelist (corresponding to the choosen language)
 Function TranslateLLMsg(sMsgCode As String) As String
-    TranslateLLMsg = TranslateLineList(sMsgCode, C_sTabTradLLMsg)
+    TranslateLLMsg = LineListTranslatedValue(sMsgCode, C_sTabTradLLMsg)
 End Function
 
-'--------------- Writing functions to translate the dictionary and other parts -----------------------------------------
-
-'A function to translate on column in one sheet
-
-Function GetTranslatedValue(ByVal sText As String) As String
-
-    GetTranslatedValue = vbNullString
-
-    Dim iColLang As Integer
-    Dim rngTrans As Range
-    Dim sLangSetup As String
-    Dim iRow As Integer
-
-    'search in linelist language
-    sLangSetup = SheetMain.Range(C_sRngLangSetup).value
-    iColLang = IIf(sLangSetup <> "", SheetSetTranslation.Rows(C_eStartLinesTransdata).Find(What:=sLangSetup, LookAt:=xlWhole).Column, C_eStartcolumntransdata)
-
-    With DesignerWorkbook.Worksheets(C_sParamSheetTranslation)
-        Set rngTrans = .ListObjects(C_sTabTranslation).DataBodyRange
-    End With
-
-    On Error Resume Next
-        iRow = rngTrans.Find(What:=sText, LookAt:=xlWhole).Row
-        GetTranslatedValue = SheetSetTranslation.Cells(iRow, iColLang).value
-    On Error GoTo 0
-
-End Function
-
-Sub TranslateColumn(iCol As Integer, sSheetName As String, iLastRow As Long, Optional iStartRow As Long = 2)
-    Dim Wksh As Worksheet
-    Dim i
-    Dim sText As String
-    Dim rngTrans As Range
-
-    If iCol > 0 Then 'Be sure the column exists
-        Set Wksh = DesignerWorkbook.Worksheets(sSheetName)
-
-        i = iStartRow
-
-        Do While i <= iLastRow
-            If Wksh.Cells(i, iCol).value <> vbNullString Then
-                sText = Wksh.Cells(i, iCol).value
-                sText = GetTranslatedValue(sText)
-                If sText <> vbNullString Then
-                    Wksh.Cells(i, iCol).value = sText
-                End If
-            End If
-            i = i + 1
-        Loop
-    End If
-End Sub
-
-Function TranslateCellFormula(ByVal sFormText As String) As String
-    Dim j As Integer
-    Dim iStart As Integer
-    Dim sText As String
-
-    Dim sFormula As String
-    Dim sLabelTranlate As String
-
-    TranslateCellFormula = vbNullString
-    sText = sFormText
-
-    iStart = 0
-
-    sFormula = Replace(sText, Chr(34) & Chr(34), vbNullString)
-
-    If InStr(1, sFormula, Chr(34), 1) > 0 Then
-        For j = 1 To Len(sFormula)
-            If Mid(sFormula, j, 1) = Chr(34) Then
-                If iStart = 0 Then
-                    iStart = j + 1
-                Else
-                    sLabelTranlate = GetTranslatedValue(Mid(sFormula, iStart, j - iStart))
-                    If sLabelTranlate <> vbNullString Then
-                        sText = Replace(sText, Mid(sFormula, iStart, j - iStart), sLabelTranlate)
-                    End If
-                    iStart = 0
-                End If
-            End If
-        Next
-    End If
-
-    If sText <> vbNullString Then
-        TranslateCellFormula = sText
-    End If
-End Function
-
-
-
-Sub TranslateColumnFormula(iCol As Integer, sSheetName As String, iLastRow As Long, Optional iStartRow As Long = 2)
-
-    Dim i As Integer
-    Dim sText As String
-    Dim Wksh As Worksheet
-
-    Set Wksh = DesignerWorkbook.Worksheets(sSheetName)
-
-    i = iStartRow
-
-    Do While i <= iLastRow
-        sText = Wksh.Cells(i, iCol).value
-        sText = TranslateCellFormula(sText)
-        If sText <> vbNullString Then Wksh.Cells(i, iCol).value = sText
-        i = i + 1
-    Loop
-
-End Sub
-
-
-'A Function to translate the dictionary
-
-'Translation of the dictionary
-
-Sub TranslateDictionary()
-
-    'List of columns to Translate
-    Dim DictHeaders As BetterArray
-    Dim iCol As Integer
-    Dim iLastRow As Long
-
-    Set DictHeaders = New BetterArray
-    Set DictHeaders = GetHeaders(DesignerWorkbook, C_sParamSheetDict, 1)
-
-    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetDict).Cells(Rows.Count, 1).End(xlUp).Row
-
-    'Translate different columns
-
-    'Main label
-    iCol = DictHeaders.IndexOf(C_sDictHeaderMainLab)
-    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
-    'Sub-label
-    iCol = DictHeaders.IndexOf(C_sDictHeaderSubLab)
-    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
-    'Note
-    iCol = DictHeaders.IndexOf(C_sDictHeaderNote)
-    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
-    'Sheet Name
-    iCol = DictHeaders.IndexOf(C_sDictHeaderSheetName)
-    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
-    'Main Section
-    iCol = DictHeaders.IndexOf(C_sDictHeaderMainSec)
-    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
-    'Sub Section
-    iCol = DictHeaders.IndexOf(C_sDictHeaderSubSec)
-    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
-    'Message
-    iCol = DictHeaders.IndexOf(C_sDictHeaderMessage)
-    Call TranslateColumn(iCol, C_sParamSheetDict, iLastRow)
-
-    'Formula
-    iCol = DictHeaders.IndexOf(C_sDictHeaderFormula)
-    Call TranslateColumnFormula(iCol, C_sParamSheetDict, iLastRow)
-
-    Set DictHeaders = Nothing
-
-
-End Sub
-
-
-'Translation of the choices
-Sub TranslateChoices()
-
-    Dim ChoiceHeaders As BetterArray
-    Dim iCol As Integer
-    Dim iLastRow As Long
-
-    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetChoices).Cells(Rows.Count, 1).End(xlUp).Row
-
-    Set ChoiceHeaders = New BetterArray
-    Set ChoiceHeaders = GetHeaders(DesignerWorkbook, C_sParamSheetChoices, 1)
-
-    'Label Short
-    iCol = ChoiceHeaders.IndexOf(C_sChoiHeaderLabShort)
-    Call TranslateColumn(iCol, C_sParamSheetChoices, iLastRow)
-
-    'Label
-    iCol = ChoiceHeaders.IndexOf(C_sChoiHeaderLab)
-    Call TranslateColumn(iCol, C_sParamSheetChoices, iLastRow)
-
-End Sub
-
-
-'Translation of the Exports
-
-Sub TranslateExports()
-    Dim iLastRow As Long
-
-    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetExport).Cells(Rows.Count, 1).End(xlUp).Row
-
-    'Second column is for label button (I hope)
-    Call TranslateColumn(2, C_sParamSheetExport, iLastRow)
-End Sub
-
-Sub TranslateAnalysis()
-
-    Dim iLast As Long
-    Dim iCol As Integer
-    Dim Wksh As Worksheet
-    Dim Headers As BetterArray
-    Dim iStartLine As Long
-
-    Set Headers = New BetterArray
-    Headers.LowerBound = 1
-
-    Set Wksh = DesignerWorkbook.Worksheets(C_sParamSheetAnalysis)
-
-
-
-    'GLOBAL SUMMARY ============================================================
-
-    With Wksh.ListObjects(C_sTabGS)
-        iStartLine = .Range.Row
-         iLast = .DataBodyRange.Rows.Count + iStartLine
-        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine)
-    End With
-
-    'Translate the column of label
-    iCol = Headers.IndexOf(C_sAnaSumLabel)
-    If iCol < 0 Then Exit Sub
-    Call TranslateColumn(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
-
-    'Translate the column of formulas
-    iCol = Headers.IndexOf(C_sAnaSumFunction)
-    If iCol < 0 Then Exit Sub
-    Call TranslateColumnFormula(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
-
-    'UNIVARIATE ANALYSIS =======================================================
-     With Wksh.ListObjects(C_sTabUA)
-        iStartLine = .Range.Row
-         iLast = .DataBodyRange.Rows.Count + iStartLine
-        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine)
-    End With
-
-    'Translate the column of label
-    iCol = Headers.IndexOf(C_sAnaSumLabel)
-    If iCol < 0 Then Exit Sub
-    Call TranslateColumn(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
-
-    'Translate the column of formulas
-    iCol = Headers.IndexOf(C_sAnaSumFunction)
-    If iCol < 0 Then Exit Sub
-    Call TranslateColumnFormula(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
-
-    'Translate the column of section
-    iCol = Headers.IndexOf(C_sAnaSection)
-    If iCol < 0 Then Exit Sub
-    Call TranslateColumnFormula(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
-
-    'BIVARIATE ANALYSIS ========================================================
-     With Wksh.ListObjects(C_sTabBA)
-        iStartLine = .Range.Row
-         iLast = .DataBodyRange.Rows.Count + iStartLine
-        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine)
-    End With
-
-    'Translate the column of label
-    iCol = Headers.IndexOf(C_sAnaSumLabel)
-    If iCol < 0 Then Exit Sub
-    Call TranslateColumn(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
-
-    'Translate the column of formulas
-    iCol = Headers.IndexOf(C_sAnaSumFunction)
-    If iCol < 0 Then Exit Sub
-    Call TranslateColumnFormula(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
-
-    'Translate the column of section
-    iCol = Headers.IndexOf(C_sAnaSection)
-    If iCol < 0 Then Exit Sub
-    Call TranslateColumnFormula(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
-
-    Set Headers = Nothing
-
-End Sub
-
-Sub TranslateLinelistData()
-    'translation of the Export, Dictionary and Choice sheets for the linelist
-
-    BeginWork xlsapp:=Application
-
-        'Dictionary
-        Call TranslateDictionary
-        'Choices
-        Call TranslateChoices
-        'Exports
-        Call TranslateExports
-        'Analysis...
-        Call TranslateAnalysis
-
-
-    EndWork xlsapp:=Application
-
-End Sub
 
