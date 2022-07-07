@@ -7,6 +7,7 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
                         DictHeaders As BetterArray, VarNameData As BetterArray)
 
     Dim iGoToCol As Long
+    Dim prevRef As Byte
 
     'Add commands Buttons  for filters
 
@@ -33,22 +34,28 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     With Wkb.Worksheets(C_sSheetChoiceAuto)
         iGoToCol = .Cells(C_eStartlinesListAuto, .Columns.Count).End(xlToLeft).Column + 2
     End With
-
-    'Add table for goto section
-
+    
+    'Remove structured references
+    prevRef = Application.GenerateTableRefs
+    Application.GenerateTableRefs = xlGenerateTableRefA1
 
     'Add global summary first column
     AddGlobalSummary Wkb, GSData, iGoToCol
 
     'Add Univariate Analysis tables
     AddUnivariateAnalysis Wkb, UAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, iGoToCol
-
+    
+    
+    'Build GoTo Area
     BuildGotoArea Wkb:=Wkb, sTableName:=LCase(C_sSheetAnalysis), sSheetName:=C_sSheetAnalysis, iGoToCol:=iGoToCol, iCol:=2
 
 
     'Allow text wrap only at the end
     Wkb.Worksheets(C_sSheetAnalysis).Cells.WrapText = True
     Wkb.Worksheets(C_sSheetAnalysis).Cells.EntireRow.AutoFit
+    
+    'return back structured references
+    Application.GenerateTableRefs = prevRef
 
 End Sub
 
@@ -338,6 +345,8 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, Choices
                 If sFormula <> vbNullString Then
                         .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis + 1).Formula = sFormula
                 End If
+                
+                Debug.Print sFormula
 
                 'Write the lines for each cells
                 With .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis)
