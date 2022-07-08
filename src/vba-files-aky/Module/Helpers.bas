@@ -277,13 +277,13 @@ Option Explicit
     End Sub
 
     'Remove Gridlines in a worksheet
-    Public Sub RemoveGridLines(Wksh As Worksheet)
+    Public Sub RemoveGridLines(Wksh As Worksheet, Optional DisplayZeros as boolean = False)
         Dim View As WorksheetView
 
         For Each View In Wksh.Parent.Windows(1).SheetViews
             If View.Sheet.Name = Wksh.Name Then
                 View.DisplayGridlines = False
-                View.DisplayZeros = False
+                View.DisplayZeros = DisplayZeros
                 Exit Sub
             End If
         Next

@@ -203,7 +203,7 @@ End Function
 ''Analysis Count
 
 
-Function AnalysisCount(sVarName As String, sValue As String, Wkb As Workbook, DictHeaders As BetterArray, Optional isFiltered As Boolean = False) As String
+Function AnalysisCount(sVarName As String, sValue As String, Wkb As Workbook, DictHeaders As BetterArray, Optional isFiltered As Boolean = False, Optional OnTotal As Boolean = False) As String
 
 
     Dim VarNameData As BetterArray
@@ -226,6 +226,8 @@ Function AnalysisCount(sVarName As String, sValue As String, Wkb As Workbook, Di
         sTable = TableNameData.Items(VarNameData.IndexOf(sVarName))
         If isFiltered Then sTable = C_sFiltered & sTable
         sFormula = "COUNTIF" & "(" & sTable & "[" & sVarName & "], " & Chr(34) & sValue & Chr(34) & ")"
+
+        If OnTotal Then sFormula = "COUNTA" & "(" & sTable & "[" & sVarName & "]" & ")"
     End If
 
     AnalysisCount = "=" & sFormula
