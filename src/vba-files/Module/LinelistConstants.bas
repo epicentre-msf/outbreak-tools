@@ -78,6 +78,7 @@ Public Const C_sDictStatusDesHid        As String = "hidden by designer"
 
 Public Const C_sDictControlHf           As String = "hf"
 Public Const C_sDictControlForm         As String = "formula"
+Public Const C_sDictControlFormChoices  As String = "formula_choices"
 Public Const C_sDictControlChoice       As String = "choices"
 Public Const C_sDictControlGeo          As String = "geo"
 Public Const C_sDictControlCustom       As String = "custom"
@@ -172,7 +173,7 @@ Public Const C_sCmdImportMigration      As String = "ClicImportMigration"
 Public Const C_sCmdExport               As String = "ClicCmdExport"
 Public Const C_sCmdDebug                As String = "ClicCmdDebug"
 Public Const C_sResetData               As String = "ClicResetData"
-Public Const C_sCmdComputeFilter        As String = "AnalysisOnFilter"
+Public Const C_sCmdComputeFilter        As String = "UpdateFilterTables"
 Public Const C_sCmdClearFilters         As String = "ClearAllFilters"
 
 'TABLES LISTOBJECTS ===================================================================================================================================================================================
