@@ -212,11 +212,11 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     BeginWork xlsapp:=Application
 
     Set DesWkb = DesignerWorkbook
-    
+
     previousSecurity = Application.AutomationSecurity
     'Set security before opening  the setup workbook
     Application.AutomationSecurity = msoAutomationSecurityForceDisable
-    
+
     Set SetupWkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
 
     'Move the dictionary data
@@ -226,11 +226,11 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Move the Export data
     Call Helpers.MoveData(SetupWkb, DesWkb, C_sParamSheetExport, C_eStartLinesExportTitle)
 
-    Call Helpers.MoveAnalysis(SetupWkb)
+    DesignerMainHelpers.MoveAnalysis SetupWkb
 
     SetupWkb.Close SaveChanges:=False
     Set SetupWkb = Nothing
-    
+
     Application.AutomationSecurity = previousSecurity
 
     iUpdateCpt = iUpdateCpt + 5
@@ -292,7 +292,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
 
     Call PrepareTemporaryFolder
-    Call BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, GSData, sPath)
+    Call BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, GSData, UAData, BAData, sPath)
 
     DoEvents
 

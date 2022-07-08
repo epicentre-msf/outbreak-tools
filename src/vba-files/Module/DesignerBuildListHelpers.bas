@@ -186,7 +186,7 @@ Sub AddCmd(Wkb As Workbook, sSheetName As String, iLeft As Integer, iTop As Inte
            Optional sShpTextColor As String = "White", Optional iTextFontSize As Integer = 10)
 
 
-    sText = TranslateLineList(sShpName, C_sTabTradLLShapes)
+    sText = LineListTranslatedValue(sShpName, C_sTabTradLLShapes)
 
     With Wkb.Worksheets(sSheetName)
         .Shapes.AddShape(msoShapeRectangle, iLeft + 3, iTop + 3, iCmdWidth, iCmdHeight).Name = sShpName
@@ -511,7 +511,7 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
     End With
 End Sub
 
-Sub BuildGotoArea(Wkb As Workbook, sTableName As String, sSheetName As String, iGoToCol As Long)
+Sub BuildGotoArea(Wkb As Workbook, sTableName As String, sSheetName As String, iGoToCol As Long, Optional iCol As Long = C_eSectionsLookupColumns)
 
     Dim iChoiceRow As Long
     Dim LoRng As Range
@@ -519,18 +519,18 @@ Sub BuildGotoArea(Wkb As Workbook, sTableName As String, sSheetName As String, i
     Dim sGoToSourceName As String
 
     With Wkb.Worksheets(sSheetName)
-        'Second Row
-        .Cells(1, C_eSectionsLookupColumns).Locked = False
-        .Cells(1, C_eSectionsLookupColumns).value = TranslateLLMsg("MSG_SelectSection")
-        .Cells(1, C_eSectionsLookupColumns).Name = sTableName & "_" & C_sGotoSection
-        .Cells(1, C_eSectionsLookupColumns).Font.Size = 10
-        .Cells(1, C_eSectionsLookupColumns).HorizontalAlignment = xlHAlignCenter
-        .Cells(1, C_eSectionsLookupColumns).Interior.Color = Helpers.GetColor("MainSecBlue")
-        .Cells(1, C_eSectionsLookupColumns).Font.Color = vbWhite
-        .Cells(1, C_eSectionsLookupColumns).Font.Bold = True
-        .Cells(1, C_eSectionsLookupColumns).VerticalAlignment = xlVAlignCenter
-        .Cells(1, C_eSectionsLookupColumns).FormulaHidden = True
-        .Cells(1, C_eSectionsLookupColumns).WrapText = True
+        'Where to write the GoTo section in the worksheet
+        .Cells(1, iCol).Locked = False
+        .Cells(1, iCol).value = TranslateLLMsg("MSG_SelectSection")
+        .Cells(1, iCol).Name = sTableName & "_" & C_sGotoSection
+        .Cells(1, iCol).Font.Size = 10
+        .Cells(1, iCol).HorizontalAlignment = xlHAlignCenter
+        .Cells(1, iCol).Interior.Color = Helpers.GetColor("MainSecBlue")
+        .Cells(1, iCol).Font.Color = vbWhite
+        .Cells(1, iCol).Font.Bold = True
+        .Cells(1, iCol).VerticalAlignment = xlVAlignCenter
+        .Cells(1, iCol).FormulaHidden = True
+        .Cells(1, iCol).WrapText = True
     End With
 
     sListObjectName = "lo" & "_" & sTableName & "_" & C_sGotoSection
@@ -552,7 +552,7 @@ Sub BuildGotoArea(Wkb As Workbook, sTableName As String, sSheetName As String, i
 
     'Add the validation
     With Wkb.Worksheets(sSheetName)
-        Call Helpers.SetValidation(.Cells(1, C_eSectionsLookupColumns), "=" & sGoToSourceName, 1, TranslateLLMsg("MSG_SectionNotExist"))
+        Call Helpers.SetValidation(.Cells(1, iCol), "=" & sGoToSourceName, 1, TranslateLLMsg("MSG_SectionNotExist"))
     End With
 End Sub
 
