@@ -173,7 +173,7 @@ Public Const C_sCmdImportMigration      As String = "ClicImportMigration"
 Public Const C_sCmdExport               As String = "ClicCmdExport"
 Public Const C_sCmdDebug                As String = "ClicCmdDebug"
 Public Const C_sResetData               As String = "ClicResetData"
-Public Const C_sCmdComputeFilter        As String = "AnalysisOnFilter"
+Public Const C_sCmdComputeFilter        As String = "UpdateFilterTables"
 Public Const C_sCmdClearFilters         As String = "ClearAllFilters"
 
 'TABLES LISTOBJECTS ===================================================================================================================================================================================

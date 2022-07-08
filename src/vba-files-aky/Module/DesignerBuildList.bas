@@ -373,7 +373,7 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
 
         'Add Analysis
         .Worksheets.Add(after:=.Worksheets(C_sSheetAdmin)).Name = C_sSheetAnalysis
-        Call RemoveGridLines(.Worksheets(C_sSheetAnalysis))
+        Call RemoveGridLines(.Worksheets(C_sSheetAnalysis), DisplayZeros := True)
 
         '--------------- adding the other the other sheets in the dictionary to the linelist
         i = 1
