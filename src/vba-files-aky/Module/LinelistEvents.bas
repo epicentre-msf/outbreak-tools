@@ -437,36 +437,76 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
 
 End Sub
 
+'Update data on Filtered values ===================================================================================
 
+Public Sub UpdateFilterTables()
 
-'Compute data on Filtered values ===================================================================================
-
-Public Sub AnalysisOnFilter()
-
-    Dim Wksh As Worksheet
-    Dim FiltData As BetterArray
-    Dim sTableName As String
+    Dim Wksh As Worksheet   'The actual worksheet
+    Dim DictHeaders As BetterArray 'Headers of the dictionary
+    Dim LLSheets As BetterArray 'List of all sheets of type linelist
     Dim Rng As Range
+    Dim Lo As ListObject
+    Dim HiddenColumns As BetterArray
+    Dim i As Long
+
 
     BeginWork xlsapp:=Application
 
-    Set FiltData = New BetterArray
+    Set HiddenColumns = New BetterArray
+    Set DictHeaders = GetDictionaryHeaders()
+
+
+    Set LLSheets = FilterLoTable(Lo := ThisWorkbook.Worksheets(C_sParamSheetDict).ListObjects(1), _
+                    iFiltindex1 := DictHeaders.IndexOf(C_sDictHeaderSheetType), _
+                    sValue1 := C_sDictSheetTypeLL, _
+                    returnIndex := DictHeaders.IndexOf(C_sDictHeaderSheetName))
+
+    Set DictHeaders = Nothing
+
     For Each Wksh In ThisWorkbook.Worksheets
-        If FindSheetType(Wksh.Name) = C_sDictSheetTypeLL Then
+        If LLSheets.Includes(Wksh.Name) Then
 
-            Wksh.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
-            sTableName = FindSheetTable(Wksh.Name)
-            Set Rng = Wksh.ListObjects(sTableName).DataBodyRange.SpecialCells(xlCellTypeVisible)
-            FiltData.FromExcelRange Rng
-            FiltData.ToExcelRange ThisWorkbook.Worksheets(C_sFiltered & Wksh.Name).Cells(C_eStartLinesLLData + 2, 1)
+            HiddenColumns.Clear
+            'Unprotect the worksheet
+            With Wksh
+                .Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
-            ProtectSheet Wksh.Name
+                'Clean the filtered table list object
+                ThisWorkbook.Worksheets(C_sFiltered & .Name).ListObjects(1).DataBodyRange.Delete
+
+                'Find Hidden Columns in a worksheets
+                i = 1
+                Do while .Cells(C_eStartLinesLLData + 1, i).value <> vbNullString
+                    If .Columns(i).Hidden Then HiddenColumns.push i
+                    i = i + 1
+                Loop
+
+                Set Lo = Wksh.ListObjects(1)
+                With Lo.DataBodyRange
+                    .EntireColumn.AutoFit
+                    Set Rng = .SpecialCells(xlCellTypeVisible)
+                End With
+
+                Rng.Copy ThisWorkbook.Worksheets(C_sFiltered & .Name).Cells(C_eStartLinesLLData + 2, 1)
+
+                'Bring back hidden columns
+                If HiddenColumns.Length > 0 Then
+                    For i = 1 To HiddenColumns.Length
+                        .Columns(i).Hidden = True
+                    Next
+                End If
+
+                'Reprotect back the worksheet
+                ProtectSheet .Name
+            End With
         End If
     Next
 
-    Set FiltData = Nothing
+    Set HiddenColumns = Nothing
+    Set LLSheets = Nothing
 
+    'ThisWorkbook.Worksheets(C_sSheetAnalysis).Activate
     EndWork xlsapp:=Application
 End Sub
 
@@ -496,3 +536,30 @@ Sub ClearAllFilters()
 
 End Sub
 
+
+'Find the selected column on "GOTO" Area and go to that column
+Sub EventValueChangeAnalysis(Target As Range)
+
+    Dim Rng As Range
+    Dim RngLook As Range
+    Dim sLabel As String
+
+    On Error GoTo Err
+    Set Rng = ThisWorkbook.Worksheets(C_sSheetAnalysis).Range(LCASE(C_sSheetAnalysis) & "_" & C_sGotoSection)
+
+    If Not Intersect(Target, Rng) is Nothing Then
+        sLabel = Replace(Target.value, TranslateLLMsg("MSG_SelectSection") & ": ", "")
+
+        Set RngLook = ActiveSheet.Columns(C_eStartColumnAnalysis).Find(What:=sLabel, _
+        LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=True, SearchFormat:=False)
+
+        If Not RngLook Is Nothing Then
+            RngLook.Activate
+        End If
+    End If
+
+    Set Rng = Nothing
+    Set RngLook = Nothing
+
+Err:
+End Sub

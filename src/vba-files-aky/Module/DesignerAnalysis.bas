@@ -34,18 +34,15 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     With Wkb.Worksheets(C_sSheetChoiceAuto)
         iGoToCol = .Cells(C_eStartlinesListAuto, .Columns.Count).End(xlToLeft).Column + 2
     End With
-    
-    'Remove structured references
-    prevRef = Application.GenerateTableRefs
-    Application.GenerateTableRefs = xlGenerateTableRefA1
+
 
     'Add global summary first column
     AddGlobalSummary Wkb, GSData, iGoToCol
 
     'Add Univariate Analysis tables
     AddUnivariateAnalysis Wkb, UAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, iGoToCol
-    
-    
+
+
     'Build GoTo Area
     BuildGotoArea Wkb:=Wkb, sTableName:=LCase(C_sSheetAnalysis), sSheetName:=C_sSheetAnalysis, iGoToCol:=iGoToCol, iCol:=2
 
@@ -53,9 +50,8 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     'Allow text wrap only at the end
     Wkb.Worksheets(C_sSheetAnalysis).Cells.WrapText = True
     Wkb.Worksheets(C_sSheetAnalysis).Cells.EntireRow.AutoFit
-    
-    'return back structured references
-    Application.GenerateTableRefs = prevRef
+
+    TransferCodeWks Wkb, C_sSheetAnalysis, C_sModLLAnaChange
 
 End Sub
 
@@ -119,11 +115,11 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
             sConvertedFilteredFormula = AnalysisFormula(sFormula, Wkb, isFiltered:=True)
 
             If sConvertedFormula <> vbNullString Then
-                .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1).Formula = sConvertedFormula
+                .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1).FormulaArray = sConvertedFormula
             End If
 
             If sConvertedFilteredFormula <> vbNullString Then
-                .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2).Formula = sConvertedFilteredFormula
+                .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2).FormulaArray = sConvertedFilteredFormula
             End If
 
             .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1).HorizontalAlignment = xlHAlignRight
@@ -224,7 +220,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, Choices
             iCol = C_eStartColumnAnalysis + 1
 
 
-            'Set up the sections------------------------------------------------------
+            'Set up the sections---------------------------------------------------------------------------------------
             'Value of the section
 
             If sPreviousSection <> sActualSection Then
@@ -304,16 +300,34 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, Choices
                     .Interior.Color = Helpers.GetColor("VeryLightGreyBlue")
                     .Font.Size = C_iAnalysisFontSize - 1
                     .Font.Bold = True
+                    .NumberFormat = "0.00"
                 End With
 
+
+                'Write formula for first missings
+                Select Case Application.WorksheetFunction.Trim(sActualSummaryFunction)
+                    Case "COUNT", "COUNT()"
+
+                        'Added + 1 to i because the Validation list starts with index 1
+                        sFormula = AnalysisCount(sActualGroupBy, "", Wkb, DictHeaders, isFiltered:=True)
+
+                    Case "SUM", "SUM()"
+
+                    Case Else
+                        sFormula = AnalysisFormula(sActualSummaryFunction, Wkb, isFiltered:=True, _
+                                sVariate:="univariate", sFirstCondVar:=sActualGroupBy, _
+                                sFirstCondVal:="")
+                End Select
+
+                If sFormula <> vbNullString Then .Cells(iLength, C_eStartColumnAnalysis + 1).FormulaArray = sFormula
+
                 iLength = iLength + 1
-
-                WriteBorderLines .Range(.Cells(iLength, C_eStartColumnAnalysis), .Cells(iLength, iCol)), iWeight:=xlHairline, sColor:="DarkBlue"
-
             End If
 
-            'Add Total (Every time)
+            'Add Total (Every time) -------------------------------------------------------------------------------
+
             .Cells(iLength, C_eStartColumnAnalysis).value = TranslateLLMsg("MSG_Total")
+
             WriteBorderLines .Range(.Cells(iLength, C_eStartColumnAnalysis), .Cells(iLength, iCol)), iWeight:=xlHairline, sColor:="DarkBlue"
 
             With .Range(.Cells(iLength, C_eStartColumnAnalysis), .Cells(iLength, iCol))
@@ -321,6 +335,30 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, Choices
                  .Interior.Color = Helpers.GetColor("VeryLightGreyBlue")
                  .Font.Size = C_iAnalysisFontSize + 1
             End With
+
+            'Add Formulas for total
+             Select Case Application.WorksheetFunction.Trim(sActualSummaryFunction)
+                    Case "COUNT", "COUNT()"
+
+                        'Added + 1 to i because the Validation list starts with index 1
+                        sFormula = AnalysisCount(sActualGroupBy, "", Wkb, DictHeaders, isFiltered:=True, OnTotal:=True)
+
+                    Case "SUM", "SUM()"
+
+                    Case Else
+                        sFormula = AnalysisFormula(sActualSummaryFunction, Wkb, isFiltered:=True, sVariate:="none")
+            End Select
+
+            If sFormula <> vbNullString Then .Cells(iLength, C_eStartColumnAnalysis + 1).FormulaArray = sFormula
+
+            If sActualPercentage = C_sYes Then
+                sFormula = "=" & .Cells(iLength, C_eStartColumnAnalysis + 1).Address & "/" & .Cells(iLength, C_eStartColumnAnalysis + 1).Address
+                With .Cells(iLength, C_eStartColumnAnalysis + 2)
+                    .Formula = sFormula
+                    .Style = "Percent"
+                    .NumberFormat = "0.00%"
+                End With
+            End If
 
 
             'Now Work on each category ---------------------------------------------------------------------------------
@@ -341,21 +379,32 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, Choices
                                 sVariate:="univariate", sFirstCondVar:=sActualGroupBy, _
                                 sFirstCondVal:=ValidationList.Item(i + 1))
                 End Select
-                
+
                 If sFormula <> vbNullString Then
-                        .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis + 1).Formula = sFormula
+                        .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis + 1).FormulaArray = sFormula
                 End If
-                
-                Debug.Print sFormula
 
                 'Write the lines for each cells
                 With .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis)
                     .Interior.Color = Helpers.GetColor("VeryLightBlue")
                     .Font.Color = Helpers.GetColor("DarkBlue")
+                    .NumberFormat = "0.00"
                 End With
-                
+
 
                 WriteBorderLines .Range(.Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis), .Cells(iSectionRow + 4 + i, iCol)), iWeight:=xlHairline, sColor:="DarkBlue"
+
+                'Add the percentage values
+
+                If sActualPercentage = C_sYes Then
+                    sFormula = "=" & .Cells(iSectionRow + 4 + i,  C_eStartColumnAnalysis + 1).Address & "/" & .Cells(iLength, C_eStartColumnAnalysis + 1).Address
+                    With .Cells(iSectionRow + 4 + i, iCol)
+                        .Style = "Percent"
+                        .NumberFormat = "0.00%"
+                        .Formula = sFormula
+                    End With
+                End If
+
             Next
 
             'Write borders arround the table
