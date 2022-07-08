@@ -211,8 +211,82 @@ Public Sub AddTableNames()
 
             .Cells(i, iCol).value = sTableName
         Next
-        
     End With
+End Sub
+
+
+
+'Move analysis Data from the analysis Sheet to the DesignerWorkbook
+    Public Function MoveAnalysis(SrcWkb As Workbook)
+
+        Dim DesRng As Range 'Range to resize the new list object in the designer
+        Dim SetupRng As Range 'Range in the setup file
+
+        Dim iPasteRow As Long
+        Dim iPasteColumn As Long
+        Dim iLastRow As Long
+        Dim iLastColumn As Long
+
+        Dim SetupWksh As Worksheet
+        Dim DesWksh As Worksheet
+
+        Dim Lo As ListObject
+
+        If Not SheetExistsInWkb(SrcWkb, C_sSheetAnalysis) Then Exit Function
+
+        Set SetupWksh = SrcWkb.Worksheets(C_sSheetAnalysis)
+        Set DesWksh = DesignerWorkbook.Worksheets(C_sSheetAnalysis)
+
+        DesWksh.Cells.Clear
+
+        For Each Lo In SetupWksh.ListObjects
+
+            iPasteRow = Lo.Range.Row
+            iPasteColumn = Lo.Range.Column
+
+            SetupWksh.Cells(iPasteRow - 2, iPasteColumn).Copy DesWksh.Cells(iPasteRow - 2, iPasteColumn)
+
+            'Find where data is entered from the first column
+            iLastRow = SetupWksh.Cells(iPasteRow, iPasteColumn).End(xlDown).Row
+            iLastColumn = SetupWksh.Cells(iPasteRow, iPasteColumn).End(xlToRight).Column
+
+            With SetupWksh
+                Set SetupRng = .Range(.Cells(iPasteRow, iPasteColumn), .Cells(iLastRow, iLastColumn))
+            End With
+
+            With DesWksh
+                Set DesRng = .Range(.Cells(iPasteRow, iPasteColumn), .Cells(iLastRow, iLastColumn))
+                DesRng.value = SetupRng.value
+                .ListObjects.Add(xlSrcRange, DesRng, , xlYes).Name = Lo.Name
+            End With
+
+        Next
+
+
+        Set DesRng = Nothing
+        Set SetupRng = Nothing
+        Set Lo = Nothing
+        Set SetupWksh = Nothing
+        Set DesWksh = Nothing
+    End Function
+
+
+'update the progress status
+Sub StatusBar_Updater(sCpte As Single)
+
+        Dim CurrentStatus As Integer
+        Dim pctDone As Integer
+        Dim bCurrEvent As Boolean
+
+        bCurrEvent = Application.ScreenUpdating
+
+        Application.ScreenUpdating = True
+
+        CurrentStatus = (C_iNumberOfBars) * Round(sCpte / 100, 1)
+        SheetMain.Range(C_sRngUpdate).value = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "% " & TranslateMsg("MSG_BuildLL")
+
+        Application.ScreenUpdating = bCurrEvent
+
 End Sub
 
 
