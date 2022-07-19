@@ -3,12 +3,14 @@ Attribute VB_Name = "LinelistExport"
 Option Explicit
 'Preliminary functions for export ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+
 Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As String
 
     Dim sPath As String
     Dim sDirectory As String
     Dim sSheetName As String
     Dim i As Long                                'iterator
+
 
     Dim iSheetNameIndex As Integer
     Dim iVarIndex As Integer
@@ -76,6 +78,8 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
                 sPath = vbNullString
                 Exit Function
             End If
+        Else
+            sPath = vbNullString
         End If
     End If
 
@@ -89,13 +93,13 @@ End Function
 
 Private Function AddExportLLSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String, _
                           DictExportData As BetterArray, i As Long, iSheetNameIndex As Integer, _
-                          iVarnameIndex As Integer) As Long
+                          iVarnameIndex As Integer, Optional ThereIsFilter As Boolean = False) As Long
 
     Dim k As Long
     Dim iLastRow As Long
 
     Dim sVarName As String
-    Dim sNewSheetName As String
+    Dim sFilt As String
     Dim src As Range
     Dim dest As Range
 
@@ -103,12 +107,17 @@ Private Function AddExportLLSheet(Wkb As Workbook, sSheetName As String, sPrevSh
     Wkb.Worksheets.Add(after:=Wkb.Worksheets(sPrevSheetName)).Name = sSheetName
 
     k = i
+
+    sFilt = ""
+    If ThereIsFilter Then sFilt = C_sFiltered
+
     Do While DictExportData.Items(k, iSheetNameIndex) = sSheetName
+
 
         sVarName = DictExportData.Items(k, iVarnameIndex)
 
-        With ThisWorkbook.Worksheets(sSheetName)
-            Set src = .ListObjects(SheetListObjectName(sSheetName)).ListColumns(sVarName).Range
+        With ThisWorkbook.Worksheets(sFilt & sSheetName)
+            Set src = .ListObjects(SheetListObjectName(sFilt & sSheetName)).ListColumns(sVarName).Range
         End With
 
         iLastRow = src.Rows.Count
@@ -168,23 +177,25 @@ Sub Export(iTypeExport As Byte)
     Dim ExportData      As BetterArray
     Dim DictLo          As ListObject
 
-    Dim i As Long                                'Iterator
+    Dim i       As Long                                'Iterator
     Dim istep As Long                            'Step in the loop
     Dim iExportIndex As Integer
     Dim iSheetTypeIndex As Integer
     Dim iSheetNameIndex As Integer
     Dim iVarnameIndex As Integer
+    Dim iTableNameIndex As Integer
     Dim fileformat As Byte
+    Dim ThereIsFilter As Boolean
 
     Dim sPrevSheetName As String
     Dim sSheetName As String
     Dim sPath As String
     Dim sFirstSheetName As String
+    Dim sExt As String                          'file extension of the export
 
     Set DictExportData = New BetterArray
     Set ExportData = New BetterArray
     Set ExportHeader = New BetterArray
-
 
     On Error GoTo exportErrHandExport
 
@@ -197,6 +208,8 @@ Sub Export(iTypeExport As Byte)
     On Error GoTo exportErrHandData
 
     If sPath <> vbNullString Then
+
+        ThereIsFilter = TestFilter()
 
         BeginWork xlsapp:=Application
 
@@ -218,9 +231,16 @@ Sub Export(iTypeExport As Byte)
             iExportIndex = GetDictionaryIndex(C_sDictHeaderExport1)
         End Select
 
-        Set DictExportData = FilterLoTable(DictLo, iExportIndex, C_sYes)
+        Set DictExportData = FilterLoTable(DictLo, iExportIndex, "<>")
 
         'Here I have the list of all the variables to Export Just go on
+
+        iSheetNameIndex = GetDictionaryIndex(C_sDictHeaderSheetName)
+        iSheetTypeIndex = GetDictionaryIndex(C_sDictHeaderSheetType)
+        iVarnameIndex = GetDictionaryIndex(C_sDictHeaderVarName)
+        iTableNameIndex = GetDictionaryIndex(C_sDictHeaderTableName)
+
+        Set DictExportData = SortExport(DictExportData, iExportIndex, iTableNameIndex)
 
         Set Wkb = Workbooks.Add
 
@@ -276,9 +296,6 @@ Sub Export(iTypeExport As Byte)
         i = 1
         istep = 1
 
-        iSheetNameIndex = GetDictionaryIndex(C_sDictHeaderSheetName)
-        iSheetTypeIndex = GetDictionaryIndex(C_sDictHeaderSheetType)
-        iVarnameIndex = GetDictionaryIndex(C_sDictHeaderVarName)
 
         While i <= DictExportData.Length
 
@@ -288,7 +305,7 @@ Sub Export(iTypeExport As Byte)
 
             Case C_sDictSheetTypeLL
 
-                istep = AddExportLLSheet(Wkb, sSheetName, sPrevSheetName, DictExportData, i, iSheetNameIndex, iVarnameIndex)
+                istep = AddExportLLSheet(Wkb, sSheetName, sPrevSheetName, DictExportData, i, iSheetNameIndex, iVarnameIndex, ThereIsFilter := ThereIsFilter)
 
                 'You were thingking about using a function to speed the steps
             Case C_sDictSheetTypeAdm
@@ -302,65 +319,105 @@ Sub Export(iTypeExport As Byte)
 
             i = istep + 1
         Wend
+
+
+        Wkb.Worksheets(sFirstSheetName).Delete
+
+        'Now writing on the choosen directory
+        On Error GoTo exportErrHandWrite
+
+        'Handling the file format
+        i = ExportHeader.IndexOf(C_sExportHeaderFileFormat)
+
+        Select Case ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).value
+        Case "xlsx"
+            fileformat = xlOpenXMLWorkbook
+            sExt = ".xlsx"
+        Case "xlsb"
+            fileformat = xlExcel12
+            sExt = ".xlsb"
+        Case Else
+            fileformat = xlExcel12
+            sExt = ".xlsb"
+        End Select
+
+        'Handling password
+
+        i = ExportHeader.IndexOf(C_sExportHeaderPassword)
+
+        Select Case ClearString(ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).value)
+        Case C_sYes
+            Wkb.SaveAs Filename:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
+            ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+            MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value
+        Case C_sNo
+            Wkb.SaveAs Filename:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+            MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_NoPassword")
+        Case Else
+            Wkb.SaveAs Filename:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
+            ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+            MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value
+        End Select
+
+        Wkb.Close
+        F_Export.Hide
+
+        EndWork xlsapp:=Application
+
+        Set Wkb = Nothing
+        Set DictExportData = Nothing
+        Set ExportData = Nothing
+        Set ExportHeader = Nothing
+        Set DictLo = Nothing
     End If
-
-    Wkb.Worksheets(sFirstSheetName).Delete
-
-    'Now writing on the choosen directory
-    On Error GoTo exportErrHandWrite
-
-    'Handling the file format
-    i = ExportHeader.IndexOf(C_sExportHeaderFileFormat)
-
-    Select Case ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).value
-    Case "xlsx"
-        fileformat = xlOpenXMLWorkbook
-    Case "xlsb"
-        fileformat = xlExcel12
-    Case Else
-        fileformat = xlExcel12
-    End Select
-
-    'Handling password
-
-    i = ExportHeader.IndexOf(C_sExportHeaderPassword)
-
-    Select Case ClearString(ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).value)
-    Case C_sYes
-        Wkb.SaveAs Filename:=sPath, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
-        ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-        MsgBox "File saved" & Chr(10) & "Password : " & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value
-    Case C_sNo
-        Wkb.SaveAs Filename:=sPath, fileformat:=fileformat, CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-        MsgBox "File saved" & Chr(10) & "No Password"
-    Case Else
-        Wkb.SaveAs Filename:=sPath, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
-        ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-        MsgBox "File saved" & Chr(10) & "Password : " & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value
-    End Select
-
-    Wkb.Close
-    F_Export.Hide
-    EndWork xlsapp:=Application
-
-    Set Wkb = Nothing
-    Set DictExportData = Nothing
-    Set ExportData = Nothing
-    Set ExportHeader = Nothing
-    Set DictLo = Nothing
 
     Exit Sub
 
 exportErrHandExport:
         MsgBox TranslateLLMsg("MSG_ErrHandExport"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         Exit Sub
+
 exportErrHandData:
+
+        If Not Wkb Is Nothing Then
+            Wkb.Close savechanges:=False
+            Set Wkb = Nothing
+        End If
+
         MsgBox TranslateLLMsg("MSG_exportErrHandData"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         Exit Sub
+
 exportErrHandWrite:
+        Wkb.Close savechanges:=False
+        Set Wkb = Nothing
         MsgBox TranslateLLMsg("MSG_exportErrHandWrite"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         Exit Sub
 End Sub
+
+
+
+Private Function SortExport(DictExportData As BetterArray, iExportIndex As Integer, iTableNameIndex As Integer) As BetterArray
+    Dim Rng As Range
+    Dim SortedData As BetterArray
+
+    Set SortedData = New BetterArray
+    SortedData.LowerBound = 1
+
+    With ThisWorkbook.Worksheets(C_sSheetTemp)
+        .Cells.Clear
+        .Sort.SortFields.Clear
+        DictExportData.ToExcelRange .Cells(1, 1)
+        Set Rng = .Range(.Cells(1, 1), .Cells(DictExportData.Length, _
+                         .Cells(1, .Columns.Count).End(xlToLeft).Column))
+        Rng.Sort key1:=.Cells(1, iTableNameIndex), order1:=xlAscending, _
+                        key2:=.Cells(1, iExportIndex), order2:=xlAscending, Header:=xlNo
+        SortedData.FromExcelRange Rng
+        .Cells.Clear
+    End With
+
+    Set Rng = Nothing
+    Set SortExport = SortedData.Clone()
+End Function
 
 'Password functions ===================================================================================================================================================================================
 
@@ -393,6 +450,46 @@ Function LetKey(bPriv As Boolean) As Long
         LetKey = ThisWorkbook.Worksheets(C_sSheetPassword).Range("PublicKey").value
     End If
 
+End Function
+
+
+Private Function AskFilter() As Boolean
+
+    Dim Test As Byte
+
+    Test = MsgBox(TranslateLLMsg("MSG_AskFilter"), vbYesNo + vbQuestion, TranslateLLMsg("MSG_ThereIsFilter"))
+
+    If Test = vbYes Then
+        Call UpdateFilterTables
+        AskFilter = True
+    End If
+
+End Function
+
+
+Private Function TestFilter() As Boolean
+
+    Dim sh As Worksheet
+    Dim LLSheets As BetterArray
+    Dim AlreadyAsked As Boolean
+    Dim ThereIsFilter As Boolean
+
+
+    AlreadyAsked = False
+
+    Set LLSheets = GetDictionaryColumn(C_sDictHeaderSheetName)
+
+    For Each sh In ThisWorkbook.Worksheets
+        If LLSheets.Includes(sh.Name) Then
+              If Not (sh.AutoFilter Is Nothing) And Not AlreadyAsked Then
+                ThereIsFilter = AskFilter()
+                AlreadyAsked = True
+              End If
+        End If
+    Next
+
+    Set LLSheets = Nothing
+    TestFilter = ThereIsFilter
 End Function
 
 
