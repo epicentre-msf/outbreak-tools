@@ -57,8 +57,6 @@ End Sub
 
 
 
-
-
 'Helpers Subs and Functions ===========================================================================================================================================================================
 
 
@@ -111,8 +109,8 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
 
             sFormula = GSData.Items(i, 2)
 
-            sConvertedFormula = AnalysisFormula(sFormula, Wkb)
-            sConvertedFilteredFormula = AnalysisFormula(sFormula, Wkb, isFiltered:=True)
+            sConvertedFormula = AnalysisFormula(Wkb, sFormula)
+            sConvertedFilteredFormula = AnalysisFormula(Wkb, sFormula, isFiltered:=True)
 
             If sConvertedFormula <> vbNullString Then
                 .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1).FormulaArray = sConvertedFormula
@@ -169,8 +167,16 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
 End Sub
 
 
-Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, _
-                                DictData As BetterArray, DictHeaders As BetterArray, VarNameData As BetterArray, iGoToCol As Long)
+Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
+                                ChoicesListData As BetterArray, _
+                                ChoicesLabelsData As BetterArray, _
+                                DictData As BetterArray, _
+                                DictHeaders As BetterArray, _
+                                VarNameData As BetterArray, _
+                                iGoToCol As Long, _
+                                Optional sOutlineColor As String = "DarkBlue")
+
+
 
     Dim sActualSection As String
     Dim sActualGroupBy As String
@@ -180,30 +186,36 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, Choices
     Dim sActualMainLab As String
     Dim sPreviousSection As String
     Dim sFormula As String
-    Dim iCounter As Long
-    Dim iSectionRow As Long
-    Dim iLength As Long
-    Dim iCol As Long
-    Dim iRow As Long
-    Dim i As Long
     Dim sActualPercentage As String
     Dim sActualMissing As String
+    Dim sCondition As String 'Address of the conditions to use in the IF function
+
+        Dim iCounter As Long
+    Dim iSectionRow As Long
+    Dim iEndRow As Long
+    Dim iEndCol As Long
+    Dim i As Long
+    Dim iRow As Long
+
+
     Dim ValidationList As BetterArray
+    Dim Wksh As Worksheet
 
     Set ValidationList = New BetterArray
-
-
+    Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
 
     iCounter = 1
-    sPreviousSection = ""
-    With Wkb.Worksheets(C_sSheetAnalysis)
 
+    sPreviousSection = ""
+    With Wksh
 
         Do While iCounter <= UAData.Length
 
-            iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis).End(xlUp).Row
+            iSectionRow = .Cells(.Rows.Count, _
+            C_eStartColumnAnalysis).End(xlUp).Row
 
-            'Actual values in the table of univariate analysis for that line
+            'values in the table of univariate analysis
+
             sActualSection = UAData.Items(iCounter, 1)
             sActualGroupBy = UAData.Items(iCounter, 2)
             sActualMissing = UAData.Items(iCounter, 3)
@@ -211,222 +223,126 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, Choices
             sActualSummaryLabel = UAData.Items(iCounter, 5)
             sActualPercentage = UAData.Items(iCounter, 6)
 
-            'Set up the different values of the table for one dimensional table
-            sActualChoice = DictData.Items(VarNameData.IndexOf(sActualGroupBy), DictHeaders.IndexOf(C_sDictHeaderChoices))
-            sActualMainLab = DictData.Items(VarNameData.IndexOf(sActualGroupBy), DictHeaders.IndexOf(C_sDictHeaderMainLab))
+            'Set up the different values
 
+            sActualChoice = DictData.Items(VarNameData.IndexOf(sActualGroupBy), _
+                                            DictHeaders.IndexOf(C_sDictHeaderChoices))
+
+            sActualMainLab = DictData. _
+            Items(VarNameData.IndexOf(sActualGroupBy), _
+            DictHeaders. _
+            IndexOf(C_sDictHeaderMainLab))
 
             'Where to stop building the table
-            iCol = C_eStartColumnAnalysis + 1
 
+            iEndCol = C_eStartColumnAnalysis + 1
 
-            'Set up the sections---------------------------------------------------------------------------------------
             'Value of the section
 
             If sPreviousSection <> sActualSection Then
-                'New Section
+                    'New Section
                 iSectionRow = iSectionRow + 3
 
-                With .Cells(iSectionRow, C_eStartColumnAnalysis)
-                    .value = sActualSection
-                    .Font.Size = C_iAnalysisFontSize + 3
-                    .Font.Color = Helpers.GetColor("DarkBlue")
-                End With
+                'Create a new section
+                                CreateNewSection Wkb.Worksheets(C_sSheetAnalysis), iSectionRow, _
+                                C_eStartColumnAnalysis, sActualSection
+
                 sPreviousSection = sActualSection
 
                 'Build the GoTo column in the list auto sheet
+
                 With Wkb.Worksheets(C_sSheetChoiceAuto)
-                    iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
-                    .Cells(iRow + 1, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") & ": " & sActualSection
-                End With
-
-                'Draw a border arround the range of section
-                With .Range(.Cells(iSectionRow, C_eStartColumnAnalysis), .Cells(iSectionRow, C_eStartColumnAnalysis + 4))
-                    With .Borders(xlEdgeBottom)
-                        .Weight = xlMedium
-                        .LineStyle = xlContinuous
-                        .Color = Helpers.GetColor("DarkBlue")
-                        .TintAndShade = 0.4
-                    End With
+                        iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
+                    .Cells(iRow + 1, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") & _
+                                                                                           ": " & sActualSection
                 End With
             End If
 
-            'Set up Header of the tables ---------------------------------------
-            'Variable Label from the dictionary
-            With .Cells(iSectionRow + 3, C_eStartColumnAnalysis)
-                .value = sActualMainLab
-                .Font.Color = Helpers.GetColor("DarkBlue")
-                .HorizontalAlignment = xlHAlignLeft
-                .VerticalAlignment = xlVAlignCenter
-                .Font.Bold = True
-            End With
+            ' Set up Header of the tables  -------------------------------------------
 
-            'First column on sumary label
-            With .Cells(iSectionRow + 3, C_eStartColumnAnalysis + 1)
-                .value = sActualSummaryLabel
-                .Font.Color = Helpers.GetColor("DarkBlue")
-                .Font.Bold = True
-                .HorizontalAlignment = xlHAlignCenter
-                .VerticalAlignment = xlVAlignCenter
-            End With
+            ' Then EndColumn iEndCol is a ByRef, to update the ends column
 
-            'Add Percentage header column if required
+            CreateUAHeaders Wksh, iRow:=iSectionRow + 3, iCol:=C_eStartColumnAnalysis, _
+                            sMainLab:=sActualMainLab, sSummaryLabel:=sActualSummaryLabel, _
+                            sPercent:=sActualPercentage, iEndCol:=iEndCol
 
-            If sActualPercentage = C_sYes Then
-                With .Cells(iSectionRow + 3, C_eStartColumnAnalysis + 2)
-                    .value = TranslateLLMsg("MSG_Percent")
-                    .Font.Color = Helpers.GetColor("DarkBlue")
-                    .Font.Bold = True
-                    .HorizontalAlignment = xlHAlignCenter
-                    .VerticalAlignment = xlVAlignCenter
-                End With
-                iCol = iCol + 1
-            End If
+                        ' Update the EndColumn if we have to add percentages
+                        If sActualPercentage = C_sYes Then iEndCol = iEndCol + 1
 
-            'Add values of the categorical variable ----------------------------
+            'Add values of the categorical variable -------------------------------------------
+
             Set ValidationList = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoice)
             ValidationList.ToExcelRange .Cells(iSectionRow + 4, C_eStartColumnAnalysis)
 
-            'iLength will check the length of the table depending of the number of categorical variables or of add NA
-            iLength = iSectionRow + 4 + ValidationList.Length
+                        'EndRow of the table.
+            iEndRow = iSectionRow + 4 + ValidationList.Length
 
-            'Add NA / Missing if required
+
+            'Add NA / Missing if required -----------------------------------------------------
+
             If sActualMissing = C_sYes Then
 
-                .Cells(iLength, C_eStartColumnAnalysis).value = TranslateLLMsg("MSG_NA")
+                AddUANA Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
+                sVar:=sActualGroupBy, iRow:=iEndRow, _
+                iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol
 
-                With .Range(.Cells(iLength, C_eStartColumnAnalysis), .Cells(iLength, iCol))
-                    .Font.Color = Helpers.GetColor("GreyBlue")
-                    .Interior.Color = Helpers.GetColor("VeryLightGreyBlue")
-                    .Font.Size = C_iAnalysisFontSize - 1
-                    .Font.Bold = True
-                    .NumberFormat = "0.00"
-                End With
+                iEndRow = iEndRow + 1
 
-
-                'Write formula for first missings
-                Select Case Application.WorksheetFunction.Trim(sActualSummaryFunction)
-                    Case "COUNT", "COUNT()"
-
-                        'Added + 1 to i because the Validation list starts with index 1
-                        sFormula = AnalysisCount(sActualGroupBy, "", Wkb, DictHeaders, isFiltered:=True)
-
-                    Case "SUM", "SUM()"
-
-                    Case Else
-                        sFormula = AnalysisFormula(sActualSummaryFunction, Wkb, isFiltered:=True, _
-                                sVariate:="univariate", sFirstCondVar:=sActualGroupBy, _
-                                sFirstCondVal:="")
-                End Select
-
-                If sFormula <> vbNullString Then .Cells(iLength, C_eStartColumnAnalysis + 1).FormulaArray = sFormula
-
-                iLength = iLength + 1
             End If
 
-            'Add Total (Every time) -------------------------------------------------------------------------------
+            'Add Total (Every time) ------------------------------------------------------------------------------------
 
-            .Cells(iLength, C_eStartColumnAnalysis).value = TranslateLLMsg("MSG_Total")
-
-            WriteBorderLines .Range(.Cells(iLength, C_eStartColumnAnalysis), .Cells(iLength, iCol)), iWeight:=xlHairline, sColor:="DarkBlue"
-
-            With .Range(.Cells(iLength, C_eStartColumnAnalysis), .Cells(iLength, iCol))
-                 .Font.Bold = True
-                 .Interior.Color = Helpers.GetColor("VeryLightGreyBlue")
-                 .Font.Size = C_iAnalysisFontSize + 1
-            End With
-
-            'Add Formulas for total
-             Select Case Application.WorksheetFunction.Trim(sActualSummaryFunction)
-                    Case "COUNT", "COUNT()"
-
-                        'Added + 1 to i because the Validation list starts with index 1
-                        sFormula = AnalysisCount(sActualGroupBy, "", Wkb, DictHeaders, isFiltered:=True, OnTotal:=True)
-
-                    Case "SUM", "SUM()"
-
-                    Case Else
-                        sFormula = AnalysisFormula(sActualSummaryFunction, Wkb, isFiltered:=True, sVariate:="none")
-            End Select
-
-            If sFormula <> vbNullString Then .Cells(iLength, C_eStartColumnAnalysis + 1).FormulaArray = sFormula
-
-            If sActualPercentage = C_sYes Then
-                sFormula = "=" & .Cells(iLength, C_eStartColumnAnalysis + 1).Address & "/" & .Cells(iLength, C_eStartColumnAnalysis + 1).Address
-                With .Cells(iLength, C_eStartColumnAnalysis + 2)
-                    .Formula = sFormula
-                    .Style = "Percent"
-                    .NumberFormat = "0.00%"
-                End With
-            End If
+                        AddUATotal Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
+                                sVar:=sActualGroupBy, iRow:=iEndRow, iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol, _
+                                sPercent:=sActualPercentage, sMiss:=sActualMissing
 
 
             'Now Work on each category ---------------------------------------------------------------------------------
 
+
             For i = 0 To ValidationList.Length - 1
 
-                'Formulas for the first column
-                Select Case Application.WorksheetFunction.Trim(sActualSummaryFunction)
-                    Case "COUNT", "COUNT()"
 
-                        'Added + 1 to i because the Validation list starts with index 1
-                        sFormula = AnalysisCount(sActualGroupBy, ValidationList.Item(i + 1), Wkb, DictHeaders, isFiltered:=True)
+                'Address of the condition to use
+                sCondition = .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis).Address
 
-                    Case "SUM", "SUM()"
+                'Getting the formulas
+                sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sActualSummaryFunction, _
+                                       sVar:=sActualGroupBy, sCondition:=sCondition)
+                
+                On Error Resume Next
 
-                    Case Else
-                        sFormula = AnalysisFormula(sActualSummaryFunction, Wkb, isFiltered:=True, _
-                                sVariate:="univariate", sFirstCondVar:=sActualGroupBy, _
-                                sFirstCondVal:=ValidationList.Item(i + 1))
-                End Select
+                If sFormula <> vbNullString And Len(sFormula) < 255 Then
 
-                If sFormula <> vbNullString Then
                         .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis + 1).FormulaArray = sFormula
+
                 End If
 
-                'Write the lines for each cells
-                With .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis)
-                    .Interior.Color = Helpers.GetColor("VeryLightBlue")
-                    .Font.Color = Helpers.GetColor("DarkBlue")
-                    .NumberFormat = "0.00"
-                End With
+                On Error GoTo 0
 
-
-                WriteBorderLines .Range(.Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis), .Cells(iSectionRow + 4 + i, iCol)), iWeight:=xlHairline, sColor:="DarkBlue"
-
-                'Add the percentage values
-
-                If sActualPercentage = C_sYes Then
-                    sFormula = "=" & .Cells(iSectionRow + 4 + i,  C_eStartColumnAnalysis + 1).Address & "/" & .Cells(iLength, C_eStartColumnAnalysis + 1).Address
-                    With .Cells(iSectionRow + 4 + i, iCol)
-                        .Style = "Percent"
-                        .NumberFormat = "0.00%"
-                        .Formula = sFormula
-                    End With
-                End If
+                FormatCell Wksh:=Wksh, iStartRow:=iSectionRow + 4 + i, _
+                           iEndRow:=iEndRow, iStartCol:=C_eStartColumnAnalysis, _
+                           iEndCol:=iEndCol, sPercent:=sActualPercentage
 
             Next
 
-            'Write borders arround the table
 
-            'Before the total columns
-            With .Range(.Cells(iLength - 1, C_eStartColumnAnalysis), .Cells(iLength - 1, iCol))
-                With .Borders(xlEdgeBottom)
-                    .Weight = xlThin
-                    .LineStyle = xlDouble
-                    .Color = Helpers.GetColor("DarkBlue")
-                End With
-            End With
+            'On the table outline ---------------------------------------------------------------------------------
 
-            'On the table outline
-            WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), .Cells(iLength, iCol)), iWeight:=xlThin, sColor:="DarkBlue"
-            WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), .Cells(iLength, C_eStartColumnAnalysis)), iWeight:=xlThin, sColor:="DarkBlue"
-            WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), .Cells(iLength, C_eStartColumnAnalysis + 1)), iWeight:=xlThin, sColor:="DarkBlue"
+            WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
+                                             .Cells(iEndRow, iEndCol)), iWeight:=xlThin, sColor:=sOutlineColor
+
+            WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
+                                             .Cells(iEndRow, C_eStartColumnAnalysis)), iWeight:=xlThin, sColor:=sOutlineColor
+
+            WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
+                                             .Cells(iEndRow, C_eStartColumnAnalysis + 1)), iWeight:=xlThin, sColor:=sOutlineColor
 
             iCounter = iCounter + 1
-        Loop
 
+        Loop
     End With
+
 End Sub
 
 

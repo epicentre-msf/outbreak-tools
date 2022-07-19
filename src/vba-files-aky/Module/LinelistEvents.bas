@@ -456,10 +456,10 @@ Public Sub UpdateFilterTables()
     Set DictHeaders = GetDictionaryHeaders()
 
 
-    Set LLSheets = FilterLoTable(Lo := ThisWorkbook.Worksheets(C_sParamSheetDict).ListObjects(1), _
-                    iFiltindex1 := DictHeaders.IndexOf(C_sDictHeaderSheetType), _
-                    sValue1 := C_sDictSheetTypeLL, _
-                    returnIndex := DictHeaders.IndexOf(C_sDictHeaderSheetName))
+    Set LLSheets = FilterLoTable(Lo:=ThisWorkbook.Worksheets(C_sParamSheetDict).ListObjects(1), _
+                    iFiltindex1:=DictHeaders.IndexOf(C_sDictHeaderSheetType), _
+                    sValue1:=C_sDictSheetTypeLL, _
+                    returnIndex:=DictHeaders.IndexOf(C_sDictHeaderSheetName))
 
     Set DictHeaders = Nothing
 
@@ -477,8 +477,8 @@ Public Sub UpdateFilterTables()
 
                 'Find Hidden Columns in a worksheets
                 i = 1
-                Do while .Cells(C_eStartLinesLLData + 1, i).value <> vbNullString
-                    If .Columns(i).Hidden Then HiddenColumns.push i
+                Do While .Cells(C_eStartLinesLLData + 1, i).value <> vbNullString
+                    If .Columns(i).Hidden Then HiddenColumns.Push i
                     i = i + 1
                 Loop
 
@@ -545,9 +545,9 @@ Sub EventValueChangeAnalysis(Target As Range)
     Dim sLabel As String
 
     On Error GoTo Err
-    Set Rng = ThisWorkbook.Worksheets(C_sSheetAnalysis).Range(LCASE(C_sSheetAnalysis) & "_" & C_sGotoSection)
+    Set Rng = ThisWorkbook.Worksheets(C_sSheetAnalysis).Range(LCase(C_sSheetAnalysis) & "_" & C_sGotoSection)
 
-    If Not Intersect(Target, Rng) is Nothing Then
+    If Not Intersect(Target, Rng) Is Nothing Then
         sLabel = Replace(Target.value, TranslateLLMsg("MSG_SelectSection") & ": ", "")
 
         Set RngLook = ActiveSheet.Columns(C_eStartColumnAnalysis).Find(What:=sLabel, _
