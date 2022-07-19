@@ -12,7 +12,7 @@ Sub TestBuildFormula()
     'Testing without filters
     Debug.Print BuildVariateFormula("table1", "outcome")
     Debug.Print BuildVariateFormula("table1", "outcome", sVariate:="univariate")
-    Debug.Print BuildVariateFormula("table1", "outcome", sVariate:="univariate", sFirstCondVar:="outcome", sFirstCondVal:="dead")
+    Debug.Print BuildVariateFormula("table1", "outcome", sVariate:="univariate", sFirstCondVar:="outcome", sFirstCondVal:=Cells(1, 1).Address)
     Debug.Print BuildVariateFormula("table1", "outcome", sVariate:="bivariate", sFirstCondVar:="outcome", sFirstCondVal:="dead")
     Debug.Print BuildVariateFormula("table1", "outcome", sVariate:="bivariate", sFirstCondVar:="outcome", sFirstCondVal:="dead", sSecondCondVar:="sex", sSecondCondVal:="Male")
     
