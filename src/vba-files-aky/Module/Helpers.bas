@@ -92,7 +92,7 @@ Option Explicit
             .Title = "Chose your directory"          'MSG_ChooseDir
             .Filters.Clear
 
-            If .Show = True Then
+            If .Show = -1 Then
                 SelectFolderOnWindows = .SelectedItems(1)
             End If
         End With
