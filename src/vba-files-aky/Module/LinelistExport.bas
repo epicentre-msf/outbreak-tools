@@ -482,8 +482,10 @@ Private Function TestFilter() As Boolean
     For Each sh In ThisWorkbook.Worksheets
         If LLSheets.Includes(sh.Name) Then
               If Not (sh.AutoFilter Is Nothing) And Not AlreadyAsked Then
-                ThereIsFilter = AskFilter()
-                AlreadyAsked = True
+                If sh.AutoFilter.FilterMode Then
+                    ThereIsFilter = AskFilter()
+                    AlreadyAsked = True
+                End If
               End If
         End If
     Next

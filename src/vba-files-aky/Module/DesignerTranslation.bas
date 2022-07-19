@@ -257,7 +257,7 @@ Function GetTranslatedValue(ByVal sText As String) As String
     End With
 
     On Error Resume Next
-        iRow = rngTrans.Find(What:=sText, LookAt:=xlWhole).Row
+    iRow = rngTrans.Find(What:=Application.WorksheetFunction.Trim(sText), LookAt:=xlWhole).Row
         GetTranslatedValue = SheetSetTranslation.Cells(iRow, iColLang).value
     On Error GoTo 0
 
