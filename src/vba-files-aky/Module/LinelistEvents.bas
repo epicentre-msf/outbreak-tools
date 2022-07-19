@@ -510,6 +510,8 @@ Public Sub UpdateFilterTables()
     Set LLSheets = Nothing
 
     On Error Resume Next
+    ThisWorkbook.Worksheets(sActSh).Activate
+    On Error GoTo 0
 
     EndWork xlsapp:=Application
 End Sub
