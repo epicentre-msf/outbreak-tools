@@ -448,9 +448,12 @@ Public Sub UpdateFilterTables()
     Dim Lo As ListObject
     Dim HiddenColumns As BetterArray
     Dim i As Long
+    Dim sActSh As String
 
 
     BeginWork xlsapp:=Application
+
+    sActSh = ActiveSheet.Name
 
     Set HiddenColumns = New BetterArray
     Set DictHeaders = GetDictionaryHeaders()
@@ -506,7 +509,10 @@ Public Sub UpdateFilterTables()
     Set HiddenColumns = Nothing
     Set LLSheets = Nothing
 
-    'ThisWorkbook.Worksheets(C_sSheetAnalysis).Activate
+    On Error Resume Next
+    ThisWorkbook.Worksheets(sActSh).Activate
+    On Error GoTo 0
+
     EndWork xlsapp:=Application
 End Sub
 
