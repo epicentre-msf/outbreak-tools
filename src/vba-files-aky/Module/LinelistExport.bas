@@ -305,7 +305,7 @@ Sub Export(iTypeExport As Byte)
 
             Case C_sDictSheetTypeLL
 
-                istep = AddExportLLSheet(Wkb, sSheetName, sPrevSheetName, DictExportData, i, iSheetNameIndex, iVarnameIndex, ThereIsFilter := ThereIsFilter)
+                istep = AddExportLLSheet(Wkb, sSheetName, sPrevSheetName, DictExportData, i, iSheetNameIndex, iVarnameIndex, ThereIsFilter:=ThereIsFilter)
 
                 'You were thingking about using a function to speed the steps
             Case C_sDictSheetTypeAdm
@@ -380,7 +380,7 @@ exportErrHandExport:
 exportErrHandData:
 
         If Not Wkb Is Nothing Then
-            Wkb.Close savechanges:=False
+            Wkb.Close SaveChanges:=False
             Set Wkb = Nothing
         End If
 
@@ -388,7 +388,7 @@ exportErrHandData:
         Exit Sub
 
 exportErrHandWrite:
-        Wkb.Close savechanges:=False
+        Wkb.Close SaveChanges:=False
         Set Wkb = Nothing
         MsgBox TranslateLLMsg("MSG_exportErrHandWrite"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         Exit Sub
@@ -453,45 +453,28 @@ Function LetKey(bPriv As Boolean) As Long
 End Function
 
 
-Private Function AskFilter() As Boolean
-
-    Dim Test As Byte
-
-    Test = MsgBox(TranslateLLMsg("MSG_AskFilter"), vbYesNo + vbQuestion, TranslateLLMsg("MSG_ThereIsFilter"))
-
-    If Test = vbYes Then
-        Call UpdateFilterTables
-        AskFilter = True
-    End If
-
-End Function
-
-
 Private Function TestFilter() As Boolean
 
-    Dim sh As Worksheet
-    Dim LLSheets As BetterArray
-    Dim AlreadyAsked As Boolean
     Dim ThereIsFilter As Boolean
+    Dim Test As Byte
 
 
-    AlreadyAsked = False
+    If F_Export.CHK_ExportFiltered.value Then
 
-    Set LLSheets = GetDictionaryColumn(C_sDictHeaderSheetName)
+        Test = MsgBox(TranslateLLMsg("MSG_AskFilter"), vbYesNo + vbQuestion, TranslateLLMsg("MSG_ThereIsFilter"))
 
-    For Each sh In ThisWorkbook.Worksheets
-        If LLSheets.Includes(sh.Name) Then
-              If Not (sh.AutoFilter Is Nothing) And Not AlreadyAsked Then
-                If sh.AutoFilter.FilterMode Then
-                    ThereIsFilter = AskFilter()
-                    AlreadyAsked = True
-                End If
-              End If
+        If Test = vbYes Then
+            Call UpdateFilterTables
+            ThereIsFilter = True
+        Else
+            F_Export.CHK_ExportFiltered.value = False
+            ThereIsFilter = False
         End If
-    Next
 
-    Set LLSheets = Nothing
+    End If
+
     TestFilter = ThereIsFilter
+
 End Function
 
 
