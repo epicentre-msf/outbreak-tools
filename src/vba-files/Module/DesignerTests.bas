@@ -39,6 +39,15 @@ Sub TestAnalysisFormula()
 End Sub
 
 
+'Testing the case_wen
+
+Sub TestCaseWhen()
+
+    Debug.Print ParseCaseWhen(ThisWorkbook.Worksheets("Test").Range("A1").value)
+
+End Sub
+
+
 
 
 

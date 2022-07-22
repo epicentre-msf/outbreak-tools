@@ -176,43 +176,6 @@ Public Sub PrepareTemporaryFolder(Optional Create As Boolean = True)
 
 End Sub
 
-Public Sub AddTableNames()
-    Dim iCol As Long
-    Dim iRow As Long
-    Dim iSheetNameCol As Integer
-    Dim sPrevSheetName As String
-    Dim sTableName As String
-    Dim DictHeaders As BetterArray
-    Dim i As Long
-    Dim iTableIndex As Long
-
-    Set DictHeaders = New BetterArray
-    Set DictHeaders = GetHeaders(ThisWorkbook, C_sParamSheetDict, 1)
-
-    iSheetNameCol = DictHeaders.IndexOf(C_sDictHeaderSheetName)
-
-    With ThisWorkbook.Worksheets(C_sParamSheetDict)
-        iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
-        iCol = DictHeaders.Length + 1
-        iTableIndex = 1
-
-        sPrevSheetName = .Cells(2, iSheetNameCol).value
-        sTableName = "table" & iTableIndex
-        Set DictHeaders = Nothing
-
-        .Cells(1, iCol).value = C_sDictHeaderTableName
-        For i = 2 To iRow
-            If sPrevSheetName <> .Cells(i, iSheetNameCol).value Then
-                'New sheet name, new table
-                sPrevSheetName = .Cells(i, iSheetNameCol).value
-                iTableIndex = iTableIndex + 1
-                sTableName = "table" & iTableIndex
-            End If
-
-            .Cells(i, iCol).value = sTableName
-        Next
-    End With
-End Sub
 
 
 
@@ -274,18 +237,174 @@ End Sub
 'update the progress status
 Sub StatusBar_Updater(sCpte As Single)
 
-        Dim CurrentStatus As Integer
-        Dim pctDone As Integer
-        Dim bCurrEvent As Boolean
+    Dim CurrentStatus As Integer
+    Dim pctDone As Integer
+    Dim bCurrEvent As Boolean
+    bCurrEvent = Application.ScreenUpdating
+    Application.ScreenUpdating = True
+    CurrentStatus = (C_iNumberOfBars) * Round(sCpte / 100, 1)
+    SheetMain.Range(C_sRngUpdate).value = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "% " & TranslateMsg("MSG_BuildLL")
+    Application.ScreenUpdating = bCurrEvent
 
-        bCurrEvent = Application.ScreenUpdating
+End Sub
 
-        Application.ScreenUpdating = True
+'================= PREPROCESSING STEPS BEFORE RUNNING THE DESIGNER =============================
 
-        CurrentStatus = (C_iNumberOfBars) * Round(sCpte / 100, 1)
-        SheetMain.Range(C_sRngUpdate).value = "[" & String(CurrentStatus, "|") & Space(C_iNumberOfBars - CurrentStatus) & "]" & " " & CInt(sCpte) & "% " & TranslateMsg("MSG_BuildLL")
 
-        Application.ScreenUpdating = bCurrEvent
+'Put values in one range in lowercase
+Sub LowerRng(Rng As Range)
+    Dim c As Range
+
+    If Not Rng is Nothing
+        For Each c In Rng
+            c.value = LCase(c.value)
+        Next
+    End If
+
+    Set c = Nothing
+End Sub
+
+'Trim values in one range
+
+Sub TrimRng(Rng As Range)
+    Dim c As Range
+    If Not Rng is Nothing
+        For Each c In Rng
+            c.value = Application.WorksheetFunction.Trim(c.value)
+        Next
+    Next
+End Sub
+
+
+'Add table names
+Public Sub AddTableNames()
+    Dim iCol As Long
+    Dim iRow As Long
+    Dim i As Long
+    Dim iTableIndex As Long
+
+    Dim iSheetNameCol As Integer
+    Dim sSheetName As String
+
+    Dim DictHeaders As BetterArray  'Dictionary Headers
+    Dim SheetsData As BetterArray   'Sheets column
+    Dim TablesData As BetterArray   'New column with table names
+
+    Set SheetsData = New BetterArray
+    Set TablesData = New BetterArray
+
+    Set DictHeaders = GetHeaders(ThisWorkbook, C_sParamSheetDict, 1)
+    iSheetNameCol = DictHeaders.IndexOf(C_sDictHeaderSheetName)
+
+    With ThisWorkbook.Worksheets(C_sParamSheetDict)
+        iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+        iCol = DictHeaders.Length + 1
+        iTableIndex = 1
+
+        SheetsData.Push .Cells(2, iSheetNameCol).value
+        TablesData.Push "table" & iTableIndex
+
+        Set DictHeaders = Nothing
+
+        'Add the header for table name
+        .Cells(1, iCol).value = C_sDictHeaderTableName
+
+        For i = 2 To iRow
+            'New sheet name, test if the sheet already exists
+            sSheetName = .Cells(i, iSheetNameCol).value
+            If SheetsData.Includes(sSheetName) Then
+                'The sheet name already exists, I need to write its table name
+                .Cells(i, iCol).value = TablesData.Items(SheetsData.IndexOf(sSheetName))
+            Else
+                'New sheet name, new table
+                iTableIndex = iTableIndex + 1
+
+                SheetsData.Push sSheetName
+                TablesData.Push "table" & iTableIndex
+                .Cells(i, iCol).value = "table" & iTableIndex
+
+            End If
+        Next
+
+    End With
+
+    Set SheetsData = Nothing
+    Set TablesData = Nothing
+End Sub
+
+
+
+'Preprocessing the dictionary
+Sub Preprocessing(DictHeaders As BetterArray)
+
+    Dim Rng As Range
+    Dim DictWksh As Worksheet
+
+    Dim iCol As Integer
+    Dim iSheetNameCol As Integer 'Column for sheet name
+    Dim iMainLabCol As Integer
+    Dim iRow As Long 'One row to work on for the dictionary
+
+    Dim sPrevSheetName As Integer
+
+    'Sort Ranges for the dictionnary and other workseets
+    Dim sortRng As Range
+    Dim MainLabData As BetterArray
+
+
+    Set DictWksh = ThisWorkbook.Worksheets(C_sParamSheetDict)
+    Set MainLabData = New BetterArray
+
+    'Work on the dictionary =============================================================
+
+
+    With DictWksh
+
+        iCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
+        iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+        Set Rng = Range(.Cells(1, 1), .Cells(iRow, iCol))
+
+        'Trim everything on the dictionary
+        TrimRng Rng
+
+        'Add table names
+
+
+        'Now Sort on worksheets, then on main section and subsections
+
+        'table name range
+        iCol = DictHeaders.IndexOf(C_sDictHeaderTableName)
+        Set sortRng = Range(.Cells(1, iCol), .Cells(iRow, iCol))
+
+        'sort on table name
+        Rng.Sort key1:=sortRng1, order1:=xlAscending
+
+        'Now prepare the sort on main label
+        .Cells(iCol + 1, 1).value = "main label number"
+        iSheetNameCol = DictHeaders.IndexOf(C_sDictHeaderSheetName)
+
+        sPrevSheetName = .Cells(2, iSheetNameCol).value
+
+        For i = 2 To iRow
+
+            If sPrevSheetName <> .Cells(i, iSheetNameCol) Then
+                'New sheet name, we should
+
+
+
+
+        Next
+
+
+
+    End With
+
+
+
+
+
+
+
 
 End Sub
 
