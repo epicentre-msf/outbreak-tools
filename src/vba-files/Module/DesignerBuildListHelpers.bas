@@ -25,6 +25,7 @@ Public Sub TransferDesignerCodes(Wkb As Workbook)
     Call TransferCode(Wkb, C_sModLLExport, "Module")
     Call TransferCode(Wkb, C_sModLLTrans, "Module")
     Call TransferCode(Wkb, C_sModLLDict, "Module")
+    Call TransferCode(Wkb, C_sModLLCustFunc, "Module")
     Call TransferCode(Wkb, C_sClaBA, "Class")
 
 End Sub
@@ -710,7 +711,8 @@ Public Function ValidationFormula(sFormula As String, AllSheetNamesData As Bette
                                     SpecCharData As BetterArray, Wksh As Worksheet, Optional bLocal As Boolean = True) As String
     'Returns a string of cleared formula
 
-    ValidationFormula = ""
+    ValidationFormula = vbNullString
+    If sFormula = vbNullString Then Exit Function
 
     Dim sFormulaATest As String                  'same formula, with all the spaces replaced with
     Dim sAlphaValue As String                    'Alpha numeric values in a formula
@@ -737,6 +739,8 @@ Public Function ValidationFormula(sFormula As String, AllSheetNamesData As Bette
 
     'squish the formula (removing multiple spaces) to avoid problems related to
     'space collapsing and upper/lower cases
+
+
     sFormulaATest = "(" & Application.WorksheetFunction.Trim(sFormula) & ")"
 
     iNbParentO = 0                               'Number of open brakets

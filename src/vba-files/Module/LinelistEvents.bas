@@ -71,46 +71,83 @@ Sub ClicCmdExport()
 
     Dim i As Byte
     Dim iHeight As Integer
+    Dim Wksh As Worksheet
+    Dim iStatus As Byte
+    Dim iLabel As Byte
+    Dim ExportHeaders As BetterArray
     Const C_CmdHeight As Integer = 40
+    Const C_CmdGap As Byte = 10
 
-    iHeight = 1
+    Set Wksh = ThisWorkbook.Worksheets(C_sParamSheetExport)
+    Set ExportHeaders = GetHeaders(ThisWorkbook, C_sParamSheetExport, 1)
+    ExportHeaders.LowerBound = 1
+    iStatus = ExportHeaders.IndexOf(C_sExportHeaderStatus)
+    iLabel = ExportHeaders.IndexOf(C_sExportHeaderLabelButton)
+
+    iHeight = C_CmdGap
 
     On Error GoTo errLoadExp
 
     With F_Export
-        i = 2
-        While i <= 6
-            If Not isError(Sheets("Exports").Cells(i, 4).value) Then
-                If LCase(Sheets("Exports").Cells(i, 4).value) <> "active" Then
-                    .Controls("CMD_Export" & i - 1).Visible = False
+        i = 1
+        While i <= 5
+            If Not isError(Wksh.Cells(i, iStatus).value) Then
+                'i+1 because the first line is for the headers
+                If Wksh.Cells(i + 1, iStatus).value <> C_sExportActive Then
+                    .Controls("CMD_Export" & i).Visible = False
                 Else
-                    .Controls("CMD_Export" & i - 1).Visible = True
-                    .Controls("CMD_Export" & i - 1).Caption = Sheets("Exports").Cells(i, 2).value
-                    iHeight = iHeight + 24 + C_CmdHeight
+                    .Controls("CMD_Export" & i).Visible = True
+                    .Controls("CMD_Export" & i).Caption = Wksh.Cells(i + 1, iLabel).value
+                    .Controls("CMD_Export" & i).Top = iHeight
+                    .Controls("CMD_Export" & i).Height = C_CmdHeight
+                    .Controls("CMD_Export" & i).Width = 160
+                    .Controls("CMD_Export" & i).Left = 20
+                    iHeight = iHeight + C_CmdHeight + C_CmdGap
                 End If
             End If
             i = i + 1
         Wend
-        .CMD_NouvCle.Top = iHeight + 5
-        '.CMD_NouvCle.Visible = True
-        iHeight = iHeight + 24 + C_iCmdHeight
 
-        .CMD_Retour.Top = iHeight + 5
-        '.CMD_Retour.Visible = True
-        iHeight = .CMD_Retour.Top + .CMD_Retour.Height + 24 + 10
-        .Height = iHeight
-        .Width = 200
-        .Show
+
+
+        'Height of checks (use filtered data)
+        .CHK_ExportFiltered.Top = iHeight + 30
+        .CHK_ExportFiltered.Left = 30
+        .CHK_ExportFiltered.Width = 160
+
+        iHeight = iHeight + 40 + C_CmdHeight + C_CmdGap
+
+        'Height of command for new key
+        .CMD_NouvCle.Top = iHeight
+        .CMD_NouvCle.Height = C_CmdHeight - 10
+        .CMD_NouvCle.Width = 160
+        .CMD_NouvCle.Left = 20
+
+        iHeight = iHeight + C_CmdHeight + C_CmdGap
+
+        'Quit command
+        .CMD_Retour.Top = iHeight
+        .CMD_Retour.Height = C_CmdHeight - 10
+        .CMD_Retour.Width = 160
+        .CMD_Retour.Left = 20
+
+        iHeight = iHeight + C_CmdHeight + C_CmdGap
+
+        'Overall height and width of the form
+
+        .Height = iHeight + 50
+        .Width = 210
     End With
 
+    Set ExportHeaders = Nothing
+
+    F_Export.Show
     Exit Sub
 
 errLoadExp:
         MsgBox TranslateLLMsg("MSG_ErrLoadExport"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         EndWork xlsapp:=Application
         Exit Sub
-
-
 End Sub
 
 
