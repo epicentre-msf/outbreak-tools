@@ -427,7 +427,6 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
 
                 'Where to stop building the table
 
-                iEndCol = C_eStartColumnAnalysis + 1
 
                 'Value of the section
 
@@ -446,7 +445,7 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                     With Wkb.Worksheets(C_sSheetChoiceAuto)
                             iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
                         .Cells(iRow + 1, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") & _
-                                                                                               ": " & sActualSection
+                               ": " & sActualSection
                     End With
                 End If
 
@@ -454,87 +453,92 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
 
                 ' Then EndColumn iEndCol is a ByRef, to update the ends column
 
-                CreateUAHeaders Wksh, iRow:=iSectionRow + 3, iCol:=C_eStartColumnAnalysis, _
-                                sMainLab:=sActualMainLab, sSummaryLabel:=sActualSummaryLabel, _
-                                sPercent:=sActualPercentage, iEndCol:=iEndCol
+                Set ValidationListRows = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoiceRow)
+                Set ValidationListColumns = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoiceRow)
 
-                            ' Update the EndColumn if we have to add percentages
-                            If sActualPercentage = C_sYes Then iEndCol = iEndCol + 1
+                iEndCol = C_eStartColumnAnalysis + ValidationListColumns.Length - 1
 
-                'Add values of the categorical variable -------------------------------------------
+                CreateUAHeaders Wksh, iRow:=iSectionRow + 3, ColumnsData := ValidationListColumns, _
+                                RowsData := ValidationListRows, iCol:=C_eStartColumnAnalysis, _
+                                sMainLabRow:=sActualMainLabRow, sMainLabCol:=sActualMainLabColumn, _
+                                sSummaryLabel:=sActualSummaryLabel, _
+                                sPercent:=sActualPercentage
 
-                Set ValidationList = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoice)
-                ValidationList.ToExcelRange .Cells(iSectionRow + 4, C_eStartColumnAnalysis)
-
-                            'EndRow of the table.
-                iEndRow = iSectionRow + 4 + ValidationList.Length
+                iEndCol = .Cells(iSectionRow + 4, .Columns.Count).End(xlToLeft).Column
 
 
-                'Add NA / Missing if required -----------------------------------------------------
-
-                If sActualMissing = C_sYes Then
-
-                    AddUANA Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
-                    sVar:=sActualGroupBy, iRow:=iEndRow, _
-                    iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol
-
-                    iEndRow = iEndRow + 1
-
-                End If
-
-                'Add Total (Every time) ------------------------------------------------------------------------------------
-
-                            AddUATotal Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
-                                    sVar:=sActualGroupBy, iRow:=iEndRow, iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol, _
-                                    sPercent:=sActualPercentage, sMiss:=sActualMissing
-
-
-                'Now Work on each category ---------------------------------------------------------------------------------
-
-
-                For i = 0 To ValidationList.Length - 1
-
-
-                    'Address of the condition to use
-                    sCondition = .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis).Address
-
-                    'Getting the formulas
-                    sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sActualSummaryFunction, _
-                                           sVar:=sActualGroupBy, sCondition:=sCondition)
-
-                    On Error Resume Next
-
-                    If sFormula <> vbNullString And Len(sFormula) < 255 Then
-
-                            .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis + 1).FormulaArray = sFormula
-
-                    End If
-
-                    On Error GoTo 0
-
-                    FormatCell Wksh:=Wksh, iStartRow:=iSectionRow + 4 + i, _
-                               iEndRow:=iEndRow, iStartCol:=C_eStartColumnAnalysis, _
-                               iEndCol:=iEndCol, sPercent:=sActualPercentage
-
-                Next
-
-
-                'On the table outline ---------------------------------------------------------------------------------
-
-                WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
-                                                 .Cells(iEndRow, iEndCol)), iWeight:=xlThin, sColor:=sOutlineColor
-
-                WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
-                                                 .Cells(iEndRow, C_eStartColumnAnalysis)), iWeight:=xlThin, sColor:=sOutlineColor
-
-                WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
-                                                 .Cells(iEndRow, C_eStartColumnAnalysis + 1)), iWeight:=xlThin, sColor:=sOutlineColor
-
-            End If
-
-                iCounter = iCounter + 1
-        Loop
-
+                'ValidationList.ToExcelRange .Cells(iSectionRow + 4, C_eStartColumnAnalysis)
+'                'Add values of the categorical variable -------------------------------------------
+'
+'                            'EndRow of the table.
+'                iEndRow = iSectionRow + 4 + ValidationList.Length
+'
+'
+'                'Add NA / Missing if required -----------------------------------------------------
+'
+'                If sActualMissing = C_sYes Then
+'
+'                    AddUANA Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
+'                    sVar:=sActualGroupBy, iRow:=iEndRow, _
+'                    iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol
+'
+'                    iEndRow = iEndRow + 1
+'
+'                End If
+'
+'                'Add Total (Every time) ------------------------------------------------------------------------------------
+'
+'                            AddUATotal Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
+'                                    sVar:=sActualGroupBy, iRow:=iEndRow, iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol, _
+'                                    sPercent:=sActualPercentage, sMiss:=sActualMissing
+'
+'
+'                'Now Work on each category ---------------------------------------------------------------------------------
+'
+'
+'                For i = 0 To ValidationList.Length - 1
+'
+'
+'                    'Address of the condition to use
+'                    sCondition = .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis).Address
+'
+'                    'Getting the formulas
+'                    sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sActualSummaryFunction, _
+'                                           sVar:=sActualGroupBy, sCondition:=sCondition)
+'
+'                    On Error Resume Next
+'
+'                    If sFormula <> vbNullString And Len(sFormula) < 255 Then
+'
+'                            .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis + 1).FormulaArray = sFormula
+'
+'                    End If
+'
+'                    On Error GoTo 0
+'
+'                    FormatCell Wksh:=Wksh, iStartRow:=iSectionRow + 4 + i, _
+'                               iEndRow:=iEndRow, iStartCol:=C_eStartColumnAnalysis, _
+'                               iEndCol:=iEndCol, sPercent:=sActualPercentage
+'
+'                Next
+'
+'
+'                'On the table outline ---------------------------------------------------------------------------------
+'
+'                WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
+'                                                 .Cells(iEndRow, iEndCol)), iWeight:=xlThin, sColor:=sOutlineColor
+'
+'                WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
+'                                                 .Cells(iEndRow, C_eStartColumnAnalysis)), iWeight:=xlThin, sColor:=sOutlineColor
+'
+'                WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
+'                                                 .Cells(iEndRow, C_eStartColumnAnalysis + 1)), iWeight:=xlThin, sColor:=sOutlineColor
+'
+'            End If
+'
+'                iCounter = iCounter + 1
+'        Loop
+'
     End With
 
 End Sub

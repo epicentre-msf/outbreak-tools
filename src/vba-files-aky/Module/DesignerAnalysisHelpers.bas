@@ -66,6 +66,90 @@ Sub CreateUAHeaders(Wksh As Worksheet, iRow As Long, iCol As Long, _
      End With
 End Sub
 
+'Create Headers for bivariate Analysis
+
+Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
+                    RowsData As BetterArray, _
+                    iRow As Long, iCol As Long, _
+                    sMainLabRow As String, sMainLabCol As String, _
+                    sSummaryLabel As String, _
+                    sPercent As String,
+                    Optional sColor As String = "DarkBlue")
+    Dim i As Long
+
+
+     With Wksh
+        'Variable Label from the dictionary for Row
+        With .Cells(iRow + 2, iCol)
+            .value = sMainLabRow
+            .Font.Color = Helpers.GetColor(sColor)
+            .Font.Bold = True
+        End With
+
+        Range(.Cells(iRow + 1, iCol), .Cells(iRow + 2, iCol)).Merge
+        .Cells(iRow + 1, iCol).MergeArea.HorizontalAlignment = xlHAlignLeft
+        .Cells(iRow + 1, iCol).MergeArea.VerticalAlignment = xlVAlignCenter
+
+        'Variable label from the dictionary for column
+        With .Cells(iRow, iCol + 1)
+            .value = sMainLabCol
+            .Font.Color = Helpers.GetColor(sColor)
+            .HorizontalAlignment = xlHAlignLeft
+            .VerticalAlignment = xlVAlignCenter
+            .Font.Bold = True
+        End With
+        RowsData.ToExcelRange .Cells(iRow + 2, iCol)
+        
+        'Now Add Percentage And Values for the column
+        'If you have to add percentage:
+
+        If sPercent = C_sAnaPercentCol Or sPercent = C_sAnaPercentRow Or _ 
+           sPercent = C_sAnaPercentTot Then
+           i = 0
+           Do While (i < ColumnsData.Length)
+                .Cells(iRow + 1, iCol + 2 * i + 1).value = ColumnsData.Items(i)
+                .Cells(iRow + 2, iCol + 2 * i + 1).value = sSummaryLabel
+                .Cells(iRow + 2, iCol + 2 * i + 2).value = TranslateLLMsg("MSG_Percent")
+            i = i + 1
+           Loop
+        Else
+            
+
+
+        End If
+
+        
+
+
+
+
+        'First column on sumary label
+        With .Cells(iRow, iCol + 1)
+            .value = sSummaryLabel
+            .Font.Color = Helpers.GetColor(sColor)
+            .Font.Bold = True
+            .HorizontalAlignment = xlHAlignCenter
+            .VerticalAlignment = xlVAlignCenter
+        End With
+        'Add Percentage header column if required
+        If sPercent = C_sYes Then
+            With .Cells(iRow, iCol + 2)
+                .value = TranslateLLMsg("MSG_Percent")
+                .Font.Color = Helpers.GetColor(sColor)
+                .Font.Bold = True
+                .HorizontalAlignment = xlHAlignCenter
+                .VerticalAlignment = xlVAlignCenter
+            End With
+        End If
+     End With
+
+
+
+
+End Sub
+
+
+
 'Add missing for univariate analysis
 Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
             sSumFunc As String, sVar As String, _
@@ -126,13 +210,13 @@ Sub AddUATotal(Wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, 
             .Cells(iRow, iStartCol).value = TranslateLLMsg("MSG_Total")
             WriteBorderLines .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), _
                 iWeight:=xlHairline, sColor:="DarkBlue"
-            
+
             With .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol))
              .Font.Bold = True
              .Interior.Color = Helpers.GetColor(sInteriorColor)
              .Font.Size = C_iAnalysisFontSize + 1
             End With
-            
+
             'Add percentage if required
             If sPercent = C_sYes Then
                 sFormula = "=" & .Cells(iRow, iStartCol + 1).Address & "/" & .Cells(iRow, iStartCol + 1).Address
@@ -144,13 +228,13 @@ Sub AddUATotal(Wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, 
             End If
             'Add Formulas for total
             On Error Resume Next
-            
+
             sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sSumFunc, sVar:=sVar, _
                                              sCondition:=sCond, OnTotal:=True, includeMissing:=includeMissing)
             If sFormula <> vbNullString And Len(sFormula) < 255 Then .Cells(iRow, iStartCol + 1).FormulaArray = sFormula
-      
+
             On Error GoTo 0
-            
+
         End With
 End Sub
 
@@ -162,8 +246,8 @@ Sub FormatCell(Wksh As Worksheet, iStartRow As Long, iEndRow As Long, iStartCol 
                          Optional sNumberFormat As String = "0.00", _
                          Optional sInteriorColor As String = "VeryLightBlue", _
                          Optional sFontColor As String = "DarkBlue")
-                         
-                         
+
+
         Dim sFormula As String
 
         With Wksh
@@ -172,7 +256,7 @@ Sub FormatCell(Wksh As Worksheet, iStartRow As Long, iEndRow As Long, iStartCol 
             .Interior.Color = Helpers.GetColor(sInteriorColor)
             .Font.Color = Helpers.GetColor(sFontColor)
         End With
-        
+
         With .Cells(iStartRow, iStartCol + 1)
             .NumberFormat = sNumberFormat
         End With
@@ -223,12 +307,12 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
                 sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
                                 sVariate:="univariate total missing", sFirstCondVar:=sVar, _
                                 sFirstCondVal:=sCondition)
-                                
+
                 ElseIf OnTotal Then
-                
+
                     sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
                                 sVariate:="none")
-                                
+
                 Else
 
                     sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
@@ -535,12 +619,12 @@ Function AnalysisCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As 
 
         sTable = TableNameData.Items(VarNameData.IndexOf(sVarName))
         If isFiltered Then sTable = C_sFiltered & sTable
-        
+
         sFormula = "COUNTIF" & "(" & sTable & "[" & sVarName & "], " & sValue & ")"
 
         If OnTotal And includeMissing Then
              sFormula = "COUNTA" & "(" & sTable & "[" & sVarName & "]" & ")" & " + " & "COUNTBLANK" & "(" & sTable & "[" & sVarName & "]" & ")"
-             
+
         ElseIf OnTotal Then
                 sFormula = "COUNTA" & "(" & sTable & "[" & sVarName & "]" & ")"
         End If

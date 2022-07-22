@@ -127,6 +127,11 @@ Public Const C_sAnaSumLabel             As String = "summary label"
 Public Const C_sAnaSumFunction          As String = "summary function"
 Public Const C_sAnaSection              As String = "section"
 
+'Percentage for bivariate analysis
+Public Const C_sAnaPercentRow           As String = "row"
+Public Const C_sAnaPercentCol           As String = "column"
+Public Const C_sAnaPercentTot           As String = "total"
+
 'FORMS ================================================================================================================================================================================================
 
 Public Const C_sFormExport               As String = "F_Export"                          'Export Frame
