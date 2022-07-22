@@ -265,7 +265,7 @@ End Function
 
 Sub TranslateColumn(iCol As Integer, sSheetName As String, iLastRow As Long, Optional iStartRow As Long = 2)
     Dim Wksh As Worksheet
-    Dim i
+    Dim i As Long
     Dim sText As String
     Dim rngTrans As Range
 
@@ -436,9 +436,9 @@ Sub TranslateAnalysis()
     Dim Wksh As Worksheet
     Dim Headers As BetterArray
     Dim iStartLine As Long
+    Dim iStartColumn As Long
 
     Set Headers = New BetterArray
-    Headers.LowerBound = 1
 
     Set Wksh = DesignerWorkbook.Worksheets(C_sParamSheetAnalysis)
 
@@ -449,8 +449,10 @@ Sub TranslateAnalysis()
     With Wksh.ListObjects(C_sTabGS)
         iStartLine = .Range.Row
          iLast = .DataBodyRange.Rows.Count + iStartLine
-        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine)
+         iStartColumn = .Range.Column
+        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine, iStartColumn)
     End With
+    
 
     'Translate the column of label
     iCol = Headers.IndexOf(C_sAnaSumLabel)
@@ -466,7 +468,8 @@ Sub TranslateAnalysis()
      With Wksh.ListObjects(C_sTabUA)
         iStartLine = .Range.Row
          iLast = .DataBodyRange.Rows.Count + iStartLine
-        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine)
+         iStartColumn = .Range.Column
+        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine, iStartColumn)
     End With
 
     'Translate the column of label
@@ -488,7 +491,8 @@ Sub TranslateAnalysis()
      With Wksh.ListObjects(C_sTabBA)
         iStartLine = .Range.Row
          iLast = .DataBodyRange.Rows.Count + iStartLine
-        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine)
+         iStartColumn = .Range.Column
+        Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine, iStartColumn)
     End With
 
     'Translate the column of label

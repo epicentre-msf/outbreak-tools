@@ -24,6 +24,8 @@ Public Const C_sModLLChange             As String = "LinelistChange"     'Change
 Public Const C_sModLLTrans              As String = "LinelistTranslation"
 Public Const C_sModLLDict               As String = "LinelistDictionary"
 Public Const C_sModLLAnaChange          As String = "LinelistAnalysisChange"
+Public Const C_sModLLCustFunc           As String = "LinelistCustomFunctions"
+
 
 'CLASSES ==========================================================================================================================================================================
 Public Const C_sClaBA                   As String = "BetterArray"
@@ -104,7 +106,7 @@ Public Const C_sTabTransMsg              As String = "T_tradMsg" 'Messages trans
 Public Const C_sTabTransShapes           As String = "T_tradShape" 'Shapes translation table
 Public Const C_sTabGS                    As String = "Tab_global_summary"
 Public Const C_sTabUA                    As String = "Tab_Univariate_Analysis"
-Public Const C_sTabBA                   As String = "Tab_Bivariate_Analysis"
+Public Const C_sTabBA                    As String = "Tab_Bivariate_Analysis"
 
 'STRING CONSTANTS =================================================================================================================================================================
 

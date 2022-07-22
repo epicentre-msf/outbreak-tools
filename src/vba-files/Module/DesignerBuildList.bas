@@ -851,7 +851,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 BuildSubSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLine:=C_eStartLinesLLSubSec, iColumnFrom:=iPrevColSubSec, _
                                      iColumnTo:=iCounterSheetLLCol + 1
             End If
-            
+
             'NEW SECTION
             'Do the same for the section
             If sPrevMainSec <> sActualMainSec Then
@@ -890,7 +890,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
             Select Case sActualControl
 
-                Case C_sDictControlChoice
+            Case C_sDictControlChoice
+
                     'Add list if the choice is not emptyy
                     If sActualChoice <> "" Then
                        Call DesignerBuildListHelpers.AddChoices(Wkb, sSheetName, _
@@ -899,7 +900,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                                         sActualValidationAlert, sActualValidationMessage)
                     End If
                     'Insert the other columns in case we are with a geo
-                Case C_sDictControlGeo
+
+            Case C_sDictControlGeo
                     'First, Geocolumns are in orange
                     Call DesignerBuildListHelpers.AddGeo(Wkb, DictData, DictHeaders, sSheetName, _
                                         C_eStartLinesLLData, iCounterSheetLLCol, _
@@ -924,9 +926,10 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                         bCmdGeoExist = True
                     End If
 
-                Case C_sDictControlChoiceAuto
-                    'Add the list_auto column in the worksheet list_auto_
-                    With Wkb.Worksheets(C_sSheetChoiceAuto)
+            Case C_sDictControlChoiceAuto
+
+                'Add the list_auto column in the worksheet list_auto_
+                With Wkb.Worksheets(C_sSheetChoiceAuto)
                         iChoiceCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
                         sChoiceAutoName = C_sDictControlChoiceAuto & "_" & sActualChoice
 
@@ -936,27 +939,35 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                          .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = "o" & sChoiceAutoName
                          ChoiceAutoVarData.Push sActualChoice
                          Wkb.Names.Add Name:=sChoiceAutoName, RefersToR1C1:="=o" & sChoiceAutoName & "[" & sChoiceAutoName & "]"
-                    End With
+                End With
 
-                    'Set the validation for list auto
-                    Call Helpers.SetValidation(.Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol), "=" & sChoiceAutoName, Helpers.GetValidationType(sActualValidationAlert), sActualValidationMessage)
+                'Set the validation for list auto
+                Call Helpers.SetValidation(.Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol), "=" & sChoiceAutoName, Helpers.GetValidationType(sActualValidationAlert), sActualValidationMessage)
 
-                Case C_sDictControlHf
+            Case C_sDictControlHf
+
                     .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = GetColor("Orange")
 
-                Case C_sDictControlForm, C_sDictControlFormChoices 'Formulas, are reported to the formula function
-                    If (sActualFormula <> "") Then
-                        sFormula = DesignerBuildListHelpers.ValidationFormula(sActualFormula, AllSheetNamesData, VarNameData, ColumnIndexData, _
+            Case C_sDictControlForm, C_sDictControlCaseWhen 'Formulas, are reported to the formula function
+
+                If (sActualFormula <> vbNullString) Then
+                    sFormula = sActualFormula
+
+                    If sActualControl = C_sDictControlCaseWhen Then sFormula = ParseCaseWhen(sFormula)
+
+                    sFormula = DesignerBuildListHelpers.ValidationFormula(sFormula, AllSheetNamesData, VarNameData, ColumnIndexData, _
                                                             FormulaData, SpecCharData, Wkb.Worksheets(sSheetName), False)
-                    End If
+
                     'Testing before writing the formula
-                    If (sFormula <> "") Then
-                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).NumberFormat = "General"
-                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Formula = sFormula
-                        bLockData = True  'Lock data for formulas
+                    If (sFormula <> vbNullString) Then
+                            .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).NumberFormat = "General"
+                            .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Formula = sFormula
+                            bLockData = True  'Lock data for formulas
                     Else
-                        'MsgBox "Invalid formula will be ignored : " & sActualFormula & "/" & sActualVarName  'MSG_InvalidFormula
+                            'MsgBox "Invalid formula will be ignored : " & sActualFormula & "/" & sActualVarName  'MSG_InvalidFormula
                     End If
+                End If
+
             End Select
 
             'The type is added after formula validation because we need to take in account the formula before
