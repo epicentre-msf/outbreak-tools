@@ -25,6 +25,7 @@ Public Sub TransferDesignerCodes(Wkb As Workbook)
     Call TransferCode(Wkb, C_sModLLExport, "Module")
     Call TransferCode(Wkb, C_sModLLTrans, "Module")
     Call TransferCode(Wkb, C_sModLLDict, "Module")
+    Call TransferCode(Wkb, C_sModLLCustFunc, "Module")
     Call TransferCode(Wkb, C_sClaBA, "Class")
 
 End Sub
