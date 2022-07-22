@@ -270,16 +270,16 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Global summary data for analysis
     Set GSData = New BetterArray
     GSData.LowerBound = 1
-    GSData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabGS).DataBodyRange
+    GSData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabGS).Range
 
     'Bivariate and Univariate Analysis data for Analysis
     Set UAData = New BetterArray
     UAData.LowerBound = 1
-    UAData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabUA).DataBodyRange
+    UAData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabUA).Range
 
     Set BAData = New BetterArray
     BAData.LowerBound = 1
-    BAData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabBA).DataBodyRange
+    BAData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabBA).Range
 
 
     DoEvents
