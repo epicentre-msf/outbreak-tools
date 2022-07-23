@@ -12,22 +12,12 @@ Option Explicit
 Sub CreateNewSection(Wksh As Worksheet, iRow As Long, iCol As Long, sSection As String, _
                                          Optional sColor As String = "DarkBlue")
         With Wksh
-                'New range
-                With .Cells(iRow, iCol)
-                    .value = sSection
-                    .Font.Size = C_iAnalysisFontSize + 3
-                    .Font.Color = Helpers.GetColor(sColor)
-                End With
+            'New range, format the range
+            FormatARange .Cells(iRow, iCol), sValue := sSection, FontSize := C_iAnalysisFontSize + 4, _
+                    sFontColor := sColor, Horiz := xlHalignLeft
 
-                'Draw a border arround the section
-                With .Range(.Cells(iRow, iCol), .Cells(iRow, iCol + 4))
-                    With .Borders(xlEdgeBottom)
-                            .Weight = xlMedium
-                            .LineStyle = xlContinuous
-                            .Color = Helpers.GetColor(sColor)
-                            .TintAndShade = 0.4
-                         End With
-                 End With
+            'Draw a border arround the section
+            DrawLines Rng := Range(.Cells(iRow, iCol), .Cells(iRow, iCol + 6)), iWeight := xlMedium, sColor := sColor, At := "Bottom"
         End With
 End Sub
 
@@ -73,79 +63,130 @@ Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
                     iRow As Long, iCol As Long, _
                     sMainLabRow As String, sMainLabCol As String, _
                     sSummaryLabel As String, _
-                    sPercent As String,
+                    sPercent As String, _
+                    Optional sInteriorColor As String = "VeryLightBlue", _
+                    Optional sTotalInteriorColor As String = "VeryLightGreyBlue", _
                     Optional sColor As String = "DarkBlue")
     Dim i As Long
+    Dim iLastCol As Long
+    Dim iTotalLastCol As Long
+    Dim sArrow As String
+    Dim HasPercent As Boolean
 
 
      With Wksh
         'Variable Label from the dictionary for Row
-        With .Cells(iRow + 2, iCol)
-            .value = sMainLabRow
-            .Font.Color = Helpers.GetColor(sColor)
-            .Font.Bold = True
-        End With
+        FormatARange Rng:=.Cells(iRow + 2, iCol), sValue:=sMainLabRow, sFontColor:=sColor, isBold:=True
 
+        'Merge the first and second rows of first column of bivariate analysis
         Range(.Cells(iRow + 1, iCol), .Cells(iRow + 2, iCol)).Merge
         .Cells(iRow + 1, iCol).MergeArea.HorizontalAlignment = xlHAlignLeft
         .Cells(iRow + 1, iCol).MergeArea.VerticalAlignment = xlVAlignCenter
 
         'Variable label from the dictionary for column
-        With .Cells(iRow, iCol + 1)
-            .value = sMainLabCol
-            .Font.Color = Helpers.GetColor(sColor)
-            .HorizontalAlignment = xlHAlignLeft
-            .VerticalAlignment = xlVAlignCenter
-            .Font.Bold = True
-        End With
-        RowsData.ToExcelRange .Cells(iRow + 2, iCol)
-        
-        'Now Add Percentage And Values for the column
-        'If you have to add percentage:
+        FormatARange Rng:=.Cells(iRow, iCol + 1), sValue:=sMainLabCol, sFontColor:=sColor, isBold:=True, Horiz:=xlHAlignLeft
 
-        If sPercent = C_sAnaPercentCol Or sPercent = C_sAnaPercentRow Or _ 
-           sPercent = C_sAnaPercentTot Then
+        'Add the rows Data --------------------------------------------------------------------------
+
+        RowsData.ToExcelRange .Cells(iRow + 3, iCol)
+
+        FormatARange Rng:=Range(.Cells(iRow + 3, iCol), .Cells(iRow + 2 + RowsData.Length, iCol)), sFontColor:=sColor, sInteriorColor:=sInteriorColor, Horiz:=xlHAlignLeft
+
+        'Now Add Percentage And Values for the column -----------------------------------------------
+        'If you have to add percentage :
+        sArrow = vbNullString
+
+        Select Case sPercent
+
+            Case C_sAnaPercentCol
+                HasPercent = True
+                sArrow = ChrW(8597) 'Arrow is vertical
+            Case C_sAnaPercentRow
+                HasPercent = True
+                sArrow = ChrW(8596) 'Arrow is horizontal
+            Case C_sAnaPercentTot
+                HasPercent = True
+            Case Else
+                HasPercent = False
+        End Select
+
+        If HasPercent Then
+
            i = 0
+
            Do While (i < ColumnsData.Length)
-                .Cells(iRow + 1, iCol + 2 * i + 1).value = ColumnsData.Items(i)
+                'There is percentage, we have to add the percentage
+                .Cells(iRow + 1, iCol + 2 * i + 1).value = ColumnsData.Items(i + 1)
                 .Cells(iRow + 2, iCol + 2 * i + 1).value = sSummaryLabel
-                .Cells(iRow + 2, iCol + 2 * i + 2).value = TranslateLLMsg("MSG_Percent")
-            i = i + 1
+                .Cells(iRow + 2, iCol + 2 * i + 2).value = TranslateLLMsg("MSG_Percent") & " " & sArrow
+                Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iRow + 1, iCol + 2 * i + 2)).Merge
+
+                'Write borders arround the different part of the columns
+                DrawLines Rng:=Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iRow + 2 + RowsData.Length, iCol + 2 * i + 2)), sColor:=sColor
+                DrawLines Rng:=Range(.Cells(iRow + 1, iCol + 2 * i + 2), .Cells(iRow + 2 + RowsData.Length, iCol + 2 * i + 2)), At:="Right", iWeight:=xlThin, sColor:=sColor
+                i = i + 1
            Loop
+
+           iLastCol = 2 * i 'This is the last column of the table when there is percentage
         Else
-            
 
+            'There is no percentage, only column values
+            i = 1
 
+            Do While (i <= ColumnsData.Length)
+                .Cells(iRow + 1, iCol + i).value = ColumnsData.Items(i)
+                .Cells(iRow + 2, iCol + i).value = sSummaryLabel
+
+               'Draw lines arround all borders
+               DrawLines Rng:=Range(.Cells(iRow + 1, iCol + i), .Cells(iRow + 2 + RowsData.Length, iCol + i)), sColor:=sColor
+               DrawLines Rng:=Range(.Cells(iRow + 1, iCol + i), .Cells(iRow + 2 + RowsData.Length, iCol + i)), At:="Right", sColor:=sColor, iWeight:=xlThin
+                i = i + 1
+            Loop
+
+            iLastCol = i - 1 'Last column of the table without the percentage
         End If
 
-        
+        iLastCol = iCol + iLastCol
 
+        'Add Total ---------------------------------------------------------------------------------------------------------
 
+        .Cells(iRow + 1, iLastCol + 1).value = TranslateLLMsg("MSG_Total")
+        .Cells(iRow + 2, iLastCol + 1).value = sSummaryLabel
 
-
-        'First column on sumary label
-        With .Cells(iRow, iCol + 1)
-            .value = sSummaryLabel
-            .Font.Color = Helpers.GetColor(sColor)
-            .Font.Bold = True
-            .HorizontalAlignment = xlHAlignCenter
-            .VerticalAlignment = xlVAlignCenter
-        End With
-        'Add Percentage header column if required
-        If sPercent = C_sYes Then
-            With .Cells(iRow, iCol + 2)
-                .value = TranslateLLMsg("MSG_Percent")
-                .Font.Color = Helpers.GetColor(sColor)
-                .Font.Bold = True
-                .HorizontalAlignment = xlHAlignCenter
-                .VerticalAlignment = xlVAlignCenter
-            End With
+        iTotalLastCol = iLastCol + 1
+        'In case it is needed, add percentage for total also
+        If HasPercent Then
+            .Cells(iRow + 2, iLastCol + 2).value = TranslateLLMsg("MSG_Percent") & " " & sArrow
+            Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iRow + 1, iLastCol + 2)).Merge
+            iTotalLastCol = iLastCol + 2
         End If
-     End With
+
+        'Format total
+        'Add hairlines between cells
+        DrawLines Rng:=Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iRow + 2 + RowsData.Length, iTotalLastCol)), sColor:=sColor
+        'Draw borders arround total
+        WriteBorderLines oRange:=Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iRow + 2 + RowsData.Length, iTotalLastCol)), sColor:=sColor
+        'Add a left double line
+        DrawLines Rng:=Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iRow + 2 + RowsData.Length, iLastCol + 1)), sColor:=sColor, iLine:=xlDouble, At:="Left"
 
 
+        FormatARange Rng:=Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iRow + 2 + RowsData.Length, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, isBold:=True
 
+        'Format Table Headers ----------------------------------------------------------------------------------------
 
+        'First row with column categories
+        FormatARange Rng:=Range(.Cells(iRow + 1, iCol + 1), .Cells(iRow + 1, iLastCol)), sFontColor:=sColor, sInteriorColor:=sInteriorColor
+
+        'Second row with summary label with/without percentage
+        FormatARange Rng:=Range(.Cells(iRow + 2, iCol + 1), .Cells(iRow + 2, iLastCol)), sFontColor:=sColor, FontSize:=C_iAnalysisFontSize - 1
+
+        'Draw lines arround the first column of tabe
+        DrawLines Rng:=Range(.Cells(iRow + 1, iCol), .Cells(iRow + 2 + RowsData.Length, iCol)), sColor:=sColor
+
+        'Thick line at the header row
+        DrawLines Rng:=Range(.Cells(iRow + 2, iCol), .Cells(iRow + 2, iTotalLastCol)), At:="Bottom", iLine:=xlDouble, sColor:=sColor
+
+    End With
 End Sub
 
 
@@ -189,6 +230,49 @@ Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
 
         End With
 End Sub
+
+
+'Add Missing for Bivariate Analysis
+
+Sub AddBANA(Wkb As Workbook, DictHeaders As BetterArray, _
+            sSumFunc As String, sVar As String, _
+            iRow As Long, iStartCol As Long, iEndCol As Long, _
+            Optional sInteriorColor As String = "VeryLightGreyBlue", _
+            Optional sFontColor As String = "GreyBlue", _
+            Optional sNumberFormat As String = "0.00")
+
+        Dim Wksh As Worksheet
+        Dim sFormula As String
+        Dim sCond As String
+
+        Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
+        sCond = Chr(34) & Chr(34)
+
+        With Wksh
+
+         .Cells(iRow, iStartCol).value = TranslateLLMsg("MSG_NA")
+
+      With .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol))
+              .Font.Color = Helpers.GetColor(sFontColor)
+              .Interior.Color = Helpers.GetColor(sInteriorColor)
+              .Font.Size = C_iAnalysisFontSize - 1
+              .Font.Bold = True
+              .NumberFormat = sNumberFormat
+      End With
+
+          On Error Resume Next
+
+                sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, _
+                                            sForm:=sSumFunc, sVar:=sVar, _
+                                            sCondition:=sCond, isFiltered:=True)
+
+            If sFormula <> vbNullString And Len(sFormula) < 255 Then .Cells(iRow, iStartCol + 1).FormulaArray = sFormula
+
+          On Error GoTo 0
+
+        End With
+End Sub
+
 
 
 
