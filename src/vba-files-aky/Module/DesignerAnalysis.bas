@@ -16,8 +16,6 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
 
         .Rows("1:2").RowHeight = C_iLLButtonsRowHeight
         .Columns(1).ColumnWidth = C_iLLFirstColumnsWidth + 20
-         .Columns(1).ColumnWidth = C_iLLFirstColumnsWidth + 20
-
 
          'Add command for filtering
         Call AddCmd(Wkb, C_sSheetAnalysis, _
@@ -42,6 +40,9 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     'Add Univariate Analysis tables
     AddUnivariateAnalysis Wkb, UAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, iGoToCol
 
+    'Add Bivariate Analysis
+     AddBivariateAnalysis Wkb, BAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, iGoToCol
+
 
     'Build GoTo Area
     BuildGotoArea Wkb:=Wkb, sTableName:=LCase(C_sSheetAnalysis), sSheetName:=C_sSheetAnalysis, iGoToCol:=iGoToCol, iCol:=2
@@ -50,6 +51,7 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     'Allow text wrap only at the end
     Wkb.Worksheets(C_sSheetAnalysis).Cells.WrapText = True
     Wkb.Worksheets(C_sSheetAnalysis).Cells.EntireRow.AutoFit
+    Wkb.Worksheets(C_sSheetAnalysis).Cells.EntireColumn.ColumnWidth = C_iLLFirstColumnsWidth
 
     TransferCodeWks Wkb, C_sSheetAnalysis, C_sModLLAnaChange
 
@@ -66,7 +68,7 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
     Dim sFormula As String
     Dim sConvertedFormula As String
     Dim sConvertedFilteredFormula As String
-    Dim i As Integer 'counter
+    Dim i As Long 'counter
 
     iSumLength = GSData.Length
 
@@ -101,29 +103,31 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
 
 
         On Error Resume Next
-        For i = 2 To iSumLength
 
-            .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis).value = GSData.Items(i, 1)
-            .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis).Font.Color = Helpers.GetColor("DarkBlue")
-            .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis).Interior.Color = Helpers.GetColor("VeryLightBlue")
+        'Formulas for Global Summary
+        For i = 2 To iSumLength
+            With .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis)
+                .value = GSData.Items(i, 1)
+                .Font.Color = Helpers.GetColor("DarkBlue")
+                .Interior.Color = Helpers.GetColor("VeryLightBlue")
+                .VerticalAlignment = xlVAlignCenter
+                .HorizontalAlignment = xlHAlignLeft
+            End With
 
             sFormula = GSData.Items(i, 2)
-
             sConvertedFormula = AnalysisFormula(Wkb, sFormula)
             sConvertedFilteredFormula = AnalysisFormula(Wkb, sFormula, isFiltered:=True)
 
-            If sConvertedFormula <> vbNullString Then
+            If sConvertedFormula <> vbNullString And sConvertedFilteredFormula <> vbNullString Then
                 .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1).FormulaArray = sConvertedFormula
-            End If
-
-            If sConvertedFilteredFormula <> vbNullString Then
                 .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2).FormulaArray = sConvertedFilteredFormula
             End If
 
-            .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1).HorizontalAlignment = xlHAlignRight
-            .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1).Font.Size = C_iAnalysisFontSize - 2
-            .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2).HorizontalAlignment = xlHAlignRight
-            .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2).Font.Size = C_iAnalysisFontSize - 2
+            With Range(.Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1), _
+                       .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2))
+                .HorizontalAlignment = xlHAlignRight
+                .Font.Size = C_iAnalysisFontSize - 2
+            End With
 
             'Write boder lines
              WriteBorderLines .Range(.Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis), _
@@ -131,11 +135,8 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
                          iWeight:=xlHairline, sColor:="DarkBlue"
 
         Next
-        On Error GoTo 0
 
-        .Columns(C_eStartColumnAnalysis).EntireColumn.AutoFit
-        .Columns(C_eStartColumnAnalysis + 1).EntireColumn.AutoFit
-        .Columns(C_eStartColumnAnalysis + 2).EntireColumn.AutoFit
+        On Error GoTo 0
 
         'Write Border Lines
 
@@ -410,18 +411,25 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
             sActualGroupByRow = BAData.Items(iCounter, 2)
             sActualGroupByColumn = BAData.Items(iCounter, 3)
             sActualMissing = BAData.Items(iCounter, 4)
-            sActualSummaryFunction = UAData.Items(iCounter, 5)
-            sActualSummaryLabel = UAData.Items(iCounter, 6)
-            sActualPercentage = UAData.Items(iCounter, 7)
+            sActualSummaryFunction = BAData.Items(iCounter, 5)
+            sActualSummaryLabel = BAData.Items(iCounter, 6)
+            sActualPercentage = BAData.Items(iCounter, 7)
 
             'Set up the different values
             If VarNameData.Includes(sActualGroupByColumn) And VarNameData.Includes(sActualGroupByRow) Then
 
                 sActualChoiceRow = DictData.Items(VarNameData.IndexOf(sActualGroupByRow), _
                                                 DictHeaders.IndexOf(C_sDictHeaderChoices))
+                sActualChoiceColumn = DictData.Items(VarNameData.IndexOf(sActualGroupByColumn), _
+                                                DictHeaders.IndexOf(C_sDictHeaderChoices))
 
                 sActualMainLabRow = DictData. _
-                Items(VarNameData.IndexOf(sActualGroupBy), _
+                Items(VarNameData.IndexOf(sActualGroupByRow), _
+                DictHeaders. _
+                IndexOf(C_sDictHeaderMainLab))
+
+                sActualMainLabColumn = DictData. _
+                Items(VarNameData.IndexOf(sActualGroupByColumn), _
                 DictHeaders. _
                 IndexOf(C_sDictHeaderMainLab))
 
@@ -454,12 +462,12 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                 ' Then EndColumn iEndCol is a ByRef, to update the ends column
 
                 Set ValidationListRows = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoiceRow)
-                Set ValidationListColumns = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoiceRow)
+                Set ValidationListColumns = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoiceColumn)
 
                 iEndCol = C_eStartColumnAnalysis + ValidationListColumns.Length - 1
 
-                CreateUAHeaders Wksh, iRow:=iSectionRow + 3, ColumnsData := ValidationListColumns, _
-                                RowsData := ValidationListRows, iCol:=C_eStartColumnAnalysis, _
+                CreateBAHeaders Wksh, iRow:=iSectionRow + 3, ColumnsData:=ValidationListColumns, _
+                                RowsData:=ValidationListRows, iCol:=C_eStartColumnAnalysis, _
                                 sMainLabRow:=sActualMainLabRow, sMainLabCol:=sActualMainLabColumn, _
                                 sSummaryLabel:=sActualSummaryLabel, _
                                 sPercent:=sActualPercentage
@@ -534,11 +542,11 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
 '                WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
 '                                                 .Cells(iEndRow, C_eStartColumnAnalysis + 1)), iWeight:=xlThin, sColor:=sOutlineColor
 '
-'            End If
+            End If
 '
-'                iCounter = iCounter + 1
-'        Loop
+                iCounter = iCounter + 1
+        Loop
 '
-    End With
+   End With
 
 End Sub
