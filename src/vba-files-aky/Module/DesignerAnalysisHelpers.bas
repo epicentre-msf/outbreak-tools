@@ -24,36 +24,16 @@ End Sub
 
 'Create Headers for univariate analysis
 Sub CreateUAHeaders(Wksh As Worksheet, iRow As Long, iCol As Long, _
-                                        sMainLab As String, sSummaryLabel As String, _
-                                        sPercent As String, iEndCol As Long, Optional sColor As String = "DarkBlue")
-        With Wksh
-                'Variable Label from the dictionary
-        With .Cells(iRow, iCol)
-            .value = sMainLab
-            .Font.Color = Helpers.GetColor(sColor)
-            .HorizontalAlignment = xlHAlignLeft
-            .VerticalAlignment = xlVAlignCenter
-            .Font.Bold = True
-        End With
-        'First column on sumary label
-        With .Cells(iRow, iCol + 1)
-            .value = sSummaryLabel
-            .Font.Color = Helpers.GetColor(sColor)
-            .Font.Bold = True
-            .HorizontalAlignment = xlHAlignCenter
-            .VerticalAlignment = xlVAlignCenter
-        End With
-        'Add Percentage header column if required
-        If sPercent = C_sYes Then
-            With .Cells(iRow, iCol + 2)
-                .value = TranslateLLMsg("MSG_Percent")
-                .Font.Color = Helpers.GetColor(sColor)
-                .Font.Bold = True
-                .HorizontalAlignment = xlHAlignCenter
-                .VerticalAlignment = xlVAlignCenter
-            End With
-        End If
-     End With
+                    sMainLab As String, sSummaryLabel As String, _
+                    sPercent As String, Optional sColor As String = "DarkBlue")
+    With Wksh
+        'Variable Label from the dictionary
+        FormatARange Rng:=.Cells(iRow, iCol), sValue:=sMainLab, sFontColor:=sColor, isBold:=True, Horiz:=xlHAlignLeft
+       'First column on sumary label
+        FormatARange Rng:=.Cells(iRow, iCol + 1), sValue:=sSummaryLabel, sFontColor:=sColor, isBold:=True
+       'Add Percentage header column if required
+        If sPercent = C_sYes Then FormatARange Rng:=.Cells(iRow, iCol + 2), sValue:=TranslateLLMsg("MSG_Percent"), sFontColor:=sColor, isBold:=True
+    End With
 End Sub
 
 'Create Headers for bivariate Analysis
@@ -99,8 +79,8 @@ Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
 
         If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Then
             'Format the last row, just in case we need
-            FormatARange Rng := .Cells(iEndRow + 1, iCol), sFontColor := sNAFontColor, sInteriorColor:= sTotalInteriorColor, _
-                         horiz := xlHAlignLeft, sValue := TranslateLLMsg("MSG_NA")
+            FormatARange Rng:=.Cells(iEndRow + 1, iCol), sFontColor:=sNAFontColor, sInteriorColor:=sTotalInteriorColor, _
+                         Horiz:=xlHAlignLeft, sValue:=TranslateLLMsg("MSG_NA")
             iEndRow = iEndRow + 1
         End If
 
@@ -211,13 +191,13 @@ Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
         'Add Missing for Rows (After total because we need total end column) -------------------------------------------------------------------------------------------------
 
         If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Then
-            FormatARange Rng:= Range(.Cells(iEndRow, iCol + 1), .Cells(iEndRow, iTotalLastCol)), sInteriorColor := sTotalInteriorColor, sFontColor := sNAFontColor
+            FormatARange Rng:=Range(.Cells(iEndRow, iCol + 1), .Cells(iEndRow, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, sFontColor:=sNAFontColor
         End If
 
         'Total on the Last line
-        FormatARange Rng := .Cells(iEndRow + 1, iCol), sInteriorColor := sTotalInteriorColor, isBold := True,  _
-                     Horiz := xlHAlignLeft, sValue := TranslateLLMsg("MSG_Total")
-        FormatARange Rng := Range(.Cells(iEndRow + 1, iCol + 1), .Cells(iEndRow + 1, iTotalLastCol)), sInteriorColor := sTotalInteriorColor, isBold := True
+        FormatARange Rng:=.Cells(iEndRow + 1, iCol), sInteriorColor:=sTotalInteriorColor, isBold:=True, _
+                     Horiz:=xlHAlignLeft, sValue:=TranslateLLMsg("MSG_Total")
+        FormatARange Rng:=Range(.Cells(iEndRow + 1, iCol + 1), .Cells(iEndRow + 1, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, isBold:=True
 
         'Format Table Headers -------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -261,25 +241,21 @@ Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
 
         With Wksh
 
-         .Cells(iRow, iStartCol).value = TranslateLLMsg("MSG_NA")
+            .Cells(iRow, iStartCol).value = TranslateLLMsg("MSG_NA")
 
-      With .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol))
-              .Font.Color = Helpers.GetColor(sFontColor)
-              .Interior.Color = Helpers.GetColor(sInteriorColor)
-              .Font.Size = C_iAnalysisFontSize - 1
-              .Font.Bold = True
-              .NumberFormat = sNumberFormat
-      End With
+            FormatARange .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), sFontColor:=sFontColor, _
+                    sInteriorColor:=sInteriorColor, FontSize:=C_iAnalysisFontSize - 1, isBold:=True, _
+                    NumFormat:=sNumberFormat
 
-          On Error Resume Next
+            On Error Resume Next
 
-                sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, _
+            sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, _
                                             sForm:=sSumFunc, sVar:=sVar, _
                                             sCondition:=sCond, isFiltered:=True)
 
             If sFormula <> vbNullString And Len(sFormula) < 255 Then .Cells(iRow, iStartCol + 1).FormulaArray = sFormula
 
-          On Error GoTo 0
+            On Error GoTo 0
 
         End With
 End Sub
@@ -326,9 +302,6 @@ Sub AddBANA(Wkb As Workbook, DictHeaders As BetterArray, _
         End With
 End Sub
 
-
-
-
 'Add total for univariate Analysis
 Sub AddUATotal(Wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, sVar As String, sPercent As String, _
                sMiss As String, iRow As Long, iStartCol As Long, iEndCol As Long, _
@@ -345,14 +318,12 @@ Sub AddUATotal(Wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, 
 
         With Wksh
             .Cells(iRow, iStartCol).value = TranslateLLMsg("MSG_Total")
+
             WriteBorderLines .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), _
                 iWeight:=xlHairline, sColor:="DarkBlue"
 
-            With .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol))
-             .Font.Bold = True
-             .Interior.Color = Helpers.GetColor(sInteriorColor)
-             .Font.Size = C_iAnalysisFontSize + 1
-            End With
+            FormatARange Rng:=.Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), isBold:=True, sInteriorColor:=sInteriorColor, _
+                        FontSize:=C_iAnalysisFontSize + 1
 
             'Add percentage if required
             If sPercent = C_sYes Then
