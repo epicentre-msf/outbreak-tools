@@ -223,6 +223,57 @@ Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
 End Sub
 
 
+'Add interior formulas for the bivariate analysis
+
+Sub AddInnerFormula(Wkb as Workbook, DictHeaders As BetterArray, sForm As String, _ 
+                    iStartRow As Long, iStartCol As Long, iEndRow As Long, iEndCol, _ 
+                    sPercent As String, sMiss As String, sVarRow As String, sVarColumn As String)
+
+    Dim Wksh As Worksheet
+    Dim iInnerEndRow As Long
+    Dim iInnerEndCol As Long
+    Dim i As Long
+    Dim j As Long
+    Dim istep As Long
+    Dim sFormula As String
+
+    Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
+
+    iInnerEndRow = iEndRow - 1
+    'There is a missing line
+    If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Then iInnerEndRow = iEndRow - 2
+
+    iInnerEndCol = iEndCol - 1
+    'There is missing at the end column
+    If sMiss = C_sAnaCol Or sMiss = C_sAnaAll Then iInnerEndCol = iInnerEndCol - 1
+
+    istep = 1
+    If sPercent  <> C_sNo Then 'There is precentage.
+        iInnerEndCol = iInnerEndCol - 2
+        istep = 2
+    End If
+
+    i = iStartRow + 2
+    j = iStartCol + 1
+
+    With Wksh
+        'Add Now the formulas
+        Do while( i <= iInnerEndRow)
+
+            Do while(j <= iInnerEndCol)
+                sFormula = BivariateFormula(Wkb := Wkb, DictHeaders := DictHeaders, sForm := sForm,  _ 
+                                            sVarRow := sVarRow, sVarColumn := sVarColumn, _
+                                            sValue := .Cells(i, iStartCol).Address, sValue2 = .Cells(iStartRow, j).Address, _ 
+                                            isFiltered := True)
+                j = j + istep
+            Loop
+
+            i = i + 1
+        Loop
+    End With
+End Sub
+
+
 
 'Add missing for univariate analysis
 Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
@@ -265,7 +316,7 @@ End Sub
 
 Sub AddBANA(Wkb As Workbook, DictHeaders As BetterArray, _
             sSumFunc As String, sVar As String, _
-            iRow As Long, iStartCol As Long, iEndCol As Long, _
+            iStartRow As Long, iEndRow As Long, iStartCol As Long, iEndCol As Long, _
             Optional sInteriorColor As String = "VeryLightGreyBlue", _
             Optional sFontColor As String = "GreyBlue", _
             Optional sNumberFormat As String = "0.00")
@@ -277,18 +328,9 @@ Sub AddBANA(Wkb As Workbook, DictHeaders As BetterArray, _
         Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
         sCond = Chr(34) & Chr(34)
 
+        'We are on Rows
+
         With Wksh
-
-         .Cells(iRow, iStartCol).value = TranslateLLMsg("MSG_NA")
-
-      With .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol))
-              .Font.Color = Helpers.GetColor(sFontColor)
-              .Interior.Color = Helpers.GetColor(sInteriorColor)
-              .Font.Size = C_iAnalysisFontSize - 1
-              .Font.Bold = True
-              .NumberFormat = sNumberFormat
-      End With
-
           On Error Resume Next
 
                 sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, _
@@ -393,7 +435,7 @@ End Sub
 
 'Add formulas for univariate analysis
 Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
-                                                        sForm As String, sVar As String, _
+                                                    sForm As String, sVar As String, _
                                                     Optional sCondition As String = "", _
                                                     Optional isFiltered As Boolean = True, _
                                                     Optional OnTotal As Boolean = False, _
@@ -406,7 +448,7 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
       Case "COUNT", "COUNT()", "N", "N()"
 
-              sFormula = AnalysisCount(Wkb, DictHeaders, sVar, sCondition, isFiltered, OnTotal, includeMissing)
+              sFormula = AnalysisCount(Wkb, DictHeaders, sVarName := sVar, sValue := sCondition, isFiltered := isFiltered, OnTotal := OnTotal, includeMissing := includeMissing)
 
           Case "SUM", "SUM()"
 
@@ -450,26 +492,34 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
       Case "COUNT", "COUNT()", "N", "N()"
 
-              sFormula = AnalysisCount(Wkb, DictHeaders, sVar, sCondition, isFiltered, OnTotal, includeMissing)
+              sFormula = AnalysisCount(Wkb, DictHeaders, sVarName := sVarRow, sValue:=sConditionRow, _
+                                      sVarName2 := sVarColumn, sValue2 := sConditionColumn,
+                                      isFiltered := isFiltered, OnTotal := OnTotal, _
+                                      includeMissing := includeMissing)
 
           Case "SUM", "SUM()"
 
       Case Else
                 If OnTotal And includeMissing Then
-                sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
-                                sVariate:="univariate total missing", sFirstCondVar:=sVar, _
-                                sFirstCondVal:=sCondition)
+                sFormula = AnalysisFormula(Wkb, sForm, isFiltered := isFiltered, _
+                                sVariate:="bivariate total missing", sFirstCondVar:=sVarRow, _
+                                sFirstCondVal:=sConditionRow, _
+                                sSecondCondVar := sVarColumn, _
+                                sSecondCondVal := sConditionColumn)
 
                 ElseIf OnTotal Then
 
-                    sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
-                                sVariate:="none")
+                    sFormula = AnalysisFormula(Wkb, sForm, isFiltered := isFiltered, _
+                                sVariate:="bivariate total", sFirstCondVar := sVarRow, _
+                                sFirstCondVal := sConditionRow, sSecondCondVar := sVarColumn, _ 
+                                sSecondCondVal := sConditionColumn)
 
                 Else
 
-                    sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
-                                sVariate:="univariate", sFirstCondVar:=sVar, _
-                                sFirstCondVal:=sCondition)
+                    sFormula = AnalysisFormula(Wkb, sForm, isFiltered := isFiltered, _
+                                sVariate:="bivariate", sFirstCondVar:=sVarRow, _
+                                sFirstCondVal:=sConditionRow, sSecondCondVar := sVarColumn, _ 
+                                sSecondCondVal := sConditionColumn)
 
                 End If
     End Select
@@ -725,10 +775,6 @@ Function BuildVariateFormula(sTableName As String, _
                             & sSecondCondVal & "), " _
                            & sTable & "[" & sVarName & "]" & ")"
 
-        Case "bivariate total"
-
-
-
         'By default fall back to simple varname in a table
 
         Case Else
@@ -744,14 +790,18 @@ End Function
 'Analysis Count
 
 
-Function AnalysisCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As String, sValue As String, Optional isFiltered As Boolean = False, _
-                      Optional OnTotal As Boolean = False, Optional includeMissing As Boolean = False) As String
+Function AnalysisCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As String, sValue As String, _
+                     Optional sVarName2 As String = "", Optional sValue2 As String = "", Optional isFiltered As Boolean = False, _
+                      Optional OnTotal As Boolean = False, _
+                      Optional includeMissing As Boolean = False, _
+                      Optional sTotalPlace As String = "row") As String
 
 
 
     Dim VarNameData As BetterArray
     Dim TableNameData As BetterArray
     Dim sTable As String
+    Dim sTable2 As String
     Dim sFormula As String
 
     Set VarNameData = New BetterArray
@@ -765,23 +815,69 @@ Function AnalysisCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As 
     VarNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=False, DetectLastRow:=True
     TableNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderTableName)), _
                                  DetectLastColumn:=False, DetectLastRow:=True
+    sFormula = vbNullString
 
-    sFormula = ""
+    If sVarName2 = vbNullString Then
+        'Only one variable, just proceed as before
 
-    If VarNameData.Includes(sVarName) Then
+        If VarNameData.Includes(sVarName) Then
 
-        sTable = TableNameData.Items(VarNameData.IndexOf(sVarName))
-        If isFiltered Then sTable = C_sFiltered & sTable
+            sTable = TableNameData.Items(VarNameData.IndexOf(sVarName))
+            If isFiltered Then sTable = C_sFiltered & sTable
 
-        sFormula = "COUNTIF" & "(" & sTable & "[" & sVarName & "], " & sValue & ")"
+            sFormula = "COUNTIF" & "(" & sTable & "[" & sVarName & "], " & sValue & ")"
 
-        If OnTotal And includeMissing Then
-             sFormula = "COUNTA" & "(" & sTable & "[" & sVarName & "]" & ")" & " + " & "COUNTBLANK" & "(" & sTable & "[" & sVarName & "]" & ")"
+            If OnTotal And includeMissing Then
+                sFormula = "COUNTA" & "(" & sTable & "[" & sVarName & "]" & ")" & " + " & "COUNTBLANK" & "(" & sTable & "[" & sVarName & "]" & ")"
 
-        ElseIf OnTotal Then
-                sFormula = "COUNTA" & "(" & sTable & "[" & sVarName & "]" & ")"
+            ElseIf OnTotal Then
+                    sFormula = "COUNTA" & "(" & sTable & "[" & sVarName & "]" & ")"
+            End If
         End If
+
+    Else
+
+        If VarNameData.Includes(sVarName) And VarNameData.Includes(sVarName2) Then
+            sTable = TableNameData.Items(VarNameData.IndexOf(sVarName))
+            sTable2 = TableNameData.Items(VarNameData.IndexOf(sVarName2))
+
+            If sTable2 <> sTable Then Exit Function 'Proceed only if variables are in the same Table
+
+            If isFiltered Then sTable = C_sFiltered & sTable
+
+            sFormula = "COUNTIFS" &   "(" & sTable & "[" & sVarName & "], " & sValue & "," & sTable & "[" & sVarName2 & "], " & sValue2 & ")"
+
+            If OnTotal  And IncludeMissing Then
+
+                Select Case  sTotalPlace
+
+                Case "row"
+                    sFormula = "COUNTIFS" &   "(" & sTable & "[" & sVarName & "], " & Chr(34) & Chr(34) & "," & sTable & "[" & sVarName2 & "], " & sValue2 & ")"
+
+                Case "col"
+                    sFormula = "COUNTIFS" &   "(" & sTable & "[" & sVarName & "], " & sValue & "," & sTable & "[" & sVarName2 & "], " & Chr(34) & Chr(34) & ")"
+
+                Case Else
+                    sFormula = "COUNTIFS" &   "(" & sTable & "[" & sVarName & "], " & Chr(34) & Chr(34) & "," & sTable & "[" & sVarName2 & "], " & sValue2 & ")"
+
+                End Select
+
+            ElseIf OnTotal Then
+
+                Select Case  sTotalPlace 'look like repeating myself, but it is safe.
+
+                Case "row"
+                    sFormula = "COUNTIFS" &   "("  & sTable & "[" & sVarName2 & "], " & sValue2 & ")"
+                Case "col"
+                    sFormula = "COUNTIFS" &   "(" & sTable & "[" & sVarName & "], " & sValue &  ")"
+                Case Else
+                    sFormula =  "COUNTIFS" &   "("  & sTable & "[" & sVarName2 & "], " & sValue2 & ")"
+                End Select
+
+            End If
+        End IF
     End If
+
 
 
     AnalysisCount = "=" & sFormula
