@@ -470,29 +470,22 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                                 RowsData:=ValidationListRows, iCol:=C_eStartColumnAnalysis, _
                                 sMainLabRow:=sActualMainLabRow, sMainLabCol:=sActualMainLabColumn, _
                                 sSummaryLabel:=sActualSummaryLabel, _
-                                sPercent:=sActualPercentage
+                                sPercent:=sActualPercentage, sMiss:=sActualMissing
 
                 iEndCol = .Cells(iSectionRow + 4, .Columns.Count).End(xlToLeft).Column
 
 
-                'ValidationList.ToExcelRange .Cells(iSectionRow + 4, C_eStartColumnAnalysis)
-'                'Add values of the categorical variable -------------------------------------------
-'
-'                            'EndRow of the table.
-'                iEndRow = iSectionRow + 4 + ValidationList.Length
-'
-'
-'                'Add NA / Missing if required -----------------------------------------------------
-'
-'                If sActualMissing = C_sYes Then
-'
-'                    AddUANA Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
-'                    sVar:=sActualGroupBy, iRow:=iEndRow, _
-'                    iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol
-'
-'                    iEndRow = iEndRow + 1
-'
-'                End If
+                'Add NA / Missing if required -----------------------------------------------------
+
+                ' If sActualMissing = C_sYes Then
+
+                '     AddBANA Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
+                '     sVar:=sActualGroupBy, iRow:=iEndRow, _
+                '     iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol
+
+                '     iEndRow = iEndRow + 1
+
+                ' End If
 '
 '                'Add Total (Every time) ------------------------------------------------------------------------------------
 '

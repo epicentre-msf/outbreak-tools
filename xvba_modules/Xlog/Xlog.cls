@@ -40,7 +40,7 @@ End Sub
 '*/
 Public Function message(messageType As Integer, messageText As String, Optional filePath)
  
-  If isMissing(filePath) Then
+  If IsMissing(filePath) Then
     filePath = param
   End If
   Dim FileNum As Integer
