@@ -128,9 +128,10 @@ Public Const C_sAnaSumFunction          As String = "summary function"
 Public Const C_sAnaSection              As String = "section"
 
 'Percentage for bivariate analysis
-Public Const C_sAnaPercentRow           As String = "row"
-Public Const C_sAnaPercentCol           As String = "column"
-Public Const C_sAnaPercentTot           As String = "total"
+Public Const C_sAnaRow                  As String = "row"
+Public Const C_sAnaCol                  As String = "column"
+Public Const C_sAnaTot                  As String = "total"
+Public Const C_sAnaAll                  As String = "all"
 
 'FORMS ================================================================================================================================================================================================
 
