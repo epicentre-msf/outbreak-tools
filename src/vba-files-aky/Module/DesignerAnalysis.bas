@@ -266,10 +266,10 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
 
                 CreateUAHeaders Wksh, iRow:=iSectionRow + 3, iCol:=C_eStartColumnAnalysis, _
                                 sMainLab:=sActualMainLab, sSummaryLabel:=sActualSummaryLabel, _
-                                sPercent:=sActualPercentage, iEndCol:=iEndCol
+                                sPercent:=sActualPercentage
 
-                            ' Update the EndColumn if we have to add percentages
-                            If sActualPercentage = C_sYes Then iEndCol = iEndCol + 1
+                ' Update the EndColumn if we have to add percentages
+                If sActualPercentage = C_sYes Then iEndCol = iEndCol + 1
 
                 'Add values of the categorical variable -------------------------------------------
 
