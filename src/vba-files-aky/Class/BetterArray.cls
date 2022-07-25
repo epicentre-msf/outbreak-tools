@@ -1808,7 +1808,7 @@ Public Function ToCSVString( _
             '1d array
             LocalItems = ConvertOneDimensionArrayToJagged(LocalItems)
         End If
-        If Not isMissing(Headers) Then
+        If Not IsMissing(Headers) Then
             If IsArray(Headers) Then
                 HeadersArray = Array(Headers)
                 LocalItems = InternalConcat(HeadersArray, LocalItems)
@@ -1835,7 +1835,7 @@ Public Function ToCSVFile( _
     ' test if path valid - if not handle err
     
     ' get ouput string
-    If isMissing(Headers) Then
+    If IsMissing(Headers) Then
         Content = Me.ToCSVString( _
                   ColumnDelimiter:=ColumnDelimiter, _
                   RowDelimiter:=RowDelimiter, _
@@ -3760,7 +3760,7 @@ Private Function Rebase(Optional ByRef SourceArray As Variant, Optional ByVal Cu
     Dim LocalItems() As Variant
     Dim LocalType As ArrayTypes
 
-    If isMissing(SourceArray) Or Not IsArray(SourceArray) Then
+    If IsMissing(SourceArray) Or Not IsArray(SourceArray) Then
         LocalItems = InternalItems
         LocalType = This.ArrayType
     Else
@@ -3980,13 +3980,13 @@ Private Function RecursiveTypedMultiToVariantMulti( _
     LocalDepth = Depth
     LocalCurrentDepth = CurrentDepth
 
-    If isMissing(Crumbs) Then
+    If IsMissing(Crumbs) Then
         ReDim LocalCrumbs(LocalDepth - 1)
     Else
         LocalCrumbs = Crumbs
     End If
 
-    If isMissing(Result) Then
+    If IsMissing(Result) Then
         LocalResult = CreateMultidimensionalArray(MapMultidimensionArray(SourceArray, LocalDepth))
     Else
         LocalResult = Result
@@ -4150,7 +4150,7 @@ Private Function RecursiveMultiToJagged( _
     LocalCurrentDepth = CurrentDepth
     
     If LocalDepth > 1 Then
-        If isMissing(Crumbs) Then
+        If IsMissing(Crumbs) Then
             ReDim LocalCrumbs(LocalDepth - 1)
         Else
             LocalCrumbs = Crumbs
@@ -4195,13 +4195,13 @@ Private Function RecursiveJaggedToMulti( _
     LocalDepth = Depth
     LocalCurrentDepth = CurrentDepth
 
-    If isMissing(Crumbs) Then
+    If IsMissing(Crumbs) Then
         ReDim LocalCrumbs(LocalDepth - 1)
     Else
         LocalCrumbs = Crumbs
     End If
 
-    If isMissing(Result) Then
+    If IsMissing(Result) Then
         LocalResult = CreateMultidimensionalArray(MapJaggedArray(SourceArray, KnownDepth:=LocalDepth))
     Else
         LocalResult = Result
