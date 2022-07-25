@@ -97,7 +97,15 @@ Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
 
         FormatARange Rng:=Range(.Cells(iRow + 3, iCol), .Cells(iEndRow, iCol)), sFontColor:=sColor, sInteriorColor:=sInteriorColor, Horiz:=xlHAlignLeft
 
+        If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Then
+            'Format the last row, just in case we need
+            FormatARange Rng := .Cells(iEndRow + 1, iCol), sFontColor := sNAFontColor, sInteriorColor:= sTotalInteriorColor, _
+                         horiz := xlHAlignLeft, sValue := TranslateLLMsg("MSG_NA")
+            iEndRow = iEndRow + 1
+        End If
+
         'Now Add Percentage And Values for the column -----------------------------------------------
+
         'If you have to add percentage :
         sArrow = vbNullString
 
@@ -127,8 +135,8 @@ Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
                 Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iRow + 1, iCol + 2 * i + 2)).Merge
 
                 'Write borders arround the different part of the columns
-                DrawLines Rng:=Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iEndRow, iCol + 2 * i + 2)), sColor:=sColor
-                DrawLines Rng:=Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iEndRow, iCol + 2 * i + 1)), At:="Left", iWeight:=xlThin, sColor:=sColor
+                DrawLines Rng:=Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iEndRow + 1, iCol + 2 * i + 2)), sColor:=sColor
+                DrawLines Rng:=Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iEndRow + 1, iCol + 2 * i + 1)), At:="Left", iWeight:=xlThin, sColor:=sColor
                 i = i + 1
            Loop
 
@@ -143,8 +151,8 @@ Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
                 .Cells(iRow + 2, iCol + i).value = sSummaryLabel
 
                'Draw lines arround all borders
-               DrawLines Rng:=Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow, iCol + i)), sColor:=sColor
-               DrawLines Rng:=Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow, iCol + i)), At:="Left", sColor:=sColor, iWeight:=xlThin
+               DrawLines Rng:=Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow + 1, iCol + i)), sColor:=sColor
+               DrawLines Rng:=Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow + 1, iCol + i)), At:="Left", sColor:=sColor, iWeight:=xlThin
                 i = i + 1
             Loop
 
@@ -174,8 +182,8 @@ Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
             End If
 
             'Format the missing for column
-            DrawLines Rng:=Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iEndRow, iTotalFirstCol - 1)), sColor:=sColor
-            FormatARange Rng:=Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iEndRow, iTotalFirstCol - 1)), sInteriorColor:=sTotalInteriorColor, sFontColor:=sNAFontColor
+            DrawLines Rng:=Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iEndRow + 1, iTotalFirstCol - 1)), sColor:=sColor
+            FormatARange Rng:=Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iEndRow + 1, iTotalFirstCol - 1)), sInteriorColor:=sTotalInteriorColor, sFontColor:=sNAFontColor
         End If
 
 
@@ -194,22 +202,24 @@ Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
 
         'Format total
         'Add hairlines between cells
-        DrawLines Rng:=Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow, iTotalLastCol)), sColor:=sColor
-        'Draw borders arround total
-        WriteBorderLines oRange:=Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow, iTotalLastCol)), sColor:=sColor
+        DrawLines Rng:=Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor
         'Add a left double line
-        DrawLines Rng:=Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow, iTotalFirstCol)), sColor:=sColor, iLine:=xlDouble, At:="Left"
+        DrawLines Rng:=Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalFirstCol)), sColor:=sColor, iLine:=xlDouble, At:="Left"
         'Format all the total range
-        FormatARange Rng:=Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, isBold:=True
+        FormatARange Rng:=Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, isBold:=True
 
         'Add Missing for Rows (After total because we need total end column) -------------------------------------------------------------------------------------------------
 
         If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Then
-
-
+            FormatARange Rng:= Range(.Cells(iEndRow, iCol + 1), .Cells(iEndRow, iTotalLastCol)), sInteriorColor := sTotalInteriorColor, sFontColor := sNAFontColor
         End If
 
-        'Format Table Headers ----------------------------------------------------------------------------------------
+        'Total on the Last line
+        FormatARange Rng := .Cells(iEndRow + 1, iCol), sInteriorColor := sTotalInteriorColor, isBold := True,  _
+                     Horiz := xlHAlignLeft, sValue := TranslateLLMsg("MSG_Total")
+        FormatARange Rng := Range(.Cells(iEndRow + 1, iCol + 1), .Cells(iEndRow + 1, iTotalLastCol)), sInteriorColor := sTotalInteriorColor, isBold := True
+
+        'Format Table Headers -------------------------------------------------------------------------------------------------------------------------------------------
 
         'First row with column categories
         FormatARange Rng:=Range(.Cells(iRow + 1, iCol + 1), .Cells(iRow + 1, iLastCol)), sFontColor:=sColor, sInteriorColor:=sInteriorColor
@@ -218,13 +228,16 @@ Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
         FormatARange Rng:=Range(.Cells(iRow + 2, iCol + 1), .Cells(iRow + 2, iLastCol)), sFontColor:=sColor, FontSize:=C_iAnalysisFontSize - 1
 
         'Draw lines arround the first column of table
-        DrawLines Rng:=Range(.Cells(iRow + 1, iCol), .Cells(iEndRow, iCol)), sColor:=sColor
+        DrawLines Rng:=Range(.Cells(iRow + 1, iCol), .Cells(iEndRow + 1, iCol)), sColor:=sColor
 
         'Thick line at the header row
         DrawLines Rng:=Range(.Cells(iRow + 2, iCol), .Cells(iRow + 2, iTotalLastCol)), At:="Bottom", iLine:=xlDouble, sColor:=sColor
 
+        'Draw lines for Total
+        DrawLines Rng:=Range(.Cells(iEndRow + 1, iCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor, iLine:=xlDouble, At:="Top"
+
         'Drawlines arround all the table
-        WriteBorderLines oRange:=Range(.Cells(iRow + 1, iCol), .Cells(iEndRow, iTotalLastCol)), sColor:=sColor, iWeigth:=xlThin
+        WriteBorderLines oRange:=Range(.Cells(iRow + 1, iCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor, iWeight:=xlThin
 
     End With
 End Sub
