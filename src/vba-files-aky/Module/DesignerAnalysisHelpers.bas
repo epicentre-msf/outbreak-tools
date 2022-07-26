@@ -225,8 +225,8 @@ End Sub
 
 'Add interior formulas for the bivariate analysis
 
-Sub AddInnerFormula(Wkb as Workbook, DictHeaders As BetterArray, sForm As String, _ 
-                    iStartRow As Long, iStartCol As Long, iEndRow As Long, iEndCol, _ 
+Sub AddInnerFormula(Wkb as Workbook, DictHeaders As BetterArray, sForm As String, _
+                    iStartRow As Long, iStartCol As Long, iEndRow As Long, iEndCol, _
                     sPercent As String, sMiss As String, sVarRow As String, sVarColumn As String)
 
     Dim Wksh As Worksheet
@@ -261,9 +261,9 @@ Sub AddInnerFormula(Wkb as Workbook, DictHeaders As BetterArray, sForm As String
         Do while( i <= iInnerEndRow)
 
             Do while(j <= iInnerEndCol)
-                sFormula = BivariateFormula(Wkb := Wkb, DictHeaders := DictHeaders, sForm := sForm,  _ 
+                sFormula = BivariateFormula(Wkb := Wkb, DictHeaders := DictHeaders, sForm := sForm,  _
                                             sVarRow := sVarRow, sVarColumn := sVarColumn, _
-                                            sValue := .Cells(i, iStartCol).Address, sValue2 = .Cells(iStartRow, j).Address, _ 
+                                            sValue := .Cells(i, iStartCol).Address, sValue2 = .Cells(iStartRow, j).Address, _
                                             isFiltered := True)
                 j = j + istep
             Loop
@@ -490,16 +490,16 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
         Select Case Application.WorksheetFunction.Trim(sForm)
 
-      Case "COUNT", "COUNT()", "N", "N()"
+        Case "COUNT", "COUNT()", "N", "N()"
 
               sFormula = AnalysisCount(Wkb, DictHeaders, sVarName := sVarRow, sValue:=sConditionRow, _
                                       sVarName2 := sVarColumn, sValue2 := sConditionColumn,
                                       isFiltered := isFiltered, OnTotal := OnTotal, _
                                       includeMissing := includeMissing)
 
-          Case "SUM", "SUM()"
+        Case "SUM", "SUM()"
 
-      Case Else
+        Case Else
                 If OnTotal And includeMissing Then
                 sFormula = AnalysisFormula(Wkb, sForm, isFiltered := isFiltered, _
                                 sVariate:="bivariate total missing", sFirstCondVar:=sVarRow, _
@@ -511,18 +511,18 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
                     sFormula = AnalysisFormula(Wkb, sForm, isFiltered := isFiltered, _
                                 sVariate:="bivariate total", sFirstCondVar := sVarRow, _
-                                sFirstCondVal := sConditionRow, sSecondCondVar := sVarColumn, _ 
+                                sFirstCondVal := sConditionRow, sSecondCondVar := sVarColumn, _
                                 sSecondCondVal := sConditionColumn)
 
                 Else
 
                     sFormula = AnalysisFormula(Wkb, sForm, isFiltered := isFiltered, _
                                 sVariate:="bivariate", sFirstCondVar:=sVarRow, _
-                                sFirstCondVal:=sConditionRow, sSecondCondVar := sVarColumn, _ 
+                                sFirstCondVal:=sConditionRow, sSecondCondVar := sVarColumn, _
                                 sSecondCondVal := sConditionColumn)
 
                 End If
-    End Select
+        End Select
 
         UnivariateFormula = sFormula
  End Function

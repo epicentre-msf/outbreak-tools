@@ -475,6 +475,11 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                 iEndCol = .Cells(iSectionRow + 4, .Columns.Count).End(xlToLeft).Column
                 iEndRow = .Cells(.Rows.Count, C_eStartColumnAnalysis).End(xlUp).Row
 
+                AddInnerFormula Wkb := Wkb, DictHeaders := DictHeaders, sForm := sActualSummaryFunction, _
+                                iStartRow := iSectionRow + 4, iStartCol := C_eStartColumnAnalysis, iEndRow := iEndRow, _
+                                iEndCol := iEndCol, sVarRow:= sActualGroupByRow, sVarColumn := sActualGroupByColumn, _
+                                sMiss := sActualMissing, sPercent := sActualPercentage
+
 
                 'Add NA / Missing if required -----------------------------------------------------
 
