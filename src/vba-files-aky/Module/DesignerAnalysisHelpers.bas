@@ -793,8 +793,7 @@ End Function
 Function AnalysisCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As String, sValue As String, _
                      Optional sVarName2 As String = "", Optional sValue2 As String = "", Optional isFiltered As Boolean = False, _
                       Optional OnTotal As Boolean = False, _
-                      Optional includeMissing As Boolean = False, _
-                      Optional sTotalPlace As String = "row") As String
+                      Optional includeMissing As Boolean = False) As String
 
 
 
@@ -846,38 +845,8 @@ Function AnalysisCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As 
             If isFiltered Then sTable = C_sFiltered & sTable
 
             sFormula = "COUNTIFS" &   "(" & sTable & "[" & sVarName & "], " & sValue & "," & sTable & "[" & sVarName2 & "], " & sValue2 & ")"
-
-            If OnTotal  And IncludeMissing Then
-
-                Select Case  sTotalPlace
-
-                Case "row"
-                    sFormula = "COUNTIFS" &   "(" & sTable & "[" & sVarName & "], " & Chr(34) & Chr(34) & "," & sTable & "[" & sVarName2 & "], " & sValue2 & ")"
-
-                Case "col"
-                    sFormula = "COUNTIFS" &   "(" & sTable & "[" & sVarName & "], " & sValue & "," & sTable & "[" & sVarName2 & "], " & Chr(34) & Chr(34) & ")"
-
-                Case Else
-                    sFormula = "COUNTIFS" &   "(" & sTable & "[" & sVarName & "], " & Chr(34) & Chr(34) & "," & sTable & "[" & sVarName2 & "], " & sValue2 & ")"
-
-                End Select
-
-            ElseIf OnTotal Then
-
-                Select Case  sTotalPlace 'look like repeating myself, but it is safe.
-
-                Case "row"
-                    sFormula = "COUNTIFS" &   "("  & sTable & "[" & sVarName2 & "], " & sValue2 & ")"
-                Case "col"
-                    sFormula = "COUNTIFS" &   "(" & sTable & "[" & sVarName & "], " & sValue &  ")"
-                Case Else
-                    sFormula =  "COUNTIFS" &   "("  & sTable & "[" & sVarName2 & "], " & sValue2 & ")"
-                End Select
-
-            End If
-        End IF
+        End If
     End If
-
 
 
     AnalysisCount = "=" & sFormula
