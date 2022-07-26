@@ -473,6 +473,7 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                                 sPercent:=sActualPercentage, sMiss:=sActualMissing
 
                 iEndCol = .Cells(iSectionRow + 4, .Columns.Count).End(xlToLeft).Column
+                iEndRow = .Cells(.Rows.Count, C_eStartColumnAnalysis).End(xlUp).Row
 
 
                 'Add NA / Missing if required -----------------------------------------------------
