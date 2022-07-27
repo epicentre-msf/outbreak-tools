@@ -120,6 +120,11 @@ Public Const C_sExportHeaderMetadata    As String = "export metadata"
 Public Const C_sExportHeaderTranslation  As String = "export translation"
 Public Const C_sExportHeaderFileFormat  As String = "file format"
 Public Const C_sExportHeaderFileName    As String = "file name"
+Public Const C_sExportHeaderHeaderType  As String = "export header"
+
+'Values for export headers:
+Public Const C_sExportHeaderTypeVarName    As String = "variables names"
+Public Const C_sExportHeaderTypeVarLab     As String = "variables labels"
 
 'ANALYSIS PARAMETERS ==================================================================================================================================================================================
 
