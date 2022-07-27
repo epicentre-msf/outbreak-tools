@@ -431,6 +431,10 @@ Option Explicit
             GetColor = RGB(68, 88, 94)
         Case "VeryLightGreyBlue"
             GetColor = RGB(233, 238, 240)
+        Case "LightGrey"
+            GetColor = RGB(218, 218, 218)
+        Case "Grey50"
+            GetColor = RGB(127, 127,  127)
         Case Else
             GetColor = vbWhite
         End Select
