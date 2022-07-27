@@ -375,7 +375,7 @@ Sub ImportMigrationData()
     Dim iVarIndex  As Long   'Index of a variable
     Dim sVal As String
     Dim iWindowState As Integer
-    
+
 
     Dim IsSameLanguage As Boolean
 
@@ -1270,8 +1270,16 @@ Sub ExportForMigration()
 
         'For the GeoPath we need more involve work
         ExportPath.Items = Split(ThisWorkbook.Worksheets(C_sSheetGeo).Range(C_sRngGeoName).value, "_")
-        ExportPath.Pop
-        sPath = ExportPath.ToString(Separator:="_", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
+
+        'Remove the last element of the path (the date)
+        If ExportPath.Length > 1 Then ExportPath.Pop
+
+        If ExportPath.Length > 0 Then sPath = ExportPath.ToString(Separator:="_", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
+
+        'write something generic if we can't find the correct name: the generic name is unkown export geobase
+        If sPath = VbNullString Then sPath = "OUTBREAK-TOOLS-GEOBASE-UNKNOWN"
+
+        sPath = sPath & "_"
         sGeoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd")
         sGeoHistoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & "_historic"
 
@@ -1280,17 +1288,10 @@ Sub ExportForMigration()
             MsgBox TranslateLLMsg("MSG_PathTooLong")
             sDirectory = Helpers.LoadFolder
             If sDirectory <> "" Then
-                 sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name, False), ".xlsb", "") & _
+                    sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name, False), ".xlsb", "") & _
                     "_export_data_" & Format(Now, "yyyymmdd-HhNn")
-
-                    'Export the full geobase
-
-                    'For the GeoPath we need more involve work
-                    ExportPath.Items = Split(ThisWorkbook.Worksheets(C_sSheetGeo).Range(C_sRngGeoName).value, "_")
-                    ExportPath.Pop
-                    sPath = ExportPath.ToString(Separator:="_", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
-                    sGeoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd")
-                    sGeoHistoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & "_historic"
+                    sGeoPath = sDirectory & Application.PathSeparator & sPath  & Format(Now, "yyyymmdd")
+                    sGeoHistoPath = sDirectory & Application.PathSeparator & sPath  & Format(Now, "yyyymmdd") & "_historic"
             End If
             i = i + 1
         Wend
