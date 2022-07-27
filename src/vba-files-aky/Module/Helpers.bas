@@ -208,54 +208,6 @@ Option Explicit
         On Error GoTo 0
     End Function
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 'APPLICATION SPEEDUP, WORKSHEET PROTECTION AND RANGE MANAGEMENT =======================================================================================================================================
 
     'Speed up before a work
