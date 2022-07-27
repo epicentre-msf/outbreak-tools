@@ -671,6 +671,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     Dim sFormulaMin As String 'Formula for min
     Dim sFormulaMax As String 'Formula for max
     Dim LoRng As Range 'Range of the listobject for one table
+    Dim Rng As Range   'Range for various headers
     Dim LoFiltRng As Range 'Range of the listobject in the filtered table
     Dim bLockData As Boolean
     Dim sChoiceAutoName As String
@@ -999,11 +1000,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
             'After input every headers, auto fit the columns and unlock data entry part
             .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).value = sActualVarName
-            .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Locked = True
-            .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).FormulaHidden = True
-            .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Interior.Color = vbWhite
-            .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Font.Color = vbWhite
-            .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Font.Bold = True
+            '.Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Locked = True
+            '.Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).FormulaHidden = True
 
             'Hide rows for Control (The row of control type is just before Main Section)
             '.Rows(C_eStartLinesLLMainSec - 1).EntireRow.Hidden = True
@@ -1027,6 +1025,16 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
         'Set Validation to the Section goto Cell
         Call DesignerBuildListHelpers.BuildGotoArea(Wkb, sTableName, sSheetName, iGoToCol)
+
+        'Put the range of variable labels in bold and grey colors
+        Set Rng =  .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol - 1))
+        FormatARange Rng, sFontColor := "Grey50", sInteriorColor := "Grey50"
+        Rng.Locked = True
+        Rng.FormulaHidden = True
+
+        Set Rng = .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_eStartLinesLLData, iCounterSheetLLCol - 1))
+
+        Rng.Font.Bold = True
 
         'Range of the listobject
         Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol - 1))
@@ -1059,5 +1067,6 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
     Set LoFiltRng = Nothing
     Set LoRng = Nothing
+    Set Rng = Nothing
 End Sub
 
