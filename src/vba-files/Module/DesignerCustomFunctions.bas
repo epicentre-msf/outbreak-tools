@@ -51,21 +51,21 @@ Function ParseCaseWhen(sFormula As String) As String
         Set ParsingTable = New BetterArray
         ParsingTable.LowerBound = 1
         iprev = 1
-        
+
         NbOpened = 0
         NbClosed = 0
 
         sLab = Application.WorksheetFunction.Trim(Replace(sFormula, "CASE_WHEN(", ""))
         sLab = Left(sLab, Len(sLab) - 1)
             For i = 1 To Len(sLab)
-            
+
                 'Manage parenthesis and quotes,
                 If Mid(sLab, i, 1) = Chr(34) Then OpenedQuotes = Not OpenedQuotes 'Opened quotes or parenthesis
-                
+
                 'Parenthesis not within quotes are expressions
                 If Mid(sLab, i, 1) = Chr(40) And Not OpenedQuotes Then NbOpened = NbOpened + 1
                 If Mid(sLab, i, 1) = Chr(41) And Not OpenedQuotes Then NbClosed = NbClosed + 1
-                
+
                 'Opened parenthesis is true or false depending on the number of quotes opened or closed
                 OpenedParenthesis = (NbOpened <> NbClosed)
 

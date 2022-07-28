@@ -208,54 +208,6 @@ Option Explicit
         On Error GoTo 0
     End Function
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 'APPLICATION SPEEDUP, WORKSHEET PROTECTION AND RANGE MANAGEMENT =======================================================================================================================================
 
     'Speed up before a work
@@ -301,6 +253,81 @@ Option Explicit
             End With
         Next
     End Sub
+
+    'Draw lines arround borders
+    Public Sub DrawLines(Rng As Range, _
+                           Optional At As String = "All", _
+                           Optional iWeight As Integer = xlHairline, _
+                           Optional iLine As Integer = xlContinuous, _
+                           Optional sColor As String = "Black")
+
+        Dim BorderPos As Byte
+
+        If At = "All" Then
+            With Rng
+                With .Borders
+                    .Weight = iWeight
+                    .LineStyle = iLine
+                    .Color = GetColor(sColor)
+                    .TintAndShade = 0.4
+                End With
+            End With
+        Else
+
+            Select Case At
+                Case "Left"
+                    BorderPos = xlEdgeLeft
+                Case "Right"
+                    BorderPos = xlEdgeRight
+                Case "Bottom"
+                    BorderPos = xlEdgeBottom
+                Case "Top"
+                    BorderPos = xlEdgeTop
+                Case Else
+                    BorderPos = xlEdgeBottom
+            End Select
+
+            With Rng
+                With .Borders(BorderPos)
+                    .Weight = iWeight
+                    .LineStyle = iLine
+                    .Color = GetColor(sColor)
+                    .TintAndShade = 0.4
+                End With
+            End With
+        End If
+    End Sub
+
+
+    'Format a range including the number format, the interior color, the fontcolor, the size of the font and the number format
+
+    Public Sub FormatARange(Rng As Range, _
+                            Optional sValue As String = "", _
+                            Optional sInteriorColor As String = "", _
+                            Optional sFontColor As String = "", _
+                            Optional isBold As Boolean = False, _
+                            Optional Horiz As Integer = xlHAlignCenter, _
+                            Optional Verti As Integer = xlVAlignCenter, _
+                            Optional FontSize As Integer = C_iAnalysisFontSize, _
+                            Optional NumFormat As String = "")
+
+        With Rng
+
+            If sInteriorColor <> vbNullString Then .Interior.Color = GetColor(sInteriorColor)
+            If sFontColor <> vbNullString Then .Font.Color = GetColor(sFontColor)
+
+            .Font.Bold = isBold
+            .Font.Size = FontSize
+            If NumFormat <> vbNullString Then .NumberFormat = NumFormat
+            .HorizontalAlignment = Horiz
+            .VerticalAlignment = Verti
+            If sValue <> vbNullString Then .value = sValue
+
+        End With
+
+
+    End Sub
+
 
     'Set validation List on a Range
     Sub SetValidation(oRange As Range, sValidList As String, sAlertType As Byte, Optional sMessage As String = vbNullString)
@@ -404,6 +431,10 @@ Option Explicit
             GetColor = RGB(68, 88, 94)
         Case "VeryLightGreyBlue"
             GetColor = RGB(233, 238, 240)
+        Case "LightGrey"
+            GetColor = RGB(218, 218, 218)
+        Case "Grey50"
+            GetColor = RGB(127, 127, 127)
         Case Else
             GetColor = vbWhite
         End Select
@@ -426,8 +457,18 @@ Option Explicit
             sValue = Replace(sValue, "_", " ")
             sValue = Replace(sValue, "/", " ")
         End If
+
         sValue = Application.WorksheetFunction.Trim(sValue)
         ClearString = LCase(sValue)
+    End Function
+
+    'Clear Unicode Characters and non printable characters in a String
+
+    Public Function ClearNonPrintableUnicode(ByVal sString As String) As String
+        Dim sValue As String
+        sValue = Application.WorksheetFunction.SUBSTITUTE(sString, Chr(160), " ")
+        sValue = Application.WorksheetFunction.CLEAN(sValue)
+        ClearNonPrintableUnicode = Application.WorksheetFunction.Trim(sValue)
     End Function
 
     'Get the headers of one sheet from one line (probablly the first line)
