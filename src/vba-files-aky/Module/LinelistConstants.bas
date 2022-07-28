@@ -23,6 +23,10 @@ Public Const C_sParamSheetChoices       As String = "Choices"                   
 Public Const C_sParamSheetTranslation   As String = "Translations"                        'Translation Sheet in the setup file
 Public Const C_sParamSheetAnalysis      As String = "Analysis"
 
+
+'Constants defined by user language
+Public sParamSheetAnalysis              As String
+
 'DICTIONARY PARAMETERS ================================================================================================================================================================================
 
 'Headers of the dictionnary in the setup file Headers are fixed________________________________________________________________________________________________________________________________________
@@ -271,4 +275,10 @@ Public Enum C_StartLines
 End Enum
 
 
+Sub SetUserDefineConstants()
+
+    sParamSheetAnalysis = TranslateLLMsg("LLSHEET_Analysis")
+    If sParamSheetAnalysis = vbNullString Then sParamSheetAnalysis = "Analysis"
+
+End Sub
 
