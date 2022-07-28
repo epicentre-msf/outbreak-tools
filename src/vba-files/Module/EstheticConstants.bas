@@ -12,7 +12,7 @@ Public Const C_iLLSubSecFontSize            As Integer = 10                     
 Public Const C_iLLMainSecFontSize           As Integer = 10 'Font size of the main label in one sheet of type linelist
 Public Const C_iAdmSheetFontSize            As Integer = 14
 Public Const C_iAdmTitleFontSize            As Integer = 20
-Public Const C_iAnalysisFontSize            As Integer = 12
+Public Const C_iAnalysisFontSize            As Integer = 11
 
 'Command buttons
 Public Const C_iCmdWidth                    As Integer = 105                                   'Width of command added  on one sheet

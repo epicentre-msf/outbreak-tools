@@ -23,6 +23,10 @@ Public Const C_sParamSheetChoices       As String = "Choices"                   
 Public Const C_sParamSheetTranslation   As String = "Translations"                        'Translation Sheet in the setup file
 Public Const C_sParamSheetAnalysis      As String = "Analysis"
 
+
+'Constants defined by user language
+Public sParamSheetAnalysis              As String
+
 'DICTIONARY PARAMETERS ================================================================================================================================================================================
 
 'Headers of the dictionnary in the setup file Headers are fixed________________________________________________________________________________________________________________________________________
@@ -120,12 +124,23 @@ Public Const C_sExportHeaderMetadata    As String = "export metadata"
 Public Const C_sExportHeaderTranslation  As String = "export translation"
 Public Const C_sExportHeaderFileFormat  As String = "file format"
 Public Const C_sExportHeaderFileName    As String = "file name"
+Public Const C_sExportHeaderHeaderType  As String = "export header"
+
+'Values for export headers:
+Public Const C_sExportHeaderTypeVarName    As String = "variables names"
+Public Const C_sExportHeaderTypeVarLab     As String = "variables labels"
 
 'ANALYSIS PARAMETERS ==================================================================================================================================================================================
 
 Public Const C_sAnaSumLabel             As String = "summary label"
 Public Const C_sAnaSumFunction          As String = "summary function"
 Public Const C_sAnaSection              As String = "section"
+
+'Percentage for bivariate analysis
+Public Const C_sAnaRow                  As String = "row"
+Public Const C_sAnaCol                  As String = "column"
+Public Const C_sAnaTot                  As String = "total"
+Public Const C_sAnaAll                  As String = "all"
 
 'FORMS ================================================================================================================================================================================================
 
@@ -258,4 +273,12 @@ Public Enum C_StartLines
     C_eStartColumnAnalysis = 2
 
 End Enum
+
+
+Sub SetUserDefineConstants()
+
+    sParamSheetAnalysis = TranslateLLMsg("LLSHEET_Analysis")
+    If sParamSheetAnalysis = vbNullString Then sParamSheetAnalysis = "Analysis"
+
+End Sub
 

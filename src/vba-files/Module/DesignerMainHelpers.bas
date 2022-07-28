@@ -195,10 +195,10 @@ End Sub
 
         Dim Lo As ListObject
 
-        If Not SheetExistsInWkb(SrcWkb, C_sSheetAnalysis) Then Exit Function
+        If Not SheetExistsInWkb(SrcWkb, C_sParamSheetAnalysis) Then Exit Function
 
-        Set SetupWksh = SrcWkb.Worksheets(C_sSheetAnalysis)
-        Set DesWksh = DesignerWorkbook.Worksheets(C_sSheetAnalysis)
+        Set SetupWksh = SrcWkb.Worksheets(C_sParamSheetAnalysis)
+        Set DesWksh = DesignerWorkbook.Worksheets(C_sParamSheetAnalysis)
 
         DesWksh.Cells.Clear
 
@@ -270,7 +270,7 @@ Sub TrimRng(Rng As Range)
     Dim c As Range
     If Not Rng is Nothing
         For Each c In Rng
-            c.value = Application.WorksheetFunction.Trim(c.value)
+            c.value = ClearNonPrintableUnicode(c.value)
         Next
     Next
 End Sub
