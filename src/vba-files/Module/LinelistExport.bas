@@ -93,7 +93,8 @@ End Function
 
 Private Function AddExportLLSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String, _
                           DictExportData As BetterArray, i As Long, iSheetNameIndex As Integer, _
-                          iVarnameIndex As Integer, Optional ThereIsFilter As Boolean = False) As Long
+                          iVarnameIndex As Integer, Optional sHeaderType As String = "variables names", _
+                          Optional ThereIsFilter As Boolean = False) As Long
 
     Dim k As Long
     Dim iLastRow As Long
@@ -102,6 +103,8 @@ Private Function AddExportLLSheet(Wkb As Workbook, sSheetName As String, sPrevSh
     Dim sFilt As String
     Dim src As Range
     Dim dest As Range
+    Dim sHeader As String
+    Dim iListColIndex As Long
 
     'Add the new worksheet
     Wkb.Worksheets.Add(after:=Wkb.Worksheets(sPrevSheetName)).Name = sSheetName
@@ -118,26 +121,35 @@ Private Function AddExportLLSheet(Wkb As Workbook, sSheetName As String, sPrevSh
 
         With ThisWorkbook.Worksheets(sFilt & sSheetName)
             Set src = .ListObjects(SheetListObjectName(sFilt & sSheetName)).ListColumns(sVarName).Range
+            iListColIndex = src.Column
         End With
+
+        If sHeaderType = C_sExportHeaderTypeVarLab Then
+            sHeader = ThisWorkbook.Worksheets(sSheetName).Cells(C_eStartLinesLLData, iListColIndex).value
+        End If
 
         iLastRow = src.Rows.Count
 
         With Wkb.Worksheets(sSheetName)
             Set dest = .Range(.Cells(1, k - i + 1), .Cells(iLastRow, k - i + 1))
+            dest.value = src.value
+            'Add variable label if required
+            If sHeader <> vbNullString Then .Cells(1, k - i + 1).value = sHeader
         End With
 
-        dest.value = src.value
 
         k = k + 1
         If k > DictExportData.Length Then Exit Do
     Loop
 
     AddExportLLSheet = k - 1
+
 End Function
 
 Private Function AddExportAdmSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String, _
                            DictExportData As BetterArray, i As Long, iSheetNameIndex As Integer, _
-                           iVarnameIndex As Integer) As Long
+                           iVarnameIndex As Integer, _
+                           Optional sHeaderType As String = "variables names") As Long
 
     Dim k As Long
     Dim sVarName As String
@@ -153,8 +165,25 @@ Private Function AddExportAdmSheet(Wkb As Workbook, sSheetName As String, sPrevS
 
         sVarName = DictExportData.Items(k, iVarnameIndex)
         With Wkb.Worksheets(sSheetName)
+
+            'Add variable names or variable labels depending on what is required by the export
+            Select Case sHeaderType
+
+                Case C_sExportHeaderTypeVarName
+
+                .Cells(k - i + 2, 1).value = sVarName
+
+                Case C_sExportHeaderTypeVarLab
+
+                .Cells(k - i + 2, 1).value = srcWksh.Range(sVarName).Offset(, -1).value
+
+                Case Else
+
+                .Cells(k - i + 2, 1).value = sVarName
+
+            End Select
+
             .Cells(k - i + 2, 2).value = srcWksh.Range(sVarName).value
-            .Cells(k - i + 2, 1).value = sVarName
         End With
 
         k = k + 1
@@ -192,6 +221,7 @@ Sub Export(iTypeExport As Byte)
     Dim sPath As String
     Dim sFirstSheetName As String
     Dim sExt As String                          'file extension of the export
+    Dim sExportHeaderType   As String           'Headers to keep in the export
 
     Set DictExportData = New BetterArray
     Set ExportData = New BetterArray
@@ -203,6 +233,7 @@ Sub Export(iTypeExport As Byte)
 
     'Get Export Path
     sPath = ExportPath(iTypeExport, ExportHeader.IndexOf(C_sExportHeaderFileName))
+    sExportHeaderType = ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, ExportHeader.IndexOf(C_sExportHeaderHeaderType))
 
     'Creating the data for the exports
     On Error GoTo exportErrHandData
@@ -305,12 +336,12 @@ Sub Export(iTypeExport As Byte)
 
             Case C_sDictSheetTypeLL
 
-                istep = AddExportLLSheet(Wkb, sSheetName, sPrevSheetName, DictExportData, i, iSheetNameIndex, iVarnameIndex, ThereIsFilter:=ThereIsFilter)
+                istep = AddExportLLSheet(Wkb, sSheetName, sPrevSheetName, DictExportData, i, iSheetNameIndex, iVarnameIndex, sExportHeaderType, ThereIsFilter:=ThereIsFilter)
 
                 'You were thingking about using a function to speed the steps
             Case C_sDictSheetTypeAdm
 
-                istep = AddExportAdmSheet(Wkb, sSheetName, sPrevSheetName, DictExportData, i, iSheetNameIndex, iVarnameIndex)
+                istep = AddExportAdmSheet(Wkb, sSheetName, sPrevSheetName, DictExportData, i, iSheetNameIndex, iVarnameIndex, sExportHeaderType)
 
             End Select
 

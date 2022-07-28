@@ -420,13 +420,13 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
         .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(Wkb, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "4" & "_" & sVarName
-        .Cells(iStartLine + 1, iCol + 1).Interior.Color = vbWhite
-        .Cells(iStartLine + 1, iCol + 1).Font.Color = vbWhite
+
         'Add the type
         .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).value = C_sDictControlGeo & "4"
         'Put in bold
         .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
         .Cells(iStartLine + 2, iCol + 1).Locked = False
+        
         Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol + 1), "=" & C_sAdmName & "_4_" & "dropdown", 2, sMessage)
 
         'Admin 3
@@ -434,15 +434,13 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
         .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(Wkb, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "3" & "_" & sVarName
-        .Cells(iStartLine + 1, iCol + 1).Interior.Color = vbWhite
-        .Cells(iStartLine + 1, iCol + 1).Font.Color = vbWhite
         .Cells(iStartLine + 1, iCol + 1).value = C_sAdmName & "3" & "_" & sVarName
+        
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
 
-        .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
+
         .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).value = C_sDictControlGeo & "3"
         .Cells(iStartLine + 2, iCol + 1).Locked = False
-
         'Set validation for admin 3
          Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol + 1), "=" & C_sAdmName & "_3_" & "dropdown", 2, sMessage)
 
@@ -452,8 +450,6 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
         .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(Wkb, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "2" & "_" & sVarName
-        .Cells(iStartLine + 1, iCol + 1).Interior.Color = vbWhite
-        .Cells(iStartLine + 1, iCol + 1).Font.Color = vbWhite
         .Cells(iStartLine + 1, iCol + 1).value = C_sAdmName & "2" & "_" & sVarName
 
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
@@ -470,11 +466,9 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Cells(iStartLine, iCol).Name = C_sAdmName & "1" & "_" & sVarName
         .Cells(iStartLine, iCol).Interior.Color = GetColor("Orange")
         .Cells(iStartLine + 1, iCol).value = C_sAdmName & "1" & "_" & sVarName
-        .Cells(iStartLine + 1, iCol).Interior.Color = vbWhite
-        .Cells(iStartLine + 1, iCol).Font.Color = vbWhite
+
 
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol), .Cells(iStartLine + 1, iCol)))
-        .Range(.Cells(iStartLine, iCol), .Cells(iStartLine + 1, iCol)).Font.Bold = True
         .Cells(iStartLine + 2, iCol).Locked = False
 
         'ajout des formules de validation
@@ -741,7 +735,7 @@ Public Function ValidationFormula(sFormula As String, AllSheetNamesData As Bette
     'space collapsing and upper/lower cases
 
 
-    sFormulaATest = "(" & Application.WorksheetFunction.Trim(sFormula) & ")"
+    sFormulaATest = "(" & ClearNonPrintableUnicode(sFormula) & ")"
 
     iNbParentO = 0                               'Number of open brakets
     iNbParentF = 0                               'Number of closed brackets

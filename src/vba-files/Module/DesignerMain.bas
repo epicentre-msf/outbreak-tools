@@ -226,7 +226,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Move the Export data
     Call Helpers.MoveData(SetupWkb, DesWkb, C_sParamSheetExport, C_eStartLinesExportTitle)
 
-    DesignerMainHelpers.MoveAnalysis SetupWkb
+    Call DesignerMainHelpers.MoveAnalysis(SetupWkb)
 
     SetupWkb.Close SaveChanges:=False
     Set SetupWkb = Nothing
@@ -270,16 +270,16 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Global summary data for analysis
     Set GSData = New BetterArray
     GSData.LowerBound = 1
-    GSData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabGS).Range
+    GSData.FromExcelRange DesWkb.Worksheets(C_sParamSheetAnalysis).ListObjects(C_sTabGS).Range
 
     'Bivariate and Univariate Analysis data for Analysis
     Set UAData = New BetterArray
     UAData.LowerBound = 1
-    UAData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabUA).Range
+    UAData.FromExcelRange DesWkb.Worksheets(C_sParamSheetAnalysis).ListObjects(C_sTabUA).Range
 
     Set BAData = New BetterArray
     BAData.LowerBound = 1
-    BAData.FromExcelRange DesWkb.Worksheets(C_sSheetAnalysis).ListObjects(C_sTabBA).Range
+    BAData.FromExcelRange DesWkb.Worksheets(C_sParamSheetAnalysis).ListObjects(C_sTabBA).Range
 
 
     DoEvents
@@ -292,6 +292,8 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
 
     Call PrepareTemporaryFolder
+    Call SetUserDefineConstants
+
     Call BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, GSData, UAData, BAData, sPath)
 
     DoEvents
