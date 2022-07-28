@@ -457,8 +457,18 @@ Option Explicit
             sValue = Replace(sValue, "_", " ")
             sValue = Replace(sValue, "/", " ")
         End If
+
         sValue = Application.WorksheetFunction.Trim(sValue)
         ClearString = LCase(sValue)
+    End Function
+
+    'Clear Unicode Characters and non printable characters in a String
+
+    Public Function ClearNonPrintableUnicode(Byval sString As String) As String
+        Dim sValue As String
+        sValue = Application.WorksheetFunction.SUBSTITUTE(sString, Char(160), " ")
+        sValue = Application.WorksheetFunction.CLEAN(sValue)
+        ClearNonPrintableUnicode = Application.WorksheetFunction.TRIM(sValue)
     End Function
 
     'Get the headers of one sheet from one line (probablly the first line)
