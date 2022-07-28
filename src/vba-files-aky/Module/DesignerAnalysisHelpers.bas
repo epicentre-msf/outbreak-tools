@@ -612,7 +612,7 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
     'squish the formula (removing multiple spaces) to avoid problems related to
     'space collapsing and upper/lower cases
 
-    sFormulaATest = "(" & Application.WorksheetFunction.Trim(sFormula) & ")"
+    sFormulaATest = "(" & ClearNonPrintableUnicode(sFormula) & ")"
 
 
     'Initialisations:
