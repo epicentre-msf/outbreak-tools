@@ -735,7 +735,7 @@ Public Function ValidationFormula(sFormula As String, AllSheetNamesData As Bette
     'space collapsing and upper/lower cases
 
 
-    sFormulaATest = "(" & Application.WorksheetFunction.Trim(sFormula) & ")"
+    sFormulaATest = "(" & ClearNonPrintableUnicode(sFormula) & ")"
 
     iNbParentO = 0                               'Number of open brakets
     iNbParentF = 0                               'Number of closed brackets
