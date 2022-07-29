@@ -51,7 +51,13 @@ Sub ClicCmdAddRows()
         iLastRow = FindLastRow(ActiveSheet) + C_iNbLinesLLData
     End If
 
-    iLastCol = Cells(C_eStartLinesLLData + 1, 1).End(xlToRight).Column
+    iLastCol = 1
+
+    Do While ActiveSheet.Cells(C_eStartLinesLLData + 1, iLastCol).value <> vbNullString
+        iLastCol = iLastCol + 1
+    Loop
+
+    iLastCol = iLastCol - 1
 
     Set LoRng = Range(Cells(C_eStartLinesLLData + 1, 1), Cells(iLastRow, iLastCol))
     oLstobj.Resize LoRng
@@ -487,7 +493,7 @@ Public Sub UpdateFilterTables()
     Dim i As Long
     Dim sActSh As String
 
-
+    On Error GoTo ErrUpdate
     BeginWork xlsapp:=Application
 
     sActSh = ActiveSheet.Name
@@ -513,7 +519,7 @@ Public Sub UpdateFilterTables()
                 .Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
                 'Clean the filtered table list object
-                ThisWorkbook.Worksheets(C_sFiltered & .Name).ListObjects(1).DataBodyRange.Delete
+                DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sFiltered & .Name).ListObjects(1)
 
                 'Find Hidden Columns in a worksheets
                 i = 1
@@ -537,6 +543,10 @@ Public Sub UpdateFilterTables()
                     Next
                 End If
 
+                'Set Column Width of First and Second Column
+                .Columns(1).ColumnWidth = C_iLLFirstColumnsWidth
+                .Columns(2).ColumnWidth = C_iLLFirstColumnsWidth
+
                 'Reprotect back the worksheet
                 ProtectSheet .Name
             End With
@@ -550,6 +560,12 @@ Public Sub UpdateFilterTables()
     ThisWorkbook.Worksheets(sActSh).Activate
     On Error GoTo 0
 
+
+    EndWork xlsapp:=Application
+    Exit Sub
+
+ErrUpdate:
+    MsgBox TranslateLLMsg("MSG_ErrUpdate"), vbCritical + vbOKOnly
     EndWork xlsapp:=Application
 End Sub
 
