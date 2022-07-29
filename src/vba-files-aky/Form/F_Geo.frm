@@ -127,6 +127,8 @@ Private Sub CMD_Copier_Click()
     Dim geosheet As String
     Dim Rng As Range
 
+     On Error GoTo ErrGeo
+
     ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
     Select Case iGeoType
@@ -152,7 +154,7 @@ Private Sub CMD_Copier_Click()
                 T_HistoGeo.Sort
                 T_HistoGeo.ToExcelRange Destination:=ThisWorkbook.Worksheets(C_sSheetGeo).Range(Cells(2, .Range.Column).Address)
                 'resize the list object
-                .Resize .Range.CurrentRegion
+                .Resize Range(Cells(1, .Range.Column), Cells(.Range.Rows.Count, .Range.Column))
                 .DataBodyRange.RemoveDuplicates Columns:=1, Header:=xlYes
             End If
         End With
@@ -187,7 +189,7 @@ Private Sub CMD_Copier_Click()
                 T_HistoHF.Sort
                 T_HistoHF.ToExcelRange Destination:=ThisWorkbook.Worksheets(C_sSheetGeo).Range(Cells(2, .Range.Column).Address)
                 'resize the list object
-                .Resize .Range.CurrentRegion
+                .Resize Range(Cells(1, .Range.Column), Cells(.Range.Rows.Count, .Range.Column))
                 .DataBodyRange.RemoveDuplicates Columns:=1, Header:=xlYes
             End If
         End With
@@ -199,6 +201,12 @@ Private Sub CMD_Copier_Click()
     [F_Geo].Hide
     'Protecting the worksheet
     Call ProtectSheet
+    Exit Sub
+
+ErrGeo:
+    MsgBox TranslateLLMsg("MSG_ErrWriteGeo"), vbCritical + vbOKOnly
+    Call ProtectSheet
+
 End Sub
 
 Private Sub CMD_GeoClearHisto_Click()
