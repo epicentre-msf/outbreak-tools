@@ -244,13 +244,13 @@ Sub AddInnerFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As String
     If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Then iInnerEndRow = iEndRow - 2
 
     iInnerEndCol = iEndCol - 1
-    
+
     'There is missing at the end column
     If sMiss = C_sAnaCol Or sMiss = C_sAnaAll Then iInnerEndCol = iInnerEndCol - 1
-    
+
     'Step for columns
     istep = 1
-    
+
     If sPercent <> C_sNo Then  'There is precentage.
         iInnerEndCol = iInnerEndCol - 1
         istep = 2
@@ -262,11 +262,11 @@ Sub AddInnerFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As String
     With Wksh
         'Add Now the formulas
         Do While (i <= iInnerEndRow)
-        
+
             j = iStartCol + 1
-            
+
             Do While (j <= iInnerEndCol)
-                
+
                 sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, _
                                             sVarRow:=sVarRow, sVarColumn:=sVarColumn, _
                                             sConditionRow:=.Cells(i, iStartCol).Address, _
@@ -274,21 +274,45 @@ Sub AddInnerFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As String
                                             isFiltered:=True)
 
                 On Error Resume Next
-                
+
                 If sFormula <> vbNullString Then
                     .Cells(i, j).FormulaArray = sFormula
                 End If
-                
-                
+
+                'adding the percentage columns
+
+                If sPercent <> C_sNo
+                    Select Case sPercent
+
+                    Case C_sAnaAll
+                        'Percentage on all
+                        sFormula = .Cells(i, j).Address / .Cells(iEndRow, iEndCol).Address
+                    Case C_sAnaCol
+                        'Percentage on column
+                        sFormula = .Cells(i, j).Address / .Cells(iEndRow, j).Address
+                    Case C_sAnaRow
+                        'Percentage on Row
+                        sFormula = .Cells(i, j).Address / .Cells(i, iEndCol).Address
+                    End Select
+
+                    'Add the percentage format now
+                    With .Cells(i, j + 1)
+                        .Style = "Percent"
+                        .NumberFormat = "0.00%"
+                        .Formula = sFormula
+                    End With
+
+                End If
+
                 On Error GoTo 0
-                
+
                  j = j + istep
             Loop
-            
+
             i = i + 1
-            
+
         Loop
-                
+
     End With
 End Sub
 
@@ -606,7 +630,7 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
     VarNameData.LowerBound = 1
     SpecCharData.LowerBound = 1
     DictHeaders.LowerBound = 1
-    
+
     If sFormula = vbNullString Then Exit Function
 
     'squish the formula (removing multiple spaces) to avoid problems related to
