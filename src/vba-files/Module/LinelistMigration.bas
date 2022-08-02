@@ -1290,8 +1290,8 @@ Sub ExportForMigration()
             If sDirectory <> "" Then
                     sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name, False), ".xlsb", "") & _
                     "_export_data_" & Format(Now, "yyyymmdd-HhNn")
-                    sGeoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd")
-                    sGeoHistoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & "_historic"
+                    sGeoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & ".xlsx"
+                    sGeoHistoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & "_historic" & ".xlsx"
             End If
             i = i + 1
         Wend
