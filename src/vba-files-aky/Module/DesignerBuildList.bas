@@ -1027,8 +1027,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         Call DesignerBuildListHelpers.BuildGotoArea(Wkb, sTableName, sSheetName, iGoToCol)
 
         'Put the range of variable labels in bold and grey colors
-        Set Rng =  .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol - 1))
-        FormatARange Rng, sFontColor := "Grey50", sInteriorColor := "Grey50"
+        Set Rng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol - 1))
+        FormatARange Rng, sFontColor:="Grey50", sInteriorColor:="Grey50"
         Rng.Locked = True
         Rng.FormulaHidden = True
 

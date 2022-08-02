@@ -472,13 +472,23 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                                 sSummaryLabel:=sActualSummaryLabel, _
                                 sPercent:=sActualPercentage, sMiss:=sActualMissing
 
-                iEndCol = .Cells(iSectionRow + 4, .Columns.Count).End(xlToLeft).Column
+                iEndCol = .Cells(iSectionRow + 5, .Columns.Count).End(xlToLeft).Column
                 iEndRow = .Cells(.Rows.Count, C_eStartColumnAnalysis).End(xlUp).Row
 
+                'Add Formulas in the interior of the table
                 AddInnerFormula Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sActualSummaryFunction, _
                                 iStartRow:=iSectionRow + 4, iStartCol:=C_eStartColumnAnalysis, iEndRow:=iEndRow, _
                                 iEndCol:=iEndCol, sVarRow:=sActualGroupByRow, sVarColumn:=sActualGroupByColumn, _
                                 sMiss:=sActualMissing, sPercent:=sActualPercentage
+
+                'Add Formulas at the borders of the table
+                AddBordersFormula Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sActualSummaryFunction, _
+                                 iStartRow:=iSectionRow + 4, iStartCol:=C_eStartColumnAnalysis, iEndRow:=iEndRow, _
+                                 iEndCol:=iEndCol, sVarRow:=sActualGroupByRow, sVarColumn:=sActualGroupByColumn, _
+                                 sMiss:=sActualMissing, sPercent:=sActualPercentage
+
+
+
 
 
                 'Add NA / Missing if required -----------------------------------------------------

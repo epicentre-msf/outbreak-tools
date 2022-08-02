@@ -1277,7 +1277,7 @@ Sub ExportForMigration()
         If ExportPath.Length > 0 Then sPath = ExportPath.ToString(Separator:="_", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
 
         'write something generic if we can't find the correct name: the generic name is unkown export geobase
-        If sPath = VbNullString Then sPath = "OUTBREAK-TOOLS-GEOBASE-UNKNOWN"
+        If sPath = vbNullString Then sPath = "OUTBREAK-TOOLS-GEOBASE-UNKNOWN"
 
         sPath = sPath & "_"
         sGeoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd")
@@ -1290,8 +1290,8 @@ Sub ExportForMigration()
             If sDirectory <> "" Then
                     sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name, False), ".xlsb", "") & _
                     "_export_data_" & Format(Now, "yyyymmdd-HhNn")
-                    sGeoPath = sDirectory & Application.PathSeparator & sPath  & Format(Now, "yyyymmdd")
-                    sGeoHistoPath = sDirectory & Application.PathSeparator & sPath  & Format(Now, "yyyymmdd") & "_historic"
+                    sGeoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd")
+                    sGeoHistoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & "_historic"
             End If
             i = i + 1
         Wend
