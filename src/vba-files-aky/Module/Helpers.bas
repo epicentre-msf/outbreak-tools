@@ -434,7 +434,7 @@ Option Explicit
         Case "LightGrey"
             GetColor = RGB(218, 218, 218)
         Case "Grey50"
-            GetColor = RGB(127, 127,  127)
+            GetColor = RGB(127, 127, 127)
         Case Else
             GetColor = vbWhite
         End Select
@@ -464,11 +464,11 @@ Option Explicit
 
     'Clear Unicode Characters and non printable characters in a String
 
-    Public Function ClearNonPrintableUnicode(Byval sString As String) As String
+    Public Function ClearNonPrintableUnicode(ByVal sString As String) As String
         Dim sValue As String
         sValue = Application.WorksheetFunction.SUBSTITUTE(sString, Chr(160), " ")
         sValue = Application.WorksheetFunction.CLEAN(sValue)
-        ClearNonPrintableUnicode = Application.WorksheetFunction.TRIM(sValue)
+        ClearNonPrintableUnicode = Application.WorksheetFunction.Trim(sValue)
     End Function
 
     'Get the headers of one sheet from one line (probablly the first line)
