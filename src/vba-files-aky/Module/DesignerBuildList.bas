@@ -372,12 +372,12 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
         Call DesignerBuildListHelpers.AddAdminSheet(Wkb)
 
         'Add Analysis
-        .Worksheets.Add(after:=.Worksheets(C_sSheetAdmin)).Name = C_sSheetAnalysis
-        Call RemoveGridLines(.Worksheets(C_sSheetAnalysis), DisplayZeros:=True)
+        .Worksheets.Add(after:=.Worksheets(sParamSheetAdmin)).Name = sParamSheetAnalysis
+        Call RemoveGridLines(.Worksheets(sParamSheetAnalysis), DisplayZeros:=True)
 
         '--------------- adding the other the other sheets in the dictionary to the linelist
         i = 1
-        sPrevSheetName = C_sSheetAdmin
+        sPrevSheetName = sParamSheetAdmin
         j = 0
         'Setting the lower bound before entering the loop
         LLNbColData.LowerBound = 1
@@ -475,13 +475,13 @@ End Sub
     'Add the logo for the first time
     If Not AddedLogo Then
         'Add the Logo
-        With Wkb.Worksheets(C_sSheetAdmin)
+        With Wkb.Worksheets(sParamSheetAdmin)
 
             On Error Resume Next
             'Logo (copy from the sheet main, copy can fail, you just continue)
             Application.CutCopyMode = False
             SheetMain.Shapes("SHP_Logo").Copy
-            .Paste Destination:=Wkb.Worksheets(C_sSheetAdmin).Cells(2, 2)
+            .Paste Destination:=Wkb.Worksheets(sParamSheetAdmin).Cells(2, 2)
             Application.CutCopyMode = True
             On Error GoTo 0
 
@@ -1000,12 +1000,6 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
             'After input every headers, auto fit the columns and unlock data entry part
             .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).value = sActualVarName
-            '.Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Locked = True
-            '.Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).FormulaHidden = True
-
-            'Hide rows for Control (The row of control type is just before Main Section)
-            '.Rows(C_eStartLinesLLMainSec - 1).EntireRow.Hidden = True
-            '.Rows(C_eStartLinesLLMainSec - 2).EntireRow.Hidden = True 'hide the list_auto row
 
             'List Auto is updated at the end of the buildList process
 

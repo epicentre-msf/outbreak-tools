@@ -11,14 +11,14 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
 
     'Add commands Buttons  for filters
 
-     With Wkb.Worksheets(C_sSheetAnalysis)
+     With Wkb.Worksheets(sParamSheetAnalysis)
         .Cells.Font.Size = C_iAnalysisFontSize
 
         .Rows("1:2").RowHeight = C_iLLButtonsRowHeight
         .Columns(1).ColumnWidth = C_iLLFirstColumnsWidth + 20
 
          'Add command for filtering
-        Call AddCmd(Wkb, C_sSheetAnalysis, _
+        Call AddCmd(Wkb, sParamSheetAnalysis, _
                 .Cells(1, 1).Left, _
                 .Cells(1, 1).Top, _
                 C_sShpFilter, _
@@ -45,21 +45,20 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
 
 
     'Build GoTo Area
-    BuildGotoArea Wkb:=Wkb, sTableName:=LCase(C_sSheetAnalysis), sSheetName:=C_sSheetAnalysis, iGoToCol:=iGoToCol, iCol:=2
-
+    BuildGotoArea Wkb:=Wkb, sTableName:=LCase(C_sSheetAnalysis), sSheetName:=sParamSheetAnalysis, iGoToCol:=iGoToCol, iCol:=2
 
     'Allow text wrap only at the end
-    Wkb.Worksheets(C_sSheetAnalysis).Cells.WrapText = True
-    Wkb.Worksheets(C_sSheetAnalysis).Cells.EntireRow.AutoFit
-    Wkb.Worksheets(C_sSheetAnalysis).Cells.EntireColumn.ColumnWidth = C_iLLFirstColumnsWidth
+    Wkb.Worksheets(sParamSheetAnalysis).Cells.WrapText = True
+    Wkb.Worksheets(sParamSheetAnalysis).Cells.EntireRow.AutoFit
+    Wkb.Worksheets(sParamSheetAnalysis).Cells.EntireColumn.ColumnWidth = C_iLLFirstColumnsWidth
 
-    TransferCodeWks Wkb, C_sSheetAnalysis, C_sModLLAnaChange
+    TransferCodeWks Wkb, sParamSheetAnalysis, C_sModLLAnaChange
 
 End Sub
 
 
 
-'Helpers Subs and Functions ===========================================================================================================================================================================
+'Helpers Subs and Functions ============================================================================================================================================================================
 
 
 Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As Long)
@@ -73,7 +72,7 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
     iSumLength = GSData.Length
 
 
-    With Wkb.Worksheets(C_sSheetAnalysis)
+    With Wkb.Worksheets(sParamSheetAnalysis)
 
         With .Cells(C_eStartLinesAnalysis - 2, C_eStartColumnAnalysis)
             .value = TranslateLLMsg("MSG_GlobalSummary")
@@ -203,7 +202,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
     Dim Wksh As Worksheet
 
     Set ValidationList = New BetterArray
-    Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
+    Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
 
     iCounter = 2
 
@@ -246,7 +245,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
                     iSectionRow = iSectionRow + 3
 
                     'Create a new section
-                                    CreateNewSection Wkb.Worksheets(C_sSheetAnalysis), iSectionRow, _
+                                    CreateNewSection Wkb.Worksheets(sParamSheetAnalysis), iSectionRow, _
                                     C_eStartColumnAnalysis, sActualSection
 
                     sPreviousSection = sActualSection
@@ -392,7 +391,7 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
     Set ValidationListRows = New BetterArray
     Set ValidationListColumns = New BetterArray
 
-    Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
+    Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
 
     iCounter = 2
 
@@ -443,7 +442,7 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                     iSectionRow = iSectionRow + 3
 
                     'Create a new section
-                                    CreateNewSection Wkb.Worksheets(C_sSheetAnalysis), iSectionRow, _
+                                    CreateNewSection Wkb.Worksheets(sParamSheetAnalysis), iSectionRow, _
                                     C_eStartColumnAnalysis, sActualSection
 
                     sPreviousSection = sActualSection
