@@ -457,7 +457,7 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                     End With
                 End If
 
-                ' Set up Header of the tables  -------------------------------------------
+                ' Set up Header of the tables  -------------------------------------------------------------------------
 
                 ' Then EndColumn iEndCol is a ByRef, to update the ends column
 
@@ -486,76 +486,11 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                                  iStartRow:=iSectionRow + 4, iStartCol:=C_eStartColumnAnalysis, iEndRow:=iEndRow, _
                                  iEndCol:=iEndCol, sVarRow:=sActualGroupByRow, sVarColumn:=sActualGroupByColumn, _
                                  sMiss:=sActualMissing, sPercent:=sActualPercentage
-
-
-
-
-
-                'Add NA / Missing if required -----------------------------------------------------
-
-                ' If sActualMissing = C_sYes Then
-
-                '     AddBANA Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
-                '     sVar:=sActualGroupBy, iRow:=iEndRow, _
-                '     iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol
-
-                '     iEndRow = iEndRow + 1
-
-                ' End If
-'
-'                'Add Total (Every time) ------------------------------------------------------------------------------------
-'
-'                            AddUATotal Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
-'                                    sVar:=sActualGroupBy, iRow:=iEndRow, iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol, _
-'                                    sPercent:=sActualPercentage, sMiss:=sActualMissing
-'
-'
-'                'Now Work on each category ---------------------------------------------------------------------------------
-'
-'
-'                For i = 0 To ValidationList.Length - 1
-'
-'
-'                    'Address of the condition to use
-'                    sCondition = .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis).Address
-'
-'                    'Getting the formulas
-'                    sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sActualSummaryFunction, _
-'                                           sVar:=sActualGroupBy, sCondition:=sCondition)
-'
-'                    On Error Resume Next
-'
-'                    If sFormula <> vbNullString And Len(sFormula) < 255 Then
-'
-'                            .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis + 1).FormulaArray = sFormula
-'
-'                    End If
-'
-'                    On Error GoTo 0
-'
-'                    FormatCell Wksh:=Wksh, iStartRow:=iSectionRow + 4 + i, _
-'                               iEndRow:=iEndRow, iStartCol:=C_eStartColumnAnalysis, _
-'                               iEndCol:=iEndCol, sPercent:=sActualPercentage
-'
-'                Next
-'
-'
-'                'On the table outline ---------------------------------------------------------------------------------
-'
-'                WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
-'                                                 .Cells(iEndRow, iEndCol)), iWeight:=xlThin, sColor:=sOutlineColor
-'
-'                WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
-'                                                 .Cells(iEndRow, C_eStartColumnAnalysis)), iWeight:=xlThin, sColor:=sOutlineColor
-'
-'                WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
-'                                                 .Cells(iEndRow, C_eStartColumnAnalysis + 1)), iWeight:=xlThin, sColor:=sOutlineColor
-'
             End If
-'
+
                 iCounter = iCounter + 1
         Loop
-'
+
    End With
 
 End Sub
