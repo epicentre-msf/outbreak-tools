@@ -1019,21 +1019,22 @@ Public Sub AddAdminSheet(Wkb As Workbook)
     Const iCmdHeightFactor As Integer = 30
 
 
-    Wkb.Worksheets(1).Name = C_sSheetAdmin
-    Call RemoveGridLines(Wkb.Worksheets(C_sSheetAdmin))
+    Wkb.Worksheets(1).Name = sParamSheetAdmin
+    Call RemoveGridLines(Wkb.Worksheets(sParamSheetAdmin))
 
     'ADD BUTTONS
 
-    With Wkb.Worksheets(C_sSheetAdmin)
+    With Wkb.Worksheets(sParamSheetAdmin)
+
         'Import migration buttons
-          Call AddCmd(Wkb, C_sSheetAdmin, _
+          Call AddCmd(Wkb, sParamSheetAdmin, _
             .Cells(2, 12).Left, .Cells(2, 1).Top, C_sShpAdvanced, _
             "Import for Migration", _
             C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
             C_sCmdImportMigration, iTextFontSize:=12)
 
         'Export Button
-        Call AddCmd(Wkb, C_sSheetAdmin, _
+        Call AddCmd(Wkb, sParamSheetAdmin, _
            .Cells(2, 12).Left + C_iCmdWidth + iCmdWidthFactor + 15, _
             .Cells(2, 1).Top, C_sShpExport, _
             "Export", _

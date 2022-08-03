@@ -604,7 +604,9 @@ Sub EventValueChangeAnalysis(Target As Range)
     Dim sLabel As String
 
     On Error GoTo Err
-    Set Rng = ThisWorkbook.Worksheets(C_sSheetAnalysis).Range(LCase(C_sSheetAnalysis) & "_" & C_sGotoSection)
+    Call SetUserDefineConstants
+
+    Set Rng = ThisWorkbook.Worksheets(sParamSheetAnalysis).Range(LCase(C_sSheetAnalysis) & "_" & C_sGotoSection)
 
     If Not Intersect(Target, Rng) Is Nothing Then
         sLabel = Replace(Target.value, TranslateLLMsg("MSG_SelectSection") & ": ", "")
@@ -619,6 +621,6 @@ Sub EventValueChangeAnalysis(Target As Range)
 
     Set Rng = Nothing
     Set RngLook = Nothing
-
+    Exit Sub
 Err:
 End Sub

@@ -218,7 +218,7 @@ Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
 
         'Drawlines arround all the table
         WriteBorderLines oRange:=Range(.Cells(iRow + 1, iCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor, iWeight:=xlThin
-        
+
         'Put every values to right
         Range(.Cells(iRow + 3, iCol + 1), .Cells(iEndRow + 1, iTotalLastCol)).HorizontalAlignment = xlHAlignCenter
 
@@ -240,7 +240,7 @@ Sub AddInnerFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As String
     Dim istep As Long
     Dim sFormula As String
 
-    Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
+    Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
 
     iInnerEndRow = iEndRow - 1
     'There is a missing line
@@ -339,13 +339,13 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
     istep = 1
     iTotalColumn = iEndCol
-    
+
     If sPercent <> C_sNo Then
         istep = 2
         iTotalColumn = iEndCol - 1
     End If
 
-    Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
+    Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
 
     With Wksh
 
@@ -399,7 +399,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
                                             sVarColumn:=sVarColumn, sConditionColumn:=.Cells(iStartRow, i).Address)
 
                 If sFormula <> vbNullString Then .Cells(iEndRow - 1, i).Formula = sFormula
-                
+
                 If sPercent <> C_sNo Then
                     ' Add percentage for the missing
                     With .Cells(iEndRow - 1, i + 1)
@@ -408,7 +408,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
                         If sFormula2 <> vbNullString Then .Formula = sFormula2
                     End With
                 End If
-                
+
             End If
 
             i = i + istep
@@ -461,7 +461,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
                         'Add the percentage on missing if there is one
                         With .Cells(i, iEndCol - 2)
-                        
+
                             .Style = "Percent"
                             .NumberFormat = "0.00%"
                             If sFormula2 <> vbNullString Then .Formula = sFormula2
@@ -478,7 +478,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
                     If includeMissing Then
 
                         sFormula = vbNullString
-                        
+
                         sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
                                                     OnTotal:=False, sConditionRow:=.Cells(i, iStartCol).Address, _
                                                     sVarColumn:=sVarColumn, sConditionColumn:=Chr(34) & Chr(34), isFiltered:=True)
@@ -489,27 +489,27 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
             i = i + 1
         Loop
-        
+
         'The EndRow, total Row formula (the right corner) -----------------------------------------------------------------------------------------
-        
+
         sFormula = vbNullString
-        
+
         Select Case ClearNonPrintableUnicode(sForm)
-        
+
         Case "COUNT", "COUNT()", "N", "N()"
-        
+
             sFormula = "= " & "SUM(" & .Cells(iStartRow + 2, iTotalColumn).Address & ":" & .Cells(iEndRow - 1, iTotalColumn).Address & ")"
-        
+
         Case Else
-            
+
             sFormula = AnalysisFormula(Wkb:=Wkb, sFormula:=sForm, sVariate:="none", isFiltered:=True)
-        
+
         End Select
-        
+
         If sFormula <> vbNullString Then .Cells(iEndRow, iTotalColumn).FormulaArray = sFormula
-        
+
     End With
-    
+
 End Sub
 
 
@@ -526,7 +526,7 @@ Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
         Dim sFormula As String
         Dim sCond As String
 
-        Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
+        Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
 
         'Condition for missing is ""
         sCond = Chr(34) & Chr(34)
@@ -538,7 +538,7 @@ Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
             FormatARange .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), sFontColor:=sFontColor, _
                     sInteriorColor:=sInteriorColor, FontSize:=C_iAnalysisFontSize - 1, isBold:=True, _
                     NumFormat:=sNumberFormat, Horiz:=xlHAlignRight
-                    
+
             .Cells(iRow, iStartCol).HorizontalAlignment = xlHAlignLeft
 
             On Error Resume Next
@@ -565,7 +565,7 @@ Sub AddUATotal(Wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, 
         Dim sCond As String
         Dim includeMissing As Boolean
 
-        Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
+        Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
         sCond = Chr(34) & Chr(34)
         includeMissing = (sMiss = C_sYes)
 
@@ -577,7 +577,7 @@ Sub AddUATotal(Wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, 
 
             FormatARange Rng:=.Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), isBold:=True, sInteriorColor:=sInteriorColor, _
                         FontSize:=C_iAnalysisFontSize + 1, Horiz:=xlHAlignRight
-                        
+
             .Cells(iRow, iStartCol).HorizontalAlignment = xlHAlignLeft
 
             'Add percentage if required

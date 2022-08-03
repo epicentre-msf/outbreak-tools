@@ -12,7 +12,9 @@ Public Const C_sSheetMetadata           As String = "Metadata"
 Public Const C_sSheetChoiceAuto         As String = "List_auto_"
 Public Const C_sSheetAnalysisTemp       As String = "Ana_temp_"                          'Temporary sheet for analysis and stuffs
 Public Const C_sSheetImportTemp         As String = "Import_temp_"
-Public Const C_sSheetAnalysis           As String = "Analysis"
+Public Const C_sSheetAnalysis           As String = "Analysis"                           'Default name of analysis sheet
+Public Const C_sSheetTemporalAnalysis   As String = "Temporal Analysis"                  'Default name of sheet for temporal analysis
+Public Const C_sSheetSpacialAnalysis   As String = "Spacial Analysis"                   'Default name of sheet for spacial analysis
 Public Const C_sSheetDebug              As String = "Debug___"
 
 'Sheets in the setup file: The all starts with Param
@@ -22,10 +24,6 @@ Public Const C_sParamSheetExport        As String = "Exports"                   
 Public Const C_sParamSheetChoices       As String = "Choices"                            'Sheet with configurations for the choices in the setup file
 Public Const C_sParamSheetTranslation   As String = "Translations"                        'Translation Sheet in the setup file
 Public Const C_sParamSheetAnalysis      As String = "Analysis"
-
-
-'Constants defined by user language
-Public sParamSheetAnalysis              As String
 
 'DICTIONARY PARAMETERS ================================================================================================================================================================================
 
@@ -198,7 +196,7 @@ Public Const C_sTabkeys = "T_Keys"
 
 'RANGES, MESSAGES AND SHAPES ==========================================================================================================================================================================
 
-'Shapes----------------------------------------------------------
+'Shapes------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Public Const C_sShpShowHide             As String = "SHP_ShowHide"
 Public Const C_sShpAddRows              As String = "SHP_Add200L"
 Public Const C_sShpGeo                  As String = "SHP_GeoApps"
@@ -252,21 +250,21 @@ Public Const C_iNbLinesLLData           As Integer = 200                        
 
 Public Enum C_StartLines
     C_eStartLinesDictHeaders = 4                                                                'Starting lines for dictionary headers
-    C_eStartLinesDictData = 3                                                                      'Starting lines for dictionary data
+    C_eStartLinesDictData = 3                                                                   'Starting lines for dictionary data
     C_eStartLinesLLMainSec = 6                                                                  'Starting lines for first title of the linelist
-    C_eStartLinesLLSubSec = 7                                                                     'Starting lines for second title of the linelist
-    C_eStartLinesLLData = 8                                                                          'Starting lines for the linelist data
+    C_eStartLinesLLSubSec = 7                                                                   'Starting lines for second title of the linelist
+    C_eStartLinesLLData = 8                                                                     'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                                                                'Starting lines for export titles
-    C_eStartLinesAdmData = 4                                                                       'Starting lines for a Adm data
-    C_eStartColumnAdmData = 2                                                                      'Starting columns for sheets of type Adm
-    C_eStartLinesExportSource = 5                                                              'Starting lines for export sources
-    C_eStartLinesChoicesHeaders = 2                                                          'Starting lines of the choices Headers
+    C_eStartLinesAdmData = 4                                                                    'Starting lines for a Adm data
+    C_eStartColumnAdmData = 2                                                                   'Starting columns for sheets of type Adm
+    C_eStartLinesExportSource = 5                                                               'Starting lines for export sources
+    C_eStartLinesChoicesHeaders = 2                                                             'Starting lines of the choices Headers
     C_eStartLinesChoicesData = 2                                                                'Starting lines of the choices Data
-    C_eStartLinesExportData = 2                                                                  'Starting lines of the export data
-    C_eStartLinesTransdata = 4                                                                    'Starting lines for the translation data
-    C_eStartcolumntransdata = 1                                                                  'Starting column for the translation data
+    C_eStartLinesExportData = 2                                                                 'Starting lines of the export data
+    C_eStartLinesTransdata = 4                                                                  'Starting lines for the translation data
+    C_eStartcolumntransdata = 1                                                                 'Starting column for the translation data
     C_eStartlinesListAuto = 1
-    C_eSectionsLookupColumns = 1                                                                 'Columns where to insert GoTo
+    C_eSectionsLookupColumns = 1                                                                'Columns where to insert GoTo
 
     'Start Lines for the analysis in the linelist
     C_eStartLinesAnalysis = 6
@@ -275,10 +273,30 @@ Public Enum C_StartLines
 End Enum
 
 
+'Constants defined by user language
+Public sParamSheetAnalysis              As String 'Sheet for analyses
+Public sParamSheetTemporalAnalysis     As String 'Sheet for temporal analysis
+Public sParamSheetSpacialAnalysis       As String 'Sheet for spacial analysis
+Public sParamSheetAdmin                 As String  'Sheet for admin
+
+'
 Sub SetUserDefineConstants()
 
+    'Setting the sheet for analysis
     sParamSheetAnalysis = TranslateLLMsg("LLSHEET_Analysis")
-    If sParamSheetAnalysis = vbNullString Then sParamSheetAnalysis = "Analysis"
+    If sParamSheetAnalysis = vbNullString Then sParamSheetAnalysis = C_sSheetAnalysis
+
+    'Setting the sheet for temporal analysis
+    sParamSheetTemporalAnalysis = TranslateLLMsg("LLSHEET_TemporalAnalysis")
+    If sParamSheetTemporalAnalysis = vbNullString Then sParamSheetTemporalAnalysis = C_sSheetTemporalAnalysis
+
+    'Setting the sheet for spacial analysis
+    sParamSheetSpacialAnalysis = TranslateLLMsg("LLSHEET_SpacialAnalysis")
+    If sParamSheetSpacialAnalysis = vbNullString Then sParamSheetSpacialAnalysis = C_sSheetSpacialAnalysis
+
+    'Setting the sheet for admin
+    sParamSheetAdmin = TranslateLLMsg("LLSHEET_Admin")
+    If sParamSheetAdmin = vbNullString Then sParamSheetAdmin = C_sSheetAdmin
 
 End Sub
 
