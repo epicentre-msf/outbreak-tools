@@ -291,8 +291,13 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Creating the linelist using the dictionnary and choices data as well as export data
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
 
+    'Prepare the temporary folder for the linelist
     Call PrepareTemporaryFolder
+
+    'Add some user define constants
     Call SetUserDefineConstants
+
+    'Add the preprocessing step for the designer
 
     Call BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, GSData, UAData, BAData, sPath)
 
