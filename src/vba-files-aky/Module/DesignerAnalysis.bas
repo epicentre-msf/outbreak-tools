@@ -3,11 +3,15 @@ Option Explicit
 
 
 Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As BetterArray, BAData As BetterArray, _
+                        TAData As BetterArray, SAData As BetterArray, _
                         ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, DictData As BetterArray, _
                         DictHeaders As BetterArray, VarNameData As BetterArray)
 
-    Dim iGoToCol As Long
-    Dim prevRef As Byte
+    Dim iGoToColAna As Long
+    Dim iGoToColTA  As Long
+    Dim iGoToColSA  As Long
+
+    ' UNIVARIATE AND BIVARIATE ANALYSIS ============================================================================================
 
     'Add commands Buttons  for filters
 
@@ -30,22 +34,21 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
 
     'Get the GoTo Column in list_auto
     With Wkb.Worksheets(C_sSheetChoiceAuto)
-        iGoToCol = .Cells(C_eStartlinesListAuto, .Columns.Count).End(xlToLeft).Column + 2
+        iGoToColAna = .Cells(C_eStartlinesListAuto, .Columns.Count).End(xlToLeft).Column + 2
     End With
 
 
     'Add global summary first column
-    AddGlobalSummary Wkb, GSData, iGoToCol
+    AddGlobalSummary Wkb, GSData, iGoToColAna
 
     'Add Univariate Analysis tables
-    AddUnivariateAnalysis Wkb, UAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, iGoToCol
+    AddUnivariateAnalysis Wkb, UAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, iGoToColAna
 
     'Add Bivariate Analysis
-     AddBivariateAnalysis Wkb, BAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, iGoToCol
+    AddBivariateAnalysis Wkb, BAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, iGoToColAna
 
-
-    'Build GoTo Area
-    BuildGotoArea Wkb:=Wkb, sTableName:=LCase(C_sSheetAnalysis), sSheetName:=sParamSheetAnalysis, iGoToCol:=iGoToCol, iCol:=2
+    'Build GoTo Area for the analysis (univariate and bivariate)
+    BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLUBA, sSheetName:=sParamSheetAnalysis, iGoToCol:=iGoToColAna, iCol:=2
 
     'Allow text wrap only at the end
     Wkb.Worksheets(sParamSheetAnalysis).Cells.WrapText = True
@@ -53,6 +56,26 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     Wkb.Worksheets(sParamSheetAnalysis).Cells.EntireColumn.ColumnWidth = C_iLLFirstColumnsWidth
 
     TransferCodeWks Wkb, sParamSheetAnalysis, C_sModLLAnaChange
+
+    'TIME SERIES ANALYSIS =============================================================================================================
+
+    'Update the GoTo Column for the time series analysis
+
+    With Wkb.Worksheets(C_sSheetChoiceAuto)
+        iGoToColTA = .Cells(C_eStartlinesListAuto, .Columns.Count).End(xlToLeft).Column + 2
+    End With
+
+    'Add Temporal Analysis
+    AddTimeSeriesAnalysis Wkb, TAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, iGoToColTA
+
+    'Build GoTo Area for the Temporal analysis
+
+     'Build GoTo Area for the analysis (univariate and bivariate)
+    BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLTA, sSheetName:=sParamSheetTemporalAnalysis, iGoToCol:=iGoToColTA, iCol:=2
+
+
+
+    'SPATIAL ANALYSIS ================================================================================================================
 
 End Sub
 
@@ -491,5 +514,101 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
         Loop
 
    End With
+
+End Sub
+
+Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
+                        ChoicesListData As BetterArray, _
+                        ChoicesLabelsData As BetterArray, _
+                        DictData As BetterArray, _
+                        DictHeaders As BetterArray, _
+                        VarNameData As BetterArray, _
+                        iGoToCol As Long, _
+                        Optional sOutlineColor As String = "DarkBlue")
+
+
+
+
+    Dim sActualSection As String
+    Dim sPreviousSection As String
+    Dim sActualTimeVar As String
+    Dim sActualGroupBy As String
+    Dim sActualMissing As String
+    Dim sActualSummaryFunction As String
+    Dim sActualSummaryLabel As String
+    Dim sActualPercentage As String
+    Dim NewSection As Boolean
+    Dim iRow As Long
+
+    Dim iCounter As Long                        'Counter for the length of the Time Series Data
+    Dim iSectionRow As Long
+
+
+    'Temporal analysis worksheet
+    Dim Wksh As Worksheet
+    Set Wksh = Wkb.Worksheets(sParamSheetTemporalAnalysis)
+
+
+    iCounter = 2
+
+    'By default, the new section is 3
+    iSectionRow = 6
+
+    'Initialise the newSection
+    sPreviousSection = vbNullString
+
+    With Wksh
+
+        Do While iCounter <= TAData.Length
+
+
+
+
+            sActualSection = TAData.Items(iCounter, 1)
+            sActualTimeVar = TAData.Items(iCounter, 2)
+            sActualGroupBy = TAData.Items(iCounter, 3)
+            sActualMissing = TAData.Items(iCounter, 4)
+            sActualSummaryFunction = TAData.Items(iCounter, 5)
+            sActualSummaryLabel = TAData.Items(iCounter, 6)
+            sActualPercentage = TAData.Items(iCounter, 7)
+
+
+
+            'Build new section
+            If sPreviousSection <> sActualSection And sActualSection <> vbNullString Then
+
+                iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis).End(xlUp).Row + 3
+
+                'Create a new section
+                CreateNewSection Wksh, iSectionRow, C_eStartColumnAnalysis, sActualSection
+
+                'Update Previous Section
+                sPreviousSection = sActualSection
+
+                'Build the GoTo column in the list auto sheet
+
+                With Wkb.Worksheets(C_sSheetChoiceAuto)
+                    iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
+                    .Cells(iRow + 1, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") & ": " & sActualSection
+                End With
+            End If
+
+
+
+
+
+
+
+
+
+            iCounter = iCounter + 1
+        Loop
+
+    End With
+
+
+
+
+
 
 End Sub
