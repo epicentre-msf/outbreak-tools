@@ -490,7 +490,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
             i = i + 1
         Loop
 
-        'The EndRow, total Row formula (the right corner) -----------------------------------------------------------------------------------------
+        'The EndRow, total Row formula (the right corner) -----------------------------------------------------------------------------------------------------
 
         sFormula = vbNullString
 
@@ -657,7 +657,7 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
         sFormula = ""
 
-        Select Case Application.WorksheetFunction.Trim(sForm)
+    Select Case Application.WorksheetFunction.Trim(sForm)
 
       Case "COUNT", "COUNT()", "N", "N()"
 
@@ -666,23 +666,17 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
           Case "SUM", "SUM()"
 
       Case Else
-                If OnTotal And Not includeMissing Then
-
+            If OnTotal And Not includeMissing Then
+            sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
+                            sVariate:="univariate total not missing", sFirstCondVar:=sVar, _
+                            sFirstCondVal:=sCondition)
+            ElseIf OnTotal Then
+                sFormula = AnalysisFormula(Wkb, sForm, isFiltered, sVariate:="none")
+            Else
                 sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
-                                sVariate:="univariate total not missing", sFirstCondVar:=sVar, _
-                                sFirstCondVal:=sCondition)
-
-                ElseIf OnTotal Then
-
-                    sFormula = AnalysisFormula(Wkb, sForm, isFiltered, sVariate:="none")
-
-                Else
-
-                    sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
-                                sVariate:="univariate", sFirstCondVar:=sVar, _
-                                sFirstCondVal:=sCondition)
-
-                End If
+                            sVariate:="univariate", sFirstCondVar:=sVar, _
+                            sFirstCondVal:=sCondition)
+            End If
     End Select
 
     If sFormula <> vbNullString And Len(sFormula) < 255 Then UnivariateFormula = sFormula

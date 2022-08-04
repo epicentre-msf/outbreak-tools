@@ -14,7 +14,7 @@ Public Const C_sSheetAnalysisTemp       As String = "Ana_temp_"                 
 Public Const C_sSheetImportTemp         As String = "Import_temp_"
 Public Const C_sSheetAnalysis           As String = "Analysis"                           'Default name of analysis sheet
 Public Const C_sSheetTemporalAnalysis   As String = "Temporal Analysis"                  'Default name of sheet for temporal analysis
-Public Const C_sSheetSpacialAnalysis   As String = "Spacial Analysis"                   'Default name of sheet for spacial analysis
+Public Const C_sSheetSpatialAnalysis   As String = "Spacial Analysis"                   'Default name of sheet for spacial analysis
 Public Const C_sSheetDebug              As String = "Debug___"
 
 'Sheets in the setup file: The all starts with Param
@@ -162,6 +162,9 @@ Public Const C_sTabNames                 As String = "T_NAMES"
 Public Const C_sTabHistoGeo              As String = "T_HistoGeo"                          'Historic data for the geo
 Public Const C_sTabHistoHF               As String = "T_HistoHF"                           'Historic data for the Health Facility
 Public Const C_sTabGeoMetadata           As String = "T_Metadata"
+
+'Tables for traductions
+
 Public Const C_sTabTradLLMsg             As String = "T_TradLLMsg"
 Public Const C_sTabTradLLShapes          As String = "T_TradLLShapes"
 Public Const C_sTabTradLLForms           As String = "T_TradLLForms"
@@ -173,6 +176,10 @@ Public Const C_sTabTranslation           As String = "Tab_Translations"
 Public Const C_sTabExcelFunctions        As String = "T_XlsFonctions"                      'Excel functions to keep in formulas
 Public Const C_sTabASCII                 As String = "T_ascii"                             'Ascii characters table
 
+'Tables for analysis
+Public Const C_sTabLLUBA                  As String = "t_uba"
+Public Const C_sTabLLTA                   As String = "t_tA"
+Public Const C_sTabLLSA                   As String = "t_sa"
 
 'PROGRAM NAMES ========================================================================================================================================================================================
 
@@ -191,7 +198,7 @@ Public Const C_sCmdClearFilters         As String = "ClearAllFilters"
 
 'TABLES LISTOBJECTS ===================================================================================================================================================================================
 
-Public Const C_sTabkeys = "T_Keys"
+Public Const C_sTabkeys                 As String = "T_Keys"
 
 
 'RANGES, MESSAGES AND SHAPES ==========================================================================================================================================================================
@@ -275,8 +282,8 @@ End Enum
 
 'Constants defined by user language
 Public sParamSheetAnalysis              As String 'Sheet for analyses
-Public sParamSheetTemporalAnalysis     As String 'Sheet for temporal analysis
-Public sParamSheetSpacialAnalysis       As String 'Sheet for spacial analysis
+Public sParamSheetTemporalAnalysis      As String 'Sheet for temporal analysis
+Public sParamSheetSpatialAnalysis       As String 'Sheet for spacial analysis
 Public sParamSheetAdmin                 As String  'Sheet for admin
 
 '
@@ -291,8 +298,8 @@ Sub SetUserDefineConstants()
     If sParamSheetTemporalAnalysis = vbNullString Then sParamSheetTemporalAnalysis = C_sSheetTemporalAnalysis
 
     'Setting the sheet for spacial analysis
-    sParamSheetSpacialAnalysis = TranslateLLMsg("LLSHEET_SpacialAnalysis")
-    If sParamSheetSpacialAnalysis = vbNullString Then sParamSheetSpacialAnalysis = C_sSheetSpacialAnalysis
+    sParamSheetSpatialAnalysis = TranslateLLMsg("LLSHEET_SpatialAnalysis")
+    If sParamSheetSpatialAnalysis = vbNullString Then sParamSheetSpatialAnalysis = C_sSheetSpatialAnalysis
 
     'Setting the sheet for admin
     sParamSheetAdmin = TranslateLLMsg("LLSHEET_Admin")

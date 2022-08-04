@@ -764,7 +764,7 @@ EndMacro:
             sSheetName = C_sParamSheetChoices Or sSheetName = C_sParamSheetTranslation Or _
             sSheetName = C_sSheetMetadata Or sSheetName = C_sSheetAnalysisTemp Or _
             sSheetName = C_sSheetImportTemp Or sSheetName = sParamSheetAnalysis Or _
-            sSheetName = sParamSheetTemporalAnalysis Or sSheetName = sParamSheetSpacialAnalysis Or _
+            sSheetName = sParamSheetTemporalAnalysis Or sSheetName = sParamSheetSpatialAnalysis Or _
             sSheetName = sParamSheetAdmin)
 
     End Function
