@@ -435,6 +435,8 @@ Option Explicit
             GetColor = RGB(218, 218, 218)
         Case "Grey50"
             GetColor = RGB(127, 127, 127)
+        Case "VeryDarkBlue"
+            GetColor = RGB(32, 55, 100)
         Case Else
             GetColor = vbWhite
         End Select
@@ -763,7 +765,9 @@ EndMacro:
             sSheetName = C_sParamSheetDict Or sSheetName = C_sParamSheetExport Or _
             sSheetName = C_sParamSheetChoices Or sSheetName = C_sParamSheetTranslation Or _
             sSheetName = C_sSheetMetadata Or sSheetName = C_sSheetAnalysisTemp Or _
-            sSheetName = C_sSheetImportTemp Or sSheetName = C_sSheetAdmin)
+            sSheetName = C_sSheetImportTemp Or sSheetName = sParamSheetAnalysis Or _
+            sSheetName = sParamSheetTemporalAnalysis Or sSheetName = sParamSheetSpatialAnalysis Or _
+            sSheetName = sParamSheetAdmin)
 
     End Function
 

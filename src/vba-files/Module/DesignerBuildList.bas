@@ -16,7 +16,7 @@ Dim AddedLogo As Boolean 'Added Logo?
 Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As BetterArray, _
               ChoicesHeaders As BetterArray, ChoicesData As BetterArray, _
               TransData As BetterArray, GSData As BetterArray, UAData As BetterArray, BAData As BetterArray, _
-              sPath As String)
+              TAData As BetterArray, SAData As BetterArray, sPath As String)
 
 
     Dim Wkb As Workbook
@@ -133,7 +133,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Windows(Wkb.Name).Visible = False
     Application.WindowState = iWindowState
 
-    iPerc = 90 - iUpdateCpt
+    iPerc = 80 - iUpdateCpt
 
     iPerc = Round(iPerc / LLSheetNameData.Length, 1)
 
@@ -213,16 +213,16 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
         .ListObjects("o" & ClearString(C_sParamSheetDict)).Resize .ListObjects("o" & ClearString(C_sParamSheetDict)).Range.CurrentRegion
     End With
 
-    iUpdateCpt = iUpdateCpt + 2
+    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildAna")
 
     Call DesignerBuildListHelpers.UpdateChoiceAutoHeaders(Wkb, ChoiceAutoVarData, DictHeaders)
 
-    '======== Build the Analysis ===============================================================
+    '======== Build the Analysis ======================================================================================================================================
 
-    Call BuildAnalysis(Wkb, GSData, UAData, BAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData)
+    Call BuildAnalysis(Wkb, GSData, UAData, BAData, TAData, SAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData)
 
 
-
+    iUpdateCpt = iUpdateCpt + 2
     StatusBar_Updater (iUpdateCpt)
 
     #If Mac Then
@@ -352,7 +352,7 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
         ChoicesData.ToExcelRange Destination:=.Worksheets(C_sParamSheetChoices).Cells(2, 1)
         .Worksheets(C_sParamSheetChoices).Visible = bNotHideSheets
 
-        '-------------- Creating the export sheet
+        '---------- Creating the export sheet
         .Worksheets.Add.Name = C_sParamSheetExport
         ExportData.ToExcelRange Destination:=.Worksheets(C_sParamSheetExport).Cells(1, 1)
         .Worksheets(C_sParamSheetExport).Visible = xlSheetVeryHidden
@@ -371,13 +371,21 @@ Private Sub CreateSheets(Wkb As Workbook, DictData As BetterArray, DictHeaders A
         'Add a Sheet called Admin for buttons and managements
         Call DesignerBuildListHelpers.AddAdminSheet(Wkb)
 
-        'Add Analysis
-        .Worksheets.Add(after:=.Worksheets(C_sSheetAdmin)).Name = C_sSheetAnalysis
-        Call RemoveGridLines(.Worksheets(C_sSheetAnalysis), DisplayZeros:=True)
+        'Add Analysis sheets
+        .Worksheets.Add(after:=.Worksheets(sParamSheetAdmin)).Name = sParamSheetAnalysis
+        Call RemoveGridLines(.Worksheets(sParamSheetAnalysis), DisplayZeros:=True)
+
+        'Temporal analysis Sheet
+        .Worksheets.Add(after:=.Worksheets(sParamSheetAnalysis)).Name = sParamSheetTemporalAnalysis
+        Call RemoveGridLines(.Worksheets(sParamSheetTemporalAnalysis), DisplayZeros:=True)
+
+        'Spatial analysis sheet
+        .Worksheets.Add(after:=.Worksheets(sParamSheetTemporalAnalysis)).Name = sParamSheetSpatialAnalysis
+        Call RemoveGridLines(.Worksheets(sParamSheetSpatialAnalysis), DisplayZeros:=True)
 
         '--------------- adding the other the other sheets in the dictionary to the linelist
         i = 1
-        sPrevSheetName = C_sSheetAdmin
+        sPrevSheetName = sParamSheetAdmin
         j = 0
         'Setting the lower bound before entering the loop
         LLNbColData.LowerBound = 1
@@ -475,13 +483,13 @@ End Sub
     'Add the logo for the first time
     If Not AddedLogo Then
         'Add the Logo
-        With Wkb.Worksheets(C_sSheetAdmin)
+        With Wkb.Worksheets(sParamSheetAdmin)
 
             On Error Resume Next
             'Logo (copy from the sheet main, copy can fail, you just continue)
             Application.CutCopyMode = False
             SheetMain.Shapes("SHP_Logo").Copy
-            .Paste Destination:=Wkb.Worksheets(C_sSheetAdmin).Cells(2, 2)
+            .Paste Destination:=Wkb.Worksheets(sParamSheetAdmin).Cells(2, 2)
             Application.CutCopyMode = True
             On Error GoTo 0
 
@@ -1000,12 +1008,6 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
             'After input every headers, auto fit the columns and unlock data entry part
             .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).value = sActualVarName
-            '.Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).Locked = True
-            '.Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol).FormulaHidden = True
-
-            'Hide rows for Control (The row of control type is just before Main Section)
-            '.Rows(C_eStartLinesLLMainSec - 1).EntireRow.Hidden = True
-            '.Rows(C_eStartLinesLLMainSec - 2).EntireRow.Hidden = True 'hide the list_auto row
 
             'List Auto is updated at the end of the buildList process
 

@@ -506,7 +506,9 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
     End With
 End Sub
 
-Sub BuildGotoArea(Wkb As Workbook, sTableName As String, sSheetName As String, iGoToCol As Long, Optional iCol As Long = C_eSectionsLookupColumns)
+Sub BuildGotoArea(Wkb As Workbook, sTableName As String, sSheetName As String, iGoToCol As Long, _
+                  Optional iCol As Long = C_eSectionsLookupColumns, _
+                  Optional iFontSize As Long = 10)
 
     Dim iChoiceRow As Long
     Dim LoRng As Range
@@ -518,7 +520,7 @@ Sub BuildGotoArea(Wkb As Workbook, sTableName As String, sSheetName As String, i
         .Cells(1, iCol).Locked = False
         .Cells(1, iCol).value = TranslateLLMsg("MSG_SelectSection")
         .Cells(1, iCol).Name = sTableName & "_" & C_sGotoSection
-        .Cells(1, iCol).Font.Size = 10
+        .Cells(1, iCol).Font.Size = iFontSize
         .Cells(1, iCol).HorizontalAlignment = xlHAlignCenter
         .Cells(1, iCol).Interior.Color = Helpers.GetColor("MainSecBlue")
         .Cells(1, iCol).Font.Color = vbWhite
@@ -1019,21 +1021,22 @@ Public Sub AddAdminSheet(Wkb As Workbook)
     Const iCmdHeightFactor As Integer = 30
 
 
-    Wkb.Worksheets(1).Name = C_sSheetAdmin
-    Call RemoveGridLines(Wkb.Worksheets(C_sSheetAdmin))
+    Wkb.Worksheets(1).Name = sParamSheetAdmin
+    Call RemoveGridLines(Wkb.Worksheets(sParamSheetAdmin))
 
     'ADD BUTTONS
 
-    With Wkb.Worksheets(C_sSheetAdmin)
+    With Wkb.Worksheets(sParamSheetAdmin)
+
         'Import migration buttons
-          Call AddCmd(Wkb, C_sSheetAdmin, _
+          Call AddCmd(Wkb, sParamSheetAdmin, _
             .Cells(2, 12).Left, .Cells(2, 1).Top, C_sShpAdvanced, _
             "Import for Migration", _
             C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
             C_sCmdImportMigration, iTextFontSize:=12)
 
         'Export Button
-        Call AddCmd(Wkb, C_sSheetAdmin, _
+        Call AddCmd(Wkb, sParamSheetAdmin, _
            .Cells(2, 12).Left + C_iCmdWidth + iCmdWidthFactor + 15, _
             .Cells(2, 1).Top, C_sShpExport, _
             "Export", _

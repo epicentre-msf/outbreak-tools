@@ -3,6 +3,21 @@ Attribute VB_Name = "DesignerAnalysisHelpers"
 
 Option Explicit
 
+'Format each analysis worksheet (global values for the worksheet)
+
+Sub FormatAnalysisWorksheet(Wkb As Workbook, sSheetName As String, _
+                            Optional sCodeName As String = vbNullString, _
+                            Optional iColWidth As Integer = C_iLLFirstColumnsWidth)
+
+    With Wkb.Worksheets(sSheetName)
+        .Cells.WrapText = True
+        .Cells.EntireRow.AutoFit
+        .Cells.EntireColumn.ColumnWidth = iColWidth
+    End With
+
+    If sCodeName <> vbNullString Then TransferCodeWks Wkb, sParamSheetAnalysis, sCodeName
+End Sub
+
 
 
 
@@ -38,59 +53,71 @@ End Sub
 
 'Create Headers for bivariate Analysis
 
-Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
-                    RowsData As BetterArray, _
-                    iRow As Long, iCol As Long, _
-                    sMainLabRow As String, sMainLabCol As String, _
-                    sSummaryLabel As String, _
-                    sPercent As String, sMiss As String, _
-                    Optional sInteriorColor As String = "VeryLightBlue", _
-                    Optional sTotalInteriorColor As String = "VeryLightGreyBlue", _
-                    Optional sNAFontColor As String = "GreyBlue", _
-                    Optional sColor As String = "DarkBlue")
+Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
+                  iRow As Long, iCol As Long, _
+                  sMainLabCol As String, _
+                  sSummaryLabel As String, _
+                  sPercent As String, sMiss As String, _
+                  Optional RowsData As BetterArray, _
+                  Optional sMainLabRow As String, _
+                  Optional sInteriorColor As String = "VeryLightBlue", _
+                  Optional sTotalInteriorColor As String = "VeryLightGreyBlue", _
+                  Optional sNAFontColor As String = "GreyBlue", _
+                  Optional sColor As String = "DarkBlue", _
+                  Optional isTimeSeries As Boolean = False)
+
+    Dim iEndRow As Long
     Dim i As Long
     Dim iLastCol As Long
     Dim iTotalLastCol As Long
     Dim iTotalFirstCol As Long
-    Dim iEndRow As Long
     Dim sArrow As String
     Dim HasPercent As Boolean
+    Dim AddTotal As Boolean
 
 
-     With Wksh
+    'Add Total for column
+    AddTotal = True
+
+    With Wksh
         'Variable Label from the dictionary for Row
-        FormatARange Rng:=.Cells(iRow + 2, iCol), sValue:=sMainLabRow, sFontColor:=sColor, isBold:=True
+        If Not isTimeSeries Then
+            FormatARange Rng:=.Cells(iRow + 2, iCol), sValue:=sMainLabRow, sFontColor:=sColor, isBold:=True
 
-        'Merge the first and second rows of first column of bivariate analysis
-        Range(.Cells(iRow + 1, iCol), .Cells(iRow + 2, iCol)).Merge
-        .Cells(iRow + 1, iCol).MergeArea.HorizontalAlignment = xlHAlignLeft
-        .Cells(iRow + 1, iCol).MergeArea.VerticalAlignment = xlVAlignCenter
+            'Merge the first and second rows of first column of bivariate analysis
+            Range(.Cells(iRow + 1, iCol), .Cells(iRow + 2, iCol)).Merge
+            .Cells(iRow + 1, iCol).MergeArea.HorizontalAlignment = xlHAlignLeft
+            .Cells(iRow + 1, iCol).MergeArea.VerticalAlignment = xlVAlignCenter
+
+            'Add the rows Data -------------------------------------------------------------------------------------------------------------------------------
+
+            RowsData.ToExcelRange .Cells(iRow + 3, iCol)
+            'EndRow of the table
+            iEndRow = iRow + 2 + RowsData.Length
+
+            FormatARange Rng:=Range(.Cells(iRow + 3, iCol), .Cells(iEndRow, iCol)), sFontColor:=sColor, _
+                     sInteriorColor:=sInteriorColor, Horiz:=xlHAlignLeft
+        Else
+            iEndRow = iRow + 2 + C_iNbTime
+        End If
+
+        If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Or isTimeSeries Then
+            'This is to avoid adding Missing on time series for following column
+            If iCol <= C_eStartColumnAnalysis + 2 Then .Cells(iEndRow + 1, iCol).value = TranslateLLMsg("MSG_NA")
+            'Format the last row, just in case we need
+            FormatARange Rng:=.Cells(iEndRow + 1, iCol), sFontColor:=sNAFontColor, sInteriorColor:=sTotalInteriorColor, _
+                         Horiz:=xlHAlignLeft
+            iEndRow = iEndRow + 1
+        End If
 
         'Variable label from the dictionary for column
         FormatARange Rng:=.Cells(iRow, iCol + 1), sValue:=sMainLabCol, sFontColor:=sColor, isBold:=True, Horiz:=xlHAlignLeft
 
-        'Add the rows Data --------------------------------------------------------------------------
-
-        RowsData.ToExcelRange .Cells(iRow + 3, iCol)
-        'EndRow of the table
-        iEndRow = iRow + 2 + RowsData.Length
-
-        FormatARange Rng:=Range(.Cells(iRow + 3, iCol), .Cells(iEndRow, iCol)), sFontColor:=sColor, sInteriorColor:=sInteriorColor, Horiz:=xlHAlignLeft
-
-        If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Then
-            'Format the last row, just in case we need
-            FormatARange Rng:=.Cells(iEndRow + 1, iCol), sFontColor:=sNAFontColor, sInteriorColor:=sTotalInteriorColor, _
-                         Horiz:=xlHAlignLeft, sValue:=TranslateLLMsg("MSG_NA")
-            iEndRow = iEndRow + 1
-        End If
-
-        'Now Add Percentage And Values for the column -----------------------------------------------
+        'Now Add Percentage And Values for the column -----------------------------------------------------------------------------------------------------
 
         'If you have to add percentage :
         sArrow = vbNullString
-
         Select Case sPercent
-
             Case C_sAnaCol
                 HasPercent = True
                 sArrow = ChrW(8597) 'Arrow is vertical
@@ -103,127 +130,137 @@ Sub CreateBAHeaders(Wksh As Worksheet, ColumnsData As BetterArray, _
                 HasPercent = False
         End Select
 
-        If HasPercent Then
+        If ColumnsData.Length > 0 Then
+            'There are categories related to the group on column
 
-           i = 0
-
-           Do While (i < ColumnsData.Length)
-                'There is percentage, we have to add the percentage
-                .Cells(iRow + 1, iCol + 2 * i + 1).value = ColumnsData.Items(i + 1)
-                .Cells(iRow + 2, iCol + 2 * i + 1).value = sSummaryLabel
-                .Cells(iRow + 2, iCol + 2 * i + 2).value = TranslateLLMsg("MSG_Percent") & " " & sArrow
-                Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iRow + 1, iCol + 2 * i + 2)).Merge
-
-                'Write borders arround the different part of the columns
-                DrawLines Rng:=Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iEndRow + 1, iCol + 2 * i + 2)), sColor:=sColor
-                DrawLines Rng:=Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iEndRow + 1, iCol + 2 * i + 1)), At:="Left", iWeight:=xlThin, sColor:=sColor
-                i = i + 1
-           Loop
-
-           iLastCol = 2 * i 'This is the last column of the table when there is percentage
-        Else
-
-            'There is no percentage, only column values
-            i = 1
-
-            Do While (i <= ColumnsData.Length)
-                .Cells(iRow + 1, iCol + i).value = ColumnsData.Items(i)
-                .Cells(iRow + 2, iCol + i).value = sSummaryLabel
-
-               'Draw lines arround all borders
-               DrawLines Rng:=Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow + 1, iCol + i)), sColor:=sColor
-               DrawLines Rng:=Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow + 1, iCol + i)), At:="Left", sColor:=sColor, iWeight:=xlThin
-                i = i + 1
+            If HasPercent Then
+            i = 0
+            Do While (i < ColumnsData.Length)
+                    'There is percentage, we have to add the percentage
+                    .Cells(iRow + 1, iCol + 2 * i + 1).value = ColumnsData.Items(i + 1)
+                    .Cells(iRow + 2, iCol + 2 * i + 1).value = sSummaryLabel
+                    .Cells(iRow + 2, iCol + 2 * i + 2).value = TranslateLLMsg("MSG_Percent") & " " & sArrow
+                    Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iRow + 1, iCol + 2 * i + 2)).Merge
+                    'Write borders arround the different part of the columns
+                    DrawLines Rng:=Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iEndRow + 1, iCol + 2 * i + 2)), sColor:=sColor
+                    DrawLines Rng:=Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iEndRow + 1, iCol + 2 * i + 1)), At:="Left", iWeight:=xlThin, sColor:=sColor
+                    i = i + 1
             Loop
+            iLastCol = 2 * i 'This is the last column of the table when there is percentage
+            Else
+                'There is no percentage, only column values
+                i = 1
+                Do While (i <= ColumnsData.Length)
+                    .Cells(iRow + 1, iCol + i).value = ColumnsData.Items(i)
+                    .Cells(iRow + 2, iCol + i).value = sSummaryLabel
+                    'Draw lines arround all borders
+                    DrawLines Rng:=Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow + 1, iCol + i)), sColor:=sColor
+                    DrawLines Rng:=Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow + 1, iCol + i)), At:="Left", sColor:=sColor, iWeight:=xlThin
+                    i = i + 1
+                Loop
+                iLastCol = i - 1 'Last column of the table without the percentage
+            End If
+            iLastCol = iCol + iLastCol
+            iTotalFirstCol = iLastCol + 1
+        Else
+            'There are no categories, only a custom function created by the user
 
-            iLastCol = i - 1 'Last column of the table without the percentage
+            .Cells(iRow + 1, iCol + 1).value = ""
+            .Cells(iRow + 2, iCol + 1).value = sSummaryLabel
+            DrawLines Rng:=Range(.Cells(iRow + 1, iCol + 1), .Cells(iEndRow + 1, iCol + 1)), sColor:=sColor
+            DrawLines Rng:=Range(.Cells(iRow + 1, iCol + 1), .Cells(iEndRow + 1, iCol + 1)), At:="Left", sColor:=sColor, iWeight:=xlThin
+            iLastCol = iCol + 1
+            iTotalFirstCol = iLastCol
+            AddTotal = False
         End If
 
-        iLastCol = iCol + iLastCol
+        'Add Missing for column ---------------------------------------------------------------------------------------------------------------------------
 
-        iTotalFirstCol = iLastCol + 1
-
-        'Add Missing for column -------------------------------------------------------------------------------
-        If sMiss = C_sAnaCol Or sMiss = C_sAnaAll Then
+        If sMiss = C_sAnaCol Or sMiss = C_sAnaAll Or (sMiss = C_sYes And isTimeSeries) Then
 
             'Missing at the end of the column
             .Cells(iRow + 1, iTotalFirstCol).value = TranslateLLMsg("MSG_NA")
             .Cells(iRow + 2, iTotalFirstCol).value = sSummaryLabel
-
             iTotalFirstCol = iTotalFirstCol + 1
 
             'Add percentage
             If HasPercent Then
+
                 .Cells(iRow + 2, iTotalFirstCol).value = TranslateLLMsg("MSG_Percent") & " " & sArrow
                 Range(.Cells(iRow + 1, iTotalFirstCol - 1), .Cells(iRow + 1, iTotalFirstCol)).Merge
 
                 'Now update the first column for total
                 iTotalFirstCol = iTotalFirstCol + 1
+
             End If
 
             'Format the missing for column
             DrawLines Rng:=Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iEndRow + 1, iTotalFirstCol - 1)), sColor:=sColor
+            DrawLines Rng:=Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iEndRow + 1, iTotalFirstCol - 1)), sColor:=sColor, iWeight:=xlThin, At:="Left"
             FormatARange Rng:=Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iEndRow + 1, iTotalFirstCol - 1)), sInteriorColor:=sTotalInteriorColor, sFontColor:=sNAFontColor
         End If
 
+        'The last column is initiated outside the total column formating
+        iTotalLastCol = iTotalFirstCol
 
         'Add Total ------------------------------------------------------------------------------------------------------------------------------------------------
+        If AddTotal Then
 
-        .Cells(iRow + 1, iTotalFirstCol).value = TranslateLLMsg("MSG_Total")
-        .Cells(iRow + 2, iTotalFirstCol).value = sSummaryLabel
+            .Cells(iRow + 1, iTotalFirstCol).value = TranslateLLMsg("MSG_Total")
+            .Cells(iRow + 2, iTotalFirstCol).value = sSummaryLabel
 
-        iTotalLastCol = iTotalFirstCol
-        'In case it is needed, add percentage for total also
-        If HasPercent Then
-            .Cells(iRow + 2, iTotalLastCol + 1).value = TranslateLLMsg("MSG_Percent") & " " & sArrow
-            Range(.Cells(iRow + 1, iTotalLastCol), .Cells(iRow + 1, iTotalLastCol + 1)).Merge
-            iTotalLastCol = iTotalLastCol + 1
+            'In case it is needed, add percentage for total also
+            If HasPercent Then
+                .Cells(iRow + 2, iTotalLastCol + 1).value = TranslateLLMsg("MSG_Percent") & " " & sArrow
+                Range(.Cells(iRow + 1, iTotalLastCol), .Cells(iRow + 1, iTotalLastCol + 1)).Merge
+                iTotalLastCol = iTotalLastCol + 1
+            End If
+
+            'Format total
+
+            'Add hairlines between cells
+            DrawLines Rng:=Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor
+
+            'Add a left double line
+            DrawLines Rng:=Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalFirstCol)), sColor:=sColor, iLine:=xlDouble, At:="Left"
+
+            'Add rigth thick line on time series
+
+            'Format all the total range
+            FormatARange Rng:=Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, isBold:=True
         End If
 
-        'Format total
-        'Add hairlines between cells
-        DrawLines Rng:=Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor
-        'Add a left double line
-        DrawLines Rng:=Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalFirstCol)), sColor:=sColor, iLine:=xlDouble, At:="Left"
-        'Format all the total range
-        FormatARange Rng:=Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, isBold:=True
-
         'Add Missing for Rows (After total because we need total end column) -------------------------------------------------------------------------------------------------
-
-        If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Then
+        If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Or isTimeSeries Then
             FormatARange Rng:=Range(.Cells(iEndRow, iCol + 1), .Cells(iEndRow, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, sFontColor:=sNAFontColor
         End If
 
         'Total on the Last line
-        FormatARange Rng:=.Cells(iEndRow + 1, iCol), sInteriorColor:=sTotalInteriorColor, isBold:=True, _
-                     Horiz:=xlHAlignLeft, sValue:=TranslateLLMsg("MSG_Total")
+        'Add total for time series only on first columns
+        If iCol <= C_eStartColumnAnalysis + 2 Then .Cells(iEndRow + 1, iCol).value = TranslateLLMsg("MSG_Total")
+        FormatARange Rng:=.Cells(iEndRow + 1, iCol), sInteriorColor:=sTotalInteriorColor, isBold:=True, Horiz:=xlHAlignLeft
         FormatARange Rng:=Range(.Cells(iEndRow + 1, iCol + 1), .Cells(iEndRow + 1, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, isBold:=True
 
         'Format Table Headers -------------------------------------------------------------------------------------------------------------------------------------------
-
         'First row with column categories
         FormatARange Rng:=Range(.Cells(iRow + 1, iCol + 1), .Cells(iRow + 1, iLastCol)), sFontColor:=sColor, sInteriorColor:=sInteriorColor
-
         'Second row with summary label with/without percentage
         FormatARange Rng:=Range(.Cells(iRow + 2, iCol + 1), .Cells(iRow + 2, iLastCol)), sFontColor:=sColor, FontSize:=C_iAnalysisFontSize - 1
-
         'Draw lines arround the first column of table
-        DrawLines Rng:=Range(.Cells(iRow + 1, iCol), .Cells(iEndRow + 1, iCol)), sColor:=sColor
-
+        If Not isTimeSeries Then DrawLines Rng:=Range(.Cells(iRow + 1, iCol), .Cells(iEndRow + 1, iCol)), sColor:=sColor
         'Thick line at the header row
         DrawLines Rng:=Range(.Cells(iRow + 2, iCol), .Cells(iRow + 2, iTotalLastCol)), At:="Bottom", iLine:=xlDouble, sColor:=sColor
-
         'Draw lines for Total
         DrawLines Rng:=Range(.Cells(iEndRow + 1, iCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor, iLine:=xlDouble, At:="Top"
-
         'Drawlines arround all the table
-        WriteBorderLines oRange:=Range(.Cells(iRow + 1, iCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor, iWeight:=xlThin
-        
+        If Not isTimeSeries Then WriteBorderLines oRange:=Range(.Cells(iRow + 1, iCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor, iWeight:=xlThin
+
         'Put every values to right
         Range(.Cells(iRow + 3, iCol + 1), .Cells(iEndRow + 1, iTotalLastCol)).HorizontalAlignment = xlHAlignCenter
 
     End With
 End Sub
+
 
 
 'Add interior formulas for the bivariate analysis
@@ -240,7 +277,7 @@ Sub AddInnerFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As String
     Dim istep As Long
     Dim sFormula As String
 
-    Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
+    Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
 
     iInnerEndRow = iEndRow - 1
     'There is a missing line
@@ -339,13 +376,13 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
     istep = 1
     iTotalColumn = iEndCol
-    
+
     If sPercent <> C_sNo Then
         istep = 2
         iTotalColumn = iEndCol - 1
     End If
 
-    Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
+    Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
 
     With Wksh
 
@@ -399,7 +436,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
                                             sVarColumn:=sVarColumn, sConditionColumn:=.Cells(iStartRow, i).Address)
 
                 If sFormula <> vbNullString Then .Cells(iEndRow - 1, i).Formula = sFormula
-                
+
                 If sPercent <> C_sNo Then
                     ' Add percentage for the missing
                     With .Cells(iEndRow - 1, i + 1)
@@ -408,7 +445,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
                         If sFormula2 <> vbNullString Then .Formula = sFormula2
                     End With
                 End If
-                
+
             End If
 
             i = i + istep
@@ -461,7 +498,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
                         'Add the percentage on missing if there is one
                         With .Cells(i, iEndCol - 2)
-                        
+
                             .Style = "Percent"
                             .NumberFormat = "0.00%"
                             If sFormula2 <> vbNullString Then .Formula = sFormula2
@@ -478,7 +515,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
                     If includeMissing Then
 
                         sFormula = vbNullString
-                        
+
                         sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
                                                     OnTotal:=False, sConditionRow:=.Cells(i, iStartCol).Address, _
                                                     sVarColumn:=sVarColumn, sConditionColumn:=Chr(34) & Chr(34), isFiltered:=True)
@@ -489,27 +526,27 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
             i = i + 1
         Loop
-        
-        'The EndRow, total Row formula (the right corner) -----------------------------------------------------------------------------------------
-        
+
+        'The EndRow, total Row formula (the right corner) -----------------------------------------------------------------------------------------------------
+
         sFormula = vbNullString
-        
+
         Select Case ClearNonPrintableUnicode(sForm)
-        
+
         Case "COUNT", "COUNT()", "N", "N()"
-        
+
             sFormula = "= " & "SUM(" & .Cells(iStartRow + 2, iTotalColumn).Address & ":" & .Cells(iEndRow - 1, iTotalColumn).Address & ")"
-        
+
         Case Else
-            
+
             sFormula = AnalysisFormula(Wkb:=Wkb, sFormula:=sForm, sVariate:="none", isFiltered:=True)
-        
+
         End Select
-        
+
         If sFormula <> vbNullString Then .Cells(iEndRow, iTotalColumn).FormulaArray = sFormula
-        
+
     End With
-    
+
 End Sub
 
 
@@ -526,7 +563,7 @@ Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
         Dim sFormula As String
         Dim sCond As String
 
-        Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
+        Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
 
         'Condition for missing is ""
         sCond = Chr(34) & Chr(34)
@@ -538,7 +575,7 @@ Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
             FormatARange .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), sFontColor:=sFontColor, _
                     sInteriorColor:=sInteriorColor, FontSize:=C_iAnalysisFontSize - 1, isBold:=True, _
                     NumFormat:=sNumberFormat, Horiz:=xlHAlignRight
-                    
+
             .Cells(iRow, iStartCol).HorizontalAlignment = xlHAlignLeft
 
             On Error Resume Next
@@ -565,7 +602,7 @@ Sub AddUATotal(Wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, 
         Dim sCond As String
         Dim includeMissing As Boolean
 
-        Set Wksh = Wkb.Worksheets(C_sSheetAnalysis)
+        Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
         sCond = Chr(34) & Chr(34)
         includeMissing = (sMiss = C_sYes)
 
@@ -577,7 +614,7 @@ Sub AddUATotal(Wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, 
 
             FormatARange Rng:=.Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), isBold:=True, sInteriorColor:=sInteriorColor, _
                         FontSize:=C_iAnalysisFontSize + 1, Horiz:=xlHAlignRight
-                        
+
             .Cells(iRow, iStartCol).HorizontalAlignment = xlHAlignLeft
 
             'Add percentage if required
@@ -657,7 +694,7 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
         sFormula = ""
 
-        Select Case Application.WorksheetFunction.Trim(sForm)
+    Select Case Application.WorksheetFunction.Trim(sForm)
 
       Case "COUNT", "COUNT()", "N", "N()"
 
@@ -666,23 +703,17 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
           Case "SUM", "SUM()"
 
       Case Else
-                If OnTotal And Not includeMissing Then
-
+            If OnTotal And Not includeMissing Then
+            sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
+                            sVariate:="univariate total not missing", sFirstCondVar:=sVar, _
+                            sFirstCondVal:=sCondition)
+            ElseIf OnTotal Then
+                sFormula = AnalysisFormula(Wkb, sForm, isFiltered, sVariate:="none")
+            Else
                 sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
-                                sVariate:="univariate total not missing", sFirstCondVar:=sVar, _
-                                sFirstCondVal:=sCondition)
-
-                ElseIf OnTotal Then
-
-                    sFormula = AnalysisFormula(Wkb, sForm, isFiltered, sVariate:="none")
-
-                Else
-
-                    sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
-                                sVariate:="univariate", sFirstCondVar:=sVar, _
-                                sFirstCondVal:=sCondition)
-
-                End If
+                            sVariate:="univariate", sFirstCondVar:=sVar, _
+                            sFirstCondVal:=sCondition)
+            End If
     End Select
 
     If sFormula <> vbNullString And Len(sFormula) < 255 Then UnivariateFormula = sFormula
@@ -741,6 +772,51 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
         If sFormula <> vbNullString And Len(sFormula) < 255 Then BivariateFormula = sFormula
  End Function
 
+ 'FUNCTIONS USED TO BUILD TIME SERIES TABLES ===================================================================================================================
+
+ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
+                   Optional sInteriorColor As String = "VeryLightBlue", _
+                   Optional sFontColor As String = "DarkBlue", _
+                   Optional sSelectionFontColor As String = "GreyBlue", _
+                   Optional sSelectionInteriorColor As String = "VeryLightGreyBlue")
+
+    Dim Rng As Range
+    Dim iRow As Long
+
+    With Wksh
+
+        'Time Aggregation
+        iRow = iStartRow + 2
+        FormatARange .Cells(iRow, iCol), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
+                     sValue:=TranslateLLMsg("MSG_TimeAggregation")
+        FormatARange .Cells(iRow, iCol + 1), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
+                     sValue:=TranslateLLMsg("MSG_Day")
+
+        'Add validation for time aggregation
+        SetValidation .Cells(iRow, iCol + 1), "=" & C_sTimeAgg, 1, TranslateLLMsg("MSG_UnableToAgg")
+
+        'Start Date
+        iRow = iRow + 2
+        .Cells(iRow, iCol).value = TranslateLLMsg("MSG_StartDate")
+        FormatARange .Cells(iRow, iCol), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignLeft
+        FormatARange .Cells(iRow, iCol + 1), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor
+
+        'The table for the time values
+        iRow = iRow + 5
+        .Cells(iRow - 1, iCol).value = TranslateLLMsg("MSG_Period")
+        .Cells(iRow, iCol).Formula = "=" & Wksh.Cells(iRow - 5, iCol + 1).Address
+        Set Rng = Range(.Cells(iRow, iCol), .Cells(iRow + C_iNbTime, iCol))
+        FormatARange Rng, sInteriorColor:=sInteriorColor, sFontColor:=sFontColor, isBold:=True
+        DrawLines Rng, sColor:=sFontColor
+        Set Rng = Range(.Cells(iRow - 2, iCol), .Cells(iRow + C_iNbTime + 1, iCol))
+        WriteBorderLines Rng, sColor:=sFontColor, iWeight:=xlMedium
+    End With
+
+    Set Rng = Nothing
+
+ End Sub
+
+
 
 
 'FUNCTIONS USED TO BUILD FORMULAS ==============================================================================================================================
@@ -755,7 +831,8 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
                                 Optional sFirstCondVar As String = "__all", _
                                 Optional sFirstCondVal As String = "__all", _
                                 Optional sSecondCondVar As String = "__all", _
-                                Optional sSecondCondVal As String = "__all") As String
+                                Optional sSecondCondVal As String = "__all", _
+                                Optional sThirdCondVal As String = "__all") As String
 
 
 
@@ -883,7 +960,7 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
 
                             sAlphaValue = BuildVariateFormula(TableNameData.Item(icolNumb), VarNameData.Item(icolNumb), _
                                                 sVariate, sFirstCondVar, sFirstCondVal, sSecondCondVar, sSecondCondVal, _
-                                                isFiltered)
+                                                sThirdCondVal, isFiltered:=isFiltered)
 
                         End If
 
@@ -936,6 +1013,7 @@ Function BuildVariateFormula(sTableName As String, _
                              Optional sFirstCondVal As String = "__all", _
                              Optional sSecondCondVar As String = "__all", _
                              Optional sSecondCondVal As String = "__all", _
+                             Optional sThirdCondVal As String = "__all", _
                              Optional isFiltered As Boolean = False) As String
 
 
@@ -955,10 +1033,10 @@ Function BuildVariateFormula(sTableName As String, _
 
     'Fall back to none if you don't precise the univariate / bivariate values: Those are safeguard
 
-    If (sVariate = "univariate" Or sVariate = "univariate total") And _
+    If (sVariate = "univariate") And _
        (sFirstCondVar = "__all" Or sFirstCondVal = "__all") Then sVariate = "none"
 
-    If (sVariate = "bivariate" Or sVariate = "bivariate total") And _
+    If (sVariate = "bivariate") And _
        (sFirstCondVar = "__all" Or sFirstCondVal = "__all" Or sSecondCondVar = "__all" Or sSecondCondVal = "__all") Then sVariate = "none"
 
 
@@ -997,8 +1075,13 @@ Function BuildVariateFormula(sTableName As String, _
                             & Chr(34) & Chr(34) & "), " _
                            & sTable & "[" & sVarName & "]" & ")"
 
-        'By default fall back to simple varname in a table
+        Case "bivariate date"
 
+            sAlphaValue = "IF (AND(" & sTable & "[" & sSecondCondVar & "]" & " >= " & _
+                           sSecondCondVal & sTable & "[" & sSecondCondVar & "]" & " < " & _
+                           sThirdCondVal & "), " & sTable & "[" & sVarName & "]" & ")"
+
+        'By default fall back to simple varname in a table
         Case Else
              sAlphaValue = sTable & "[" & sVarName & "]"
     End Select
@@ -1088,4 +1171,38 @@ Function AnalysisCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As 
     Set VarNameData = Nothing
     Set TableNameData = Nothing
 
+End Function
+
+
+Function TimeSeriesCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As String, sValue1 As String, _
+                         sValue2 As String, Optional isFiltered As Boolean = False) As String
+
+
+    Dim VarNameData As BetterArray
+    Dim TableNameData As BetterArray
+    Dim sTable As String
+    Dim sFormula As String
+
+    Set VarNameData = New BetterArray
+    Set TableNameData = New BetterArray
+
+    VarNameData.LowerBound = 1
+    TableNameData.LowerBound = 1
+
+    VarNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=False, DetectLastRow:=True
+    TableNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderTableName)), _
+                                 DetectLastColumn:=False, DetectLastRow:=True
+
+    sFormula = vbNullString
+
+    If VarNameData.Includes(sVarName) Then
+
+        sTable = TableNameData.Items(VarNameData.IndexOf(sVarName))
+        If isFiltered Then sTable = C_sFiltered & sTable
+
+        sFormula = "COUNTIFS" & "(" & sTable & "[" & sVarName & "], " & ">= " & sValue1 & _
+                    ", " & sTable & "[" & sVarName & "], " & "< " & sValue2 & ")"
+    End If
+
+    TimeSeriesCount = sFormula
 End Function
