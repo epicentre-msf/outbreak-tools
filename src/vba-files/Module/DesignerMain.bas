@@ -186,6 +186,9 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     Dim GSData          As BetterArray          'Global Summary Data
     Dim UAData          As BetterArray          'Univariate Analaysis Data
     Dim BAData          As BetterArray          'Bivariate Analysis DAta
+    Dim TAData          As BetterArray
+    Dim SAData          As BetterArray
+
     Dim sPath           As String
     Dim SetupWkb        As Workbook
     Dim DesWkb          As Workbook
@@ -281,6 +284,14 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     BAData.LowerBound = 1
     BAData.FromExcelRange DesWkb.Worksheets(C_sParamSheetAnalysis).ListObjects(C_sTabBA).Range
 
+    'Time series and Spatial Analysis data
+    Set TAData = New BetterArray 'Time series analysis
+    TAData.LowerBound = 1
+    TAData.FromExcelRange DesWkb.Worksheets(C_sParamSheetAnalysis).ListObjects(C_sTabTA).Range
+
+    Set SAData = New BetterArray 'Spatial analysis
+    SAData.LowerBound = 1
+    SAData.FromExcelRange DesWkb.Worksheets(C_sParamSheetAnalysis).ListObjects(C_sTabTA).Range
 
     DoEvents
 
@@ -291,10 +302,15 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Creating the linelist using the dictionnary and choices data as well as export data
     sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
 
+    'Prepare the temporary folder for the linelist
     Call PrepareTemporaryFolder
+
+    'Add some user define constants
     Call SetUserDefineConstants
 
-    Call BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, GSData, UAData, BAData, sPath)
+    'Add the preprocessing step for the designer
+
+    Call BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, GSData, UAData, BAData, TAData, SAData, sPath)
 
     DoEvents
 
