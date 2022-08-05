@@ -236,7 +236,7 @@ Public Const C_sValue                   As String = "value"
 Public Const C_sLanguage                As String = "language"
 Public Const C_sLLDate                  As String = "linelist_creation_date"
 Public Const C_sFiltered                As String = "filt_"                              'Just to know if we are on a filtered/Not filtered sheet or table
-
+Public Const C_sTimeHeader              As String = "time_var"                           'header of time period for time series table
 
 
 Public Const C_sAdm1                    As String = "ADM1"
@@ -248,6 +248,7 @@ Public Const C_sNames                   As String = "NAMES"
 Public Const C_sHistoHF                 As String = "HistoHF"
 Public Const C_sHistoGeo                As String = "HistoGeo"
 Public Const C_sGeoMetadata             As String = "METADATA"
+
 
 'INTEGERS CONSTANTS ===================================================================================================================================================================================
 Public Const C_iNbLinesLLData           As Integer = 200                                    'Number of linest to add by default

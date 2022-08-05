@@ -51,11 +51,7 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLUBA, sSheetName:=sParamSheetAnalysis, iGoToCol:=iGoToColAna, iCol:=2
 
     'Allow text wrap only at the end
-    Wkb.Worksheets(sParamSheetAnalysis).Cells.WrapText = True
-    Wkb.Worksheets(sParamSheetAnalysis).Cells.EntireRow.AutoFit
-    Wkb.Worksheets(sParamSheetAnalysis).Cells.EntireColumn.ColumnWidth = C_iLLFirstColumnsWidth
-
-    TransferCodeWks Wkb, sParamSheetAnalysis, C_sModLLAnaChange
+    FormatAnalysisWorksheet Wkb, sParamSheetAnalysis, C_sModLLAnaChange
 
     'TIME SERIES ANALYSIS =============================================================================================================
 
@@ -69,10 +65,10 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     AddTimeSeriesAnalysis Wkb, TAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, iGoToColTA
 
     'Build GoTo Area for the Temporal analysis
+    BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLTA, sSheetName:=sParamSheetTemporalAnalysis, iGoToCol:=iGoToColTA, iCol:= C_eStartColumnAnalysis + 2
 
-     'Build GoTo Area for the analysis (univariate and bivariate)
-    BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLTA, sSheetName:=sParamSheetTemporalAnalysis, iGoToCol:=iGoToColTA, iCol:=2
-
+    'Format then worksheet for temporal analysis
+    FormatAnalysisWorksheet Wkb, sParamSheetTemporalAnalysis
 
 
     'SPATIAL ANALYSIS ================================================================================================================
@@ -424,8 +420,7 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
 
         Do While iCounter <= BAData.Length
 
-            iSectionRow = .Cells(.Rows.Count, _
-            C_eStartColumnAnalysis).End(xlUp).Row
+            iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis).End(xlUp).Row
 
             'values in the table of univariate analysis
 
@@ -460,8 +455,8 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
 
                 'Value of the section
 
-                If sPreviousSection <> sActualSection Then
-                        'New Section
+                If sPreviousSection <> sActualSection Or iCounter = 2 Then
+                    'New Section
                     iSectionRow = iSectionRow + 3
 
                     'Create a new section
@@ -537,22 +532,29 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
     Dim sActualSummaryFunction As String
     Dim sActualSummaryLabel As String
     Dim sActualPercentage As String
-    Dim NewSection As Boolean
+    Dim sActualChoice As String
+    Dim sActualMainLabColumn As String
     Dim iRow As Long
 
     Dim iCounter As Long                        'Counter for the length of the Time Series Data
     Dim iSectionRow As Long
+    Dim iStartCol As Long
 
 
     'Temporal analysis worksheet
     Dim Wksh As Worksheet
+    'Columns for the group by if there is one
+    Dim ValidationListColumns As BetterArray
+
+
     Set Wksh = Wkb.Worksheets(sParamSheetTemporalAnalysis)
+    Set ValidationListColumns = New BetterArray
 
 
     iCounter = 2
 
     'By default, the new section is 3
-    iSectionRow = 6
+    iSectionRow = 3
 
     'Initialise the newSection
     sPreviousSection = vbNullString
@@ -571,34 +573,55 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
             sActualSummaryFunction = TAData.Items(iCounter, 5)
             sActualSummaryLabel = TAData.Items(iCounter, 6)
             sActualPercentage = TAData.Items(iCounter, 7)
+            sActualMainLabColumn = vbNullString
+            ValidationListColumns.Clear
+
+            'Test if there is a need to enter the process (by testing the time variable)
+            If VarNameData.Includes(sActualTimeVar) Then
+                'Build new section
+                If sPreviousSection <> sActualSection Or iCounter = 2 Then
+
+                    iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis + 2).End(xlUp).Row + 3
+                    iStartCol = C_eStartColumnAnalysis + 2
+
+                    'Create a new section
+                    CreateNewSection Wksh, iSectionRow, C_eStartColumnAnalysis + 2, sActualSection
+
+                    'Update Previous Section
+                    sPreviousSection = sActualSection
+
+                    'Build the GoTo column in the list auto sheet
+                    With Wkb.Worksheets(C_sSheetChoiceAuto)
+                        iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
+                        .Cells(iRow + 1, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") & ": " & sActualSection
+                    End With
+
+                    'Add the start date, Time aggregation, and Time column
+                    AddTimeColumn Wksh, iSectionRow, C_eStartColumnAnalysis + 2
+                End If
+
+
+                'Create a validation lis if there it is needed
+                If VarNameData.Includes(sActualGroupBy) Then
+                    sActualChoice = DictData.Items(VarNameData.IndexOf(sActualGroupBy), DictHeaders.IndexOf(C_sDictHeaderChoices))
+                    sActualMainLabColumn = DictData.Items(VarNameData.IndexOf(sActualGroupBy), DictHeaders.IndexOf(C_sDictHeaderMainLab))
+                    Set ValidationListColumns = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoice)
+                End If
 
 
 
-            'Build new section
-            If sPreviousSection <> sActualSection And sActualSection <> vbNullString Then
+                ' CreateTAHeaders Wksh, iRow:=iSectionRow + 6, ColumnsData:=ValidationListColumns, _
+                '                 iCol:=iStartCol, sMainLabCol:=sActualMainLabColumn, _
+                '                 sSummaryLabel:=sActualSummaryLabel, _
+                '                 sPercent:=sActualPercentage, sMiss:=sActualMissing
 
-                iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis).End(xlUp).Row + 3
+                If ValidationListColumns.Length > 0 Then
+                    iStartCol = iStartCol + ValidationListColumns.Length
+                Else
+                    iStartCol = iStartCol + 1
+                End If
 
-                'Create a new section
-                CreateNewSection Wksh, iSectionRow, C_eStartColumnAnalysis, sActualSection
-
-                'Update Previous Section
-                sPreviousSection = sActualSection
-
-                'Build the GoTo column in the list auto sheet
-
-                With Wkb.Worksheets(C_sSheetChoiceAuto)
-                    iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
-                    .Cells(iRow + 1, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") & ": " & sActualSection
-                End With
             End If
-
-
-
-
-
-
-
 
 
             iCounter = iCounter + 1
