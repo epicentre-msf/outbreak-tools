@@ -10,6 +10,7 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     Dim iGoToColAna As Long
     Dim iGoToColTA  As Long
     Dim iGoToColSA  As Long
+    Dim Rng As Range
 
     ' UNIVARIATE AND BIVARIATE ANALYSIS ============================================================================================
 
@@ -51,24 +52,47 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLUBA, sSheetName:=sParamSheetAnalysis, iGoToCol:=iGoToColAna, iCol:=2
 
     'Allow text wrap only at the end
-    FormatAnalysisWorksheet Wkb, sParamSheetAnalysis, C_sModLLAnaChange
+    FormatAnalysisWorksheet Wkb, sParamSheetAnalysis
 
     'TIME SERIES ANALYSIS =============================================================================================================
 
     'Update the GoTo Column for the time series analysis
 
     With Wkb.Worksheets(C_sSheetChoiceAuto)
+
         iGoToColTA = .Cells(C_eStartlinesListAuto, .Columns.Count).End(xlToLeft).Column + 2
+
+        .Cells(C_eStartlinesListAuto, iGoToColTA).value = C_sTimeAgg
+        .Cells(C_eStartlinesListAuto + 1, iGoToColTA).value = TranslateLLMsg("MSG_Day")
+        .Cells(C_eStartlinesListAuto + 2, iGoToColTA).value = TranslateLLMsg("MSG_Week")
+        .Cells(C_eStartlinesListAuto + 3, iGoToColTA).value = TranslateLLMsg("MSG_Month")
+        .Cells(C_eStartlinesListAuto + 4, iGoToColTA).value = TranslateLLMsg("MSG_Quarter")
+        .Cells(C_eStartlinesListAuto + 5, iGoToColTA).value = TranslateLLMsg("MSG_Year")
+
+        'Define the list object for validation
+        Set Rng = .Range(.Cells(C_eStartlinesListAuto, iGoToColTA), .Cells(C_eStartlinesListAuto + 5, iGoToColTA))
+        .ListObjects.Add(xlSrcRange, Rng, , xlYes).Name = "lo" & "_" & C_sTimeAgg
+
+        iGoToColTA = iGoToColTA + 2
     End With
+
+    'Add a dynamic name for the times series
+    Wkb.Names.Add Name:=C_sTimeAgg, RefersToR1C1:="=" & "lo" & "_" & C_sTimeAgg & "[" & C_sTimeAgg & "]"
 
     'Add Temporal Analysis
     AddTimeSeriesAnalysis Wkb, TAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, iGoToColTA
 
     'Build GoTo Area for the Temporal analysis
-    BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLTA, sSheetName:=sParamSheetTemporalAnalysis, iGoToCol:=iGoToColTA, iCol:= C_eStartColumnAnalysis + 2
+    BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLTA, sSheetName:=sParamSheetTemporalAnalysis, iGoToCol:=iGoToColTA, _
+                  iCol:=C_eStartColumnAnalysis + 2, iFontSize:=C_iAnalysisFontSize
 
     'Format then worksheet for temporal analysis
-    FormatAnalysisWorksheet Wkb, sParamSheetTemporalAnalysis
+    FormatAnalysisWorksheet Wkb, sParamSheetTemporalAnalysis, iColWidth:=C_iLLFirstColumnsWidth - 10
+
+    'Column witdth of the start column
+    With Wkb.Worksheets(sParamSheetTemporalAnalysis)
+        .Cells(1, C_eStartColumnAnalysis + 2).EntireColumn.ColumnWidth = C_iLLFirstColumnsWidth
+    End With
 
 
     'SPATIAL ANALYSIS ================================================================================================================
@@ -483,7 +507,7 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
 
                 iEndCol = C_eStartColumnAnalysis + ValidationListColumns.Length - 1
 
-                CreateBAHeaders Wksh, iRow:=iSectionRow + 3, ColumnsData:=ValidationListColumns, _
+                CreateBATable Wksh, iRow:=iSectionRow + 3, ColumnsData:=ValidationListColumns, _
                                 RowsData:=ValidationListRows, iCol:=C_eStartColumnAnalysis, _
                                 sMainLabRow:=sActualMainLabRow, sMainLabCol:=sActualMainLabColumn, _
                                 sSummaryLabel:=sActualSummaryLabel, _
@@ -519,7 +543,9 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                         DictHeaders As BetterArray, _
                         VarNameData As BetterArray, _
                         iGoToCol As Long, _
-                        Optional sOutlineColor As String = "DarkBlue")
+                        Optional sOutlineColor As String = "DarkBlue", _
+                        Optional sHeaderFontColor As String = "White", _
+                        Optional sHeaderInteriorColor As String = "VeryDarkBlue")
 
 
 
@@ -538,6 +564,7 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
     Dim iCounter As Long                        'Counter for the length of the Time Series Data
     Dim iSectionRow As Long
+    Dim iPrevCol As Long
     Dim iStartCol As Long
 
 
@@ -545,6 +572,7 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
     Dim Wksh As Worksheet
     'Columns for the group by if there is one
     Dim ValidationListColumns As BetterArray
+    Dim Rng As Range
 
 
     Set Wksh = Wkb.Worksheets(sParamSheetTemporalAnalysis)
@@ -556,15 +584,17 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
     'By default, the new section is 3
     iSectionRow = 3
 
+    'Previous column
+    iPrevCol = C_eStartColumnAnalysis + 2
+
     'Initialise the newSection
     sPreviousSection = vbNullString
 
     With Wksh
 
+        iStartCol = C_eStartColumnAdmData + 2
+
         Do While iCounter <= TAData.Length
-
-
-
 
             sActualSection = TAData.Items(iCounter, 1)
             sActualTimeVar = TAData.Items(iCounter, 2)
@@ -585,6 +615,7 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                     iStartCol = C_eStartColumnAnalysis + 2
 
                     'Create a new section
+                    Range(.Cells(iSectionRow, C_eStartColumnAnalysis + 2), .Cells(iSectionRow, C_eStartColumnAnalysis + 3)).Merge
                     CreateNewSection Wksh, iSectionRow, C_eStartColumnAnalysis + 2, sActualSection
 
                     'Update Previous Section
@@ -600,7 +631,6 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                     AddTimeColumn Wksh, iSectionRow, C_eStartColumnAnalysis + 2
                 End If
 
-
                 'Create a validation lis if there it is needed
                 If VarNameData.Includes(sActualGroupBy) Then
                     sActualChoice = DictData.Items(VarNameData.IndexOf(sActualGroupBy), DictHeaders.IndexOf(C_sDictHeaderChoices))
@@ -608,30 +638,35 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                     Set ValidationListColumns = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoice)
                 End If
 
+                CreateBATable Wksh, iRow:=iSectionRow + 6, ColumnsData:=ValidationListColumns, _
+                                 iCol:=iStartCol, sMainLabCol:=sActualMainLabColumn, _
+                                 sSummaryLabel:=sActualSummaryLabel, _
+                                 sPercent:=sActualPercentage, sMiss:=sActualMissing, _
+                                 isTimeSeries:=True
+
+                DoEvents
+
+                iPrevCol = iStartCol + 1
+                iStartCol = .Cells(iSectionRow + 8, .Columns.Count).End(xlToLeft).Column
+
+                Set Rng = Range(.Cells(iSectionRow + 7, iPrevCol), .Cells(iSectionRow + 10 + C_iNbTime, iStartCol))
+                WriteBorderLines Rng, sColor:=sOutlineColor, iWeight:=xlMedium
 
 
-                ' CreateTAHeaders Wksh, iRow:=iSectionRow + 6, ColumnsData:=ValidationListColumns, _
-                '                 iCol:=iStartCol, sMainLabCol:=sActualMainLabColumn, _
-                '                 sSummaryLabel:=sActualSummaryLabel, _
-                '                 sPercent:=sActualPercentage, sMiss:=sActualMissing
+                Set Rng = Range(.Cells(iSectionRow + 6, iPrevCol), .Cells(iSectionRow + 6, iStartCol))
 
-                If ValidationListColumns.Length > 0 Then
-                    iStartCol = iStartCol + ValidationListColumns.Length
-                Else
-                    iStartCol = iStartCol + 1
-                End If
+                Rng.Merge
+                FormatARange Rng:=Rng, sInteriorColor:=sHeaderInteriorColor, sFontColor:=sHeaderFontColor, isBold:=True
+                WriteBorderLines Rng, sColor:=sOutlineColor, iWeight:=xlMedium
+
 
             End If
 
 
             iCounter = iCounter + 1
+
         Loop
 
     End With
-
-
-
-
-
-
+    Set Rng = Nothing
 End Sub
