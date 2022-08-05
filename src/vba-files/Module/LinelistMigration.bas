@@ -412,6 +412,7 @@ Sub ImportMigrationData()
 
     'Test If we have the same language and ask the user if he really want to import.
     IsSameLanguage = TestImportLanguage(WkbImp)
+    Call SetUserDefineConstants
 
     If Not IsSameLanguage Then
 
@@ -624,7 +625,7 @@ End Sub
 
 
 
-'----------------------------------- GEOBASE IMPORT   ------------------------------------------------
+'-------------------------------------------------- GEOBASE IMPORT   ------------------------------------------------
 
 
 'Function to import a Geobase.
