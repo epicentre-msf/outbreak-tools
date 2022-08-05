@@ -3,6 +3,20 @@ Attribute VB_Name = "DesignerAnalysisHelpers"
 
 Option Explicit
 
+'Format each analysis worksheet (global values for the worksheet)
+
+Sub FormatAnalysisWorksheet(Wkb As Workbook, sSheetName As String, _ 
+                            Optional sCodeName As String = vbNullString)
+
+    With Wkb.Worksheets(sSheetName)
+        .Cells.WrapText = True
+        .Cells.EntireRow.AutoFit
+        .Cells.EntireColumn.ColumnWidth = C_iLLFirstColumnsWidth
+    End With
+
+    If sCodeName <> vbNullString Then TransferCodeWks Wkb, sParamSheetAnalysis, sCodeName
+End Sub
+
 
 
 
@@ -735,6 +749,32 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
         If sFormula <> vbNullString And Len(sFormula) < 255 Then BivariateFormula = sFormula
  End Function
 
+ 'FUNCTIONS USED TO BUILD TIME SERIES TABLES ===================================================================================================================
+
+ Sub AddTimeColumn(Wksh As Worksheet, iRow As Long, iCol As Long, _
+                   Optional sInteriorColor As String = "VeryLightBlue", _
+                   Optional sFontColor As String = "DarkBlue")
+
+    Dim Rng As Range
+
+    Const iNbTime As Integer = 52
+
+    With Wksh
+        .Cells(iRow + 2, iCol).value = TranslateLLMsg("MSG_TimeAggregation")
+        .Cells(iRow + 4, iCol).value = TranslateLLMsg("MSG_StartDate")
+        .Cells(iRow + 9, iCol).Formula = "=" & Wksh.Cells(iRow + 2, iCol + 1).Address
+        .Cells(iRow + 10, iCol).value = C_sTimeHeader
+        'Format the range for the time variables
+        Set Rng = Range(.Cells(iRow + 11, iCol), .Cells(iRow + 11 + iNbTime, iCol))
+        FormatARange Rng, sInteriorColor:=sInteriorColor, sFontColor:=sFontColor
+    End With
+
+    Set Rng = Nothing
+
+
+ End Sub
+
+
 
 
 'FUNCTIONS USED TO BUILD FORMULAS ==============================================================================================================================
@@ -749,7 +789,8 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
                                 Optional sFirstCondVar As String = "__all", _
                                 Optional sFirstCondVal As String = "__all", _
                                 Optional sSecondCondVar As String = "__all", _
-                                Optional sSecondCondVal As String = "__all") As String
+                                Optional sSecondCondVal As String = "__all", _
+                                Optional sThirdCondVal As String = "__all") As String
 
 
 
@@ -877,7 +918,7 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
 
                             sAlphaValue = BuildVariateFormula(TableNameData.Item(icolNumb), VarNameData.Item(icolNumb), _
                                                 sVariate, sFirstCondVar, sFirstCondVal, sSecondCondVar, sSecondCondVal, _
-                                                isFiltered)
+                                                sThirdCondVal, isFiltered:=isFiltered)
 
                         End If
 
@@ -930,6 +971,7 @@ Function BuildVariateFormula(sTableName As String, _
                              Optional sFirstCondVal As String = "__all", _
                              Optional sSecondCondVar As String = "__all", _
                              Optional sSecondCondVal As String = "__all", _
+                             Optional sThirdCondVal As String = "__all", _
                              Optional isFiltered As Boolean = False) As String
 
 
@@ -949,10 +991,10 @@ Function BuildVariateFormula(sTableName As String, _
 
     'Fall back to none if you don't precise the univariate / bivariate values: Those are safeguard
 
-    If (sVariate = "univariate" Or sVariate = "univariate total") And _
+    If (sVariate = "univariate") And _
        (sFirstCondVar = "__all" Or sFirstCondVal = "__all") Then sVariate = "none"
 
-    If (sVariate = "bivariate" Or sVariate = "bivariate total") And _
+    If (sVariate = "bivariate") And _
        (sFirstCondVar = "__all" Or sFirstCondVal = "__all" Or sSecondCondVar = "__all" Or sSecondCondVal = "__all") Then sVariate = "none"
 
 
@@ -991,8 +1033,13 @@ Function BuildVariateFormula(sTableName As String, _
                             & Chr(34) & Chr(34) & "), " _
                            & sTable & "[" & sVarName & "]" & ")"
 
-        'By default fall back to simple varname in a table
+        Case "bivariate date"
 
+            sAlphaValue = "IF (AND(" & sTable & "[" & sSecondCondVar & "]" & " >= " & _
+                           sSecondCondVal & sTable & "[" & sSecondCondVar & "]" & " < " & _
+                           sThirdCondVal & "), " & sTable & "[" & sVarName & "]" & ")"
+
+        'By default fall back to simple varname in a table
         Case Else
              sAlphaValue = sTable & "[" & sVarName & "]"
     End Select
@@ -1082,4 +1129,38 @@ Function AnalysisCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As 
     Set VarNameData = Nothing
     Set TableNameData = Nothing
 
+End Function
+
+
+Function TimeSeriesCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As String, sValue1 As String, _
+                         sValue2 As String, Optional isFiltered As Boolean = False) As String
+
+
+    Dim VarNameData As BetterArray
+    Dim TableNameData As BetterArray
+    Dim sTable As String
+    Dim sFormula As String
+
+    Set VarNameData = New BetterArray
+    Set TableNameData = New BetterArray
+
+    VarNameData.LowerBound = 1
+    TableNameData.LowerBound = 1
+
+    VarNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=False, DetectLastRow:=True
+    TableNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderTableName)), _
+                                 DetectLastColumn:=False, DetectLastRow:=True
+
+    sFormula = vbNullString
+
+    If VarNameData.Includes(sVarName) Then
+
+        sTable = TableNameData.Items(VarNameData.IndexOf(sVarName))
+        If isFiltered Then sTable = C_sFiltered & sTable
+
+        sFormula = "COUNTIFS" & "(" & sTable & "[" & sVarName & "], " & ">= " & sValue1 & _
+                    ", " & sTable & "[" & sVarName & "], " & "< " & sValue2 & ")"
+    End If
+
+    TimeSeriesCount = sFormula
 End Function
