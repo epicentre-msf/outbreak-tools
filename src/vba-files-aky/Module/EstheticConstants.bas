@@ -33,3 +33,6 @@ Public Const C_iNumberOfBars                As Integer = 40                     
 Public Const C_iLLSplitColumn               As Integer = 2                                      'Where to split columns of type linelist
 Public Const C_iLLFirstColumnsWidth         As Integer = 22
 Public Const C_iAdmLinesColor               As Integer = 32
+
+'Number of lines to display for a time series table
+Public Const C_iNbTime                      As Integer = 52
