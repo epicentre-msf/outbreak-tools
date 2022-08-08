@@ -98,7 +98,7 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
             FormatARange Rng:=Range(.Cells(iRow + 3, iCol), .Cells(iEndRow, iCol)), sFontColor:=sColor, _
                      sInteriorColor:=sInteriorColor, Horiz:=xlHAlignLeft
         Else
-            iEndRow = iRow + 2 + C_iNbTime
+            iEndRow = iRow + 3 + C_iNbTime
         End If
 
         If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Or isTimeSeries Then
@@ -782,6 +782,8 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
     Dim Rng As Range
     Dim iRow As Long
+    Dim sFormula As String
+    Dim sAgg As String 'Aggregate cell
 
     With Wksh
 
@@ -800,16 +802,49 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
         .Cells(iRow, iCol).value = TranslateLLMsg("MSG_StartDate")
         FormatARange .Cells(iRow, iCol), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignLeft
         FormatARange .Cells(iRow, iCol + 1), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor
+        .Cells(iRow, iCol + 1).Locked = True
 
         'The table for the time values
         iRow = iRow + 5
         .Cells(iRow - 1, iCol).value = TranslateLLMsg("MSG_Period")
-        .Cells(iRow, iCol).Formula = "=" & Wksh.Cells(iRow - 5, iCol + 1).Address
+        .Cells(iRow, iCol - 2).Formula = "= " & .Cells(iRow - 5, iCol + 1).Address
+        .Cells(iRow, iCol - 1).Formula = "= " & "FindLastDay(" & .Cells(iRow - 7, iCol + 1).Address & ", " & .Cells(iRow, iCol - 2).Address & ")"
+
+        'Next row for autofill
+        sAgg = .Cells(iRow - 7, iCol + 1).Address
+        .Cells(iRow + 1, iCol - 2).Formula = "= " & .Cells(iRow, iCol - 1).Address(RowAbsolute:=False, ColumnAbsolute:=False) & "+ 1"
+        .Cells(iRow + 1, iCol - 1).Formula = "= " & "FindLastDay(" & sAgg & ", " _
+                                            & .Cells(iRow + 1, iCol - 2).Address(RowAbsolute:=False, ColumnAbsolute:=False) & ")"
+                                             
+        'Autofill column - 1
+         Set Rng = Range(.Cells(iRow + 1, iCol - 1), .Cells(iRow + C_iNbTime, iCol - 1))
+         .Cells(iRow + 1, iCol - 1).AutoFill Rng
+
+        'Autofill column - 2
+         Set Rng = Range(.Cells(iRow + 1, iCol - 2), .Cells(iRow + C_iNbTime, iCol - 2))
+        .Cells(iRow + 1, iCol - 2).AutoFill Rng
+
+        'Format and AutoFill the Range of values
+        .Cells(iRow, iCol).Formula = "= " & "FormatDateFromLastDay(" & sAgg & ", " & _
+                                    .Cells(iRow, iCol - 1).Address(RowAbsolute:=False, ColumnAbsolute:=False) & ")"
+        
+        'Format the range of time span (from, to)
+        .Cells(iRow - 1, iCol - 2).value = TranslateLLMsg("MSG_From")
+        .Cells(iRow - 1, iCol - 1).value = TranslateLLMsg("MSG_To")
+        Set Rng = Range(.Cells(iRow - 1, iCol - 2), .Cells(iRow + C_iNbTime, iCol - 1))
+        FormatARange Rng, sFontColor:=sSelectionInteriorColor, NumFormat:="dd-mm-yyyy", FontSize:=10
+        Rng.Locked = True
+        
+        'Format the range for period (with labels)
         Set Rng = Range(.Cells(iRow, iCol), .Cells(iRow + C_iNbTime, iCol))
-        FormatARange Rng, sInteriorColor:=sInteriorColor, sFontColor:=sFontColor, isBold := True
-        DrawLines Rng, sColor := sFontColor
-        Set Rng =  Range(.Cells(iRow - 2, iCol), .Cells(iRow + C_iNbTime + 1, iCol))
-        WriteBorderLines Rng, sColor := sFontColor, iWeight := xlMedium
+        .Cells(iRow, iCol).AutoFill Rng
+
+        FormatARange Rng, sInteriorColor:=sInteriorColor, sFontColor:=sFontColor, isBold:=True
+        DrawLines Rng, sColor:=sFontColor
+
+        Set Rng = Range(.Cells(iRow - 2, iCol), .Cells(iRow + C_iNbTime + 2, iCol))
+        WriteBorderLines Rng, sColor:=sFontColor, iWeight:=xlMedium
+        
     End With
 
     Set Rng = Nothing
