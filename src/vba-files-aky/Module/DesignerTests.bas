@@ -3,19 +3,20 @@ Option Explicit
 Sub ShowWindows()
     Windows(ThisWorkbook.Name).Visible = True
     Application.Visible = True
+    EndWork xlsapp:=Application
 End Sub
 
 'Test for the Formulas
 
 Sub TestBuildFormula()
-    
+
     'Testing without filters
     Debug.Print BuildVariateFormula("table1", "outcome")
     Debug.Print BuildVariateFormula("table1", "outcome", sVariate:="univariate")
     Debug.Print BuildVariateFormula("table1", "outcome", sVariate:="univariate", sFirstCondVar:="outcome", sFirstCondVal:=Cells(1, 1).Address)
     Debug.Print BuildVariateFormula("table1", "outcome", sVariate:="bivariate", sFirstCondVar:="outcome", sFirstCondVal:="dead")
     Debug.Print BuildVariateFormula("table1", "outcome", sVariate:="bivariate", sFirstCondVar:="outcome", sFirstCondVal:="dead", sSecondCondVar:="sex", sSecondCondVal:="Male")
-    
+
     'Testing with filters
     Debug.Print BuildVariateFormula("table1", "outcome", isFiltered:=True)
     Debug.Print BuildVariateFormula("table1", "outcome", sVariate:="univariate", isFiltered:=True)
@@ -31,7 +32,7 @@ End Sub
 Sub TestAnalysisFormula()
 
     'Analysis Formula
-    
+
     Debug.Print AnalysisFormula("COUNT(outcome)", ThisWorkbook, isFiltered:=True, sVariate:="univariate", sFirstCondVar:="outcome", sFirstCondVal:="dead")
 
 
@@ -47,6 +48,23 @@ Sub TestCaseWhen()
 
 End Sub
 
+Sub TestFindFistDay()
+Debug.Print Format(FindFirstDay("Quarter", 44780), "Long Date")
+
+End Sub
+
+
+Sub TestAutoFill()
+    Dim sh As Worksheet
+    Dim Rng As Range
+    
+    Set sh = ThisWorkbook.Worksheets("Test")
+    
+    With sh
+        Set Rng = .Range("C1:C30")
+        .Cells(1, 3).AutoFill Rng
+    End With
+End Sub
 
 
 

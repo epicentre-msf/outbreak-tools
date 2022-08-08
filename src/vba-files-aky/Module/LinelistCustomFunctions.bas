@@ -1,5 +1,6 @@
 Attribute VB_Name = "LinelistCustomFunctions"
 
+Option Explicit
 
 'USER DEFINE FUNCTIONS FOR THE LINELIST ==========================================
 
@@ -12,7 +13,8 @@ Attribute VB_Name = "LinelistCustomFunctions"
 'A String
 '
 '@Example: If "A1" contains date, DATE_RANGE("A1")
-'
+
+
 Public Function DATE_RANGE(DateRng As Range) As String
         DATE_RANGE = Format(Application.WorksheetFunction.Min(DateRng), "DD/MM/YYYY") & _
         " - " & Format(Application.WorksheetFunction.Max(DateRng), "DD/MM/YYYY")
@@ -109,3 +111,114 @@ Public Function Epiweek(jour As Long) As Long
         Epiweek = 1 + Int((jour - Jour0_2022) / 7)
     End Select
 End Function
+
+
+'Epiweek function without specifying the year in select cases (works with all years)
+Public Function Epiweek2(currentDate As Long) As Long
+    Dim inDate As Long
+    Dim firstDate As Long
+    
+     inDate = DateSerial(Year(currentDate), 1, 1)
+     firstDate = inDate - Weekday(inDate, 2) + 1
+     
+     Epiweek2 = 1 + (currentDate - firstDate) \ 7
+
+End Function
+
+
+
+'Find the quarter, the year, the week or the month depending on the aggregation ============================================
+
+'Quick function to define the aggregate
+Private Function GetAgg(sAggregate As String) As String
+
+    Select Case sAggregate
+
+    Case TranslateLLMsg("MSG_Day")
+        GetAgg = "day"
+    Case TranslateLLMsg("MSG_Week")
+        GetAgg = "week"
+    Case TranslateLLMsg("MSG_Month")
+        GetAgg = "month"
+    Case TranslateLLMsg("MSG_Quarter")
+        GetAgg = "quarter"
+    Case TranslateLLMsg("MSG_Year")
+        GetAgg = "year"
+    Case Else 'Aggregate as week if unable to find the aggregate (defensive)
+        GetAgg = "week"
+    End Select
+
+End Function
+
+Public Function FindLastDay(sAggregate As String, inDate As Long) As Long
+
+    Dim sAgg As String
+    Dim dLastDay As Long
+    Dim monthQuarter As Integer
+    Dim monthDate As Integer
+
+    sAgg = GetAgg(sAggregate)
+
+    Select Case sAgg
+
+    Case "day"
+
+        dLastDay = inDate
+
+    Case "week"
+
+        dLastDay = inDate - Weekday(inDate, 2) + 7
+
+    Case "month"
+
+        dLastDay = DateSerial(Year(inDate), Month(inDate) + 1, 0)
+
+    Case "quarter"
+
+        monthDate = Month(inDate)
+        monthQuarter = 3 * (IIF((monthDate Mod 3) = 0, ((monthDate - 1) \ 3), (monthDate \ 3))) + 1
+
+        dLastDay = DateSerial(Year(inDate), monthQuarter + 3, 0)
+
+    Case "year"
+
+        dLastDay = DateSerial(Year(inDate) + 1, 1, 0)
+
+    End Select
+
+    FindLastDay = dLastDay
+
+End Function
+
+
+'Format a date to feet the aggregation selection ================================================================
+
+Public Function FormatDateFromLastDay(sAggregate As String, inDate As Long)
+
+    Dim sAgg As String
+    Dim sValue As String
+    Dim monthDate As Integer
+    Dim quarterDate As Integer
+
+    sAgg = GetAgg(sAggregate)
+
+    Select Case sAgg
+
+    Case "day"
+        sValue = Format(inDate, "dd-mmm-yyyy")
+    Case "week"
+        sValue = TranslateLLMsg("MSG_W") & IIF(Epiweek2(inDate) < 10, "0" & Epiweek2(inDate), Epiweek2(inDate)) & " - " & Year(inDate)
+    Case "month"
+        sValue = Format(inDate, "mmm - yyyy")
+    Case "quarter"
+        monthDate = Month(inDate)
+        quarterDate = (IIF((monthDate Mod 3) = 0, ((monthDate - 1) \ 3), (monthDate \ 3))) + 1
+        sValue = TranslateLLMsg("MSG_Q") & quarterDate & " - " & Year(inDate)
+    Case "year"
+        sValue = Year(inDate)
+    End Select
+
+    FormatDateFromLastDay = sValue
+End Function
+
+

@@ -32,6 +32,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Dim SpecCharData            As BetterArray
     Dim DictVarName             As BetterArray
     Dim DictSheetNames          As BetterArray
+    Dim TableNameData           As BetterArray
     Dim iPastingRow             As Integer
     Dim LoRng                   As Range                          'List object's range
     Dim iNbshifted              As Integer
@@ -58,6 +59,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Set SheetsOfTypeLLData = New BetterArray
     Set ChoiceAutoVarData = New BetterArray
     Set DictSheetNames = New BetterArray
+    Set TableNameData = New BetterArray
 
     AddedLogo = False
 
@@ -98,8 +100,13 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     FormulaData.FromExcelRange SheetFormulas.ListObjects(C_sTabExcelFunctions).ListColumns("ENG").DataBodyRange, DetectLastColumn:=False
     SpecCharData.FromExcelRange SheetFormulas.ListObjects(C_sTabASCII).ListColumns("TEXT").DataBodyRange, DetectLastColumn:=False
 
+    VarNameData.LowerBound = 1
+    DictSheetNames.LowerBound = 1
+    TableNameData.LowerBound = 1
+  
     VarNameData.Items = DictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderVarName))
     DictSheetNames.Items = DictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderSheetName))
+    TableNameData.Items = DictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderTableName))
 
     'Create all the required Sheets in the workbook (Dictionnary, Export, Password, Geo and other sheets defined by the user)
     Call CreateSheets(Wkb, DictData, DictHeaders, ExportData, _
@@ -219,7 +226,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
     '======== Build the Analysis ======================================================================================================================================
 
-    Call BuildAnalysis(Wkb, GSData, UAData, BAData, TAData, SAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData)
+    Call BuildAnalysis(Wkb, GSData, UAData, BAData, TAData, SAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, TableNameData)
 
 
     iUpdateCpt = iUpdateCpt + 2
@@ -292,6 +299,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Set FormulaData = Nothing
     Set SpecCharData = Nothing
     Set VarNameData = Nothing
+    Set TableNameData = Nothing
     Set ChoicesListData = Nothing
     Set ChoicesLabelsData = Nothing
     Set DictVarName = Nothing
