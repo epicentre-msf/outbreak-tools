@@ -415,7 +415,7 @@ Public Function ToString( _
     Dim LocalItems() As Variant
     Dim Sep As String
     
-    Sep = IIf(PrettyPrint, Separator & Space(1), Separator)
+    Sep = IIF(PrettyPrint, Separator & Space(1), Separator)
     
     LocalItems = InternalItems
     LocalArrayType = GetArrayType(LocalItems)
@@ -1484,7 +1484,7 @@ Public Function CopyWithin( _
             ToIndex = Min(RelativeTarget, LocalLength)
         End If
         
-        RelativeStart = IIf(StartIndex = MISSING_LONG, LBound(LocalItems), StartIndex)
+        RelativeStart = IIF(StartIndex = MISSING_LONG, LBound(LocalItems), StartIndex)
         
         If RelativeStart < 0 Then
             FromIndex = Max((LocalLength + RelativeStart), 0)
@@ -1772,7 +1772,7 @@ Public Function FromCSVString( _
              RowDelimiter:=LineEnding, _
              Quote:=Quote, _
              IgnoreFirstRow:=IgnoreFirstRow, _
-             ReturnJagged:=IIf(LocalType = BA_JAGGED, True, False), _
+             ReturnJagged:=IIF(LocalType = BA_JAGGED, True, False), _
              Base:=This.LowerBound, _
              DuckType:=DuckType _
                         )
@@ -2836,7 +2836,7 @@ Private Function ElementsAreEqual( _
         If IsNumeric(Expected) And IsNumeric(Actual) Then
             Dim Diff As Double
             Diff = Abs(Expected - Actual)
-            If Diff <= (IIf( _
+            If Diff <= (IIF( _
                         Abs(Expected) < Abs(Actual), _
                         Abs(Actual), _
                         Abs(Expected) _
@@ -2921,7 +2921,7 @@ Private Function ParseArraySegmentFromString( _
         ) As Variant()
     Dim SegmentLength As Long
     Dim Segment() As String
-    SegmentLength = IIf(NextCloser = 0, Len(SourceString), NextCloser - Cursor)
+    SegmentLength = IIF(NextCloser = 0, Len(SourceString), NextCloser - Cursor)
     Segment = Split(Mid$(SourceString, Cursor, SegmentLength), ValueSeparator)
     Cursor = NextCloser
     ParseArraySegmentFromString = DuckTypeStringArray(Segment)
@@ -3616,7 +3616,7 @@ Private Sub RecursiveToString( _
     
     StringBuilder OpeningDelimiter
     For i = LBound(SourceArray) To UBound(SourceArray)
-        Sep = IIf(i = UBound(SourceArray), ClosingDelimiter, Separator)
+        Sep = IIF(i = UBound(SourceArray), ClosingDelimiter, Separator)
         If IsArray(SourceArray(i)) Then
             Dim Nested() As Variant
             Nested = SourceArray(i)
@@ -3813,7 +3813,7 @@ End Function
 Private Sub EnsureCapacity(ByVal MinimumCapacity As Long)
     If This.Capacity < MinimumCapacity Then
         Dim NewCapacity As Long
-        NewCapacity = IIf(This.Capacity = 0, DEFAULT_CAPACITY, This.Capacity * 2)
+        NewCapacity = IIF(This.Capacity = 0, DEFAULT_CAPACITY, This.Capacity * 2)
         If NewCapacity > MAX_ARRAY_LENGTH Then
             NewCapacity = MAX_ARRAY_LENGTH
         End If

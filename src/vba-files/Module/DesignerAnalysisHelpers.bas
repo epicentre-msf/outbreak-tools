@@ -98,7 +98,7 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
             FormatARange Rng:=Range(.Cells(iRow + 3, iCol), .Cells(iEndRow, iCol)), sFontColor:=sColor, _
                      sInteriorColor:=sInteriorColor, Horiz:=xlHAlignLeft
         Else
-            iEndRow = iRow + 2 + C_iNbTime
+            iEndRow = iRow + 3 + C_iNbTime
         End If
 
         If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Or isTimeSeries Then
@@ -638,6 +638,113 @@ Sub AddUATotal(Wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, 
         End With
 End Sub
 
+'Add formulas for TimeSeries
+
+Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
+                        sForm As String, sTimeVar As String, sCondVar As String, _
+                        iRow As Long, iStartCol As Long, iEndCol As Long, sPerc As String, _
+                        sMiss As String)
+
+
+    Dim sFirstTimeCond As String
+    Dim sSecondTimeCond As String
+    Dim sTotalCell As String
+    Dim istep As Long
+    Dim i As Long
+    Dim iInnerEndCol As Long
+    Dim includeMissing As Boolean
+    Dim sFormula As String
+    Dim sCondVal As String
+
+    Dim Rng As Range
+    Dim Wksh As Worksheet
+
+    Set Wksh = Wkb.Worksheets(sParamSheetTemporalAnalysis)
+
+
+    With Wksh
+
+        'includeMissing
+        includeMissing = (sMiss = C_sYes)
+
+        'Update the end column
+        iInnerEndCol = iEndCol
+        'update the step
+        istep = 1
+
+        If sPerc <> C_sNo Then
+            istep = 2
+            iInnerEndCol = iInnerEndCol - 1
+        End If
+        
+        
+        i = iStartCol
+
+        sFirstTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis).Address(RowAbsolute:=False)
+        sSecondTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis + 1).Address(RowAbsolute:=False)
+        
+
+        Do While (i <= iInnerEndCol)
+            sCondVal = .Cells(iRow, i).Address
+            sFormula = TimeSeriesFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sTimeVar:=sTimeVar, _
+                                         sFirstTimeCond:=sFirstTimeCond, sSecondTimeCond:=sSecondTimeCond, _
+                                         sCondVar:=sCondVar, sCondVal:=sCondVal, _
+                                         isFiltered:=True)
+                                         
+            If sFormula <> vbNullString Then
+                .Cells(iRow + 2, i).FormulaArray = sFormula
+                Set Rng = Range(.Cells(iRow + 2, i), .Cells(iRow + 2 + C_iNbTime, i))
+                .Cells(iRow + 2, i).AutoFill Destination:=Rng, Type:=xlFillValues
+            End If
+
+            If sPerc <> C_sNo Then
+                Select Case sPerc
+                    Case C_sAnaRow
+                        sTotalCell = .Cells(iRow + 2, iEndCol - 1).Address(RowAbsolute:=False)
+                    Case C_sAnaCol
+                        sTotalCell = .Cells(iRow + 3 + C_iNbTime, i).Address
+                    Case C_sAnaAll
+                        sTotalCell = .Cells(iRow + 3 + C_iNbTime, iEndCol - 1).Address
+                End Select
+
+                .Cells(iRow + 2, i + 1).Formula = "=" & .Cells(iRow + 2, i).Address(RowAbsolute:=False) & "/" & sTotalCell
+                Set Rng = Range(.Cells(iRow + 2, i + 1), .Cells(iRow + 4 + C_iNbTime, i + 1))
+                .Cells(iRow + 2, i + 1).AutoFill Destination:=Rng, Type:=xlFillValues
+                Rng.NumberFormat = "0.00 %"
+            End If
+
+
+            'Missing row
+            sFormula = UnivariateFormula(Wkb, DictHeaders, sForm, sTimeVar, sCondition:=Chr(34) & Chr(34), isFiltered:=True)
+            If sFormula <> vbNullString Then .Cells(iRow + 3 + C_iNbTime, i).FormulaArray = sFormula
+
+            'Total Row
+            sFormula = UnivariateFormula(Wkb, DictHeaders, sForm, sCondVar, sCondVal, isFiltered:=True)
+
+            If sFormula <> vbNullString Then .Cells(iRow + 4 + C_iNbTime, i).FormulaArray = sFormula
+
+            i = i + istep
+        Loop
+        
+        'Missing column
+        If sMiss = C_sYes Then
+        
+        
+        End If
+        
+        
+        'Total column
+        sFormula = TimeSeriesFormula(Wkb, DictHeaders, sForm, sTimeVar, sFirstTimeCond, sSecondTimeCond, _
+                                     OnTotal:=True, includeMissing:=includeMissing, sCondVar:=sCondVar)
+                                     
+        If sFormula <> vbNullString Then .Cells(iRow + 2, iInnerEndCol).FormulaArray = sFormula
+        Set Rng = Range(.Cells(iRow + 2, iInnerEndCol), .Cells(iRow + 4 + C_iNbTime, iInnerEndCol))
+        .Cells(iRow + 2, iInnerEndCol).AutoFill Destination:=Rng, Type:=xlFillValues
+        
+
+    End With
+End Sub
+
 
 
 'Format one line for univariate analysis
@@ -681,6 +788,8 @@ Sub FormatCell(Wksh As Worksheet, iStartRow As Long, iEndRow As Long, iStartCol 
             End With
     End With
 End Sub
+
+
 
 
 'Add formulas for univariate analysis
@@ -772,6 +881,75 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
         If sFormula <> vbNullString And Len(sFormula) < 255 Then BivariateFormula = sFormula
  End Function
 
+ 'Add formulas for time series
+ Function TimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
+                            sForm As String, sTimeVar As String, _
+                            sFirstTimeCond As String, sSecondTimeCond As String, _
+                            Optional sCondVar As String, _
+                            Optional sCondVal As String, _
+                            Optional isFiltered As Boolean = True, _
+                            Optional OnTotal As Boolean = False, _
+                            Optional includeMissing As Boolean = False) As String
+        Dim sFormula As String
+
+        sFormula = vbNullString
+
+        If sCondVar = vbNullString Then
+
+            Select Case ClearNonPrintableUnicode(sForm)
+
+            Case "COUNT", "COUNT()", "N", "N()"
+                sFormula = TimeSeriesCount(Wkb, DictHeaders, sVarName:=sTimeVar, sValue1:=sFirstTimeCond, _
+                                          sValue2:=sSecondTimeCond, isFiltered:=isFiltered)
+            Case "SUM", "SUM()"
+
+            Case Else
+                sFormula = AnalysisFormula(Wkb, sForm, isFiltered:=isFiltered, sVariate:="bivariate date unique", _
+                                        sSecondCondVar:=sTimeVar, sSecondCondVal:=sFirstTimeCond, _
+                                        sThirdCondVal:=sSecondTimeCond)
+            End Select
+
+        Else
+
+            Select Case ClearNonPrintableUnicode(sForm)
+
+
+            Case "COUNT", "COUNT()", "N", "N()"
+
+                sFormula = TimeSeriesCount(Wkb, DictHeaders, sVarName:=sTimeVar, sValue1:=sFirstTimeCond, sValue2:=sSecondTimeCond, _
+                                          isFiltered:=isFiltered, sFirstCondVar:=sCondVar, sFirstCondVal:=sCondVal, OnTotal:=OnTotal, _
+                                          includeMissing:=includeMissing)
+
+
+            Case "SUM", "SUM()"
+
+
+            Case Else
+
+                If OnTotal And Not includeMissing Then
+
+                    sFormula = AnalysisFormula(Wkb, sForm, isFiltered:=isFiltered, sVariate:="bivariate date not missing", _
+                                                sFirstCondVar:=sCondVar, sSecondCondVar:=sTimeVar, _
+                                                sSecondCondVal:=sFirstTimeCond, sThirdCondVal:=sSecondTimeCond)
+                ElseIf OnTotal Then
+
+                    sFormula = AnalysisFormula(Wkb, sForm, isFiltered:=isFiltered, sVariate:="bivariate date unique", _
+                                                sSecondCondVar:=sTimeVar, sSecondCondVal:=sFirstTimeCond, _
+                                                sThirdCondVal:=sSecondTimeCond)
+                Else
+
+                    sFormula = AnalysisFormula(Wkb, sForm, isFiltered:=isFiltered, sVariate:="bivariate date", _
+                                                sFirstCondVar:=sCondVar, sFirstCondVal:=sCondVal, sSecondCondVar:=sTimeVar, _
+                                                sSecondCondVal:=sFirstTimeCond, sThirdCondVal:=sSecondTimeCond)
+
+                End If
+
+            End Select
+        End If
+    If sFormula <> vbNullString And Len(sFormula) < 255 Then TimeSeriesFormula = sFormula
+ End Function
+
+
  'FUNCTIONS USED TO BUILD TIME SERIES TABLES ===================================================================================================================
 
  Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
@@ -782,6 +960,8 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
     Dim Rng As Range
     Dim iRow As Long
+    Dim sFormula As String
+    Dim sAgg As String 'Aggregate cell
 
     With Wksh
 
@@ -800,16 +980,49 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
         .Cells(iRow, iCol).value = TranslateLLMsg("MSG_StartDate")
         FormatARange .Cells(iRow, iCol), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignLeft
         FormatARange .Cells(iRow, iCol + 1), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor
+        .Cells(iRow, iCol + 1).Locked = True
 
         'The table for the time values
         iRow = iRow + 5
         .Cells(iRow - 1, iCol).value = TranslateLLMsg("MSG_Period")
-        .Cells(iRow, iCol).Formula = "=" & Wksh.Cells(iRow - 5, iCol + 1).Address
+        .Cells(iRow, iCol - 2).Formula = "= " & .Cells(iRow - 5, iCol + 1).Address
+        .Cells(iRow, iCol - 1).Formula = "= " & "FindLastDay(" & .Cells(iRow - 7, iCol + 1).Address & ", " & .Cells(iRow, iCol - 2).Address & ")"
+
+        'Next row for autofill
+        sAgg = .Cells(iRow - 7, iCol + 1).Address
+        .Cells(iRow + 1, iCol - 2).Formula = "= " & .Cells(iRow, iCol - 1).Address(RowAbsolute:=False, ColumnAbsolute:=False) & "+ 1"
+        .Cells(iRow + 1, iCol - 1).Formula = "= " & "FindLastDay(" & sAgg & ", " _
+                                            & .Cells(iRow + 1, iCol - 2).Address(RowAbsolute:=False, ColumnAbsolute:=False) & ")"
+
+        'Autofill column - 1
+         Set Rng = Range(.Cells(iRow + 1, iCol - 1), .Cells(iRow + C_iNbTime, iCol - 1))
+         .Cells(iRow + 1, iCol - 1).AutoFill Rng
+
+        'Autofill column - 2
+         Set Rng = Range(.Cells(iRow + 1, iCol - 2), .Cells(iRow + C_iNbTime, iCol - 2))
+        .Cells(iRow + 1, iCol - 2).AutoFill Rng
+
+        'Format and AutoFill the Range of values
+        .Cells(iRow, iCol).Formula = "= " & "FormatDateFromLastDay(" & sAgg & ", " & _
+                                    .Cells(iRow, iCol - 1).Address(RowAbsolute:=False, ColumnAbsolute:=False) & ")"
+
+        'Format the range of time span (from, to)
+        .Cells(iRow - 1, iCol - 2).value = TranslateLLMsg("MSG_From")
+        .Cells(iRow - 1, iCol - 1).value = TranslateLLMsg("MSG_To")
+        Set Rng = Range(.Cells(iRow - 1, iCol - 2), .Cells(iRow + C_iNbTime, iCol - 1))
+        FormatARange Rng, sFontColor:=sSelectionInteriorColor, NumFormat:="dd-mm-yyyy", FontSize:=10
+        Rng.Locked = True
+
+        'Format the range for period (with labels)
         Set Rng = Range(.Cells(iRow, iCol), .Cells(iRow + C_iNbTime, iCol))
+        .Cells(iRow, iCol).AutoFill Rng
+
         FormatARange Rng, sInteriorColor:=sInteriorColor, sFontColor:=sFontColor, isBold:=True
         DrawLines Rng, sColor:=sFontColor
-        Set Rng = Range(.Cells(iRow - 2, iCol), .Cells(iRow + C_iNbTime + 1, iCol))
+
+        Set Rng = Range(.Cells(iRow - 2, iCol), .Cells(iRow + C_iNbTime + 2, iCol))
         WriteBorderLines Rng, sColor:=sFontColor, iWeight:=xlMedium
+
     End With
 
     Set Rng = Nothing
@@ -1077,8 +1290,23 @@ Function BuildVariateFormula(sTableName As String, _
 
         Case "bivariate date"
 
-            sAlphaValue = "IF (AND(" & sTable & "[" & sSecondCondVar & "]" & " >= " & _
-                           sSecondCondVal & sTable & "[" & sSecondCondVar & "]" & " < " & _
+            sAlphaValue = "IF(AND(" & sTable & "[" & sFirstCondVar & "]" & "=" & _
+                            sFirstCondVal & ", " _
+                             & sTable & "[" & sSecondCondVar & "]" & " >= " & _
+                           sSecondCondVal & ", " & sTable & "[" & sSecondCondVar & "]" & " <= " & _
+                           sThirdCondVal & "), " & sTable & "[" & sVarName & "]" & ")"
+
+        Case "bivariate date not missing"
+
+            sAlphaValue = "IF(AND(" & sTable & "[" & sFirstCondVar & "]" & " <> " & _
+                             Chr(34) & Chr(34) & ", " & _
+                             sTable & "[" & sSecondCondVar & "]" & " >= " & _
+                           sSecondCondVal & ", " & sTable & "[" & sSecondCondVar & "]" & " <= " & _
+                           sThirdCondVal & "), " & sTable & "[" & sVarName & "]" & ")"
+
+        Case "bivariate date unique"
+            sAlphaValue = "IF(AND(" & sTable & "[" & sSecondCondVar & "]" & " >= " & _
+                           sSecondCondVal & ", " & sTable & "[" & sSecondCondVar & "]" & " <= " & _
                            sThirdCondVal & "), " & sTable & "[" & sVarName & "]" & ")"
 
         'By default fall back to simple varname in a table
@@ -1093,7 +1321,6 @@ End Function
 
 
 'Analysis Count
-
 
 Function AnalysisCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As String, sValue As String, _
                      Optional sVarName2 As String = "", Optional sValue2 As String = "", Optional isFiltered As Boolean = False, _
@@ -1175,7 +1402,11 @@ End Function
 
 
 Function TimeSeriesCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As String, sValue1 As String, _
-                         sValue2 As String, Optional isFiltered As Boolean = False) As String
+                         sValue2 As String, Optional isFiltered As Boolean = False, _
+                         Optional sFirstCondVar As String = "", _
+                         Optional sFirstCondVal As String = "", _
+                         Optional OnTotal As Boolean = False, _
+                         Optional includeMissing As Boolean = True) As String
 
 
     Dim VarNameData As BetterArray
@@ -1194,15 +1425,36 @@ Function TimeSeriesCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName A
                                  DetectLastColumn:=False, DetectLastRow:=True
 
     sFormula = vbNullString
-
+    
     If VarNameData.Includes(sVarName) Then
-
         sTable = TableNameData.Items(VarNameData.IndexOf(sVarName))
         If isFiltered Then sTable = C_sFiltered & sTable
-
-        sFormula = "COUNTIFS" & "(" & sTable & "[" & sVarName & "], " & ">= " & sValue1 & _
-                    ", " & sTable & "[" & sVarName & "], " & "< " & sValue2 & ")"
+    
+        If sFirstCondVar = vbNullString Or (OnTotal And includeMissing) Then
+    
+                sFormula = "= COUNTIFS" & "(" & sTable & "[" & sVarName & "]," & Chr(34) & ">=" & Chr(34) & "&" & sValue1 & _
+                            ", " & sTable & "[" & sVarName & "]," & Chr(34) & "<=" & Chr(34) & "&" & sValue2 & ")"
+        Else
+            If VarNameData.Includes(sFirstCondVar) Then
+            
+            'Total without missing
+            
+                If OnTotal And Not includeMissing Then
+                    
+                    sFormula = "= COUNTIFS" & "(" & sTable & "[" & sFirstCondVar & "]" & ", " & _
+                                     Chr(34) & "<>" & Chr(34) & ", " & sTable & "[" & sVarName & "], " & Chr(34) & ">=" & Chr(34) & "&" & sValue1 & _
+                                ", " & sTable & "[" & sVarName & "], " & Chr(34) & "<=" & Chr(34) & "&" & sValue2 & ")"
+                    
+                Else
+        
+                    sFormula = "= COUNTIFS" & "(" & sTable & "[" & sFirstCondVar & "]" & ", " & _
+                                     sFirstCondVal & ", " & sTable & "[" & sVarName & "], " & Chr(34) & ">=" & Chr(34) & "&" & sValue1 & _
+                                ", " & sTable & "[" & sVarName & "], " & Chr(34) & "<=" & Chr(34) & "&" & sValue2 & ")"
+                End If
+            End If
+        End If
+    
     End If
 
-    TimeSeriesCount = sFormula
+    If sFormula <> vbNullString And Len(sFormula) < 255 Then TimeSeriesCount = sFormula
 End Function
