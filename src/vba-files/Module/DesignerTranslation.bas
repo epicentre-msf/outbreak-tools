@@ -250,7 +250,7 @@ Function GetTranslatedValue(ByVal sText As String) As String
 
     'search in linelist language
     sLangSetup = SheetMain.Range(C_sRngLangSetup).value
-    iColLang = IIf(sLangSetup <> "", SheetSetTranslation.Rows(C_eStartLinesTransdata).Find(What:=sLangSetup, LookAt:=xlWhole).Column, C_eStartcolumntransdata)
+    iColLang = IIF(sLangSetup <> "", SheetSetTranslation.Rows(C_eStartLinesTransdata).Find(What:=sLangSetup, LookAt:=xlWhole).Column, C_eStartcolumntransdata)
 
     With DesignerWorkbook.Worksheets(C_sParamSheetTranslation)
         Set rngTrans = .ListObjects(C_sTabTranslation).DataBodyRange
@@ -452,7 +452,7 @@ Sub TranslateAnalysis()
          iStartColumn = .Range.Column
         Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine, iStartColumn)
     End With
-    
+
 
     'Translate the column of label
     iCol = Headers.IndexOf(C_sAnaSumLabel)

@@ -55,15 +55,17 @@ End Sub
 
 
 Sub TestAutoFill()
-    Dim sh As Worksheet
-    Dim Rng As Range
-    
-    Set sh = ThisWorkbook.Worksheets("Test")
-    
-    With sh
-        Set Rng = .Range("C1:C30")
-        .Cells(1, 3).AutoFill Rng
-    End With
+  Dim DictHeaders As BetterArray
+  Dim sForm As String
+  Dim sTimeVar As String
+  
+  Set DictHeaders = GetHeaders(ThisWorkbook, C_sParamSheetDict, 1)
+  sForm = "COUNTA(case_id)"
+  sTimeVar = "date_notification"
+  
+  
+  Debug.Print TimeSeriesCount(ThisWorkbook, DictHeaders, sTimeVar, "2022", "2023", _
+                        isFiltered:=True)
 End Sub
 
 

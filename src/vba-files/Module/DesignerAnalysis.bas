@@ -5,7 +5,7 @@ Option Explicit
 Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As BetterArray, BAData As BetterArray, _
                         TAData As BetterArray, SAData As BetterArray, _
                         ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, DictData As BetterArray, _
-                        DictHeaders As BetterArray, VarNameData As BetterArray)
+                        DictHeaders As BetterArray, VarNameData As BetterArray, TableNameData As BetterArray)
 
     Dim iGoToColAna As Long
     Dim iGoToColTA  As Long
@@ -80,7 +80,7 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     Wkb.Names.Add Name:=C_sTimeAgg, RefersToR1C1:="=" & "lo" & "_" & C_sTimeAgg & "[" & C_sTimeAgg & "]"
 
     'Add Temporal Analysis
-    AddTimeSeriesAnalysis Wkb, TAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, iGoToColTA
+    AddTimeSeriesAnalysis Wkb, TAData, ChoicesListData, ChoicesLabelsData, DictData, DictHeaders, VarNameData, TableNameData, iGoToColTA
 
     'Build GoTo Area for the Temporal analysis
     BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLTA, sSheetName:=sParamSheetTemporalAnalysis, iGoToCol:=iGoToColTA, _
@@ -542,10 +542,12 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                         DictData As BetterArray, _
                         DictHeaders As BetterArray, _
                         VarNameData As BetterArray, _
+                        TableNameData As BetterArray, _
                         iGoToCol As Long, _
                         Optional sOutlineColor As String = "DarkBlue", _
                         Optional sHeaderFontColor As String = "White", _
-                        Optional sHeaderInteriorColor As String = "VeryDarkBlue")
+                        Optional sHeaderInteriorColor As String = "VeryDarkBlue", _
+                        Optional isFiltered As Boolean = True)
 
 
 
@@ -560,6 +562,9 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
     Dim sActualPercentage As String
     Dim sActualChoice As String
     Dim sActualMainLabColumn As String
+    Dim sMinimumFormula As String
+    Dim sPrevTimeVar As String
+    Dim sTableName As String
     Dim iRow As Long
 
     Dim iCounter As Long                        'Counter for the length of the Time Series Data
@@ -589,6 +594,7 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
     'Initialise the newSection
     sPreviousSection = vbNullString
+    sPrevTimeVar = vbNullString
 
     With Wksh
 
@@ -608,15 +614,29 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
             'Test if there is a need to enter the process (by testing the time variable)
             If VarNameData.Includes(sActualTimeVar) Then
+
+                sTableName = TableNameData.Items(VarNameData.IndexOf(sActualTimeVar))
+
+                If isFiltered Then sTableName = C_sFiltered & sTableName
+
                 'Build new section
                 If sPreviousSection <> sActualSection Or iCounter = 2 Then
+
+                    'Update the Mimimum if it is not the first time
+                    If iCounter <> 2 Then
+                        With .Cells(iSectionRow + 4, C_eStartColumnAnalysis + 3)
+                            .Formula = "= MIN(" & sMinimumFormula & ")"
+                            .Locked = True
+                        End With
+                    End If
 
                     iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis + 2).End(xlUp).Row + 3
                     iStartCol = C_eStartColumnAnalysis + 2
 
-                    'Create a new section
+                    'Create a new section, and new minimum formula
                     Range(.Cells(iSectionRow, C_eStartColumnAnalysis + 2), .Cells(iSectionRow, C_eStartColumnAnalysis + 3)).Merge
                     CreateNewSection Wksh, iSectionRow, C_eStartColumnAnalysis + 2, sActualSection
+                    sMinimumFormula = vbNullString
 
                     'Update Previous Section
                     sPreviousSection = sActualSection
@@ -631,6 +651,17 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                     AddTimeColumn Wksh, iSectionRow, C_eStartColumnAnalysis + 2
                 End If
 
+                'Update the minimum formula
+                If sPrevTimeVar <> sActualTimeVar Then
+                    'New time variable, update the minmum formula
+                    If sMinimumFormula = vbNullString Then
+                        sMinimumFormula = "MIN(" & sTableName & "[" & sActualTimeVar & "]" & ")"
+                    Else
+                        sMinimumFormula = sMinimumFormula & ", " & "MIN(" & sTableName & "[" & sActualTimeVar & "]" & ")"
+                    End If
+                    sPrevTimeVar = sActualTimeVar
+                End If
+
                 'Create a validation lis if there it is needed
                 If VarNameData.Includes(sActualGroupBy) Then
                     sActualChoice = DictData.Items(VarNameData.IndexOf(sActualGroupBy), DictHeaders.IndexOf(C_sDictHeaderChoices))
@@ -643,13 +674,19 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                                  sSummaryLabel:=sActualSummaryLabel, _
                                  sPercent:=sActualPercentage, sMiss:=sActualMissing, _
                                  isTimeSeries:=True
-
                 DoEvents
 
                 iPrevCol = iStartCol + 1
                 iStartCol = .Cells(iSectionRow + 8, .Columns.Count).End(xlToLeft).Column
 
-                Set Rng = Range(.Cells(iSectionRow + 7, iPrevCol), .Cells(iSectionRow + 10 + C_iNbTime, iStartCol))
+                AddTimeSeriesFormula Wkb, DictHeaders:=DictHeaders, sForm:=sActualSummaryFunction, _
+                                     sTimeVar:=sActualTimeVar, sCondVar:=sActualGroupBy, iRow:=iSectionRow + 7, _
+                                     iStartCol:=iPrevCol, iEndCol:=iStartCol, sPerc:=sActualPercentage, _
+                                     sMiss:=sActualMissing
+
+
+
+                Set Rng = Range(.Cells(iSectionRow + 7, iPrevCol), .Cells(iSectionRow + 11 + C_iNbTime, iStartCol))
                 WriteBorderLines Rng, sColor:=sOutlineColor, iWeight:=xlMedium
 
 
@@ -659,13 +696,18 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                 FormatARange Rng:=Rng, sInteriorColor:=sHeaderInteriorColor, sFontColor:=sHeaderFontColor, isBold:=True
                 WriteBorderLines Rng, sColor:=sOutlineColor, iWeight:=xlMedium
 
-
             End If
 
 
             iCounter = iCounter + 1
 
         Loop
+
+        'Add formula at the end for the start date
+        With .Cells(iSectionRow + 4, C_eStartColumnAnalysis + 3)
+            .Formula = "= MIN(" & sMinimumFormula & ")"
+            .Locked = True
+        End With
 
     End With
     Set Rng = Nothing

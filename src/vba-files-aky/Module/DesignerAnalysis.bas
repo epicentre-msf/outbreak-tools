@@ -674,11 +674,17 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                                  sSummaryLabel:=sActualSummaryLabel, _
                                  sPercent:=sActualPercentage, sMiss:=sActualMissing, _
                                  isTimeSeries:=True
-
                 DoEvents
 
                 iPrevCol = iStartCol + 1
                 iStartCol = .Cells(iSectionRow + 8, .Columns.Count).End(xlToLeft).Column
+
+                AddTimeSeriesFormula Wkb, DictHeaders:=DictHeaders, sForm:=sActualSummaryFunction, _
+                                     sTimeVar:=sActualTimeVar, sCondVar:=sActualGroupBy, iRow:=iSectionRow + 7, _
+                                     iStartCol:=iPrevCol, iEndCol:=iStartCol, sPerc:=sActualPercentage, _
+                                     sMiss:=sActualMissing
+
+
 
                 Set Rng = Range(.Cells(iSectionRow + 7, iPrevCol), .Cells(iSectionRow + 11 + C_iNbTime, iStartCol))
                 WriteBorderLines Rng, sColor:=sOutlineColor, iWeight:=xlMedium
