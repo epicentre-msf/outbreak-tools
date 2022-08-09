@@ -426,7 +426,7 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         'Put in bold
         .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
         .Cells(iStartLine + 2, iCol + 1).Locked = False
-        
+
         Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol + 1), "=" & C_sAdmName & "_4_" & "dropdown", 2, sMessage)
 
         'Admin 3
@@ -435,7 +435,7 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(Wkb, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "3" & "_" & sVarName
         .Cells(iStartLine + 1, iCol + 1).value = C_sAdmName & "3" & "_" & sVarName
-        
+
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
 
 
@@ -605,7 +605,7 @@ Sub BuildSubSectionVMerge(Wksh As Worksheet, iColumn As Integer, iLineFrom As In
 
     Dim iLastLine As Integer
     'Last Column can be 1, in that case move to the first column
-    iLastLine = IIf(iLineTo <= 1, 1, iLineTo - 1)
+    iLastLine = IIF(iLineTo <= 1, 1, iLineTo - 1)
 
     'Merge Area for Worksheet
     MergeArea Wksh, iLineFrom:=iLineFrom, iLineTo:=iLastLine, iColFrom:=iColumn, iColTo:=iColumn
@@ -665,7 +665,7 @@ Sub BuildSubSectionHMerge(Wksh As Worksheet, iLine As Integer, iColumnFrom As In
 
     Dim iLastCol As Integer
     'Last Column can be 1, in that case move to the first column
-    iLastCol = IIf(iColumnTo <= 1, 1, iColumnTo - 1)
+    iLastCol = IIF(iColumnTo <= 1, 1, iColumnTo - 1)
 
     'Merge Area for Worksheet
     MergeArea Wksh, iLineFrom:=iLine, iLineTo:=iLine, iColFrom:=iColumnFrom, iColTo:=iLastCol
