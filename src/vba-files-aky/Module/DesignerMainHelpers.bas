@@ -49,7 +49,7 @@ Public Function ControlForGenerate() As Boolean
 
     SheetMain.Range(C_sRngPathDic).Interior.Color = GetColor("White") 'if path is OK
 
-    'Checking coherence of the GEO  ------------------------------------------------
+    'Checking coherence of the GEO  ------------------------------------------------------------------------
 
     'Be sure the geo path is not empty
     If SheetMain.Range(C_sRngPathGeo).value = "" Then
@@ -255,7 +255,7 @@ End Sub
 Sub LowerRng(Rng As Range)
     Dim c As Range
 
-    If Not Rng is Nothing
+    If Not Rng Is Nothing Then
         For Each c In Rng
             c.value = LCase(c.value)
         Next
@@ -268,11 +268,11 @@ End Sub
 
 Sub TrimRng(Rng As Range)
     Dim c As Range
-    If Not Rng is Nothing
+    If Not Rng Is Nothing Then
         For Each c In Rng
             c.value = ClearNonPrintableUnicode(c.value)
         Next
-    Next
+    End If
 End Sub
 
 
@@ -389,6 +389,7 @@ Sub Preprocessing(DictHeaders As BetterArray)
 
             If sPrevSheetName <> .Cells(i, iSheetNameCol) Then
                 'New sheet name, we should
+            End If
 
 
 
