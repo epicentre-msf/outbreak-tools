@@ -1,49 +1,54 @@
 Attribute VB_Name = "LinelistConstants"
 
+'@NoIndent
+'@IgnoreModule
+
+'Don't indent this constant module, and ignore it in code inspection
+
 Option Explicit
 
-Public Const C_sSheetGeo                As String = "GEO"                                'Sheet for storing the geo data // Feuille des donnees geo
-Public Const C_sSheetAdmin              As String = "Admin"                              'Name of the sheet for admin data (metadata on a linelist)
-Public Const C_sSheetPassword           As String = "Password"                           'sheet for password management
-Public Const C_sSheetFormulas           As String = "ControleFormule"                    'Sheet for formula management (mainly in the validation)
+Public Const C_sSheetGeo                As String = "GEO" 'Sheet for storing the geo data // Feuille des donnees geo
+Public Const C_sSheetAdmin              As String = "Admin" 'Name of the sheet for admin data (metadata on a linelist)
+Public Const C_sSheetPassword           As String = "Password" 'sheet for password management
+Public Const C_sSheetFormulas           As String = "ControleFormule" 'Sheet for formula management (mainly in the validation)
 Public Const C_sSheetLLTranslation      As String = "LinelistTranslation"
-Public Const C_sSheetTemp               As String = "Temp_"                              'Temporary sheet for data manipulation and doing stuffs
+Public Const C_sSheetTemp               As String = "Temp_" 'Temporary sheet for data manipulation and doing stuffs
 Public Const C_sSheetMetadata           As String = "Metadata"
 Public Const C_sSheetChoiceAuto         As String = "List_auto_"
-Public Const C_sSheetAnalysisTemp       As String = "Ana_temp_"                          'Temporary sheet for analysis and stuffs
+Public Const C_sSheetAnalysisTemp       As String = "Ana_temp_" 'Temporary sheet for analysis and stuffs
 Public Const C_sSheetImportTemp         As String = "Import_temp_"
-Public Const C_sSheetAnalysis           As String = "Analysis"                           'Default name of analysis sheet
-Public Const C_sSheetTemporalAnalysis   As String = "Temporal Analysis"                  'Default name of sheet for temporal analysis
-Public Const C_sSheetSpatialAnalysis   As String = "Spacial Analysis"                   'Default name of sheet for spacial analysis
+Public Const C_sSheetAnalysis           As String = "Analysis" 'Default name of analysis sheet
+Public Const C_sSheetTemporalAnalysis   As String = "Temporal Analysis" 'Default name of sheet for temporal analysis
+Public Const C_sSheetSpatialAnalysis    As String = "Spacial Analysis" 'Default name of sheet for spacial analysis
 Public Const C_sSheetDebug              As String = "Debug___"
 
 'Sheets in the setup file: The all starts with Param
 
-Public Const C_sParamSheetDict          As String = "Dictionary"                         'Dictionnary Sheet in the setup file
-Public Const C_sParamSheetExport        As String = "Exports"                            'Sheet with configurations for the export  in the setup filefile
-Public Const C_sParamSheetChoices       As String = "Choices"                            'Sheet with configurations for the choices in the setup file
-Public Const C_sParamSheetTranslation   As String = "Translations"                        'Translation Sheet in the setup file
+Public Const C_sParamSheetDict          As String = "Dictionary" 'Dictionnary Sheet in the setup file
+Public Const C_sParamSheetExport        As String = "Exports" 'Sheet with configurations for the export  in the setup filefile
+Public Const C_sParamSheetChoices       As String = "Choices" 'Sheet with configurations for the choices in the setup file
+Public Const C_sParamSheetTranslation   As String = "Translations" 'Translation Sheet in the setup file
 Public Const C_sParamSheetAnalysis      As String = "Analysis"
 
 'DICTIONARY PARAMETERS ================================================================================================================================================================================
 
 'Headers of the dictionnary in the setup file Headers are fixed________________________________________________________________________________________________________________________________________
 
-Public Const C_sDictHeaderVarName       As String = "variable name"                      'Variable Name (unique identifier of a variable in lowercase without spaces)
-Public Const C_sDictHeaderMainLab       As String = "main label"                         'Variable Label
-Public Const C_sDictHeaderSubLab        As String = "sub label"                          'Variable Sub Label (sub label of the variable name in gray)
-Public Const C_sDictHeaderNote          As String = "note"                               'Notes to show for the variable
-Public Const C_sDictHeaderSheetName     As String = "sheet name"                         'Name of the sheet to add to the linelist
-Public Const C_sDictHeaderSheetType     As String = "sheet type"                         'Type of the sheet to add to the linelist
-Public Const C_sDictHeaderMainSec       As String = "main section"                       'Main Section of the variable (to show in heading)
-Public Const C_sDictHeaderSubSec        As String = "sub section"                        'Sub Section of the variable to show under the headings
-Public Const C_sDictHeaderStatus        As String = "status"                             'Status of the variable
-Public Const C_sDictHeaderId            As String = "personal identifier"                'Is the variable a personal identifier?
-Public Const C_sDictHeaderType          As String = "type"                               'Type of the variable
-Public Const C_sDictHeaderControl       As String = "control"                            'Control for the variable (one of the differents types of control)
-Public Const C_sDictHeaderFormula       As String = "formula"                            'Formulas for the variable
-Public Const C_sDictHeaderChoices       As String = "choices"                            'Different types of choices for one variable
-Public Const C_sDictHeaderUnique        As String = "unique"                             '
+Public Const C_sDictHeaderVarName       As String = "variable name" 'Variable Name (unique identifier of a variable in lowercase without spaces)
+Public Const C_sDictHeaderMainLab       As String = "main label" 'Variable Label
+Public Const C_sDictHeaderSubLab        As String = "sub label" 'Variable Sub Label (sub label of the variable name in gray)
+Public Const C_sDictHeaderNote          As String = "note" 'Notes to show for the variable
+Public Const C_sDictHeaderSheetName     As String = "sheet name" 'Name of the sheet to add to the linelist
+Public Const C_sDictHeaderSheetType     As String = "sheet type" 'Type of the sheet to add to the linelist
+Public Const C_sDictHeaderMainSec       As String = "main section" 'Main Section of the variable (to show in heading)
+Public Const C_sDictHeaderSubSec        As String = "sub section" 'Sub Section of the variable to show under the headings
+Public Const C_sDictHeaderStatus        As String = "status" 'Status of the variable
+Public Const C_sDictHeaderId            As String = "personal identifier" 'Is the variable a personal identifier?
+Public Const C_sDictHeaderType          As String = "type" 'Type of the variable
+Public Const C_sDictHeaderControl       As String = "control" 'Control for the variable (one of the differents types of control)
+Public Const C_sDictHeaderFormula       As String = "formula" 'Formulas for the variable
+Public Const C_sDictHeaderChoices       As String = "choices" 'Different types of choices for one variable
+Public Const C_sDictHeaderUnique        As String = "unique" '
 Public Const C_sDictHeaderSource        As String = "source"
 Public Const C_sDictHeaderHxl           As String = "hxl"
 Public Const C_sDictHeaderExport1       As String = "export 1"
@@ -106,8 +111,8 @@ Public Const C_sDictTypeDec             As String = "decimal"
 
 'CHOICES PARAMETERS ===================================================================================================================================================================================
 
-Public Const C_sChoiHeaderLab           As String = "label"                             'Choice label name headers
-Public Const C_sChoiHeaderList          As String = "list name"                         'Choice list headers
+Public Const C_sChoiHeaderLab           As String = "label" 'Choice label name headers
+Public Const C_sChoiHeaderList          As String = "list name" 'Choice list headers
 Public Const C_sChoiHeaderLabShort      As String = "label short"
 
 'EXPORTS PARAMETERS ===================================================================================================================================================================================
@@ -142,25 +147,25 @@ Public Const C_sAnaAll                  As String = "all"
 
 'FORMS ================================================================================================================================================================================================
 
-Public Const C_sFormExport               As String = "F_Export"                          'Export Frame
-Public Const C_sFormGeo                  As String = "F_Geo"                             'Geo Frame
-Public Const C_sFormShowHide             As String = "F_NomVisible"                      'ShowHide Frame
-Public Const C_sFormExportMig            As String = "F_ExportMig"                       'Export for Migration form
-Public Const C_sFormAdvanced             As String = "F_Advanced"                       'Import for Migration form
+Public Const C_sFormExport               As String = "F_Export" 'Export Frame
+Public Const C_sFormGeo                  As String = "F_Geo" 'Geo Frame
+Public Const C_sFormShowHide             As String = "F_NomVisible" 'ShowHide Frame
+Public Const C_sFormExportMig            As String = "F_ExportMig" 'Export for Migration form
+Public Const C_sFormAdvanced             As String = "F_Advanced" 'Import for Migration form
 Public Const C_sFormImportRep            As String = "F_ImportRep"
 
 'TABLES LISTOBJECTS ===================================================================================================================================================================================
 
 'Admin levels tables in the Geo Sheet
 
-Public Const C_sTabadm1                  As String = "T_ADM1"                              'ADM1 Table name
-Public Const C_sTabAdm2                  As String = "T_ADM2"                              'ADM2 Table name
-Public Const C_sTabAdm3                  As String = "T_ADM3"                              'ADM3 Table name
-Public Const C_sTabAdm4                  As String = "T_ADM4"                              'ADM4 Table name
-Public Const C_sTabHF                    As String = "T_HF"                                'Health Facility Table
+Public Const C_sTabadm1                  As String = "T_ADM1" 'ADM1 Table name
+Public Const C_sTabAdm2                  As String = "T_ADM2" 'ADM2 Table name
+Public Const C_sTabAdm3                  As String = "T_ADM3" 'ADM3 Table name
+Public Const C_sTabAdm4                  As String = "T_ADM4" 'ADM4 Table name
+Public Const C_sTabHF                    As String = "T_HF" 'Health Facility Table
 Public Const C_sTabNames                 As String = "T_NAMES"
-Public Const C_sTabHistoGeo              As String = "T_HistoGeo"                          'Historic data for the geo
-Public Const C_sTabHistoHF               As String = "T_HistoHF"                           'Historic data for the Health Facility
+Public Const C_sTabHistoGeo              As String = "T_HistoGeo" 'Historic data for the geo
+Public Const C_sTabHistoHF               As String = "T_HistoHF" 'Historic data for the Health Facility
 Public Const C_sTabGeoMetadata           As String = "T_Metadata"
 
 'Tables for traductions
@@ -173,8 +178,8 @@ Public Const C_sTabTranslation           As String = "Tab_Translations"
 
 'Formulas and functions tables
 
-Public Const C_sTabExcelFunctions        As String = "T_XlsFonctions"                      'Excel functions to keep in formulas
-Public Const C_sTabASCII                 As String = "T_ascii"                             'Ascii characters table
+Public Const C_sTabExcelFunctions        As String = "T_XlsFonctions" 'Excel functions to keep in formulas
+Public Const C_sTabASCII                 As String = "T_ascii" 'Ascii characters table
 
 'Tables for analysis
 Public Const C_sTabLLUBA                  As String = "t_uba"
@@ -215,28 +220,28 @@ Public Const C_sShpFilter               As String = "SHP_Filter"
 Public Const C_sShpClearFilters         As String = "SHP_ClearFilters"
 
 'Ranges in the linelist sheet
-Public Const C_sRngPublickey            As String = "RNG_PublicKey"                     'Name of the range for publickey
-Public Const C_sRngPrivatekey           As String = "RNG_PrivateKey"                    'Name of the range for the private key
+Public Const C_sRngPublickey            As String = "RNG_PublicKey" 'Name of the range for publickey
+Public Const C_sRngPrivatekey           As String = "RNG_PrivateKey" 'Name of the range for the private key
 Public Const C_sRngGeoName              As String = "RNG_GeoName"
-Public Const C_sRngLLLanguageCode       As String = "RNG_LLLanguageCode"                        'Where the name of the geofile is stored in the GeoSheet
+Public Const C_sRngLLLanguageCode       As String = "RNG_LLLanguageCode" 'Where the name of the geofile is stored in the GeoSheet
 Public Const C_sRngLLLanguage           As String = "RNG_LLLanguage"
 Public Const C_sRngDebuggingPassWord    As String = "RNG_DebuggingPassword"
 Public Const C_sAdmName                 As String = "adm"
 
 'STRING CONSTANTS =====================================================================================================================================================================================
 
-Public Const C_sLLPassword              As String = "1234"                                'Default password for the linelist file (if no one is set)
+Public Const C_sLLPassword              As String = "1234" 'Default password for the linelist file (if no one is set)
 Public Const C_sYes                     As String = "yes"
 Public Const C_sNo                      As String = "no"
 Public Const C_sGeobase                 As String = "export_geobase"
 Public Const C_sDatabase                As String = "export_data"
 Public Const C_sGotoSection             As String = "go_to_section"
-Public Const C_sVariable                As String = "variable"                           'Variable and values for metadata sheet
+Public Const C_sVariable                As String = "variable" 'Variable and values for metadata sheet
 Public Const C_sValue                   As String = "value"
 Public Const C_sLanguage                As String = "language"
 Public Const C_sLLDate                  As String = "linelist_creation_date"
-Public Const C_sFiltered                As String = "filt_"                              'Just to know if we are on a filtered/Not filtered sheet or table
-Public Const C_sTimeAgg                 As String = "time_agg"                           'header of time period for time series table
+Public Const C_sFiltered                As String = "filt_" 'Just to know if we are on a filtered/Not filtered sheet or table
+Public Const C_sTimeAgg                 As String = "time_agg" 'header of time period for time series table
 
 
 Public Const C_sAdm1                    As String = "ADM1"
@@ -251,28 +256,28 @@ Public Const C_sGeoMetadata             As String = "METADATA"
 
 
 'INTEGERS CONSTANTS ===================================================================================================================================================================================
-Public Const C_iNbLinesLLData           As Integer = 200                                    'Number of linest to add by default
+Public Const C_iNbLinesLLData           As Integer = 200 'Number of linest to add by default
 
 
 'Startlines for data in various source files
 
 Public Enum C_StartLines
-    C_eStartLinesDictHeaders = 4                                                                'Starting lines for dictionary headers
-    C_eStartLinesDictData = 3                                                                   'Starting lines for dictionary data
-    C_eStartLinesLLMainSec = 6                                                                  'Starting lines for first title of the linelist
-    C_eStartLinesLLSubSec = 7                                                                   'Starting lines for second title of the linelist
-    C_eStartLinesLLData = 8                                                                     'Starting lines for the linelist data
-    C_eStartLinesExportTitle = 1                                                                'Starting lines for export titles
-    C_eStartLinesAdmData = 4                                                                    'Starting lines for a Adm data
-    C_eStartColumnAdmData = 2                                                                   'Starting columns for sheets of type Adm
-    C_eStartLinesExportSource = 5                                                               'Starting lines for export sources
-    C_eStartLinesChoicesHeaders = 2                                                             'Starting lines of the choices Headers
-    C_eStartLinesChoicesData = 2                                                                'Starting lines of the choices Data
-    C_eStartLinesExportData = 2                                                                 'Starting lines of the export data
-    C_eStartLinesTransdata = 4                                                                  'Starting lines for the translation data
-    C_eStartcolumntransdata = 1                                                                 'Starting column for the translation data
+    C_eStartLinesDictHeaders = 4                 'Starting lines for dictionary headers
+    C_eStartLinesDictData = 3                    'Starting lines for dictionary data
+    C_eStartLinesLLMainSec = 6                   'Starting lines for first title of the linelist
+    C_eStartLinesLLSubSec = 7                    'Starting lines for second title of the linelist
+    C_eStartLinesLLData = 8                      'Starting lines for the linelist data
+    C_eStartLinesExportTitle = 1                 'Starting lines for export titles
+    C_eStartLinesAdmData = 4                     'Starting lines for a Adm data
+    C_eStartColumnAdmData = 2                    'Starting columns for sheets of type Adm
+    C_eStartLinesExportSource = 5                'Starting lines for export sources
+    C_eStartLinesChoicesHeaders = 2              'Starting lines of the choices Headers
+    C_eStartLinesChoicesData = 2                 'Starting lines of the choices Data
+    C_eStartLinesExportData = 2                  'Starting lines of the export data
+    C_eStartLinesTransdata = 4                   'Starting lines for the translation data
+    C_eStartcolumntransdata = 1                  'Starting column for the translation data
     C_eStartlinesListAuto = 1
-    C_eSectionsLookupColumns = 1                                                                'Columns where to insert GoTo
+    C_eSectionsLookupColumns = 1                 'Columns where to insert GoTo
 
     'Start Lines for the analysis in the linelist
     C_eStartLinesAnalysis = 6
@@ -280,12 +285,11 @@ Public Enum C_StartLines
 
 End Enum
 
-
 'Constants defined by user language
 Public sParamSheetAnalysis              As String 'Sheet for analyses
 Public sParamSheetTemporalAnalysis      As String 'Sheet for temporal analysis
 Public sParamSheetSpatialAnalysis       As String 'Sheet for spacial analysis
-Public sParamSheetAdmin                 As String  'Sheet for admin
+Public sParamSheetAdmin                 As String 'Sheet for admin
 
 '
 Sub SetUserDefineConstants()

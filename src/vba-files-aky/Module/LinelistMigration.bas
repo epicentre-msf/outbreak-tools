@@ -42,7 +42,6 @@ ErrClearData:
 
 End Sub
 
-
 'Clear all the Linelist and Adm Data
 
 Sub ClearData()
@@ -60,32 +59,32 @@ Sub ClearData()
         sSheetType = FindSheetType(Wksh.Name)
         Select Case sSheetType
 
-            Case C_sDictSheetTypeLL
-                 Wksh.Unprotect ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
+        Case C_sDictSheetTypeLL
+            Wksh.Unprotect ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
 
-                With Wksh.ListObjects(SheetListObjectName(Wksh.Name))
+            With Wksh.ListObjects(SheetListObjectName(Wksh.Name))
 
-                    If Not .DataBodyRange Is Nothing Then
-                        'Delete the data body range
-                        .DataBodyRange.Delete
-                    End If
-                End With
+                If Not .DataBodyRange Is Nothing Then
+                    'Delete the data body range
+                    .DataBodyRange.Delete
+                End If
+            End With
 
-                Wksh.Protect Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value, _
-                     DrawingObjects:=True, Contents:=True, Scenarios:=True, _
-                     AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
-                     AllowFormattingColumns:=True
+            Wksh.Protect Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value, _
+        DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
+        AllowFormattingColumns:=True
 
-            Case C_sDictSheetTypeAdm
-                'Find Last row of Adm Data
-                With Wksh
-                    iLastRow = .Cells(.Rows.Count, 2).End(xlUp).Row
-                    For i = C_eStartLinesAdmData To iLastRow
-                        .Cells(i, C_eStartColumnAdmData + 3).value = vbNullString
-                    Next
-                End With
+        Case C_sDictSheetTypeAdm
+            'Find Last row of Adm Data
+            With Wksh
+                iLastRow = .Cells(.Rows.Count, 2).End(xlUp).Row
+                For i = C_eStartLinesAdmData To iLastRow
+                    .Cells(i, C_eStartColumnAdmData + 3).value = vbNullString
+                Next
+            End With
 
-            Case Else
+        Case Else
 
         End Select
     Next
@@ -152,7 +151,6 @@ Function LLhasData() As Boolean
     LLhasData = hasData
 End Function
 
-
 'Add Some Test on the language in the workbook
 
 Function TestImportLanguage(WkbImp As Workbook) As Boolean
@@ -160,7 +158,7 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
     Dim VarColumn As BetterArray
     Dim sActualLanguage As String
     Dim sImportedLanguage As String
-    Dim index As Long 'index of the language
+    Dim index As Long                            'index of the language
 
 
     Dim Quit As Byte
@@ -228,24 +226,24 @@ End Function
 
 Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean, ColumnIndexData As BetterArray, VarNamesData As BetterArray)
 
-    Dim sSheetType As String 'Sheet type (different procedures will apply)
-    Dim iLastRowImp As Long 'LastRow (when needed for import sheet)
-    Dim iLastColImp As Long 'Last Column for Import data of Type LL
+    Dim sSheetType As String                     'Sheet type (different procedures will apply)
+    Dim iLastRowImp As Long                      'LastRow (when needed for import sheet)
+    Dim iLastColImp As Long                      'Last Column for Import data of Type LL
     Dim WkbLL As Workbook
-    Dim i As Long 'Counter, for All variables
-    Dim k As Long 'Counter, unfound variables
-    Dim iRowIndex As Long 'Row index for sheets of type Adm
-    Dim iColIndex As Long 'Col index for sheets of type LL
+    Dim i As Long                                'Counter, for All variables
+    Dim k As Long                                'Counter, unfound variables
+    Dim iRowIndex As Long                        'Row index for sheets of type Adm
+    Dim iColIndex As Long                        'Col index for sheets of type LL
     Dim iLastRow As Long
 
     Dim sVal As String
 
-    Dim rngImp As Range 'Range in the Import sheet
-    Dim rngLL As Range 'Range in the LL sheet
+    Dim rngImp As Range                          'Range in the Import sheet
+    Dim rngLL As Range                           'Range in the LL sheet
 
     'First, sheet of type Adm
 
-    Set WkbLL = ThisWorkbook 'The workbook of Linelist
+    Set WkbLL = ThisWorkbook                     'The workbook of Linelist
     sSheetType = FindSheetType(sSheetName)
 
     With WkbLL.Worksheets(sSheetName)
@@ -253,31 +251,31 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
         Select Case sSheetType
             'Import Data of Type Adm (No choice, we have to delete previous values)
 
-            Case C_sDictSheetTypeAdm
-                iLastRowImp = shImp.Cells(shImp.Rows.Count, 1).End(xlUp).Row
+        Case C_sDictSheetTypeAdm
+            iLastRowImp = shImp.Cells(shImp.Rows.Count, 1).End(xlUp).Row
 
-                For i = 2 To iLastRowImp '2 because the first row is for headers
-                    sVal = shImp.Cells(i, 1)
+            For i = 2 To iLastRowImp             '2 because the first row is for headers
+                sVal = shImp.Cells(i, 1)
 
-                    ImportVarData.Push sVal
-                    If VarNamesData.Includes(sVal) Then
-                        'Get the row Index here
-                        iRowIndex = ColumnIndexData.Items(VarNamesData.IndexOf(sVal))
-                        .Cells(iRowIndex, C_eStartColumnAdmData + 3).value = shImp.Cells(i, 2).value 'On sheets of type Adm, the third column contains values
-                    Else
-                        'Report variables not imported
-                        If Not ImportReport Then ImportReport = True
+                ImportVarData.Push sVal
+                If VarNamesData.Includes(sVal) Then
+                    'Get the row Index here
+                    iRowIndex = ColumnIndexData.Items(VarNamesData.IndexOf(sVal))
+                    .Cells(iRowIndex, C_eStartColumnAdmData + 3).value = shImp.Cells(i, 2).value 'On sheets of type Adm, the third column contains values
+                Else
+                    'Report variables not imported
+                    If Not ImportReport Then ImportReport = True
 
-                        With ThisWorkbook.Worksheets(C_sSheetImportTemp)
-                            k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
-                            .Cells(k, 3).value = sVal
-                            .Cells(k, 4).value = sSheetName
-                        End With
+                    With ThisWorkbook.Worksheets(C_sSheetImportTemp)
+                        k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
+                        .Cells(k, 3).value = sVal
+                        .Cells(k, 4).value = sSheetName
+                    End With
 
-                    End If
-                Next
+                End If
+            Next
 
-            Case C_sDictSheetTypeLL
+        Case C_sDictSheetTypeLL
 
             'Import Data on a Sheet of Type LL
 
@@ -305,7 +303,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                         'Don't Import columns of Type formulas
                         With shImp
                             iLastRowImp = .Cells(.Rows.Count, i).End(xlUp).Row
-                            Set rngImp = .Range(.Cells(2, i), .Cells(iLastRowImp, i))  '2 because first row if for headers ie varnames
+                            Set rngImp = .Range(.Cells(2, i), .Cells(iLastRowImp, i)) '2 because first row if for headers ie varnames
                         End With
                         'Take one because of the headers in the import Sheet
                         iLastRowImp = iLastRowImp - 1
@@ -322,7 +320,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
 
                     With ThisWorkbook.Worksheets(C_sSheetImportTemp)
 
-                         k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
+                        k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
 
                         .Cells(k, 3).value = sVal
                         .Cells(k, 4).value = sSheetName
@@ -335,19 +333,19 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
             UpdateListAuto WkbLL.Worksheets(sSheetName)
 
             .Protect Password:=WkbLL.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value, _
-                     DrawingObjects:=True, Contents:=True, Scenarios:=True, _
-                     AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
-                     AllowFormattingColumns:=True
+        DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
+        AllowFormattingColumns:=True
         End Select
     End With
 End Sub
 
 Sub ImportMigrationData()
 
-    Dim WkbImp As Workbook 'Workbook Import
+    Dim WkbImp As Workbook                       'Workbook Import
 
-    Dim shImp As Worksheet 'Sheet Import
-    Dim TabSheetLL As BetterArray 'List of sheets in the linelist
+    Dim shImp As Worksheet                       'Sheet Import
+    Dim TabSheetLL As BetterArray                'List of sheets in the linelist
     Dim VarNamesData As BetterArray
     Dim TabSheetsTouched As BetterArray
     Dim ColumnIndexData As BetterArray
@@ -360,11 +358,11 @@ Sub ImportMigrationData()
     Dim ShouldQuit As Byte
     Dim iStartSheet As Long
     Dim iEndSheet As Long
-    Dim k As Long 'counter
+    Dim k As Long                                'counter
     Dim iRow As Long
-    Dim sVarName As String 'Varname value
-    Dim sVarControlType  As String 'Control of a varname
-    Dim iVarIndex  As Long   'Index of a variable
+    Dim sVarName As String                       'Varname value
+    Dim sVarControlType  As String               'Control of a varname
+    Dim iVarIndex  As Long                       'Index of a variable
     Dim sVal As String
 
 
@@ -393,7 +391,7 @@ Sub ImportMigrationData()
         Exit Sub
     End If
 
-    hasData = LLhasData() 'Here we know if data is cleared or Not
+    hasData = LLhasData()                        'Here we know if data is cleared or Not
 
     BeginWork xlsapp:=Application
     Application.EnableEvents = False
@@ -478,9 +476,9 @@ Sub ImportMigrationData()
             If Not ImportReport Then ImportReport = True
             sVal = TabSheetLL.Item(k)
             With shpTemp
-             iRow = .Cells(.Rows.Count, 11).End(xlUp).Row
-             iRow = iRow + 1
-             .Cells(iRow, 11).value = TabSheetLL.Item(k)
+                iRow = .Cells(.Rows.Count, 11).End(xlUp).Row
+                iRow = iRow + 1
+                .Cells(iRow, 11).value = TabSheetLL.Item(k)
             End With
 
         End If
@@ -607,8 +605,6 @@ Sub ShowImportReport()
 
 End Sub
 
-
-
 '-------------------------------------------------- GEOBASE IMPORT   ------------------------------------------------
 
 
@@ -622,12 +618,12 @@ Sub ImportGeobase()
 
     BeginWork xlsapp:=Application
 
-    Dim sFilePath   As String                      'File path to the geo file
+    Dim sFilePath   As String                    'File path to the geo file
     Dim oSheet      As Object
-    Dim AdmData     As BetterArray                  'Table for admin levels
-    Dim AdmHeader   As BetterArray                 'Table for the headers of the listobjects
-    Dim AdmNames    As BetterArray                  'Array of the sheetnames
-    Dim i           As Long                             'iterator
+    Dim AdmData     As BetterArray               'Table for admin levels
+    Dim AdmHeader   As BetterArray               'Table for the headers of the listobjects
+    Dim AdmNames    As BetterArray               'Array of the sheetnames
+    Dim i           As Long                      'iterator
     Dim Wkb         As Workbook
     Dim WkshGeo     As Worksheet
     Dim ShouldQuit As Long
@@ -639,7 +635,7 @@ Sub ImportGeobase()
     On Error GoTo ErrImportGeo
 
     AdmNames.LowerBound = 1
-    AdmNames.Push C_sAdm1, C_sAdm2, C_sAdm3, C_sAdm4, C_sHF, C_sNames, C_sHistoHF, C_sHistoGeo, C_sGeoMetadata  'Names of each sheet
+    AdmNames.Push C_sAdm1, C_sAdm2, C_sAdm3, C_sAdm4, C_sHF, C_sNames, C_sHistoHF, C_sHistoGeo, C_sGeoMetadata 'Names of each sheet
 
     'Set xlsapp = New Excel.Application
     sFilePath = Helpers.LoadFile("*.xlsx")
@@ -710,7 +706,6 @@ ErrImportGeo:
     Exit Sub
 End Sub
 
-
 Private Sub TranslateImportGeoHead()
 
     Dim sIsoCountry As String
@@ -741,7 +736,6 @@ Private Sub TranslateImportGeoHead()
 
 End Sub
 
-
 'Import the only the Historic Data
 Sub ImportHistoricGeobase()
 
@@ -749,11 +743,11 @@ Sub ImportHistoricGeobase()
 
     BeginWork xlsapp:=Application
 
-    Dim sFilePath   As String                      'File path to the geo file
+    Dim sFilePath   As String                    'File path to the geo file
     Dim oSheet      As Object
-    Dim AdmData     As BetterArray                  'Table for admin levels
-    Dim AdmNames    As BetterArray                  'Array of the sheetnames
-    Dim i           As Long                             'iterator
+    Dim AdmData     As BetterArray               'Table for admin levels
+    Dim AdmNames    As BetterArray               'Array of the sheetnames
+    Dim i           As Long                      'iterator
     Dim Wkb         As Workbook
     Dim WkshGeo     As Worksheet
     Dim ShouldQuit As Long
@@ -815,9 +809,9 @@ Sub ImportHistoricGeobase()
     Exit Sub
 
 errImportHistoric:
-        MsgBox TranslateLLMsg("MSG_ErrHistoricGeo")
-        EndWork xlsapp:=Application
-        Exit Sub
+    MsgBox TranslateLLMsg("MSG_ErrHistoricGeo")
+    EndWork xlsapp:=Application
+    Exit Sub
 
 End Sub
 
@@ -849,12 +843,10 @@ Sub ClearHistoricGeobase()
     Exit Sub
 
 errClearHistoric:
-        MsgBox TranslateLLMsg("MSG_ErrCleanHistoric")
-        EndWork xlsapp:=Application
-        Exit Sub
+    MsgBox TranslateLLMsg("MSG_ErrCleanHistoric")
+    EndWork xlsapp:=Application
+    Exit Sub
 End Sub
-
-
 
 'EXPORTS MIGRATIONS ===================================================================================================================================================================================
 
@@ -870,9 +862,9 @@ Private Sub ExportMigrationData(sLLPath As String)
     Dim ExportData As BetterArray
     Dim ExportHeader As BetterArray
 
-    Dim i As Long 'iterator
-    Dim sPrevSheetName As String 'Previous sheet name  used as temporary variable
-    Dim sSheetName As String 'Actual Sheet Name
+    Dim i As Long                                'iterator
+    Dim sPrevSheetName As String                 'Previous sheet name  used as temporary variable
+    Dim sSheetName As String                     'Actual Sheet Name
 
     Dim iControlIndex As Integer
     Dim iSheetNameIndex As Integer
@@ -928,7 +920,7 @@ Private Sub ExportMigrationData(sLLPath As String)
 
 
     i = 1
-    While i <= DictData.Length
+    Do While i <= DictData.Length
 
         If DictData.Items(i, iSheetNameIndex) <> sPrevSheetName Then
             'Update sheetname
@@ -936,15 +928,15 @@ Private Sub ExportMigrationData(sLLPath As String)
 
             Select Case DictData.Items(i, iControlIndex)
 
-                Case C_sDictSheetTypeLL
+            Case C_sDictSheetTypeLL
 
                 'Add Sheet of type Linelist if needed
-                 Call AddLLSheet(Wkb, sSheetName, sPrevSheetName)
+                Call AddLLSheet(Wkb, sSheetName, sPrevSheetName)
 
-                Case C_sDictSheetTypeAdm
+            Case C_sDictSheetTypeAdm
 
                 'Add sheet of type Adm
-                 Call AddAdmSheet(Wkb, sSheetName, sPrevSheetName)
+                Call AddAdmSheet(Wkb, sSheetName, sPrevSheetName)
 
             End Select
 
@@ -953,12 +945,12 @@ Private Sub ExportMigrationData(sLLPath As String)
         End If
 
         i = i + 1
-    Wend
+    Loop
 
 
     'Write an error handling for writing the file here
     Wkb.SaveAs FileName:=sLLPath, fileformat:=xlExcel12, CreateBackup:=False, _
-     ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+               ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     Wkb.Close
 
 
@@ -968,9 +960,9 @@ Private Sub ExportMigrationData(sLLPath As String)
     Exit Sub
 
 errExportMig:
-        MsgBox TranslateLLMsg("MSG_ErrExportData")
-        EndWork xlsapp:=Application
-        Exit Sub
+    MsgBox TranslateLLMsg("MSG_ErrExportData")
+    EndWork xlsapp:=Application
+    Exit Sub
 End Sub
 
 'Add sheet of type linelist
@@ -995,9 +987,9 @@ End Sub
 
 Private Sub AddAdmSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String)
     Dim iLastRow As Long
-    Dim i As Long 'iterator for Adm sheet
-    Dim k As Long 'iterator for export workbook
-    Dim Wksh As Worksheet 'New adm worksheet, for code readability
+    Dim i As Long                                'iterator for Adm sheet
+    Dim k As Long                                'iterator for export workbook
+    Dim Wksh As Worksheet                        'New adm worksheet, for code readability
 
     With ThisWorkbook.Worksheets(sSheetName)
         iLastRow = .Cells(.Rows.Count, C_eStartColumnAdmData).End(xlUp).Row
@@ -1134,11 +1126,10 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
     Exit Sub
 
 errExportMigGeo:
-        MsgBox TranslateLLMsg("MSG_ErrExportGeo")
-        EndWork xlsapp:=Application
-        Exit Sub
+    MsgBox TranslateLLMsg("MSG_ErrExportGeo")
+    EndWork xlsapp:=Application
+    Exit Sub
 End Sub
-
 
 'Export the Geobase Historic Only
 
@@ -1197,11 +1188,10 @@ Private Sub ExportMigrationHistoricGeo(sGeoPath As String)
     Exit Sub
 
 ErrExportHistGeo:
-        MsgBox TranslateLLMsg("MSG_ErrExportHistoricGeo")
-        EndWork xlsapp:=Application
-        Exit Sub
+    MsgBox TranslateLLMsg("MSG_ErrExportHistoricGeo")
+    EndWork xlsapp:=Application
+    Exit Sub
 End Sub
-
 
 'Export for Migration (Either historic, the full geobase and / or data)
 
@@ -1212,14 +1202,14 @@ Sub ExportForMigration()
     'boolean for controling the export
     Dim AbleToExport As Boolean
 
-    Dim sDirectory As String 'Folder for export
-    Dim sLLPath As String 'Linelist file
-    Dim sGeoPath As String 'Geo File
-    Dim sGeoHistoPath As String 'Historic File
+    Dim sDirectory As String                     'Folder for export
+    Dim sLLPath As String                        'Linelist file
+    Dim sGeoPath As String                       'Geo File
+    Dim sGeoHistoPath As String                  'Historic File
     Dim sPath As String
     Dim ShouldQuit As Byte
 
-    Dim i As Long 'iterator
+    Dim i As Long                                'iterator
 
     Set ExportPath = New BetterArray
 
@@ -1232,7 +1222,7 @@ Sub ExportForMigration()
     If sDirectory <> "" Then
         'Export the Data of the linelist
         sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name, False), ".xlsb", "") & _
-             "_export_data_" & Format(Now, "yyyymmdd-HhNn")
+                                                                                                                       "_export_data_" & Format(Now, "yyyymmdd-HhNn")
 
         'Export the full geobase
 
@@ -1252,23 +1242,24 @@ Sub ExportForMigration()
         sGeoHistoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & "_historic"
 
         i = 0
-        While Len(sLLPath) >= 255 And Len(sGeoPath) >= 255 And Len(sGeoHistoPath) >= 255 And i < 3 'MSG_PathTooLong
+        Do While Len(sLLPath) >= 255 And Len(sGeoPath) >= 255 And Len(sGeoHistoPath) >= 255 And i < 3 'MSG_PathTooLong
             MsgBox TranslateLLMsg("MSG_PathTooLong")
             sDirectory = Helpers.LoadFolder
             If sDirectory <> "" Then
-                    sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name, False), ".xlsb", "") & _
-                    "_export_data_" & Format(Now, "yyyymmdd-HhNn")
-                    sGeoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & ".xlsx"
-                    sGeoHistoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & "_historic" & ".xlsx"
+                sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name, False), ".xlsb", "") & _
+                                                                                                                               "_export_data_" & Format(Now, "yyyymmdd-HhNn")
+                sGeoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & ".xlsx"
+                sGeoHistoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & "_historic" & ".xlsx"
             End If
             i = i + 1
-        Wend
+        Loop
+        
         If i < 3 Then
-           AbleToExport = True
+            AbleToExport = True
         Else
-        'Unable to export, leave the program
-         F_ExportMig.Hide
-        Exit Sub
+            'Unable to export, leave the program
+            F_ExportMig.Hide
+            Exit Sub
         End If
     End If
 
@@ -1314,7 +1305,9 @@ Sub ExportForMigration()
     Exit Sub
 
 ErrPath:
-        MsgBox TranslateLLMsg("MSG_ErrExportPath"), vbCritical + vbOKOnly, TranslateLLMsg("MSG_Migration")
-        EndWork xlsapp:=Application
-        Exit Sub
+    MsgBox TranslateLLMsg("MSG_ErrExportPath"), vbCritical + vbOKOnly, TranslateLLMsg("MSG_Migration")
+    EndWork xlsapp:=Application
+    Exit Sub
 End Sub
+
+

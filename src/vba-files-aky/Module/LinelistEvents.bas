@@ -16,16 +16,16 @@ Sub ClicCmdGeoApp()
 
         sType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).value
         Select Case sType
-            Case C_sDictControlGeo
-                iGeoType = 0
-                Call LoadGeo(iGeoType)
+        Case C_sDictControlGeo
+            iGeoType = 0
+            Call LoadGeo(iGeoType)
 
-            Case C_sDictControlHf
-                iGeoType = 1
-                Call LoadGeo(iGeoType)
+        Case C_sDictControlHf
+            iGeoType = 1
+            Call LoadGeo(iGeoType)
 
-            Case Else
-                MsgBox TranslateLLMsg("MSG_WrongCells")
+        Case Else
+            MsgBox TranslateLLMsg("MSG_WrongCells")
         End Select
     Else
         MsgBox TranslateLLMsg("MSG_WrongCells"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
@@ -67,9 +67,9 @@ Sub ClicCmdAddRows()
     Exit Sub
 
 errAddRows:
-        Application.EnableEvents = True
-        MsgBox TranslateLLMsg("MSG_ErrAddRows"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
-        Exit Sub
+    Application.EnableEvents = True
+    MsgBox TranslateLLMsg("MSG_ErrAddRows"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
+    Exit Sub
 End Sub
 
 Sub ClicCmdExport()
@@ -95,7 +95,7 @@ Sub ClicCmdExport()
 
     With F_Export
         i = 1
-        While i <= 5
+        Do While i <= 5
             If Not isError(Wksh.Cells(i, iStatus).value) Then
                 'i+1 because the first line is for the headers
                 If Wksh.Cells(i + 1, iStatus).value <> C_sExportActive Then
@@ -111,9 +111,7 @@ Sub ClicCmdExport()
                 End If
             End If
             i = i + 1
-        Wend
-
-
+        Loop
 
         'Height of checks (use filtered data)
         .CHK_ExportFiltered.Top = iHeight + 30
@@ -149,11 +147,10 @@ Sub ClicCmdExport()
     Exit Sub
 
 errLoadExp:
-        MsgBox TranslateLLMsg("MSG_ErrLoadExport"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
-        EndWork xlsapp:=Application
-        Exit Sub
+    MsgBox TranslateLLMsg("MSG_ErrLoadExport"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
+    EndWork xlsapp:=Application
+    Exit Sub
 End Sub
-
 
 Sub ClicCmdDebug()
 
@@ -194,9 +191,9 @@ Sub ClicCmdDebug()
 
         For Each sh In ThisWorkbook.Worksheets
             If SheetsToProtect.Includes(sh.Name) Then
-             sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
-                         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
-                         AllowFormattingColumns:=True
+                sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                           AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
+                           AllowFormattingColumns:=True
 
 
             End If
@@ -213,9 +210,9 @@ Sub ClicCmdDebug()
     Exit Sub
 
 errDebug:
-        MsgBox TranslateLLMsg("MSG_ErrDebug"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
-        EndWork xlsapp:=Application
-        Exit Sub
+    MsgBox TranslateLLMsg("MSG_ErrDebug"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
+    EndWork xlsapp:=Application
+    Exit Sub
 
     EndWork xlsapp:=Application
 End Sub
@@ -234,12 +231,11 @@ Public Sub ProtectSheet(Optional sSheetName As String = "_Active")
     If Not DebugMode Then
         pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
         sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
-                    AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
-                    AllowFormattingColumns:=True
+                   AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
+                   AllowFormattingColumns:=True
     End If
 
 End Sub
-
 
 'Trigerring event when the linelist sheet has some values within                                                          -
 'Trigerring event when the linelist sheet has some values within                                                          -
@@ -247,7 +243,7 @@ Sub EventValueChangeLinelist(oRange As Range)
 
     Dim T_geo As BetterArray
     Set T_geo = New BetterArray
-    Dim sControlType As String 'Control type
+    Dim sControlType As String                   'Control type
     Dim sLabel As String
     Dim sCustomVarName As String
     Dim sNote As String
@@ -263,71 +259,71 @@ Sub EventValueChangeLinelist(oRange As Range)
 
         Select Case sControlType
 
-            Case C_sDictControlGeo
-                ' adm1 has been modified, we will correct and set validation to adm2
+        Case C_sDictControlGeo
+            ' adm1 has been modified, we will correct and set validation to adm2
 
-                BeginWork xlsapp:=Application
-                ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
+            BeginWork xlsapp:=Application
+            ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
-                DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm4 & "_dropdown")
-                oRange.Offset(, 1).value = vbNullString
-                DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm3 & "_dropdown")
-                oRange.Offset(, 2).value = vbNullString
-                DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm2 & "_dropdown")
-                oRange.Offset(, 3).value = vbNullString
+            DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm4 & "_dropdown")
+            oRange.Offset(, 1).value = vbNullString
+            DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm3 & "_dropdown")
+            oRange.Offset(, 2).value = vbNullString
+            DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm2 & "_dropdown")
+            oRange.Offset(, 3).value = vbNullString
 
-                If oRange.value <> vbNullString Then
+            If oRange.value <> vbNullString Then
 
-                    'Filter on adm1
-                    Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm2), 1, oRange.value, returnIndex:=2)
-                    'Build the validation list for adm2
-                    T_geo.ToExcelRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).Cells(2, 1)
-                    T_geo.Clear
-                End If
+                'Filter on adm1
+                Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm2), 1, oRange.value, returnIndex:=2)
+                'Build the validation list for adm2
+                T_geo.ToExcelRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).Cells(2, 1)
+                T_geo.Clear
+            End If
 
-                Call ProtectSheet
-                EndWork xlsapp:=Application
+            Call ProtectSheet
+            EndWork xlsapp:=Application
 
-            Case C_sDictControlGeo & "2"
+        Case C_sDictControlGeo & "2"
 
-                'Adm2 has been modified, we will correct and filter adm3
-                BeginWork xlsapp:=Application
-                ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
+            'Adm2 has been modified, we will correct and filter adm3
+            BeginWork xlsapp:=Application
+            ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
-                DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm3 & "_dropdown")
-                oRange.Offset(, 1).value = vbNullString
-                DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm4 & "_dropdown")
-                oRange.Offset(, 2).value = vbNullString
+            DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm3 & "_dropdown")
+            oRange.Offset(, 1).value = vbNullString
+            DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm4 & "_dropdown")
+            oRange.Offset(, 2).value = vbNullString
 
-                If oRange.value <> vbNullString Then
-                    Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm3), 1, oRange.Offset(, -1).value, 2, oRange.value, returnIndex:=3)
-                    T_geo.ToExcelRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).Cells(2, 3)
-                    T_geo.Clear
-                End If
+            If oRange.value <> vbNullString Then
+                Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm3), 1, oRange.Offset(, -1).value, 2, oRange.value, returnIndex:=3)
+                T_geo.ToExcelRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).Cells(2, 3)
+                T_geo.Clear
+            End If
 
-                Call ProtectSheet
-                EndWork xlsapp:=Application
+            Call ProtectSheet
+            EndWork xlsapp:=Application
 
-            Case C_sDictControlGeo & "3"
-                'Adm 3 has been modified, correct and filter adm4
-                BeginWork xlsapp:=Application
-                ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
+        Case C_sDictControlGeo & "3"
+            'Adm 3 has been modified, correct and filter adm4
+            BeginWork xlsapp:=Application
+            ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
-                DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm4 & "_dropdown")
-                oRange.Offset(, 1).value = vbNullString
+            DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm4 & "_dropdown")
+            oRange.Offset(, 1).value = vbNullString
 
-                If oRange.value <> vbNullString Then
-                    'Take the adm4 table
-                    Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm4), 1, _
-                                            oRange.Offset(, -2).value, 2, oRange.Offset(, -1).value, 3, oRange.value, returnIndex:=4)
-                    T_geo.ToExcelRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).Cells(2, 5)
-                    T_geo.Clear
-                End If
+            If oRange.value <> vbNullString Then
+                'Take the adm4 table
+                Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm4), 1, _
+                                          oRange.Offset(, -2).value, 2, oRange.Offset(, -1).value, 3, oRange.value, returnIndex:=4)
+                T_geo.ToExcelRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).Cells(2, 5)
+                T_geo.Clear
+            End If
 
-                Call ProtectSheet
-                EndWork xlsapp:=Application
+            Call ProtectSheet
+            EndWork xlsapp:=Application
 
-            Case Else
+        Case Else
 
         End Select
 
@@ -346,9 +342,9 @@ Sub EventValueChangeLinelist(oRange As Range)
 
 
     If oRange.Row > C_eStartLinesLLData + 1 And _
-        ActiveSheet.Cells(C_eStartLinesLLMainSec - 2, iNumCol).value = C_sDictControlChoiceAuto & "_origin" And _
-        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).value <> "list_auto_change_yes" Then
-             ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).value = "list_auto_change_yes"
+       ActiveSheet.Cells(C_eStartLinesLLMainSec - 2, iNumCol).value = C_sDictControlChoiceAuto & "_origin" And _
+       ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).value <> "list_auto_change_yes" Then
+        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).value = "list_auto_change_yes"
     End If
 
 
@@ -356,8 +352,8 @@ Sub EventValueChangeLinelist(oRange As Range)
         sLabel = Replace(oRange.value, TranslateLLMsg("MSG_SelectSection") & ": ", "")
 
         Set Rng = ActiveSheet.Rows(C_eStartLinesLLMainSec).Find(What:=sLabel, _
-        LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByColumns, _
-        SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False)
+                                                                LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByColumns, _
+                                                                SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False)
 
         If Not Rng Is Nothing Then
             Rng.Activate
@@ -369,12 +365,10 @@ errHand:
 
 End Sub
 
-
 Sub ClicImportMigration()
-'Import exported data into the linelist
+    'Import exported data into the linelist
     F_Advanced.Show
 End Sub
-
 
 Sub ClicExportMigration()
 
@@ -413,9 +407,8 @@ Public Sub EventDesactivateLinelist(ByVal sSheetName As String)
 
     End If
 errHand:
-        EndWork xlsapp:=Application
+    EndWork xlsapp:=Application
 End Sub
-
 
 'Update the list Auto of one Sheet
 
@@ -436,33 +429,33 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
     With Wksh
 
 
-        While (.Cells(C_eStartLinesLLData, i) <> vbNullString)
+        Do While (.Cells(C_eStartLinesLLData, i) <> vbNullString)
             Select Case .Cells(C_eStartLinesLLMainSec - 2, i).value
-                Case C_sDictControlChoiceAuto & "_origin"
-                    sVarName = .Cells(C_eStartLinesLLData + 1, i).value
-                    arrTable.FromExcelRange .Cells(C_eStartLinesLLData + 2, i), DetectLastColumn:=False, DetectLastRow:=True
-                    'Unique values (removing the spaces and the Null strings and keeping the case (The remove duplicates doesn't do that))
-                    Set arrTable = GetUniqueBA(arrTable)
-                    With ThisWorkbook.Worksheets(C_sSheetChoiceAuto)
-                        Set choiceLo = .ListObjects("o" & C_sDictControlChoiceAuto & "_" & sVarName)
-                        iChoiceCol = choiceLo.Range.Column
-                        If Not choiceLo.DataBodyRange Is Nothing Then choiceLo.DataBodyRange.Delete
-                        arrTable.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
-                        iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
-                        choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
-                        'Sort in descending order
-                        Set Rng = choiceLo.ListColumns(1).Range
-                        With choiceLo.Sort
-                            .SortFields.Clear
-                            .SortFields.Add Key:=Rng, SortOn:=xlSortOnValues, Order:=xlDescending
-                            .Header = xlYes
-                            .Apply
-                        End With
+            Case C_sDictControlChoiceAuto & "_origin"
+                sVarName = .Cells(C_eStartLinesLLData + 1, i).value
+                arrTable.FromExcelRange .Cells(C_eStartLinesLLData + 2, i), DetectLastColumn:=False, DetectLastRow:=True
+                'Unique values (removing the spaces and the Null strings and keeping the case (The remove duplicates doesn't do that))
+                Set arrTable = GetUniqueBA(arrTable)
+                With ThisWorkbook.Worksheets(C_sSheetChoiceAuto)
+                    Set choiceLo = .ListObjects("o" & C_sDictControlChoiceAuto & "_" & sVarName)
+                    iChoiceCol = choiceLo.Range.Column
+                    If Not choiceLo.DataBodyRange Is Nothing Then choiceLo.DataBodyRange.Delete
+                    arrTable.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
+                    iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
+                    choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
+                    'Sort in descending order
+                    Set Rng = choiceLo.ListColumns(1).Range
+                    With choiceLo.Sort
+                        .SortFields.Clear
+                        .SortFields.Add Key:=Rng, SortOn:=xlSortOnValues, Order:=xlDescending
+                        .Header = xlYes
+                        .Apply
                     End With
-                Case Else
+                End With
+            Case Else
             End Select
             i = i + 1
-        Wend
+        Loop
     End With
 
 End Sub
@@ -471,9 +464,9 @@ End Sub
 
 Public Sub UpdateFilterTables()
 
-    Dim Wksh As Worksheet   'The actual worksheet
-    Dim DictHeaders As BetterArray 'Headers of the dictionary
-    Dim LLSheets As BetterArray 'List of all sheets of type linelist
+    Dim Wksh As Worksheet                        'The actual worksheet
+    Dim DictHeaders As BetterArray               'Headers of the dictionary
+    Dim LLSheets As BetterArray                  'List of all sheets of type linelist
     Dim Rng As Range
     Dim Lo As ListObject
     Dim HiddenColumns As BetterArray
@@ -490,9 +483,9 @@ Public Sub UpdateFilterTables()
 
 
     Set LLSheets = FilterLoTable(Lo:=ThisWorkbook.Worksheets(C_sParamSheetDict).ListObjects(1), _
-                    iFiltindex1:=DictHeaders.IndexOf(C_sDictHeaderSheetType), _
-                    sValue1:=C_sDictSheetTypeLL, _
-                    returnIndex:=DictHeaders.IndexOf(C_sDictHeaderSheetName))
+                                 iFiltindex1:=DictHeaders.IndexOf(C_sDictHeaderSheetType), _
+                                 sValue1:=C_sDictSheetTypeLL, _
+                                 returnIndex:=DictHeaders.IndexOf(C_sDictHeaderSheetName))
 
 
     For Each Wksh In ThisWorkbook.Worksheets
@@ -554,7 +547,6 @@ ErrUpdate:
     EndWork xlsapp:=Application
 End Sub
 
-
 'Clear All the filters on current sheet =====================================================================
 
 Sub ClearAllFilters()
@@ -579,7 +571,6 @@ Sub ClearAllFilters()
 
 End Sub
 
-
 'Find the selected column on "GOTO" Area and go to that column
 Sub EventValueChangeAnalysis(Target As Range)
 
@@ -596,7 +587,7 @@ Sub EventValueChangeAnalysis(Target As Range)
         sLabel = Replace(Target.value, TranslateLLMsg("MSG_SelectSection") & ": ", "")
 
         Set RngLook = ActiveSheet.Columns(C_eStartColumnAnalysis).Find(What:=sLabel, _
-        LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=True, SearchFormat:=False)
+                                                                       LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=True, SearchFormat:=False)
 
         If Not RngLook Is Nothing Then
             RngLook.Activate
@@ -607,3 +598,5 @@ Sub EventValueChangeAnalysis(Target As Range)
     Exit Sub
 Err:
 End Sub
+
+

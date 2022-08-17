@@ -124,6 +124,7 @@ Attribute VB_Exposed = False
 
 
 
+
 Option Explicit
 
 Private Sub CMD_ClearData_Click()
@@ -161,7 +162,7 @@ Private Sub CMD_ImportMigRep_Click()
 End Sub
 
 Private Sub UserForm_Initialize()
-'Manage language
+    'Manage language
     Me.Caption = TranslateLLMsg(Me.Name)
 
     Call TranslateForm(Me)
@@ -170,5 +171,4 @@ Private Sub UserForm_Initialize()
     Me.Height = 550
 
 End Sub
-
 
