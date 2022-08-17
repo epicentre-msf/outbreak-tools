@@ -114,20 +114,19 @@ Attribute VB_Exposed = False
 
 
 
+
 Option Explicit
 
 Private Sub CMD_ExportMig_Click()
     Call ExportForMigration
 End Sub
 
-
 Private Sub CMD_ExportMigQuit_Click()
     Me.Hide
 End Sub
 
-
 Private Sub UserForm_Initialize()
-'Manage language
+    'Manage language
     Me.Caption = TranslateLLMsg(Me.Name)
 
     Call TranslateForm(Me)
@@ -136,3 +135,4 @@ Private Sub UserForm_Initialize()
     Me.Height = 300
 
 End Sub
+

@@ -125,6 +125,7 @@ Attribute VB_Exposed = False
 
 
 
+
 Option Explicit
 Option Base 1
 
@@ -144,7 +145,6 @@ End Sub
 Private Sub OPT_Masque_Click()
     ShowHideLogic LST_NomChamp.ListIndex
 End Sub
-
 
 Private Sub UserForm_Initialize()
     'Manage language

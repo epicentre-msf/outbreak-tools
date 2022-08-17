@@ -135,6 +135,7 @@ Attribute VB_Exposed = False
 
 
 
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -144,7 +145,7 @@ Private Sub CMD_Copier_Click()
     Dim T_temp As BetterArray
     Set T_temp = New BetterArray
 
-     On Error GoTo ErrGeo
+    On Error GoTo ErrGeo
 
     ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
@@ -325,9 +326,8 @@ Private Sub TXT_RechercheHistoF_Change()
 
 End Sub
 
-
 Private Sub UserForm_Initialize()
-'Manage language
+    'Manage language
     Me.Caption = TranslateLLMsg(Me.Name)
 
     Call TranslateForm(Me)
