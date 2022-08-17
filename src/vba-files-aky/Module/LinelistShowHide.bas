@@ -39,7 +39,6 @@ Function CreateDicTitle() As BetterArray
     End If
 
     Set CreateDicTitle = T_DictHeaders.Clone
-    Set T_DictHeaders = Nothing
 End Function
 
 'This command loads variables and
@@ -120,15 +119,12 @@ Sub ClicCmdShowHide()
         End If
         i = i + 1
     Wend
-    Set T_DictHeaders = Nothing
 
     T_data.Item(1) = T_mainlab.Items
     T_data.Item(2) = T_varname.Items
     T_data.Item(3) = T_status.Items
 
-    Set T_varname = Nothing
-    Set T_mainlab = Nothing
-    Set T_status = Nothing
+
 
     Application.EnableEvents = False
 
@@ -141,8 +137,7 @@ Sub ClicCmdShowHide()
     F_NomVisible.LST_NomChamp.List = T_data.Items
     'Setting objects to nothing
 
-    Set Wksh = Nothing
-    Set T_data = Nothing
+
 
     Application.EnableEvents = True
 
@@ -213,7 +208,6 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
         F_NomVisible.OPT_Masque.value = 0
     End Select
 
-    Set T_FormData = Nothing
     TriggerShowHide = True
     Application.EnableEvents = True
     EndWork xlsapp:=Application
@@ -255,7 +249,6 @@ Sub ShowHideColumnSheet(sSheetName As String, ByVal sVarName As String, Optional
     Call ProtectSheet
     EndWork xlsapp:=Application
 
-    Set T_DictHeaders = Nothing
 End Sub
 
 'A simple Procedure to update the third column of the next formname to either hidden or Shown before
@@ -277,7 +270,6 @@ Sub UpdateFormData(ByRef T_table As BetterArray, index As Integer, Optional bhid
     End If
     'Mutate in the form table
     T_table.Item(index + 1) = T_values.Items
-    Set T_values = Nothing
 End Sub
 
 'Logic behind the show/hide click
@@ -321,7 +313,6 @@ Sub ShowHideLogic(iIndex As Integer)
         F_NomVisible.LST_NomChamp.Clear
         F_NomVisible.LST_NomChamp.List = T_FormData.Items
         F_NomVisible.LST_NomChamp.Selected(iIndex) = True
-        Set T_FormData = Nothing
 
         Application.EnableEvents = True
         EndWork xlsapp:=Application
@@ -360,6 +351,4 @@ Sub WriteShowHide(sSheetName As String, ByVal sVarName As String, visibility As 
     End If
 
 
-    Set T_DictVarnames = Nothing
-    Set T_DictSheetNames = Nothing
 End Sub

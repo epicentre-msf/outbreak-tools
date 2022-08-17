@@ -135,7 +135,6 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
 
     EndWork xlsapp:=Application
 
-    Set transValue = Nothing
     [F_Geo].TXT_Msg.value = vbNullString
     [F_Geo].Show
 
@@ -173,9 +172,6 @@ Sub ShowLst2(sPlace As String)
         [F_Geo].LST_Adm2.List = T_Aff.Items
     End If
 
-    'Clear
-    Set T_Aff = Nothing
-    Set Wksh = Nothing
 End Sub
 
 'Show second list for the facility
@@ -201,8 +197,6 @@ Sub ShowLstF2(sPlace As String)
         [F_Geo].LST_AdmF2.List = T_Aff.Items
     End If
 
-    Set T_Aff = Nothing
-    Set Wksh = Nothing
 End Sub
 
 'This function shows the third list for the geobase
@@ -228,8 +222,6 @@ Sub ShowLst3(sAdm2 As String)
         [F_Geo].LST_Adm3.List = T_Aff.Items
     End If
 
-    Set T_Aff = Nothing
-    Set Wksh = Nothing
 End Sub
 
 'Show the third list of geobase, pretty much the same as before
@@ -254,8 +246,6 @@ Sub ShowLstF3(sAdm2 As String)
         [F_Geo].LST_AdmF3.List = T_Aff.Items
     End If
 
-    Set T_Aff = Nothing
-    Set Wksh = Nothing
 End Sub
 
 'This function shows the fourth list for the Geo (pretty much the same thing as done previously)
@@ -281,8 +271,6 @@ Sub ShowLst4(sAdm3 As String)
         [F_Geo].LST_Adm4.List = T_Aff.Items
     End If
 
-    Set T_Aff = Nothing
-    Set Wksh = Nothing
 End Sub
 
 'Fourth list of health facility
@@ -307,8 +295,6 @@ Sub ShowLstF4(sAdm3 As String)
         [F_Geo].LST_AdmF4.List = T_Aff.Items
     End If
 
-    Set T_Aff = Nothing
-    Set Wksh = Nothing
 End Sub
 
 Sub ClearGeo()
@@ -363,7 +349,6 @@ Sub SearchValue(ByVal sSearchedValue As String)
         End If
     End If
 
-    Set T_result = Nothing
 End Sub
 
 Sub SeachHistoValue(sSearchedValue As String)
@@ -392,7 +377,6 @@ Sub SeachHistoValue(sSearchedValue As String)
         End If
     End If
 
-    Set T_result = Nothing
 End Sub
 
 Sub SearchValueF(sSearchedValue As String)
@@ -421,7 +405,6 @@ Sub SearchValueF(sSearchedValue As String)
         End If
     End If
 
-    Set T_result = Nothing
 End Sub
 
 Sub SeachHistoValueF(sSearchedValue As String)
@@ -452,7 +435,6 @@ Sub SeachHistoValueF(sSearchedValue As String)
         End If
     End If
 
-    Set T_result = Nothing
 End Sub
 
 ' This function reverses a string using the | as separator, like in the final selection of the
@@ -472,7 +454,6 @@ Function ReverseString(sChaine As String)
     Next
 
     ReverseString = sRes
-    Set T_temp = Nothing
 End Function
 
 Sub ClearOneHistoricGeobase(iGeoType As Byte)
@@ -499,6 +480,4 @@ Sub ClearOneHistoricGeobase(iGeoType As Byte)
 
         MsgBox "Done", vbInformation, "Delete Historic"
     End If
-    'Add a message to say it is done
-    Set WkshGeo = Nothing
 End Sub

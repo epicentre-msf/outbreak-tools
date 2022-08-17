@@ -96,7 +96,6 @@ Option Explicit
                 SelectFolderOnWindows = .SelectedItems(1)
             End If
         End With
-        Set fDialog = Nothing
 
     End Function
 
@@ -167,7 +166,6 @@ Option Explicit
             End If
         End With
 
-        Set fDialog = Nothing
     End Function
 
     'File extension ----------------------------------------------------------------
@@ -495,7 +493,6 @@ Option Explicit
             Wend
             Set GetHeaders = Headers.Clone
             'Clear everything
-            Set Headers = Nothing
         End With
     End Function
 
@@ -520,8 +517,7 @@ Option Explicit
         Data.FromExcelRange Rng
         'The output of the function is a variant
         Set GetData = Data
-        Set Data = Nothing
-        Set Rng = Nothing
+
     End Function
 
     'Get the validation list using Choices data and choices labels
@@ -530,7 +526,6 @@ Option Explicit
 
         Dim iChoiceIndex As Integer
         Dim iChoiceLastIndex As Integer
-        Dim i As Integer 'iterator to get the values
         Dim ValidationList As BetterArray 'Validation List
 
         Set ValidationList = New BetterArray
@@ -553,7 +548,6 @@ Option Explicit
         Set Lo = Wksh.ListObjects(sListObjectName)
         ListObjectExists = (Not Lo Is Nothing)
         On Error GoTo 0
-        Set Lo = Nothing
     End Function
 
     'Get validation type
@@ -599,7 +593,6 @@ Option Explicit
         'Copy the data Now
         sData.ToExcelRange DestWkb.Worksheets(sSheetName).Range("A1")
         DestWkb.Worksheets(sSheetName).Visible = xlSheetHidden
-        Set sData = Nothing
     End Sub
 
     'Filter a table listobject on one condition and get the values of that table or all the unique values of one column
@@ -691,8 +684,6 @@ Option Explicit
 
         Set GetUniquelo = Data.Clone()
 
-        Set Data = Nothing
-        Set Rng = Nothing
 
     End Function
 
@@ -752,7 +743,6 @@ EndMacro:
         End If
 
         Set GetUniqueBA = Outable.Clone()
-        Set Outable = Nothing
 
     End Function
 
@@ -792,6 +782,7 @@ EndMacro:
     Public Function MoveWksh(SrcWkb As Workbook, DestWkb As Workbook, sSheetName As String)
 
         Dim Wksh As Worksheet
+        Dim ActvSh As Worksheet
 
         BeginWork xlsapp:=Application
         Application.EnableEvents = False
@@ -806,9 +797,8 @@ EndMacro:
 
         SrcWkb.Worksheets(sSheetName).Copy after:=Wksh
         Wksh.Delete
-
-
-        Set Wksh = Nothing
+        
+        ActvSh.Activate
 
         EndWork xlsapp:=Application
         Application.EnableEvents = True
@@ -821,7 +811,6 @@ EndMacro:
     Public Function GetInternationalFormula(sFormula As String, Wksh As Worksheet) As String
 
         Dim sprevformula As String
-        Dim slocalformula As String
 
         GetInternationalFormula = ""
 
@@ -838,5 +827,4 @@ EndMacro:
         End If
             'Reseting the previous formula
         Wksh.Range("A1").Formula = sprevformula
-        Set Wksh = Nothing
     End Function

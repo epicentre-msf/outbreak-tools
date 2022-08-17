@@ -30,7 +30,6 @@ End Function
 Sub TranslateForm(UserFrm As UserForm)
     'management of the translation of the form captions
 
-    Dim sLanguage As String
     Dim i As Integer
     Dim cControl As Control
 
@@ -78,7 +77,6 @@ Function LineListTranslatedValue(sText As String, sRngName As String)
     End If
 
     On Error GoTo 0
-    Set HeadersData = Nothing
 End Function
 
 

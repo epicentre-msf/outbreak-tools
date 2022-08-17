@@ -341,7 +341,6 @@ Sub AddChoices(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer
 
             'Write it to the worksheet and free memory
             ValidationList.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
-            Set ValidationList = Nothing
 
             'Add the list object to the worksheet
             iChoiceRow = .Cells(.Rows.Count, iChoiceCol).End(xlUp).Row
@@ -362,11 +361,6 @@ Sub AddChoices(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer
                                  "=" & sChoice, Helpers.GetValidationType(sAlert), _
                                  sMessage)
     End With
-
-
-    Set WkshLL = Nothing
-    Set WkshChoice = Nothing
-    Set LoRng = Nothing
 
 End Sub
 
@@ -502,7 +496,6 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Cells(iRow + 2, 1).value = ""
         .Cells(iRow + 2, DictHeaders.Length + 1).value = .Cells(iRow + 1, DictHeaders.Length + 1).value + 1
 
-         Set LineValues = Nothing
     End With
 End Sub
 
@@ -596,7 +589,6 @@ Sub BuildMainSectionVMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As I
         WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom + 3)), iWeight:=xlThin, sColor:="DarkBlue"
     End With
 
-    Set oCell = Nothing
 End Sub
 
 'Sub Section Vertical Merge
@@ -653,7 +645,6 @@ Sub BuildMainSectionHMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As I
         WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo, iColumnTo - 1))
     End With
 
-    Set oCell = Nothing
 End Sub
 
 
@@ -816,7 +807,6 @@ Public Function ValidationFormula(sFormula As String, AllSheetNamesData As Bette
         End If
     End If
 
-    Set FormulaAlphaData = Nothing
 
 End Function
 
@@ -1009,8 +999,6 @@ Public Sub AddTemporarySheets(Wkb As Workbook)
             'Adm 4
             Wkb.Names.Add Name:=C_sAdmName & "_4_" & "dropdown", RefersToR1C1:="=" & C_sTabAdm4 & "_dropdown" & "[" & C_sAdmName & "_4_" & "dropdown" & "]"
         End With
-
-        Set LoRng = Nothing
     End With
 End Sub
 

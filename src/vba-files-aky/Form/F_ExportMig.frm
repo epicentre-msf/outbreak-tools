@@ -1,10 +1,10 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_ExportMig 
    Caption         =   "Export For Migration"
-   ClientHeight    =   5415
+   ClientHeight    =   5412
    ClientLeft      =   120
-   ClientTop       =   465
-   ClientWidth     =   3765
+   ClientTop       =   468
+   ClientWidth     =   3768
    OleObjectBlob   =   "F_ExportMig.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
