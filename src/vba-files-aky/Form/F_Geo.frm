@@ -1,9 +1,9 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_Geo 
    Caption         =   "GEO Apps"
-   ClientHeight    =   9570
-   ClientLeft      =   45
-   ClientTop       =   -345
+   ClientHeight    =   9576.001
+   ClientLeft      =   48
+   ClientTop       =   -348
    ClientWidth     =   10200
    OleObjectBlob   =   "F_Geo.frx":0000
    StartUpPosition =   1  'CenterOwner
@@ -143,8 +143,6 @@ Private Sub CMD_Copier_Click()
 
     Dim T_temp As BetterArray
     Set T_temp = New BetterArray
-    Dim geosheet As String
-    Dim Rng As Range
 
      On Error GoTo ErrGeo
 

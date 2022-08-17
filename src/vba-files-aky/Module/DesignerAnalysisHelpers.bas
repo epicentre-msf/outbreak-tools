@@ -676,13 +676,13 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
             istep = 2
             iInnerEndCol = iInnerEndCol - 1
         End If
-
-
+        
+        
         i = iStartCol
 
         sFirstTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis).Address(RowAbsolute:=False)
         sSecondTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis + 1).Address(RowAbsolute:=False)
-
+        
 
         Do While (i <= iInnerEndCol)
             sCondVal = .Cells(iRow, i).Address
@@ -690,7 +690,7 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
                                          sFirstTimeCond:=sFirstTimeCond, sSecondTimeCond:=sSecondTimeCond, _
                                          sCondVar:=sCondVar, sCondVal:=sCondVal, _
                                          isFiltered:=True)
-
+                                         
             If sFormula <> vbNullString Then
                 .Cells(iRow + 2, i).FormulaArray = sFormula
                 Set Rng = Range(.Cells(iRow + 2, i), .Cells(iRow + 2 + C_iNbTime, i))
@@ -725,22 +725,22 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
             i = i + istep
         Loop
-
+        
         'Missing column
         If sMiss = C_sYes Then
-
-
+        
+        
         End If
-
-
+        
+        
         'Total column
         sFormula = TimeSeriesFormula(Wkb, DictHeaders, sForm, sTimeVar, sFirstTimeCond, sSecondTimeCond, _
                                      OnTotal:=True, includeMissing:=includeMissing, sCondVar:=sCondVar)
-
+                                     
         If sFormula <> vbNullString Then .Cells(iRow + 2, iInnerEndCol).FormulaArray = sFormula
         Set Rng = Range(.Cells(iRow + 2, iInnerEndCol), .Cells(iRow + 4 + C_iNbTime, iInnerEndCol))
         .Cells(iRow + 2, iInnerEndCol).AutoFill Destination:=Rng, Type:=xlFillValues
-
+        
 
     End With
 End Sub
@@ -960,7 +960,6 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
     Dim Rng As Range
     Dim iRow As Long
-    Dim sFormula As String
     Dim sAgg As String 'Aggregate cell
 
     With Wksh
@@ -1025,8 +1024,6 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
     End With
 
-    Set Rng = Nothing
-
  End Sub
 
 
@@ -1056,7 +1053,6 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
     Dim sFormulaATest As String                  'same formula, with all the spaces replaced with
     Dim sAlphaValue As String                    'Alpha numeric values in a formula
     Dim sLetter As String                        'counter for every letter in one formula
-    Dim scolAddress As String                    'address of one column used in a formula
 
     Dim FormulaAlphaData As BetterArray          'Table of alphanumeric data in one formula
     Dim FormulaData      As BetterArray
@@ -1064,7 +1060,6 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
     Dim SpecCharData As BetterArray              'List of Special Characters data
     Dim DictHeaders As BetterArray
     Dim TableNameData As BetterArray
-    Dim VarMainLabelData As BetterArray
 
     Dim i As Long
     Dim iPrevBreak As Long
@@ -1075,14 +1070,12 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
     Dim isError As Boolean
     Dim OpenedQuotes As Boolean                  'Test if the formula has opened some quotes
     Dim QuotedCharacter As Boolean
-    Dim NoErrorAndNoEnd As Boolean
 
     Set FormulaAlphaData = New BetterArray       'Alphanumeric values of one formula
     Set FormulaData = New BetterArray
     Set VarNameData = New BetterArray       'The list of all Variable Names
     Set SpecCharData = New BetterArray       'The list of all special characters
     Set DictHeaders = New BetterArray
-    Set VarMainLabelData = New BetterArray
     Set TableNameData = New BetterArray
 
 
@@ -1204,13 +1197,6 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
     'MsgBox "Error in analysis formula: " & sFormula
 
     End If
-
-    Set FormulaAlphaData = Nothing  'Alphanumeric values of one formula
-    Set VarNameData = Nothing       'The list of all Variable Names
-    Set SpecCharData = Nothing      'The list of all special characters
-    Set DictHeaders = Nothing
-    Set VarMainLabelData = Nothing
-    Set TableNameData = Nothing
 End Function
 
 
@@ -1395,9 +1381,6 @@ Function AnalysisCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As 
 
     AnalysisCount = "=" & sFormula
 
-    Set VarNameData = Nothing
-    Set TableNameData = Nothing
-
 End Function
 
 
@@ -1425,35 +1408,35 @@ Function TimeSeriesCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName A
                                  DetectLastColumn:=False, DetectLastRow:=True
 
     sFormula = vbNullString
-
+    
     If VarNameData.Includes(sVarName) Then
         sTable = TableNameData.Items(VarNameData.IndexOf(sVarName))
         If isFiltered Then sTable = C_sFiltered & sTable
-
+    
         If sFirstCondVar = vbNullString Or (OnTotal And includeMissing) Then
-
+    
                 sFormula = "= COUNTIFS" & "(" & sTable & "[" & sVarName & "]," & Chr(34) & ">=" & Chr(34) & "&" & sValue1 & _
                             ", " & sTable & "[" & sVarName & "]," & Chr(34) & "<=" & Chr(34) & "&" & sValue2 & ")"
         Else
             If VarNameData.Includes(sFirstCondVar) Then
-
+            
             'Total without missing
-
+            
                 If OnTotal And Not includeMissing Then
-
+                    
                     sFormula = "= COUNTIFS" & "(" & sTable & "[" & sFirstCondVar & "]" & ", " & _
                                      Chr(34) & "<>" & Chr(34) & ", " & sTable & "[" & sVarName & "], " & Chr(34) & ">=" & Chr(34) & "&" & sValue1 & _
                                 ", " & sTable & "[" & sVarName & "], " & Chr(34) & "<=" & Chr(34) & "&" & sValue2 & ")"
-
+                    
                 Else
-
+        
                     sFormula = "= COUNTIFS" & "(" & sTable & "[" & sFirstCondVar & "]" & ", " & _
                                      sFirstCondVal & ", " & sTable & "[" & sVarName & "], " & Chr(34) & ">=" & Chr(34) & "&" & sValue1 & _
                                 ", " & sTable & "[" & sVarName & "], " & Chr(34) & "<=" & Chr(34) & "&" & sValue2 & ")"
                 End If
             End If
         End If
-
+    
     End If
 
     If sFormula <> vbNullString And Len(sFormula) < 255 Then TimeSeriesCount = sFormula

@@ -34,7 +34,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Dim DictSheetNames          As BetterArray
     Dim TableNameData           As BetterArray
     Dim iPastingRow             As Integer
-    Dim LoRng                   As Range                          'List object's range
     Dim iNbshifted              As Integer
     'For updating sheet names in the dictionary worksheet
     Dim i                       As Integer 'iterator
@@ -248,14 +247,12 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
             End If
         Next
 
-        Wkb.SaveAs Filename:=sPath, fileformat:=xlExcel12, Password:=SheetMain.Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+        Wkb.SaveAs FileName:=sPath, fileformat:=xlExcel12, Password:=SheetMain.Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
         Wkb.Close
-        Set Wkb = Nothing
     #Else
         'I am on windows, I will save the workbook, reopen it with new instance, put everything as visible in the workbook, hide the instance and do my work on Panes
         Wkb.SaveAs SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp", fileformat:=xlExcel12
         Wkb.Close
-        Set Wkb = Nothing
         Dim Myxlsapp As Excel.Application
         Set Myxlsapp = New Excel.Application
        With Myxlsapp
@@ -277,13 +274,10 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
             End If
         Next
     End With
-       Wkb.SaveAs Filename:=sPath, fileformat:=xlExcel12, Password:=SheetMain.Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+       Wkb.SaveAs FileName:=sPath, fileformat:=xlExcel12, Password:=SheetMain.Range("RNG_LLPwdOpen").value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     Wkb.Close
-    Set Wkb = Nothing
-
 
     Myxlsapp.Quit
-    Set Myxlsapp = Nothing
 
     #End If
 
@@ -292,19 +286,6 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     Application.EnableAnimations = True
     Application.EnableEvents = True
     Application.Cursor = xlDefault
-
-    Set LLNbColData = Nothing
-    Set LLSheetNameData = Nothing      'Names of sheets of type linelist
-    Set ColumnIndexData = Nothing
-    Set FormulaData = Nothing
-    Set SpecCharData = Nothing
-    Set VarNameData = Nothing
-    Set TableNameData = Nothing
-    Set ChoicesListData = Nothing
-    Set ChoicesLabelsData = Nothing
-    Set DictVarName = Nothing
-    Set DictSheetNames = Nothing
-    Set SheetsOfTypeLLData = Nothing
 
 End Sub
 
@@ -467,11 +448,9 @@ End Sub
     Dim sActualMainLab As String 'Actual Main label
     Dim sActualVarName As String 'Actual Variable Name
     Dim sActualChoice As String  'Actual Variable Choice
-    Dim sValidationList As String
     Dim sActualControl As String
     Dim sActualValidationAlert As String
     Dim sActualValidationMessage As String
-    Dim sActualSubLab As String
     Dim sActualMainSec As String
     Dim sActualSubSec As String
 
@@ -673,8 +652,6 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     Dim sActualNote As String
     Dim sActualType As String
     Dim sActualControl As String
-    Dim iDecType As Integer                      'Decimal type number
-    Dim sValidationList As String                'List of validations to use for choices
     Dim sActualChoice As String                  'current choose choice
     Dim sActualMin As String                     'current min
     Dim sActualMax As String                     'current Max
@@ -691,7 +668,6 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     Dim LoFiltRng As Range 'Range of the listobject in the filtered table
     Dim bLockData As Boolean
     Dim sChoiceAutoName As String
-    Dim sSectionsList As String
 
     'The table name of the listobject
     Dim sTableName As String
@@ -1073,9 +1049,4 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         .ListObjects.Add(xlSrcRange, LoFiltRng, , xlYes).Name = C_sFiltered & sTableName
         .ListObjects(C_sFiltered & sTableName).TableStyle = C_sLLTableStyle
     End With
-
-
-    Set LoFiltRng = Nothing
-    Set LoRng = Nothing
-    Set Rng = Nothing
 End Sub

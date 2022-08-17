@@ -17,7 +17,6 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
 
     Dim PathData As BetterArray
     Dim VarNameData As BetterArray
-    Dim Headers As BetterArray
     Dim DictSheet As Worksheet
 
     sPath = vbNullString
@@ -85,9 +84,7 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
 
 
     ExportPath = sPath
-    Set PathData = Nothing
-    Set VarNameData = Nothing
-    Set DictSheet = Nothing
+
 End Function
 
 
@@ -378,14 +375,14 @@ Sub Export(iTypeExport As Byte)
 
         Select Case ClearString(ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).value)
         Case C_sYes
-            Wkb.SaveAs Filename:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
+            Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
             ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
             MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value
         Case C_sNo
-            Wkb.SaveAs Filename:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+            Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
             MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_NoPassword")
         Case Else
-            Wkb.SaveAs Filename:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
+            Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
             ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
             MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value
         End Select
@@ -395,11 +392,6 @@ Sub Export(iTypeExport As Byte)
 
         EndWork xlsapp:=Application
 
-        Set Wkb = Nothing
-        Set DictExportData = Nothing
-        Set ExportData = Nothing
-        Set ExportHeader = Nothing
-        Set DictLo = Nothing
     End If
 
     Exit Sub
@@ -412,7 +404,7 @@ exportErrHandData:
 
         If Not Wkb Is Nothing Then
             Wkb.Close SaveChanges:=False
-            Set Wkb = Nothing
+
         End If
 
         MsgBox TranslateLLMsg("MSG_exportErrHandData"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
@@ -420,7 +412,6 @@ exportErrHandData:
 
 exportErrHandWrite:
         Wkb.Close SaveChanges:=False
-        Set Wkb = Nothing
         MsgBox TranslateLLMsg("MSG_exportErrHandWrite"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
         Exit Sub
 End Sub
@@ -446,7 +437,6 @@ Private Function SortExport(DictExportData As BetterArray, iExportIndex As Integ
         .Cells.Clear
     End With
 
-    Set Rng = Nothing
     Set SortExport = SortedData.Clone()
 End Function
 

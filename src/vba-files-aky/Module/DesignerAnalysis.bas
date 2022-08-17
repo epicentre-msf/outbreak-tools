@@ -399,8 +399,7 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                                 DictData As BetterArray, _
                                 DictHeaders As BetterArray, _
                                 VarNameData As BetterArray, _
-                                iGoToCol As Long, _
-                                Optional sOutlineColor As String = "DarkBlue")
+                                iGoToCol As Long)
 
 
 
@@ -414,16 +413,13 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
     Dim sActualMainLabRow As String
     Dim sActualMainLabColumn As String
     Dim sPreviousSection As String
-    Dim sFormula As String
     Dim sActualPercentage As String
     Dim sActualMissing As String
-    Dim sCondition As String 'Address of the conditions to use in the IF function
 
     Dim iCounter As Long
     Dim iSectionRow As Long
     Dim iEndRow As Long
     Dim iEndCol As Long
-    Dim i As Long
     Dim iRow As Long
 
 
@@ -710,5 +706,4 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
         End With
 
     End With
-    Set Rng = Nothing
 End Sub

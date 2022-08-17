@@ -42,7 +42,7 @@ Sub LoadFileLL()
     If sFilePath = "" Then Exit Sub
 
     On Error GoTo ErrorManage
-    Application.Workbooks.Open Filename:=sFilePath, ReadOnly:=False
+    Application.Workbooks.Open FileName:=sFilePath, ReadOnly:=False
 
     Exit Sub
 ErrorManage:
@@ -147,10 +147,6 @@ Public Sub ImportGeobase()
     Next
 
     Wkb.Close SaveChanges:=False
-    Set AdmData = Nothing
-    Set AdmHeader = Nothing
-    Set AdmNames = Nothing
-    Set Wkb = Nothing
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Fini")
     SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White")
 
@@ -193,7 +189,6 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     Dim SetupWkb        As Workbook
     Dim DesWkb          As Workbook
     Dim iOpenLL         As Integer
-    Dim i               As Integer
     Dim previousSecurity As Byte
 
     'Be sure the actual Workbook is not opened
@@ -232,7 +227,6 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     Call DesignerMainHelpers.MoveAnalysis(SetupWkb)
 
     SetupWkb.Close SaveChanges:=False
-    Set SetupWkb = Nothing
 
     Application.AutomationSecurity = previousSecurity
 
@@ -295,8 +289,6 @@ Sub GenerateData(Optional iAsk As Byte = 0)
 
     DoEvents
 
-    Set DesWkb = Nothing
-
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
 
     'Creating the linelist using the dictionnary and choices data as well as export data
@@ -331,16 +323,6 @@ Sub GenerateData(Optional iAsk As Byte = 0)
         End If
 
     End If
-
-    'Setting the memory data to nothing
-    Set DictHeaders = Nothing
-    Set DictData = Nothing
-    Set ChoicesHeaders = Nothing
-    Set ChoicesData = Nothing
-    Set ExportData = Nothing
-    Set TransData = Nothing
-    Set GSData = Nothing
-    Set BAData = Nothing
 
 End Sub
 
@@ -419,7 +401,7 @@ Sub OpenLL()
 
     On Error GoTo no
     'Then open it
-    Application.Workbooks.Open Filename:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
+    Application.Workbooks.Open FileName:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
 no:
     Exit Sub
 
