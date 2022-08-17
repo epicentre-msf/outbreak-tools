@@ -103,7 +103,7 @@ Function LLhasData() As Boolean
     Dim hasData As Boolean
     Dim shLL As Worksheet
     Dim WkbLL As Workbook
-    Dim TabLL As BetterArray
+
     Dim ShouldProceed As Byte
     Dim sLLName As String
     Dim NotGood As Boolean
@@ -150,10 +150,6 @@ Function LLhasData() As Boolean
 
     'If you were not able to clear the data, Set it to table lenth
     LLhasData = hasData
-
-    Set TabLL = Nothing
-    Set shLL = Nothing
-    Set WkbLL = Nothing
 End Function
 
 
@@ -201,7 +197,6 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
                               TranslateLLMsg("MSG_LanguageDifferent"))
                 If Quit = vbYes Then
                     TestImportLanguage = False
-                    Set VarColumn = Nothing
                     Exit Function
                 End If
             End If
@@ -212,7 +207,6 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
             If Quit = vbYes Then
 
                 TestImportLanguage = False
-                Set VarColumn = Nothing
                 Exit Function
 
             End If
@@ -220,7 +214,6 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
         End If
     End If
 
-    Set VarColumn = Nothing
     TestImportLanguage = True
 End Function
 
@@ -347,7 +340,6 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                      AllowFormattingColumns:=True
         End Select
     End With
-    Set rngImp = Nothing
 End Sub
 
 Sub ImportMigrationData()
@@ -374,7 +366,6 @@ Sub ImportMigrationData()
     Dim sVarControlType  As String 'Control of a varname
     Dim iVarIndex  As Long   'Index of a variable
     Dim sVal As String
-    Dim iWindowState As Integer
 
 
     Dim IsSameLanguage As Boolean
@@ -418,7 +409,6 @@ Sub ImportMigrationData()
 
         'If the user wants to abort imports because of the differences of language
         WkbImp.Close
-        Set WkbImp = Nothing
         EndWork xlsapp:=Application
         Application.EnableEvents = True
         Exit Sub
@@ -515,14 +505,9 @@ Sub ImportMigrationData()
         End If
     Next
 
-    Set ColumnIndexData = Nothing
-    Set VarNamesData = Nothing
-    Set VarNamesLLData = Nothing
-    Set ColumnIndexLLData = Nothing
-    Set TabSheetsTouched = Nothing
+
 
     WkbImp.Close SaveChanges:=False
-    Set WkbImp = Nothing
 
     EndWork xlsapp:=Application
     Application.EnableEvents = True
@@ -619,7 +604,6 @@ Sub ShowImportReport()
 
     'Show Import report
     F_ImportRep.Show
-    Set TabRep = Nothing
 
 End Sub
 
@@ -714,12 +698,7 @@ Sub ImportGeobase()
         End If
     End If
 
-    Set AdmHeader = Nothing
-    Set AdmNames = Nothing
-    Set Wkb = Nothing
-    Set AdmData = Nothing
-    Set Wkb = Nothing
-    Set WkshGeo = Nothing
+
 
     EndWork xlsapp:=Application
 
@@ -829,10 +808,7 @@ Sub ImportHistoricGeobase()
         F_Advanced.Hide
     End If
 
-    Set AdmData = Nothing
-    Set AdmNames = Nothing
-    Set Wkb = Nothing
-    Set WkshGeo = Nothing
+
 
     EndWork xlsapp:=Application
 
@@ -869,7 +845,6 @@ Sub ClearHistoricGeobase()
     End If
 
     'Add a message to say it is done
-    Set WkshGeo = Nothing
 
     Exit Sub
 
@@ -950,8 +925,7 @@ Private Sub ExportMigrationData(sLLPath As String)
     iSheetNameIndex = DictHeaders.IndexOf(C_sDictHeaderSheetName)
 
     'No more need export data and headers
-    Set ExportData = Nothing
-    Set ExportHeader = Nothing
+
 
     i = 1
     While i <= DictData.Length
@@ -983,13 +957,10 @@ Private Sub ExportMigrationData(sLLPath As String)
 
 
     'Write an error handling for writing the file here
-    Wkb.SaveAs Filename:=sLLPath, fileformat:=xlExcel12, CreateBackup:=False, _
+    Wkb.SaveAs FileName:=sLLPath, fileformat:=xlExcel12, CreateBackup:=False, _
      ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     Wkb.Close
 
-    Set Wkb = Nothing
-    Set DictData = Nothing
-    Set DictHeaders = Nothing
 
     Application.DisplayAlerts = True
     EndWork xlsapp:=Application
@@ -1018,8 +989,6 @@ Private Sub AddLLSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As 
     'copy by value
     dest.value = src.value
 
-    Set dest = Nothing
-    Set src = Nothing
 End Sub
 
 'Add sheet of type Adm
@@ -1155,7 +1124,7 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
     End With
 
     'Writing the Geo
-    Wkb.SaveAs Filename:=sGeoPath, fileformat:=xlOpenXMLWorkbook, _
+    Wkb.SaveAs FileName:=sGeoPath, fileformat:=xlOpenXMLWorkbook, _
                CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     Wkb.Close
 
@@ -1216,13 +1185,11 @@ Private Sub ExportMigrationHistoricGeo(sGeoPath As String)
     End With
 
     'Writing the Geo
-    Wkb.SaveAs Filename:=sGeoPath, fileformat:=xlOpenXMLWorkbook, _
+    Wkb.SaveAs FileName:=sGeoPath, fileformat:=xlOpenXMLWorkbook, _
                CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     Wkb.Close
 
-    Set Wkb = Nothing
-    Set WkshGeo = Nothing
-    Set ExportData = Nothing
+
 
     Application.DisplayAlerts = True
     EndWork xlsapp:=Application
@@ -1342,7 +1309,7 @@ Sub ExportForMigration()
 
     End If
 
-    Set ExportPath = Nothing
+
 
     Exit Sub
 

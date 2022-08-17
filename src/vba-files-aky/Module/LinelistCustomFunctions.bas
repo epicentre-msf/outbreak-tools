@@ -4,7 +4,7 @@ Option Explicit
 
 'USER DEFINE FUNCTIONS FOR THE LINELIST ==========================================
 
-'@Description: Get the date grande of column of type date which is "minimum date - maximum date"
+'@Description("Get the date grande of column of type date which is "minimum date - maximum date")
 '
 '@Arguments:
 '- Rng: a Range

@@ -62,7 +62,6 @@ Sub ClicCmdAddRows()
     Set LoRng = Range(Cells(C_eStartLinesLLData + 1, 1), Cells(iLastRow, iLastCol))
     oLstobj.Resize LoRng
 
-    Set LoRng = Nothing
     Call ProtectSheet
     Application.EnableEvents = True
     Exit Sub
@@ -145,7 +144,6 @@ Sub ClicCmdExport()
         .Width = 210
     End With
 
-    Set ExportHeaders = Nothing
 
     F_Export.Show
     Exit Sub
@@ -162,10 +160,6 @@ Sub ClicCmdDebug()
     Dim pwd As String
     Dim sh As Worksheet
     Dim SheetsToProtect As BetterArray
-    Dim DictHeaders As BetterArray
-    Dim i As Integer
-    Dim iNbVar As Integer
-    Dim sPrevSheetName As String
     Dim DebugWksh As Worksheet
 
     BeginWork xlsapp:=Application
@@ -216,7 +210,6 @@ Sub ClicCmdDebug()
         DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.Text = TranslateLLMsg("MSG_Debug")
     End If
 
-    Set SheetsToProtect = Nothing
     Exit Sub
 
 errDebug:
@@ -254,18 +247,12 @@ Sub EventValueChangeLinelist(oRange As Range)
 
     Dim T_geo As BetterArray
     Set T_geo = New BetterArray
-    Dim sList As String
     Dim sControlType As String 'Control type
     Dim sLabel As String
     Dim sCustomVarName As String
     Dim sNote As String
     Dim sListAutoType As String
-    Dim sVarName As String
     Dim iNumCol As Integer
-    Dim iChoiceCol As Integer
-    Dim choiceLo As ListObject
-    Dim sChoiceAutoType As String
-    Dim iRow As Integer
     Dim Rng As Range
 
     On Error GoTo errHand
@@ -440,7 +427,7 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
     Dim iRow As Long
     Dim i As Long
     Dim arrTable As BetterArray
-    Dim PrevWksh As Worksheet
+
     Dim Rng As Range
 
     Set arrTable = New BetterArray
@@ -507,7 +494,6 @@ Public Sub UpdateFilterTables()
                     sValue1:=C_sDictSheetTypeLL, _
                     returnIndex:=DictHeaders.IndexOf(C_sDictHeaderSheetName))
 
-    Set DictHeaders = Nothing
 
     For Each Wksh In ThisWorkbook.Worksheets
         If LLSheets.Includes(Wksh.Name) Then
@@ -553,8 +539,7 @@ Public Sub UpdateFilterTables()
         End If
     Next
 
-    Set HiddenColumns = Nothing
-    Set LLSheets = Nothing
+  
 
     On Error Resume Next
     ThisWorkbook.Worksheets(sActSh).Activate
@@ -591,7 +576,6 @@ Sub ClearAllFilters()
 
     End If
 
-    Set Wksh = Nothing
 
 End Sub
 
@@ -619,8 +603,7 @@ Sub EventValueChangeAnalysis(Target As Range)
         End If
     End If
 
-    Set Rng = Nothing
-    Set RngLook = Nothing
+
     Exit Sub
 Err:
 End Sub

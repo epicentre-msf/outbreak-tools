@@ -203,7 +203,7 @@ Sub ImportLang()
     Application.EnableEvents = False
     Application.EnableAnimations = False
 
-    Set Wkb = Workbooks.Open(Filename:=SheetMain.Range(C_sRngPathDic).value)
+    Set Wkb = Workbooks.Open(FileName:=SheetMain.Range(C_sRngPathDic).value)
 
     SheetSetTranslation.Cells.Clear
 
@@ -225,9 +225,6 @@ Sub ImportLang()
     'Set Validation, 1 is Error
     Call Helpers.SetValidation(SheetMain.Range(C_sRngLangSetup), "='" & SheetDesTranslation.Name & "'!" & sAdr1 & ":" & sAdr2, 1)
 
-    Set Wkb = Nothing
-    Set src = Nothing
-    Set dest = Nothing
 
     SheetMain.Range(C_sRngLangSetup).value = SheetSetTranslation.Cells(C_eStartLinesTransdata, 1).value
     EndWork xlsapp:=Application
@@ -254,10 +251,11 @@ Function GetTranslatedValue(ByVal sText As String) As String
 
     With DesignerWorkbook.Worksheets(C_sParamSheetTranslation)
         Set rngTrans = .ListObjects(C_sTabTranslation).DataBodyRange
+        If rngTrans Is Nothing Then Exit Function
     End With
 
     On Error Resume Next
-    iRow = rngTrans.Find(What:=Application.WorksheetFunction.Trim(sText), LookAt:=xlWhole).Row
+        iRow = rngTrans.Find(What:=Application.WorksheetFunction.Trim(sText), LookAt:=xlWhole).Row
         GetTranslatedValue = SheetSetTranslation.Cells(iRow, iColLang).value
     On Error GoTo 0
 
@@ -267,7 +265,6 @@ Sub TranslateColumn(iCol As Integer, sSheetName As String, iLastRow As Long, Opt
     Dim Wksh As Worksheet
     Dim i As Long
     Dim sText As String
-    Dim rngTrans As Range
 
     If iCol > 0 Then 'Be sure the column exists
         Set Wksh = DesignerWorkbook.Worksheets(sSheetName)
@@ -389,9 +386,6 @@ Sub TranslateDictionary()
     iCol = DictHeaders.IndexOf(C_sDictHeaderFormula)
     Call TranslateColumnFormula(iCol, C_sParamSheetDict, iLastRow)
 
-    Set DictHeaders = Nothing
-
-
 End Sub
 
 
@@ -509,8 +503,6 @@ Sub TranslateAnalysis()
     iCol = Headers.IndexOf(C_sAnaSection)
     If iCol < 0 Then Exit Sub
     Call TranslateColumnFormula(iCol, C_sParamSheetAnalysis, iLast, iStartLine)
-
-    Set Headers = Nothing
 
 End Sub
 

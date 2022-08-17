@@ -49,7 +49,7 @@ Public Function ControlForGenerate() As Boolean
 
     SheetMain.Range(C_sRngPathDic).Interior.Color = GetColor("White") 'if path is OK
 
-    'Checking coherence of the GEO  ------------------------------------------------------------------------
+    'Checking coherence of the GEO  ------------------------------------------------
 
     'Be sure the geo path is not empty
     If SheetMain.Range(C_sRngPathGeo).value = "" Then
@@ -138,12 +138,12 @@ Public Function ControlForGenerate() As Boolean
 End Function
 
 
-Function FileNameControl(ByVal sName As String) As String
+Function FileNameControl(ByVal FileName As String) As String
 'In the file name, replace forbidden characters with an underscore
 
     FileNameControl = vbNullString
 
-    sName = Replace(sName, "<", "_")
+    sName = Replace(FileName, "<", "_")
     sName = Replace(sName, ">", "_")
     sName = Replace(sName, ":", "_")
     sName = Replace(sName, "|", "_")
@@ -180,7 +180,7 @@ End Sub
 
 
 'Move analysis Data from the analysis Sheet to the DesignerWorkbook
-    Public Function MoveAnalysis(SrcWkb As Workbook)
+    Public Sub MoveAnalysis(SrcWkb As Workbook)
 
         Dim DesRng As Range 'Range to resize the new list object in the designer
         Dim SetupRng As Range 'Range in the setup file
@@ -195,7 +195,7 @@ End Sub
 
         Dim Lo As ListObject
 
-        If Not SheetExistsInWkb(SrcWkb, C_sParamSheetAnalysis) Then Exit Function
+        If Not SheetExistsInWkb(SrcWkb, C_sParamSheetAnalysis) Then Exit Sub
 
         Set SetupWksh = SrcWkb.Worksheets(C_sParamSheetAnalysis)
         Set DesWksh = DesignerWorkbook.Worksheets(C_sParamSheetAnalysis)
@@ -224,22 +224,15 @@ End Sub
             End With
 
         Next
-
-
-        Set DesRng = Nothing
-        Set SetupRng = Nothing
-        Set Lo = Nothing
-        Set SetupWksh = Nothing
-        Set DesWksh = Nothing
-    End Function
+    End Sub
 
 
 'update the progress status
 Sub StatusBar_Updater(sCpte As Single)
 
     Dim CurrentStatus As Integer
-    Dim pctDone As Integer
     Dim bCurrEvent As Boolean
+    
     bCurrEvent = Application.ScreenUpdating
     Application.ScreenUpdating = True
     CurrentStatus = (C_iNumberOfBars) * Round(sCpte / 100, 1)
@@ -260,8 +253,6 @@ Sub LowerRng(Rng As Range)
             c.value = LCase(c.value)
         Next
     End If
-
-    Set c = Nothing
 End Sub
 
 'Trim values in one range
@@ -304,8 +295,6 @@ Public Sub AddTableNames()
         SheetsData.Push .Cells(2, iSheetNameCol).value
         TablesData.Push "table" & iTableIndex
 
-        Set DictHeaders = Nothing
-
         'Add the header for table name
         .Cells(1, iCol).value = C_sDictHeaderTableName
 
@@ -327,9 +316,6 @@ Public Sub AddTableNames()
         Next
 
     End With
-
-    Set SheetsData = Nothing
-    Set TablesData = Nothing
 End Sub
 
 
@@ -341,6 +327,7 @@ Sub Preprocessing(DictHeaders As BetterArray)
     Dim DictWksh As Worksheet
 
     Dim iCol As Integer
+    Dim i As Long
     Dim iSheetNameCol As Integer 'Column for sheet name
     Dim iMainLabCol As Integer
     Dim iRow As Long 'One row to work on for the dictionary
@@ -348,7 +335,8 @@ Sub Preprocessing(DictHeaders As BetterArray)
     Dim sPrevSheetName As Integer
 
     'Sort Ranges for the dictionnary and other workseets
-    Dim sortRng As Range
+    Dim sortRng1 As Range
+    Dim sortRng2 As Range
     Dim MainLabData As BetterArray
 
 
@@ -374,7 +362,7 @@ Sub Preprocessing(DictHeaders As BetterArray)
 
         'table name range
         iCol = DictHeaders.IndexOf(C_sDictHeaderTableName)
-        Set sortRng = Range(.Cells(1, iCol), .Cells(iRow, iCol))
+        Set sortRng1 = Range(.Cells(1, iCol), .Cells(iRow, iCol))
 
         'sort on table name
         Rng.Sort key1:=sortRng1, order1:=xlAscending
@@ -399,11 +387,6 @@ Sub Preprocessing(DictHeaders As BetterArray)
 
 
     End With
-
-
-
-
-
 
 
 

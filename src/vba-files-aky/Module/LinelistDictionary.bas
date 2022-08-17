@@ -32,7 +32,6 @@ Function GetDictionaryHeaders() As BetterArray
     'Set the Array
 
     Set GetDictionaryHeaders = DictHeaders.Clone()
-    Set DictHeaders = Nothing
 
 End Function
 
@@ -41,7 +40,6 @@ Function isInDictHeaders(sColname As String) As Integer
     Dim DictHeaders As BetterArray
     Set DictHeaders = GetDictionaryHeaders()
     isInDictHeaders = DictHeaders.IndexOf(sColname)
-    Set DictHeaders = Nothing
 End Function
 
 'Get Dictionary index of one variable
@@ -50,7 +48,6 @@ Function GetDictionaryIndex(sColname As String) As Integer
   Set DictHeaders = GetDictionaryHeaders()
   DictHeaders.LowerBound = 1
   GetDictionaryIndex = DictHeaders.IndexOf(sColname)
-  Set DictHeaders = Nothing
 End Function
 
 'Get one column from the dictionary
@@ -68,7 +65,6 @@ Function GetDictionaryColumn(sColname As String) As BetterArray
         End With
     End If
     Set GetDictionaryColumn = ColumnData.Clone()
-    Set ColumnData = Nothing
 End Function
 
 'Retrieve all the dictionnary data, excluding the headers
@@ -82,7 +78,6 @@ Function GetDictionaryData() As BetterArray
     End With
 
     Set GetDictionaryData = DictData.Clone
-    Set DictData = Nothing
 End Function
 
 'Retrieve all the Choices data, excluding the headers
@@ -98,7 +93,6 @@ Function GetChoicesData() As BetterArray
     End With
 
     Set GetChoicesData = ChoicesData.Clone
-    Set ChoicesData = Nothing
 End Function
 
 'Retrieve all the Translation data, excluding the headers
@@ -114,7 +108,6 @@ Function GetTransData() As BetterArray
     End With
 
     Set GetTransData = TransData.Clone
-    Set TransData = Nothing
 End Function
 
 'Retrieve the variable names of the dictionnary on one condition on a variable
@@ -155,9 +148,7 @@ Function GetDictDataFromCondition(sColumnName As String, sCondition As String, O
             .Visible = xlSheetVeryHidden
         End With
 
-        Set Rng = Nothing
         Set GetDictDataFromCondition = ColumnData.Clone()
-        Set ColumnData = Nothing
     End If
 End Function
 
@@ -175,8 +166,6 @@ Function GetDictColumnValue(sVarName As String, sColname As String) As String
            GetDictColumnValue = ColnameData.Item(VarNameData.IndexOf(sVarName))
         End If
     End If
-    Set ColnameData = Nothing
-    Set VarNameData = Nothing
 End Function
 
 
@@ -184,7 +173,6 @@ End Function
 Sub UpdateDictionaryValue(sVarName As String, sColname As String, sNewValue As String)
 
     Dim VarNameData As BetterArray
-    Dim ColnameData As BetterArray
     Dim iRow As Integer
     Dim iColumn As Integer
 
@@ -221,8 +209,6 @@ Function FindSheetType(ByVal sSheetName As String) As String
         FindSheetType = SheetTypeData.Item(SheetNameData.IndexOf(sSheetName))
     End If
 
-    Set SheetNameData = Nothing
-    Set SheetTypeData = Nothing
 
 End Function
 
@@ -241,8 +227,6 @@ Function FindSheetTable(ByVal sSheetName As String) As String
         FindSheetTable = TableNameData.Item(SheetNameData.IndexOf(sSheetName))
     End If
 
-    Set SheetNameData = Nothing
-    Set TableNameData = Nothing
 End Function
 
 
