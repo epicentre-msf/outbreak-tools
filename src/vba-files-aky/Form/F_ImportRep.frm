@@ -92,8 +92,8 @@ Attribute VB_Exposed = False
 
 
 
-Option Explicit
 
+Option Explicit
 
 Private Sub UserForm_Initialize()
     'Manage language
@@ -109,3 +109,4 @@ End Sub
 Private Sub CMD_ImpRepQuit_Click()
     Me.Hide
 End Sub
+

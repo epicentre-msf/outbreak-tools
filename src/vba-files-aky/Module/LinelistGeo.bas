@@ -17,7 +17,6 @@ Public T_ConcatHF   As BetterArray               'Health Facility concatenated
 
 Public sPlaceSelection As String
 
-
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 'This sub loads the geodata from the Geo form to on form in the linenist. There are two types of data:
 'Facility iGeoType = 1 or Geographical informations: iGeotype = 0 Some frame are hidden when one
@@ -45,7 +44,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
         Select Case iGeoType
 
             'Load Geo informations
-            Case 0
+        Case 0
 
             'Add Caption for  each adminstrative leveles in the form
             F_Geo.LBL_Adm1.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(1).value
@@ -69,7 +68,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
                 For i = T_Adm4.LowerBound To T_Adm4.UpperBound
                     transValue.Clear
                     'binding all the lines together
-                    transValue.Items = T_Adm4.Item(i)              'This is oneline of the adm
+                    transValue.Items = T_Adm4.Item(i) 'This is oneline of the adm
                     T_Concat.Item(i) = transValue.Item(1) & " | " & transValue.Item(2) & " | " & transValue.Item(3) & " | " & transValue.Item(4)
                 Next
                 T_Concat.Sort
@@ -90,7 +89,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
 
             'Load Health Facility
 
-            Case 1
+        Case 1
             '-------- Adding caption for each admnistrative levels in the form of the health facility
             F_Geo.LBL_Adm1F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(4).value
             F_Geo.LBL_Adm2F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(3).value
@@ -141,9 +140,9 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     Exit Sub
 
 ErrLoadGeo:
-        MsgBox TranslateLLMsg("MSG_ErrGeo"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
-        EndWork xlsapp:=Application
-        Exit Sub
+    MsgBox TranslateLLMsg("MSG_ErrGeo"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
+    EndWork xlsapp:=Application
+    Exit Sub
 End Sub
 
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -158,7 +157,7 @@ Sub ShowLst2(sPlace As String)
     [F_Geo].LST_Adm3.Clear
     [F_Geo].LST_Adm4.Clear
     Dim T_Aff As BetterArray
-    Dim Wksh As Worksheet                     'Aff is for rendering filtered values withing the list
+    Dim Wksh As Worksheet                        'Aff is for rendering filtered values withing the list
 
     Set T_Aff = New BetterArray
     Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
@@ -206,7 +205,7 @@ Sub ShowLst3(sAdm2 As String)
     [F_Geo].LST_Adm3.Clear
     [F_Geo].LST_Adm4.Clear
 
-    Dim sAdm1 As String 'Selected admin 1
+    Dim sAdm1 As String                          'Selected admin 1
     Dim T_Aff As BetterArray
     Dim Wksh As Worksheet
 
@@ -328,12 +327,12 @@ Sub SearchValue(ByVal sSearchedValue As String)
     'Create a table of the found values (called T_result)
     If Len(sSearchedValue) >= 3 Then
         i = 1
-        While i <= T_Concat.UpperBound
+        Do While i <= T_Concat.UpperBound
             If InStr(1, LCase(T_Concat.Item(i)), LCase(sSearchedValue)) > 0 Then
                 T_result.Push T_Concat.Item(i)
             End If
             i = i + 1
-        Wend
+        Loop
 
         'Render the table if some values are found
         If T_result.Length > 0 Then
@@ -358,12 +357,12 @@ Sub SeachHistoValue(sSearchedValue As String)
     If Len(sSearchedValue) >= 3 Then
         Set T_result = New BetterArray
         i = 1
-        While i <= T_HistoGeo.UpperBound
+        Do While i <= T_HistoGeo.UpperBound
             If InStr(1, LCase(T_HistoGeo.Item(i)), LCase(sSearchedValue)) > 0 Then
                 T_result.Push T_HistoGeo.Item(i)
             End If
             i = i + 1
-        Wend
+        Loop
 
         If T_result.Length > 0 Then
             T_result.Sort
@@ -386,12 +385,12 @@ Sub SearchValueF(sSearchedValue As String)
     If Len(sSearchedValue) >= 3 Then
         Set T_result = New BetterArray
         i = 1
-        While i <= T_ConcatHF.UpperBound
+        Do While i <= T_ConcatHF.UpperBound
             If InStr(1, LCase(T_ConcatHF.Item(i)), LCase(sSearchedValue)) > 0 Then
                 T_result.Push T_ConcatHF.Item(i)
             End If
             i = i + 1
-        Wend
+        Loop
 
         If T_result.Length > 0 Then
             T_result.Sort
@@ -416,12 +415,12 @@ Sub SeachHistoValueF(sSearchedValue As String)
         i = 1
         Set T_result = New BetterArray
 
-        While i <= T_HistoHF.UpperBound
+        Do While i <= T_HistoHF.UpperBound
             If InStr(1, LCase(T_HistoHF.Item(i)), LCase(sSearchedValue)) > 0 Then
                 T_result.Push T_HistoHF.Item(i)
             End If
             i = i + 1
-        Wend
+        Loop
 
         If T_result.Length > 0 Then
             T_result.Sort
@@ -481,3 +480,4 @@ Sub ClearOneHistoricGeobase(iGeoType As Byte)
         MsgBox "Done", vbInformation, "Delete Historic"
     End If
 End Sub
+
