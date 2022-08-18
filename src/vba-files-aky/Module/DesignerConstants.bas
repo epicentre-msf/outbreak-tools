@@ -1,4 +1,6 @@
 Attribute VB_Name = "DesignerConstants"
+Option Private Module
+
 '@NoIndent
 '@IgnoreModule
 

@@ -1,5 +1,6 @@
 Attribute VB_Name = "LinelistMigration"
 Option Explicit
+Option Private Module
 
 Dim ImportReport As Boolean
 Dim ImportVarData As BetterArray

@@ -1,5 +1,6 @@
 Attribute VB_Name = "DesignerMain"
 Option Explicit
+Option Private Module
 
 Public iUpdateCpt As Integer
 Public bGeobaseIsImported As Boolean

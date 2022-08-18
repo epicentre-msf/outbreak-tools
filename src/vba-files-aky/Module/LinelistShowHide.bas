@@ -1,6 +1,8 @@
 Attribute VB_Name = "LinelistShowHide"
 
 Option Explicit
+Option Private Module
+
 ' Retrieving the heading of the dictionnary (names of columns)
 Public TriggerShowHide As Boolean
 
