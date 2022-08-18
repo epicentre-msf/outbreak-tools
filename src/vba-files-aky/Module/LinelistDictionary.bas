@@ -19,6 +19,7 @@ Attribute VB_Name = "LinelistDictionary"
 'Get The Dictionnary Headers From the Dictionary worksheet
 Option Explicit
 Option Base 1
+Option Private Module
 
 Function GetDictionaryHeaders() As BetterArray
     Dim DictHeaders As BetterArray

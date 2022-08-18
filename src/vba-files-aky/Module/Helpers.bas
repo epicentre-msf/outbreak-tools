@@ -1,4 +1,6 @@
 Attribute VB_Name = "Helpers"
+Option Private Module
+
 'Basic Helper functions used in the creation of the linelist and other stuffs
 'Most of them are explicit functions. Contains all the ancillary sub/
 'Functions used when creating the linelist and also in the linelist

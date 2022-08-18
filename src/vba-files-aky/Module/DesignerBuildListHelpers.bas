@@ -1,5 +1,6 @@
 Attribute VB_Name = "DesignerBuildListHelpers"
 Option Explicit
+Option Private Module
 '-------
 'Transfert Codes and forms to the designer
 

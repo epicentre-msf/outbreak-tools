@@ -1,4 +1,5 @@
 Attribute VB_Name = "EstheticConstants"
+Option Private Module
 
 'Constants used when defining esthetic things for the linelist and the
 'Designer, as well as some function for esthetic work.

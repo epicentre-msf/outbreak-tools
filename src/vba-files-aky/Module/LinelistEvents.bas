@@ -1,6 +1,7 @@
 Attribute VB_Name = "LinelistEvents"
 
 Option Explicit
+Option Private Module
 
 Public iGeoType As Byte
 Dim DebugMode As Boolean

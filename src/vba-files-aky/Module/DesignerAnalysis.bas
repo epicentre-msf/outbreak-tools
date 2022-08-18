@@ -1,5 +1,6 @@
 Attribute VB_Name = "DesignerAnalysis"
 Option Explicit
+Option Private Module
 
 Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As BetterArray, BAData As BetterArray, _
                          TAData As BetterArray, SAData As BetterArray, _
@@ -162,7 +163,7 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
                 .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2).FormulaArray = sConvertedFilteredFormula
             End If
 
-            With Range(.Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1), _
+            With .Range(.Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1), _
                        .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2))
                 .HorizontalAlignment = xlHAlignRight
                 .Font.Size = C_iAnalysisFontSize - 2
@@ -624,7 +625,7 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                     iStartCol = C_eStartColumnAnalysis + 2
 
                     'Create a new section, and new minimum formula
-                    Range(.Cells(iSectionRow, C_eStartColumnAnalysis + 2), .Cells(iSectionRow, C_eStartColumnAnalysis + 3)).Merge
+                    .Range(.Cells(iSectionRow, C_eStartColumnAnalysis + 2), .Cells(iSectionRow, C_eStartColumnAnalysis + 3)).Merge
                     CreateNewSection Wksh, iSectionRow, C_eStartColumnAnalysis + 2, sActualSection
                     sMinimumFormula = vbNullString
 
@@ -676,11 +677,11 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
 
 
-                Set Rng = Range(.Cells(iSectionRow + 7, iPrevCol), .Cells(iSectionRow + 11 + C_iNbTime, iStartCol))
+                Set Rng = .Range(.Cells(iSectionRow + 7, iPrevCol), .Cells(iSectionRow + 11 + C_iNbTime, iStartCol))
                 WriteBorderLines Rng, sColor:=sOutlineColor, iWeight:=xlMedium
 
 
-                Set Rng = Range(.Cells(iSectionRow + 6, iPrevCol), .Cells(iSectionRow + 6, iStartCol))
+                Set Rng = .Range(.Cells(iSectionRow + 6, iPrevCol), .Cells(iSectionRow + 6, iStartCol))
 
                 Rng.Merge
                 FormatARange Rng:=Rng, sInteriorColor:=sHeaderInteriorColor, sFontColor:=sHeaderFontColor, isBold:=True

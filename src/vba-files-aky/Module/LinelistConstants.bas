@@ -1,5 +1,5 @@
 Attribute VB_Name = "LinelistConstants"
-
+Option Private Module
 '@NoIndent
 '@IgnoreModule
 

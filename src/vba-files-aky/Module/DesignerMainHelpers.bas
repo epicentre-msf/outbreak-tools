@@ -2,6 +2,7 @@ Attribute VB_Name = "DesignerMainHelpers"
 
 'Helper functions for the designerMain
 Option Explicit
+Option Private Module
 
 'Set All the Input ranges to white
 Sub SetInputRangesToWhite()
@@ -342,7 +343,7 @@ Sub Preprocessing(DictHeaders As BetterArray)
 
         iCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
         iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
-        Set Rng = Range(.Cells(1, 1), .Cells(iRow, iCol))
+        Set Rng = .Range(.Cells(1, 1), .Cells(iRow, iCol))
 
         'Trim everything on the dictionary
         TrimRng Rng
