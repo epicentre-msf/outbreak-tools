@@ -7,10 +7,10 @@ assignees: yves-amevoin
 
 ---
 
-**Scope*
-Please where the bug occurred (Select) ?
+**Scope**
+Please where the bug occurred (Add an "x" in the box) ?
 
-- [ ] Setup
+- [x] Setup
 - [ ] Designer
 - [ ] Linelist
 
@@ -25,7 +25,7 @@ Steps to reproduce the behavior:
 A clear and concise description of what you expected to happen.
 
 **Screenshots**
-If applicable, add screenshots to help explain your problem.
+Please, add screenshots to help explain your problem.
 
 **Desktop (please complete the following information):**
  - OS: [e.g. iOS]
