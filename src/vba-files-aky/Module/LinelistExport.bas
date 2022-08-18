@@ -1,6 +1,7 @@
 Attribute VB_Name = "LinelistExport"
 
 Option Explicit
+Option Private Module
 'Preliminary functions for export ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As String

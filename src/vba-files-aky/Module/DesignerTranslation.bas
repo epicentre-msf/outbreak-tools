@@ -1,5 +1,6 @@
 Attribute VB_Name = "DesignerTranslation"
 Option Explicit
+Option Private Module
 
 'Translate one shape using informations on languages
 Sub TranslateShape(oShape As Object, sValue As String)

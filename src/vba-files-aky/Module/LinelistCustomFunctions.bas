@@ -1,5 +1,4 @@
 Attribute VB_Name = "LinelistCustomFunctions"
-
 Option Explicit
 
 'USER DEFINE FUNCTIONS FOR THE LINELIST ==========================================

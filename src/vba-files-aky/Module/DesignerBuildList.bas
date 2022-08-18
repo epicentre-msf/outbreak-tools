@@ -1,5 +1,6 @@
 Attribute VB_Name = "DesignerBuildList"
 Option Explicit
+Option Private Module
 
 'BUILD THE LINELIST ===================================================================================================================================================================================
 
@@ -925,7 +926,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
                     .Cells(C_eStartlinesListAuto, iChoiceCol + 1).value = sChoiceAutoName
 
-                    Set LoRng = Range(.Cells(C_eStartlinesListAuto, iChoiceCol + 1), .Cells(C_eStartlinesListAuto + 1, iChoiceCol + 1))
+                    Set LoRng = .Range(.Cells(C_eStartlinesListAuto, iChoiceCol + 1), .Cells(C_eStartlinesListAuto + 1, iChoiceCol + 1))
                     .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = "o" & sChoiceAutoName
                     ChoiceAutoVarData.Push sActualChoice
                     Wkb.Names.Add Name:=sChoiceAutoName, RefersToR1C1:="=o" & sChoiceAutoName & "[" & sChoiceAutoName & "]"

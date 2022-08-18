@@ -2,6 +2,7 @@ Attribute VB_Name = "LinelistGeo"
 
 Option Explicit
 Option Base 1
+Option Private Module
 'Module Geo: This is where the geo form and data are managed as well ass all geographic data
 '-------------------------------------------------------------------------------------------------------------------------------------------------------------------
 'We keep the following data are public, so we can make some checks on their content even after initialization

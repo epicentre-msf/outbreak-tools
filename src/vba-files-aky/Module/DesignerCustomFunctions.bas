@@ -1,5 +1,5 @@
 Attribute VB_Name = "DesignerCustomFunctions"
-
+Option Private Module
 Option Explicit
 'parsing case_when functions (This is done at the designer)
 

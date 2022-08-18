@@ -1,5 +1,6 @@
 Attribute VB_Name = "LinelistTranslation"
 Option Explicit
+Option Private Module
 
 Function GetLanguageCode(sString As String) As String
     Dim T_data As BetterArray                    'array of languages
