@@ -950,7 +950,7 @@ Private Sub ExportMigrationData(sLLPath As String)
 
 
     'Write an error handling for writing the file here
-    Wkb.SaveAs FileName:=sLLPath, fileformat:=xlExcel12, CreateBackup:=False, _
+    Wkb.SaveAs FileName:=sLLPath, fileformat:=xlOpenXMLWorkbook, CreateBackup:=False, _
                ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     Wkb.Close
 
@@ -1248,13 +1248,13 @@ Sub ExportForMigration()
             sDirectory = Helpers.LoadFolder
             If sDirectory <> "" Then
                 sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name, False), ".xlsb", "") & _
-                                                                                                                               "_export_data_" & Format(Now, "yyyymmdd-HhNn")
+                         "_export_data_" & Format(Now, "yyyymmdd-HhNn") & ".xlsx"
                 sGeoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & ".xlsx"
                 sGeoHistoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & "_historic" & ".xlsx"
             End If
             i = i + 1
         Loop
-        
+
         If i < 3 Then
             AbleToExport = True
         Else
