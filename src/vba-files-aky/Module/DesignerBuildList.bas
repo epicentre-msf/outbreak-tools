@@ -783,6 +783,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 'In case we have custom variables, let the headers as free text for future
                 'modifications by the user
                 .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Locked = False
+            Case C_sDictControlForm
+                sActualSubLab = IIF(sActualSubLab <> "", sActualSubLab & Chr(10) & C_sForm, C_sForm)
             End Select
 
             'Adding the headers of the table ---------------------------------------------------------------------------------------------------------
@@ -952,6 +954,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                     'Testing before writing the formula
                     If (sFormula <> vbNullString) Then
                         .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).NumberFormat = "General"
+                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Font.Color = GetColor("Grey")
                         .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Formula = sFormula
                         bLockData = True         'Lock data for formulas
                     Else
