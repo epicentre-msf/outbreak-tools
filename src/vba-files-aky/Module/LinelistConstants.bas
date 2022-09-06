@@ -242,6 +242,7 @@ Public Const C_sLanguage                As String = "language"
 Public Const C_sLLDate                  As String = "linelist_creation_date"
 Public Const C_sFiltered                As String = "filt_" 'Just to know if we are on a filtered/Not filtered sheet or table
 Public Const C_sTimeAgg                 As String = "time_agg" 'header of time period for time series table
+Public Const C_sForm                    As String = "(Calculated Formula)"
 
 
 Public Const C_sAdm1                    As String = "ADM1"

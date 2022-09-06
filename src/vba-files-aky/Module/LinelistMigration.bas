@@ -1223,7 +1223,7 @@ Sub ExportForMigration()
     If sDirectory <> "" Then
         'Export the Data of the linelist
         sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name, False), ".xlsb", "") & _
-                                                                                                                       "_export_data_" & Format(Now, "yyyymmdd-HhNn")
+                "_export_data_" & Format(Now, "yyyymmdd-HhNn") & ".xlsx"
 
         'Export the full geobase
 
