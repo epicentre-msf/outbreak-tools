@@ -378,6 +378,7 @@ Sub Export(iTypeExport As Byte)
         ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
             MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value
         Case C_sNo
+            sPath = Replace(sPath, "__" & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PublicKey").value, "")
             Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
             MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_NoPassword")
         Case Else
