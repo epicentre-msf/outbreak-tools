@@ -696,8 +696,10 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
         'Add formula at the end for the start date
         With .Cells(iSectionRow + 4, C_eStartColumnAnalysis + 3)
+        On Error Resume Next
             .Formula = "= MIN(" & sMinimumFormula & ")"
             .Locked = True
+        On Error GoTo 0
         End With
 
     End With
