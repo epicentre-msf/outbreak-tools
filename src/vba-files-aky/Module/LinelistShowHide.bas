@@ -22,6 +22,9 @@ Sub SetHiddenMandatory()
     sShowMandatory = TranslateLLMsg("MSG_ShowMandatory") 'translate_LineList("Show/Mandatory", Sheets("linelist-translation").[T_tradRange])
     sDesHidden = TranslateLLMsg("MSG_DesHidden")
 
+    F_NomVisible.OPT_Affiche.Caption = sShown
+    F_NomVisible.OPT_Masque.Caption = sHidden
+
 End Sub
 
 Function CreateDicTitle() As BetterArray
