@@ -242,7 +242,7 @@ Public Const C_sLanguage                As String = "language"
 Public Const C_sLLDate                  As String = "linelist_creation_date"
 Public Const C_sFiltered                As String = "filt_" 'Just to know if we are on a filtered/Not filtered sheet or table
 Public Const C_sTimeAgg                 As String = "time_agg" 'header of time period for time series table
-Public Const C_sForm                    As String = "(Calculated Formula)"
+Public Const C_sForm                    As String = "(Automatically calculated column)"
 
 
 Public Const C_sAdm1                    As String = "ADM1"
@@ -291,6 +291,7 @@ Public sParamSheetAnalysis              As String 'Sheet for analyses
 Public sParamSheetTemporalAnalysis      As String 'Sheet for temporal analysis
 Public sParamSheetSpatialAnalysis       As String 'Sheet for spacial analysis
 Public sParamSheetAdmin                 As String 'Sheet for admin
+Public sCalculatedForm                  As String 'Calculated formula
 
 '
 Sub SetUserDefineConstants()
@@ -310,6 +311,10 @@ Sub SetUserDefineConstants()
     'Setting the sheet for admin
     sParamSheetAdmin = TranslateLLMsg("LLSHEET_Admin")
     If sParamSheetAdmin = vbNullString Then sParamSheetAdmin = C_sSheetAdmin
+
+    'Calculated formula
+    sCalculatedForm = TranslateLLMsg("MSG_Calculated_Formula")
+    If sCalculatedForm = vbNullString Then sCalculatedForm = C_sForm
 
 End Sub
 
