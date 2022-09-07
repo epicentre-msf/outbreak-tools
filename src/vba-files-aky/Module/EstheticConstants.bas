@@ -35,6 +35,7 @@ Public Const C_iLLSplitColumn               As Integer = 2 'Where to split colum
 Public Const C_iLLFirstColumnsWidth         As Integer = 22
 Public Const C_iAdmLinesColor               As Integer = 32
 Public Const C_iLLVarLabelHeight            As Integer = 80 'Row height of variable label on linelist sheet
+Public Const C_iLLChartPartRowHeight        As Integer = 35
 
 'Number of lines to display for a time series table
 Public Const C_iNbTime                      As Integer = 52
