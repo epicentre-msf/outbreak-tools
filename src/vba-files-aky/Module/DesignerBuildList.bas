@@ -783,8 +783,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 'In case we have custom variables, let the headers as free text for future
                 'modifications by the user
                 .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Locked = False
-            Case C_sDictControlForm
-                sActualSubLab = IIF(sActualSubLab <> "", sActualSubLab & Chr(10) & C_sForm, C_sForm)
+            Case C_sDictControlForm, C_sDictControlCaseWhen
+                sActualSubLab = IIF(sActualSubLab <> vbNullString, sActualSubLab & Chr(10) & sCalculatedForm, sCalculatedForm)
             End Select
 
             'Adding the headers of the table ---------------------------------------------------------------------------------------------------------
@@ -870,7 +870,6 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             End If
 
             'STATUS, TYPE and CONTROLS ====================================================================================================================================================================
-            .Columns(iCounterSheetLLCol).EntireColumn.AutoFit
 
             'Updating the notes according to the column's Status ----------------------------------------------------------------------------
             Call DesignerBuildListHelpers.AddStatus(Wkb.Worksheets(sSheetName), _
@@ -954,8 +953,9 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                     'Testing before writing the formula
                     If (sFormula <> vbNullString) Then
                         .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).NumberFormat = "General"
-                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Font.Color = GetColor("Grey")
                         .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Formula = sFormula
+                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Font.Color = GetColor("VMainSecFont")
+                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Font.Italic = True
                         bLockData = True         'Lock data for formulas
                     Else
                         'MsgBox "Invalid formula will be ignored : " & sActualFormula & "/" & sActualVarName  'MSG_InvalidFormula
@@ -1006,7 +1006,13 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             DoEvents
         Loop
 
+        'Formating the variable labels row
+        Set Rng = .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_eStartLinesLLData, iCounterSheetLLCol - 1))
+        Rng.Font.Bold = True
+        Rng.RowHeight = C_iLLVarLabelHeight
+
         'Set Column Width of First and Second Column
+        .Cells.EntireColumn.AutoFit
         .Columns(1).ColumnWidth = C_iLLFirstColumnsWidth
         .Columns(2).ColumnWidth = C_iLLFirstColumnsWidth
 
@@ -1019,9 +1025,6 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         Rng.Locked = True
         Rng.FormulaHidden = True
 
-        Set Rng = .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_eStartLinesLLData, iCounterSheetLLCol - 1))
-
-        Rng.Font.Bold = True
 
         'Range of the listobject
         Set LoRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol - 1))
