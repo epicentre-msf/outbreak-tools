@@ -29,6 +29,10 @@ Sub CreateNewSection(Wksh As Worksheet, iRow As Long, iCol As Long, sSection As 
 
         'Draw a border arround the section
         DrawLines Rng:=Range(.Cells(iRow, iCol), .Cells(iRow, iCol + 6)), iWeight:=xlMedium, sColor:=sColor, At:="Bottom"
+
+        'Heights for eventual charts
+        .Cells(iRow - 1, iCol).RowHeight = C_iLLChartPartRowHeight
+        .Cells(iRow + 1, iCol).RowHeigth = C_iLLChartPartRowHeight
     End With
 End Sub
 
@@ -666,13 +670,13 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
             istep = 2
             iInnerEndCol = iInnerEndCol - 1
         End If
-        
-        
+
+
         i = iStartCol
 
         sFirstTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis).Address(RowAbsolute:=False)
         sSecondTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis + 1).Address(RowAbsolute:=False)
-        
+
 
         Do While (i <= iInnerEndCol)
             sCondVal = .Cells(iRow, i).Address
@@ -680,7 +684,7 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
                                          sFirstTimeCond:=sFirstTimeCond, sSecondTimeCond:=sSecondTimeCond, _
                                          sCondVar:=sCondVar, sCondVal:=sCondVal, _
                                          isFiltered:=True)
-                                         
+
             If sFormula <> vbNullString Then
                 .Cells(iRow + 2, i).FormulaArray = sFormula
                 Set Rng = .Range(.Cells(iRow + 2, i), .Cells(iRow + 2 + C_iNbTime, i))
@@ -715,22 +719,22 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
             i = i + istep
         Loop
-        
+
         'Missing column
         If sMiss = C_sYes Then
-        
-        
+
+
         End If
-        
-        
+
+
         'Total column
         sFormula = TimeSeriesFormula(Wkb, DictHeaders, sForm, sTimeVar, sFirstTimeCond, sSecondTimeCond, _
                                      OnTotal:=True, includeMissing:=includeMissing, sCondVar:=sCondVar)
-                                     
+
         If sFormula <> vbNullString Then .Cells(iRow + 2, iInnerEndCol).FormulaArray = sFormula
         Set Rng = .Range(.Cells(iRow + 2, iInnerEndCol), .Cells(iRow + 4 + C_iNbTime, iInnerEndCol))
         .Cells(iRow + 2, iInnerEndCol).AutoFill Destination:=Rng, Type:=xlFillValues
-        
+
 
     End With
 End Sub
@@ -1380,38 +1384,50 @@ Function TimeSeriesCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName A
         DetectLastColumn:=False, DetectLastRow:=True
 
     sFormula = vbNullString
-    
+
     If VarNameData.Includes(sVarName) Then
         sTable = TableNameData.Items(VarNameData.IndexOf(sVarName))
         If isFiltered Then sTable = C_sFiltered & sTable
-    
+
         If sFirstCondVar = vbNullString Or (OnTotal And includeMissing) Then
-    
+
             sFormula = "= COUNTIFS" & "(" & sTable & "[" & sVarName & "]," & Chr(34) & ">=" & Chr(34) & "&" & sValue1 & _
                                                                                                       ", " & sTable & "[" & sVarName & "]," & Chr(34) & "<=" & Chr(34) & "&" & sValue2 & ")"
         Else
             If VarNameData.Includes(sFirstCondVar) Then
-            
+
                 'Total without missing
-            
+
                 If OnTotal And Not includeMissing Then
-                    
+
                     sFormula = "= COUNTIFS" & "(" & sTable & "[" & sFirstCondVar & "]" & ", " & _
                                Chr(34) & "<>" & Chr(34) & ", " & sTable & "[" & sVarName & "], " & Chr(34) & ">=" & Chr(34) & "&" & sValue1 & _
                                ", " & sTable & "[" & sVarName & "], " & Chr(34) & "<=" & Chr(34) & "&" & sValue2 & ")"
-                    
+
                 Else
-        
+
                     sFormula = "= COUNTIFS" & "(" & sTable & "[" & sFirstCondVar & "]" & ", " & _
                                sFirstCondVal & ", " & sTable & "[" & sVarName & "], " & Chr(34) & ">=" & Chr(34) & "&" & sValue1 & _
                                ", " & sTable & "[" & sVarName & "], " & Chr(34) & "<=" & Chr(34) & "&" & sValue2 & ")"
                 End If
             End If
         End If
-    
+
     End If
 
     If sFormula <> vbNullString And Len(sFormula) < 255 Then TimeSeriesCount = sFormula
 End Function
 
+
+'Function to create a simple bar chart for the univariate analysis part
+Public Sub CreateBarChart(Wksh, Row, Col, RngSource, Optional chartType as Integer = xlColumnClustered)
+
+    Dim UAChart As ChartObject
+    With Wksh
+
+        Set UAChart = .ChartObjects.Add(Row, Col, 10, 10)
+    End With
+
+
+End Sub
 
