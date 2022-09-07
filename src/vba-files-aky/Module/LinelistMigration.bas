@@ -993,7 +993,7 @@ Private Sub AddAdmSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As
     Dim Wksh As Worksheet                        'New adm worksheet, for code readability
 
     With ThisWorkbook.Worksheets(sSheetName)
-        iLastRow = .Cells(.Rows.Count, C_eStartColumnAdmData).End(xlUp).Row
+        iLastRow = .Cells(.Rows.Count, C_eStartColumnAdmData + 2).End(xlUp).Row
     End With
 
     Wkb.Worksheets.Add(after:=Wkb.Worksheets(sPrevSheetName)).Name = sSheetName
