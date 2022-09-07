@@ -285,8 +285,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
                     iSectionRow = iSectionRow + 3
 
                     'Create a new section
-                    CreateNewSection Wkb.Worksheets(sParamSheetAnalysis), iSectionRow, _
-        C_eStartColumnAnalysis, sActualSection
+                    CreateNewSection Wkb.Worksheets(sParamSheetAnalysis), iSectionRow,     C_eStartColumnAnalysis, sActualSection
 
                     sPreviousSection = sActualSection
 
