@@ -212,13 +212,13 @@ Sub AddSubLab(Wksh As Worksheet, iSheetStartLine As Integer, _
               Optional sSubLabColor As String = "SubLabBlue")
     With Wksh
         .Cells(iSheetStartLine, iCol).value = _
-                                            .Cells(iSheetStartLine, iCol).value & Chr(10) & sSubLab
+        .Cells(iSheetStartLine, iCol).value & Chr(10) & sSubLab
 
         'Changing the fontsize of the sublabels
         .Cells(iSheetStartLine, iCol).Characters(Start:=Len(sMainLab) + 1, _
-                                                 Length:=Len(sSubLab) + 1).Font.Size = C_iLLSheetFontSize - 2
+            Length:=Len(sSubLab) + 1).Font.Size = C_iLLSheetFontSize - 2
         .Cells(iSheetStartLine, iCol).Characters(Start:=Len(sMainLab) + 1, _
-                                                 Length:=Len(sSubLab) + 1).Font.Color = Helpers.GetColor(sSubLabColor)
+            Length:=Len(sSubLab) + 1).Font.Color = Helpers.GetColor(sSubLabColor)
     End With
 
 End Sub
