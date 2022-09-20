@@ -204,6 +204,8 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
       & ": " & TranslateLLMsg("MSG_GlobalSummary")
 
     End With
+    
+    'Add Bivariate Graph
 
 End Sub
 
@@ -229,6 +231,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
     Dim sActualPercentage As String
     Dim sActualMissing As String
     Dim sCondition As String                     'Address of the conditions to use in the IF function
+    Dim sActualChart As String
 
     Dim iCounter As Long
     Dim iSectionRow As Long
@@ -236,6 +239,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
     Dim iEndCol As Long
     Dim i As Long
     Dim iRow As Long
+    Dim Rng As Range
 
 
     Dim ValidationList As BetterArray
@@ -262,6 +266,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
             sActualSummaryFunction = UAData.Items(iCounter, 4)
             sActualSummaryLabel = UAData.Items(iCounter, 5)
             sActualPercentage = UAData.Items(iCounter, 6)
+            sActualChart = UAData.Items(iCounter, 7)
 
             'Set up the different values
             If VarNameData.Includes(sActualGroupBy) Then
@@ -285,7 +290,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
                     iSectionRow = iSectionRow + 3
 
                     'Create a new section
-                    CreateNewSection Wkb.Worksheets(sParamSheetAnalysis), iSectionRow,     C_eStartColumnAnalysis, sActualSection
+                    CreateNewSection Wkb.Worksheets(sParamSheetAnalysis), iSectionRow, C_eStartColumnAnalysis, sActualSection
 
                     sPreviousSection = sActualSection
 
@@ -298,7 +303,8 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
                     End With
                 End If
 
-                ' Set up Header of the tables  -------------------------------------------
+
+                ' Set up Header of the tables  ------------------------------------------------------------------------
 
                 ' Then EndColumn iEndCol is a ByRef, to update the ends column
 
@@ -321,9 +327,10 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
                 'Add NA / Missing if required -----------------------------------------------------
 
                 If sActualMissing = C_sYes Then
+                
 
                     AddUANA Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
-                            sVar:=sActualGroupBy, iRow:=iEndRow, _
+                            sVar:=sActualGroupBy, iRow:=iEndRow, sPercent:=sActualPercentage, _
                             iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol
 
                     iEndRow = iEndRow + 1
@@ -377,6 +384,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
 
                 WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
                                         .Cells(iEndRow, C_eStartColumnAnalysis + 1)), iWeight:=xlThin, sColor:=sOutlineColor
+
 
             End If
 
@@ -541,7 +549,7 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
 
 
-
+    Dim sActualSerie As String
     Dim sActualSection As String
     Dim sPreviousSection As String
     Dim sActualTimeVar As String
@@ -552,6 +560,7 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
     Dim sActualPercentage As String
     Dim sActualChoice As String
     Dim sActualMainLabColumn As String
+    Dim sActualAddTotal As String
     Dim sMinimumFormula As String
     Dim sPrevTimeVar As String
     Dim sTableName As String
@@ -592,13 +601,17 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
         Do While iCounter <= TAData.Length
 
-            sActualSection = TAData.Items(iCounter, 1)
-            sActualTimeVar = TAData.Items(iCounter, 2)
-            sActualGroupBy = TAData.Items(iCounter, 3)
-            sActualMissing = TAData.Items(iCounter, 4)
-            sActualSummaryFunction = TAData.Items(iCounter, 5)
-            sActualSummaryLabel = TAData.Items(iCounter, 6)
-            sActualPercentage = TAData.Items(iCounter, 7)
+            sActualSerie = TAData.Items(iCounter, 1)
+            sActualSection = TAData.Items(iCounter, 2)
+            sActualTimeVar = TAData.Items(iCounter, 3)
+            sActualGroupBy = TAData.Items(iCounter, 4)
+            sActualMissing = TAData.Items(iCounter, 5)
+            sActualSummaryFunction = TAData.Items(iCounter, 6)
+            sActualSummaryLabel = TAData.Items(iCounter, 7)
+            sActualPercentage = TAData.Items(iCounter, 8)
+            sActualAddTotal = TAData.Items(iCounter, 9)
+
+
             sActualMainLabColumn = vbNullString
             ValidationListColumns.Clear
 
@@ -614,10 +627,10 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
                     'Update the Mimimum if it is not the first time
                     If iCounter <> 2 Then
-                        With .Cells(iSectionRow + 4, C_eStartColumnAnalysis + 3)
-                            .Formula = "= MIN(" & sMinimumFormula & ")"
-                            .Locked = True
-                        End With
+                        'With .Cells(iSectionRow + 4, C_eStartColumnAnalysis + 3)
+                          '  .Formula = "= MIN(" & sMinimumFormula & ")"
+                           ' .Locked = True
+                        'End With
                     End If
 
                     iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis + 2).End(xlUp).Row + 3
@@ -695,10 +708,10 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
         'Add formula at the end for the start date
         With .Cells(iSectionRow + 4, C_eStartColumnAnalysis + 3)
-        On Error Resume Next
+            On Error Resume Next
             .Formula = "= MIN(" & sMinimumFormula & ")"
             .Locked = True
-        On Error GoTo 0
+            On Error GoTo 0
         End With
 
     End With
