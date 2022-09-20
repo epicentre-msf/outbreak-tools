@@ -110,7 +110,6 @@ Function LLhasData() As Boolean
 
     hasData = False
 
-    Set TabLL = New BetterArray
     Set WkbLL = ThisWorkbook
 
     For Each shLL In WkbLL.Worksheets
