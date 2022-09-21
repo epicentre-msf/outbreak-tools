@@ -1,5 +1,6 @@
 Attribute VB_Name = "DesignerMain"
 Option Explicit
+Option Private Module
 
 Public iUpdateCpt As Integer
 Public bGeobaseIsImported As Boolean
@@ -14,7 +15,7 @@ Sub LoadFileDic()
     BeginWork xlsapp:=Application
 
     'LoadFile is the procedure for loading the path to the dictionnary
-    sFilePath = Helpers.LoadFile("*.xlsb") 'The
+    sFilePath = Helpers.LoadFile("*.xlsb")       'The
 
     'Update messages if the file path is correct
     If sFilePath <> "" Then
@@ -37,12 +38,12 @@ Sub LoadFileLL()
     Dim sFilePath As String                      'Path to the linelist
 
     'LoadFile is the procedure for loading the path to the linelist
-    sFilePath = Helpers.LoadFile("*.xlsb") 'The
+    sFilePath = Helpers.LoadFile("*.xlsb")       'The
 
     If sFilePath = "" Then Exit Sub
 
     On Error GoTo ErrorManage
-    Application.Workbooks.Open Filename:=sFilePath, ReadOnly:=False
+    Application.Workbooks.Open FileName:=sFilePath, ReadOnly:=False
 
     Exit Sub
 ErrorManage:
@@ -71,7 +72,7 @@ End Sub
 '
 Sub LoadGeoFile()
 
-    Dim sFilePath   As String                      'File path to the geo file
+    Dim sFilePath   As String                    'File path to the geo file
     sFilePath = Helpers.LoadFile("*.xlsx")
 
     If sFilePath <> vbNullString Then
@@ -84,17 +85,16 @@ Sub LoadGeoFile()
     End If
 End Sub
 
-
 'Function to import the geobase
 
 Public Sub ImportGeobase()
 
     Dim sFilePath As String
     Dim oSheet      As Object
-    Dim AdmData     As BetterArray                  'Table for admin levels
-    Dim AdmHeader   As BetterArray                 'Table for the headers of the listobjects
-    Dim AdmNames    As BetterArray                  'Array of the sheetnames
-    Dim i           As Integer                             'iterator
+    Dim AdmData     As BetterArray               'Table for admin levels
+    Dim AdmHeader   As BetterArray               'Table for the headers of the listobjects
+    Dim AdmNames    As BetterArray               'Array of the sheetnames
+    Dim i           As Integer                   'iterator
     Dim Wkb         As Workbook
     'Sheet names
     Set AdmNames = New BetterArray
@@ -147,10 +147,6 @@ Public Sub ImportGeobase()
     Next
 
     Wkb.Close SaveChanges:=False
-    Set AdmData = Nothing
-    Set AdmHeader = Nothing
-    Set AdmNames = Nothing
-    Set Wkb = Nothing
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Fini")
     SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White")
 
@@ -177,15 +173,15 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Import the geobase if it is not imported
     If Not bGeobaseIsImported Then Call ImportGeobase
 
-    Dim DictHeaders     As BetterArray          'Dictionary headers
-    Dim DictData        As BetterArray          'Dictionary data
-    Dim ChoicesHeaders  As BetterArray          'Choices headers
-    Dim ChoicesData     As BetterArray          'Choices data
-    Dim ExportData      As BetterArray          'Export data
-    Dim TransData       As BetterArray          'Translation data
-    Dim GSData          As BetterArray          'Global Summary Data
-    Dim UAData          As BetterArray          'Univariate Analaysis Data
-    Dim BAData          As BetterArray          'Bivariate Analysis DAta
+    Dim DictHeaders     As BetterArray           'Dictionary headers
+    Dim DictData        As BetterArray           'Dictionary data
+    Dim ChoicesHeaders  As BetterArray           'Choices headers
+    Dim ChoicesData     As BetterArray           'Choices data
+    Dim ExportData      As BetterArray           'Export data
+    Dim TransData       As BetterArray           'Translation data
+    Dim GSData          As BetterArray           'Global Summary Data
+    Dim UAData          As BetterArray           'Univariate Analaysis Data
+    Dim BAData          As BetterArray           'Bivariate Analysis DAta
     Dim TAData          As BetterArray
     Dim SAData          As BetterArray
 
@@ -193,7 +189,6 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     Dim SetupWkb        As Workbook
     Dim DesWkb          As Workbook
     Dim iOpenLL         As Integer
-    Dim i               As Integer
     Dim previousSecurity As Byte
 
     'Be sure the actual Workbook is not opened
@@ -232,7 +227,6 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     Call DesignerMainHelpers.MoveAnalysis(SetupWkb)
 
     SetupWkb.Close SaveChanges:=False
-    Set SetupWkb = Nothing
 
     Application.AutomationSecurity = previousSecurity
 
@@ -285,17 +279,15 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     BAData.FromExcelRange DesWkb.Worksheets(C_sParamSheetAnalysis).ListObjects(C_sTabBA).Range
 
     'Time series and Spatial Analysis data
-    Set TAData = New BetterArray 'Time series analysis
+    Set TAData = New BetterArray                 'Time series analysis
     TAData.LowerBound = 1
     TAData.FromExcelRange DesWkb.Worksheets(C_sParamSheetAnalysis).ListObjects(C_sTabTA).Range
 
-    Set SAData = New BetterArray 'Spatial analysis
+    Set SAData = New BetterArray                 'Spatial analysis
     SAData.LowerBound = 1
     SAData.FromExcelRange DesWkb.Worksheets(C_sParamSheetAnalysis).ListObjects(C_sTabTA).Range
 
     DoEvents
-
-    Set DesWkb = Nothing
 
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
 
@@ -332,16 +324,6 @@ Sub GenerateData(Optional iAsk As Byte = 0)
 
     End If
 
-    'Setting the memory data to nothing
-    Set DictHeaders = Nothing
-    Set DictData = Nothing
-    Set ChoicesHeaders = Nothing
-    Set ChoicesData = Nothing
-    Set ExportData = Nothing
-    Set TransData = Nothing
-    Set GSData = Nothing
-    Set BAData = Nothing
-
 End Sub
 
 'Adding some controls before generating the linelist  =================================================================================================================================================
@@ -372,7 +354,7 @@ Public Sub Control()
             SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Correct") & ": " & SheetMain.Range(C_sRngLLName).value & ".xlsb " & TranslateMsg("MSG_Exists")
             SheetMain.Range(C_sRngEdition).Interior.Color = Helpers.GetColor("Grey")
             If MsgBox(SheetMain.Range(C_sRngLLName).value & ".xlsb " & TranslateMsg("MSG_Exists") & Chr(10) & TranslateMsg("MSG_Question"), vbYesNo, _
-            TranslateMsg("MSG_Title")) = vbNo Then
+                      TranslateMsg("MSG_Title")) = vbNo Then
                 SheetMain.Range(C_sRngLLName).value = ""
                 SheetMain.Range(C_sRngLLName).Interior.Color = GetColor("RedEpi")
                 Exit Sub
@@ -419,13 +401,11 @@ Sub OpenLL()
 
     On Error GoTo no
     'Then open it
-    Application.Workbooks.Open Filename:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
+    Application.Workbooks.Open FileName:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
 no:
     Exit Sub
 
 End Sub
-
-
 
 Sub ResetField()
 
@@ -445,6 +425,5 @@ Sub ResetField()
     SheetMain.Range(C_sRngUpdate).Interior.Color = vbWhite
 
 End Sub
-
 
 
