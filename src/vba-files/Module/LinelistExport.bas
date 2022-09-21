@@ -1,8 +1,8 @@
 Attribute VB_Name = "LinelistExport"
 
 Option Explicit
+Option Private Module
 'Preliminary functions for export ---------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
 
 Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As String
 
@@ -17,7 +17,6 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
 
     Dim PathData As BetterArray
     Dim VarNameData As BetterArray
-    Dim Headers As BetterArray
     Dim DictSheet As Worksheet
 
     sPath = vbNullString
@@ -35,7 +34,7 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
         PathData.Items = Split(sPath, "+")
 
         i = 1
-        While i <= PathData.UpperBound
+        Do While i <= PathData.UpperBound
             PathData.Item(i) = Replace(Application.WorksheetFunction.Trim(PathData.Items(i)), "+", "")
 
             If VarNameData.Includes(PathData.Items(i)) Then
@@ -49,7 +48,7 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
             End If
 
             i = i + 1
-        Wend
+        Loop
 
 
         sPath = PathData.ToString(Separator:="-", OpeningDelimiter:=vbNullString, ClosingDelimiter:=vbNullString, QuoteStrings:=False) & _
@@ -61,7 +60,7 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
         If sDirectory <> vbNullString Then
             sPath = sDirectory & Application.PathSeparator & sPath
             i = 0
-            While Len(sPath) >= 255 And i < 3
+            Do While Len(sPath) >= 255 And i < 3
 
                 MsgBox TranslateLLMsg("MSG_PathTooLong")
                 sDirectory = LoadFolder
@@ -72,7 +71,7 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
 
                 End If
                 i = i + 1
-            Wend
+            Loop
 
             If i > 3 Then
                 sPath = vbNullString
@@ -85,16 +84,13 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
 
 
     ExportPath = sPath
-    Set PathData = Nothing
-    Set VarNameData = Nothing
-    Set DictSheet = Nothing
+
 End Function
 
-
 Private Function AddExportLLSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String, _
-                          DictExportData As BetterArray, i As Long, iSheetNameIndex As Integer, _
-                          iVarnameIndex As Integer, Optional sHeaderType As String = "variables names", _
-                          Optional ThereIsFilter As Boolean = False) As Long
+                                  DictExportData As BetterArray, i As Long, iSheetNameIndex As Integer, _
+                                  iVarnameIndex As Integer, Optional sHeaderType As String = "variables names", _
+                                  Optional ThereIsFilter As Boolean = False) As Long
 
     Dim k As Long
     Dim iLastRow As Long
@@ -147,9 +143,9 @@ Private Function AddExportLLSheet(Wkb As Workbook, sSheetName As String, sPrevSh
 End Function
 
 Private Function AddExportAdmSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String, _
-                           DictExportData As BetterArray, i As Long, iSheetNameIndex As Integer, _
-                           iVarnameIndex As Integer, _
-                           Optional sHeaderType As String = "variables names") As Long
+                                   DictExportData As BetterArray, i As Long, iSheetNameIndex As Integer, _
+                                   iVarnameIndex As Integer, _
+                                   Optional sHeaderType As String = "variables names") As Long
 
     Dim k As Long
     Dim sVarName As String
@@ -169,15 +165,15 @@ Private Function AddExportAdmSheet(Wkb As Workbook, sSheetName As String, sPrevS
             'Add variable names or variable labels depending on what is required by the export
             Select Case sHeaderType
 
-                Case C_sExportHeaderTypeVarName
+            Case C_sExportHeaderTypeVarName
 
                 .Cells(k - i + 2, 1).value = sVarName
 
-                Case C_sExportHeaderTypeVarLab
+            Case C_sExportHeaderTypeVarLab
 
                 .Cells(k - i + 2, 1).value = srcWksh.Range(sVarName).Offset(, -1).value
 
-                Case Else
+            Case Else
 
                 .Cells(k - i + 2, 1).value = sVarName
 
@@ -206,7 +202,7 @@ Sub Export(iTypeExport As Byte)
     Dim ExportData      As BetterArray
     Dim DictLo          As ListObject
 
-    Dim i       As Long                                'Iterator
+    Dim i       As Long                          'Iterator
     Dim istep As Long                            'Step in the loop
     Dim iExportIndex As Integer
     Dim iSheetTypeIndex As Integer
@@ -220,8 +216,8 @@ Sub Export(iTypeExport As Byte)
     Dim sSheetName As String
     Dim sPath As String
     Dim sFirstSheetName As String
-    Dim sExt As String                          'file extension of the export
-    Dim sExportHeaderType   As String           'Headers to keep in the export
+    Dim sExt As String                           'file extension of the export
+    Dim sExportHeaderType   As String            'Headers to keep in the export
 
     Set DictExportData = New BetterArray
     Set ExportData = New BetterArray
@@ -328,7 +324,7 @@ Sub Export(iTypeExport As Byte)
         istep = 1
 
 
-        While i <= DictExportData.Length
+        Do While i <= DictExportData.Length
 
             sSheetName = DictExportData.Items(i, iSheetNameIndex)
 
@@ -349,7 +345,7 @@ Sub Export(iTypeExport As Byte)
             sPrevSheetName = sSheetName
 
             i = istep + 1
-        Wend
+        Loop
 
 
         Wkb.Worksheets(sFirstSheetName).Delete
@@ -378,15 +374,16 @@ Sub Export(iTypeExport As Byte)
 
         Select Case ClearString(ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).value)
         Case C_sYes
-            Wkb.SaveAs Filename:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
-            ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+            Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
+        ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
             MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value
         Case C_sNo
-            Wkb.SaveAs Filename:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+            sPath = Replace(sPath, "__" & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PublicKey").value, "")
+            Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
             MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_NoPassword")
         Case Else
-            Wkb.SaveAs Filename:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
-            ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+            Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
+        ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
             MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value
         End Select
 
@@ -395,37 +392,29 @@ Sub Export(iTypeExport As Byte)
 
         EndWork xlsapp:=Application
 
-        Set Wkb = Nothing
-        Set DictExportData = Nothing
-        Set ExportData = Nothing
-        Set ExportHeader = Nothing
-        Set DictLo = Nothing
     End If
 
     Exit Sub
 
 exportErrHandExport:
-        MsgBox TranslateLLMsg("MSG_ErrHandExport"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
-        Exit Sub
+    MsgBox TranslateLLMsg("MSG_ErrHandExport"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
+    Exit Sub
 
 exportErrHandData:
 
-        If Not Wkb Is Nothing Then
-            Wkb.Close SaveChanges:=False
-            Set Wkb = Nothing
-        End If
+    If Not Wkb Is Nothing Then
+        Wkb.Close SaveChanges:=False
 
-        MsgBox TranslateLLMsg("MSG_exportErrHandData"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
-        Exit Sub
+    End If
+
+    MsgBox TranslateLLMsg("MSG_exportErrHandData"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
+    Exit Sub
 
 exportErrHandWrite:
-        Wkb.Close SaveChanges:=False
-        Set Wkb = Nothing
-        MsgBox TranslateLLMsg("MSG_exportErrHandWrite"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
-        Exit Sub
+    Wkb.Close SaveChanges:=False
+    MsgBox TranslateLLMsg("MSG_exportErrHandWrite"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
+    Exit Sub
 End Sub
-
-
 
 Private Function SortExport(DictExportData As BetterArray, iExportIndex As Integer, iTableNameIndex As Integer) As BetterArray
     Dim Rng As Range
@@ -439,14 +428,13 @@ Private Function SortExport(DictExportData As BetterArray, iExportIndex As Integ
         .Sort.SortFields.Clear
         DictExportData.ToExcelRange .Cells(1, 1)
         Set Rng = .Range(.Cells(1, 1), .Cells(DictExportData.Length, _
-                         .Cells(1, .Columns.Count).End(xlToLeft).Column))
+                                              .Cells(1, .Columns.Count).End(xlToLeft).Column))
         Rng.Sort key1:=.Cells(1, iTableNameIndex), order1:=xlAscending, _
-                        key2:=.Cells(1, iExportIndex), order2:=xlAscending, Header:=xlNo
+        key2:=.Cells(1, iExportIndex), order2:=xlAscending, Header:=xlNo
         SortedData.FromExcelRange Rng
         .Cells.Clear
     End With
 
-    Set Rng = Nothing
     Set SortExport = SortedData.Clone()
 End Function
 
@@ -482,7 +470,6 @@ Function LetKey(bPriv As Boolean) As Long
     End If
 
 End Function
-
 
 Private Function TestFilter() As Boolean
 
