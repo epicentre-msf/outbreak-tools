@@ -52,7 +52,7 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLUBA, sSheetName:=sParamSheetAnalysis, iGoToCol:=iGoToColAna, iCol:=2
 
     'Allow text wrap only at the end
-    FormatAnalysisWorksheet Wkb := Wkb, sSheetName := sParamSheetAnalysis, sCodeName := C_sModLLAnaChange
+    FormatAnalysisWorksheet Wkb:=Wkb, sSheetName:=sParamSheetAnalysis, sCodeName:=C_sModLLAnaChange
 
     'TIME SERIES ANALYSIS =============================================================================================================
 
@@ -87,7 +87,7 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
                   iCol:=C_eStartColumnAnalysis + 2, iFontSize:=C_iAnalysisFontSize
 
     'Format then worksheet for temporal analysis
-    FormatAnalysisWorksheet Wkb := Wkb, sSheetName := sParamSheetTemporalAnalysis, iColWidth:=C_iLLFirstColumnsWidth - 10, sCodeName := C_sModLLAnaChange
+    FormatAnalysisWorksheet Wkb:=Wkb, sSheetName:=sParamSheetTemporalAnalysis, iColWidth:=C_iLLFirstColumnsWidth - 8, sCodeName:=C_sModLLAnaChange
 
     'Column witdth of the start column
     With Wkb.Worksheets(sParamSheetTemporalAnalysis)
@@ -205,7 +205,7 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
       & ": " & TranslateLLMsg("MSG_GlobalSummary")
 
     End With
-    
+
     'Add Bivariate Graph
 
 End Sub
@@ -328,7 +328,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
                 'Add NA / Missing if required -----------------------------------------------------
 
                 If sActualMissing = C_sYes Then
-                
+
 
                     AddUANA Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
                             sVar:=sActualGroupBy, iRow:=iEndRow, sPercent:=sActualPercentage, _
@@ -563,6 +563,7 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
     Dim sActualMainLabColumn As String
     Dim sActualAddTotal As String
     Dim sMinimumFormula As String
+    Dim sMaximumFormula As String
     Dim sPrevTimeVar As String
     Dim sTableName As String
     Dim iRow As Long
@@ -571,6 +572,7 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
     Dim iSectionRow As Long
     Dim iPrevCol As Long
     Dim iStartCol As Long
+    Dim NewSection As Boolean
 
 
     'Temporal analysis worksheet
@@ -593,8 +595,9 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
     iPrevCol = C_eStartColumnAnalysis + 2
 
     'Initialise the newSection
-    sPreviousSection = vbNullString
-    sPrevTimeVar = vbNullString
+    sPreviousSection = TAData.Items(iCounter, 2)
+    sPrevTimeVar = TAData.Items(iCounter, 3)
+
 
     With Wksh
 
@@ -615,6 +618,8 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
             sActualMainLabColumn = vbNullString
             ValidationListColumns.Clear
+            NewSection = sPreviousSection <> sActualSection
+
 
             'Test if there is a need to enter the process (by testing the time variable)
             If VarNameData.Includes(sActualTimeVar) Then
@@ -624,14 +629,12 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                 If isFiltered Then sTableName = C_sFiltered & sTableName
 
                 'Build new section
-                If sPreviousSection <> sActualSection Or iCounter = 2 Then
+                If NewSection Or iCounter = 2 Then
 
-                    'Update the Mimimum if it is not the first time
+                    'Update minimum and maximum
                     If iCounter <> 2 Then
-                        'With .Cells(iSectionRow + 4, C_eStartColumnAnalysis + 3)
-                          '  .Formula = "= MIN(" & sMinimumFormula & ")"
-                           ' .Locked = True
-                        'End With
+                        .Cells(iSectionRow + 2, C_eStartColumnAnalysis + 9).Formula = "= MIN(" & sMinimumFormula & ")"
+                        .Cells(iSectionRow + 2, C_eStartColumnAnalysis + 12).Formula = "= MAX(" & sMaximumFormula & ")"
                     End If
 
                     iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis + 2).End(xlUp).Row + 3
@@ -640,7 +643,6 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                     'Create a new section, and new minimum formula
                     .Range(.Cells(iSectionRow, C_eStartColumnAnalysis + 2), .Cells(iSectionRow, C_eStartColumnAnalysis + 3)).Merge
                     CreateNewSection Wksh, iSectionRow, C_eStartColumnAnalysis + 2, sActualSection
-                    sMinimumFormula = vbNullString
 
                     'Update Previous Section
                     sPreviousSection = sActualSection
@@ -656,17 +658,22 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                 End If
 
                 'Update the minimum formula
-                If sPrevTimeVar <> sActualTimeVar Then
-                    'New time variable, update the minmum formula
-                    If sMinimumFormula = vbNullString Then
-                        sMinimumFormula = "MIN(" & sTableName & "[" & sActualTimeVar & "]" & ")"
-                    Else
-                        sMinimumFormula = sMinimumFormula & ", " & "MIN(" & sTableName & "[" & sActualTimeVar & "]" & ")"
-                    End If
+                If sPrevTimeVar <> sActualTimeVar And Not NewSection Then
+                    'New time variable, no new section
+
+                    sMinimumFormula = sMinimumFormula & ", " & "MIN(" & sTableName & "[" & sActualTimeVar & "]" & ")"
+                    sMaximumFormula = sMaximumFormula & ", " & "MAX(" & sTableName & "[" & sActualTimeVar & "]" & ")"
+
                     sPrevTimeVar = sActualTimeVar
+
+                ElseIf NewSection Or iCounter = 2 Then
+                    'New section, new minimum and maximum
+                    sMinimumFormula = "MIN(" & sTableName & "[" & sActualTimeVar & "]" & ")"
+                    sMaximumFormula = "MAX(" & sTableName & "[" & sActualTimeVar & "]" & ")"
+
                 End If
 
-                'Create a validation lis if there it is needed
+                'Create a validation list if there it is needed
                 If VarNameData.Includes(sActualGroupBy) Then
                     sActualChoice = DictData.Items(VarNameData.IndexOf(sActualGroupBy), DictHeaders.IndexOf(C_sDictHeaderChoices))
                     sActualMainLabColumn = DictData.Items(VarNameData.IndexOf(sActualGroupBy), DictHeaders.IndexOf(C_sDictHeaderMainLab))
@@ -707,13 +714,12 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
         Loop
 
-        'Add formula at the end for the start date
-        With .Cells(iSectionRow + 4, C_eStartColumnAnalysis + 3)
-            On Error Resume Next
-            .Formula = "= MIN(" & sMinimumFormula & ")"
-            .Locked = True
-            On Error GoTo 0
-        End With
+        'Add formula at the end for the start date at the end
+
+        On Error Resume Next
+        .Cells(iSectionRow + 2, C_eStartColumnAnalysis + 9).Formula = "= MIN(" & sMinimumFormula & ")"
+        .Cells(iSectionRow + 2, C_eStartColumnAnalysis + 12).Formula = "= MAX(" & sMaximumFormula & ")"
+        On Error GoTo 0
 
     End With
 End Sub

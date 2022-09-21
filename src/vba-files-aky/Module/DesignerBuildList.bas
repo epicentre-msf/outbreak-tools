@@ -984,8 +984,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                     If (sFormula <> vbNullString) Then
                         .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).NumberFormat = "General"
                         .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Formula = sFormula
-                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Font.Color = GetColor("VMainSecFont")
-                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Font.Italic = True
+                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Font.Color = GetColor("Grey50")
+                        .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = GetColor("GreyFormula")
                         bLockData = True         'Lock data for formulas
                     Else
                         'MsgBox "Invalid formula will be ignored : " & sActualFormula & "/" & sActualVarName  'MSG_InvalidFormula
@@ -1051,7 +1051,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
         'Put the range of variable labels in bold and grey colors
         Set Rng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol - 1))
-        FormatARange Rng, sFontColor:="Grey50", sInteriorColor:="Grey50"
+        FormatARange Rng, sFontColor:="VeryLightGreyBlue", sInteriorColor:="VeryLightGreyBlue"
         Rng.Locked = True
         Rng.FormulaHidden = True
 
@@ -1070,11 +1070,10 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
 
-
     End With
 
     'Tranfert Event code to the worksheet
-    TransferCodeWksh Wkb := Wkb, sSheetName := sSheetName, sNameModule := C_sModLLChange
+    TransferCodeWksh Wkb:=Wkb, sSheetName:=sSheetName, sNameModule:=C_sModLLChange
 
     'Now on the filtered sheet copy the range of the list object
     With Wkb.Worksheets(C_sFiltered & sSheetName)

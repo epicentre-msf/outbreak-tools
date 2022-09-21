@@ -434,6 +434,8 @@ Public Function GetColor(sColorCode As String)
         GetColor = RGB(127, 127, 127)
     Case "VeryDarkBlue"
         GetColor = RGB(32, 55, 100)
+    Case "GreyFormula"
+        GetColor = RGB(231, 230, 230)
     Case Else
         GetColor = vbWhite
     End Select
