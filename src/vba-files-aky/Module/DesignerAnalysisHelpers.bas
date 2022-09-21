@@ -13,7 +13,7 @@ Sub FormatAnalysisWorksheet(Wkb As Workbook, sSheetName As String, _
         .Cells.EntireColumn.ColumnWidth = iColWidth
     End With
 
-    If sCodeName <> vbNullString Then TransferCodeWks Wkb, sParamSheetAnalysis, sCodeName
+    If sCodeName <> vbNullString Then TransferCodeWksh Wkb := Wkb, sSheetName := sSheetName, sNameModule := sCodeName
 End Sub
 
 'FUNCTIONS USED TO BUILD UNIVARIATE ANALYSIS ===================================================================================================================
@@ -627,7 +627,7 @@ Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
 
         FormatARange .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), sFontColor:=sFontColor, _
         sInteriorColor:=sInteriorColor, FontSize:=C_iAnalysisFontSize - 1, isBold:=True, _
-        NumFormat:=sNumberFormat, Horiz:=xlHAlignRight
+        Horiz:=xlHAlignRight
 
         .Cells(iRow, iStartCol).HorizontalAlignment = xlHAlignLeft
 
@@ -822,10 +822,6 @@ Sub FormatCell(Wksh As Worksheet, iStartRow As Long, iEndRow As Long, iStartCol 
         With .Cells(iStartRow, iStartCol)
             .Interior.Color = Helpers.GetColor(sInteriorColor)
             .Font.Color = Helpers.GetColor(sFontColor)
-        End With
-
-        With .Cells(iStartRow, iStartCol + 1)
-            .NumberFormat = sNumberFormat
         End With
 
         WriteBorderLines .Range(.Cells(iStartRow, iStartCol), .Cells(iStartRow, iEndCol)), iWeight:=xlHairline, sColor:=sFontColor
