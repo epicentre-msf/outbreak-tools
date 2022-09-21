@@ -102,7 +102,7 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
     VarNameData.LowerBound = 1
     DictSheetNames.LowerBound = 1
     TableNameData.LowerBound = 1
-  
+
     VarNameData.Items = DictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderVarName))
     DictSheetNames.Items = DictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderSheetName))
     TableNameData.Items = DictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderTableName))
@@ -237,11 +237,27 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
         Windows(Wkb.Name).WindowState = xlMaximized
 
         For Each Wksh In Wkb.Worksheets
+            'Unable to write this code as a sub, please keep it in mind because it won't freeze.
             If SheetsOfTypeLLData.Includes(Wksh.Name) Then
                 Wksh.Activate
                 With ActiveWindow
                     .SplitColumn = C_iLLSplitColumn
                     .SplitRow = C_eStartLinesLLData + 1
+                    .FreezePanes = True
+                End With
+
+            ElseIf Wksh.Name = sParamSheetAnalysis Then
+                Wksh.Activate
+                With ActiveWindow
+                    .SplitRow = C_eStartLinesAnalysis - 3
+                    .FreezePanes = True
+                End With
+
+            ElseIf Wksh.Name = sParamSheetTemporalAnalysis Then
+                Wksh.Activate
+                With ActiveWindow
+                    .SplitColumn = C_iLLSplitColumn + 2
+                    .SplitRow = C_eStartLinesAnalysis - 3
                     .FreezePanes = True
                 End With
             End If
@@ -269,6 +285,20 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
                     With .ActiveWindow
                         .SplitColumn = C_iLLSplitColumn
                         .SplitRow = C_eStartLinesLLData + 1
+                        .FreezePanes = True
+                    End With
+
+                ElseIf Wksh.Name = sParamSheetAnalysis Then
+                    Wksh.Activate
+                    With .ActiveWindow
+                        .SplitRow = C_eStartLinesAnalysis - 3
+                        .FreezePanes = True
+                    End With
+                ElseIf Wksh.Name = sParamSheetTemporalAnalysis Then
+                    Wksh.Activate
+                    With .ActiveWindow
+                        .SplitColumn = C_iLLSplitColumn + 2
+                        .SplitRow = C_eStartLinesAnalysis - 3
                         .FreezePanes = True
                     End With
                 End If
@@ -1044,7 +1074,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     End With
 
     'Tranfert Event code to the worksheet
-    Call DesignerBuildListHelpers.TransferCodeWks(Wkb, sSheetName, C_sModLLChange)
+    TransferCodeWksh Wkb := Wkb, sSheetName := sSheetName, sNameModule := C_sModLLChange
 
     'Now on the filtered sheet copy the range of the list object
     With Wkb.Worksheets(C_sFiltered & sSheetName)

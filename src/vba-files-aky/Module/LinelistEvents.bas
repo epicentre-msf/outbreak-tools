@@ -582,17 +582,26 @@ Sub EventValueChangeAnalysis(Target As Range)
     On Error GoTo Err
     Call SetUserDefineConstants
 
-    Set Rng = ThisWorkbook.Worksheets(sParamSheetAnalysis).Range(C_sTabLLUBA & "_" & C_sGotoSection)
+    Select Case ActiveSheet.Name
+
+        Case sParamSheetAnalysis
+
+            Set Rng = ThisWorkbook.Worksheets(sParamSheetAnalysis).Range(C_sTabLLUBA & "_" & C_sGotoSection)
+
+        Case sParamSheetTemporalAnalysis
+
+            Set Rng = ThisWorkbook.Worksheets(sParamSheetTemporalAnalysis).Range(C_sTabLLTA & "_" & C_sGotoSection)
+
+        Case sParamSheetSpatialAnalysis
+    End Select
+
 
     If Not Intersect(Target, Rng) Is Nothing Then
         sLabel = Replace(Target.value, TranslateLLMsg("MSG_SelectSection") & ": ", "")
 
-        Set RngLook = ActiveSheet.Columns(C_eStartColumnAnalysis).Find(What:=sLabel, _
-                                                                       LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=True, SearchFormat:=False)
+        Set RngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=True, SearchFormat:=False)
 
-        If Not RngLook Is Nothing Then
-            RngLook.Activate
-        End If
+        If Not RngLook Is Nothing Then  RngLook.Activate
     End If
 
 

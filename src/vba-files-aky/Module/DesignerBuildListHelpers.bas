@@ -35,7 +35,7 @@ End Sub
 '@sSheetName the sheet name we want to transfer to
 '@sNameModule the name of the module we want to copy code from
 
-Public Sub TransferCodeWks(Wkb As Workbook, sSheetName As String, _
+Public Sub TransferCodeWksh(Wkb As Workbook, sSheetName As String, _
                            sNameModule As String)
 
     Dim sNouvCode As String                      'a string to contain code to add
@@ -1018,5 +1018,4 @@ Public Sub AddAdminSheet(Wkb As Workbook)
     End With
 
 End Sub
-
 
