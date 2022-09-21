@@ -601,7 +601,7 @@ Sub EventValueChangeAnalysis(Target As Range)
 
         Set RngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=True, SearchFormat:=False)
 
-        If Not RngLook Is Nothing Then  RngLook.Activate
+        If Not RngLook Is Nothing Then RngLook.Activate
     End If
 
 
