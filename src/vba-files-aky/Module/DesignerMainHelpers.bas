@@ -2,7 +2,7 @@ Attribute VB_Name = "DesignerMainHelpers"
 
 'Helper functions for the designerMain
 Option Explicit
-
+Option Private Module
 
 'Set All the Input ranges to white
 Sub SetInputRangesToWhite()
@@ -27,9 +27,9 @@ Public Function ControlForGenerate() As Boolean
 
     'Be sure the dictionary path is not empty
     If SheetMain.Range(C_sRngPathDic).value = "" Then
-       SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathDic")
-       SheetMain.Range(C_sRngPathDic).Interior.Color = GetColor("RedEpi")
-       Exit Function
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathDic")
+        SheetMain.Range(C_sRngPathDic).Interior.Color = GetColor("RedEpi")
+        Exit Function
     End If
 
     'Now check if the file exists
@@ -53,24 +53,24 @@ Public Function ControlForGenerate() As Boolean
 
     'Be sure the geo path is not empty
     If SheetMain.Range(C_sRngPathGeo).value = "" Then
-       SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathGeo")
-       SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("RedEpi")
-       MsgBox TranslateMsg("MSG_PathGeo"), vbExclamation + vbOKOnly, TranslateMsg("MSG_TitleGeo")
-       Exit Function
+        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathGeo")
+        SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("RedEpi")
+        MsgBox TranslateMsg("MSG_PathGeo"), vbExclamation + vbOKOnly, TranslateMsg("MSG_TitleGeo")
+        Exit Function
     End If
 
     'Now check if the file exists
     If Dir(SheetMain.Range(C_sRngPathGeo).value) = "" Then
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathGeo")
         SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("RedEpi")
-         MsgBox TranslateMsg("MSG_PathGeo"), vbExclamation + vbOKOnly, TranslateMsg("MSG_TitleGeo")
+        MsgBox TranslateMsg("MSG_PathGeo"), vbExclamation + vbOKOnly, TranslateMsg("MSG_TitleGeo")
         Exit Function
     End If
 
     bGeo = (SheetGeo.ListObjects(C_sTabadm1).DataBodyRange Is Nothing) Or _
-            (SheetGeo.ListObjects(C_sTabAdm2).DataBodyRange Is Nothing) Or _
-            (SheetGeo.ListObjects(C_sTabAdm3).DataBodyRange Is Nothing) Or _
-            (SheetGeo.ListObjects(C_sTabAdm4).DataBodyRange Is Nothing)
+                                                                       (SheetGeo.ListObjects(C_sTabAdm2).DataBodyRange Is Nothing) Or _
+                                                                       (SheetGeo.ListObjects(C_sTabAdm3).DataBodyRange Is Nothing) Or _
+                                                                       (SheetGeo.ListObjects(C_sTabAdm4).DataBodyRange Is Nothing)
 
     'Be sure the geo has been loaded correctly ie the geo data is not empty
     If bGeo Then
@@ -137,13 +137,13 @@ Public Function ControlForGenerate() As Boolean
 
 End Function
 
-
-Function FileNameControl(ByVal sName As String) As String
-'In the file name, replace forbidden characters with an underscore
+Function FileNameControl(ByVal FileName As String) As String
+    'In the file name, replace forbidden characters with an underscore
 
     FileNameControl = vbNullString
+    Dim sName As String
 
-    sName = Replace(sName, "<", "_")
+    sName = Replace(FileName, "<", "_")
     sName = Replace(sName, ">", "_")
     sName = Replace(sName, ":", "_")
     sName = Replace(sName, "|", "_")
@@ -163,83 +163,72 @@ End Function
 
 Public Sub PrepareTemporaryFolder(Optional Create As Boolean = True)
 
-'required temporary folder for analysis
+    'required temporary folder for analysis
     On Error Resume Next
-        Workbooks("Temp.xlsb").Close SaveChanges:=False
-        Workbooks("Temp").Close SaveChanges:=False
-        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb"
-        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "*.frm"
-        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "*.frx"
-        RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
-        If Create Then MkDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" 'create a folder for sending all the data from designer
+    Workbooks("Temp.xlsb").Close SaveChanges:=False
+    Workbooks("Temp").Close SaveChanges:=False
+    Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb"
+    Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "*.frm"
+    Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "*.frx"
+    RmDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_"
+    If Create Then MkDir SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" 'create a folder for sending all the data from designer
     On Error GoTo 0
 
 End Sub
 
-
-
-
 'Move analysis Data from the analysis Sheet to the DesignerWorkbook
-    Public Function MoveAnalysis(SrcWkb As Workbook)
+Public Sub MoveAnalysis(SrcWkb As Workbook)
 
-        Dim DesRng As Range 'Range to resize the new list object in the designer
-        Dim SetupRng As Range 'Range in the setup file
+    Dim DesRng As Range                          'Range to resize the new list object in the designer
+    Dim SetupRng As Range                        'Range in the setup file
 
-        Dim iPasteRow As Long
-        Dim iPasteColumn As Long
-        Dim iLastRow As Long
-        Dim iLastColumn As Long
+    Dim iPasteRow As Long
+    Dim iPasteColumn As Long
+    Dim iLastRow As Long
+    Dim iLastColumn As Long
 
-        Dim SetupWksh As Worksheet
-        Dim DesWksh As Worksheet
+    Dim SetupWksh As Worksheet
+    Dim DesWksh As Worksheet
 
-        Dim Lo As ListObject
+    Dim Lo As ListObject
 
-        If Not SheetExistsInWkb(SrcWkb, C_sParamSheetAnalysis) Then Exit Function
+    If Not SheetExistsInWkb(SrcWkb, C_sParamSheetAnalysis) Then Exit Sub
 
-        Set SetupWksh = SrcWkb.Worksheets(C_sParamSheetAnalysis)
-        Set DesWksh = DesignerWorkbook.Worksheets(C_sParamSheetAnalysis)
+    Set SetupWksh = SrcWkb.Worksheets(C_sParamSheetAnalysis)
+    Set DesWksh = DesignerWorkbook.Worksheets(C_sParamSheetAnalysis)
 
-        DesWksh.Cells.Clear
+    DesWksh.Cells.Clear
 
-        For Each Lo In SetupWksh.ListObjects
+    For Each Lo In SetupWksh.ListObjects
 
-            iPasteRow = Lo.Range.Row
-            iPasteColumn = Lo.Range.Column
+        iPasteRow = Lo.Range.Row
+        iPasteColumn = Lo.Range.Column
 
-            SetupWksh.Cells(iPasteRow - 2, iPasteColumn).Copy DesWksh.Cells(iPasteRow - 2, iPasteColumn)
+        SetupWksh.Cells(iPasteRow - 2, iPasteColumn).Copy DesWksh.Cells(iPasteRow - 2, iPasteColumn)
 
-            'Find where data is entered from the first column
-            iLastRow = SetupWksh.Cells(iPasteRow, iPasteColumn).End(xlDown).Row
-            iLastColumn = SetupWksh.Cells(iPasteRow, iPasteColumn).End(xlToRight).Column
+        'Find where data is entered from the first column
+        iLastRow = SetupWksh.Cells(iPasteRow, iPasteColumn).End(xlDown).Row
+        iLastColumn = SetupWksh.Cells(iPasteRow, iPasteColumn).End(xlToRight).Column
 
-            With SetupWksh
-                Set SetupRng = .Range(.Cells(iPasteRow, iPasteColumn), .Cells(iLastRow, iLastColumn))
-            End With
+        With SetupWksh
+            Set SetupRng = .Range(.Cells(iPasteRow, iPasteColumn), .Cells(iLastRow, iLastColumn))
+        End With
 
-            With DesWksh
-                Set DesRng = .Range(.Cells(iPasteRow, iPasteColumn), .Cells(iLastRow, iLastColumn))
-                DesRng.value = SetupRng.value
-                .ListObjects.Add(xlSrcRange, DesRng, , xlYes).Name = Lo.Name
-            End With
+        With DesWksh
+            Set DesRng = .Range(.Cells(iPasteRow, iPasteColumn), .Cells(iLastRow, iLastColumn))
+            DesRng.value = SetupRng.value
+            .ListObjects.Add(xlSrcRange, DesRng, , xlYes).Name = Lo.Name
+        End With
 
-        Next
-
-
-        Set DesRng = Nothing
-        Set SetupRng = Nothing
-        Set Lo = Nothing
-        Set SetupWksh = Nothing
-        Set DesWksh = Nothing
-    End Function
-
+    Next
+End Sub
 
 'update the progress status
 Sub StatusBar_Updater(sCpte As Single)
 
     Dim CurrentStatus As Integer
-    Dim pctDone As Integer
     Dim bCurrEvent As Boolean
+    
     bCurrEvent = Application.ScreenUpdating
     Application.ScreenUpdating = True
     CurrentStatus = (C_iNumberOfBars) * Round(sCpte / 100, 1)
@@ -255,26 +244,23 @@ End Sub
 Sub LowerRng(Rng As Range)
     Dim c As Range
 
-    If Not Rng is Nothing
+    If Not Rng Is Nothing Then
         For Each c In Rng
             c.value = LCase(c.value)
         Next
     End If
-
-    Set c = Nothing
 End Sub
 
 'Trim values in one range
 
 Sub TrimRng(Rng As Range)
     Dim c As Range
-    If Not Rng is Nothing
+    If Not Rng Is Nothing Then
         For Each c In Rng
             c.value = ClearNonPrintableUnicode(c.value)
         Next
-    Next
+    End If
 End Sub
-
 
 'Add table names
 Public Sub AddTableNames()
@@ -286,9 +272,9 @@ Public Sub AddTableNames()
     Dim iSheetNameCol As Integer
     Dim sSheetName As String
 
-    Dim DictHeaders As BetterArray  'Dictionary Headers
-    Dim SheetsData As BetterArray   'Sheets column
-    Dim TablesData As BetterArray   'New column with table names
+    Dim DictHeaders As BetterArray               'Dictionary Headers
+    Dim SheetsData As BetterArray                'Sheets column
+    Dim TablesData As BetterArray                'New column with table names
 
     Set SheetsData = New BetterArray
     Set TablesData = New BetterArray
@@ -303,8 +289,6 @@ Public Sub AddTableNames()
 
         SheetsData.Push .Cells(2, iSheetNameCol).value
         TablesData.Push "table" & iTableIndex
-
-        Set DictHeaders = Nothing
 
         'Add the header for table name
         .Cells(1, iCol).value = C_sDictHeaderTableName
@@ -327,12 +311,7 @@ Public Sub AddTableNames()
         Next
 
     End With
-
-    Set SheetsData = Nothing
-    Set TablesData = Nothing
 End Sub
-
-
 
 'Preprocessing the dictionary
 Sub Preprocessing(DictHeaders As BetterArray)
@@ -341,14 +320,16 @@ Sub Preprocessing(DictHeaders As BetterArray)
     Dim DictWksh As Worksheet
 
     Dim iCol As Integer
-    Dim iSheetNameCol As Integer 'Column for sheet name
+    Dim i As Long
+    Dim iSheetNameCol As Integer                 'Column for sheet name
     Dim iMainLabCol As Integer
-    Dim iRow As Long 'One row to work on for the dictionary
+    Dim iRow As Long                             'One row to work on for the dictionary
 
     Dim sPrevSheetName As Integer
 
     'Sort Ranges for the dictionnary and other workseets
-    Dim sortRng As Range
+    Dim sortRng1 As Range
+    Dim sortRng2 As Range
     Dim MainLabData As BetterArray
 
 
@@ -362,7 +343,7 @@ Sub Preprocessing(DictHeaders As BetterArray)
 
         iCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
         iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
-        Set Rng = Range(.Cells(1, 1), .Cells(iRow, iCol))
+        Set Rng = .Range(.Cells(1, 1), .Cells(iRow, iCol))
 
         'Trim everything on the dictionary
         TrimRng Rng
@@ -374,7 +355,7 @@ Sub Preprocessing(DictHeaders As BetterArray)
 
         'table name range
         iCol = DictHeaders.IndexOf(C_sDictHeaderTableName)
-        Set sortRng = Range(.Cells(1, iCol), .Cells(iRow, iCol))
+        Set sortRng1 = Range(.Cells(1, iCol), .Cells(iRow, iCol))
 
         'sort on table name
         Rng.Sort key1:=sortRng1, order1:=xlAscending
@@ -389,6 +370,7 @@ Sub Preprocessing(DictHeaders As BetterArray)
 
             If sPrevSheetName <> .Cells(i, iSheetNameCol) Then
                 'New sheet name, we should
+            End If
 
 
 
@@ -398,11 +380,6 @@ Sub Preprocessing(DictHeaders As BetterArray)
 
 
     End With
-
-
-
-
-
 
 
 

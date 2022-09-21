@@ -1,11 +1,11 @@
 Attribute VB_Name = "DesignerAnalysis"
 Option Explicit
-
+Option Private Module
 
 Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As BetterArray, BAData As BetterArray, _
-                        TAData As BetterArray, SAData As BetterArray, _
-                        ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, DictData As BetterArray, _
-                        DictHeaders As BetterArray, VarNameData As BetterArray, TableNameData As BetterArray)
+                         TAData As BetterArray, SAData As BetterArray, _
+                         ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, DictData As BetterArray, _
+                         DictHeaders As BetterArray, VarNameData As BetterArray, TableNameData As BetterArray)
 
     Dim iGoToColAna As Long
     Dim iGoToColTA  As Long
@@ -16,20 +16,20 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
 
     'Add commands Buttons  for filters
 
-     With Wkb.Worksheets(sParamSheetAnalysis)
+    With Wkb.Worksheets(sParamSheetAnalysis)
         .Cells.Font.Size = C_iAnalysisFontSize
 
         .Rows("1:2").RowHeight = C_iLLButtonsRowHeight
         .Columns(1).ColumnWidth = C_iLLFirstColumnsWidth + 20
 
-         'Add command for filtering
+        'Add command for filtering
         Call AddCmd(Wkb, sParamSheetAnalysis, _
-                .Cells(1, 1).Left, _
-                .Cells(1, 1).Top, _
-                C_sShpFilter, _
-                "Calculate on filtered data", _
-                C_iCmdWidth, C_iCmdHeight + 10, _
-                C_sCmdComputeFilter)
+                    .Cells(1, 1).Left, _
+                    .Cells(1, 1).Top, _
+                    C_sShpFilter, _
+                    "Calculate on filtered data", _
+                    C_iCmdWidth, C_iCmdHeight + 10, _
+                    C_sCmdComputeFilter)
     End With
 
 
@@ -52,7 +52,7 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLUBA, sSheetName:=sParamSheetAnalysis, iGoToCol:=iGoToColAna, iCol:=2
 
     'Allow text wrap only at the end
-    FormatAnalysisWorksheet Wkb, sParamSheetAnalysis
+    FormatAnalysisWorksheet Wkb:=Wkb, sSheetName:=sParamSheetAnalysis, sCodeName:=C_sModLLAnaChange
 
     'TIME SERIES ANALYSIS =============================================================================================================
 
@@ -87,7 +87,7 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
                   iCol:=C_eStartColumnAnalysis + 2, iFontSize:=C_iAnalysisFontSize
 
     'Format then worksheet for temporal analysis
-    FormatAnalysisWorksheet Wkb, sParamSheetTemporalAnalysis, iColWidth:=C_iLLFirstColumnsWidth - 10
+    FormatAnalysisWorksheet Wkb:=Wkb, sSheetName:=sParamSheetTemporalAnalysis, iColWidth:=C_iLLFirstColumnsWidth - 8, sCodeName:=C_sModLLAnaChange
 
     'Column witdth of the start column
     With Wkb.Worksheets(sParamSheetTemporalAnalysis)
@@ -95,11 +95,10 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     End With
 
 
-    'SPATIAL ANALYSIS ================================================================================================================
+    'SPATIAL ANALYSIS ================================================================================================================================
+
 
 End Sub
-
-
 
 'Helpers Subs and Functions ============================================================================================================================================================================
 
@@ -110,7 +109,7 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
     Dim sFormula As String
     Dim sConvertedFormula As String
     Dim sConvertedFilteredFormula As String
-    Dim i As Long 'counter
+    Dim i As Long                                'counter
 
     iSumLength = GSData.Length
 
@@ -165,16 +164,16 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
                 .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2).FormulaArray = sConvertedFilteredFormula
             End If
 
-            With Range(.Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1), _
+            With .Range(.Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1), _
                        .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2))
                 .HorizontalAlignment = xlHAlignRight
                 .Font.Size = C_iAnalysisFontSize - 2
             End With
 
             'Write boder lines
-             WriteBorderLines .Range(.Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis), _
-                                .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2)), _
-                         iWeight:=xlHairline, sColor:="DarkBlue"
+            WriteBorderLines .Range(.Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis), _
+                                    .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2)), _
+        iWeight:=xlHairline, sColor:="DarkBlue"
 
         Next
 
@@ -185,17 +184,17 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
         'Thin lines between formulas
         WriteBorderLines .Range(.Cells(C_eStartLinesAnalysis + 1, C_eStartColumnAnalysis), _
                                 .Cells(C_eStartLinesAnalysis + iSumLength, C_eStartColumnAnalysis + 2)), _
-                         iWeight:=xlThin, sColor:="DarkBlue"
+        iWeight:=xlThin, sColor:="DarkBlue"
 
         'lines on label columns
         WriteBorderLines .Range(.Cells(C_eStartLinesAnalysis + 1, C_eStartColumnAnalysis), _
                                 .Cells(C_eStartLinesAnalysis + iSumLength, C_eStartColumnAnalysis)), _
-                         iWeight:=xlThin, sColor:="DarkBlue"
+        iWeight:=xlThin, sColor:="DarkBlue"
 
         'Lines on the overall table
         WriteBorderLines .Range(.Cells(C_eStartLinesAnalysis + 1, C_eStartColumnAnalysis + 1), _
                                 .Cells(C_eStartLinesAnalysis + iSumLength, C_eStartColumnAnalysis + 1)), _
-                         iWeight:=xlThin, sColor:="DarkBlue"
+        iWeight:=xlThin, sColor:="DarkBlue"
 
     End With
 
@@ -203,21 +202,22 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
     With Wkb.Worksheets(C_sSheetChoiceAuto)
 
         .Cells(C_eStartlinesListAuto + 1, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") _
-                                            & ": " & TranslateLLMsg("MSG_GlobalSummary")
+      & ": " & TranslateLLMsg("MSG_GlobalSummary")
 
     End With
 
+    'Add Bivariate Graph
+
 End Sub
 
-
 Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
-                                ChoicesListData As BetterArray, _
-                                ChoicesLabelsData As BetterArray, _
-                                DictData As BetterArray, _
-                                DictHeaders As BetterArray, _
-                                VarNameData As BetterArray, _
-                                iGoToCol As Long, _
-                                Optional sOutlineColor As String = "DarkBlue")
+                                 ChoicesListData As BetterArray, _
+                                 ChoicesLabelsData As BetterArray, _
+                                 DictData As BetterArray, _
+                                 DictHeaders As BetterArray, _
+                                 VarNameData As BetterArray, _
+                                 iGoToCol As Long, _
+                                 Optional sOutlineColor As String = "DarkBlue")
 
 
 
@@ -231,14 +231,16 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
     Dim sFormula As String
     Dim sActualPercentage As String
     Dim sActualMissing As String
-    Dim sCondition As String 'Address of the conditions to use in the IF function
+    Dim sCondition As String                     'Address of the conditions to use in the IF function
+    Dim sActualChart As String
 
-        Dim iCounter As Long
+    Dim iCounter As Long
     Dim iSectionRow As Long
     Dim iEndRow As Long
     Dim iEndCol As Long
     Dim i As Long
     Dim iRow As Long
+    Dim Rng As Range
 
 
     Dim ValidationList As BetterArray
@@ -255,7 +257,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
         Do While iCounter <= UAData.Length
 
             iSectionRow = .Cells(.Rows.Count, _
-            C_eStartColumnAnalysis).End(xlUp).Row
+                                 C_eStartColumnAnalysis).End(xlUp).Row
 
             'values in the table of univariate analysis
 
@@ -265,17 +267,18 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
             sActualSummaryFunction = UAData.Items(iCounter, 4)
             sActualSummaryLabel = UAData.Items(iCounter, 5)
             sActualPercentage = UAData.Items(iCounter, 6)
+            sActualChart = UAData.Items(iCounter, 7)
 
             'Set up the different values
             If VarNameData.Includes(sActualGroupBy) Then
 
                 sActualChoice = DictData.Items(VarNameData.IndexOf(sActualGroupBy), _
-                                                DictHeaders.IndexOf(C_sDictHeaderChoices))
+                                               DictHeaders.IndexOf(C_sDictHeaderChoices))
 
                 sActualMainLab = DictData. _
-                Items(VarNameData.IndexOf(sActualGroupBy), _
-                DictHeaders. _
-                IndexOf(C_sDictHeaderMainLab))
+                                 Items(VarNameData.IndexOf(sActualGroupBy), _
+                                       DictHeaders. _
+                                       IndexOf(C_sDictHeaderMainLab))
 
                 'Where to stop building the table
 
@@ -284,25 +287,25 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
                 'Value of the section
 
                 If sPreviousSection <> sActualSection Then
-                        'New Section
+                    'New Section
                     iSectionRow = iSectionRow + 3
 
                     'Create a new section
-                                    CreateNewSection Wkb.Worksheets(sParamSheetAnalysis), iSectionRow, _
-                                    C_eStartColumnAnalysis, sActualSection
+                    CreateNewSection Wkb.Worksheets(sParamSheetAnalysis), iSectionRow, C_eStartColumnAnalysis, sActualSection
 
                     sPreviousSection = sActualSection
 
                     'Build the GoTo column in the list auto sheet
 
                     With Wkb.Worksheets(C_sSheetChoiceAuto)
-                            iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
+                        iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
                         .Cells(iRow + 1, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") & _
                                                                                                ": " & sActualSection
                     End With
                 End If
 
-                ' Set up Header of the tables  -------------------------------------------
+
+                ' Set up Header of the tables  ------------------------------------------------------------------------
 
                 ' Then EndColumn iEndCol is a ByRef, to update the ends column
 
@@ -318,7 +321,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
                 Set ValidationList = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sActualChoice)
                 ValidationList.ToExcelRange .Cells(iSectionRow + 4, C_eStartColumnAnalysis)
 
-                            'EndRow of the table.
+                'EndRow of the table.
                 iEndRow = iSectionRow + 4 + ValidationList.Length
 
 
@@ -326,9 +329,10 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
 
                 If sActualMissing = C_sYes Then
 
+
                     AddUANA Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
-                    sVar:=sActualGroupBy, iRow:=iEndRow, _
-                    iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol
+                            sVar:=sActualGroupBy, iRow:=iEndRow, sPercent:=sActualPercentage, _
+                            iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol
 
                     iEndRow = iEndRow + 1
 
@@ -336,9 +340,9 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
 
                 'Add Total (Every time) ------------------------------------------------------------------------------------
 
-                            AddUATotal Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
-                                    sVar:=sActualGroupBy, iRow:=iEndRow, iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol, _
-                                    sPercent:=sActualPercentage, sMiss:=sActualMissing
+                AddUATotal Wkb:=Wkb, DictHeaders:=DictHeaders, sSumFunc:=sActualSummaryFunction, _
+                           sVar:=sActualGroupBy, iRow:=iEndRow, iStartCol:=C_eStartColumnAnalysis, iEndCol:=iEndCol, _
+                           sPercent:=sActualPercentage, sMiss:=sActualMissing
 
 
                 'Now Work on each category ---------------------------------------------------------------------------------
@@ -352,13 +356,13 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
 
                     'Getting the formulas
                     sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sActualSummaryFunction, _
-                                           sVar:=sActualGroupBy, sCondition:=sCondition)
+                                                 sVar:=sActualGroupBy, sCondition:=sCondition)
 
                     On Error Resume Next
 
                     If sFormula <> vbNullString And Len(sFormula) < 255 Then
 
-                            .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis + 1).FormulaArray = sFormula
+                        .Cells(iSectionRow + 4 + i, C_eStartColumnAnalysis + 1).FormulaArray = sFormula
 
                     End If
 
@@ -374,24 +378,23 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
                 'On the table outline ---------------------------------------------------------------------------------
 
                 WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
-                                                 .Cells(iEndRow, iEndCol)), iWeight:=xlThin, sColor:=sOutlineColor
+                                        .Cells(iEndRow, iEndCol)), iWeight:=xlThin, sColor:=sOutlineColor
 
                 WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
-                                                 .Cells(iEndRow, C_eStartColumnAnalysis)), iWeight:=xlThin, sColor:=sOutlineColor
+                                        .Cells(iEndRow, C_eStartColumnAnalysis)), iWeight:=xlThin, sColor:=sOutlineColor
 
                 WriteBorderLines .Range(.Cells(iSectionRow + 4, C_eStartColumnAnalysis), _
-                                                 .Cells(iEndRow, C_eStartColumnAnalysis + 1)), iWeight:=xlThin, sColor:=sOutlineColor
+                                        .Cells(iEndRow, C_eStartColumnAnalysis + 1)), iWeight:=xlThin, sColor:=sOutlineColor
+
 
             End If
 
-                iCounter = iCounter + 1
+            iCounter = iCounter + 1
         Loop
 
     End With
 
 End Sub
-
-
 
 Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                                 ChoicesListData As BetterArray, _
@@ -399,8 +402,7 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                                 DictData As BetterArray, _
                                 DictHeaders As BetterArray, _
                                 VarNameData As BetterArray, _
-                                iGoToCol As Long, _
-                                Optional sOutlineColor As String = "DarkBlue")
+                                iGoToCol As Long)
 
 
 
@@ -414,21 +416,18 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
     Dim sActualMainLabRow As String
     Dim sActualMainLabColumn As String
     Dim sPreviousSection As String
-    Dim sFormula As String
     Dim sActualPercentage As String
     Dim sActualMissing As String
-    Dim sCondition As String 'Address of the conditions to use in the IF function
 
     Dim iCounter As Long
     Dim iSectionRow As Long
     Dim iEndRow As Long
     Dim iEndCol As Long
-    Dim i As Long
     Dim iRow As Long
 
 
-    Dim ValidationListRows As BetterArray 'Categories For Rows
-    Dim ValidationListColumns As BetterArray 'Categories For Columns
+    Dim ValidationListRows As BetterArray        'Categories For Rows
+    Dim ValidationListColumns As BetterArray     'Categories For Columns
     Dim Wksh As Worksheet
 
     Set ValidationListRows = New BetterArray
@@ -460,19 +459,19 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
             If VarNameData.Includes(sActualGroupByColumn) And VarNameData.Includes(sActualGroupByRow) Then
 
                 sActualChoiceRow = DictData.Items(VarNameData.IndexOf(sActualGroupByRow), _
-                                                DictHeaders.IndexOf(C_sDictHeaderChoices))
+                                                  DictHeaders.IndexOf(C_sDictHeaderChoices))
                 sActualChoiceColumn = DictData.Items(VarNameData.IndexOf(sActualGroupByColumn), _
-                                                DictHeaders.IndexOf(C_sDictHeaderChoices))
+                                                     DictHeaders.IndexOf(C_sDictHeaderChoices))
 
                 sActualMainLabRow = DictData. _
-                Items(VarNameData.IndexOf(sActualGroupByRow), _
-                DictHeaders. _
-                IndexOf(C_sDictHeaderMainLab))
+                                    Items(VarNameData.IndexOf(sActualGroupByRow), _
+                                          DictHeaders. _
+                                          IndexOf(C_sDictHeaderMainLab))
 
                 sActualMainLabColumn = DictData. _
-                Items(VarNameData.IndexOf(sActualGroupByColumn), _
-                DictHeaders. _
-                IndexOf(C_sDictHeaderMainLab))
+                                       Items(VarNameData.IndexOf(sActualGroupByColumn), _
+                                             DictHeaders. _
+                                             IndexOf(C_sDictHeaderMainLab))
 
                 'Where to stop building the table
 
@@ -484,17 +483,17 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                     iSectionRow = iSectionRow + 3
 
                     'Create a new section
-                                    CreateNewSection Wkb.Worksheets(sParamSheetAnalysis), iSectionRow, _
-                                    C_eStartColumnAnalysis, sActualSection
+                    CreateNewSection Wkb.Worksheets(sParamSheetAnalysis), iSectionRow, _
+        C_eStartColumnAnalysis, sActualSection
 
                     sPreviousSection = sActualSection
 
                     'Build the GoTo column in the list auto sheet
 
                     With Wkb.Worksheets(C_sSheetChoiceAuto)
-                            iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
+                        iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
                         .Cells(iRow + 1, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") & _
-                               ": " & sActualSection
+                                                                                               ": " & sActualSection
                     End With
                 End If
 
@@ -508,10 +507,10 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                 iEndCol = C_eStartColumnAnalysis + ValidationListColumns.Length - 1
 
                 CreateBATable Wksh, iRow:=iSectionRow + 3, ColumnsData:=ValidationListColumns, _
-                                RowsData:=ValidationListRows, iCol:=C_eStartColumnAnalysis, _
-                                sMainLabRow:=sActualMainLabRow, sMainLabCol:=sActualMainLabColumn, _
-                                sSummaryLabel:=sActualSummaryLabel, _
-                                sPercent:=sActualPercentage, sMiss:=sActualMissing
+                              RowsData:=ValidationListRows, iCol:=C_eStartColumnAnalysis, _
+                              sMainLabRow:=sActualMainLabRow, sMainLabCol:=sActualMainLabColumn, _
+                              sSummaryLabel:=sActualSummaryLabel, _
+                              sPercent:=sActualPercentage, sMiss:=sActualMissing
 
                 iEndCol = .Cells(iSectionRow + 5, .Columns.Count).End(xlToLeft).Column
                 iEndRow = .Cells(.Rows.Count, C_eStartColumnAnalysis).End(xlUp).Row
@@ -524,34 +523,34 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
 
                 'Add Formulas at the borders of the table
                 AddBordersFormula Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sActualSummaryFunction, _
-                                 iStartRow:=iSectionRow + 4, iStartCol:=C_eStartColumnAnalysis, iEndRow:=iEndRow, _
-                                 iEndCol:=iEndCol, sVarRow:=sActualGroupByRow, sVarColumn:=sActualGroupByColumn, _
-                                 sMiss:=sActualMissing, sPercent:=sActualPercentage
+                                  iStartRow:=iSectionRow + 4, iStartCol:=C_eStartColumnAnalysis, iEndRow:=iEndRow, _
+                                  iEndCol:=iEndCol, sVarRow:=sActualGroupByRow, sVarColumn:=sActualGroupByColumn, _
+                                  sMiss:=sActualMissing, sPercent:=sActualPercentage
             End If
 
-                iCounter = iCounter + 1
+            iCounter = iCounter + 1
         Loop
 
-   End With
+    End With
 
 End Sub
 
 Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
-                        ChoicesListData As BetterArray, _
-                        ChoicesLabelsData As BetterArray, _
-                        DictData As BetterArray, _
-                        DictHeaders As BetterArray, _
-                        VarNameData As BetterArray, _
-                        TableNameData As BetterArray, _
-                        iGoToCol As Long, _
-                        Optional sOutlineColor As String = "DarkBlue", _
-                        Optional sHeaderFontColor As String = "White", _
-                        Optional sHeaderInteriorColor As String = "VeryDarkBlue", _
-                        Optional isFiltered As Boolean = True)
+                          ChoicesListData As BetterArray, _
+                          ChoicesLabelsData As BetterArray, _
+                          DictData As BetterArray, _
+                          DictHeaders As BetterArray, _
+                          VarNameData As BetterArray, _
+                          TableNameData As BetterArray, _
+                          iGoToCol As Long, _
+                          Optional sOutlineColor As String = "DarkBlue", _
+                          Optional sHeaderFontColor As String = "White", _
+                          Optional sHeaderInteriorColor As String = "VeryDarkBlue", _
+                          Optional isFiltered As Boolean = True)
 
 
 
-
+    Dim sActualSerie As String
     Dim sActualSection As String
     Dim sPreviousSection As String
     Dim sActualTimeVar As String
@@ -562,15 +561,18 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
     Dim sActualPercentage As String
     Dim sActualChoice As String
     Dim sActualMainLabColumn As String
+    Dim sActualAddTotal As String
     Dim sMinimumFormula As String
+    Dim sMaximumFormula As String
     Dim sPrevTimeVar As String
     Dim sTableName As String
     Dim iRow As Long
 
-    Dim iCounter As Long                        'Counter for the length of the Time Series Data
+    Dim iCounter As Long                         'Counter for the length of the Time Series Data
     Dim iSectionRow As Long
     Dim iPrevCol As Long
     Dim iStartCol As Long
+    Dim NewSection As Boolean
 
 
     'Temporal analysis worksheet
@@ -593,8 +595,9 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
     iPrevCol = C_eStartColumnAnalysis + 2
 
     'Initialise the newSection
-    sPreviousSection = vbNullString
-    sPrevTimeVar = vbNullString
+    sPreviousSection = TAData.Items(iCounter, 2)
+    sPrevTimeVar = TAData.Items(iCounter, 3)
+
 
     With Wksh
 
@@ -602,15 +605,21 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
         Do While iCounter <= TAData.Length
 
-            sActualSection = TAData.Items(iCounter, 1)
-            sActualTimeVar = TAData.Items(iCounter, 2)
-            sActualGroupBy = TAData.Items(iCounter, 3)
-            sActualMissing = TAData.Items(iCounter, 4)
-            sActualSummaryFunction = TAData.Items(iCounter, 5)
-            sActualSummaryLabel = TAData.Items(iCounter, 6)
-            sActualPercentage = TAData.Items(iCounter, 7)
+            sActualSerie = TAData.Items(iCounter, 1)
+            sActualSection = TAData.Items(iCounter, 2)
+            sActualTimeVar = TAData.Items(iCounter, 3)
+            sActualGroupBy = TAData.Items(iCounter, 4)
+            sActualMissing = TAData.Items(iCounter, 5)
+            sActualSummaryFunction = TAData.Items(iCounter, 6)
+            sActualSummaryLabel = TAData.Items(iCounter, 7)
+            sActualPercentage = TAData.Items(iCounter, 8)
+            sActualAddTotal = TAData.Items(iCounter, 9)
+
+
             sActualMainLabColumn = vbNullString
             ValidationListColumns.Clear
+            NewSection = sPreviousSection <> sActualSection
+
 
             'Test if there is a need to enter the process (by testing the time variable)
             If VarNameData.Includes(sActualTimeVar) Then
@@ -620,23 +629,20 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                 If isFiltered Then sTableName = C_sFiltered & sTableName
 
                 'Build new section
-                If sPreviousSection <> sActualSection Or iCounter = 2 Then
+                If NewSection Or iCounter = 2 Then
 
-                    'Update the Mimimum if it is not the first time
+                    'Update minimum and maximum
                     If iCounter <> 2 Then
-                        With .Cells(iSectionRow + 4, C_eStartColumnAnalysis + 3)
-                            .Formula = "= MIN(" & sMinimumFormula & ")"
-                            .Locked = True
-                        End With
+                        .Cells(iSectionRow + 2, C_eStartColumnAnalysis + 9).Formula = "= MIN(" & sMinimumFormula & ")"
+                        .Cells(iSectionRow + 2, C_eStartColumnAnalysis + 12).Formula = "= MAX(" & sMaximumFormula & ")"
                     End If
 
                     iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis + 2).End(xlUp).Row + 3
                     iStartCol = C_eStartColumnAnalysis + 2
 
                     'Create a new section, and new minimum formula
-                    Range(.Cells(iSectionRow, C_eStartColumnAnalysis + 2), .Cells(iSectionRow, C_eStartColumnAnalysis + 3)).Merge
+                    .Range(.Cells(iSectionRow, C_eStartColumnAnalysis + 2), .Cells(iSectionRow, C_eStartColumnAnalysis + 3)).Merge
                     CreateNewSection Wksh, iSectionRow, C_eStartColumnAnalysis + 2, sActualSection
-                    sMinimumFormula = vbNullString
 
                     'Update Previous Section
                     sPreviousSection = sActualSection
@@ -652,17 +658,22 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                 End If
 
                 'Update the minimum formula
-                If sPrevTimeVar <> sActualTimeVar Then
-                    'New time variable, update the minmum formula
-                    If sMinimumFormula = vbNullString Then
-                        sMinimumFormula = "MIN(" & sTableName & "[" & sActualTimeVar & "]" & ")"
-                    Else
-                        sMinimumFormula = sMinimumFormula & ", " & "MIN(" & sTableName & "[" & sActualTimeVar & "]" & ")"
-                    End If
+                If sPrevTimeVar <> sActualTimeVar And Not NewSection Then
+                    'New time variable, no new section
+
+                    sMinimumFormula = sMinimumFormula & ", " & "MIN(" & sTableName & "[" & sActualTimeVar & "]" & ")"
+                    sMaximumFormula = sMaximumFormula & ", " & "MAX(" & sTableName & "[" & sActualTimeVar & "]" & ")"
+
                     sPrevTimeVar = sActualTimeVar
+
+                ElseIf NewSection Or iCounter = 2 Then
+                    'New section, new minimum and maximum
+                    sMinimumFormula = "MIN(" & sTableName & "[" & sActualTimeVar & "]" & ")"
+                    sMaximumFormula = "MAX(" & sTableName & "[" & sActualTimeVar & "]" & ")"
+
                 End If
 
-                'Create a validation lis if there it is needed
+                'Create a validation list if there it is needed
                 If VarNameData.Includes(sActualGroupBy) Then
                     sActualChoice = DictData.Items(VarNameData.IndexOf(sActualGroupBy), DictHeaders.IndexOf(C_sDictHeaderChoices))
                     sActualMainLabColumn = DictData.Items(VarNameData.IndexOf(sActualGroupBy), DictHeaders.IndexOf(C_sDictHeaderMainLab))
@@ -670,10 +681,10 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                 End If
 
                 CreateBATable Wksh, iRow:=iSectionRow + 6, ColumnsData:=ValidationListColumns, _
-                                 iCol:=iStartCol, sMainLabCol:=sActualMainLabColumn, _
-                                 sSummaryLabel:=sActualSummaryLabel, _
-                                 sPercent:=sActualPercentage, sMiss:=sActualMissing, _
-                                 isTimeSeries:=True
+                              iCol:=iStartCol, sMainLabCol:=sActualMainLabColumn, _
+                              sSummaryLabel:=sActualSummaryLabel, _
+                              sPercent:=sActualPercentage, sMiss:=sActualMissing, _
+                              isTimeSeries:=True
                 DoEvents
 
                 iPrevCol = iStartCol + 1
@@ -686,11 +697,11 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
 
 
-                Set Rng = Range(.Cells(iSectionRow + 7, iPrevCol), .Cells(iSectionRow + 11 + C_iNbTime, iStartCol))
+                Set Rng = .Range(.Cells(iSectionRow + 7, iPrevCol), .Cells(iSectionRow + 11 + C_iNbTime, iStartCol))
                 WriteBorderLines Rng, sColor:=sOutlineColor, iWeight:=xlMedium
 
 
-                Set Rng = Range(.Cells(iSectionRow + 6, iPrevCol), .Cells(iSectionRow + 6, iStartCol))
+                Set Rng = .Range(.Cells(iSectionRow + 6, iPrevCol), .Cells(iSectionRow + 6, iStartCol))
 
                 Rng.Merge
                 FormatARange Rng:=Rng, sInteriorColor:=sHeaderInteriorColor, sFontColor:=sHeaderFontColor, isBold:=True
@@ -703,12 +714,14 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
         Loop
 
-        'Add formula at the end for the start date
-        With .Cells(iSectionRow + 4, C_eStartColumnAnalysis + 3)
-            .Formula = "= MIN(" & sMinimumFormula & ")"
-            .Locked = True
-        End With
+        'Add formula at the end for the start date at the end
+
+        On Error Resume Next
+        .Cells(iSectionRow + 2, C_eStartColumnAnalysis + 9).Formula = "= MIN(" & sMinimumFormula & ")"
+        .Cells(iSectionRow + 2, C_eStartColumnAnalysis + 12).Formula = "= MAX(" & sMaximumFormula & ")"
+        On Error GoTo 0
 
     End With
-    Set Rng = Nothing
 End Sub
+
+

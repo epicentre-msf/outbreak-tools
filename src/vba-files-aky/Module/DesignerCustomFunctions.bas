@@ -1,5 +1,5 @@
 Attribute VB_Name = "DesignerCustomFunctions"
-
+Option Private Module
 Option Explicit
 'parsing case_when functions (This is done at the designer)
 
@@ -7,7 +7,7 @@ Option Explicit
 Function CaseWhen(Values As BetterArray) As String
     Dim i        As Long
     Dim sFormula As String
-    Dim sPar     As String 'Number of parenthesis for the formula
+    Dim sPar     As String                       'Number of parenthesis for the formula
 
     'Initialisations:
     sFormula = vbNullString
@@ -17,7 +17,7 @@ Function CaseWhen(Values As BetterArray) As String
     'We convert to nested ifs, up to 64 nested ifs can be used in Excel
     Do While i < Values.Length
         sFormula = sFormula & "IF" & "(" & Values.Items(i) & ", " & _
-                     Values.Items(i + 1) & ", "
+                                                           Values.Items(i + 1) & ", "
         i = i + 2
         sPar = sPar & ")"
     Loop
@@ -57,26 +57,28 @@ Function ParseCaseWhen(sFormula As String) As String
 
         sLab = Application.WorksheetFunction.Trim(Replace(sFormula, "CASE_WHEN(", ""))
         sLab = Left(sLab, Len(sLab) - 1)
-            For i = 1 To Len(sLab)
+        For i = 1 To Len(sLab)
 
-                'Manage parenthesis and quotes,
-                If Mid(sLab, i, 1) = Chr(34) Then OpenedQuotes = Not OpenedQuotes 'Opened quotes or parenthesis
+            'Manage parenthesis and quotes,
+            If Mid(sLab, i, 1) = Chr(34) Then OpenedQuotes = Not OpenedQuotes 'Opened quotes or parenthesis
 
-                'Parenthesis not within quotes are expressions
-                If Mid(sLab, i, 1) = Chr(40) And Not OpenedQuotes Then NbOpened = NbOpened + 1
-                If Mid(sLab, i, 1) = Chr(41) And Not OpenedQuotes Then NbClosed = NbClosed + 1
+            'Parenthesis not within quotes are expressions
+            If Mid(sLab, i, 1) = Chr(40) And Not OpenedQuotes Then NbOpened = NbOpened + 1
+            If Mid(sLab, i, 1) = Chr(41) And Not OpenedQuotes Then NbClosed = NbClosed + 1
 
-                'Opened parenthesis is true or false depending on the number of quotes opened or closed
-                OpenedParenthesis = (NbOpened <> NbClosed)
+            'Opened parenthesis is true or false depending on the number of quotes opened or closed
+            OpenedParenthesis = (NbOpened <> NbClosed)
 
-                If Not OpenedQuotes And Not OpenedParenthesis And Mid(sLab, i, 1) = "," Then
-                    ParsingTable.Push Application.WorksheetFunction.Trim(Mid(sLab, iprev, i - iprev))
-                    iprev = i + 1
-                End If
-            Next
+            If Not OpenedQuotes And Not OpenedParenthesis And Mid(sLab, i, 1) = "," Then
+                ParsingTable.Push Application.WorksheetFunction.Trim(Mid(sLab, iprev, i - iprev))
+                iprev = i + 1
+            End If
+        Next
 
-            ParsingTable.Push Application.WorksheetFunction.Trim(Mid(sLab, iprev, i - iprev))
+        ParsingTable.Push Application.WorksheetFunction.Trim(Mid(sLab, iprev, i - iprev))
 
         ParseCaseWhen = CaseWhen(ParsingTable)
     End If
 End Function
+
+
