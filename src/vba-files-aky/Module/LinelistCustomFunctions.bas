@@ -1,10 +1,9 @@
 Attribute VB_Name = "LinelistCustomFunctions"
-
 Option Explicit
 
 'USER DEFINE FUNCTIONS FOR THE LINELIST ==========================================
 
-'@Description: Get the date grande of column of type date which is "minimum date - maximum date"
+'@Description("Get the date grande of column of type date which is "minimum date - maximum date")
 '
 '@Arguments:
 '- Rng: a Range
@@ -14,12 +13,10 @@ Option Explicit
 '
 '@Example: If "A1" contains date, DATE_RANGE("A1")
 
-
 Public Function DATE_RANGE(DateRng As Range) As String
-        DATE_RANGE = Format(Application.WorksheetFunction.Min(DateRng), "DD/MM/YYYY") & _
-        " - " & Format(Application.WorksheetFunction.Max(DateRng), "DD/MM/YYYY")
+    DATE_RANGE = Format(Application.WorksheetFunction.Min(DateRng), "DD/MM/YYYY") & _
+                                                                                  " - " & Format(Application.WorksheetFunction.Max(DateRng), "DD/MM/YYYY")
 End Function
-
 
 '
 '
@@ -32,44 +29,40 @@ End Function
 '
 Public Function VALUE_OF(Rng As Range, RngLook As Range, RngVal As Range) As String
 
-        Dim sValLook As String
-        Dim sSheetLook As String 'Sheet name where to look for values
-        Dim sSheetVal As String     'Sheet name where to return the values
+    Dim sValLook As String
+    Dim sSheetLook As String                     'Sheet name where to look for values
+    Dim sSheetVal As String                      'Sheet name where to return the values
 
-        Dim ColRngLook As Range 'Column Range where to look for
-        Dim ColRngVal  As Range 'Column Range where to return the value from
+    Dim ColRngLook As Range                      'Column Range where to look for
+    Dim ColRngVal  As Range                      'Column Range where to return the value from
 
-        Dim iColLook As Long 'columns to look and return values
-        Dim sVal As String
-        Dim iColVal As Long
+    Dim iColLook As Long                         'columns to look and return values
+    Dim sVal As String
+    Dim iColVal As Long
 
-        sValLook = Rng.value
+    sValLook = Rng.value
 
-        sVal = vbNullString
+    sVal = vbNullString
 
-        If sValLook <> vbNullString Then
-            sSheetLook = RngLook.Worksheet.Name
-            sSheetVal = RngVal.Worksheet.Name
+    If sValLook <> vbNullString Then
+        sSheetLook = RngLook.Worksheet.Name
+        sSheetVal = RngVal.Worksheet.Name
 
-            iColLook = RngLook.Column
-            iColVal = RngVal.Column
+        iColLook = RngLook.Column
+        iColVal = RngVal.Column
 
-            Set ColRngLook = ThisWorkbook.Worksheets(sSheetLook).ListObjects(SheetListObjectName(sSheetLook)).ListColumns(iColLook).Range
-            Set ColRngVal = ThisWorkbook.Worksheets(sSheetVal).ListObjects(SheetListObjectName(sSheetVal)).ListColumns(iColVal).Range
+        Set ColRngLook = ThisWorkbook.Worksheets(sSheetLook).ListObjects(SheetListObjectName(sSheetLook)).ListColumns(iColLook).Range
+        Set ColRngVal = ThisWorkbook.Worksheets(sSheetVal).ListObjects(SheetListObjectName(sSheetVal)).ListColumns(iColVal).Range
 
-            On Error Resume Next
-            With Application.WorksheetFunction
-                sVal = .index(ColRngVal, .Match(sValLook, ColRngLook, 0))
-            End With
-            On Error GoTo 0
-        End If
+        On Error Resume Next
+        With Application.WorksheetFunction
+            sVal = .index(ColRngVal, .Match(sValLook, ColRngLook, 0))
+        End With
+        On Error GoTo 0
+    End If
 
-        VALUE_OF = sVal
+    VALUE_OF = sVal
 End Function
-
-
-
-
 
 '
 '
@@ -112,20 +105,17 @@ Public Function Epiweek(jour As Long) As Long
     End Select
 End Function
 
-
 'Epiweek function without specifying the year in select cases (works with all years)
 Public Function Epiweek2(currentDate As Long) As Long
     Dim inDate As Long
     Dim firstDate As Long
     
-     inDate = DateSerial(Year(currentDate), 1, 1)
-     firstDate = inDate - Weekday(inDate, 2) + 1
+    inDate = DateSerial(Year(currentDate), 1, 1)
+    firstDate = inDate - Weekday(inDate, 2) + 1
      
-     Epiweek2 = 1 + (currentDate - firstDate) \ 7
+    Epiweek2 = 1 + (currentDate - firstDate) \ 7
 
 End Function
-
-
 
 'Find the quarter, the year, the week or the month depending on the aggregation ============================================
 
@@ -144,7 +134,7 @@ Private Function GetAgg(sAggregate As String) As String
         GetAgg = "quarter"
     Case TranslateLLMsg("MSG_Year")
         GetAgg = "year"
-    Case Else 'Aggregate as week if unable to find the aggregate (defensive)
+    Case Else                                    'Aggregate as week if unable to find the aggregate (defensive)
         GetAgg = "week"
     End Select
 
@@ -190,10 +180,9 @@ Public Function FindLastDay(sAggregate As String, inDate As Long) As Long
 
 End Function
 
-
 'Format a date to feet the aggregation selection ================================================================
 
-Public Function FormatDateFromLastDay(sAggregate As String, inDate As Long)
+Public Function FormatDateFromLastDay(sAggregate As String, inDate As Long, maxDate As Long, startDate As Long) As String
 
     Dim sAgg As String
     Dim sValue As String
@@ -201,6 +190,11 @@ Public Function FormatDateFromLastDay(sAggregate As String, inDate As Long)
     Dim quarterDate As Integer
 
     sAgg = GetAgg(sAggregate)
+    
+    If startDate > maxDate Then
+        FormatDateFromLastDay = vbNullString
+        Exit Function
+    End If
 
     Select Case sAgg
 
@@ -221,4 +215,10 @@ Public Function FormatDateFromLastDay(sAggregate As String, inDate As Long)
     FormatDateFromLastDay = sValue
 End Function
 
+'Format a date range
+Public Function FormatDateRange(MinDate As Long, maxDate As Long) As String
+
+    FormatDateRange = Format(MinDate, "dd/mm/yyyy") & "-" & Format(maxDate, "dd/mm/yyyy")
+
+End Function
 

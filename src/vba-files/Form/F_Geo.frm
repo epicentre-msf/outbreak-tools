@@ -1,9 +1,9 @@
 VERSION 5.00
 Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_Geo 
    Caption         =   "GEO Apps"
-   ClientHeight    =   9570
-   ClientLeft      =   45
-   ClientTop       =   -345
+   ClientHeight    =   9576.001
+   ClientLeft      =   48
+   ClientTop       =   -348
    ClientWidth     =   10200
    OleObjectBlob   =   "F_Geo.frx":0000
    StartUpPosition =   1  'CenterOwner
@@ -135,6 +135,18 @@ Attribute VB_Exposed = False
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -143,10 +155,8 @@ Private Sub CMD_Copier_Click()
 
     Dim T_temp As BetterArray
     Set T_temp = New BetterArray
-    Dim geosheet As String
-    Dim Rng As Range
 
-     On Error GoTo ErrGeo
+    On Error GoTo ErrGeo
 
     ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
@@ -327,9 +337,8 @@ Private Sub TXT_RechercheHistoF_Change()
 
 End Sub
 
-
 Private Sub UserForm_Initialize()
-'Manage language
+    'Manage language
     Me.Caption = TranslateLLMsg(Me.Name)
 
     Call TranslateForm(Me)

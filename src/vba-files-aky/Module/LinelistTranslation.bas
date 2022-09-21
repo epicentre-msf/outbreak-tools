@@ -1,5 +1,6 @@
 Attribute VB_Name = "LinelistTranslation"
 Option Explicit
+Option Private Module
 
 Function GetLanguageCode(sString As String) As String
     Dim T_data As BetterArray                    'array of languages
@@ -26,11 +27,9 @@ Function GetLanguageCode(sString As String) As String
 
 End Function
 
-
 Sub TranslateForm(UserFrm As UserForm)
     'management of the translation of the form captions
 
-    Dim sLanguage As String
     Dim i As Integer
     Dim cControl As Control
 
@@ -48,7 +47,6 @@ Sub TranslateForm(UserFrm As UserForm)
         End If
     Next cControl
 End Sub
-
 
 'Find correponding values in one listobject of the linelist translation sheet and translate them
 
@@ -74,13 +72,11 @@ Function LineListTranslatedValue(sText As String, sRngName As String)
     On Error Resume Next
 
     If iNumCol > 0 Then
-         LineListTranslatedValue = Application.WorksheetFunction.VLookup(sText, Rng, iNumCol, False)
+        LineListTranslatedValue = Application.WorksheetFunction.VLookup(sText, Rng, iNumCol, False)
     End If
 
     On Error GoTo 0
-    Set HeadersData = Nothing
 End Function
-
 
 'Translate a message in the linelist (corresponding to the choosen language)
 Function TranslateLLMsg(sMsgCode As String) As String
