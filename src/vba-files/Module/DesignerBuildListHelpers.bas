@@ -1,5 +1,6 @@
 Attribute VB_Name = "DesignerBuildListHelpers"
 Option Explicit
+Option Private Module
 '-------
 'Transfert Codes and forms to the designer
 
@@ -30,13 +31,12 @@ Public Sub TransferDesignerCodes(Wkb As Workbook)
 
 End Sub
 
-
 'Transfert code from one module to a worksheet to trigger some events
 '@sSheetName the sheet name we want to transfer to
 '@sNameModule the name of the module we want to copy code from
 
-Public Sub TransferCodeWks(Wkb As Workbook, sSheetName As String, _
-                    sNameModule As String)
+Public Sub TransferCodeWksh(Wkb As Workbook, sSheetName As String, _
+                           sNameModule As String)
 
     Dim sNouvCode As String                      'a string to contain code to add
     Dim sheetComp As String
@@ -83,8 +83,8 @@ Private Sub TransferForm(Wkb As Workbook, sFormName As String)
 
     'The form is sent to the LinelisteApp folder
     On Error Resume Next
-        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
-        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frx"
+    Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
+    Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frx"
     On Error GoTo 0
 
     DoEvents
@@ -93,11 +93,10 @@ Private Sub TransferForm(Wkb As Workbook, sFormName As String)
     DoEvents
 
     On Error Resume Next
-        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
-        Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frx"
+    Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
+    Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frx"
     On Error GoTo 0
 End Sub
-
 
 '---
 'The Goal is to transfer one Code Module/Class from the designer to the
@@ -108,8 +107,8 @@ End Sub
 
 Private Sub TransferCode(Wkb As Workbook, sNameModule As String, sType As String)
 
-    Dim oNouvM As Object 'New module name
-    Dim sNouvCode As String 'New module code
+    Dim oNouvM As Object                         'New module name
+    Dim sNouvCode As String                      'New module code
 
     'get all the values within the actual module to transfer
     With DesignerWorkbook.VBProject.VBComponents(sNameModule).CodeModule
@@ -128,12 +127,11 @@ Private Sub TransferCode(Wkb As Workbook, sNameModule As String, sType As String
     oNouvM.Name = sNameModule
     With Wkb.VBProject.VBComponents(oNouvM.Name).CodeModule
         .DeleteLines 1, .CountOfLines
-         DoEvents
+        DoEvents
         .AddFromString sNouvCode
     End With
 
 End Sub
-
 
 '----
 'When you have same headers name in a listobject table, excels add a number (1)
@@ -155,9 +153,9 @@ Public Function AddSpaceToHeaders(Wkb As Workbook, _
     AddSpaceToHeaders = ""
     With Wkb
         i = 1
-        While i <= .Worksheets(sSheetName).Cells(iStartLine, Columns.Count).End(xlToLeft).Column And Replace(UCase(.Sheets(sSheetName).Cells(iStartLine, i).value), " ", "") <> Replace(UCase(sHeader), " ", "")
+        Do While i <= .Worksheets(sSheetName).Cells(iStartLine, Columns.Count).End(xlToLeft).Column And Replace(UCase(.Sheets(sSheetName).Cells(iStartLine, i).value), " ", "") <> Replace(UCase(sHeader), " ", "")
             i = i + 1
-        Wend
+        Loop
         If Replace(UCase(Wkb.Worksheets(sSheetName).Cells(iStartLine, i).value), " ", "") = Replace(UCase(sHeader), " ", "") Then
             AddSpaceToHeaders = Wkb.Worksheets(sSheetName).Cells(iStartLine, i).value & " "
         Else
@@ -207,7 +205,6 @@ Sub AddCmd(Wkb As Workbook, sSheetName As String, iLeft As Integer, iTop As Inte
 
 End Sub
 
-
 'Little Subs used when working with the Creation of the data Entry for a sheet of type Linelist
 'Add the Sub Label
 Sub AddSubLab(Wksh As Worksheet, iSheetStartLine As Integer, _
@@ -217,19 +214,19 @@ Sub AddSubLab(Wksh As Worksheet, iSheetStartLine As Integer, _
         .Cells(iSheetStartLine, iCol).value = _
         .Cells(iSheetStartLine, iCol).value & Chr(10) & sSubLab
 
-                'Changing the fontsize of the sublabels
+        'Changing the fontsize of the sublabels
         .Cells(iSheetStartLine, iCol).Characters(Start:=Len(sMainLab) + 1, _
-               Length:=Len(sSubLab) + 1).Font.Size = C_iLLSheetFontSize - 2
+            Length:=Len(sSubLab) + 1).Font.Size = C_iLLSheetFontSize - 2
         .Cells(iSheetStartLine, iCol).Characters(Start:=Len(sMainLab) + 1, _
-               Length:=Len(sSubLab) + 1).Font.Color = Helpers.GetColor(sSubLabColor)
+            Length:=Len(sSubLab) + 1).Font.Color = Helpers.GetColor(sSubLabColor)
     End With
 
 End Sub
 
 'Add the notes
 Sub AddNotes(Wksh As Worksheet, iSheetStartLine As Integer, _
-              iCol As Integer, sNote As String, _
-              Optional bNoteVisibility As Boolean = False)
+             iCol As Integer, sNote As String, _
+             Optional bNoteVisibility As Boolean = False)
     With Wksh
 
         .Cells(iSheetStartLine, iCol).AddComment
@@ -248,34 +245,33 @@ Sub AddStatus(Wksh As Worksheet, iSheetStartLine As Integer, _
               Optional bNoteVisibility As Boolean = False)
     With Wksh
         Select Case sStatus
-            Case C_sDictStatusMan
-                If sNote <> "" Then
-                    'Update the notes to add the Status
-                    .Cells(iSheetStartLine, iCol).Comment.Text Text:=sMandatory & Chr(10) & sNote
-                Else
-                    'or  Add comment on status
-                     Call AddNotes(Wksh, _
-                                    iSheetStartLine, _
-                                    iCol, sMandatory)
-                End If
-            Case C_sDictStatusHid
-                'Hidden, hid the actual column
-                .Columns(iCol).EntireColumn.Hidden = True
-            Case C_sDictStatusOpt
-                'Do nothing for the moment for optional status
+        Case C_sDictStatusMan
+            If sNote <> "" Then
+                'Update the notes to add the Status
+                .Cells(iSheetStartLine, iCol).Comment.Text Text:=sMandatory & Chr(10) & sNote
+            Else
+                'or  Add comment on status
+                Call AddNotes(Wksh, _
+                              iSheetStartLine, _
+                              iCol, sMandatory)
+            End If
+        Case C_sDictStatusHid
+            'Hidden, hid the actual column
+            .Columns(iCol).EntireColumn.Hidden = True
+        Case C_sDictStatusOpt
+            'Do nothing for the moment for optional status
         End Select
     End With
 End Sub
 
-
 'Add the type
 Sub AddType(Wksh As Worksheet, iSheetStartLine As Integer, _
-              iCol As Integer, sType As String)
+            iCol As Integer, sType As String)
 
-    Dim iDecType As Integer 'Just to get the decimal number at the end of decimal
+    Dim iDecType As Integer                      'Just to get the decimal number at the end of decimal
     'Dim iDecNb As Integer
     Dim i As Integer
-    Dim sNbDeci As String 'Number of decimals
+    Dim sNbDeci As String                        'Number of decimals
 
 
     'Check to be sure that the actual type contains decimal
@@ -285,36 +281,36 @@ Sub AddType(Wksh As Worksheet, iSheetStartLine As Integer, _
             sType = C_sDictTypeDec
             i = 0
             sNbDeci = ""
-            While i < iDecType
+            Do While i < iDecType
                 sNbDeci = "0" & sNbDeci
                 i = i + 1
-            Wend
+            Loop
         End If
 
         Select Case sType
             'Text Type
-            Case C_sDictTypeText
-                .Cells(iSheetStartLine + 2, iCol).NumberFormat = "@"
-                'Integer
-            Case C_sDictTypeInt
-                 .Cells(iSheetStartLine + 2, iCol).NumberFormat = "0"
-                'Date Type
-            Case C_sDictTypeDate
-                 .Cells(iSheetStartLine + 2, iCol).NumberFormat = "d-mmm-yyy"
-                'Decimal
-            Case C_sDictTypeDec
-                 .Cells(iSheetStartLine + 2, iCol).NumberFormat = "0." & sNbDeci
-            Case Else
+        Case C_sDictTypeText
+            .Cells(iSheetStartLine + 2, iCol).NumberFormat = "@"
+            'Integer
+        Case C_sDictTypeInt
+            .Cells(iSheetStartLine + 2, iCol).NumberFormat = "0"
+            'Date Type
+        Case C_sDictTypeDate
+            .Cells(iSheetStartLine + 2, iCol).NumberFormat = "d-mmm-yyy"
+            'Decimal
+        Case C_sDictTypeDec
+            .Cells(iSheetStartLine + 2, iCol).NumberFormat = "0." & sNbDeci
+        Case Else
             'If I don't know the type, put in text
-             .Cells(iSheetStartLine + 2, iCol).NumberFormat = "@"
+            .Cells(iSheetStartLine + 2, iCol).NumberFormat = "@"
         End Select
     End With
 End Sub
 
 'Add the choices
 Sub AddChoices(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
-             ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, _
-             sChoice As String, sAlert As String, sMessage As String)
+               ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, _
+               sChoice As String, sAlert As String, sMessage As String)
 
     Dim ValidationList As BetterArray
     Dim iChoiceCol As Long
@@ -341,7 +337,6 @@ Sub AddChoices(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer
 
             'Write it to the worksheet and free memory
             ValidationList.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
-            Set ValidationList = Nothing
 
             'Add the list object to the worksheet
             iChoiceRow = .Cells(.Rows.Count, iChoiceCol).End(xlUp).Row
@@ -359,14 +354,9 @@ Sub AddChoices(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer
     'Add the validation
     With WkshLL
         Call Helpers.SetValidation(.Cells(iSheetStartLine, iCol), _
-                                 "=" & sChoice, Helpers.GetValidationType(sAlert), _
-                                 sMessage)
+                                   "=" & sChoice, Helpers.GetValidationType(sAlert), _
+                                   sMessage)
     End With
-
-
-    Set WkshLL = Nothing
-    Set WkshChoice = Nothing
-    Set LoRng = Nothing
 
 End Sub
 
@@ -374,11 +364,11 @@ End Sub
 
 'Add Geo
 Sub AddGeo(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterArray, sSheetName As String, iSheetStartLine As Integer, iCol As Integer, _
-          iSheetSubSecStartLine As Integer, iDictLine As Integer, sVarName As String, sMessage As String, iNbshifted As Integer)
+           iSheetSubSecStartLine As Integer, iDictLine As Integer, sVarName As String, sMessage As String, iNbshifted As Integer)
 
     With Wkb.Worksheets(sSheetName)
         .Cells(iSheetStartLine, iCol).Interior.Color = GetColor("Orange")
-                        'update the columns only for the geo
+        'update the columns only for the geo
         Call Add4GeoCol(Wkb, DictData, DictHeaders, sSheetName, sVarName, iSheetStartLine, _
                         iCol, sMessage, _
                         iSheetSubSecStartLine, iDictLine, iNbshifted)
@@ -400,11 +390,11 @@ End Sub
 '@iStartLineSubLab: Starting line of the Sub label
 
 Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterArray, _
-            sSheetName As String, sVarName As String, iStartLine As Integer, iCol As Integer, _
-            sMessage As String, iStartLineSubLab As Integer, iDictLine As Integer, iNbshifted As Integer)
+               sSheetName As String, sVarName As String, iStartLine As Integer, iCol As Integer, _
+               sMessage As String, iStartLineSubLab As Integer, iDictLine As Integer, iNbshifted As Integer)
 
 
-    Dim sLab As String 'Temporary variable, label of the Admin level
+    Dim sLab As String                           'Temporary variable, label of the Admin level
     Dim LineValues As BetterArray
     Dim iRow As Integer
 
@@ -442,7 +432,7 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).value = C_sDictControlGeo & "3"
         .Cells(iStartLine + 2, iCol + 1).Locked = False
         'Set validation for admin 3
-         Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol + 1), "=" & C_sAdmName & "_3_" & "dropdown", 2, sMessage)
+        Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol + 1), "=" & C_sAdmName & "_3_" & "dropdown", 2, sMessage)
 
 
         'Admin 2
@@ -491,18 +481,17 @@ Sub Add4GeoCol(Wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         .Cells(iRow + 2, DictHeaders.Length + 1).value = .Cells(iRow + 1, DictHeaders.Length + 1).value + 3
         'Admin 3
         .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-         LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "3"
+        LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "3"
         LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
         .Cells(iRow + 2, 1).value = ""
         .Cells(iRow + 2, DictHeaders.Length + 1).value = .Cells(iRow + 1, DictHeaders.Length + 1).value + 2
         'Admin 2
         .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-         LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "2"
+        LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "2"
         LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
         .Cells(iRow + 2, 1).value = ""
         .Cells(iRow + 2, DictHeaders.Length + 1).value = .Cells(iRow + 1, DictHeaders.Length + 1).value + 1
 
-         Set LineValues = Nothing
     End With
 End Sub
 
@@ -553,7 +542,6 @@ Sub BuildGotoArea(Wkb As Workbook, sTableName As String, sSheetName As String, i
     End With
 End Sub
 
-
 'Merging Areas on Sheets of type LL and Adms ___________________________________________________________________________________________________________________________________________________________
 
 Sub MergeArea(Wksh As Worksheet, iLineFrom As Integer, iLineTo As Integer, iColFrom As Integer, iColTo As Integer)
@@ -563,7 +551,6 @@ Sub MergeArea(Wksh As Worksheet, iLineFrom As Integer, iLineTo As Integer, iColF
         .Cells(iLineFrom, iColFrom).MergeArea.VerticalAlignment = xlCenter
     End With
 End Sub
-
 
 'Main Section Vertical Merge
 Sub BuildMainSectionVMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As Integer, _
@@ -596,7 +583,6 @@ Sub BuildMainSectionVMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As I
         WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom + 3)), iWeight:=xlThin, sColor:="DarkBlue"
     End With
 
-    Set oCell = Nothing
 End Sub
 
 'Sub Section Vertical Merge
@@ -624,9 +610,6 @@ Sub BuildSubSectionVMerge(Wksh As Worksheet, iColumn As Integer, iLineFrom As In
     End With
 End Sub
 
-
-
-
 ' Build sections horizontal merge area
 Sub BuildMainSectionHMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As Integer, _
                            iColumnFrom As Integer, iColumnTo As Integer, _
@@ -653,9 +636,7 @@ Sub BuildMainSectionHMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As I
         WriteBorderLines .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo, iColumnTo - 1))
     End With
 
-    Set oCell = Nothing
 End Sub
-
 
 'Build subsections horizontal merge area
 
@@ -682,9 +663,6 @@ Sub BuildSubSectionHMerge(Wksh As Worksheet, iLine As Integer, iColumnFrom As In
     End With
 End Sub
 
-
-
-
 'Get the Validation Formulas
 '
 'Using the formulas Entered by the user, guess the acual formula to use in. This one is almost the same idea as Lionel's one:
@@ -703,8 +681,8 @@ End Sub
 
 
 Public Function ValidationFormula(sFormula As String, AllSheetNamesData As BetterArray, VarNameData As BetterArray, _
-                                    ColumnIndexData As BetterArray, FormulaData As BetterArray, _
-                                    SpecCharData As BetterArray, Wksh As Worksheet, Optional bLocal As Boolean = True) As String
+                                  ColumnIndexData As BetterArray, FormulaData As BetterArray, _
+                                  SpecCharData As BetterArray, Wksh As Worksheet, Optional bLocal As Boolean = True) As String
     'Returns a string of cleared formula
 
     ValidationFormula = vbNullString
@@ -787,7 +765,7 @@ Public Function ValidationFormula(sFormula As String, AllSheetNamesData As Bette
                             sSheetName = EnsureGoodSheetName(AllSheetNamesData.Item(VarNameData.IndexOf(sAlphaValue)))
                             sAlphaValue = "'" & sSheetName & "'!" & Cells(C_eStartLinesLLData + 2, icolNumb).Address(False, True)
                         ElseIf FormulaData.Includes(UCase(sAlphaValue)) Then 'It is a formula, excel will do the translation for us
-                                sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
+                            sAlphaValue = Application.WorksheetFunction.Trim(sAlphaValue)
                         End If
                     End If
                     FormulaAlphaData.Push sAlphaValue, sLetter
@@ -816,10 +794,8 @@ Public Function ValidationFormula(sFormula As String, AllSheetNamesData As Bette
         End If
     End If
 
-    Set FormulaAlphaData = Nothing
 
 End Function
-
 
 'Setting the min and the max validation
 Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAlertType As Byte, sTypeValidation As String, sMessage As String)
@@ -882,7 +858,7 @@ Public Sub UpdateChoiceAutoHeaders(Wkb As Workbook, ChoiceAutoVarData As BetterA
     i = 1
     With Wkb
         sVarName = .Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderVarName)).value
-        While (sVarName <> vbNullString)
+        Do While (sVarName <> vbNullString)
             If ChoiceAutoVarData.Includes(sVarName) Then
                 sSheetName = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)).value
                 iIndex = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.Length + 1).value
@@ -890,12 +866,12 @@ Public Sub UpdateChoiceAutoHeaders(Wkb As Workbook, ChoiceAutoVarData As BetterA
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).value = C_sDictControlChoiceAuto & "_origin"
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).Font.Color = vbWhite
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).FormulaHidden = True
-                  .Worksheets(sSheetName).Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
-                         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
+                .Worksheets(sSheetName).Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
             End If
             i = i + 1
             sVarName = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.IndexOf(C_sDictHeaderVarName)).value
-        Wend
+        Loop
     End With
 End Sub
 
@@ -906,7 +882,7 @@ Public Sub AddMetadataSheet(Wkb As Workbook)
     iRow = 0
 
     With Wkb
-    'Metadata sheet
+        'Metadata sheet
         .Worksheets.Add.Name = C_sSheetMetadata
 
         With SheetGeo.ListObjects(C_sTabGeoMetadata)
@@ -938,7 +914,6 @@ Public Sub AddMetadataSheet(Wkb As Workbook)
         End With
     End With
 End Sub
-
 
 'Add the temporary sheets for computation and stuffs
 Public Sub AddTemporarySheets(Wkb As Workbook)
@@ -1009,11 +984,8 @@ Public Sub AddTemporarySheets(Wkb As Workbook)
             'Adm 4
             Wkb.Names.Add Name:=C_sAdmName & "_4_" & "dropdown", RefersToR1C1:="=" & C_sTabAdm4 & "_dropdown" & "[" & C_sAdmName & "_4_" & "dropdown" & "]"
         End With
-
-        Set LoRng = Nothing
     End With
 End Sub
-
 
 Public Sub AddAdminSheet(Wkb As Workbook)
 
@@ -1029,20 +1001,21 @@ Public Sub AddAdminSheet(Wkb As Workbook)
     With Wkb.Worksheets(sParamSheetAdmin)
 
         'Import migration buttons
-          Call AddCmd(Wkb, sParamSheetAdmin, _
-            .Cells(2, 12).Left, .Cells(2, 1).Top, C_sShpAdvanced, _
-            "Import for Migration", _
-            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
-            C_sCmdImportMigration, iTextFontSize:=12)
+        Call AddCmd(Wkb, sParamSheetAdmin, _
+                    .Cells(2, 12).Left, .Cells(2, 1).Top, C_sShpAdvanced, _
+                    "Import for Migration", _
+                    C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, _
+                    C_sCmdImportMigration, iTextFontSize:=12)
 
         'Export Button
         Call AddCmd(Wkb, sParamSheetAdmin, _
-           .Cells(2, 12).Left + C_iCmdWidth + iCmdWidthFactor + 15, _
-            .Cells(2, 1).Top, C_sShpExport, _
-            "Export", _
-            C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdExport, _
-            iTextFontSize:=12)
+                    .Cells(2, 12).Left + C_iCmdWidth + iCmdWidthFactor + 15, _
+                    .Cells(2, 1).Top, C_sShpExport, _
+                    "Export", _
+                    C_iCmdWidth + iCmdWidthFactor, C_iCmdHeight + iCmdHeightFactor, C_sCmdExport, _
+                    iTextFontSize:=12)
 
     End With
 
 End Sub
+
