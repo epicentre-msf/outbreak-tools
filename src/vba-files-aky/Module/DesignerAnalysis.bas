@@ -52,7 +52,7 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLUBA, sSheetName:=sParamSheetAnalysis, iGoToCol:=iGoToColAna, iCol:=2
 
     'Allow text wrap only at the end
-    FormatAnalysisWorksheet Wkb, sParamSheetAnalysis
+    FormatAnalysisWorksheet Wkb := Wkb, sSheetName := sParamSheetAnalysis, sCodeName := C_sModLLAnaChange
 
     'TIME SERIES ANALYSIS =============================================================================================================
 
@@ -87,7 +87,7 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
                   iCol:=C_eStartColumnAnalysis + 2, iFontSize:=C_iAnalysisFontSize
 
     'Format then worksheet for temporal analysis
-    FormatAnalysisWorksheet Wkb, sParamSheetTemporalAnalysis, iColWidth:=C_iLLFirstColumnsWidth - 10
+    FormatAnalysisWorksheet Wkb := Wkb, sSheetName := sParamSheetTemporalAnalysis, iColWidth:=C_iLLFirstColumnsWidth - 10, sCodeName := C_sModLLAnaChange
 
     'Column witdth of the start column
     With Wkb.Worksheets(sParamSheetTemporalAnalysis)
@@ -96,6 +96,7 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
 
 
     'SPATIAL ANALYSIS ================================================================================================================================
+
 
 End Sub
 
