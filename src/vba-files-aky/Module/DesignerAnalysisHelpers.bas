@@ -8,12 +8,12 @@ Sub FormatAnalysisWorksheet(Wkb As Workbook, sSheetName As String, _
                             Optional iColWidth As Integer = C_iLLFirstColumnsWidth)
 
     With Wkb.Worksheets(sSheetName)
+        .Cells.EntireColumn.ColumnWidth = iColWidth
         .Cells.WrapText = True
         .Cells.EntireRow.AutoFit
-        .Cells.EntireColumn.ColumnWidth = iColWidth
     End With
 
-    If sCodeName <> vbNullString Then TransferCodeWksh Wkb := Wkb, sSheetName := sSheetName, sNameModule := sCodeName
+    If sCodeName <> vbNullString Then TransferCodeWksh Wkb:=Wkb, sSheetName:=sSheetName, sNameModule:=sCodeName
 End Sub
 
 'FUNCTIONS USED TO BUILD UNIVARIATE ANALYSIS ===================================================================================================================
@@ -23,9 +23,10 @@ Sub CreateNewSection(Wksh As Worksheet, iRow As Long, iCol As Long, sSection As 
                      Optional sColor As String = "DarkBlue")
     With Wksh
         'New range, format the range
-        FormatARange .Cells(iRow, iCol), sValue:=sSection, FontSize:=C_iAnalysisFontSize + 4, _
-        sFontColor:=sColor, Horiz:=xlHAlignLeft
-
+        FormatARange .Cells(iRow, iCol), sValue:=sSection, FontSize:=C_iAnalysisFontSize + 2, _
+        sFontColor:=sColor, Horiz:=xlHAlignLeft, Verti:=xlVAlignBottom
+        
+        Range(.Cells(iRow, iCol), .Cells(iRow, iCol + 4)).Merge
         'Draw a border arround the section
         DrawLines Rng:=Range(.Cells(iRow, iCol), .Cells(iRow, iCol + 6)), iWeight:=xlMedium, sColor:=sColor, At:="Bottom"
 
@@ -433,7 +434,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
                                             OnTotal:=False, sConditionRow:=Chr(34) & Chr(34), _
                                             sVarColumn:=sVarColumn, sConditionColumn:=.Cells(iStartRow, i).Address)
 
-                If sFormula <> vbNullString Then .Cells(iEndRow - 1, i).Formula = sFormula
+                If sFormula <> vbNullString Then .Cells(iEndRow - 1, i).FormulaArray = sFormula
 
                 'Update the missing row
                 iMissingRow = iEndRow - 1
@@ -560,32 +561,36 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
         Case C_sAnaRow
 
-        'Missing column and total row
-            sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sVarColumn, _
-                                OnTotal:=False, sCondition:=Chr(34) & Chr(34))
+        'Missing row and total column
+            sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
+                                        OnTotal:=True, sConditionRow:=Chr(34) & Chr(34), _
+                                        sVarColumn:=sVarColumn, includeMissing:=False, isFiltered:=True)
 
             If sFormula <> vbNullString Then .Cells(iMissingRow, iTotalColumn).FormulaArray = sFormula
 
         Case C_sAnaCol
 
             'Missing column and total row
-            sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sVarRow, _
-                                OnTotal:=False, sCondition:=Chr(34) & Chr(34))
+            sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarColumn, _
+                                        OnTotal:=True, sConditionRow:=Chr(34) & Chr(34), _
+                                        sVarColumn:=sVarRow, includeMissing:=False, isFiltered:=True)
 
              If sFormula <> vbNullString Then .Cells(iEndRow, iMissingColumn).FormulaArray = sFormula
 
         Case C_sAnaAll
 
-            'Missing column and total row
-            sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sVarColumn, _
-                                OnTotal:=False, sCondition:=Chr(34) & Chr(34))
+            'Missing row and total column
+            sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
+                                        OnTotal:=True, sConditionRow:=Chr(34) & Chr(34), _
+                                        sVarColumn:=sVarColumn, includeMissing:=True, isFiltered:=True)
 
             If sFormula <> vbNullString Then .Cells(iMissingRow, iTotalColumn).FormulaArray = sFormula
 
 
              'Missing column and total row
-            sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sVarRow, _
-                                OnTotal:=False, sCondition:=Chr(34) & Chr(34))
+            sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarColumn, _
+                                        OnTotal:=True, sConditionRow:=Chr(34) & Chr(34), _
+                                        sVarColumn:=sVarRow, includeMissing:=True, isFiltered:=True)
 
              If sFormula <> vbNullString Then .Cells(iEndRow, iMissingColumn).FormulaArray = sFormula
 
@@ -752,6 +757,7 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
                                          sFirstTimeCond:=sFirstTimeCond, sSecondTimeCond:=sSecondTimeCond, _
                                          sCondVar:=sCondVar, sCondVal:=sCondVal, _
                                          isFiltered:=True)
+                                         
 
             If sFormula <> vbNullString Then
                 .Cells(iRow + 2, i).FormulaArray = sFormula
@@ -764,9 +770,9 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
                 Case C_sAnaRow
                     sTotalCell = .Cells(iRow + 2, iEndCol - 1).Address(RowAbsolute:=False)
                 Case C_sAnaCol
-                    sTotalCell = .Cells(iRow + 3 + C_iNbTime, i).Address
+                    sTotalCell = .Cells(iRow + 4 + C_iNbTime, i).Address
                 Case C_sAnaAll
-                    sTotalCell = .Cells(iRow + 3 + C_iNbTime, iEndCol - 1).Address
+                    sTotalCell = .Cells(iRow + 4 + C_iNbTime, iEndCol - 1).Address
                 End Select
 
                 sFormula = .Cells(iRow + 2, i).Address(RowAbsolute:=False) & "/" & sTotalCell
@@ -778,12 +784,15 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
 
             'Missing row
-            sFormula = UnivariateFormula(Wkb, DictHeaders, sForm, sTimeVar, sCondition:=Chr(34) & Chr(34), isFiltered:=True)
+            sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sTimeVar, _
+                                        sConditionRow:=Chr(34) & Chr(34), _
+                                        sVarColumn:=sCondVar, sConditionColumn:=sCondVal)
+                                        
             If sFormula <> vbNullString Then .Cells(iRow + 3 + C_iNbTime, i).FormulaArray = sFormula
 
             'Total Row
-            sFormula = UnivariateFormula(Wkb, DictHeaders, sForm, sCondVar, sCondVal, isFiltered:=True)
-
+            sFormula = UnivariateFormula(Wkb, DictHeaders, sForm, sVar:=sCondVar, sCondition:=sCondVal, isFiltered:=True)
+            
             If sFormula <> vbNullString Then .Cells(iRow + 4 + C_iNbTime, i).FormulaArray = sFormula
 
             i = i + istep
@@ -795,15 +804,26 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
         End If
 
-
         'Total column
         sFormula = TimeSeriesFormula(Wkb, DictHeaders, sForm, sTimeVar, sFirstTimeCond, sSecondTimeCond, _
                                      OnTotal:=True, includeMissing:=includeMissing, sCondVar:=sCondVar)
+        
 
         If sFormula <> vbNullString Then .Cells(iRow + 2, iInnerEndCol).FormulaArray = sFormula
         Set Rng = .Range(.Cells(iRow + 2, iInnerEndCol), .Cells(iRow + 4 + C_iNbTime, iInnerEndCol))
         .Cells(iRow + 2, iInnerEndCol).AutoFill Destination:=Rng, Type:=xlFillValues
+        
+         'Missing Row and Total column
+         
+         sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sTimeVar, _
+                                        sCondition:=Chr(34) & Chr(34))
 
+         If sFormula <> vbNullString Then .Cells(iRow + 3 + C_iNbTime, iInnerEndCol).FormulaArray = sFormula
+         
+         'Two total columns
+         sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sCondVar, isFiltered:=True, OnTotal:=True)
+         If sFormula <> vbNullString Then .Cells(iRow + 4 + C_iNbTime, iInnerEndCol).FormulaArray = sFormula
+         
     End With
 End Sub
 
@@ -1013,6 +1033,7 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
     Dim Rng As Range
     Dim iRow As Long
     Dim sAgg As String                           'Aggregate cell
+    Dim sMax As String                           'Max Cell
 
     With Wksh
 
@@ -1022,16 +1043,62 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         sValue:=TranslateLLMsg("MSG_TimeAggregation")
         FormatARange .Cells(iRow, iCol + 1), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
         sValue:=TranslateLLMsg("MSG_Day")
+        
+        'Aggregate address
+        sAgg = .Cells(iRow, iCol + 1).Address
 
         'Add validation for time aggregation
         SetValidation .Cells(iRow, iCol + 1), "=" & C_sTimeAgg, 1, TranslateLLMsg("MSG_UnableToAgg")
 
+        'Enter a Start Date
+        FormatARange .Cells(iRow, iCol + 3), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
+        sValue:=TranslateLLMsg("MSG_EnterStartDate")
+        FormatARange .Cells(iRow, iCol + 4), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
+        NumFormat:="dd/mm/yyyy"
+
+
+        'Minimum date of the data
+        FormatARange .Cells(iRow, iCol + 6), isBold:=False, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
+        sValue:=TranslateLLMsg("MSG_MinData"), FontSize:=C_iAnalysisFontSize - 2
+        FormatARange .Cells(iRow, iCol + 7), isBold:=False, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
+        NumFormat:="dd/mm/yyyy", FontSize:=C_iAnalysisFontSize - 2
+        .Cells(iRow, iCol + 7).Locked = True
+
+
+        'Maximum date of the data
+
+        FormatARange .Cells(iRow, iCol + 9), isBold:=False, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
+        sValue:=TranslateLLMsg("MSG_MaxData"), FontSize:=C_iAnalysisFontSize - 2
+        FormatARange .Cells(iRow, iCol + 10), isBold:=False, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
+        NumFormat:="dd/mm/yyyy", FontSize:=C_iAnalysisFontSize - 2
+        .Cells(iRow, iCol + 10).Locked = True
+        
+        'Maximum address to be used elsewhere
+        sMax = .Cells(iRow, iCol + 10).Address
+
         'Start Date
         iRow = iRow + 2
+        
         .Cells(iRow, iCol).value = TranslateLLMsg("MSG_StartDate")
-        FormatARange .Cells(iRow, iCol), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignLeft
-        FormatARange .Cells(iRow, iCol + 1), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor
+        FormatARange .Cells(iRow, iCol), isBold:=False, sFontColor:=sFontColor, Horiz:=xlHAlignLeft
+        FormatARange .Cells(iRow, iCol + 1), isBold:=False, sFontColor:=sSelectionFontColor, _
+                    sInteriorColor:=sSelectionInteriorColor, _
+                    NumFormat:="dd/mm/yyyy"
+               
         .Cells(iRow, iCol + 1).Locked = True
+        .Cells(iRow, iCol + 1).Formula = "=" & "MIN(MAX(" & .Cells(iRow - 2, iCol + 4).Address & "," & _
+             .Cells(iRow - 2, iCol + 7).Address & ")," & sMax & ")"
+
+        'Range of analysis
+
+         FormatARange .Cells(iRow, iCol + 3), isBold:=False, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
+        sValue:=TranslateLLMsg("MSG_RangeAna"), FontSize:=C_iAnalysisFontSize - 2
+        FormatARange .Cells(iRow, iCol + 4), isBold:=False, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
+        FontSize:=C_iAnalysisFontSize - 2
+
+        .Cells(iRow, iCol + 4).Formula = "= FormatDateRange(" & .Cells(iRow, iCol + 1).Address & "," & .Cells(iRow - 2, iCol + 10).Address & ")"
+        .Cells(iRow, iCol + 4).Locked = True
+        
 
         'The table for the time values
         iRow = iRow + 5
@@ -1040,7 +1107,6 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         .Cells(iRow, iCol - 1).Formula = "= " & "FindLastDay(" & .Cells(iRow - 7, iCol + 1).Address & ", " & .Cells(iRow, iCol - 2).Address & ")"
 
         'Next row for autofill
-        sAgg = .Cells(iRow - 7, iCol + 1).Address
         .Cells(iRow + 1, iCol - 2).Formula = "= " & .Cells(iRow, iCol - 1).Address(RowAbsolute:=False, ColumnAbsolute:=False) & "+ 1"
         .Cells(iRow + 1, iCol - 1).Formula = "= " & "FindLastDay(" & sAgg & ", " _
                                            & .Cells(iRow + 1, iCol - 2).Address(RowAbsolute:=False, ColumnAbsolute:=False) & ")"
@@ -1055,13 +1121,16 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
 
         'Format and AutoFill the Range of values
         .Cells(iRow, iCol).Formula = "= " & "FormatDateFromLastDay(" & sAgg & ", " & _
-                                     .Cells(iRow, iCol - 1).Address(RowAbsolute:=False, ColumnAbsolute:=False) & ")"
+                                     .Cells(iRow, iCol - 1).Address(RowAbsolute:=False, ColumnAbsolute:=False) & "," & sMax & "," & _
+                                      .Cells(iRow, iCol - 2).Address(RowAbsolute:=False, ColumnAbsolute:=False) & ")"
 
         'Format the range of time span (from, to)
         .Cells(iRow - 1, iCol - 2).value = TranslateLLMsg("MSG_From")
         .Cells(iRow - 1, iCol - 1).value = TranslateLLMsg("MSG_To")
         Set Rng = .Range(.Cells(iRow - 1, iCol - 2), .Cells(iRow + C_iNbTime, iCol - 1))
-        FormatARange Rng, sFontColor:=sSelectionInteriorColor, NumFormat:="dd-mm-yyyy", FontSize:=10
+        
+        'Put the range in white
+        FormatARange Rng, sFontColor:=vbWhite, NumFormat:="dd-mm-yyyy", FontSize:=10
         Rng.Locked = True
 
         'Format the range for period (with labels)
@@ -1091,7 +1160,8 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
                                 Optional sFirstCondVal As String = "__all", _
                                 Optional sSecondCondVar As String = "__all", _
                                 Optional sSecondCondVal As String = "__all", _
-                                Optional sThirdCondVal As String = "__all") As String
+                                Optional sThirdCondVal As String = "__all", _
+                                Optional Equal As String = "=") As String
 
 
 
@@ -1239,7 +1309,7 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
 
     If Not isError Then
         sAlphaValue = FormulaAlphaData.ToString(Separator:="", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
-        AnalysisFormula = "=" & sAlphaValue
+        AnalysisFormula = Equal & sAlphaValue
     Else
 
         'MsgBox "Error in analysis formula: " & sFormula

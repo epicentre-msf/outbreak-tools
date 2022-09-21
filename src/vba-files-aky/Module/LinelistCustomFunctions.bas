@@ -182,7 +182,7 @@ End Function
 
 'Format a date to feet the aggregation selection ================================================================
 
-Public Function FormatDateFromLastDay(sAggregate As String, inDate As Long)
+Public Function FormatDateFromLastDay(sAggregate As String, inDate As Long, maxDate As Long, startDate As Long) As String
 
     Dim sAgg As String
     Dim sValue As String
@@ -190,6 +190,11 @@ Public Function FormatDateFromLastDay(sAggregate As String, inDate As Long)
     Dim quarterDate As Integer
 
     sAgg = GetAgg(sAggregate)
+    
+    If startDate > maxDate Then
+        FormatDateFromLastDay = vbNullString
+        Exit Function
+    End If
 
     Select Case sAgg
 
@@ -210,4 +215,10 @@ Public Function FormatDateFromLastDay(sAggregate As String, inDate As Long)
     FormatDateFromLastDay = sValue
 End Function
 
+'Format a date range
+Public Function FormatDateRange(MinDate As Long, maxDate As Long) As String
+
+    FormatDateRange = Format(MinDate, "dd/mm/yyyy") & "-" & Format(maxDate, "dd/mm/yyyy")
+
+End Function
 
