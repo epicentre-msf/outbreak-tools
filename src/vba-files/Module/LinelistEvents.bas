@@ -463,27 +463,26 @@ End Sub
 
 'Update data on Filtered values ===================================================================================
 
+
 Public Sub UpdateFilterTables()
 
     Dim Wksh As Worksheet                        'The actual worksheet
+    Dim filtWksh As Worksheet                    'Filtered worksheet
     Dim DictHeaders As BetterArray               'Headers of the dictionary
     Dim LLSheets As BetterArray                  'List of all sheets of type linelist
-    Dim Rng As Range
     Dim Lo As ListObject
-    Dim filtLo As ListObject
-    Dim filtRng As Range
-    Dim HiddenColumns As BetterArray
-    Dim i As Long
+    Dim rowCounter As Long
+    Dim endCol As Long
     Dim sActSh As String
-    Dim nbFiltLines As Long
+    Dim ts As Date
+    Dim destRng As Range
 
-    On Error GoTo ErrUpdate
+
     BeginWork xlsapp:=Application
+    On Error GoTo ErrUpdate
+    ts = Now
 
     sActSh = ActiveSheet.Name
-
-    Set HiddenColumns = New BetterArray
-    HiddenColumns.LowerBound = 1
     Set DictHeaders = GetDictionaryHeaders()
 
 
@@ -492,56 +491,47 @@ Public Sub UpdateFilterTables()
                                  sValue1:=C_sDictSheetTypeLL, _
                                  returnIndex:=DictHeaders.IndexOf(C_sDictHeaderSheetName))
 
+    Debug.Print Application.Calculation
+
+    BeginWork xlsapp:=Application
 
     For Each Wksh In ThisWorkbook.Worksheets
         If LLSheets.Includes(Wksh.Name) Then
 
-            HiddenColumns.Clear
             'Unprotect the worksheet
             With Wksh
+
                 .Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
                 'Clean the filtered table list object
-                Set filtLo = ThisWorkbook.Worksheets(C_sFiltered & .Name).ListObjects(1)
-                Set Lo = Wksh.ListObjects(1)
+                Set Lo = .ListObjects(1)
+                endCol = Lo.Range.Columns.Count
 
-                'Number of lines of the filter
-                nbFiltLines = .AutoFilter.Range.Columns(1).SpecialCells(xlCellTypeVisible).Count
+                If Not Lo.DataBodyRange Is Nothing Then
+                    Set filtWksh = ThisWorkbook.Worksheets(C_sFiltered & .Name)
 
-                DeleteLoDataBodyRange filtLo
 
-                'Find Hidden Columns in a worksheets
-                i = 1
-                Do While .Cells(C_eStartLinesLLData + 1, i).value <> vbNullString
-                   If .Columns(i).Hidden Then HiddenColumns.Push i
-                   i = i + 1
-                Loop
+                    DeleteLoDataBodyRange filtWksh.ListObjects(1)
 
-                With Lo.DataBodyRange
-                    .EntireColumn.AutoFit
-                    Set Rng = .SpecialCells(xlCellTypeVisible)
-                End With
+                    rowCounter = C_eStartLinesLLData + 1 + Lo.DataBodyRange.Rows.Count
 
-                With ThisWorkbook.Worksheets(C_sFiltered & .Name)
-                    Set filtRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(nbFiltLines + C_eStartLinesLLData + 1, Rng.Columns.Count))
-                    filtLo.Resize filtRng
-                End With
 
-                filtLo.DataBodyRange.value = Rng.value
+                    With filtWksh
+                        Set destRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(rowCounter, endCol))
+                        .ListObjects(1).Resize destRng
+                        Set destRng = .Range(.Cells(C_eStartLinesLLData + 2, 1), .Cells(rowCounter, endCol))
+                    End With
 
-                'Bring back hidden columns
-                If HiddenColumns.Length > 0 Then
-                    For i = 1 To HiddenColumns.Length
-                       .Columns(HiddenColumns.Item(i)).Hidden = True
-                    Next
+                    destRng.value = Lo.DataBodyRange.value
+
+                    Do While rowCounter > C_eStartLinesLLData + 1
+                       If .Rows(rowCounter).Hidden Then filtWksh.Rows(rowCounter).EntireRow.Delete
+                       rowCounter = rowCounter - 1
+                    Loop
+
+                    'Reprotect back the worksheet
+                    ProtectSheet .Name
                 End If
-
-                'Set Column Width of First and Second Column
-                .Columns(1).ColumnWidth = C_iLLFirstColumnsWidth
-                .Columns(2).ColumnWidth = C_iLLFirstColumnsWidth
-
-                'Reprotect back the worksheet
-                ProtectSheet .Name
             End With
         End If
     Next
@@ -554,6 +544,8 @@ Public Sub UpdateFilterTables()
 
 
     EndWork xlsapp:=Application
+
+    'Debug.Print DateDiff("s", ts, Now)
     Exit Sub
 
 ErrUpdate:
@@ -567,22 +559,25 @@ Sub ClearAllFilters()
     Dim Wksh As Worksheet
     Set Wksh = ActiveSheet
 
+    On Error GoTo errHand
 
-    If Not Wksh.AutoFilter Is Nothing Then
+    If Not Wksh.ListObjects(1).AutoFilter Is Nothing Then
 
         BeginWork xlsapp:=Application
 
         'Unprotect current worksheet
         Wksh.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
         'remove the filters
-        Wksh.AutoFilter.ShowAllData
+        Wksh.ListObjects(1).AutoFilter.ShowAllData
         ProtectSheet Wksh.Name
 
         EndWork xlsapp:=Application
 
     End If
 
-
+    Exit Sub
+errHand:
+    EndWork xlsapp := Application
 End Sub
 
 'Find the selected column on "GOTO" Area and go to that column
