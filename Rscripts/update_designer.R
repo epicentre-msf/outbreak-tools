@@ -61,6 +61,7 @@ clear_output  <- function(outdir = "./output") {
 
 # prepare for the a demo
 
+# code for preparing the demo
 prepare_demo  <- function(fake_dataset = "",
                           fake_geobase = "./input/geobase/default_geobase.xlsx",
                           setup_filename = "setup_measles_SSD_ASH",
@@ -89,5 +90,11 @@ prepare_demo  <- function(fake_dataset = "",
 }
 
 
-# code for preparing the demo
+# create en empty file for creating an interface for each of the class
 
+create_class  <- function(class_name){
+        #create the class
+        cat("", file = glue::glue("./src/vba-files/Class/{class_name}.cls"))
+        #create the interface of the class
+        cat("", file = glue::glue("./src/vba-files/Class/I{class_name}.cls"))
+}
