@@ -238,8 +238,7 @@ Public Sub ProtectSheet(Optional sSheetName As String = "_Active")
 
 End Sub
 
-'Trigerring event when the linelist sheet has some values within                                                          -
-'Trigerring event when the linelist sheet has some values within                                                          -
+'Trigerring event when the linelist sheet has some values within                                                          -                                                      -
 Sub EventValueChangeLinelist(oRange As Range)
 
     Dim T_geo As BetterArray
