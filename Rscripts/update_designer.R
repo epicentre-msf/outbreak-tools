@@ -53,9 +53,9 @@ update_designer  <- function(src = "codes") {
 
 # clear the outpout folder (I have too many outputs)
 
-clear_output  <- function() {
-    if (dir.exists("./output")) unlink("./output", recursive = TRUE)
-    dir.create("./output")
+clear_output  <- function(outdir = "./output") {
+    if (dir.exists(outdir)) unlink(outdir, recursive = TRUE)
+    dir.create(outdir)
 }
 
 
@@ -63,28 +63,29 @@ clear_output  <- function() {
 
 prepare_demo  <- function(fake_dataset = "",
                           fake_geobase = "./input/geobase/default_geobase.xlsx",
-                          setup_filename = "setup_measles_SSD_ASH") {
-    if (dir.exists("./demo")) unlink("./demo", recursive = TRUE)
+                          setup_filename = "setup_measles_SSD_ASH",
+                          demo_folder = "./demo") {
+    if (dir.exists(demo_folder)) unlink(demo_folder, recursive = TRUE)
 
-    dir.create("./demo")
+    dir.create(demo_folder)
 
     # add the setup file
     file.copy(from = glue::glue("./input/outbreak-tools-setup/{setup_filename}"), # nolint
-              to = "./demo/setup.xlsb")
+              to = glue::glue("{demo_folder}/setup.xlsb"))
 
     # add the geobase files
     file.copy(from = glue::glue("./input/outbreak-tools-setup/{fake_geobase}"),
-              to = "./demo/{fake_geo}.xlsb")
+              to = glue::glue("{demo_folder}/{fake_geo}.xlsb")
 
     # add the fake dataset file
     fdata  <- basename(fake_dataset)
     file.copy(from = fake_dataset,
-              to = glue::glue("./demo/{fdata}")
+              to = glue::glue("{demo_folder}/{fdata}")
     )
 
     # add the designer
     file.copy(from = "./linelist_designer.xlsb",
-              to = "./demo/linelist_designer.xlsb")
+              to = "{demo_folder}/linelist_designer.xlsb")
 }
 
 

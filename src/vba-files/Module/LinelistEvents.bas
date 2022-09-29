@@ -470,9 +470,12 @@ Public Sub UpdateFilterTables()
     Dim LLSheets As BetterArray                  'List of all sheets of type linelist
     Dim Rng As Range
     Dim Lo As ListObject
+    Dim filtLo As ListObject
+    Dim filtRng As Range
     Dim HiddenColumns As BetterArray
     Dim i As Long
     Dim sActSh As String
+    Dim nbFiltLines As Long
 
     On Error GoTo ErrUpdate
     BeginWork xlsapp:=Application
@@ -480,6 +483,7 @@ Public Sub UpdateFilterTables()
     sActSh = ActiveSheet.Name
 
     Set HiddenColumns = New BetterArray
+    HiddenColumns.LowerBound = 1
     Set DictHeaders = GetDictionaryHeaders()
 
 
@@ -492,34 +496,43 @@ Public Sub UpdateFilterTables()
     For Each Wksh In ThisWorkbook.Worksheets
         If LLSheets.Includes(Wksh.Name) Then
 
-
             HiddenColumns.Clear
             'Unprotect the worksheet
             With Wksh
                 .Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
 
                 'Clean the filtered table list object
-                DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sFiltered & .Name).ListObjects(1)
+                Set filtLo = ThisWorkbook.Worksheets(C_sFiltered & .Name).ListObjects(1)
+                Set Lo = Wksh.ListObjects(1)
+
+                'Number of lines of the filter
+                nbFiltLines = .AutoFilter.Range.Columns(1).SpecialCells(xlCellTypeVisible).Count
+
+                DeleteLoDataBodyRange filtLo
 
                 'Find Hidden Columns in a worksheets
                 i = 1
                 Do While .Cells(C_eStartLinesLLData + 1, i).value <> vbNullString
-                    If .Columns(i).Hidden Then HiddenColumns.Push i
-                    i = i + 1
+                   If .Columns(i).Hidden Then HiddenColumns.Push i
+                   i = i + 1
                 Loop
 
-                Set Lo = Wksh.ListObjects(1)
                 With Lo.DataBodyRange
                     .EntireColumn.AutoFit
                     Set Rng = .SpecialCells(xlCellTypeVisible)
                 End With
 
-                Rng.Copy ThisWorkbook.Worksheets(C_sFiltered & .Name).Cells(C_eStartLinesLLData + 2, 1)
+                With ThisWorkbook.Worksheets(C_sFiltered & .Name)
+                    Set filtRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(nbFiltLines + C_eStartLinesLLData + 1, Rng.Columns.Count))
+                    filtLo.Resize filtRng
+                End With
+
+                filtLo.DataBodyRange.value = Rng.value
 
                 'Bring back hidden columns
                 If HiddenColumns.Length > 0 Then
                     For i = 1 To HiddenColumns.Length
-                        .Columns(i).Hidden = True
+                       .Columns(HiddenColumns.Item(i)).Hidden = True
                     Next
                 End If
 
@@ -533,7 +546,7 @@ Public Sub UpdateFilterTables()
         End If
     Next
 
-  
+
 
     On Error Resume Next
     ThisWorkbook.Worksheets(sActSh).Activate
