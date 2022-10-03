@@ -3,17 +3,17 @@ Option Explicit
 Option Private Module
 
 'Format each analysis worksheet (global values for the worksheet)
-Sub FormatAnalysisWorksheet(Wkb As Workbook, sSheetName As String, _
+Sub FormatAnalysisWorksheet(wkb As Workbook, sSheetName As String, _
                             Optional sCodeName As String = vbNullString, _
                             Optional iColWidth As Integer = C_iLLFirstColumnsWidth)
 
-    With Wkb.Worksheets(sSheetName)
+    With wkb.Worksheets(sSheetName)
         .Cells.EntireColumn.ColumnWidth = iColWidth
         .Cells.WrapText = True
         .Cells.EntireRow.AutoFit
     End With
 
-    If sCodeName <> vbNullString Then TransferCodeWksh Wkb:=Wkb, sSheetName:=sSheetName, sNameModule:=sCodeName
+    If sCodeName <> vbNullString Then TransferCodeWksh wkb:=wkb, sSheetName:=sSheetName, sNameModule:=sCodeName
 End Sub
 
 'FUNCTIONS USED TO BUILD UNIVARIATE ANALYSIS ===================================================================================================================
@@ -262,7 +262,7 @@ End Sub
 
 'Add interior formulas for the bivariate analysis
 
-Sub AddInnerFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As String, _
+Sub AddInnerFormula(wkb As Workbook, DictHeaders As BetterArray, sForm As String, _
                     iStartRow As Long, iStartCol As Long, iEndRow As Long, iEndCol, _
                     sPercent As String, sMiss As String, sVarRow As String, sVarColumn As String)
 
@@ -274,7 +274,7 @@ Sub AddInnerFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As String
     Dim istep As Long
     Dim sFormula As String
 
-    Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
+    Set Wksh = wkb.Worksheets(sParamSheetAnalysis)
 
     iInnerEndRow = iEndRow - 1
     'There is a missing line
@@ -304,7 +304,7 @@ Sub AddInnerFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As String
 
             Do While (j <= iInnerEndCol)
 
-                sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, _
+                sFormula = BivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, _
                                             sVarRow:=sVarRow, sVarColumn:=sVarColumn, _
                                             sConditionRow:=.Cells(i, iStartCol).Address, _
                                             sConditionColumn:=.Cells(iStartRow, j).Address, _
@@ -358,7 +358,7 @@ End Sub
 
 'Add formulas at Borders
 
-Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As String, iStartRow As Long, iStartCol As Long, _
+Sub AddBordersFormula(wkb As Workbook, DictHeaders As BetterArray, sForm As String, iStartRow As Long, iStartCol As Long, _
                       iEndRow As Long, iEndCol As Long, sVarRow As String, sVarColumn As String, sMiss As String, sPercent As String)
 
 
@@ -381,7 +381,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
         iTotalColumn = iEndCol - 1
     End If
 
-    Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
+    Set Wksh = wkb.Worksheets(sParamSheetAnalysis)
 
     With Wksh
 
@@ -392,7 +392,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
         Do While (i <= iEndCol)
 
             'Formula for the last line (Here I invert the places of rows and columns)
-            sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarColumn, _
+            sFormula = BivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarColumn, _
                                         OnTotal:=True, sConditionRow:=.Cells(iStartRow, i).Address, _
                                         sVarColumn:=sVarRow, includeMissing:=includeMissing, isFiltered:=True)
 
@@ -430,7 +430,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
             If includeMissing Then
 
                 sFormula = vbNullString
-                sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
+                sFormula = BivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
                                             OnTotal:=False, sConditionRow:=Chr(34) & Chr(34), _
                                             sVarColumn:=sVarColumn, sConditionColumn:=.Cells(iStartRow, i).Address)
 
@@ -461,7 +461,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
         Do While (i <= iEndRow)
 
             sFormula = vbNullString
-            sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
+            sFormula = BivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
                                         OnTotal:=True, sConditionRow:=.Cells(i, iStartCol).Address, _
                                         sVarColumn:=sVarColumn, includeMissing:=includeMissing, isFiltered:=True)
 
@@ -496,7 +496,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
                     sFormula = vbNullString
                     'Add Formula for missing
-                    sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
+                    sFormula = BivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
                                                 OnTotal:=False, sConditionRow:=.Cells(i, iStartCol).Address, _
                                                 sVarColumn:=sVarColumn, sConditionColumn:=Chr(34) & Chr(34))
 
@@ -524,7 +524,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
                     sFormula = vbNullString
 
-                    sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
+                    sFormula = BivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
                                                 OnTotal:=False, sConditionRow:=.Cells(i, iStartCol).Address, _
                                                 sVarColumn:=sVarColumn, sConditionColumn:=Chr(34) & Chr(34), isFiltered:=True)
 
@@ -549,7 +549,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
         Case Else
 
-            sFormula = AnalysisFormula(Wkb:=Wkb, sFormula:=sForm, sVariate:="none", isFiltered:=True)
+            sFormula = AnalysisFormula(wkb:=wkb, sFormula:=sForm, sVariate:="none", isFiltered:=True)
 
         End Select
 
@@ -562,7 +562,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
         Case C_sAnaRow
 
         'Missing row and total column
-            sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
+            sFormula = BivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
                                         OnTotal:=True, sConditionRow:=Chr(34) & Chr(34), _
                                         sVarColumn:=sVarColumn, includeMissing:=False, isFiltered:=True)
 
@@ -571,7 +571,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
         Case C_sAnaCol
 
             'Missing column and total row
-            sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarColumn, _
+            sFormula = BivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarColumn, _
                                         OnTotal:=True, sConditionRow:=Chr(34) & Chr(34), _
                                         sVarColumn:=sVarRow, includeMissing:=False, isFiltered:=True)
 
@@ -580,7 +580,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
         Case C_sAnaAll
 
             'Missing row and total column
-            sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
+            sFormula = BivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
                                         OnTotal:=True, sConditionRow:=Chr(34) & Chr(34), _
                                         sVarColumn:=sVarColumn, includeMissing:=True, isFiltered:=True)
 
@@ -588,14 +588,14 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
 
              'Missing column and total row
-            sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarColumn, _
+            sFormula = BivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarColumn, _
                                         OnTotal:=True, sConditionRow:=Chr(34) & Chr(34), _
                                         sVarColumn:=sVarRow, includeMissing:=True, isFiltered:=True)
 
              If sFormula <> vbNullString Then .Cells(iEndRow, iMissingColumn).FormulaArray = sFormula
 
             'Missing row and missing column
-            sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
+            sFormula = BivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
                                         OnTotal:=False, sConditionRow:=Chr(34) & Chr(34), _
                                         sVarColumn:=sVarColumn, sConditionColumn:=Chr(34) & Chr(34), isFiltered:=True)
 
@@ -609,7 +609,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 End Sub
 
 'Add missing for univariate analysis
-Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
+Sub AddUANA(wkb As Workbook, DictHeaders As BetterArray, _
             sSumFunc As String, sVar As String, _
             sPercent As String, _
             iRow As Long, iStartCol As Long, iEndCol As Long, _
@@ -621,7 +621,7 @@ Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
     Dim sFormula As String
     Dim sCond As String
 
-    Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
+    Set Wksh = wkb.Worksheets(sParamSheetAnalysis)
 
     'Condition for missing is ""
     sCond = Chr(34) & Chr(34)
@@ -638,7 +638,7 @@ Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
 
         On Error Resume Next
 
-        sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, _
+        sFormula = UnivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, _
                                      sForm:=sSumFunc, sVar:=sVar, _
                                      sCondition:=sCond, isFiltered:=True)
 
@@ -660,7 +660,7 @@ Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
 End Sub
 
 'Add total for univariate Analysis
-Sub AddUATotal(Wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, sVar As String, sPercent As String, _
+Sub AddUATotal(wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, sVar As String, sPercent As String, _
                sMiss As String, iRow As Long, iStartCol As Long, iEndCol As Long, _
                Optional sInteriorColor As String = "VeryLightGreyBlue")
 
@@ -669,7 +669,7 @@ Sub AddUATotal(Wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, 
     Dim sCond As String
     Dim includeMissing As Boolean
 
-    Set Wksh = Wkb.Worksheets(sParamSheetAnalysis)
+    Set Wksh = wkb.Worksheets(sParamSheetAnalysis)
     sCond = Chr(34) & Chr(34)
     includeMissing = (sMiss = C_sYes)
 
@@ -696,7 +696,7 @@ Sub AddUATotal(Wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, 
         'Add Formulas for total
         On Error Resume Next
 
-        sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sSumFunc, sVar:=sVar, _
+        sFormula = UnivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sSumFunc, sVar:=sVar, _
                                      sCondition:=sCond, OnTotal:=True, includeMissing:=includeMissing)
         If sFormula <> vbNullString And Len(sFormula) < 255 Then .Cells(iRow, iStartCol + 1).FormulaArray = sFormula
 
@@ -707,7 +707,7 @@ End Sub
 
 'Add formulas for TimeSeries
 
-Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
+Sub AddTimeSeriesFormula(wkb As Workbook, DictHeaders As BetterArray, _
                          sForm As String, sTimeVar As String, sCondVar As String, _
                          iRow As Long, iStartCol As Long, iEndCol As Long, sPerc As String, _
                          sMiss As String)
@@ -726,7 +726,7 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
     Dim Rng As Range
     Dim Wksh As Worksheet
 
-    Set Wksh = Wkb.Worksheets(sParamSheetTemporalAnalysis)
+    Set Wksh = wkb.Worksheets(sParamSheetTemporalAnalysis)
 
 
     With Wksh
@@ -753,7 +753,7 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
         Do While (i <= iInnerEndCol)
             sCondVal = .Cells(iRow, i).Address
-            sFormula = TimeSeriesFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sTimeVar:=sTimeVar, _
+            sFormula = TimeSeriesFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sTimeVar:=sTimeVar, _
                                          sFirstTimeCond:=sFirstTimeCond, sSecondTimeCond:=sSecondTimeCond, _
                                          sCondVar:=sCondVar, sCondVal:=sCondVal, _
                                          isFiltered:=True)
@@ -784,14 +784,14 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
 
             'Missing row
-            sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sTimeVar, _
+            sFormula = BivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sTimeVar, _
                                         sConditionRow:=Chr(34) & Chr(34), _
                                         sVarColumn:=sCondVar, sConditionColumn:=sCondVal)
                                         
             If sFormula <> vbNullString Then .Cells(iRow + 3 + C_iNbTime, i).FormulaArray = sFormula
 
             'Total Row
-            sFormula = UnivariateFormula(Wkb, DictHeaders, sForm, sVar:=sCondVar, sCondition:=sCondVal, isFiltered:=True)
+            sFormula = UnivariateFormula(wkb, DictHeaders, sForm, sVar:=sCondVar, sCondition:=sCondVal, isFiltered:=True)
             
             If sFormula <> vbNullString Then .Cells(iRow + 4 + C_iNbTime, i).FormulaArray = sFormula
 
@@ -805,7 +805,7 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
         End If
 
         'Total column
-        sFormula = TimeSeriesFormula(Wkb, DictHeaders, sForm, sTimeVar, sFirstTimeCond, sSecondTimeCond, _
+        sFormula = TimeSeriesFormula(wkb, DictHeaders, sForm, sTimeVar, sFirstTimeCond, sSecondTimeCond, _
                                      OnTotal:=True, includeMissing:=includeMissing, sCondVar:=sCondVar)
         
 
@@ -815,13 +815,13 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
         
          'Missing Row and Total column
          
-         sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sTimeVar, _
+         sFormula = UnivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sTimeVar, _
                                         sCondition:=Chr(34) & Chr(34))
 
          If sFormula <> vbNullString Then .Cells(iRow + 3 + C_iNbTime, iInnerEndCol).FormulaArray = sFormula
          
          'Two total columns
-         sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sCondVar, isFiltered:=True, OnTotal:=True)
+         sFormula = UnivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sCondVar, isFiltered:=True, OnTotal:=True)
          If sFormula <> vbNullString Then .Cells(iRow + 4 + C_iNbTime, iInnerEndCol).FormulaArray = sFormula
          
     End With
@@ -867,7 +867,7 @@ Sub FormatCell(Wksh As Worksheet, iStartRow As Long, iEndRow As Long, iStartCol 
 End Sub
 
 'Add formulas for univariate analysis
-Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
+Function UnivariateFormula(wkb As Workbook, DictHeaders As BetterArray, _
                            sForm As String, sVar As String, _
                            Optional sCondition As String = "", _
                            Optional isFiltered As Boolean = True, _
@@ -881,19 +881,19 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
     Case "COUNT", "COUNT()", "N", "N()"
 
-        sFormula = AnalysisCount(Wkb, DictHeaders, sVarName:=sVar, sValue:=sCondition, isFiltered:=isFiltered, OnTotal:=OnTotal, includeMissing:=includeMissing)
+        sFormula = AnalysisCount(wkb, DictHeaders, sVarName:=sVar, sValue:=sCondition, isFiltered:=isFiltered, OnTotal:=OnTotal, includeMissing:=includeMissing)
 
     Case "SUM", "SUM()"
 
     Case Else
         If OnTotal And Not includeMissing Then
-            sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
+            sFormula = AnalysisFormula(wkb, sForm, isFiltered, _
                                        sVariate:="univariate total not missing", sFirstCondVar:=sVar, _
                                        sFirstCondVal:=sCondition)
         ElseIf OnTotal Then
-            sFormula = AnalysisFormula(Wkb, sForm, isFiltered, sVariate:="none")
+            sFormula = AnalysisFormula(wkb, sForm, isFiltered, sVariate:="none")
         Else
-            sFormula = AnalysisFormula(Wkb, sForm, isFiltered, _
+            sFormula = AnalysisFormula(wkb, sForm, isFiltered, _
                                        sVariate:="univariate", sFirstCondVar:=sVar, _
                                        sFirstCondVal:=sCondition)
         End If
@@ -903,7 +903,7 @@ Function UnivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 End Function
 
 'Add formulas for bivariate analysis
-Function BivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
+Function BivariateFormula(wkb As Workbook, DictHeaders As BetterArray, _
                           sForm As String, sVarRow As String, sVarColumn As String, _
                           Optional sConditionRow As String = "", _
                           Optional sConditionColumn As String = "", _
@@ -918,7 +918,7 @@ Function BivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
     Case "COUNT", "COUNT()", "N", "N()"
 
-        sFormula = AnalysisCount(Wkb, DictHeaders, sVarName:=sVarRow, sValue:=sConditionRow, _
+        sFormula = AnalysisCount(wkb, DictHeaders, sVarName:=sVarRow, sValue:=sConditionRow, _
                                  sVarName2:=sVarColumn, sValue2:=sConditionColumn, _
                                  isFiltered:=isFiltered, OnTotal:=OnTotal, _
                                  includeMissing:=includeMissing)
@@ -930,20 +930,20 @@ Function BivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
         If OnTotal And Not includeMissing Then
 
-            sFormula = AnalysisFormula(Wkb, sForm, isFiltered:=isFiltered, _
+            sFormula = AnalysisFormula(wkb, sForm, isFiltered:=isFiltered, _
                                        sVariate:="bivariate total not missing", sFirstCondVar:=sVarRow, _
                                        sFirstCondVal:=sConditionRow, _
                                        sSecondCondVar:=sVarColumn)
 
         ElseIf OnTotal Then
             'If required, write total on
-            sFormula = AnalysisFormula(Wkb, sForm, isFiltered:=isFiltered, _
+            sFormula = AnalysisFormula(wkb, sForm, isFiltered:=isFiltered, _
                                        sVariate:="univariate", sFirstCondVar:=sVarRow, _
                                        sFirstCondVal:=sConditionRow)
 
         Else
 
-            sFormula = AnalysisFormula(Wkb, sForm, isFiltered:=isFiltered, _
+            sFormula = AnalysisFormula(wkb, sForm, isFiltered:=isFiltered, _
                                        sVariate:="bivariate", sFirstCondVar:=sVarRow, _
                                        sFirstCondVal:=sConditionRow, sSecondCondVar:=sVarColumn, _
                                        sSecondCondVal:=sConditionColumn)
@@ -955,7 +955,7 @@ Function BivariateFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 End Function
 
 'Add formulas for time series
-Function TimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
+Function TimeSeriesFormula(wkb As Workbook, DictHeaders As BetterArray, _
                            sForm As String, sTimeVar As String, _
                            sFirstTimeCond As String, sSecondTimeCond As String, _
                            Optional sCondVar As String, _
@@ -972,12 +972,12 @@ Function TimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
         Select Case ClearNonPrintableUnicode(sForm)
 
         Case "COUNT", "COUNT()", "N", "N()"
-            sFormula = TimeSeriesCount(Wkb, DictHeaders, sVarName:=sTimeVar, sValue1:=sFirstTimeCond, _
+            sFormula = TimeSeriesCount(wkb, DictHeaders, sVarName:=sTimeVar, sValue1:=sFirstTimeCond, _
                                        sValue2:=sSecondTimeCond, isFiltered:=isFiltered)
         Case "SUM", "SUM()"
 
         Case Else
-            sFormula = AnalysisFormula(Wkb, sForm, isFiltered:=isFiltered, sVariate:="bivariate date unique", _
+            sFormula = AnalysisFormula(wkb, sForm, isFiltered:=isFiltered, sVariate:="bivariate date unique", _
                                        sSecondCondVar:=sTimeVar, sSecondCondVal:=sFirstTimeCond, _
                                        sThirdCondVal:=sSecondTimeCond)
         End Select
@@ -989,7 +989,7 @@ Function TimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
         Case "COUNT", "COUNT()", "N", "N()"
 
-            sFormula = TimeSeriesCount(Wkb, DictHeaders, sVarName:=sTimeVar, sValue1:=sFirstTimeCond, sValue2:=sSecondTimeCond, _
+            sFormula = TimeSeriesCount(wkb, DictHeaders, sVarName:=sTimeVar, sValue1:=sFirstTimeCond, sValue2:=sSecondTimeCond, _
                                        isFiltered:=isFiltered, sFirstCondVar:=sCondVar, sFirstCondVal:=sCondVal, OnTotal:=OnTotal, _
                                        includeMissing:=includeMissing)
 
@@ -1001,17 +1001,17 @@ Function TimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
             If OnTotal And Not includeMissing Then
 
-                sFormula = AnalysisFormula(Wkb, sForm, isFiltered:=isFiltered, sVariate:="bivariate date not missing", _
+                sFormula = AnalysisFormula(wkb, sForm, isFiltered:=isFiltered, sVariate:="bivariate date not missing", _
                                            sFirstCondVar:=sCondVar, sSecondCondVar:=sTimeVar, _
                                            sSecondCondVal:=sFirstTimeCond, sThirdCondVal:=sSecondTimeCond)
             ElseIf OnTotal Then
 
-                sFormula = AnalysisFormula(Wkb, sForm, isFiltered:=isFiltered, sVariate:="bivariate date unique", _
+                sFormula = AnalysisFormula(wkb, sForm, isFiltered:=isFiltered, sVariate:="bivariate date unique", _
                                            sSecondCondVar:=sTimeVar, sSecondCondVal:=sFirstTimeCond, _
                                            sThirdCondVal:=sSecondTimeCond)
             Else
 
-                sFormula = AnalysisFormula(Wkb, sForm, isFiltered:=isFiltered, sVariate:="bivariate date", _
+                sFormula = AnalysisFormula(wkb, sForm, isFiltered:=isFiltered, sVariate:="bivariate date", _
                                            sFirstCondVar:=sCondVar, sFirstCondVal:=sCondVal, sSecondCondVar:=sTimeVar, _
                                            sSecondCondVal:=sFirstTimeCond, sThirdCondVal:=sSecondTimeCond)
 
@@ -1153,7 +1153,7 @@ End Sub
 'Wkb is a workbook where we can find the dictionary, the special character
 'data and the name of all 'friendly' functions
 
-Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
+Public Function AnalysisFormula(wkb As Workbook, sFormula As String, _
                                 Optional isFiltered As Boolean = False, _
                                 Optional sVariate As String = "none", _
                                 Optional sFirstCondVar As String = "__all", _
@@ -1222,11 +1222,11 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
 
     i = 1
 
-    Set DictHeaders = GetHeaders(Wkb, C_sParamSheetDict, 1)
+    Set DictHeaders = GetHeaders(wkb, C_sParamSheetDict, 1)
 
-    VarNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=False, DetectLastRow:=True
-    FormulaData.FromExcelRange Wkb.Worksheets(C_sSheetFormulas).ListObjects(C_sTabExcelFunctions).ListColumns("ENG").DataBodyRange, DetectLastColumn:=False
-    SpecCharData.FromExcelRange Wkb.Worksheets(C_sSheetFormulas).ListObjects(C_sTabASCII).ListColumns("TEXT").DataBodyRange, DetectLastColumn:=False
+    VarNameData.FromExcelRange wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=False, DetectLastRow:=True
+    FormulaData.FromExcelRange wkb.Worksheets(C_sSheetFormulas).ListObjects(C_sTabExcelFunctions).ListColumns("ENG").DataBodyRange, DetectLastColumn:=False
+    SpecCharData.FromExcelRange wkb.Worksheets(C_sSheetFormulas).ListObjects(C_sTabASCII).ListColumns("TEXT").DataBodyRange, DetectLastColumn:=False
 
     'Test if you have variable name in the dictionary
 
@@ -1235,7 +1235,7 @@ Public Function AnalysisFormula(Wkb As Workbook, sFormula As String, _
     End If
 
 
-    TableNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderTableName)), DetectLastColumn:=False, DetectLastRow:=True
+    TableNameData.FromExcelRange wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderTableName)), DetectLastColumn:=False, DetectLastRow:=True
 
     If VarNameData.Includes(sFormulaATest) Then
         AnalysisFormula = ""                     'We have to aggregate
@@ -1420,7 +1420,7 @@ End Function
 
 'Analysis Count
 
-Function AnalysisCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As String, sValue As String, _
+Function AnalysisCount(wkb As Workbook, DictHeaders As BetterArray, sVarName As String, sValue As String, _
                        Optional sVarName2 As String = "", Optional sValue2 As String = "", Optional isFiltered As Boolean = False, _
                        Optional OnTotal As Boolean = False, _
                        Optional includeMissing As Boolean = False) As String
@@ -1441,8 +1441,8 @@ Function AnalysisCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As 
     VarNameData.LowerBound = 1
     TableNameData.LowerBound = 1
 
-    VarNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=False, DetectLastRow:=True
-    TableNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderTableName)), _
+    VarNameData.FromExcelRange wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=False, DetectLastRow:=True
+    TableNameData.FromExcelRange wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderTableName)), _
         DetectLastColumn:=False, DetectLastRow:=True
     sFormula = vbNullString
 
@@ -1495,7 +1495,7 @@ Function AnalysisCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As 
 
 End Function
 
-Function TimeSeriesCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName As String, sValue1 As String, _
+Function TimeSeriesCount(wkb As Workbook, DictHeaders As BetterArray, sVarName As String, sValue1 As String, _
                          sValue2 As String, Optional isFiltered As Boolean = False, _
                          Optional sFirstCondVar As String = "", _
                          Optional sFirstCondVal As String = "", _
@@ -1514,8 +1514,8 @@ Function TimeSeriesCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName A
     VarNameData.LowerBound = 1
     TableNameData.LowerBound = 1
 
-    VarNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=False, DetectLastRow:=True
-    TableNameData.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderTableName)), _
+    VarNameData.FromExcelRange wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=False, DetectLastRow:=True
+    TableNameData.FromExcelRange wkb.Worksheets(C_sParamSheetDict).Cells(1, DictHeaders.IndexOf(C_sDictHeaderTableName)), _
         DetectLastColumn:=False, DetectLastRow:=True
 
     sFormula = vbNullString

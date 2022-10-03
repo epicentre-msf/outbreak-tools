@@ -50,7 +50,7 @@ Public errorTitle As String
 '*/
 Public vbaDebugPrintActive As Boolean
 
-Private Sub class_initialize()
+Private Sub Class_Initialize()
 
     Dim fso  As Object
     Set fso = CreateObject("Scripting.FileSystemObject")
