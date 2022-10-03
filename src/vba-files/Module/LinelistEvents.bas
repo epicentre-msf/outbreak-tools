@@ -475,10 +475,12 @@ Public Sub UpdateFilterTables()
     Dim sActSh As String
     Dim ts As Date
     Dim destRng As Range
+    Dim delRng As Range
 
 
     BeginWork xlsapp:=Application
-    On Error GoTo ErrUpdate
+    'On Error GoTo ErrUpdate
+
     ts = Now
 
     sActSh = ActiveSheet.Name
@@ -490,7 +492,6 @@ Public Sub UpdateFilterTables()
                                  sValue1:=C_sDictSheetTypeLL, _
                                  returnIndex:=DictHeaders.IndexOf(C_sDictHeaderSheetName))
 
-    Debug.Print Application.Calculation
 
     BeginWork xlsapp:=Application
 
@@ -524,10 +525,20 @@ Public Sub UpdateFilterTables()
                     destRng.value = Lo.DataBodyRange.value
 
                     Do While rowCounter > C_eStartLinesLLData + 1
-                       If .Rows(rowCounter).Hidden Then filtWksh.Rows(rowCounter).EntireRow.Delete
+
+                       If .Rows(rowCounter).Hidden Then
+                            With filtWksh
+                                If delRng Is Nothing Then
+                                    Set delRng = .Range(.Cells(rowCounter, 1), .Cells(rowCounter, endCol))
+                                Else
+                                    Set delRng = Application.Union(delRng, .Range(.Cells(rowCounter, 1), .Cells(rowCounter, endCol)))
+                                End If
+                            End With
+                       End If
                        rowCounter = rowCounter - 1
                     Loop
 
+                    delRng.Delete
                     'Reprotect back the worksheet
                     ProtectSheet .Name
                 End If
@@ -536,15 +547,14 @@ Public Sub UpdateFilterTables()
     Next
 
 
+    Debug.Print DateDiff("s", ts, Now)
 
     On Error Resume Next
     ThisWorkbook.Worksheets(sActSh).Activate
     On Error GoTo 0
 
-
     EndWork xlsapp:=Application
 
-    'Debug.Print DateDiff("s", ts, Now)
     Exit Sub
 
 ErrUpdate:
@@ -576,7 +586,7 @@ Sub ClearAllFilters()
 
     Exit Sub
 errHand:
-    EndWork xlsapp := Application
+    EndWork xlsapp:=Application
 End Sub
 
 'Find the selected column on "GOTO" Area and go to that column
