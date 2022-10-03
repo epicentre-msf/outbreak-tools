@@ -26,7 +26,7 @@ Option Explicit
 
 Private param As String
 
-Private Sub class_initialize()
+Private Sub Class_Initialize()
     param = Application.ThisWorkbook.Path & "\app.log"
 End Sub
 
