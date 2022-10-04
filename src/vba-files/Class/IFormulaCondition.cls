@@ -16,5 +16,5 @@ Option Explicit
 
 Public Property Get Variable() As String: End Property
 Public Property Get Condition() As String: End Property
-Public Property Get Valid(ByVal Dict As IDictionary, ByVal tableName As String) As Boolean : End Property
-Public Property Get ConditionString(ByVal tableName As String, ByVal varName As String, Optional Connector As String = "*") As String : End Property
+Public Property Get Valid(ByVal Dict As IDictionary, ByVal tableName As String) As Boolean: End Property
+Public Property Get ConditionString(ByVal tableName As String, ByVal varName As String, Optional Connector As String = "*") As String: End Property
