@@ -1037,6 +1037,12 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
 
     With Wksh
 
+        'Start Date
+        FormatARange .Cells(iRow, iCol + 3), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
+        sValue:=TranslateLLMsg("MSG_EnterStartDate")
+        FormatARange .Cells(iRow, iCol + 4), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
+        NumFormat:="dd/mm/yyyy"
+
         'Time Aggregation
         iRow = iStartRow + 2
         FormatARange .Cells(iRow, iCol), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
@@ -1050,11 +1056,6 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         'Add validation for time aggregation
         SetValidation .Cells(iRow, iCol + 1), "=" & C_sTimeAgg, 1, TranslateLLMsg("MSG_UnableToAgg")
 
-        'Enter a Start Date
-        FormatARange .Cells(iRow, iCol + 3), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
-        sValue:=TranslateLLMsg("MSG_EnterStartDate")
-        FormatARange .Cells(iRow, iCol + 4), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
-        NumFormat:="dd/mm/yyyy"
 
 
         'Minimum date of the data
@@ -1066,7 +1067,6 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
 
 
         'Maximum date of the data
-
         FormatARange .Cells(iRow, iCol + 9), isBold:=False, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
         sValue:=TranslateLLMsg("MSG_MaxData"), FontSize:=C_iAnalysisFontSize - 2
         FormatARange .Cells(iRow, iCol + 10), isBold:=False, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
