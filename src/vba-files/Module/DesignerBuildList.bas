@@ -84,10 +84,10 @@ Sub BuildList(DictHeaders As BetterArray, DictData As BetterArray, ExportData As
 
     'DesignerBuildListHelpers.TransterSheet is for sending worksheets from the actual workbook to the first workbook of the instance
     sFirstSheetName = wkb.Worksheets(1).Name
-    Call DesignerBuildListHelpers.TransferSheet(wkb, C_sSheetGeo, sFirstSheetName)
-    Call DesignerBuildListHelpers.TransferSheet(wkb, C_sSheetPassword, C_sSheetGeo)
-    Call DesignerBuildListHelpers.TransferSheet(wkb, C_sSheetFormulas, C_sSheetPassword)
-    Call DesignerBuildListHelpers.TransferSheet(wkb, C_sSheetLLTranslation, C_sSheetFormulas)
+    TransferSheet wkb, C_sSheetGeo, sFirstSheetName
+    TransferSheet wkb, C_sSheetPassword, C_sSheetGeo
+    TransferSheet wkb, C_sSheetFormulas, C_sSheetPassword
+    TransferSheet wkb, C_sSheetLLTranslation, C_sSheetFormulas
 
     DoEvents
     iUpdateCpt = iUpdateCpt + 5
@@ -951,7 +951,7 @@ Private Sub CreateSheetLLDataEntry(wkb As Workbook, sSheetName As String, iSheet
 
                 'Add the list_auto column in the worksheet list_auto_
                 With wkb.Worksheets(C_sSheetChoiceAuto)
-                    iChoiceCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
+                    iChoiceCol = .Cells(1, .Columns.Count).End(xlToLeft).Column + 1
                     sChoiceAutoName = C_sDictControlChoiceAuto & "_" & sActualChoice
 
                     .Cells(C_eStartlinesListAuto, iChoiceCol + 1).value = sChoiceAutoName
