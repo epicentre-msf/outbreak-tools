@@ -23,9 +23,9 @@ outputs
 *Sheet4.cls
 *Sheet5.cls
 config.json
-src/vba-files-lla
-linelist_designer_lla.xlsb
+demo
 local
+
 
 .DS_Store
 .vscode

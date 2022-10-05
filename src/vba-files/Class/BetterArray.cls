@@ -95,12 +95,12 @@ Private Type TString
     ByteLength As Long
 End Type
 
-Private This As TFields
+Private this As TFields
 
 '@Description("Constructor")
-Private Sub class_initialize()
+Private Sub Class_Initialize()
     Me.Capacity = DEFAULT_CAPACITY
-    This.ArrayType = BA_UNALLOCATED
+    this.ArrayType = BA_UNALLOCATED
     PopulateErrorDefinitions
 End Sub
 
@@ -110,7 +110,7 @@ End Sub
 
 '@Description("Returns the capacity of the internal array.")
 Public Property Get Capacity() As Long
-    Capacity = This.Capacity
+    Capacity = this.Capacity
 End Property
 
 '@Description("Sets the capacity of the internal array.")
@@ -118,59 +118,59 @@ End Property
 Public Property Let Capacity(ByVal value As Long)
     '@Ignore FunctionReturnValueDiscarded
     If value < 0 Then Err.Raise 9
-    If value <> This.Capacity Then
-        If This.Capacity > 0 Then
-            If GetArrayLength(This.Items) <> value Then
+    If value <> this.Capacity Then
+        If this.Capacity > 0 Then
+            If GetArrayLength(this.Items) <> value Then
                 Dim NewItems() As Variant
-                NewItems = This.Items
-                ReDim Preserve NewItems(This.LowerBound To (value + This.LowerBound - 1))
+                NewItems = this.Items
+                ReDim Preserve NewItems(this.LowerBound To (value + this.LowerBound - 1))
                 InternalItems = NewItems
             End If
         Else
-            ReDim This.Items(This.LowerBound To (DEFAULT_CAPACITY + This.LowerBound - 1))
+            ReDim this.Items(this.LowerBound To (DEFAULT_CAPACITY + this.LowerBound - 1))
         End If
-        This.Capacity = UBound(This.Items) - This.LowerBound + 1
+        this.Capacity = UBound(this.Items) - this.LowerBound + 1
     End If
 End Property
 
 '@Description("Returns the number of entries stored in the array.")
 Public Property Get Length() As Long
-    Length = This.Length
+    Length = this.Length
 End Property
 
 '@Description("Returns largest used index in the array.")
 Public Property Get UpperBound() As Long
-    If This.ArrayType = BA_UNALLOCATED Then
+    If this.ArrayType = BA_UNALLOCATED Then
         UpperBound = -1
     Else
-        UpperBound = This.Length + This.LowerBound - 1
+        UpperBound = this.Length + this.LowerBound - 1
     End If
 End Property
 
 '@Description("Returns smallest used index in the array.")
 Public Property Get LowerBound() As Long
-    LowerBound = This.LowerBound
+    LowerBound = this.LowerBound
 End Property
 
 '@Description("Sets the starting index of the array. If an array is already stored then it will be re-indexed to match the new value")
 Public Property Let LowerBound(ByVal value As Long)
-    This.LowerBoundSet = True
-    If value <> This.LowerBound Then
-        This.LowerBound = value
+    this.LowerBoundSet = True
+    If value <> this.LowerBound Then
+        this.LowerBound = value
         InternalItems = Rebase()
-        This.Capacity = GetArrayLength(This.Items)
+        this.Capacity = GetArrayLength(this.Items)
     End If
 End Property
 
 '@DefaultMember
 '@Description("Returns the element in the array stored at the specified index.")
 Public Property Get Item(ByVal index As Long) As Variant
-    If index <= This.Length Then
+    If index <= this.Length Then
         ' not using letOrSetElement here as it might try to access the Items letter
-        If IsObject(This.Items(index)) Then
-            Set Item = This.Items(index)
+        If IsObject(this.Items(index)) Then
+            Set Item = this.Items(index)
         Else
-            Item = This.Items(index)
+            Item = this.Items(index)
         End If
     Else
         '@Ignore FunctionReturnValueDiscarded
@@ -181,11 +181,11 @@ End Property
 '@Description("Assigns the passed element to the array at the specified index.")
 Public Property Let Item(ByVal index As Long, ByVal Element As Variant)
     If Me.UpperBound >= index Then
-        If index < This.LowerBound Then
+        If index < this.LowerBound Then
             '@Ignore FunctionReturnValueDiscarded
             Me.Unshift Element
         Else
-            LetOrSetElement This.Items(index), Element
+            LetOrSetElement this.Items(index), Element
         End If
     Else
         '@Ignore FunctionReturnValueDiscarded
@@ -197,7 +197,7 @@ End Property
 Public Property Get Items() As Variant
     Dim Result() As Variant
     Result = InternalItems
-    If This.ArrayType = ArrayTypes.BA_MULTIDIMENSION Then
+    If this.ArrayType = ArrayTypes.BA_MULTIDIMENSION Then
         If IsJaggedArray(Result) Then Result = JaggedToMulti(Result)
     End If
     Items = Result
@@ -214,18 +214,18 @@ Public Property Let Items(ByVal Values As Variant)
     If TypeName(Values) = TypeName(Me) Then
         LocalValues = Values.Items
     ElseIf IsArray(Values) Then
-        This.ArrayType = GetArrayType(Values)
+        this.ArrayType = GetArrayType(Values)
         TypeSet = True
-        If This.ArrayType = BA_UNALLOCATED Then
+        If this.ArrayType = BA_UNALLOCATED Then
             LocalValues = GetEmptyArray
         Else
             LocalLowerBound = LBound(Values)
-            If Not This.LowerBoundSet Then
-                This.LowerBound = LocalLowerBound
+            If Not this.LowerBoundSet Then
+                this.LowerBound = LocalLowerBound
             End If
             LocalValues = ConvertArrayForStorage( _
                           Values, _
-                          This.ArrayType, _
+                          this.ArrayType, _
                           CONVERT_MD_TO_JAGGED, _
                           CONVERT_NESTED_JAGGED _
                           )
@@ -234,7 +234,7 @@ Public Property Let Items(ByVal Values As Variant)
         ' If Values is not an array then clear our internal array and push the Values arg
         ' NOTE: this possibly violates PoLA - assess for refactor
         '@Ignore FunctionReturnValueDiscarded
-        If IsEmpty(Values) And This.ArrayType = ArrayTypes.BA_UNDEFINED Then
+        If IsEmpty(Values) And this.ArrayType = ArrayTypes.BA_UNDEFINED Then
             RaiseError EC_EXPECTED_ARRAY, "Items", "Values"
         Else
             Me.Clear.Push Values
@@ -243,13 +243,13 @@ Public Property Let Items(ByVal Values As Variant)
     End If
     
     If Not TypeSet Then
-        This.ArrayType = GetArrayType(LocalValues)
+        this.ArrayType = GetArrayType(LocalValues)
     End If
     
     InternalItems = LocalValues
-    This.Length = GetArrayLength(LocalValues)
-    This.Capacity = This.Length
-    If This.Capacity < DEFAULT_CAPACITY Then
+    this.Length = GetArrayLength(LocalValues)
+    this.Capacity = this.Length
+    If this.Capacity < DEFAULT_CAPACITY Then
         Me.Capacity = DEFAULT_CAPACITY
     End If
 
@@ -257,7 +257,7 @@ End Property
 
 '@Description("Retrieves the stored array type.")
 Public Property Get ArrayType() As ArrayTypes
-    ArrayType = This.ArrayType
+    ArrayType = this.ArrayType
 End Property
 
 '@Description("Sets the stored array type.")
@@ -266,29 +266,29 @@ Public Property Let ArrayType(ByVal NewType As ArrayTypes)
     Case ArrayTypes.BA_UNDEFINED
         RaiseError EC_CANNOT_CONVERT_TO_REQUESTED_STRUCTURE, "ArrayType", "NewType"
     Case ArrayTypes.BA_UNALLOCATED
-        If This.ArrayType <> BA_UNALLOCATED Then
+        If this.ArrayType <> BA_UNALLOCATED Then
             Me.ResetToDefault
         End If
     Case ArrayTypes.BA_ONEDIMENSION
-        Select Case This.ArrayType
+        Select Case this.ArrayType
         Case ArrayTypes.BA_MULTIDIMENSION, ArrayTypes.BA_JAGGED
             RaiseError EC_CANNOT_CONVERT_TO_REQUESTED_STRUCTURE, "ArrayType", "NewType"
         Case Else
-            This.ArrayType = NewType
+            this.ArrayType = NewType
         End Select
     Case Else
-        This.ArrayType = NewType
+        this.ArrayType = NewType
     End Select
 End Property
 
 '@Description("Retrieves the sorting algorithm used by the Sort() method.")
 Public Property Get SortMethod() As SortMethods
-    SortMethod = This.SortMethod
+    SortMethod = this.SortMethod
 End Property
 
 '@Description("Specifies the sorting algorithm used by the Sort() method.")
 Public Property Let SortMethod(ByVal Method As SortMethods)
-    This.SortMethod = Method
+    this.SortMethod = Method
 End Property
 
 ''''''''''''''''''''''
@@ -298,13 +298,13 @@ End Property
 '@Description("Retrieves the stored items trimmed to the correct length. Does not change structure (i.e jagged to multi).")
 Private Property Get InternalItems() As Variant()
     Dim Result() As Variant
-    If This.ArrayType <> BA_UNALLOCATED And This.ArrayType <> BA_UNDEFINED Then
-        Result = This.Items
-        If This.Capacity > This.Length Then
-            If This.Length = 0 Then
-                ReDim Preserve Result(This.LowerBound To This.LowerBound)
-            ElseIf This.Length > 0 Then
-                ReDim Preserve Result(This.LowerBound To Me.UpperBound)
+    If this.ArrayType <> BA_UNALLOCATED And this.ArrayType <> BA_UNDEFINED Then
+        Result = this.Items
+        If this.Capacity > this.Length Then
+            If this.Length = 0 Then
+                ReDim Preserve Result(this.LowerBound To this.LowerBound)
+            ElseIf this.Length > 0 Then
+                ReDim Preserve Result(this.LowerBound To Me.UpperBound)
             End If
         End If
     Else
@@ -316,7 +316,7 @@ End Property
 '@Description("Assigns the passed array to this.items")
 '@Ignore MisleadingByRefParameter
 Private Property Let InternalItems(ByRef value() As Variant)
-    This.Items = value
+    this.Items = value
 End Property
 
 ''''''''''''''''''
@@ -327,46 +327,46 @@ End Property
 Public Function Push(ParamArray Args() As Variant) As Variant
     Dim Element As Variant
 
-    If This.ArrayType = ArrayTypes.BA_UNALLOCATED Or _
-       This.ArrayType = ArrayTypes.BA_UNDEFINED Then
-        This.ArrayType = ArrayTypes.BA_ONEDIMENSION
+    If this.ArrayType = ArrayTypes.BA_UNALLOCATED Or _
+       this.ArrayType = ArrayTypes.BA_UNDEFINED Then
+        this.ArrayType = ArrayTypes.BA_ONEDIMENSION
     End If
 
     For Each Element In Args
-        If This.Length = This.Capacity Then
-            EnsureCapacity This.Length + 1
+        If this.Length = this.Capacity Then
+            EnsureCapacity this.Length + 1
         End If
         If IsArray(Element) Then
             Dim ArrayElement() As Variant
             Dim ArrayElementType As ArrayTypes
             ArrayElement = Element
-            If This.ArrayType = BA_ONEDIMENSION Then
+            If this.ArrayType = BA_ONEDIMENSION Then
                 ArrayElementType = GetArrayType(ArrayElement)
                 If ArrayElementType = BA_MULTIDIMENSION Then
-                    This.ArrayType = BA_MULTIDIMENSION
+                    this.ArrayType = BA_MULTIDIMENSION
                 Else
-                    This.ArrayType = BA_JAGGED
+                    this.ArrayType = BA_JAGGED
                 End If
             End If
-            If LBound(ArrayElement) <> This.LowerBound Then
+            If LBound(ArrayElement) <> this.LowerBound Then
                 ArrayElement = Rebase(ArrayElement, ArrayElementType)
             End If
-            LetOrSetElement This.Items(This.Length + This.LowerBound), ArrayElement
+            LetOrSetElement this.Items(this.Length + this.LowerBound), ArrayElement
         Else
-            LetOrSetElement This.Items(This.Length + This.LowerBound), Element
+            LetOrSetElement this.Items(this.Length + this.LowerBound), Element
         End If
-        inc This.Length
+        inc this.Length
     Next
-    Push = This.Length
+    Push = this.Length
 End Function
 
 '@Description("Removes the last element from the array and returns that element.")
 Public Function Pop() As Variant
     Dim Result As Variant
     Dim NewItems() As Variant
-    If This.Length > 0 Then
-        Result = This.Items(Me.UpperBound)
-        NewItems = Me.Slice(This.LowerBound, Me.UpperBound)
+    If this.Length > 0 Then
+        Result = this.Items(Me.UpperBound)
+        NewItems = Me.Slice(this.LowerBound, Me.UpperBound)
         Me.Items = NewItems
     End If
     Pop = Result
@@ -376,9 +376,9 @@ End Function
 Public Function Shift() As Variant
     Dim NewItems() As Variant
     Dim Result As Variant
-    If This.Length > 0 Then
-        Result = This.Items(This.LowerBound)
-        NewItems = Me.Slice(This.LowerBound + 1)
+    If this.Length > 0 Then
+        Result = this.Items(this.LowerBound)
+        NewItems = Me.Slice(this.LowerBound + 1)
         Me.Items = NewItems
     End If
     Shift = Result
@@ -391,15 +391,15 @@ Public Function Unshift(ParamArray Args() As Variant) As Long
     Dim OldType As ArrayTypes
     
     NewItems = Args
-    OldType = This.ArrayType
+    OldType = this.ArrayType
     OldItems = InternalItems
     Me.Items = NewItems
     If OldType <> BA_UNALLOCATED And OldType <> BA_UNDEFINED Then
         '@Ignore FunctionReturnValueDiscarded
         Me.Concat OldItems
-        This.ArrayType = OldType
+        this.ArrayType = OldType
     End If
-    Unshift = This.Length
+    Unshift = this.Length
 End Function
 
 '@Description("Returns a string representing the array structure and its elements.")
@@ -447,17 +447,17 @@ Public Function Includes( _
     Dim SearchArray() As Variant
     
     SearchArray = InternalItems
-    LocalLength = This.Length
+    LocalLength = this.Length
     
     If LocalLength = 0 Then
         Includes = False
         Exit Function
     End If
         
-    If FromIndex > This.LowerBound Then
+    If FromIndex > this.LowerBound Then
         CurrentIndex = FromIndex
     ElseIf FromIndex = MISSING_LONG Then
-        CurrentIndex = This.LowerBound
+        CurrentIndex = this.LowerBound
     Else
         CurrentIndex = LocalLength + FromIndex
     End If
@@ -476,17 +476,17 @@ Public Function IncludesType( _
     Dim SearchArray() As Variant
     
     SearchArray = InternalItems
-    LocalLength = This.Length
+    LocalLength = this.Length
     
     If LocalLength = 0 Then
         IncludesType = False
         Exit Function
     End If
         
-    If FromIndex > This.LowerBound Then
+    If FromIndex > this.LowerBound Then
         CurrentIndex = FromIndex
     ElseIf FromIndex = MISSING_LONG Then
-        CurrentIndex = This.LowerBound
+        CurrentIndex = this.LowerBound
     Else
         CurrentIndex = LocalLength + FromIndex
     End If
@@ -505,17 +505,17 @@ Public Function Every( _
     Dim SearchArray() As Variant
     
     SearchArray = InternalItems
-    LocalLength = This.Length
+    LocalLength = this.Length
     
     If LocalLength = 0 Then
         Every = False
         Exit Function
     End If
         
-    If FromIndex > This.LowerBound Then
+    If FromIndex > this.LowerBound Then
         CurrentIndex = FromIndex
     ElseIf FromIndex = MISSING_LONG Then
-        CurrentIndex = This.LowerBound
+        CurrentIndex = this.LowerBound
     Else
         CurrentIndex = LocalLength + FromIndex
     End If
@@ -534,17 +534,17 @@ Public Function EveryType( _
     Dim SearchArray() As Variant
     
     SearchArray = InternalItems
-    LocalLength = This.Length
+    LocalLength = this.Length
     
     If LocalLength = 0 Then
         EveryType = False
         Exit Function
     End If
         
-    If FromIndex > This.LowerBound Then
+    If FromIndex > this.LowerBound Then
         CurrentIndex = FromIndex
     ElseIf FromIndex = MISSING_LONG Then
-        CurrentIndex = This.LowerBound
+        CurrentIndex = this.LowerBound
     Else
         CurrentIndex = LocalLength + FromIndex
     End If
@@ -559,13 +559,13 @@ Public Function Keys() As Variant()
     Dim LocalLowerBound As Long
     Dim Result() As Variant
     
-    If This.ArrayType = BA_UNDEFINED Then
+    If this.ArrayType = BA_UNDEFINED Then
         RaiseError EC_UNDEFINED_ARRAY, "Keys"
-    ElseIf This.ArrayType = BA_UNALLOCATED Then
+    ElseIf this.ArrayType = BA_UNALLOCATED Then
         RaiseError EC_UNALLOCATED_ARRAY, "Keys"
     Else
-        LocalLowerBound = This.LowerBound
-        ReDim Result(0 To This.Length - 1)
+        LocalLowerBound = this.LowerBound
+        ReDim Result(0 To this.Length - 1)
         For i = LBound(Result) To UBound(Result)
             Result(i) = i + LocalLowerBound
         Next
@@ -615,7 +615,7 @@ Public Function Slice( _
     Dim Result() As Variant
     
     LocalItems = InternalItems
-    LocalLength = This.Length
+    LocalLength = this.Length
     RelativeStart = StartIndex
     If RelativeStart < LBound(LocalItems) Then
         If RelativeStart < 0 Then
@@ -648,7 +648,7 @@ Public Function Slice( _
                 inc OldIndex
             End If
         Loop
-        If This.ArrayType = BA_MULTIDIMENSION Then
+        If this.ArrayType = BA_MULTIDIMENSION Then
             Slice = JaggedToMulti(Result)
         Else
             Slice = Result
@@ -667,33 +667,33 @@ Public Function FromExcelRange( _
     If TypeName(FromRange) = "Range" Then
         Dim StartColumn As Long
         Dim EndColumn As Long
-        Dim StartRow As Long
-        Dim EndRow As Long
+        Dim startRow As Long
+        Dim endRow As Long
         
         With FromRange
             StartColumn = .Column
-            StartRow = .Row
+            startRow = .Row
             EndColumn = .Column + .Columns.Count - 1
-            EndRow = .Row + .Rows.Count - 1
+            endRow = .Row + .Rows.Count - 1
         End With
         
         With FromRange.Parent
             If DetectLastColumn Then
-                EndColumn = .Cells.Item(StartRow, .Columns.Count).End(xlToLeft).Column
+                EndColumn = .Cells.Item(startRow, .Columns.Count).End(xlToLeft).Column
             End If
             
             If DetectLastRow Then
-                EndRow = .Cells.Item(.Rows.Count, StartColumn).End(xlUp).Row
+                endRow = .Cells.Item(.Rows.Count, StartColumn).End(xlUp).Row
             End If
             
-            Me.Items = .Range(.Cells(StartRow, StartColumn), .Cells(EndRow, EndColumn)).value
+            Me.Items = .Range(.Cells(startRow, StartColumn), .Cells(endRow, EndColumn)).value
         End With
         
         ' convert arrays of single column or row to 1d
-        If StartColumn = EndColumn And StartRow <> EndRow Then
+        If StartColumn = EndColumn And startRow <> endRow Then
             Me.Items = Me.ExtractSegment(, StartColumn)
-        ElseIf StartColumn <> EndColumn And StartRow = EndRow Then
-            Me.Items = Me.ExtractSegment(StartRow)
+        ElseIf StartColumn <> EndColumn And startRow = endRow Then
+            Me.Items = Me.ExtractSegment(startRow)
         End If
         
     Else
@@ -724,7 +724,7 @@ Public Function ExtractSegment( _
             Result = Me.Items
         Else
             ' Row number missing, column number present
-            Select Case This.ArrayType
+            Select Case this.ArrayType
             Case BA_ONEDIMENSION
                 If ColumnIndex >= LBound(LocalItems) And ColumnIndex <= UBound(LocalItems) Then
                     LocalColumnIndex = ColumnIndex
@@ -738,7 +738,7 @@ Public Function ExtractSegment( _
                 If ColumnIndex >= NestedBounds(0) And ColumnIndex <= NestedBounds(1) Then
                     LocalColumnIndex = ColumnIndex
                 Else
-                    LocalColumnIndex = This.LowerBound
+                    LocalColumnIndex = this.LowerBound
                 End If
                 ReDim Result(LBound(LocalItems) To UBound(LocalItems))
                 For i = LBound(LocalItems) To UBound(LocalItems)
@@ -758,7 +758,7 @@ Public Function ExtractSegment( _
         End If
         If ColumnIndex = MISSING_LONG Then
             ' Row number present, column number missing
-            Select Case This.ArrayType
+            Select Case this.ArrayType
             Case BA_ONEDIMENSION
                 Result = Array(LocalItems(LocalRowIndex))
             Case BA_JAGGED, BA_MULTIDIMENSION
@@ -769,7 +769,7 @@ Public Function ExtractSegment( _
             End Select
         Else
             ' Row number present, column number present
-            Select Case This.ArrayType
+            Select Case this.ArrayType
             Case BA_ONEDIMENSION
                 ' ignore column number arg as array is 1d
                 Result = Array(LocalItems(LocalRowIndex))
@@ -779,7 +779,7 @@ Public Function ExtractSegment( _
                 If ColumnIndex >= NestedBounds(0) And ColumnIndex <= NestedBounds(1) Then
                     LocalColumnIndex = ColumnIndex
                 Else
-                    LocalColumnIndex = This.LowerBound
+                    LocalColumnIndex = this.LowerBound
                 End If
                 If IsArray(LocalItems(LocalRowIndex)(LocalColumnIndex)) Then
                     Result = LocalItems(LocalRowIndex)(LocalColumnIndex)
@@ -937,7 +937,7 @@ Public Function IndexOf( _
         End If
     End If
     
-    If This.Length = 0 Then
+    If this.Length = 0 Then
         IndexOf = MISSING_LONG
         Exit Function
     End If
@@ -997,7 +997,7 @@ Public Function LastIndexOf( _
         End If
     End If
     
-    If This.Length = 0 Then
+    If this.Length = 0 Then
         LastIndexOf = MISSING_LONG
         Exit Function
     End If
@@ -1039,16 +1039,16 @@ Public Function Remove(ByVal index As Long) As Long
     Dim LocalType As ArrayTypes
     
     RelativeIndex = MISSING_LONG
-    LocalType = This.ArrayType
+    LocalType = this.ArrayType
     
-    If index >= This.LowerBound Then
+    If index >= this.LowerBound Then
         If index <= Me.UpperBound Then
             RelativeIndex = index
         End If
     Else
         If index < 0 Then
             RelativeIndex = Me.UpperBound + index
-            If RelativeIndex < This.LowerBound Then RelativeIndex = MISSING_LONG
+            If RelativeIndex < this.LowerBound Then RelativeIndex = MISSING_LONG
         End If
     End If
     
@@ -1058,8 +1058,8 @@ Public Function Remove(ByVal index As Long) As Long
         Dim BeforeExists As Boolean
         Dim AfterExists As Boolean
         
-        If RelativeIndex > This.LowerBound Then
-            BeforeSlice = Me.Slice(This.LowerBound, RelativeIndex)
+        If RelativeIndex > this.LowerBound Then
+            BeforeSlice = Me.Slice(this.LowerBound, RelativeIndex)
             BeforeExists = True
         End If
         If RelativeIndex < Me.UpperBound Then
@@ -1078,15 +1078,15 @@ Public Function Remove(ByVal index As Long) As Long
             End If
         End If
         If BeforeExists Or AfterExists Then
-            If This.ArrayType = BA_JAGGED And LocalType = BA_MULTIDIMENSION Then
-                This.ArrayType = LocalType
+            If this.ArrayType = BA_JAGGED And LocalType = BA_MULTIDIMENSION Then
+                this.ArrayType = LocalType
             End If
         Else
             Me.Clear
         End If
     End If
     
-    Remove = This.Length
+    Remove = this.Length
 End Function
 
 '@Description("changes the contents of the array by removing or replacing existing elements and/or adding new elements in place.")
@@ -1174,7 +1174,7 @@ Public Function Splice( _
     ElseIf ItemCount > ActualDeleteCount Then
         i = (LocalLength - ActualDeleteCount)
         TempArray = LocalItems
-        ReDim Preserve TempArray(This.LowerBound To i + ItemCount - 1) As Variant
+        ReDim Preserve TempArray(this.LowerBound To i + ItemCount - 1) As Variant
         Do While i > ActualStart
             LetOrSetElement TempArray(i + ItemCount - 1), LocalItems(i + ActualDeleteCount - 1)
             dec i
@@ -1296,7 +1296,7 @@ Public Function Transpose() As BetterArray
     Dim LocalItems() As Variant
     Dim LocalType As ArrayTypes
     Dim StoredType As ArrayTypes
-    StoredType = This.ArrayType
+    StoredType = this.ArrayType
     LocalItems = InternalItems
     LocalType = GetArrayType(LocalItems)
     Select Case LocalType
@@ -1314,7 +1314,7 @@ Public Function Transpose() As BetterArray
     If StoredType = BA_MULTIDIMENSION Then
         LocalType = GetArrayType(Result)
         If LocalType = BA_JAGGED Then
-            This.ArrayType = BA_MULTIDIMENSION
+            this.ArrayType = BA_MULTIDIMENSION
         End If
     End If
     Set Transpose = Me
@@ -1324,28 +1324,28 @@ End Function
 Public Function Clone() As BetterArray
     Dim Result As BetterArray
     Set Result = New BetterArray
-    Result.LowerBound = This.LowerBound
+    Result.LowerBound = this.LowerBound
     Result.Items = Me.Items
     Set Clone = Result
 End Function
 
 '@Description("Clears the current array and resets capacity to default value")
 Public Function ResetToDefault() As BetterArray
-    This.LowerBound = 0
-    ReDim This.Items(This.LowerBound To DEFAULT_CAPACITY + This.LowerBound)
-    This.Length = 0
+    this.LowerBound = 0
+    ReDim this.Items(this.LowerBound To DEFAULT_CAPACITY + this.LowerBound)
+    this.Length = 0
     Me.Capacity = DEFAULT_CAPACITY
-    This.ArrayType = BA_UNALLOCATED
+    this.ArrayType = BA_UNALLOCATED
     Set ResetToDefault = Me
 End Function
 
 '@Description("Clears all entries in the current array but retains existing capacity.")
 Public Function Clear() As BetterArray
     Dim OldCapacity As Long
-    OldCapacity = This.Capacity
-    ReDim This.Items(This.LowerBound To OldCapacity + This.LowerBound)
-    This.ArrayType = BA_UNALLOCATED
-    This.Length = 0
+    OldCapacity = this.Capacity
+    ReDim this.Items(this.LowerBound To OldCapacity + this.LowerBound)
+    this.ArrayType = BA_UNALLOCATED
+    this.Length = 0
     Me.Capacity = OldCapacity
     Set Clear = Me
 End Function
@@ -1357,8 +1357,8 @@ Public Function Concat(ParamArray Args() As Variant) As BetterArray
     Dim Stored() As Variant
     Dim StoredType As ArrayTypes
     Dim StoredCapacity As Long
-    StoredType = This.ArrayType
-    StoredCapacity = This.Capacity
+    StoredType = this.ArrayType
+    StoredCapacity = this.Capacity
     If StoredType <> BA_JAGGED And StoredType <> BA_MULTIDIMENSION Then
         For i = LBound(Args) To UBound(Args)
             If IsArray(Args(i)) Then
@@ -1369,15 +1369,15 @@ Public Function Concat(ParamArray Args() As Variant) As BetterArray
             End If
         Next
     End If
-    If This.ArrayType <> BA_UNALLOCATED Then
+    If this.ArrayType <> BA_UNALLOCATED Then
         Stored = InternalItems
     End If
     Result = ConcatDelegate(Stored, Args)
     Me.Items = Result
     If StoredType = BA_MULTIDIMENSION Then
-        This.ArrayType = StoredType
+        this.ArrayType = StoredType
     End If
-    If This.Capacity < StoredCapacity Then
+    If this.Capacity < StoredCapacity Then
         Me.Capacity = StoredCapacity
     End If
     Set Concat = Me
@@ -1390,13 +1390,13 @@ Public Function CopyFromCollection(ByVal SourceCollection As Collection) As Bett
     End If
     Dim i As Long
     Dim NewItems() As Variant
-    This.Length = SourceCollection.Count
-    If This.Length = 0 Then
+    this.Length = SourceCollection.Count
+    If this.Length = 0 Then
         NewItems = GetEmptyArray
     Else
-        ReDim NewItems(This.LowerBound To (This.Length - This.LowerBound - 1))
-        For i = 1 To This.Length
-            NewItems(i + This.LowerBound - 1) = SourceCollection.Item(i)
+        ReDim NewItems(this.LowerBound To (this.Length - this.LowerBound - 1))
+        For i = 1 To this.Length
+            NewItems(i + this.LowerBound - 1) = SourceCollection.Item(i)
         Next
     End If
     Me.Items = NewItems
@@ -1424,7 +1424,7 @@ Public Function Sort(Optional ByVal SortColumn As Long = MISSING_LONG) As Better
        LocalArrayType = ArrayTypes.BA_UNDEFINED Then
         SortedItems = GetEmptyArray
     Else
-        If This.Length > 0 Then
+        If this.Length > 0 Then
             If LocalArrayType <> BA_ONEDIMENSION Then
                 If LocalArrayType = ArrayTypes.BA_MULTIDIMENSION Then
                     LocalItems = MultiToJagged(LocalItems)
@@ -1468,14 +1468,14 @@ Public Function CopyWithin( _
     Dim Direction As Long
     Dim LocalItems() As Variant
     
-    Select Case This.ArrayType
+    Select Case this.ArrayType
     Case ArrayTypes.BA_UNDEFINED
         RaiseError EC_EXPECTED_ARRAY, "CopyWithin"
     Case ArrayTypes.BA_UNALLOCATED
         RaiseError EC_UNALLOCATED_ARRAY, "CopyWithin"
     Case Else
         LocalItems = InternalItems
-        LocalLength = This.Length
+        LocalLength = this.Length
         RelativeTarget = Target
         
         If RelativeTarget < 0 Then
@@ -1539,7 +1539,7 @@ Public Function Filter( _
     Dim Result() As Variant
     Dim LocalItems() As Variant
     Dim LocalType As ArrayTypes
-    LocalType = This.ArrayType
+    LocalType = this.ArrayType
     If LocalType = BA_UNDEFINED Then
         RaiseError EC_EXPECTED_ARRAY, "Filter"
     ElseIf LocalType = BA_UNALLOCATED Then
@@ -1554,7 +1554,7 @@ Public Function Filter( _
                  )
     End If
     Me.Items = Result
-    If LocalType = BA_MULTIDIMENSION Then This.ArrayType = LocalType
+    If LocalType = BA_MULTIDIMENSION Then this.ArrayType = LocalType
     Set Filter = Me
 End Function
 
@@ -1566,7 +1566,7 @@ Public Function FilterType( _
     Dim Result() As Variant
     Dim LocalItems() As Variant
     Dim LocalType As ArrayTypes
-    LocalType = This.ArrayType
+    LocalType = this.ArrayType
     If LocalType = BA_UNDEFINED Then
         RaiseError EC_EXPECTED_ARRAY, "Filter"
     ElseIf LocalType = BA_UNALLOCATED Then
@@ -1582,7 +1582,7 @@ Public Function FilterType( _
                  )
     End If
     Me.Items = Result
-    If LocalType = BA_MULTIDIMENSION Then This.ArrayType = LocalType
+    If LocalType = BA_MULTIDIMENSION Then this.ArrayType = LocalType
     Set FilterType = Me
 End Function
 
@@ -1591,7 +1591,7 @@ Public Function Reverse(Optional ByVal Recurse As Boolean) As BetterArray
     Dim LocalItems() As Variant
     Dim Result() As Variant
     Dim CurrentType As ArrayTypes
-    CurrentType = This.ArrayType
+    CurrentType = this.ArrayType
     Select Case CurrentType
     Case BA_UNDEFINED
         RaiseError EC_UNDEFINED_ARRAY, "Reverse"
@@ -1599,7 +1599,7 @@ Public Function Reverse(Optional ByVal Recurse As Boolean) As BetterArray
         LocalItems = InternalItems
         Result = RecursiveReverse(LocalItems, Recurse)
         Me.Items = Result
-        This.ArrayType = CurrentType
+        this.ArrayType = CurrentType
     End Select
     
     Set Reverse = Me
@@ -1612,13 +1612,13 @@ Public Function Flatten() As BetterArray
         
     ' noop on 1d or unalloc
     ' md & jagged both stored as jagged
-    Select Case This.ArrayType
+    Select Case this.ArrayType
     Case BA_UNDEFINED
         RaiseError EC_UNDEFINED_ARRAY, "Flatten"
     Case BA_MULTIDIMENSION, BA_JAGGED
         LocalItems = InternalItems
         Set Result = New BetterArray
-        Result.LowerBound = This.LowerBound
+        Result.LowerBound = this.LowerBound
         RecursiveFlatten LocalItems, Result
         Me.Items = Result.Items
     End Select
@@ -1631,7 +1631,7 @@ Public Function Shuffle(Optional ByVal Recurse As Boolean) As BetterArray
     Dim LocalItems() As Variant
     Dim Result() As Variant
     Dim CurrentType As ArrayTypes
-    CurrentType = This.ArrayType
+    CurrentType = this.ArrayType
     Select Case CurrentType
     Case BA_UNDEFINED
         RaiseError EC_UNDEFINED_ARRAY, "Shuffle"
@@ -1639,7 +1639,7 @@ Public Function Shuffle(Optional ByVal Recurse As Boolean) As BetterArray
         LocalItems = InternalItems
         Result = RecursiveShuffle(LocalItems, Recurse)
         Me.Items = Result
-        This.ArrayType = CurrentType
+        this.ArrayType = CurrentType
     End Select
     
     Set Shuffle = Me
@@ -1653,7 +1653,7 @@ Public Function Unique(Optional ByVal ColumnIndex As Long = MISSING_LONG) As Bet
     Dim i As Long
     
     LocalItems = InternalItems
-    LocalType = This.ArrayType
+    LocalType = this.ArrayType
     Set Result = New BetterArray
     Result.LowerBound = Me.LowerBound
     If (LocalType = BA_JAGGED Or LocalType = BA_MULTIDIMENSION) And ColumnIndex <> MISSING_LONG Then
@@ -1708,7 +1708,7 @@ Public Function Unique(Optional ByVal ColumnIndex As Long = MISSING_LONG) As Bet
     
 
     Me.Items = Result.Items
-    This.ArrayType = LocalType
+    this.ArrayType = LocalType
     Set Unique = Me
 End Function
 
@@ -1760,7 +1760,7 @@ Public Function FromCSVString( _
         LineEnding = RowDelimiter
     End If
     
-    If This.ArrayType = BA_MULTIDIMENSION Then
+    If this.ArrayType = BA_MULTIDIMENSION Then
         LocalType = BA_MULTIDIMENSION
     Else
         LocalType = BA_JAGGED
@@ -1773,14 +1773,14 @@ Public Function FromCSVString( _
              Quote:=Quote, _
              IgnoreFirstRow:=IgnoreFirstRow, _
              ReturnJagged:=IIF(LocalType = BA_JAGGED, True, False), _
-             Base:=This.LowerBound, _
+             Base:=this.LowerBound, _
              DuckType:=DuckType _
                         )
 
-    This.Length = GetArrayLength(Parsed)
-    This.Capacity = UBound(Parsed)
-    This.ArrayType = LocalType
-    This.Items = Parsed
+    this.Length = GetArrayLength(Parsed)
+    this.Capacity = UBound(Parsed)
+    this.ArrayType = LocalType
+    this.Items = Parsed
 
     Set FromCSVString = Me
 End Function
@@ -2094,7 +2094,7 @@ Private Function ConcatDelegate(ByRef First() As Variant, ParamArray Args() As V
     Dim Current() As Variant
     
     Rest = Args(0)
-    Cursor = This.LowerBound
+    Cursor = this.LowerBound
     If IsArrayAllocated(First) Then
         Cursor = LBound(First)
     ElseIf IsArray(Rest(LBound(Rest))) Then
@@ -2369,7 +2369,7 @@ Private Function ParseCSV( _
     Dim CountRows As Long
     Dim LastRow As Long
     Dim LastColumn As Long
-    Dim StartRow As Long
+    Dim startRow As Long
     Dim InQuote As Boolean
     Dim Buffer As String
     Dim Char As String
@@ -2397,12 +2397,12 @@ Private Function ParseCSV( _
     CountRows = UBound(CSVRows) - LBound(CSVRows) + 1
     
     If IgnoreFirstRow Then
-        StartRow = 1
+        startRow = 1
     Else
-        StartRow = 0
+        startRow = 0
     End If
     
-    LastRow = Base + CountRows - 1 - StartRow
+    LastRow = Base + CountRows - 1 - startRow
     LastColumn = Base + CountColumns - 1
     If ReturnJagged Then
         ReDim JaggedRow(Base To LastColumn)
@@ -2411,7 +2411,7 @@ Private Function ParseCSV( _
         ReDim Results(Base To LastRow, Base To LastColumn)
     End If
     
-    For i = StartRow To LastRow
+    For i = startRow To LastRow
         ColumnIndex = Base
         Buffer = CSVRows(i)
         Cursor = 1
@@ -2430,7 +2430,7 @@ Private Function ParseCSV( _
                     If ReturnJagged Then
                         JaggedRow(ColumnIndex) = Element
                     Else
-                        Results(i - StartRow, ColumnIndex) = Element
+                        Results(i - startRow, ColumnIndex) = Element
                     End If
                     Cursor = j + 2
                     inc ColumnIndex
@@ -2439,7 +2439,7 @@ Private Function ParseCSV( _
             End If
         Next
         If ReturnJagged Then
-            Results(i - StartRow) = JaggedRow
+            Results(i - startRow) = JaggedRow
             ' ReDim jaggedRow(Base To lastColumn)
         End If
     Next
@@ -2745,7 +2745,7 @@ Private Function RecursiveFilter( _
     LocalLowerBound = LBound(SourceArray)
     LocalUpperBound = UBound(SourceArray)
     Set Result = New BetterArray
-    Result.LowerBound = This.LowerBound
+    Result.LowerBound = this.LowerBound
     For i = LocalLowerBound To LocalUpperBound
         If IsArray(SourceArray(i)) And Recurse Then
             If IsArrayAllocated(SourceArray(i)) Then
@@ -2880,10 +2880,10 @@ Private Function ParseDelimitedArrayString( _
     End If
         
     ' traverse nested arrays
-    i = This.LowerBound
+    i = this.LowerBound
     Do
         If CurrentChar = Opener Then
-            If i > This.LowerBound Then
+            If i > this.LowerBound Then
                 ReDim Preserve LocalResult(i)
             Else
                 LocalResult = GetEmptyArray
@@ -2985,82 +2985,82 @@ End Function
 Private Sub PopulateErrorDefinitions()
     Dim Source As String
     Source = TypeName(Me)
-    This.ErrorDefinitions(ErrorCodes.EC_EXPECTED_RANGE_OBJECT) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_EXPECTED_RANGE_OBJECT) = ErrorDefinitionFactory( _
                                                                  Number:=ErrorCodes.EC_EXPECTED_RANGE_OBJECT, _
                                                                  Source:=Source, _
                                                                  Description:="Range Object Expected" _
                                                                                )
-    This.ErrorDefinitions(ErrorCodes.EC_MAX_DIMENSIONS_LIMIT) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_MAX_DIMENSIONS_LIMIT) = ErrorDefinitionFactory( _
                                                                 Number:=ErrorCodes.EC_MAX_DIMENSIONS_LIMIT, _
                                                                 Source:=Source, _
                                                                 Description:="Cannot convert structure of arrays with more than 20 dimensions." _
                                                                               )
-    This.ErrorDefinitions(ErrorCodes.EC_EXPECTED_COLLECTION_OBJECT) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_EXPECTED_COLLECTION_OBJECT) = ErrorDefinitionFactory( _
                                                                       Number:=ErrorCodes.EC_EXPECTED_COLLECTION_OBJECT, _
                                                                       Source:=Source, _
                                                                       Description:="Valid Collection Object Expected" _
                                                                                     )
-    This.ErrorDefinitions(ErrorCodes.EC_EXCEEDS_MAX_SORT_DEPTH) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_EXCEEDS_MAX_SORT_DEPTH) = ErrorDefinitionFactory( _
                                                                   Number:=ErrorCodes.EC_EXCEEDS_MAX_SORT_DEPTH, _
                                                                   Source:=Source, _
                                                                   Description:="Cannot sort on arrays with more than 2 dimensions" _
                                                                                 )
-    This.ErrorDefinitions(ErrorCodes.EC_EXPECTED_JAGGED_ARRAY) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_EXPECTED_JAGGED_ARRAY) = ErrorDefinitionFactory( _
                                                                  Number:=ErrorCodes.EC_EXPECTED_JAGGED_ARRAY, _
                                                                  Source:=Source, _
                                                                  Description:="Expected jagged array." _
                                                                                )
-    This.ErrorDefinitions(ErrorCodes.EC_EXPECTED_MULTIDIMENSION_ARRAY) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_EXPECTED_MULTIDIMENSION_ARRAY) = ErrorDefinitionFactory( _
                                                                          Number:=ErrorCodes.EC_EXPECTED_MULTIDIMENSION_ARRAY, _
                                                                          Source:=Source, _
                                                                          Description:="Expected multidimension array." _
                                                                                        )
-    This.ErrorDefinitions(ErrorCodes.EC_EXPECTED_ARRAY) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_EXPECTED_ARRAY) = ErrorDefinitionFactory( _
                                                           Number:=ErrorCodes.EC_EXPECTED_ARRAY, _
                                                           Source:=Source, _
                                                           Description:="Expected array." _
                                                                         )
-    This.ErrorDefinitions(ErrorCodes.EC_NULL_STRING) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_NULL_STRING) = ErrorDefinitionFactory( _
                                                        Number:=ErrorCodes.EC_NULL_STRING, _
                                                        Source:=Source, _
                                                        Description:="Cannot parse from a null string. Expected string with length greater than 0." _
                                                                      )
-    This.ErrorDefinitions(ErrorCodes.EC_UNALLOCATED_ARRAY) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_UNALLOCATED_ARRAY) = ErrorDefinitionFactory( _
                                                              Number:=ErrorCodes.EC_UNALLOCATED_ARRAY, _
                                                              Source:=Source, _
                                                              Description:="Cannot operate on unallocated array." _
                                                                            )
-    This.ErrorDefinitions(ErrorCodes.EC_UNDEFINED_ARRAY) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_UNDEFINED_ARRAY) = ErrorDefinitionFactory( _
                                                            Number:=ErrorCodes.EC_UNDEFINED_ARRAY, _
                                                            Source:=Source, _
                                                            Description:="Array is undefined." _
                                                                          )
-    This.ErrorDefinitions(ErrorCodes.EC_INVALID_MULTIDIMENSIONAL_ARRAY_OPERATION) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_INVALID_MULTIDIMENSIONAL_ARRAY_OPERATION) = ErrorDefinitionFactory( _
                                                                                     Number:=ErrorCodes.EC_INVALID_MULTIDIMENSIONAL_ARRAY_OPERATION, _
                                                                                     Source:=Source, _
                                                                                     Description:="Unable to perform the requested operation on a multidimensional array." _
                                                                                                   )
-    This.ErrorDefinitions(ErrorCodes.EC_EXPECTED_VARIANT_ARRAY) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_EXPECTED_VARIANT_ARRAY) = ErrorDefinitionFactory( _
                                                                   Number:=ErrorCodes.EC_EXPECTED_VARIANT_ARRAY, _
                                                                   Source:=Source, _
                                                                   Description:="Unable to perform the requested operation on a typed array." _
                                                                                 )
-    This.ErrorDefinitions(ErrorCodes.EC_EXCEEDS_MAX_ARRAY_LENGTH) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_EXCEEDS_MAX_ARRAY_LENGTH) = ErrorDefinitionFactory( _
                                                                     Number:=ErrorCodes.EC_EXCEEDS_MAX_ARRAY_LENGTH, _
                                                                     Source:=Source, _
                                                                     Description:="The requested operation would result in an array which exceeds the maximum possible length." _
                                                                                   )
-    This.ErrorDefinitions(ErrorCodes.EC_STRING_TYPE_EXPECTED) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_STRING_TYPE_EXPECTED) = ErrorDefinitionFactory( _
                                                                 Number:=ErrorCodes.EC_STRING_TYPE_EXPECTED, _
                                                                 Source:=Source, _
                                                                 Description:="Expected a String or String-coercible type." _
                                                                               )
-    This.ErrorDefinitions(ErrorCodes.EC_CANNOT_CONVERT_TO_REQUESTED_STRUCTURE) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_CANNOT_CONVERT_TO_REQUESTED_STRUCTURE) = ErrorDefinitionFactory( _
                                                                                  Number:=ErrorCodes.EC_CANNOT_CONVERT_TO_REQUESTED_STRUCTURE, _
                                                                                  Source:=Source, _
                                                                                  Description:="The stored array cannot be converted to the requested structure." _
                                                                                                )
-    This.ErrorDefinitions(ErrorCodes.EC_CANNOT_SORT_OBJECTS) = ErrorDefinitionFactory( _
+    this.ErrorDefinitions(ErrorCodes.EC_CANNOT_SORT_OBJECTS) = ErrorDefinitionFactory( _
                                                                Number:=ErrorCodes.EC_CANNOT_SORT_OBJECTS, _
                                                                Source:=Source, _
                                                                Description:="The array contains Objects which cannot be sorted." _
@@ -3090,7 +3090,7 @@ Private Sub RaiseError( _
     Dim CurrentError As ErrorDefinition
     Dim LocalArgName As String
     If ArgName <> vbNullString Then LocalArgName = "Argument " & ArgName & ": "
-    CurrentError = This.ErrorDefinitions(ErrorCode)
+    CurrentError = this.ErrorDefinitions(ErrorCode)
     Err.Raise CurrentError.Number, _
               CurrentError.Source & "." & Caller, _
               LocalArgName & CurrentError.Description
@@ -3216,7 +3216,7 @@ End Function
 '@Description("Returns an empty 1d array with 1 slot.")
 Private Function GetEmptyArray() As Variant()
     Dim Result() As Variant
-    ReDim Result(This.LowerBound To This.LowerBound)
+    ReDim Result(this.LowerBound To this.LowerBound)
     GetEmptyArray = Result
 End Function
 
@@ -3226,7 +3226,7 @@ Private Sub ApplySortMethod( _
         ByVal LocalArrayType As ArrayTypes, _
         Optional ByVal col As Long _
         )
-    Select Case This.SortMethod
+    Select Case this.SortMethod
     Case SortMethods.SM_TIMSORT
         TimSort SourceArray, LocalArrayType, col
     Case SortMethods.SM_QUICKSORT_RECURSIVE
@@ -3762,7 +3762,7 @@ Private Function Rebase(Optional ByRef SourceArray As Variant, Optional ByVal Cu
 
     If IsMissing(SourceArray) Or Not IsArray(SourceArray) Then
         LocalItems = InternalItems
-        LocalType = This.ArrayType
+        LocalType = this.ArrayType
     Else
         LocalItems = SourceArray
         If CurrentArrayType = 0 Then
@@ -3794,8 +3794,8 @@ Private Function RecursiveRebase( _
     
     LocalLowerBound = LBound(SourceArray)
     LocalUpperBound = UBound(SourceArray)
-    Offset = This.LowerBound - LocalLowerBound
-    ReDim NewItems(This.LowerBound To LocalUpperBound + Offset)
+    Offset = this.LowerBound - LocalLowerBound
+    ReDim NewItems(this.LowerBound To LocalUpperBound + Offset)
     For i = LocalLowerBound To LocalUpperBound
         If IsArray(SourceArray(i)) And Recurse And Offset <> 0 Then
             Dim Nested() As Variant
@@ -3811,9 +3811,9 @@ End Function
 
 '@Description("Increases capacity of internal array if required.")
 Private Sub EnsureCapacity(ByVal MinimumCapacity As Long)
-    If This.Capacity < MinimumCapacity Then
+    If this.Capacity < MinimumCapacity Then
         Dim NewCapacity As Long
-        NewCapacity = IIF(This.Capacity = 0, DEFAULT_CAPACITY, This.Capacity * 2)
+        NewCapacity = IIF(this.Capacity = 0, DEFAULT_CAPACITY, this.Capacity * 2)
         If NewCapacity > MAX_ARRAY_LENGTH Then
             NewCapacity = MAX_ARRAY_LENGTH
         End If
@@ -3844,7 +3844,7 @@ Private Function ConvertArrayForStorage( _
     Case ArrayTypes.BA_ONEDIMENSION, ArrayTypes.BA_JAGGED
         If TypeName(Values) <> "Variant()" _
                             Or (CurrentArrayType = BA_JAGGED And ConvertJaggedNestedArrays) _
-                            Or LBound(Values) <> This.LowerBound Then
+                            Or LBound(Values) <> this.LowerBound Then
             Result = TypedJaggedToVariantJagged( _
                      Values, _
                      ConvertJaggedNestedArrays, _
@@ -3870,7 +3870,7 @@ Private Function TypedJaggedToVariantJagged( _
     
     Bounds(0) = LBound(SourceArray)
     Bounds(1) = UBound(SourceArray)
-    Offset = This.LowerBound - Bounds(0)
+    Offset = this.LowerBound - Bounds(0)
     ReDim Result(Bounds(0) + Offset To Bounds(1) + Offset)
     For i = Bounds(0) To Bounds(1)
         If IsArray(SourceArray(i)) Then
@@ -3908,8 +3908,8 @@ Private Function TypedMultiToVariantMulti( _
         FirstDimBounds(1) = UBound(SourceArray, 1)
         SecondDimBounds(0) = LBound(SourceArray, 2)
         SecondDimBounds(1) = UBound(SourceArray, 2)
-        FirstDimOffset = This.LowerBound - FirstDimBounds(0)
-        SecondDimOffset = This.LowerBound - SecondDimBounds(0)
+        FirstDimOffset = this.LowerBound - FirstDimBounds(0)
+        SecondDimOffset = this.LowerBound - SecondDimBounds(0)
         ReDim Result( _
               FirstDimBounds(0) + FirstDimOffset To FirstDimBounds(1) + FirstDimOffset, _
               SecondDimBounds(0) + SecondDimOffset To SecondDimBounds(1) + SecondDimOffset _
@@ -4110,8 +4110,8 @@ Private Function MultiToJagged( _
         FirstDimBounds(1) = UBound(SourceArray, 1)
         SecondDimBounds(0) = LBound(SourceArray, 2)
         SecondDimBounds(1) = UBound(SourceArray, 2)
-        FirstDimOffset = This.LowerBound - FirstDimBounds(0)
-        SecondDimOffset = This.LowerBound - SecondDimBounds(0)
+        FirstDimOffset = this.LowerBound - FirstDimBounds(0)
+        SecondDimOffset = this.LowerBound - SecondDimBounds(0)
         ReDim Result(FirstDimBounds(0) + FirstDimOffset To FirstDimBounds(1) + FirstDimOffset)
         For i = FirstDimBounds(0) To FirstDimBounds(1)
             ReDim Nested(SecondDimBounds(0) + SecondDimOffset To SecondDimBounds(1) + SecondDimOffset)
@@ -4158,7 +4158,7 @@ Private Function RecursiveMultiToJagged( _
         inc LocalCurrentDepth
         LocalLowerBound = LBound(SourceArray, LocalCurrentDepth)
         LocalUpperBound = UBound(SourceArray, LocalCurrentDepth)
-        BoundOffset = This.LowerBound - LocalLowerBound
+        BoundOffset = this.LowerBound - LocalLowerBound
         ReDim Result(LocalLowerBound + BoundOffset To LocalUpperBound + BoundOffset)
         For i = LocalLowerBound To LocalUpperBound
             LocalCrumbs(LocalCurrentDepth - 1) = i
