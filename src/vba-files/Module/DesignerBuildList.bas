@@ -567,8 +567,8 @@ Private Sub CreateSheetAdmEntry(wkb As Workbook, sSheetName As String, iSheetSta
                 'the actual first value due to changes (taking in account the geo)
 
                 BuildSubSectionVMerge Wksh:=wkb.Worksheets(sSheetName), _
-        iColumn:=C_eStartColumnAdmData + 1, iLineFrom:=iPrevLineSubSec, _
-        iLineTo:=iCounterSheetAdmLine
+                iColumn:=C_eStartColumnAdmData + 1, iLineFrom:=iPrevLineSubSec, _
+                iLineTo:=iCounterSheetAdmLine
 
                 'update previous columns
                 sPrevSubSec = sActualSubSec
@@ -949,18 +949,21 @@ Private Sub CreateSheetLLDataEntry(wkb As Workbook, sSheetName As String, iSheet
 
             Case C_sDictControlChoiceAuto
 
-                'Add the list_auto column in the worksheet list_auto_
-                With wkb.Worksheets(C_sSheetChoiceAuto)
-                    iChoiceCol = .Cells(1, .Columns.Count).End(xlToLeft).Column + 1
-                    sChoiceAutoName = C_sDictControlChoiceAuto & "_" & sActualChoice
+                sChoiceAutoName = C_sDictControlChoiceAuto & "_" & sActualChoice
 
-                    .Cells(C_eStartlinesListAuto, iChoiceCol + 1).value = sChoiceAutoName
+                If Not ListObjectExists(wkb.Worksheets(C_sSheetChoiceAuto), "o" & sChoiceAutoName) Then
+                    'Add the list_auto column in the worksheet list_auto_
+                    With wkb.Worksheets(C_sSheetChoiceAuto)
+                        iChoiceCol = .Cells(1, .Columns.Count).End(xlToLeft).Column + 1
 
-                    Set LoRng = .Range(.Cells(C_eStartlinesListAuto, iChoiceCol + 1), .Cells(C_eStartlinesListAuto + 1, iChoiceCol + 1))
-                    .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = "o" & sChoiceAutoName
-                    ChoiceAutoVarData.Push sActualChoice
-                    wkb.Names.Add Name:=sChoiceAutoName, RefersToR1C1:="=o" & sChoiceAutoName & "[" & sChoiceAutoName & "]"
-                End With
+                        .Cells(C_eStartlinesListAuto, iChoiceCol + 1).value = sChoiceAutoName
+
+                        Set LoRng = .Range(.Cells(C_eStartlinesListAuto, iChoiceCol + 1), .Cells(C_eStartlinesListAuto + 1, iChoiceCol + 1))
+                        .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = "o" & sChoiceAutoName
+                        ChoiceAutoVarData.Push sActualChoice
+                        wkb.Names.Add Name:=sChoiceAutoName, RefersToR1C1:="=o" & sChoiceAutoName & "[" & sChoiceAutoName & "]"
+                    End With
+                End If
 
                 'Set the validation for list auto
                 Call Helpers.SetValidation(.Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol), "=" & sChoiceAutoName, Helpers.GetValidationType(sActualValidationAlert), sActualValidationMessage)
@@ -1041,7 +1044,6 @@ Private Sub CreateSheetLLDataEntry(wkb As Workbook, sSheetName As String, iSheet
         Rng.RowHeight = C_iLLVarLabelHeight
 
         'Set Column Width of First and Second Column
-        .Cells.EntireColumn.AutoFit
         .Columns(1).ColumnWidth = C_iLLFirstColumnsWidth
         .Columns(2).ColumnWidth = C_iLLFirstColumnsWidth
 
