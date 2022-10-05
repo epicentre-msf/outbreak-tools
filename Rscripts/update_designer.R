@@ -76,10 +76,12 @@ prepare_demo  <- function(fake_dataset = "",
 
     # add the geobase files
     file.copy(from = glue::glue("./input/outbreak-tools-setup/{fake_geobase}"),
-              to = glue::glue("{demo_folder}/{fake_geo}.xlsb")
+              to = glue::glue("{demo_folder}/{fake_geo}.xlsb"))
 
     # add the fake dataset file
+
     fdata  <- basename(fake_dataset)
+
     file.copy(from = fake_dataset,
               to = glue::glue("{demo_folder}/{fdata}")
     )
