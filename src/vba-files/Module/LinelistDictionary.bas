@@ -23,13 +23,13 @@ Option Private Module
 
 Function GetDictionaryHeaders() As BetterArray
     Dim DictHeaders As BetterArray
-    Dim Wkb As Workbook
+    Dim wkb As Workbook
 
     Set DictHeaders = New BetterArray
     DictHeaders.LowerBound = 1
 
-    Set Wkb = ThisWorkbook
-    DictHeaders.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=False
+    Set wkb = ThisWorkbook
+    DictHeaders.FromExcelRange wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=False
     'Set the Array
 
     Set GetDictionaryHeaders = DictHeaders.Clone()
