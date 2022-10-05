@@ -25,7 +25,7 @@ Sub CreateNewSection(Wksh As Worksheet, iRow As Long, iCol As Long, sSection As 
         'New range, format the range
         FormatARange .Cells(iRow, iCol), sValue:=sSection, FontSize:=C_iAnalysisFontSize + 2, _
         sFontColor:=sColor, Horiz:=xlHAlignLeft, Verti:=xlVAlignBottom
-        
+
         Range(.Cells(iRow, iCol), .Cells(iRow, iCol + 4)).Merge
         'Draw a border arround the section
         DrawLines Rng:=Range(.Cells(iRow, iCol), .Cells(iRow, iCol + 6)), iWeight:=xlMedium, sColor:=sColor, At:="Bottom"
@@ -757,7 +757,7 @@ Sub AddTimeSeriesFormula(wkb As Workbook, DictHeaders As BetterArray, _
                                          sFirstTimeCond:=sFirstTimeCond, sSecondTimeCond:=sSecondTimeCond, _
                                          sCondVar:=sCondVar, sCondVal:=sCondVal, _
                                          isFiltered:=True)
-                                         
+
 
             If sFormula <> vbNullString Then
                 .Cells(iRow + 2, i).FormulaArray = sFormula
@@ -787,12 +787,12 @@ Sub AddTimeSeriesFormula(wkb As Workbook, DictHeaders As BetterArray, _
             sFormula = BivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sTimeVar, _
                                         sConditionRow:=Chr(34) & Chr(34), _
                                         sVarColumn:=sCondVar, sConditionColumn:=sCondVal)
-                                        
+
             If sFormula <> vbNullString Then .Cells(iRow + 3 + C_iNbTime, i).FormulaArray = sFormula
 
             'Total Row
             sFormula = UnivariateFormula(wkb, DictHeaders, sForm, sVar:=sCondVar, sCondition:=sCondVal, isFiltered:=True)
-            
+
             If sFormula <> vbNullString Then .Cells(iRow + 4 + C_iNbTime, i).FormulaArray = sFormula
 
             i = i + istep
@@ -807,23 +807,23 @@ Sub AddTimeSeriesFormula(wkb As Workbook, DictHeaders As BetterArray, _
         'Total column
         sFormula = TimeSeriesFormula(wkb, DictHeaders, sForm, sTimeVar, sFirstTimeCond, sSecondTimeCond, _
                                      OnTotal:=True, includeMissing:=includeMissing, sCondVar:=sCondVar)
-        
+
 
         If sFormula <> vbNullString Then .Cells(iRow + 2, iInnerEndCol).FormulaArray = sFormula
         Set Rng = .Range(.Cells(iRow + 2, iInnerEndCol), .Cells(iRow + 4 + C_iNbTime, iInnerEndCol))
         .Cells(iRow + 2, iInnerEndCol).AutoFill Destination:=Rng, Type:=xlFillValues
-        
+
          'Missing Row and Total column
-         
+
          sFormula = UnivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sTimeVar, _
                                         sCondition:=Chr(34) & Chr(34))
 
          If sFormula <> vbNullString Then .Cells(iRow + 3 + C_iNbTime, iInnerEndCol).FormulaArray = sFormula
-         
+
          'Two total columns
          sFormula = UnivariateFormula(wkb:=wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sCondVar, isFiltered:=True, OnTotal:=True)
          If sFormula <> vbNullString Then .Cells(iRow + 4 + C_iNbTime, iInnerEndCol).FormulaArray = sFormula
-         
+
     End With
 End Sub
 
@@ -1049,7 +1049,7 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         sValue:=TranslateLLMsg("MSG_TimeAggregation")
         FormatARange .Cells(iRow, iCol + 1), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
         sValue:=TranslateLLMsg("MSG_Day")
-        
+
         'Aggregate address
         sAgg = .Cells(iRow, iCol + 1).Address
 
@@ -1072,19 +1072,19 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         FormatARange .Cells(iRow, iCol + 10), isBold:=False, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
         NumFormat:="dd/mm/yyyy", FontSize:=C_iAnalysisFontSize - 2
         .Cells(iRow, iCol + 10).Locked = True
-        
+
         'Maximum address to be used elsewhere
         sMax = .Cells(iRow, iCol + 10).Address
 
         'Start Date
         iRow = iRow + 2
-        
+
         .Cells(iRow, iCol).value = TranslateLLMsg("MSG_StartDate")
         FormatARange .Cells(iRow, iCol), isBold:=False, sFontColor:=sFontColor, Horiz:=xlHAlignLeft
         FormatARange .Cells(iRow, iCol + 1), isBold:=False, sFontColor:=sSelectionFontColor, _
                     sInteriorColor:=sSelectionInteriorColor, _
                     NumFormat:="dd/mm/yyyy"
-               
+
         .Cells(iRow, iCol + 1).Locked = True
         .Cells(iRow, iCol + 1).Formula = "=" & "MIN(MAX(" & .Cells(iRow - 2, iCol + 4).Address & "," & _
              .Cells(iRow - 2, iCol + 7).Address & ")," & sMax & ")"
@@ -1098,7 +1098,7 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
 
         .Cells(iRow, iCol + 4).Formula = "= FormatDateRange(" & .Cells(iRow, iCol + 1).Address & "," & .Cells(iRow - 2, iCol + 10).Address & ")"
         .Cells(iRow, iCol + 4).Locked = True
-        
+
 
         'The table for the time values
         iRow = iRow + 5
@@ -1128,7 +1128,7 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         .Cells(iRow - 1, iCol - 2).value = TranslateLLMsg("MSG_From")
         .Cells(iRow - 1, iCol - 1).value = TranslateLLMsg("MSG_To")
         Set Rng = .Range(.Cells(iRow - 1, iCol - 2), .Cells(iRow + C_iNbTime, iCol - 1))
-        
+
         'Put the range in white
         FormatARange Rng, sFontColor:=vbWhite, NumFormat:="dd-mm-yyyy", FontSize:=10
         Rng.Locked = True
