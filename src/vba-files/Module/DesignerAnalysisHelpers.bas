@@ -173,7 +173,7 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
             AddTotal = False
         End If
 
-        'Add Missing for column ---------------------------------------------------------------------------------------------------------------------------
+        'Add Missing for column --------------------------------------------------------------------------------------------------------------------------------
 
         If sMiss = C_sAnaCol Or sMiss = C_sAnaAll Or (sMiss = C_sYes And isTimeSeries) Then
 
@@ -1038,49 +1038,52 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
     With Wksh
 
         'Start Date
-        FormatARange .Cells(iRow, iCol + 3), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
-        sValue:=TranslateLLMsg("MSG_EnterStartDate")
-        FormatARange .Cells(iRow, iCol + 4), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
+        iRow = iStartRow + 2
+
+        FormatARange .Cells(iRow, iCol + 2), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignCenter, _
+        sValue:=TranslateLLMsg("MSG_StartDate")
+        FormatARange .Cells(iRow + 1, iCol + 2), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
         NumFormat:="dd/mm/yyyy"
+        'Information on start date
+        FormatARange .Cells(iRow + 2, iCol + 2),  sFontColor:=sSelectionFontColor
 
         'Time Aggregation
-        iRow = iStartRow + 2
-        FormatARange .Cells(iRow, iCol), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
-        sValue:=TranslateLLMsg("MSG_TimeAggregation")
-        FormatARange .Cells(iRow, iCol + 1), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
-        sValue:=TranslateLLMsg("MSG_Day")
 
+        FormatARange .Cells(iRow, iCol + 4), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, sValue:=TranslateLLMsg("MSG_TimeUnit")
+        FormatARange .Cells(iRow + 1, iCol + 4), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor,  sValue:=TranslateLLMsg("MSG_Day")
         'Aggregate address
-        sAgg = .Cells(iRow, iCol + 1).Address
-
+        sAgg = .Cells(iRow + 1, iCol + 4).Address
         'Add validation for time aggregation
-        SetValidation .Cells(iRow, iCol + 1), "=" & C_sTimeAgg, 1, TranslateLLMsg("MSG_UnableToAgg")
+        SetValidation .Cells(iRow + 1, iCol + 4), "=" & C_sTimeAgg, 1, TranslateLLMsg("MSG_UnableToAgg")
+
+        'End Date
+        FormatARange .Cells(iRow, iCol + 6), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignCenter, _
+        sValue:=TranslateLLMsg("MSG_EndDate")
+        FormatARange .Cells(iRow + 1, iCol + 6), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
+        NumFormat:="dd/mm/yyyy"
 
 
-
-        'Minimum date of the data
-        FormatARange .Cells(iRow, iCol + 6), isBold:=False, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
+        'Minimum date of the analysis
+        FormatARange .Cells(iRow, iCol + 8), isBold:=False, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
         sValue:=TranslateLLMsg("MSG_MinData"), FontSize:=C_iAnalysisFontSize - 2
-        FormatARange .Cells(iRow, iCol + 7), isBold:=False, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
+        FormatARange .Cells(iRow + 1, iCol + 8), isBold:=False, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
         NumFormat:="dd/mm/yyyy", FontSize:=C_iAnalysisFontSize - 2
-        .Cells(iRow, iCol + 7).Locked = True
+        .Cells(iRow, iCol + 8).Locked = True
 
 
         'Maximum date of the data
-        FormatARange .Cells(iRow, iCol + 9), isBold:=False, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
+        FormatARange .Cells(iRow, iCol + 10), isBold:=False, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
         sValue:=TranslateLLMsg("MSG_MaxData"), FontSize:=C_iAnalysisFontSize - 2
-        FormatARange .Cells(iRow, iCol + 10), isBold:=False, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
+        FormatARange .Cells(iRow + 1, iCol + 10), isBold:=False, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
         NumFormat:="dd/mm/yyyy", FontSize:=C_iAnalysisFontSize - 2
-        .Cells(iRow, iCol + 10).Locked = True
+        .Cells(iRow + 1, iCol + 10).Locked = True
 
         'Maximum address to be used elsewhere
-        sMax = .Cells(iRow, iCol + 10).Address
+        sMax = .Cells(iRow + 1, iCol + 10).Address
 
         'Start Date
-        iRow = iRow + 2
+        iRow = iRow + 4
 
-        .Cells(iRow, iCol).value = TranslateLLMsg("MSG_StartDate")
-        FormatARange .Cells(iRow, iCol), isBold:=False, sFontColor:=sFontColor, Horiz:=xlHAlignLeft
         FormatARange .Cells(iRow, iCol + 1), isBold:=False, sFontColor:=sSelectionFontColor, _
                     sInteriorColor:=sSelectionInteriorColor, _
                     NumFormat:="dd/mm/yyyy"
@@ -1088,16 +1091,6 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         .Cells(iRow, iCol + 1).Locked = True
         .Cells(iRow, iCol + 1).Formula = "=" & "MIN(MAX(" & .Cells(iRow - 2, iCol + 4).Address & "," & _
              .Cells(iRow - 2, iCol + 7).Address & ")," & sMax & ")"
-
-        'Range of analysis
-
-         FormatARange .Cells(iRow, iCol + 3), isBold:=False, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, _
-        sValue:=TranslateLLMsg("MSG_RangeAna"), FontSize:=C_iAnalysisFontSize - 2
-        FormatARange .Cells(iRow, iCol + 4), isBold:=False, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
-        FontSize:=C_iAnalysisFontSize - 2
-
-        .Cells(iRow, iCol + 4).Formula = "= FormatDateRange(" & .Cells(iRow, iCol + 1).Address & "," & .Cells(iRow - 2, iCol + 10).Address & ")"
-        .Cells(iRow, iCol + 4).Locked = True
 
 
         'The table for the time values
