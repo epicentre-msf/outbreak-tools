@@ -229,6 +229,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
     Dim sSheetType As String                     'Sheet type (different procedures will apply)
     Dim iLastRowImp As Long                      'LastRow (when needed for import sheet)
     Dim iLastColImp As Long                      'Last Column for Import data of Type LL
+    Dim varControl As String                     'Import variable control
     Dim WkbLL As Workbook
     Dim i As Long                                'Counter, for All variables
     Dim k As Long                                'Counter, unfound variables
@@ -298,8 +299,9 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                 If VarNamesData.Includes(sVal) Then
                     'The variable is in the sheet, just paste the values to last row
                     iColIndex = ColumnIndexData.Items(VarNamesData.IndexOf(sVal))
+                    varControl = .Cells(C_eStartLinesLLMainSec - 1, iColIndex).value
 
-                    If .Cells(C_eStartLinesLLMainSec - 1, iColIndex).value <> C_sDictControlForm Then
+                    If varControl <> C_sDictControlForm And varControl <> C_sDictControlCaseWhen Then
                         'Don't Import columns of Type formulas
                         With shImp
                             iLastRowImp = .Cells(.Rows.Count, i).End(xlUp).Row
