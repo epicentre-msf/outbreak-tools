@@ -95,7 +95,7 @@ Public Sub ImportGeobase()
     Dim AdmHeader   As BetterArray               'Table for the headers of the listobjects
     Dim AdmNames    As BetterArray               'Array of the sheetnames
     Dim i           As Integer                   'iterator
-    Dim Wkb         As Workbook
+    Dim wkb         As Workbook
     'Sheet names
     Set AdmNames = New BetterArray
     Set AdmData = New BetterArray
@@ -115,7 +115,7 @@ Public Sub ImportGeobase()
 
     SheetGeo.Range(C_sRngGeoName).value = Dir(sFilePath)
 
-    Set Wkb = Workbooks.Open(sFilePath)
+    Set wkb = Workbooks.Open(sFilePath)
     'Write the filename of the geobase somewhere for the export
     'Cleaning the previous Data in case the ranges are not Empty
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_NetoPrec")
@@ -126,7 +126,7 @@ Public Sub ImportGeobase()
         End If
     Next
     'Reloading the data from the Geobase
-    For Each oSheet In Wkb.Worksheets
+    For Each oSheet In wkb.Worksheets
         SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_EnCours") & oSheet.Name
         AdmData.Clear
         AdmHeader.Clear
@@ -146,7 +146,7 @@ Public Sub ImportGeobase()
         End If
     Next
 
-    Wkb.Close SaveChanges:=False
+    wkb.Close SaveChanges:=False
     SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Fini")
     SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White")
 

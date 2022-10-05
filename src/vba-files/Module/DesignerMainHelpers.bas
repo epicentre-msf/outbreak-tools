@@ -317,7 +317,7 @@ End Sub
 Sub Preprocessing(DictHeaders As BetterArray)
 
     Dim Rng As Range
-    Dim DictWksh As Worksheet
+    Dim dictWksh As Worksheet
 
     Dim iCol As Integer
     Dim i As Long
@@ -333,13 +333,13 @@ Sub Preprocessing(DictHeaders As BetterArray)
     Dim MainLabData As BetterArray
 
 
-    Set DictWksh = ThisWorkbook.Worksheets(C_sParamSheetDict)
+    Set dictWksh = ThisWorkbook.Worksheets(C_sParamSheetDict)
     Set MainLabData = New BetterArray
 
     'Work on the dictionary =============================================================
 
 
-    With DictWksh
+    With dictWksh
 
         iCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
         iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
