@@ -22,14 +22,14 @@ Sub testform()
     
     Set dictObject = LLdictionary.Create(Wksh, 1, 1)
     
-    formcond.Push "> 0", "< 1"
-    formvar.Push "varb1", "varb2"
+    formcond.Push "> 0", "< 1", ">0", "<1"
+    formvar.Push "varb1", "varb2", "varb3", "varb4"
     
     Set form = FormulaCondition.Create(formcond, formvar)
      
     Debug.Print form.Variable.Length
-    Debug.Print form.Valid(dictObject, "table3")
-    Debug.Print form.ConditionString("table2", "varb3")
+    Debug.Print form.Valid(dictObject, "table2")
+    Debug.Print form.ConditionString("table2", "varb2")
     Debug.Print form.Valid(dictObject, "table3")
     
 End Sub

@@ -26,7 +26,7 @@ End Type
 Private this As TFormulaCondition
 
 'Instanciation
-Public Function Create(ByVal formcond As BetterArray, ByVal formvar As BetterArray) As IFormulaCondition
+Public Function Create(ByVal formvar As BetterArray, ByVal formcond As BetterArray) As IFormulaCondition
     With New FormulaCondition
         Set .Condition = formcond
         Set .Variable = formvar
@@ -44,7 +44,7 @@ Public Property Get Condition() As BetterArray
 End Property
 
 Public Property Set Condition(ByVal formcond As BetterArray)
-    Set this.Condition = formcond 
+    Set this.Condition = formcond
 End Property
 
 'Variables
