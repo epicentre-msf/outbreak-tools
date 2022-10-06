@@ -249,7 +249,7 @@ Sub EventValueChangeLinelist(oRange As Range)
     Dim sNote As String
     Dim sListAutoType As String
     Dim iNumCol As Integer
-    Dim Rng As Range
+    Dim rng As Range
 
     On Error GoTo errHand
     iNumCol = oRange.Column
@@ -351,12 +351,12 @@ Sub EventValueChangeLinelist(oRange As Range)
     If oRange.Name.Name = SheetListObjectName(ActiveSheet.Name) & "_" & C_sGotoSection Then
         sLabel = Replace(oRange.value, TranslateLLMsg("MSG_SelectSection") & ": ", "")
 
-        Set Rng = ActiveSheet.Rows(C_eStartLinesLLMainSec).Find(What:=sLabel, _
+        Set rng = ActiveSheet.Rows(C_eStartLinesLLMainSec).Find(What:=sLabel, _
                                                                 LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByColumns, _
                                                                 SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False)
 
-        If Not Rng Is Nothing Then
-            Rng.Activate
+        If Not rng Is Nothing Then
+            rng.Activate
         End If
 
     End If
@@ -421,7 +421,7 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
     Dim i As Long
     Dim arrTable As BetterArray
 
-    Dim Rng As Range
+    Dim rng As Range
 
     Set arrTable = New BetterArray
     i = 1
@@ -444,10 +444,10 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
                     iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
                     choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
                     'Sort in descending order
-                    Set Rng = choiceLo.ListColumns(1).Range
+                    Set rng = choiceLo.ListColumns(1).Range
                     With choiceLo.Sort
                         .SortFields.Clear
-                        .SortFields.Add Key:=Rng, SortOn:=xlSortOnValues, Order:=xlDescending
+                        .SortFields.Add Key:=rng, SortOn:=xlSortOnValues, Order:=xlDescending
                         .Header = xlYes
                         .Apply
                     End With
@@ -538,7 +538,8 @@ Public Sub UpdateFilterTables()
                        rowCounter = rowCounter - 1
                     Loop
 
-                    delRng.Delete
+                    'Delete the ragne if necessary
+                    If Not delRng Is Nothing Then delRng.Delete
                     'Reprotect back the worksheet
                     ProtectSheet .Name
                 End If
@@ -562,7 +563,7 @@ ErrUpdate:
     EndWork xlsapp:=Application
 End Sub
 
-'Clear All the filters on current sheet =====================================================================
+'Clear All the filters on current sheet =============================================================================
 
 Sub ClearAllFilters()
     Dim Wksh As Worksheet
@@ -592,7 +593,7 @@ End Sub
 'Find the selected column on "GOTO" Area and go to that column
 Sub EventValueChangeAnalysis(Target As Range)
 
-    Dim Rng As Range
+    Dim rng As Range
     Dim RngLook As Range
     Dim sLabel As String
 
@@ -603,17 +604,17 @@ Sub EventValueChangeAnalysis(Target As Range)
 
         Case sParamSheetAnalysis
 
-            Set Rng = ThisWorkbook.Worksheets(sParamSheetAnalysis).Range(C_sTabLLUBA & "_" & C_sGotoSection)
+            Set rng = ThisWorkbook.Worksheets(sParamSheetAnalysis).Range(C_sTabLLUBA & "_" & C_sGotoSection)
 
         Case sParamSheetTemporalAnalysis
 
-            Set Rng = ThisWorkbook.Worksheets(sParamSheetTemporalAnalysis).Range(C_sTabLLTA & "_" & C_sGotoSection)
+            Set rng = ThisWorkbook.Worksheets(sParamSheetTemporalAnalysis).Range(C_sTabLLTA & "_" & C_sGotoSection)
 
         Case sParamSheetSpatialAnalysis
     End Select
 
 
-    If Not Intersect(Target, Rng) Is Nothing Then
+    If Not Intersect(Target, rng) Is Nothing Then
         sLabel = Replace(Target.value, TranslateLLMsg("MSG_SelectSection") & ": ", "")
 
         Set RngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=True, SearchFormat:=False)
