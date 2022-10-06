@@ -10,7 +10,7 @@ Public Sub BuildAnalysis(wkb As Workbook, GSData As BetterArray, UAData As Bette
     Dim iGoToColAna As Long
     Dim iGoToColTA  As Long
     Dim iGoToColSA  As Long
-    Dim Rng As Range
+    Dim rng As Range
 
     ' UNIVARIATE AND BIVARIATE ANALYSIS ============================================================================================
 
@@ -70,8 +70,8 @@ Public Sub BuildAnalysis(wkb As Workbook, GSData As BetterArray, UAData As Bette
         .Cells(C_eStartlinesListAuto + 5, iGoToColTA).value = TranslateLLMsg("MSG_Year")
 
         'Define the list object for validation
-        Set Rng = .Range(.Cells(C_eStartlinesListAuto, iGoToColTA), .Cells(C_eStartlinesListAuto + 5, iGoToColTA))
-        .ListObjects.Add(xlSrcRange, Rng, , xlYes).Name = "lo" & "_" & C_sTimeAgg
+        Set rng = .Range(.Cells(C_eStartlinesListAuto, iGoToColTA), .Cells(C_eStartlinesListAuto + 5, iGoToColTA))
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "lo" & "_" & C_sTimeAgg
 
         iGoToColTA = iGoToColTA + 2
     End With
@@ -240,7 +240,7 @@ Public Sub AddUnivariateAnalysis(wkb As Workbook, UAData As BetterArray, _
     Dim iEndCol As Long
     Dim i As Long
     Dim iRow As Long
-    Dim Rng As Range
+    Dim rng As Range
 
 
     Dim ValidationList As BetterArray
@@ -579,7 +579,7 @@ Sub AddTimeSeriesAnalysis(wkb As Workbook, TAData As BetterArray, _
     Dim Wksh As Worksheet
     'Columns for the group by if there is one
     Dim ValidationListColumns As BetterArray
-    Dim Rng As Range
+    Dim rng As Range
 
 
     Set Wksh = wkb.Worksheets(sParamSheetTemporalAnalysis)
@@ -697,15 +697,15 @@ Sub AddTimeSeriesAnalysis(wkb As Workbook, TAData As BetterArray, _
 
 
 
-                Set Rng = .Range(.Cells(iSectionRow + 7, iPrevCol), .Cells(iSectionRow + 11 + C_iNbTime, iStartCol))
-                WriteBorderLines Rng, sColor:=sOutlineColor, iWeight:=xlMedium
+                Set rng = .Range(.Cells(iSectionRow + 7, iPrevCol), .Cells(iSectionRow + 11 + C_iNbTime, iStartCol))
+                WriteBorderLines rng, sColor:=sOutlineColor, iWeight:=xlMedium
 
 
-                Set Rng = .Range(.Cells(iSectionRow + 6, iPrevCol), .Cells(iSectionRow + 6, iStartCol))
+                Set rng = .Range(.Cells(iSectionRow + 6, iPrevCol), .Cells(iSectionRow + 6, iStartCol))
 
-                Rng.Merge
-                FormatARange Rng:=Rng, sInteriorColor:=sHeaderInteriorColor, sFontColor:=sHeaderFontColor, isBold:=True
-                WriteBorderLines Rng, sColor:=sOutlineColor, iWeight:=xlMedium
+                rng.Merge
+                FormatARange rng:=rng, sInteriorColor:=sHeaderInteriorColor, sFontColor:=sHeaderFontColor, isBold:=True
+                WriteBorderLines rng, sColor:=sOutlineColor, iWeight:=xlMedium
 
             End If
 

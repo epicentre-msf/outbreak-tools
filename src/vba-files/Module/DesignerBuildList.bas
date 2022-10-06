@@ -692,7 +692,7 @@ Private Sub CreateSheetLLDataEntry(wkb As Workbook, sSheetName As String, iSheet
     Dim sFormulaMin As String                    'Formula for min
     Dim sFormulaMax As String                    'Formula for max
     Dim LoRng As Range                           'Range of the listobject for one table
-    Dim Rng As Range                             'Range for various headers
+    Dim rng As Range                             'Range for various headers
     Dim LoFiltRng As Range                       'Range of the listobject in the filtered table
     Dim bLockData As Boolean
     Dim sChoiceAutoName As String
@@ -1039,9 +1039,9 @@ Private Sub CreateSheetLLDataEntry(wkb As Workbook, sSheetName As String, iSheet
         Loop
 
         'Formating the variable labels row
-        Set Rng = .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_eStartLinesLLData, iCounterSheetLLCol - 1))
-        Rng.Font.Bold = True
-        Rng.RowHeight = C_iLLVarLabelHeight
+        Set rng = .Range(.Cells(C_eStartLinesLLData, 1), .Cells(C_eStartLinesLLData, iCounterSheetLLCol - 1))
+        rng.Font.Bold = True
+        rng.RowHeight = C_iLLVarLabelHeight
 
         'Set Column Width of First and Second Column
         .Columns(1).ColumnWidth = C_iLLFirstColumnsWidth
@@ -1051,10 +1051,10 @@ Private Sub CreateSheetLLDataEntry(wkb As Workbook, sSheetName As String, iSheet
         Call DesignerBuildListHelpers.BuildGotoArea(wkb, sTableName, sSheetName, iGoToCol)
 
         'Put the range of variable labels in bold and grey colors
-        Set Rng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol - 1))
-        FormatARange Rng, sFontColor:="VeryLightGreyBlue", sInteriorColor:="VeryLightGreyBlue"
-        Rng.Locked = True
-        Rng.FormulaHidden = True
+        Set rng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol - 1))
+        FormatARange rng, sFontColor:="VeryLightGreyBlue", sInteriorColor:="VeryLightGreyBlue"
+        rng.Locked = True
+        rng.FormulaHidden = True
 
 
         'Range of the listobject
