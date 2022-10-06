@@ -26,10 +26,10 @@ End Type
 Private this As TFormulaCondition
 
 'Instanciation
-Public Function Create(ByVal formCond As BetterArray, ByVal formVar As BetterArray) As IFormulaCondition
+Public Function Create(ByVal formcond As BetterArray, ByVal formvar As BetterArray) As IFormulaCondition
     With New FormulaCondition
-        Set .Condition = formCond
-        Set .Variable = formVar
+        Set .Condition = formcond
+        Set .Variable = formvar
         Set Create = .Self
     End With
 End Function
@@ -43,8 +43,8 @@ Public Property Get Condition() As BetterArray
     Set Condition = this.Condition
 End Property
 
-Public Property Set Condition(ByVal formCond As BetterArray)
-    this.Condition = formCond
+Public Property Set Condition(ByVal formcond As BetterArray)
+    Set this.Condition = formcond 
 End Property
 
 'Variables
@@ -52,8 +52,8 @@ Public Property Get Variable() As BetterArray
     Set Variable = this.Variable
 End Property
 
-Public Property Let Variable(ByVal formVar As BetterArray)
-     Set this.Variable = formVar
+Public Property Set Variable(ByVal formvar As BetterArray)
+     Set this.Variable = formvar
 End Property
 
 'Test if a formula is valid:
@@ -76,6 +76,7 @@ Public Property Get Valid(ByVal Dict As ILLdictionary, ByVal tableName As String
     Set variableData = Dict.Column("variable name")
 
     For counter = Variable.LowerBound To Variable.UpperBound
+
 
         variableName = Variable.Item(counter)
 
@@ -114,7 +115,7 @@ Public Property Get ConditionString(ByVal tableName As String, ByVal varName As 
         ParsedCondition = ParsedCondition & Connector & "(" & tableName & "[" & Variable.Item(counter) & "]" & Condition.Item(counter) & ")"
     Next
 
-    ConditionString = "IF(" & ParsedCondition & "," & tableName & "[" & varName & "]" & ")"
+    ConditionString = "IF(" & ParsedCondition & " , " & tableName & "[" & varName & "]" & ")"
 End Property
 
 'Implement interfaces
@@ -130,6 +131,6 @@ Public Property Get IFormulaCondition_ConditionString(ByVal tableName As String,
     IFormulaCondition_ConditionString = ConditionString(tableName:=tableName, varName:=varName, Connector:=Connector)
 End Property
 
-Public Property Get IFormulaCondition_Valid(ByVal Dict As IDictionary, ByVal tableName As String) As Boolean
+Public Property Get IFormulaCondition_Valid(ByVal Dict As ILLdictionary, ByVal tableName As String) As Boolean
     IFormulaCondition_Valid = Valid(Dict, tableName)
 End Property

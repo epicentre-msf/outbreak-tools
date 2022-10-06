@@ -27,7 +27,7 @@ End Function
 '
 '
 '
-Public Function VALUE_OF(Rng As Range, RngLook As Range, RngVal As Range) As String
+Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As String
 
     Dim sValLook As String
     Dim sSheetLook As String                     'Sheet name where to look for values
@@ -40,7 +40,7 @@ Public Function VALUE_OF(Rng As Range, RngLook As Range, RngVal As Range) As Str
     Dim sVal As String
     Dim iColVal As Long
 
-    sValLook = Rng.value
+    sValLook = rng.value
 
     sVal = vbNullString
 
