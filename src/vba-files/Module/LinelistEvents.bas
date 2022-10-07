@@ -420,38 +420,40 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
     Dim iRow As Long
     Dim i As Long
     Dim arrTable As BetterArray
+    Dim listAutoSheet As Worksheet
 
     Dim rng As Range
 
     Set arrTable = New BetterArray
     i = 1
 
+    Set listAutoSheet = ThisWorkbook.Worksheets(C_sSheetChoiceAuto)
     With Wksh
-
-
         Do While (.Cells(C_eStartLinesLLData, i) <> vbNullString)
             Select Case .Cells(C_eStartLinesLLMainSec - 2, i).value
             Case C_sDictControlChoiceAuto & "_origin"
                 sVarName = .Cells(C_eStartLinesLLData + 1, i).value
-                arrTable.FromExcelRange .Cells(C_eStartLinesLLData + 2, i), DetectLastColumn:=False, DetectLastRow:=True
-                'Unique values (removing the spaces and the Null strings and keeping the case (The remove duplicates doesn't do that))
-                Set arrTable = GetUniqueBA(arrTable)
-                With ThisWorkbook.Worksheets(C_sSheetChoiceAuto)
-                    Set choiceLo = .ListObjects("o" & C_sDictControlChoiceAuto & "_" & sVarName)
-                    iChoiceCol = choiceLo.Range.Column
-                    If Not choiceLo.DataBodyRange Is Nothing Then choiceLo.DataBodyRange.Delete
-                    arrTable.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
-                    iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
-                    choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
-                    'Sort in descending order
-                    Set rng = choiceLo.ListColumns(1).Range
-                    With choiceLo.Sort
-                        .SortFields.Clear
-                        .SortFields.Add Key:=rng, SortOn:=xlSortOnValues, Order:=xlDescending
-                        .Header = xlYes
-                        .Apply
+                If ListObjectExists(listAutoSheet, "o" & C_sDictControlChoiceAuto & "_" & sVarName) Then
+                    arrTable.FromExcelRange .Cells(C_eStartLinesLLData + 2, i), DetectLastColumn:=False, DetectLastRow:=True
+                    'Unique values (removing the spaces and the Null strings and keeping the case (The remove duplicates doesn't do that))
+                    Set arrTable = GetUniqueBA(arrTable)
+                    With listAutoSheet
+                        Set choiceLo = .ListObjects("o" & C_sDictControlChoiceAuto & "_" & sVarName)
+                        iChoiceCol = choiceLo.Range.Column
+                        If Not choiceLo.DataBodyRange Is Nothing Then choiceLo.DataBodyRange.Delete
+                        arrTable.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
+                        iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
+                        choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
+                        'Sort in descending order
+                        Set rng = choiceLo.ListColumns(1).Range
+                        With choiceLo.Sort
+                            .SortFields.Clear
+                            .SortFields.Add Key:=rng, SortOn:=xlSortOnValues, Order:=xlDescending
+                            .Header = xlYes
+                            .Apply
+                        End With
                     End With
-                End With
+                End If
             Case Else
             End Select
             i = i + 1
