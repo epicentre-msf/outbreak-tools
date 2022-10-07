@@ -28,7 +28,7 @@ Sub CreateNewSection(Wksh As Worksheet, iRow As Long, iCol As Long, sSection As 
 
         Range(.Cells(iRow, iCol), .Cells(iRow, iCol + 4)).Merge
         'Draw a border arround the section
-        DrawLines Rng:=Range(.Cells(iRow, iCol), .Cells(iRow, iCol + 6)), iWeight:=xlMedium, sColor:=sColor, At:="Bottom"
+        DrawLines rng:=Range(.Cells(iRow, iCol), .Cells(iRow, iCol + 6)), iWeight:=xlMedium, sColor:=sColor, At:="Bottom"
 
         'Heights for eventual charts
         .Cells(iRow - 1, iCol).RowHeight = C_iLLChartPartRowHeight
@@ -42,11 +42,11 @@ Sub CreateUAHeaders(Wksh As Worksheet, iRow As Long, iCol As Long, _
                     sPercent As String, Optional sColor As String = "DarkBlue")
     With Wksh
         'Variable Label from the dictionary
-        FormatARange Rng:=.Cells(iRow, iCol), sValue:=sMainLab, sFontColor:=sColor, isBold:=True, Horiz:=xlHAlignLeft
+        FormatARange rng:=.Cells(iRow, iCol), sValue:=sMainLab, sFontColor:=sColor, isBold:=True, Horiz:=xlHAlignLeft
         'First column on sumary label
-        FormatARange Rng:=.Cells(iRow, iCol + 1), sValue:=sSummaryLabel, sFontColor:=sColor, isBold:=True
+        FormatARange rng:=.Cells(iRow, iCol + 1), sValue:=sSummaryLabel, sFontColor:=sColor, isBold:=True
         'Add Percentage header column if required
-        If sPercent = C_sYes Then FormatARange Rng:=.Cells(iRow, iCol + 2), sValue:=TranslateLLMsg("MSG_Percent"), sFontColor:=sColor, isBold:=True
+        If sPercent = C_sYes Then FormatARange rng:=.Cells(iRow, iCol + 2), sValue:=TranslateLLMsg("MSG_Percent"), sFontColor:=sColor, isBold:=True
     End With
 End Sub
 
@@ -81,7 +81,7 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
     With Wksh
         'Variable Label from the dictionary for Row
         If Not isTimeSeries Then
-            FormatARange Rng:=.Cells(iRow + 2, iCol), sValue:=sMainLabRow, sFontColor:=sColor, isBold:=True
+            FormatARange rng:=.Cells(iRow + 2, iCol), sValue:=sMainLabRow, sFontColor:=sColor, isBold:=True
 
             'Merge the first and second rows of first column of bivariate analysis
             .Range(.Cells(iRow + 1, iCol), .Cells(iRow + 2, iCol)).Merge
@@ -94,7 +94,7 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
             'EndRow of the table
             iEndRow = iRow + 2 + RowsData.Length
 
-            FormatARange Rng:=.Range(.Cells(iRow + 3, iCol), .Cells(iEndRow, iCol)), sFontColor:=sColor, _
+            FormatARange rng:=.Range(.Cells(iRow + 3, iCol), .Cells(iEndRow, iCol)), sFontColor:=sColor, _
         sInteriorColor:=sInteriorColor, Horiz:=xlHAlignLeft
         Else
             iEndRow = iRow + 3 + C_iNbTime
@@ -104,13 +104,13 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
             'This is to avoid adding Missing on time series for following column
             If iCol <= C_eStartColumnAnalysis + 2 Then .Cells(iEndRow + 1, iCol).value = TranslateLLMsg("MSG_NA")
             'Format the last row, just in case we need
-            FormatARange Rng:=.Cells(iEndRow + 1, iCol), sFontColor:=sNAFontColor, sInteriorColor:=sTotalInteriorColor, _
+            FormatARange rng:=.Cells(iEndRow + 1, iCol), sFontColor:=sNAFontColor, sInteriorColor:=sTotalInteriorColor, _
         Horiz:=xlHAlignLeft
             iEndRow = iEndRow + 1
         End If
 
         'Variable label from the dictionary for column
-        FormatARange Rng:=.Cells(iRow, iCol + 1), sValue:=sMainLabCol, sFontColor:=sColor, isBold:=True, Horiz:=xlHAlignLeft
+        FormatARange rng:=.Cells(iRow, iCol + 1), sValue:=sMainLabCol, sFontColor:=sColor, isBold:=True, Horiz:=xlHAlignLeft
 
         'Now Add Percentage And Values for the column -----------------------------------------------------------------------------------------------------
 
@@ -141,8 +141,8 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
                     .Cells(iRow + 2, iCol + 2 * i + 2).value = TranslateLLMsg("MSG_Percent") & " " & sArrow
                     .Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iRow + 1, iCol + 2 * i + 2)).Merge
                     'Write borders arround the different part of the columns
-                    DrawLines Rng:=.Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iEndRow + 1, iCol + 2 * i + 2)), sColor:=sColor
-                    DrawLines Rng:=.Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iEndRow + 1, iCol + 2 * i + 1)), At:="Left", iWeight:=xlThin, sColor:=sColor
+                    DrawLines rng:=.Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iEndRow + 1, iCol + 2 * i + 2)), sColor:=sColor
+                    DrawLines rng:=.Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iEndRow + 1, iCol + 2 * i + 1)), At:="Left", iWeight:=xlThin, sColor:=sColor
                     i = i + 1
                 Loop
                 iLastCol = 2 * i                 'This is the last column of the table when there is percentage
@@ -153,8 +153,8 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
                     .Cells(iRow + 1, iCol + i).value = ColumnsData.Items(i)
                     .Cells(iRow + 2, iCol + i).value = sSummaryLabel
                     'Draw lines arround all borders
-                    DrawLines Rng:=.Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow + 1, iCol + i)), sColor:=sColor
-                    DrawLines Rng:=.Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow + 1, iCol + i)), At:="Left", sColor:=sColor, iWeight:=xlThin
+                    DrawLines rng:=.Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow + 1, iCol + i)), sColor:=sColor
+                    DrawLines rng:=.Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow + 1, iCol + i)), At:="Left", sColor:=sColor, iWeight:=xlThin
                     i = i + 1
                 Loop
                 iLastCol = i - 1                 'Last column of the table without the percentage
@@ -166,8 +166,8 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
 
             .Cells(iRow + 1, iCol + 1).value = ""
             .Cells(iRow + 2, iCol + 1).value = sSummaryLabel
-            DrawLines Rng:=.Range(.Cells(iRow + 1, iCol + 1), .Cells(iEndRow + 1, iCol + 1)), sColor:=sColor
-            DrawLines Rng:=.Range(.Cells(iRow + 1, iCol + 1), .Cells(iEndRow + 1, iCol + 1)), At:="Left", sColor:=sColor, iWeight:=xlThin
+            DrawLines rng:=.Range(.Cells(iRow + 1, iCol + 1), .Cells(iEndRow + 1, iCol + 1)), sColor:=sColor
+            DrawLines rng:=.Range(.Cells(iRow + 1, iCol + 1), .Cells(iEndRow + 1, iCol + 1)), At:="Left", sColor:=sColor, iWeight:=xlThin
             iLastCol = iCol + 1
             iTotalFirstCol = iLastCol
             AddTotal = False
@@ -194,9 +194,9 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
             End If
 
             'Format the missing for column
-            DrawLines Rng:=.Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iEndRow + 1, iTotalFirstCol - 1)), sColor:=sColor
-            DrawLines Rng:=.Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iEndRow + 1, iTotalFirstCol - 1)), sColor:=sColor, iWeight:=xlThin, At:="Left"
-            FormatARange Rng:=.Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iEndRow + 1, iTotalFirstCol - 1)), sInteriorColor:=sTotalInteriorColor, sFontColor:=sNAFontColor
+            DrawLines rng:=.Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iEndRow + 1, iTotalFirstCol - 1)), sColor:=sColor
+            DrawLines rng:=.Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iEndRow + 1, iTotalFirstCol - 1)), sColor:=sColor, iWeight:=xlThin, At:="Left"
+            FormatARange rng:=.Range(.Cells(iRow + 1, iLastCol + 1), .Cells(iEndRow + 1, iTotalFirstCol - 1)), sInteriorColor:=sTotalInteriorColor, sFontColor:=sNAFontColor
         End If
 
         'The last column is initiated outside the total column formating
@@ -218,39 +218,39 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
             'Format total
 
             'Add hairlines between cells
-            DrawLines Rng:=.Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor
+            DrawLines rng:=.Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor
 
             'Add a left double line
-            DrawLines Rng:=.Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalFirstCol)), sColor:=sColor, iLine:=xlDouble, At:="Left"
+            DrawLines rng:=.Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalFirstCol)), sColor:=sColor, iLine:=xlDouble, At:="Left"
 
             'Add rigth thick line on time series
 
             'Format all the total range
-            FormatARange Rng:=.Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, isBold:=True
+            FormatARange rng:=.Range(.Cells(iRow + 1, iTotalFirstCol), .Cells(iEndRow + 1, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, isBold:=True
         End If
 
         'Add Missing for Rows (After total because we need total end column) -------------------------------------------------------------------------------------------------
         If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Or isTimeSeries Then
-            FormatARange Rng:=.Range(.Cells(iEndRow, iCol + 1), .Cells(iEndRow, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, sFontColor:=sNAFontColor
+            FormatARange rng:=.Range(.Cells(iEndRow, iCol + 1), .Cells(iEndRow, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, sFontColor:=sNAFontColor
         End If
 
         'Total on the Last line
         'Add total for time series only on first columns
         If iCol <= C_eStartColumnAnalysis + 2 Then .Cells(iEndRow + 1, iCol).value = TranslateLLMsg("MSG_Total")
-        FormatARange Rng:=.Cells(iEndRow + 1, iCol), sInteriorColor:=sTotalInteriorColor, isBold:=True, Horiz:=xlHAlignLeft
-        FormatARange Rng:=.Range(.Cells(iEndRow + 1, iCol + 1), .Cells(iEndRow + 1, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, isBold:=True
+        FormatARange rng:=.Cells(iEndRow + 1, iCol), sInteriorColor:=sTotalInteriorColor, isBold:=True, Horiz:=xlHAlignLeft
+        FormatARange rng:=.Range(.Cells(iEndRow + 1, iCol + 1), .Cells(iEndRow + 1, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, isBold:=True
 
         'Format Table Headers -------------------------------------------------------------------------------------------------------------------------------------------
         'First row with column categories
-        FormatARange Rng:=.Range(.Cells(iRow + 1, iCol + 1), .Cells(iRow + 1, iLastCol)), sFontColor:=sColor, sInteriorColor:=sInteriorColor
+        FormatARange rng:=.Range(.Cells(iRow + 1, iCol + 1), .Cells(iRow + 1, iLastCol)), sFontColor:=sColor, sInteriorColor:=sInteriorColor
         'Second row with summary label with/without percentage
-        FormatARange Rng:=.Range(.Cells(iRow + 2, iCol + 1), .Cells(iRow + 2, iLastCol)), sFontColor:=sColor, FontSize:=C_iAnalysisFontSize - 1
+        FormatARange rng:=.Range(.Cells(iRow + 2, iCol + 1), .Cells(iRow + 2, iLastCol)), sFontColor:=sColor, FontSize:=C_iAnalysisFontSize - 1
         'Draw lines arround the first column of table
-        If Not isTimeSeries Then DrawLines Rng:=.Range(.Cells(iRow + 1, iCol), .Cells(iEndRow + 1, iCol)), sColor:=sColor
+        If Not isTimeSeries Then DrawLines rng:=.Range(.Cells(iRow + 1, iCol), .Cells(iEndRow + 1, iCol)), sColor:=sColor
         'Thick line at the header row
-        DrawLines Rng:=.Range(.Cells(iRow + 2, iCol), .Cells(iRow + 2, iTotalLastCol)), At:="Bottom", iLine:=xlDouble, sColor:=sColor
+        DrawLines rng:=.Range(.Cells(iRow + 2, iCol), .Cells(iRow + 2, iTotalLastCol)), At:="Bottom", iLine:=xlDouble, sColor:=sColor
         'Draw lines for Total
-        DrawLines Rng:=.Range(.Cells(iEndRow + 1, iCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor, iLine:=xlDouble, At:="Top"
+        DrawLines rng:=.Range(.Cells(iEndRow + 1, iCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor, iLine:=xlDouble, At:="Top"
         'Drawlines arround all the table
         If Not isTimeSeries Then WriteBorderLines oRange:=.Range(.Cells(iRow + 1, iCol), .Cells(iEndRow + 1, iTotalLastCol)), sColor:=sColor, iWeight:=xlThin
 
@@ -679,7 +679,7 @@ Sub AddUATotal(wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, 
         WriteBorderLines .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), _
         iWeight:=xlHairline, sColor:="DarkBlue"
 
-        FormatARange Rng:=.Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), isBold:=True, sInteriorColor:=sInteriorColor, _
+        FormatARange rng:=.Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), isBold:=True, sInteriorColor:=sInteriorColor, _
         FontSize:=C_iAnalysisFontSize + 1, Horiz:=xlHAlignRight
 
         .Cells(iRow, iStartCol).HorizontalAlignment = xlHAlignLeft
@@ -723,7 +723,7 @@ Sub AddTimeSeriesFormula(wkb As Workbook, DictHeaders As BetterArray, _
     Dim sFormula As String
     Dim sCondVal As String
 
-    Dim Rng As Range
+    Dim rng As Range
     Dim Wksh As Worksheet
 
     Set Wksh = wkb.Worksheets(sParamSheetTemporalAnalysis)
@@ -761,8 +761,8 @@ Sub AddTimeSeriesFormula(wkb As Workbook, DictHeaders As BetterArray, _
 
             If sFormula <> vbNullString Then
                 .Cells(iRow + 2, i).FormulaArray = sFormula
-                Set Rng = .Range(.Cells(iRow + 2, i), .Cells(iRow + 2 + C_iNbTime, i))
-                .Cells(iRow + 2, i).AutoFill Destination:=Rng, Type:=xlFillValues
+                Set rng = .Range(.Cells(iRow + 2, i), .Cells(iRow + 2 + C_iNbTime, i))
+                .Cells(iRow + 2, i).AutoFill Destination:=rng, Type:=xlFillValues
             End If
 
             If sPerc <> C_sNo Then
@@ -777,9 +777,9 @@ Sub AddTimeSeriesFormula(wkb As Workbook, DictHeaders As BetterArray, _
 
                 sFormula = .Cells(iRow + 2, i).Address(RowAbsolute:=False) & "/" & sTotalCell
                 .Cells(iRow + 2, i + 1).Formula = AddPercentage(sFormula)
-                Set Rng = .Range(.Cells(iRow + 2, i + 1), .Cells(iRow + 4 + C_iNbTime, i + 1))
-                .Cells(iRow + 2, i + 1).AutoFill Destination:=Rng, Type:=xlFillValues
-                Rng.NumberFormat = "0.00 %"
+                Set rng = .Range(.Cells(iRow + 2, i + 1), .Cells(iRow + 4 + C_iNbTime, i + 1))
+                .Cells(iRow + 2, i + 1).AutoFill Destination:=rng, Type:=xlFillValues
+                rng.NumberFormat = "0.00 %"
             End If
 
 
@@ -810,8 +810,8 @@ Sub AddTimeSeriesFormula(wkb As Workbook, DictHeaders As BetterArray, _
 
 
         If sFormula <> vbNullString Then .Cells(iRow + 2, iInnerEndCol).FormulaArray = sFormula
-        Set Rng = .Range(.Cells(iRow + 2, iInnerEndCol), .Cells(iRow + 4 + C_iNbTime, iInnerEndCol))
-        .Cells(iRow + 2, iInnerEndCol).AutoFill Destination:=Rng, Type:=xlFillValues
+        Set rng = .Range(.Cells(iRow + 2, iInnerEndCol), .Cells(iRow + 4 + C_iNbTime, iInnerEndCol))
+        .Cells(iRow + 2, iInnerEndCol).AutoFill Destination:=rng, Type:=xlFillValues
 
          'Missing Row and Total column
 
@@ -1030,7 +1030,7 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
                   Optional sSelectionFontColor As String = "GreyBlue", _
                   Optional sSelectionInteriorColor As String = "VeryLightGreyBlue")
 
-    Dim Rng As Range
+    Dim rng As Range
     Dim iRow As Long
     Dim sAgg As String                           'Aggregate cell
     Dim sMax As String                           'Max Cell
@@ -1045,12 +1045,12 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         FormatARange .Cells(iRow + 1, iCol + 2), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, _
         NumFormat:="dd/mm/yyyy"
         'Information on start date
-        FormatARange .Cells(iRow + 2, iCol + 2),  sFontColor:=sSelectionFontColor
+        FormatARange .Cells(iRow + 2, iCol + 2), sFontColor:=sSelectionFontColor
 
         'Time Aggregation
 
         FormatARange .Cells(iRow, iCol + 4), isBold:=True, sFontColor:=sFontColor, Horiz:=xlHAlignLeft, sValue:=TranslateLLMsg("MSG_TimeUnit")
-        FormatARange .Cells(iRow + 1, iCol + 4), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor,  sValue:=TranslateLLMsg("MSG_Day")
+        FormatARange .Cells(iRow + 1, iCol + 4), isBold:=True, sFontColor:=sSelectionFontColor, sInteriorColor:=sSelectionInteriorColor, sValue:=TranslateLLMsg("MSG_Day")
         'Aggregate address
         sAgg = .Cells(iRow + 1, iCol + 4).Address
         'Add validation for time aggregation
@@ -1105,12 +1105,12 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
                                            & .Cells(iRow + 1, iCol - 2).Address(RowAbsolute:=False, ColumnAbsolute:=False) & ")"
 
         'Autofill column - 1
-        Set Rng = .Range(.Cells(iRow + 1, iCol - 1), .Cells(iRow + C_iNbTime, iCol - 1))
-        .Cells(iRow + 1, iCol - 1).AutoFill Rng
+        Set rng = .Range(.Cells(iRow + 1, iCol - 1), .Cells(iRow + C_iNbTime, iCol - 1))
+        .Cells(iRow + 1, iCol - 1).AutoFill rng
 
         'Autofill column - 2
-        Set Rng = .Range(.Cells(iRow + 1, iCol - 2), .Cells(iRow + C_iNbTime, iCol - 2))
-        .Cells(iRow + 1, iCol - 2).AutoFill Rng
+        Set rng = .Range(.Cells(iRow + 1, iCol - 2), .Cells(iRow + C_iNbTime, iCol - 2))
+        .Cells(iRow + 1, iCol - 2).AutoFill rng
 
         'Format and AutoFill the Range of values
         .Cells(iRow, iCol).Formula = "= " & "FormatDateFromLastDay(" & sAgg & ", " & _
@@ -1120,21 +1120,21 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         'Format the range of time span (from, to)
         .Cells(iRow - 1, iCol - 2).value = TranslateLLMsg("MSG_From")
         .Cells(iRow - 1, iCol - 1).value = TranslateLLMsg("MSG_To")
-        Set Rng = .Range(.Cells(iRow - 1, iCol - 2), .Cells(iRow + C_iNbTime, iCol - 1))
+        Set rng = .Range(.Cells(iRow - 1, iCol - 2), .Cells(iRow + C_iNbTime, iCol - 1))
 
         'Put the range in white
-        FormatARange Rng, sFontColor:=vbWhite, NumFormat:="dd-mm-yyyy", FontSize:=10
-        Rng.Locked = True
+        FormatARange rng, sFontColor:=vbWhite, NumFormat:="dd-mm-yyyy", FontSize:=10
+        rng.Locked = True
 
         'Format the range for period (with labels)
-        Set Rng = .Range(.Cells(iRow, iCol), .Cells(iRow + C_iNbTime, iCol))
-        .Cells(iRow, iCol).AutoFill Rng
+        Set rng = .Range(.Cells(iRow, iCol), .Cells(iRow + C_iNbTime, iCol))
+        .Cells(iRow, iCol).AutoFill rng
 
-        FormatARange Rng, sInteriorColor:=sInteriorColor, sFontColor:=sFontColor, isBold:=True
-        DrawLines Rng, sColor:=sFontColor
+        FormatARange rng, sInteriorColor:=sInteriorColor, sFontColor:=sFontColor, isBold:=True
+        DrawLines rng, sColor:=sFontColor
 
-        Set Rng = .Range(.Cells(iRow - 2, iCol), .Cells(iRow + C_iNbTime + 2, iCol))
-        WriteBorderLines Rng, sColor:=sFontColor, iWeight:=xlMedium
+        Set rng = .Range(.Cells(iRow - 2, iCol), .Cells(iRow + C_iNbTime + 2, iCol))
+        WriteBorderLines rng, sColor:=sFontColor, iWeight:=xlMedium
 
     End With
 

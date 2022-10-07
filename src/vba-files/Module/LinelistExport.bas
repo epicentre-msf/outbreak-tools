@@ -417,7 +417,7 @@ exportErrHandWrite:
 End Sub
 
 Private Function SortExport(DictExportData As BetterArray, iExportIndex As Integer, iTableNameIndex As Integer) As BetterArray
-    Dim Rng As Range
+    Dim rng As Range
     Dim SortedData As BetterArray
 
     Set SortedData = New BetterArray
@@ -427,11 +427,11 @@ Private Function SortExport(DictExportData As BetterArray, iExportIndex As Integ
         .Cells.Clear
         .Sort.SortFields.Clear
         DictExportData.ToExcelRange .Cells(1, 1)
-        Set Rng = .Range(.Cells(1, 1), .Cells(DictExportData.Length, _
+        Set rng = .Range(.Cells(1, 1), .Cells(DictExportData.Length, _
                                               .Cells(1, .Columns.Count).End(xlToLeft).Column))
-        Rng.Sort key1:=.Cells(1, iTableNameIndex), order1:=xlAscending, _
+        rng.Sort key1:=.Cells(1, iTableNameIndex), order1:=xlAscending, _
         key2:=.Cells(1, iExportIndex), order2:=xlAscending, Header:=xlNo
-        SortedData.FromExcelRange Rng
+        SortedData.FromExcelRange rng
         .Cells.Clear
     End With
 

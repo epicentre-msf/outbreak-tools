@@ -104,8 +104,16 @@ End Property
 'Check if colname exists
 Public Property Get ColumnExists(colName As String) As Boolean
     Dim hRng As Range
+    Dim Exist As Boolean
     Set hRng = HeaderRange() 'Header Range of the dictionary
-    ColumnExists = Not (hRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+    
+    If colName = vbNullString Then
+        Exist = False
+    Else
+        Exist = Not (hRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+    End If
+    
+    ColumnExists = Exist
 End Property
 
 'Column Index within the data range of the dictionary
@@ -174,31 +182,35 @@ Public Property Get FilterData(ByVal varName As String, ByVal criteriaValue As S
     endRow = DictEndRow()
     returnedColumnIndex = ColumnIndex(returnedColumnName) 'Which index to return, the startcolumn is returned if the returned colname is not found
 
-    On Error GoTo ErrFilter
-
-    With dataRng
-        .AutoFilter Field:=ColumnIndex(varName, InDataRange:=True), Criteria1:=criteriaValue
-    End With
-
     With dictWksh
-        Set returnedRng = .Range(.Cells(StartLine + 1, returnedColumnIndex), .Cells(endRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
-        returnedRng.Copy .Cells(1, endCol + 2)
-        .AutoFilter.ShowAllData
-        'end row of data to return
-        endRow = .Cells(.Rows.Count, endCol + 2).End(xlToUp).Row
-        Set returnedRng = .Range(.Cells(1, endCol + 2), .Cells(endRow, endCol + 2))
 
-        returnedData.FromExcelRange returnedRng, DetectLastRow:=False, DetectLastColumn:=False
-        returnedRng.Cells.Clear
+        If Not .AutoFilter Is Nothing Then .AutoFilter.ShowAllData
+
+        With dataRng
+            .AutoFilter Field:=ColumnIndex(varName, InDataRange:=True), Criteria1:=criteriaValue
+        End With
+        
+        On Error Resume Next
+            Set returnedRng = .Range(.Cells(StartLine + 1, returnedColumnIndex), .Cells(endRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
+        On Error GoTo 0
+        
+        .AutoFilter.ShowAllData
+
+        If Not returnedRng Is Nothing Then
+            returnedRng.Copy .Cells(1, endCol + 2)
+            
+            'end row of data to return
+            endRow = .Cells(.Rows.Count, endCol + 2).End(xlUp).Row
+            Set returnedRng = .Range(.Cells(1, endCol + 2), .Cells(endRow, endCol + 2))
+
+            returnedData.FromExcelRange returnedRng, DetectLastRow:=False, DetectLastColumn:=False
+            returnedRng.Cells.Clear
+        End If
     End With
 
     Set FilterData = returnedData.Clone()
     Exit Property
 
-ErrFilter:
-    MsgBox "Unable to Filter the Dictionary : " & Err.Description & " - " & Err.Number
-    If Not dictWksh.AutoFilter Is Nothing Then dictWksh.AutoFilter.ShowAllData
-    Exit Property
 End Property
 
 'Multiple filters on the data (when you have mutiple conditions)
@@ -218,29 +230,39 @@ Public Property Get FiltersData(ByVal varData As BetterArray, ByVal criteriaData
 
     Set returnedData = New BetterArray
     returnedData.LowerBound = 1
-    Set dataRng = DataRange(includeHeader:=True)
-    endRow = DictEndRow
-    endCol = DictEndColumn
 
-    On Error GoTo ErrFilter
+    Set dataRng = DataRange(includeHeader:=True)
+
+    'On Error GoTo ErrFilter
     If varData.Length <> criteriaData.Length Or varData.Length = 0 Then Exit Property
 
-    With dataRng
-        For counter = varData.LowerBound To varData.UpperBound
-            .AutoFilter Field:=ColumnIndex(varData.Item(counter), InDataRange:=True), Criteria1:=criteriaData.Item(counter)
-        Next
-    End With
-
     'returned Range
-    col = 1 'Iterator for columns to extract
+    col = 2 'Iterator for columns to extract
     Set dictWksh = Wksh()
-
+    
+    
     With dictWksh
 
+        If Not .AutoFilter Is Nothing Then .AutoFilter.ShowAllData
+        
+        endRow = DictEndRow()
+        endCol = DictEndColumn()
+        
+        With dataRng
+            For counter = varData.LowerBound To varData.UpperBound
+                .AutoFilter Field:=ColumnIndex(varData.Item(counter), InDataRange:=True), Criteria1:=criteriaData.Item(counter)
+            Next
+        End With
+        
+        
         For counter = returnedColumnsData.LowerBound To returnedColumnsData.UpperBound
             returnedColumnIndex = ColumnIndex(returnedColumnsData.Item(counter))
+            
+            On Error Resume Next
             Set returnedRng = .Range(.Cells(StartLine + 1, returnedColumnIndex), .Cells(endRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
-            returnedRng.Copy .Cells(col, endCol + 2)
+            On Error GoTo 0
+            
+            If Not returnedRng Is Nothing Then returnedRng.Copy .Cells(1, endCol + col)
             col = col + 1
         Next
 
@@ -250,16 +272,20 @@ Public Property Get FiltersData(ByVal varData As BetterArray, ByVal criteriaData
         retEndRow = .Cells(.Rows.Count, endCol + 2).End(xlUp).Row
         retEndCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
 
-        Set returnedRng = .Range(.Cells(1, endCol + 2), .Cells(retEndRow, retEndCol))
-        returnedColumnsData.FromExcelRange returnedRng, DetectLastRow:=False, DetectLastColumn:=False
-        returnedRng.Cells.Clear
+        If .Cells(1, endCol + 2).value <> vbNullString Then
+            Set returnedRng = .Range(.Cells(1, endCol + 2), .Cells(retEndRow, retEndCol))
+            'returned data is the data returned by the filter
+            returnedData.FromExcelRange returnedRng, DetectLastRow:=False, DetectLastColumn:=False
+            returnedRng.Cells.Clear
+        End If
+
     End With
 
-    Set FiltersData = returnedColumnsData.Clone()
+    Set FiltersData = returnedData.Clone()
     Exit Property
 
 ErrFilter:
-    If Not dataRng.AutoFilter Is Nothing Then dataRng.AutoFilter.ShowAllData
+    If Not dictWksh.AutoFilter Is Nothing Then dictWksh.AutoFilter.ShowAllData
     MsgBox "Unable to Filter the Dictionary : " & Err.Description & " - " & Err.Number
 End Property
 

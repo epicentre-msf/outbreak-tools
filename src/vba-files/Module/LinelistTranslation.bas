@@ -57,11 +57,11 @@ Function LineListTranslatedValue(sText As String, sRngName As String)
     Dim iNumCol As Integer
     Dim HeadersData As BetterArray
     Dim TransWksh As Worksheet
-    Dim Rng As Range
+    Dim rng As Range
 
     Set HeadersData = New BetterArray
     Set TransWksh = ThisWorkbook.Worksheets(C_sSheetLLTranslation)
-    Set Rng = TransWksh.ListObjects(sRngName).Range
+    Set rng = TransWksh.ListObjects(sRngName).Range
 
     LineListTranslatedValue = vbNullString
 
@@ -72,7 +72,7 @@ Function LineListTranslatedValue(sText As String, sRngName As String)
     On Error Resume Next
 
     If iNumCol > 0 Then
-        LineListTranslatedValue = Application.WorksheetFunction.VLookup(sText, Rng, iNumCol, False)
+        LineListTranslatedValue = Application.WorksheetFunction.VLookup(sText, rng, iNumCol, False)
     End If
 
     On Error GoTo 0

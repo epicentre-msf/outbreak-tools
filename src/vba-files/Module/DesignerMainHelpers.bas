@@ -241,11 +241,11 @@ End Sub
 
 
 'Put values in one range in lowercase
-Sub LowerRng(Rng As Range)
+Sub LowerRng(rng As Range)
     Dim c As Range
 
-    If Not Rng Is Nothing Then
-        For Each c In Rng
+    If Not rng Is Nothing Then
+        For Each c In rng
             c.value = LCase(c.value)
         Next
     End If
@@ -253,10 +253,10 @@ End Sub
 
 'Trim values in one range
 
-Sub TrimRng(Rng As Range)
+Sub TrimRng(rng As Range)
     Dim c As Range
-    If Not Rng Is Nothing Then
-        For Each c In Rng
+    If Not rng Is Nothing Then
+        For Each c In rng
             c.value = ClearNonPrintableUnicode(c.value)
         Next
     End If
@@ -316,7 +316,7 @@ End Sub
 'Preprocessing the dictionary
 Sub Preprocessing(DictHeaders As BetterArray)
 
-    Dim Rng As Range
+    Dim rng As Range
     Dim dictWksh As Worksheet
 
     Dim iCol As Integer
@@ -343,10 +343,10 @@ Sub Preprocessing(DictHeaders As BetterArray)
 
         iCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
         iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
-        Set Rng = .Range(.Cells(1, 1), .Cells(iRow, iCol))
+        Set rng = .Range(.Cells(1, 1), .Cells(iRow, iCol))
 
         'Trim everything on the dictionary
-        TrimRng Rng
+        TrimRng rng
 
         'Add table names
 
@@ -358,7 +358,7 @@ Sub Preprocessing(DictHeaders As BetterArray)
         Set sortRng1 = Range(.Cells(1, iCol), .Cells(iRow, iCol))
 
         'sort on table name
-        Rng.Sort key1:=sortRng1, order1:=xlAscending
+        rng.Sort key1:=sortRng1, order1:=xlAscending
 
         'Now prepare the sort on main label
         .Cells(iCol + 1, 1).value = "main label number"

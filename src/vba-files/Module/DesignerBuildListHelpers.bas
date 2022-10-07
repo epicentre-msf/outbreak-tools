@@ -684,7 +684,8 @@ End Sub
 
 Public Function ValidationFormula(sFormula As String, AllSheetNamesData As BetterArray, VarNameData As BetterArray, _
                                   ColumnIndexData As BetterArray, FormulaData As BetterArray, _
-                                  SpecCharData As BetterArray, Wksh As Worksheet, Optional bLocal As Boolean = True) As String
+                                  SpecCharData As BetterArray, ChoiceAutoVarData As BetterArray, _
+                                  sActualVarName As String, Wksh As Worksheet, Optional bLocal As Boolean = True) As String
     'Returns a string of cleared formula
 
     ValidationFormula = vbNullString
@@ -763,6 +764,10 @@ Public Function ValidationFormula(sFormula As String, AllSheetNamesData As Bette
                     If Not isError And Not QuotedCharacter Then
                         'It is either a variable name or a formula
                         If VarNameData.Includes(sAlphaValue) Then 'It is a variable name, I will track its column
+
+                            'update the choice auto data
+                            If ChoiceAutoVarData.Includes(sActualVarName) Then ChoiceAutoVarData.Push sAlphaValue
+
                             icolNumb = ColumnIndexData.Item(VarNameData.IndexOf(sAlphaValue))
                             sSheetName = EnsureGoodSheetName(AllSheetNamesData.Item(VarNameData.IndexOf(sAlphaValue)))
                             sAlphaValue = "'" & sSheetName & "'!" & Cells(C_eStartLinesLLData + 2, icolNumb).Address(False, True)
