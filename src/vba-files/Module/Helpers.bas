@@ -255,7 +255,7 @@ Public Sub WriteBorderLines(oRange As Range, Optional iWeight As Integer = xlThi
 End Sub
 
 'Draw lines arround borders
-Public Sub DrawLines(Rng As Range, _
+Public Sub DrawLines(rng As Range, _
                      Optional At As String = "All", _
                      Optional iWeight As Integer = xlHairline, _
                      Optional iLine As Integer = xlContinuous, _
@@ -264,7 +264,7 @@ Public Sub DrawLines(Rng As Range, _
     Dim BorderPos As Byte
 
     If At = "All" Then
-        With Rng
+        With rng
             With .Borders
                 .Weight = iWeight
                 .LineStyle = iLine
@@ -287,7 +287,7 @@ Public Sub DrawLines(Rng As Range, _
             BorderPos = xlEdgeBottom
         End Select
 
-        With Rng
+        With rng
             With .Borders(BorderPos)
                 .Weight = iWeight
                 .LineStyle = iLine
@@ -300,7 +300,7 @@ End Sub
 
 'Format a range including the number format, the interior color, the fontcolor, the size of the font and the number format
 
-Public Sub FormatARange(Rng As Range, _
+Public Sub FormatARange(rng As Range, _
                         Optional sValue As String = "", _
                         Optional sInteriorColor As String = "", _
                         Optional sFontColor As String = "", _
@@ -310,7 +310,7 @@ Public Sub FormatARange(Rng As Range, _
                         Optional FontSize As Integer = C_iAnalysisFontSize, _
                         Optional NumFormat As String = "")
 
-    With Rng
+    With rng
 
         If sInteriorColor <> vbNullString Then .Interior.Color = GetColor(sInteriorColor)
         If sFontColor <> vbNullString Then .Font.Color = GetColor(sFontColor)
@@ -501,7 +501,7 @@ End Function
 'Get the data from one sheet starting from one line
 Public Function GetData(wkb As Workbook, sSheetName As String, StartLine As Long, Optional EndColumn As Long = 0) As BetterArray
     Dim Data As BetterArray
-    Dim Rng As Range
+    Dim rng As Range
 
     Dim iLastRow As Long
     Dim iLastCol As Long
@@ -513,10 +513,10 @@ Public Function GetData(wkb As Workbook, sSheetName As String, StartLine As Long
         iLastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
         iLastCol = EndColumn
         If EndColumn = 0 Then iLastCol = .Cells(StartLine, .Columns.Count).End(xlToLeft).Column
-        Set Rng = .Range(.Cells(StartLine, 1), .Cells(iLastRow, iLastCol))
+        Set rng = .Range(.Cells(StartLine, 1), .Cells(iLastRow, iLastCol))
     End With
 
-    Data.FromExcelRange Rng
+    Data.FromExcelRange rng
     'The output of the function is a variant
     Set GetData = Data
 
@@ -573,17 +573,12 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
     Dim sData As BetterArray
     Dim DestWksh As Worksheet
     Dim sheetExists As Boolean
+    Dim col As Long 'iterator to clear the strings when loading
 
     Set sData = New BetterArray
     sData.FromExcelRange SourceWkb.Worksheets(sSheetName).Range("A" & CStr(sStartCell)), DetectLastRow:=True, DetectLastColumn:=True
     sheetExists = False
-
-    For Each DestWksh In DestWkb.Worksheets
-        If DestWksh.Name = sSheetName Then
-            sheetExists = True
-            Exit For
-        End If
-    Next
+    sheetExists = SheetExistsInWkb(DestWkb, sSheetName)
 
     'Clear the contents if the sheet exists, or create a new sheet if Not
     If sheetExists Then
@@ -594,6 +589,15 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
 
     'Copy the data Now
     sData.ToExcelRange DestWkb.Worksheets(sSheetName).Range("A1")
+    
+    col = 1
+    With DestWkb.Worksheets(sSheetName)
+        Do While (.Cells(1, col) <> vbNullString)
+            .Cells(1, col).value = ClearString(.Cells(1, col).value)
+            col = col + 1
+        Loop
+    End With
+    
     DestWkb.Worksheets(sSheetName).Visible = xlSheetHidden
 End Sub
 
@@ -603,7 +607,7 @@ Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 
                               Optional iFiltindex3 As Integer = 0, Optional sValue3 As String = vbNullString, _
                               Optional returnIndex As Integer = -99, _
                               Optional bAllData As Boolean = True) As BetterArray
-    Dim Rng As Range
+    Dim rng As Range
     Dim Data As BetterArray
     Dim breturnAllData As Boolean
 
@@ -622,7 +626,7 @@ Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 
 
     End With
 
-    Set Rng = Lo.Range.SpecialCells(xlCellTypeVisible)
+    Set rng = Lo.Range.SpecialCells(xlCellTypeVisible)
 
     If returnIndex > 0 Then
         breturnAllData = False
@@ -637,7 +641,7 @@ Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 
         .Visible = xlSheetHidden
         .Cells.Clear
 
-        Rng.Copy Destination:=.Cells(1, 1)
+        rng.Copy Destination:=.Cells(1, 1)
 
         Set Data = New BetterArray
         Data.LowerBound = 1
@@ -657,40 +661,10 @@ Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 
     Set FilterLoTable = Data.Clone()
 End Function
 
-'Get unique values of one range in a listobject
-Function GetUniquelo(Lo As ListObject, iIndex As Integer) As BetterArray
-
-    Dim Rng As Range
-    Dim Data As BetterArray
-
-    Set Rng = Lo.ListColumns(iIndex).DataBodyRange
-
-    'Copy and paste to temp
-    With ThisWorkbook.Worksheets(C_sSheetTemp)
-        .Visible = xlSheetHidden
-        .Cells.Clear
-
-        Rng.Copy Destination:=.Cells(1, 1)
-
-        Set Data = New BetterArray
-        Data.LowerBound = 1
-
-        'This is not case sensitive though
-        .Range(.Cells(1, 1), .Cells(.Cells(.Rows.Count, 1).End(xlUp).Row, .Cells(1, .Columns.Count).End(xlToLeft).Column)).RemoveDuplicates Columns:=1, Header:=xlNo
-
-        Data.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
-        .Cells.Clear
-        .Visible = xlSheetVeryHidden
-    End With
-
-    Set GetUniquelo = Data.Clone()
-
-
-End Function
 
 'Remove duplicates values from one range and excluding also null values
 
-Sub RemoveRangeDuplicates(Rng As Range)
+Sub RemoveRangeDuplicates(rng As Range)
 
     Dim iRow As Long
     Dim Cellvalue As Variant
@@ -698,14 +672,14 @@ Sub RemoveRangeDuplicates(Rng As Range)
     On Error GoTo EndMacro
     BeginWork xlsapp:=Application
 
-    For iRow = 1 To Rng.Rows.Count
+    For iRow = 1 To rng.Rows.Count
 
-        Cellvalue = Rng.Cells(iRow, 1).value
+        Cellvalue = rng.Cells(iRow, 1).value
         If Cellvalue = vbNullString Then
-            Rng.Rows(iRow).EntireRow.Delete
+            rng.Rows(iRow).EntireRow.Delete
         Else
-            If Application.WorksheetFunction.CountIf(Rng.Columns(1), Cellvalue) > 1 Then
-                Rng.Rows(iRow).EntireRow.Delete
+            If Application.WorksheetFunction.CountIf(rng.Columns(1), Cellvalue) > 1 Then
+                rng.Rows(iRow).EntireRow.Delete
             End If
         End If
     Next
