@@ -100,7 +100,7 @@ Public Sub BuildAnalysis(wkb As Workbook, GSData As BetterArray, UAData As Bette
 
 End Sub
 
-'Helpers Subs and Functions ============================================================================================================================================================================
+'Helpers Subs and Functions ===========================================================================================================================
 
 
 Private Sub AddGlobalSummary(wkb As Workbook, GSData As BetterArray, iGoToCol As Long)

@@ -68,9 +68,11 @@ Public Property Get Valid(ByVal Dict As ILLdictionary, ByVal tableName As String
 
     'Valid Fail by default, turns to true after the checkings
     Valid = False
+        
 
     'variable and conditions table doesn't fit
     If Variable.Length <> Condition.Length Or Variable.Length = 0 Then Exit Property
+    If Not (Dict.ColumnExists("table name") And Dict.ColumnExists("variable name")) Then Exit Property
 
     Set tableData = Dict.Column("table name")
     Set variableData = Dict.Column("variable name")

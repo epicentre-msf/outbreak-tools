@@ -166,7 +166,7 @@ Public Function FindLastDay(sAggregate As String, inDate As Long) As Long
     Case "quarter"
 
         monthDate = Month(inDate)
-        monthQuarter = 3 * (IIF((monthDate Mod 3) = 0, ((monthDate - 1) \ 3), (monthDate \ 3))) + 1
+        monthQuarter = 3 * (IIf((monthDate Mod 3) = 0, ((monthDate - 1) \ 3), (monthDate \ 3))) + 1
 
         dLastDay = DateSerial(Year(inDate), monthQuarter + 3, 0)
 
@@ -201,12 +201,12 @@ Public Function FormatDateFromLastDay(sAggregate As String, inDate As Long, maxD
     Case "day"
         sValue = Format(inDate, "dd-mmm-yyyy")
     Case "week"
-        sValue = TranslateLLMsg("MSG_W") & IIF(Epiweek2(inDate) < 10, "0" & Epiweek2(inDate), Epiweek2(inDate)) & " - " & Year(inDate)
+        sValue = TranslateLLMsg("MSG_W") & IIf(Epiweek2(inDate) < 10, "0" & Epiweek2(inDate), Epiweek2(inDate)) & " - " & Year(inDate)
     Case "month"
         sValue = Format(inDate, "mmm - yyyy")
     Case "quarter"
         monthDate = Month(inDate)
-        quarterDate = (IIF((monthDate Mod 3) = 0, ((monthDate - 1) \ 3), (monthDate \ 3))) + 1
+        quarterDate = (IIf((monthDate Mod 3) = 0, ((monthDate - 1) \ 3), (monthDate \ 3))) + 1
         sValue = TranslateLLMsg("MSG_Q") & quarterDate & " - " & Year(inDate)
     Case "year"
         sValue = Year(inDate)
