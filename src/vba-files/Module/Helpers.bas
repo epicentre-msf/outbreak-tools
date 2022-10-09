@@ -469,7 +469,7 @@ End Function
 Public Function ClearNonPrintableUnicode(ByVal sString As String) As String
     Dim sValue As String
     sValue = Application.WorksheetFunction.SUBSTITUTE(sString, Chr(160), " ")
-    sValue = Application.WorksheetFunction.CLEAN(sValue)
+    sValue = Application.WorksheetFunction.Clean(sValue)
     ClearNonPrintableUnicode = Application.WorksheetFunction.Trim(sValue)
 End Function
 

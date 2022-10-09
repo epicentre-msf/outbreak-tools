@@ -820,7 +820,7 @@ Private Sub CreateSheetLLDataEntry(wkb As Workbook, sSheetName As String, iSheet
                 'modifications by the user
                 .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Locked = False
             Case C_sDictControlForm, C_sDictControlCaseWhen
-                sActualSubLab = IIF(sActualSubLab <> vbNullString, sActualSubLab & Chr(10) & sCalculatedForm, sCalculatedForm)
+                sActualSubLab = IIf(sActualSubLab <> vbNullString, sActualSubLab & Chr(10) & sCalculatedForm, sCalculatedForm)
             End Select
 
             'Adding the headers of the table ---------------------------------------------------------------------------------------------------------

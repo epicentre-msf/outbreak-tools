@@ -593,7 +593,7 @@ Sub BuildSubSectionVMerge(Wksh As Worksheet, iColumn As Integer, iLineFrom As In
 
     Dim iLastLine As Integer
     'Last Column can be 1, in that case move to the first column
-    iLastLine = IIF(iLineTo <= 1, 1, iLineTo - 1)
+    iLastLine = IIf(iLineTo <= 1, 1, iLineTo - 1)
 
     'Merge Area for Worksheet
     MergeArea Wksh, iLineFrom:=iLineFrom, iLineTo:=iLastLine, iColFrom:=iColumn, iColTo:=iColumn
@@ -648,7 +648,7 @@ Sub BuildSubSectionHMerge(Wksh As Worksheet, iLine As Integer, iColumnFrom As In
 
     Dim iLastCol As Integer
     'Last Column can be 1, in that case move to the first column
-    iLastCol = IIF(iColumnTo <= 1, 1, iColumnTo - 1)
+    iLastCol = IIf(iColumnTo <= 1, 1, iColumnTo - 1)
 
     'Merge Area for Worksheet
     MergeArea Wksh, iLineFrom:=iLine, iLineTo:=iLine, iColFrom:=iColumnFrom, iColTo:=iLastCol
