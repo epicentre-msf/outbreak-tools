@@ -27,9 +27,17 @@ Private this As TDictionary
 Private DICTIONARYCOLUMNS As BetterArray
 Private Const SHEETTYPEVERTICAL As String = "vlist1D"
 Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
+Private Const CLASS_NAME As String = "ILLdictionary"
 
 Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, _
                        ByVal dictStartColumn As Long) As ILLdictionary
+
+    'Throw illegal errors before the creation of the dictionary
+
+    If dictWksh Is Nothing Then ThrowErrorEmptySheetGiven
+    If dictStartRow < 1 Then ThrowErrorStartNumber dictStartRow, " Start Row "
+    If dictStartColumn < 1 Then ThrowErrorStartNumber dictStartColumn, " Start Column "
+
     With New LLdictionary
         Set .Wksh = dictWksh
         .StartRow = dictStartRow
@@ -276,9 +284,9 @@ Public Property Get FiltersData(ByVal varData As BetterArray, ByVal criteriaData
     Dim endCol As Long
     Dim retEndRow As Long
     Dim retEndCol As Long
-    
+
     Clean
-    
+
     Set returnedData = New BetterArray
     returnedData.LowerBound = 1
 
@@ -349,13 +357,13 @@ Private Sub Clean()
     Set dictWksh = Wksh()
     endCol = DictEndColumn
     counter = endCol
-    
+
     With dictWksh
         Do While counter >= 1
             If Not ColumnExists(.Cells(StartRow, counter).value, checkValidity:=True) Then
                 .Columns(counter).EntireColumn.Delete
             End If
-            
+
             counter = counter - 1
          Loop
     End With
@@ -377,8 +385,8 @@ Private Sub Prepare(Optional ByVal tablePrefix As String = "table")
                                     tablePrefix:=tablePrefix, _
                                     newColumn:="table name"    'Add table name
             End If
-            
-            
+
+
             If Not ColumnExists("column index") Then AppendColumnIndex 'Add Column Index
 
             'Testing control to update the Geo
@@ -541,18 +549,18 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
         'Sort on table name
         Set dictRng = DataRange
         dictRng.Sort key1:=DataRange("number_" & newColumn), order1:=xlAscending
-        
+
         endCol = DictEndColumn
         .Cells(StartRow, endCol + 1).value = newColumn
         .Cells(StartRow + 1, endCol + 1).Formula = "= " & Chr(34) & tablePrefix & Chr(34) & " " & Chr(38) & " " & .Cells(StartRow + 1, endCol).Address(Rowabsolute:=False)
         Set dictRng = DataRange(newColumn)
-        
+
         .Cells(StartRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
         dictRng.value = dictRng.value 'remove the link to the formulas
-    
+
     End With
-    
-    
+
+
 End Sub
 
 
@@ -614,6 +622,22 @@ Private Sub AppendColumnIndex()
             .Cells(counter, endCol + 1).value = varOrder 'variable order
         Next
     End With
+End Sub
+
+
+'Errors
+
+Private Sub ThrowErrorEmptySheetGiven()
+    Err.Raise VBA.vbObjectError + 513, CLASS_NAME, "Unable to create an instance of the class:" & CLASS_NAME & ": Given Worksheet object does not exists, please verify if you set it."
+End Sub
+
+Private Sub ThrowErrorStartNumber(Optional ByVal startNumber As Long = -1, Optional ByVal startLabel As String = " Start ")
+    Err.Raise VBA.vbObjectError + 514, CLASS_NAME, "Unable to create an instance of the class:" & CLASS_NAME & ". The " & startLabel & _
+                                                 "should be >= 1. " & "Actual value : " & startNumber
+End Sub
+
+Private Sub ThrowErrorUnFoundColumn(ByVal colName As String)
+    Err.Raise VBA.vbObjectError + 515, CLASS_NAME, "Column " & colName & "Does not exists"
 End Sub
 
 
