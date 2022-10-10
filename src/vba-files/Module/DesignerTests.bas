@@ -18,9 +18,8 @@ Sub testform()
     Dim rng As Range
     
     Set choiceWorksheet = ThisWorkbook.Worksheets("Choices")
-
-    Set choiceDict = LLdictionary.Create(choiceWorksheet, 1, 1)
-    Set choice = LLchoice.Create(choiceDict)
+    
+    Set choiceDict = LLdictionary.Create(choiceWorksheet, -1, 1)
     Set rng = choice.ChoiceDictionary.DataRange
     
     Set Cat = New BetterArray
