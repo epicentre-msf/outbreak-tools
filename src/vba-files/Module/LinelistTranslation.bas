@@ -34,7 +34,7 @@ Sub TranslateForm(UserFrm As UserForm)
     Dim cControl As Control
 
     For Each cControl In UserFrm.Controls
-        If TypeOf cControl Is MSForms.CommandButton Or (TypeOf cControl Is MSForms.Label) Or (TypeOf cControl Is MSForms.OptionButton) _
+        If TypeOf cControl Is MSForms.CommandButton Or (TypeOf cControl Is MSForms.LABEL) Or (TypeOf cControl Is MSForms.OptionButton) _
         Or (TypeOf cControl Is MSForms.Page) Or (TypeOf cControl Is MSForms.MultiPage) Or (TypeOf cControl Is MSForms.Frame) Or (TypeOf cControl Is MSForms.CheckBox) Then
             If TypeOf cControl Is MSForms.MultiPage Then
                 For i = 0 To cControl.Pages.Count - 1

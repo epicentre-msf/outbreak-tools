@@ -56,23 +56,18 @@ Private Sub TestFormulaValidity()
     Set Wksh = ThisWorkbook.Worksheets("Dictionary")
     Set Dict = LLdictionary.Create(Wksh, 1, 1)
     
-    Debug.Print formcond.Variable.Length
-    Debug.Print formcond.Condition.Length
-    
-    Debug.Print formcond.Valid(Dict, "table3")
-    
-    Assert.IsTrue formcond.Valid(Dict, "table2"), "Correct formula shows as incorrect (variable length = 4)"
-    Assert.isFalse formcond.Valid(Dict, "table3"), "Formula with false table name shows as correct"
+    Assert.IsTrue (Not Dict.ColumnExists("table name")) Or formcond.Valid(Dict, "table2"), "Correct formula shows as incorrect (variable length = 4)"
+    Assert.IsFalse formcond.Valid(Dict, "table3"), "Formula with false table name shows as correct"
     var.Pop
     Set formcond = FormulaCondition.Create(var, cond)
-    Assert.isFalse formcond.Valid(Dict, "table2"), "Formula with variable length < condition length shows as correct"
+    Assert.IsFalse formcond.Valid(Dict, "table2"), "Formula with variable length < condition length shows as correct"
     cond.Pop
     cond.Pop
     Set formcond = FormulaCondition.Create(var, cond)
-    Assert.isFalse formcond.Valid(Dict, "table2"), "Formula with variable length > condition length shows as correct"
+    Assert.IsFalse formcond.Valid(Dict, "table2"), "Formula with variable length > condition length shows as correct"
     var.Pop
     Set formcond = FormulaCondition.Create(var, cond)
-    Assert.IsTrue formcond.Valid(Dict, "table2"), "Correct formula shows as incorrect (variable length = 2)"
+    Assert.IsTrue (Not Dict.ColumnExists("table name")) Or formcond.Valid(Dict, "table2"), "Correct formula shows as incorrect (variable length = 2)"
 End Sub
 
 '@TestMethod

@@ -94,9 +94,49 @@ prepare_demo  <- function(fake_dataset = "",
 
 # create en empty file for creating an interface for each of the class
 
-create_class  <- function(class_name){
+class_header  <- function(class_name, description = "", module_description = "",
+ interface = FALSE){ #nolint
+interf  <- ifelse(interface, "I", "")
+predeclare_id  <- ifelse(interface, "False", "True")
+
+glue::glue("
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+
+Attribute VB_Name = \"{interf}{class_name}\"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = {predeclare_id}
+Attribute VB_Exposed = False
+Attribute VB_Description = \"{description}\"
+
+'@Folder(\"Dictionary\")
+'@ModuleDescription(\"{module_description}\")
+'@IgnoreModule
+
+Option Explicit
+
+'Exposed methods
+")
+
+}
+
+create_class  <- function(class_name, description = "", module_description = ""){ #nolint
+
+
+        class_name_header  <- class_header(class_name,
+                                           description = description,
+                                           module_description = module_description) #nolint
+        class_interface_header  <- class_header(class_name, interface = TRUE,
+                                                description = description,
+                                                module_description = glue::glue("Interface of {module_description}")) #nolint
+
         #create the class
-        cat("", file = glue::glue("./src/vba-files/Class/{class_name}.cls"))
+        cat(class_name_header,
+            file = glue::glue("./src/vba-files/Class/{class_name}.cls"))
         #create the interface of the class
-        cat("", file = glue::glue("./src/vba-files/Class/I{class_name}.cls"))
+        cat(class_interface_header,
+        file = glue::glue("./src/vba-files/Class/I{class_name}.cls"))
 }
