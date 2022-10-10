@@ -1,0 +1,176 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "LLchoice"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = True
+Attribute VB_Exposed = False
+
+
+'@Folder("Dictionary")
+'@ModuleDescription("Linelist choice Class")
+'@IgnoreModule
+
+Option Explicit
+Implements ILLchoice
+
+
+Private Type Tchoice
+  choiceDict As ILLdictionary
+End Type
+
+Private this As Tchoice
+
+Private Const LISTNAME As String = "list name"
+Private Const LABEL   As String = "label"
+Private Const ORDER   As String = "ordering list"
+
+'Instanciation
+Public Function Create(ByVal choiceWorksheet As Worksheet, ByVal choiceStartRow As Long, ByVal choiceStartColumn As Long) As ILLchoice
+    
+    Dim choiceDict As ILLdictionary
+    Set choiceDict = LLdictionary.Create(choiceWorksheet, choiceStartRow, choiceStartColumn)
+
+    With New LLchoice
+        Set .ChoiceDictionary = choiceDict
+        Set Create = .Self
+    End With
+End Function
+
+'Self
+Public Property Get Self() As LLchoice
+    Set Self = Me
+End Property
+
+'Worksheet
+Public Property Get Wksh() As Worksheet
+    Set Wksh = this.choiceDict.Wksh()
+End Property
+
+'StartRow
+Public Property Get StartRow() As Long
+    StartRow = this.choiceDict.StartRow()
+End Property
+
+'StartColumn
+Public Property Get StartColumn() As Long
+    StartColumn = this.choiceDict.StartColumn()
+End Property
+
+Private Property Get ChoiceDictionary() As ILLdictionary
+  Set ChoiceDictionary = this.choiceDict
+End Property
+
+Friend Property Set ChoiceDictionary(ByVal choiceDict As ILLdictionary)
+  Set this.choiceDict = choiceDict
+End Property
+
+
+'Get the data range
+Public Property Get DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range
+    Dim dictObject As ILLdictionary
+    Set dictObject = ChoiceDictionary
+
+    Set DataRange = dictObject.DataRange(colName, includeHeaders)
+End Property
+
+'Get the categories
+Public Property Get Categories(ByVal choiceName As String) As BetterArray
+  Dim dictObject As ILLdictionary
+
+  Set dictObject = ChoiceDictionary
+
+  Set Categories = dictObject.FilterData(varName:=LISTNAME, _
+                    criteriaName:=choiceName, returnedColumnName:=LABEL, _
+                    includeHeaders:=False)
+End Property
+
+'Sort the Choices sheet
+Private Sub Sort()
+
+  Dim dictObject As ILLdictionary
+  Dim orderRng As Range
+  Dim listRng As Range
+  Dim choiceRng As Range
+
+  Set dictObject = ChoiceDictionary
+
+  If dictObject.ColumnExists(LISTNAME) And dictObject.ColumnExists(ORDER) Then
+    Set listRng = DataRange(LISTNAME)
+    Set orderRng = DataRange(ORDER)
+    Set choiceRng = DataRange()
+
+    choiceRng.Sort key1:=listRng, order1:=xlAscending, key2:=orderRng, order2:=xlAscending
+  End If
+End Sub
+
+'Add New Categories
+Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As BetterArray)
+
+  Dim listRng As Range
+  Dim labelRng As Range
+  Dim orderRng As Range
+  Dim choicewksh As Worksheet
+  Dim endRow As Long
+  Dim endRowlabel As Long
+  Dim counter As Long
+
+
+  Set listRng = DataRange(LISTNAME)
+  Set labelRng = DataRange(LABEL)
+  Set orderRng = DataRange(ORDER)
+  Set choicewksh = Wksh()
+
+  endRow = StartRow + listRng.Rows.Count
+  endRowlabel = StartRow + labelRng.Rows.Count
+
+  With choicewksh
+    If (endRow = endRowlabel) Then
+      CategoriesData.ToExcelRange .Cells(endRow, labelRng.Column)
+      For counter = 0 To (CategoriesData.Length - 1)
+        .Cells(endRow + counter, listRng.Column).value = choiceName
+        .Cells(endRow + counter, orderRng.Column).value = counter + 1
+      Next
+    Else
+      'Do something (trace log)
+
+    End If
+  End With
+End Sub
+
+'Encapsulated data
+Public Property Get ILLchoice_Wksh() As Worksheet
+    Set ILLchoice_Wksh = Wksh()
+End Property
+
+Public Property Get ILLchoice_StartRow() As Long
+  ILLchoice_StartRow = StartRow()
+End Property
+
+Public Property Get ILLchoice_StartColumn() As Long
+  ILLchoice_StartColumn = StartColumn()
+End Property
+
+Public Property Get ILLchoice_ChoiceDictionary() As ILLdictionary
+  Set ILLchoice_ChoiceDictionary = ChoiceDictionary
+End Property
+
+'Void methods
+Public Sub ILLchoice_Sort()
+    Sort
+End Sub
+
+Public Sub ILLchoice_AddChoice(ByVal choiceName As String, ByVal CategoriesData As BetterArray)
+    AddChoice choiceName:=choiceName, CategoriesData:=CategoriesData
+End Sub
+
+Public Property Get ILLchoice_DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range
+    Set ILLchoice_DataRange = DataRange(colName, includeHeaders)
+End Property
+
+
+Public Property Get ILLchoice_Categories(ByVal choiceName As String) As BetterArray
+    Set ILLchoice_Categories = Categories(choiceName)
+End Property

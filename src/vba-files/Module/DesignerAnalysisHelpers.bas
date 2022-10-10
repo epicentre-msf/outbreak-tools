@@ -747,8 +747,8 @@ Sub AddTimeSeriesFormula(wkb As Workbook, DictHeaders As BetterArray, _
 
         i = iStartCol
 
-        sFirstTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis).Address(RowAbsolute:=False)
-        sSecondTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis + 1).Address(RowAbsolute:=False)
+        sFirstTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis).Address(Rowabsolute:=False)
+        sSecondTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis + 1).Address(Rowabsolute:=False)
 
 
         Do While (i <= iInnerEndCol)
@@ -768,14 +768,14 @@ Sub AddTimeSeriesFormula(wkb As Workbook, DictHeaders As BetterArray, _
             If sPerc <> C_sNo Then
                 Select Case sPerc
                 Case C_sAnaRow
-                    sTotalCell = .Cells(iRow + 2, iEndCol - 1).Address(RowAbsolute:=False)
+                    sTotalCell = .Cells(iRow + 2, iEndCol - 1).Address(Rowabsolute:=False)
                 Case C_sAnaCol
                     sTotalCell = .Cells(iRow + 4 + C_iNbTime, i).Address
                 Case C_sAnaAll
                     sTotalCell = .Cells(iRow + 4 + C_iNbTime, iEndCol - 1).Address
                 End Select
 
-                sFormula = .Cells(iRow + 2, i).Address(RowAbsolute:=False) & "/" & sTotalCell
+                sFormula = .Cells(iRow + 2, i).Address(Rowabsolute:=False) & "/" & sTotalCell
                 .Cells(iRow + 2, i + 1).Formula = AddPercentage(sFormula)
                 Set rng = .Range(.Cells(iRow + 2, i + 1), .Cells(iRow + 4 + C_iNbTime, i + 1))
                 .Cells(iRow + 2, i + 1).AutoFill Destination:=rng, Type:=xlFillValues
@@ -1100,9 +1100,9 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         .Cells(iRow, iCol - 1).Formula = "= " & "FindLastDay(" & .Cells(iRow - 7, iCol + 1).Address & ", " & .Cells(iRow, iCol - 2).Address & ")"
 
         'Next row for autofill
-        .Cells(iRow + 1, iCol - 2).Formula = "= " & .Cells(iRow, iCol - 1).Address(RowAbsolute:=False, ColumnAbsolute:=False) & "+ 1"
+        .Cells(iRow + 1, iCol - 2).Formula = "= " & .Cells(iRow, iCol - 1).Address(Rowabsolute:=False, ColumnAbsolute:=False) & "+ 1"
         .Cells(iRow + 1, iCol - 1).Formula = "= " & "FindLastDay(" & sAgg & ", " _
-                                           & .Cells(iRow + 1, iCol - 2).Address(RowAbsolute:=False, ColumnAbsolute:=False) & ")"
+                                           & .Cells(iRow + 1, iCol - 2).Address(Rowabsolute:=False, ColumnAbsolute:=False) & ")"
 
         'Autofill column - 1
         Set rng = .Range(.Cells(iRow + 1, iCol - 1), .Cells(iRow + C_iNbTime, iCol - 1))
@@ -1114,8 +1114,8 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
 
         'Format and AutoFill the Range of values
         .Cells(iRow, iCol).Formula = "= " & "FormatDateFromLastDay(" & sAgg & ", " & _
-                                     .Cells(iRow, iCol - 1).Address(RowAbsolute:=False, ColumnAbsolute:=False) & "," & sMax & "," & _
-                                      .Cells(iRow, iCol - 2).Address(RowAbsolute:=False, ColumnAbsolute:=False) & ")"
+                                     .Cells(iRow, iCol - 1).Address(Rowabsolute:=False, ColumnAbsolute:=False) & "," & sMax & "," & _
+                                      .Cells(iRow, iCol - 2).Address(Rowabsolute:=False, ColumnAbsolute:=False) & ")"
 
         'Format the range of time span (from, to)
         .Cells(iRow - 1, iCol - 2).value = TranslateLLMsg("MSG_From")

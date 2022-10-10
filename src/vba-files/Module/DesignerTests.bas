@@ -10,26 +10,26 @@ End Sub
 
 
 Sub testform()
-    Dim form As IFormulaCondition
-    Dim dictObject As ILLdictionary
-    Dim formcond As BetterArray
-    Dim formvar As BetterArray
-    Dim Wksh As Worksheet
+    Dim choicewksh As Worksheet
+    Dim choiceDict As ILLdictionary
+    Dim choiceWorksheet As Worksheet
+    Dim choice As ILLchoice
+    Dim Cat As BetterArray
+    Dim rng As Range
     
-    Set formcond = New BetterArray
-    Set formvar = New BetterArray
-    Set Wksh = ThisWorkbook.Worksheets("Dictionary")
+    Set choiceWorksheet = ThisWorkbook.Worksheets("Choices")
+
+    Set choiceDict = LLdictionary.Create(choiceWorksheet, 1, 1)
+    Set choice = LLchoice.Create(choiceDict)
+    Set rng = choice.ChoiceDictionary.DataRange
     
-    Set dictObject = LLdictionary.Create(Wksh, 1, 1)
+    Set Cat = New BetterArray
+    Cat.Push "simple", "test"
     
-    formcond.Push "> 0", "< 1", ">0", "<1"
-    formvar.Push "varb1", "varb2", "varb3", "varb4"
+    Set Cat = choice.Categories("list_a1")
     
-    Set form = FormulaCondition.Create(formcond, formvar)
-     
-    Debug.Print form.Variable.Length
-    Debug.Print form.Valid(dictObject, "table2")
-    Debug.Print form.ConditionString("table2", "varb2")
-    Debug.Print form.Valid(dictObject, "table3")
-    
+    Debug.Print choice.StartRow
+    Debug.Print choice.StartColumn
+    Debug.Print choice.Wksh.Name
+    Debug.Print choice.DataRange().Address
 End Sub

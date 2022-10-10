@@ -448,7 +448,7 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
                         Set rng = choiceLo.ListColumns(1).Range
                         With choiceLo.Sort
                             .SortFields.Clear
-                            .SortFields.Add Key:=rng, SortOn:=xlSortOnValues, Order:=xlDescending
+                            .SortFields.Add Key:=rng, SortOn:=xlSortOnValues, ORDER:=xlDescending
                             .Header = xlYes
                             .Apply
                         End With
@@ -549,8 +549,6 @@ Public Sub UpdateFilterTables()
         End If
     Next
 
-
-    Debug.Print DateDiff("s", ts, Now)
 
     On Error Resume Next
     ThisWorkbook.Worksheets(sActSh).Activate

@@ -415,7 +415,7 @@ Public Function ToString( _
     Dim LocalItems() As Variant
     Dim Sep As String
     
-    Sep = IIF(PrettyPrint, Separator & Space(1), Separator)
+    Sep = IIf(PrettyPrint, Separator & Space(1), Separator)
     
     LocalItems = InternalItems
     LocalArrayType = GetArrayType(LocalItems)
@@ -667,33 +667,33 @@ Public Function FromExcelRange( _
     If TypeName(FromRange) = "Range" Then
         Dim StartColumn As Long
         Dim EndColumn As Long
-        Dim startRow As Long
+        Dim StartRow As Long
         Dim endRow As Long
         
         With FromRange
             StartColumn = .Column
-            startRow = .Row
+            StartRow = .Row
             EndColumn = .Column + .Columns.Count - 1
             endRow = .Row + .Rows.Count - 1
         End With
         
         With FromRange.Parent
             If DetectLastColumn Then
-                EndColumn = .Cells.Item(startRow, .Columns.Count).End(xlToLeft).Column
+                EndColumn = .Cells.Item(StartRow, .Columns.Count).End(xlToLeft).Column
             End If
             
             If DetectLastRow Then
                 endRow = .Cells.Item(.Rows.Count, StartColumn).End(xlUp).Row
             End If
             
-            Me.Items = .Range(.Cells(startRow, StartColumn), .Cells(endRow, EndColumn)).value
+            Me.Items = .Range(.Cells(StartRow, StartColumn), .Cells(endRow, EndColumn)).value
         End With
         
         ' convert arrays of single column or row to 1d
-        If StartColumn = EndColumn And startRow <> endRow Then
+        If StartColumn = EndColumn And StartRow <> endRow Then
             Me.Items = Me.ExtractSegment(, StartColumn)
-        ElseIf StartColumn <> EndColumn And startRow = endRow Then
-            Me.Items = Me.ExtractSegment(startRow)
+        ElseIf StartColumn <> EndColumn And StartRow = endRow Then
+            Me.Items = Me.ExtractSegment(StartRow)
         End If
         
     Else
@@ -1484,7 +1484,7 @@ Public Function CopyWithin( _
             ToIndex = Min(RelativeTarget, LocalLength)
         End If
         
-        RelativeStart = IIF(StartIndex = MISSING_LONG, LBound(LocalItems), StartIndex)
+        RelativeStart = IIf(StartIndex = MISSING_LONG, LBound(LocalItems), StartIndex)
         
         If RelativeStart < 0 Then
             FromIndex = Max((LocalLength + RelativeStart), 0)
@@ -1772,7 +1772,7 @@ Public Function FromCSVString( _
              RowDelimiter:=LineEnding, _
              Quote:=Quote, _
              IgnoreFirstRow:=IgnoreFirstRow, _
-             ReturnJagged:=IIF(LocalType = BA_JAGGED, True, False), _
+             ReturnJagged:=IIf(LocalType = BA_JAGGED, True, False), _
              Base:=this.LowerBound, _
              DuckType:=DuckType _
                         )
@@ -2369,7 +2369,7 @@ Private Function ParseCSV( _
     Dim CountRows As Long
     Dim LastRow As Long
     Dim LastColumn As Long
-    Dim startRow As Long
+    Dim StartRow As Long
     Dim InQuote As Boolean
     Dim Buffer As String
     Dim Char As String
@@ -2397,12 +2397,12 @@ Private Function ParseCSV( _
     CountRows = UBound(CSVRows) - LBound(CSVRows) + 1
     
     If IgnoreFirstRow Then
-        startRow = 1
+        StartRow = 1
     Else
-        startRow = 0
+        StartRow = 0
     End If
     
-    LastRow = Base + CountRows - 1 - startRow
+    LastRow = Base + CountRows - 1 - StartRow
     LastColumn = Base + CountColumns - 1
     If ReturnJagged Then
         ReDim JaggedRow(Base To LastColumn)
@@ -2411,7 +2411,7 @@ Private Function ParseCSV( _
         ReDim Results(Base To LastRow, Base To LastColumn)
     End If
     
-    For i = startRow To LastRow
+    For i = StartRow To LastRow
         ColumnIndex = Base
         Buffer = CSVRows(i)
         Cursor = 1
@@ -2430,7 +2430,7 @@ Private Function ParseCSV( _
                     If ReturnJagged Then
                         JaggedRow(ColumnIndex) = Element
                     Else
-                        Results(i - startRow, ColumnIndex) = Element
+                        Results(i - StartRow, ColumnIndex) = Element
                     End If
                     Cursor = j + 2
                     inc ColumnIndex
@@ -2439,7 +2439,7 @@ Private Function ParseCSV( _
             End If
         Next
         If ReturnJagged Then
-            Results(i - startRow) = JaggedRow
+            Results(i - StartRow) = JaggedRow
             ' ReDim jaggedRow(Base To lastColumn)
         End If
     Next
@@ -2836,7 +2836,7 @@ Private Function ElementsAreEqual( _
         If IsNumeric(Expected) And IsNumeric(Actual) Then
             Dim Diff As Double
             Diff = Abs(Expected - Actual)
-            If Diff <= (IIF( _
+            If Diff <= (IIf( _
                         Abs(Expected) < Abs(Actual), _
                         Abs(Actual), _
                         Abs(Expected) _
@@ -2921,7 +2921,7 @@ Private Function ParseArraySegmentFromString( _
         ) As Variant()
     Dim SegmentLength As Long
     Dim Segment() As String
-    SegmentLength = IIF(NextCloser = 0, Len(SourceString), NextCloser - Cursor)
+    SegmentLength = IIf(NextCloser = 0, Len(SourceString), NextCloser - Cursor)
     Segment = Split(Mid$(SourceString, Cursor, SegmentLength), ValueSeparator)
     Cursor = NextCloser
     ParseArraySegmentFromString = DuckTypeStringArray(Segment)
@@ -3616,7 +3616,7 @@ Private Sub RecursiveToString( _
     
     StringBuilder OpeningDelimiter
     For i = LBound(SourceArray) To UBound(SourceArray)
-        Sep = IIF(i = UBound(SourceArray), ClosingDelimiter, Separator)
+        Sep = IIf(i = UBound(SourceArray), ClosingDelimiter, Separator)
         If IsArray(SourceArray(i)) Then
             Dim Nested() As Variant
             Nested = SourceArray(i)
@@ -3813,7 +3813,7 @@ End Function
 Private Sub EnsureCapacity(ByVal MinimumCapacity As Long)
     If this.Capacity < MinimumCapacity Then
         Dim NewCapacity As Long
-        NewCapacity = IIF(this.Capacity = 0, DEFAULT_CAPACITY, this.Capacity * 2)
+        NewCapacity = IIf(this.Capacity = 0, DEFAULT_CAPACITY, this.Capacity * 2)
         If NewCapacity > MAX_ARRAY_LENGTH Then
             NewCapacity = MAX_ARRAY_LENGTH
         End If
