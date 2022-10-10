@@ -132,7 +132,7 @@ Public Property Get DataRange(Optional colName As String = "__all__", Optional i
 End Property
 
 'Check if colname exists
-Public Property Get ColumnExists(colName As String, Optional checkValidity As Boolean = False) As Boolean
+Public Property Get ColumnExists(ByVal colName As String, Optional ByVal checkValidity As Boolean = False) As Boolean
     Dim hRng As Range
     Dim Exist As Boolean
     Set hRng = HeaderRange() 'Header Range of the dictionary
@@ -151,7 +151,7 @@ Public Property Get ColumnExists(colName As String, Optional checkValidity As Bo
 End Property
 
 'Column Index within the data range of the dictionary
-Private Function ColumnIndex(colName As String, Optional inDataRange As Boolean = False) As Long
+Private Function ColumnIndex(ByVal colName As String, Optional ByVal inDataRange As Boolean = False) As Long
     Dim hRng As Range
     Dim colIndex As Long
     Set hRng = HeaderRange()
@@ -166,7 +166,7 @@ End Function
 
 
 'Column
-Public Property Get Column(ByVal colName As String, Optional includeHeaders As Boolean = False) As BetterArray
+Public Property Get Column(ByVal colName As String, Optional ByVal includeHeaders As Boolean = False) As BetterArray
 
     Dim colNum As Long
     Dim colRng As Range
@@ -201,7 +201,7 @@ End Property
 
 'Filtered Data
 Public Property Get FilterData(ByVal varName As String, ByVal criteriaValue As String, ByVal returnedColumnName As String, _
-                               Optional includeHeaders As Boolean = False) As BetterArray
+                               Optional ByVal includeHeaders As Boolean = False) As BetterArray
 
     Dim dataRng As Range
     Dim returnedRng As Range
@@ -253,8 +253,6 @@ Public Property Get FilterData(ByVal varName As String, ByVal criteriaValue As S
             endRow = .Cells(.Rows.Count, endCol + 2).End(xlUp).Row
             retEndCol = .Cells(StartRow, .Columns.Count).End(xlToLeft).Column
             Set returnedRng = .Range(.Cells(StartRow, endCol + 2), .Cells(endRow, retEndCol))
-            
-            Debug.Print returnedRng.Address
 
             returnedData.FromExcelRange returnedRng, DetectLastRow:=False, DetectLastColumn:=False
             returnedRng.Cells.Clear
@@ -365,7 +363,7 @@ End Sub
 
 
 'Prepare the dictionary for designer
-Private Sub Prepare(Optional tablePrefix As String = "table")
+Private Sub Prepare(Optional ByVal tablePrefix As String = "table")
     Dim endCol As Long
     Dim dictWksh As Worksheet
     Dim counter As Long
@@ -497,9 +495,9 @@ Private Sub AppendGeoLines()
     End With
 End Sub
 
-Private Sub AppendNumberColumn(Optional onColName As String = "sheet name", _
-                              Optional tablePrefix As String = "table", _
-                              Optional newColumn As String = "table name")
+Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name", _
+                               Optional ByVal tablePrefix As String = "table", _
+                               Optional ByVal newColumn As String = "table name")
 
     Dim endRow As Long
     Dim endCol As Integer
@@ -622,7 +620,7 @@ End Sub
 ' INTERFACE __________________________________________________________________________________________________________________________
 
 'Exposed methods
-Public Property Get ILLdictionary_Column(ByVal columnName As String, Optional includeHeaders As Boolean = False) As BetterArray
+Public Property Get ILLdictionary_Column(ByVal columnName As String, Optional ByVal includeHeaders As Boolean = False) As BetterArray
     Set ILLdictionary_Column = Column(columnName, includeHeaders)
 End Property
 
@@ -630,7 +628,7 @@ Public Property Get ILLdictionary_ColumnExists(ByVal columnName As String) As Bo
     ILLdictionary_ColumnExists = ColumnExists(columnName)
 End Property
 
-Public Property Get ILLdictionary_FilterData(ByVal varName As String, ByVal criteriaName As String, ByVal returnedColumnName As String, Optional includeHeaders As Boolean = False) As BetterArray
+Public Property Get ILLdictionary_FilterData(ByVal varName As String, ByVal criteriaName As String, ByVal returnedColumnName As String, Optional ByVal includeHeaders As Boolean = False) As BetterArray
     Set ILLdictionary_FilterData = FilterData(varName, criteriaName, returnedColumnName, includeHeaders)
 End Property
 
@@ -642,7 +640,8 @@ Public Property Get ILLdictionary_Prepared() As Boolean
     ILLdictionary_Prepared = Prepared
 End Property
 
-Public Property Get ILLdictionary_DataRange(Optional colName As String = "__all__", Optional includeHeaders As Boolean = False) As Range
+Public Property Get ILLdictionary_DataRange(Optional ByVal colName As String = "__all__", _
+                                            Optional ByVal includeHeaders As Boolean = False) As Range
     Set ILLdictionary_DataRange = DataRange(colName, includeHeaders)
 End Property
 
@@ -659,7 +658,7 @@ Public Property Get ILLdictionary_Wksh() As Worksheet
 End Property
 
 'void methods
-Public Sub ILLdictionary_Prepare(Optional tablePrefix As String = "table")
+Public Sub ILLdictionary_Prepare(Optional ByVal tablePrefix As String = "table")
    Prepare tablePrefix
 End Sub
 
