@@ -165,6 +165,7 @@ Attribute VB_Exposed = False
 
 
 
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -261,7 +262,7 @@ Private Sub CMD_GeoClearHisto_Click()
 End Sub
 
 'Closing the Geoapp
-Private Sub CMD_Retour_Click()
+Private Sub CMD_Retour_Geo_Click()
     Me.Hide
 End Sub
 
