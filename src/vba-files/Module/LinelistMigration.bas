@@ -61,7 +61,7 @@ Sub ClearData()
         Select Case sSheetType
 
         Case C_sDictSheetTypeLL
-            Wksh.Unprotect ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
+            Wksh.Unprotect ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value
 
             With Wksh.ListObjects(SheetListObjectName(Wksh.Name))
 
@@ -71,7 +71,7 @@ Sub ClearData()
                 End If
             End With
 
-            Wksh.Protect Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value, _
+            Wksh.Protect Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value, _
         DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
         AllowFormattingColumns:=True
@@ -81,7 +81,7 @@ Sub ClearData()
             With Wksh
                 iLastRow = .Cells(.Rows.Count, 2).End(xlUp).Row
                 For i = C_eStartLinesAdmData To iLastRow
-                    .Cells(i, C_eStartColumnAdmData + 3).value = vbNullString
+                    .Cells(i, C_eStartColumnAdmData + 3).Value = vbNullString
                 Next
             End With
 
@@ -158,7 +158,7 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
     Dim VarColumn As BetterArray
     Dim sActualLanguage As String
     Dim sImportedLanguage As String
-    Dim index As Long                            'index of the language
+    Dim Index As Long                            'index of the language
 
 
     Dim Quit As Byte
@@ -183,8 +183,8 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
         VarColumn.FromExcelRange WkbImp.Worksheets(C_sSheetMetadata).Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=False
 
         If VarColumn.Includes(C_sLanguage) Then
-            index = VarColumn.IndexOf(C_sLanguage)
-            sImportedLanguage = WkbImp.Worksheets(C_sSheetMetadata).Cells(index, 2).value
+            Index = VarColumn.IndexOf(C_sLanguage)
+            sImportedLanguage = WkbImp.Worksheets(C_sSheetMetadata).Cells(Index, 2).Value
             sActualLanguage = ThisWorkbook.Worksheets(C_sSheetLLTranslation).Range("RNG_LLLanguage")
 
             'Test and ask the user if he wants to abort
@@ -262,15 +262,15 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                 If VarNamesData.Includes(sVal) Then
                     'Get the row Index here
                     iRowIndex = ColumnIndexData.Items(VarNamesData.IndexOf(sVal))
-                    .Cells(iRowIndex, C_eStartColumnAdmData + 3).value = shImp.Cells(i, 2).value 'On sheets of type Adm, the third column contains values
+                    .Cells(iRowIndex, C_eStartColumnAdmData + 3).Value = shImp.Cells(i, 2).Value 'On sheets of type Adm, the third column contains values
                 Else
                     'Report variables not imported
                     If Not ImportReport Then ImportReport = True
 
                     With ThisWorkbook.Worksheets(C_sSheetImportTemp)
                         k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
-                        .Cells(k, 3).value = sVal
-                        .Cells(k, 4).value = sSheetName
+                        .Cells(k, 3).Value = sVal
+                        .Cells(k, 4).Value = sSheetName
                     End With
 
                 End If
@@ -281,7 +281,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
             'Import Data on a Sheet of Type LL
 
             'First, un protect the sheet were we need to paste the data before proceeding
-            .Unprotect WkbLL.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value
+            .Unprotect WkbLL.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value
 
             'Last column of Import Data
             iLastColImp = shImp.Cells(1, shImp.Columns.Count).End(xlToLeft).Column
@@ -299,7 +299,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                 If VarNamesData.Includes(sVal) Then
                     'The variable is in the sheet, just paste the values to last row
                     iColIndex = ColumnIndexData.Items(VarNamesData.IndexOf(sVal))
-                    varControl = .Cells(C_eStartLinesLLMainSec - 1, iColIndex).value
+                    varControl = .Cells(C_eStartLinesLLMainSec - 1, iColIndex).Value
 
                     If varControl <> C_sDictControlForm And varControl <> C_sDictControlCaseWhen Then
                         'Don't Import columns of Type formulas
@@ -313,7 +313,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                         If iLastRowImp > 0 Then
                             Set rngLL = .Range(.Cells(iLastRow, iColIndex), .Cells(iLastRow + iLastRowImp - 1, iColIndex))
                             'Copy by values, more safe
-                            rngLL.value = rngImp.value
+                            rngLL.Value = rngImp.Value
                         End If
                     End If
                 Else
@@ -324,8 +324,8 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
 
                         k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
 
-                        .Cells(k, 3).value = sVal
-                        .Cells(k, 4).value = sSheetName
+                        .Cells(k, 3).Value = sVal
+                        .Cells(k, 4).Value = sSheetName
                     End With
 
                 End If
@@ -334,7 +334,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
             'Update the list auto on imports
             UpdateListAuto WkbLL.Worksheets(sSheetName)
 
-            .Protect Password:=WkbLL.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value, _
+            .Protect Password:=WkbLL.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value, _
         DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
         AllowFormattingColumns:=True
@@ -437,11 +437,11 @@ Sub ImportMigrationData()
     'Updates dates for last imports (just in case)
     sVal = shpTemp.Cells(1, 9)
     shpTemp.Cells.Clear
-    shpTemp.Cells(1, 8).value = Format(Now, "yyyy-mm-dd Hh:Nn")
-    If sVal <> vbNullString Then shpTemp.Cells(1, 9).value = sVal
+    shpTemp.Cells(1, 8).Value = Format(Now, "yyyy-mm-dd Hh:Nn")
+    If sVal <> vbNullString Then shpTemp.Cells(1, 9).Value = sVal
 
     'Set the list_auto to true
-    shpTemp.Cells(1, 15).value = "list_auto_change_yes"
+    shpTemp.Cells(1, 15).Value = "list_auto_change_yes"
 
     For Each shImp In WkbImp.Worksheets
         If TabSheetLL.Includes(shImp.Name) Then
@@ -463,7 +463,7 @@ Sub ImportMigrationData()
             If Not SheetNameIsBad(shImp.Name) Then
                 With shpTemp
                     iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
-                    .Cells(iRow + 1, 1).value = shImp.Name
+                    .Cells(iRow + 1, 1).Value = shImp.Name
                 End With
             End If
         End If
@@ -480,7 +480,7 @@ Sub ImportMigrationData()
             With shpTemp
                 iRow = .Cells(.Rows.Count, 11).End(xlUp).Row
                 iRow = iRow + 1
-                .Cells(iRow, 11).value = TabSheetLL.Item(k)
+                .Cells(iRow, 11).Value = TabSheetLL.Item(k)
             End With
 
         End If
@@ -491,7 +491,7 @@ Sub ImportMigrationData()
         sVarName = VarNamesData.Item(k)
         iVarIndex = ColumnIndexData.Item(k)
 
-        sVarControlType = ThisWorkbook.Worksheets(TabSheetLL.Item(k)).Cells(C_eStartLinesLLMainSec - 1, iVarIndex).value
+        sVarControlType = ThisWorkbook.Worksheets(TabSheetLL.Item(k)).Cells(C_eStartLinesLLMainSec - 1, iVarIndex).Value
 
         If ImportVarData.Length > 0 And Not ImportVarData.Includes(sVarName) And sVarControlType <> C_sDictControlForm Then
             'Update report status
@@ -499,8 +499,8 @@ Sub ImportMigrationData()
             With shpTemp
                 iRow = .Cells(.Rows.Count, 6).End(xlUp).Row
                 iRow = iRow + 1
-                .Cells(iRow, 6).value = VarNamesData.Item(k)
-                .Cells(iRow, 7).value = TabSheetLL.Item(k)
+                .Cells(iRow, 6).Value = VarNamesData.Item(k)
+                .Cells(iRow, 7).Value = TabSheetLL.Item(k)
             End With
         End If
     Next
@@ -648,7 +648,7 @@ Sub ImportGeobase()
         Set WkshGeo = ThisWorkbook.Worksheets(C_sSheetGeo)
 
         'Write the filename of the geobase somewhere for the export
-        WkshGeo.Range(C_sRngGeoName).value = Dir(sFilePath)
+        WkshGeo.Range(C_sRngGeoName).Value = Dir(sFilePath)
 
         For i = 1 To AdmNames.Length
             'Adms (Maybe come back to work on the names?)
@@ -687,7 +687,7 @@ Sub ImportGeobase()
 
 
         Call TranslateImportGeoHead
-        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 9).value = Format(Now, "yyyy-mm-dd Hh:Nn")
+        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 9).Value = Format(Now, "yyyy-mm-dd Hh:Nn")
 
         ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportGeo"), vbQuestion + vbYesNo, "Import GeoData")
 
@@ -721,7 +721,7 @@ Private Sub TranslateImportGeoHead()
     Set Wksh = ThisWorkbook.Worksheets(C_sSheetLLTranslation)
 
     'Get the isoCode for the linelist
-    sIsoCountry = Wksh.Range(C_sRngLLLanguageCode).value
+    sIsoCountry = Wksh.Range(C_sRngLLLanguageCode).Value
     Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
 
     sCountry = Application.WorksheetFunction.HLookup(sIsoCountry, Wksh.ListObjects(C_sTabNames).Range, 2, False)
@@ -730,11 +730,11 @@ Private Sub TranslateImportGeoHead()
     sPlace = Application.WorksheetFunction.HLookup(sIsoCountry, Wksh.ListObjects(C_sTabNames).Range, 5, False)
     sFacility = Application.WorksheetFunction.HLookup(sIsoCountry, Wksh.ListObjects(C_sTabNames).Range, 6, False)
 
-    Wksh.Range("A1,E1,J1,P1,Z1").value = sCountry
-    Wksh.Range("F1,K1,Q1,Y1").value = sSubCounty
-    Wksh.Range("L1,R1,X1").value = sWard
-    Wksh.Range("S1").value = sPlace
-    Wksh.Range("W1").value = sFacility
+    Wksh.Range("A1,E1,J1,P1,Z1").Value = sCountry
+    Wksh.Range("F1,K1,Q1,Y1").Value = sSubCounty
+    Wksh.Range("L1,R1,X1").Value = sWard
+    Wksh.Range("S1").Value = sPlace
+    Wksh.Range("W1").Value = sFacility
 
 End Sub
 
@@ -981,7 +981,7 @@ Private Sub AddLLSheet(wkb As Workbook, sSheetName As String, sPrevSheetName As 
     End With
 
     'copy by value
-    dest.value = src.value
+    dest.Value = src.Value
 
 End Sub
 
@@ -1000,15 +1000,15 @@ Private Sub AddAdmSheet(wkb As Workbook, sSheetName As String, sPrevSheetName As
     wkb.Worksheets.Add(after:=wkb.Worksheets(sPrevSheetName)).Name = sSheetName
     Set Wksh = wkb.Worksheets(sSheetName)
 
-    Wksh.Cells(1, 1).value = C_sVariable
-    Wksh.Cells(1, 2).value = C_sValue
+    Wksh.Cells(1, 1).Value = C_sVariable
+    Wksh.Cells(1, 2).Value = C_sValue
 
     'Add values to export sheet from the second line
     k = 2
     With ThisWorkbook.Worksheets(sSheetName)
         For i = C_eStartLinesAdmData To iLastRow
-            Wksh.Cells(k, 1).value = .Cells(i, C_eStartColumnAdmData + 3).Name.Name
-            Wksh.Cells(k, 2).value = .Cells(i, C_eStartColumnAdmData + 3).value
+            Wksh.Cells(k, 1).Value = .Cells(i, C_eStartColumnAdmData + 3).Name.Name
+            Wksh.Cells(k, 2).Value = .Cells(i, C_eStartColumnAdmData + 3).Value
             k = k + 1
         Next
     End With
@@ -1081,7 +1081,7 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
         ExportData.FromExcelRange WkshGeo.ListObjects(C_sTabAdm4).Range
         ExportData.ToExcelRange .Worksheets(C_sAdm4).Cells(1, 1)
         ExportHeader.ToExcelRange .Worksheets(C_sAdm4).Cells(1, 1), TransposeValues:=True
-        .Worksheets(C_sAdm4).Cells(1, 5).value = LCase(C_sAdm4) & "_pop"
+        .Worksheets(C_sAdm4).Cells(1, 5).Value = LCase(C_sAdm4) & "_pop"
         sPrevSheetName = C_sAdm4
         ExportData.Clear
 
@@ -1107,7 +1107,7 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
         .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sAdm1
         ExportData.FromExcelRange WkshGeo.ListObjects(C_sTabadm1).Range
         ExportData.ToExcelRange .Worksheets(C_sAdm1).Cells(1, 1)
-        .Worksheets(C_sAdm1).Cells(1, 1).value = C_sAdmName & "1" & "_name"
+        .Worksheets(C_sAdm1).Cells(1, 1).Value = C_sAdmName & "1" & "_name"
         sPrevSheetName = C_sAdm1
 
         'Metadata
@@ -1164,7 +1164,7 @@ Private Sub ExportMigrationHistoricGeo(sGeoPath As String)
         ExportData.FromExcelRange WkshGeo.ListObjects(C_sTabHistoHF).Range
         ExportData.ToExcelRange .Worksheets(C_sHistoHF).Cells(1, 1)
         'Add headers // Remember to use the convention with the headers defined previously
-        .Worksheets(C_sHistoHF).Cells(1, 1).value = C_sHistoHF
+        .Worksheets(C_sHistoHF).Cells(1, 1).Value = C_sHistoHF
         sPrevSheetName = C_sHistoHF
         ExportData.Clear
 
@@ -1173,7 +1173,7 @@ Private Sub ExportMigrationHistoricGeo(sGeoPath As String)
         ExportData.FromExcelRange WkshGeo.ListObjects(C_sTabHistoGeo).Range
         ExportData.ToExcelRange .Worksheets(C_sHistoGeo).Cells(1, 1)
         'Change the headers
-        .Worksheets(C_sHistoGeo).Cells(1, 1).value = C_sHistoGeo
+        .Worksheets(C_sHistoGeo).Cells(1, 1).Value = C_sHistoGeo
 
     End With
 
@@ -1229,7 +1229,7 @@ Sub ExportForMigration()
         'Export the full geobase
 
         'For the GeoPath we need more involve work
-        ExportPath.Items = Split(ThisWorkbook.Worksheets(C_sSheetGeo).Range(C_sRngGeoName).value, "_")
+        ExportPath.Items = Split(ThisWorkbook.Worksheets(C_sSheetGeo).Range(C_sRngGeoName).Value, "_")
 
         'Remove the last element of the path (the date)
         If ExportPath.Length > 1 Then ExportPath.Pop

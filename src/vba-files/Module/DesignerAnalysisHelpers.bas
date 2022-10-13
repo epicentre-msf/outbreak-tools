@@ -102,7 +102,7 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
 
         If sMiss = C_sAnaRow Or sMiss = C_sAnaAll Or isTimeSeries Then
             'This is to avoid adding Missing on time series for following column
-            If iCol <= C_eStartColumnAnalysis + 2 Then .Cells(iEndRow + 1, iCol).value = TranslateLLMsg("MSG_NA")
+            If iCol <= C_eStartColumnAnalysis + 2 Then .Cells(iEndRow + 1, iCol).Value = TranslateLLMsg("MSG_NA")
             'Format the last row, just in case we need
             FormatARange rng:=.Cells(iEndRow + 1, iCol), sFontColor:=sNAFontColor, sInteriorColor:=sTotalInteriorColor, _
         Horiz:=xlHAlignLeft
@@ -136,9 +136,9 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
                 i = 0
                 Do While (i < ColumnsData.Length)
                     'There is percentage, we have to add the percentage
-                    .Cells(iRow + 1, iCol + 2 * i + 1).value = ColumnsData.Items(i + 1)
-                    .Cells(iRow + 2, iCol + 2 * i + 1).value = sSummaryLabel
-                    .Cells(iRow + 2, iCol + 2 * i + 2).value = TranslateLLMsg("MSG_Percent") & " " & sArrow
+                    .Cells(iRow + 1, iCol + 2 * i + 1).Value = ColumnsData.Items(i + 1)
+                    .Cells(iRow + 2, iCol + 2 * i + 1).Value = sSummaryLabel
+                    .Cells(iRow + 2, iCol + 2 * i + 2).Value = TranslateLLMsg("MSG_Percent") & " " & sArrow
                     .Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iRow + 1, iCol + 2 * i + 2)).Merge
                     'Write borders arround the different part of the columns
                     DrawLines rng:=.Range(.Cells(iRow + 1, iCol + 2 * i + 1), .Cells(iEndRow + 1, iCol + 2 * i + 2)), sColor:=sColor
@@ -150,8 +150,8 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
                 'There is no percentage, only column values
                 i = 1
                 Do While (i <= ColumnsData.Length)
-                    .Cells(iRow + 1, iCol + i).value = ColumnsData.Items(i)
-                    .Cells(iRow + 2, iCol + i).value = sSummaryLabel
+                    .Cells(iRow + 1, iCol + i).Value = ColumnsData.Items(i)
+                    .Cells(iRow + 2, iCol + i).Value = sSummaryLabel
                     'Draw lines arround all borders
                     DrawLines rng:=.Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow + 1, iCol + i)), sColor:=sColor
                     DrawLines rng:=.Range(.Cells(iRow + 1, iCol + i), .Cells(iEndRow + 1, iCol + i)), At:="Left", sColor:=sColor, iWeight:=xlThin
@@ -164,8 +164,8 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
         Else
             'There are no categories, only a custom function created by the user
 
-            .Cells(iRow + 1, iCol + 1).value = ""
-            .Cells(iRow + 2, iCol + 1).value = sSummaryLabel
+            .Cells(iRow + 1, iCol + 1).Value = ""
+            .Cells(iRow + 2, iCol + 1).Value = sSummaryLabel
             DrawLines rng:=.Range(.Cells(iRow + 1, iCol + 1), .Cells(iEndRow + 1, iCol + 1)), sColor:=sColor
             DrawLines rng:=.Range(.Cells(iRow + 1, iCol + 1), .Cells(iEndRow + 1, iCol + 1)), At:="Left", sColor:=sColor, iWeight:=xlThin
             iLastCol = iCol + 1
@@ -178,14 +178,14 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
         If sMiss = C_sAnaCol Or sMiss = C_sAnaAll Or (sMiss = C_sYes And isTimeSeries) Then
 
             'Missing at the end of the column
-            .Cells(iRow + 1, iTotalFirstCol).value = TranslateLLMsg("MSG_NA")
-            .Cells(iRow + 2, iTotalFirstCol).value = sSummaryLabel
+            .Cells(iRow + 1, iTotalFirstCol).Value = TranslateLLMsg("MSG_NA")
+            .Cells(iRow + 2, iTotalFirstCol).Value = sSummaryLabel
             iTotalFirstCol = iTotalFirstCol + 1
 
             'Add percentage
             If HasPercent Then
 
-                .Cells(iRow + 2, iTotalFirstCol).value = TranslateLLMsg("MSG_Percent") & " " & sArrow
+                .Cells(iRow + 2, iTotalFirstCol).Value = TranslateLLMsg("MSG_Percent") & " " & sArrow
                 .Range(.Cells(iRow + 1, iTotalFirstCol - 1), .Cells(iRow + 1, iTotalFirstCol)).Merge
 
                 'Now update the first column for total
@@ -205,12 +205,12 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
         'Add Total ------------------------------------------------------------------------------------------------------------------------------------------------
         If AddTotal Then
 
-            .Cells(iRow + 1, iTotalFirstCol).value = TranslateLLMsg("MSG_Total")
-            .Cells(iRow + 2, iTotalFirstCol).value = sSummaryLabel
+            .Cells(iRow + 1, iTotalFirstCol).Value = TranslateLLMsg("MSG_Total")
+            .Cells(iRow + 2, iTotalFirstCol).Value = sSummaryLabel
 
             'In case it is needed, add percentage for total also
             If HasPercent Then
-                .Cells(iRow + 2, iTotalLastCol + 1).value = TranslateLLMsg("MSG_Percent") & " " & sArrow
+                .Cells(iRow + 2, iTotalLastCol + 1).Value = TranslateLLMsg("MSG_Percent") & " " & sArrow
                 .Range(.Cells(iRow + 1, iTotalLastCol), .Cells(iRow + 1, iTotalLastCol + 1)).Merge
                 iTotalLastCol = iTotalLastCol + 1
             End If
@@ -236,7 +236,7 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
 
         'Total on the Last line
         'Add total for time series only on first columns
-        If iCol <= C_eStartColumnAnalysis + 2 Then .Cells(iEndRow + 1, iCol).value = TranslateLLMsg("MSG_Total")
+        If iCol <= C_eStartColumnAnalysis + 2 Then .Cells(iEndRow + 1, iCol).Value = TranslateLLMsg("MSG_Total")
         FormatARange rng:=.Cells(iEndRow + 1, iCol), sInteriorColor:=sTotalInteriorColor, isBold:=True, Horiz:=xlHAlignLeft
         FormatARange rng:=.Range(.Cells(iEndRow + 1, iCol + 1), .Cells(iEndRow + 1, iTotalLastCol)), sInteriorColor:=sTotalInteriorColor, isBold:=True
 
@@ -628,7 +628,7 @@ Sub AddUANA(wkb As Workbook, DictHeaders As BetterArray, _
 
     With Wksh
 
-        .Cells(iRow, iStartCol).value = TranslateLLMsg("MSG_NA")
+        .Cells(iRow, iStartCol).Value = TranslateLLMsg("MSG_NA")
 
         FormatARange .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), sFontColor:=sFontColor, _
         sInteriorColor:=sInteriorColor, FontSize:=C_iAnalysisFontSize - 1, isBold:=True, _
@@ -674,7 +674,7 @@ Sub AddUATotal(wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, 
     includeMissing = (sMiss = C_sYes)
 
     With Wksh
-        .Cells(iRow, iStartCol).value = TranslateLLMsg("MSG_Total")
+        .Cells(iRow, iStartCol).Value = TranslateLLMsg("MSG_Total")
 
         WriteBorderLines .Range(.Cells(iRow, iStartCol), .Cells(iRow, iEndCol)), _
         iWeight:=xlHairline, sColor:="DarkBlue"
@@ -1095,7 +1095,7 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
 
         'The table for the time values
         iRow = iRow + 5
-        .Cells(iRow - 1, iCol).value = TranslateLLMsg("MSG_Period")
+        .Cells(iRow - 1, iCol).Value = TranslateLLMsg("MSG_Period")
         .Cells(iRow, iCol - 2).Formula = "= " & .Cells(iRow - 5, iCol + 1).Address
         .Cells(iRow, iCol - 1).Formula = "= " & "FindLastDay(" & .Cells(iRow - 7, iCol + 1).Address & ", " & .Cells(iRow, iCol - 2).Address & ")"
 
@@ -1118,8 +1118,8 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
                                       .Cells(iRow, iCol - 2).Address(Rowabsolute:=False, ColumnAbsolute:=False) & ")"
 
         'Format the range of time span (from, to)
-        .Cells(iRow - 1, iCol - 2).value = TranslateLLMsg("MSG_From")
-        .Cells(iRow - 1, iCol - 1).value = TranslateLLMsg("MSG_To")
+        .Cells(iRow - 1, iCol - 2).Value = TranslateLLMsg("MSG_From")
+        .Cells(iRow - 1, iCol - 1).Value = TranslateLLMsg("MSG_To")
         Set rng = .Range(.Cells(iRow - 1, iCol - 2), .Cells(iRow + C_iNbTime, iCol - 1))
 
         'Put the range in white

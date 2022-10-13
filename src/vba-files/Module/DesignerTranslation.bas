@@ -20,7 +20,7 @@ Sub TranslateShape(oShape As Object, sValue As String)
 End Sub
 
 Sub TranslateRange(rngCode As String, rngValue As String)
-    SheetMain.Range(rngCode).value = rngValue
+    SheetMain.Range(rngCode).Value = rngValue
 End Sub
 
 Sub TranslateDesigner()
@@ -42,7 +42,7 @@ Sub TranslateDesigner()
     T_codes.LowerBound = 1
 
     'First Get the language code
-    sString = GetLanguageCode([RNG_LangDesigner].value)
+    sString = GetLanguageCode([RNG_LangDesigner].Value)
 
     T_codes.Clear
     T_values.Clear
@@ -106,7 +106,7 @@ Sub TranslateDesigner()
         End If
         T_values.Clear
         T_codes.Clear
-        SheetMain.Range("RNG_Edition").value = TranslateMsg("MSG_Traduit")
+        SheetMain.Range("RNG_Edition").Value = TranslateMsg("MSG_Traduit")
 
         SheetMain.Range("RNG_LLName").NoteText TranslateMsg("NoteText_Forbidden_Caracteres")
 
@@ -135,7 +135,7 @@ Function TranslateMsg(sMsgId As String) As String
     TranslateMsg = ""
     T_data.FromExcelRange SheetDesTranslation.ListObjects("T_tradMsg").DataBodyRange
     T_codes.FromExcelRange SheetDesTranslation.ListObjects("T_tradMsg").HeaderRowRange
-    slCod = GetLanguageCode(SheetMain.Range(C_sRngLangDes).value)
+    slCod = GetLanguageCode(SheetMain.Range(C_sRngLangDes).Value)
 
     If slCod <> "" Then
         i = T_codes.IndexOf(slCod)
@@ -157,10 +157,10 @@ Sub TranslateHeadGeo()
 
     Dim sIsoCountry As String, sCountry As String, sSubCounty As String, sWard As String, sPlace As String, sFacility As String
 
-    sIsoCountry = GetLanguageCode(SheetMain.Range(C_sRngLLFormLang).value)
+    sIsoCountry = GetLanguageCode(SheetMain.Range(C_sRngLLFormLang).Value)
 
     'Get the isoCode for the linelist
-    SheetLLTranslation.Range(C_sRngLLLanguageCode).value = sIsoCountry
+    SheetLLTranslation.Range(C_sRngLLLanguageCode).Value = sIsoCountry
 
     sCountry = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 2, False)
     sSubCounty = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 3, False)
@@ -168,13 +168,13 @@ Sub TranslateHeadGeo()
     sPlace = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 5, False)
     sFacility = Application.WorksheetFunction.HLookup(sIsoCountry, SheetGeo.ListObjects(C_sTabNames).Range, 6, False)
 
-    SheetGeo.Range("A1,E1,J1,P1,Z1").value = sCountry
-    SheetGeo.Range("F1,K1,Q1,Y1").value = sSubCounty
-    SheetGeo.Range("L1,R1,X1").value = sWard
-    SheetGeo.Range("S1").value = sPlace
-    SheetGeo.Range("W1").value = sFacility
+    SheetGeo.Range("A1,E1,J1,P1,Z1").Value = sCountry
+    SheetGeo.Range("F1,K1,Q1,Y1").Value = sSubCounty
+    SheetGeo.Range("L1,R1,X1").Value = sWard
+    SheetGeo.Range("S1").Value = sPlace
+    SheetGeo.Range("W1").Value = sFacility
 
-    SheetLLTranslation.Range(C_sRngLLLanguage).value = SheetMain.Range(C_sRngLLFormLang) 'check Language of linelist's forms
+    SheetLLTranslation.Range(C_sRngLLLanguage).Value = SheetMain.Range(C_sRngLLFormLang) 'check Language of linelist's forms
 
 End Sub
 
@@ -201,7 +201,7 @@ Sub ImportLang()
     Application.EnableEvents = False
     Application.EnableAnimations = False
 
-    Set wkb = Workbooks.Open(FileName:=SheetMain.Range(C_sRngPathDic).value)
+    Set wkb = Workbooks.Open(FileName:=SheetMain.Range(C_sRngPathDic).Value)
 
     SheetSetTranslation.Cells.Clear
 
@@ -209,7 +209,7 @@ Sub ImportLang()
     Set src = wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).Range
     With SheetSetTranslation
         Set dest = .Range(.Cells(C_eStartLinesTransdata, 1), .Cells(C_eStartLinesTransdata + src.Rows.Count, src.Columns.Count))
-        dest.value = src.value
+        dest.Value = src.Value
         .ListObjects.Add(xlSrcRange, dest, , xlYes).Name = C_sTabTranslation
     End With
     Set src = wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).HeaderRowRange
@@ -224,7 +224,7 @@ Sub ImportLang()
     Call Helpers.SetValidation(SheetMain.Range(C_sRngLangSetup), "='" & SheetDesTranslation.Name & "'!" & sAdr1 & ":" & sAdr2, 1)
 
 
-    SheetMain.Range(C_sRngLangSetup).value = SheetSetTranslation.Cells(C_eStartLinesTransdata, 1).value
+    SheetMain.Range(C_sRngLangSetup).Value = SheetSetTranslation.Cells(C_eStartLinesTransdata, 1).Value
     EndWork xlsapp:=Application
     Application.EnableEvents = True
     Application.EnableAnimations = True
@@ -244,7 +244,7 @@ Function GetTranslatedValue(ByVal sText As String) As String
     Dim iRow As Integer
 
     'search in linelist language
-    sLangSetup = SheetMain.Range(C_sRngLangSetup).value
+    sLangSetup = SheetMain.Range(C_sRngLangSetup).Value
     iColLang = IIf(sLangSetup <> "", SheetSetTranslation.Rows(C_eStartLinesTransdata).Find(What:=sLangSetup, LookAt:=xlWhole).Column, C_eStartcolumntransdata)
 
     With DesignerWorkbook.Worksheets(C_sParamSheetTranslation)
@@ -254,7 +254,7 @@ Function GetTranslatedValue(ByVal sText As String) As String
 
     On Error Resume Next
     iRow = rngTrans.Find(What:=Application.WorksheetFunction.Trim(sText), LookAt:=xlWhole).Row
-    GetTranslatedValue = SheetSetTranslation.Cells(iRow, iColLang).value
+    GetTranslatedValue = SheetSetTranslation.Cells(iRow, iColLang).Value
     On Error GoTo 0
 
 End Function
@@ -270,11 +270,11 @@ Sub TranslateColumn(iCol As Integer, sSheetName As String, iLastRow As Long, Opt
         i = iStartRow
 
         Do While i <= iLastRow
-            If Wksh.Cells(i, iCol).value <> vbNullString Then
-                sText = Wksh.Cells(i, iCol).value
+            If Wksh.Cells(i, iCol).Value <> vbNullString Then
+                sText = Wksh.Cells(i, iCol).Value
                 sText = GetTranslatedValue(sText)
                 If sText <> vbNullString Then
-                    Wksh.Cells(i, iCol).value = sText
+                    Wksh.Cells(i, iCol).Value = sText
                 End If
             End If
             i = i + 1
@@ -329,9 +329,9 @@ Sub TranslateColumnFormula(iCol As Integer, sSheetName As String, iLastRow As Lo
     i = iStartRow
 
     Do While i <= iLastRow
-        sText = Wksh.Cells(i, iCol).value
+        sText = Wksh.Cells(i, iCol).Value
         sText = TranslateCellFormula(sText)
-        If sText <> vbNullString Then Wksh.Cells(i, iCol).value = sText
+        If sText <> vbNullString Then Wksh.Cells(i, iCol).Value = sText
         i = i + 1
     Loop
 

@@ -145,8 +145,8 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
     If (endRow = endRowlabel) Then
       CategoriesData.ToExcelRange .Cells(endRow, labelRng.Column)
       For counter = 0 To (CategoriesData.Length - 1)
-        .Cells(endRow + counter, listRng.Column).value = choiceName
-        .Cells(endRow + counter, orderRng.Column).value = counter + 1
+        .Cells(endRow + counter, listRng.Column).Value = choiceName
+        .Cells(endRow + counter, orderRng.Column).Value = counter + 1
       Next
     Else
       'Do something (trace log)

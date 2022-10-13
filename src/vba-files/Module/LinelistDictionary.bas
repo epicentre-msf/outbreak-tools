@@ -185,7 +185,7 @@ Sub UpdateDictionaryValue(sVarName As String, sColname As String, sNewValue As S
 
             If iRow > 0 And iColumn > 0 Then
                 With ThisWorkbook.Worksheets(C_sParamSheetDict)
-                    .Cells(iRow, iColumn).value = Application.WorksheetFunction.Trim(sNewValue)
+                    .Cells(iRow, iColumn).Value = Application.WorksheetFunction.Trim(sNewValue)
                 End With
             End If
 

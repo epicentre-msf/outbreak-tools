@@ -19,14 +19,14 @@ Sub LoadFileDic()
 
     'Update messages if the file path is correct
     If sFilePath <> "" Then
-        SheetMain.Range(C_sRngPathDic).value = sFilePath
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ChemFich")
+        SheetMain.Range(C_sRngPathDic).Value = sFilePath
+        SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_ChemFich")
         SheetMain.Range(C_sRngPathDic).Interior.Color = vbWhite
 
         'Import the languages after loading the setup file
         Call ImportLang
     Else
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
+        SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_OpeAnnule")
     End If
 
     EndWork xlsapp:=Application
@@ -57,10 +57,10 @@ Sub LinelistDir()
     sfolder = Helpers.LoadFolder
     SheetMain.Range(C_sRngLLDir) = ""
     If (sfolder <> "") Then
-        SheetMain.Range(C_sRngLLDir).value = sfolder
+        SheetMain.Range(C_sRngLLDir).Value = sfolder
         SheetMain.Range(C_sRngLLDir).Interior.Color = vbWhite
     Else
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
+        SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_OpeAnnule")
     End If
 End Sub
 
@@ -77,11 +77,11 @@ Sub LoadGeoFile()
 
     If sFilePath <> vbNullString Then
         'Open the geo workbook and hide the windows
-        SheetMain.Range(C_sRngPathGeo).value = sFilePath
+        SheetMain.Range(C_sRngPathGeo).Value = sFilePath
         Call ImportGeobase
         bGeobaseIsImported = True
     Else
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_OpeAnnule")
+        SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_OpeAnnule")
     End If
 End Sub
 
@@ -107,18 +107,18 @@ Public Sub ImportGeobase()
     AdmNames.Push C_sAdm1, C_sAdm2, C_sAdm3, C_sAdm4, C_sHF, C_sNames, C_sHistoHF, C_sHistoGeo, C_sGeoMetadata
 
     'Path to the geobase
-    sFilePath = SheetMain.Range(C_sRngPathGeo).value
+    sFilePath = SheetMain.Range(C_sRngPathGeo).Value
 
     'Be sure there is a geobase before proceeding, otherwhise, build the linelist without a geobase
     If sFilePath = vbNullString Then Exit Sub
 
 
-    SheetGeo.Range(C_sRngGeoName).value = Dir(sFilePath)
+    SheetGeo.Range(C_sRngGeoName).Value = Dir(sFilePath)
 
     Set wkb = Workbooks.Open(sFilePath)
     'Write the filename of the geobase somewhere for the export
     'Cleaning the previous Data in case the ranges are not Empty
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_NetoPrec")
+    SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_NetoPrec")
     For i = 1 To AdmNames.Length
         'Adms (Maybe come back to work on the names?)
         If Not SheetGeo.ListObjects("T_" & AdmNames.Items(i)).DataBodyRange Is Nothing Then
@@ -127,7 +127,7 @@ Public Sub ImportGeobase()
     Next
     'Reloading the data from the Geobase
     For Each oSheet In wkb.Worksheets
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_EnCours") & oSheet.Name
+        SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_EnCours") & oSheet.Name
         AdmData.Clear
         AdmHeader.Clear
         'Be sure my sheetnames are correct before loading the data
@@ -147,7 +147,7 @@ Public Sub ImportGeobase()
     Next
 
     wkb.Close SaveChanges:=False
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Fini")
+    SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_Fini")
     SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White")
 
     Call TranslateHeadGeo
@@ -194,15 +194,15 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Be sure the actual Workbook is not opened
 
 
-    SheetMain.Range(C_sRngUpdate).value = vbNullString
+    SheetMain.Range(C_sRngUpdate).Value = vbNullString
 
-    If IsWkbOpened(SheetMain.Range(C_sRngLLName).value & ".xlsb") Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseLL")
+    If IsWkbOpened(SheetMain.Range(C_sRngLLName).Value & ".xlsb") Then
+        SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_CloseLL")
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
 
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_MovingData")
+    SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_MovingData")
 
     iUpdateCpt = 0
     StatusBar_Updater (iUpdateCpt)
@@ -215,7 +215,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Set security before opening  the setup workbook
     Application.AutomationSecurity = msoAutomationSecurityForceDisable
 
-    Set SetupWkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).value)
+    Set SetupWkb = Workbooks.Open(SheetMain.Range(C_sRngPathDic).Value)
 
     'Move the dictionary data
     Call Helpers.MoveData(SetupWkb, DesWkb, C_sParamSheetDict, C_eStartLinesDictHeaders)
@@ -234,7 +234,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     StatusBar_Updater (iUpdateCpt)
 
     'Translating the linelist
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Translating")
+    SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_Translating")
 
     'Translate
     Call TranslateLinelistData
@@ -249,13 +249,13 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Create the data table of linelist patient using the dictionnary
     Set DictData = Helpers.GetData(DesWkb, C_sParamSheetDict, 2, DictHeaders.Length)
     'Create the choices data
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadList")
+    SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_ReadList")
     'Create the dictionnary for the choices sheet
     Set ChoicesHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetChoices, 1)
     'Create the table for the choices
     Set ChoicesData = Helpers.GetData(DesWkb, C_sParamSheetChoices, 2, ChoicesHeaders.Length)
     'Reading the export sheet
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_ReadExport")
+    SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_ReadExport")
     'Create parameters for export
     Set ExportData = Helpers.GetData(DesWkb, C_sParamSheetExport, 1)
     'Create the translation Data
@@ -289,10 +289,10 @@ Sub GenerateData(Optional iAsk As Byte = 0)
 
     DoEvents
 
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_BuildLL")
+    SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_BuildLL")
 
     'Creating the linelist using the dictionnary and choices data as well as export data
-    sPath = SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb"
+    sPath = SheetMain.Range(C_sRngLLDir).Value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).Value & ".xlsb"
 
     'Prepare the temporary folder for the linelist
     Call PrepareTemporaryFolder
@@ -307,7 +307,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     DoEvents
 
     EndWork xlsapp:=Application
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLCreated")
+    SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_LLCreated")
 
     Call PrepareTemporaryFolder(Create:=False)
 
@@ -348,19 +348,19 @@ Public Sub Control()
 
         Call SetInputRangesToWhite
 
-        SheetMain.Range(C_sRngLLName).value = FileNameControl(SheetMain.Range(C_sRngLLName).value)
+        SheetMain.Range(C_sRngLLName).Value = FileNameControl(SheetMain.Range(C_sRngLLName).Value)
 
-        If Dir(SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb") <> "" Then
-            SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Correct") & ": " & SheetMain.Range(C_sRngLLName).value & ".xlsb " & TranslateMsg("MSG_Exists")
+        If Dir(SheetMain.Range(C_sRngLLDir).Value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).Value & ".xlsb") <> "" Then
+            SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_Correct") & ": " & SheetMain.Range(C_sRngLLName).Value & ".xlsb " & TranslateMsg("MSG_Exists")
             SheetMain.Range(C_sRngEdition).Interior.Color = Helpers.GetColor("Grey")
-            If MsgBox(SheetMain.Range(C_sRngLLName).value & ".xlsb " & TranslateMsg("MSG_Exists") & Chr(10) & TranslateMsg("MSG_Question"), vbYesNo, _
+            If MsgBox(SheetMain.Range(C_sRngLLName).Value & ".xlsb " & TranslateMsg("MSG_Exists") & Chr(10) & TranslateMsg("MSG_Question"), vbYesNo, _
                       TranslateMsg("MSG_Title")) = vbNo Then
-                SheetMain.Range(C_sRngLLName).value = ""
+                SheetMain.Range(C_sRngLLName).Value = ""
                 SheetMain.Range(C_sRngLLName).Interior.Color = GetColor("RedEpi")
                 Exit Sub
             End If
         Else
-            SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_Correct")
+            SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_Correct")
         End If
 
         Call GenerateData(1)
@@ -372,28 +372,28 @@ End Sub
 
 Sub OpenLL()
     'Be sure that the directory and the linelist name are not empty
-    If SheetMain.Range(C_sRngLLDir).value = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_PathLL")
+    If SheetMain.Range(C_sRngLLDir).Value = "" Then
+        SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_PathLL")
         SheetMain.Range(C_sRngLLDir).Interior.Color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
 
-    If SheetMain.Range(C_sRngLLName).value = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_LLName")
+    If SheetMain.Range(C_sRngLLName).Value = "" Then
+        SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_LLName")
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
 
     'Be sure the workbook is not already opened
-    If IsWkbOpened(SheetMain.Range(C_sRngLLName).value & ".xlsb") Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CloseLL")
+    If IsWkbOpened(SheetMain.Range(C_sRngLLName).Value & ".xlsb") Then
+        SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_CloseLL")
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
 
     'Be sure the workbook exits
-    If Dir(SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb") = "" Then
-        SheetMain.Range(C_sRngEdition).value = TranslateMsg("MSG_CheckLL")
+    If Dir(SheetMain.Range(C_sRngLLDir).Value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).Value & ".xlsb") = "" Then
+        SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_CheckLL")
         SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
         SheetMain.Range(C_sRngLLDir).Interior.Color = Helpers.GetColor("RedEpi")
         Exit Sub
@@ -401,7 +401,7 @@ Sub OpenLL()
 
     On Error GoTo no
     'Then open it
-    Application.Workbooks.Open FileName:=SheetMain.Range(C_sRngLLDir).value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).value & ".xlsb", ReadOnly:=False
+    Application.Workbooks.Open FileName:=SheetMain.Range(C_sRngLLDir).Value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).Value & ".xlsb", ReadOnly:=False
 no:
     Exit Sub
 
@@ -409,13 +409,13 @@ End Sub
 
 Sub ResetField()
 
-    SheetMain.Range(C_sRngPathDic).value = vbNullString
-    SheetMain.Range(C_sRngPathGeo).value = vbNullString
-    SheetMain.Range(C_sRngLLName).value = vbNullString
-    SheetMain.Range(C_sRngLLDir).value = vbNullString
-    SheetMain.Range(C_sRngEdition).value = vbNullString
-    SheetMain.Range(C_sRngUpdate).value = vbNullString
-    SheetMain.Range(C_sRngLangSetup).value = vbNullString
+    SheetMain.Range(C_sRngPathDic).Value = vbNullString
+    SheetMain.Range(C_sRngPathGeo).Value = vbNullString
+    SheetMain.Range(C_sRngLLName).Value = vbNullString
+    SheetMain.Range(C_sRngLLDir).Value = vbNullString
+    SheetMain.Range(C_sRngEdition).Value = vbNullString
+    SheetMain.Range(C_sRngUpdate).Value = vbNullString
+    SheetMain.Range(C_sRngLangSetup).Value = vbNullString
 
     SheetMain.Range(C_sRngPathGeo).Interior.Color = vbWhite
     SheetMain.Range(C_sRngPathDic).Interior.Color = vbWhite

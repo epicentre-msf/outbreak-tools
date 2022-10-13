@@ -38,7 +38,7 @@ Function CreateDicTitle() As BetterArray
     If Not T_DictHeaders.Includes(C_sDictHeaderVisibility) Then
         T_DictHeaders.Push C_sDictHeaderVisibility
         'add the visibility
-        ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(1, T_DictHeaders.UpperBound).value = C_sDictHeaderVisibility
+        ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(1, T_DictHeaders.UpperBound).Value = C_sDictHeaderVisibility
     End If
 
     Set CreateDicTitle = T_DictHeaders.Clone
@@ -73,7 +73,7 @@ Sub ClicCmdShowHide()
     T_DictHeaders.LowerBound = 1
     T_data.LowerBound = 1
 
-    ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
+    ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
 
     On Error GoTo errShowHide
 
@@ -97,27 +97,27 @@ Sub ClicCmdShowHide()
                                                                                           Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "4"
 
             'update only on non hidden variables
-            If Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderStatus)).value <> C_sDictStatusHid Then
+            If Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderStatus)).Value <> C_sDictStatusHid Then
 
                 'avoid adding the other Geos
                 If Not bremoveFromGeo Then
-                    T_mainlab.Push Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderMainLab)).value
-                    T_varname.Push Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVarName)).value
+                    T_mainlab.Push Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderMainLab)).Value
+                    T_varname.Push Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVarName)).Value
 
-                    If LCase(Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderStatus)).value) = C_sDictStatusMan Or _
-                                                                                                Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderIndex)).value <= C_iLLSplitColumn Then
+                    If LCase(Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderStatus)).Value) = C_sDictStatusMan Or _
+                                                                                                Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderIndex)).Value <= C_iLLSplitColumn Then
                         T_status.Push sMandatory
-                        Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = sMandatory
-                    ElseIf Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = sHidden Then
+                        Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).Value = sMandatory
+                    ElseIf Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).Value = sHidden Then
                         T_status.Push sHidden
                     Else
                         T_status.Push sShown
-                        Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = sShown
+                        Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).Value = sShown
                     End If
                 End If
 
             Else
-                Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).value = sDesHidden
+                Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).Value = sDesHidden
             End If
         End If
         i = i + 1
@@ -179,7 +179,7 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
     Select Case T_FormData.Items(iIndex + 1, 3)
     Case sMandatory
         TriggerShowHide = False
-        F_NomVisible.OPT_Affiche.value = 1
+        F_NomVisible.OPT_Affiche.Value = 1
         F_NomVisible.OPT_Affiche.Caption = sShowMandatory
         F_NomVisible.OPT_Affiche.Width = 80
         F_NomVisible.OPT_Affiche.Left = 0
@@ -188,7 +188,7 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
         F_NomVisible.OPT_Masque.Visible = False
     Case sHidden                                 'It is hidden, show masking
         TriggerShowHide = False
-        F_NomVisible.OPT_Affiche.value = 0
+        F_NomVisible.OPT_Affiche.Value = 0
         F_NomVisible.OPT_Affiche.Caption = sShown
         F_NomVisible.OPT_Affiche.Width = 70
         F_NomVisible.OPT_Affiche.Left = 10
@@ -196,10 +196,10 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
 
         F_NomVisible.OPT_Masque.Visible = True
         F_NomVisible.OPT_Affiche.Visible = True
-        F_NomVisible.OPT_Masque.value = 1
+        F_NomVisible.OPT_Masque.Value = 1
     Case Else
         TriggerShowHide = False                  'It is shown if not
-        F_NomVisible.OPT_Affiche.value = 1
+        F_NomVisible.OPT_Affiche.Value = 1
         F_NomVisible.OPT_Affiche.Caption = sShown
         F_NomVisible.OPT_Affiche.Width = 70
         F_NomVisible.OPT_Affiche.Left = 10
@@ -207,7 +207,7 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
 
         F_NomVisible.OPT_Masque.Visible = True
         F_NomVisible.OPT_Affiche.Visible = True
-        F_NomVisible.OPT_Masque.value = 0
+        F_NomVisible.OPT_Masque.Value = 0
     End Select
 
     TriggerShowHide = True
@@ -224,7 +224,7 @@ Sub ShowHideColumnSheet(sSheetName As String, ByVal sVarName As String, Optional
     Dim sControl As String                       'Extracting the control label to be sure we can hide all the geos
 
     BeginWork xlsapp:=Application
-    ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
+    ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
 
     'First, Get the values of the headers names
     Set T_DictHeaders = New BetterArray
@@ -256,14 +256,14 @@ End Sub
 'A simple Procedure to update the third column of the next formname to either hidden or Shown before
 'moving to the logic
 
-Sub UpdateFormData(ByRef T_table As BetterArray, index As Integer, Optional bhide As Boolean = True)
+Sub UpdateFormData(ByRef T_table As BetterArray, Index As Integer, Optional bhide As Boolean = True)
     'We can't mutate easily on a 2D array. We need first to work on updating the data from a
     '1D array. That is the purpose of the T_values BetterArray
     Dim T_values As BetterArray
     Set T_values = New BetterArray
 
     'Get the current row
-    T_values.Items = T_table.Item(index + 1)     'the index starts at -1 on a listbox
+    T_values.Items = T_table.Item(Index + 1)     'the index starts at -1 on a listbox
     'Update the visibility status
     If bhide Then
         T_values.Item(3) = sHidden
@@ -271,7 +271,7 @@ Sub UpdateFormData(ByRef T_table As BetterArray, index As Integer, Optional bhid
         T_values.Item(3) = sShown
     End If
     'Mutate in the form table
-    T_table.Item(index + 1) = T_values.Items
+    T_table.Item(Index + 1) = T_values.Items
 End Sub
 
 'Logic behind the show/hide click
@@ -297,15 +297,15 @@ Sub ShowHideLogic(iIndex As Integer)
             'For mutating, we can only use the item method. Items with s, read only values,
             'we can't set values with items
 
-            If F_NomVisible.OPT_Masque.value Then
+            If F_NomVisible.OPT_Masque.Value Then
                 '// --- Here I update the Data to show "Hidden"
-                UpdateFormData T_table:=T_FormData, index:=iIndex, bhide:=True
+                UpdateFormData T_table:=T_FormData, Index:=iIndex, bhide:=True
                 '//--- Actually hide the column
                 ShowHideColumnSheet sSheetName:=ActiveSheet.Name, sVarName:=T_FormData.Items(iIndex + 1, 2), bhide:=True
                 WriteShowHide sSheetName:=ActiveSheet.Name, sVarName:=T_FormData.Items(iIndex + 1, 2), visibility:=0
             Else
                 '// --- Here I udpate the data to show "Shown"
-                UpdateFormData T_table:=T_FormData, index:=iIndex, bhide:=False
+                UpdateFormData T_table:=T_FormData, Index:=iIndex, bhide:=False
                 ShowHideColumnSheet sSheetName:=ActiveSheet.Name, sVarName:=T_FormData.Items(iIndex + 1, 2), bhide:=False
                 WriteShowHide sSheetName:=ActiveSheet.Name, sVarName:=T_FormData.Items(iIndex + 1, 2), visibility:=1
             End If
@@ -345,9 +345,9 @@ Sub WriteShowHide(sSheetName As String, ByVal sVarName As String, visibility As 
             T_DictVarnames.LowerBound = 2
             iVarnameIndex = T_DictVarnames.IndexOf(sVarName)
             If visibility = 0 Then
-                ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).value = sHidden
+                ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).Value = sHidden
             ElseIf visibility = 1 Then
-                ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).value = sShown
+                ThisWorkbook.Worksheets(C_sParamSheetDict).Cells(iVarnameIndex, iVisIndex).Value = sShown
             End If
         End If
     End If
