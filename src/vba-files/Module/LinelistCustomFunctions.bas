@@ -40,7 +40,7 @@ Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Str
     Dim sVal As String
     Dim iColVal As Long
 
-    sValLook = rng.value
+    sValLook = rng.Value
 
     sVal = vbNullString
 
@@ -56,7 +56,7 @@ Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Str
 
         On Error Resume Next
         With Application.WorksheetFunction
-            sVal = .index(ColRngVal, .Match(sValLook, ColRngLook, 0))
+            sVal = .Index(ColRngVal, .Match(sValLook, ColRngLook, 0))
         End With
         On Error GoTo 0
     End If

@@ -155,11 +155,11 @@ Public Function AddSpaceToHeaders(wkb As Workbook, _
     AddSpaceToHeaders = ""
     With wkb
         i = 1
-        Do While i <= .Worksheets(sSheetName).Cells(iStartLine, Columns.Count).End(xlToLeft).Column And Replace(UCase(.Sheets(sSheetName).Cells(iStartLine, i).value), " ", "") <> Replace(UCase(sHeader), " ", "")
+        Do While i <= .Worksheets(sSheetName).Cells(iStartLine, Columns.Count).End(xlToLeft).Column And Replace(UCase(.Sheets(sSheetName).Cells(iStartLine, i).Value), " ", "") <> Replace(UCase(sHeader), " ", "")
             i = i + 1
         Loop
-        If Replace(UCase(wkb.Worksheets(sSheetName).Cells(iStartLine, i).value), " ", "") = Replace(UCase(sHeader), " ", "") Then
-            AddSpaceToHeaders = wkb.Worksheets(sSheetName).Cells(iStartLine, i).value & " "
+        If Replace(UCase(wkb.Worksheets(sSheetName).Cells(iStartLine, i).Value), " ", "") = Replace(UCase(sHeader), " ", "") Then
+            AddSpaceToHeaders = wkb.Worksheets(sSheetName).Cells(iStartLine, i).Value & " "
         Else
             AddSpaceToHeaders = sHeader
         End If
@@ -213,8 +213,8 @@ Sub AddSubLab(Wksh As Worksheet, iSheetStartLine As Integer, _
               iCol As Integer, sMainLab As String, sSubLab As String, _
               Optional sSubLabColor As String = "SubLabBlue")
     With Wksh
-        .Cells(iSheetStartLine, iCol).value = _
-        .Cells(iSheetStartLine, iCol).value & Chr(10) & sSubLab
+        .Cells(iSheetStartLine, iCol).Value = _
+        .Cells(iSheetStartLine, iCol).Value & Chr(10) & sSubLab
 
         'Changing the fontsize of the sublabels
         .Cells(iSheetStartLine, iCol).Characters(Start:=Len(sMainLab) + 1, _
@@ -332,7 +332,7 @@ Sub AddChoices(wkb As Workbook, sSheetName As String, iSheetStartLine As Integer
     If Not ListObjectExists(WkshChoice, sListObjectName) Then
         With WkshChoice
             iChoiceCol = .Cells(1, .Columns.Count).End(xlToLeft).Column + 2
-            .Cells(C_eStartlinesListAuto, iChoiceCol).value = sChoice
+            .Cells(C_eStartlinesListAuto, iChoiceCol).Value = sChoice
 
             'Get the validation list
             Set ValidationList = Helpers.GetValidationList(ChoicesListData, ChoicesLabelsData, sChoice)
@@ -408,13 +408,13 @@ Sub Add4GeoCol(wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
     With wkb.Worksheets(sSheetName)
 
         'Admin 4
-        sLab = SheetGeo.ListObjects(C_sTabAdm4).HeaderRowRange.Item(4).value
+        sLab = SheetGeo.ListObjects(C_sTabAdm4).HeaderRowRange.Item(4).Value
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
-        .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(wkb, sLab, sSheetName, iStartLine)
+        .Cells(iStartLine, iCol + 1).Value = AddSpaceToHeaders(wkb, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "4" & "_" & sVarName
 
         'Add the type
-        .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).value = C_sDictControlGeo & "4"
+        .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).Value = C_sDictControlGeo & "4"
         'Put in bold
         .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
         .Cells(iStartLine + 2, iCol + 1).Locked = False
@@ -422,42 +422,42 @@ Sub Add4GeoCol(wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol + 1), "=" & C_sAdmName & "_4_" & "dropdown", 2, sMessage)
 
         'Admin 3
-        sLab = SheetGeo.ListObjects(C_sTabAdm3).HeaderRowRange.Item(3).value
+        sLab = SheetGeo.ListObjects(C_sTabAdm3).HeaderRowRange.Item(3).Value
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
-        .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(wkb, sLab, sSheetName, iStartLine)
+        .Cells(iStartLine, iCol + 1).Value = AddSpaceToHeaders(wkb, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "3" & "_" & sVarName
-        .Cells(iStartLine + 1, iCol + 1).value = C_sAdmName & "3" & "_" & sVarName
+        .Cells(iStartLine + 1, iCol + 1).Value = C_sAdmName & "3" & "_" & sVarName
 
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
 
 
-        .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).value = C_sDictControlGeo & "3"
+        .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).Value = C_sDictControlGeo & "3"
         .Cells(iStartLine + 2, iCol + 1).Locked = False
         'Set validation for admin 3
         Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol + 1), "=" & C_sAdmName & "_3_" & "dropdown", 2, sMessage)
 
 
         'Admin 2
-        sLab = SheetGeo.ListObjects(C_sTabAdm2).HeaderRowRange.Item(2).value
+        sLab = SheetGeo.ListObjects(C_sTabAdm2).HeaderRowRange.Item(2).Value
         .Columns(iCol + 1).Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
-        .Cells(iStartLine, iCol + 1).value = AddSpaceToHeaders(wkb, sLab, sSheetName, iStartLine)
+        .Cells(iStartLine, iCol + 1).Value = AddSpaceToHeaders(wkb, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol + 1).Name = C_sAdmName & "2" & "_" & sVarName
-        .Cells(iStartLine + 1, iCol + 1).value = C_sAdmName & "2" & "_" & sVarName
+        .Cells(iStartLine + 1, iCol + 1).Value = C_sAdmName & "2" & "_" & sVarName
 
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)))
         .Range(.Cells(iStartLine, iCol + 1), .Cells(iStartLine + 1, iCol + 1)).Font.Bold = True
-        .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).value = C_sDictControlGeo & "2"
+        .Cells(C_eStartLinesLLMainSec - 1, iCol + 1).Value = C_sDictControlGeo & "2"
         .Cells(iStartLine + 2, iCol + 1).Locked = False
 
         'Set validation for admin 2
         Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol + 1), "=" & C_sAdmName & "_2_" & "dropdown", 2, sMessage)
 
         'Admin 1
-        sLab = SheetGeo.ListObjects(C_sTabadm1).HeaderRowRange.Item(1).value
-        .Cells(iStartLine, iCol).value = AddSpaceToHeaders(wkb, sLab, sSheetName, iStartLine)
+        sLab = SheetGeo.ListObjects(C_sTabadm1).HeaderRowRange.Item(1).Value
+        .Cells(iStartLine, iCol).Value = AddSpaceToHeaders(wkb, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol).Name = C_sAdmName & "1" & "_" & sVarName
         .Cells(iStartLine, iCol).Interior.Color = GetColor("Orange")
-        .Cells(iStartLine + 1, iCol).value = C_sAdmName & "1" & "_" & sVarName
+        .Cells(iStartLine + 1, iCol).Value = C_sAdmName & "1" & "_" & sVarName
 
 
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol), .Cells(iStartLine + 1, iCol)))
@@ -466,7 +466,7 @@ Sub Add4GeoCol(wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         'ajout des formules de validation
         .Cells(iStartLine + 2, iCol).Validation.Delete
         'Add name and reference for adm1 (in case someone adds one adm1)
-        wkb.Names.Add Name:=C_sAdmName & "1" & "_column", RefersToR1C1:="=" & C_sTabadm1 & "[" & SheetGeo.Cells(1, 1).value & "]"
+        wkb.Names.Add Name:=C_sAdmName & "1" & "_column", RefersToR1C1:="=" & C_sTabadm1 & "[" & SheetGeo.Cells(1, 1).Value & "]"
 
         Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol), "=" & C_sAdmName & 1 & "_column", 2, sMessage)
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol), .Cells(iStartLine + 1, iCol)))
@@ -479,20 +479,20 @@ Sub Add4GeoCol(wkb As Workbook, DictData As BetterArray, DictHeaders As BetterAr
         LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "4"
         .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
         LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
-        .Cells(iRow + 2, 1).value = ""
-        .Cells(iRow + 2, DictHeaders.Length + 1).value = .Cells(iRow + 1, DictHeaders.Length + 1).value + 3
+        .Cells(iRow + 2, 1).Value = ""
+        .Cells(iRow + 2, DictHeaders.Length + 1).Value = .Cells(iRow + 1, DictHeaders.Length + 1).Value + 3
         'Admin 3
         .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
         LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "3"
         LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
-        .Cells(iRow + 2, 1).value = ""
-        .Cells(iRow + 2, DictHeaders.Length + 1).value = .Cells(iRow + 1, DictHeaders.Length + 1).value + 2
+        .Cells(iRow + 2, 1).Value = ""
+        .Cells(iRow + 2, DictHeaders.Length + 1).Value = .Cells(iRow + 1, DictHeaders.Length + 1).Value + 2
         'Admin 2
         .Rows(iRow + 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
         LineValues.Item(DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "2"
         LineValues.ToExcelRange Destination:=.Cells(iRow + 2, 1), TransposeValues:=True
-        .Cells(iRow + 2, 1).value = ""
-        .Cells(iRow + 2, DictHeaders.Length + 1).value = .Cells(iRow + 1, DictHeaders.Length + 1).value + 1
+        .Cells(iRow + 2, 1).Value = ""
+        .Cells(iRow + 2, DictHeaders.Length + 1).Value = .Cells(iRow + 1, DictHeaders.Length + 1).Value + 1
 
     End With
 End Sub
@@ -509,7 +509,7 @@ Sub BuildGotoArea(wkb As Workbook, sTableName As String, sSheetName As String, i
     With wkb.Worksheets(sSheetName)
         'Where to write the GoTo section in the worksheet
         .Cells(1, iCol).Locked = False
-        .Cells(1, iCol).value = TranslateLLMsg("MSG_SelectSection")
+        .Cells(1, iCol).Value = TranslateLLMsg("MSG_SelectSection")
         .Cells(1, iCol).Name = sTableName & "_" & C_sGotoSection
         .Cells(1, iCol).Font.Size = iFontSize
         .Cells(1, iCol).HorizontalAlignment = xlHAlignCenter
@@ -526,7 +526,7 @@ Sub BuildGotoArea(wkb As Workbook, sTableName As String, sSheetName As String, i
 
     With wkb.Worksheets(C_sSheetChoiceAuto)
 
-        .Cells(C_eStartlinesListAuto, iGoToCol).value = sGoToSourceName
+        .Cells(C_eStartlinesListAuto, iGoToCol).Value = sGoToSourceName
         'Add the list object to the worksheet
         iChoiceRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
         Set LoRng = .Range(.Cells(C_eStartlinesListAuto, iGoToCol), .Cells(iChoiceRow, iGoToCol))
@@ -575,7 +575,7 @@ Sub BuildMainSectionVMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As I
         End With
 
         For Each oCell In .Range(.Cells(iLineFrom, iColumnTo), .Cells(iLineTo - 1, iColumnTo))
-            If oCell.value = vbNullString Then oCell.Interior.Color = vbWhite
+            If oCell.Value = vbNullString Then oCell.Interior.Color = vbWhite
         Next
 
         'Write the borders line
@@ -631,7 +631,7 @@ Sub BuildMainSectionHMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As I
         End With
 
         For Each oCell In .Range(.Cells(iLineTo, iColumnFrom), .Cells(iLineTo, iColumnTo - 1))
-            If oCell.value = vbNullString Then oCell.Interior.Color = vbWhite
+            If oCell.Value = vbNullString Then oCell.Interior.Color = vbWhite
         Next
 
         'Write the borders line
@@ -864,20 +864,20 @@ Public Sub UpdateChoiceAutoHeaders(wkb As Workbook, ChoiceAutoVarData As BetterA
     Dim iIndex As Integer
     i = 2
     With wkb
-        sVarName = .Worksheets(C_sParamSheetDict).Cells(2, DictHeaders.IndexOf(C_sDictHeaderVarName)).value
+        sVarName = .Worksheets(C_sParamSheetDict).Cells(2, DictHeaders.IndexOf(C_sDictHeaderVarName)).Value
         Do While (sVarName <> vbNullString)
             If ChoiceAutoVarData.Includes(sVarName) Then
-                sSheetName = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)).value
-                iIndex = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.Length + 1).value
-                .Worksheets(sSheetName).Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
-                .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).value = C_sDictControlChoiceAuto & "_origin"
+                sSheetName = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)).Value
+                iIndex = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.Length + 1).Value
+                .Worksheets(sSheetName).Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+                .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).Value = C_sDictControlChoiceAuto & "_origin"
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).Font.Color = vbWhite
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).FormulaHidden = True
-                .Worksheets(sSheetName).Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                .Worksheets(sSheetName).Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
             End If
             i = i + 1
-            sVarName = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.IndexOf(C_sDictHeaderVarName)).value
+            sVarName = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.IndexOf(C_sDictHeaderVarName)).Value
         Loop
     End With
 End Sub
@@ -898,22 +898,22 @@ Public Sub AddMetadataSheet(wkb As Workbook)
 
         'Add metadata of the Geo
         With .Worksheets(C_sSheetMetadata)
-            .Cells(1, 1).value = C_sVariable
-            .Cells(1, 2).value = C_sValue
+            .Cells(1, 1).Value = C_sVariable
+            .Cells(1, 2).Value = C_sValue
             If iRow > 0 Then
-                .Range(.Cells(2, 1), .Cells(2 + iRow, 2)).value = SheetGeo.ListObjects(C_sTabGeoMetadata).DataBodyRange.value
+                .Range(.Cells(2, 1), .Cells(2 + iRow, 2)).Value = SheetGeo.ListObjects(C_sTabGeoMetadata).DataBodyRange.Value
             Else
                 iRow = 1
             End If
             'Add other informations to the metadata sheet:
 
             'language
-            .Cells(iRow + 1, 1).value = C_sLanguage
-            .Cells(iRow + 1, 2).value = SheetLLTranslation.Range(C_sRngLLLanguage).value
+            .Cells(iRow + 1, 1).Value = C_sLanguage
+            .Cells(iRow + 1, 2).Value = SheetLLTranslation.Range(C_sRngLLLanguage).Value
 
             'linelist creation date
-            .Cells(iRow + 2, 1).value = C_sLLDate
-            .Cells(iRow + 2, 2).value = Format(Now, "yyyy/mm/dd Hh:Nn")
+            .Cells(iRow + 2, 1).Value = C_sLLDate
+            .Cells(iRow + 2, 2).Value = Format(Now, "yyyy/mm/dd Hh:Nn")
 
             'linelist version... Other infos will be added
 
@@ -963,9 +963,9 @@ Public Sub AddTemporarySheets(wkb As Workbook)
         'Add in choice auto list for the Geo dropdowns
         With .Worksheets(C_sSheetChoiceAuto)
 
-            .Cells(1, 1).value = C_sAdmName & "_2_" & "dropdown"
-            .Cells(1, 3).value = C_sAdmName & "_3_" & "dropdown"
-            .Cells(1, 5).value = C_sAdmName & "_4_" & "dropdown"
+            .Cells(1, 1).Value = C_sAdmName & "_2_" & "dropdown"
+            .Cells(1, 3).Value = C_sAdmName & "_3_" & "dropdown"
+            .Cells(1, 5).Value = C_sAdmName & "_4_" & "dropdown"
 
             'Add the listObjects
 

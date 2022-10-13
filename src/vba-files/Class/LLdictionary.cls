@@ -114,6 +114,11 @@ Public Property Get DataRange(Optional colName As String = "__all__", Optional i
     Set DataRange = customDataSheet.DataRange(colName, includeHeaders)
 End Property
 
+Private Property Get variables() As ILLVariables
+    Dim var As ILLVariables
+    Set var = LLVariable.Create(Self)
+End Property
+
 'Functions ---------------------------------------------------------------------
 'Check if colname exists
 Private Function ColumnExists(ByVal colName As String, Optional ByVal checkValidity As Boolean = False) As Boolean
@@ -142,20 +147,21 @@ End Function
 Private Function UniqueValues(colName As String) As BetterArray
 
     Dim varColIndex As Long
+    Dim varValue As String
     Dim counter As Long
     Dim endRow As Long
     Dim varData As BetterArray
     Dim dictWksh As Worksheet
 
     endRow = DictEndRow
-    counter = StartRow
+    counter = StartRow + 1
     varColIndex = ColumnIndex(colName)
     Set varData = New BetterArray
     Set dictWksh = Wksh()
 
     With dictWksh
         Do While counter < endRow
-            varValue = .Cells(counter, varColIndex).value
+            varValue = .Cells(counter, varColIndex).Value
             If Not varData.Includes(varValue) Then varData.Push varValue
             counter = counter + 1
         Loop
@@ -184,7 +190,7 @@ Private Sub Clean()
 
     With dictWksh
         Do While counter >= 1
-            If Not ColumnExists(.Cells(StartRow, counter).value, checkValidity:=True) Then
+            If Not ColumnExists(.Cells(StartRow, counter).Value, checkValidity:=True) Then
                 .Columns(counter).EntireColumn.Delete
             End If
 
@@ -250,14 +256,14 @@ Private Sub UniqueVarNames()
 
             varName = Application.WorksheetFunction.SUBSTITUTE(varName, Chr(160), " ")
             varName = Application.WorksheetFunction.Clean(varName)
-            varName = Application.WorksheetFunction.Trim(.Cells(counter, varNameIndex).value)
+            varName = Application.WorksheetFunction.Trim(.Cells(counter, varNameIndex).Value)
             varName = Replace(varName, " ", "_")
             If Len(varName) < 3 Then varName = "var_" & varName 'Should be at least 4 letters.
 
             If varTrackData.Includes(varName) Then varName = varName & "_"
 
             varTrackData.Push varName
-            .Cells(counter, varNameIndex).value = varName
+            .Cells(counter, varNameIndex).Value = varName
         Next
     End With
 End Sub
@@ -298,24 +304,24 @@ Private Sub AppendGeoLines()
             geoRowIndex = dictRng.Find(What:="geo", LookAt:=xlWhole, MatchCase:=True).Row
 
             Set geoRng = .Range(.Cells(geoRowIndex, StartColumn), .Cells(geoRowIndex, endCol))
-            varName = .Cells(geoRowIndex, varNameIndex).value
+            varName = .Cells(geoRowIndex, varNameIndex).Value
 
             'Replace sub-section by main label (if required)
             If IsEmpty(.Cells(geoRowIndex, subSectionIndex)) And (Not IsEmpty(.Cells(geoRowIndex, mainLabelIndex))) Then
-                .Cells(geoRowIndex, subSectionIndex).value = .Cells(geoRowIndex, mainLabelIndex).value
-                .Cells(geoRowIndex, mainLabelIndex).value = ""
+                .Cells(geoRowIndex, subSectionIndex).Value = .Cells(geoRowIndex, mainLabelIndex).Value
+                .Cells(geoRowIndex, mainLabelIndex).Value = ""
             End If
 
-            .Cells(geoRowIndex, varNameIndex).value = "adm1" & "_" & varName
+            .Cells(geoRowIndex, varNameIndex).Value = "adm1" & "_" & varName
 
             'Insert the others geo lines
             geoRowIndex = geoRowIndex + 1
             For counter = 4 To 2 Step -1
                 .Rows(geoRowIndex).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                 Set pastedGeoRng = .Range(.Cells(geoRowIndex, StartColumn), .Cells(geoRowIndex, endCol))
-                pastedGeoRng.value = geoRng.value 'Paste dictionary values
-                .Cells(geoRowIndex, varNameIndex).value = "adm" & counter & "_" & varName
-                .Cells(geoRowIndex, controlIndex).value = "geo" & counter
+                pastedGeoRng.Value = geoRng.Value 'Paste dictionary values
+                .Cells(geoRowIndex, varNameIndex).Value = "adm" & counter & "_" & varName
+                .Cells(geoRowIndex, controlIndex).Value = "geo" & counter
             Next
 
             geoRowIndex = geoRowIndex + 3
@@ -351,19 +357,19 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
     Set dictWksh = Wksh()
 
     With dictWksh
-        .Cells(StartRow, endCol + 1).value = "number_" & newColumn
-        sheetTrackData.Push .Cells(StartRow + 1, sheetNameIndex).value
+        .Cells(StartRow, endCol + 1).Value = "number_" & newColumn
+        sheetTrackData.Push .Cells(StartRow + 1, sheetNameIndex).Value
         tableTrackData.Push tableOrder
 
         For counter = StartRow + 1 To endRow
-            sheetName = .Cells(counter, sheetNameIndex).value
+            sheetName = .Cells(counter, sheetNameIndex).Value
             If sheetTrackData.Includes(sheetName) Then
-                .Cells(counter, endCol + 1).value = tableTrackData.Items(sheetTrackData.IndexOf(sheetName))
+                .Cells(counter, endCol + 1).Value = tableTrackData.Items(sheetTrackData.IndexOf(sheetName))
             Else
                 tableOrder = tableOrder + 1
                 sheetTrackData.Push sheetName
                 tableTrackData.Push tableOrder
-                .Cells(counter, endCol + 1).value = tableOrder
+                .Cells(counter, endCol + 1).Value = tableOrder
             End If
         Next
 
@@ -372,12 +378,12 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
         dictRng.Sort key1:=DataRange("number_" & newColumn), order1:=xlAscending
 
         endCol = DictEndColumn
-        .Cells(StartRow, endCol + 1).value = newColumn
+        .Cells(StartRow, endCol + 1).Value = newColumn
         .Cells(StartRow + 1, endCol + 1).Formula = "= " & Chr(34) & tablePrefix & Chr(34) & " " & Chr(38) & " " & .Cells(StartRow + 1, endCol).Address(Rowabsolute:=False)
         Set dictRng = DataRange(newColumn)
 
         .Cells(StartRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
-        dictRng.value = dictRng.value 'remove the link to the formulas
+        dictRng.Value = dictRng.Value 'remove the link to the formulas
 
     End With
 End Sub
@@ -413,7 +419,7 @@ Private Sub AppendColumnIndex()
 
     With dictWksh
         'Sorting
-        .Cells(StartRow, endCol + 1).value = "main section sort"
+        .Cells(StartRow, endCol + 1).Value = "main section sort"
         firstsheetNameCell = .Cells(StartRow + 1, sheetNameIndex).Address(Rowabsolute:=False) & " "
         firstmainSectionCell = .Cells(StartRow + 1, mainSectionIndex).Address(Rowabsolute:=False)
         .Cells(StartRow + 1, endCol + 1).Formula = "= IF(" & firstmainSectionCell & "=" & Chr(34) & Chr(34) & _
@@ -428,17 +434,17 @@ Private Sub AppendColumnIndex()
 
         'Filling column index
         endCol = DictEndColumn
-        .Cells(StartRow, endCol + 1).value = "column index"
+        .Cells(StartRow, endCol + 1).Value = "column index"
         For counter = StartRow + 1 To endRow
-            If .Cells(counter, sheetNameIndex).value <> sheetName Then
+            If .Cells(counter, sheetNameIndex).Value <> sheetName Then
                 'New sheet name
-                varOrder = IIf(.Cells(counter, sheetTypeIndex).value = SHEETTYPEVERTICAL, 4, 1)
-                sheetName = .Cells(counter, sheetNameIndex).value
+                varOrder = IIf(.Cells(counter, sheetTypeIndex).Value = SHEETTYPEVERTICAL, 4, 1)
+                sheetName = .Cells(counter, sheetNameIndex).Value
             Else
                 'Old sheet name
-                varOrder = IIf(.Cells(counter - 1, controlIndex).value = "geo", varOrder + 4, varOrder + 1)
+                varOrder = IIf(.Cells(counter - 1, controlIndex).Value = "geo", varOrder + 4, varOrder + 1)
             End If
-            .Cells(counter, endCol + 1).value = varOrder 'variable order
+            .Cells(counter, endCol + 1).Value = varOrder 'variable order
         Next
     End With
 End Sub
@@ -446,7 +452,7 @@ End Sub
 
 ' INTERFACE __________________________________________________________________________________________________________________________
 
-'Exposed methods
+'Properties
 Public Property Get ILLdictionary_Prepared() As Boolean
     ILLdictionary_Prepared = Prepared
 End Property
@@ -459,6 +465,10 @@ End Property
 Public Property Get ILLdictionary_Data() As IDataSheet
     Set ILLdictionary_Data = Data()
 End Property
+
+'Public Property Get ILLdictionary_Variables() As ILLVariables
+ '   Set ILLdictionary_Variables = variables
+'End Property
 
 'Functions
 Public Function ILLdictionary_ColumnExists(ByVal colName As String, Optional ByVal checkValidity As Boolean) As Boolean

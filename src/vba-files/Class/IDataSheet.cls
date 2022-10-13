@@ -29,7 +29,13 @@ Public Property Get Wksh() As Worksheet: End Property
 
 'Exposed methods
 'Check if a column exists
-Public Function ColumnExists(ByVal columnName As String) As Boolean: End Function
+Public Function ColumnExists(ByVal colName As String) As Boolean: End Function
+
+'Return the column index
+Public Function ColumnIndex(ByVal colName As String, _
+                            Optional ByVal inDataRange As Boolean = False, _
+                            Optional shouldExist As Boolean = False) As Long
+End Function
 
 'simple filter
 Public Function FilterData(ByVal varName As String, ByVal criteriaName As String, _

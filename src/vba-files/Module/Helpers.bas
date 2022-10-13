@@ -20,7 +20,7 @@ Public Function LoadFolder() As String
         LoadFolder = SelectFolderOnWindows()
     Else
         'We are on Mac, need to test the version of excel running
-        If Val(Application.Version) > 14 Then
+        If val(Application.Version) > 14 Then
             LoadFolder = SelectFolderOnMac()
         End If
     End If
@@ -34,7 +34,7 @@ Public Function LoadFile(sFilters As String) As String
         LoadFile = SelectFileOnWindows(sFilters)
     Else
         'We are on Mac, need to test the version of excel running
-        If Val(Application.Version) > 14 Then
+        If val(Application.Version) > 14 Then
             LoadFile = SelectFileOnMac(sFilters)
         End If
     End If
@@ -320,7 +320,7 @@ Public Sub FormatARange(rng As Range, _
         If NumFormat <> vbNullString Then .NumberFormat = NumFormat
         .HorizontalAlignment = Horiz
         .VerticalAlignment = Verti
-        If sValue <> vbNullString Then .value = sValue
+        If sValue <> vbNullString Then .Value = sValue
 
     End With
 
@@ -370,7 +370,7 @@ Function FindLastRow(shLL As Worksheet) As Long
     Set LoRng = shLL.ListObjects(SheetListObjectName(shLL.Name)).Range
     Set destRng = shTemp.Range(LoRng.Address)
 
-    destRng.value = LoRng.value
+    destRng.Value = LoRng.Value
 
     For i = 1 To iLastCol
         If iLastRow < shTemp.Cells(Rows.Count, i).End(xlUp).Row Then iLastRow = shTemp.Cells(Rows.Count, i).End(xlUp).Row
@@ -486,9 +486,9 @@ Public Function GetHeaders(wkb As Workbook, sSheet As String, StartLine As Long,
 
     With wkb.Worksheets(sSheet)
         i = StartColumn
-        Do While .Cells(StartLine, i).value <> vbNullString
+        Do While .Cells(StartLine, i).Value <> vbNullString
             'Clear the values in the sheet when adding thems
-            sValue = .Cells(StartLine, i).value  'The argument is passed byval to clearstring
+            sValue = .Cells(StartLine, i).Value  'The argument is passed byval to clearstring
             sValue = ClearString(sValue)
             Headers.Push sValue
             i = i + 1
@@ -593,7 +593,7 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
     col = 1
     With DestWkb.Worksheets(sSheetName)
         Do While (.Cells(1, col) <> vbNullString)
-            .Cells(1, col).value = ClearString(.Cells(1, col).value)
+            .Cells(1, col).Value = ClearString(.Cells(1, col).Value)
             col = col + 1
         Loop
     End With
@@ -674,7 +674,7 @@ Sub RemoveRangeDuplicates(rng As Range)
 
     For iRow = 1 To rng.Rows.Count
 
-        Cellvalue = rng.Cells(iRow, 1).value
+        Cellvalue = rng.Cells(iRow, 1).Value
         If Cellvalue = vbNullString Then
             rng.Rows(iRow).EntireRow.Delete
         Else

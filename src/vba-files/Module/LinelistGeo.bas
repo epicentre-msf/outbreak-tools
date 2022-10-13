@@ -48,10 +48,10 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
         Case 0
 
             'Add Caption for  each adminstrative leveles in the form
-            F_Geo.LBL_Adm1.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(1).value
-            F_Geo.LBL_Adm2.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(2).value
-            F_Geo.LBL_Adm3.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(3).value
-            F_Geo.LBL_Adm4.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(4).value
+            F_Geo.LBL_Adm1.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(1).Value
+            F_Geo.LBL_Adm2.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(2).Value
+            F_Geo.LBL_Adm3.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(3).Value
+            F_Geo.LBL_Adm4.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(4).Value
             
             DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm4 & "_dropdown")
             DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm3 & "_dropdown")
@@ -92,10 +92,10 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
 
         Case 1
             '-------- Adding caption for each admnistrative levels in the form of the health facility
-            F_Geo.LBL_Adm1F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(4).value
-            F_Geo.LBL_Adm2F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(3).value
-            F_Geo.LBL_Adm3F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(2).value
-            F_Geo.LBL_Adm4F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(1).value
+            F_Geo.LBL_Adm1F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(4).Value
+            F_Geo.LBL_Adm2F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(3).Value
+            F_Geo.LBL_Adm3F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(2).Value
+            F_Geo.LBL_Adm4F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(1).Value
 
             'Now health facility ----------------------------------------------------------------------------------------------------------
             If (Not .ListObjects(C_sTabHF).DataBodyRange Is Nothing) Then
@@ -135,7 +135,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
 
     EndWork xlsapp:=Application
 
-    [F_Geo].TXT_Msg.value = vbNullString
+    [F_Geo].TXT_Msg.Value = vbNullString
     [F_Geo].Show
 
     Exit Sub
@@ -166,7 +166,7 @@ Sub ShowLst2(sPlace As String)
     'Search if the value exists in the 2 dimensional table T_Adm1 previously initialized
     Set T_Aff = FilterLoTable(Wksh.ListObjects(C_sTabAdm2), 1, sPlace, returnIndex:=2)
 
-    [F_Geo].TXT_Msg.value = sPlace
+    [F_Geo].TXT_Msg.Value = sPlace
     'update if only next level is available
     If T_Aff.Length > 0 Then
         [F_Geo].LST_Adm2.List = T_Aff.Items
@@ -191,7 +191,7 @@ Sub ShowLstF2(sPlace As String)
     Set T_Aff = FilterLoTable(Wksh.ListObjects(C_sTabHF), 4, sPlace, returnIndex:=3)
     Set T_Aff = GetUniqueBA(T_Aff)
 
-    [F_Geo].TXT_Msg.value = sPlace
+    [F_Geo].TXT_Msg.Value = sPlace
 
     If T_Aff.Length > 0 Then
         [F_Geo].LST_AdmF2.List = T_Aff.Items
@@ -211,12 +211,12 @@ Sub ShowLst3(sAdm2 As String)
     Dim Wksh As Worksheet
 
     Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
-    sAdm1 = [F_Geo].LST_Adm1.value
+    sAdm1 = [F_Geo].LST_Adm1.Value
 
     'Just filter and show
     Set T_Aff = FilterLoTable(Wksh.ListObjects(C_sTabAdm3), 1, sAdm1, 2, sAdm2, returnIndex:=3)
 
-    [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value
+    [F_Geo].TXT_Msg.Value = [F_Geo].LST_Adm1.Value & " | " & [F_Geo].LST_Adm2.Value
     'Update the adm3 list in the geoform if the T_Aff3 is not missing
     If T_Aff.Length > 0 Then
         [F_Geo].LST_Adm3.List = T_Aff.Items
@@ -235,11 +235,11 @@ Sub ShowLstF3(sAdm2 As String)
     Dim Wksh As Worksheet
 
     Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
-    sAdm1 = [F_Geo].LST_AdmF1.value
+    sAdm1 = [F_Geo].LST_AdmF1.Value
 
     Set T_Aff = FilterLoTable(Wksh.ListObjects(C_sTabHF), 4, sAdm1, 3, sAdm2, returnIndex:=2)
 
-    [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
+    [F_Geo].TXT_Msg.Value = [F_Geo].LST_AdmF2.Value & " | " & [F_Geo].LST_AdmF1.Value
     Set T_Aff = GetUniqueBA(T_Aff)
 
     If T_Aff.Length > 0 Then
@@ -258,10 +258,10 @@ Sub ShowLst4(sAdm3 As String)
     Dim sAdm1 As String
     Dim sAdm2 As String
 
-    sAdm1 = [F_Geo].LST_Adm1.value
-    sAdm2 = [F_Geo].LST_Adm2.value
+    sAdm1 = [F_Geo].LST_Adm1.Value
+    sAdm2 = [F_Geo].LST_Adm2.Value
 
-    [F_Geo].TXT_Msg.value = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value
+    [F_Geo].TXT_Msg.Value = [F_Geo].LST_Adm1.Value & " | " & [F_Geo].LST_Adm2.Value & " | " & [F_Geo].LST_Adm3.Value
 
     Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
     Set T_Aff = FilterLoTable(Wksh.ListObjects(C_sTabAdm4), 1, sAdm1, 2, sAdm2, 3, sAdm3, returnIndex:=4)
@@ -283,13 +283,13 @@ Sub ShowLstF4(sAdm3 As String)
     Dim sAdm1 As String
     Dim sAdm2 As String
 
-    sAdm1 = [F_Geo].LST_AdmF1.value
-    sAdm2 = [F_Geo].LST_AdmF2.value
+    sAdm1 = [F_Geo].LST_AdmF1.Value
+    sAdm2 = [F_Geo].LST_AdmF2.Value
 
     Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
     Set T_Aff = FilterLoTable(Wksh.ListObjects(C_sTabHF), 4, sAdm1, 3, sAdm2, 2, sAdm3, returnIndex:=1)
 
-    [F_Geo].TXT_Msg.value = [F_Geo].LST_AdmF3.value & " | " & [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF1.value
+    [F_Geo].TXT_Msg.Value = [F_Geo].LST_AdmF3.Value & " | " & [F_Geo].LST_AdmF2.Value & " | " & [F_Geo].LST_AdmF1.Value
 
     If T_Aff.Length > 0 Then
         [F_Geo].LST_AdmF4.List = T_Aff.Items
@@ -309,7 +309,7 @@ Sub ClearGeo()
     [F_Geo].LST_AdmF3.Clear
     [F_Geo].LST_AdmF4.Clear
     [F_Geo].LST_ListeAgreF.Clear
-    [F_Geo].TXT_Msg.value = ""
+    [F_Geo].TXT_Msg.Value = ""
 End Sub
 
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

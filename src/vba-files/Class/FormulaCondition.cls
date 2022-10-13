@@ -27,6 +27,10 @@ Private this As TFormulaCondition
 
 'Instanciation
 Public Function Create(ByVal formvar As BetterArray, ByVal formcond As BetterArray) As IFormulaCondition
+
+    'Seems like BetterArry is referencing the Arrays within my object. I want them to be
+    'immutable, so I clone those arrays.
+
     With New FormulaCondition
         Set .Condition = formcond
         Set .Variable = formvar
@@ -40,55 +44,58 @@ End Property
 
 'Conditions
 Public Property Get Condition() As BetterArray
-    Set Condition = this.Condition
+    Set Condition = this.Condition.Clone()
 End Property
 
 Public Property Set Condition(ByVal formcond As BetterArray)
-    Set this.Condition = formcond
+    Set this.Condition = formcond.Clone()
 End Property
 
 'Variables
 Public Property Get Variable() As BetterArray
-    Set Variable = this.Variable
+    Set Variable = this.Variable.Clone()
 End Property
 
 Public Property Set Variable(ByVal formvar As BetterArray)
-     Set this.Variable = formvar
+     Set this.Variable = formvar.Clone()
 End Property
 
 'Test if a formula is valid:
-Public Function Valid(ByVal Dict As ILLdictionary, ByVal tableName As String) As Boolean
+Public Function Valid(ByVal dict As ILLdictionary, ByVal tableName As String) As Boolean
 
     Dim tableData As BetterArray 'list of all tables in dictionary
     Dim variableData As BetterArray 'list of all variables in dictionary
 
     Dim variablesTableName As String
-    Dim variableName As String
+    Dim VARIABLENAME As String
     Dim counter As Long
 
     Set tableData = New BetterArray
     Set variableData = New BetterArray
+    
+    variableData.FromExcelRange dict.DataRange("variable name")
+    tableData.FromExcelRange dict.DataRange("table name")
 
     'Valid Fail by default, turns to true after the checkings
     Valid = False
 
     'variable and conditions table doesn't fit
     If Variable.Length <> Condition.Length Or Variable.Length = 0 Then Exit Function
-    If Not (Dict.ColumnExists("table name") And Dict.ColumnExists("variable name")) Then Exit Function
+    If Not (dict.ColumnExists("table name") And dict.ColumnExists("variable name")) Then Exit Function
 
-    tableData.FromExcelRange Dict.DataRange("table name")
-    variableData.FromExcelRange Dict.DataRange("variable name")
+    tableData.FromExcelRange dict.DataRange("table name")
+    variableData.FromExcelRange dict.DataRange("variable name")
 
     For counter = Variable.LowerBound To Variable.UpperBound
 
 
-        variableName = Variable.Item(counter)
+        VARIABLENAME = Variable.Item(counter)
 
         'Unable to find the variable within the provided list of variables
-        If Not variableData.Includes(variableName) Then Exit Function
+        If Not variableData.Includes(VARIABLENAME) Then Exit Function
 
         'Variables are not in the same table
-        variablesTableName = tableData.Item(variableData.IndexOf(variableName))
+        variablesTableName = tableData.Item(variableData.IndexOf(VARIABLENAME))
         If variablesTableName <> tableName Then Exit Function
     Next
 
@@ -135,6 +142,6 @@ Public Function IFormulaCondition_ConditionString(ByVal tableName As String, ByV
     IFormulaCondition_ConditionString = ConditionString(tableName:=tableName, varName:=varName, Connector:=Connector)
 End Function
 
-Public Function IFormulaCondition_Valid(ByVal Dict As ILLdictionary, ByVal tableName As String) As Boolean
-    IFormulaCondition_Valid = Valid(Dict, tableName)
+Public Function IFormulaCondition_Valid(ByVal dict As ILLdictionary, ByVal tableName As String) As Boolean
+    IFormulaCondition_Valid = Valid(dict, tableName)
 End Function
