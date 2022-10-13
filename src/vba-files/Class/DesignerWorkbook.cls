@@ -13,7 +13,7 @@ Option Explicit
 Private Sub Workbook_Open()
 
     Call ResetField
-    SheetMain.Range(C_sRngEdition).value = TranslateMsg(C_sMsgSet)
+    SheetMain.Range(C_sRngEdition).Value = TranslateMsg(C_sMsgSet)
 
     SheetGeo.ListObjects(C_sTabadm1).DataBodyRange.Clear
     SheetGeo.ListObjects(C_sTabAdm2).DataBodyRange.Clear
@@ -22,7 +22,7 @@ Private Sub Workbook_Open()
     SheetGeo.ListObjects(C_sTabHF).DataBodyRange.Clear
     SheetGeo.ListObjects(C_sTabNames).DataBodyRange.Clear
 
-    SheetLLTranslation.Range(C_sRngLLLanguage).value = SheetMain.Range(C_sRngLLFormLang).value 'check Language of linelist's forms
+    SheetLLTranslation.Range(C_sRngLLLanguage).Value = SheetMain.Range(C_sRngLLFormLang).Value 'check Language of linelist's forms
 
     With SheetDesTranslation
         .Range(.Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").Column), _
@@ -30,6 +30,8 @@ Private Sub Workbook_Open()
     End With
 
 End Sub
+
+
 
 
 

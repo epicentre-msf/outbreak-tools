@@ -168,6 +168,8 @@ Attribute VB_Exposed = False
 
 
 
+
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -179,7 +181,7 @@ Private Sub CMD_Copier_Click()
 
     On Error GoTo ErrGeo
 
-    ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).value)
+    ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
 
     Select Case iGeoType
         'In case you selected the Geo data
@@ -190,8 +192,8 @@ Private Sub CMD_Copier_Click()
                 T_temp.FromExcelRange .DataBodyRange
                 T_temp.Sort
                 'only update if you don't find actual value then update
-                If Not T_temp.Includes(TXT_Msg.value) Then
-                    T_HistoGeo.Push ReverseString(TXT_Msg.value)
+                If Not T_temp.Includes(TXT_Msg.Value) Then
+                    T_HistoGeo.Push ReverseString(TXT_Msg.Value)
                 End If
             Else
                 'In case there is no histo data, update the first line
@@ -210,11 +212,11 @@ Private Sub CMD_Copier_Click()
         End With
         'Writing the selected data in the linelist sheet
         T_temp.Clear
-        T_temp.Items = Split([TXT_Msg].value, " | ")
+        T_temp.Items = Split([TXT_Msg].Value, " | ")
         If T_temp.Length > 0 Then
             Application.EnableEvents = False
             'Clear the cells before filling
-            Range(ActiveCell.Address, ActiveCell.Offset(, 3)).value = ""
+            Range(ActiveCell.Address, ActiveCell.Offset(, 3)).Value = ""
             T_temp.ToExcelRange Destination:=Range(ActiveCell.Address), TransposeValues:=True
             Application.EnableEvents = True
         End If
@@ -226,8 +228,8 @@ Private Sub CMD_Copier_Click()
                 T_temp.FromExcelRange .DataBodyRange
                 T_temp.Sort
 
-                If Not T_temp.Includes(ReverseString(TXT_Msg.value)) Then
-                    T_HistoHF.Push [TXT_Msg].value
+                If Not T_temp.Includes(ReverseString(TXT_Msg.Value)) Then
+                    T_HistoHF.Push [TXT_Msg].Value
                 End If
             Else
                 If sPlaceSelection <> "" Then
@@ -244,10 +246,10 @@ Private Sub CMD_Copier_Click()
             End If
         End With
         'writing the selected value
-        Selection.value = TXT_Msg.value
+        Selection.Value = TXT_Msg.Value
     End Select
 
-    [F_Geo].TXT_Msg.value = ""
+    [F_Geo].TXT_Msg.Value = ""
     [F_Geo].Hide
     'Protecting the worksheet
     Call ProtectSheet
@@ -271,90 +273,90 @@ End Sub
 'Those are procedures to show the following list in one item is selected.
 'They rely on ShowLst* functions coded in the Geo module
 Private Sub LST_Adm1_Click()
-    Call ShowLst2(LST_Adm1.value)
-    sPlaceSelection = TXT_Msg.value
+    Call ShowLst2(LST_Adm1.Value)
+    sPlaceSelection = TXT_Msg.Value
 End Sub
 
 Private Sub LST_Adm2_Click()
-    Call ShowLst3(LST_Adm2.value)
-    sPlaceSelection = TXT_Msg.value
+    Call ShowLst3(LST_Adm2.Value)
+    sPlaceSelection = TXT_Msg.Value
 End Sub
 
 Private Sub LST_Adm3_Click()
-    Call ShowLst4(LST_Adm3.value)
-    sPlaceSelection = TXT_Msg.value
+    Call ShowLst4(LST_Adm3.Value)
+    sPlaceSelection = TXT_Msg.Value
 End Sub
 
 Private Sub LST_Adm4_Click()
-    sPlaceSelection = [F_Geo].LST_Adm1.value & " | " & [F_Geo].LST_Adm2.value & " | " & [F_Geo].LST_Adm3.value & " | " & [F_Geo].LST_Adm4.value
-    TXT_Msg.value = sPlaceSelection
+    sPlaceSelection = [F_Geo].LST_Adm1.Value & " | " & [F_Geo].LST_Adm2.Value & " | " & [F_Geo].LST_Adm3.Value & " | " & [F_Geo].LST_Adm4.Value
+    TXT_Msg.Value = sPlaceSelection
 End Sub
 
 Private Sub LST_AdmF1_Click()
-    Call ShowLstF2(LST_AdmF1.value)
-    sPlaceSelection = TXT_Msg.value
+    Call ShowLstF2(LST_AdmF1.Value)
+    sPlaceSelection = TXT_Msg.Value
 End Sub
 
 Private Sub LST_AdmF2_Click()
-    Call ShowLstF3(LST_AdmF2.value)
-    sPlaceSelection = TXT_Msg.value
+    Call ShowLstF3(LST_AdmF2.Value)
+    sPlaceSelection = TXT_Msg.Value
 End Sub
 
 Private Sub LST_AdmF3_Click()
-    Call ShowLstF4(LST_AdmF3.value)
-    sPlaceSelection = TXT_Msg.value
+    Call ShowLstF4(LST_AdmF3.Value)
+    sPlaceSelection = TXT_Msg.Value
 End Sub
 
 Private Sub LST_AdmF4_Click()
-    sPlaceSelection = ReverseString([F_Geo].LST_AdmF1.value & " | " & [F_Geo].LST_AdmF2.value & " | " & [F_Geo].LST_AdmF3.value & " | " & [F_Geo].LST_AdmF4.value)
-    TXT_Msg.value = sPlaceSelection
+    sPlaceSelection = ReverseString([F_Geo].LST_AdmF1.Value & " | " & [F_Geo].LST_AdmF2.Value & " | " & [F_Geo].LST_AdmF3.Value & " | " & [F_Geo].LST_AdmF4.Value)
+    TXT_Msg.Value = sPlaceSelection
 
 End Sub
 
 'Those are trigerring event for the Histo
 Private Sub LST_Histo_Click()
-    TXT_Msg.value = ReverseString(LST_Histo.value)
-    sPlaceSelection = LST_Histo.value
+    TXT_Msg.Value = ReverseString(LST_Histo.Value)
+    sPlaceSelection = LST_Histo.Value
 End Sub
 
 Private Sub LST_HistoF_Click()
-    If LST_HistoF.value <> "" Then
-        TXT_Msg.value = LST_HistoF.value
-        sPlaceSelection = LST_HistoF.value
+    If LST_HistoF.Value <> "" Then
+        TXT_Msg.Value = LST_HistoF.Value
+        sPlaceSelection = LST_HistoF.Value
     End If
 End Sub
 
 Private Sub LST_ListeAgre_Click()
-    TXT_Msg.value = LST_ListeAgre.value
-    sPlaceSelection = LST_ListeAgre.value
+    TXT_Msg.Value = LST_ListeAgre.Value
+    sPlaceSelection = LST_ListeAgre.Value
 End Sub
 
 Private Sub LST_ListeAgreF_Click()
-    TXT_Msg.value = LST_ListeAgreF.value
-    sPlaceSelection = LST_ListeAgreF.value
+    TXT_Msg.Value = LST_ListeAgreF.Value
+    sPlaceSelection = LST_ListeAgreF.Value
 
 End Sub
 
 Private Sub TXT_Recherche_Change()
     'Search any value in geo data
-    Call SearchValue(F_Geo.TXT_Recherche.value)
+    Call SearchValue(F_Geo.TXT_Recherche.Value)
 End Sub
 
 Private Sub TXT_RechercheF_Change()
     'Search any value in health facility
-    Call SearchValueF(F_Geo.TXT_RechercheF.value)
+    Call SearchValueF(F_Geo.TXT_RechercheF.Value)
 
 End Sub
 
 Private Sub TXT_RechercheHisto_Change()
     'In case there is a change in the historic geographic Search list
-    Call SeachHistoValue(F_Geo.TXT_RechercheHisto.value)
+    Call SeachHistoValue(F_Geo.TXT_RechercheHisto.Value)
 
 End Sub
 
 Private Sub TXT_RechercheHistoF_Change()
     'In case there is a change in the historic data
-    Call SeachHistoValueF(F_Geo.TXT_RechercheHistoF.value)
+    Call SeachHistoValueF(F_Geo.TXT_RechercheHistoF.Value)
 
 End Sub
 

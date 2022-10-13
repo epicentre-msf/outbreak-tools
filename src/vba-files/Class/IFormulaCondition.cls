@@ -18,7 +18,7 @@ Public Property Get Variable() As BetterArray: End Property
 Public Property Get Condition() As BetterArray: End Property
 
 'Methods
-Public Function Valid(ByVal Dict As ILLdictionary, ByVal tableName As String) As Boolean: End Function
+Public Function Valid(ByVal dict As ILLdictionary, ByVal tableName As String) As Boolean: End Function
 Public Function ConditionString(ByVal tableName As String, ByVal varName As String, _
                  Optional ByVal Connector As String = "*") As String
 End Function

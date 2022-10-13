@@ -115,15 +115,15 @@ End Property
 
 '@Description("Sets the capacity of the internal array.")
 '@Ignore ProcedureNotUsed
-Public Property Let Capacity(ByVal value As Long)
+Public Property Let Capacity(ByVal Value As Long)
     '@Ignore FunctionReturnValueDiscarded
-    If value < 0 Then Err.Raise 9
-    If value <> this.Capacity Then
+    If Value < 0 Then Err.Raise 9
+    If Value <> this.Capacity Then
         If this.Capacity > 0 Then
-            If GetArrayLength(this.Items) <> value Then
+            If GetArrayLength(this.Items) <> Value Then
                 Dim NewItems() As Variant
                 NewItems = this.Items
-                ReDim Preserve NewItems(this.LowerBound To (value + this.LowerBound - 1))
+                ReDim Preserve NewItems(this.LowerBound To (Value + this.LowerBound - 1))
                 InternalItems = NewItems
             End If
         Else
@@ -153,10 +153,10 @@ Public Property Get LowerBound() As Long
 End Property
 
 '@Description("Sets the starting index of the array. If an array is already stored then it will be re-indexed to match the new value")
-Public Property Let LowerBound(ByVal value As Long)
+Public Property Let LowerBound(ByVal Value As Long)
     this.LowerBoundSet = True
-    If value <> this.LowerBound Then
-        this.LowerBound = value
+    If Value <> this.LowerBound Then
+        this.LowerBound = Value
         InternalItems = Rebase()
         this.Capacity = GetArrayLength(this.Items)
     End If
@@ -164,13 +164,13 @@ End Property
 
 '@DefaultMember
 '@Description("Returns the element in the array stored at the specified index.")
-Public Property Get Item(ByVal index As Long) As Variant
-    If index <= this.Length Then
+Public Property Get Item(ByVal Index As Long) As Variant
+    If Index <= this.Length Then
         ' not using letOrSetElement here as it might try to access the Items letter
-        If IsObject(this.Items(index)) Then
-            Set Item = this.Items(index)
+        If IsObject(this.Items(Index)) Then
+            Set Item = this.Items(Index)
         Else
-            Item = this.Items(index)
+            Item = this.Items(Index)
         End If
     Else
         '@Ignore FunctionReturnValueDiscarded
@@ -179,13 +179,13 @@ Public Property Get Item(ByVal index As Long) As Variant
 End Property
 
 '@Description("Assigns the passed element to the array at the specified index.")
-Public Property Let Item(ByVal index As Long, ByVal Element As Variant)
-    If Me.UpperBound >= index Then
-        If index < this.LowerBound Then
+Public Property Let Item(ByVal Index As Long, ByVal Element As Variant)
+    If Me.UpperBound >= Index Then
+        If Index < this.LowerBound Then
             '@Ignore FunctionReturnValueDiscarded
             Me.Unshift Element
         Else
-            LetOrSetElement this.Items(index), Element
+            LetOrSetElement this.Items(Index), Element
         End If
     Else
         '@Ignore FunctionReturnValueDiscarded
@@ -315,8 +315,8 @@ End Property
 
 '@Description("Assigns the passed array to this.items")
 '@Ignore MisleadingByRefParameter
-Private Property Let InternalItems(ByRef value() As Variant)
-    this.Items = value
+Private Property Let InternalItems(ByRef Value() As Variant)
+    this.Items = Value
 End Property
 
 ''''''''''''''''''
@@ -686,7 +686,7 @@ Public Function FromExcelRange( _
                 endRow = .Cells.Item(.Rows.Count, StartColumn).End(xlUp).Row
             End If
             
-            Me.Items = .Range(.Cells(StartRow, StartColumn), .Cells(endRow, EndColumn)).value
+            Me.Items = .Range(.Cells(StartRow, StartColumn), .Cells(endRow, EndColumn)).Value
         End With
         
         ' convert arrays of single column or row to 1d
@@ -844,7 +844,7 @@ Public Function ToExcelRange( _
                              RowSize:=LengthRows, _
                              ColumnSize:=LengthColumns _
                                           )
-            LocalRange.value = LocalItems
+            LocalRange.Value = LocalItems
             '@Ignore EmptyElseBlock
         Else
             'array must be unalloc
@@ -1034,20 +1034,20 @@ Public Function LastIndexOf( _
 End Function
 
 '@Description("Removes the item at the specified index. Returns the new length of the array")
-Public Function Remove(ByVal index As Long) As Long
+Public Function Remove(ByVal Index As Long) As Long
     Dim RelativeIndex As Long
     Dim LocalType As ArrayTypes
     
     RelativeIndex = MISSING_LONG
     LocalType = this.ArrayType
     
-    If index >= this.LowerBound Then
-        If index <= Me.UpperBound Then
-            RelativeIndex = index
+    If Index >= this.LowerBound Then
+        If Index <= Me.UpperBound Then
+            RelativeIndex = Index
         End If
     Else
-        If index < 0 Then
-            RelativeIndex = Me.UpperBound + index
+        If Index < 0 Then
+            RelativeIndex = Me.UpperBound + Index
             If RelativeIndex < this.LowerBound Then RelativeIndex = MISSING_LONG
         End If
     End If
@@ -1202,7 +1202,7 @@ End Function
 
 '@Description("Recursvely fills (modifies) all the elements of an array from a start index (default zero) to an end index (default array length) with a passed value.")
 Public Function Fill( _
-       ByVal value As Variant, _
+       ByVal Value As Variant, _
        Optional ByVal StartIndex As Long = MISSING_LONG, _
        Optional ByVal EndIndex As Long = MISSING_LONG _
        ) As BetterArray
@@ -1234,7 +1234,7 @@ Public Function Fill( _
             RelativeEnd = Min(EndIndex, Me.UpperBound)
         End If
     End If
-    InternalItems = RecursiveFill(LocalItems, value, RelativeStart, RelativeEnd)
+    InternalItems = RecursiveFill(LocalItems, Value, RelativeStart, RelativeEnd)
     Set Fill = Me
 End Function
 
@@ -2035,7 +2035,7 @@ Private Function EscapeCharInString( _
         ByVal Escape As String, _
         Optional ByVal BothSides As Boolean _
         ) As String
-    Dim index As Long
+    Dim Index As Long
     Dim TargetLength As Long
     Dim EscapeLength As String
     Dim Result As String
@@ -2043,17 +2043,17 @@ Private Function EscapeCharInString( _
     TargetLength = Len(Target)
     EscapeLength = Len(Escape)
     Result = Destination
-    index = 1
+    Index = 1
     Do
-        index = VBA.Strings.InStr(index, Destination, Target)
-        If index Then
-            Result = InsertIntoStringAtIndex(Result, Escape, index)
-            inc index, EscapeLength + TargetLength
+        Index = VBA.Strings.InStr(Index, Destination, Target)
+        If Index Then
+            Result = InsertIntoStringAtIndex(Result, Escape, Index)
+            inc Index, EscapeLength + TargetLength
             If BothSides Then
-                Result = InsertIntoStringAtIndex(Result, Escape, index)
+                Result = InsertIntoStringAtIndex(Result, Escape, Index)
             End If
         End If
-    Loop While index > 0
+    Loop While Index > 0
     
     EscapeCharInString = Result
 End Function
@@ -2062,16 +2062,16 @@ End Function
 Private Function InsertIntoStringAtIndex( _
         ByVal Destination As String, _
         ByVal Source As String, _
-        ByVal index As Long _
+        ByVal Index As Long _
         ) As String
     Dim Front As String
     Dim Back As String
-    If index > 1 Then
-        Front = Left$(Destination, index)
+    If Index > 1 Then
+        Front = Left$(Destination, Index)
     End If
     
-    If index < Len(Destination) Then
-        Back = Right$(Destination, Len(Destination) - index)
+    If Index < Len(Destination) Then
+        Back = Right$(Destination, Len(Destination) - Index)
     End If
     InsertIntoStringAtIndex = Front & Source & Back
 End Function
@@ -2123,17 +2123,17 @@ Private Function ConcatDelegate(ByRef First() As Variant, ParamArray Args() As V
 End Function
 
 '@Description("Places the Values in Source within Destination starting at Index")
-Private Sub InsertArrayAtIndex(ByRef Destination() As Variant, ByRef Source() As Variant, ByRef index As Long)
+Private Sub InsertArrayAtIndex(ByRef Destination() As Variant, ByRef Source() As Variant, ByRef Index As Long)
     Dim Offset As Long
     Dim SourceLength As Long
     Dim StartingIndex As Long
     If IsArrayAllocated(Source) Then
-        StartingIndex = index
+        StartingIndex = Index
         Offset = StartingIndex - LBound(Source)
         SourceLength = GetArrayLength(Source)
-        Do While index < StartingIndex + SourceLength
-            LetOrSetElement Destination(index), Source(index - Offset)
-            inc index
+        Do While Index < StartingIndex + SourceLength
+            LetOrSetElement Destination(Index), Source(Index - Offset)
+            inc Index
         Loop
     End If
 End Sub
@@ -2207,15 +2207,15 @@ Private Function TrimRowsMultidimensionArray(ByRef Original() As Variant, ByVal 
 End Function
 
 '@Description("Increments an index")
-Private Function inc(ByRef index As Long, Optional ByVal value As Long = 1) As Long
-    index = index + value
-    inc = index
+Private Function inc(ByRef Index As Long, Optional ByVal Value As Long = 1) As Long
+    Index = Index + Value
+    inc = Index
 End Function
 
 '@Description("Decrements an index")
-Private Function dec(ByRef index As Long, Optional ByVal value As Long = 1) As Long
-    index = index - value
-    dec = index
+Private Function dec(ByRef Index As Long, Optional ByVal Value As Long = 1) As Long
+    Index = Index - Value
+    dec = Index
 End Function
 
 '@Description("Populates TString Types")
@@ -2449,7 +2449,7 @@ End Function
 '@Description("Recursvely fills the array (and nested arrays) with the passed value.")
 Private Function RecursiveFill( _
         ByRef SourceArray() As Variant, _
-        ByVal value As Variant, _
+        ByVal Value As Variant, _
         Optional ByVal StartIndex As Long = MISSING_LONG, _
         Optional ByVal EndIndex As Long = MISSING_LONG _
         ) As Variant()
@@ -2470,9 +2470,9 @@ Private Function RecursiveFill( _
     For i = RelativeStart To RelativeEnd
         If IsArray(SourceArray(i)) Then
             Dim PassThru() As Variant
-            PassThru = RecursiveFill(PassThru, value)
+            PassThru = RecursiveFill(PassThru, Value)
         Else
-            LetOrSetElement SourceArray(i), value
+            LetOrSetElement SourceArray(i), Value
         End If
     Next
     RecursiveFill = SourceArray
@@ -3249,17 +3249,17 @@ End Sub
 '@Description("Returns an field of a one dimension or two dimension jagged array")
 Private Function GetComparisonItem( _
         ByRef Source() As Variant, _
-        ByVal index As Long, _
+        ByVal Index As Long, _
         ByVal col As Long, _
         ByVal LocalArrayType As ArrayTypes _
         ) As Variant
-    If IsObject(Source(index)) Then
-        GetComparisonItem = ObjPtr(Source(index))
+    If IsObject(Source(Index)) Then
+        GetComparisonItem = ObjPtr(Source(Index))
     Else
         If LocalArrayType = BA_JAGGED Then
-            GetComparisonItem = Source(index)(col)
+            GetComparisonItem = Source(Index)(col)
         Else
-            GetComparisonItem = Source(index)
+            GetComparisonItem = Source(Index)
         End If
     End If
 End Function

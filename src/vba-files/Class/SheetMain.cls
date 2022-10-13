@@ -25,7 +25,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
 
         Call TranslateHeadGeo
     ElseIf Target.Name.Name = "RNG_LLPassword" Then
-        SheetPassword.Range("RNG_DebuggingPassword").value = Target.value
+        SheetPassword.Range("RNG_DebuggingPassword").Value = Target.Value
     End If
 
     Application.ScreenUpdating = True

@@ -326,7 +326,7 @@ End Function
 Public Function IDataSheet_ColumnIndex(ByVal colName As String, _
                                         Optional ByVal inDataRange As Boolean = False, _
                                         Optional shouldExist As Boolean = False) As Long
-    IDataSheet_ColumnIndex = ColumnIndex()
+    IDataSheet_ColumnIndex = ColumnIndex(colName, inDataRange, shouldExist)
 End Function
 
 'Properties

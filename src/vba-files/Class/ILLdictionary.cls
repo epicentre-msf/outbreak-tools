@@ -19,7 +19,7 @@ Public Property Get Data() As IDataSheet: End Property
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
                                             Optional ByVal includeHeaders As Boolean = False) As Range: End Property
 Public Property Get Prepared() As Boolean: End Property
-'Public Property Get Variable() As IVariable : End Property
+'Public Property Get variables() As ILLVariable: End Property
 
 'Functions
 Public Function ColumnExists(ByVal colName As String, Optional ByVal checkValidity As Boolean) As Boolean: End Function

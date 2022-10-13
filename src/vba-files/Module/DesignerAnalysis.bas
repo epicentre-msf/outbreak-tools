@@ -62,12 +62,12 @@ Public Sub BuildAnalysis(wkb As Workbook, GSData As BetterArray, UAData As Bette
 
         iGoToColTA = .Cells(C_eStartlinesListAuto, .Columns.Count).End(xlToLeft).Column + 2
 
-        .Cells(C_eStartlinesListAuto, iGoToColTA).value = C_sTimeAgg
-        .Cells(C_eStartlinesListAuto + 1, iGoToColTA).value = TranslateLLMsg("MSG_Day")
-        .Cells(C_eStartlinesListAuto + 2, iGoToColTA).value = TranslateLLMsg("MSG_Week")
-        .Cells(C_eStartlinesListAuto + 3, iGoToColTA).value = TranslateLLMsg("MSG_Month")
-        .Cells(C_eStartlinesListAuto + 4, iGoToColTA).value = TranslateLLMsg("MSG_Quarter")
-        .Cells(C_eStartlinesListAuto + 5, iGoToColTA).value = TranslateLLMsg("MSG_Year")
+        .Cells(C_eStartlinesListAuto, iGoToColTA).Value = C_sTimeAgg
+        .Cells(C_eStartlinesListAuto + 1, iGoToColTA).Value = TranslateLLMsg("MSG_Day")
+        .Cells(C_eStartlinesListAuto + 2, iGoToColTA).Value = TranslateLLMsg("MSG_Week")
+        .Cells(C_eStartlinesListAuto + 3, iGoToColTA).Value = TranslateLLMsg("MSG_Month")
+        .Cells(C_eStartlinesListAuto + 4, iGoToColTA).Value = TranslateLLMsg("MSG_Quarter")
+        .Cells(C_eStartlinesListAuto + 5, iGoToColTA).Value = TranslateLLMsg("MSG_Year")
 
         'Define the list object for validation
         Set rng = .Range(.Cells(C_eStartlinesListAuto, iGoToColTA), .Cells(C_eStartlinesListAuto + 5, iGoToColTA))
@@ -117,7 +117,7 @@ Private Sub AddGlobalSummary(wkb As Workbook, GSData As BetterArray, iGoToCol As
     With wkb.Worksheets(sParamSheetAnalysis)
 
         With .Cells(C_eStartLinesAnalysis - 2, C_eStartColumnAnalysis)
-            .value = TranslateLLMsg("MSG_GlobalSummary")
+            .Value = TranslateLLMsg("MSG_GlobalSummary")
             .Font.Size = C_iAnalysisFontSize + 5
             .Font.Bold = True
             .Font.Color = Helpers.GetColor("DarkBlue")
@@ -125,7 +125,7 @@ Private Sub AddGlobalSummary(wkb As Workbook, GSData As BetterArray, iGoToCol As
 
 
         With .Cells(C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1)
-            .value = TranslateLLMsg("MSG_AllData")
+            .Value = TranslateLLMsg("MSG_AllData")
             .Font.Color = Helpers.GetColor("DarkBlue")
             .HorizontalAlignment = xlHAlignCenter
             .VerticalAlignment = xlVAlignCenter
@@ -134,7 +134,7 @@ Private Sub AddGlobalSummary(wkb As Workbook, GSData As BetterArray, iGoToCol As
         End With
 
         With .Cells(C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2)
-            .value = TranslateLLMsg("MSG_FilteredData")
+            .Value = TranslateLLMsg("MSG_FilteredData")
             .Font.Color = Helpers.GetColor("DarkBlue")
             .HorizontalAlignment = xlHAlignCenter
             .VerticalAlignment = xlVAlignCenter
@@ -148,7 +148,7 @@ Private Sub AddGlobalSummary(wkb As Workbook, GSData As BetterArray, iGoToCol As
         'Formulas for Global Summary
         For i = 2 To iSumLength
             With .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis)
-                .value = GSData.Items(i, 1)
+                .Value = GSData.Items(i, 1)
                 .Font.Color = Helpers.GetColor("DarkBlue")
                 .Interior.Color = Helpers.GetColor("VeryLightBlue")
                 .VerticalAlignment = xlVAlignCenter
@@ -201,7 +201,7 @@ Private Sub AddGlobalSummary(wkb As Workbook, GSData As BetterArray, iGoToCol As
     'Update values of the GoTo Column
     With wkb.Worksheets(C_sSheetChoiceAuto)
 
-        .Cells(C_eStartlinesListAuto + 1, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") _
+        .Cells(C_eStartlinesListAuto + 1, iGoToCol).Value = TranslateLLMsg("MSG_SelectSection") _
       & ": " & TranslateLLMsg("MSG_GlobalSummary")
 
     End With
@@ -299,7 +299,7 @@ Public Sub AddUnivariateAnalysis(wkb As Workbook, UAData As BetterArray, _
 
                     With wkb.Worksheets(C_sSheetChoiceAuto)
                         iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
-                        .Cells(iRow + 1, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") & _
+                        .Cells(iRow + 1, iGoToCol).Value = TranslateLLMsg("MSG_SelectSection") & _
                                                                                                ": " & sActualSection
                     End With
                 End If
@@ -492,7 +492,7 @@ Public Sub AddBivariateAnalysis(wkb As Workbook, BAData As BetterArray, _
 
                     With wkb.Worksheets(C_sSheetChoiceAuto)
                         iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
-                        .Cells(iRow + 1, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") & _
+                        .Cells(iRow + 1, iGoToCol).Value = TranslateLLMsg("MSG_SelectSection") & _
                                                                                                ": " & sActualSection
                     End With
                 End If
@@ -650,7 +650,7 @@ Sub AddTimeSeriesAnalysis(wkb As Workbook, TAData As BetterArray, _
                     'Build the GoTo column in the list auto sheet
                     With wkb.Worksheets(C_sSheetChoiceAuto)
                         iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
-                        .Cells(iRow + 1, iGoToCol).value = TranslateLLMsg("MSG_SelectSection") & ": " & sActualSection
+                        .Cells(iRow + 1, iGoToCol).Value = TranslateLLMsg("MSG_SelectSection") & ": " & sActualSection
                     End With
 
                     'Add the start date, Time aggregation, and Time column

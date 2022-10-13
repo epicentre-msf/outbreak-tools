@@ -20,7 +20,7 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
     Dim DictSheet As Worksheet
 
     sPath = vbNullString
-    sPath = ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, iFileNameIndex).value
+    sPath = ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, iFileNameIndex).Value
 
     Set PathData = New BetterArray
     PathData.LowerBound = 1
@@ -41,7 +41,7 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
 
                 iVarIndex = VarNameData.IndexOf(PathData.Items(i)) 'Index of the varname
                 sSheetName = DictSheet.Cells(1 + iVarIndex, iSheetNameIndex) '+1 because first line is for column names
-                PathData.Item(i) = ThisWorkbook.Worksheets(sSheetName).Range(PathData.Items(i)).value
+                PathData.Item(i) = ThisWorkbook.Worksheets(sSheetName).Range(PathData.Items(i)).Value
 
             Else
                 PathData.Item(i) = Replace(PathData.Items(i), Chr(34), "")
@@ -52,7 +52,7 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
 
 
         sPath = PathData.ToString(Separator:="-", OpeningDelimiter:=vbNullString, ClosingDelimiter:=vbNullString, QuoteStrings:=False) & _
-                                                                                                                                       "__" & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PublicKey").value & "__" & Format(Now, "yyyymmdd-HhNn")
+                                                                                                                                       "__" & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PublicKey").Value & "__" & Format(Now, "yyyymmdd-HhNn")
 
         'Folder where to write the exports
         sDirectory = Helpers.LoadFolder
@@ -121,16 +121,16 @@ Private Function AddExportLLSheet(wkb As Workbook, sSheetName As String, sPrevSh
         End With
 
         If sHeaderType = C_sExportHeaderTypeVarLab Then
-            sHeader = ThisWorkbook.Worksheets(sSheetName).Cells(C_eStartLinesLLData, iListColIndex).value
+            sHeader = ThisWorkbook.Worksheets(sSheetName).Cells(C_eStartLinesLLData, iListColIndex).Value
         End If
 
         iLastRow = src.Rows.Count
 
         With wkb.Worksheets(sSheetName)
             Set dest = .Range(.Cells(1, k - i + 1), .Cells(iLastRow, k - i + 1))
-            dest.value = src.value
+            dest.Value = src.Value
             'Add variable label if required
-            If sHeader <> vbNullString Then .Cells(1, k - i + 1).value = sHeader
+            If sHeader <> vbNullString Then .Cells(1, k - i + 1).Value = sHeader
         End With
 
 
@@ -167,27 +167,27 @@ Private Function AddExportAdmSheet(wkb As Workbook, sSheetName As String, sPrevS
 
             Case C_sExportHeaderTypeVarName
 
-                .Cells(k - i + 2, 1).value = sVarName
+                .Cells(k - i + 2, 1).Value = sVarName
 
             Case C_sExportHeaderTypeVarLab
 
-                .Cells(k - i + 2, 1).value = srcWksh.Range(sVarName).Offset(, -1).value
+                .Cells(k - i + 2, 1).Value = srcWksh.Range(sVarName).Offset(, -1).Value
 
             Case Else
 
-                .Cells(k - i + 2, 1).value = sVarName
+                .Cells(k - i + 2, 1).Value = sVarName
 
             End Select
 
-            .Cells(k - i + 2, 2).value = srcWksh.Range(sVarName).value
+            .Cells(k - i + 2, 2).Value = srcWksh.Range(sVarName).Value
         End With
 
         k = k + 1
     Loop
 
     'Add variable and value
-    wkb.Worksheets(sSheetName).Cells(1, 1).value = C_sVariable
-    wkb.Worksheets(sSheetName).Cells(1, 2).value = C_sValue
+    wkb.Worksheets(sSheetName).Cells(1, 1).Value = C_sVariable
+    wkb.Worksheets(sSheetName).Cells(1, 2).Value = C_sValue
 
     AddExportAdmSheet = k - 1
 End Function
@@ -280,7 +280,7 @@ Sub Export(iTypeExport As Byte)
             'Add Translation
             i = ExportHeader.IndexOf(C_sExportHeaderTranslation)
 
-            If (ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).value = C_sYes) Then
+            If (ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).Value = C_sYes) Then
                 Set ExportData = GetTransData()
                 .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sParamSheetTranslation
                 ExportData.ToExcelRange .Worksheets(C_sParamSheetTranslation).Cells(1, 1)
@@ -291,7 +291,7 @@ Sub Export(iTypeExport As Byte)
             i = ExportHeader.IndexOf(C_sExportHeaderMetadata)
 
             'Add Choice
-            If (ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).value = C_sYes) Then
+            If (ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).Value = C_sYes) Then
 
                 Set ExportData = GetChoicesData()
                 'Choices Sheet
@@ -356,7 +356,7 @@ Sub Export(iTypeExport As Byte)
         'Handling the file format
         i = ExportHeader.IndexOf(C_sExportHeaderFileFormat)
 
-        Select Case ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).value
+        Select Case ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).Value
         Case "xlsx"
             fileformat = xlOpenXMLWorkbook
             sExt = ".xlsx"
@@ -372,19 +372,19 @@ Sub Export(iTypeExport As Byte)
 
         i = ExportHeader.IndexOf(C_sExportHeaderPassword)
 
-        Select Case ClearString(ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).value)
+        Select Case ClearString(ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).Value)
         Case C_sYes
-            wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
+            wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value, _
         ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-            MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value
+            MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value
         Case C_sNo
-            sPath = Replace(sPath, "__" & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PublicKey").value, "")
+            sPath = Replace(sPath, "__" & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PublicKey").Value, "")
             wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
             MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_NoPassword")
         Case Else
-            wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value, _
+            wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value, _
         ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-            MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").value
+            MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value
         End Select
 
         wkb.Close
@@ -452,8 +452,8 @@ Sub NewKey()
 
     'Randomize
     i = Int(nbLigne * Rnd())
-    ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngPublickey).value = T_Cle(i, 1)
-    ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngPrivatekey).value = T_Cle(i, 2)
+    ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngPublickey).Value = T_Cle(i, 1)
+    ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngPrivatekey).Value = T_Cle(i, 2)
 
     MsgBox TranslateLLMsg("MSG_Password") & T_Cle(i, 2) 'MSG_NewPass
 
@@ -464,9 +464,9 @@ End Sub
 Function LetKey(bPriv As Boolean) As Long
 
     If bPriv Then
-        LetKey = ThisWorkbook.Worksheets(C_sSheetPassword).Range("PrivateKey").value
+        LetKey = ThisWorkbook.Worksheets(C_sSheetPassword).Range("PrivateKey").Value
     Else
-        LetKey = ThisWorkbook.Worksheets(C_sSheetPassword).Range("PublicKey").value
+        LetKey = ThisWorkbook.Worksheets(C_sSheetPassword).Range("PublicKey").Value
     End If
 
 End Function
@@ -477,7 +477,7 @@ Private Function TestFilter() As Boolean
     Dim test As Byte
 
 
-    If F_Export.CHK_ExportFiltered.value Then
+    If F_Export.CHK_ExportFiltered.Value Then
 
         test = MsgBox(TranslateLLMsg("MSG_AskFilter"), vbYesNo + vbQuestion, TranslateLLMsg("MSG_ThereIsFilter"))
 
@@ -485,7 +485,7 @@ Private Function TestFilter() As Boolean
             Call UpdateFilterTables
             ThereIsFilter = True
         Else
-            F_Export.CHK_ExportFiltered.value = False
+            F_Export.CHK_ExportFiltered.Value = False
             ThereIsFilter = False
         End If
 
