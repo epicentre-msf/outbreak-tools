@@ -53,7 +53,7 @@ Private Sub TestFormulaValidity()
     Dim Wksh As Worksheet
     Dim Dict As ILLdictionary
 
-    Set Wksh = ThisWorkbook.Worksheets("Dictionary")
+    Set Wksh = ThisWorkbook.Worksheets("TestDictionary")
     Set Dict = LLdictionary.Create(Wksh, 1, 1)
     
     Assert.IsTrue (Not Dict.ColumnExists("table name")) Or formcond.Valid(Dict, "table2"), "Correct formula shows as incorrect (variable length = 4)"
@@ -78,6 +78,7 @@ Private Sub TestFormConversion()
     cond.Pop
     
     Assert.IsTrue (formcond.ConditionString("table2", "varb2") = "IF((table2[varb1] > 0)*(table2[varb2] < 0) , table2[varb2])"), "Formula not converted correctly (step 1)"
+    Debug.Print formcond.ConditionString("table2", "varb2")
     Assert.IsTrue (formcond.ConditionString("filttable2", "varb5") = "IF((filttable2[varb1] > 0)*(filttable2[varb2] < 0) , filttable2[varb5])"), "Formula not converted correctly (step 2)"
 
 End Sub

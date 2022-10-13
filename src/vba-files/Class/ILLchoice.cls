@@ -15,21 +15,20 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
+'Properties
+Public Property Get Wksh() As Worksheet: End Property
+Public Property Get StartRow() As Long: End Property
+Public Property Get StartColumn() As Long: End Property
+Public Property Get ChoiceData() As IDataSheet: End Property
+Public Property Get DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range: End Property
+Public Property Get Categories(ByVal choiceName As String) As BetterArray: End Property
 
 'Exposed methods
-
-Public Property Get Categories(ByVal choiceName As String) As BetterArray: End Property
-Public Property Get DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range: End Property
 
 'Void methods
 'Sort the choices sheet
 Public Sub Sort(): End Sub
-
-'Add choice to the export list
+'Add choice
 Public Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As BetterArray): End Sub
 
-'Encapsulated data
-Public Property Get Wksh() As Worksheet: End Property
-Public Property Get StartRow() As Long: End Property
-Public Property Get StartColumn() As Long: End Property
-Public Property Get ChoiceDictionary() As ILLdictionary: End Property
+

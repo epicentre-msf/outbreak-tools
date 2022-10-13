@@ -589,7 +589,7 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
 
     'Copy the data Now
     sData.ToExcelRange DestWkb.Worksheets(sSheetName).Range("A1")
-    
+
     col = 1
     With DestWkb.Worksheets(sSheetName)
         Do While (.Cells(1, col) <> vbNullString)
@@ -597,7 +597,7 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
             col = col + 1
         Loop
     End With
-    
+
     DestWkb.Worksheets(sSheetName).Visible = xlSheetHidden
 End Sub
 
@@ -771,7 +771,7 @@ Public Function MoveWksh(SrcWkb As Workbook, DestWkb As Workbook, sSheetName As 
 
     SrcWkb.Worksheets(sSheetName).Copy after:=Wksh
     Wksh.Delete
-        
+
     ActvSh.Activate
 
     EndWork xlsapp:=Application

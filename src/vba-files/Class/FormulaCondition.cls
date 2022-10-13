@@ -57,7 +57,7 @@ Public Property Set Variable(ByVal formvar As BetterArray)
 End Property
 
 'Test if a formula is valid:
-Public Property Get Valid(ByVal Dict As ILLdictionary, ByVal tableName As String) As Boolean
+Public Function Valid(ByVal Dict As ILLdictionary, ByVal tableName As String) As Boolean
 
     Dim tableData As BetterArray 'list of all tables in dictionary
     Dim variableData As BetterArray 'list of all variables in dictionary
@@ -66,16 +66,18 @@ Public Property Get Valid(ByVal Dict As ILLdictionary, ByVal tableName As String
     Dim variableName As String
     Dim counter As Long
 
+    Set tableData = New BetterArray
+    Set variableData = New BetterArray
+
     'Valid Fail by default, turns to true after the checkings
     Valid = False
-        
 
     'variable and conditions table doesn't fit
-    If Variable.Length <> Condition.Length Or Variable.Length = 0 Then Exit Property
-    If Not (Dict.ColumnExists("table name") And Dict.ColumnExists("variable name")) Then Exit Property
+    If Variable.Length <> Condition.Length Or Variable.Length = 0 Then Exit Function
+    If Not (Dict.ColumnExists("table name") And Dict.ColumnExists("variable name")) Then Exit Function
 
-    Set tableData = Dict.Column("table name")
-    Set variableData = Dict.Column("variable name")
+    tableData.FromExcelRange Dict.DataRange("table name")
+    variableData.FromExcelRange Dict.DataRange("variable name")
 
     For counter = Variable.LowerBound To Variable.UpperBound
 
@@ -83,19 +85,19 @@ Public Property Get Valid(ByVal Dict As ILLdictionary, ByVal tableName As String
         variableName = Variable.Item(counter)
 
         'Unable to find the variable within the provided list of variables
-        If Not variableData.Includes(variableName) Then Exit Property
+        If Not variableData.Includes(variableName) Then Exit Function
 
         'Variables are not in the same table
         variablesTableName = tableData.Item(variableData.IndexOf(variableName))
-        If variablesTableName <> tableName Then Exit Property
+        If variablesTableName <> tableName Then Exit Function
     Next
 
     Valid = True
-End Property
+End Function
 
 
 'Convert the conditions into a string of formulas
-Public Property Get ConditionString(ByVal tableName As String, ByVal varName As String, Optional Connector As String = "*") As String
+Public Function ConditionString(ByVal tableName As String, ByVal varName As String, Optional Connector As String = "*") As String
 
     'The connector is how we want to link the conditions: * for AND, + for OR
 
@@ -106,7 +108,7 @@ Public Property Get ConditionString(ByVal tableName As String, ByVal varName As 
     ConditionString = vbNullString
 
     'You get an empty vector in case of no data
-    If Variable.Length = 0 Or Condition.Length = 0 Then Exit Property
+    If Variable.Length = 0 Or Condition.Length = 0 Then Exit Function
 
     'Initialize
     counter = Variable.LowerBound
@@ -118,7 +120,7 @@ Public Property Get ConditionString(ByVal tableName As String, ByVal varName As 
     Next
 
     ConditionString = "IF(" & ParsedCondition & " , " & tableName & "[" & varName & "]" & ")"
-End Property
+End Function
 
 'Implement interfaces
 Public Property Get IFormulaCondition_Variable() As BetterArray
@@ -129,10 +131,10 @@ Public Property Get IFormulaCondition_Condition() As BetterArray
      Set IFormulaCondition_Condition = Condition
 End Property
 
-Public Property Get IFormulaCondition_ConditionString(ByVal tableName As String, ByVal varName As String, Optional Connector As String = "*") As String
+Public Function IFormulaCondition_ConditionString(ByVal tableName As String, ByVal varName As String, Optional ByVal Connector As String = "*") As String
     IFormulaCondition_ConditionString = ConditionString(tableName:=tableName, varName:=varName, Connector:=Connector)
-End Property
+End Function
 
-Public Property Get IFormulaCondition_Valid(ByVal Dict As ILLdictionary, ByVal tableName As String) As Boolean
+Public Function IFormulaCondition_Valid(ByVal Dict As ILLdictionary, ByVal tableName As String) As Boolean
     IFormulaCondition_Valid = Valid(Dict, tableName)
-End Property
+End Function
