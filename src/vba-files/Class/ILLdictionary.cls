@@ -15,20 +15,17 @@ Attribute VB_Description = "Interface of Dictionary Class"
 Option Explicit
 
 'Exposed methods
-Public Property Get Column(ByVal columnName As String, Optional ByVal includeHeaders As Boolean = False) As BetterArray: End Property
-Public Property Get ColumnExists(ByVal columnName As String) As Boolean: End Property
-Public Property Get FilterData(ByVal varName As String, ByVal criteriaName As String, ByVal returnedColumnName As String, Optional ByVal includeHeaders As Boolean = False) As BetterArray
-End Property
-Public Property Get FiltersData(ByVal varData As BetterArray, ByVal criteriaData As BetterArray, ByVal returnedColumnsData As BetterArray) As BetterArray
-End Property
-Public Property Get DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders As Boolean = False) As Range: End Property
+Public Property Get Data() As IDataSheet: End Property
+Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
+                                            Optional ByVal includeHeaders As Boolean = False) As Range: End Property
 Public Property Get Prepared() As Boolean: End Property
-Public Property Get Wksh() As Worksheet: End Property
+'Public Property Get Variable() As IVariable : End Property
 
-'Getters for the encapsulated data
-Public Property Get StartRow() As Long: End Property
-Public Property Get StartColumn() As Long: End Property
+'Functions
+Public Function ColumnExists(ByVal colName As String, Optional ByVal checkValidity As Boolean) As Boolean: End Function
+Public Function UniqueValues(ByVal colName As String) As BetterArray: End Function
+Public Function VariableExists(ByVal varName As String) As Boolean: End Function
 
-'Void methods
-Public Sub Prepare(Optional ByVal tablePrefix As String = "table"): End Sub
+'Void Cleaning methods
+Public Sub Prepare(Optional ByVal tablePrefix As String = "tab"): End Sub
 Public Sub Clean(): End Sub

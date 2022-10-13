@@ -18,7 +18,7 @@ Implements ILLchoice
 
 
 Private Type Tchoice
-  choiceDict As ILLdictionary
+  choiceDataSheet As IDataSheet
 End Type
 
 Private this As Tchoice
@@ -29,12 +29,12 @@ Private Const ORDER   As String = "ordering list"
 
 'Instanciation
 Public Function Create(ByVal choiceWorksheet As Worksheet, ByVal choiceStartRow As Long, ByVal choiceStartColumn As Long) As ILLchoice
-    
-    Dim choiceDict As ILLdictionary
-    Set choiceDict = LLdictionary.Create(choiceWorksheet, choiceStartRow, choiceStartColumn)
+
+    Dim customDataSheet As IDataSheet
+    Set customDataSheet = DataSheet.Create(choiceWorksheet, choiceStartRow, choiceStartColumn)
 
     With New LLchoice
-        Set .ChoiceDictionary = choiceDict
+        Set .ChoiceData = customDataSheet
         Set Create = .Self
     End With
 End Function
@@ -46,43 +46,49 @@ End Property
 
 'Worksheet
 Public Property Get Wksh() As Worksheet
-    Set Wksh = this.choiceDict.Wksh()
+    Dim dataObject As IDataSheet
+    Set dataObject = ChoiceData
+    Set Wksh = dataObject.Wksh()
 End Property
 
 'StartRow
 Public Property Get StartRow() As Long
-    StartRow = this.choiceDict.StartRow()
+   Dim dataObject As IDataSheet
+   Set dataObject = ChoiceData
+    StartRow = dataObject.StartRow()
 End Property
 
 'StartColumn
 Public Property Get StartColumn() As Long
-    StartColumn = this.choiceDict.StartColumn()
+    Dim dataObject As IDataSheet
+    Set dataObject = ChoiceData
+    StartColumn = dataObject.StartColumn()
 End Property
 
-Private Property Get ChoiceDictionary() As ILLdictionary
-  Set ChoiceDictionary = this.choiceDict
+Private Property Get ChoiceData() As IDataSheet
+  Set ChoiceData = this.choiceDataSheet
 End Property
 
-Friend Property Set ChoiceDictionary(ByVal choiceDict As ILLdictionary)
-  Set this.choiceDict = choiceDict
+Friend Property Set ChoiceData(ByVal customDataSheet As IDataSheet)
+  Set this.choiceDataSheet = customDataSheet
 End Property
 
 
 'Get the data range
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range
-    Dim dictObject As ILLdictionary
-    Set dictObject = ChoiceDictionary
+    Dim dataObject As IDataSheet
+    Set dataObject = ChoiceData
 
-    Set DataRange = dictObject.DataRange(colName, includeHeaders)
+    Set DataRange = dataObject.DataRange(colName, includeHeaders)
 End Property
 
 'Get the categories
 Public Property Get Categories(ByVal choiceName As String) As BetterArray
-  Dim dictObject As ILLdictionary
+  Dim dataObject As IDataSheet
 
-  Set dictObject = ChoiceDictionary
+  Set dataObject = ChoiceData
 
-  Set Categories = dictObject.FilterData(varName:=LISTNAME, _
+  Set Categories = dataObject.FilterData(varName:=LISTNAME, _
                     criteriaName:=choiceName, returnedColumnName:=LABEL, _
                     includeHeaders:=False)
 End Property
@@ -90,14 +96,14 @@ End Property
 'Sort the Choices sheet
 Private Sub Sort()
 
-  Dim dictObject As ILLdictionary
+  Dim dataObject As IDataSheet
   Dim orderRng As Range
   Dim listRng As Range
   Dim choiceRng As Range
 
-  Set dictObject = ChoiceDictionary
+  Set dataObject = ChoiceData
 
-  If dictObject.ColumnExists(LISTNAME) And dictObject.ColumnExists(ORDER) Then
+  If dataObject.ColumnExists(LISTNAME) And dataObject.ColumnExists(ORDER) Then
     Set listRng = DataRange(LISTNAME)
     Set orderRng = DataRange(ORDER)
     Set choiceRng = DataRange()
@@ -116,6 +122,14 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
   Dim endRow As Long
   Dim endRowlabel As Long
   Dim counter As Long
+  Dim checkCategories As BetterArray
+
+  If CategoriesData.Length = 0 Then Exit Sub
+
+  'Test if the choice already exists
+  Set checkCategories = New BetterArray
+  Set checkCategories = Categories(choiceName)
+  If checkCategories.Length > 0 Then Exit Sub 'Will probably trace log.
 
 
   Set listRng = DataRange(LISTNAME)
@@ -125,6 +139,7 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
 
   endRow = StartRow + listRng.Rows.Count
   endRowlabel = StartRow + labelRng.Rows.Count
+
 
   With choicewksh
     If (endRow = endRowlabel) Then
@@ -140,7 +155,7 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
   End With
 End Sub
 
-'Encapsulated data
+'Properties
 Public Property Get ILLchoice_Wksh() As Worksheet
     Set ILLchoice_Wksh = Wksh()
 End Property
@@ -153,9 +168,20 @@ Public Property Get ILLchoice_StartColumn() As Long
   ILLchoice_StartColumn = StartColumn()
 End Property
 
-Public Property Get ILLchoice_ChoiceDictionary() As ILLdictionary
-  Set ILLchoice_ChoiceDictionary = ChoiceDictionary
+Public Property Get ILLchoice_ChoiceData() As IDataSheet
+  Set ILLchoice_ChoiceData = ChoiceData
 End Property
+
+Public Property Get ILLchoice_DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range
+    Set ILLchoice_DataRange = DataRange(colName, includeHeaders)
+End Property
+
+Public Property Get ILLchoice_Categories(ByVal choiceName As String) As BetterArray
+    Set ILLchoice_Categories = Categories(choiceName)
+End Property
+
+
+'Methods
 
 'Void methods
 Public Sub ILLchoice_Sort()
@@ -166,11 +192,4 @@ Public Sub ILLchoice_AddChoice(ByVal choiceName As String, ByVal CategoriesData 
     AddChoice choiceName:=choiceName, CategoriesData:=CategoriesData
 End Sub
 
-Public Property Get ILLchoice_DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range
-    Set ILLchoice_DataRange = DataRange(colName, includeHeaders)
-End Property
 
-
-Public Property Get ILLchoice_Categories(ByVal choiceName As String) As BetterArray
-    Set ILLchoice_Categories = Categories(choiceName)
-End Property

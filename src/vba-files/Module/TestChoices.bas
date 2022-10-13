@@ -29,10 +29,9 @@ End Sub
 Private Sub TestInitialize()
     'This method runs before every test in the module..
     Dim choicewksh As Worksheet
-    Dim choiceDict As ILLdictionary
     Dim choiceWorksheet As Worksheet
 
-    Set choiceWorksheet = ThisWorkbook.Worksheets("Choices")
+    Set choiceWorksheet = ThisWorkbook.Worksheets("TestChoices")
     Set choice = LLchoice.Create(choiceWorksheet, 1, 1)
 End Sub
 
@@ -44,7 +43,7 @@ Private Sub TestInit()
 
     Assert.IsTrue (choice.StartRow = 1), "Bad choice startRow"
     Assert.IsTrue (choice.StartColumn = 1), "Bad choice startcolumn"
-    Assert.IsTrue (choice.Wksh.Name = "Choices"), "Bad choice worksheet"
+    Assert.IsTrue (choice.Wksh.Name = "TestChoices"), "Bad choice worksheet"
 
     Exit Sub
 InitFailed:
