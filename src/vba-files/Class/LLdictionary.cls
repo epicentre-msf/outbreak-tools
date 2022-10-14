@@ -23,6 +23,7 @@ End Type
 
 Private this As TDictionary
 Private DICTIONARYCOLUMNS As BetterArray
+Private PRESERVEDSHEETSNAMES As BetterArray
 Private Const SHEETTYPEVERTICAL As String = "vlist1D"
 Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
 
@@ -100,11 +101,21 @@ Public Property Get Prepared() As Boolean
 End Property
 
 'Initialize the Headers  -----------------------------------------------------
-Private Sub ColumnInitialize()
+Private Sub ClassArraysInitialize()
+
     Set DICTIONARYCOLUMNS = New BetterArray
+
+    'colnames of the dictionary
     DICTIONARYCOLUMNS.Push "variable name", "main label", "sub label", "note", "sheet name", _
      "sheet type", "main section", "sub section", "status", "personal identifier", "type", "control", "control details", "unique", _
      "export 1", "export 2", "export 3", "export 4", "export 5", "min", "max", "alert", "message", "table name", "column index"
+
+    'Preserved names
+    Set PRESERVEDSHEETSNAMES = New BetterArray
+    PRESERVEDSHEETSNAMES.Push "GEO", "ControleFormule", "Password", "Temp_", _ 
+    "LinelistTranslation", "List_auto_", "Dictionary", "Exports", "Choices", "Translations",  _ 
+    "Metadata", "Ana_temp_", "Import_temp_", "Admin", "Debug___"
+
 End Sub
 
 'Dictionary data Range
@@ -129,7 +140,7 @@ Private Function ColumnExists(ByVal colName As String, Optional ByVal checkValid
     Exist = customDataSheet.ColumnExists(colName)
 
     If Exist And checkValidity Then
-        If DICTIONARYCOLUMNS Is Nothing Then ColumnInitialize
+        If DICTIONARYCOLUMNS Is Nothing Then ClassArraysInitialize
         Exist = DICTIONARYCOLUMNS.Includes(colName)
     End If
 
@@ -208,7 +219,7 @@ Private Sub Prepare(Optional ByVal tablePrefix As String = "table")
     Dim controlRng As Range
 
     If Not Prepared() Then
-        'Test if the dictionary is prepared before doing the whole loop
+            'Test if the dictionary is prepared before doing the whole loop
             If Not ColumnExists("table name") Then
                  AppendNumberColumn onColName:="sheet name", tablePrefix:=tablePrefix, _
                                     newColumn:="table name"    'Add table name
@@ -227,11 +238,37 @@ Private Sub Prepare(Optional ByVal tablePrefix As String = "table")
             End If
             'Sort the dictionary accordingly and make unique varNames
             UniqueVarNames
+            GoodSheetNames
             Clean
             'Add color to the last line for prepare indication
             Set dictWksh = Wksh()
             dictWksh.Cells(DictEndRow + 1, StartColumn).Font.Color = vbBlue
     End If
+End Sub
+
+
+Private Sub GoodSheetNames
+    Dim dictWksh As Worksheet
+    Dim sheetNameIndex As Long
+
+    Dim endRow As Long
+    Dim counter As Long
+
+    endRow = DictEndRow
+    Set dictWksh = Wksh()
+    sheetNameIndex = ColumnIndex("sheet name")
+
+    If (PRESERVEDSHEETSNAMES is Nothing) Then ClassArraysInitialize
+
+    With dictWksh
+        For counter = StartRow + 1 To endRow
+            If PRESERVEDSHEETSNAMES.Includes(.Cells(counter, sheetNameIndex).Value) Then
+                .Cells(counter, sheetNameIndex).Value = .Cells(counter, sheetNameIndex).value & "_"
+                'Designer Loggin
+            End If
+        Next
+    End With
+
 End Sub
 
 'Make unique variable names
