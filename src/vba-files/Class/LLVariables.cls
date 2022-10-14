@@ -25,7 +25,7 @@ End Type
 Private this As TVariable
 Private Const VARIABLENAME As String = "variable name"
 Private Const INDEXHEADER  As String = "column index"
-Private Const CLASSNAME As String = "Variable"
+Private Const CLASSNAME As String = "LLVariables"
 
 Public Function Create(ByVal dict As ILLdictionary) As ILLVariables
 
@@ -61,9 +61,9 @@ End Property
 'Test if a variable is present
 Private Function Contains(ByVal varName As String) As Boolean
   Dim varRng As Range
-  Set varRng = VarRange()
   Dim Exist As Boolean
   
+  Set varRng = VarRange()
   If varName = vbNullString Then
     Exist = False
   Else
