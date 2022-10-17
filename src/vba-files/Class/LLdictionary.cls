@@ -112,8 +112,8 @@ Private Sub ClassArraysInitialize()
 
     'Preserved names
     Set PRESERVEDSHEETSNAMES = New BetterArray
-    PRESERVEDSHEETSNAMES.Push "GEO", "ControleFormule", "Password", "Temp_", _ 
-    "LinelistTranslation", "List_auto_", "Dictionary", "Exports", "Choices", "Translations",  _ 
+    PRESERVEDSHEETSNAMES.Push "GEO", "ControleFormule", "Password", "Temp_", _
+    "LinelistTranslation", "List_auto_", "Dictionary", "Exports", "Choices", "Translations", _
     "Metadata", "Ana_temp_", "Import_temp_", "Admin", "Debug___"
 
 End Sub
@@ -247,7 +247,7 @@ Private Sub Prepare(Optional ByVal tablePrefix As String = "table")
 End Sub
 
 
-Private Sub GoodSheetNames
+Private Sub GoodSheetNames()
     Dim dictWksh As Worksheet
     Dim sheetNameIndex As Long
 
@@ -258,12 +258,12 @@ Private Sub GoodSheetNames
     Set dictWksh = Wksh()
     sheetNameIndex = ColumnIndex("sheet name")
 
-    If (PRESERVEDSHEETSNAMES is Nothing) Then ClassArraysInitialize
+    If (PRESERVEDSHEETSNAMES Is Nothing) Then ClassArraysInitialize
 
     With dictWksh
         For counter = StartRow + 1 To endRow
             If PRESERVEDSHEETSNAMES.Includes(.Cells(counter, sheetNameIndex).Value) Then
-                .Cells(counter, sheetNameIndex).Value = .Cells(counter, sheetNameIndex).value & "_"
+                .Cells(counter, sheetNameIndex).Value = .Cells(counter, sheetNameIndex).Value & "_"
                 'Designer Loggin
             End If
         Next

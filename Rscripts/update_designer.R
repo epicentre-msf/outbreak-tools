@@ -123,6 +123,44 @@ Option Explicit
 
 }
 
+test_header  <- function(class_name) {
+
+glue::glue(
+"
+Attribute VB_Name = \"Test{class_name}\"
+
+Option Explicit
+Option Private Module
+
+'@TestModule
+'@Folder(\"Tests\")
+
+Private Assert As Object
+Private Fakes As Object
+
+'@ModuleInitialize
+Private Sub ModuleInitialize()
+    'this method runs once per module.
+    Set Assert = CreateObject(\"Rubberduck.AssertClass\")
+    Set Fakes = CreateObject(\"Rubberduck.FakesProvider\")
+End Sub
+
+'@ModuleCleanup
+Private Sub ModuleCleanup()
+    'this method runs once per module.
+    Set Assert = Nothing
+    Set Fakes = Nothing
+End Sub
+
+'This method runs before every test in the module..
+
+'@TestInitialize
+Private Sub TestInitialize()
+
+End Sub
+")
+}
+
 create_class  <- function(class_name, description = "", module_description = ""){ #nolint
 
 
@@ -133,10 +171,14 @@ create_class  <- function(class_name, description = "", module_description = "")
                                                 description = description,
                                                 module_description = glue::glue("Interface of {module_description}")) #nolint
 
+        class_test_header  <- test_header(class_name)
         #create the class
         cat(class_name_header,
             file = glue::glue("./src/vba-files/Class/{class_name}.cls"))
         #create the interface of the class
         cat(class_interface_header,
         file = glue::glue("./src/vba-files/Class/I{class_name}.cls"))
+        # Add Test for the class
+        cat(class_test_header,
+        file = glue::glue("./src/vba-files/Module/Test{class_name}.bas"))
 }

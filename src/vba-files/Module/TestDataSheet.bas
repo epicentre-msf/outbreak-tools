@@ -81,7 +81,6 @@ Private Sub TestColumnName()
 
 UnFoundFail:
     Assert.IsTrue (Err.Description = "Column Formula does not exists in worksheet TestDictionary"), "Failed to raise error on unfound columns"
-    Debug.Print Err.Description
     Exit Sub
 
 ColumnFail:
@@ -122,7 +121,6 @@ Private Sub TestSimpleFilter()
 
 UnFoundFail:
     Assert.IsTrue (Err.Description = "Column OO does not exists in worksheet TestDictionary"), "Failed to raise error on unfound columns"
-    Debug.Print Err.Description
     Exit Sub
 
 SimpleFilterFail:
@@ -175,7 +173,6 @@ Exit Sub
 
 UnFoundFail:
     Assert.IsTrue (Err.Description = "Column AAAA does not exists in worksheet TestDictionary"), "Failed to raise error on unfound columns"
-    Debug.Print Err.Description
     Exit Sub
 
 MultipleFiltersFail:

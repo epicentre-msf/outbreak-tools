@@ -33,7 +33,7 @@ Function CreateDicTitle() As BetterArray
 
     'loading headers
     T_DictHeaders.Clear
-    T_DictHeaders.FromExcelRange Sheets(C_sParamSheetDict).Range("A1"), DetectLastRow:=False, DetectLastColumn:=True
+    T_DictHeaders.FromExcelRange sheets(C_sParamSheetDict).Range("A1"), DetectLastRow:=False, DetectLastColumn:=True
     'Checking the visibility variable
     If Not T_DictHeaders.Includes(C_sDictHeaderVisibility) Then
         T_DictHeaders.Push C_sDictHeaderVisibility

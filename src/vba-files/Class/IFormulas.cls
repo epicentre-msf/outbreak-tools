@@ -10,9 +10,10 @@ Attribute VB_Exposed = False
 
 
 '@Folder("Dictionary")
-'@ModuleDescription("Interface of ")
+'@ModuleDescription("Interface of Formulas Object")
 '@IgnoreModule
 
 Option Explicit
 
 'Exposed methods
+

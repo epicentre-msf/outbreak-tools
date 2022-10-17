@@ -78,7 +78,6 @@ Private Sub TestFormConversion()
     cond.Pop
     Set formcond = FormulaCondition.Create(var, cond)
     Assert.IsTrue (formcond.ConditionString("tab2", "varb2") = "IF((tab2[varb1] > 0)*(tab2[varb2] < 0) , tab2[varb2])"), "Formula not converted correctly (step 1)"
-    Debug.Print formcond.ConditionString("tab2", "varb2")
     Assert.IsTrue (formcond.ConditionString("filttable2", "varb5") = "IF((filttable2[varb1] > 0)*(filttable2[varb2] < 0) , filttable2[varb5])"), "Formula not converted correctly (step 2)"
 
 End Sub
