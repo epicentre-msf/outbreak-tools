@@ -53,7 +53,7 @@ Public Sub TransferCodeWksh(wkb As Workbook, sSheetName As String, _
 
     With wkb
         Set vbProj = .VBProject
-        Set vbComp = vbProj.VBComponents(.Sheets(sSheetName).CodeName)
+        Set vbComp = vbProj.VBComponents(.sheets(sSheetName).CodeName)
         Set codeMod = vbComp.CodeModule
     End With
 
@@ -155,7 +155,7 @@ Public Function AddSpaceToHeaders(wkb As Workbook, _
     AddSpaceToHeaders = ""
     With wkb
         i = 1
-        Do While i <= .Worksheets(sSheetName).Cells(iStartLine, Columns.Count).End(xlToLeft).Column And Replace(UCase(.Sheets(sSheetName).Cells(iStartLine, i).Value), " ", "") <> Replace(UCase(sHeader), " ", "")
+        Do While i <= .Worksheets(sSheetName).Cells(iStartLine, Columns.Count).End(xlToLeft).Column And Replace(UCase(.sheets(sSheetName).Cells(iStartLine, i).Value), " ", "") <> Replace(UCase(sHeader), " ", "")
             i = i + 1
         Loop
         If Replace(UCase(wkb.Worksheets(sSheetName).Cells(iStartLine, i).Value), " ", "") = Replace(UCase(sHeader), " ", "") Then
@@ -846,7 +846,7 @@ Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAler
         .InputTitle = ""
         .errorTitle = ""
         .InputMessage = ""
-        .ErrorMessage = sMessage
+        .errorMessage = sMessage
         .ShowInput = True
         .ShowError = True
     End With

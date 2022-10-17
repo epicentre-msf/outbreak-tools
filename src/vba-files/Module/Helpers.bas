@@ -346,7 +346,7 @@ Sub SetValidation(oRange As Range, sValidList As String, sAlertType As Byte, Opt
         .InputTitle = ""
         .errorTitle = ""
         .InputMessage = ""
-        .ErrorMessage = sMessage
+        .errorMessage = sMessage
         .ShowInput = True
         .ShowError = True
     End With

@@ -383,7 +383,7 @@ Private Sub CreateSheets(wkb As Workbook, DictData As BetterArray, DictHeaders A
 
         '--------- Creating the translation sheet
         .Worksheets.Add.Name = C_sParamSheetTranslation
-        TransData.ToExcelRange Destination:=.Sheets(C_sParamSheetTranslation).Cells(1, 1)
+        TransData.ToExcelRange Destination:=.sheets(C_sParamSheetTranslation).Cells(1, 1)
         .Worksheets(C_sParamSheetTranslation).Visible = xlSheetVeryHidden
 
         'Add the metadata sheet
