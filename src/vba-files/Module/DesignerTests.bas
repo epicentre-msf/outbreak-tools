@@ -9,26 +9,16 @@ Sub ShowWindows()
 End Sub
 
 
-Sub testform()
-    Dim choicewksh As Worksheet
-    Dim choiceDict As ILLdictionary
-    Dim choiceWorksheet As Worksheet
-    Dim choice As ILLchoice
-    Dim Cat As BetterArray
-    Dim rng As Range
+Sub test()
+    Dim Dictionary As ILLdictionary
+    Dim sheets As ILLSheets
     
-    Set choiceWorksheet = ThisWorkbook.Worksheets("Choices")
+    Dim dataWksh As Worksheet
+    'This method runs before every test in the module..
+    Set dataWksh = ThisWorkbook.Worksheets("Dictionary")
+    Set Dictionary = LLdictionary.Create(dataWksh, 1, 1)
+    Dictionary.Prepare
+    Set sheets = LLSheets.Create(Dictionary)
     
-    Set choiceDict = LLdictionary.Create(choiceWorksheet, -1, 1)
-    Set rng = choice.ChoiceDictionary.DataRange
     
-    Set Cat = New BetterArray
-    Cat.Push "simple", "test"
-    
-    Set Cat = choice.Categories("list_a1")
-    
-    Debug.Print choice.StartRow
-    Debug.Print choice.StartColumn
-    Debug.Print choice.Wksh.Name
-    Debug.Print choice.DataRange().Address
 End Sub

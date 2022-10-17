@@ -22,17 +22,20 @@ Public Enum SheetBound
   ColEnd = 4
 End Enum
 
+Public Enum SheetInfoType
+  SheetInfoSheetType = 1
+  SheetInfoSheetTable = 2
+End Enum
+
 'Properties
 
-Public Property Get Dictionary As ILLdictionary: End Property
-Public Property Get AllSheets As BetterArray : End Property
+Public Property Get Dictionary() As ILLdictionary: End Property
 
 'Exposed methods (Seems Handy to use sheetype and table instead of one function)
-Public Function SheetType(ByVal sheetName As String) As String: End Function
+Public Function SheetInfo(ByVal sheetName As String, Optional ByVal Info As Byte = SheetInfoType.SheetInfoSheetType) As String: End Function
 Public Function Contains(ByVal sheetName As String) As Boolean: End Function
-Public Function Table(ByVal sheetName As String) As String : End Function
-Public Function DataBounds(ByVal sheetName As String, Optional ByVal Bound As SheetBound = 1) As Long: End Function
-Public Function VarList(ByVal sheetName As String) As BetterArray : End Function
+
+Public Function DataBounds(ByVal sheetName As String, Optional ByVal Bound As Byte = SheetBound.RowSart) As Long: End Function
 Public Function ContainsListAuto(ByVal sheetName As String) As Boolean: End Function
-Public Function VariableAddress(Byval sheetName As String, ByVal varName As String, Optional ByVal useTable As Boolean = False) As String : End Function
+Public Function VariableAddress(ByVal varName As String) As String: End Function
 

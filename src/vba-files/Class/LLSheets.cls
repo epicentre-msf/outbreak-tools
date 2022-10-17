@@ -23,24 +23,22 @@ Private Type TLLSheets
   sheetRng As Range
 End Type
 
-Private this as TLLSheets
+Private this As TLLSheets
 Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
 Private Const SHEETTYPEVERTICAL As String = "vlist1D"
 Private Const CLASSNAME As String = "LLSheets"
-Private Const SHEETSNAME As String = "sheet name"
-Private Const SHEETSTYPE As String = "sheet type"
 Private Const SHEETHORIZONTALNBROWS As Long = 200
 
 Private Enum SHEETSTART
   SHEETSTARTCOLHORIZONTAL = 1
-  SHEETSTARTROWHORIZONTAL = 9 'Where headers of the Listobject are in the table
+  SHEETSTARTROWHORIZONTAL = 9
   SHEETSTARTROWVERTICAL = 4
-  SHEETSTARTCOLVERTICAL = 5 'Where the data for the list object is stored
+  SHEETSTARTCOLVERTICAL = 5
 End Enum
 
 Public Function Create(ByVal dict As ILLdictionary) As ILLSheets
 
-  If (Not dict.ColumnExists(SHEETSNAME)) Or (Not dict.ColumnExists(SHEETSTYPE)) Then ThrowErrorUnableInstanciateNoSheetName
+  If (Not dict.ColumnExists("sheet name")) Or (Not dict.ColumnExists("sheet type")) Then ThrowErrorUnableInstanciateNoSheetName
   If Not dict.Prepared Then ThrowErrorUnableInstanciateNotPrepared
 
   With New LLSheets
@@ -49,7 +47,7 @@ Public Function Create(ByVal dict As ILLdictionary) As ILLSheets
   End With
 End Function
 
-Public Property Get Self() As ILLVariables
+Public Property Get Self() As ILLSheets
     Set Self = Me
 End Property
 
@@ -57,12 +55,12 @@ Public Property Get Dictionary() As ILLdictionary
     Set Dictionary = this.dict
 End Property
 
-Private Property Set Dictionary(ByVal dict As ILLdictionary)
+Public Property Set Dictionary(ByVal dict As ILLdictionary)
     Set this.dict = dict
-    Set this.sheetRng = dict.DataRange(SHEETSNAME)
+    Set this.sheetRng = dict.DataRange("sheet name")
 End Property
 
-Private Property SheetRange() As Range
+Public Property Get SheetRange() As Range
     Set SheetRange = this.sheetRng
 End Property
 
@@ -75,10 +73,10 @@ Private Function Contains(ByVal sheetName As String) As Boolean
   If sheetName = vbNullString Then
     Exists = False
   Else
-    Exist = Not (sheetRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+    Exists = Not (sheetRng.Find(What:=sheetName, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
   End If
 
-  Contains = Exist
+  Contains = Exists
 End Function
 
 'Row Index for table and varlists
@@ -88,29 +86,37 @@ Private Function RowIndex(ByVal sheetName As String) As Long
   rowNum = -1
   Set sheetRng = SheetRange()
   If Contains(sheetName) Then
-      rowNum = sheetRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True).Row
+      rowNum = sheetRng.Find(What:=sheetName, LookAt:=xlWhole, MatchCase:=True).Row
   End If
   RowIndex = rowNum
 End Function
 
-''Sheet type of one sheet Name
-Private Function SheetType(ByVal sheetName As String) As String
+'Get the sheet information
 
-  Dim sheetTypeIndex As Long
-  Dim retSheetType As String
+Public Function SheetInfo(ByVal sheetName As String, Optional ByVal Info As Byte = 1) As String
+  Dim sheetInfoIndex As Long
+  Dim retSheetInfo As String
   Dim dict As ILLdictionary
   Dim dictWksh As Worksheet
 
   Set dict = Dictionary
-  Set dictWksh = dict.Wksh
-  retSheetType = vbNullString
+  Set dictWksh = dict.Data.Wksh
+  retSheetInfo = vbNullString
 
-  sheetTypeIndex = dict.Data.ColumnIndex(SHEETSTYPE)
+  If Not Contains(sheetName) Then Exit Function
 
-  If Contains(sheetName) Then retSheetType = dictWksh.Cells(RowIndex(sheetName), sheetTypeIndex)
+  If (Info = 1) Then
+    sheetInfoIndex = dict.Data.ColumnIndex("sheet type")
+  ElseIf (Info = 2) Then
+    sheetInfoIndex = dict.Data.ColumnIndex("table name")
+  Else
+    Exit Function
+  End If
 
-  SheetType = retSheetType
+  retSheetInfo = dictWksh.Cells(RowIndex(sheetName), sheetInfoIndex)
+  SheetInfo = retSheetInfo
 End Function
+
 
 'List of all variables of a sheet
 Private Function Varlist(ByVal sheetName As String) As BetterArray
@@ -120,68 +126,48 @@ Private Function Varlist(ByVal sheetName As String) As BetterArray
 
   Set dict = Dictionary
   Set varlistData = New BetterArray
-  If Contains(sheetName) Then  Set varlistData = dict.Data.Filter(SHEETSNAME, sheetName, "variable name")
+  If Contains(sheetName) Then Set varlistData = dict.Data.FilterData("sheet name", sheetName, "variable name")
 
   'return the variable list
-  Set VarList = varlistData.Clone()
+  Set Varlist = varlistData.Clone()
 End Function
 
-
-'Table of one variable
-Private Function Table(ByVal sheetName As String) As String
-  Dim tableName As String
-
-  Dim dict As ILLdictionary
-  Dim dictWksh As Worksheet
-
-  Set dict = Dictionary
-  Set dictWksh = dict.Wksh
-  tableName = vbNullString
-
-
-  If Contains(sheetName) And dict.ColumnExists("table name") Then
-    tableName = dictWksh.Cells(RowIndex(sheetName), dict.Data.ColumnIndex("table name"))
-  End If
-
-  Table = tableName
-End Function
 
 'Number of variables in a a sheet
 Private Function NumberVars(ByVal sheetName As String) As Long
     Dim varData As BetterArray
     Set varData = New BetterArray
-    Set varData = VarList(sheetName)
+    Set varData = Varlist(sheetName)
     NumberVars = varData.Length
 End Function
 
 'Implement the databounds
-Private Function DataBounds(ByVal sheetName As String, Optional ByVal SheetBound As SheetBound)
+Private Function DataBounds(ByVal sheetName As String, Optional ByVal Bound As Byte = 1)
 
-    Dim bound As Long
     Dim nbVars As Long
 
-    Select Case SheetBound
+    Select Case Bound
 
-      Case RowStart
-        bound = Switch( _
-        SheetType(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTROWHORIZONTAL, _
-        SheetType(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTROWVERTICAL _
+      Case 1
+        Bound = Switch( _
+        SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTROWHORIZONTAL, _
+        SheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTROWVERTICAL _
         )
-      Case RowEnd
+      Case 2
         nbVars = NumberVars(sheetName)
-        bound = Switch( _
-          SheetType(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTROWHORIZONTAL + SHEETHORIZONTALNBROWS, _
-          SheetType(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTROWVERTICAL + nbVars - 1 )
-      Case ColStart
-        bound = IIf(SheetType(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTCOLHORIZONTAL, SHEETSTARTCOLVERTICAL)
-      Case ColEnd
+        Bound = Switch( _
+          SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTROWHORIZONTAL + SHEETHORIZONTALNBROWS, _
+          SheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTROWVERTICAL + nbVars - 1)
+      Case 3
+        Bound = IIf(SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTCOLHORIZONTAL, SHEETSTARTCOLVERTICAL)
+      Case 4
         nbVars = NumberVars(sheetName)
-        bound = Switch(
-          SheetType(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTCOLHORIZONTAL + nbVars - 1, _ 
-          SheetType(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTCOLVERTICAL)
+        Bound = Switch( _
+          SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTCOLHORIZONTAL + nbVars - 1, _
+          SheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTCOLVERTICAL)
     End Select
 
-    DataBounds = bound
+    DataBounds = Bound
 End Function
 
 
@@ -201,12 +187,12 @@ Private Function ContainsListAuto(ByVal sheetName As String) As Boolean
 
     Exist = False
 
-    Set listAutoVar = dict.Data.Filter("control", "list_auto", "variable name")
-    Set varData = VarList(sheetName)
+    Set listAutoVar = dict.Data.FilterData("control", "list_auto", "variable name")
+    Set varData = Varlist(sheetName)
 
     If listAutoVar.Length <> 0 Then
       For counter = listAutoVar.LowerBound To listAutoVar.UpperBound
-        If Not Exist And varData.Includes(listAutoVar.Item(counter)) Then
+        If varData.Includes(listAutoVar.Item(counter)) Then
             Exist = True
             Exit For
         End If
@@ -217,34 +203,37 @@ Private Function ContainsListAuto(ByVal sheetName As String) As Boolean
 End Function
 
 'Variable Address
-Private Function VariableAddress(Byval sheetName As String, ByVal varName As String, _ 
-                                 Optional ByVal useTable As Boolean = False) As String
-
+Private Function VariableAddress(ByVal varName As String) As String
   'Return the variable address
   Dim varAdd As String
   Dim varIndex As Long
   Dim rstart As Long
   Dim cstart As Long
   Dim dict As ILLdictionary
+  Dim sheetName As String
   Dim dictWksh As Worksheet
   Dim vars As ILLVariables
 
   Set dict = Dictionary()
-  Set dictWksh = dict.Wksh()
-  set vars = LLVariables.Create(dict)
+  Set dictWksh = dict.Data.Wksh()
+  Set vars = LLVariables.Create(dict)
 
   varIndex = vars.Index(varName)
-  rstart = DataBounds(sheetName, RowStart)
-  cstart = DataBounds(sheetName, ColStart)
+  sheetName = vars.Value("sheet name", varName)
+  
+  rstart = DataBounds(sheetName, 1)
+  cstart = DataBounds(sheetName, 3)
 
-  Select Case SheetType(sheetName)
-
-    Case SHEETTYPEHORIZONTAL
-
-    Case SHEETTYPEVERTICAL
-
-  End Select
-
+  If Contains(sheetName) Then
+    Select Case SheetInfo(sheetName)
+      Case SHEETTYPEHORIZONTAL
+        varAdd = "'" & sheetName & "'!" & dictWksh.Cells(rstart + 1, varIndex).Address(Rowabsolute:=False)
+      Case SHEETTYPEVERTICAL
+        varAdd = "'" & sheetName & "'!" & dictWksh.Cells(varIndex, cstart).Address(Rowabsolute:=True, ColumnAbsolute:=True)
+    End Select
+  End If
+  
+  VariableAddress = varAdd
 End Function
 
 
@@ -259,28 +248,28 @@ End Sub
 
 
 'Interface ---------------------------------------------------------------------
-Public Function ILLSheets_SheetType(ByVal sheetName As String) As String
-  ILLSheets_SheetType =  SheetType(sheetName)
+Public Property Get ILLSheets_Dictionary() As ILLdictionary
+    Set ILLSheets_Dictionary = Dictionary()
+End Property
+
+Public Function ILLSheets_SheetInfo(ByVal sheetName As String, Optional ByVal Info As Byte = 1) As String
+  ILLSheets_SheetInfo = SheetInfo(sheetName, Info)
 End Function
 
 Public Function ILLSheets_Contains(ByVal sheetName As String) As Boolean
-  ILLSheets_Contains =  Contains(sheetName)
-End Function
-
-Public Function ILLSheets_Table(ByVal sheetName As String) As String
-  ILLSheets_Table =  Table(sheetName)
+  ILLSheets_Contains = Contains(sheetName)
 End Function
 
 Public Function ILLSheets_DataBounds(ByVal sheetName As String, _
-                                     Optional ByVal Bound As SheetBound) As Long
-  ILLSheets_DataBounds =  DataBounds(sheetName, start, row)
+                                     Optional ByVal Bound As Byte = 1) As Long
+  ILLSheets_DataBounds = DataBounds(sheetName, Bound)
 End Function
-
-Public Function ILLSheets_VarList(ByVal sheetName As String) As BetterArray
-  Set ILLSheets_VarList =  VarList(sheetName).Clone()
-End Function
-
 
 Public Function ILLSheets_ContainsListAuto(ByVal sheetName As String) As Boolean
-  ILLSheets_ContainsListAuto =  ContainsListAuto(sheetName)
+  ILLSheets_ContainsListAuto = ContainsListAuto(sheetName)
+End Function
+
+'Variable Address
+Public Function ILLSheets_VariableAddress(ByVal varName As String) As String
+  ILLSheets_VariableAddress = VariableAddress(varName)
 End Function
