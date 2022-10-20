@@ -50,9 +50,9 @@ Public Function Create(ByVal formWksh As Worksheet, ByVal excelFormLo As String,
 End Function
 
 'Properties
-Public Function Self() As IFormulaData
+Public Property Get Self() As IFormulaData
     Set Self = Me
-End Function
+End Property
 
 Public Property Get Wksh() As Worksheet
     Set Wksh = this.fWksh
