@@ -127,7 +127,7 @@ End Property
 
 Private Property Get variables() As ILLVariables
     Dim var As ILLVariables
-    Set var = LLVariable.Create(Self)
+    Set var = LLVariables.Create(Self)
 End Property
 
 'Functions ---------------------------------------------------------------------
