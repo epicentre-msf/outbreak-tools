@@ -7,7 +7,7 @@ Option Private Module
 
 Private Assert As Object
 Private Fakes As Object
-Private formcond As IFormulaCondition
+Private formCond As IFormulaCondition
 Private choice As ILLchoice
 
 

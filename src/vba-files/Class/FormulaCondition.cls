@@ -26,13 +26,13 @@ End Type
 Private this As TFormulaCondition
 
 'Instanciation
-Public Function Create(ByVal formvar As BetterArray, ByVal formcond As BetterArray) As IFormulaCondition
+Public Function Create(ByVal formvar As BetterArray, ByVal formCond As BetterArray) As IFormulaCondition
 
     'Seems like BetterArry is referencing the Arrays within my object. I want them to be
     'immutable, so I clone those arrays.
 
     With New FormulaCondition
-        Set .Condition = formcond
+        Set .Condition = formCond
         Set .Variable = formvar
         Set Create = .Self
     End With
@@ -47,8 +47,8 @@ Public Property Get Condition() As BetterArray
     Set Condition = this.Condition.Clone()
 End Property
 
-Public Property Set Condition(ByVal formcond As BetterArray)
-    Set this.Condition = formcond.Clone()
+Public Property Set Condition(ByVal formCond As BetterArray)
+    Set this.Condition = formCond.Clone()
 End Property
 
 'Variables
@@ -60,11 +60,24 @@ Public Property Set Variable(ByVal formvar As BetterArray)
      Set this.Variable = formvar.Clone()
 End Property
 
+Public Property Get VariablesTable(ByVal dict As ILLdictionary) As String
+    Dim vars As ILLVariables
+    Dim firstVar As String
+    If Valid(dict) Then
+        Set vars = LLVariables.Create(dict)
+        firstVar = Variable.Item(Variable.LowerBound)
+        VariablesTable = vars.Value(varName:=firstVar, colName:="table name")
+    End If
+End Property
+
 'Test if a formula is valid:
-Public Function Valid(ByVal dict As ILLdictionary, ByVal tableName As String) As Boolean
+Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tableName As String = vbNullString) As Boolean
 
     Dim tableData As BetterArray 'list of all tables in dictionary
     Dim variableData As BetterArray 'list of all variables in dictionary
+    Dim formulavariables As BetterArray
+    Dim formulaConditions As BetterArray
+    Dim customtableName As String
 
     Dim variablesTableName As String
     Dim VARIABLENAME As String
@@ -72,35 +85,51 @@ Public Function Valid(ByVal dict As ILLdictionary, ByVal tableName As String) As
 
     Set tableData = New BetterArray
     Set variableData = New BetterArray
-    
-    variableData.FromExcelRange dict.DataRange("variable name")
-    tableData.FromExcelRange dict.DataRange("table name")
+    Set formulavariables = New BetterArray
+    Set formulaConditions = New BetterArray
+
+    Set formulavariables = Variable
+    Set formulaConditions = Condition
 
     'Valid Fail by default, turns to true after the checkings
     Valid = False
 
-    'variable and conditions table doesn't fit
-    If Variable.Length <> Condition.Length Or Variable.Length = 0 Then Exit Function
     If Not (dict.ColumnExists("table name") And dict.ColumnExists("variable name")) Then Exit Function
 
-    tableData.FromExcelRange dict.DataRange("table name")
     variableData.FromExcelRange dict.DataRange("variable name")
+    tableData.FromExcelRange dict.DataRange("table name")
 
-    For counter = Variable.LowerBound To Variable.UpperBound
+
+    'variable and conditions table doesn't fit
+    If formulavariables.Length <> formulaConditions.Length Or formulavariables.Length = 0 Then Exit Function
+
+    'test the table name
+    counter = formulavariables.LowerBound
+    If tableName = vbNullString Then
+        VARIABLENAME = formulavariables.Item(counter)
+        If Not variableData.Includes(VARIABLENAME) Then Exit Function
+        customtableName = tableData.Item(variableData.IndexOf(VARIABLENAME))
+    Else
+        customtableName = tableName
+    End If
 
 
-        VARIABLENAME = Variable.Item(counter)
+    For counter = formulavariables.LowerBound To formulavariables.UpperBound
+
+        VARIABLENAME = formulavariables.Item(counter)
 
         'Unable to find the variable within the provided list of variables
         If Not variableData.Includes(VARIABLENAME) Then Exit Function
 
         'Variables are not in the same table
         variablesTableName = tableData.Item(variableData.IndexOf(VARIABLENAME))
-        If variablesTableName <> tableName Then Exit Function
+        If variablesTableName <> customtableName Then Exit Function
     Next
 
     Valid = True
 End Function
+
+
 
 
 'Convert the conditions into a string of formulas
@@ -130,18 +159,22 @@ Public Function ConditionString(ByVal tableName As String, ByVal varName As Stri
 End Function
 
 'Implement interfaces
-Public Property Get IFormulaCondition_Variable() As BetterArray
-    Set IFormulaCondition_Variable = Variable
+Public Property Get IFormulaCondition_Variables() As BetterArray
+    Set IFormulaCondition_Variables = Variable
 End Property
 
-Public Property Get IFormulaCondition_Condition() As BetterArray
-     Set IFormulaCondition_Condition = Condition
+Public Property Get IFormulaCondition_Conditions() As BetterArray
+     Set IFormulaCondition_Conditions = Condition
+End Property
+
+Public Property Get IFormulaCondition_VariablesTable(ByVal dict As ILLdictionary) As String
+     IFormulaCondition_VariablesTable = VariablesTable(dict)
 End Property
 
 Public Function IFormulaCondition_ConditionString(ByVal tableName As String, ByVal varName As String, Optional ByVal Connector As String = "*") As String
     IFormulaCondition_ConditionString = ConditionString(tableName:=tableName, varName:=varName, Connector:=Connector)
 End Function
 
-Public Function IFormulaCondition_Valid(ByVal dict As ILLdictionary, ByVal tableName As String) As Boolean
+Public Function IFormulaCondition_Valid(ByVal dict As ILLdictionary, Optional ByVal tableName As String = vbNullString) As Boolean
     IFormulaCondition_Valid = Valid(dict, tableName)
 End Function

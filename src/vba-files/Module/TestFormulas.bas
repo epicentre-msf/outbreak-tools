@@ -1,4 +1,4 @@
-Attribute VB_Name = "TestFormulaData"
+Attribute VB_Name = "TestFormulas"
 
 Option Explicit
 Option Private Module
@@ -9,6 +9,10 @@ Option Private Module
 Private Assert As Object
 Private Fakes As Object
 Private formData As IFormulaData
+Private dict As ILLdictionary
+Private llform As Formulas
+Private parsedFormula As String
+Private formCond As IFormulaCondition
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()

@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
 
-'@Folder("Dictionary")
+'@Folder("Formulas")
 '@ModuleDescription("Interface of Formulas Object")
 '@IgnoreModule
 
@@ -17,3 +17,12 @@ Option Explicit
 
 'Exposed methods
 
+Public Property Get Varlists() As BetterArray: End Property
+Public Property Get Valid(Optional ByVal formulaType As String = "analysis") As Boolean: End Property
+Public Property Get ParsedLinelistFormula() As String: End Property
+Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, Optional ByVal tablePrefix As String = vbNullString, _
+                                          Optional ByVal Connector As String = "*") As String
+End Property
+
+
+'Logs for eventual errors in formula
