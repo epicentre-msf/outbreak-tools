@@ -383,9 +383,6 @@ End Function
 
 
 'Interfaces
-
-
-
 Public Property Get IFormulas_Varlists() As BetterArray
   Set IFormulas_Varlists = Varlists()
 End Property

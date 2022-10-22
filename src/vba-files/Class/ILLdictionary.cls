@@ -29,3 +29,9 @@ Public Function VariableExists(ByVal varName As String) As Boolean: End Function
 'Void Cleaning methods
 Public Sub Prepare(Optional ByVal tablePrefix As String = "tab"): End Sub
 Public Sub Clean(): End Sub
+Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long)
+End Sub
+Public Sub Export(ByVal toWkb As Workbook, Optional ByVal exportType As String = "__all__")
+End Sub
+
+'Add translation

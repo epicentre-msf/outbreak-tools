@@ -10,7 +10,7 @@ End Sub
 
 
 Sub test()
-    Dim Dictionary As ILLdictionary
+    Dim Dictionary As ILLchoice
     Dim formData As IFormulaData
     Dim Wksh As Worksheet
     Dim dataWksh As Worksheet
@@ -20,33 +20,14 @@ Sub test()
     Dim conds As BetterArray
     Dim parsedFormula As String
     Dim formCond As IFormulaCondition
+    Dim Wkb As Workbook
 
     'This method runs before every test in the module..
-    Set dataWksh = ThisWorkbook.Worksheets("TestDictionary")
-    Set Dictionary = LLdictionary.Create(dataWksh, 1, 1)
-    Dictionary.Prepare
+    Set dataWksh = ThisWorkbook.Worksheets("TestChoices")
+    Set Dictionary = LLchoice.Create(dataWksh, 1, 1)
     
-    'Formulas Data
-    Set Wksh = ThisWorkbook.Worksheets("ControleFormule")
-    Set formData = FormulaData.Create(Wksh, "T_XlsFonctions", "T_ascii")
-
-    setupForm = "N"
-
-    Set lform = Formulas.Create(Dictionary, formData, setupForm)
-
-    Debug.Print lform.Valid()
-    Set vars = New BetterArray
-    vars.Push "varb1"
-    Set conds = New BetterArray
-    conds.Push ">0"
+    Set Wkb = Workbooks.Add
+    Dictionary.Export Wkb
     
-    Set formCond = FormulaCondition.Create(vars, conds)
-    
-    'Conditions
-    
-    'testing a formula
-    
-    parsedFormula = lform.ParsedAnalysisFormula(formCond)
-    Debug.Print parsedFormula
 
 End Sub

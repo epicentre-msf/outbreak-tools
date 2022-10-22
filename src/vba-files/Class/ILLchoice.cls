@@ -31,4 +31,9 @@ Public Sub Sort(): End Sub
 'Add choice
 Public Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As BetterArray): End Sub
 
+'Import and exports
+Public Sub Export(ByVal toWkb As Workbook)
+End Sub
 
+Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long)
+End Sub
