@@ -486,6 +486,26 @@ Private Sub AppendColumnIndex()
     End With
 End Sub
 
+'Import and export subs
+'Export
+Private Sub Export(ByVal Wkb As Workbook, Optional ByVal exportType As String = "__all__")
+
+    Dim dictData As IDataSheet
+    Set dictData = Data()
+    If ColumnExists(exportType) Then
+       dictData.Export Wkb, filteredVarName:=exportType
+    ElseIf exportType = "__all__" Then
+       dictData.Export Wkb
+    End If
+End Sub
+
+'Import
+Private Sub Import(ByVal fromWksh As Worksheet, fromStartRow As Long, fromStartCol As Long)
+   Dim dictData As IDataSheet
+   Set dictData = Data()
+   dictData.Import fromWksh, fromStartRow, fromStartCol
+End Sub
+
 
 ' INTERFACE __________________________________________________________________________________________________________________________
 
@@ -502,10 +522,6 @@ End Property
 Public Property Get ILLdictionary_Data() As IDataSheet
     Set ILLdictionary_Data = Data()
 End Property
-
-'Public Property Get ILLdictionary_Variables() As ILLVariables
- '   Set ILLdictionary_Variables = variables
-'End Property
 
 'Functions
 Public Function ILLdictionary_ColumnExists(ByVal colName As String, Optional ByVal checkValidity As Boolean) As Boolean
@@ -529,3 +545,10 @@ Public Sub ILLdictionary_Clean()
     Clean
 End Sub
 
+Public Sub ILLdictionary_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long)
+    Import fromWksh, fromStartRow, fromStartCol
+End Sub
+
+Public Sub ILLdictionary_Export(ByVal toWkb As Workbook, Optional ByVal exportType As String = "__all__")
+    Export toWkb, exportType
+End Sub

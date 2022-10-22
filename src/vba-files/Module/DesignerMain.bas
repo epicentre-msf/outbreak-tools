@@ -95,7 +95,7 @@ Public Sub ImportGeobase()
     Dim AdmHeader   As BetterArray               'Table for the headers of the listobjects
     Dim AdmNames    As BetterArray               'Array of the sheetnames
     Dim i           As Integer                   'iterator
-    Dim wkb         As Workbook
+    Dim Wkb         As Workbook
     'Sheet names
     Set AdmNames = New BetterArray
     Set AdmData = New BetterArray
@@ -115,7 +115,7 @@ Public Sub ImportGeobase()
 
     SheetGeo.Range(C_sRngGeoName).Value = Dir(sFilePath)
 
-    Set wkb = Workbooks.Open(sFilePath)
+    Set Wkb = Workbooks.Open(sFilePath)
     'Write the filename of the geobase somewhere for the export
     'Cleaning the previous Data in case the ranges are not Empty
     SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_NetoPrec")
@@ -126,7 +126,7 @@ Public Sub ImportGeobase()
         End If
     Next
     'Reloading the data from the Geobase
-    For Each oSheet In wkb.Worksheets
+    For Each oSheet In Wkb.Worksheets
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_EnCours") & oSheet.Name
         AdmData.Clear
         AdmHeader.Clear
@@ -146,7 +146,7 @@ Public Sub ImportGeobase()
         End If
     Next
 
-    wkb.Close SaveChanges:=False
+    Wkb.Close SaveChanges:=False
     SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_Fini")
     SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White")
 
@@ -174,7 +174,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     If Not bGeobaseIsImported Then Call ImportGeobase
 
     Dim DictHeaders     As BetterArray           'Dictionary headers
-    Dim DictData        As BetterArray           'Dictionary data
+    Dim dictData        As BetterArray           'Dictionary data
     Dim ChoicesHeaders  As BetterArray           'Choices headers
     Dim ChoicesData     As BetterArray           'Choices data
     Dim ExportData      As BetterArray           'Export data
@@ -247,7 +247,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Create the Dictionnary data
     Set DictHeaders = Helpers.GetHeaders(DesWkb, C_sParamSheetDict, 1)
     'Create the data table of linelist patient using the dictionnary
-    Set DictData = Helpers.GetData(DesWkb, C_sParamSheetDict, 2, DictHeaders.Length)
+    Set dictData = Helpers.GetData(DesWkb, C_sParamSheetDict, 2, DictHeaders.Length)
     'Create the choices data
     SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_ReadList")
     'Create the dictionnary for the choices sheet
@@ -302,7 +302,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
 
     'Add the preprocessing step for the designer
 
-    Call BuildList(DictHeaders, DictData, ExportData, ChoicesHeaders, ChoicesData, TransData, GSData, UAData, BAData, TAData, SAData, sPath)
+    Call BuildList(DictHeaders, dictData, ExportData, ChoicesHeaders, ChoicesData, TransData, GSData, UAData, BAData, TAData, SAData, sPath)
 
     DoEvents
 

@@ -184,7 +184,7 @@ End Sub
 Sub ImportLang()
     'Import languages from the setup file and sheets Translation and Analysis
 
-    Dim wkb As Workbook
+    Dim Wkb As Workbook
     Dim sAdr1 As String
     Dim sAdr2 As String
     Dim src As Range
@@ -201,24 +201,24 @@ Sub ImportLang()
     Application.EnableEvents = False
     Application.EnableAnimations = False
 
-    Set wkb = Workbooks.Open(FileName:=SheetMain.Range(C_sRngPathDic).Value)
+    Set Wkb = Workbooks.Open(FileName:=SheetMain.Range(C_sRngPathDic).Value)
 
     SheetSetTranslation.Cells.Clear
 
     'Copy the languages
-    Set src = wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).Range
+    Set src = Wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).Range
     With SheetSetTranslation
         Set dest = .Range(.Cells(C_eStartLinesTransdata, 1), .Cells(C_eStartLinesTransdata + src.Rows.Count, src.Columns.Count))
         dest.Value = src.Value
         .ListObjects.Add(xlSrcRange, dest, , xlYes).Name = C_sTabTranslation
     End With
-    Set src = wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).HeaderRowRange
+    Set src = Wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).HeaderRowRange
     src.Copy SheetDesTranslation.Range("T_Lst_Lang")
 
     sAdr1 = SheetDesTranslation.Range("T_Lst_Lang").Address
     sAdr2 = SheetDesTranslation.Range("T_Lst_Lang").End(xlToRight).Address
 
-    wkb.Close
+    Wkb.Close
 
     'Set Validation, 1 is Error
     Call Helpers.SetValidation(SheetMain.Range(C_sRngLangSetup), "='" & SheetDesTranslation.Name & "'!" & sAdr1 & ":" & sAdr2, 1)

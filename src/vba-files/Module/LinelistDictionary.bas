@@ -23,13 +23,13 @@ Option Private Module
 
 Function GetDictionaryHeaders() As BetterArray
     Dim DictHeaders As BetterArray
-    Dim wkb As Workbook
+    Dim Wkb As Workbook
 
     Set DictHeaders = New BetterArray
     DictHeaders.LowerBound = 1
 
-    Set wkb = ThisWorkbook
-    DictHeaders.FromExcelRange wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=False
+    Set Wkb = ThisWorkbook
+    DictHeaders.FromExcelRange Wkb.Worksheets(C_sParamSheetDict).Cells(1, 1), DetectLastColumn:=True, DetectLastRow:=False
     'Set the Array
 
     Set GetDictionaryHeaders = DictHeaders.Clone()
@@ -70,15 +70,15 @@ End Function
 
 'Retrieve all the dictionnary data, excluding the headers
 Function GetDictionaryData() As BetterArray
-    Dim DictData As BetterArray
-    Set DictData = New BetterArray
-    DictData.LowerBound = 1
+    Dim dictData As BetterArray
+    Set dictData = New BetterArray
+    dictData.LowerBound = 1
 
     With ThisWorkbook.Worksheets(C_sParamSheetDict)
-        DictData.FromExcelRange .Cells(2, 1), DetectLastRow:=True, DetectLastColumn:=True
+        dictData.FromExcelRange .Cells(2, 1), DetectLastRow:=True, DetectLastColumn:=True
     End With
 
-    Set GetDictionaryData = DictData.Clone
+    Set GetDictionaryData = dictData.Clone
 End Function
 
 'Retrieve all the Choices data, excluding the headers
