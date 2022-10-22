@@ -46,3 +46,11 @@ End Function
 'multiple filters
 Public Function FiltersData(ByVal varData As BetterArray, ByVal criteriaData As BetterArray, ByVal returnedColumnsData As BetterArray) As BetterArray
 End Function
+
+'Import and Export Sub
+Public Sub Export(ByVal toWkb As Workbook, _
+                  Optional ByVal filteredVarName As String = "__all__", _
+                  Optional ByVal filteredCondition As String = "<>")
+End Sub
+
+Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long): End Sub
