@@ -2,13 +2,12 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-
 Attribute VB_Name = "LinelistSpecs"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = ""
+
 
 '@Folder("Build")
 '@ModuleDescription("Object containing specifications for the linelist")
@@ -36,7 +35,7 @@ End Function
 
 
 
-Public Property Get Self As ILinelistSpecs
+Public Property Get Self() As ILinelistSpecs
   Set Self = Me
 End Property
 
@@ -63,7 +62,7 @@ Private Function Categories(ByVal varName As String) As BetterArray
   Dim categoryData As BetterArray
   Dim vars As ILLVariables
   Dim dict As ILLdictionary
-  Dim choi As ILLChoice
+  Dim choi As ILLchoice
   Dim categoryName As String
 
   Set dict = Dictionary()
@@ -71,7 +70,7 @@ Private Function Categories(ByVal varName As String) As BetterArray
   Set categoryData = New BetterArray
   Set vars = LLVariables.Create(dict)
 
-  categoryName = vars.Value(varName := varName, colName := "control details")
+  categoryName = vars.Value(varName:=varName, colName:="control details")
   Set categoryData = choi.Categories(categoryName)
 
   Set Categories = categoryData.Clone()
@@ -94,4 +93,4 @@ End Property
 'Categories of one variable
 Public Function ILinelistSpecs_Categories(ByVal varName As String) As BetterArray
   Set ILinelistSpecs_Categories = Categories(varName)
-End function
+End Function

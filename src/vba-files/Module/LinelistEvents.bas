@@ -180,7 +180,7 @@ Sub ClicCmdDebug()
             DebugMode = True
             DebugWksh.Shapes(C_sShpDebug).Fill.ForeColor.RGB = Helpers.GetColor("Green")
             DebugWksh.Shapes(C_sShpDebug).Fill.BackColor.RGB = Helpers.GetColor("Green")
-            DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.Text = TranslateLLMsg("MSG_Protect")
+            DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.text = TranslateLLMsg("MSG_Protect")
             DebugWksh.Select
         Else
             MsgBox TranslateLLMsg("MSG_WrongPassword"), vbOK, "DEBUG MODE"
@@ -205,7 +205,7 @@ Sub ClicCmdDebug()
         ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value = pwd
         DebugWksh.Shapes(C_sShpDebug).Fill.ForeColor.RGB = Helpers.GetColor("Orange")
         DebugWksh.Shapes(C_sShpDebug).Fill.BackColor.RGB = Helpers.GetColor("Orange")
-        DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.Text = TranslateLLMsg("MSG_Debug")
+        DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.text = TranslateLLMsg("MSG_Debug")
     End If
 
     Exit Sub

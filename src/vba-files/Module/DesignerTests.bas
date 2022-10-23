@@ -10,24 +10,14 @@ End Sub
 
 
 Sub test()
-    Dim Dictionary As ILLchoice
-    Dim formData As IFormulaData
-    Dim Wksh As Worksheet
-    Dim dataWksh As Worksheet
-    Dim setupForm As String
-    Dim lform As IFormulas
-    Dim vars As BetterArray
-    Dim conds As BetterArray
-    Dim parsedFormula As String
-    Dim formCond As IFormulaCondition
-    Dim Wkb As Workbook
-
-    'This method runs before every test in the module..
-    Set dataWksh = ThisWorkbook.Worksheets("TestChoices")
-    Set Dictionary = LLchoice.Create(dataWksh, 1, 1)
+    Dim ana As ILLdictionary
+    Dim anash As Worksheet
+    Dim trad As ITranslation
     
-    Set Wkb = Workbooks.Add
-    Dictionary.Export Wkb
+    Set anash = ThisWorkbook.Worksheets("TestDictionary")
+    Set ana = LLdictionary.Create(anash, 1, 1)
+    Set trad = Translation.Create(ThisWorkbook.Worksheets("Translations").ListObjects(1), "Français")
     
-
+    ana.Translate trad
+    
 End Sub
