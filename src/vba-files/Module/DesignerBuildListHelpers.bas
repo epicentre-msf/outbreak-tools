@@ -192,7 +192,7 @@ Sub AddCmd(Wkb As Workbook, sSheetName As String, iLeft As Integer, iTop As Inte
     With Wkb.Worksheets(sSheetName)
         .Shapes.AddShape(msoShapeRectangle, iLeft + 3, iTop + 3, iCmdWidth, iCmdHeight).Name = sShpName
         .Shapes(sShpName).Placement = xlFreeFloating
-        .Shapes(sShpName).TextFrame2.TextRange.Characters.Text = sText
+        .Shapes(sShpName).TextFrame2.TextRange.Characters.text = sText
         .Shapes(sShpName).TextFrame2.TextRange.ParagraphFormat.Alignment = msoAlignCenter
         .Shapes(sShpName).TextFrame2.VerticalAnchor = msoAnchorMiddle
         .Shapes(sShpName).TextFrame2.WordWrap = msoTrue
@@ -232,7 +232,7 @@ Sub AddNotes(Wksh As Worksheet, iSheetStartLine As Integer, _
     With Wksh
 
         .Cells(iSheetStartLine, iCol).AddComment
-        .Cells(iSheetStartLine, iCol).Comment.Text Text:=sNote
+        .Cells(iSheetStartLine, iCol).Comment.text text:=sNote
         .Cells(iSheetStartLine, iCol).Comment.Visible = bNoteVisibility
 
     End With
@@ -250,7 +250,7 @@ Sub AddStatus(Wksh As Worksheet, iSheetStartLine As Integer, _
         Case C_sDictStatusMan
             If sNote <> "" Then
                 'Update the notes to add the Status
-                .Cells(iSheetStartLine, iCol).Comment.Text Text:=sMandatory & Chr(10) & sNote
+                .Cells(iSheetStartLine, iCol).Comment.text text:=sMandatory & Chr(10) & sNote
             Else
                 'or  Add comment on status
                 Call AddNotes(Wksh, _

@@ -12,7 +12,7 @@ Sub TranslateShape(oShape As Object, sValue As String)
     With SheetMain.Shapes(oShape.Name)
         'keeping the previous font selected
         sFont = .TextFrame.Characters.Font.Name
-        .TextFrame.Characters.Text = sValue
+        .TextFrame.Characters.text = sValue
         .TextFrame.Characters.Font.Name = sFont
     End With
     oShape.Visible = bVis

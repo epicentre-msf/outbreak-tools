@@ -41,7 +41,7 @@ Private Sub TestInit()
 
     On Error GoTo InitFailed
 
-    Assert.IsTrue (choice.StartRow = 1), "Bad choice startRow"
+    Assert.IsTrue (choice.startRow = 1), "Bad choice startRow"
     Assert.IsTrue (choice.StartColumn = 1), "Bad choice startcolumn"
     Assert.IsTrue (choice.Wksh.Name = "TestChoices"), "Bad choice worksheet"
 
@@ -63,13 +63,13 @@ End Sub
 
 '@TestMethod
 Private Sub TestAddChoice()
-    Dim Cat As BetterArray
-    Set Cat = New BetterArray
+    Dim cat As BetterArray
+    Set cat = New BetterArray
 
-    Cat.Push "simple", "test"
+    cat.Push "simple", "test"
     On Error GoTo AddFailed
 
-    choice.AddChoice "list_test", Cat
+    choice.AddChoice "list_test", cat
 Exit Sub
 
 AddFailed:
