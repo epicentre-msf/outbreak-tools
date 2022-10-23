@@ -2,18 +2,221 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-
 Attribute VB_Name = "Translation"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = ""
+
 
 '@Folder("Dictionary")
-'@ModuleDescription("")
+'@ModuleDescription("Translation class for dictionary and the linelist")
 '@IgnoreModule
 
 Option Explicit
+Implements ITranslation
 
-'Exposed methods
+Private Const CLASSNAME As String = "Translation"
+
+Private Type TTranslation
+  transLo As ListObject
+  transLng As String
+End Type
+
+Private this As TTranslation
+
+'Instanciation
+
+Public Function Create(ByVal translationLo As ListObject, ByVal translationLang As String) As ITranslation
+
+  'Test if the listobject is empty
+  If translationLo Is Nothing Then ThrowErrorUnableInstanciate "Listobject is not defined"
+  With New Translation
+    Set .Table = translationLo
+    .Language = translationLang
+    Set Create = .Self
+  End With
+End Function
+
+
+Public Property Get Self() As ITranslation
+  Set Self = Me
+End Property
+
+Public Property Get Table() As ListObject
+  Set Table = this.transLo
+End Property
+
+Public Property Set Table(ByVal Lo As ListObject)
+  Set this.transLo = Lo
+End Property
+
+Public Property Get Language() As String
+  Language = this.transLng
+End Property
+
+Public Property Let Language(ByVal transLng As String)
+  this.transLng = transLng
+End Property
+
+Private Property Get LanguageExists() As Boolean
+  Dim lng As String
+  Dim hRng As Range
+  lng = Language
+  Set hRng = Table.HeaderRowRange()
+  LanguageExists = (Not hRng.Find(What:=lng, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+End Property
+
+Private Function LanguageIndex() As Long
+
+  Dim lngIndex As Long
+  Dim startCol As Long
+  Dim hRng As Range
+  Dim lng As String
+
+  lng = Language
+  If LanguageExists() Then
+    Set hRng = Table.HeaderRowRange
+    startCol = hRng.Column
+    lngIndex = hRng.Find(What:=lng, LookAt:=xlWhole, MatchCase:=True).Column - startCol + 1
+  Else
+    lngIndex = -1
+  End If
+
+  LanguageIndex = lngIndex
+End Function
+
+Private Function ValueExists(ByVal text As String) As Boolean
+  Dim textExists As Boolean
+  Dim keyRng As Range
+  textExists = False
+
+  Set keyRng = Table.ListColumns(1).Range
+
+  If LanguageExists() Then textExists = (Not keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+
+  ValueExists = textExists
+End Function
+
+
+Private Function ValueIndex(ByVal text As String) As Long
+  Dim Index As Long
+  Dim keyRng As Range
+  Dim startRow As Long
+
+  If ValueExists(text) Then
+    Set keyRng = Table.ListColumns(1).Range
+    startRow = keyRng.Row
+    Index = keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True).Row - startRow + 1
+  Else
+    Index = -1
+  End If
+
+  ValueIndex = Index
+End Function
+
+Private Function TranslatedValue(ByVal text As String, Optional ByVal containsFormula As Boolean = False) As String
+  'Test if the language Exists
+  Dim transText As String
+  Dim cleanedText As String
+  Dim formulaText As String
+  Dim lngCol As Long
+  Dim valIndex As Long
+  Dim LoRng As Range
+  Dim counter As Long
+  Dim quoteStart As Long
+
+  If containsFormula Then
+    formulaText = text
+    cleanedText = Replace(formulaText, Chr(34) & Chr(34), vbNullString)
+    If InStr(1, formulaText, Chr(34)) > 0 Then
+      For counter = 1 To Len(formulaText)
+        If Mid(formulaText, counter, 1) = Chr(34) Then
+          If quoteStart = 0 Then
+              quoteStart = counter + 1
+          Else
+              transText = TranslatedValue(Mid(formulaText, quoteStart, counter - quoteStart))
+              formulaText = Replace(formulaText, Mid(formulaText, quoteStart, counter - quoteStart), transText)
+              quoteStart = 0
+          End If
+        End If
+      Next
+    End If
+    TranslatedValue = formulaText
+  Else
+    If ValueExists(text) Then
+      Set LoRng = Table.Range
+      valIndex = ValueIndex(text)
+      lngCol = LanguageIndex()
+      transText = LoRng.Cells(valIndex, lngCol).Value
+      TranslatedValue = transText
+    Else
+     TranslatedValue = text
+    End If
+  End If
+End Function
+
+
+'Translate a Range
+Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
+  Dim counter As Long
+  Dim endRow As Long
+  
+  endRow = colRng.Rows.Count
+  'The range should be a column range, not a row range.
+  For counter = 1 To endRow
+    Debug.Print TranslatedValue(colRng.Cells(counter, 1).Value, containsFormula:=containsFormula)
+    colRng.Cells(counter, 1).Value = TranslatedValue(colRng.Cells(counter, 1).Value, containsFormula:=containsFormula)
+  Next
+End Sub
+
+
+'Translate a Form
+Private Sub TranslateForm(ByVal UserFrm As UserForm)
+  Dim counter As Integer
+  Dim formControl As Control
+
+  For Each formControl In UserFrm.Controls
+    If (TypeOf formControl Is MSForms.CommandButton) Or _
+       (TypeOf formControl Is MSForms.LABEL) Or _
+       (TypeOf formControl Is MSForms.OptionButton) Or _
+       (TypeOf formControl Is MSForms.Page) Or _
+       (TypeOf formControl Is MSForms.MultiPage) Or _
+       (TypeOf formControl Is MSForms.Frame) Or _
+       (TypeOf formControl Is MSForms.CheckBox) Then
+        If TypeOf formControl Is MSForms.MultiPage Then
+            For counter = 0 To formControl.Pages.Count - 1
+                If formControl.Name = "MultiPage1" Then
+                  UserFrm.MultiPage1.Pages(counter).Caption = _
+                  TranslatedValue(UserFrm.MultiPage1.Pages(counter).Name)
+                End If
+                If formControl.Name = "MultiPage2" Then
+                  UserFrm.MultiPage2.Pages(counter).Caption = _
+                  TranslatedValue(UserFrm.MultiPage2.Pages(counter).Name)
+                End If
+            Next
+        Else
+            If Trim(formControl.Caption) <> vbNullString Then formControl.Caption = TranslatedValue(formControl.Name)
+        End If
+    End If
+  Next
+End Sub
+
+'Errors ---------------------------------------------------------------------------------
+Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
+  Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
+End Sub
+
+'Interface
+Public Sub ITranslation_TranslateForm(ByVal UserFrm As UserForm)
+  TranslateForm UserFrm
+End Sub
+
+Public Sub ITranslation_TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
+  TranslateRange colRng:=colRng, containsFormula:=containsFormula
+End Sub
+
+Public Function ITranslation_TranslatedValue(ByVal text As String, Optional ByVal containsFormula As Boolean = False) As String
+  ITranslation_TranslatedValue = TranslatedValue(text, containsFormula)
+End Function
+

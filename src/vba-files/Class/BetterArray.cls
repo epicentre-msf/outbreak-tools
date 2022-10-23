@@ -90,7 +90,7 @@ Private Type TFields
 End Type
 
 Private Type TString
-    Text As String
+    text As String
     Length As Long
     ByteLength As Long
 End Type
@@ -667,33 +667,33 @@ Public Function FromExcelRange( _
     If TypeName(FromRange) = "Range" Then
         Dim StartColumn As Long
         Dim EndColumn As Long
-        Dim StartRow As Long
+        Dim startRow As Long
         Dim endRow As Long
         
         With FromRange
             StartColumn = .Column
-            StartRow = .Row
+            startRow = .Row
             EndColumn = .Column + .Columns.Count - 1
             endRow = .Row + .Rows.Count - 1
         End With
         
         With FromRange.Parent
             If DetectLastColumn Then
-                EndColumn = .Cells.Item(StartRow, .Columns.Count).End(xlToLeft).Column
+                EndColumn = .Cells.Item(startRow, .Columns.Count).End(xlToLeft).Column
             End If
             
             If DetectLastRow Then
                 endRow = .Cells.Item(.Rows.Count, StartColumn).End(xlUp).Row
             End If
             
-            Me.Items = .Range(.Cells(StartRow, StartColumn), .Cells(endRow, EndColumn)).Value
+            Me.Items = .Range(.Cells(startRow, StartColumn), .Cells(endRow, EndColumn)).Value
         End With
         
         ' convert arrays of single column or row to 1d
-        If StartColumn = EndColumn And StartRow <> endRow Then
+        If StartColumn = EndColumn And startRow <> endRow Then
             Me.Items = Me.ExtractSegment(, StartColumn)
-        ElseIf StartColumn <> EndColumn And StartRow = endRow Then
-            Me.Items = Me.ExtractSegment(StartRow)
+        ElseIf StartColumn <> EndColumn And startRow = endRow Then
+            Me.Items = Me.ExtractSegment(startRow)
         End If
         
     Else
@@ -2221,7 +2221,7 @@ End Function
 '@Description("Populates TString Types")
 Private Function StringFactory(ByRef Expression As String) As TString
     Dim Result As TString
-    Result.Text = Expression
+    Result.text = Expression
     Result.Length = Len(Expression)
     Result.ByteLength = LenB(Expression)
     StringFactory = Result
@@ -2234,9 +2234,9 @@ Private Function NextDelimBytePos( _
         Optional ByRef StartIndex As Long = 1 _
         ) As Long
     Dim Result As Long
-    Result = InStrB(StartIndex, Expression.Text, Delimiter.Text, vbBinaryCompare)
+    Result = InStrB(StartIndex, Expression.text, Delimiter.text, vbBinaryCompare)
     Do Until (Result And 1) Or (Result = 0)
-        Result = InStrB(Result + 1, Expression.Text, Delimiter.Text, vbBinaryCompare)
+        Result = InStrB(Result + 1, Expression.text, Delimiter.text, vbBinaryCompare)
     Loop
     NextDelimBytePos = Result
 End Function
@@ -2263,17 +2263,17 @@ Private Function GetCSVRows( _
     RowDelimIndex = NextDelimBytePos(Expr, RowDelim)
 
     ' find last row delimiter
-    LastRowDelim = InStrRev(Expr.Text, RowDelim.Text)
+    LastRowDelim = InStrRev(Expr.text, RowDelim.text)
     RowIndex = Expr.Length + 1
     Do While RowIndex - LastRowDelim = RowDelim.Length
         RowIndex = LastRowDelim
-        LastRowDelim = InStrRev(Expr.Text, RowDelim.Text, LastRowDelim)
+        LastRowDelim = InStrRev(Expr.text, RowDelim.text, LastRowDelim)
         inc BlankTrailingRows
     Loop
     RowIndex = Empty
 
     ' estimate max number of rows - does not account for line breaks within strings
-    MaxRows = (Expr.Length - Len(Replace(Expr.Text, RowDelim.Text, vbNullString))) / RowDelim.Length + 1
+    MaxRows = (Expr.Length - Len(Replace(Expr.text, RowDelim.text, vbNullString))) / RowDelim.Length + 1
     ReDim LineEndIndices(0 To MaxRows)
         
     ' find first quote delimiter
@@ -2308,7 +2308,7 @@ Private Function GetCSVRows( _
     ReDim CSVRows(0 To CountRows - 1)
     Cursor = 1
     For i = 0 To CountRows - 1
-        CSVRows(i) = MidB$(Expr.Text, Cursor, LineEndIndices(i) - Cursor)
+        CSVRows(i) = MidB$(Expr.text, Cursor, LineEndIndices(i) - Cursor)
         Cursor = LineEndIndices(i) + RowDelim.ByteLength
     Next
     GetCSVRows = CSVRows
@@ -2327,7 +2327,7 @@ Private Function CountCSVColumns(ByRef FirstRow As String, ByRef LiteralDelim As
     For i = 0 To Len(FirstRow)
         Char = Mid$(FirstRow, i + 1, 1)
         Select Case Char
-        Case LiteralDelim.Text
+        Case LiteralDelim.text
             InQuote = Not InQuote
         Case ColumnDelimiter
             If Not InQuote Then
@@ -2369,7 +2369,7 @@ Private Function ParseCSV( _
     Dim CountRows As Long
     Dim LastRow As Long
     Dim LastColumn As Long
-    Dim StartRow As Long
+    Dim startRow As Long
     Dim InQuote As Boolean
     Dim Buffer As String
     Dim Char As String
@@ -2397,12 +2397,12 @@ Private Function ParseCSV( _
     CountRows = UBound(CSVRows) - LBound(CSVRows) + 1
     
     If IgnoreFirstRow Then
-        StartRow = 1
+        startRow = 1
     Else
-        StartRow = 0
+        startRow = 0
     End If
     
-    LastRow = Base + CountRows - 1 - StartRow
+    LastRow = Base + CountRows - 1 - startRow
     LastColumn = Base + CountColumns - 1
     If ReturnJagged Then
         ReDim JaggedRow(Base To LastColumn)
@@ -2411,13 +2411,13 @@ Private Function ParseCSV( _
         ReDim Results(Base To LastRow, Base To LastColumn)
     End If
     
-    For i = StartRow To LastRow
+    For i = startRow To LastRow
         ColumnIndex = Base
         Buffer = CSVRows(i)
         Cursor = 1
         For j = 0 To Len(Buffer)
             Char = Mid$(Buffer, j + 1, 1)
-            If Char = LiteralDelim.Text Then
+            If Char = LiteralDelim.text Then
                 InQuote = Not InQuote
             ElseIf Char = ColumnDelimiter Or j = Len(Buffer) Then
                 If Not InQuote Then
@@ -2430,7 +2430,7 @@ Private Function ParseCSV( _
                     If ReturnJagged Then
                         JaggedRow(ColumnIndex) = Element
                     Else
-                        Results(i - StartRow, ColumnIndex) = Element
+                        Results(i - startRow, ColumnIndex) = Element
                     End If
                     Cursor = j + 2
                     inc ColumnIndex
@@ -2439,7 +2439,7 @@ Private Function ParseCSV( _
             End If
         Next
         If ReturnJagged Then
-            Results(i - StartRow) = JaggedRow
+            Results(i - startRow) = JaggedRow
             ' ReDim jaggedRow(Base To lastColumn)
         End If
     Next

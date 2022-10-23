@@ -35,3 +35,5 @@ Public Sub Export(ByVal toWkb As Workbook, Optional ByVal exportType As String =
 End Sub
 
 'Add translation
+Public Sub Translate(ByVal transObject As ITranslation)
+End Sub
