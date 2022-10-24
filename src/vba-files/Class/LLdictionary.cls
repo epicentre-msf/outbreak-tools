@@ -416,7 +416,7 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
 
         endCol = DictEndColumn
         .Cells(startRow, endCol + 1).Value = newColumn
-        .Cells(startRow + 1, endCol + 1).Formula = "= " & Chr(34) & tablePrefix & Chr(34) & " " & Chr(38) & " " & .Cells(startRow + 1, endCol).Address(Rowabsolute:=False)
+        .Cells(startRow + 1, endCol + 1).formula = "= " & Chr(34) & tablePrefix & Chr(34) & " " & Chr(38) & " " & .Cells(startRow + 1, endCol).Address(Rowabsolute:=False)
         Set dictRng = DataRange(newColumn)
 
         .Cells(startRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
@@ -459,7 +459,7 @@ Private Sub AppendColumnIndex()
         .Cells(startRow, endCol + 1).Value = "main section sort"
         firstsheetNameCell = .Cells(startRow + 1, sheetNameIndex).Address(Rowabsolute:=False) & " "
         firstmainSectionCell = .Cells(startRow + 1, mainSectionIndex).Address(Rowabsolute:=False)
-        .Cells(startRow + 1, endCol + 1).Formula = "= IF(" & firstmainSectionCell & "=" & Chr(34) & Chr(34) & _
+        .Cells(startRow + 1, endCol + 1).formula = "= IF(" & firstmainSectionCell & "=" & Chr(34) & Chr(34) & _
                                                     ", ROW(" & firstmainSectionCell & ")" & ", " & _
                                                    firstsheetNameCell & Chr(38) & Chr(34) & " - " & Chr(34) & Chr(38) & firstmainSectionCell & _
                                                    ")"

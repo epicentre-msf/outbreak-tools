@@ -1,4 +1,4 @@
-Attribute VB_Name = "TestLinelistSpecs"
+Attribute VB_Name = "TestOSFiles"
 
 Option Explicit
 Option Private Module
@@ -8,9 +8,6 @@ Option Private Module
 
 Private Assert As Object
 Private Fakes As Object
-Private lData As ILinelistSpecs
-Private dict As ILLdictionary
-Private choi As ILLchoice
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
@@ -30,19 +27,5 @@ End Sub
 
 '@TestInitialize
 Private Sub TestInitialize()
- Set dict = LLdictionary.Create(ThisWorkbook.Worksheets("TestDictionary"), 1, 1)
- Set choi = LLchoice.Create(ThisWorkbook.Worksheets("TestChoices"), 1, 1)
- 
- Set lData = LinelistSpecs.Create(dict, choi)
-End Sub
 
-'@TestMethod
-Private Sub TestPrepare()
- Dim cat As BetterArray
- 
- lData.Prepare
- Set cat = choi.Categories("__case_when_vara4")
- Assert.IsTrue (cat.Length > 0), "case when categories not defined on vara4"
- 
 End Sub
-

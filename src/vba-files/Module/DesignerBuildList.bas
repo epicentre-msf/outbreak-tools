@@ -990,7 +990,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                     'Testing before writing the formula
                     If (sFormula <> vbNullString) Then
                         .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).NumberFormat = "General"
-                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Formula = sFormula
+                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).formula = sFormula
                         .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Font.Color = GetColor("Grey50")
                         .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = GetColor("GreyFormula")
                         bLockData = True         'Lock data for formulas

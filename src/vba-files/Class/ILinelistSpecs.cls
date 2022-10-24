@@ -29,3 +29,7 @@ Public Property Get Choices() As ILLchoice:   End Property
 'Exposed methods
 'Categories of one variable
 Public Function Categories(ByVal varName As String) As BetterArray: End Function
+
+
+'Void methods
+Public Sub Prepare(): End Sub
