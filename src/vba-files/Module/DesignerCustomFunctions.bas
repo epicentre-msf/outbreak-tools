@@ -37,7 +37,7 @@ End Function
 'CASE_WHEN in upper case.
 Function ParseCaseWhen(sFormula As String) As String
 
-    Dim ParsingTable As BetterArray
+    Dim parsingTable As BetterArray
     Dim sLab As String
     Dim i As Long
     Dim iprev As Long
@@ -48,8 +48,8 @@ Function ParseCaseWhen(sFormula As String) As String
 
 
     If InStr(1, sFormula, "CASE_WHEN") > 0 Then
-        Set ParsingTable = New BetterArray
-        ParsingTable.LowerBound = 1
+        Set parsingTable = New BetterArray
+        parsingTable.LowerBound = 1
         iprev = 1
 
         NbOpened = 0
@@ -70,14 +70,14 @@ Function ParseCaseWhen(sFormula As String) As String
             OpenedParenthesis = (NbOpened <> NbClosed)
 
             If Not OpenedQuotes And Not OpenedParenthesis And Mid(sLab, i, 1) = "," Then
-                ParsingTable.Push Application.WorksheetFunction.Trim(Mid(sLab, iprev, i - iprev))
+                parsingTable.Push Application.WorksheetFunction.Trim(Mid(sLab, iprev, i - iprev))
                 iprev = i + 1
             End If
         Next
 
-        ParsingTable.Push Application.WorksheetFunction.Trim(Mid(sLab, iprev, i - iprev))
+        parsingTable.Push Application.WorksheetFunction.Trim(Mid(sLab, iprev, i - iprev))
 
-        ParseCaseWhen = CaseWhen(ParsingTable)
+        ParseCaseWhen = CaseWhen(parsingTable)
     End If
 End Function
 

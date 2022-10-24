@@ -633,8 +633,8 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
                     'Update minimum and maximum
                     If iCounter <> 2 Then
-                        .Cells(iSectionRow + 3, C_eStartColumnAnalysis + 10).Formula = "= MIN(" & sMinimumFormula & ")"
-                        .Cells(iSectionRow + 3, C_eStartColumnAnalysis + 12).Formula = "= MAX(" & sMaximumFormula & ")"
+                        .Cells(iSectionRow + 3, C_eStartColumnAnalysis + 10).formula = "= MIN(" & sMinimumFormula & ")"
+                        .Cells(iSectionRow + 3, C_eStartColumnAnalysis + 12).formula = "= MAX(" & sMaximumFormula & ")"
                     End If
 
                     iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis + 2).End(xlUp).Row + 3
@@ -717,8 +717,8 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
         'Add formula at the end for the start date at the end
 
         On Error Resume Next
-        .Cells(iSectionRow + 3, C_eStartColumnAnalysis + 10).Formula = "= MIN(" & sMinimumFormula & ")"
-        .Cells(iSectionRow + 3, C_eStartColumnAnalysis + 12).Formula = "= MAX(" & sMaximumFormula & ")"
+        .Cells(iSectionRow + 3, C_eStartColumnAnalysis + 10).formula = "= MIN(" & sMinimumFormula & ")"
+        .Cells(iSectionRow + 3, C_eStartColumnAnalysis + 12).formula = "= MAX(" & sMaximumFormula & ")"
         On Error GoTo 0
 
     End With

@@ -43,8 +43,12 @@ Private Sub TestTranslation()
 
     Assert.IsTrue (transObject.TranslatedValue("MSG_Day") = "Jour"), "Bad translated value"
     Assert.IsTrue (transObject.TranslatedValue("www&!") = "www&!"), "unfound translated value found"
+    formVal = transObject.TranslatedValue("IF(" & Chr(34) & "MSG_Day" & Chr(34) & ", " & Chr(34) & "MSG_Year" & Chr(34) & ")", containsFormula:=True)
+    Debug.Print formVal
+    Assert.IsTrue (formVal = "IF(" & Chr(34) & "Jour" & Chr(34) & ", " & Chr(34) & "Année" & Chr(34) & ")"), "Bad translated formula : obtained " & formVal
     formVal = transObject.TranslatedValue("IF(" & Chr(34) & "MSG_Day" & Chr(34), containsFormula:=True)
     Assert.IsTrue (formVal = "IF(" & Chr(34) & "Jour" & Chr(34)), "Bad translated formula : obtained " & formVal
+
 
 Exit Sub
 Fail:

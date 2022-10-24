@@ -58,7 +58,7 @@ End Property
 
 'Get Categories for one variable
 Private Function Categories(ByVal varName As String) As BetterArray
-  
+
   Dim categoryData As BetterArray
   Dim vars As ILLVariables
   Dim dict As ILLdictionary
@@ -77,7 +77,42 @@ Private Function Categories(ByVal varName As String) As BetterArray
 
 End Function
 
+Private Sub Prepare()
 
+ Const CATEGORYPREFIX As String = "__case_when_"
+
+  Dim dict As ILLdictionary
+  Dim choi As ILLchoice
+  Dim vars As ILLVariables
+  Dim counter As Long
+
+  Dim casewhenVars As BetterArray
+  Dim casewhenObject As ICaseWhen
+  Dim casewhenVariableName As String
+  Dim casewhenFormula As String
+
+
+  Set dict = Dictionary()
+  Set choi = Choices()
+  Set vars = LLVariables.Create(dict)
+
+  dict.Prepare
+
+  'Add case_when to choices
+  Set casewhenVars = dict.Data.FilterData(varName:="control", criteriaName:="case_when", returnedColumnName:="variable name")
+  For counter = casewhenVars.LowerBound To casewhenVars.UpperBound
+      casewhenVariableName = casewhenVars.Item(counter)
+      casewhenFormula = vars.Value(varName:=casewhenVariableName, colName:="control details")
+
+      Set casewhenObject = CaseWhen.Create(casewhenFormula)
+      'Test validity before parsing categories to choices
+      If casewhenObject.Valid() Then
+        choi.AddChoice choiceName:=CATEGORYPREFIX & casewhenVariableName, CategoriesData:=casewhenObject.Categories
+      End If
+  Next
+
+  choi.Sort
+End Sub
 
 'Implement the interfaces
 
@@ -94,3 +129,7 @@ End Property
 Public Function ILinelistSpecs_Categories(ByVal varName As String) As BetterArray
   Set ILinelistSpecs_Categories = Categories(varName)
 End Function
+
+Public Sub ILinelistSpecs_Prepare()
+  Prepare
+End Sub

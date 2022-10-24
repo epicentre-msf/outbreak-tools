@@ -339,7 +339,7 @@ Sub AddInnerFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As String
                         .Style = "Percent"
                         .NumberFormat = "0.00%"
 
-                        If sFormula <> vbNullString Then .Formula = AddPercentage(sFormula)
+                        If sFormula <> vbNullString Then .formula = AddPercentage(sFormula)
                     End With
 
                 End If
@@ -422,7 +422,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
                 With .Cells(iEndRow, i + 1)
                     .Style = "Percent"
                     .NumberFormat = "0.00%"
-                    If sFormula <> vbNullString Then .Formula = AddPercentage(sFormula)
+                    If sFormula <> vbNullString Then .formula = AddPercentage(sFormula)
                 End With
             End If
 
@@ -444,7 +444,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
                     With .Cells(iEndRow - 1, i + 1)
                         .Style = "Percent"
                         .NumberFormat = "0.00%"
-                        If sFormula2 <> vbNullString Then .Formula = AddPercentage(sFormula2)
+                        If sFormula2 <> vbNullString Then .formula = AddPercentage(sFormula2)
                     End With
                 End If
 
@@ -489,7 +489,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
                 With .Cells(i, iEndCol)
                     .Style = "Percent"
                     .NumberFormat = "0.00%"
-                    If sFormula <> vbNullString Then .Formula = AddPercentage(sFormula)
+                    If sFormula <> vbNullString Then .formula = AddPercentage(sFormula)
                 End With
 
                 If includeMissing Then
@@ -509,7 +509,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
                         .Style = "Percent"
                         .NumberFormat = "0.00%"
-                        If sFormula2 <> vbNullString Then .Formula = AddPercentage(sFormula2)
+                        If sFormula2 <> vbNullString Then .formula = AddPercentage(sFormula2)
 
                     End With
 
@@ -651,7 +651,7 @@ Sub AddUANA(Wkb As Workbook, DictHeaders As BetterArray, _
             With .Cells(iRow, iEndCol)
                 .Style = "Percent"
                 .NumberFormat = "0.00%"
-                .Formula = sFormula
+                .formula = sFormula
             End With
         End If
         On Error GoTo 0
@@ -688,7 +688,7 @@ Sub AddUATotal(Wkb As Workbook, DictHeaders As BetterArray, sSumFunc As String, 
         If sPercent = C_sYes Then
             sFormula = "=" & .Cells(iRow, iStartCol + 1).Address & "/" & .Cells(iRow, iStartCol + 1).Address
             With .Cells(iRow, iEndCol)
-                .Formula = sFormula
+                .formula = sFormula
                 .Style = "Percent"
                 .NumberFormat = "0.00%"
             End With
@@ -776,7 +776,7 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
                 End Select
 
                 sFormula = .Cells(iRow + 2, i).Address(Rowabsolute:=False) & "/" & sTotalCell
-                .Cells(iRow + 2, i + 1).Formula = AddPercentage(sFormula)
+                .Cells(iRow + 2, i + 1).formula = AddPercentage(sFormula)
                 Set rng = .Range(.Cells(iRow + 2, i + 1), .Cells(iRow + 4 + C_iNbTime, i + 1))
                 .Cells(iRow + 2, i + 1).AutoFill Destination:=rng, Type:=xlFillValues
                 rng.NumberFormat = "0.00 %"
@@ -852,7 +852,7 @@ Sub FormatCell(Wksh As Worksheet, iStartRow As Long, iEndRow As Long, iStartCol 
             With .Cells(iStartRow, iEndCol)
                 .Style = "Percent"
                 .NumberFormat = "0.00%"
-                .Formula = sFormula
+                .formula = sFormula
             End With
         End If
         'Before the total columns, double lines
@@ -1089,19 +1089,19 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
                     NumFormat:="dd/mm/yyyy"
 
         .Cells(iRow, iCol + 1).Locked = True
-        .Cells(iRow, iCol + 1).Formula = "=" & "MIN(MAX(" & .Cells(iRow - 2, iCol + 4).Address & "," & _
+        .Cells(iRow, iCol + 1).formula = "=" & "MIN(MAX(" & .Cells(iRow - 2, iCol + 4).Address & "," & _
              .Cells(iRow - 2, iCol + 7).Address & ")," & sMax & ")"
 
 
         'The table for the time values
         iRow = iRow + 5
         .Cells(iRow - 1, iCol).Value = TranslateLLMsg("MSG_Period")
-        .Cells(iRow, iCol - 2).Formula = "= " & .Cells(iRow - 5, iCol + 1).Address
-        .Cells(iRow, iCol - 1).Formula = "= " & "FindLastDay(" & .Cells(iRow - 7, iCol + 1).Address & ", " & .Cells(iRow, iCol - 2).Address & ")"
+        .Cells(iRow, iCol - 2).formula = "= " & .Cells(iRow - 5, iCol + 1).Address
+        .Cells(iRow, iCol - 1).formula = "= " & "FindLastDay(" & .Cells(iRow - 7, iCol + 1).Address & ", " & .Cells(iRow, iCol - 2).Address & ")"
 
         'Next row for autofill
-        .Cells(iRow + 1, iCol - 2).Formula = "= " & .Cells(iRow, iCol - 1).Address(Rowabsolute:=False, ColumnAbsolute:=False) & "+ 1"
-        .Cells(iRow + 1, iCol - 1).Formula = "= " & "FindLastDay(" & sAgg & ", " _
+        .Cells(iRow + 1, iCol - 2).formula = "= " & .Cells(iRow, iCol - 1).Address(Rowabsolute:=False, ColumnAbsolute:=False) & "+ 1"
+        .Cells(iRow + 1, iCol - 1).formula = "= " & "FindLastDay(" & sAgg & ", " _
                                            & .Cells(iRow + 1, iCol - 2).Address(Rowabsolute:=False, ColumnAbsolute:=False) & ")"
 
         'Autofill column - 1
@@ -1113,7 +1113,7 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         .Cells(iRow + 1, iCol - 2).AutoFill rng
 
         'Format and AutoFill the Range of values
-        .Cells(iRow, iCol).Formula = "= " & "FormatDateFromLastDay(" & sAgg & ", " & _
+        .Cells(iRow, iCol).formula = "= " & "FormatDateFromLastDay(" & sAgg & ", " & _
                                      .Cells(iRow, iCol - 1).Address(Rowabsolute:=False, ColumnAbsolute:=False) & "," & sMax & "," & _
                                       .Cells(iRow, iCol - 2).Address(Rowabsolute:=False, ColumnAbsolute:=False) & ")"
 
