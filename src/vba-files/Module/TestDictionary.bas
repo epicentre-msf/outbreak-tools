@@ -96,7 +96,7 @@ Private Sub TestPreparation()
             endCol = .Cells(1, .Columns.Count).End(xlToLeft).Column + 1
             If Not Dictionary.ColumnExists("randnumber") Then
                 .Cells(1, endCol) = "randnumber"
-                .Cells(2, endCol).Formula = "= RAND()"
+                .Cells(2, endCol).formula = "= RAND()"
                 Set randRng = Dictionary.DataRange("randnumber")
                 .Cells(2, endCol).AutoFill randRng, Type:=xlFillValues
             End If

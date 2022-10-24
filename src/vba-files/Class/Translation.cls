@@ -118,31 +118,31 @@ End Function
 Private Function TranslatedValue(ByVal text As String, Optional ByVal containsFormula As Boolean = False) As String
   'Test if the language Exists
   Dim transText As String
-  Dim cleanedText As String
+  Dim formTransText As String
   Dim formulaText As String
   Dim lngCol As Long
   Dim valIndex As Long
   Dim LoRng As Range
   Dim counter As Long
   Dim quoteStart As Long
-
+  
   If containsFormula Then
-    formulaText = text
-    cleanedText = Replace(formulaText, Chr(34) & Chr(34), vbNullString)
+    formTransText = text
+    formulaText = Replace(text, Chr(34) & Chr(34), vbNullString)
     If InStr(1, formulaText, Chr(34)) > 0 Then
       For counter = 1 To Len(formulaText)
-        If Mid(formulaText, counter, 1) = Chr(34) Then
+        If Mid(text, counter, 1) = Chr(34) Then
           If quoteStart = 0 Then
               quoteStart = counter + 1
           Else
               transText = TranslatedValue(Mid(formulaText, quoteStart, counter - quoteStart))
-              formulaText = Replace(formulaText, Mid(formulaText, quoteStart, counter - quoteStart), transText)
+              formTransText = Replace(formTransText, Mid(formulaText, quoteStart, counter - quoteStart), transText)
               quoteStart = 0
           End If
         End If
       Next
     End If
-    TranslatedValue = formulaText
+    TranslatedValue = formTransText
   Else
     If ValueExists(text) Then
       Set LoRng = Table.Range

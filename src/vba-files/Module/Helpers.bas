@@ -793,14 +793,14 @@ Public Function GetInternationalFormula(sFormula As String, Wksh As Worksheet) A
     'when I deal with Validations
 
     If (sFormula <> "") Then
-        sprevformula = Wksh.Range("A1").Formula
+        sprevformula = Wksh.Range("A1").formula
         'Setting the formula to a range
-        Wksh.Range("A1").Formula = "=" & sFormula
+        Wksh.Range("A1").formula = "=" & sFormula
         'retrieving the local formula
         GetInternationalFormula = Wksh.Range("A1").FormulaLocal
     End If
     'Reseting the previous formula
-    Wksh.Range("A1").Formula = sprevformula
+    Wksh.Range("A1").formula = sprevformula
 End Function
 
 

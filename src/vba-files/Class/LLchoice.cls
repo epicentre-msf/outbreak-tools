@@ -104,9 +104,9 @@ Private Sub Sort()
   Set dataObject = ChoiceData
 
   If dataObject.ColumnExists(LISTNAME) And dataObject.ColumnExists(ORDER) Then
-    Set listRng = DataRange(LISTNAME)
-    Set orderRng = DataRange(ORDER)
-    Set choiceRng = DataRange()
+    Set listRng = DataRange(LISTNAME, includeHeaders:=False)
+    Set orderRng = DataRange(ORDER, includeHeaders:=False)
+    Set choiceRng = DataRange(includeHeaders:=False)
 
     choiceRng.Sort key1:=listRng, order1:=xlAscending, key2:=orderRng, order2:=xlAscending
   End If
@@ -168,6 +168,13 @@ Private Sub Import(fromWksh As Worksheet, fromStartRow As Long, fromStartCol As 
   choiData.Import fromWksh, fromStartRow, fromStartCol
 End Sub
 
+'Translation
+Private Sub Translate(ByVal transObject)
+  Dim lblRng As Range
+  Set lblRng = DataRange("label")
+  transObject.TranslateRange lblRng
+End Sub
+
 'Properties
 Public Property Get ILLchoice_Wksh() As Worksheet
     Set ILLchoice_Wksh = Wksh()
@@ -193,9 +200,6 @@ Public Property Get ILLchoice_Categories(ByVal choiceName As String) As BetterAr
     Set ILLchoice_Categories = Categories(choiceName)
 End Property
 
-
-'Methods
-
 'Void methods
 Public Sub ILLchoice_Sort()
     Sort
@@ -213,4 +217,8 @@ End Sub
 
 Public Sub ILLchoice_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long)
     Import fromWksh, fromStartRow, fromStartCol
+End Sub
+
+Public Sub ILLchoice_Translate(ByVal transObject As ITranslation)
+  Translate transObject
 End Sub
