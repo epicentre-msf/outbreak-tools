@@ -667,33 +667,33 @@ Public Function FromExcelRange( _
     If TypeName(FromRange) = "Range" Then
         Dim StartColumn As Long
         Dim EndColumn As Long
-        Dim startRow As Long
-        Dim endRow As Long
+        Dim StartRow As Long
+        Dim EndRow As Long
         
         With FromRange
             StartColumn = .Column
-            startRow = .Row
+            StartRow = .row
             EndColumn = .Column + .Columns.Count - 1
-            endRow = .Row + .Rows.Count - 1
+            EndRow = .row + .Rows.Count - 1
         End With
         
         With FromRange.Parent
             If DetectLastColumn Then
-                EndColumn = .Cells.Item(startRow, .Columns.Count).End(xlToLeft).Column
+                EndColumn = .Cells.Item(StartRow, .Columns.Count).End(xlToLeft).Column
             End If
             
             If DetectLastRow Then
-                endRow = .Cells.Item(.Rows.Count, StartColumn).End(xlUp).Row
+                EndRow = .Cells.Item(.Rows.Count, StartColumn).End(xlUp).row
             End If
             
-            Me.Items = .Range(.Cells(startRow, StartColumn), .Cells(endRow, EndColumn)).Value
+            Me.Items = .Range(.Cells(StartRow, StartColumn), .Cells(EndRow, EndColumn)).Value
         End With
         
         ' convert arrays of single column or row to 1d
-        If StartColumn = EndColumn And startRow <> endRow Then
+        If StartColumn = EndColumn And StartRow <> EndRow Then
             Me.Items = Me.ExtractSegment(, StartColumn)
-        ElseIf StartColumn <> EndColumn And startRow = endRow Then
-            Me.Items = Me.ExtractSegment(startRow)
+        ElseIf StartColumn <> EndColumn And StartRow = EndRow Then
+            Me.Items = Me.ExtractSegment(StartRow)
         End If
         
     Else
@@ -819,7 +819,7 @@ Public Function ToExcelRange( _
     On Error GoTo 0
     
     If DestType = TARGET_OBJECT And DestApplication = TARGET_APPLICATION Then
-        AvailableRows = Destination.Parent.Rows.Count - Destination.Row + 1
+        AvailableRows = Destination.Parent.Rows.Count - Destination.row + 1
         AvailableColumns = Destination.Parent.Columns.Count - Destination.Column + 1
         LocalItems = InternalItems
         Depth = GetJaggedArrayDepth(LocalItems)
@@ -2369,7 +2369,7 @@ Private Function ParseCSV( _
     Dim CountRows As Long
     Dim LastRow As Long
     Dim LastColumn As Long
-    Dim startRow As Long
+    Dim StartRow As Long
     Dim InQuote As Boolean
     Dim Buffer As String
     Dim Char As String
@@ -2397,12 +2397,12 @@ Private Function ParseCSV( _
     CountRows = UBound(CSVRows) - LBound(CSVRows) + 1
     
     If IgnoreFirstRow Then
-        startRow = 1
+        StartRow = 1
     Else
-        startRow = 0
+        StartRow = 0
     End If
     
-    LastRow = Base + CountRows - 1 - startRow
+    LastRow = Base + CountRows - 1 - StartRow
     LastColumn = Base + CountColumns - 1
     If ReturnJagged Then
         ReDim JaggedRow(Base To LastColumn)
@@ -2411,7 +2411,7 @@ Private Function ParseCSV( _
         ReDim Results(Base To LastRow, Base To LastColumn)
     End If
     
-    For i = startRow To LastRow
+    For i = StartRow To LastRow
         ColumnIndex = Base
         Buffer = CSVRows(i)
         Cursor = 1
@@ -2430,7 +2430,7 @@ Private Function ParseCSV( _
                     If ReturnJagged Then
                         JaggedRow(ColumnIndex) = Element
                     Else
-                        Results(i - startRow, ColumnIndex) = Element
+                        Results(i - StartRow, ColumnIndex) = Element
                     End If
                     Cursor = j + 2
                     inc ColumnIndex
@@ -2439,7 +2439,7 @@ Private Function ParseCSV( _
             End If
         Next
         If ReturnJagged Then
-            Results(i - startRow) = JaggedRow
+            Results(i - StartRow) = JaggedRow
             ' ReDim jaggedRow(Base To lastColumn)
         End If
     Next
@@ -3408,7 +3408,7 @@ Private Sub TimSort( _
     ' each iteration until you surpass the length of
     ' the array.
     Dim Size As Long
-    Dim Start As Long
+    Dim start As Long
     Dim Midpoint As Long
     Dim Endpoint As Long
     Dim LastIndex As Long
@@ -3418,19 +3418,19 @@ Private Sub TimSort( _
     Do While Size < SourceLength
         ' Determine the arrays that will
         ' be merged together
-        Start = LBound(Source)
-        Do While Start < UBound(Source)
+        start = LBound(Source)
+        Do While start < UBound(Source)
             ' Compute the `midpoint` (where the first array ends
             ' and the second starts) and the `endpoint` (where
             ' the second array ends)
-            Midpoint = Min(Start + Size - 1, LastIndex)
-            Endpoint = Min(Start + Size * 2 - 1, LastIndex)
+            Midpoint = Min(start + Size - 1, LastIndex)
+            Endpoint = Min(start + Size * 2 - 1, LastIndex)
             ' Merge the two subarrays.
             ' The `left` array should go from `start` to
             ' `midpoint + 1`, while the `right` array should
             ' go from `midpoint + 1` to `end + 1`.
-            MergeSort Source, Start, Midpoint, Endpoint, LocalArrayType, col
-            inc Start, Size * 2
+            MergeSort Source, start, Midpoint, Endpoint, LocalArrayType, col
+            inc start, Size * 2
         Loop
         ' Each iteration should double the size of your arrays
         inc Size, Size

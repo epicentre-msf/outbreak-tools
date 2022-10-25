@@ -57,7 +57,7 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
                   sMainLabCol As String, _
                   sSummaryLabel As String, _
                   sPercent As String, sMiss As String, _
-                  Optional RowsData As BetterArray, _
+                  Optional rowsData As BetterArray, _
                   Optional sMainLabRow As String, _
                   Optional sInteriorColor As String = "VeryLightBlue", _
                   Optional sTotalInteriorColor As String = "VeryLightGreyBlue", _
@@ -90,9 +90,9 @@ Sub CreateBATable(Wksh As Worksheet, ColumnsData As BetterArray, _
 
             'Add the rows Data -------------------------------------------------------------------------------------------------------------------------------
 
-            RowsData.ToExcelRange .Cells(iRow + 3, iCol)
+            rowsData.ToExcelRange .Cells(iRow + 3, iCol)
             'EndRow of the table
-            iEndRow = iRow + 2 + RowsData.Length
+            iEndRow = iRow + 2 + rowsData.Length
 
             FormatARange rng:=.Range(.Cells(iRow + 3, iCol), .Cells(iEndRow, iCol)), sFontColor:=sColor, _
         sInteriorColor:=sInteriorColor, Horiz:=xlHAlignLeft

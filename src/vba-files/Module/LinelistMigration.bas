@@ -79,7 +79,7 @@ Sub ClearData()
         Case C_sDictSheetTypeAdm
             'Find Last row of Adm Data
             With Wksh
-                iLastRow = .Cells(.Rows.Count, 2).End(xlUp).Row
+                iLastRow = .Cells(.Rows.Count, 2).End(xlUp).row
                 For i = C_eStartLinesAdmData To iLastRow
                     .Cells(i, C_eStartColumnAdmData + 3).Value = vbNullString
                 Next
@@ -253,7 +253,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
             'Import Data of Type Adm (No choice, we have to delete previous values)
 
         Case C_sDictSheetTypeAdm
-            iLastRowImp = shImp.Cells(shImp.Rows.Count, 1).End(xlUp).Row
+            iLastRowImp = shImp.Cells(shImp.Rows.Count, 1).End(xlUp).row
 
             For i = 2 To iLastRowImp             '2 because the first row is for headers
                 sVal = shImp.Cells(i, 1)
@@ -268,7 +268,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                     If Not ImportReport Then ImportReport = True
 
                     With ThisWorkbook.Worksheets(C_sSheetImportTemp)
-                        k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
+                        k = .Cells(.Rows.Count, 3).End(xlUp).row + 1
                         .Cells(k, 3).Value = sVal
                         .Cells(k, 4).Value = sSheetName
                     End With
@@ -304,7 +304,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                     If varControl <> C_sDictControlForm And varControl <> C_sDictControlCaseWhen Then
                         'Don't Import columns of Type formulas
                         With shImp
-                            iLastRowImp = .Cells(.Rows.Count, i).End(xlUp).Row
+                            iLastRowImp = .Cells(.Rows.Count, i).End(xlUp).row
                             Set rngImp = .Range(.Cells(2, i), .Cells(iLastRowImp, i)) '2 because first row if for headers ie varnames
                         End With
                         'Take one because of the headers in the import Sheet
@@ -322,7 +322,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
 
                     With ThisWorkbook.Worksheets(C_sSheetImportTemp)
 
-                        k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
+                        k = .Cells(.Rows.Count, 3).End(xlUp).row + 1
 
                         .Cells(k, 3).Value = sVal
                         .Cells(k, 4).Value = sSheetName
@@ -462,7 +462,7 @@ Sub ImportMigrationData()
             'Test if this is valid worksheet before writing
             If Not SheetNameIsBad(shImp.Name) Then
                 With shpTemp
-                    iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+                    iRow = .Cells(.Rows.Count, 1).End(xlUp).row
                     .Cells(iRow + 1, 1).Value = shImp.Name
                 End With
             End If
@@ -478,7 +478,7 @@ Sub ImportMigrationData()
             If Not ImportReport Then ImportReport = True
             sVal = TabSheetLL.Item(k)
             With shpTemp
-                iRow = .Cells(.Rows.Count, 11).End(xlUp).Row
+                iRow = .Cells(.Rows.Count, 11).End(xlUp).row
                 iRow = iRow + 1
                 .Cells(iRow, 11).Value = TabSheetLL.Item(k)
             End With
@@ -497,7 +497,7 @@ Sub ImportMigrationData()
             'Update report status
             If Not ImportReport Then ImportReport = True
             With shpTemp
-                iRow = .Cells(.Rows.Count, 6).End(xlUp).Row
+                iRow = .Cells(.Rows.Count, 6).End(xlUp).row
                 iRow = iRow + 1
                 .Cells(iRow, 6).Value = VarNamesData.Item(k)
                 .Cells(iRow, 7).Value = TabSheetLL.Item(k)
@@ -551,7 +551,7 @@ Sub ShowImportReport()
 
     'Sheet not found
     With shp
-        iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+        iRow = .Cells(.Rows.Count, 1).End(xlUp).row
 
         If iRow >= 1 Then
             TabRep.FromExcelRange .Range(.Cells(1, 1), .Cells(iRow, 1))
@@ -560,7 +560,7 @@ Sub ShowImportReport()
         End If
 
         'Variable not imported
-        iRow = .Cells(.Rows.Count, 3).End(xlUp).Row
+        iRow = .Cells(.Rows.Count, 3).End(xlUp).row
 
         If iRow >= 1 Then
             TabRep.Clear
@@ -569,7 +569,7 @@ Sub ShowImportReport()
             F_ImportRep.LST_ImpRepVarImp.List = TabRep.Items
         End If
 
-        iRow = .Cells(.Rows.Count, 6).End(xlUp).Row
+        iRow = .Cells(.Rows.Count, 6).End(xlUp).row
 
         If iRow >= 1 Then
             TabRep.Clear
@@ -579,7 +579,7 @@ Sub ShowImportReport()
         End If
 
         'Sheets not touched
-        iRow = .Cells(.Rows.Count, 11).End(xlUp).Row
+        iRow = .Cells(.Rows.Count, 11).End(xlUp).row
 
         If iRow >= 1 Then
             TabRep.Clear
@@ -994,7 +994,7 @@ Private Sub AddAdmSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As
     Dim Wksh As Worksheet                        'New adm worksheet, for code readability
 
     With ThisWorkbook.Worksheets(sSheetName)
-        iLastRow = .Cells(.Rows.Count, C_eStartColumnAdmData + 2).End(xlUp).Row
+        iLastRow = .Cells(.Rows.Count, C_eStartColumnAdmData + 2).End(xlUp).row
     End With
 
     Wkb.Worksheets.Add(after:=Wkb.Worksheets(sPrevSheetName)).Name = sSheetName

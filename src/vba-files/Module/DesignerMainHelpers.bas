@@ -201,13 +201,13 @@ Public Sub MoveAnalysis(SrcWkb As Workbook)
 
     For Each Lo In SetupWksh.ListObjects
 
-        iPasteRow = Lo.Range.Row
+        iPasteRow = Lo.Range.row
         iPasteColumn = Lo.Range.Column
 
         SetupWksh.Cells(iPasteRow - 2, iPasteColumn).Copy DesWksh.Cells(iPasteRow - 2, iPasteColumn)
 
         'Find where data is entered from the first column
-        iLastRow = SetupWksh.Cells(iPasteRow, iPasteColumn).End(xlDown).Row
+        iLastRow = SetupWksh.Cells(iPasteRow, iPasteColumn).End(xlDown).row
         iLastColumn = SetupWksh.Cells(iPasteRow, iPasteColumn).End(xlToRight).Column
 
         With SetupWksh
@@ -283,7 +283,7 @@ Public Sub AddTableNames()
     iSheetNameCol = DictHeaders.IndexOf(C_sDictHeaderSheetName)
 
     With ThisWorkbook.Worksheets(C_sParamSheetDict)
-        iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+        iRow = .Cells(.Rows.Count, 1).End(xlUp).row
         iCol = DictHeaders.Length + 1
         iTableIndex = 1
 
@@ -342,7 +342,7 @@ Sub Preprocessing(DictHeaders As BetterArray)
     With dictWksh
 
         iCol = .Cells(1, .Columns.Count).End(xlToLeft).Column
-        iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+        iRow = .Cells(.Rows.Count, 1).End(xlUp).row
         Set rng = .Range(.Cells(1, 1), .Cells(iRow, iCol))
 
         'Trim everything on the dictionary

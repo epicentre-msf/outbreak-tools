@@ -89,7 +89,7 @@ Sub ClicCmdShowHide()
     i = 1
     bremoveFromGeo = False
 
-    Do While (i <= Wksh.Cells(Wksh.Rows.Count, 1).End(xlUp).Row)
+    Do While (i <= Wksh.Cells(Wksh.Rows.Count, 1).End(xlUp).row)
 
         If ActiveSheet.Name = Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderSheetName)) Then
             bremoveFromGeo = Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "2" Or _

@@ -217,9 +217,9 @@ Sub AddSubLab(Wksh As Worksheet, iSheetStartLine As Integer, _
         .Cells(iSheetStartLine, iCol).Value & Chr(10) & sSubLab
 
         'Changing the fontsize of the sublabels
-        .Cells(iSheetStartLine, iCol).Characters(Start:=Len(sMainLab) + 1, _
+        .Cells(iSheetStartLine, iCol).Characters(start:=Len(sMainLab) + 1, _
             Length:=Len(sSubLab) + 1).Font.Size = C_iLLSheetFontSize - 2
-        .Cells(iSheetStartLine, iCol).Characters(Start:=Len(sMainLab) + 1, _
+        .Cells(iSheetStartLine, iCol).Characters(start:=Len(sMainLab) + 1, _
             Length:=Len(sSubLab) + 1).Font.Color = Helpers.GetColor(sSubLabColor)
     End With
 
@@ -341,7 +341,7 @@ Sub AddChoices(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer
             ValidationList.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
 
             'Add the list object to the worksheet
-            iChoiceRow = .Cells(.Rows.Count, iChoiceCol).End(xlUp).Row
+            iChoiceRow = .Cells(.Rows.Count, iChoiceCol).End(xlUp).row
 
             Set LoRng = .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iChoiceRow, iChoiceCol))
 
@@ -528,7 +528,7 @@ Sub BuildGotoArea(Wkb As Workbook, sTableName As String, sSheetName As String, i
 
         .Cells(C_eStartlinesListAuto, iGoToCol).Value = sGoToSourceName
         'Add the list object to the worksheet
-        iChoiceRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
+        iChoiceRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).row
         Set LoRng = .Range(.Cells(C_eStartlinesListAuto, iGoToCol), .Cells(iChoiceRow, iGoToCol))
 
         'Add the list object here

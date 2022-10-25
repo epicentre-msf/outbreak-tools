@@ -21,7 +21,7 @@ Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
                               Optional ByVal includeHeaders As Boolean = False) As Range
 End Property
 'Getters for the encapsulated data
-Public Property Get startRow() As Long: End Property
+Public Property Get StartRow() As Long: End Property
 Public Property Get StartColumn() As Long: End Property
 Public Property Get DataEndRow() As Long: End Property
 Public Property Get DataEndColumn() As Long: End Property

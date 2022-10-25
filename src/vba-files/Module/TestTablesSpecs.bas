@@ -42,7 +42,7 @@ Private Sub TestInitialize()
     Set lData = LinelistSpecs.Create(dict, choi)
     Set Lo = ThisWorkbook.Worksheets("Analysis").ListObjects(2)
     Set headRng = Lo.HeaderRowRange
-    Set rowRng = Lo.listRows(1).Range
+    Set rowRng = Lo.ListRows(1).Range
     Set specs = TablesSpecs.Create(headRng, rowRng, lData, TypeUnivariate)
 End Sub
 

@@ -17,170 +17,322 @@ Option Explicit
 Implements ITablesSpecs
 
 Private Type TTablesSpecs
-  hRng As Range
-  tRng As Range
-  lData As ILinelistSpecs
-  tType As AnalysisTablesType
+    hRng As Range
+    tRng As Range
+    lData As ILinelistSpecs
+    tType As AnalysisTablesType
 End Type
-
 
 Private this As TTablesSpecs
 Private Const CLASSNAME As String = "TableSpecs"
 
 'Instanciation
 
-Public Function Create(headerRng As Range, tableSpecsRng As Range, linelistData As ILinelistSpecs, taType As AnalysisTablesType) As ITablesSpecs
+Public Function Create(headerRng As Range, tableSpecsRng As Range, linelistData As ILinelistSpecs) As ITablesSpecs
     If headerRng Is Nothing Then ThrowErrorUnableInstanciate "Header range not defined"
     If tableSpecsRng Is Nothing Then ThrowErrorUnableInstanciate "Table range not defined"
     If linelistData Is Nothing Then ThrowErrorUnableInstanciate "Linelist specifications not defined"
     If headerRng.Columns.Count <> tableSpecsRng.Columns.Count Then ThrowErrorUnableInstanciate "Header range and sepicification range don't have same length"
-    If headerRng.Row > tableSpecsRng.Row Then ThrowErrorUnableInstanciate "Seems like header comes range after specification range. Maybe you reversed the order? "
-    If headerRng.Row < 1 Then ThrowErrorUnableInstanciate "Header range should be at row > 1"
+    If headerRng.row > tableSpecsRng.row Then ThrowErrorUnableInstanciate "Seems like header comes range after specification range. Maybe you reversed the order? "
+    If headerRng.row < 1 Then ThrowErrorUnableInstanciate "Header range should be at row > 1"
 
     With New TablesSpecs
-      Set .HeaderRange = headerRng
-      Set .TableRange = tableSpecsRng
-      Set .LinelistSpecifications = linelistData
-      .TableType = taType
-      Set Create = .Self
+        Set .HeaderRange = headerRng
+        Set .TableRange = tableSpecsRng
+        Set .LinelistSpecifications = linelistData
+        Set Create = .Self
     End With
 End Function
 
-
 'Properties
 Public Property Get HeaderRange() As Range
-  Set HeaderRange = this.hRng
+    Set HeaderRange = this.hRng
 End Property
 
 Public Property Get TableRange() As Range
-  Set TableRange = this.tRng
+    Set TableRange = this.tRng
 End Property
 
 Public Property Get LinelistSpecifications() As ILinelistSpecs
-  Set LinelistSpecifications = this.lData
+    Set LinelistSpecifications = this.lData
 End Property
 
-
 Public Property Set HeaderRange(ByVal hRng As Range)
-  Set this.hRng = hRng
+    Set this.hRng = hRng
 End Property
 
 Public Property Set TableRange(ByVal tRng As Range)
-  Set this.tRng = tRng
+    Set this.tRng = tRng
 End Property
 
 Public Property Set LinelistSpecifications(ByVal lData As ILinelistSpecs)
-  Set this.lData = lData
+    Set this.lData = lData
 End Property
 
 Public Property Get TableType() As AnalysisTablesType
-  TableType = this.tType
-End Property
-
-Public Property Let TableType(ByVal taType As AnalysisTablesType)
-  this.tType = taType
+    Dim hRng As Range
+    Dim tType As AnalysisTablesType
+    Dim anaType As String
+    
+    Set hRng = HeaderRange()
+    anaType = LCase(Application.WorksheetFunction.Trim(hRng.Cells(-1, 1).Value))
+    Select Case anaType
+    Case "global summary"
+        tType = TypeGlobalSummary
+    Case "univariate analysis"
+        tType = TypeUnivariate
+    Case "bivariate analysis"
+        tType = TypeBivariate
+    Case "time series analysis"
+        tType = TypeTimeSeries
+    Case "spatial analysis"
+        tType = TypeSpatial
+    Case Else
+        ThrowError "Could not find the table type [uni-bivariate, spatial or timeseries? :(]" & ".Actual type is : " & anaType
+    End Select
+  
+    TableType = tType
 End Property
 
 Public Property Get Self() As ITablesSpecs
-  Set Self = Me
+    Set Self = Me
+End Property
+
+Private Property Get TableId() As String
+    Dim PREFIX As String
+    Dim tRng As Range
+    Dim hRng As Range
+    Dim lineNum As Long
+
+    Set tRng = TableRange
+    Set hRng = HeaderRange
+
+    lineNum = tRng.row - hRng.row + 1
+
+    Select Case TableType
+
+    Case TypeGlobalSummary
+        PREFIX = "GS"
+    Case TypeUnivariate
+        PREFIX = "UA"
+    Case TypeBivariate
+        PREFIX = "BA"
+    Case TypeTimeSeries
+        PREFIX = "TS"
+    Case TypeSpatial
+        PREFIX = "SA"
+    End Select
+
+    TableId = PREFIX & "_tab" & lineNum
+End Property
+
+Private Property Get HasPercent() As Boolean
+    Select Case TableType
+
+    Case TypeGlobalSummary
+        HasPercent = False
+    Case TypeUnivariate
+        HasPercent = (Value("percentage") = "yes")
+    Case TypeBivariate
+        HasPercent = (Value("percentage")) = "row" Or (Value("percentage") = "column") Or (Value("percentage") = "total")
+    Case TypeTimeSeries
+        HasPercent = (Value("percentage")) = "row" Or (Value("percentage") = "column")
+    Case TypeSpatial
+        HasPercent = (Value("percentage") = "column" And Value("column") <> vbNullString) Or _
+                                                                                          (Value("percentage") = "row") Or (Value("percentage") = "total")
+    End Select
+End Property
+
+Private Property Get hasTotal() As Boolean
+    Select Case TableType
+
+    Case TypeGlobalSummary
+        hasTotal = False
+    Case TypeUnivariate
+        hasTotal = True
+    Case TypeBivariate
+        hasTotal = True
+    Case TypeTimeSeries
+        hasTotal = (Value("total") = "yes")
+    Case TypeSpatial
+        hasTotal = (Value("total") <> "no")
+    End Select
+End Property
+
+Private Property Get HasMissing() As Boolean
+    Select Case TableType
+
+    Case TypeGlobalSummary
+        HasMissing = False
+    Case TypeUnivariate
+        HasMissing = Value("missing") = "yes"
+    Case TypeBivariate
+        HasMissing = (Value("missing")) = "row" Or _
+                                          (Value("missing") = "column") Or _
+                                          (Value("missing") = "all")
+    Case TypeTimeSeries
+        HasMissing = (Value("missing") = "yes")
+    Case TypeSpatial
+        HasMissing = (Value("missing")) = "row" Or _
+                                          (Value("missing") = "column") Or _
+                                          (Value("missing") = "all")
+    End Select
+
+End Property
+
+
+Private Property Get Dictionary() As ILLdictionary
+    Dim lData As ILinelistSpecs
+    Set lData = LinelistSpecifications()
+    Set Dictionary = lData.Dictionary()
 End Property
 
 Private Function ColumnExists(ByVal colName As String) As Boolean
-  Dim hRng As Range
-  Set hRng = HeaderRange
-  ColumnExists = (Not hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False) Is Nothing)
+    Dim hRng As Range
+    Set hRng = HeaderRange
+    ColumnExists = (Not hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False) Is Nothing)
 End Function
 
 Private Function ColumnIndex(ByVal colName As String) As Long
-  Dim hRng As Range
-  Set hRng = HeaderRange
-  If ColumnExists(colName) Then
-    ColumnIndex = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False).Column - hRng.Column + 1
-  Else
-    ColumnIndex = -1
-  End If
+    Dim hRng As Range
+    Set hRng = HeaderRange
+    If ColumnExists(colName) Then
+        ColumnIndex = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False).Column - hRng.Column + 1
+    Else
+        ColumnIndex = -1
+    End If
 End Function
 
 Private Function Value(ByVal colName As String) As String
-  Dim retVal As String
-  Dim valIndex As Long
-  Dim tRng As Range
+    Dim retVal As String
+    Dim valIndex As Long
+    Dim tRng As Range
 
-  Set tRng = TableRange
-  retVal = vbNullString
+    Set tRng = TableRange
+    retVal = vbNullString
 
-  If ColumnExists(colName) Then
-    valIndex = ColumnIndex(colName)
-    retVal = tRng.Cells(1, valIndex).Value
-  End If
+    If ColumnExists(colName) Then
+        valIndex = ColumnIndex(colName)
+        retVal = tRng.Cells(1, valIndex).Value
+    End If
 
-  Value = retVal
+    Value = retVal
 End Function
 
-
 Private Property Get Data(ByVal rowOrCol As String) As BetterArray
-  Dim varsCat As BetterArray
-  Dim nameVar As String
-  Dim vars As ILLVariables
-  Dim lData As ILinelistSpecs
+    Dim varsCat As BetterArray
+    Dim nameVar As String
+    Dim vars As ILLVariables
+    Dim lData As ILinelistSpecs
 
-  Set lData = LinelistSpecifications()
-  Set vars = LLVariables.Create(lData.Dictionary)
-  Set varsCat = New BetterArray
-  nameVar = Value(rowOrCol)
-  If vars.Contains(nameVar) Then
-    Set varsCat = lData.Categories(nameVar)
-  End If
-  Set Data = varsCat.Clone()
+    Set lData = LinelistSpecifications()
+    Set vars = LLVariables.Create(lData.Dictionary)
+    Set varsCat = New BetterArray
+    nameVar = Value(rowOrCol)
+    If vars.Contains(nameVar) Then
+        Set varsCat = lData.Categories(nameVar)
+    End If
+    Set Data = varsCat.Clone()
+End Property
+
+Private Property Get Previous() As ITablesSpecs
+    Dim lData As ILinelistSpecs
+    Dim hRng As Range
+    Dim tRng As Range
+    Dim actRng As Range                          'Actual range
+    Dim taType As AnalysisTablesType
+    Dim endCol As Long
+    
+    
+    If isNewSection() Then ThrowErrorUnableInstanciate "Your table is on a new section, I can't return the previous table"
+    
+    taType = TableType()
+    Set hRng = HeaderRange()
+    Set actRng = TableRange()
+    Set lData = LinelistSpecifications()
+    Set tRng = actRng.Offset(-1)
+    
+    Set Previous = Create(hRng, tRng, lData)
+
 End Property
 
 Private Property Get isNewSection() As Boolean
-  Dim sectIndex As Long
-  Dim actualSection As String
-  Dim previousSection As String
-  Dim oldSec As Boolean
-  Dim tRng As Range
-  Dim hRng As Range
-  Dim prevCell As Range
+    Dim sectIndex As Long
+    Dim actualSection As String
+    Dim previousSection As String
+    Dim oldSec As Boolean
+    Dim tRng As Range
+    Dim hRng As Range
+    Dim prevCell As Range
 
-  Set tRng = TableRange()
-  Set hRng = HeaderRange()
-  oldSec = False
+    Set tRng = TableRange()
+    Set hRng = HeaderRange()
+    oldSec = False
 
-  If ColumnExists("section") Then
-    sectIndex = ColumnIndex("section")
-    actualSection = Value("section")
-    Set prevCell = tRng.Cells(0, sectIndex) '0 for previous line
-    previousSection = prevCell.Value
-    oldSec = (actualSection = previousSection) And (prevCell.Row <> hRng.Row)
-  End If
+    If ColumnExists("section") Then
+        sectIndex = ColumnIndex("section")
+        actualSection = Value("section")
+        Set prevCell = tRng.Cells(0, sectIndex)  '0 for previous line (we can also offset)
+        previousSection = prevCell.Value
+        oldSec = (actualSection = previousSection) And (prevCell.row <> hRng.row)
+    End If
 
-  isNewSection = (Not oldSec)
+    isNewSection = (Not oldSec) And (TableType <> TypeGlobalSummary)
 End Property
 
 'Errors
 'Errors ---------------------------------------------------------------------------------
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
-  Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
+    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
+End Sub
+
+Private Sub ThrowError(ByVal errorMessage As String)
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error: " & errorMessage
 End Sub
 
 'Interface
 Public Property Get ITablesSpecs_TableType() As AnalysisTablesType
-  ITablesSpecs_TableType = TableType()
+    ITablesSpecs_TableType = TableType()
 End Property
 
 Public Property Get ITablesSpecs_RowCategories() As BetterArray
-  Set ITablesSpecs_RowCategories = Data("row")
+    Set ITablesSpecs_RowCategories = Data("row")
 End Property
 
 Public Property Get ITablesSpecs_ColumnCategories() As BetterArray
-  Set ITablesSpecs_ColumnCategories = Data("column")
+    Set ITablesSpecs_ColumnCategories = Data("column")
+End Property
+
+Public Property Get ITablesSpecs_Dictionary() As ILLdictionary
+    Set ITablesSpecs_Dictionary = Dictionary()
+End Property
+
+Public Property Get ITablesSpecs_TableId() As String
+    ITablesSpecs_TableId = TableId()
 End Property
 
 Public Property Get ITablesSpecs_isNewSection() As Boolean
-  ITablesSpecs_isNewSection = isNewSection
+    ITablesSpecs_isNewSection = isNewSection
 End Property
 
 Public Function ITablesSpecs_Value(ByVal colName As String) As String
-  ITablesSpecs_Value = Value(colName)
+    ITablesSpecs_Value = Value(colName)
 End Function
+
+Public Property Get ITablesSpecs_HasTotal() As Boolean
+    ITablesSpecs_HasTotal = hasTotal
+End Property
+
+Public Property Get ITablesSpecs_HasPercentage() As Boolean
+    ITablesSpecs_HasPercentage = HasPercent
+End Property
+
+Public Property Get ITablesSpecs_HasMissing() As Boolean
+    ITablesSpecs_HasMissing = HasMissing
+End Property
+
+Public Property Get ITablesSpecs_Previous() As ITablesSpecs
+    Set ITablesSpecs_Previous = Previous
+End Property
+
+
