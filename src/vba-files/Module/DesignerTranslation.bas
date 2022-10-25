@@ -191,8 +191,8 @@ Sub ImportLang()
     Dim dest As Range
 
     With SheetDesTranslation
-        .Range(.Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").Column), _
-               .Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").End(xlToRight).Column)).ClearContents
+        .Range(.Cells(.Range("T_Lst_Lang").row, .Range("T_Lst_Lang").Column), _
+               .Cells(.Range("T_Lst_Lang").row, .Range("T_Lst_Lang").End(xlToRight).Column)).ClearContents
     End With
 
     SheetSetTranslation.Cells.Clear
@@ -253,7 +253,7 @@ Function GetTranslatedValue(ByVal sText As String) As String
     End With
 
     On Error Resume Next
-    iRow = rngTrans.Find(What:=Application.WorksheetFunction.Trim(sText), LookAt:=xlWhole).Row
+    iRow = rngTrans.Find(What:=Application.WorksheetFunction.Trim(sText), LookAt:=xlWhole).row
     GetTranslatedValue = SheetSetTranslation.Cells(iRow, iColLang).Value
     On Error GoTo 0
 
@@ -351,7 +351,7 @@ Sub TranslateDictionary()
     Set DictHeaders = New BetterArray
     Set DictHeaders = GetHeaders(DesignerWorkbook, C_sParamSheetDict, 1)
 
-    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetDict).Cells(Rows.Count, 1).End(xlUp).Row
+    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetDict).Cells(Rows.Count, 1).End(xlUp).row
 
     'Translate different columns
 
@@ -390,7 +390,7 @@ Sub TranslateChoices()
     Dim iCol As Integer
     Dim iLastRow As Long
 
-    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetChoices).Cells(Rows.Count, 1).End(xlUp).Row
+    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetChoices).Cells(Rows.Count, 1).End(xlUp).row
 
     Set ChoiceHeaders = New BetterArray
     Set ChoiceHeaders = GetHeaders(DesignerWorkbook, C_sParamSheetChoices, 1)
@@ -410,7 +410,7 @@ End Sub
 Sub TranslateExports()
     Dim iLastRow As Long
 
-    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetExport).Cells(Rows.Count, 1).End(xlUp).Row
+    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetExport).Cells(Rows.Count, 1).End(xlUp).row
 
     'Second column is for label button (I hope)
     Call TranslateColumn(2, C_sParamSheetExport, iLastRow)
@@ -434,7 +434,7 @@ Sub TranslateAnalysis()
     'GLOBAL SUMMARY ============================================================
 
     With Wksh.ListObjects(C_sTabGS)
-        iStartLine = .Range.Row
+        iStartLine = .Range.row
         iLast = .DataBodyRange.Rows.Count + iStartLine
         iStartColumn = .Range.Column
         Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine, iStartColumn)
@@ -453,7 +453,7 @@ Sub TranslateAnalysis()
 
     'UNIVARIATE ANALYSIS =======================================================
     With Wksh.ListObjects(C_sTabUA)
-        iStartLine = .Range.Row
+        iStartLine = .Range.row
         iLast = .DataBodyRange.Rows.Count + iStartLine
         iStartColumn = .Range.Column
         Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine, iStartColumn)
@@ -476,7 +476,7 @@ Sub TranslateAnalysis()
 
     'BIVARIATE ANALYSIS ========================================================
     With Wksh.ListObjects(C_sTabBA)
-        iStartLine = .Range.Row
+        iStartLine = .Range.row
         iLast = .DataBodyRange.Rows.Count + iStartLine
         iStartColumn = .Range.Column
         Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine, iStartColumn)

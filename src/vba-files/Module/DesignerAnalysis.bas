@@ -257,7 +257,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
         Do While iCounter <= UAData.Length
 
             iSectionRow = .Cells(.Rows.Count, _
-                                 C_eStartColumnAnalysis).End(xlUp).Row
+                                 C_eStartColumnAnalysis).End(xlUp).row
 
             'values in the table of univariate analysis
 
@@ -298,7 +298,7 @@ Public Sub AddUnivariateAnalysis(Wkb As Workbook, UAData As BetterArray, _
                     'Build the GoTo column in the list auto sheet
 
                     With Wkb.Worksheets(C_sSheetChoiceAuto)
-                        iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
+                        iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).row
                         .Cells(iRow + 1, iGoToCol).Value = TranslateLLMsg("MSG_SelectSection") & _
                                                                                                ": " & sActualSection
                     End With
@@ -443,7 +443,7 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
 
         Do While iCounter <= BAData.Length
 
-            iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis).End(xlUp).Row
+            iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis).End(xlUp).row
 
             'values in the table of univariate analysis
 
@@ -491,7 +491,7 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                     'Build the GoTo column in the list auto sheet
 
                     With Wkb.Worksheets(C_sSheetChoiceAuto)
-                        iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
+                        iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).row
                         .Cells(iRow + 1, iGoToCol).Value = TranslateLLMsg("MSG_SelectSection") & _
                                                                                                ": " & sActualSection
                     End With
@@ -507,13 +507,13 @@ Public Sub AddBivariateAnalysis(Wkb As Workbook, BAData As BetterArray, _
                 iEndCol = C_eStartColumnAnalysis + ValidationListColumns.Length - 1
 
                 CreateBATable Wksh, iRow:=iSectionRow + 3, ColumnsData:=ValidationListColumns, _
-                              RowsData:=ValidationListRows, iCol:=C_eStartColumnAnalysis, _
+                              rowsData:=ValidationListRows, iCol:=C_eStartColumnAnalysis, _
                               sMainLabRow:=sActualMainLabRow, sMainLabCol:=sActualMainLabColumn, _
                               sSummaryLabel:=sActualSummaryLabel, _
                               sPercent:=sActualPercentage, sMiss:=sActualMissing
 
                 iEndCol = .Cells(iSectionRow + 5, .Columns.Count).End(xlToLeft).Column
-                iEndRow = .Cells(.Rows.Count, C_eStartColumnAnalysis).End(xlUp).Row
+                iEndRow = .Cells(.Rows.Count, C_eStartColumnAnalysis).End(xlUp).row
 
                 'Add Formulas in the interior of the table
                 AddInnerFormula Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sActualSummaryFunction, _
@@ -637,7 +637,7 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
                         .Cells(iSectionRow + 3, C_eStartColumnAnalysis + 12).formula = "= MAX(" & sMaximumFormula & ")"
                     End If
 
-                    iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis + 2).End(xlUp).Row + 3
+                    iSectionRow = .Cells(.Rows.Count, C_eStartColumnAnalysis + 2).End(xlUp).row + 3
                     iStartCol = C_eStartColumnAnalysis + 2
 
                     'Create a new section, and new minimum formula
@@ -649,7 +649,7 @@ Sub AddTimeSeriesAnalysis(Wkb As Workbook, TAData As BetterArray, _
 
                     'Build the GoTo column in the list auto sheet
                     With Wkb.Worksheets(C_sSheetChoiceAuto)
-                        iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
+                        iRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).row
                         .Cells(iRow + 1, iGoToCol).Value = TranslateLLMsg("MSG_SelectSection") & ": " & sActualSection
                     End With
 

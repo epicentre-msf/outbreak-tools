@@ -13,7 +13,7 @@ Sub ClicCmdGeoApp()
 
     iNumCol = ActiveCell.Column
 
-    If ActiveCell.Row > C_eStartLinesLLData + 1 Then
+    If ActiveCell.row > C_eStartLinesLLData + 1 Then
 
         sType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).Value
         Select Case sType
@@ -255,7 +255,7 @@ Sub EventValueChangeLinelist(oRange As Range)
     iNumCol = oRange.Column
     sControlType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).Value
 
-    If oRange.Row > C_eStartLinesLLData + 1 Then
+    If oRange.row > C_eStartLinesLLData + 1 Then
 
         Select Case sControlType
 
@@ -329,7 +329,7 @@ Sub EventValueChangeLinelist(oRange As Range)
 
     End If
 
-    If oRange.Row = C_eStartLinesLLData And sControlType = C_sDictControlCustom Then
+    If oRange.row = C_eStartLinesLLData And sControlType = C_sDictControlCustom Then
         'The name of custom variables has been updated, update the dictionary
         sCustomVarName = ActiveSheet.Cells(C_eStartLinesLLData + 1, iNumCol).Value
         sNote = GetDictColumnValue(sCustomVarName, C_sDictHeaderSubLab)
@@ -341,7 +341,7 @@ Sub EventValueChangeLinelist(oRange As Range)
     End If
 
 
-    If oRange.Row > C_eStartLinesLLData + 1 And _
+    If oRange.row > C_eStartLinesLLData + 1 And _
        ActiveSheet.Cells(C_eStartLinesLLMainSec - 2, iNumCol).Value = C_sDictControlChoiceAuto & "_origin" And _
        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value <> "list_auto_change_yes" Then
         ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value = "list_auto_change_yes"
@@ -442,7 +442,7 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
                         iChoiceCol = choiceLo.Range.Column
                         If Not choiceLo.DataBodyRange Is Nothing Then choiceLo.DataBodyRange.Delete
                         arrTable.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
-                        iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
+                        iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).row
                         choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
                         'Sort in descending order
                         Set rng = choiceLo.ListColumns(1).Range
