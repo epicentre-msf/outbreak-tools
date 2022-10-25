@@ -1,4 +1,4 @@
-Attribute VB_Name = "TestAnalysisTable"
+Attribute VB_Name = "TestCrossTable"
 
 Option Explicit
 Option Private Module

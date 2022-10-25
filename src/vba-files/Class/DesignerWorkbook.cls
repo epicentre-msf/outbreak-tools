@@ -25,11 +25,19 @@ Private Sub Workbook_Open()
     SheetLLTranslation.Range(C_sRngLLLanguage).Value = SheetMain.Range(C_sRngLLFormLang).Value 'check Language of linelist's forms
 
     With SheetDesTranslation
-        .Range(.Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").Column), _
-               .Cells(.Range("T_Lst_Lang").Row, .Range("T_Lst_Lang").End(xlToRight).Column)).ClearContents
+        .Range(.Cells(.Range("T_Lst_Lang").row, .Range("T_Lst_Lang").Column), _
+               .Cells(.Range("T_Lst_Lang").row, .Range("T_Lst_Lang").End(xlToRight).Column)).ClearContents
     End With
 
 End Sub
+
+
+
+
+
+
+
+
 
 
 

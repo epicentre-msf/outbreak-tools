@@ -53,7 +53,7 @@ Private Property Get CaseWhenTable() As BetterArray
   Dim parsingTable As BetterArray
   Dim formula As String
   Dim counter As Long
-  Dim previous As Long
+  Dim Previous As Long
   Dim NbOpened As Long
   Dim NbClosed As Long
   Dim OpenedQuotes As Boolean
@@ -68,7 +68,7 @@ Private Property Get CaseWhenTable() As BetterArray
   parsingTable.LowerBound = 1
 
   If Valid() Then
-    previous = 1
+    Previous = 1
     NbOpened = 0
     NbClosed = 0
     OpenedQuotes = False
@@ -84,12 +84,12 @@ Private Property Get CaseWhenTable() As BetterArray
       OpenedParenthesis = (NbOpened <> NbClosed)
       'Opened parenthesis will allow excel formulas within a  case_when
       If Not OpenedQuotes And Not OpenedParenthesis And Mid(formula, counter, 1) = "," Then
-          parsingTable.Push Application.WorksheetFunction.Trim(Mid(formula, previous, counter - previous))
-          previous = counter + 1
+          parsingTable.Push Application.WorksheetFunction.Trim(Mid(formula, Previous, counter - Previous))
+          Previous = counter + 1
       End If
     Next
     'push the last chunk
-    parsingTable.Push Application.WorksheetFunction.Trim(Mid(formula, previous, counter - previous))
+    parsingTable.Push Application.WorksheetFunction.Trim(Mid(formula, Previous, counter - Previous))
   End If
 
   Set this.parsingTable = parsingTable.Clone()

@@ -174,7 +174,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
 
             'Now writing the data of varnames to the dictionary
             With Wkb.Worksheets(C_sParamSheetDict)
-                iPastingRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+                iPastingRow = .Cells(.Rows.Count, 1).End(xlUp).row
                 DictVarName.ToExcelRange Destination:=.Cells(iPastingRow + 1, 1)
                 DictVarName.Clear
             End With
@@ -197,7 +197,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
 
             'Now writing the data of varnames to the dictionary
             With Wkb.Worksheets(C_sParamSheetDict)
-                iPastingRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+                iPastingRow = .Cells(.Rows.Count, 1).End(xlUp).row
                 DictVarName.ToExcelRange Destination:=.Cells(iPastingRow + 1, 1)
                 DictVarName.Clear
             End With
@@ -215,7 +215,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
     With Wkb.Worksheets(C_sParamSheetDict)
         .Cells(1, 1).Value = C_sDictHeaderVarName
         'Update values of the Sheet Names with correct spelling
-        For i = 2 To .Cells(Rows.Count, 1).End(xlUp).Row
+        For i = 2 To .Cells(Rows.Count, 1).End(xlUp).row
             iSheetNameColumn = DictHeaders.IndexOf(C_sDictHeaderSheetName)
             .Cells(i, iSheetNameColumn).Value = EnsureGoodSheetName(.Cells(i, iSheetNameColumn).Value)
         Next

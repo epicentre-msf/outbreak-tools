@@ -10,15 +10,36 @@ End Sub
 
 
 Sub test()
-    Dim ana As ILLdictionary
-    Dim anash As Worksheet
     Dim trad As ITranslation
+    Dim dict As ILLdictionary
+    Dim choi As ILLchoice
+    Dim headRng As Range
+    Dim rowRng As Range
+    Dim Lo As ListObject
+    Dim lData As ILinelistSpecs
+    Dim table As ICrossTable
+    Dim specs As ITablesSpecs
     
-    Set anash = ThisWorkbook.Worksheets("TestDictionary")
-    Set ana = LLdictionary.Create(anash, 1, 1)
-    Set trad = Translation.Create(ThisWorkbook.Worksheets("Translations").ListObjects(1), "Français")
+
+    Set dict = LLdictionary.Create(ThisWorkbook.Worksheets("TestDictionary"), 1, 1)
+    Set choi = LLchoice.Create(ThisWorkbook.Worksheets("TestChoices"), 1, 1)
+    Set lData = LinelistSpecs.Create(dict, choi)
+    Set Lo = ThisWorkbook.Worksheets("Analysis").ListObjects(3)
+    Set headRng = Lo.HeaderRowRange
+    Set rowRng = Lo.ListRows(1).Range
+    Set trad = Translation.Create(ThisWorkbook.Worksheets("LinelistTranslation").ListObjects("T_TradLLMsg"), "FRA")
     
-    ana.Translate trad
+    Set specs = TablesSpecs.Create(headRng, rowRng, lData)
+
+    Set table = CrossTable.Create(specs, ThisWorkbook.Worksheets("TestAnalysis"), trad)
     
+    table.AddHeader
+    table.AddRows
+    table.AddColumns
+    table.NameRanges
+    
+    
+   
+    'Debug.Print table.RowsCategoriesRange.Address
     
 End Sub
