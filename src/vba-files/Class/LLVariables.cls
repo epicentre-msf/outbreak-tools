@@ -117,10 +117,10 @@ Private Function Value(ByVal colName As String, ByVal varName As String) As Stri
 End Function
 
 'Index of a column or a Row of a variable in a worksheet
-Private Function Index(ByVal varName As String) As Long
+Private Function index(ByVal varName As String) As Long
       Dim sheetIndex As String
       sheetIndex = Value(colName:=INDEXHEADER, varName:=varName)
-      Index = IIf(sheetIndex = vbNullString, -1, CLng(sheetIndex))
+      index = IIf(sheetIndex = vbNullString, -1, CLng(sheetIndex))
 End Function
 
 'Errors ----------------------------------------------------------------------
@@ -148,7 +148,7 @@ End Function
 
 'column or row index in the sheet of one variable
 Public Function ILLVariables_Index(ByVal varName As String) As Long
-  ILLVariables_Index = Index(varName)
+  ILLVariables_Index = index(varName)
 End Function
 
 Public Function ILLVariables_Contains(ByVal varName As String) As Boolean

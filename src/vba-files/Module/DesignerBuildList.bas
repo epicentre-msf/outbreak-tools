@@ -553,8 +553,8 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
             'Update the previous sub sections and
 
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Value = sActualMainLab
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Interior.Color = vbWhite
-            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Font.Color = Helpers.GetColor("BlueButton")
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Interior.color = vbWhite
+            .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2).Font.color = Helpers.GetColor("BlueButton")
             WriteBorderLines .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 2), iWeight:=xlHairline, sColor:="DarkBlue"
             .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData + 3).Name = sActualVarName
 
@@ -798,7 +798,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
             'Adding the control
             .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).Value = sActualControl
-            .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).Font.Color = vbWhite
+            .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).Font.color = vbWhite
             .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).FormulaHidden = True
             .Cells(C_eStartLinesLLMainSec - 1, iCounterSheetLLCol).Locked = True
 
@@ -974,7 +974,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
             Case C_sDictControlHf
 
-                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = GetColor("Orange")
+                .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.color = GetColor("Orange")
 
             Case C_sDictControlForm, C_sDictControlCaseWhen 'Formulas, are reported to the formula function
 
@@ -991,8 +991,8 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                     If (sFormula <> vbNullString) Then
                         .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).NumberFormat = "General"
                         .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).formula = sFormula
-                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Font.Color = GetColor("Grey50")
-                        .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.Color = GetColor("GreyFormula")
+                        .Cells(C_eStartLinesLLData + 2, iCounterSheetLLCol).Font.color = GetColor("Grey50")
+                        .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Interior.color = GetColor("GreyFormula")
                         bLockData = True         'Lock data for formulas
                     Else
                         'MsgBox "Invalid formula will be ignored : " & sActualFormula & "/" & sActualVarName  'MSG_InvalidFormula

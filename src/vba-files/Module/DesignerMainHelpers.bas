@@ -7,11 +7,11 @@ Option Private Module
 'Set All the Input ranges to white
 Sub SetInputRangesToWhite()
 
-    SheetMain.Range(C_sRngPathGeo).Interior.Color = vbWhite
-    SheetMain.Range(C_sRngPathDic).Interior.Color = vbWhite
-    SheetMain.Range(C_sRngLLName).Interior.Color = vbWhite
-    SheetMain.Range(C_sRngLLDir).Interior.Color = vbWhite
-    SheetMain.Range(C_sRngEdition).Interior.Color = vbWhite
+    SheetMain.Range(C_sRngPathGeo).Interior.color = vbWhite
+    SheetMain.Range(C_sRngPathDic).Interior.color = vbWhite
+    SheetMain.Range(C_sRngLLName).Interior.color = vbWhite
+    SheetMain.Range(C_sRngLLDir).Interior.color = vbWhite
+    SheetMain.Range(C_sRngEdition).Interior.color = vbWhite
 
 End Sub
 
@@ -28,33 +28,33 @@ Public Function ControlForGenerate() As Boolean
     'Be sure the dictionary path is not empty
     If SheetMain.Range(C_sRngPathDic).Value = "" Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_PathDic")
-        SheetMain.Range(C_sRngPathDic).Interior.Color = GetColor("RedEpi")
+        SheetMain.Range(C_sRngPathDic).Interior.color = GetColor("RedEpi")
         Exit Function
     End If
 
     'Now check if the file exists
     If Dir(SheetMain.Range(C_sRngPathDic).Value) = "" Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_PathDic")
-        SheetMain.Range(C_sRngPathDic).Interior.Color = GetColor("RedEpi")
+        SheetMain.Range(C_sRngPathDic).Interior.color = GetColor("RedEpi")
         Exit Function
     End If
 
     'Be sure the dictionnary is not opened
     If Helpers.IsWkbOpened(Dir(SheetMain.Range(C_sRngPathDic).Value)) Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_CloseDic")
-        SheetMain.Range(C_sRngPathDic).Interior.Color = GetColor("RedEpi")
+        SheetMain.Range(C_sRngPathDic).Interior.color = GetColor("RedEpi")
         MsgBox TranslateMsg("MSG_AlreadyOpen"), vbExclamation + vbOKOnly, TranslateMsg("MSG_Title_Dictionnary")
         Exit Function
     End If
 
-    SheetMain.Range(C_sRngPathDic).Interior.Color = GetColor("White") 'if path is OK
+    SheetMain.Range(C_sRngPathDic).Interior.color = GetColor("White") 'if path is OK
 
     'Checking coherence of the GEO  ------------------------------------------------
 
     'Be sure the geo path is not empty
     If SheetMain.Range(C_sRngPathGeo).Value = "" Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_PathGeo")
-        SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("RedEpi")
+        SheetMain.Range(C_sRngPathGeo).Interior.color = GetColor("RedEpi")
         MsgBox TranslateMsg("MSG_PathGeo"), vbExclamation + vbOKOnly, TranslateMsg("MSG_TitleGeo")
         Exit Function
     End If
@@ -62,7 +62,7 @@ Public Function ControlForGenerate() As Boolean
     'Now check if the file exists
     If Dir(SheetMain.Range(C_sRngPathGeo).Value) = "" Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_PathGeo")
-        SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("RedEpi")
+        SheetMain.Range(C_sRngPathGeo).Interior.color = GetColor("RedEpi")
         MsgBox TranslateMsg("MSG_PathGeo"), vbExclamation + vbOKOnly, TranslateMsg("MSG_TitleGeo")
         Exit Function
     End If
@@ -75,20 +75,20 @@ Public Function ControlForGenerate() As Boolean
     'Be sure the geo has been loaded correctly ie the geo data is not empty
     If bGeo Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_LoadGeo")
-        SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("RedEpi")
+        SheetMain.Range(C_sRngPathGeo).Interior.color = GetColor("RedEpi")
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_PathGeo")
         MsgBox TranslateMsg("MSG_GeoNotLoaded"), vbExclamation + vbOKOnly, TranslateMsg("MSG_TitleGeo")
         Exit Function
     End If
 
-    SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White") 'if path is OK
+    SheetMain.Range(C_sRngPathGeo).Interior.color = GetColor("White") 'if path is OK
 
     'Checking coherence of the Linelist File ------------------------------------------------------
 
     'Be sure the linelist directory is not empty
     If SheetMain.Range(C_sRngLLDir).Value = "" Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_PathLL")
-        SheetMain.Range(C_sRngLLDir).Interior.Color = GetColor("RedEpi")
+        SheetMain.Range(C_sRngLLDir).Interior.color = GetColor("RedEpi")
         MsgBox TranslateMsg("MSG_PathLL"), vbExclamation + vbOKOnly, TranslateMsg("MSG_TitleLL")
         Exit Function
     End If
@@ -96,7 +96,7 @@ Public Function ControlForGenerate() As Boolean
     'Be sure the dictionnary is not opened
     If Helpers.IsWkbOpened(Dir(SheetMain.Range(C_sRngLLDir).Value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).Value & ".xlsb")) Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_CloseOutPut")
-        SheetMain.Range(C_sRngLLDir).Interior.Color = GetColor("RedEpi")
+        SheetMain.Range(C_sRngLLDir).Interior.color = GetColor("RedEpi")
         MsgBox TranslateMsg("MSG_CloseOutPut"), vbExclamation + vbOKOnly, TranslateMsg("MSG_Title_OutPut")
         Exit Function
     End If
@@ -105,26 +105,26 @@ Public Function ControlForGenerate() As Boolean
     'Seems like this step is not working on Mac
     If Dir(SheetMain.Range(C_sRngLLDir).Value & "*", vbDirectory) = vbNullString Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_PathLL")
-        SheetMain.Range(C_sRngLLDir).Interior.Color = GetColor("RedEpi")
+        SheetMain.Range(C_sRngLLDir).Interior.color = GetColor("RedEpi")
         MsgBox TranslateMsg("MSG_PathLL"), vbExclamation + vbOKOnly, TranslateMsg("MSG_TitleLL")
         Exit Function
     End If
 
-    SheetMain.Range(C_sRngLLDir).Interior.Color = GetColor("White") 'if path is OK
+    SheetMain.Range(C_sRngLLDir).Interior.color = GetColor("White") 'if path is OK
 
     'Checking coherence of the linelist name ------------------------------------------------------
 
     'be sure the linelist name is not empty
     If SheetMain.Range(C_sRngLLName) = "" Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_LLName")
-        SheetMain.Range(C_sRngLLName).Interior.Color = GetColor("RedEpi")
+        SheetMain.Range(C_sRngLLName).Interior.color = GetColor("RedEpi")
         Exit Function
     End If
 
     'Be sure the linelist workbook is not already opened
     If Helpers.IsWkbOpened(SheetMain.Range(C_sRngLLName).Value & ".xlsb") Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_CloseLL")
-        SheetMain.Range(C_sRngLLName).Interior.Color = GetColor("RedEpi")
+        SheetMain.Range(C_sRngLLName).Interior.color = GetColor("RedEpi")
         Exit Function
     End If
 

@@ -36,7 +36,7 @@ Public Function Create(ByVal anaWksh As Worksheet) As ILLAnalysis
 
    If anaWksh Is Nothing Then ThrowErrorUnableInstanciate "Worksheet object not defined"
    With anaWksh.Cells(1, 1)
-    If .Font.Color <> vbBlue Or .Value <> "analysis" Then ThrowErrorUnableInstanciate "Not a valid analysis worksheet"
+    If .Font.color <> vbBlue Or .Value <> "analysis" Then ThrowErrorUnableInstanciate "Not a valid analysis worksheet"
    End With
 
   With New LLAnalysis
@@ -68,16 +68,16 @@ Private Function ColumnExists(ByVal Lo As ListObject, ByVal colName As String) A
 End Function
 
 Private Function ColumnIndex(ByVal Lo As ListObject, ByVal colName) As Long
-  Dim Index As Long
+  Dim index As Long
   Dim hRng As Range
 
   Set hRng = Lo.HeaderRowRange
   If ColumnExists(Lo, colName) Then
-    Index = hRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=False).Column - hRng.Column + 1
+    index = hRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=False).Column - hRng.Column + 1
   Else
-    Index = -1
+    index = -1
   End If
-  ColumnIndex = Index
+  ColumnIndex = index
 End Function
 
 Private Function DataRange(ByVal Lo As ListObject, ByVal colName As String) As Range
@@ -114,7 +114,7 @@ Private Sub Import(ByVal impWksh As Worksheet)
 
     actRng.Cells(-1, 1).Value = impRng.Cells(-1, 1).Value
     actRng.Cells(-1, 1).Font.Size = impRng.Cells(-1, 1).Font.Size
-    actRng.Cells(-1, 1).Font.Color = impRng.Cells(-1, 1).Font.Color
+    actRng.Cells(-1, 1).Font.color = impRng.Cells(-1, 1).Font.color
     actRng.Cells(-1, 1).Font.Bold = True
 
     'Define the listobject
@@ -125,7 +125,7 @@ Private Sub Import(ByVal impWksh As Worksheet)
   Next
 
   anash.Cells(1, 1).Value = "analysis"
-  anash.Cells(1, 1).Font.Color = vbBlue
+  anash.Cells(1, 1).Font.color = vbBlue
 
   Exit Sub
 LoFail:

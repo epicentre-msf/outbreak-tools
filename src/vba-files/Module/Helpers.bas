@@ -20,7 +20,7 @@ Public Function LoadFolder() As String
         LoadFolder = SelectFolderOnWindows()
     Else
         'We are on Mac, need to test the version of excel running
-        If val(Application.Version) > 14 Then
+        If Val(Application.Version) > 14 Then
             LoadFolder = SelectFolderOnMac()
         End If
     End If
@@ -34,7 +34,7 @@ Public Function LoadFile(sFilters As String) As String
         LoadFile = SelectFileOnWindows(sFilters)
     Else
         'We are on Mac, need to test the version of excel running
-        If val(Application.Version) > 14 Then
+        If Val(Application.Version) > 14 Then
             LoadFile = SelectFileOnMac(sFilters)
         End If
     End If
@@ -247,9 +247,9 @@ Public Sub WriteBorderLines(oRange As Range, Optional iWeight As Integer = xlThi
     For i = 7 To 10                              'xltop, left, right and bottom
         With oRange.Borders(i)
             .LineStyle = xlContinuous
-            .Color = Helpers.GetColor(sColor)
+            .color = Helpers.GetColor(sColor)
             .TintAndShade = 0.4
-            .Weight = iWeight
+            .weight = iWeight
         End With
     Next
 End Sub
@@ -266,9 +266,9 @@ Public Sub DrawLines(rng As Range, _
     If At = "All" Then
         With rng
             With .Borders
-                .Weight = iWeight
+                .weight = iWeight
                 .LineStyle = iLine
-                .Color = GetColor(sColor)
+                .color = GetColor(sColor)
                 .TintAndShade = 0.4
             End With
         End With
@@ -289,9 +289,9 @@ Public Sub DrawLines(rng As Range, _
 
         With rng
             With .Borders(BorderPos)
-                .Weight = iWeight
+                .weight = iWeight
                 .LineStyle = iLine
-                .Color = GetColor(sColor)
+                .color = GetColor(sColor)
                 .TintAndShade = 0.4
             End With
         End With
@@ -312,8 +312,8 @@ Public Sub FormatARange(rng As Range, _
 
     With rng
 
-        If sInteriorColor <> vbNullString Then .Interior.Color = GetColor(sInteriorColor)
-        If sFontColor <> vbNullString Then .Font.Color = GetColor(sFontColor)
+        If sInteriorColor <> vbNullString Then .Interior.color = GetColor(sInteriorColor)
+        If sFontColor <> vbNullString Then .Font.color = GetColor(sFontColor)
 
         .Font.Bold = isBold
         .Font.Size = FontSize

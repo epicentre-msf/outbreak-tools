@@ -220,7 +220,7 @@ Sub AddSubLab(Wksh As Worksheet, iSheetStartLine As Integer, _
         .Cells(iSheetStartLine, iCol).Characters(start:=Len(sMainLab) + 1, _
             Length:=Len(sSubLab) + 1).Font.Size = C_iLLSheetFontSize - 2
         .Cells(iSheetStartLine, iCol).Characters(start:=Len(sMainLab) + 1, _
-            Length:=Len(sSubLab) + 1).Font.Color = Helpers.GetColor(sSubLabColor)
+            Length:=Len(sSubLab) + 1).Font.color = Helpers.GetColor(sSubLabColor)
     End With
 
 End Sub
@@ -369,7 +369,7 @@ Sub AddGeo(Wkb As Workbook, dictData As BetterArray, DictHeaders As BetterArray,
            iSheetSubSecStartLine As Integer, iDictLine As Integer, sVarName As String, sMessage As String, iNbshifted As Integer)
 
     With Wkb.Worksheets(sSheetName)
-        .Cells(iSheetStartLine, iCol).Interior.Color = GetColor("Orange")
+        .Cells(iSheetStartLine, iCol).Interior.color = GetColor("Orange")
         'update the columns only for the geo
         Call Add4GeoCol(Wkb, dictData, DictHeaders, sSheetName, sVarName, iSheetStartLine, _
                         iCol, sMessage, _
@@ -456,7 +456,7 @@ Sub Add4GeoCol(Wkb As Workbook, dictData As BetterArray, DictHeaders As BetterAr
         sLab = SheetGeo.ListObjects(C_sTabadm1).HeaderRowRange.Item(1).Value
         .Cells(iStartLine, iCol).Value = AddSpaceToHeaders(Wkb, sLab, sSheetName, iStartLine)
         .Cells(iStartLine, iCol).Name = C_sAdmName & "1" & "_" & sVarName
-        .Cells(iStartLine, iCol).Interior.Color = GetColor("Orange")
+        .Cells(iStartLine, iCol).Interior.color = GetColor("Orange")
         .Cells(iStartLine + 1, iCol).Value = C_sAdmName & "1" & "_" & sVarName
 
 
@@ -513,8 +513,8 @@ Sub BuildGotoArea(Wkb As Workbook, sTableName As String, sSheetName As String, i
         .Cells(1, iCol).Name = sTableName & "_" & C_sGotoSection
         .Cells(1, iCol).Font.Size = iFontSize
         .Cells(1, iCol).HorizontalAlignment = xlHAlignCenter
-        .Cells(1, iCol).Interior.Color = Helpers.GetColor("MainSecBlue")
-        .Cells(1, iCol).Font.Color = vbWhite
+        .Cells(1, iCol).Interior.color = Helpers.GetColor("MainSecBlue")
+        .Cells(1, iCol).Font.color = vbWhite
         .Cells(1, iCol).Font.Bold = True
         .Cells(1, iCol).VerticalAlignment = xlVAlignCenter
         .Cells(1, iCol).FormulaHidden = True
@@ -568,14 +568,14 @@ Sub BuildMainSectionVMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As I
 
     With Wksh
         With .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineTo - 1, iColumnFrom))
-            .Interior.Color = Helpers.GetColor("MainSecBlue")
-            .Font.Color = Helpers.GetColor("White")
+            .Interior.color = Helpers.GetColor("MainSecBlue")
+            .Font.color = Helpers.GetColor("White")
             .Font.Bold = True
             .Font.Size = 12
         End With
 
         For Each oCell In .Range(.Cells(iLineFrom, iColumnTo), .Cells(iLineTo - 1, iColumnTo))
-            If oCell.Value = vbNullString Then oCell.Interior.Color = vbWhite
+            If oCell.Value = vbNullString Then oCell.Interior.color = vbWhite
         Next
 
         'Write the borders line
@@ -600,8 +600,8 @@ Sub BuildSubSectionVMerge(Wksh As Worksheet, iColumn As Integer, iLineFrom As In
 
     With Wksh
         With .Range(.Cells(iLineFrom, iColumn), .Cells(iLastLine, iColumn))
-            .Interior.Color = Helpers.GetColor("SubSecBlue")
-            .Font.Color = Helpers.GetColor("BlueButton")
+            .Interior.color = Helpers.GetColor("SubSecBlue")
+            .Font.color = Helpers.GetColor("BlueButton")
             .Font.Bold = True
             .Font.Size = 10
         End With
@@ -624,14 +624,14 @@ Sub BuildMainSectionHMerge(Wksh As Worksheet, iLineFrom As Integer, iLineTo As I
 
     With Wksh
         With .Range(.Cells(iLineFrom, iColumnFrom), .Cells(iLineFrom, iColumnTo - 1))
-            .Interior.Color = Helpers.GetColor(sColorMainSec)
-            .Font.Color = Helpers.GetColor("White")
+            .Interior.color = Helpers.GetColor(sColorMainSec)
+            .Font.color = Helpers.GetColor("White")
             .Font.Bold = True
             .Font.Size = C_iLLMainSecFontSize
         End With
 
         For Each oCell In .Range(.Cells(iLineTo, iColumnFrom), .Cells(iLineTo, iColumnTo - 1))
-            If oCell.Value = vbNullString Then oCell.Interior.Color = vbWhite
+            If oCell.Value = vbNullString Then oCell.Interior.color = vbWhite
         Next
 
         'Write the borders line
@@ -655,8 +655,8 @@ Sub BuildSubSectionHMerge(Wksh As Worksheet, iLine As Integer, iColumnFrom As In
 
     With Wksh
         With .Range(.Cells(iLine, iColumnFrom), .Cells(iLine, iLastCol))
-            .Interior.Color = Helpers.GetColor(sColorSubSec)
-            .Font.Color = Helpers.GetColor(sColorMainSec)
+            .Interior.color = Helpers.GetColor(sColorSubSec)
+            .Font.color = Helpers.GetColor(sColorMainSec)
             .Font.Size = C_iLLSubSecFontSize
         End With
 
@@ -871,7 +871,7 @@ Public Sub UpdateChoiceAutoHeaders(Wkb As Workbook, ChoiceAutoVarData As BetterA
                 iIndex = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.Length + 1).Value
                 .Worksheets(sSheetName).Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).Value = C_sDictControlChoiceAuto & "_origin"
-                .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).Font.Color = vbWhite
+                .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).Font.color = vbWhite
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).FormulaHidden = True
                 .Worksheets(sSheetName).Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True

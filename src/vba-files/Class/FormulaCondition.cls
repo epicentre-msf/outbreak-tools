@@ -22,18 +22,20 @@ Private Type TFormulaCondition
     Variable As BetterArray  'Variables for the formulas
 End Type
 
-
+Private Const CLASSNAME As String = "Formula"
 Private this As TFormulaCondition
 
 'Instanciation
-Public Function Create(ByVal formvar As BetterArray, ByVal formCond As BetterArray) As IFormulaCondition
+Public Function Create(ByVal formVar As BetterArray, ByVal formCond As BetterArray) As IFormulaCondition
 
     'Seems like BetterArry is referencing the Arrays within my object. I want them to be
     'immutable, so I clone those arrays.
+    
+    If formVar.Length <> formCond.Length Then ThrowErrorUnableInstanciate "Condition length: " & formCond.Length & "different from variable length: " & formVar.Length
 
     With New FormulaCondition
         Set .Condition = formCond
-        Set .Variable = formvar
+        Set .Variable = formVar
         Set Create = .Self
     End With
 End Function
@@ -56,8 +58,8 @@ Public Property Get Variable() As BetterArray
     Set Variable = this.Variable.Clone()
 End Property
 
-Public Property Set Variable(ByVal formvar As BetterArray)
-     Set this.Variable = formvar.Clone()
+Public Property Set Variable(ByVal formVar As BetterArray)
+     Set this.Variable = formVar.Clone()
 End Property
 
 Public Property Get VariablesTable(ByVal dict As ILLdictionary) As String
@@ -133,7 +135,8 @@ End Function
 
 
 'Convert the conditions into a string of formulas
-Public Function ConditionString(ByVal tableName As String, ByVal varName As String, Optional Connector As String = "*") As String
+Public Function ConditionString(ByVal tableName As String, ByVal varName As String, _
+                                Optional ByVal Connector As String = "*") As String
 
     'The connector is how we want to link the conditions: * for AND, + for OR
 
@@ -158,6 +161,11 @@ Public Function ConditionString(ByVal tableName As String, ByVal varName As Stri
     ConditionString = "IF(" & ParsedCondition & " , " & tableName & "[" & varName & "]" & ")"
 End Function
 
+'Errors ---------------------------------------------------------------------------------
+Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
+    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
+End Sub
+
 'Implement interfaces
 Public Property Get IFormulaCondition_Variables() As BetterArray
     Set IFormulaCondition_Variables = Variable
@@ -171,7 +179,8 @@ Public Property Get IFormulaCondition_VariablesTable(ByVal dict As ILLdictionary
      IFormulaCondition_VariablesTable = VariablesTable(dict)
 End Property
 
-Public Function IFormulaCondition_ConditionString(ByVal tableName As String, ByVal varName As String, Optional ByVal Connector As String = "*") As String
+Public Function IFormulaCondition_ConditionString(ByVal tableName As String, ByVal varName As String, _
+                                                Optional ByVal Connector As String = "*") As String
     IFormulaCondition_ConditionString = ConditionString(tableName:=tableName, varName:=varName, Connector:=Connector)
 End Function
 

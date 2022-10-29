@@ -17,119 +17,121 @@ Implements ILinelistSpecs
 Option Explicit
 
 Private Type TLinelistSpecs
-  lldict As ILLdictionary
-  llchoi As ILLchoice
+    lldict As ILLdictionary
+    llchoi As ILLchoice
 End Type
-
 
 Private this As TLinelistSpecs
 
 Public Function Create(ByVal dict As ILLdictionary, ByVal choi As ILLchoice) As ILinelistSpecs
 
-  With New LinelistSpecs
-    Set .Dictionary = dict
-    Set .Choices = choi
-    Set Create = .Self
-  End With
+    With New LinelistSpecs
+        Set .Dictionary = dict
+        Set .Choices = choi
+        Set Create = .Self
+    End With
 End Function
 
-
-
 Public Property Get Self() As ILinelistSpecs
-  Set Self = Me
+    Set Self = Me
 End Property
 
 Public Property Get Dictionary() As ILLdictionary
-  Set Dictionary = this.lldict
+    Set Dictionary = this.lldict
 End Property
 
 Public Property Get Choices() As ILLchoice
-  Set Choices = this.llchoi
+    Set Choices = this.llchoi
 End Property
 
 Public Property Set Dictionary(ByVal dict As ILLdictionary)
-  Set this.lldict = dict
+    Set this.lldict = dict
 End Property
 
 Public Property Set Choices(ByVal choi As ILLchoice)
-  Set this.llchoi = choi
+    Set this.llchoi = choi
 End Property
-
 
 'Get Categories for one variable
 Private Function Categories(ByVal varName As String) As BetterArray
 
-  Dim categoryData As BetterArray
-  Dim vars As ILLVariables
-  Dim dict As ILLdictionary
-  Dim choi As ILLchoice
-  Dim categoryName As String
+    Dim categoryData As BetterArray
+    Dim vars As ILLVariables
+    Dim dict As ILLdictionary
+    Dim choi As ILLchoice
+    Dim categoryName As String
+    Dim categoryType As String
 
-  Set dict = Dictionary()
-  Set choi = Choices()
-  Set categoryData = New BetterArray
-  Set vars = LLVariables.Create(dict)
+    Set dict = Dictionary()
+    Set choi = Choices()
+    Set categoryData = New BetterArray
+    Set vars = LLVariables.Create(dict)
+    categoryType = vars.Value(varName:=varName, colName:="control")
+    If categoryType = "case_when" Then
+        categoryName = "__case_when_" & varName
+    ElseIf categoryType = "choices" Then
+        categoryName = vars.Value(varName:=varName, colName:="control details")
+    End If
+    'Test the case_when
+    Set categoryData = choi.Categories(categoryName)
 
-  categoryName = vars.Value(varName:=varName, colName:="control details")
-  Set categoryData = choi.Categories(categoryName)
-
-  Set Categories = categoryData.Clone()
+    Set Categories = categoryData.Clone()
 
 End Function
 
 Private Sub Prepare()
 
- Const CATEGORYPREFIX As String = "__case_when_"
+    Const CATEGORYPREFIX As String = "__case_when_"
 
-  Dim dict As ILLdictionary
-  Dim choi As ILLchoice
-  Dim vars As ILLVariables
-  Dim counter As Long
+    Dim dict As ILLdictionary
+    Dim choi As ILLchoice
+    Dim vars As ILLVariables
+    Dim counter As Long
 
-  Dim casewhenVars As BetterArray
-  Dim casewhenObject As ICaseWhen
-  Dim casewhenVariableName As String
-  Dim casewhenFormula As String
+    Dim casewhenVars As BetterArray
+    Dim casewhenObject As ICaseWhen
+    Dim casewhenVariableName As String
+    Dim casewhenFormula As String
 
 
-  Set dict = Dictionary()
-  Set choi = Choices()
-  Set vars = LLVariables.Create(dict)
+    Set dict = Dictionary()
+    Set choi = Choices()
+    Set vars = LLVariables.Create(dict)
 
-  dict.Prepare
+    dict.Prepare
 
-  'Add case_when to choices
-  Set casewhenVars = dict.Data.FilterData(varName:="control", criteriaName:="case_when", returnedColumnName:="variable name")
-  For counter = casewhenVars.LowerBound To casewhenVars.UpperBound
-      casewhenVariableName = casewhenVars.Item(counter)
-      casewhenFormula = vars.Value(varName:=casewhenVariableName, colName:="control details")
+    'Add case_when to choices
+    Set casewhenVars = dict.Data.FilterData(varName:="control", criteriaName:="case_when", returnedColumnName:="variable name")
+    For counter = casewhenVars.LowerBound To casewhenVars.UpperBound
+        casewhenVariableName = casewhenVars.Item(counter)
+        casewhenFormula = vars.Value(varName:=casewhenVariableName, colName:="control details")
 
-      Set casewhenObject = CaseWhen.Create(casewhenFormula)
-      'Test validity before parsing categories to choices
-      If casewhenObject.Valid() Then
-        choi.AddChoice choiceName:=CATEGORYPREFIX & casewhenVariableName, CategoriesData:=casewhenObject.Categories
-      End If
-  Next
+        Set casewhenObject = CaseWhen.Create(casewhenFormula)
+        'Test validity before parsing categories to choices
+        If casewhenObject.Valid() Then
+            choi.AddChoice choiceName:=CATEGORYPREFIX & casewhenVariableName, CategoriesData:=casewhenObject.Categories
+        End If
+    Next
 
-  choi.Sort
+    choi.Sort
 End Sub
 
 'Implement the interfaces
 
 Public Property Get ILinelistSpecs_Dictionary() As ILLdictionary
-  Set ILinelistSpecs_Dictionary = Dictionary()
+    Set ILinelistSpecs_Dictionary = Dictionary()
 End Property
 
 Public Property Get ILinelistSpecs_Choices() As ILLchoice
-  Set ILinelistSpecs_Choices = Choices()
+    Set ILinelistSpecs_Choices = Choices()
 End Property
-
 
 'Categories of one variable
 Public Function ILinelistSpecs_Categories(ByVal varName As String) As BetterArray
-  Set ILinelistSpecs_Categories = Categories(varName)
+    Set ILinelistSpecs_Categories = Categories(varName)
 End Function
 
 Public Sub ILinelistSpecs_Prepare()
-  Prepare
+    Prepare
 End Sub
+

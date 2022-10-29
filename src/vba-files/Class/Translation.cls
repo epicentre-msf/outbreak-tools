@@ -32,7 +32,7 @@ Public Function Create(ByVal translationLo As ListObject, ByVal translationLang 
   'Test if the listobject is empty
   If translationLo Is Nothing Then ThrowErrorUnableInstanciate "Listobject is not defined"
   With New Translation
-    Set .table = translationLo
+    Set .Table = translationLo
     .Language = translationLang
     Set Create = .Self
   End With
@@ -43,11 +43,11 @@ Public Property Get Self() As ITranslation
   Set Self = Me
 End Property
 
-Public Property Get table() As ListObject
-  Set table = this.transLo
+Public Property Get Table() As ListObject
+  Set Table = this.transLo
 End Property
 
-Public Property Set table(ByVal Lo As ListObject)
+Public Property Set Table(ByVal Lo As ListObject)
   Set this.transLo = Lo
 End Property
 
@@ -63,7 +63,7 @@ Private Property Get LanguageExists() As Boolean
   Dim lng As String
   Dim hRng As Range
   lng = Language
-  Set hRng = table.HeaderRowRange()
+  Set hRng = Table.HeaderRowRange()
   LanguageExists = (Not hRng.Find(What:=lng, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
 End Property
 
@@ -76,7 +76,7 @@ Private Function LanguageIndex() As Long
 
   lng = Language
   If LanguageExists() Then
-    Set hRng = table.HeaderRowRange
+    Set hRng = Table.HeaderRowRange
     startCol = hRng.Column
     lngIndex = hRng.Find(What:=lng, LookAt:=xlWhole, MatchCase:=True).Column - startCol + 1
   Else
@@ -91,7 +91,7 @@ Private Function ValueExists(ByVal text As String) As Boolean
   Dim keyRng As Range
   textExists = False
 
-  Set keyRng = table.ListColumns(1).Range
+  Set keyRng = Table.ListColumns(1).Range
 
   If LanguageExists() Then textExists = (Not keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
 
@@ -100,19 +100,19 @@ End Function
 
 
 Private Function ValueIndex(ByVal text As String) As Long
-  Dim Index As Long
+  Dim index As Long
   Dim keyRng As Range
   Dim StartRow As Long
 
   If ValueExists(text) Then
-    Set keyRng = table.ListColumns(1).Range
+    Set keyRng = Table.ListColumns(1).Range
     StartRow = keyRng.row
-    Index = keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True).row - StartRow + 1
+    index = keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True).row - StartRow + 1
   Else
-    Index = -1
+    index = -1
   End If
 
-  ValueIndex = Index
+  ValueIndex = index
 End Function
 
 Private Function TranslatedValue(ByVal text As String, Optional ByVal containsFormula As Boolean = False) As String
@@ -145,7 +145,7 @@ Private Function TranslatedValue(ByVal text As String, Optional ByVal containsFo
     TranslatedValue = formTransText
   Else
     If ValueExists(text) Then
-      Set LoRng = table.Range
+      Set LoRng = Table.Range
       valIndex = ValueIndex(text)
       lngCol = LanguageIndex()
       transText = LoRng.Cells(valIndex, lngCol).Value

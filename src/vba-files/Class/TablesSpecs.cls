@@ -126,6 +126,14 @@ Private Property Get TableId() As String
     TableId = PREFIX & "_tab" & lineNum
 End Property
 
+Private Property Get TableSectionId() As String
+    If isNewSection() Or (TableType = TypeGlobalSummary) Then
+        TableSectionId = TableId()
+    Else
+        TableSectionId = Previous.TableSectionId
+    End If
+End Property
+
 Private Property Get HasPercent() As Boolean
     Select Case TableType
 
@@ -143,19 +151,19 @@ Private Property Get HasPercent() As Boolean
     End Select
 End Property
 
-Private Property Get hasTotal() As Boolean
+Private Property Get HasTotal() As Boolean
     Select Case TableType
 
     Case TypeGlobalSummary
-        hasTotal = False
+        HasTotal = False
     Case TypeUnivariate
-        hasTotal = True
+        HasTotal = True
     Case TypeBivariate
-        hasTotal = True
+        HasTotal = True
     Case TypeTimeSeries
-        hasTotal = (Value("total") = "yes")
+        HasTotal = (Value("total") = "yes")
     Case TypeSpatial
-        hasTotal = (Value("total") <> "no")
+        HasTotal = (Value("total") <> "no")
     End Select
 End Property
 
@@ -320,7 +328,7 @@ Public Function ITablesSpecs_Value(ByVal colName As String) As String
 End Function
 
 Public Property Get ITablesSpecs_HasTotal() As Boolean
-    ITablesSpecs_HasTotal = hasTotal
+    ITablesSpecs_HasTotal = HasTotal
 End Property
 
 Public Property Get ITablesSpecs_HasPercentage() As Boolean
@@ -333,6 +341,10 @@ End Property
 
 Public Property Get ITablesSpecs_Previous() As ITablesSpecs
     Set ITablesSpecs_Previous = Previous
+End Property
+
+Public Property Get ITablesSpecs_TableSectionId() As String
+        ITablesSpecs_TableSectionId = TableSectionId
 End Property
 
 
