@@ -184,9 +184,14 @@ Public Property Get Valid(Optional ByVal formulaType As String = "analysis") As 
     Valid = FormulaValidity
     Exit Property
   End If
+  
+  
 
   'if it is a variable and we are on analysis, it is not valid, we need aggregation
-  If (vars.Contains(setupForm) And formulaType = "analysis") Then
+  'If the formula is empty validity is false
+  If setupForm = vbNullString Then
+    GoTo FormulaIsNotValid
+  ElseIf (vars.Contains(setupForm) And formulaType = "analysis") Then
     GoTo FormulaIsNotValid
   ElseIf formulaType = "analysis" And customFormulas.Includes(setupForm) Then
     formulaTable.Push setupForm
@@ -220,14 +225,9 @@ Public Property Get Valid(Optional ByVal formulaType As String = "analysis") As 
             'Error because we don't know the meaning of chunk
             GoTo FormulaIsNotValid
         ElseIf vars.Contains(chunk) Then
-          Debug.Print chunk
-          Debug.Print midChar
-
           VariablesTable.Push chunk
           formulaTable.Push chunk, midChar
         Else
-          Debug.Print chunk
-          Debug.Print midChar
           formulaTable.Push chunk, midChar
         End If
 
@@ -266,34 +266,40 @@ Public Property Get Varlists(Optional ByVal formulaType As String = "analysis") 
 End Property
 
 
+
 'Parse the formula for linelist
-Public Property Get ParsedLinelistFormula() As String
-  Dim vars As ILLVariables
-  Dim sheets As ILLSheets
-  Dim counter As Long
-  Dim formulaTable As BetterArray
-  Dim chunk As String
+Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _
+                                          Optional ByVal tablePrefix As String = vbNullString) As String
+    Dim vars As ILLVariables
+    Dim sheets As ILLSheets
+    Dim counter As Long
+    Dim formulaTable As BetterArray
+    Dim chunk As String
 
-  Set formulaTable = New BetterArray
-  Set vars = variables()
-  Set sheets = FormulaSheets()
+    Set formulaTable = New BetterArray
+    Set vars = variables()
+    Set sheets = FormulaSheets()
 
-  ParsedLinelistFormula = vbNullString
+    ParsedLinelistFormula = vbNullString
 
-  If Not Valid(formulaType:="simple") Then Exit Property
+    If Not Valid(formulaType:="simple") Then Exit Property
 
-  Set formulaTable = FormulaTableList
-  For counter = formulaTable.LowerBound To formulaTable.UpperBound
-    chunk = formulaTable.Item(counter)
-    If vars.Contains(chunk) Then
-      formulaTable.Item(counter) = sheets.VariableAddress(chunk)
-    ElseIf UCase(chunk) = "MEAN" Then
-      formulaTable.Item(counter) = "AVERAGE"
-    End If
-  Next
+    Set formulaTable = FormulaTableList
+    For counter = formulaTable.LowerBound To formulaTable.UpperBound
+        chunk = formulaTable.Item(counter)
+        If vars.Contains(chunk) Then
+            If useTableName Then
+                formulaTable.Item(counter) = tablePrefix & vars.Value(colName:="table name", varName:=chunk) & "[" & chunk & "]"
+            Else
+                formulaTable.Item(counter) = sheets.VariableAddress(chunk)
+            End If
+        ElseIf UCase(chunk) = "MEAN" Then
+            formulaTable.Item(counter) = "AVERAGE"
+        End If
+    Next
 
-  ParsedLinelistFormula = formulaTable.ToString(Separator:="", OpeningDelimiter:="", _
-                           ClosingDelimiter:="", QuoteStrings:=False)
+    ParsedLinelistFormula = formulaTable.ToString(Separator:="", OpeningDelimiter:="", _
+                                                  ClosingDelimiter:="", QuoteStrings:=False)
 End Property
 
 'Parse the formula for the analysis
@@ -325,15 +331,17 @@ Public Property Get ParsedAnalysisFormula(formCond As IFormulaCondition, _
 
       If vars.Contains(chunk) Then
 
-        tableName = vars.Value(chunk, "table name")
-        If Not formCond.Valid(dict, tableName) Then Exit Property
+        tableName = vars.Value(varName:=chunk, colName:="table name")
+        Debug.Print tableName
+        
+        If Not formCond.Valid(dict, tableName) Then Exit Property 'Trace
         formulaTable.Item(counter) = formCond.ConditionString(varName:=chunk, _
          tableName:=tablePrefix & tableName, Connector:=Connector)
 
       ElseIf customFormulas.Includes(chunk) Then
         parsedCustom = ParsedCustomFormula(customFunction:=chunk, _
-                                    formCond:=formCond, tableName:=tablePrefix & tableName)
-        If parsedCustom = vbNullString Then Exit Property
+                                    formCond:=formCond, tableName:=tableName, tablePrefix:=tablePrefix)
+        If parsedCustom = vbNullString Then Exit Property 'Trace
         formulaTable.Item(counter) = parsedCustom
 
       End If
@@ -345,19 +353,35 @@ Public Property Get ParsedAnalysisFormula(formCond As IFormulaCondition, _
                            ClosingDelimiter:="", QuoteStrings:=False)
 End Property
 
+Private Function Quoted(ByVal Val As String)
+    Quoted = Chr(34) & Val & Chr(34)
+End Function
+
+Private Function ClearCountIf(ByVal Val As String)
+    Dim cleared As String
+     cleared = Replace(Val, Quoted("=") & "&", vbNullString)
+     cleared = Replace(Val, "=", vbNullString)
+      cleared = Replace(cleared, Chr(34) & Chr(34) & Chr(34) & Chr(34), Chr(34) & Chr(34))
+      cleared = IIf(InStr(1, cleared, "<") > 0, Replace(cleared, "<", Quoted("<=") & " & "), cleared)
+      cleared = IIf(InStr(1, cleared, ">") > 0, Replace(cleared, ">", Quoted(">=") & " & "), cleared)
+      ClearCountIf = cleared
+End Function
 
 Private Function ParsedCustomFormula(ByVal customFunction As String, ByVal formCond As IFormulaCondition, _
-                                     Optional ByVal tableName As String = vbNullString) As String
+                                     Optional ByVal tableName As String = vbNullString, _
+                                     Optional ByVal tablePrefix As String = vbNullString) As String
   Dim cond As BetterArray
   Dim condVars As BetterArray
   Dim parsedFormula As String
   Dim customtableName As String
   Dim dict As ILLdictionary
+  Dim counter As Long
 
   Set dict = Dictionary()
   customtableName = tableName
   If tableName = vbNullString Then customtableName = formCond.VariablesTable(dict)
-  Dim counter As Long
+  customtableName = tablePrefix & customtableName
+  
 
   Select Case customFunction
 
@@ -365,10 +389,10 @@ Private Function ParsedCustomFormula(ByVal customFunction As String, ByVal formC
     Set cond = formCond.Conditions()
     Set condVars = formCond.variables()
     counter = condVars.LowerBound
-    parsedFormula = customtableName & "[" & condVars.Item(counter) & "]" & ", " & cond.Item(counter)
+    parsedFormula = customtableName & "[" & condVars.Item(counter) & "]" & ", " & ClearCountIf(cond.Item(counter))
 
     For counter = condVars.LowerBound + 1 To condVars.UpperBound
-      parsedFormula = parsedFormula & "," & customtableName & "[" & condVars.Item(counter) & "]" & "," & cond.Item(counter)
+      parsedFormula = parsedFormula & "," & customtableName & "[" & condVars.Item(counter) & "]" & "," & ClearCountIf(cond.Item(counter))
     Next
     parsedFormula = "COUNTIFS(" & parsedFormula & ")"
 
@@ -391,11 +415,12 @@ Public Property Get IFormulas_Valid(Optional ByVal formulaType As String = "anal
   IFormulas_Valid = Valid(formulaType)
 End Property
 
-Public Property Get IFormulas_ParsedLinelistFormula() As String
-  IFormulas_ParsedLinelistFormula = ParsedLinelistFormula()
+Public Property Get IFormulas_ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _
+                                                    Optional ByVal tablePrefix As String = vbNullString) As String
+  IFormulas_ParsedLinelistFormula = ParsedLinelistFormula(useTableName, tablePrefix)
 End Property
 
 Public Property Get IFormulas_ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, Optional ByVal tablePrefix As String = vbNullString, _
-                                          Optional ByVal Connector As String = "*") As String
+                                                    Optional ByVal Connector As String = "*") As String
    IFormulas_ParsedAnalysisFormula = ParsedAnalysisFormula(formCond, tablePrefix, Connector)
 End Property

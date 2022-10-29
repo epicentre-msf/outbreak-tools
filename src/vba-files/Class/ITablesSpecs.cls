@@ -23,17 +23,18 @@ Public Enum AnalysisTablesType
   TypeSpatial = 5
 End Enum
 
-Public Property Get TableType() As AnalysisTablesType: End Property
+Public Property Get TableType() As AnalysisTablesType: End Property 'One of the previous mentioned table types
 Public Property Get Dictionary() As ILLdictionary: End Property
 Public Property Get RowCategories() As BetterArray: End Property
 Public Property Get ColumnCategories() As BetterArray: End Property
 Public Property Get isNewSection() As Boolean: End Property
 Public Property Get TableId() As String: End Property
 Public Property Get HasMissing() As Boolean: End Property
-Public Property Get hasTotal() As Boolean: End Property
+Public Property Get HasTotal() As Boolean: End Property
 Public Property Get HasPercentage() As Boolean: End Property
-Public Property Get Previous() As ITablesSpecs: End Property
+Public Property Get Previous() As ITablesSpecs: End Property 'Return the previous table specification in the same section (the order is defined by apearance in the listobject)
+Public Property Get TableSectionId() As String: End Property 'The id of the first table of the section
 
 'Exposed methods
-Public Function Value(ByVal colName As String) As String: End Function
+Public Function Value(ByVal colName As String) As String: End Function 'The search is done without case sensitive
 

@@ -90,7 +90,7 @@ Sub ClearData()
         End Select
     Next
 
-    ThisWorkbook.save
+    ThisWorkbook.Save
     EndWork xlsapp:=Application
     Application.EnableEvents = True
 
@@ -158,7 +158,7 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
     Dim VarColumn As BetterArray
     Dim sActualLanguage As String
     Dim sImportedLanguage As String
-    Dim Index As Long                            'index of the language
+    Dim index As Long                            'index of the language
 
 
     Dim Quit As Byte
@@ -183,8 +183,8 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
         VarColumn.FromExcelRange WkbImp.Worksheets(C_sSheetMetadata).Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=False
 
         If VarColumn.Includes(C_sLanguage) Then
-            Index = VarColumn.IndexOf(C_sLanguage)
-            sImportedLanguage = WkbImp.Worksheets(C_sSheetMetadata).Cells(Index, 2).Value
+            index = VarColumn.IndexOf(C_sLanguage)
+            sImportedLanguage = WkbImp.Worksheets(C_sSheetMetadata).Cells(index, 2).Value
             sActualLanguage = ThisWorkbook.Worksheets(C_sSheetLLTranslation).Range("RNG_LLLanguage")
 
             'Test and ask the user if he wants to abort

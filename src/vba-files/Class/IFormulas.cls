@@ -19,8 +19,11 @@ Option Explicit
 
 Public Property Get Varlists() As BetterArray: End Property
 Public Property Get Valid(Optional ByVal formulaType As String = "analysis") As Boolean: End Property
-Public Property Get ParsedLinelistFormula() As String: End Property
-Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, Optional ByVal tablePrefix As String = vbNullString, _
+Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _
+                                          Optional ByVal tablePrefix As String = vbNullString) As String
+End Property
+Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
+                                          Optional ByVal tablePrefix As String = vbNullString, _
                                           Optional ByVal Connector As String = "*") As String
 End Property
 

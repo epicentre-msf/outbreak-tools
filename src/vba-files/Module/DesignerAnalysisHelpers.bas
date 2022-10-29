@@ -747,8 +747,8 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
 
         i = iStartCol
 
-        sFirstTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis).Address(Rowabsolute:=False)
-        sSecondTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis + 1).Address(Rowabsolute:=False)
+        sFirstTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis).Address(rowabsolute:=False)
+        sSecondTimeCond = .Cells(iRow + 2, C_eStartColumnAnalysis + 1).Address(rowabsolute:=False)
 
 
         Do While (i <= iInnerEndCol)
@@ -768,14 +768,14 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
             If sPerc <> C_sNo Then
                 Select Case sPerc
                 Case C_sAnaRow
-                    sTotalCell = .Cells(iRow + 2, iEndCol - 1).Address(Rowabsolute:=False)
+                    sTotalCell = .Cells(iRow + 2, iEndCol - 1).Address(rowabsolute:=False)
                 Case C_sAnaCol
                     sTotalCell = .Cells(iRow + 4 + C_iNbTime, i).Address
                 Case C_sAnaAll
                     sTotalCell = .Cells(iRow + 4 + C_iNbTime, iEndCol - 1).Address
                 End Select
 
-                sFormula = .Cells(iRow + 2, i).Address(Rowabsolute:=False) & "/" & sTotalCell
+                sFormula = .Cells(iRow + 2, i).Address(rowabsolute:=False) & "/" & sTotalCell
                 .Cells(iRow + 2, i + 1).formula = AddPercentage(sFormula)
                 Set rng = .Range(.Cells(iRow + 2, i + 1), .Cells(iRow + 4 + C_iNbTime, i + 1))
                 .Cells(iRow + 2, i + 1).AutoFill Destination:=rng, Type:=xlFillValues
@@ -840,8 +840,8 @@ Sub FormatCell(Wksh As Worksheet, iStartRow As Long, iEndRow As Long, iStartCol 
     With Wksh
         'Write the lines for each cells
         With .Cells(iStartRow, iStartCol)
-            .Interior.Color = Helpers.GetColor(sInteriorColor)
-            .Font.Color = Helpers.GetColor(sFontColor)
+            .Interior.color = Helpers.GetColor(sInteriorColor)
+            .Font.color = Helpers.GetColor(sFontColor)
         End With
 
         WriteBorderLines .Range(.Cells(iStartRow, iStartCol), .Cells(iStartRow, iEndCol)), iWeight:=xlHairline, sColor:=sFontColor
@@ -858,9 +858,9 @@ Sub FormatCell(Wksh As Worksheet, iStartRow As Long, iEndRow As Long, iStartCol 
         'Before the total columns, double lines
         With .Range(.Cells(iEndRow - 1, iStartCol), .Cells(iEndRow - 1, iEndCol))
             With .Borders(xlEdgeBottom)
-                .Weight = xlThin
+                .weight = xlThin
                 .LineStyle = xlDouble
-                .Color = Helpers.GetColor(sFontColor)
+                .color = Helpers.GetColor(sFontColor)
             End With
         End With
     End With
@@ -1100,9 +1100,9 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         .Cells(iRow, iCol - 1).formula = "= " & "FindLastDay(" & .Cells(iRow - 7, iCol + 1).Address & ", " & .Cells(iRow, iCol - 2).Address & ")"
 
         'Next row for autofill
-        .Cells(iRow + 1, iCol - 2).formula = "= " & .Cells(iRow, iCol - 1).Address(Rowabsolute:=False, ColumnAbsolute:=False) & "+ 1"
+        .Cells(iRow + 1, iCol - 2).formula = "= " & .Cells(iRow, iCol - 1).Address(rowabsolute:=False, ColumnAbsolute:=False) & "+ 1"
         .Cells(iRow + 1, iCol - 1).formula = "= " & "FindLastDay(" & sAgg & ", " _
-                                           & .Cells(iRow + 1, iCol - 2).Address(Rowabsolute:=False, ColumnAbsolute:=False) & ")"
+                                           & .Cells(iRow + 1, iCol - 2).Address(rowabsolute:=False, ColumnAbsolute:=False) & ")"
 
         'Autofill column - 1
         Set rng = .Range(.Cells(iRow + 1, iCol - 1), .Cells(iRow + C_iNbTime, iCol - 1))
@@ -1114,8 +1114,8 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
 
         'Format and AutoFill the Range of values
         .Cells(iRow, iCol).formula = "= " & "FormatDateFromLastDay(" & sAgg & ", " & _
-                                     .Cells(iRow, iCol - 1).Address(Rowabsolute:=False, ColumnAbsolute:=False) & "," & sMax & "," & _
-                                      .Cells(iRow, iCol - 2).Address(Rowabsolute:=False, ColumnAbsolute:=False) & ")"
+                                     .Cells(iRow, iCol - 1).Address(rowabsolute:=False, ColumnAbsolute:=False) & "," & sMax & "," & _
+                                      .Cells(iRow, iCol - 2).Address(rowabsolute:=False, ColumnAbsolute:=False) & ")"
 
         'Format the range of time span (from, to)
         .Cells(iRow - 1, iCol - 2).Value = TranslateLLMsg("MSG_From")
@@ -1562,7 +1562,7 @@ Public Sub CreateBarChart(Wksh As Worksheet, Left As Integer, Top As Integer, Rn
         UAChart.Chart.chartType = chartType
 
         'Add data to the graph
-        UAChart.Chart.SeriesCollection.Add Source:=RngSource, RowCol:=xlColumns, SeriesLabels:=True, Categorylabels:=True
+        UAChart.Chart.SeriesCollection.Add Source:=RngSource, RowCol:=xlColumns, SeriesLabels:=True, CategoryLabels:=True
 
     End With
 

@@ -27,7 +27,7 @@ Public Function UniqueValues(ByVal colName As String) As BetterArray: End Functi
 Public Function VariableExists(ByVal varName As String) As Boolean: End Function
 
 'Void Cleaning methods
-Public Sub Prepare(Optional ByVal tablePrefix As String = "tab"): End Sub
+Public Sub Prepare(Optional ByVal tablePrefix As String = "table"): End Sub
 Public Sub Clean(): End Sub
 Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long)
 End Sub

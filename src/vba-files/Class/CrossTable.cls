@@ -30,6 +30,7 @@ End Type
 Private this As TCrossTable
 Private Const STANDARDSTARTCOL As Long = 3
 Private Const CLASSNAME As String = "CrossTable"
+Private Const NBROWSTIMESERIES As Long = 56
 
 Public Function Create(ByVal specs As ITablesSpecs, ByVal outputWksh As Worksheet, ByVal trans As ITranslation) As ICrossTable
     'Check if values are not defined
@@ -97,24 +98,26 @@ Private Property Get StartRow() As Long
     Dim sh As Worksheet
     Dim specs As ITablesSpecs
     Dim strtRow As Long
-    Dim rowSet As Boolean                        'Test there is a row specification
+    Dim rowSet As Boolean
+    Dim tabId As String                        'Test there is a row specification
 
     Set specs = Specifications()
+    tabId = specs.TableId
     Set sh = Wksh()
     With sh
         'Test if there is already a startrow
-        If Not RangeExists("STARTROW_" & specs.TableId) Then
+        If Not RangeExists("STARTROW_" & tabId) Then
             If specs.isNewSection() Or specs.TableType <> TypeTimeSeries Then
                 strtRow = .Cells(.Rows.Count, STANDARDSTARTCOL).End(xlUp).row + 1
                 strtRow = IIf(strtRow = 2, 10, strtRow) 'Be sure to Start after the 1st lines
                 strtRow = IIf(specs.TableType <> TypeGlobalSummary, strtRow + 4, strtRow) 'Do not shift for global summary
-                .Cells(strtRow, STANDARDSTARTCOL).Name = "STARTROW_" & specs.TableId
+                .Cells(strtRow, STANDARDSTARTCOL).Name = "STARTROW_" & tabId
             ElseIf (Not specs.isNewSection) Then
                 strtRow = Previous.StartRow      'For time series on same section, go back to precendent start row
             End If
             StartRow = strtRow
         Else
-            StartRow = .Range("STARTROW_" & specs.TableId).row
+            StartRow = .Range("STARTROW_" & tabId).row
         End If
 
     End With
@@ -139,11 +142,13 @@ Private Property Get StartColumn() As Long
     Dim sh As Worksheet
     Dim specs As ITablesSpecs
     Dim strtCol As Long
+    Dim tabId As String
 
     Set specs = Specifications
+    tabId = specs.TableId
     Set sh = Wksh
     With sh
-        If Not RangeExists("STARTCOL_" & specs.TableId()) Then
+        If Not RangeExists("STARTCOL_" & tabId) Then
             'On time series, the startcolumn depends on new section
 
             strtCol = IIf(specs.TableType = TypeTimeSeries And (Not specs.isNewSection()), _
@@ -151,9 +156,9 @@ Private Property Get StartColumn() As Long
                           STANDARDSTARTCOL)
 
             StartColumn = strtCol
-            .Cells(StartRow - 1, strtCol + 1).Name = "STARTCOL_" & specs.TableId
+            .Cells(StartRow - 1, strtCol + 1).Name = "STARTCOL_" & tabId
         Else
-            StartColumn = .Range("STARTCOL_" & specs.TableId).Column - 1
+            StartColumn = .Range("STARTCOL_" & tabId).Column - 1
         End If
     End With
 End Property
@@ -204,7 +209,10 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     If Not includeHeaders Then start = start + 1
 
     'End Row
-    rend = Switch(specs.TableType = TypeTimeSeries, EndRow - 2, specs.hasTotal And onlyCategories, EndRow - 1, True, EndRow)
+    rend = Switch((specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial) And onlyCategories, EndRow - 2, _
+                  (specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial), EndRow, _
+                  specs.HasTotal And onlyCategories, EndRow - 1, _
+                  True, EndRow)
 
     With sh
         Set RowsCategoriesRange = .Range(.Cells(start, STANDARDSTARTCOL), .Cells(rend, STANDARDSTARTCOL))
@@ -236,25 +244,38 @@ Public Property Get RowRange(ByVal rowVal As String, Optional ByVal includeHeade
     End If
 End Property
 
-Public Property Get ColumnRange(ByVal colVal As String, Optional ByVal includeHeaders = False) As Range
+Public Property Get ColumnRange(ByVal colVal As String, Optional ByVal includeHeaders = False, Optional ByVal onlyCategories As Boolean = False) As Range
     Dim rng As Range
     Dim valueColumn As Long
     Dim start As Long
     Dim sh As Worksheet
     Dim specs As ITablesSpecs
+    Dim rend As Long
 
     Set rng = HeaderRange()
     Set sh = Wksh()
     Set specs = Specifications
 
-    start = IIf(specs.TableType = TypeBivariate, StartRow + 2, StartRow + 1)
+    'startRow
+    start = Switch(specs.TableType = TypeBivariate, StartRow + 2, _
+                   specs.TableType = TypeTimeSeries, StartRow + 2, _
+                   specs.TableType = TypeSpatial, StartRow + 2, _
+                   True, StartRow + 1)
+    'End Row
+    rend = Switch((specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial) And onlyCategories, EndRow - 2, _
+                  specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial, EndRow, _
+                  specs.HasTotal And onlyCategories, EndRow - 1, _
+                  True, EndRow)
+
     If includeHeaders Then start = start - 1
+
+
 
     'Test if the value exists
     If ValueExists(rng, colVal) Then
         valueColumn = rng.Find(What:=colVal, LookAt:=xlWhole, MatchCase:=True).Column
         With sh
-            Set ColumnRange = .Range(.Cells(start, valueColumn), .Cells(EndRow, valueColumn))
+            Set ColumnRange = .Range(.Cells(start, valueColumn), .Cells(rend, valueColumn))
         End With
     End If
 End Property
@@ -271,10 +292,12 @@ Private Sub AddRows()
     Dim transMissing As String
     Dim transTotal As String
     Dim counter As Long
+    Dim tabId As String
 
     start = StartRow
     Set sh = Wksh()
     Set specs = Specifications()
+    tabId = specs.TableId
     Set trans = Trads()
     Set vars = LLVariables.Create(specs.Dictionary)
 
@@ -322,14 +345,20 @@ Private Sub AddRows()
                 rowsData.Push transTotal, transMissing
                 rowsData.ToExcelRange .Cells(start + 1, StartColumn)
 
-                EndRow = start + rowsData.Length
             End If
+
+            EndRow = start + NBROWSTIMESERIES    'This is the number of rows (FIXED for time series)
 
         Case TypeSpatial
             rowVar = specs.Value("row")
-            .Cells(start + 1, StartColumn).Value = vars.Value(colName:="sub section", varName:="adm1" & "_" & rowVar)
-            EndRow = start + 1 + CLng(specs.Value("geo max"))
-            .Cells(EndRow + 1, StartColumn).Value = transTotal
+            rowsData.Clear
+            rowsData.Push vars.Value(colName:="sub section", varName:="adm1" & "_" & rowVar)
+            For counter = 1 To CLng(specs.Value("geo max"))
+                rowsData.Push ""
+            Next
+            rowsData.Push transTotal, transMissing
+            rowsData.ToExcelRange .Cells(start + 1, StartColumn)
+            EndRow = start + rowsData.Length
         End Select
     End With
 End Sub
@@ -338,7 +367,7 @@ Private Function Percent(ByVal percentVal As String, Optional ByVal percentType 
     Select Case percentType
     Case "row"
         Percent = percentVal & " " & ChrW(8596)
-    Case "col"
+    Case "column"
         Percent = percentVal & " " & ChrW(8597)
     Case Else
         Percent = percentVal
@@ -359,12 +388,14 @@ Private Sub BivariateColumns(ByVal start As Long, ByVal specs As ITablesSpecs, B
     Dim counter As Long
     Dim tobound As Long
     Dim totalValue As String
+    Dim tabId As String
 
     Set colData = New BetterArray
     Set labData = New BetterArray
     colData.LowerBound = 1
     labData.LowerBound = 1
     missingValue = specs.Value("missing")
+    tabId = specs.TableId
     percentageValue = specs.Value("percentage")
     totalValue = specs.Value("total")
     transMissing = trans.TranslatedValue("MSG_NA")
@@ -374,12 +405,12 @@ Private Sub BivariateColumns(ByVal start As Long, ByVal specs As ITablesSpecs, B
     With sh
         colLab = specs.Value("label")
         If missingValue = "column" Or missingValue = "all" Or missingValue = "yes" Then labData.Push transMissing
-        If specs.hasTotal Then labData.Push transTotal
+        If specs.HasTotal Then labData.Push transTotal
         Set colData = specs.ColumnCategories()
 
         If colData.Length > 0 Then
 
-            NumberOfColumns = colData.Length  'Set the number of columns of the categories
+            NumberOfColumns = colData.Length     'Set the number of columns of the categories
 
             colData.Concat labData.Items
             labData.Clear
@@ -427,11 +458,13 @@ Private Sub AddColumns()
     Dim colData As BetterArray
     Dim colVarLab As String
     Dim timeVarLab As String
+    Dim tabId As String
 
 
     start = StartRow
     Set sh = Wksh()
     Set specs = Specifications()
+    tabId = specs.TableId
     Set trans = Trads()
     Set vars = LLVariables.Create(specs.Dictionary)
     Set colData = New BetterArray
@@ -464,12 +497,12 @@ Private Sub AddColumns()
             colData.ToExcelRange .Cells(start, StartColumn + 1), TransposeValues:=True
 
             EndColumn = StartColumn + colData.Length
-            NumberOfColumns = colData.Length
+            NumberOfColumns = 1                  'Univariate analysis has one variable on columns (even when there are percentages)
 
         Case TypeBivariate
 
             BivariateColumns start, specs, trans, sh
-            .Range("STARTCOL_" & specs.TableId).Value = vars.Value(colName:="main label", varName:=specs.Value("column"))
+            .Range("STARTCOL_" & tabId).Value = vars.Value(colName:="main label", varName:=specs.Value("column"))
 
         Case TypeTimeSeries
 
@@ -478,7 +511,7 @@ Private Sub AddColumns()
             timeVarLab = vars.Value(colName:="main label", varName:=specs.Value("time"))
 
             'Add the time variable label
-            .Range("STARTCOL_" & specs.TableId).Value = colVarLab & " " & trans.TranslatedValue("MSG_per") & " " & timeVarLab
+            .Range("STARTCOL_" & tabId).Value = colVarLab & " " & trans.TranslatedValue("MSG_per") & " " & timeVarLab
 
         Case TypeSpatial
 
@@ -495,12 +528,14 @@ Private Sub AddHeader()
     Dim specs As ITablesSpecs
     Dim counter As Long
     Dim trans As ITranslation
+    Dim tabId As String
     Dim rng As Range
 
     Set sh = Wksh()
     Set specs = Specifications
     Set trans = Trads()
     start = StartRow
+    tabId = specs.TableId
 
     With sh
         Select Case specs.TableType
@@ -508,70 +543,104 @@ Private Sub AddHeader()
         Case TypeUnivariate, TypeBivariate
 
             .Cells(start - 2, STANDARDSTARTCOL).Value = specs.Value("title")
-            .Cells(start - 2, STANDARDSTARTCOL).Name = "TITLE_" & specs.TableId()
+            .Cells(start - 2, STANDARDSTARTCOL).Name = "TITLE_" & tabId
 
-            If specs.isNewSection() And (Not RangeExists("SECTION_" & specs.TableId())) Then
+            If specs.isNewSection() And (Not RangeExists("SECTION_" & tabId)) Then
                 For counter = 1 To 3
                     .Rows(start - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                 Next
                 'Jump two rows before the title for the section
-                .Range("TITLE_" & specs.TableId()).Cells(-1, 1) = specs.Value("section")
-                .Range("TITLE_" & specs.TableId()).Cells(-1, 1).Name = "SECTION_" & specs.TableId()
+                .Range("TITLE_" & tabId).Cells(-1, 1) = specs.Value("section")
+                .Range("TITLE_" & tabId).Cells(-1, 1).Name = "SECTION_" & tabId
             End If
 
         Case TypeGlobalSummary
 
             If Not RangeExists("ROWGS_SET") Then
+                For counter = 1 To 3
+                    .Rows(start - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+                Next
+
                 .Cells(start - 2, STANDARDSTARTCOL).Value = trans.TranslatedValue("MSG_GlobalSummary")
                 .Cells(start - 2, STANDARDSTARTCOL).Name = "ROWGS_SET"
             End If
 
         Case TypeTimeSeries
 
-            If specs.isNewSection() And (Not RangeExists("SECTION_" & specs.TableId())) Then
-                For counter = 1 To 4
+            If specs.isNewSection() And (Not RangeExists("SECTION_" & tabId)) Then
+                For counter = 1 To 6
                     .Rows(start - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                 Next
                 .Cells(start - 2, StartColumn).Value = specs.Value("section")
-                .Cells(start - 2, StartColumn).Name = "SECTION_" & specs.TableId()
+                .Cells(start - 2, StartColumn).Name = "SECTION_" & tabId
 
                 'Ranges for start and end dates and for minimum and maximum dates (for validations)
-                Set rng = .Range("SECTION_" & specs.TableId())
+                Set rng = .Range("SECTION_" & tabId)
 
                 'Start Date
                 rng.Cells(3, 3).Value = trans.TranslatedValue("MSG_StartDate")
-                rng.Cells(4, 3).Name = "START_DATE_" & specs.TableId()
-                rng.Cells(5, 3).Name = "INFO_START_DATE_" & specs.TableId()
+                rng.Cells(3, 3).Name = "START_DATE_LABEL_" & tabId
+                rng.Cells(4, 3).Name = "START_DATE_" & tabId
+                rng.Cells(5, 3).Name = "INFO_START_DATE_" & tabId
 
                 'Time Unit
                 rng.Cells(3, 5).Value = trans.TranslatedValue("MSG_TimeUnit")
-                rng.Cells(4, 5).Name = "TIME_UNIT_" & specs.TableId()
+                rng.Cells(3, 5).Name = "TIME_UNIT_LABEL_" & tabId
+                rng.Cells(4, 5).Name = "TIME_UNIT_" & tabId
 
                 'End Date
                 rng.Cells(3, 7).Value = trans.TranslatedValue("MSG_EndDate")
-                rng.Cells(4, 7).Name = "END_DATE_" & specs.TableId()
-                rng.Cells(5, 7).Name = "INFO_END_DATE_" & specs.TableId()
+                rng.Cells(3, 7).Name = "END_DATE_LABEL_" & tabId
+                rng.Cells(4, 7).Name = "END_DATE_" & tabId
+                rng.Cells(5, 7).Name = "INFO_END_DATE_" & tabId
 
 
-                'Minimum cell for validiation
-                rng.Cells(4, 9).Name = "MIN_DATE_" & specs.TableId()
-                rng.Cells(4, 11).Name = "MAX_DATE_" & specs.TableId()
-                'Maximum cell for validation
+                'Minimum / Maximum cell for validiation
+                rng.Cells(4, 9).Name = "VALIDATION_MIN_DATE_" & tabId
+                rng.Cells(4, 11).Name = "VALIDATION_MAX_DATE_" & tabId
+                'Minimum /Maximum of all dates
+
+                rng.Cells(4, 13).Name = "MIN_MIN_DATE_" & tabId
+                rng.Cells(4, 15).Name = "MAX_MAX_DATE_" & tabId
+            End If
+
+            If (Not RangeExists("TIME_UNIT_LIST")) Then
+                Set rng = .Cells(1, 26)
+                rng.Cells(1, 1).Value = trans.TranslatedValue("MSG_Day")
+                rng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Week")
+                rng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Quarter")
+                rng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Year")
+                .Range(.Cells(1, rng.Column), .Cells(4, rng.Column)).Name = "TIME_UNIT_LIST"
+                .Range("TIME_UNIT_LIST").Font.color = vbWhite
+                .Range("TIME_UNIT_LIST").Interior.color = vbWhite
+                .Range("TIME_UNIT_LIST").Locked = True
             End If
 
         Case TypeSpatial
 
-            If Not RangeExists("ADM_DROPDOWN_" & specs.TableId()) Then
-                .Rows(start - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-                'Table Title
-                .Cells(start - 3, STANDARDSTARTCOL).Value = specs.Value("title")
-                .Cells(start - 3, STANDARDSTARTCOL).Name = "TITLE_" & specs.TableId()
-
+            If Not RangeExists("ADM_DROPDOWN_" & tabId) Then
                 'Range for dropdown for the admins
-                .Cells(start - 2, STANDARDSTARTCOL).Name = "ADM_DROPDOWN_" & specs.TableId()
+                .Cells(start - 2, STANDARDSTARTCOL).Name = "ADM_DROPDOWN_" & tabId
                 .Cells(start - 2, STANDARDSTARTCOL).Value = trans.TranslatedValue("MSG_SelectAdmin")
-            End If
+                Set rng = .Range("ADM_DROPDOWN_" & tabId)
+                
+                'Table Title
+                .Rows(rng.row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+                rng.Cells(-1, 1).Value = specs.Value("title")
+                rng.Cells(-1, 1).Name = "TITLE_" & tabId
 
+                Set rng = .Range("TITLE_" & tabId)
+
+                'New Section
+                If specs.isNewSection() Then
+                    For counter = 1 To 3
+                        .Rows(rng.row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+                    Next
+                    rng.Cells(-1, 1).Value = specs.Value("section")
+                    rng.Cells(-1, 1).Name = "SECTION_" & tabId
+                End If
+
+            End If
         End Select
     End With
 End Sub
@@ -593,25 +662,46 @@ Private Sub NameRanges()
     Dim col As Long
     Dim addBegin As String
     Dim addEnd As String
+    Dim tabId As String
 
 
     Set sh = Wksh()
     Set trans = Trads()
+    Set specs = Specifications
+    tabId = specs.TableId
+
+    If specs.TableType = TypeGlobalSummary Then Exit Sub 'No name ranges for global summary
 
     With sh
-        Set specs = Specifications
 
         'Test if the table has been filled
-        If Not RangeExists("ENDTABLE_" & specs.TableId) Then .Cells(EndRow + 1, StartColumn).Name = "ENDTABLE_" & specs.TableId
+        If Not RangeExists("ENDTABLE_" & tabId) Then .Cells(EndRow + 1, StartColumn).Name = "ENDTABLE_" & tabId
 
         nbCols = NumberOfColumns
-        If nbCols = 0 Then ThrowExecutionError "Execution Error: Found a table with number of columns 0: " & specs.TableId
+        If nbCols = 0 Then ThrowExecutionError "Execution Error: Found a table with number of columns 0: " & tabId
 
         'The label of rows categories of the table (with the missing, will serve for graphs)
+        If (specs.TableType <> TypeTimeSeries) Or (specs.TableType = TypeTimeSeries And specs.isNewSection()) Then
+            Set catRng = RowsCategoriesRange(onlyCategories:=True, includeHeaders:=False)
+            catRng.Name = "ROW_CATEGORIES_" & tabId
+            catRng.Cells(0, 1).Name = "LABEL_ROW_CATEGORIES_" & tabId
+            'Set the start time period and last time period dates
+            If (specs.TableType = TypeTimeSeries) Then
+                Set rng = catRng.Offset(, -1)
+                rng.Name = "END_TIME_PERIOD_" & tabId
+                Set rng = rng.Offset(, -1)
+                rng.Cells(1, 1).Name = "FIRST_VALUE_START_TIME_" & tabId
+                Set rng = .Range(rng.Cells(2, 1), rng.Cells(rng.Rows.Count, 1))
+                rng.Name = "START_TIME_PERIOD_" & tabId
+            End If
+        End If
 
-        Set catRng = RowsCategoriesRange(onlyCategories:=True, includeHeaders:=False)
-        catRng.Name = "ROW_CATEGORIES_" & specs.TableId
-        catRng.Cells(0, 1).Name = "LABEL_ROW_CATEGORIES_" & specs.TableId
+
+        'On time series and not on new sections, start with the previous total row
+        If (specs.TableType = TypeTimeSeries) And Not (specs.isNewSection) Then
+            If Not RangeExists("TOTAL_COL_VALUES_" & specs.Previous.TableId) Then ThrowExecutionError "I can't append the new time series to a previous table, No previous table  were found :("
+            Set catRng = .Range("TOTAL_COL_VALUES_" & specs.Previous.TableId)
+        End If
 
         'All columns of the data
         counter = StartColumn
@@ -619,24 +709,24 @@ Private Sub NameRanges()
         Set rng = catRng.Offset(, 1)
 
         Do While (counter < EndColumn) And (nbcolCounter <= nbCols)
-            rng.Name = "VALUES_COL_" & nbcolCounter & "_" & specs.TableId
+            rng.Name = "VALUES_COL_" & nbcolCounter & "_" & tabId
 
             Select Case specs.TableType
 
-                Case TypeBivariate, TypeTimeSeries, TypeSpatial
-                    labCol = -1
-                Case TypeUnivariate, TypeGlobalSummary
-                    labCol = 0
+            Case TypeBivariate, TypeTimeSeries, TypeSpatial
+                labCol = -1
+            Case TypeUnivariate, TypeGlobalSummary
+                labCol = 0
             End Select
 
             'Name the header witch will serve as labels
-            rng.Cells(labCol, 1).Name = "LABEL_COL_" & nbcolCounter & "_" & specs.TableId
+            rng.Cells(labCol, 1).Name = "LABEL_COL_" & nbcolCounter & "_" & tabId
 
             'Movte to next Range
             Set rng = rng.Offset(, 1)
 
             If specs.HasPercentage Then
-                rng.Name = "PERC_COL_" & nbcolCounter & "_" & specs.TableId
+                rng.Name = "PERC_COL_" & nbcolCounter & "_" & tabId
                 Set rng = rng.Offset(, 1)
                 counter = counter + 1
             End If
@@ -648,80 +738,292 @@ Private Sub NameRanges()
         Set cData = New BetterArray
         Set tData = New BetterArray
 
-        cData.Push "MISSING", "TOTAL"
-        tData.Push "MSG_NA", "MSG_Total"
+        cData.Push "MISSING", "TOTAL", "PERC"
+        tData.Push "MSG_NA", "MSG_Total", "MSG_Percent"
 
         For counter = cData.LowerBound To cData.UpperBound
-             'Missing/Total Row (with label)
+            'Missing/Total Row
 
             Set rng = RowRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=True)
 
             If (Not rng Is Nothing) Then
-                rng.Name = cData.Item(counter) & "_ROW_" & specs.TableId
+                rng.Name = cData.Item(counter) & "_ROW_" & tabId
                 Set rng = RowRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=False)
-                rng.Name = cData.Item(counter) & "_ROW_VALUES_" & specs.TableId
+                rng.Name = cData.Item(counter) & "_ROW_VALUES_" & tabId
             End If
 
             'Missing /Total Column
-            Set rng = ColumnRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=True)
-            If (Not rng Is Nothing) Then
-                rng.Name = cData.Item(counter) & "_COL_" & specs.TableId
-                rng.Cells(0, 1).Name = cData.Item(counter) & "_LABEL_COL_" & specs.TableId
-                Set rng = ColumnRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=False)
-                rng.Name = cData.Item(counter) & "_COL_VALUES_" & specs.TableId
-                'Percentages on Missing/Total column
-                If specs.HasPercentage Then
-                 Set rng = rng.Offset(, 1)
-                 rng.Name = cData.Item(counter) & "_PERC_VALUES_" & specs.TableId
-                 'All the percentage columns (including label)
-                 .Range(cData.Item(counter) & "_COL_" & specs.TableId).Offset(, 1).Name = cData.Item(counter) & "_PERC_" & specs.TableId
+            If specs.TableType <> TypeUnivariate Then
+                Set rng = ColumnRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=True, onlyCategories:=True)
+                If (Not rng Is Nothing) Then
+                    rng.Name = cData.Item(counter) & "_COL_" & tabId
+                    rng.Cells(0, 1).Name = cData.Item(counter) & "_LABEL_COL_" & tabId
+                    Set rng = ColumnRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=False, onlyCategories:=True)
+                    rng.Name = cData.Item(counter) & "_COL_VALUES_" & tabId
+                    'Percentages on Missing/Total column
+                    If specs.HasPercentage Then
+                        Set rng = rng.Offset(, 1)
+                        rng.Name = cData.Item(counter) & "_PERC_VALUES_" & tabId
+                        'All the percentage columns (including label)
+                        .Range(cData.Item(counter) & "_COL_" & tabId).Offset(, 1).Name = cData.Item(counter) & "_PERC_" & tabId
+                    End If
                 End If
             End If
         Next
 
+
         'Intersection of total and missings
-        If RangeExists("TOTAL_COL_" & specs.TableId) Then
+        If RangeExists("TOTAL_COL_" & tabId) Then
             'Total and Total
-            If RangeExists("TOTAL_ROW_" & specs.TableId) Then
+            If RangeExists("TOTAL_ROW_" & tabId) Then
                 'Total row
-                rw = .Range("TOTAL_ROW_" & specs.TableId).row
-                col = .Range("TOTAL_COL_" & specs.TableId).Column
-                .Cells(rw, col).Name = "TOTAL_TOTAL_" & specs.TableId
+                rw = .Range("TOTAL_ROW_" & tabId).row
+                col = .Range("TOTAL_COL_" & tabId).Column
+                .Cells(rw, col).Name = "TOTAL_TOTAL_" & tabId
             End If
-            If RangeExists("MISSING_ROW_" & specs.TableId) Then
-                rw = .Range("MISSING_ROW_" & specs.TableId).row
-                col = .Range("TOTAL_COL_" & specs.TableId).Column
-                .Cells(rw, col).Name = "MISSING_TOTAL_" & specs.TableId
+
+            If RangeExists("MISSING_ROW_" & tabId) Then
+                rw = .Range("MISSING_ROW_" & tabId).row
+                col = .Range("TOTAL_COL_" & tabId).Column
+                .Cells(rw, col).Name = "MISSING_TOTAL_" & tabId
+                If RangeExists("MISSING_COL_" & tabId) Then
+                    col = .Range("MISSING_COL_" & tabId).Column
+                    .Cells(rw, col).Name = "MISSING_MISSING_" & tabId
+                End If
             End If
         End If
 
-        If RangeExists("TOTAL_ROW_" & specs.TableId) Then
+        If RangeExists("TOTAL_ROW_" & tabId) Then
             'Total and Total
-            If RangeExists("MISSING_COL_" & specs.TableId) Then
-                col = .Range("MISSING_COL_" & specs.TableId).Column
-                rw = .Range("TOTAL_ROW_" & specs.TableId).row
-                .Cells(rw, col).Name = "TOTAL_MISSING_" & specs.TableId
+            If RangeExists("MISSING_COL_" & tabId) Then
+                col = .Range("MISSING_COL_" & tabId).Column
+                rw = .Range("TOTAL_ROW_" & tabId).row
+                .Cells(rw, col).Name = "TOTAL_MISSING_" & tabId
             End If
         End If
 
         'All the interior of the table
-        addBegin = Split(.Range("VALUES_COL_1_" & specs.TableId).Address, ":")(0)
+        addBegin = Split(.Range("VALUES_COL_1_" & tabId).Address, ":")(0)
         addEnd = IIf(specs.HasPercentage, "PERC_COL_", "VALUES_COL_")
-        addEnd = Split(.Range(addEnd & nbCols & "_" & specs.TableId).Address, ":")(1)
-        .Range(addBegin & ":" & addEnd).Name = "INTERIOR_VALUES_" & specs.TableId
+        addEnd = Split(.Range(addEnd & nbCols & "_" & tabId).Address, ":")(1)
+        .Range(addBegin & ":" & addEnd).Name = "INTERIOR_VALUES_" & tabId
 
         'Header Row with column categories
         Set rng = HeaderRange()
-        rng.Name = "COLUMN_CATEGORIES_" & specs.TableId
+        rng.Name = "COLUMN_CATEGORIES_" & tabId
     End With
+End Sub
+
+'Format
+
+Private Sub Format(ByVal desFormat As ILLFormat)
+    Dim sh As Worksheet
+    Dim specs As ITablesSpecs
+    Dim rng As Range
+    Dim cellRng As Range
+    Dim rngTable As BetterArray
+    Dim counter As Long
+    Dim rngName As String
+    Dim tabId As String
+    Dim designFormat As ILLFormat
+    Dim wholeTableStart As Long
+
+    Set rngTable = New BetterArray
+    Set specs = Specifications
+    Set sh = Wksh()
+    Set designFormat = desFormat
+    tabId = specs.TableId
+
+    With sh
+        'Sections
+        If specs.isNewSection() Then
+            Set rng = .Range("SECTION_" & tabId)
+            designFormat.ApplyFormat rng, AnalysisSection
+
+        ElseIf RangeExists("ROWGS_SET") And (Not RangeExists("ROWGS_FORMATSET")) Then
+            Set rng = .Range("ROWGS_SET")
+            designFormat.ApplyFormat rng, scope:=AnalysisSection
+            'Add informations on the sheet to avoid redoing the same thing
+            rng.Cells(1, 8).Name = "ROWGS_FORMATSET"
+        End If
+
+        'Tittle (global summary and time series don't have a title)
+        If specs.TableType <> TypeGlobalSummary And specs.TableType <> TypeTimeSeries Then
+            Set rng = .Range("TITLE_" & tabId)
+            designFormat.ApplyFormat rng, AnalysisTableTitle
+        End If
+        
+        'Dropdown on Geo/spatial table
+        If specs.TableType = TypeSpatial Then
+            Set rng = .Range("ADM_DROPDOWN_" & tabId)
+            designFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
+        End If
+
+        'Headers
+        Select Case specs.TableType
+        
+        Case TypeGlobalSummary
+            If Not RangeExists("COLGS_FORMATSET") Then
+                Set rng = .Range("COLGS_SET")
+                Set rng = .Range(rng.Cells(1, 1), rng.Cells(1, 2))
+                designFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
+                rng.Cells(1, 3).Name = "COLGS_FORMATSET"
+            End If
+            
+        Case TypeUnivariate
+            Set rng = .Range("COLUMN_CATEGORIES_" & tabId)
+            designFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
+            Set rng = .Range("LABEL_ROW_CATEGORIES_" & tabId)
+            designFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelRow
+        
+        Case TypeBivariate, TypeSpatial, TypeTimeSeries
+            
+            If (specs.TableType <> TypeTimeSeries) Or (specs.isNewSection) Then
+                Set rng = .Range("LABEL_ROW_CATEGORIES_" & tabId)
+                designFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelRow
+            End If
+            
+            Set rng = .Range("STARTCOL_" & tabId)
+            designFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelColumn
+        End Select
+
+        'Categories column and row
+        Select Case specs.TableType
+
+        Case TypeGlobalSummary
+            Set rng = .Range("STARTROW_" & tabId)
+            designFormat.ApplyFormat rng, scope:=AnalysisGlobalSummaryRow
+        
+        Case TypeUnivariate
+            Set rng = .Range("ROW_CATEGORIES_" & tabId)
+            designFormat.ApplyFormat rng, scope:=AnalysisCategoriesUnivariateRow
+        
+        Case TypeBivariate, TypeTimeSeries, TypeSpatial
+            'rows
+            If (specs.TableType <> TypeTimeSeries) Or (specs.isNewSection) Then
+                Set rng = .Range("ROW_CATEGORIES_" & tabId)
+                designFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateRow
+                'start and end date columns
+                If specs.TableType = TypeTimeSeries Then
+                    Set rng = rng.Offset(, -1)
+                    Set rng = .Range(rng.Cells(1, 0), rng.Cells(rng.Rows.Count + 1, 1))
+                    rng.Font.color = vbWhite
+                    rng.Interior.color = vbWhite
+                    rng.Locked = True
+                End If
+            End If
+
+            'columns
+            Set rng = .Range("LABEL_COL_1_" & tabId)
+            'Merge the columns if there is percentage
+            If Not RangeExists("MERGED_" & tabId) Then
+                Do While rng.Column <= EndColumn()
+                    If specs.HasPercentage() Then
+                        Set rng = rng.Offset(, 2)
+                        .Range(rng.Cells(1, -1), rng.Cells(1, 0)).Merge
+                    Else
+                        Set rng = rng.Offset(, 1)
+                    End If
+                Loop
+                rng.Cells(1, 3).Name = "MERGED_" & tabId
+            End If
+
+            Set rng = .Range("COLUMN_CATEGORIES_" & tabId)
+            designFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateColumn
+            Set rng = rng.Offset(1)
+            designFormat.ApplyFormat rng, scope:=AnalysisFirstRow
+        
+        End Select
+        
+        'Interior values
+        If (specs.TableType <> TypeGlobalSummary) Then
+            Set rng = .Range("INTERIOR_VALUES_" & tabId)
+            designFormat.ApplyFormat rng, scope:=AnalysisInteriorTable
+        End If
+
+        'Total And missing lines
+        rngTable.Push "TOTAL_ROW_VALUES_" & tabId, "TOTAL_COL_VALUES_" & tabId, _
+        "MISSING_ROW_VALUES_" & tabId, "MISSING_COL_VALUES_" & tabId, _
+        "TOTAL_PERC_VALUES_" & tabId, "MISSING_PERC_VALUES_" & tabId
+        
+        For counter = rngTable.LowerBound To rngTable.UpperBound
+          If (InStr(1, rngTable.Item(counter), "ROW") > 0) And RangeExists(rngTable.Item(counter)) Then
+            Set rng = .Range(rngTable.Item(counter))
+            designFormat.ApplyFormat rng, scope:=AnalysisMissingRow
+          ElseIf RangeExists(rngTable.Item(counter)) Then
+            Set rng = .Range(rngTable.Item(counter))
+            designFormat.ApplyFormat rng, scope:=AnalysisMissingColumn
+          End If
+        Next
+
+        'Single cells (total_missing, missing_total, ect.)
+        rngTable.Clear
+        rngTable.Push "TOTAL_MISSING_" & tabId, "TOTAL_TOTAL_" & tabId, _
+        "START_DATE_" & tabId, "END_DATE_" & tabId, "TIME_UNIT_" & tabId, _
+        "MISSING_TOTAL_" & tabId, "MISSING_MISSING_" & tabId, "START_DATE_LABEL_" & tabId, _
+        "TIME_UNIT_LABEL_" & tabId, "END_DATE_LABEL_" & tabId
+        
+        For counter = rngTable.LowerBound To rngTable.UpperBound
+            If (InStr(1, rngTable.Item(counter), "LABEL") > 0) And RangeExists(rngTable.Item(counter)) Then
+                Set rng = .Range(rngTable.Item(counter))
+                designFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
+            ElseIf RangeExists(rngTable.Item(counter)) Then
+              Set rng = .Range(rngTable.Item(counter))
+              designFormat.ApplyFormat rng, scope:=AnalysisOneCell  'Will be formatted with the missing color
+            End If
+        Next
+
+        'Percentages
+        If specs.HasPercentage Then
+            Set rng = .Range("PERC_COL_1_" & tabId)
+            If (specs.TableType <> TypeSpatial) Or (specs.HasTotal) Then
+                Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count + 1, 1))
+            End If
+
+            Do While rng.Column <= EndColumn()
+                designFormat.ApplyFormat rng, scope:=AnalysisPercent
+                Set rng = rng.Offset(, 2)
+            Loop
+            rngTable.Clear
+            rngTable.Push "MISSING_MISSING_", "TOTAL_TOTAL_", "MISSING_TOTAL_"
+            
+            For counter = rngTable.LowerBound To rngTable.UpperBound
+                rngName = rngTable.Items(counter) & tabId
+                If RangeExists(rngName) Then
+                Set rng = .Range(rngName).Offset(, 1)
+                designFormat.ApplyFormat rng, scope:=AnalysisOneCell
+            End If
+            Next
+        End If
+
+        'Time series Header
+        If specs.TableType = TypeTimeSeries Then
+            Set rng = .Range("STARTCOL_" & tabId)
+            Set rng = .Range(.Cells(rng.row, rng.Column), .Cells(rng.row, EndColumn()))
+            designFormat.ApplyFormat rng, scope:=AnalysisTimeSeriesHeader
+            
+        End If
+        
+        wholeTableStart = IIf(specs.TableType = TypeTimeSeries And Not specs.isNewSection, _
+                               StartColumn + 1, StartColumn)
+        'The whole table
+        If (specs.TableType <> TypeUnivariate) And (specs.TableType <> TypeGlobalSummary) Then
+            Set rng = .Range(.Cells(StartRow, wholeTableStart), .Cells(EndRow, EndColumn))
+            designFormat.ApplyFormat rng, scope:=AnalysisWholeTable
+        ElseIf (specs.TableType = TypeUnivariate) Then
+            Set rng = .Range(.Cells(StartRow + 1, wholeTableStart), .Cells(EndRow, EndColumn))
+            designFormat.ApplyFormat rng, scope:=AnalysisWholeTable
+        End If
+    End With
+
 End Sub
 
 'Build the table
 Private Sub Build()
-  AddRows 'Add categories for rows and column
-  AddColumns
-  AddHeaders 'Add the headers of the table
-  NameRanges 'Name required ranges of the table (for plotting purposes
+    AddRows                                      'Add categories for rows and column
+    AddColumns
+    AddHeaders                                   'Add the headers of the table
+    NameRanges                                   'Name required ranges of the table (for plotting purposes
 End Sub
 
 'Get the formula of the table
@@ -751,8 +1053,12 @@ Public Sub ICrossTable_NameRanges()
     NameRanges
 End Sub
 
+Public Sub ICrossTable_Format(ByVal designFormat As ILLFormat)
+    Format designFormat
+End Sub
+
 Public Sub ICrossTable_Build()
-  Build
+    Build
 End Sub
 
 Public Property Get ICrossTable_HeaderRange() As Range
@@ -774,6 +1080,30 @@ End Property
 
 Public Property Get ICrossTable_StartRow() As Long
     ICrossTable_StartRow = StartRow
+End Property
+
+Public Property Get ICrossTable_Previous() As ICrossTable
+    Set ICrossTable_Previous = Previous
+End Property
+
+Public Property Get ICrossTable_Specifications() As ITablesSpecs
+    Set ICrossTable_Specifications = Specifications
+End Property
+
+Public Property Get ICrossTable_Wksh() As Worksheet
+    Set ICrossTable_Wksh = Wksh()
+End Property
+
+Public Property Get ICrossTable_NumberOfColumns() As Long
+    ICrossTable_NumberOfColumns = NumberOfColumns()
+End Property
+
+Public Property Get ICrossTable_EndColumn() As Long
+    ICrossTable_EndColumn = EndColumn()
+End Property
+
+Public Property Get ICrossTable_EndRow() As Long
+    ICrossTable_EndRow = EndRow()
 End Property
 
 

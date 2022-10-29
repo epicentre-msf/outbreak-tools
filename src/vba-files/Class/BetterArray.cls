@@ -164,13 +164,13 @@ End Property
 
 '@DefaultMember
 '@Description("Returns the element in the array stored at the specified index.")
-Public Property Get Item(ByVal Index As Long) As Variant
-    If Index <= this.Length Then
+Public Property Get Item(ByVal index As Long) As Variant
+    If index <= this.Length Then
         ' not using letOrSetElement here as it might try to access the Items letter
-        If IsObject(this.Items(Index)) Then
-            Set Item = this.Items(Index)
+        If isObject(this.Items(index)) Then
+            Set Item = this.Items(index)
         Else
-            Item = this.Items(Index)
+            Item = this.Items(index)
         End If
     Else
         '@Ignore FunctionReturnValueDiscarded
@@ -179,13 +179,13 @@ Public Property Get Item(ByVal Index As Long) As Variant
 End Property
 
 '@Description("Assigns the passed element to the array at the specified index.")
-Public Property Let Item(ByVal Index As Long, ByVal Element As Variant)
-    If Me.UpperBound >= Index Then
-        If Index < this.LowerBound Then
+Public Property Let Item(ByVal index As Long, ByVal Element As Variant)
+    If Me.UpperBound >= index Then
+        If index < this.LowerBound Then
             '@Ignore FunctionReturnValueDiscarded
             Me.Unshift Element
         Else
-            LetOrSetElement this.Items(Index), Element
+            LetOrSetElement this.Items(index), Element
         End If
     Else
         '@Ignore FunctionReturnValueDiscarded
@@ -1034,20 +1034,20 @@ Public Function LastIndexOf( _
 End Function
 
 '@Description("Removes the item at the specified index. Returns the new length of the array")
-Public Function Remove(ByVal Index As Long) As Long
+Public Function Remove(ByVal index As Long) As Long
     Dim RelativeIndex As Long
     Dim LocalType As ArrayTypes
     
     RelativeIndex = MISSING_LONG
     LocalType = this.ArrayType
     
-    If Index >= this.LowerBound Then
-        If Index <= Me.UpperBound Then
-            RelativeIndex = Index
+    If index >= this.LowerBound Then
+        If index <= Me.UpperBound Then
+            RelativeIndex = index
         End If
     Else
-        If Index < 0 Then
-            RelativeIndex = Me.UpperBound + Index
+        If index < 0 Then
+            RelativeIndex = Me.UpperBound + index
             If RelativeIndex < this.LowerBound Then RelativeIndex = MISSING_LONG
         End If
     End If
@@ -2035,7 +2035,7 @@ Private Function EscapeCharInString( _
         ByVal Escape As String, _
         Optional ByVal BothSides As Boolean _
         ) As String
-    Dim Index As Long
+    Dim index As Long
     Dim TargetLength As Long
     Dim EscapeLength As String
     Dim Result As String
@@ -2043,17 +2043,17 @@ Private Function EscapeCharInString( _
     TargetLength = Len(Target)
     EscapeLength = Len(Escape)
     Result = Destination
-    Index = 1
+    index = 1
     Do
-        Index = VBA.Strings.InStr(Index, Destination, Target)
-        If Index Then
-            Result = InsertIntoStringAtIndex(Result, Escape, Index)
-            inc Index, EscapeLength + TargetLength
+        index = VBA.Strings.InStr(index, Destination, Target)
+        If index Then
+            Result = InsertIntoStringAtIndex(Result, Escape, index)
+            inc index, EscapeLength + TargetLength
             If BothSides Then
-                Result = InsertIntoStringAtIndex(Result, Escape, Index)
+                Result = InsertIntoStringAtIndex(Result, Escape, index)
             End If
         End If
-    Loop While Index > 0
+    Loop While index > 0
     
     EscapeCharInString = Result
 End Function
@@ -2062,16 +2062,16 @@ End Function
 Private Function InsertIntoStringAtIndex( _
         ByVal Destination As String, _
         ByVal Source As String, _
-        ByVal Index As Long _
+        ByVal index As Long _
         ) As String
     Dim Front As String
     Dim Back As String
-    If Index > 1 Then
-        Front = Left$(Destination, Index)
+    If index > 1 Then
+        Front = Left$(Destination, index)
     End If
     
-    If Index < Len(Destination) Then
-        Back = Right$(Destination, Len(Destination) - Index)
+    If index < Len(Destination) Then
+        Back = Right$(Destination, Len(Destination) - index)
     End If
     InsertIntoStringAtIndex = Front & Source & Back
 End Function
@@ -2123,17 +2123,17 @@ Private Function ConcatDelegate(ByRef First() As Variant, ParamArray Args() As V
 End Function
 
 '@Description("Places the Values in Source within Destination starting at Index")
-Private Sub InsertArrayAtIndex(ByRef Destination() As Variant, ByRef Source() As Variant, ByRef Index As Long)
+Private Sub InsertArrayAtIndex(ByRef Destination() As Variant, ByRef Source() As Variant, ByRef index As Long)
     Dim Offset As Long
     Dim SourceLength As Long
     Dim StartingIndex As Long
     If IsArrayAllocated(Source) Then
-        StartingIndex = Index
+        StartingIndex = index
         Offset = StartingIndex - LBound(Source)
         SourceLength = GetArrayLength(Source)
-        Do While Index < StartingIndex + SourceLength
-            LetOrSetElement Destination(Index), Source(Index - Offset)
-            inc Index
+        Do While index < StartingIndex + SourceLength
+            LetOrSetElement Destination(index), Source(index - Offset)
+            inc index
         Loop
     End If
 End Sub
@@ -2207,15 +2207,15 @@ Private Function TrimRowsMultidimensionArray(ByRef Original() As Variant, ByVal 
 End Function
 
 '@Description("Increments an index")
-Private Function inc(ByRef Index As Long, Optional ByVal Value As Long = 1) As Long
-    Index = Index + Value
-    inc = Index
+Private Function inc(ByRef index As Long, Optional ByVal Value As Long = 1) As Long
+    index = index + Value
+    inc = index
 End Function
 
 '@Description("Decrements an index")
-Private Function dec(ByRef Index As Long, Optional ByVal Value As Long = 1) As Long
-    Index = Index - Value
-    dec = Index
+Private Function dec(ByRef index As Long, Optional ByVal Value As Long = 1) As Long
+    index = index - Value
+    dec = index
 End Function
 
 '@Description("Populates TString Types")
@@ -2700,7 +2700,7 @@ Private Function RecursiveIncludes( _
                ) > 0 _
                  Or _
                  UCase$(CStr(SearchElement)) = "OBJECT" And _
-                 IsObject(SearchArray(i)) _
+                 isObject(SearchArray(i)) _
                  Then
                 RecursiveIncludes = True
                 Exit Function
@@ -2828,8 +2828,8 @@ Private Function ElementsAreEqual( _
         End If
     ElseIf IsEmpty(Expected) Or IsEmpty(Actual) Then
         If IsEmpty(Expected) And IsEmpty(Actual) Then Result = True
-    ElseIf IsObject(Expected) Or IsObject(Actual) Then
-        If IsObject(Expected) And IsObject(Actual) Then
+    ElseIf isObject(Expected) Or isObject(Actual) Then
+        If isObject(Expected) And isObject(Actual) Then
             If Expected Is Actual Then Result = True
         End If
     ElseIf IsNumeric(Expected) Or IsNumeric(Actual) Then
@@ -3249,17 +3249,17 @@ End Sub
 '@Description("Returns an field of a one dimension or two dimension jagged array")
 Private Function GetComparisonItem( _
         ByRef Source() As Variant, _
-        ByVal Index As Long, _
+        ByVal index As Long, _
         ByVal col As Long, _
         ByVal LocalArrayType As ArrayTypes _
         ) As Variant
-    If IsObject(Source(Index)) Then
-        GetComparisonItem = ObjPtr(Source(Index))
+    If isObject(Source(index)) Then
+        GetComparisonItem = ObjPtr(Source(index))
     Else
         If LocalArrayType = BA_JAGGED Then
-            GetComparisonItem = Source(Index)(col)
+            GetComparisonItem = Source(index)(col)
         Else
-            GetComparisonItem = Source(Index)
+            GetComparisonItem = Source(index)
         End If
     End If
 End Function
@@ -3546,7 +3546,7 @@ End Sub
 
 '@Description("Sets or lets the value of a variable by reference depending on the type of the element to be assigned")
 Private Sub LetOrSetElement(ByRef Destination As Variant, ByRef Source As Variant)
-    If IsObject(Source) Then
+    If isObject(Source) Then
         Set Destination = Source
     Else
         Destination = Source
@@ -3646,7 +3646,7 @@ Private Function GetScalarRepresentation( _
         Optional ByVal QuoteStrings As Boolean _
         ) As Variant
     Dim Result As Variant
-    If IsObject(Element) Then
+    If isObject(Element) Then
         On Error Resume Next
         'Try to retrieve default member
         Result = Element

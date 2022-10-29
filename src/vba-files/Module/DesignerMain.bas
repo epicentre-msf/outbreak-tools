@@ -21,7 +21,7 @@ Sub LoadFileDic()
     If sFilePath <> "" Then
         SheetMain.Range(C_sRngPathDic).Value = sFilePath
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_ChemFich")
-        SheetMain.Range(C_sRngPathDic).Interior.Color = vbWhite
+        SheetMain.Range(C_sRngPathDic).Interior.color = vbWhite
 
         'Import the languages after loading the setup file
         Call ImportLang
@@ -58,7 +58,7 @@ Sub LinelistDir()
     SheetMain.Range(C_sRngLLDir) = ""
     If (sfolder <> "") Then
         SheetMain.Range(C_sRngLLDir).Value = sfolder
-        SheetMain.Range(C_sRngLLDir).Interior.Color = vbWhite
+        SheetMain.Range(C_sRngLLDir).Interior.color = vbWhite
     Else
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_OpeAnnule")
     End If
@@ -148,7 +148,7 @@ Public Sub ImportGeobase()
 
     Wkb.Close SaveChanges:=False
     SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_Fini")
-    SheetMain.Range(C_sRngPathGeo).Interior.Color = GetColor("White")
+    SheetMain.Range(C_sRngPathGeo).Interior.color = GetColor("White")
 
     Call TranslateHeadGeo
     EndWork xlsapp:=Application
@@ -198,7 +198,7 @@ Sub GenerateData(Optional iAsk As Byte = 0)
 
     If IsWkbOpened(SheetMain.Range(C_sRngLLName).Value & ".xlsb") Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_CloseLL")
-        SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
+        SheetMain.Range(C_sRngLLName).Interior.color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
 
@@ -352,11 +352,11 @@ Public Sub Control()
 
         If Dir(SheetMain.Range(C_sRngLLDir).Value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).Value & ".xlsb") <> "" Then
             SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_Correct") & ": " & SheetMain.Range(C_sRngLLName).Value & ".xlsb " & TranslateMsg("MSG_Exists")
-            SheetMain.Range(C_sRngEdition).Interior.Color = Helpers.GetColor("Grey")
+            SheetMain.Range(C_sRngEdition).Interior.color = Helpers.GetColor("Grey")
             If MsgBox(SheetMain.Range(C_sRngLLName).Value & ".xlsb " & TranslateMsg("MSG_Exists") & Chr(10) & TranslateMsg("MSG_Question"), vbYesNo, _
                       TranslateMsg("MSG_Title")) = vbNo Then
                 SheetMain.Range(C_sRngLLName).Value = ""
-                SheetMain.Range(C_sRngLLName).Interior.Color = GetColor("RedEpi")
+                SheetMain.Range(C_sRngLLName).Interior.color = GetColor("RedEpi")
                 Exit Sub
             End If
         Else
@@ -374,28 +374,28 @@ Sub OpenLL()
     'Be sure that the directory and the linelist name are not empty
     If SheetMain.Range(C_sRngLLDir).Value = "" Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_PathLL")
-        SheetMain.Range(C_sRngLLDir).Interior.Color = Helpers.GetColor("RedEpi")
+        SheetMain.Range(C_sRngLLDir).Interior.color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
 
     If SheetMain.Range(C_sRngLLName).Value = "" Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_LLName")
-        SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
+        SheetMain.Range(C_sRngLLName).Interior.color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
 
     'Be sure the workbook is not already opened
     If IsWkbOpened(SheetMain.Range(C_sRngLLName).Value & ".xlsb") Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_CloseLL")
-        SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
+        SheetMain.Range(C_sRngLLName).Interior.color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
 
     'Be sure the workbook exits
     If Dir(SheetMain.Range(C_sRngLLDir).Value & Application.PathSeparator & SheetMain.Range(C_sRngLLName).Value & ".xlsb") = "" Then
         SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_CheckLL")
-        SheetMain.Range(C_sRngLLName).Interior.Color = Helpers.GetColor("RedEpi")
-        SheetMain.Range(C_sRngLLDir).Interior.Color = Helpers.GetColor("RedEpi")
+        SheetMain.Range(C_sRngLLName).Interior.color = Helpers.GetColor("RedEpi")
+        SheetMain.Range(C_sRngLLDir).Interior.color = Helpers.GetColor("RedEpi")
         Exit Sub
     End If
 
@@ -417,12 +417,12 @@ Sub ResetField()
     SheetMain.Range(C_sRngUpdate).Value = vbNullString
     SheetMain.Range(C_sRngLangSetup).Value = vbNullString
 
-    SheetMain.Range(C_sRngPathGeo).Interior.Color = vbWhite
-    SheetMain.Range(C_sRngPathDic).Interior.Color = vbWhite
-    SheetMain.Range(C_sRngLLName).Interior.Color = vbWhite
-    SheetMain.Range(C_sRngLLDir).Interior.Color = vbWhite
-    SheetMain.Range(C_sRngEdition).Interior.Color = vbWhite
-    SheetMain.Range(C_sRngUpdate).Interior.Color = vbWhite
+    SheetMain.Range(C_sRngPathGeo).Interior.color = vbWhite
+    SheetMain.Range(C_sRngPathDic).Interior.color = vbWhite
+    SheetMain.Range(C_sRngLLName).Interior.color = vbWhite
+    SheetMain.Range(C_sRngLLDir).Interior.color = vbWhite
+    SheetMain.Range(C_sRngEdition).Interior.color = vbWhite
+    SheetMain.Range(C_sRngUpdate).Interior.color = vbWhite
 
 End Sub
 
