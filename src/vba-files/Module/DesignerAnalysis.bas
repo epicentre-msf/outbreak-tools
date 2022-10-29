@@ -120,13 +120,13 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
             .Value = TranslateLLMsg("MSG_GlobalSummary")
             .Font.Size = C_iAnalysisFontSize + 5
             .Font.Bold = True
-            .Font.Color = Helpers.GetColor("DarkBlue")
+            .Font.color = Helpers.GetColor("DarkBlue")
         End With
 
 
         With .Cells(C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1)
             .Value = TranslateLLMsg("MSG_AllData")
-            .Font.Color = Helpers.GetColor("DarkBlue")
+            .Font.color = Helpers.GetColor("DarkBlue")
             .HorizontalAlignment = xlHAlignCenter
             .VerticalAlignment = xlVAlignCenter
             .Font.Bold = True
@@ -135,7 +135,7 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
 
         With .Cells(C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2)
             .Value = TranslateLLMsg("MSG_FilteredData")
-            .Font.Color = Helpers.GetColor("DarkBlue")
+            .Font.color = Helpers.GetColor("DarkBlue")
             .HorizontalAlignment = xlHAlignCenter
             .VerticalAlignment = xlVAlignCenter
             .Font.Bold = True
@@ -149,8 +149,8 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
         For i = 2 To iSumLength
             With .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis)
                 .Value = GSData.Items(i, 1)
-                .Font.Color = Helpers.GetColor("DarkBlue")
-                .Interior.Color = Helpers.GetColor("VeryLightBlue")
+                .Font.color = Helpers.GetColor("DarkBlue")
+                .Interior.color = Helpers.GetColor("VeryLightBlue")
                 .VerticalAlignment = xlVAlignCenter
                 .HorizontalAlignment = xlHAlignLeft
             End With

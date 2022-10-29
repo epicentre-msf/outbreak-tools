@@ -218,7 +218,7 @@ Private Function VariableAddress(ByVal varName As String) As String
   Set dictWksh = dict.Data.Wksh()
   Set vars = LLVariables.Create(dict)
 
-  varIndex = vars.Index(varName)
+  varIndex = vars.index(varName)
   sheetName = vars.Value("sheet name", varName)
   
   rstart = DataBounds(sheetName, 1)
@@ -227,9 +227,9 @@ Private Function VariableAddress(ByVal varName As String) As String
   If Contains(sheetName) Then
     Select Case SheetInfo(sheetName)
       Case SHEETTYPEHORIZONTAL
-        varAdd = "'" & sheetName & "'!" & dictWksh.Cells(rstart + 1, varIndex).Address(Rowabsolute:=False)
+        varAdd = "'" & sheetName & "'!" & dictWksh.Cells(rstart + 1, varIndex).Address(rowabsolute:=False)
       Case SHEETTYPEVERTICAL
-        varAdd = "'" & sheetName & "'!" & dictWksh.Cells(varIndex, cstart).Address(Rowabsolute:=True, ColumnAbsolute:=True)
+        varAdd = "'" & sheetName & "'!" & dictWksh.Cells(varIndex, cstart).Address(rowabsolute:=True, ColumnAbsolute:=True)
     End Select
   End If
   

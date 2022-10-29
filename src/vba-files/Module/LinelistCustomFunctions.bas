@@ -56,7 +56,7 @@ Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Str
 
         On Error Resume Next
         With Application.WorksheetFunction
-            sVal = .Index(ColRngVal, .Match(sValLook, ColRngLook, 0))
+            sVal = .index(ColRngVal, .Match(sValLook, ColRngLook, 0))
         End With
         On Error GoTo 0
     End If
@@ -109,10 +109,10 @@ End Function
 Public Function Epiweek2(currentDate As Long) As Long
     Dim inDate As Long
     Dim firstDate As Long
-    
+
     inDate = DateSerial(Year(currentDate), 1, 1)
     firstDate = inDate - Weekday(inDate, 2) + 1
-     
+
     Epiweek2 = 1 + (currentDate - firstDate) \ 7
 
 End Function
@@ -180,9 +180,14 @@ Public Function FindLastDay(sAggregate As String, inDate As Long) As Long
 
 End Function
 
+
 'Format a date to feet the aggregation selection ================================================================
 
-Public Function FormatDateFromLastDay(sAggregate As String, inDate As Long, maxDate As Long, startDate As Long) As String
+Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, endDate As Long, maxDate As Long) As String
+
+    'enDate is the date of the end of the aggregation period
+    'startDate is the startDate of the aggregation period
+    'maxDate is the maximum Date of the time series
 
     Dim sAgg As String
     Dim sValue As String
@@ -190,7 +195,7 @@ Public Function FormatDateFromLastDay(sAggregate As String, inDate As Long, maxD
     Dim quarterDate As Integer
 
     sAgg = GetAgg(sAggregate)
-    
+
     If startDate > maxDate Then
         FormatDateFromLastDay = vbNullString
         Exit Function
@@ -199,17 +204,17 @@ Public Function FormatDateFromLastDay(sAggregate As String, inDate As Long, maxD
     Select Case sAgg
 
     Case "day"
-        sValue = Format(inDate, "dd-mmm-yyyy")
+        sValue = Format(endDate, "dd-mmm-yyyy")
     Case "week"
-        sValue = TranslateLLMsg("MSG_W") & IIf(Epiweek2(inDate) < 10, "0" & Epiweek2(inDate), Epiweek2(inDate)) & " - " & Year(inDate)
+        sValue = TranslateLLMsg("MSG_W") & IIf(Epiweek2(endDate) < 10, "0" & Epiweek2(endDate), Epiweek2(endDate)) & " - " & Year(endDate)
     Case "month"
-        sValue = Format(inDate, "mmm - yyyy")
+        sValue = Format(endDate, "mmm - yyyy")
     Case "quarter"
-        monthDate = Month(inDate)
+        monthDate = Month(endDate)
         quarterDate = (IIf((monthDate Mod 3) = 0, ((monthDate - 1) \ 3), (monthDate \ 3))) + 1
-        sValue = TranslateLLMsg("MSG_Q") & quarterDate & " - " & Year(inDate)
+        sValue = TranslateLLMsg("MSG_Q") & quarterDate & " - " & Year(endDate)
     Case "year"
-        sValue = Year(inDate)
+        sValue = Year(endDate)
     End Select
 
     FormatDateFromLastDay = sValue
@@ -221,4 +226,16 @@ Public Function FormatDateRange(MinDate As Long, maxDate As Long) As String
     FormatDateRange = Format(MinDate, "dd/mm/yyyy") & "-" & Format(maxDate, "dd/mm/yyyy")
 
 End Function
+
+'Top admin levels and values for the tables on spatial analysis
+Public Function TopAdminName(Admlevel As String, Admcount As Long) As String
+    TopAdminName = vbNullString
+End Function
+
+
+Public Function TopAdminValue(admName As String, Admlevel As String, Admcount As Long) As Long
+    TopAdminValue = 0
+End Function
+
+
 

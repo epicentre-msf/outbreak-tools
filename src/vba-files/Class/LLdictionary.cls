@@ -95,7 +95,7 @@ End Property
 Public Property Get Prepared() As Boolean
     Dim dictWksh As Worksheet
     Set dictWksh = Wksh()
-    Prepared = (dictWksh.Cells(DictEndRow + 1, StartColumn).Font.Color = vbBlue) And _
+    Prepared = (dictWksh.Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue) And _
                 ColumnExists("table name") And ColumnExists("column index") And _
                 (Not ColumnExists("main section sort")) And (Not ColumnExists("main section index"))
 End Property
@@ -242,7 +242,7 @@ Private Sub Prepare(Optional ByVal tablePrefix As String = "table")
             Clean
             'Add color to the last line for prepare indication
             Set dictWksh = Wksh()
-            dictWksh.Cells(DictEndRow + 1, StartColumn).Font.Color = vbBlue
+            dictWksh.Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue
     End If
 End Sub
 
@@ -416,7 +416,7 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
 
         endCol = DictEndColumn
         .Cells(StartRow, endCol + 1).Value = newColumn
-        .Cells(StartRow + 1, endCol + 1).formula = "= " & Chr(34) & tablePrefix & Chr(34) & " " & Chr(38) & " " & .Cells(StartRow + 1, endCol).Address(Rowabsolute:=False)
+        .Cells(StartRow + 1, endCol + 1).formula = "= " & Chr(34) & tablePrefix & Chr(34) & " " & Chr(38) & " " & .Cells(StartRow + 1, endCol).Address(rowabsolute:=False)
         Set dictRng = DataRange(newColumn)
 
         .Cells(StartRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
@@ -457,8 +457,8 @@ Private Sub AppendColumnIndex()
     With dictWksh
         'Sorting
         .Cells(StartRow, endCol + 1).Value = "main section sort"
-        firstsheetNameCell = .Cells(StartRow + 1, sheetNameIndex).Address(Rowabsolute:=False) & " "
-        firstmainSectionCell = .Cells(StartRow + 1, mainSectionIndex).Address(Rowabsolute:=False)
+        firstsheetNameCell = .Cells(StartRow + 1, sheetNameIndex).Address(rowabsolute:=False) & " "
+        firstmainSectionCell = .Cells(StartRow + 1, mainSectionIndex).Address(rowabsolute:=False)
         .Cells(StartRow + 1, endCol + 1).formula = "= IF(" & firstmainSectionCell & "=" & Chr(34) & Chr(34) & _
                                                     ", ROW(" & firstmainSectionCell & ")" & ", " & _
                                                    firstsheetNameCell & Chr(38) & Chr(34) & " - " & Chr(34) & Chr(38) & firstmainSectionCell & _
@@ -558,7 +558,7 @@ Public Function ILLdictionary_VariableExists(ByVal varName As String) As Boolean
 End Function
 
 'void methods
-Public Sub ILLdictionary_Prepare(Optional ByVal tablePrefix As String = "tab")
+Public Sub ILLdictionary_Prepare(Optional ByVal tablePrefix As String = "table")
    Prepare tablePrefix
 End Sub
 

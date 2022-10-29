@@ -19,5 +19,12 @@
         "titleBar.inactiveForeground": "#e7e7e799",
         "commandCenter.border": "#e7e7e799"
     },
-    "peacock.color": "#000000"
+
+    
+
+"editor.quickSuggestions": {
+    "other": true,
+    "comments": false,
+    "strings": true
+  }
 }

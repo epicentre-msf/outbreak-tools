@@ -40,13 +40,13 @@ End Sub
 Private Sub TestVariableValues()
     On Error GoTo VariableValuesFail
     
-    Dim val As String
+    Dim Val As String
     
-    val = variables.Value(varName:="varb1", colName:="sheet type")
-    Assert.IsTrue (val = "hlist2D"), "returned value of sheet type for variable varb1 is not correct. Expected hlist2D, returned : " & val
+    Val = variables.Value(varName:="varb1", colName:="sheet type")
+    Assert.IsTrue (Val = "hlist2D"), "returned value of sheet type for variable varb1 is not correct. Expected hlist2D, returned : " & Val
     
-    val = variables.Value(varName:="vara1", colName:="sheet type")
-    Assert.IsTrue (val = "vlist1D"), "returned value of sheet type of variable vara1 is not correct Expected vlist1D, returned :" & val
+    Val = variables.Value(varName:="vara1", colName:="sheet type")
+    Assert.IsTrue (Val = "vlist1D"), "returned value of sheet type of variable vara1 is not correct Expected vlist1D, returned :" & Val
 
     Assert.IsTrue variables.Contains("varb1"), "varb1 exists as a variable, but it not found as one."
     Assert.IsFalse variables.Contains("va"), "va does not exist as a variable, but it is found as one."
@@ -72,8 +72,8 @@ Private Sub TestIndex()
     'TEst the column index
     dict.Prepare
     Set vars = LLVariables.Create(dict)
-    sheetIndex = vars.Index("vara1")
+    sheetIndex = vars.index("vara1")
     Assert.IsTrue (sheetIndex = 4), "Expected index: 4, Obtained index: " & sheetIndex
-    sheetIndex = vars.Index("varb2")
+    sheetIndex = vars.index("varb2")
     Assert.IsTrue (sheetIndex = 2), "Expected index: 2, Obtained index: " & sheetIndex
 End Sub
