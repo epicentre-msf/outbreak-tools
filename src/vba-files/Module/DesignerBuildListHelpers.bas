@@ -38,7 +38,7 @@ End Sub
 '@sNameModule the name of the module we want to copy code from
 
 Public Sub TransferCodeWksh(Wkb As Workbook, sSheetName As String, _
-                           sNameModule As String)
+                            sNameModule As String)
 
     Dim sNouvCode As String                      'a string to contain code to add
     Dim sheetComp As String
@@ -214,13 +214,13 @@ Sub AddSubLab(Wksh As Worksheet, iSheetStartLine As Integer, _
               Optional sSubLabColor As String = "SubLabBlue")
     With Wksh
         .Cells(iSheetStartLine, iCol).Value = _
-        .Cells(iSheetStartLine, iCol).Value & Chr(10) & sSubLab
+                                            .Cells(iSheetStartLine, iCol).Value & Chr(10) & sSubLab
 
         'Changing the fontsize of the sublabels
         .Cells(iSheetStartLine, iCol).Characters(start:=Len(sMainLab) + 1, _
-            Length:=Len(sSubLab) + 1).Font.Size = C_iLLSheetFontSize - 2
+                                                 Length:=Len(sSubLab) + 1).Font.Size = C_iLLSheetFontSize - 2
         .Cells(iSheetStartLine, iCol).Characters(start:=Len(sMainLab) + 1, _
-            Length:=Len(sSubLab) + 1).Font.color = Helpers.GetColor(sSubLabColor)
+                                                 Length:=Len(sSubLab) + 1).Font.color = Helpers.GetColor(sSubLabColor)
     End With
 
 End Sub
@@ -464,7 +464,7 @@ Sub Add4GeoCol(Wkb As Workbook, dictData As BetterArray, DictHeaders As BetterAr
         .Cells(iStartLine + 2, iCol).Locked = False
 
         'ajout des formules de validation
-        .Cells(iStartLine + 2, iCol).Validation.Delete
+        .Cells(iStartLine + 2, iCol).validation.Delete
         'Add name and reference for adm1 (in case someone adds one adm1)
         Wkb.Names.Add Name:=C_sAdmName & "1" & "_column", RefersToR1C1:="=" & C_sTabadm1 & "[" & SheetGeo.Cells(1, 1).Value & "]"
 
@@ -808,7 +808,7 @@ End Function
 Sub BuildValidationMinMax(oRange As Range, iMin As String, iMax As String, iAlertType As Byte, sTypeValidation As String, sMessage As String)
 
     On Error Resume Next
-    With oRange.Validation
+    With oRange.validation
         .Delete
         Select Case LCase(sTypeValidation)
         Case "integer"                           'if the validation should be for integer
@@ -1025,4 +1025,5 @@ Public Sub AddAdminSheet(Wkb As Workbook)
     End With
 
 End Sub
+
 

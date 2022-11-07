@@ -25,8 +25,8 @@ End Type
 
 Private this As TGraph
 
-Private Const GRAPHHEIGHT As Long = 16.618
-Private Const GRAPHWIDTH As Long = 8.309
+Private Const GRAPHHEIGHT As Long = 14.3
+Private Const GRAPHWIDTH As Long = 4.1
 
 Public Function Create(sh As Worksheet, posRng As Range) As IGraphs
     With New Graphs
@@ -160,22 +160,31 @@ Public Sub AddLabels(ByVal catName As String, ByVal lblName As String)
         .SeriesCollection(ind).XValues = sh.Range(catName)
         .SeriesCollection(ind).Name = sh.Range(lblName)
         .SeriesCollection(ind).ApplyDataLabels xlDataLabelsShowValue, False
-        .SeriesCollection(ind).DataLabels.Font.Size = 8
+        .SeriesCollection(ind).DataLabels.Font.Size = 6
         .SeriesCollection(ind).DataLabels.Font.color = RGB(2, 6, 91)
         .SeriesCollection(ind).DataLabels.Font.Name = "+mj-lt"
     End With
 
 End Sub
 
-Public Sub Format(Optional valuesTitle As String = vbNullString, _
-                  Optional catTitle As String = vbNullString, _
-                  Optional plotTitle As String = vbNullString)
+Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
+                  Optional ByVal catTitle As String = vbNullString, _
+                  Optional ByVal plotTitle As String = vbNullString, _
+                  Optional ByVal secondAxisTitle As String = vbNullString)
 
     Dim co As ChartObject
     Dim sh As Worksheet
     Set co = graphChart
     Set sh = Wksh()
+    Dim cw As Long
+    Dim rh As Long
+    cw = sh.Range("A1").Width
+    rh = sh.Range("A1").Height
 
+
+    'Coerce again the width and the height
+    co.Width = GRAPHWIDTH * cw
+    co.Height = GRAPHHEIGHT * rh
     With sh.Shapes(co.Name)
         .Shadow.Type = msoShadow21
         .line.Visible = msoTrue
@@ -187,6 +196,8 @@ Public Sub Format(Optional valuesTitle As String = vbNullString, _
             .HasTitle = True
             .HasMajorGridlines = True
             .MajorGridlines.Border.color = RGB(255, 255, 255)
+            .AxisTitle.text = catTitle
+            .TickLabels.Font.Size = 8
         End With
         With .Axes(xlValue, xlPrimary)
             .HasTitle = True
@@ -194,13 +205,33 @@ Public Sub Format(Optional valuesTitle As String = vbNullString, _
             .MajorGridlines.Border.color = RGB(255, 255, 255)
             .TickLabels.Font.Size = 8
             .TickLabels.Font.Name = "+mj-lt"
+            .AxisTitle.text = valuesTitle
         End With
+        .HasTitle = False
+        
+        'formatting on the secondary axe
+        If .HasAxis(xlValue, xlSecondary) Then
+            With .Axes(xlValue, xlSecondary)
+                .HasTitle = True
+                .HasMajorGridlines = False
+                .MajorGridlines.Border.color = RGB(255, 255, 255)
+                .TickLabels.Font.Size = 8
+                .TickLabels.Font.Name = "+mj-lt"
+                .AxisTitle.text = "%"
+                .MaximumScale = 1
+                .MajorUnit = 0.1
+            End With
+        End If
+        
         With .PlotArea
             .Left = 30
-            .Width = 340
-            .Height = 180
+            .Top = 20
+            .Width = 315
+            .Height = 150
         End With
     End With
+    
+    
 End Sub
 
 Public Sub IGraphs_Add()
@@ -215,8 +246,10 @@ Public Sub IGraphs_AddLabels(ByVal catName As String, ByVal lblName As String)
     AddLabels catName, lblName
 End Sub
 
-Public Sub IGraphs_Format()
-    Format
+Public Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, _
+                  Optional ByVal catTitle As String = vbNullString, _
+                  Optional ByVal plotTitle As String = vbNullString)
+    Format valuesTitle:=valuesTitle, catTitle:=catTitle, plotTitle:=plotTitle
 End Sub
 
 

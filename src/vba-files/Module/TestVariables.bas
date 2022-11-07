@@ -52,12 +52,11 @@ Private Sub TestVariableValues()
     Assert.IsFalse variables.Contains("va"), "va does not exist as a variable, but it is found as one."
     Assert.IsFalse variables.Contains(""), "empty characters are considered as present in variables"
 
-Exit Sub
+    Exit Sub
 
 VariableValuesFail:
     Assert.Fail "Variable values Failed: #" & Err.Number & " : " & Err.Description
 End Sub
-
 
 '@TestMethod
 Private Sub TestIndex()
@@ -77,3 +76,4 @@ Private Sub TestIndex()
     sheetIndex = vars.index("varb2")
     Assert.IsTrue (sheetIndex = 2), "Expected index: 2, Obtained index: " & sheetIndex
 End Sub
+

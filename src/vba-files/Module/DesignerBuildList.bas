@@ -11,7 +11,7 @@ Option Private Module
 '@ChoicesData: The choices data
 '@ExportData: The export data
 
-Private AddedLogo As Boolean                         'Added Logo?
+Private AddedLogo As Boolean                     'Added Logo?
 
 Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As BetterArray, _
               ChoicesHeaders As BetterArray, ChoicesData As BetterArray, _
@@ -63,7 +63,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
 
 
     Set LinelistDictionary = LLdictionary.Create(ThisWorkbook.Worksheets("Dictionary"), 1, 1)
-    Set ChoiceAutoVarData = LinelistDictionary.Data.FilterData("control", "list_auto", "control details")
+    Set ChoiceAutoVarData = LinelistDictionary.data.FilterData("control", "list_auto", "control details")
 
     AddedLogo = False
 
@@ -481,7 +481,7 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
     Dim sActualMainLab As String                 'Actual Main label
     Dim sActualSubLab As String
     Dim sActualVarName As String                 'Actual Variable Name
-    Dim sActualFormula As String                  'Actual Variable Choice
+    Dim sActualFormula As String                 'Actual Variable Choice
     Dim sActualControl As String
     Dim sActualValidationAlert As String
     Dim sActualValidationMessage As String
@@ -572,8 +572,8 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
                 'the actual first value due to changes (taking in account the geo)
 
                 BuildSubSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), _
-                iColumn:=C_eStartColumnAdmData + 1, iLineFrom:=iPrevLineSubSec, _
-                iLineTo:=iCounterSheetAdmLine
+        iColumn:=C_eStartColumnAdmData + 1, iLineFrom:=iPrevLineSubSec, _
+        iLineTo:=iCounterSheetAdmLine
 
                 'update previous columns
                 sPrevSubSec = sActualSubSec
@@ -1012,12 +1012,12 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
                 'Testing if it is numeric
                 sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, AllSheetNamesData, VarNameData, ColumnIndexData, _
-                                                                        FormulaData, SpecCharData, ChoiceAutoVarData, sActualVarName, Wkb.Worksheets(sSheetName), True)
+                                                                         FormulaData, SpecCharData, ChoiceAutoVarData, sActualVarName, Wkb.Worksheets(sSheetName), True)
                 If sFormulaMin = "" Then
                     'MsgBox "Invalid formula will be ignored : " & sActualMin & " / " & sActualVarName
                 Else
                     sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, AllSheetNamesData, VarNameData, ColumnIndexData, FormulaData, SpecCharData, _
-                                                                            ChoiceAutoVarData, sActualVarName, Wkb.Worksheets(sSheetName), True)
+                                                                             ChoiceAutoVarData, sActualVarName, Wkb.Worksheets(sSheetName), True)
                     If sFormulaMax = "" Then
                         'MsgBox "Invalid formula will be ignored : " & sFormulaMax & " / " & sActualVarName
                     End If

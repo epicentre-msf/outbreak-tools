@@ -22,10 +22,13 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     If Target.Name.Name = "RNG_LangDesigner" Then
         Call TranslateDesigner
     ElseIf Target.Name.Name = "RNG_LLForm" Then
-
         Call TranslateHeadGeo
     ElseIf Target.Name.Name = "RNG_LLPassword" Then
+    
         SheetPassword.Range("RNG_DebuggingPassword").Value = Target.Value
+    ElseIf Target.Name.Name = "RNG_LangSetup" Then
+    
+        SheetLLTranslation.Range("RNG_DictionaryLanguage").Value = Target.Value
     End If
 
     Application.ScreenUpdating = True

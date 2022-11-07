@@ -528,7 +528,7 @@ Public Sub UpdateFilterTables()
 
                     Do While rowCounter > C_eStartLinesLLData + 1
 
-                       If .Rows(rowCounter).Hidden Then
+                        If .Rows(rowCounter).Hidden Then
                             With filtWksh
                                 If delRng Is Nothing Then
                                     Set delRng = .Range(.Cells(rowCounter, 1), .Cells(rowCounter, endCol))
@@ -536,8 +536,8 @@ Public Sub UpdateFilterTables()
                                     Set delRng = Application.Union(delRng, .Range(.Cells(rowCounter, 1), .Cells(rowCounter, endCol)))
                                 End If
                             End With
-                       End If
-                       rowCounter = rowCounter - 1
+                        End If
+                        rowCounter = rowCounter - 1
                     Loop
 
                     'Delete the ragne if necessary
@@ -602,15 +602,15 @@ Sub EventValueChangeAnalysis(Target As Range)
 
     Select Case ActiveSheet.Name
 
-        Case sParamSheetAnalysis
+    Case sParamSheetAnalysis
 
-            Set rng = ThisWorkbook.Worksheets(sParamSheetAnalysis).Range(C_sTabLLUBA & "_" & C_sGotoSection)
+        Set rng = ThisWorkbook.Worksheets(sParamSheetAnalysis).Range(C_sTabLLUBA & "_" & C_sGotoSection)
 
-        Case sParamSheetTemporalAnalysis
+    Case sParamSheetTemporalAnalysis
 
-            Set rng = ThisWorkbook.Worksheets(sParamSheetTemporalAnalysis).Range(C_sTabLLTA & "_" & C_sGotoSection)
+        Set rng = ThisWorkbook.Worksheets(sParamSheetTemporalAnalysis).Range(C_sTabLLTA & "_" & C_sGotoSection)
 
-        Case sParamSheetSpatialAnalysis
+    Case sParamSheetSpatialAnalysis
     End Select
 
 

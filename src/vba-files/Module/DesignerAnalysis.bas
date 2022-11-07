@@ -11,16 +11,21 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
     Dim iGoToColTA  As Long
     Dim iGoToColSA  As Long
     Dim rng As Range
+    Dim shUA As Worksheet
+    Dim shTS As Worksheet
+    Dim ana As ILLAnalysis
+    Dim lData As ILinelistSpecs
+    Dim currWkb As Workbook
 
     ' UNIVARIATE AND BIVARIATE ANALYSIS ============================================================================================
 
     'Add commands Buttons  for filters
 
     With Wkb.Worksheets(sParamSheetAnalysis)
-        .Cells.Font.Size = C_iAnalysisFontSize
+        '.Cells.Font.Size = C_iAnalysisFontSize
 
-        .Rows("1:2").RowHeight = C_iLLButtonsRowHeight
-        .Columns(1).ColumnWidth = C_iLLFirstColumnsWidth + 20
+        '.Rows("1:2").RowHeight = C_iLLButtonsRowHeight
+        '.Columns(1).ColumnWidth = C_iLLFirstColumnsWidth + 20
 
         'Add command for filtering
         Call AddCmd(Wkb, sParamSheetAnalysis, _
@@ -38,61 +43,71 @@ Public Sub BuildAnalysis(Wkb As Workbook, GSData As BetterArray, UAData As Bette
         iGoToColAna = .Cells(C_eStartlinesListAuto, .Columns.Count).End(xlToLeft).Column + 2
     End With
 
+    Set shUA = Wkb.Worksheets(sParamSheetAnalysis)
+    Set shTS = Wkb.Worksheets(sParamSheetTemporalAnalysis)
+    Set currWkb = ThisWorkbook
+    Set lData = LinelistSpecs.Create(currWkb)
+    Set ana = LLAnalysis.Create(currWkb.Worksheets("Analysis"), lData)
+    
+    lData.Prepare
+    ana.Build shUA, shTS
+
+
 
     'Add global summary first column
-    AddGlobalSummary Wkb, GSData, iGoToColAna
+    'AddGlobalSummary Wkb, GSData, iGoToColAna
 
     'Add Univariate Analysis tables
-    AddUnivariateAnalysis Wkb, UAData, ChoicesListData, ChoicesLabelsData, dictData, DictHeaders, VarNameData, iGoToColAna
+    'AddUnivariateAnalysis Wkb, UAData, ChoicesListData, ChoicesLabelsData, dictData, DictHeaders, VarNameData, iGoToColAna
 
     'Add Bivariate Analysis
-    AddBivariateAnalysis Wkb, BAData, ChoicesListData, ChoicesLabelsData, dictData, DictHeaders, VarNameData, iGoToColAna
+    'AddBivariateAnalysis Wkb, BAData, ChoicesListData, ChoicesLabelsData, dictData, DictHeaders, VarNameData, iGoToColAna
 
     'Build GoTo Area for the analysis (univariate and bivariate)
-    BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLUBA, sSheetName:=sParamSheetAnalysis, iGoToCol:=iGoToColAna, iCol:=2
+    'BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLUBA, sSheetName:=sParamSheetAnalysis, iGoToCol:=iGoToColAna, iCol:=2
 
     'Allow text wrap only at the end
-    FormatAnalysisWorksheet Wkb:=Wkb, sSheetName:=sParamSheetAnalysis, sCodeName:=C_sModLLAnaChange
+    'FormatAnalysisWorksheet Wkb:=Wkb, sSheetName:=sParamSheetAnalysis, sCodeName:=C_sModLLAnaChange
 
     'TIME SERIES ANALYSIS =============================================================================================================
 
     'Update the GoTo Column for the time series analysis
 
-    With Wkb.Worksheets(C_sSheetChoiceAuto)
+    ' With Wkb.Worksheets(C_sSheetChoiceAuto)
 
-        iGoToColTA = .Cells(C_eStartlinesListAuto, .Columns.Count).End(xlToLeft).Column + 2
+    '     iGoToColTA = .Cells(C_eStartlinesListAuto, .Columns.Count).End(xlToLeft).Column + 2
 
-        .Cells(C_eStartlinesListAuto, iGoToColTA).Value = C_sTimeAgg
-        .Cells(C_eStartlinesListAuto + 1, iGoToColTA).Value = TranslateLLMsg("MSG_Day")
-        .Cells(C_eStartlinesListAuto + 2, iGoToColTA).Value = TranslateLLMsg("MSG_Week")
-        .Cells(C_eStartlinesListAuto + 3, iGoToColTA).Value = TranslateLLMsg("MSG_Month")
-        .Cells(C_eStartlinesListAuto + 4, iGoToColTA).Value = TranslateLLMsg("MSG_Quarter")
-        .Cells(C_eStartlinesListAuto + 5, iGoToColTA).Value = TranslateLLMsg("MSG_Year")
+    '     .Cells(C_eStartlinesListAuto, iGoToColTA).Value = C_sTimeAgg
+    '     .Cells(C_eStartlinesListAuto + 1, iGoToColTA).Value = TranslateLLMsg("MSG_Day")
+    '     .Cells(C_eStartlinesListAuto + 2, iGoToColTA).Value = TranslateLLMsg("MSG_Week")
+    '     .Cells(C_eStartlinesListAuto + 3, iGoToColTA).Value = TranslateLLMsg("MSG_Month")
+    '     .Cells(C_eStartlinesListAuto + 4, iGoToColTA).Value = TranslateLLMsg("MSG_Quarter")
+    '     .Cells(C_eStartlinesListAuto + 5, iGoToColTA).Value = TranslateLLMsg("MSG_Year")
 
-        'Define the list object for validation
-        Set rng = .Range(.Cells(C_eStartlinesListAuto, iGoToColTA), .Cells(C_eStartlinesListAuto + 5, iGoToColTA))
-        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "lo" & "_" & C_sTimeAgg
+    '     'Define the list object for validation
+    '     Set rng = .Range(.Cells(C_eStartlinesListAuto, iGoToColTA), .Cells(C_eStartlinesListAuto + 5, iGoToColTA))
+    '     .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "lo" & "_" & C_sTimeAgg
 
-        iGoToColTA = iGoToColTA + 2
-    End With
+    '     iGoToColTA = iGoToColTA + 2
+    ' End With
 
     'Add a dynamic name for the times series
-    Wkb.Names.Add Name:=C_sTimeAgg, RefersToR1C1:="=" & "lo" & "_" & C_sTimeAgg & "[" & C_sTimeAgg & "]"
+    'Wkb.Names.Add Name:=C_sTimeAgg, RefersToR1C1:="=" & "lo" & "_" & C_sTimeAgg & "[" & C_sTimeAgg & "]"
 
     'Add Temporal Analysis
-    AddTimeSeriesAnalysis Wkb, TAData, ChoicesListData, ChoicesLabelsData, dictData, DictHeaders, VarNameData, TableNameData, iGoToColTA
+    'AddTimeSeriesAnalysis Wkb, TAData, ChoicesListData, ChoicesLabelsData, dictData, DictHeaders, VarNameData, TableNameData, iGoToColTA
 
     'Build GoTo Area for the Temporal analysis
-    BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLTA, sSheetName:=sParamSheetTemporalAnalysis, iGoToCol:=iGoToColTA, _
-                  iCol:=C_eStartColumnAnalysis + 2, iFontSize:=C_iAnalysisFontSize
+    'BuildGotoArea Wkb:=Wkb, sTableName:=C_sTabLLTA, sSheetName:=sParamSheetTemporalAnalysis, iGoToCol:=iGoToColTA, _
+     '             iCol:=C_eStartColumnAnalysis + 2, iFontSize:=C_iAnalysisFontSize
 
-    'Format then worksheet for temporal analysis
-    FormatAnalysisWorksheet Wkb:=Wkb, sSheetName:=sParamSheetTemporalAnalysis, iColWidth:=C_iLLFirstColumnsWidth - 8, sCodeName:=C_sModLLAnaChange
+    ' 'Format then worksheet for temporal analysis
+    ' FormatAnalysisWorksheet Wkb:=Wkb, sSheetName:=sParamSheetTemporalAnalysis, iColWidth:=C_iLLFirstColumnsWidth - 8, sCodeName:=C_sModLLAnaChange
 
     'Column witdth of the start column
-    With Wkb.Worksheets(sParamSheetTemporalAnalysis)
-        .Cells(1, C_eStartColumnAnalysis + 2).EntireColumn.ColumnWidth = C_iLLFirstColumnsWidth
-    End With
+    ' With Wkb.Worksheets(sParamSheetTemporalAnalysis)
+    '     .Cells(1, C_eStartColumnAnalysis + 2).EntireColumn.ColumnWidth = C_iLLFirstColumnsWidth
+    ' End With
 
 
     'SPATIAL ANALYSIS ================================================================================================================================
@@ -165,7 +180,7 @@ Private Sub AddGlobalSummary(Wkb As Workbook, GSData As BetterArray, iGoToCol As
             End If
 
             With .Range(.Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 1), _
-                       .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2))
+                        .Cells(i + C_eStartLinesAnalysis, C_eStartColumnAnalysis + 2))
                 .HorizontalAlignment = xlHAlignRight
                 .Font.Size = C_iAnalysisFontSize - 2
             End With

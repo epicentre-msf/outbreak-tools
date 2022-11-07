@@ -668,13 +668,13 @@ Public Function FromExcelRange( _
         Dim StartColumn As Long
         Dim EndColumn As Long
         Dim StartRow As Long
-        Dim EndRow As Long
+        Dim endRow As Long
         
         With FromRange
             StartColumn = .Column
             StartRow = .row
             EndColumn = .Column + .Columns.Count - 1
-            EndRow = .row + .Rows.Count - 1
+            endRow = .row + .Rows.Count - 1
         End With
         
         With FromRange.Parent
@@ -683,16 +683,16 @@ Public Function FromExcelRange( _
             End If
             
             If DetectLastRow Then
-                EndRow = .Cells.Item(.Rows.Count, StartColumn).End(xlUp).row
+                endRow = .Cells.Item(.Rows.Count, StartColumn).End(xlUp).row
             End If
             
-            Me.Items = .Range(.Cells(StartRow, StartColumn), .Cells(EndRow, EndColumn)).Value
+            Me.Items = .Range(.Cells(StartRow, StartColumn), .Cells(endRow, EndColumn)).Value
         End With
         
         ' convert arrays of single column or row to 1d
-        If StartColumn = EndColumn And StartRow <> EndRow Then
+        If StartColumn = EndColumn And StartRow <> endRow Then
             Me.Items = Me.ExtractSegment(, StartColumn)
-        ElseIf StartColumn <> EndColumn And StartRow = EndRow Then
+        ElseIf StartColumn <> EndColumn And StartRow = endRow Then
             Me.Items = Me.ExtractSegment(StartRow)
         End If
         
@@ -2322,11 +2322,11 @@ Private Function CountCSVColumns(ByRef FirstRow As String, ByRef LiteralDelim As
     Dim i As Long
     Dim InQuote As Boolean
     Dim CountColumns As Long
-    Dim Char As String
+    Dim char As String
     CountColumns = 1
     For i = 0 To Len(FirstRow)
-        Char = Mid$(FirstRow, i + 1, 1)
-        Select Case Char
+        char = Mid$(FirstRow, i + 1, 1)
+        Select Case char
         Case LiteralDelim.text
             InQuote = Not InQuote
         Case ColumnDelimiter
@@ -2372,7 +2372,7 @@ Private Function ParseCSV( _
     Dim StartRow As Long
     Dim InQuote As Boolean
     Dim Buffer As String
-    Dim Char As String
+    Dim char As String
     Dim Frag As String
     Dim CSVRows() As String
     Dim JaggedRow() As Variant
@@ -2416,10 +2416,10 @@ Private Function ParseCSV( _
         Buffer = CSVRows(i)
         Cursor = 1
         For j = 0 To Len(Buffer)
-            Char = Mid$(Buffer, j + 1, 1)
-            If Char = LiteralDelim.text Then
+            char = Mid$(Buffer, j + 1, 1)
+            If char = LiteralDelim.text Then
                 InQuote = Not InQuote
-            ElseIf Char = ColumnDelimiter Or j = Len(Buffer) Then
+            ElseIf char = ColumnDelimiter Or j = Len(Buffer) Then
                 If Not InQuote Then
                     Frag = Mid$(Buffer, Cursor, j - Cursor + 1)
                     If DuckType Then
@@ -4582,6 +4582,10 @@ Private Function CreateMultidimensionalArray(ByRef Crumb() As Variant) As Varian
 End Function
 
 'v1.7.6
+
+
+
+
 
 
 

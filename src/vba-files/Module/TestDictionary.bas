@@ -36,12 +36,10 @@ End Sub
 
 '@TestMethod
 Private Sub TestObjectInit()
-    Assert.IsTrue (Dictionary.Data.StartColumn = 1), "Start column changed"
-    Assert.IsTrue (Dictionary.Data.StartRow = 1), "Start line changed"
-    Assert.IsTrue (Dictionary.Data.Wksh.Name = "TestDictionary"), "Dictionary name changed"
+    Assert.IsTrue (Dictionary.data.StartColumn = 1), "Start column changed"
+    Assert.IsTrue (Dictionary.data.StartRow = 1), "Start line changed"
+    Assert.IsTrue (Dictionary.data.Wksh.Name = "TestDictionary"), "Dictionary name changed"
 End Sub
-
-
 
 '@TestMethod
 Private Sub TestUniqueValues()
@@ -78,8 +76,6 @@ ColumnExistFailed:
 
 End Sub
 
-
-
 '@TestMethod
 Private Sub TestPreparation()
 
@@ -89,7 +85,7 @@ Private Sub TestPreparation()
     Dim randRng As Range
     Dim endCol As Long
 
-    Set dictWksh = Dictionary.Data.Wksh
+    Set dictWksh = Dictionary.data.Wksh
 
     If Not Dictionary.Prepared Then
         With dictWksh
@@ -113,3 +109,4 @@ Private Sub TestPreparation()
 PreparationFailed:
     Assert.Fail "Prepared Failed: #" & Err.Number & " : " & Err.Description
 End Sub
+

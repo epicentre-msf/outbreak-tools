@@ -8,7 +8,7 @@ Option Private Module
 
 Private Assert As Object
 Private Fakes As Object
-Private transObject As ITranslation
+Private TransObject As ITranslation
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
@@ -22,7 +22,7 @@ Private Sub ModuleCleanup()
     'this method runs once per module.
     Set Assert = Nothing
     Set Fakes = Nothing
-    Set transObject = Nothing
+    Set TransObject = Nothing
 End Sub
 
 'This method runs before every test in the module..
@@ -39,18 +39,19 @@ Private Sub TestTranslation()
 
     Dim Lo As ListObject
     Set Lo = ThisWorkbook.Worksheets("LinelistTranslation").ListObjects("T_TradLLMsg")
-    Set transObject = Translation.Create(Lo, "FRA")
+    Set TransObject = Translation.Create(Lo, "FRA")
 
-    Assert.IsTrue (transObject.TranslatedValue("MSG_Day") = "Jour"), "Bad translated value"
-    Assert.IsTrue (transObject.TranslatedValue("www&!") = "www&!"), "unfound translated value found"
-    formVal = transObject.TranslatedValue("IF(" & Chr(34) & "MSG_Day" & Chr(34) & ", " & Chr(34) & "MSG_Year" & Chr(34) & ")", containsFormula:=True)
-    Debug.Print formVal
+    Assert.IsTrue (TransObject.TranslatedValue("MSG_Day") = "Jour"), "Bad translated value"
+    Assert.IsTrue (TransObject.TranslatedValue("www&!") = "www&!"), "unfound translated value found"
+    formVal = TransObject.TranslatedValue("IF(" & Chr(34) & "MSG_Day" & Chr(34) & ", " & Chr(34) & "MSG_Year" & Chr(34) & ")", containsFormula:=True)
+
     Assert.IsTrue (formVal = "IF(" & Chr(34) & "Jour" & Chr(34) & ", " & Chr(34) & "Année" & Chr(34) & ")"), "Bad translated formula : obtained " & formVal
-    formVal = transObject.TranslatedValue("IF(" & Chr(34) & "MSG_Day" & Chr(34), containsFormula:=True)
+    formVal = TransObject.TranslatedValue("IF(" & Chr(34) & "MSG_Day" & Chr(34), containsFormula:=True)
     Assert.IsTrue (formVal = "IF(" & Chr(34) & "Jour" & Chr(34)), "Bad translated formula : obtained " & formVal
 
 
-Exit Sub
+    Exit Sub
 Fail:
-   Assert.Fail "Translation failed: #" & Err.Number & " : " & Err.Description
+    Assert.Fail "Translation failed: #" & Err.Number & " : " & Err.Description
 End Sub
+
