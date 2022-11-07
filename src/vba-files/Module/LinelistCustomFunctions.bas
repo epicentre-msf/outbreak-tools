@@ -107,13 +107,23 @@ End Function
 
 'Epiweek function without specifying the year in select cases (works with all years)
 Public Function Epiweek2(currentDate As Long) As Long
+    
     Dim inDate As Long
     Dim firstDate As Long
+    Dim firstMondayDate As Long
+    Dim borderLeftDate As Long
+    Dim borderRightDate As Long
+    Dim LastYearEpiWeek As Long
 
     inDate = DateSerial(Year(currentDate), 1, 1)
-    firstDate = inDate - Weekday(inDate, 2) + 1
+    firstMondayDate = inDate - Weekday(inDate, 2) + 1
+    
+    borderLeftDate = DateSerial(Year(currentDate) - 1, 12, 29)
+    
+    firstDate = IIf(firstMondayDate < borderLeftDate, firstMondayDate + 7, firstMondayDate)
 
-    Epiweek2 = 1 + (currentDate - firstDate) \ 7
+    
+    Epiweek2 = IIf(currentDate >= firstDate, 1 + (currentDate - firstDate) \ 7, Epiweek2(borderLeftDate))
 
 End Function
 
@@ -180,10 +190,9 @@ Public Function FindLastDay(sAggregate As String, inDate As Long) As Long
 
 End Function
 
-
 'Format a date to feet the aggregation selection ================================================================
 
-Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, endDate As Long, maxDate As Long) As String
+Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, endDate As Long, MaxDate As Long) As String
 
     'enDate is the date of the end of the aggregation period
     'startDate is the startDate of the aggregation period
@@ -196,7 +205,7 @@ Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, e
 
     sAgg = GetAgg(sAggregate)
 
-    If startDate > maxDate Then
+    If startDate > MaxDate Then
         FormatDateFromLastDay = vbNullString
         Exit Function
     End If
@@ -221,9 +230,9 @@ Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, e
 End Function
 
 'Format a date range
-Public Function FormatDateRange(MinDate As Long, maxDate As Long) As String
+Public Function FormatDateRange(MinDate As Long, MaxDate As Long) As String
 
-    FormatDateRange = Format(MinDate, "dd/mm/yyyy") & "-" & Format(maxDate, "dd/mm/yyyy")
+    FormatDateRange = Format(MinDate, "dd/mm/yyyy") & "-" & Format(MaxDate, "dd/mm/yyyy")
 
 End Function
 
@@ -232,10 +241,113 @@ Public Function TopAdminName(Admlevel As String, Admcount As Long) As String
     TopAdminName = vbNullString
 End Function
 
-
 Public Function TopAdminValue(admName As String, Admlevel As String, Admcount As Long) As Long
     TopAdminValue = 0
 End Function
 
+Public Function FirstAggDayFrom(endDate As Long, agg As String) As Long
+    Dim firstDate As Long
+    Dim timeAgg As String
+    
+    timeAgg = GetAgg(agg)
+    
+    Select Case timeAgg
+    Case "day"
+        firstDate = endDate - 53
+    Case "week"
+        firstDate = endDate - 371
+    Case "month"
+        firstDate = DateSerial(Year(endDate) - 4 - ((Month(endDate) - 5) \ 12), ((Month(endDate) - 5) Mod 12), 1) - 1
+    Case "quarter"
+        firstDate = DateSerial(Year(endDate) - 13 - ((Month(endDate) - 3) \ 12), ((Month(endDate) - 3) Mod 12), 1) - 1
+    Case "year"
+        firstDate = DateSerial(Year(endDate) - 53, Month(endDate), Day(endDate))
+    End Select
+    
+    FirstAggDayFrom = firstDate
+    
+End Function
+
+Public Function LastAggDayFrom(startDate As Long, agg As String) As Long
+    Dim lastDate As Long
+    Dim timeAgg As String
+    
+    timeAgg = GetAgg(agg)
+    
+    Select Case timeAgg
+    Case "day"
+        lastDate = startDate + 53
+    Case "week"
+        lastDate = startDate + 371
+    Case "month"
+        lastDate = DateSerial(Year(startDate) + 4 + ((Month(startDate) + 5) \ 12), ((Month(startDate) + 5) Mod 12) + 1, 1) - 1
+    Case "quarter"
+        lastDate = DateSerial(Year(startDate) + 13 + ((Month(startDate) + 3) \ 12), ((Month(startDate) + 3) Mod 12) + 1, 1) - 1
+    Case "year"
+        lastDate = DateSerial(Year(startDate) + 53, Month(startDate), Day(startDate))
+    End Select
+    
+    LastAggDayFrom = lastDate
+    
+End Function
+
+Public Function ValidMin(startDate As Long, endDate As Long, MinDate As Long, MaxDate As Long, agg As String) As Long
+    
+    Dim validation As Long
+    Dim timeStamp As Long
+    
+    If startDate = 0 And endDate = 0 Then
+        'Test if the minimum and the maximum are 0
+        If MaxDate = 0 And MinDate = 0 Then
+            validation = -1
+        Else
+            validation = MinDate
+        End If
+    ElseIf (startDate = 0) Then
+        timeStamp = FirstAggDayFrom(endDate, agg)
+        validation = Application.WorksheetFunction.Max(MinDate, timeStamp)
+    Else
+        validation = Application.WorksheetFunction.Max(MinDate, startDate)
+    End If
+    
+    ValidMin = validation
+End Function
+
+Public Function ValidMax(startDate As Long, endDate As Long, MinDate As Long, MaxDate As Long, agg As String) As Long
+    
+    Dim validation As Long
+    Dim timeStamp As Long
+    
+    'The two dates are equal to 0
+    If startDate = 0 And endDate = 0 Then
+        'Test if the minimum and the maximum are 0
+        If MaxDate = 0 And MinDate = 0 Then
+            validation = 1
+        Else
+            validation = MaxDate
+        End If
+    ElseIf (endDate = 0) Then
+        timeStamp = LastAggDayFrom(startDate, agg)
+        validation = Application.WorksheetFunction.Min(timeStamp, MaxDate)
+    ElseIf (startDate = 0) Then
+        validation = Application.WorksheetFunction.Min(endDate, MaxDate)
+    ElseIf (startDate <> 0 And endDate <> 0) Then
+        timeStamp = LastAggDayFrom(startDate, agg)
+        validation = Application.WorksheetFunction.Min(timeStamp, endDate, MaxDate)
+    End If
+    
+    ValidMax = validation
+End Function
+
+
+Public Function InfoUser(userDate As Long, actualDate As Long, Optional infotype As Byte = 1) As String
+   
+    Dim info As String
+    If ((userDate <> actualDate) And (userDate <> 0)) Then
+        info = IIf(infotype = 1, TranslateLLMsg("MSG_InfoStart"), TranslateLLMsg("MSG_InfoEnd"))
+        InfoUser = info & " " & Format(actualDate, "dd/mm/yyyy")
+    End If
+    
+End Function
 
 

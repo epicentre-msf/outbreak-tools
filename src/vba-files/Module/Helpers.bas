@@ -91,7 +91,7 @@ Private Function SelectFolderOnWindows() As String
     Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
     With fDialog
         .AllowMultiSelect = False
-        .Title = "Chose your directory"          'MSG_ChooseDir
+        .title = "Chose your directory"          'MSG_ChooseDir
         .Filters.Clear
 
         If .Show = -1 Then
@@ -159,7 +159,7 @@ Private Function SelectFileOnWindows(sFilters)
     Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
     With fDialog
         .AllowMultiSelect = False
-        .Title = "Chose your file"               'MSG_ChooseFile
+        .title = "Chose your file"               'MSG_ChooseFile
         .Filters.Clear
         .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
 
@@ -330,7 +330,7 @@ End Sub
 'Set validation List on a Range
 Sub SetValidation(oRange As Range, sValidList As String, sAlertType As Byte, Optional sMessage As String = vbNullString)
 
-    With oRange.Validation
+    With oRange.validation
         .Delete
         Select Case sAlertType
         Case 1                                   '"error"
@@ -500,13 +500,13 @@ End Function
 
 'Get the data from one sheet starting from one line
 Public Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Long, Optional EndColumn As Long = 0) As BetterArray
-    Dim Data As BetterArray
+    Dim data As BetterArray
     Dim rng As Range
 
     Dim iLastRow As Long
     Dim iLastCol As Long
-    Set Data = New BetterArray
-    Data.LowerBound = 1
+    Set data = New BetterArray
+    data.LowerBound = 1
 
     With Wkb.Worksheets(sSheetName)
 
@@ -516,9 +516,9 @@ Public Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Long
         Set rng = .Range(.Cells(StartLine, 1), .Cells(iLastRow, iLastCol))
     End With
 
-    Data.FromExcelRange rng
+    data.FromExcelRange rng
     'The output of the function is a variant
-    Set GetData = Data
+    Set GetData = data
 
 End Function
 
@@ -573,7 +573,7 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
     Dim sData As BetterArray
     Dim DestWksh As Worksheet
     Dim sheetExists As Boolean
-    Dim col As Long 'iterator to clear the strings when loading
+    Dim col As Long                              'iterator to clear the strings when loading
 
     Set sData = New BetterArray
     sData.FromExcelRange SourceWkb.Worksheets(sSheetName).Range("A" & CStr(sStartCell)), DetectLastRow:=True, DetectLastColumn:=True
@@ -593,7 +593,7 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
     col = 1
     With DestWkb.Worksheets(sSheetName)
         Do While (.Cells(1, col) <> vbNullString)
-            .Cells(1, col).Value = ClearString(.Cells(1, col).Value)
+            .Cells(1, col).Value = LCase(ClearString(.Cells(1, col).Value))
             col = col + 1
         Loop
     End With
@@ -608,7 +608,7 @@ Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 
                               Optional returnIndex As Integer = -99, _
                               Optional bAllData As Boolean = True) As BetterArray
     Dim rng As Range
-    Dim Data As BetterArray
+    Dim data As BetterArray
     Dim breturnAllData As Boolean
 
     With Lo.Range
@@ -643,13 +643,13 @@ Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 
 
         rng.Copy Destination:=.Cells(1, 1)
 
-        Set Data = New BetterArray
-        Data.LowerBound = 1
+        Set data = New BetterArray
+        data.LowerBound = 1
 
         If breturnAllData Then
-            Data.FromExcelRange .Cells(2, 1), DetectLastColumn:=True, DetectLastRow:=True
+            data.FromExcelRange .Cells(2, 1), DetectLastColumn:=True, DetectLastRow:=True
         ElseIf returnIndex > 0 Then
-            Data.FromExcelRange .Cells(2, returnIndex), DetectLastColumn:=False, DetectLastRow:=True
+            data.FromExcelRange .Cells(2, returnIndex), DetectLastColumn:=False, DetectLastRow:=True
         End If
 
         .Cells.Clear
@@ -658,9 +658,8 @@ Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 
 
     Lo.AutoFilter.ShowAllData
 
-    Set FilterLoTable = Data.Clone()
+    Set FilterLoTable = data.Clone()
 End Function
-
 
 'Remove duplicates values from one range and excluding also null values
 

@@ -1,4 +1,4 @@
-# 
+#
 source("./Rscripts/update_designer.R")
 
 # update from codes
@@ -20,7 +20,9 @@ demo_folder  <- "./demo"
 # preparing the demo folder
 clear_output("./demo")
 
-prepare_demo(fake_dataset = fake_dataset, fake_geobase = fake_geobase, setup_filename = setup_filename) # nolint
+prepare_demo(fake_dataset = fake_dataset,
+             fake_geobase = fake_geobase,
+             setup_filename = setup_filename) # nolint
 
 
 # create a class

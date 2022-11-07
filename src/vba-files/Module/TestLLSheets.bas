@@ -41,12 +41,11 @@ End Sub
 '@TestMethod
 Private Sub TestSheetInit()
 
-    Assert.IsTrue (sheets.Dictionary.Data.Wksh.Name = "Dictionary"), "Bad dictionary associated with the worksheet"
-    Assert.IsTrue (sheets.Dictionary.Data.StartRow = 1), "Start row of the dictionary associated with the sheets object is not correct"
-    Assert.IsTrue (sheets.Dictionary.Data.StartColumn = 1), "End row of the dictionary associated with the sheets object is not correct"
+    Assert.IsTrue (sheets.Dictionary.data.Wksh.Name = "Dictionary"), "Bad dictionary associated with the worksheet"
+    Assert.IsTrue (sheets.Dictionary.data.StartRow = 1), "Start row of the dictionary associated with the sheets object is not correct"
+    Assert.IsTrue (sheets.Dictionary.data.StartColumn = 1), "End row of the dictionary associated with the sheets object is not correct"
 
 End Sub
-
 
 'Testing the sheet info
 '@TestMethod
@@ -55,12 +54,11 @@ Private Sub TestSheetInfo()
     Assert.IsTrue (sheets.SheetInfo("A, B, C") = "vlist1D"), "A vlist1D worksheet is not detected correctly in sheet Info"
     Assert.IsTrue (sheets.SheetInfo("A, B, C", 2) = "tab1"), "Unable to get the table name of a worksheet in sheet Info"
 
-Exit Sub
+    Exit Sub
 Fail:
     Assert.Fail "Sheet Info Failed: #" & Err.Number & " : " & Err.Description
 
 End Sub
-
 
 'Testing the sheet info
 '@TestMethod
@@ -85,7 +83,6 @@ Fail:
 
 End Sub
 
-
 'Testing the sheet info
 '@TestMethod
 Private Sub TestSheetContains()
@@ -98,11 +95,10 @@ Private Sub TestSheetContains()
     Assert.IsFalse sheets.Contains(""), "Empty sheet name exists"
     Assert.IsFalse sheets.Contains("mjkmdjlqsjfs"), "sheet does not exist, but found as present"
 
- Exit Sub
+    Exit Sub
 Fail:
     Assert.Fail "Sheet Contains failed: #" & Err.Number & " : " & Err.Description
 End Sub
-
 
 'Testing the sheet info
 '@TestMethod
@@ -113,11 +109,10 @@ Private Sub TestSheetContainsListAuto()
     Assert.IsTrue sheets.ContainsListAuto("B-H2D"), "List auto not found in sheet"
     Assert.IsFalse sheets.ContainsListAuto("A, B, C"), "List auto does not exists, but Test found one"
 
- Exit Sub
+    Exit Sub
 Fail:
     Assert.Fail "Sheet list auto failed: #" & Err.Number & " : " & Err.Description
 End Sub
-
 
 'Testing the sheet info
 '@TestMethod
@@ -129,7 +124,8 @@ Private Sub TestSheetVariableAddress()
     Assert.IsTrue sheets.VariableAddress("varb2") = "'B-H2D'!$B10", "hlist 2D variable address is not correct"
 
     'Address on a V1D worksheet
- Exit Sub
+    Exit Sub
 Fail:
     Assert.Fail "Variable Address failed #" & Err.Number & " : " & Err.Description
 End Sub
+

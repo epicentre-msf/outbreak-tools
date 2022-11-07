@@ -18,12 +18,11 @@ Implements ILLdictionary
 
 'Types of the class
 Private Type TDictionary
-    dictDataSheet As IDataSheet 'Worksheet data of the dictionary
+    dictDataSheet As IDataSheet                  'Worksheet data of the dictionary
 End Type
 
 Private this As TDictionary
 Private DICTIONARYCOLUMNS As BetterArray
-Private PRESERVEDSHEETSNAMES As BetterArray
 Private Const SHEETTYPEVERTICAL As String = "vlist1D"
 Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
 
@@ -39,7 +38,7 @@ Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, 
     Set customDataSheet = DataSheet.Create(dictWksh, dictStartRow, dictStartColumn)
 
     With New LLdictionary
-        Set .Data = customDataSheet
+        Set .data = customDataSheet
         Set Create = .Self
     End With
 End Function
@@ -49,46 +48,46 @@ Public Property Get Self() As ILLdictionary
 End Property
 
 'Data sheet
-Public Property Get Data() As IDataSheet
-    Set Data = this.dictDataSheet
+Public Property Get data() As IDataSheet
+    Set data = this.dictDataSheet
 End Property
 
-Friend Property Set Data(ByVal customDataSheet As IDataSheet)
+Friend Property Set data(ByVal customDataSheet As IDataSheet)
     Set this.dictDataSheet = customDataSheet
 End Property
 
 'Worksheet
 Public Property Get Wksh() As Worksheet
     Dim customDataSheet As IDataSheet
-    Set customDataSheet = Data()
+    Set customDataSheet = data()
     Set Wksh = customDataSheet.Wksh()
 End Property
 
 'StartRow
 Public Property Get StartRow() As Long
     Dim customDataSheet As IDataSheet
-    Set customDataSheet = Data()
+    Set customDataSheet = data()
     StartRow = customDataSheet.StartRow()
 End Property
 
 'StartColumn
 Public Property Get StartColumn() As Long
     Dim customDataSheet As IDataSheet
-    Set customDataSheet = Data()
+    Set customDataSheet = data()
     StartColumn = customDataSheet.StartColumn()
 End Property
 
 'End row and columns of the dictionary
 Private Property Get DictEndRow() As Long
-   Dim customDataSheet As IDataSheet
-   Set customDataSheet = Data()
-   DictEndRow = customDataSheet.DataEndRow()
+    Dim customDataSheet As IDataSheet
+    Set customDataSheet = data()
+    DictEndRow = customDataSheet.DataEndRow()
 End Property
 
 Private Property Get DictEndColumn() As Long
     Dim customDataSheet As IDataSheet
-   Set customDataSheet = Data()
-   DictEndColumn = customDataSheet.DataEndColumn()
+    Set customDataSheet = data()
+    DictEndColumn = customDataSheet.DataEndColumn()
 End Property
 
 'Is the dictionary prepared for linelist?
@@ -96,8 +95,8 @@ Public Property Get Prepared() As Boolean
     Dim dictWksh As Worksheet
     Set dictWksh = Wksh()
     Prepared = (dictWksh.Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue) And _
-                ColumnExists("table name") And ColumnExists("column index") And _
-                (Not ColumnExists("main section sort")) And (Not ColumnExists("main section index"))
+                                                                                 ColumnExists("table name") And ColumnExists("column index") And _
+                                                                                 (Not ColumnExists("main section sort")) And (Not ColumnExists("main section index"))
 End Property
 
 'Initialize the Headers  -----------------------------------------------------
@@ -107,21 +106,15 @@ Private Sub ClassArraysInitialize()
 
     'colnames of the dictionary
     DICTIONARYCOLUMNS.Push "variable name", "main label", "sub label", "note", "sheet name", _
-     "sheet type", "main section", "sub section", "status", "personal identifier", "type", "control", "control details", "unique", _
-     "export 1", "export 2", "export 3", "export 4", "export 5", "min", "max", "alert", "message", "table name", "column index"
-
-    'Preserved names
-    Set PRESERVEDSHEETSNAMES = New BetterArray
-    PRESERVEDSHEETSNAMES.Push "GEO", "ControleFormule", "Password", "Temp_", _
-    "LinelistTranslation", "List_auto_", "Dictionary", "Exports", "Choices", "Translations", _
-    "Metadata", "Ana_temp_", "Import_temp_", "Admin", "Debug___"
-
+                           "sheet type", "main section", "sub section", "status", "personal identifier", "type", "control", "control details", "unique", _
+                           "export 1", "export 2", "export 3", "export 4", "export 5", "min", "max", "alert", "message", "table name", "column index", _
+                           "list_auto_origin"
 End Sub
 
 'Dictionary data Range
 Public Property Get DataRange(Optional colName As String = "__all__", Optional includeHeaders As Boolean = False) As Range
     Dim customDataSheet As IDataSheet
-    Set customDataSheet = Data()
+    Set customDataSheet = data()
     Set DataRange = customDataSheet.DataRange(colName, includeHeaders)
 End Property
 
@@ -136,7 +129,7 @@ Private Function ColumnExists(ByVal colName As String, Optional ByVal checkValid
     Dim customDataSheet As IDataSheet
     Dim Exist As Boolean
 
-    Set customDataSheet = Data()
+    Set customDataSheet = data()
     Exist = customDataSheet.ColumnExists(colName)
 
     If Exist And checkValidity Then
@@ -150,7 +143,7 @@ End Function
 'Column Index within the data range of the dictionary
 Private Function ColumnIndex(ByVal colName As String, Optional ByVal inDataRange As Boolean = False) As Long
     Dim customDataSheet As IDataSheet
-    Set customDataSheet = Data()
+    Set customDataSheet = data()
     ColumnIndex = customDataSheet.ColumnIndex(colName, inDataRange, shouldExist:=True)
 End Function
 
@@ -160,18 +153,18 @@ Private Function UniqueValues(colName As String) As BetterArray
     Dim varColIndex As Long
     Dim varValue As String
     Dim counter As Long
-    Dim EndRow As Long
+    Dim endRow As Long
     Dim varData As BetterArray
     Dim dictWksh As Worksheet
 
-    EndRow = DictEndRow
+    endRow = DictEndRow
     counter = StartRow + 1
     varColIndex = ColumnIndex(colName)
     Set varData = New BetterArray
     Set dictWksh = Wksh()
 
     With dictWksh
-        Do While counter < EndRow
+        Do While counter < endRow
             varValue = .Cells(counter, varColIndex).Value
             If Not varData.Includes(varValue) Then varData.Push varValue
             counter = counter + 1
@@ -194,11 +187,13 @@ Private Sub Clean()
     Dim endCol As Long
     Dim counter As Long
     Dim dictWksh As Worksheet
+    Dim rng As Range
 
     Set dictWksh = Wksh()
-    endCol = DictEndColumn
-    counter = endCol
-
+    Set rng = dictWksh.UsedRange
+    counter = rng.Column + rng.Columns.Count - 1
+    Debug.Print counter
+    
     With dictWksh
         Do While counter >= 1
             If Not ColumnExists(.Cells(StartRow, counter).Value, checkValidity:=True) Then
@@ -206,65 +201,63 @@ Private Sub Clean()
             End If
 
             counter = counter - 1
-         Loop
+        Loop
     End With
 End Sub
 
-
 'Prepare the dictionary for designer
-Private Sub Prepare(Optional ByVal tablePrefix As String = "table")
+Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, Optional ByVal tablePrefix As String = "table")
     Dim endCol As Long
     Dim dictWksh As Worksheet
     Dim counter As Long
     Dim controlRng As Range
 
     If Not Prepared() Then
-            'Test if the dictionary is prepared before doing the whole loop
-            If Not ColumnExists("table name") Then
-                 AppendNumberColumn onColName:="sheet name", tablePrefix:=tablePrefix, _
-                                    newColumn:="table name"    'Add table name
-            End If
+        'Test if the dictionary is prepared before doing the whole loop
+        If Not ColumnExists("table name") Then
+            AppendNumberColumn onColName:="sheet name", tablePrefix:=tablePrefix, _
+                               newColumn:="table name" 'Add table name
+        End If
 
-            If Not ColumnExists("column index") Then AppendColumnIndex 'Add Column Index
-            'Testing control to update the Geo
-            Set controlRng = DataRange("control")
+        If Not ColumnExists("column index") Then AppendColumnIndex 'Add Column Index
+        'Testing control to update the Geo
+        Set controlRng = DataRange("control")
 
-            If (Not controlRng Is Nothing) Then
-                If (Not controlRng.Find(What:="geo", LookAt:=xlWhole, MatchCase:=True) Is Nothing) And _
-                    (controlRng.Find(What:="geo2", LookAt:=xlWhole, MatchCase:=True) Is Nothing) Then
-                    'Update the Geo
-                    AppendGeoLines
-                End If
+        If (Not controlRng Is Nothing) Then
+            If (Not controlRng.Find(What:="geo", LookAt:=xlWhole, MatchCase:=True) Is Nothing) And _
+                                                                                               (controlRng.Find(What:="geo2", LookAt:=xlWhole, MatchCase:=True) Is Nothing) Then
+                'Update the Geo
+                AppendGeoLines
             End If
-            'Sort the dictionary accordingly and make unique varNames
-            UniqueVarNames
-            GoodSheetNames
-            Clean
-            'Add color to the last line for prepare indication
-            Set dictWksh = Wksh()
-            dictWksh.Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue
+        End If
+        'Sort the dictionary accordingly and make unique varNames
+        UniqueVarNames
+        GoodSheetNames PreservedSheetsNames
+        Clean
+        'Add color to the last line for prepare indication
+        Set dictWksh = Wksh()
+        dictWksh.Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue
     End If
 End Sub
 
-
-Private Sub GoodSheetNames()
+Private Sub GoodSheetNames(ByVal PreservedSheetsNames As BetterArray)
     Dim dictWksh As Worksheet
     Dim sheetNameIndex As Long
 
-    Dim EndRow As Long
+    Dim endRow As Long
     Dim counter As Long
 
-    EndRow = DictEndRow
+    endRow = DictEndRow
     Set dictWksh = Wksh()
     sheetNameIndex = ColumnIndex("sheet name")
 
-    If (PRESERVEDSHEETSNAMES Is Nothing) Then ClassArraysInitialize
+    If (PreservedSheetsNames Is Nothing) Then ClassArraysInitialize
 
     With dictWksh
-        For counter = StartRow + 1 To EndRow
-            If PRESERVEDSHEETSNAMES.Includes(.Cells(counter, sheetNameIndex).Value) Then
+        For counter = StartRow + 1 To endRow
+            If PreservedSheetsNames.Includes(.Cells(counter, sheetNameIndex).Value) Then
                 .Cells(counter, sheetNameIndex).Value = .Cells(counter, sheetNameIndex).Value & "_"
-                'Designer Loggin
+                'Trace here for logging
             End If
         Next
     End With
@@ -275,7 +268,7 @@ End Sub
 Private Sub UniqueVarNames()
 
     Dim dictWksh As Worksheet
-    Dim EndRow As Long
+    Dim endRow As Long
     Dim varNameIndex As Long
     Dim counter As Long
     Dim varName As String
@@ -284,11 +277,11 @@ Private Sub UniqueVarNames()
 
     Set varTrackData = New BetterArray
     Set dictWksh = Wksh()
-    EndRow = DictEndRow
+    endRow = DictEndRow
     varNameIndex = ColumnIndex("variable name")
 
     With dictWksh
-        For counter = StartRow + 1 To EndRow
+        For counter = StartRow + 1 To endRow
             'remove no breakable spaces and clean the name of the variable. replace spaces with _
 
             varName = Application.WorksheetFunction.SUBSTITUTE(varName, Chr(160), " ")
@@ -305,7 +298,6 @@ Private Sub UniqueVarNames()
     End With
 End Sub
 
-
 'Append Geo Lines
 Private Sub AppendGeoLines()
 
@@ -319,7 +311,7 @@ Private Sub AppendGeoLines()
     Dim subSectionIndex As Long
     Dim mainLabelIndex As Long
     Dim varName As String
-    Dim EndRow As Long
+    Dim endRow As Long
     Dim endCol As Long
 
     Dim counter As Long
@@ -331,7 +323,7 @@ Private Sub AppendGeoLines()
     mainLabelIndex = ColumnIndex("main label")
     subSectionIndex = ColumnIndex("sub section")
 
-    EndRow = DictEndRow
+    endRow = DictEndRow
     endCol = DictEndColumn
     geoRowIndex = StartRow + 1
 
@@ -362,7 +354,7 @@ Private Sub AppendGeoLines()
             Next
 
             geoRowIndex = geoRowIndex + 3
-            Set dictRng = .Range(.Cells(geoRowIndex, controlIndex), .Cells(EndRow, controlIndex))
+            Set dictRng = .Range(.Cells(geoRowIndex, controlIndex), .Cells(endRow, controlIndex))
         Loop
     End With
 End Sub
@@ -371,7 +363,7 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
                                Optional ByVal tablePrefix As String = "table", _
                                Optional ByVal newColumn As String = "table name")
 
-    Dim EndRow As Long
+    Dim endRow As Long
     Dim endCol As Integer
     Dim tableOrder As Long
     Dim sheetNameIndex As Long
@@ -386,7 +378,7 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
     Set sheetTrackData = New BetterArray
     Set tableTrackData = New BetterArray
 
-    EndRow = DictEndRow
+    endRow = DictEndRow
     endCol = DictEndColumn
     tableOrder = 1
     sheetNameIndex = ColumnIndex(onColName)
@@ -398,7 +390,7 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
         sheetTrackData.Push .Cells(StartRow + 1, sheetNameIndex).Value
         tableTrackData.Push tableOrder
 
-        For counter = StartRow + 1 To EndRow
+        For counter = StartRow + 1 To endRow
             sheetName = .Cells(counter, sheetNameIndex).Value
             If sheetTrackData.Includes(sheetName) Then
                 .Cells(counter, endCol + 1).Value = tableTrackData.Items(sheetTrackData.IndexOf(sheetName))
@@ -420,18 +412,17 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
         Set dictRng = DataRange(newColumn)
 
         .Cells(StartRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
-        dictRng.Value = dictRng.Value 'remove the link to the formulas
+        dictRng.Value = dictRng.Value            'remove the link to the formulas
 
     End With
 End Sub
-
 
 Private Sub AppendColumnIndex()
 
     Dim dictWksh As Worksheet
     Dim dictRng As Range
     Dim endCol As Long
-    Dim EndRow As Long
+    Dim endRow As Long
     Dim counter As Long
     Dim varOrder As Long
     Dim sheetTypeIndex As Long
@@ -445,7 +436,7 @@ Private Sub AppendColumnIndex()
 
     Set dictWksh = Wksh()
     endCol = DictEndColumn
-    EndRow = DictEndRow
+    endRow = DictEndRow
     sheetTypeIndex = ColumnIndex("sheet type")
     sheetNameIndex = ColumnIndex("sheet name")
     mainSectionIndex = ColumnIndex("main section")
@@ -460,9 +451,9 @@ Private Sub AppendColumnIndex()
         firstsheetNameCell = .Cells(StartRow + 1, sheetNameIndex).Address(rowabsolute:=False) & " "
         firstmainSectionCell = .Cells(StartRow + 1, mainSectionIndex).Address(rowabsolute:=False)
         .Cells(StartRow + 1, endCol + 1).formula = "= IF(" & firstmainSectionCell & "=" & Chr(34) & Chr(34) & _
-                                                    ", ROW(" & firstmainSectionCell & ")" & ", " & _
-                                                   firstsheetNameCell & Chr(38) & Chr(34) & " - " & Chr(34) & Chr(38) & firstmainSectionCell & _
-                                                   ")"
+                                                                                                            ", ROW(" & firstmainSectionCell & ")" & ", " & _
+                                                                                                            firstsheetNameCell & Chr(38) & Chr(34) & " - " & Chr(34) & Chr(38) & firstmainSectionCell & _
+                                                                                                            ")"
         Set dictRng = DataRange("main section sort")
         .Cells(StartRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
 
@@ -472,7 +463,7 @@ Private Sub AppendColumnIndex()
         'Filling column index
         endCol = DictEndColumn
         .Cells(StartRow, endCol + 1).Value = "column index"
-        For counter = StartRow + 1 To EndRow
+        For counter = StartRow + 1 To endRow
             If .Cells(counter, sheetNameIndex).Value <> sheetName Then
                 'New sheet name
                 varOrder = IIf(.Cells(counter, sheetTypeIndex).Value = SHEETTYPEVERTICAL, 4, 1)
@@ -491,23 +482,23 @@ End Sub
 Private Sub Export(ByVal Wkb As Workbook, Optional ByVal exportType As String = "__all__")
 
     Dim dictData As IDataSheet
-    Set dictData = Data()
+    Set dictData = data()
     If ColumnExists(exportType) Then
-       dictData.Export Wkb, filteredVarName:=exportType
+        dictData.Export Wkb, filteredVarName:=exportType
     ElseIf exportType = "__all__" Then
-       dictData.Export Wkb
+        dictData.Export Wkb
     End If
 End Sub
 
 'Import
 Private Sub Import(ByVal fromWksh As Worksheet, fromStartRow As Long, fromStartCol As Long)
-   Dim dictData As IDataSheet
-   Set dictData = Data()
-   dictData.Import fromWksh, fromStartRow, fromStartCol
+    Dim dictData As IDataSheet
+    Set dictData = data()
+    dictData.Import fromWksh, fromStartRow, fromStartCol
 End Sub
 
 'Translation
-Private Sub Translate(ByVal transObject As ITranslation)
+Private Sub Translate(ByVal TransObject As ITranslation)
     Dim transCols As BetterArray
     Dim rng As Range
     Dim counter As Long
@@ -518,15 +509,13 @@ Private Sub Translate(ByVal transObject As ITranslation)
                    "main section", "sub section", "message"
 
     For counter = transCols.LowerBound To transCols.UpperBound
-        Debug.Print transCols.Item(counter) & " __________________________"
         Set rng = DataRange(transCols.Item(counter))
-        transObject.TranslateRange rng
+        TransObject.TranslateRange rng
     Next
 
     Set rng = DataRange("control details")
-    transObject.TranslateRange rng, containsFormula:=True
+    TransObject.TranslateRange rng, containsFormula:=True
 End Sub
-
 
 ' INTERFACE __________________________________________________________________________________________________________________________
 
@@ -541,7 +530,7 @@ Public Property Get ILLdictionary_DataRange(Optional ByVal colName As String = "
 End Property
 
 Public Property Get ILLdictionary_Data() As IDataSheet
-    Set ILLdictionary_Data = Data()
+    Set ILLdictionary_Data = data()
 End Property
 
 'Functions
@@ -558,8 +547,9 @@ Public Function ILLdictionary_VariableExists(ByVal varName As String) As Boolean
 End Function
 
 'void methods
-Public Sub ILLdictionary_Prepare(Optional ByVal tablePrefix As String = "table")
-   Prepare tablePrefix
+Public Sub ILLdictionary_Prepare(PreservedSheetsNames As BetterArray, _
+                                 Optional ByVal tablePrefix As String = "table")
+    Prepare PreservedSheetsNames, tablePrefix
 End Sub
 
 Public Sub ILLdictionary_Clean()
@@ -574,6 +564,8 @@ Public Sub ILLdictionary_Export(ByVal toWkb As Workbook, Optional ByVal exportTy
     Export toWkb, exportType
 End Sub
 
-Public Sub ILLdictionary_Translate(ByVal transObject As ITranslation)
-    Translate transObject
+Public Sub ILLdictionary_Translate(ByVal TransObject As ITranslation)
+    Translate TransObject
 End Sub
+
+

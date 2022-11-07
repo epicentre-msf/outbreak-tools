@@ -18,42 +18,51 @@ Option Explicit
 'Exposed methods
 'Scope is where to apply the format: Those are the possibilities
 Public Enum FormatScopes
-  AnalysisSection = 1 '
-  AnalysisCategoriesUnivariateRow = 2
-  AnalysisPercent = 3
-  AnalysisInteriorTable = 5
-  AnalysisWholeTable = 6
-  AnalysisUnivariateHeader = 7
-  AnalysisCategoriesBivariateColumn = 8
-  AnalysisTimeSeriesHeader = 9
-  AnalysisMissingRow = 10
+  AllAnalysisSheet = 1
+  AnalysisCategoriesBivariateColumn = 2
+  AnalysisCategoriesBivariateRow = 3
+  AnalysisCategoriesLabelColumn = 4
+  AnalysisCategoriesLabelRow = 5
+  AnalysisCategoriesUnivariateRow = 6
+  AnalysisFirstRow = 7
+  AnalysisGlobalSummaryRow = 8
+  LinelistHiddenCell = 9
+  AnalysisInteriorTable = 10
   AnalysisMissingColumn = 11
-  AnalysisFirstRow = 12
-  AnalysisOneCell = 14
-  LinelistSelectionDropdown = 15
-  VListSection = 16
-  VListSubSection = 17
-  HListHeader = 18
-  HListGeo = 19
-  LinelistShape = 20
-  LinelistGeoShape = 21
-  HListSection = 22
-  HListSubSection = 23
-  VListBorders = 24
-  VListInnerBorders = 25
-  HListBorders = 26
-  HListCalculatedFormula = 27
-  HListNote = 28
-  HListTable = 29
-  AnalysisTableTitle = 30
-  AllAnalysisSheet = 31
-  AnalysisCategoriesLabelRow = 32
-  AnalysisCategoriesLabelColumn = 33
-  AnalysisGlobalSummaryRow = 34
-  AnalysisCategoriesBivariateRow = 35
-  AnalysisOneCellLeft = 36
+  AnalysisMissingRow = 12
+  AnalysisOneCell = 13
+  AnalysisOneCellLeft = 14
+  AnalysisPercent = 15
+  AnalysisSection = 16
+  AnalysisTableTitle = 17
+  AnalysisTimeSeriesHeader = 18
+  AnalysisUnivariateHeader = 19
+  AnalysisWholeTable = 20
+  HListBorders = 21
+  HListCalculatedFormulaCell = 22
+  HListGeo = 23
+  HListHeader = 24
+  HListNote = 25
+  HListSection = 26
+  HListSubSection = 27
+  HListTable = 28
+  LinelistGeoShape = 29
+  LinelistSelectionDropdown = 30
+  LinelistShape = 31
+  VListBorders = 32
+  VListInnerBorders = 33
+  VListSection = 34
+  VListSubSection = 35
+  AnalysisEndTable = 36
+  AnalysisOneCellCenter = 37
+  AnalysisInfoCell = 38
+  HListCalculatedFormulaHeader = 39
+  HListSublab = 40
+  HListMainLab = 41
+  VListMainlab = 42
+  VListSublab = 43
+  HListGeoHeader = 44
 End Enum
-
 
 Public Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
 End Sub
@@ -61,3 +70,5 @@ End Sub
 Public Function DesignValue(ByVal labelName As String, _
                             Optional ByVal returnedColor As Boolean = True) As Variant
 End Function
+
+

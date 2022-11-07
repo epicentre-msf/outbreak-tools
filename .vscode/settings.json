@@ -18,13 +18,5 @@
         "titleBar.inactiveBackground": "#00000099",
         "titleBar.inactiveForeground": "#e7e7e799",
         "commandCenter.border": "#e7e7e799"
-    },
-
-    
-
-"editor.quickSuggestions": {
-    "other": true,
-    "comments": false,
-    "strings": true
-  }
+    }
 }

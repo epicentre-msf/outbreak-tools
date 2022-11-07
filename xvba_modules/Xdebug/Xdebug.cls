@@ -103,13 +103,13 @@ Private Function writeDebugFileContent(messageText, messageType)
 
     Dim filePath As String
     Dim FileNum As Integer
-    Dim PREFIX As String
+    Dim prefix As String
 
     filePath = DEBUG_FILE_PATH
 
     FileNum = FreeFile
 
-    PREFIX = Now & " - "
+    prefix = Now & " - "
 
     Open filePath For Append As #FileNum
 
@@ -118,12 +118,12 @@ Private Function writeDebugFileContent(messageText, messageType)
 
     Case 0                                       'Error Message
 
-        debugMessage = PREFIX & "Error:" & messageText
+        debugMessage = prefix & "Error:" & messageText
     Case 1                                       'Success
-        debugMessage = PREFIX & messageText
+        debugMessage = prefix & messageText
     Case Else                                    'No Type Set
 
-        debugMessage = PREFIX & "Info:" & messageText
+        debugMessage = prefix & "Info:" & messageText
     End Select
 
     Print #FileNum, debugMessage
@@ -142,7 +142,7 @@ Private Function createOutputMessage(inputValue) As String
     Dim typeOfVar As Integer
     Dim response As String
 
-    typeOfVar = VarType(inputValue)
+    typeOfVar = varType(inputValue)
 
 
     'Set Error Source Macro/Function name

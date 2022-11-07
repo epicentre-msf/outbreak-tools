@@ -409,7 +409,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
                 Case C_sAnaCol
 
                     sFormula = .Cells(iEndRow, i).Address & " / " & .Cells(iEndRow, i).Address
-                    sFormula2 = .Cells(iEndRow - 1, i).Address & " / " & .Cells(iEndRow, i).Address   'Formula for missing percentage
+                    sFormula2 = .Cells(iEndRow - 1, i).Address & " / " & .Cells(iEndRow, i).Address 'Formula for missing percentage
 
                 Case C_sAnaRow, C_sAnaTot
 
@@ -473,15 +473,15 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
                 'Add the percentage on total
                 Select Case sPercent
 
-                    Case C_sAnaRow
+                Case C_sAnaRow
 
-                        sFormula = .Cells(i, iEndCol - 1).Address & " / " & .Cells(i, iEndCol - 1).Address
-                        sFormula2 = .Cells(i, iEndCol - 3).Address & " / " & .Cells(i, iEndCol - 1).Address
+                    sFormula = .Cells(i, iEndCol - 1).Address & " / " & .Cells(i, iEndCol - 1).Address
+                    sFormula2 = .Cells(i, iEndCol - 3).Address & " / " & .Cells(i, iEndCol - 1).Address
 
-                    Case C_sAnaCol, C_sAnaTot
+                Case C_sAnaCol, C_sAnaTot
 
-                        sFormula = .Cells(i, iEndCol - 1).Address & " / " & .Cells(iEndRow, iEndCol - 1).Address
-                        sFormula2 = .Cells(i, iEndCol - 3).Address & " / " & .Cells(iEndRow, iEndCol - 1).Address
+                    sFormula = .Cells(i, iEndCol - 1).Address & " / " & .Cells(iEndRow, iEndCol - 1).Address
+                    sFormula2 = .Cells(i, iEndCol - 3).Address & " / " & .Cells(iEndRow, iEndCol - 1).Address
 
 
                 End Select
@@ -555,13 +555,13 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
         If sFormula <> vbNullString Then .Cells(iEndRow, iTotalColumn).FormulaArray = sFormula
 
-    'Missings row and columns, with total row and columns -----------------------------------------------------------------------
+        'Missings row and columns, with total row and columns -----------------------------------------------------------------------
 
-    Select Case sMiss
+        Select Case sMiss
 
         Case C_sAnaRow
 
-        'Missing row and total column
+            'Missing row and total column
             sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
                                         OnTotal:=True, sConditionRow:=Chr(34) & Chr(34), _
                                         sVarColumn:=sVarColumn, includeMissing:=False, isFiltered:=True)
@@ -575,7 +575,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
                                         OnTotal:=True, sConditionRow:=Chr(34) & Chr(34), _
                                         sVarColumn:=sVarRow, includeMissing:=False, isFiltered:=True)
 
-             If sFormula <> vbNullString Then .Cells(iEndRow, iMissingColumn).FormulaArray = sFormula
+            If sFormula <> vbNullString Then .Cells(iEndRow, iMissingColumn).FormulaArray = sFormula
 
         Case C_sAnaAll
 
@@ -587,12 +587,12 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
             If sFormula <> vbNullString Then .Cells(iMissingRow, iTotalColumn).FormulaArray = sFormula
 
 
-             'Missing column and total row
+            'Missing column and total row
             sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarColumn, _
                                         OnTotal:=True, sConditionRow:=Chr(34) & Chr(34), _
                                         sVarColumn:=sVarRow, includeMissing:=True, isFiltered:=True)
 
-             If sFormula <> vbNullString Then .Cells(iEndRow, iMissingColumn).FormulaArray = sFormula
+            If sFormula <> vbNullString Then .Cells(iEndRow, iMissingColumn).FormulaArray = sFormula
 
             'Missing row and missing column
             sFormula = BivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVarRow:=sVarRow, _
@@ -601,7 +601,7 @@ Sub AddBordersFormula(Wkb As Workbook, DictHeaders As BetterArray, sForm As Stri
 
             If sFormula <> vbNullString Then .Cells(iMissingRow, iMissingColumn).FormulaArray = sFormula
 
-    End Select
+        End Select
 
     End With
 
@@ -813,16 +813,16 @@ Sub AddTimeSeriesFormula(Wkb As Workbook, DictHeaders As BetterArray, _
         Set rng = .Range(.Cells(iRow + 2, iInnerEndCol), .Cells(iRow + 4 + C_iNbTime, iInnerEndCol))
         .Cells(iRow + 2, iInnerEndCol).AutoFill Destination:=rng, Type:=xlFillValues
 
-         'Missing Row and Total column
+        'Missing Row and Total column
 
-         sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sTimeVar, _
-                                        sCondition:=Chr(34) & Chr(34))
+        sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sTimeVar, _
+                                     sCondition:=Chr(34) & Chr(34))
 
-         If sFormula <> vbNullString Then .Cells(iRow + 3 + C_iNbTime, iInnerEndCol).FormulaArray = sFormula
+        If sFormula <> vbNullString Then .Cells(iRow + 3 + C_iNbTime, iInnerEndCol).FormulaArray = sFormula
 
-         'Two total columns
-         sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sCondVar, isFiltered:=True, OnTotal:=True)
-         If sFormula <> vbNullString Then .Cells(iRow + 4 + C_iNbTime, iInnerEndCol).FormulaArray = sFormula
+        'Two total columns
+        sFormula = UnivariateFormula(Wkb:=Wkb, DictHeaders:=DictHeaders, sForm:=sForm, sVar:=sCondVar, isFiltered:=True, OnTotal:=True)
+        If sFormula <> vbNullString Then .Cells(iRow + 4 + C_iNbTime, iInnerEndCol).FormulaArray = sFormula
 
     End With
 End Sub
@@ -1085,12 +1085,12 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         iRow = iRow + 4
 
         FormatARange .Cells(iRow, iCol + 1), isBold:=False, sFontColor:=sSelectionFontColor, _
-                    sInteriorColor:=sSelectionInteriorColor, _
-                    NumFormat:="dd/mm/yyyy"
+        sInteriorColor:=sSelectionInteriorColor, _
+        NumFormat:="dd/mm/yyyy"
 
         .Cells(iRow, iCol + 1).Locked = True
         .Cells(iRow, iCol + 1).formula = "=" & "MIN(MAX(" & .Cells(iRow - 2, iCol + 4).Address & "," & _
-             .Cells(iRow - 2, iCol + 7).Address & ")," & sMax & ")"
+                                                                                               .Cells(iRow - 2, iCol + 7).Address & ")," & sMax & ")"
 
 
         'The table for the time values
@@ -1115,7 +1115,7 @@ Sub AddTimeColumn(Wksh As Worksheet, iStartRow As Long, iCol As Long, _
         'Format and AutoFill the Range of values
         .Cells(iRow, iCol).formula = "= " & "FormatDateFromLastDay(" & sAgg & ", " & _
                                      .Cells(iRow, iCol - 1).Address(rowabsolute:=False, ColumnAbsolute:=False) & "," & sMax & "," & _
-                                      .Cells(iRow, iCol - 2).Address(rowabsolute:=False, ColumnAbsolute:=False) & ")"
+                                     .Cells(iRow, iCol - 2).Address(rowabsolute:=False, ColumnAbsolute:=False) & ")"
 
         'Format the range of time span (from, to)
         .Cells(iRow - 1, iCol - 2).Value = TranslateLLMsg("MSG_From")
@@ -1546,17 +1546,15 @@ Function TimeSeriesCount(Wkb As Workbook, DictHeaders As BetterArray, sVarName A
     If sFormula <> vbNullString And Len(sFormula) < 255 Then TimeSeriesCount = sFormula
 End Function
 
-
 'Add percentage taking in account eventual errors
 Function AddPercentage(sForm As String) As String
     AddPercentage = "= IF(ISERR(" & sForm & ")," & Chr(34) & Chr(34) & "," & sForm & ")"
 End Function
 
-
 'Function to create a simple bar chart for the univariate analysis part
 Public Sub CreateBarChart(Wksh As Worksheet, Left As Integer, Top As Integer, RngSource As Range, Optional chartType As Integer = xlColumnClustered)
     With Wksh
-    Dim UAChart As ChartObject
+        Dim UAChart As ChartObject
         Set UAChart = .ChartObjects.Add(Left + 450, Top, 100, 180)
 
         UAChart.Chart.chartType = chartType
@@ -1567,4 +1565,5 @@ Public Sub CreateBarChart(Wksh As Worksheet, Left As Integer, Top As Integer, Rn
     End With
 
 End Sub
+
 

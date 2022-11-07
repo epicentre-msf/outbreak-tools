@@ -99,7 +99,7 @@ Public Property Get Self() As ITablesSpecs
 End Property
 
 Private Property Get TableId() As String
-    Dim PREFIX As String
+    Dim prefix As String
     Dim tRng As Range
     Dim hRng As Range
     Dim lineNum As Long
@@ -107,23 +107,23 @@ Private Property Get TableId() As String
     Set tRng = TableRange
     Set hRng = HeaderRange
 
-    lineNum = tRng.row - hRng.row + 1
+    lineNum = tRng.row - hRng.row
 
     Select Case TableType
 
     Case TypeGlobalSummary
-        PREFIX = "GS"
+        prefix = "GS"
     Case TypeUnivariate
-        PREFIX = "UA"
+        prefix = "UA"
     Case TypeBivariate
-        PREFIX = "BA"
+        prefix = "BA"
     Case TypeTimeSeries
-        PREFIX = "TS"
+        prefix = "TS"
     Case TypeSpatial
-        PREFIX = "SA"
+        prefix = "SA"
     End Select
 
-    TableId = PREFIX & "_tab" & lineNum
+    TableId = prefix & "_tab" & lineNum
 End Property
 
 Private Property Get TableSectionId() As String
@@ -167,6 +167,19 @@ Private Property Get HasTotal() As Boolean
     End Select
 End Property
 
+Public Property Get HasGraph() As Boolean
+    Select Case TableType
+    Case TypeGlobalSummary
+        HasGraph = False
+    Case TypeUnivariate
+        HasGraph = (Value("graph") = "yes")
+    Case TypeBivariate
+        HasGraph = (Value("graph") = "percentage" Or Value("graph") = "values" Or Value("graph") = "both")
+    Case TypeSpatial
+        HasGraph = (Value("graph") = "yes")
+    End Select
+End Property
+
 Private Property Get HasMissing() As Boolean
     Select Case TableType
 
@@ -188,6 +201,47 @@ Private Property Get HasMissing() As Boolean
 
 End Property
 
+Public Property Get ValidTable() As Boolean
+    
+    Dim dict As ILLdictionary
+    Dim lData As ILinelistSpecs
+    Dim valid As Boolean
+    Dim rowVar As String
+    Dim colVar As String
+    Dim colControl As String
+    Dim rowControl As String
+    Dim vars As ILLVariables
+
+    Set vars = LLVariables.Create(dict)
+
+    Set lData = LinelistSpecifications
+    Set dict = lData.Dictionary
+
+    rowVar = Value("row")
+    rowControl = vars.Value(colName:="choices", varName:=rowVar)
+
+    colVar = Value("column")
+    colControl = vars.Value(colName:="choices", varName:=colVar)
+
+    Select Case TableType
+    Case TypeGlobalSummary
+        valid = True
+    Case TypeUnivariate
+        valid = vars.Contains(rowVar) And (rowControl = "choice")
+    Case TypeBivariate
+        valid = vars.Contains(rowVar) And vars.Contains(colVar) And (colControl = "choice")
+    Case TypeTimeSeries
+        rowVar = Value("row")
+        colVar = Value("column")
+        valid = (dict.VariableExists(rowVar) And (colVar = vbNullString Or dict.VariableExists(colVar)))
+    Case TypeSpatial
+        rowVar = Value("row")
+        colVar = Value("column")
+        valid = (dict.VariableExists("adm1_" & rowVar) And (colVar = vbNullString Or dict.VariableExists(colVar)))
+    End Select
+
+    ValidTable = valid
+End Property
 
 Private Property Get Dictionary() As ILLdictionary
     Dim lData As ILinelistSpecs
@@ -227,7 +281,7 @@ Private Function Value(ByVal colName As String) As String
     Value = retVal
 End Function
 
-Private Property Get Data(ByVal rowOrCol As String) As BetterArray
+Private Property Get data(ByVal rowOrCol As String) As BetterArray
     Dim varsCat As BetterArray
     Dim nameVar As String
     Dim vars As ILLVariables
@@ -240,7 +294,7 @@ Private Property Get Data(ByVal rowOrCol As String) As BetterArray
     If vars.Contains(nameVar) Then
         Set varsCat = lData.Categories(nameVar)
     End If
-    Set Data = varsCat.Clone()
+    Set data = varsCat.Clone()
 End Property
 
 Private Property Get Previous() As ITablesSpecs
@@ -304,11 +358,11 @@ Public Property Get ITablesSpecs_TableType() As AnalysisTablesType
 End Property
 
 Public Property Get ITablesSpecs_RowCategories() As BetterArray
-    Set ITablesSpecs_RowCategories = Data("row")
+    Set ITablesSpecs_RowCategories = data("row")
 End Property
 
 Public Property Get ITablesSpecs_ColumnCategories() As BetterArray
-    Set ITablesSpecs_ColumnCategories = Data("column")
+    Set ITablesSpecs_ColumnCategories = data("column")
 End Property
 
 Public Property Get ITablesSpecs_Dictionary() As ILLdictionary
@@ -339,12 +393,20 @@ Public Property Get ITablesSpecs_HasMissing() As Boolean
     ITablesSpecs_HasMissing = HasMissing
 End Property
 
+Public Property Get ITablesSpecs_HasGraph() As Boolean
+    ITablesSpecs_HasGraph = HasGraph()
+End Property
+
 Public Property Get ITablesSpecs_Previous() As ITablesSpecs
     Set ITablesSpecs_Previous = Previous
 End Property
 
 Public Property Get ITablesSpecs_TableSectionId() As String
-        ITablesSpecs_TableSectionId = TableSectionId
+    ITablesSpecs_TableSectionId = TableSectionId
+End Property
+
+Public Property Get ITablesSpecs_ValidTable() As Boolean
+    ITablesSpecs_ValidTable = ValidTable()
 End Property
 
 

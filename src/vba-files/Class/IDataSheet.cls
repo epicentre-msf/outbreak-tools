@@ -20,10 +20,13 @@ Option Explicit
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
                               Optional ByVal includeHeaders As Boolean = False) As Range
 End Property
+
 'Getters for the encapsulated data
 Public Property Get StartRow() As Long: End Property
+
 Public Property Get StartColumn() As Long: End Property
 Public Property Get DataEndRow() As Long: End Property
+
 Public Property Get DataEndColumn() As Long: End Property
 Public Property Get Wksh() As Worksheet: End Property
 
@@ -54,3 +57,7 @@ Public Sub Export(ByVal toWkb As Workbook, _
 End Sub
 
 Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long): End Sub
+
+
+
+

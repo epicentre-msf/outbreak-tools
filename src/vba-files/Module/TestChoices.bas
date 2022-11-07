@@ -10,7 +10,6 @@ Private Fakes As Object
 Private formCond As IFormulaCondition
 Private choice As ILLchoice
 
-
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     'this method runs once per module.
@@ -35,7 +34,6 @@ Private Sub TestInitialize()
     Set choice = LLchoice.Create(choiceWorksheet, 1, 1)
 End Sub
 
-
 '@TestMethod
 Private Sub TestInit()
 
@@ -54,12 +52,11 @@ End Sub
 Private Sub TestSort()
     On Error GoTo SortFailed
     choice.Sort
-Exit Sub
+    Exit Sub
 
 SortFailed:
     Assert.Fail "Sort Failed: #" & Err.Number & " : " & Err.Description
 End Sub
-
 
 '@TestMethod
 Private Sub TestAddChoice()
@@ -70,12 +67,11 @@ Private Sub TestAddChoice()
     On Error GoTo AddFailed
 
     choice.AddChoice "list_test", cat
-Exit Sub
+    Exit Sub
 
 AddFailed:
     Assert.Fail "Sort Failed: #" & Err.Number & " : " & Err.Description
 End Sub
-
 
 '@TestMethod
 Private Sub TestDataRange()
@@ -83,9 +79,10 @@ Private Sub TestDataRange()
 
     Assert.IsTrue (choice.DataRange("list name").Column = 1), "Bad list name column returned"
     Assert.IsTrue (choice.DataRange("label").Column = 3), "Bad label column returned"
-Exit Sub
+    Exit Sub
 
 DataRangeFailed:
     Assert.Fail "Sort Failed: #" & Err.Number & " : " & Err.Description
 
 End Sub
+

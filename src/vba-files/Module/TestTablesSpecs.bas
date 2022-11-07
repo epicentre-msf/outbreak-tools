@@ -11,7 +11,6 @@ Private Fakes As Object
 Private lData As ILinelistSpecs
 Private specs As ITablesSpecs
 
-
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     'this method runs once per module.
@@ -46,7 +45,6 @@ Private Sub TestInitialize()
     Set specs = TablesSpecs.Create(headRng, rowRng, lData, TypeUnivariate)
 End Sub
 
-
 'Test row categories
 '@TestMethod
 Private Sub TestCategories()
@@ -61,11 +59,10 @@ Private Sub TestCategories()
     Set cat = specs.ColumnCategories()
     Assert.IsTrue (cat.Length = 0), "Found unexisting column categories in table specifications"
 
-Exit Sub
+    Exit Sub
 Fail:
     Assert.Fail "Row Categories Failed: #" & Err.Number & " : " & Err.Description
 End Sub
-
 
 'Test value
 '@TestMethod
@@ -77,7 +74,7 @@ Private Sub TestValueSection()
     Assert.IsTrue (specs.isNewSection), "New section not detected"
     Assert.IsTrue (specs.TableType = TypeUnivariate), "Bad table type for specs"
 
-Exit Sub
+    Exit Sub
 Fail:
     Assert.Fail "Row Categories Failed: #" & Err.Number & " : " & Err.Description
 End Sub

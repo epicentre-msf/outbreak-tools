@@ -19,3 +19,4 @@ Option Explicit
 'Exposed methods
 Public Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolean: End Function
 Public Function ExcelFormulasIncludes(ByVal excelFormula As String) As Boolean: End Function
+
