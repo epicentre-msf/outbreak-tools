@@ -1224,7 +1224,7 @@ Sub ExportForMigration()
     If sDirectory <> "" Then
         'Export the Data of the linelist
         sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name, False), ".xlsb", "") & _
-                "_export_data_" & Format(Now, "yyyymmdd-HhNn") & ".xlsx"
+                                                                                                                       "_export_data_" & Format(Now, "yyyymmdd-HhNn") & ".xlsx"
 
         'Export the full geobase
 
@@ -1249,7 +1249,7 @@ Sub ExportForMigration()
             sDirectory = Helpers.LoadFolder
             If sDirectory <> "" Then
                 sLLPath = sDirectory & Application.PathSeparator & Replace(ClearString(ThisWorkbook.Name, False), ".xlsb", "") & _
-                         "_export_data_" & Format(Now, "yyyymmdd-HhNn") & ".xlsx"
+                                                                                                                               "_export_data_" & Format(Now, "yyyymmdd-HhNn") & ".xlsx"
                 sGeoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & ".xlsx"
                 sGeoHistoPath = sDirectory & Application.PathSeparator & sPath & Format(Now, "yyyymmdd") & "_historic" & ".xlsx"
             End If

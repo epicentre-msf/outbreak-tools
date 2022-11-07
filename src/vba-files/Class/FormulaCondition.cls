@@ -18,8 +18,8 @@ Implements IFormulaCondition
 
 'Types of the class
 Private Type TFormulaCondition
-    Condition As BetterArray 'Conditions for the formulas
-    Variable As BetterArray  'Variables for the formulas
+    Condition As BetterArray                     'Conditions for the formulas
+    Variable As BetterArray                      'Variables for the formulas
 End Type
 
 Private Const CLASSNAME As String = "Formula"
@@ -59,13 +59,13 @@ Public Property Get Variable() As BetterArray
 End Property
 
 Public Property Set Variable(ByVal formVar As BetterArray)
-     Set this.Variable = formVar.Clone()
+    Set this.Variable = formVar.Clone()
 End Property
 
 Public Property Get VariablesTable(ByVal dict As ILLdictionary) As String
     Dim vars As ILLVariables
     Dim firstVar As String
-    If Valid(dict) Then
+    If valid(dict) Then
         Set vars = LLVariables.Create(dict)
         firstVar = Variable.Item(Variable.LowerBound)
         VariablesTable = vars.Value(varName:=firstVar, colName:="table name")
@@ -73,10 +73,10 @@ Public Property Get VariablesTable(ByVal dict As ILLdictionary) As String
 End Property
 
 'Test if a formula is valid:
-Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tableName As String = vbNullString) As Boolean
+Public Function valid(ByVal dict As ILLdictionary, Optional ByVal tableName As String = vbNullString) As Boolean
 
-    Dim tableData As BetterArray 'list of all tables in dictionary
-    Dim variableData As BetterArray 'list of all variables in dictionary
+    Dim tableData As BetterArray                 'list of all tables in dictionary
+    Dim variableData As BetterArray              'list of all variables in dictionary
     Dim formulavariables As BetterArray
     Dim formulaConditions As BetterArray
     Dim customtableName As String
@@ -94,7 +94,7 @@ Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tableName As S
     Set formulaConditions = Condition
 
     'Valid Fail by default, turns to true after the checkings
-    Valid = False
+    valid = False
 
     If Not (dict.ColumnExists("table name") And dict.ColumnExists("variable name")) Then Exit Function
 
@@ -128,11 +128,8 @@ Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tableName As S
         If variablesTableName <> customtableName Then Exit Function
     Next
 
-    Valid = True
+    valid = True
 End Function
-
-
-
 
 'Convert the conditions into a string of formulas
 Public Function ConditionString(ByVal tableName As String, ByVal varName As String, _
@@ -172,18 +169,20 @@ Public Property Get IFormulaCondition_Variables() As BetterArray
 End Property
 
 Public Property Get IFormulaCondition_Conditions() As BetterArray
-     Set IFormulaCondition_Conditions = Condition
+    Set IFormulaCondition_Conditions = Condition
 End Property
 
 Public Property Get IFormulaCondition_VariablesTable(ByVal dict As ILLdictionary) As String
-     IFormulaCondition_VariablesTable = VariablesTable(dict)
+    IFormulaCondition_VariablesTable = VariablesTable(dict)
 End Property
 
 Public Function IFormulaCondition_ConditionString(ByVal tableName As String, ByVal varName As String, _
-                                                Optional ByVal Connector As String = "*") As String
+                                                  Optional ByVal Connector As String = "*") As String
     IFormulaCondition_ConditionString = ConditionString(tableName:=tableName, varName:=varName, Connector:=Connector)
 End Function
 
 Public Function IFormulaCondition_Valid(ByVal dict As ILLdictionary, Optional ByVal tableName As String = vbNullString) As Boolean
-    IFormulaCondition_Valid = Valid(dict, tableName)
+    IFormulaCondition_Valid = valid(dict, tableName)
 End Function
+
+

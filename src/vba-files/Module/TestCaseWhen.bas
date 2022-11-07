@@ -37,7 +37,7 @@ Private Function Quoted(ByVal text As String)
 End Function
 
 '@TestMethod
-Private Sub TestCaseWhen()
+Private Sub testcasewhen()
     Dim cat As BetterArray
     Dim dict As ILLdictionary
     Dim vars As ILLVariables
@@ -47,17 +47,17 @@ Private Sub TestCaseWhen()
     Set vars = LLVariables.Create(dict)
     formula = vars.Value(varName:="vara4", colName:="control details")
     Set casewhenObject = CaseWhen.Create(formula)
-    Assert.IsTrue (casewhenObject.Valid()), "Validity test failed to succeed"
+    Assert.IsTrue (casewhenObject.valid()), "Validity test failed to succeed"
     Assert.IsTrue (casewhenObject.parsedFormula = ThisWorkbook.Worksheets("TestValues").Range("case_when_value").Value), "Case when not parsed correctly"
-    Debug.Print casewhenObject.parsedFormula
     Set cat = casewhenObject.Categories()
     Assert.IsTrue (cat.Item(1) = "Choice is A" And cat.Item(2) = "Choice is B"), "Case when categories not correct"
     formula = "IF(CASE_WHEN(yes, true)"
     Set casewhenObject = CaseWhen.Create(formula)
-    Assert.IsFalse casewhenObject.Valid(), "Validity test failed to fail"
+    Assert.IsFalse casewhenObject.valid(), "Validity test failed to fail"
     'parsed case when
 
-Exit Sub
+    Exit Sub
 Fail:
     Assert.Fail "Test Case when failed #" & Err.Number & " : " & Err.Description
 End Sub
+

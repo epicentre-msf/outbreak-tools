@@ -18,8 +18,10 @@ Option Explicit
 'Properties
 Public Property Get Wksh() As Worksheet: End Property
 Public Property Get StartRow() As Long: End Property
+
 Public Property Get StartColumn() As Long: End Property
 Public Property Get ChoiceData() As IDataSheet: End Property
+
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range: End Property
 Public Property Get Categories(ByVal choiceName As String) As BetterArray: End Property
 
@@ -28,6 +30,7 @@ Public Property Get Categories(ByVal choiceName As String) As BetterArray: End P
 'Void methods
 'Sort the choices sheet
 Public Sub Sort(): End Sub
+
 'Add choice
 Public Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As BetterArray): End Sub
 
@@ -38,5 +41,6 @@ End Sub
 Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long)
 End Sub
 
-Public Sub Translate(ByVal transObject As ITranslation)
+Public Sub Translate(ByVal TransObject As ITranslation)
 End Sub
+

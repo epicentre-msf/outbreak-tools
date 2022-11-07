@@ -16,3 +16,27 @@ Attribute VB_Exposed = False
 Option Explicit
 
 'Exposed methods
+Public Property Get NumberOfSeries() As Long
+End Property
+
+Public Property Get NumberOfGraphs() As Long
+End Property
+
+Public Property Get SeriesName(ByVal index As Long) As String
+End Property
+
+Public Property Get SeriesType(ByVal index As Long) As String
+End Property
+
+Public Property Get SeriesPos(ByVal index As Long) As String
+End Property
+
+Public Property Get SeriesLabel(ByVal index As Long) As String
+End Property
+
+Public Property Get SeriesColumnLabel(ByVal index As Long) As String
+End Property
+
+Public Sub CreateSeries()
+End Sub
+

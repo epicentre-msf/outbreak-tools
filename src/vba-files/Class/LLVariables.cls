@@ -18,8 +18,8 @@ Option Explicit
 Implements ILLVariables
 
 Private Type TVariable
-  dict As ILLdictionary
-  varRng As Range
+    dict As ILLdictionary
+    varRng As Range
 End Type
 
 Private this As TVariable
@@ -29,13 +29,13 @@ Private Const CLASSNAME As String = "LLVariables"
 
 Public Function Create(ByVal dict As ILLdictionary) As ILLVariables
 
-  If Not dict.ColumnExists(VARIABLENAME) Then ThrowErrorUnableInstanciateNoVarName
-  If Not dict.Prepared Then ThrowErrorUnableInstanciateNotPrepared
+    If Not dict.ColumnExists(VARIABLENAME) Then ThrowErrorUnableInstanciateNoVarName
+    If Not dict.Prepared Then ThrowErrorUnableInstanciateNotPrepared
 
-  With New LLVariables
-    Set .Dictionary = dict
-    Set Create = .Self
-  End With
+    With New LLVariables
+        Set .Dictionary = dict
+        Set Create = .Self
+    End With
 End Function
 
 Public Property Get Self() As ILLVariables
@@ -47,80 +47,78 @@ Public Property Get Dictionary() As ILLdictionary
 End Property
 
 Public Property Set Dictionary(ByVal dict As ILLdictionary)
-  Set this.dict = dict
-  Set this.varRng = dict.DataRange(VARIABLENAME)
+    Set this.dict = dict
+    Set this.varRng = dict.DataRange(VARIABLENAME)
 End Property
 
 Friend Property Get VarRange() As Range
     Set VarRange = this.varRng
 End Property
 
-
 'Functions --------------------------------------------------------------------------
 
 'Test if a variable is present
 Private Function Contains(ByVal varName As String) As Boolean
-  Dim varRng As Range
-  Dim Exist As Boolean
+    Dim varRng As Range
+    Dim Exist As Boolean
   
-  Set varRng = VarRange()
-  If varName = vbNullString Then
-    Exist = False
-  Else
-    Exist = Not (varRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
-  End If
+    Set varRng = VarRange()
+    If varName = vbNullString Then
+        Exist = False
+    Else
+        Exist = Not (varRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+    End If
   
-  Contains = Exist
+    Contains = Exist
 End Function
 
 'Find the row index of one variable
 Private Function RowIndex(ByVal varName As String) As Long
-  Dim varRng As Range
-  Dim rowNum As Long
-  rowNum = -1
-  Set varRng = VarRange()
-  If Contains(varName) Then
-      rowNum = varRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True).row
-  End If
-  RowIndex = rowNum
+    Dim varRng As Range
+    Dim rowNum As Long
+    rowNum = -1
+    Set varRng = VarRange()
+    If Contains(varName) Then
+        rowNum = varRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True).row
+    End If
+    RowIndex = rowNum
 End Function
-
 
 'Value of one column for one variable
 Private Function Value(ByVal colName As String, ByVal varName As String) As String
-  Dim varRng As Range
+    Dim varRng As Range
 
-  'Row and columns to return
-  Dim rowNum As Long
-  Dim colNum As Long
-  Dim retValue As String
+    'Row and columns to return
+    Dim rowNum As Long
+    Dim colNum As Long
+    Dim retValue As String
 
-  Dim dict As ILLdictionary
-  Dim Wksh As Worksheet
+    Dim dict As ILLdictionary
+    Dim Wksh As Worksheet
 
-  Set varRng = VarRange
-  Set dict = Dictionary()
-  Set Wksh = dict.Data.Wksh
+    Set varRng = VarRange
+    Set dict = Dictionary()
+    Set Wksh = dict.data.Wksh
 
-  'return value
-  retValue = vbNullString
+    'return value
+    retValue = vbNullString
 
-  If Contains(varName) And dict.ColumnExists(colName) Then
+    If Contains(varName) And dict.ColumnExists(colName) Then
 
-    rowNum = RowIndex(varName)
-    colNum = dict.Data.ColumnIndex(colName)
-    retValue = Wksh.Cells(rowNum, colNum).Value
+        rowNum = RowIndex(varName)
+        colNum = dict.data.ColumnIndex(colName)
+        retValue = Wksh.Cells(rowNum, colNum).Value
 
-  End If
+    End If
 
-  Value = retValue
+    Value = retValue
 End Function
 
 'Index of a column or a Row of a variable in a worksheet
 Private Function index(ByVal varName As String) As Long
-      Dim sheetIndex As String
-      sheetIndex = Value(colName:=INDEXHEADER, varName:=varName)
-      index = IIf(sheetIndex = vbNullString, -1, CLng(sheetIndex))
+    Dim sheetIndex As String
+    sheetIndex = Value(colName:=INDEXHEADER, varName:=varName)
+    index = IIf(sheetIndex = vbNullString, -1, CLng(sheetIndex))
 End Function
 
 'Errors ----------------------------------------------------------------------
@@ -132,25 +130,24 @@ Private Sub ThrowErrorUnableInstanciateNotPrepared()
     Err.Raise VBA.vbObjectError + 514, CLASSNAME, "Unable to create an instance of the class variable: The dictionary is not prepared"
 End Sub
 
-
 'Interface ------------------------------------------------------------------------------
 
 'Properties
 Public Property Get ILLVariables_Dictionary() As ILLdictionary
-  Set ILLVariables_Dictionary = Dictionary
+    Set ILLVariables_Dictionary = Dictionary
 End Property
-
 
 'Exposed methods
 Public Function ILLVariables_Value(ByVal colName As String, ByVal varName As String) As String
-  ILLVariables_Value = Value(colName, varName)
+    ILLVariables_Value = Value(colName, varName)
 End Function
 
 'column or row index in the sheet of one variable
 Public Function ILLVariables_Index(ByVal varName As String) As Long
-  ILLVariables_Index = index(varName)
+    ILLVariables_Index = index(varName)
 End Function
 
 Public Function ILLVariables_Contains(ByVal varName As String) As Boolean
     ILLVariables_Contains = Contains(varName)
 End Function
+

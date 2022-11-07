@@ -41,7 +41,7 @@ Private Sub TestIncludes()
     Assert.IsTrue formData.ExcelFormulasIncludes("AVERAGE"), "Existing formula not found"
     Assert.IsFalse formData.ExcelFormulasIncludes("COMPLEXES"), "Non Existing formula found"
 
-Exit Sub
+    Exit Sub
 Fail:
     Assert.Fail "Test Special characters failed #" & Err.Number & " : " & Err.Description
 

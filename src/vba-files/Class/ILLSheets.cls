@@ -16,15 +16,15 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Public Enum SheetBound
-  RowSart = 1
-  RowEnd = 2
-  ColStart = 3
-  ColEnd = 4
+    RowSart = 1
+    RowEnd = 2
+    ColStart = 3
+    ColEnd = 4
 End Enum
 
 Public Enum SheetInfoType
-  SheetInfoSheetType = 1
-  SheetInfoSheetTable = 2
+    SheetInfoSheetType = 1
+    SheetInfoSheetTable = 2
 End Enum
 
 'Properties
@@ -32,10 +32,12 @@ End Enum
 Public Property Get Dictionary() As ILLdictionary: End Property
 
 'Exposed methods (Seems Handy to use sheetype and table instead of one function)
-Public Function SheetInfo(ByVal sheetName As String, Optional ByVal Info As Byte = SheetInfoType.SheetInfoSheetType) As String: End Function
+Public Function SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = SheetInfoType.SheetInfoSheetType) As String: End Function
+
 Public Function Contains(ByVal sheetName As String) As Boolean: End Function
 
 Public Function DataBounds(ByVal sheetName As String, Optional ByVal Bound As Byte = SheetBound.RowSart) As Long: End Function
+
 Public Function ContainsListAuto(ByVal sheetName As String) As Boolean: End Function
 Public Function VariableAddress(ByVal varName As String) As String: End Function
 

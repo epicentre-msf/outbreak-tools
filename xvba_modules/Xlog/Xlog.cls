@@ -47,9 +47,9 @@ Public Function message(messageType As Integer, messageText As String, Optional 
   
     FileNum = FreeFile
   
-    Dim PREFIX As String
+    Dim prefix As String
   
-    PREFIX = Now & " - "
+    prefix = Now & " - "
   
   
     Open filePath For Append As #FileNum
@@ -57,11 +57,11 @@ Public Function message(messageType As Integer, messageText As String, Optional 
     Select Case messageType
    
     Case 0                                       'Error Message
-        Print #FileNum, PREFIX & "Error:" & messageText
+        Print #FileNum, prefix & "Error:" & messageText
     Case 1                                       'Success
-        Print #FileNum, PREFIX & "DEBUG:" & messageText
+        Print #FileNum, prefix & "DEBUG:" & messageText
     Case Else                                    'No Type Set
-        Print #FileNum, PREFIX & "INFO:" & messageText
+        Print #FileNum, prefix & "INFO:" & messageText
     End Select
      
     Close #FileNum

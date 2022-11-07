@@ -18,9 +18,9 @@ Implements IDataSheet
 
 'Types of the class
 Private Type TDataSheet
-    dataWksh As Worksheet 'Worksheet of the data
-    startLn As Long  'The line where the data starts
-    startCol As Long 'The column where the data starts (the first column is the column of the variable names.
+    dataWksh As Worksheet                        'Worksheet of the data
+    startLn As Long                              'The line where the data starts
+    startCol As Long                             'The column where the data starts (the first column is the column of the variable names.
 End Type
 
 Private this As TDataSheet
@@ -43,7 +43,6 @@ Public Function Create(ByVal dataWksh As Worksheet, ByVal dataStartRow As Long, 
         Set Create = .Self
     End With
 End Function
-
 
 Public Property Get Self() As IDataSheet
     Set Self = Me
@@ -78,13 +77,13 @@ End Property
 
 'End row and columns of the dictionary
 Private Property Get DataEndRow() As Long
-   With Wksh
+    With Wksh
         DataEndRow = .Cells(.Rows.Count, StartColumn).End(xlUp).row
-   End With
+    End With
 End Property
 
 Private Property Get DataEndColumn() As Long
-     With Wksh
+    With Wksh
         DataEndColumn = .Cells(StartRow, .Columns.Count).End(xlToLeft).Column
     End With
 End Property
@@ -127,7 +126,7 @@ End Property
 Private Function ColumnExists(ByVal colName As String) As Boolean
     Dim hRng As Range
     Dim Exist As Boolean
-    Set hRng = HeaderRange() 'Header Range of the dictionary
+    Set hRng = HeaderRange()                     'Header Range of the dictionary
     If colName = vbNullString Then
         Exist = False
     Else
@@ -138,8 +137,8 @@ End Function
 
 'Column Index within the data range of the dictionary
 Private Function ColumnIndex(ByVal colName As String, _
-                            Optional ByVal inDataRange As Boolean = False, _
-                            Optional ByVal shouldExist As Boolean = False) As Long
+                             Optional ByVal inDataRange As Boolean = False, _
+                             Optional ByVal shouldExist As Boolean = False) As Long
     Dim hRng As Range
     Dim colIndex As Long
     Set hRng = HeaderRange()
@@ -162,7 +161,7 @@ Private Function FilterData(ByVal varName As String, _
                             ByVal criteriaName As String, _
                             ByVal returnedColumnName As String, _
                             Optional ByVal includeHeaders As Boolean = False) _
-                            As BetterArray
+        As BetterArray
 
     Dim dataRng As Range
     Dim returnedRng As Range
@@ -172,7 +171,7 @@ Private Function FilterData(ByVal varName As String, _
     Dim returnedData As BetterArray
     Dim dataWksh As Worksheet
     Dim endCol As Long
-    Dim EndRow As Long
+    Dim endRow As Long
     Dim retEndCol As Long
 
     Set returnedData = New BetterArray
@@ -180,8 +179,8 @@ Private Function FilterData(ByVal varName As String, _
 
     Set dataRng = DataRange(includeHeaders:=True) 'Plage of the dictionary data
     Set dataWksh = Wksh()
-    endCol = DataEndColumn() 'End column and rows of the dictionary
-    EndRow = DataEndRow()
+    endCol = DataEndColumn()                     'End column and rows of the dictionary
+    endRow = DataEndRow()
 
     startRetRow = IIf(includeHeaders, StartRow, StartRow + 1)
 
@@ -189,19 +188,19 @@ Private Function FilterData(ByVal varName As String, _
         startRetColIndex = StartColumn
         endRetColIndex = endCol
     Else
-        startRetColIndex = ColumnIndex(returnedColumnName, shouldExist:=True)   'Which index to return, the startcolumn is returned if the returned colname is not found
+        startRetColIndex = ColumnIndex(returnedColumnName, shouldExist:=True) 'Which index to return, the startcolumn is returned if the returned colname is not found
         endRetColIndex = startRetColIndex
     End If
 
     With dataWksh
-       If Not .AutoFilter Is Nothing Then .AutoFilter.ShowAllData
+        If Not .AutoFilter Is Nothing Then .AutoFilter.ShowAllData
 
         With dataRng
             .AutoFilter Field:=ColumnIndex(varName, inDataRange:=True, shouldExist:=True), Criteria1:=criteriaName
         End With
 
         On Error Resume Next
-            Set returnedRng = .Range(.Cells(startRetRow, startRetColIndex), .Cells(EndRow, endRetColIndex)).SpecialCells(xlCellTypeVisible)
+        Set returnedRng = .Range(.Cells(startRetRow, startRetColIndex), .Cells(endRow, endRetColIndex)).SpecialCells(xlCellTypeVisible)
         On Error GoTo 0
 
         .AutoFilter.ShowAllData
@@ -210,10 +209,13 @@ Private Function FilterData(ByVal varName As String, _
             returnedRng.Copy .Cells(StartRow, endCol + 2)
 
             'end row of data to return
-            EndRow = .Cells(.Rows.Count, endCol + 2).End(xlUp).row
-            retEndCol = .Cells(StartRow, .Columns.Count).End(xlToLeft).Column
-            Set returnedRng = .Range(.Cells(StartRow, endCol + 2), .Cells(EndRow, retEndCol))
-
+            endRow = StartRow + returnedRng.Cells.Count - 1 'cells.Count gives the number of cells, even in non contiguous ranges
+            
+            retEndCol = endCol + 2 + returnedRng.Columns.Count - 1
+            
+            'return column should be greather than endCol + 2. If it is not the case, there are empty lines causing that
+            Set returnedRng = .Range(.Cells(StartRow, endCol + 2), .Cells(endRow, retEndCol))
+            
             returnedData.FromExcelRange returnedRng, DetectLastRow:=False, _
                                         DetectLastColumn:=False
             returnedRng.Cells.Clear
@@ -223,20 +225,19 @@ Private Function FilterData(ByVal varName As String, _
     Set FilterData = returnedData.Clone()
 End Function
 
-
 'Multiple filters on the data (when you have mutiple conditions)
 Private Function FiltersData(ByVal varData As BetterArray, _
-                            ByVal criteriaData As BetterArray, _
-                            ByVal returnedColumnsData As BetterArray) As BetterArray
+                             ByVal criteriaData As BetterArray, _
+                             ByVal returnedColumnsData As BetterArray) As BetterArray
 
-    Dim dataRng As Range 'Range of the data
+    Dim dataRng As Range                         'Range of the data
     Dim dataWksh As Worksheet
     Dim returnedRng As Range
     Dim returnedColumnIndex As Long
     Dim returnedData As BetterArray
     Dim counter As Long
     Dim col As Long
-    Dim EndRow As Long
+    Dim endRow As Long
     Dim endCol As Long
     Dim retEndRow As Long
     Dim retEndCol As Long
@@ -251,13 +252,13 @@ Private Function FiltersData(ByVal varData As BetterArray, _
     If varData.Length <> criteriaData.Length Or varData.Length = 0 Then Exit Function
 
     'returned Range
-    col = 2 'Iterator for columns to extract
+    col = 2                                      'Iterator for columns to extract
     Set dataWksh = Wksh()
 
     With dataWksh
 
         If Not .AutoFilter Is Nothing Then .AutoFilter.ShowAllData
-        EndRow = DataEndRow()
+        endRow = DataEndRow()
         endCol = DataEndColumn()
 
         With dataRng
@@ -270,7 +271,7 @@ Private Function FiltersData(ByVal varData As BetterArray, _
             returnedColumnIndex = ColumnIndex(returnedColumnsData.Item(counter), shouldExist:=True)
 
             On Error Resume Next
-            Set returnedRng = .Range(.Cells(StartRow + 1, returnedColumnIndex), .Cells(EndRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
+            Set returnedRng = .Range(.Cells(StartRow + 1, returnedColumnIndex), .Cells(endRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
             On Error GoTo 0
 
             If Not returnedRng Is Nothing Then returnedRng.Copy .Cells(StartRow, endCol + col)
@@ -309,7 +310,7 @@ End Sub
 
 'Export
 Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As String = "__all__", _
-                  Optional ByVal filteredCondition As String = "<>")
+                   Optional ByVal filteredCondition As String = "<>")
 
     Dim dataExportData As BetterArray
     Dim dataWksh As Worksheet
@@ -322,8 +323,8 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As Stri
     Set dataWksh = Wksh()
 
     On Error Resume Next
-        Set dataExportWksh = Wkb.Worksheets(dataWksh.Name)
-        sheetDataExist = (Not dataExportWksh Is Nothing)
+    Set dataExportWksh = Wkb.Worksheets(dataWksh.Name)
+    sheetDataExist = (Not dataExportWksh Is Nothing)
     On Error GoTo 0
 
     'Trace on errors on exports
@@ -333,14 +334,13 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As Stri
     Set dataExportWksh = Wkb.Worksheets(dataWksh.Name)
 
     If filteredVarName = "__all__" Then
-       dataExportData.FromExcelRange DataRange(colName:="__all__", includeHeaders:=True)
+        dataExportData.FromExcelRange DataRange(colName:="__all__", includeHeaders:=True)
     Else
-       Set dataExportData = FilterData(filteredVarName, filteredCondition, "__all__", includeHeaders:=True)
+        Set dataExportData = FilterData(filteredVarName, filteredCondition, "__all__", includeHeaders:=True)
     End If
 
     dataExportData.ToExcelRange dataExportWksh.Cells(StartRow, StartColumn)
 End Sub
-
 
 'Errors ----------------------------------------------------------------------
 Private Sub ThrowErrorEmptySheetGiven(Optional ByVal Class As String = ":")
@@ -372,8 +372,8 @@ Public Function IDataSheet_ColumnExists(ByVal colName As String) As Boolean
 End Function
 
 Public Function IDataSheet_ColumnIndex(ByVal colName As String, _
-                                        Optional ByVal inDataRange As Boolean = False, _
-                                        Optional shouldExist As Boolean = False) As Long
+                                       Optional ByVal inDataRange As Boolean = False, _
+                                       Optional shouldExist As Boolean = False) As Long
     IDataSheet_ColumnIndex = ColumnIndex(colName, inDataRange, shouldExist)
 End Function
 
@@ -405,11 +405,13 @@ Public Property Get IDataSheet_DataEndColumn() As Long
 End Property
 
 Public Sub IDataSheet_Export(ByVal toWkb As Workbook, _
-                  Optional ByVal filteredVarName As String = "__all__", _
-                  Optional ByVal filteredCondition As String = "<>")
+                             Optional ByVal filteredVarName As String = "__all__", _
+                             Optional ByVal filteredCondition As String = "<>")
     Export toWkb, filteredVarName, filteredCondition
 End Sub
 
 Public Sub IDataSheet_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long)
     Import fromWksh, fromStartRow, fromStartCol
 End Sub
+
+

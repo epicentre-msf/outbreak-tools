@@ -87,7 +87,6 @@ ColumnFail:
     Assert.Fail "Test raised an error: #" & Err.Number & "-" & Err.Description
 End Sub
 
-
 '@TestMethod
 Private Sub TestColumnExist()
     Assert.IsFalse dataObject.ColumnExists("&222!\"), "Weird column Name found"
@@ -169,7 +168,7 @@ Private Sub TestMultipleFilters()
     Set var = dataObject.FiltersData(varData, condData, retrData)
     Assert.IsTrue (var.Length = 0), "Unable to filter on Unfound variables"
 
-Exit Sub
+    Exit Sub
 
 UnFoundFail:
     Assert.IsTrue (Err.Description = "Column AAAA does not exists in worksheet TestDictionary"), "Failed to raise error on unfound columns"
@@ -178,7 +177,4 @@ UnFoundFail:
 MultipleFiltersFail:
     Assert.Fail "Multiple filters raised an error: #" & Err.Number & " : " & Err.Description
 End Sub
-
-
-
 
