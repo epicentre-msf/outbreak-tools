@@ -42,7 +42,7 @@ End Sub
 Private Sub TestSheetInit()
 
     Assert.IsTrue (sheets.Dictionary.data.Wksh.Name = "Dictionary"), "Bad dictionary associated with the worksheet"
-    Assert.IsTrue (sheets.Dictionary.data.StartRow = 1), "Start row of the dictionary associated with the sheets object is not correct"
+    Assert.IsTrue (sheets.Dictionary.data.startRow = 1), "Start row of the dictionary associated with the sheets object is not correct"
     Assert.IsTrue (sheets.Dictionary.data.StartColumn = 1), "End row of the dictionary associated with the sheets object is not correct"
 
 End Sub

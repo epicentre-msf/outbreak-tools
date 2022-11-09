@@ -9,10 +9,18 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
 
-'@Folder("Dictionary")
-'@ModuleDescription("Interface of ")
+'@Folder("Linelist")
+'@ModuleDescription("Interface of Linelist")
 '@IgnoreModule
 
 Option Explicit
 
+
+
+Public Property Get Wksh(ByVal sheetName As String) As Worksheet: End Property
+Public Property Get Dropdown() As IDropdownLists: End Property
+
 'Exposed methods
+Public Sub Prepare(): End Sub
+Public Function sheetExists(ByVal sheetName As String) As Boolean: End Function
+

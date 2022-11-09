@@ -14,7 +14,7 @@ Attribute VB_Description = "Interface of FormulaCondition"
 
 Option Explicit
 
-Public Property Get variables() As BetterArray: End Property
+Public Property Get Variables() As BetterArray: End Property
 Public Property Get Conditions() As BetterArray: End Property
 
 Public Property Get VariablesTable(ByVal dict As ILLdictionary) As String: End Property

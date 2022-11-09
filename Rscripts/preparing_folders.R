@@ -5,7 +5,7 @@ source("./Rscripts/update_designer.R")
 update_designer(src = "codes")
 
 # update from github
-update_designer(src = "github")
+#update_designer(src = "github")
 
 # clean the output
 clear_output()

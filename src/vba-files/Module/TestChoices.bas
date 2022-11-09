@@ -39,7 +39,7 @@ Private Sub TestInit()
 
     On Error GoTo InitFailed
 
-    Assert.IsTrue (choice.StartRow = 1), "Bad choice startRow"
+    Assert.IsTrue (choice.startRow = 1), "Bad choice startRow"
     Assert.IsTrue (choice.StartColumn = 1), "Bad choice startcolumn"
     Assert.IsTrue (choice.Wksh.Name = "TestChoices"), "Bad choice worksheet"
 

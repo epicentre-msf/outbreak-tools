@@ -87,8 +87,8 @@ Sub testgr()
     Dim cw As Long
     Dim rh As Long
     
-    rh = SheetTest.Range("A1").Height
-    cw = SheetTest.Range("A1").Width
+    rh = SheetTest.Range("A1").height
+    cw = SheetTest.Range("A1").width
     Set co = SheetTest.ChartObjects.Add(rng.Left, rng.Top, cw * 8, rh * 20)
     'Debug.Print co.Top
     With co.Chart.PlotArea
@@ -143,21 +143,40 @@ Sub TestHListVars()
     Dim dict As ILLdictionary
     Dim preserved As BetterArray
     Dim outsh As Worksheet
+    Dim outdropsh As Worksheet
     Dim hvar As IHListVars
+    Dim listTest As BetterArray
+    Dim drop As IDropdownLists
+    
     
     Set preserved = New BetterArray
     
     Set Wkb = ThisWorkbook
-    Set sh = Wkb.Worksheets("Dictionary")
+    Set outdropsh = Wkb.Worksheets("Test Dropdown")
     Set outsh = Wkb.Worksheets("Test HList")
-    outsh.Cells.Clear
-
-    Set dict = LLdictionary.Create(sh, 1, 1)
     Set lData = LinelistSpecs.Create(Wkb)
     
     lData.Prepare
-    Set hvar = HListVars.Create("varb19", outsh, lData)
+    
+    Set drop = DropdownLists.Create(outdropsh)
+    outsh.Cells.Clear
+    outdropsh.Cells.Clear
+    Set hvar = HListVars.Create("varb14", outsh, lData, drop)
+
     hvar.WriteInfo
     
+End Sub
+
+Sub TestOs()
+    Dim io As IOSFiles
+
+    Set io = OSFiles.Create()
+    io.LoadFile "*.xlsx"
+    
+    Debug.Print io.HasValidFolder()
+    Debug.Print io.HasValidFile()
+    Debug.Print io.File
+    io.LoadFolder
+    Debug.Print io.Folder
 End Sub
 

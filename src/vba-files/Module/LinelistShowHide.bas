@@ -145,9 +145,9 @@ Sub ClicCmdShowHide()
     Application.EnableEvents = True
 
     F_NomVisible.FRM_AffMas.Visible = True
-    F_NomVisible.FRM_AffMas.Width = 90
-    F_NomVisible.Width = 450
-    F_NomVisible.Height = 270
+    F_NomVisible.FRM_AffMas.width = 90
+    F_NomVisible.width = 450
+    F_NomVisible.height = 270
     F_NomVisible.CMD_Fermer.SetFocus
     F_NomVisible.Show
 
@@ -181,7 +181,7 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
         TriggerShowHide = False
         F_NomVisible.OPT_Affiche.Value = 1
         F_NomVisible.OPT_Affiche.Caption = sShowMandatory
-        F_NomVisible.OPT_Affiche.Width = 80
+        F_NomVisible.OPT_Affiche.width = 80
         F_NomVisible.OPT_Affiche.Left = 0
         F_NomVisible.OPT_Affiche.Top = 20
 
@@ -190,7 +190,7 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
         TriggerShowHide = False
         F_NomVisible.OPT_Affiche.Value = 0
         F_NomVisible.OPT_Affiche.Caption = sShown
-        F_NomVisible.OPT_Affiche.Width = 70
+        F_NomVisible.OPT_Affiche.width = 70
         F_NomVisible.OPT_Affiche.Left = 10
         F_NomVisible.OPT_Affiche.Top = 6
 
@@ -201,7 +201,7 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
         TriggerShowHide = False                  'It is shown if not
         F_NomVisible.OPT_Affiche.Value = 1
         F_NomVisible.OPT_Affiche.Caption = sShown
-        F_NomVisible.OPT_Affiche.Width = 70
+        F_NomVisible.OPT_Affiche.width = 70
         F_NomVisible.OPT_Affiche.Left = 10
         F_NomVisible.OPT_Affiche.Top = 6
 

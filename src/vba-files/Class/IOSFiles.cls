@@ -16,3 +16,15 @@ Attribute VB_Exposed = False
 Option Explicit
 
 'Exposed methods
+
+Public Property Get File() As String: End Property
+Public Property Get Folder() As String: End Property
+
+Public Sub LoadFile(ByVal filters As String): End Sub
+
+Public Sub LoadFolder(): End Sub
+
+Public Function HasValidFile() As Boolean: End Function
+
+Public Function HasValidFolder() As Boolean: End Function
+

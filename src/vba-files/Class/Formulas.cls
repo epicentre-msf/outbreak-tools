@@ -79,8 +79,8 @@ Public Property Let SetupFormula(setupform As String)
     this.setupform = setupform
 End Property
 
-Private Property Get variables() As ILLVariables
-    Set variables = this.vars
+Private Property Get Variables() As ILLVariables
+    Set Variables = this.vars
 End Property
 
 Private Property Get FormulaSheets() As ILLSheets
@@ -168,7 +168,7 @@ Public Property Get valid(Optional ByVal formulaType As String = "analysis") As 
     previousBreak = 1
 
     setupform = Clean(setupform)
-    Set vars = variables()
+    Set vars = Variables()
     Set formData = data()
 
     Set formulaTable = New BetterArray
@@ -277,7 +277,7 @@ Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean
     Dim chunk As String
 
     Set formulaTable = New BetterArray
-    Set vars = variables()
+    Set vars = Variables()
     Set sheets = FormulaSheets()
 
     ParsedLinelistFormula = vbNullString
@@ -317,7 +317,7 @@ Public Property Get ParsedAnalysisFormula(formCond As IFormulaCondition, _
     Dim chunk As String
 
 
-    Set vars = variables()
+    Set vars = Variables()
     Set sheets = FormulaSheets()
     Set dict = Dictionary()
 
@@ -388,7 +388,7 @@ Private Function ParsedCustomFormula(ByVal customFunction As String, ByVal formC
 
     Case "N", "N()"
         Set cond = formCond.Conditions()
-        Set condVars = formCond.variables()
+        Set condVars = formCond.Variables()
         counter = condVars.LowerBound
         parsedFormula = customtableName & "[" & condVars.Item(counter) & "]" & ", " & ClearCountIf(cond.Item(counter))
 

@@ -214,6 +214,9 @@ Attribute VB_Exposed = False
 
 
 
+
+
+
 Option Explicit
 
 Private Sub CMD_ClearData_Click()
@@ -256,8 +259,8 @@ Private Sub UserForm_Initialize()
 
     Call TranslateForm(Me)
 
-    Me.Width = 250
-    Me.Height = 550
+    Me.width = 250
+    Me.height = 550
 
 End Sub
 
