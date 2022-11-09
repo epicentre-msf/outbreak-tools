@@ -41,8 +41,8 @@ End Sub
 '@TestMethod
 Private Sub TestFormInit()
 
-    Assert.IsTrue (formCond.variables.Length = 4), "Not all the variables are initilialized in conditions"
-    Assert.IsTrue (formCond.Conditions.Length = formCond.variables.Length), "Conditions and variable length do not match"
+    Assert.IsTrue (formCond.Variables.Length = 4), "Not all the variables are initilialized in conditions"
+    Assert.IsTrue (formCond.Conditions.Length = formCond.Variables.Length), "Conditions and variable length do not match"
 
 End Sub
 

@@ -21,7 +21,11 @@ Public Property Get Dictionary() As ILLdictionary:   End Property
 Public Property Get Choices() As ILLchoice:   End Property
 Public Property Get Wkb() As Workbook: End Property
 
-Public Property Get TransObject(Optional ByVal loName As String = "T_TradLLMsg") As ITranslation: End Property
+'Translation objects (messages, shapes and userforms)
+Public Property Get TransObject() As ITranslation: End Property
+Public Property Get ShapesTransObject() As ITranslation: End Property
+Public Property Get UserFormsTransObject() As ITranslation: End Property
+
 'Formula data object
 Public Property Get FormDataObject() As IFormulaData: End Property
 

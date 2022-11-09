@@ -9,7 +9,7 @@ Option Private Module
 Private Assert As Object
 Private Fakes As Object
 Private Dictionary As ILLdictionary
-Private variables As ILLVariables
+Private Variables As ILLVariables
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
@@ -33,7 +33,7 @@ Private Sub TestInitialize()
     Set dataWksh = ThisWorkbook.Worksheets("TestDictionary")
     Set Dictionary = LLdictionary.Create(dataWksh, 1, 1)
     Dictionary.Prepare
-    Set variables = LLVariables.Create(Dictionary)
+    Set Variables = LLVariables.Create(Dictionary)
 End Sub
 
 '@TestMethod
@@ -42,15 +42,15 @@ Private Sub TestVariableValues()
     
     Dim Val As String
     
-    Val = variables.Value(varName:="varb1", colName:="sheet type")
+    Val = Variables.Value(varName:="varb1", colName:="sheet type")
     Assert.IsTrue (Val = "hlist2D"), "returned value of sheet type for variable varb1 is not correct. Expected hlist2D, returned : " & Val
     
-    Val = variables.Value(varName:="vara1", colName:="sheet type")
+    Val = Variables.Value(varName:="vara1", colName:="sheet type")
     Assert.IsTrue (Val = "vlist1D"), "returned value of sheet type of variable vara1 is not correct Expected vlist1D, returned :" & Val
 
-    Assert.IsTrue variables.Contains("varb1"), "varb1 exists as a variable, but it not found as one."
-    Assert.IsFalse variables.Contains("va"), "va does not exist as a variable, but it is found as one."
-    Assert.IsFalse variables.Contains(""), "empty characters are considered as present in variables"
+    Assert.IsTrue Variables.Contains("varb1"), "varb1 exists as a variable, but it not found as one."
+    Assert.IsFalse Variables.Contains("va"), "va does not exist as a variable, but it is found as one."
+    Assert.IsFalse Variables.Contains(""), "empty characters are considered as present in variables"
 
     Exit Sub
 

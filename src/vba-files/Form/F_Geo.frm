@@ -225,6 +225,9 @@ Attribute VB_Exposed = False
 
 
 
+
+
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -421,8 +424,8 @@ Private Sub UserForm_Initialize()
 
     Call TranslateForm(Me)
 
-    Me.Width = 650
-    Me.Height = 450
+    Me.width = 650
+    Me.height = 450
 
 End Sub
 

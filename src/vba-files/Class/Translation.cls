@@ -69,15 +69,15 @@ End Property
 Private Function LanguageIndex() As Long
 
     Dim lngIndex As Long
-    Dim startCol As Long
+    Dim STARTCOL As Long
     Dim hRng As Range
     Dim lng As String
 
     lng = Language
     If LanguageExists() Then
         Set hRng = Table.HeaderRowRange
-        startCol = hRng.Column
-        lngIndex = hRng.Find(What:=lng, LookAt:=xlWhole, MatchCase:=True).Column - startCol + 1
+        STARTCOL = hRng.Column
+        lngIndex = hRng.Find(What:=lng, LookAt:=xlWhole, MatchCase:=True).Column - STARTCOL + 1
     Else
         lngIndex = -1
     End If
@@ -100,12 +100,12 @@ End Function
 Private Function ValueIndex(ByVal text As String) As Long
     Dim index As Long
     Dim keyRng As Range
-    Dim StartRow As Long
+    Dim startRow As Long
 
     If ValueExists(text) Then
         Set keyRng = Table.ListColumns(1).Range
-        StartRow = keyRng.row
-        index = keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True).row - StartRow + 1
+        startRow = keyRng.row
+        index = keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True).row - startRow + 1
     Else
         index = -1
     End If

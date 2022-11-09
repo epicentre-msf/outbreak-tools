@@ -78,8 +78,8 @@ Public Sub Add()
 
     Set sh = Wksh()
     Set rng = StartRange()
-    cw = sh.Range("A1").Width
-    rh = sh.Range("A1").Height
+    cw = sh.Range("A1").width
+    rh = sh.Range("A1").height
 
     Set co = sh.ChartObjects.Add(rng.Left, rng.Top, GRAPHWIDTH * cw, GRAPHHEIGHT * rh)
     co.Left = rng.Left
@@ -178,13 +178,13 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
     Set sh = Wksh()
     Dim cw As Long
     Dim rh As Long
-    cw = sh.Range("A1").Width
-    rh = sh.Range("A1").Height
+    cw = sh.Range("A1").width
+    rh = sh.Range("A1").height
 
 
     'Coerce again the width and the height
-    co.Width = GRAPHWIDTH * cw
-    co.Height = GRAPHHEIGHT * rh
+    co.width = GRAPHWIDTH * cw
+    co.height = GRAPHHEIGHT * rh
     With sh.Shapes(co.Name)
         .Shadow.Type = msoShadow21
         .line.Visible = msoTrue
@@ -226,8 +226,8 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
         With .PlotArea
             .Left = 30
             .Top = 20
-            .Width = 315
-            .Height = 150
+            .width = 315
+            .height = 150
         End With
     End With
     

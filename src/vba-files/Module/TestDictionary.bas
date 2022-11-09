@@ -37,7 +37,7 @@ End Sub
 '@TestMethod
 Private Sub TestObjectInit()
     Assert.IsTrue (Dictionary.data.StartColumn = 1), "Start column changed"
-    Assert.IsTrue (Dictionary.data.StartRow = 1), "Start line changed"
+    Assert.IsTrue (Dictionary.data.startRow = 1), "Start line changed"
     Assert.IsTrue (Dictionary.data.Wksh.Name = "TestDictionary"), "Dictionary name changed"
 End Sub
 

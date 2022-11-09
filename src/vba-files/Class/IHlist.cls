@@ -16,3 +16,4 @@ Attribute VB_Exposed = False
 Option Explicit
 
 'Exposed methods
+Public Sub Build(): End Sub

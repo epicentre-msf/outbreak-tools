@@ -23,7 +23,7 @@ End Type
 
 Private this As Tchoice
 
-Private Const LISTNAME As String = "list name"
+Private Const ListName As String = "list name"
 Private Const LABEL   As String = "label"
 Private Const ORDER   As String = "ordering list"
 
@@ -52,10 +52,10 @@ Public Property Get Wksh() As Worksheet
 End Property
 
 'StartRow
-Public Property Get StartRow() As Long
+Public Property Get startRow() As Long
     Dim dataObject As IDataSheet
     Set dataObject = ChoiceData
-    StartRow = dataObject.StartRow()
+    startRow = dataObject.startRow()
 End Property
 
 'StartColumn
@@ -87,7 +87,7 @@ Public Property Get Categories(ByVal choiceName As String) As BetterArray
 
     Set dataObject = ChoiceData
 
-    Set Categories = dataObject.FilterData(varName:=LISTNAME, _
+    Set Categories = dataObject.FilterData(varName:=ListName, _
                                            criteriaName:=choiceName, returnedColumnName:=LABEL, _
                                            includeHeaders:=False)
 End Property
@@ -102,8 +102,8 @@ Private Sub Sort()
 
     Set dataObject = ChoiceData
 
-    If dataObject.ColumnExists(LISTNAME) And dataObject.ColumnExists(ORDER) Then
-        Set listRng = DataRange(LISTNAME, includeHeaders:=False)
+    If dataObject.ColumnExists(ListName) And dataObject.ColumnExists(ORDER) Then
+        Set listRng = DataRange(ListName, includeHeaders:=False)
         Set orderRng = DataRange(ORDER, includeHeaders:=False)
         Set choiceRng = DataRange(includeHeaders:=False)
 
@@ -131,13 +131,13 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
     If checkCategories.Length > 0 Then Exit Sub  'Will probably trace log.
 
 
-    Set listRng = DataRange(LISTNAME)
+    Set listRng = DataRange(ListName)
     Set labelRng = DataRange(LABEL)
     Set orderRng = DataRange(ORDER)
     Set choicewksh = Wksh()
 
-    endRow = StartRow + listRng.Rows.Count
-    endRowlabel = StartRow + labelRng.Rows.Count
+    endRow = startRow + listRng.Rows.Count
+    endRowlabel = startRow + labelRng.Rows.Count
 
 
     With choicewksh
@@ -180,7 +180,7 @@ Public Property Get ILLchoice_Wksh() As Worksheet
 End Property
 
 Public Property Get ILLchoice_StartRow() As Long
-    ILLchoice_StartRow = StartRow()
+    ILLchoice_StartRow = startRow()
 End Property
 
 Public Property Get ILLchoice_StartColumn() As Long
