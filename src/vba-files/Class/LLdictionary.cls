@@ -64,10 +64,10 @@ Public Property Get Wksh() As Worksheet
 End Property
 
 'StartRow
-Public Property Get StartRow() As Long
+Public Property Get startRow() As Long
     Dim customDataSheet As IDataSheet
     Set customDataSheet = data()
-    StartRow = customDataSheet.StartRow()
+    startRow = customDataSheet.startRow()
 End Property
 
 'StartColumn
@@ -118,7 +118,7 @@ Public Property Get DataRange(Optional colName As String = "__all__", Optional i
     Set DataRange = customDataSheet.DataRange(colName, includeHeaders)
 End Property
 
-Private Property Get variables() As ILLVariables
+Private Property Get Variables() As ILLVariables
     Dim var As ILLVariables
     Set var = LLVariables.Create(Self)
 End Property
@@ -158,7 +158,7 @@ Private Function UniqueValues(colName As String) As BetterArray
     Dim dictWksh As Worksheet
 
     endRow = DictEndRow
-    counter = StartRow + 1
+    counter = startRow + 1
     varColIndex = ColumnIndex(colName)
     Set varData = New BetterArray
     Set dictWksh = Wksh()
@@ -196,7 +196,7 @@ Private Sub Clean()
     
     With dictWksh
         Do While counter >= 1
-            If Not ColumnExists(.Cells(StartRow, counter).Value, checkValidity:=True) Then
+            If Not ColumnExists(.Cells(startRow, counter).Value, checkValidity:=True) Then
                 .Columns(counter).EntireColumn.Delete
             End If
 
@@ -254,7 +254,7 @@ Private Sub GoodSheetNames(ByVal PreservedSheetsNames As BetterArray)
     If (PreservedSheetsNames Is Nothing) Then ClassArraysInitialize
 
     With dictWksh
-        For counter = StartRow + 1 To endRow
+        For counter = startRow + 1 To endRow
             If PreservedSheetsNames.Includes(.Cells(counter, sheetNameIndex).Value) Then
                 .Cells(counter, sheetNameIndex).Value = .Cells(counter, sheetNameIndex).Value & "_"
                 'Trace here for logging
@@ -281,7 +281,7 @@ Private Sub UniqueVarNames()
     varNameIndex = ColumnIndex("variable name")
 
     With dictWksh
-        For counter = StartRow + 1 To endRow
+        For counter = startRow + 1 To endRow
             'remove no breakable spaces and clean the name of the variable. replace spaces with _
 
             varName = Application.WorksheetFunction.SUBSTITUTE(varName, Chr(160), " ")
@@ -325,7 +325,7 @@ Private Sub AppendGeoLines()
 
     endRow = DictEndRow
     endCol = DictEndColumn
-    geoRowIndex = StartRow + 1
+    geoRowIndex = startRow + 1
 
     With dictWksh
         Do While (Not dictRng.Find(What:="geo", LookAt:=xlWhole, MatchCase:=True) Is Nothing)
@@ -386,11 +386,11 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
     Set dictWksh = Wksh()
 
     With dictWksh
-        .Cells(StartRow, endCol + 1).Value = "number_" & newColumn
-        sheetTrackData.Push .Cells(StartRow + 1, sheetNameIndex).Value
+        .Cells(startRow, endCol + 1).Value = "number_" & newColumn
+        sheetTrackData.Push .Cells(startRow + 1, sheetNameIndex).Value
         tableTrackData.Push tableOrder
 
-        For counter = StartRow + 1 To endRow
+        For counter = startRow + 1 To endRow
             sheetName = .Cells(counter, sheetNameIndex).Value
             If sheetTrackData.Includes(sheetName) Then
                 .Cells(counter, endCol + 1).Value = tableTrackData.Items(sheetTrackData.IndexOf(sheetName))
@@ -407,11 +407,11 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
         dictRng.Sort key1:=DataRange("number_" & newColumn), order1:=xlAscending
 
         endCol = DictEndColumn
-        .Cells(StartRow, endCol + 1).Value = newColumn
-        .Cells(StartRow + 1, endCol + 1).formula = "= " & Chr(34) & tablePrefix & Chr(34) & " " & Chr(38) & " " & .Cells(StartRow + 1, endCol).Address(rowabsolute:=False)
+        .Cells(startRow, endCol + 1).Value = newColumn
+        .Cells(startRow + 1, endCol + 1).formula = "= " & Chr(34) & tablePrefix & Chr(34) & " " & Chr(38) & " " & .Cells(startRow + 1, endCol).Address(rowabsolute:=False)
         Set dictRng = DataRange(newColumn)
 
-        .Cells(StartRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
+        .Cells(startRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
         dictRng.Value = dictRng.Value            'remove the link to the formulas
 
     End With
@@ -447,23 +447,23 @@ Private Sub AppendColumnIndex()
 
     With dictWksh
         'Sorting
-        .Cells(StartRow, endCol + 1).Value = "main section sort"
-        firstsheetNameCell = .Cells(StartRow + 1, sheetNameIndex).Address(rowabsolute:=False) & " "
-        firstmainSectionCell = .Cells(StartRow + 1, mainSectionIndex).Address(rowabsolute:=False)
-        .Cells(StartRow + 1, endCol + 1).formula = "= IF(" & firstmainSectionCell & "=" & Chr(34) & Chr(34) & _
+        .Cells(startRow, endCol + 1).Value = "main section sort"
+        firstsheetNameCell = .Cells(startRow + 1, sheetNameIndex).Address(rowabsolute:=False) & " "
+        firstmainSectionCell = .Cells(startRow + 1, mainSectionIndex).Address(rowabsolute:=False)
+        .Cells(startRow + 1, endCol + 1).formula = "= IF(" & firstmainSectionCell & "=" & Chr(34) & Chr(34) & _
                                                                                                             ", ROW(" & firstmainSectionCell & ")" & ", " & _
                                                                                                             firstsheetNameCell & Chr(38) & Chr(34) & " - " & Chr(34) & Chr(38) & firstmainSectionCell & _
                                                                                                             ")"
         Set dictRng = DataRange("main section sort")
-        .Cells(StartRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
+        .Cells(startRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
 
         'Now append and sort
         AppendNumberColumn onColName:="main section sort", tablePrefix:="main section", newColumn:="main section index"
 
         'Filling column index
         endCol = DictEndColumn
-        .Cells(StartRow, endCol + 1).Value = "column index"
-        For counter = StartRow + 1 To endRow
+        .Cells(startRow, endCol + 1).Value = "column index"
+        For counter = startRow + 1 To endRow
             If .Cells(counter, sheetNameIndex).Value <> sheetName Then
                 'New sheet name
                 varOrder = IIf(.Cells(counter, sheetTypeIndex).Value = SHEETTYPEVERTICAL, 4, 1)

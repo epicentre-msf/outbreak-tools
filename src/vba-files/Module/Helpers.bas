@@ -92,7 +92,7 @@ Private Function SelectFolderOnWindows() As String
     With fDialog
         .AllowMultiSelect = False
         .title = "Chose your directory"          'MSG_ChooseDir
-        .Filters.Clear
+        .filters.Clear
 
         If .Show = -1 Then
             SelectFolderOnWindows = .SelectedItems(1)
@@ -160,8 +160,8 @@ Private Function SelectFileOnWindows(sFilters)
     With fDialog
         .AllowMultiSelect = False
         .title = "Chose your file"               'MSG_ChooseFile
-        .Filters.Clear
-        .Filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
+        .filters.Clear
+        .filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
 
         If .Show = True Then
             SelectFileOnWindows = .SelectedItems(1)

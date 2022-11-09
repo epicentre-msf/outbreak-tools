@@ -204,6 +204,9 @@ Attribute VB_Exposed = False
 
 
 
+
+
+
 Option Explicit
 
 Private Sub CMD_ExportMig_Click()
@@ -220,8 +223,8 @@ Private Sub UserForm_Initialize()
 
     Call TranslateForm(Me)
 
-    Me.Width = 200
-    Me.Height = 300
+    Me.width = 200
+    Me.height = 300
 
 End Sub
 

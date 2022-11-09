@@ -17,17 +17,18 @@ Implements IHListVars
 
 Private Type THListVars
     data As ILinelistSpecs
+    drop As IDropdownLists
     sh As Worksheet
     varName As String
     inputRange As Range
 End Type
 
 Private this As THListVars
-Private Const CLASSNAME As String = "HLIST"
-Private Const StartRow As Long = 8               'Where the variables should start in the output worksheet
+Private Const CLASSNAME As String = "HListVars"
+Private Const startRow As Long = 8               'Where the variables should start in the output worksheet
 
 Public Function Create(ByVal varName As String, ByVal outputsh As Worksheet, _
-                       ByVal lData As ILinelistSpecs) As IHListVars
+                       ByVal lData As ILinelistSpecs, ByVal drop As IDropdownLists) As IHListVars
     Dim dict As ILLdictionary
 
     If outputsh Is Nothing Then ThrowError "Worksheet does not exists"
@@ -38,6 +39,7 @@ Public Function Create(ByVal varName As String, ByVal outputsh As Worksheet, _
     With New HListVars
         Set .linelistData = lData
         Set .Wksh = outputsh
+        Set .Dropdown = drop
         .ActualVariable = varName
         Set Create = .Self
     End With
@@ -67,6 +69,14 @@ Public Property Get Wksh() As Worksheet
     Set Wksh = this.sh
 End Property
 
+Public Property Get Dropdown() As IDropdownLists
+    Set Dropdown = this.drop
+End Property
+
+Public Property Set Dropdown(ByVal drop As IDropdownLists)
+    Set this.drop = drop
+End Property
+
 Public Property Set Wksh(ByVal sh As Worksheet)
     Set this.sh = sh
 End Property
@@ -90,7 +100,7 @@ Private Property Get ValueOf(ByVal colName As String) As String
 End Property
 
 Private Property Get VarRange() As Range         'Where to input informations on the variable
-    Dim startCol As Long
+    Dim STARTCOL As Long
     Dim sh As Worksheet
     Dim rng As Range
 
@@ -98,9 +108,9 @@ Private Property Get VarRange() As Range         'Where to input informations on
     If this.inputRange Is Nothing Then
         Set sh = Wksh()
         With sh
-            startCol = ValueOf("column index")
-            Set VarRange = .Cells(StartRow + 1, startCol)
-            Set this.inputRange = .Cells(StartRow + 1, startCol)
+            STARTCOL = ValueOf("column index")
+            Set VarRange = .Cells(startRow + 1, STARTCOL)
+            Set this.inputRange = .Cells(startRow + 1, STARTCOL)
         End With
     Else
       Set VarRange = this.inputRange
@@ -303,21 +313,58 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
 End Sub
 
 
+'Add the choices
+Private Sub AddChoices()
+    
+    Dim varControl As String
+    Dim varName As String
+    Dim varAlert As String
+    Dim varMessage As String
 
+    Dim lData As ILinelistSpecs
+    Dim cat As BetterArray
+    Dim drop As IDropdownLists
+    Dim cellRng As Range
+
+    Set lData = linelistData()
+    Set drop = Dropdown()
+    Set cat = New BetterArray
+
+    varName = ActualVariable()
+    varControl = ValueOf("control")
+
+    If (varControl <> "choices") Then Exit Sub
+
+    Set cat = lData.Categories(varName)
+    Set cellRng = VarRange()
+    
+    'Add dropdown
+    drop.Add cat, varName
+    varAlert = ValueOf("alert")
+    varMessage = ValueOf("message")
+
+    'Set dropdown validations
+    drop.SetValidation cellRng:=cellRng, ListName:=varName, _
+                       alertType:=varAlert, message:=varMessage
+End Sub
+
+
+'Write one variable information in the corresponding cell.
 
 Private Sub WriteInfo()
+
     'Add the label
     AddLabel
 
     'Formulas
     AddFormula
 
-    'Choices
+    'Types
     AddType
+
+    'Choices
+    AddChoices
 End Sub
-
-
-
 
 
 'Errors

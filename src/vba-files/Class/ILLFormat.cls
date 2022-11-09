@@ -59,9 +59,12 @@ Public Enum FormatScopes
   HListCalculatedFormulaHeader = 39
   HListSublab = 40
   HListMainLab = 41
-  VListMainlab = 42
+  VListMainLab = 42
   VListSublab = 43
   HListGeoHeader = 44
+  LinelistSmallButton = 45
+  LinelistGeoButton = 46
+  AdminLargeButton = 47
 End Enum
 
 Public Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)

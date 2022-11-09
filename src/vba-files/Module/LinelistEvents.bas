@@ -105,8 +105,8 @@ Sub ClicCmdExport()
                     .Controls("CMD_Export" & i).Visible = True
                     .Controls("CMD_Export" & i).Caption = Wksh.Cells(i + 1, iLabel).Value
                     .Controls("CMD_Export" & i).Top = iHeight
-                    .Controls("CMD_Export" & i).Height = C_CmdHeight
-                    .Controls("CMD_Export" & i).Width = 160
+                    .Controls("CMD_Export" & i).height = C_CmdHeight
+                    .Controls("CMD_Export" & i).width = 160
                     .Controls("CMD_Export" & i).Left = 20
                     iHeight = iHeight + C_CmdHeight + C_CmdGap
                 End If
@@ -117,30 +117,30 @@ Sub ClicCmdExport()
         'Height of checks (use filtered data)
         .CHK_ExportFiltered.Top = iHeight + 30
         .CHK_ExportFiltered.Left = 30
-        .CHK_ExportFiltered.Width = 160
+        .CHK_ExportFiltered.width = 160
 
         iHeight = iHeight + 40 + C_CmdHeight + C_CmdGap
 
         'Height of command for new key
         .CMD_NouvCle.Top = iHeight
-        .CMD_NouvCle.Height = C_CmdHeight - 10
-        .CMD_NouvCle.Width = 160
+        .CMD_NouvCle.height = C_CmdHeight - 10
+        .CMD_NouvCle.width = 160
         .CMD_NouvCle.Left = 20
 
         iHeight = iHeight + C_CmdHeight + C_CmdGap
 
         'Quit command
         .CMD_Retour.Top = iHeight
-        .CMD_Retour.Height = C_CmdHeight - 10
-        .CMD_Retour.Width = 160
+        .CMD_Retour.height = C_CmdHeight - 10
+        .CMD_Retour.width = 160
         .CMD_Retour.Left = 20
 
         iHeight = iHeight + C_CmdHeight + C_CmdGap
 
         'Overall height and width of the form
 
-        .Height = iHeight + 50
-        .Width = 210
+        .height = iHeight + 50
+        .width = 210
     End With
 
 

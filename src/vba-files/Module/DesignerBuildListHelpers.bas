@@ -53,7 +53,7 @@ Public Sub TransferCodeWksh(Wkb As Workbook, sSheetName As String, _
 
     With Wkb
         Set vbProj = .VBProject
-        Set vbComp = vbProj.VBComponents(.sheets(sSheetName).CodeName)
+        Set vbComp = vbProj.VBComponents(.sheets(sSheetName).codeName)
         Set codeMod = vbComp.CodeModule
     End With
 
@@ -1001,8 +1001,7 @@ Public Sub AddAdminSheet(Wkb As Workbook)
 
 
     Wkb.Worksheets(1).Name = sParamSheetAdmin
-    Call RemoveGridLines(Wkb.Worksheets(sParamSheetAdmin))
-
+    
     'ADD BUTTONS
 
     With Wkb.Worksheets(sParamSheetAdmin)
