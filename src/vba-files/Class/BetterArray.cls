@@ -668,13 +668,13 @@ Public Function FromExcelRange( _
         Dim StartColumn As Long
         Dim EndColumn As Long
         Dim startRow As Long
-        Dim endRow As Long
+        Dim EndRow As Long
         
         With FromRange
             StartColumn = .Column
-            startRow = .row
+            startRow = .Row
             EndColumn = .Column + .Columns.Count - 1
-            endRow = .row + .Rows.Count - 1
+            EndRow = .Row + .Rows.Count - 1
         End With
         
         With FromRange.Parent
@@ -683,16 +683,16 @@ Public Function FromExcelRange( _
             End If
             
             If DetectLastRow Then
-                endRow = .Cells.Item(.Rows.Count, StartColumn).End(xlUp).row
+                EndRow = .Cells.Item(.Rows.Count, StartColumn).End(xlUp).Row
             End If
             
-            Me.Items = .Range(.Cells(startRow, StartColumn), .Cells(endRow, EndColumn)).Value
+            Me.Items = .Range(.Cells(startRow, StartColumn), .Cells(EndRow, EndColumn)).Value
         End With
         
         ' convert arrays of single column or row to 1d
-        If StartColumn = EndColumn And startRow <> endRow Then
+        If StartColumn = EndColumn And startRow <> EndRow Then
             Me.Items = Me.ExtractSegment(, StartColumn)
-        ElseIf StartColumn <> EndColumn And startRow = endRow Then
+        ElseIf StartColumn <> EndColumn And startRow = EndRow Then
             Me.Items = Me.ExtractSegment(startRow)
         End If
         
@@ -819,7 +819,7 @@ Public Function ToExcelRange( _
     On Error GoTo 0
     
     If DestType = TARGET_OBJECT And DestApplication = TARGET_APPLICATION Then
-        AvailableRows = Destination.Parent.Rows.Count - Destination.row + 1
+        AvailableRows = Destination.Parent.Rows.Count - Destination.Row + 1
         AvailableColumns = Destination.Parent.Columns.Count - Destination.Column + 1
         LocalItems = InternalItems
         Depth = GetJaggedArrayDepth(LocalItems)
@@ -1921,11 +1921,11 @@ Private Function BuildCSVString( _
         ) As String
     Dim i As Long
     Dim j As Long
-    Dim LastRow As Long
+    Dim lastRow As Long
     Dim LastCol As Long
     Dim ValidRow As Boolean
     
-    LastRow = UBound(Records)
+    lastRow = UBound(Records)
     LastCol = UBound(Records, 2)
     StringBuilder NewString:=True
     For i = LBound(Records) To UBound(Records)
@@ -1941,7 +1941,7 @@ Private Function BuildCSVString( _
             For j = LBound(Records, 2) To UBound(Records, 2)
                 StringBuilder Records(i, j)
                 If j = LastCol Then
-                    If i <> LastRow Then
+                    If i <> lastRow Then
                         StringBuilder RowDelimiter
                     End If
                 Else
@@ -2367,7 +2367,7 @@ Private Function ParseCSV( _
     Dim ColumnIndex As Long
     Dim CountColumns As Long
     Dim CountRows As Long
-    Dim LastRow As Long
+    Dim lastRow As Long
     Dim LastColumn As Long
     Dim startRow As Long
     Dim InQuote As Boolean
@@ -2402,16 +2402,16 @@ Private Function ParseCSV( _
         startRow = 0
     End If
     
-    LastRow = Base + CountRows - 1 - startRow
+    lastRow = Base + CountRows - 1 - startRow
     LastColumn = Base + CountColumns - 1
     If ReturnJagged Then
         ReDim JaggedRow(Base To LastColumn)
-        ReDim Results(Base To LastRow)
+        ReDim Results(Base To lastRow)
     Else
-        ReDim Results(Base To LastRow, Base To LastColumn)
+        ReDim Results(Base To lastRow, Base To LastColumn)
     End If
     
-    For i = startRow To LastRow
+    For i = startRow To lastRow
         ColumnIndex = Base
         Buffer = CSVRows(i)
         Cursor = 1
@@ -4582,6 +4582,7 @@ Private Function CreateMultidimensionalArray(ByRef Crumb() As Variant) As Varian
 End Function
 
 'v1.7.6
+
 
 
 

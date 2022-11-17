@@ -373,7 +373,7 @@ Function FindLastRow(shLL As Worksheet) As Long
     destRng.Value = LoRng.Value
 
     For i = 1 To iLastCol
-        If iLastRow < shTemp.Cells(Rows.Count, i).End(xlUp).row Then iLastRow = shTemp.Cells(Rows.Count, i).End(xlUp).row
+        If iLastRow < shTemp.Cells(Rows.Count, i).End(xlUp).Row Then iLastRow = shTemp.Cells(Rows.Count, i).End(xlUp).Row
     Next
 
     iLastRow = iLastRow + 1
@@ -510,7 +510,7 @@ Public Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Long
 
     With Wkb.Worksheets(sSheetName)
 
-        iLastRow = .Cells(.Rows.Count, 1).End(xlUp).row
+        iLastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
         iLastCol = EndColumn
         If EndColumn = 0 Then iLastCol = .Cells(StartLine, .Columns.Count).End(xlToLeft).Column
         Set rng = .Range(.Cells(StartLine, 1), .Cells(iLastRow, iLastCol))

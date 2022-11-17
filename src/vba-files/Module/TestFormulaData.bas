@@ -30,7 +30,7 @@ End Sub
 Private Sub TestInitialize()
     Dim Wksh As Worksheet
     Set Wksh = ThisWorkbook.Worksheets("ControleFormule")
-    Set formData = FormulaData.Create(Wksh, "T_XlsFonctions", "T_ascii")
+    Set formData = FormulaData.Create(Wksh)
 End Sub
 
 '@TestMethod

@@ -29,7 +29,7 @@ Public Function UniqueValues(ByVal colName As String) As BetterArray: End Functi
 Public Function VariableExists(ByVal varName As String) As Boolean: End Function
 
 'Void Cleaning methods
-Public Sub Prepare(PreservedSheetNames As BetterArray, Optional ByVal tablePrefix As String = "table"): End Sub
+Public Sub Prepare(ByVal PreservedSheetNames As BetterArray, ByVal geoObject As ILLGeo, Optional ByVal tablePrefix As String = "table"): End Sub
 
 Public Sub Clean(): End Sub
 Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long)

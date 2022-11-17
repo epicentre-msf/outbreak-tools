@@ -378,7 +378,7 @@ Private Sub AddFormulas()
 
                     finalFormula = CurrentExcelFormula()
                     
-                    Set cellRng = .Cells(misRng.row, rng.Column)
+                    Set cellRng = .Cells(misRng.Row, rng.Column)
                     cellRng.FormulaArray = "= " & finalFormula
 
                     'Formula on total:
@@ -386,7 +386,7 @@ Private Sub AddFormulas()
                     ClearTableConditions
                     AddTableConditions colVar, "= " & rngLab.Address
                     finalFormula = CurrentExcelFormula()
-                    Set cellRng = .Cells(totRng.row, rng.Column)
+                    Set cellRng = .Cells(totRng.Row, rng.Column)
                     cellRng.FormulaArray = "= " & finalFormula
                 Else
                     'Formula on total should remove missing from row variable
@@ -394,7 +394,7 @@ Private Sub AddFormulas()
                     AddTableConditions rowVar, "=" & NonEmpStr()
                     AddTableConditions colVar, "=" & rngLab.Address
                     finalFormula = CurrentExcelFormula()
-                    Set cellRng = .Cells(totRng.row, rng.Column)
+                    Set cellRng = .Cells(totRng.Row, rng.Column)
                     cellRng.FormulaArray = "= " & finalFormula
 
                 End If
@@ -406,7 +406,7 @@ Private Sub AddFormulas()
                         Set cellRng = .Range("TOTAL_COL_VALUES_" & tabId).Cells(1, 1)
                         rng.Cells(1, 2).formula = "= " & Percentage(cellRng, rng.Cells(1, 1), rowabs:=False)
                     Case "column"
-                        Set cellRng = .Cells(totRng.row, rng.Column)
+                        Set cellRng = .Cells(totRng.Row, rng.Column)
                         rng.Cells(1, 2).formula = "= " & Percentage(cellRng, rng.Cells(1, 1))
                     Case "total"
                         Set cellRng = .Range("TOTAL_TOTAL_" & tabId)
@@ -415,7 +415,7 @@ Private Sub AddFormulas()
                     Set rng = rng.Offset(, 1)    'percentage range
                     Set rngLab = rngLab.Offset(, 1)
                     'Include the total on the percentages
-                    rng.Cells(1, 1).AutoFill Destination:=.Range(.Cells(rng.row, rng.Column), .Cells(totRng.row, rng.Column)), Type:=xlFillValues
+                    rng.Cells(1, 1).AutoFill Destination:=.Range(.Cells(rng.Row, rng.Column), .Cells(totRng.Row, rng.Column)), Type:=xlFillValues
                 End If
 
                 Set rng = rng.Offset(, 1)
@@ -510,9 +510,9 @@ Private Sub AddFormulas()
                 Set rng = .Range("ROW_CATEGORIES_" & tabId)
                 Set cellRng = rng.Cells(1, 1)
                 'cellRng.formula = "= FormatDateFromLastDay(TIME_UNIT_" & tabId & "," & _
-                                  cellRng.Cells(1, -1).Address(rowabsolute:=False) & "," & _
-                                  cellRng.Cells(1, 0).Address(rowabsolute:=False) & ", " & _
-                                  "END_DATE_" & tabId & ")"
+                cellRng.Cells(1, -1).Address(rowabsolute:=False) & "," & _
+                cellRng.Cells(1, 0).Address(rowabsolute:=False) & ", " & _
+                "END_DATE_" & tabId & ")"
                 'cellRng.AutoFill Destination:=rng, Type:=xlFillValues
                 'Start period column
                 Set cellRng = .Range("FIRST_VALUE_START_TIME_" & tabId)
@@ -597,7 +597,7 @@ Private Sub AddFormulas()
                 
                 finalFormula = CurrentExcelFormula()
 
-                Set cellRng = .Cells(misRng.row, rng.Column)
+                Set cellRng = .Cells(misRng.Row, rng.Column)
                 cellRng.FormulaArray = "= " & finalFormula
 
                 'Percentage
@@ -607,7 +607,7 @@ Private Sub AddFormulas()
                         Set cellRng = .Range("TOTAL_COL_VALUES_" & tabId).Cells(1, 1)
                         rng.Cells(1, 2).formula = "= " & Percentage(cellRng, rng.Cells(1, 1), rowabs:=False)
                     Case "column"
-                        Set cellRng = .Cells(totRng.row, rng.Column)
+                        Set cellRng = .Cells(totRng.Row, rng.Column)
                         rng.Cells(1, 2).formula = "= " & Percentage(cellRng, rng.Cells(1, 1))
                     Case "total"
                         Set cellRng = .Range("TOTAL_TOTAL_" & tabId)

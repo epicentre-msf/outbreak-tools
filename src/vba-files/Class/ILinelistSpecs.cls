@@ -22,12 +22,11 @@ Public Property Get Choices() As ILLchoice:   End Property
 Public Property Get Wkb() As Workbook: End Property
 
 'Translation objects (messages, shapes and userforms)
-Public Property Get TransObject() As ITranslation: End Property
-Public Property Get ShapesTransObject() As ITranslation: End Property
-Public Property Get UserFormsTransObject() As ITranslation: End Property
+Public Property Get TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation: End Property
+
 
 'Formula data object
-Public Property Get FormDataObject() As IFormulaData: End Property
+Public Property Get FormulaDataObject() As IFormulaData: End Property
 
 Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As String: End Property
 Public Property Get DesignFormat() As ILLFormat: End Property

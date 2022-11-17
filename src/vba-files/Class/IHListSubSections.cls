@@ -9,10 +9,18 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
 
-'@Folder("Dictionary")
-'@ModuleDescription("Interface of ")
+'@Folder("Linelist")
+'@ModuleDescription("Interface of Horizontal sub sections")
 '@IgnoreModule
 
 Option Explicit
 
 'Exposed methods
+Public Property Get HasNext() As Boolean: End Property
+Public Property Get NextSubSection() As IHListSubSections: End Property
+  
+'Build the sub sections
+Public Sub Build():  End Sub
+    
+'Format the subSection
+Public Sub Format(): End Sub

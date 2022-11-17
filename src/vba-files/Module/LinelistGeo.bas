@@ -22,7 +22,6 @@ Public sPlaceSelection As String
 'This sub loads the geodata from the Geo form to on form in the linenist. There are two types of data:
 'Facility iGeoType = 1 or Geographical informations: iGeotype = 0 Some frame are hidden when one
 'type of geodata should be load (facility) or (geographical informations)
-'
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo = 0 or Facility = 1
     Dim transValue As BetterArray
@@ -91,6 +90,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
             'Load Health Facility
 
         Case 1
+
             '-------- Adding caption for each admnistrative levels in the form of the health facility
             F_Geo.LBL_Adm1F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(4).Value
             F_Geo.LBL_Adm2F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(3).Value
@@ -130,7 +130,6 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
             [F_Geo].LBL_Geo1.Visible = False
 
         End Select
-
     End With
 
     EndWork xlsapp:=Application

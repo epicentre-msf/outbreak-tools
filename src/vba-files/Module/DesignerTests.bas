@@ -5,6 +5,7 @@ Option Private Module
 Sub ShowWindows()
     Windows(ThisWorkbook.Name).Visible = True
     Application.Visible = True
+    Application.EnableEvents = True
     EndWork xlsapp:=Application
 End Sub
 
@@ -36,7 +37,7 @@ Sub test()
     Set specs = TablesSpecs.Create(headRng, rowRng, lData)
 
     Set Table = CrossTable.Create(specs, ThisWorkbook.Worksheets("TestAnalysis"), trad)
-    Set TableFormula = CrossTableFormula.Create(Table, lData.FormDataObject)
+    Set TableFormula = CrossTableFormula.Create(Table, lData.FormulaDataObject)
     
     Table.AddHeader
     Table.AddRows
@@ -65,7 +66,8 @@ Sub TestGraphs()
     Dim Wkb As Workbook
     Dim ana As ILLAnalysis
     Dim lData As ILinelistSpecs
-    Dim sh As Worksheet
+    Dim shUA As Worksheet
+    Dim shTS As Worksheet
     Dim test As BetterArray
     
     Set Wkb = ThisWorkbook
@@ -74,9 +76,10 @@ Sub TestGraphs()
     
     Set ana = LLAnalysis.Create(Wkb.Worksheets("Analysis"), lData)
     
-    Set sh = ThisWorkbook.Worksheets("TestAnalysis")
+    Set shUA = ThisWorkbook.Worksheets("TestAnalysisUA")
+    Set shTS = ThisWorkbook.Worksheets("TestAnalysisTS")
     lData.Prepare
-    ana.Build sh
+    ana.Build shUA, shTS
  
 End Sub
 
@@ -98,26 +101,24 @@ Sub testgr()
     
 End Sub
 
-
 Sub testformula()
 
-  Dim Wksh As Worksheet
-  Dim formData As IFormulaData
-  Dim setupform As String
-  Dim dict As ILLdictionary
-  Dim formObject As Formulas
+    Dim Wksh As Worksheet
+    Dim formData As IFormulaData
+    Dim setupform As String
+    Dim dict As ILLdictionary
+    Dim formObject As Formulas
     
     Set Wksh = ThisWorkbook.Worksheets("Dictionary")
     Set dict = LLdictionary.Create(Wksh, 1, 1)
     Set Wksh = ThisWorkbook.Worksheets("ControleFormule")
-    Set formData = FormulaData.Create(Wksh, "T_XlsFonctions", "T_ascii")
+    Set formData = FormulaData.Create(Wksh)
     setupform = "COUNTIF(outcome," & Chr(34) & "Decede" & Chr(34) & ") - COUNTIF(outcome," & Chr(34) & "Gueri" & Chr(34) & ")"
     
     Set formObject = Formulas.Create(dict, formData, setupform)
     
     Debug.Print formObject.valid
 End Sub
-
 
 Sub testcasewhen()
     Dim Wkb As Workbook
@@ -178,5 +179,43 @@ Sub TestOs()
     Debug.Print io.File
     io.LoadFolder
     Debug.Print io.Folder
+End Sub
+
+Sub TestGeo()
+    Dim geoObject As ILLGeo
+    Dim admname As String
+    Dim wb As Workbook
+    Dim admList As String
+    Dim admNames As BetterArray
+    
+    
+    Set geoObject = LLGeo.Create(SheetGeo)
+    'admname = geoObject.GeoNames("adm2_name")
+    'geoObject.Translate rawNames:=True
+    'geoObject.Clear
+    'geoObject.ClearHistoric
+    'Set wb = Workbooks.Open("D:\Projects\outbreak-tools\input\geobase\OUTBREAK-TOOLS-GEOBASE-SSD-2022-09-07.xlsx")
+    'geoObject.Import wb
+    'Get the list of admin 1
+    Set admNames = New BetterArray
+    admNames.LowerBound = 1
+    admNames.Push "Abyei", "Abyei Region", "Alel"
+    'admNames = "Unity"
+     admList = geoObject.Population(LevelAdmin3, admNames)
+    
+    
+End Sub
+
+
+Sub TestSections()
+
+    Dim ll As ILinelist
+    Dim lData As ILinelistSpecs
+    
+    Set lData = LinelistSpecs.Create(ThisWorkbook)
+    lData.Prepare
+    Set ll = Linelist.Create(lData)
+    ll.Prepare
+
 End Sub
 

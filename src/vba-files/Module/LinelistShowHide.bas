@@ -73,7 +73,7 @@ Sub ClicCmdShowHide()
     T_DictHeaders.LowerBound = 1
     T_data.LowerBound = 1
 
-    ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+    ActiveSheet.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
 
     On Error GoTo errShowHide
 
@@ -89,7 +89,7 @@ Sub ClicCmdShowHide()
     i = 1
     bremoveFromGeo = False
 
-    Do While (i <= Wksh.Cells(Wksh.Rows.Count, 1).End(xlUp).row)
+    Do While (i <= Wksh.Cells(Wksh.Rows.Count, 1).End(xlUp).Row)
 
         If ActiveSheet.Name = Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderSheetName)) Then
             bremoveFromGeo = Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderControl)) = C_sDictControlGeo & "2" Or _
@@ -224,7 +224,7 @@ Sub ShowHideColumnSheet(sSheetName As String, ByVal sVarName As String, Optional
     Dim sControl As String                       'Extracting the control label to be sure we can hide all the geos
 
     BeginWork xlsapp:=Application
-    ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+    ActiveSheet.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
 
     'First, Get the values of the headers names
     Set T_DictHeaders = New BetterArray

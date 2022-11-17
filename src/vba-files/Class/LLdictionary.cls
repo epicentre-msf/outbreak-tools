@@ -153,18 +153,18 @@ Private Function UniqueValues(colName As String) As BetterArray
     Dim varColIndex As Long
     Dim varValue As String
     Dim counter As Long
-    Dim endRow As Long
+    Dim EndRow As Long
     Dim varData As BetterArray
     Dim dictWksh As Worksheet
 
-    endRow = DictEndRow
+    EndRow = DictEndRow
     counter = startRow + 1
     varColIndex = ColumnIndex(colName)
     Set varData = New BetterArray
     Set dictWksh = Wksh()
 
     With dictWksh
-        Do While counter < endRow
+        Do While counter < EndRow
             varValue = .Cells(counter, varColIndex).Value
             If Not varData.Includes(varValue) Then varData.Push varValue
             counter = counter + 1
@@ -206,7 +206,8 @@ Private Sub Clean()
 End Sub
 
 'Prepare the dictionary for designer
-Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, Optional ByVal tablePrefix As String = "table")
+Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject As ILLGeo, _
+                    Optional ByVal tablePrefix As String = "table")
     Dim endCol As Long
     Dim dictWksh As Worksheet
     Dim counter As Long
@@ -227,7 +228,7 @@ Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, Optional ByVal ta
             If (Not controlRng.Find(What:="geo", LookAt:=xlWhole, MatchCase:=True) Is Nothing) And _
                                                                                                (controlRng.Find(What:="geo2", LookAt:=xlWhole, MatchCase:=True) Is Nothing) Then
                 'Update the Geo
-                AppendGeoLines
+                AppendGeoLines geoObject
             End If
         End If
         'Sort the dictionary accordingly and make unique varNames
@@ -244,17 +245,17 @@ Private Sub GoodSheetNames(ByVal PreservedSheetsNames As BetterArray)
     Dim dictWksh As Worksheet
     Dim sheetNameIndex As Long
 
-    Dim endRow As Long
+    Dim EndRow As Long
     Dim counter As Long
 
-    endRow = DictEndRow
+    EndRow = DictEndRow
     Set dictWksh = Wksh()
     sheetNameIndex = ColumnIndex("sheet name")
 
     If (PreservedSheetsNames Is Nothing) Then ClassArraysInitialize
 
     With dictWksh
-        For counter = startRow + 1 To endRow
+        For counter = startRow + 1 To EndRow
             If PreservedSheetsNames.Includes(.Cells(counter, sheetNameIndex).Value) Then
                 .Cells(counter, sheetNameIndex).Value = .Cells(counter, sheetNameIndex).Value & "_"
                 'Trace here for logging
@@ -268,7 +269,7 @@ End Sub
 Private Sub UniqueVarNames()
 
     Dim dictWksh As Worksheet
-    Dim endRow As Long
+    Dim EndRow As Long
     Dim varNameIndex As Long
     Dim counter As Long
     Dim varName As String
@@ -277,11 +278,11 @@ Private Sub UniqueVarNames()
 
     Set varTrackData = New BetterArray
     Set dictWksh = Wksh()
-    endRow = DictEndRow
+    EndRow = DictEndRow
     varNameIndex = ColumnIndex("variable name")
 
     With dictWksh
-        For counter = startRow + 1 To endRow
+        For counter = startRow + 1 To EndRow
             'remove no breakable spaces and clean the name of the variable. replace spaces with _
 
             varName = Application.WorksheetFunction.SUBSTITUTE(varName, Chr(160), " ")
@@ -299,7 +300,7 @@ Private Sub UniqueVarNames()
 End Sub
 
 'Append Geo Lines
-Private Sub AppendGeoLines()
+Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
 
     Dim dictRng As Range
     Dim geoRng As Range
@@ -308,10 +309,11 @@ Private Sub AppendGeoLines()
     Dim geoRowIndex As Long
     Dim controlIndex As Long
     Dim varNameIndex As Long
+    Dim statusIndex As Long
     Dim subSectionIndex As Long
     Dim mainLabelIndex As Long
     Dim varName As String
-    Dim endRow As Long
+    Dim EndRow As Long
     Dim endCol As Long
 
     Dim counter As Long
@@ -322,15 +324,16 @@ Private Sub AppendGeoLines()
     varNameIndex = ColumnIndex("variable name")
     mainLabelIndex = ColumnIndex("main label")
     subSectionIndex = ColumnIndex("sub section")
+    statusIndex = ColumnIndex("status")
 
-    endRow = DictEndRow
+    EndRow = DictEndRow
     endCol = DictEndColumn
     geoRowIndex = startRow + 1
 
     With dictWksh
         Do While (Not dictRng.Find(What:="geo", LookAt:=xlWhole, MatchCase:=True) Is Nothing)
 
-            geoRowIndex = dictRng.Find(What:="geo", LookAt:=xlWhole, MatchCase:=True).row
+            geoRowIndex = dictRng.Find(What:="geo", LookAt:=xlWhole, MatchCase:=True).Row
 
             Set geoRng = .Range(.Cells(geoRowIndex, StartColumn), .Cells(geoRowIndex, endCol))
             varName = .Cells(geoRowIndex, varNameIndex).Value
@@ -351,10 +354,14 @@ Private Sub AppendGeoLines()
                 pastedGeoRng.Value = geoRng.Value 'Paste dictionary values
                 .Cells(geoRowIndex, varNameIndex).Value = "adm" & counter & "_" & varName
                 .Cells(geoRowIndex, controlIndex).Value = "geo" & counter
+                .Cells(geoRowIndex, mainLabelIndex).Value = geoObject.GeoNames("adm" & counter & "_" & "name")
             Next
 
+            'Hide the pcode when everything is done
+            .Cells(geoRng.Row, statusIndex).Value = "hidden"
+
             geoRowIndex = geoRowIndex + 3
-            Set dictRng = .Range(.Cells(geoRowIndex, controlIndex), .Cells(endRow, controlIndex))
+            Set dictRng = .Range(.Cells(geoRowIndex, controlIndex), .Cells(EndRow, controlIndex))
         Loop
     End With
 End Sub
@@ -363,7 +370,7 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
                                Optional ByVal tablePrefix As String = "table", _
                                Optional ByVal newColumn As String = "table name")
 
-    Dim endRow As Long
+    Dim EndRow As Long
     Dim endCol As Integer
     Dim tableOrder As Long
     Dim sheetNameIndex As Long
@@ -378,7 +385,7 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
     Set sheetTrackData = New BetterArray
     Set tableTrackData = New BetterArray
 
-    endRow = DictEndRow
+    EndRow = DictEndRow
     endCol = DictEndColumn
     tableOrder = 1
     sheetNameIndex = ColumnIndex(onColName)
@@ -390,7 +397,7 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
         sheetTrackData.Push .Cells(startRow + 1, sheetNameIndex).Value
         tableTrackData.Push tableOrder
 
-        For counter = startRow + 1 To endRow
+        For counter = startRow + 1 To EndRow
             sheetName = .Cells(counter, sheetNameIndex).Value
             If sheetTrackData.Includes(sheetName) Then
                 .Cells(counter, endCol + 1).Value = tableTrackData.Items(sheetTrackData.IndexOf(sheetName))
@@ -422,7 +429,7 @@ Private Sub AppendColumnIndex()
     Dim dictWksh As Worksheet
     Dim dictRng As Range
     Dim endCol As Long
-    Dim endRow As Long
+    Dim EndRow As Long
     Dim counter As Long
     Dim varOrder As Long
     Dim sheetTypeIndex As Long
@@ -436,7 +443,7 @@ Private Sub AppendColumnIndex()
 
     Set dictWksh = Wksh()
     endCol = DictEndColumn
-    endRow = DictEndRow
+    EndRow = DictEndRow
     sheetTypeIndex = ColumnIndex("sheet type")
     sheetNameIndex = ColumnIndex("sheet name")
     mainSectionIndex = ColumnIndex("main section")
@@ -463,7 +470,7 @@ Private Sub AppendColumnIndex()
         'Filling column index
         endCol = DictEndColumn
         .Cells(startRow, endCol + 1).Value = "column index"
-        For counter = startRow + 1 To endRow
+        For counter = startRow + 1 To EndRow
             If .Cells(counter, sheetNameIndex).Value <> sheetName Then
                 'New sheet name
                 varOrder = IIf(.Cells(counter, sheetTypeIndex).Value = SHEETTYPEVERTICAL, 4, 1)
@@ -547,9 +554,10 @@ Public Function ILLdictionary_VariableExists(ByVal varName As String) As Boolean
 End Function
 
 'void methods
-Public Sub ILLdictionary_Prepare(PreservedSheetsNames As BetterArray, _
+Public Sub ILLdictionary_Prepare(ByVal PreservedSheetsNames As BetterArray, _
+                                 ByVal geoObject As ILLGeo, _
                                  Optional ByVal tablePrefix As String = "table")
-    Prepare PreservedSheetsNames, tablePrefix
+    Prepare PreservedSheetsNames, geoObject, tablePrefix
 End Sub
 
 Public Sub ILLdictionary_Clean()

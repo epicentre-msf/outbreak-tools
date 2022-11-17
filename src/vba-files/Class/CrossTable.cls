@@ -22,7 +22,7 @@ Private Type TCrossTable
     specs As ITablesSpecs
     outputsh As Worksheet
     trans As ITranslation
-    endRw As Long
+    endrw As Long
     endCol As Long
     nbCols As Long
 End Type
@@ -108,7 +108,7 @@ Private Property Get startRow() As Long
         'Test if there is already a startrow
         If Not RangeExists("STARTROW_" & tabId) Then
             If specs.isNewSection() Or specs.TableType <> TypeTimeSeries Then
-                strtRow = .Cells(.Rows.Count, STANDARDSTARTCOL).End(xlUp).row + 1
+                strtRow = .Cells(.Rows.Count, STANDARDSTARTCOL).End(xlUp).Row + 1
                 strtRow = IIf(strtRow = 2, 10, strtRow) 'Be sure to Start after the 1st lines
                 
                 strtRow = Switch(specs.TableType = TypeSpatial, strtRow + 6, _
@@ -121,7 +121,7 @@ Private Property Get startRow() As Long
             End If
             startRow = strtRow
         Else
-            startRow = .Range("STARTROW_" & tabId).row
+            startRow = .Range("STARTROW_" & tabId).Row
         End If
 
     End With
@@ -167,16 +167,16 @@ Private Property Get StartColumn() As Long
     End With
 End Property
 
-Private Property Let endRow(ByVal rw As Long)
-    this.endRw = rw
+Private Property Let EndRow(ByVal rw As Long)
+    this.endrw = rw
 End Property
 
 Private Property Let EndColumn(ByVal col As Long)
     this.endCol = col
 End Property
 
-Private Property Get endRow() As Long
-    endRow = this.endRw
+Private Property Get EndRow() As Long
+    EndRow = this.endrw
 End Property
 
 Private Property Get EndColumn() As Long
@@ -213,10 +213,10 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     If Not includeHeaders Then start = start + 1
 
     'End Row
-    rend = Switch((specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial) And onlyCategories, endRow - 2, _
-                  (specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial), endRow, _
-                  specs.HasTotal And onlyCategories, endRow - 1, _
-                  True, endRow)
+    rend = Switch((specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial) And onlyCategories, EndRow - 2, _
+                  (specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial), EndRow, _
+                  specs.HasTotal And onlyCategories, EndRow - 1, _
+                  True, EndRow)
 
     With sh
         Set RowsCategoriesRange = .Range(.Cells(start, STANDARDSTARTCOL), .Cells(rend, STANDARDSTARTCOL))
@@ -240,7 +240,7 @@ Public Property Get RowRange(ByVal rowVal As String, Optional ByVal includeHeade
 
     'Test if Missing exists
     If ValueExists(rng, rowVal) Then
-        valueRow = rng.Find(What:=rowVal, LookAt:=xlWhole, MatchCase:=True).row
+        valueRow = rng.Find(What:=rowVal, LookAt:=xlWhole, MatchCase:=True).Row
         start = IIf(includeHeaders, StartColumn, StartColumn + 1)
         With sh
             Set RowRange = .Range(.Cells(valueRow, start), .Cells(valueRow, EndColumn))
@@ -266,10 +266,10 @@ Public Property Get ColumnRange(ByVal colVal As String, Optional ByVal includeHe
                    specs.TableType = TypeSpatial, startRow + 2, _
                    True, startRow + 1)
     'End Row
-    rend = Switch((specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial) And onlyCategories, endRow - 2, _
-                  specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial, endRow, _
-                  specs.HasTotal And onlyCategories, endRow - 1, _
-                  True, endRow)
+    rend = Switch((specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial) And onlyCategories, EndRow - 2, _
+                  specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial, EndRow, _
+                  specs.HasTotal And onlyCategories, EndRow - 1, _
+                  True, EndRow)
 
     If includeHeaders Then start = start - 1
 
@@ -324,7 +324,7 @@ Private Sub AddRows()
             rowVar = specs.Value("row")
             .Cells(start, StartColumn).Value = vars.Value(colName:="main label", varName:=rowVar)
 
-            endRow = start + rowsData.Length
+            EndRow = start + rowsData.Length
 
 
         Case TypeBivariate
@@ -336,7 +336,7 @@ Private Sub AddRows()
             .Cells(start + 1, StartColumn).Value = vars.Value(colName:="main label", varName:=rowVar)
 
             'Define the endrow
-            endRow = start + 1 + rowsData.Length
+            EndRow = start + 1 + rowsData.Length
 
         Case TypeTimeSeries
             'Add rows for time series only on new sections
@@ -352,7 +352,7 @@ Private Sub AddRows()
 
             End If
 
-            endRow = start + NBROWSTIMESERIES    'This is the number of rows (FIXED for time series)
+            EndRow = start + NBROWSTIMESERIES    'This is the number of rows (FIXED for time series)
 
         Case TypeSpatial
             rowVar = specs.Value("row")
@@ -363,7 +363,7 @@ Private Sub AddRows()
             Next
             rowsData.Push transTotal, transMissing
             rowsData.ToExcelRange .Cells(start + 1, StartColumn)
-            endRow = start + rowsData.Length
+            EndRow = start + rowsData.Length
         End Select
     End With
 End Sub
@@ -635,14 +635,14 @@ Private Sub AddHeader()
                 'New Section
                 If specs.isNewSection() Then
                     For counter = 1 To 3
-                        .Rows(rng.row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+                        .Rows(rng.Row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                     Next
                     rng.Cells(-3, 1).Value = specs.Value("section")
                     rng.Cells(-3, 1).Name = "SECTION_" & tabId
                 End If
                 
                 'Table Title
-                .Rows(rng.row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+                .Rows(rng.Row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                 rng.Cells(-1, 1).Value = specs.Value("title")
                 rng.Cells(-1, 1).Name = "TITLE_" & tabId
 
@@ -685,7 +685,7 @@ Private Sub NameRanges()
     With sh
 
         'Test if the table has been filled
-        If Not RangeExists("ENDTABLE_" & tabId) Then .Cells(endRow + 1, StartColumn).Name = "ENDTABLE_" & tabId
+        If Not RangeExists("ENDTABLE_" & tabId) Then .Cells(EndRow + 1, StartColumn).Name = "ENDTABLE_" & tabId
 
         nbCols = NumberOfColumns
         If nbCols = 0 Then ThrowExecutionError "Execution Error: Found a table with number of columns 0: " & tabId
@@ -799,13 +799,13 @@ Private Sub NameRanges()
             'Total and Total
             If RangeExists("TOTAL_ROW_" & tabId) Then
                 'Total row
-                rw = .Range("TOTAL_ROW_" & tabId).row
+                rw = .Range("TOTAL_ROW_" & tabId).Row
                 col = .Range("TOTAL_COL_" & tabId).Column
                 .Cells(rw, col).Name = "TOTAL_TOTAL_" & tabId
             End If
 
             If RangeExists("MISSING_ROW_" & tabId) Then
-                rw = .Range("MISSING_ROW_" & tabId).row
+                rw = .Range("MISSING_ROW_" & tabId).Row
                 col = .Range("TOTAL_COL_" & tabId).Column
                 .Cells(rw, col).Name = "MISSING_TOTAL_" & tabId
                 If RangeExists("MISSING_COL_" & tabId) Then
@@ -819,7 +819,7 @@ Private Sub NameRanges()
             'Total and Total
             If RangeExists("MISSING_COL_" & tabId) Then
                 col = .Range("MISSING_COL_" & tabId).Column
-                rw = .Range("TOTAL_ROW_" & tabId).row
+                rw = .Range("TOTAL_ROW_" & tabId).Row
                 .Cells(rw, col).Name = "TOTAL_MISSING_" & tabId
             End If
         End If
@@ -1050,7 +1050,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         'Time series Header
         If specs.TableType = TypeTimeSeries Then
             Set rng = .Range("STARTCOL_" & tabId)
-            Set rng = .Range(.Cells(rng.row, rng.Column), .Cells(rng.row, EndColumn()))
+            Set rng = .Range(.Cells(rng.Row, rng.Column), .Cells(rng.Row, EndColumn()))
             DesignFormat.ApplyFormat rng, scope:=AnalysisTimeSeriesHeader
             
         End If
@@ -1059,10 +1059,10 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                               StartColumn + 1, StartColumn)
         'The whole table
         If (specs.TableType <> TypeUnivariate) And (specs.TableType <> TypeGlobalSummary) Then
-            Set rng = .Range(.Cells(startRow, wholeTableStart), .Cells(endRow, EndColumn))
+            Set rng = .Range(.Cells(startRow, wholeTableStart), .Cells(EndRow, EndColumn))
             DesignFormat.ApplyFormat rng, scope:=AnalysisWholeTable
         ElseIf (specs.TableType = TypeUnivariate) Then
-            Set rng = .Range(.Cells(startRow + 1, wholeTableStart), .Cells(endRow, EndColumn))
+            Set rng = .Range(.Cells(startRow + 1, wholeTableStart), .Cells(EndRow, EndColumn))
             DesignFormat.ApplyFormat rng, scope:=AnalysisWholeTable
         End If
 
@@ -1161,7 +1161,7 @@ Public Property Get ICrossTable_EndColumn() As Long
 End Property
 
 Public Property Get ICrossTable_EndRow() As Long
-    ICrossTable_EndRow = endRow()
+    ICrossTable_EndRow = EndRow()
 End Property
 
 

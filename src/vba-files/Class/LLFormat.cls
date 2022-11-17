@@ -35,7 +35,7 @@ Public Function Create(formatSh As Worksheet, designType As String) As ILLFormat
     Set Lo = formatSh.ListObjects(1)
     If Lo Is Nothing Then ThrowError "No format table found in " & formatSh.Name & " worksheet. Do you have a table in this sheet?"
     design = designType
-  
+
     'Test if design 1 or default is present
     Set rng = Lo.HeaderRowRange
     If (Not ValueExist("design 1", rng)) Then ThrowError "Not default (design 1) found in format sheet, can you seet a design 1 on table " & Lo.Name & "?"
@@ -100,7 +100,7 @@ Private Function DesignValue(ByVal labelName As String, _
         desIndex = headerRng.Find(What:=design, LookAt:=xlPart, MatchCase:=False).Column
         If ValueExist(labelName, labelColumnRng) Then
 
-            labIndex = labelColumnRng.Find(What:=labelName, LookAt:=xlPart, MatchCase:=False).row
+            labIndex = labelColumnRng.Find(What:=labelName, LookAt:=xlPart, MatchCase:=False).Row
 
             If returnColor Then
                 retdesValue = .Cells(labIndex, desIndex).Interior.color
@@ -109,7 +109,7 @@ Private Function DesignValue(ByVal labelName As String, _
             End If
         End If
     End With
-  
+
     If IsEmpty(retdesValue) Then
         DesignValue = IIf(returnColor, vbBlack, 0)
     Else
@@ -121,10 +121,10 @@ End Function
 
 'Draw lines arround borders
 Private Sub DrawLines(rng As Range, _
-                     Optional At As String = "All", _
-                     Optional weight As Integer = xlHairline, _
-                     Optional line As Integer = xlContinuous, _
-                     Optional color As Variant = vbBlack)
+                      Optional At As String = "All", _
+                      Optional weight As Integer = xlHairline, _
+                      Optional line As Integer = xlContinuous, _
+                      Optional color As Variant = vbBlack)
     Dim BorderPos As Byte
     If At = "All" Then
         With rng
@@ -160,7 +160,7 @@ Private Sub DrawLines(rng As Range, _
 End Sub
 
 Private Sub DrawBorder(rng As Range, Optional weight As Integer = xlThin, Optional color As Variant = vbBlack, Optional line As Long = xlContinuous)
-  
+
     Dim counter As Integer
     For counter = 7 To 10                        'xltop, left, right and bottom
         With rng.Borders(counter)
@@ -173,14 +173,14 @@ Private Sub DrawBorder(rng As Range, Optional weight As Integer = xlThin, Option
 End Sub
 
 Private Sub FormatRange(ByVal rng As Range, _
-                       Optional ByVal fillValue As String = "", _
-                       Optional ByVal interiorColor As Variant = "", _
-                       Optional ByVal fontColor As Variant = "", _
-                       Optional ByVal isBold As Boolean = False, _
-                       Optional ByVal Horiz As Integer = xlHAlignCenter, _
-                       Optional ByVal Verti As Integer = xlVAlignCenter, _
-                       Optional ByVal FontSize As Double = 0, _
-                       Optional ByVal NumFormat As String = "")
+                        Optional ByVal fillValue As String = "", _
+                        Optional ByVal interiorColor As Variant = "", _
+                        Optional ByVal fontColor As Variant = "", _
+                        Optional ByVal isBold As Boolean = False, _
+                        Optional ByVal Horiz As Integer = xlHAlignCenter, _
+                        Optional ByVal Verti As Integer = xlVAlignCenter, _
+                        Optional ByVal FontSize As Double = 0, _
+                        Optional ByVal NumFormat As String = "")
 
     With rng
         If interiorColor <> vbNullString Then .Interior.color = interiorColor
@@ -195,22 +195,22 @@ Private Sub FormatRange(ByVal rng As Range, _
 End Sub
 
 Private Sub FormatCharacters(ByVal char As Characters, _
-        Optional ByVal fontColor As Variant = "", _
-        Optional ByVal isBold As Boolean = False, _
-        Optional ByVal FontSize As Double = 0)
+                             Optional ByVal fontColor As Variant = "", _
+                             Optional ByVal isBold As Boolean = False, _
+                             Optional ByVal FontSize As Double = 0)
 
-With char
-    If fontColor <> vbNullString Then .Font.color = fontColor
-    .Font.Bold = isBold
-    If FontSize <> 0 Then .Font.Size = FontSize
-End With
+    With char
+        If fontColor <> vbNullString Then .Font.color = fontColor
+        .Font.Bold = isBold
+        If FontSize <> 0 Then .Font.Size = FontSize
+    End With
 End Sub
 
 Private Sub FormatShape(ByVal shp As WorksheetShape, _
-                       Optional ByVal fontColor As Variant = vbNullString, _
-                       Optional ByVal interiorColor As Variant = vbNullString, _
-                       Optional ByVal isBold As Boolean = False, _
-                       Optional ByVal FontSize As Double = 0)
+                        Optional ByVal fontColor As Variant = vbNullString, _
+                        Optional ByVal interiorColor As Variant = vbNullString, _
+                        Optional ByVal isBold As Boolean = False, _
+                        Optional ByVal FontSize As Double = 0)
     With shp
         'Fill color
         If interiorColor <> vbNullString Then
@@ -219,13 +219,13 @@ Private Sub FormatShape(ByVal shp As WorksheetShape, _
         End If
 
         With .TextFrame2
-        'Text alignment
+            'Text alignment
             .VerticalAnchor = msoAnchorMiddle
             .WordWrap = msoTrue
 
             With .TextRange
                 .ParagraphFormat.Alignment = msoAlignCenter
-                
+
                 'Font Zize and Font Shape
                 If FontSize <> 0 Then .Font.Size = FontSize
                 .Font.Bold = isBold
@@ -242,7 +242,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
     Dim char As Characters
     Dim sh As Worksheet
     Dim shp As WorksheetShape
-  
+
     Dim fontColorValue As Variant
     Dim interiorColorValue As Variant
     Dim bordersColorValue As Variant
@@ -250,11 +250,11 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
     Dim dimensionValue As Variant
     Dim verticalAlign As Long                    'Vertical Alignment
     Dim horizAlign As Long
- 
+
     'Base analysis font size
     styleValue = DesignValue("analysis base font size", False)
     If (Not TypeName(styleValue) = "Double") Then styleValue = 11
- 
+
     'Formatting on analysis  part:
     Select Case scope
     Case AllAnalysisSheet
@@ -294,20 +294,20 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         rng.Offset(1).EntireRow.RowHeight = 45
         rng.Offset(1).EntireRow.RowHeight = dimensionValue
         On Error GoTo 0
-  
+
     Case AnalysisTableTitle
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         dimensionValue = DesignValue("gap for graphs", False)
         fontColorValue = DesignValue("table title font color")
-    
+
 
         FormatRange rng, FontSize:=styleValue, _
                     fontColor:=fontColorValue, Horiz:=xlHAlignLeft, _
                     Verti:=xlVAlignBottom
         rng.WrapText = True
         rng.Font.Italic = True
-        
+
     Case LinelistSelectionDropdown
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
@@ -327,17 +327,17 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         fontColorValue = DesignValue("categories names font color")
         FormatRange rng, fontColor:=fontColorValue, isBold:=True, FontSize:=styleValue - 1, _
                     Horiz:=horizAlign, Verti:=verticalAlign
-  
+
     Case AnalysisCategoriesUnivariateRow, AnalysisFirstRow, AnalysisCategoriesBivariateRow, AnalysisCategoriesBivariateColumn
-  
+
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         fontColorValue = DesignValue("table categories font color")
         bordersColorValue = DesignValue("analysis table borders color")
         interiorColorValue = DesignValue("table categories interior color")
-    
+
         horizAlign = IIf(scope = AnalysisCategoriesBivariateColumn, xlHAlignCenter, xlHAlignLeft)
-    
+
         'Format the categories
         If scope <> AnalysisFirstRow Then
             FormatRange rng, fontColor:=fontColorValue, FontSize:=styleValue, _
@@ -348,20 +348,20 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
                         Horiz:=xlHAlignCenter, Verti:=xlVAlignCenter
             DrawLines rng, color:=bordersColorValue
         End If
-    
+
         If scope = AnalysisCategoriesBivariateColumn Or scope = AnalysisFirstRow Then
             DrawLines rng, Ate² = "Left", color:=bordersColorValue, line:=xlDouble
             DrawLines rng, At:="Right", color:=bordersColorValue, line:=xlDouble
         Else
             DrawBorder rng, color:=bordersColorValue
         End If
-    
+
         'Borders at top and bottom for bivariate
         If scope = AnalysisCategoriesBivariateRow Then
             DrawLines rng, line:=xlDouble, At:="Top", color:=bordersColorValue
             DrawLines rng, line:=xlDouble, At:="Bottom", color:=bordersColorValue
         End If
-  
+
     Case AnalysisGlobalSummaryRow
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
@@ -386,7 +386,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         bordersColorValue = DesignValue("analysis table borders color")
-    
+
         If scope = AnalysisInteriorTable Then
             DrawLines rng, color:=bordersColorValue
             DrawLines rng, color:=bordersColorValue, At:="Top", line:=xlDouble
@@ -394,17 +394,17 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
             DrawLines rng, color:=bordersColorValue, At:="Right", line:=xlDouble
             DrawLines rng, color:=bordersColorValue, At:="Left", line:=xlDouble
         End If
-    
+
         If scope = AnalysisWholeTable Then DrawBorder rng, color:=bordersColorValue
 
-  
+
     Case AnalysisTimeSeriesHeader
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         fontColorValue = DesignValue("time series header font")
         bordersColorValue = DesignValue("analysis table borders color")
         interiorColorValue = DesignValue("time series header interior")
-    
+
         On Error Resume Next
         rng.Merge
         On Error GoTo 0
@@ -414,7 +414,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         DrawLines rng, At:="Left", color:=bordersColorValue, line:=xlDouble
         DrawLines rng, At:="Bottom", color:=bordersColorValue, line:=xlDouble
         DrawLines rng, At:="Right", color:=bordersColorValue, line:=xlDouble
-  
+
     Case AnalysisMissingRow, AnalysisMissingColumn
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
@@ -430,12 +430,12 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         DrawLines rng, color:=bordersColorValue
         DrawLines rng, color:=fontColorValue, At:="Top", line:=xlDouble
         DrawLines rng, color:=fontColorValue, At:="Left", line:=xlDouble
-    
+
         If scope = AnalysisMissingRow Then
             Set rng = rng.Cells(1, 0)
             ApplyFormat rng, scope:=AnalysisOneCellLeft
         End If
-  
+
     Case AnalysisOneCell, AnalysisOneCellLeft, AnalysisOneCellCenter
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
@@ -459,11 +459,11 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         FormatRange rng, NumFormat:="0.00%"
-  
+
     Case LinelistHiddenCell
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        
+
         Set rng = formattingObject
         rng.Interior.color = vbWhite
         rng.Font.color = vbWhite
@@ -473,10 +473,10 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
     Case AnalysisEndTable
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        
+
         Set rng = formattingObject
         dimensionValue = DesignValue("gap for graphs", False)
-        
+
         On Error Resume Next
 
         'Gap for graphs
@@ -492,9 +492,9 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
-        fontColorValue = DesignValue("missing font color")
+        fontColorValue = IIf(IsEmpty(rng), "", DesignValue("missing font color"))
         FormatRange rng, fontColor:=fontColorValue, _
-        FontSize:=8, isBold:=False, Horiz:=xlHAlignCenter
+                    FontSize:=8, isBold:=False, Horiz:=xlHAlignCenter
 
     Case HListMainLab
         If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
@@ -502,7 +502,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         fontColorValue = DesignValue("hlist main label font color")
         dimensionValue = DesignValue("hlist main label font size", False)
         FormatCharacters char:=char, fontColor:=fontColorValue, _
-        FontSize:=dimensionValue, isBold:=True
+                         FontSize:=dimensionValue, isBold:=True
 
     Case HListSublab
         If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
@@ -511,14 +511,14 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         dimensionValue = DesignValue("hlist sub label font size", False)
 
         FormatCharacters char:=char, FontSize:=dimensionValue, fontColor:=fontColorValue
-    
+
     Case HListCalculatedFormulaCell
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         fontColorValue = DesignValue("calculated formula font color")
         interiorColorValue = DesignValue("calculated formula column interior color")
         FormatRange rng, fontColor:=fontColorValue, interiorColor:=interiorColorValue
-        
+
     Case HListCalculatedFormulaHeader
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
@@ -531,31 +531,31 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         interiorColorValue = IIf(scope = HListGeoHeader, DesignValue("geo interior color"), "")
         fontColorValue = DesignValue("geo font color")
         FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue
-    
+
     Case VListMainLab
         If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
         Set char = formattingObject
         fontColorValue = DesignValue("vlist main label font color")
         dimensionValue = DesignValue("vlist main label font size", False)
         FormatCharacters char:=char, fontColor:=fontColorValue, _
-        FontSize:=dimensionValue, isBold:=True
+                         FontSize:=dimensionValue, isBold:=True
 
     Case VListSublab
-        
+
         If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
         Set char = formattingObject
         fontColorValue = DesignValue("vlist sub label font color")
         dimensionValue = DesignValue("vlist sub label font size", False)
         FormatCharacters char:=char, FontSize:=dimensionValue, fontColor:=fontColorValue
-    
+
     Case LinelistSmallButton, AdminLargeButton
-        
+
         If (Not TypeName(formattingObject) = "WorksheetShape") Then Exit Sub
         Set shp = formatingObject
 
         fontColorValue = DesignValue("button default font color")
         interiorColorValue = DesignValue("button default interior color")
-        dimensionValue = DesignValue("linelist base font size")
+        dimensionValue = DesignValue("linelist base font size", False)
         dimensionValue = IIf(dimensionValue = 0, 9, dimensionValue)
         dimensionValue = IIf(scope = AdminLargeButton, dimensionValue + 3, dimensionValue)
 
@@ -568,12 +568,47 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
 
         fontColorValue = DesignValue("geo interior color")
         interiorColorValue = DesignValue("geo font color")
-        dimensionValue = DesignValue("linelist base font size")
+        dimensionValue = DesignValue("linelist base font size", False)
         dimensionValue = IIf(dimensionValue = 0, 9, dimensionValue)
 
         FormatShape shp, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue
-    
+
+    Case HListSubSection, VListSubSection
+
+      If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+      Set rng = formattingObject
+
+      fontColorValue = DesignValue("sub section interior color")
+      interiorColorValue = DesignValue("sub section font color")
+      dimensionValue = DesignValue("sub section font size", False)
+      dimensionValue = IIf(dimensionValue = 0, 11, dimensionValue)
+
+      On Error Resume Next
+        rng.Merge
+      On Error GoTo 0
+
+      FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue, _
+      isBold:=True
+
+    Case HListSection, VListSection
+
+      If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+      Set rng = formattingObject
+
+      fontColorValue = DesignValue("section interior color")
+      interiorColorValue = DesignValue("section font color")
+      dimensionValue = DesignValue("section font size", False)
+      dimensionValue = IIf(dimensionValue = 0, 12, dimensionValue)
+
+      On Error Resume Next
+        rng.Merge
+      On Error GoTo 0
+     
+      FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue, _
+      isBold:=True
+
     End Select
+
 End Sub
 
 Private Function RangeExists(ByVal sh As Worksheet, rngName As String) As Boolean
