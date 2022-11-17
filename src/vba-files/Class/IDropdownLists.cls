@@ -18,6 +18,7 @@ Option Explicit
 'Exposed methods
 Public Property Get Exists(ByVal ListName As String) As Boolean: End Property
 Public Sub Add(ByVal listValues As BetterArray, ByVal ListName As String): End Sub
+
 Public Sub Remove(ByVal ListName As String): End Sub
 Public Sub SetValidation(ByVal cellRng As Range, ByVal ListName As String, _
                          Optional ByVal alertType As String = "info", _

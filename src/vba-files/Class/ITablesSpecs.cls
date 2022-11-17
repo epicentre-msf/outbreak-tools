@@ -33,12 +33,15 @@ Public Property Get isNewSection() As Boolean: End Property
 
 Public Property Get TableId() As String: End Property
 Public Property Get ValidTable() As Boolean: End Property
+
 Public Property Get HasMissing() As Boolean: End Property
 
 Public Property Get HasTotal() As Boolean: End Property
+
 Public Property Get HasPercentage() As Boolean: End Property
 
 Public Property Get Previous() As ITablesSpecs: End Property 'Return the previous table specification in the same section (the order is defined by apearance in the listobject)
+
 Public Property Get TableSectionId() As String: End Property 'The id of the first table of the section
 
 'Exposed methods

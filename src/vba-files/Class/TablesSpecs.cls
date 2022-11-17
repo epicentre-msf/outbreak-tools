@@ -33,8 +33,8 @@ Public Function Create(headerRng As Range, tableSpecsRng As Range, linelistData 
     If tableSpecsRng Is Nothing Then ThrowErrorUnableInstanciate "Table range not defined"
     If linelistData Is Nothing Then ThrowErrorUnableInstanciate "Linelist specifications not defined"
     If headerRng.Columns.Count <> tableSpecsRng.Columns.Count Then ThrowErrorUnableInstanciate "Header range and sepicification range don't have same length"
-    If headerRng.row > tableSpecsRng.row Then ThrowErrorUnableInstanciate "Seems like header comes range after specification range. Maybe you reversed the order? "
-    If headerRng.row < 1 Then ThrowErrorUnableInstanciate "Header range should be at row > 1"
+    If headerRng.Row > tableSpecsRng.Row Then ThrowErrorUnableInstanciate "Seems like header comes range after specification range. Maybe you reversed the order? "
+    If headerRng.Row < 1 Then ThrowErrorUnableInstanciate "Header range should be at row > 1"
 
     With New TablesSpecs
         Set .HeaderRange = headerRng
@@ -107,7 +107,7 @@ Private Property Get TableId() As String
     Set tRng = TableRange
     Set hRng = HeaderRange
 
-    lineNum = tRng.row - hRng.row
+    lineNum = tRng.Row - hRng.Row
 
     Select Case TableType
 
@@ -320,7 +320,7 @@ End Property
 
 Private Property Get isNewSection() As Boolean
     Dim sectIndex As Long
-    Dim actualSection As String
+    Dim ActualSection As String
     Dim previousSection As String
     Dim oldSec As Boolean
     Dim tRng As Range
@@ -333,10 +333,10 @@ Private Property Get isNewSection() As Boolean
 
     If ColumnExists("section") Then
         sectIndex = ColumnIndex("section")
-        actualSection = Value("section")
+        ActualSection = Value("section")
         Set prevCell = tRng.Cells(0, sectIndex)  '0 for previous line (we can also offset)
         previousSection = prevCell.Value
-        oldSec = (actualSection = previousSection) And (prevCell.row <> hRng.row)
+        oldSec = (ActualSection = previousSection) And (prevCell.Row <> hRng.Row)
     End If
 
     isNewSection = (Not oldSec) And (TableType <> TypeGlobalSummary)

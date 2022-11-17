@@ -86,7 +86,7 @@ Private Function RowIndex(ByVal sheetName As String) As Long
     rowNum = -1
     Set sheetRng = SheetRange()
     If Contains(sheetName) Then
-        rowNum = sheetRng.Find(What:=sheetName, LookAt:=xlWhole, MatchCase:=True).row
+        rowNum = sheetRng.Find(What:=sheetName, LookAt:=xlWhole, MatchCase:=True).Row
     End If
     RowIndex = rowNum
 End Function

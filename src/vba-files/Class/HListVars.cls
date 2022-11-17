@@ -16,9 +16,7 @@ Option Explicit
 Implements IHListVars
 
 Private Type THListVars
-    data As ILinelistSpecs
-    drop As IDropdownLists
-    sh As Worksheet
+    ll As ILinelist
     varName As String
     inputRange As Range
 End Type
@@ -27,34 +25,29 @@ Private this As THListVars
 Private Const CLASSNAME As String = "HListVars"
 Private Const startRow As Long = 8               'Where the variables should start in the output worksheet
 
-Public Function Create(ByVal varName As String, ByVal outputsh As Worksheet, _
-                       ByVal lData As ILinelistSpecs, ByVal drop As IDropdownLists) As IHListVars
-    Dim dict As ILLdictionary
+Public Function Create(ByVal varName As String, ll As ILinelist) As IHListVars
 
-    If outputsh Is Nothing Then ThrowError "Worksheet does not exists"
-    If lData Is Nothing Then ThrowError "No linelist specifications found"
-    Set dict = lData.Dictionary()
-    If Not dict.VariableExists(varName) Then ThrowError "Variable" & varName & "Does not exists!"
+    CheckRequirements varName, ll
 
     With New HListVars
-        Set .linelistData = lData
-        Set .Wksh = outputsh
-        Set .Dropdown = drop
+        Set .LinelistObject = ll
         .ActualVariable = varName
         Set Create = .Self
     End With
+
 End Function
 
 Public Property Get Self() As IHListVars
     Set Self = Me
 End Property
 
-Public Property Get linelistData() As ILinelistSpecs
-    Set linelistData = this.data
+Public Property Get LinelistObject() As ILinelist
+    Set LinelistObject = this.ll
 End Property
 
-Public Property Set linelistData(ByVal data As ILinelistSpecs)
-    Set this.data = data
+
+Public Property Set LinelistObject(ByVal ll As ILinelist)
+    Set this.ll = ll
 End Property
 
 Public Property Get ActualVariable() As String
@@ -65,32 +58,45 @@ Public Property Let ActualVariable(ByVal varName As String)
     this.varName = varName
 End Property
 
+'The linelist Data
+Private Property Get linelistData() As ILinelistSpecs
+    Dim ll As ILinelist
+    Set ll = LinelistObject()
+    Set linelistData = ll.linelistData()
+End Property
+
+'Get the worksheet Object where the variable should be written
 Public Property Get Wksh() As Worksheet
-    Set Wksh = this.sh
+    Dim ll As ILinelist
+    Dim sheetName As String
+
+    Set ll = LinelistObject()
+    sheetName = ValueOf("sheet name")
+    Set Wksh = ll.Wsh(sheetName)
 End Property
 
+'The dropdown object as part of the linelist
 Public Property Get Dropdown() As IDropdownLists
-    Set Dropdown = this.drop
+    Dim ll As ILinelist
+    Dim drop As IDropdown
+
+    Set ll = LinelistObject()
+    Set drop = ll.Dropdown()
+
+    Set Dropdown = drop
 End Property
 
-Public Property Set Dropdown(ByVal drop As IDropdownLists)
-    Set this.drop = drop
-End Property
-
-Public Property Set Wksh(ByVal sh As Worksheet)
-    Set this.sh = sh
-End Property
 
 Private Property Get Dictionary() As ILLdictionary
-    Dim lData As ILinelistSpecs
-
-    Set lData = linelistData()
-
-    Set Dictionary = lData.Dictionary
+    Dim ll As ILinelist
+    Set ll = LinelistObject()
+    Set Dictionary = ll.Dictionary
 End Property
 
 Private Property Get vars() As ILLVariables
-    Set vars = LLVariables.Create(Dictionary())
+    Dim dict As ILLdictionary
+    Set dict = Dictionary()
+    Set vars = LLVariables.Create(dict)
 End Property
 
 Private Property Get ValueOf(ByVal colName As String) As String
@@ -113,10 +119,9 @@ Private Property Get VarRange() As Range         'Where to input informations on
             Set this.inputRange = .Cells(startRow + 1, STARTCOL)
         End With
     Else
-      Set VarRange = this.inputRange
+        Set VarRange = this.inputRange
     End If
 End Property
-
 
 'Type
 Private Sub AddType()
@@ -192,7 +197,7 @@ Private Sub AddFormula()
     
     Set lData = linelistData()
     Set dict = lData.Dictionary()
-    Set varFormData = lData.FormDataObject()
+    Set varFormData = lData.FormulaDataObject()
     Set DesignFormat = lData.DesignFormat()
     varForm = ValueOf("control details")
     Set cellRng = VarRange()
@@ -209,7 +214,7 @@ Private Sub AddFormula()
         excelForm = varFormObject.ParsedLinelistFormula()
         'Test if the formula is correct and parse it
         If FailedFormula(excelForm) Then
-           excelForm = Chr(34) & "##== formula parsing failed :( ==##" & Chr(34)
+            excelForm = Chr(34) & "##== formula parsing failed :( ==##" & Chr(34)
         End If
 
         cellRng.formula = "= " & excelForm
@@ -218,8 +223,8 @@ Private Sub AddFormula()
     End If
 
     'Apply format of the calculated range
-    DesignFormat.ApplyFormat cellRng, scope:=HListCalculatedFormulaCell   'Cell
-    DesignFormat.ApplyFormat cellRng.Offset(-2), scope:=HListCalculatedFormulaHeader   'Header
+    DesignFormat.ApplyFormat cellRng, scope:=HListCalculatedFormulaCell 'Cell
+    DesignFormat.ApplyFormat cellRng.Offset(-2), scope:=HListCalculatedFormulaHeader 'Header
 End Sub
 
 'Main Label
@@ -264,7 +269,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
 
     'Add subLabel to main label
     If (varSublab <> vbNullString) Then
-       varMainLab = varMainLab & Chr(10) & varSublab
+        varMainLab = varMainLab & Chr(10) & varSublab
     End If
 
     'Status to add to Notes
@@ -273,9 +278,9 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     'variable main label and sub lable
     cellRng.Offset(-2).Value = varMainLab
     design.ApplyFormat cellRng.Offset(-2).Characters(start:=1, Length:=mainLabLength), _
-        scope:=HListMainLab   'format of the main label
+        scope:=HListMainLab                      'format of the main label
     design.ApplyFormat cellRng.Offset(-2).Characters(start:=mainLabLength + 1), _
-        scope:=HListSublab   'format of the sub label
+        scope:=HListSublab                       'format of the sub label
 
     'variable name
     cellRng.Offset(-1).Value = varName
@@ -297,11 +302,11 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
 
     'Geo labels
     If (InStr(1, varControl, "geo") > 0) Or (varControl = "hf") Or _
-       (InStr(1, varControl, "pcode") > 0) Then
+                                                                (InStr(1, varControl, "pcode") > 0) Then
 
-      'Put geo color
-      design.ApplyFormat cellRng.Offset(-2), scope:=HListGeoHeader
-      design.ApplyFormat cellRng, scope:=HListGeo
+        'Put geo color
+        design.ApplyFormat cellRng.Offset(-2), scope:=HListGeoHeader
+        design.ApplyFormat cellRng, scope:=HListGeo
     
     End If
 
@@ -311,7 +316,6 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
         cellRng.EntireColumn.Hidden = True
     End If
 End Sub
-
 
 'Add the choices
 Private Sub AddChoices()
@@ -348,7 +352,6 @@ Private Sub AddChoices()
                        alertType:=varAlert, message:=varMessage
 End Sub
 
-
 'Write one variable information in the corresponding cell.
 
 Private Sub WriteInfo()
@@ -366,10 +369,24 @@ Private Sub WriteInfo()
     AddChoices
 End Sub
 
-
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+End Sub
+
+Private Sub CheckRequirements(ByVal varName As String, ll As ILinelist)
+
+    Dim dict As ILLdictionary
+    Dim varObject As ILLVariables
+    Dim sheetName As String
+
+    If ll Is Nothing Then ThrowError "No linelist object found"
+    Set dict = ll.Dictionary()
+    Set varObject = LLVariables.Create(dict)
+    If Not dict.VariableExists(varName) Then ThrowError "Variable" & varName & "Does not exists!"
+    sheetName = varObject.Value(varName:=varName, colName:="sheet name")
+    If Not ll.sheetExists(sheetName) Then ThrowError varName & "worksheet named" & sheetName & "is not created"
+
 End Sub
 
 'Exposed methods
@@ -380,3 +397,5 @@ End Sub
 Public Property Get IHListVars_ValueOf(ByVal colName As String) As String
     IHListVars_ValueOf = ValueOf(colName)
 End Property
+
+

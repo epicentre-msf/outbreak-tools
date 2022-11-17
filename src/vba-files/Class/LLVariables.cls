@@ -79,7 +79,7 @@ Private Function RowIndex(ByVal varName As String) As Long
     rowNum = -1
     Set varRng = VarRange()
     If Contains(varName) Then
-        rowNum = varRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True).row
+        rowNum = varRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True).Row
     End If
     RowIndex = rowNum
 End Function

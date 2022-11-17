@@ -228,6 +228,12 @@ Attribute VB_Exposed = False
 
 
 
+
+
+
+
+
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -239,7 +245,7 @@ Private Sub CMD_Copier_Click()
 
     On Error GoTo ErrGeo
 
-    ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+    ActiveSheet.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
 
     Select Case iGeoType
         'In case you selected the Geo data

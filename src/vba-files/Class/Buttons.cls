@@ -17,16 +17,16 @@ Option Explicit
 Implements IButtons
 
 Public Enum ButtonType
-  ButtonTypeLarge = 1
-  ButtonTypeSmall = 2
-  ButtonTypeGeo = 3
+    ButtonTypeLarge = 1
+    ButtonTypeSmall = 2
+    ButtonTypeGeo = 3
 End Enum
 
 Private Type TButton
-  Trads As ILinelistSpecs
-  rng As Range
-  shapename As String
-  scope As Boolean
+    Trads As ILinelistSpecs
+    rng As Range
+    shapename As String
+    scope As Boolean
 End Type
 
 Private this As TButton
@@ -36,72 +36,71 @@ Private Const BUTTONHEIGHT As Long = 30
 Private Const BUTTONGAP As Long = 5
 
 Public Function Create(ByVal outRng As Range, ByVal Trads As ITranslation, ByVal codeName As String, _
-                      ByVal scope As ButtonType) As IButtons
+                       ByVal scope As ButtonType) As IButtons
   
-  If outRng Is Nothing Then ThrowError "I don't know where to write the button, no range found."
-  If Trads Is Nothing Then ThrowError "No translation object found"
+    If outRng Is Nothing Then ThrowError "I don't know where to write the button, no range found."
+    If Trads Is Nothing Then ThrowError "No translation object found"
 
-  With New Button
-    Set .OutputRange = outRng
-    Set .ShapesTranslation = Trads
-      .Name = codeName
-      .ShapeType = scope
-    Set Create = Self()
-  End With
+    With New Button
+        Set .OutputRange = outRng
+        Set .ShapesTranslation = Trads
+        .Name = codeName
+        .ShapeType = scope
+        Set Create = Self()
+    End With
 End Function
-
 
 'Encapsulated objects
 Public Property Get Self() As IButtons
-  Set Self = Me
+    Set Self = Me
 End Property
 
 Public Property Get OutputRange() As Range
-  Set OutputRange = this.rng
+    Set OutputRange = this.rng
 End Property
 
 Public Property Set OutputRange(ByVal rng As Range)
-  Set this.rng = rng
+    Set this.rng = rng
 End Property
 
 Public Property Get ShapesTranslation() As ITranslation
-  Set ShapesTranslation = this.Trads
+    Set ShapesTranslation = this.Trads
 End Property
 
 Public Property Set ShapesTranslation(ByVal Trads As ITranslation)
-  Set this.Trads = Trads
+    Set this.Trads = Trads
 End Property
 
 Public Property Get Name() As String
-  Name = this.shapename
+    Name = this.shapename
 End Property
 
 Public Property Let Name(ByVal nm As String)
-  this.shapename = nm
+    this.shapename = nm
 End Property
 
 Public Property Let ShapeType(ByVal scope As ButtonType)
-  this.scope = scope
+    this.scope = scope
 End Property
 
 Public Property Get ShapeType() As ButtonType
-  ShapeType = this.scope
+    ShapeType = this.scope
 End Property
 
 Private Property Get ShapeExists() As Boolean
-  Dim shp As WorksheetShape
-  Dim sh As Worksheet
-  Dim cellRng As Range
-  Dim codeName As String
+    Dim shp As WorksheetShape
+    Dim sh As Worksheet
+    Dim cellRng As Range
+    Dim codeName As String
 
-  codeName = Name()
-  Set cellRng = OutputRange()
-  Set sh = cellRng.Parent
+    codeName = Name()
+    Set cellRng = OutputRange()
+    Set sh = cellRng.Parent
 
-  On Error Resume Next
+    On Error Resume Next
     Set shp = sh.Shapes(codeName)
     ShapeExists = Not (shp Is Nothing)
-  On Error GoTo 0
+    On Error GoTo 0
 End Property
 
 Private Property Get ShapeObject() As WorksheetShape
@@ -118,86 +117,86 @@ Private Property Get ShapeObject() As WorksheetShape
 
 End Property
 
-
 'Add the button
 Public Sub Add(Optional ByVal actionCommand As String = vbNullString)
 
-  Dim height As Long
-  Dim width As Long
-  Dim topGap As Long
-  Dim cellRng As Range
-  Dim sh As Worksheet
-  Dim codeName As String
-  Dim shapeLabel As String
-  Dim trans As ITranslation
+    Dim height As Long
+    Dim width As Long
+    Dim topGap As Long
+    Dim cellRng As Range
+    Dim sh As Worksheet
+    Dim codeName As String
+    Dim shapeLabel As String
+    Dim trans As ITranslation
 
 
-  If ShapeExists() Then Exit Sub
+    If ShapeExists() Then Exit Sub
 
-  Set cellRng = OutputRange()
-  codeName = Name()
+    Set cellRng = OutputRange()
+    codeName = Name()
   
-  'Long button
-  If ShapeType = ButtonTypeLarge Then
-    height = 2 * BUTTONHEIGHT
-    width = 2 * BUTTONWIDTH
-  Else
-    'Short Button
-    height = BUTTONHEIGHT
-    width = BUTTONWIDTH
-  End If
+    'Long button
+    If ShapeType = ButtonTypeLarge Then
+        height = 2 * BUTTONHEIGHT
+        width = 2 * BUTTONWIDTH
+    Else
+        'Short Button
+        height = BUTTONHEIGHT
+        width = BUTTONWIDTH
+    End If
     
-  Set sh = cellRng.Parent
-  topGap = BUTTONGAP * (cellRng.row - 1) + 3  'Gap between multiple buttons on the same column
+    Set sh = cellRng.Parent
+    topGap = BUTTONGAP * (cellRng.Row - 1) + 3   'Gap between multiple buttons on the same column
 
-  'Add the button
-  sh.Shapes.AddShape(msoShapeRoundedRectangle, cellRng.Left, cellRng.Top + topGap, width, height).Name = codeName
+    'Add the button
+    sh.Shapes.AddShape(msoShapeRoundedRectangle, cellRng.Left, cellRng.Top + topGap, width, height).Name = codeName
 
-  'The text to display on the shape
-  Set trans = ShapesTranslation()
-  shapeLabel = trans.TranslatedValue(codeName)
+    'The text to display on the shape
+    Set trans = ShapesTranslation()
+    shapeLabel = trans.TranslatedValue(codeName)
 
-  With sh.Shapes(codeName)
-    .OnAction = actionCommand
-    .Placement = xlFreeFloating
-    .Shadow.Type = msoShadow24
-    .TextFrame2.TextRange.Characters.text = shapeLabel
-  End With
+    With sh.Shapes(codeName)
+        .OnAction = actionCommand
+        .Placement = xlFreeFloating
+        .Shadow.Type = msoShadow24
+        .TextFrame2.TextRange.Characters.text = shapeLabel
+    End With
 End Sub
 
 'Format
 Public Sub Format(ByVal design As ILLFormat)
-  Dim shp As WorksheetShape
-  Dim scope As ButtonType
+    Dim shp As WorksheetShape
+    Dim scope As ButtonType
 
-  Set shp = ShapeObject()
-  scope = ShapeType()
+    Set shp = ShapeObject()
+    scope = ShapeType()
 
-  Select Case scope
+    Select Case scope
   
-  Case ButtonTypeLarge
-    design.ApplyFormat shp, scope:=AdminLargeButton
+    Case ButtonTypeLarge
+        design.ApplyFormat shp, scope:=AdminLargeButton
     
-  Case ButtonTypeSmall
-    design.ApplyFormat shp, scope:=LinelistSmallButton
+    Case ButtonTypeSmall
+        design.ApplyFormat shp, scope:=LinelistSmallButton
 
-  Case ButtonTypeGeo
-    design.ApplyFormat shp, scope:=LinelistGeoButton
-  End Select
+    Case ButtonTypeGeo
+        design.ApplyFormat shp, scope:=LinelistGeoButton
+    End Select
 
 End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-  Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
-
 
 'Exposed methods
 Public Sub IButtons_Add(Optional ByVal actionCommand As String = vbNullString)
-  Add actionCommand
+    Add actionCommand
 End Sub
 
 Public Sub IButtons_Format(design As ILLFormat)
-  Format design
+    Format design
 End Sub
+
+

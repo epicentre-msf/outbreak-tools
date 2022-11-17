@@ -130,7 +130,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
     'Update the values of the labels and list! here I must make sure my Headers contains those values
 
     If (ChoicesHeaders.IndexOf(C_sChoiHeaderList) <= 0 Or ChoicesHeaders.IndexOf(C_sChoiHeaderLab) <= 0) Then
-        SheetMain.Range(C_sRngEdition).Value = "Error 1"
+        SheetMain.Range("RNG_Edition").Value = "Error 1"
         Exit Sub
     End If
 
@@ -174,7 +174,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
 
             'Now writing the data of varnames to the dictionary
             With Wkb.Worksheets(C_sParamSheetDict)
-                iPastingRow = .Cells(.Rows.Count, 1).End(xlUp).row
+                iPastingRow = .Cells(.Rows.Count, 1).End(xlUp).Row
                 DictVarName.ToExcelRange Destination:=.Cells(iPastingRow + 1, 1)
                 DictVarName.Clear
             End With
@@ -197,7 +197,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
 
             'Now writing the data of varnames to the dictionary
             With Wkb.Worksheets(C_sParamSheetDict)
-                iPastingRow = .Cells(.Rows.Count, 1).End(xlUp).row
+                iPastingRow = .Cells(.Rows.Count, 1).End(xlUp).Row
                 DictVarName.ToExcelRange Destination:=.Cells(iPastingRow + 1, 1)
                 DictVarName.Clear
             End With
@@ -215,7 +215,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
     With Wkb.Worksheets(C_sParamSheetDict)
         .Cells(1, 1).Value = C_sDictHeaderVarName
         'Update values of the Sheet Names with correct spelling
-        For i = 2 To .Cells(Rows.Count, 1).End(xlUp).row
+        For i = 2 To .Cells(Rows.Count, 1).End(xlUp).Row
             iSheetNameColumn = DictHeaders.IndexOf(C_sDictHeaderSheetName)
             .Cells(i, iSheetNameColumn).Value = EnsureGoodSheetName(.Cells(i, iSheetNameColumn).Value)
         Next
@@ -224,7 +224,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
         .ListObjects("o" & ClearString(C_sParamSheetDict)).Resize .ListObjects("o" & ClearString(C_sParamSheetDict)).Range.CurrentRegion
     End With
 
-    SheetMain.Range(C_sRngEdition).Value = TranslateMsg("MSG_BuildAna")
+    SheetMain.Range("RNG_Edition").Value = TranslateMsg("MSG_BuildAna")
 
     Call DesignerBuildListHelpers.UpdateChoiceAutoHeaders(Wkb, ChoiceAutoVarData, DictHeaders)
 
@@ -268,11 +268,11 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
             End If
         Next
 
-        Wkb.SaveAs FileName:=sPath, fileformat:=xlExcel12, Password:=SheetMain.Range("RNG_LLPwdOpen").Value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+        Wkb.SaveAs FileName:=sPath, fileformat:=xlExcel12, PassWord:=SheetMain.Range("RNG_LLPwdOpen").Value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
         Wkb.Close
     #Else
         'I am on windows, I will save the workbook, reopen it with new instance, put everything as visible in the workbook, hide the instance and do my work on Panes
-        Wkb.SaveAs SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp", fileformat:=xlExcel12
+        Wkb.SaveAs SheetMain.Range("RNG_LLDir") & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp", fileformat:=xlExcel12
         Wkb.Close
         Dim Myxlsapp As Excel.Application
         Set Myxlsapp = New Excel.Application
@@ -282,7 +282,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
             .DisplayAlerts = False
             .EnableAnimations = False
             .EnableEvents = False
-            Set Wkb = .Workbooks.Open(SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb")
+            Set Wkb = .Workbooks.Open(SheetMain.Range("RNG_LLDir") & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb")
             .Windows(Wkb.Name).Visible = True
             For Each Wksh In Wkb.Worksheets
                 If SheetsOfTypeLLData.Includes(Wksh.Name) Then
@@ -309,7 +309,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
                 End If
             Next
         End With
-        Wkb.SaveAs FileName:=sPath, fileformat:=xlExcel12, Password:=SheetMain.Range("RNG_LLPwdOpen").Value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+        Wkb.SaveAs FileName:=sPath, fileformat:=xlExcel12, PassWord:=SheetMain.Range("RNG_LLPwdOpen").Value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
         Wkb.Close
 
         Myxlsapp.Quit
@@ -448,7 +448,7 @@ Private Sub CreateSheets(Wkb As Workbook, dictData As BetterArray, DictHeaders A
                     .Worksheets(sPrevSheetName).Rows("1:4").RowHeight = C_iLLButtonsRowHeight
                     'Now I split at starting lines and freeze the pane
                 Case Else
-                    SheetMain.Range(C_sRngEdition).Value = TranslateMsg(C_sMsgCheckSheetType)
+                    SheetMain.Range("RNG_Edition").Value = TranslateMsg(C_sMsgCheckSheetType)
                     Exit Sub
                 End Select
             Else
@@ -515,7 +515,7 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
             On Error GoTo 0
 
             AddedLogo = True
-            .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+            .Protect PassWord:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
         End With
     End If
@@ -645,7 +645,7 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
         WriteBorderLines .Range(.Cells(C_eStartLinesAdmData, C_eStartColumnAdmData), .Cells(iCounterSheetAdmLine - 1, C_eStartColumnAdmData + 3)), _
         iWeight:=xlThin, sColor:="DarkBlue"
 
-        .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        .Protect PassWord:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
     End With
 End Sub
@@ -709,7 +709,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     bCmdGeoExist = False
 
     If (LLSheetNameData.IndexOf(sSheetName) < 0) Then
-        SheetMain.Range(C_sRngEdition).Value = "Logging Error 2"
+        SheetMain.Range("RNG_Edition").Value = "Logging Error 2"
         Exit Sub
     End If
 
@@ -965,7 +965,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
                         Set LoRng = .Range(.Cells(C_eStartlinesListAuto, iChoiceCol + 1), .Cells(C_eStartlinesListAuto + 1, iChoiceCol + 1))
                         .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = "o" & sChoiceAutoName
-                        Wkb.Names.Add Name:=sChoiceAutoName, RefersToR1C1:="=o" & sChoiceAutoName & "[" & sChoiceAutoName & "]"
+                        Wkb.NAMES.Add Name:=sChoiceAutoName, RefersToR1C1:="=o" & sChoiceAutoName & "[" & sChoiceAutoName & "]"
                     End With
                 End If
 
@@ -1075,7 +1075,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         'Resize for 200 lines entrie
         .ListObjects(sTableName).Resize LoRng
         '   Now Protect the sheet,
-        .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        .Protect PassWord:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
 
     End With

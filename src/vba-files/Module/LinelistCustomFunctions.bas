@@ -241,7 +241,7 @@ Public Function TopAdminName(Admlevel As String, Admcount As Long) As String
     TopAdminName = vbNullString
 End Function
 
-Public Function TopAdminValue(admName As String, Admlevel As String, Admcount As Long) As Long
+Public Function TopAdminValue(admname As String, Admlevel As String, Admcount As Long) As Long
     TopAdminValue = 0
 End Function
 
@@ -338,7 +338,6 @@ Public Function ValidMax(startDate As Long, endDate As Long, MinDate As Long, Ma
     
     ValidMax = validation
 End Function
-
 
 Public Function InfoUser(userDate As Long, actualDate As Long, Optional infotype As Byte = 1) As String
    

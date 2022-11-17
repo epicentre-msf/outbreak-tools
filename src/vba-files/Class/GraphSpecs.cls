@@ -541,7 +541,7 @@ Private Function GraphValues(ByVal colName As String, ByVal graphId As String) A
     If ValueExists(rng, graphId, strictSearch:=True) Then
         With sh
             Do While Not (rng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
-                RowIndex = rng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True).row
+                RowIndex = rng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True).Row
                 Values.Push colRng.Cells(RowIndex, 1).Value
                 Set rng = .Range(rng.Cells(RowIndex + 1, 1), rng.Cells(rng.Rows.Count, 1))
             Loop

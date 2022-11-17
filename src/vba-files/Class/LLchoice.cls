@@ -118,7 +118,7 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
     Dim labelRng As Range
     Dim orderRng As Range
     Dim choicewksh As Worksheet
-    Dim endRow As Long
+    Dim EndRow As Long
     Dim endRowlabel As Long
     Dim counter As Long
     Dim checkCategories As BetterArray
@@ -136,16 +136,16 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
     Set orderRng = DataRange(ORDER)
     Set choicewksh = Wksh()
 
-    endRow = startRow + listRng.Rows.Count
+    EndRow = startRow + listRng.Rows.Count
     endRowlabel = startRow + labelRng.Rows.Count
 
 
     With choicewksh
-        If (endRow = endRowlabel) Then
-            CategoriesData.ToExcelRange .Cells(endRow, labelRng.Column)
+        If (EndRow = endRowlabel) Then
+            CategoriesData.ToExcelRange .Cells(EndRow, labelRng.Column)
             For counter = 0 To (CategoriesData.Length - 1)
-                .Cells(endRow + counter, listRng.Column).Value = choiceName
-                .Cells(endRow + counter, orderRng.Column).Value = counter + 1
+                .Cells(EndRow + counter, listRng.Column).Value = choiceName
+                .Cells(EndRow + counter, orderRng.Column).Value = counter + 1
             Next
         Else
             'Do something (trace log)

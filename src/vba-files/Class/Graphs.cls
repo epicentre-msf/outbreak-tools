@@ -247,8 +247,8 @@ Public Sub IGraphs_AddLabels(ByVal catName As String, ByVal lblName As String)
 End Sub
 
 Public Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, _
-                  Optional ByVal catTitle As String = vbNullString, _
-                  Optional ByVal plotTitle As String = vbNullString)
+                          Optional ByVal catTitle As String = vbNullString, _
+                          Optional ByVal plotTitle As String = vbNullString)
     Format valuesTitle:=valuesTitle, catTitle:=catTitle, plotTitle:=plotTitle
 End Sub
 

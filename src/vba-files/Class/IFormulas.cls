@@ -17,7 +17,7 @@ Option Explicit
 
 'Exposed methods
 
-Public Property Get Varlists() As BetterArray: End Property
+Public Property Get varlists() As BetterArray: End Property
 Public Property Get valid(Optional ByVal formulaType As String = "analysis") As Boolean: End Property
 
 Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _
@@ -30,6 +30,7 @@ Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
 End Property
 
 'Logs for eventual errors in formula
+
 
 
 

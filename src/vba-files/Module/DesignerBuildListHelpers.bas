@@ -85,18 +85,18 @@ Private Sub TransferForm(Wkb As Workbook, sFormName As String)
 
     'The form is sent to the LinelisteApp folder
     On Error Resume Next
-    Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
-    Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frx"
+    Kill SheetMain.Range("RNG_LLDir") & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
+    Kill SheetMain.Range("RNG_LLDir") & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frx"
     On Error GoTo 0
 
     DoEvents
-    DesignerWorkbook.VBProject.VBComponents(sFormName).Export SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
-    Wkb.VBProject.VBComponents.Import SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
+    DesignerWorkbook.VBProject.VBComponents(sFormName).Export SheetMain.Range("RNG_LLDir") & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
+    Wkb.VBProject.VBComponents.Import SheetMain.Range("RNG_LLDir") & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
     DoEvents
 
     On Error Resume Next
-    Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
-    Kill SheetMain.Range(C_sRngLLDir) & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frx"
+    Kill SheetMain.Range("RNG_LLDir") & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frm"
+    Kill SheetMain.Range("RNG_LLDir") & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "CopieUsf.frx"
     On Error GoTo 0
 End Sub
 
@@ -341,7 +341,7 @@ Sub AddChoices(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer
             ValidationList.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
 
             'Add the list object to the worksheet
-            iChoiceRow = .Cells(.Rows.Count, iChoiceCol).End(xlUp).row
+            iChoiceRow = .Cells(.Rows.Count, iChoiceCol).End(xlUp).Row
 
             Set LoRng = .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iChoiceRow, iChoiceCol))
 
@@ -350,7 +350,7 @@ Sub AddChoices(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer
         End With
 
         'Now Add dynamic name for the choice
-        Wkb.Names.Add Name:=sChoice, RefersToR1C1:="=" & sListObjectName & "[" & sChoice & "]"
+        Wkb.NAMES.Add Name:=sChoice, RefersToR1C1:="=" & sListObjectName & "[" & sChoice & "]"
     End If
 
     'Add the validation
@@ -466,7 +466,7 @@ Sub Add4GeoCol(Wkb As Workbook, dictData As BetterArray, DictHeaders As BetterAr
         'ajout des formules de validation
         .Cells(iStartLine + 2, iCol).validation.Delete
         'Add name and reference for adm1 (in case someone adds one adm1)
-        Wkb.Names.Add Name:=C_sAdmName & "1" & "_column", RefersToR1C1:="=" & C_sTabadm1 & "[" & SheetGeo.Cells(1, 1).Value & "]"
+        Wkb.NAMES.Add Name:=C_sAdmName & "1" & "_column", RefersToR1C1:="=" & C_sTabadm1 & "[" & SheetGeo.Cells(1, 1).Value & "]"
 
         Call Helpers.SetValidation(.Cells(iStartLine + 2, iCol), "=" & C_sAdmName & 1 & "_column", 2, sMessage)
         Call Helpers.WriteBorderLines(.Range(.Cells(iStartLine, iCol), .Cells(iStartLine + 1, iCol)))
@@ -528,7 +528,7 @@ Sub BuildGotoArea(Wkb As Workbook, sTableName As String, sSheetName As String, i
 
         .Cells(C_eStartlinesListAuto, iGoToCol).Value = sGoToSourceName
         'Add the list object to the worksheet
-        iChoiceRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).row
+        iChoiceRow = .Cells(.Rows.Count, iGoToCol).End(xlUp).Row
         Set LoRng = .Range(.Cells(C_eStartlinesListAuto, iGoToCol), .Cells(iChoiceRow, iGoToCol))
 
         'Add the list object here
@@ -536,7 +536,7 @@ Sub BuildGotoArea(Wkb As Workbook, sTableName As String, sSheetName As String, i
     End With
 
     'Add the validation
-    Wkb.Names.Add Name:=sGoToSourceName, RefersToR1C1:="=" & sListObjectName & "[" & sGoToSourceName & "]"
+    Wkb.NAMES.Add Name:=sGoToSourceName, RefersToR1C1:="=" & sListObjectName & "[" & sGoToSourceName & "]"
 
     'Add the validation
     With Wkb.Worksheets(sSheetName)
@@ -869,11 +869,11 @@ Public Sub UpdateChoiceAutoHeaders(Wkb As Workbook, ChoiceAutoVarData As BetterA
             If ChoiceAutoVarData.Includes(sVarName) Then
                 sSheetName = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)).Value
                 iIndex = .Worksheets(C_sParamSheetDict).Cells(i, DictHeaders.Length + 1).Value
-                .Worksheets(sSheetName).Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+                .Worksheets(sSheetName).UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).Value = C_sDictControlChoiceAuto & "_origin"
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).Font.color = vbWhite
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).FormulaHidden = True
-                .Worksheets(sSheetName).Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                .Worksheets(sSheetName).Protect PassWord:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
             End If
             i = i + 1
@@ -985,11 +985,11 @@ Public Sub AddTemporarySheets(Wkb As Workbook)
             .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = C_sTabAdm4 & "_dropdown"
 
             'Adm 2
-            Wkb.Names.Add Name:=C_sAdmName & "_2_" & "dropdown", RefersToR1C1:="=" & C_sTabAdm2 & "_dropdown" & "[" & C_sAdmName & "_2_" & "dropdown" & "]"
+            Wkb.NAMES.Add Name:=C_sAdmName & "_2_" & "dropdown", RefersToR1C1:="=" & C_sTabAdm2 & "_dropdown" & "[" & C_sAdmName & "_2_" & "dropdown" & "]"
             'Adm3
-            Wkb.Names.Add Name:=C_sAdmName & "_3_" & "dropdown", RefersToR1C1:="=" & C_sTabAdm3 & "_dropdown" & "[" & C_sAdmName & "_3_" & "dropdown" & "]"
+            Wkb.NAMES.Add Name:=C_sAdmName & "_3_" & "dropdown", RefersToR1C1:="=" & C_sTabAdm3 & "_dropdown" & "[" & C_sAdmName & "_3_" & "dropdown" & "]"
             'Adm 4
-            Wkb.Names.Add Name:=C_sAdmName & "_4_" & "dropdown", RefersToR1C1:="=" & C_sTabAdm4 & "_dropdown" & "[" & C_sAdmName & "_4_" & "dropdown" & "]"
+            Wkb.NAMES.Add Name:=C_sAdmName & "_4_" & "dropdown", RefersToR1C1:="=" & C_sTabAdm4 & "_dropdown" & "[" & C_sAdmName & "_4_" & "dropdown" & "]"
         End With
     End With
 End Sub

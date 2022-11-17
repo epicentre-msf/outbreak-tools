@@ -22,10 +22,17 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     If Target.Name.Name = "RNG_LangDesigner" Then
         Call TranslateDesigner
     ElseIf Target.Name.Name = "RNG_LLForm" Then
-        Call TranslateHeadGeo
+        
+        'Language of LinelistForms
+        SheetLLTranslation.Range("RNG_LLLanguage").Value = Target.Value
+
+        'Language Code in the Geo Sheet
+        SheetGeo.Range("RNG_GeoLangCode").Value = SheetLLTranslation.Range("RNG_LLLanguageCode").Value
+
     ElseIf Target.Name.Name = "RNG_LLPassword" Then
     
         SheetPassword.Range("RNG_DebuggingPassword").Value = Target.Value
+
     ElseIf Target.Name.Name = "RNG_LangSetup" Then
     
         SheetLLTranslation.Range("RNG_DictionaryLanguage").Value = Target.Value
@@ -36,5 +43,6 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Application.EnableEvents = True
     Exit Sub
 no:
+  Application.EnableEvents = True
 End Sub
 
