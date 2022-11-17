@@ -13,7 +13,7 @@ Sub ClicCmdGeoApp()
 
     iNumCol = ActiveCell.Column
 
-    If ActiveCell.row > C_eStartLinesLLData + 1 Then
+    If ActiveCell.Row > C_eStartLinesLLData + 1 Then
 
         sType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).Value
         Select Case sType
@@ -42,7 +42,7 @@ Sub ClicCmdAddRows()
 
     On Error GoTo errAddRows
 
-    ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+    ActiveSheet.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
     Application.EnableEvents = False
     Set oLstobj = ActiveSheet.ListObjects(SheetListObjectName(ActiveSheet.Name))
 
@@ -174,7 +174,7 @@ Sub ClicCmdDebug()
         If pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value Then
             For Each sh In ThisWorkbook.Worksheets
                 If sh.ProtectContents = True Then
-                    sh.Unprotect pwd
+                    sh.UnProtect pwd
                 End If
             Next
             DebugMode = True
@@ -192,7 +192,7 @@ Sub ClicCmdDebug()
 
         For Each sh In ThisWorkbook.Worksheets
             If SheetsToProtect.Includes(sh.Name) Then
-                sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                sh.Protect PassWord:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                            AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                            AllowFormattingColumns:=True
 
@@ -231,7 +231,7 @@ Public Sub ProtectSheet(Optional sSheetName As String = "_Active")
 
     If Not DebugMode Then
         pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value
-        sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        sh.Protect PassWord:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                    AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                    AllowFormattingColumns:=True
     End If
@@ -255,7 +255,7 @@ Sub EventValueChangeLinelist(oRange As Range)
     iNumCol = oRange.Column
     sControlType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).Value
 
-    If oRange.row > C_eStartLinesLLData + 1 Then
+    If oRange.Row > C_eStartLinesLLData + 1 Then
 
         Select Case sControlType
 
@@ -263,7 +263,7 @@ Sub EventValueChangeLinelist(oRange As Range)
             ' adm1 has been modified, we will correct and set validation to adm2
 
             BeginWork xlsapp:=Application
-            ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+            ActiveSheet.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
 
             DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm4 & "_dropdown")
             oRange.Offset(, 1).Value = vbNullString
@@ -288,7 +288,7 @@ Sub EventValueChangeLinelist(oRange As Range)
 
             'Adm2 has been modified, we will correct and filter adm3
             BeginWork xlsapp:=Application
-            ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+            ActiveSheet.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
 
             DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm3 & "_dropdown")
             oRange.Offset(, 1).Value = vbNullString
@@ -307,7 +307,7 @@ Sub EventValueChangeLinelist(oRange As Range)
         Case C_sDictControlGeo & "3"
             'Adm 3 has been modified, correct and filter adm4
             BeginWork xlsapp:=Application
-            ActiveSheet.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+            ActiveSheet.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
 
             DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm4 & "_dropdown")
             oRange.Offset(, 1).Value = vbNullString
@@ -329,7 +329,7 @@ Sub EventValueChangeLinelist(oRange As Range)
 
     End If
 
-    If oRange.row = C_eStartLinesLLData And sControlType = C_sDictControlCustom Then
+    If oRange.Row = C_eStartLinesLLData And sControlType = C_sDictControlCustom Then
         'The name of custom variables has been updated, update the dictionary
         sCustomVarName = ActiveSheet.Cells(C_eStartLinesLLData + 1, iNumCol).Value
         sNote = GetDictColumnValue(sCustomVarName, C_sDictHeaderSubLab)
@@ -341,7 +341,7 @@ Sub EventValueChangeLinelist(oRange As Range)
     End If
 
 
-    If oRange.row > C_eStartLinesLLData + 1 And _
+    If oRange.Row > C_eStartLinesLLData + 1 And _
        ActiveSheet.Cells(C_eStartLinesLLMainSec - 2, iNumCol).Value = C_sDictControlChoiceAuto & "_origin" And _
        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value <> "list_auto_change_yes" Then
         ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value = "list_auto_change_yes"
@@ -442,7 +442,7 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
                         iChoiceCol = choiceLo.Range.Column
                         If Not choiceLo.DataBodyRange Is Nothing Then choiceLo.DataBodyRange.Delete
                         arrTable.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
-                        iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).row
+                        iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
                         choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
                         'Sort in descending order
                         Set rng = choiceLo.ListColumns(1).Range
@@ -503,7 +503,7 @@ Public Sub UpdateFilterTables()
             'Unprotect the worksheet
             With Wksh
 
-                .Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+                .UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
 
                 'Clean the filtered table list object
                 Set Lo = .ListObjects(1)
@@ -576,7 +576,7 @@ Sub ClearAllFilters()
         BeginWork xlsapp:=Application
 
         'Unprotect current worksheet
-        Wksh.Unprotect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+        Wksh.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
         'remove the filters
         Wksh.ListObjects(1).AutoFilter.ShowAllData
         ProtectSheet Wksh.Name

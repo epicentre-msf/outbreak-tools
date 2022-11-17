@@ -13,27 +13,11 @@ Option Explicit
 Private Sub Workbook_Open()
 
     Call ResetField
-    SheetMain.Range(C_sRngEdition).Value = TranslateMsg(C_sMsgSet)
+    SheetMain.Range("RNG_Edition").Value = TranslateMsg(C_sMsgSet)
 
-    SheetGeo.ListObjects(C_sTabadm1).DataBodyRange.Clear
-    SheetGeo.ListObjects(C_sTabAdm2).DataBodyRange.Clear
-    SheetGeo.ListObjects(C_sTabAdm3).DataBodyRange.Clear
-    SheetGeo.ListObjects(C_sTabAdm4).DataBodyRange.Clear
-    SheetGeo.ListObjects(C_sTabHF).DataBodyRange.Clear
-    SheetGeo.ListObjects(C_sTabNames).DataBodyRange.Clear
-
-    SheetLLTranslation.Range(C_sRngLLLanguage).Value = SheetMain.Range(C_sRngLLFormLang).Value 'check Language of linelist's forms
-
-    With SheetDesTranslation
-        .Range(.Cells(.Range("T_Lst_Lang").row, .Range("T_Lst_Lang").Column), _
-               .Cells(.Range("T_Lst_Lang").row, .Range("T_Lst_Lang").End(xlToRight).Column)).ClearContents
-    End With
+    SheetDesTranslation.Range("LangDictList").ClearContents
 
 End Sub
-
-
-
-
 
 
 

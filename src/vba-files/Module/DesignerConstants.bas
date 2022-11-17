@@ -42,7 +42,6 @@ Public Const C_sClaBA                   As String = "BetterArray"
 'Ranges in the main sheet of the designer
 
 Public Const C_sRngPathDic               As String = "RNG_PathDico" 'Range with path to the dictionary
-Public Const C_sRngEdition               As String = "RNG_Edition" 'Range for messages and editions
 Public Const C_sRngLLDir                 As String = "RNG_LLDir" 'Range for the linelist Dir (where to save the linelist)
 Public Const C_sRngLLName                As String = "RNG_LLName" 'Range for the linelist name in the designer
 Public Const C_sRngLangDes               As String = "RNG_LangDesigner" 'Range for the language of the designer

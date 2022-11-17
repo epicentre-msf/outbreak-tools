@@ -257,14 +257,14 @@ FormulaIsNotValid:
 End Property
 
 'List of formulas
-Public Property Get Varlists(Optional ByVal formulaType As String = "analysis") As BetterArray
+Public Property Get varlists(Optional ByVal formulaType As String = "analysis") As BetterArray
     Dim varTable As BetterArray
     Set varTable = New BetterArray
     varTable.LowerBound = 1
     If valid(formulaType) Then
         Set varTable = this.formulavariables.Clone()
     End If
-    Set Varlists = varTable.Clone()
+    Set varlists = varTable.Clone()
 End Property
 
 'Parse the formula for linelist
@@ -408,7 +408,7 @@ End Function
 
 'Interfaces
 Public Property Get IFormulas_Varlists() As BetterArray
-    Set IFormulas_Varlists = Varlists()
+    Set IFormulas_Varlists = varlists()
 End Property
 
 Public Property Get IFormulas_Valid(Optional ByVal formulaType As String = "analysis") As Boolean

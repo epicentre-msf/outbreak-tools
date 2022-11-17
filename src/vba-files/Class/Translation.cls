@@ -104,8 +104,8 @@ Private Function ValueIndex(ByVal text As String) As Long
 
     If ValueExists(text) Then
         Set keyRng = Table.ListColumns(1).Range
-        startRow = keyRng.row
-        index = keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True).row - startRow + 1
+        startRow = keyRng.Row
+        index = keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True).Row - startRow + 1
     Else
         index = -1
     End If
@@ -157,11 +157,11 @@ End Function
 'Translate a Range
 Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
     Dim counter As Long
-    Dim endRow As Long
+    Dim EndRow As Long
   
-    endRow = colRng.Rows.Count
+    EndRow = colRng.Rows.Count
     'The range should be a column range, not a row range.
-    For counter = 1 To endRow
+    For counter = 1 To EndRow
         colRng.Cells(counter, 1).Value = TranslatedValue(colRng.Cells(counter, 1).Value, containsFormula:=containsFormula)
     Next
 End Sub

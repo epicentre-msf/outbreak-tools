@@ -16,3 +16,11 @@ Attribute VB_Exposed = False
 Option Explicit
 
 'Exposed methods
+Public Property Get HasNext() As Boolean: End Property
+Public Property Get NextSubSection() As IVListSubSections: End Property
+
+'Build the sub sections
+Public Sub Build():  End Sub
+  
+'Format the subSection
+Public Sub Format(): End Sub

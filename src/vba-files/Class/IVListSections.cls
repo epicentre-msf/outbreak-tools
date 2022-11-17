@@ -8,11 +8,19 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
-
-'@Folder("Dictionary")
-'@ModuleDescription("Interface of ")
+'@Folder("Linelist")
+'@ModuleDescription("Interface of vertical List Sections")
 '@IgnoreModule
 
 Option Explicit
 
 'Exposed methods
+Public Property Get HasNext() As Boolean: End Property
+
+Public Property Get NextSection() As IVListSections: End Property
+
+'Build the sub sections
+Public Sub Build(): End Sub
+
+'Format the subSection
+Public Sub Format(): End Sub

@@ -183,51 +183,20 @@ End Sub
 'Import languages for linelist translation
 Sub ImportLang()
     'Import languages from the setup file and sheets Translation and Analysis
-
     Dim Wkb As Workbook
-    Dim sAdr1 As String
-    Dim sAdr2 As String
-    Dim src As Range
-    Dim dest As Range
-
-    With SheetDesTranslation
-        .Range(.Cells(.Range("T_Lst_Lang").row, .Range("T_Lst_Lang").Column), _
-               .Cells(.Range("T_Lst_Lang").row, .Range("T_Lst_Lang").End(xlToRight).Column)).ClearContents
-    End With
-
-    SheetSetTranslation.Cells.Clear
-
+    Dim src As BetterArray
     BeginWork xlsapp:=Application
-    Application.EnableEvents = False
-    Application.EnableAnimations = False
 
-    Set Wkb = Workbooks.Open(FileName:=SheetMain.Range(C_sRngPathDic).Value)
-
-    SheetSetTranslation.Cells.Clear
-
-    'Copy the languages
-    Set src = Wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).Range
-    With SheetSetTranslation
-        Set dest = .Range(.Cells(C_eStartLinesTransdata, 1), .Cells(C_eStartLinesTransdata + src.Rows.Count, src.Columns.Count))
-        dest.Value = src.Value
-        .ListObjects.Add(xlSrcRange, dest, , xlYes).Name = C_sTabTranslation
-    End With
-    Set src = Wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).HeaderRowRange
-    src.Copy SheetDesTranslation.Range("T_Lst_Lang")
-
-    sAdr1 = SheetDesTranslation.Range("T_Lst_Lang").Address
-    sAdr2 = SheetDesTranslation.Range("T_Lst_Lang").End(xlToRight).Address
-
+    Set Wkb = Workbooks.Open(FileName:=SheetMain.Range("RNG_PathDico").Value)
+    Set src = New BetterArray
+    src.FromExcelRange Wkb.Worksheets(C_sParamSheetTranslation).ListObjects(C_sTabTranslation).HeaderRowRange, _
+                        DetectLastRow:=False
+   
+    src.ToExcelRange SheetDesTranslation.Range("LangDictList").Cells(1, 1)
     Wkb.Close
 
-    'Set Validation, 1 is Error
-    Call Helpers.SetValidation(SheetMain.Range(C_sRngLangSetup), "='" & SheetDesTranslation.Name & "'!" & sAdr1 & ":" & sAdr2, 1)
-
-
-    SheetMain.Range(C_sRngLangSetup).Value = SheetSetTranslation.Cells(C_eStartLinesTransdata, 1).Value
+    SheetMain.Range("RNG_LangSetup").Value = SheetSetTranslation.Cells(C_eStartLinesTransdata, 1).Value
     EndWork xlsapp:=Application
-    Application.EnableEvents = True
-    Application.EnableAnimations = True
 End Sub
 
 '--------------- Writing functions to translate the dictionary and other parts -----------------------------------------
@@ -244,7 +213,7 @@ Function GetTranslatedValue(ByVal sText As String) As String
     Dim iRow As Integer
 
     'search in linelist language
-    sLangSetup = SheetMain.Range(C_sRngLangSetup).Value
+    sLangSetup = SheetMain.Range("RNG_LangSetup").Value
     iColLang = IIf(sLangSetup <> "", SheetSetTranslation.Rows(C_eStartLinesTransdata).Find(What:=sLangSetup, LookAt:=xlWhole).Column, C_eStartcolumntransdata)
 
     With DesignerWorkbook.Worksheets(C_sParamSheetTranslation)
@@ -253,7 +222,7 @@ Function GetTranslatedValue(ByVal sText As String) As String
     End With
 
     On Error Resume Next
-    iRow = rngTrans.Find(What:=Application.WorksheetFunction.Trim(sText), LookAt:=xlWhole).row
+    iRow = rngTrans.Find(What:=Application.WorksheetFunction.Trim(sText), LookAt:=xlWhole).Row
     GetTranslatedValue = SheetSetTranslation.Cells(iRow, iColLang).Value
     On Error GoTo 0
 
@@ -351,7 +320,7 @@ Sub TranslateDictionary()
     Set DictHeaders = New BetterArray
     Set DictHeaders = GetHeaders(DesignerWorkbook, C_sParamSheetDict, 1)
 
-    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetDict).Cells(Rows.Count, 1).End(xlUp).row
+    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetDict).Cells(Rows.Count, 1).End(xlUp).Row
 
     'Translate different columns
 
@@ -390,7 +359,7 @@ Sub TranslateChoices()
     Dim iCol As Integer
     Dim iLastRow As Long
 
-    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetChoices).Cells(Rows.Count, 1).End(xlUp).row
+    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetChoices).Cells(Rows.Count, 1).End(xlUp).Row
 
     Set ChoiceHeaders = New BetterArray
     Set ChoiceHeaders = GetHeaders(DesignerWorkbook, C_sParamSheetChoices, 1)
@@ -410,7 +379,7 @@ End Sub
 Sub TranslateExports()
     Dim iLastRow As Long
 
-    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetExport).Cells(Rows.Count, 1).End(xlUp).row
+    iLastRow = DesignerWorkbook.Worksheets(C_sParamSheetExport).Cells(Rows.Count, 1).End(xlUp).Row
 
     'Second column is for label button (I hope)
     Call TranslateColumn(2, C_sParamSheetExport, iLastRow)
@@ -434,7 +403,7 @@ Sub TranslateAnalysis()
     'GLOBAL SUMMARY ============================================================
 
     With Wksh.ListObjects(C_sTabGS)
-        iStartLine = .Range.row
+        iStartLine = .Range.Row
         iLast = .DataBodyRange.Rows.Count + iStartLine
         iStartColumn = .Range.Column
         Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine, iStartColumn)
@@ -453,7 +422,7 @@ Sub TranslateAnalysis()
 
     'UNIVARIATE ANALYSIS =======================================================
     With Wksh.ListObjects(C_sTabUA)
-        iStartLine = .Range.row
+        iStartLine = .Range.Row
         iLast = .DataBodyRange.Rows.Count + iStartLine
         iStartColumn = .Range.Column
         Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine, iStartColumn)
@@ -476,7 +445,7 @@ Sub TranslateAnalysis()
 
     'BIVARIATE ANALYSIS ========================================================
     With Wksh.ListObjects(C_sTabBA)
-        iStartLine = .Range.row
+        iStartLine = .Range.Row
         iLast = .DataBodyRange.Rows.Count + iStartLine
         iStartColumn = .Range.Column
         Set Headers = GetHeaders(DesignerWorkbook, C_sParamSheetAnalysis, iStartLine, iStartColumn)

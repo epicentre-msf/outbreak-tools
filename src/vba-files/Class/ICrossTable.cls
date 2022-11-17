@@ -37,7 +37,7 @@ Public Property Get Wksh() As Worksheet: End Property
 Public Property Get NumberOfColumns() As Long: End Property
 Public Property Get EndColumn() As Long: End Property
 
-Public Property Get endRow() As Long: End Property
+Public Property Get EndRow() As Long: End Property
 
 
 'Exposed methods
@@ -51,5 +51,6 @@ Public Sub NameRanges(): End Sub
 Public Sub Build(): End Sub
 
 Public Sub Format(ByVal DesignFormat As ILLFormat): End Sub
+
 
 

@@ -26,10 +26,7 @@ Public Enum TemporarySheetTypes
 End Enum
 
 Private Type TLinelistSpecs
-    'specs workbook
     specswkb As Workbook
-    'output workbook
-    outwkb As Workbook
 End Type
 
 Private this As TLinelistSpecs
@@ -45,148 +42,23 @@ Private Const ANALYSISSPECSSHEET        As String = "Analysis"
 Private Const EXPORTSHEET               As String = "Exports"
 Private Const FORMATSHEET               As String = "LinelistStyle"
 
-Private Const FORMSLANGUAGECODERANGE    As String = "RNG_LLLanguageCode"
-Private Const DICTLANGUAGECODERANGE     As String = "RNG_DictionaryLanguage"
+'Name of the range for design name in the design sheet
 Private Const designType                As String = "DESIGNTYPE"
 
-
-'Tables
-Private Const TABADM1                   As String = "T_ADM1" 'ADM1 Table name
-Private Const TABADM2                   As String = "T_ADM2" 'ADM2 Table name
-Private Const TABADM3                   As String = "T_ADM3" 'ADM3 Table name
-Private Const TABADM4                   As String = "T_ADM4" 'ADM4 Table name
-Private Const TABHF                     As String = "T_HF"   'Health Facility Table
-Private Const TABNAMES                  As String = "T_NAMES"
-Private Const TABHISTOGEO               As String = "T_HistoGeo" 'Historic data for the geo
-Private Const TABHISTOHF                As String = "T_HistoHF"  'Historic data for the Health Facility
-Private Const TABGEOMETADATA            As String = "T_Metadata"
-
-'Tables for traductions
-Private Const TABTRADLLMSG              As String = "T_TradLLMsg"
-Private Const TABTRADLLSHAPES           As String = "T_TradLLShapes"
-Private Const TABTRADLLFORMS            As String = "T_TradLLForms"
-Private Const TABLLLANG                 As String = "T_LLLang"
-Private Const TABTRANSLATION            As String = "Tab_Translations"
-
-'Formulas and functions tables
-Private Const TABEXCELFUNCTIONS         As String = "T_XlsFonctions" 'Excel functions to keep in formulas
-Private Const TABASCII                  As String = "T_ascii" 'Ascii characters table
-
 Public Function Create(ByVal specswkb As Workbook) As ILinelistSpecs
-    Dim counter As Long
+
     Dim sheetName As String
-
     If specswkb Is Nothing Then ThrowErrorUnableInstanciate "specification workbook does not exists"
-
     'Check worksheets requirements
     CheckSheetsRequirements specswkb
-    'Check requirements for Listobject tables
-    CheckTablesRequirements specswkb
-
-    'Check Ranges requirements
-    CheckRangesRequirements specswkb
-
     'At this step everything needed of creating the Linelist exists
     With New LinelistSpecs
         Set .Wkb = specswkb
         Set Create = .Self
     End With
+
 End Function
 
-'Initialize the array of sheets
-Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
-    Dim counter As Long
-    Dim sheetName As String
-
-    Dim sheetsArray As BetterArray
-    Set sheetsArray = New BetterArray
-    sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
-                     PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
-                     EXPORTSHEET, FORMATSHEET
-
-    For counter = sheetsArray.LowerBound To sheetsArray.UpperBound
-        sheetName = sheetsArray.Item(counter)
-        If Not sheetExists(specswkb, sheetName) Then ThrowErrorUnableInstanciate " Worksheet " & sheetName & " Not found!"
-    Next
-End Sub
-
-Private Sub CheckTablesRequirements(ByVal specswkb As Workbook)
-    Dim counter As Long
-    Dim sh As Worksheet
-    Dim loArray As BetterArray
-    Set sh = specswkb.Worksheets(HLISTTRANSLATIONSHEET)
-    Set loArray = New BetterArray
-
-    'Forms translation
-    loArray.Push TABTRADLLMSG, TABTRADLLSHAPES, TABTRADLLFORMS, TABLLLANG
-    LoExists sh, loArray
-
-    'Dictionary translation
-    loArray.Clear
-    loArray.Push TABTRANSLATION
-    Set sh = specswkb.Worksheets(DICTTRANSLATIONSHEET)
-    LoExists sh, loArray
-    
-    'Geobase
-    loArray.Clear
-    Set sh = specswkb.Worksheets(GEOSHEET)
-    loArray.Push TABADM1, TABADM2, TABADM3, TABADM4, TABHF, TABNAMES, _
-                 TABHISTOGEO, TABHISTOHF, TABGEOMETADATA
-
-    LoExists sh, loArray
-
-    'Formulas
-    loArray.Clear
-    Set sh = specswkb.Worksheets(FORMULASHEET)
-    loArray.Push TABEXCELFUNCTIONS, TABASCII
-    LoExists sh, loArray
-End Sub
-
-Private Sub CheckRangesRequirements(ByVal specswkb As Workbook)
-    Dim sh As Worksheet
-
-    'Ranges in the LinelistTranslation sheet
-    Set sh = specswkb.Worksheets(HLISTTRANSLATIONSHEET)
-    RangeExists sh, DICTLANGUAGECODERANGE
-    RangeExists sh, FORMSLANGUAGECODERANGE
-    
-    Set sh = specswkb.Worksheets(FORMATSHEET)
-    RangeExists sh, designType
-End Sub
-
-'Check if a sheet Exists
-Private Function sheetExists(ByVal specswkb As Workbook, ByVal sheetName As String) As Boolean
-    Dim sh As Worksheet                          'Just try to set the workbook if it fails it is closed
-    On Error Resume Next
-    Set sh = specswkb.Worksheets(sheetName)
-    sheetExists = (Not sh Is Nothing)
-    On Error GoTo 0
-End Function
-
-Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
-    Dim rng As Range
-    On Error Resume Next
-    Set rng = sh.Range(rngName)
-    If rng Is Nothing Then
-        ThrowErrorUnableInstanciate "Range " & rngName & " does not exists in worksheet " & sh.Name
-    End If
-    On Error GoTo 0
-End Sub
-
-Private Sub LoExists(ByVal sh As Worksheet, ByVal loNames As BetterArray)
-    Dim Lo As ListObject
-    Dim counter As Long
-    Dim lName As String
-    For counter = loNames.LowerBound To loNames.UpperBound
-        lName = loNames.Item(counter)
-        On Error Resume Next
-        Set Lo = sh.ListObjects(loNames)
-        If Lo Is Nothing Then
-            ThrowErrorUnableInstanciate "Table " & lName & " does not exists in worksheet" & sh.Name
-        End If
-        On Error GoTo 0
-    Next
-End Sub
 
 Public Property Get Wkb() As Workbook
     Set Wkb = this.specswkb
@@ -201,6 +73,7 @@ Public Property Get Self() As ILinelistSpecs
 End Property
 
 Public Property Get Dictionary() As ILLdictionary
+
     'Create the dictionary
     Dim dict As ILLdictionary
     Dim sh As Worksheet
@@ -212,6 +85,7 @@ Public Property Get Dictionary() As ILLdictionary
 End Property
 
 Public Property Get Choices() As ILLchoice
+
     Dim choi As ILLchoice
     Dim sh As Worksheet
 
@@ -219,57 +93,38 @@ Public Property Get Choices() As ILLchoice
 
     Set choi = LLchoice.Create(sh, 1, 1)
     Set Choices = choi
+
 End Property
 
-Private Property Get FormLang() As String
-    Dim sh As Worksheet
-    Set sh = Wkb.Worksheets(HLISTTRANSLATIONSHEET)
-    FormLang = sh.Range(FORMSLANGUAGECODERANGE).Value
+Public Property Get Trads() As ILLTranslations
+    Dim trans As ILLTranslations
+    Dim shtransLL As Worksheet
+    Dim shtransDict As Worksheet
+
+    Set shtransLL = Wkb.Worksheets(HLISTTRANSLATIONSHEET)
+    Set shtransDict = Wkb.Worksheets(DICTTRANSLATIONSHEET)
+
+    Set trans = LLTranslations.Create(shtransLL, shtransDict)
+    Set Trads = trans
 End Property
 
-Private Property Get DictLang() As String
+Public Property Get geoObject() As ILLGeo
     Dim sh As Worksheet
-    Set sh = Wkb.Worksheets(HLISTTRANSLATIONSHEET)
-    DictLang = sh.Range(DICTLANGUAGECODERANGE).Value
-End Property
-
-'Translation Object for Dictionary, choices, analysis Translations
-Public Property Get DictTransObject() As ITranslation
-    Dim sh As Worksheet
-    Dim Lo As ListObject
-    Dim lang As String
-    
-    Set sh = Wkb.Worksheets(DICTTRANSLATIONSHEET)
-    Set Lo = sh.ListObjects(1)
-    lang = DictLang()
-
-    Set DictTransObject = Translation.Create(Lo, lang)
+    Dim geo As ILLGeo
+    Set sh = Wkb.Worksheets(GEOSHEET)
+    Set geo = LLGeo.Create(sh)
+    Set geoObject = geo
 End Property
 
 'Test if the translation form exists
-Public Property Get TranslationObject(Optional ByVal loName As String = TABTRADLLMSG) As ITranslation
-
-    Dim sh As Worksheet
-    Dim Lo As ListObject
-    Dim lang As String
-
-    Set sh = Wkb.Worksheets(HLISTTRANSLATIONSHEET)
-    Set Lo = sh.ListObjects(loName)
-    lang = FormLang()
-
-    Set TranslationObject = Translation.Create(Lo, lang)
+Public Property Get TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation
+    Set TransObject = Trads.TransObject(trans)
 End Property
 
-Public Property Get FormDataObject() As IFormulaData
+Public Property Get FormulaDataObject() As IFormulaData
     Dim sh As Worksheet
-    Dim excelLo As ListObject                    'Excel Functions listObject
-    Dim charLo As ListObject                     'special characters listObject
-
     Set sh = Wkb.Worksheets(FORMULASHEET)
-    Set excelLo = sh.ListObjects(TABEXCELFUNCTIONS)
-    Set charLo = sh.ListObjects(TABASCII)
-
-    Set FormDataObject = FormulaData.Create(sh, excelLo, charLo)
+    Set FormulaDataObject = FormulaData.Create(sh)
 End Property
 
 Public Property Get DesignFormat() As ILLFormat
@@ -332,25 +187,27 @@ Private Sub Prepare()
     Const CATEGORYPREFIX As String = "__case_when_"
     Dim PreservedSheetNames As BetterArray
     Dim outwkb As Workbook
-    
+
     Dim dict As ILLdictionary
     Dim choi As ILLchoice
     Dim vars As ILLVariables
-    Dim trans As ITranslation
-    Dim dicttrans As ITranslation
+    Dim geo As ILLGeo 'Geo Object to add admin names in the preparation steps of the dictionary
+    Dim dictTrads As ITranslation
+    Dim msgTrads As ITranslation 'Translations of messages object used in preserve sheet Names
     Dim counter As Long
-    
+
     Dim casewhenVars As BetterArray
     Dim casewhenObject As ICaseWhen
     Dim casewhenVariableName As String
     Dim casewhenFormula As String
-    
-    
+
+
     Set dict = Dictionary()
     Set choi = Choices()
-    Set trans = FormTransObject()
-    Set dicttrans = DictTransObject()
-    
+    Set dictTrads = TransObject(TranslationOfDictionary)
+    Set msgTrads = TransObject()
+    Set geo = geoObject()
+
     Set PreservedSheetNames = New BetterArray
     PreservedSheetNames.LowerBound = 1
 
@@ -361,17 +218,17 @@ Private Sub Prepare()
                              EXPORTSHEET, TemporarySheetName(TemporarySingle), TemporarySheetName(TemporarySheetList), _
                              TemporarySheetName(TemporarySheetDebug), TemporarySheetName(TemporarySheetMetadata), _
                              TemporarySheetName(TemporarySheetAnalysis), TemporarySheetName(TemporarySheetImport), _
-                             trans.TranslatedValue("LLSHEET_Admin"), trans.TranslatedValue("LLSHEET_Analysis"), _
-                             trans.TranslatedValue("LLSHEET_SpatialAnalysis"), trans.TranslatedValue("LLSHEET_TemporalAnalysis")
-    
+                             msgTrads.TranslatedValue("LLSHEET_Admin"), msgTrads.TranslatedValue("LLSHEET_Analysis"), _
+                             msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), msgTrads.TranslatedValue("LLSHEET_TemporalAnalysis")
+
     'Translate the dictionary
-    dict.Translate dicttrans
-    
+    dict.Translate dictTrads
+
     'Prepare the dictionary
-    dict.Prepare PreservedSheetNames, tablePrefix:="table"
+    dict.Prepare PreservedSheetNames, geo, tablePrefix:="table"
     'Need to prepare the dictionary before loading the variable class
     Set vars = LLVariables.Create(dict)
- 
+
     'Add case_when to choices
     Set casewhenVars = dict.data.FilterData(varName:="control", criteriaName:="case_when", returnedColumnName:="variable name")
     For counter = casewhenVars.LowerBound To casewhenVars.UpperBound
@@ -386,18 +243,54 @@ Private Sub Prepare()
     Next
 
     'Translate the choices
-    choi.Translate dicttrans
-    
+    choi.Translate dictTrads
+
     'Sort the exports
     choi.Sort
 End Sub
 
+'Errors ----------------------------------
 
-'Errors
+'Initialize the array of sheets
+Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
+    Dim counter As Long
+    Dim sheetName As String
+
+    Dim sheetsArray As BetterArray
+    Set sheetsArray = New BetterArray
+    sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
+                     PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
+                     EXPORTSHEET, FORMATSHEET
+
+    For counter = sheetsArray.LowerBound To sheetsArray.UpperBound
+        sheetName = sheetsArray.Item(counter)
+        If Not sheetExists(specswkb, sheetName) Then ThrowErrorUnableInstanciate " Worksheet " & sheetName & " Not found!"
+    Next
+End Sub
+
+
+'Check if a sheet Exists
+Private Function sheetExists(ByVal specswkb As Workbook, ByVal sheetName As String) As Boolean
+    Dim sh As Worksheet                          'Just try to set the workbook if it fails it is closed
+    On Error Resume Next
+    Set sh = specswkb.Worksheets(sheetName)
+    sheetExists = (Not sh Is Nothing)
+    On Error GoTo 0
+End Function
+
+Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
+    Dim rng As Range
+    On Error Resume Next
+    Set rng = sh.Range(rngName)
+    If rng Is Nothing Then
+        ThrowErrorUnableInstanciate "Range " & rngName & " does not exists in worksheet " & sh.Name
+    End If
+    On Error GoTo 0
+End Sub
+
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
 End Sub
-
 
 Private Sub ThrowError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
@@ -421,21 +314,14 @@ Public Sub ILinelistSpecs_Prepare()
     Prepare
 End Sub
 
-Public Property Get ILinelistSpecs_TransObject() As ITranslation
-    Set ILinelistSpecs_TransObject = TranslationObject(TABTRADLLMSG)
+Public Property Get ILinelistSpecs_TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation
+    Set ILinelistSpecs_TransObject = TransObject(trans)
 End Property
 
-Public Property Get ILinelistSpecs_ShapesTransObject() As ITranslation
-    Set ILinelistSpecs_ShapesTransObject = TranslationObject(TABTRADLLSHAPES)
-End Property
 
-Public Property Get ILinelistSpecs_UserFormsTransObject() As ITranslation
-    Set ILinelistSpecs_UserFormsTransObject = TranslationObject(TABTRADLLFORMS)
-End Property
-    
 'Formula data object
-Public Property Get ILinelistSpecs_FormDataObject() As IFormulaData
-    Set ILinelistSpecs_FormDataObject = FormDataObject()
+Public Property Get ILinelistSpecs_FormulaDataObject() As IFormulaData
+    Set ILinelistSpecs_FormulaDataObject = FormulaDataObject()
 End Property
 
 Public Property Get ILinelistSpecs_TemporarysheetName(ByVal scope As TemporarySheetTypes) As String

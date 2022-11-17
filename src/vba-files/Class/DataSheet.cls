@@ -78,7 +78,7 @@ End Property
 'End row and columns of the dictionary
 Private Property Get DataEndRow() As Long
     With Wksh
-        DataEndRow = .Cells(.Rows.Count, StartColumn).End(xlUp).row
+        DataEndRow = .Cells(.Rows.Count, StartColumn).End(xlUp).Row
     End With
 End Property
 
@@ -171,7 +171,7 @@ Private Function FilterData(ByVal varName As String, _
     Dim returnedData As BetterArray
     Dim dataWksh As Worksheet
     Dim endCol As Long
-    Dim endRow As Long
+    Dim EndRow As Long
     Dim retEndCol As Long
 
     Set returnedData = New BetterArray
@@ -180,7 +180,7 @@ Private Function FilterData(ByVal varName As String, _
     Set dataRng = DataRange(includeHeaders:=True) 'Plage of the dictionary data
     Set dataWksh = Wksh()
     endCol = DataEndColumn()                     'End column and rows of the dictionary
-    endRow = DataEndRow()
+    EndRow = DataEndRow()
 
     startRetRow = IIf(includeHeaders, startRow, startRow + 1)
 
@@ -200,7 +200,7 @@ Private Function FilterData(ByVal varName As String, _
         End With
 
         On Error Resume Next
-        Set returnedRng = .Range(.Cells(startRetRow, startRetColIndex), .Cells(endRow, endRetColIndex)).SpecialCells(xlCellTypeVisible)
+        Set returnedRng = .Range(.Cells(startRetRow, startRetColIndex), .Cells(EndRow, endRetColIndex)).SpecialCells(xlCellTypeVisible)
         On Error GoTo 0
 
         .AutoFilter.ShowAllData
@@ -209,12 +209,12 @@ Private Function FilterData(ByVal varName As String, _
             returnedRng.Copy .Cells(startRow, endCol + 2)
 
             'end row of data to return
-            endRow = startRow + returnedRng.Cells.Count - 1 'cells.Count gives the number of cells, even in non contiguous ranges
+            EndRow = startRow + returnedRng.Cells.Count - 1 'cells.Count gives the number of cells, even in non contiguous ranges
             
             retEndCol = endCol + 2 + returnedRng.Columns.Count - 1
             
             'return column should be greather than endCol + 2. If it is not the case, there are empty lines causing that
-            Set returnedRng = .Range(.Cells(startRow, endCol + 2), .Cells(endRow, retEndCol))
+            Set returnedRng = .Range(.Cells(startRow, endCol + 2), .Cells(EndRow, retEndCol))
             
             returnedData.FromExcelRange returnedRng, DetectLastRow:=False, _
                                         DetectLastColumn:=False
@@ -237,7 +237,7 @@ Private Function FiltersData(ByVal varData As BetterArray, _
     Dim returnedData As BetterArray
     Dim counter As Long
     Dim col As Long
-    Dim endRow As Long
+    Dim EndRow As Long
     Dim endCol As Long
     Dim retEndRow As Long
     Dim retEndCol As Long
@@ -258,7 +258,7 @@ Private Function FiltersData(ByVal varData As BetterArray, _
     With dataWksh
 
         If Not .AutoFilter Is Nothing Then .AutoFilter.ShowAllData
-        endRow = DataEndRow()
+        EndRow = DataEndRow()
         endCol = DataEndColumn()
 
         With dataRng
@@ -271,7 +271,7 @@ Private Function FiltersData(ByVal varData As BetterArray, _
             returnedColumnIndex = ColumnIndex(returnedColumnsData.Item(counter), shouldExist:=True)
 
             On Error Resume Next
-            Set returnedRng = .Range(.Cells(startRow + 1, returnedColumnIndex), .Cells(endRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
+            Set returnedRng = .Range(.Cells(startRow + 1, returnedColumnIndex), .Cells(EndRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
             On Error GoTo 0
 
             If Not returnedRng Is Nothing Then returnedRng.Copy .Cells(startRow, endCol + col)
@@ -281,7 +281,7 @@ Private Function FiltersData(ByVal varData As BetterArray, _
         .AutoFilter.ShowAllData
 
         'end row and end columns of data to return
-        retEndRow = .Cells(.Rows.Count, endCol + 2).End(xlUp).row
+        retEndRow = .Cells(.Rows.Count, endCol + 2).End(xlUp).Row
         retEndCol = .Cells(startRow, .Columns.Count).End(xlToLeft).Column
 
         If Not IsEmpty(.Cells(startRow, endCol + 2)) Then

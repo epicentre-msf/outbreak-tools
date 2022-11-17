@@ -374,7 +374,7 @@ Sub Export(iTypeExport As Byte)
 
         Select Case ClearString(ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).Value)
         Case C_sYes
-            Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value, _
+            Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, PassWord:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value, _
         ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
             MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value
         Case C_sNo
@@ -382,7 +382,7 @@ Sub Export(iTypeExport As Byte)
             Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
             MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_NoPassword")
         Case Else
-            Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value, _
+            Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, PassWord:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value, _
         ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
             MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value
         End Select
