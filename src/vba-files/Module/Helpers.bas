@@ -500,13 +500,13 @@ End Function
 
 'Get the data from one sheet starting from one line
 Public Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Long, Optional EndColumn As Long = 0) As BetterArray
-    Dim data As BetterArray
+    Dim Data As BetterArray
     Dim rng As Range
 
     Dim iLastRow As Long
     Dim iLastCol As Long
-    Set data = New BetterArray
-    data.LowerBound = 1
+    Set Data = New BetterArray
+    Data.LowerBound = 1
 
     With Wkb.Worksheets(sSheetName)
 
@@ -516,9 +516,9 @@ Public Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Long
         Set rng = .Range(.Cells(StartLine, 1), .Cells(iLastRow, iLastCol))
     End With
 
-    data.FromExcelRange rng
+    Data.FromExcelRange rng
     'The output of the function is a variant
-    Set GetData = data
+    Set GetData = Data
 
 End Function
 
@@ -608,7 +608,7 @@ Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 
                               Optional returnIndex As Integer = -99, _
                               Optional bAllData As Boolean = True) As BetterArray
     Dim rng As Range
-    Dim data As BetterArray
+    Dim Data As BetterArray
     Dim breturnAllData As Boolean
 
     With Lo.Range
@@ -643,13 +643,13 @@ Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 
 
         rng.Copy Destination:=.Cells(1, 1)
 
-        Set data = New BetterArray
-        data.LowerBound = 1
+        Set Data = New BetterArray
+        Data.LowerBound = 1
 
         If breturnAllData Then
-            data.FromExcelRange .Cells(2, 1), DetectLastColumn:=True, DetectLastRow:=True
+            Data.FromExcelRange .Cells(2, 1), DetectLastColumn:=True, DetectLastRow:=True
         ElseIf returnIndex > 0 Then
-            data.FromExcelRange .Cells(2, returnIndex), DetectLastColumn:=False, DetectLastRow:=True
+            Data.FromExcelRange .Cells(2, returnIndex), DetectLastColumn:=False, DetectLastRow:=True
         End If
 
         .Cells.Clear
@@ -658,7 +658,7 @@ Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 
 
     Lo.AutoFilter.ShowAllData
 
-    Set FilterLoTable = data.Clone()
+    Set FilterLoTable = Data.Clone()
 End Function
 
 'Remove duplicates values from one range and excluding also null values

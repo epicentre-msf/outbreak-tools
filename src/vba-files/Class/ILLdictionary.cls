@@ -15,7 +15,7 @@ Attribute VB_Description = "Interface of Dictionary Class"
 Option Explicit
 
 'Exposed methods
-Public Property Get data() As IDataSheet: End Property
+Public Property Get Data() As IDataSheet: End Property
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
                               Optional ByVal includeHeaders As Boolean = False) As Range: End Property
 

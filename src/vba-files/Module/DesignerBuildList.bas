@@ -63,7 +63,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
 
 
     Set LinelistDictionary = LLdictionary.Create(ThisWorkbook.Worksheets("Dictionary"), 1, 1)
-    Set ChoiceAutoVarData = LinelistDictionary.data.FilterData("control", "list_auto", "control details")
+    Set ChoiceAutoVarData = LinelistDictionary.Data.FilterData("control", "list_auto", "control details")
 
     AddedLogo = False
 

@@ -23,9 +23,9 @@ End Type
 
 Private this As THListVars
 Private Const CLASSNAME As String = "HListVars"
-Private Const startRow As Long = 8               'Where the variables should start in the output worksheet
+Private Const StartRow As Long = 8               'Where the variables should start in the output worksheet
 
-Public Function Create(ByVal varName As String, ll As ILinelist) As IHListVars
+Public Function Create(ByVal varName As String, ByVal ll As ILinelist) As IHListVars
 
     CheckRequirements varName, ll
 
@@ -72,13 +72,13 @@ Public Property Get Wksh() As Worksheet
 
     Set ll = LinelistObject()
     sheetName = ValueOf("sheet name")
-    Set Wksh = ll.Wsh(sheetName)
+    Set Wksh = ll.Wksh(sheetName)
 End Property
 
 'The dropdown object as part of the linelist
 Public Property Get Dropdown() As IDropdownLists
     Dim ll As ILinelist
-    Dim drop As IDropdown
+    Dim drop As IDropdownLists
 
     Set ll = LinelistObject()
     Set drop = ll.Dropdown()
@@ -110,37 +110,35 @@ Private Property Get VarRange() As Range         'Where to input informations on
     Dim sh As Worksheet
     Dim rng As Range
 
-
     If this.inputRange Is Nothing Then
         Set sh = Wksh()
         With sh
             STARTCOL = ValueOf("column index")
-            Set VarRange = .Cells(startRow + 1, STARTCOL)
-            Set this.inputRange = .Cells(startRow + 1, STARTCOL)
+            Set this.inputRange = .Cells(StartRow + 1, STARTCOL)
         End With
-    Else
-        Set VarRange = this.inputRange
     End If
+
+    Set VarRange = this.inputRange
 End Property
 
 'Type
 Private Sub AddType()
-    Dim varType As String
+    Dim varTypes As String
     Dim cellRng As Range
     Dim nbDecimals As Integer
     Dim zerosDecimals As String
 
     Set cellRng = VarRange()
 
-    varType = LCase(Application.WorksheetFunction.Trim(ValueOf("type")))
+    varTypes = LCase(Application.WorksheetFunction.Trim(ValueOf("type")))
 
     'Number of decimals
-    If InStr(1, varType, "decimal") > 0 Then
-        nbDecimals = CInt(Replace(varType, "decimal", vbNullString))
+    If InStr(1, varTypes, "decimal") > 0 Then
+        nbDecimals = CInt(Replace(varTypes, "decimal", vbNullString))
         zerosDecimals = String(nbDecimals, "0")
     End If
 
-    Select Case varType
+    Select Case varTypes
     Case "text"
         cellRng.NumberFormat = "@"
     Case "integer"
@@ -157,11 +155,14 @@ End Sub
 'Failed formula
 Private Function FailedFormula(ByVal frmName As String) As Boolean
     Dim sh As Worksheet
+    Dim prevAlert As Boolean
 
     Set sh = Wksh()
     With sh
         .Cells(1, 1).Clear
         On Error GoTo Fail
+        prevAlert = Application.DisplayAlerts
+
         Application.DisplayAlerts = False
 
         'Test the formula on one cell
@@ -172,10 +173,10 @@ Private Function FailedFormula(ByVal frmName As String) As Boolean
         Exit Function
     End With
     
-    Application.DisplayAlerts = True
+    Application.DisplayAlerts = prevAlert
 Fail:
     FailedFormula = True
-    Application.DisplayAlerts = True
+    Application.DisplayAlerts = prevAlert
 End Function
 
 'Formula
@@ -245,7 +246,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     Dim design As ILLFormat
 
     Set cellRng = VarRange()
-    Set lData = linelistData
+    Set lData = linelistData()
     Set trans = lData.TransObject()
     Set design = lData.DesignFormat()
 
@@ -315,6 +316,9 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     If varStatus = "hidden" Then
         cellRng.EntireColumn.Hidden = True
     End If
+    
+    'The cell header itself
+    design.ApplyFormat cellRng.Offset(-2), scope:=HListSimpleHeaderCell
 End Sub
 
 'Add the choices
@@ -329,16 +333,16 @@ Private Sub AddChoices()
     Dim cat As BetterArray
     Dim drop As IDropdownLists
     Dim cellRng As Range
+    
+    varControl = ValueOf("control")
+    If (varControl <> "choices") Then Exit Sub
 
     Set lData = linelistData()
     Set drop = Dropdown()
     Set cat = New BetterArray
 
     varName = ActualVariable()
-    varControl = ValueOf("control")
-
-    If (varControl <> "choices") Then Exit Sub
-
+    
     Set cat = lData.Categories(varName)
     Set cellRng = VarRange()
     

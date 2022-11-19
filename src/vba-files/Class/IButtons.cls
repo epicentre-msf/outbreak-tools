@@ -15,6 +15,12 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
+Public Enum ButtonScope
+  ButtonScopeLarge = 1
+  ButtonScopeSmall = 2
+  ButtonScopeGeo = 3
+End Enum
+
 'Exposed methods
 Public Sub Add(Optional ByVal actionCommand As String = vbNullString): End Sub
 Public Sub Format(design As ILLFormat): End Sub

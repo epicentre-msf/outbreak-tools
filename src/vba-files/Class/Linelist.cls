@@ -17,7 +17,8 @@ Option Explicit
 Implements ILinelist
 Private Type TLinelist
     outwkb As Workbook
-    data As ILinelistSpecs
+    Data As ILinelistSpecs
+    firstSheet As String 'stock the name of the first sheet (depending on the os language)
 End Type
 
 Private this As TLinelist
@@ -38,26 +39,25 @@ Public Property Get Self() As ILinelist
 End Property
 
 Public Property Get linelistData() As ILinelistSpecs
-    Set linelistData = this.data
+    Set linelistData = this.Data
 End Property
 
 Public Property Set linelistData(ByVal lData As ILinelistSpecs)
-    Set this.data = lData
+    Set this.Data = lData
 End Property
 
 'Dictionary
-Public Property Get Dictionary()
-    Dim dict As ILLdictionary
+Public Property Get Dictionary() As ILLdictionary
     Dim lData As ILinelistSpecs
-
     Set lData = linelistData()
-    Set dict = lData.Dictionary()
+    Set Dictionary = lData.Dictionary()
 End Property
 
 'Workbook
 Public Property Get Wkb() As Workbook
     If this.outwkb Is Nothing Then
         Set this.outwkb = Workbooks.Add()
+        this.firstSheet = this.outwkb.Worksheets(1).Name
     End If
     Set Wkb = this.outwkb
 End Property
@@ -74,7 +74,7 @@ Private Function sheetExists(ByVal sheetName As String) As Boolean
     sheetExists = (Not sh Is Nothing)
 End Function
 
-'Get the dropdown object
+'Get the dropdown object for all the choices in a worksheet
 Private Property Get Dropdown() As IDropdownLists
     Dim sh As Worksheet
     Dim listSheetName As String
@@ -122,6 +122,7 @@ Private Sub Prepare()
     Dim counter As Long
     Dim sheetName As String
     Dim outwkb As Workbook
+    Dim prevAlert As Boolean
     
     Set outwkb = Wkb()
     
@@ -155,7 +156,10 @@ Private Sub Prepare()
     AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlsheetvisible
     
     'Delete the first worksheet with name sheet1
-     outwkb.Worksheets(1).Delete
+    prevAlert = Application.DisplayAlerts
+    Application.DisplayAlerts = False
+    outwkb.Worksheets(this.firstSheet).Delete
+    Application.DisplayAlerts = prevAlert
 End Sub
 
 Private Sub Build()
