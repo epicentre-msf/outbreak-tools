@@ -281,7 +281,7 @@ Private Function Value(ByVal colName As String) As String
     Value = retVal
 End Function
 
-Private Property Get data(ByVal rowOrCol As String) As BetterArray
+Private Property Get Data(ByVal rowOrCol As String) As BetterArray
     Dim varsCat As BetterArray
     Dim nameVar As String
     Dim vars As ILLVariables
@@ -294,7 +294,7 @@ Private Property Get data(ByVal rowOrCol As String) As BetterArray
     If vars.Contains(nameVar) Then
         Set varsCat = lData.Categories(nameVar)
     End If
-    Set data = varsCat.Clone()
+    Set Data = varsCat.Clone()
 End Property
 
 Private Property Get Previous() As ITablesSpecs
@@ -358,11 +358,11 @@ Public Property Get ITablesSpecs_TableType() As AnalysisTablesType
 End Property
 
 Public Property Get ITablesSpecs_RowCategories() As BetterArray
-    Set ITablesSpecs_RowCategories = data("row")
+    Set ITablesSpecs_RowCategories = Data("row")
 End Property
 
 Public Property Get ITablesSpecs_ColumnCategories() As BetterArray
-    Set ITablesSpecs_ColumnCategories = data("column")
+    Set ITablesSpecs_ColumnCategories = Data("column")
 End Property
 
 Public Property Get ITablesSpecs_Dictionary() As ILLdictionary

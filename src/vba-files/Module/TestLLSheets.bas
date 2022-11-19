@@ -41,9 +41,9 @@ End Sub
 '@TestMethod
 Private Sub TestSheetInit()
 
-    Assert.IsTrue (sheets.Dictionary.data.Wksh.Name = "Dictionary"), "Bad dictionary associated with the worksheet"
-    Assert.IsTrue (sheets.Dictionary.data.startRow = 1), "Start row of the dictionary associated with the sheets object is not correct"
-    Assert.IsTrue (sheets.Dictionary.data.StartColumn = 1), "End row of the dictionary associated with the sheets object is not correct"
+    Assert.IsTrue (sheets.Dictionary.Data.Wksh.Name = "Dictionary"), "Bad dictionary associated with the worksheet"
+    Assert.IsTrue (sheets.Dictionary.Data.StartRow = 1), "Start row of the dictionary associated with the sheets object is not correct"
+    Assert.IsTrue (sheets.Dictionary.Data.StartColumn = 1), "End row of the dictionary associated with the sheets object is not correct"
 
 End Sub
 
@@ -102,12 +102,12 @@ End Sub
 
 'Testing the sheet info
 '@TestMethod
-Private Sub TestSheetContainsListAuto()
+Private Sub TestSheetContainsControl()
     On Error GoTo Fail
 
     'Contains list auto
-    Assert.IsTrue sheets.ContainsListAuto("B-H2D"), "List auto not found in sheet"
-    Assert.IsFalse sheets.ContainsListAuto("A, B, C"), "List auto does not exists, but Test found one"
+    Assert.IsTrue sheets.ContainsControl("B-H2D"), "List auto not found in sheet"
+    Assert.IsFalse sheets.ContainsControl("A, B, C"), "List auto does not exists, but Test found one"
 
     Exit Sub
 Fail:

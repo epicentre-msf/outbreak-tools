@@ -36,9 +36,9 @@ End Sub
 
 '@TestMethod
 Private Sub TestObjectInit()
-    Assert.IsTrue (Dictionary.data.StartColumn = 1), "Start column changed"
-    Assert.IsTrue (Dictionary.data.startRow = 1), "Start line changed"
-    Assert.IsTrue (Dictionary.data.Wksh.Name = "TestDictionary"), "Dictionary name changed"
+    Assert.IsTrue (Dictionary.Data.StartColumn = 1), "Start column changed"
+    Assert.IsTrue (Dictionary.Data.StartRow = 1), "Start line changed"
+    Assert.IsTrue (Dictionary.Data.Wksh.Name = "TestDictionary"), "Dictionary name changed"
 End Sub
 
 '@TestMethod
@@ -85,7 +85,7 @@ Private Sub TestPreparation()
     Dim randRng As Range
     Dim endCol As Long
 
-    Set dictWksh = Dictionary.data.Wksh
+    Set dictWksh = Dictionary.Data.Wksh
 
     If Not Dictionary.Prepared Then
         With dictWksh

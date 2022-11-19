@@ -96,7 +96,7 @@ Public Property Get Choices() As ILLchoice
 
 End Property
 
-Public Property Get Trads() As ILLTranslations
+Public Property Get trads() As ILLTranslations
     Dim trans As ILLTranslations
     Dim shtransLL As Worksheet
     Dim shtransDict As Worksheet
@@ -105,7 +105,7 @@ Public Property Get Trads() As ILLTranslations
     Set shtransDict = Wkb.Worksheets(DICTTRANSLATIONSHEET)
 
     Set trans = LLTranslations.Create(shtransLL, shtransDict)
-    Set Trads = trans
+    Set trads = trans
 End Property
 
 Public Property Get geoObject() As ILLGeo
@@ -118,7 +118,7 @@ End Property
 
 'Test if the translation form exists
 Public Property Get TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation
-    Set TransObject = Trads.TransObject(trans)
+    Set TransObject = trads.TransObject(trans)
 End Property
 
 Public Property Get FormulaDataObject() As IFormulaData
@@ -230,7 +230,7 @@ Private Sub Prepare()
     Set vars = LLVariables.Create(dict)
 
     'Add case_when to choices
-    Set casewhenVars = dict.data.FilterData(varName:="control", criteriaName:="case_when", returnedColumnName:="variable name")
+    Set casewhenVars = dict.Data.FilterData(varName:="control", criteriaName:="case_when", returnedColumnName:="variable name")
     For counter = casewhenVars.LowerBound To casewhenVars.UpperBound
         casewhenVariableName = casewhenVars.Item(counter)
         casewhenFormula = vars.Value(varName:=casewhenVariableName, colName:="control details")
