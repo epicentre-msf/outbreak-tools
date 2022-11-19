@@ -211,11 +211,14 @@ Sub TestSections()
 
     Dim ll As ILinelist
     Dim lData As ILinelistSpecs
+    Dim horizSheet As IHlist
     
     Set lData = LinelistSpecs.Create(ThisWorkbook)
     lData.Prepare
     Set ll = Linelist.Create(lData)
     ll.Prepare
+    Set horizSheet = Hlist.Create("B-H2D", ll)
+    horizSheet.Build
 
 End Sub
 

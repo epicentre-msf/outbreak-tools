@@ -25,7 +25,7 @@ Private Type THListSubSections
 End Type
 
 Private this As THListSubSections
-Private Const SUBSECROW As Long = 7 'Row for the sub section
+Private Const SUBSECROW As Long = 6 'Row for the sub section
 Private Const CLASSNAME As String = "HListSubSections"
 
 Public Function Create(ByVal strt As Long, ll As ILinelist) As IHListSubSections
@@ -33,8 +33,8 @@ Public Function Create(ByVal strt As Long, ll As ILinelist) As IHListSubSections
   CheckRequirements strt, ll
 
   With New HListSubSections
-     .startRow = strt
-     .LinelistObject = ll
+     .StartRow = strt
+     Set .LinelistObject = ll
      Set Create = .Self()
   End With
 
@@ -44,12 +44,13 @@ Public Property Get Self() As IHListSubSections
   Set Self = Me
 End Property
 
-Public Property Get startRow() As Long 'Start Row of the subsection in the dictionary
-  startRow = this.strt
+Public Property Get StartRow() As Long 'Start Row of the subsection in the dictionary
+  StartRow = this.strt
 End Property
 
-Public Property Let startRow(ByVal strt As Long)
+Public Property Let StartRow(ByVal strt As Long)
   this.strt = strt
+  this.endrw = 0
 End Property
 
 Public Property Get EndRow() As Long 'End Row of the subsection in the dictionary (Not in the worksheet)
@@ -60,9 +61,10 @@ Public Property Get EndRow() As Long 'End Row of the subsection in the dictionar
   Dim sectionRng As Range
   Dim subSectionEnd As Boolean
   Dim subSectionName As String
+  Dim sectionName As String
 
-  If (IsMissing(this.endrw)) Then
-    rowNumber = startRow()
+  If (this.endrw = 0) Then
+    rowNumber = StartRow()
     Set dict = Dictionary()
     Set subSectionRng = dict.DataRange("sub section")
     Set sectionRng = dict.DataRange("main section")
@@ -103,7 +105,7 @@ Private Property Get ActualSection() As String
   Dim sectionRng As Range
   
   Set dict = Dictionary()
-  strt = startRow()
+  strt = StartRow()
   Set sectionRng = dict.DataRange("main section")
 
   ActualSection = sectionRng.Cells(strt, 1).Value
@@ -115,7 +117,7 @@ Private Property Get ActualSubSection() As String
   Dim subSectionRng As Range
 
   Set dict = Dictionary()
-  strt = startRow()
+  strt = StartRow()
   Set subSectionRng = dict.DataRange("sub section")
   ActualSubSection = subSectionRng.Cells(strt, 1).Value
 End Property
@@ -133,7 +135,7 @@ Private Property Get VariableLists() As BetterArray
     Set dict = Dictionary()
     Set varl = New BetterArray
     Set varRng = dict.DataRange("variable name")
-    strt = startRow()
+    strt = StartRow()
     endrw = EndRow()
 
     For counter = strt To endrw
@@ -151,12 +153,12 @@ Private Property Get HasNext() As Boolean
   Dim endrw As Long
   Dim dict As ILLdictionary
   Dim sectRng As Range
-  Dim sectName As Range
+  Dim sectName As String
   endrw = EndRow() + 1
   sectName = ActualSection()
   Set dict = Dictionary()
   Set sectRng = dict.DataRange("main section")
-  HasNext = (sectRng.Cells(endrw, 1).Value = sectName) And (endrw <= dict.data.EndRow())
+  HasNext = (sectRng.Cells(endrw, 1).Value = sectName) And (endrw <= dict.Data.DataEndRow())
 End Property
 
 Private Property Get NextSubSection() As IHListSubSections
@@ -185,7 +187,7 @@ Private Sub Build()
   For counter = varlists.LowerBound To varlists.UpperBound
     varName = varlists.Item(counter)
     Set vars = HListVars.Create(varName, ll)
-    vars.WriteInfo()
+    vars.WriteInfo
   Next
 End Sub
 
@@ -242,7 +244,7 @@ End Sub
 'requirements for creating an objec
 Private Sub CheckRequirements(ByVal strt As Long, ll As ILinelist)
   If ll Is Nothing Then ThrowError "Please provide a linelist object, no linelist object found"
-  If strt < 0 Or strt > ll.Dictionary.data.EndRow() Then ThrowError "Start row should be a positive integer less or equal than end row of the dictionary"
+  If strt < 0 Or strt > ll.Dictionary.Data.DataEndRow() Then ThrowError "Start row should be a positive integer less or equal than end row of the dictionary"
 End Sub
 
 Public Property Get IHListSubSections_HasNext() As Boolean

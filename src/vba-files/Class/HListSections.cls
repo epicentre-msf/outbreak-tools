@@ -24,29 +24,30 @@ End Type
 
 
 Private this As THListSections
-Private Const SECROW As Long = 6 'Row for the sub section
+Private Const SECROW As Long = 5 'Row for the sub section
 Private Const CLASSNAME As String = "HListSections"
 
 Public Function Create(ByVal strt As Long, ll As ILinelist) As IHListSections
   CheckRequirements strt, ll
-  With New HListSubSections
-     .startRow = strt
-     .LinelistObject = ll
+  With New HListSections
+     .StartRow = strt
+     Set .LinelistObject = ll
      Set Create = .Self()
   End With
 
 End Function
 
-Public Property Get Self() As IHListSubSections
+Public Property Get Self() As IHListSections
   Set Self = Me
 End Property
 
-Public Property Get startRow() As Long 'Start Row of the subsection in the dictionary
-  startRow = this.strt
+Public Property Get StartRow() As Long 'Start Row of the subsection in the dictionary
+  StartRow = this.strt
 End Property
 
-Public Property Let startRow(ByVal strt As Long)
+Public Property Let StartRow(ByVal strt As Long)
   this.strt = strt
+  this.endrw = 0
 End Property
 
 Public Property Get LinelistObject() As ILinelist
@@ -64,16 +65,16 @@ Public Property Get Dictionary() As ILLdictionary
   Set Dictionary = ll.Dictionary()
 End Property
 
-Private Property Get ActualSection() As String
+Private Property Get ActualSectionName() As String
   Dim dict As ILLdictionary
   Dim strt As Long
   Dim sectionRng As Range
   
   Set dict = Dictionary()
-  strt = startRow()
+  strt = StartRow()
   Set sectionRng = dict.DataRange("main section")
 
-  ActualSection = sectionRng.Cells(strt, 1).Value
+  ActualSectionName = sectionRng.Cells(strt, 1).Value
 End Property
 
 Private Property Get ActualSheetName() As String
@@ -82,7 +83,7 @@ Private Property Get ActualSheetName() As String
   Dim sheetRng As Range
   
   Set dict = Dictionary()
-  strt = startRow()
+  strt = StartRow()
   Set sheetRng = dict.DataRange("sheet name")
 
   ActualSheetName = sheetRng.Cells(strt, 1).Value
@@ -98,12 +99,12 @@ Public Property Get EndRow() As Long 'End Row of the subsection in the dictionar
   Dim sheetName As String
   Dim sectionEnd As Boolean
 
-  If (IsMissing(this.endrw)) Then
-    rowNumber = startRow()
+  If (this.endrw = 0) Then
+    rowNumber = StartRow()
     Set dict = Dictionary()
     Set sectionRng = dict.DataRange("main section")
     Set sheetRng = dict.DataRange("sheet name")
-    sectionName = ActualSection()
+    sectionName = ActualSectionName()
     sheetName = ActualSheetName()
     sectionEnd = False
 
@@ -129,7 +130,7 @@ Private Property Get HasNext() As Boolean
   Set dict = Dictionary()
   Set sheetRng = dict.DataRange("sheet name")
 
-  HasNext = (endrw <= dict.data.EndRow()) And (sheetRng.Cells(endrw, 1).Value = sheetName)
+  HasNext = (endrw <= dict.Data.DataEndRow()) And (sheetRng.Cells(endrw, 1).Value = sheetName)
 End Property
   
 Private Property Get NextSection() As IHListSections
@@ -153,13 +154,17 @@ Private Sub Build()
   Dim strt As Long
 
   Set ll = LinelistObject()
-  strt = startRow()
+  strt = StartRow()
   Set subsec = HListSubSections.Create(strt, ll)
+  subsec.Build
+  subsec.Format
+  
   Do While subsec.HasNext()
-    subsec.Build()
-    subsect.Format()
-    Set subsect = subsect.NextSubSection()
+    Set subsec = subsec.NextSubSection()
+    subsec.Build
+    subsec.Format
   Loop
+  
 End Sub
 
 Private Sub Format()
@@ -184,7 +189,7 @@ Private Sub Format()
   Set dict = Dictionary()
   Set varRng = dict.DataRange("variable name")
   Set vars = LLVariables.Create(dict)
-  strtrw = startRow() 'End and start row of the section in the dictionary
+  strtrw = StartRow() 'End and start row of the section in the dictionary
   endrw = EndRow()
 
 
@@ -198,7 +203,7 @@ Private Sub Format()
 
   'sheet name
   sheetName = ActualSheetName()
-  setionName = ActualSectionName()
+  sectionName = ActualSectionName()
   Set sh = ll.Wksh(sheetName)
 
   With sh
@@ -217,7 +222,7 @@ End Sub
 'requirements for creating an objec
 Private Sub CheckRequirements(ByVal strt As Long, ll As ILinelist)
   If ll Is Nothing Then ThrowError "Please provide a linelist object, no linelist object found"
-  If strt < 0 Or strt > ll.Dictionary.data.EndRow() Then ThrowError "Start row should be a positive integer less or equal than end row of the dictionary"
+  If strt < 0 Or strt > ll.Dictionary.Data.DataEndRow() Then ThrowError "Start row should be a positive integer less or equal than end row of the dictionary"
 End Sub
 
 'Exposed methods
@@ -240,3 +245,8 @@ End Sub
 Public Sub IHListSections_Format()
   Format
 End Sub
+
+'Add section Name
+Public Property Get IHListSections_Name() As String
+  IHListSections_Name = ActualSectionName()
+End Property

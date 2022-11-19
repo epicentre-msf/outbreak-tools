@@ -17,7 +17,7 @@ Option Explicit
 Implements IFormulas
 
 Private Type TFormulas
-    data As IFormulaData
+    Data As IFormulaData
     dict As ILLdictionary
     sheets As ILLSheets
     vars As ILLVariables
@@ -36,7 +36,7 @@ Private initialized As Boolean
 Public Function Create(ByVal dict As ILLdictionary, ByVal formData As IFormulaData, ByVal setupform As String) As IFormulas
     With New Formulas
         Set .Dictionary = dict
-        Set .data = formData
+        Set .Data = formData
         .SetupFormula = setupform
         Set Create = .Self
     End With
@@ -51,8 +51,8 @@ Public Property Get Dictionary() As ILLdictionary
     Set Dictionary = this.dict
 End Property
 
-Public Property Get data() As IFormulaData
-    Set data = this.data
+Public Property Get Data() As IFormulaData
+    Set Data = this.Data
 End Property
 
 Public Property Set Dictionary(ByVal dict As ILLdictionary)
@@ -67,8 +67,8 @@ Public Property Set Dictionary(ByVal dict As ILLdictionary)
     initialized = False
 End Property
 
-Public Property Set data(ByVal formData As IFormulaData)
-    Set this.data = formData
+Public Property Set Data(ByVal formData As IFormulaData)
+    Set this.Data = formData
 End Property
 
 Public Property Get SetupFormula() As String
@@ -169,7 +169,7 @@ Public Property Get valid(Optional ByVal formulaType As String = "analysis") As 
 
     setupform = Clean(setupform)
     Set vars = Variables()
-    Set formData = data()
+    Set formData = Data()
 
     Set formulaTable = New BetterArray
     Set VariablesTable = New BetterArray

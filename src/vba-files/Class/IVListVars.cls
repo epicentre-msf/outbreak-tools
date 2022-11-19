@@ -10,9 +10,11 @@ Attribute VB_Exposed = False
 
 
 '@Folder("Dictionary")
-'@ModuleDescription("Interface of ")
+'@ModuleDescription("Interface of VlistVars")
 '@IgnoreModule
 
 Option Explicit
 
 'Exposed methods
+Public Sub WriteInfo(): End Sub
+Public Property Get ValueOf(ByVal colName As String) As String: End Property

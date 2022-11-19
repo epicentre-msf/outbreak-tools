@@ -195,7 +195,7 @@ Private Sub Build(ByVal outputshUA As Worksheet, ByVal outputshTS As Worksheet)
                 tabl.Format design
                 'Add graph
                 If specs.Value("graph") = "yes" Then
-                    Set cellRng = outsh.Cells(tabl.startRow - 2, tabl.EndColumn + 2)
+                    Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
                     Set grSpecs = GraphSpecs.Create(tabl)
                     grSpecs.CreateSeries
                     Set gr = Graphs.Create(outsh, cellRng)
@@ -230,7 +230,7 @@ Private Sub Build(ByVal outputshUA As Worksheet, ByVal outputshTS As Worksheet)
                 
                 'Add graph
                 If specs.Value("graph") = "values" Or specs.Value("graph") = "percentage" Or specs.Value("graph") = "both" Then
-                    Set cellRng = outsh.Cells(tabl.startRow - 2, tabl.EndColumn + 2)
+                    Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
                     Set grSpecs = GraphSpecs.Create(tabl)
                     grSpecs.CreateSeries
                     Set gr = Graphs.Create(outsh, cellRng)

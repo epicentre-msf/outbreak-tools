@@ -32,24 +32,25 @@ Private Const CLASSNAME As String = "VListSections"
 
 Public Function Create(ByVal strt As Long, ll As ILinelist) As IVListSections
   CheckRequirements strt, ll
-  With New VListSubSections
-     .startRow = strt
-     .LinelistObject = ll
+  With New VListSections
+     .StartRow = strt
+     Set .LinelistObject = ll
      Set Create = .Self()
   End With
 
 End Function
 
-Public Property Get Self() As IVListSubSections
+Public Property Get Self() As IVListSections
   Set Self = Me
 End Property
 
-Public Property Get startRow() As Long 'Start Row of the subsection in the dictionary
-  startRow = this.strt
+Public Property Get StartRow() As Long 'Start Row of the subsection in the dictionary
+  StartRow = this.strt
 End Property
 
-Public Property Let startRow(ByVal strt As Long)
+Public Property Let StartRow(ByVal strt As Long)
   this.strt = strt
+  this.endrw = 0
 End Property
 
 Public Property Get LinelistObject() As ILinelist
@@ -67,16 +68,16 @@ Public Property Get Dictionary() As ILLdictionary
   Set Dictionary = ll.Dictionary()
 End Property
 
-Private Property Get ActualSection() As String
+Private Property Get ActualSectionName() As String
   Dim dict As ILLdictionary
   Dim strt As Long
   Dim sectionRng As Range
   
   Set dict = Dictionary()
-  strt = startRow()
+  strt = StartRow()
   Set sectionRng = dict.DataRange("main section")
 
-  ActualSection = sectionRng.Cells(strt, 1).Value
+  ActualSectionName = sectionRng.Cells(strt, 1).Value
 End Property
 
 Private Property Get ActualSheetName() As String
@@ -85,7 +86,7 @@ Private Property Get ActualSheetName() As String
   Dim sheetRng As Range
   
   Set dict = Dictionary()
-  strt = startRow()
+  strt = StartRow()
   Set sheetRng = dict.DataRange("sheet name")
 
   ActualSheetName = sheetRng.Cells(strt, 1).Value
@@ -101,12 +102,12 @@ Public Property Get EndRow() As Long 'End Row of the subsection in the dictionar
   Dim sheetName As String
   Dim sectionEnd As Boolean
 
-  If (IsMissing(this.endrw)) Then
-    rowNumber = startRow()
+  If this.endrw = 0 Then
+    rowNumber = StartRow()
     Set dict = Dictionary()
     Set sectionRng = dict.DataRange("main section")
     Set sheetRng = dict.DataRange("sheet name")
-    sectionName = ActualSection()
+    sectionName = ActualSectionName()
     sheetName = ActualSheetName()
     sectionEnd = False
 
@@ -132,7 +133,7 @@ Private Property Get HasNext() As Boolean
   Set dict = Dictionary()
   Set sheetRng = dict.DataRange("sheet name")
 
-  HasNext = (endrw <= dict.data.EndRow()) And (sheetRng.Cells(endrw, 1).Value = sheetName)
+  HasNext = (endrw <= dict.Data.DataEndRow()) And (sheetRng.Cells(endrw, 1).Value = sheetName)
 End Property
   
 Private Property Get NextSection() As IVListSections
@@ -156,12 +157,14 @@ Private Sub Build()
   Dim strt As Long
 
   Set ll = LinelistObject()
-  strt = startRow()
+  strt = StartRow()
   Set subsec = VListSubSections.Create(strt, ll)
+  subsec.Build
+  subsec.Format
   Do While subsec.HasNext()
-    subsec.Build()
-    subsect.Format()
-    Set subsect = subsect.NextSubSection()
+    subsec.Build
+    subsec.Format
+    Set subsec = subsec.NextSubSection()
   Loop
 End Sub
 
@@ -185,21 +188,21 @@ Private Sub Format()
   Set dict = Dictionary()
   Set varRng = dict.DataRange("variable name")
   Set vars = LLVariables.Create(dict)
-  strtrw = startRow() 'End and start row of the section in the dictionary
+  strtrw = StartRow() 'End and start row of the section in the dictionary
   endrw = EndRow()
 
 
   'Compute the start row on vertical sheet (Here the start row is replaced by the start row in the linelist)
   varName = varRng.Cells(strtrw, 1).Value
-  strtrw = vars.Value(varName:=varName, colName:="column index")
+  strtrw = CLng(vars.Value(varName:=varName, colName:="column index"))
 
   'Compute the endrow
   varName = varRng.Cells(endrw, 1).Value
-  endrw = vars.Value(varName:=varName, colName:="column index")
+  endrw = CLng(vars.Value(varName:=varName, colName:="column index"))
 
   'sheet name
   sheetName = ActualSheetName()
-  setionName = ActualSectionName()
+  sectionName = ActualSectionName()
   Set sh = ll.Wksh(sheetName)
 
   With sh
@@ -218,7 +221,7 @@ End Sub
 'requirements for creating an objec
 Private Sub CheckRequirements(ByVal strt As Long, ll As ILinelist)
   If ll Is Nothing Then ThrowError "Please provide a linelist object, no linelist object found"
-  If strt < 0 Or strt > ll.Dictionary.data.EndRow() Then ThrowError "Start row should be a positive integer less or equal than end row of the dictionary"
+  If strt < 0 Or strt > ll.Dictionary.Data.DataEndRow() Then ThrowError "Start row should be a positive integer less or equal than end row of the dictionary"
 End Sub
 
 'Exposed methods

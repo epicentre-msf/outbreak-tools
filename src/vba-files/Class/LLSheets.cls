@@ -31,7 +31,7 @@ Private Const SHEETHORIZONTALNBROWS As Long = 200
 
 Private Enum SHEETSTART
     SHEETSTARTCOLHORIZONTAL = 1
-    SHEETSTARTROWHORIZONTAL = 9
+    SHEETSTARTROWHORIZONTAL = 8
     SHEETSTARTROWVERTICAL = 4
     SHEETSTARTCOLVERTICAL = 5
 End Enum
@@ -100,15 +100,15 @@ Public Function SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte
     Dim dictWksh As Worksheet
 
     Set dict = Dictionary
-    Set dictWksh = dict.data.Wksh
+    Set dictWksh = dict.Data.Wksh
     retSheetInfo = vbNullString
 
     If Not Contains(sheetName) Then Exit Function
 
     If (info = 1) Then
-        sheetInfoIndex = dict.data.ColumnIndex("sheet type")
+        sheetInfoIndex = dict.Data.ColumnIndex("sheet type")
     ElseIf (info = 2) Then
-        sheetInfoIndex = dict.data.ColumnIndex("table name")
+        sheetInfoIndex = dict.Data.ColumnIndex("table name")
     Else
         Exit Function
     End If
@@ -125,7 +125,7 @@ Private Function Varlist(ByVal sheetName As String) As BetterArray
 
     Set dict = Dictionary
     Set varlistData = New BetterArray
-    If Contains(sheetName) Then Set varlistData = dict.data.FilterData("sheet name", sheetName, "variable name")
+    If Contains(sheetName) Then Set varlistData = dict.Data.FilterData("sheet name", sheetName, "variable name")
 
     'return the variable list
     Set Varlist = varlistData.Clone()
@@ -168,15 +168,16 @@ Private Function DataBounds(ByVal sheetName As String, Optional ByVal Bound As B
     DataBounds = Bound
 End Function
 
-'ContainsListAuto
-Private Function ContainsListAuto(ByVal sheetName As String) As Boolean
+'Test if a sheet contains a type of control (list_auto by default)
+Private Function ContainsControl(ByVal sheetName As String, _
+                                 Optional ByVal Control As String = "list_auto") As Boolean
     'Check if a sheet contains a list auto
-    Dim listAutoVar As BetterArray
+    Dim controlVar As BetterArray
     Dim varData As BetterArray
     Dim dict As ILLdictionary
     Dim counter As Long
 
-    Set listAutoVar = New BetterArray
+    Set controlVar = New BetterArray
     Set varData = New BetterArray
     Set dict = Dictionary()
 
@@ -184,19 +185,19 @@ Private Function ContainsListAuto(ByVal sheetName As String) As Boolean
 
     Exist = False
 
-    Set listAutoVar = dict.data.FilterData("control", "list_auto", "variable name")
+    Set controlVar = dict.Data.FilterData("control", Control, "variable name")
     Set varData = Varlist(sheetName)
 
-    If listAutoVar.Length <> 0 Then
-        For counter = listAutoVar.LowerBound To listAutoVar.UpperBound
-            If varData.Includes(listAutoVar.Item(counter)) Then
+    If controlVar.Length <> 0 Then
+        For counter = controlVar.LowerBound To controlVar.UpperBound
+            If varData.Includes(controlVar.Item(counter)) Then
                 Exist = True
                 Exit For
             End If
         Next
     End If
 
-    ContainsListAuto = Exist
+    ContainsControl = Exist
 End Function
 
 'Variable Address
@@ -212,7 +213,7 @@ Private Function VariableAddress(ByVal varName As String) As String
     Dim vars As ILLVariables
 
     Set dict = Dictionary()
-    Set dictWksh = dict.data.Wksh()
+    Set dictWksh = dict.Data.Wksh()
     Set vars = LLVariables.Create(dict)
 
     varIndex = vars.index(varName)
@@ -260,8 +261,8 @@ Public Function ILLSheets_DataBounds(ByVal sheetName As String, _
     ILLSheets_DataBounds = DataBounds(sheetName, Bound)
 End Function
 
-Public Function ILLSheets_ContainsListAuto(ByVal sheetName As String) As Boolean
-    ILLSheets_ContainsListAuto = ContainsListAuto(sheetName)
+Public Function ILLSheets_ContainsControl(ByVal sheetName As String, Optional ByVal Control As String = "list_auto") As Boolean
+    ILLSheets_ContainsControl = ContainsControl(sheetName, Control)
 End Function
 
 'Variable Address
@@ -269,4 +270,12 @@ Public Function ILLSheets_VariableAddress(ByVal varName As String) As String
     ILLSheets_VariableAddress = VariableAddress(varName)
 End Function
 
+'Row index of the sheet in the dictionary
+Public Function ILLSheets_RowIndex(ByVal sheetName As String) As Long
+    ILLSheets_RowIndex = RowIndex(sheetName)
+End Function
 
+'Number of variables in the SheetS
+Public Function ILLSheets_NumberOfVars(ByVal sheetName As String) As Long
+    ILLSheets_NumberOfVars = NumberOfVars(sheetName)
+End Function

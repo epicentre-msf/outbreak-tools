@@ -19,9 +19,7 @@ Option Explicit
 Implements IVListVars
 
 Private Type TVListVars
-    data As ILinelistSpecs
-    drop As IDropdownLists
-    sh As Worksheet
+    ll As ILinelist
     varName As String
     inputRange As Range
 End Type
@@ -30,34 +28,29 @@ Private this As TVListVars
 Private Const CLASSNAME As String = "VListVars"
 Private Const STARTCOL As Long = 5               'Where the variables should start in the output worksheet
 
-Public Function Create(ByVal varName As String, ByVal outputsh As Worksheet, _
-                       ByVal lData As ILinelistSpecs, ByVal drop As IDropdownLists) As IVListVars
-    Dim dict As ILLdictionary
-
-    If outputsh Is Nothing Then ThrowError "Worksheet does not exists"
-    If lData Is Nothing Then ThrowError "No linelist specifications found"
-    Set dict = lData.Dictionary()
-    If Not dict.VariableExists(varName) Then ThrowError "Variable" & varName & "Does not exists!"
-
+Public Function Create(ByVal varName As String, ByVal ll As ILinelist) As IVListVars
+    
+    CheckRequirements varName, ll
+    
     With New VListVars
-        Set .linelistData = lData
-        Set .Wksh = outputsh
-        Set .Dropdown = drop
+        Set .LinelistObject = ll
         .ActualVariable = varName
         Set Create = .Self
     End With
+
 End Function
 
-Public Property Get Self() As IHListVars
+Public Property Get Self() As IVListVars
     Set Self = Me
 End Property
 
-Public Property Get linelistData() As ILinelistSpecs
-    Set linelistData = this.data
+Public Property Get LinelistObject() As ILinelist
+    Set LinelistObject = this.ll
 End Property
 
-Public Property Set linelistData(ByVal data As ILinelistSpecs)
-    Set this.data = data
+
+Public Property Set LinelistObject(ByVal ll As ILinelist)
+    Set this.ll = ll
 End Property
 
 Public Property Get ActualVariable() As String
@@ -68,31 +61,46 @@ Public Property Let ActualVariable(ByVal varName As String)
     this.varName = varName
 End Property
 
+'The linelist Data
+Private Property Get linelistData() As ILinelistSpecs
+    Dim ll As ILinelist
+    Set ll = LinelistObject()
+    Set linelistData = ll.linelistData()
+End Property
+
+'Get the worksheet Object where the variable should be written
 Public Property Get Wksh() As Worksheet
-    Set Wksh = this.sh
+    Dim ll As ILinelist
+    Dim sheetName As String
+
+    Set ll = LinelistObject()
+    sheetName = ValueOf("sheet name")
+    Set Wksh = ll.Wksh(sheetName)
 End Property
 
+
+'The dropdown object as part of the linelist
 Public Property Get Dropdown() As IDropdownLists
-    Set Dropdown = this.drop
+    Dim ll As ILinelist
+    Dim drop As IDropdownLists
+
+    Set ll = LinelistObject()
+    Set drop = ll.Dropdown()
+
+    Set Dropdown = drop
 End Property
 
-Public Property Set Dropdown(ByVal drop As IDropdownLists)
-    Set this.drop = drop
-End Property
+    Private Property Get Dictionary() As ILLdictionary
+        Dim ll As ILinelist
+        Set ll = LinelistObject()
+        Set Dictionary = ll.Dictionary
+    End Property
 
-Public Property Set Wksh(ByVal sh As Worksheet)
-    Set this.sh = sh
-End Property
-
-Private Property Get Dictionary() As ILLdictionary
-    Dim lData As ILinelistSpecs
-    Set lData = linelistData()
-    Set Dictionary = lData.Dictionary
-End Property
-
-Private Property Get vars() As ILLVariables
-    Set vars = LLVariables.Create(Dictionary())
-End Property
+        Private Property Get vars() As ILLVariables
+            Dim dict As ILLdictionary
+            Set dict = Dictionary()
+            Set vars = LLVariables.Create(dict)
+        End Property
 
 Private Property Get ValueOf(ByVal colName As String) As String
     Dim varObject As ILLVariables
@@ -101,39 +109,39 @@ Private Property Get ValueOf(ByVal colName As String) As String
 End Property
 
 Private Property Get VarRange() As Range         'Where to input informations on the variable
-    Dim startRow As Long
+    Dim StartRow As Long
     Dim sh As Worksheet
     Dim rng As Range
+    
     If this.inputRange Is Nothing Then
         Set sh = Wksh()
         With sh
-            startRow = ValueOf("column index")
-            Set VarRange = .Cells(startRow, STARTCOL)
-            Set this.inputRange = .Cells(startRow, STARTCOL)
+            StartRow = ValueOf("column index")
+            Set this.inputRange = .Cells(StartRow, STARTCOL)
         End With
-    Else
-        Set VarRange = this.inputRange
     End If
+    
+    Set VarRange = this.inputRange
 End Property
 
 'Type
 Private Sub AddType()
-    Dim varType As String
+    Dim varTypes As String
     Dim cellRng As Range
     Dim nbDecimals As Integer
     Dim zerosDecimals As String
 
     Set cellRng = VarRange()
 
-    varType = LCase(Application.WorksheetFunction.Trim(ValueOf("type")))
+    varTypes = LCase(Application.WorksheetFunction.Trim(ValueOf("type")))
 
     'Number of decimals
-    If InStr(1, varType, "decimal") > 0 Then
-        nbDecimals = CInt(Replace(varType, "decimal", vbNullString))
+    If InStr(1, varTypes, "decimal") > 0 Then
+        nbDecimals = CInt(Replace(varTypes, "decimal", vbNullString))
         zerosDecimals = String(nbDecimals, "0")
     End If
 
-    Select Case varType
+    Select Case varTypes
     Case "text"
         cellRng.NumberFormat = "@"
     Case "integer"
@@ -150,11 +158,13 @@ End Sub
 'Failed formula
 Private Function FailedFormula(ByVal frmName As String) As Boolean
     Dim sh As Worksheet
+    Dim prevAlert As Boolean
 
     Set sh = Wksh()
     With sh
         .Cells(1, 1).Clear
         On Error GoTo Fail
+        prevAlert = Application.DisplayAlerts
         Application.DisplayAlerts = False
 
         'Test the formula on one cell
@@ -165,10 +175,10 @@ Private Function FailedFormula(ByVal frmName As String) As Boolean
         Exit Function
     End With
     
-    Application.DisplayAlerts = True
+    Application.DisplayAlerts = prevAlert
 Fail:
     FailedFormula = True
-    Application.DisplayAlerts = True
+    Application.DisplayAlerts = prevAlert
 End Function
 
 'Formula
@@ -230,7 +240,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
 
 
     Set cellRng = VarRange()
-    Set lData = linelistData
+    Set lData = linelistData()
     Set trans = lData.TransObject()
     Set design = lData.DesignFormat()
 
@@ -336,12 +346,26 @@ Private Sub ThrowError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
+Private Sub CheckRequirements(ByVal varName As String, ll As ILinelist)
+    Dim dict As ILLdictionary
+    Dim varObject As ILLVariables
+    Dim sheetName As String
+
+    If ll Is Nothing Then ThrowError "No linelist object found"
+    Set dict = ll.Dictionary()
+    Set varObject = LLVariables.Create(dict)
+    If Not dict.VariableExists(varName) Then ThrowError "Variable" & varName & "Does not exists!"
+    sheetName = varObject.Value(varName:=varName, colName:="sheet name")
+    If Not ll.sheetExists(sheetName) Then ThrowError varName & "worksheet named" & sheetName & "is not created"
+
+End Sub
+
 'Exposed methods
-Public Sub IHListVars_WriteInfo()
+Public Sub IVListVars_WriteInfo()
     WriteInfo
 End Sub
 
-Public Property Get IHListVars_ValueOf(ByVal colName As String) As String
+Public Property Get IVListVars_ValueOf(ByVal colName As String) As String
     IHListVars_ValueOf = ValueOf(colName)
 End Property
 

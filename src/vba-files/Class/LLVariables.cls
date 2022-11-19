@@ -98,7 +98,7 @@ Private Function Value(ByVal colName As String, ByVal varName As String) As Stri
 
     Set varRng = VarRange
     Set dict = Dictionary()
-    Set Wksh = dict.data.Wksh
+    Set Wksh = dict.Data.Wksh
 
     'return value
     retValue = vbNullString
@@ -106,7 +106,7 @@ Private Function Value(ByVal colName As String, ByVal varName As String) As Stri
     If Contains(varName) And dict.ColumnExists(colName) Then
 
         rowNum = RowIndex(varName)
-        colNum = dict.data.ColumnIndex(colName)
+        colNum = dict.Data.ColumnIndex(colName)
         retValue = Wksh.Cells(rowNum, colNum).Value
 
     End If

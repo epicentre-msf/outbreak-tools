@@ -81,7 +81,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     If sh Is Nothing Then ThrowErrorUnableInstanciate "No worksheet found"
 
     On Error Resume Next
-    Set Lo = sh.ListObjects(SPECCHAR)
+    Set Lo = sh.ListObjects(excelForm)
     On Error GoTo 0
 
     'Special characters listObject
@@ -98,7 +98,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     Set Lo = Nothing
 
     On Error Resume Next
-    Set Lo = sh.ListObjects(excelForm)
+    Set Lo = sh.ListObjects(SPECCHAR)
     On Error GoTo 0
 
     If Lo Is Nothing Then ThrowErrorUnableInstanciate "No Excel formula ListObject"

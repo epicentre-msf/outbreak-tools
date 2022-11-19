@@ -510,9 +510,9 @@ Private Sub AddFormulas()
                 Set rng = .Range("ROW_CATEGORIES_" & tabId)
                 Set cellRng = rng.Cells(1, 1)
                 'cellRng.formula = "= FormatDateFromLastDay(TIME_UNIT_" & tabId & "," & _
-                cellRng.Cells(1, -1).Address(rowabsolute:=False) & "," & _
-                cellRng.Cells(1, 0).Address(rowabsolute:=False) & ", " & _
-                "END_DATE_" & tabId & ")"
+                                  cellRng.Cells(1, -1).Address(rowabsolute:=False) & "," & _
+                                  cellRng.Cells(1, 0).Address(rowabsolute:=False) & ", " & _
+                                  "END_DATE_" & tabId & ")"
                 'cellRng.AutoFill Destination:=rng, Type:=xlFillValues
                 'Start period column
                 Set cellRng = .Range("FIRST_VALUE_START_TIME_" & tabId)
