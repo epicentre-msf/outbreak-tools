@@ -23,7 +23,7 @@ End Enum
 
 Private Type TCrossTableFormula
     tab As ICrossTable
-    fdata As IFormulaData
+    fData As IFormulaData
     forml As IFormulas
     condVars As BetterArray
     condTests As BetterArray
@@ -32,10 +32,10 @@ End Type
 Private this As TCrossTableFormula
 Private Const CLASSNAME As String = "CrossTableFormula"
 
-Public Function Create(ByVal tabl As ICrossTable, fdata As IFormulaData) As ICrossTableFormula
+Public Function Create(ByVal tabl As ICrossTable, fData As IFormulaData) As ICrossTableFormula
     With New CrossTableFormula
         Set .Table = tabl
-        Set .formData = fdata
+        Set .formData = fData
         Set Create = .Self
     End With
 End Function
@@ -53,11 +53,11 @@ Public Property Set Table(ByVal tabl As ICrossTable)
 End Property
 
 Public Property Get formData() As IFormulaData
-    Set formData = this.fdata
+    Set formData = this.fData
 End Property
 
-Public Property Set formData(ByVal fdata As IFormulaData)
-    Set this.fdata = fdata
+Public Property Set formData(ByVal fData As IFormulaData)
+    Set this.fData = fData
 End Property
 
 Private Property Get Specifications() As ITablesSpecs
@@ -90,17 +90,17 @@ End Property
 
 Private Property Get TableFormula() As IFormulas
     Dim tabform As String
-    Dim fdata As IFormulaData
+    Dim fData As IFormulaData
     Dim specs As ITablesSpecs
     Dim dict As ILLdictionary
     Dim tabFormObject As IFormulas
 
     If (this.forml Is Nothing) Then
-        Set fdata = formData()
+        Set fData = formData()
         Set specs = Specifications
         Set dict = specs.Dictionary
         tabform = SummaryFunction
-        Set tabFormObject = Formulas.Create(dict, fdata, tabform)
+        Set tabFormObject = Formulas.Create(dict, fData, tabform)
 
         Set this.forml = tabFormObject
         Set TableFormula = tabFormObject

@@ -20,6 +20,7 @@ Public Enum TradScopes
   TranslationOfShapes = 2
   TranslationOfForms = 3
   TranslationOfMessages = 4
+  TranslationOfRanges = 5
 End Enum
 
 

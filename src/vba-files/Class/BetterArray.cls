@@ -413,9 +413,9 @@ Public Function ToString( _
     Dim LocalArrayType As ArrayTypes
     Dim Result As String
     Dim LocalItems() As Variant
-    Dim Sep As String
+    Dim sep As String
     
-    Sep = IIf(PrettyPrint, Separator & Space(1), Separator)
+    sep = IIf(PrettyPrint, Separator & Space(1), Separator)
     
     LocalItems = InternalItems
     LocalArrayType = GetArrayType(LocalItems)
@@ -427,7 +427,7 @@ Public Function ToString( _
         RecursiveToString _
         SourceArray:=LocalItems, _
         PrettyPrint:=PrettyPrint, _
-        Separator:=Sep, _
+        Separator:=sep, _
         OpeningDelimiter:=OpeningDelimiter, _
         ClosingDelimiter:=ClosingDelimiter, _
         QuoteStrings:=QuoteStrings
@@ -3612,11 +3612,11 @@ Private Sub RecursiveToString( _
         )
     Const TabWidth As Long = 2
     Dim i As Long
-    Dim Sep As String
+    Dim sep As String
     
     StringBuilder OpeningDelimiter
     For i = LBound(SourceArray) To UBound(SourceArray)
-        Sep = IIf(i = UBound(SourceArray), ClosingDelimiter, Separator)
+        sep = IIf(i = UBound(SourceArray), ClosingDelimiter, Separator)
         If IsArray(SourceArray(i)) Then
             Dim Nested() As Variant
             Nested = SourceArray(i)
@@ -3628,14 +3628,14 @@ Private Sub RecursiveToString( _
                 StringBuilder vbCrLf
                 StringBuilder Space(TabWidth * (Tabs - 1))
             End If
-            StringBuilder Sep
+            StringBuilder sep
         Else
             ' ensure no arrays passed to GetScalar as it clears string builder
             StringBuilder Replace( _
                           CStr(GetScalarRepresentation(SourceArray(i), QuoteStrings)), _
                           Separator, _
                           vbNullString _
-                          ) & Sep
+                          ) & sep
         End If
     Next
 End Sub

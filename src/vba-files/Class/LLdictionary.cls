@@ -95,8 +95,9 @@ Public Property Get Prepared() As Boolean
     Dim dictWksh As Worksheet
     Set dictWksh = Wksh()
     Prepared = (dictWksh.Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue) And _
-                                                                                 ColumnExists("table name") And ColumnExists("column index") And _
-                                                                                 (Not ColumnExists("main section sort")) And (Not ColumnExists("main section index"))
+                ColumnExists("table name") And ColumnExists("column index") And _
+                ColumnExists("visibility") And _
+                 (Not ColumnExists("main section sort")) And (Not ColumnExists("main section index"))
 End Property
 
 'Initialize the Headers  -----------------------------------------------------
@@ -108,7 +109,7 @@ Private Sub ClassArraysInitialize()
     DICTIONARYCOLUMNS.Push "variable name", "main label", "sub label", "note", "sheet name", _
                            "sheet type", "main section", "sub section", "status", "personal identifier", "type", "control", "control details", "unique", _
                            "export 1", "export 2", "export 3", "export 4", "export 5", "min", "max", "alert", "message", "table name", "column index", _
-                           "list_auto_origin"
+                           "list auto", "visibility"
 End Sub
 
 'Dictionary data Range
@@ -207,6 +208,7 @@ End Sub
 
 'Prepare the dictionary for designer
 Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject As ILLGeo, _
+                    ByVal msgTrads As ITranslation, _
                     Optional ByVal tablePrefix As String = "table")
     Dim endCol As Long
     Dim dictWksh As Worksheet
@@ -221,9 +223,10 @@ Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject A
         End If
 
         If Not ColumnExists("column index") Then AppendColumnIndex 'Add Column Index
+        If Not ColumnExists("visibility") Then AddVisibility msgTrads 'Add visibility for show/Hide
+
         'Testing control to update the Geo
         Set controlRng = DataRange("control")
-
         If (Not controlRng Is Nothing) Then
             If (Not controlRng.Find(What:="geo", LookAt:=xlWhole, MatchCase:=True) Is Nothing) And _
                                                                                                (controlRng.Find(What:="geo2", LookAt:=xlWhole, MatchCase:=True) Is Nothing) Then
@@ -299,6 +302,51 @@ Private Sub UniqueVarNames()
     End With
 End Sub
 
+'Add the visibility for show Hide
+Private Sub AddVisibility(ByVal msgTrads As ITranslation)
+
+    Dim dictWksh As Worksheet
+    Dim EndRow As Long
+    Dim endCol As Long
+    Dim counter As Long
+    Dim statusIndex As Long
+    Dim colIndex As Long
+    Dim statusValue As String
+
+
+    Set dictWksh = Wksh()
+    EndRow = DictEndRow()
+    endCol = DictEndColumn()
+
+    statusIndex = ColumnIndex("status")
+    colIndex = ColumnIndex("column index")
+
+    With dictWksh
+        .Cells(StartRow, endCol + 1).Value = "visibility"
+        For counter = StartRow + 1 To EndRow
+            statusValue = .Cells(counter, statusIndex).Value
+            
+            Select Case statusValue
+            
+            Case "hidden"
+             
+             .Cells(counter, endCol + 1).Value = msgTrads.TranslatedValue("MSG_DesHidden")
+
+            Case "mandatory"
+
+              .Cells(counter, endCol + 1) = msgTrads.TranslatedValue("MSG_Mandatory")
+
+            Case "optional"
+
+             .Cells(counter, endCol + 1) = msgTrads.TranslatedValue("MSG_Show")
+            End Select
+        Next
+    End With
+
+End Sub
+
+
+
 'Append Geo Lines
 Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
 
@@ -364,6 +412,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
 
             'Hide the pcode when everything is done
             .Cells(geoRng.Row, statusIndex).Value = "hidden"
+            .Cells(geoRng.Row, controlIndex).Value = "geo_pcode"
 
             geoRowIndex = geoRowIndex + 3
             Set dictRng = .Range(.Cells(geoRowIndex, controlIndex), .Cells(EndRow, controlIndex))
@@ -424,7 +473,8 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
         Set dictRng = DataRange(newColumn)
 
         .Cells(StartRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
-        dictRng.Value = dictRng.Value            'remove the link to the formulas
+        .Calculate                  'Calculate the worksheet
+        dictRng.Value = dictRng.Value   'remove the link to the formulas
 
     End With
 End Sub
@@ -503,10 +553,10 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal exportType As String = 
 End Sub
 
 'Import
-Private Sub Import(ByVal fromWksh As Worksheet, fromStartRow As Long, fromStartCol As Long)
+Private Sub Import(ByVal fromWksh As Worksheet, fromStartRow As Long, fromStartcol As Long)
     Dim dictData As IDataSheet
     Set dictData = Data()
-    dictData.Import fromWksh, fromStartRow, fromStartCol
+    dictData.Import fromWksh, fromStartRow, fromStartcol
 End Sub
 
 'Translation
@@ -527,6 +577,18 @@ Private Sub Translate(ByVal TransObject As ITranslation)
 
     Set rng = DataRange("control details")
     TransObject.TranslateRange rng, containsFormula:=True
+End Sub
+
+'Add a column to the dictionary
+
+Private Sub AddColumn(ByVal colName As String)
+    Dim dictWksh As Worksheet
+    Dim endCol As Long
+    Set dictWksh = Wksh()
+    endCol = DictEndColumn()
+    If colName <> vbNullString Then
+        dictWksh.Cells(StartRow, endCol + 1).Value = colName
+    End If
 End Sub
 
 ' INTERFACE __________________________________________________________________________________________________________________________
@@ -560,17 +622,17 @@ End Function
 
 'void methods
 Public Sub ILLdictionary_Prepare(ByVal PreservedSheetsNames As BetterArray, _
-                                 ByVal geoObject As ILLGeo, _
+                                 ByVal geoObject As ILLGeo, ByVal msgTrads As ITranslation, _
                                  Optional ByVal tablePrefix As String = "table")
-    Prepare PreservedSheetsNames, geoObject, tablePrefix
+    Prepare PreservedSheetsNames, geoObject, msgTrads, tablePrefix
 End Sub
 
 Public Sub ILLdictionary_Clean()
     Clean
 End Sub
 
-Public Sub ILLdictionary_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long)
-    Import fromWksh, fromStartRow, fromStartCol
+Public Sub ILLdictionary_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
+    Import fromWksh, fromStartRow, fromStartcol
 End Sub
 
 Public Sub ILLdictionary_Export(ByVal toWkb As Workbook, Optional ByVal exportType As String = "__all__")
@@ -581,4 +643,7 @@ Public Sub ILLdictionary_Translate(ByVal TransObject As ITranslation)
     Translate TransObject
 End Sub
 
+Public Sub ILLdictionary_AddColumn(ByVal colName As String)
+    AddColumn colName
+End Sub
 

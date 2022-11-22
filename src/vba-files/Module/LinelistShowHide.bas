@@ -105,7 +105,7 @@ Sub ClicCmdShowHide()
                     T_varname.Push Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVarName)).Value
 
                     If LCase(Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderStatus)).Value) = C_sDictStatusMan Or _
-                                                                                                Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderIndex)).Value <= C_iLLSplitColumn Then
+                        Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderIndex)).Value <= C_iLLSplitColumn Then
                         T_status.Push sMandatory
                         Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).Value = sMandatory
                     ElseIf Wksh.Cells(i, T_DictHeaders.IndexOf(C_sDictHeaderVisibility)).Value = sHidden Then

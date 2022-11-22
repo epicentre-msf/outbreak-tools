@@ -13,8 +13,6 @@ Option Explicit
 Private Sub Workbook_Open()
 
     Call ResetField
-    SheetMain.Range("RNG_Edition").Value = TranslateMsg(C_sMsgSet)
-
     SheetDesTranslation.Range("LangDictList").ClearContents
 
 End Sub

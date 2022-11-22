@@ -20,7 +20,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Application.EnableEvents = False
 
     If Target.Name.Name = "RNG_LangDesigner" Then
-        Call TranslateDesigner
+        TranslateDesignerMain
     ElseIf Target.Name.Name = "RNG_LLForm" Then
         
         'Language of LinelistForms

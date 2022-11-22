@@ -86,7 +86,6 @@ End Function
 
 'Value of one column for one variable
 Private Function Value(ByVal colName As String, ByVal varName As String) As String
-    Dim varRng As Range
 
     'Row and columns to return
     Dim rowNum As Long
@@ -96,7 +95,6 @@ Private Function Value(ByVal colName As String, ByVal varName As String) As Stri
     Dim dict As ILLdictionary
     Dim Wksh As Worksheet
 
-    Set varRng = VarRange
     Set dict = Dictionary()
     Set Wksh = dict.Data.Wksh
 
@@ -114,6 +112,32 @@ Private Function Value(ByVal colName As String, ByVal varName As String) As Stri
     Value = retValue
 End Function
 
+
+Private Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal newValue As String, Optional ByVal onEmpty As Boolean = False)
+
+    'Row and columns to return
+    Dim rowNum As Long
+    Dim colNum As Long
+    Dim Update As Boolean
+
+    Dim dict As ILLdictionary
+    Dim Wksh As Worksheet
+
+    Set dict = Dictionary()
+    Set Wksh = dict.Data.Wksh
+
+    If Contains(varName) And dict.ColumnExists(colName) Then
+        Update = True
+        
+        rowNum = RowIndex(varName)
+        colNum = dict.Data.ColumnIndex(colName)
+        If onEmpty Then Update = IsEmpty(Wksh.Cells(rowNum, colNum))
+        If Update Then Wksh.Cells(rowNum, colNum).Value = newValue
+    End If
+
+End Sub
+
+
 'Index of a column or a Row of a variable in a worksheet
 Private Function index(ByVal varName As String) As Long
     Dim sheetIndex As String
@@ -121,7 +145,7 @@ Private Function index(ByVal varName As String) As Long
     index = IIf(sheetIndex = vbNullString, -1, CLng(sheetIndex))
 End Function
 
-'Errors ----------------------------------------------------------------------
+'Errors ------------------------------------------------------------------------------------------------------------------------------------
 Private Sub ThrowErrorUnableInstanciateNoVarName()
     Err.Raise VBA.vbObjectError + 513, CLASSNAME, "Unable to create an instance of the class variable, variable name column does not exists"
 End Sub
@@ -130,7 +154,7 @@ Private Sub ThrowErrorUnableInstanciateNotPrepared()
     Err.Raise VBA.vbObjectError + 514, CLASSNAME, "Unable to create an instance of the class variable: The dictionary is not prepared"
 End Sub
 
-'Interface ------------------------------------------------------------------------------
+'Interface ---------------------------------------------------------------------------------------------------------------------------------
 
 'Properties
 Public Property Get ILLVariables_Dictionary() As ILLdictionary
@@ -151,3 +175,6 @@ Public Function ILLVariables_Contains(ByVal varName As String) As Boolean
     ILLVariables_Contains = Contains(varName)
 End Function
 
+Public Sub ILLVariables_SetValue(ByVal varName As String, ByVal colName As String, ByVal newValue As String, Optional ByVal onEmpty As Boolean = False)
+    SetValue varName, colName, newValue, onEmpty
+End Sub
