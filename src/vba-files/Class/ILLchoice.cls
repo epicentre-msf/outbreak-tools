@@ -38,7 +38,7 @@ Public Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As BetterA
 Public Sub Export(ByVal toWkb As Workbook)
 End Sub
 
-Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long)
+Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
 End Sub
 
 Public Sub Translate(ByVal TransObject As ITranslation)

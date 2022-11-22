@@ -195,7 +195,7 @@ End Sub
 Private Sub Format()
   Dim rng As Range
   Dim varlists As BetterArray
-  Dim strtCol As Long 'Start Column of the subsecction
+  Dim strtcol As Long 'Start Column of the subsecction
   Dim endCol As Long 'End column of the sub section
   Dim ll As ILinelist
   Dim vars As ILLVariables
@@ -218,7 +218,7 @@ Private Sub Format()
   
   'compute the start column
   varName = varlists.Item(varlists.LowerBound)
-  strtCol = CLng(vars.Value(colName:="column index", varName:=varName))
+  strtcol = CLng(vars.Value(colName:="column index", varName:=varName))
   
   'Actual sub section
   subSectionName = ActualSubSection()
@@ -227,7 +227,7 @@ Private Sub Format()
   Set sh = ll.Wksh(sheetName)
   
   With sh
-    Set rng = .Range(.Cells(SUBSECROW, strtCol), .Cells(SUBSECROW, endCol))
+    Set rng = .Range(.Cells(SUBSECROW, strtcol), .Cells(SUBSECROW, endCol))
     rng.Cells(1, 1).Value = subSectionName
   End With
 

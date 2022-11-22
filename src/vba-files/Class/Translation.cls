@@ -88,9 +88,11 @@ End Function
 Private Function ValueExists(ByVal text As String) As Boolean
     Dim textExists As Boolean
     Dim keyRng As Range
+    Dim Lo As ListObject
     textExists = False
-
-    Set keyRng = Table.ListColumns(1).Range
+    
+    Set Lo = Table()
+    Set keyRng = Lo.ListColumns(1).Range
 
     If LanguageExists() Then textExists = (Not keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
 

@@ -40,6 +40,7 @@ Public Function Create(ByVal sheetName As String, ll As ILinelist) As IHlist
         Set .LinelistObject = ll
         Set Create = .Self
     End With
+    
 End Function
 
 Public Property Get Self() As IHlist
@@ -101,7 +102,7 @@ Public Sub Build()
     Dim ll As ILinelist
     Dim lData As ILinelistSpecs
     Dim but As IButtons
-    Dim trads As ITranslation
+    Dim Trads As ITranslation
     Dim rng As Range
     Dim design As ILLFormat
     Dim sheetName As String
@@ -140,20 +141,20 @@ Public Sub Build()
 
     'Show Hide button
     Set rng = sh.Cells(1, 2)
-    Set trads = lData.TransObject(TranslationOfShapes)
-    Set but = Buttons.Create(rng, trads, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
+    Set Trads = lData.TransObject(TranslationOfShapes)
+    Set but = Buttons.Create(rng, Trads, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
     but.Add
     but.Format design
 
     'Add Rows button
     Set rng = sh.Cells(2, 2)
-    Set but = Buttons.Create(rng, trads, codeName:=SHPADDROWS, scope:=ButtonScopeSmall)
+    Set but = Buttons.Create(rng, Trads, codeName:=SHPADDROWS, scope:=ButtonScopeSmall)
     but.Add
     but.Format design
     
     'Remove Filters
     Set rng = sh.Cells(2, 1)
-    Set but = Buttons.Create(rng, trads, codeName:=SHPREMOVEFILT, scope:=ButtonScopeSmall)
+    Set but = Buttons.Create(rng, Trads, codeName:=SHPREMOVEFILT, scope:=ButtonScopeSmall)
     but.Add
     but.Format design
 
@@ -161,14 +162,14 @@ Public Sub Build()
     hasGeo = llshs.ContainsControl(sheetName, "geo")
     If hasGeo Then
         Set rng = sh.Cells(3, 1)
-        Set but = Buttons.Create(rng, trads, codeName:=SHPGEO, scope:=ButtonScopeGeo)
+        Set but = Buttons.Create(rng, Trads, codeName:=SHPGEO, scope:=ButtonScopeGeo)
         but.Add
         but.Format design
     End If
 
     'Now Build each Section
-    Set trads = lData.TransObject(TranslationOfMessages)
-    gotoSection = trads.TranslatedValue("MSG_GoToSec")
+    Set Trads = lData.TransObject(TranslationOfMessages)
+    gotoSection = Trads.TranslatedValue("MSG_GoToSec")
 
     Set sectionsList = New BetterArray
     strt = llshs.RowIndex(sheetName) - 1 '- 1 because the row index includes the header row of the dictionary

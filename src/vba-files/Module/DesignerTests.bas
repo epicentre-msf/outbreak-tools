@@ -213,6 +213,7 @@ Sub TestSections()
     Dim lData As ILinelistSpecs
     Dim horizSheet As IHlist
     
+    
     Set lData = LinelistSpecs.Create(ThisWorkbook)
     lData.Prepare
     Set ll = Linelist.Create(lData)

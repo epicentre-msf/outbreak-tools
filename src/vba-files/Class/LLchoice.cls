@@ -161,14 +161,14 @@ Private Sub Export(Wkb As Workbook)
     ChoiceData.Export Wkb
 End Sub
 
-Private Sub Import(fromWksh As Worksheet, fromStartRow As Long, fromStartCol As Long)
+Private Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
     Dim choiData As IDataSheet
     Set choiData = ChoiceData()
-    choiData.Import fromWksh, fromStartRow, fromStartCol
+    choiData.Import fromWksh, fromStartRow, fromStartcol
 End Sub
 
 'Translation
-Private Sub Translate(ByVal TransObject)
+Private Sub Translate(ByVal TransObject As ITranslation)
     Dim lblRng As Range
     Set lblRng = DataRange("label")
     TransObject.TranslateRange lblRng
@@ -213,8 +213,8 @@ Public Sub ILLchoice_Export(ByVal toWkb As Workbook)
     Export toWkb
 End Sub
 
-Public Sub ILLchoice_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long)
-    Import fromWksh, fromStartRow, fromStartCol
+Public Sub ILLchoice_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
+    Import fromWksh, fromStartRow, fromStartcol
 End Sub
 
 Public Sub ILLchoice_Translate(ByVal TransObject As ITranslation)

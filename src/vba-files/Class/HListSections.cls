@@ -170,7 +170,7 @@ End Sub
 Private Sub Format()
   
   Dim rng As Range
-  Dim strtCol As Long
+  Dim strtcol As Long
   Dim strtrw As Long
   Dim endrw As Long
   Dim endCol As Long
@@ -195,7 +195,7 @@ Private Sub Format()
 
   'Compute the startColumn
   varName = varRng.Cells(strtrw, 1).Value
-  strtCol = vars.Value(varName:=varName, colName:="column index")
+  strtcol = vars.Value(varName:=varName, colName:="column index")
 
   'Compute the endColumn
   varName = varRng.Cells(endrw, 1).Value
@@ -207,7 +207,7 @@ Private Sub Format()
   Set sh = ll.Wksh(sheetName)
 
   With sh
-    Set rng = .Range(.Cells(SECROW, strtCol), .Cells(SECROW, endCol))
+    Set rng = .Range(.Cells(SECROW, strtcol), .Cells(SECROW, endCol))
     rng.Cells(1, 1).Value = sectionName
   End With
 

@@ -15,6 +15,12 @@ Attribute VB_Exposed = False
 
 Option Explicit
 Implements ILinelist
+
+Private Enum CodeScope
+    codeScopeClass = 1
+    codeScopeModule = 2
+End Enum
+
 Private Type TLinelist
     outwkb As Workbook
     Data As ILinelistSpecs
@@ -113,6 +119,102 @@ Private Property Get Wksh(ByVal sheetName As String) As Worksheet
     Set Wksh = sh
 End Property
 
+
+Private Sub TransferCode(moduleName As String, scope As CodeScope)
+    
+    Dim codeObject As Object                         'Where to stock to code in the workbook
+    Dim codeContent As String
+    Dim outwkb As Workbook
+    Dim inpWkb As Workbook
+    Dim lData As ILinelistSpecs
+
+    Set outwkb = Wkb() 'Output workbook
+    Set lData = linelistData()
+    Set inpWkb = lData.specswkb()
+
+    'get all the values within the actual module to transfer
+    With inpWkb.VBProject.VBComponents(moduleName).CodeModule
+        codeContent = .Lines(1, .CountOfLines)
+    End With
+
+    Select Case scope
+    Case codeScopeClass
+        Set codeObject = outwkb.VBProject.VBComponents.Add(vbext_ct_StdModule)
+    Case codeScopeModule
+        Set codeObject = outwkb.VBProject.VBComponents.Add(vbext_ct_ClassModule)
+    End Select
+
+    'keep the name and add the codes
+    codeObject.Name = moduleName
+    With outwkb.VBProject.VBComponents(moduleName).CodeModule
+        .DeleteLines 1, .CountOfLines
+         DoEvents
+        .AddFromString codeContent
+    End With
+End Sub
+
+
+'Prepare temporary folder for the linelist creation
+Public Sub TemporaryFolder(Optional Create As Boolean = True)
+    Dim lData As ILinelistSpecs
+    Dim mainobj As IMain
+    Dim outPath As String
+    Dim sep As String 'Separator
+
+    Set lData = linelistData()
+    Set mainobj = lData.MainObject()
+    outPath = mainobj.OutputPath()
+    sep = Application.PathSeparator
+
+    'required temporary folder for analysis
+    On Error Resume Next
+        Kill outPath & sep & "LinelistApp_" & sep & "*.frm"
+        Kill outPath & sep & "LinelistApp_" & sep & "*.frx"
+        RmDir outPath & sep & "LinelistApp_"
+        If Create Then MkDir outPath & sep & "LinelistApp_" 'create a folder for sending all the data from designer
+    On Error GoTo 0
+End Sub
+
+
+'Transfert a form to the output workbook
+Public Sub TransferForm(formName As String)
+
+    Dim outDir As String
+    Dim lData As ILinelistSpecs
+    Dim outwkb As Workbook
+    Dim inpWkb As Workbook
+    Dim mainobj As IMain
+    Dim sep As String 'Application path separator
+    Dim formPath As String
+
+    Set lData = linelistData()
+    Set outwkb = Wkb()
+    Set inpWkb = lData.specswkb()
+    Set manObj = lData.MainObject()
+    sep = Application.PathSeparator
+    outDir = mainobj.OutputPath() & sep & "LinelistApp_"
+
+    'Output dir is where to write the form for import / export
+    On Error Resume Next
+    Kill outDir & sep & "CopieUsf.frm"
+    Kill outDir & sep & "CopieUsf.frx"
+    On Error GoTo 0
+    
+    formPath = outDir & sep & "CopieUsf.frm"
+
+    'Copy the frame to the output directory
+    inpWkb.VBProject.VBComponents(formName).Export formPath
+    outwkb.VBProject.VBComponents.Import formPath
+
+    DoEvents
+
+    On Error Resume Next
+    Kill outDir & sep & "CopieUsf.frm"
+    Kill outDir & sep & "CopieUsf.frx"
+    On Error GoTo 0
+End Sub
+
+
 'Prepare the Linelist by adding required worksheets
 Private Sub Prepare()
     Dim dict As ILLdictionary
@@ -121,8 +223,10 @@ Private Sub Prepare()
     Dim lData As ILinelistSpecs
     Dim counter As Long
     Dim sheetName As String
+    Dim codeName As String
     Dim outwkb As Workbook
     Dim prevAlert As Boolean
+    Dim classesList As BetterArray
     
     Set outwkb = Wkb()
     
@@ -160,13 +264,42 @@ Private Sub Prepare()
     Application.DisplayAlerts = False
     outwkb.Worksheets(this.firstSheet).Delete
     Application.DisplayAlerts = prevAlert
+
+    'Send the required classes to the linelist
+    Set classesList = New BetterArray
+    classesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", "ILLExport", "LLchoice", "ILLchoice", _
+                     "LLdictionary", "ILLdictionary", "LLGeo", "ILLGeo", "LLPasswords", "ILLPasswords", _
+                     "LLSheets", "ILLSheets", "LLTranslations", "ILLTranslations", "OSFiles", "IOSFiles", _
+                     "Translation", "ITranslation", "LLVariables", "ILLVariables"
+
+    For counter = classesList.LowerBound To classesList.UpperBound
+        codeName = classesList.Item(counter)
+        TransferCode codeName, codeScopeClass
+    Next
+
+    'Send the modules to the linelist
+    classesList.Clear
+    classesList.Push "Helpers", "LinelistConstants", "LinelistChange", "LinelistCustomFunctions", _
+                     "LinelistExport", "LinelistGeo", "LinelistMigration", "LinelistShowHide", _
+                     "LinelistTranslation", "EstheticConstants", "LinelistEvents"
+
+    For counter = classesList.LowerBound To classesList.UpperBound
+        codeName = classesList.Item(counter)
+        TransferCode codeName, codeScopeModule
+    Next
 End Sub
 
 Private Sub Build()
+
+    'prepare the temporary folder
+    TemporaryFolder Create:=True
+
     'Prepare the workbook
     Prepare
 
-    '
+
+
+    TemporaryFolder Create:=False
 End Sub
 
 'Errors
