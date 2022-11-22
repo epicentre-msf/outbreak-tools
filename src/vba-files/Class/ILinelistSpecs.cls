@@ -19,7 +19,7 @@ Option Explicit
 
 Public Property Get Dictionary() As ILLdictionary:   End Property
 Public Property Get Choices() As ILLchoice:   End Property
-Public Property Get Wkb() As Workbook: End Property
+Public Property Get specswkb() As Workbook: End Property
 
 'Translation objects (messages, shapes and userforms)
 Public Property Get TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation: End Property

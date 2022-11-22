@@ -17,7 +17,7 @@ Option Explicit
 Implements IButtons
 
 Private Type TButton
-  trads As ITranslation
+  Trads As ITranslation
   rng As Range
   shapename As String
   scope As ButtonScope
@@ -29,15 +29,15 @@ Private Const BUTTONWIDTH As Long = 105
 Private Const BUTTONHEIGHT As Long = 30
 Private Const BUTTONGAP As Long = 5
 
-Public Function Create(ByVal outRng As Range, ByVal trads As ITranslation, ByVal codeName As String, _
+Public Function Create(ByVal outRng As Range, ByVal Trads As ITranslation, ByVal codeName As String, _
                       ByVal scope As ButtonScope) As IButtons
   
   If outRng Is Nothing Then ThrowError "I don't know where to write the button, no range found."
-  If trads Is Nothing Then ThrowError "No translation object found"
+  If Trads Is Nothing Then ThrowError "No translation object found"
 
   With New Buttons
     Set .OutputRange = outRng
-    Set .ShapesTranslation = trads
+    Set .ShapesTranslation = Trads
       .Name = codeName
       .ShapeScope = scope
     Set Create = .Self()
@@ -59,11 +59,11 @@ Public Property Set OutputRange(ByVal rng As Range)
 End Property
 
 Public Property Get ShapesTranslation() As ITranslation
-  Set ShapesTranslation = this.trads
+  Set ShapesTranslation = this.Trads
 End Property
 
-Public Property Set ShapesTranslation(ByVal trads As ITranslation)
-  Set this.trads = trads
+Public Property Set ShapesTranslation(ByVal Trads As ITranslation)
+  Set this.Trads = Trads
 End Property
 
 Public Property Get Name() As String

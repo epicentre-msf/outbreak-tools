@@ -41,6 +41,8 @@ Private Const HLISTTRANSLATIONSHEET     As String = "LinelistTranslation" 'linel
 Private Const ANALYSISSPECSSHEET        As String = "Analysis"
 Private Const EXPORTSHEET               As String = "Exports"
 Private Const FORMATSHEET               As String = "LinelistStyle"
+Private Const MAINSHEET                 As String = "Main"
+Private Const DESTRANSSHEET             As String = "DesignerTranslation"
 
 'Name of the range for design name in the design sheet
 Private Const designType                As String = "DESIGNTYPE"
@@ -96,7 +98,7 @@ Public Property Get Choices() As ILLchoice
 
 End Property
 
-Public Property Get trads() As ILLTranslations
+Public Property Get Trads() As ILLTranslations
     Dim trans As ILLTranslations
     Dim shtransLL As Worksheet
     Dim shtransDict As Worksheet
@@ -105,7 +107,13 @@ Public Property Get trads() As ILLTranslations
     Set shtransDict = Wkb.Worksheets(DICTTRANSLATIONSHEET)
 
     Set trans = LLTranslations.Create(shtransLL, shtransDict)
-    Set trads = trans
+    Set Trads = trans
+End Property
+
+Public Property Get DesTrads() As IDesTranslation
+    Dim sh As Worksheet
+    Set sh = Wkb.Worksheets(DESTRANSSHEET)
+    Set DesTrads = DesTranslation.Create(sh)
 End Property
 
 Public Property Get geoObject() As ILLGeo
@@ -116,9 +124,21 @@ Public Property Get geoObject() As ILLGeo
     Set geoObject = geo
 End Property
 
+Public Property Get Exports() As ILLExport
+    Dim sh As Worksheet
+    Set sh = Wkb.Worksheets(EXPORTSHEET)
+    Set Exports = LLExport.Create(sh)
+End Property
+
+Public Property Get Analysis() As ILLAnalysis
+    Dim sh As Worksheet
+    Set sh = Wkb.Worksheets(ANALYSISSPECSSHEET)
+    Set Analysis = LLAnalysis.Create(sh)
+End Property
+
 'Test if the translation form exists
 Public Property Get TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation
-    Set TransObject = trads.TransObject(trans)
+    Set TransObject = Trads.TransObject(trans)
 End Property
 
 Public Property Get FormulaDataObject() As IFormulaData
@@ -136,6 +156,12 @@ Public Property Get DesignFormat() As ILLFormat
 
     'Will take in account the other aspecs
     Set DesignFormat = LLFormat.Create(sh, designName)
+End Property
+
+Public Property Get MainObject() As IMain
+    Dim sh As Worksheet
+    Set sh = Wkb.Worksheets(MAINSHEET)
+    Set MainObject = Main.Create(sh)
 End Property
 
 Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As String
@@ -182,11 +208,30 @@ Private Function Categories(ByVal varName As String) As BetterArray
 
 End Function
 
+'Speed up before a work
+Private Sub BusyApp()
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    Application.Calculation = xlCalculationManual
+    Application.DisplayStatusBar = False
+    Application.EnableAnimations = False
+End Sub
+
+'Return previous state
+Private Sub ReturnState()
+    Application.ScreenUpdating = True
+   Application.DisplayAlerts = True
+    Application.Calculation = xlCalculationAutomatic
+    Application.DisplayStatusBar = True
+    Application.EnableAnimations = True
+End Sub
+
 Private Sub Prepare()
 
     Const CATEGORYPREFIX As String = "__case_when_"
+    'Start Row of the dictionary
+
     Dim PreservedSheetNames As BetterArray
-    Dim outwkb As Workbook
 
     Dim dict As ILLdictionary
     Dim choi As ILLchoice
@@ -194,25 +239,90 @@ Private Sub Prepare()
     Dim geo As ILLGeo 'Geo Object to add admin names in the preparation steps of the dictionary
     Dim dictTrads As ITranslation
     Dim msgTrads As ITranslation 'Translations of messages object used in preserve sheet Names
+    Dim mainTrads As IDesTranslation 'Translation of the designer: the main sheet
+    Dim mainobj As IMain
+    Dim trans As ILLTranslations
     Dim counter As Long
+    Dim inpWkb As Workbook
+    Dim prevWindowState As Integer
+    Dim setPath As String
+    Dim sh As Worksheet
+    Dim expobj As ILLExport
+    Dim ana As ILLAnalysis
+    Dim fData As IFormulaData
 
     Dim casewhenVars As BetterArray
     Dim casewhenObject As ICaseWhen
     Dim casewhenVariableName As String
     Dim casewhenFormula As String
 
+    Set mainobj = MainObject()
+    Set mainTrads = DesTrads()
+
+    'If the main object is not ready exit the function
+    mainobj.CheckReadiness mainTrads
+    If Not mainobj.Ready() Then Exit Sub
 
     Set dict = Dictionary()
     Set choi = Choices()
-    Set dictTrads = TransObject(TranslationOfDictionary)
-    Set msgTrads = TransObject()
+    Set trans = Trads()
+    Set expobj = Exports()
+    Set ana = Analysis()
     Set geo = geoObject()
 
-    Set PreservedSheetNames = New BetterArray
-    PreservedSheetNames.LowerBound = 1
+    'Import dictionary, and geobase, as well as choices
+    prevWindowState = Application.WindowState
+    setPath = mainobj.SetupPath()
+    BusyApp
+    
+    Set inpWkb = Workbooks.Open(setPath)
+    Application.WindowState = xlMinimized
 
+    'All the required sheeets should be present
+    sheetExists inpWkb, DICTIONARYSHEET
+    sheetExists inpWkb, CHOICESSHEET
+    sheetExists inpWkb, DICTTRANSLATIONSHEET
+    sheetExists inpWkb, EXPORTSHEET
+    sheetExists inpWkb, ANALYSISSPECSSHEET
+
+    'Import the dictionary data
+    Set sh = inpWkb.Worksheets(DICTIONARYSHEET)
+    dict.Import sh, fromStartRow:=4, fromStartcol:=1
+
+    'Import the choice data
+    Set sh = inpWkb.Worksheets(CHOICESSHEET)
+    choi.Import sh, fromStartRow:=2, fromStartcol:=1
+
+    'Import the translations
+    trans.ImportTranslation inpWkb
+
+    'Import the Exports specifications from the setup
+    Set sh = inpWkb.Worksheets(EXPORTSHEET)
+    expobj.ImportSpecs sh, 1, 1
+    
+    'Import the analysis
+    Set sh = inpWkb.Worksheets(ANALYSISSPECSSHEET)
+    ana.Import sh
+    
+    inpWkb.Close SaveChanges:=False
+
+    'Import the geobase
+    setPath = mainobj.GeoPath()
+    Set inpWkb = Workbooks.Open(setPath)
+    Application.WindowState = xlMinimized
+    
+    BusyApp
+    
+    geo.Import inpWkb
+    inpWkb.Close SaveChanges:=False
+    
+    'Define those objects after the imports
+    Set dictTrads = TransObject(TranslationOfDictionary)
+    Set msgTrads = TransObject()
 
     'Preserved names for worksheet
+    Set PreservedSheetNames = New BetterArray
+    PreservedSheetNames.LowerBound = 1
     PreservedSheetNames.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
                              PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
                              EXPORTSHEET, TemporarySheetName(TemporarySingle), TemporarySheetName(TemporarySheetList), _
@@ -221,11 +331,9 @@ Private Sub Prepare()
                              msgTrads.TranslatedValue("LLSHEET_Admin"), msgTrads.TranslatedValue("LLSHEET_Analysis"), _
                              msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), msgTrads.TranslatedValue("LLSHEET_TemporalAnalysis")
 
-    'Translate the dictionary
-    dict.Translate dictTrads
-
     'Prepare the dictionary
-    dict.Prepare PreservedSheetNames, geo, tablePrefix:="table"
+    dict.Prepare PreservedSheetNames, geo, msgTrads, tablePrefix:="table"
+    
     'Need to prepare the dictionary before loading the variable class
     Set vars = LLVariables.Create(dict)
 
@@ -242,12 +350,116 @@ Private Sub Prepare()
         End If
     Next
 
+    'Add list auto to dictionary (in a recursive way)
+    If Not dict.ColumnExists("list auto") Then AddListAuto
+
+    'Translate the dictionary
+    dict.Translate dictTrads
+
     'Translate the choices
     choi.Translate dictTrads
-
-    'Sort the exports
+    
+    'Sort the chocies
     choi.Sort
+
+    'Translate the exports
+    expobj.Translate dictTrads
+
+    'Translate the analysis
+    ana.Translate dictTrads
+    
+    mainobj.UpdateStatus 10
+    Application.WindowState = prevWindowState
+
+    'Return the state of the application
+    ReturnState
 End Sub
+
+
+'Add list auto origin informations
+Private Sub AddListAuto()
+    Dim dict As ILLdictionary
+    Dim vars As ILLVariables
+    Dim counter As Long
+    Dim listVars As BetterArray
+    Dim varName As String
+    Dim varControl As String
+    Dim dictLength As Long
+
+    Set dict = Dictionary()
+    Set vars = LLVariables.Create(dict)
+
+    dict.AddColumn ("list auto")
+    Set listVars = dict.Data.FilterData("control", "list_auto", "control details")
+
+    For counter = listVars.LowerBound To listVars.UpperBound
+        varName = listVars.Item(counter)
+        
+        'listVars can contains the same variable twice, be sure we need to update with the onEmpty parameter
+            vars.SetValue varName:=varName, colName:="list auto", newValue:="list_auto_origin", onEmpty:=True
+            
+            'If one list auto var is a formula, all the variables in that formula are list auto origin
+            'List auto origin triggers update of list auto
+            
+            varControl = vars.Value(varName:=varName, colName:="control")
+            If (varControl = "formula") Or (varControl = "case_when") Then RecursiveListAuto varName
+    Next
+
+End Sub
+
+Private Sub RecursiveListAuto(ByVal varName As String)
+    
+    Dim dict As ILLdictionary
+    Dim vars As ILLVariables
+    Dim controlValue As String
+    Dim controlDetailsValue As String
+    Dim fData As FormulaData
+    Dim varCaseWhen As ICaseWhen
+    Dim varFormObject As IFormulas
+    Dim formList As BetterArray
+    Dim counter As Long
+    Dim formvarName As String
+    Dim formVarControl As String
+
+    Set dict = Dictionary()
+    Set vars = LLVariables.Create(dict)
+
+    controlValue = vars.Value(varName:=varName, colName:="control")
+    
+    If (controlValue = "case_when" Or controlValue = "formula") Then
+        Set fData = FormulaDataObject()
+        controlDetailsValue = vars.Value(varName:=varName, colName:="control details")
+
+        If controlValue = "case_when" Then
+            Set varCaseWhen = CaseWhen.Create(controlDetailsValue)
+            controlDetailsValue = varCaseWhen.parsedFormula()
+        End If
+
+        Set varFormObject = Formulas.Create(dict, fData, controlDetailsValue)
+
+        If varFormObject.valid(formulaType:="linelist") Then
+            
+            Set formList = varFormObject.varlists()
+            
+            counter = formList.LowerBound
+            
+            Do While counter <= formList.UpperBound
+                
+                formvarName = formList.Items(counter)
+                formVarControl = vars.Value(varName:=formvarName, colName:="control")
+                
+                vars.SetValue varName:=formvarName, colName:="list auto", newValue:="list_auto_origin", onEmpty:=True
+                
+                If (formVarControl = "formula" Or formVarControl = "case_when") Then RecursiveListAuto formvarName
+
+                counter = counter + 1
+            Loop
+            
+        End If
+    End If
+
+End Sub
+
 
 'Errors ----------------------------------
 
@@ -260,7 +472,7 @@ Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
     Set sheetsArray = New BetterArray
     sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
                      PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
-                     EXPORTSHEET, FORMATSHEET
+                     EXPORTSHEET, FORMATSHEET, MAINSHEET, DESTRANSSHEET
 
     For counter = sheetsArray.LowerBound To sheetsArray.UpperBound
         sheetName = sheetsArray.Item(counter)
@@ -330,6 +542,10 @@ End Property
 
 Public Property Get ILinelistSpecs_DesignFormat() As ILLFormat
     Set ILinelistSpecs_DesignFormat = DesignFormat()
+End Property
+
+Public Property Get ILinelistSpecs_SpecsWkb() As Workbook
+    Set ILinelistSpecs_SpecsWkb = Wkb()
 End Property
 
 

@@ -41,7 +41,7 @@ Public Function Create(ByVal specs As ITablesSpecs, ByVal outputWksh As Workshee
     With New CrossTable
         Set .Specifications = specs
         Set .Wksh = outputWksh
-        Set .trads = trans
+        Set .Trads = trans
         Set Create = .Self
     End With
 
@@ -67,11 +67,11 @@ Public Property Set Specifications(ByVal specs As ITablesSpecs)
     Set this.specs = specs
 End Property
 
-Public Property Get trads() As ITranslation
-    Set trads = this.trans
+Public Property Get Trads() As ITranslation
+    Set Trads = this.trans
 End Property
 
-Public Property Set trads(ByVal trans As ITranslation)
+Public Property Set Trads(ByVal trans As ITranslation)
     Set this.trans = trans
 End Property
 
@@ -137,7 +137,7 @@ Private Property Get Previous() As ICrossTable
     Set specs = Specifications
     Set prevSpecs = specs.Previous
     Set sh = Wksh()
-    Set trans = trads()
+    Set trans = Trads()
 
     Set Previous = Create(prevSpecs, sh, trans)
 End Property
@@ -145,7 +145,7 @@ End Property
 Private Property Get StartColumn() As Long
     Dim sh As Worksheet
     Dim specs As ITablesSpecs
-    Dim strtCol As Long
+    Dim strtcol As Long
     Dim tabId As String
 
     Set specs = Specifications
@@ -155,12 +155,12 @@ Private Property Get StartColumn() As Long
         If Not RangeExists("STARTCOL_" & tabId) Then
             'On time series, the startcolumn depends on new section
 
-            strtCol = IIf(specs.TableType = TypeTimeSeries And (Not specs.isNewSection()), _
+            strtcol = IIf(specs.TableType = TypeTimeSeries And (Not specs.isNewSection()), _
                           .Cells(StartRow + 1, .Columns.Count).End(xlToLeft).Column, _
                           STANDARDSTARTCOL)
 
-            StartColumn = strtCol
-            .Cells(StartRow - 1, strtCol + 1).Name = "STARTCOL_" & tabId
+            StartColumn = strtcol
+            .Cells(StartRow - 1, strtcol + 1).Name = "STARTCOL_" & tabId
         Else
             StartColumn = .Range("STARTCOL_" & tabId).Column - 1
         End If
@@ -302,7 +302,7 @@ Private Sub AddRows()
     Set sh = Wksh()
     Set specs = Specifications()
     tabId = specs.TableId
-    Set trans = trads()
+    Set trans = Trads()
     Set vars = LLVariables.Create(specs.Dictionary)
 
     missingValue = specs.Value("missing")
@@ -471,7 +471,7 @@ Private Sub AddColumns()
     Set sh = Wksh()
     Set specs = Specifications()
     tabId = specs.TableId
-    Set trans = trads()
+    Set trans = Trads()
     Set vars = LLVariables.Create(specs.Dictionary)
     Set colData = New BetterArray
     colData.LowerBound = 1
@@ -539,7 +539,7 @@ Private Sub AddHeader()
 
     Set sh = Wksh()
     Set specs = Specifications
-    Set trans = trads()
+    Set trans = Trads()
     start = StartRow
     tabId = specs.TableId
 
@@ -676,7 +676,7 @@ Private Sub NameRanges()
 
 
     Set sh = Wksh()
-    Set trans = trads()
+    Set trans = Trads()
     Set specs = Specifications
     tabId = specs.TableId
 

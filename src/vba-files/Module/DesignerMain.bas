@@ -89,27 +89,12 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Import the geobase if it is not imported
     If Not bGeobaseIsImported Then Call ImportGeobase
 
-    Dim DictHeaders     As BetterArray           'Dictionary headers
-    Dim dictData        As BetterArray           'Dictionary data
-    Dim ChoicesHeaders  As BetterArray           'Choices headers
-    Dim ChoicesData     As BetterArray           'Choices data
-    Dim ExportData      As BetterArray           'Export data
-    Dim TransData       As BetterArray           'Translation data
-    Dim GSData          As BetterArray           'Global Summary Data
-    Dim UAData          As BetterArray           'Univariate Analaysis Data
-    Dim BAData          As BetterArray           'Bivariate Analysis DAta
-    Dim TAData          As BetterArray
-    Dim SAData          As BetterArray
-
     Dim sPath           As String
-    Dim SetupWkb        As Workbook
     Dim DesWkb          As Workbook
     Dim iOpenLL         As Integer
     Dim previousSecurity As Byte
 
     'Be sure the actual Workbook is not opened
-
-
     SheetMain.Range("RNG_Update").Value = vbNullString
 
     If IsWkbOpened(SheetMain.Range("RNG_LLName").Value & ".xlsb") Then
@@ -131,18 +116,18 @@ Sub GenerateData(Optional iAsk As Byte = 0)
     'Set security before opening  the setup workbook
     Application.AutomationSecurity = msoAutomationSecurityForceDisable
 
-    Set SetupWkb = Workbooks.Open(SheetMain.Range("RNG_PathDico").Value)
+    Set setupWkb = Workbooks.Open(SheetMain.Range("RNG_PathDico").Value)
 
     'Move the dictionary data
-    Call Helpers.MoveData(SetupWkb, DesWkb, C_sParamSheetDict, C_eStartLinesDictHeaders)
+    Call Helpers.MoveData(setupWkb, DesWkb, C_sParamSheetDict, C_eStartLinesDictHeaders)
     'Move the Choices data
-    Call Helpers.MoveData(SetupWkb, DesWkb, C_sParamSheetChoices, C_eStartLinesChoicesHeaders)
+    Call Helpers.MoveData(setupWkb, DesWkb, C_sParamSheetChoices, C_eStartLinesChoicesHeaders)
     'Move the Export data
-    Call Helpers.MoveData(SetupWkb, DesWkb, C_sParamSheetExport, C_eStartLinesExportTitle)
+    Call Helpers.MoveData(setupWkb, DesWkb, C_sParamSheetExport, C_eStartLinesExportTitle)
 
-    Call DesignerMainHelpers.MoveAnalysis(SetupWkb)
+    Call DesignerMainHelpers.MoveAnalysis(setupWkb)
 
-    SetupWkb.Close SaveChanges:=False
+    setupWkb.Close SaveChanges:=False
 
     Application.AutomationSecurity = previousSecurity
 

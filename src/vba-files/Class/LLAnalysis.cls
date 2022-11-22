@@ -32,21 +32,13 @@ Private Const GRAPHTIMESERIES As String = "Tab_Graph_TimeSeries"
 Private Const SPATIAL As String = "Tab_SpactialAnalysis"
 
 'Exposed methods
-Public Function Create(ByVal anaWksh As Worksheet, lData As ILinelistSpecs) As ILLAnalysis
+Public Function Create(ByVal anaWksh As Worksheet) As ILLAnalysis
 
     If anaWksh Is Nothing Then ThrowErrorUnableInstanciate "Worksheet object not defined"
-    If lData Is Nothing Then ThrowErrorUnableInstanciate "Linelist specifications not defined"
-    
-    'With anaWksh.Cells(1, 1)
-    '    If .Font.color <> vbBlue Or .Value <> "analysis" Then ThrowErrorUnableInstanciate "Not a valid analysis worksheet"
-    'End With
-
-    'Add checks on required ListObjects
     CheckTablesRequirements
 
     With New LLAnalysis
         Set .Wksh = anaWksh
-        Set .LinelistSpecifications = lData
         Set Create = .Self
     End With
 
@@ -60,13 +52,6 @@ Public Property Set Wksh(ByVal anash As Worksheet)
     Set this.anash = anash
 End Property
 
-Public Property Get LinelistSpecifications() As ILinelistSpecs
-    Set LinelistSpecifications = this.lData
-End Property
-
-Public Property Set LinelistSpecifications(ByVal lData As ILinelistSpecs)
-    Set this.lData = lData
-End Property
 
 Public Property Get Self() As ILLAnalysis
     Set Self = Me
@@ -116,188 +101,188 @@ Private Function DataRange(ByVal Lo As ListObject, ByVal colName As String) As R
     If ColumnExists(Lo, colName) Then Set DataRange = Lo.ListColumns(ColumnIndex(Lo, colName)).Range
 End Function
 
-Private Sub Build(ByVal outputshUA As Worksheet, ByVal outputshTS As Worksheet)
-    Dim sh As Worksheet
-    Dim outsh As Worksheet
-    Dim counter As Long
-    Dim graphCounter As Long
-    Dim Lo As ListObject
-    Dim hRng As Range
-    Dim tabRng As Range
-    Dim cellRng As Range
-    Dim specs As ITablesSpecs
-    Dim prevSpecs As ITablesSpecs
-    Dim grSpecs As IGraphSpecs
-    Dim gr As IGraphs
-    Dim tabId As String
-    Dim lData As ILinelistSpecs
-    Dim tabl As ICrossTable
-    Dim tabform As ICrossTableFormula
-    Dim design As ILLFormat
-    Dim trans As ITranslation
-    Dim forml As IFormulaData
-    Dim dict As ILLdictionary
-    Dim vars As ILLVariables
-    Dim maxFormula As String
-    Dim minFormula As String
-    Dim rowVar As String
-    Dim secId As String
-    Dim valid As Boolean
+' Private Sub Build(ll As ILinelist)
+'     Dim sh As Worksheet
+'     Dim outsh As Worksheet
+'     Dim counter As Long
+'     Dim graphCounter As Long
+'     Dim Lo As ListObject
+'     Dim hRng As Range
+'     Dim tabRng As Range
+'     Dim cellRng As Range
+'     Dim specs As ITablesSpecs
+'     Dim prevSpecs As ITablesSpecs
+'     Dim grSpecs As IGraphSpecs
+'     Dim gr As IGraphs
+'     Dim tabId As String
+'     Dim lData As ILinelistSpecs
+'     Dim tabl As ICrossTable
+'     Dim tabform As ICrossTableFormula
+'     Dim design As ILLFormat
+'     Dim trans As ITranslation
+'     Dim forml As IFormulaData
+'     Dim dict As ILLdictionary
+'     Dim vars As ILLVariables
+'     Dim maxFormula As String
+'     Dim minFormula As String
+'     Dim rowVar As String
+'     Dim secId As String
+'     Dim valid As Boolean
 
 
 
-    Set sh = Wksh()
-    outputshUA.Cells.EntireColumn.ColumnWidth = 16.18
-    outputshUA.Cells.WrapText = True
-    Set lData = LinelistSpecifications()
-    Set trans = lData.TransObject()
-    Set design = lData.DesignFormat
-    Set forml = lData.FormulaDataObject
-    Set dict = lData.Dictionary()
-    Set vars = LLVariables.Create(dict)
+'     Set sh = Wksh()
+'     outputshUA.Cells.EntireColumn.ColumnWidth = 16.18
+'     outputshUA.Cells.WrapText = True
+'     Set lData = LinelistSpecifications()
+'     Set trans = lData.TransObject()
+'     Set design = lData.DesignFormat
+'     Set forml = lData.FormulaDataObject
+'     Set dict = lData.Dictionary()
+'     Set vars = LLVariables.Create(dict)
 
-    'Build Global summary ========================================================
-    'Test if the listObject is not empty
-    Set Lo = sh.ListObjects(GLOBALSUMMARY)
-    Set outsh = outputshUA
-    If Not (Lo.DataBodyRange Is Nothing) Then
-        Set hRng = Lo.HeaderRowRange
-        For counter = 1 To Lo.ListRows.Count
-            Set tabRng = Lo.ListRows(counter).Range
-            Set specs = TablesSpecs.Create(hRng, tabRng, lData)
-            If specs.ValidTable() Then
-                'Create the table
-                Set tabl = CrossTable.Create(specs, outsh, trans)
-                tabl.Build
-                'Add formulas and format
-                Set tabform = CrossTableFormula.Create(tabl, forml)
-                tabform.AddFormulas
-                tabl.Format design
-            End If
-        Next
-    End If
+'     'Build Global summary ========================================================
+'     'Test if the listObject is not empty
+'     Set Lo = sh.ListObjects(GLOBALSUMMARY)
+'     Set outsh = outputshUA
+'     If Not (Lo.DataBodyRange Is Nothing) Then
+'         Set hRng = Lo.HeaderRowRange
+'         For counter = 1 To Lo.ListRows.Count
+'             Set tabRng = Lo.ListRows(counter).Range
+'             Set specs = TablesSpecs.Create(hRng, tabRng, lData)
+'             If specs.ValidTable() Then
+'                 'Create the table
+'                 Set tabl = CrossTable.Create(specs, outsh, trans)
+'                 tabl.Build
+'                 'Add formulas and format
+'                 Set tabform = CrossTableFormula.Create(tabl, forml)
+'                 tabform.AddFormulas
+'                 tabl.Format design
+'             End If
+'         Next
+'     End If
 
-    'Build Univariate Analysis =====================================================
-    Set Lo = sh.ListObjects(UNIVARIATE)
-    Set outsh = outputshUA
-    If Not (Lo.DataBodyRange Is Nothing) Then
-        Set hRng = Lo.HeaderRowRange
-        For counter = 1 To Lo.ListRows.Count
-            Set tabRng = Lo.ListRows(counter).Range
-            Set specs = TablesSpecs.Create(hRng, tabRng, lData)
-            If specs.ValidTable() Then
-                'Create the table
-                Set tabl = CrossTable.Create(specs, outsh, trans)
-                tabl.Build
-                'Add formulas and format
-                Set tabform = CrossTableFormula.Create(tabl, forml)
-                tabform.AddFormulas
-                tabl.Format design
-                'Add graph
-                If specs.Value("graph") = "yes" Then
-                    Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
-                    Set grSpecs = GraphSpecs.Create(tabl)
-                    grSpecs.CreateSeries
-                    Set gr = Graphs.Create(outsh, cellRng)
-                    gr.Add
-                    For graphCounter = 1 To grSpecs.NumberOfSeries 'Number of series for univariate and bivariate
-                        gr.AddSeries grSpecs.SeriesName(graphCounter), grSpecs.SeriesType(graphCounter), grSpecs.SeriesPos(graphCounter)
-                        gr.AddLabels grSpecs.SeriesLabel(graphCounter), grSpecs.SeriesColumnLabel(graphCounter)
-                    Next
-                    gr.Format catTitle:=vars.Value(colName:="main label", varName:=specs.Value("row")), valuesTitle:=specs.Value("label")
-                End If
-            End If
-        Next
-    End If
+'     'Build Univariate Analysis =====================================================
+'     Set Lo = sh.ListObjects(UNIVARIATE)
+'     Set outsh = outputshUA
+'     If Not (Lo.DataBodyRange Is Nothing) Then
+'         Set hRng = Lo.HeaderRowRange
+'         For counter = 1 To Lo.ListRows.Count
+'             Set tabRng = Lo.ListRows(counter).Range
+'             Set specs = TablesSpecs.Create(hRng, tabRng, lData)
+'             If specs.ValidTable() Then
+'                 'Create the table
+'                 Set tabl = CrossTable.Create(specs, outsh, trans)
+'                 tabl.Build
+'                 'Add formulas and format
+'                 Set tabform = CrossTableFormula.Create(tabl, forml)
+'                 tabform.AddFormulas
+'                 tabl.Format design
+'                 'Add graph
+'                 If specs.Value("graph") = "yes" Then
+'                     Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
+'                     Set grSpecs = GraphSpecs.Create(tabl)
+'                     grSpecs.CreateSeries
+'                     Set gr = Graphs.Create(outsh, cellRng)
+'                     gr.Add
+'                     For graphCounter = 1 To grSpecs.NumberOfSeries 'Number of series for univariate and bivariate
+'                         gr.AddSeries grSpecs.SeriesName(graphCounter), grSpecs.SeriesType(graphCounter), grSpecs.SeriesPos(graphCounter)
+'                         gr.AddLabels grSpecs.SeriesLabel(graphCounter), grSpecs.SeriesColumnLabel(graphCounter)
+'                     Next
+'                     gr.Format catTitle:=vars.Value(colName:="main label", varName:=specs.Value("row")), valuesTitle:=specs.Value("label")
+'                 End If
+'             End If
+'         Next
+'     End If
 
-    'Build Bivariate Analysis ===================================================== 'Can fator this later on
-    Set Lo = sh.ListObjects(BIVARIATE)
-    Set outsh = outputshUA
-    If Not (Lo.DataBodyRange Is Nothing) Then
-        Set hRng = Lo.HeaderRowRange
-        For counter = 1 To Lo.ListRows.Count
-            Set tabRng = Lo.ListRows(counter).Range
-            Set specs = TablesSpecs.Create(hRng, tabRng, lData)
-            If specs.ValidTable() Then
-                tabId = specs.TableId
-                'Create the table
-                Set tabl = CrossTable.Create(specs, outsh, trans)
-                tabl.Build
-                'Add formulas and format
-                Set tabform = CrossTableFormula.Create(tabl, forml)
-                tabform.AddFormulas
-                tabl.Format design
+'     'Build Bivariate Analysis ===================================================== 'Can fator this later on
+'     Set Lo = sh.ListObjects(BIVARIATE)
+'     Set outsh = outputshUA
+'     If Not (Lo.DataBodyRange Is Nothing) Then
+'         Set hRng = Lo.HeaderRowRange
+'         For counter = 1 To Lo.ListRows.Count
+'             Set tabRng = Lo.ListRows(counter).Range
+'             Set specs = TablesSpecs.Create(hRng, tabRng, lData)
+'             If specs.ValidTable() Then
+'                 tabId = specs.TableId
+'                 'Create the table
+'                 Set tabl = CrossTable.Create(specs, outsh, trans)
+'                 tabl.Build
+'                 'Add formulas and format
+'                 Set tabform = CrossTableFormula.Create(tabl, forml)
+'                 tabform.AddFormulas
+'                 tabl.Format design
                 
-                'Add graph
-                If specs.Value("graph") = "values" Or specs.Value("graph") = "percentage" Or specs.Value("graph") = "both" Then
-                    Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
-                    Set grSpecs = GraphSpecs.Create(tabl)
-                    grSpecs.CreateSeries
-                    Set gr = Graphs.Create(outsh, cellRng)
-                    gr.Add
-                    For graphCounter = 1 To grSpecs.NumberOfSeries
+'                 'Add graph
+'                 If specs.Value("graph") = "values" Or specs.Value("graph") = "percentage" Or specs.Value("graph") = "both" Then
+'                     Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
+'                     Set grSpecs = GraphSpecs.Create(tabl)
+'                     grSpecs.CreateSeries
+'                     Set gr = Graphs.Create(outsh, cellRng)
+'                     gr.Add
+'                     For graphCounter = 1 To grSpecs.NumberOfSeries
 
-                        gr.AddSeries grSpecs.SeriesName(graphCounter), grSpecs.SeriesType(graphCounter), grSpecs.SeriesPos(graphCounter)
-                        gr.AddLabels grSpecs.SeriesLabel(graphCounter), grSpecs.SeriesColumnLabel(graphCounter)
+'                         gr.AddSeries grSpecs.SeriesName(graphCounter), grSpecs.SeriesType(graphCounter), grSpecs.SeriesPos(graphCounter)
+'                         gr.AddLabels grSpecs.SeriesLabel(graphCounter), grSpecs.SeriesColumnLabel(graphCounter)
 
-                    Next
-                    gr.Format catTitle:=vars.Value(colName:="main label", varName:=specs.Value("row")), valuesTitle:=specs.Value("label")
-                End If
-            End If
-        Next
-    End If
+'                     Next
+'                     gr.Format catTitle:=vars.Value(colName:="main label", varName:=specs.Value("row")), valuesTitle:=specs.Value("label")
+'                 End If
+'             End If
+'         Next
+'     End If
 
-    'Build time series analysis =======================================================================================
-    Set Lo = sh.ListObjects(TIMESERIES)
-    Set outsh = outputshTS
-    If Not (Lo.DataBodyRange Is Nothing) Then
-        Set hRng = Lo.HeaderRowRange
-        For counter = 1 To Lo.ListRows.Count
-            Set tabRng = Lo.ListRows(counter).Range
-            Set specs = TablesSpecs.Create(hRng, tabRng, lData)
-            valid = specs.ValidTable()
-            If valid Then
-                'Minimum and maximum formulas
-                rowVar = specs.Value("row")
-                On Error Resume Next
-                Set prevSpecs = specs.Previous()
-                On Error GoTo 0
+'     'Build time series analysis =======================================================================================
+'     Set Lo = sh.ListObjects(TIMESERIES)
+'     Set outsh = outputshTS
+'     If Not (Lo.DataBodyRange Is Nothing) Then
+'         Set hRng = Lo.HeaderRowRange
+'         For counter = 1 To Lo.ListRows.Count
+'             Set tabRng = Lo.ListRows(counter).Range
+'             Set specs = TablesSpecs.Create(hRng, tabRng, lData)
+'             valid = specs.ValidTable()
+'             If valid Then
+'                 'Minimum and maximum formulas
+'                 rowVar = specs.Value("row")
+'                 On Error Resume Next
+'                 Set prevSpecs = specs.Previous()
+'                 On Error GoTo 0
 
                     
-                Set tabl = CrossTable.Create(specs, outsh, trans)
-                tabl.Build
-                Set tabform = CrossTableFormula.Create(tabl, forml)
+'                 Set tabl = CrossTable.Create(specs, outsh, trans)
+'                 tabl.Build
+'                 Set tabform = CrossTableFormula.Create(tabl, forml)
                 
                 
-                tabform.AddFormulas
-                tabl.Format design
+'                 tabform.AddFormulas
+'                 tabl.Format design
 
-                'Minimum and maximum formula
-                If (prevSpecs Is Nothing) Then
-                    ' First New section
-                    minFormula = "MIN(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
-                    maxFormula = "MAX(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
+'                 'Minimum and maximum formula
+'                 If (prevSpecs Is Nothing) Then
+'                     ' First New section
+'                     minFormula = "MIN(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
+'                     maxFormula = "MAX(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
 
-                ElseIf specs.isNewSection() And (Not prevSpecs Is Nothing) Then
+'                 ElseIf specs.isNewSection() And (Not prevSpecs Is Nothing) Then
                     
-                    ' New section after the first new section
-                    outsh.Range("MAX_MAX_DATE_" & prevSpecs.TableSectionId).formula = "= MAX(" & minFormula & ")"
-                    outsh.Range("MIN_MIN_DATE_" & prevSpecs.TableSectionId).formula = "= MIN(" & maxFormula & ")"
-                    minFormula = "MIN(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
-                    maxFormula = "MAX(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
+'                     ' New section after the first new section
+'                     outsh.Range("MAX_MAX_DATE_" & prevSpecs.TableSectionId).formula = "= MAX(" & minFormula & ")"
+'                     outsh.Range("MIN_MIN_DATE_" & prevSpecs.TableSectionId).formula = "= MIN(" & maxFormula & ")"
+'                     minFormula = "MIN(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
+'                     maxFormula = "MAX(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
 
-                ElseIf Not specs.isNewSection() Then
+'                 ElseIf Not specs.isNewSection() Then
 
-                    'Another part of the table, on the same section
-                    minFormula = minFormula & " , " & "MIN(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
-                    maxFormula = maxFormula & ", " & "MAX(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
+'                     'Another part of the table, on the same section
+'                     minFormula = minFormula & " , " & "MIN(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
+'                     maxFormula = maxFormula & ", " & "MAX(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
 
-                End If
+'                 End If
 
-            End If
-        Next
-    End If
-End Sub
+'             End If
+'         Next
+'     End If
+' End Sub
 
 'Import listobjects in analysis
 Private Sub Import(ByVal impWksh As Worksheet)

@@ -29,10 +29,10 @@ Public Function UniqueValues(ByVal colName As String) As BetterArray: End Functi
 Public Function VariableExists(ByVal varName As String) As Boolean: End Function
 
 'Void Cleaning methods
-Public Sub Prepare(ByVal PreservedSheetNames As BetterArray, ByVal geoObject As ILLGeo, Optional ByVal tablePrefix As String = "table"): End Sub
+Public Sub Prepare(ByVal PreservedSheetNames As BetterArray, ByVal geoObject As ILLGeo, ByVal msgTrads As ITranslation, Optional ByVal tablePrefix As String = "table"): End Sub
 
 Public Sub Clean(): End Sub
-Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long)
+Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
 End Sub
 
 Public Sub Export(ByVal toWkb As Workbook, Optional ByVal exportType As String = "__all__")
@@ -42,4 +42,7 @@ End Sub
 Public Sub Translate(ByVal TransObject As ITranslation)
 End Sub
 
+'Add a column
+Public Sub AddColumn(ByVal colName As String)
+End Sub
 

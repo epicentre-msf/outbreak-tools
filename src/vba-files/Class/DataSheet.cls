@@ -295,17 +295,32 @@ Private Function FiltersData(ByVal varData As BetterArray, _
 End Function
 
 'Import Sub
-Private Sub Import(ByVal fromWksh As Worksheet, fromStartRow As Long, fromStartCol As Long)
+Private Sub Import(ByVal fromWksh As Worksheet, fromStartRow As Long, fromStartcol As Long)
     Dim dataWksh As Worksheet
     Dim dataImportData As BetterArray
-
+    Dim strtcol As Long
+    Dim strtrw As Long
+    Dim col As Long
+    
+    strtcol = StartColumn()
+    strtrw = StartRow()
+    
     'Trace on errors on import
-    If (fromWksh = Nothing) Or (fromStartRow <= 0) Or (fromStartCol <= 0) Then Exit Sub
+    If (fromWksh Is Nothing) Or (fromStartRow <= 0) Or (fromStartcol <= 0) Then Exit Sub
     Set dataWksh = Wksh()
     dataWksh.Cells.Clear
     Set dataImportData = New BetterArray
-    dataImportData.FromExcelRange fromWksh.Cells(fromStartRow, fromStartCol), DetectLastColumn:=True, DetectLastRow:=True
-    dataImportData.ToExcelRange dataWksh.Cells(StartRow, StartColumn)
+    dataImportData.FromExcelRange fromWksh.Cells(fromStartRow, fromStartcol), DetectLastColumn:=True, DetectLastRow:=True
+    dataImportData.ToExcelRange dataWksh.Cells(strtrw, strtcol)
+    
+    'Change colnames to lowercase
+    col = strtcol
+    With dataWksh
+        Do While (.Cells(strtrw, col) <> vbNullString)
+            .Cells(strtrw, col).Value = LCase(Application.WorksheetFunction.Trim(.Cells(strtrw, col).Value))
+            col = col + 1
+        Loop
+    End With
 End Sub
 
 'Export
@@ -410,8 +425,8 @@ Public Sub IDataSheet_Export(ByVal toWkb As Workbook, _
     Export toWkb, filteredVarName, filteredCondition
 End Sub
 
-Public Sub IDataSheet_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartCol As Long)
-    Import fromWksh, fromStartRow, fromStartCol
+Public Sub IDataSheet_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
+    Import fromWksh, fromStartRow, fromStartcol
 End Sub
 
 
