@@ -146,6 +146,8 @@ Sub GenerateData()
     Set dict = lData.Dictionary()
     Set llshs = LLSheets.Create(dict)
     Set mainobj = lData.MainObject()
+    Set llana = lData.Analysis()
+
     mainobj.UpdateStatus (10)
 
     currSheetName = dict.DataRange("sheet name").Cells(1, 1).Value
@@ -190,10 +192,11 @@ Sub GenerateData()
         
         statusValue = statusValue + increment
         mainobj.UpdateStatus statusValue
-
     Loop
 
     'Save the linelist
+    BeginWork xlsapp:=Application
+    llana.Build ll
     ll.SaveLL
     EndWork xlsapp:=Application
     

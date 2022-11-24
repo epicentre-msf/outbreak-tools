@@ -21,6 +21,7 @@ Private Type TDropdownLists
 End Type
 
 Private this As TDropdownLists
+Private Const CLASSNAME As String = "DropdownLists"
 
 Public Function Create(outsh) As IDropdownLists
     'Errors

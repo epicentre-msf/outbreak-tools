@@ -164,7 +164,7 @@ Public Sub Build()
     Dim pass As ILLPasswords
     Dim sectionsList As BetterArray              'The list of all sections in a worksheet (for a dropdown)
     Dim tableName As String
-    Dim gotoSection As String
+    Dim goToSection As String
     Dim gotoSectionListName As String
     Dim shcolStart As Long
     Dim shcolEnd As Long
@@ -228,20 +228,20 @@ Public Sub Build()
 
     'Now Build each Section
     Set trads = lData.TransObject(TranslationOfMessages)
-    gotoSection = trads.TranslatedValue("MSG_GoToSec")
+    goToSection = trads.TranslatedValue("MSG_GoToSec")
 
     Set sectionsList = New BetterArray
     strt = llshs.RowIndex(sheetName) - 1         '- 1 because the row index includes the header row of the dictionary
     Set sec = HListSections.Create(strt, ll)
     sec.Build
     sec.Format
-    If sec.Name <> vbNullString Then sectionsList.Push gotoSection & ": " & sec.Name
+    If sec.Name <> vbNullString Then sectionsList.Push goToSection & ": " & sec.Name
 
     Do While sec.HasNext()
         Set sec = sec.NextSection
         sec.Build
         sec.Format
-        If sec.Name <> vbNullString Then sectionsList.Push gotoSection & ": " & sec.Name
+        If sec.Name <> vbNullString Then sectionsList.Push goToSection & ": " & sec.Name
     Loop
 
     'Add dropdown on first cell for GoTo section
@@ -249,7 +249,7 @@ Public Sub Build()
     tableName = llshs.SheetInfo(sheetName, 2)
     gotoSectionListName = tableName & "_" & GOTOSECCODE 'Name of the range goTo section
     rng.Name = gotoSectionListName
-    rng.Value = gotoSection
+    rng.Value = goToSection
     drop.Add sectionsList, gotoSectionListName
     drop.SetValidation rng, gotoSectionListName
     design.ApplyFormat rng, scope:=LinelistSelectionDropdown
