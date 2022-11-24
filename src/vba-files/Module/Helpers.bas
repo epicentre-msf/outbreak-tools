@@ -215,7 +215,6 @@ Public Sub BeginWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean
     xlsapp.ScreenUpdating = False
     xlsapp.DisplayAlerts = False
     xlsapp.Calculation = xlCalculationManual
-    xlsapp.DisplayStatusBar = bstatusbar
     xlsapp.EnableAnimations = False
 End Sub
 
@@ -224,7 +223,6 @@ Public Sub EndWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean =
     xlsapp.ScreenUpdating = True
     xlsapp.DisplayAlerts = True
     xlsapp.Calculation = xlCalculationAutomatic
-    xlsapp.DisplayStatusBar = bstatusbar
     xlsapp.EnableAnimations = True
 End Sub
 

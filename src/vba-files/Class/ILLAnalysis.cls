@@ -23,5 +23,5 @@ Public Property Get Wksh() As Worksheet: End Property
 Public Sub Import(ByVal Wksh As Worksheet): End Sub
 
 Public Sub Translate(ByVal TransObject As ITranslation): End Sub
-Public Sub Build(ByVal outputshUA As Worksheet, ByVal outputshTS As Worksheet): End Sub
+Public Sub Build(ll As ILinelist): End Sub
 

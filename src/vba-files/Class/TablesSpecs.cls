@@ -212,28 +212,30 @@ Public Property Get ValidTable() As Boolean
     Dim rowControl As String
     Dim vars As ILLVariables
 
-    Set vars = LLVariables.Create(dict)
-
     Set lData = LinelistSpecifications
     Set dict = lData.Dictionary
+    Set vars = LLVariables.Create(dict)
 
     rowVar = Value("row")
-    rowControl = vars.Value(colName:="choices", varName:=rowVar)
+    rowControl = vars.Value(colName:="control", varName:=rowVar)
 
     colVar = Value("column")
-    colControl = vars.Value(colName:="choices", varName:=colVar)
+    colControl = vars.Value(colName:="control", varName:=colVar)
 
     Select Case TableType
     Case TypeGlobalSummary
         valid = True
     Case TypeUnivariate
-        valid = vars.Contains(rowVar) And (rowControl = "choice")
+        valid = vars.Contains(rowVar) And (rowControl = "choices" Or rowControl = "case_when")
     Case TypeBivariate
-        valid = vars.Contains(rowVar) And vars.Contains(colVar) And (colControl = "choice")
+        valid = vars.Contains(rowVar) And vars.Contains(colVar) And _
+        (colControl = "choices" Or colControl = "case_when") And _
+        (rowControl = "choices" Or rowControl = "case_when")
     Case TypeTimeSeries
         rowVar = Value("row")
         colVar = Value("column")
-        valid = (dict.VariableExists(rowVar) And (colVar = vbNullString Or dict.VariableExists(colVar)))
+        valid = (dict.VariableExists(rowVar) And (colVar = vbNullString Or dict.VariableExists(colVar))) And _
+                (vars.Value(colName:="type", varName:=rowVar) = "date")
     Case TypeSpatial
         rowVar = Value("row")
         colVar = Value("column")

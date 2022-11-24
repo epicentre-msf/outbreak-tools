@@ -279,6 +279,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         If scope = AllAnalysisSheet Then
             RemoveGridLines sh, DisplayZeros:=True
             dimensionValue = DesignValue("default analysis column width", False)
+            sh.Rows("2:3").RowHeight = 40
         Else
             RemoveGridLines sh
             styleValue = DesignValue("linelist base font size", False)
@@ -504,8 +505,8 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         On Error Resume Next
 
         'Gap for graphs
-        rng.EntireRow.RowHeight = 50
-        rng.Offset(1).EntireRow.RowHeight = 50
+        rng.EntireRow.RowHeight = 60
+        rng.Offset(1).EntireRow.RowHeight = 60
 
         rng.EntireRow.RowHeight = dimensionValue
         rng.Offset(1).EntireRow.RowHeight = dimensionValue
