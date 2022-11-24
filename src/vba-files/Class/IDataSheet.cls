@@ -53,10 +53,12 @@ End Function
 'Import and Export Sub
 Public Sub Export(ByVal toWkb As Workbook, _
                   Optional ByVal filteredVarName As String = "__all__", _
-                  Optional ByVal filteredCondition As String = "<>")
+                  Optional ByVal filteredCondition As String = "<>", Optional ByVal Hide As Long = xlSheetHidden)
 End Sub
 
 Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long): End Sub
+
+
 
 
 

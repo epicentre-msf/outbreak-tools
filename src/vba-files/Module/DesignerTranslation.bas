@@ -4,13 +4,14 @@ Option Private Module
 
 '
 Sub TranslateDesignerMain()
-    Dim Trads As IDesTranslation
+    Dim trads As IDesTranslation
     Dim sh As Worksheet
     Dim shmain As Worksheet
 
     Set sh = ThisWorkbook.Worksheets("DesignerTranslation")
     Set shmain = ThisWorkbook.Worksheets("Main")
-    Set Trads = DesTranslation.Create(sh)
+    Set trads = DesTranslation.Create(sh)
     
-    Trads.TranslateDesigner shmain
+    trads.TranslateDesigner shmain
 End Sub
+

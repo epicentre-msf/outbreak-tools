@@ -16,15 +16,15 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Public Enum TradScopes
-  TranslationOfDictionary = 1
-  TranslationOfShapes = 2
-  TranslationOfForms = 3
-  TranslationOfMessages = 4
-  TranslationOfRanges = 5
+    TranslationOfDictionary = 1
+    TranslationOfShapes = 2
+    TranslationOfForms = 3
+    TranslationOfMessages = 4
+    TranslationOfRanges = 5
 End Enum
-
 
 'Exposed methods
 Public Property Get TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation: End Property
 Public Sub ExportToWkb(ByVal outputWkb As Workbook): End Sub
+
 Public Sub ImportTranslation(ByVal fromWkb As Workbook): End Sub

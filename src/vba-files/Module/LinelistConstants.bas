@@ -12,15 +12,15 @@ Public Const C_sSheetAdmin              As String = "Admin" 'Name of the sheet f
 Public Const C_sSheetPassword           As String = "Password" 'sheet for password management
 Public Const C_sSheetFormulas           As String = "ControleFormule" 'Sheet for formula management (mainly in the validation)
 Public Const C_sSheetLLTranslation      As String = "LinelistTranslation"
-Public Const C_sSheetTemp               As String = "Temp_" 'Temporary sheet for data manipulation and doing stuffs
+Public Const C_sSheetTemp               As String = "temp__" 'Temporary sheet for data manipulation and doing stuffs
 Public Const C_sSheetMetadata           As String = "Metadata"
-Public Const C_sSheetChoiceAuto         As String = "List_auto_"
+Public Const C_sSheetChoiceAuto         As String = "dropdown_lists__"
 Public Const C_sSheetAnalysisTemp       As String = "Ana_temp_" 'Temporary sheet for analysis and stuffs
-Public Const C_sSheetImportTemp         As String = "Import_temp_"
+Public Const C_sSheetImportTemp         As String = "import_temp__"
 Public Const C_sSheetAnalysis           As String = "Analysis" 'Default name of analysis sheet
 Public Const C_sSheetTemporalAnalysis   As String = "Temporal Analysis" 'Default name of sheet for temporal analysis
 Public Const C_sSheetSpatialAnalysis    As String = "Spacial Analysis" 'Default name of sheet for spacial analysis
-Public Const C_sSheetDebug              As String = "Debug___"
+Public Const C_sSheetDebug              As String = "debug__"
 
 'Sheets in the setup file: The all starts with Param
 
@@ -164,9 +164,9 @@ Public Const C_sTabAdm3                  As String = "T_ADM3" 'ADM3 Table name
 Public Const C_sTabAdm4                  As String = "T_ADM4" 'ADM4 Table name
 Public Const C_sTabHF                    As String = "T_HF" 'Health Facility Table
 Public Const C_sTabNames                 As String = "T_NAMES"
-Public Const C_sTabHistoGeo              As String = "T_HistoGeo" 'Historic data for the geo
-Public Const C_sTabHistoHF               As String = "T_HistoHF" 'Historic data for the Health Facility
-Public Const C_sTabGeoMetadata           As String = "T_Metadata"
+Public Const C_sTabHistoGeo              As String = "T_HISTOGEO" 'Historic data for the geo
+Public Const C_sTabHistoHF               As String = "T_HISTOHF" 'Historic data for the Health Facility
+Public Const C_sTabGeoMetadata           As String = "T_METADATA"
 
 'Tables for traductions
 
@@ -265,9 +265,9 @@ Public Const C_iNbLinesLLData           As Integer = 200 'Number of linest to ad
 Public Enum C_StartLines
     C_eStartLinesDictHeaders = 4                 'Starting lines for dictionary headers
     C_eStartLinesDictData = 3                    'Starting lines for dictionary data
-    C_eStartLinesLLMainSec = 6                   'Starting lines for first title of the linelist
-    C_eStartLinesLLSubSec = 7                    'Starting lines for second title of the linelist
-    C_eStartLinesLLData = 8                      'Starting lines for the linelist data
+    C_eStartLinesLLMainSec = 5                   'Starting lines for first title of the linelist
+    C_eStartLinesLLSubSec = 6                    'Starting lines for second title of the linelist
+    C_eStartLinesLLData = 7                      'Starting lines for the linelist data
     C_eStartLinesExportTitle = 1                 'Starting lines for export titles
     C_eStartLinesAdmData = 4                     'Starting lines for a Adm data
     C_eStartColumnAdmData = 2                    'Starting columns for sheets of type Adm

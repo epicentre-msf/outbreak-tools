@@ -19,5 +19,7 @@ Option Explicit
 Public Property Get TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation: End Property
 
 Public Sub TranslateDesigner(ByVal mainsh As Worksheet): End Sub
+
 'Get translated value of a message code
 Public Function TranslationMsg(ByVal msgCode As String) As String: End Function
+

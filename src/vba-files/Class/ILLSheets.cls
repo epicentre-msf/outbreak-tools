@@ -39,6 +39,8 @@ Public Function Contains(ByVal sheetName As String) As Boolean: End Function
 Public Function DataBounds(ByVal sheetName As String, Optional ByVal Bound As Byte = SheetBound.RowSart) As Long: End Function
 
 Public Function ContainsControl(ByVal sheetName As String, Optional ByVal Control As String = "list_auto") As Boolean: End Function
-Public Function VariableAddress(ByVal varName As String) As String: End Function
+Public Function VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String: End Function
+
 Public Function RowIndex(ByVal sheetName As String) As Long: End Function
 Public Function NumberOfVars(ByVal sheetName As String) As Long: End Function
+

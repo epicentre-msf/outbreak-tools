@@ -16,9 +16,9 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Public Enum ButtonScope
-  ButtonScopeLarge = 1
-  ButtonScopeSmall = 2
-  ButtonScopeGeo = 3
+    ButtonScopeLarge = 1
+    ButtonScopeSmall = 2
+    ButtonScopeGeo = 3
 End Enum
 
 'Exposed methods

@@ -155,10 +155,10 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
 End Sub
 
 'Import and export Sub
-Private Sub Export(Wkb As Workbook)
+Private Sub Export(wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     Dim choiData As IDataSheet
     Set choiData = ChoiceData()
-    ChoiceData.Export Wkb
+    ChoiceData.Export wkb, Hide:=Hide
 End Sub
 
 Private Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
@@ -209,8 +209,8 @@ Public Sub ILLchoice_AddChoice(ByVal choiceName As String, ByVal CategoriesData 
 End Sub
 
 'Export and Import
-Public Sub ILLchoice_Export(ByVal toWkb As Workbook)
-    Export toWkb
+Public Sub ILLchoice_Export(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+    Export toWkb, Hide:=Hide
 End Sub
 
 Public Sub ILLchoice_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)

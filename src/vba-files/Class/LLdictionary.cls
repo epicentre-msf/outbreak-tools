@@ -95,9 +95,9 @@ Public Property Get Prepared() As Boolean
     Dim dictWksh As Worksheet
     Set dictWksh = Wksh()
     Prepared = (dictWksh.Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue) And _
-                ColumnExists("table name") And ColumnExists("column index") And _
-                ColumnExists("visibility") And _
-                 (Not ColumnExists("main section sort")) And (Not ColumnExists("main section index"))
+                                                                                 ColumnExists("table name") And ColumnExists("column index") And _
+                                                                                 ColumnExists("visibility") And _
+                                                                                 (Not ColumnExists("main section sort")) And (Not ColumnExists("main section index"))
 End Property
 
 'Initialize the Headers  -----------------------------------------------------
@@ -193,7 +193,6 @@ Private Sub Clean()
     Set dictWksh = Wksh()
     Set rng = dictWksh.UsedRange
     counter = rng.Column + rng.Columns.Count - 1
-    Debug.Print counter
     
     With dictWksh
         Do While counter >= 1
@@ -237,6 +236,8 @@ Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject A
         'Sort the dictionary accordingly and make unique varNames
         UniqueVarNames
         GoodSheetNames PreservedSheetsNames
+        
+
         Clean
         'Add color to the last line for prepare indication
         Set dictWksh = Wksh()
@@ -330,22 +331,20 @@ Private Sub AddVisibility(ByVal msgTrads As ITranslation)
             
             Case "hidden"
              
-             .Cells(counter, endCol + 1).Value = msgTrads.TranslatedValue("MSG_DesHidden")
+                .Cells(counter, endCol + 1).Value = msgTrads.TranslatedValue("MSG_DesHidden")
 
             Case "mandatory"
 
-              .Cells(counter, endCol + 1) = msgTrads.TranslatedValue("MSG_Mandatory")
+                .Cells(counter, endCol + 1) = msgTrads.TranslatedValue("MSG_Mandatory")
 
             Case "optional"
 
-             .Cells(counter, endCol + 1) = msgTrads.TranslatedValue("MSG_Show")
+                .Cells(counter, endCol + 1) = msgTrads.TranslatedValue("MSG_Show")
             End Select
         Next
     End With
 
 End Sub
-
-
 
 'Append Geo Lines
 Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
@@ -397,6 +396,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
             End If
 
             .Cells(geoRowIndex, varNameIndex).Value = "pcode" & "_" & varName
+            .Cells(geoRng.Row, mainLabelIndex).Value = "pcode" & "_" & varName
 
             'Insert the others geo lines
             geoRowIndex = geoRowIndex + 1
@@ -413,6 +413,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
             'Hide the pcode when everything is done
             .Cells(geoRng.Row, statusIndex).Value = "hidden"
             .Cells(geoRng.Row, controlIndex).Value = "geo_pcode"
+            
 
             geoRowIndex = geoRowIndex + 3
             Set dictRng = .Range(.Cells(geoRowIndex, controlIndex), .Cells(EndRow, controlIndex))
@@ -473,8 +474,8 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
         Set dictRng = DataRange(newColumn)
 
         .Cells(StartRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
-        .Calculate                  'Calculate the worksheet
-        dictRng.Value = dictRng.Value   'remove the link to the formulas
+        .Calculate                               'Calculate the worksheet
+        dictRng.Value = dictRng.Value            'remove the link to the formulas
 
     End With
 End Sub
@@ -541,15 +542,32 @@ End Sub
 
 'Import and export subs
 'Export
-Private Sub Export(ByVal Wkb As Workbook, Optional ByVal exportType As String = "__all__")
+Private Sub Export(ByVal wkb As Workbook, Optional ByVal exportType As String = "__all__")
 
     Dim dictData As IDataSheet
+    Dim rng As Range
+    Dim sh As Worksheet
+    Dim sheetName As String
+
     Set dictData = Data()
     If ColumnExists(exportType) Then
-        dictData.Export Wkb, filteredVarName:=exportType
+        dictData.Export wkb, filteredVarName:=exportType
     ElseIf exportType = "__all__" Then
-        dictData.Export Wkb
+        dictData.Export wkb
     End If
+    
+    sheetName = Wksh.Name
+
+    Set sh = wkb.Worksheets(sheetName)
+    Set rng = DataRange(includeHeaders:=True)
+    Set rng = sh.Range(rng.Address)
+
+    'Add a listObject to the dictionary (for compatibility purposes with previous codes)
+    With sh
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "o" & LCase(sheetName)
+        'prepare the dictionary
+        .Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue
+    End With
 End Sub
 
 'Import
@@ -646,4 +664,5 @@ End Sub
 Public Sub ILLdictionary_AddColumn(ByVal colName As String)
     AddColumn colName
 End Sub
+
 

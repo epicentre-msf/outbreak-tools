@@ -456,7 +456,7 @@ End Function
 'Test if a value Exists in a Range
 Private Function ValueExists(ByVal rng As Range, ByVal Value As String, Optional ByVal strictSearch As Boolean = False)
     If Not strictSearch Then
-        ValueExists = (Not rng.Find(What:=Value, LookAt:=xlPart, MatchCase:=Fase) Is Nothing)
+        ValueExists = (Not rng.Find(What:=Value, LookAt:=xlPart, MatchCase:=False) Is Nothing)
     Else
         ValueExists = (Not rng.Find(What:=Value, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
     End If
@@ -471,9 +471,9 @@ Private Function ColumnIndex(ByVal Lo As ListObject, ByVal colName As String, Op
     Set hRng = Lo.HeaderRowRange
     If ValueExists(hRng, colName) Then
         If inRange Then
-            index = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=Fase).Column - hRng.Column + 1
+            index = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False).Column - hRng.Column + 1
         Else
-            index = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=Fase).Column
+            index = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False).Column
         End If
     Else
         index = -1

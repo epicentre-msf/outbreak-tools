@@ -16,16 +16,17 @@ Attribute VB_Exposed = False
 Option Explicit
 
 Public Enum ExportScope
-  ExportOne = 1
-  ExportTwo = 2
-  ExportThree = 3
-  ExportFour = 4
-  ExportFive = 5
-  ExportAll = 10
+    ExportOne = 1
+    ExportTwo = 2
+    ExportThree = 3
+    ExportFour = 4
+    ExportFive = 5
+    ExportAll = 10
 End Enum
+
 'Exposed methods
 
-
 Public Sub Translate(ByVal trans As ITranslation): End Sub
-Public Sub ExportSpecs(ByVal toWkb As Workbook): End Sub
+Public Sub ExportSpecs(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden): End Sub
+
 Public Sub ImportSpecs(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long): End Sub

@@ -111,7 +111,7 @@ Private Function SelectFolderOnWindows() As String
     Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
     With fDialog
         .AllowMultiSelect = False
-        .title = "Chose your directory"          'MSG_ChooseDir
+        .Title = "Chose your directory"          'MSG_ChooseDir
         .filters.Clear
 
         If .Show = -1 Then
@@ -178,7 +178,7 @@ Private Function SelectFileOnWindows(ByVal filters As String) As String
     Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
     With fDialog
         .AllowMultiSelect = False
-        .title = "Chose your file"               'MSG_ChooseFile
+        .Title = "Chose your file"               'MSG_ChooseFile
         .filters.Clear
         .filters.Add "Excel Sheet", filters      '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
 

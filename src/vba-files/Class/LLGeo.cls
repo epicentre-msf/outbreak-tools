@@ -106,7 +106,6 @@ Private Function GeoColumnIndex(ByVal colName As String, ByVal adminLevel As Geo
     GeoColumnIndex = colIndex
 End Function
 
-
 Private Function HFColumnIndex(ByVal colName As String) As Long
     Dim hRng As Range
     Dim sh As Worksheet
@@ -283,10 +282,10 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
             Lo.AutoFilter.ShowAllData
             Set outLevels = UniqueValues()
         End If
+        
+        Lo.AutoFilter.ShowAllData
     End If
 
-    Lo.AutoFilter.ShowAllData
-    'Clear the pasting column
     sh.Range("RNG_PastingGeoCol").EntireColumn.Cells.Clear
     Set GeoLevel = outLevels.Clone()
 End Property
@@ -361,8 +360,8 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
 
     Set sh = Wksh()
     Set rng = sh.Range("RNG_GeoUpdated")
-    If Not rawNames And ((rng.Value = "updated, translated") Or (rng.Value = "empty")) Then Exit Sub
-    If rawNames And (rng.Value = "updated, not translated") Then Exit Sub
+    If Not rawNames And (InStr(1, rng.Value, ", translated") > 0) Then Exit Sub
+    If rawNames And (InStr(1, rng.Value, ", not translated") > 0) Then Exit Sub
 
     Set tabl = TableNames()
     tabl.LowerBound = 1
@@ -389,7 +388,7 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
         End If
 
     Next
-    rng.Value = IIf(rawNames, "updated, not translated", "updated, translated")
+    rng.Value = IIf(rawNames, rng.Value & ", not translated", rng.Value & ", translated")
 End Sub
 
 Private Sub Clear()
@@ -464,23 +463,35 @@ End Sub
 'Export by keeping the actual format of the Worksheet
 Private Sub ExportToWkb(ByVal outputWkb As Workbook)
 
+    Const METADATASHEET As String = "Metadata"
+
     Dim sh As Worksheet
     Dim outsh As Worksheet
     Dim Lo As ListObject
     Dim expAddress As String
     Dim expRange As Range
+    Dim rng As Range
     Dim rngTable As BetterArray
     Dim counter As Long
     Dim rngName As String
 
+
     'Test if a sheet named as the geo sheet already exists
+    Set sh = Wksh()
     On Error Resume Next
     Set outsh = outputWkb.Worksheets(sh.Name)
     On Error GoTo 0
 
-
     If Not outsh Is Nothing Then ThrowError "Unable to export, already a sheet named " & sh.Name & " in the workbook"
-    Set sh = Wksh()
+
+    'Test if there is a metadata sheet
+    On Error Resume Next
+    Set outsh = outputWkb.Worksheets(METADATASHEET)
+    On Error GoTo 0
+
+    If Not outsh Is Nothing Then ThrowError "Unable to export, already a sheet named " & METADATASHEET & " in the workbook"
+
+
     Translate rawNames:=False
 
     'Now move every listObjects
@@ -516,6 +527,17 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
             On Error GoTo 0
         End If
     Next
+
+    'Add the metadata sheet
+    outputWkb.Worksheets.Add.Name = METADATASHEET
+    Set outsh = outputWkb.Worksheets(METADATASHEET)
+    Set rng = sh.ListObjects("T_" & METADATA).Range
+
+    With outsh
+        Set expRange = .Range(.Cells(1, 1), .Cells(rng.Rows.Count, rng.Columns.Count))
+        expRange.Value = rng.Value
+        .Visible = xlSheetVeryHidden
+    End With
 End Sub
 
 Private Sub Import(ByVal fromWkb As Workbook)
@@ -542,26 +564,36 @@ Private Sub Import(ByVal fromWkb As Workbook)
 
     For Each impsh In fromWkb.Worksheets
         'Only sheet with valid names are used for import
-        If admNames.Includes(impsh.Name) Then
-            Set Lo = sh.ListObjects("T_" & impsh.Name) 'Lo Name
-            Set hRng = Lo.HeaderRowRange
-            counter = 1
-            Do While impsh.Cells(1, counter) <> vbNullString
-                With impsh
-                    lastRow = .UsedRange.Rows.Count
+        With impsh
+            If admNames.Includes(.Name) Then
+                lastRow = .UsedRange.Rows.Count
+                Set Lo = sh.ListObjects("T_" & impsh.Name) 'Lo Name
+                Set hRng = Lo.HeaderRowRange
+                counter = 1
+                Do While impsh.Cells(1, counter) <> vbNullString
                     colName = .Cells(1, counter).Value
                     colIndex = ColumnIndex(colName, hRng, inRange:=False)
-
                     If colIndex > 0 Then
                         Set impRng = .Range(.Cells(2, counter), .Cells(lastRow, counter))
                         Set actRng = sh.Range(sh.Cells(2, colIndex), sh.Cells(lastRow, colIndex))
                         actRng.Value = impRng.Value
                     End If
+                    counter = counter + 1
+                Loop
+                
+                counter = counter - 1            'Exact number of columns
+
+                'Resize the listObject
+                With sh
+                    'I know that each geo listobject starts on the first line
+                    Set actRng = .Range(.Cells(1, hRng.Column), .Cells(lastRow, hRng.Column + counter - 1))
+                    Lo.Resize actRng
                 End With
-                counter = counter + 1
-            Loop
-        End If
+            End If
+        End With
     Next
+    
+    sh.Range("RNG_GeoUpdated").Value = "updated"
     Translate rawNames:=False
 End Sub
 
@@ -619,8 +651,8 @@ End Sub
 
 'Interfaces
 Public Property Get ILLGeo_GeoLevel(ByVal adminLevel As GeoLevel, _
-                                  Optional ByVal geoType As CustomGeoType = CustomTypeGeo, _
-                                  Optional ByVal adminNames As Variant = vbNullString) As BetterArray
+                                    Optional ByVal geoType As CustomGeoType = CustomTypeGeo, _
+                                    Optional ByVal adminNames As Variant = vbNullString) As BetterArray
 
     Set ILLGeo_GeoLevel = GeoLevel(adminLevel, geoType, adminNames)
 End Property
@@ -632,7 +664,7 @@ End Property
 
 'Get the Population of one administrative level (only for geoType)
 Public Property Get ILLGeo_Population(ByVal adminLevel As GeoLevel, _
-                                    ByVal adminNames As Variant) As String
+                                      ByVal adminNames As Variant) As String
     ILLGeo_Population = Population(adminLevel, adminNames)
 End Property
 
@@ -662,3 +694,5 @@ End Sub
 Public Sub ILLGeo_ClearHistoric()
     ClearHistoric
 End Sub
+
+
