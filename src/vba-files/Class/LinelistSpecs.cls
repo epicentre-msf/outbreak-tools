@@ -218,7 +218,6 @@ Private Sub BusyApp()
     Application.ScreenUpdating = False
     Application.DisplayAlerts = False
     Application.Calculation = xlCalculationManual
-    Application.DisplayStatusBar = False
     Application.EnableAnimations = False
 End Sub
 
@@ -227,7 +226,6 @@ Private Sub ReturnState()
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
     Application.Calculation = xlCalculationAutomatic
-    Application.DisplayStatusBar = True
     Application.EnableAnimations = True
 End Sub
 
@@ -376,7 +374,6 @@ Private Sub Prepare()
     Application.WindowState = prevWindowState
 
     'Return the state of the application
-    ReturnState
 End Sub
 
 'Add list auto origin informations
