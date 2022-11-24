@@ -52,7 +52,6 @@ Public Property Set Wksh(ByVal anash As Worksheet)
     Set this.anash = anash
 End Property
 
-
 Public Property Get Self() As ILLAnalysis
     Set Self = Me
 End Property

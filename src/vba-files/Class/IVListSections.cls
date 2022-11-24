@@ -16,6 +16,7 @@ Option Explicit
 
 'Exposed methods
 Public Property Get HasNext() As Boolean: End Property
+Public Property Get Name() As String: End Property
 
 Public Property Get NextSection() As IVListSections: End Property
 
@@ -24,3 +25,4 @@ Public Sub Build(): End Sub
 
 'Format the subSection
 Public Sub Format(): End Sub
+

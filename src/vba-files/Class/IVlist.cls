@@ -9,10 +9,16 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
 
-'@Folder("Dictionary")
-'@ModuleDescription("Interface of ")
+'@Folder("Linelist")
+'@ModuleDescription("Interface of Vlist")
 '@IgnoreModule
 
 Option Explicit
 
 'Exposed methods
+
+'Exposed methods
+Public Sub Build(): End Sub
+
+Public Property Get NextSheet() As String: End Property
+

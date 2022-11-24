@@ -91,7 +91,7 @@ Private Function SelectFolderOnWindows() As String
     Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
     With fDialog
         .AllowMultiSelect = False
-        .title = "Chose your directory"          'MSG_ChooseDir
+        .Title = "Chose your directory"          'MSG_ChooseDir
         .filters.Clear
 
         If .Show = -1 Then
@@ -159,7 +159,7 @@ Private Function SelectFileOnWindows(sFilters)
     Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
     With fDialog
         .AllowMultiSelect = False
-        .title = "Chose your file"               'MSG_ChooseFile
+        .Title = "Chose your file"               'MSG_ChooseFile
         .filters.Clear
         .filters.Add "Feuille de calcul Excel", sFilters '"*.xlsx" ', *.xlsm, *.xlsb,  *.xls" 'MSG_ExcelFile
 
@@ -199,11 +199,11 @@ Public Function IsWkbOpened(sName As String) As Boolean
 End Function
 
 'Check if a Sheet Exists
-Public Function SheetExistsInWkb(Wkb As Workbook, sSheetName As String) As Boolean
+Public Function SheetExistsInWkb(wkb As Workbook, sSheetName As String) As Boolean
     SheetExistsInWkb = False
     Dim Wksh As Worksheet                        'Just try to set the workbook if it fails it is closed
     On Error Resume Next
-    Set Wksh = Wkb.Worksheets(sSheetName)
+    Set Wksh = wkb.Worksheets(sSheetName)
     SheetExistsInWkb = (Not Wksh Is Nothing)
     On Error GoTo 0
 End Function
@@ -476,7 +476,7 @@ End Function
 'Get the headers of one sheet from one line (probablly the first line)
 'The headers are cleaned
 
-Public Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Long, Optional StartColumn As Long = 1) As BetterArray
+Public Function GetHeaders(wkb As Workbook, sSheet As String, StartLine As Long, Optional StartColumn As Long = 1) As BetterArray
     'Extract column names in one sheet starting from one line
     Dim Headers As BetterArray
     Dim i As Long
@@ -484,7 +484,7 @@ Public Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Long,
     Headers.LowerBound = StartColumn
     Dim sValue As String
 
-    With Wkb.Worksheets(sSheet)
+    With wkb.Worksheets(sSheet)
         i = StartColumn
         Do While .Cells(StartLine, i).Value <> vbNullString
             'Clear the values in the sheet when adding thems
@@ -499,7 +499,7 @@ Public Function GetHeaders(Wkb As Workbook, sSheet As String, StartLine As Long,
 End Function
 
 'Get the data from one sheet starting from one line
-Public Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Long, Optional EndColumn As Long = 0) As BetterArray
+Public Function GetData(wkb As Workbook, sSheetName As String, StartLine As Long, Optional EndColumn As Long = 0) As BetterArray
     Dim Data As BetterArray
     Dim rng As Range
 
@@ -508,7 +508,7 @@ Public Function GetData(Wkb As Workbook, sSheetName As String, StartLine As Long
     Set Data = New BetterArray
     Data.LowerBound = 1
 
-    With Wkb.Worksheets(sSheetName)
+    With wkb.Worksheets(sSheetName)
 
         iLastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
         iLastCol = EndColumn

@@ -65,11 +65,11 @@ Private Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolea
     SpecialCharacterIncludes = (Not rng.Find(What:=specialChar, LookAt:=xlWhole, MatchCase:=False) Is Nothing)
 End Function
 
-Private Function ExcelFormulasIncludes(ByVal excelFormula As String) As Boolean
+Private Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
     Dim rng As Range
 
     Set rng = FormulaRange
-    ExcelFormulasIncludes = (Not rng.Find(What:=excelFormula, LookAt:=xlWhole, MatchCase:=False) Is Nothing)
+    ExcelFormulasIncludes = (Not rng.Find(What:=ExcelFormula, LookAt:=xlWhole, MatchCase:=False) Is Nothing)
 End Function
 
 'Errors management ---------------------------------------------------------------------------------
@@ -88,7 +88,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     If Lo Is Nothing Then ThrowErrorUnableInstanciate "No special character listObject"
     
     On Error Resume Next
-        Set rng = Lo.ListColumns("ENG").DataBodyRange
+    Set rng = Lo.ListColumns("ENG").DataBodyRange
     On Error GoTo 0
 
     If rng Is Nothing Then ThrowErrorUnableInstanciate "There is no column ENG in table " & Lo.Name
@@ -104,23 +104,22 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     If Lo Is Nothing Then ThrowErrorUnableInstanciate "No Excel formula ListObject"
     
     On Error Resume Next
-        Set rng = Lo.ListColumns(2).DataBodyRange
+    Set rng = Lo.ListColumns(2).DataBodyRange
     On Error GoTo 0
 
     If rng Is Nothing Then ThrowErrorUnableInstanciate "There is no column for ascii characters in table " & Lo.Name
 End Sub
 
-
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
 End Sub
-
 
 'Exposed methods
 Public Function IFormulaData_SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
     IFormulaData_SpecialCharacterIncludes = SpecialCharacterIncludes(specialChar)
 End Function
 
-Public Function IFormulaData_ExcelFormulasIncludes(ByVal excelFormula As String) As Boolean
-    IFormulaData_ExcelFormulasIncludes = ExcelFormulasIncludes(excelFormula)
+Public Function IFormulaData_ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
+    IFormulaData_ExcelFormulasIncludes = ExcelFormulasIncludes(ExcelFormula)
 End Function
+

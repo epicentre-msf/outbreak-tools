@@ -41,7 +41,7 @@ Public Function Create(ByVal specs As ITablesSpecs, ByVal outputWksh As Workshee
     With New CrossTable
         Set .Specifications = specs
         Set .Wksh = outputWksh
-        Set .Trads = trans
+        Set .trads = trans
         Set Create = .Self
     End With
 
@@ -67,11 +67,11 @@ Public Property Set Specifications(ByVal specs As ITablesSpecs)
     Set this.specs = specs
 End Property
 
-Public Property Get Trads() As ITranslation
-    Set Trads = this.trans
+Public Property Get trads() As ITranslation
+    Set trads = this.trans
 End Property
 
-Public Property Set Trads(ByVal trans As ITranslation)
+Public Property Set trads(ByVal trans As ITranslation)
     Set this.trans = trans
 End Property
 
@@ -137,7 +137,7 @@ Private Property Get Previous() As ICrossTable
     Set specs = Specifications
     Set prevSpecs = specs.Previous
     Set sh = Wksh()
-    Set trans = Trads()
+    Set trans = trads()
 
     Set Previous = Create(prevSpecs, sh, trans)
 End Property
@@ -302,7 +302,7 @@ Private Sub AddRows()
     Set sh = Wksh()
     Set specs = Specifications()
     tabId = specs.TableId
-    Set trans = Trads()
+    Set trans = trads()
     Set vars = LLVariables.Create(specs.Dictionary)
 
     missingValue = specs.Value("missing")
@@ -471,7 +471,7 @@ Private Sub AddColumns()
     Set sh = Wksh()
     Set specs = Specifications()
     tabId = specs.TableId
-    Set trans = Trads()
+    Set trans = trads()
     Set vars = LLVariables.Create(specs.Dictionary)
     Set colData = New BetterArray
     colData.LowerBound = 1
@@ -539,7 +539,7 @@ Private Sub AddHeader()
 
     Set sh = Wksh()
     Set specs = Specifications
-    Set trans = Trads()
+    Set trans = trads()
     start = StartRow
     tabId = specs.TableId
 
@@ -676,7 +676,7 @@ Private Sub NameRanges()
 
 
     Set sh = Wksh()
-    Set trans = Trads()
+    Set trans = trads()
     Set specs = Specifications
     tabId = specs.TableId
 

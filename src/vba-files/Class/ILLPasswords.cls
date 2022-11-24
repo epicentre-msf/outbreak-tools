@@ -16,11 +16,15 @@ Attribute VB_Exposed = False
 Option Explicit
 
 'Exposed methods
-Public Property Get PassWord() As String: End Property
+Public Property Get Password() As String: End Property
 
-Public Sub UnProtect(ByVal sh As Worksheet): End Sub
-Public Sub Protect(ByVal sh As Worksheet): End Sub
-Public Sub EnterDebugMode(): End Sub
-Public Sub LeaveDebugMode(): End Sub
+Public Sub UnProtect(Optional ByVal sheetName As String = "_active"): End Sub
+
+Public Sub Protect(Optional ByVal sheetName As String = "_active"): End Sub
+'Public Sub EnterDebugMode(): End Sub
+
+'Public Sub LeaveDebugMode(): End Sub
 
 'Export password
+Public Sub Export(ByVal toWkb As Workbook): End Sub
+
