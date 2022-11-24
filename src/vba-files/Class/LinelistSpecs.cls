@@ -35,7 +35,7 @@ Private Const DICTIONARYSHEET           As String = "Dictionary"
 Private Const CHOICESSHEET              As String = "Choices"
 Private Const GEOSHEET                  As String = "Geo"
 Private Const PASSWORDSHEET             As String = "Password"
-Private Const FORMULASHEET              As String = "ControleFormule"
+Private Const FormulaSheet              As String = "ControleFormule"
 Private Const DICTTRANSLATIONSHEET      As String = "Translations" 'Dictionary translation sheet
 Private Const HLISTTRANSLATIONSHEET     As String = "LinelistTranslation" 'linelist translation (forms, shapes, etc.)
 Private Const ANALYSISSPECSSHEET        As String = "Analysis"
@@ -55,18 +55,17 @@ Public Function Create(ByVal specswkb As Workbook) As ILinelistSpecs
     CheckSheetsRequirements specswkb
     'At this step everything needed of creating the Linelist exists
     With New LinelistSpecs
-        Set .Wkb = specswkb
+        Set .wkb = specswkb
         Set Create = .Self
     End With
 
 End Function
 
-
-Public Property Get Wkb() As Workbook
-    Set Wkb = this.specswkb
+Public Property Get wkb() As Workbook
+    Set wkb = this.specswkb
 End Property
 
-Public Property Set Wkb(ByVal specswkb As Workbook)
+Public Property Set wkb(ByVal specswkb As Workbook)
     Set this.specswkb = specswkb
 End Property
 
@@ -79,7 +78,7 @@ Public Property Get Dictionary() As ILLdictionary
     'Create the dictionary
     Dim dict As ILLdictionary
     Dim sh As Worksheet
-    Set sh = Wkb.Worksheets(DICTIONARYSHEET)
+    Set sh = wkb.Worksheets(DICTIONARYSHEET)
 
     'StartRow is 1, start column is 1
     Set dict = LLdictionary.Create(sh, 1, 1)
@@ -91,59 +90,65 @@ Public Property Get Choices() As ILLchoice
     Dim choi As ILLchoice
     Dim sh As Worksheet
 
-    Set sh = Wkb.Worksheets(CHOICESSHEET)
+    Set sh = wkb.Worksheets(CHOICESSHEET)
 
     Set choi = LLchoice.Create(sh, 1, 1)
     Set Choices = choi
 
 End Property
 
-Public Property Get Trads() As ILLTranslations
+Public Property Get trads() As ILLTranslations
     Dim trans As ILLTranslations
     Dim shtransLL As Worksheet
     Dim shtransDict As Worksheet
 
-    Set shtransLL = Wkb.Worksheets(HLISTTRANSLATIONSHEET)
-    Set shtransDict = Wkb.Worksheets(DICTTRANSLATIONSHEET)
+    Set shtransLL = wkb.Worksheets(HLISTTRANSLATIONSHEET)
+    Set shtransDict = wkb.Worksheets(DICTTRANSLATIONSHEET)
 
     Set trans = LLTranslations.Create(shtransLL, shtransDict)
-    Set Trads = trans
+    Set trads = trans
 End Property
 
-Public Property Get DesTrads() As IDesTranslation
+Public Property Get desTrads() As IDesTranslation
     Dim sh As Worksheet
-    Set sh = Wkb.Worksheets(DESTRANSSHEET)
-    Set DesTrads = DesTranslation.Create(sh)
+    Set sh = wkb.Worksheets(DESTRANSSHEET)
+    Set desTrads = DesTranslation.Create(sh)
 End Property
 
 Public Property Get geoObject() As ILLGeo
     Dim sh As Worksheet
     Dim geo As ILLGeo
-    Set sh = Wkb.Worksheets(GEOSHEET)
+    Set sh = wkb.Worksheets(GEOSHEET)
     Set geo = LLGeo.Create(sh)
     Set geoObject = geo
 End Property
 
 Public Property Get Exports() As ILLExport
     Dim sh As Worksheet
-    Set sh = Wkb.Worksheets(EXPORTSHEET)
+    Set sh = wkb.Worksheets(EXPORTSHEET)
     Set Exports = LLExport.Create(sh)
 End Property
 
 Public Property Get Analysis() As ILLAnalysis
     Dim sh As Worksheet
-    Set sh = Wkb.Worksheets(ANALYSISSPECSSHEET)
+    Set sh = wkb.Worksheets(ANALYSISSPECSSHEET)
     Set Analysis = LLAnalysis.Create(sh)
+End Property
+
+Public Property Get Password() As ILLPasswords
+    Dim sh As Worksheet
+    Set sh = wkb.Worksheets(PASSWORDSHEET)
+    Set Password = LLPasswords.Create(sh)
 End Property
 
 'Test if the translation form exists
 Public Property Get TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation
-    Set TransObject = Trads.TransObject(trans)
+    Set TransObject = trads.TransObject(trans)
 End Property
 
 Public Property Get FormulaDataObject() As IFormulaData
     Dim sh As Worksheet
-    Set sh = Wkb.Worksheets(FORMULASHEET)
+    Set sh = wkb.Worksheets(FormulaSheet)
     Set FormulaDataObject = FormulaData.Create(sh)
 End Property
 
@@ -151,7 +156,7 @@ Public Property Get DesignFormat() As ILLFormat
     Dim sh As Worksheet
     Dim designName As String
 
-    Set sh = Wkb.Worksheets(FORMATSHEET)
+    Set sh = wkb.Worksheets(FORMATSHEET)
     designName = sh.Range(designType).Value
 
     'Will take in account the other aspecs
@@ -160,7 +165,7 @@ End Property
 
 Public Property Get MainObject() As IMain
     Dim sh As Worksheet
-    Set sh = Wkb.Worksheets(MAINSHEET)
+    Set sh = wkb.Worksheets(MAINSHEET)
     Set MainObject = Main.Create(sh)
 End Property
 
@@ -172,7 +177,7 @@ Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As St
     Case TemporarySheetDebug
         TemporarySheetName = "debug__"
     Case TemporarySheetMetadata
-        TemporarySheetName = "metadata__"
+        TemporarySheetName = "Metadata"
     Case TemporarySheetList
         TemporarySheetName = "dropdown_lists__"
     Case TemporarySheetImport
@@ -220,7 +225,7 @@ End Sub
 'Return previous state
 Private Sub ReturnState()
     Application.ScreenUpdating = True
-   Application.DisplayAlerts = True
+    Application.DisplayAlerts = True
     Application.Calculation = xlCalculationAutomatic
     Application.DisplayStatusBar = True
     Application.EnableAnimations = True
@@ -236,10 +241,10 @@ Private Sub Prepare()
     Dim dict As ILLdictionary
     Dim choi As ILLchoice
     Dim vars As ILLVariables
-    Dim geo As ILLGeo 'Geo Object to add admin names in the preparation steps of the dictionary
+    Dim geo As ILLGeo                            'Geo Object to add admin names in the preparation steps of the dictionary
     Dim dictTrads As ITranslation
-    Dim msgTrads As ITranslation 'Translations of messages object used in preserve sheet Names
-    Dim mainTrads As IDesTranslation 'Translation of the designer: the main sheet
+    Dim msgTrads As ITranslation                 'Translations of messages object used in preserve sheet Names
+    Dim mainTrads As IDesTranslation             'Translation of the designer: the main sheet
     Dim mainobj As IMain
     Dim trans As ILLTranslations
     Dim counter As Long
@@ -257,7 +262,7 @@ Private Sub Prepare()
     Dim casewhenFormula As String
 
     Set mainobj = MainObject()
-    Set mainTrads = DesTrads()
+    Set mainTrads = desTrads()
 
     'If the main object is not ready exit the function
     mainobj.CheckReadiness mainTrads
@@ -265,7 +270,7 @@ Private Sub Prepare()
 
     Set dict = Dictionary()
     Set choi = Choices()
-    Set trans = Trads()
+    Set trans = trads()
     Set expobj = Exports()
     Set ana = Analysis()
     Set geo = geoObject()
@@ -304,17 +309,16 @@ Private Sub Prepare()
     Set sh = inpWkb.Worksheets(ANALYSISSPECSSHEET)
     ana.Import sh
     
-    inpWkb.Close SaveChanges:=False
+    inpWkb.Close savechanges:=False
 
     'Import the geobase
     setPath = mainobj.GeoPath()
+    BusyApp
     Set inpWkb = Workbooks.Open(setPath)
     Application.WindowState = xlMinimized
     
-    BusyApp
-    
     geo.Import inpWkb
-    inpWkb.Close SaveChanges:=False
+    inpWkb.Close savechanges:=False
     
     'Define those objects after the imports
     Set dictTrads = TransObject(TranslationOfDictionary)
@@ -324,7 +328,7 @@ Private Sub Prepare()
     Set PreservedSheetNames = New BetterArray
     PreservedSheetNames.LowerBound = 1
     PreservedSheetNames.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
-                             PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
+                             PASSWORDSHEET, FormulaSheet, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
                              EXPORTSHEET, TemporarySheetName(TemporarySingle), TemporarySheetName(TemporarySheetList), _
                              TemporarySheetName(TemporarySheetDebug), TemporarySheetName(TemporarySheetMetadata), _
                              TemporarySheetName(TemporarySheetAnalysis), TemporarySheetName(TemporarySheetImport), _
@@ -375,7 +379,6 @@ Private Sub Prepare()
     ReturnState
 End Sub
 
-
 'Add list auto origin informations
 Private Sub AddListAuto()
     Dim dict As ILLdictionary
@@ -396,13 +399,13 @@ Private Sub AddListAuto()
         varName = listVars.Item(counter)
         
         'listVars can contains the same variable twice, be sure we need to update with the onEmpty parameter
-            vars.SetValue varName:=varName, colName:="list auto", newValue:="list_auto_origin", onEmpty:=True
+        vars.SetValue varName:=varName, colName:="list auto", newValue:="list_auto_origin", onEmpty:=True
             
-            'If one list auto var is a formula, all the variables in that formula are list auto origin
-            'List auto origin triggers update of list auto
+        'If one list auto var is a formula, all the variables in that formula are list auto origin
+        'List auto origin triggers update of list auto
             
-            varControl = vars.Value(varName:=varName, colName:="control")
-            If (varControl = "formula") Or (varControl = "case_when") Then RecursiveListAuto varName
+        varControl = vars.Value(varName:=varName, colName:="control")
+        If (varControl = "formula") Or (varControl = "case_when") Then RecursiveListAuto varName
     Next
 
 End Sub
@@ -439,7 +442,7 @@ Private Sub RecursiveListAuto(ByVal varName As String)
 
         If varFormObject.valid(formulaType:="linelist") Then
             
-            Set formList = varFormObject.varlists()
+            Set formList = varFormObject.Varlists()
             
             counter = formList.LowerBound
             
@@ -460,6 +463,28 @@ Private Sub RecursiveListAuto(ByVal varName As String)
 
 End Sub
 
+Private Sub Export(ByVal toWkb As Workbook)
+    Dim dict As ILLdictionary
+    Dim choi As ILLchoice
+    Dim geo As ILLGeo                            'Geo Object to add admin names in the preparation steps of the dictionary
+    Dim trans As ILLTranslations
+    Dim expobj As ILLExport
+    Dim passobj As ILLPasswords
+
+    Set dict = Dictionary()
+    Set choi = Choices()
+    Set trans = trads()
+    Set expobj = Exports()
+    Set geo = geoObject()
+    Set passobj = Password()
+
+    dict.Export toWkb
+    choi.Export toWkb, Hide:=xlSheetVeryHidden
+    trans.ExportToWkb toWkb
+    expobj.ExportSpecs toWkb, Hide:=xlSheetVeryHidden
+    geo.ExportToWkb toWkb
+    passobj.Export toWkb
+End Sub
 
 'Errors ----------------------------------
 
@@ -471,7 +496,7 @@ Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
     Dim sheetsArray As BetterArray
     Set sheetsArray = New BetterArray
     sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
-                     PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
+                     PASSWORDSHEET, FormulaSheet, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
                      EXPORTSHEET, FORMATSHEET, MAINSHEET, DESTRANSSHEET
 
     For counter = sheetsArray.LowerBound To sheetsArray.UpperBound
@@ -479,7 +504,6 @@ Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
         If Not sheetExists(specswkb, sheetName) Then ThrowErrorUnableInstanciate " Worksheet " & sheetName & " Not found!"
     Next
 End Sub
-
 
 'Check if a sheet Exists
 Private Function sheetExists(ByVal specswkb As Workbook, ByVal sheetName As String) As Boolean
@@ -530,7 +554,6 @@ Public Property Get ILinelistSpecs_TransObject(Optional ByVal trans As TradScope
     Set ILinelistSpecs_TransObject = TransObject(trans)
 End Property
 
-
 'Formula data object
 Public Property Get ILinelistSpecs_FormulaDataObject() As IFormulaData
     Set ILinelistSpecs_FormulaDataObject = FormulaDataObject()
@@ -545,7 +568,27 @@ Public Property Get ILinelistSpecs_DesignFormat() As ILLFormat
 End Property
 
 Public Property Get ILinelistSpecs_SpecsWkb() As Workbook
-    Set ILinelistSpecs_SpecsWkb = Wkb()
+    Set ILinelistSpecs_SpecsWkb = wkb()
 End Property
+
+Public Property Get ILinelistSpecs_MainObject() As IMain
+    Set ILinelistSpecs_MainObject = MainObject()
+End Property
+
+Public Property Get ILinelistSpecs_Password() As ILLPasswords
+    Set ILinelistSpecs_Password = Password()
+End Property
+
+Public Property Get ILinelistSpecs_GeoObject() As ILLGeo
+    Set ILinelistSpecs_GeoObject = geoObject()
+End Property
+
+Public Property Get ILinelistSpecs_Analysis() As ILLAnalysis
+    Set ILinelistSpecs_Analysis = Analysis()
+End Property
+
+Public Sub ILinelistSpecs_Export(ByVal toWkb As Workbook)
+    Export toWkb
+End Sub
 
 

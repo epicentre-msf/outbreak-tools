@@ -27,7 +27,7 @@ Private this As TLLSheets
 Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
 Private Const SHEETTYPEVERTICAL As String = "vlist1D"
 Private Const CLASSNAME As String = "LLSheets"
-Private Const SHEETHORIZONTALNBROWS As Long = 200
+Private Const SHEETHORIZONTALNBROWS As Long = 201
 
 Private Enum SHEETSTART
     SHEETSTARTCOLHORIZONTAL = 1
@@ -57,7 +57,7 @@ End Property
 
 Public Property Set Dictionary(ByVal dict As ILLdictionary)
     Set this.dict = dict
-    Set this.sheetRng = dict.DataRange("sheet name")
+    Set this.sheetRng = dict.DataRange("sheet name", includeHeaders:=True)
 End Property
 
 Public Property Get SheetRange() As Range
@@ -70,7 +70,7 @@ Private Function Contains(ByVal sheetName As String) As Boolean
     Dim Exists As Boolean
 
     Set sheetRng = SheetRange()
-    If sheetName = vbNullString Then
+    If sheetName = vbNullString Or sheetName = "sheet name" Then
         Exists = False
     Else
         Exists = Not (sheetRng.Find(What:=sheetName, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
@@ -140,32 +140,31 @@ Private Function NumberVars(ByVal sheetName As String) As Long
 End Function
 
 'Implement the databounds
-Private Function DataBounds(ByVal sheetName As String, Optional ByVal Bound As Byte = 1)
+Private Function DataBounds(ByVal sheetName As String, Optional ByVal Bound As Byte = 1) As Long
 
     Dim nbVars As Long
 
     Select Case Bound
 
     Case 1
-        Bound = Switch( _
-                SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTROWHORIZONTAL, _
-                SheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTROWVERTICAL _
-                                                         )
+        DataBounds = Switch( _
+                     SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTROWHORIZONTAL, _
+                     SheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTROWVERTICAL _
+                                                              )
     Case 2
         nbVars = NumberVars(sheetName)
-        Bound = Switch( _
-                SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTROWHORIZONTAL + SHEETHORIZONTALNBROWS, _
-                SheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTROWVERTICAL + nbVars - 1)
+        DataBounds = Switch( _
+                     SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTROWHORIZONTAL + SHEETHORIZONTALNBROWS, _
+                     SheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTROWVERTICAL + nbVars - 1)
     Case 3
-        Bound = IIf(SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTCOLHORIZONTAL, SHEETSTARTCOLVERTICAL)
+        DataBounds = IIf(SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTCOLHORIZONTAL, SHEETSTARTCOLVERTICAL)
     Case 4
         nbVars = NumberVars(sheetName)
-        Bound = Switch( _
-                SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTCOLHORIZONTAL + nbVars - 1, _
-                SheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTCOLVERTICAL)
+        DataBounds = Switch( _
+                     SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTCOLHORIZONTAL + nbVars - 1, _
+                     SheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTCOLVERTICAL)
     End Select
 
-    DataBounds = Bound
 End Function
 
 'Test if a sheet contains a type of control (list_auto by default)
@@ -201,7 +200,7 @@ Private Function ContainsControl(ByVal sheetName As String, _
 End Function
 
 'Variable Address
-Private Function VariableAddress(ByVal varName As String) As String
+Private Function VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
     'Return the variable address
     Dim varAdd As String
     Dim varIndex As Long
@@ -211,13 +210,20 @@ Private Function VariableAddress(ByVal varName As String) As String
     Dim sheetName As String
     Dim dictWksh As Worksheet
     Dim vars As ILLVariables
+    Dim prefix As String                         'Prefix to variable address
 
     Set dict = Dictionary()
     Set dictWksh = dict.Data.Wksh()
     Set vars = LLVariables.Create(dict)
 
     varIndex = vars.index(varName)
-    sheetName = vars.Value("sheet name", varName)
+    sheetName = vars.Value(colName:="sheet name", varName:=varName)
+
+    prefix = vbNullString
+    
+    If (onSheet <> sheetName) Then
+        prefix = "'" & sheetName & "'!"
+    End If
   
     rstart = DataBounds(sheetName, 1)
     cstart = DataBounds(sheetName, 3)
@@ -225,9 +231,9 @@ Private Function VariableAddress(ByVal varName As String) As String
     If Contains(sheetName) Then
         Select Case SheetInfo(sheetName)
         Case SHEETTYPEHORIZONTAL
-            varAdd = "'" & sheetName & "'!" & dictWksh.Cells(rstart + 1, varIndex).Address(rowabsolute:=False)
+            varAdd = prefix & dictWksh.Cells(rstart + 1, varIndex).Address(rowabsolute:=False)
         Case SHEETTYPEVERTICAL
-            varAdd = "'" & sheetName & "'!" & dictWksh.Cells(varIndex, cstart).Address(rowabsolute:=True, ColumnAbsolute:=True)
+            varAdd = prefix & dictWksh.Cells(varIndex, cstart).Address(rowabsolute:=True, ColumnAbsolute:=True)
         End Select
     End If
   
@@ -266,8 +272,8 @@ Public Function ILLSheets_ContainsControl(ByVal sheetName As String, Optional By
 End Function
 
 'Variable Address
-Public Function ILLSheets_VariableAddress(ByVal varName As String) As String
-    ILLSheets_VariableAddress = VariableAddress(varName)
+Public Function ILLSheets_VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
+    ILLSheets_VariableAddress = VariableAddress(varName, onSheet)
 End Function
 
 'Row index of the sheet in the dictionary
@@ -277,5 +283,7 @@ End Function
 
 'Number of variables in the SheetS
 Public Function ILLSheets_NumberOfVars(ByVal sheetName As String) As Long
-    ILLSheets_NumberOfVars = NumberOfVars(sheetName)
+    ILLSheets_NumberOfVars = NumberVars(sheetName)
 End Function
+
+

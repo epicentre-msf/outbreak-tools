@@ -19,7 +19,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
               TAData As BetterArray, SAData As BetterArray, sPath As String)
 
 
-    Dim Wkb As Workbook
+    Dim wkb As Workbook
     Dim LLNbColData             As BetterArray   'Number of columns of a Sheet of type linelist
     Dim LLSheetNameData         As BetterArray   'Names of sheets
     Dim ChoicesListData         As BetterArray   'Choices list
@@ -74,7 +74,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
     Application.EnableEvents = False
     Application.Cursor = xlDefault
 
-    Set Wkb = Workbooks.Add
+    Set wkb = Workbooks.Add
     iWindowState = Application.WindowState
     Application.WindowState = xlMinimized
     BeginWork xlsapp:=Application
@@ -83,16 +83,16 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
     StatusBar_Updater (iUpdateCpt)
 
     'Now Transferring some designers objects (codes, modules) to the workbook we want to create
-    Call DesignerBuildListHelpers.TransferDesignerCodes(Wkb)
+    Call DesignerBuildListHelpers.TransferDesignerCodes(wkb)
 
     DoEvents
 
     'DesignerBuildListHelpers.TransterSheet is for sending worksheets from the actual workbook to the first workbook of the instance
-    sFirstSheetName = Wkb.Worksheets(1).Name
-    TransferSheet Wkb, C_sSheetGeo, sFirstSheetName
-    TransferSheet Wkb, C_sSheetPassword, C_sSheetGeo
-    TransferSheet Wkb, C_sSheetFormulas, C_sSheetPassword
-    TransferSheet Wkb, C_sSheetLLTranslation, C_sSheetFormulas
+    sFirstSheetName = wkb.Worksheets(1).Name
+    TransferSheet wkb, C_sSheetGeo, sFirstSheetName
+    TransferSheet wkb, C_sSheetPassword, C_sSheetGeo
+    TransferSheet wkb, C_sSheetFormulas, C_sSheetPassword
+    TransferSheet wkb, C_sSheetLLTranslation, C_sSheetFormulas
 
     DoEvents
     iUpdateCpt = iUpdateCpt + 5
@@ -113,7 +113,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
     TableNameData.Items = dictData.ExtractSegment(ColumnIndex:=DictHeaders.IndexOf(C_sDictHeaderTableName))
 
     'Create all the required Sheets in the workbook (Dictionnary, Export, Password, Geo and other sheets defined by the user)
-    Call CreateSheets(Wkb, dictData, DictHeaders, ExportData, _
+    Call CreateSheets(wkb, dictData, DictHeaders, ExportData, _
                       ChoicesHeaders, ChoicesData, TransData, _
                       LLNbColData, ColumnIndexData, LLSheetNameData, _
                       bNotHideSheets:=False)
@@ -141,7 +141,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
     iNbshifted = 0
 
 
-    Windows(Wkb.Name).Visible = False
+    Windows(wkb.Name).Visible = False
     Application.WindowState = iWindowState
 
     iPerc = 80 - iUpdateCpt
@@ -156,7 +156,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
             'On linelist type, build a data entry form
         Case C_sDictSheetTypeLL
             'Create a sheet for data Entry in one sheet of type linelist
-            Call CreateSheetLLDataEntry(Wkb, LLSheetNameData.Item(iCounterSheet), iSheetStartLine, dictData, _
+            Call CreateSheetLLDataEntry(wkb, LLSheetNameData.Item(iCounterSheet), iSheetStartLine, dictData, _
                                         DictHeaders, LLSheetNameData, LLNbColData, ChoicesListData, ChoicesLabelsData, _
                                         VarNameData, ColumnIndexData, FormulaData, SpecCharData, ChoiceAutoVarData, _
                                         DictSheetNames, iNbshifted)
@@ -165,7 +165,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
 
             'update the variable names for writing in the dictionary sheet
             i = 1
-            With Wkb.Worksheets(LLSheetNameData.Item(iCounterSheet))
+            With wkb.Worksheets(LLSheetNameData.Item(iCounterSheet))
                 Do While (.Cells(C_eStartLinesLLData, i).Value <> "")
                     DictVarName.Push .Cells(C_eStartLinesLLData + 1, i).Value
                     i = i + 1
@@ -173,7 +173,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
             End With
 
             'Now writing the data of varnames to the dictionary
-            With Wkb.Worksheets(C_sParamSheetDict)
+            With wkb.Worksheets(C_sParamSheetDict)
                 iPastingRow = .Cells(.Rows.Count, 1).End(xlUp).Row
                 DictVarName.ToExcelRange Destination:=.Cells(iPastingRow + 1, 1)
                 DictVarName.Clear
@@ -184,11 +184,11 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
         Case C_sDictSheetTypeAdm
 
             'Create a sheet of type admin entry
-            Call CreateSheetAdmEntry(Wkb, LLSheetNameData.Item(iCounterSheet), iSheetStartLine, dictData, _
+            Call CreateSheetAdmEntry(wkb, LLSheetNameData.Item(iCounterSheet), iSheetStartLine, dictData, _
                                      DictHeaders, LLSheetNameData, LLNbColData, _
                                      ChoicesListData, ChoicesLabelsData)
             i = 0
-            With Wkb.Worksheets(LLSheetNameData.Item(iCounterSheet))
+            With wkb.Worksheets(LLSheetNameData.Item(iCounterSheet))
                 Do While (.Cells(C_eStartLinesAdmData + i, C_eStartColumnAdmData + 2).Value <> "")
                     DictVarName.Push .Cells(C_eStartLinesAdmData + i, C_eStartColumnAdmData + 3).Name.Name
                     i = i + 1
@@ -196,7 +196,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
             End With
 
             'Now writing the data of varnames to the dictionary
-            With Wkb.Worksheets(C_sParamSheetDict)
+            With wkb.Worksheets(C_sParamSheetDict)
                 iPastingRow = .Cells(.Rows.Count, 1).End(xlUp).Row
                 DictVarName.ToExcelRange Destination:=.Cells(iPastingRow + 1, 1)
                 DictVarName.Clear
@@ -212,7 +212,7 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
     Next
 
     'Put the dictionnary in a table format
-    With Wkb.Worksheets(C_sParamSheetDict)
+    With wkb.Worksheets(C_sParamSheetDict)
         .Cells(1, 1).Value = C_sDictHeaderVarName
         'Update values of the Sheet Names with correct spelling
         For i = 2 To .Cells(Rows.Count, 1).End(xlUp).Row
@@ -226,11 +226,11 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
 
     SheetMain.Range("RNG_Edition").Value = TranslateMsg("MSG_BuildAna")
 
-    Call DesignerBuildListHelpers.UpdateChoiceAutoHeaders(Wkb, ChoiceAutoVarData, DictHeaders)
+    Call DesignerBuildListHelpers.UpdateChoiceAutoHeaders(wkb, ChoiceAutoVarData, DictHeaders)
 
     '======== Build the Analysis ======================================================================================================================================
 
-    Call BuildAnalysis(Wkb, GSData, UAData, BAData, TAData, SAData, ChoicesListData, ChoicesLabelsData, dictData, DictHeaders, VarNameData, TableNameData)
+    Call BuildAnalysis(wkb, GSData, UAData, BAData, TAData, SAData, ChoicesListData, ChoicesLabelsData, dictData, DictHeaders, VarNameData, TableNameData)
 
 
     iUpdateCpt = iUpdateCpt + 2
@@ -238,10 +238,10 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
 
     #If Mac Then
         'Mac users will have to endure screen flickering, no choice
-        Windows(Wkb.Name).Visible = True
-        Windows(Wkb.Name).WindowState = xlMaximized
+        Windows(wkb.Name).Visible = True
+        Windows(wkb.Name).WindowState = xlMaximized
 
-        For Each Wksh In Wkb.Worksheets
+        For Each Wksh In wkb.Worksheets
             'Unable to write this code as a sub, please keep it in mind because it won't freeze.
             If SheetsOfTypeLLData.Includes(Wksh.Name) Then
                 Wksh.Activate
@@ -268,12 +268,12 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
             End If
         Next
 
-        Wkb.SaveAs FileName:=sPath, fileformat:=xlExcel12, PassWord:=SheetMain.Range("RNG_LLPwdOpen").Value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-        Wkb.Close
+        wkb.SaveAs FileName:=sPath, fileformat:=xlExcel12, Password:=SheetMain.Range("RNG_LLPwdOpen").Value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+        wkb.Close
     #Else
         'I am on windows, I will save the workbook, reopen it with new instance, put everything as visible in the workbook, hide the instance and do my work on Panes
-        Wkb.SaveAs SheetMain.Range("RNG_LLDir") & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp", fileformat:=xlExcel12
-        Wkb.Close
+        wkb.SaveAs SheetMain.Range("RNG_LLDir") & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp", fileformat:=xlExcel12
+        wkb.Close
         Dim Myxlsapp As Excel.Application
         Set Myxlsapp = New Excel.Application
         With Myxlsapp
@@ -282,9 +282,9 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
             .DisplayAlerts = False
             .EnableAnimations = False
             .EnableEvents = False
-            Set Wkb = .Workbooks.Open(SheetMain.Range("RNG_LLDir") & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb")
-            .Windows(Wkb.Name).Visible = True
-            For Each Wksh In Wkb.Worksheets
+            Set wkb = .Workbooks.Open(SheetMain.Range("RNG_LLDir") & Application.PathSeparator & "LinelistApp_" & Application.PathSeparator & "Temp.xlsb")
+            .Windows(wkb.Name).Visible = True
+            For Each Wksh In wkb.Worksheets
                 If SheetsOfTypeLLData.Includes(Wksh.Name) Then
                     Wksh.Activate
                     With .ActiveWindow
@@ -309,8 +309,8 @@ Sub BuildList(DictHeaders As BetterArray, dictData As BetterArray, ExportData As
                 End If
             Next
         End With
-        Wkb.SaveAs FileName:=sPath, fileformat:=xlExcel12, PassWord:=SheetMain.Range("RNG_LLPwdOpen").Value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-        Wkb.Close
+        wkb.SaveAs FileName:=sPath, fileformat:=xlExcel12, Password:=SheetMain.Range("RNG_LLPwdOpen").Value, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+        wkb.Close
 
         Myxlsapp.Quit
 
@@ -337,7 +337,7 @@ End Sub
 '@LLSheetName: This is a vector that will contain le name of all the sheets
 '@bNotHideSheets: For debugging purpose (hide or not dicitonary and Export sheets)
 
-Private Sub CreateSheets(Wkb As Workbook, dictData As BetterArray, DictHeaders As BetterArray, _
+Private Sub CreateSheets(wkb As Workbook, dictData As BetterArray, DictHeaders As BetterArray, _
                          ExportData As BetterArray, ChoicesHeaders As BetterArray, _
                          ChoicesData As BetterArray, TransData As BetterArray, _
                          LLNbColData As BetterArray, ColumnIndexData As BetterArray, _
@@ -353,7 +353,7 @@ Private Sub CreateSheets(Wkb As Workbook, dictData As BetterArray, DictHeaders A
     ColumnIndexData.LowerBound = 1
 
 
-    With Wkb
+    With wkb
         'Workbook already contains Password and formula sheets. Hide them
         .Worksheets(C_sSheetPassword).Visible = xlVeryHidden
         .Worksheets(C_sSheetFormulas).Visible = xlVeryHidden
@@ -387,13 +387,13 @@ Private Sub CreateSheets(Wkb As Workbook, dictData As BetterArray, DictHeaders A
         .Worksheets(C_sParamSheetTranslation).Visible = xlSheetVeryHidden
 
         'Add the metadata sheet
-        Call DesignerBuildListHelpers.AddMetadataSheet(Wkb)
+        Call DesignerBuildListHelpers.AddMetadataSheet(wkb)
 
         'Add the temporary sheets for computation and stuffs
-        Call DesignerBuildListHelpers.AddTemporarySheets(Wkb)
+        Call DesignerBuildListHelpers.AddTemporarySheets(wkb)
 
         'Add a Sheet called Admin for buttons and managements
-        Call DesignerBuildListHelpers.AddAdminSheet(Wkb)
+        Call DesignerBuildListHelpers.AddAdminSheet(wkb)
 
         'Add Analysis sheets
         .Worksheets.Add(after:=.Worksheets(sParamSheetAdmin)).Name = sParamSheetAnalysis
@@ -474,7 +474,7 @@ End Sub
 
 'SHEET OF TYPE ADM CREATION (Adaptation from lionel's work) ===========================================================================================================================================
 
-Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer, _
+Private Sub CreateSheetAdmEntry(wkb As Workbook, sSheetName As String, iSheetStartLine As Integer, _
                                 dictData As BetterArray, DictHeaders As BetterArray, LLSheetNameData As BetterArray, _
                                 LLNbColData As BetterArray, ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray)
 
@@ -504,18 +504,18 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
     'Add the logo for the first time
     If Not AddedLogo Then
         'Add the Logo
-        With Wkb.Worksheets(sParamSheetAdmin)
+        With wkb.Worksheets(sParamSheetAdmin)
 
             On Error Resume Next
             'Logo (copy from the sheet main, copy can fail, you just continue)
             Application.CutCopyMode = False
             SheetMain.Shapes("SHP_Logo").Copy
-            .Paste Destination:=Wkb.Worksheets(sParamSheetAdmin).Cells(2, 2)
+            .Paste Destination:=wkb.Worksheets(sParamSheetAdmin).Cells(2, 2)
             Application.CutCopyMode = True
             On Error GoTo 0
 
             AddedLogo = True
-            .Protect PassWord:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+            .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
         End With
     End If
@@ -529,7 +529,7 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
     sPrevMainSec = dictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderMainSec))
     sPrevSubSec = dictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderSubSec))
 
-    With Wkb.Worksheets(sSheetName)
+    With wkb.Worksheets(sSheetName)
 
         'FontSizes of Adms
         .Cells.Font.Size = C_iAdmSheetFontSize
@@ -571,7 +571,7 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
                 'I have to test I am not on the first column since it is possible that initialized value differed from
                 'the actual first value due to changes (taking in account the geo)
 
-                BuildSubSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), _
+                BuildSubSectionVMerge Wksh:=wkb.Worksheets(sSheetName), _
         iColumn:=C_eStartColumnAdmData + 1, iLineFrom:=iPrevLineSubSec, _
         iLineTo:=iCounterSheetAdmLine
 
@@ -583,7 +583,7 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
                 'Update sub sections on new Main sections too
 
                 .Cells(iCounterSheetAdmLine, C_eStartLinesAdmData + 1).Value = sActualSubSec
-                BuildSubSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), _
+                BuildSubSectionVMerge Wksh:=wkb.Worksheets(sSheetName), _
         iColumn:=C_eStartColumnAdmData + 1, iLineFrom:=iPrevLineSubSec, _
         iLineTo:=iCounterSheetAdmLine
 
@@ -594,7 +594,7 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
                 'Build last section
             ElseIf (iCounterDictSheetLine = iSheetStartLine + iTotalSheetAdmColumns - 1) Then
 
-                BuildSubSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), _
+                BuildSubSectionVMerge Wksh:=wkb.Worksheets(sSheetName), _
         iColumn:=C_eStartColumnAdmData + 1, iLineFrom:=iPrevLineSubSec, _
         iLineTo:=iCounterSheetAdmLine + 1
             End If
@@ -605,7 +605,7 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
                 .Cells(iCounterSheetAdmLine, C_eStartColumnAdmData).Value = sActualMainSec
 
                 'Merge the previous area
-                BuildMainSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), iLineFrom:=iPrevLineMainSec, _
+                BuildMainSectionVMerge Wksh:=wkb.Worksheets(sSheetName), iLineFrom:=iPrevLineMainSec, _
         iColumnFrom:=C_eStartColumnAdmData, iLineTo:=iCounterSheetAdmLine
 
                 'Update the previous columns
@@ -614,7 +614,7 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
             ElseIf (iCounterDictSheetLine = iSheetStartLine + iTotalSheetAdmColumns - 1) Then
 
                 'I am on the same main section, I will test if I am not on the last column, if it is the case, merge the area
-                BuildMainSectionVMerge Wksh:=Wkb.Worksheets(sSheetName), _
+                BuildMainSectionVMerge Wksh:=wkb.Worksheets(sSheetName), _
         iLineFrom:=iPrevLineMainSec, iColumnFrom:=C_eStartColumnAdmData, _
         iLineTo:=iCounterSheetAdmLine + 1
             End If
@@ -628,14 +628,14 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
 
             If sActualControl = C_sDictControlChoice Then
                 'Add list if the choice is not empty
-                Call AddChoices(Wkb, sSheetName, iCounterSheetAdmLine, C_eStartColumnAdmData + 3, _
+                Call AddChoices(wkb, sSheetName, iCounterSheetAdmLine, C_eStartColumnAdmData + 3, _
                                 ChoicesListData, ChoicesLabelsData, sActualFormula, _
                                 sActualValidationAlert, sActualValidationMessage)
             End If
 
 
             'Add the Column index for those variable
-            Wkb.Worksheets(C_sParamSheetDict).Cells(iCounterDictSheetLine + 1, DictHeaders.Length + 1).Value = iCounterSheetAdmLine '+1 on lines because of headers of the dictionary
+            wkb.Worksheets(C_sParamSheetDict).Cells(iCounterDictSheetLine + 1, DictHeaders.Length + 1).Value = iCounterSheetAdmLine '+1 on lines because of headers of the dictionary
 
 
             iCounterSheetAdmLine = iCounterSheetAdmLine + 1
@@ -645,7 +645,7 @@ Private Sub CreateSheetAdmEntry(Wkb As Workbook, sSheetName As String, iSheetSta
         WriteBorderLines .Range(.Cells(C_eStartLinesAdmData, C_eStartColumnAdmData), .Cells(iCounterSheetAdmLine - 1, C_eStartColumnAdmData + 3)), _
         iWeight:=xlThin, sColor:="DarkBlue"
 
-        .Protect PassWord:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
     End With
 End Sub
@@ -653,7 +653,7 @@ End Sub
 'SHEET OF TYPE LINELIST CREATION ======================================================================================================================================================================
 
 
-Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheetStartLine As Integer, _
+Private Sub CreateSheetLLDataEntry(wkb As Workbook, sSheetName As String, iSheetStartLine As Integer, _
                                    dictData As BetterArray, DictHeaders As BetterArray, LLSheetNameData As BetterArray, _
                                    LLNbColData As BetterArray, ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, _
                                    VarNameData As BetterArray, ColumnIndexData As BetterArray, FormulaData As BetterArray, _
@@ -724,7 +724,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     sTableName = dictData.Items(iCounterDictSheetLine, DictHeaders.IndexOf(C_sDictHeaderTableName))
 
     'Column for the GoTo Section
-    With Wkb.Worksheets(C_sSheetChoiceAuto)
+    With wkb.Worksheets(C_sSheetChoiceAuto)
         iGoToCol = .Cells(C_eStartlinesListAuto, .Columns.Count).End(xlToLeft).Column + 2
         'Rows for the GotTo Section
         iGoToRow = C_eStartlinesListAuto + 1
@@ -733,14 +733,14 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
     End With
 
     'Continue adding the columns unless the total number of columns to add is reached
-    With Wkb.Worksheets(sSheetName)
+    With wkb.Worksheets(sSheetName)
 
         'INITIALISATIONS AND ADDING COMMANDS___________________________________________________________________________________________________________________________________________________________
 
         'Adding required buttons
 
         'Show Hide Button
-        Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
+        Call DesignerBuildListHelpers.AddCmd(wkb, sSheetName, _
                                              .Cells(1, 1).Left + C_iCmdWidth + 20, _
                                              .Cells(1, 1).Top, _
                                              C_sShpShowHide, _
@@ -748,7 +748,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                                              C_iCmdWidth, C_iCmdHeight, _
                                              C_sCmdShowHideName)
         'Add 200 Rows Button
-        Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
+        Call DesignerBuildListHelpers.AddCmd(wkb, sSheetName, _
                                              .Cells(2, 1).Left + C_iCmdWidth + 20, _
                                              .Cells(2, 1).Top + 5, _
                                              C_sShpAddRows, _
@@ -757,7 +757,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                                              C_sCmdAddRowsName)
 
         'Add Command to clear filters
-        Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
+        Call DesignerBuildListHelpers.AddCmd(wkb, sSheetName, _
                                              .Cells(3, 1).Left + C_iCmdWidth + 20, _
                                              .Cells(3, 1).Top + 10, _
                                              C_sShpClearFilters, _
@@ -770,7 +770,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
         Do While (iCounterDictSheetLine <= iSheetStartLine + iTotalLLSheetColumns - 1)
 
-            Wkb.Worksheets(C_sParamSheetDict).Cells(iCounterDictSheetLine + 1 + iNbshifted, DictHeaders.Length + 1).Value = iCounterSheetLLCol '+1 on DictSheetLine because of headers, iNbShifted to take in account Geo
+            wkb.Worksheets(C_sParamSheetDict).Cells(iCounterDictSheetLine + 1 + iNbshifted, DictHeaders.Length + 1).Value = iCounterSheetLLCol '+1 on DictSheetLine because of headers, iNbShifted to take in account Geo
 
             bLockData = False                    'lock or not the data in one cell
 
@@ -825,19 +825,19 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
             'Adding the headers of the table ---------------------------------------------------------------------------------------------------------
             .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Name = sActualVarName
-            .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Value = DesignerBuildListHelpers.AddSpaceToHeaders(Wkb, sActualMainLab, sSheetName, C_eStartLinesLLData)
+            .Cells(C_eStartLinesLLData, iCounterSheetLLCol).Value = DesignerBuildListHelpers.AddSpaceToHeaders(wkb, sActualMainLab, sSheetName, C_eStartLinesLLData)
             .Cells(C_eStartLinesLLData, iCounterSheetLLCol).VerticalAlignment = xlTop
 
             'Adding the sub-label if needed Chr(10) is the return to line character the sublabel is in gray------------------
             If sActualSubLab <> "" Then
-                Call DesignerBuildListHelpers.AddSubLab(Wkb.Worksheets(sSheetName), C_eStartLinesLLData, _
+                Call DesignerBuildListHelpers.AddSubLab(wkb.Worksheets(sSheetName), C_eStartLinesLLData, _
                                                         iCounterSheetLLCol, sActualMainLab, _
                                                         sActualSubLab)
             End If
 
             'Adding the notes
             If sActualNote <> "" Then
-                Call DesignerBuildListHelpers.AddNotes(Wkb.Worksheets(sSheetName), C_eStartLinesLLData, _
+                Call DesignerBuildListHelpers.AddNotes(wkb.Worksheets(sSheetName), C_eStartLinesLLData, _
                                                        iCounterSheetLLCol, sActualNote)
             End If
 
@@ -858,7 +858,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 'I have to test I am not on the first column since it is possible that initialized value differed from
                 'the actual first value due to changes (taking in account the geo)
 
-                BuildSubSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLine:=C_eStartLinesLLSubSec, iColumnFrom:=iPrevColSubSec, _
+                BuildSubSectionHMerge Wksh:=wkb.Worksheets(sSheetName), iLine:=C_eStartLinesLLSubSec, iColumnFrom:=iPrevColSubSec, _
         iColumnTo:=iCounterSheetLLCol
 
                 'update previous columns
@@ -869,7 +869,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 'Update sub sections on new Main sections too
 
                 .Cells(C_eStartLinesLLSubSec, iCounterSheetLLCol).Value = sActualSubSec
-                BuildSubSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLine:=C_eStartLinesLLSubSec, iColumnFrom:=iPrevColSubSec, _
+                BuildSubSectionHMerge Wksh:=wkb.Worksheets(sSheetName), iLine:=C_eStartLinesLLSubSec, iColumnFrom:=iPrevColSubSec, _
         iColumnTo:=iCounterSheetLLCol
 
                 'update previous columns
@@ -877,7 +877,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 iPrevColSubSec = iCounterSheetLLCol
                 'Build last Section on last column
             ElseIf iCounterDictSheetLine = iSheetStartLine + iTotalLLSheetColumns - 1 Then
-                BuildSubSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLine:=C_eStartLinesLLSubSec, iColumnFrom:=iPrevColSubSec, _
+                BuildSubSectionHMerge Wksh:=wkb.Worksheets(sSheetName), iLine:=C_eStartLinesLLSubSec, iColumnFrom:=iPrevColSubSec, _
         iColumnTo:=iCounterSheetLLCol + 1
             End If
 
@@ -889,10 +889,10 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
                 'GOTO : Here I update the list to set as validation for the "GOTO"
                 iGoToRow = iGoToRow + 1
-                Wkb.Worksheets(C_sSheetChoiceAuto).Cells(iGoToRow, iGoToCol).Value = TranslateLLMsg("MSG_SelectSection") & ": " & sActualMainSec
+                wkb.Worksheets(C_sSheetChoiceAuto).Cells(iGoToRow, iGoToCol).Value = TranslateLLMsg("MSG_SelectSection") & ": " & sActualMainSec
 
                 'Merge the previous area
-                BuildMainSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), iLineFrom:=C_eStartLinesLLMainSec, _
+                BuildMainSectionHMerge Wksh:=wkb.Worksheets(sSheetName), iLineFrom:=C_eStartLinesLLMainSec, _
         iColumnFrom:=iPrevColMainSec, iLineTo:=C_eStartLinesLLSubSec, iColumnTo:=iCounterSheetLLCol
 
                 'Update the previous columns
@@ -900,7 +900,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
                 iPrevColMainSec = iCounterSheetLLCol
             ElseIf (iCounterDictSheetLine = iSheetStartLine + iTotalLLSheetColumns - 1) Then
                 'I am on the same main section, I will test if I am not on the last column, if it is the case, merge the area
-                BuildMainSectionHMerge Wksh:=Wkb.Worksheets(sSheetName), _
+                BuildMainSectionHMerge Wksh:=wkb.Worksheets(sSheetName), _
         iLineFrom:=C_eStartLinesLLMainSec, iColumnFrom:=iPrevColMainSec, _
         iColumnTo:=iCounterSheetLLCol + 1, iLineTo:=C_eStartLinesLLSubSec
             End If
@@ -908,7 +908,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             'STATUS, TYPE and CONTROLS ==========================================================================================================================
 
             'Updating the notes according to the column's Status ---------------------------------------------------------------------------------------------
-            Call DesignerBuildListHelpers.AddStatus(Wkb.Worksheets(sSheetName), _
+            Call DesignerBuildListHelpers.AddStatus(wkb.Worksheets(sSheetName), _
                                                     C_eStartLinesLLData, iCounterSheetLLCol, sActualNote, _
                                                     sActualStatus, "Mandatory data")
 
@@ -920,7 +920,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
                 'Add list if the choice is not emptyy
                 If sActualChoice <> vbNullString Then
-                    Call DesignerBuildListHelpers.AddChoices(Wkb, sSheetName, _
+                    Call DesignerBuildListHelpers.AddChoices(wkb, sSheetName, _
                                                              C_eStartLinesLLData + 2, iCounterSheetLLCol, _
                                                              ChoicesListData, ChoicesLabelsData, sActualChoice, _
                                                              sActualValidationAlert, sActualValidationMessage)
@@ -929,7 +929,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
             Case C_sDictControlGeo
                 'First, Geocolumns are in orange
-                Call DesignerBuildListHelpers.AddGeo(Wkb, dictData, DictHeaders, sSheetName, _
+                Call DesignerBuildListHelpers.AddGeo(wkb, dictData, DictHeaders, sSheetName, _
                                                      C_eStartLinesLLData, iCounterSheetLLCol, _
                                                      C_eStartLinesLLSubSec, iCounterDictSheetLine, sActualVarName, sActualValidationMessage, _
                                                      iNbshifted)
@@ -943,7 +943,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
                 'Add the GeoButton only one time
                 If Not bCmdGeoExist Then
-                    Call DesignerBuildListHelpers.AddCmd(Wkb, sSheetName, _
+                    Call DesignerBuildListHelpers.AddCmd(wkb, sSheetName, _
                                                          .Cells(1, 1).Left + 5, .Cells(2, 1).Top + 5, _
                                                          C_sShpGeo, _
                                                          "GEO", _
@@ -956,16 +956,16 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
                 sChoiceAutoName = C_sDictControlChoiceAuto & "_" & sActualChoice
 
-                If Not ListObjectExists(Wkb.Worksheets(C_sSheetChoiceAuto), "o" & sChoiceAutoName) Then
+                If Not ListObjectExists(wkb.Worksheets(C_sSheetChoiceAuto), "o" & sChoiceAutoName) Then
                     'Add the list_auto column in the worksheet list_auto_
-                    With Wkb.Worksheets(C_sSheetChoiceAuto)
+                    With wkb.Worksheets(C_sSheetChoiceAuto)
                         iChoiceCol = .Cells(1, .Columns.Count).End(xlToLeft).Column + 1
 
                         .Cells(C_eStartlinesListAuto, iChoiceCol + 1).Value = sChoiceAutoName
 
                         Set LoRng = .Range(.Cells(C_eStartlinesListAuto, iChoiceCol + 1), .Cells(C_eStartlinesListAuto + 1, iChoiceCol + 1))
                         .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = "o" & sChoiceAutoName
-                        Wkb.NAMES.Add Name:=sChoiceAutoName, RefersToR1C1:="=o" & sChoiceAutoName & "[" & sChoiceAutoName & "]"
+                        wkb.NAMES.Add Name:=sChoiceAutoName, RefersToR1C1:="=o" & sChoiceAutoName & "[" & sChoiceAutoName & "]"
                     End With
                 End If
 
@@ -985,7 +985,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
                     sFormula = DesignerBuildListHelpers.ValidationFormula(sFormula, AllSheetNamesData, VarNameData, ColumnIndexData, _
                                                                           FormulaData, SpecCharData, ChoiceAutoVarData, _
-                                                                          sActualVarName, Wkb.Worksheets(sSheetName), False)
+                                                                          sActualVarName, wkb.Worksheets(sSheetName), False)
 
                     'Testing before writing the formula
                     If (sFormula <> vbNullString) Then
@@ -1004,7 +1004,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
             'The type is added after formula validation because we need to take in account the formula before
             'setting the type
             'Formating the Column according to the Column's type -------------------------------------------------------------------------------------------
-            Call DesignerBuildListHelpers.AddType(Wkb.Worksheets(sSheetName), _
+            Call DesignerBuildListHelpers.AddType(wkb.Worksheets(sSheetName), _
                                                   C_eStartLinesLLData, iCounterSheetLLCol, sActualType)
 
             'Building Min/Max Validation ----------------------------------------------------------------------------
@@ -1012,12 +1012,12 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
 
                 'Testing if it is numeric
                 sFormulaMin = DesignerBuildListHelpers.ValidationFormula(sActualMin, AllSheetNamesData, VarNameData, ColumnIndexData, _
-                                                                         FormulaData, SpecCharData, ChoiceAutoVarData, sActualVarName, Wkb.Worksheets(sSheetName), True)
+                                                                         FormulaData, SpecCharData, ChoiceAutoVarData, sActualVarName, wkb.Worksheets(sSheetName), True)
                 If sFormulaMin = "" Then
                     'MsgBox "Invalid formula will be ignored : " & sActualMin & " / " & sActualVarName
                 Else
                     sFormulaMax = DesignerBuildListHelpers.ValidationFormula(sActualMax, AllSheetNamesData, VarNameData, ColumnIndexData, FormulaData, SpecCharData, _
-                                                                             ChoiceAutoVarData, sActualVarName, Wkb.Worksheets(sSheetName), True)
+                                                                             ChoiceAutoVarData, sActualVarName, wkb.Worksheets(sSheetName), True)
                     If sFormulaMax = "" Then
                         'MsgBox "Invalid formula will be ignored : " & sFormulaMax & " / " & sActualVarName
                     End If
@@ -1055,7 +1055,7 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         .Columns(2).ColumnWidth = C_iLLFirstColumnsWidth
 
         'Set Validation to the Section goto Cell
-        Call DesignerBuildListHelpers.BuildGotoArea(Wkb, sTableName, sSheetName, iGoToCol)
+        Call DesignerBuildListHelpers.BuildGotoArea(wkb, sTableName, sSheetName, iGoToCol)
 
         'Put the range of variable labels in bold and grey colors
         Set rng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_eStartLinesLLData + 1, iCounterSheetLLCol - 1))
@@ -1075,16 +1075,16 @@ Private Sub CreateSheetLLDataEntry(Wkb As Workbook, sSheetName As String, iSheet
         'Resize for 200 lines entrie
         .ListObjects(sTableName).Resize LoRng
         '   Now Protect the sheet,
-        .Protect PassWord:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
 
     End With
 
     'Tranfert Event code to the worksheet
-    TransferCodeWksh Wkb:=Wkb, sSheetName:=sSheetName, sNameModule:=C_sModLLChange
+    TransferCodeWksh wkb:=wkb, sSheetName:=sSheetName, sNameModule:=C_sModLLChange
 
     'Now on the filtered sheet copy the range of the list object
-    With Wkb.Worksheets(C_sFiltered & sSheetName)
+    With wkb.Worksheets(C_sFiltered & sSheetName)
         Set LoFiltRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(C_iNbLinesLLData + C_eStartLinesLLData + 1, iCounterSheetLLCol - 1))
         LoFiltRng.Value = LoRng.Value
         .ListObjects.Add(xlSrcRange, LoFiltRng, , xlYes).Name = C_sFiltered & sTableName

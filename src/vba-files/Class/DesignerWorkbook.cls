@@ -11,12 +11,12 @@ Option Explicit
 
 'clear the path ranges once the workbook opens
 Private Sub Workbook_Open()
-
+    Dim geo As ILLGeo
     Call ResetField
     SheetDesTranslation.Range("LangDictList").ClearContents
 
+    'Clear the geobase when opening the workbook
+    Set geo = LLGeo.Create(SheetGeo)
+    geo.Clear
 End Sub
-
-
-
 

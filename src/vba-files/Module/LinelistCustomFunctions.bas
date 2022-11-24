@@ -29,6 +29,8 @@ End Function
 '
 Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As String
 
+    Application.Volatile
+
     Dim sValLook As String
     Dim sSheetLook As String                     'Sheet name where to look for values
     Dim sSheetVal As String                      'Sheet name where to return the values
@@ -51,8 +53,9 @@ Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Str
         iColLook = RngLook.Column
         iColVal = RngVal.Column
 
-        Set ColRngLook = ThisWorkbook.Worksheets(sSheetLook).ListObjects(SheetListObjectName(sSheetLook)).ListColumns(iColLook).Range
-        Set ColRngVal = ThisWorkbook.Worksheets(sSheetVal).ListObjects(SheetListObjectName(sSheetVal)).ListColumns(iColVal).Range
+        'There is only one table per worksheet, so I can just take the first listObject
+        Set ColRngLook = ThisWorkbook.Worksheets(sSheetLook).ListObjects(1).ListColumns(iColLook).Range
+        Set ColRngVal = ThisWorkbook.Worksheets(sSheetVal).ListObjects(1).ListColumns(iColVal).Range
 
         On Error Resume Next
         With Application.WorksheetFunction

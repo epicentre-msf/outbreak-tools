@@ -52,9 +52,9 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
             F_Geo.LBL_Adm3.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(3).Value
             F_Geo.LBL_Adm4.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(4).Value
             
-            DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm4 & "_dropdown")
-            DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm3 & "_dropdown")
-            DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects(C_sTabAdm2 & "_dropdown")
+            DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin4")
+            DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin3")
+            DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin2")
 
 
             'Before doing the whole all thing, we need to test if the T_Adm data is empty or not

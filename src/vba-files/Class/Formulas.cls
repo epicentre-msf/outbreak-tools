@@ -119,6 +119,21 @@ Private Property Let FormulaValidity(test As Boolean)
     this.validity = test
 End Property
 
+Private Property Get ConvertedSetupFormula() As String
+    Dim setupform As String
+    Dim casewhenObject As ICaseWhen
+
+    setupform = SetupFormula()
+
+    If (InStr(1, setupform, "CASE_WHEN") = 1) Then
+        'Case when custom formula, need to be parsed
+        Set casewhenObject = CaseWhen.Create(setupform)
+        setupform = casewhenObject.parsedFormula()
+    End If
+
+    ConvertedSetupFormula = setupform
+End Property
+
 'Initialise custom formulas
 Private Sub Initialize()
     Set customFormulas = New BetterArray
@@ -148,6 +163,22 @@ Private Function isClosedParenthesis(ByVal chunk As String) As Boolean
     isClosedParenthesis = (chunk = Chr(41))
 End Function
 
+Private Property Get FormulaSheet() As String
+    Dim dict As ILLdictionary
+    Dim sheetLists As BetterArray
+    Dim setupform As String
+
+    Set dict = Dictionary()
+    setupform = SetupFormula()
+
+    FormulaSheet = vbNullString
+
+    Set sheetLists = dict.Data.FilterData("control details", setupform, "sheet name")
+    
+    If sheetLists.Length > 1 Then Debug.Print setupform; " is present on more than 1 sheet "
+    If sheetLists.Length = 1 Then FormulaSheet = sheetLists.Item(sheetLists.LowerBound)
+End Property
+
 'Test if a formula is valid
 Public Property Get valid(Optional ByVal formulaType As String = "analysis") As Boolean
     Dim setupform As String
@@ -162,7 +193,7 @@ Public Property Get valid(Optional ByVal formulaType As String = "analysis") As 
     Dim formulaTable As BetterArray
     Dim VariablesTable As BetterArray
 
-    setupform = SetupFormula
+    setupform = ConvertedSetupFormula()
     nbParenthesis = 0
     QuotedCharacter = False
     previousBreak = 1
@@ -213,8 +244,6 @@ Public Property Get valid(Optional ByVal formulaType As String = "analysis") As 
         If (formData.SpecialCharacterIncludes(midChar) And (Not QuotedCharacter)) Or (counter = Len(setupform)) Then
             
             chunk = Clean(Mid(setupform, previousBreak, counter - previousBreak))
-            Debug.Print chunk
-            Debug.Print midChar
             'Now you test for variables
             If (Not vars.Contains(chunk)) And _
                                           (Not formData.ExcelFormulasIncludes(UCase(chunk))) And _
@@ -225,6 +254,7 @@ Public Property Get valid(Optional ByVal formulaType As String = "analysis") As 
                 'Write here to say why
                 'Debug.Print chunk & " is unknown in formula " & setupform
                 'Error because we don't know the meaning of chunk
+                
                 GoTo FormulaIsNotValid
             ElseIf vars.Contains(chunk) Then
                 VariablesTable.Push chunk
@@ -257,14 +287,14 @@ FormulaIsNotValid:
 End Property
 
 'List of formulas
-Public Property Get varlists(Optional ByVal formulaType As String = "analysis") As BetterArray
+Public Property Get Varlists(Optional ByVal formulaType As String = "analysis") As BetterArray
     Dim varTable As BetterArray
     Set varTable = New BetterArray
     varTable.LowerBound = 1
     If valid(formulaType) Then
         Set varTable = this.formulavariables.Clone()
     End If
-    Set varlists = varTable.Clone()
+    Set Varlists = varTable.Clone()
 End Property
 
 'Parse the formula for linelist
@@ -275,6 +305,7 @@ Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean
     Dim counter As Long
     Dim formulaTable As BetterArray
     Dim chunk As String
+    Dim formshName As String
 
     Set formulaTable = New BetterArray
     Set vars = Variables()
@@ -291,7 +322,8 @@ Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean
             If useTableName Then
                 formulaTable.Item(counter) = tablePrefix & vars.Value(colName:="table name", varName:=chunk) & "[" & chunk & "]"
             Else
-                formulaTable.Item(counter) = sheets.VariableAddress(chunk)
+                formshName = FormulaSheet()
+                formulaTable.Item(counter) = sheets.VariableAddress(chunk, formshName)
             End If
         ElseIf UCase(chunk) = "MEAN" Then
             formulaTable.Item(counter) = "AVERAGE"
@@ -408,11 +440,15 @@ End Function
 
 'Interfaces
 Public Property Get IFormulas_Varlists() As BetterArray
-    Set IFormulas_Varlists = varlists()
+    Set IFormulas_Varlists = Varlists()
 End Property
 
 Public Property Get IFormulas_Valid(Optional ByVal formulaType As String = "analysis") As Boolean
     IFormulas_Valid = valid(formulaType)
+End Property
+
+Private Property Get IFormulas_FormulaTableList() As BetterArray
+    Set IFormulas_FormulaTableList = FormulaTableList
 End Property
 
 Public Property Get IFormulas_ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _

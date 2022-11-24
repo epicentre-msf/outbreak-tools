@@ -112,7 +112,6 @@ Private Function Value(ByVal colName As String, ByVal varName As String) As Stri
     Value = retValue
 End Function
 
-
 Private Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal newValue As String, Optional ByVal onEmpty As Boolean = False)
 
     'Row and columns to return
@@ -136,7 +135,6 @@ Private Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal new
     End If
 
 End Sub
-
 
 'Index of a column or a Row of a variable in a worksheet
 Private Function index(ByVal varName As String) As Long
@@ -178,3 +176,4 @@ End Function
 Public Sub ILLVariables_SetValue(ByVal varName As String, ByVal colName As String, ByVal newValue As String, Optional ByVal onEmpty As Boolean = False)
     SetValue varName, colName, newValue, onEmpty
 End Sub
+

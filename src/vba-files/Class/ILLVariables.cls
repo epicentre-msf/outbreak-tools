@@ -33,3 +33,4 @@ End Function
 'Change the value of one column for one variable in the dictionary (use carefully it modifies setup data)
 Public Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal newValue As String, Optional ByVal onEmpty As Boolean = False)
 End Sub
+

@@ -17,3 +17,5 @@ Option Explicit
 
 'Exposed methods
 Public Sub Build(): End Sub
+Public Property Get NextSheet() As String: End Property
+

@@ -24,12 +24,17 @@ Public Property Get specswkb() As Workbook: End Property
 'Translation objects (messages, shapes and userforms)
 Public Property Get TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation: End Property
 
-
 'Formula data object
 Public Property Get FormulaDataObject() As IFormulaData: End Property
 
 Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As String: End Property
 Public Property Get DesignFormat() As ILLFormat: End Property
+
+Public Property Get MainObject() As IMain: End Property
+Public Property Get Password() As ILLPasswords: End Property 'Passwords
+
+Public Property Get geoObject() As ILLGeo: End Property 'Geo object
+Public Property Get Analysis() As ILLAnalysis: End Property 'Analysis
 
 'Exposed methods
 'Categories of one variable
@@ -37,4 +42,7 @@ Public Function Categories(ByVal varName As String) As BetterArray: End Function
 
 'Void methods
 Public Sub Prepare(): End Sub
+
+'Export specifications to workbook
+Public Sub Export(ByVal toWkb As Workbook): End Sub
 

@@ -249,13 +249,13 @@ Private Sub RemoveGridLines(Wksh As Worksheet, Optional DisplayZeros As Boolean 
     Next
 End Sub
 
-
 Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
 
     Dim rng As Range
     Dim char As Characters
     Dim sh As Worksheet
     Dim shp As Shape
+    Dim Lo As ListObject
 
     Dim fontColorValue As Variant
     Dim interiorColorValue As Variant
@@ -586,7 +586,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         fontColorValue = DesignValue("button default font color")
         interiorColorValue = DesignValue("button default interior color")
         dimensionValue = DesignValue("linelist base font size", False)
-        dimensionValue = IIf(dimensionValue = 0, 9, dimensionValue) + 1
+        dimensionValue = IIf(dimensionValue = 0, 9, dimensionValue)
         dimensionValue = IIf(scope = AdminLargeButton, dimensionValue + 3, dimensionValue)
 
         FormatShape shp, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue
@@ -605,70 +605,98 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
 
     Case HListSubSection, VListSubSection
 
-      If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-      Set rng = formattingObject
-      Set sh = rng.Parent
-      'Borders arround subsections
-      bordersColorValue = DesignValue("hlist and vlist table borders color")
+        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        Set rng = formattingObject
+        Set sh = rng.Parent
+        'Borders arround subsections
+        bordersColorValue = DesignValue("hlist and vlist table borders color")
 
-      With sh
-        If scope = HListSubSection Then
-            Set rng = .Range(rng.Cells(1, 1), rng.Cells(3, rng.Columns.Count))
-        Else
-            Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count, 3))
-        End If
-         DrawLines rng, color:=bordersColorValue
-         DrawBorder rng, color:=bordersColorValue
-      End With
+        With sh
+            If scope = HListSubSection Then
+                Set rng = .Range(rng.Cells(1, 1), rng.Cells(3, rng.Columns.Count))
+            Else
+                Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count, 3))
+            End If
+            DrawLines rng, color:=bordersColorValue
+            DrawBorder rng, color:=bordersColorValue
+        End With
 
-      'format the range.
-      Set rng = formattingObject
+        'format the range.
+        Set rng = formattingObject
       
-      interiorColorValue = IIf(IsEmpty(rng), "", DesignValue("sub section interior color"))
-      fontColorValue = DesignValue("sub section font color")
-      dimensionValue = DesignValue("sub section font size", False)
-      dimensionValue = IIf(dimensionValue = 0, 11, dimensionValue)
+        interiorColorValue = IIf(IsEmpty(rng), "", DesignValue("sub section interior color"))
+        fontColorValue = DesignValue("sub section font color")
+        dimensionValue = DesignValue("sub section font size", False)
+        dimensionValue = IIf(dimensionValue = 0, 11, dimensionValue)
       
-      FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue, _
-      isBold:=True
+        FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue, _
+                    isBold:=True
 
-      On Error Resume Next
+        On Error Resume Next
         rng.Merge
-      On Error GoTo 0
+        On Error GoTo 0
 
     Case HListSection, VListSection
 
-      If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
 
-      'draw borders
-      Set rng = formattingObject
-      Set sh = rng.Parent
-      bordersColorValue = DesignValue("hlist and vlist table borders color")
+        'draw borders
+        Set rng = formattingObject
+        Set sh = rng.Parent
+        bordersColorValue = DesignValue("hlist and vlist table borders color")
 
-      With sh
-        If scope = HListSection Then
-            Set rng = .Range(rng.Cells(1, 1), rng.Cells(4, rng.Columns.Count))
+        With sh
+            If scope = HListSection Then
+                Set rng = .Range(rng.Cells(1, 1), rng.Cells(4, rng.Columns.Count))
+            Else
+                Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count, 4))
+            End If
+        
+            DrawBorder rng, color:=bordersColorValue
+        End With
+
+        'format the range
+        Set rng = formattingObject
+
+        fontColorValue = DesignValue("main section font color")
+        interiorColorValue = DesignValue("main section interior color")
+        dimensionValue = DesignValue("main section font size", False)
+        dimensionValue = IIf(dimensionValue = 0, 12, dimensionValue)
+     
+        FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue, _
+                    isBold:=True
+
+        On Error Resume Next
+        rng.Merge
+        On Error GoTo 0
+
+    Case HListTable
+        If (Not TypeName(formattingObject) = "ListObject") Then Exit Sub
+        Set Lo = formattingObject
+
+        interiorColorValue = DesignValue("entry table style", False)
+        bordersColorValue = DesignValue("hlist and vlist table borders color")
+
+        If interiorColorValue = "None, with borders" Then
+            Lo.TableStyle = ""
+            DrawLines Lo.DataBodyRange, color:=bordersColorValue
+        ElseIf interiorColorValue = "None" Then
+            Lo.TableStype = ""
         Else
-            Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count, 4))
+            On Error Resume Next
+            Lo.TableStyle = "TableStyleLight16"
+            Lo.TableStyle = interiorColorValue
+            On Error GoTo 0
         End If
         
-        DrawBorder rng, color:=bordersColorValue
-      End With
+    Case HListHeader
+        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        Set rng = formattingObject
 
-      'format the range
-      Set rng = formattingObject
+        interiorColorValue = DesignValue("hlist table header color")
+        FormatRange rng, fontColor:=interiorColorValue, interiorColor:=interiorColorValue
+        rng.Locked = True
 
-      fontColorValue = DesignValue("main section font color")
-      interiorColorValue = DesignValue("main section interior color")
-      dimensionValue = DesignValue("main section font size", False)
-      dimensionValue = IIf(dimensionValue = 0, 12, dimensionValue)
-     
-      FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue, _
-      isBold:=True
-
-      On Error Resume Next
-        rng.Merge
-      On Error GoTo 0
     End Select
 
 End Sub

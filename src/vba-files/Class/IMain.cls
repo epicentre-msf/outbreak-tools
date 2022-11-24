@@ -15,14 +15,18 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
-
 Public Property Get OutputPath() As String: End Property 'Linelist Directory
 Public Property Get LinelistName() As String: End Property 'Linelist Name
+
 Public Property Get SetupPath() As String: End Property 'Setup Path
 Public Property Get GeoPath() As String: End Property ' GeoPath
+
 'Check if all the paths are ready for linelist generation
 Public Property Get Ready() As Boolean: End Property
+Public Property Get LinelistPassWord() As String: End Property
 
 'Exposed methods
-Public Sub CheckReadiness(ByVal Trads As IDesTranslation): End Sub
+Public Sub CheckReadiness(ByVal trads As IDesTranslation): End Sub
+
 Public Sub UpdateStatus(ByVal numValue As Integer): End Sub
+

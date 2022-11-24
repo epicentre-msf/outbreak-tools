@@ -324,8 +324,8 @@ Private Sub Import(ByVal fromWksh As Worksheet, fromStartRow As Long, fromStartc
 End Sub
 
 'Export
-Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As String = "__all__", _
-                   Optional ByVal filteredCondition As String = "<>")
+Private Sub Export(ByVal wkb As Workbook, Optional ByVal filteredVarName As String = "__all__", _
+                   Optional ByVal filteredCondition As String = "<>", Optional ByVal Hide As Long = xlSheetHidden)
 
     Dim dataExportData As BetterArray
     Dim dataWksh As Worksheet
@@ -333,20 +333,20 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As Stri
     Dim sheetDataExist As Boolean
 
     'Trace on errors on export
-    If Wkb Is Nothing Then Exit Sub
+    If wkb Is Nothing Then Exit Sub
     'Test if the sheet  exists in the workbook
     Set dataWksh = Wksh()
 
     On Error Resume Next
-    Set dataExportWksh = Wkb.Worksheets(dataWksh.Name)
+    Set dataExportWksh = wkb.Worksheets(dataWksh.Name)
     sheetDataExist = (Not dataExportWksh Is Nothing)
     On Error GoTo 0
 
     'Trace on errors on exports
     If sheetDataExist Then Exit Sub
-    Wkb.Worksheets.Add(after:=Wkb.Worksheets(Wkb.Worksheets.Count)).Name = dataWksh.Name
+    wkb.Worksheets.Add(after:=wkb.Worksheets(wkb.Worksheets.Count)).Name = dataWksh.Name
     Set dataExportData = New BetterArray
-    Set dataExportWksh = Wkb.Worksheets(dataWksh.Name)
+    Set dataExportWksh = wkb.Worksheets(dataWksh.Name)
 
     If filteredVarName = "__all__" Then
         dataExportData.FromExcelRange DataRange(colName:="__all__", includeHeaders:=True)
@@ -355,6 +355,7 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As Stri
     End If
 
     dataExportData.ToExcelRange dataExportWksh.Cells(StartRow, StartColumn)
+    dataExportWksh.Visible = Hide
 End Sub
 
 'Errors ----------------------------------------------------------------------
@@ -421,8 +422,8 @@ End Property
 
 Public Sub IDataSheet_Export(ByVal toWkb As Workbook, _
                              Optional ByVal filteredVarName As String = "__all__", _
-                             Optional ByVal filteredCondition As String = "<>")
-    Export toWkb, filteredVarName, filteredCondition
+                             Optional ByVal filteredCondition As String = "<>", Optional ByVal Hide As Long = xlSheetHidden)
+    Export toWkb, filteredVarName, filteredCondition, Hide
 End Sub
 
 Public Sub IDataSheet_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)

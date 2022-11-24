@@ -22,9 +22,9 @@ Private Enum CodeScope
 End Enum
 
 Private Type TLinelist
-    outwkb As Workbook
+    outWkb As Workbook
     Data As ILinelistSpecs
-    firstSheet As String 'stock the name of the first sheet (depending on the os language)
+    firstSheet As String                         'stock the name of the first sheet (depending on the os language)
 End Type
 
 Private this As TLinelist
@@ -59,23 +59,43 @@ Public Property Get Dictionary() As ILLdictionary
     Set Dictionary = lData.Dictionary()
 End Property
 
+'Speed up before a work
+Private Sub BusyApp()
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    Application.Calculation = xlCalculationManual
+    Application.DisplayStatusBar = False
+    Application.EnableAnimations = False
+End Sub
+
+'Return previous state
+Private Sub ReturnState()
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    Application.Calculation = xlCalculationAutomatic
+    Application.DisplayStatusBar = True
+    Application.EnableAnimations = True
+End Sub
+
 'Workbook
-Public Property Get Wkb() As Workbook
-    If this.outwkb Is Nothing Then
-        Set this.outwkb = Workbooks.Add()
-        this.firstSheet = this.outwkb.Worksheets(1).Name
+Public Property Get wkb() As Workbook
+    If this.outWkb Is Nothing Then
+        BusyApp
+        Set this.outWkb = Workbooks.Add()
+        this.firstSheet = this.outWkb.Worksheets(1).Name
+    
     End If
-    Set Wkb = this.outwkb
+    Set wkb = this.outWkb
 End Property
 
 'Test if a worksheet Exists
 Private Function sheetExists(ByVal sheetName As String) As Boolean
     Dim sh As Worksheet
-    Dim outwkb As Workbook
+    Dim outWkb As Workbook
 
-    Set outwkb = Wkb()
+    Set outWkb = wkb()
     On Error Resume Next
-    Set sh = outwkb.Worksheets(sheetName)
+    Set sh = outWkb.Worksheets(sheetName)
     On Error GoTo 0
     sheetExists = (Not sh Is Nothing)
 End Function
@@ -97,11 +117,11 @@ End Property
 
 'Add worksheets to workbook
 Private Sub AddOutputSheet(ByVal sheetName As String, Optional ByVal Hide As Long = xlSheetVeryHidden)
-    Dim outwkb As Workbook
-    Set outwkb = Wkb()
+    Dim outWkb As Workbook
+    Set outWkb = wkb()
 
     If sheetExists(sheetName) Then ThrowError "The sheet " & sheetName & "already exists in the output workbook"
-    With outwkb
+    With outWkb
         .Worksheets.Add.Name = sheetName
         .Worksheets(sheetName).Visible = Hide
     End With
@@ -110,56 +130,67 @@ End Sub
 'Get a Worksheet in the output workbook
 Private Property Get Wksh(ByVal sheetName As String) As Worksheet
     Dim sh As Worksheet
-    Dim outwkb As Workbook
+    Dim outWkb As Workbook
 
     'Test if the sheet Exists
     If Not sheetExists(sheetName) Then ThrowError "The sheet " & sheetName & "does not exists in current workbook"
-    Set outwkb = Wkb()
-    Set sh = outwkb.Worksheets(sheetName)
+    Set outWkb = wkb()
+    Set sh = outWkb.Worksheets(sheetName)
     Set Wksh = sh
 End Property
 
-
 Private Sub TransferCode(moduleName As String, scope As CodeScope)
     
-    Dim codeObject As Object                         'Where to stock to code in the workbook
+    Dim codeObject As Object                     'Where to stock to code in the workbook
     Dim codeContent As String
-    Dim outwkb As Workbook
+    Dim outWkb As Workbook
     Dim inpWkb As Workbook
+    Dim mainobj As IMain
+    Dim sep As String
+    Dim outDir As String
+    Dim outPath As String
+    
     Dim lData As ILinelistSpecs
 
-    Set outwkb = Wkb() 'Output workbook
+    Set outWkb = wkb()                           'Output workbook
     Set lData = linelistData()
     Set inpWkb = lData.specswkb()
+    Set mainobj = lData.MainObject()
+    sep = Application.PathSeparator
+    outDir = mainobj.OutputPath() & sep & "LinelistApp_"
+         
 
     'get all the values within the actual module to transfer
-    With inpWkb.VBProject.VBComponents(moduleName).CodeModule
-        codeContent = .Lines(1, .CountOfLines)
-    End With
-
     Select Case scope
-    Case codeScopeClass
-        Set codeObject = outwkb.VBProject.VBComponents.Add(vbext_ct_StdModule)
     Case codeScopeModule
-        Set codeObject = outwkb.VBProject.VBComponents.Add(vbext_ct_ClassModule)
+        outPath = outDir & sep & "CopieMod.bas"
+    Case codeScopeClass
+        outPath = outDir & sep & "CopieCls.cls"
     End Select
+    
+    'I need to import/export classes to keep their attribute. (self instanciation, etc.)
 
-    'keep the name and add the codes
-    codeObject.Name = moduleName
-    With outwkb.VBProject.VBComponents(moduleName).CodeModule
-        .DeleteLines 1, .CountOfLines
-         DoEvents
-        .AddFromString codeContent
-    End With
+    On Error Resume Next
+    Kill outPath
+    On Error GoTo 0
+         
+    Set codeObject = inpWkb.VBProject.VBComponents(moduleName)
+    codeObject.Export outPath
+    Set codeObject = outWkb.VBProject.VBComponents
+    codeObject.Import outPath
+        
+    On Error Resume Next
+    Kill outPath
+    On Error GoTo 0
+    
 End Sub
-
 
 'Prepare temporary folder for the linelist creation
 Public Sub TemporaryFolder(Optional Create As Boolean = True)
     Dim lData As ILinelistSpecs
     Dim mainobj As IMain
     Dim outPath As String
-    Dim sep As String 'Separator
+    Dim sep As String                            'Separator
 
     Set lData = linelistData()
     Set mainobj = lData.MainObject()
@@ -168,29 +199,28 @@ Public Sub TemporaryFolder(Optional Create As Boolean = True)
 
     'required temporary folder for analysis
     On Error Resume Next
-        Kill outPath & sep & "LinelistApp_" & sep & "*.frm"
-        Kill outPath & sep & "LinelistApp_" & sep & "*.frx"
-        RmDir outPath & sep & "LinelistApp_"
-        If Create Then MkDir outPath & sep & "LinelistApp_" 'create a folder for sending all the data from designer
+    Kill outPath & sep & "LinelistApp_" & sep & "*.frm"
+    Kill outPath & sep & "LinelistApp_" & sep & "*.frx"
+    RmDir outPath & sep & "LinelistApp_"
+    If Create Then MkDir outPath & sep & "LinelistApp_" 'create a folder for sending all the data from designer
     On Error GoTo 0
 End Sub
-
 
 'Transfert a form to the output workbook
 Public Sub TransferForm(formName As String)
 
     Dim outDir As String
     Dim lData As ILinelistSpecs
-    Dim outwkb As Workbook
+    Dim outWkb As Workbook
     Dim inpWkb As Workbook
     Dim mainobj As IMain
-    Dim sep As String 'Application path separator
+    Dim sep As String                            'Application path separator
     Dim formPath As String
 
     Set lData = linelistData()
-    Set outwkb = Wkb()
+    Set outWkb = wkb()
     Set inpWkb = lData.specswkb()
-    Set manObj = lData.MainObject()
+    Set mainobj = lData.MainObject()
     sep = Application.PathSeparator
     outDir = mainobj.OutputPath() & sep & "LinelistApp_"
 
@@ -204,7 +234,7 @@ Public Sub TransferForm(formName As String)
 
     'Copy the frame to the output directory
     inpWkb.VBProject.VBComponents(formName).Export formPath
-    outwkb.VBProject.VBComponents.Import formPath
+    outWkb.VBProject.VBComponents.Import formPath
 
     DoEvents
 
@@ -214,9 +244,11 @@ Public Sub TransferForm(formName As String)
     On Error GoTo 0
 End Sub
 
-
 'Prepare the Linelist by adding required worksheets
 Private Sub Prepare()
+
+    Const FILTERPREFIX As String = "f"
+
     Dim dict As ILLdictionary
     Dim trans As ITranslation
     Dim sheetsList As BetterArray
@@ -224,11 +256,11 @@ Private Sub Prepare()
     Dim counter As Long
     Dim sheetName As String
     Dim codeName As String
-    Dim outwkb As Workbook
+    Dim outWkb As Workbook
     Dim prevAlert As Boolean
     Dim classesList As BetterArray
     
-    Set outwkb = Wkb()
+    Set outWkb = wkb()
     
     Set lData = linelistData()
     Set sheetsList = New BetterArray
@@ -238,15 +270,27 @@ Private Sub Prepare()
 
     'temporary sheet Names
     sheetsList.Push lData.TemporarySheetName(TemporarySingle), lData.TemporarySheetName(TemporarySheetList), _
-        lData.TemporarySheetName(TemporarySheetDebug), lData.TemporarySheetName(TemporarySheetMetadata), _
+        lData.TemporarySheetName(TemporarySheetDebug), _
         lData.TemporarySheetName(TemporarySheetAnalysis), lData.TemporarySheetName(TemporarySheetImport)
 
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         sheetName = sheetsList.Item(counter)
         AddOutputSheet sheetName, xlSheetVeryHidden
     Next
-    
+
+    DoEvents
+
+    'Export differents parts to the workbook (dictionary, choices, translation, geo)
+    lData.Export outWkb
+
+    DoEvents
+
     'Unique sheet Names (HList or VList)
+    'Add the sheets for Bivariate Analysis, Time series and spatial Analysis
+    AddOutputSheet trans.TranslatedValue("LLSHEET_SpatialAnalysis"), xlsheetvisible
+    AddOutputSheet trans.TranslatedValue("LLSHEET_TemporalAnalysis"), xlsheetvisible
+    AddOutputSheet trans.TranslatedValue("LLSHEET_Analysis"), xlsheetvisible
+
     sheetsList.Clear
     Set sheetsList = dict.UniqueValues("sheet name")
     sheetsList.Reverse
@@ -258,12 +302,16 @@ Private Sub Prepare()
     
     'Admin sheet Name
     AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlsheetvisible
+
     
     'Delete the first worksheet with name sheet1
     prevAlert = Application.DisplayAlerts
     Application.DisplayAlerts = False
-    outwkb.Worksheets(this.firstSheet).Delete
+    outWkb.Worksheets(this.firstSheet).Delete
     Application.DisplayAlerts = prevAlert
+    
+    'Send the User forms and classes to the linelist
+    TemporaryFolder Create:=True
 
     'Send the required classes to the linelist
     Set classesList = New BetterArray
@@ -277,29 +325,91 @@ Private Sub Prepare()
         TransferCode codeName, codeScopeClass
     Next
 
+    DoEvents
+
     'Send the modules to the linelist
     classesList.Clear
-    classesList.Push "Helpers", "LinelistConstants", "LinelistChange", "LinelistCustomFunctions", _
+    classesList.Push "Helpers", "LinelistConstants", "LinelistCustomFunctions", _
                      "LinelistExport", "LinelistGeo", "LinelistMigration", "LinelistShowHide", _
-                     "LinelistTranslation", "EstheticConstants", "LinelistEvents"
+                     "LinelistTranslation", "EstheticConstants", "LinelistEvents", "LinelistDictionary"
 
     For counter = classesList.LowerBound To classesList.UpperBound
         codeName = classesList.Item(counter)
         TransferCode codeName, codeScopeModule
     Next
+
+       
+    classesList.Clear
+    classesList.Push "F_Advanced", "F_Export", "F_ExportMig", "F_Geo", "F_ImportMig", "F_ImportRep", _
+                     "F_NomVisible"
+    
+    For counter = classesList.LowerBound To classesList.UpperBound
+        codeName = classesList.Item(counter)
+        TransferForm codeName
+    Next
+    
+    TemporaryFolder Create:=False
+
+    'Prepare the LinelistAdmin sheet
+    PrepareAdmin
 End Sub
 
-Private Sub Build()
+Private Sub PrepareAdmin()
 
-    'prepare the temporary folder
-    TemporaryFolder Create:=True
+    Const ADVANCEDCOMMAND As String = "ClicCmdAdvanced"
+    Const EXPORTCOMMAND As String = "ClicCmdExport"
+    Const SHPADVANCE As String = "SHP_Advanced"
+    Const SHPEXPORT As String = "SHP_Export"
 
-    'Prepare the workbook
-    Prepare
+    Dim sh As Worksheet
+    Dim trads As ITranslation
+    Dim design As ILLFormat
+    Dim lData As LinelistSpecs
+    Dim but As IButtons
+    Dim rng As Range
 
 
+    Set lData = linelistData()
+    Set design = lData.DesignFormat()
+    Set trads = lData.TransObject()
 
-    TemporaryFolder Create:=False
+    Set sh = Wksh(trads.TranslatedValue("LLSHEET_Admin"))
+    'Format the admin worksheet
+    design.ApplyFormat sh, scope:=AllLinelistSheet
+
+    'Change the translation to the Shapes one
+    Set trads = lData.TransObject(TranslationOfShapes)
+
+    'Advance button
+    Set rng = sh.Cells(2, 5)
+    Set but = Buttons.Create(rng, trads, codeName:=SHPADVANCE, scope:=ButtonScopeLarge)
+    but.Add ADVANCEDCOMMAND
+    but.Format design
+
+    'Import button
+    Set rng = sh.Cells(2, 7)
+    Set but = Buttons.Create(rng, trads, codeName:=SHPEXPORT, scope:=ButtonScopeLarge)
+    but.Add EXPORTCOMMAND
+    but.Format design
+End Sub
+
+Private Sub SaveLL()
+    Dim outWkb As Workbook
+    Dim passwd As String
+    Dim outPath As String
+    Dim lData As ILinelistSpecs
+    Dim mainobj As IMain
+
+
+    Set lData = linelistData()
+    Set outWkb = wkb()
+    Set mainobj = lData.MainObject()
+    passwd = mainobj.LinelistPassWord()
+    outPath = mainobj.OutputPath() & Application.PathSeparator & mainobj.LinelistName & ".xlsb"
+
+    outWkb.SaveAs FileName:=outPath, fileformat:=xlExcel12, Password:=passwd, _
+        ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+    outWkb.Close
 End Sub
 
 'Errors
@@ -333,8 +443,12 @@ Public Function ILinelist_SheetExists(ByVal sheetName As String) As Boolean
     ILinelist_SheetExists = sheetExists(sheetName)
 End Function
 
-Public Sub ILinelist_Build()
-    Build
+Public Sub ILinelist_AddOutputSheet(ByVal sheetName As String, Optional ByVal Hide As Long = xlSheetVeryHidden)
+    AddOutputSheet sheetName, Hide
+End Sub
+
+Public Sub ILinelist_SaveLL()
+    SaveLL
 End Sub
 
 

@@ -89,7 +89,7 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal ListName As String)
     Dim headerName As String                     'header Name
     Dim loName As String                         'List object name
     Dim rng As Range
-    Dim Wkb As Workbook
+    Dim wkb As Workbook
 
 
     If (Not Exists(ListName)) Then
@@ -105,17 +105,17 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal ListName As String)
 
             'Add A list object table
             .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName
-            Set Wkb = .Parent
+            Set wkb = .Parent
         End With
 
-        Wkb.NAMES.Add Name:=headerName, RefersToR1C1:="=" & loName & "[" & headerName & "]"
+        wkb.NAMES.Add Name:=headerName, RefersToR1C1:="=" & loName & "[" & headerName & "]"
     End If
 End Sub
 
 'Remove the validation
 Private Sub Remove(ByVal ListName As String)
     Dim sh As Worksheet
-    Dim Wkb As Workbook
+    Dim wkb As Workbook
     Dim rng As Range
     Dim loName As String
     Dim headerName As String
@@ -127,9 +127,9 @@ Private Sub Remove(ByVal ListName As String)
 
         Set sh = Wksh()
         Set rng = sh.ListObjects(loName).Range
-        Set Wkb = sh.Parent
+        Set wkb = sh.Parent
     
-        Wkb.NAMES(headerName).Delete
+        wkb.NAMES(headerName).Delete
     
         If rng.Column = 1 Then
     
