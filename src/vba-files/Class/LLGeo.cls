@@ -32,6 +32,7 @@ Private Const HISTOGEO  As String = "HISTOGEO"
 Private Const HISTOHF   As String = "HISTOHF"
 Private Const NAMES     As String = "NAMES"
 Private Const METADATA  As String = "METADATA"
+Private Const CONCAT    As String = "CONCAT" 'concatenated list of admins
 
 Public Function Create(ByVal sh As Worksheet) As ILLGeo
     CheckRequirements sh
@@ -65,6 +66,7 @@ Private Property Get GeoNames(ByVal admname As String) As String
     Dim sh As Worksheet
     Dim actualName As Variant
     Set sh = Wksh()
+    sh.Calculate
     Select Case admname
     Case "adm1_name"
         actualName = sh.Range("RNG_ADM1NAME").Value
@@ -353,12 +355,12 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
     Dim rng As Range
     Dim Lo As ListObject
     Dim loName As String
-    Dim colName As String
     Dim admname As String
     Dim transGeoName As String                   'Translated geo Name
     Dim hRng As Range                            'Header Range
 
     Set sh = Wksh()
+    sh.Calculate
     Set rng = sh.Range("RNG_GeoUpdated")
     If Not rawNames And (InStr(1, rng.Value, ", translated") > 0) Then Exit Sub
     If rawNames And (InStr(1, rng.Value, ", not translated") > 0) Then Exit Sub
@@ -369,25 +371,22 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
         loName = tabl.Item(counter)
         Set Lo = sh.ListObjects(loName)
         Set hRng = Lo.HeaderRowRange
-        'Admin 1 to 4
+        
+        'Admin 1 to 5, and hf
         For counter2 = 1 To counter
-            admname = "adm" & counter2 & "_name"
+            admname = IIf(counter2 = 5, "hf_name", "adm" & counter2 & "_name")
             transGeoName = GeoNames(admname)
-            colName = IIf(rawNames, transGeoName, admname)
-            colIndex = ColumnIndex(colName, hRng, inRange:=False)
-            If colIndex > 0 Then sh.Cells(hRng.Row, colIndex).Value = IIf(rawNames, admname, transGeoName)
+            'I have to take in account hf, since hf table is reversed
+            colIndex = Switch(counter2 = 5, 1, _
+                              counter = 5, hRng.Cells.Count - counter2, _
+                              True, counter2)
+            hRng.Cells(1, colIndex).Value = IIf(rawNames, admname, transGeoName)
         Next
-
-        If counter = 5 Then
-            'HF
-            admname = "hf_name"
-            transGeoName = GeoNames(admname)
-            colName = IIf(rawNames, transGeoName, admname)
-            colIndex = ColumnIndex(colName, hRng, inRange:=False)
-            If colIndex > 0 Then sh.Cells(hRng.Row, colIndex).Value = IIf(rawNames, admname, transGeoName)
-        End If
-
     Next
+    
+    'Informations for next translations
+    rng.Value = Replace(rng.Value, ", not translated", "")
+    rng.Value = Replace(rng.Value, ", translated", "")
     rng.Value = IIf(rawNames, rng.Value & ", not translated", rng.Value & ", translated")
 End Sub
 
@@ -398,7 +397,7 @@ Private Sub Clear()
     Set sh = Wksh()
     For Each Lo In sh.ListObjects
         On Error Resume Next
-        If Lo.Name <> "T_LevelNames" Then Lo.DataBodyRange.Cells.Clear
+        If Lo.Name <> "T_LevelNames" And Lo.Name <> "T_CONCAT" Then Lo.DataBodyRange.Cells.Clear
         On Error GoTo 0
     Next
 
@@ -513,7 +512,8 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     'Export all the ranges
     Set rngTable = New BetterArray
     rngTable.Push "RNG_GeoName", "RNG_GeoUpdated", "RNG_PastingGeoCol", "RNG_GeoLangCode", _
-                  "RNG_HFNAME", "RNG_ADM1NAME", "RNG_ADM2NAME", "RNG_ADM3NAME", "RNG_ADM4NAME"
+                  "RNG_HFNAME", "RNG_ADM1NAME", "RNG_ADM2NAME", "RNG_ADM3NAME", "RNG_ADM4NAME", _
+                  "RNG_FormLoaded"
 
     For counter = rngTable.LowerBound To rngTable.UpperBound
         rngName = rngTable.Item(counter)
@@ -552,6 +552,8 @@ Private Sub Import(ByVal fromWkb As Workbook)
     Dim lastRow As Long
     Dim impRng As Range
     Dim actRng As Range
+    Dim concatFormula As String
+    Dim sep As String
 
 
     Set admNames = New BetterArray
@@ -580,15 +582,45 @@ Private Sub Import(ByVal fromWkb As Workbook)
                     End If
                     counter = counter + 1
                 Loop
-                
-                counter = counter - 1            'Exact number of columns
 
                 'Resize the listObject
                 With sh
                     'I know that each geo listobject starts on the first line
-                    Set actRng = .Range(.Cells(1, hRng.Column), .Cells(lastRow, hRng.Column + counter - 1))
+                    Set actRng = .Range(.Cells(1, hRng.Column), .Cells(lastRow, hRng.Column + hRng.Cells.Count - 1))
                     Lo.Resize actRng
+                    
+                    'Resize the concat table
+                    If Lo.Name = "T_ADM4" Then
+                        'List object T_ADM4 first row range
+                        Set impRng = Lo.ListRows(1).Range
+                        
+                        'resize the list object of concatenate, after adding the formula
+                        Set Lo = .ListObjects("T_CONCAT")
+                        'remove previous data in the concat Range
+                        If Not Lo.DataBodyRange Is Nothing Then Lo.DataBodyRange.Delete
+                        sep = " & " & Chr(34) & "|" & Chr(34) & " & " 'Separator for the formula (Debug print to see what its looks like)
+                        
+                        'Creating the formula
+                        concatFormula = "=" & _
+                        impRng.Cells(1, 1).Address(Rowabsolute:=False) & _
+                        sep & _
+                        impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
+                        sep & _
+                        impRng.Cells(1, 3).Address(Rowabsolute:=False) & _
+                        sep & _
+                        impRng.Cells(1, 4).Address(Rowabsolute:=False)
+                        
+                        .Cells(2, Lo.Range.Column).formula = concatFormula
+                                                            
+                        Set actRng = .Range(.Cells(1, Lo.Range.Column), .Cells(lastRow, Lo.Range.Column))
+                        Lo.Resize actRng
+                    End If
+                    
+                    'Add the workbook name (Geobase Name)
+                    .Range("RNG_GeoName").Value = Replace(fromWkb.Name, ".xlsx", "")
+                    
                 End With
+                
             End If
         End With
     Next
@@ -611,7 +643,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     'Check for existence of all the required tables
     Set admTableNames = New BetterArray
     admTableNames.Push "T_" & ADMIN1, "T_" & ADMIN2, "T_" & ADMIN3, "T_" & ADMIN4, _
-                       "T_" & HF, "T_" & NAMES, "T_" & HISTOGEO, "T_" & HISTOHF, "T_" & METADATA
+                       "T_" & HF, "T_" & NAMES, "T_" & HISTOGEO, "T_" & HISTOHF, "T_" & METADATA, "T_" & CONCAT
     LoExists admTableNames, sh
     'Check if ranges for geo all exists
     RangeExists sh, "RNG_GeoName"
@@ -623,6 +655,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     RangeExists sh, "RNG_ADM2NAME"
     RangeExists sh, "RNG_ADM3NAME"
     RangeExists sh, "RNG_ADM4NAME"
+    RangeExists sh, "RNG_FormLoaded"
 End Sub
 
 Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
@@ -647,6 +680,69 @@ Private Sub LoExists(ByVal loNames As BetterArray, sh As Worksheet)
         On Error GoTo 0
         If Lo Is Nothing Then ThrowError "Table " & lName & " does not exists in Worksheet " & sh.Name
     Next
+End Sub
+
+'Update the geobase admin names in the linelist
+Private Sub Update(ByVal pass As ILLPasswords)
+    
+    Dim sh As Worksheet
+    Dim wb As Workbook
+    Dim cellRng As Range
+    Dim controlValue As String
+    
+    Set wb = Wksh.Parent
+    
+    For Each sh In wb.Worksheets
+    
+        'Test if it is a Hlist
+        If sh.Cells(1, 3).Value = "HList" Then
+            
+            'Unprotect and update
+             pass.UnProtect sh.Name
+            
+            With sh
+            
+                'Start of the table in the HList
+                '.Cells(1, 4) contains the name of table in the linelist HList sheet
+                Set cellRng = .Range(.Cells(1, 4).Value & "_" & "START")
+                
+                Do While Not IsEmpty(cellRng)
+                
+                    controlValue = cellRng.Offset(-6).Value
+                
+                    Select Case controlValue
+                
+                    Case "geo1"
+                
+                        cellRng.Offset(-2).Value = GeoNames("adm1_name")
+                    
+                    Case "geo2"
+                    
+                        cellRng.Offset(-2).Value = GeoNames("adm2_name")
+                    
+                    Case "geo3"
+                    
+                        cellRng.Offset(-2).Value = GeoNames("adm3_name")
+                    
+                    Case "geo4"
+                                    
+                        cellRng.Offset(-2).Value = GeoNames("adm4_name")
+                    
+                    Case "hf"
+                    
+                        cellRng.Offset(-2).Value = GeoNames("hf_name")
+                    
+                    End Select
+                    
+                    Set cellRng = cellRng.Offset(, 1)
+                Loop
+                
+            End With
+            
+            pass.protect sh.Name
+        End If
+    Next
+
 End Sub
 
 'Interfaces
@@ -695,4 +791,7 @@ Public Sub ILLGeo_ClearHistoric()
     ClearHistoric
 End Sub
 
+Public Sub ILLGeo_Update(ByVal pass As ILLPasswords)
+Update pass
+End Sub
 

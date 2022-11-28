@@ -137,6 +137,15 @@ Private Sub TransferCodeWksh()
     End With
 End Sub
 
+'Busy app
+Private Sub BusyApp()
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    Application.Calculation = xlCalculationManual
+    Application.EnableAnimations = False
+    Application.DisplayStatusBar = False
+End Sub
+
 Public Sub Build()
 
     Const ADDROWSCOMMAND As String = "ClicCmdAddRows"
@@ -189,6 +198,7 @@ Public Sub Build()
     'Split the rows and columns
     On Error Resume Next
     sh.Activate
+    BusyApp
     With ActiveWindow
         .SplitRow = llshs.DataBounds(sheetName, 1)
         .SplitColumn = 2
@@ -248,14 +258,25 @@ Public Sub Build()
     Set rng = sh.Cells(1, 1)
     tableName = llshs.SheetInfo(sheetName, 2)
     gotoSectionListName = tableName & "_" & GOTOSECCODE 'Name of the range goTo section
+    
     rng.Name = gotoSectionListName
     rng.Value = goToSection
     drop.Add sectionsList, gotoSectionListName
     drop.SetValidation rng, gotoSectionListName
     design.ApplyFormat rng, scope:=LinelistSelectionDropdown
     rng.Locked = False
-
-
+    
+    'Add the sheet type on HList sheet
+    Set rng = sh.Cells(1, 3)
+    rng.Value = "HList"
+    design.ApplyFormat rng, scope:=LinelistHiddenCell
+    
+    'Add the table name
+    Set rng = sh.Cells(1, 4)
+    rng.Value = tableName
+    design.ApplyFormat rng, scope:=LinelistHiddenCell
+            
+    
     'Create the whole table of the HList
     With sh
         shrowStart = llshs.DataBounds(sheetName, 1)
@@ -297,7 +318,7 @@ Public Sub Build()
     sh.Protection.AllowEditRanges.Add Title:="EditAll" & tableName, Range:=Range(tableName & "[#All]")
     
     'Protect the worksheet
-    pass.Protect "_active"
+    pass.protect "_active"
 End Sub
 
 'Error

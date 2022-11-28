@@ -23,7 +23,7 @@ End Type
 
 Private this As THListVars
 Private Const CLASSNAME As String = "HListVars"
-Private Const StartRow As Long = 8               'Where the variables should start in the output worksheet
+Private Const STARTROW As Long = 8               'Where the variables should start in the output worksheet
 
 Public Function Create(ByVal varName As String, ByVal ll As ILinelist) As IHListVars
 
@@ -112,7 +112,7 @@ Private Property Get VarRange() As Range         'Where to input informations on
         Set sh = Wksh()
         With sh
             STARTCOL = ValueOf("column index")
-            Set this.inputRange = .Cells(StartRow + 1, STARTCOL)
+            Set this.inputRange = .Cells(STARTROW + 1, STARTCOL)
         End With
     End If
 
@@ -229,6 +229,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     Dim varStatus As String
     Dim varListAutoOrigin As String
     Dim varControl As String
+    Dim varIndex As Long
     Dim cellRng As Range
     Dim trans As ITranslation
     Dim lData As ILinelistSpecs
@@ -250,8 +251,13 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     varControl = ValueOf("control")
     varStatus = ValueOf("status")
     varListAutoOrigin = ValueOf("list auto")
+    varIndex = CLng(ValueOf("column index"))
     calculated = trans.TranslatedValue("MSG_Calculated")
     mandatory = trans.TranslatedValue("MSG_Mandatory")
+    
+    If varIndex = 1 Then
+        cellRng.Name = ValueOf("table name") & "_" & "START"
+    End If
 
     'sublabel
     If (varControl = "formula") Or (varControl = "case_when") Then

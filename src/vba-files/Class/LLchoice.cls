@@ -52,10 +52,10 @@ Public Property Get Wksh() As Worksheet
 End Property
 
 'StartRow
-Public Property Get StartRow() As Long
+Public Property Get STARTROW() As Long
     Dim dataObject As IDataSheet
     Set dataObject = ChoiceData
-    StartRow = dataObject.StartRow()
+    STARTROW = dataObject.STARTROW()
 End Property
 
 'StartColumn
@@ -136,8 +136,8 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
     Set orderRng = DataRange(ORDER)
     Set choicewksh = Wksh()
 
-    EndRow = StartRow + listRng.Rows.Count
-    endRowlabel = StartRow + labelRng.Rows.Count
+    EndRow = STARTROW + listRng.Rows.Count
+    endRowlabel = STARTROW + labelRng.Rows.Count
 
 
     With choicewksh
@@ -180,7 +180,7 @@ Public Property Get ILLchoice_Wksh() As Worksheet
 End Property
 
 Public Property Get ILLchoice_StartRow() As Long
-    ILLchoice_StartRow = StartRow()
+    ILLchoice_StartRow = STARTROW()
 End Property
 
 Public Property Get ILLchoice_StartColumn() As Long

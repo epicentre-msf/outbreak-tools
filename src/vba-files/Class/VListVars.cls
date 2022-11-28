@@ -107,15 +107,15 @@ Private Property Get ValueOf(ByVal colName As String) As String
 End Property
 
 Private Property Get VarRange() As Range         'Where to input informations on the variable
-    Dim StartRow As Long
+    Dim STARTROW As Long
     Dim sh As Worksheet
     Dim rng As Range
     
     If this.inputRange Is Nothing Then
         Set sh = Wksh()
         With sh
-            StartRow = ValueOf("column index")
-            Set this.inputRange = .Cells(StartRow, STARTCOL)
+            STARTROW = ValueOf("column index")
+            Set this.inputRange = .Cells(STARTROW, STARTCOL)
         End With
     End If
     

@@ -132,7 +132,8 @@ Sub GenerateData()
     Dim increment As Integer
     Dim statusValue As Integer
 
-    BeginWork xlsapp:=Application
+    
+    Application.DisplayStatusBar = False
     
     Set wb = ThisWorkbook
     Set lData = LinelistSpecs.Create(wb)
@@ -195,7 +196,6 @@ Sub GenerateData()
     Loop
 
     'Save the linelist
-    BeginWork xlsapp:=Application
     llana.Build ll
     ll.SaveLL
     EndWork xlsapp:=Application

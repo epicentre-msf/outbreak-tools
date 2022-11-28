@@ -231,9 +231,9 @@ Private Function VariableAddress(ByVal varName As String, Optional ByVal onSheet
     If Contains(sheetName) Then
         Select Case SheetInfo(sheetName)
         Case SHEETTYPEHORIZONTAL
-            varAdd = prefix & dictWksh.Cells(rstart + 1, varIndex).Address(rowabsolute:=False)
+            varAdd = prefix & dictWksh.Cells(rstart + 1, varIndex).Address(Rowabsolute:=False)
         Case SHEETTYPEVERTICAL
-            varAdd = prefix & dictWksh.Cells(varIndex, cstart).Address(rowabsolute:=True, ColumnAbsolute:=True)
+            varAdd = prefix & dictWksh.Cells(varIndex, cstart).Address(Rowabsolute:=True, ColumnAbsolute:=True)
         End Select
     End If
   

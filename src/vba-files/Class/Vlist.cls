@@ -133,6 +133,14 @@ Private Sub TransferCodeWksh()
     End With
 End Sub
 
+Private Sub BusyApp()
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    Application.Calculation = xlCalculationManual
+    Application.EnableAnimations = False
+    Application.DisplayStatusBar = False
+End Sub
+
 Public Sub Build()
 
     Dim sh As Worksheet
@@ -159,6 +167,7 @@ Public Sub Build()
     Dim shrowStart As Long
     Dim shrowEnd As Long
     Dim Lo As ListObject
+    
 
     Set sh = Wksh()
     Set dict = Dictionary()
@@ -177,6 +186,7 @@ Public Sub Build()
     'Split the rows and columns
     On Error Resume Next
     sh.Activate
+    BusyApp
     With ActiveWindow
         .SplitRow = 1
         .FreezePanes = True
@@ -212,12 +222,23 @@ Public Sub Build()
     drop.SetValidation rng, gotoSectionListName
     design.ApplyFormat rng, scope:=LinelistSelectionDropdown
     rng.Locked = False
+    
+    'Add the sheet type on vlist
+    Set rng = sh.Cells(1, 3)
+    rng.Value = "VList"
+    design.ApplyFormat rng, scope:=LinelistHiddenCell
+    
+    'Add the table Name
+    Set rng = sh.Cells(1, 4)
+    rng.Value = tableName
+    design.ApplyFormat rng, scope:=LinelistHiddenCell
+    
 
     'Transfert code to the worksheet
     TransferCodeWksh
     
     'Protect the worksheet
-    pass.Protect "_active"
+    'pass.Protect "_active"
 End Sub
 
 'Error

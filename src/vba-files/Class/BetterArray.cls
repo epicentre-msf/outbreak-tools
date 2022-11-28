@@ -396,7 +396,7 @@ Public Function Unshift(ParamArray Args() As Variant) As Long
     Me.Items = NewItems
     If OldType <> BA_UNALLOCATED And OldType <> BA_UNDEFINED Then
         '@Ignore FunctionReturnValueDiscarded
-        Me.Concat OldItems
+        Me.CONCAT OldItems
         this.ArrayType = OldType
     End If
     Unshift = this.Length
@@ -667,33 +667,33 @@ Public Function FromExcelRange( _
     If TypeName(FromRange) = "Range" Then
         Dim StartColumn As Long
         Dim EndColumn As Long
-        Dim StartRow As Long
+        Dim STARTROW As Long
         Dim EndRow As Long
         
         With FromRange
             StartColumn = .Column
-            StartRow = .Row
+            STARTROW = .Row
             EndColumn = .Column + .Columns.Count - 1
             EndRow = .Row + .Rows.Count - 1
         End With
         
         With FromRange.Parent
             If DetectLastColumn Then
-                EndColumn = .Cells.Item(StartRow, .Columns.Count).End(xlToLeft).Column
+                EndColumn = .Cells.Item(STARTROW, .Columns.Count).End(xlToLeft).Column
             End If
             
             If DetectLastRow Then
                 EndRow = .Cells.Item(.Rows.Count, StartColumn).End(xlUp).Row
             End If
             
-            Me.Items = .Range(.Cells(StartRow, StartColumn), .Cells(EndRow, EndColumn)).Value
+            Me.Items = .Range(.Cells(STARTROW, StartColumn), .Cells(EndRow, EndColumn)).Value
         End With
         
         ' convert arrays of single column or row to 1d
-        If StartColumn = EndColumn And StartRow <> EndRow Then
+        If StartColumn = EndColumn And STARTROW <> EndRow Then
             Me.Items = Me.ExtractSegment(, StartColumn)
-        ElseIf StartColumn <> EndColumn And StartRow = EndRow Then
-            Me.Items = Me.ExtractSegment(StartRow)
+        ElseIf StartColumn <> EndColumn And STARTROW = EndRow Then
+            Me.Items = Me.ExtractSegment(STARTROW)
         End If
         
     Else
@@ -1351,7 +1351,7 @@ Public Function Clear() As BetterArray
 End Function
 
 '@Description("Joins one or more arrays onto the end of the current array.")
-Public Function Concat(ParamArray Args() As Variant) As BetterArray
+Public Function CONCAT(ParamArray Args() As Variant) As BetterArray
     Dim i As Long
     Dim Result() As Variant
     Dim Stored() As Variant
@@ -1380,7 +1380,7 @@ Public Function Concat(ParamArray Args() As Variant) As BetterArray
     If this.Capacity < StoredCapacity Then
         Me.Capacity = StoredCapacity
     End If
-    Set Concat = Me
+    Set CONCAT = Me
 End Function
 
 '@Description("Writes all of the elements in a Collection objet to the internal array.")
@@ -2369,7 +2369,7 @@ Private Function ParseCSV( _
     Dim CountRows As Long
     Dim lastRow As Long
     Dim LastColumn As Long
-    Dim StartRow As Long
+    Dim STARTROW As Long
     Dim InQuote As Boolean
     Dim Buffer As String
     Dim char As String
@@ -2397,12 +2397,12 @@ Private Function ParseCSV( _
     CountRows = UBound(CSVRows) - LBound(CSVRows) + 1
     
     If IgnoreFirstRow Then
-        StartRow = 1
+        STARTROW = 1
     Else
-        StartRow = 0
+        STARTROW = 0
     End If
     
-    lastRow = Base + CountRows - 1 - StartRow
+    lastRow = Base + CountRows - 1 - STARTROW
     LastColumn = Base + CountColumns - 1
     If ReturnJagged Then
         ReDim JaggedRow(Base To LastColumn)
@@ -2411,7 +2411,7 @@ Private Function ParseCSV( _
         ReDim Results(Base To lastRow, Base To LastColumn)
     End If
     
-    For i = StartRow To lastRow
+    For i = STARTROW To lastRow
         ColumnIndex = Base
         Buffer = CSVRows(i)
         Cursor = 1
@@ -2430,7 +2430,7 @@ Private Function ParseCSV( _
                     If ReturnJagged Then
                         JaggedRow(ColumnIndex) = Element
                     Else
-                        Results(i - StartRow, ColumnIndex) = Element
+                        Results(i - STARTROW, ColumnIndex) = Element
                     End If
                     Cursor = j + 2
                     inc ColumnIndex
@@ -2439,7 +2439,7 @@ Private Function ParseCSV( _
             End If
         Next
         If ReturnJagged Then
-            Results(i - StartRow) = JaggedRow
+            Results(i - STARTROW) = JaggedRow
             ' ReDim jaggedRow(Base To lastColumn)
         End If
     Next
