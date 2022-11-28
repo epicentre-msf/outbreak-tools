@@ -61,12 +61,13 @@ Private Property Get InDebugMode() As Boolean
 End Property
 
 'protect
-Private Sub Protect(Optional ByVal sheetName As String = "_active")
+Private Sub protect(Optional ByVal sheetName As String = "_active")
 
     Dim pwd As String
     Dim sh As Worksheet
     Dim wb As Workbook
     Set wb = Wksh.Parent
+    
     If sheetName = "_active" Then
         Set sh = ActiveSheet
     Else
@@ -78,7 +79,7 @@ Private Sub Protect(Optional ByVal sheetName As String = "_active")
     If sh Is Nothing Then Exit Sub
     If Not InDebugMode() Then
         pwd = Password()
-        sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=False, _
+        sh.protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=False, _
                    AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                    AllowFormattingCells:=True, AllowDeletingRows:=True
         sh.EnableSelection = xlUnlockedCells
@@ -92,11 +93,11 @@ Private Sub UnProtect(Optional ByVal sheetName As String = "_active")
     Dim sh As Worksheet
     Dim wb As Workbook
     Set wb = Wksh.Parent
-    If sSheetName = "_Active" Then
+    If sheetName = "_Active" Then
         Set sh = ActiveSheet
     Else
         On Error Resume Next
-        Set sh = wb.Worksheets(sSheetName)
+        Set sh = wb.Worksheets(sheetName)
         On Error GoTo 0
     End If
     'Test if the sheet Exists
@@ -186,7 +187,7 @@ Private Sub Export(ByVal toWkb As Workbook)
     'Export all the ranges
     Set rngTable = New BetterArray
     rngTable.Push "RNG_DebuggingPassword", "RNG_PublicKey", "RNG_LabPublicKey", "RNG_PrivateKey", _
-                  "RNG_LabPrivateKey"
+                  "RNG_LabPrivateKey", "RNG_DebugMode"
 
     For counter = rngTable.LowerBound To rngTable.UpperBound
         rngName = rngTable.Item(counter)
@@ -213,7 +214,7 @@ Public Sub ILLPasswords_UnProtect(Optional ByVal sheetName As String = "_active"
 End Sub
 
 Public Sub ILLPasswords_Protect(Optional ByVal sheetName As String = "_active")
-    Protect sheetName
+    protect sheetName
 End Sub
 
 Public Sub ILLPasswords_Export(ByVal toWkb As Workbook)

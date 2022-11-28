@@ -29,7 +29,7 @@ Private Const UNIVARIATE As String = "Tab_Univariate_Analysis"
 Private Const BIVARIATE As String = "Tab_Bivariate_Analysis"
 Private Const TIMESERIES As String = "Tab_TimeSeries_Analysis"
 Private Const GRAPHTIMESERIES As String = "Tab_Graph_TimeSeries"
-Private Const SPATIAL As String = "Tab_SpactialAnalysis"
+Private Const SPATIAL As String = "Tab_Spatial_Analysis"
 
 'Exposed methods
 Public Function Create(ByVal anaWksh As Worksheet) As ILLAnalysis
@@ -105,6 +105,44 @@ Private Sub BusyApp()
     Application.DisplayAlerts = False
     Application.Calculation = xlCalculationManual
     Application.EnableAnimations = False
+    Application.DisplayStatusBar = False
+End Sub
+
+
+Private Sub TransferCodeWksh(ByVal sh As Worksheet, ll As ILinelist)
+    
+    Const MODULENAME As String = "LinelistAnalysisChange"
+                                  
+    Dim inpWkb As Workbook                       'Input workbook
+    Dim lData As ILinelistSpecs
+    Dim codeContent As String                    'a string to contain code to add
+    Dim vbProj As Object                         'component, project and modules
+    Dim vbComp As Object
+    Dim codeMod As Object
+    Dim sheetName As String
+
+    Set lData = ll.linelistData()
+    Set inpWkb = lData.specswkb()
+    sheetName = sh.Name
+    
+
+    'save the code module in the string sNouvCode
+    With inpWkb.VBProject.VBComponents(MODULENAME).CodeModule
+        codeContent = .Lines(1, .CountOfLines)
+    End With
+
+    With sh.Parent
+        Set vbProj = .VBProject
+        Set vbComp = vbProj.VBComponents(.sheets(sheetName).codeName)
+        Set codeMod = vbComp.CodeModule
+    End With
+
+    'Adding the code
+    With codeMod
+        .DeleteLines 1, .CountOfLines
+        .AddFromString codeContent
+    End With
+    
 End Sub
 
 Private Sub Build(ll As ILinelist)
@@ -144,9 +182,6 @@ Private Sub Build(ll As ILinelist)
     Dim sectionsList As BetterArray 'Dropdown for sections
     Dim drop As IDropdownLists
     Dim goToSection As String
-    
-
-
 
     Set sh = Wksh()
     Set lData = ll.linelistData()
@@ -158,14 +193,11 @@ Private Sub Build(ll As ILinelist)
     Set vars = LLVariables.Create(dict)
     Set sectionsList = New BetterArray
     Set drop = ll.Dropdown()
-    BusyApp
-    Set outsh = ll.Wksh(tradmsg.TranslatedValue("LLSHEET_Analysis"))
-    goToSection = tradmsg.TranslatedValue("MSG_GoToSec")
-
-    'Build Global summary ========================================================
     
-    'Test if the listObject is not empty
-    Set Lo = sh.ListObjects(GLOBALSUMMARY)
+    
+    Set outsh = ll.Wksh(tradmsg.TranslatedValue("LLSHEET_Analysis"))
+    BusyApp
+    goToSection = tradmsg.TranslatedValue("MSG_GoToSec")
     design.ApplyFormat outsh, AllAnalysisSheet
     
     'Add the update filter button
@@ -174,14 +206,25 @@ Private Sub Build(ll As ILinelist)
     but.Add UPDATEFILTERCOMMAND
     but.Format design
     
+    'Add The Sheet Type
+    Set cellRng = outsh.Cells(1, 3)
+    cellRng.Value = "Uni-Bi-Analysis"
+    design.ApplyFormat cellRng, scope:=LinelistHiddenCell
+    
     On Error Resume Next
+    'Activating the worksheet restores all the application
+    'status to true, remember to recall the busy app just
+    'after
     outsh.Activate
+    BusyApp
     With ActiveWindow
         .SplitRow = 2
         .FreezePanes = True
     End With
     On Error GoTo 0
     
+    
+    Set Lo = sh.ListObjects(GLOBALSUMMARY)
     If Not (Lo.DataBodyRange Is Nothing) Then
         Set hRng = Lo.HeaderRowRange
         For counter = 1 To Lo.ListRows.Count
@@ -198,8 +241,9 @@ Private Sub Build(ll As ILinelist)
             End If
         Next
     End If
-
-     'Build Univariate Analysis =====================================================
+    
+    
+    'Build Univariate Analysis =====================================================
      Set Lo = sh.ListObjects(UNIVARIATE)
      If Not (Lo.DataBodyRange Is Nothing) Then
          Set hRng = Lo.HeaderRowRange
@@ -218,7 +262,7 @@ Private Sub Build(ll As ILinelist)
                  tabl.Format design
                  'Add graph
                  If specs.Value("graph") = "yes" Then
-                     Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
+                     Set cellRng = outsh.Cells(tabl.STARTROW - 2, tabl.EndColumn + 2)
                      Set grSpecs = GraphSpecs.Create(tabl)
                      grSpecs.CreateSeries
                      Set gr = Graphs.Create(outsh, cellRng)
@@ -232,7 +276,8 @@ Private Sub Build(ll As ILinelist)
              End If
          Next
      End If
-
+     
+     
      'Build Bivariate Analysis ===================================================== 'Can fator this later on
      Set Lo = sh.ListObjects(BIVARIATE)
      If Not (Lo.DataBodyRange Is Nothing) Then
@@ -253,7 +298,7 @@ Private Sub Build(ll As ILinelist)
                
                  'Add graph
                  If specs.Value("graph") = "values" Or specs.Value("graph") = "percentage" Or specs.Value("graph") = "both" Then
-                     Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
+                     Set cellRng = outsh.Cells(tabl.STARTROW - 2, tabl.EndColumn + 2)
                      Set grSpecs = GraphSpecs.Create(tabl)
                      grSpecs.CreateSeries
                      Set gr = Graphs.Create(outsh, cellRng)
@@ -268,18 +313,20 @@ Private Sub Build(ll As ILinelist)
          Next
      End If
      
+     'Add GoTo Section dropdown
      drop.Add sectionsList, "uagotosection"
      drop.SetValidation outsh.Cells(2, 2), "uagotosection"
      design.ApplyFormat outsh.Cells(2, 2), scope:=LinelistSelectionDropdown
      outsh.Cells(2, 2).Name = "ua_" & GOTOSECCODE
      
-     'Transfer goto section code to the worksheet
-          
-
-     'Build time series analysis =======================================================================================
+     'Transfert event change to the univariate analysis worksheet
+     TransferCodeWksh outsh, ll
+     
+     'Build Time series Analysis =====================================================
+     
      Set Lo = sh.ListObjects(TIMESERIES)
-     BusyApp
      Set outsh = ll.Wksh(tradmsg.TranslatedValue("LLSHEET_TemporalAnalysis"))
+     BusyApp
      design.ApplyFormat outsh, AllAnalysisSheet
      
     'Add the update filter button
@@ -288,10 +335,16 @@ Private Sub Build(ll As ILinelist)
     but.Add UPDATEFILTERCOMMAND
     but.Format design
     
+    'Add the sheet type
+    Set cellRng = outsh.Cells(1, 3)
+    cellRng.Value = "TS-Analysis"
+    design.ApplyFormat cellRng, LinelistHiddenCell
+    
     On Error Resume Next
     outsh.Activate
+    BusyApp
     With ActiveWindow
-        .SplitRow = 1
+        .SplitRow = 2
         .FreezePanes = True
     End With
     On Error GoTo 0
@@ -300,25 +353,32 @@ Private Sub Build(ll As ILinelist)
     
      If Not (Lo.DataBodyRange Is Nothing) Then
          Set hRng = Lo.HeaderRowRange
+         
          For counter = 1 To Lo.ListRows.Count
+             
              Set tabRng = Lo.ListRows(counter).Range
              Set specs = TablesSpecs.Create(hRng, tabRng, lData)
+             
              valid = specs.ValidTable()
+             
              If valid Then
+                 
                  'Minimum and maximum formulas
                  rowVar = specs.Value("row")
-                 On Error Resume Next
+                 
+                 If specs.isNewSection() Then sectionsList.Push goToSection & ": " & specs.Value("section")
+                 
+                 On Error Resume Next 'Could generate an error if the table doesn't have a previous table
                  Set prevSpecs = specs.Previous()
                  On Error GoTo 0
 
-                    
                  Set tabl = CrossTable.Create(specs, outsh, tradmsg)
                  tabl.Build
                  Set tabform = CrossTableFormula.Create(tabl, forml)
                  tabform.AddFormulas
                  tabl.Format design
                  
-                 'Minimum and maximum formula
+                 'Minimum and maximum formulas for time series
                  If (prevSpecs Is Nothing) Then
                      ' First New section
                      minFormula = "MIN(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
@@ -326,10 +386,9 @@ Private Sub Build(ll As ILinelist)
 
                  ElseIf specs.isNewSection() And (Not prevSpecs Is Nothing) Then
                     
-                    sectionsList.Push goToSection & ": " & specs.Value("section")
-                  '    New section after the first new section
-                     outsh.Range("MAX_MAX_DATE_" & prevSpecs.TableSectionId).formula = "= MAX(" & minFormula & ")"
-                     outsh.Range("MIN_MIN_DATE_" & prevSpecs.TableSectionId).formula = "= MIN(" & maxFormula & ")"
+                    'New section after the first new section
+                     outsh.Range("MAX_MAX_DATE_" & prevSpecs.TableSectionId).formula = "= MAX(" & maxFormula & ")"
+                     outsh.Range("MIN_MIN_DATE_" & prevSpecs.TableSectionId).formula = "= MIN(" & minFormula & ")"
                      minFormula = "MIN(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
                      maxFormula = "MAX(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
 
@@ -340,9 +399,13 @@ Private Sub Build(ll As ILinelist)
                     maxFormula = maxFormula & ", " & "MAX(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
 
                 End If
-
              End If
          Next
+         
+         'Add formulas to the last section
+          'outsh.Range("MAX_MAX_DATE_" & specs.TableSectionId).formula = "= MAX(" & maxFormula & ")"
+          'outsh.Range("MIN_MIN_DATE_" & specs.TableSectionId).formula = "= MIN(" & minFormula & ")"
+
      End If
      
      drop.Add sectionsList, "tsgotosection"
@@ -350,7 +413,76 @@ Private Sub Build(ll As ILinelist)
      design.ApplyFormat outsh.Cells(2, 2), scope:=LinelistSelectionDropdown
      outsh.Cells(2, 2).Name = "ts_" & GOTOSECCODE
      
+     'Send the LinelistTimeSeries change
+     TransferCodeWksh outsh, ll
      
+     
+     'Building the spatial Analysis ===================================================================================
+     
+     Set outsh = ll.Wksh(tradmsg.TranslatedValue("LLSHEET_SpatialAnalysis"))
+    design.ApplyFormat outsh, AllAnalysisSheet
+    BusyApp
+    sectionsList.Clear
+     
+     'Add the update filter button
+    Set cellRng = outsh.Cells(2, 1)
+    Set but = Buttons.Create(cellRng, tradshp, SHPFILTERNAME, ButtonScopeSmall)
+    but.Add UPDATEFILTERCOMMAND
+    but.Format design
+    
+    'Add The Sheet Type
+    Set cellRng = outsh.Cells(1, 3)
+    cellRng.Value = "SP-Analysis"
+    design.ApplyFormat cellRng, scope:=LinelistHiddenCell
+    
+    On Error Resume Next
+    'Activating the worksheet restores all the application
+    'status to true, remember to recall the busy app just
+    'after
+    outsh.Activate
+    BusyApp
+    With ActiveWindow
+        .SplitRow = 2
+        .FreezePanes = True
+    End With
+    On Error GoTo 0
+     
+     'Same as Bivariate analysis
+     Set Lo = sh.ListObjects(SPATIAL)
+     If Not (Lo.DataBodyRange Is Nothing) Then
+         Set hRng = Lo.HeaderRowRange
+         For counter = 1 To Lo.ListRows.Count
+             Set tabRng = Lo.ListRows(counter).Range
+             Set specs = TablesSpecs.Create(hRng, tabRng, lData)
+             
+             If specs.ValidTable() Then
+                 If specs.isNewSection Then sectionsList.Push goToSection & ": " & specs.Value("section")
+                 tabId = specs.TableId
+                 'Create the table
+                 Set tabl = CrossTable.Create(specs, outsh, tradmsg)
+                 tabl.Build
+                 
+                 'Add formulas and format
+                 Set tabform = CrossTableFormula.Create(tabl, forml)
+                 tabform.AddFormulas
+                 tabl.Format design
+               
+                 'Add graph
+                 If specs.Value("graph") = "values" Or specs.Value("graph") = "percentage" Or specs.Value("graph") = "both" Then
+                     Set cellRng = outsh.Cells(tabl.STARTROW - 2, tabl.EndColumn + 2)
+                     Set grSpecs = GraphSpecs.Create(tabl)
+                     grSpecs.CreateSeries
+                     Set gr = Graphs.Create(outsh, cellRng)
+                     gr.Add
+                     For graphCounter = 1 To grSpecs.NumberOfSeries
+                         gr.AddSeries grSpecs.SeriesName(graphCounter), grSpecs.SeriesType(graphCounter), grSpecs.SeriesPos(graphCounter)
+                         gr.AddLabels grSpecs.SeriesLabel(graphCounter), grSpecs.SeriesColumnLabel(graphCounter)
+                     Next
+                     gr.Format catTitle:=vars.Value(colName:="main label", varName:=specs.Value("row")), valuesTitle:=specs.Value("label")
+                 End If
+             End If
+         Next
+     End If
 End Sub
 
 'Import listobjects in analysis

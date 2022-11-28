@@ -4,7 +4,7 @@ Option Explicit
 Option Private Module
 
 Public iGeoType As Byte
-Dim DebugMode As Boolean
+Public DebugMode As Boolean
 
 Sub ClicCmdGeoApp()
 
@@ -192,7 +192,7 @@ Sub ClicCmdDebug()
 
         For Each sh In ThisWorkbook.Worksheets
             If SheetsToProtect.Includes(sh.Name) Then
-                sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                sh.protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                            AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                            AllowFormattingColumns:=True
 
@@ -231,7 +231,7 @@ Public Sub ProtectSheet(Optional sSheetName As String = "_Active")
 
     If Not DebugMode Then
         pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value
-        sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        sh.protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                    AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                    AllowFormattingColumns:=True
     End If
@@ -241,6 +241,8 @@ End Sub
 'Trigerring event when the linelist sheet has some values within                                                          -                                                      -
 Sub EventValueChangeLinelist(oRange As Range)
 
+    Const GOTOSECCODE As String = "go_to_section" 'Go To section constant
+    
     Dim T_geo As BetterArray
     Set T_geo = New BetterArray
     Dim sControlType As String                   'Control type
@@ -253,10 +255,17 @@ Sub EventValueChangeLinelist(oRange As Range)
     Dim loAdm2 As ListObject
     Dim loAdm3 As ListObject
     Dim loAdm4 As ListObject
-
+    Dim tableName As String
+    Dim sh As Worksheet
+    
     On Error GoTo errHand
+    Set sh = ActiveSheet
+    tableName = sh.Cells(1, 4).Value
+    Set rng = sh.Range(tableName & "_" & GOTOSECCODE)
+    
     iNumCol = oRange.Column
-    sControlType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).Value
+    sControlType = sh.Cells(C_eStartLinesLLMainSec - 1, iNumCol).Value
+    
 
     If oRange.Row > C_eStartLinesLLData + 1 Then
         Set loAdm2 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin2")
@@ -335,7 +344,8 @@ Sub EventValueChangeLinelist(oRange As Range)
         End Select
 
     End If
-
+    
+    'Update the custom control
     If oRange.Row = C_eStartLinesLLData And sControlType = C_sDictControlCustom Then
         'The name of custom variables has been updated, update the dictionary
         sCustomVarName = ActiveSheet.Cells(C_eStartLinesLLData + 1, iNumCol).Value
@@ -346,16 +356,18 @@ Sub EventValueChangeLinelist(oRange As Range)
         Call UpdateDictionaryValue(sCustomVarName, C_sDictHeaderMainLab, sLabel)
 
     End If
-
-
+    
+    'Update the list auto
     If oRange.Row > C_eStartLinesLLData + 1 And _
        ActiveSheet.Cells(C_eStartLinesLLMainSec - 2, iNumCol).Value = C_sDictControlChoiceAuto & "_origin" And _
        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value <> "list_auto_change_yes" Then
         ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value = "list_auto_change_yes"
     End If
 
-
-    If oRange.Name.Name = SheetListObjectName(ActiveSheet.Name) & "_" & C_sGotoSection Then
+    
+    'GoTo section
+    
+    If Not Intersect(oRange, rng) Is Nothing Then
         sLabel = Replace(oRange.Value, TranslateLLMsg("MSG_GoToSec") & ": ", "")
 
         Set rng = ActiveSheet.Rows(C_eStartLinesLLMainSec).Find(What:=sLabel, _
@@ -476,36 +488,18 @@ Public Sub UpdateFilterTables()
 
     Dim Wksh As Worksheet                        'The actual worksheet
     Dim filtWksh As Worksheet                    'Filtered worksheet
-    Dim DictHeaders As BetterArray               'Headers of the dictionary
-    Dim LLSheets As BetterArray                  'List of all sheets of type linelist
     Dim Lo As ListObject
     Dim rowCounter As Long
     Dim endCol As Long
     Dim sActSh As String
-    Dim ts As Date
     Dim destRng As Range
     Dim delRng As Range
-
-
-    BeginWork xlsapp:=Application
+    
     On Error GoTo ErrUpdate
-
-    ts = Now
-
-    sActSh = ActiveSheet.Name
-    Set DictHeaders = GetDictionaryHeaders()
-
-
-    Set LLSheets = FilterLoTable(Lo:=ThisWorkbook.Worksheets(C_sParamSheetDict).ListObjects(1), _
-                                 iFiltindex1:=DictHeaders.IndexOf(C_sDictHeaderSheetType), _
-                                 sValue1:=C_sDictSheetTypeLL, _
-                                 returnIndex:=DictHeaders.IndexOf(C_sDictHeaderSheetName))
-
-
     BeginWork xlsapp:=Application
 
     For Each Wksh In ThisWorkbook.Worksheets
-        If LLSheets.Includes(Wksh.Name) Then
+        If Wksh.Cells(1, 3).Value = "HList" Then
 
             'Unprotect the worksheet
             With Wksh
@@ -548,7 +542,9 @@ Public Sub UpdateFilterTables()
                     Loop
 
                     'Delete the ragne if necessary
+                    BeginWork Application
                     If Not delRng Is Nothing Then delRng.Delete
+                    BeginWork Application
                     'Reprotect back the worksheet
                     ProtectSheet .Name
                 End If
@@ -556,13 +552,7 @@ Public Sub UpdateFilterTables()
         End If
     Next
 
-
-    On Error Resume Next
-    ThisWorkbook.Worksheets(sActSh).Activate
-    On Error GoTo 0
-
     EndWork xlsapp:=Application
-
     Exit Sub
 
 ErrUpdate:
@@ -603,28 +593,35 @@ Sub EventValueChangeAnalysis(Target As Range)
     Dim rng As Range
     Dim RngLook As Range
     Dim sLabel As String
+    Dim actSh As Worksheet
+    Dim analysisType As String
 
     On Error GoTo Err
-    Call SetUserDefineConstants
+    Set actSh = ActiveSheet
+    
+    analysisType = actSh.Cells(1, 3).Value
+    
+    Select Case analysisType
 
-    Select Case ActiveSheet.Name
+    Case "Uni-Bi-Analysis"
+        'GoTo section range for univariate and bivariate analysis
+        Set rng = actSh.Range("ua_go_to_section")
 
-    Case sParamSheetAnalysis
-
-        Set rng = ThisWorkbook.Worksheets(sParamSheetAnalysis).Range(C_sTabLLUBA & "_" & C_sGotoSection)
-
-    Case sParamSheetTemporalAnalysis
-
-        Set rng = ThisWorkbook.Worksheets(sParamSheetTemporalAnalysis).Range(C_sTabLLTA & "_" & C_sGotoSection)
-
-    Case sParamSheetSpatialAnalysis
+    Case "TS-Analysis"
+        'Goto section range for time series analysis
+        Set rng = actSh.Range("ts_go_to_section")
+        
+    Case "SP-Analysis"
+        'GoTo section for spatial analysis
+        Set rng = actSh.Range("sp_go_to_section")
     End Select
 
-
     If Not Intersect(Target, rng) Is Nothing Then
+    
         sLabel = Replace(Target.Value, TranslateLLMsg("MSG_GoToSec") & ": ", "")
 
-        Set RngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=True, SearchFormat:=False)
+        Set RngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, _
+                                             MatchCase:=True, SearchFormat:=False)
 
         If Not RngLook Is Nothing Then RngLook.Activate
     End If
@@ -636,22 +633,18 @@ End Sub
 
 Sub EventValueChangeVList(Target As Range)
 
+    Const GOTOSECCODE As String = "go_to_section" 'Go To section constant
+
     Dim rng As Range
     Dim RngLook As Range
     Dim sLabel As String
     Dim sh As Worksheet
-    Dim dict As ILLdictionary
-    Dim llshs As ILLSheets
     Dim tableName As String
-    Const GOTOSECCODE As String = "go_to_section"
+    
     
     On Error GoTo Err
-    
-    Set sh = ThisWorkbook.Worksheets("Dictionary")
-    Set dict = LLdictionary.Create(sh, 1, 1)
-    Set llshs = LLSheets.Create(dict)
     Set sh = ActiveSheet
-    tableName = llshs.SheetInfo(sh.Name, 2)
+    tableName = sh.Cells(1, 4).Value
     Set rng = sh.Range(tableName & "_" & GOTOSECCODE)
     
     If Not Intersect(Target, rng) Is Nothing Then

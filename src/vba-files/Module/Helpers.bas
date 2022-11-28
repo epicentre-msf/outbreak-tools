@@ -224,6 +224,7 @@ Public Sub EndWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean =
     xlsapp.DisplayAlerts = True
     xlsapp.Calculation = xlCalculationAutomatic
     xlsapp.EnableAnimations = True
+    xlsapp.DisplayStatusBar = bstatusbar
 End Sub
 
 'Remove Gridlines in a worksheet

@@ -157,13 +157,13 @@ End Function
 
 Private Function Percentage(ByVal denomRng As Range, ByVal numRng As Range, Optional ByVal rowabs As Boolean = True) As String
     Dim parsedForm As String
-    parsedForm = numRng.Address(rowabsolute:=False) & "/" & denomRng.Address(rowabsolute:=rowabs, ColumnAbsolute:=True)
+    parsedForm = numRng.Address(Rowabsolute:=False) & "/" & denomRng.Address(Rowabsolute:=rowabs, ColumnAbsolute:=True)
     Percentage = "IF(ISERR(" & parsedForm & ")," & EmpStr & "," & parsedForm & ")"
 End Function
 
 'Write a formula on a cell if only another cell is not empty
 Private Function Condition(ByVal rngCondition As Range, ByVal formulaValue As String, Optional ByVal rowabs As Boolean = False) As String
-    Condition = "IF(" & rngCondition.Address(rowabsolute:=rowabs) & "=" & EmpStr & "," & EmpStr & "," & formulaValue & ")"
+    Condition = "IF(" & rngCondition.Address(Rowabsolute:=rowabs) & "=" & EmpStr & "," & EmpStr & "," & formulaValue & ")"
 End Function
 
 'Add conditions for the formulas
@@ -291,7 +291,7 @@ Private Sub AddFormulas()
             Set rng = .Range("ROW_CATEGORIES_" & tabId)
             rowVar = specs.Value("row")
             ClearTableConditions
-            AddTableConditions rowVar, "=" & rng.Cells(1, 1).Address(rowabsolute:=False)
+            AddTableConditions rowVar, "=" & rng.Cells(1, 1).Address(Rowabsolute:=False)
             finalFormula = CurrentExcelFormula()
 
             Set rng = .Range("VALUES_COL_1_" & tabId)
@@ -350,7 +350,7 @@ Private Sub AddFormulas()
 
             rowVar = specs.Value("row")
             colVar = specs.Value("column")
-            rowCatAddress = .Range("ROW_CATEGORIES_" & tabId).Cells(1, 1).Address(rowabsolute:=False)
+            rowCatAddress = .Range("ROW_CATEGORIES_" & tabId).Cells(1, 1).Address(Rowabsolute:=False)
             tabEndColumn = Table.EndColumn
             'Row categorie
             Set rng = .Range("VALUES_COL_1_" & tabId)
@@ -517,7 +517,7 @@ Private Sub AddFormulas()
                 'Start period column
                 Set cellRng = .Range("FIRST_VALUE_START_TIME_" & tabId)
                 cellRng.formula = "= " & "START_DATE_" & tabId
-                cellRng.Cells(2, 1).formula = "= " & cellRng.Cells(1, 2).Address(rowabsolute:=False) & " + " & " 1 "
+                cellRng.Cells(2, 1).formula = "= " & cellRng.Cells(1, 2).Address(Rowabsolute:=False) & " + " & " 1 "
                 Set rng = .Range("START_TIME_PERIOD_" & tabId)
                 Set cellRng = rng.Cells(1, 1)
                 cellRng.AutoFill Destination:=rng, Type:=xlFillValues
@@ -526,7 +526,7 @@ Private Sub AddFormulas()
                 Set rng = .Range("END_TIME_PERIOD_" & tabId)
                 Set cellRng = rng.Cells(1, 1)
                 cellRng.formula = "= FindLastDay(TIME_UNIT_" & tabId & "," & _
-                                  cellRng.Cells(1, 0).Address(rowabsolute:=False) & ")"
+                                  cellRng.Cells(1, 0).Address(Rowabsolute:=False) & ")"
                 cellRng.AutoFill Destination:=rng, Type:=xlFillValues
                 'Total period
                 Set rng = .Range("TOTAL_ROW_" & tabId)
@@ -575,8 +575,8 @@ Private Sub AddFormulas()
             Set cellRng = .Range("FIRST_VALUE_START_TIME_" & secId) 'Section Id because time series share same time period
             Set misRng = .Range("MISSING_ROW_VALUES_" & tabId)
             Set perRng = cellRng.Cells(1, 3)     'Period Range
-            startTimeAddress = cellRng.Address(rowabsolute:=False)
-            endTimeAddress = cellRng.Cells(1, 2).Address(rowabsolute:=False)
+            startTimeAddress = cellRng.Address(Rowabsolute:=False)
+            endTimeAddress = cellRng.Cells(1, 2).Address(Rowabsolute:=False)
             tabEndColumn = Table.EndColumn
             
             Do While (rng.Column <= tabEndColumn)
@@ -713,6 +713,7 @@ Private Sub AddFormulas()
             End If
 
         Case TypeSpatial
+        
         
         
 

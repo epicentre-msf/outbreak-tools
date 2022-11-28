@@ -59,6 +59,6 @@ Public Sub Clear(): End Sub
 Public Sub ClearHistoric(): End Sub
 
 'Update new Geobase
-'Public Sub Update(ByVal dict As ILLdictionary, pass As IPasswords): End Sub
+Public Sub Update(ByVal pass As ILLPasswords): End Sub
 
 

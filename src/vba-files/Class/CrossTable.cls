@@ -94,7 +94,7 @@ Private Function RangeExists(ByVal rngName As String) As Boolean
     RangeExists = (Not rng Is Nothing)
 End Function
 
-Private Property Get StartRow() As Long
+Private Property Get STARTROW() As Long
     Dim sh As Worksheet
     Dim specs As ITablesSpecs
     Dim strtRow As Long
@@ -117,11 +117,11 @@ Private Property Get StartRow() As Long
                 
                 .Cells(strtRow, STANDARDSTARTCOL).Name = "STARTROW_" & tabId
             ElseIf (Not specs.isNewSection) Then
-                strtRow = Previous.StartRow      'For time series on same section, go back to precendent start row
+                strtRow = Previous.STARTROW      'For time series on same section, go back to precendent start row
             End If
-            StartRow = strtRow
+            STARTROW = strtRow
         Else
-            StartRow = .Range("STARTROW_" & tabId).Row
+            STARTROW = .Range("STARTROW_" & tabId).Row
         End If
 
     End With
@@ -156,11 +156,11 @@ Private Property Get StartColumn() As Long
             'On time series, the startcolumn depends on new section
 
             strtcol = IIf(specs.TableType = TypeTimeSeries And (Not specs.isNewSection()), _
-                          .Cells(StartRow + 1, .Columns.Count).End(xlToLeft).Column, _
+                          .Cells(STARTROW + 1, .Columns.Count).End(xlToLeft).Column, _
                           STANDARDSTARTCOL)
 
             StartColumn = strtcol
-            .Cells(StartRow - 1, strtcol + 1).Name = "STARTCOL_" & tabId
+            .Cells(STARTROW - 1, strtcol + 1).Name = "STARTCOL_" & tabId
         Else
             StartColumn = .Range("STARTCOL_" & tabId).Column - 1
         End If
@@ -188,7 +188,7 @@ Public Property Get HeaderRange() As Range
     Dim sh As Worksheet
     Set sh = Wksh()
     With sh
-        Set HeaderRange = .Range(.Cells(StartRow, StartColumn + 1), .Cells(StartRow, EndColumn))
+        Set HeaderRange = .Range(.Cells(STARTROW, StartColumn + 1), .Cells(STARTROW, EndColumn))
     End With
 
 End Property
@@ -206,9 +206,9 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     Select Case specs.TableType()
 
     Case TypeBivariate, TypeTimeSeries, TypeSpatial
-        start = StartRow + 1
+        start = STARTROW + 1
     Case TypeUnivariate, TypeGlobalSummary
-        start = StartRow
+        start = STARTROW
     End Select
     If Not includeHeaders Then start = start + 1
 
@@ -261,10 +261,10 @@ Public Property Get ColumnRange(ByVal colVal As String, Optional ByVal includeHe
     Set specs = Specifications
 
     'startRow
-    start = Switch(specs.TableType = TypeBivariate, StartRow + 2, _
-                   specs.TableType = TypeTimeSeries, StartRow + 2, _
-                   specs.TableType = TypeSpatial, StartRow + 2, _
-                   True, StartRow + 1)
+    start = Switch(specs.TableType = TypeBivariate, STARTROW + 2, _
+                   specs.TableType = TypeTimeSeries, STARTROW + 2, _
+                   specs.TableType = TypeSpatial, STARTROW + 2, _
+                   True, STARTROW + 1)
     'End Row
     rend = Switch((specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial) And onlyCategories, EndRow - 2, _
                   specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial, EndRow, _
@@ -298,7 +298,7 @@ Private Sub AddRows()
     Dim counter As Long
     Dim tabId As String
 
-    start = StartRow
+    start = STARTROW
     Set sh = Wksh()
     Set specs = Specifications()
     tabId = specs.TableId
@@ -417,7 +417,7 @@ Private Sub BivariateColumns(ByVal start As Long, ByVal specs As ITablesSpecs, B
 
             NumberOfColumns = colData.Length     'Set the number of columns of the categories
 
-            colData.Concat labData.Items
+            colData.CONCAT labData.Items
             labData.Clear
             'Percentage
             If specs.HasPercentage Then
@@ -467,7 +467,7 @@ Private Sub AddColumns()
     Dim tabId As String
 
 
-    start = StartRow
+    start = STARTROW
     Set sh = Wksh()
     Set specs = Specifications()
     tabId = specs.TableId
@@ -540,7 +540,7 @@ Private Sub AddHeader()
     Set sh = Wksh()
     Set specs = Specifications
     Set trans = trads()
-    start = StartRow
+    start = STARTROW
     tabId = specs.TableId
 
     With sh
@@ -1059,10 +1059,10 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                               StartColumn + 1, StartColumn)
         'The whole table
         If (specs.TableType <> TypeUnivariate) And (specs.TableType <> TypeGlobalSummary) Then
-            Set rng = .Range(.Cells(StartRow, wholeTableStart), .Cells(EndRow, EndColumn))
+            Set rng = .Range(.Cells(STARTROW, wholeTableStart), .Cells(EndRow, EndColumn))
             DesignFormat.ApplyFormat rng, scope:=AnalysisWholeTable
         ElseIf (specs.TableType = TypeUnivariate) Then
-            Set rng = .Range(.Cells(StartRow + 1, wholeTableStart), .Cells(EndRow, EndColumn))
+            Set rng = .Range(.Cells(STARTROW + 1, wholeTableStart), .Cells(EndRow, EndColumn))
             DesignFormat.ApplyFormat rng, scope:=AnalysisWholeTable
         End If
 
@@ -1137,7 +1137,7 @@ Public Property Get ICrossTable_RowRange(ByVal rowVal As String, Optional ByVal 
 End Property
 
 Public Property Get ICrossTable_StartRow() As Long
-    ICrossTable_StartRow = StartRow
+    ICrossTable_StartRow = STARTROW
 End Property
 
 Public Property Get ICrossTable_Previous() As ICrossTable

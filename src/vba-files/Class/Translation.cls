@@ -102,12 +102,12 @@ End Function
 Private Function ValueIndex(ByVal text As String) As Long
     Dim index As Long
     Dim keyRng As Range
-    Dim StartRow As Long
+    Dim STARTROW As Long
 
     If ValueExists(text) Then
         Set keyRng = Table.ListColumns(1).Range
-        StartRow = keyRng.Row
-        index = keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True).Row - StartRow + 1
+        STARTROW = keyRng.Row
+        index = keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True).Row - STARTROW + 1
     Else
         index = -1
     End If

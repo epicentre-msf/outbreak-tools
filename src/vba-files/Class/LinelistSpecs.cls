@@ -219,6 +219,7 @@ Private Sub BusyApp()
     Application.DisplayAlerts = False
     Application.Calculation = xlCalculationManual
     Application.EnableAnimations = False
+    Application.DisplayStatusBar = False
 End Sub
 
 'Return previous state
@@ -247,7 +248,6 @@ Private Sub Prepare()
     Dim trans As ILLTranslations
     Dim counter As Long
     Dim inpWkb As Workbook
-    Dim prevWindowState As Integer
     Dim setPath As String
     Dim sh As Worksheet
     Dim expobj As ILLExport
@@ -274,12 +274,10 @@ Private Sub Prepare()
     Set geo = geoObject()
 
     'Import dictionary, and geobase, as well as choices
-    prevWindowState = Application.WindowState
     setPath = mainobj.SetupPath()
     BusyApp
-    
     Set inpWkb = Workbooks.Open(setPath)
-    Application.WindowState = xlMinimized
+    BusyApp
 
     'All the required sheeets should be present
     sheetExists inpWkb, DICTIONARYSHEET
@@ -311,9 +309,10 @@ Private Sub Prepare()
 
     'Import the geobase
     setPath = mainobj.GeoPath()
+    
     BusyApp
     Set inpWkb = Workbooks.Open(setPath)
-    Application.WindowState = xlMinimized
+    BusyApp
     
     geo.Import inpWkb
     inpWkb.Close savechanges:=False
@@ -371,7 +370,6 @@ Private Sub Prepare()
     ana.Translate dictTrads
     
     mainobj.UpdateStatus 10
-    Application.WindowState = prevWindowState
 
     'Return the state of the application
 End Sub

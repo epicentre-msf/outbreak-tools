@@ -875,7 +875,7 @@ Public Sub UpdateChoiceAutoHeaders(wkb As Workbook, ChoiceAutoVarData As BetterA
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).Value = C_sDictControlChoiceAuto & "_origin"
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).Font.color = vbWhite
                 .Worksheets(sSheetName).Cells(C_eStartLinesLLMainSec - 2, iIndex).FormulaHidden = True
-                .Worksheets(sSheetName).Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                .Worksheets(sSheetName).protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
             End If
             i = i + 1

@@ -65,6 +65,7 @@ Private Sub BusyApp()
     Application.DisplayAlerts = False
     Application.Calculation = xlCalculationManual
     Application.EnableAnimations = False
+    Application.DisplayStatusBar = False
 End Sub
 
 'Return previous state
@@ -80,8 +81,9 @@ Public Property Get wkb() As Workbook
     If this.outWkb Is Nothing Then
         BusyApp
         Set this.outWkb = Workbooks.Add()
+        BusyApp
         this.firstSheet = this.outWkb.Worksheets(1).Name
-    
+        
     End If
     Set wkb = this.outWkb
 End Property
@@ -137,7 +139,7 @@ Private Property Get Wksh(ByVal sheetName As String) As Worksheet
     Set Wksh = sh
 End Property
 
-Private Sub TransferCode(moduleName As String, scope As CodeScope)
+Private Sub TransferCode(MODULENAME As String, scope As CodeScope)
     
     Dim codeObject As Object                     'Where to stock to code in the workbook
     Dim codeContent As String
@@ -172,7 +174,7 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
     Kill outPath
     On Error GoTo 0
          
-    Set codeObject = inpWkb.VBProject.VBComponents(moduleName)
+    Set codeObject = inpWkb.VBProject.VBComponents(MODULENAME)
     codeObject.Export outPath
     Set codeObject = outWkb.VBProject.VBComponents
     codeObject.Import outPath
@@ -182,6 +184,43 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
     On Error GoTo 0
     
 End Sub
+
+'Transfert code to the workbook
+
+Private Sub TransferCodeWkb()
+    Const LINELISTWORKBOOKMODULENAME = "LinelistWorkbook"
+    
+    Dim lData As ILinelistSpecs
+    Dim codeContent As String                    'a string to contain code to add
+    Dim vbProj As Object                         'component, project and modules
+    Dim vbComp As Object
+    Dim codeMod As Object
+    Dim sheetName As String
+    Dim inpWkb As Workbook
+    Dim outWkb As Workbook
+
+    Set lData = linelistData()
+    Set inpWkb = lData.specswkb()
+    Set outWkb = wkb()
+
+    'save the code module in the string sNouvCode
+    With inpWkb.VBProject.VBComponents(LINELISTWORKBOOKMODULENAME).CodeModule
+        codeContent = .Lines(1, .CountOfLines)
+    End With
+
+    With outWkb
+        Set vbProj = .VBProject
+        Set vbComp = vbProj.VBComponents(.codeName)
+        Set codeMod = vbComp.CodeModule
+    End With
+
+    'Adding the code
+    With codeMod
+        .DeleteLines 1, .CountOfLines
+        .AddFromString codeContent
+    End With
+End Sub
+
 
 'Prepare temporary folder for the linelist creation
 Public Sub TemporaryFolder(Optional Create As Boolean = True)
@@ -345,6 +384,9 @@ Private Sub Prepare()
         codeName = classesList.Item(counter)
         TransferForm codeName
     Next
+    
+    'Transfert workbook close codes to the workbook
+    TransferCodeWkb
     
     TemporaryFolder Create:=False
 

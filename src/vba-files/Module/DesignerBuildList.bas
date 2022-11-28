@@ -515,7 +515,7 @@ Private Sub CreateSheetAdmEntry(wkb As Workbook, sSheetName As String, iSheetSta
             On Error GoTo 0
 
             AddedLogo = True
-            .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+            .protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
         End With
     End If
@@ -645,7 +645,7 @@ Private Sub CreateSheetAdmEntry(wkb As Workbook, sSheetName As String, iSheetSta
         WriteBorderLines .Range(.Cells(C_eStartLinesAdmData, C_eStartColumnAdmData), .Cells(iCounterSheetAdmLine - 1, C_eStartColumnAdmData + 3)), _
         iWeight:=xlThin, sColor:="DarkBlue"
 
-        .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        .protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
     End With
 End Sub
@@ -1075,7 +1075,7 @@ Private Sub CreateSheetLLDataEntry(wkb As Workbook, sSheetName As String, iSheet
         'Resize for 200 lines entrie
         .ListObjects(sTableName).Resize LoRng
         '   Now Protect the sheet,
-        .Protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        .protect Password:=(ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value), DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, AllowFormattingColumns:=True
 
     End With

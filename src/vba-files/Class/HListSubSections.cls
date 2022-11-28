@@ -33,7 +33,7 @@ Public Function Create(ByVal strt As Long, ll As ILinelist) As IHListSubSections
     CheckRequirements strt, ll
 
     With New HListSubSections
-        .StartRow = strt
+        .STARTROW = strt
         Set .LinelistObject = ll
         Set Create = .Self()
     End With
@@ -44,11 +44,11 @@ Public Property Get Self() As IHListSubSections
     Set Self = Me
 End Property
 
-Public Property Get StartRow() As Long           'Start Row of the subsection in the dictionary
-    StartRow = this.strt
+Public Property Get STARTROW() As Long           'Start Row of the subsection in the dictionary
+    STARTROW = this.strt
 End Property
 
-Public Property Let StartRow(ByVal strt As Long)
+Public Property Let STARTROW(ByVal strt As Long)
     this.strt = strt
     this.endrw = 0
 End Property
@@ -64,7 +64,7 @@ Public Property Get EndRow() As Long             'End Row of the subsection in t
     Dim sectionName As String
 
     If (this.endrw = 0) Then
-        rowNumber = StartRow()
+        rowNumber = STARTROW()
         Set dict = Dictionary()
         Set subSectionRng = dict.DataRange("sub section")
         Set sectionRng = dict.DataRange("main section")
@@ -105,7 +105,7 @@ Private Property Get ActualSection() As String
     Dim sectionRng As Range
   
     Set dict = Dictionary()
-    strt = StartRow()
+    strt = STARTROW()
     Set sectionRng = dict.DataRange("main section")
 
     ActualSection = sectionRng.Cells(strt, 1).Value
@@ -117,7 +117,7 @@ Private Property Get ActualSubSection() As String
     Dim subSectionRng As Range
 
     Set dict = Dictionary()
-    strt = StartRow()
+    strt = STARTROW()
     Set subSectionRng = dict.DataRange("sub section")
     ActualSubSection = subSectionRng.Cells(strt, 1).Value
 End Property
@@ -135,7 +135,7 @@ Private Property Get VariableLists() As BetterArray
         Set dict = Dictionary()
         Set varl = New BetterArray
         Set varRng = dict.DataRange("variable name")
-        strt = StartRow()
+        strt = STARTROW()
         endrw = EndRow()
 
         For counter = strt To endrw
