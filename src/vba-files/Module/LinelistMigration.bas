@@ -71,7 +71,7 @@ Sub ClearData()
                 End If
             End With
 
-            Wksh.Protect Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value, _
+            Wksh.protect Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value, _
         DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
         AllowFormattingColumns:=True
@@ -334,7 +334,7 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
             'Update the list auto on imports
             UpdateListAuto WkbLL.Worksheets(sSheetName)
 
-            .Protect Password:=WkbLL.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value, _
+            .protect Password:=WkbLL.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value, _
         DrawingObjects:=True, Contents:=True, Scenarios:=True, _
         AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
         AllowFormattingColumns:=True
@@ -357,7 +357,7 @@ Sub ImportMigrationData()
 
     Dim sActSht As String
     Dim shpTemp As Worksheet
-    Dim ShouldQuit As Byte
+    Dim shouldQuit As Byte
     Dim iStartSheet As Long
     Dim iEndSheet As Long
     Dim k As Long                                'counter
@@ -514,15 +514,15 @@ Sub ImportMigrationData()
 
 
     If Not ImportReport Then
-        ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImport"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
+        shouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImport"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
 
-        If ShouldQuit = vbYes Then
+        If shouldQuit = vbYes Then
             F_Advanced.Hide
         End If
     Else
-        ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportRep"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
+        shouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportRep"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Imports"))
 
-        If ShouldQuit = vbYes Then
+        If shouldQuit = vbYes Then
             F_Advanced.Hide
             Call ShowImportReport
         End If
@@ -617,87 +617,45 @@ End Sub
 'Import the full Geobase
 
 Sub ImportGeobase()
+    
+    Dim geo As ILLGeo
+    Dim sh As Worksheet
+    Dim pass As ILLPasswords
+        Dim sFilePath As String
+    Dim wkb As Workbook
+    Dim shouldQuit As Byte
+    
+    Set sh = ThisWorkbook.Worksheets("Geo")
+    Set geo = LLGeo.Create(sh)
+    Set sh = ThisWorkbook.Worksheets("Password")
+    Set pass = LLPasswords.Create(sh)
 
     BeginWork xlsapp:=Application
-
-    Dim sFilePath   As String                    'File path to the geo file
-    Dim oSheet      As Object
-    Dim AdmData     As BetterArray               'Table for admin levels
-    Dim AdmHeader   As BetterArray               'Table for the headers of the listobjects
-    Dim admNames    As BetterArray               'Array of the sheetnames
-    Dim i           As Long                      'iterator
-    Dim wkb         As Workbook
-    Dim WkshGeo     As Worksheet
-    Dim ShouldQuit As Long
-    'Sheet names
-    Set admNames = New BetterArray
-    Set AdmData = New BetterArray
-    Set AdmHeader = New BetterArray
-
-    On Error GoTo ErrImportGeo
-
-    admNames.LowerBound = 1
-    admNames.Push C_sAdm1, C_sAdm2, C_sAdm3, C_sAdm4, C_sHF, C_sNames, C_sHistoHF, C_sHistoGeo, C_sGeoMetadata 'Names of each sheet
 
     'Set xlsapp = New Excel.Application
     sFilePath = Helpers.LoadFile("*.xlsx")
 
     If sFilePath <> "" Then
         'Open the geo workbook and hide the windows
+        BeginWork xlsapp:=Application
         Set wkb = Workbooks.Open(sFilePath)
-        Set WkshGeo = ThisWorkbook.Worksheets(C_sSheetGeo)
-
-        'Write the filename of the geobase somewhere for the export
-        WkshGeo.Range(C_sRngGeoName).Value = Dir(sFilePath)
-
-        For i = 1 To admNames.Length
-            'Adms (Maybe come back to work on the names?)
-            If Not WkshGeo.ListObjects("T_" & admNames.Items(i)).DataBodyRange Is Nothing Then
-                WkshGeo.ListObjects("T_" & admNames.Items(i)).DataBodyRange.Delete
-            End If
-        Next
-
-        'Reloading the data from the Geobase
-        For Each oSheet In wkb.Worksheets
-            AdmData.Clear
-            AdmHeader.Clear
-
-            'Be sure my sheetnames are correct before loading the data
-            If admNames.Includes(oSheet.Name) Then
-
-                'loading the data in memory
-                AdmData.FromExcelRange oSheet.Range("A2"), DetectLastRow:=True, DetectLastColumn:=True
-                'The headers
-                AdmHeader.FromExcelRange oSheet.Range("A1"), DetectLastRow:=False, DetectLastColumn:=True
-
-                'Check if the sheet is the admin exists sheet before writing in the adm table
-                With WkshGeo.ListObjects("T_" & oSheet.Name)
-                    AdmHeader.ToExcelRange Destination:=WkshGeo.Cells(1, .Range.Column), TransposeValues:=True
-                    AdmData.ToExcelRange Destination:=WkshGeo.Cells(2, .Range.Column)
-
-                    'Resizing the Table
-                    .Resize .Range.CurrentRegion
-                End With
-
-            End If
-        Next
-
+        BeginWork xlsapp:=Application
+        
+        geo.Import wkb
+        
+        'update other geobase names in the workbook
+        geo.Update pass
 
         wkb.Close savechanges:=False
-
-
-        Call TranslateImportGeoHead
+        
         ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 9).Value = Format(Now, "yyyy-mm-dd Hh:Nn")
 
-        ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportGeo"), vbQuestion + vbYesNo, "Import GeoData")
+        shouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportGeo"), vbQuestion + vbYesNo, "Import GeoData")
 
-        If ShouldQuit = vbYes Then
+        If shouldQuit = vbYes Then
             F_Advanced.Hide
         End If
     End If
-
-
-
     EndWork xlsapp:=Application
 
     Exit Sub
@@ -752,7 +710,7 @@ Sub ImportHistoricGeobase()
     Dim i           As Long                      'iterator
     Dim wkb         As Workbook
     Dim WkshGeo     As Worksheet
-    Dim ShouldQuit As Long
+    Dim shouldQuit As Long
 
     'Sheet names
     Set admNames = New BetterArray
@@ -798,9 +756,9 @@ Sub ImportHistoricGeobase()
         'Add a message box to say it is over
     End If
 
-    ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportHistoricGeo"), vbQuestion + vbYesNo, "Import Historic")
+    shouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportHistoricGeo"), vbQuestion + vbYesNo, "Import Historic")
 
-    If ShouldQuit = vbYes Then
+    If shouldQuit = vbYes Then
         F_Advanced.Hide
     End If
 
@@ -1209,7 +1167,7 @@ Sub ExportForMigration()
     Dim sGeoPath As String                       'Geo File
     Dim sGeoHistoPath As String                  'Historic File
     Dim sPath As String
-    Dim ShouldQuit As Byte
+    Dim shouldQuit As Byte
 
     Dim i As Long                                'iterator
 
@@ -1295,8 +1253,8 @@ Sub ExportForMigration()
         Application.DisplayAlerts = True
         EndWork xlsapp:=Application
 
-        ShouldQuit = MsgBox(TranslateLLMsg("MSG_FinishedExports"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Migration"))
-        If ShouldQuit = vbYes Then
+        shouldQuit = MsgBox(TranslateLLMsg("MSG_FinishedExports"), vbQuestion + vbYesNo, TranslateLLMsg("MSG_Migration"))
+        If shouldQuit = vbYes Then
             F_ExportMig.Hide
         End If
 

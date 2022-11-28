@@ -22,7 +22,7 @@ Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
 End Property
 
 'Getters for the encapsulated data
-Public Property Get StartRow() As Long: End Property
+Public Property Get STARTROW() As Long: End Property
 
 Public Property Get StartColumn() As Long: End Property
 Public Property Get DataEndRow() As Long: End Property

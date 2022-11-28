@@ -38,7 +38,7 @@ Public Function Create(ByVal dataWksh As Worksheet, ByVal dataStartRow As Long, 
 
     With New DataSheet
         Set .Wksh = dataWksh
-        .StartRow = dataStartRow
+        .STARTROW = dataStartRow
         .StartColumn = dataStartColumn
         Set Create = .Self
     End With
@@ -58,11 +58,11 @@ Friend Property Set Wksh(ByVal dataWksh As Worksheet)
 End Property
 
 'StartRow
-Public Property Get StartRow() As Long
-    StartRow = this.startLn
+Public Property Get STARTROW() As Long
+    STARTROW = this.startLn
 End Property
 
-Friend Property Let StartRow(ByVal dataStartRow As Long)
+Friend Property Let STARTROW(ByVal dataStartRow As Long)
     this.startLn = dataStartRow
 End Property
 
@@ -84,7 +84,7 @@ End Property
 
 Private Property Get DataEndColumn() As Long
     With Wksh
-        DataEndColumn = .Cells(StartRow, .Columns.Count).End(xlToLeft).Column
+        DataEndColumn = .Cells(STARTROW, .Columns.Count).End(xlToLeft).Column
     End With
 End Property
 
@@ -94,7 +94,7 @@ Public Property Get HeaderRange() As Range
     Dim endCol As Long
 
     With Wksh
-        Set HeaderRange = .Range(.Cells(StartRow, StartColumn), .Cells(StartRow, DataEndColumn))
+        Set HeaderRange = .Range(.Cells(STARTROW, StartColumn), .Cells(STARTROW, DataEndColumn))
     End With
 End Property
 
@@ -108,7 +108,7 @@ Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
     Set dataWksh = Wksh()
 
     With dataWksh
-        customStartRow = IIf(includeHeaders, StartRow, StartRow + 1)
+        customStartRow = IIf(includeHeaders, STARTROW, STARTROW + 1)
         If colName = "__all__" Then
             customStartCol = StartColumn
             endCol = DataEndColumn
@@ -182,7 +182,7 @@ Private Function FilterData(ByVal varName As String, _
     endCol = DataEndColumn()                     'End column and rows of the dictionary
     EndRow = DataEndRow()
 
-    startRetRow = IIf(includeHeaders, StartRow, StartRow + 1)
+    startRetRow = IIf(includeHeaders, STARTROW, STARTROW + 1)
 
     If returnedColumnName = "__all__" Then
         startRetColIndex = StartColumn
@@ -206,15 +206,15 @@ Private Function FilterData(ByVal varName As String, _
         .AutoFilter.ShowAllData
 
         If Not returnedRng Is Nothing Then
-            returnedRng.Copy .Cells(StartRow, endCol + 2)
+            returnedRng.Copy .Cells(STARTROW, endCol + 2)
 
             'end row of data to return
-            EndRow = StartRow + returnedRng.Cells.Count - 1 'cells.Count gives the number of cells, even in non contiguous ranges
+            EndRow = STARTROW + returnedRng.Cells.Count - 1 'cells.Count gives the number of cells, even in non contiguous ranges
             
             retEndCol = endCol + 2 + returnedRng.Columns.Count - 1
             
             'return column should be greather than endCol + 2. If it is not the case, there are empty lines causing that
-            Set returnedRng = .Range(.Cells(StartRow, endCol + 2), .Cells(EndRow, retEndCol))
+            Set returnedRng = .Range(.Cells(STARTROW, endCol + 2), .Cells(EndRow, retEndCol))
             
             returnedData.FromExcelRange returnedRng, DetectLastRow:=False, _
                                         DetectLastColumn:=False
@@ -271,10 +271,10 @@ Private Function FiltersData(ByVal varData As BetterArray, _
             returnedColumnIndex = ColumnIndex(returnedColumnsData.Item(counter), shouldExist:=True)
 
             On Error Resume Next
-            Set returnedRng = .Range(.Cells(StartRow + 1, returnedColumnIndex), .Cells(EndRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
+            Set returnedRng = .Range(.Cells(STARTROW + 1, returnedColumnIndex), .Cells(EndRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
             On Error GoTo 0
 
-            If Not returnedRng Is Nothing Then returnedRng.Copy .Cells(StartRow, endCol + col)
+            If Not returnedRng Is Nothing Then returnedRng.Copy .Cells(STARTROW, endCol + col)
             col = col + 1
         Next
 
@@ -282,10 +282,10 @@ Private Function FiltersData(ByVal varData As BetterArray, _
 
         'end row and end columns of data to return
         retEndRow = .Cells(.Rows.Count, endCol + 2).End(xlUp).Row
-        retEndCol = .Cells(StartRow, .Columns.Count).End(xlToLeft).Column
+        retEndCol = .Cells(STARTROW, .Columns.Count).End(xlToLeft).Column
 
-        If Not IsEmpty(.Cells(StartRow, endCol + 2)) Then
-            Set returnedRng = .Range(.Cells(StartRow, endCol + 2), .Cells(retEndRow, retEndCol))
+        If Not IsEmpty(.Cells(STARTROW, endCol + 2)) Then
+            Set returnedRng = .Range(.Cells(STARTROW, endCol + 2), .Cells(retEndRow, retEndCol))
             'returned data is the data returned by the filter
             returnedData.FromExcelRange returnedRng, DetectLastRow:=False, DetectLastColumn:=False
             returnedRng.Cells.Clear
@@ -303,7 +303,7 @@ Private Sub Import(ByVal fromWksh As Worksheet, fromStartRow As Long, fromStartc
     Dim col As Long
     
     strtcol = StartColumn()
-    strtrw = StartRow()
+    strtrw = STARTROW()
     
     'Trace on errors on import
     If (fromWksh Is Nothing) Or (fromStartRow <= 0) Or (fromStartcol <= 0) Then Exit Sub
@@ -354,7 +354,7 @@ Private Sub Export(ByVal wkb As Workbook, Optional ByVal filteredVarName As Stri
         Set dataExportData = FilterData(filteredVarName, filteredCondition, "__all__", includeHeaders:=True)
     End If
 
-    dataExportData.ToExcelRange dataExportWksh.Cells(StartRow, StartColumn)
+    dataExportData.ToExcelRange dataExportWksh.Cells(STARTROW, StartColumn)
     dataExportWksh.Visible = Hide
 End Sub
 
@@ -401,7 +401,7 @@ End Property
 
 'Getters for the encapsulated data
 Public Property Get IDataSheet_StartRow() As Long
-    IDataSheet_StartRow = StartRow()
+    IDataSheet_StartRow = STARTROW()
 End Property
 
 Public Property Get IDataSheet_StartColumn() As Long
