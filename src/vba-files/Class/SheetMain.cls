@@ -40,6 +40,7 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     ElseIf Target.Name.Name = "RNG_LangSetup" Then
     
         SheetLLTranslation.Range("RNG_DictionaryLanguage").Value = Target.Value
+        SheetGeo.Range("RNG_MetaLang").Value = Target.Value
     End If
 
     Application.ScreenUpdating = True

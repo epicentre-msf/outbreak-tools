@@ -144,10 +144,9 @@ Private Property Get HasPercent() As Boolean
     Case TypeBivariate
         HasPercent = (Value("percentage")) = "row" Or (Value("percentage") = "column") Or (Value("percentage") = "total")
     Case TypeTimeSeries
-        HasPercent = (Value("percentage")) = "row" Or (Value("percentage") = "column")
+        HasPercent = ((Value("percentage")) = "row" Or (Value("percentage") = "column")) And HasTotal()
     Case TypeSpatial
-        HasPercent = (Value("percentage") = "column" And Value("column") <> vbNullString) Or _
-                                                                                          (Value("percentage") = "row") Or (Value("percentage") = "total")
+        HasPercent = (Value("percentage") = "column") Or (Value("percentage") = "row") Or (Value("percentage") = "total")
     End Select
 End Property
 
@@ -161,9 +160,9 @@ Private Property Get HasTotal() As Boolean
     Case TypeBivariate
         HasTotal = True
     Case TypeTimeSeries
-        HasTotal = (Value("total") = "yes")
+        HasTotal = (Value("total") = "yes") And (Value("column") <> vbNullString)
     Case TypeSpatial
-        HasTotal = (Value("total") <> "no")
+        HasTotal = True
     End Select
 End Property
 
@@ -188,11 +187,11 @@ Private Property Get HasMissing() As Boolean
     Case TypeUnivariate
         HasMissing = Value("missing") = "yes"
     Case TypeBivariate
-        HasMissing = (Value("missing")) = "row" Or _
-                                          (Value("missing") = "column") Or _
-                                          (Value("missing") = "all")
+        HasMissing = (Value("missing") = "row") Or _
+                                                (Value("missing") = "column") Or _
+                                                (Value("missing") = "all")
     Case TypeTimeSeries
-        HasMissing = (Value("missing") = "yes")
+        HasMissing = (Value("missing") = "yes") And (Value("column") <> vbNullString)
     Case TypeSpatial
         HasMissing = (Value("missing")) = "row" Or _
                                           (Value("missing") = "column") Or _
@@ -205,7 +204,7 @@ Public Property Get ValidTable() As Boolean
     
     Dim dict As ILLdictionary
     Dim lData As ILinelistSpecs
-    Dim valid As Boolean
+    Dim Valid As Boolean
     Dim rowVar As String
     Dim colVar As String
     Dim colControl As String
@@ -224,25 +223,25 @@ Public Property Get ValidTable() As Boolean
 
     Select Case TableType
     Case TypeGlobalSummary
-        valid = True
+        Valid = True
     Case TypeUnivariate
-        valid = vars.Contains(rowVar) And (rowControl = "choices" Or rowControl = "case_when")
+        Valid = vars.Contains(rowVar) And (rowControl = "choices" Or rowControl = "case_when")
     Case TypeBivariate
-        valid = vars.Contains(rowVar) And vars.Contains(colVar) And _
-        (colControl = "choices" Or colControl = "case_when") And _
-        (rowControl = "choices" Or rowControl = "case_when")
+        Valid = vars.Contains(rowVar) And vars.Contains(colVar) And _
+                                                                (colControl = "choices" Or colControl = "case_when") And _
+                                                                (rowControl = "choices" Or rowControl = "case_when")
     Case TypeTimeSeries
         rowVar = Value("row")
         colVar = Value("column")
-        valid = (dict.VariableExists(rowVar) And (colVar = vbNullString Or dict.VariableExists(colVar))) And _
-                (vars.Value(colName:="type", varName:=rowVar) = "date")
+        Valid = (dict.VariableExists(rowVar) And (colVar = vbNullString Or dict.VariableExists(colVar))) And _
+                                                                                                         (vars.Value(colName:="type", varName:=rowVar) = "date")
     Case TypeSpatial
         rowVar = Value("row")
         colVar = Value("column")
-        valid = (dict.VariableExists("adm1_" & rowVar) And (colVar = vbNullString Or dict.VariableExists(colVar)))
+        Valid = (dict.VariableExists("adm1_" & rowVar) And (colVar = vbNullString Or dict.VariableExists(colVar)))
     End Select
 
-    ValidTable = valid
+    ValidTable = Valid
 End Property
 
 Private Property Get Dictionary() As ILLdictionary

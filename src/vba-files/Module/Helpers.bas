@@ -764,10 +764,10 @@ Public Function MoveWksh(SrcWkb As Workbook, DestWkb As Workbook, sSheetName As 
     If Not SheetExistsInWkb(SrcWkb, sSheetName) Then Exit Function
 
     'First Test if the sheet exists in the destination workbook
-    Set Wksh = DestWkb.Worksheets.Add(after:=DestWkb.Worksheets(DestWkb.Worksheets.Count))
+    Set Wksh = DestWkb.Worksheets.Add(After:=DestWkb.Worksheets(DestWkb.Worksheets.Count))
     If SheetExistsInWkb(DestWkb, sSheetName) Then DestWkb.Worksheets(sSheetName).Delete
 
-    SrcWkb.Worksheets(sSheetName).Copy after:=Wksh
+    SrcWkb.Worksheets(sSheetName).Copy After:=Wksh
     Wksh.Delete
 
     ActvSh.Activate

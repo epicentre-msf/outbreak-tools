@@ -15,7 +15,7 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
-Public Property Get valid() As Boolean: End Property
+Public Property Get Valid() As Boolean: End Property
 Public Property Get parsedFormula() As String: End Property
 
 Public Property Get Categories() As BetterArray: End Property

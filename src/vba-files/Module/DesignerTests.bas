@@ -101,6 +101,22 @@ Sub testgr()
     
 End Sub
 
+Sub testRange()
+    Dim sh As Worksheet
+    Dim rng As Range
+    Dim testRng As Range
+    
+    Set sh = SheetTest
+    
+    With sh
+        Set rng = .Range(.Cells(1, 1), .Cells(2, 1))
+        Set testRng = .Range(rng.Cells(2, 1), rng.Cells(2, 1))
+    End With
+    
+    Debug.Print testRng.Address
+    
+End Sub
+
 Sub testformula()
 
     Dim Wksh As Worksheet
@@ -182,9 +198,9 @@ Sub TestGeo()
     Dim admname As String
     Dim wb As Workbook
     Dim admList As BetterArray
+    Dim pcodeValue As String
     
     Dim admNames As BetterArray
-    
     
     Set geoObject = LLGeo.Create(SheetGeo)
     'admname = geoObject.GeoNames("adm2_name")
@@ -197,8 +213,7 @@ Sub TestGeo()
     Set admNames = New BetterArray
     admNames.LowerBound = 1
     admNames.Push "Abyei", "Abyei Region", "Alel"
-    'admNames = "Unity"
-    Set admList = geoObject.GeoLevel(LevelAdmin2, CustomTypeGeo, "Abyei")
+    pcodeValue = geoObject.Population(LevelGeoAdmin3, admNames)
     
     
 End Sub

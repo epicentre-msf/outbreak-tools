@@ -28,7 +28,7 @@ Public Property Get RowRange(ByVal rowVal As String, _
                              Optional ByVal includeHeaders As Boolean = True) As Range
 End Property
 
-Public Property Get STARTROW() As Long: End Property
+Public Property Get StartRow() As Long: End Property
 Public Property Get Previous() As ICrossTable: End Property 'Previous table in the same section
 
 Public Property Get Specifications() As ITablesSpecs: End Property
@@ -51,6 +51,8 @@ Public Sub NameRanges(): End Sub
 Public Sub Build(): End Sub
 
 Public Sub Format(ByVal DesignFormat As ILLFormat): End Sub
+
+
 
 
 

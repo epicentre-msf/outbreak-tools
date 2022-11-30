@@ -219,7 +219,6 @@ Private Sub BusyApp()
     Application.DisplayAlerts = False
     Application.Calculation = xlCalculationManual
     Application.EnableAnimations = False
-    Application.DisplayStatusBar = False
 End Sub
 
 'Return previous state
@@ -346,7 +345,7 @@ Private Sub Prepare()
 
         Set casewhenObject = CaseWhen.Create(casewhenFormula)
         'Test validity before parsing categories to choices
-        If casewhenObject.valid() Then
+        If casewhenObject.Valid() Then
             choi.AddChoice choiceName:=CATEGORYPREFIX & casewhenVariableName, CategoriesData:=casewhenObject.Categories
         End If
     Next
@@ -435,7 +434,7 @@ Private Sub RecursiveListAuto(ByVal varName As String)
 
         Set varFormObject = Formulas.Create(dict, fData, controlDetailsValue)
 
-        If varFormObject.valid(formulaType:="linelist") Then
+        If varFormObject.Valid(formulaType:="linelist") Then
             
             Set formList = varFormObject.Varlists()
             
@@ -479,6 +478,8 @@ Private Sub Export(ByVal toWkb As Workbook)
     expobj.ExportSpecs toWkb, Hide:=xlSheetVeryHidden
     geo.ExportToWkb toWkb
     passobj.Export toWkb
+
+    'Add the export language and date to the linelist
 End Sub
 
 'Errors ----------------------------------

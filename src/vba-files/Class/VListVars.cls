@@ -107,15 +107,15 @@ Private Property Get ValueOf(ByVal colName As String) As String
 End Property
 
 Private Property Get VarRange() As Range         'Where to input informations on the variable
-    Dim STARTROW As Long
+    Dim StartRow As Long
     Dim sh As Worksheet
     Dim rng As Range
     
     If this.inputRange Is Nothing Then
         Set sh = Wksh()
         With sh
-            STARTROW = ValueOf("column index")
-            Set this.inputRange = .Cells(STARTROW, STARTCOL)
+            StartRow = ValueOf("column index")
+            Set this.inputRange = .Cells(StartRow, STARTCOL)
         End With
     End If
     
@@ -207,7 +207,7 @@ Private Sub AddFormula()
         varForm = varCaseWhen.parsedFormula()
     End If
     Set varFormObject = Formulas.Create(dict, varFormData, varForm)
-    If varFormObject.valid(formulaType:="linelist") Then
+    If varFormObject.Valid(formulaType:="linelist") Then
         excelForm = varFormObject.ParsedLinelistFormula()
         'Test if the formula is correct and parse it
         If FailedFormula(excelForm) Then
@@ -420,12 +420,12 @@ Private Function ExcelFormula(ByVal formVal As String, ByVal validationTypes As 
     Set varFormObject = Formulas.Create(dict, varFormData, formVal)
 
     'If the formula is valid, test it before setting the validation
-    If Not varFormObject.valid(formulaType:="linelist") Then Exit Function
+    If Not varFormObject.Valid(formulaType:="linelist") Then Exit Function
     excelForm = varFormObject.ParsedLinelistFormula()
     If FailedFormula(excelForm) Then Exit Function
     excelForm = OSFormula(excelForm)
     
-    If varFormObject.Varlists.Length = 0 Then
+    If Not varFormObject.HasLiterals Then
         
         'Return the required type
         excelForm = Application.WorksheetFunction.Trim(Replace(excelForm, "=", ""))

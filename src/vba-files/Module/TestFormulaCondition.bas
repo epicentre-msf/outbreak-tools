@@ -54,18 +54,18 @@ Private Sub TestFormulaValidity()
     Set Wksh = ThisWorkbook.Worksheets("Dictionary")
     Set dict = LLdictionary.Create(Wksh, 1, 1)
     
-    Assert.IsTrue (Not dict.ColumnExists("table name")) Or formCond.valid(dict, "tab2"), "Correct formula shows as incorrect (variable length = 4)"
-    Assert.IsFalse formCond.valid(dict, "tab3"), "Formula with false table name shows as correct"
+    Assert.IsTrue (Not dict.ColumnExists("table name")) Or formCond.Valid(dict, "tab2"), "Correct formula shows as incorrect (variable length = 4)"
+    Assert.IsFalse formCond.Valid(dict, "tab3"), "Formula with false table name shows as correct"
     var.Pop
     Set formCond = FormulaCondition.Create(var, cond)
-    Assert.IsFalse formCond.valid(dict, "tab2"), "Formula with variable length < condition length shows as correct"
+    Assert.IsFalse formCond.Valid(dict, "tab2"), "Formula with variable length < condition length shows as correct"
     cond.Pop
     cond.Pop
     Set formCond = FormulaCondition.Create(var, cond)
-    Assert.IsFalse formCond.valid(dict, "tab2"), "Formula with variable length > condition length shows as correct"
+    Assert.IsFalse formCond.Valid(dict, "tab2"), "Formula with variable length > condition length shows as correct"
     var.Pop
     Set formCond = FormulaCondition.Create(var, cond)
-    Assert.IsTrue (Not dict.ColumnExists("table name")) Or formCond.valid(dict, "tab2"), "Correct formula shows as incorrect (variable length = 2)"
+    Assert.IsTrue (Not dict.ColumnExists("table name")) Or formCond.Valid(dict, "tab2"), "Correct formula shows as incorrect (variable length = 2)"
 End Sub
 
 '@TestMethod

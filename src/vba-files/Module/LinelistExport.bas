@@ -103,7 +103,7 @@ Private Function AddExportLLSheet(wkb As Workbook, sSheetName As String, sPrevSh
     Dim iListColIndex As Long
 
     'Add the new worksheet
-    wkb.Worksheets.Add(after:=wkb.Worksheets(sPrevSheetName)).Name = sSheetName
+    wkb.Worksheets.Add(After:=wkb.Worksheets(sPrevSheetName)).Name = sSheetName
 
     k = i
 
@@ -153,7 +153,7 @@ Private Function AddExportAdmSheet(wkb As Workbook, sSheetName As String, sPrevS
 
 
     'Add the new worksheet
-    wkb.Worksheets.Add(after:=wkb.Worksheets(sPrevSheetName)).Name = sSheetName
+    wkb.Worksheets.Add(After:=wkb.Worksheets(sPrevSheetName)).Name = sSheetName
     Set srcWksh = ThisWorkbook.Worksheets(sSheetName)
 
     k = i

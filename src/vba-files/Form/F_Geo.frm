@@ -249,6 +249,9 @@ Attribute VB_Exposed = False
 
 
 
+
+
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -256,7 +259,9 @@ Option Explicit
 Private Sub CMD_Copier_Click()
 
     Dim T_temp As BetterArray
+    
     Set T_temp = New BetterArray
+    T_temp.LowerBound = 1
 
     On Error GoTo ErrGeo
 
@@ -297,6 +302,8 @@ Private Sub CMD_Copier_Click()
             'Clear the cells before filling
             Range(ActiveCell.Address, ActiveCell.Offset(, 3)).Value = ""
             T_temp.ToExcelRange Destination:=Range(ActiveCell.Address), TransposeValues:=True
+            'Add the pcode
+            ActiveCell.Offset(, 4).Value = GEO_PCODE(T_temp.Item(1), T_temp.Item(2), T_temp.Item(3), T_temp.Item(4))
             Application.EnableEvents = True
         End If
         T_temp.Clear
@@ -325,7 +332,9 @@ Private Sub CMD_Copier_Click()
             End If
         End With
         'writing the selected value
-        Selection.Value = TXT_Msg.Value
+        ActiveCell.Value = TXT_Msg.Value
+        'Writing the pcode
+        ActiveCell.Offset(, 1).Value = HF_PCODE(TXT_Msg.Value)
     End Select
 
     [F_Geo].TXT_Msg.Value = ""

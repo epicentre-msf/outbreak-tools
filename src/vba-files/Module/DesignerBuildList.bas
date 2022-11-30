@@ -396,15 +396,15 @@ Private Sub CreateSheets(wkb As Workbook, dictData As BetterArray, DictHeaders A
         Call DesignerBuildListHelpers.AddAdminSheet(wkb)
 
         'Add Analysis sheets
-        .Worksheets.Add(after:=.Worksheets(sParamSheetAdmin)).Name = sParamSheetAnalysis
+        .Worksheets.Add(After:=.Worksheets(sParamSheetAdmin)).Name = sParamSheetAnalysis
         Call RemoveGridLines(.Worksheets(sParamSheetAnalysis), DisplayZeros:=True)
 
         'Temporal analysis Sheet
-        .Worksheets.Add(after:=.Worksheets(sParamSheetAnalysis)).Name = sParamSheetTemporalAnalysis
+        .Worksheets.Add(After:=.Worksheets(sParamSheetAnalysis)).Name = sParamSheetTemporalAnalysis
         Call RemoveGridLines(.Worksheets(sParamSheetTemporalAnalysis), DisplayZeros:=True)
 
         'Spatial analysis sheet
-        .Worksheets.Add(after:=.Worksheets(sParamSheetTemporalAnalysis)).Name = sParamSheetSpatialAnalysis
+        .Worksheets.Add(After:=.Worksheets(sParamSheetTemporalAnalysis)).Name = sParamSheetSpatialAnalysis
         Call RemoveGridLines(.Worksheets(sParamSheetSpatialAnalysis), DisplayZeros:=True)
 
         '--------------- adding the other the other sheets in the dictionary to the linelist
@@ -419,10 +419,10 @@ Private Sub CreateSheets(wkb As Workbook, dictData As BetterArray, DictHeaders A
             sNewSheetName = EnsureGoodSheetName(dictData.Items(i, DictHeaders.IndexOf(C_sDictHeaderSheetName)))
 
             If sPrevSheetName <> sNewSheetName Then
-                .Worksheets.Add(after:=.Worksheets(sPrevSheetName)).Name = sNewSheetName
+                .Worksheets.Add(After:=.Worksheets(sPrevSheetName)).Name = sNewSheetName
 
                 'Add Filtered Data sheet for filtered data
-                .Worksheets.Add(after:=.Worksheets(sNewSheetName)).Name = C_sFiltered & sNewSheetName
+                .Worksheets.Add(After:=.Worksheets(sNewSheetName)).Name = C_sFiltered & sNewSheetName
                 .Worksheets(C_sFiltered & sNewSheetName).Visible = xlSheetVeryHidden
 
                 'Remove the gridlines in this new Sheetname

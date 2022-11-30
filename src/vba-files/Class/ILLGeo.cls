@@ -27,6 +27,14 @@ Public Enum GeoLevel
     LevelAdmin4 = 3
 End Enum
 
+Public Enum GeoLevelOrHF
+    LevelGeoAdmin1 = 0
+    LevelGeoAdmin2 = 1
+    LevelGeoAdmin3 = 2
+    LevelGeoAdmin4 = 3
+    LevelHF = 4
+End Enum
+
 'Get the list of levels of one admin name (will return either a BetterArray or
 ' a String(for admin4))
 Public Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
@@ -39,8 +47,13 @@ End Property
 Public Property Get GeoNames(ByVal admname As String) As String: End Property
 
 'Get the Population of one administrative level (only for geoType)
-Public Property Get Population(ByVal adminLevel As GeoLevel, _
+Public Property Get Population(ByVal adminLevel As GeoLevelOrHF, _
                                ByVal adminNames As Variant) As String
+End Property
+
+'Get the Population of one administrative level (only for geoType)
+Public Property Get pcode(ByVal adminLevel As GeoLevelOrHF, _
+                          ByVal adminNames As Variant) As String
 End Property
 
 'Translation
@@ -54,6 +67,7 @@ Public Sub ExportToFile(ByVal outputWkb As Workbook, Optional ByVal onlyHistory 
 End Sub
 
 Public Sub ExportToWkb(ByVal wkb As Workbook): End Sub
+
 Public Sub Clear(): End Sub
 
 Public Sub ClearHistoric(): End Sub

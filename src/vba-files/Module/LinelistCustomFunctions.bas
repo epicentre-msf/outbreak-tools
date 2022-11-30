@@ -133,33 +133,44 @@ End Function
 'Find the quarter, the year, the week or the month depending on the aggregation ============================================
 
 'Quick function to define the aggregate
+'Quick function to define the aggregate
 Private Function GetAgg(sAggregate As String) As String
 
+    Dim rng As Range
+    
+    If ActiveSheet.Cells(1, 3).Value <> "TS-Analysis" Then
+        GetAgg = "week"
+        Exit Function
+    End If
+    
+    Set rng = ActiveSheet.Range("TIME_UNIT_LIST")
     Select Case sAggregate
 
-    Case TranslateLLMsg("MSG_Day")
+    Case rng.Cells(1, 1).Value
         GetAgg = "day"
-    Case TranslateLLMsg("MSG_Week")
+    Case rng.Cells(2, 1).Value
         GetAgg = "week"
-    Case TranslateLLMsg("MSG_Month")
+    Case rng.Cells(3, 1).Value
         GetAgg = "month"
-    Case TranslateLLMsg("MSG_Quarter")
+    Case rng.Cells(4, 1).Value
         GetAgg = "quarter"
-    Case TranslateLLMsg("MSG_Year")
+    Case rng.Cells(5, 1).Value
         GetAgg = "year"
     Case Else                                    'Aggregate as week if unable to find the aggregate (defensive)
         GetAgg = "week"
     End Select
-
+ 
 End Function
 
 Public Function FindLastDay(sAggregate As String, inDate As Long) As Long
 
+    Application.Volatile
+    
     Dim sAgg As String
     Dim dLastDay As Long
     Dim monthQuarter As Integer
     Dim monthDate As Integer
-
+    
     sAgg = GetAgg(sAggregate)
 
     Select Case sAgg
@@ -197,6 +208,7 @@ End Function
 
 Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, endDate As Long, MaxDate As Long) As String
 
+    Application.Volatile
     'enDate is the date of the end of the aggregation period
     'startDate is the startDate of the aggregation period
     'maxDate is the maximum Date of the time series
@@ -205,20 +217,24 @@ Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, e
     Dim sValue As String
     Dim monthDate As Integer
     Dim quarterDate As Integer
-
-    sAgg = GetAgg(sAggregate)
-
-    If startDate > MaxDate Then
+    Dim fun As WorksheetFunction
+    
+    
+    
+    If startDate > MaxDate Or (ActiveSheet.Cells(1, 3).Value <> "TS-Analysis") Then
         FormatDateFromLastDay = vbNullString
         Exit Function
     End If
+    
 
+    sAgg = GetAgg(sAggregate)
+
+    Set fun = Application.WorksheetFunction
     Select Case sAgg
-
     Case "day"
         sValue = Format(endDate, "dd-mmm-yyyy")
     Case "week"
-        sValue = TranslateLLMsg("MSG_W") & IIf(Epiweek2(endDate) < 10, "0" & Epiweek2(endDate), Epiweek2(endDate)) & " - " & Year(endDate)
+        sValue = TranslateLLMsg("MSG_W") & fun.IsoWeekNum(endDate) & " - " & Year(endDate)
     Case "month"
         sValue = Format(endDate, "mmm - yyyy")
     Case "quarter"
@@ -295,6 +311,7 @@ Public Function LastAggDayFrom(startDate As Long, agg As String) As Long
 End Function
 
 Public Function ValidMin(startDate As Long, endDate As Long, MinDate As Long, MaxDate As Long, agg As String) As Long
+    Application.Volatile
     
     Dim validation As Long
     Dim timeStamp As Long
@@ -317,6 +334,7 @@ Public Function ValidMin(startDate As Long, endDate As Long, MinDate As Long, Ma
 End Function
 
 Public Function ValidMax(startDate As Long, endDate As Long, MinDate As Long, MaxDate As Long, agg As String) As Long
+    Application.Volatile
     
     Dim validation As Long
     Dim timeStamp As Long
@@ -343,7 +361,8 @@ Public Function ValidMax(startDate As Long, endDate As Long, MinDate As Long, Ma
 End Function
 
 Public Function InfoUser(userDate As Long, actualDate As Long, Optional infotype As Byte = 1) As String
-   
+    Application.Volatile
+    
     Dim info As String
     If ((userDate <> actualDate) And (userDate <> 0)) Then
         info = IIf(infotype = 1, TranslateLLMsg("MSG_InfoStart"), TranslateLLMsg("MSG_InfoEnd"))
@@ -352,4 +371,46 @@ Public Function InfoUser(userDate As Long, actualDate As Long, Optional infotype
     
 End Function
 
+
+'HF pcode
+Public Function HF_PCODE(concatVal As String) As Variant
+    
+    Dim tabl As BetterArray
+    Dim geo As ILLGeo
+    Set tabl = New BetterArray
+    tabl.LowerBound = 1
+    tabl.Items = Split(concatVal, " | ")
+    tabl.Reverse
+    Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
+    HF_PCODE = geo.pcode(LevelHF, tabl)
+    
+End Function
+
+'Geo Pcode
+Public Function GEO_PCODE(admin1Val As String, Optional admin2Val As String = vbNullString, Optional Admin3Val As String = vbNullString, Optional admin4Val As String = vbNullString) As String
+   
+    Dim tabl As BetterArray
+    Dim level As Byte
+    Dim geo As ILLGeo
+    Dim pcodeVal As String
+    
+    Set tabl = New BetterArray
+    tabl.LowerBound = 1
+    
+    If admin4Val <> vbNullString Then tabl.Push admin4Val
+    If Admin3Val <> vbNullString Then tabl.Push Admin3Val
+    If admin2Val <> vbNullString Then tabl.Push admin2Val
+    If admin1Val <> vbNullString Then tabl.Push admin1Val
+    
+    level = CByte(tabl.Length - 1)
+    Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
+    tabl.Reverse
+    
+    If tabl.Length = 1 Then
+        GEO_PCODE = geo.pcode(level, admin1Val)
+    ElseIf tabl.Length > 1 Then
+        GEO_PCODE = geo.pcode(level, tabl)
+    End If
+    
+End Function
 

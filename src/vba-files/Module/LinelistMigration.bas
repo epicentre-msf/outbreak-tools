@@ -185,7 +185,7 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
         If VarColumn.Includes(C_sLanguage) Then
             index = VarColumn.IndexOf(C_sLanguage)
             sImportedLanguage = WkbImp.Worksheets(C_sSheetMetadata).Cells(index, 2).Value
-            sActualLanguage = ThisWorkbook.Worksheets(C_sSheetLLTranslation).Range("RNG_LLLanguage")
+            sActualLanguage = ThisWorkbook.Worksheets(C_sSheetLLTranslation).Range("RNG_DictionaryLanguage")
 
             'Test and ask the user if he wants to abort
             If sActualLanguage <> sImportedLanguage Then
@@ -617,11 +617,13 @@ End Sub
 'Import the full Geobase
 
 Sub ImportGeobase()
+
+    BeginWork xlsapp:=Application
     
     Dim geo As ILLGeo
     Dim sh As Worksheet
     Dim pass As ILLPasswords
-        Dim sFilePath As String
+    Dim sFilePath As String
     Dim wkb As Workbook
     Dim shouldQuit As Byte
     
@@ -630,32 +632,23 @@ Sub ImportGeobase()
     Set sh = ThisWorkbook.Worksheets("Password")
     Set pass = LLPasswords.Create(sh)
 
-    BeginWork xlsapp:=Application
-
     'Set xlsapp = New Excel.Application
     sFilePath = Helpers.LoadFile("*.xlsx")
-
     If sFilePath <> "" Then
         'Open the geo workbook and hide the windows
-        BeginWork xlsapp:=Application
         Set wkb = Workbooks.Open(sFilePath)
-        BeginWork xlsapp:=Application
-        
         geo.Import wkb
-        
         'update other geobase names in the workbook
         geo.Update pass
-
         wkb.Close savechanges:=False
-        
-        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 9).Value = Format(Now, "yyyy-mm-dd Hh:Nn")
-
         shouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportGeo"), vbQuestion + vbYesNo, "Import GeoData")
 
         If shouldQuit = vbYes Then
             F_Advanced.Hide
         End If
+        
     End If
+
     EndWork xlsapp:=Application
 
     Exit Sub
@@ -932,7 +925,7 @@ Private Sub AddLLSheet(wkb As Workbook, sSheetName As String, sPrevSheetName As 
     Dim dest As Range
 
     Set src = ThisWorkbook.Worksheets(sSheetName).ListObjects(SheetListObjectName(sSheetName)).Range
-    wkb.Worksheets.Add(after:=wkb.Worksheets(sPrevSheetName)).Name = sSheetName
+    wkb.Worksheets.Add(After:=wkb.Worksheets(sPrevSheetName)).Name = sSheetName
 
     With wkb.Worksheets(sSheetName)
         Set dest = .Range(.Cells(1, 1), .Cells(src.Rows.Count, src.Columns.Count))
@@ -955,7 +948,7 @@ Private Sub AddAdmSheet(wkb As Workbook, sSheetName As String, sPrevSheetName As
         iLastRow = .Cells(.Rows.Count, C_eStartColumnAdmData + 2).End(xlUp).Row
     End With
 
-    wkb.Worksheets.Add(after:=wkb.Worksheets(sPrevSheetName)).Name = sSheetName
+    wkb.Worksheets.Add(After:=wkb.Worksheets(sPrevSheetName)).Name = sSheetName
     Set Wksh = wkb.Worksheets(sSheetName)
 
     Wksh.Cells(1, 1).Value = C_sVariable

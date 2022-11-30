@@ -32,7 +32,7 @@ Private Const CLASSNAME As String = "VListSections"
 Public Function Create(ByVal strt As Long, ll As ILinelist) As IVListSections
     CheckRequirements strt, ll
     With New VListSections
-        .STARTROW = strt
+        .StartRow = strt
         Set .LinelistObject = ll
         Set Create = .Self()
     End With
@@ -43,11 +43,11 @@ Public Property Get Self() As IVListSections
     Set Self = Me
 End Property
 
-Public Property Get STARTROW() As Long           'Start Row of the subsection in the dictionary
-    STARTROW = this.strt
+Public Property Get StartRow() As Long           'Start Row of the subsection in the dictionary
+    StartRow = this.strt
 End Property
 
-Public Property Let STARTROW(ByVal strt As Long)
+Public Property Let StartRow(ByVal strt As Long)
     this.strt = strt
     this.endrw = 0
 End Property
@@ -73,7 +73,7 @@ Private Property Get ActualSectionName() As String
     Dim sectionRng As Range
   
     Set dict = Dictionary()
-    strt = STARTROW()
+    strt = StartRow()
     Set sectionRng = dict.DataRange("main section")
 
     ActualSectionName = sectionRng.Cells(strt, 1).Value
@@ -85,7 +85,7 @@ Private Property Get ActualSheetName() As String
     Dim sheetRng As Range
   
     Set dict = Dictionary()
-    strt = STARTROW()
+    strt = StartRow()
     Set sheetRng = dict.DataRange("sheet name")
 
     ActualSheetName = sheetRng.Cells(strt, 1).Value
@@ -102,7 +102,7 @@ Public Property Get EndRow() As Long             'End Row of the subsection in t
     Dim sectionEnd As Boolean
 
     If this.endrw = 0 Then
-        rowNumber = STARTROW()
+        rowNumber = StartRow()
         Set dict = Dictionary()
         Set sectionRng = dict.DataRange("main section")
         Set sheetRng = dict.DataRange("sheet name")
@@ -156,7 +156,7 @@ Private Sub Build()
     Dim strt As Long
 
     Set ll = LinelistObject()
-    strt = STARTROW()
+    strt = StartRow()
     Set subsec = VListSubSections.Create(strt, ll)
     subsec.Build
     subsec.Format
@@ -187,7 +187,7 @@ Private Sub Format()
     Set dict = Dictionary()
     Set varRng = dict.DataRange("variable name")
     Set vars = LLVariables.Create(dict)
-    strtrw = STARTROW()                          'End and start row of the section in the dictionary
+    strtrw = StartRow()                          'End and start row of the section in the dictionary
     endrw = EndRow()
 
 

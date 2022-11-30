@@ -94,7 +94,7 @@ Private Function RangeExists(ByVal rngName As String) As Boolean
     RangeExists = (Not rng Is Nothing)
 End Function
 
-Private Property Get STARTROW() As Long
+Private Property Get StartRow() As Long
     Dim sh As Worksheet
     Dim specs As ITablesSpecs
     Dim strtRow As Long
@@ -117,11 +117,11 @@ Private Property Get STARTROW() As Long
                 
                 .Cells(strtRow, STANDARDSTARTCOL).Name = "STARTROW_" & tabId
             ElseIf (Not specs.isNewSection) Then
-                strtRow = Previous.STARTROW      'For time series on same section, go back to precendent start row
+                strtRow = Previous.StartRow      'For time series on same section, go back to precendent start row
             End If
-            STARTROW = strtRow
+            StartRow = strtRow
         Else
-            STARTROW = .Range("STARTROW_" & tabId).Row
+            StartRow = .Range("STARTROW_" & tabId).Row
         End If
 
     End With
@@ -156,11 +156,11 @@ Private Property Get StartColumn() As Long
             'On time series, the startcolumn depends on new section
 
             strtcol = IIf(specs.TableType = TypeTimeSeries And (Not specs.isNewSection()), _
-                          .Cells(STARTROW + 1, .Columns.Count).End(xlToLeft).Column, _
+                          .Cells(StartRow + 1, .Columns.Count).End(xlToLeft).Column, _
                           STANDARDSTARTCOL)
 
             StartColumn = strtcol
-            .Cells(STARTROW - 1, strtcol + 1).Name = "STARTCOL_" & tabId
+            .Cells(StartRow - 1, strtcol + 1).Name = "STARTCOL_" & tabId
         Else
             StartColumn = .Range("STARTCOL_" & tabId).Column - 1
         End If
@@ -188,7 +188,7 @@ Public Property Get HeaderRange() As Range
     Dim sh As Worksheet
     Set sh = Wksh()
     With sh
-        Set HeaderRange = .Range(.Cells(STARTROW, StartColumn + 1), .Cells(STARTROW, EndColumn))
+        Set HeaderRange = .Range(.Cells(StartRow, StartColumn + 1), .Cells(StartRow, EndColumn))
     End With
 
 End Property
@@ -206,9 +206,9 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     Select Case specs.TableType()
 
     Case TypeBivariate, TypeTimeSeries, TypeSpatial
-        start = STARTROW + 1
+        start = StartRow + 1
     Case TypeUnivariate, TypeGlobalSummary
-        start = STARTROW
+        start = StartRow
     End Select
     If Not includeHeaders Then start = start + 1
 
@@ -261,10 +261,10 @@ Public Property Get ColumnRange(ByVal colVal As String, Optional ByVal includeHe
     Set specs = Specifications
 
     'startRow
-    start = Switch(specs.TableType = TypeBivariate, STARTROW + 2, _
-                   specs.TableType = TypeTimeSeries, STARTROW + 2, _
-                   specs.TableType = TypeSpatial, STARTROW + 2, _
-                   True, STARTROW + 1)
+    start = Switch(specs.TableType = TypeBivariate, StartRow + 2, _
+                   specs.TableType = TypeTimeSeries, StartRow + 2, _
+                   specs.TableType = TypeSpatial, StartRow + 2, _
+                   True, StartRow + 1)
     'End Row
     rend = Switch((specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial) And onlyCategories, EndRow - 2, _
                   specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial, EndRow, _
@@ -298,7 +298,7 @@ Private Sub AddRows()
     Dim counter As Long
     Dim tabId As String
 
-    start = STARTROW
+    start = StartRow
     Set sh = Wksh()
     Set specs = Specifications()
     tabId = specs.TableId
@@ -385,7 +385,6 @@ Private Sub BivariateColumns(ByVal start As Long, ByVal specs As ITablesSpecs, B
     Dim colLab As String
     Dim colData As BetterArray
     Dim labData As BetterArray
-    Dim missingValue As String
     Dim percentageValue As String
     Dim transMissing As String
     Dim transTotal As String
@@ -399,7 +398,6 @@ Private Sub BivariateColumns(ByVal start As Long, ByVal specs As ITablesSpecs, B
     Set labData = New BetterArray
     colData.LowerBound = 1
     labData.LowerBound = 1
-    missingValue = specs.Value("missing")
     tabId = specs.TableId
     percentageValue = specs.Value("percentage")
     totalValue = specs.Value("total")
@@ -409,13 +407,13 @@ Private Sub BivariateColumns(ByVal start As Long, ByVal specs As ITablesSpecs, B
 
     With sh
         colLab = specs.Value("label")
-        If missingValue = "column" Or missingValue = "all" Or missingValue = "yes" Then labData.Push transMissing
+        If specs.HasMissing Then labData.Push transMissing
         If specs.HasTotal Then labData.Push transTotal
         Set colData = specs.ColumnCategories()
 
         If colData.Length > 0 Then
 
-            NumberOfColumns = colData.Length     'Set the number of columns of the categories
+            NumberOfColumns = colData.Length     'Set the number of columns of the categories (Property)
 
             colData.CONCAT labData.Items
             labData.Clear
@@ -438,7 +436,7 @@ Private Sub BivariateColumns(ByVal start As Long, ByVal specs As ITablesSpecs, B
             colData.ToExcelRange .Cells(start, StartColumn + 1), TransposeValues:=True
             labData.ToExcelRange .Cells(start + 1, StartColumn + 1), TransposeValues:=True
         Else                                     'No column Data, just a summary function
-            labData.Splice 1, 0, colLab
+            labData.Push colLab
             NumberOfColumns = 1
             labData.ToExcelRange .Cells(start, StartColumn + 1), TransposeValues:=True
         End If
@@ -454,12 +452,8 @@ Private Sub AddColumns()
     Dim sh As Worksheet
     Dim vars As ILLVariables
     Dim trans As ITranslation
-    Dim missingValue As String
     Dim percentageValue As String
-    Dim transMissing As String
-    Dim transTotal As String
     Dim transPercent As String
-    Dim customStartCol As Long
     Dim colLab As String
     Dim colData As BetterArray
     Dim colVarLab As String
@@ -467,7 +461,7 @@ Private Sub AddColumns()
     Dim tabId As String
 
 
-    start = STARTROW
+    start = StartRow
     Set sh = Wksh()
     Set specs = Specifications()
     tabId = specs.TableId
@@ -476,10 +470,7 @@ Private Sub AddColumns()
     Set colData = New BetterArray
     colData.LowerBound = 1
 
-    missingValue = specs.Value("missing")
     percentageValue = specs.Value("percentage")
-    transMissing = trans.TranslatedValue("MSG_NA")
-    transTotal = trans.TranslatedValue("MSG_Total")
     transPercent = trans.TranslatedValue("MSG_Percent")
 
     With sh
@@ -517,7 +508,7 @@ Private Sub AddColumns()
             timeVarLab = vars.Value(colName:="main label", varName:=specs.Value("time"))
 
             'Add the time variable label
-            .Range("STARTCOL_" & tabId).Value = colVarLab & " " & trans.TranslatedValue("MSG_per") & " " & timeVarLab
+            If colVarLab <> vbNullString Then .Range("STARTCOL_" & tabId).Value = colVarLab & " " & trans.TranslatedValue("MSG_per") & " " & timeVarLab
 
         Case TypeSpatial
 
@@ -540,7 +531,7 @@ Private Sub AddHeader()
     Set sh = Wksh()
     Set specs = Specifications
     Set trans = trads()
-    start = STARTROW
+    start = StartRow
     tabId = specs.TableId
 
     With sh
@@ -616,9 +607,10 @@ Private Sub AddHeader()
                 Set rng = .Cells(1, 26)
                 rng.Cells(1, 1).Value = trans.TranslatedValue("MSG_Day")
                 rng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Week")
-                rng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Quarter")
-                rng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Year")
-                .Range(.Cells(1, rng.Column), .Cells(4, rng.Column)).Name = "TIME_UNIT_LIST"
+                rng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Month")
+                rng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Quarter")
+                rng.Cells(5, 1).Value = trans.TranslatedValue("MSG_Year")
+                .Range(.Cells(1, rng.Column), .Cells(5, rng.Column)).Name = "TIME_UNIT_LIST"
                 .Range("TIME_UNIT_LIST").Font.color = vbWhite
                 .Range("TIME_UNIT_LIST").Interior.color = vbWhite
                 .Range("TIME_UNIT_LIST").Locked = True
@@ -726,7 +718,7 @@ Private Sub NameRanges()
         nbcolCounter = 1
         Set rng = catRng.Offset(, 1)
 
-        Do While (counter < EndColumn) And (nbcolCounter <= nbCols)
+        Do While (counter <= EndColumn) And (nbcolCounter <= nbCols)
             rng.Name = "VALUES_COL_" & nbcolCounter & "_" & tabId
 
             Select Case specs.TableType
@@ -1059,10 +1051,10 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                               StartColumn + 1, StartColumn)
         'The whole table
         If (specs.TableType <> TypeUnivariate) And (specs.TableType <> TypeGlobalSummary) Then
-            Set rng = .Range(.Cells(STARTROW, wholeTableStart), .Cells(EndRow, EndColumn))
+            Set rng = .Range(.Cells(StartRow, wholeTableStart), .Cells(EndRow, EndColumn))
             DesignFormat.ApplyFormat rng, scope:=AnalysisWholeTable
         ElseIf (specs.TableType = TypeUnivariate) Then
-            Set rng = .Range(.Cells(STARTROW + 1, wholeTableStart), .Cells(EndRow, EndColumn))
+            Set rng = .Range(.Cells(StartRow + 1, wholeTableStart), .Cells(EndRow, EndColumn))
             DesignFormat.ApplyFormat rng, scope:=AnalysisWholeTable
         End If
 
@@ -1137,7 +1129,7 @@ Public Property Get ICrossTable_RowRange(ByVal rowVal As String, Optional ByVal 
 End Property
 
 Public Property Get ICrossTable_StartRow() As Long
-    ICrossTable_StartRow = STARTROW
+    ICrossTable_StartRow = StartRow
 End Property
 
 Public Property Get ICrossTable_Previous() As ICrossTable
