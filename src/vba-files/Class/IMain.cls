@@ -23,6 +23,7 @@ Public Property Get GeoPath() As String: End Property ' GeoPath
 
 'Check if all the paths are ready for linelist generation
 Public Property Get Ready() As Boolean: End Property
+
 Public Property Get LinelistPassWord() As String: End Property
 
 'Exposed methods

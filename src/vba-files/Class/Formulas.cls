@@ -24,6 +24,7 @@ Private Type TFormulas
     setupform As String
     testDone As Boolean
     validity As Boolean
+    literals As Boolean
     formulavariables As BetterArray
     formulaTable As BetterArray
 End Type
@@ -141,6 +142,15 @@ Private Sub Initialize()
     initialized = True
 End Sub
 
+'Has literals
+Public Property Get HasLiterals() As Boolean
+    HasLiterals = this.literals
+End Property
+
+Private Property Let HasLiterals(ByVal lit As Boolean)
+    this.literals = lit
+End Property
+
 'Clean the formula and remove all eventual trailing spaces
 Private Function Clean(chunk As String) As String
     Dim cleanedChunk As String
@@ -180,7 +190,7 @@ Private Property Get FormulaSheet() As String
 End Property
 
 'Test if a formula is valid
-Public Property Get valid(Optional ByVal formulaType As String = "analysis") As Boolean
+Public Property Get Valid(Optional ByVal formulaType As String = "analysis") As Boolean
     Dim setupform As String
     Dim chunk As String
     Dim midChar As String
@@ -212,23 +222,28 @@ Public Property Get valid(Optional ByVal formulaType As String = "analysis") As 
 
     'If the test is already done return the value
     If ValidityTestDone Then
-        valid = FormulaValidity
+        Valid = FormulaValidity
         Exit Property
     End If
-  
-
+    
+    'Initialize the literals (testing if the formula contains literals)
+    HasLiterals = False
+    
     'if it is a variable and we are on analysis, it is not valid, we need aggregation
     'If the formula is empty validity is false
     If setupform = vbNullString Then
         GoTo FormulaIsNotValid
     ElseIf (vars.Contains(setupform) And formulaType = "analysis") Then
+        HasLiterals = True
         GoTo FormulaIsNotValid
     ElseIf formulaType = "analysis" And customFormulas.Includes(setupform) Then
+        HasLiterals = True
         formulaTable.Push setupform
         GoTo FormulaIsValid
     ElseIf (vars.Contains(setupform)) Then       'simple type formula, we can have only varname
         VariablesTable.Push setupform
         formulaTable.Push setupform
+        HasLiterals = True
         GoTo FormulaIsValid
     End If
 
@@ -257,9 +272,11 @@ Public Property Get valid(Optional ByVal formulaType As String = "analysis") As 
                 
                 GoTo FormulaIsNotValid
             ElseIf vars.Contains(chunk) Then
+                HasLiterals = True
                 VariablesTable.Push chunk
                 formulaTable.Push chunk, midChar
             Else
+                If formData.ExcelFormulasIncludes(chunk) Then HasLiterals = True
                 formulaTable.Push chunk, midChar
             End If
 
@@ -277,13 +294,13 @@ FormulaIsValid:
     FormulaValidity = True
     Set FormulaTableList = formulaTable
     Set FormulaVariablesList = VariablesTable
-    valid = FormulaValidity
+    Valid = FormulaValidity
     Exit Property
 
 FormulaIsNotValid:
     ValidityTestDone = True
     FormulaValidity = False
-    valid = FormulaValidity
+    Valid = FormulaValidity
 End Property
 
 'List of formulas
@@ -291,7 +308,7 @@ Public Property Get Varlists(Optional ByVal formulaType As String = "analysis") 
     Dim varTable As BetterArray
     Set varTable = New BetterArray
     varTable.LowerBound = 1
-    If valid(formulaType) Then
+    If Valid(formulaType) Then
         Set varTable = this.formulavariables.Clone()
     End If
     Set Varlists = varTable.Clone()
@@ -313,7 +330,7 @@ Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean
 
     ParsedLinelistFormula = vbNullString
 
-    If Not valid(formulaType:="simple") Then Exit Property
+    If Not Valid(formulaType:="simple") Then Exit Property
 
     Set formulaTable = FormulaTableList
     For counter = formulaTable.LowerBound To formulaTable.UpperBound
@@ -353,7 +370,7 @@ Public Property Get ParsedAnalysisFormula(formCond As IFormulaCondition, _
     Set sheets = FormulaSheets()
     Set dict = Dictionary()
 
-    If valid(formulaType:="analysis") Then
+    If Valid(formulaType:="analysis") Then
         Set formulaTable = FormulaTableList
         counter = formulaTable.LowerBound
         tableLength = formulaTable.UpperBound
@@ -365,7 +382,7 @@ Public Property Get ParsedAnalysisFormula(formCond As IFormulaCondition, _
 
                 tableName = vars.Value(varName:=chunk, colName:="table name")
         
-                If Not formCond.valid(dict, tableName) Then Exit Property 'Trace
+                If Not formCond.Valid(dict, tableName) Then Exit Property 'Trace
                 formulaTable.Item(counter) = formCond.ConditionString(varName:=chunk, _
                                                                       tableName:=tablePrefix & tableName, Connector:=Connector)
 
@@ -444,7 +461,7 @@ Public Property Get IFormulas_Varlists() As BetterArray
 End Property
 
 Public Property Get IFormulas_Valid(Optional ByVal formulaType As String = "analysis") As Boolean
-    IFormulas_Valid = valid(formulaType)
+    IFormulas_Valid = Valid(formulaType)
 End Property
 
 Private Property Get IFormulas_FormulaTableList() As BetterArray
@@ -459,6 +476,10 @@ End Property
 Public Property Get IFormulas_ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, Optional ByVal tablePrefix As String = vbNullString, _
                                                     Optional ByVal Connector As String = "*") As String
     IFormulas_ParsedAnalysisFormula = ParsedAnalysisFormula(formCond, tablePrefix, Connector)
+End Property
+
+Public Property Get IFormulas_HasLiterals() As Boolean
+    IFormulas_HasLiterals = HasLiterals()
 End Property
 
 

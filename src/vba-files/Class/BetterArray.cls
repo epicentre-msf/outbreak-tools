@@ -667,33 +667,33 @@ Public Function FromExcelRange( _
     If TypeName(FromRange) = "Range" Then
         Dim StartColumn As Long
         Dim EndColumn As Long
-        Dim STARTROW As Long
+        Dim StartRow As Long
         Dim EndRow As Long
         
         With FromRange
             StartColumn = .Column
-            STARTROW = .Row
+            StartRow = .Row
             EndColumn = .Column + .Columns.Count - 1
             EndRow = .Row + .Rows.Count - 1
         End With
         
         With FromRange.Parent
             If DetectLastColumn Then
-                EndColumn = .Cells.Item(STARTROW, .Columns.Count).End(xlToLeft).Column
+                EndColumn = .Cells.Item(StartRow, .Columns.Count).End(xlToLeft).Column
             End If
             
             If DetectLastRow Then
                 EndRow = .Cells.Item(.Rows.Count, StartColumn).End(xlUp).Row
             End If
             
-            Me.Items = .Range(.Cells(STARTROW, StartColumn), .Cells(EndRow, EndColumn)).Value
+            Me.Items = .Range(.Cells(StartRow, StartColumn), .Cells(EndRow, EndColumn)).Value
         End With
         
         ' convert arrays of single column or row to 1d
-        If StartColumn = EndColumn And STARTROW <> EndRow Then
+        If StartColumn = EndColumn And StartRow <> EndRow Then
             Me.Items = Me.ExtractSegment(, StartColumn)
-        ElseIf StartColumn <> EndColumn And STARTROW = EndRow Then
-            Me.Items = Me.ExtractSegment(STARTROW)
+        ElseIf StartColumn <> EndColumn And StartRow = EndRow Then
+            Me.Items = Me.ExtractSegment(StartRow)
         End If
         
     Else
@@ -2369,7 +2369,7 @@ Private Function ParseCSV( _
     Dim CountRows As Long
     Dim lastRow As Long
     Dim LastColumn As Long
-    Dim STARTROW As Long
+    Dim StartRow As Long
     Dim InQuote As Boolean
     Dim Buffer As String
     Dim char As String
@@ -2397,12 +2397,12 @@ Private Function ParseCSV( _
     CountRows = UBound(CSVRows) - LBound(CSVRows) + 1
     
     If IgnoreFirstRow Then
-        STARTROW = 1
+        StartRow = 1
     Else
-        STARTROW = 0
+        StartRow = 0
     End If
     
-    lastRow = Base + CountRows - 1 - STARTROW
+    lastRow = Base + CountRows - 1 - StartRow
     LastColumn = Base + CountColumns - 1
     If ReturnJagged Then
         ReDim JaggedRow(Base To LastColumn)
@@ -2411,7 +2411,7 @@ Private Function ParseCSV( _
         ReDim Results(Base To lastRow, Base To LastColumn)
     End If
     
-    For i = STARTROW To lastRow
+    For i = StartRow To lastRow
         ColumnIndex = Base
         Buffer = CSVRows(i)
         Cursor = 1
@@ -2430,7 +2430,7 @@ Private Function ParseCSV( _
                     If ReturnJagged Then
                         JaggedRow(ColumnIndex) = Element
                     Else
-                        Results(i - STARTROW, ColumnIndex) = Element
+                        Results(i - StartRow, ColumnIndex) = Element
                     End If
                     Cursor = j + 2
                     inc ColumnIndex
@@ -2439,7 +2439,7 @@ Private Function ParseCSV( _
             End If
         Next
         If ReturnJagged Then
-            Results(i - STARTROW) = JaggedRow
+            Results(i - StartRow) = JaggedRow
             ' ReDim jaggedRow(Base To lastColumn)
         End If
     Next
@@ -4582,6 +4582,8 @@ Private Function CreateMultidimensionalArray(ByRef Crumb() As Variant) As Varian
 End Function
 
 'v1.7.6
+
+
 
 
 

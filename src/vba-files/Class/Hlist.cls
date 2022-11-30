@@ -143,7 +143,6 @@ Private Sub BusyApp()
     Application.DisplayAlerts = False
     Application.Calculation = xlCalculationManual
     Application.EnableAnimations = False
-    Application.DisplayStatusBar = False
 End Sub
 
 Public Sub Build()

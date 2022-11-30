@@ -519,7 +519,9 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         Set rng = formattingObject
         fontColorValue = IIf(IsEmpty(rng), "", DesignValue("missing font color"))
         FormatRange rng, fontColor:=fontColorValue, _
-                    FontSize:=8, isBold:=False, Horiz:=xlHAlignCenter
+                    FontSize:=8, isBold:=False, Horiz:=xlHAlignCenter, Verti:=xlVAlignCenter
+        rng.EntireRow.RowHeight = 45
+        rng.WrapText = True
 
     Case HListMainLab
         If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
