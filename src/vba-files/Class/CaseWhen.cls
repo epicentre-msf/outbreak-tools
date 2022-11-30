@@ -43,10 +43,10 @@ Public Property Let casewhenFormula(ByVal formula As String)
     this.formula = Application.WorksheetFunction.Trim(formula)
 End Property
 
-Private Property Get valid() As Boolean
+Private Property Get Valid() As Boolean
     Dim formula As String
     formula = casewhenFormula
-    valid = (InStr(1, formula, "CASE_WHEN") = 1)
+    Valid = (InStr(1, formula, "CASE_WHEN") = 1)
 End Property
 
 Private Property Get CaseWhenTable() As BetterArray
@@ -68,7 +68,7 @@ Private Property Get CaseWhenTable() As BetterArray
     Set parsingTable = New BetterArray
     parsingTable.LowerBound = 1
 
-    If valid() Then
+    If Valid() Then
         Previous = 1
         NbOpened = 0
         NbClosed = 0
@@ -109,7 +109,7 @@ Private Function parsedFormula() As String
     parenthesis = vbNullString
     counter = 1
 
-    If valid() Then
+    If Valid() Then
         Set parsingTable = CaseWhenTable()
         'We convert to nested ifs, up to 64 nested ifs can be used in Excel
         Do While counter < parsingTable.Length
@@ -140,7 +140,7 @@ Private Function Categories() As BetterArray
     Set categoriesTable = New BetterArray
     categoriesTable.LowerBound = 1
 
-    If valid() Then
+    If Valid() Then
         counter = 2
         Set parsingTable = CaseWhenTable()
         Do While counter <= parsingTable.Length
@@ -163,7 +163,7 @@ End Function
 'Interface
 
 Public Property Get ICaseWhen_Valid() As Boolean
-    ICaseWhen_Valid = valid()
+    ICaseWhen_Valid = Valid()
 End Property
 
 Public Property Get ICaseWhen_ParsedFormula() As String

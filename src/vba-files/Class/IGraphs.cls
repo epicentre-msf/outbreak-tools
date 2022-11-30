@@ -23,7 +23,8 @@ Public Sub AddLabels(ByVal catName As String, ByVal lblName As String): End Sub
 'Maybe format
 Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal catTitle As String = vbNullString, _
-                  Optional ByVal plotTitle As String = vbNullString)
+                  Optional ByVal plotTitle As String = vbNullString, _
+                  Optional ByVal asTimeSeries As Boolean = False)
 End Sub
 
 

@@ -16,7 +16,7 @@ Attribute VB_Exposed = False
 Option Explicit
 
 'Exposed methods
-Public Property Get valid() As Boolean: End Property
+Public Property Get Valid() As Boolean: End Property
 
 Public Sub AddFormulas(): End Sub
 

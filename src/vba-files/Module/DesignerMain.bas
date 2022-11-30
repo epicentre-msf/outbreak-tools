@@ -133,8 +133,6 @@ Sub GenerateData()
     Dim statusValue As Integer
 
     
-    Application.DisplayStatusBar = False
-    
     Set wb = ThisWorkbook
     Set lData = LinelistSpecs.Create(wb)
     

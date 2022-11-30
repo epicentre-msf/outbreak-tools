@@ -40,3 +40,7 @@ End Property
 Public Sub CreateSeries()
 End Sub
 
+Public Property Get SpecsLists() As BetterArray: End Property
+
+Public Property Get Valid() As Boolean: End Property
+

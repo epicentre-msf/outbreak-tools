@@ -32,7 +32,7 @@ Private Const HISTOGEO  As String = "HISTOGEO"
 Private Const HISTOHF   As String = "HISTOHF"
 Private Const NAMES     As String = "NAMES"
 Private Const METADATA  As String = "METADATA"
-Private Const CONCAT    As String = "CONCAT" 'concatenated list of admins
+Private Const CONCAT    As String = "CONCAT"     'concatenated list of admins
 
 Public Function Create(ByVal sh As Worksheet) As ILLGeo
     CheckRequirements sh
@@ -202,6 +202,7 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
         ThrowError "No need to add admin names If you want the list of all admin"
     ElseIf (TypeName(adminNames) = "BetterArray") Then
         If (adminNames.Length <> CLng(adminLevel)) Then ThrowError "You should provide a table of length " & CLng(adminLevel) & " for admin " & (CLng(adminLevel) + 1)
+        If adminNames.LowerBound <> 1 Then ThrowError "Please ensure your BetterArray has 1 as Lowerbound, it is mandatory"
     End If
 
     'Output Levels
@@ -292,8 +293,13 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
     Set GeoLevel = outLevels.Clone()
 End Property
 
-Private Property Get Population(ByVal adminLevel As GeoLevel, _
-                                ByVal adminNames As Variant) As String
+Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
+                             ByVal adminNames As Variant, _
+                             Optional ByVal returnedSuffix As String = "pop") As String
+                             
+    'Return the population or the pcode of a admin level, by default, return population
+    'Returned Suffix is the suffix of the column to return.
+    'If you send a betterarray as adminNames, please, be sure the betterarray has 1 as Lowerbound
 
     Dim sh As Worksheet
     Dim tabl As BetterArray
@@ -306,43 +312,73 @@ Private Property Get Population(ByVal adminLevel As GeoLevel, _
 
     Set sh = Wksh()
     Set tabl = TableNames()
-    loName = tabl.Item(adminLevel)
+    loName = IIf(adminLevel = LevelHF, "T_HF", tabl.Item(adminLevel))
     Set Lo = sh.ListObjects(loName)
     Set LoRng = Lo.Range
-
-    If (TypeName(adminNames) = "BetterArray") Then
-        If (adminNames.Length <> CLng(adminLevel) + 1) Then _
-                                                       ThrowError "You should provide a table of length " & CLng(adminLevel) + 1 & _
-                                                       " for admin " & (CLng(adminLevel) + 1)
-    ElseIf (adminLevel = 0) And (Not TypeName(adminNames) = "String") Then
-        ThrowError "You should provide only one admin1 name for population of admin1"
+    
+    If (adminLevel = 0) And (Not TypeName(adminNames) = "String") Then
+        ThrowError "You should provide only one admin1 name for" & returnedSuffix & "of admin1"
     End If
 
+    If (TypeName(adminNames) = "BetterArray") Then
+        If (adminNames.LowerBound <> 1) Then ThrowError "Please ensure your BetterArray has 1 as Lowerbound, it is mandatory"
+        If (adminNames.Length <> CLng(adminLevel) + 1) And (adminLevel <> LevelHF) Then
+            ThrowError "You should provide a table of length " & CLng(adminLevel) + 1 & " for admin " & (CLng(adminLevel) + 1)
+        End If
+        If (adminNames.Length <> 4) And (adminLevel = LevelHF) Then ThrowError "Please provide a table of length 4 for HF"
+    End If
+                                                       
+    
+    'Value for the Geo
+        
     Select Case adminLevel
-    Case LevelAdmin1
+        
+    Case LevelGeoAdmin1
+        
         With LoRng
             colIndex = GeoColumnIndex("adm1_name", LevelAdmin1)
             .AutoFilter Field:=colIndex, Criteria1:=adminNames
-            colIndex = GeoColumnIndex("adm1_pop", LevelAdmin1)
+            colIndex = GeoColumnIndex("adm1_" & returnedSuffix, LevelAdmin1)
         End With
-    Case LevelAdmin2, LevelAdmin3, LevelAdmin4
+            
+    Case LevelGeoAdmin2, LevelGeoAdmin3, LevelGeoAdmin4
         With LoRng
-            adminNames.LowerBound = 1
             For counter = 1 To adminNames.Length
                 colIndex = GeoColumnIndex("adm" & counter & "_name", adminLevel)
                 .AutoFilter Field:=colIndex, Criteria1:=adminNames.Item(counter)
             Next
-            colIndex = GeoColumnIndex("adm" & (counter - 1) & "_pop", adminLevel)
+            colIndex = GeoColumnIndex("adm" & (counter - 1) & "_" & returnedSuffix, adminLevel)
         End With
+        
+    Case LevelHF                                 'Here I need to extract one information of HF table
+        
+        With LoRng
+            For counter = 1 To 3
+                colIndex = HFColumnIndex("adm" & counter & "_name")
+                .AutoFilter Field:=colIndex, Criteria1:=adminNames.Item(counter)
+            Next
+            
+            'Hf name
+            colIndex = HFColumnIndex("hf_name")
+            .AutoFilter Field:=colIndex, Criteria1:=adminNames.Item(4)
+            colIndex = HFColumnIndex("hf_" & returnedSuffix)
+        End With
+        
     End Select
 
     'Return filtered value
+    'Important to test if the filtered value is Nothing (no corresponding population found)
     On Error Resume Next
     Set returnedRng = Lo.ListColumns(colIndex).DataBodyRange.SpecialCells(xlCellTypeVisible)
     On Error GoTo 0
     Lo.AutoFilter.ShowAllData
 
-    If Not returnedRng Is Nothing Then Population = returnedRng.Value
+    'Population is a String, for computations, convert it to Long.
+    'When there is more than on match on the table, the function returns an empty string
+    If (Not returnedRng Is Nothing) Then
+        If (returnedRng.Cells.Count = 1) Then ValueOf = returnedRng.Value
+    End If
+    
 End Property
 
 Private Sub Translate(Optional ByVal rawNames As Boolean = False)
@@ -447,7 +483,7 @@ Private Sub ExportToFile(outputWkb As Workbook, Optional ByVal onlyHistory As Bo
         For counter = tabl.LowerBound To tabl.UpperBound
             loName = tabl.Item(counter)
             Set inputRng = sh.ListObjects(loName).Range
-            .Worksheets.Add(after:=.Worksheets(sheetName)).Name = Replace(loName, "T_", vbNullString)
+            .Worksheets.Add(After:=.Worksheets(sheetName)).Name = Replace(loName, "T_", vbNullString)
             sheetName = Replace(loName, "T_", vbNullString)
             With .Worksheets(sheetName)
                 Set outputRng = .Range(.Cells(1, 1), .Cells(inputRng.Rows.Count, inputRng.Columns.Count))
@@ -513,7 +549,7 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     Set rngTable = New BetterArray
     rngTable.Push "RNG_GeoName", "RNG_GeoUpdated", "RNG_PastingGeoCol", "RNG_GeoLangCode", _
                   "RNG_HFNAME", "RNG_ADM1NAME", "RNG_ADM2NAME", "RNG_ADM3NAME", "RNG_ADM4NAME", _
-                  "RNG_FormLoaded"
+                  "RNG_FormLoaded", "RNG_MetaLang"
 
     For counter = rngTable.LowerBound To rngTable.UpperBound
         rngName = rngTable.Item(counter)
@@ -602,13 +638,13 @@ Private Sub Import(ByVal fromWkb As Workbook)
                         
                         'Creating the formula
                         concatFormula = "=" & _
-                        impRng.Cells(1, 1).Address(Rowabsolute:=False) & _
-                        sep & _
-                        impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
-                        sep & _
-                        impRng.Cells(1, 3).Address(Rowabsolute:=False) & _
-                        sep & _
-                        impRng.Cells(1, 4).Address(Rowabsolute:=False)
+                                        impRng.Cells(1, 1).Address(Rowabsolute:=False) & _
+                                        sep & _
+                                        impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
+                                        sep & _
+                                        impRng.Cells(1, 3).Address(Rowabsolute:=False) & _
+                                        sep & _
+                                        impRng.Cells(1, 4).Address(Rowabsolute:=False)
                         
                         .Cells(2, Lo.Range.Column).formula = concatFormula
                                                             
@@ -656,6 +692,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     RangeExists sh, "RNG_ADM3NAME"
     RangeExists sh, "RNG_ADM4NAME"
     RangeExists sh, "RNG_FormLoaded"
+    RangeExists sh, "RNG_MetaLang"
 End Sub
 
 Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
@@ -698,7 +735,7 @@ Private Sub Update(ByVal pass As ILLPasswords)
         If sh.Cells(1, 3).Value = "HList" Then
             
             'Unprotect and update
-             pass.UnProtect sh.Name
+            pass.UnProtect sh.Name
             
             With sh
             
@@ -759,9 +796,14 @@ Public Property Get ILLGeo_GeoNames(ByVal admname As String) As String
 End Property
 
 'Get the Population of one administrative level (only for geoType)
-Public Property Get ILLGeo_Population(ByVal adminLevel As GeoLevel, _
+Public Property Get ILLGeo_Population(ByVal adminLevel As GeoLevelOrHF, _
                                       ByVal adminNames As Variant) As String
-    ILLGeo_Population = Population(adminLevel, adminNames)
+    ILLGeo_Population = ValueOf(adminLevel:=adminLevel, adminNames:=adminNames, returnedSuffix:="pop")
+End Property
+
+Public Property Get ILLGeo_Pcode(ByVal adminLevel As GeoLevelOrHF, _
+                                ByVal adminNames As Variant) As String
+    ILLGeo_Pcode = ValueOf(adminLevel:=adminLevel, adminNames:=adminNames, returnedSuffix:="pcode")
 End Property
 
 'Translation
@@ -792,6 +834,7 @@ Public Sub ILLGeo_ClearHistoric()
 End Sub
 
 Public Sub ILLGeo_Update(ByVal pass As ILLPasswords)
-Update pass
+    Update pass
 End Sub
+
 

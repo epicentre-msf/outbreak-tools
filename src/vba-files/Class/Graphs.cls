@@ -170,21 +170,25 @@ End Sub
 Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal catTitle As String = vbNullString, _
                   Optional ByVal plotTitle As String = vbNullString, _
-                  Optional ByVal secondAxisTitle As String = vbNullString)
+                  Optional ByVal secondAxisTitle As String = vbNullString, _
+                  Optional ByVal asTimeSeries As Boolean = False)
 
     Dim co As ChartObject
     Dim sh As Worksheet
+    Dim coef As Long
     Set co = graphChart
     Set sh = Wksh()
     Dim cw As Long
     Dim rh As Long
     cw = sh.Range("A1").width
     rh = sh.Range("A1").height
-
+    
+    coef = 1
+    If asTimeSeries Then coef = 3
 
     'Coerce again the width and the height
-    co.width = GRAPHWIDTH * cw
-    co.height = GRAPHHEIGHT * rh
+    co.width = GRAPHWIDTH * cw * coef
+    co.height = GRAPHHEIGHT * rh * coef
     With sh.Shapes(co.Name)
         .Shadow.Type = msoShadow21
         .line.Visible = msoTrue
@@ -224,13 +228,12 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
         End If
         
         With .PlotArea
-            .Left = 30
-            .Top = 20
-            .width = 315
-            .height = 150
+            .Left = 20 * coef
+            .Top = 20 * coef
+            .width = 400 * coef
+            .height = 150 * coef
         End With
     End With
-    
     
 End Sub
 
@@ -248,8 +251,9 @@ End Sub
 
 Public Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, _
                           Optional ByVal catTitle As String = vbNullString, _
-                          Optional ByVal plotTitle As String = vbNullString)
-    Format valuesTitle:=valuesTitle, catTitle:=catTitle, plotTitle:=plotTitle
+                          Optional ByVal plotTitle As String = vbNullString, _
+                          Optional ByVal asTimeSeries As Boolean = False)
+    Format valuesTitle:=valuesTitle, catTitle:=catTitle, plotTitle:=plotTitle, asTimeSeries:=asTimeSeries
 End Sub
 
 

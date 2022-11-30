@@ -65,7 +65,6 @@ Private Sub BusyApp()
     Application.DisplayAlerts = False
     Application.Calculation = xlCalculationManual
     Application.EnableAnimations = False
-    Application.DisplayStatusBar = False
 End Sub
 
 'Return previous state
@@ -220,7 +219,6 @@ Private Sub TransferCodeWkb()
         .AddFromString codeContent
     End With
 End Sub
-
 
 'Prepare temporary folder for the linelist creation
 Public Sub TemporaryFolder(Optional Create As Boolean = True)
@@ -448,7 +446,7 @@ Private Sub SaveLL()
     outPath = mainobj.OutputPath() & Application.PathSeparator & mainobj.LinelistName & ".xlsb"
 
     outWkb.SaveAs FileName:=outPath, fileformat:=xlExcel12, Password:=passwd, _
-        ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+                  ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     outWkb.Close
 End Sub
 

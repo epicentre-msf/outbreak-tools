@@ -24,6 +24,8 @@ End Enum
 'Will have two instanciation methods (one like a tablespecs, another which
 'norma and reserved to most cases (bivariate, spatial))
 Private Type TGraphSpecs
+    testDone As Boolean
+    validity As Boolean
     tabl As ICrossTable
     timelos As BetterArray
     specstype As GraphSpecsType
@@ -40,6 +42,9 @@ End Type
 
 Private this As TGraphSpecs
 Private Const CLASSNAME As String = "GraphSpecs"
+
+'You can create graph specs in two various way: First one is to give a crosstable (for bivariate, univariate and graphs);
+'Second one is to give a BetterArray of two listObjects, the output sheet and the linelist Data (For graphs for time series)
 
 Public Function Create(ByVal tabl As ICrossTable) As IGraphSpecs
   
@@ -61,17 +66,22 @@ End Function
 
 Public Function CreateRangeSpecs(ByVal loTable As BetterArray, ByVal outputsh As Worksheet, ByVal lData As ILinelistSpecs) As IGraphSpecs
     'loTable is a table of two listObjects, one for the graphs, and another for the tables.
+    'The first table of the list object is the graph table, the second table of the listObject is the list of tables
+    
     CheckSpecifications loTable
     If lData Is Nothing Then ThrowErrorUnableInstanciate "No linelist data provided"
     If outputsh Is Nothing Then ThrowErrorUnableInstanciate "No OutputSheet provided"
 
     With New GraphSpecs
+        'Lo list is the list of listobjects
         Set .LoList = loTable
+        'Output sheet is where to write the graphs
         Set .OutputSheet = outputsh
         .GraphType = GraphTypeComplex
-        .LinelistSpecifications = lData
-        Set Create = .Self
+        Set .LinelistSpecifications = lData
+        Set CreateRangeSpecs = .Self()
     End With
+
 End Function
 
 Private Sub CheckSpecifications(ByVal loTable As BetterArray)
@@ -81,10 +91,11 @@ Private Sub CheckSpecifications(ByVal loTable As BetterArray)
     Dim graphLo As ListObject
     Dim tabLo As ListObject
     Dim rng As Range
+    Dim titleVal As String
 
     'Test and check required specifications for listObjects for graph specs
     If loTable Is Nothing Then ThrowErrorUnableInstanciate "The List of listobjects is Empty"
-    If Length(loTable) <> 2 Then ThrowErrorUnableInstanciate "Seems like the table of listobjects is too long or too short? should be length 2"
+    If loTable.Length <> 2 Then ThrowErrorUnableInstanciate "Seems like the table of listobjects is too long or too short? should be length 2"
 
     'Now test the graphListObject and the table listObject
     For counter = loTable.LowerBound To loTable.UpperBound
@@ -100,19 +111,19 @@ Private Sub CheckSpecifications(ByVal loTable As BetterArray)
     'Test for graph title
     Set rng = graphLo.HeaderRowRange()
     titleVal = LCase(Application.WorksheetFunction.Trim(rng.Cells(-1, 1).Value))
-    If titleVal <> "graph on time series" Then ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table. No graph table found the title is: " & titleVal
+    If titleVal <> "graph on time series" Then ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table. No graph table found the title of first table is: " & titleVal
   
     Set tabLo = loTable.Item(loTable.LowerBound + 1)
-    Set rng = graphLo.HeaderRowRange()
+    Set rng = tabLo.HeaderRowRange()
     titleVal = LCase(Application.WorksheetFunction.Trim(rng.Cells(-1, 1).Value))
-    If titleVal <> "time series analysis" Then ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table. No time series table found the title is: " & titleVal
+    If titleVal <> "time series analysis" Then ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table. No time series table found the title second table is: " & titleVal
 End Sub
 
 Public Property Get OutputSheet() As Worksheet
     Set OutputSheet = this.outsh
 End Property
 
-Public Property Set OutputShet(ByVal sh As Worksheet)
+Public Property Set OutputSheet(ByVal sh As Worksheet)
     Set this.outsh = sh
 End Property
 
@@ -151,15 +162,14 @@ End Property
 Public Property Set LoList(ByVal los As BetterArray)
     Set this.timelos = New BetterArray
     Set this.timelos = los.Clone()
-    this.timelos.LowerBound = 1
 End Property
 
 Private Property Get GraphListObject() As ListObject
-    Set GraphListObject = LoList.Item(1)
+    Set GraphListObject = LoList.Item(LoList.LowerBound)
 End Property
 
 Private Property Get TimeSeriesListObject() As ListObject
-    Set TimeSeriesListObject = LoList.Item(2)
+    Set TimeSeriesListObject = LoList.Item(LoList.LowerBound + 1)
 End Property
 
 Public Property Get Wksh() As Worksheet          'Worksheet where to draw the graph
@@ -168,7 +178,7 @@ Public Property Get Wksh() As Worksheet          'Worksheet where to draw the gr
 
     Case GraphTypeSimple
         Set sh = Table.Wksh()
-    Case GrahTypeComplex
+    Case GraphTypeComplex
         Set sh = OutputSheet
     End Select
 
@@ -214,6 +224,8 @@ Private Sub PushLabels(ByVal chrtRowCategory As String, ByVal chrtColumnLab As S
 End Sub
 
 Private Sub PushGraph()
+    'One graph consists of five betterarrays of same length:
+    'One for series, one for types, one for position and the two others for the labels
     Dim graphSpecsTable As BetterArray
     Set graphSpecsTable = New BetterArray
     graphSpecsTable.LowerBound = 1
@@ -224,14 +236,19 @@ Private Sub PushGraph()
     'Higher Level, for one graph
     If this.graphsChartsSpecs Is Nothing Then
         Set this.graphsChartsSpecs = New BetterArray
-        this.graphsChatsSpecs.LowerBound = 1
+        this.graphsChartsSpecs.LowerBound = 1
     End If
 
+    'The list of graphs is a BetterArray of BetterArray, where each inner BetterArray Is a graph
     this.graphsChartsSpecs.Push graphSpecsTable
 End Sub
 
+Private Property Get SpecsLists() As BetterArray
+    Set SpecsLists = this.graphsChartsSpecs.Clone()
+End Property
+
 Private Sub ClearSeries()
-    'Avoid errors if the tables don't exists
+    'Avoid errors if the tables doesn't exists
     On Error Resume Next
     this.chartSeriesName.Clear
     this.chartSeriesType.Clear
@@ -239,6 +256,7 @@ Private Sub ClearSeries()
     this.chartSeriesLabel.Clear
     this.chartColumnCategoriesLabel.Clear
     On Error GoTo 0
+
 End Sub
 
 Public Sub CreateSeries()
@@ -307,7 +325,9 @@ Public Sub CreateSeries()
         End Select
 
     Case GraphTypeComplex
-        'Time series
+        'Time series graph
+
+        'You define the graph  and add all the graphs to the list of graphs
         Set mGraphIds = New BetterArray
         Set mGraphIds = GraphIdsList()
         For counter = mGraphIds.LowerBound To mGraphIds.UpperBound
@@ -360,6 +380,25 @@ Public Property Get SeriesColumnLabel(ByVal index As Long) As String
     SeriesColumnLabel = this.chartColumnCategoriesLabel.Item(index)
 End Property
 
+Private Property Get Valid() As Boolean
+
+    If this.testDone Then
+        Valid = this.validity
+        Exit Property
+    End If
+    
+    If GraphType = GraphTypeSimple Then
+        CreateSeries
+        Valid = True
+    Else
+        CreateSeries
+        this.validity = Not (this.graphsChartsSpecs Is Nothing)
+        this.testDone = True
+    End If
+    
+    Valid = this.validity
+End Property
+
 Private Sub DefineGraphSpecs(ByVal graphId As String)
     'Defines Specs for one grpah Id
 
@@ -375,15 +414,17 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
     Dim posList As BetterArray
     Dim percList As BetterArray
     Dim typeList As BetterArray
-    Dim choiList As BetterArray
+    Dim choiceList As BetterArray
     Dim idsList As BetterArray
     Dim choiValue As String
+    Dim hRng As Range
+    Dim tabRng As Range
 
 
     Set posList = New BetterArray
-    Set perList = New BetterArray
+    Set percList = New BetterArray
     Set typeList = New BetterArray
-    Set choiList = New BetterArray
+    Set choiceList = New BetterArray
     Set idsList = New BetterArray
 
 
@@ -405,7 +446,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
         Val = idsList.Item(counter)
         Val = Application.WorksheetFunction.Trim(Replace(LCase(Val), "series", vbNullString))
 
-        Set tabRng = tsLo.ListRows(CLng(Val))
+        Set tabRng = tsLo.ListRows(CLng(Val)).Range
         Set specs = TablesSpecs.Create(hRng, tabRng, lData)
         tabId = specs.TableId
         secId = specs.TableSectionId
@@ -494,13 +535,15 @@ Private Function GraphIdsList() As BetterArray
     Set graphLo = GraphListObject()
     idIndex = ColumnIndex(graphLo, "graph id")
     Set rng = graphLo.ListColumns(idIndex).Range
-
+    
+    counter = 2
     Do While counter <= rng.Rows.Count
-        If Not idsList.Includes(rng.Cells(counter, 1).Value) Then
-            idsList.Push rng.Cells(counter, 1).Value
-        End If
+    
+        If Not idsList.Includes(rng.Cells(counter, 1).Value) And Not IsEmpty(rng.Cells(counter, 1)) Then idsList.Push rng.Cells(counter, 1).Value
+        counter = counter + 1
+        
     Loop
-    GraphIdsList = idsList.Clone()
+    Set GraphIdsList = idsList.Clone()
 End Function
 
 Public Property Get GraphIDs() As BetterArray
@@ -514,12 +557,13 @@ Public Property Get GraphIDs() As BetterArray
 End Property
 
 Private Function GraphValues(ByVal colName As String, ByVal graphId As String) As BetterArray
-    Dim idIndex As String
+    Dim idIndex As Long
     Dim RowIndex As Long
     Dim colIndex As Long
     Dim grLo As ListObject
     Dim rng As Range
     Dim colRng As Range
+    Dim cellVal As String
     Dim Values As BetterArray
     Dim sh As Worksheet
 
@@ -534,16 +578,35 @@ Private Function GraphValues(ByVal colName As String, ByVal graphId As String) A
     If idIndex < 0 Then ThrowError "graph id column not found"
     If colIndex < 0 Then ThrowError colName & " is not present in graph colnames"
 
-    Set rng = grLo.ListColumns(idIndex)
-    Set colRng = grLo.ListColumns(colIndex)
+    Set rng = grLo.ListColumns(idIndex).DataBodyRange
+    Set colRng = grLo.ListColumns(colIndex).DataBodyRange
+    
     Set sh = rng.Worksheet
 
     If ValueExists(rng, graphId, strictSearch:=True) Then
         With sh
-            Do While Not (rng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
-                RowIndex = rng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True).Row
-                Values.Push colRng.Cells(RowIndex, 1).Value
+            Do While Not (rng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True, After:=rng.Cells(rng.Rows.Count, 1)) Is Nothing)
+                RowIndex = rng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True, After:=rng.Cells(rng.Rows.Count, 1)).Row - rng.Row + 1
+                
+                cellVal = colRng.Cells(RowIndex, 1).Value
+                
+                If cellVal = vbNullString Then
+                
+                    Values.Push "&"
+                
+                Else
+                    
+                    Values.Push cellVal
+                
+                End If
+                
+                'Important to exit if the range has only one cell since reducing could
+                'return the same range
+                If rng.Rows.Count = 1 Then Exit Do
+                
+                'Reduce the ranges for further searches
                 Set rng = .Range(rng.Cells(RowIndex + 1, 1), rng.Cells(rng.Rows.Count, 1))
+                Set colRng = .Range(colRng.Cells(RowIndex + 1, 1), colRng.Cells(colRng.Rows.Count, 1))
             Loop
         End With
     End If
@@ -593,5 +656,13 @@ End Property
 Public Sub IGraphSpecs_CreateSeries()
     CreateSeries
 End Sub
+
+Public Property Get IGraphSpecs_SpecsLists() As BetterArray
+    Set IGraphSpecs_SpecsLists = SpecsLists()
+End Property
+
+Public Property Get IGraphSpecs_Valid() As Boolean
+    IGraphSpecs_Valid = Valid()
+End Property
 
 
