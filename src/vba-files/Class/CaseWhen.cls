@@ -135,7 +135,7 @@ Private Function Categories() As BetterArray
     Dim categoriesTable As BetterArray
     Dim counter As Long
     Dim parsingTable As BetterArray
-    Dim level As String
+    Dim Level As String
 
     Set categoriesTable = New BetterArray
     categoriesTable.LowerBound = 1
@@ -147,12 +147,12 @@ Private Function Categories() As BetterArray
 
             If Mid(parsingTable.Item(counter), 1, 1) = Chr(34) Then
                 'Quoted character, is a level
-                level = Replace(parsingTable.Item(counter), Chr(34), vbNullString)
+                Level = Replace(parsingTable.Item(counter), Chr(34), vbNullString)
             Else
                 'Not Quoted character, the user should not use case_when in analysis
-                level = Chr(34) & parsingTable.Item(counter) & Chr(34)
+                Level = Chr(34) & parsingTable.Item(counter) & Chr(34)
             End If
-            categoriesTable.Push level
+            categoriesTable.Push Level
             counter = counter + 2
         Loop
     End If

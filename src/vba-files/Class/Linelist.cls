@@ -306,7 +306,8 @@ Private Sub Prepare()
     'temporary sheet Names
     sheetsList.Push lData.TemporarySheetName(TemporarySingle), lData.TemporarySheetName(TemporarySheetList), _
         lData.TemporarySheetName(TemporarySheetDebug), _
-        lData.TemporarySheetName(TemporarySheetAnalysis), lData.TemporarySheetName(TemporarySheetImport)
+        lData.TemporarySheetName(TemporarySheetAnalysis), lData.TemporarySheetName(TemporarySheetImport), _
+        lData.TemporarySheetName(TemporarySpatial)
 
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         sheetName = sheetsList.Item(counter)
@@ -353,7 +354,7 @@ Private Sub Prepare()
     classesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", "ILLExport", "LLchoice", "ILLchoice", _
                      "LLdictionary", "ILLdictionary", "LLGeo", "ILLGeo", "LLPasswords", "ILLPasswords", _
                      "LLSheets", "ILLSheets", "LLTranslations", "ILLTranslations", "OSFiles", "IOSFiles", _
-                     "Translation", "ITranslation", "LLVariables", "ILLVariables"
+                     "Translation", "ITranslation", "LLVariables", "ILLVariables", "ILLSpatial", "LLSpatial"
 
     For counter = classesList.LowerBound To classesList.UpperBound
         codeName = classesList.Item(counter)

@@ -20,7 +20,7 @@ Public Function LoadFolder() As String
         LoadFolder = SelectFolderOnWindows()
     Else
         'We are on Mac, need to test the version of excel running
-        If Val(Application.Version) > 14 Then
+        If val(Application.Version) > 14 Then
             LoadFolder = SelectFolderOnMac()
         End If
     End If
@@ -34,7 +34,7 @@ Public Function LoadFile(sFilters As String) As String
         LoadFile = SelectFileOnWindows(sFilters)
     Else
         'We are on Mac, need to test the version of excel running
-        If Val(Application.Version) > 14 Then
+        If val(Application.Version) > 14 Then
             LoadFile = SelectFileOnMac(sFilters)
         End If
     End If

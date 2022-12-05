@@ -527,6 +527,7 @@ Private Sub AddHeader()
     Dim trans As ITranslation
     Dim tabId As String
     Dim rng As Range
+    Dim cellRng As Range
 
     Set sh = Wksh()
     Set specs = Specifications
@@ -604,12 +605,12 @@ Private Sub AddHeader()
             End If
 
             If (Not RangeExists("TIME_UNIT_LIST")) Then
-                Set rng = .Cells(1, 26)
-                rng.Cells(1, 1).Value = trans.TranslatedValue("MSG_Day")
-                rng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Week")
-                rng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Month")
-                rng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Quarter")
-                rng.Cells(5, 1).Value = trans.TranslatedValue("MSG_Year")
+                Set cellRng = .Cells(1, 26)
+                cellRng.Cells(1, 1).Value = trans.TranslatedValue("MSG_Day")
+                cellRng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Week")
+                cellRng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Month")
+                cellRng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Quarter")
+                cellRng.Cells(5, 1).Value = trans.TranslatedValue("MSG_Year")
                 .Range(.Cells(1, rng.Column), .Cells(5, rng.Column)).Name = "TIME_UNIT_LIST"
                 .Range("TIME_UNIT_LIST").Font.color = vbWhite
                 .Range("TIME_UNIT_LIST").Interior.color = vbWhite
@@ -617,15 +618,31 @@ Private Sub AddHeader()
             End If
 
         Case TypeSpatial
+        
+             'Add Dropdown for selecting the admins
+            If (Not RangeExists("ADMIN_UNIT_LIST")) Then
+
+                    Set cellRng = .Cells(1, 26)
+                    cellRng.Cells(1, 1).formula = "= RNG_ADM1NAME"
+                    cellRng.Cells(2, 1).formula = "= RNG_ADM2NAME"
+                    cellRng.Cells(3, 1).formula = "= RNG_ADM3NAME"
+                    cellRng.Cells(4, 1).formula = "= RNG_ADM4NAME"
+
+                    .Range(.Cells(1, cellRng.Column), .Cells(4, cellRng.Column)).Name = "ADM_UNIT_LIST"
+                    .Range("ADM_UNIT_LIST").Font.color = vbWhite
+                    .Range("ADM_UNIT_LIST").Interior.color = vbWhite
+                    .Range("ADM_UNIT_LIST").Locked = True
+            End If
 
             If Not RangeExists("ADM_DROPDOWN_" & tabId) Then
                 'Range for dropdown for the admins
                 .Cells(start - 2, STANDARDSTARTCOL).Name = "ADM_DROPDOWN_" & tabId
                 .Cells(start - 2, STANDARDSTARTCOL).Value = trans.TranslatedValue("MSG_SelectAdmin")
-                Set rng = .Range("ADM_DROPDOWN_" & tabId)
 
                 'New Section
+                 Set rng = .Range("ADM_DROPDOWN_" & tabId)
                 If specs.isNewSection() Then
+                
                     For counter = 1 To 3
                         .Rows(rng.Row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                     Next
@@ -637,12 +654,8 @@ Private Sub AddHeader()
                 .Rows(rng.Row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                 rng.Cells(-1, 1).Value = specs.Value("title")
                 rng.Cells(-1, 1).Name = "TITLE_" & tabId
-
-                Set rng = .Range("TITLE_" & tabId)
-
-                
-
             End If
+            
         End Select
     End With
 End Sub
@@ -871,6 +884,10 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         If specs.TableType = TypeSpatial Then
             Set rng = .Range("ADM_DROPDOWN_" & tabId)
             DesignFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
+
+            'Range for the order (used in the formulas)
+            Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -1)
+            DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
         End If
 
         'Headers

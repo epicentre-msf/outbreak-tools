@@ -40,13 +40,13 @@ End Sub
 Private Sub TestVariableValues()
     On Error GoTo VariableValuesFail
     
-    Dim Val As String
+    Dim val As String
     
-    Val = Variables.Value(varName:="varb1", colName:="sheet type")
-    Assert.IsTrue (Val = "hlist2D"), "returned value of sheet type for variable varb1 is not correct. Expected hlist2D, returned : " & Val
+    val = Variables.Value(varName:="varb1", colName:="sheet type")
+    Assert.IsTrue (val = "hlist2D"), "returned value of sheet type for variable varb1 is not correct. Expected hlist2D, returned : " & val
     
-    Val = Variables.Value(varName:="vara1", colName:="sheet type")
-    Assert.IsTrue (Val = "vlist1D"), "returned value of sheet type of variable vara1 is not correct Expected vlist1D, returned :" & Val
+    val = Variables.Value(varName:="vara1", colName:="sheet type")
+    Assert.IsTrue (val = "vlist1D"), "returned value of sheet type of variable vara1 is not correct Expected vlist1D, returned :" & val
 
     Assert.IsTrue Variables.Contains("varb1"), "varb1 exists as a variable, but it not found as one."
     Assert.IsFalse Variables.Contains("va"), "va does not exist as a variable, but it is found as one."
