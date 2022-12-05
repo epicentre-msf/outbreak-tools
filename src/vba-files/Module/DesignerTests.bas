@@ -199,21 +199,16 @@ Sub TestGeo()
     Dim wb As Workbook
     Dim admList As BetterArray
     Dim pcodeValue As String
+    Dim rng As Range
+    Dim val As String
     
     Dim admNames As BetterArray
     
     Set geoObject = LLGeo.Create(SheetGeo)
-    'admname = geoObject.GeoNames("adm2_name")
-    'geoObject.Translate rawNames:=True
-    'geoObject.Clear
-    'geoObject.ClearHistoric
-    'Set wb = Workbooks.Open("D:\Projects\outbreak-tools\input\geobase\OUTBREAK-TOOLS-GEOBASE-SSD-2022-09-07.xlsx")
-    'geoObject.Import wb
-    'Get the list of admin 1
-    Set admNames = New BetterArray
-    admNames.LowerBound = 1
-    admNames.Push "Abyei", "Abyei Region", "Alel"
-    pcodeValue = geoObject.Population(LevelGeoAdmin3, admNames)
+    Set rng = SheetGeo.Range("N15")
+    
+    val = GEOPCODE(rng, 3)
+    
     
     
 End Sub

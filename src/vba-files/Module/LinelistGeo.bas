@@ -3,20 +3,16 @@ Attribute VB_Name = "LinelistGeo"
 Option Explicit
 Option Base 1
 Option Private Module
-'Module Geo: This is where the geo form and data are managed as well ass all geographic data
-'-------------------------------------------------------------------------------------------------------------------------------------------------------------------
-'We keep the following data are public, so we can make some checks on their content even after initialization
-'Geobases at country level
-Public T_Adm4 As BetterArray                     'Administrative boundaries for level 1 (admin1) and 2 (admin2)
+
+
 Public T_HistoGeo As BetterArray                 'Historic of Geo
-Public T_Concat As BetterArray                   'Binding everything for the concatenate for the Geo database
+Public sPlaceSelection As String
+Public T_HistoHF As BetterArray                  'Historic of health facility
 
 'Health facilities
-Public T_HF As BetterArray                       'Health Facility data in the geo base
-Public T_HistoHF As BetterArray                  'Historic of health facility
-Public T_ConcatHF   As BetterArray               'Health Facility concatenated
+Private T_Concat As BetterArray                   'Binding everything for the concatenate for the Geo database
+Private T_ConcatHF   As BetterArray               'Health Facility concatenated
 
-Public sPlaceSelection As String
 
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 'This sub loads the geodata from the Geo form to on form in the linenist. There are two types of data:
@@ -26,14 +22,12 @@ Public sPlaceSelection As String
 Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo = 0 or Facility = 1
     Dim sh As Worksheet
     Dim transValue As BetterArray
-    Dim i As Integer
     Dim geo As ILLGeo
 
     Set T_Concat = New BetterArray
     Set T_HistoGeo = New BetterArray
     Set transValue = New BetterArray
 
-    Set T_HF = New BetterArray
     Set T_ConcatHF = New BetterArray
     Set T_HistoHF = New BetterArray
     Set transValue = New BetterArray
@@ -44,16 +38,16 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
     BeginWork xlsapp:=Application
         
-    With ThisWorkbook.Worksheets(C_sSheetGeo)
+    With sh
     
         Select Case iGeoType
             'Load Geo informations
         Case 0
             'Add Caption for  each adminstrative leveles in the form
-            F_Geo.LBL_Adm1.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(1).Value
-            F_Geo.LBL_Adm2.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(2).Value
-            F_Geo.LBL_Adm3.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(3).Value
-            F_Geo.LBL_Adm4.Caption = .ListObjects(C_sTabAdm4).HeaderRowRange.Item(4).Value
+            F_Geo.LBL_Adm1.Caption = .ListObjects("T_ADM4").HeaderRowRange.Item(1).Value
+            F_Geo.LBL_Adm2.Caption = .ListObjects("T_ADM4").HeaderRowRange.Item(2).Value
+            F_Geo.LBL_Adm3.Caption = .ListObjects("T_ADM4").HeaderRowRange.Item(3).Value
+            F_Geo.LBL_Adm4.Caption = .ListObjects("T_ADM4").HeaderRowRange.Item(4).Value
                 
             DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin4")
             DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin3")
@@ -61,12 +55,12 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     
             'Before doing the whole all thing, we need to test if the T_Adm data is empty or not
                 
-            If (Not .ListObjects(C_sTabAdm4).DataBodyRange Is Nothing) And (Not .ListObjects("T_CONCAT").DataBodyRange Is Nothing) Then
+            If (Not .ListObjects("T_ADM4").DataBodyRange Is Nothing) Then
                     
-                'T_Adm4.FromExcelRange .ListObjects(C_sTabAdm4).DataBodyRange
+                'T_Adm4.FromExcelRange .ListObjects("T_ADM4").DataBodyRange
                 Set transValue = geo.GeoLevel(LevelAdmin1, CustomTypeGeo)
                 [F_Geo].[LST_Adm1].List = transValue.Items
-                T_Concat.FromExcelRange .ListObjects("T_CONCAT").ListColumns(1).DataBodyRange
+                T_Concat.FromExcelRange .ListObjects("T_ADM4").ListColumns("adm4_concat").DataBodyRange
                 T_Concat.Sort
                 '------ Once the concat is created, add it to the list in the form
                 [F_Geo].LST_ListeAgre.List = T_Concat.Items
@@ -85,28 +79,22 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     
         Case 1
             'Adding caption for each admnistrative levels in the form of the health facility
-            F_Geo.LBL_Adm1F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(4).Value
-            F_Geo.LBL_Adm2F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(3).Value
-            F_Geo.LBL_Adm3F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(2).Value
-            F_Geo.LBL_Adm4F.Caption = .ListObjects(C_sTabHF).HeaderRowRange.Item(1).Value
+            F_Geo.LBL_Adm1F.Caption = .ListObjects("T_HF").HeaderRowRange.Item(4).Value
+            F_Geo.LBL_Adm2F.Caption = .ListObjects("T_HF").HeaderRowRange.Item(3).Value
+            F_Geo.LBL_Adm3F.Caption = .ListObjects("T_HF").HeaderRowRange.Item(2).Value
+            F_Geo.LBL_Adm4F.Caption = .ListObjects("T_HF").HeaderRowRange.Item(1).Value
     
             'Now health facility ----------------------------------------------------------------------------------------------------------
-            If (Not .ListObjects(C_sTabHF).DataBodyRange Is Nothing) Then
+            If (Not .ListObjects("T_HF").DataBodyRange Is Nothing) Then
     
-                T_HF.FromExcelRange .ListObjects(C_sTabHF).DataBodyRange
                 transValue.Clear
                 'unique admin 1
-                transValue.FromExcelRange .ListObjects(C_sTabHF).ListColumns(4).DataBodyRange
+                transValue.FromExcelRange .ListObjects("T_HF").ListColumns(4).DataBodyRange
                 Set transValue = GetUniqueBA(transValue)
                 ' ----- Fill the list of the admins with the unique values of adm1
                 [F_Geo].[LST_AdmF1].List = transValue.Items
-                'Creating the concatenate for the Health facility
-                For i = T_HF.LowerBound To T_HF.UpperBound
-                    transValue.Clear
-                    transValue.Items = T_HF.Item(i)
-                    T_ConcatHF.Item(i) = transValue.ToString(Separator:="|", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
-                Next i
-                    
+                
+                T_ConcatHF.FromExcelRange .ListObjects("T_HF").ListColumns("hf_concat").DataBodyRange
                 T_ConcatHF.Sort
                 '---- Once the concat is created, add it to the HF form using the list for the concat part
                 [F_Geo].LST_ListeAgreF.List = T_ConcatHF.Items
@@ -182,7 +170,7 @@ Sub ShowLstF2(sPlace As String)
     Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
 
     'Just filter and show
-    Set T_Aff = FilterLoTable(Wksh.ListObjects(C_sTabHF), 4, sPlace, returnIndex:=3)
+    Set T_Aff = FilterLoTable(Wksh.ListObjects("T_HF"), 4, sPlace, returnIndex:=3)
     Set T_Aff = GetUniqueBA(T_Aff)
 
     [F_Geo].TXT_Msg.Value = sPlace
@@ -231,7 +219,7 @@ Sub ShowLstF3(sAdm2 As String)
     Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
     sAdm1 = [F_Geo].LST_AdmF1.Value
 
-    Set T_Aff = FilterLoTable(Wksh.ListObjects(C_sTabHF), 4, sAdm1, 3, sAdm2, returnIndex:=2)
+    Set T_Aff = FilterLoTable(Wksh.ListObjects("T_HF"), 4, sAdm1, 3, sAdm2, returnIndex:=2)
 
     [F_Geo].TXT_Msg.Value = [F_Geo].LST_AdmF2.Value & " | " & [F_Geo].LST_AdmF1.Value
     Set T_Aff = GetUniqueBA(T_Aff)
@@ -258,7 +246,7 @@ Sub ShowLst4(sAdm3 As String)
     [F_Geo].TXT_Msg.Value = [F_Geo].LST_Adm1.Value & " | " & [F_Geo].LST_Adm2.Value & " | " & [F_Geo].LST_Adm3.Value
 
     Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
-    Set T_Aff = FilterLoTable(Wksh.ListObjects(C_sTabAdm4), 1, sAdm1, 2, sAdm2, 3, sAdm3, returnIndex:=4)
+    Set T_Aff = FilterLoTable(Wksh.ListObjects("T_ADM4"), 1, sAdm1, 2, sAdm2, 3, sAdm3, returnIndex:=4)
 
 
     If T_Aff.Length > 0 Then
@@ -281,7 +269,7 @@ Sub ShowLstF4(sAdm3 As String)
     sAdm2 = [F_Geo].LST_AdmF2.Value
 
     Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
-    Set T_Aff = FilterLoTable(Wksh.ListObjects(C_sTabHF), 4, sAdm1, 3, sAdm2, 2, sAdm3, returnIndex:=1)
+    Set T_Aff = FilterLoTable(Wksh.ListObjects("T_HF"), 4, sAdm1, 3, sAdm2, 2, sAdm3, returnIndex:=1)
 
     [F_Geo].TXT_Msg.Value = [F_Geo].LST_AdmF3.Value & " | " & [F_Geo].LST_AdmF2.Value & " | " & [F_Geo].LST_AdmF1.Value
 

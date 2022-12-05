@@ -104,7 +104,7 @@ Function GetTransData() As BetterArray
 
     With ThisWorkbook.Worksheets(C_sParamSheetTranslation)
         .Visible = xlSheetHidden
-        TransData.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
+        TransData.FromExcelRange .ListObjects(1).Range
         .Visible = xlSheetVeryHidden
     End With
 

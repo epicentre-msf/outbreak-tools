@@ -511,10 +511,11 @@ Public Sub UpdateFilterTables()
                 endCol = Lo.Range.Columns.Count
 
                 If Not Lo.DataBodyRange Is Nothing Then
-                    Set filtWksh = ThisWorkbook.Worksheets(C_sFiltered & .Name)
+                    Set filtWksh = ThisWorkbook.Worksheets(.Cells(1, 5).Value)
 
-
-                    DeleteLoDataBodyRange filtWksh.ListObjects(1)
+                    On Error Resume Next
+                        filtWksh.ListObjects(1).DataBodyRange.Delete
+                    On Error GoTo ErrUpdate
 
                     rowCounter = C_eStartLinesLLData + 1 + Lo.DataBodyRange.Rows.Count
 
@@ -559,6 +560,20 @@ ErrUpdate:
     MsgBox TranslateLLMsg("MSG_ErrUpdate"), vbCritical + vbOKOnly
     EndWork xlsapp:=Application
 End Sub
+
+Sub UpdateSpTables()
+    Const SPATIALSHEET As String = "spatial_tables__"
+    Dim sp As ILLSpatial
+    Dim sh As Worksheet
+    
+    Set sh = ThisWorkbook.Worksheets(SPATIALSHEET)
+    Set sp = LLSpatial.Create(sh)
+
+    UpdateFilterTables
+    sp.Update
+End Sub
+
+
 
 'Clear All the filters on current sheet =============================================================================
 

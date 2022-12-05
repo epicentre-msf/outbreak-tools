@@ -196,7 +196,7 @@ Private Sub LoadFolder()
         Folder = SelectFolderOnWindows()
     ElseIf OS() = "Mac" Then
         'We are on Mac, need to test the version of excel running
-        If Val(Application.Version) > 14 Then
+        If val(Application.Version) > 14 Then
             Folder = SelectFolderOnMac()
         End If
     End If
@@ -208,7 +208,7 @@ Private Sub LoadFile(ByVal filters As String)
         File = SelectFileOnWindows(filters)
     ElseIf OS() = "Mac" Then
         'We are on Mac, need to test the version of excel running
-        If Val(Application.Version) > 14 Then
+        If val(Application.Version) > 14 Then
             File = SelectFileOnMac(filters)
         End If
     End If

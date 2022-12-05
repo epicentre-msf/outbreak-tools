@@ -23,7 +23,7 @@ End Type
 Private this As TDropdownLists
 Private Const CLASSNAME As String = "DropdownLists"
 
-Public Function Create(outsh) As IDropdownLists
+Public Function Create(ByVal outsh As Worksheet) As IDropdownLists
     'Errors
     If outsh Is Nothing Then ThrowError "Dropdown worksheet not initialised"
   
