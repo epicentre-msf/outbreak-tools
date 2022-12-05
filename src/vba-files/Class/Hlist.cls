@@ -292,7 +292,11 @@ Public Sub Build()
         
         Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
         
+        'On Error Resume Next
+        .Calculate
         Lo.Resize rng
+        'On Error GoTo 0
+        
         design.ApplyFormat Lo, scope:=HListTable
         
         'Format the header range
@@ -309,6 +313,11 @@ Public Sub Build()
         'Define listObject on the filtered sheet
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = FILTEREDPREFIX & tableName
     End With
+
+    'Add the name of the filtered worksheet to the HList
+    Set rng = sh.Cells(1, 5)
+    rng.Value = filtsh.Name
+    design.ApplyFormat rng, scope:=LinelistHiddenCell
 
     'Transfert code to the worksheet
     TransferCodeWksh

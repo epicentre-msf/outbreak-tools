@@ -23,6 +23,7 @@ Public Enum TemporarySheetTypes
     TemporarySheetList = 4
     TemporarySheetImport = 5
     TemporarySingle = 6
+    TemporarySpatial = 7
 End Enum
 
 Private Type TLinelistSpecs
@@ -184,6 +185,8 @@ Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As St
         TemporarySheetName = "import_temp__"
     Case TemporarySingle
         TemporarySheetName = "temp__"
+    Case TemporarySpatial
+        TemporarySheetName = "spatial_tables__"
     End Select
 End Property
 
@@ -328,6 +331,7 @@ Private Sub Prepare()
                              EXPORTSHEET, TemporarySheetName(TemporarySingle), TemporarySheetName(TemporarySheetList), _
                              TemporarySheetName(TemporarySheetDebug), TemporarySheetName(TemporarySheetMetadata), _
                              TemporarySheetName(TemporarySheetAnalysis), TemporarySheetName(TemporarySheetImport), _
+                             TemporarySheetName(TemporarySpatial), _
                              msgTrads.TranslatedValue("LLSHEET_Admin"), msgTrads.TranslatedValue("LLSHEET_Analysis"), _
                              msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), msgTrads.TranslatedValue("LLSHEET_TemporalAnalysis")
 
@@ -497,18 +501,25 @@ Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
 
     For counter = sheetsArray.LowerBound To sheetsArray.UpperBound
         sheetName = sheetsArray.Item(counter)
-        If Not sheetExists(specswkb, sheetName) Then ThrowErrorUnableInstanciate " Worksheet " & sheetName & " Not found!"
+        sheetExists specswkb, sheetName
     Next
 End Sub
 
+'Chek if a sheet really exists
+
 'Check if a sheet Exists
-Private Function sheetExists(ByVal specswkb As Workbook, ByVal sheetName As String) As Boolean
+Private Sub sheetExists(ByVal specswkb As Workbook, ByVal sheetName As String)
     Dim sh As Worksheet                          'Just try to set the workbook if it fails it is closed
+    Dim checkExists As Boolean
+    
     On Error Resume Next
     Set sh = specswkb.Worksheets(sheetName)
-    sheetExists = (Not sh Is Nothing)
+    checkExists = (Not sh Is Nothing)
     On Error GoTo 0
-End Function
+
+    If Not checkExists Then ThrowError " Worksheet " & sheetName & " Not found!"
+
+End Sub
 
 Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
     Dim rng As Range

@@ -230,8 +230,30 @@ Private Sub PushGraph()
     Set graphSpecsTable = New BetterArray
     graphSpecsTable.LowerBound = 1
 
-    graphSpecsTable.Push this.chartSeriesName, this.chartSeriesType, this.chartSeriesPosition, _
-                         this.chartSeriesLabel, this.chartColumnCategoriesLabel
+
+
+    'You need to define the five bette arrays because of (memory management issues)
+    Dim tabSeries As BetterArray
+    Dim tabType As BetterArray
+    Dim tabPos As BetterArray
+    Dim tabLabel As BetterArray
+    Dim tabCatLabel As BetterArray
+
+    Set tabSeries = New BetterArray
+    Set tabType = New BetterArray
+    Set tabPos = New BetterArray
+    Set tabLabel = New BetterArray
+    Set tabCatLabel = New BetterArray
+
+    Set tabSeries = this.chartSeriesName.Clone()
+    Set tabType = this.chartSeriesType.Clone()
+    Set tabPos = this.chartSeriesPosition.Clone()
+    Set tabLabel = this.chartSeriesLabel.Clone()
+    Set tabCatLabel = this.chartColumnCategoriesLabel.Clone()
+
+
+    graphSpecsTable.Push tabSeries, tabType, tabPos, _
+                         tabLabel, tabCatLabel
   
     'Higher Level, for one graph
     If this.graphsChartsSpecs Is Nothing Then
@@ -331,7 +353,6 @@ Public Sub CreateSeries()
         Set mGraphIds = New BetterArray
         Set mGraphIds = GraphIdsList()
         For counter = mGraphIds.LowerBound To mGraphIds.UpperBound
-            ClearSeries
             graphId = mGraphIds.Item(counter)
             DefineGraphSpecs graphId
             PushGraph                            'push the five tables to the nested BetterArray graphList
@@ -406,7 +427,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
     Dim counter As Long
     Dim lData As ILinelistSpecs
     Dim specs As ITablesSpecs
-    Dim Val As String
+    Dim val As String
     Dim tabId As String
     Dim secId As String
     Dim colName As String
@@ -440,28 +461,33 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
     Set typeList = GraphValues(colName:="type", graphId:=graphId)
     Set choiceList = GraphValues(colName:="choices", graphId:=graphId)
 
+    'Clear al the actual series
+    ClearSeries
+
     'Convert all itmes to table id
     For counter = idsList.LowerBound To idsList.UpperBound
         
-        Val = idsList.Item(counter)
-        Val = Application.WorksheetFunction.Trim(Replace(LCase(Val), "series", vbNullString))
+        val = idsList.Item(counter)
+        val = Application.WorksheetFunction.Trim(Replace(LCase(val), "series", vbNullString))
 
-        Set tabRng = tsLo.ListRows(CLng(Val)).Range
+        Set tabRng = tsLo.ListRows(CLng(val)).Range
         Set specs = TablesSpecs.Create(hRng, tabRng, lData)
         tabId = specs.TableId
         secId = specs.TableSectionId
         choiValue = choiceList.Item(counter)
     
         labName = TimeSeriesColumnName(choiValue, tabId)
-        colName = Replace(labName, "LABEL", "VALUES")
+        colName = IIf(choiValue = "Total", "TOTAL_COL_VALUES_" & tabId, Replace(labName, "LABEL", "VALUES"))
 
         If (percList.Item(counter) = "percentages") Then
             colName = IIf(choiValue = "Total", Replace(labName, "COL", "PERC"), Replace(labName, "LABEL", "PERC"))
         End If
+        
 
-
-        PushSeries colName, typeList.Item(counter), posList.Item(counter)
-        PushLabels "ROW_CATEGORIES_" & secId, labName
+        If colName <> vbNullString Then
+            PushSeries colName, typeList.Item(counter), posList.Item(counter)
+            PushLabels "ROW_CATEGORIES_" & secId, labName
+        End If
         
     Next
 
@@ -476,8 +502,10 @@ Private Function TimeSeriesColumnName(ByVal choiValue As String, ByVal tabId As 
 
     Set sh = Wksh()
 
+    If choiValue = vbNullString Then Exit Function
+
     If choiValue = "Total" Then
-        TimeSeriesColumnName = "TOTAL_COL_VALUES_" & tabId
+        TimeSeriesColumnName = "TOTAL_LABEL_COL_" & tabId
         Exit Function
     End If
   

@@ -362,6 +362,8 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
     Dim endCol As Long
     Dim varPositionIndex As Long
     Dim varPosition As Long
+    Dim controlDetailsIndex As Long
+    Dim formulaValue As String
 
     Dim counter As Long
 
@@ -373,6 +375,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
     subSectionIndex = ColumnIndex("sub section")
     statusIndex = ColumnIndex("status")
     varPositionIndex = ColumnIndex("column index")
+    controlDetailsIndex = ColumnIndex("control details")
 
     EndRow = DictEndRow
     endCol = DictEndColumn
@@ -401,7 +404,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
 
             'Insert the others geo lines
             geoRowIndex = geoRowIndex + 1
-            For counter = 5 To 2 Step -1
+            For counter = 11 To 2 Step -1
                 .Rows(geoRowIndex).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                 Set pastedGeoRng = .Range(.Cells(geoRowIndex, StartColumn), .Cells(geoRowIndex, endCol))
                 pastedGeoRng.Value = geoRng.Value 'Paste dictionary values
@@ -411,15 +414,42 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
                 .Cells(geoRowIndex, varPositionIndex).Value = varPosition + counter - 1
             Next
             
-            geoRowIndex = geoRowIndex + 3
+            geoRowIndex = geoRowIndex + 2
             
-            'Hide the pcode when everything is done (after the admin names)
-            .Cells(geoRowIndex, statusIndex).Value = "hidden"
-            .Cells(geoRowIndex, controlIndex).Value = "geo_pcode"
-            .Cells(geoRowIndex, mainLabelIndex).Value = "geo_pcode"
-            .Cells(geoRowIndex, varNameIndex).Value = "pcode" & "_" & varName
+            'Format the pcodes
+            For counter = 1 To 4
+
+                'Hide the pcode when everything is done (after the admin names)
+                .Cells(geoRowIndex + counter, statusIndex).Value = "hidden"
+                .Cells(geoRowIndex + counter, controlIndex).Value = "formula"
+                .Cells(geoRowIndex + counter, mainLabelIndex).Value = "geo_pcode_adm" & counter
+                .Cells(geoRowIndex + counter, varNameIndex).Value = "pcode" & "_" & "adm" & counter & "_" & varName
+
+                'Formula for pcode
+                formulaValue = "INDEX(T_ADM" & counter & _
+                ", MATCH(concat_adm" & counter & "_" & varName & _
+                ", adm" & counter & "_concat, 0), " & (counter + 2) & ")"
+                
+                .Cells(geoRowIndex + counter, controlDetailsIndex) = "IF(ISNA(" & formulaValue & "), " & Chr(34) & Chr(34) & ", " & formulaValue & ")"
+            Next
+
+            geoRowIndex = geoRowIndex + 4
+
+            'Formulas for concatenate values
+            For counter = 1 To 4
+
+                'Hide the pcode when everything is done (after the admin names)
+                .Cells(geoRowIndex + counter, statusIndex).Value = "hidden"
+                .Cells(geoRowIndex + counter, controlIndex).Value = "formula"
+                .Cells(geoRowIndex + counter, mainLabelIndex).Value = "geo_concat_adm" & counter
+                .Cells(geoRowIndex + counter, varNameIndex).Value = "concat" & "_" & "adm" & counter & "_" & varName
+
+                'Formula for pcode
+                .Cells(geoRowIndex + counter, controlDetailsIndex) = "GEOCONCAT(adm1_" & varName & ", " & counter & ")"
+
+            Next
             
-            geoRowIndex = geoRowIndex + 1
+            geoRowIndex = geoRowIndex + 5
 
             Set dictRng = .Range(.Cells(geoRowIndex, controlIndex), .Cells(EndRow, controlIndex))
         Loop
@@ -433,6 +463,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
             varPosition = .Cells(geoRowIndex, varPositionIndex).Value
             
             'Just insert one line for the pcode of health facility
+            .Cells(geoRowIndex, varNameIndex).Value = "hf_" & varName
              geoRowIndex = geoRowIndex + 1
              .Rows(geoRowIndex).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
              Set pastedGeoRng = .Range(.Cells(geoRowIndex, StartColumn), .Cells(geoRowIndex, endCol))
@@ -440,11 +471,17 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
              
              'Change the pcode and others value
             .Cells(geoRowIndex, statusIndex).Value = "hidden"
-            .Cells(geoRowIndex, controlIndex).Value = "hf_pcode"
+            .Cells(geoRowIndex, controlIndex).Value = "formula"
             .Cells(geoRowIndex, mainLabelIndex).Value = "hf_pcode"
-            .Cells(geoRowIndex, varNameIndex).Value = "pcode" & "_" & varName
+            .Cells(geoRowIndex, varNameIndex).Value = "hf_pcode" & "_" & varName
             'Column index
             .Cells(geoRowIndex, varPositionIndex).Value = varPosition + 1
+            
+            formulaValue = "INDEX(T_HF" & _
+                ", MATCH(hf_" & varName & _
+                ", hf" & "_concat, 0)," & "5 )"
+                
+            .Cells(geoRowIndex, controlDetailsIndex) = "IF(ISNA(" & formulaValue & "), " & Chr(34) & Chr(34) & ", " & formulaValue & ")"
               
             geoRowIndex = geoRowIndex + 1
             Set dictRng = .Range(.Cells(geoRowIndex, controlIndex), .Cells(EndRow, controlIndex))
@@ -567,7 +604,7 @@ Private Sub AppendColumnIndex()
             Else
                 prevControl = .Cells(counter - 1, controlIndex).Value
                 'Old sheet name
-                varOrder = Switch(prevControl = "geo", varOrder + 5, prevControl = "hf", varOrder + 2, True, varOrder + 1)
+                varOrder = Switch(prevControl = "geo", varOrder + 11, prevControl = "hf", varOrder + 2, True, varOrder + 1)
             End If
             .Cells(counter, endCol + 1).Value = varOrder 'variable order
         Next

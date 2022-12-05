@@ -48,12 +48,12 @@ Public Property Get GeoNames(ByVal admname As String) As String: End Property
 
 'Get the Population of one administrative level (only for geoType)
 Public Property Get Population(ByVal adminLevel As GeoLevelOrHF, _
-                               ByVal adminNames As Variant) As String
+                               ByVal cellRng As Range) As String
 End Property
 
 'Get the Population of one administrative level (only for geoType)
-Public Property Get pcode(ByVal adminLevel As GeoLevelOrHF, _
-                          ByVal adminNames As Variant) As String
+Public Property Get Pcode(ByVal adminLevel As GeoLevelOrHF, _
+                          ByVal cellRng As Range) As String
 End Property
 
 'Translation

@@ -371,46 +371,100 @@ Public Function InfoUser(userDate As Long, actualDate As Long, Optional infotype
     
 End Function
 
-
 'HF pcode
-Public Function HF_PCODE(concatVal As String) As Variant
+Public Function HFPCODE(cellRng As Range) As Variant
+    Application.Volatile
     
-    Dim tabl As BetterArray
+    If ActiveSheet.Cells(1, 3).Value <> "HList" Then Exit Function
+    
     Dim geo As ILLGeo
-    Set tabl = New BetterArray
-    tabl.LowerBound = 1
-    tabl.Items = Split(concatVal, " | ")
-    tabl.Reverse
     Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
-    HF_PCODE = geo.pcode(LevelHF, tabl)
-    
+    HFPCODE = geo.Pcode(LevelHF, cellRng)
 End Function
 
 'Geo Pcode
-Public Function GEO_PCODE(admin1Val As String, Optional admin2Val As String = vbNullString, Optional Admin3Val As String = vbNullString, Optional admin4Val As String = vbNullString) As String
+Public Function GEOPCODE(cellRng As Range, Level As Byte) As String
+    Application.Volatile
+    
+    If ActiveSheet.Cells(1, 3).Value <> "HList" Then Exit Function
    
-    Dim tabl As BetterArray
-    Dim level As Byte
     Dim geo As ILLGeo
-    Dim pcodeVal As String
-    
-    Set tabl = New BetterArray
-    tabl.LowerBound = 1
-    
-    If admin4Val <> vbNullString Then tabl.Push admin4Val
-    If Admin3Val <> vbNullString Then tabl.Push Admin3Val
-    If admin2Val <> vbNullString Then tabl.Push admin2Val
-    If admin1Val <> vbNullString Then tabl.Push admin1Val
-    
-    level = CByte(tabl.Length - 1)
     Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
-    tabl.Reverse
+    GEOPCODE = geo.Pcode(Level - 1, cellRng) '- 1 because 0 == admin1
     
-    If tabl.Length = 1 Then
-        GEO_PCODE = geo.pcode(level, admin1Val)
-    ElseIf tabl.Length > 1 Then
-        GEO_PCODE = geo.pcode(level, tabl)
-    End If
+End Function
+
+
+Public Function GEOCONCAT(cellRng As Range, Level As Byte) As String
+    Application.Volatile
     
+    Dim concatValue As String
+
+    Select Case Level
+    
+    Case 1
+
+        concatValue = cellRng.Value
+
+    Case 2
+
+        concatValue = cellRng.Offset(, 1).Value & " | " & cellRng.Value
+
+    Case 3
+
+        concatValue = cellRng.Offset(, 2).Value & " | " & cellRng.Offset(, 1).Value & " | " & cellRng.Value
+
+    Case 4
+
+        concatValue = cellRng.Offset(, 3).Value & " | " & cellRng.Offset(, 2).Value & " | " & cellRng.Offset(, 1).Value & " | " & cellRng.Value
+
+    Case Else
+
+        concatValue = cellRng.Value
+
+    End Select
+
+    GEOCONCAT = concatValue
+End Function
+
+Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varName As String) As String
+
+    Dim geo As ILLGeo
+    Dim sp As ILLSpatial
+    Dim adminName As String
+    Dim sh As Worksheet
+
+    Set sh = ThisWorkbook.Worksheets("Geo")
+    Set geo = LLGeo.Create(sh)
+
+    Set sh = ThisWorkbook.Worksheets("spatial_tables__")
+    Set sp = LLSpatial.Create(sh)
+
+    Select Case adminLevel
+
+    Case geo.GeoNames("adm1_name")
+    
+        adminName = "adm1"
+        
+    Case geo.GeoNames("adm2_name")
+    
+        adminName = "adm2"
+        
+    Case geo.GeoNames("adm3_name")
+    
+        adminName = "adm3"
+        
+    Case geo.GeoNames("adm4_name")
+    
+        adminName = "adm4"
+        
+    Case Else
+    
+        adminName = "adm1"
+        
+    End Select
+
+    FindTopAdmin = sp.FindTopValue(adminName, adminOrder, varName)
+
 End Function
 

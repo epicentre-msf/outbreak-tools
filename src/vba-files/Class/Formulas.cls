@@ -401,14 +401,14 @@ Public Property Get ParsedAnalysisFormula(formCond As IFormulaCondition, _
                                                   ClosingDelimiter:="", QuoteStrings:=False)
 End Property
 
-Private Function Quoted(ByVal Val As String)
-    Quoted = Chr(34) & Val & Chr(34)
+Private Function Quoted(ByVal val As String)
+    Quoted = Chr(34) & val & Chr(34)
 End Function
 
-Private Function ClearCountIf(ByVal Val As String)
+Private Function ClearCountIf(ByVal val As String)
     Dim cleared As String
-    cleared = Replace(Val, Quoted("=") & "&", vbNullString)
-    cleared = Replace(Val, "=", vbNullString)
+    cleared = Replace(val, Quoted("=") & "&", vbNullString)
+    cleared = Replace(val, "=", vbNullString)
     cleared = Replace(cleared, Chr(34) & Chr(34) & Chr(34) & Chr(34), Chr(34) & Chr(34))
     cleared = Replace(cleared, "<>", "######")
     cleared = IIf(InStr(1, cleared, "<") > 0, Replace(cleared, "<", Quoted("<=") & " & "), cleared)
