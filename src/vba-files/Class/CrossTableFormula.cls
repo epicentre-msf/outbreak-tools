@@ -591,6 +591,11 @@ Private Sub AddFormulas()
                 Set rng = .Range("INFO_END_DATE_" & tabId)
                 rng.formula = "= InfoUser(USER_END_DATE_" & tabId & ", END_DATE_" & tabId & ", 2)"
 
+                Set rng = .Range("INFO_ANA_PERIOD_" & tabId)
+
+                rng.Formula = "= RNG_AnaPeriod & " & " PLAGE_VALUE(START_DATE_" & tabId & "," & "END_DATE_" & tabId & ")"
+                
+
                 On Error Resume Next
 
                 With .Range("TIME_UNIT_" & tabId).validation

@@ -575,6 +575,9 @@ Private Sub AddHeader()
                 'Ranges for start and end dates and for minimum and maximum dates (for validations)
                 Set rng = .Range("SECTION_" & tabId)
 
+                'Analysis Period Date
+                rng.Cells(6, 1).Name = "INFO_ANA_PERIOD_" & tabId
+
                 'Start Date
                 rng.Cells(3, 3).Value = trans.TranslatedValue("MSG_StartDate")
                 rng.Cells(3, 3).Name = "START_DATE_LABEL_" & tabId
@@ -611,10 +614,13 @@ Private Sub AddHeader()
                 cellRng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Month")
                 cellRng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Quarter")
                 cellRng.Cells(5, 1).Value = trans.TranslatedValue("MSG_Year")
-                .Range(.Cells(1, rng.Column), .Cells(5, rng.Column)).Name = "TIME_UNIT_LIST"
+                .Range(.Cells(1, cellRng.Column), .Cells(5, cellRng.Column)).Name = "TIME_UNIT_LIST"
                 .Range("TIME_UNIT_LIST").Font.color = vbWhite
                 .Range("TIME_UNIT_LIST").Interior.color = vbWhite
                 .Range("TIME_UNIT_LIST").Locked = True
+
+                'Add week
+                .Range("TIME_UNIT_" & tabId).Value = cellRng.Cells(2, 1).Value
             End If
 
         Case TypeSpatial
@@ -946,6 +952,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                         rngName = rngTable.Item(counter) & tabId
                         Set rng = .Range(rngName)
                         DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+                        DesignFormat.ApplyFormat rng, scope := AnalysisDateCell
                     Next
                 End If
             End If
@@ -1023,13 +1030,14 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
         'Informations Cells (Info on start date, info on end date)
         rngTable.Clear
-        rngTable.Push "INFO_START_DATE_", "INFO_END_DATE_"
+        rngTable.Push "INFO_START_DATE_", "INFO_END_DATE_", "INFO_ANA_PERIOD_"
         
         For counter = rngTable.LowerBound To rngTable.UpperBound
             rngName = rngTable.Item(counter) & tabId
             If RangeExists(rngName) Then
                 Set rng = .Range(rngName)
                 DesignFormat.ApplyFormat rng, scope:=AnalysisInfoCell
+                If InStr(1, rngName, "INFO_ANA_") > 0 Then   DesignFormat.ApplyFormat rng, scope:=AnalysisInfoCellLeft
             End If
         Next
 

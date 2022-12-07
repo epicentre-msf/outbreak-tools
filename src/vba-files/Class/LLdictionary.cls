@@ -404,7 +404,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
 
             'Insert the others geo lines
             geoRowIndex = geoRowIndex + 1
-            For counter = 11 To 2 Step -1
+            For counter = 12 To 2 Step -1
                 .Rows(geoRowIndex).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                 Set pastedGeoRng = .Range(.Cells(geoRowIndex, StartColumn), .Cells(geoRowIndex, endCol))
                 pastedGeoRng.Value = geoRng.Value 'Paste dictionary values
@@ -446,7 +446,6 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
 
                 'Formula for pcode
                 .Cells(geoRowIndex + counter, controlDetailsIndex) = "GEOCONCAT(adm1_" & varName & ", " & counter & ")"
-
             Next
             
             geoRowIndex = geoRowIndex + 5
@@ -456,6 +455,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
         
         'Hf Lines
         'On Hf lines I only insert the pcode value
+        Set dictRng = DataRange("control")
         Do While (Not dictRng.Find(What:="hf", LookAt:=xlWhole, MatchCase:=True) Is Nothing)
             geoRowIndex = dictRng.Find(What:="hf", LookAt:=xlWhole, MatchCase:=True).Row
             Set geoRng = .Range(.Cells(geoRowIndex, StartColumn), .Cells(geoRowIndex, endCol))
@@ -604,7 +604,7 @@ Private Sub AppendColumnIndex()
             Else
                 prevControl = .Cells(counter - 1, controlIndex).Value
                 'Old sheet name
-                varOrder = Switch(prevControl = "geo", varOrder + 11, prevControl = "hf", varOrder + 2, True, varOrder + 1)
+                varOrder = Switch(prevControl = "geo", varOrder + 12, prevControl = "hf", varOrder + 2, True, varOrder + 1)
             End If
             .Cells(counter, endCol + 1).Value = varOrder 'variable order
         Next

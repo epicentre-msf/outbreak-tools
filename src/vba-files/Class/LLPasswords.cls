@@ -61,7 +61,7 @@ Private Property Get InDebugMode() As Boolean
 End Property
 
 'protect
-Private Sub protect(Optional ByVal sheetName As String = "_active")
+Private Sub Protect(Optional ByVal sheetName As String = "_active")
 
     Dim pwd As String
     Dim sh As Worksheet

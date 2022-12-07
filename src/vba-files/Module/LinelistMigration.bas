@@ -48,49 +48,47 @@ End Sub
 Sub ClearData()
 
     Dim Wksh As Worksheet
-    Dim sSheetType As String
-    Dim iLastRow As Long
-    Dim i As Long
+    Dim sheetType As String
+    Dim lastRow As Long
+    Dim counter As Long
+    Dim wb As Workbook
+    Dim pass As ILLPasswords
+
 
     BeginWork xlsapp:=Application
     Application.EnableEvents = False
+    
+    Set wb = ThisWorkbook
+    Set pass = LLPasswords.Create(wb.Worksheets("Password"))
 
 
-    For Each Wksh In ThisWorkbook.Worksheets
-        sSheetType = FindSheetType(Wksh.Name)
-        Select Case sSheetType
+    For Each Wksh In wb.Worksheets
+        sheetType = Wksh.Cells(1, 3).Value
 
-        Case C_sDictSheetTypeLL
-            Wksh.UnProtect ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value
+        Select Case sheetType
 
-            With Wksh.ListObjects(SheetListObjectName(Wksh.Name))
+        Case "HList" 'Delete the databodyrange of the HList linelist
+            pass.UnProtect wksh.Name
 
-                If Not .DataBodyRange Is Nothing Then
-                    'Delete the data body range
-                    .DataBodyRange.Delete
-                End If
+            With Wksh.ListObjects(1)
+                If Not .DataBodyRange Is Nothing Then .DataBodyRange.Delete
             End With
 
-            Wksh.protect Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value, _
-        DrawingObjects:=True, Contents:=True, Scenarios:=True, _
-        AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
-        AllowFormattingColumns:=True
+            pass.Protect Wksh.Name
 
-        Case C_sDictSheetTypeAdm
-            'Find Last row of Adm Data
+        Case "VList"
+            'Find Last row of Adm Data and clear the cells
             With Wksh
-                iLastRow = .Cells(.Rows.Count, 2).End(xlUp).Row
-                For i = C_eStartLinesAdmData To iLastRow
-                    .Cells(i, C_eStartColumnAdmData + 3).Value = vbNullString
+                lastRow = .Cells(.Rows.Count, 4).End(xlUp).Row
+                For counter = 4 To lastRow
+                    .Cells(counter, 5).Value = vbNullString
                 Next
             End With
-
-        Case Else
 
         End Select
     Next
 
-    ThisWorkbook.Save
+    wb.Save
     EndWork xlsapp:=Application
     Application.EnableEvents = True
 
@@ -113,7 +111,7 @@ Function LLhasData() As Boolean
     Set WkbLL = ThisWorkbook
 
     For Each shLL In WkbLL.Worksheets
-        If FindSheetType(shLL.Name) = C_sDictSheetTypeLL Then
+        If shLL.Cells(1, 3).Value = "HList" Then
 
             If FindLastRow(shLL) > C_eStartLinesLLData + 2 Then
                 hasData = True
@@ -224,9 +222,9 @@ End Function
 'Two different procedures for sheets of type Linelist and those of type Adm
 
 
-Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean, ColumnIndexData As BetterArray, VarNamesData As BetterArray)
+Sub ImportSheetData(sheetName As String, shImp As Worksheet, hasData As Boolean, ColumnIndexData As BetterArray, VarNamesData As BetterArray)
 
-    Dim sSheetType As String                     'Sheet type (different procedures will apply)
+    Dim sheetType As String                     'Sheet type (different procedures will apply)
     Dim iLastRowImp As Long                      'LastRow (when needed for import sheet)
     Dim iLastColImp As Long                      'Last Column for Import data of Type LL
     Dim varControl As String                     'Import variable control
@@ -241,18 +239,21 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
 
     Dim rngImp As Range                          'Range in the Import sheet
     Dim rngLL As Range                           'Range in the LL sheet
+    Dim pass As ILLPasswords                      'Passwords for protection
 
     'First, sheet of type Adm
 
     Set WkbLL = ThisWorkbook                     'The workbook of Linelist
-    sSheetType = FindSheetType(sSheetName)
+    Set pass = LLPasswords.Create(WkbLL.Worksheets("PassWord"))
 
-    With WkbLL.Worksheets(sSheetName)
+    sheetType = WkbLL.Worksheets(sheetName).Cells(1, 3).Value
 
-        Select Case sSheetType
+    With WkbLL.Worksheets(sheetName)
+
+        Select Case sheetType
             'Import Data of Type Adm (No choice, we have to delete previous values)
 
-        Case C_sDictSheetTypeAdm
+        Case "VList"
             iLastRowImp = shImp.Cells(shImp.Rows.Count, 1).End(xlUp).Row
 
             For i = 2 To iLastRowImp             '2 because the first row is for headers
@@ -270,25 +271,25 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                     With ThisWorkbook.Worksheets(C_sSheetImportTemp)
                         k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
                         .Cells(k, 3).Value = sVal
-                        .Cells(k, 4).Value = sSheetName
+                        .Cells(k, 4).Value = sheetName
                     End With
 
                 End If
             Next
 
-        Case C_sDictSheetTypeLL
+        Case "HList"
 
             'Import Data on a Sheet of Type LL
 
             'First, un protect the sheet were we need to paste the data before proceeding
-            .UnProtect WkbLL.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value
+            pass.Unprotect sheetName
 
             'Last column of Import Data
             iLastColImp = shImp.Cells(1, shImp.Columns.Count).End(xlToLeft).Column
             iLastRow = C_eStartLinesLLData + 2
 
             If hasData Then
-                iLastRow = FindLastRow(WkbLL.Worksheets(sSheetName))
+                iLastRow = FindLastRow(WkbLL.Worksheets(sheetName))
             End If
 
             k = 1
@@ -325,19 +326,17 @@ Sub ImportSheetData(sSheetName As String, shImp As Worksheet, hasData As Boolean
                         k = .Cells(.Rows.Count, 3).End(xlUp).Row + 1
 
                         .Cells(k, 3).Value = sVal
-                        .Cells(k, 4).Value = sSheetName
+                        .Cells(k, 4).Value = sheetName
                     End With
 
                 End If
             Next
 
             'Update the list auto on imports
-            UpdateListAuto WkbLL.Worksheets(sSheetName)
-
-            .protect Password:=WkbLL.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value, _
-        DrawingObjects:=True, Contents:=True, Scenarios:=True, _
-        AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
-        AllowFormattingColumns:=True
+            UpdateListAuto WkbLL.Worksheets(sheetName)
+            'WkbLL.Worksheets(sheetName).Calculate
+            pass.Protect sheetName
+           
         End Select
     End With
 End Sub

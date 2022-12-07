@@ -67,6 +67,8 @@ Public Enum FormatScopes
     AdminLargeButton = 47
     AllLinelistSheet = 48
     HListSimpleHeaderCell = 49
+    AnalysisDateCell = 50
+    AnalysisInfoCellLeft = 51
 End Enum
 
 Public Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
