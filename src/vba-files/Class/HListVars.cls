@@ -283,6 +283,8 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
 
     'variable name
     cellRng.Offset(-1).Value = varName
+    'Name the cell range
+    cellRng.Offset(-2).Name = varName
 
     'variable note
     If varNote <> vbNullString Then

@@ -222,7 +222,6 @@ End Sub
 Public Sub EndWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean = True)
     xlsapp.ScreenUpdating = True
     xlsapp.DisplayAlerts = True
-    xlsapp.Calculation = xlCalculationAutomatic
     xlsapp.EnableAnimations = True
     xlsapp.DisplayStatusBar = bstatusbar
 End Sub
@@ -351,33 +350,61 @@ Sub SetValidation(oRange As Range, sValidList As String, sAlertType As Byte, Opt
     End With
 End Sub
 
-'Find The last on empty row of a sheet of type linelist
+'Find The last non empty row of a sheet of type linelist
 Function FindLastRow(shLL As Worksheet) As Long
 
-    Dim i As Long
-    Dim iLastRow As Long
-    Dim iLastCol As Long
-    Dim LoRng As Range
+    Dim counter As Long
+    Dim lastRow As Long
+    Dim lo As ListObject
+    Dim loRng As Range
+    Dim hRng As Range
+    Dim controlValue As String
     Dim destRng As Range
     Dim shTemp As Worksheet
+    Dim col As Long 'Column to check the number of rows on
 
-    FindLastRow = C_eStartLinesLLData + 2
-    iLastCol = shLL.Cells(C_eStartLinesLLData, Columns.Count).End(xlToLeft).Column
-    iLastRow = C_eStartLinesLLData + 1
+    Set lo = shLL.ListObjects(1)
+    Set hRng = lo.HeaderRowRange
+    Set shTemp = ThisWorkbook.Worksheets("temp__") 'temporary sheet for work
 
-    Set shTemp = ThisWorkbook.Worksheets(C_sSheetTemp)
-    Set LoRng = shLL.ListObjects(SheetListObjectName(shLL.Name)).Range
-    Set destRng = shTemp.Range(LoRng.Address)
+    'First copy the listObject data to the temporary sheet
+    'It is really not recommanded to unlist the listobject to get the used range of
+    'the worksheet (a lot of formulas rely on this listobject, unlisting will completly break all the links)
+    'so we need another approach to find the last row
 
-    destRng.Value = LoRng.Value
+    '- Copy the range to a temporary sheet
+    '- Count the number of rows by removing the formula columns
 
-    For i = 1 To iLastCol
-        If iLastRow < shTemp.Cells(Rows.Count, i).End(xlUp).Row Then iLastRow = shTemp.Cells(Rows.Count, i).End(xlUp).Row
-    Next
+    shTemp.Cells.Clear
+    lastRow = hRng.Row
 
-    iLastRow = iLastRow + 1
+    Set loRng = lo.Range
+    Set destRng = shTemp.Range(loRng.Address)
 
-    FindLastRow = iLastRow
+    'copy the value to the destination range in the temporary worksheet
+    destRng.Value = loRng.Value
+
+    'No need to compute the lastrow if the databodyrange does not exists, 
+    'in that case the last row is just the headerRow + 1
+
+    If Not lo.DataBodyRange Is Nothing Then
+
+        For counter = 1 To hRng.Cells.Count
+
+            controlValue = hRng.Cells(1, counter).Offset(-4).Value
+
+            If controlValue <> "formula" Then
+
+                col = hRng.Cells(1, counter).Column
+
+                'The test is done only on columns that are not formulas
+                If lastRow < shTemp.Cells(Rows.Count, col).End(xlUp).Row Then lastRow = shTemp.Cells(Rows.Count, col).End(xlUp).Row
+
+            End If
+        Next
+    End If
+
+    FindLastRow = lastRow + 1
     shTemp.Cells.Clear
 End Function
 

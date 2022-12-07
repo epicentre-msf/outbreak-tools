@@ -12,6 +12,7 @@ Public T_HistoHF As BetterArray                  'Historic of health facility
 'Health facilities
 Private T_Concat As BetterArray                   'Binding everything for the concatenate for the Geo database
 Private T_ConcatHF   As BetterArray               'Health Facility concatenated
+Private geo As ILLGeo 'The geo object is used in the entire module for filtering, for sorting and also for computing various things
 
 
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -22,7 +23,6 @@ Private T_ConcatHF   As BetterArray               'Health Facility concatenated
 Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo = 0 or Facility = 1
     Dim sh As Worksheet
     Dim transValue As BetterArray
-    Dim geo As ILLGeo
 
     Set T_Concat = New BetterArray
     Set T_HistoGeo = New BetterArray
@@ -34,8 +34,8 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     Set sh = ThisWorkbook.Worksheets("Geo")
     
     On Error GoTo ErrLoadGeo
-    
-    Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
+    Set geo = LLGeo.Create(sh)
+
     BeginWork xlsapp:=Application
         
     With sh
@@ -123,8 +123,10 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     Exit Sub
 
 ErrLoadGeo:
+    
     MsgBox TranslateLLMsg("MSG_ErrGeo"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
     EndWork xlsapp:=Application
+
     Exit Sub
 End Sub
 
@@ -140,13 +142,12 @@ Sub ShowLst2(sPlace As String)
     [F_Geo].LST_Adm3.Clear
     [F_Geo].LST_Adm4.Clear
     Dim T_Aff As BetterArray
-    Dim Wksh As Worksheet                        'Aff is for rendering filtered values withing the list
 
     Set T_Aff = New BetterArray
-    Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
+    Application.Cursor = xlNorthwestArrow
 
     'Search if the value exists in the 2 dimensional table T_Adm1 previously initialized
-    Set T_Aff = FilterLoTable(Wksh.ListObjects(C_sTabAdm2), 1, sPlace, returnIndex:=2)
+    Set T_Aff = geo.GeoLevel(LevelAdmin2, CustomTypeGeo, sPlace)
 
     [F_Geo].TXT_Msg.Value = sPlace
     'update if only next level is available
@@ -154,6 +155,7 @@ Sub ShowLst2(sPlace As String)
         [F_Geo].LST_Adm2.List = T_Aff.Items
     End If
 
+    Application.Cursor = xlDefault
 End Sub
 
 'Show second list for the facility
@@ -164,20 +166,18 @@ Sub ShowLstF2(sPlace As String)
     [F_Geo].LST_AdmF3.Clear
     [F_Geo].LST_AdmF4.Clear
     Dim T_Aff As BetterArray                     'Aff is for rendering filtered values withing the list
-    Dim Wksh As Worksheet
-
     Set T_Aff = New BetterArray
-    Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
+
+    Application.Cursor = xlNorthwestArrow
 
     'Just filter and show
-    Set T_Aff = FilterLoTable(Wksh.ListObjects("T_HF"), 4, sPlace, returnIndex:=3)
-    Set T_Aff = GetUniqueBA(T_Aff)
+    Set T_Aff = geo.GeoLevel(LevelAdmin2, CustomTypeHF, sPlace)
 
     [F_Geo].TXT_Msg.Value = sPlace
 
-    If T_Aff.Length > 0 Then
-        [F_Geo].LST_AdmF2.List = T_Aff.Items
-    End If
+    If T_Aff.Length > 0 Then  [F_Geo].LST_AdmF2.List = T_Aff.Items
+
+    Application.Cursor = xlDefault
 
 End Sub
 
@@ -190,19 +190,27 @@ Sub ShowLst3(sAdm2 As String)
 
     Dim sAdm1 As String                          'Selected admin 1
     Dim T_Aff As BetterArray
-    Dim Wksh As Worksheet
+    Dim adminNames As BetterArray
 
-    Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
+    Set adminNames = New BetterArray
+    adminNames.LowerBound = 1 'It is important to have 1 as lowerbound for the filterig
     sAdm1 = [F_Geo].LST_Adm1.Value
 
+    Application.Cursor = xlNorthwestArrow
+
+    'add admin 1 and admin 2 for filtering
+    adminNames.Push sAdm1, sAdm2
+
     'Just filter and show
-    Set T_Aff = FilterLoTable(Wksh.ListObjects(C_sTabAdm3), 1, sAdm1, 2, sAdm2, returnIndex:=3)
+    Set T_Aff = geo.GeoLevel(LevelAdmin3, CustomTypeGeo, adminNames)
 
     [F_Geo].TXT_Msg.Value = [F_Geo].LST_Adm1.Value & " | " & [F_Geo].LST_Adm2.Value
     'Update the adm3 list in the geoform if the T_Aff3 is not missing
     If T_Aff.Length > 0 Then
         [F_Geo].LST_Adm3.List = T_Aff.Items
     End If
+
+    Application.Cursor = xlDefault
 
 End Sub
 
@@ -214,19 +222,26 @@ Sub ShowLstF3(sAdm2 As String)
 
     Dim sAdm1 As String
     Dim T_Aff As BetterArray
-    Dim Wksh As Worksheet
+    Dim adminNames As BetterArray
 
-    Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
     sAdm1 = [F_Geo].LST_AdmF1.Value
+    Set adminNames = New BetterArray
+    adminNames.LowerBound = 1
 
-    Set T_Aff = FilterLoTable(Wksh.ListObjects("T_HF"), 4, sAdm1, 3, sAdm2, returnIndex:=2)
+    adminNames.Push sAdm1, sAdm2 'selected admin 1 and 2
+
+    Application.Cursor = xlNorthwestArrow
+
+    'Here I filter on the Health Facilities instead of the Geo
+    Set T_Aff = geo.GeoLevel(LevelAdmin3, CustomTypeHF, adminNames)
 
     [F_Geo].TXT_Msg.Value = [F_Geo].LST_AdmF2.Value & " | " & [F_Geo].LST_AdmF1.Value
-    Set T_Aff = GetUniqueBA(T_Aff)
 
     If T_Aff.Length > 0 Then
         [F_Geo].LST_AdmF3.List = T_Aff.Items
     End If
+
+    Application.Cursor = xlDefault
 
 End Sub
 
@@ -236,23 +251,25 @@ Sub ShowLst4(sAdm3 As String)
     [F_Geo].LST_Adm4.Clear
 
     Dim T_Aff As BetterArray
-    Dim Wksh As Worksheet
     Dim sAdm1 As String
     Dim sAdm2 As String
+    Dim adminNames As BetterArray
 
     sAdm1 = [F_Geo].LST_Adm1.Value
     sAdm2 = [F_Geo].LST_Adm2.Value
+    Set adminNames = New BetterArray
+    adminNames.LowerBound = 1
+    adminNames.Push sAdm1, sAdm2, sAdm3 'Add the three levels to filter up to level 4
+
+    Application.Cursor = xlNorthwestArrow
 
     [F_Geo].TXT_Msg.Value = [F_Geo].LST_Adm1.Value & " | " & [F_Geo].LST_Adm2.Value & " | " & [F_Geo].LST_Adm3.Value
 
-    Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
-    Set T_Aff = FilterLoTable(Wksh.ListObjects("T_ADM4"), 1, sAdm1, 2, sAdm2, 3, sAdm3, returnIndex:=4)
+    Set T_Aff = geo.GeoLevel(LevelAdmin4, CustomTypeGeo, adminNames)
 
+    If T_Aff.Length > 0 Then  [F_Geo].LST_Adm4.List = T_Aff.Items
 
-    If T_Aff.Length > 0 Then
-        [F_Geo].LST_Adm4.List = T_Aff.Items
-    End If
-
+    Application.Cursor = xlDefault
 End Sub
 
 'Fourth list of health facility
@@ -261,22 +278,27 @@ Sub ShowLstF4(sAdm3 As String)
     [F_Geo].LST_AdmF4.Clear
 
     Dim T_Aff As BetterArray
-    Dim Wksh As Worksheet
+    Dim adminNames As BetterArray
     Dim sAdm1 As String
     Dim sAdm2 As String
 
     sAdm1 = [F_Geo].LST_AdmF1.Value
     sAdm2 = [F_Geo].LST_AdmF2.Value
+    Set adminNames = New BetterArray
 
-    Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
-    Set T_Aff = FilterLoTable(Wksh.ListObjects("T_HF"), 4, sAdm1, 3, sAdm2, 2, sAdm3, returnIndex:=1)
+    adminNames.LowerBound = 1
+    adminNames.Push sAdm1, sAdm2, sAdm3
+
+    'Use the cursor to hide some working steps
+    Application.Cursor = xlNorthwestArrow
+    
+    Set T_Aff = geo.GeoLevel(LevelAdmin4, CustomTypeHF, adminNames)
 
     [F_Geo].TXT_Msg.Value = [F_Geo].LST_AdmF3.Value & " | " & [F_Geo].LST_AdmF2.Value & " | " & [F_Geo].LST_AdmF1.Value
 
-    If T_Aff.Length > 0 Then
-        [F_Geo].LST_AdmF4.List = T_Aff.Items
-    End If
+    If T_Aff.Length > 0 Then [F_Geo].LST_AdmF4.List = T_Aff.Items
 
+    Application.Cursor = xlDefault
 End Sub
 
 Sub ClearGeo()
@@ -306,6 +328,8 @@ Sub SearchValue(ByVal sSearchedValue As String)
     Dim T_result As BetterArray
     Set T_result = New BetterArray
     Dim i As Integer
+
+
 
     'Create a table of the found values (called T_result)
     If Len(sSearchedValue) >= 3 Then

@@ -6,7 +6,7 @@ Attribute VB_Name = "HlistChange"
 Option Explicit
 
 Private Sub Worksheet_Change(ByVal Target As Range)
-    Application.Cursor = xlWait
+    Application.Cursor = xlNorthwestArrow
     Application.EnableEvents = False
     EventValueChangeLinelist Target
     Application.EnableEvents = True

@@ -3,10 +3,16 @@ Option Explicit
 
 Private Sub Workbook_Open()
     Application.OnKey "^+g", "ClicCmdGeoApp"
+    Application.Calculation = xlCalculationManual
 End Sub
 
 Private Sub Workbook_BeforeClose(cancel As Boolean)
-    'Add functions to move directly in debug mode
+    'Add functions to move directly in non debug mode
     
 End Sub
 
+
+'avoid calculation before save to reduce latency
+Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean) 
+    Application.CalculateBeforeSave = False
+End Sub
