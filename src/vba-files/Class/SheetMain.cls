@@ -27,11 +27,13 @@ Private Sub Worksheet_Change(ByVal Target As Range)
         
         'Language of LinelistForms
         SheetLLTranslation.Range("RNG_LLLanguage").Value = Target.Value
+        SheetLLTranslation.Calculate
 
         'Language Code in the Geo Sheet
         Set geo = LLGeo.Create(SheetGeo)
         geo.Translate rawNames:=True
         SheetGeo.Range("RNG_GeoLangCode").Value = SheetLLTranslation.Range("RNG_LLLanguageCode").Value
+        SheetGeo.Calculate
 
     ElseIf Target.Name.Name = "RNG_LLPassword" Then
     

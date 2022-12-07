@@ -22,8 +22,10 @@ End Function
 '
 '
 '
-'
-'
+Public Function PLAGE_VALUE(rng1 As Range, rng2 As Range) As String
+    PLAGE_VALUE = Format(rng1, "DD/MM/YYYY") &  " - " & Format(rng2, "DD/MM/YYYY")
+End Function
+
 '
 '
 '

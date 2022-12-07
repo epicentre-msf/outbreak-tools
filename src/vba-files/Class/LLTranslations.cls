@@ -148,12 +148,21 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     'Ranges (For more ranghes we should use a table of the range names)
     outshLLTrans.Range(shLL.Range("RNG_LLLanguage").Address).Name = "RNG_LLLanguage"
     outshLLTrans.Range("RNG_LLLanguage").Value = shLL.Range("RNG_LLLanguage").Value
+    
     outshLLTrans.Range(shLL.Range("RNG_LLLanguageCode").Address).Name = "RNG_LLLanguageCode"
     outshLLTrans.Range("RNG_LLLanguageCode").Value = shLL.Range("RNG_LLLanguageCode").Value
+    
+    outshLLTrans.Range(shLL.Range("RNG_GoToSection").Address).Name = "RNG_GoToSection"
+    outshLLTrans.Range("RNG_GoToSection").Value = shLL.Range("RNG_GoToSection").Value
+
+    outshLLTrans.Range(shLL.Range("RNG_AnaPeriod").Address).Name = "RNG_AnaPeriod"
+    outshLLTrans.Range("RNG_AnaPeriod").Value = shLL.Range("RNG_AnaPeriod").Value
 
     'Formula for linelist language code
     On Error Resume Next
     outshLLTrans.Range("RNG_LLLanguageCode").formula = shLL.Range("RNG_LLLanguageCode").formula
+    outshLLTrans.Range("RNG_GoToSection").formula = shLL.Range("RNG_GoToSection").formula
+    outshLLTrans.Range("RNG_AnaPeriod").formula = shLL.Range("RNG_AnaPeriod").formula
     On Error GoTo 0
 
     outshLLTrans.Range(shLL.Range("RNG_DictionaryLanguage").Address).Name = "RNG_DictionaryLanguage"
@@ -161,6 +170,7 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
 
     outshDictTrans.Visible = xlSheetVeryHidden
     outshLLTrans.Visible = xlSheetVeryHidden
+    outshLLTrans.Calculate
 End Sub
 
 Private Sub ImportTranslation(ByVal fromWkb As Workbook)
@@ -217,6 +227,8 @@ Private Sub CheckRequirements(ByVal lltradsh As Worksheet, dtradsh As Worksheet)
     RangeExists rngName:="RNG_LLLanguage", sh:=lltradsh
     RangeExists rngName:="RNG_LLLanguageCode", sh:=lltradsh
     RangeExists rngName:="RNG_DictionaryLanguage", sh:=lltradsh
+    RangeExists rngName := "RNG_GoToSection", sh := lltradsh
+    RangeExists rngName := "RNG_AnaPeriod", sh := lltradsh
 End Sub
 
 'Check if listobject exists in a worksheet

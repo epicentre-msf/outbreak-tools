@@ -254,11 +254,6 @@ Attribute VB_Exposed = False
 
 
 
-
-
-
-
-
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -266,91 +261,100 @@ Option Explicit
 Private Sub CMD_Copier_Click()
 
     Dim T_temp As BetterArray
+    Dim selectedValue As String
+    Dim Lo As ListObject
+    Dim LoRng As Range
+    Dim sh As Worksheet
+    Dim cellRng As Range
+    Dim hRng As Range
+    Dim nbOffset As Long
+    Dim calcRng As Range 'Range to calculate
     
     Set T_temp = New BetterArray
     T_temp.LowerBound = 1
 
     On Error GoTo ErrGeo
-
-    ActiveSheet.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
-
+    
+    selectedValue = [TXT_Msg].Value
+    Set cellRng = ActiveCell 'First cell for a geo value
+    Set sh = ActiveSheet 'Linelist sheet
+    Set hRng = sh.ListObjects(1).HeaderRowRange
+    nbOffset = cellRng.Row - hRng.Row
+    Set calcRng = hRng.Offset(nbOffset)
+    
     Select Case iGeoType
         'In case you selected the Geo data
     Case 0
-        'updating the histo data if needed
-        With ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabHistoGeo)
-            If Not .DataBodyRange Is Nothing Then
-                T_temp.FromExcelRange .DataBodyRange
-                T_temp.Sort
-                'only update if you don't find actual value then update
-                If Not T_temp.Includes(TXT_Msg.Value) Then
-                    T_HistoGeo.Push ReverseString(TXT_Msg.Value)
-                End If
-            Else
-                'In case there is no histo data, update the first line
-                If sPlaceSelection <> "" Then
-                    T_HistoGeo.Push ReverseString(sPlaceSelection)
-                End If
-            End If
-            'Now rewrite the histo data in the list object
-            If T_HistoGeo.Length > 0 Then
-                T_HistoGeo.Sort
-                T_HistoGeo.ToExcelRange Destination:=ThisWorkbook.Worksheets(C_sSheetGeo).Range(Cells(2, .Range.Column).Address)
-                'resize the list object
-                .Resize Range(Cells(1, .Range.Column), Cells(.Range.Rows.Count, .Range.Column))
-                .DataBodyRange.RemoveDuplicates Columns:=1, Header:=xlYes
-            End If
-        End With
+    
         'Writing the selected data in the linelist sheet
         T_temp.Clear
-        T_temp.Items = Split([TXT_Msg].Value, " | ")
+        T_temp.Items = Split(selectedValue, " | ")
         If T_temp.Length > 0 Then
-            Application.EnableEvents = False
             'Clear the cells before filling
-            Range(ActiveCell.Address, ActiveCell.Offset(, 3)).Value = ""
-            T_temp.Reverse
+            Application.EnableEvents = False
+            sh.Range(cellRng, cellRng.Offset(, 3)).Value = ""
+            If T_temp.Length = 4 Then T_temp.Reverse
             T_temp.ToExcelRange Destination:=Range(ActiveCell.Address), TransposeValues:=True
             Application.EnableEvents = True
         End If
+        
+        calcRng.Calculate
+        [F_Geo].TXT_Msg.Value = ""
+        [F_Geo].Hide
+        
+        'Protecting the worksheet
+                
+        'updating the histo data if needed
         T_temp.Clear
+        Set sh = ThisWorkbook.Worksheets("Geo")
+        Set Lo = sh.ListObjects("T_HISTOGEO")
+        Set LoRng = Lo.Range
+        
+        'only update if you don't find actual value then update
+        If Not T_HistoGeo.Includes(ReverseString(selectedValue)) Then T_HistoGeo.Push ReverseString(selectedValue)
+        
+        'Now rewrite the histo data in the list object
+        If T_HistoGeo.Length > (Lo.Range.Rows.Count - 1) Then
+            T_HistoGeo.ToExcelRange Destination:=LoRng.Cells(2, 1)
+            'resize the list object
+            Lo.Resize sh.Range(LoRng.Cells(1, 1), LoRng.Cells(T_HistoGeo.Length + 1, 1))
+            Set LoRng = Lo.DataBodyRange
+            LoRng.RemoveDuplicates Columns:=1, Header:=xlYes
+            LoRng.Sort key1:=LoRng, Header:=xlYes
+        End If
+        
         'In Case we are dealing with the health facility (basically the same thing with little modifications)
     Case 1
-        With ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabHistoHF)
-            If Not .DataBodyRange Is Nothing Then
-                T_temp.FromExcelRange .DataBodyRange
-                T_temp.Sort
-
-                If Not T_temp.Includes(ReverseString(TXT_Msg.Value)) Then
-                    T_HistoHF.Push [TXT_Msg].Value
-                End If
-            Else
-                If sPlaceSelection <> "" Then
-                    T_HistoHF.Push sPlaceSelection
-                End If
-            End If
-            'Now rewrite the histo data in the list object
-            If (T_HistoHF.Length > 0) Then
-                T_HistoHF.Sort
-                T_HistoHF.ToExcelRange Destination:=ThisWorkbook.Worksheets(C_sSheetGeo).Range(Cells(2, .Range.Column).Address)
-                'resize the list object
-                .Resize Range(Cells(1, .Range.Column), Cells(.Range.Rows.Count, .Range.Column))
-                .DataBodyRange.RemoveDuplicates Columns:=1, Header:=xlYes
-            End If
-        End With
-        'writing the selected value
-        ActiveCell.Value = TXT_Msg.Value
+        Application.EnableEvents = False
+        cellRng.Value = selectedValue
+        Application.EnableEvents = True
+        'Hide the form
+        calcRng.Calculate
+        [F_Geo].TXT_Msg.Value = ""
+        [F_Geo].Hide
+        
+        'Update the listObject of historic data on health facility
+        Set sh = ThisWorkbook.Worksheets("Geo")
+        Set Lo = sh.ListObjects("T_HISTOHF")
+        Set LoRng = Lo.Range
+         
+        If Not T_HistoHF.Includes(selectedValue) Then T_HistoHF.Push selectedValue
+            
+        'Now rewrite the histo data in the list object
+        If T_HistoHF.Length > (Lo.Range.Rows.Count - 1) Then
+            T_HistoHF.ToExcelRange Destination:=LoRng.Cells(2, 1)
+            'resize the list object
+            Lo.Resize sh.Range(LoRng.Cells(1, 1), LoRng.Cells(T_HistoHF.Length + 1, 1))
+            Set LoRng = Lo.DataBodyRange
+            LoRng.RemoveDuplicates Columns:=1, Header:=xlYes
+            LoRng.Sort key1:=LoRng, Header:=xlYes
+        End If
     End Select
 
-    [F_Geo].TXT_Msg.Value = ""
-    [F_Geo].Hide
-    'Protecting the worksheet
-    Call ProtectSheet
     Exit Sub
 
 ErrGeo:
     MsgBox TranslateLLMsg("MSG_ErrWriteGeo"), vbCritical + vbOKOnly
-    Call ProtectSheet
-
 End Sub
 
 Private Sub CMD_GeoClearHisto_Click()

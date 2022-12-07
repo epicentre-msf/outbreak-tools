@@ -8,14 +8,14 @@ Public DebugMode As Boolean
 
 Sub ClicCmdGeoApp()
 
-    Dim iNumCol As Integer
+    Dim targetColumn As Integer
     Dim sType As String
 
-    iNumCol = ActiveCell.Column
+    targetColumn = ActiveCell.Column
 
     If ActiveCell.Row > C_eStartLinesLLData + 1 Then
 
-        sType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, iNumCol).Value
+        sType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, targetColumn).Value
         Select Case sType
         Case "geo1"
             iGeoType = 0
@@ -239,145 +239,167 @@ Public Sub ProtectSheet(Optional sSheetName As String = "_Active")
 End Sub
 
 'Trigerring event when the linelist sheet has some values within                                                          -                                                      -
-Sub EventValueChangeLinelist(oRange As Range)
+Sub EventValueChangeLinelist(Target As Range)
 
     Const GOTOSECCODE As String = "go_to_section" 'Go To section constant
     
     Dim T_geo As BetterArray
     Set T_geo = New BetterArray
-    Dim sControlType As String                   'Control type
+    Dim varControl As String                   'Control type
     Dim sLabel As String
-    Dim sCustomVarName As String
-    Dim sNote As String
-    Dim sListAutoType As String
-    Dim iNumCol As Integer
+    Dim varName As String
+    Dim varSubLabel As String
+    Dim targetColumn As Long 'column of the target range
     Dim rng As Range
     Dim loAdm2 As ListObject
     Dim loAdm3 As ListObject
     Dim loAdm4 As ListObject
     Dim tableName As String
-    Dim sh As Worksheet
+    Dim adminNames As BetterArray
+    Dim sh As Worksheet 'Active sheet where the event fires
+    Dim geo As ILLGeo
+    Dim cellRng As Range
+    Dim hRng As Range 'Header Row Range of the listObject
+    Dim goToSection As String
+    Dim vars As ILLVariables
+    Dim dict As ILLdictionary
+    Dim startLine As Long
+    Dim calcRng As Range 'calculate range
+    Dim nbOffset As Long 'number of offset from the headerrow range
     
     On Error GoTo errHand
     Set sh = ActiveSheet
     tableName = sh.Cells(1, 4).Value
     Set rng = sh.Range(tableName & "_" & GOTOSECCODE)
-    
-    iNumCol = oRange.Column
-    sControlType = sh.Cells(C_eStartLinesLLMainSec - 1, iNumCol).Value
-    
+    Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
+    Set hRng = sh.ListObjects(1).HeaderRowRange
+    Set adminNames = New BetterArray
+    adminNames.LowerBound = 1
 
-    If oRange.Row > C_eStartLinesLLData + 1 Then
-        Set loAdm2 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin2")
-        Set loAdm3 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin3")
-        Set loAdm4 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin4")
+    targetColumn = Target.Column
+    startLine = sh.Range(tablename & "_START").row
+    varControl = sh.Cells(startLine - 5 , targetColumn).Value
+
+    If Target.Row >= startLine Then
+        
+        nbOffset = Target.Row - hRng.Row
+        Set calcRng = hRng.Offset(nbOffset)
+        calcRng.Calculate 
+
+        If (varControl = "geo1") Or (varControl = "geo2") Or (varControl = "geo3") Or (varControl = "geo4") Then
+
+            Set loAdm2 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin2")
+            Set loAdm3 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin3")
+            Set loAdm4 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin4")
 
 
-        Select Case sControlType
+            Select Case varControl
 
-        Case C_sDictControlGeo & "1"
-            ' adm1 has been modified, we will correct and set validation to adm2
+            Case  "geo1"
+                'adm1 has been modified, we will correct and set validation to adm2
 
-            BeginWork xlsapp:=Application
-            ActiveSheet.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+                BeginWork xlsapp:=Application
 
-            DeleteLoDataBodyRange loAdm2
-            oRange.Offset(, 1).Value = vbNullString
-            DeleteLoDataBodyRange loAdm3
-            oRange.Offset(, 2).Value = vbNullString
-            DeleteLoDataBodyRange loAdm4
-            oRange.Offset(, 3).Value = vbNullString
+                DeleteLoDataBodyRange loAdm2
+                Target.Offset(, 1).Value = vbNullString
+                DeleteLoDataBodyRange loAdm3
+                Target.Offset(, 2).Value = vbNullString
+                DeleteLoDataBodyRange loAdm4
+                Target.Offset(, 3).Value = vbNullString
 
-            If oRange.Value <> vbNullString Then
+                If Target.Value <> vbNullString Then
 
-                'Filter on adm1
-                Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm2), 1, oRange.Value, returnIndex:=2)
-                'Build the validation list for adm2
-                T_geo.ToExcelRange loAdm2.Range.Cells(2, 1)
-                T_geo.Clear
-            End If
+                    'Filter on adm1
+                    Set T_geo = geo.GeoLevel(LevelAdmin2, CustomTypeGeo, Target.Value)
+                    'Build the validation list for adm2
+                    T_geo.ToExcelRange loAdm2.Range.Cells(2, 1)
+                    T_geo.Clear
+                End If
 
-            Call ProtectSheet
-            EndWork xlsapp:=Application
 
-        Case C_sDictControlGeo & "2"
+                EndWork xlsapp:=Application
 
-            'Adm2 has been modified, we will correct and filter adm3
-            BeginWork xlsapp:=Application
-            ActiveSheet.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+            Case "geo2"
 
-            DeleteLoDataBodyRange loAdm3
-            oRange.Offset(, 1).Value = vbNullString
-            DeleteLoDataBodyRange loAdm4
-            oRange.Offset(, 2).Value = vbNullString
+                'Adm2 has been modified, we will correct and filter adm3
+                BeginWork xlsapp:=Application
 
-            If oRange.Value <> vbNullString Then
-                Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm3), 1, oRange.Offset(, -1).Value, 2, oRange.Value, returnIndex:=3)
-                T_geo.ToExcelRange loAdm3.Range.Cells(2, 1)
-                T_geo.Clear
-            End If
+                DeleteLoDataBodyRange loAdm3
+                Target.Offset(, 1).Value = vbNullString
+                DeleteLoDataBodyRange loAdm4
+                Target.Offset(, 2).Value = vbNullString
 
-            Call ProtectSheet
-            EndWork xlsapp:=Application
+                If Target.Value <> vbNullString Then
+                    adminNames.Push Target.Offset(, -1).Value, Target.Value
+                    Set T_geo = geo.GeoLevel(LevelAdmin3, CustomTypeGeo, adminNames)
+                    T_geo.ToExcelRange loAdm3.Range.Cells(2, 1)
+                    T_geo.Clear
+                End If
 
-        Case C_sDictControlGeo & "3"
-            'Adm 3 has been modified, correct and filter adm4
-            BeginWork xlsapp:=Application
-            ActiveSheet.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
+                EndWork xlsapp:=Application
 
-            DeleteLoDataBodyRange loAdm4
-            oRange.Offset(, 1).Value = vbNullString
+            Case  "geo3"
+                'Adm 3 has been modified, correct and filter adm4
+                BeginWork xlsapp:=Application
 
-            If oRange.Value <> vbNullString Then
-                'Take the adm4 table
-                Set T_geo = FilterLoTable(ThisWorkbook.Worksheets(C_sSheetGeo).ListObjects(C_sTabAdm4), 1, _
-                                          oRange.Offset(, -2).Value, 2, oRange.Offset(, -1).Value, 3, oRange.Value, returnIndex:=4)
-                T_geo.ToExcelRange loAdm4.Range.Cells(2, 1)
-                T_geo.Clear
-            End If
+                DeleteLoDataBodyRange loAdm4
+                Target.Offset(, 1).Value = vbNullString
 
-            Call ProtectSheet
-            EndWork xlsapp:=Application
+                If Target.Value <> vbNullString Then
 
-        Case Else
+                    adminNames.Push Target.Offset(, -2).Value, Target.Offset(, -1).Value, Target.Value
+                    'Take the adm4 table
+                    Set T_geo = geo.GeoLevel(LevelAdmin4, CustomTypeGeo, adminNames)
+                    T_geo.ToExcelRange loAdm4.Range.Cells(2, 1)
+                    T_geo.Clear
+                End If
 
-        End Select
+                EndWork xlsapp:=Application
+
+            End Select
+        End If
 
     End If
     
     'Update the custom control
-    If oRange.Row = C_eStartLinesLLData And sControlType = C_sDictControlCustom Then
+    If  (Target.Row = startLine - 2) And (varControl = "custom") Then
+        Set dict = LLdictionary.Create(ThisWorkbook.Worksheets("Dictionary"), 1, 1)
+        Set vars = LLVariables.Create(dict)
         'The name of custom variables has been updated, update the dictionary
-        sCustomVarName = ActiveSheet.Cells(C_eStartLinesLLData + 1, iNumCol).Value
-        sNote = GetDictColumnValue(sCustomVarName, C_sDictHeaderSubLab)
-        sLabel = Replace(oRange.Value, sNote, "")
+        varName = sh.Cells(startLine - 1, targetColumn).Value
+        varSubLabel = vars.Value(varName := varName, colName := "sub label")
+
+        sLabel = Replace(Target.Value, varSubLabel, "")
         sLabel = Replace(sLabel, Chr(10), "")
 
-        Call UpdateDictionaryValue(sCustomVarName, C_sDictHeaderMainLab, sLabel)
+        vars.SetValue varName := varName, colName := "main label", newValue := sLabel
 
     End If
     
     'Update the list auto
-    If oRange.Row > C_eStartLinesLLData + 1 And _
-       ActiveSheet.Cells(C_eStartLinesLLMainSec - 2, iNumCol).Value = C_sDictControlChoiceAuto & "_origin" And _
-       ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value <> "list_auto_change_yes" Then
+    If Target.Row >= startLine And _
+       sh.Cells(startLine - 6, targetColumn).Value = "list_auto_origin" And _
+        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value <> "list_auto_change_yes" Then
         ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value = "list_auto_change_yes"
     End If
 
     
-    'GoTo section
-    
-    If Not Intersect(oRange, rng) Is Nothing Then
-        sLabel = Replace(oRange.Value, TranslateLLMsg("MSG_GoToSec") & ": ", "")
+    'GoTo section 
+    If Not Intersect(Target, rng) Is Nothing Then
+        goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
 
-        Set rng = ActiveSheet.Rows(C_eStartLinesLLMainSec).Find(What:=sLabel, _
-                                                                LookIn:=xlValues, LookAt:=xlWhole, SearchOrder:=xlByColumns, _
-                                                                SearchDirection:=xlNext, MatchCase:=True, SearchFormat:=False)
+        sLabel = Replace(Target.Value, goToSection & ": ", "")
+        Set hRng = sh.ListObjects(1).HeaderRowRange
+        Set hRng = hRng.Offset(-3)
 
-        If Not rng Is Nothing Then
-            rng.Activate
-        End If
+        Set cellRng = hRng.Find(What:=sLabel, LookAt:=xlWhole,  MatchCase:=True)
 
+        If Not cellRng Is Nothing Then cellRng.Activate
+    End If
+
+    If Target.Row = startLine - 1 Then
+        Target.Value = Target.Offset(-1).Name.Name
+        MsgBox "Do not modify the Headers!!!!!"
     End If
 
 errHand:
@@ -448,6 +470,7 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
 
     Set listAutoSheet = ThisWorkbook.Worksheets(C_sSheetChoiceAuto)
     With Wksh
+        .Calculate
         Do While (.Cells(C_eStartLinesLLData, i) <> vbNullString)
             Select Case .Cells(C_eStartLinesLLMainSec - 2, i).Value
             Case C_sDictControlChoiceAuto & "_origin"
@@ -491,7 +514,6 @@ Public Sub UpdateFilterTables()
     Dim Lo As ListObject
     Dim rowCounter As Long
     Dim endCol As Long
-    Dim sActSh As String
     Dim destRng As Range
     Dim delRng As Range
     
@@ -503,8 +525,6 @@ Public Sub UpdateFilterTables()
 
             'Unprotect the worksheet
             With Wksh
-
-                .UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
 
                 'Clean the filtered table list object
                 Set Lo = .ListObjects(1)
@@ -543,15 +563,15 @@ Public Sub UpdateFilterTables()
                     Loop
 
                     'Delete the ragne if necessary
-                    BeginWork Application
                     If Not delRng Is Nothing Then delRng.Delete
-                    BeginWork Application
-                    'Reprotect back the worksheet
-                    ProtectSheet .Name
+
                 End If
             End With
         End If
     Next
+
+    'caclulate active sheet
+    ActiveSheet.Calculate
 
     EndWork xlsapp:=Application
     Exit Sub
@@ -610,6 +630,10 @@ Sub EventValueChangeAnalysis(Target As Range)
     Dim sLabel As String
     Dim actSh As Worksheet
     Dim analysisType As String
+    Dim goToSection As String
+    Dim cellRng As Range
+
+    BeginWork xlsApp := Application
 
     On Error GoTo Err
     Set actSh = ActiveSheet
@@ -623,27 +647,33 @@ Sub EventValueChangeAnalysis(Target As Range)
         Set rng = actSh.Range("ua_go_to_section")
 
     Case "TS-Analysis"
+
+        actSh.Calculate
+        
         'Goto section range for time series analysis
         Set rng = actSh.Range("ts_go_to_section")
         
     Case "SP-Analysis"
+        
         'GoTo section for spatial analysis
         Set rng = actSh.Range("sp_go_to_section")
+    
     End Select
 
     If Not Intersect(Target, rng) Is Nothing Then
-    
-        sLabel = Replace(Target.Value, TranslateLLMsg("MSG_GoToSec") & ": ", "")
+        goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
 
-        Set RngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, _
-                                             MatchCase:=True, SearchFormat:=False)
+        sLabel = Replace(Target.Value, goToSection & ": ", "")
+        Set RngLook = actSh.Cells.Find(What:=sLabel, LookAt:=xlWhole, MatchCase:=True)
 
-        If Not RngLook Is Nothing Then RngLook.Activate
+        If Not RngLook Is Nothing Then Application.GoTo actSh.Range(RngLook.Address)
     End If
 
-
+    EndWork xlsApp := Application
     Exit Sub
+
 Err:
+EndWork xlsApp := Application
 End Sub
 
 Sub EventValueChangeVList(Target As Range)
@@ -655,16 +685,18 @@ Sub EventValueChangeVList(Target As Range)
     Dim sLabel As String
     Dim sh As Worksheet
     Dim tableName As String
+    Dim goToSection As String
     
     
     On Error GoTo Err
     Set sh = ActiveSheet
     tableName = sh.Cells(1, 4).Value
     Set rng = sh.Range(tableName & "_" & GOTOSECCODE)
+    goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
     
     If Not Intersect(Target, rng) Is Nothing Then
-        sLabel = Replace(Target.Value, TranslateLLMsg("MSG_GoToSec") & ": ", "")
-        Set RngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, MatchCase:=True, SearchFormat:=False)
+        sLabel = Replace(Target.Value,  goToSection & ": ", "")
+        Set RngLook = ActiveSheet.Cells.Find(What:=sLabel, LookAt:=xlWhole, MatchCase:=True)
         If Not RngLook Is Nothing Then RngLook.Activate
     End If
 

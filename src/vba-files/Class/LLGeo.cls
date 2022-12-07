@@ -183,8 +183,13 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
     Dim counter As Long
     Dim returnedRng As Range
 
+    
     Set sh = Wksh()
     Set tabl = TableNames()
+
+    On Error GoTo Err
+
+    sh.EnableCalculation = False
 
     If geoType = CustomTypeGeo Then
         loName = tabl.Item(adminLevel)
@@ -250,7 +255,8 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
         Case LevelAdmin1
 
             Set rng = HFRange("adm1_name")
-            Set outLevels = UniqueValues(rng)
+            rng.Copy sh.Range("RNG_PastingGeoCol")
+            Set outLevels = UniqueValues()
 
         Case LevelAdmin2
 
@@ -279,7 +285,7 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
 
         On Error Resume Next
         Set returnedRng = Lo.ListColumns(colIndex).DataBodyRange.SpecialCells(xlCellTypeVisible)
-        On Error GoTo 0
+        On Error GoTo Err
         If Not returnedRng Is Nothing Then
             returnedRng.Copy sh.Range("RNG_PastingGeoCol")
             Lo.AutoFilter.ShowAllData
@@ -290,7 +296,10 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
     End If
 
     sh.Range("RNG_PastingGeoCol").EntireColumn.Cells.Clear
+
+Err :
     Set GeoLevel = outLevels.Clone()
+    sh.EnableCalculation = True
 End Property
 
 Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _

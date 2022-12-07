@@ -303,14 +303,11 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         With sh
             Set rng = .Range(rng.Cells(1, 1), rng.Cells(1, 7))
         End With
-        On Error Resume Next
-        rng.Merge
-        On Error GoTo 0
+
         'Section color
         FormatRange rng, FontSize:=styleValue + 5, _
                     fontColor:=fontColorValue, Horiz:=xlHAlignLeft, Verti:=xlVAlignBottom, _
                     isBold:=True
-        rng.WrapText = True
         'Draw a border arround the section
         DrawLines rng:=rng, weight:=xlMedium, color:=fontColorValue, At:="Bottom"
 
@@ -513,15 +510,16 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
 
         On Error GoTo 0
 
-    Case AnalysisInfoCell
+    Case AnalysisInfoCell, AnalysisInfoCellLeft
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        horizAlign = IIf(scope = AnalysisInfoCellLeft, xlHAlignLeft, xlHAlignCenter)
         Set rng = formattingObject
         fontColorValue = IIf(IsEmpty(rng), "", DesignValue("missing font color"))
         FormatRange rng, fontColor:=fontColorValue, _
-                    FontSize:=8, isBold:=False, Horiz:=xlHAlignCenter, Verti:=xlVAlignCenter
+                    FontSize:=8, isBold:=(scope = AnalysisInfoCellLeft), Horiz:=horizAlign, Verti:=xlVAlignCenter
         rng.EntireRow.RowHeight = 45
-        rng.WrapText = True
+        rng.WrapText = (scope = AnalysisInfoCell)
 
     Case HListMainLab
         If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
@@ -634,10 +632,14 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
       
         FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue, _
                     isBold:=True
+        
+
 
         On Error Resume Next
+        rng.Locked = False
         rng.Merge
         On Error GoTo 0
+
 
     Case HListSection, VListSection
 
@@ -670,9 +672,17 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
                     isBold:=True
 
         On Error Resume Next
+        rng.Locked = False
         rng.Merge
         On Error GoTo 0
 
+    Case AnalysisDateCell
+        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        'draw borders
+        Set rng = formattingObject
+        rng.NumberFormat = "dd/mm/yyyy"
+
+        
     Case HListTable
         If (Not TypeName(formattingObject) = "ListObject") Then Exit Sub
         Set Lo = formattingObject
@@ -698,7 +708,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
 
         interiorColorValue = DesignValue("hlist table header color")
         FormatRange rng, fontColor:=interiorColorValue, interiorColor:=interiorColorValue
-        rng.Locked = True
+        rng.Locked = False
 
     End Select
 
