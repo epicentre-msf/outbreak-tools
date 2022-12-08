@@ -601,13 +601,117 @@ Private Sub Import(ByVal impWksh As Worksheet)
         End With
     Next
 
+
+    'Be sure all the tables exist after import
+    CheckTablesRequirements
+
     anash.Cells(1, 1).Value = "analysis"
     anash.Cells(1, 1).Font.color = vbBlue
+
+    'Sort the analysis worksheet on each one of the tables
+    SortAnalysis
 
     Exit Sub
 LoFail:
     'add trace for no list objects
-    Exit Sub
+End Sub
+
+
+Private Sub SortListOnFirst(Byval Lo As ListObject, Byval colIndex As Long)
+
+    Dim numRng As Range'Number range
+    Dim colRng As Range 'Colum range to sort on
+    Dim LoRng As Range 'ListObject Range
+    Dim hRng As Range 'Header Range of the list Object
+    Dim resRng As Range 'Will resize on this range
+    Dim counter As Long
+    Dim trackData As BetterArray
+    Dim sh As Worksheet
+    Dim sortedValue As String
+    Dim num As Long
+    Dim numData As BetterArray
+
+    'Sort on values only If there is data
+    If Lo.DataBodyRange Is Nothing Then Exit Sub
+    If IsEmpty(Lo.DataBodyRange) Then Exit Sub
+
+    Set trackData = New BetterArray
+    Set numData = new BetterArray
+    Set sh = Wksh()
+
+    Set LoRng = Lo.DataBodyRange
+    Set hRng = Lo.HeaderRowRange
+    Set colRng = Lo.ListColumns(colIndex).DataBodyRange
+
+    'Test values progressively 
+    'If the trackData does not contains the values,
+    'Update the number (where you will sort)
+
+    hRng.Cells(1, hRng.Cells.Count + 1).Value = "__number"
+
+    With sh
+        Set resRng = .Range(hRng.Cells(1, 1), LoRng.Cells(LoRng.Rows.Count, LoRng.Columns.Count + 1))
+        Lo.Resize resRng
+    End With
+
+    Set numRng = Lo.ListColumns(hRng.Cells.Count + 1).DataBodyRange
+
+    'Seems like sometimes the databodyrange of a new column could be empty in that case exit
+    If numRng Is Nothing Then
+        Lo.ListColumns(hRng.Cells.Count + 1).Delete
+       Exit Sub
+   End If
+
+    num = 1 'Number to sort later on
+
+    'Resize the listObject to be sure it includes the number added 
+    For counter = 1 To colRng.Cells.Count
+
+       sortedValue = colRng.Cells(counter, 1).Value
+
+      If Not trackData.Includes(sortedValue) Then 
+        
+        trackData.Push sortedValue
+        numData.Push num
+        numRng.Cells(counter, 1).Value = num
+        num = num + 1
+      Else
+        numRng.Cells(counter, 1) = numData.Items(trackData.IndexOf(sortedValue))
+      End If
+    Next
+
+     'Now sort the listObject on the column
+     LoRng.Sort key1 := numRng, order1:= xlAscending, Header := xlYes
+     
+     'Remove the _number column
+     Lo.Listcolumns(hRng.Cells.Count + 1).Delete
+    
+End Sub
+
+
+Private Sub SortAnalysis()
+
+    Dim sh As Worksheet
+    Dim Lo As ListObject
+    Dim colIndex As Long
+    Dim tabl As BetterArray 'Will contain the list of listObjects to sort
+    Dim counter As Long
+    Dim loName As String
+
+    Set tabl = New BetterArray
+    tabl.LowerBound = 1
+
+    tabl.Push UNIVARIATE, BIVARIATE, TIMESERIES, SPATIAL
+
+    Set sh = Wksh()
+
+    For counter = 1 To tabl.Length
+        loName = tabl.Items(counter)
+        Set Lo = sh.ListObjects(loName)
+        colIndex = ColumnIndex(Lo, "section")
+    
+        SortListOnFirst Lo, colIndex
+    Next
 End Sub
 
 'Translate

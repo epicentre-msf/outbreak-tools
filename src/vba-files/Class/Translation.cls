@@ -115,7 +115,7 @@ Private Function ValueIndex(ByVal text As String) As Long
     ValueIndex = index
 End Function
 
-Private Function TranslatedValue(ByVal text As String, Optional ByVal containsFormula As Boolean = False) As String
+Private Function TranslatedValue(ByVal textTotranslate As String, Optional ByVal containsFormula As Boolean = False) As String
     'Test if the language Exists
     Dim transText As String
     Dim formTransText As String
@@ -125,13 +125,19 @@ Private Function TranslatedValue(ByVal text As String, Optional ByVal containsFo
     Dim LoRng As Range
     Dim counter As Long
     Dim quoteStart As Long
-  
+    Dim text As String
+    
+    'Remove trailing spaces before translations
+    text = Application.WorksheetFunction.Trim(textTotranslate)
+
     If containsFormula Then
         formTransText = text
+
+        'Remove empty characters from the formula.
         formulaText = Replace(text, Chr(34) & Chr(34), vbNullString)
         If InStr(1, formulaText, Chr(34)) > 0 Then
             For counter = 1 To Len(formulaText)
-                If Mid(text, counter, 1) = Chr(34) Then
+                If Mid(formulaText, counter, 1) = Chr(34) Then
                     If quoteStart = 0 Then
                         quoteStart = counter + 1
                     Else
@@ -142,9 +148,11 @@ Private Function TranslatedValue(ByVal text As String, Optional ByVal containsFo
                 End If
             Next
         End If
+
         TranslatedValue = formTransText
     Else
         If ValueExists(text) Then
+            
             Set LoRng = Table.Range
             valIndex = ValueIndex(text)
             lngCol = LanguageIndex()

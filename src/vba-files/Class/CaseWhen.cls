@@ -152,7 +152,7 @@ Private Function Categories() As BetterArray
                 'Not Quoted character, the user should not use case_when in analysis
                 Level = Chr(34) & parsingTable.Item(counter) & Chr(34)
             End If
-            categoriesTable.Push Level
+            If Level <> vbNullString Then categoriesTable.Push Level
             counter = counter + 2
         Loop
     End If

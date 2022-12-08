@@ -631,9 +631,6 @@ Sub EventValueChangeAnalysis(Target As Range)
     Dim actSh As Worksheet
     Dim analysisType As String
     Dim goToSection As String
-    Dim cellRng As Range
-
-    BeginWork xlsApp := Application
 
     On Error GoTo Err
     Set actSh = ActiveSheet
@@ -647,33 +644,28 @@ Sub EventValueChangeAnalysis(Target As Range)
         Set rng = actSh.Range("ua_go_to_section")
 
     Case "TS-Analysis"
-
-        actSh.Calculate
-        
         'Goto section range for time series analysis
         Set rng = actSh.Range("ts_go_to_section")
         
     Case "SP-Analysis"
-        
         'GoTo section for spatial analysis
         Set rng = actSh.Range("sp_go_to_section")
-    
     End Select
 
     If Not Intersect(Target, rng) Is Nothing Then
         goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
-
+        
         sLabel = Replace(Target.Value, goToSection & ": ", "")
-        Set RngLook = actSh.Cells.Find(What:=sLabel, LookAt:=xlWhole, MatchCase:=True)
 
-        If Not RngLook Is Nothing Then Application.GoTo actSh.Range(RngLook.Address)
+        Set RngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, _
+                                             MatchCase:=True, SearchFormat:=False)
+
+        If Not RngLook Is Nothing Then RngLook.Activate
     End If
 
-    EndWork xlsApp := Application
-    Exit Sub
 
+    Exit Sub
 Err:
-EndWork xlsApp := Application
 End Sub
 
 Sub EventValueChangeVList(Target As Range)
@@ -696,7 +688,7 @@ Sub EventValueChangeVList(Target As Range)
     
     If Not Intersect(Target, rng) Is Nothing Then
         sLabel = Replace(Target.Value,  goToSection & ": ", "")
-        Set RngLook = ActiveSheet.Cells.Find(What:=sLabel, LookAt:=xlWhole, MatchCase:=True)
+        Set RngLook = sh.Cells.Find(What:=sLabel, LookAt:=xlWhole, MatchCase:=True)
         If Not RngLook Is Nothing Then RngLook.Activate
     End If
 
