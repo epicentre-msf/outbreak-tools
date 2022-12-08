@@ -26,10 +26,12 @@ Private Sub ImportLang()
     Dim langTable As BetterArray
  
     inPath = SheetMain.Range("RNG_PathDico").Value
+
     On Error Resume Next
     BeginWork xlsapp:=Application
     Set wkb = Workbooks.Open(inPath)
     On Error GoTo 0
+    
     If wkb Is Nothing Then Exit Sub
     On Error Resume Next
     Set Lo = wkb.Worksheets("Translations").ListObjects(1)

@@ -684,6 +684,7 @@ Private Sub NameRanges()
     Dim addBegin As String
     Dim addEnd As String
     Dim tabId As String
+    Dim cellRng As Range
 
 
     Set sh = Wksh()
@@ -718,18 +719,12 @@ Private Sub NameRanges()
         End If
 
 
-        'On time series and not on new sections, start with the previous total row
+        'On time series and not on new sections, start with the previous end row
+
         If (specs.TableType = TypeTimeSeries) And Not (specs.isNewSection) Then
-            If Not RangeExists("TOTAL_COL_VALUES_" & specs.Previous.TableId) Then ThrowExecutionError "I can't append the new time series to a previous table, No previous table  were found :("
-            If specs.Previous.HasPercentage Then
-                
-                Set catRng = .Range("TOTAL_PERC_VALUES_" & specs.Previous.TableId)
-            
-            Else
-                
-                Set catRng = .Range("TOTAL_COL_VALUES_" & specs.Previous.TableId)
-            
-            End If
+            If Not RangeExists("ENDTABLE_" & specs.Previous.TableId) Then ThrowExecutionError "I can't append the new time series to a previous table, No previous table  were found :("
+            Set cellRng = .Range("ENDTABLE_" & specs.TableId)
+            Set catRng = .Range(cellRng.Offset(1 - NBROWSTIMESERIES), cellRng.Offset(-3)) 'should be negative the offset (going backward)
         End If
 
         'All columns of the data
