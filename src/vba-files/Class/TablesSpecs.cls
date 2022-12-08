@@ -160,9 +160,11 @@ Private Property Get HasTotal() As Boolean
     Case TypeBivariate
         HasTotal = True
     Case TypeTimeSeries
-        HasTotal = (Value("total") = "yes") And (Value("column") <> vbNullString)
+        HasTotal = ((Value("total") = "yes") Or (Value("percentage") = "row") Or _ 
+                    (Value("percentage") = "column")) And (Value("column") <> vbNullString)
     Case TypeSpatial
         HasTotal = True
+
     End Select
 End Property
 
@@ -223,7 +225,7 @@ Public Property Get ValidTable() As Boolean
 
     Select Case TableType
     Case TypeGlobalSummary
-        Valid = True
+        Valid = (Value("label") <> vbNullString) And (Value("function") <> vbNullString)
     Case TypeUnivariate
         Valid = vars.Contains(rowVar) And (rowControl = "choices" Or rowControl = "case_when")
     Case TypeBivariate
