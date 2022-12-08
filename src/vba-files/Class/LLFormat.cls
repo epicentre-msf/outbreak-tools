@@ -694,7 +694,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
             Lo.TableStyle = ""
             DrawLines Lo.DataBodyRange, color:=bordersColorValue
         ElseIf interiorColorValue = "None" Then
-            Lo.TableStype = ""
+            Lo.TableStyle = ""
         Else
             On Error Resume Next
             Lo.TableStyle = "TableStyleLight16"
