@@ -145,20 +145,26 @@ Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional
     seriesIndex = ind
 End Sub
 
-Public Sub AddLabels(ByVal catName As String, ByVal lblName As String)
+Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, Optional Byval prefix As String = vbNullString)
 
     Dim co As ChartObject
     Dim sh As Worksheet
     Set co = graphChart
     Set sh = Wksh()
+    Dim label As String
     Dim ind As Long
 
     ind = seriesIndex
 
+    'Adding prefix to the label name of graphs (useful for time series graphs)
+    If prefix <> vbNullString Then prefix = prefix & " - "
+
+    label = prefix & sh.Range(lblName).Value 
+
     'Throw error when co is Nothing
     With co.Chart
         .SeriesCollection(ind).XValues = sh.Range(catName)
-        .SeriesCollection(ind).Name = sh.Range(lblName)
+        .SeriesCollection(ind).Name = label 'labels are hardcoded, the user can not modify by changing values in ranges
         .SeriesCollection(ind).ApplyDataLabels xlDataLabelsShowValue, False
         .SeriesCollection(ind).DataLabels.Font.Size = 6
         .SeriesCollection(ind).DataLabels.Font.color = RGB(2, 6, 91)
@@ -172,16 +178,16 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal plotTitle As String = vbNullString, _
                   Optional ByVal secondAxisTitle As String = vbNullString, _
                   Optional ByVal asTimeSeries As Boolean = False)
+    
+    Const cw As Long = 119
+    Const rh As Long = 15
 
     Dim co As ChartObject
     Dim sh As Worksheet
     Dim coef As Long
     Set co = graphChart
     Set sh = Wksh()
-    Dim cw As Long
-    Dim rh As Long
-    cw = sh.Range("A1").width
-    rh = sh.Range("A1").height
+
     
     coef = 1
     If asTimeSeries Then coef = 3
@@ -228,7 +234,7 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
         End If
         
         With .PlotArea
-            .Left = 20 * coef
+            .Left = 16.618 * coef
             .Top = 20 * coef
             .width = 400 * coef
             .height = 150 * coef
@@ -245,8 +251,8 @@ Public Sub IGraphs_AddSeries(ByVal rngName As String, ByVal chrtType As String, 
     AddSeries rngName, chrtType, axisPos
 End Sub
 
-Public Sub IGraphs_AddLabels(ByVal catName As String, ByVal lblName As String)
-    AddLabels catName, lblName
+Public Sub IGraphs_AddLabels(ByVal catName As String, ByVal lblName As String, Optional Byval prefix As String = vbNullString)
+    AddLabels catName, lblName, prefix
 End Sub
 
 Public Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, _

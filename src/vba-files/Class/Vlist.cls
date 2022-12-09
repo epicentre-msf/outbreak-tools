@@ -237,7 +237,7 @@ Public Sub Build()
     TransferCodeWksh
     
     'Protect the worksheet
-    'pass.Protect "_active"
+    pass.Protect "_active"
 End Sub
 
 'Error

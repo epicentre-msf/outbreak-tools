@@ -13,9 +13,15 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     Application.Cursor = xlDefault
 End Sub
 
-Public Sub Worksheet_Deactivate()
+Private Sub Worksheet_Deactivate()
     Application.EnableEvents = False
     EventDesactivateLinelist Me.Name
     Application.EnableEvents = True
 End Sub
 
+
+'@ntncmch here is the code for commenting. Just uncomment the next three lines.
+
+' Private Sub Worksheet_Activate()
+'     Me.Calculate
+' End Sub

@@ -77,13 +77,37 @@ End Sub
 
 'Workbook
 Public Property Get wkb() As Workbook
+    Dim xlsapp As Object
+
+
     If this.outWkb Is Nothing Then
-        BusyApp
-        Set this.outWkb = Workbooks.Add()
-        BusyApp
-        this.firstSheet = this.outWkb.Worksheets(1).Name
+
+        '#If Mac Then
+            
+            BusyApp
+            Set this.outWkb = Workbooks.Add()
+            BusyApp
         
+        ' #Else
+            
+        ' 'On Windows, create a new instance of excel application and Work
+        ' 'with it for the linelist creation process to avoid screen flashing
+
+        '     Set xlsapp = New Excel.Application
+        '     With xlsapp
+        '         .Visible = True
+        '         .ScreenUpdating = False
+        '         .DisplayAlerts = False
+        '         .EnableAnimations = False
+        '         .EnableEvents = False
+        '         Set this.outwkb = .Workbooks.Add()
+        '     End With
+
+        ' #End If
+
+        this.firstSheet = this.outWkb.Worksheets(1).Name
     End If
+
     Set wkb = this.outWkb
 End Property
 
@@ -403,6 +427,7 @@ Private Sub PrepareAdmin()
     Dim sh As Worksheet
     Dim trads As ITranslation
     Dim design As ILLFormat
+    Dim pass As ILLPasswords
     Dim lData As LinelistSpecs
     Dim but As IButtons
     Dim rng As Range
@@ -411,6 +436,7 @@ Private Sub PrepareAdmin()
     Set lData = linelistData()
     Set design = lData.DesignFormat()
     Set trads = lData.TransObject()
+    Set pass = lData.Password()
 
     Set sh = Wksh(trads.TranslatedValue("LLSHEET_Admin"))
     'Format the admin worksheet
@@ -430,6 +456,35 @@ Private Sub PrepareAdmin()
     Set but = Buttons.Create(rng, trads, codeName:=SHPEXPORT, scope:=ButtonScopeLarge)
     but.Add EXPORTCOMMAND
     but.Format design
+
+    BusyApp
+    sh.Activate
+    BusyApp
+    
+    pass.Protect "_active"
+
+End Sub
+
+
+'Ask question on Error to the user:
+Private Sub ErrorManage()
+
+    Dim outWkb As Workbook 'Output workbook
+    Dim Quit As Integer
+
+    'Ask the user if he wants to see (Or not) the uncompleted linelist
+    Quit = MsgBox("An internal Error occured, do you want to see the uncompleted linelist?", _ 
+                  vbExclamation + vbYesNo, "ERROR")
+
+    If Quit = vbNo Then
+        Set outWkb = wkb()
+        'Return the uncomplete workbook
+        outWkb.Application.Visible = True
+    Else
+        Set outWkb = wkb()
+        outWkb.Close savechanges := False
+    End If
+
 End Sub
 
 Private Sub SaveLL()
@@ -488,6 +543,10 @@ End Sub
 
 Public Sub ILinelist_SaveLL()
     SaveLL
+End Sub
+
+Public Sub ILinelist_ErrorManage()
+    ErrorManage
 End Sub
 
 

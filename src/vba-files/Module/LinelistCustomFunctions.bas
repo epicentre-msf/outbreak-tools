@@ -220,7 +220,8 @@ Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, e
     Dim monthDate As Integer
     Dim quarterDate As Integer
     Dim fun As WorksheetFunction
-    
+    Dim epiYear As Long
+    Dim epiW As Long
     
     
     If startDate > MaxDate Or (ActiveSheet.Cells(1, 3).Value <> "TS-Analysis") Then
@@ -236,7 +237,9 @@ Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, e
     Case "day"
         sValue = Format(endDate, "dd-mmm-yyyy")
     Case "week"
-        sValue = TranslateLLMsg("MSG_W") & fun.IsoWeekNum(endDate) & " - " & Year(endDate)
+        epiW = fun.IsoWeekNum(endDate)
+        epiYear = IIf(((epiW = 52 Or epiW = 53) And Month(endDate) = 1), Year(endDate) - 1, Year(endDate))
+        sValue = TranslateLLMsg("MSG_W") & epiW & " - " & epiYear
     Case "month"
         sValue = Format(endDate, "mmm - yyyy")
     Case "quarter"

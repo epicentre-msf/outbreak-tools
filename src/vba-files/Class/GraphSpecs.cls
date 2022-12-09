@@ -36,7 +36,7 @@ Private Type TGraphSpecs
     chartSeriesLabel As BetterArray
     chartColumnCategoriesLabel As BetterArray
     lData As ILinelistSpecs
-    graphsChartsSpecs As BetterArray             'A BetterArray of BetterArray all with length 55 of same length, each one for series, Type, label and category label
+    graphsChartsSpecs As BetterArray             'A BetterArray of BetterArray all with length 5 of same length, each one for series, Type, label and category label
     GraphIdsList As BetterArray
 End Type
 
@@ -224,6 +224,7 @@ Private Sub PushLabels(ByVal chrtRowCategory As String, ByVal chrtColumnLab As S
 End Sub
 
 Private Sub PushGraph()
+
     'One graph consists of five betterarrays of same length:
     'One for series, one for types, one for position and the two others for the labels
     Dim graphSpecsTable As BetterArray
@@ -421,7 +422,8 @@ Private Property Get Valid() As Boolean
 End Property
 
 Private Sub DefineGraphSpecs(ByVal graphId As String)
-    'Defines Specs for one grpah Id
+    'Defines Specs for one grpah Id of type complex
+    'Complex graphs are graphs for time series (They are tables of tables of graphs)
 
     Dim tsLo As ListObject
     Dim counter As Long
@@ -450,6 +452,8 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
 
 
     Set lData = LinelistSpecifications
+
+    'I can't run definegraph specs on simple graphs.
     If GraphType <> GraphTypeComplex Then ThrowError "Multiple table Ids are only on time series graph"
 
 
@@ -464,7 +468,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
     'Clear al the actual series
     ClearSeries
 
-    'Convert all itmes to table id
+    'Convert all times to table id
     For counter = idsList.LowerBound To idsList.UpperBound
         
         val = idsList.Item(counter)
@@ -483,7 +487,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
             colName = IIf(choiValue = "Total", Replace(labName, "COL", "PERC"), Replace(labName, "LABEL", "PERC"))
         End If
         
-
+        'I could not find the TimeSeriesColumn, in that case we jump to the next iteration
         If colName <> vbNullString Then
             PushSeries colName, typeList.Item(counter), posList.Item(counter)
             PushLabels "ROW_CATEGORIES_" & secId, labName
@@ -511,18 +515,20 @@ Private Function TimeSeriesColumnName(ByVal choiValue As String, ByVal tabId As 
   
 
     Set rng = sh.Range("COLUMN_CATEGORIES_" & tabId)
+    
     'If Not ValueExists(rng, choiValue, True) Then ThrowError choiValue & " is not in the drawn table " & tabId
     Set cellRng = rng.Find(What:=choiValue, LookAt:=xlWhole, MatchCase:=True)
 
     On Error Resume Next
-    colName = cellRng.Name.Name
+    If Not cellRng Is Nothing Then colName = cellRng.Name.Name
     On Error GoTo 0
   
     'If colName = vbNullString Then ThrowError choiValue & "Has no name in the table " & tabId
     TimeSeriesColumnName = colName
 End Function
 
-'Test if a value Exists in a Range
+'Test if a value Exists in a Range (pay attention the .Find is a tricky function, be sure your range does not contains duplicates
+'or starts after cell(1, 1))
 Private Function ValueExists(ByVal rng As Range, ByVal Value As String, Optional ByVal strictSearch As Boolean = False)
     If Not strictSearch Then
         ValueExists = (Not rng.Find(What:=Value, LookAt:=xlPart, MatchCase:=False) Is Nothing)
@@ -532,7 +538,7 @@ Private Function ValueExists(ByVal rng As Range, ByVal Value As String, Optional
 
 End Function
 
-'Column Index
+'Column Index of a colname in a listObject
 Private Function ColumnIndex(ByVal Lo As ListObject, ByVal colName As String, Optional ByVal inRange As Boolean = True) As Long
     Dim index As Long
     Dim hRng As Range
@@ -692,5 +698,3 @@ End Property
 Public Property Get IGraphSpecs_Valid() As Boolean
     IGraphSpecs_Valid = Valid()
 End Property
-
-
