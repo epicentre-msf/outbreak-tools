@@ -244,6 +244,18 @@ Private Sub UpdateStatus(ByVal numValue As Integer)
     Application.ScreenUpdating = currentEvent
 End Sub
 
+'Add information on edition to the end user
+Private Sub AddInfo(Byval trads As IDesTranslation, Byval msgCode As String)
+    Dim sh As Worksheet
+    Dim infoRng As Range
+
+    Set sh = Wksh()
+    Set infoRng = sh.Range("RNG_Edition")
+
+    'End user informations
+    infoRng.Value = trads.TranslationMsg(msgCode)
+End Sub
+
 'Errors and checkings
 Private Sub ThrowError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
@@ -304,6 +316,10 @@ End Sub
 
 Public Sub Imain_UpdateStatus(ByVal numValue As Integer)
     UpdateStatus numValue
+End Sub
+
+Public Sub Imain_AddInfo(Byval trads As IDesTranslation, Byval msgCode As String)
+    AddInfo trads, msgCode
 End Sub
 
 Public Property Get IMain_LinelistPassword() As String

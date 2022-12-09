@@ -581,6 +581,7 @@ Private Sub AddHeader()
                 'Start Date
                 rng.Cells(3, 3).Value = trans.TranslatedValue("MSG_StartDate")
                 rng.Cells(3, 3).Name = "START_DATE_LABEL_" & tabId
+                rng.Cells(4, 3).Locked = False
                 rng.Cells(4, 3).Name = "USER_START_DATE_" & tabId
                 rng.Cells(5, 3).Name = "INFO_START_DATE_" & tabId
                 rng.Cells(6, 3).Name = "START_DATE_" & tabId
@@ -589,11 +590,13 @@ Private Sub AddHeader()
                 rng.Cells(3, 5).Value = trans.TranslatedValue("MSG_TimeUnit")
                 rng.Cells(3, 5).Name = "TIME_UNIT_LABEL_" & tabId
                 rng.Cells(4, 5).Name = "TIME_UNIT_" & tabId
+                rng.Cells(4, 5).Locked = False
 
                 'End Date
                 rng.Cells(3, 7).Value = trans.TranslatedValue("MSG_EndDate")
                 rng.Cells(3, 7).Name = "END_DATE_LABEL_" & tabId
                 rng.Cells(4, 7).Name = "USER_END_DATE_" & tabId
+                rng.Cells(4, 7).Locked = False
                 rng.Cells(5, 7).Name = "INFO_END_DATE_" & tabId
                 rng.Cells(6, 7).Name = "END_DATE_" & tabId
 
@@ -855,16 +858,36 @@ Private Sub Format(ByVal desFormat As ILLFormat)
     Dim tabId As String
     Dim DesignFormat As ILLFormat
     Dim wholeTableStart As Long
+    Dim hasPercent As Boolean
+    Dim newSection As Boolean
+    Dim tablType As AnalysisTablesType
 
     Set rngTable = New BetterArray
     Set specs = Specifications
     Set sh = Wksh()
     Set DesignFormat = desFormat
+
     tabId = specs.TableId
+    tablType = specs.TableType
+    hasPercent = specs.HasPercentage
+    newSection = specs.isNewSection
+
+    'The formatting is divided in parts, from the begining to the end of the
+    'table
+
+    '- Sections
+    '- Titles
+    '- Headers
+    '- Categories columns and Rows
+    '- Interior Values
+    '- uniques cells (missing_missing, total_total, missing_total, info_user, ect)
+    '- Percentage columns (If they exists)
+    '- Then the whole table
+    '- There is a special format for the END_TABLE to take in accound gap for graphs
 
     With sh
-        'Sections
-        If specs.isNewSection() Then
+        'Sections =========================================
+        If newSection Then
             Set rng = .Range("SECTION_" & tabId)
             DesignFormat.ApplyFormat rng, AnalysisSection
 
@@ -876,13 +899,13 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         End If
 
         'Tittle (global summary and time series don't have a title)
-        If specs.TableType <> TypeGlobalSummary And specs.TableType <> TypeTimeSeries Then
+        If tablType <> TypeGlobalSummary And tablType <> TypeTimeSeries Then
             Set rng = .Range("TITLE_" & tabId)
             DesignFormat.ApplyFormat rng, AnalysisTableTitle
         End If
         
         'Dropdown on Geo/spatial table
-        If specs.TableType = TypeSpatial Then
+        If tablType = TypeSpatial Then
             Set rng = .Range("ADM_DROPDOWN_" & tabId)
             DesignFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
 
@@ -891,8 +914,9 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
         End If
 
-        'Headers
-        Select Case specs.TableType
+        'Headers ==============================================================
+
+        Select Case tablType
         
         Case TypeGlobalSummary
             If Not RangeExists("COLGS_FORMATSET") Then
@@ -908,19 +932,32 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             Set rng = .Range("LABEL_ROW_CATEGORIES_" & tabId)
             DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelRow
         
-        Case TypeBivariate, TypeSpatial, TypeTimeSeries
+        Case TypeBivariate, TypeSpatial
             
-            If (specs.TableType <> TypeTimeSeries) Or (specs.isNewSection) Then
+            Set rng = .Range("LABEL_ROW_CATEGORIES_" & tabId)
+            DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelRow
+            
+            Set rng = .Range("STARTCOL_" & tabId)
+            DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelColumn
+
+        Case TypeTimeSeries
+
+            'Row categories are formatted only on new sections
+            If newSection Then
                 Set rng = .Range("LABEL_ROW_CATEGORIES_" & tabId)
                 DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelRow
             End If
             
+            'Headers with the start columns
             Set rng = .Range("STARTCOL_" & tabId)
-            DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelColumn
+            Set rng = .Range(.Cells(rng.Row, rng.Column), .Cells(rng.Row, EndColumn()))
+            DesignFormat.ApplyFormat rng, scope:=AnalysisTimeSeriesHeader
+
         End Select
 
-        'Categories column and row
-        Select Case specs.TableType
+        'Categories column and row =============================================
+
+        Select Case tablType
 
         Case TypeGlobalSummary
             Set rng = .Range("STARTROW_" & tabId)
@@ -932,11 +969,11 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         
         Case TypeBivariate, TypeTimeSeries, TypeSpatial
             'rows
-            If (specs.TableType <> TypeTimeSeries) Or (specs.isNewSection) Then
+            If (tablType <> TypeTimeSeries) Or (newSection) Then
                 Set rng = .Range("ROW_CATEGORIES_" & tabId)
                 DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateRow
                 'start and end date columns
-                If specs.TableType = TypeTimeSeries Then
+                If tablType = TypeTimeSeries Then
                     Set rng = rng.Offset(, -1)
                     Set rng = .Range(rng.Cells(1, 0), rng.Cells(rng.Rows.Count + 1, 1))
                     DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
@@ -957,7 +994,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             'Merge the columns if there is percentage
             If Not RangeExists("MERGED_" & tabId) Then
                 Do While rng.Column <= EndColumn()
-                    If specs.HasPercentage() Then
+                    If hasPercent Then
                         Set rng = rng.Offset(, 2)
                         .Range(rng.Cells(1, -1), rng.Cells(1, 0)).Merge
                     Else
@@ -974,11 +1011,14 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         
         End Select
         
-        'Interior values
-        If (specs.TableType <> TypeGlobalSummary) Then
+        'Interior values =======================================================
+
+        If (tablType <> TypeGlobalSummary) Then
             Set rng = .Range("INTERIOR_VALUES_" & tabId)
             DesignFormat.ApplyFormat rng, scope:=AnalysisInteriorTable
         End If
+
+        'Unique Cells ==========================================================
 
         'Total And missing lines
         rngTable.Clear
@@ -990,7 +1030,13 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             rngName = rngTable.Item(counter) & tabId
             If (InStr(1, rngName, "ROW") > 0) And RangeExists(rngName) Then
                 Set rng = .Range(rngName)
-                DesignFormat.ApplyFormat rng, scope:=AnalysisMissingRow
+                'On time series will shift the first cell on non new sections
+                If tablType = TypeTimeSeries And (Not newSection) Then
+                    DesignFormat.ApplyFormat rng, scope := AnalysisMissingRowWithoutHeader
+                Else
+                    DesignFormat.ApplyFormat rng, scope:=AnalysisMissingRow
+                End If
+                
             ElseIf RangeExists(rngName) Then
                 Set rng = .Range(rngName)
                 DesignFormat.ApplyFormat rng, scope:=AnalysisMissingColumn
@@ -1014,7 +1060,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                 If (InStr(1, rngName, "LABEL") > 0) Then
                     DesignFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
                 
-                ElseIf (InStr(1, rngName, "USER") > 0) Then
+                ElseIf (InStr(1, rngName, "USER") > 0) Or (rngName = "TIME_UNIT_" & tabId) Then
                     DesignFormat.ApplyFormat rng, scope:=AnalysisOneCellCenter
                 
                 Else
@@ -1036,8 +1082,9 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             End If
         Next
 
-        'Percentages
-        If specs.HasPercentage Then
+        'Percentages columns ========================================================
+
+        If hasPercent Then
             Set rng = .Range("PERC_COL_1_" & tabId)
             If (specs.TableType <> TypeSpatial) Or (specs.HasTotal) Then
                 Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count + 1, 1))
@@ -1054,31 +1101,25 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                 rngName = rngTable.Items(counter) & tabId
                 If RangeExists(rngName) Then
                     Set rng = .Range(rngName).Offset(, 1)
-                    DesignFormat.ApplyFormat rng, scope:=AnalysisOneCell
+                    DesignFormat.ApplyFormat rng, scope:=AnalysisOneCellCenter 'Percentages are centered
                 End If
             Next
         End If
-
-        'Time series Header
-        If specs.TableType = TypeTimeSeries Then
-            Set rng = .Range("STARTCOL_" & tabId)
-            Set rng = .Range(.Cells(rng.Row, rng.Column), .Cells(rng.Row, EndColumn()))
-            DesignFormat.ApplyFormat rng, scope:=AnalysisTimeSeriesHeader
-            
-        End If
         
-        wholeTableStart = IIf(specs.TableType = TypeTimeSeries And Not specs.isNewSection, _
+        'The whole table =======================================================
+
+        wholeTableStart = IIf(tablType = TypeTimeSeries And (Not newSection), _
                               StartColumn + 1, StartColumn)
-        'The whole table
-        If (specs.TableType <> TypeUnivariate) And (specs.TableType <> TypeGlobalSummary) Then
+        If (tablType <> TypeUnivariate) And (tablType <> TypeGlobalSummary) Then
             Set rng = .Range(.Cells(StartRow, wholeTableStart), .Cells(EndRow, EndColumn))
             DesignFormat.ApplyFormat rng, scope:=AnalysisWholeTable
-        ElseIf (specs.TableType = TypeUnivariate) Then
+        ElseIf (tablType = TypeUnivariate) Then
             Set rng = .Range(.Cells(StartRow + 1, wholeTableStart), .Cells(EndRow, EndColumn))
             DesignFormat.ApplyFormat rng, scope:=AnalysisWholeTable
         End If
 
-        'The end table for gap for graphs
+        'The end table for gap for graphs ======================================
+
         If RangeExists("ENDTABLE_" & tabId) Then
             Set rng = .Range("ENDTABLE_" & tabId)
             DesignFormat.ApplyFormat rng, scope:=AnalysisEndTable

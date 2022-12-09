@@ -133,43 +133,57 @@ Sub GenerateData()
     Dim nbOfSheets As Long
     Dim increment As Integer
     Dim statusValue As Integer
+    Dim desTrads As IDesTranslation
 
+    BeginWork xlsApp := Application
+
+    Application.Cursor = xlWait
+    Application.EnableEvents = False
     
     Set wb = ThisWorkbook
     Set lData = LinelistSpecs.Create(wb)
-    
-    lData.Prepare
-    
-    Set ll = Linelist.Create(lData)
-    
-    ll.Prepare
-    
-    Set dict = lData.Dictionary()
-    Set llshs = LLSheets.Create(dict)
-    Set mainobj = lData.MainObject()
-    Set llana = lData.Analysis()
+    Set dict = lData.Dictionary() 'Dictionary
+    Set llshs = LLSheets.Create(dict) 'The worksheets object of the dictionary
+    Set mainobj = lData.MainObject() 'The main object is an object for dealing with the main sheet interface
+    Set llana = lData.Analysis() 'Linelist analysis object
 
+    'Create the designer translation object
+    Set desTrads = DesTranslation.Create(wb.Worksheets("DesignerTranslation"))
+
+    'After preparation steps, update the status
+    mainobj.UpdateStatus (5) '5% after preparation steps are done
+
+    'Add informations on the preparing step to the end user
+    mainobj.AddInfo desTrads, "MSG_ReadSetup"
+
+    'Preparing the setup and specification files
+    lData.Prepare
+
+    'Preparing the linelist file
+    Set ll = Linelist.Create(lData)
+    mainobj.AddInfo desTrads, "MSG_PreparLL"
+    ll.Prepare
     mainobj.UpdateStatus (10)
 
+    'Should add Error management when something goes wrong
+    mainobj.AddInfo desTrads, "MSG_HListVList"
+
+    On Error GoTo ErrorBuildingLLManage
+
     currSheetName = dict.DataRange("sheet name").Cells(1, 1).Value
-    
     If llshs.SheetInfo(currSheetName) = "vlist1D" Then
-
         Set buildingSheet = Vlist.Create(currSheetName, ll)
-    
     ElseIf llshs.SheetInfo(currSheetName) = "hlist2D" Then
-
         Set buildingSheet = Hlist.Create(currSheetName, ll)
-    
     End If
 
     If buildingSheet Is Nothing Then Exit Sub
+    
+    mainobj.UpdateStatus (15)
     statusValue = 15
-    mainobj.UpdateStatus statusValue
     nbOfSheets = dict.UniqueValues("sheet name").Length
     increment = CInt((80 - 15) / nbOfSheets)
 
-     
     'Build the first sheet
     buildingSheet.Build
     statusValue = statusValue + increment
@@ -196,17 +210,38 @@ Sub GenerateData()
     Loop
 
     'Save the linelist
+    mainobj.AddInfo desTrads, "MSG_BuildAna"
+
     llana.Build ll
     ll.SaveLL
-    EndWork xlsapp:=Application
+
+    'Update the status to 100%
+    mainobj.UpdateStatus (100)
+
+    Application.Cursor = xlDefault
+    Application.EnableEvents = True
     
     'Open the linelist
     outPath = mainobj.OutputPath & Application.PathSeparator & mainobj.LinelistName & ".xlsb"
     If MsgBox(TranslateMsg("MSG_OpenLL") & " " & outPath & " ?", vbQuestion + vbYesNo, "Linelist") = vbYes Then OpenLL
 
+    Exit Sub
+    
+    ErrorBuildingLLManage :
+        Application.Cursor = xlDefault
+        Application.EnableEvents = True
+
+        ll.ErrorManage
+        Exit Sub
+
+    ErrorLinelistSpecsManage:
+        Application.Cursor = xlDefault
+        Application.EnableEvents = True
+        
+        lData.ErrorManage
+        Exit Sub
 End Sub
 
-'Adding some controls before generating the linelist  =================================================================================================================================================
 
 'Adding some controls before generating the linelist  =================================================================================================================================================
 Public Sub Control()

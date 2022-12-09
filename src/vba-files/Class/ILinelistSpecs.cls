@@ -45,4 +45,5 @@ Public Sub Prepare(): End Sub
 
 'Export specifications to workbook
 Public Sub Export(ByVal toWkb As Workbook): End Sub
+Public Sub ErrorManage() : End Sub
 

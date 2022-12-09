@@ -288,7 +288,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         End If
 
         styleValue = IIf(styleValue = 0, 9, styleValue)
-        dimensionValue = IIf(dimensionValue = 0, 22, dimensionValue)
+        dimensionValue = IIf(dimensionValue = 0, 30, dimensionValue)
         sh.Cells.Font.Size = styleValue
         sh.Cells.EntireColumn.ColumnWidth = dimensionValue
 
@@ -316,6 +316,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         rng.Offset(1).EntireRow.RowHeight = 45
         rng.Offset(1).EntireRow.RowHeight = dimensionValue
         On Error GoTo 0
+        rng.Locked = False
 
     Case AnalysisTableTitle
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
@@ -327,7 +328,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         FormatRange rng, FontSize:=styleValue, _
                     fontColor:=fontColorValue, Horiz:=xlHAlignLeft, _
                     Verti:=xlVAlignBottom
-        rng.WrapText = True
+        rng.WrapText = False
         rng.Font.Italic = True
 
     Case LinelistSelectionDropdown
@@ -349,6 +350,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         fontColorValue = DesignValue("categories names font color")
         FormatRange rng, fontColor:=fontColorValue, isBold:=True, FontSize:=styleValue - 1, _
                     Horiz:=horizAlign, Verti:=verticalAlign
+        rng.WrapText = True
 
     Case AnalysisCategoriesUnivariateRow, AnalysisFirstRow, AnalysisCategoriesBivariateRow, AnalysisCategoriesBivariateColumn
 
@@ -383,6 +385,9 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
             DrawLines rng, line:=xlDouble, At:="Top", color:=bordersColorValue
             DrawLines rng, line:=xlDouble, At:="Bottom", color:=bordersColorValue
         End If
+
+        'Wrap text on column and rows if too long
+        rng.WrapText = True
 
     Case AnalysisGlobalSummaryRow
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
@@ -437,7 +442,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         DrawLines rng, At:="Bottom", color:=bordersColorValue, line:=xlDouble
         DrawLines rng, At:="Right", color:=bordersColorValue, line:=xlDouble
 
-    Case AnalysisMissingRow, AnalysisMissingColumn
+    Case AnalysisMissingRow, AnalysisMissingColumn, AnalysisMissingRowWithoutHeader
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject

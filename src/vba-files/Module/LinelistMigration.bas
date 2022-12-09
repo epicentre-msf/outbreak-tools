@@ -2,7 +2,7 @@ Attribute VB_Name = "LinelistMigration"
 Option Explicit
 Option Private Module
 
-Dim ImportReport As Boolean
+Private ImportReport As Boolean
 Dim ImportVarData As BetterArray
 
 Sub ControlClearData()
@@ -456,10 +456,10 @@ Sub ImportMigrationData()
             Call ImportSheetData(shImp.Name, shImp, hasData, ColumnIndexLLData, VarNamesLLData)
             TabSheetsTouched.Push shImp.Name
         Else
-            'Set import report to true
-            If Not ImportReport Then ImportReport = True
             'Test if this is valid worksheet before writing
             If Not SheetNameIsBad(shImp.Name) Then
+                'Set import report to true
+                If Not ImportReport Then ImportReport = True
                 With shpTemp
                     iRow = .Cells(.Rows.Count, 1).End(xlUp).Row
                     .Cells(iRow + 1, 1).Value = shImp.Name

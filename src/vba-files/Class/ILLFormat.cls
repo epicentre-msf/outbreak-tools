@@ -69,6 +69,7 @@ Public Enum FormatScopes
     HListSimpleHeaderCell = 49
     AnalysisDateCell = 50
     AnalysisInfoCellLeft = 51
+    AnalysisMissingRowWithoutHeader = 52
 End Enum
 
 Public Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
