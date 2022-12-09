@@ -172,6 +172,7 @@ Private Sub Build(ll As ILinelist)
     Dim forml As IFormulaData
     Dim dict As ILLdictionary
     Dim vars As ILLVariables
+    Dim pass As ILLPasswords
     Dim maxFormula As String
     Dim minFormula As String
     Dim rowVar As String
@@ -205,6 +206,7 @@ Private Sub Build(ll As ILinelist)
     Set vars = LLVariables.Create(dict)
     Set sectionsList = New BetterArray
     Set drop = ll.Dropdown()
+    Set pass = lData.Password()
     
     
     Set outsh = ll.Wksh(tradmsg.TranslatedValue("LLSHEET_Analysis"))
@@ -227,9 +229,9 @@ Private Sub Build(ll As ILinelist)
     'Activating the worksheet restores all the application
     'status to true, remember to recall the busy app just
     'after
-    outsh.Activate
     BusyApp
-    With ActiveWindow
+    outsh.Activate
+    With Application.ActiveWindow
         .SplitRow = 2
         .FreezePanes = True
     End With
@@ -332,11 +334,12 @@ Private Sub Build(ll As ILinelist)
     outsh.Cells(2, 2).Value = goToSection
     drop.SetValidation outsh.Cells(2, 2), "uagotosection"
     design.ApplyFormat outsh.Cells(2, 2), scope:=LinelistSelectionDropdown
+    outsh.Cells(2, 2).Locked = False
     outsh.Cells(2, 2).Name = "ua_" & GOTOSECCODE
     
-     
     'Transfert event change to the univariate analysis worksheet
     TransferCodeWksh outsh, ll
+    pass.Protect "_active", True
      
     'Build Time series Analysis =====================================================
      
@@ -356,9 +359,9 @@ Private Sub Build(ll As ILinelist)
     design.ApplyFormat cellRng, LinelistHiddenCell
     
     On Error Resume Next
-    outsh.Activate
     BusyApp
-    With ActiveWindow
+    outsh.Activate
+    With Application.ActiveWindow
         .SplitRow = 2
         .FreezePanes = True
         .Zoom = 65
@@ -476,9 +479,11 @@ Private Sub Build(ll As ILinelist)
     design.ApplyFormat outsh.Cells(2, 2), scope:=LinelistSelectionDropdown
     outsh.Cells(2, 2).Name = "ts_" & GOTOSECCODE
     outsh.Cells(2, 2).Value = goToSection
+    outsh.Cells(2, 2).Locked = False
      
     'Send the LinelistTimeSeries change
     TransferCodeWksh outsh, ll
+    pass.Protect "_active", True
      
      
     'Building the spatial Analysis ===================================================================================
@@ -722,9 +727,12 @@ Private Sub Translate(ByVal TransObject As ITranslation)
     Dim Lo As ListObject
     Dim colRng As Range
 
+    'TransObject is the translation object (from Translation.cls). It can
+    'translate ranges, and formula ranges.
+
     Set transCols = New BetterArray
     Set anash = Wksh()
-    transCols.Push "section", "title", "summary label"
+    transCols.Push "section", "title", "summary label", "choices" 'choices is for the time series graphs translation
 
     For Each Lo In anash.ListObjects
         For counter = transCols.LowerBound To transCols.UpperBound

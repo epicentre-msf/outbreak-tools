@@ -61,7 +61,7 @@ Private Property Get InDebugMode() As Boolean
 End Property
 
 'protect
-Private Sub Protect(Optional ByVal sheetName As String = "_active")
+Private Sub Protect(Optional ByVal sheetName As String = "_active", Optional Byval allowShapes As Boolean = False)
 
     Dim pwd As String
     Dim sh As Worksheet
@@ -79,10 +79,11 @@ Private Sub Protect(Optional ByVal sheetName As String = "_active")
     If sh Is Nothing Then Exit Sub
     If Not InDebugMode() Then
         pwd = Password()
-        sh.protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=False, _
+        sh.protect Password:=pwd, DrawingObjects:=(Not allowShapes), Contents:=True, Scenarios:=allowShapes, _
                    AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                    AllowFormattingCells:=True, AllowDeletingRows:=True
-        sh.EnableSelection = xlUnlockedCells
+                   
+        If Not allowShapes Then sh.EnableSelection = xlUnlockedCells
     End If
 
 End Sub
@@ -213,8 +214,8 @@ Public Sub ILLPasswords_UnProtect(Optional ByVal sheetName As String = "_active"
     UnProtect sheetName
 End Sub
 
-Public Sub ILLPasswords_Protect(Optional ByVal sheetName As String = "_active")
-    protect sheetName
+Public Sub ILLPasswords_Protect(Optional ByVal sheetName As String = "_active", Optional Byval allowShapes As Boolean = False)
+    protect sheetName, allowShapes
 End Sub
 
 Public Sub ILLPasswords_Export(ByVal toWkb As Workbook)

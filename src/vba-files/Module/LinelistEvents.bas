@@ -644,6 +644,7 @@ Sub EventValueChangeAnalysis(Target As Range)
         Set rng = actSh.Range("ua_go_to_section")
 
     Case "TS-Analysis"
+        actSh.Calculate
         'Goto section range for time series analysis
         Set rng = actSh.Range("ts_go_to_section")
         
