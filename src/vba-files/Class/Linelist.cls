@@ -391,7 +391,7 @@ Private Sub Prepare()
     classesList.Clear
     classesList.Push "Helpers", "LinelistConstants", "LinelistCustomFunctions", _
                      "LinelistExport", "LinelistGeo", "LinelistMigration", "LinelistShowHide", _
-                     "LinelistTranslation", "EstheticConstants", "LinelistEvents", "LinelistDictionary"
+                     "LinelistTranslation", "LinelistEvents", "LinelistDictionary"
 
     For counter = classesList.LowerBound To classesList.UpperBound
         codeName = classesList.Item(counter)
@@ -473,16 +473,16 @@ Private Sub ErrorManage()
     Dim Quit As Integer
 
     'Ask the user if he wants to see (Or not) the uncompleted linelist
-    Quit = MsgBox("An internal Error occured, do you want to see the uncompleted linelist?", _ 
+    Quit = MsgBox("An internal Error occured, do you want to see the uncompleted linelist?", _
                   vbExclamation + vbYesNo, "ERROR")
 
-    If Quit = vbNo Then
+    If Quit = vbYes Then
         Set outWkb = wkb()
         'Return the uncomplete workbook
         outWkb.Application.Visible = True
     Else
         Set outWkb = wkb()
-        outWkb.Close savechanges := False
+        outWkb.Close savechanges:=False
     End If
 
 End Sub

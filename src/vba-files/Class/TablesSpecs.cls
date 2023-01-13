@@ -160,7 +160,7 @@ Private Property Get HasTotal() As Boolean
     Case TypeBivariate
         HasTotal = True
     Case TypeTimeSeries
-        HasTotal = ((Value("total") = "yes") Or (Value("percentage") = "row") Or _ 
+        HasTotal = ((Value("total") = "yes") Or (Value("percentage") = "row") Or _
                     (Value("percentage") = "column")) And (Value("column") <> vbNullString)
     Case TypeSpatial
         HasTotal = True

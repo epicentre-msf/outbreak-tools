@@ -175,7 +175,7 @@ Sub ShowLstF2(sPlace As String)
 
     [F_Geo].TXT_Msg.Value = sPlace
 
-    If T_Aff.Length > 0 Then  [F_Geo].LST_AdmF2.List = T_Aff.Items
+    If T_Aff.Length > 0 Then [F_Geo].LST_AdmF2.List = T_Aff.Items
 
     Application.Cursor = xlDefault
 
@@ -267,7 +267,7 @@ Sub ShowLst4(sAdm3 As String)
 
     Set T_Aff = geo.GeoLevel(LevelAdmin4, CustomTypeGeo, adminNames)
 
-    If T_Aff.Length > 0 Then  [F_Geo].LST_Adm4.List = T_Aff.Items
+    If T_Aff.Length > 0 Then [F_Geo].LST_Adm4.List = T_Aff.Items
 
     Application.Cursor = xlDefault
 End Sub
