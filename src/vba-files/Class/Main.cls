@@ -133,20 +133,17 @@ Public Sub CheckReadiness(ByVal trads As IDesTranslation)
 
     'Checking coherence of the GEO  ------------------------------------------------
 
-    'Be sure the geo path is not empty
-    If sh.Range("RNG_PathGeo").Value = vbNullString Then
-        sh.Range("RNG_Edition").Value = trads.TranslationMsg("MSG_PathGeo")
-        sh.Range("RNG_PathGeo").Interior.color = redColor
-        MsgBox trads.TranslationMsg("MSG_PathGeo"), vbExclamation + vbOKOnly, trads.TranslationMsg("MSG_TitleGeo")
-        Exit Sub
-    End If
-
-    'Now check if the file exists
-    If Dir(sh.Range("RNG_PathGeo").Value) = vbNullString Then
-        sh.Range("RNG_Edition").Value = trads.TranslationMsg("MSG_PathGeo")
-        sh.Range("RNG_PathGeo").Interior.color = redColor
-        MsgBox trads.TranslationMsg("MSG_PathGeo"), vbExclamation + vbOKOnly, trads.TranslationMsg("MSG_TitleGeo")
-        Exit Sub
+    'Be sure the geo path is not empty and in that case, test the file.
+    'You can create a linelist with an empty geobase though
+    
+    If Not IsEmpty(sh.Range("RNG_PathGeo")) Then
+        'Now check if the file exists
+        If Dir(sh.Range("RNG_PathGeo").Value) = vbNullString Then
+            sh.Range("RNG_Edition").Value = trads.TranslationMsg("MSG_PathGeo")
+            sh.Range("RNG_PathGeo").Interior.color = redColor
+            MsgBox trads.TranslationMsg("MSG_PathGeo"), vbExclamation + vbOKOnly, trads.TranslationMsg("MSG_TitleGeo")
+            Exit Sub
+        End If
     End If
 
     sh.Range("RNG_PathGeo").Interior.color = whiteColor 'if path is OK
