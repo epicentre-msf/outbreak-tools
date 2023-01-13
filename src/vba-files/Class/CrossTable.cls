@@ -858,8 +858,8 @@ Private Sub Format(ByVal desFormat As ILLFormat)
     Dim tabId As String
     Dim DesignFormat As ILLFormat
     Dim wholeTableStart As Long
-    Dim hasPercent As Boolean
-    Dim newSection As Boolean
+    Dim HasPercent As Boolean
+    Dim NewSection As Boolean
     Dim tablType As AnalysisTablesType
 
     Set rngTable = New BetterArray
@@ -869,8 +869,8 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
     tabId = specs.TableId
     tablType = specs.TableType
-    hasPercent = specs.HasPercentage
-    newSection = specs.isNewSection
+    HasPercent = specs.HasPercentage
+    NewSection = specs.isNewSection
 
     'The formatting is divided in parts, from the begining to the end of the
     'table
@@ -887,7 +887,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
     With sh
         'Sections =========================================
-        If newSection Then
+        If NewSection Then
             Set rng = .Range("SECTION_" & tabId)
             DesignFormat.ApplyFormat rng, AnalysisSection
 
@@ -943,7 +943,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         Case TypeTimeSeries
 
             'Row categories are formatted only on new sections
-            If newSection Then
+            If NewSection Then
                 Set rng = .Range("LABEL_ROW_CATEGORIES_" & tabId)
                 DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelRow
             End If
@@ -969,7 +969,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         
         Case TypeBivariate, TypeTimeSeries, TypeSpatial
             'rows
-            If (tablType <> TypeTimeSeries) Or (newSection) Then
+            If (tablType <> TypeTimeSeries) Or (NewSection) Then
                 Set rng = .Range("ROW_CATEGORIES_" & tabId)
                 DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateRow
                 'start and end date columns
@@ -984,7 +984,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                         rngName = rngTable.Item(counter) & tabId
                         Set rng = .Range(rngName)
                         DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
-                        DesignFormat.ApplyFormat rng, scope := AnalysisDateCell
+                        DesignFormat.ApplyFormat rng, scope:=AnalysisDateCell
                     Next
                 End If
             End If
@@ -994,7 +994,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             'Merge the columns if there is percentage
             If Not RangeExists("MERGED_" & tabId) Then
                 Do While rng.Column <= EndColumn()
-                    If hasPercent Then
+                    If HasPercent Then
                         Set rng = rng.Offset(, 2)
                         .Range(rng.Cells(1, -1), rng.Cells(1, 0)).Merge
                     Else
@@ -1031,8 +1031,8 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             If (InStr(1, rngName, "ROW") > 0) And RangeExists(rngName) Then
                 Set rng = .Range(rngName)
                 'On time series will shift the first cell on non new sections
-                If tablType = TypeTimeSeries And (Not newSection) Then
-                    DesignFormat.ApplyFormat rng, scope := AnalysisMissingRowWithoutHeader
+                If tablType = TypeTimeSeries And (Not NewSection) Then
+                    DesignFormat.ApplyFormat rng, scope:=AnalysisMissingRowWithoutHeader
                 Else
                     DesignFormat.ApplyFormat rng, scope:=AnalysisMissingRow
                 End If
@@ -1078,13 +1078,13 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             If RangeExists(rngName) Then
                 Set rng = .Range(rngName)
                 DesignFormat.ApplyFormat rng, scope:=AnalysisInfoCell
-                If InStr(1, rngName, "INFO_ANA_") > 0 Then   DesignFormat.ApplyFormat rng, scope:=AnalysisInfoCellLeft
+                If InStr(1, rngName, "INFO_ANA_") > 0 Then DesignFormat.ApplyFormat rng, scope:=AnalysisInfoCellLeft
             End If
         Next
 
         'Percentages columns ========================================================
 
-        If hasPercent Then
+        If HasPercent Then
             Set rng = .Range("PERC_COL_1_" & tabId)
             If (specs.TableType <> TypeSpatial) Or (specs.HasTotal) Then
                 Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count + 1, 1))
@@ -1108,7 +1108,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         
         'The whole table =======================================================
 
-        wholeTableStart = IIf(tablType = TypeTimeSeries And (Not newSection), _
+        wholeTableStart = IIf(tablType = TypeTimeSeries And (Not NewSection), _
                               StartColumn + 1, StartColumn)
         If (tablType <> TypeUnivariate) And (tablType <> TypeGlobalSummary) Then
             Set rng = .Range(.Cells(StartRow, wholeTableStart), .Cells(EndRow, EndColumn))

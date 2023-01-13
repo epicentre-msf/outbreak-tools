@@ -326,7 +326,7 @@ Public Sub Build()
     sh.Protection.AllowEditRanges.Add Title:="EditAll" & tableName, Range:=Range(tableName & "[#All]")
     
     'Protect the worksheet
-    pass.protect "_active"
+    pass.Protect "_active"
 End Sub
 
 'Error

@@ -192,7 +192,7 @@ Sub ClicCmdDebug()
 
         For Each sh In ThisWorkbook.Worksheets
             If SheetsToProtect.Includes(sh.Name) Then
-                sh.protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+                sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                            AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                            AllowFormattingColumns:=True
 
@@ -231,7 +231,7 @@ Public Sub ProtectSheet(Optional sSheetName As String = "_Active")
 
     If Not DebugMode Then
         pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value
-        sh.protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
+        sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
                    AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
                    AllowFormattingColumns:=True
     End If
@@ -277,14 +277,14 @@ Sub EventValueChangeLinelist(Target As Range)
     adminNames.LowerBound = 1
 
     targetColumn = Target.Column
-    startLine = sh.Range(tablename & "_START").row
-    varControl = sh.Cells(startLine - 5 , targetColumn).Value
+    startLine = sh.Range(tableName & "_START").Row
+    varControl = sh.Cells(startLine - 5, targetColumn).Value
 
     If Target.Row >= startLine Then
         
         nbOffset = Target.Row - hRng.Row
         Set calcRng = hRng.Offset(nbOffset)
-        calcRng.Calculate 
+        calcRng.Calculate
 
         If (varControl = "geo1") Or (varControl = "geo2") Or (varControl = "geo3") Or (varControl = "geo4") Then
 
@@ -295,7 +295,7 @@ Sub EventValueChangeLinelist(Target As Range)
 
             Select Case varControl
 
-            Case  "geo1"
+            Case "geo1"
                 'adm1 has been modified, we will correct and set validation to adm2
 
                 BeginWork xlsapp:=Application
@@ -338,7 +338,7 @@ Sub EventValueChangeLinelist(Target As Range)
 
                 EndWork xlsapp:=Application
 
-            Case  "geo3"
+            Case "geo3"
                 'Adm 3 has been modified, correct and filter adm4
                 BeginWork xlsapp:=Application
 
@@ -362,17 +362,17 @@ Sub EventValueChangeLinelist(Target As Range)
     End If
     
     'Update the custom control
-    If  (Target.Row = startLine - 2) And (varControl = "custom") Then
+    If (Target.Row = startLine - 2) And (varControl = "custom") Then
         Set dict = LLdictionary.Create(ThisWorkbook.Worksheets("Dictionary"), 1, 1)
         Set vars = LLVariables.Create(dict)
         'The name of custom variables has been updated, update the dictionary
         varName = sh.Cells(startLine - 1, targetColumn).Value
-        varSubLabel = vars.Value(varName := varName, colName := "sub label")
+        varSubLabel = vars.Value(varName:=varName, colName:="sub label")
 
         sLabel = Replace(Target.Value, varSubLabel, "")
         sLabel = Replace(sLabel, Chr(10), "")
 
-        vars.SetValue varName := varName, colName := "main label", newValue := sLabel
+        vars.SetValue varName:=varName, colName:="main label", newValue:=sLabel
 
     End If
     
@@ -384,7 +384,7 @@ Sub EventValueChangeLinelist(Target As Range)
     End If
 
     
-    'GoTo section 
+    'GoTo section
     If Not Intersect(Target, rng) Is Nothing Then
         goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
 
@@ -392,7 +392,7 @@ Sub EventValueChangeLinelist(Target As Range)
         Set hRng = sh.ListObjects(1).HeaderRowRange
         Set hRng = hRng.Offset(-3)
 
-        Set cellRng = hRng.Find(What:=sLabel, LookAt:=xlWhole,  MatchCase:=True)
+        Set cellRng = hRng.Find(What:=sLabel, LookAt:=xlWhole, MatchCase:=True)
 
         If Not cellRng Is Nothing Then cellRng.Activate
     End If
@@ -688,7 +688,7 @@ Sub EventValueChangeVList(Target As Range)
     goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
     
     If Not Intersect(Target, rng) Is Nothing Then
-        sLabel = Replace(Target.Value,  goToSection & ": ", "")
+        sLabel = Replace(Target.Value, goToSection & ": ", "")
         Set RngLook = sh.Cells.Find(What:=sLabel, LookAt:=xlWhole, MatchCase:=True)
         If Not RngLook Is Nothing Then RngLook.Activate
     End If

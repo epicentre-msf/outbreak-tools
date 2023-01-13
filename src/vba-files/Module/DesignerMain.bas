@@ -29,10 +29,15 @@ Private Sub ImportLang()
 
     On Error Resume Next
     BeginWork xlsapp:=Application
+    
+    'Set Events to false to avoid
+    Application.EnableEvents = False
     Set wkb = Workbooks.Open(inPath)
+    
     On Error GoTo 0
     
     If wkb Is Nothing Then Exit Sub
+    
     On Error Resume Next
     Set Lo = wkb.Worksheets("Translations").ListObjects(1)
     On Error GoTo 0
@@ -45,6 +50,8 @@ Private Sub ImportLang()
     SheetMain.Range("RNG_LangSetup").Value = langTable.Item(langTable.LowerBound)
  
     wkb.Close savechanges:=False
+    
+    Application.EnableEvents = True
  
 End Sub
 
@@ -52,6 +59,7 @@ End Sub
 Sub LoadFileDic()
 
     BeginWork xlsapp:=Application
+    
     Dim io As IOSFiles
     Set io = OSFiles.Create()
 
@@ -135,7 +143,7 @@ Sub GenerateData()
     Dim statusValue As Integer
     Dim desTrads As IDesTranslation
 
-    BeginWork xlsApp := Application
+    BeginWork xlsapp:=Application
 
     Application.Cursor = xlWait
     Application.EnableEvents = False
@@ -227,14 +235,14 @@ Sub GenerateData()
 
     Exit Sub
     
-    ErrorBuildingLLManage :
+ErrorBuildingLLManage:
         Application.Cursor = xlDefault
         Application.EnableEvents = True
 
         ll.ErrorManage
         Exit Sub
 
-    ErrorLinelistSpecsManage:
+ErrorLinelistSpecsManage:
         Application.Cursor = xlDefault
         Application.EnableEvents = True
         

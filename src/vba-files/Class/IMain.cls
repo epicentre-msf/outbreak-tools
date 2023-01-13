@@ -27,7 +27,7 @@ Public Property Get Ready() As Boolean: End Property
 Public Property Get LinelistPassWord() As String: End Property
 
 'Add information to end user
-Public Sub AddInfo(Byval trads As IDesTranslation, Byval msgCode As String): End Sub
+Public Sub AddInfo(ByVal trads As IDesTranslation, ByVal msgCode As String): End Sub
 
 'Exposed methods
 Public Sub CheckReadiness(ByVal trads As IDesTranslation): End Sub
