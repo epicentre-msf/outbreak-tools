@@ -312,12 +312,15 @@ Private Sub Prepare()
     'Import the geobase
     setPath = mainobj.GeoPath()
     
-    BusyApp
-    Set inpWkb = Workbooks.Open(setPath)
-    BusyApp
-    
-    geo.Import inpWkb
-    inpWkb.Close savechanges:=False
+    'If the geopath is not empty, then import the geobase
+    If (setPath <> vbNullString) Then
+        BusyApp
+        Set inpWkb = Workbooks.Open(setPath)
+        BusyApp
+        
+        geo.Import inpWkb
+        inpWkb.Close savechanges:=False
+    End If
     
     'Define those objects after the imports
     Set dictTrads = TransObject(TranslationOfDictionary)
