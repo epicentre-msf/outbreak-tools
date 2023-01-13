@@ -439,6 +439,10 @@ Private Sub BivariateColumns(ByVal start As Long, ByVal specs As ITablesSpecs, B
             labData.Push colLab
             NumberOfColumns = 1
             labData.ToExcelRange .Cells(start, StartColumn + 1), TransposeValues:=True
+            
+            'This is a quick fix to include calculated columns (not splitted by a group by) to time series.
+            'I use the End(xltoLeft) to find the next startcolumn, so something needs to be puts in this column
+            .Cells(start + 1, StartColumn + 1).Value = " "
         End If
 
         EndColumn = StartColumn + labData.Length() 'Set the endcolumn of the table
