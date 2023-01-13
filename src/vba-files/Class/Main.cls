@@ -245,7 +245,7 @@ Private Sub UpdateStatus(ByVal numValue As Integer)
 End Sub
 
 'Add information on edition to the end user
-Private Sub AddInfo(Byval trads As IDesTranslation, Byval msgCode As String)
+Private Sub AddInfo(ByVal trads As IDesTranslation, ByVal msgCode As String)
     Dim sh As Worksheet
     Dim infoRng As Range
 
@@ -318,7 +318,7 @@ Public Sub Imain_UpdateStatus(ByVal numValue As Integer)
     UpdateStatus numValue
 End Sub
 
-Public Sub Imain_AddInfo(Byval trads As IDesTranslation, Byval msgCode As String)
+Public Sub Imain_AddInfo(ByVal trads As IDesTranslation, ByVal msgCode As String)
     AddInfo trads, msgCode
 End Sub
 

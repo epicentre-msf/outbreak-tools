@@ -20,7 +20,7 @@ Public Property Get Password() As String: End Property
 
 Public Sub UnProtect(Optional ByVal sheetName As String = "_active"): End Sub
 
-Public Sub Protect(Optional ByVal sheetName As String = "_active", Optional Byval allowShapes As Boolean = False)
+Public Sub Protect(Optional ByVal sheetName As String = "_active", Optional ByVal allowShapes As Boolean = False)
 End Sub
 
 'Public Sub EnterDebugMode(): End Sub

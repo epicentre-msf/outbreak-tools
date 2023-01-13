@@ -297,7 +297,7 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
 
     sh.Range("RNG_PastingGeoCol").EntireColumn.Cells.Clear
 
-Err :
+Err:
     Set GeoLevel = outLevels.Clone()
     sh.EnableCalculation = True
 End Property
@@ -859,7 +859,7 @@ Private Sub Update(ByVal pass As ILLPasswords)
                 
             End With
             
-            pass.protect sh.Name
+            pass.Protect sh.Name
         End If
     Next
 

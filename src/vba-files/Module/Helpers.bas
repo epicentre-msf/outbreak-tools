@@ -296,34 +296,7 @@ Public Sub DrawLines(rng As Range, _
     End If
 End Sub
 
-'Format a range including the number format, the interior color, the fontcolor, the size of the font and the number format
 
-Public Sub FormatARange(rng As Range, _
-                        Optional sValue As String = "", _
-                        Optional sInteriorColor As String = "", _
-                        Optional sFontColor As String = "", _
-                        Optional isBold As Boolean = False, _
-                        Optional Horiz As Integer = xlHAlignCenter, _
-                        Optional Verti As Integer = xlVAlignCenter, _
-                        Optional FontSize As Integer = C_iAnalysisFontSize, _
-                        Optional NumFormat As String = "")
-
-    With rng
-
-        If sInteriorColor <> vbNullString Then .Interior.color = GetColor(sInteriorColor)
-        If sFontColor <> vbNullString Then .Font.color = GetColor(sFontColor)
-
-        .Font.Bold = isBold
-        .Font.Size = FontSize
-        If NumFormat <> vbNullString Then .NumberFormat = NumFormat
-        .HorizontalAlignment = Horiz
-        .VerticalAlignment = Verti
-        If sValue <> vbNullString Then .Value = sValue
-
-    End With
-
-
-End Sub
 
 'Set validation List on a Range
 Sub SetValidation(oRange As Range, sValidList As String, sAlertType As Byte, Optional sMessage As String = vbNullString)
@@ -355,16 +328,16 @@ Function FindLastRow(shLL As Worksheet) As Long
 
     Dim counter As Long
     Dim lastRow As Long
-    Dim lo As ListObject
-    Dim loRng As Range
+    Dim Lo As ListObject
+    Dim LoRng As Range
     Dim hRng As Range
     Dim controlValue As String
     Dim destRng As Range
     Dim shTemp As Worksheet
     Dim col As Long 'Column to check the number of rows on
 
-    Set lo = shLL.ListObjects(1)
-    Set hRng = lo.HeaderRowRange
+    Set Lo = shLL.ListObjects(1)
+    Set hRng = Lo.HeaderRowRange
     Set shTemp = ThisWorkbook.Worksheets("temp__") 'temporary sheet for work
 
     'First copy the listObject data to the temporary sheet
@@ -378,16 +351,16 @@ Function FindLastRow(shLL As Worksheet) As Long
     shTemp.Cells.Clear
     lastRow = hRng.Row
 
-    Set loRng = lo.Range
-    Set destRng = shTemp.Range(loRng.Address)
+    Set LoRng = Lo.Range
+    Set destRng = shTemp.Range(LoRng.Address)
 
     'copy the value to the destination range in the temporary worksheet
-    destRng.Value = loRng.Value
+    destRng.Value = LoRng.Value
 
-    'No need to compute the lastrow if the databodyrange does not exists, 
+    'No need to compute the lastrow if the databodyrange does not exists,
     'in that case the last row is just the headerRow + 1
 
-    If Not lo.DataBodyRange Is Nothing Then
+    If Not Lo.DataBodyRange Is Nothing Then
 
         For counter = 1 To hRng.Cells.Count
 
@@ -502,7 +475,7 @@ End Function
 'Get the headers of one sheet from one line (probablly the first line)
 'The headers are cleaned
 
-Public Function GetHeaders(wkb As Workbook, sSheet As String, StartLine As Long, Optional StartColumn As Long = 1) As BetterArray
+Public Function GetHeaders(wkb As Workbook, sSheet As String, startLine As Long, Optional StartColumn As Long = 1) As BetterArray
     'Extract column names in one sheet starting from one line
     Dim Headers As BetterArray
     Dim i As Long
@@ -512,9 +485,9 @@ Public Function GetHeaders(wkb As Workbook, sSheet As String, StartLine As Long,
 
     With wkb.Worksheets(sSheet)
         i = StartColumn
-        Do While .Cells(StartLine, i).Value <> vbNullString
+        Do While .Cells(startLine, i).Value <> vbNullString
             'Clear the values in the sheet when adding thems
-            sValue = .Cells(StartLine, i).Value  'The argument is passed byval to clearstring
+            sValue = .Cells(startLine, i).Value  'The argument is passed byval to clearstring
             sValue = ClearString(sValue)
             Headers.Push sValue
             i = i + 1
@@ -525,7 +498,7 @@ Public Function GetHeaders(wkb As Workbook, sSheet As String, StartLine As Long,
 End Function
 
 'Get the data from one sheet starting from one line
-Public Function GetData(wkb As Workbook, sSheetName As String, StartLine As Long, Optional EndColumn As Long = 0) As BetterArray
+Public Function GetData(wkb As Workbook, sSheetName As String, startLine As Long, Optional EndColumn As Long = 0) As BetterArray
     Dim Data As BetterArray
     Dim rng As Range
 
@@ -538,8 +511,8 @@ Public Function GetData(wkb As Workbook, sSheetName As String, StartLine As Long
 
         iLastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
         iLastCol = EndColumn
-        If EndColumn = 0 Then iLastCol = .Cells(StartLine, .Columns.Count).End(xlToLeft).Column
-        Set rng = .Range(.Cells(StartLine, 1), .Cells(iLastRow, iLastCol))
+        If EndColumn = 0 Then iLastCol = .Cells(startLine, .Columns.Count).End(xlToLeft).Column
+        Set rng = .Range(.Cells(startLine, 1), .Cells(iLastRow, iLastCol))
     End With
 
     Data.FromExcelRange rng

@@ -145,13 +145,13 @@ Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional
     seriesIndex = ind
 End Sub
 
-Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, Optional Byval prefix As String = vbNullString)
+Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, Optional ByVal prefix As String = vbNullString)
 
     Dim co As ChartObject
     Dim sh As Worksheet
     Set co = graphChart
     Set sh = Wksh()
-    Dim label As String
+    Dim LABEL As String
     Dim ind As Long
 
     ind = seriesIndex
@@ -159,12 +159,12 @@ Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, Optional 
     'Adding prefix to the label name of graphs (useful for time series graphs)
     If prefix <> vbNullString Then prefix = prefix & " - "
 
-    label = prefix & sh.Range(lblName).Value 
+    LABEL = prefix & sh.Range(lblName).Value
 
     'Throw error when co is Nothing
     With co.Chart
         .SeriesCollection(ind).XValues = sh.Range(catName)
-        .SeriesCollection(ind).Name = label 'labels are hardcoded, the user can not modify by changing values in ranges
+        .SeriesCollection(ind).Name = LABEL 'labels are hardcoded, the user can not modify by changing values in ranges
         .SeriesCollection(ind).ApplyDataLabels xlDataLabelsShowValue, False
         .SeriesCollection(ind).DataLabels.Font.Size = 6
         .SeriesCollection(ind).DataLabels.Font.color = RGB(2, 6, 91)
@@ -251,7 +251,7 @@ Public Sub IGraphs_AddSeries(ByVal rngName As String, ByVal chrtType As String, 
     AddSeries rngName, chrtType, axisPos
 End Sub
 
-Public Sub IGraphs_AddLabels(ByVal catName As String, ByVal lblName As String, Optional Byval prefix As String = vbNullString)
+Public Sub IGraphs_AddLabels(ByVal catName As String, ByVal lblName As String, Optional ByVal prefix As String = vbNullString)
     AddLabels catName, lblName, prefix
 End Sub
 

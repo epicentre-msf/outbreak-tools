@@ -68,7 +68,7 @@ Sub ClearData()
         Select Case sheetType
 
         Case "HList" 'Delete the databodyrange of the HList linelist
-            pass.UnProtect wksh.Name
+            pass.UnProtect Wksh.Name
 
             With Wksh.ListObjects(1)
                 If Not .DataBodyRange Is Nothing Then .DataBodyRange.Delete
@@ -282,7 +282,7 @@ Sub ImportSheetData(sheetName As String, shImp As Worksheet, hasData As Boolean,
             'Import Data on a Sheet of Type LL
 
             'First, un protect the sheet were we need to paste the data before proceeding
-            pass.Unprotect sheetName
+            pass.UnProtect sheetName
 
             'Last column of Import Data
             iLastColImp = shImp.Cells(1, shImp.Columns.Count).End(xlToLeft).Column

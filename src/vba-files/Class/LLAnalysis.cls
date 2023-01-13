@@ -426,7 +426,7 @@ Private Sub Build(ll As ILinelist)
         Next
                     
         'Add formulas to the last section
-        If Not lastValid Is Nothing Then 
+        If Not lastValid Is Nothing Then
             outsh.Range("MAX_MAX_DATE_" & lastValid.TableSectionId).formula = "= MAX(" & maxFormula & ")"
             outsh.Range("MIN_MIN_DATE_" & lastValid.TableSectionId).formula = "= MIN(" & minFormula & ")"
             Set cellRng = outsh.Range("ENDTABLE_" & lastValid.TableId).Offset(5)
@@ -622,9 +622,9 @@ LoFail:
 End Sub
 
 
-Private Sub SortListOnFirst(Byval Lo As ListObject, Byval colIndex As Long)
+Private Sub SortListOnFirst(ByVal Lo As ListObject, ByVal colIndex As Long)
 
-    Dim numRng As Range'Number range
+    Dim numRng As Range 'Number range
     Dim colRng As Range 'Colum range to sort on
     Dim LoRng As Range 'ListObject Range
     Dim hRng As Range 'Header Range of the list Object
@@ -641,14 +641,14 @@ Private Sub SortListOnFirst(Byval Lo As ListObject, Byval colIndex As Long)
     If IsEmpty(Lo.DataBodyRange) Then Exit Sub
 
     Set trackData = New BetterArray
-    Set numData = new BetterArray
+    Set numData = New BetterArray
     Set sh = Wksh()
 
     Set LoRng = Lo.DataBodyRange
     Set hRng = Lo.HeaderRowRange
     Set colRng = Lo.ListColumns(colIndex).DataBodyRange
 
-    'Test values progressively 
+    'Test values progressively
     'If the trackData does not contains the values,
     'Update the number (where you will sort)
 
@@ -669,12 +669,12 @@ Private Sub SortListOnFirst(Byval Lo As ListObject, Byval colIndex As Long)
 
     num = 1 'Number to sort later on
 
-    'Resize the listObject to be sure it includes the number added 
+    'Resize the listObject to be sure it includes the number added
     For counter = 1 To colRng.Cells.Count
 
        sortedValue = colRng.Cells(counter, 1).Value
 
-      If Not trackData.Includes(sortedValue) Then 
+      If Not trackData.Includes(sortedValue) Then
         
         trackData.Push sortedValue
         numData.Push num
@@ -686,10 +686,10 @@ Private Sub SortListOnFirst(Byval Lo As ListObject, Byval colIndex As Long)
     Next
 
      'Now sort the listObject on the column
-     LoRng.Sort key1 := numRng, order1:= xlAscending, Header := xlYes
+     LoRng.Sort key1:=numRng, order1:=xlAscending, Header:=xlYes
      
      'Remove the _number column
-     Lo.Listcolumns(hRng.Cells.Count + 1).Delete
+     Lo.ListColumns(hRng.Cells.Count + 1).Delete
     
 End Sub
 

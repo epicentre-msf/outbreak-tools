@@ -227,8 +227,8 @@ Private Sub CheckRequirements(ByVal lltradsh As Worksheet, dtradsh As Worksheet)
     RangeExists rngName:="RNG_LLLanguage", sh:=lltradsh
     RangeExists rngName:="RNG_LLLanguageCode", sh:=lltradsh
     RangeExists rngName:="RNG_DictionaryLanguage", sh:=lltradsh
-    RangeExists rngName := "RNG_GoToSection", sh := lltradsh
-    RangeExists rngName := "RNG_AnaPeriod", sh := lltradsh
+    RangeExists rngName:="RNG_GoToSection", sh:=lltradsh
+    RangeExists rngName:="RNG_AnaPeriod", sh:=lltradsh
 End Sub
 
 'Check if listobject exists in a worksheet
