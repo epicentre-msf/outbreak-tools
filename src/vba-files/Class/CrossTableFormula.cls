@@ -256,6 +256,16 @@ Private Property Get CurrentSpatialFormula(Optional ByVal scope As ExcelFormulaS
                                         
 End Property
 
+Private Sub AddNonEmptyTableConditions(ByVal varName As String)
+    If SummaryFunction = "N" Or SummaryFunction = "N()" Then
+        'for countifs it is varName = "<>"
+        AddTableConditions varName, "= " & NonEmpStr() 'varName = "<>"
+    Else
+        'For any other function, it is varName <> ""
+        AddTableConditions varName, "<>" & EmpStr() 'varName <> ""
+    End If
+End Sub
+
 'Parsing Formulas -----------------------------------------------------------------------
 Private Sub AddFormulas()
     Dim tabId As String
@@ -355,7 +365,9 @@ Private Sub AddFormulas()
                 'No Missing
                 Set rng = .Range("TOTAL_ROW_VALUES_" & tabId)
                 ClearTableConditions
-                AddTableConditions rowVar, "= " & NonEmpStr() 'rowvar = "<>"
+                
+                'removing missing is not the same when using COUNTIFS
+                AddNonEmptyTableConditions rowVar
                 finalFormula = CurrentExcelFormula()
                 rng.Cells(1, 1).FormulaArray = "= " & finalFormula
             End If
@@ -370,7 +382,6 @@ Private Sub AddFormulas()
 
                 'Last range on percentage
                 cellRng.Cells(1, 2).formula = "= " & Percentage(cellRng.Cells(1, 1), cellRng.Cells(1, 1))
-
             End If
 
         Case TypeBivariate
@@ -420,12 +431,11 @@ Private Sub AddFormulas()
                 Else
                     'Formula on total should remove missing from row variable
                     ClearTableConditions
-                    AddTableConditions rowVar, "=" & NonEmpStr()
+                    AddNonEmptyTableConditions rowVar
                     AddTableConditions colVar, "=" & rngLab.Address
                     finalFormula = CurrentExcelFormula()
                     Set cellRng = .Cells(totRng.Row, rng.Column)
                     cellRng.FormulaArray = "= " & finalFormula
-
                 End If
                 
                 'Percentages
@@ -466,12 +476,12 @@ Private Sub AddFormulas()
                 ClearTableConditions
                 AddTableConditions rowVar, "= " & rowCatAddress
                 finalFormula = CurrentExcelFormula()
-                'The range is filled bellow
+                'The range is filled bellow (for total)
             Else
                 'Total column, without missing
                 ClearTableConditions
                 AddTableConditions rowVar, "= " & rowCatAddress
-                AddTableConditions colVar, "=" & NonEmpStr()
+                AddNonEmptyTableConditions colVar
                 finalFormula = CurrentExcelFormula()
             End If
 
@@ -516,12 +526,18 @@ Private Sub AddFormulas()
                         .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
                     Case "row"                   'If missing on rows only, compute the total by removing non empty on columns
                         ClearTableConditions
-                        AddTableConditions colVar, "= " & NonEmpStr()
+                        AddNonEmptyTableConditions colVar
                         finalFormula = CurrentExcelFormula()
                         .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
                     Case "column"                'If missing on columns only, compute the total by removing non empty on rows
                         ClearTableConditions
-                        AddTableConditions rowVar, "= " & NonEmpStr()
+                        AddNonEmptyTableConditions rowVar
+                        finalFormula = CurrentExcelFormula()
+                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
+                    Case "no"
+                        ClearTableConditions
+                        AddNonEmptyTableConditions colVar
+                        AddNonEmptyTableConditions rowVar
                         finalFormula = CurrentExcelFormula()
                         .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
                     End Select
@@ -709,7 +725,7 @@ Private Sub AddFormulas()
                     ClearTableConditions
                     AddTableConditions rowVar, ">=" & startTimeAddress
                     AddTableConditions rowVar, "<=" & endTimeAddress
-                    If colVar <> vbNullString Then AddTableConditions colVar, "= " & NonEmpStr()
+                    If colVar <> vbNullString Then AddNonEmptyTableConditions colVar
 
                     finalFormula = CurrentExcelFormula()
 
@@ -717,7 +733,6 @@ Private Sub AddFormulas()
                     totRng.Cells(1, 1).FormulaArray = "= " & Condition(perRng, finalFormula)
                     totRng.Cells(1, 1).AutoFill Destination:=totRng, Type:=xlFillValues
                 End If
-
             End If
 
             'missing row, total column
@@ -754,7 +769,7 @@ Private Sub AddFormulas()
                         finalFormula = CurrentExcelFormula()
                         .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
                     Else
-                        AddTableConditions colVar, "= " & NonEmpStr()
+                        AddNonEmptyTableConditions colVar
                         finalFormula = CurrentExcelFormula()
                         .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
                     End If
@@ -882,7 +897,7 @@ Private Sub AddFormulas()
                     'Total column, without missing
                     ClearTableConditions
                     AddTableConditions rowVar, "= " & rowCatAddress
-                    AddTableConditions colVar, "= " & NonEmpStr()
+                    AddNonEmptyTableConditions colVar
 
                     finalFormula = CurrentExcelFormula()
 
@@ -924,7 +939,7 @@ Private Sub AddFormulas()
                         finalFormula = CurrentExcelFormula(scope:=1)
                         .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
                     Else
-                        AddTableConditions colVar, "= " & NonEmpStr()
+                        AddNonEmptyTableConditions colVar
                         finalFormula = CurrentExcelFormula()
                         .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
                     End If
