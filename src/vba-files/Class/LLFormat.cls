@@ -292,6 +292,9 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         sh.Cells.Font.Size = styleValue
         sh.Cells.EntireColumn.ColumnWidth = dimensionValue
 
+        'Column with of the period and goto section columns
+        sh.Columns(3).EntireColumn.ColumnWidth = dimensionValue + 5
+
     Case AnalysisSection
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub

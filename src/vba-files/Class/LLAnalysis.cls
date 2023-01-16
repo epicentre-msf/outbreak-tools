@@ -363,6 +363,7 @@ Private Sub Build(ll As ILinelist)
     outsh.Activate
     With Application.ActiveWindow
         .SplitRow = 2
+        .SplitColumn = 3
         .FreezePanes = True
         .Zoom = 65
     End With
@@ -475,11 +476,14 @@ Private Sub Build(ll As ILinelist)
     End If
      
     drop.Add sectionsList, "tsgotosection"
-    drop.SetValidation outsh.Cells(2, 2), "tsgotosection"
-    design.ApplyFormat outsh.Cells(2, 2), scope:=LinelistSelectionDropdown
-    outsh.Cells(2, 2).Name = "ts_" & GOTOSECCODE
-    outsh.Cells(2, 2).Value = goToSection
-    outsh.Cells(2, 2).Locked = False
+    drop.SetValidation outsh.Cells(2, 3), "tsgotosection"
+    design.ApplyFormat outsh.Cells(2, 3), scope:=LinelistSelectionDropdown
+    outsh.Cells(2, 3).Name = "ts_" & GOTOSECCODE
+    outsh.Cells(2, 3).Value = goToSection
+    outsh.Cells(2, 3).Locked = False
+
+    'Hide the second column (column B)
+    outsh.Columns(2).Hidden = True
      
     'Send the LinelistTimeSeries change
     TransferCodeWksh outsh, ll
