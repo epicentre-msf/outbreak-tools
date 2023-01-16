@@ -81,7 +81,7 @@ Private Sub Protect(Optional ByVal sheetName As String = "_active", Optional ByV
         pwd = Password()
         sh.Protect Password:=pwd, DrawingObjects:=(Not allowShapes), Contents:=True, Scenarios:=allowShapes, _
                    AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
-                   AllowFormattingCells:=True, AllowDeletingRows:=True
+                   AllowFormattingCells:=True, AllowDeletingRows:=True, AllowFormattingColumns:= True
                    
         If Not allowShapes Then sh.EnableSelection = xlUnlockedCells
     End If
@@ -94,7 +94,7 @@ Private Sub UnProtect(Optional ByVal sheetName As String = "_active")
     Dim sh As Worksheet
     Dim wb As Workbook
     Set wb = Wksh.Parent
-    If sheetName = "_Active" Then
+    If sheetName = "_active" Then
         Set sh = ActiveSheet
     Else
         On Error Resume Next
