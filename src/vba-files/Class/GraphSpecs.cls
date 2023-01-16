@@ -239,19 +239,22 @@ Private Sub PushGraph()
     Dim tabPos As BetterArray
     Dim tabLabel As BetterArray
     Dim tabCatLabel As BetterArray
-
-    Set tabSeries = New BetterArray
-    Set tabType = New BetterArray
-    Set tabPos = New BetterArray
-    Set tabLabel = New BetterArray
-    Set tabCatLabel = New BetterArray
-
+    
     Set tabSeries = this.chartSeriesName.Clone()
     Set tabType = this.chartSeriesType.Clone()
     Set tabPos = this.chartSeriesPosition.Clone()
     Set tabLabel = this.chartSeriesLabel.Clone()
     Set tabCatLabel = this.chartColumnCategoriesLabel.Clone()
-
+    
+    'Check the length of the tabSeries and remove the last element if needed
+    'It looks like it is a bug from BetterArray memory management
+    If tabSeries.Length = this.chartSeriesName.Length + 1 Then
+        tabSeries.Pop
+        tabType.Pop
+        tabPos.Pop
+        tabLabel.Pop
+        tabCatLabel.Pop
+    End If
 
     graphSpecsTable.Push tabSeries, tabType, tabPos, _
                          tabLabel, tabCatLabel
