@@ -23,7 +23,7 @@ End Function
 '
 '
 Public Function PLAGE_VALUE(rng1 As Range, rng2 As Range) As String
-    PLAGE_VALUE = Format(rng1, "d-mmm-yyyy") & "     " & ChrW(9472) & "     " & Format(rng2, "d-mmm-yyyy")
+    PLAGE_VALUE = Chr(13) & Chr(10) & Format(rng1, "d-mmm-yyyy") & " " & ChrW(9472) & " " & Format(rng2, "d-mmm-yyyy")
 End Function
 
 '
