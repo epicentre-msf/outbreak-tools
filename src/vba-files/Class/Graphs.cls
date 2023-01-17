@@ -121,6 +121,10 @@ Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional
     Case "bar"
         customType = xlColumnClustered
 
+    Case "hbar"
+
+        customType =  xlBarClustered
+
     Case Else
         customType = xlColumnClustered
     End Select
@@ -135,9 +139,11 @@ Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional
 
         'Add axis at the right if required
         If axGrp = xlSecondary Then
-            .SeriesCollection(ind).AxisGroup = axGrp
             .HasAxis(xlValue, xlSecondary) = True
+            .SeriesCollection(ind).AxisGroup = axGrp
         End If
+
+
         .SeriesCollection(ind).chartType = customType
     End With
 
