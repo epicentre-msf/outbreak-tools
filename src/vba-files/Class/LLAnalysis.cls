@@ -430,7 +430,7 @@ Private Sub Build(ll As ILinelist)
         If Not lastValid Is Nothing Then
             outsh.Range("MAX_MAX_DATE_" & lastValid.TableSectionId).formula = "= MAX(" & maxFormula & ")"
             outsh.Range("MIN_MIN_DATE_" & lastValid.TableSectionId).formula = "= MIN(" & minFormula & ")"
-            Set cellRng = outsh.Range("ENDTABLE_" & lastValid.TableId).Offset(5)
+            Set cellRng = outsh.Range("ENDTABLE_" & lastValid.TableId).Offset(5, 2)
         End If
         
         'Add the graphs for time series analysis
