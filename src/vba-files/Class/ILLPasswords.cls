@@ -30,3 +30,11 @@ End Sub
 'Export password
 Public Sub Export(ByVal toWkb As Workbook): End Sub
 
+
+'Protect and unprotect a given workbook to avoid sheet name changes.
+Public Sub ProtectWkb(ByVal wb As Workbook, Optional ByVal protectSheetName As Boolean = True)
+End Sub
+
+Public Sub UnProtectWkb(ByVal wb As Workbook)
+End Sub
+

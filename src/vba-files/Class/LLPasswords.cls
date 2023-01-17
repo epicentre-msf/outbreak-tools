@@ -88,6 +88,24 @@ Private Sub Protect(Optional ByVal sheetName As String = "_active", Optional ByV
 
 End Sub
 
+'Protect workbook
+Private Sub ProtectWkb(Byval wb As Workbook, Optional ByVal protectSheetName As Boolean = True)
+    Dim pwd As String
+    pwd = Password()
+    wb.Protect pwd, Structure := protectSheetName
+End Sub
+
+
+'UnProptect the workbook
+Private Sub UnProtectWkb(Byval wb As Workbook)
+    Dim pwd As String
+    pwd = Password()
+    On Error Resume Next
+    wb.UnProtect pwd
+    On Error GoTo 0
+End Sub
+
+
 Private Sub UnProtect(Optional ByVal sheetName As String = "_active")
 
     Dim pwd As String
@@ -220,6 +238,15 @@ End Sub
 
 Public Sub ILLPasswords_Export(ByVal toWkb As Workbook)
     Export toWkb
+End Sub
+
+    'Protect and unprotect the workbook to avoid sheet name changes
+Public Sub ILLPasswords_ProtectWkb(ByVal wb As Workbook, Optional ByVal protectSheetName As Boolean = True)
+    ProtectWkb wb, protectSheetName
+End Sub
+
+Public Sub ILLPasswords_UnProtectWkb(ByVal wb As Workbook)
+    UnProtectWkb wb
 End Sub
 
 

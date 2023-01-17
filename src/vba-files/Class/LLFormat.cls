@@ -649,8 +649,6 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue, _
                     isBold:=True
         
-
-
         On Error Resume Next
         rng.Locked = False
         rng.Merge
