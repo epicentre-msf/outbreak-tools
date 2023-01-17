@@ -199,6 +199,8 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
         .Shadow.Type = msoShadow21
         .line.Visible = msoTrue
         .line.ForeColor.RGB = RGB(173, 216, 230)
+        'Avoid changing graph width
+        .Placement = xlMove
     End With
 
     With co.Chart
