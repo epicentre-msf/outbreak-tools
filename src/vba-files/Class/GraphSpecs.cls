@@ -296,6 +296,7 @@ Public Sub CreateSeries()
     Dim tabType As AnalysisTablesType
     Dim counter As Long
     Dim nbCols As Long
+    Dim plotType As String
 
     Dim series As BetterArray
     Set series = New BetterArray
@@ -303,17 +304,22 @@ Public Sub CreateSeries()
     Select Case GraphType
     
     Case GraphTypeSimple
+
         Set tabl = Table
         Set specs = tabl.Specifications
         tabId = specs.TableId
         tabType = specs.TableType
         nbCols = tabl.NumberOfColumns
+        
+        'Plotype can plot either horizontal or vertical bars depending of the flip coordinates
+        plotType = IIf(specs.Value("flip") = "yes" And (Not specs.HasPercentage), "hbar", "bar")
+        Debug.Print plotType
 
         Select Case tabType
 
         Case TypeUnivariate
             'First series, values for column 1
-            PushSeries "VALUES_COL_1_" & tabId, "bar", "left" 'bars at the left
+            PushSeries "VALUES_COL_1_" & tabId, plotType, "left" 'bars at the left
             PushLabels "ROW_CATEGORIES_" & tabId, "LABEL_COL_1_" & tabId
             If specs.HasPercentage Then
                 PushSeries "PERC_COL_1_" & tabId, "point", "right"
@@ -326,21 +332,21 @@ Public Sub CreateSeries()
       
             Case "values"
                 For counter = 1 To nbCols
-                    PushSeries "VALUES_COL_" & counter & "_" & tabId, "bar", "left"
+                    PushSeries "VALUES_COL_" & counter & "_" & tabId, plotType, "left"
                     PushLabels "ROW_CATEGORIES_" & tabId, "LABEL_COL_" & counter & "_" & tabId
                 Next
       
             Case "percentage"
                 If specs.HasPercentage Then
                     For counter = 1 To nbCols
-                        PushSeries "PERC_COL_" & counter & "_" & tabId, "bar", "left"
+                        PushSeries "PERC_COL_" & counter & "_" & tabId, plotType, "left"
                         PushLabels "ROW_CATEGORIES_" & tabId, "LABEL_COL_" & counter & "_" & tabId
                     Next
                 End If
 
             Case "both"
                 For counter = 1 To nbCols
-                    PushSeries "VALUES_COL_" & counter & "_" & tabId, "bar", "left"
+                    PushSeries "VALUES_COL_" & counter & "_" & tabId, plotType, "left"
                     PushLabels "ROW_CATEGORIES_" & tabId, "LABEL_COL_" & counter & "_" & tabId
                     If specs.HasPercentage Then
                         PushSeries "PERC_COL_" & counter & "_" & tabId, "point", "right"
