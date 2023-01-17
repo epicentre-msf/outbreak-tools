@@ -109,7 +109,7 @@ Private Property Get StartRow() As Long
         If Not RangeExists("STARTROW_" & tabId) Then
             If specs.isNewSection() Or specs.TableType <> TypeTimeSeries Then
                 strtRow = .Cells(.Rows.Count, STANDARDSTARTCOL).End(xlUp).Row + 1
-                strtRow = IIf(strtRow = 2, 10, strtRow) 'Be sure to Start after the 1st lines
+                strtRow = IIf(strtRow = 2, 6, strtRow) 'Be sure to Start after the 1st lines
                 
                 strtRow = Switch(specs.TableType = TypeSpatial, strtRow + 6, _
                                  specs.TableType = TypeGlobalSummary, _

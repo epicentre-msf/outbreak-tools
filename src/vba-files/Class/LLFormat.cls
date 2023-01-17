@@ -334,6 +334,13 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         rng.WrapText = False
         rng.Font.Italic = True
 
+        'Gap for graphs
+        On Error Resume Next
+        'Gap for graphs
+        rng.EntireRow.RowHeight = 60
+        rng.EntireRow.RowHeight = dimensionValue
+        On Error GoTo 0
+
     Case LinelistSelectionDropdown
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
@@ -528,7 +535,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
                     FontSize:=IIf(scope = AnalysisInfoCellLeft, 11, 8), _ 
                     isBold:=(scope = AnalysisInfoCellLeft), Horiz:=horizAlign, Verti:=xlVAlignCenter
         rng.EntireRow.RowHeight = 45
-        rng.WrapText = (scope = AnalysisInfoCell)
+        rng.WrapText = True
 
     Case HListMainLab
         If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
