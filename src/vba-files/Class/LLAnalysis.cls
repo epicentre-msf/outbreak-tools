@@ -29,6 +29,7 @@ Private Const UNIVARIATE As String = "Tab_Univariate_Analysis"
 Private Const BIVARIATE As String = "Tab_Bivariate_Analysis"
 Private Const TIMESERIES As String = "Tab_TimeSeries_Analysis"
 Private Const GRAPHTIMESERIES As String = "Tab_Graph_TimeSeries"
+Private Const TITLEGRAPHTIMESERIES As String = "Tab_Label_TSGraph"
 Private Const SPATIAL As String = "Tab_Spatial_Analysis"
 
 'Exposed methods
@@ -183,6 +184,7 @@ Private Sub Build(ll As ILinelist)
     Dim drop As IDropdownLists
     Dim goToSection As String
     Dim grLo As ListObject                       'ListObject of graph for time series
+    Dim grLoTitle As ListObject                   'Title of graphs of time series
     Dim grBAinput As BetterArray                 'BetterArray input (list of listobjects) for time series f
     Dim grBAoutput As BetterArray                'BetterArray output (list of graphs) for time series graphs
     Dim temptabl As BetterArray                  'Temporary table to stock specs of graphs for time series
@@ -436,11 +438,12 @@ Private Sub Build(ll As ILinelist)
         
         'Add the graphs for time series analysis
         Set grLo = sh.ListObjects(GRAPHTIMESERIES)
+        Set grLoTitle = sh.ListObjects(TITLEGRAPHTIMESERIES)
         
-        If Not grLo.DataBodyRange Is Nothing Then
+        If (Not grLo.DataBodyRange Is Nothing) And (Not grLoTitle.DataBodyRange Is Nothing) Then
         
             Set grBAinput = New BetterArray
-            grBAinput.Push grLo, Lo              'The order of the listobjects in the betterarray is important, first graph, second the table
+            grBAinput.Push grLo, Lo, grLoTitle             'The order of the listobjects in the betterarray is important, first graph, second the table
             Set grSpecs = GraphSpecs.CreateRangeSpecs(grBAinput, outsh, lData)
             
             'Test the validity of the graphs (No empty graph ids) before building thems
@@ -468,7 +471,8 @@ Private Sub Build(ll As ILinelist)
                         gr.AddLabels tablLabel.Item(counter), tablColLabel.Item(counter), tablPrefLabel.Item(counter), prefixOnly := True
                     Next
                     
-                    gr.Format asTimeSeries:=True
+                    gr.Format catTitle := tradmsg.TranslatedValue("MSG_Period"), valuesTitle := tradmsg.TranslatedValue("MSG_Values"), _ 
+                              plotTitle := temptabl.Item(7),  asTimeSeries:=True 'The last item of temptabl is the title
     
                     Set cellRng = cellRng.Offset(50)
                 Next
