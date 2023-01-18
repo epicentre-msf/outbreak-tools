@@ -231,7 +231,18 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
             .TickLabels.Font.Name = "+mj-lt"
             .AxisTitle.text = valuesTitle
         End With
+
+        'Add a title if needed
         .HasTitle = False
+        If plotTitle <> vbNullString Then
+            .HasTitle = True
+            With .ChartTitle
+                .Caption = plotTitle
+                .Font.Size = 14
+                .Font.Bold = True
+                .Font.Name = "+mj-lt"
+            End With
+        End If
         
         'formatting on the secondary axe
         If .HasAxis(xlValue, xlSecondary) Then
@@ -242,6 +253,7 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                 .TickLabels.Font.Size = 8
                 .TickLabels.Font.Name = "+mj-lt"
                 .AxisTitle.text = "%"
+                If secondAxisTitle <> vbNullString Then .AxisTitle.text = secondAxisTitle
                 .MaximumScale = 1
                 .MajorUnit = 0.1
             End With
@@ -250,7 +262,7 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
         With .PlotArea
             .Left = 16.618 * coef
             .Top = 20 * coef
-            .width = 400 * coef
+            .width = 405 * coef
             .height = 150 * coef
         End With
     End With

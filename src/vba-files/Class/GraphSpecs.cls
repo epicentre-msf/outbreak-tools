@@ -91,12 +91,13 @@ Private Sub CheckSpecifications(ByVal loTable As BetterArray)
     Dim testLo As Variant
     Dim graphLo As ListObject
     Dim tabLo As ListObject
+    Dim titleLo As ListObject
     Dim rng As Range
     Dim titleVal As String
 
     'Test and check required specifications for listObjects for graph specs
     If loTable Is Nothing Then ThrowErrorUnableInstanciate "The List of listobjects is Empty"
-    If loTable.Length <> 2 Then ThrowErrorUnableInstanciate "Seems like the table of listobjects is too long or too short? should be length 2"
+    If loTable.Length <> 3 Then ThrowErrorUnableInstanciate "Seems like the table of listobjects is too long or too short? should be length 3"
 
     'Now test the graphListObject and the table listObject
     For counter = loTable.LowerBound To loTable.UpperBound
@@ -107,17 +108,27 @@ Private Sub CheckSpecifications(ByVal loTable As BetterArray)
         If Lo.DataBodyRange Is Nothing Then ThrowErrorUnableInstanciate "The listobject" & Lo.Name & "has no data to proceed with"
     Next
 
-    'Now test for graphs and time series
+    'Now test for graphs and time series, and title of graphs
     Set graphLo = loTable.Item(loTable.LowerBound)
     'Test for graph title
     Set rng = graphLo.HeaderRowRange()
     titleVal = LCase(Application.WorksheetFunction.Trim(rng.Cells(-1, 1).Value))
-    If titleVal <> "graph on time series" Then ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table. No graph table found the title of first table is: " & titleVal
+    If titleVal <> "graph on time series" Then  _ 
+    ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table, and then title table. No graph table found the title of first table is: " & titleVal
   
     Set tabLo = loTable.Item(loTable.LowerBound + 1)
     Set rng = tabLo.HeaderRowRange()
     titleVal = LCase(Application.WorksheetFunction.Trim(rng.Cells(-1, 1).Value))
-    If titleVal <> "time series analysis" Then ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table. No time series table found the title second table is: " & titleVal
+    If titleVal <> "time series analysis" Then _ 
+    ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table and then title table. No time series table found the title second table is: " & titleVal
+
+    Set titleLo = loTable.Item(loTable.LowerBound + 2)
+    Set rng = titleLo.HeaderRowRange()
+
+    titleVal = LCase(Application.WorksheetFunction.Trim(rng.Cells(-1, 1).Value))
+    If titleVal <> "labels for graphs on time series" Then  _ 
+    ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table and then title table. No title of graph table found the title of the third table is: " & titleVal
+
 End Sub
 
 Public Property Get OutputSheet() As Worksheet
@@ -171,6 +182,10 @@ End Property
 
 Private Property Get TimeSeriesListObject() As ListObject
     Set TimeSeriesListObject = LoList.Item(LoList.LowerBound + 1)
+End Property
+
+Private Property Get TitlesListObject() As ListObject
+    Set TitlesListObject = LoList.Item(LoList.LowerBound + 2)
 End Property
 
 Public Property Get Wksh() As Worksheet          'Worksheet where to draw the graph
@@ -231,15 +246,13 @@ Private Sub PushLabels(ByVal chrtRowCategory As String, ByVal chrtColumnLab As S
     this.chartSeriesLabelPrefix.Push chrtLabPref
 End Sub
 
-Private Sub PushGraph()
+Private Sub PushGraph(ByVal graphId As String)
 
     'One graph consists of five betterarrays of same length:
     'One for series, one for types, one for position and the two others for the labels
     Dim graphSpecsTable As BetterArray
     Set graphSpecsTable = New BetterArray
     graphSpecsTable.LowerBound = 1
-
-
 
     'You need to define the five bette arrays because of (memory management issues)
     Dim tabSeries As BetterArray
@@ -248,6 +261,7 @@ Private Sub PushGraph()
     Dim tabLabel As BetterArray
     Dim tabCatLabel As BetterArray
     Dim tabPrefLabel As BetterArray
+    Dim title As String
     
     Set tabSeries = this.chartSeriesName.Clone()
     Set tabType = this.chartSeriesType.Clone()
@@ -267,8 +281,10 @@ Private Sub PushGraph()
         tabPrefLabel.Pop
     End If
 
+    title = GraphTitle(graphId) 
+
     graphSpecsTable.Push tabSeries, tabType, tabPos, _
-                         tabLabel, tabCatLabel, tabPrefLabel
+                         tabLabel, tabCatLabel, tabPrefLabel, title
   
     'Higher Level, for one graph
     If this.graphsChartsSpecs Is Nothing Then
@@ -375,7 +391,7 @@ Public Sub CreateSeries()
         For counter = mGraphIds.LowerBound To mGraphIds.UpperBound
             graphId = mGraphIds.Item(counter)
             DefineGraphSpecs graphId
-            PushGraph                            'push the five tables to the nested BetterArray graphList
+            PushGraph  graphId                         'push the five tables to the nested BetterArray graphList
         Next
     End Select
 End Sub
@@ -395,6 +411,33 @@ Public Property Get NumberOfGraphs() As Long
     End If
     NumberOfGraphs = this.graphsChartsSpecs.Length()
 End Property
+
+'Get the title of one complex graph from an index (a Long)
+
+Private Function GraphTitle(ByVal graphId As String) As String
+    'The first column of the listObject is for ids, the second column is for the title
+
+    Dim title As String
+    Dim titleLo As ListObject
+    Dim idRng As Range
+    Dim cellRng As Range
+
+    'List of all ids for one graph
+    Set titleLo = TitlesListObject()
+
+    'idRng is the first column of the listobject where there are ids for graphs
+    Set idRng = titleLo.ListColumns(1).DataBodyRange
+    
+    If Not idRng.Find(What := graphId, LookAt := xlWhole, MatchCase := True) Is Nothing Then
+        Set cellRng = idRng.Find(What := graphId, LookAt := xlWhole, MatchCase := True)
+        title = cellRng.Offset(, 1).Value
+    End If
+ 
+    'The title can be empty, if unable to find the graphId in the title table
+    GraphTitle = title
+End Function
+
+
 
 Public Property Get SeriesName(ByVal index As Long) As String
     If (index > NumberOfSeries) Or (index < 0) Then ThrowError "Index of series out of bound"
