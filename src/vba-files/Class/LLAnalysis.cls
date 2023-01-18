@@ -188,12 +188,13 @@ Private Sub Build(ll As ILinelist)
     Dim temptabl As BetterArray                  'Temporary table to stock specs of graphs for time series
     Dim lastValid As ITablesSpecs
     
-    'Those five tables are temporary tables for time series graphs
+    'Those six tables are temporary tables for time series graphs
     Dim tablSeries As BetterArray
     Dim tablType As BetterArray
     Dim tablPos As BetterArray
     Dim tablLabel As BetterArray
     Dim tablColLabel As BetterArray
+    Dim tablPrefLabel As BetterArray
 
 
     Set sh = Wksh()
@@ -457,13 +458,14 @@ Private Sub Build(ll As ILinelist)
                     'Labels and column labels
                     Set tablLabel = temptabl.Item(4)
                     Set tablColLabel = temptabl.Item(5)
+                    Set tablPrefLabel = temptabl.Item(6)
     
                     Set gr = Graphs.Create(outsh, cellRng)
                     gr.Add
     
                     For counter = 1 To tablSeries.Length
                         gr.AddSeries tablSeries.Item(counter), tablType.Item(counter), tablPos.Item(counter)
-                        gr.AddLabels tablLabel.Item(counter), tablColLabel.Item(counter)
+                        gr.AddLabels tablLabel.Item(counter), tablColLabel.Item(counter), tablPrefLabel.Item(counter), prefixOnly := True
                     Next
                     
                     gr.Format asTimeSeries:=True

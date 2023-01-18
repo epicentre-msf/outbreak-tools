@@ -34,6 +34,7 @@ Private Type TGraphSpecs
     chartSeriesType As BetterArray
     chartSeriesPosition As BetterArray
     chartSeriesLabel As BetterArray
+    chartSeriesLabelPrefix As BetterArray
     chartColumnCategoriesLabel As BetterArray
     lData As ILinelistSpecs
     graphsChartsSpecs As BetterArray             'A BetterArray of BetterArray all with length 5 of same length, each one for series, Type, label and category label
@@ -207,7 +208,7 @@ Private Sub PushSeries(ByVal chrtName As String, ByVal chrtType As String, ByVal
     this.chartSeriesPosition.Push chrtPos
 End Sub
 
-Private Sub PushLabels(ByVal chrtRowCategory As String, ByVal chrtColumnLab As String)
+Private Sub PushLabels(ByVal chrtRowCategory As String, ByVal chrtColumnLab As String, Optional ByVal chrtLabPref As String = vbNullString)
 
     If this.chartSeriesLabel Is Nothing Then
         Set this.chartSeriesLabel = New BetterArray
@@ -219,8 +220,15 @@ Private Sub PushLabels(ByVal chrtRowCategory As String, ByVal chrtColumnLab As S
         this.chartColumnCategoriesLabel.LowerBound = 1
     End If
 
+    'Chartseriles label prefix (prefix can be used in place of label names)
+    If this.chartSeriesLabelPrefix Is Nothing Then
+        Set this.chartSeriesLabelPrefix = New BetterArray
+        this.chartSeriesLabelPrefix.LowerBound = 1
+    End If
+
     this.chartSeriesLabel.Push chrtRowCategory
     this.chartColumnCategoriesLabel.Push chrtColumnLab
+    this.chartSeriesLabelPrefix.Push chrtLabPref
 End Sub
 
 Private Sub PushGraph()
@@ -239,12 +247,14 @@ Private Sub PushGraph()
     Dim tabPos As BetterArray
     Dim tabLabel As BetterArray
     Dim tabCatLabel As BetterArray
+    Dim tabPrefLabel As BetterArray
     
     Set tabSeries = this.chartSeriesName.Clone()
     Set tabType = this.chartSeriesType.Clone()
     Set tabPos = this.chartSeriesPosition.Clone()
     Set tabLabel = this.chartSeriesLabel.Clone()
     Set tabCatLabel = this.chartColumnCategoriesLabel.Clone()
+    Set tabPrefLabel = this.chartSeriesLabelPrefix.Clone()
     
     'Check the length of the tabSeries and remove the last element if needed
     'It looks like it is a bug from BetterArray memory management
@@ -254,10 +264,11 @@ Private Sub PushGraph()
         tabPos.Pop
         tabLabel.Pop
         tabCatLabel.Pop
+        tabPrefLabel.Pop
     End If
 
     graphSpecsTable.Push tabSeries, tabType, tabPos, _
-                         tabLabel, tabCatLabel
+                         tabLabel, tabCatLabel, tabPrefLabel
   
     'Higher Level, for one graph
     If this.graphsChartsSpecs Is Nothing Then
@@ -313,7 +324,6 @@ Public Sub CreateSeries()
         
         'Plotype can plot either horizontal or vertical bars depending of the flip coordinates
         plotType = IIf(specs.Value("flip") = "yes" And (Not specs.HasPercentage), "hbar", "bar")
-        Debug.Print plotType
 
         Select Case tabType
 
@@ -447,6 +457,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
     Dim percList As BetterArray
     Dim typeList As BetterArray
     Dim choiceList As BetterArray
+    Dim labelList As BetterArray
     Dim idsList As BetterArray
     Dim choiValue As String
     Dim hRng As Range
@@ -458,6 +469,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
     Set typeList = New BetterArray
     Set choiceList = New BetterArray
     Set idsList = New BetterArray
+    Set labelList = New BetterArray
 
 
     Set lData = LinelistSpecifications
@@ -466,6 +478,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
     If GraphType <> GraphTypeComplex Then ThrowError "Multiple table Ids are only on time series graph"
 
 
+    'I can suppose that all the graphIDs are sorted in the order they appear
     Set tsLo = TimeSeriesListObject()
     Set hRng = tsLo.HeaderRowRange
     Set idsList = GraphValues(colName:="series id", graphId:=graphId)
@@ -473,6 +486,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
     Set percList = GraphValues(colName:="percentages", graphId:=graphId)
     Set typeList = GraphValues(colName:="type", graphId:=graphId)
     Set choiceList = GraphValues(colName:="choices", graphId:=graphId)
+    Set labelList = GraphValues(colName := "label", graphId := graphId)
 
     'Clear al the actual series
     ClearSeries
@@ -499,7 +513,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
         'I could not find the TimeSeriesColumn, in that case we jump to the next iteration
         If colName <> vbNullString Then
             PushSeries colName, typeList.Item(counter), posList.Item(counter)
-            PushLabels "ROW_CATEGORIES_" & secId, labName
+            PushLabels "ROW_CATEGORIES_" & secId, labName, labelList.Item(counter)
         End If
         
     Next

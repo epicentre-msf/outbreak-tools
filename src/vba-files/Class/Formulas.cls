@@ -123,13 +123,18 @@ End Property
 Private Property Get ConvertedSetupFormula() As String
     Dim setupform As String
     Dim casewhenObject As ICaseWhen
+    Dim choiformObj As IChoiceFormula
 
     setupform = SetupFormula()
-
     If (InStr(1, setupform, "CASE_WHEN") = 1) Then
         'Case when custom formula, need to be parsed
         Set casewhenObject = CaseWhen.Create(setupform)
         setupform = casewhenObject.parsedFormula()
+
+        'choice formula
+    ElseIf (InStr(1, setupform, "CHOICE_FORMULA") = 1) Then
+        Set choiformObj = ChoiceFormula.Create(setupform)
+        setupform = choiformObj.parsedFormula()
     End If
 
     ConvertedSetupFormula = setupform

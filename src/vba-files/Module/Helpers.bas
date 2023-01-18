@@ -366,7 +366,7 @@ Function FindLastRow(shLL As Worksheet) As Long
 
             controlValue = hRng.Cells(1, counter).Offset(-4).Value
 
-            If controlValue <> "formula" And controlValue <> "case_when" Then 'case_when is a formula, we should remove them from export
+            If controlValue <> "formula" And controlValue <> "case_when" And controlValue <> "choice_formula" Then 'case_when is a formula, we should remove them from export
 
                 col = hRng.Cells(1, counter).Column
 

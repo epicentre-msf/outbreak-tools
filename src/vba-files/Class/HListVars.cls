@@ -191,7 +191,7 @@ Private Sub AddFormula()
     Dim varControl As String
 
     varControl = ValueOf("control")
-    If (varControl <> "formula") And (varControl <> "case_when") Then Exit Sub
+    If (varControl <> "formula") And (varControl <> "case_when") And (varControl <> "choice_formula") Then Exit Sub
     
     Set lData = linelistData()
     Set dict = lData.Dictionary()
@@ -210,6 +210,7 @@ Private Sub AddFormula()
         End If
 
         cellRng.formula = "= " & excelForm
+
         'Lock the formula cell
         cellRng.Locked = True
 
@@ -260,7 +261,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     End If
 
     'sublabel
-    If (varControl = "formula") Or (varControl = "case_when") Then
+    If (varControl = "formula") Or (varControl = "case_when") Or (varControl = "choice_formula") Then
         varSublab = varSublab & Chr(10) & calculated
     End If
 
@@ -339,7 +340,7 @@ Private Sub AddChoices()
     Dim geo As ILLGeo
     
     varControl = ValueOf("control")
-    If (varControl <> "choices") And (varControl <> "list_auto") And (varControl <> "geo1") Then Exit Sub
+    If (varControl <> "choice_manual") And (varControl <> "list_auto") And (varControl <> "geo1") Then Exit Sub
 
     Set lData = linelistData()
     Set drop = Dropdown()
@@ -350,7 +351,7 @@ Private Sub AddChoices()
         'dropName is the name of the dropdown, not the variable. Tt is the variable name only if
         'the control is choices
         'Dropdown list are named dropdown_[dropName] in the workbook
-    Case "choices"
+    Case "choice_manual"
 
         dropName = ActualVariable()
         Set cat = lData.Categories(dropName)

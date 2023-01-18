@@ -199,17 +199,26 @@ Private Function Categories(ByVal varName As String) As BetterArray
     Dim choi As ILLchoice
     Dim categoryName As String
     Dim categoryType As String
+    Dim controlDetails As String
 
     Set dict = Dictionary()
     Set choi = Choices()
     Set categoryData = New BetterArray
     Set vars = LLVariables.Create(dict)
+    
     categoryType = vars.Value(varName:=varName, colName:="control")
-    If categoryType = "case_when" Then
-        categoryName = "__case_when_" & varName
-    ElseIf categoryType = "choices" Then
+    controlDetails = Application.WorksheetFunction.Trim(vars.Value(varName := varName, colName := "control details"))
+
+    If categoryType = "choice_formula" Then
+        categoryName = Replace(Split(controlDetails, ",")(0), "CHOICE_FORMULA(", "")
+    ElseIf categoryType = "choice_manual" Then
+
         categoryName = vars.Value(varName:=varName, colName:="control details")
+        'Normally there is no more case_when category, but I keep it
+    ElseIf categoryType = "case_when" Then
+        categoryName = "__case_when_" & varName 
     End If
+
     'Test the case_when
     Set categoryData = choi.Categories(categoryName)
     Set Categories = categoryData.Clone()
@@ -232,16 +241,46 @@ Private Sub ReturnState()
     Application.EnableAnimations = True
 End Sub
 
-Private Sub Prepare()
+
+Private Sub AddCaseWhenToChoices()
 
     Const CATEGORYPREFIX As String = "__case_when_"
+    
+    Dim casewhenVars As BetterArray
+    Dim dict As ILLdictionary
+    Dim casewhenVariableName As String
+    Dim counter As Long
+    Dim casewhenObject As ICaseWhen
+    Dim casewhenFormula As String
+    Dim choi As ILLchoice
+    Dim vars As ILLVariables
+
+    Set dict = Dictionary()
+    Set choi = Choices()
+    Set vars = LLVariables.Create(dict)
+
+    'Add case_when to choices
+    Set casewhenVars = dict.Data.FilterData(varName:="control", criteriaName:="case_when", returnedColumnName:="variable name")
+    For counter = casewhenVars.LowerBound To casewhenVars.UpperBound
+        casewhenVariableName = casewhenVars.Item(counter)
+        casewhenFormula = vars.Value(varName:=casewhenVariableName, colName:="control details")
+'
+        Set casewhenObject = CaseWhen.Create(casewhenFormula)
+        'Test validity before parsing categories to choices
+        If casewhenObject.Valid() Then
+            choi.AddChoice choiceName:=CATEGORYPREFIX & casewhenVariableName, CategoriesData:=casewhenObject.Categories
+        End If
+    Next
+End Sub
+
+Private Sub Prepare()
+
     'Start Row of the dictionary
 
     Dim PreservedSheetNames As BetterArray
 
     Dim dict As ILLdictionary
     Dim choi As ILLchoice
-    Dim vars As ILLVariables
     Dim geo As ILLGeo                            'Geo Object to add admin names in the preparation steps of the dictionary
     Dim dictTrads As ITranslation
     Dim msgTrads As ITranslation                 'Translations of messages object used in preserve sheet Names
@@ -255,11 +294,6 @@ Private Sub Prepare()
     Dim expobj As ILLExport
     Dim ana As ILLAnalysis
     Dim fData As IFormulaData
-
-    Dim casewhenVars As BetterArray
-    Dim casewhenObject As ICaseWhen
-    Dim casewhenVariableName As String
-    Dim casewhenFormula As String
 
     Set mainobj = MainObject()
     Set mainTrads = desTrads()
@@ -340,22 +374,9 @@ Private Sub Prepare()
 
     'Prepare the dictionary
     dict.Prepare PreservedSheetNames, geo, msgTrads, tablePrefix:="table"
-    
-    'Need to prepare the dictionary before loading the variable class
-    Set vars = LLVariables.Create(dict)
 
-    'Add case_when to choices
-    Set casewhenVars = dict.Data.FilterData(varName:="control", criteriaName:="case_when", returnedColumnName:="variable name")
-    For counter = casewhenVars.LowerBound To casewhenVars.UpperBound
-        casewhenVariableName = casewhenVars.Item(counter)
-        casewhenFormula = vars.Value(varName:=casewhenVariableName, colName:="control details")
-
-        Set casewhenObject = CaseWhen.Create(casewhenFormula)
-        'Test validity before parsing categories to choices
-        If casewhenObject.Valid() Then
-            choi.AddChoice choiceName:=CATEGORYPREFIX & casewhenVariableName, CategoriesData:=casewhenObject.Categories
-        End If
-    Next
+    'This sub adds case_when variables to choices (No more needed). Need to prepare the dictionary before
+    'AddCaseWhenToChoices
 
     'Add list auto to dictionary (in a recursive way)
     If Not dict.ColumnExists("list auto") Then AddListAuto
@@ -406,7 +427,7 @@ Private Sub AddListAuto()
         'List auto origin triggers update of list auto
             
         varControl = vars.Value(varName:=varName, colName:="control")
-        If (varControl = "formula") Or (varControl = "case_when") Then RecursiveListAuto varName
+        If (varControl = "formula") Or (varControl = "case_when") Or (varControl = "choice_formula") Then RecursiveListAuto varName
     Next
 
 End Sub
@@ -418,7 +439,6 @@ Private Sub RecursiveListAuto(ByVal varName As String)
     Dim controlValue As String
     Dim controlDetailsValue As String
     Dim fData As FormulaData
-    Dim varCaseWhen As ICaseWhen
     Dim varFormObject As IFormulas
     Dim formList As BetterArray
     Dim counter As Long
@@ -430,14 +450,9 @@ Private Sub RecursiveListAuto(ByVal varName As String)
 
     controlValue = vars.Value(varName:=varName, colName:="control")
     
-    If (controlValue = "case_when" Or controlValue = "formula") Then
+    If (controlValue = "case_when" Or controlValue = "formula" Or controlValue = "choice_formula") Then
         Set fData = FormulaDataObject()
         controlDetailsValue = vars.Value(varName:=varName, colName:="control details")
-
-        If controlValue = "case_when" Then
-            Set varCaseWhen = CaseWhen.Create(controlDetailsValue)
-            controlDetailsValue = varCaseWhen.parsedFormula()
-        End If
 
         Set varFormObject = Formulas.Create(dict, fData, controlDetailsValue)
 
@@ -493,11 +508,13 @@ End Sub
 
 'Initialize the array of sheets
 Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
+
     Dim counter As Long
     Dim sheetName As String
-
     Dim sheetsArray As BetterArray
+    
     Set sheetsArray = New BetterArray
+    
     sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
                      PASSWORDSHEET, FormulaSheet, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
                      EXPORTSHEET, FORMATSHEET, MAINSHEET, DESTRANSSHEET
@@ -506,6 +523,7 @@ Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
         sheetName = sheetsArray.Item(counter)
         sheetExists specswkb, sheetName
     Next
+    
 End Sub
 
 'Chek if a sheet really exists

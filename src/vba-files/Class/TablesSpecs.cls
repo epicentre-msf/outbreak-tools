@@ -227,11 +227,11 @@ Public Property Get ValidTable() As Boolean
     Case TypeGlobalSummary
         Valid = (Value("label") <> vbNullString) And (Value("function") <> vbNullString)
     Case TypeUnivariate
-        Valid = vars.Contains(rowVar) And (rowControl = "choices" Or rowControl = "case_when")
+        Valid = vars.Contains(rowVar) And (rowControl = "choice_manual" Or rowControl = "choice_formula")
     Case TypeBivariate
         Valid = vars.Contains(rowVar) And vars.Contains(colVar) And _
-                                                                (colControl = "choices" Or colControl = "case_when") And _
-                                                                (rowControl = "choices" Or rowControl = "case_when")
+                                                                (colControl = "choice_manual" Or colControl = "choice_formula") And _
+                                                                (rowControl = "choice_manual" Or rowControl = "choice_formula")
     Case TypeTimeSeries
         Valid = (dict.VariableExists(rowVar) And (colVar = vbNullString Or dict.VariableExists(colVar))) And _
                                                                                                          (vars.Value(colName:="type", varName:=rowVar) = "date")

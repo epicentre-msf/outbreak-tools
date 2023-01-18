@@ -19,7 +19,8 @@ Option Explicit
 Public Sub Add(): End Sub
 Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional axisPos As String = vbNullString): End Sub
 
-Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, Optional ByVal prefix As String = vbNullString): End Sub
+Public Sub AddLabels(ByVal catName As String, ByVal lblName As String,  _ 
+                     Optional ByVal prefix As String = vbNullString, Optional ByVal prefixOnly As Boolean = False): End Sub
 'Maybe format
 Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal catTitle As String = vbNullString, _
