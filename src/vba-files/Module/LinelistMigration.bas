@@ -302,7 +302,7 @@ Sub ImportSheetData(sheetName As String, shImp As Worksheet, hasData As Boolean,
                     iColIndex = ColumnIndexData.Items(VarNamesData.IndexOf(sVal))
                     varControl = .Cells(C_eStartLinesLLMainSec - 1, iColIndex).Value
 
-                    If varControl <> C_sDictControlForm And varControl <> C_sDictControlCaseWhen Then
+                    If varControl <> "formula" And varControl <> "case_when" And varControl <> "choice_formula" Then
                         'Don't Import columns of Type formulas
                         With shImp
                             iLastRowImp = .Cells(.Rows.Count, i).End(xlUp).Row

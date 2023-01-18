@@ -190,10 +190,10 @@ Private Sub AddFormula()
     Dim dict As ILLdictionary
     Dim varFormObject As IFormulas
     Dim DesignFormat As ILLFormat
-    Dim varCaseWhen As ICaseWhen
     Dim varControl As String
+
     varControl = ValueOf("control")
-    If (varControl <> "formula") And (varControl <> "case_when") Then Exit Sub
+    If (varControl <> "formula") And (varControl <> "case_when") And (varControl <> "choice_formula") Then Exit Sub
   
     Set lData = linelistData()
     Set dict = lData.Dictionary()
@@ -201,12 +201,9 @@ Private Sub AddFormula()
     Set DesignFormat = lData.DesignFormat()
     varForm = ValueOf("control details")
     Set cellRng = VarRange()
-    'For case_when parse the case_when before
-    If varControl = "case_when" Then
-        Set varCaseWhen = CaseWhen.Create(varForm)
-        varForm = varCaseWhen.parsedFormula()
-    End If
+
     Set varFormObject = Formulas.Create(dict, varFormData, varForm)
+    
     If varFormObject.Valid(formulaType:="linelist") Then
         excelForm = varFormObject.ParsedLinelistFormula()
         'Test if the formula is correct and parse it
@@ -253,17 +250,18 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     mandatory = trans.TranslatedValue("MSG_Mandatory")
 
     'sublabel
-    If (varControl = "formula") Or (varControl = "case_when") Then
+    If (varControl = "formula") Or (varControl = "case_when") Or (varControl = "choice_formula") Then
         varSublab = varSublab & Chr(10) & calculated
     End If
 
     mainLabLength = Len(varMainLab)
+    
     'Add subLabel to main label
-    If (varSublab <> vbNullString) Then
-        varMainLab = varMainLab & Chr(10) & varSublab
-    End If
+    If (varSublab <> vbNullString) Then varMainLab = varMainLab & Chr(10) & varSublab
+
     'Status to add to Notes
     If varStatus = "mandatory" Then varNote = mandatory & Chr(10) & varNote
+    
     'variable main label and sub lable
     cellRng.Offset(, -1).Value = varMainLab
   
@@ -312,7 +310,7 @@ Private Sub AddChoices()
     varName = ActualVariable()
     varControl = ValueOf("control")
 
-    If (varControl <> "choices") Then Exit Sub
+    If (varControl <> "choice_manual") Then Exit Sub
 
     Set cat = lData.Categories(varName)
     Set cellRng = VarRange()
