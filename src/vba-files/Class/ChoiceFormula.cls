@@ -64,7 +64,6 @@ Private Property Get CaseWhenObject() As ICaseWhen
   convertedFormula = Left(convertedFormula, Len(convertedFormula) - 1)
   convertedFormula = convertedFormula & ", " & chr(34) & chr(34) & ")"
 
-  Debug.Print convertedFormula
   Set CaseWhenObject = CaseWhen.Create(convertedFormula)
   
 End Property
