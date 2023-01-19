@@ -39,6 +39,9 @@ Public Property Get EndColumn() As Long: End Property
 
 Public Property Get EndRow() As Long: End Property
 
+Public Property Get TimeSeriesHeader() As String
+End Property
+
 
 'Exposed methods
 
