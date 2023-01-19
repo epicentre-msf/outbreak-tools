@@ -2,13 +2,13 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-
 Attribute VB_Name = "ChoiceFormula"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "choice formula"
+
 
 '@Folder("Dictionary")
 '@ModuleDescription("A class for choices formula")
@@ -25,7 +25,7 @@ End Type
 'Exposed methods
 Private this As TChoiceFormula
 
-Public Function Create(Byval formula As String) As IChoiceFormula
+Public Function Create(ByVal formula As String) As IChoiceFormula
   With New ChoiceFormula
       .ChoiceSpecifications = formula
       Set Create = .Self
@@ -41,7 +41,7 @@ Public Property Get ChoiceSpecifications() As String
   ChoiceSpecifications = this.formula
 End Property
 
-Public Property Let ChoiceSpecifications(Byval formula As String)
+Public Property Let ChoiceSpecifications(ByVal formula As String)
   this.formula = Application.WorksheetFunction.Trim(formula)
 End Property
 
@@ -52,7 +52,7 @@ Private Property Get Valid() As Boolean
   Valid = (InStr(1, formula, "CHOICE_FORMULA") = 1) And (Right(formula, 1) = ")")
 End Property
 
-Private Property Get CaseWhenObject() As ICaseWhen
+Private Property Get casewhenObject() As ICaseWhen
   Dim formula As String
   Dim convertedFormula As String 'converted formula to case_when.
 
@@ -62,9 +62,9 @@ Private Property Get CaseWhenObject() As ICaseWhen
   convertedFormula = Application.WorksheetFunction.Trim(Replace(formula, Split(formula, ",")(0) & ",", ""))
   convertedFormula = "CASE_WHEN(" & convertedFormula
   convertedFormula = Left(convertedFormula, Len(convertedFormula) - 1)
-  convertedFormula = convertedFormula & ", " & chr(34) & chr(34) & ")"
+  convertedFormula = convertedFormula & ", " & Chr(34) & Chr(34) & ")"
 
-  Set CaseWhenObject = CaseWhen.Create(convertedFormula)
+  Set casewhenObject = CaseWhen.Create(convertedFormula)
   
 End Property
 
@@ -72,7 +72,7 @@ End Property
 Private Function parsedFormula() As String
   Dim casewhenObj As ICaseWhen
   If Valid() Then
-    Set casewhenObj = CaseWhenObject()
+    Set casewhenObj = casewhenObject()
     parsedFormula = casewhenObj.parsedFormula()
   End If
 End Function
@@ -86,7 +86,7 @@ Private Function Categories() As BetterArray
   Set categoriesTable = New BetterArray
   
   If Valid() Then
-    Set caseWhenObj = CaseWhenObject()
+    Set casewhenObj = casewhenObject()
     Set categoriesTable = casewhenObj.Categories()
   End If
 
@@ -95,11 +95,11 @@ End Function
 
 
 'Get the choice name from the choice formula
-Private Function ChoiceName() As String
+Private Function choiceName() As String
   Dim formula As String
   If Valid() Then
       formula = ChoiceSpecifications()
-      ChoiceName = Replace(Split(formula, ",")(0), "CHOICE_FORMULA(", "")
+      choiceName = Replace(Split(formula, ",")(0), "CHOICE_FORMULA(", "")
   End If
 End Function
 
@@ -120,5 +120,5 @@ Public Property Get IChoiceFormula_Valid() As Boolean
 End Property
 
 Public Property Get IChoiceFormula_ChoiceName() As String
-  IChoiceFormula_ChoiceName = ChoiceName()
+  IChoiceFormula_ChoiceName = choiceName()
 End Property

@@ -532,7 +532,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         Set rng = formattingObject
         fontColorValue = IIf(IsEmpty(rng), "", DesignValue("missing font color"))
         FormatRange rng, fontColor:=fontColorValue, _
-                    FontSize:=IIf(scope = AnalysisInfoCellLeft, 11, 8), _ 
+                    FontSize:=IIf(scope = AnalysisInfoCellLeft, 11, 8), _
                     isBold:=(scope = AnalysisInfoCellLeft), Horiz:=horizAlign, Verti:=xlVAlignCenter
         rng.EntireRow.RowHeight = 45
         rng.WrapText = True
