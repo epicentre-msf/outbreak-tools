@@ -631,6 +631,8 @@ Sub EventValueChangeAnalysis(Target As Range)
     Dim actSh As Worksheet
     Dim analysisType As String
     Dim goToSection As String
+    Dim goToHeader As String
+    Dim rngName As String
 
     On Error GoTo Err
     Set actSh = ActiveSheet
@@ -646,7 +648,10 @@ Sub EventValueChangeAnalysis(Target As Range)
     Case "TS-Analysis"
         actSh.Calculate
         'Goto section range for time series analysis
-        Set rng = actSh.Range("ts_go_to_section")
+        On Error Resume Next
+            rngName = Target.Name.Name
+            If InStr(rngName, "ts_go_to_section", 1) > 0 Then Set rng = Target
+        On Error GoTo 0
         
     Case "SP-Analysis"
         'GoTo section for spatial analysis
@@ -655,8 +660,10 @@ Sub EventValueChangeAnalysis(Target As Range)
 
     If Not Intersect(Target, rng) Is Nothing Then
         goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
+        goToHeader = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToHeader").Value
         
         sLabel = Replace(Target.Value, goToSection & ": ", "")
+        sLabel = Replace(sLabel, goToHeader & ": ", "")
 
         Set RngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, _
                                              MatchCase:=True, SearchFormat:=False)

@@ -181,13 +181,16 @@ Private Sub Build(ll As ILinelist)
     Dim Valid As Boolean
     Dim but As IButtons
     Dim sectionsList As BetterArray              'Dropdown for sections
+    Dim tsSectionList As BetterArray             'Dropdown for time series sections
     Dim drop As IDropdownLists
     Dim goToSection As String
+    Dim goToHeader As String
     Dim grLo As ListObject                       'ListObject of graph for time series
     Dim grLoTitle As ListObject                   'Title of graphs of time series
     Dim grBAinput As BetterArray                 'BetterArray input (list of listobjects) for time series f
     Dim grBAoutput As BetterArray                'BetterArray output (list of graphs) for time series graphs
     Dim temptabl As BetterArray                  'Temporary table to stock specs of graphs for time series
+    Dim prevSecId As String
     Dim lastValid As ITablesSpecs
     
     'Those six tables are temporary tables for time series graphs
@@ -208,6 +211,7 @@ Private Sub Build(ll As ILinelist)
     Set dict = lData.Dictionary()
     Set vars = LLVariables.Create(dict)
     Set sectionsList = New BetterArray
+    Set tsSectionList = New BetterArray
     Set drop = ll.Dropdown()
     Set pass = lData.Password()
     
@@ -215,6 +219,7 @@ Private Sub Build(ll As ILinelist)
     Set outsh = ll.Wksh(tradmsg.TranslatedValue("LLSHEET_Analysis"))
     BusyApp
     goToSection = tradmsg.TranslatedValue("MSG_GoToSec")
+    goToHeader = tradmsg.TranslatedValue("MSG_GoToHead")
     design.ApplyFormat outsh, AllAnalysisSheet
     
     'Add the update filter button
@@ -232,6 +237,8 @@ Private Sub Build(ll As ILinelist)
     'Activating the worksheet restores all the application
     'status to true, remember to recall the busy app just
     'after
+
+    'Adding something to push from analysis
     BusyApp
     outsh.Activate
     With Application.ActiveWindow
@@ -411,19 +418,38 @@ Private Sub Build(ll As ILinelist)
                     minFormula = "MIN(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
                     maxFormula = "MAX(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
 
+                    tsSectionList.Push goToHeader & ": " & tabl.TimeSeriesHeader()
+
                 ElseIf specs.isNewSection() And (Not prevSpecs Is Nothing) Then
-                    
+                    prevSecId = prevSpecs.TableSectionId
                     'New section after the first new section
-                    outsh.Range("MAX_MAX_DATE_" & prevSpecs.TableSectionId).formula = "= MAX(" & maxFormula & ")"
-                    outsh.Range("MIN_MIN_DATE_" & prevSpecs.TableSectionId).formula = "= MIN(" & minFormula & ")"
+                    outsh.Range("MAX_MAX_DATE_" & prevSecId).formula = "= MAX(" & maxFormula & ")"
+                    outsh.Range("MIN_MIN_DATE_" & prevSecId).formula = "= MIN(" & minFormula & ")"
                     minFormula = "MIN(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
                     maxFormula = "MAX(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
+
+                    'New section, add goTo section dropdown to previous section
+                    drop.Add tsSectionList, "tsgotosection" & prevSecId
+                    Set cellRng = outsh.Range("SECTION_" & prevSecId)
+                    Set cellRng = cellRng.Offset(2)
+                    drop.SetValidation cellRng, "tsgotosection" & prevSecId
+                    design.ApplyFormat cellRng, scope:=LinelistSelectionDropdown
+                    cellRng.Name = "ts_" & GOTOSECCODE & "_" & prevSecId
+                    cellRng.Value = goToHeader
+                    cellRng.Locked = False
+
+                    'Clear the previous values of table section list
+                    tsSectionList.Clear
+                    tsSectionList.Push goToHeader & ": " & tabl.TimeSeriesHeader()
 
                 ElseIf Not specs.isNewSection() Then
 
                     'Another part of the table, on the same section
                     minFormula = minFormula & " , " & "MIN(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
                     maxFormula = maxFormula & ", " & "MAX(" & vars.Value(colName:="table name", varName:=rowVar) & "[" & rowVar & "]" & ")"
+
+                    'Update the dropdown
+                    tsSectionList.Push goToHeader & ": " & tabl.TimeSeriesHeader()
 
                 End If
             End If
@@ -433,6 +459,18 @@ Private Sub Build(ll As ILinelist)
         If Not lastValid Is Nothing Then
             outsh.Range("MAX_MAX_DATE_" & lastValid.TableSectionId).formula = "= MAX(" & maxFormula & ")"
             outsh.Range("MIN_MIN_DATE_" & lastValid.TableSectionId).formula = "= MIN(" & minFormula & ")"
+            
+            'New section, add goTo section dropdown to the last section
+            drop.Add tsSectionList, "tsgotosection" & lastValid.TableSectionId
+            Set cellRng = outsh.Range("SECTION_" & lastValid.TableSectionId)
+            Set cellRng = cellRng.Offset(2)
+            drop.SetValidation cellRng, "tsgotosection" & lastValid.TableSectionId
+            design.ApplyFormat cellRng, scope:=LinelistSelectionDropdown
+            cellRng.Name = "ts_" & GOTOSECCODE & "_" & lastValid.TableSectionId
+            cellRng.Value = goToHeader
+            cellRng.Locked = False
+            
+            
             Set cellRng = outsh.Range("ENDTABLE_" & lastValid.TableId).Offset(5, 2)
         End If
         
