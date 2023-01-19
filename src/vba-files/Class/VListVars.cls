@@ -122,35 +122,88 @@ Private Property Get VarRange() As Range         'Where to input informations on
     Set VarRange = this.inputRange
 End Property
 
-'Type
+'Type using type and format of the variable
 Private Sub AddType()
+
     Dim varTypes As String
+    Dim varFormat As String
     Dim cellRng As Range
     Dim nbDecimals As Integer
     Dim zerosDecimals As String
+    Dim formatText As String
 
     Set cellRng = VarRange()
 
     varTypes = LCase(Application.WorksheetFunction.Trim(ValueOf("type")))
+    varFormat = LCase(Application.WorksheetFunction.Trim(ValueOf("format")))
 
-    'Number of decimals
-    If InStr(1, varTypes, "decimal") > 0 Then
-        nbDecimals = CInt(Replace(varTypes, "decimal", vbNullString))
-        zerosDecimals = String(nbDecimals, "0")
-        varTypes = "decimal"
-    End If
-
+    'Find the format depending on the Types and format
     Select Case varTypes
+
     Case "text"
+
         cellRng.NumberFormat = "@"
-    Case "integer"
-        cellRng.NumberFormat = "#,##0;-#,##0;0;@"
+
     Case "date"
-        cellRng.NumberFormat = "d-mmm-yyy"
-    Case "decimal"
-        cellRng.NumberFormat = "#,###." & zerosDecimals & ";-#,###." & zerosDecimals & ";0." & zerosDecimals & ";@"
-    Case Else
-        cellRng.NumberFormat = "@"
+
+        'Apply default type before changing
+        cellRng.NumberFormat = "d-mmm-yyyy"
+
+        On Error Resume Next
+        If varFormat <> vbNullString Then cellRng.NumberFormat = varFormat
+        On Error GoTo 0
+        
+    Case "decimal", "integer"
+
+        If varFormat = vbNullString Then
+            
+            'Default format if there is nothing
+            formatText = IIf(varTypes = "decimal", "#,##0.00;-#,##0.00;0.00;@", "#,##0;-#,##0;0;@")
+
+        'Other formats
+        ElseIf varFormat = "round0" Then
+
+            formatText = "#,##0;-#,##0;0;@"
+        
+        ElseIf varFormat = "percentage0" Then
+            
+            formatText = "0%"
+
+        ElseIf (InStr(1, varFormat, "round") > 0) Then
+
+            nbDecimals = CInt(Replace(varFormat, "round", vbNullString))
+            zerosDecimals = String(nbDecimals, "0")
+            formatText = "#,###0." & zerosDecimals & ";-#,###0." & zerosDecimals & ";0." & zerosDecimals & ";@"
+
+        ElseIf (InStr(1, varFormat, "percentage") > 0) Then
+
+            nbDecimals = CInt(Replace(varFormat, "percentage", vbNullString))
+            zerosDecimals = String(nbDecimals, "0")
+            formatText = "0." & zerosDecimals & "%"
+
+        ElseIf varFormat = "euros" Then
+
+            formatText = "#,##0.00 $;-#,##0.00 $;0.00 $;@" 
+
+        ElseIf varFormat = "dollars" Then
+            
+            formatText = "[$$-en-US] #,##0.00;[$$-en-US] -#,##0.00;[$$-en-US] 0.00;@"
+
+        ElseIf varFormat <> "text" Then
+
+            formatText = "custom"
+        
+        End If
+
+        'Define the format
+        If formatText <> "custom" Then
+            cellRng.NumberFormat = formatText
+        Else
+            On Error Resume Next
+            cellRng.NumberFormat = varFormat
+            On Error GoTo 0
+        End If
+
     End Select
 End Sub
 
@@ -354,7 +407,7 @@ Private Sub AddValidation()
 
         validationTypes = Switch(varTypes = "integer", xlValidateWholeNumber, _
                                  varTypes = "date", xlValidateDate, _
-                                 InStr(1, varTypes, "decimal") > 0, _
+                                 varTypes = "decimal", _
                                  xlValidateDecimal)
 
         validationAlerts = Switch(varAlert = "error", xlValidAlertStop, _
