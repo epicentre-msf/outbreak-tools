@@ -207,7 +207,7 @@ Private Function Categories(ByVal varName As String) As BetterArray
     Set vars = LLVariables.Create(dict)
     
     categoryType = vars.Value(varName:=varName, colName:="control")
-    controlDetails = Application.WorksheetFunction.Trim(vars.Value(varName := varName, colName := "control details"))
+    controlDetails = Application.WorksheetFunction.Trim(vars.Value(varName:=varName, colName:="control details"))
 
     If categoryType = "choice_formula" Then
         categoryName = Replace(Split(controlDetails, ",")(0), "CHOICE_FORMULA(", "")
@@ -216,7 +216,7 @@ Private Function Categories(ByVal varName As String) As BetterArray
         categoryName = vars.Value(varName:=varName, colName:="control details")
         'Normally there is no more case_when category, but I keep it
     ElseIf categoryType = "case_when" Then
-        categoryName = "__case_when_" & varName 
+        categoryName = "__case_when_" & varName
     End If
 
     'Test the case_when

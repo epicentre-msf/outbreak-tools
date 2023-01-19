@@ -113,20 +113,20 @@ Private Sub CheckSpecifications(ByVal loTable As BetterArray)
     'Test for graph title
     Set rng = graphLo.HeaderRowRange()
     titleVal = LCase(Application.WorksheetFunction.Trim(rng.Cells(-1, 1).Value))
-    If titleVal <> "graph on time series" Then  _ 
+    If titleVal <> "graph on time series" Then _
     ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table, and then title table. No graph table found the title of first table is: " & titleVal
   
     Set tabLo = loTable.Item(loTable.LowerBound + 1)
     Set rng = tabLo.HeaderRowRange()
     titleVal = LCase(Application.WorksheetFunction.Trim(rng.Cells(-1, 1).Value))
-    If titleVal <> "time series analysis" Then _ 
+    If titleVal <> "time series analysis" Then _
     ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table and then title table. No time series table found the title second table is: " & titleVal
 
     Set titleLo = loTable.Item(loTable.LowerBound + 2)
     Set rng = titleLo.HeaderRowRange()
 
     titleVal = LCase(Application.WorksheetFunction.Trim(rng.Cells(-1, 1).Value))
-    If titleVal <> "labels for graphs on time series" Then  _ 
+    If titleVal <> "labels for graphs on time series" Then _
     ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table and then title table. No title of graph table found the title of the third table is: " & titleVal
 
 End Sub
@@ -281,7 +281,7 @@ Private Sub PushGraph(ByVal graphId As String)
         tabPrefLabel.Pop
     End If
 
-    title = GraphTitle(graphId) 
+    title = GraphTitle(graphId)
 
     graphSpecsTable.Push tabSeries, tabType, tabPos, _
                          tabLabel, tabCatLabel, tabPrefLabel, title
@@ -391,7 +391,7 @@ Public Sub CreateSeries()
         For counter = mGraphIds.LowerBound To mGraphIds.UpperBound
             graphId = mGraphIds.Item(counter)
             DefineGraphSpecs graphId
-            PushGraph  graphId                         'push the five tables to the nested BetterArray graphList
+            PushGraph graphId                          'push the five tables to the nested BetterArray graphList
         Next
     End Select
 End Sub
@@ -428,8 +428,8 @@ Private Function GraphTitle(ByVal graphId As String) As String
     'idRng is the first column of the listobject where there are ids for graphs
     Set idRng = titleLo.ListColumns(1).DataBodyRange
     
-    If Not idRng.Find(What := graphId, LookAt := xlWhole, MatchCase := True) Is Nothing Then
-        Set cellRng = idRng.Find(What := graphId, LookAt := xlWhole, MatchCase := True)
+    If Not idRng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True) Is Nothing Then
+        Set cellRng = idRng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True)
         title = cellRng.Offset(, 1).Value
     End If
  
@@ -529,7 +529,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
     Set percList = GraphValues(colName:="percentages", graphId:=graphId)
     Set typeList = GraphValues(colName:="type", graphId:=graphId)
     Set choiceList = GraphValues(colName:="choices", graphId:=graphId)
-    Set labelList = GraphValues(colName := "label", graphId := graphId)
+    Set labelList = GraphValues(colName:="label", graphId:=graphId)
 
     'Clear al the actual series
     ClearSeries

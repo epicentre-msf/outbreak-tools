@@ -323,7 +323,7 @@ Public Sub Build()
     TransferCodeWksh
     
     'Add editing range for sorting
-    sh.Protection.AllowEditRanges.Add Title:="EditAll" & tableName, Range:=Range(tableName & "[#All]")
+    sh.Protection.AllowEditRanges.Add title:="EditAll" & tableName, Range:=Range(tableName & "[#All]")
     
     'Protect the worksheet
     pass.Protect "_active"
