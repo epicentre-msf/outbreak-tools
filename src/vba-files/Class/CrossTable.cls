@@ -25,6 +25,7 @@ Private Type TCrossTable
     endrw As Long
     endCol As Long
     nbCols As Long
+    tsHeader As String 'Header for time series (to use in to go section)
 End Type
 
 Private this As TCrossTable
@@ -191,6 +192,15 @@ Public Property Get HeaderRange() As Range
         Set HeaderRange = .Range(.Cells(StartRow, StartColumn + 1), .Cells(StartRow, EndColumn))
     End With
 
+End Property
+
+'Header for each part of the time series
+Private Property Get TimeSeriesHeader() As String
+    TimeSeriesHeader = this.tsHeader
+End Property
+
+Private Property Let TimeSeriesHeader(ByVal headerText As String)
+    this.tsHeader = headerText
 End Property
 
 Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean = True, Optional ByVal onlyCategories As Boolean = False) As Range
@@ -511,8 +521,13 @@ Private Sub AddColumns()
             colVarLab = vars.Value(colName:="main label", varName:=specs.Value("column"))
             timeVarLab = vars.Value(colName:="main label", varName:=specs.Value("time"))
 
+            'Use the label for header if there is no column (only an aggregate function)
+            If specs.Value("column") = vbNullString Then colVarLab = specs.Value("label")
+
             'Add the time variable label
-            If colVarLab <> vbNullString Then .Range("STARTCOL_" & tabId).Value = colVarLab & " " & trans.TranslatedValue("MSG_per") & " " & timeVarLab
+            .Range("STARTCOL_" & tabId).Value = colVarLab & " " & trans.TranslatedValue("MSG_per") & " " & timeVarLab
+
+            TimeSeriesHeader = colVarLab & " " & trans.TranslatedValue("MSG_per") & " " & timeVarLab
 
         Case TypeSpatial
 
@@ -1177,6 +1192,10 @@ End Sub
 
 Public Property Get ICrossTable_HeaderRange() As Range
     Set ICrossTable_HeaderRange = HeaderRange
+End Property
+
+Public Property Get ICrossTable_TimeSeriesHeader() As String
+    ICrossTable_TimeSeriesHeader = TimeSeriesHeader()
 End Property
 
 Public Property Get ICrossTable_RowsCategoriesRange(Optional ByVal includeHeaders As Boolean = True, Optional ByVal onlyCategories As Boolean = False) As Range

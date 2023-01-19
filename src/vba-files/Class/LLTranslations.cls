@@ -158,11 +158,15 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     outshLLTrans.Range(shLL.Range("RNG_AnaPeriod").Address).Name = "RNG_AnaPeriod"
     outshLLTrans.Range("RNG_AnaPeriod").Value = shLL.Range("RNG_AnaPeriod").Value
 
+    outshLLTrans.Range(shLL.Range("RNG_GoToHeader").Address).Name = "RNG_GoToHeader"
+    outshLLTrans.Range("RNG_GoToHeader").Value = shLL.Range("RNG_GoToHeader").Value
+
     'Formula for linelist language code
     On Error Resume Next
     outshLLTrans.Range("RNG_LLLanguageCode").formula = shLL.Range("RNG_LLLanguageCode").formula
     outshLLTrans.Range("RNG_GoToSection").formula = shLL.Range("RNG_GoToSection").formula
     outshLLTrans.Range("RNG_AnaPeriod").formula = shLL.Range("RNG_AnaPeriod").formula
+    outshLLTrans.Range("RNG_GoToHeader").formula = shLL.Range("RNG_GoToHeader").formula
     On Error GoTo 0
 
     outshLLTrans.Range(shLL.Range("RNG_DictionaryLanguage").Address).Name = "RNG_DictionaryLanguage"
