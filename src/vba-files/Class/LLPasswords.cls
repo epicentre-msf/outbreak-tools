@@ -81,7 +81,7 @@ Private Sub Protect(Optional ByVal sheetName As String = "_active", Optional ByV
         pwd = Password()
         sh.Protect Password:=pwd, DrawingObjects:=(Not allowShapes), Contents:=True, Scenarios:=allowShapes, _
                    AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
-                   AllowFormattingCells:=True, AllowDeletingRows:=True, AllowFormattingColumns:= True
+                   AllowFormattingCells:=True, AllowDeletingRows:=True, AllowFormattingColumns:=True
                    
         If Not allowShapes Then sh.EnableSelection = xlUnlockedCells
     End If
@@ -89,15 +89,15 @@ Private Sub Protect(Optional ByVal sheetName As String = "_active", Optional ByV
 End Sub
 
 'Protect workbook
-Private Sub ProtectWkb(Byval wb As Workbook, Optional ByVal protectSheetName As Boolean = True)
+Private Sub ProtectWkb(ByVal wb As Workbook, Optional ByVal protectSheetName As Boolean = True)
     Dim pwd As String
     pwd = Password()
-    wb.Protect pwd, Structure := protectSheetName
+    wb.Protect pwd, Structure:=protectSheetName
 End Sub
 
 
 'UnProptect the workbook
-Private Sub UnProtectWkb(Byval wb As Workbook)
+Private Sub UnProtectWkb(ByVal wb As Workbook)
     Dim pwd As String
     pwd = Password()
     On Error Resume Next

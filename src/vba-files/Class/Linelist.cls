@@ -493,18 +493,18 @@ Private Sub SaveLL()
     Dim outPath As String
     Dim lData As ILinelistSpecs
     Dim mainobj As IMain
-    Dim passObj As ILLPasswords
+    Dim passobj As ILLPasswords
 
 
     Set lData = linelistData()
     Set outWkb = wkb()
     Set mainobj = lData.MainObject()
-    Set passObj = lData.Password()
+    Set passobj = lData.Password()
     passwd = mainobj.LinelistPassWord()
     outPath = mainobj.OutputPath() & Application.PathSeparator & mainobj.LinelistName & ".xlsb"
 
     'Protect workbook from changes in its structure
-    passObj.ProtectWkb outWkb
+    passobj.ProtectWkb outWkb
     outWkb.SaveAs FileName:=outPath, fileformat:=xlExcel12, Password:=passwd, _
                   ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     outWkb.Close

@@ -468,11 +468,11 @@ Private Sub Build(ll As ILinelist)
     
                     For counter = 1 To tablSeries.Length
                         gr.AddSeries tablSeries.Item(counter), tablType.Item(counter), tablPos.Item(counter)
-                        gr.AddLabels tablLabel.Item(counter), tablColLabel.Item(counter), tablPrefLabel.Item(counter), prefixOnly := True
+                        gr.AddLabels tablLabel.Item(counter), tablColLabel.Item(counter), tablPrefLabel.Item(counter), prefixOnly:=True
                     Next
                     
-                    gr.Format catTitle := tradmsg.TranslatedValue("MSG_Period"), valuesTitle := tradmsg.TranslatedValue("MSG_Values"), _ 
-                              plotTitle := temptabl.Item(7),  asTimeSeries:=True 'The last item of temptabl is the title
+                    gr.Format catTitle:=tradmsg.TranslatedValue("MSG_Period"), valuesTitle:=tradmsg.TranslatedValue("MSG_Values"), _
+                              plotTitle:=temptabl.Item(7), asTimeSeries:=True    'The last item of temptabl is the title
     
                     Set cellRng = cellRng.Offset(50)
                 Next

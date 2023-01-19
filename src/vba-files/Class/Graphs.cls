@@ -123,7 +123,7 @@ Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional
 
     Case "hbar"
 
-        customType =  xlBarClustered
+        customType = xlBarClustered
 
     Case Else
         customType = xlColumnClustered
@@ -151,14 +151,14 @@ Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional
     seriesIndex = ind
 End Sub
 
-Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, Optional ByVal prefix As String = vbNullString, _ 
-                     Optional Byval prefixOnly As Boolean = False)
+Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, Optional ByVal prefix As String = vbNullString, _
+                     Optional ByVal prefixOnly As Boolean = False)
 
     Dim co As ChartObject
     Dim sh As Worksheet
     Set co = graphChart
     Set sh = Wksh()
-    Dim label As String
+    Dim LABEL As String
     Dim ind As Long
 
     ind = seriesIndex
@@ -167,16 +167,16 @@ Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, Optional 
     If prefix <> vbNullString And (Not prefixOnly) Then prefix = prefix & " - "
 
     'Do not evaluate lblName on range if not necessary (avoid IIf())
-    If prefixOnly Then 
-        label = prefix
+    If prefixOnly Then
+        LABEL = prefix
     Else
-        label = prefix & sh.Range(lblName).Value
+        LABEL = prefix & sh.Range(lblName).Value
     End If
 
     'Throw error when co is Nothing
     With co.Chart
         .SeriesCollection(ind).XValues = sh.Range(catName)
-        .SeriesCollection(ind).Name = label 'labels are hardcoded, the user can not modify by changing values in ranges
+        .SeriesCollection(ind).Name = LABEL 'labels are hardcoded, the user can not modify by changing values in ranges
         .SeriesCollection(ind).ApplyDataLabels xlDataLabelsShowValue, False
         .SeriesCollection(ind).DataLabels.Font.Size = 6
         .SeriesCollection(ind).DataLabels.Font.color = RGB(2, 6, 91)
@@ -277,7 +277,7 @@ Public Sub IGraphs_AddSeries(ByVal rngName As String, ByVal chrtType As String, 
     AddSeries rngName, chrtType, axisPos
 End Sub
 
-Public Sub IGraphs_AddLabels(ByVal catName As String, ByVal lblName As String, Optional ByVal prefix As String = vbNullString, _ 
+Public Sub IGraphs_AddLabels(ByVal catName As String, ByVal lblName As String, Optional ByVal prefix As String = vbNullString, _
                             Optional ByVal prefixOnly As Boolean = False)
     AddLabels catName, lblName, prefix, prefixOnly
 End Sub
