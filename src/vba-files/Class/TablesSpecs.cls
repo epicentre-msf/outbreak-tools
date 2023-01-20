@@ -233,10 +233,9 @@ Public Property Get ValidTable() As Boolean
                                                                 (colControl = "choice_manual" Or colControl = "choice_formula") And _
                                                                 (rowControl = "choice_manual" Or rowControl = "choice_formula")
     Case TypeTimeSeries
-        Valid = (dict.VariableExists(rowVar) And (colVar = vbNullString Or dict.VariableExists(colVar))) And _
-                                                                                                         (vars.Value(colName:="type", varName:=rowVar) = "date")
+        Valid = (colVar = vbNullString Or colControl = "choice_manual") And (vars.Value(colName:="type", varName:=rowVar) = "date")
     Case TypeSpatial
-        Valid = (dict.VariableExists("adm1_" & rowVar) And (colVar = vbNullString Or dict.VariableExists(colVar)))
+        Valid = (dict.VariableExists("adm1_" & rowVar) And (colVar = vbNullString Or colControl = "choice_manual"))
     End Select
 
     ValidTable = Valid
@@ -303,6 +302,7 @@ Private Property Get Previous() As ITablesSpecs
     Dim actRng As Range                          'Actual range
     Dim taType As AnalysisTablesType
     Dim endCol As Long
+    Dim precSec As ITablesSpecs
     
     
     If isNewSection() Then ThrowErrorUnableInstanciate "Your table is on a new section, I can't return the previous table"
@@ -313,8 +313,18 @@ Private Property Get Previous() As ITablesSpecs
     Set lData = LinelistSpecifications()
     Set tRng = actRng.Offset(-1)
     
-    Set Previous = Create(hRng, tRng, lData)
-
+    'Loop until valid table
+    Set precSec = Create(hRng, tRng, lData)
+    Set tRng = tRng.Offset(-1)
+    
+    Do While (Not precSec.ValidTable()) And (Not (tRng.Row <= hRng.Row))
+        Set precSec = Create(hRng, tRng, lData)
+        If precSec.isNewSection() Then Exit Do
+        Set tRng = tRng.Offset(-1)
+    Loop
+    
+    Set Previous = precSec
+    
 End Property
 
 Private Property Get isNewSection() As Boolean
