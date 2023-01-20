@@ -183,7 +183,7 @@ Private Sub AddType()
 
         ElseIf varFormat = "euros" Then
 
-            formatText = "#,##0.00 $;-#,##0.00 $;0.00 $;@" 
+            formatText = "#,##0.00 $;-#,##0.00 $;0.00 $;@"
 
         ElseIf varFormat = "dollars" Then
             

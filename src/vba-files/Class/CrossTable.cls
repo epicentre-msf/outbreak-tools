@@ -744,6 +744,7 @@ Private Sub NameRanges()
         'On time series and not on new sections, start with the previous end row
 
         If (specs.TableType = TypeTimeSeries) And Not (specs.isNewSection) Then
+            Debug.Print specs.Previous.TableId
             If Not RangeExists("ENDTABLE_" & specs.Previous.TableId) Then ThrowExecutionError "I can't append the new time series to a previous table, No previous table  were found :("
             Set cellRng = .Range("ENDTABLE_" & specs.TableId)
             Set catRng = .Range(cellRng.Offset(1 - NBROWSTIMESERIES), cellRng.Offset(-3)) 'should be negative the offset (going backward)
