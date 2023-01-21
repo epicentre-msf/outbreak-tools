@@ -310,9 +310,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     calculated = trans.TranslatedValue("MSG_Calculated")
     mandatory = trans.TranslatedValue("MSG_Mandatory")
     
-    If varIndex = 1 Then
-        cellRng.Name = ValueOf("table name") & "_" & "START"
-    End If
+    If varIndex = 1 Then  cellRng.Name = ValueOf("table name") & "_" & "START"
 
     'sublabel
     If (varControl = "formula") Or (varControl = "case_when") Or (varControl = "choice_formula") Then

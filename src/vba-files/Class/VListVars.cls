@@ -273,6 +273,7 @@ End Sub
 'Main Label
 Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     Dim varMainLab As String
+    Dim varIndex As Long
     Dim varName As String
     Dim varNote As String
     Dim varSublab As String
@@ -299,8 +300,14 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     varSublab = ValueOf("sub label")
     varControl = ValueOf("control")
     varStatus = ValueOf("status")
+    varIndex = CLng(ValueOf("column index"))
+
     calculated = trans.TranslatedValue("MSG_Calculated")
     mandatory = trans.TranslatedValue("MSG_Mandatory")
+
+    'Add the table start name
+    If varIndex = 4 Then cellRng.Name = ValueOf("table name") & "_" & "START"
+    
 
     'sublabel
     If (varControl = "formula") Or (varControl = "case_when") Or (varControl = "choice_formula") Then
