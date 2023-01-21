@@ -741,6 +741,44 @@ Private Sub SortListOnFirst(ByVal Lo As ListObject, ByVal colIndex As Long)
     
 End Sub
 
+'Resize a listobject to resize every listObject after loading.
+Private Sub ResizeLo(Lo As ListObject, Optional totalRowCount As Long = 0)
+
+    'Begining of the tables
+    Dim loRowHeader As Long
+    Dim loColHeader  As Long
+    Dim rowCounter As Long
+
+    'End of the listobject table
+    Dim loRowsEnd As Long
+    Dim loColsEnd As Long
+    Dim sh As Worksheet
+
+    Set sh = Wksh()
+
+    'Remove unwanted rows from each listObject
+    With sh
+        'Rows and columns at the begining of the table to resize
+        loRowHeader = Lo.Range.Row
+        loColHeader = Lo.Range.Column
+
+        'Rows and Columns at the end of the Table to resize
+        loRowsEnd = loRowHeader + Lo.Range.Rows.Count - 1
+        loColsEnd = loColHeader + Lo.Range.Columns.Count - 1
+        rowCounter = loRowsEnd
+        Do While (rowCounter > loRowHeader + 1)
+            If (Application.WorksheetFunction.CountA(.Rows(rowCounter)) <= totalRowCount) Then
+                .Rows(rowCounter).EntireRow.Delete
+                'update the end rows
+                loRowsEnd = loRowsEnd - 1
+            End If
+            rowCounter = rowCounter - 1
+        Loop
+            Lo.Resize .Range(.Cells(loRowHeader, loColHeader), .Cells(loRowsEnd, loColsEnd))
+    End With
+End Sub
+
+
 
 Private Sub SortAnalysis()
 
@@ -750,20 +788,31 @@ Private Sub SortAnalysis()
     Dim tabl As BetterArray 'Will contain the list of listObjects to sort
     Dim counter As Long
     Dim loName As String
+    Dim rowCount As Long
 
     Set tabl = New BetterArray
     tabl.LowerBound = 1
 
-    tabl.Push UNIVARIATE, BIVARIATE, TIMESERIES, SPATIAL
+    tabl.Push UNIVARIATE, BIVARIATE, TIMESERIES, SPATIAL, GRAPHTIMESERIES, TITLEGRAPHTIMESERIES
 
     Set sh = Wksh()
 
     For counter = 1 To tabl.Length
+        
         loName = tabl.Items(counter)
         Set Lo = sh.ListObjects(loName)
+
+        'Row count is the number of elements in the row that triggers deletion of the
+        'entire row of the listObject
+        rowCount = Switch(loName = TIMESERIES, 2, loName = GRAPHTIMESERIES, 4, True, 0)
+
         colIndex = ColumnIndex(Lo, "section")
-    
+        If loName = GRAPHTIMESERIES Or loName = TITLEGRAPHTIMESERIES Then colIndex = ColumnIndex(Lo, "graph id")
+        
         SortListOnFirst Lo, colIndex
+
+        'resize the listObject
+        ResizeLo Lo, totalRowCount := rowCount
     Next
 End Sub
 
@@ -780,7 +829,8 @@ Private Sub Translate(ByVal TransObject As ITranslation)
 
     Set transCols = New BetterArray
     Set anash = Wksh()
-    transCols.Push "section", "title", "summary label", "choices" 'choices is for the time series graphs translation
+    transCols.Push "section", "table title", "graph title", "summary label", _ 
+                   "choices", "label" 'choices is for the time series graphs translation
 
     For Each Lo In anash.ListObjects
         For counter = transCols.LowerBound To transCols.UpperBound
@@ -789,11 +839,13 @@ Private Sub Translate(ByVal TransObject As ITranslation)
                 TransObject.TranslateRange colRng
             End If
         Next
+
         'Formulas
         If ColumnExists(Lo, "summary function") Then
             Set colRng = DataRange(Lo, "summary function")
             TransObject.TranslateRange colRng, containsFormula:=True
         End If
+
     Next
 End Sub
 

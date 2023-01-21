@@ -691,6 +691,11 @@ Sub EventValueChangeVList(Target As Range)
     On Error GoTo Err
     Set sh = ActiveSheet
     tableName = sh.Cells(1, 4).Value
+
+    'Calculate the range where the values are entered
+    Set rng = sh.Range(tableName & "_" & "PLAGEVALUES")
+    rng.Calculate
+    
     Set rng = sh.Range(tableName & "_" & GOTOSECCODE)
     goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
     
