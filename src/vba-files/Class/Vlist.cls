@@ -150,6 +150,7 @@ Public Sub Build()
     Dim but As IButtons
     Dim trads As ITranslation
     Dim rng As Range
+    Dim cellRng As Range
     Dim design As ILLFormat
     Dim sheetName As String
     Dim hasGeo As Boolean
@@ -231,7 +232,22 @@ Public Sub Build()
     Set rng = sh.Cells(1, 4)
     rng.Value = tableName
     design.ApplyFormat rng, scope:=LinelistHiddenCell
+
+    Set cellRng = sh.Range(tableName & "_" & "START")
+    'Add a name to all the plage where to enter values (Use to update calculations of the VList)
+    Set rng = cellRng.Offset(, -1)
+
+    Do While Not IsEmpty(rng)
+        Set rng = rng.Offset(1)
+    Loop
     
+    With sh
+        Set rng = .Range(.Cells(cellRng.Row, cellRng.Column), .Cells(rng.Row, cellRng.Column))
+    End With
+
+    'Name the plage where all the values are entered
+    rng.Name = tableName & "_" & "PLAGEVALUES"
+
 
     'Transfert code to the worksheet
     TransferCodeWksh
