@@ -308,8 +308,8 @@ Private Sub ClearSeries()
     this.chartSeriesPosition.Clear
     this.chartSeriesLabel.Clear
     this.chartColumnCategoriesLabel.Clear
+    this.chartSeriesLabelPrefix.Clear
     On Error GoTo 0
-
 End Sub
 
 Public Sub CreateSeries()
@@ -324,6 +324,7 @@ Public Sub CreateSeries()
     Dim counter As Long
     Dim nbCols As Long
     Dim plotType As String
+    Dim flipCoords As String
 
     Dim series As BetterArray
     Set series = New BetterArray
@@ -338,16 +339,19 @@ Public Sub CreateSeries()
         tabType = specs.TableType
         nbCols = tabl.NumberOfColumns
         
-        'Plotype can plot either horizontal or vertical bars depending of the flip coordinates
-        plotType = IIf(specs.Value("flip") = "yes" And (Not specs.HasPercentage), "hbar", "bar")
-
+        'flip coordinates
+        flipCoords = specs.Value("flip")
+        plotType = IIf(flipCoords = "yes", "hbar", "bar")
+        
         Select Case tabType
-
+            
         Case TypeUnivariate
             'First series, values for column 1
+            'Plotype can plot either horizontal or vertical bars depending of the flip coordinates
             PushSeries "VALUES_COL_1_" & tabId, plotType, "left" 'bars at the left
             PushLabels "ROW_CATEGORIES_" & tabId, "LABEL_COL_1_" & tabId
-            If specs.HasPercentage Then
+
+            If (specs.HasPercentage And plotType = "bar") Then
                 PushSeries "PERC_COL_1_" & tabId, "point", "right"
                 PushLabels "ROW_CATEGORIES_" & tabId, "PERC_LABEL_COL_" & tabId
             End If
@@ -657,6 +661,9 @@ Public Property Get GraphIDs() As BetterArray
 End Property
 
 Private Function GraphValues(ByVal colName As String, ByVal graphId As String) As BetterArray
+
+    'Returns all the values for one column of a given graph (a kind of filter)
+
     Dim idIndex As Long
     Dim RowIndex As Long
     Dim colIndex As Long
@@ -703,6 +710,7 @@ Private Function GraphValues(ByVal colName As String, ByVal graphId As String) A
                 'Important to exit if the range has only one cell since reducing could
                 'return the same range
                 If rng.Rows.Count = 1 Then Exit Do
+                If RowIndex + 1 > rng.Rows.Count Then Exit Do
                 
                 'Reduce the ranges for further searches
                 Set rng = .Range(rng.Cells(RowIndex + 1, 1), rng.Cells(rng.Rows.Count, 1))

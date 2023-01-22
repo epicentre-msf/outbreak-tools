@@ -446,13 +446,13 @@ Private Sub PrepareAdmin()
     Set trads = lData.TransObject(TranslationOfShapes)
 
     'Advance button
-    Set rng = sh.Cells(2, 5)
+    Set rng = sh.Cells(2, 3)
     Set but = Buttons.Create(rng, trads, codeName:=SHPADVANCE, scope:=ButtonScopeLarge)
     but.Add ADVANCEDCOMMAND
     but.Format design
 
     'Import button
-    Set rng = sh.Cells(2, 7)
+    Set rng = sh.Cells(2, 5)
     Set but = Buttons.Create(rng, trads, codeName:=SHPEXPORT, scope:=ButtonScopeLarge)
     but.Add EXPORTCOMMAND
     but.Format design
@@ -494,17 +494,26 @@ Private Sub SaveLL()
     Dim lData As ILinelistSpecs
     Dim mainobj As IMain
     Dim passobj As ILLPasswords
+    Dim msgTrads As ITranslation
 
 
     Set lData = linelistData()
     Set outWkb = wkb()
     Set mainobj = lData.MainObject()
     Set passobj = lData.Password()
+    Set msgTrads = lData.TransObject()
+
     passwd = mainobj.LinelistPassWord()
     outPath = mainobj.OutputPath() & Application.PathSeparator & mainobj.LinelistName & ".xlsb"
 
     'Protect workbook from changes in its structure
+
+    'Select the admin sheet before saving
+    outWkb.Worksheets(msgTrads.TranslatedValue("LLSHEET_Admin")).Activate
+    
+    'Protect the workbook structure from eventual deletion/renaming of a worksheet
     passobj.ProtectWkb outWkb
+
     outWkb.SaveAs FileName:=outPath, fileformat:=xlExcel12, Password:=passwd, _
                   ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     outWkb.Close

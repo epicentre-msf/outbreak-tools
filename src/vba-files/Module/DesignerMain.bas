@@ -169,8 +169,14 @@ Sub GenerateData()
 
     'Preparing the linelist file
     Set ll = Linelist.Create(lData)
+
     mainobj.AddInfo desTrads, "MSG_PreparLL"
+
+    'If you want to change the behavior of the linelist, please go to the
+    'linelist class instead of using functions here.
+
     ll.Prepare
+    
     mainobj.UpdateStatus (10)
 
     'Should add Error management when something goes wrong
