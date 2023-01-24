@@ -434,10 +434,13 @@ End Function
 
 Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varName As String) As String
 
+    Application.Volatile
+    
     Dim geo As ILLGeo
     Dim sp As ILLSpatial
     Dim adminName As String
     Dim sh As Worksheet
+
 
     Set sh = ThisWorkbook.Worksheets("Geo")
     Set geo = LLGeo.Create(sh)
@@ -472,4 +475,10 @@ Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varNam
     FindTopAdmin = sp.FindTopValue(adminName, adminOrder, varName)
 
 End Function
+
+'Find the corresponding value of a top admin for one variable
+
+Public Function FindTopValue(adminLevel As String, adminOrder As Integer, varName As String, catName As String) As Long
+End Function
+
 

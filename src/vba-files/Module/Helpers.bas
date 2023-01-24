@@ -637,7 +637,6 @@ Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 
 
     'Copy and paste to temp
     With ThisWorkbook.Worksheets(C_sSheetTemp)
-        .Visible = xlSheetHidden
         .Cells.Clear
 
         rng.Copy Destination:=.Cells(1, 1)
@@ -652,7 +651,6 @@ Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 
         End If
 
         .Cells.Clear
-        .Visible = xlSheetVeryHidden
     End With
 
     Lo.AutoFilter.ShowAllData

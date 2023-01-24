@@ -32,7 +32,7 @@ Private Const CONCAT As String = "concat_"
 Public Function Create(ByVal tabl As ICrossTable) As ISpatialTables
     
     'output worksheet to add the spatial tables
-    CheckRequirements tabl
+    CheckRequirements tabl '(tabl is exists and spatial_tables__ sheet exists)
 
     With New SpatialTables
         Set .Table = tabl
@@ -46,6 +46,8 @@ Public Property Get Self() As ISpatialTables
 End Property
 
 Public Property Get Wksh() As Worksheet
+  'The worksheet is the sapatial table worksheet (where to write tables for admins)
+  
   Dim tabl As ICrossTable
   Dim wb As Workbook
   Dim sh As Worksheet
@@ -70,6 +72,8 @@ Public Property Set Table(ByVal tabl As ICrossTable)
 End Property
 
 Private Property Get LastColumn() As Long
+  'Find the last column of the spatial table sheet.
+  
     Dim sh As Worksheet
     Dim colIndex As Long
     Set sh = Wksh()
@@ -262,16 +266,18 @@ Private Sub Add(ByVal formObject As IFormulas)
     Dim rng As Range
     Dim finalFormula As String
     Dim adminName As String
+    Dim rowVarName As String 'Variable name on rows for formulas
 
     Set tabl = Table
     Set specs = tabl.Specifications
+    Set colCategories = New BetterArray
     varName = specs.Value("row")
 
+    
     If Exists(varName) Then Exit Sub
     If Not LoExists("listofgeovars") Then Prepare
-
     Set sh = Wksh()
-      
+    
     With sh
 
       For counter = 1 To 4
@@ -280,30 +286,33 @@ Private Sub Add(ByVal formObject As IFormulas)
 
         loName = CurrentLoName(varName, ADMIN & counter)
         colIndex = LastColumn()
-        
+        rowVarName = CONCAT & adminName & "_" & varName
         'Add the table names for admin 1, only admin1, for admin2, admin1 and admin2, etc...
         adminName = ADMIN & counter
         headerName = CurrentHeaderName(varName, adminName)
         Set cellRng = .Cells(1, colIndex)
         cellRng.Value = headerName
-        Set cellRng = cellRng.Offset(1)
-        AddTableConditions CONCAT & adminName & "_" & varName, "= " & cellRng.Address(Rowabsolute:=False)
-
-        'Formula value
-        Set cellRng = cellRng.Offset(0, 1) 'formula header
-        cellRng.Value = "formula_" & ADMIN & "_" & counter
         
-        'Where to write the formula
-        Set cellRng = cellRng.Offset(1)
+        'CellRng IS  THE RANGE WITH THE HEADERNAME OF THE COLUMN OF CONCAT VALUES 
+        
+        'Move to one row bellow to add conditions on rows
+        AddTableConditions rowVarName, "= " & cellRng.Cells(2, 1).Address(Rowabsolute:=False)
+
+        'Formula value for total
+        cellRng.Cells(1,  2).Value = "total_" & ADMIN & "_" & counter
         
         'final formula
         finalFormula = CurrentExcelFormula(formObject)
 
         'Test final formula to see if it returns something
-        If finalFormula <> vbNullString Then cellRng.FormulaArray = "= " & finalFormula
+        If finalFormula <> vbNullString Then cellRng.Cells(2, 2).FormulaArray = "= " & finalFormula
+
+        'Define the formulas
+        Set rng = .Range(cellRng.Cells(2, 2), cellRng.Cells(3, catLength + 2))
+        cellRng.Cells(2, 2).AutoFill Destination:=rng, Type:=xlFillValues
 
         'Define the listObject
-        Set rng = .Range(.Cells(1, colIndex), .Cells(2, colIndex + 1))
+        Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(3, catLength + 2))
 
         'Add A list object table
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName

@@ -776,10 +776,10 @@ Private Sub AddFormulas()
                 End If
             End If
 
-        Case TypeSpatial
+        Case TypeSpatial '======================== spatial analysis tables
 
             'Add dropdown on the selection part od validation
-            rowVar = specs.Value("row")
+            rowVar = "concat_adm1_" & specs.Value("row")
             colVar = specs.Value("column")
             
             On Error Resume Next
@@ -948,10 +948,10 @@ Private Sub AddFormulas()
             End If
 
             'Create the spatial table management
-            Set spTab = SpatialTables.Create(tabl)
-            Set tabFormObject = TableFormula
-            
-            spTab.Add (tabFormObject)
+            'Set spTab = SpatialTables.Create(tabl)
+            'Set tabFormObject = TableFormula
+            '
+            'spTab.Add tabFormObject
 
         End Select
     End With
