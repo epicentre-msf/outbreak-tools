@@ -812,7 +812,6 @@ Private Sub AddFormulas()
             'Now formulas As for time series (almost the same, can fator later on)
             Set rng = .Range("VALUES_COL_1_" & tabId)
             Set rngLab = .Range("LABEL_COL_1_" & tabId)
-            Set totRng = .Range("TOTAL_ROW_VALUES_" & tabId)
             Set misRng = .Range("MISSING_ROW_VALUES_" & tabId)
             tabEndColumn = tabl.EndColumn
             
@@ -841,18 +840,8 @@ Private Sub AddFormulas()
                 'Percentage
                 If HasPercentage Then
                     
-                    Select Case specs.Value("percentage")
-                    
-                    Case "row"
-                        Set cellRng = .Range("TOTAL_COL_VALUES_" & tabId).Cells(1, 1)
-                        rng.Cells(1, 2).formula = "= " & Percentage(cellRng, rng.Cells(1, 1), rowabs:=False)
-                    Case "column"
-                        Set cellRng = .Cells(totRng.Row, rng.Column)
-                        rng.Cells(1, 2).formula = "= " & Percentage(cellRng, rng.Cells(1, 1))
-                    Case "total"
-                        Set cellRng = .Range("TOTAL_TOTAL_" & tabId)
-                        rng.Cells(1, 2).formula = "= " & Percentage(cellRng, rng.Cells(1, 1))
-                    End Select
+                    Set cellRng = .Range("TOTAL_COL_VALUES_" & tabId).Cells(1, 1)
+                    rng.Cells(1, 2).formula = "= " & Percentage(cellRng, rng.Cells(1, 1), rowabs:=False)                    
                     
                     Set rng = rng.Offset(, 1)    'percentage column range
                     Set rngLab = rngLab.Offset(, 1)
@@ -925,26 +914,6 @@ Private Sub AddFormulas()
 
                 finalFormula = CurrentExcelFormula()
                 .Range("MISSING_MISSING_" & tabId).FormulaArray = "= " & finalFormula
-            End If
-
-            'total row, total column, depend on formula, I will just sum the column if it is N()
-            If RangeExists("TOTAL_TOTAL_" & tabId) Then
-                If SummaryFunction = "N" Or SummaryFunction = "N()" Then
-                    .Range("TOTAL_TOTAL_" & tabId).formula = "= SUM(" & .Range("TOTAL_COL_VALUES_" & tabId).Address & ")"
-            
-                Else
-                    ClearTableConditions
-
-                    If HasMissing Then
-                        finalFormula = CurrentExcelFormula(scope:=1)
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
-                    Else
-                        AddNonEmptyTableConditions colVar
-                        finalFormula = CurrentExcelFormula()
-                        .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
-                    End If
-
-                End If
             End If
 
             'Create the spatial table management
