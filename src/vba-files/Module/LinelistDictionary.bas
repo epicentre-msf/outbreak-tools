@@ -88,9 +88,7 @@ Function GetChoicesData() As BetterArray
     ChoicesData.LowerBound = 1
 
     With ThisWorkbook.Worksheets(C_sParamSheetChoices)
-        .Visible = xlSheetHidden
         ChoicesData.FromExcelRange .Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=True
-        .Visible = xlSheetVeryHidden
     End With
 
     Set GetChoicesData = ChoicesData.Clone
@@ -103,9 +101,7 @@ Function GetTransData() As BetterArray
     TransData.LowerBound = 1
 
     With ThisWorkbook.Worksheets(C_sParamSheetTranslation)
-        .Visible = xlSheetHidden
         TransData.FromExcelRange .ListObjects(1).Range
-        .Visible = xlSheetVeryHidden
     End With
 
     Set GetTransData = TransData.Clone
@@ -134,7 +130,6 @@ Function GetDictDataFromCondition(sColumnName As String, sCondition As String, O
 
         'Take the special cells and copy the data
         With ThisWorkbook.Worksheets(C_sSheetTemp)
-            .Visible = xlSheetHidden
             .Cells.Clear
             rng.Copy Destination:=.Cells(1, 1)
             Set ColumnData = New BetterArray
@@ -146,7 +141,6 @@ Function GetDictDataFromCondition(sColumnName As String, sCondition As String, O
             End If
 
             .Cells.Clear
-            .Visible = xlSheetVeryHidden
         End With
 
         Set GetDictDataFromCondition = ColumnData.Clone()

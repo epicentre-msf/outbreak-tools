@@ -536,81 +536,80 @@ Private Sub Build(ll As ILinelist)
      
     'Building the spatial Analysis ===================================================================================
      
-    ' Set outsh = ll.Wksh(tradmsg.TranslatedValue("LLSHEET_SpatialAnalysis"))
-    ' design.ApplyFormat outsh, AllAnalysisSheet
-    ' BusyApp
-    ' sectionsList.Clear
+    Set outsh = ll.Wksh(tradmsg.TranslatedValue("LLSHEET_SpatialAnalysis"))
+    design.ApplyFormat outsh, AllAnalysisSheet
+    BusyApp
+    sectionsList.Clear
      
-    ' 'Add the update filter button
-    ' Set cellRng = outsh.Cells(2, 1)
-    ' Set but = Buttons.Create(cellRng, tradshp, SHPFILTERNAME, ButtonScopeSmall)
-    ' but.Add UPDATESPCOMMAND
-    ' but.Format design
+    'Add the update filter button
+    Set cellRng = outsh.Cells(2, 1)
+    Set but = Buttons.Create(cellRng, tradshp, SHPFILTERNAME, ButtonScopeSmall)
+    but.Add UPDATESPCOMMAND
+    but.Format design
     
-    ' 'Add The Sheet Type
-    ' Set cellRng = outsh.Cells(1, 3)
-    ' cellRng.Value = "SP-Analysis"
-    ' design.ApplyFormat cellRng, scope:=LinelistHiddenCell
+    'Add The Sheet Type
+    Set cellRng = outsh.Cells(1, 3)
+    cellRng.Value = "SP-Analysis"
+    design.ApplyFormat cellRng, scope:=LinelistHiddenCell
     
-    ' On Error Resume Next
-    ' 'Activating the worksheet restores all the application
-    ' 'status to true, remember to recall the busy app just
-    ' 'after
-    ' outsh.Activate
-    ' BusyApp
-    ' With ActiveWindow
-    '     .SplitRow = 2
-    '     .FreezePanes = True
-    ' End With
-    ' On Error GoTo 0
+    On Error Resume Next
+    'Activating the worksheet restores all the application
+    'status to true, remember to recall the busy app just
+    'after
+    outsh.Activate
+    BusyApp
+    With ActiveWindow
+        .SplitRow = 2
+        .FreezePanes = True
+    End With
+    On Error GoTo 0
      
-    ' 'Same as Bivariate analysis
-    ' Set Lo = sh.ListObjects(SPATIAL)
-    ' If Not (Lo.DataBodyRange Is Nothing) Then
-    '     Set hRng = Lo.HeaderRowRange
-    '     For counter = 1 To Lo.ListRows.Count
-    '         Set tabRng = Lo.ListRows(counter).Range
-    '         Set specs = TablesSpecs.Create(hRng, tabRng, lData)
+    'Same as Bivariate analysis
+    Set Lo = sh.ListObjects(SPATIAL)
+    If Not (Lo.DataBodyRange Is Nothing) Then
+        Set hRng = Lo.HeaderRowRange
+        For counter = 1 To Lo.ListRows.Count
+            Set tabRng = Lo.ListRows(counter).Range
+            Set specs = TablesSpecs.Create(hRng, tabRng, lData)
              
-    '         If specs.ValidTable() Then
-    '             If specs.isNewSection Then sectionsList.Push goToSection & ": " & specs.Value("section")
-    '             tabId = specs.TableId
-    '             'Create the table
-    '             Set tabl = CrossTable.Create(specs, outsh, tradmsg)
-    '             tabl.Build
+            If specs.ValidTable() Then
+                If specs.isNewSection Then sectionsList.Push goToSection & ": " & specs.Value("section")
+                tabId = specs.TableId
+                'Create the table
+                Set tabl = CrossTable.Create(specs, outsh, tradmsg)
+                tabl.Build
                  
-    '             'Add formulas and format
-    '             Set tabform = CrossTableFormula.Create(tabl, forml)
-    '             tabform.AddFormulas
-    '             tabl.Format design
-                
+                'Add formulas and format
+                Set tabform = CrossTableFormula.Create(tabl, forml)
+                tabform.AddFormulas
+                tabl.Format design             
                
-    '             'Add graph
-    '             If specs.Value("graph") = "values" Or specs.Value("graph") = "percentage" Or specs.Value("graph") = "both" Then
-    '                 Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
-    '                 Set grSpecs = GraphSpecs.Create(tabl)
-    '                 grSpecs.CreateSeries
-    '                 Set gr = Graphs.Create(outsh, cellRng)
-    '                 gr.Add
-    '                 For graphCounter = 1 To grSpecs.NumberOfSeries
-    '                     gr.AddSeries grSpecs.SeriesName(graphCounter), grSpecs.SeriesType(graphCounter), grSpecs.SeriesPos(graphCounter)
-    '                     gr.AddLabels grSpecs.SeriesLabel(graphCounter), grSpecs.SeriesColumnLabel(graphCounter)
-    '                 Next
+                'Add graph
+                If specs.Value("graph") = "values" Or specs.Value("graph") = "percentage" Or specs.Value("graph") = "both" Then
+                    Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
+                    Set grSpecs = GraphSpecs.Create(tabl)
+                    grSpecs.CreateSeries
+                    Set gr = Graphs.Create(outsh, cellRng)
+                    gr.Add
+                    For graphCounter = 1 To grSpecs.NumberOfSeries
+                        gr.AddSeries grSpecs.SeriesName(graphCounter), grSpecs.SeriesType(graphCounter), grSpecs.SeriesPos(graphCounter)
+                        gr.AddLabels grSpecs.SeriesLabel(graphCounter), grSpecs.SeriesColumnLabel(graphCounter)
+                    Next
 
-    '                 gr.Format catTitle:=vars.Value(colName:="main label", varName:=specs.Value("row")), valuesTitle:=specs.Value("label")
-    '             End If
+                    gr.Format catTitle:=vars.Value(colName:="main label", varName:=specs.Value("row")), valuesTitle:=specs.Value("label")
+                End If
                 
-    '         End If
-    '     Next
-    ' End If
+            End If
+        Next
+    End If
 
-    ' 'Add the goto section dropdown
+    'Add the goto section dropdown
 
-    ' drop.Add sectionsList, "spgotosection"
-    ' drop.SetValidation outsh.Cells(2, 2), "spgotosection"
-    ' design.ApplyFormat outsh.Cells(2, 2), scope:=LinelistSelectionDropdown
-    ' outsh.Cells(2, 2).Name = "sp_" & GOTOSECCODE
-    ' outsh.Cells(2, 2).Value = goToSection
+    drop.Add sectionsList, "spgotosection"
+    drop.SetValidation outsh.Cells(2, 2), "spgotosection"
+    design.ApplyFormat outsh.Cells(2, 2), scope:=LinelistSelectionDropdown
+    outsh.Cells(2, 2).Name = "sp_" & GOTOSECCODE
+    outsh.Cells(2, 2).Value = goToSection
 
 End Sub
 
