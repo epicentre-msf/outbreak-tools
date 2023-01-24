@@ -223,8 +223,8 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     If Not includeHeaders Then start = start + 1
 
     'End Row
-    rend = Switch((specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial) And onlyCategories, EndRow - 2, _
-                  (specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial), EndRow, _
+    rend = Switch(specs.TableType = TypeTimeSeries And onlyCategories, EndRow - 2, _
+                  specs.TableType = TypeTimeSeries, EndRow, _
                   specs.HasTotal And onlyCategories, EndRow - 1, _
                   True, EndRow)
 
@@ -276,8 +276,8 @@ Public Property Get ColumnRange(ByVal colVal As String, Optional ByVal includeHe
                    specs.TableType = TypeSpatial, StartRow + 2, _
                    True, StartRow + 1)
     'End Row
-    rend = Switch((specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial) And onlyCategories, EndRow - 2, _
-                  specs.TableType = TypeTimeSeries Or specs.TableType = TypeSpatial, EndRow, _
+    rend = Switch(specs.TableType = TypeTimeSeries And onlyCategories, EndRow - 2, _
+                  specs.TableType = TypeTimeSeries, EndRow, _
                   specs.HasTotal And onlyCategories, EndRow - 1, _
                   True, EndRow)
 
@@ -371,7 +371,7 @@ Private Sub AddRows()
             For counter = 1 To CLng(specs.Value("geo max"))
                 rowsData.Push ""
             Next
-            rowsData.Push transTotal, transMissing
+            rowsData.Push transMissing
             rowsData.ToExcelRange .Cells(start + 1, StartColumn)
             EndRow = start + rowsData.Length
         End Select
