@@ -80,31 +80,10 @@ Public Property Get wkb() As Workbook
     Dim xlsapp As Object
 
 
-    If this.outWkb Is Nothing Then
-
-        '#If Mac Then
-            
-            BusyApp
-            Set this.outWkb = Workbooks.Add()
-            BusyApp
-        
-        ' #Else
-            
-        ' 'On Windows, create a new instance of excel application and Work
-        ' 'with it for the linelist creation process to avoid screen flashing
-
-        '     Set xlsapp = New Excel.Application
-        '     With xlsapp
-        '         .Visible = True
-        '         .ScreenUpdating = False
-        '         .DisplayAlerts = False
-        '         .EnableAnimations = False
-        '         .EnableEvents = False
-        '         Set this.outwkb = .Workbooks.Add()
-        '     End With
-
-        ' #End If
-
+    If this.outWkb Is Nothing Then           
+        BusyApp
+        Set this.outWkb = Workbooks.Add()
+        BusyApp
         this.firstSheet = this.outWkb.Worksheets(1).Name
     End If
 
