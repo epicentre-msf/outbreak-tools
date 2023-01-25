@@ -507,7 +507,7 @@ End Sub
 'Update data on Filtered values ===================================================================================
 
 
-Public Sub UpdateFilterTables()
+Public Sub UpdateFilterTables(Optional Byval calculate As Boolean = True)
 
     Dim Wksh As Worksheet                        'The actual worksheet
     Dim filtWksh As Worksheet                    'Filtered worksheet
@@ -571,7 +571,7 @@ Public Sub UpdateFilterTables()
     Next
 
     'caclulate active sheet
-    ActiveSheet.Calculate
+    If calculate Then ActiveSheet.Calculate
 
     EndWork xlsapp:=Application
     Exit Sub
@@ -589,7 +589,7 @@ Sub UpdateSpTables()
     Set sh = ThisWorkbook.Worksheets(SPATIALSHEET)
     Set sp = LLSpatial.Create(sh)
 
-    UpdateFilterTables
+    UpdateFilterTables calculate := False
     sp.Update
 End Sub
 
@@ -634,6 +634,12 @@ Sub EventValueChangeAnalysis(Target As Range)
     Dim goToHeader As String
     Dim rngName As String
 
+
+    'Range name if it exists
+    On Error Resume Next
+        rngName = Target.Name.Name
+    On Error GoTo 0
+
     On Error GoTo Err
     Set actSh = ActiveSheet
     
@@ -648,17 +654,17 @@ Sub EventValueChangeAnalysis(Target As Range)
     Case "TS-Analysis"
         actSh.Calculate
         'Goto section range for time series analysis
-        On Error Resume Next
-            rngName = Target.Name.Name
-            If InStr(rngName, "ts_go_to_section", 1) > 0 Then Set rng = Target
-        On Error GoTo 0
+        If InStr(rngName, "ts_go_to_section", 1) > 0 Then Set rng = Target
         
     Case "SP-Analysis"
         'GoTo section for spatial analysis
         Set rng = actSh.Range("sp_go_to_section")
+        If InStr(rngName, "ADM_DROPDOWN_") Then UpdateSingleTable 
+
+
     End Select
 
-    If Not Intersect(Target, rng) Is Nothing Then
+    If (Not (Intersect(Target, rng) Is Nothing)) And (Not rng Is Nothing) Then
         goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
         goToHeader = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToHeader").Value
         
