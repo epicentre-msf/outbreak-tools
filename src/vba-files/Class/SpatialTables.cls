@@ -79,7 +79,7 @@ Private Property Get LastColumn() As Long
     Set sh = Wksh()
     With sh
         colIndex = .Cells(1, .Columns.Count).End(xlToLeft).Column
-        colIndex = IIf(colIndex = 1, 7, colIndex + 2)
+        colIndex = IIf(colIndex = 3, 7, colIndex + 2)
     End With
     LastColumn = colIndex
 End Property
@@ -100,6 +100,7 @@ End Property
 Private Function Exists(ByVal varName As String) As Boolean
   Dim counter As Long
   Dim testExistence As Boolean
+  Dim loName As String
 
   For counter = 1 To 4
     loName = CurrentLoName(varName, ADMIN & counter)
@@ -107,7 +108,7 @@ Private Function Exists(ByVal varName As String) As Boolean
     If Not testExistence Then Exit For
   Next
 
-  Exits = testExistence
+  Exists = testExistence
 End Function
 
 Private Function LoExists(ByVal loName As String) As Boolean
@@ -263,14 +264,12 @@ Private Sub Add(ByVal formObject As IFormulas)
     Dim specs As ITablesSpecs
     Dim tabl As ICrossTable
     Dim cellRng As Range
-    Dim rng As Range
     Dim finalFormula As String
     Dim adminName As String
     Dim rowVarName As String 'Variable name on rows for formulas
 
     Set tabl = Table
     Set specs = tabl.Specifications
-    Set colCategories = New BetterArray
     varName = specs.Value("row")
 
     
@@ -286,9 +285,9 @@ Private Sub Add(ByVal formObject As IFormulas)
 
         loName = CurrentLoName(varName, ADMIN & counter)
         colIndex = LastColumn()
+        adminName = ADMIN & counter
         rowVarName = CONCAT & adminName & "_" & varName
         'Add the table names for admin 1, only admin1, for admin2, admin1 and admin2, etc...
-        adminName = ADMIN & counter
         headerName = CurrentHeaderName(varName, adminName)
         Set cellRng = .Cells(1, colIndex)
         cellRng.Value = headerName
@@ -307,12 +306,8 @@ Private Sub Add(ByVal formObject As IFormulas)
         'Test final formula to see if it returns something
         If finalFormula <> vbNullString Then cellRng.Cells(2, 2).FormulaArray = "= " & finalFormula
 
-        'Define the formulas
-        Set rng = .Range(cellRng.Cells(2, 2), cellRng.Cells(3, catLength + 2))
-        cellRng.Cells(2, 2).AutoFill Destination:=rng, Type:=xlFillValues
-
         'Define the listObject
-        Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(3, catLength + 2))
+        Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(2, 2))
 
         'Add A list object table
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName

@@ -917,10 +917,10 @@ Private Sub AddFormulas()
             End If
 
             'Create the spatial table management
-            'Set spTab = SpatialTables.Create(tabl)
-            'Set tabFormObject = TableFormula
-            '
-            'spTab.Add tabFormObject
+            Set spTab = SpatialTables.Create(tabl)
+            Set tabFormObject = TableFormula
+            
+            spTab.Add tabFormObject
 
         End Select
     End With
