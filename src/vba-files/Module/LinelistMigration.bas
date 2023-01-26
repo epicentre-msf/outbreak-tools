@@ -255,6 +255,8 @@ Sub ImportSheetData(sheetName As String, shImp As Worksheet, hasData As Boolean,
 
         Case "VList"
             iLastRowImp = shImp.Cells(shImp.Rows.Count, 1).End(xlUp).Row
+            pass.UnProtect sheetName
+
 
             For i = 2 To iLastRowImp             '2 because the first row is for headers
                 sVal = shImp.Cells(i, 1)
@@ -276,6 +278,7 @@ Sub ImportSheetData(sheetName As String, shImp As Worksheet, hasData As Boolean,
 
                 End If
             Next
+            pass.Protect sheetName
 
         Case "HList"
 

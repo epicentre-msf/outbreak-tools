@@ -63,6 +63,7 @@ End Property
 Private Function Exists(ByVal varName As String) As Boolean
   Dim counter As Long
   Dim testExistence As Boolean
+  Dim loName As String
 
   For counter = 1 To 4
     loName = CurrentLoName(varName, ADMIN & counter)
@@ -70,7 +71,7 @@ Private Function Exists(ByVal varName As String) As Boolean
     If Not testExistence Then Exit For
   Next
 
-  Exits = testExistence
+  Exists = testExistence
 End Function
 
 Private Function LoExists(ByVal loName As String) As Boolean
@@ -122,17 +123,17 @@ Private Sub Update()
             controlValue = cellRng.Offset(-5).Value
 
             If controlValue = "geo1" Then
-
-              varName = Replace(ADMIN & "1_", cellRng.Offset(-1).Value, "")
-
+              
+              varName = Replace(cellRng.Offset(-1).Value, ADMIN & "1_", "")
               If Exists(varName) Then
                 Set rng = Lo.ListColumns(CONCAT & ADMIN & "1_" & varName).DataBodyRange()
-                
                 UpdateSpatialValue rng, varName
-
               End If
 
+              Set cellRng = cellRng.Offset(, 11)
             End If
+
+            Set cellRng = cellRng.Offset(, 1)
           Loop
       End If
     End If
@@ -152,25 +153,59 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal varName As String)
   Dim adminName As String
   Dim sortRng As Range
   Dim nbRows As Long
+  Dim LoRng As Range
 
   Set sh = Wksh()
   Set rng = inputRng
-  nbRows = rng.Cells.Count
-
+  
   For counter = 1 To 4
+      nbRows = rng.Cells.Count
+
       loName = CurrentLoName(varName, ADMIN & counter)
       Set Lo = sh.ListObjects(loName)
 
       'First cell where to paste the values of the range
-      Set cellRng = Lo.Range.Cells(2, 1)
+      Set cellRng = sh.Range("RNG_PastingCol")
       Set pasteRng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nbRows, 1))
-
+      
       'copy values to the pasting Rng
       pasteRng.Value = rng.Value
 
+      'Remove duplicates to the pasting Rng
+      pasteRng.RemoveDuplicates Columns := 1, Header := xlNo
+
+      'Resize the pasting Range
+      nbRows = sh.Cells(sh.Rows.Count, pasteRng.Column).End(xlUp).Row
+      Set pasteRng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nbRows, 1))
+
+      'Get the range for the list Object column
+      Set cellRng = Lo.Range.Cells(2, 1)
+      
+      'First clear the Ranges of the listObject (Databodyrange could be nothing)
+      On Error Resume Next
+        Lo.DataBodyRange.Cells.Clear
+      On Error GoTo 0
+      
+      Set LoRng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nbRows, 1))
+      LoRng.Value = pasteRng.Value
+
+      'Clear the pasting range
+      pasteRng.Cells.Clear
+
+      'Resize the listObject
+      Set LoRng = sh.Range(cellRng.Cells(0, 1), cellRng.Cells(nbRows, 2))
+      Lo.Resize LoRng
+
       'Sort on the formula column
       Set sortRng = Lo.ListColumns("formula_" & ADMIN & "_" & counter).DataBodyRange
-      Lo.DataBodyRange.Sort key1:=sortRng, order1:=xlDescending
+
+      'Sort the Calculate range for formulas
+      sortRng.Calculate
+      
+      On Error Resume Next
+        Lo.Listcolumns(1).DataBodyRange.Sort key1:=sortRng, order1:=xlDescending
+      On Error GoTo 0
+      
       Set rng = rng.Offset(, 1)
   Next
 End Sub

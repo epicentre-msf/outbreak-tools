@@ -865,6 +865,22 @@ Private Sub Update(ByVal pass As ILLPasswords)
 
 End Sub
 
+'Find the admin level given one admin name
+Private Function AdminCode(Byval selectedAdmin As String) As String
+    Select Case selectedAdmin
+    Case GeoNames("adm1_name")
+        AdminCode = "adm1"
+    Case GeoNames("adm2_name")       
+        AdminCode = "adm2"
+    Case GeoNames("adm3_name")       
+        AdminCode = "adm3"
+    Case GeoNames("adm4_name")
+        AdminCode = "adm4"
+    Case Else
+        AdminCode = "adm1"
+    End Select
+End Function
+
 'Interfaces
 Public Property Get ILLGeo_GeoLevel(ByVal adminLevel As GeoLevel, _
                                     Optional ByVal geoType As CustomGeoType = CustomTypeGeo, _
@@ -918,4 +934,7 @@ Public Sub ILLGeo_Update(ByVal pass As ILLPasswords)
     Update pass
 End Sub
 
+Public Function ILLGeo_AdminCode(Byval selectedAdmin As String) As String
+    ILLGeo_AdminCode = AdminCode(selectedAdmin)
+End Function
 
