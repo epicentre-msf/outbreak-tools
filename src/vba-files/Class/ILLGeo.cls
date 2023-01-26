@@ -75,4 +75,8 @@ Public Sub ClearHistoric(): End Sub
 'Update new Geobase
 Public Sub Update(ByVal pass As ILLPasswords): End Sub
 
+'Get the admin code from a selected admin
+
+Public Function AdminCode(Byval selectedAdmin As String) As String:  End Function
+
 

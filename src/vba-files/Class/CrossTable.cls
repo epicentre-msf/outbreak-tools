@@ -668,7 +668,12 @@ Private Sub AddHeader()
                 .Cells(start - 2, STANDARDSTARTCOL).Value = trans.TranslatedValue("MSG_SelectAdmin")
 
                 'New Section
-                 Set rng = .Range("ADM_DROPDOWN_" & tabId)
+                Set rng = .Range("ADM_DROPDOWN_" & tabId)
+                
+                'Previous value selected for ADM_DROPDOWN_
+                rng.Cells(1, 2).Value = "adm1"
+                rng.Cells(1, 2).Name = "PREVIOUS_ADM_" & tabId
+                
                 If specs.isNewSection() Then
                 
                     For counter = 1 To 3
@@ -707,14 +712,16 @@ Private Sub NameRanges()
     Dim addEnd As String
     Dim tabId As String
     Dim cellRng As Range
+    Dim tablType As AnalysisTablesType
 
 
     Set sh = Wksh()
     Set trans = trads()
     Set specs = Specifications
     tabId = specs.TableId
+    tablType = specs.TableType
 
-    If specs.TableType = TypeGlobalSummary Then Exit Sub 'No name ranges for global summary
+    If tablType = TypeGlobalSummary Then Exit Sub 'No name ranges for global summary
 
     With sh
 
@@ -725,12 +732,12 @@ Private Sub NameRanges()
         If nbCols = 0 Then ThrowExecutionError "Execution Error: Found a table with number of columns 0: " & tabId
 
         'The label of rows categories of the table (with the missing, will serve for graphs)
-        If (specs.TableType <> TypeTimeSeries) Or (specs.TableType = TypeTimeSeries And specs.isNewSection()) Then
+        If (tablType <> TypeTimeSeries) Or (tablType = TypeTimeSeries And specs.isNewSection()) Then
             Set catRng = RowsCategoriesRange(onlyCategories:=True, includeHeaders:=False)
             catRng.Name = "ROW_CATEGORIES_" & tabId
             catRng.Cells(0, 1).Name = "LABEL_ROW_CATEGORIES_" & tabId
             'Set the start time period and last time period dates
-            If (specs.TableType = TypeTimeSeries) Then
+            If (tablType = TypeTimeSeries) Then
                 Set rng = catRng.Offset(, -1)
                 rng.Name = "END_TIME_PERIOD_" & tabId
                 Set rng = rng.Offset(, -1)
@@ -743,7 +750,7 @@ Private Sub NameRanges()
 
         'On time series and not on new sections, start with the previous end row
 
-        If (specs.TableType = TypeTimeSeries) And Not (specs.isNewSection) Then
+        If (tablType = TypeTimeSeries) And Not (specs.isNewSection) Then
             Debug.Print specs.Previous.TableId
             If Not RangeExists("ENDTABLE_" & specs.Previous.TableId) Then ThrowExecutionError "I can't append the new time series to a previous table, No previous table  were found :("
             Set cellRng = .Range("ENDTABLE_" & specs.TableId)
@@ -758,7 +765,7 @@ Private Sub NameRanges()
         Do While (counter <= EndColumn) And (nbcolCounter <= nbCols)
             rng.Name = "VALUES_COL_" & nbcolCounter & "_" & tabId
 
-            Select Case specs.TableType
+            Select Case tablType
 
             Case TypeBivariate, TypeTimeSeries, TypeSpatial
                 labCol = -1
@@ -776,7 +783,7 @@ Private Sub NameRanges()
             
             If specs.HasPercentage Then
                 rng.Name = "PERC_COL_" & nbcolCounter & "_" & tabId
-                If specs.TableType = TypeUnivariate Then rng.Cells(labCol, 1).Name = "PERC_LABEL_COL_" & tabId
+                If tablType = TypeUnivariate Then rng.Cells(labCol, 1).Name = "PERC_LABEL_COL_" & tabId
                 Set rng = rng.Offset(, 1)
                 counter = counter + 1
             End If
@@ -804,7 +811,7 @@ Private Sub NameRanges()
             End If
 
             'Missing /Total Column
-            If specs.TableType <> TypeUnivariate Then
+            If tablType <> TypeUnivariate Then
                 Set rng = ColumnRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=True, onlyCategories:=True)
                 If (Not rng Is Nothing) Then
                     rng.Name = cData.Item(counter) & "_COL_" & tabId
@@ -858,6 +865,13 @@ Private Sub NameRanges()
         addEnd = IIf(specs.HasPercentage, "PERC_COL_", "VALUES_COL_")
         addEnd = Split(.Range(addEnd & nbCols & "_" & tabId).Address, ":")(1)
         .Range(addBegin & ":" & addEnd).Name = "INTERIOR_VALUES_" & tabId
+
+        'For spatial table, add a new name (outer_values for future computations)
+        If tablType = TypeSpatial Then
+            Set rng = .Range("INTERIOR_VALUES_" & tabId)
+            Set rng = .Range(rng.Cells(1, -1), rng.Cells(rng.Rows.Count + 1, rng.Columns.Count + 2))
+            rng.Name = "OUTER_VALUES_" & tabId
+        End If
 
         'Header Row with column categories
         Set rng = HeaderRange()
@@ -932,6 +946,9 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             'Range for the order (used in the formulas)
             Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -1)
             DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+
+            Set rng = .Range("PREVIOUS_ADM_" & tabId)
+            DesignFormat.ApplyFormat rng, scope := LinelistHiddenCell
         End If
 
         'Headers ==============================================================

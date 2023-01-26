@@ -96,7 +96,7 @@ Private Property Get CurrentLoName(ByVal varName As String, ByVal adminName As S
     CurrentLoName = "spatial_" & adminName & "_" & CurrentListName(varName)
 End Property
 
-'Test if a listobject exists in a sheet
+'Test if a variable exists in a sheet
 Private Function Exists(ByVal varName As String) As Boolean
   Dim counter As Long
   Dim testExistence As Boolean
@@ -298,7 +298,7 @@ Private Sub Add(ByVal formObject As IFormulas)
         AddTableConditions rowVarName, "= " & cellRng.Cells(2, 1).Address(Rowabsolute:=False)
 
         'Formula value for total
-        cellRng.Cells(1,  2).Value = "total_" & ADMIN & "_" & counter
+        cellRng.Cells(1,  2).Value = "formula_" & ADMIN & "_" & counter
         
         'final formula
         finalFormula = CurrentExcelFormula(formObject)
