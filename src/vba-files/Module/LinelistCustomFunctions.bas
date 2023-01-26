@@ -434,7 +434,7 @@ Public Function GEOCONCAT(cellRng As Range, Level As Byte) As String
     GEOCONCAT = concatValue
 End Function
 
-Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varName As String) As String
+Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varName As String, Optional Byval tabId As String = vbNullString) As String
 
     Application.Volatile
     
@@ -453,7 +453,7 @@ Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varNam
     Set sh = ThisWorkbook.Worksheets("spatial_tables__")
     Set sp = LLSpatial.Create(sh)
     adminName = geo.AdminCode(adminLevel)
-    FindTopAdmin = sp.FindTopValue(adminName, adminOrder, actualVarName)
+    FindTopAdmin = sp.FindTopValue(adminName, adminOrder, actualVarName, tabId)
 
 End Function
 

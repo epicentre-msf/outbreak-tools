@@ -193,9 +193,7 @@ Private Property Get HasMissing() As Boolean
     Case TypeTimeSeries
         HasMissing = (Value("missing") = "yes") And (Value("column") <> vbNullString)
     Case TypeSpatial
-        HasMissing = (Value("missing")) = "row" Or _
-                                          (Value("missing") = "column") Or _
-                                          (Value("missing") = "all")
+        HasMissing = (Value("missing") = "yes")
     End Select
 
 End Property
@@ -233,7 +231,7 @@ Public Property Get ValidTable() As Boolean
     Case TypeTimeSeries
         Valid = (colVar = vbNullString Or colControl = "choice_manual"Or colControl = "choice_formula") And (vars.Value(colName:="type", varName:=rowVar) = "date")
     Case TypeSpatial
-        Valid = (dict.VariableExists("adm1_" & rowVar) And (colVar = vbNullString Or colControl = "choice_manual"))
+        Valid = (dict.VariableExists("adm1_" & rowVar) And (colVar = vbNullString Or colControl = "choice_manual" Or colControl = "choice_formula"))
     End Select
 
     ValidTable = Valid
