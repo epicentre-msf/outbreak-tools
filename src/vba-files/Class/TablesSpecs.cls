@@ -139,14 +139,12 @@ Private Property Get HasPercent() As Boolean
 
     Case TypeGlobalSummary
         HasPercent = False
-    Case TypeUnivariate
+    Case TypeUnivariate, TypeSpatial
         HasPercent = (Value("percentage") = "yes")
     Case TypeBivariate
         HasPercent = (Value("percentage")) = "row" Or (Value("percentage") = "column") Or (Value("percentage") = "total")
     Case TypeTimeSeries
         HasPercent = ((Value("percentage")) = "row" Or (Value("percentage") = "column")) And HasTotal()
-    Case TypeSpatial
-        HasPercent = (Value("percentage") = "column") Or (Value("percentage") = "row") Or (Value("percentage") = "total")
     End Select
 End Property
 

@@ -428,6 +428,8 @@ Public Function GEOCONCAT(cellRng As Range, Level As Byte) As String
         concatValue = cellRng.Value
 
     End Select
+   	
+    If (concatValue = " | ") Or (concatValue = " |  | ") Or (concatValue = " |  |  | ") Then concatValue = vbNullString
 
     GEOCONCAT = concatValue
 End Function
@@ -440,6 +442,9 @@ Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varNam
     Dim sp As ILLSpatial
     Dim adminName As String
     Dim sh As Worksheet
+    Dim actualVarName As String
+
+    actualVarName = Split(varName, "_")(2)
 
 
     Set sh = ThisWorkbook.Worksheets("Geo")
@@ -447,32 +452,8 @@ Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varNam
 
     Set sh = ThisWorkbook.Worksheets("spatial_tables__")
     Set sp = LLSpatial.Create(sh)
-
-    Select Case adminLevel
-
-    Case geo.GeoNames("adm1_name")
-    
-        adminName = "adm1"
-        
-    Case geo.GeoNames("adm2_name")
-    
-        adminName = "adm2"
-        
-    Case geo.GeoNames("adm3_name")
-    
-        adminName = "adm3"
-        
-    Case geo.GeoNames("adm4_name")
-    
-        adminName = "adm4"
-        
-    Case Else
-    
-        adminName = "adm1"
-        
-    End Select
-
-    FindTopAdmin = sp.FindTopValue(adminName, adminOrder, varName)
+    adminName = geo.AdminCode(adminLevel)
+    FindTopAdmin = sp.FindTopValue(adminName, adminOrder, actualVarName)
 
 End Function
 

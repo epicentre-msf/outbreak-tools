@@ -591,6 +591,62 @@ Sub UpdateSpTables()
 
     UpdateFilterTables calculate := False
     sp.Update
+    ActiveSheet.Calculate
+End Sub
+
+Sub UpdateSingleSpTable(Byval rngName As String)
+
+    Dim tabId As String
+    Dim adminName As String
+    Dim selectedAdmin As String
+    Dim formulaValue As String
+    Dim prevAdmValue As String
+    Dim cellRng As Range
+    Dim rng As Range
+    Dim sh As Worksheet
+    Dim geo As ILLGeo
+    Dim hasFormula As Boolean
+
+    'Spatial analysis worksheet
+    Set sh = ActiveSheet
+    selectedAdmin = sh.Range(rngName).Value
+    Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
+    adminName = geo.AdminCode(selectedAdmin)
+    'remove the admdropdown to get the table id
+    tabId = Replace(rngName, "ADM_DROPDOWN_", "")
+    prevAdmValue = sh.Range("PREVIOUS_ADM_" & tabId).Value
+
+    'Interior table range, missing row and total column range for the loop
+    Set rng = sh.Range("OUTER_VALUES_" & tabId)
+
+    For Each cellRng in rng
+        
+        hasFormula = False
+        formulaValue = cellRng.FormulaArray
+        
+        If formulaValue = vbNullString Then
+            formulaValue = cellRng.Formula
+            hasFormula = True
+        End If
+        
+        If (InStr(1, formulaValue, "concat_" & prevAdmValue) > 0) Then
+
+            formulaValue = Replace(formulaValue, "concat_" & prevAdmValue, "concat_" & adminName)
+
+            'some cells have formula, others have formulaArray
+            If (hasFormula) Then
+                cellRng.Formula = formulaValue
+            Else
+                cellRng.FormulaArray = formulaValue
+            End If
+        End If
+    Next
+
+    'change the previous admin
+    sh.Range("PREVIOUS_ADM_" & tabId).Value = adminName
+
+    'Calculate the outer range
+    rng.Calculate
 End Sub
 
 
@@ -654,13 +710,12 @@ Sub EventValueChangeAnalysis(Target As Range)
     Case "TS-Analysis"
         actSh.Calculate
         'Goto section range for time series analysis
-        If InStr(rngName, "ts_go_to_section", 1) > 0 Then Set rng = Target
+        If InStr(1, rngName, "ts_go_to_section") > 0 Then Set rng = Target
         
     Case "SP-Analysis"
         'GoTo section for spatial analysis
         Set rng = actSh.Range("sp_go_to_section")
-        If InStr(rngName, "ADM_DROPDOWN_") Then UpdateSingleTable 
-
+        If InStr(1, rngName, "ADM_DROPDOWN_") > 0 Then UpdateSingleSpTable rngName
 
     End Select
 

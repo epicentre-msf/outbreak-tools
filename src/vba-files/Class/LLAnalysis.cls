@@ -611,6 +611,10 @@ Private Sub Build(ll As ILinelist)
     outsh.Cells(2, 2).Name = "sp_" & GOTOSECCODE
     outsh.Cells(2, 2).Value = goToSection
 
+    'Transfert worksheet change event
+    TransferCodeWksh outsh, ll
+    'pass.Protect "_active", True
+
 End Sub
 
 'Import listobjects in analysis

@@ -366,7 +366,7 @@ Public Sub CreateSeries()
                     PushLabels "ROW_CATEGORIES_" & tabId, "LABEL_COL_" & counter & "_" & tabId
                 Next
       
-            Case "percentage"
+            Case "percentages"
                 If specs.HasPercentage Then
                     For counter = 1 To nbCols
                         PushSeries "PERC_COL_" & counter & "_" & tabId, plotType, "left"
