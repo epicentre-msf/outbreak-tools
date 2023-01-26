@@ -48,6 +48,9 @@ Private Sub ImportLang()
     langTable.FromExcelRange Lo.HeaderRowRange
     langTable.ToExcelRange ThisWorkbook.Worksheets("DesignerTranslation").Range("T_LanguageDictionary").Cells(1, 1)
     SheetMain.Range("RNG_LangSetup").Value = langTable.Item(langTable.LowerBound)
+
+    'Add the language to LLTranslations
+    SheetLLTranslation.Range("RNG_DictionaryLanguage").Value = SheetMain.Range("RNG_LangSetup").Value
  
     wkb.Close savechanges:=False
     

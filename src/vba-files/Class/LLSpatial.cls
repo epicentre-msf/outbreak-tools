@@ -61,17 +61,13 @@ End Property
 
 'Test if a listobject exists in a sheet
 Private Function Exists(ByVal varName As String) As Boolean
-  Dim counter As Long
-  Dim testExistence As Boolean
-  Dim loName As String
+  Dim listVarsRng As Range
+  Dim sh As Worksheet
 
-  For counter = 1 To 4
-    loName = CurrentLoName(varName, ADMIN & counter)
-    testExistence = LoExists(loName)
-    If Not testExistence Then Exit For
-  Next
-
-  Exists = testExistence
+  Set sh = Wksh()
+  Set listVarsRng = sh.ListObjects("listofgeovars").Range
+  
+  Exists = (Not (listVarsRng.Find(What := varName, LookAt := xlPart, MatchCase := True) Is Nothing))
 End Function
 
 Private Function LoExists(ByVal loName As String) As Boolean
@@ -140,11 +136,37 @@ Private Sub Update()
   Next
 End Sub
 
+Private Function ListOfExistingVarNames(Byval varName As String) As BetterArray
+  
+  Dim listRng As Range
+  Dim cellRng As Range
+  Dim sh As Worksheet
+  Dim listTab As BetterArray
 
-Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal varName As String)
+  Set sh = Wksh()
+  Set listTab = New BetterArray
+  Set listRng =  sh.ListObjects("listofgeovars").Range
+
+  Do While (Not (listRng.Find(what := varName, LookAt := xlPart, MatchCase := True) Is Nothing))
+    Set cellRng = listRng.Find(what := varName, LookAt := xlPart, MatchCase := True)
+    listTab.Push cellRng.Value
+    
+    'Exit the loop on those two conditions
+    If (listRng.Rows.Count = 1) Then Exit Do 
+    If cellRng.Cells(2, 1).Row > listRng.Cells(listRng.Rows.Count, 1).Row Then Exit Do
+    
+    Set listRng = sh.Range(cellRng.Cells(2, 1), listRng.Cells(listRng.Rows.Count, 1))
+  Loop
+
+  Set ListOfExistingVarNames = listTab.Clone()
+End Function
+
+
+Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As String)
 
   Dim pasteRng As Range
   Dim counter As Long
+  Dim admincounter As Long
   Dim sh As Worksheet
   Dim cellRng As Range
   Dim rng As Range
@@ -154,69 +176,83 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal varName As String)
   Dim sortRng As Range
   Dim nbRows As Long
   Dim LoRng As Range
+  Dim listVars As BetterArray
+  Dim varName As String
 
   Set sh = Wksh()
-  Set rng = inputRng
   
-  For counter = 1 To 4
-      nbRows = rng.Cells.Count
+  'Get the list of varNames concerned
+  Set listVars = ListOfExistingVarNames(inputVarName)
+  
+  For counter = listVars.LowerBound To listVars.UpperBound
 
-      loName = CurrentLoName(varName, ADMIN & counter)
-      Set Lo = sh.ListObjects(loName)
+    varName = listVars.Item(counter)
+    Set rng = inputRng
 
-      'First cell where to paste the values of the range
-      Set cellRng = sh.Range("RNG_PastingCol")
-      Set pasteRng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nbRows, 1))
-      
-      'copy values to the pasting Rng
-      pasteRng.Value = rng.Value
+    For admincounter = 1 To 4
+        nbRows = rng.Cells.Count
 
-      'Remove duplicates to the pasting Rng
-      pasteRng.RemoveDuplicates Columns := 1, Header := xlNo
+        loName = CurrentLoName(varName, ADMIN & admincounter)
+        Set Lo = sh.ListObjects(loName)
 
-      'Resize the pasting Range
-      nbRows = sh.Cells(sh.Rows.Count, pasteRng.Column).End(xlUp).Row
-      Set pasteRng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nbRows, 1))
+        'First cell where to paste the values of the range
+        Set cellRng = sh.Range("RNG_PastingCol")
+        Set pasteRng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nbRows, 1))
 
-      'Get the range for the list Object column
-      Set cellRng = Lo.Range.Cells(2, 1)
-      
-      'First clear the Ranges of the listObject (Databodyrange could be nothing)
-      On Error Resume Next
-        Lo.DataBodyRange.Cells.Clear
-      On Error GoTo 0
-      
-      Set LoRng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nbRows, 1))
-      LoRng.Value = pasteRng.Value
+        'copy values to the pasting Rng
+        pasteRng.Value = rng.Value
 
-      'Clear the pasting range
-      pasteRng.Cells.Clear
+        'Remove duplicates to the pasting Rng
+        pasteRng.RemoveDuplicates Columns := 1, Header := xlNo
 
-      'Resize the listObject
-      Set LoRng = sh.Range(cellRng.Cells(0, 1), cellRng.Cells(nbRows, 2))
-      Lo.Resize LoRng
+        'Resize the pasting Range
+        nbRows = sh.Cells(sh.Rows.Count, pasteRng.Column).End(xlUp).Row
+        Set pasteRng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nbRows, 1))
 
-      'Sort on the formula column
-      Set sortRng = Lo.ListColumns("formula_" & ADMIN & "_" & counter).DataBodyRange
+        'Get the range for the list Object column
+        Set cellRng = Lo.Range.Cells(2, 1)
 
-      'Sort the Calculate range for formulas
-      sortRng.Calculate
-      
-      On Error Resume Next
-        Lo.Listcolumns(1).DataBodyRange.Sort key1:=sortRng, order1:=xlDescending
-      On Error GoTo 0
-      
-      Set rng = rng.Offset(, 1)
+        'First clear the Ranges of the listObject (Databodyrange could be nothing)
+        On Error Resume Next
+          Lo.ListColumns(1).DataBodyRange.Cells.Clear
+        On Error GoTo 0
+
+        Set LoRng = sh.Range(cellRng.Cells(1, 1), cellRng.Cells(nbRows, 1))
+        LoRng.Value = pasteRng.Value
+
+        'Clear the pasting range
+        pasteRng.Cells.Clear
+
+        'Resize the listObject
+        Set LoRng = sh.Range(cellRng.Cells(0, 1), cellRng.Cells(nbRows, 2))
+        Lo.Resize LoRng
+
+        'Sort on the formula column
+        Set sortRng = Lo.ListColumns("formula_" & ADMIN & "_" & admincounter).DataBodyRange
+
+        'Sort the Calculate range for formulas
+        sortRng.Calculate
+
+        On Error Resume Next
+          Lo.Listcolumns(1).DataBodyRange.Sort key1:=sortRng, order1:=xlDescending
+        On Error GoTo 0
+
+        Set rng = rng.Offset(, 1)
+    Next
   Next
+
 End Sub
 
-Private Property Get FindTopValue(ByVal adminName As String, ByVal orderValue As Integer, ByVal varName As String) As String
+Private Property Get FindTopValue(ByVal adminName As String, ByVal orderValue As Integer, ByVal inputvarName As String, _ 
+                                 Optional ByVal tabId As String = vbNullString) As String
   Dim sh As Worksheet
   Dim Lo As ListObject
   Dim loName As String
+  Dim varName As String
   Dim rng As Range
   Set sh = Wksh()
 
+  varName = inputvarName & "_" & tabId
   loName = CurrentLoName(varName, adminName)
   If Not LoExists(loName) Then Exit Property
   Set Lo = sh.ListObjects(loName)
@@ -248,6 +284,7 @@ Public Sub ILLSpatial_Update()
 End Sub
 
 
-Public Property Get ILLSpatial_FindTopValue(ByVal adminName As String, ByVal levelValue As Integer, ByVal varName As String) As String
-  ILLSpatial_FindTopValue = FindTopValue(adminName, levelValue, varName)
+Public Property Get ILLSpatial_FindTopValue(ByVal adminName As String, ByVal levelValue As Integer, ByVal varName As String, _ 
+  Optional ByVal tabId As String = vbNullString) As String
+  ILLSpatial_FindTopValue = FindTopValue(adminName, levelValue, varName, tabId)
 End Property

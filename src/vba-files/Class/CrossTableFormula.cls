@@ -796,7 +796,7 @@ Private Sub AddFormulas()
             Set cellRng = rng.Cells(1, 1)
             cellRng.formula = "= FindTopAdmin(ADM_DROPDOWN_" & tabId & "," & _
                                   cellRng.Cells(1, 0).Address(Rowabsolute:=False) & "," & _
-                                  Chr(34) & rowVar & Chr(34) & ")"
+                                  Chr(34) & rowVar & Chr(34) & "," & Chr(34) & tabId & Chr(34) & ")"
             
             cellRng.AutoFill Destination:=rng, Type:=xlFillValues
 

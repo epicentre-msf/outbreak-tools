@@ -869,7 +869,7 @@ Private Sub NameRanges()
         'For spatial table, add a new name (outer_values for future computations)
         If tablType = TypeSpatial Then
             Set rng = .Range("INTERIOR_VALUES_" & tabId)
-            Set rng = .Range(rng.Cells(1, -1), rng.Cells(rng.Rows.Count + 1, rng.Columns.Count + 2))
+            Set rng = .Range(rng.Cells(1, -1), rng.Cells(rng.Rows.Count + 1, rng.Columns.Count + 4))
             rng.Name = "OUTER_VALUES_" & tabId
         End If
 
