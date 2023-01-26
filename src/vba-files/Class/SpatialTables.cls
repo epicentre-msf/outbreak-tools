@@ -84,16 +84,13 @@ Private Property Get LastColumn() As Long
     LastColumn = colIndex
 End Property
 
-Private Property Get CurrentListName(ByVal varName As String) As String
-    CurrentListName = Replace(Application.WorksheetFunction.Trim(varName), " ", "_")
-End Property
 
 Private Property Get CurrentHeaderName(ByVal varName As String, ByVal adminName As String) As String
-    CurrentHeaderName = "tabl_" & adminName & "_" & CurrentListName(varName)
+    CurrentHeaderName = "tabl_" & adminName & "_" & varName
 End Property
 
 Private Property Get CurrentLoName(ByVal varName As String, ByVal adminName As String) As String
-    CurrentLoName = "spatial_" & adminName & "_" & CurrentListName(varName)
+  CurrentLoName = "spatial_" & adminName & "_" & varName
 End Property
 
 'Test if a variable exists in a sheet
@@ -250,6 +247,19 @@ Private Sub Prepare()
   End With
 End Sub
 
+Private Sub AddVarNameToList(Byval varName As String)
+  Dim sh As Worksheet
+  Dim Lo As ListObject
+  Dim nbRows As Long
+
+  Set sh = Wksh()
+  Set Lo = sh.ListObjects("listofgeovars")
+
+  'Add the variable to the listobject
+  nbRows = Application.WorksheetFunction.CountA(Lo.Range)
+  sh.Cells(nbRows + 1, Lo.Range.Column).Value = varName
+End Sub
+
 'Add New list to the dropdown sheet
 Private Sub Add(ByVal formObject As IFormulas)
   
@@ -267,14 +277,19 @@ Private Sub Add(ByVal formObject As IFormulas)
     Dim finalFormula As String
     Dim adminName As String
     Dim rowVarName As String 'Variable name on rows for formulas
+    Dim inputVarName As String
 
     Set tabl = Table
     Set specs = tabl.Specifications
-    varName = specs.Value("row")
-
+    inputVarName = specs.Value("row")
+    varName = inputvarName & "_" & specs.TableId()
     
     If Exists(varName) Then Exit Sub
     If Not LoExists("listofgeovars") Then Prepare
+    
+    'Add this variable name to the list of geovars (which contains the ids)
+    AddVarNameToList varName
+    
     Set sh = Wksh()
     
     With sh
@@ -286,7 +301,7 @@ Private Sub Add(ByVal formObject As IFormulas)
         loName = CurrentLoName(varName, ADMIN & counter)
         colIndex = LastColumn()
         adminName = ADMIN & counter
-        rowVarName = CONCAT & adminName & "_" & varName
+        rowVarName = CONCAT & adminName & "_" & inputvarName
         'Add the table names for admin 1, only admin1, for admin2, admin1 and admin2, etc...
         headerName = CurrentHeaderName(varName, adminName)
         Set cellRng = .Cells(1, colIndex)
