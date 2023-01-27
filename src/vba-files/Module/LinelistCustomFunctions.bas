@@ -428,13 +428,13 @@ Public Function GEOCONCAT(cellRng As Range, Level As Byte) As String
         concatValue = cellRng.Value
 
     End Select
-   	
+        
     If (concatValue = " | ") Or (concatValue = " |  | ") Or (concatValue = " |  |  | ") Then concatValue = vbNullString
 
     GEOCONCAT = concatValue
 End Function
 
-Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varName As String, Optional Byval tabId As String = vbNullString) As String
+Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varName As String, Optional ByVal tabId As String = vbNullString) As String
 
     Application.Volatile
     

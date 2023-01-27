@@ -229,7 +229,7 @@ Public Property Get ValidTable() As Boolean
                                                                 (colControl = "choice_manual" Or colControl = "choice_formula") And _
                                                                 (rowControl = "choice_manual" Or rowControl = "choice_formula")
     Case TypeTimeSeries
-        Valid = (colVar = vbNullString Or colControl = "choice_manual"Or colControl = "choice_formula") And (vars.Value(colName:="type", varName:=rowVar) = "date")
+        Valid = (colVar = vbNullString Or colControl = "choice_manual" Or colControl = "choice_formula") And (vars.Value(colName:="type", varName:=rowVar) = "date")
     Case TypeSpatial
         Valid = (dict.VariableExists("adm1_" & rowVar) And (colVar = vbNullString Or colControl = "choice_manual" Or colControl = "choice_formula"))
     End Select

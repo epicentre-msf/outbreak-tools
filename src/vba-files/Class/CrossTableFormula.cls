@@ -841,7 +841,7 @@ Private Sub AddFormulas()
                 If HasPercentage Then
                     
                     Set cellRng = .Range("TOTAL_COL_VALUES_" & tabId).Cells(1, 1)
-                    rng.Cells(1, 2).formula = "= " & Percentage(cellRng, rng.Cells(1, 1), rowabs:=False)                    
+                    rng.Cells(1, 2).formula = "= " & Percentage(cellRng, rng.Cells(1, 1), rowabs:=False)
                     
                     Set rng = rng.Offset(, 1)    'percentage column range
                     Set rngLab = rngLab.Offset(, 1)

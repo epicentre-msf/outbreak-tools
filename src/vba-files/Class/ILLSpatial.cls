@@ -18,6 +18,6 @@ Option Explicit
 'Exposed methods
 Public Property Get Exists(ByVal varName As String) As Boolean: End Property
 Public Sub Update(): End Sub
-Public Property Get FindTopValue(ByVal adminName As String, ByVal levelValue As Integer, ByVal varName As String, _ 
+Public Property Get FindTopValue(ByVal adminName As String, ByVal levelValue As Integer, ByVal varName As String, _
    Optional ByVal tabId As String = vbNullString) As String
 End Property
