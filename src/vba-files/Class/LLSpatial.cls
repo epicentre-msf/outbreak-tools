@@ -67,7 +67,7 @@ Private Function Exists(ByVal varName As String) As Boolean
   Set sh = Wksh()
   Set listVarsRng = sh.ListObjects("listofgeovars").Range
   
-  Exists = (Not (listVarsRng.Find(What := varName, LookAt := xlPart, MatchCase := True) Is Nothing))
+  Exists = (Not (listVarsRng.Find(What:=varName, LookAt:=xlPart, MatchCase:=True) Is Nothing))
 End Function
 
 Private Function LoExists(ByVal loName As String) As Boolean
@@ -136,7 +136,7 @@ Private Sub Update()
   Next
 End Sub
 
-Private Function ListOfExistingVarNames(Byval varName As String) As BetterArray
+Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
   
   Dim listRng As Range
   Dim cellRng As Range
@@ -145,14 +145,14 @@ Private Function ListOfExistingVarNames(Byval varName As String) As BetterArray
 
   Set sh = Wksh()
   Set listTab = New BetterArray
-  Set listRng =  sh.ListObjects("listofgeovars").Range
+  Set listRng = sh.ListObjects("listofgeovars").Range
 
-  Do While (Not (listRng.Find(what := varName, LookAt := xlPart, MatchCase := True) Is Nothing))
-    Set cellRng = listRng.Find(what := varName, LookAt := xlPart, MatchCase := True)
+  Do While (Not (listRng.Find(What:=varName, LookAt:=xlPart, MatchCase:=True) Is Nothing))
+    Set cellRng = listRng.Find(What:=varName, LookAt:=xlPart, MatchCase:=True)
     listTab.Push cellRng.Value
     
     'Exit the loop on those two conditions
-    If (listRng.Rows.Count = 1) Then Exit Do 
+    If (listRng.Rows.Count = 1) Then Exit Do
     If cellRng.Cells(2, 1).Row > listRng.Cells(listRng.Rows.Count, 1).Row Then Exit Do
     
     Set listRng = sh.Range(cellRng.Cells(2, 1), listRng.Cells(listRng.Rows.Count, 1))
@@ -203,7 +203,7 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
         pasteRng.Value = rng.Value
 
         'Remove duplicates to the pasting Rng
-        pasteRng.RemoveDuplicates Columns := 1, Header := xlNo
+        pasteRng.RemoveDuplicates Columns:=1, Header:=xlNo
 
         'Resize the pasting Range
         nbRows = sh.Cells(sh.Rows.Count, pasteRng.Column).End(xlUp).Row
@@ -231,10 +231,10 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
         Set sortRng = Lo.ListColumns("formula_" & ADMIN & "_" & admincounter).DataBodyRange
 
         'Sort the Calculate range for formulas
-        sortRng.Calculate
+        sortRng.calculate
 
         On Error Resume Next
-          Lo.Listcolumns(1).DataBodyRange.Sort key1:=sortRng, order1:=xlDescending
+          Lo.ListColumns(1).DataBodyRange.Sort key1:=sortRng, order1:=xlDescending
         On Error GoTo 0
 
         Set rng = rng.Offset(, 1)
@@ -243,7 +243,7 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
 
 End Sub
 
-Private Property Get FindTopValue(ByVal adminName As String, ByVal orderValue As Integer, ByVal inputvarName As String, _ 
+Private Property Get FindTopValue(ByVal adminName As String, ByVal orderValue As Integer, ByVal inputVarName As String, _
                                  Optional ByVal tabId As String = vbNullString) As String
   Dim sh As Worksheet
   Dim Lo As ListObject
@@ -252,7 +252,7 @@ Private Property Get FindTopValue(ByVal adminName As String, ByVal orderValue As
   Dim rng As Range
   Set sh = Wksh()
 
-  varName = inputvarName & "_" & tabId
+  varName = inputVarName & "_" & tabId
   loName = CurrentLoName(varName, adminName)
   If Not LoExists(loName) Then Exit Property
   Set Lo = sh.ListObjects(loName)
@@ -284,7 +284,7 @@ Public Sub ILLSpatial_Update()
 End Sub
 
 
-Public Property Get ILLSpatial_FindTopValue(ByVal adminName As String, ByVal levelValue As Integer, ByVal varName As String, _ 
+Public Property Get ILLSpatial_FindTopValue(ByVal adminName As String, ByVal levelValue As Integer, ByVal varName As String, _
   Optional ByVal tabId As String = vbNullString) As String
   ILLSpatial_FindTopValue = FindTopValue(adminName, levelValue, varName, tabId)
 End Property

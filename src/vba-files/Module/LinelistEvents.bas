@@ -284,7 +284,7 @@ Sub EventValueChangeLinelist(Target As Range)
         
         nbOffset = Target.Row - hRng.Row
         Set calcRng = hRng.Offset(nbOffset)
-        calcRng.Calculate
+        calcRng.calculate
 
         If (varControl = "geo1") Or (varControl = "geo2") Or (varControl = "geo3") Or (varControl = "geo4") Then
 
@@ -470,7 +470,7 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
 
     Set listAutoSheet = ThisWorkbook.Worksheets(C_sSheetChoiceAuto)
     With Wksh
-        .Calculate
+        .calculate
         Do While (.Cells(C_eStartLinesLLData, i) <> vbNullString)
             Select Case .Cells(C_eStartLinesLLMainSec - 2, i).Value
             Case C_sDictControlChoiceAuto & "_origin"
@@ -507,7 +507,7 @@ End Sub
 'Update data on Filtered values ===================================================================================
 
 
-Public Sub UpdateFilterTables(Optional Byval calculate As Boolean = True)
+Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
 
     Dim Wksh As Worksheet                        'The actual worksheet
     Dim filtWksh As Worksheet                    'Filtered worksheet
@@ -571,7 +571,7 @@ Public Sub UpdateFilterTables(Optional Byval calculate As Boolean = True)
     Next
 
     'caclulate active sheet
-    If calculate Then ActiveSheet.Calculate
+    If calculate Then ActiveSheet.calculate
 
     EndWork xlsapp:=Application
     Exit Sub
@@ -589,12 +589,12 @@ Sub UpdateSpTables()
     Set sh = ThisWorkbook.Worksheets(SPATIALSHEET)
     Set sp = LLSpatial.Create(sh)
 
-    UpdateFilterTables calculate := False
+    UpdateFilterTables calculate:=False
     sp.Update
-    ActiveSheet.Calculate
+    ActiveSheet.calculate
 End Sub
 
-Sub UpdateSingleSpTable(Byval rngName As String)
+Sub UpdateSingleSpTable(ByVal rngName As String)
 
     Dim tabId As String
     Dim adminName As String
@@ -619,13 +619,13 @@ Sub UpdateSingleSpTable(Byval rngName As String)
     'Interior table range, missing row and total column range for the loop
     Set rng = sh.Range("OUTER_VALUES_" & tabId)
 
-    For Each cellRng in rng
+    For Each cellRng In rng
         
         hasFormula = False
         formulaValue = cellRng.FormulaArray
         
         If formulaValue = vbNullString Then
-            formulaValue = cellRng.Formula
+            formulaValue = cellRng.formula
             hasFormula = True
         End If
         
@@ -635,7 +635,7 @@ Sub UpdateSingleSpTable(Byval rngName As String)
 
             'some cells have formula, others have formulaArray
             If (hasFormula) Then
-                cellRng.Formula = formulaValue
+                cellRng.formula = formulaValue
             Else
                 cellRng.FormulaArray = formulaValue
             End If
@@ -646,7 +646,7 @@ Sub UpdateSingleSpTable(Byval rngName As String)
     sh.Range("PREVIOUS_ADM_" & tabId).Value = adminName
 
     'Calculate the outer range
-    rng.Calculate
+    rng.calculate
 End Sub
 
 
@@ -708,7 +708,7 @@ Sub EventValueChangeAnalysis(Target As Range)
         Set rng = actSh.Range("ua_go_to_section")
 
     Case "TS-Analysis"
-        actSh.Calculate
+        actSh.calculate
         'Goto section range for time series analysis
         If InStr(1, rngName, "ts_go_to_section") > 0 Then Set rng = Target
         
@@ -755,7 +755,7 @@ Sub EventValueChangeVList(Target As Range)
 
     'Calculate the range where the values are entered
     Set rng = sh.Range(tableName & "_" & "PLAGEVALUES")
-    rng.Calculate
+    rng.calculate
     
     Set rng = sh.Range(tableName & "_" & GOTOSECCODE)
     goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value

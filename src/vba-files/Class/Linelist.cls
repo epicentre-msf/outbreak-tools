@@ -80,7 +80,7 @@ Public Property Get wkb() As Workbook
     Dim xlsapp As Object
 
 
-    If this.outWkb Is Nothing Then           
+    If this.outWkb Is Nothing Then
         BusyApp
         Set this.outWkb = Workbooks.Add()
         BusyApp

@@ -544,7 +544,7 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
         Set dictRng = DataRange(newColumn)
 
         .Cells(StartRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
-        .Calculate                               'Calculate the worksheet
+        .calculate                               'Calculate the worksheet
         dictRng.Value = dictRng.Value            'remove the link to the formulas
 
     End With

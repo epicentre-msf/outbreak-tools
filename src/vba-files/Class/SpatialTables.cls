@@ -247,7 +247,7 @@ Private Sub Prepare()
   End With
 End Sub
 
-Private Sub AddVarNameToList(Byval varName As String)
+Private Sub AddVarNameToList(ByVal varName As String)
   Dim sh As Worksheet
   Dim Lo As ListObject
   Dim nbRows As Long
@@ -282,7 +282,7 @@ Private Sub Add(ByVal formObject As IFormulas)
     Set tabl = Table
     Set specs = tabl.Specifications
     inputVarName = specs.Value("row")
-    varName = inputvarName & "_" & specs.TableId()
+    varName = inputVarName & "_" & specs.TableId()
     
     If Exists(varName) Then Exit Sub
     If Not LoExists("listofgeovars") Then Prepare
@@ -301,19 +301,19 @@ Private Sub Add(ByVal formObject As IFormulas)
         loName = CurrentLoName(varName, ADMIN & counter)
         colIndex = LastColumn()
         adminName = ADMIN & counter
-        rowVarName = CONCAT & adminName & "_" & inputvarName
+        rowVarName = CONCAT & adminName & "_" & inputVarName
         'Add the table names for admin 1, only admin1, for admin2, admin1 and admin2, etc...
         headerName = CurrentHeaderName(varName, adminName)
         Set cellRng = .Cells(1, colIndex)
         cellRng.Value = headerName
         
-        'CellRng IS  THE RANGE WITH THE HEADERNAME OF THE COLUMN OF CONCAT VALUES 
+        'CellRng IS  THE RANGE WITH THE HEADERNAME OF THE COLUMN OF CONCAT VALUES
         
         'Move to one row bellow to add conditions on rows
         AddTableConditions rowVarName, "= " & cellRng.Cells(2, 1).Address(Rowabsolute:=False)
 
         'Formula value for total
-        cellRng.Cells(1,  2).Value = "formula_" & ADMIN & "_" & counter
+        cellRng.Cells(1, 2).Value = "formula_" & ADMIN & "_" & counter
         
         'final formula
         finalFormula = CurrentExcelFormula(formObject)
