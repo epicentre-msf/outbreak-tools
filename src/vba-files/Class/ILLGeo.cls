@@ -77,6 +77,6 @@ Public Sub Update(ByVal pass As ILLPasswords): End Sub
 
 'Get the admin code from a selected admin
 
-Public Function AdminCode(Byval selectedAdmin As String) As String:  End Function
+Public Function AdminCode(ByVal selectedAdmin As String) As String:  End Function
 
 

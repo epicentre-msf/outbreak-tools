@@ -174,7 +174,7 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
 
     outshDictTrans.Visible = xlSheetVeryHidden
     outshLLTrans.Visible = xlSheetVeryHidden
-    outshLLTrans.Calculate
+    outshLLTrans.calculate
 End Sub
 
 Private Sub ImportTranslation(ByVal fromWkb As Workbook)

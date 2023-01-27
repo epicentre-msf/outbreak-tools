@@ -265,6 +265,7 @@ Attribute VB_Exposed = False
 
 
 
+
 Option Explicit
 
 'This command is at the end, when you close the geoapp
@@ -309,7 +310,7 @@ Private Sub CMD_Copier_Click()
             Application.EnableEvents = True
         End If
         
-        calcRng.Calculate
+        calcRng.calculate
         [F_Geo].TXT_Msg.Value = ""
         [F_Geo].Hide
         
@@ -340,7 +341,7 @@ Private Sub CMD_Copier_Click()
         cellRng.Value = selectedValue
         Application.EnableEvents = True
         'Hide the form
-        calcRng.Calculate
+        calcRng.calculate
         [F_Geo].TXT_Msg.Value = ""
         [F_Geo].Hide
         

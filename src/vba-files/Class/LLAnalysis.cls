@@ -582,7 +582,7 @@ Private Sub Build(ll As ILinelist)
                 'Add formulas and format
                 Set tabform = CrossTableFormula.Create(tabl, forml)
                 tabform.AddFormulas
-                tabl.Format design             
+                tabl.Format design
                
                 'Add graph
                 If specs.Value("graph") = "values" Or specs.Value("graph") = "percentage" Or specs.Value("graph") = "both" Then
@@ -815,7 +815,7 @@ Private Sub SortAnalysis()
         SortListOnFirst Lo, colIndex
 
         'resize the listObject
-        ResizeLo Lo, totalRowCount := rowCount
+        ResizeLo Lo, totalRowCount:=rowCount
     Next
 End Sub
 
@@ -832,7 +832,7 @@ Private Sub Translate(ByVal TransObject As ITranslation)
 
     Set transCols = New BetterArray
     Set anash = Wksh()
-    transCols.Push "section", "table title", "graph title", "summary label", _ 
+    transCols.Push "section", "table title", "graph title", "summary label", _
                    "choices", "label" 'choices is for the time series graphs translation
 
     For Each Lo In anash.ListObjects

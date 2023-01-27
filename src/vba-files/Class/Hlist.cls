@@ -293,7 +293,7 @@ Public Sub Build()
         Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
         
         'On Error Resume Next
-        .Calculate
+        .calculate
         Lo.Resize rng
         'On Error GoTo 0
         

@@ -948,7 +948,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
 
             Set rng = .Range("PREVIOUS_ADM_" & tabId)
-            DesignFormat.ApplyFormat rng, scope := LinelistHiddenCell
+            DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
         End If
 
         'Headers ==============================================================

@@ -66,7 +66,7 @@ Private Property Get GeoNames(ByVal admname As String) As String
     Dim sh As Worksheet
     Dim actualName As Variant
     Set sh = Wksh()
-    sh.Calculate
+    sh.calculate
     Select Case admname
     Case "adm1_name"
         actualName = sh.Range("RNG_ADM1NAME").Value
@@ -398,7 +398,7 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
     Dim hRng As Range                            'Header Range
 
     Set sh = Wksh()
-    sh.Calculate
+    sh.calculate
     Set rng = sh.Range("RNG_GeoUpdated")
     If Not rawNames And (InStr(1, rng.Value, ", translated") > 0) Then Exit Sub
     If rawNames And (InStr(1, rng.Value, ", not translated") > 0) Then Exit Sub
@@ -866,13 +866,13 @@ Private Sub Update(ByVal pass As ILLPasswords)
 End Sub
 
 'Find the admin level given one admin name
-Private Function AdminCode(Byval selectedAdmin As String) As String
+Private Function AdminCode(ByVal selectedAdmin As String) As String
     Select Case selectedAdmin
     Case GeoNames("adm1_name")
         AdminCode = "adm1"
-    Case GeoNames("adm2_name")       
+    Case GeoNames("adm2_name")
         AdminCode = "adm2"
-    Case GeoNames("adm3_name")       
+    Case GeoNames("adm3_name")
         AdminCode = "adm3"
     Case GeoNames("adm4_name")
         AdminCode = "adm4"
@@ -934,7 +934,7 @@ Public Sub ILLGeo_Update(ByVal pass As ILLPasswords)
     Update pass
 End Sub
 
-Public Function ILLGeo_AdminCode(Byval selectedAdmin As String) As String
+Public Function ILLGeo_AdminCode(ByVal selectedAdmin As String) As String
     ILLGeo_AdminCode = AdminCode(selectedAdmin)
 End Function
 
