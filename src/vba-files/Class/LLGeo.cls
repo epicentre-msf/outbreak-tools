@@ -805,10 +805,14 @@ End Sub
 'Update the geobase admin names in the linelist
 Private Sub Update(ByVal pass As ILLPasswords)
     
+    Const DROPDOWNSHEET As String = "dropdown_lists__"
+
     Dim sh As Worksheet
     Dim wb As Workbook
     Dim cellRng As Range
     Dim controlValue As String
+    Dim geoData As BetterArray
+    Dim drop As IDropdownLists
     
     Set wb = Wksh.Parent
     
@@ -862,6 +866,19 @@ Private Sub Update(ByVal pass As ILLPasswords)
             pass.Protect sh.Name
         End If
     Next
+
+
+    On Error Resume Next
+    'Update the dropdown for geo1
+    Set sh = wb.Worksheets(DROPDOWNSHEET)
+    On Error GoTo 0
+
+    If (sh Is Nothing) Then Exit Sub
+    Set drop = DropdownLists.Create(sh)
+    Set geoData = GeoLevel(LevelAdmin1)
+
+    'Now update the dropdown
+    drop.Update geoData, "admin1"
 
 End Sub
 

@@ -146,6 +146,29 @@ Private Sub Remove(ByVal ListName As String)
     End If
 End Sub
 
+'Update a list with new values
+Private Sub Update(ByVal UpdateData As BetterArray, ByVal ListName As String)
+    
+    Dim sh As Worksheet
+    Dim cellRng As Range
+    Dim rng As Range
+    Dim loName As String
+    Dim Lo As ListObject
+
+    If Not Exists(ListName) Then Exit Sub
+    Set sh = Wksh()
+    loName = CurrentLoName(ListName)
+    Set Lo = sh.ListObjects(loName)
+    Set cellRng = Lo.Range.Cells(2, 1)
+    
+    'put the new data in the range
+    UpdateData.ToExcelRange cellRng
+    
+    'Resize the listObject to the new Range
+    Set rng = sh.Range(cellRng.Cells(0, 1), cellRng.Cells(UpdateData.Length, 1))
+    Lo.Resize rng
+End Sub
+
 'Set a validation on a range
 Private Sub SetValidation(ByVal cellRng As Range, ByVal ListName As String, _
                           Optional ByVal alertType As String = "info", _
@@ -205,3 +228,6 @@ Public Sub IDropdownLists_SetValidation(ByVal cellRng As Range, ByVal ListName A
 End Sub
 
 
+Public Sub IDropdownLists_Update(ByVal UpdateData As BetterArray, ByVal ListName As String)
+    Update UpdateData:=UpdateData, ListName:=ListName
+End Sub
