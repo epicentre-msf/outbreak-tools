@@ -26,3 +26,5 @@ Public Sub SetValidation(ByVal cellRng As Range, ByVal ListName As String, _
 End Sub
 
 
+Public Sub Update(ByVal UpdateData As BetterArray, ByVal ListName As String)
+End Sub
