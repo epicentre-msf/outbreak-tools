@@ -303,7 +303,7 @@ Err:
 End Property
 
 Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
-                             ByVal cellRng As Range, _
+                             Optional Byval concatValue As String = vbNullString, _
                              Optional ByVal returnedSuffix As String = "pop") As String
                              
     'Return the population or the pcode of a admin level, by default, return population
@@ -317,7 +317,6 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
     Dim colIndex As Long
     Dim colRange As Range
     Dim concatRng As Range
-    Dim concatValue As String
     Dim fun As WorksheetFunction
     Dim tabl As BetterArray
 
@@ -343,29 +342,23 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
 
     Case LevelGeoAdmin1
 
-        concatValue = cellRng.Value
         Set concatRng = sh.Range("adm1_concat")
 
     Case LevelGeoAdmin2
     
-        concatValue = cellRng.Offset(, 1).Value & " | " & cellRng.Value
         Set concatRng = sh.Range("adm2_concat")
     
     Case LevelGeoAdmin3
     
-        concatValue = cellRng.Offset(, 2).Value & " | " & cellRng.Offset(, 1).Value & " | " & cellRng.Value
         Set concatRng = sh.Range("adm3_concat")
     
     Case LevelGeoAdmin4
     
-        concatValue = cellRng.Offset(, 3).Value & " | " & cellRng.Offset(, 2).Value & " | " & cellRng.Offset(, 1).Value & " | " & cellRng.Value
         Set concatRng = sh.Range("adm4_concat")
     
     Case LevelHF
     
-        concatValue = cellRng.Value
-        Set concatRng = sh.Range("hf_concat")
-    
+        Set concatRng = sh.Range("hf_concat")    
     End Select
 
     'Use index match to get the result
@@ -912,12 +905,12 @@ Public Property Get ILLGeo_GeoNames(ByVal admname As String) As String
 End Property
 
 'Get the Population of one administrative level (only for geoType)
-Public Property Get ILLGeo_Population(ByVal adminLevel As GeoLevelOrHF, ByVal cellRng As Range) As String
-    ILLGeo_Population = ValueOf(adminLevel:=adminLevel, cellRng:=cellRng, returnedSuffix:="pop")
+Public Property Get ILLGeo_Population(ByVal adminLevel As GeoLevelOrHF, Optional ByVal concatValue As String = vbNullString) As String
+    ILLGeo_Population = ValueOf(adminLevel:=adminLevel, concatValue:=concatValue, returnedSuffix:="pop")
 End Property
 
-Public Property Get ILLGeo_Pcode(ByVal adminLevel As GeoLevelOrHF, ByVal cellRng As Range) As String
-    ILLGeo_Pcode = ValueOf(adminLevel:=adminLevel, cellRng:=cellRng, returnedSuffix:="pcode")
+Public Property Get ILLGeo_Pcode(ByVal adminLevel As GeoLevelOrHF, Optional ByVal concatValue As String = vbNullString) As String
+    ILLGeo_Pcode = ValueOf(adminLevel:=adminLevel, concatValue:=concatValue, returnedSuffix:="pcode")
 End Property
 
 'Translation
