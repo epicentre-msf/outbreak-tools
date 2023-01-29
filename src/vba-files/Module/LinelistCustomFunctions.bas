@@ -376,34 +376,45 @@ Public Function InfoUser(userDate As Long, actualDate As Long, Optional infotype
     
 End Function
 
-'HF pcode
-Public Function HFPCODE(cellRng As Range) As Variant
+Public Function GeoPopulation(ByVal adminLevel As Byte, Optional ByVal concatValue As String = vbNullString) As Long
     Application.Volatile
-    
-    If ActiveSheet.Cells(1, 3).Value <> "HList" Then Exit Function
-    
     Dim geo As ILLGeo
+    Dim popValue As String
+    Dim popLng As Long
+    
     Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
-    HFPCODE = geo.Pcode(LevelHF, cellRng)
+    popLng = 0
+    popValue = geo.Population(adminLevel, concatValue)
+
+    On Error Resume Next
+        popLng = CLng(popValue)
+    On Error GoTo 0
+
+    GeoPopulation = popLng
 End Function
 
-'Geo Pcode
-Public Function GEOPCODE(cellRng As Range, Level As Byte) As String
+Public Function HFPopulation(Optional Byval concatValue As String = vbNullString) As Long
     Application.Volatile
-    
-    If ActiveSheet.Cells(1, 3).Value <> "HList" Then Exit Function
-   
     Dim geo As ILLGeo
-    Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
-    GEOPCODE = geo.Pcode(Level - 1, cellRng) '- 1 because 0 == admin1
-    
-End Function
+    Dim popValue As String
+    Dim popLng As Long
 
+    Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
+    popLng = 0
+    popValue = geo.Population(4, concatValue)
+
+    On Error Resume Next
+        popLng = CLng(popValue)
+    On Error GoTo 0
+
+    HFPopulation = popLng
+End Function
 
 Public Function GEOCONCAT(cellRng As Range, Level As Byte) As String
     Application.Volatile
     
     Dim concatValue As String
+    Dim nonEmptyValue As Boolean
 
     Select Case Level
     
@@ -412,24 +423,23 @@ Public Function GEOCONCAT(cellRng As Range, Level As Byte) As String
         concatValue = cellRng.Value
 
     Case 2
-
-        concatValue = cellRng.Offset(, 1).Value & " | " & cellRng.Value
+        nonEmptyValue = (Not IsEmpty(cellRng)) And (Not IsEmpty(cellRng.Offset(, 1)))
+        concatValue = IIf(nonEmptyValue, cellRng.Offset(, 1).Value & " | " & cellRng.Value, vbNullString)
 
     Case 3
-
-        concatValue = cellRng.Offset(, 2).Value & " | " & cellRng.Offset(, 1).Value & " | " & cellRng.Value
+        nonEmptyValue = (Not IsEmpty(cellRng)) And (Not IsEmpty(cellRng.Offset(, 1))) And (Not IsEmpty(cellRng.Offset(, 2)))
+        concatValue = IIf(nonEmptyValue, cellRng.Offset(, 2).Value & " | " & cellRng.Offset(, 1).Value & " | " & cellRng.Value, vbNullString)
 
     Case 4
 
-        concatValue = cellRng.Offset(, 3).Value & " | " & cellRng.Offset(, 2).Value & " | " & cellRng.Offset(, 1).Value & " | " & cellRng.Value
+        nonEmptyValue = (Not IsEmpty(cellRng)) And (Not IsEmpty(cellRng.Offset(, 1))) And (Not IsEmpty(cellRng.Offset(, 2))) And (Not IsEmpty(cellRng.Offset(, 3)))
+        concatValue = IIf(nonEmptyValue, cellRng.Offset(, 3).Value & " | " & cellRng.Offset(, 2).Value & " | " & cellRng.Offset(, 1).Value & " | " & cellRng.Value, vbNullString)
 
     Case Else
 
         concatValue = cellRng.Value
 
     End Select
-        
-    If (concatValue = " | ") Or (concatValue = " |  | ") Or (concatValue = " |  |  | ") Then concatValue = vbNullString
 
     GEOCONCAT = concatValue
 End Function
