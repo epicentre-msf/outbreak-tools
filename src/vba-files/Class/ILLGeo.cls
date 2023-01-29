@@ -47,13 +47,11 @@ End Property
 Public Property Get GeoNames(ByVal admname As String) As String: End Property
 
 'Get the Population of one administrative level (only for geoType)
-Public Property Get Population(ByVal adminLevel As GeoLevelOrHF, _
-                               ByVal cellRng As Range) As String
+Public Property Get Population(ByVal adminLevel As GeoLevelOrHF, Optional ByVal concatValue As String = vbNullString) As String
 End Property
 
 'Get the Population of one administrative level (only for geoType)
-Public Property Get Pcode(ByVal adminLevel As GeoLevelOrHF, _
-                          ByVal cellRng As Range) As String
+Public Property Get Pcode(ByVal adminLevel As GeoLevelOrHF, Optional ByVal concatValue As String = vbNullString) As String
 End Property
 
 'Translation
@@ -78,5 +76,3 @@ Public Sub Update(ByVal pass As ILLPasswords): End Sub
 'Get the admin code from a selected admin
 
 Public Function AdminCode(ByVal selectedAdmin As String) As String:  End Function
-
-

@@ -314,15 +314,20 @@ Private Sub Add(ByVal formObject As IFormulas)
 
         'Formula value for total
         cellRng.Cells(1, 2).Value = "formula_" & ADMIN & "_" & counter
+        cellRng.Cells(1, 3).Value = "population_" & ADMIN & "_" & counter
         
         'final formula
         finalFormula = CurrentExcelFormula(formObject)
 
         'Test final formula to see if it returns something
         If finalFormula <> vbNullString Then cellRng.Cells(2, 2).FormulaArray = "= " & finalFormula
+        
+        'Formula for the population of the admin level
+        finalFormula = "= GeoPopulation(" & counter - 1 & ", " & cellRng.Cells(2, 1).Address(Rowabsolute:=False) & ")"
+        cellRng.Cells(2, 3).Formula = finalFormula
 
         'Define the listObject
-        Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(2, 2))
+        Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(2, 3))
 
         'Add A list object table
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName

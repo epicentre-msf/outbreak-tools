@@ -224,7 +224,7 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
         pasteRng.Cells.Clear
 
         'Resize the listObject
-        Set LoRng = sh.Range(cellRng.Cells(0, 1), cellRng.Cells(nbRows, 2))
+        Set LoRng = sh.Range(cellRng.Cells(0, 1), cellRng.Cells(nbRows, 3))
         Lo.Resize LoRng
 
         'Sort on the formula column
@@ -232,6 +232,9 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
 
         'Sort the Calculate range for formulas
         sortRng.calculate
+
+        'Sort the population range for formulas
+        sortRng.Offset(, 1).Calculate
 
         On Error Resume Next
           Lo.ListColumns(1).DataBodyRange.Sort key1:=sortRng, order1:=xlDescending

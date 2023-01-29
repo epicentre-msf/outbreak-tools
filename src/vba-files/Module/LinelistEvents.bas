@@ -529,6 +529,7 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
                 'Clean the filtered table list object
                 Set Lo = .ListObjects(1)
                 endCol = Lo.Range.Columns.Count
+                Set delRng = Nothing
 
                 If Not Lo.DataBodyRange Is Nothing Then
                     Set filtWksh = ThisWorkbook.Worksheets(.Cells(1, 5).Value)
@@ -607,6 +608,8 @@ Sub UpdateSingleSpTable(ByVal rngName As String)
     Dim geo As ILLGeo
     Dim hasFormula As Boolean
 
+    BeginWork xlsapp:=Application
+
     'Spatial analysis worksheet
     Set sh = ActiveSheet
     selectedAdmin = sh.Range(rngName).Value
@@ -647,6 +650,8 @@ Sub UpdateSingleSpTable(ByVal rngName As String)
 
     'Calculate the outer range
     rng.calculate
+
+    EndWork xlsapp:=Application
 End Sub
 
 
