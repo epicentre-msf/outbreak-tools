@@ -47,3 +47,7 @@ Public Property Get TableSectionId() As String: End Property 'The id of the firs
 'Exposed methods
 Public Function Value(ByVal colName As String) As String: End Function 'The search is done without case sensitive
 
+'Find the type of spatial analysis
+Public Property Get SpatialTableTypes() As String
+End Property
+

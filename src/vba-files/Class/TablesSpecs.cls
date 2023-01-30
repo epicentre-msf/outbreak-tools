@@ -94,6 +94,31 @@ Public Property Get TableType() As AnalysisTablesType
     TableType = tType
 End Property
 
+Private Property Get SpatialTableTypes() As String
+    Dim rowVar As String
+    Dim tType As AnalysisTableType
+    Dim lData As ILinelistSpecs
+    Dim dict As ILLdictionary
+    Dim spatType As String
+    
+    Set lData = LinelistSpecifications
+    Set dict = lData.Dictionary
+
+    tType = TableType()
+    rowVar = Value("row")
+
+    'Find the spatial table type.
+    'Use the spatial table type only if the table is valid (need to check it before)
+    
+    If tType = TypeSpatial Then
+        spatType = Switch(dict.VariableExists("hf_" & rowVar), "hf",  _ 
+                          dict.VariableExists("adm1_" & rowVar), "geo", _ 
+                          True, "")
+    End If
+
+    SpatialTableTypes = spatType
+End Property
+
 Public Property Get Self() As ITablesSpecs
     Set Self = Me
 End Property
@@ -231,11 +256,13 @@ Public Property Get ValidTable() As Boolean
     Case TypeTimeSeries
         Valid = (colVar = vbNullString Or colControl = "choice_manual" Or colControl = "choice_formula") And (vars.Value(colName:="type", varName:=rowVar) = "date")
     Case TypeSpatial
-        Valid = (dict.VariableExists("adm1_" & rowVar) And (colVar = vbNullString Or colControl = "choice_manual" Or colControl = "choice_formula"))
+        Valid = (dict.VariableExists("adm1_" & rowVar) Or dict.VariableExists("hf_" & rowVar)) And _ 
+                (colVar = vbNullString Or colControl = "choice_manual" Or colControl = "choice_formula")
     End Select
 
     ValidTable = Valid
 End Property
+
 
 Private Property Get Dictionary() As ILLdictionary
     Dim lData As ILinelistSpecs
@@ -412,6 +439,10 @@ End Property
 
 Public Property Get ITablesSpecs_ValidTable() As Boolean
     ITablesSpecs_ValidTable = ValidTable()
+End Property
+
+Public Property Get ITablesSpecs_SpatialTableTypes() As String
+    ITablesSpecs_SpatialTableTypes = SpatialTableTypes()
 End Property
 
 
