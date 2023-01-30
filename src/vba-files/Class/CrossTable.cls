@@ -662,20 +662,28 @@ Private Sub AddHeader()
                     .Range("ADM_UNIT_LIST").Locked = True
             End If
 
-            If Not RangeExists("ADM_DROPDOWN_" & tabId) Then
-                'Range for dropdown for the admins
-                .Cells(start - 2, STANDARDSTARTCOL).Name = "ADM_DROPDOWN_" & tabId
-                .Cells(start - 2, STANDARDSTARTCOL).Value = trans.TranslatedValue("MSG_SelectAdmin")
+            If (Not RangeExists("ADM_DROPDOWN_" & tabId)) And (Not RangeExists("HF_DROPDOWN_" & tabId))  Then
 
-                'New Section
-                Set rng = .Range("ADM_DROPDOWN_" & tabId)
+                If (specs.SpatialTableTypes = "geo") Then
+                    'Range for dropdown for the admins
+                    .Cells(start - 2, STANDARDSTARTCOL).Name = "ADM_DROPDOWN_" & tabId
+                    'Add the dropdown only on spatial tables of type geo
+                    .Cells(start - 2, STANDARDSTARTCOL).Value = trans.TranslatedValue("MSG_SelectAdmin")
+
+                    Set rng = .Range("ADM_DROPDOWN_" & tabId)
+                    'Previous value selected for ADM_DROPDOWN_
+                    rng.Cells(1, 2).Value = "adm1"
+                    rng.Cells(1, 2).Name = "PREVIOUS_ADM_" & tabId
                 
-                'Previous value selected for ADM_DROPDOWN_
-                rng.Cells(1, 2).Value = "adm1"
-                rng.Cells(1, 2).Name = "PREVIOUS_ADM_" & tabId
-                
+                ElseIf (specs.SpatialTableTypes = "hf") Then
+                    'Range for information on Type of admin level
+                    .Cells(start - 2, STANDARDSTARTCOL).Name = "HF_DROPDOWN_" & tabId
+                    Set rng = .Range("HF_DROPDOWN_" & tabId)
+                    rng.Cells(1, 1).Value = trans.TranslatedValue("MSG_HF")
+                End If
+
+                'New Section                
                 If specs.isNewSection() Then
-                
                     For counter = 1 To 3
                         .Rows(rng.Row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                     Next
@@ -940,9 +948,15 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         
         'Dropdown on Geo/spatial table
         If tablType = TypeSpatial Then
-            Set rng = .Range("ADM_DROPDOWN_" & tabId)
-            DesignFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
 
+            'Apply the dropdown only on geo
+            If (specs.SpatialTableTypes = "geo") Then
+                Set rng = .Range("ADM_DROPDOWN_" & tabId)
+            ElseIf (specs.SpatialTableTypes = "hf") Then
+                Set rng = .Range("HF_DROPDOWN_" & tabId)
+            End If
+            
+            DesignFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
             'Range for the order (used in the formulas)
             Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -1)
             DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
