@@ -27,6 +27,7 @@ Private this As TSpatialTables
 Private Const CLASSNAME As String = "SpatialTables"
 Private Const SPATIALSHEET As String = "spatial_tables__"
 Private Const ADMIN As String = "adm"
+Private Const HF As String = "hf"
 Private Const CONCAT As String = "concat_"
 
 Public Function Create(ByVal tabl As ICrossTable) As ISpatialTables
@@ -278,9 +279,12 @@ Private Sub Add(ByVal formObject As IFormulas)
     Dim adminName As String
     Dim rowVarName As String 'Variable name on rows for formulas
     Dim inputVarName As String
+    Dim endCounter As Integer
+    Dim spatType As String
 
     Set tabl = Table
     Set specs = tabl.Specifications
+    spatType = specs.SpatialTableTypes()
     inputVarName = specs.Value("row")
     varName = inputVarName & "_" & specs.TableId()
     
@@ -293,15 +297,19 @@ Private Sub Add(ByVal formObject As IFormulas)
     Set sh = Wksh()
     
     With sh
+      
+      endCounter = Switch(spatType = "geo", 4, spatType = "hf", 1, True, 4)
 
-      For counter = 1 To 4
+      For counter = 1 To endCounter
         
         ClearTableConditions
 
-        loName = CurrentLoName(varName, ADMIN & counter)
+        loName = Switch(spatType = "geo", CurrentLoName(varName, ADMIN & counter), _ 
+                        spatType = "hf", CurrentLoName(varName, HF))
+
         colIndex = LastColumn()
-        adminName = ADMIN & counter
-        rowVarName = CONCAT & adminName & "_" & inputVarName
+        adminName = Switch(spatType = "geo", ADMIN & counter, spatType = "hf", HF)
+        rowVarName = Switch(spatType = "geo", CONCAT & adminName & "_" & inputVarName, spatType = "hf", HF & "_" & inputVarName)
         'Add the table names for admin 1, only admin1, for admin2, admin1 and admin2, etc...
         headerName = CurrentHeaderName(varName, adminName)
         Set cellRng = .Cells(1, colIndex)

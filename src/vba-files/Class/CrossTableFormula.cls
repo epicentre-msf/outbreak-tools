@@ -293,6 +293,7 @@ Private Sub AddFormulas()
     Dim tabl As ICrossTable
     Dim spTab As ISpatialTables
     Dim tabFormObject As IFormulas
+    Dim spTabType As String
     
     Dim specs As ITablesSpecs
     
@@ -783,20 +784,28 @@ Private Sub AddFormulas()
             colVar = specs.Value("column")
             
             On Error Resume Next
-                With .Range("ADM_DROPDOWN_" & tabId).validation
-                .Delete
-                .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
-                     Operator:=xlBetween, Formula1:="=ADM_UNIT_LIST"
-                End With
+                If (specs.SpatialTableTypes = "geo") Then
+                    With .Range("ADM_DROPDOWN_" & tabId).validation
+                        .Delete
+                        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
+                            Operator:=xlBetween, Formula1:="=ADM_UNIT_LIST"
+                    End With
+                End If
             On Error GoTo 0
 
             'Row cageories formula
             Set rng = .Range("ROW_CATEGORIES_" & tabId)
             rowCatAddress = rng.Cells(1, 1).Address(Rowabsolute:=False)
             Set cellRng = rng.Cells(1, 1)
-            cellRng.formula = "= FindTopAdmin(ADM_DROPDOWN_" & tabId & "," & _
+
+            If (specs.SpatialTableTypes = "geo") Then
+                cellRng.formula = "= FindTopAdmin(ADM_DROPDOWN_" & tabId & "," & _
                                   cellRng.Cells(1, 0).Address(Rowabsolute:=False) & "," & _
                                   Chr(34) & rowVar & Chr(34) & "," & Chr(34) & tabId & Chr(34) & ")"
+            ElseIf (specs.SpatialTableTypes = "hf") Then
+                cellRng.formula = "= FindTopHF("  cellRng.Cells(1, 0).Address(Rowabsolute:=False) & "," & _
+                Chr(34) & rowVar & Chr(34) & "," & Chr(34) & tabId & Chr(34) & ")"
+            End If
             
             cellRng.AutoFill Destination:=rng, Type:=xlFillValues
 
