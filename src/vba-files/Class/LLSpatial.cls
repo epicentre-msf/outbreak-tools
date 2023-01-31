@@ -24,6 +24,7 @@ Private Const CLASSNAME As String = "LLSpatial"
 Private Const SPATIALSHEET As String = "spatial_tables__"
 Private Const ADMIN As String = "adm"
 Private Const CONCAT As String = "concat_"
+Private Const HF As String = "hf"
 
 Public Function Create(ByVal sh As Worksheet) As ILLSpatial
     
@@ -110,23 +111,42 @@ Private Sub Update()
       'Exit the sub if there is no data in the filters
       If Not (filtsh.ListObjects(1).DataBodyRange Is Nothing) Then
           
-         tableName = sh.Cells(1, 4).Value
-          Set cellRng = sh.Range(tableName & "_" & "START")
-          Set Lo = filtsh.ListObjects(1)
+        tableName = sh.Cells(1, 4).Value
+        Set cellRng = sh.Range(tableName & "_" & "START")
+        Set Lo = filtsh.ListObjects(1)
 
           'Offset - 1 is the range with the variable names
           Do While Not IsEmpty(cellRng.Offset(-1))
             controlValue = cellRng.Offset(-5).Value
 
             If controlValue = "geo1" Then
-              
+
               varName = Replace(cellRng.Offset(-1).Value, ADMIN & "1_", "")
+              
               If Exists(varName) Then
+                
                 Set rng = Lo.ListColumns(CONCAT & ADMIN & "1_" & varName).DataBodyRange()
                 UpdateSpatialValue rng, varName
+              
               End If
 
               Set cellRng = cellRng.Offset(, 11)
+
+            ElseIf controlValue = "hf" Then
+
+              'Update spatial values on health facility
+              varName = Replace(cellRng.Offset(-1).Value, HF & "_", "")
+
+
+              If Exists(varName) Then
+              
+                Set rng = Lo.ListColumns(HF & "_" & varName).DataBodyRange()
+                UpdateSpatialValue rng, varName, isHF:=True
+              
+              End If
+              
+              'Jump pcode for health facility
+              Set cellRng = cellRng.Offset(, 1)
             End If
 
             Set cellRng = cellRng.Offset(, 1)
@@ -162,7 +182,7 @@ Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
 End Function
 
 
-Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As String)
+Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As String, Optional Byval isHF As Boolean = False)
 
   Dim pasteRng As Range
   Dim counter As Long
@@ -178,21 +198,27 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
   Dim LoRng As Range
   Dim listVars As BetterArray
   Dim varName As String
+  Dim endCounter As Long
 
   Set sh = Wksh()
   
   'Get the list of varNames concerned
   Set listVars = ListOfExistingVarNames(inputVarName)
+
+  'Number of admin tables to update
+  endCounter = IIf(isHf, 1, 4)
   
   For counter = listVars.LowerBound To listVars.UpperBound
 
     varName = listVars.Item(counter)
     Set rng = inputRng
 
-    For admincounter = 1 To 4
+    For admincounter = 1 To endCounter
         nbRows = rng.Cells.Count
 
-        loName = CurrentLoName(varName, ADMIN & admincounter)
+        loName = IIf(isHF, CurrentLoName(varName, HF), CurrentLoName(varName, ADMIN & admincounter))
+        adminName = IIf(isHF, HF, ADMIN & admincounter)
+
         Set Lo = sh.ListObjects(loName)
 
         'First cell where to paste the values of the range
@@ -228,13 +254,13 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
         Lo.Resize LoRng
 
         'Sort on the formula column
-        Set sortRng = Lo.ListColumns("formula_" & ADMIN & "_" & admincounter).DataBodyRange
+        Set sortRng = Lo.ListColumns("formula_" & adminName).DataBodyRange
 
         'Sort the Calculate range for formulas
         sortRng.calculate
 
-        'Sort the population range for formulas
-        sortRng.Offset(, 1).Calculate
+        'Calculate the population range by shifting by 1.
+         sortRng.Offset(, 1).Calculate
 
         On Error Resume Next
           Lo.ListColumns(1).DataBodyRange.Sort key1:=sortRng, order1:=xlDescending
@@ -246,8 +272,29 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
 
 End Sub
 
-Private Property Get FindTopValue(ByVal adminName As String, ByVal orderValue As Integer, ByVal inputVarName As String, _
+Private Property Get TopGeoValue(ByVal adminName As String, ByVal orderValue As Integer, ByVal inputVarName As String, _
                                  Optional ByVal tabId As String = vbNullString) As String
+  Dim sh As Worksheet
+  Dim Lo As ListObject
+  Dim loName As String
+  Dim varName As String
+  Dim rng As Range
+  
+  Set sh = Wksh()
+
+  varName = inputVarName & "_" & tabId
+  loName = CurrentLoName(varName, adminName)
+  
+  If Not LoExists(loName) Then Exit Property
+  
+  Set Lo = sh.ListObjects(loName)
+  Set rng = Lo.ListColumns(1).DataBodyRange()
+  
+  TopGeoValue = rng.Cells(orderValue, 1).Value
+
+End Property
+
+Private Property Get TopHFValue(ByVal orderValue As Integer, ByVal inputVarName As String, Optional Byval tabId As String = vbNullString) As String
   Dim sh As Worksheet
   Dim Lo As ListObject
   Dim loName As String
@@ -256,12 +303,13 @@ Private Property Get FindTopValue(ByVal adminName As String, ByVal orderValue As
   Set sh = Wksh()
 
   varName = inputVarName & "_" & tabId
-  loName = CurrentLoName(varName, adminName)
+  loName = CurrentLoName(varName, HF)
+
   If Not LoExists(loName) Then Exit Property
   Set Lo = sh.ListObjects(loName)
   Set rng = Lo.ListColumns(1).DataBodyRange()
-  FindTopValue = rng.Cells(orderValue, 1).Value
-
+  
+  TopHFValue = rng.Cells(orderValue, 1).Value
 End Property
 
 
@@ -287,7 +335,13 @@ Public Sub ILLSpatial_Update()
 End Sub
 
 
-Public Property Get ILLSpatial_FindTopValue(ByVal adminName As String, ByVal levelValue As Integer, ByVal varName As String, _
+Public Property Get ILLSpatial_TopGeoValue(ByVal adminName As String, ByVal levelValue As Integer, ByVal varName As String, _
   Optional ByVal tabId As String = vbNullString) As String
-  ILLSpatial_FindTopValue = FindTopValue(adminName, levelValue, varName, tabId)
+  ILLSpatial_TopGeoValue = TopGeoValue(adminName, levelValue, varName, tabId)
 End Property
+
+
+Public Property Get ILLSpatial_TopHFValue(ByVal orderValue As Integer, ByVal inputVarName As String, Optional Byval tabId As String = vbNullString) As String
+  ILLSpatial_TopHFValue = TopHFValue(orderValue, inputVarName, tabId)
+End Property
+  

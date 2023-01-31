@@ -96,7 +96,6 @@ End Property
 
 Private Property Get SpatialTableTypes() As String
     Dim rowVar As String
-    Dim tType As AnalysisTableType
     Dim lData As ILinelistSpecs
     Dim dict As ILLdictionary
     Dim spatType As String
@@ -104,18 +103,14 @@ Private Property Get SpatialTableTypes() As String
     Set lData = LinelistSpecifications
     Set dict = lData.Dictionary
 
-    tType = TableType()
     rowVar = Value("row")
 
     'Find the spatial table type.
-    'Use the spatial table type only if the table is valid (need to check it before)
+    'Use the spatial table type only if the table is valid (you need to check it before)
     
-    If tType = TypeSpatial Then
-        spatType = Switch(dict.VariableExists("hf_" & rowVar), "hf",  _ 
-                          dict.VariableExists("adm1_" & rowVar), "geo", _ 
-                          True, "")
-    End If
-
+    spatType = Switch(dict.VariableExists("hf_" & rowVar), "hf",  _ 
+                      dict.VariableExists("adm1_" & rowVar), "geo", _ 
+                      True, "")
     SpatialTableTypes = spatType
 End Property
 
