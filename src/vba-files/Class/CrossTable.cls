@@ -307,6 +307,7 @@ Private Sub AddRows()
     Dim transTotal As String
     Dim counter As Long
     Dim tabId As String
+    Dim spatType As String
 
     start = StartRow
     Set sh = Wksh()
@@ -367,10 +368,19 @@ Private Sub AddRows()
         Case TypeSpatial
             rowVar = specs.Value("row")
             rowsData.Clear
-            rowsData.Push vars.Value(colName:="sub section", varName:="adm1" & "_" & rowVar)
+            spatType = specs.SpatialTableTypes()
+            
+            
+            If  (spatType = "geo") Then
+                rowsData.Push vars.Value(colName:="sub section", varName:="adm1_" & rowVar)
+            ElseIf (spatType = "hf") Then
+                rowsData.Push vars.Value(colName := "main label", varName := "hf_" & rowVar)
+            End If
+
             For counter = 1 To CLng(specs.Value("geo max"))
                 rowsData.Push ""
             Next
+
             rowsData.Push transMissing
             rowsData.ToExcelRange .Cells(start + 1, StartColumn)
             EndRow = start + rowsData.Length
@@ -471,6 +481,7 @@ Private Sub AddColumns()
     Dim colLab As String
     Dim colData As BetterArray
     Dim colVarLab As String
+    Dim sumLab As String
     Dim timeVarLab As String
     Dim tabId As String
 
@@ -520,14 +531,17 @@ Private Sub AddColumns()
             BivariateColumns start, specs, trans, sh
             colVarLab = vars.Value(colName:="main label", varName:=specs.Value("column"))
             timeVarLab = vars.Value(colName:="main label", varName:=specs.Value("time"))
+            sumLab = specs.Value("label")
 
             'Use the label for header if there is no column (only an aggregate function)
-            If specs.Value("column") = vbNullString Then colVarLab = specs.Value("label")
+            If specs.Value("column") = vbNullString Then 
+                TimeSeriesHeader = sumLab & " X " & timeVarLab
+            Else
+                TimeSeriesHeader = sumLab & " X " & timeVarLab & " X " & colVarLab
+            End If
 
             'Add the time variable label
-            .Range("STARTCOL_" & tabId).Value = colVarLab & " " & trans.TranslatedValue("MSG_per") & " " & timeVarLab
-
-            TimeSeriesHeader = colVarLab & " " & trans.TranslatedValue("MSG_per") & " " & timeVarLab
+            .Range("STARTCOL_" & tabId).Value = TimeSeriesHeader
 
         Case TypeSpatial
 
@@ -952,11 +966,12 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             'Apply the dropdown only on geo
             If (specs.SpatialTableTypes = "geo") Then
                 Set rng = .Range("ADM_DROPDOWN_" & tabId)
+                DesignFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
             ElseIf (specs.SpatialTableTypes = "hf") Then
                 Set rng = .Range("HF_DROPDOWN_" & tabId)
+                DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
             End If
             
-            DesignFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
             'Range for the order (used in the formulas)
             Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -1)
             DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
