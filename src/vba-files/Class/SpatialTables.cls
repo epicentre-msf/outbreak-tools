@@ -310,6 +310,8 @@ Private Sub Add(ByVal formObject As IFormulas)
         colIndex = LastColumn()
         adminName = Switch(spatType = "geo", ADMIN & counter, spatType = "hf", HF)
         rowVarName = Switch(spatType = "geo", CONCAT & adminName & "_" & inputVarName, spatType = "hf", HF & "_" & inputVarName)
+
+
         'Add the table names for admin 1, only admin1, for admin2, admin1 and admin2, etc...
         headerName = CurrentHeaderName(varName, adminName)
         Set cellRng = .Cells(1, colIndex)
@@ -321,8 +323,8 @@ Private Sub Add(ByVal formObject As IFormulas)
         AddTableConditions rowVarName, "= " & cellRng.Cells(2, 1).Address(Rowabsolute:=False)
 
         'Formula value for total
-        cellRng.Cells(1, 2).Value = "formula_" & ADMIN & "_" & counter
-        cellRng.Cells(1, 3).Value = "population_" & ADMIN & "_" & counter
+        cellRng.Cells(1, 2).Value = "formula_" & adminName
+        cellRng.Cells(1, 3).Value = "population_" & adminName
         
         'final formula
         finalFormula = CurrentExcelFormula(formObject)
@@ -331,14 +333,18 @@ Private Sub Add(ByVal formObject As IFormulas)
         If finalFormula <> vbNullString Then cellRng.Cells(2, 2).FormulaArray = "= " & finalFormula
         
         'Formula for the population of the admin level
-        finalFormula = "= GeoPopulation(" & counter - 1 & ", " & cellRng.Cells(2, 1).Address(Rowabsolute:=False) & ")"
-        cellRng.Cells(2, 3).Formula = finalFormula
+        
+        If spatType = "geo" Then
+          finalFormula = "= GeoPopulation(" & counter - 1 & ", " & cellRng.Cells(2, 1).Address(Rowabsolute:=False) & ")"
+          cellRng.Cells(2, 3).Formula = finalFormula
+        End If
 
         'Define the listObject
         Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(2, 3))
 
         'Add A list object table
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName
+
       Next
 
     End With

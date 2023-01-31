@@ -961,8 +961,11 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -1)
             DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
 
-            Set rng = .Range("PREVIOUS_ADM_" & tabId)
-            DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+            'Previous selected admin level
+            If RangeExists("PREVIOUS_ADM_" & tabId) Then
+                Set rng = .Range("PREVIOUS_ADM_" & tabId)
+                DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+            End If
         End If
 
         'Headers ==============================================================
