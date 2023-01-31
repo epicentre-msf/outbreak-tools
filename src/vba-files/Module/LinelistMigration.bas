@@ -78,12 +78,16 @@ Sub ClearData()
 
         Case "VList"
             'Find Last row of Adm Data and clear the cells
+            pass.UnProtect Wksh.Name
+
             With Wksh
                 lastRow = .Cells(.Rows.Count, 4).End(xlUp).Row
                 For counter = 4 To lastRow
                     .Cells(counter, 5).Value = vbNullString
                 Next
             End With
+
+            pass.Protect Wksh.Name
 
         End Select
     Next
