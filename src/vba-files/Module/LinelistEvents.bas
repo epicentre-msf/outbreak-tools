@@ -592,7 +592,10 @@ Sub UpdateSpTables()
 
     UpdateFilterTables calculate:=False
     sp.Update
+
+    DoEvents
     ActiveSheet.calculate
+    ActiveSheet.Columns("B:C").Calculate
 End Sub
 
 Sub UpdateSingleSpTable(ByVal rngName As String)

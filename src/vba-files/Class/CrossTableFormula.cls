@@ -780,7 +780,13 @@ Private Sub AddFormulas()
         Case TypeSpatial '======================== spatial analysis tables
 
             'Add dropdown on the selection part od validation
-            rowVar = "concat_adm1_" & specs.Value("row")
+            spTabType = specs.SpatialTableTypes()
+            rowVar = specs.Value("row")
+
+            'rowvariable depends on the table type
+            rowVar = Switch(spTabType = "geo", "concat_adm1_" & rowVar, spTabType = "hf", _ 
+                            "hf_" & rowVar, True, "")
+
             colVar = specs.Value("column")
             
             On Error Resume Next
@@ -803,7 +809,7 @@ Private Sub AddFormulas()
                                   cellRng.Cells(1, 0).Address(Rowabsolute:=False) & "," & _
                                   Chr(34) & rowVar & Chr(34) & "," & Chr(34) & tabId & Chr(34) & ")"
             ElseIf (specs.SpatialTableTypes = "hf") Then
-                cellRng.formula = "= FindTopHF("  cellRng.Cells(1, 0).Address(Rowabsolute:=False) & "," & _
+                cellRng.formula = "= FindTopHF(" & cellRng.Cells(1, 0).Address(Rowabsolute:=False) & "," & _
                 Chr(34) & rowVar & Chr(34) & "," & Chr(34) & tabId & Chr(34) & ")"
             End If
             

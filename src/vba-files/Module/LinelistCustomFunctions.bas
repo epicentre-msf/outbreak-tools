@@ -392,23 +392,7 @@ Public Function GeoPopulation(ByVal adminLevel As Byte, Optional ByVal concatVal
 
     GeoPopulation = popLng
 End Function
-
-Public Function HFPopulation(Optional Byval concatValue As String = vbNullString) As Long
-    Application.Volatile
-    Dim geo As ILLGeo
-    Dim popValue As String
-    Dim popLng As Long
-
-    Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
-    popLng = 0
-    popValue = geo.Population(4, concatValue)
-
-    On Error Resume Next
-        popLng = CLng(popValue)
-    On Error GoTo 0
-
-    HFPopulation = popLng
-End Function
+'There is No population for health facility
 
 Public Function GEOCONCAT(cellRng As Range, Level As Byte) As String
     Application.Volatile
@@ -463,16 +447,24 @@ Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varNam
     Set sh = ThisWorkbook.Worksheets("spatial_tables__")
     Set sp = LLSpatial.Create(sh)
     adminName = geo.AdminCode(adminLevel)
-    FindTopAdmin = sp.FindTopValue(adminName, adminOrder, actualVarName, tabId)
+    FindTopAdmin = sp.TopGeoValue(adminName, adminOrder, actualVarName, tabId)
 
 End Function
 
 'Find the corresponding value of a top admin for one variable
 
-Public Function FindTopHF(adminOrder As Integer, varName As String, Optional Byval tabId As String = vbNullString) As As String
+Public Function FindTopHF(adminOrder As Integer, varName As String, Optional Byval tabId As String = vbNullString) As String
 
     Application.Volatile
+    
+    Dim sp As ILLSpatial
+    Dim sh As Worksheet
+    Dim actualVarName As String
 
+    actualVarName = Split(varName, "_")(1)
+    Set sh = ThisWorkbook.Worksheets("spatial_tables__")
+    Set sp = LLSpatial.Create(sh)
+    FindTopHF = sp.TopHFValue(adminOrder, actualVarName, tabId)
 End Function
 
 
