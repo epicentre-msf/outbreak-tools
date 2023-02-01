@@ -572,7 +572,13 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
     Next
 
     'caclulate active sheet
-    If calculate Then ActiveSheet.calculate
+    DoEvents
+    
+    If calculate Then 
+        ActiveSheet.calculate
+        ActiveSheet.UsedRange.calculate
+        ActiveSheet.Columns("A:E").calculate
+    End If
 
     EndWork xlsapp:=Application
     Exit Sub
@@ -595,7 +601,8 @@ Sub UpdateSpTables()
 
     DoEvents
     ActiveSheet.calculate
-    ActiveSheet.Columns("B:C").Calculate
+    ActiveSheet.UsedRange.calculate
+    ActiveSheet.Columns("A:E").Calculate
 End Sub
 
 Sub UpdateSingleSpTable(ByVal rngName As String)
@@ -717,6 +724,8 @@ Sub EventValueChangeAnalysis(Target As Range)
 
     Case "TS-Analysis"
         actSh.calculate
+        actSh.UsedRange.calculate
+        actSh.Columns("A:E").calculate
         'Goto section range for time series analysis
         If InStr(1, rngName, "ts_go_to_section") > 0 Then Set rng = Target
         

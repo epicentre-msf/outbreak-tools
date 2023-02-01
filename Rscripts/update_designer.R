@@ -71,24 +71,26 @@ prepare_demo  <- function(fake_dataset = "",
     dir.create(demo_folder)
 
     # add the setup file
-    file.copy(from = glue::glue("./input/outbreak-tools-setup/{setup_filename}"), # nolint
-              to = glue::glue("{demo_folder}/setup.xlsb"))
+    file.copy(from = setup_filename, # nolint
+              to = demo_folder)
+
+    fake_geo  <- basename(fake_geobase)
 
     # add the geobase files
-    file.copy(from = glue::glue("./input/outbreak-tools-setup/{fake_geobase}"),
-              to = glue::glue("{demo_folder}/{fake_geo}.xlsb"))
+    file.copy(from = fake_geobase,
+              to = demo_folder)
 
     # add the fake dataset file
 
     fdata  <- basename(fake_dataset)
 
     file.copy(from = fake_dataset,
-              to = glue::glue("{demo_folder}/{fdata}")
+              to = demo_folder
     )
 
     # add the designer
     file.copy(from = "./linelist_designer.xlsb",
-              to = "{demo_folder}/linelist_designer.xlsb")
+              to = demo_folder)
 }
 
 

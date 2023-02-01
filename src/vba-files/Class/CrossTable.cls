@@ -535,9 +535,9 @@ Private Sub AddColumns()
 
             'Use the label for header if there is no column (only an aggregate function)
             If specs.Value("column") = vbNullString Then 
-                TimeSeriesHeader = sumLab & " X " & timeVarLab
+                TimeSeriesHeader = sumLab & " " & ChrW(9472) & " " & timeVarLab
             Else
-                TimeSeriesHeader = sumLab & " X " & timeVarLab & " X " & colVarLab
+                TimeSeriesHeader = sumLab & " " & ChrW(9472) & " " & timeVarLab & " " & ChrW(9472) & " " & colVarLab
             End If
 
             'Add the time variable label

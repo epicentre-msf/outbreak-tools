@@ -12,17 +12,19 @@ clear_output()
 
 # preparing the demo folder
 
-path_fake_dataset  <-  "D:/MSF/OutbreakTools - Library/06 - Pipelines/01 - Test/03 - Fake data set/ll_export_SSD_ASH 1808 20220921-1143.xlsx" # nolint
-path_fake_geobase  <- "./input/geobase/OUTBREAK-TOOLS-GEOBASE-SSD-2022-09-07.xlsx" # nolint
-setup_filename  <- "setup_measles_SSD_ASH.xlsb"
-demo_folder  <- "./demo"
+path_fake_dataset  <-  "D:/MSF/OutbreakTools - Library/03 - Test/TEST MARINE/20230131/LL-test-Marine_with fake data.xlsb" # nolint
+path_fake_geobase  <- "D:/MSF/OutbreakTools - Library/03 - Test/TEST MARINE/20230131/geobase_obt_yem_20230127.xlsx" # nolint
+setup_filename  <- "D:/MSF/OutbreakTools - Library/03 - Test/TEST MARINE/20230131/setup_measles_Yemen_20230131.xlsb" # nolint
+demo_folder  <- "./demo/"
 
 # preparing the demo folder
 clear_output("./demo")
 
-prepare_demo(fake_dataset = fake_dataset,
-             fake_geobase = fake_geobase,
+prepare_demo(fake_dataset = path_fake_dataset,
+             fake_geobase = path_fake_geobase,
              setup_filename = setup_filename) # nolint
 
 
 # create a class
+
+
