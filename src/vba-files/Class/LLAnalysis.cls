@@ -357,11 +357,6 @@ Private Sub Build(ll As ILinelist)
     Set outsh = ll.Wksh(tradmsg.TranslatedValue("LLSHEET_TemporalAnalysis"))
     design.ApplyFormat outsh, AllAnalysisSheet
      
-    'Add the update filter button
-    Set cellRng = outsh.Cells(2, 1)
-    Set but = Buttons.Create(cellRng, tradshp, SHPFILTERNAME, ButtonScopeSmall)
-    but.Add UPDATEFILTERCOMMAND
-    but.Format design
     
     'Add the sheet type
     Set cellRng = outsh.Cells(1, 3)
@@ -431,7 +426,7 @@ Private Sub Build(ll As ILinelist)
                     'New section, add goTo section dropdown to previous section
                     drop.Add tsSectionList, "tsgotosection" & prevSecId
                     Set cellRng = outsh.Range("SECTION_" & prevSecId)
-                    Set cellRng = cellRng.Offset(2)
+                    Set cellRng = cellRng.Offset(1, -2)
                     drop.SetValidation cellRng, "tsgotosection" & prevSecId
                     design.ApplyFormat cellRng, scope:=LinelistSelectionDropdown
                     cellRng.Name = "ts_" & GOTOSECCODE & "_" & prevSecId
@@ -463,7 +458,7 @@ Private Sub Build(ll As ILinelist)
             'New section, add goTo section dropdown to the last section
             drop.Add tsSectionList, "tsgotosection" & lastValid.TableSectionId
             Set cellRng = outsh.Range("SECTION_" & lastValid.TableSectionId)
-            Set cellRng = cellRng.Offset(2)
+            Set cellRng = cellRng.Offset(1, -2)
             drop.SetValidation cellRng, "tsgotosection" & lastValid.TableSectionId
             design.ApplyFormat cellRng, scope:=LinelistSelectionDropdown
             cellRng.Name = "ts_" & GOTOSECCODE & "_" & lastValid.TableSectionId
@@ -520,14 +515,20 @@ Private Sub Build(ll As ILinelist)
     End If
      
     drop.Add sectionsList, "tsgotosection"
-    drop.SetValidation outsh.Cells(2, 3), "tsgotosection"
-    design.ApplyFormat outsh.Cells(2, 3), scope:=LinelistSelectionDropdown
-    outsh.Cells(2, 3).Name = "ts_" & GOTOSECCODE
-    outsh.Cells(2, 3).Value = goToSection
-    outsh.Cells(2, 3).Locked = False
+    drop.SetValidation outsh.Cells(2, 1), "tsgotosection"
+    design.ApplyFormat outsh.Cells(2, 1), scope:=LinelistSelectionDropdown
+    outsh.Cells(2, 1).Name = "ts_" & GOTOSECCODE
+    outsh.Cells(2, 1).Value = goToSection
+    outsh.Cells(2, 1).Locked = False
 
     'Hide the second column (column B)
     outsh.Columns(2).Hidden = True
+
+    'Add the update filter button
+    Set cellRng = outsh.Cells(2, 3)
+    Set but = Buttons.Create(cellRng, tradshp, SHPFILTERNAME, ButtonScopeSmall)
+    but.Add UPDATEFILTERCOMMAND
+    but.Format design
      
     'Send the LinelistTimeSeries change
     TransferCodeWksh outsh, ll
