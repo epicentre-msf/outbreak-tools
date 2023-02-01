@@ -181,7 +181,7 @@ Private Property Get HasTotal() As Boolean
         HasTotal = ((Value("total") = "yes") Or (Value("percentage") = "row") Or _
                     (Value("percentage") = "column")) And (Value("column") <> vbNullString)
     Case TypeSpatial
-        HasTotal = True
+        HasTotal = (Value("column") <> vbNullString)
 
     End Select
 End Property

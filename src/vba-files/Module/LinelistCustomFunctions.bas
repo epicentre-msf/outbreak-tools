@@ -112,23 +112,26 @@ End Function
 
 'Epiweek function without specifying the year in select cases (works with all years)
 Public Function Epiweek2(currentDate As Long) As Long
-    
+
     Dim inDate As Long
     Dim firstDate As Long
     Dim firstMondayDate As Long
     Dim borderLeftDate As Long
-    Dim borderRightDate As Long
-    Dim LastYearEpiWeek As Long
 
     inDate = DateSerial(Year(currentDate), 1, 1)
-    firstMondayDate = inDate - Weekday(inDate, 2) + 1
     
+
+    firstMondayDate = inDate - Weekday(inDate, 2) + 1
+  
     borderLeftDate = DateSerial(Year(currentDate) - 1, 12, 29)
     
     firstDate = IIf(firstMondayDate < borderLeftDate, firstMondayDate + 7, firstMondayDate)
 
-    
-    Epiweek2 = IIf(currentDate >= firstDate, 1 + (currentDate - firstDate) \ 7, Epiweek2(borderLeftDate))
+    If currentDate >= firstDate Then
+        Epiweek2 = 1 + (currentDate - firstDate) \ 7
+    Else
+        Epiweek2 = Epiweek2(borderLeftDate - 1)
+    End If
 
 End Function
 
@@ -219,7 +222,6 @@ Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, e
     Dim sValue As String
     Dim monthDate As Integer
     Dim quarterDate As Integer
-    Dim fun As WorksheetFunction
     Dim epiYear As Long
     Dim epiW As Long
     
@@ -232,12 +234,11 @@ Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, e
 
     sAgg = GetAgg(sAggregate)
 
-    Set fun = Application.WorksheetFunction
     Select Case sAgg
     Case "day"
         sValue = Format(endDate, "dd-mmm-yyyy")
     Case "week"
-        epiW = fun.IsoWeekNum(endDate)
+        epiW = Epiweek2(endDate)
         epiYear = IIf(((epiW = 52 Or epiW = 53) And Month(endDate) = 1), Year(endDate) - 1, Year(endDate))
         sValue = TranslateLLMsg("MSG_W") & epiW & " - " & epiYear
     Case "month"
@@ -260,14 +261,6 @@ Public Function FormatDateRange(MinDate As Long, MaxDate As Long) As String
 
 End Function
 
-'Top admin levels and values for the tables on spatial analysis
-Public Function TopAdminName(Admlevel As String, Admcount As Long) As String
-    TopAdminName = vbNullString
-End Function
-
-Public Function TopAdminValue(admname As String, Admlevel As String, Admcount As Long) As Long
-    TopAdminValue = 0
-End Function
 
 Public Function FirstAggDayFrom(endDate As Long, agg As String) As Long
     Dim firstDate As Long

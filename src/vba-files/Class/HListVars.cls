@@ -500,8 +500,8 @@ Private Sub AddValidation()
 
         ElseIf (varMin <> vbNullString) And (varMax <> vbNullString) Then
             'Validation on Both minimum and maximum
-            excelForm = ExcelFormula(varMin, validationTypes)
-            excelForm2 = ExcelFormula(varMax, validationTypes)
+            excelForm = ExcelFormula(varMax, validationTypes)
+            excelForm2 = ExcelFormula(varMin, validationTypes)
             
             If IsEmpty(excelForm) Or IsEmpty(excelForm2) Then Exit Sub
             
@@ -544,7 +544,11 @@ Private Function ExcelFormula(ByVal formVal As String, ByVal validationTypes As 
     If Not varFormObject.Valid(formulaType:="linelist") Then Exit Function
     excelForm = varFormObject.ParsedLinelistFormula()
     If FailedFormula(excelForm) Then Exit Function
-    excelForm = OSFormula(excelForm)
+
+    'Removed conversion to OS formula on french desktops
+    'excelForm = OSFormula(excelForm)
+
+    excelForm = "= " & excelForm
     
     If Not varFormObject.HasLiterals Then
         
