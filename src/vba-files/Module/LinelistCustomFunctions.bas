@@ -446,7 +446,7 @@ End Function
 
 'Find the corresponding value of a top admin for one variable
 
-Public Function FindTopHF(adminOrder As Integer, varName As String, Optional Byval tabId As String = vbNullString) As String
+Public Function FindTopHF(adminOrder As Integer, varName As String, Optional ByVal tabId As String = vbNullString) As String
 
     Application.Volatile
     

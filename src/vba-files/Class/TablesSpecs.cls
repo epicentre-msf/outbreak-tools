@@ -108,8 +108,8 @@ Private Property Get SpatialTableTypes() As String
     'Find the spatial table type.
     'Use the spatial table type only if the table is valid (you need to check it before)
     
-    spatType = Switch(dict.VariableExists("hf_" & rowVar), "hf",  _ 
-                      dict.VariableExists("adm1_" & rowVar), "geo", _ 
+    spatType = Switch(dict.VariableExists("hf_" & rowVar), "hf", _
+                      dict.VariableExists("adm1_" & rowVar), "geo", _
                       True, "")
     SpatialTableTypes = spatType
 End Property
@@ -251,7 +251,7 @@ Public Property Get ValidTable() As Boolean
     Case TypeTimeSeries
         Valid = (colVar = vbNullString Or colControl = "choice_manual" Or colControl = "choice_formula") And (vars.Value(colName:="type", varName:=rowVar) = "date")
     Case TypeSpatial
-        Valid = (dict.VariableExists("adm1_" & rowVar) Or dict.VariableExists("hf_" & rowVar)) And _ 
+        Valid = (dict.VariableExists("adm1_" & rowVar) Or dict.VariableExists("hf_" & rowVar)) And _
                 (colVar = vbNullString Or colControl = "choice_manual" Or colControl = "choice_formula")
     End Select
 
