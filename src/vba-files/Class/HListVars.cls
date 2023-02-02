@@ -500,8 +500,8 @@ Private Sub AddValidation()
 
         ElseIf (varMin <> vbNullString) And (varMax <> vbNullString) Then
             'Validation on Both minimum and maximum
-            excelForm = ExcelFormula(varMax, validationTypes)
-            excelForm2 = ExcelFormula(varMin, validationTypes)
+            excelForm = ExcelFormula(varMin, validationTypes)
+            excelForm2 = ExcelFormula(varMax, validationTypes)
             
             If IsEmpty(excelForm) Or IsEmpty(excelForm2) Then Exit Sub
             

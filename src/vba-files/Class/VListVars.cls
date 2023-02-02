@@ -481,7 +481,11 @@ Private Function ExcelFormula(ByVal formVal As String, ByVal validationTypes As 
     If Not varFormObject.Valid(formulaType:="linelist") Then Exit Function
     excelForm = varFormObject.ParsedLinelistFormula()
     If FailedFormula(excelForm) Then Exit Function
-    excelForm = OSFormula(excelForm)
+    'Removed conversion to OS formula on french desktops
+    'excelForm = OSFormula(excelForm)
+
+    excelForm = "= " & excelForm
+
     
     If Not varFormObject.HasLiterals Then
         
