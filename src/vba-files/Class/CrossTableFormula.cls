@@ -784,7 +784,7 @@ Private Sub AddFormulas()
             rowVar = specs.Value("row")
 
             'rowvariable depends on the table type
-            rowVar = Switch(spTabType = "geo", "concat_adm1_" & rowVar, spTabType = "hf", _ 
+            rowVar = Switch(spTabType = "geo", "concat_adm1_" & rowVar, spTabType = "hf", _
                             "hf_" & rowVar, True, "")
 
             colVar = specs.Value("column")

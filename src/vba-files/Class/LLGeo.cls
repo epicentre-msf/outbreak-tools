@@ -303,7 +303,7 @@ Err:
 End Property
 
 Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
-                             Optional Byval concatValue As String = vbNullString, _
+                             Optional ByVal concatValue As String = vbNullString, _
                              Optional ByVal returnedSuffix As String = "pop") As String
                              
     'Return the population or the pcode of a admin level, by default, return population
@@ -358,7 +358,7 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
     
     Case LevelHF
     
-        Set concatRng = sh.Range("hf_concat")    
+        Set concatRng = sh.Range("hf_concat")
     End Select
 
     'Use index match to get the result

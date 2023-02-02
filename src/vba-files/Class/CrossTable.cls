@@ -371,10 +371,10 @@ Private Sub AddRows()
             spatType = specs.SpatialTableTypes()
             
             
-            If  (spatType = "geo") Then
+            If (spatType = "geo") Then
                 rowsData.Push vars.Value(colName:="sub section", varName:="adm1_" & rowVar)
             ElseIf (spatType = "hf") Then
-                rowsData.Push vars.Value(colName := "main label", varName := "hf_" & rowVar)
+                rowsData.Push vars.Value(colName:="main label", varName:="hf_" & rowVar)
             End If
 
             For counter = 1 To CLng(specs.Value("geo max"))
@@ -404,20 +404,22 @@ Private Sub BivariateColumns(ByVal start As Long, ByVal specs As ITablesSpecs, B
     Dim colVar As String
     Dim colLab As String
     Dim colData As BetterArray
+    Dim newColData As BetterArray 'New column data to use for sending empty values when add percentage = True
     Dim labData As BetterArray
     Dim percentageValue As String
     Dim transMissing As String
     Dim transTotal As String
     Dim transPercent As String
     Dim counter As Long
-    Dim tobound As Long
     Dim totalValue As String
     Dim tabId As String
 
     Set colData = New BetterArray
+    Set newColData = New BetterArray
     Set labData = New BetterArray
     colData.LowerBound = 1
     labData.LowerBound = 1
+    newColData.LowerBound = 1
     tabId = specs.TableId
     percentageValue = specs.Value("percentage")
     totalValue = specs.Value("total")
@@ -440,20 +442,21 @@ Private Sub BivariateColumns(ByVal start As Long, ByVal specs As ITablesSpecs, B
             'Percentage
             If specs.HasPercentage Then
                 counter = 1
-                tobound = 2 * colData.UpperBound
 
-                Do While counter <= tobound
+                Do While counter <= colData.UpperBound
 
-                    colData.Splice counter + 1, 0, ""
-                    counter = counter + 2
+                    newColData.Push colData.Item(counter), ""
                     labData.Push colLab, Percent(transPercent, percentageValue)
+                    counter = counter + 1
                 Loop
             Else
                 For counter = 1 To colData.UpperBound
                     labData.Push colLab
                 Next
             End If
-            colData.ToExcelRange .Cells(start, StartColumn + 1), TransposeValues:=True
+            
+            'new col data is the column data with the empty values between elements
+            newColData.ToExcelRange .Cells(start, StartColumn + 1), TransposeValues:=True
             labData.ToExcelRange .Cells(start + 1, StartColumn + 1), TransposeValues:=True
         Else                                     'No column Data, just a summary function
             labData.Push colLab
@@ -534,7 +537,7 @@ Private Sub AddColumns()
             sumLab = specs.Value("label")
 
             'Use the label for header if there is no column (only an aggregate function)
-            If specs.Value("column") = vbNullString Then 
+            If specs.Value("column") = vbNullString Then
                 TimeSeriesHeader = sumLab & " " & ChrW(9472) & " " & timeVarLab
             Else
                 TimeSeriesHeader = sumLab & " " & ChrW(9472) & " " & timeVarLab & " " & ChrW(9472) & " " & colVarLab
@@ -676,7 +679,7 @@ Private Sub AddHeader()
                     .Range("ADM_UNIT_LIST").Locked = True
             End If
 
-            If (Not RangeExists("ADM_DROPDOWN_" & tabId)) And (Not RangeExists("HF_DROPDOWN_" & tabId))  Then
+            If (Not RangeExists("ADM_DROPDOWN_" & tabId)) And (Not RangeExists("HF_DROPDOWN_" & tabId)) Then
 
                 If (specs.SpatialTableTypes = "geo") Then
                     'Range for dropdown for the admins
@@ -696,7 +699,7 @@ Private Sub AddHeader()
                     rng.Cells(1, 1).Value = trans.TranslatedValue("MSG_HF")
                 End If
 
-                'New Section                
+                'New Section
                 If specs.isNewSection() Then
                     For counter = 1 To 3
                         .Rows(rng.Row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove

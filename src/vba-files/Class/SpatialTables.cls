@@ -304,7 +304,7 @@ Private Sub Add(ByVal formObject As IFormulas)
         
         ClearTableConditions
 
-        loName = Switch(spatType = "geo", CurrentLoName(varName, ADMIN & counter), _ 
+        loName = Switch(spatType = "geo", CurrentLoName(varName, ADMIN & counter), _
                         spatType = "hf", CurrentLoName(varName, HF))
 
         colIndex = LastColumn()
@@ -336,7 +336,7 @@ Private Sub Add(ByVal formObject As IFormulas)
         
         If spatType = "geo" Then
           finalFormula = "= GeoPopulation(" & counter - 1 & ", " & cellRng.Cells(2, 1).Address(Rowabsolute:=False) & ")"
-          cellRng.Cells(2, 3).Formula = finalFormula
+          cellRng.Cells(2, 3).formula = finalFormula
         End If
 
         'Define the listObject

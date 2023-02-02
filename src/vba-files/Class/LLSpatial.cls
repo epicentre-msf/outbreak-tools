@@ -182,7 +182,7 @@ Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
 End Function
 
 
-Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As String, Optional Byval isHF As Boolean = False)
+Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As String, Optional ByVal isHF As Boolean = False)
 
   Dim pasteRng As Range
   Dim counter As Long
@@ -206,7 +206,7 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
   Set listVars = ListOfExistingVarNames(inputVarName)
 
   'Number of admin tables to update
-  endCounter = IIf(isHf, 1, 4)
+  endCounter = IIf(isHF, 1, 4)
   
   For counter = listVars.LowerBound To listVars.UpperBound
 
@@ -260,7 +260,7 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
         sortRng.calculate
 
         'Calculate the population range by shifting by 1.
-         sortRng.Offset(, 1).Calculate
+         sortRng.Offset(, 1).calculate
 
         On Error Resume Next
           Lo.ListColumns(1).DataBodyRange.Sort key1:=sortRng, order1:=xlDescending
@@ -294,7 +294,7 @@ Private Property Get TopGeoValue(ByVal adminName As String, ByVal orderValue As 
 
 End Property
 
-Private Property Get TopHFValue(ByVal orderValue As Integer, ByVal inputVarName As String, Optional Byval tabId As String = vbNullString) As String
+Private Property Get TopHFValue(ByVal orderValue As Integer, ByVal inputVarName As String, Optional ByVal tabId As String = vbNullString) As String
   Dim sh As Worksheet
   Dim Lo As ListObject
   Dim loName As String
@@ -341,7 +341,7 @@ Public Property Get ILLSpatial_TopGeoValue(ByVal adminName As String, ByVal leve
 End Property
 
 
-Public Property Get ILLSpatial_TopHFValue(ByVal orderValue As Integer, ByVal inputVarName As String, Optional Byval tabId As String = vbNullString) As String
+Public Property Get ILLSpatial_TopHFValue(ByVal orderValue As Integer, ByVal inputVarName As String, Optional ByVal tabId As String = vbNullString) As String
   ILLSpatial_TopHFValue = TopHFValue(orderValue, inputVarName, tabId)
 End Property
   
