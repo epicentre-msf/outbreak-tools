@@ -574,7 +574,7 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
     'caclulate active sheet
     DoEvents
     
-    If calculate Then 
+    If calculate Then
         ActiveSheet.calculate
         ActiveSheet.UsedRange.calculate
         ActiveSheet.Columns("A:E").calculate
@@ -602,7 +602,7 @@ Sub UpdateSpTables()
     DoEvents
     ActiveSheet.calculate
     ActiveSheet.UsedRange.calculate
-    ActiveSheet.Columns("A:E").Calculate
+    ActiveSheet.Columns("A:E").calculate
 End Sub
 
 Sub UpdateSingleSpTable(ByVal rngName As String)
