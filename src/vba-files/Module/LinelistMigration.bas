@@ -195,7 +195,7 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
                               TranslateLLMsg("MSG_ImportLanguage") & " " & sImportedLanguage & _
                               TranslateLLMsg("MSG_QuitImports"), vbExclamation + vbYesNo, _
                               TranslateLLMsg("MSG_LanguageDifferent"))
-                If Quit = vbYes Then
+                If Quit = vbNo Then
                     TestImportLanguage = False
                     Exit Function
                 End If
