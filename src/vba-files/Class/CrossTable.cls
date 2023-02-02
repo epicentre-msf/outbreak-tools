@@ -225,7 +225,7 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     'End Row
     rend = Switch(specs.TableType = TypeTimeSeries And onlyCategories, EndRow - 2, _
                   specs.TableType = TypeTimeSeries, EndRow, _
-                  specs.HasTotal And onlyCategories, EndRow - 1, _
+                  (specs.HasTotal Or specs.TableType = TypeSpatial) And onlyCategories, EndRow - 1, _
                   True, EndRow)
 
     With sh
@@ -278,7 +278,7 @@ Public Property Get ColumnRange(ByVal colVal As String, Optional ByVal includeHe
     'End Row
     rend = Switch(specs.TableType = TypeTimeSeries And onlyCategories, EndRow - 2, _
                   specs.TableType = TypeTimeSeries, EndRow, _
-                  specs.HasTotal And onlyCategories, EndRow - 1, _
+                  (specs.HasTotal Or specs.TableType = TypeSpatial) And onlyCategories, EndRow - 1, _
                   True, EndRow)
 
     If includeHeaders Then start = start - 1
