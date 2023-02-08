@@ -17,6 +17,7 @@ output
 migration
 migrations
 outputs
+demo
 *Sheet1.cls
 *Sheet2.cls
 *Sheet3.cls
