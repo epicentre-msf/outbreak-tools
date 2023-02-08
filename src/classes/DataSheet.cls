@@ -23,9 +23,9 @@ Private Type TDataSheet
     STARTCOL As Long                             'The column where the data starts (the first column is the column of the variable names.
 End Type
 
-Private this As TDataSheet
+Private This As TDataSheet
 
-Private Const CLASSNAME As String = "DataSheet"
+Private Const className As String = "DataSheet"
 
 Public Function Create(ByVal dataWksh As Worksheet, ByVal dataStartRow As Long, _
                        ByVal dataStartColumn As Long) As IDataSheet
@@ -50,29 +50,29 @@ End Property
 
 'Worksheet
 Public Property Get Wksh() As Worksheet
-    Set Wksh = this.dataWksh
+    Set Wksh = This.dataWksh
 End Property
 
 Friend Property Set Wksh(ByVal dataWksh As Worksheet)
-    Set this.dataWksh = dataWksh
+    Set This.dataWksh = dataWksh
 End Property
 
 'StartRow
 Public Property Get StartRow() As Long
-    StartRow = this.startLn
+    StartRow = This.startLn
 End Property
 
 Friend Property Let StartRow(ByVal dataStartRow As Long)
-    this.startLn = dataStartRow
+    This.startLn = dataStartRow
 End Property
 
 'StartColumn
 Public Property Get StartColumn() As Long
-    StartColumn = this.STARTCOL
+    StartColumn = This.STARTCOL
 End Property
 
 Friend Property Let StartColumn(ByVal dataStartColumn As Long)
-    this.STARTCOL = dataStartColumn
+    This.STARTCOL = dataStartColumn
 End Property
 
 'End row and columns of the dictionary
@@ -236,7 +236,7 @@ Private Function FiltersData(ByVal varData As BetterArray, _
     Dim returnedColumnIndex As Long
     Dim returnedData As BetterArray
     Dim counter As Long
-    Dim col As Long
+    Dim Col As Long
     Dim EndRow As Long
     Dim endCol As Long
     Dim retEndRow As Long
@@ -252,7 +252,7 @@ Private Function FiltersData(ByVal varData As BetterArray, _
     If varData.Length <> criteriaData.Length Or varData.Length = 0 Then Exit Function
 
     'returned Range
-    col = 2                                      'Iterator for columns to extract
+    Col = 2                                      'Iterator for columns to extract
     Set dataWksh = Wksh()
 
     With dataWksh
@@ -274,8 +274,8 @@ Private Function FiltersData(ByVal varData As BetterArray, _
             Set returnedRng = .Range(.Cells(StartRow + 1, returnedColumnIndex), .Cells(EndRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
             On Error GoTo 0
 
-            If Not returnedRng Is Nothing Then returnedRng.Copy .Cells(StartRow, endCol + col)
-            col = col + 1
+            If Not returnedRng Is Nothing Then returnedRng.Copy .Cells(StartRow, endCol + Col)
+            Col = Col + 1
         Next
 
         .AutoFilter.ShowAllData
@@ -300,7 +300,7 @@ Private Sub Import(ByVal fromWksh As Worksheet, fromStartRow As Long, fromStartc
     Dim dataImportData As BetterArray
     Dim strtcol As Long
     Dim strtrw As Long
-    Dim col As Long
+    Dim Col As Long
     
     strtcol = StartColumn()
     strtrw = StartRow()
@@ -314,17 +314,17 @@ Private Sub Import(ByVal fromWksh As Worksheet, fromStartRow As Long, fromStartc
     dataImportData.ToExcelRange dataWksh.Cells(strtrw, strtcol)
     
     'Change colnames to lowercase
-    col = strtcol
+    Col = strtcol
     With dataWksh
-        Do While (.Cells(strtrw, col) <> vbNullString)
-            .Cells(strtrw, col).Value = LCase(Application.WorksheetFunction.Trim(.Cells(strtrw, col).Value))
-            col = col + 1
+        Do While (.Cells(strtrw, Col) <> vbNullString)
+            .Cells(strtrw, Col).Value = LCase(Application.WorksheetFunction.Trim(.Cells(strtrw, Col).Value))
+            Col = Col + 1
         Loop
     End With
 End Sub
 
 'Export
-Private Sub Export(ByVal wkb As Workbook, Optional ByVal filteredVarName As String = "__all__", _
+Private Sub export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As String = "__all__", _
                    Optional ByVal filteredCondition As String = "<>", Optional ByVal Hide As Long = xlSheetHidden)
 
     Dim dataExportData As BetterArray
@@ -333,20 +333,20 @@ Private Sub Export(ByVal wkb As Workbook, Optional ByVal filteredVarName As Stri
     Dim sheetDataExist As Boolean
 
     'Trace on errors on export
-    If wkb Is Nothing Then Exit Sub
+    If Wkb Is Nothing Then Exit Sub
     'Test if the sheet  exists in the workbook
     Set dataWksh = Wksh()
 
     On Error Resume Next
-    Set dataExportWksh = wkb.Worksheets(dataWksh.Name)
+    Set dataExportWksh = Wkb.Worksheets(dataWksh.Name)
     sheetDataExist = (Not dataExportWksh Is Nothing)
     On Error GoTo 0
 
     'Trace on errors on exports
     If sheetDataExist Then Exit Sub
-    wkb.Worksheets.Add(After:=wkb.Worksheets(wkb.Worksheets.Count)).Name = dataWksh.Name
+    Wkb.Worksheets.Add(After:=Wkb.Worksheets(Wkb.Worksheets.Count)).Name = dataWksh.Name
     Set dataExportData = New BetterArray
-    Set dataExportWksh = wkb.Worksheets(dataWksh.Name)
+    Set dataExportWksh = Wkb.Worksheets(dataWksh.Name)
 
     If filteredVarName = "__all__" Then
         dataExportData.FromExcelRange DataRange(colName:="__all__", includeHeaders:=True)
@@ -360,16 +360,16 @@ End Sub
 
 'Errors ----------------------------------------------------------------------
 Private Sub ThrowErrorEmptySheetGiven(Optional ByVal Class As String = ":")
-    Err.Raise VBA.vbObjectError + 513, CLASSNAME, "Unable to create an instance of the class" & Class & " Given Worksheet object does not exists, please verify if you set it."
+    Err.Raise VBA.vbObjectError + 513, className, "Unable to create an instance of the class" & Class & " Given Worksheet object does not exists, please verify if you set it."
 End Sub
 
 Private Sub ThrowErrorStartNumber(Optional ByVal startNumber As Long = -1, Optional ByVal startLabel As String = " Start ", Optional ByVal Class As String = ":")
-    Err.Raise VBA.vbObjectError + 514, CLASSNAME, "Unable to create an instance of the class" & Class & " The " & startLabel & _
+    Err.Raise VBA.vbObjectError + 514, className, "Unable to create an instance of the class" & Class & " The " & startLabel & _
                                                  "should be >= 1. " & "Actual value : " & startNumber
 End Sub
 
 Private Sub ThrowErrorUnFoundColumn(ByVal colName As String)
-    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Column " & colName & " does not exists" & " in worksheet " & Wksh.Name
+    Err.Raise VBA.vbObjectError + 515, className, "Column " & colName & " does not exists" & " in worksheet " & Wksh.Name
 End Sub
 
 'Inteface ----------------------------------------------------------------------
@@ -423,7 +423,7 @@ End Property
 Public Sub IDataSheet_Export(ByVal toWkb As Workbook, _
                              Optional ByVal filteredVarName As String = "__all__", _
                              Optional ByVal filteredCondition As String = "<>", Optional ByVal Hide As Long = xlSheetHidden)
-    Export toWkb, filteredVarName, filteredCondition, Hide
+    export toWkb, filteredVarName, filteredCondition, Hide
 End Sub
 
 Public Sub IDataSheet_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)

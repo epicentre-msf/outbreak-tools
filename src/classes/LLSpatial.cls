@@ -19,11 +19,11 @@ Private Type TLLSpatial
     sh As Worksheet
 End Type
 
-Private this As TLLSpatial
-Private Const CLASSNAME As String = "LLSpatial"
+Private This As TLLSpatial
+Private Const className As String = "LLSpatial"
 Private Const SPATIALSHEET As String = "spatial_tables__"
 Private Const ADMIN As String = "adm"
-Private Const CONCAT As String = "concat_"
+Private Const Concat As String = "concat_"
 Private Const HF As String = "hf"
 
 Public Function Create(ByVal sh As Worksheet) As ILLSpatial
@@ -44,11 +44,11 @@ Public Property Get Self() As ILLSpatial
 End Property
 
 Public Property Get Wksh() As Worksheet
-  Set Wksh = this.sh
+  Set Wksh = This.sh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-  Set this.sh = sh
+  Set This.sh = sh
 End Property
 
 
@@ -125,7 +125,7 @@ Private Sub Update()
               
               If Exists(varName) Then
                 
-                Set rng = Lo.ListColumns(CONCAT & ADMIN & "1_" & varName).DataBodyRange()
+                Set rng = Lo.ListColumns(Concat & ADMIN & "1_" & varName).DataBodyRange()
                 UpdateSpatialValue rng, varName
               
               End If
@@ -322,7 +322,7 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
 End Sub
 
 'Exposed methods

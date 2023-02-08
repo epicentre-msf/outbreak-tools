@@ -24,8 +24,8 @@ Private Type TVListVars
     inputRange As Range
 End Type
 
-Private this As TVListVars
-Private Const CLASSNAME As String = "VListVars"
+Private This As TVListVars
+Private Const className As String = "VListVars"
 Private Const STARTCOL As Long = 5               'Where the variables should start in the output worksheet
 
 Public Function Create(ByVal varName As String, ByVal ll As ILinelist) As IVListVars
@@ -45,19 +45,19 @@ Public Property Get Self() As IVListVars
 End Property
 
 Public Property Get LinelistObject() As ILinelist
-    Set LinelistObject = this.ll
+    Set LinelistObject = This.ll
 End Property
 
 Public Property Set LinelistObject(ByVal ll As ILinelist)
-    Set this.ll = ll
+    Set This.ll = ll
 End Property
 
 Public Property Get ActualVariable() As String
-    ActualVariable = this.varName
+    ActualVariable = This.varName
 End Property
 
 Public Property Let ActualVariable(ByVal varName As String)
-    this.varName = varName
+    This.varName = varName
 End Property
 
 'The linelist Data
@@ -111,15 +111,15 @@ Private Property Get VarRange() As Range         'Where to input informations on
     Dim sh As Worksheet
     Dim rng As Range
     
-    If this.inputRange Is Nothing Then
+    If This.inputRange Is Nothing Then
         Set sh = Wksh()
         With sh
             StartRow = ValueOf("column index")
-            Set this.inputRange = .Cells(StartRow, STARTCOL)
+            Set This.inputRange = .Cells(StartRow, STARTCOL)
         End With
     End If
     
-    Set VarRange = this.inputRange
+    Set VarRange = This.inputRange
 End Property
 
 'Type using type and format of the variable
@@ -261,7 +261,7 @@ Private Sub AddFormula()
         excelForm = varFormObject.ParsedLinelistFormula()
         'Test if the formula is correct and parse it
         If FailedFormula(excelForm) Then
-            excelForm = Chr(34) & "##== formula parsing failed :( ==##" & Chr(34)
+            excelForm = chr(34) & "##== formula parsing failed :( ==##" & chr(34)
         End If
         cellRng.formula = "= " & excelForm
         cellRng.Locked = True
@@ -311,25 +311,25 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
 
     'sublabel
     If (varControl = "formula") Or (varControl = "case_when") Or (varControl = "choice_formula") Then
-        varSublab = varSublab & Chr(10) & calculated
+        varSublab = varSublab & chr(10) & calculated
     End If
 
     mainLabLength = Len(varMainLab)
     
     'Add subLabel to main label
-    If (varSublab <> vbNullString) Then varMainLab = varMainLab & Chr(10) & varSublab
+    If (varSublab <> vbNullString) Then varMainLab = varMainLab & chr(10) & varSublab
 
     'Status to add to Notes
-    If varStatus = "mandatory" Then varNote = mandatory & Chr(10) & varNote
+    If varStatus = "mandatory" Then varNote = mandatory & chr(10) & varNote
     
     'variable main label and sub lable
     cellRng.Offset(, -1).Value = varMainLab
   
-    design.ApplyFormat cellRng.Offset(, -1).Characters(start:=1, Length:=mainLabLength), _
+    design.ApplyFormat cellRng.Offset(, -1).Characters(Start:=1, Length:=mainLabLength), _
         scope:=VListMainLab                      'format of the main label
   
     If (varSublab <> vbNullString) Then
-        design.ApplyFormat cellRng.Offset(, -1).Characters(start:=mainLabLength + 1), _
+        design.ApplyFormat cellRng.Offset(, -1).Characters(Start:=mainLabLength + 1), _
         scope:=VListSublab                       'format of the sub label
     End If
   
@@ -339,7 +339,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     'variable note
     If varNote <> vbNullString Then
         cellRng.AddComment
-        cellRng.Comment.text text:=varNote
+        cellRng.Comment.Text Text:=varNote
         cellRng.Comment.Visible = notevisibility
     End If
 
@@ -381,7 +381,7 @@ Private Sub AddChoices()
     varMessage = ValueOf("message")
 
     'Set dropdown validations
-    drop.SetValidation cellRng:=cellRng, ListName:=varName, _
+    drop.SetValidation cellRng:=cellRng, listName:=varName, _
                        alertType:=varAlert, message:=varMessage
 End Sub
 
@@ -555,7 +555,7 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
 End Sub
 
 Private Sub CheckRequirements(ByVal varName As String, ll As ILinelist)

@@ -29,8 +29,8 @@ Private Type TCrossTableFormula
     condTests As BetterArray
 End Type
 
-Private this As TCrossTableFormula
-Private Const CLASSNAME As String = "CrossTableFormula"
+Private This As TCrossTableFormula
+Private Const className As String = "CrossTableFormula"
 
 Public Function Create(ByVal tabl As ICrossTable, fData As IFormulaData) As ICrossTableFormula
     With New CrossTableFormula
@@ -45,19 +45,19 @@ Public Property Get Self() As ICrossTableFormula
 End Property
 
 Public Property Get Table() As ICrossTable
-    Set Table = this.tab
+    Set Table = This.tab
 End Property
 
 Public Property Set Table(ByVal tabl As ICrossTable)
-    Set this.tab = tabl
+    Set This.tab = tabl
 End Property
 
 Public Property Get formData() As IFormulaData
-    Set formData = this.fData
+    Set formData = This.fData
 End Property
 
 Public Property Set formData(ByVal fData As IFormulaData)
-    Set this.fData = fData
+    Set This.fData = fData
 End Property
 
 Private Property Get Specifications() As ITablesSpecs
@@ -95,17 +95,17 @@ Private Property Get TableFormula() As IFormulas
     Dim dict As ILLdictionary
     Dim tabFormObject As IFormulas
 
-    If (this.forml Is Nothing) Then
+    If (This.forml Is Nothing) Then
         Set fData = formData()
         Set specs = Specifications
         Set dict = specs.Dictionary
         tabform = SummaryFunction
         Set tabFormObject = Formulas.Create(dict, fData, tabform)
 
-        Set this.forml = tabFormObject
+        Set This.forml = tabFormObject
         Set TableFormula = tabFormObject
     Else
-        Set TableFormula = this.forml
+        Set TableFormula = This.forml
     End If
 End Property
 
@@ -155,11 +155,11 @@ Fail:
 End Function
 
 Private Function EmpStr() As String
-    EmpStr = Chr(34) & Chr(34)
+    EmpStr = chr(34) & chr(34)
 End Function
 
 Private Function NonEmpStr() As String
-    NonEmpStr = Chr(34) & "<>" & Chr(34)
+    NonEmpStr = chr(34) & "<>" & chr(34)
 End Function
 
 Private Function Percentage(ByVal denomRng As Range, ByVal numRng As Range, Optional ByVal rowabs As Boolean = True) As String
@@ -176,44 +176,44 @@ End Function
 'Add conditions for the formulas
 Private Sub AddTableConditions(varName As String, conditionName As String)
 
-    If this.condVars Is Nothing Then
-        Set this.condVars = New BetterArray
-        this.condVars.LowerBound = 1
+    If This.condVars Is Nothing Then
+        Set This.condVars = New BetterArray
+        This.condVars.LowerBound = 1
     End If
 
-    If this.condTests Is Nothing Then
-        Set this.condTests = New BetterArray
-        this.condTests.LowerBound = 1
+    If This.condTests Is Nothing Then
+        Set This.condTests = New BetterArray
+        This.condTests.LowerBound = 1
     End If
 
     If varName <> vbNullString Then
-        this.condVars.Push varName
-        this.condTests.Push conditionName
+        This.condVars.Push varName
+        This.condTests.Push conditionName
     End If
 End Sub
 
 Private Sub ClearTableConditions(Optional ByVal removeNumber As Integer = 0)
     Dim counter As Integer
 
-    If this.condVars Is Nothing Then
-        Set this.condVars = New BetterArray
-        this.condVars.LowerBound = 1
+    If This.condVars Is Nothing Then
+        Set This.condVars = New BetterArray
+        This.condVars.LowerBound = 1
         removeNumber = 0
     End If
 
-    If this.condTests Is Nothing Then
-        Set this.condTests = New BetterArray
-        this.condTests.LowerBound = 1
+    If This.condTests Is Nothing Then
+        Set This.condTests = New BetterArray
+        This.condTests.LowerBound = 1
         removeNumber = 0
     End If
 
     If removeNumber <= 0 Then
-        this.condVars.Clear
-        this.condTests.Clear
+        This.condVars.Clear
+        This.condTests.Clear
     Else
         For counter = 1 To removeNumber
-            this.condVars.Pop
-            this.condTests.Pop
+            This.condVars.Pop
+            This.condTests.Pop
         Next
     End If
 End Sub
@@ -230,8 +230,8 @@ Private Property Get CurrentExcelFormula(Optional ByVal scope As ExcelFormulaSco
     If scope = 1 Then
         eform = tabFormObject.ParsedLinelistFormula(useTableName:=True, tablePrefix:=prefix)
     Else
-        If this.condVars Is Nothing Or this.condTests Is Nothing Then GoTo Fail
-        Set cond = FormulaCondition.Create(this.condVars, this.condTests)
+        If This.condVars Is Nothing Or This.condTests Is Nothing Then GoTo Fail
+        Set cond = FormulaCondition.Create(This.condVars, This.condTests)
         eform = tabFormObject.ParsedAnalysisFormula(cond, tablePrefix:=prefix)
     End If
   
@@ -245,7 +245,7 @@ Private Property Get CurrentExcelFormula(Optional ByVal scope As ExcelFormulaSco
 
 Fail:
     'Trace Log here on failed formula?
-    eform = Chr(34) & "##== formula parsing failed :( ==##" & Chr(34)
+    eform = chr(34) & "##== formula parsing failed :( ==##" & chr(34)
     CurrentExcelFormula = eform
 End Property
 
@@ -807,10 +807,10 @@ Private Sub AddFormulas()
             If (specs.SpatialTableTypes = "geo") Then
                 cellRng.formula = "= FindTopAdmin(ADM_DROPDOWN_" & tabId & "," & _
                                   cellRng.Cells(1, 0).Address(Rowabsolute:=False) & "," & _
-                                  Chr(34) & rowVar & Chr(34) & "," & Chr(34) & tabId & Chr(34) & ")"
+                                  chr(34) & rowVar & chr(34) & "," & chr(34) & tabId & chr(34) & ")"
             ElseIf (specs.SpatialTableTypes = "hf") Then
                 cellRng.formula = "= FindTopHF(" & cellRng.Cells(1, 0).Address(Rowabsolute:=False) & "," & _
-                Chr(34) & rowVar & Chr(34) & "," & Chr(34) & tabId & Chr(34) & ")"
+                chr(34) & rowVar & chr(34) & "," & chr(34) & tabId & chr(34) & ")"
             End If
             
             cellRng.AutoFill Destination:=rng, Type:=xlFillValues
@@ -943,7 +943,7 @@ End Sub
 
 'Errors
 Private Sub ThrowExecutionError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Execution Error : " & errorMessage
 End Sub
 
 Private Sub UnFoundRangeError(ByVal sectionName As String, ByVal rngName As String, ByVal shName As String)

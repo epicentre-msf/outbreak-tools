@@ -28,9 +28,9 @@ Private Const TABRANGE As String = "T_tradRange"
 Private Const TABSMSG As String = "T_tradMsg"
 Private Const TABLANG As String = "T_Lang"
 Private Const TABLANGDICT As String = "T_LanguageDictionary"
-Private Const CLASSNAME As String = "DesTranslation"
+Private Const className As String = "DesTranslation"
 
-Private this As TDesTranslation
+Private This As TDesTranslation
 
 Public Function Create(ByVal sh As Worksheet) As IDesTranslation
   
@@ -48,11 +48,11 @@ Public Property Get Self() As IDesTranslation
 End Property
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = this.sh
+    Set Wksh = This.sh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-    Set this.sh = sh
+    Set This.sh = sh
 End Property
 
 Private Property Get DesignerLanguage() As String
@@ -122,7 +122,7 @@ Private Sub TranslateDesigner(ByVal mainsh As Worksheet)
                 With shp
                     'keep the previous font
                     prevFont = .TextFrame.Characters.Font.Name
-                    .TextFrame.Characters.text = shpObject.TranslatedValue(shp.Name)
+                    .TextFrame.Characters.Text = shpObject.TranslatedValue(shp.Name)
                     .TextFrame.Characters.Font.Name = prevFont
                 End With
             End If
@@ -161,7 +161,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
 End Sub
 
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
 End Sub
 
 Private Sub LoExists(sh As Worksheet, ByVal loNames As BetterArray)

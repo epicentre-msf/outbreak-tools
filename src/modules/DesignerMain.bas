@@ -21,7 +21,7 @@ End Function
 'Import the language of the setup
 Private Sub ImportLang()
     Dim inPath As String
-    Dim wkb As Workbook
+    Dim Wkb As Workbook
     Dim Lo As ListObject
     Dim langTable As BetterArray
  
@@ -32,14 +32,14 @@ Private Sub ImportLang()
     
     'Set Events to false to avoid
     Application.EnableEvents = False
-    Set wkb = Workbooks.Open(inPath)
+    Set Wkb = Workbooks.Open(inPath)
     
     On Error GoTo 0
     
-    If wkb Is Nothing Then Exit Sub
+    If Wkb Is Nothing Then Exit Sub
     
     On Error Resume Next
-    Set Lo = wkb.Worksheets("Translations").ListObjects(1)
+    Set Lo = Wkb.Worksheets("Translations").ListObjects(1)
     On Error GoTo 0
  
     If Lo Is Nothing Then Exit Sub
@@ -52,7 +52,7 @@ Private Sub ImportLang()
     'Add the language to LLTranslations
     SheetLLTranslation.Range("RNG_DictionaryLanguage").Value = SheetMain.Range("RNG_LangSetup").Value
  
-    wkb.Close savechanges:=False
+    Wkb.Close savechanges:=False
     
     Application.EnableEvents = True
  
@@ -300,7 +300,7 @@ Public Sub Control()
         SheetMain.Range("RNG_Edition").Interior.color = RGB(235, 232, 232)
         
         If MsgBox(SheetMain.Range("RNG_LLName").Value & ".xlsb " & _
-                  trads.TranslatedValue("MSG_Exists") & Chr(10) & _
+                  trads.TranslatedValue("MSG_Exists") & chr(10) & _
                   trads.TranslatedValue("MSG_Question"), vbYesNo, _
                   trads.TranslatedValue("MSG_Title")) = vbNo Then
             

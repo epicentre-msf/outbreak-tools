@@ -71,9 +71,9 @@ Private Sub TestIndex()
     'TEst the column index
     dict.Prepare
     Set vars = LLVariables.Create(dict)
-    sheetIndex = vars.index("vara1")
+    sheetIndex = vars.Index("vara1")
     Assert.IsTrue (sheetIndex = 4), "Expected index: 4, Obtained index: " & sheetIndex
-    sheetIndex = vars.index("varb2")
+    sheetIndex = vars.Index("varb2")
     Assert.IsTrue (sheetIndex = 2), "Expected index: 2, Obtained index: " & sheetIndex
 End Sub
 

@@ -24,9 +24,9 @@ Private Type THListSubSections
     Varlists As BetterArray
 End Type
 
-Private this As THListSubSections
+Private This As THListSubSections
 Private Const SUBSECROW As Long = 6              'Row for the sub section
-Private Const CLASSNAME As String = "HListSubSections"
+Private Const className As String = "HListSubSections"
 
 Public Function Create(ByVal strt As Long, ll As ILinelist) As IHListSubSections
 
@@ -45,12 +45,12 @@ Public Property Get Self() As IHListSubSections
 End Property
 
 Public Property Get StartRow() As Long           'Start Row of the subsection in the dictionary
-    StartRow = this.strt
+    StartRow = This.strt
 End Property
 
 Public Property Let StartRow(ByVal strt As Long)
-    this.strt = strt
-    this.endrw = 0
+    This.strt = strt
+    This.endrw = 0
 End Property
 
 Public Property Get EndRow() As Long             'End Row of the subsection in the dictionary (Not in the worksheet)
@@ -63,7 +63,7 @@ Public Property Get EndRow() As Long             'End Row of the subsection in t
     Dim subSectionName As String
     Dim sectionName As String
 
-    If (this.endrw = 0) Then
+    If (This.endrw = 0) Then
         rowNumber = StartRow()
         Set dict = Dictionary()
         Set subSectionRng = dict.DataRange("sub section")
@@ -78,18 +78,18 @@ Public Property Get EndRow() As Long             'End Row of the subsection in t
                                                                                         (sectionRng.Cells(rowNumber, 1).Value <> sectionName)
         Loop
 
-        this.endrw = rowNumber - 1
+        This.endrw = rowNumber - 1
     End If
 
-    EndRow = this.endrw
+    EndRow = This.endrw
 End Property
 
 Public Property Get LinelistObject() As ILinelist
-    Set LinelistObject = this.ll
+    Set LinelistObject = This.ll
 End Property
 
 Public Property Set LinelistObject(ByVal ll As ILinelist)
-    Set this.ll = ll
+    Set This.ll = ll
 End Property
 
 Public Property Get Dictionary() As ILLdictionary
@@ -131,7 +131,7 @@ Private Property Get VariableLists() As BetterArray
     Dim varRng As Range
     Dim dict As ILLdictionary
 
-    If this.Varlists Is Nothing Then
+    If This.Varlists Is Nothing Then
         Set dict = Dictionary()
         Set varl = New BetterArray
         Set varRng = dict.DataRange("variable name")
@@ -142,11 +142,11 @@ Private Property Get VariableLists() As BetterArray
             varl.Push varRng.Cells(counter, 1).Value
         Next
 
-        Set this.Varlists = New BetterArray
-        Set this.Varlists = varl.Clone()
+        Set This.Varlists = New BetterArray
+        Set This.Varlists = varl.Clone()
     End If
 
-    Set VariableLists = this.Varlists.Clone()
+    Set VariableLists = This.Varlists.Clone()
 End Property
 
 Private Property Get HasNext() As Boolean
@@ -237,7 +237,7 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Execution Error : " & errorMessage
 End Sub
 
 'requirements for creating an objec

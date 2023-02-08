@@ -23,7 +23,7 @@ End Type
 
 
 'Exposed methods
-Private this As TChoiceFormula
+Private This As TChoiceFormula
 
 Public Function Create(ByVal formula As String) As IChoiceFormula
   With New ChoiceFormula
@@ -38,11 +38,11 @@ Public Property Get Self() As IChoiceFormula
 End Property
 
 Public Property Get ChoiceSpecifications() As String
-  ChoiceSpecifications = this.formula
+  ChoiceSpecifications = This.formula
 End Property
 
 Public Property Let ChoiceSpecifications(ByVal formula As String)
-  this.formula = Application.WorksheetFunction.Trim(formula)
+  This.formula = Application.WorksheetFunction.Trim(formula)
 End Property
 
 'Test the validity of the choice formula
@@ -62,7 +62,7 @@ Private Property Get casewhenObject() As ICaseWhen
   convertedFormula = Application.WorksheetFunction.Trim(Replace(formula, Split(formula, ",")(0) & ",", ""))
   convertedFormula = "CASE_WHEN(" & convertedFormula
   convertedFormula = Left(convertedFormula, Len(convertedFormula) - 1)
-  convertedFormula = convertedFormula & ", " & Chr(34) & Chr(34) & ")"
+  convertedFormula = convertedFormula & ", " & chr(34) & chr(34) & ")"
 
   Set casewhenObject = CaseWhen.Create(convertedFormula)
   

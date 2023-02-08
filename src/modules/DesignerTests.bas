@@ -18,15 +18,15 @@ Sub test()
     Dim Table As ICrossTable
     Dim specs As ITablesSpecs
     Dim TableFormula As ICrossTableFormula
-    Dim wkb As Workbook
+    Dim Wkb As Workbook
     Dim grSpecs As IGraphSpecs
     Dim gr As IGraphs
     Dim sh As Worksheet
     Dim counter As Long
     Dim nbSeries As Long
     
-    Set wkb = ThisWorkbook
-    Set lData = LinelistSpecs.Create(wkb)
+    Set Wkb = ThisWorkbook
+    Set lData = LinelistSpecs.Create(Wkb)
     
     Set sh = ThisWorkbook.Worksheets("TestAnalysis")
     Set Lo = ThisWorkbook.Worksheets("Analysis").ListObjects(4)
@@ -63,18 +63,18 @@ Sub test()
 End Sub
 
 Sub TestGraphs()
-    Dim wkb As Workbook
+    Dim Wkb As Workbook
     Dim ana As ILLAnalysis
     Dim lData As ILinelistSpecs
     Dim shUA As Worksheet
     Dim shTS As Worksheet
     Dim test As BetterArray
     
-    Set wkb = ThisWorkbook
-    Set lData = LinelistSpecs.Create(wkb)
+    Set Wkb = ThisWorkbook
+    Set lData = LinelistSpecs.Create(Wkb)
     lData.Prepare
     
-    Set ana = LLAnalysis.Create(wkb.Worksheets("Analysis"), lData)
+    Set ana = LLAnalysis.Create(Wkb.Worksheets("Analysis"), lData)
     
     Set shUA = ThisWorkbook.Worksheets("TestAnalysisUA")
     Set shTS = ThisWorkbook.Worksheets("TestAnalysisTS")
@@ -129,21 +129,21 @@ Sub testformula()
     Set dict = LLdictionary.Create(Wksh, 1, 1)
     Set Wksh = ThisWorkbook.Worksheets("ControleFormule")
     Set formData = FormulaData.Create(Wksh)
-    setupform = "COUNTIF(outcome," & Chr(34) & "Decede" & Chr(34) & ") - COUNTIF(outcome," & Chr(34) & "Gueri" & Chr(34) & ")"
+    setupform = "COUNTIF(outcome," & chr(34) & "Decede" & chr(34) & ") - COUNTIF(outcome," & chr(34) & "Gueri" & chr(34) & ")"
     
     Set formObject = Formulas.Create(dict, formData, setupform)
     
 End Sub
 
 Sub testcasewhen()
-    Dim wkb As Workbook
+    Dim Wkb As Workbook
     Dim ana As ILLAnalysis
     Dim lData As ILinelistSpecs
     Dim sh As Worksheet
     Dim test As BetterArray
     
-    Set wkb = ThisWorkbook
-    Set lData = LinelistSpecs.Create(wkb)
+    Set Wkb = ThisWorkbook
+    Set lData = LinelistSpecs.Create(Wkb)
     lData.Prepare
     
     Set test = lData.Categories("age_group")
@@ -151,7 +151,7 @@ End Sub
 
 Sub TestHListVars()
     
-    Dim wkb As Workbook
+    Dim Wkb As Workbook
     Dim ana As ILLAnalysis
     Dim lData As ILinelistSpecs
     Dim sh As Worksheet
@@ -167,10 +167,10 @@ Sub TestHListVars()
     
     Set preserved = New BetterArray
     
-    Set wkb = ThisWorkbook
-    Set outdropsh = wkb.Worksheets("Test Dropdown")
-    Set outsh = wkb.Worksheets("Test HList")
-    Set lData = LinelistSpecs.Create(wkb)
+    Set Wkb = ThisWorkbook
+    Set outdropsh = Wkb.Worksheets("Test Dropdown")
+    Set outsh = Wkb.Worksheets("Test HList")
+    Set lData = LinelistSpecs.Create(Wkb)
     
     lData.Prepare
     
