@@ -20,7 +20,7 @@ Private Type TMain
     sh As Worksheet
 End Type
 
-Private this As TMain
+Private This As TMain
 
 Public Function Create(sh As Worksheet) As IMain
 
@@ -34,11 +34,11 @@ Public Function Create(sh As Worksheet) As IMain
 End Function
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = this.sh
+    Set Wksh = This.sh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-    Set this.sh = sh
+    Set This.sh = sh
 End Property
 
 Public Property Get Self() As IMain
@@ -236,7 +236,7 @@ Private Sub UpdateStatus(ByVal numValue As Integer)
     currentEvent = Application.ScreenUpdating
     Application.ScreenUpdating = True
     CurrentStatus = (NUMBEROFBARS) * Round(numValue / 100, 1)
-    sh.Range("RNG_Update").Value = "[" & String(CurrentStatus, "|") & Space(NUMBEROFBARS - CurrentStatus) & "]" & _
+    sh.Range("RNG_Update").Value = "[" & String(CurrentStatus, "|") & SPACE(NUMBEROFBARS - CurrentStatus) & "]" & _
                                                                                                           " " & CInt(numValue) & "%"
     Application.ScreenUpdating = currentEvent
 End Sub
@@ -255,7 +255,7 @@ End Sub
 
 'Errors and checkings
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
 End Sub
 
 Private Sub CheckRequirements(ByVal sh As Worksheet)

@@ -21,9 +21,9 @@ Private Type Tchoice
     choiceDataSheet As IDataSheet
 End Type
 
-Private this As Tchoice
+Private This As Tchoice
 
-Private Const ListName As String = "list name"
+Private Const listName As String = "list name"
 Private Const LABEL   As String = "label"
 Private Const ORDER   As String = "ordering list"
 
@@ -66,11 +66,11 @@ Public Property Get StartColumn() As Long
 End Property
 
 Private Property Get ChoiceData() As IDataSheet
-    Set ChoiceData = this.choiceDataSheet
+    Set ChoiceData = This.choiceDataSheet
 End Property
 
 Friend Property Set ChoiceData(ByVal customDataSheet As IDataSheet)
-    Set this.choiceDataSheet = customDataSheet
+    Set This.choiceDataSheet = customDataSheet
 End Property
 
 'Get the data range
@@ -87,7 +87,7 @@ Public Property Get Categories(ByVal choiceName As String) As BetterArray
 
     Set dataObject = ChoiceData
 
-    Set Categories = dataObject.FilterData(varName:=ListName, _
+    Set Categories = dataObject.FilterData(varName:=listName, _
                                            criteriaName:=choiceName, returnedColumnName:=LABEL, _
                                            includeHeaders:=False)
 End Property
@@ -102,8 +102,8 @@ Private Sub Sort()
 
     Set dataObject = ChoiceData
 
-    If dataObject.ColumnExists(ListName) And dataObject.ColumnExists(ORDER) Then
-        Set listRng = DataRange(ListName, includeHeaders:=False)
+    If dataObject.ColumnExists(listName) And dataObject.ColumnExists(ORDER) Then
+        Set listRng = DataRange(listName, includeHeaders:=False)
         Set orderRng = DataRange(ORDER, includeHeaders:=False)
         Set choiceRng = DataRange(includeHeaders:=False)
 
@@ -131,7 +131,7 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
     If checkCategories.Length > 0 Then Exit Sub  'Will probably trace log.
 
 
-    Set listRng = DataRange(ListName)
+    Set listRng = DataRange(listName)
     Set labelRng = DataRange(LABEL)
     Set orderRng = DataRange(ORDER)
     Set choicewksh = Wksh()
@@ -155,10 +155,10 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
 End Sub
 
 'Import and export Sub
-Private Sub Export(wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+Private Sub export(Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     Dim choiData As IDataSheet
     Set choiData = ChoiceData()
-    ChoiceData.Export wkb, Hide:=Hide
+    ChoiceData.export Wkb, Hide:=Hide
 End Sub
 
 Private Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
@@ -210,7 +210,7 @@ End Sub
 
 'Export and Import
 Public Sub ILLchoice_Export(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
-    Export toWkb, Hide:=Hide
+    export toWkb, Hide:=Hide
 End Sub
 
 Public Sub ILLchoice_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)

@@ -97,7 +97,7 @@ Sub ClicCmdExport()
     With F_Export
         i = 1
         Do While i <= 5
-            If Not isError(Wksh.Cells(i, iStatus).Value) Then
+            If Not IsError(Wksh.Cells(i, iStatus).Value) Then
                 'i+1 because the first line is for the headers
                 If Wksh.Cells(i + 1, iStatus).Value <> C_sExportActive Then
                     .Controls("CMD_Export" & i).Visible = False
@@ -180,7 +180,7 @@ Sub ClicCmdDebug()
             DebugMode = True
             DebugWksh.Shapes(C_sShpDebug).Fill.ForeColor.RGB = Helpers.GetColor("Green")
             DebugWksh.Shapes(C_sShpDebug).Fill.BackColor.RGB = Helpers.GetColor("Green")
-            DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.text = TranslateLLMsg("MSG_Protect")
+            DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.Text = TranslateLLMsg("MSG_Protect")
             DebugWksh.Select
         Else
             MsgBox TranslateLLMsg("MSG_WrongPassword"), vbOK, "DEBUG MODE"
@@ -205,7 +205,7 @@ Sub ClicCmdDebug()
         ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value = pwd
         DebugWksh.Shapes(C_sShpDebug).Fill.ForeColor.RGB = Helpers.GetColor("Orange")
         DebugWksh.Shapes(C_sShpDebug).Fill.BackColor.RGB = Helpers.GetColor("Orange")
-        DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.text = TranslateLLMsg("MSG_Debug")
+        DebugWksh.Shapes(C_sShpDebug).TextFrame2.TextRange.Characters.Text = TranslateLLMsg("MSG_Debug")
     End If
 
     Exit Sub
@@ -370,7 +370,7 @@ Sub EventValueChangeLinelist(Target As Range)
         varSubLabel = vars.Value(varName:=varName, colName:="sub label")
 
         sLabel = Replace(Target.Value, varSubLabel, "")
-        sLabel = Replace(sLabel, Chr(10), "")
+        sLabel = Replace(sLabel, chr(10), "")
 
         vars.SetValue varName:=varName, colName:="main label", newValue:=sLabel
 

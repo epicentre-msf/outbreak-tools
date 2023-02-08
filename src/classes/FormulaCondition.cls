@@ -22,8 +22,8 @@ Private Type TFormulaCondition
     Variable As BetterArray                      'Variables for the formulas
 End Type
 
-Private Const CLASSNAME As String = "Formula"
-Private this As TFormulaCondition
+Private Const className As String = "Formula"
+Private This As TFormulaCondition
 
 'Instanciation
 Public Function Create(ByVal formVar As BetterArray, ByVal formCond As BetterArray) As IFormulaCondition
@@ -46,20 +46,20 @@ End Property
 
 'Conditions
 Public Property Get Condition() As BetterArray
-    Set Condition = this.Condition.Clone()
+    Set Condition = This.Condition.Clone()
 End Property
 
 Public Property Set Condition(ByVal formCond As BetterArray)
-    Set this.Condition = formCond.Clone()
+    Set This.Condition = formCond.Clone()
 End Property
 
 'Variables
 Public Property Get Variable() As BetterArray
-    Set Variable = this.Variable.Clone()
+    Set Variable = This.Variable.Clone()
 End Property
 
 Public Property Set Variable(ByVal formVar As BetterArray)
-    Set this.Variable = formVar.Clone()
+    Set This.Variable = formVar.Clone()
 End Property
 
 Public Property Get VariablesTable(ByVal dict As ILLdictionary) As String
@@ -160,7 +160,7 @@ End Function
 
 'Errors ---------------------------------------------------------------------------------
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
+    Err.Raise VBA.vbObjectError + 515, className, "Unable to create an instance of the class : " & errorMessage
 End Sub
 
 'Implement interfaces

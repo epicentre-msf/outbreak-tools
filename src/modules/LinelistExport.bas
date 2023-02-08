@@ -44,7 +44,7 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
                 PathData.Item(i) = ThisWorkbook.Worksheets(sSheetName).Range(PathData.Items(i)).Value
 
             Else
-                PathData.Item(i) = Replace(PathData.Items(i), Chr(34), "")
+                PathData.Item(i) = Replace(PathData.Items(i), chr(34), "")
             End If
 
             i = i + 1
@@ -87,7 +87,7 @@ Private Function ExportPath(iTypeExport As Byte, iFileNameIndex As Integer) As S
 
 End Function
 
-Private Function AddExportLLSheet(wkb As Workbook, sSheetName As String, sPrevSheetName As String, _
+Private Function AddExportLLSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String, _
                                   DictExportData As BetterArray, i As Long, iSheetNameIndex As Integer, _
                                   iVarnameIndex As Integer, Optional sHeaderType As String = "variables names", _
                                   Optional ThereIsFilter As Boolean = False) As Long
@@ -103,7 +103,7 @@ Private Function AddExportLLSheet(wkb As Workbook, sSheetName As String, sPrevSh
     Dim iListColIndex As Long
 
     'Add the new worksheet
-    wkb.Worksheets.Add(After:=wkb.Worksheets(sPrevSheetName)).Name = sSheetName
+    Wkb.Worksheets.Add(After:=Wkb.Worksheets(sPrevSheetName)).Name = sSheetName
 
     k = i
 
@@ -126,7 +126,7 @@ Private Function AddExportLLSheet(wkb As Workbook, sSheetName As String, sPrevSh
 
         iLastRow = src.Rows.Count
 
-        With wkb.Worksheets(sSheetName)
+        With Wkb.Worksheets(sSheetName)
             Set dest = .Range(.Cells(1, k - i + 1), .Cells(iLastRow, k - i + 1))
             dest.Value = src.Value
             'Add variable label if required
@@ -142,7 +142,7 @@ Private Function AddExportLLSheet(wkb As Workbook, sSheetName As String, sPrevSh
 
 End Function
 
-Private Function AddExportAdmSheet(wkb As Workbook, sSheetName As String, sPrevSheetName As String, _
+Private Function AddExportAdmSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String, _
                                    DictExportData As BetterArray, i As Long, iSheetNameIndex As Integer, _
                                    iVarnameIndex As Integer, _
                                    Optional sHeaderType As String = "variables names") As Long
@@ -153,14 +153,14 @@ Private Function AddExportAdmSheet(wkb As Workbook, sSheetName As String, sPrevS
 
 
     'Add the new worksheet
-    wkb.Worksheets.Add(After:=wkb.Worksheets(sPrevSheetName)).Name = sSheetName
+    Wkb.Worksheets.Add(After:=Wkb.Worksheets(sPrevSheetName)).Name = sSheetName
     Set srcWksh = ThisWorkbook.Worksheets(sSheetName)
 
     k = i
     Do While DictExportData.Items(k, iSheetNameIndex) = sSheetName
 
         sVarName = DictExportData.Items(k, iVarnameIndex)
-        With wkb.Worksheets(sSheetName)
+        With Wkb.Worksheets(sSheetName)
 
             'Add variable names or variable labels depending on what is required by the export
             Select Case sHeaderType
@@ -186,17 +186,17 @@ Private Function AddExportAdmSheet(wkb As Workbook, sSheetName As String, sPrevS
     Loop
 
     'Add variable and value
-    wkb.Worksheets(sSheetName).Cells(1, 1).Value = C_sVariable
-    wkb.Worksheets(sSheetName).Cells(1, 2).Value = C_sValue
+    Wkb.Worksheets(sSheetName).Cells(1, 1).Value = C_sVariable
+    Wkb.Worksheets(sSheetName).Cells(1, 2).Value = C_sValue
 
     AddExportAdmSheet = k - 1
 End Function
 
 'Export Function --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
-Sub Export(iTypeExport As Byte)
+Sub export(iTypeExport As Byte)
 
-    Dim wkb             As Workbook
+    Dim Wkb             As Workbook
     Dim DictExportData  As BetterArray           'Values of the dictionary
     Dim ExportHeader    As BetterArray
     Dim ExportData      As BetterArray
@@ -269,9 +269,9 @@ Sub Export(iTypeExport As Byte)
 
         Set DictExportData = SortExport(DictExportData, iExportIndex, iTableNameIndex)
 
-        Set wkb = Workbooks.Add
+        Set Wkb = Workbooks.Add
 
-        With wkb
+        With Wkb
 
             'Adding the worksheets
             sPrevSheetName = .Worksheets(1).Name
@@ -332,12 +332,12 @@ Sub Export(iTypeExport As Byte)
 
             Case C_sDictSheetTypeLL
 
-                istep = AddExportLLSheet(wkb, sSheetName, sPrevSheetName, DictExportData, i, iSheetNameIndex, iVarnameIndex, sExportHeaderType, ThereIsFilter:=ThereIsFilter)
+                istep = AddExportLLSheet(Wkb, sSheetName, sPrevSheetName, DictExportData, i, iSheetNameIndex, iVarnameIndex, sExportHeaderType, ThereIsFilter:=ThereIsFilter)
 
                 'You were thingking about using a function to speed the steps
             Case C_sDictSheetTypeAdm
 
-                istep = AddExportAdmSheet(wkb, sSheetName, sPrevSheetName, DictExportData, i, iSheetNameIndex, iVarnameIndex, sExportHeaderType)
+                istep = AddExportAdmSheet(Wkb, sSheetName, sPrevSheetName, DictExportData, i, iSheetNameIndex, iVarnameIndex, sExportHeaderType)
 
             End Select
 
@@ -348,7 +348,7 @@ Sub Export(iTypeExport As Byte)
         Loop
 
 
-        wkb.Worksheets(sFirstSheetName).Delete
+        Wkb.Worksheets(sFirstSheetName).Delete
 
         'Now writing on the choosen directory
         On Error GoTo exportErrHandWrite
@@ -374,20 +374,20 @@ Sub Export(iTypeExport As Byte)
 
         Select Case ClearString(ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, i).Value)
         Case C_sYes
-            wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value, _
+            Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value, _
         ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-            MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value
+            MsgBox TranslateLLMsg("MSG_FileSaved") & chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value
         Case C_sNo
             sPath = Replace(sPath, "__" & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PublicKey").Value, "")
-            wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-            MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_NoPassword")
+            Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+            MsgBox TranslateLLMsg("MSG_FileSaved") & chr(10) & TranslateLLMsg("MSG_NoPassword")
         Case Else
-            wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value, _
+            Wkb.SaveAs FileName:=sPath & sExt, fileformat:=fileformat, CreateBackup:=False, Password:=ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value, _
         ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-            MsgBox TranslateLLMsg("MSG_FileSaved") & Chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value
+            MsgBox TranslateLLMsg("MSG_FileSaved") & chr(10) & TranslateLLMsg("MSG_Password") & ThisWorkbook.Worksheets(C_sSheetPassword).Range("RNG_PrivateKey").Value
         End Select
 
-        wkb.Close
+        Wkb.Close
         F_Export.Hide
 
         EndWork xlsapp:=Application
@@ -402,8 +402,8 @@ exportErrHandExport:
 
 exportErrHandData:
 
-    If Not wkb Is Nothing Then
-        wkb.Close savechanges:=False
+    If Not Wkb Is Nothing Then
+        Wkb.Close savechanges:=False
 
     End If
 
@@ -411,7 +411,7 @@ exportErrHandData:
     Exit Sub
 
 exportErrHandWrite:
-    wkb.Close savechanges:=False
+    Wkb.Close savechanges:=False
     MsgBox TranslateLLMsg("MSG_exportErrHandWrite"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
     Exit Sub
 End Sub

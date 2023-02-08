@@ -256,14 +256,14 @@ End Sub
 'A simple Procedure to update the third column of the next formname to either hidden or Shown before
 'moving to the logic
 
-Sub UpdateFormData(ByRef T_table As BetterArray, index As Integer, Optional bhide As Boolean = True)
+Sub UpdateFormData(ByRef T_table As BetterArray, Index As Integer, Optional bhide As Boolean = True)
     'We can't mutate easily on a 2D array. We need first to work on updating the data from a
     '1D array. That is the purpose of the T_values BetterArray
     Dim T_values As BetterArray
     Set T_values = New BetterArray
 
     'Get the current row
-    T_values.Items = T_table.Item(index + 1)     'the index starts at -1 on a listbox
+    T_values.Items = T_table.Item(Index + 1)     'the index starts at -1 on a listbox
     'Update the visibility status
     If bhide Then
         T_values.Item(3) = sHidden
@@ -271,7 +271,7 @@ Sub UpdateFormData(ByRef T_table As BetterArray, index As Integer, Optional bhid
         T_values.Item(3) = sShown
     End If
     'Mutate in the form table
-    T_table.Item(index + 1) = T_values.Items
+    T_table.Item(Index + 1) = T_values.Items
 End Sub
 
 'Logic behind the show/hide click
@@ -299,13 +299,13 @@ Sub ShowHideLogic(iIndex As Integer)
 
             If F_NomVisible.OPT_Masque.Value Then
                 '// --- Here I update the Data to show "Hidden"
-                UpdateFormData T_table:=T_FormData, index:=iIndex, bhide:=True
+                UpdateFormData T_table:=T_FormData, Index:=iIndex, bhide:=True
                 '//--- Actually hide the column
                 ShowHideColumnSheet sSheetName:=ActiveSheet.Name, sVarName:=T_FormData.Items(iIndex + 1, 2), bhide:=True
                 WriteShowHide sSheetName:=ActiveSheet.Name, sVarName:=T_FormData.Items(iIndex + 1, 2), visibility:=0
             Else
                 '// --- Here I udpate the data to show "Shown"
-                UpdateFormData T_table:=T_FormData, index:=iIndex, bhide:=False
+                UpdateFormData T_table:=T_FormData, Index:=iIndex, bhide:=False
                 ShowHideColumnSheet sSheetName:=ActiveSheet.Name, sVarName:=T_FormData.Items(iIndex + 1, 2), bhide:=False
                 WriteShowHide sSheetName:=ActiveSheet.Name, sVarName:=T_FormData.Items(iIndex + 1, 2), visibility:=1
             End If

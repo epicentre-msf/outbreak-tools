@@ -22,8 +22,8 @@ Private Type TLLAnalysis
     lData As ILinelistSpecs
 End Type
 
-Private this As TLLAnalysis
-Private Const CLASSNAME As String = "LLAnalysis"
+Private This As TLLAnalysis
+Private Const className As String = "LLAnalysis"
 Private Const GLOBALSUMMARY As String = "Tab_global_summary"
 Private Const UNIVARIATE As String = "Tab_Univariate_Analysis"
 Private Const BIVARIATE As String = "Tab_Bivariate_Analysis"
@@ -46,11 +46,11 @@ Public Function Create(ByVal anaWksh As Worksheet) As ILLAnalysis
 End Function
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = this.anash
+    Set Wksh = This.anash
 End Property
 
 Public Property Set Wksh(ByVal anash As Worksheet)
-    Set this.anash = anash
+    Set This.anash = anash
 End Property
 
 Public Property Get Self() As ILLAnalysis
@@ -85,16 +85,16 @@ Private Function ColumnExists(ByVal Lo As ListObject, ByVal colName As String) A
 End Function
 
 Private Function ColumnIndex(ByVal Lo As ListObject, ByVal colName) As Long
-    Dim index As Long
+    Dim Index As Long
     Dim hRng As Range
 
     Set hRng = Lo.HeaderRowRange
     If ColumnExists(Lo, colName) Then
-        index = hRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=False).Column - hRng.Column + 1
+        Index = hRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=False).Column - hRng.Column + 1
     Else
-        index = -1
+        Index = -1
     End If
-    ColumnIndex = index
+    ColumnIndex = Index
 End Function
 
 Private Function DataRange(ByVal Lo As ListObject, ByVal colName As String) As Range
@@ -110,7 +110,7 @@ End Sub
 
 Private Sub TransferCodeWksh(ByVal sh As Worksheet, ll As ILinelist)
     
-    Const MODULENAME As String = "LinelistAnalysisChange"
+    Const moduleName As String = "LinelistAnalysisChange"
                                   
     Dim inpWkb As Workbook                       'Input workbook
     Dim lData As ILinelistSpecs
@@ -126,7 +126,7 @@ Private Sub TransferCodeWksh(ByVal sh As Worksheet, ll As ILinelist)
     
 
     'save the code module in the string sNouvCode
-    With inpWkb.VBProject.VBComponents(MODULENAME).CodeModule
+    With inpWkb.VBProject.VBComponents(moduleName).CodeModule
         codeContent = .Lines(1, .CountOfLines)
     End With
 
@@ -323,7 +323,7 @@ Private Sub Build(ll As ILinelist)
                 tabl.Format design
                
                 'Add graph
-                If specs.Value("graph") = "values" Or specs.Value("graph") = "percentage" Or specs.Value("graph") = "both" Then
+                If specs.Value("graph") = "values" Or specs.Value("graph") = "percentages" Or specs.Value("graph") = "both" Then
                     Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
                     Set grSpecs = GraphSpecs.Create(tabl)
                     grSpecs.CreateSeries
@@ -855,7 +855,7 @@ End Sub
 
 'Errors ---------------------------------------------------------------------------------
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
+    Err.Raise VBA.vbObjectError + 515, className, "Unable to create an instance of the class : " & errorMessage
 End Sub
 
 'Interface

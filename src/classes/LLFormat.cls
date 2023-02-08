@@ -15,14 +15,14 @@ Attribute VB_Exposed = False
 
 Option Explicit
 Implements ILLFormat
-Private Const CLASSNAME As String = "LLFormat"
+Private Const className As String = "LLFormat"
 
 Private Type TLLFormat
     design As String
     sh As Worksheet
 End Type
 
-Private this As TLLFormat
+Private This As TLLFormat
 
 'instanciation:
 
@@ -62,19 +62,19 @@ Public Property Get Self() As ILLFormat
 End Property
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = this.sh
+    Set Wksh = This.sh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-    Set this.sh = sh
+    Set This.sh = sh
 End Property
 
 Public Property Get designName() As String
-    designName = this.design
+    designName = This.design
 End Property
 
 Public Property Let designName(ByVal design As String)
-    this.design = design
+    This.design = design
 End Property
 
 'Get the colors:
@@ -195,12 +195,12 @@ Private Sub FormatRange(ByVal rng As Range, _
     End With
 End Sub
 
-Private Sub FormatCharacters(ByVal char As Characters, _
+Private Sub FormatCharacters(ByVal Char As Characters, _
                              Optional ByVal fontColor As Variant = "", _
                              Optional ByVal isBold As Boolean = False, _
                              Optional ByVal FontSize As Double = 0)
 
-    With char
+    With Char
         If fontColor <> vbNullString Then .Font.color = fontColor
         .Font.Bold = isBold
         If FontSize <> 0 Then .Font.Size = FontSize
@@ -252,7 +252,7 @@ End Sub
 Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
 
     Dim rng As Range
-    Dim char As Characters
+    Dim Char As Characters
     Dim sh As Worksheet
     Dim shp As Shape
     Dim Lo As ListObject
@@ -539,19 +539,19 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
 
     Case HListMainLab
         If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
-        Set char = formattingObject
+        Set Char = formattingObject
         fontColorValue = DesignValue("hlist main label font color")
         dimensionValue = DesignValue("hlist main label font size", False)
-        FormatCharacters char:=char, fontColor:=fontColorValue, _
+        FormatCharacters Char:=Char, fontColor:=fontColorValue, _
                          FontSize:=dimensionValue, isBold:=True
 
     Case HListSublab
         If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
-        Set char = formattingObject
+        Set Char = formattingObject
         fontColorValue = DesignValue("hlist sub label font color")
         dimensionValue = DesignValue("hlist sub label font size", False)
 
-        FormatCharacters char:=char, FontSize:=dimensionValue, fontColor:=fontColorValue
+        FormatCharacters Char:=Char, FontSize:=dimensionValue, fontColor:=fontColorValue
 
     Case HListCalculatedFormulaCell
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
@@ -575,19 +575,19 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
 
     Case VListMainLab
         If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
-        Set char = formattingObject
+        Set Char = formattingObject
         fontColorValue = DesignValue("vlist main label font color")
         dimensionValue = DesignValue("vlist main label font size", False)
-        FormatCharacters char:=char, fontColor:=fontColorValue, _
+        FormatCharacters Char:=Char, fontColor:=fontColorValue, _
                          FontSize:=dimensionValue, isBold:=False
 
     Case VListSublab
 
         If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
-        Set char = formattingObject
+        Set Char = formattingObject
         fontColorValue = DesignValue("vlist sub label font color")
         dimensionValue = DesignValue("vlist sub label font size", False)
-        FormatCharacters char:=char, FontSize:=dimensionValue, fontColor:=fontColorValue
+        FormatCharacters Char:=Char, FontSize:=dimensionValue, fontColor:=fontColorValue
     
     Case HListSimpleHeaderCell
     
@@ -738,7 +738,7 @@ End Function
 
 'Throw Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Execution Error : " & errorMessage
 End Sub
 
 'Exposed methods---------------------------------------------------------------------

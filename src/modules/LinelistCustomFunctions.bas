@@ -23,7 +23,7 @@ End Function
 '
 '
 Public Function PLAGE_VALUE(rng1 As Range, rng2 As Range) As String
-    PLAGE_VALUE = Chr(13) & Chr(10) & Format(rng1, "d-mmm-yyyy") & " " & ChrW(9472) & " " & Format(rng2, "d-mmm-yyyy")
+    PLAGE_VALUE = chr(13) & chr(10) & Format(rng1, "d-mmm-yyyy") & " " & ChrW(9472) & " " & Format(rng2, "d-mmm-yyyy")
 End Function
 
 '
@@ -61,7 +61,7 @@ Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Str
 
         On Error Resume Next
         With Application.WorksheetFunction
-            sVal = .index(ColRngVal, .Match(sValLook, ColRngLook, 0))
+            sVal = .Index(ColRngVal, .Match(sValLook, ColRngLook, 0))
         End With
         On Error GoTo 0
     End If

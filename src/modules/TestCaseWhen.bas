@@ -32,8 +32,8 @@ End Sub
 Private Sub TestInitialize()
 End Sub
 
-Private Function Quoted(ByVal text As String)
-    Quoted = Chr(34) & text & Chr(34)
+Private Function Quoted(ByVal Text As String)
+    Quoted = chr(34) & Text & chr(34)
 End Function
 
 '@TestMethod

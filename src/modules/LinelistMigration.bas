@@ -49,7 +49,7 @@ Sub ClearData()
 
     Dim Wksh As Worksheet
     Dim sheetType As String
-    Dim lastRow As Long
+    Dim LastRow As Long
     Dim counter As Long
     Dim wb As Workbook
     Dim pass As ILLPasswords
@@ -81,8 +81,8 @@ Sub ClearData()
             pass.UnProtect Wksh.Name
 
             With Wksh
-                lastRow = .Cells(.Rows.Count, 4).End(xlUp).Row
-                For counter = 4 To lastRow
+                LastRow = .Cells(.Rows.Count, 4).End(xlUp).Row
+                For counter = 4 To LastRow
                     .Cells(counter, 5).Value = vbNullString
                 Next
             End With
@@ -160,7 +160,7 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
     Dim VarColumn As BetterArray
     Dim sActualLanguage As String
     Dim sImportedLanguage As String
-    Dim index As Long                            'index of the language
+    Dim Index As Long                            'index of the language
 
 
     Dim Quit As Byte
@@ -185,8 +185,8 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
         VarColumn.FromExcelRange WkbImp.Worksheets(C_sSheetMetadata).Cells(1, 1), DetectLastRow:=True, DetectLastColumn:=False
 
         If VarColumn.Includes(C_sLanguage) Then
-            index = VarColumn.IndexOf(C_sLanguage)
-            sImportedLanguage = WkbImp.Worksheets(C_sSheetMetadata).Cells(index, 2).Value
+            Index = VarColumn.IndexOf(C_sLanguage)
+            sImportedLanguage = WkbImp.Worksheets(C_sSheetMetadata).Cells(Index, 2).Value
             sActualLanguage = ThisWorkbook.Worksheets(C_sSheetLLTranslation).Range("RNG_DictionaryLanguage")
 
             'Test and ask the user if he wants to abort
@@ -630,7 +630,7 @@ Sub ImportGeobase()
     Dim sh As Worksheet
     Dim pass As ILLPasswords
     Dim sFilePath As String
-    Dim wkb As Workbook
+    Dim Wkb As Workbook
     Dim shouldQuit As Byte
     
     Set sh = ThisWorkbook.Worksheets("Geo")
@@ -642,11 +642,11 @@ Sub ImportGeobase()
     sFilePath = Helpers.LoadFile("*.xlsx")
     If sFilePath <> "" Then
         'Open the geo workbook and hide the windows
-        Set wkb = Workbooks.Open(sFilePath)
-        geo.Import wkb
+        Set Wkb = Workbooks.Open(sFilePath)
+        geo.Import Wkb
         'update other geobase names in the workbook
         geo.Update pass
-        wkb.Close savechanges:=False
+        Wkb.Close savechanges:=False
         shouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportGeo"), vbQuestion + vbYesNo, "Import GeoData")
 
         If shouldQuit = vbYes Then
@@ -707,7 +707,7 @@ Sub ImportHistoricGeobase()
     Dim AdmData     As BetterArray               'Table for admin levels
     Dim admNames    As BetterArray               'Array of the sheetnames
     Dim i           As Long                      'iterator
-    Dim wkb         As Workbook
+    Dim Wkb         As Workbook
     Dim WkshGeo     As Worksheet
     Dim shouldQuit As Long
 
@@ -722,7 +722,7 @@ Sub ImportHistoricGeobase()
 
     If sFilePath <> "" Then
         'Open the geo workbook and hide the windows
-        Set wkb = Workbooks.Open(sFilePath)
+        Set Wkb = Workbooks.Open(sFilePath)
         Set WkshGeo = ThisWorkbook.Worksheets(C_sSheetGeo)
 
         For i = 1 To admNames.Length
@@ -733,7 +733,7 @@ Sub ImportHistoricGeobase()
         Next
 
         'Reloading the data from the Geobase
-        For Each oSheet In wkb.Worksheets
+        For Each oSheet In Wkb.Worksheets
             AdmData.Clear
 
             'Be sure my sheetnames are correct before loading the data
@@ -751,7 +751,7 @@ Sub ImportHistoricGeobase()
 
             End If
         Next
-        wkb.Close savechanges:=False
+        Wkb.Close savechanges:=False
         'Add a message box to say it is over
     End If
 
@@ -828,7 +828,7 @@ Private Sub ExportMigrationData(sLLPath As String)
     Dim iControlIndex As Integer
     Dim iSheetNameIndex As Integer
 
-    Dim wkb As Workbook
+    Dim Wkb As Workbook
     Set ExportData = New BetterArray
     Set ExportHeader = New BetterArray
 
@@ -842,9 +842,9 @@ Private Sub ExportMigrationData(sLLPath As String)
     Set dictData = GetDictionaryData()
 
     'Writing the linelist Data (with all the databases, dictionary, export, translation and choices)
-    Set wkb = Workbooks.Add
+    Set Wkb = Workbooks.Add
 
-    With wkb
+    With Wkb
         'Writing the translation data
         sPrevSheetName = .Worksheets(1).Name
         Set ExportData = GetTransData()
@@ -890,12 +890,12 @@ Private Sub ExportMigrationData(sLLPath As String)
             Case C_sDictSheetTypeLL
 
                 'Add Sheet of type Linelist if needed
-                Call AddLLSheet(wkb, sSheetName, sPrevSheetName)
+                Call AddLLSheet(Wkb, sSheetName, sPrevSheetName)
 
             Case C_sDictSheetTypeAdm
 
                 'Add sheet of type Adm
-                Call AddAdmSheet(wkb, sSheetName, sPrevSheetName)
+                Call AddAdmSheet(Wkb, sSheetName, sPrevSheetName)
 
             End Select
 
@@ -908,9 +908,9 @@ Private Sub ExportMigrationData(sLLPath As String)
 
 
     'Write an error handling for writing the file here
-    wkb.SaveAs FileName:=sLLPath, fileformat:=xlOpenXMLWorkbook, CreateBackup:=False, _
+    Wkb.SaveAs FileName:=sLLPath, fileformat:=xlOpenXMLWorkbook, CreateBackup:=False, _
                ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-    wkb.Close
+    Wkb.Close
 
 
     Application.DisplayAlerts = True
@@ -925,15 +925,15 @@ errExportMig:
 End Sub
 
 'Add sheet of type linelist
-Private Sub AddLLSheet(wkb As Workbook, sSheetName As String, sPrevSheetName As String)
+Private Sub AddLLSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String)
 
     Dim src As Range
     Dim dest As Range
 
     Set src = ThisWorkbook.Worksheets(sSheetName).ListObjects(SheetListObjectName(sSheetName)).Range
-    wkb.Worksheets.Add(After:=wkb.Worksheets(sPrevSheetName)).Name = sSheetName
+    Wkb.Worksheets.Add(After:=Wkb.Worksheets(sPrevSheetName)).Name = sSheetName
 
-    With wkb.Worksheets(sSheetName)
+    With Wkb.Worksheets(sSheetName)
         Set dest = .Range(.Cells(1, 1), .Cells(src.Rows.Count, src.Columns.Count))
     End With
 
@@ -944,7 +944,7 @@ End Sub
 
 'Add sheet of type Adm
 
-Private Sub AddAdmSheet(wkb As Workbook, sSheetName As String, sPrevSheetName As String)
+Private Sub AddAdmSheet(Wkb As Workbook, sSheetName As String, sPrevSheetName As String)
     Dim iLastRow As Long
     Dim i As Long                                'iterator for Adm sheet
     Dim k As Long                                'iterator for export workbook
@@ -954,8 +954,8 @@ Private Sub AddAdmSheet(wkb As Workbook, sSheetName As String, sPrevSheetName As
         iLastRow = .Cells(.Rows.Count, C_eStartColumnAdmData + 2).End(xlUp).Row
     End With
 
-    wkb.Worksheets.Add(After:=wkb.Worksheets(sPrevSheetName)).Name = sSheetName
-    Set Wksh = wkb.Worksheets(sSheetName)
+    Wkb.Worksheets.Add(After:=Wkb.Worksheets(sPrevSheetName)).Name = sSheetName
+    Set Wksh = Wkb.Worksheets(sSheetName)
 
     Wksh.Cells(1, 1).Value = C_sVariable
     Wksh.Cells(1, 2).Value = C_sValue
@@ -976,7 +976,7 @@ End Sub
 
 Private Sub ExportMigrationGeo(sGeoPath As String)
 
-    Dim wkb As Workbook
+    Dim Wkb As Workbook
     Dim WkshGeo As Worksheet
     Dim ExportData As BetterArray
     Dim ExportHeader As BetterArray
@@ -988,7 +988,7 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
 
     On Error GoTo errExportMigGeo
 
-    Set wkb = Workbooks.Add
+    Set Wkb = Workbooks.Add
     Set WkshGeo = ThisWorkbook.Worksheets(C_sSheetGeo)
 
     Set ExportData = New BetterArray
@@ -996,7 +996,7 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
     ExportHeader.LowerBound = 1
     ExportData.LowerBound = 1
 
-    With wkb
+    With Wkb
         sPrevSheetName = .Worksheets(1).Name
         'Add the worksheets for each of the ADM and Histo Levels
 
@@ -1075,9 +1075,9 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
     End With
 
     'Writing the Geo
-    wkb.SaveAs FileName:=sGeoPath, fileformat:=xlOpenXMLWorkbook, _
+    Wkb.SaveAs FileName:=sGeoPath, fileformat:=xlOpenXMLWorkbook, _
                CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-    wkb.Close
+    Wkb.Close
 
     Application.DisplayAlerts = True
     EndWork xlsapp:=Application
@@ -1094,7 +1094,7 @@ End Sub
 
 Private Sub ExportMigrationHistoricGeo(sGeoPath As String)
 
-    Dim wkb As Workbook
+    Dim Wkb As Workbook
     Dim WkshGeo As Worksheet
     Dim ExportData As BetterArray
 
@@ -1106,13 +1106,13 @@ Private Sub ExportMigrationHistoricGeo(sGeoPath As String)
     BeginWork xlsapp:=Application
     Application.DisplayAlerts = False
 
-    Set wkb = Workbooks.Add
+    Set Wkb = Workbooks.Add
     Set WkshGeo = ThisWorkbook.Worksheets(C_sSheetGeo)
 
     Set ExportData = New BetterArray
 
 
-    With wkb
+    With Wkb
         sPrevSheetName = .Worksheets(1).Name
         'Add the worksheets for each of the ADM and Histo Levels
 
@@ -1135,9 +1135,9 @@ Private Sub ExportMigrationHistoricGeo(sGeoPath As String)
     End With
 
     'Writing the Geo
-    wkb.SaveAs FileName:=sGeoPath, fileformat:=xlOpenXMLWorkbook, _
+    Wkb.SaveAs FileName:=sGeoPath, fileformat:=xlOpenXMLWorkbook, _
                CreateBackup:=False, ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-    wkb.Close
+    Wkb.Close
 
 
 

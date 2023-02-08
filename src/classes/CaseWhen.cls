@@ -22,7 +22,7 @@ Private Type TCaseWhen
 End Type
 
 'Exposed methods
-Private this As TCaseWhen
+Private This As TCaseWhen
 
 Public Function Create(ByVal formula As String) As ICaseWhen
     With New CaseWhen
@@ -36,11 +36,11 @@ Public Property Get Self() As ICaseWhen
 End Property
 
 Public Property Get casewhenFormula() As String
-    casewhenFormula = this.formula
+    casewhenFormula = This.formula
 End Property
 
 Public Property Let casewhenFormula(ByVal formula As String)
-    this.formula = Application.WorksheetFunction.Trim(formula)
+    This.formula = Application.WorksheetFunction.Trim(formula)
 End Property
 
 Private Property Get Valid() As Boolean
@@ -60,8 +60,8 @@ Private Property Get CaseWhenTable() As BetterArray
     Dim OpenedQuotes As Boolean
     Dim OpenedParenthesis As Boolean
 
-    If Not this.parsingTable Is Nothing Then
-        Set CaseWhenTable = this.parsingTable.Clone()
+    If Not This.parsingTable Is Nothing Then
+        Set CaseWhenTable = This.parsingTable.Clone()
         Exit Property
     End If
 
@@ -78,10 +78,10 @@ Private Property Get CaseWhenTable() As BetterArray
         formula = Left(formula, Len(formula) - 1) 'Removed the closing parenthesis
         For counter = 1 To Len(formula)
             'Manage parenthesis and quotes,
-            If Mid(formula, counter, 1) = Chr(34) Then OpenedQuotes = Not OpenedQuotes 'Opened quotes or parenthesis
+            If Mid(formula, counter, 1) = chr(34) Then OpenedQuotes = Not OpenedQuotes 'Opened quotes or parenthesis
             'Parenthesis not within quotes are not expressions
-            If Mid(formula, counter, 1) = Chr(40) And Not OpenedQuotes Then NbOpened = NbOpened + 1
-            If Mid(formula, counter, 1) = Chr(41) And Not OpenedQuotes Then NbClosed = NbClosed + 1
+            If Mid(formula, counter, 1) = chr(40) And Not OpenedQuotes Then NbOpened = NbOpened + 1
+            If Mid(formula, counter, 1) = chr(41) And Not OpenedQuotes Then NbClosed = NbClosed + 1
             OpenedParenthesis = (NbOpened <> NbClosed)
             'Opened parenthesis will allow excel formulas within a  case_when
             If Not OpenedQuotes And Not OpenedParenthesis And Mid(formula, counter, 1) = "," Then
@@ -93,8 +93,8 @@ Private Property Get CaseWhenTable() As BetterArray
         parsingTable.Push Application.WorksheetFunction.Trim(Mid(formula, Previous, counter - Previous))
     End If
 
-    Set this.parsingTable = parsingTable.Clone()
-    Set CaseWhenTable = this.parsingTable.Clone()
+    Set This.parsingTable = parsingTable.Clone()
+    Set CaseWhenTable = This.parsingTable.Clone()
 End Property
 
 'pasing the case when
@@ -123,7 +123,7 @@ Private Function parsedFormula() As String
             formula = formula & parsingTable.Items(counter) & parenthesis
         Else
             'even number of conditions, there is no default
-            formula = formula & Chr(34) & Chr(34) & parenthesis
+            formula = formula & chr(34) & chr(34) & parenthesis
         End If
     Else
         'Trace log here
@@ -145,12 +145,12 @@ Private Function Categories() As BetterArray
         Set parsingTable = CaseWhenTable()
         Do While counter <= parsingTable.Length
 
-            If Mid(parsingTable.Item(counter), 1, 1) = Chr(34) Then
+            If Mid(parsingTable.Item(counter), 1, 1) = chr(34) Then
                 'Quoted character, is a level
-                Level = Replace(parsingTable.Item(counter), Chr(34), vbNullString)
+                Level = Replace(parsingTable.Item(counter), chr(34), vbNullString)
             Else
                 'Not Quoted character, the user should not use case_when in analysis
-                Level = Chr(34) & parsingTable.Item(counter) & Chr(34)
+                Level = chr(34) & parsingTable.Item(counter) & chr(34)
             End If
             If Level <> vbNullString Then categoriesTable.Push Level
             counter = counter + 2

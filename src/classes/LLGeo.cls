@@ -21,8 +21,8 @@ Private Type TGeo
 End Type
 
 'Exposed methods
-Private this As TGeo
-Private Const CLASSNAME As String = "Geo"
+Private This As TGeo
+Private Const className As String = "Geo"
 Private Const ADMIN1    As String = "ADM1"
 Private Const ADMIN2    As String = "ADM2"
 Private Const ADMIN3    As String = "ADM3"
@@ -32,7 +32,7 @@ Private Const HISTOGEO  As String = "HISTOGEO"
 Private Const HISTOHF   As String = "HISTOHF"
 Private Const NAMES     As String = "NAMES"
 Private Const METADATA  As String = "METADATA"
-Private Const CONCAT    As String = "CONCAT"     'concatenated list of admins
+Private Const Concat    As String = "CONCAT"     'concatenated list of admins
 
 Public Function Create(ByVal sh As Worksheet) As ILLGeo
     CheckRequirements sh
@@ -47,11 +47,11 @@ Public Property Get Self() As ILLGeo
 End Property
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = this.geosh
+    Set Wksh = This.geosh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-    Set this.geosh = sh
+    Set This.geosh = sh
 End Property
 
 Public Property Get TableNames() As BetterArray
@@ -124,14 +124,14 @@ End Function
 
 Private Function ColumnIndex(ByVal colName As String, ByVal headerRng As Range, _
                              Optional ByVal inRange As Boolean = True) As Long
-    Dim index As Long
+    Dim Index As Long
     If Not (headerRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=True) Is Nothing) Then
-        index = headerRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=True).Column
-        If inRange Then index = index - headerRng.Column + 1
+        Index = headerRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=True).Column
+        If inRange Then Index = Index - headerRng.Column + 1
     Else
-        index = -1
+        Index = -1
     End If
-    ColumnIndex = index
+    ColumnIndex = Index
 End Function
 
 Private Function UniqueValues() As BetterArray
@@ -363,7 +363,7 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
 
     'Use index match to get the result
     On Error Resume Next
-    returnedValue = fun.index(LoRng, fun.Match(concatValue, concatRng, 0), colIndex)
+    returnedValue = fun.Index(LoRng, fun.Match(concatValue, concatRng, 0), colIndex)
     On Error GoTo 0
 
     If TypeName(returnedValue) = "String" Then
@@ -634,11 +634,11 @@ Private Sub Import(ByVal fromWkb As Workbook)
     Dim counter As Long
     Dim colName As String
     Dim colIndex As Long
-    Dim lastRow As Long
+    Dim LastRow As Long
     Dim impRng As Range
     Dim actRng As Range
     Dim concatFormula As String
-    Dim sep As String
+    Dim Sep As String
 
 
     Set admNames = New BetterArray
@@ -646,7 +646,7 @@ Private Sub Import(ByVal fromWkb As Workbook)
 
     Set sh = Wksh()
     'Separator for concatenate
-    sep = " & " & Chr(34) & " | " & Chr(34) & " & "
+    Sep = " & " & chr(34) & " | " & chr(34) & " & "
 
     'Clear the Current Geo
     Clear
@@ -656,7 +656,7 @@ Private Sub Import(ByVal fromWkb As Workbook)
         'Only sheet with valid names are used for import
         With impsh
             If admNames.Includes(.Name) Then
-                lastRow = .UsedRange.Rows.Count
+                LastRow = .UsedRange.Rows.Count
                 Set Lo = sh.ListObjects("T_" & impsh.Name) 'Lo Name
                 Set hRng = Lo.HeaderRowRange
                 counter = 1
@@ -664,8 +664,8 @@ Private Sub Import(ByVal fromWkb As Workbook)
                     colName = .Cells(1, counter).Value
                     colIndex = ColumnIndex(colName, hRng, inRange:=False)
                     If colIndex > 0 Then
-                        Set impRng = .Range(.Cells(2, counter), .Cells(lastRow, counter))
-                        Set actRng = sh.Range(sh.Cells(2, colIndex), sh.Cells(lastRow, colIndex))
+                        Set impRng = .Range(.Cells(2, counter), .Cells(LastRow, counter))
+                        Set actRng = sh.Range(sh.Cells(2, colIndex), sh.Cells(LastRow, colIndex))
                         actRng.Value = impRng.Value
                     End If
                     counter = counter + 1
@@ -683,37 +683,37 @@ Private Sub Import(ByVal fromWkb As Workbook)
                 Case "T_ADM2"
 
                     concatFormula = "=" & impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
-                                                                                         sep & _
+                                                                                         Sep & _
                                                                                          impRng.Cells(1, 1).Address(Rowabsolute:=False)
                 Case "T_ADM3"
 
                     concatFormula = "=" & _
                                     impRng.Cells(1, 3).Address(Rowabsolute:=False) & _
-                                    sep & _
+                                    Sep & _
                                     impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
-                                    sep & _
+                                    Sep & _
                                     impRng.Cells(1, 1).Address(Rowabsolute:=False)
 
                 Case "T_ADM4"
 
                     concatFormula = "=" & _
                                     impRng.Cells(1, 4).Address(Rowabsolute:=False) & _
-                                    sep & _
+                                    Sep & _
                                     impRng.Cells(1, 3).Address(Rowabsolute:=False) & _
-                                    sep & _
+                                    Sep & _
                                     impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
-                                    sep & _
+                                    Sep & _
                                     impRng.Cells(1, 1).Address(Rowabsolute:=False)
                     
                 Case "T_HF"
 
                     concatFormula = "=" & _
                                     impRng.Cells(1, 1).Address(Rowabsolute:=False) & _
-                                    sep & _
+                                    Sep & _
                                     impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
-                                    sep & _
+                                    Sep & _
                                     impRng.Cells(1, 3).Address(Rowabsolute:=False) & _
-                                    sep & _
+                                    Sep & _
                                     impRng.Cells(1, 4).Address(Rowabsolute:=False)
 
                 Case Else
@@ -727,7 +727,7 @@ Private Sub Import(ByVal fromWkb As Workbook)
                 End If
                                                             
                 'I know that each geo listobject starts on the first line
-                Set actRng = sh.Range(sh.Cells(1, hRng.Column), sh.Cells(lastRow, hRng.Column + hRng.Cells.Count - 1))
+                Set actRng = sh.Range(sh.Cells(1, hRng.Column), sh.Cells(LastRow, hRng.Column + hRng.Cells.Count - 1))
                     
                 'Resize the listObject and add a concatenate formula
                 Lo.Resize actRng
@@ -743,7 +743,7 @@ End Sub
 
 'Errors and checkings
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
 End Sub
 
 Private Sub CheckRequirements(ByVal sh As Worksheet)

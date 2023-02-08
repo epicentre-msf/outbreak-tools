@@ -21,7 +21,7 @@ Private Type TLLExport
     expData As IDataSheet
 End Type
 
-Private this As TLLExport
+Private This As TLLExport
 
 Public Function Create(ByVal sh As Worksheet) As ILLExport
   
@@ -38,11 +38,11 @@ End Function
 
 'Data for the exports
 Public Property Get Data() As IDataSheet
-    Set Data = this.expData
+    Set Data = This.expData
 End Property
 
 Public Property Set Data(ByVal customData As IDataSheet)
-    Set this.expData = customData
+    Set This.expData = customData
 End Property
 
 Public Property Get Self() As ILLExport
@@ -53,7 +53,7 @@ End Property
 Private Sub ExportSpecs(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     Dim expData As IDataSheet
     Set expData = Data()
-    expData.Export toWkb, Hide:=Hide
+    expData.export toWkb, Hide:=Hide
 End Sub
 
 Private Sub Translate(ByVal trans As ITranslation)

@@ -41,8 +41,8 @@ Private Type TGraphSpecs
     GraphIdsList As BetterArray
 End Type
 
-Private this As TGraphSpecs
-Private Const CLASSNAME As String = "GraphSpecs"
+Private This As TGraphSpecs
+Private Const className As String = "GraphSpecs"
 
 'You can create graph specs in two various way: First one is to give a crosstable (for bivariate, univariate and graphs);
 'Second one is to give a BetterArray of two listObjects, the output sheet and the linelist Data (For graphs for time series)
@@ -132,35 +132,35 @@ Private Sub CheckSpecifications(ByVal loTable As BetterArray)
 End Sub
 
 Public Property Get OutputSheet() As Worksheet
-    Set OutputSheet = this.outsh
+    Set OutputSheet = This.outsh
 End Property
 
 Public Property Set OutputSheet(ByVal sh As Worksheet)
-    Set this.outsh = sh
+    Set This.outsh = sh
 End Property
 
 Public Property Get LinelistSpecifications() As ILinelistSpecs
-    Set LinelistSpecifications = this.lData
+    Set LinelistSpecifications = This.lData
 End Property
 
 Public Property Set LinelistSpecifications(ByVal lData As ILinelistSpecs)
-    Set this.lData = lData
+    Set This.lData = lData
 End Property
 
 Public Property Get Table() As ICrossTable
-    Set Table = this.tabl
+    Set Table = This.tabl
 End Property
 
 Public Property Get GraphType() As GraphSpecsType
-    GraphType = this.specstype
+    GraphType = This.specstype
 End Property
 
 Public Property Let GraphType(ByVal spectype As GraphSpecsType)
-    this.specstype = spectype
+    This.specstype = spectype
 End Property
 
 Public Property Set Table(ByVal tabl As ICrossTable)
-    Set this.tabl = tabl
+    Set This.tabl = tabl
 End Property
 
 Public Property Get Self() As IGraphSpecs
@@ -168,12 +168,12 @@ Public Property Get Self() As IGraphSpecs
 End Property
 
 Public Property Get LoList() As BetterArray
-    Set LoList = this.timelos
+    Set LoList = This.timelos
 End Property
 
 Public Property Set LoList(ByVal los As BetterArray)
-    Set this.timelos = New BetterArray
-    Set this.timelos = los.Clone()
+    Set This.timelos = New BetterArray
+    Set This.timelos = los.Clone()
 End Property
 
 Private Property Get GraphListObject() As ListObject
@@ -203,47 +203,47 @@ End Property
 
 Private Sub PushSeries(ByVal chrtName As String, ByVal chrtType As String, ByVal chrtPos As String)
 
-    If this.chartSeriesName Is Nothing Then
-        Set this.chartSeriesName = New BetterArray
-        this.chartSeriesName.LowerBound = 1
+    If This.chartSeriesName Is Nothing Then
+        Set This.chartSeriesName = New BetterArray
+        This.chartSeriesName.LowerBound = 1
     End If
 
-    If this.chartSeriesType Is Nothing Then
-        Set this.chartSeriesType = New BetterArray
-        this.chartSeriesType.LowerBound = 1
+    If This.chartSeriesType Is Nothing Then
+        Set This.chartSeriesType = New BetterArray
+        This.chartSeriesType.LowerBound = 1
     End If
 
-    If this.chartSeriesPosition Is Nothing Then
-        Set this.chartSeriesPosition = New BetterArray
-        this.chartSeriesPosition.LowerBound = 1
+    If This.chartSeriesPosition Is Nothing Then
+        Set This.chartSeriesPosition = New BetterArray
+        This.chartSeriesPosition.LowerBound = 1
     End If
 
-    this.chartSeriesName.Push chrtName
-    this.chartSeriesType.Push chrtType
-    this.chartSeriesPosition.Push chrtPos
+    This.chartSeriesName.Push chrtName
+    This.chartSeriesType.Push chrtType
+    This.chartSeriesPosition.Push chrtPos
 End Sub
 
 Private Sub PushLabels(ByVal chrtRowCategory As String, ByVal chrtColumnLab As String, Optional ByVal chrtLabPref As String = vbNullString)
 
-    If this.chartSeriesLabel Is Nothing Then
-        Set this.chartSeriesLabel = New BetterArray
-        this.chartSeriesLabel.LowerBound = 1
+    If This.chartSeriesLabel Is Nothing Then
+        Set This.chartSeriesLabel = New BetterArray
+        This.chartSeriesLabel.LowerBound = 1
     End If
 
-    If this.chartColumnCategoriesLabel Is Nothing Then
-        Set this.chartColumnCategoriesLabel = New BetterArray
-        this.chartColumnCategoriesLabel.LowerBound = 1
+    If This.chartColumnCategoriesLabel Is Nothing Then
+        Set This.chartColumnCategoriesLabel = New BetterArray
+        This.chartColumnCategoriesLabel.LowerBound = 1
     End If
 
     'Chartseriles label prefix (prefix can be used in place of label names)
-    If this.chartSeriesLabelPrefix Is Nothing Then
-        Set this.chartSeriesLabelPrefix = New BetterArray
-        this.chartSeriesLabelPrefix.LowerBound = 1
+    If This.chartSeriesLabelPrefix Is Nothing Then
+        Set This.chartSeriesLabelPrefix = New BetterArray
+        This.chartSeriesLabelPrefix.LowerBound = 1
     End If
 
-    this.chartSeriesLabel.Push chrtRowCategory
-    this.chartColumnCategoriesLabel.Push chrtColumnLab
-    this.chartSeriesLabelPrefix.Push chrtLabPref
+    This.chartSeriesLabel.Push chrtRowCategory
+    This.chartColumnCategoriesLabel.Push chrtColumnLab
+    This.chartSeriesLabelPrefix.Push chrtLabPref
 End Sub
 
 Private Sub PushGraph(ByVal graphId As String)
@@ -263,16 +263,16 @@ Private Sub PushGraph(ByVal graphId As String)
     Dim tabPrefLabel As BetterArray
     Dim title As String
     
-    Set tabSeries = this.chartSeriesName.Clone()
-    Set tabType = this.chartSeriesType.Clone()
-    Set tabPos = this.chartSeriesPosition.Clone()
-    Set tabLabel = this.chartSeriesLabel.Clone()
-    Set tabCatLabel = this.chartColumnCategoriesLabel.Clone()
-    Set tabPrefLabel = this.chartSeriesLabelPrefix.Clone()
+    Set tabSeries = This.chartSeriesName.Clone()
+    Set tabType = This.chartSeriesType.Clone()
+    Set tabPos = This.chartSeriesPosition.Clone()
+    Set tabLabel = This.chartSeriesLabel.Clone()
+    Set tabCatLabel = This.chartColumnCategoriesLabel.Clone()
+    Set tabPrefLabel = This.chartSeriesLabelPrefix.Clone()
     
     'Check the length of the tabSeries and remove the last element if needed
     'It looks like it is a bug from BetterArray memory management
-    If tabSeries.Length = this.chartSeriesName.Length + 1 Then
+    If tabSeries.Length = This.chartSeriesName.Length + 1 Then
         tabSeries.Pop
         tabType.Pop
         tabPos.Pop
@@ -287,28 +287,28 @@ Private Sub PushGraph(ByVal graphId As String)
                          tabLabel, tabCatLabel, tabPrefLabel, title
   
     'Higher Level, for one graph
-    If this.graphsChartsSpecs Is Nothing Then
-        Set this.graphsChartsSpecs = New BetterArray
-        this.graphsChartsSpecs.LowerBound = 1
+    If This.graphsChartsSpecs Is Nothing Then
+        Set This.graphsChartsSpecs = New BetterArray
+        This.graphsChartsSpecs.LowerBound = 1
     End If
 
     'The list of graphs is a BetterArray of BetterArray, where each inner BetterArray Is a graph
-    this.graphsChartsSpecs.Push graphSpecsTable
+    This.graphsChartsSpecs.Push graphSpecsTable
 End Sub
 
 Private Property Get SpecsLists() As BetterArray
-    Set SpecsLists = this.graphsChartsSpecs.Clone()
+    Set SpecsLists = This.graphsChartsSpecs.Clone()
 End Property
 
 Private Sub ClearSeries()
     'Avoid errors if the tables doesn't exists
     On Error Resume Next
-    this.chartSeriesName.Clear
-    this.chartSeriesType.Clear
-    this.chartSeriesPosition.Clear
-    this.chartSeriesLabel.Clear
-    this.chartColumnCategoriesLabel.Clear
-    this.chartSeriesLabelPrefix.Clear
+    This.chartSeriesName.Clear
+    This.chartSeriesType.Clear
+    This.chartSeriesPosition.Clear
+    This.chartSeriesLabel.Clear
+    This.chartColumnCategoriesLabel.Clear
+    This.chartSeriesLabelPrefix.Clear
     On Error GoTo 0
 End Sub
 
@@ -401,19 +401,19 @@ Public Sub CreateSeries()
 End Sub
 
 Public Property Get NumberOfSeries() As Long
-    If (this.chartSeriesName Is Nothing) Or (GraphType = GraphTypeComplex) Then
+    If (This.chartSeriesName Is Nothing) Or (GraphType = GraphTypeComplex) Then
         NumberOfSeries = 0
         Exit Property
     End If
-    NumberOfSeries = this.chartSeriesName.Length()
+    NumberOfSeries = This.chartSeriesName.Length()
 End Property
 
 Public Property Get NumberOfGraphs() As Long
-    If (this.graphsChartsSpecs Is Nothing) Or (GraphType <> GraphTypeComplex) Then
+    If (This.graphsChartsSpecs Is Nothing) Or (GraphType <> GraphTypeComplex) Then
         NumberOfGraphs = 0
         Exit Property
     End If
-    NumberOfGraphs = this.graphsChartsSpecs.Length()
+    NumberOfGraphs = This.graphsChartsSpecs.Length()
 End Property
 
 'Get the title of one complex graph from an index (a Long)
@@ -443,35 +443,35 @@ End Function
 
 
 
-Public Property Get SeriesName(ByVal index As Long) As String
-    If (index > NumberOfSeries) Or (index < 0) Then ThrowError "Index of series out of bound"
-    SeriesName = this.chartSeriesName.Item(index)
+Public Property Get SeriesName(ByVal Index As Long) As String
+    If (Index > NumberOfSeries) Or (Index < 0) Then ThrowError "Index of series out of bound"
+    SeriesName = This.chartSeriesName.Item(Index)
 End Property
 
-Public Property Get SeriesType(ByVal index As Long) As String
-    If (index > NumberOfSeries) Or (index < 0) Then ThrowError "Index of series types out of bound"
-    SeriesType = this.chartSeriesType.Item(index)
+Public Property Get SeriesType(ByVal Index As Long) As String
+    If (Index > NumberOfSeries) Or (Index < 0) Then ThrowError "Index of series types out of bound"
+    SeriesType = This.chartSeriesType.Item(Index)
 End Property
 
-Public Property Get SeriesPos(ByVal index As Long) As String
-    If (index > NumberOfSeries) Or (index < 0) Then ThrowError "Index of series positions out of bound"
-    SeriesPos = this.chartSeriesPosition.Item(index)
+Public Property Get SeriesPos(ByVal Index As Long) As String
+    If (Index > NumberOfSeries) Or (Index < 0) Then ThrowError "Index of series positions out of bound"
+    SeriesPos = This.chartSeriesPosition.Item(Index)
 End Property
 
-Public Property Get SeriesLabel(ByVal index As Long) As String
-    If (index > NumberOfSeries) Or (index < 0) Then ThrowError "Index of series positions out of bound"
-    SeriesLabel = this.chartSeriesLabel.Item(index)
+Public Property Get SeriesLabel(ByVal Index As Long) As String
+    If (Index > NumberOfSeries) Or (Index < 0) Then ThrowError "Index of series positions out of bound"
+    SeriesLabel = This.chartSeriesLabel.Item(Index)
 End Property
 
-Public Property Get SeriesColumnLabel(ByVal index As Long) As String
-    If (index > NumberOfSeries) Or (index < 0) Then ThrowError "Index of series positions out of bound"
-    SeriesColumnLabel = this.chartColumnCategoriesLabel.Item(index)
+Public Property Get SeriesColumnLabel(ByVal Index As Long) As String
+    If (Index > NumberOfSeries) Or (Index < 0) Then ThrowError "Index of series positions out of bound"
+    SeriesColumnLabel = This.chartColumnCategoriesLabel.Item(Index)
 End Property
 
 Private Property Get Valid() As Boolean
 
-    If this.testDone Then
-        Valid = this.validity
+    If This.testDone Then
+        Valid = This.validity
         Exit Property
     End If
     
@@ -480,11 +480,11 @@ Private Property Get Valid() As Boolean
         Valid = True
     Else
         CreateSeries
-        this.validity = Not (this.graphsChartsSpecs Is Nothing)
-        this.testDone = True
+        This.validity = Not (This.graphsChartsSpecs Is Nothing)
+        This.testDone = True
     End If
     
-    Valid = this.validity
+    Valid = This.validity
 End Property
 
 Private Sub DefineGraphSpecs(ByVal graphId As String)
@@ -551,7 +551,9 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
         choiValue = choiceList.Item(counter)
     
         labName = TimeSeriesColumnName(choiValue, tabId)
-        colName = IIf(choiValue = "Total", "TOTAL_COL_VALUES_" & tabId, Replace(labName, "LABEL", "VALUES"))
+        colName = Switch(choiValue = "Total", "TOTAL_COL_VALUES_" & tabId, _
+                        InStr(1, labName, "COLUMN_CATEGORIES_") > 0, "INTERIOR_VALUES_" & tabId, _
+                        True, Replace(labName, "LABEL", "VALUES"))
 
         If (percList.Item(counter) = "percentages") Then
             colName = IIf(choiValue = "Total", Replace(labName, "COL", "PERC"), Replace(labName, "LABEL", "PERC"))
@@ -610,21 +612,21 @@ End Function
 
 'Column Index of a colname in a listObject
 Private Function ColumnIndex(ByVal Lo As ListObject, ByVal colName As String, Optional ByVal inRange As Boolean = True) As Long
-    Dim index As Long
+    Dim Index As Long
     Dim hRng As Range
 
     Set hRng = Lo.HeaderRowRange
     If ValueExists(hRng, colName) Then
         If inRange Then
-            index = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False).Column - hRng.Column + 1
+            Index = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False).Column - hRng.Column + 1
         Else
-            index = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False).Column
+            Index = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False).Column
         End If
     Else
-        index = -1
+        Index = -1
     End If
 
-    ColumnIndex = index
+    ColumnIndex = Index
 End Function
 
 Private Function GraphIdsList() As BetterArray
@@ -651,12 +653,12 @@ Private Function GraphIdsList() As BetterArray
 End Function
 
 Public Property Get GraphIDs() As BetterArray
-    If this.GraphIdsList Is Nothing Then
-        Set this.GraphIdsList = New BetterArray
-        Set this.GraphIdsList = GraphIldsList()
-        Set GraphIDs = this.GraphIdsList.Clone()
+    If This.GraphIdsList Is Nothing Then
+        Set This.GraphIdsList = New BetterArray
+        Set This.GraphIdsList = GraphIldsList()
+        Set GraphIDs = This.GraphIdsList.Clone()
     Else
-        Set GraphIDs = this.GraphIdsList.Clone()
+        Set GraphIDs = This.GraphIdsList.Clone()
     End If
 End Property
 
@@ -724,11 +726,11 @@ End Function
 
 'Errors
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
+    Err.Raise VBA.vbObjectError + 515, className, "Unable to create an instance of the class : " & errorMessage
 End Sub
 
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Execution Error : " & errorMessage
 End Sub
 
 'Exposed Properties and methods
@@ -741,24 +743,24 @@ Public Property Get IGraphSpecs_NumberOfGraphs() As Long
     IGraphSpecs_NumberOfGraphs = NumberOfGraphs()
 End Property
 
-Public Property Get IGraphSpecs_SeriesName(ByVal index As Long) As String
-    IGraphSpecs_SeriesName = SeriesName(index)
+Public Property Get IGraphSpecs_SeriesName(ByVal Index As Long) As String
+    IGraphSpecs_SeriesName = SeriesName(Index)
 End Property
 
-Public Property Get IGraphSpecs_SeriesType(ByVal index As Long) As String
-    IGraphSpecs_SeriesType = SeriesType(index)
+Public Property Get IGraphSpecs_SeriesType(ByVal Index As Long) As String
+    IGraphSpecs_SeriesType = SeriesType(Index)
 End Property
 
-Public Property Get IGraphSpecs_SeriesPos(ByVal index As Long) As String
-    IGraphSpecs_SeriesPos = SeriesPos(index)
+Public Property Get IGraphSpecs_SeriesPos(ByVal Index As Long) As String
+    IGraphSpecs_SeriesPos = SeriesPos(Index)
 End Property
 
-Public Property Get IGraphSpecs_SeriesLabel(ByVal index As Long) As String
-    IGraphSpecs_SeriesLabel = SeriesLabel(index)
+Public Property Get IGraphSpecs_SeriesLabel(ByVal Index As Long) As String
+    IGraphSpecs_SeriesLabel = SeriesLabel(Index)
 End Property
 
-Public Property Get IGraphSpecs_SeriesColumnLabel(ByVal index As Long) As String
-    IGraphSpecs_SeriesColumnLabel = SeriesColumnLabel(index)
+Public Property Get IGraphSpecs_SeriesColumnLabel(ByVal Index As Long) As String
+    IGraphSpecs_SeriesColumnLabel = SeriesColumnLabel(Index)
 End Property
 
 Public Sub IGraphSpecs_CreateSeries()
