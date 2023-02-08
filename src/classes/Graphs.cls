@@ -20,10 +20,10 @@ Private Type TGraph
     sh As Worksheet
     strtRng As Range
     co As ChartObject
-    index As Long
+    Index As Long
 End Type
 
-Private this As TGraph
+Private This As TGraph
 
 Private Const GRAPHHEIGHT As Long = 14.3
 Private Const GRAPHWIDTH As Long = 4.1
@@ -37,11 +37,11 @@ Public Function Create(sh As Worksheet, posRng As Range) As IGraphs
 End Function
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = this.sh
+    Set Wksh = This.sh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-    Set this.sh = sh
+    Set This.sh = sh
 End Property
 
 Public Property Get Self() As IGraphs
@@ -49,23 +49,23 @@ Public Property Get Self() As IGraphs
 End Property
 
 Public Property Get StartRange() As Range
-    Set StartRange = this.strtRng
+    Set StartRange = This.strtRng
 End Property
 
 Public Property Set StartRange(ByVal strtRng As Range)
-    Set this.strtRng = strtRng
+    Set This.strtRng = strtRng
 End Property
 
 Public Property Get graphChart() As ChartObject
-    Set graphChart = this.co
+    Set graphChart = This.co
 End Property
 
 Private Property Get seriesIndex() As Long
-    seriesIndex = this.index
+    seriesIndex = This.Index
 End Property
 
 Private Property Let seriesIndex(ByVal ind As Long)
-    this.index = ind
+    This.Index = ind
 End Property
 
 'Exposed methods
@@ -90,7 +90,7 @@ Public Sub Add()
         .Legend.Position = xlLegendPositionTop
     End With
 
-    Set this.co = co
+    Set This.co = co
 End Sub
 
 Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional axisPos As String = vbNullString)
@@ -220,7 +220,7 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
             .HasTitle = True
             .HasMajorGridlines = True
             .MajorGridlines.Border.color = RGB(255, 255, 255)
-            .AxisTitle.text = catTitle
+            .AxisTitle.Text = catTitle
             .TickLabels.Font.Size = 8
         End With
         With .Axes(xlValue, xlPrimary)
@@ -229,7 +229,7 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
             .MajorGridlines.Border.color = RGB(255, 255, 255)
             .TickLabels.Font.Size = 8
             .TickLabels.Font.Name = "+mj-lt"
-            .AxisTitle.text = valuesTitle
+            .AxisTitle.Text = valuesTitle
         End With
 
         'Add a title if needed
@@ -252,8 +252,8 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                 .MajorGridlines.Border.color = RGB(255, 255, 255)
                 .TickLabels.Font.Size = 8
                 .TickLabels.Font.Name = "+mj-lt"
-                .AxisTitle.text = "%"
-                If secondAxisTitle <> vbNullString Then .AxisTitle.text = secondAxisTitle
+                .AxisTitle.Text = "%"
+                If secondAxisTitle <> vbNullString Then .AxisTitle.Text = secondAxisTitle
                 .MaximumScale = 1
                 .MajorUnit = 0.1
             End With

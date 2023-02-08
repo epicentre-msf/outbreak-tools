@@ -21,11 +21,11 @@ Private Type TDictionary
     dictDataSheet As IDataSheet                  'Worksheet data of the dictionary
 End Type
 
-Private this As TDictionary
+Private This As TDictionary
 Private DICTIONARYCOLUMNS As BetterArray
 Private Const SHEETTYPEVERTICAL As String = "vlist1D"
 Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
-Private Const CLASSNAME As String = "ILLdictionary"
+Private Const className As String = "ILLdictionary"
 
 Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, _
                        ByVal dictStartColumn As Long) As ILLdictionary
@@ -47,11 +47,11 @@ End Property
 
 'Data sheet
 Public Property Get Data() As IDataSheet
-    Set Data = this.dictDataSheet
+    Set Data = This.dictDataSheet
 End Property
 
 Friend Property Set Data(ByVal customDataSheet As IDataSheet)
-    Set this.dictDataSheet = customDataSheet
+    Set This.dictDataSheet = customDataSheet
 End Property
 
 'Worksheet
@@ -288,7 +288,7 @@ Private Sub UniqueVarNames()
         For counter = StartRow + 1 To EndRow
             'remove no breakable spaces and clean the name of the variable. replace spaces with _
 
-            varName = Application.WorksheetFunction.SUBSTITUTE(varName, Chr(160), " ")
+            varName = Application.WorksheetFunction.SUBSTITUTE(varName, chr(160), " ")
             varName = Application.WorksheetFunction.Clean(varName)
             varName = Application.WorksheetFunction.Trim(.Cells(counter, varNameIndex).Value)
             varName = Replace(varName, " ", "_")
@@ -431,7 +431,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
                 ", MATCH(concat_adm" & counter & "_" & varName & _
                 ", adm" & counter & "_concat, 0), " & (counter + 2) & ")"
                 
-                .Cells(geoRowIndex + counter, controlDetailsIndex) = "IF(ISNA(" & formulaValue & "), " & Chr(34) & Chr(34) & ", " & formulaValue & ")"
+                .Cells(geoRowIndex + counter, controlDetailsIndex) = "IF(ISNA(" & formulaValue & "), " & chr(34) & chr(34) & ", " & formulaValue & ")"
             Next
 
             geoRowIndex = geoRowIndex + 4
@@ -482,7 +482,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
                 ", MATCH(hf_" & varName & _
                 ", hf" & "_concat, 0)," & "5 )"
                 
-            .Cells(geoRowIndex, controlDetailsIndex) = "IF(ISNA(" & formulaValue & "), " & Chr(34) & Chr(34) & ", " & formulaValue & ")"
+            .Cells(geoRowIndex, controlDetailsIndex) = "IF(ISNA(" & formulaValue & "), " & chr(34) & chr(34) & ", " & formulaValue & ")"
               
             geoRowIndex = geoRowIndex + 1
             Set dictRng = .Range(.Cells(geoRowIndex, controlIndex), .Cells(EndRow, controlIndex))
@@ -540,7 +540,7 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
 
         endCol = DictEndColumn
         .Cells(StartRow, endCol + 1).Value = newColumn
-        .Cells(StartRow + 1, endCol + 1).formula = "= " & Chr(34) & tablePrefix & Chr(34) & " " & Chr(38) & " " & .Cells(StartRow + 1, endCol).Address(Rowabsolute:=False)
+        .Cells(StartRow + 1, endCol + 1).formula = "= " & chr(34) & tablePrefix & chr(34) & " " & chr(38) & " " & .Cells(StartRow + 1, endCol).Address(Rowabsolute:=False)
         Set dictRng = DataRange(newColumn)
 
         .Cells(StartRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
@@ -584,9 +584,9 @@ Private Sub AppendColumnIndex()
         .Cells(StartRow, endCol + 1).Value = "main section sort"
         firstsheetNameCell = .Cells(StartRow + 1, sheetNameIndex).Address(Rowabsolute:=False) & " "
         firstmainSectionCell = .Cells(StartRow + 1, mainSectionIndex).Address(Rowabsolute:=False)
-        .Cells(StartRow + 1, endCol + 1).formula = "= IF(" & firstmainSectionCell & "=" & Chr(34) & Chr(34) & _
+        .Cells(StartRow + 1, endCol + 1).formula = "= IF(" & firstmainSectionCell & "=" & chr(34) & chr(34) & _
                                                                                                             ", ROW(" & firstmainSectionCell & ")" & ", " & _
-                                                                                                            firstsheetNameCell & Chr(38) & Chr(34) & " - " & Chr(34) & Chr(38) & firstmainSectionCell & _
+                                                                                                            firstsheetNameCell & chr(38) & chr(34) & " - " & chr(34) & chr(38) & firstmainSectionCell & _
                                                                                                             ")"
         Set dictRng = DataRange("main section sort")
         .Cells(StartRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
@@ -614,7 +614,7 @@ End Sub
 
 'Import and export subs
 'Export
-Private Sub Export(ByVal wkb As Workbook, Optional ByVal exportType As String = "__all__")
+Private Sub export(ByVal Wkb As Workbook, Optional ByVal exportType As String = "__all__")
 
     Dim dictData As IDataSheet
     Dim rng As Range
@@ -623,14 +623,14 @@ Private Sub Export(ByVal wkb As Workbook, Optional ByVal exportType As String = 
 
     Set dictData = Data()
     If ColumnExists(exportType) Then
-        dictData.Export wkb, filteredVarName:=exportType
+        dictData.export Wkb, filteredVarName:=exportType
     ElseIf exportType = "__all__" Then
-        dictData.Export wkb
+        dictData.export Wkb
     End If
     
     sheetName = Wksh.Name
 
-    Set sh = wkb.Worksheets(sheetName)
+    Set sh = Wkb.Worksheets(sheetName)
     Set rng = DataRange(includeHeaders:=True)
     Set rng = sh.Range(rng.Address)
 
@@ -683,7 +683,7 @@ End Sub
 
 'Throw Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Execution Error : " & errorMessage
 End Sub
 
 ' INTERFACE __________________________________________________________________________________________________________________________
@@ -731,7 +731,7 @@ Public Sub ILLdictionary_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow 
 End Sub
 
 Public Sub ILLdictionary_Export(ByVal toWkb As Workbook, Optional ByVal exportType As String = "__all__")
-    Export toWkb, exportType
+    export toWkb, exportType
 End Sub
 
 Public Sub ILLdictionary_Translate(ByVal TransObject As ITranslation)

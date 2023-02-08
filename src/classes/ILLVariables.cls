@@ -24,7 +24,7 @@ Public Function Value(ByVal colName As String, ByVal varName As String) As Strin
 End Function
 
 'column or row index in the sheet of one variable
-Public Function index(ByVal varName As String) As Long
+Public Function Index(ByVal varName As String) As Long
 End Function
 
 Public Function Contains(ByVal varName As String) As Boolean

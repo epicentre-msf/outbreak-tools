@@ -23,8 +23,8 @@ Private Type TTablesSpecs
     tType As AnalysisTablesType
 End Type
 
-Private this As TTablesSpecs
-Private Const CLASSNAME As String = "TableSpecs"
+Private This As TTablesSpecs
+Private Const className As String = "TableSpecs"
 
 'Instanciation
 
@@ -46,27 +46,27 @@ End Function
 
 'Properties
 Public Property Get HeaderRange() As Range
-    Set HeaderRange = this.hRng
+    Set HeaderRange = This.hRng
 End Property
 
 Public Property Get TableRange() As Range
-    Set TableRange = this.tRng
+    Set TableRange = This.tRng
 End Property
 
 Public Property Get LinelistSpecifications() As ILinelistSpecs
-    Set LinelistSpecifications = this.lData
+    Set LinelistSpecifications = This.lData
 End Property
 
 Public Property Set HeaderRange(ByVal hRng As Range)
-    Set this.hRng = hRng
+    Set This.hRng = hRng
 End Property
 
 Public Property Set TableRange(ByVal tRng As Range)
-    Set this.tRng = tRng
+    Set This.tRng = tRng
 End Property
 
 Public Property Set LinelistSpecifications(ByVal lData As ILinelistSpecs)
-    Set this.lData = lData
+    Set This.lData = lData
 End Property
 
 Public Property Get TableType() As AnalysisTablesType
@@ -372,11 +372,11 @@ End Property
 'Errors
 'Errors ---------------------------------------------------------------------------------
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
+    Err.Raise VBA.vbObjectError + 515, className, "Unable to create an instance of the class : " & errorMessage
 End Sub
 
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error: " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Execution Error: " & errorMessage
 End Sub
 
 'Interface

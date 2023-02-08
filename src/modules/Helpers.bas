@@ -199,11 +199,11 @@ Public Function IsWkbOpened(sName As String) As Boolean
 End Function
 
 'Check if a Sheet Exists
-Public Function SheetExistsInWkb(wkb As Workbook, sSheetName As String) As Boolean
+Public Function SheetExistsInWkb(Wkb As Workbook, sSheetName As String) As Boolean
     SheetExistsInWkb = False
     Dim Wksh As Worksheet                        'Just try to set the workbook if it fails it is closed
     On Error Resume Next
-    Set Wksh = wkb.Worksheets(sSheetName)
+    Set Wksh = Wkb.Worksheets(sSheetName)
     SheetExistsInWkb = (Not Wksh Is Nothing)
     On Error GoTo 0
 End Function
@@ -327,14 +327,14 @@ End Sub
 Function FindLastRow(shLL As Worksheet) As Long
 
     Dim counter As Long
-    Dim lastRow As Long
+    Dim LastRow As Long
     Dim Lo As ListObject
     Dim LoRng As Range
     Dim hRng As Range
     Dim controlValue As String
     Dim destRng As Range
     Dim shTemp As Worksheet
-    Dim col As Long 'Column to check the number of rows on
+    Dim Col As Long 'Column to check the number of rows on
 
     Set Lo = shLL.ListObjects(1)
     Set hRng = Lo.HeaderRowRange
@@ -349,7 +349,7 @@ Function FindLastRow(shLL As Worksheet) As Long
     '- Count the number of rows by removing the formula columns
 
     shTemp.Cells.Clear
-    lastRow = hRng.Row
+    LastRow = hRng.Row
 
     Set LoRng = Lo.Range
     Set destRng = shTemp.Range(LoRng.Address)
@@ -368,16 +368,16 @@ Function FindLastRow(shLL As Worksheet) As Long
 
             If controlValue <> "formula" And controlValue <> "case_when" And controlValue <> "choice_formula" Then 'case_when is a formula, we should remove them from export
 
-                col = hRng.Cells(1, counter).Column
+                Col = hRng.Cells(1, counter).Column
 
                 'The test is done only on columns that are not formulas
-                If lastRow < shTemp.Cells(Rows.Count, col).End(xlUp).Row Then lastRow = shTemp.Cells(Rows.Count, col).End(xlUp).Row
+                If LastRow < shTemp.Cells(Rows.Count, Col).End(xlUp).Row Then LastRow = shTemp.Cells(Rows.Count, Col).End(xlUp).Row
 
             End If
         Next
     End If
 
-    FindLastRow = lastRow + 1
+    FindLastRow = LastRow + 1
     shTemp.Cells.Clear
 End Function
 
@@ -467,7 +467,7 @@ End Function
 
 Public Function ClearNonPrintableUnicode(ByVal sString As String) As String
     Dim sValue As String
-    sValue = Application.WorksheetFunction.SUBSTITUTE(sString, Chr(160), " ")
+    sValue = Application.WorksheetFunction.SUBSTITUTE(sString, chr(160), " ")
     sValue = Application.WorksheetFunction.Clean(sValue)
     ClearNonPrintableUnicode = Application.WorksheetFunction.Trim(sValue)
 End Function
@@ -475,7 +475,7 @@ End Function
 'Get the headers of one sheet from one line (probablly the first line)
 'The headers are cleaned
 
-Public Function GetHeaders(wkb As Workbook, sSheet As String, startLine As Long, Optional StartColumn As Long = 1) As BetterArray
+Public Function GetHeaders(Wkb As Workbook, sSheet As String, startLine As Long, Optional StartColumn As Long = 1) As BetterArray
     'Extract column names in one sheet starting from one line
     Dim Headers As BetterArray
     Dim i As Long
@@ -483,7 +483,7 @@ Public Function GetHeaders(wkb As Workbook, sSheet As String, startLine As Long,
     Headers.LowerBound = StartColumn
     Dim sValue As String
 
-    With wkb.Worksheets(sSheet)
+    With Wkb.Worksheets(sSheet)
         i = StartColumn
         Do While .Cells(startLine, i).Value <> vbNullString
             'Clear the values in the sheet when adding thems
@@ -498,7 +498,7 @@ Public Function GetHeaders(wkb As Workbook, sSheet As String, startLine As Long,
 End Function
 
 'Get the data from one sheet starting from one line
-Public Function GetData(wkb As Workbook, sSheetName As String, startLine As Long, Optional EndColumn As Long = 0) As BetterArray
+Public Function GetData(Wkb As Workbook, sSheetName As String, startLine As Long, Optional EndColumn As Long = 0) As BetterArray
     Dim Data As BetterArray
     Dim rng As Range
 
@@ -507,7 +507,7 @@ Public Function GetData(wkb As Workbook, sSheetName As String, startLine As Long
     Set Data = New BetterArray
     Data.LowerBound = 1
 
-    With wkb.Worksheets(sSheetName)
+    With Wkb.Worksheets(sSheetName)
 
         iLastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
         iLastCol = EndColumn
@@ -572,7 +572,7 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
     Dim sData As BetterArray
     Dim DestWksh As Worksheet
     Dim sheetExists As Boolean
-    Dim col As Long                              'iterator to clear the strings when loading
+    Dim Col As Long                              'iterator to clear the strings when loading
 
     Set sData = New BetterArray
     sData.FromExcelRange SourceWkb.Worksheets(sSheetName).Range("A" & CStr(sStartCell)), DetectLastRow:=True, DetectLastColumn:=True
@@ -589,11 +589,11 @@ Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As St
     'Copy the data Now
     sData.ToExcelRange DestWkb.Worksheets(sSheetName).Range("A1")
 
-    col = 1
+    Col = 1
     With DestWkb.Worksheets(sSheetName)
-        Do While (.Cells(1, col) <> vbNullString)
-            .Cells(1, col).Value = LCase(ClearString(.Cells(1, col).Value))
-            col = col + 1
+        Do While (.Cells(1, Col) <> vbNullString)
+            .Cells(1, Col).Value = LCase(ClearString(.Cells(1, Col).Value))
+            Col = Col + 1
         Loop
     End With
 

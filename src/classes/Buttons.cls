@@ -23,8 +23,8 @@ Private Type TButton
     scope As ButtonScope
 End Type
 
-Private this As TButton
-Private Const CLASSNAME As String = "Buttons"
+Private This As TButton
+Private Const className As String = "Buttons"
 Private Const BUTTONWIDTH As Long = 105
 Private Const BUTTONHEIGHT As Long = 30
 Private Const BUTTONGAP As Long = 5
@@ -50,35 +50,35 @@ Public Property Get Self() As IButtons
 End Property
 
 Public Property Get OutputRange() As Range
-    Set OutputRange = this.rng
+    Set OutputRange = This.rng
 End Property
 
 Public Property Set OutputRange(ByVal rng As Range)
-    Set this.rng = rng
+    Set This.rng = rng
 End Property
 
 Public Property Get ShapesTranslation() As ITranslation
-    Set ShapesTranslation = this.trads
+    Set ShapesTranslation = This.trads
 End Property
 
 Public Property Set ShapesTranslation(ByVal trads As ITranslation)
-    Set this.trads = trads
+    Set This.trads = trads
 End Property
 
 Public Property Get Name() As String
-    Name = this.shapename
+    Name = This.shapename
 End Property
 
 Public Property Let Name(ByVal nm As String)
-    this.shapename = nm
+    This.shapename = nm
 End Property
 
 Public Property Let ShapeScope(ByVal scope As ButtonScope)
-    this.scope = scope
+    This.scope = scope
 End Property
 
 Public Property Get ShapeScope() As ButtonScope
-    ShapeScope = this.scope
+    ShapeScope = This.scope
 End Property
 
 Private Property Get ShapeExists() As Boolean
@@ -155,7 +155,7 @@ Public Sub Add(Optional ByVal actionCommand As String = vbNullString)
         .OnAction = actionCommand
         .Placement = xlFreeFloating
         .Shadow.Type = msoShadow24
-        .TextFrame2.TextRange.Characters.text = shapeLabel
+        .TextFrame2.TextRange.Characters.Text = shapeLabel
     End With
 End Sub
 
@@ -185,7 +185,7 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
 End Sub
 
 'Exposed methods

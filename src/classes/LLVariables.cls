@@ -22,10 +22,10 @@ Private Type TVariable
     varRng As Range
 End Type
 
-Private this As TVariable
+Private This As TVariable
 Private Const VARIABLENAME As String = "variable name"
 Private Const INDEXHEADER  As String = "column index"
-Private Const CLASSNAME As String = "LLVariables"
+Private Const className As String = "LLVariables"
 
 Public Function Create(ByVal dict As ILLdictionary) As ILLVariables
 
@@ -43,16 +43,16 @@ Public Property Get Self() As ILLVariables
 End Property
 
 Public Property Get Dictionary() As ILLdictionary
-    Set Dictionary = this.dict
+    Set Dictionary = This.dict
 End Property
 
 Public Property Set Dictionary(ByVal dict As ILLdictionary)
-    Set this.dict = dict
-    Set this.varRng = dict.DataRange(VARIABLENAME)
+    Set This.dict = dict
+    Set This.varRng = dict.DataRange(VARIABLENAME)
 End Property
 
 Friend Property Get VarRange() As Range
-    Set VarRange = this.varRng
+    Set VarRange = This.varRng
 End Property
 
 'Functions --------------------------------------------------------------------------
@@ -137,19 +137,19 @@ Private Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal new
 End Sub
 
 'Index of a column or a Row of a variable in a worksheet
-Private Function index(ByVal varName As String) As Long
+Private Function Index(ByVal varName As String) As Long
     Dim sheetIndex As String
     sheetIndex = Value(colName:=INDEXHEADER, varName:=varName)
-    index = IIf(sheetIndex = vbNullString, -1, CLng(sheetIndex))
+    Index = IIf(sheetIndex = vbNullString, -1, CLng(sheetIndex))
 End Function
 
 'Errors ------------------------------------------------------------------------------------------------------------------------------------
 Private Sub ThrowErrorUnableInstanciateNoVarName()
-    Err.Raise VBA.vbObjectError + 513, CLASSNAME, "Unable to create an instance of the class variable, variable name column does not exists"
+    Err.Raise VBA.vbObjectError + 513, className, "Unable to create an instance of the class variable, variable name column does not exists"
 End Sub
 
 Private Sub ThrowErrorUnableInstanciateNotPrepared()
-    Err.Raise VBA.vbObjectError + 514, CLASSNAME, "Unable to create an instance of the class variable: The dictionary is not prepared"
+    Err.Raise VBA.vbObjectError + 514, className, "Unable to create an instance of the class variable: The dictionary is not prepared"
 End Sub
 
 'Interface ---------------------------------------------------------------------------------------------------------------------------------
@@ -166,7 +166,7 @@ End Function
 
 'column or row index in the sheet of one variable
 Public Function ILLVariables_Index(ByVal varName As String) As Long
-    ILLVariables_Index = index(varName)
+    ILLVariables_Index = Index(varName)
 End Function
 
 Public Function ILLVariables_Contains(ByVal varName As String) As Boolean

@@ -64,7 +64,7 @@ Public Sub Import(ByVal fromWkb As Workbook): End Sub
 Public Sub ExportToFile(ByVal outputWkb As Workbook, Optional ByVal onlyHistory As Boolean = False)
 End Sub
 
-Public Sub ExportToWkb(ByVal wkb As Workbook): End Sub
+Public Sub ExportToWkb(ByVal Wkb As Workbook): End Sub
 
 Public Sub Clear(): End Sub
 

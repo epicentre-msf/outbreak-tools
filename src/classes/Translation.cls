@@ -16,14 +16,14 @@ Attribute VB_Exposed = False
 Option Explicit
 Implements ITranslation
 
-Private Const CLASSNAME As String = "Translation"
+Private Const className As String = "Translation"
 
 Private Type TTranslation
     transLo As ListObject
     transLng As String
 End Type
 
-Private this As TTranslation
+Private This As TTranslation
 
 'Instanciation
 
@@ -43,19 +43,19 @@ Public Property Get Self() As ITranslation
 End Property
 
 Public Property Get Table() As ListObject
-    Set Table = this.transLo
+    Set Table = This.transLo
 End Property
 
 Public Property Set Table(ByVal Lo As ListObject)
-    Set this.transLo = Lo
+    Set This.transLo = Lo
 End Property
 
 Public Property Get Language() As String
-    Language = this.transLng
+    Language = This.transLng
 End Property
 
 Public Property Let Language(ByVal transLng As String)
-    this.transLng = transLng
+    This.transLng = transLng
 End Property
 
 Private Property Get LanguageExists() As Boolean
@@ -85,7 +85,7 @@ Private Function LanguageIndex() As Long
     LanguageIndex = lngIndex
 End Function
 
-Private Function ValueExists(ByVal text As String) As Boolean
+Private Function ValueExists(ByVal Text As String) As Boolean
     Dim textExists As Boolean
     Dim keyRng As Range
     Dim Lo As ListObject
@@ -94,25 +94,25 @@ Private Function ValueExists(ByVal text As String) As Boolean
     Set Lo = Table()
     Set keyRng = Lo.ListColumns(1).Range
 
-    If LanguageExists() Then textExists = (Not keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+    If LanguageExists() Then textExists = (Not keyRng.Find(What:=Text, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
 
     ValueExists = textExists
 End Function
 
-Private Function ValueIndex(ByVal text As String) As Long
-    Dim index As Long
+Private Function ValueIndex(ByVal Text As String) As Long
+    Dim Index As Long
     Dim keyRng As Range
     Dim StartRow As Long
 
-    If ValueExists(text) Then
+    If ValueExists(Text) Then
         Set keyRng = Table.ListColumns(1).Range
         StartRow = keyRng.Row
-        index = keyRng.Find(What:=text, LookAt:=xlWhole, MatchCase:=True).Row - StartRow + 1
+        Index = keyRng.Find(What:=Text, LookAt:=xlWhole, MatchCase:=True).Row - StartRow + 1
     Else
-        index = -1
+        Index = -1
     End If
 
-    ValueIndex = index
+    ValueIndex = Index
 End Function
 
 Private Function TranslatedValue(ByVal textTotranslate As String, Optional ByVal containsFormula As Boolean = False) As String
@@ -125,19 +125,19 @@ Private Function TranslatedValue(ByVal textTotranslate As String, Optional ByVal
     Dim LoRng As Range
     Dim counter As Long
     Dim quoteStart As Long
-    Dim text As String
+    Dim Text As String
     
     'Remove trailing spaces before translations
-    text = Application.WorksheetFunction.Trim(textTotranslate)
+    Text = Application.WorksheetFunction.Trim(textTotranslate)
 
     If containsFormula Then
-        formTransText = text
+        formTransText = Text
 
         'Remove empty characters from the formula.
-        formulaText = Replace(text, Chr(34) & Chr(34), vbNullString)
-        If InStr(1, formulaText, Chr(34)) > 0 Then
+        formulaText = Replace(Text, chr(34) & chr(34), vbNullString)
+        If InStr(1, formulaText, chr(34)) > 0 Then
             For counter = 1 To Len(formulaText)
-                If Mid(formulaText, counter, 1) = Chr(34) Then
+                If Mid(formulaText, counter, 1) = chr(34) Then
                     If quoteStart = 0 Then
                         quoteStart = counter + 1
                     Else
@@ -151,15 +151,15 @@ Private Function TranslatedValue(ByVal textTotranslate As String, Optional ByVal
 
         TranslatedValue = formTransText
     Else
-        If ValueExists(text) Then
+        If ValueExists(Text) Then
             
             Set LoRng = Table.Range
-            valIndex = ValueIndex(text)
+            valIndex = ValueIndex(Text)
             lngCol = LanguageIndex()
             transText = LoRng.Cells(valIndex, lngCol).Value
             TranslatedValue = transText
         Else
-            TranslatedValue = text
+            TranslatedValue = Text
         End If
     End If
 End Function
@@ -209,7 +209,7 @@ End Sub
 
 'Errors ---------------------------------------------------------------------------------
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
+    Err.Raise VBA.vbObjectError + 515, className, "Unable to create an instance of the class : " & errorMessage
 End Sub
 
 'Interface
@@ -221,8 +221,8 @@ Public Sub ITranslation_TranslateRange(ByVal colRng As Range, Optional ByVal con
     TranslateRange colRng:=colRng, containsFormula:=containsFormula
 End Sub
 
-Public Function ITranslation_TranslatedValue(ByVal text As String, Optional ByVal containsFormula As Boolean = False) As String
-    ITranslation_TranslatedValue = TranslatedValue(text, containsFormula)
+Public Function ITranslation_TranslatedValue(ByVal Text As String, Optional ByVal containsFormula As Boolean = False) As String
+    ITranslation_TranslatedValue = TranslatedValue(Text, containsFormula)
 End Function
 
 

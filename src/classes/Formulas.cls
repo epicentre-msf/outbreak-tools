@@ -29,7 +29,7 @@ Private Type TFormulas
     formulaTable As BetterArray
 End Type
 
-Private this As TFormulas
+Private This As TFormulas
 Private customFormulas As BetterArray
 Private initialized As Boolean
 
@@ -49,75 +49,75 @@ End Property
 
 'Properties
 Public Property Get Dictionary() As ILLdictionary
-    Set Dictionary = this.dict
+    Set Dictionary = This.dict
 End Property
 
 Public Property Get Data() As IFormulaData
-    Set Data = this.Data
+    Set Data = This.Data
 End Property
 
 Public Property Set Dictionary(ByVal dict As ILLdictionary)
-    Set this.dict = dict
-    Set this.vars = LLVariables.Create(dict)
-    Set this.sheets = LLSheets.Create(dict)
-    Set this.formulavariables = New BetterArray
-    Set this.formulaTable = New BetterArray
-    this.formulaTable.LowerBound = 1
-    this.formulavariables.LowerBound = 1
-    this.testDone = False
+    Set This.dict = dict
+    Set This.vars = LLVariables.Create(dict)
+    Set This.sheets = LLSheets.Create(dict)
+    Set This.formulavariables = New BetterArray
+    Set This.formulaTable = New BetterArray
+    This.formulaTable.LowerBound = 1
+    This.formulavariables.LowerBound = 1
+    This.testDone = False
     initialized = False
 End Property
 
 Public Property Set Data(ByVal formData As IFormulaData)
-    Set this.Data = formData
+    Set This.Data = formData
 End Property
 
 Public Property Get SetupFormula() As String
-    SetupFormula = this.setupform
+    SetupFormula = This.setupform
 End Property
 
 Public Property Let SetupFormula(setupform As String)
-    this.setupform = setupform
+    This.setupform = setupform
 End Property
 
 Private Property Get Variables() As ILLVariables
-    Set Variables = this.vars
+    Set Variables = This.vars
 End Property
 
 Private Property Get FormulaSheets() As ILLSheets
-    Set FormulaSheets = this.sheets
+    Set FormulaSheets = This.sheets
 End Property
 
 Private Property Get FormulaVariablesList() As BetterArray
-    Set FormulaVariablesList = this.formulavariables.Clone()
+    Set FormulaVariablesList = This.formulavariables.Clone()
 End Property
 
 Private Property Set FormulaVariablesList(ByVal baTable As BetterArray)
-    Set this.formulavariables = baTable.Clone()
+    Set This.formulavariables = baTable.Clone()
 End Property
 
 Private Property Get FormulaTableList() As BetterArray
-    Set FormulaTableList = this.formulaTable.Clone()
+    Set FormulaTableList = This.formulaTable.Clone()
 End Property
 
 Private Property Set FormulaTableList(ByVal baTable As BetterArray)
-    Set this.formulaTable = baTable.Clone()
+    Set This.formulaTable = baTable.Clone()
 End Property
 
 Private Property Get ValidityTestDone() As Boolean
-    ValidityTestDone = this.testDone
+    ValidityTestDone = This.testDone
 End Property
 
 Private Property Let ValidityTestDone(test As Boolean)
-    this.testDone = test
+    This.testDone = test
 End Property
 
 Private Property Get FormulaValidity() As Boolean
-    FormulaValidity = this.validity
+    FormulaValidity = This.validity
 End Property
 
 Private Property Let FormulaValidity(test As Boolean)
-    this.validity = test
+    This.validity = test
 End Property
 
 Private Property Get ConvertedSetupFormula() As String
@@ -149,33 +149,33 @@ End Sub
 
 'Has literals
 Public Property Get HasLiterals() As Boolean
-    HasLiterals = this.literals
+    HasLiterals = This.literals
 End Property
 
 Private Property Let HasLiterals(ByVal lit As Boolean)
-    this.literals = lit
+    This.literals = lit
 End Property
 
 'Clean the formula and remove all eventual trailing spaces
 Private Function Clean(chunk As String) As String
     Dim cleanedChunk As String
-    cleanedChunk = Application.WorksheetFunction.SUBSTITUTE(chunk, Chr(160), " ")
+    cleanedChunk = Application.WorksheetFunction.SUBSTITUTE(chunk, chr(160), " ")
     cleanedChunk = Application.WorksheetFunction.Clean(cleanedChunk)
     Clean = Application.WorksheetFunction.Trim(cleanedChunk)
 End Function
 
 'Test if a chunk is a parenthesis, or a quote
 Private Function isQuoted(ByVal chunk As String) As Boolean
-    isQuoted = (Mid(chunk, 1, 1) = Chr(34))
+    isQuoted = (Mid(chunk, 1, 1) = chr(34))
 End Function
 
 'Test if a chunk is an opened parenthesis
 Private Function isOpenedParenthesis(ByVal chunk As String) As Boolean
-    isOpenedParenthesis = (chunk = Chr(40))
+    isOpenedParenthesis = (chunk = chr(40))
 End Function
 
 Private Function isClosedParenthesis(ByVal chunk As String) As Boolean
-    isClosedParenthesis = (chunk = Chr(41))
+    isClosedParenthesis = (chunk = chr(41))
 End Function
 
 Private Property Get FormulaSheet() As String
@@ -314,7 +314,7 @@ Public Property Get Varlists(Optional ByVal formulaType As String = "analysis") 
     Set varTable = New BetterArray
     varTable.LowerBound = 1
     If Valid(formulaType) Then
-        Set varTable = this.formulavariables.Clone()
+        Set varTable = This.formulavariables.Clone()
     End If
     Set Varlists = varTable.Clone()
 End Property
@@ -407,14 +407,14 @@ Public Property Get ParsedAnalysisFormula(formCond As IFormulaCondition, _
 End Property
 
 Private Function Quoted(ByVal val As String)
-    Quoted = Chr(34) & val & Chr(34)
+    Quoted = chr(34) & val & chr(34)
 End Function
 
 Private Function ClearCountIf(ByVal val As String)
     Dim cleared As String
     cleared = Replace(val, Quoted("=") & "&", vbNullString)
     cleared = Replace(val, "=", vbNullString)
-    cleared = Replace(cleared, Chr(34) & Chr(34) & Chr(34) & Chr(34), Chr(34) & Chr(34))
+    cleared = Replace(cleared, chr(34) & chr(34) & chr(34) & chr(34), chr(34) & chr(34))
     cleared = Replace(cleared, "<>", "######")
     cleared = IIf(InStr(1, cleared, "<") > 0, Replace(cleared, "<", Quoted("<=") & " & "), cleared)
     cleared = IIf(InStr(1, cleared, ">") > 0, Replace(cleared, ">", Quoted(">=") & " & "), cleared)

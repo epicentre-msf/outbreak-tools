@@ -27,8 +27,8 @@ Private Type TLinelist
     firstSheet As String                         'stock the name of the first sheet (depending on the os language)
 End Type
 
-Private this As TLinelist
-Private Const CLASSNAME  As String = "Linelist"
+Private This As TLinelist
+Private Const className  As String = "Linelist"
 
 Public Function Create(lData As ILinelistSpecs) As ILinelist
 
@@ -45,11 +45,11 @@ Public Property Get Self() As ILinelist
 End Property
 
 Public Property Get linelistData() As ILinelistSpecs
-    Set linelistData = this.Data
+    Set linelistData = This.Data
 End Property
 
 Public Property Set linelistData(ByVal lData As ILinelistSpecs)
-    Set this.Data = lData
+    Set This.Data = lData
 End Property
 
 'Dictionary
@@ -76,18 +76,18 @@ Private Sub ReturnState()
 End Sub
 
 'Workbook
-Public Property Get wkb() As Workbook
+Public Property Get Wkb() As Workbook
     Dim xlsapp As Object
 
 
-    If this.outWkb Is Nothing Then
+    If This.outWkb Is Nothing Then
         BusyApp
-        Set this.outWkb = Workbooks.Add()
+        Set This.outWkb = Workbooks.Add()
         BusyApp
-        this.firstSheet = this.outWkb.Worksheets(1).Name
+        This.firstSheet = This.outWkb.Worksheets(1).Name
     End If
 
-    Set wkb = this.outWkb
+    Set Wkb = This.outWkb
 End Property
 
 'Test if a worksheet Exists
@@ -95,7 +95,7 @@ Private Function sheetExists(ByVal sheetName As String) As Boolean
     Dim sh As Worksheet
     Dim outWkb As Workbook
 
-    Set outWkb = wkb()
+    Set outWkb = Wkb()
     On Error Resume Next
     Set sh = outWkb.Worksheets(sheetName)
     On Error GoTo 0
@@ -120,7 +120,7 @@ End Property
 'Add worksheets to workbook
 Private Sub AddOutputSheet(ByVal sheetName As String, Optional ByVal Hide As Long = xlSheetVeryHidden)
     Dim outWkb As Workbook
-    Set outWkb = wkb()
+    Set outWkb = Wkb()
 
     If sheetExists(sheetName) Then ThrowError "The sheet " & sheetName & "already exists in the output workbook"
     With outWkb
@@ -136,38 +136,38 @@ Private Property Get Wksh(ByVal sheetName As String) As Worksheet
 
     'Test if the sheet Exists
     If Not sheetExists(sheetName) Then ThrowError "The sheet " & sheetName & "does not exists in current workbook"
-    Set outWkb = wkb()
+    Set outWkb = Wkb()
     Set sh = outWkb.Worksheets(sheetName)
     Set Wksh = sh
 End Property
 
-Private Sub TransferCode(MODULENAME As String, scope As CodeScope)
+Private Sub TransferCode(moduleName As String, scope As CodeScope)
     
     Dim codeObject As Object                     'Where to stock to code in the workbook
     Dim codeContent As String
     Dim outWkb As Workbook
     Dim inpWkb As Workbook
     Dim mainobj As IMain
-    Dim sep As String
+    Dim Sep As String
     Dim outDir As String
     Dim outPath As String
     
     Dim lData As ILinelistSpecs
 
-    Set outWkb = wkb()                           'Output workbook
+    Set outWkb = Wkb()                           'Output workbook
     Set lData = linelistData()
     Set inpWkb = lData.specswkb()
     Set mainobj = lData.MainObject()
-    sep = Application.PathSeparator
-    outDir = mainobj.OutputPath() & sep & "LinelistApp_"
+    Sep = Application.PathSeparator
+    outDir = mainobj.OutputPath() & Sep & "LinelistApp_"
          
 
     'get all the values within the actual module to transfer
     Select Case scope
     Case codeScopeModule
-        outPath = outDir & sep & "CopieMod.bas"
+        outPath = outDir & Sep & "CopieMod.bas"
     Case codeScopeClass
-        outPath = outDir & sep & "CopieCls.cls"
+        outPath = outDir & Sep & "CopieCls.cls"
     End Select
     
     'I need to import/export classes to keep their attribute. (self instanciation, etc.)
@@ -176,8 +176,8 @@ Private Sub TransferCode(MODULENAME As String, scope As CodeScope)
     Kill outPath
     On Error GoTo 0
          
-    Set codeObject = inpWkb.VBProject.VBComponents(MODULENAME)
-    codeObject.Export outPath
+    Set codeObject = inpWkb.VBProject.VBComponents(moduleName)
+    codeObject.export outPath
     Set codeObject = outWkb.VBProject.VBComponents
     codeObject.Import outPath
         
@@ -203,7 +203,7 @@ Private Sub TransferCodeWkb()
 
     Set lData = linelistData()
     Set inpWkb = lData.specswkb()
-    Set outWkb = wkb()
+    Set outWkb = Wkb()
 
     'save the code module in the string sNouvCode
     With inpWkb.VBProject.VBComponents(LINELISTWORKBOOKMODULENAME).CodeModule
@@ -228,19 +228,19 @@ Public Sub TemporaryFolder(Optional Create As Boolean = True)
     Dim lData As ILinelistSpecs
     Dim mainobj As IMain
     Dim outPath As String
-    Dim sep As String                            'Separator
+    Dim Sep As String                            'Separator
 
     Set lData = linelistData()
     Set mainobj = lData.MainObject()
     outPath = mainobj.OutputPath()
-    sep = Application.PathSeparator
+    Sep = Application.PathSeparator
 
     'required temporary folder for analysis
     On Error Resume Next
-    Kill outPath & sep & "LinelistApp_" & sep & "*.frm"
-    Kill outPath & sep & "LinelistApp_" & sep & "*.frx"
-    RmDir outPath & sep & "LinelistApp_"
-    If Create Then MkDir outPath & sep & "LinelistApp_" 'create a folder for sending all the data from designer
+    Kill outPath & Sep & "LinelistApp_" & Sep & "*.frm"
+    Kill outPath & Sep & "LinelistApp_" & Sep & "*.frx"
+    RmDir outPath & Sep & "LinelistApp_"
+    If Create Then MkDir outPath & Sep & "LinelistApp_" 'create a folder for sending all the data from designer
     On Error GoTo 0
 End Sub
 
@@ -252,33 +252,33 @@ Public Sub TransferForm(formName As String)
     Dim outWkb As Workbook
     Dim inpWkb As Workbook
     Dim mainobj As IMain
-    Dim sep As String                            'Application path separator
+    Dim Sep As String                            'Application path separator
     Dim formPath As String
 
     Set lData = linelistData()
-    Set outWkb = wkb()
+    Set outWkb = Wkb()
     Set inpWkb = lData.specswkb()
     Set mainobj = lData.MainObject()
-    sep = Application.PathSeparator
-    outDir = mainobj.OutputPath() & sep & "LinelistApp_"
+    Sep = Application.PathSeparator
+    outDir = mainobj.OutputPath() & Sep & "LinelistApp_"
 
     'Output dir is where to write the form for import / export
     On Error Resume Next
-    Kill outDir & sep & "CopieUsf.frm"
-    Kill outDir & sep & "CopieUsf.frx"
+    Kill outDir & Sep & "CopieUsf.frm"
+    Kill outDir & Sep & "CopieUsf.frx"
     On Error GoTo 0
     
-    formPath = outDir & sep & "CopieUsf.frm"
+    formPath = outDir & Sep & "CopieUsf.frm"
 
     'Copy the frame to the output directory
-    inpWkb.VBProject.VBComponents(formName).Export formPath
+    inpWkb.VBProject.VBComponents(formName).export formPath
     outWkb.VBProject.VBComponents.Import formPath
 
     DoEvents
 
     On Error Resume Next
-    Kill outDir & sep & "CopieUsf.frm"
-    Kill outDir & sep & "CopieUsf.frx"
+    Kill outDir & Sep & "CopieUsf.frm"
+    Kill outDir & Sep & "CopieUsf.frx"
     On Error GoTo 0
 End Sub
 
@@ -298,7 +298,7 @@ Private Sub Prepare()
     Dim prevAlert As Boolean
     Dim classesList As BetterArray
     
-    Set outWkb = wkb()
+    Set outWkb = Wkb()
     
     Set lData = linelistData()
     Set sheetsList = New BetterArray
@@ -320,7 +320,7 @@ Private Sub Prepare()
     DoEvents
 
     'Export differents parts to the workbook (dictionary, choices, translation, geo)
-    lData.Export outWkb
+    lData.export outWkb
 
     DoEvents
 
@@ -346,7 +346,7 @@ Private Sub Prepare()
     'Delete the first worksheet with name sheet1
     prevAlert = Application.DisplayAlerts
     Application.DisplayAlerts = False
-    outWkb.Worksheets(this.firstSheet).Delete
+    outWkb.Worksheets(This.firstSheet).Delete
     Application.DisplayAlerts = prevAlert
     
     'Send the User forms and classes to the linelist
@@ -457,11 +457,11 @@ Private Sub ErrorManage()
                   vbExclamation + vbYesNo, "ERROR")
 
     If Quit = vbYes Then
-        Set outWkb = wkb()
+        Set outWkb = Wkb()
         'Return the uncomplete workbook
         outWkb.Application.Visible = True
     Else
-        Set outWkb = wkb()
+        Set outWkb = Wkb()
         outWkb.Close savechanges:=False
     End If
 
@@ -478,7 +478,7 @@ Private Sub SaveLL()
 
 
     Set lData = linelistData()
-    Set outWkb = wkb()
+    Set outWkb = Wkb()
     Set mainobj = lData.MainObject()
     Set passobj = lData.Password()
     Set msgTrads = lData.TransObject()
@@ -501,7 +501,7 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
 End Sub
 
 'Properties

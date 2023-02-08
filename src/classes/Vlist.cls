@@ -22,8 +22,8 @@ Private Type TVlist
     ll As ILinelist
 End Type
 
-Private this As TVlist
-Private Const CLASSNAME As String = "Vlist"
+Private This As TVlist
+Private Const className As String = "Vlist"
 Private Const GOTOSECCODE As String = "go_to_section"
 
 Public Function Create(ByVal sheetName As String, ll As ILinelist) As IVlist
@@ -43,19 +43,19 @@ Public Property Get Self() As IVlist
 End Property
 
 Public Property Let Name(ByVal sheetName As String)
-    this.shName = sheetName
+    This.shName = sheetName
 End Property
 
 Public Property Get Name() As String
-    Name = this.shName
+    Name = This.shName
 End Property
 
 Public Property Get LinelistObject() As ILinelist
-    Set LinelistObject = this.ll
+    Set LinelistObject = This.ll
 End Property
 
 Public Property Set LinelistObject(ByVal ll As ILinelist)
-    Set this.ll = ll
+    Set This.ll = ll
 End Property
 
 Private Property Get Dictionary() As ILLdictionary
@@ -258,7 +258,7 @@ End Sub
 
 'Error
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
 End Sub
 
 Private Sub CheckRequirements(ByVal sheetName As String, ByVal ll As ILinelist)

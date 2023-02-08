@@ -30,8 +30,8 @@ Private Type TLinelistSpecs
     specswkb As Workbook
 End Type
 
-Private this As TLinelistSpecs
-Private Const CLASSNAME                 As String = "LinelistSpecs"
+Private This As TLinelistSpecs
+Private Const className                 As String = "LinelistSpecs"
 Private Const DICTIONARYSHEET           As String = "Dictionary"
 Private Const CHOICESSHEET              As String = "Choices"
 Private Const GEOSHEET                  As String = "Geo"
@@ -56,18 +56,18 @@ Public Function Create(ByVal specswkb As Workbook) As ILinelistSpecs
     CheckSheetsRequirements specswkb
     'At this step everything needed of creating the Linelist exists
     With New LinelistSpecs
-        Set .wkb = specswkb
+        Set .Wkb = specswkb
         Set Create = .Self
     End With
 
 End Function
 
-Public Property Get wkb() As Workbook
-    Set wkb = this.specswkb
+Public Property Get Wkb() As Workbook
+    Set Wkb = This.specswkb
 End Property
 
-Public Property Set wkb(ByVal specswkb As Workbook)
-    Set this.specswkb = specswkb
+Public Property Set Wkb(ByVal specswkb As Workbook)
+    Set This.specswkb = specswkb
 End Property
 
 Public Property Get Self() As ILinelistSpecs
@@ -79,7 +79,7 @@ Public Property Get Dictionary() As ILLdictionary
     'Create the dictionary
     Dim dict As ILLdictionary
     Dim sh As Worksheet
-    Set sh = wkb.Worksheets(DICTIONARYSHEET)
+    Set sh = Wkb.Worksheets(DICTIONARYSHEET)
 
     'StartRow is 1, start column is 1
     Set dict = LLdictionary.Create(sh, 1, 1)
@@ -91,7 +91,7 @@ Public Property Get Choices() As ILLchoice
     Dim choi As ILLchoice
     Dim sh As Worksheet
 
-    Set sh = wkb.Worksheets(CHOICESSHEET)
+    Set sh = Wkb.Worksheets(CHOICESSHEET)
 
     Set choi = LLchoice.Create(sh, 1, 1)
     Set Choices = choi
@@ -103,8 +103,8 @@ Public Property Get trads() As ILLTranslations
     Dim shtransLL As Worksheet
     Dim shtransDict As Worksheet
 
-    Set shtransLL = wkb.Worksheets(HLISTTRANSLATIONSHEET)
-    Set shtransDict = wkb.Worksheets(DICTTRANSLATIONSHEET)
+    Set shtransLL = Wkb.Worksheets(HLISTTRANSLATIONSHEET)
+    Set shtransDict = Wkb.Worksheets(DICTTRANSLATIONSHEET)
 
     Set trans = LLTranslations.Create(shtransLL, shtransDict)
     Set trads = trans
@@ -112,33 +112,33 @@ End Property
 
 Public Property Get desTrads() As IDesTranslation
     Dim sh As Worksheet
-    Set sh = wkb.Worksheets(DESTRANSSHEET)
+    Set sh = Wkb.Worksheets(DESTRANSSHEET)
     Set desTrads = DesTranslation.Create(sh)
 End Property
 
 Public Property Get geoObject() As ILLGeo
     Dim sh As Worksheet
     Dim geo As ILLGeo
-    Set sh = wkb.Worksheets(GEOSHEET)
+    Set sh = Wkb.Worksheets(GEOSHEET)
     Set geo = LLGeo.Create(sh)
     Set geoObject = geo
 End Property
 
 Public Property Get Exports() As ILLExport
     Dim sh As Worksheet
-    Set sh = wkb.Worksheets(EXPORTSHEET)
+    Set sh = Wkb.Worksheets(EXPORTSHEET)
     Set Exports = LLExport.Create(sh)
 End Property
 
 Public Property Get Analysis() As ILLAnalysis
     Dim sh As Worksheet
-    Set sh = wkb.Worksheets(ANALYSISSPECSSHEET)
+    Set sh = Wkb.Worksheets(ANALYSISSPECSSHEET)
     Set Analysis = LLAnalysis.Create(sh)
 End Property
 
 Public Property Get Password() As ILLPasswords
     Dim sh As Worksheet
-    Set sh = wkb.Worksheets(PASSWORDSHEET)
+    Set sh = Wkb.Worksheets(PASSWORDSHEET)
     Set Password = LLPasswords.Create(sh)
 End Property
 
@@ -149,7 +149,7 @@ End Property
 
 Public Property Get FormulaDataObject() As IFormulaData
     Dim sh As Worksheet
-    Set sh = wkb.Worksheets(FormulaSheet)
+    Set sh = Wkb.Worksheets(FormulaSheet)
     Set FormulaDataObject = FormulaData.Create(sh)
 End Property
 
@@ -157,7 +157,7 @@ Public Property Get DesignFormat() As ILLFormat
     Dim sh As Worksheet
     Dim designName As String
 
-    Set sh = wkb.Worksheets(FORMATSHEET)
+    Set sh = Wkb.Worksheets(FORMATSHEET)
     designName = sh.Range(designType).Value
 
     'Will take in account the other aspecs
@@ -166,7 +166,7 @@ End Property
 
 Public Property Get MainObject() As IMain
     Dim sh As Worksheet
-    Set sh = wkb.Worksheets(MAINSHEET)
+    Set sh = Wkb.Worksheets(MAINSHEET)
     Set MainObject = Main.Create(sh)
 End Property
 
@@ -479,7 +479,7 @@ Private Sub RecursiveListAuto(ByVal varName As String)
 
 End Sub
 
-Private Sub Export(ByVal toWkb As Workbook)
+Private Sub export(ByVal toWkb As Workbook)
     Dim dict As ILLdictionary
     Dim choi As ILLchoice
     Dim geo As ILLGeo                            'Geo Object to add admin names in the preparation steps of the dictionary
@@ -494,12 +494,12 @@ Private Sub Export(ByVal toWkb As Workbook)
     Set geo = geoObject()
     Set passobj = Password()
 
-    dict.Export toWkb
-    choi.Export toWkb, Hide:=xlSheetVeryHidden
+    dict.export toWkb
+    choi.export toWkb, Hide:=xlSheetVeryHidden
     trans.ExportToWkb toWkb
     expobj.ExportSpecs toWkb, Hide:=xlSheetVeryHidden
     geo.ExportToWkb toWkb
-    passobj.Export toWkb
+    passobj.export toWkb
 
     'Add the export language and date to the linelist
 End Sub
@@ -553,11 +553,11 @@ Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
 End Sub
 
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
+    Err.Raise VBA.vbObjectError + 515, className, "Unable to create an instance of the class : " & errorMessage
 End Sub
 
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
 End Sub
 
 'Implement the interfaces
@@ -596,7 +596,7 @@ Public Property Get ILinelistSpecs_DesignFormat() As ILLFormat
 End Property
 
 Public Property Get ILinelistSpecs_SpecsWkb() As Workbook
-    Set ILinelistSpecs_SpecsWkb = wkb()
+    Set ILinelistSpecs_SpecsWkb = Wkb()
 End Property
 
 Public Property Get ILinelistSpecs_MainObject() As IMain
@@ -616,7 +616,7 @@ Public Property Get ILinelistSpecs_Analysis() As ILLAnalysis
 End Property
 
 Public Sub ILinelistSpecs_Export(ByVal toWkb As Workbook)
-    Export toWkb
+    export toWkb
 End Sub
 
 

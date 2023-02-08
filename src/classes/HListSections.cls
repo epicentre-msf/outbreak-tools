@@ -22,9 +22,9 @@ Private Type THListSections
     ll As ILinelist
 End Type
 
-Private this As THListSections
+Private This As THListSections
 Private Const SECROW As Long = 5                 'Row for the sub section
-Private Const CLASSNAME As String = "HListSections"
+Private Const className As String = "HListSections"
 
 Public Function Create(ByVal strt As Long, ll As ILinelist) As IHListSections
     CheckRequirements strt, ll
@@ -41,20 +41,20 @@ Public Property Get Self() As IHListSections
 End Property
 
 Public Property Get StartRow() As Long           'Start Row of the subsection in the dictionary
-    StartRow = this.strt
+    StartRow = This.strt
 End Property
 
 Public Property Let StartRow(ByVal strt As Long)
-    this.strt = strt
-    this.endrw = 0
+    This.strt = strt
+    This.endrw = 0
 End Property
 
 Public Property Get LinelistObject() As ILinelist
-    Set LinelistObject = this.ll
+    Set LinelistObject = This.ll
 End Property
 
 Public Property Set LinelistObject(ByVal ll As ILinelist)
-    Set this.ll = ll
+    Set This.ll = ll
 End Property
 
 Public Property Get Dictionary() As ILLdictionary
@@ -98,7 +98,7 @@ Public Property Get EndRow() As Long             'End Row of the subsection in t
     Dim sheetName As String
     Dim sectionEnd As Boolean
 
-    If (this.endrw = 0) Then
+    If (This.endrw = 0) Then
         rowNumber = StartRow()
         Set dict = Dictionary()
         Set sectionRng = dict.DataRange("main section")
@@ -112,10 +112,10 @@ Public Property Get EndRow() As Long             'End Row of the subsection in t
             sectionEnd = (sectionRng.Cells(rowNumber, 1).Value <> sectionName) Or _
                                                                                (sheetRng.Cells(rowNumber, 1).Value <> sheetName)
         Loop
-        this.endrw = rowNumber - 1
+        This.endrw = rowNumber - 1
     End If
 
-    EndRow = this.endrw
+    EndRow = This.endrw
 End Property
 
 Private Property Get HasNext() As Boolean
@@ -215,7 +215,7 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Execution Error : " & errorMessage
 End Sub
 
 'requirements for creating an objec

@@ -20,8 +20,8 @@ Private Type TDropdownLists
     sh As Worksheet
 End Type
 
-Private this As TDropdownLists
-Private Const CLASSNAME As String = "DropdownLists"
+Private This As TDropdownLists
+Private Const className As String = "DropdownLists"
 
 Public Function Create(ByVal outsh As Worksheet) As IDropdownLists
     'Errors
@@ -39,11 +39,11 @@ Public Property Get Self() As IDropdownLists
 End Property
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = this.sh
+    Set Wksh = This.sh
 End Property
 
 Public Property Set Wksh(ByVal outsh As Worksheet)
-    Set this.sh = outsh
+    Set This.sh = outsh
 End Property
 
 Private Property Get LastColumn() As Long
@@ -57,25 +57,25 @@ Private Property Get LastColumn() As Long
     LastColumn = colIndex
 End Property
 
-Private Property Get CurrentListName(ByVal ListName As String) As String
-    CurrentListName = Replace(Application.WorksheetFunction.Trim(ListName), " ", "_")
+Private Property Get CurrentListName(ByVal listName As String) As String
+    CurrentListName = Replace(Application.WorksheetFunction.Trim(listName), " ", "_")
 End Property
 
-Private Property Get CurrentHeaderName(ByVal ListName As String) As String
-    CurrentHeaderName = "dropdown_" & CurrentListName(ListName)
+Private Property Get CurrentHeaderName(ByVal listName As String) As String
+    CurrentHeaderName = "dropdown_" & CurrentListName(listName)
 End Property
 
-Private Property Get CurrentLoName(ByVal ListName As String) As String
-    CurrentLoName = "list_" & CurrentListName(ListName)
+Private Property Get CurrentLoName(ByVal listName As String) As String
+    CurrentLoName = "list_" & CurrentListName(listName)
 End Property
 
 'Test if a listobject exists in a sheet
-Public Function Exists(ByVal ListName As String) As Boolean
+Public Function Exists(ByVal listName As String) As Boolean
     Dim Lo As ListObject
     Dim loName As String
     Dim sh As Worksheet
     Set sh = Wksh()
-    loName = CurrentLoName(ListName)
+    loName = CurrentLoName(listName)
     On Error Resume Next
     Set Lo = sh.ListObjects(loName)
     On Error GoTo 0
@@ -83,19 +83,19 @@ Public Function Exists(ByVal ListName As String) As Boolean
 End Function
 
 'Add New list to the dropdown sheet
-Private Sub Add(ByVal listValues As BetterArray, ByVal ListName As String)
+Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String)
   
     Dim sh As Worksheet
     Dim colIndex As Long
     Dim headerName As String                     'header Name
     Dim loName As String                         'List object name
     Dim rng As Range
-    Dim wkb As Workbook
+    Dim Wkb As Workbook
 
 
-    If (Not Exists(ListName)) Then
-        loName = CurrentLoName(ListName)
-        headerName = CurrentHeaderName(ListName)
+    If (Not Exists(listName)) Then
+        loName = CurrentLoName(listName)
+        headerName = CurrentHeaderName(listName)
         colIndex = LastColumn()
         Set sh = Wksh()
 
@@ -106,31 +106,31 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal ListName As String)
 
             'Add A list object table
             .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName
-            Set wkb = .Parent
+            Set Wkb = .Parent
         End With
 
-        wkb.NAMES.Add Name:=headerName, RefersToR1C1:="=" & loName & "[" & headerName & "]"
+        Wkb.NAMES.Add Name:=headerName, RefersToR1C1:="=" & loName & "[" & headerName & "]"
     End If
 End Sub
 
 'Remove the validation
-Private Sub Remove(ByVal ListName As String)
+Private Sub Remove(ByVal listName As String)
     Dim sh As Worksheet
-    Dim wkb As Workbook
+    Dim Wkb As Workbook
     Dim rng As Range
     Dim loName As String
     Dim headerName As String
 
-    If Exists(ListName) Then
+    If Exists(listName) Then
     
-        loName = CurrentLoName(ListName)
-        headerName = CurrentHeaderName(ListName)
+        loName = CurrentLoName(listName)
+        headerName = CurrentHeaderName(listName)
 
         Set sh = Wksh()
         Set rng = sh.ListObjects(loName).Range
-        Set wkb = sh.Parent
+        Set Wkb = sh.Parent
     
-        wkb.NAMES(headerName).Delete
+        Wkb.NAMES(headerName).Delete
     
         If rng.Column = 1 Then
     
@@ -147,7 +147,7 @@ Private Sub Remove(ByVal ListName As String)
 End Sub
 
 'Update a list with new values
-Private Sub Update(ByVal UpdateData As BetterArray, ByVal ListName As String)
+Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String)
     
     Dim sh As Worksheet
     Dim cellRng As Range
@@ -155,9 +155,9 @@ Private Sub Update(ByVal UpdateData As BetterArray, ByVal ListName As String)
     Dim loName As String
     Dim Lo As ListObject
 
-    If Not Exists(ListName) Then Exit Sub
+    If Not Exists(listName) Then Exit Sub
     Set sh = Wksh()
-    loName = CurrentLoName(ListName)
+    loName = CurrentLoName(listName)
     Set Lo = sh.ListObjects(loName)
     Set cellRng = Lo.Range.Cells(2, 1)
     
@@ -170,15 +170,15 @@ Private Sub Update(ByVal UpdateData As BetterArray, ByVal ListName As String)
 End Sub
 
 'Set a validation on a range
-Private Sub SetValidation(ByVal cellRng As Range, ByVal ListName As String, _
+Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
                           Optional ByVal alertType As String = "info", _
                           Optional ByVal message As String = vbNullString)
 
     Dim headerName As String
 
-    If Not Exists(ListName) Then ThrowError "There is no available dropdown for " & ListName
+    If Not Exists(listName) Then ThrowError "There is no available dropdown for " & listName
 
-    headerName = "= " & CurrentHeaderName(ListName)
+    headerName = "= " & CurrentHeaderName(listName)
     
     With cellRng.validation
         .Delete
@@ -204,30 +204,30 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
 End Sub
 
 'Exposed methods
-Public Property Get IDropdownLists_Exists(ByVal ListName As String) As Boolean
-    IDropdownLists_Exists = Exists(ListName)
+Public Property Get IDropdownLists_Exists(ByVal listName As String) As Boolean
+    IDropdownLists_Exists = Exists(listName)
 End Property
 
-Public Sub IDropdownLists_Add(ByVal listValues As BetterArray, ByVal ListName As String)
-    Add listValues:=listValues, ListName:=ListName
+Public Sub IDropdownLists_Add(ByVal listValues As BetterArray, ByVal listName As String)
+    Add listValues:=listValues, listName:=listName
 End Sub
 
-Public Sub IDropdownLists_Remove(ByVal ListName As String)
-    Remove ListName:=ListName
+Public Sub IDropdownLists_Remove(ByVal listName As String)
+    Remove listName:=listName
 End Sub
 
-Public Sub IDropdownLists_SetValidation(ByVal cellRng As Range, ByVal ListName As String, _
+Public Sub IDropdownLists_SetValidation(ByVal cellRng As Range, ByVal listName As String, _
                                         Optional ByVal alertType As String = "info", _
                                         Optional ByVal message As String = vbNullString)
 
-    SetValidation cellRng:=cellRng, ListName:=ListName, alertType:=alertType, message:=message
+    SetValidation cellRng:=cellRng, listName:=listName, alertType:=alertType, message:=message
 End Sub
 
 
-Public Sub IDropdownLists_Update(ByVal UpdateData As BetterArray, ByVal ListName As String)
-    Update UpdateData:=UpdateData, ListName:=ListName
+Public Sub IDropdownLists_Update(ByVal UpdateData As BetterArray, ByVal listName As String)
+    Update UpdateData:=UpdateData, listName:=listName
 End Sub

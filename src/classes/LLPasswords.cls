@@ -22,9 +22,9 @@ Private Type TPassWord
     sh As Worksheet
 End Type
 
-Private this As TPassWord
+Private This As TPassWord
 
-Private Const CLASSNAME As String = "LLPasswords"
+Private Const className As String = "LLPasswords"
 Private Const TABKEYS   As String = "T_keys"
 
 Public Function Create(ByVal sh As Worksheet) As ILLPasswords
@@ -37,11 +37,11 @@ Public Function Create(ByVal sh As Worksheet) As ILLPasswords
 End Function
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = this.sh
+    Set Wksh = This.sh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-    Set this.sh = sh
+    Set This.sh = sh
 End Property
 
 Public Property Get Self() As ILLPasswords
@@ -164,10 +164,10 @@ End Sub
 
 'Error
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
 End Sub
 
-Private Sub Export(ByVal toWkb As Workbook)
+Private Sub export(ByVal toWkb As Workbook)
 
     Dim sh As Worksheet
     Dim outsh As Worksheet
@@ -237,7 +237,7 @@ Public Sub ILLPasswords_Protect(Optional ByVal sheetName As String = "_active", 
 End Sub
 
 Public Sub ILLPasswords_Export(ByVal toWkb As Workbook)
-    Export toWkb
+    export toWkb
 End Sub
 
     'Protect and unprotect the workbook to avoid sheet name changes
