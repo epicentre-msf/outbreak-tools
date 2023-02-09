@@ -474,12 +474,14 @@ Sub ClearOneHistoricGeobase(iGeoType As Byte)
         If iGeoType = 0 Then
             If Not WkshGeo.ListObjects(C_sTabHistoGeo).DataBodyRange Is Nothing Then
                 WkshGeo.ListObjects(C_sTabHistoGeo).DataBodyRange.Delete
+                T_HistoGeo.Clear
                 [F_Geo].LST_Histo.Clear
             End If
         End If
         If iGeoType = 1 Then
             If Not WkshGeo.ListObjects(C_sTabHistoHF).DataBodyRange Is Nothing Then
                 WkshGeo.ListObjects(C_sTabHistoHF).DataBodyRange.Delete
+                T_HistoHF.Clear
                 [F_Geo].LST_HistoF.Clear
             End If
         End If

@@ -213,7 +213,7 @@ Private Property Get HasMissing() As Boolean
     Case TypeTimeSeries
         HasMissing = (Value("missing") = "yes") And (Value("column") <> vbNullString)
     Case TypeSpatial
-        HasMissing = (Value("missing") = "yes")
+        HasMissing = (Value("missing") = "yes") And (Value("column") <> vbNullString)
     End Select
 
 End Property

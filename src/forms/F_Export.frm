@@ -277,31 +277,31 @@ Option Explicit
 
 Private Sub CMD_Export2_Click()
 
-    Call Export(2)
+    Call export(2)
 
 End Sub
 
 Private Sub CMD_Export1_Click()
 
-    Call Export(1)
+    Call export(1)
 
 End Sub
 
 Private Sub CMD_Export3_Click()
 
-    Call Export(3)
+    Call export(3)
 
 End Sub
 
 Private Sub CMD_Export4_Click()
 
-    Call Export(4)
+    Call export(4)
 
 End Sub
 
 Private Sub CMD_Export5_Click()
 
-    Call Export(5)
+    Call export(5)
 
 End Sub
 

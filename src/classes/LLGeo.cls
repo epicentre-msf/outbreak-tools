@@ -500,6 +500,7 @@ Private Sub ExportToFile(outputWkb As Workbook, Optional ByVal onlyHistory As Bo
     Translate rawNames:=False
 End Sub
 
+
 'Export by keeping the actual format of the Worksheet
 Private Sub ExportToWkb(ByVal outputWkb As Workbook)
 
@@ -638,7 +639,7 @@ Private Sub Import(ByVal fromWkb As Workbook)
     Dim impRng As Range
     Dim actRng As Range
     Dim concatFormula As String
-    Dim Sep As String
+    Dim sep As String
 
 
     Set admNames = New BetterArray
@@ -646,7 +647,7 @@ Private Sub Import(ByVal fromWkb As Workbook)
 
     Set sh = Wksh()
     'Separator for concatenate
-    Sep = " & " & chr(34) & " | " & chr(34) & " & "
+    sep = " & " & chr(34) & " | " & chr(34) & " & "
 
     'Clear the Current Geo
     Clear
@@ -683,37 +684,37 @@ Private Sub Import(ByVal fromWkb As Workbook)
                 Case "T_ADM2"
 
                     concatFormula = "=" & impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
-                                                                                         Sep & _
+                                                                                         sep & _
                                                                                          impRng.Cells(1, 1).Address(Rowabsolute:=False)
                 Case "T_ADM3"
 
                     concatFormula = "=" & _
                                     impRng.Cells(1, 3).Address(Rowabsolute:=False) & _
-                                    Sep & _
+                                    sep & _
                                     impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
-                                    Sep & _
+                                    sep & _
                                     impRng.Cells(1, 1).Address(Rowabsolute:=False)
 
                 Case "T_ADM4"
 
                     concatFormula = "=" & _
                                     impRng.Cells(1, 4).Address(Rowabsolute:=False) & _
-                                    Sep & _
+                                    sep & _
                                     impRng.Cells(1, 3).Address(Rowabsolute:=False) & _
-                                    Sep & _
+                                    sep & _
                                     impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
-                                    Sep & _
+                                    sep & _
                                     impRng.Cells(1, 1).Address(Rowabsolute:=False)
                     
                 Case "T_HF"
 
                     concatFormula = "=" & _
                                     impRng.Cells(1, 1).Address(Rowabsolute:=False) & _
-                                    Sep & _
+                                    sep & _
                                     impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
-                                    Sep & _
+                                    sep & _
                                     impRng.Cells(1, 3).Address(Rowabsolute:=False) & _
-                                    Sep & _
+                                    sep & _
                                     impRng.Cells(1, 4).Address(Rowabsolute:=False)
 
                 Case Else
