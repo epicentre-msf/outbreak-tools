@@ -10,7 +10,7 @@
 # If update is done from the source, will just update the
 # linelist_designer file with linelist_designer_aky file
 
-update_designer  <- function(src = "codes") {
+update_designer  <- function(src = "codes", update_stable = FALSE) {
 
     if (src == "codes") {
         #move previous version of my designer
@@ -18,8 +18,11 @@ update_designer  <- function(src = "codes") {
                 to = "./Rscripts/", overwrite = TRUE)
 
         # move back and overwrite
-        file.copy(from = "./Rscripts/linelist_designer_aky.xlsb",
+
+        if (update_stable) {
+            file.copy(from = "./Rscripts/linelist_designer_aky.xlsb",
                 to = "./linelist_designer.xlsb", overwrite = TRUE)
+        }
 
         # add the dev version when copying
 

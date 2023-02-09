@@ -148,7 +148,7 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
     Dim outWkb As Workbook
     Dim inpWkb As Workbook
     Dim mainobj As IMain
-    Dim Sep As String
+    Dim sep As String
     Dim outDir As String
     Dim outPath As String
     
@@ -158,16 +158,16 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
     Set lData = linelistData()
     Set inpWkb = lData.specswkb()
     Set mainobj = lData.MainObject()
-    Sep = Application.PathSeparator
-    outDir = mainobj.OutputPath() & Sep & "LinelistApp_"
+    sep = Application.PathSeparator
+    outDir = mainobj.OutputPath() & sep & "LinelistApp_"
          
 
     'get all the values within the actual module to transfer
     Select Case scope
     Case codeScopeModule
-        outPath = outDir & Sep & "CopieMod.bas"
+        outPath = outDir & sep & "CopieMod.bas"
     Case codeScopeClass
-        outPath = outDir & Sep & "CopieCls.cls"
+        outPath = outDir & sep & "CopieCls.cls"
     End Select
     
     'I need to import/export classes to keep their attribute. (self instanciation, etc.)
@@ -228,19 +228,19 @@ Public Sub TemporaryFolder(Optional Create As Boolean = True)
     Dim lData As ILinelistSpecs
     Dim mainobj As IMain
     Dim outPath As String
-    Dim Sep As String                            'Separator
+    Dim sep As String                            'Separator
 
     Set lData = linelistData()
     Set mainobj = lData.MainObject()
     outPath = mainobj.OutputPath()
-    Sep = Application.PathSeparator
+    sep = Application.PathSeparator
 
     'required temporary folder for analysis
     On Error Resume Next
-    Kill outPath & Sep & "LinelistApp_" & Sep & "*.frm"
-    Kill outPath & Sep & "LinelistApp_" & Sep & "*.frx"
-    RmDir outPath & Sep & "LinelistApp_"
-    If Create Then MkDir outPath & Sep & "LinelistApp_" 'create a folder for sending all the data from designer
+    Kill outPath & sep & "LinelistApp_" & sep & "*.frm"
+    Kill outPath & sep & "LinelistApp_" & sep & "*.frx"
+    RmDir outPath & sep & "LinelistApp_"
+    If Create Then MkDir outPath & sep & "LinelistApp_" 'create a folder for sending all the data from designer
     On Error GoTo 0
 End Sub
 
@@ -252,23 +252,23 @@ Public Sub TransferForm(formName As String)
     Dim outWkb As Workbook
     Dim inpWkb As Workbook
     Dim mainobj As IMain
-    Dim Sep As String                            'Application path separator
+    Dim sep As String                            'Application path separator
     Dim formPath As String
 
     Set lData = linelistData()
     Set outWkb = Wkb()
     Set inpWkb = lData.specswkb()
     Set mainobj = lData.MainObject()
-    Sep = Application.PathSeparator
-    outDir = mainobj.OutputPath() & Sep & "LinelistApp_"
+    sep = Application.PathSeparator
+    outDir = mainobj.OutputPath() & sep & "LinelistApp_"
 
     'Output dir is where to write the form for import / export
     On Error Resume Next
-    Kill outDir & Sep & "CopieUsf.frm"
-    Kill outDir & Sep & "CopieUsf.frx"
+    Kill outDir & sep & "CopieUsf.frm"
+    Kill outDir & sep & "CopieUsf.frx"
     On Error GoTo 0
     
-    formPath = outDir & Sep & "CopieUsf.frm"
+    formPath = outDir & sep & "CopieUsf.frm"
 
     'Copy the frame to the output directory
     inpWkb.VBProject.VBComponents(formName).export formPath
@@ -277,8 +277,8 @@ Public Sub TransferForm(formName As String)
     DoEvents
 
     On Error Resume Next
-    Kill outDir & Sep & "CopieUsf.frm"
-    Kill outDir & Sep & "CopieUsf.frx"
+    Kill outDir & sep & "CopieUsf.frm"
+    Kill outDir & sep & "CopieUsf.frx"
     On Error GoTo 0
 End Sub
 

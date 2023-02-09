@@ -835,7 +835,9 @@ Private Sub AddFormulas()
                 ClearTableConditions
 
                 AddTableConditions rowVar, "= " & rowCatAddress
+                AddNonEmptyTableConditions rowVar
                 AddTableConditions colVar, "= " & rngLab.Address
+                
                 finalFormula = CurrentExcelFormula()
 
                 'Formula on one column for time series

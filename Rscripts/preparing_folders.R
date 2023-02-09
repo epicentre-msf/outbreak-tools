@@ -3,9 +3,11 @@ source("./Rscripts/update_designer.R")
 
 # update from codes
 update_designer(src = "codes")
+#update with the stable version
+#update_designer(src = "codes", update_stable = TRUE) #nolint
 
 # update from github
-#update_designer(src = "github")
+#update_designer(src = "github") #nolint
 
 # clean the output
 clear_output()
@@ -26,5 +28,3 @@ prepare_demo(fake_dataset = path_fake_dataset,
 
 
 # create a class
-
-

@@ -292,6 +292,13 @@ Private Sub CMD_Copier_Click()
     On Error GoTo ErrGeo
     
     selectedValue = [TXT_Msg].Value
+
+    'Exit if nothing is selected
+    If selectedValue = vbNullString Then
+        [F_Geo].Hide
+        Exit Sub
+    End If
+
     Set cellRng = ActiveCell 'First cell for a geo value
     Set sh = ActiveSheet 'Linelist sheet
     Set hRng = sh.ListObjects(1).HeaderRowRange
@@ -330,7 +337,7 @@ Private Sub CMD_Copier_Click()
         If Not T_HistoGeo.Includes(ReverseString(selectedValue)) Then T_HistoGeo.Push ReverseString(selectedValue)
         
         'Now rewrite the histo data in the list object
-        If T_HistoGeo.Length > (Lo.Range.Rows.Count - 1) Then
+        If (T_HistoGeo.Length > (LoRng.Rows.Count - 1)) Or (T_HistoGeo.Length = 1) Then
             T_HistoGeo.ToExcelRange Destination:=LoRng.Cells(2, 1)
             'resize the list object
             Lo.Resize sh.Range(LoRng.Cells(1, 1), LoRng.Cells(T_HistoGeo.Length + 1, 1))
@@ -357,7 +364,7 @@ Private Sub CMD_Copier_Click()
         If Not T_HistoHF.Includes(selectedValue) Then T_HistoHF.Push selectedValue
             
         'Now rewrite the histo data in the list object
-        If T_HistoHF.Length > (Lo.Range.Rows.Count - 1) Then
+        If (T_HistoHF.Length > (LoRng.Rows.Count - 1)) Or (T_HistoHF.Length = 1) Then
             T_HistoHF.ToExcelRange Destination:=LoRng.Cells(2, 1)
             'resize the list object
             Lo.Resize sh.Range(LoRng.Cells(1, 1), LoRng.Cells(T_HistoHF.Length + 1, 1))
