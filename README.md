@@ -4,7 +4,7 @@ Download
 
 [![Download Latest version of setup file](https://github.com/epicentre-msf/outbreak-tools/raw/users/y-amevoin/src/imgs/setup_file.svg)](https://github.com/epicentre-msf/outbreak-tools-setup/raw/main/setup.xlsb)
 [![Download Latest stable version of the designer](https://github.com/epicentre-msf/outbreak-tools/raw/users/y-amevoin/src/imgs/stable_designer.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/main/linelist_designer.xlsb)
-[![Download Latest development version of the designer](https://github.com/epicentre-msf/outbreak-tools/raw/users/y-amevoin/src/imgs/dev_designer.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/dev/linelist_designer.xlsb)
+[![Download Latest development version of the designer](https://github.com/epicentre-msf/outbreak-tools/raw/users/y-amevoin/src/imgs/dev_designer.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/dev/linelist_designer_dev.xlsb)
 
 
 
