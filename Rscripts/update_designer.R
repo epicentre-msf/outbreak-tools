@@ -17,18 +17,14 @@ update_designer  <- function(src = "codes") {
         file.copy(from = "./linelist_designer_aky.xlsb",
                 to = "./Rscripts/", overwrite = TRUE)
 
-        # rename it
-        file.rename(from = "./Rscripts/linelist_designer_aky.xlsb",
-                    to = "./Rscripts/linelist_designer.xlsb")
-
         # move back and overwrite
-        file.copy(from = "./Rscripts/linelist_designer.xlsb",
+        file.copy(from = "./Rscripts/linelist_designer_aky.xlsb",
                 to = "./linelist_designer.xlsb", overwrite = TRUE)
 
-        # last designer version
-        # rename it
-        file.rename(from = "./Rscripts/linelist_designer.xlsb",
-                    to = "./Rscripts/linelist_designer_aky.xlsb")
+        # add the dev version when copying
+
+        file.copy(from = "./Rscripts/linelist_designer_aky.xlsb",
+                to = "./linelist_designer_dev.xlsb", overwrite = TRUE)
     }
 
     if (src == "github") {
