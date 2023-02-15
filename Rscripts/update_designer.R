@@ -10,49 +10,34 @@
 # If update is done from the source, will just update the
 # linelist_designer file with linelist_designer_aky file
 
-update_designer  <- function(src = "codes") {
-
-    if (src == "codes") {
-        #move previous version of my designer
-        file.copy(from = "./linelist_designer_aky.xlsb",
-                to = "./Rscripts/", overwrite = TRUE)
-
-        # rename it
-        file.rename(from = "./Rscripts/linelist_designer_aky.xlsb",
-                    to = "./Rscripts/linelist_designer.xlsb")
-
-        # move back and overwrite
-        file.copy(from = "./Rscripts/linelist_designer.xlsb",
-                to = "./linelist_designer.xlsb", overwrite = TRUE)
-
-        # last designer version
-        # rename it
-        file.rename(from = "./Rscripts/linelist_designer.xlsb",
-                    to = "./Rscripts/linelist_designer_aky.xlsb")
+update_designer  <- function(update_stable = 0) {
+    #move previous version of my designer
+   file.copy(from = "./linelist_designer_aky.xlsb",
+             to = "./Rscripts/", overwrite = TRUE)
+    # move back and overwrite
+    file.copy(from = "./Rscripts/linelist_designer_aky.xlsb",
+             to = "./linelist_designer_dev.xlsb", overwrite = TRUE)
+    # update the stable version if needed
+    if (update_stable == 1) {
+       # previous stable version
+         file.copy(from = "./linelist_designer.xlsb",
+             to = "./Rscripts/linelist_designer_prev.xlsb", overwrite = TRUE)
+       # update the new stable version
+         file.copy(from = "./Rscripts/linelist_designer_aky.xlsb",
+             to = "./linelist_designer.xlsb", overwrite = TRUE)
     }
-
-    if (src == "github") {
-         #move previous version of my designer
-        file.copy(from = "./linelist_designer.xlsb",
-                to = "./Rscripts/", overwrite = TRUE)
-
-        # delete the linelist_designer_aky file
-        file.remove("./Rscripts/linelist_designer_aky.xlsb")
-
-         # rename the linelist_designer file in the ./Rscript folder
-        file.rename(from = "./Rscripts/linelist_designer.xlsb",
-                    to = "./Rscripts/linelist_designer_aky.xlsb")
-
-        # move the new designer file and replace the previous one
-        file.copy(from = "./Rscripts/linelist_designer_aky.xlsb",
-                to = "./linelist_designer_aky.xlsb", overwrite = TRUE)
-
+    # revert back previous stable designer due to corrupt files.
+    if (update_stable == 2) {
+         file.copy(from = "./Rscripts/linelist_designer_prev.xlsb",
+             to = "./linelist_designer.xlsb", overwrite = TRUE)
+         file.copy(from = "./Rscripts/linelist_designer_prev.xlsb",
+                 to = "./linelist_designer_dev.xlsb", overwrite = TRUE)
+         file.copy(from = "./Rscripts/linelist_designer_prev.xlsb",
+                 to = "./linelist_designer_aky.xlsb", overwrite = TRUE)
     }
-
 }
 
 # clear the outpout folder (I have too many outputs)
-
 clear_output  <- function(outdir = "./output") {
     if (dir.exists(outdir)) unlink(outdir, recursive = TRUE)
     dir.create(outdir)
