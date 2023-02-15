@@ -835,6 +835,7 @@ Private Sub AddFormulas()
                 ClearTableConditions
 
                 AddTableConditions rowVar, "= " & rowCatAddress
+                AddNonEmptyTableConditions rowVar
                 AddTableConditions colVar, "= " & rngLab.Address
                 finalFormula = CurrentExcelFormula()
 
