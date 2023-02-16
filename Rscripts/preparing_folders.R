@@ -2,12 +2,10 @@
 source("./Rscripts/update_designer.R")
 
 # update from codes
-update_designer(src = "codes")
-#update with the stable version
-#update_designer(src = "codes", update_stable = TRUE) #nolint
+update_designer()
 
-# update from github
-#update_designer(src = "github") #nolint
+# update by adding the stable
+update_designer(update_stable = 1)
 
 # clean the output
 clear_output()
