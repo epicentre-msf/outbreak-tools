@@ -453,6 +453,7 @@ Private Sub BivariateColumns(ByVal Start As Long, ByVal specs As ITablesSpecs, B
                 For counter = 1 To colData.UpperBound
                     labData.Push colLab
                 Next
+                Set newColData = colData.Clone()
             End If
             
             'new col data is the column data with the empty values between elements

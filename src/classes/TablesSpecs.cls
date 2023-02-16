@@ -195,7 +195,7 @@ Public Property Get HasGraph() As Boolean
     Case TypeBivariate
         HasGraph = (Value("graph") = "percentage" Or Value("graph") = "values" Or Value("graph") = "both")
     Case TypeSpatial
-        HasGraph = (Value("graph") = "yes")
+        HasGraph = (Value("graph") = "yes") And (Value("column") <> vbNullString)
     End Select
 End Property
 
