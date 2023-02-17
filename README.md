@@ -23,9 +23,9 @@ In three steps:
 
 3- Feed the designer with a valid setup file with/without a valid geobase and it generates a linelist using the configurations you have defined.
 
-The linelist designer requires Excel >= Excel 2010 and works on Windows and Mac Os.
+**The linelist designer requires Excel >= Excel 2010 and works on Windows and Mac Os.**
 
-Automation of the work can be done on R (**only works on a windows machine**) using the provided [Rscript](https://github.com/epicentre-msf/outbreak-tools/raw/main/Rscripts/run_designer_on_windows.R).
+Automation of the work can be done on R (**only works on a windows machine**) using the provided [R script](https://github.com/epicentre-msf/outbreak-tools/raw/main/Rscripts/run_designer_on_windows.R).
 
 
 
