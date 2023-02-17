@@ -17,14 +17,14 @@
 
 In three steps:
 
-1- Define the configurations of your linelist in a setup file. It is basically an excel file with sheets referring to differents configurations to take in account when bulding the linelist.
+1- Download the setup file and add the configurations of your linelist in it. The setup file is basically an excel file with sheets referring to differents configurations to take in account when bulding the linelist. Remember to check the setup for eventual errors before importing it in the designer.
 
-2- Use or not a [geobase](https://reports.msf.net/secure/app/outbreak-tools-geoapp) related to your linelist.
+2- Use a [geobase](https://reports.msf.net/secure/app/outbreak-tools-geoapp) related to your linelist. You can choose to generate a linelist without a geobase which is optional. You can also import a geobase in the created linelist if you want.
 
-3- Feed the designer with a valid setup file with/without a valid geobase and it generates a linelist using the configurations you have defined.
+3- Feed the designer with a **valid**  setup file (a setup file without errors in it) with/without a geobase and it generates a linelist using the configurations you have defined.
 
-The linelist designer requires Excel >= Excel 2010 and works on Windows and Mac Os.
-Automation of the work can be done on R (**only works on a windows machine**) using the provided [R script](https://github.com/epicentre-msf/outbreak-tools/raw/main/Rscripts/run_designer_on_windows.R) as example. It sends the required parameters for the designer to a vbscript which in turn opens excel and runs the routines for linelist creation.
+**The linelist designer requires Excel >= Excel 2010** and works on both Windows and Mac operating sytems.
+Automation of the work can be done on R (**only works on a windows machine**) using the provided [R script](https://github.com/epicentre-msf/outbreak-tools/raw/main/Rscripts/run_designer_on_windows.R) as example. It sends the required parameters for the designer to a [vbscript](https://github.com/epicentre-msf/outbreak-tools/raw/main/Rscripts/rundesigner.vbs) which in turn opens excel and runs the routines for linelist creation.
 
 
 
