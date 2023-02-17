@@ -20,7 +20,7 @@ set_path <- function(file_name, out_path = outbreak_tools_path) {
 # Define the parameters
 
 
-designer_path <- set_path("linelist_designer_aky.xlsb")
+designer_path <- set_path("designer.xlsb")
 setup_path <- set_path("input/outbreak-tools-setup/setup.xlsb")
 #The geobase is optional
 geo_path <- set_path("input/geobase/geobase_obt_yem_20230112.xlsx")

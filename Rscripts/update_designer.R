@@ -4,36 +4,36 @@
 
 # source can take two values: Codes or Github:
 
-# If update is done from github, will just update the linelist_
-# designer_aky file with linelist_designer file
+# If update is done from github, will just update the 
+# designer_aky file with designer file
 
 # If update is done from the source, will just update the
-# linelist_designer file with linelist_designer_aky file
+# linelist_designer file with designer_aky file
 
 update_designer  <- function(update_stable = 0) {
     #move previous version of my designer
-   file.copy(from = "./linelist_designer_aky.xlsb",
+   file.copy(from = "./designer_aky.xlsb",
              to = "./Rscripts/", overwrite = TRUE)
     # move back and overwrite
-    file.copy(from = "./Rscripts/linelist_designer_aky.xlsb",
-             to = "./linelist_designer_dev.xlsb", overwrite = TRUE)
+    file.copy(from = "./Rscripts/designer_aky.xlsb",
+             to = "./designer_dev.xlsb", overwrite = TRUE)
     # update the stable version if needed
     if (update_stable == 1) {
        # previous stable version
-         file.copy(from = "./linelist_designer.xlsb",
-             to = "./Rscripts/linelist_designer_prev.xlsb", overwrite = TRUE)
+         file.copy(from = "./designer.xlsb",
+             to = "./Rscripts/designer_prev.xlsb", overwrite = TRUE)
        # update the new stable version
-         file.copy(from = "./Rscripts/linelist_designer_aky.xlsb",
-             to = "./linelist_designer.xlsb", overwrite = TRUE)
+         file.copy(from = "./Rscripts/designer_aky.xlsb",
+             to = "./designer.xlsb", overwrite = TRUE)
     }
     # revert back previous stable designer due to corrupt files.
     if (update_stable == 2) {
-         file.copy(from = "./Rscripts/linelist_designer_prev.xlsb",
-             to = "./linelist_designer.xlsb", overwrite = TRUE)
-         file.copy(from = "./Rscripts/linelist_designer_prev.xlsb",
-                 to = "./linelist_designer_dev.xlsb", overwrite = TRUE)
-         file.copy(from = "./Rscripts/linelist_designer_prev.xlsb",
-                 to = "./linelist_designer_aky.xlsb", overwrite = TRUE)
+         file.copy(from = "./Rscripts/designer_prev.xlsb",
+             to = "./designer.xlsb", overwrite = TRUE)
+         file.copy(from = "./Rscripts/designer_prev.xlsb",
+                 to = "./designer_dev.xlsb", overwrite = TRUE)
+         file.copy(from = "./Rscripts/designer_prev.xlsb",
+                 to = "./designer_aky.xlsb", overwrite = TRUE)
     }
 }
 
@@ -74,7 +74,7 @@ prepare_demo  <- function(fake_dataset = "",
     )
 
     # add the designer
-    file.copy(from = "./linelist_designer.xlsb",
+    file.copy(from = "./designer.xlsb",
               to = demo_folder)
 }
 
