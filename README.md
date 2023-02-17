@@ -28,32 +28,11 @@ Automation of the work can be done on R (**only works on a windows machine**) us
 
 
 
-#### Cloning the repo on your local computer
-
-
-This repo contains one sub-module, add it when cloning
-
-```cmd
-git clone --recurse-submodules https://github.com/epicentre-msf/outbreak-tools.git
-
-```
-
-Or after cloning :
-
-```cmd
-
-git clone https://github.com/epicentre-msf/outbreak-tools.git
-git submodule init
-git submodule update
-
-```
-
-
 The repo contains codes and input files for a linelist builder written in VBA.
 
 - `input` folder contains All the input files needed for building the linelist:
 
-  - Setup files in the `outbreak-tools-setup` folder in `.xlsb` format.
+  - Setup files in the `setup` folder in `.xlsb` format.
   - Geobase files in the `geobase` folder: (Geobase data in excel `.xlsx` formats that could be loaded in the designer)
 - `src` folder contains all the source codes in flat files used in the designer.
 - `designer.xlsb` is the designer file.
