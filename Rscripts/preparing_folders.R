@@ -5,7 +5,7 @@ source("./Rscripts/update_designer.R")
 update_designer()
 
 # update by adding the stable
-update_designer(update_stable = 1)
+#update_designer(update_stable = 1)
 
 # clean the output
 clear_output()
