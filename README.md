@@ -17,12 +17,15 @@
 
 In three steps:
 
-1- You define the configurations of your linelist in a setup file. It is basically an excel file with sheets referring to differents configurations to take in account when bulding the linelist.
+1- Define the configurations of your linelist in a setup file. It is basically an excel file with sheets referring to differents configurations to take in account when bulding the linelist.
 
-2- You can add or not a geobase related to your linelist.
+2- Use or not a [geobase](https://reports.msf.net/secure/app/outbreak-tools-geoapp) related to your linelist.
 
-3- You feed the designer with a valid setup file and it generates a linelist using the configurations you have defined.
+3- Feed the designer with a valid setup file with/without a valid geobase and it generates a linelist using the configurations you have defined.
 
+The linelist designer requires Excel >= Excel 2010 and works on Windows and Mac Os.
+
+Automation of the work can be done on R (**only works on a windows machine**) using the provided [Rscript](https://github.com/epicentre-msf/outbreak-tools/raw/main/Rscripts/run_designer_on_windows.R).
 
 
 
