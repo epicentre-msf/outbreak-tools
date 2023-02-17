@@ -1,4 +1,5 @@
-# This is a quick R script to run the designer from R will only work on windows OS.
+# This is a quick R script to run the designer from R will only work on
+# windows OS.
 # I used here, and glue packages with R version > 4.1 (pipe operator)
 
 used_packages <- c("here", "glue")
@@ -20,8 +21,9 @@ set_path <- function(file_name, out_path = outbreak_tools_path) {
 
 
 designer_path <- set_path("linelist_designer_aky.xlsb")
-setup_path <- set_path("input/setup/setup_measles_dev_20220608.xlsb")
-geo_path <- set_path("input/geobase/KEN_1234H_20220316.xlsx")
+setup_path <- set_path("input/outbreak-tools-setup/setup.xlsb")
+#The geobase is optional
+geo_path <- set_path("input/geobase/geobase_obt_yem_20230112.xlsx")
 output_dir <- set_path("output")
 linelist_name <- shQuote("rinterface_test") # Name of the linelist file
 setup_lang <- shQuote("English") # Language of the dictionary
@@ -29,7 +31,10 @@ linelist_lang <- shQuote("English") # Language of the linelist interface
 
 # Sending code to the designer
 
-cmd <- glue::glue("{outbreak_tools_path}/Rscripts/rundesigner.vbs {designer_path} {geo_path} {setup_path} {output_dir} {linelist_name} {setup_lang} {linelist_lang}")
+cmd <- glue::glue("{outbreak_tools_path}/Rscripts/rundesigner.vbs",
+                  " {designer_path} {geo_path} {setup_path}",
+                  " {output_dir} {linelist_name}",
+                  " {setup_lang} {linelist_lang}")
 
 
 # run the shell command
