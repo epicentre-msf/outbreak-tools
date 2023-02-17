@@ -26,7 +26,7 @@ In three steps:
 **The linelist designer requires Excel >= Excel 2010** and works on both Windows and Mac operating sytems.
 Automation of the work can be done on R (**only works on a windows machine**) using the provided [R script](https://github.com/epicentre-msf/outbreak-tools/raw/main/Rscripts/run_designer_on_windows.R) as example. It sends the required parameters for the designer to a [vbscript](https://github.com/epicentre-msf/outbreak-tools/raw/main/Rscripts/rundesigner.vbs) which in turn opens excel and runs the routines for linelist creation.
 
-
+#### Structure of the repo
 
 The repo contains codes and input files for a linelist builder written in VBA.
 
