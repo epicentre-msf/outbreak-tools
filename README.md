@@ -1,7 +1,7 @@
 <div align="center">
 <p align="center">
 
-**Quickly build a linelist from an excel designer**
+## Quickly build a linelist from an excel designer**
 
 [![Download Latest version of setup file](https://github.com/epicentre-msf/outbreak-tools/raw/users/y-amevoin/src/imgs/setup_file.svg)](https://github.com/epicentre-msf/outbreak-tools-setup/raw/main/setup.xlsb)
 [![Download Latest stable version of the designer](https://github.com/epicentre-msf/outbreak-tools/raw/users/y-amevoin/src/imgs/stable_designer.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/main/linelist_designer.xlsb)
@@ -10,7 +10,7 @@
 </p>
 </div>
 
-**How it works?**
+#### How it works?
 
 In three steps:
 
@@ -21,9 +21,9 @@ In three steps:
 3- You feed the designer with a valid setup file and it generates a linelist using the configurations you have defined.
 
 
-<hr />
 
-**Cloning the repo on your local computer**
+
+#### Cloning the repo on your local computer
 
 
 This repo contains one sub-module, add it when cloning
