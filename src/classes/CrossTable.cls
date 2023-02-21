@@ -30,8 +30,9 @@ End Type
 
 Private This As TCrossTable
 Private Const STANDARDSTARTCOL As Long = 3
-Private Const className As String = "CrossTable"
+Private Const CLASSNAME As String = "CrossTable"
 Private Const NBROWSTIMESERIES As Long = 56
+Private Const COMMANDDEVIDE As String = "DevideByPopulation"
 
 Public Function Create(ByVal specs As ITablesSpecs, ByVal outputWksh As Worksheet, ByVal trans As ITranslation) As ICrossTable
     'Check if values are not defined
@@ -680,6 +681,18 @@ Private Sub AddHeader()
                     .Range("ADM_UNIT_LIST").Locked = True
             End If
 
+            'Range for selecting values for the population
+            If (Not RangeExists("POPULATION_FACTOR_LIST")) Then
+                Set cellRng = .Cells(1, 27)
+                cellRng.Cells(1, 1).Value = trans.TranslatedValue("MSG_NoDevide")
+                cellRng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Devide")
+
+                .Range(.Cells(1, cellRng.Column), .Cells(2, cellRng.Column)).Name = "POPULATION_FACTOR_LIST"
+                .Range("POPULATION_FACTOR_LIST").Font.color = vbWhite
+                .Range("POPULATION_FACTOR_LIST").Interior.color = vbWhite
+                .Range("POPULATION_FACTOR_LIST").Locked = True
+            End If
+
             If (Not RangeExists("ADM_DROPDOWN_" & tabId)) And (Not RangeExists("HF_DROPDOWN_" & tabId)) Then
 
                 If (specs.SpatialTableTypes = "geo") Then
@@ -692,6 +705,20 @@ Private Sub AddHeader()
                     'Previous value selected for ADM_DROPDOWN_
                     rng.Cells(1, 2).Value = "adm1"
                     rng.Cells(1, 2).Name = "PREVIOUS_ADM_" & tabId
+
+                    'population factor dropdown
+                    rng.Cells(1, 3).Value = trans.TranslatedValue("MSG_SelectPOPFACT")
+                    rng.Cells(1, 3).Name = "DEVIDEPOP_" & tabId
+
+                    'Add population to range 4
+                    rng.Cells(0, 4).Value = trans.TranslatedValue("MSG_MultiplyBy")
+                    rng.Cells(0, 4).Name = "POPFACTLABEL_" & tabId
+                    rng.Cells(1, 4).Value = 100
+                    rng.Cells(1, 4).Name = "POPFACT_" & tabId
+
+                    'Add name to button where you divide by the population
+                    rng.Cells(1, 5).Name = "POPPREVFACT_" & tabId
+                    rng.Cells(1, 5).Value = "0"
                 
                 ElseIf (specs.SpatialTableTypes = "hf") Then
                     'Range for information on Type of admin level
@@ -777,7 +804,6 @@ Private Sub NameRanges()
         'On time series and not on new sections, start with the previous end row
 
         If (tablType = TypeTimeSeries) And Not (specs.isNewSection) Then
-            Debug.Print specs.Previous.TableId
             If Not RangeExists("ENDTABLE_" & specs.Previous.TableId) Then ThrowExecutionError "I can't append the new time series to a previous table, No previous table  were found :("
             Set cellRng = .Range("ENDTABLE_" & specs.TableId)
             Set catRng = .Range(cellRng.Offset(1 - NBROWSTIMESERIES), cellRng.Offset(-3)) 'should be negative the offset (going backward)
@@ -921,10 +947,14 @@ Private Sub Format(ByVal desFormat As ILLFormat)
     Dim HasPercent As Boolean
     Dim NewSection As Boolean
     Dim tablType As AnalysisTablesType
+    Dim but As IButtons
+    Dim trans As ITranslation
+    Dim commandName As String 'command name for devide By button
 
     Set rngTable = New BetterArray
     Set specs = Specifications
     Set sh = Wksh()
+    Set trans = trads()
     Set DesignFormat = desFormat
 
     tabId = specs.TableId
@@ -946,7 +976,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
     '- There is a special format for the END_TABLE to take in accound gap for graphs
 
     With sh
-        'Sections =========================================
+        'Sections =============================================================
         If NewSection Then
             Set rng = .Range("SECTION_" & tabId)
             DesignFormat.ApplyFormat rng, AnalysisSection
@@ -964,13 +994,16 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             DesignFormat.ApplyFormat rng, AnalysisTableTitle
         End If
         
-        'Dropdown on Geo/spatial table
+        'Dropdown on Geo/spatial table, and also buttons for the 
         If tablType = TypeSpatial Then
 
             'Apply the dropdown only on geo
             If (specs.SpatialTableTypes = "geo") Then
                 Set rng = .Range("ADM_DROPDOWN_" & tabId)
                 DesignFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
+                Set rng = .Range("DEVIDEPOP_" & tabId)
+                DesignFormat.ApplyFormat rng, scope:= LinelistSelectionDropdown
+
             ElseIf (specs.SpatialTableTypes = "hf") Then
                 Set rng = .Range("HF_DROPDOWN_" & tabId)
                 DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
@@ -979,12 +1012,8 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             'Range for the order (used in the formulas)
             Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -1)
             DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
-
-            'Previous selected admin level
-            If RangeExists("PREVIOUS_ADM_" & tabId) Then
-                Set rng = .Range("PREVIOUS_ADM_" & tabId)
-                DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
-            End If
+            Set rng = rng.Offset(, -1)
+            DesignFormat.ApplyFormat rng, scope := LinelistHiddenCell
         End If
 
         'Headers ==============================================================
@@ -1121,7 +1150,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         rngTable.Push "TOTAL_MISSING_", "TOTAL_TOTAL_", _
                       "USER_START_DATE_", "USER_END_DATE_", "TIME_UNIT_", _
                       "MISSING_TOTAL_", "MISSING_MISSING_", "START_DATE_LABEL_", _
-                      "TIME_UNIT_LABEL_", "END_DATE_LABEL_"
+                      "TIME_UNIT_LABEL_", "END_DATE_LABEL_","POPFACT_", "POPFACTLABEL_"
         
         For counter = rngTable.LowerBound To rngTable.UpperBound
             rngName = rngTable.Item(counter) & tabId
@@ -1130,12 +1159,10 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             If RangeExists(rngName) Then
                 Set rng = .Range(rngName)
                 
-                If (InStr(1, rngName, "LABEL") > 0) Then
+                If (InStr(1, rngName, "LABEL") > 0)  Or (InStr(1, rngName, "POP") > 0) Then
                     DesignFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
-                
                 ElseIf (InStr(1, rngName, "USER") > 0) Or (rngName = "TIME_UNIT_" & tabId) Then
                     DesignFormat.ApplyFormat rng, scope:=AnalysisOneCellCenter
-                
                 Else
                     DesignFormat.ApplyFormat rng, scope:=AnalysisOneCell 'Will be formatted with the missing color
                 End If
@@ -1144,7 +1171,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
         'Informations Cells (Info on start date, info on end date)
         rngTable.Clear
-        rngTable.Push "INFO_START_DATE_", "INFO_END_DATE_", "INFO_ANA_PERIOD_"
+        rngTable.Push "INFO_START_DATE_", "INFO_END_DATE_", "INFO_ANA_PERIOD_", "POPFACTLABEL_"
         
         For counter = rngTable.LowerBound To rngTable.UpperBound
             rngName = rngTable.Item(counter) & tabId
@@ -1152,6 +1179,18 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                 Set rng = .Range(rngName)
                 DesignFormat.ApplyFormat rng, scope:=AnalysisInfoCell
                 If InStr(1, rngName, "INFO_ANA_") > 0 Then DesignFormat.ApplyFormat rng, scope:=AnalysisInfoCellLeft
+            End If
+        Next
+
+        'Hidden cells (no matter what)
+        rngTable.Clear
+        rngTable.Push "PREVIOUS_ADM_", "POPPREVFACT_"
+        
+        For counter = rngTable.LowerBound To rngTable.UpperBound
+            rngName = rngTable.Item(counter) & tabId
+            If RangeExists(rngName) Then
+                Set rng = .Range(rngName)
+                DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
             End If
         Next
 

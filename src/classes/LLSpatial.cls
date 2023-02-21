@@ -273,7 +273,7 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
 End Sub
 
 Private Property Get TopGeoValue(ByVal adminName As String, ByVal orderValue As Integer, ByVal inputVarName As String, _
-                                 Optional ByVal tabId As String = vbNullString) As String
+                                 Optional ByVal tabId As String = vbNullString, Optional ByVal concatValue As Byte = 1) As String
   Dim sh As Worksheet
   Dim Lo As ListObject
   Dim loName As String
@@ -288,9 +288,14 @@ Private Property Get TopGeoValue(ByVal adminName As String, ByVal orderValue As 
   If Not LoExists(loName) Then Exit Property
   
   Set Lo = sh.ListObjects(loName)
-  Set rng = Lo.ListColumns(1).DataBodyRange()
+
+  If concatValue = 1 Then
+    Set rng = Lo.ListColumns(1).DataBodyRange()
+  Else
+    Set rng = Lo.ListColumns(3).DataBodyRange()
+  End If
   
-  TopGeoValue = rng.Cells(orderValue, 1).Value
+  TopGeoValue = CStr(rng.Cells(orderValue, 1).Value)
 
 End Property
 
@@ -336,8 +341,8 @@ End Sub
 
 
 Public Property Get ILLSpatial_TopGeoValue(ByVal adminName As String, ByVal levelValue As Integer, ByVal varName As String, _
-  Optional ByVal tabId As String = vbNullString) As String
-  ILLSpatial_TopGeoValue = TopGeoValue(adminName, levelValue, varName, tabId)
+  Optional ByVal tabId As String = vbNullString, Optional ByVal concatValue As Byte = 1) As String
+  ILLSpatial_TopGeoValue = TopGeoValue(adminName, levelValue, varName, tabId, concatValue)
 End Property
 
 

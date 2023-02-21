@@ -100,9 +100,13 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     Dim outRng As Range
     Dim outRngAddress As String
     Dim rngTable As BetterArray
+    Dim tablRng As BetterArray
+    Dim counter As Long
+    Dim rngName As String
 
     Set shLL = LLTransSheet()
     Set shDict = DictTransSheet()
+    Set tablRng = New BetterArray
 
     'Test if there is no sheet name translation or Linelistranslation in the output workbook
     On Error Resume Next
@@ -146,31 +150,20 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     Next
 
     'Ranges (For more ranghes we should use a table of the range names)
-    outshLLTrans.Range(shLL.Range("RNG_LLLanguage").Address).Name = "RNG_LLLanguage"
-    outshLLTrans.Range("RNG_LLLanguage").Value = shLL.Range("RNG_LLLanguage").Value
-    
-    outshLLTrans.Range(shLL.Range("RNG_LLLanguageCode").Address).Name = "RNG_LLLanguageCode"
-    outshLLTrans.Range("RNG_LLLanguageCode").Value = shLL.Range("RNG_LLLanguageCode").Value
-    
-    outshLLTrans.Range(shLL.Range("RNG_GoToSection").Address).Name = "RNG_GoToSection"
-    outshLLTrans.Range("RNG_GoToSection").Value = shLL.Range("RNG_GoToSection").Value
+    tablRng.Push "RNG_LLLanguage", "RNG_LLLanguageCode", "RNG_GoToSection", _ 
+                 "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _ 
+                 "RNG_NoDevide", "RNG_Devide"
+                 
+    For counter = tablRng.LowerBound to tablRng.UpperBound
+        rngName = tablRng.Item(counter)
+        outshLLTrans.Range(shLL.Range(rngName).Address).Name = rngName
+        outshLLTrans.Range(rngName).Value = shLL.Range(rngName).Value
 
-    outshLLTrans.Range(shLL.Range("RNG_AnaPeriod").Address).Name = "RNG_AnaPeriod"
-    outshLLTrans.Range("RNG_AnaPeriod").Value = shLL.Range("RNG_AnaPeriod").Value
-
-    outshLLTrans.Range(shLL.Range("RNG_GoToHeader").Address).Name = "RNG_GoToHeader"
-    outshLLTrans.Range("RNG_GoToHeader").Value = shLL.Range("RNG_GoToHeader").Value
-
-    'Formula for linelist language code
-    On Error Resume Next
-    outshLLTrans.Range("RNG_LLLanguageCode").formula = shLL.Range("RNG_LLLanguageCode").formula
-    outshLLTrans.Range("RNG_GoToSection").formula = shLL.Range("RNG_GoToSection").formula
-    outshLLTrans.Range("RNG_AnaPeriod").formula = shLL.Range("RNG_AnaPeriod").formula
-    outshLLTrans.Range("RNG_GoToHeader").formula = shLL.Range("RNG_GoToHeader").formula
-    On Error GoTo 0
-
-    outshLLTrans.Range(shLL.Range("RNG_DictionaryLanguage").Address).Name = "RNG_DictionaryLanguage"
-    outshLLTrans.Range("RNG_DictionaryLanguage").Value = shLL.Range("RNG_DictionaryLanguage").Value
+        'Add Formula
+        On Error Resume Next
+        outshLLTrans.Range(rngName).formula = shLL.Range(rngName).formula
+        On Error GoTo 0
+    Next
 
     outshDictTrans.Visible = xlSheetVeryHidden
     outshLLTrans.Visible = xlSheetVeryHidden

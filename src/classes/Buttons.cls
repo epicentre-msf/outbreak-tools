@@ -24,20 +24,18 @@ Private Type TButton
 End Type
 
 Private This As TButton
-Private Const className As String = "Buttons"
+Private Const CLASSNAME As String = "Buttons"
 Private Const BUTTONWIDTH As Long = 105
 Private Const BUTTONHEIGHT As Long = 30
 Private Const BUTTONGAP As Long = 5
 
-Public Function Create(ByVal outRng As Range, ByVal trads As ITranslation, ByVal codeName As String, _
+Public Function Create(ByVal outRng As Range, ByVal codeName As String, _
                        ByVal scope As ButtonScope) As IButtons
   
     If outRng Is Nothing Then ThrowError "I don't know where to write the button, no range found."
-    If trads Is Nothing Then ThrowError "No translation object found"
 
     With New Buttons
         Set .OutputRange = outRng
-        Set .ShapesTranslation = trads
         .Name = codeName
         .ShapeScope = scope
         Set Create = .Self()
@@ -55,14 +53,6 @@ End Property
 
 Public Property Set OutputRange(ByVal rng As Range)
     Set This.rng = rng
-End Property
-
-Public Property Get ShapesTranslation() As ITranslation
-    Set ShapesTranslation = This.trads
-End Property
-
-Public Property Set ShapesTranslation(ByVal trads As ITranslation)
-    Set This.trads = trads
 End Property
 
 Public Property Get Name() As String
@@ -112,7 +102,7 @@ Private Property Get ShapeObject() As Shape
 End Property
 
 'Add the button
-Public Sub Add(Optional ByVal actionCommand As String = vbNullString)
+Public Sub Add(Optional ByVal actionCommand As String = vbNullString, Optional ByVal shapeLabel As String = vbNullString)
 
     Dim height As Long
     Dim width As Long
@@ -121,7 +111,6 @@ Public Sub Add(Optional ByVal actionCommand As String = vbNullString)
     Dim cellRng As Range
     Dim sh As Worksheet
     Dim codeName As String
-    Dim shapeLabel As String
     Dim trans As ITranslation
 
 
@@ -148,9 +137,6 @@ Public Sub Add(Optional ByVal actionCommand As String = vbNullString)
     sh.Shapes.AddShape(msoShapeRoundedRectangle, cellRng.Left + leftGap, cellRng.Top + topGap, width, height).Name = codeName
 
     'The text to display on the shape
-    Set trans = ShapesTranslation()
-    shapeLabel = trans.TranslatedValue(codeName)
-
     With sh.Shapes(codeName)
         .OnAction = actionCommand
         .Placement = xlFreeFloating
@@ -189,8 +175,9 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Exposed methods
-Public Sub IButtons_Add(Optional ByVal actionCommand As String = vbNullString)
-    Add actionCommand
+Public Sub IButtons_Add(Optional ByVal actionCommand As String = vbNullString, _ 
+                        Optional ByVal shapeLabel As String = vbNullString)
+    Add actionCommand := actionCommand, shapeLabel:= shapeLabel
 End Sub
 
 Public Sub IButtons_Format(design As ILLFormat)
