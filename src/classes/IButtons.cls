@@ -22,6 +22,6 @@ Public Enum ButtonScope
 End Enum
 
 'Exposed methods
-Public Sub Add(Optional ByVal actionCommand As String = vbNullString): End Sub
+Public Sub Add(Optional ByVal actionCommand As String = vbNullString, Optional ByVal shapeLabel As String = vbNullString): End Sub
 Public Sub Format(design As ILLFormat): End Sub
 

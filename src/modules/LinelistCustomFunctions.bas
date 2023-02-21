@@ -440,9 +440,42 @@ Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varNam
     Set sh = ThisWorkbook.Worksheets("spatial_tables__")
     Set sp = LLSpatial.Create(sh)
     adminName = geo.AdminCode(adminLevel)
+
     FindTopAdmin = sp.TopGeoValue(adminName, adminOrder, actualVarName, tabId)
 
 End Function
+
+
+Public Function FindTopPop(adminLevel As String, adminOrder As Integer, varName As String, Optional ByVal tabId As String = vbNullString) As Long
+
+    Application.Volatile
+    
+    Dim geo As ILLGeo
+    Dim sp As ILLSpatial
+    Dim adminName As String
+    Dim sh As Worksheet
+    Dim actualVarName As String
+    Dim pop As Long
+
+    actualVarName = Split(varName, "_")(2)
+
+
+    Set sh = ThisWorkbook.Worksheets("Geo")
+    Set geo = LLGeo.Create(sh)
+
+    Set sh = ThisWorkbook.Worksheets("spatial_tables__")
+    Set sp = LLSpatial.Create(sh)
+    adminName = geo.AdminCode(adminLevel)
+
+    pop = 0
+    On Error Resume Next
+        pop = CLng(sp.TopGeoValue(adminName, adminOrder, actualVarName, tabId, 2))
+    On Error GoTo 0
+
+    FindTopPop = pop
+End Function
+    
+
 
 'Find the corresponding value of a top admin for one variable
 

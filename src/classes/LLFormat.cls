@@ -346,9 +346,12 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         Set rng = formattingObject
         fontColorValue = DesignValue("select dropdown font color")
         interiorColorValue = DesignValue("dropdown interior color")
-        FormatRange rng, fontColor:=fontColorValue, interiorColor:=interiorColorValue, _
-                    isBold:=False, FontSize:=styleValue - 2, Verti:=xlVAlignCenter
+        FormatRange rng, fontColor:=fontColorValue, _ 
+                    interiorColor:=interiorColorValue, _
+                    isBold:=False, FontSize:=styleValue - 2, _ 
+                    Verti:=xlVAlignCenter
         rng.WrapText = True
+        rng.Locked = False
 
     Case AnalysisCategoriesLabelRow, AnalysisCategoriesLabelColumn, AnalysisUnivariateHeader
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
