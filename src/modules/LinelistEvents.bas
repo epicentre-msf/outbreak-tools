@@ -617,8 +617,13 @@ Sub UpdateSingleSpTable(ByVal rngName As String)
     Dim sh As Worksheet
     Dim geo As ILLGeo
     Dim hasFormula As Boolean
+    Dim pass As ILLPasswords
 
     BeginWork xlsapp:=Application
+
+    Set pass = LLPasswords.Create(ThisWorkbook.Worksheets("Password"))
+
+    pass.UnProtect "_active"
 
     'Spatial analysis worksheet
     Set sh = ActiveSheet
@@ -661,12 +666,140 @@ Sub UpdateSingleSpTable(ByVal rngName As String)
     'Calculate the outer range
     rng.calculate
 
+    pass.Protect "_active", True
     EndWork xlsapp:=Application
 End Sub
 
 
+'Update the value by deviding by the population
+Sub DevideByPopulation(Byval rngName As String, Optional ByVal revertBack As Boolean = False)
 
-'Clear All the filters on current sheet =============================================================================
+    Dim sh As Worksheet
+    Dim hasFormula As Boolean
+    Dim factorMult As Long
+    Dim prevFact As Long
+    Dim rng As Range
+    Dim cellRng As Range
+    Dim formulaValue As String
+    Dim adminName As String
+    Dim adminCode As Byte
+    Dim rowRng As Range
+    Dim geo As ILLGeo
+    Dim selectedAdmin As String
+    Dim popValue As String
+    Dim tabId As String
+    Dim pass As ILLPasswords
+
+    BeginWork xlsapp := Application
+    Set sh = ActiveSheet
+    Set pass = LLPasswords.Create(ThisWorkbook.Worksheets("Password"))
+    pass.Unprotect "_active"
+
+    tabId = Replace(rngName, "POPFACT_", vbNullString)
+    prevFact = sh.Range("POPPREVFACT_" & tabId).Value
+
+    factorMult = 100
+    On Error Resume Next
+    factorMult = CLng(Application.WorksheetFunction.Trim(sh.Range(rngName).Value))
+    On Error GoTo Err
+    
+    Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
+    selectedAdmin = sh.Range("ADM_DROPDOWN_" & tabId).Value
+    adminName = geo.AdminCode(selectedAdmin)
+
+    Set rng = sh.Range("OUTER_VALUES_" & tabId)
+    Set rowRng = sh.Range("ROW_CATEGORIES_" & tabId)
+
+    For Each cellRng In rng
+
+        hasFormula = False
+        formulaValue = cellRng.FormulaArray
+        
+        If formulaValue = vbNullString Then
+            formulaValue = cellRng.formula
+            hasFormula = True
+        End If
+        
+        If (InStr(1, formulaValue, "concat_" & adminName) > 0) And ( cellRng.Column > rowRng.Column) Then
+            
+            popValue = sh.Cells(cellRng.Row, rowRng.Column - 1).Address
+
+            If (Not revertBack) And (prevFact = 0) Then
+                formulaValue = Replace(formulaValue, "=", vbNullString)
+                formulaValue = "= " & factorMult & "*" & formulaValue & "/" & popValue
+            ElseIf (Not revertBack) And (prevFact <> 0) Then
+                formulaValue = Replace(formulaValue, prevFact, factorMult)
+            ElseIf (prevFact <> 0) Then 'If the previous factor is 0, then no need to revert Back
+                'Remove the factor
+                formulaValue = Replace(formulaValue, prevFact & "*", vbNullString)
+                'Remove the denominator
+                formulaValue = Replace(formulaValue, "/" & popValue, vbNullString)
+            End If
+
+
+            'some cells have formula, others have formulaArray
+            If (hasFormula) Then
+                cellRng.formula = formulaValue
+            Else
+                cellRng.FormulaArray = formulaValue
+            End If
+        End If
+    Next
+
+    'Update the previous Factor
+    If revertBack Then
+        sh.Range("POPPREVFACT_" & tabId).Value = 0
+    Else
+        sh.Range("POPPREVFACT_" & tabId).Value = factorMult
+    End If
+    rng.Calculate
+
+Err:
+    pass.Protect "_active", True
+    EndWork xlsapp := Application
+End Sub
+
+Sub FormatDevidePop(ByVal rngName)
+
+    Dim pass As ILLPasswords
+    Dim sh As Worksheet
+    Dim tabId As String
+
+    Set sh = ActiveSheet
+    Set pass = LLPasswords.Create(ThisWorkbook.Worksheets("Password"))
+
+    pass.Unprotect "_active"
+
+    tabId = Replace(rngName, "DEVIDEPOP_", "")
+
+    If sh.Range(rngName).Value = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_NoDevide").Value Then
+        
+        'Do not devide
+        sh.Range("POPFACT_" & tabId).Font.Color = vbWhite
+        sh.Range("POPFACT_" & tabId).Locked = True
+        sh.Range("POPFACTLABEL_" & tabId).Font.Color = vbWhite
+        sh.Range("POPFACTLABEL_" & tabId).Locked = True
+
+        DevideByPopulation rngName := "POPFACT_" & tabId, revertBack := True
+
+    ElseIf  sh.Range(rngName).Value = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_Devide").Value Then
+        
+        'Devide by the population
+        sh.Range("POPFACT_" & tabId).Font.Color = vbBlack
+        sh.Range("POPFACT_" & tabId).Locked = False
+        sh.Range("POPFACTLABEL_" & tabId).Font.Color = vbBlack
+        sh.Range("POPFACTLABEL_" & tabId).Locked = False
+
+        DevideByPopulation "POPFACT_" & tabId
+
+    End If 
+
+    pass.Protect "_active", True
+End Sub
+
+
+
+'Clear All the filters on current sheet =================================================================================
 
 Sub ClearAllFilters()
     Dim Wksh As Worksheet
@@ -733,6 +866,8 @@ Sub EventValueChangeAnalysis(Target As Range)
         'GoTo section for spatial analysis
         Set rng = actSh.Range("sp_go_to_section")
         If InStr(1, rngName, "ADM_DROPDOWN_") > 0 Then UpdateSingleSpTable rngName
+        If InStr(1, rngName, "POPFACT_") > 0 Then DevideByPopulation rngName
+        If InStr(1, rngName, "DEVIDEPOP_") > 0 Then FormatDevidePop rngName
 
     End Select
 
@@ -753,6 +888,7 @@ Sub EventValueChangeAnalysis(Target As Range)
     Exit Sub
 Err:
 End Sub
+
 
 Sub EventValueChangeVList(Target As Range)
 

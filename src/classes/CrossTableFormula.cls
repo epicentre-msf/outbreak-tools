@@ -790,24 +790,57 @@ Private Sub AddFormulas()
             colVar = specs.Value("column")
             
             On Error Resume Next
-                If (specs.SpatialTableTypes = "geo") Then
+                If (spTabType = "geo") Then
+
+                    'Validation on the admin
                     With .Range("ADM_DROPDOWN_" & tabId).validation
                         .Delete
                         .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
                             Operator:=xlBetween, Formula1:="=ADM_UNIT_LIST"
                     End With
+
+                    'Validation on the factors
+                    With .Range("DEVIDEPOP_" & tabId).validation
+                        .Delete
+                        .Add Type:=xlValidateList,  _ 
+                        AlertStyle:=xlValidAlertStop, _
+                            Operator:=xlBetween, Formula1:="=POPULATION_FACTOR_LIST"
+                    End With
+
                 End If
             On Error GoTo 0
 
-            'Row cageories formula
+            'Orders formula
+            Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -2)
+            Set cellRng = rng.Cells(1, 1)
+            cellRng.Value = 1
+            Set cellRng = rng.Cells(2, 1)
+            cellRng.formula = "= " & cellRng.Offset(-1).Address(Rowabsolute:=False) & " + 1"
+            Set rng = .Range(rng.Cells(2, 1), rng.Cells(rng.Rows.Count, 1))
+            cellRng.AutoFill Destination:=rng, Type:=xlFillValues
+
+
             Set rng = .Range("ROW_CATEGORIES_" & tabId)
             rowCatAddress = rng.Cells(1, 1).Address(Rowabsolute:=False)
-            Set cellRng = rng.Cells(1, 1)
 
             If (specs.SpatialTableTypes = "geo") Then
-                cellRng.formula = "= FindTopAdmin(ADM_DROPDOWN_" & tabId & "," & _
+
+                'Population formula
+                Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -1)
+                Set cellRng = rng.Cells(1, 1)
+                cellRng.formula = "= FindTopPop(ADM_DROPDOWN_" & tabId & "," & _
                                   cellRng.Cells(1, 0).Address(Rowabsolute:=False) & "," & _
                                   chr(34) & rowVar & chr(34) & "," & chr(34) & tabId & chr(34) & ")"
+                cellRng.AutoFill Destination:=rng, Type:=xlFillValues
+
+
+                'Top Admin formula
+                Set rng = .Range("ROW_CATEGORIES_" & tabId)
+                Set cellRng = rng.Cells(1, 1)
+                cellRng.formula = "= FindTopAdmin(ADM_DROPDOWN_" & tabId & "," & _
+                                  cellRng.Cells(1, -1).Address(Rowabsolute:=False) & "," & _
+                                  chr(34) & rowVar & chr(34) & "," & chr(34) & tabId & chr(34) & ")"
+
             ElseIf (specs.SpatialTableTypes = "hf") Then
                 cellRng.formula = "= FindTopHF(" & cellRng.Cells(1, 0).Address(Rowabsolute:=False) & "," & _
                 chr(34) & rowVar & chr(34) & "," & chr(34) & tabId & chr(34) & ")"
@@ -815,14 +848,6 @@ Private Sub AddFormulas()
             
             cellRng.AutoFill Destination:=rng, Type:=xlFillValues
 
-            'Orders formula
-            Set rng = rng.Offset(, -1)
-            Set cellRng = rng.Cells(1, 1)
-            cellRng.Value = 1
-            Set cellRng = rng.Cells(2, 1)
-            cellRng.formula = "= " & cellRng.Offset(-1).Address(Rowabsolute:=False) & " + 1"
-            Set rng = .Range(rng.Cells(2, 1), rng.Cells(rng.Rows.Count, 1))
-            cellRng.AutoFill Destination:=rng, Type:=xlFillValues
 
             'Now formulas As for time series (almost the same, can fator later on)
             Set rng = .Range("VALUES_COL_1_" & tabId)

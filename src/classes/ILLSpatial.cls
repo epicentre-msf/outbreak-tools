@@ -19,7 +19,7 @@ Option Explicit
 Public Property Get Exists(ByVal varName As String) As Boolean: End Property
 Public Sub Update(): End Sub
 Public Property Get TopGeoValue(ByVal adminName As String, ByVal levelValue As Integer, ByVal varName As String, _
-   Optional ByVal tabId As String = vbNullString) As String
+   Optional ByVal tabId As String = vbNullString, Optional ByVal concatValue As Byte = 1) As String
 End Property
 
 Public Property Get TopHFValue(ByVal orderValue As Integer, ByVal inputVarName As String, Optional ByVal tabId As String = vbNullString) As String
