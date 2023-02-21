@@ -152,7 +152,7 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     'Ranges (For more ranghes we should use a table of the range names)
     tablRng.Push "RNG_LLLanguage", "RNG_LLLanguageCode", "RNG_GoToSection", _ 
                  "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _ 
-                 "RNG_NoDevide", "RNG_Devide"
+                 "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph"
                  
     For counter = tablRng.LowerBound to tablRng.UpperBound
         rngName = tablRng.Item(counter)
@@ -269,5 +269,3 @@ End Sub
 Public Sub ILLTranslations_ImportTranslation(ByVal fromWkb As Workbook)
     ImportTranslation fromWkb
 End Sub
-
-
