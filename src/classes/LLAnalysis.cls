@@ -182,9 +182,11 @@ Private Sub Build(ll As ILinelist)
     Dim but As IButtons
     Dim sectionsList As BetterArray              'Dropdown for sections
     Dim tsSectionList As BetterArray             'Dropdown for time series sections
+    Dim graphTitlesList As BetterArray           'Dropdown for titles of graphs
     Dim drop As IDropdownLists
     Dim goToSection As String
     Dim goToHeader As String
+    Dim goToGraph As String
     Dim grLo As ListObject                       'ListObject of graph for time series
     Dim grLoTitle As ListObject                   'Title of graphs of time series
     Dim grBAinput As BetterArray                 'BetterArray input (list of listobjects) for time series f
@@ -212,6 +214,7 @@ Private Sub Build(ll As ILinelist)
     Set vars = LLVariables.Create(dict)
     Set sectionsList = New BetterArray
     Set tsSectionList = New BetterArray
+    Set graphTitlesList = New BetterArray
     Set drop = ll.Dropdown()
     Set pass = lData.Password()
 
@@ -220,10 +223,11 @@ Private Sub Build(ll As ILinelist)
     BusyApp
     goToSection = tradmsg.TranslatedValue("MSG_GoToSec")
     goToHeader = tradmsg.TranslatedValue("MSG_GoToHead")
+    goToGraph = tradmsg.TranslatedValue("MSG_GoToGraph")
     design.ApplyFormat outsh, AllAnalysisSheet
 
     'Add the update filter button
-    Set cellRng = outsh.Cells(2, 1)
+    Set cellRng = outsh.Cells(2, 2)
     Set but = Buttons.Create(outRng := cellRng, codeName := SHPFILTERNAME, scope := ButtonScopeSmall)
     but.Add actionCommand := UPDATEFILTERCOMMAND, shapeLabel := tradshp.TranslatedValue(SHPFILTERNAME)
     but.Format design
@@ -341,11 +345,10 @@ Private Sub Build(ll As ILinelist)
 
     'Add GoTo Section dropdown
     drop.Add sectionsList, "uagotosection"
-    outsh.Cells(2, 2).Value = goToSection
-    drop.SetValidation outsh.Cells(2, 2), "uagotosection"
-    design.ApplyFormat outsh.Cells(2, 2), scope:=LinelistSelectionDropdown
-    outsh.Cells(2, 2).Locked = False
-    outsh.Cells(2, 2).Name = "ua_" & GOTOSECCODE
+    outsh.Cells(2, 1).Value = goToSection
+    drop.SetValidation outsh.Cells(2, 1), "uagotosection"
+    design.ApplyFormat outsh.Cells(2, 1), scope:=LinelistSelectionDropdown
+    outsh.Cells(2, 1).Name = "ua_" & GOTOSECCODE
 
     'Transfert event change to the univariate analysis worksheet
     TransferCodeWksh outsh, ll
@@ -431,7 +434,6 @@ Private Sub Build(ll As ILinelist)
                     design.ApplyFormat cellRng, scope:=LinelistSelectionDropdown
                     cellRng.Name = "ts_" & GOTOSECCODE & "_" & prevSecId
                     cellRng.Value = goToHeader
-                    cellRng.Locked = False
 
                     'Clear the previous values of table section list
                     tsSectionList.Clear
@@ -463,10 +465,10 @@ Private Sub Build(ll As ILinelist)
             design.ApplyFormat cellRng, scope:=LinelistSelectionDropdown
             cellRng.Name = "ts_" & GOTOSECCODE & "_" & lastValid.TableSectionId
             cellRng.Value = goToHeader
-            cellRng.Locked = False
-
-
-            Set cellRng = outsh.Range("ENDTABLE_" & lastValid.TableId).Offset(5, 2)
+            
+            Set cellRng = outsh.Range("ENDTABLE_" & lastValid.TableId).Offset(2, -2)
+            cellRng.Name = "ts_" & GOTOSECCODE & "_graph"
+            Set cellRng = cellRng.Offset(3, 4)
         End If
 
         'Add the graphs for time series analysis
@@ -486,7 +488,6 @@ Private Sub Build(ll As ILinelist)
                 For graphCounter = 1 To grSpecs.NumberOfGraphs
                     Set temptabl = grBAoutput.Item(graphCounter) 'Temporary data containing specifications for one graph
                     'temptabl is a table of five tables
-
                     Set tablSeries = temptabl.Item(1) 'List of series for one graph
                     Set tablType = temptabl.Item(2) 'List of types for one graph (line, bar, point)
                     Set tablPos = temptabl.Item(3) 'List of the positions for one graph
@@ -506,7 +507,11 @@ Private Sub Build(ll As ILinelist)
 
                     gr.Format catTitle:=tradmsg.TranslatedValue("MSG_Period"), valuesTitle:=tradmsg.TranslatedValue("MSG_Values"), _
                               plotTitle:=temptabl.Item(7), asTimeSeries:=True    'The last item of temptabl is the title
-
+                    
+                    'Add the graph title for further searchs
+                    cellRng.Value = temptabl.Item(7)
+                    cellRng.Font.Color = vbWhite
+                    graphTitlesList.Push goToGraph & ": " & temptabl.Item(7)
                     Set cellRng = cellRng.Offset(50)
                 Next
             End If
@@ -518,12 +523,17 @@ Private Sub Build(ll As ILinelist)
     drop.SetValidation outsh.Cells(2, 1), "tsgotosection"
     design.ApplyFormat outsh.Cells(2, 1), scope:=LinelistSelectionDropdown
     outsh.Cells(2, 1).Name = "ts_" & GOTOSECCODE
-    outsh.Cells(2, 1).Value = goToSection
     outsh.Cells(2, 1).Locked = False
+
+    'Add the drodown for graphs
+    Set cellRng = outsh.Range("ts_" & GOTOSECCODE & "_graph")
+    drop.Add graphTitlesList, "tsgotographs"
+    drop.SetValidation cellRng, "tsgotographs"
+    design.ApplyFormat cellRng, scope := LinelistSelectionDropdown
+    cellRng.Value = goToGraph
 
     'Hide the second column (column B)
     outsh.Columns(2).Hidden = True
-
     'Add the update filter button
     Set cellRng = outsh.Cells(2, 3)
     Set but = Buttons.Create(outRng := cellRng, codeName := SHPFILTERNAME, scope := ButtonScopeSmall)
@@ -543,7 +553,7 @@ Private Sub Build(ll As ILinelist)
     sectionsList.Clear
 
     'Add the update filter button
-    Set cellRng = outsh.Cells(2, 1)
+    Set cellRng = outsh.Cells(2, 2)
     Set but = Buttons.Create(outRng := cellRng, codeName := SHPFILTERNAME, scope := ButtonScopeSmall)
     but.Add actionCommand := UPDATESPCOMMAND, shapeLabel := tradshp.TranslatedValue(SHPFILTERNAME)
     but.Format design
@@ -607,10 +617,11 @@ Private Sub Build(ll As ILinelist)
     'Add the goto section dropdown
 
     drop.Add sectionsList, "spgotosection"
-    drop.SetValidation outsh.Cells(2, 2), "spgotosection"
-    design.ApplyFormat outsh.Cells(2, 2), scope:=LinelistSelectionDropdown
-    outsh.Cells(2, 2).Name = "sp_" & GOTOSECCODE
-    outsh.Cells(2, 2).Value = goToSection
+    Set cellRng = outsh.Cells(2, 1)
+    drop.SetValidation cellRng, "spgotosection"
+    design.ApplyFormat cellRng, scope:=LinelistSelectionDropdown
+    cellRng.Name = "sp_" & GOTOSECCODE
+    cellRng.Value = goToSection
 
     'Transfert worksheet change event
     TransferCodeWksh outsh, ll

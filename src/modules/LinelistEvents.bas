@@ -836,6 +836,7 @@ Sub EventValueChangeAnalysis(Target As Range)
     Dim analysisType As String
     Dim goToSection As String
     Dim goToHeader As String
+    Dim goToGraph As String
     Dim rngName As String
 
 
@@ -874,10 +875,13 @@ Sub EventValueChangeAnalysis(Target As Range)
     If (Not (Intersect(Target, rng) Is Nothing)) And (Not rng Is Nothing) Then
         goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
         goToHeader = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToHeader").Value
-        
+        goToGraph = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToGraph").Value
+
         sLabel = Replace(Target.Value, goToSection & ": ", "")
         sLabel = Replace(sLabel, goToHeader & ": ", "")
-
+        sLabel = Replace(sLabel, goToGraph & ": ", "")
+        
+        Debug.Print sLabel
         Set RngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, _
                                              MatchCase:=True, SearchFormat:=False)
 
