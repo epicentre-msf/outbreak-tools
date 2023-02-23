@@ -4,6 +4,7 @@ Option Explicit
 Private Sub Workbook_Open()
     Application.OnKey "^+g", "ClicCmdGeoApp"
     Application.Calculation = xlCalculationManual
+    Application.EnableEvents = True
 End Sub
 
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
