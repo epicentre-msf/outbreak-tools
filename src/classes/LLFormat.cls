@@ -350,6 +350,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
                     interiorColor:=interiorColorValue, _
                     isBold:=False, FontSize:=styleValue - 2, _ 
                     Verti:=xlVAlignCenter
+        DrawLines rng:=rng, weight := xlThin, color := vbWhite
         rng.WrapText = True
         rng.Locked = False
 
@@ -562,6 +563,8 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         fontColorValue = DesignValue("calculated formula font color")
         interiorColorValue = DesignValue("calculated formula column interior color")
         FormatRange rng, fontColor:=fontColorValue, interiorColor:=interiorColorValue
+        rng.Locked = True
+        rng.FormulaHidden = True
 
     Case HListCalculatedFormulaHeader
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub

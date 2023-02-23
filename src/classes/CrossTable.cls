@@ -715,6 +715,7 @@ Private Sub AddHeader()
                     rng.Cells(0, 4).Name = "POPFACTLABEL_" & tabId
                     rng.Cells(1, 4).Value = 100
                     rng.Cells(1, 4).Name = "POPFACT_" & tabId
+                
 
                     'Add name to button where you divide by the population
                     rng.Cells(1, 5).Name = "POPPREVFACT_" & tabId
@@ -1150,7 +1151,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         rngTable.Push "TOTAL_MISSING_", "TOTAL_TOTAL_", _
                       "USER_START_DATE_", "USER_END_DATE_", "TIME_UNIT_", _
                       "MISSING_TOTAL_", "MISSING_MISSING_", "START_DATE_LABEL_", _
-                      "TIME_UNIT_LABEL_", "END_DATE_LABEL_","POPFACT_", "POPFACTLABEL_"
+                      "TIME_UNIT_LABEL_", "END_DATE_LABEL_", "POPFACT_", "POPFACTLABEL_"
         
         For counter = rngTable.LowerBound To rngTable.UpperBound
             rngName = rngTable.Item(counter) & tabId
@@ -1158,8 +1159,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             'labels are formatted differently (using analysis univariate header format)
             If RangeExists(rngName) Then
                 Set rng = .Range(rngName)
-                
-                If (InStr(1, rngName, "LABEL") > 0)  Or (InStr(1, rngName, "POP") > 0) Then
+                If (InStr(1, rngName, "LABEL") > 0) Or (InStr(1, rngName, "POP") > 0)  Then
                     DesignFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
                 ElseIf (InStr(1, rngName, "USER") > 0) Or (rngName = "TIME_UNIT_" & tabId) Then
                     DesignFormat.ApplyFormat rng, scope:=AnalysisOneCellCenter
@@ -1171,7 +1171,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
         'Informations Cells (Info on start date, info on end date)
         rngTable.Clear
-        rngTable.Push "INFO_START_DATE_", "INFO_END_DATE_", "INFO_ANA_PERIOD_", "POPFACTLABEL_"
+        rngTable.Push "INFO_START_DATE_", "INFO_END_DATE_", "INFO_ANA_PERIOD_"
         
         For counter = rngTable.LowerBound To rngTable.UpperBound
             rngName = rngTable.Item(counter) & tabId
@@ -1184,7 +1184,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
         'Hidden cells (no matter what)
         rngTable.Clear
-        rngTable.Push "PREVIOUS_ADM_", "POPPREVFACT_"
+        rngTable.Push "PREVIOUS_ADM_", "POPPREVFACT_", "POPFACT_", "POPFACTLABEL_"
         
         For counter = rngTable.LowerBound To rngTable.UpperBound
             rngName = rngTable.Item(counter) & tabId

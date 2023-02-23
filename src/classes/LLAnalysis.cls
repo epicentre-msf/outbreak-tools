@@ -370,7 +370,7 @@ Private Sub Build(ll As ILinelist)
     BusyApp
     outsh.Activate
     With Application.ActiveWindow
-        .SplitRow = 2
+        .SplitRow = 3
         .SplitColumn = 3
         .FreezePanes = True
         .Zoom = 65
@@ -466,9 +466,7 @@ Private Sub Build(ll As ILinelist)
             cellRng.Name = "ts_" & GOTOSECCODE & "_" & lastValid.TableSectionId
             cellRng.Value = goToHeader
             
-            Set cellRng = outsh.Range("ENDTABLE_" & lastValid.TableId).Offset(2, -2)
-            cellRng.Name = "ts_" & GOTOSECCODE & "_graph"
-            Set cellRng = cellRng.Offset(3, 4)
+            Set cellRng = outsh.Range("ENDTABLE_" & lastValid.TableId).Offset(5, 2)
         End If
 
         'Add the graphs for time series analysis
@@ -519,14 +517,17 @@ Private Sub Build(ll As ILinelist)
         End If
     End If
 
+    'goto section
+    Set cellRng = outsh.Cells(2, 1)
     drop.Add sectionsList, "tsgotosection"
-    drop.SetValidation outsh.Cells(2, 1), "tsgotosection"
-    design.ApplyFormat outsh.Cells(2, 1), scope:=LinelistSelectionDropdown
-    outsh.Cells(2, 1).Name = "ts_" & GOTOSECCODE
-    outsh.Cells(2, 1).Locked = False
-
-    'Add the drodown for graphs
-    Set cellRng = outsh.Range("ts_" & GOTOSECCODE & "_graph")
+    drop.SetValidation cellRng, "tsgotosection"
+    design.ApplyFormat cellRng, scope:=LinelistSelectionDropdown
+    cellRng.Name = "ts_" & GOTOSECCODE
+    cellRng.Value = goToSection
+    
+    'Add the dropdown for graphs
+    Set cellRng = outsh.Cells(3, 1)
+    cellRng.Name = "ts_" & GOTOSECCODE & "_graph"
     drop.Add graphTitlesList, "tsgotographs"
     drop.SetValidation cellRng, "tsgotographs"
     design.ApplyFormat cellRng, scope := LinelistSelectionDropdown
@@ -597,7 +598,7 @@ Private Sub Build(ll As ILinelist)
 
                 'Add graph
                 If specs.Value("graph") = "values" Or specs.Value("graph") = "percentage" Or specs.Value("graph") = "both" Then
-                    Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
+                    Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 4)
                     Set grSpecs = GraphSpecs.Create(tabl)
                     grSpecs.CreateSeries
                     Set gr = Graphs.Create(outsh, cellRng)
@@ -860,7 +861,6 @@ Private Sub Translate(ByVal TransObject As ITranslation)
             Set colRng = DataRange(Lo, "summary function")
             TransObject.TranslateRange colRng, containsFormula:=True
         End If
-
     Next
 End Sub
 
@@ -885,4 +885,3 @@ End Property
 Public Sub ILLAnalysis_Build(ll As ILinelist)
     Build ll
 End Sub
-
