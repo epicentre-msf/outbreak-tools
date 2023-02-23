@@ -78,12 +78,20 @@ Private Sub Protect(Optional ByVal sheetName As String = "_active", Optional ByV
     'Test if the sheet Exists
     If sh Is Nothing Then Exit Sub
     If Not InDebugMode() Then
+
         pwd = Password()
-        sh.Protect Password:=pwd, DrawingObjects:=(Not allowShapes), Contents:=True, Scenarios:=allowShapes, _
-                   AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
+        
+        'Contents: Protect graphs data, and Locked cells in one sheet
+        'Scenarios: Protect scenarios
+        'DrawingObjects: You can change graphs dimensions, move them and / or add new shapes
+        'You can remove alowing scenario and unable selection of lock cells
+        
+        sh.Protect Password:=pwd, DrawingObjects:=(Not allowShapes), Contents:=True, Scenarios:=True, _
+                   AllowInsertingRows:=True, AllowSorting:=False, AllowFiltering:=True, _
                    AllowFormattingCells:=True, AllowDeletingRows:=True, AllowFormattingColumns:=True
-                   
-        If Not allowShapes Then sh.EnableSelection = xlUnlockedCells
+        
+        'This is for management of sorting (create editable ranges for future sorting in the linelist)
+        'If Not allowShapes Then sh.EnableSelection = xlUnlockedCells
     End If
 
 End Sub

@@ -504,7 +504,7 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
 
 End Sub
 
-'Update data on Filtered values ===================================================================================
+'Update data on Filtered values ========================================================================================
 
 
 Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
@@ -779,6 +779,7 @@ Sub FormatDevidePop(ByVal rngName)
         sh.Range("POPFACT_" & tabId).Locked = True
         sh.Range("POPFACTLABEL_" & tabId).Font.Color = vbWhite
         sh.Range("POPFACTLABEL_" & tabId).Locked = True
+        sh.Range("POPFACT_" & tabId).FormulaHidden = True
 
         DevideByPopulation rngName := "POPFACT_" & tabId, revertBack := True
 
@@ -787,6 +788,7 @@ Sub FormatDevidePop(ByVal rngName)
         'Devide by the population
         sh.Range("POPFACT_" & tabId).Font.Color = vbBlack
         sh.Range("POPFACT_" & tabId).Locked = False
+        sh.Range("POPFACT_" & tabId).FormulaHidden = False
         sh.Range("POPFACTLABEL_" & tabId).Font.Color = vbBlack
         sh.Range("POPFACTLABEL_" & tabId).Locked = False
 

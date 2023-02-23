@@ -351,7 +351,8 @@ Sub OpenLL()
 
     On Error GoTo no
     'Then open it
-    Application.Workbooks.Open FileName:=SheetMain.Range("RNG_LLDir").Value & Application.PathSeparator & SheetMain.Range("RNG_LLName").Value & ".xlsb", ReadOnly:=False
+    Application.Workbooks.Open FileName:=SheetMain.Range("RNG_LLDir").Value & Application.PathSeparator & SheetMain.Range("RNG_LLName").Value & ".xlsb"
+    Exit Sub
 no:
     Exit Sub
 
