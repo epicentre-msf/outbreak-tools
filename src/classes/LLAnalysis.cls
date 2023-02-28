@@ -237,6 +237,11 @@ Private Sub Build(ll As ILinelist)
     cellRng.Value = "Uni-Bi-Analysis"
     design.ApplyFormat cellRng, scope:=LinelistHiddenCell
 
+    'Add the Formula on Filtered Data
+    Set cellRng = outsh.Cells(1, 5)
+    cellRng.Formula = "= ComputedOnFiltered()"
+    design.ApplyFormat cellRng, scope:=LinelistWarning
+
     On Error Resume Next
     'Activating the worksheet restores all the application
     'status to true, remember to recall the busy app just
@@ -365,6 +370,11 @@ Private Sub Build(ll As ILinelist)
     Set cellRng = outsh.Cells(1, 3)
     cellRng.Value = "TS-Analysis"
     design.ApplyFormat cellRng, LinelistHiddenCell
+
+    'Add informations on cells calculated on formula
+    Set cellRng = outsh.Cells(1, 5)
+    cellRng.Formula = "= ComputedOnFiltered()"
+    design.ApplyFormat cellRng, scope:=LinelistWarning
 
     On Error Resume Next
     BusyApp
@@ -563,6 +573,11 @@ Private Sub Build(ll As ILinelist)
     Set cellRng = outsh.Cells(1, 3)
     cellRng.Value = "SP-Analysis"
     design.ApplyFormat cellRng, scope:=LinelistHiddenCell
+
+    'Add infos on filtered data
+    Set cellRng = outsh.Cells(1, 5)
+    cellRng.Formula = "= ComputedOnFiltered()"
+    design.ApplyFormat cellRng, scope:=LinelistWarning
 
     On Error Resume Next
     'Activating the worksheet restores all the application

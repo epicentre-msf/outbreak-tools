@@ -131,6 +131,7 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     outRngAddress = Lo.Range.Address
     Set outRng = outshDictTrans.Range(outRngAddress)
     outRng.Value = Lo.Range.Value
+    
     'Define the listobject
     With outshDictTrans
         .ListObjects.Add(xlSrcRange, outRng, , xlYes).Name = Lo.Name
@@ -152,7 +153,7 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     'Ranges (For more ranghes we should use a table of the range names)
     tablRng.Push "RNG_LLLanguage", "RNG_LLLanguageCode", "RNG_GoToSection", _ 
                  "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _ 
-                 "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph"
+                 "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered"
                  
     For counter = tablRng.LowerBound to tablRng.UpperBound
         rngName = tablRng.Item(counter)
