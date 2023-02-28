@@ -228,8 +228,11 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
         'copy values to the pasting Rng
         pasteRng.Value = rng.Value
 
+        On Error Resume Next
         'Remove duplicates to the pasting Rng
         pasteRng.RemoveDuplicates Columns:=1, Header:=xlNo
+
+        On Error GoTo 0
 
         'Resize the pasting Range
         nbRows = sh.Cells(sh.Rows.Count, pasteRng.Column).End(xlUp).Row

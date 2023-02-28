@@ -70,6 +70,7 @@ Public Enum FormatScopes
     AnalysisDateCell = 50
     AnalysisInfoCellLeft = 51
     AnalysisMissingRowWithoutHeader = 52
+    LinelistWarning = 53
 End Enum
 
 Public Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)

@@ -71,7 +71,37 @@ End Function
 
 '
 '
-'
+Public Function ComputedOnFiltered() As String
+    Application.Volatile
+    Dim sh As Worksheet
+    Dim wb As Workbook
+    Dim warningInfo As String
+    Dim filteredSheet As String
+    Dim Lo As Listobject
+    Dim LoFiltered As ListObject
+    Dim infoValue As String
+
+    Set wb = ThisWorkbook
+    warningInfo = wb.Worksheets("LinelistTranslation").Range("RNG_OnFiltered").Value
+
+    For Each sh In wb.Worksheets
+        If sh.Cells(1, 3).Value = "HList" Then
+        filteredSheet = sh.Cells(1, 5).Value
+
+        On Error Resume Next
+            Set Lo = sh.ListObjects(1)
+            Set LoFiltered = wb.Worksheets(filteredSheet).ListObjects(1)
+
+            If Lo.Range.Rows.Count <> LoFiltered.Range.Rows.Count Then
+                infoValue = warningInfo
+                Exit For
+            End If
+        On Error GoTo 0
+        End If
+    Next
+
+    ComputedOnFiltered = infoValue
+End Function
 '
 '
 'Epicemiological week function
