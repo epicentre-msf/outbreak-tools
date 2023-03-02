@@ -529,16 +529,22 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
 
         On Error GoTo 0
 
-    Case AnalysisInfoCell, AnalysisInfoCellLeft
+    Case AnalysisInfoCell, AnalysisInfoCellLeft, LinelistWarning
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+
+        'Horizontal alignment to left for cellLeft
         horizAlign = IIf(scope = AnalysisInfoCellLeft, xlHAlignLeft, xlHAlignCenter)
+        
         Set rng = formattingObject
-        fontColorValue = IIf(IsEmpty(rng), "", DesignValue("missing font color"))
+        fontColorValue = Switch(scope = LinelistWarning, vbRed, IsEmpty(rng), "", _ 
+                            True,  DesignValue("missing font color"))
+
         FormatRange rng, fontColor:=fontColorValue, _
-                    FontSize:=IIf(scope = AnalysisInfoCellLeft, 11, 8), _
-                    isBold:=(scope = AnalysisInfoCellLeft), Horiz:=horizAlign, Verti:=xlVAlignCenter
-        rng.EntireRow.RowHeight = 45
+                    FontSize:=Switch(scope = AnalysisInfoCellLeft, 11, scope = LinelistWarning, 14, True, 8), _
+                    isBold:=(scope = AnalysisInfoCellLeft Or scope = LinelistWarning), _ 
+                    Horiz:=horizAlign, Verti:=xlVAlignCenter
+        If scope <> LinelistWarning Then rng.EntireRow.RowHeight = 45
         rng.WrapText = True
 
     Case HListMainLab
