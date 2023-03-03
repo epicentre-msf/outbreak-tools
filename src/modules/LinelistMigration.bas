@@ -1045,7 +1045,7 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
         'ADM3
         .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sAdm3
         ExportData.FromExcelRange WkshGeo.ListObjects(C_sTabAdm3).Range
-        ExportHeader.Pop
+        ExportHeader.pop
         ExportData.ToExcelRange .Worksheets(C_sAdm3).Cells(1, 1)
         ExportHeader.ToExcelRange .Worksheets(C_sAdm3).Cells(1, 1), TransposeValues:=True
         sPrevSheetName = C_sAdm3
@@ -1055,7 +1055,7 @@ Private Sub ExportMigrationGeo(sGeoPath As String)
         .Worksheets.Add(before:=.Worksheets(sPrevSheetName)).Name = C_sAdm2
         ExportData.FromExcelRange WkshGeo.ListObjects(C_sTabAdm2).Range
         ExportData.ToExcelRange .Worksheets(C_sAdm2).Cells(1, 1)
-        ExportHeader.Pop
+        ExportHeader.pop
         ExportHeader.ToExcelRange .Worksheets(C_sAdm2).Cells(1, 1), TransposeValues:=True
         sPrevSheetName = C_sAdm2
         ExportData.Clear
@@ -1189,7 +1189,7 @@ Sub ExportForMigration()
         ExportPath.Items = Split(ThisWorkbook.Worksheets(C_sSheetGeo).Range(C_sRngGeoName).Value, "_")
 
         'Remove the last element of the path (the date)
-        If ExportPath.Length > 1 Then ExportPath.Pop
+        If ExportPath.Length > 1 Then ExportPath.pop
 
         If ExportPath.Length > 0 Then sPath = ExportPath.ToString(Separator:="_", OpeningDelimiter:="", ClosingDelimiter:="", QuoteStrings:=False)
 

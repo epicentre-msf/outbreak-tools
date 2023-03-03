@@ -25,8 +25,6 @@ End Type
 
 Private This As TGraph
 
-Private Const GRAPHHEIGHT As Long = 14.3
-Private Const GRAPHWIDTH As Long = 4.1
 
 Public Function Create(sh As Worksheet, posRng As Range) As IGraphs
     With New Graphs
@@ -70,18 +68,23 @@ End Property
 
 'Exposed methods
 Public Sub Add()
+    
+    'upon creation width and height of graphs are constants
+    
+    Const cw As Long = 488 'graph width
+    Const rh As Long = 214  'graph height
+    
     Dim co As ChartObject
     Dim sh As Worksheet
     Dim rng As Range
-    Dim cw As Long
-    Dim rh As Long
 
+    
+    
     Set sh = Wksh()
     Set rng = StartRange()
-    cw = sh.Range("A1").width
-    rh = sh.Range("A1").height
 
-    Set co = sh.ChartObjects.Add(rng.Left, rng.Top, GRAPHWIDTH * cw, GRAPHHEIGHT * rh)
+
+    Set co = sh.ChartObjects.Add(rng.Left, rng.Top, rh, cw)
     co.Left = rng.Left
     co.Top = rng.Top
 
@@ -151,7 +154,30 @@ Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional
     seriesIndex = ind
 End Sub
 
-Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, _ 
+'Test if a range exists in the worksheet
+Private Function RangeExist(ByVal rngName As String) As Boolean
+    Dim sh As Worksheet
+    Dim rng As Range
+    Set sh = Wksh()
+    On Error Resume Next
+        Set rng = sh.Range(rngName)
+    On Error GoTo 0
+    RangeExist = Not (rng Is Nothing)
+End Function
+
+'Get the True adress of a rangename to use in captions
+Private Function RngAddress(ByVal rngName As String) As String
+    Dim sh As Worksheet
+    Dim rng As Range
+
+    If Not RangeExist(rngName) Then Exit Function 'adress can be empty
+    Set sh = Wksh()
+    Set rng = sh.Range(rngName)
+
+    RngAddress = "'" & sh.Name & "'" & "!" & rng.Address
+End Function
+
+Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, _
                      Optional ByVal prefix As String = vbNullString, _
                      Optional ByVal prefixOnly As Boolean = False, _
                      Optional ByVal hardCodeLabels As Boolean = True)
@@ -180,43 +206,47 @@ Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, _
         .SeriesCollection(ind).XValues = sh.Range(catName)
 
         'Labels can be hardcoded or Not, by default, they are hardcoded
-        If hardCodeLabels Then
-            .SeriesCollection(ind).Name = labelValue 
-        Else
+        If (Not hardCodeLabels) And RangeExist(lblName) Then
             'The user can modify by changing values in the range, but
             'You have to assume the range exists and is not empty
-            .SeriesCollection(ind).Name = sh.Range(lblName)
+            .SeriesCollection(ind).Name = "= " & RngAddress(lblName)
+        Else
+            .SeriesCollection(ind).Name = labelValue
         End If
+
         .SeriesCollection(ind).ApplyDataLabels xlDataLabelsShowValue, False
         .SeriesCollection(ind).DataLabels.Font.Size = 6
         .SeriesCollection(ind).DataLabels.Font.color = RGB(2, 6, 91)
         .SeriesCollection(ind).DataLabels.Font.Name = "+mj-lt"
     End With
-
 End Sub
 
 Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal catTitle As String = vbNullString, _
                   Optional ByVal plotTitle As String = vbNullString, _
                   Optional ByVal secondAxisTitle As String = vbNullString, _
-                  Optional ByVal asTimeSeries As Boolean = False)
+                  Optional ByVal scope As GraphScope = GraphScopeNormal, _
+                  Optional ByVal heightFactor As Long = 1)
     
-    Const cw As Long = 119
-    Const rh As Long = 15
+    Const cw As Long = 488
+    Const rh As Long = 214
 
     Dim co As ChartObject
     Dim sh As Worksheet
     Dim coef As Long
+    Dim heightCoef As Long
+    
     Set co = graphChart
     Set sh = Wksh()
 
-    
     coef = 1
-    If asTimeSeries Then coef = 3
+    If (scope = GraphScopeTimeSeries) Then coef = 3
+    heightCoef = IIf(heightFactor <= 1, 1, (heightFactor + 1) * 0.08)
 
     'Coerce again the width and the height
-    co.width = GRAPHWIDTH * cw * coef
-    co.height = GRAPHHEIGHT * rh * coef
+    co.width = cw * coef
+    co.height = rh * coef * heightCoef
+
     With sh.Shapes(co.Name)
         .Shadow.Type = msoShadow21
         .line.Visible = msoTrue
@@ -226,13 +256,18 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
     End With
 
     With co.Chart
+        
         With .Axes(xlCategory, xlPrimary)
             .HasTitle = True
             .HasMajorGridlines = True
             .MajorGridlines.Border.color = RGB(255, 255, 255)
-            .AxisTitle.Text = catTitle
+            .AxisTitle.Caption = catTitle
             .TickLabels.Font.Size = 8
+            
+            'Reverse plot order for spatial analysis
+            If (scope = GraphScopeSpatial) Then .ReversePlotOrder = True
         End With
+        
         With .Axes(xlValue, xlPrimary)
             .HasTitle = True
             .HasMajorGridlines = True
@@ -270,11 +305,22 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
         End If
         
         With .PlotArea
-            .Left = 16.618 * coef
-            .Top = 20 * coef
-            .width = 405 * coef
-            .height = 150 * coef
+            
+            If scope = GraphScopeTimeSeries Then
+                .Left = 25 * coef
+            Else
+                .Left = 16.618 * coef
+            End If
+            
+            .Top = 16.618 * coef
+            .width = 425 * coef
+            .height = 177 * coef * heightCoef
         End With
+        
+        'Legend position of the chart
+        If (scope = GraphScopeSpatial) Then
+            .Legend.Position = xlLegendPositionBottom
+        End If
     End With
     
 End Sub
@@ -295,8 +341,10 @@ End Sub
 Public Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, _
                           Optional ByVal catTitle As String = vbNullString, _
                           Optional ByVal plotTitle As String = vbNullString, _
-                          Optional ByVal asTimeSeries As Boolean = False)
-    Format valuesTitle:=valuesTitle, catTitle:=catTitle, plotTitle:=plotTitle, asTimeSeries:=asTimeSeries
+                          Optional ByVal scope As GraphScope = GraphScopeNormal, _
+                          Optional ByVal heightFactor As Long = 1)
+    Format valuesTitle:=valuesTitle, catTitle:=catTitle, plotTitle:=plotTitle, scope:=scope, _
+           heightFactor:=heightFactor
 End Sub
 
 

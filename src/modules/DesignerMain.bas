@@ -185,7 +185,7 @@ Sub GenerateData()
     'Should add Error management when something goes wrong
     mainobj.AddInfo desTrads, "MSG_HListVList"
 
-    On Error GoTo ErrorBuildingLLManage
+    'On Error GoTo ErrorBuildingLLManage
 
     currSheetName = dict.DataRange("sheet name").Cells(1, 1).Value
     If llshs.SheetInfo(currSheetName) = "vlist1D" Then
