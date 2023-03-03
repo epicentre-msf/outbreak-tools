@@ -151,11 +151,11 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     Next
 
     'Ranges (For more ranghes we should use a table of the range names)
-    tablRng.Push "RNG_LLLanguage", "RNG_LLLanguageCode", "RNG_GoToSection", _ 
-                 "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _ 
+    tablRng.Push "RNG_LLLanguage", "RNG_LLLanguageCode", "RNG_GoToSection", _
+                 "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _
                  "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered"
                  
-    For counter = tablRng.LowerBound to tablRng.UpperBound
+    For counter = tablRng.LowerBound To tablRng.UpperBound
         rngName = tablRng.Item(counter)
         outshLLTrans.Range(shLL.Range(rngName).Address).Name = rngName
         outshLLTrans.Range(rngName).Value = shLL.Range(rngName).Value

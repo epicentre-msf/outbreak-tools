@@ -24,7 +24,7 @@ Private Type TButton
 End Type
 
 Private This As TButton
-Private Const CLASSNAME As String = "Buttons"
+Private Const className As String = "Buttons"
 Private Const BUTTONWIDTH As Long = 105
 Private Const BUTTONHEIGHT As Long = 30
 Private Const BUTTONGAP As Long = 5
@@ -175,9 +175,9 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Exposed methods
-Public Sub IButtons_Add(Optional ByVal actionCommand As String = vbNullString, _ 
+Public Sub IButtons_Add(Optional ByVal actionCommand As String = vbNullString, _
                         Optional ByVal shapeLabel As String = vbNullString)
-    Add actionCommand := actionCommand, shapeLabel:= shapeLabel
+    Add actionCommand:=actionCommand, shapeLabel:=shapeLabel
 End Sub
 
 Public Sub IButtons_Format(design As ILLFormat)

@@ -672,7 +672,7 @@ End Sub
 
 
 'Update the value by deviding by the population
-Sub DevideByPopulation(Byval rngName As String, Optional ByVal revertBack As Boolean = False)
+Sub DevideByPopulation(ByVal rngName As String, Optional ByVal revertBack As Boolean = False)
 
     Dim sh As Worksheet
     Dim hasFormula As Boolean
@@ -682,7 +682,7 @@ Sub DevideByPopulation(Byval rngName As String, Optional ByVal revertBack As Boo
     Dim cellRng As Range
     Dim formulaValue As String
     Dim adminName As String
-    Dim adminCode As Byte
+    Dim AdminCode As Byte
     Dim rowRng As Range
     Dim geo As ILLGeo
     Dim selectedAdmin As String
@@ -690,10 +690,10 @@ Sub DevideByPopulation(Byval rngName As String, Optional ByVal revertBack As Boo
     Dim tabId As String
     Dim pass As ILLPasswords
 
-    BeginWork xlsapp := Application
+    BeginWork xlsapp:=Application
     Set sh = ActiveSheet
     Set pass = LLPasswords.Create(ThisWorkbook.Worksheets("Password"))
-    pass.Unprotect "_active"
+    pass.UnProtect "_active"
 
     tabId = Replace(rngName, "POPFACT_", vbNullString)
     prevFact = sh.Range("POPPREVFACT_" & tabId).Value
@@ -720,7 +720,7 @@ Sub DevideByPopulation(Byval rngName As String, Optional ByVal revertBack As Boo
             hasFormula = True
         End If
         
-        If (InStr(1, formulaValue, "concat_" & adminName) > 0) And ( cellRng.Column > rowRng.Column) Then
+        If (InStr(1, formulaValue, "concat_" & adminName) > 0) And (cellRng.Column > rowRng.Column) Then
             
             popValue = sh.Cells(cellRng.Row, rowRng.Column - 1).Address
 
@@ -752,11 +752,11 @@ Sub DevideByPopulation(Byval rngName As String, Optional ByVal revertBack As Boo
     Else
         sh.Range("POPPREVFACT_" & tabId).Value = factorMult
     End If
-    rng.Calculate
+    rng.calculate
 
 Err:
     pass.Protect "_active", True
-    EndWork xlsapp := Application
+    EndWork xlsapp:=Application
 End Sub
 
 Sub FormatDevidePop(ByVal rngName)
@@ -768,33 +768,33 @@ Sub FormatDevidePop(ByVal rngName)
     Set sh = ActiveSheet
     Set pass = LLPasswords.Create(ThisWorkbook.Worksheets("Password"))
 
-    pass.Unprotect "_active"
+    pass.UnProtect "_active"
 
     tabId = Replace(rngName, "DEVIDEPOP_", "")
 
     If sh.Range(rngName).Value = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_NoDevide").Value Then
         
         'Do not devide
-        sh.Range("POPFACT_" & tabId).Font.Color = vbWhite
+        sh.Range("POPFACT_" & tabId).Font.color = vbWhite
         sh.Range("POPFACT_" & tabId).Locked = True
-        sh.Range("POPFACTLABEL_" & tabId).Font.Color = vbWhite
+        sh.Range("POPFACTLABEL_" & tabId).Font.color = vbWhite
         sh.Range("POPFACTLABEL_" & tabId).Locked = True
         sh.Range("POPFACT_" & tabId).FormulaHidden = True
 
-        DevideByPopulation rngName := "POPFACT_" & tabId, revertBack := True
+        DevideByPopulation rngName:="POPFACT_" & tabId, revertBack:=True
 
-    ElseIf  sh.Range(rngName).Value = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_Devide").Value Then
+    ElseIf sh.Range(rngName).Value = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_Devide").Value Then
         
         'Devide by the population
-        sh.Range("POPFACT_" & tabId).Font.Color = vbBlack
+        sh.Range("POPFACT_" & tabId).Font.color = vbBlack
         sh.Range("POPFACT_" & tabId).Locked = False
         sh.Range("POPFACT_" & tabId).FormulaHidden = False
-        sh.Range("POPFACTLABEL_" & tabId).Font.Color = vbBlack
+        sh.Range("POPFACTLABEL_" & tabId).Font.color = vbBlack
         sh.Range("POPFACTLABEL_" & tabId).Locked = False
 
         DevideByPopulation "POPFACT_" & tabId
 
-    End If 
+    End If
 
     pass.Protect "_active", True
 End Sub

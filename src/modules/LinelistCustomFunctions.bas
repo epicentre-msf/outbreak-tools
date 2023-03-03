@@ -77,7 +77,7 @@ Public Function ComputedOnFiltered() As String
     Dim wb As Workbook
     Dim warningInfo As String
     Dim filteredSheet As String
-    Dim Lo As Listobject
+    Dim Lo As ListObject
     Dim LoFiltered As ListObject
     Dim infoValue As String
 

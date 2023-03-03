@@ -273,12 +273,12 @@ Private Sub PushGraph(ByVal graphId As String)
     'Check the length of the tabSeries and remove the last element if needed
     'It looks like it is a bug from BetterArray memory management
     If tabSeries.Length = This.chartSeriesName.Length + 1 Then
-        tabSeries.Pop
-        tabType.Pop
-        tabPos.Pop
-        tabLabel.Pop
-        tabCatLabel.Pop
-        tabPrefLabel.Pop
+        tabSeries.pop
+        tabType.pop
+        tabPos.pop
+        tabLabel.pop
+        tabCatLabel.pop
+        tabPrefLabel.pop
     End If
 
     title = GraphTitle(graphId)

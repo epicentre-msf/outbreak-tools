@@ -198,8 +198,8 @@ Private Sub ClearTableConditions(Optional ByVal removeNumber As Integer = 0)
       This.condTests.Clear
   Else
       For counter = 1 To removeNumber
-          This.condVars.Pop
-          This.condTests.Pop
+          This.condVars.pop
+          This.condTests.pop
       Next
   End If
 End Sub

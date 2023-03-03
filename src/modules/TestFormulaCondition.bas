@@ -56,24 +56,24 @@ Private Sub TestFormulaValidity()
     
     Assert.IsTrue (Not dict.ColumnExists("table name")) Or formCond.Valid(dict, "tab2"), "Correct formula shows as incorrect (variable length = 4)"
     Assert.IsFalse formCond.Valid(dict, "tab3"), "Formula with false table name shows as correct"
-    var.Pop
+    var.pop
     Set formCond = FormulaCondition.Create(var, cond)
     Assert.IsFalse formCond.Valid(dict, "tab2"), "Formula with variable length < condition length shows as correct"
-    cond.Pop
-    cond.Pop
+    cond.pop
+    cond.pop
     Set formCond = FormulaCondition.Create(var, cond)
     Assert.IsFalse formCond.Valid(dict, "tab2"), "Formula with variable length > condition length shows as correct"
-    var.Pop
+    var.pop
     Set formCond = FormulaCondition.Create(var, cond)
     Assert.IsTrue (Not dict.ColumnExists("table name")) Or formCond.Valid(dict, "tab2"), "Correct formula shows as incorrect (variable length = 2)"
 End Sub
 
 '@TestMethod
 Private Sub TestFormConversion()
-    var.Pop
-    var.Pop
-    cond.Pop
-    cond.Pop
+    var.pop
+    var.pop
+    cond.pop
+    cond.pop
     Set formCond = FormulaCondition.Create(var, cond)
     Assert.IsTrue (formCond.ConditionString("tab2", "varb2") = "IF((tab2[varb1] > 0)*(tab2[varb2] < 0) , tab2[varb2])"), "Formula not converted correctly (step 1)"
     Assert.IsTrue (formCond.ConditionString("filttable2", "varb5") = "IF((filttable2[varb1] > 0)*(filttable2[varb2] < 0) , filttable2[varb5])"), "Formula not converted correctly (step 2)"
