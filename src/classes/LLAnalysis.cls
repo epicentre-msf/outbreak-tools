@@ -228,8 +228,8 @@ Private Sub Build(ll As ILinelist)
 
     'Add the update filter button
     Set cellRng = outsh.Cells(2, 2)
-    Set but = Buttons.Create(outRng := cellRng, codeName := SHPFILTERNAME, scope := ButtonScopeSmall)
-    but.Add actionCommand := UPDATEFILTERCOMMAND, shapeLabel := tradshp.TranslatedValue(SHPFILTERNAME)
+    Set but = Buttons.Create(outRng:=cellRng, codeName:=SHPFILTERNAME, scope:=ButtonScopeSmall)
+    but.Add actionCommand:=UPDATEFILTERCOMMAND, shapeLabel:=tradshp.TranslatedValue(SHPFILTERNAME)
     but.Format design
 
     'Add The Sheet Type
@@ -239,7 +239,7 @@ Private Sub Build(ll As ILinelist)
 
     'Add the Formula on Filtered Data
     Set cellRng = outsh.Cells(1, 5)
-    cellRng.Formula = "= ComputedOnFiltered()"
+    cellRng.formula = "= ComputedOnFiltered()"
     design.ApplyFormat cellRng, scope:=LinelistWarning
 
     On Error Resume Next
@@ -373,7 +373,7 @@ Private Sub Build(ll As ILinelist)
 
     'Add informations on cells calculated on formula
     Set cellRng = outsh.Cells(1, 5)
-    cellRng.Formula = "= ComputedOnFiltered()"
+    cellRng.formula = "= ComputedOnFiltered()"
     design.ApplyFormat cellRng, scope:=LinelistWarning
 
     On Error Resume Next
@@ -514,11 +514,11 @@ Private Sub Build(ll As ILinelist)
                     Next
 
                     gr.Format catTitle:=tradmsg.TranslatedValue("MSG_Period"), valuesTitle:=tradmsg.TranslatedValue("MSG_Values"), _
-                              plotTitle:=temptabl.Item(7), asTimeSeries:=True    'The last item of temptabl is the title
+                              plotTitle:=temptabl.Item(7), scope:=GraphScopeTimeSeries    'The last item of temptabl is the title
                     
                     'Add the graph title for further searchs
                     cellRng.Value = temptabl.Item(7)
-                    cellRng.Font.Color = vbWhite
+                    cellRng.Font.color = vbWhite
                     graphTitlesList.Push goToGraph & ": " & temptabl.Item(7)
                     Set cellRng = cellRng.Offset(50)
                 Next
@@ -540,15 +540,15 @@ Private Sub Build(ll As ILinelist)
     cellRng.Name = "ts_" & GOTOSECCODE & "_graph"
     drop.Add graphTitlesList, "tsgotographs"
     drop.SetValidation cellRng, "tsgotographs"
-    design.ApplyFormat cellRng, scope := LinelistSelectionDropdown
+    design.ApplyFormat cellRng, scope:=LinelistSelectionDropdown
     cellRng.Value = goToGraph
 
     'Hide the second column (column B)
     outsh.Columns(2).Hidden = True
     'Add the update filter button
     Set cellRng = outsh.Cells(2, 3)
-    Set but = Buttons.Create(outRng := cellRng, codeName := SHPFILTERNAME, scope := ButtonScopeSmall)
-    but.Add actionCommand := UPDATEFILTERCOMMAND, shapeLabel := tradshp.TranslatedValue(SHPFILTERNAME)
+    Set but = Buttons.Create(outRng:=cellRng, codeName:=SHPFILTERNAME, scope:=ButtonScopeSmall)
+    but.Add actionCommand:=UPDATEFILTERCOMMAND, shapeLabel:=tradshp.TranslatedValue(SHPFILTERNAME)
     but.Format design
 
     'Send the LinelistTimeSeries change
@@ -565,8 +565,8 @@ Private Sub Build(ll As ILinelist)
 
     'Add the update filter button
     Set cellRng = outsh.Cells(2, 2)
-    Set but = Buttons.Create(outRng := cellRng, codeName := SHPFILTERNAME, scope := ButtonScopeSmall)
-    but.Add actionCommand := UPDATESPCOMMAND, shapeLabel := tradshp.TranslatedValue(SHPFILTERNAME)
+    Set but = Buttons.Create(outRng:=cellRng, codeName:=SHPFILTERNAME, scope:=ButtonScopeSmall)
+    but.Add actionCommand:=UPDATESPCOMMAND, shapeLabel:=tradshp.TranslatedValue(SHPFILTERNAME)
     but.Format design
 
     'Add The Sheet Type
@@ -576,7 +576,7 @@ Private Sub Build(ll As ILinelist)
 
     'Add infos on filtered data
     Set cellRng = outsh.Cells(1, 5)
-    cellRng.Formula = "= ComputedOnFiltered()"
+    cellRng.formula = "= ComputedOnFiltered()"
     design.ApplyFormat cellRng, scope:=LinelistWarning
 
     On Error Resume Next
@@ -620,10 +620,10 @@ Private Sub Build(ll As ILinelist)
                     gr.Add
                     For graphCounter = 1 To grSpecs.NumberOfSeries
                         gr.AddSeries grSpecs.SeriesName(graphCounter), grSpecs.SeriesType(graphCounter), grSpecs.SeriesPos(graphCounter)
-                        gr.AddLabels grSpecs.SeriesLabel(graphCounter), grSpecs.SeriesColumnLabel(graphCounter), hardCodeLabels := False
+                        gr.AddLabels grSpecs.SeriesLabel(graphCounter), grSpecs.SeriesColumnLabel(graphCounter), hardCodeLabels:=False
                     Next
 
-                    gr.Format catTitle:=vars.Value(colName:="main label", varName:=specs.Value("row")), valuesTitle:=specs.Value("label")
+                    gr.Format valuesTitle:=specs.Value("label"), heightFactor:=CLng(specs.Value("n geo")), scope:=GraphScopeSpatial     'catTitle:=vars.Value(colName:="main label", varName:=specs.Value("row")),
                 End If
 
             End If

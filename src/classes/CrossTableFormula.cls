@@ -212,8 +212,8 @@ Private Sub ClearTableConditions(Optional ByVal removeNumber As Integer = 0)
         This.condTests.Clear
     Else
         For counter = 1 To removeNumber
-            This.condVars.Pop
-            This.condTests.Pop
+            This.condVars.pop
+            This.condTests.pop
         Next
     End If
 End Sub
@@ -802,7 +802,7 @@ Private Sub AddFormulas()
                     'Validation on the factors
                     With .Range("DEVIDEPOP_" & tabId).validation
                         .Delete
-                        .Add Type:=xlValidateList,  _ 
+                        .Add Type:=xlValidateList, _
                         AlertStyle:=xlValidAlertStop, _
                             Operator:=xlBetween, Formula1:="=POPULATION_FACTOR_LIST"
                     End With

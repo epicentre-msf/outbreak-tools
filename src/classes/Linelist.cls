@@ -427,14 +427,14 @@ Private Sub PrepareAdmin()
 
     'Advance button
     Set rng = sh.Cells(2, 3)
-    Set but = Buttons.Create(outRng :=rng, codeName:=SHPADVANCE, scope:=ButtonScopeLarge)
-    but.Add actionCommand := ADVANCEDCOMMAND, shapeLabel := trads.TranslatedValue(SHPADVANCE)
+    Set but = Buttons.Create(outRng:=rng, codeName:=SHPADVANCE, scope:=ButtonScopeLarge)
+    but.Add actionCommand:=ADVANCEDCOMMAND, shapeLabel:=trads.TranslatedValue(SHPADVANCE)
     but.Format design
 
     'Import button
     Set rng = sh.Cells(2, 5)
-    Set but = Buttons.Create(outRng := rng, codeName:=SHPEXPORT, scope:=ButtonScopeLarge)
-    but.Add actionCommand := EXPORTCOMMAND, shapeLabel := trads.TranslatedValue(SHPEXPORT)
+    Set but = Buttons.Create(outRng:=rng, codeName:=SHPEXPORT, scope:=ButtonScopeLarge)
+    but.Add actionCommand:=EXPORTCOMMAND, shapeLabel:=trads.TranslatedValue(SHPEXPORT)
     but.Format design
 
     BusyApp

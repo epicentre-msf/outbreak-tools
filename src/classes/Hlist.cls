@@ -210,28 +210,28 @@ Public Sub Build()
     'Show Hide button
     Set rng = sh.Cells(1, 2)
     Set trads = lData.TransObject(TranslationOfShapes)
-    Set but = Buttons.Create(outRng := rng, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
-    but.Add actionCommand := SHOWHIDECOMMAND, shapeLabel := trads.TranslatedValue(SHPSHOWHIDE)
+    Set but = Buttons.Create(outRng:=rng, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
+    but.Add actionCommand:=SHOWHIDECOMMAND, shapeLabel:=trads.TranslatedValue(SHPSHOWHIDE)
     but.Format design
 
     'Add Rows button
     Set rng = sh.Cells(2, 2)
-    Set but = Buttons.Create(outRng := rng, codeName:=SHPADDROWS, scope:=ButtonScopeSmall)
-    but.Add actionCommand := ADDROWSCOMMAND, shapeLabel := trads.TranslatedValue(SHPADDROWS)
+    Set but = Buttons.Create(outRng:=rng, codeName:=SHPADDROWS, scope:=ButtonScopeSmall)
+    but.Add actionCommand:=ADDROWSCOMMAND, shapeLabel:=trads.TranslatedValue(SHPADDROWS)
     but.Format design
     
     'Remove Filters
     Set rng = sh.Cells(2, 1)
-    Set but = Buttons.Create(outRng := rng,  codeName:=SHPREMOVEFILT, scope:=ButtonScopeSmall)
-    but.Add actionCommand := REMOVEFILTERCOMMAND, shapeLabel := trads.TranslatedValue(SHPREMOVEFILT)
+    Set but = Buttons.Create(outRng:=rng, codeName:=SHPREMOVEFILT, scope:=ButtonScopeSmall)
+    but.Add actionCommand:=REMOVEFILTERCOMMAND, shapeLabel:=trads.TranslatedValue(SHPREMOVEFILT)
     but.Format design
 
     'Geo If neededed
     hasGeo = llshs.ContainsControl(sheetName, "geo1")
     If hasGeo Then
         Set rng = sh.Cells(3, 1)
-        Set but = Buttons.Create(outRng := rng, codeName:=SHPGEO, scope:=ButtonScopeGeo)
-        but.Add actionCommand := GEOCOMMAND, shapeLabel := trads.TranslatedValue(SHPGEO)
+        Set but = Buttons.Create(outRng:=rng, codeName:=SHPGEO, scope:=ButtonScopeGeo)
+        but.Add actionCommand:=GEOCOMMAND, shapeLabel:=trads.TranslatedValue(SHPGEO)
         but.Format design
     End If
 

@@ -30,7 +30,7 @@ End Type
 
 Private This As TCrossTable
 Private Const STANDARDSTARTCOL As Long = 3
-Private Const CLASSNAME As String = "CrossTable"
+Private Const className As String = "CrossTable"
 Private Const NBROWSTIMESERIES As Long = 56
 Private Const COMMANDDEVIDE As String = "DevideByPopulation"
 
@@ -995,7 +995,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             DesignFormat.ApplyFormat rng, AnalysisTableTitle
         End If
         
-        'Dropdown on Geo/spatial table, and also buttons for the 
+        'Dropdown on Geo/spatial table, and also buttons for the
         If tablType = TypeSpatial Then
 
             'Apply the dropdown only on geo
@@ -1003,7 +1003,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                 Set rng = .Range("ADM_DROPDOWN_" & tabId)
                 DesignFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
                 Set rng = .Range("DEVIDEPOP_" & tabId)
-                DesignFormat.ApplyFormat rng, scope:= LinelistSelectionDropdown
+                DesignFormat.ApplyFormat rng, scope:=LinelistSelectionDropdown
 
             ElseIf (specs.SpatialTableTypes = "hf") Then
                 Set rng = .Range("HF_DROPDOWN_" & tabId)
@@ -1014,7 +1014,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -1)
             DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
             Set rng = rng.Offset(, -1)
-            DesignFormat.ApplyFormat rng, scope := LinelistHiddenCell
+            DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
         End If
 
         'Headers ==============================================================
@@ -1159,7 +1159,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             'labels are formatted differently (using analysis univariate header format)
             If RangeExists(rngName) Then
                 Set rng = .Range(rngName)
-                If (InStr(1, rngName, "LABEL") > 0) Or (InStr(1, rngName, "POP") > 0)  Then
+                If (InStr(1, rngName, "LABEL") > 0) Or (InStr(1, rngName, "POP") > 0) Then
                     DesignFormat.ApplyFormat rng, scope:=AnalysisUnivariateHeader
                 ElseIf (InStr(1, rngName, "USER") > 0) Or (rngName = "TIME_UNIT_" & tabId) Then
                     DesignFormat.ApplyFormat rng, scope:=AnalysisOneCellCenter

@@ -155,7 +155,7 @@ Private Sub TestMultipleFilters()
     Assert.IsTrue (var.Length = 0), "Unable to filter on Unfound values"
 
     'Number of conditions not equal number of variables
-    varData.Pop
+    varData.pop
     Set var = dataObject.FiltersData(varData, condData, retrData)
     Assert.IsTrue (var.Length = 0), "Unable to filter when number of conditions <> number of variables"
 

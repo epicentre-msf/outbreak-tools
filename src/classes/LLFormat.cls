@@ -346,11 +346,11 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         Set rng = formattingObject
         fontColorValue = DesignValue("select dropdown font color")
         interiorColorValue = DesignValue("dropdown interior color")
-        FormatRange rng, fontColor:=fontColorValue, _ 
+        FormatRange rng, fontColor:=fontColorValue, _
                     interiorColor:=interiorColorValue, _
-                    isBold:=False, FontSize:=styleValue - 2, _ 
+                    isBold:=False, FontSize:=styleValue - 2, _
                     Verti:=xlVAlignCenter
-        DrawLines rng:=rng, weight := xlThin, color := vbWhite
+        DrawLines rng:=rng, weight:=xlThin, color:=vbWhite
         rng.WrapText = True
         rng.Locked = False
 
@@ -537,12 +537,12 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         horizAlign = IIf(scope = AnalysisInfoCellLeft, xlHAlignLeft, xlHAlignCenter)
         
         Set rng = formattingObject
-        fontColorValue = Switch(scope = LinelistWarning, vbRed, IsEmpty(rng), "", _ 
-                            True,  DesignValue("missing font color"))
+        fontColorValue = Switch(scope = LinelistWarning, vbRed, IsEmpty(rng), "", _
+                            True, DesignValue("missing font color"))
 
         FormatRange rng, fontColor:=fontColorValue, _
-                    FontSize:=Switch(scope = AnalysisInfoCellLeft, 11, scope = LinelistWarning, 14, True, 8), _
-                    isBold:=(scope = AnalysisInfoCellLeft Or scope = LinelistWarning), _ 
+                    FontSize:=Switch(scope = AnalysisInfoCellLeft, 11, scope = LinelistWarning, 12, True, 8), _
+                    isBold:=(scope = AnalysisInfoCellLeft Or scope = LinelistWarning), _
                     Horiz:=horizAlign, Verti:=xlVAlignCenter
         If scope <> LinelistWarning Then rng.EntireRow.RowHeight = 45
         rng.WrapText = True
