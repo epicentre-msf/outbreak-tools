@@ -226,7 +226,8 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal plotTitle As String = vbNullString, _
                   Optional ByVal secondAxisTitle As String = vbNullString, _
                   Optional ByVal scope As GraphScope = GraphScopeNormal, _
-                  Optional ByVal heightFactor As Long = 1)
+                  Optional ByVal heightFactor As Long = 1, _
+                  Optional ByVal hardCodeLabels As Boolean = False)
     
     Const cw As Long = 488
     Const rh As Long = 214
@@ -261,7 +262,14 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
             .HasTitle = True
             .HasMajorGridlines = True
             .MajorGridlines.Border.color = RGB(255, 255, 255)
-            .AxisTitle.Caption = catTitle
+            'If hardcoded labels, the title are range names , test if they exist
+            'and use reference instead of hard values
+            If (Not hardCodeLabels) And RangeExist(catTitle) Then
+                .AxisTitle.Caption = "= " & RngAddress(catTitle)
+            Else
+                .AxisTitle.Caption = catTitle
+            End If
+
             .TickLabels.Font.Size = 8
             
             'Reverse plot order for spatial analysis
@@ -274,7 +282,12 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
             .MajorGridlines.Border.color = RGB(255, 255, 255)
             .TickLabels.Font.Size = 8
             .TickLabels.Font.Name = "+mj-lt"
-            .AxisTitle.Text = valuesTitle
+
+            If (Not hardCodeLabels) And RangeExist(valuesTitle) Then
+                .AxisTitle.Caption = "= " & RngAddress(valuesTitle)
+            Else
+                .AxisTitle.Caption = valuesTitle
+            End If
         End With
 
         'Add a title if needed
@@ -282,7 +295,12 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
         If plotTitle <> vbNullString Then
             .HasTitle = True
             With .ChartTitle
-                .Caption = plotTitle
+                'You can add either address or value of plot title
+                If (Not hardCodeLabels) And RangeExist(plotTitle) Then
+                    .Caption = "= " & RngAddress(plotTitle)
+                Else
+                    .Caption = plotTitle
+                End If
                 .Font.Size = 14
                 .Font.Bold = True
                 .Font.Name = "+mj-lt"
@@ -314,7 +332,7 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
             
             .Top = 16.618 * coef
             .width = 425 * coef
-            .height = 177 * coef * heightCoef
+            .height = 178 * coef * heightCoef
         End With
         
         'Legend position of the chart
@@ -342,9 +360,10 @@ Public Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, _
                           Optional ByVal catTitle As String = vbNullString, _
                           Optional ByVal plotTitle As String = vbNullString, _
                           Optional ByVal scope As GraphScope = GraphScopeNormal, _
-                          Optional ByVal heightFactor As Long = 1)
+                          Optional ByVal heightFactor As Long = 1, _
+                          Optional ByVal hardCodeLabels As Boolean = False)
     Format valuesTitle:=valuesTitle, catTitle:=catTitle, plotTitle:=plotTitle, scope:=scope, _
-           heightFactor:=heightFactor
+           heightFactor:=heightFactor, hardCodeLabels:=hardCodeLabels
 End Sub
 
 
