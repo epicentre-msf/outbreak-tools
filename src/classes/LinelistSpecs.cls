@@ -241,7 +241,6 @@ Private Sub ReturnState()
     Application.EnableAnimations = True
 End Sub
 
-
 Private Sub AddCaseWhenToChoices()
 
     Const CATEGORYPREFIX As String = "__case_when_"
@@ -523,7 +522,6 @@ Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
         sheetName = sheetsArray.Item(counter)
         sheetExists specswkb, sheetName
     Next
-    
 End Sub
 
 'Chek if a sheet really exists
@@ -618,5 +616,3 @@ End Property
 Public Sub ILinelistSpecs_Export(ByVal toWkb As Workbook)
     export toWkb
 End Sub
-
-
