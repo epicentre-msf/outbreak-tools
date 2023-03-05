@@ -124,7 +124,6 @@ Private Sub TransferCodeWksh(ByVal sh As Worksheet, ll As ILinelist)
     Set inpWkb = lData.specswkb()
     sheetName = sh.Name
 
-
     'save the code module in the string sNouvCode
     With inpWkb.VBProject.VBComponents(moduleName).CodeModule
         codeContent = .Lines(1, .CountOfLines)
@@ -141,7 +140,6 @@ Private Sub TransferCodeWksh(ByVal sh As Worksheet, ll As ILinelist)
         .DeleteLines 1, .CountOfLines
         .AddFromString codeContent
     End With
-
 End Sub
 
 Private Sub Build(ll As ILinelist)
