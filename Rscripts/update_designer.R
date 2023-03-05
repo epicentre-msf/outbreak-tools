@@ -161,11 +161,11 @@ create_class  <- function(class_name, description = "", module_description = "")
         class_test_header  <- test_header(class_name)
         #create the class
         cat(class_name_header,
-            file = glue::glue("./src/vba-files/Class/{class_name}.cls"))
+            file = glue::glue("./src/classes/{class_name}.cls"))
         #create the interface of the class
         cat(class_interface_header,
-        file = glue::glue("./src/vba-files/Class/I{class_name}.cls"))
+        file = glue::glue("./src/classes/I{class_name}.cls"))
         # Add Test for the class
         cat(class_test_header,
-        file = glue::glue("./src/vba-files/Module/Test{class_name}.bas"))
+        file = glue::glue("./src/modules/Test{class_name}.bas"))
 }
