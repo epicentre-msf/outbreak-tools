@@ -16,4 +16,10 @@ Attribute VB_Description = ""
 
 Option Explicit
 
+Public Enum AnalysisScope
+  AnalysisScopeTimeSeries = 1 'A time series analysis
+  AnalysisScopeSpatial = 2 'A spatial analysis
+  AnalysisScopeNormal = 3 'A standard univariate / bivariate analysis
+End Enum
+
 'Exposed methods
