@@ -23,3 +23,4 @@ Public Enum AnalysisScope
 End Enum
 
 'Exposed methods
+Public Sub WriteAnalysis() : End Sub
