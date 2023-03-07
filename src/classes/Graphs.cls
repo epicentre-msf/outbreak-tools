@@ -177,7 +177,8 @@ Private Function RngAddress(ByVal rngName As String) As String
     RngAddress = "'" & sh.Name & "'" & "!" & rng.Address
 End Function
 
-Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, _
+Public Sub AddLabels(ByVal catName As String, _ 
+                     ByVal lblName As String, _
                      Optional ByVal prefix As String = vbNullString, _
                      Optional ByVal prefixOnly As Boolean = False, _
                      Optional ByVal hardCodeLabels As Boolean = True)
@@ -194,10 +195,9 @@ Public Sub AddLabels(ByVal catName As String, ByVal lblName As String, _
     'Adding prefix to the label name of graphs (useful for time series graphs)
     If prefix <> vbNullString And (Not prefixOnly) Then prefix = prefix & " - "
 
-    'Do not evaluate lblName on range if not necessary (avoid IIf())
     If prefixOnly Then
         labelValue = prefix
-    Else
+    ElseIf RangeExist(lblName) Then
         labelValue = prefix & sh.Range(lblName).Value
     End If
 
@@ -227,7 +227,7 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal secondAxisTitle As String = vbNullString, _
                   Optional ByVal scope As GraphScope = GraphScopeNormal, _
                   Optional ByVal heightFactor As Long = 1, _
-                  Optional ByVal hardCodeLabels As Boolean = False)
+                  Optional ByVal hardCodeLabels As Boolean = True)
     
     Const cw As Long = 488
     Const rh As Long = 214
@@ -361,7 +361,7 @@ Public Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, _
                           Optional ByVal plotTitle As String = vbNullString, _
                           Optional ByVal scope As GraphScope = GraphScopeNormal, _
                           Optional ByVal heightFactor As Long = 1, _
-                          Optional ByVal hardCodeLabels As Boolean = False)
+                          Optional ByVal hardCodeLabels As Boolean = True)
     Format valuesTitle:=valuesTitle, catTitle:=catTitle, plotTitle:=plotTitle, scope:=scope, _
            heightFactor:=heightFactor, hardCodeLabels:=hardCodeLabels
 End Sub
