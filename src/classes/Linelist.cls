@@ -27,14 +27,14 @@ Private Type TLinelist
     firstSheet As String                         'stock the name of the first sheet (depending on the os language)
 End Type
 
-Private This As TLinelist
-Private Const className  As String = "Linelist"
+Private this As TLinelist
+Private Const CLASSNAME  As String = "Linelist"
 
 Public Function Create(lData As ILinelistSpecs) As ILinelist
 
     If lData Is Nothing Then ThrowError "Linelist specifications unfound"
     With New Linelist
-        Set .linelistData = lData
+        Set .LinelistData = lData
         Set Create = .Self()
     End With
 
@@ -44,18 +44,18 @@ Public Property Get Self() As ILinelist
     Set Self = Me
 End Property
 
-Public Property Get linelistData() As ILinelistSpecs
-    Set linelistData = This.Data
+Public Property Get LinelistData() As ILinelistSpecs
+    Set LinelistData = this.Data
 End Property
 
-Public Property Set linelistData(ByVal lData As ILinelistSpecs)
-    Set This.Data = lData
+Public Property Set LinelistData(ByVal lData As ILinelistSpecs)
+    Set this.Data = lData
 End Property
 
 'Dictionary
 Public Property Get Dictionary() As ILLdictionary
     Dim lData As ILinelistSpecs
-    Set lData = linelistData()
+    Set lData = LinelistData()
     Set Dictionary = lData.Dictionary()
 End Property
 
@@ -80,14 +80,14 @@ Public Property Get Wkb() As Workbook
     Dim xlsapp As Object
 
 
-    If This.outWkb Is Nothing Then
+    If this.outWkb Is Nothing Then
         BusyApp
-        Set This.outWkb = Workbooks.Add()
+        Set this.outWkb = Workbooks.Add()
         BusyApp
-        This.firstSheet = This.outWkb.Worksheets(1).Name
+        this.firstSheet = this.outWkb.Worksheets(1).Name
     End If
 
-    Set Wkb = This.outWkb
+    Set Wkb = this.outWkb
 End Property
 
 'Test if a worksheet Exists
@@ -109,7 +109,7 @@ Private Property Get Dropdown() As IDropdownLists
     Dim lData As ILinelistSpecs
     Dim drop As IDropdownLists
 
-    Set lData = linelistData()
+    Set lData = LinelistData()
     listSheetName = lData.TemporarySheetName(TemporarySheetList)
     Set sh = Wksh(listSheetName)
 
@@ -155,7 +155,7 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
     Dim lData As ILinelistSpecs
 
     Set outWkb = Wkb()                           'Output workbook
-    Set lData = linelistData()
+    Set lData = LinelistData()
     Set inpWkb = lData.specswkb()
     Set mainobj = lData.MainObject()
     sep = Application.PathSeparator
@@ -201,7 +201,7 @@ Private Sub TransferCodeWkb()
     Dim inpWkb As Workbook
     Dim outWkb As Workbook
 
-    Set lData = linelistData()
+    Set lData = LinelistData()
     Set inpWkb = lData.specswkb()
     Set outWkb = Wkb()
 
@@ -230,7 +230,7 @@ Public Sub TemporaryFolder(Optional Create As Boolean = True)
     Dim outPath As String
     Dim sep As String                            'Separator
 
-    Set lData = linelistData()
+    Set lData = LinelistData()
     Set mainobj = lData.MainObject()
     outPath = mainobj.OutputPath()
     sep = Application.PathSeparator
@@ -255,7 +255,7 @@ Public Sub TransferForm(formName As String)
     Dim sep As String                            'Application path separator
     Dim formPath As String
 
-    Set lData = linelistData()
+    Set lData = LinelistData()
     Set outWkb = Wkb()
     Set inpWkb = lData.specswkb()
     Set mainobj = lData.MainObject()
@@ -300,7 +300,7 @@ Private Sub Prepare()
     
     Set outWkb = Wkb()
     
-    Set lData = linelistData()
+    Set lData = LinelistData()
     Set sheetsList = New BetterArray
     Set trans = lData.TransObject()
     Set dict = lData.Dictionary()
@@ -346,7 +346,7 @@ Private Sub Prepare()
     'Delete the first worksheet with name sheet1
     prevAlert = Application.DisplayAlerts
     Application.DisplayAlerts = False
-    outWkb.Worksheets(This.firstSheet).Delete
+    outWkb.Worksheets(this.firstSheet).Delete
     Application.DisplayAlerts = prevAlert
     
     'Send the User forms and classes to the linelist
@@ -413,7 +413,7 @@ Private Sub PrepareAdmin()
     Dim rng As Range
 
 
-    Set lData = linelistData()
+    Set lData = LinelistData()
     Set design = lData.DesignFormat()
     Set trads = lData.TransObject()
     Set pass = lData.Password()
@@ -477,7 +477,7 @@ Private Sub SaveLL()
     Dim msgTrads As ITranslation
 
 
-    Set lData = linelistData()
+    Set lData = LinelistData()
     Set outWkb = Wkb()
     Set mainobj = lData.MainObject()
     Set passobj = lData.Password()
@@ -501,7 +501,7 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 'Properties
@@ -510,7 +510,7 @@ Public Property Get ILinelist_Wksh(ByVal sheetName As String) As Worksheet
 End Property
 
 Public Property Get ILinelist_LinelistData() As ILinelistSpecs
-    Set ILinelist_LinelistData = linelistData()
+    Set ILinelist_LinelistData = LinelistData()
 End Property
 
 Public Property Get ILinelist_Dictionary() As ILLdictionary

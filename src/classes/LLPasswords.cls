@@ -22,9 +22,9 @@ Private Type TPassWord
     sh As Worksheet
 End Type
 
-Private This As TPassWord
+Private this As TPassWord
 
-Private Const className As String = "LLPasswords"
+Private Const CLASSNAME As String = "LLPasswords"
 Private Const TABKEYS   As String = "T_keys"
 
 Public Function Create(ByVal sh As Worksheet) As ILLPasswords
@@ -37,11 +37,11 @@ Public Function Create(ByVal sh As Worksheet) As ILLPasswords
 End Function
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = This.sh
+    Set Wksh = this.sh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-    Set This.sh = sh
+    Set this.sh = sh
 End Property
 
 Public Property Get Self() As ILLPasswords
@@ -162,17 +162,17 @@ Private Sub RangeExists(ByVal rngName As String, ByVal sh As Worksheet)
     If rng Is Nothing Then ThrowError "Range " & rngName & " does not exists in worksheet " & sh.Name
 End Sub
 
-Private Sub LoExists(ByVal loName As String, sh As Worksheet)
+Private Sub LoExists(ByVal LoName As String, sh As Worksheet)
     Dim Lo As ListObject
     On Error Resume Next
-    Set Lo = sh.ListObjects(loName)
+    Set Lo = sh.ListObjects(LoName)
     On Error GoTo 0
-    If Lo Is Nothing Then ThrowError "Table " & loName & " does not exists in Worksheet " & sh.Name
+    If Lo Is Nothing Then ThrowError "Table " & LoName & " does not exists in Worksheet " & sh.Name
 End Sub
 
 'Error
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 Private Sub export(ByVal toWkb As Workbook)

@@ -22,8 +22,8 @@ Private Type TVlist
     ll As ILinelist
 End Type
 
-Private This As TVlist
-Private Const className As String = "Vlist"
+Private this As TVlist
+Private Const CLASSNAME As String = "Vlist"
 Private Const GOTOSECCODE As String = "go_to_section"
 
 Public Function Create(ByVal sheetName As String, ll As ILinelist) As IVlist
@@ -43,19 +43,19 @@ Public Property Get Self() As IVlist
 End Property
 
 Public Property Let Name(ByVal sheetName As String)
-    This.shName = sheetName
+    this.shName = sheetName
 End Property
 
 Public Property Get Name() As String
-    Name = This.shName
+    Name = this.shName
 End Property
 
 Public Property Get LinelistObject() As ILinelist
-    Set LinelistObject = This.ll
+    Set LinelistObject = this.ll
 End Property
 
 Public Property Set LinelistObject(ByVal ll As ILinelist)
-    Set This.ll = ll
+    Set this.ll = ll
 End Property
 
 Private Property Get Dictionary() As ILLdictionary
@@ -108,7 +108,7 @@ Private Sub TransferCodeWksh()
     Dim sheetName As String
 
     Set ll = LinelistObject()
-    Set lData = ll.linelistData()
+    Set lData = ll.LinelistData()
 
     Set inpWkb = lData.specswkb()
     Set sh = Wksh()
@@ -173,7 +173,7 @@ Public Sub Build()
     Set dict = Dictionary()
     Set llshs = LLSheets.Create(dict)
     Set ll = LinelistObject()
-    Set lData = ll.linelistData()
+    Set lData = ll.LinelistData()
     Set design = lData.DesignFormat()
     Set drop = ll.Dropdown()
     Set pass = lData.Password()
@@ -214,7 +214,7 @@ Public Sub Build()
 
     'Add dropdown on first cell for GoTo section
     Set rng = sh.Cells(1, 1)
-    tableName = llshs.SheetInfo(sheetName, 2)
+    tableName = llshs.sheetInfo(sheetName, 2)
     gotoSectionListName = tableName & "_" & GOTOSECCODE 'Name of the range goTo section
     rng.Name = gotoSectionListName
     rng.Value = goToSection
@@ -226,12 +226,12 @@ Public Sub Build()
     'Add the sheet type on vlist
     Set rng = sh.Cells(1, 3)
     rng.Value = "VList"
-    design.ApplyFormat rng, scope:=LinelistHiddenCell
+    design.ApplyFormat rng, scope:=LInelistHiddenCell
     
     'Add the table Name
     Set rng = sh.Cells(1, 4)
     rng.Value = tableName
-    design.ApplyFormat rng, scope:=LinelistHiddenCell
+    design.ApplyFormat rng, scope:=LInelistHiddenCell
 
     Set cellRng = sh.Range(tableName & "_" & "START")
     'Add a name to all the plage where to enter values (Use to update calculations of the VList)
@@ -258,7 +258,7 @@ End Sub
 
 'Error
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 Private Sub CheckRequirements(ByVal sheetName As String, ByVal ll As ILinelist)

@@ -51,8 +51,8 @@ End Sub
 '@TestMethod
 Private Sub TestSheetInfo()
     On Error GoTo Fail
-    Assert.IsTrue (sheets.SheetInfo("A, B, C") = "vlist1D"), "A vlist1D worksheet is not detected correctly in sheet Info"
-    Assert.IsTrue (sheets.SheetInfo("A, B, C", 2) = "tab1"), "Unable to get the table name of a worksheet in sheet Info"
+    Assert.IsTrue (sheets.sheetInfo("A, B, C") = "vlist1D"), "A vlist1D worksheet is not detected correctly in sheet Info"
+    Assert.IsTrue (sheets.sheetInfo("A, B, C", 2) = "tab1"), "Unable to get the table name of a worksheet in sheet Info"
 
     Exit Sub
 Fail:

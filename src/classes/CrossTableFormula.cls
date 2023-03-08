@@ -29,8 +29,8 @@ Private Type TCrossTableFormula
     condTests As BetterArray
 End Type
 
-Private This As TCrossTableFormula
-Private Const className As String = "CrossTableFormula"
+Private this As TCrossTableFormula
+Private Const CLASSNAME As String = "CrossTableFormula"
 
 Public Function Create(ByVal tabl As ICrossTable, fData As IFormulaData) As ICrossTableFormula
     With New CrossTableFormula
@@ -45,19 +45,19 @@ Public Property Get Self() As ICrossTableFormula
 End Property
 
 Public Property Get Table() As ICrossTable
-    Set Table = This.tab
+    Set Table = this.tab
 End Property
 
 Public Property Set Table(ByVal tabl As ICrossTable)
-    Set This.tab = tabl
+    Set this.tab = tabl
 End Property
 
 Public Property Get formData() As IFormulaData
-    Set formData = This.fData
+    Set formData = this.fData
 End Property
 
 Public Property Set formData(ByVal fData As IFormulaData)
-    Set This.fData = fData
+    Set this.fData = fData
 End Property
 
 Private Property Get Specifications() As ITablesSpecs
@@ -95,17 +95,17 @@ Private Property Get TableFormula() As IFormulas
     Dim dict As ILLdictionary
     Dim tabFormObject As IFormulas
 
-    If (This.forml Is Nothing) Then
+    If (this.forml Is Nothing) Then
         Set fData = formData()
         Set specs = Specifications
         Set dict = specs.Dictionary
         tabform = SummaryFunction
         Set tabFormObject = Formulas.Create(dict, fData, tabform)
 
-        Set This.forml = tabFormObject
+        Set this.forml = tabFormObject
         Set TableFormula = tabFormObject
     Else
-        Set TableFormula = This.forml
+        Set TableFormula = this.forml
     End If
 End Property
 
@@ -176,44 +176,44 @@ End Function
 'Add conditions for the formulas
 Private Sub AddTableConditions(varName As String, conditionName As String)
 
-    If This.condVars Is Nothing Then
-        Set This.condVars = New BetterArray
-        This.condVars.LowerBound = 1
+    If this.condVars Is Nothing Then
+        Set this.condVars = New BetterArray
+        this.condVars.LowerBound = 1
     End If
 
-    If This.condTests Is Nothing Then
-        Set This.condTests = New BetterArray
-        This.condTests.LowerBound = 1
+    If this.condTests Is Nothing Then
+        Set this.condTests = New BetterArray
+        this.condTests.LowerBound = 1
     End If
 
     If varName <> vbNullString Then
-        This.condVars.Push varName
-        This.condTests.Push conditionName
+        this.condVars.Push varName
+        this.condTests.Push conditionName
     End If
 End Sub
 
 Private Sub ClearTableConditions(Optional ByVal removeNumber As Integer = 0)
     Dim counter As Integer
 
-    If This.condVars Is Nothing Then
-        Set This.condVars = New BetterArray
-        This.condVars.LowerBound = 1
+    If this.condVars Is Nothing Then
+        Set this.condVars = New BetterArray
+        this.condVars.LowerBound = 1
         removeNumber = 0
     End If
 
-    If This.condTests Is Nothing Then
-        Set This.condTests = New BetterArray
-        This.condTests.LowerBound = 1
+    If this.condTests Is Nothing Then
+        Set this.condTests = New BetterArray
+        this.condTests.LowerBound = 1
         removeNumber = 0
     End If
 
     If removeNumber <= 0 Then
-        This.condVars.Clear
-        This.condTests.Clear
+        this.condVars.Clear
+        this.condTests.Clear
     Else
         For counter = 1 To removeNumber
-            This.condVars.pop
-            This.condTests.pop
+            this.condVars.pop
+            this.condTests.pop
         Next
     End If
 End Sub
@@ -230,8 +230,8 @@ Private Property Get CurrentExcelFormula(Optional ByVal scope As ExcelFormulaSco
     If scope = 1 Then
         eform = tabFormObject.ParsedLinelistFormula(useTableName:=True, tablePrefix:=prefix)
     Else
-        If This.condVars Is Nothing Or This.condTests Is Nothing Then GoTo Fail
-        Set cond = FormulaCondition.Create(This.condVars, This.condTests)
+        If this.condVars Is Nothing Or this.condTests Is Nothing Then GoTo Fail
+        Set cond = FormulaCondition.Create(this.condVars, this.condTests)
         eform = tabFormObject.ParsedAnalysisFormula(cond, tablePrefix:=prefix)
     End If
   
@@ -970,7 +970,7 @@ End Sub
 
 'Errors
 Private Sub ThrowExecutionError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Execution Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
 End Sub
 
 Private Sub UnFoundRangeError(ByVal sectionName As String, ByVal rngName As String, ByVal shName As String)

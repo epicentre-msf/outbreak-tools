@@ -16,14 +16,14 @@ Attribute VB_Exposed = False
 Option Explicit
 Implements ITranslation
 
-Private Const className As String = "Translation"
+Private Const CLASSNAME As String = "Translation"
 
 Private Type TTranslation
     transLo As ListObject
     transLng As String
 End Type
 
-Private This As TTranslation
+Private this As TTranslation
 
 'Instanciation
 
@@ -43,19 +43,19 @@ Public Property Get Self() As ITranslation
 End Property
 
 Public Property Get Table() As ListObject
-    Set Table = This.transLo
+    Set Table = this.transLo
 End Property
 
 Public Property Set Table(ByVal Lo As ListObject)
-    Set This.transLo = Lo
+    Set this.transLo = Lo
 End Property
 
 Public Property Get Language() As String
-    Language = This.transLng
+    Language = this.transLng
 End Property
 
 Public Property Let Language(ByVal transLng As String)
-    This.transLng = transLng
+    this.transLng = transLng
 End Property
 
 Private Property Get LanguageExists() As Boolean
@@ -209,7 +209,7 @@ End Sub
 
 'Errors ---------------------------------------------------------------------------------
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 515, className, "Unable to create an instance of the class : " & errorMessage
+    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
 End Sub
 
 'Interface

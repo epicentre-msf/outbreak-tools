@@ -23,15 +23,15 @@ Private Type TTablesSpecs
     tType As AnalysisTablesType
 End Type
 
-Private This As TTablesSpecs
-Private Const className As String = "TableSpecs"
+Private this As TTablesSpecs
+Private Const CLASSNAME As String = "TableSpecs"
 
 'Instanciation
 
-Public Function Create(headerRng As Range, tableSpecsRng As Range, linelistData As ILinelistSpecs) As ITablesSpecs
+Public Function Create(headerRng As Range, tableSpecsRng As Range, LinelistData As ILinelistSpecs) As ITablesSpecs
     If headerRng Is Nothing Then ThrowErrorUnableInstanciate "Header range not defined"
     If tableSpecsRng Is Nothing Then ThrowErrorUnableInstanciate "Table range not defined"
-    If linelistData Is Nothing Then ThrowErrorUnableInstanciate "Linelist specifications not defined"
+    If LinelistData Is Nothing Then ThrowErrorUnableInstanciate "Linelist specifications not defined"
     If headerRng.Columns.Count <> tableSpecsRng.Columns.Count Then ThrowErrorUnableInstanciate "Header range and sepicification range don't have same length"
     If headerRng.Row > tableSpecsRng.Row Then ThrowErrorUnableInstanciate "Seems like header comes range after specification range. Maybe you reversed the order? "
     If headerRng.Row < 1 Then ThrowErrorUnableInstanciate "Header range should be at row > 1"
@@ -39,34 +39,34 @@ Public Function Create(headerRng As Range, tableSpecsRng As Range, linelistData 
     With New TablesSpecs
         Set .HeaderRange = headerRng
         Set .TableRange = tableSpecsRng
-        Set .LinelistSpecifications = linelistData
+        Set .LinelistSpecifications = LinelistData
         Set Create = .Self
     End With
 End Function
 
 'Properties
 Public Property Get HeaderRange() As Range
-    Set HeaderRange = This.hRng
+    Set HeaderRange = this.hRng
 End Property
 
 Public Property Get TableRange() As Range
-    Set TableRange = This.tRng
+    Set TableRange = this.tRng
 End Property
 
 Public Property Get LinelistSpecifications() As ILinelistSpecs
-    Set LinelistSpecifications = This.lData
+    Set LinelistSpecifications = this.lData
 End Property
 
 Public Property Set HeaderRange(ByVal hRng As Range)
-    Set This.hRng = hRng
+    Set this.hRng = hRng
 End Property
 
 Public Property Set TableRange(ByVal tRng As Range)
-    Set This.tRng = tRng
+    Set this.tRng = tRng
 End Property
 
 Public Property Set LinelistSpecifications(ByVal lData As ILinelistSpecs)
-    Set This.lData = lData
+    Set this.lData = lData
 End Property
 
 Public Property Get TableType() As AnalysisTablesType
@@ -372,11 +372,11 @@ End Property
 'Errors
 'Errors ---------------------------------------------------------------------------------
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 515, className, "Unable to create an instance of the class : " & errorMessage
+    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
 End Sub
 
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Execution Error: " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error: " & errorMessage
 End Sub
 
 'Interface

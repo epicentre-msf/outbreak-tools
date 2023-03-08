@@ -29,7 +29,7 @@ Private Type TFormulas
     formulaTable As BetterArray
 End Type
 
-Private This As TFormulas
+Private this As TFormulas
 Private customFormulas As BetterArray
 Private initialized As Boolean
 
@@ -49,75 +49,75 @@ End Property
 
 'Properties
 Public Property Get Dictionary() As ILLdictionary
-    Set Dictionary = This.dict
+    Set Dictionary = this.dict
 End Property
 
 Public Property Get Data() As IFormulaData
-    Set Data = This.Data
+    Set Data = this.Data
 End Property
 
 Public Property Set Dictionary(ByVal dict As ILLdictionary)
-    Set This.dict = dict
-    Set This.vars = LLVariables.Create(dict)
-    Set This.sheets = LLSheets.Create(dict)
-    Set This.formulavariables = New BetterArray
-    Set This.formulaTable = New BetterArray
-    This.formulaTable.LowerBound = 1
-    This.formulavariables.LowerBound = 1
-    This.testDone = False
+    Set this.dict = dict
+    Set this.vars = LLVariables.Create(dict)
+    Set this.sheets = LLSheets.Create(dict)
+    Set this.formulavariables = New BetterArray
+    Set this.formulaTable = New BetterArray
+    this.formulaTable.LowerBound = 1
+    this.formulavariables.LowerBound = 1
+    this.testDone = False
     initialized = False
 End Property
 
 Public Property Set Data(ByVal formData As IFormulaData)
-    Set This.Data = formData
+    Set this.Data = formData
 End Property
 
 Public Property Get SetupFormula() As String
-    SetupFormula = This.setupform
+    SetupFormula = this.setupform
 End Property
 
 Public Property Let SetupFormula(setupform As String)
-    This.setupform = setupform
+    this.setupform = setupform
 End Property
 
 Private Property Get Variables() As ILLVariables
-    Set Variables = This.vars
+    Set Variables = this.vars
 End Property
 
 Private Property Get FormulaSheets() As ILLSheets
-    Set FormulaSheets = This.sheets
+    Set FormulaSheets = this.sheets
 End Property
 
 Private Property Get FormulaVariablesList() As BetterArray
-    Set FormulaVariablesList = This.formulavariables.Clone()
+    Set FormulaVariablesList = this.formulavariables.Clone()
 End Property
 
 Private Property Set FormulaVariablesList(ByVal baTable As BetterArray)
-    Set This.formulavariables = baTable.Clone()
+    Set this.formulavariables = baTable.Clone()
 End Property
 
 Private Property Get FormulaTableList() As BetterArray
-    Set FormulaTableList = This.formulaTable.Clone()
+    Set FormulaTableList = this.formulaTable.Clone()
 End Property
 
 Private Property Set FormulaTableList(ByVal baTable As BetterArray)
-    Set This.formulaTable = baTable.Clone()
+    Set this.formulaTable = baTable.Clone()
 End Property
 
 Private Property Get ValidityTestDone() As Boolean
-    ValidityTestDone = This.testDone
+    ValidityTestDone = this.testDone
 End Property
 
 Private Property Let ValidityTestDone(test As Boolean)
-    This.testDone = test
+    this.testDone = test
 End Property
 
 Private Property Get FormulaValidity() As Boolean
-    FormulaValidity = This.validity
+    FormulaValidity = this.validity
 End Property
 
 Private Property Let FormulaValidity(test As Boolean)
-    This.validity = test
+    this.validity = test
 End Property
 
 Private Property Get ConvertedSetupFormula() As String
@@ -149,11 +149,11 @@ End Sub
 
 'Has literals
 Public Property Get HasLiterals() As Boolean
-    HasLiterals = This.literals
+    HasLiterals = this.literals
 End Property
 
 Private Property Let HasLiterals(ByVal lit As Boolean)
-    This.literals = lit
+    this.literals = lit
 End Property
 
 'Clean the formula and remove all eventual trailing spaces
@@ -314,7 +314,7 @@ Public Property Get Varlists(Optional ByVal formulaType As String = "analysis") 
     Set varTable = New BetterArray
     varTable.LowerBound = 1
     If Valid(formulaType) Then
-        Set varTable = This.formulavariables.Clone()
+        Set varTable = this.formulavariables.Clone()
     End If
     Set Varlists = varTable.Clone()
 End Property

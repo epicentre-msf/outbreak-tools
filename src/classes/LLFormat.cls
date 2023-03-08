@@ -15,14 +15,14 @@ Attribute VB_Exposed = False
 
 Option Explicit
 Implements ILLFormat
-Private Const className As String = "LLFormat"
+Private Const CLASSNAME As String = "LLFormat"
 
 Private Type TLLFormat
     design As String
     sh As Worksheet
 End Type
 
-Private This As TLLFormat
+Private this As TLLFormat
 
 'instanciation:
 
@@ -62,19 +62,19 @@ Public Property Get Self() As ILLFormat
 End Property
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = This.sh
+    Set Wksh = this.sh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-    Set This.sh = sh
+    Set this.sh = sh
 End Property
 
 Public Property Get designName() As String
-    designName = This.design
+    designName = this.design
 End Property
 
 Public Property Let designName(ByVal design As String)
-    This.design = design
+    this.design = design
 End Property
 
 'Get the colors:
@@ -501,7 +501,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         Set rng = formattingObject
         FormatRange rng, NumFormat:="0.00%"
 
-    Case LinelistHiddenCell
+    Case LInelistHiddenCell
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
 
@@ -750,7 +750,7 @@ End Function
 
 'Throw Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Execution Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
 End Sub
 
 'Exposed methods---------------------------------------------------------------------

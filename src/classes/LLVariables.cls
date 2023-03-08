@@ -1,4 +1,4 @@
-pVERSION 1.0 CLASS
+VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
@@ -22,10 +22,10 @@ Private Type TVariable
     varRng As Range
 End Type
 
-Private This As TVariable
+Private this As TVariable
 Private Const VARIABLENAME As String = "variable name"
 Private Const INDEXHEADER  As String = "column index"
-Private Const className As String = "LLVariables"
+Private Const CLASSNAME As String = "LLVariables"
 
 Public Function Create(ByVal dict As ILLdictionary) As ILLVariables
 
@@ -43,16 +43,16 @@ Public Property Get Self() As ILLVariables
 End Property
 
 Public Property Get Dictionary() As ILLdictionary
-    Set Dictionary = This.dict
+    Set Dictionary = this.dict
 End Property
 
 Public Property Set Dictionary(ByVal dict As ILLdictionary)
-    Set This.dict = dict
-    Set This.varRng = dict.DataRange(VARIABLENAME)
+    Set this.dict = dict
+    Set this.varRng = dict.DataRange(VARIABLENAME)
 End Property
 
 Friend Property Get VarRange() As Range
-    Set VarRange = This.varRng
+    Set VarRange = this.varRng
 End Property
 
 'Functions --------------------------------------------------------------------------
@@ -145,11 +145,11 @@ End Function
 
 'Errors ------------------------------------------------------------------------------------------------------------------------------------
 Private Sub ThrowErrorUnableInstanciateNoVarName()
-    Err.Raise VBA.vbObjectError + 513, className, "Unable to create an instance of the class variable, variable name column does not exists"
+    Err.Raise VBA.vbObjectError + 513, CLASSNAME, "Unable to create an instance of the class variable, variable name column does not exists"
 End Sub
 
 Private Sub ThrowErrorUnableInstanciateNotPrepared()
-    Err.Raise VBA.vbObjectError + 514, className, "Unable to create an instance of the class variable: The dictionary is not prepared"
+    Err.Raise VBA.vbObjectError + 514, CLASSNAME, "Unable to create an instance of the class variable: The dictionary is not prepared"
 End Sub
 
 'Interface ---------------------------------------------------------------------------------------------------------------------------------

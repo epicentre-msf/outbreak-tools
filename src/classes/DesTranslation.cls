@@ -28,9 +28,9 @@ Private Const TABRANGE As String = "T_tradRange"
 Private Const TABSMSG As String = "T_tradMsg"
 Private Const TABLANG As String = "T_Lang"
 Private Const TABLANGDICT As String = "T_LanguageDictionary"
-Private Const className As String = "DesTranslation"
+Private Const CLASSNAME As String = "DesTranslation"
 
-Private This As TDesTranslation
+Private this As TDesTranslation
 
 Public Function Create(ByVal sh As Worksheet) As IDesTranslation
   
@@ -48,11 +48,11 @@ Public Property Get Self() As IDesTranslation
 End Property
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = This.sh
+    Set Wksh = this.sh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-    Set This.sh = sh
+    Set this.sh = sh
 End Property
 
 Private Property Get DesignerLanguage() As String
@@ -161,7 +161,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
 End Sub
 
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 Private Sub LoExists(sh As Worksheet, ByVal loNames As BetterArray)

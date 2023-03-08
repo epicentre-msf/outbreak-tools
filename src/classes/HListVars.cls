@@ -21,8 +21,8 @@ Private Type THListVars
     inputRange As Range
 End Type
 
-Private This As THListVars
-Private Const className As String = "HListVars"
+Private this As THListVars
+Private Const CLASSNAME As String = "HListVars"
 Private Const StartRow As Long = 8               'Where the variables should start in the output worksheet
 
 Public Function Create(ByVal varName As String, ByVal ll As ILinelist) As IHListVars
@@ -42,26 +42,26 @@ Public Property Get Self() As IHListVars
 End Property
 
 Public Property Get LinelistObject() As ILinelist
-    Set LinelistObject = This.ll
+    Set LinelistObject = this.ll
 End Property
 
 Public Property Set LinelistObject(ByVal ll As ILinelist)
-    Set This.ll = ll
+    Set this.ll = ll
 End Property
 
 Public Property Get ActualVariable() As String
-    ActualVariable = This.varName
+    ActualVariable = this.varName
 End Property
 
 Public Property Let ActualVariable(ByVal varName As String)
-    This.varName = varName
+    this.varName = varName
 End Property
 
 'The linelist Data
-Private Property Get linelistData() As ILinelistSpecs
+Private Property Get LinelistData() As ILinelistSpecs
     Dim ll As ILinelist
     Set ll = LinelistObject()
-    Set linelistData = ll.linelistData()
+    Set LinelistData = ll.LinelistData()
 End Property
 
 'Get the worksheet Object where the variable should be written
@@ -108,15 +108,15 @@ Private Property Get VarRange() As Range         'Where to input informations on
     Dim sh As Worksheet
     Dim rng As Range
 
-    If This.inputRange Is Nothing Then
+    If this.inputRange Is Nothing Then
         Set sh = Wksh()
         With sh
             STARTCOL = ValueOf("column index")
-            Set This.inputRange = .Cells(StartRow + 1, STARTCOL)
+            Set this.inputRange = .Cells(StartRow + 1, STARTCOL)
         End With
     End If
 
-    Set VarRange = This.inputRange
+    Set VarRange = this.inputRange
 End Property
 
 'Type
@@ -247,7 +247,7 @@ Private Sub AddFormula()
     varControl = ValueOf("control")
     If (varControl <> "formula") And (varControl <> "case_when") And (varControl <> "choice_formula") Then Exit Sub
     
-    Set lData = linelistData()
+    Set lData = LinelistData()
     Set dict = lData.Dictionary()
     Set varFormData = lData.FormulaDataObject()
     Set DesignFormat = lData.DesignFormat()
@@ -294,7 +294,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     Dim design As ILLFormat
 
     Set cellRng = VarRange()
-    Set lData = linelistData()
+    Set lData = LinelistData()
     Set trans = lData.TransObject()
     Set design = lData.DesignFormat()
 
@@ -348,11 +348,11 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
 
     'Control
     cellRng.Offset(-5).Value = varControl
-    design.ApplyFormat cellRng.Offset(-5), scope:=LinelistHiddenCell
+    design.ApplyFormat cellRng.Offset(-5), scope:=LInelistHiddenCell
 
     'List auto origin
     cellRng.Offset(-6).Value = varListAutoOrigin
-    design.ApplyFormat cellRng.Offset(-6), scope:=LinelistHiddenCell
+    design.ApplyFormat cellRng.Offset(-6), scope:=LInelistHiddenCell
 
     'Geo labels
     If (InStr(1, varControl, "geo") > 0) Or (varControl = "hf") Or _
@@ -394,7 +394,7 @@ Private Sub AddChoices()
     varControl = ValueOf("control")
     If (varControl <> "choice_manual") And (varControl <> "list_auto") And (varControl <> "geo1") Then Exit Sub
 
-    Set lData = linelistData()
+    Set lData = LinelistData()
     Set drop = Dropdown()
     Set cat = New BetterArray
     Set cellRng = VarRange()                     'variable range where to set the validation
@@ -535,7 +535,7 @@ Private Function ExcelFormula(ByVal formVal As String, ByVal validationTypes As 
      
     
     'Elements to build the formula
-    Set lData = linelistData()
+    Set lData = LinelistData()
     Set dict = lData.Dictionary()
     Set varFormData = lData.FormulaDataObject()
     Set varFormObject = Formulas.Create(dict, varFormData, formVal)
@@ -618,7 +618,7 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 Private Sub CheckRequirements(ByVal varName As String, ll As ILinelist)

@@ -22,7 +22,7 @@ Private Type TCaseWhen
 End Type
 
 'Exposed methods
-Private This As TCaseWhen
+Private this As TCaseWhen
 
 Public Function Create(ByVal formula As String) As ICaseWhen
     With New CaseWhen
@@ -36,11 +36,11 @@ Public Property Get Self() As ICaseWhen
 End Property
 
 Public Property Get casewhenFormula() As String
-    casewhenFormula = This.formula
+    casewhenFormula = this.formula
 End Property
 
 Public Property Let casewhenFormula(ByVal formula As String)
-    This.formula = Application.WorksheetFunction.Trim(formula)
+    this.formula = Application.WorksheetFunction.Trim(formula)
 End Property
 
 Private Property Get Valid() As Boolean
@@ -60,8 +60,8 @@ Private Property Get CaseWhenTable() As BetterArray
     Dim OpenedQuotes As Boolean
     Dim OpenedParenthesis As Boolean
 
-    If Not This.parsingTable Is Nothing Then
-        Set CaseWhenTable = This.parsingTable.Clone()
+    If Not this.parsingTable Is Nothing Then
+        Set CaseWhenTable = this.parsingTable.Clone()
         Exit Property
     End If
 
@@ -93,8 +93,8 @@ Private Property Get CaseWhenTable() As BetterArray
         parsingTable.Push Application.WorksheetFunction.Trim(Mid(formula, Previous, counter - Previous))
     End If
 
-    Set This.parsingTable = parsingTable.Clone()
-    Set CaseWhenTable = This.parsingTable.Clone()
+    Set this.parsingTable = parsingTable.Clone()
+    Set CaseWhenTable = this.parsingTable.Clone()
 End Property
 
 'pasing the case when
