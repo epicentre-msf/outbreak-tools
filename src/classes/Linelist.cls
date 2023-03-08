@@ -8,7 +8,6 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
-
 '@Folder("Linelist")
 '@ModuleDescription("Final linelist workbook")
 '@IgnoreModule
@@ -37,7 +36,6 @@ Public Function Create(lData As ILinelistSpecs) As ILinelist
         Set .LinelistData = lData
         Set Create = .Self()
     End With
-
 End Function
 
 Public Property Get Self() As ILinelist
@@ -67,18 +65,9 @@ Private Sub BusyApp()
     Application.EnableAnimations = False
 End Sub
 
-'Return previous state
-Private Sub ReturnState()
-    Application.ScreenUpdating = True
-    Application.DisplayAlerts = True
-    Application.Calculation = xlCalculationAutomatic
-    Application.EnableAnimations = True
-End Sub
-
 'Workbook
 Public Property Get Wkb() As Workbook
     Dim xlsapp As Object
-
 
     If this.outWkb Is Nothing Then
         BusyApp
@@ -141,8 +130,7 @@ Private Property Get Wksh(ByVal sheetName As String) As Worksheet
     Set Wksh = sh
 End Property
 
-Private Sub TransferCode(moduleName As String, scope As CodeScope)
-    
+Private Sub TransferCode(moduleName As String, scope As CodeScope)   
     Dim codeObject As Object                     'Where to stock to code in the workbook
     Dim codeContent As String
     Dim outWkb As Workbook
@@ -161,7 +149,6 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
     sep = Application.PathSeparator
     outDir = mainobj.OutputPath() & sep & "LinelistApp_"
          
-
     'get all the values within the actual module to transfer
     Select Case scope
     Case codeScopeModule
@@ -171,7 +158,6 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
     End Select
     
     'I need to import/export classes to keep their attribute. (self instanciation, etc.)
-
     On Error Resume Next
     Kill outPath
     On Error GoTo 0
@@ -183,12 +169,10 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
         
     On Error Resume Next
     Kill outPath
-    On Error GoTo 0
-    
+    On Error GoTo 0   
 End Sub
 
 'Transfert code to the workbook
-
 Private Sub TransferCodeWkb()
     Const LINELISTWORKBOOKMODULENAME = "LinelistWorkbook"
     
@@ -246,7 +230,6 @@ End Sub
 
 'Transfert a form to the output workbook
 Public Sub TransferForm(formName As String)
-
     Dim outDir As String
     Dim lData As ILinelistSpecs
     Dim outWkb As Workbook
@@ -284,7 +267,6 @@ End Sub
 
 'Prepare the Linelist by adding required worksheets
 Private Sub Prepare()
-
     Const FILTERPREFIX As String = "f"
 
     Dim dict As ILLdictionary
@@ -304,7 +286,6 @@ Private Sub Prepare()
     Set sheetsList = New BetterArray
     Set trans = lData.TransObject()
     Set dict = lData.Dictionary()
-
 
     'temporary sheet Names
     sheetsList.Push lData.TemporarySheetName(TemporarySingle), lData.TemporarySheetName(TemporarySheetList), _
@@ -341,8 +322,7 @@ Private Sub Prepare()
     
     'Admin sheet Name
     AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlsheetvisible
-
-    
+   
     'Delete the first worksheet with name sheet1
     prevAlert = Application.DisplayAlerts
     Application.DisplayAlerts = False
@@ -364,7 +344,6 @@ Private Sub Prepare()
         codeName = classesList.Item(counter)
         TransferCode codeName, codeScopeClass
     Next
-
     DoEvents
 
     'Send the modules to the linelist
@@ -377,8 +356,7 @@ Private Sub Prepare()
         codeName = classesList.Item(counter)
         TransferCode codeName, codeScopeModule
     Next
-
-       
+      
     classesList.Clear
     classesList.Push "F_Advanced", "F_Export", "F_ExportMig", "F_Geo", "F_ImportMig", "F_ImportRep", _
                      "F_NomVisible"
@@ -389,16 +367,13 @@ Private Sub Prepare()
     Next
     
     'Transfert workbook close codes to the workbook
-    TransferCodeWkb
-    
+    TransferCodeWkb   
     TemporaryFolder Create:=False
-
     'Prepare the LinelistAdmin sheet
     PrepareAdmin
 End Sub
 
 Private Sub PrepareAdmin()
-
     Const ADVANCEDCOMMAND As String = "ClicCmdAdvanced"
     Const EXPORTCOMMAND As String = "ClicCmdExport"
     Const SHPADVANCE As String = "SHP_Advanced"
@@ -442,13 +417,10 @@ Private Sub PrepareAdmin()
     BusyApp
     
     pass.Protect "_active"
-
 End Sub
-
 
 'Ask question on Error to the user:
 Private Sub ErrorManage()
-
     Dim outWkb As Workbook 'Output workbook
     Dim Quit As Integer
 
@@ -464,7 +436,6 @@ Private Sub ErrorManage()
         Set outWkb = Wkb()
         outWkb.Close savechanges:=False
     End If
-
 End Sub
 
 Private Sub SaveLL()
@@ -476,7 +447,6 @@ Private Sub SaveLL()
     Dim passobj As ILLPasswords
     Dim msgTrads As ITranslation
 
-
     Set lData = LinelistData()
     Set outWkb = Wkb()
     Set mainobj = lData.MainObject()
@@ -485,8 +455,6 @@ Private Sub SaveLL()
 
     passwd = mainobj.LinelistPassWord()
     outPath = mainobj.OutputPath() & Application.PathSeparator & mainobj.LinelistName & ".xlsb"
-
-    'Protect workbook from changes in its structure
 
     'Select the admin sheet before saving
     outWkb.Worksheets(msgTrads.TranslatedValue("LLSHEET_Admin")).Activate
@@ -541,5 +509,3 @@ End Sub
 Public Sub ILinelist_ErrorManage()
     ErrorManage
 End Sub
-
-

@@ -202,12 +202,17 @@ Private Sub PrepareSheet(Optional ByVal scope As AnalysisScope _
 
   Set outsh = OutputSh(scope)
   Set design = DesignFormat()
-  Set cellRng = outsh.Cells(1, 3)
+
+  'Create a range called RGN_HasTable whith value Yes if there are tables
+  Set cellRng = outsh.Cells(1, 10)
+  cellRng.Name = "RNG_HasTable"
+  design.ApplyFormat cellRng, scope:=LinelistHiddenCell
 
   'Add the whole format of the worksheet
   design.ApplyFormat outsh, scope:=AllAnalysisSheet
 
   'Add the info of a worksheet
+  Set cellRng = outsh.Cells(1, 3)
   cellRng.Value = sheetInfo
   design.ApplyFormat cellRng, scope:=LinelistHiddenCell
 
@@ -240,7 +245,6 @@ Private Sub Push(pushedValue As String, _
 End Sub
 
 'Add a GoTo (could be section or Header, or Graphs)
-
 Private Sub InitializeArrays()
     Dim trads As ITranslation
 
@@ -394,6 +398,10 @@ Private Sub WriteTable(ByVal LoName As String, _
       tabform.AddFormulas
       'Format the created table
       tabl.Format design
+      
+      'Will be used to test if a sheed has a table
+      If IsEmpty(outsh.Range("RNG_HasTable")) Then  _ 
+      outsh.Range("RNG_HasTable").Value = "yes"
 
       'Minimum and maximum formula for Time series; GoTo Headers for time series
       If (tabType = TypeTimeSeries) Then
@@ -625,6 +633,11 @@ Private Sub WriteAnalysis()
   Dim outsh As Worksheet
   Dim cellRng As Range
   Dim scope As AnalysisScope
+  Dim pass As ILLPasswords
+  Dim lData As ILinelistSpecs
+
+  Set lData = LinelistData()
+  Set pass = lData.Password()
 
   'Univariate and Bivariate Analysis Worksheet =================================
   scope = AnalysisScopeNormal
@@ -643,6 +656,10 @@ Private Sub WriteAnalysis()
    'Add the command
    AddCommands scope:=scope
 
+   'Hide the output sheet if required
+   If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
+   pass.Protect "_active", True
+
    'Time Series Analysis Worksheet =============================================
   scope = AnalysisScopeTimeSeries
   Set outsh = OutputSh(scope)
@@ -651,24 +668,33 @@ Private Sub WriteAnalysis()
   WriteTable LoName:=TIMESERIES, scope:=scope
   'Write the graphs
   WriteTimeSeriesGraphs graphLoName:=GRAPHTIMESERIES, _
-                         graphTitleLoName:=TITLEGRAPHTIMESERIES, _
-                         tabLoName:=TIMESERIES
+                        graphTitleLoName:=TITLEGRAPHTIMESERIES, _
+                        tabLoName:=TIMESERIES
   
   Set cellRng = outsh.Cells(2, 1)
   AddGoTo cellRng:=cellRng, scope:="section"
   'Add the commands
   AddCommands scope:=scope
 
+  If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
+  pass.Protect "_active", True
+
   'Spatial Analysis Worksheet ==================================================
   scope = AnalysisScopeSpatial
   Set outsh = OutputSh(scope)
+
   PrepareSheet scope:=scope
+  
   WriteTable LoName:=SPATIAL, scope:=scope
+  
   Set cellRng = outsh.Cells(2, 1)
+  
   AddGoTo cellRng:=cellRng, scope:="section"
   AddCommands scope:=scope
+  
+  If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
+  pass.Protect "_active", True
 End Sub
-
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
