@@ -640,16 +640,24 @@ Private Sub WriteAnalysis()
   Set pass = lData.Password()
 
   'Univariate and Bivariate Analysis Worksheet =================================
+
   scope = AnalysisScopeNormal
   Set outsh = OutputSh(scope)
   ' --- Prepare the worksheet
-   PrepareSheet scope:=scope
+  
+  PrepareSheet scope:=scope
+
+  'Add an Error Management for the tables
+   On Error GoTo ErrHand
   ' --- Write Global summary
    WriteTable LoName:=GLOBALSUMMARY, scope:=scope
    ' ---- Write Univariate Analysis
    WriteTable LoName:=UNIVARIATE, scope:=scope
    ' ---- Write the Bivariate Analysis
    WriteTable LoName:=BIVARIATE, scope:=scope
+
+   On Error GoTo 0
+
    'Add The goTo for sections
    Set cellRng = outsh.Cells(2, 1)
    AddGoTo cellRng:=cellRng, scope:="section"
@@ -665,11 +673,14 @@ Private Sub WriteAnalysis()
   Set outsh = OutputSh(scope)
   PrepareSheet scope:=scope
   'Write the tables of time series
+  On Error GoTo ErrHand
+
   WriteTable LoName:=TIMESERIES, scope:=scope
   'Write the graphs
   WriteTimeSeriesGraphs graphLoName:=GRAPHTIMESERIES, _
                         graphTitleLoName:=TITLEGRAPHTIMESERIES, _
                         tabLoName:=TIMESERIES
+  On Error GoTo 0
   
   Set cellRng = outsh.Cells(2, 1)
   AddGoTo cellRng:=cellRng, scope:="section"
@@ -685,7 +696,9 @@ Private Sub WriteAnalysis()
 
   PrepareSheet scope:=scope
   
+  On Error GoTo ErrHand
   WriteTable LoName:=SPATIAL, scope:=scope
+  On Error GoTo 0
   
   Set cellRng = outsh.Cells(2, 1)
   
@@ -693,7 +706,14 @@ Private Sub WriteAnalysis()
   AddCommands scope:=scope
   
   If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
+
   pass.Protect "_active", True
+
+  Exit Sub
+
+ErrHand:
+    Debug.Print "Error: " & Err.Number & " " &  Err.Description
+    Resume Next
 End Sub
 
 'Errors
