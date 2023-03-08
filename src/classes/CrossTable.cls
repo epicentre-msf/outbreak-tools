@@ -1007,14 +1007,14 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
             ElseIf (specs.SpatialTableTypes = "hf") Then
                 Set rng = .Range("HF_DROPDOWN_" & tabId)
-                DesignFormat.ApplyFormat rng, scope:=LInelistHiddenCell
+                DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
             End If
             
             'Range for the order (used in the formulas)
             Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -1)
-            DesignFormat.ApplyFormat rng, scope:=LInelistHiddenCell
+            DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
             Set rng = rng.Offset(, -1)
-            DesignFormat.ApplyFormat rng, scope:=LInelistHiddenCell
+            DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
         End If
 
         'Headers ==============================================================
@@ -1079,14 +1079,14 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                 If tablType = TypeTimeSeries Then
                     Set rng = rng.Offset(, -1)
                     Set rng = .Range(rng.Cells(1, 0), rng.Cells(rng.Rows.Count + 1, 1))
-                    DesignFormat.ApplyFormat rng, scope:=LInelistHiddenCell
+                    DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
                     rngTable.Clear
                     rngTable.Push "START_DATE_", "END_DATE_", "VALIDATION_MIN_DATE_", _
                                   "VALIDATION_MAX_DATE_", "MIN_MIN_DATE_", "MAX_MAX_DATE_"
                     For counter = rngTable.LowerBound To rngTable.UpperBound
                         rngName = rngTable.Item(counter) & tabId
                         Set rng = .Range(rngName)
-                        DesignFormat.ApplyFormat rng, scope:=LInelistHiddenCell
+                        DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
                         DesignFormat.ApplyFormat rng, scope:=AnalysisDateCell
                     Next
                 End If
@@ -1190,7 +1190,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             rngName = rngTable.Item(counter) & tabId
             If RangeExists(rngName) Then
                 Set rng = .Range(rngName)
-                DesignFormat.ApplyFormat rng, scope:=LInelistHiddenCell
+                DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
             End If
         Next
 
