@@ -23,10 +23,10 @@ Private Type TLLSheets
     sheetRng As Range
 End Type
 
-Private This As TLLSheets
+Private this As TLLSheets
 Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
 Private Const SHEETTYPEVERTICAL As String = "vlist1D"
-Private Const className As String = "LLSheets"
+Private Const CLASSNAME As String = "LLSheets"
 Private Const SHEETHORIZONTALNBROWS As Long = 201
 
 Private Enum SHEETSTART
@@ -52,16 +52,16 @@ Public Property Get Self() As ILLSheets
 End Property
 
 Public Property Get Dictionary() As ILLdictionary
-    Set Dictionary = This.dict
+    Set Dictionary = this.dict
 End Property
 
 Public Property Set Dictionary(ByVal dict As ILLdictionary)
-    Set This.dict = dict
-    Set This.sheetRng = dict.DataRange("sheet name", includeHeaders:=True)
+    Set this.dict = dict
+    Set this.sheetRng = dict.DataRange("sheet name", includeHeaders:=True)
 End Property
 
 Public Property Get SheetRange() As Range
-    Set SheetRange = This.sheetRng
+    Set SheetRange = this.sheetRng
 End Property
 
 'methods
@@ -93,7 +93,7 @@ End Function
 
 'Get the sheet information
 
-Public Function SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = 1) As String
+Public Function sheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = 1) As String
     Dim sheetInfoIndex As Long
     Dim retSheetInfo As String
     Dim dict As ILLdictionary
@@ -114,7 +114,7 @@ Public Function SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte
     End If
 
     retSheetInfo = dictWksh.Cells(RowIndex(sheetName), sheetInfoIndex)
-    SheetInfo = retSheetInfo
+    sheetInfo = retSheetInfo
 End Function
 
 'List of all variables of a sheet
@@ -148,21 +148,21 @@ Private Function DataBounds(ByVal sheetName As String, Optional ByVal Bound As B
 
     Case 1
         DataBounds = Switch( _
-                     SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTROWHORIZONTAL, _
-                     SheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTROWVERTICAL _
+                     sheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTROWHORIZONTAL, _
+                     sheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTROWVERTICAL _
                                                               )
     Case 2
         nbVars = NumberVars(sheetName)
         DataBounds = Switch( _
-                     SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTROWHORIZONTAL + SHEETHORIZONTALNBROWS, _
-                     SheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTROWVERTICAL + nbVars - 1)
+                     sheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTROWHORIZONTAL + SHEETHORIZONTALNBROWS, _
+                     sheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTROWVERTICAL + nbVars - 1)
     Case 3
-        DataBounds = IIf(SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTCOLHORIZONTAL, SHEETSTARTCOLVERTICAL)
+        DataBounds = IIf(sheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTCOLHORIZONTAL, SHEETSTARTCOLVERTICAL)
     Case 4
         nbVars = NumberVars(sheetName)
         DataBounds = Switch( _
-                     SheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTCOLHORIZONTAL + nbVars - 1, _
-                     SheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTCOLVERTICAL)
+                     sheetInfo(sheetName) = SHEETTYPEHORIZONTAL, SHEETSTARTCOLHORIZONTAL + nbVars - 1, _
+                     sheetInfo(sheetName) = SHEETTYPEVERTICAL, SHEETSTARTCOLVERTICAL)
     End Select
 
 End Function
@@ -229,7 +229,7 @@ Private Function VariableAddress(ByVal varName As String, Optional ByVal onSheet
     cstart = DataBounds(sheetName, 3)
 
     If Contains(sheetName) Then
-        Select Case SheetInfo(sheetName)
+        Select Case sheetInfo(sheetName)
         Case SHEETTYPEHORIZONTAL
             varAdd = prefix & dictWksh.Cells(rstart + 1, varIndex).Address(Rowabsolute:=False)
         Case SHEETTYPEVERTICAL
@@ -242,11 +242,11 @@ End Function
 
 'Errors
 Private Sub ThrowErrorUnableInstanciateNoSheetName()
-    Err.Raise VBA.vbObjectError + 513, className, "Unable to create an instance of the class variable, sheet name and sheet types columns do not exists"
+    Err.Raise VBA.vbObjectError + 513, CLASSNAME, "Unable to create an instance of the class variable, sheet name and sheet types columns do not exists"
 End Sub
 
 Private Sub ThrowErrorUnableInstanciateNotPrepared()
-    Err.Raise VBA.vbObjectError + 514, className, "Unable to create an instance of the class variable: The dictionary is not prepared"
+    Err.Raise VBA.vbObjectError + 514, CLASSNAME, "Unable to create an instance of the class variable: The dictionary is not prepared"
 End Sub
 
 'Interface ---------------------------------------------------------------------
@@ -255,7 +255,7 @@ Public Property Get ILLSheets_Dictionary() As ILLdictionary
 End Property
 
 Public Function ILLSheets_SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = 1) As String
-    ILLSheets_SheetInfo = SheetInfo(sheetName, info)
+    ILLSheets_SheetInfo = sheetInfo(sheetName, info)
 End Function
 
 Public Function ILLSheets_Contains(ByVal sheetName As String) As Boolean

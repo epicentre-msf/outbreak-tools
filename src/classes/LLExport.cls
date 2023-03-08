@@ -21,7 +21,7 @@ Private Type TLLExport
     expData As IDataSheet
 End Type
 
-Private This As TLLExport
+Private this As TLLExport
 
 Public Function Create(ByVal sh As Worksheet) As ILLExport
   
@@ -38,11 +38,11 @@ End Function
 
 'Data for the exports
 Public Property Get Data() As IDataSheet
-    Set Data = This.expData
+    Set Data = this.expData
 End Property
 
 Public Property Set Data(ByVal customData As IDataSheet)
-    Set This.expData = customData
+    Set this.expData = customData
 End Property
 
 Public Property Get Self() As ILLExport

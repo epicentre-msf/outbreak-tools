@@ -22,8 +22,8 @@ Private Type THList
     ll As ILinelist
 End Type
 
-Private This As THList
-Private Const className As String = "HList"
+Private this As THList
+Private Const CLASSNAME As String = "HList"
 Private Const SHPGEO As String = "SHP_GeoApps"
 Private Const SHPADDROWS As String = "SHP_Add200L"
 Private Const SHPREMOVEFILT As String = "SHP_ClearFilters"
@@ -47,19 +47,19 @@ Public Property Get Self() As IHlist
 End Property
 
 Public Property Let Name(ByVal sheetName As String)
-    This.shName = sheetName
+    this.shName = sheetName
 End Property
 
 Public Property Get Name() As String
-    Name = This.shName
+    Name = this.shName
 End Property
 
 Public Property Get LinelistObject() As ILinelist
-    Set LinelistObject = This.ll
+    Set LinelistObject = this.ll
 End Property
 
 Public Property Set LinelistObject(ByVal ll As ILinelist)
-    Set This.ll = ll
+    Set this.ll = ll
 End Property
 
 Private Property Get Dictionary() As ILLdictionary
@@ -112,7 +112,7 @@ Private Sub TransferCodeWksh()
     Dim sheetName As String
 
     Set ll = LinelistObject()
-    Set lData = ll.linelistData()
+    Set lData = ll.LinelistData()
 
     Set inpWkb = lData.specswkb()
     Set sh = Wksh()
@@ -184,7 +184,7 @@ Public Sub Build()
     Set dict = Dictionary()
     Set llshs = LLSheets.Create(dict)
     Set ll = LinelistObject()
-    Set lData = ll.linelistData()
+    Set lData = ll.LinelistData()
     Set design = lData.DesignFormat()
     Set drop = ll.Dropdown()
     Set pass = lData.Password()
@@ -255,7 +255,7 @@ Public Sub Build()
 
     'Add dropdown on first cell for GoTo section
     Set rng = sh.Cells(1, 1)
-    tableName = llshs.SheetInfo(sheetName, 2)
+    tableName = llshs.sheetInfo(sheetName, 2)
     gotoSectionListName = tableName & "_" & GOTOSECCODE 'Name of the range goTo section
     
     rng.Name = gotoSectionListName
@@ -268,12 +268,12 @@ Public Sub Build()
     'Add the sheet type on HList sheet
     Set rng = sh.Cells(1, 3)
     rng.Value = "HList"
-    design.ApplyFormat rng, scope:=LinelistHiddenCell
+    design.ApplyFormat rng, scope:=LInelistHiddenCell
     
     'Add the table name
     Set rng = sh.Cells(1, 4)
     rng.Value = tableName
-    design.ApplyFormat rng, scope:=LinelistHiddenCell
+    design.ApplyFormat rng, scope:=LInelistHiddenCell
             
     
     'Create the whole table of the HList
@@ -317,7 +317,7 @@ Public Sub Build()
     'Add the name of the filtered worksheet to the HList
     Set rng = sh.Cells(1, 5)
     rng.Value = filtsh.Name
-    design.ApplyFormat rng, scope:=LinelistHiddenCell
+    design.ApplyFormat rng, scope:=LInelistHiddenCell
 
     'Transfert code to the worksheet
     TransferCodeWksh
@@ -331,7 +331,7 @@ End Sub
 
 'Error
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 Private Sub CheckRequirements(ByVal sheetName As String, ByVal ll As ILinelist)

@@ -30,8 +30,8 @@ Private Type TLinelistSpecs
     specswkb As Workbook
 End Type
 
-Private This As TLinelistSpecs
-Private Const className                 As String = "LinelistSpecs"
+Private this As TLinelistSpecs
+Private Const CLASSNAME                 As String = "LinelistSpecs"
 Private Const DICTIONARYSHEET           As String = "Dictionary"
 Private Const CHOICESSHEET              As String = "Choices"
 Private Const GEOSHEET                  As String = "Geo"
@@ -63,11 +63,11 @@ Public Function Create(ByVal specswkb As Workbook) As ILinelistSpecs
 End Function
 
 Public Property Get Wkb() As Workbook
-    Set Wkb = This.specswkb
+    Set Wkb = this.specswkb
 End Property
 
 Public Property Set Wkb(ByVal specswkb As Workbook)
-    Set This.specswkb = specswkb
+    Set this.specswkb = specswkb
 End Property
 
 Public Property Get Self() As ILinelistSpecs
@@ -551,11 +551,11 @@ Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
 End Sub
 
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 515, className, "Unable to create an instance of the class : " & errorMessage
+    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
 End Sub
 
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 'Implement the interfaces

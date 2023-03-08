@@ -22,7 +22,7 @@ Private Type TLLTranslations
     dicttranssh As Worksheet
 End Type
 
-Private This As TLLTranslations
+Private this As TLLTranslations
 
 'Tables for traductions
 Private Const TRADLLMSG              As String = "T_TradLLMsg"
@@ -31,7 +31,7 @@ Private Const TRADLLFORMS            As String = "T_TradLLForms"
 Private Const LLLANG                 As String = "T_LLLang"
 Private Const DICTTRANS              As String = "Tab_Translations"
 Private Const SELECTEDLANG           As String = "T_SelectedLLLanguages"
-Private Const className As String = "LLTranslations"
+Private Const CLASSNAME As String = "LLTranslations"
 
 Public Function Create(ByVal lltranssh As Worksheet, dicttranssh As Worksheet) As ILLTranslations
   
@@ -49,19 +49,19 @@ Public Property Get Self() As ILLTranslations
 End Property
 
 Public Property Get LLTransSheet() As Worksheet
-    Set LLTransSheet = This.lltranssh
+    Set LLTransSheet = this.lltranssh
 End Property
 
 Public Property Get DictTransSheet() As Worksheet
-    Set DictTransSheet = This.dicttranssh
+    Set DictTransSheet = this.dicttranssh
 End Property
 
 Public Property Set LLTransSheet(ByVal sh As Worksheet)
-    Set This.lltranssh = sh
+    Set this.lltranssh = sh
 End Property
 
 Public Property Set DictTransSheet(ByVal sh As Worksheet)
-    Set This.dicttranssh = sh
+    Set this.dicttranssh = sh
 End Property
 
 Private Property Get TransObject(Optional ByVal trans As TradScopes = _
@@ -255,7 +255,7 @@ End Sub
 
 'Error
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 'Interfaces

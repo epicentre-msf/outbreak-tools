@@ -14,7 +14,7 @@ Attribute VB_Description = "Data Used for the Formula Object"
 '@ModuleDescription("Formula Data Class")
 '@IgnoreModule
 
-Private Const className As String = "FormulaData"
+Private Const CLASSNAME As String = "FormulaData"
 Private Const SPECCHAR As String = "T_ascii"
 Private Const excelForm As String = "T_XlsFonctions"
 
@@ -25,7 +25,7 @@ Private Type TFormulaData
     fWksh As Worksheet
 End Type
 
-Private This As TFormulaData
+Private this As TFormulaData
 
 'instanciation
 Public Function Create(ByVal formWksh As Worksheet) As IFormulaData
@@ -42,11 +42,11 @@ Public Property Get Self() As IFormulaData
 End Property
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = This.fWksh
+    Set Wksh = this.fWksh
 End Property
 
 Public Property Set Wksh(ByVal formWksh As Worksheet)
-    Set This.fWksh = formWksh
+    Set this.fWksh = formWksh
 End Property
 
 Public Property Get FormulaRange() As Range
@@ -111,7 +111,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
 End Sub
 
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 515, className, "Unable to create an instance of the class : " & errorMessage
+    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
 End Sub
 
 'Exposed methods

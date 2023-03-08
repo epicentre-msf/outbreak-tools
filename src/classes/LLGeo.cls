@@ -21,8 +21,8 @@ Private Type TGeo
 End Type
 
 'Exposed methods
-Private This As TGeo
-Private Const className As String = "Geo"
+Private this As TGeo
+Private Const CLASSNAME As String = "Geo"
 Private Const ADMIN1    As String = "ADM1"
 Private Const ADMIN2    As String = "ADM2"
 Private Const ADMIN3    As String = "ADM3"
@@ -47,11 +47,11 @@ Public Property Get Self() As ILLGeo
 End Property
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = This.geosh
+    Set Wksh = this.geosh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-    Set This.geosh = sh
+    Set this.geosh = sh
 End Property
 
 Public Property Get TableNames() As BetterArray
@@ -91,7 +91,7 @@ End Property
 
 Private Function GeoColumnIndex(ByVal colName As String, ByVal adminLevel As GeoLevel) As Long
     Dim hRng As Range
-    Dim loName As String
+    Dim LoName As String
     Dim tabl As BetterArray
     Dim sh As Worksheet
     Dim colIndex As Long
@@ -99,12 +99,12 @@ Private Function GeoColumnIndex(ByVal colName As String, ByVal adminLevel As Geo
 
     Set sh = Wksh()
     Set tabl = TableNames()
-    loName = tabl.Item(adminLevel)
+    LoName = tabl.Item(adminLevel)
     actualColName = colName
     If sh.Range("RNG_GeoUpdated").Value = "updated, translated" Then actualColName = GeoNames(colName)
-    Set hRng = sh.ListObjects(loName).HeaderRowRange
+    Set hRng = sh.ListObjects(LoName).HeaderRowRange
     colIndex = ColumnIndex(actualColName, hRng)
-    If colIndex < 0 Then ThrowError "Column " & actualColName & " not found in table " & loName
+    If colIndex < 0 Then ThrowError "Column " & actualColName & " not found in table " & LoName
     GeoColumnIndex = colIndex
 End Function
 
@@ -178,7 +178,7 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
     Dim Lo As ListObject
     Dim LoRng As Range
     Dim rng As Range
-    Dim loName As String
+    Dim LoName As String
     Dim colIndex As Long
     Dim counter As Long
     Dim returnedRng As Range
@@ -192,9 +192,9 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
     sh.EnableCalculation = False
 
     If geoType = CustomTypeGeo Then
-        loName = tabl.Item(adminLevel)
+        LoName = tabl.Item(adminLevel)
     Else
-        loName = tabl.Item(4)
+        LoName = tabl.Item(4)
     End If
 
     'Work only on Geobase with values withing
@@ -212,11 +212,11 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
 
     'Output Levels
     Set outLevels = New BetterArray
-    Set Lo = sh.ListObjects(loName)
+    Set Lo = sh.ListObjects(LoName)
     Set LoRng = Lo.Range
 
     'If the Listobject is Empty, throw error
-    If Lo.DataBodyRange Is Nothing Then ThrowError "The listobject " & loName & "has no data"
+    If Lo.DataBodyRange Is Nothing Then ThrowError "The listobject " & LoName & "has no data"
 
     Select Case geoType
 
@@ -313,7 +313,7 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
     Dim Lo As ListObject
     Dim LoRng As Range
     Dim returnedValue As Variant
-    Dim loName As String
+    Dim LoName As String
     Dim colIndex As Long
     Dim colRange As Range
     Dim concatRng As Range
@@ -324,8 +324,8 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
     Set fun = Application.WorksheetFunction
     Set tabl = TableNames()
 
-    loName = IIf(adminLevel = LevelHF, "T_HF", tabl.Item(adminLevel))
-    Set Lo = sh.ListObjects(loName)
+    LoName = IIf(adminLevel = LevelHF, "T_HF", tabl.Item(adminLevel))
+    Set Lo = sh.ListObjects(LoName)
     
     If Lo.DataBodyRange Is Nothing Then Exit Property
     
@@ -385,7 +385,7 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
     Dim rng As Range
     Dim cellRng As Range
     Dim Lo As ListObject
-    Dim loName As String
+    Dim LoName As String
     Dim admname As String
     Dim transGeoName As String                   'Translated geo Name
     Dim hRng As Range                            'Header Range
@@ -399,8 +399,8 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
     Set tabl = TableNames()
     tabl.LowerBound = 1
     For counter = 1 To 4 'admin 1, 2, 3, 4
-        loName = tabl.Item(counter)
-        Set Lo = sh.ListObjects(loName)
+        LoName = tabl.Item(counter)
+        Set Lo = sh.ListObjects(LoName)
         Set hRng = Lo.HeaderRowRange
         
         'Admin 1 to 5, and hf
@@ -461,7 +461,7 @@ Private Sub ExportToFile(outputWkb As Workbook, Optional ByVal onlyHistory As Bo
     Dim outputRng As Range
     Dim inputRng As Range
     Dim sheetName As String
-    Dim loName As String
+    Dim LoName As String
     Dim counter As Long
 
     Set tabl = New BetterArray
@@ -486,10 +486,10 @@ Private Sub ExportToFile(outputWkb As Workbook, Optional ByVal onlyHistory As Bo
 
         'Add the others tables to the worksheet
         For counter = tabl.LowerBound To tabl.UpperBound
-            loName = tabl.Item(counter)
-            Set inputRng = sh.ListObjects(loName).Range
-            .Worksheets.Add(After:=.Worksheets(sheetName)).Name = Replace(loName, "T_", vbNullString)
-            sheetName = Replace(loName, "T_", vbNullString)
+            LoName = tabl.Item(counter)
+            Set inputRng = sh.ListObjects(LoName).Range
+            .Worksheets.Add(After:=.Worksheets(sheetName)).Name = Replace(LoName, "T_", vbNullString)
+            sheetName = Replace(LoName, "T_", vbNullString)
             With .Worksheets(sheetName)
                 Set outputRng = .Range(.Cells(1, 1), .Cells(inputRng.Rows.Count, inputRng.Columns.Count))
             End With
@@ -744,7 +744,7 @@ End Sub
 
 'Errors and checkings
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 Private Sub CheckRequirements(ByVal sh As Worksheet)

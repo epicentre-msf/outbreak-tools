@@ -25,3 +25,13 @@ End Sub
 ' Private Sub Worksheet_Activate()
 '     Me.Calculate
 ' End Sub
+
+
+Private Sub Worksheet_SelectionChange(ByVal Target As Range)
+    Application.Cursor = xlNorthwestArrow
+    Application.EnableEvents = False
+    EventSelectionLinelist Target
+    Application.EnableEvents = True
+    Application.Cursor = xlDefault
+End Sub
+

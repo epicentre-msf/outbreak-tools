@@ -23,7 +23,7 @@ Private Type TGraph
     Index As Long
 End Type
 
-Private This As TGraph
+Private this As TGraph
 
 
 Public Function Create(sh As Worksheet, posRng As Range) As IGraphs
@@ -35,11 +35,11 @@ Public Function Create(sh As Worksheet, posRng As Range) As IGraphs
 End Function
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = This.sh
+    Set Wksh = this.sh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-    Set This.sh = sh
+    Set this.sh = sh
 End Property
 
 Public Property Get Self() As IGraphs
@@ -47,23 +47,23 @@ Public Property Get Self() As IGraphs
 End Property
 
 Public Property Get StartRange() As Range
-    Set StartRange = This.strtRng
+    Set StartRange = this.strtRng
 End Property
 
 Public Property Set StartRange(ByVal strtRng As Range)
-    Set This.strtRng = strtRng
+    Set this.strtRng = strtRng
 End Property
 
 Public Property Get graphChart() As ChartObject
-    Set graphChart = This.co
+    Set graphChart = this.co
 End Property
 
 Private Property Get seriesIndex() As Long
-    seriesIndex = This.Index
+    seriesIndex = this.Index
 End Property
 
 Private Property Let seriesIndex(ByVal ind As Long)
-    This.Index = ind
+    this.Index = ind
 End Property
 
 'Exposed methods
@@ -93,7 +93,7 @@ Public Sub Add()
         .Legend.Position = xlLegendPositionTop
     End With
 
-    Set This.co = co
+    Set this.co = co
 End Sub
 
 Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional axisPos As String = vbNullString)
@@ -177,7 +177,7 @@ Private Function RngAddress(ByVal rngName As String) As String
     RngAddress = "'" & sh.Name & "'" & "!" & rng.Address
 End Function
 
-Public Sub AddLabels(ByVal catName As String, _ 
+Public Sub AddLabels(ByVal catName As String, _
                      ByVal lblName As String, _
                      Optional ByVal prefix As String = vbNullString, _
                      Optional ByVal prefixOnly As Boolean = False, _

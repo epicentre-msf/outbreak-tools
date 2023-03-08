@@ -20,8 +20,8 @@ Private Type TDropdownLists
     sh As Worksheet
 End Type
 
-Private This As TDropdownLists
-Private Const className As String = "DropdownLists"
+Private this As TDropdownLists
+Private Const CLASSNAME As String = "DropdownLists"
 
 Public Function Create(ByVal outsh As Worksheet) As IDropdownLists
     'Errors
@@ -39,11 +39,11 @@ Public Property Get Self() As IDropdownLists
 End Property
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = This.sh
+    Set Wksh = this.sh
 End Property
 
 Public Property Set Wksh(ByVal outsh As Worksheet)
-    Set This.sh = outsh
+    Set this.sh = outsh
 End Property
 
 Private Property Get LastColumn() As Long
@@ -72,12 +72,12 @@ End Property
 'Test if a listobject exists in a sheet
 Public Function Exists(ByVal listName As String) As Boolean
     Dim Lo As ListObject
-    Dim loName As String
+    Dim LoName As String
     Dim sh As Worksheet
     Set sh = Wksh()
-    loName = CurrentLoName(listName)
+    LoName = CurrentLoName(listName)
     On Error Resume Next
-    Set Lo = sh.ListObjects(loName)
+    Set Lo = sh.ListObjects(LoName)
     On Error GoTo 0
     Exists = (Not Lo Is Nothing)
 End Function
@@ -88,13 +88,13 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String)
     Dim sh As Worksheet
     Dim colIndex As Long
     Dim headerName As String                     'header Name
-    Dim loName As String                         'List object name
+    Dim LoName As String                         'List object name
     Dim rng As Range
     Dim Wkb As Workbook
 
 
     If (Not Exists(listName)) Then
-        loName = CurrentLoName(listName)
+        LoName = CurrentLoName(listName)
         headerName = CurrentHeaderName(listName)
         colIndex = LastColumn()
         Set sh = Wksh()
@@ -105,11 +105,11 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String)
             Set rng = .Range(.Cells(1, colIndex), .Cells(listValues.Length + 1, colIndex))
 
             'Add A list object table
-            .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName
+            .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = LoName
             Set Wkb = .Parent
         End With
 
-        Wkb.NAMES.Add Name:=headerName, RefersToR1C1:="=" & loName & "[" & headerName & "]"
+        Wkb.NAMES.Add Name:=headerName, RefersToR1C1:="=" & LoName & "[" & headerName & "]"
     End If
 End Sub
 
@@ -118,16 +118,16 @@ Private Sub Remove(ByVal listName As String)
     Dim sh As Worksheet
     Dim Wkb As Workbook
     Dim rng As Range
-    Dim loName As String
+    Dim LoName As String
     Dim headerName As String
 
     If Exists(listName) Then
     
-        loName = CurrentLoName(listName)
+        LoName = CurrentLoName(listName)
         headerName = CurrentHeaderName(listName)
 
         Set sh = Wksh()
-        Set rng = sh.ListObjects(loName).Range
+        Set rng = sh.ListObjects(LoName).Range
         Set Wkb = sh.Parent
     
         Wkb.NAMES(headerName).Delete
@@ -152,13 +152,13 @@ Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String)
     Dim sh As Worksheet
     Dim cellRng As Range
     Dim rng As Range
-    Dim loName As String
+    Dim LoName As String
     Dim Lo As ListObject
 
     If Not Exists(listName) Then Exit Sub
     Set sh = Wksh()
-    loName = CurrentLoName(listName)
-    Set Lo = sh.ListObjects(loName)
+    LoName = CurrentLoName(listName)
+    Set Lo = sh.ListObjects(LoName)
     Set cellRng = Lo.Range.Cells(2, 1)
     
     'put the new data in the range
@@ -204,7 +204,7 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 'Exposed methods

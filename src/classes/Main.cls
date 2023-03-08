@@ -20,7 +20,7 @@ Private Type TMain
     sh As Worksheet
 End Type
 
-Private This As TMain
+Private this As TMain
 
 Public Function Create(sh As Worksheet) As IMain
 
@@ -34,11 +34,11 @@ Public Function Create(sh As Worksheet) As IMain
 End Function
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = This.sh
+    Set Wksh = this.sh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-    Set This.sh = sh
+    Set this.sh = sh
 End Property
 
 Public Property Get Self() As IMain
@@ -255,7 +255,7 @@ End Sub
 
 'Errors and checkings
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 Private Sub CheckRequirements(ByVal sh As Worksheet)

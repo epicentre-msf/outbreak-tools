@@ -26,7 +26,7 @@ Public Enum FormatScopes
     AnalysisCategoriesUnivariateRow = 6
     AnalysisFirstRow = 7
     AnalysisGlobalSummaryRow = 8
-    LinelistHiddenCell = 9
+    LInelistHiddenCell = 9
     AnalysisInteriorTable = 10
     AnalysisMissingColumn = 11
     AnalysisMissingRow = 12

@@ -2,13 +2,13 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-
 Attribute VB_Name = "AnalysisOutput"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Module to put all together for the analysis"
+
 
 '@Folder("Analysis")
 '@ModuleDescription("Build And format the analysis")
@@ -17,7 +17,7 @@ Attribute VB_Description = "Module to put all together for the analysis"
 Option Explicit
 Implements IAnalysisOutput
 
-'Name of differents 
+'Name of differents
 Private Const UPDATEFILTERCOMMAND As String = "UpdateFilterTables"
 Private Const SHPFILTERNAME As String = "SHP_Filter"
 Private Const GOTOSECCODE As String = "go_to_section" 'Goto section code
@@ -78,17 +78,7 @@ Public Property Set Wksh(ByVal specSh As Worksheet)
   Set this.sh = specSh
 End Property
 
-
 'Get the linelist and linelistData attributes used when building the linelist
-
-'Translation of messages / other translations
-Private Property Get Trads(Optional ByVal scope As TradScopes = TranslationOfMessages) As ITranslation
-  Dim ll As ILinelist
-  Dim lData As LinelistSpecs
-  Set ll = OutputLL()
-  Set lData = ll.LinelistData()
-  Set Trads = lData.TransObject(scope)
-End Property
 
 'Linelist Specs
 Private Property Get LinelistData() As ILinelistSpecs
@@ -105,7 +95,7 @@ Private Property Get DesignFormat() As ILLFormat
 End Property
 
 'Translation of shapes and messages
-Public Property Get TransObject(ByVal scope As  _ 
+Public Property Get TransObject(Optional ByVal scope As _
                                 TradScopes = TranslationOfMessages) As ITranslation
   Dim lData As ILinelistSpecs
   Set lData = LinelistData()
@@ -128,8 +118,6 @@ Private Property Get OutputSh(Optional ByVal scope _
     Set OutputSh = trads.TranslatedValue("LLSHEET_SpatialAnalysis")
   Case AnalysisScopeNormal
     Set OutputSh = trads.TranslatedValue("LLSHEET_Analysis")
-  Case Else
-    Set OutputSh = trads.TranslatedValue("LLSHEET_Analysis")
   End Select
 End Property
 
@@ -141,19 +129,11 @@ Private Sub BusyApp()
     Application.EnableAnimations = False
 End Sub
 
-'Return previous state
-Private Sub ReturnState()
-    Application.ScreenUpdating = True
-    Application.DisplayAlerts = True
-    Application.Calculation = xlCalculationAutomatic
-    Application.EnableAnimations = True
-End Sub
-
 'Split the output sheet
-
 Private Sub SplitOutputSheet(Optional ByVal scope As AnalysisScope = AnalysisScopeNormal)
   Dim outsh As Worksheet
-  Dim rowSplit As Long
+  Dim rowSplit As Integer
+
   'OUtput worksheet
   Set outsh = OutputSh(scope)
   rowSplit = IIf(scope = AnalysisScopeTimeSeries, 3, 2)
@@ -169,14 +149,14 @@ Private Sub SplitOutputSheet(Optional ByVal scope As AnalysisScope = AnalysisSco
     'Split on the third column for Time series only
     If scope = AnalysisScopeTimeSeries Then .SplitColumn = 3
     'For spatial or time series, reduce the zoom for the worksheeet
-    If scope <> AnalysisScopeNormal Then .Zoom = 65
+    If scope <> AnalysisScopeNormal Then .Zoom = 70
     .FreezePanes = True
   End With
   On Error GoTo 0
 End Sub
 
 'Add the command buttons to a worksheet
-Private Sub AddCommands(Optional ByVal scope _ 
+Private Sub AddCommands(Optional ByVal scope _
                        As AnalysisScope = AnalysisScopeNormal)
   Dim cellRng As Range
   Dim commandName As String
@@ -194,14 +174,14 @@ Private Sub AddCommands(Optional ByVal scope _
   'Update shapeLabel and commandName depending on the scope of the butto
   commandName = IIf(scope = AnalysisScopeSpatial, UPDATESPCOMMAND, UPDATEFILTERCOMMAND)
   shapeLabel = trads.TranslatedValue(SHPFILTERNAME)
-  Set but = Buttons.Create(outRng:=cellRng, codeName:=SHPFILTERNAME, _ 
+  Set but = Buttons.Create(outRng:=cellRng, codeName:=SHPFILTERNAME, _
                            scope:=ButtonScopeSmall)
   but.Add actionCommand:=commandName, shapeLabel:=shapeLabel
   but.Format design
 End Sub
 
 'Initialize the output worksheet (format, values)
-Private Sub PrepareSheet(Optional ByVal scope As AnalysisScope _ 
+Private Sub PrepareSheet(Optional ByVal scope As AnalysisScope _
                          = AnalysisScopeNormal)
 
   Dim outsh As Worksheet
@@ -227,11 +207,11 @@ Private Sub PrepareSheet(Optional ByVal scope As AnalysisScope _
 
   'Add the info of a worksheet
   cellRng.Value = sheetInfo
-  design.ApplyFormat cellRng, scope:=LinelistHiddenCell
+  design.ApplyFormat cellRng, scope:=LInelistHiddenCell
 
   'Add warning if the cells are filtered
   Set cellRng = outshCells(2, 5)
-  cellRng.Formula = "= ComputedOnFiltered()"
+  cellRng.formula = "= ComputedOnFiltered()"
   design.ApplyFormat cellRng, scope:=LinelistWarning
 
 
@@ -246,7 +226,7 @@ End Sub
 'Push section, graphs or headers to the tables
 Private Sub Push(pushedValue As String, Optional ByVal scope As String = "section")
   'Initialize arrays of sections, headers and graphs
-  Select case scope
+  Select Case scope
   Case "section"
     this.sectiionsList.Push pushedValue
   Case "header"
@@ -273,17 +253,17 @@ Private Sub InitializeArrays()
 End Sub
 
 'Get the goToSection, header, graph value
-Private Function GoToLabel(optional ByVal scope As String = "section") As String
+Private Function GoToLabel(Optional ByVal scope As String = "section") As String
 
-  GoToLabel = Switch(scope = "section", this.goToSection, _ 
-                     scope = "graph", this.goToGraph, _ 
-                     scope = "header", this.goToHeader, _ 
+  GoToLabel = Switch(scope = "section", this.goToSection, _
+                     scope = "graph", this.goToGraph, _
+                     scope = "header", this.goToHeader, _
                      True, this.goToSection)
 End Function
 
-Private Sub AddGoTo(cellRng As Range, _ 
-                    Optional ByVal goToPrefix As String = "ua_", _ 
-                    Optional ByVal scope As String = "section", _ 
+Private Sub AddGoTo(cellRng As Range, _
+                    Optional ByVal goToPrefix As String = "ua_", _
+                    Optional ByVal scope As String = "section", _
                     Optional ByVal goToSuffix As String = vbNullString)
   
   Dim drop As IDropdownLists
@@ -312,7 +292,7 @@ Private Sub AddGoTo(cellRng As Range, _
   'dropdown name
   dropName = goToPrefix & "gotosection"
   drop.Add dropArray, dropName
-  drop.SetValidation cellrng, dropName
+  drop.SetValidation cellRng, dropName
 
   'Apply the dropdown format to the cell
   design.ApplyFormat cellRng, scope:=LinelistSelectionDropdown
@@ -324,16 +304,16 @@ Private Sub AddGoTo(cellRng As Range, _
   'Clear the table for another usage
   Select Case scope
   Case "section"
-    this.sectionsList.Clear()
+    this.sectionsList.Clear
   Case "graph"
-    this.headersList.Clear()
+    this.headersList.Clear
   Case "header"
-    this.graphsList.Clear()
+    this.graphsList.Clear
   End Select
 End Sub
 
 'Write tables of one section: Global summary, univariate or bivariate or spatial
-Private Sub WriteTable(ByVal LoName As String,  _ 
+Private Sub WriteTable(ByVal LoName As String, _
                        Optional ByVal scope As AnalysisScope = AnalysisScopeNormal)
   Dim sh As Worksheet
   Dim outsh As Worksheet
@@ -364,9 +344,9 @@ Private Sub WriteTable(ByVal LoName As String,  _
   Dim lastValid As ITablesSpecs
   Dim prevSpecs As ITableSpecs 'Previous specs (could be Nothing)
   Dim prevSecId As String 'Previous table Id
-  Dim dict As ILLDictionary
+  Dim dict As ILLdictionary
   Dim vars As ILLVariables
-  Dim goToHeader As STring
+  Dim goToHeader As String
 
   'Initialize the arrays
   InitializeArrays
@@ -388,7 +368,7 @@ Private Sub WriteTable(ByVal LoName As String,  _
 
   tabType = specs.TableType()
 
-  If Lo.DataBodyRange Is Nothing Then Exit SuB
+  If Lo.DataBodyRange Is Nothing Then Exit Sub
   Set hRng = Lo.HeaderRowRange
 
   For tabCounter = 1 To Lo.ListRows.Count
@@ -397,13 +377,13 @@ Private Sub WriteTable(ByVal LoName As String,  _
     
     If specs.ValidTable() Then
 
-      If specs.isNewSection Then 
+      If specs.isNewSection Then
         Push goToSection & ": " & specs.Value("section")
         'The last valid specs is the specs of the last valid new section for TS
         Set lastValid = specs
       End If
       
-      'Get the previous specs 
+      'Get the previous specs
       On Error Resume Next
       Set prevSpecs = specs.Previous()
       On Error GoTo 0
@@ -411,8 +391,8 @@ Private Sub WriteTable(ByVal LoName As String,  _
       Set tabl = CrossTable.Create(specs, outsh, trads)
       tabl.Build
       'Add Formulas
-      Set tabForm = CrossTableFormula.Create(tabl, formData)
-      tabForm.AddFormulas
+      Set tabform = CrossTableFormula.Create(tabl, formData)
+      tabform.AddFormulas
       'Format the created table
       tabl.Format design
 
@@ -444,10 +424,10 @@ Private Sub WriteTable(ByVal LoName As String,  _
 
           'Add goTo Header to the previous section
           Set cellRng = outsh.Range("SECTION_" & prevSecId).Offset(1, -2)
-          AddGoTo cellRng:=cellRng, goToPrefix:="ts_", scope:="header", _ 
+          AddGoTo cellRng:=cellRng, goToPrefix:="ts_", scope:="header", _
                    goToSuffix:=prevSecId
         
-        ElseIf (Not specs.isNewSection()) Then  
+        ElseIf (Not specs.isNewSection()) Then
           'No new section, update minimum and maximum formula
           minFormula = minFormula & ", " & "MIN(" & tableName & "[" & rowVar & "]" & ")"
           maxFormula = maxFormula & ", " & "MAX(" & tableName & "[" & rowVar & "]" & ")"
@@ -459,8 +439,8 @@ Private Sub WriteTable(ByVal LoName As String,  _
       'Add graphs if needed for bivariate, univariate and spatial
       addGraph = specs.Value("graph")
 
-      If (addGraph = "yes" And tabType = TypeUnivariate) Or _ 
-        ((addGraph = "values" Or addGraph = "percentages") _ 
+      If (addGraph = "yes" And tabType = TypeUnivariate) Or _
+        ((addGraph = "values" Or addGraph = "percentages") _
          And ((tabType = TypeBivariate) Or (tabType = TypeSpatial))) Then
 
         Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
@@ -475,19 +455,19 @@ Private Sub WriteTable(ByVal LoName As String,  _
         Set gr = Graphs.Create(outsh, cellRng)
         gr.Add
         
-        'Add 
+        'Add
         For graphCounter = 1 To grSpecs.NumberOfSeries()
           'Add the series
-          gr.AddSeries grSpecs.SeriesName(graphCounter), _ 
+          gr.AddSeries grSpecs.SeriesName(graphCounter), _
           grSpecs.SeriesType(graphCounter), grSpecs.SeriesPos(graphCounter)
           
           'Add the series label
-          gr.AddLabels grSpecs.SeriesLabel(graphCounter), _ 
+          gr.AddLabels grSpecs.SeriesLabel(graphCounter), _
           grSpecs.SeriesColumnLabel(graphCounter), hardCodeLabels:=False
         Next
         
         'format the graph
-        gr.Format catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _ 
+        gr.Format catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _
         valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _
         scope:=scope
       End If
@@ -495,13 +475,13 @@ Private Sub WriteTable(ByVal LoName As String,  _
   Next
 
   'Add minimum and maximum formula for last section if on time series
-  If (Not lastValid is Nothing) And (tabType = TypeTimeSeries) Then
+  If (Not lastValid Is Nothing) And (tabType = TypeTimeSeries) Then
     tabId = lastValid.TableSectionId
     outsh.Range("MAX_MAX_DATE_" & tabId).formula = "= MAX(" & maxFormula & ")"
     outsh.Range("MIN_MIN_DATE_" & tabId).formula = "= MIN(" & minFormula & ")"
     Set cellRng = outsh.Range("SECTION_" & tabId).Offset(1, -2)
     'Add dropdown
-    AddGoTo cellRng:=cellRng, goToPrefix:="ts_", scope:="header", _ 
+    AddGoTo cellRng:=cellRng, goToPrefix:="ts_", scope:="header", _
                    goToSuffix:=tabId
     'Add an anchor to where to start building graphs for time series
     Set cellRng = outsh.Range("ENDTABLE_" & lastValid.TableId).Offset(5, 2)
@@ -514,7 +494,7 @@ End Sub
 'tabLoName: listobject name of the table
 'graphLoName: listobject name of the graph
 'graphTitleLoName : lisobject name of graph titles
-Private Sub WirteTimeSeriesGraphs(ByVal graphLoName As String, graphTitleLoName As String, _ 
+Private Sub WirteTimeSeriesGraphs(ByVal graphLoName As String, graphTitleLoName As String, _
                                   ByVal tabLoName As String)
   Dim sh As Worksheet
   Dim outsh As Worksheet
@@ -551,7 +531,7 @@ Private Sub WirteTimeSeriesGraphs(ByVal graphLoName As String, graphTitleLoName 
   'Initialize the arrays
   Set grBAinput = New BetterArray '
   Set grBAoutput = New BetterArray
-  Set tabGraphInfos = New BetterArray 
+  Set tabGraphInfos = New BetterArray
   Set tabSeries = New BetterArray
   Set tabTypes = New BetterArray
   Set tabPos = New BetterArray
@@ -577,7 +557,7 @@ Private Sub WirteTimeSeriesGraphs(ByVal graphLoName As String, graphTitleLoName 
 
   'Build the graphs if they are valid
   If grSpecs.Valid() Then
-    Set grBAOutput = grSpecs.SpecsLists()
+    Set grBAoutput = grSpecs.SpecsLists()
 
     For graphCounter = 1 To grSpecs.NumberOfGraphs()
       Set tabGraphInfos = grBAoutput.Item(graphCounter)
@@ -596,16 +576,16 @@ Private Sub WirteTimeSeriesGraphs(ByVal graphLoName As String, graphTitleLoName 
       gr.Add
 
       For seriesCounter = 1 To tabSeries.Length
-          gr.AddSeries tabSeries.Item(counter), tabType.Item(counter), _ 
+          gr.AddSeries tabSeries.Item(counter), tabType.Item(counter), _
                        tabPos.Item(counter)
-          gr.AddLabels tabLabel.Item(counter), tabColLabel.Item(counter), _ 
+          gr.AddLabels tabLabel.Item(counter), tabColLabel.Item(counter), _
                        tabPrefLabel.Item(counter), prefixOnly:=True
       Next
 
       'Format the graphs
       plotTitle = tabGraphInfos.Item(7)
-      gr.Format catTitle:=trads.TranslatedValue("MSG_Period"), _ 
-                valuesTitle:=trads.TranslatedValue("MSG_Values"), _ 
+      gr.Format catTitle:=trads.TranslatedValue("MSG_Period"), _
+                valuesTitle:=trads.TranslatedValue("MSG_Values"), _
                 plotTitle:=plotTitle, scope:=GraphScopeTimeSeries
       
       'Add the graph title to graph lists
@@ -620,7 +600,7 @@ Private Sub WirteTimeSeriesGraphs(ByVal graphLoName As String, graphTitleLoName 
 
   'Add the GoTo graph dropdown
   AddGoTo outsh.Cells(3, 1), scope:="graph", _
-          goToPrefix:="ts_", goTosuffix:="_graph"
+          goToPrefix:="ts_", goToSuffix:="_graph"
 End Sub
 
 
@@ -656,8 +636,8 @@ Private Sub WriteAnalysis()
   'Write the tables of time series
   WriteTable LoName:=TIMESERIES, scope:=scope
   'Write the graphs
-  WriteTimeSeriesGraphs graphLoName:=GRAPHTIMESERIES, _ 
-                         graphTitleLoName:=TITLEGRAPHTIMESERIES, _ 
+  WriteTimeSeriesGraphs graphLoName:=GRAPHTIMESERIES, _
+                         graphTitleLoName:=TITLEGRAPHTIMESERIES, _
                          tabLoName:=TIMESERIES
   
   Set cellRng = outsh.Cells(2, 1)
@@ -678,10 +658,10 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 Public Sub IAnalysisOutput_WriteAnalysis()
-  'write analysis 
+  'write analysis
   WriteAnalysis
 End Sub

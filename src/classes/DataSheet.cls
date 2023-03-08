@@ -23,9 +23,9 @@ Private Type TDataSheet
     STARTCOL As Long                             'The column where the data starts (the first column is the column of the variable names.
 End Type
 
-Private This As TDataSheet
+Private this As TDataSheet
 
-Private Const className As String = "DataSheet"
+Private Const CLASSNAME As String = "DataSheet"
 
 Public Function Create(ByVal dataWksh As Worksheet, ByVal dataStartRow As Long, _
                        ByVal dataStartColumn As Long) As IDataSheet
@@ -50,29 +50,29 @@ End Property
 
 'Worksheet
 Public Property Get Wksh() As Worksheet
-    Set Wksh = This.dataWksh
+    Set Wksh = this.dataWksh
 End Property
 
 Friend Property Set Wksh(ByVal dataWksh As Worksheet)
-    Set This.dataWksh = dataWksh
+    Set this.dataWksh = dataWksh
 End Property
 
 'StartRow
 Public Property Get StartRow() As Long
-    StartRow = This.startLn
+    StartRow = this.startLn
 End Property
 
 Friend Property Let StartRow(ByVal dataStartRow As Long)
-    This.startLn = dataStartRow
+    this.startLn = dataStartRow
 End Property
 
 'StartColumn
 Public Property Get StartColumn() As Long
-    StartColumn = This.STARTCOL
+    StartColumn = this.STARTCOL
 End Property
 
 Friend Property Let StartColumn(ByVal dataStartColumn As Long)
-    This.STARTCOL = dataStartColumn
+    this.STARTCOL = dataStartColumn
 End Property
 
 'End row and columns of the dictionary
@@ -360,16 +360,16 @@ End Sub
 
 'Errors ----------------------------------------------------------------------
 Private Sub ThrowErrorEmptySheetGiven(Optional ByVal Class As String = ":")
-    Err.Raise VBA.vbObjectError + 513, className, "Unable to create an instance of the class" & Class & " Given Worksheet object does not exists, please verify if you set it."
+    Err.Raise VBA.vbObjectError + 513, CLASSNAME, "Unable to create an instance of the class" & Class & " Given Worksheet object does not exists, please verify if you set it."
 End Sub
 
 Private Sub ThrowErrorStartNumber(Optional ByVal startNumber As Long = -1, Optional ByVal startLabel As String = " Start ", Optional ByVal Class As String = ":")
-    Err.Raise VBA.vbObjectError + 514, className, "Unable to create an instance of the class" & Class & " The " & startLabel & _
+    Err.Raise VBA.vbObjectError + 514, CLASSNAME, "Unable to create an instance of the class" & Class & " The " & startLabel & _
                                                  "should be >= 1. " & "Actual value : " & startNumber
 End Sub
 
 Private Sub ThrowErrorUnFoundColumn(ByVal colName As String)
-    Err.Raise VBA.vbObjectError + 515, className, "Column " & colName & " does not exists" & " in worksheet " & Wksh.Name
+    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Column " & colName & " does not exists" & " in worksheet " & Wksh.Name
 End Sub
 
 'Inteface ----------------------------------------------------------------------

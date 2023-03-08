@@ -18,7 +18,7 @@ Option Explicit
 Public Property Get Wksh(ByVal sheetName As String) As Worksheet: End Property
 Public Property Get Dropdown() As IDropdownLists: End Property
 
-Public Property Get linelistData() As ILinelistSpecs: End Property
+Public Property Get LinelistData() As ILinelistSpecs: End Property
 Public Property Get Dictionary() As ILLdictionary: End Property
 
 'Exposed methods
