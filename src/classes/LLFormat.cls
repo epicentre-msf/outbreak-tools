@@ -501,7 +501,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         Set rng = formattingObject
         FormatRange rng, NumFormat:="0.00%"
 
-    Case LInelistHiddenCell
+    Case LinelistHiddenCell
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
 

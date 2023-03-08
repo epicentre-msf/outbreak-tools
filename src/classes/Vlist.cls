@@ -226,12 +226,12 @@ Public Sub Build()
     'Add the sheet type on vlist
     Set rng = sh.Cells(1, 3)
     rng.Value = "VList"
-    design.ApplyFormat rng, scope:=LInelistHiddenCell
+    design.ApplyFormat rng, scope:=LinelistHiddenCell
     
     'Add the table Name
     Set rng = sh.Cells(1, 4)
     rng.Value = tableName
-    design.ApplyFormat rng, scope:=LInelistHiddenCell
+    design.ApplyFormat rng, scope:=LinelistHiddenCell
 
     Set cellRng = sh.Range(tableName & "_" & "START")
     'Add a name to all the plage where to enter values (Use to update calculations of the VList)

@@ -268,12 +268,12 @@ Public Sub Build()
     'Add the sheet type on HList sheet
     Set rng = sh.Cells(1, 3)
     rng.Value = "HList"
-    design.ApplyFormat rng, scope:=LInelistHiddenCell
+    design.ApplyFormat rng, scope:=LinelistHiddenCell
     
     'Add the table name
     Set rng = sh.Cells(1, 4)
     rng.Value = tableName
-    design.ApplyFormat rng, scope:=LInelistHiddenCell
+    design.ApplyFormat rng, scope:=LinelistHiddenCell
             
     
     'Create the whole table of the HList
@@ -317,7 +317,7 @@ Public Sub Build()
     'Add the name of the filtered worksheet to the HList
     Set rng = sh.Cells(1, 5)
     rng.Value = filtsh.Name
-    design.ApplyFormat rng, scope:=LInelistHiddenCell
+    design.ApplyFormat rng, scope:=LinelistHiddenCell
 
     'Transfert code to the worksheet
     TransferCodeWksh
