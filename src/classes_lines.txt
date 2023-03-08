@@ -44,7 +44,6 @@
    124 ./src/classes/ChoiceFormula.cls
    125 ./src/classes/FormulaData.cls
    177 ./src/classes/CaseWhen.cls
-   179 ./src/classes/AnalysisOutput.cls
    179 ./src/classes/LLVariables.cls
    187 ./src/classes/Buttons.cls
    188 ./src/classes/FormulaCondition.cls
@@ -66,6 +65,7 @@
    357 ./src/classes/Hlist.cls
    369 ./src/classes/Graphs.cls
    389 ./src/classes/SpatialTables.cls
+   399 ./src/classes/LLAnalysis.cls
    433 ./src/classes/DataSheet.cls
    443 ./src/classes/TablesSpecs.cls
    490 ./src/classes/Formulas.cls
@@ -73,12 +73,12 @@
    584 ./src/classes/VListVars.cls
    618 ./src/classes/LinelistSpecs.cls
    648 ./src/classes/HListVars.cls
+   681 ./src/classes/AnalysisOutput.cls
    745 ./src/classes/LLdictionary.cls
    765 ./src/classes/LLFormat.cls
    776 ./src/classes/GraphSpecs.cls
-   899 ./src/classes/LLAnalysis.cls
    951 ./src/classes/LLGeo.cls
    988 ./src/classes/CrossTableFormula.cls
   1336 ./src/classes/CrossTable.cls
   4849 ./src/classes/BetterArray.cls
- 22874 total
+ 22876 total
