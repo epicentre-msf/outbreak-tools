@@ -96,7 +96,8 @@ Public Sub Add()
     Set this.co = co
 End Sub
 
-Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional axisPos As String = vbNullString)
+Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _ 
+                    Optional axisPos As String = vbNullString)
 
     Dim co As ChartObject
     Dim sh As Worksheet
