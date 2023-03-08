@@ -23,8 +23,8 @@ Private Type TSpatialTables
     condTests As BetterArray
 End Type
 
-Private This As TSpatialTables
-Private Const className As String = "SpatialTables"
+Private this As TSpatialTables
+Private Const CLASSNAME As String = "SpatialTables"
 Private Const SPATIALSHEET As String = "spatial_tables__"
 Private Const ADMIN As String = "adm"
 Private Const HF As String = "hf"
@@ -53,23 +53,23 @@ Public Property Get Wksh() As Worksheet
   Dim wb As Workbook
   Dim sh As Worksheet
   
-  If This.sh Is Nothing Then
+  If this.sh Is Nothing Then
     Set tabl = Table()
     Set sh = tabl.Wksh()
     Set wb = sh.Parent
-    Set This.sh = wb.Worksheets(SPATIALSHEET)
+    Set this.sh = wb.Worksheets(SPATIALSHEET)
   End If
 
-  Set Wksh = This.sh
+  Set Wksh = this.sh
 
 End Property
 
 Public Property Get Table() As ICrossTable
-  Set Table = This.tab
+  Set Table = this.tab
 End Property
 
 Public Property Set Table(ByVal tabl As ICrossTable)
-  Set This.tab = tabl
+  Set this.tab = tabl
 End Property
 
 Private Property Get LastColumn() As Long
@@ -98,24 +98,24 @@ End Property
 Private Function Exists(ByVal varName As String) As Boolean
   Dim counter As Long
   Dim testExistence As Boolean
-  Dim loName As String
+  Dim LoName As String
 
   For counter = 1 To 4
-    loName = CurrentLoName(varName, ADMIN & counter)
-    testExistence = LoExists(loName)
+    LoName = CurrentLoName(varName, ADMIN & counter)
+    testExistence = LoExists(LoName)
     If Not testExistence Then Exit For
   Next
 
   Exists = testExistence
 End Function
 
-Private Function LoExists(ByVal loName As String) As Boolean
+Private Function LoExists(ByVal LoName As String) As Boolean
   Dim sh As Worksheet
   Dim Lo As ListObject
   Set sh = Wksh()
 
   On Error Resume Next
-    Set Lo = sh.ListObjects(loName)
+    Set Lo = sh.ListObjects(LoName)
   On Error GoTo 0
 
   LoExists = (Not Lo Is Nothing)
@@ -161,19 +161,19 @@ End Function
 'Add conditions for the formulas
 Private Sub AddTableConditions(varName As String, conditionName As String)
 
-  If This.condVars Is Nothing Then
-      Set This.condVars = New BetterArray
-      This.condVars.LowerBound = 1
+  If this.condVars Is Nothing Then
+      Set this.condVars = New BetterArray
+      this.condVars.LowerBound = 1
   End If
 
-  If This.condTests Is Nothing Then
-      Set This.condTests = New BetterArray
-      This.condTests.LowerBound = 1
+  If this.condTests Is Nothing Then
+      Set this.condTests = New BetterArray
+      this.condTests.LowerBound = 1
   End If
 
   If varName <> vbNullString Then
-      This.condVars.Push varName
-      This.condTests.Push conditionName
+      this.condVars.Push varName
+      this.condTests.Push conditionName
   End If
   
 End Sub
@@ -181,25 +181,25 @@ End Sub
 Private Sub ClearTableConditions(Optional ByVal removeNumber As Integer = 0)
   Dim counter As Integer
 
-  If This.condVars Is Nothing Then
-      Set This.condVars = New BetterArray
-      This.condVars.LowerBound = 1
+  If this.condVars Is Nothing Then
+      Set this.condVars = New BetterArray
+      this.condVars.LowerBound = 1
       removeNumber = 0
   End If
 
-  If This.condTests Is Nothing Then
-      Set This.condTests = New BetterArray
-      This.condTests.LowerBound = 1
+  If this.condTests Is Nothing Then
+      Set this.condTests = New BetterArray
+      this.condTests.LowerBound = 1
       removeNumber = 0
   End If
 
   If removeNumber <= 0 Then
-      This.condVars.Clear
-      This.condTests.Clear
+      this.condVars.Clear
+      this.condTests.Clear
   Else
       For counter = 1 To removeNumber
-          This.condVars.pop
-          This.condTests.pop
+          this.condVars.pop
+          this.condTests.pop
       Next
   End If
 End Sub
@@ -216,8 +216,8 @@ Private Property Get CurrentExcelFormula(tabFormObject As IFormulas, _
   If scope = 1 Then
       eform = tabFormObject.ParsedLinelistFormula(useTableName:=True, tablePrefix:=prefix)
   Else
-      If This.condVars Is Nothing Or This.condTests Is Nothing Then Exit Property
-      Set cond = FormulaCondition.Create(This.condVars, This.condTests)
+      If this.condVars Is Nothing Or this.condTests Is Nothing Then Exit Property
+      Set cond = FormulaCondition.Create(this.condVars, this.condTests)
       eform = tabFormObject.ParsedAnalysisFormula(cond, tablePrefix:=prefix)
   End If
 
@@ -268,7 +268,7 @@ Private Sub Add(ByVal formObject As IFormulas)
     Dim colIndex As Long
     Dim varName As String
     Dim headerName As String                     'header Name
-    Dim loName As String                         'List object name
+    Dim LoName As String                         'List object name
     Dim rng As Range
     Dim Wkb As Workbook
     Dim counter As Long
@@ -304,7 +304,7 @@ Private Sub Add(ByVal formObject As IFormulas)
         
         ClearTableConditions
 
-        loName = Switch(spatType = "geo", CurrentLoName(varName, ADMIN & counter), _
+        LoName = Switch(spatType = "geo", CurrentLoName(varName, ADMIN & counter), _
                         spatType = "hf", CurrentLoName(varName, HF))
 
         colIndex = LastColumn()
@@ -343,7 +343,7 @@ Private Sub Add(ByVal formObject As IFormulas)
         Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(2, 3))
 
         'Add A list object table
-        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = LoName
 
       Next
 
@@ -376,7 +376,7 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 'Exposed methods

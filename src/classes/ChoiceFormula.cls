@@ -23,7 +23,7 @@ End Type
 
 
 'Exposed methods
-Private This As TChoiceFormula
+Private this As TChoiceFormula
 
 Public Function Create(ByVal formula As String) As IChoiceFormula
   With New ChoiceFormula
@@ -38,11 +38,11 @@ Public Property Get Self() As IChoiceFormula
 End Property
 
 Public Property Get ChoiceSpecifications() As String
-  ChoiceSpecifications = This.formula
+  ChoiceSpecifications = this.formula
 End Property
 
 Public Property Let ChoiceSpecifications(ByVal formula As String)
-  This.formula = Application.WorksheetFunction.Trim(formula)
+  this.formula = Application.WorksheetFunction.Trim(formula)
 End Property
 
 'Test the validity of the choice formula

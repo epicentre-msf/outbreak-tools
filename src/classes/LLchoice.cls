@@ -21,7 +21,7 @@ Private Type Tchoice
     choiceDataSheet As IDataSheet
 End Type
 
-Private This As Tchoice
+Private this As Tchoice
 
 Private Const listName As String = "list name"
 Private Const LABEL   As String = "label"
@@ -66,11 +66,11 @@ Public Property Get StartColumn() As Long
 End Property
 
 Private Property Get ChoiceData() As IDataSheet
-    Set ChoiceData = This.choiceDataSheet
+    Set ChoiceData = this.choiceDataSheet
 End Property
 
 Friend Property Set ChoiceData(ByVal customDataSheet As IDataSheet)
-    Set This.choiceDataSheet = customDataSheet
+    Set this.choiceDataSheet = customDataSheet
 End Property
 
 'Get the data range

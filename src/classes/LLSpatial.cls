@@ -19,8 +19,8 @@ Private Type TLLSpatial
     sh As Worksheet
 End Type
 
-Private This As TLLSpatial
-Private Const className As String = "LLSpatial"
+Private this As TLLSpatial
+Private Const CLASSNAME As String = "LLSpatial"
 Private Const SPATIALSHEET As String = "spatial_tables__"
 Private Const ADMIN As String = "adm"
 Private Const Concat As String = "concat_"
@@ -44,11 +44,11 @@ Public Property Get Self() As ILLSpatial
 End Property
 
 Public Property Get Wksh() As Worksheet
-  Set Wksh = This.sh
+  Set Wksh = this.sh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-  Set This.sh = sh
+  Set this.sh = sh
 End Property
 
 
@@ -71,13 +71,13 @@ Private Function Exists(ByVal varName As String) As Boolean
   Exists = (Not (listVarsRng.Find(What:=varName, LookAt:=xlPart, MatchCase:=True) Is Nothing))
 End Function
 
-Private Function LoExists(ByVal loName As String) As Boolean
+Private Function LoExists(ByVal LoName As String) As Boolean
   Dim sh As Worksheet
   Dim Lo As ListObject
   Set sh = Wksh()
 
   On Error Resume Next
-    Set Lo = sh.ListObjects(loName)
+    Set Lo = sh.ListObjects(LoName)
   On Error GoTo 0
 
   LoExists = (Not Lo Is Nothing)
@@ -191,7 +191,7 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
   Dim cellRng As Range
   Dim rng As Range
   Dim Lo As ListObject
-  Dim loName As String
+  Dim LoName As String
   Dim adminName As String
   Dim sortRng As Range
   Dim nbRows As Long
@@ -216,10 +216,10 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
     For admincounter = 1 To endCounter
         nbRows = rng.Cells.Count
 
-        loName = IIf(isHF, CurrentLoName(varName, HF), CurrentLoName(varName, ADMIN & admincounter))
+        LoName = IIf(isHF, CurrentLoName(varName, HF), CurrentLoName(varName, ADMIN & admincounter))
         adminName = IIf(isHF, HF, ADMIN & admincounter)
 
-        Set Lo = sh.ListObjects(loName)
+        Set Lo = sh.ListObjects(LoName)
 
         'First cell where to paste the values of the range
         Set cellRng = sh.Range("RNG_PastingCol")
@@ -279,18 +279,18 @@ Private Property Get TopGeoValue(ByVal adminName As String, ByVal orderValue As 
                                  Optional ByVal tabId As String = vbNullString, Optional ByVal concatValue As Byte = 1) As String
   Dim sh As Worksheet
   Dim Lo As ListObject
-  Dim loName As String
+  Dim LoName As String
   Dim varName As String
   Dim rng As Range
   
   Set sh = Wksh()
 
   varName = inputVarName & "_" & tabId
-  loName = CurrentLoName(varName, adminName)
+  LoName = CurrentLoName(varName, adminName)
   
-  If Not LoExists(loName) Then Exit Property
+  If Not LoExists(LoName) Then Exit Property
   
-  Set Lo = sh.ListObjects(loName)
+  Set Lo = sh.ListObjects(LoName)
 
   If concatValue = 1 Then
     Set rng = Lo.ListColumns(1).DataBodyRange()
@@ -305,16 +305,16 @@ End Property
 Private Property Get TopHFValue(ByVal orderValue As Integer, ByVal inputVarName As String, Optional ByVal tabId As String = vbNullString) As String
   Dim sh As Worksheet
   Dim Lo As ListObject
-  Dim loName As String
+  Dim LoName As String
   Dim varName As String
   Dim rng As Range
   Set sh = Wksh()
 
   varName = inputVarName & "_" & tabId
-  loName = CurrentLoName(varName, HF)
+  LoName = CurrentLoName(varName, HF)
 
-  If Not LoExists(loName) Then Exit Property
-  Set Lo = sh.ListObjects(loName)
+  If Not LoExists(LoName) Then Exit Property
+  Set Lo = sh.ListObjects(LoName)
   Set rng = Lo.ListColumns(1).DataBodyRange()
   
   TopHFValue = rng.Cells(orderValue, 1).Value
@@ -330,7 +330,7 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 'Exposed methods

@@ -32,7 +32,7 @@ End Enum
 Public Property Get Dictionary() As ILLdictionary: End Property
 
 'Exposed methods (Seems Handy to use sheetype and table instead of one function)
-Public Function SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = SheetInfoType.SheetInfoSheetType) As String: End Function
+Public Function sheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = SheetInfoType.SheetInfoSheetType) As String: End Function
 
 Public Function Contains(ByVal sheetName As String) As Boolean: End Function
 

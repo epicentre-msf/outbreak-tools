@@ -20,7 +20,7 @@ Implements ICrossTable
 
 Private Type TCrossTable
     specs As ITablesSpecs
-    outputsh As Worksheet
+    OutputSh As Worksheet
     trans As ITranslation
     endrw As Long
     endCol As Long
@@ -28,9 +28,9 @@ Private Type TCrossTable
     tsHeader As String 'Header for time series (to use in to go section)
 End Type
 
-Private This As TCrossTable
+Private this As TCrossTable
 Private Const STANDARDSTARTCOL As Long = 3
-Private Const className As String = "CrossTable"
+Private Const CLASSNAME As String = "CrossTable"
 Private Const NBROWSTIMESERIES As Long = 56
 Private Const COMMANDDEVIDE As String = "DevideByPopulation"
 
@@ -54,35 +54,35 @@ Public Property Get Self() As ICrossTable
 End Property
 
 Public Property Get Wksh() As Worksheet
-    Set Wksh = This.outputsh
+    Set Wksh = this.OutputSh
 End Property
 
 Public Property Set Wksh(ByVal sh As Worksheet)
-    Set This.outputsh = sh
+    Set this.OutputSh = sh
 End Property
 
 Public Property Get Specifications() As ITablesSpecs
-    Set Specifications = This.specs
+    Set Specifications = this.specs
 End Property
 
 Public Property Set Specifications(ByVal specs As ITablesSpecs)
-    Set This.specs = specs
+    Set this.specs = specs
 End Property
 
 Public Property Get trads() As ITranslation
-    Set trads = This.trans
+    Set trads = this.trans
 End Property
 
 Public Property Set trads(ByVal trans As ITranslation)
-    Set This.trans = trans
+    Set this.trans = trans
 End Property
 
 Private Property Get NumberOfColumns() As Long
-    NumberOfColumns = This.nbCols
+    NumberOfColumns = this.nbCols
 End Property
 
 Private Property Let NumberOfColumns(ByVal Col As Long)
-    This.nbCols = Col
+    this.nbCols = Col
 End Property
 
 Private Function RangeExists(ByVal rngName As String) As Boolean
@@ -170,19 +170,19 @@ Private Property Get StartColumn() As Long
 End Property
 
 Private Property Let EndRow(ByVal rw As Long)
-    This.endrw = rw
+    this.endrw = rw
 End Property
 
 Private Property Let EndColumn(ByVal Col As Long)
-    This.endCol = Col
+    this.endCol = Col
 End Property
 
 Private Property Get EndRow() As Long
-    EndRow = This.endrw
+    EndRow = this.endrw
 End Property
 
 Private Property Get EndColumn() As Long
-    EndColumn = This.endCol
+    EndColumn = this.endCol
 End Property
 
 Public Property Get HeaderRange() As Range
@@ -197,11 +197,11 @@ End Property
 
 'Header for each part of the time series
 Private Property Get TimeSeriesHeader() As String
-    TimeSeriesHeader = This.tsHeader
+    TimeSeriesHeader = this.tsHeader
 End Property
 
 Private Property Let TimeSeriesHeader(ByVal headerText As String)
-    This.tsHeader = headerText
+    this.tsHeader = headerText
 End Property
 
 Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean = True, Optional ByVal onlyCategories As Boolean = False) As Range
@@ -1007,14 +1007,14 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
             ElseIf (specs.SpatialTableTypes = "hf") Then
                 Set rng = .Range("HF_DROPDOWN_" & tabId)
-                DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+                DesignFormat.ApplyFormat rng, scope:=LInelistHiddenCell
             End If
             
             'Range for the order (used in the formulas)
             Set rng = .Range("ROW_CATEGORIES_" & tabId).Offset(, -1)
-            DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+            DesignFormat.ApplyFormat rng, scope:=LInelistHiddenCell
             Set rng = rng.Offset(, -1)
-            DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+            DesignFormat.ApplyFormat rng, scope:=LInelistHiddenCell
         End If
 
         'Headers ==============================================================
@@ -1079,14 +1079,14 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                 If tablType = TypeTimeSeries Then
                     Set rng = rng.Offset(, -1)
                     Set rng = .Range(rng.Cells(1, 0), rng.Cells(rng.Rows.Count + 1, 1))
-                    DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+                    DesignFormat.ApplyFormat rng, scope:=LInelistHiddenCell
                     rngTable.Clear
                     rngTable.Push "START_DATE_", "END_DATE_", "VALIDATION_MIN_DATE_", _
                                   "VALIDATION_MAX_DATE_", "MIN_MIN_DATE_", "MAX_MAX_DATE_"
                     For counter = rngTable.LowerBound To rngTable.UpperBound
                         rngName = rngTable.Item(counter) & tabId
                         Set rng = .Range(rngName)
-                        DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+                        DesignFormat.ApplyFormat rng, scope:=LInelistHiddenCell
                         DesignFormat.ApplyFormat rng, scope:=AnalysisDateCell
                     Next
                 End If
@@ -1190,7 +1190,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             rngName = rngTable.Item(counter) & tabId
             If RangeExists(rngName) Then
                 Set rng = .Range(rngName)
-                DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
+                DesignFormat.ApplyFormat rng, scope:=LInelistHiddenCell
             End If
         Next
 
@@ -1252,11 +1252,11 @@ End Sub
 
 'Errors ---------------------------------------------------------------------------------
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 515, className, "Unable to create an instance of the class : " & errorMessage
+    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
 End Sub
 
 Private Sub ThrowExecutionError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Execution Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
 End Sub
 
 Public Sub ICrossTable_AddRows()

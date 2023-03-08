@@ -930,3 +930,93 @@ Err:
 End Sub
 
 
+
+'Selection change Event for updating geo dropdowns
+Public Sub EventSelectionLinelist(ByVal Target As Range)
+
+    Dim targetColumn As Long
+    Dim sh As Worksheet
+    Dim nbOffset As Long
+    Dim hRng As Range
+    Dim calcRng As Range
+    Dim startLine As Long
+    Dim varControl As String
+    Dim tableName As String
+    Dim loAdm2 As ListObject
+    Dim loAdm3 As ListObject
+    Dim loAdm4 As ListObject
+    Dim T_geo As BetterArray
+    Dim geo As ILLGeo
+    Dim adminNames As BetterArray
+    
+
+    'On Error GoTo errHand
+    Set sh = ActiveSheet
+    tableName = sh.Cells(1, 4).Value
+    Set hRng = sh.ListObjects(1).HeaderRowRange
+
+    targetColumn = Target.Column
+    startLine = sh.Range(tableName & "_START").Row
+    varControl = sh.Cells(startLine - 5, targetColumn).Value
+    Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
+    Set adminNames = New BetterArray
+    adminNames.LowerBound = 1
+
+    If Target.Row < startLine Then Exit Sub
+        
+    nbOffset = Target.Row - hRng.Row
+    Set calcRng = hRng.Offset(nbOffset)
+    calcRng.calculate
+
+    If (varControl <> "geo2") And _
+     (varControl <> "geo3") And (varControl <> "geo4") Then Exit Sub
+
+    Set loAdm2 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin2")
+    Set loAdm3 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin3")
+    Set loAdm4 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin4")
+    
+    Select Case varControl
+       Case "geo2"
+        'adm1 has been modified, we will correct and set validation to adm2
+        BeginWork xlsapp:=Application
+        If Target.Value <> vbNullString Then
+            DeleteLoDataBodyRange loAdm2
+          'Filter on adm1
+           Set T_geo = geo.GeoLevel(LevelAdmin2, CustomTypeGeo, Target.Offset(, -1).Value)
+           'Build the validation list for adm2
+            T_geo.ToExcelRange loAdm2.Range.Cells(2, 1)
+            T_geo.Clear
+        End If
+        EndWork xlsapp:=Application
+        
+       Case "geo3"
+        'Adm2 has been modified, we will correct and filter adm3
+         BeginWork xlsapp:=Application
+         If Target.Value <> vbNullString Then
+            DeleteLoDataBodyRange loAdm3
+            adminNames.Push Target.Offset(, -2).Value, Target.Offset(, -1).Value
+            Set T_geo = geo.GeoLevel(LevelAdmin3, CustomTypeGeo, adminNames)
+            T_geo.ToExcelRange loAdm3.Range.Cells(2, 1)
+            T_geo.Clear
+         End If
+         EndWork xlsapp:=Application
+      
+       Case "geo4"
+        'Adm 3 has been modified, correct and filter adm4
+         BeginWork xlsapp:=Application
+         
+         If Target.Value <> vbNullString Then
+            DeleteLoDataBodyRange loAdm4
+            adminNames.Push Target.Offset(, -3).Value, Target.Offset(, -2).Value, Target.Offset(, -1).Value
+            'Take the adm4 table
+             Set T_geo = geo.GeoLevel(LevelAdmin4, CustomTypeGeo, adminNames)
+             T_geo.ToExcelRange loAdm4.Range.Cells(2, 1)
+             T_geo.Clear
+         End If
+        EndWork xlsapp:=Application
+       
+       End Select
+errHand:
+End Sub
+
+

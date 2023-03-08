@@ -188,9 +188,9 @@ Sub GenerateData()
     'On Error GoTo ErrorBuildingLLManage
 
     currSheetName = dict.DataRange("sheet name").Cells(1, 1).Value
-    If llshs.SheetInfo(currSheetName) = "vlist1D" Then
+    If llshs.sheetInfo(currSheetName) = "vlist1D" Then
         Set buildingSheet = Vlist.Create(currSheetName, ll)
-    ElseIf llshs.SheetInfo(currSheetName) = "hlist2D" Then
+    ElseIf llshs.sheetInfo(currSheetName) = "hlist2D" Then
         Set buildingSheet = Hlist.Create(currSheetName, ll)
     End If
 
@@ -212,9 +212,9 @@ Sub GenerateData()
         
         currSheetName = buildingSheet.NextSheet()
 
-        If llshs.SheetInfo(currSheetName) = "vlist1D" Then
+        If llshs.sheetInfo(currSheetName) = "vlist1D" Then
             Set buildingSheet = Vlist.Create(currSheetName, ll)
-        ElseIf llshs.SheetInfo(currSheetName) = "hlist2D" Then
+        ElseIf llshs.sheetInfo(currSheetName) = "hlist2D" Then
             Set buildingSheet = Hlist.Create(currSheetName, ll)
         End If
         

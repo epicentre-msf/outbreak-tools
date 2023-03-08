@@ -23,8 +23,8 @@ Private Type TButton
     scope As ButtonScope
 End Type
 
-Private This As TButton
-Private Const className As String = "Buttons"
+Private this As TButton
+Private Const CLASSNAME As String = "Buttons"
 Private Const BUTTONWIDTH As Long = 105
 Private Const BUTTONHEIGHT As Long = 30
 Private Const BUTTONGAP As Long = 5
@@ -48,27 +48,27 @@ Public Property Get Self() As IButtons
 End Property
 
 Public Property Get OutputRange() As Range
-    Set OutputRange = This.rng
+    Set OutputRange = this.rng
 End Property
 
 Public Property Set OutputRange(ByVal rng As Range)
-    Set This.rng = rng
+    Set this.rng = rng
 End Property
 
 Public Property Get Name() As String
-    Name = This.shapename
+    Name = this.shapename
 End Property
 
 Public Property Let Name(ByVal nm As String)
-    This.shapename = nm
+    this.shapename = nm
 End Property
 
 Public Property Let ShapeScope(ByVal scope As ButtonScope)
-    This.scope = scope
+    this.scope = scope
 End Property
 
 Public Property Get ShapeScope() As ButtonScope
-    ShapeScope = This.scope
+    ShapeScope = this.scope
 End Property
 
 Private Property Get ShapeExists() As Boolean
@@ -171,7 +171,7 @@ End Sub
 
 'Errors
 Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, className, "Error : " & errorMessage
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 'Exposed methods
