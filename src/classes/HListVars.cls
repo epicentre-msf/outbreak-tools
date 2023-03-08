@@ -348,11 +348,11 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
 
     'Control
     cellRng.Offset(-5).Value = varControl
-    design.ApplyFormat cellRng.Offset(-5), scope:=LInelistHiddenCell
+    design.ApplyFormat cellRng.Offset(-5), scope:=LinelistHiddenCell
 
     'List auto origin
     cellRng.Offset(-6).Value = varListAutoOrigin
-    design.ApplyFormat cellRng.Offset(-6), scope:=LInelistHiddenCell
+    design.ApplyFormat cellRng.Offset(-6), scope:=LinelistHiddenCell
 
     'Geo labels
     If (InStr(1, varControl, "geo") > 0) Or (varControl = "hf") Or _
