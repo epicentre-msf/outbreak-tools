@@ -3,7 +3,6 @@
     11 ./src/modules/LinelistAnalysisChange.bas
     17 ./src/modules/DesignerTranslation.bas
     19 ./src/modules/LinelistWorkbook.bas
-    27 ./src/modules/HlistChange.bas
     30 ./src/modules/TestAnalysisOutput.bas
     31 ./src/modules/TestChoiceFormula.bas
     31 ./src/modules/TestLLSpatial.bas
@@ -31,6 +30,7 @@
     32 ./src/modules/TestVListVars.bas
     32 ./src/modules/TestVlist.bas
     32 ./src/modules/Testmain.bas
+    37 ./src/modules/HlistChange.bas
     48 ./src/modules/TestLinelistSpecs.bas
     49 ./src/modules/TestFormulaData.bas
     55 ./src/modules/TestFormulas.bas
@@ -54,6 +54,6 @@
    498 ./src/modules/LinelistExport.bas
    526 ./src/modules/LinelistCustomFunctions.bas
    802 ./src/modules/Helpers.bas
-   932 ./src/modules/LinelistEvents.bas
+  1022 ./src/modules/LinelistEvents.bas
   1272 ./src/modules/LinelistMigration.bas
-  8272 total
+  8372 total
