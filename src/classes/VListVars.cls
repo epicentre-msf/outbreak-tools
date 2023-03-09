@@ -158,7 +158,7 @@ Private Sub AddType()
         If varFormat = vbNullString Then
             
             'Default format if there is nothing
-            formatText = IIf(varTypes = "decimal", "#,##0.00;-#,##0.00;0.00;@", "#,##0;-#,##0;0;@")
+            formatText = IIf(varTypes = "decimal", "#,##0.00;-#,##0.00;0.00;@", "###0;-###0;0;@")
 
         'Other formats
         ElseIf varFormat = "round0" Then
