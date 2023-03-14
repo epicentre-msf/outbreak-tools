@@ -9,7 +9,7 @@
 [![Download Latest version of setup file](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/setup_file.svg)](https://github.com/epicentre-msf/outbreak-tools-setup/raw/main/setup.xlsb)
 [![Download Latest stable version of the designer](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/stable_designer.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/main/designer.xlsb)
 [![Download Latest development version of the designer](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/dev_designer.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/dev/src/bin/designer_dev.xlsb)
-[![Documentation](https://github.com/epicentre-msf/outbreak-tools/raw/users/y-amevoin/src/imgs/docs.svg)](https://epicentre-msf.github.io/outbreak-tools/)
+[![Documentation](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/docs.svg)](https://epicentre-msf.github.io/outbreak-tools/)
 </p>
 </div>
 
