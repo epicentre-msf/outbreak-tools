@@ -550,6 +550,12 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
   Dim tabPrefLabel As BetterArray
   Dim plotTitle As String
 
+  'Worksheets
+  Set sh = Wksh()
+  Set outsh = OutputSh(AnalysisScopeTimeSeries)
+  
+  If IsEmpty(outsh.Range("RNG_HasTable")) Then Exit Sub
+  
   'Initialize the arrays
   Set grBAinput = New BetterArray '
   Set grBAoutput = New BetterArray
@@ -560,12 +566,10 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
   Set tabLabel = New BetterArray
   Set tabColLabel = New BetterArray
   Set tabPrefLabel = New BetterArray
+    
   
-  
-  'ListObjects
-  Set sh = Wksh()
+  'ListObjects and linelist data
   Set lData = LinelistData()
-  Set outsh = OutputSh(AnalysisScopeTimeSeries)
   'Where to start the graphs on time series
   Set cellRng = outsh.Range("START_GRAPHS_TS")
   Set grLo = sh.ListObjects(graphLoName)
@@ -573,6 +577,10 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
   Set grTitleLo = sh.ListObjects(graphTitleLoName)
   Set trads = TransObject()
   Set design = DesignFormat()
+
+  If (grLo.DataBodyRange Is Nothing) Or _
+  (grTitleLo.DataBodyRange Is Nothing) Then _
+  Exit Sub
 
   grBAinput.Push grLo, tabLo, grTitleLo
 
@@ -665,8 +673,8 @@ Private Sub WriteAnalysis()
    AddCommands scope:=scope
 
    'Hide the output sheet if required
-   If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
    pass.Protect "_active", True
+   If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
 
    'Time Series Analysis Worksheet =============================================
   scope = AnalysisScopeTimeSeries
@@ -687,8 +695,8 @@ Private Sub WriteAnalysis()
   'Add the commands
   AddCommands scope:=scope
 
-  If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
   pass.Protect "_active", True
+  If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
 
   'Spatial Analysis Worksheet ==================================================
   scope = AnalysisScopeSpatial
@@ -705,10 +713,8 @@ Private Sub WriteAnalysis()
   AddGoTo cellRng:=cellRng, scope:="section"
   AddCommands scope:=scope
   
-  If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
-
   pass.Protect "_active", True
-
+  If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
   Exit Sub
 
 ErrHand:
