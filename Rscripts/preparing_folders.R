@@ -1,8 +1,8 @@
 #
 source("./Rscripts/update_designer.R")
 
-# update from codes
-update_designer()
+# update from codes and update the stable file (on dev branch)
+update_designer(update_stable = 1)
 
 # update by adding the stable
 #update_designer(update_stable = 1)

@@ -12,11 +12,12 @@
 
 update_designer  <- function(update_stable = 0) {
     #move previous version of my designer
-   file.copy(from = "./designer_aky.xlsb",
+   file.copy(from = "./src/bin/designer_aky.xlsb",
              to = "./Rscripts/", overwrite = TRUE)
+
     # move back and overwrite
     file.copy(from = "./Rscripts/designer_aky.xlsb",
-             to = "./designer_dev.xlsb", overwrite = TRUE)
+             to = "./src/bin/designer_dev.xlsb", overwrite = TRUE)
     # update the stable version if needed
     if (update_stable == 1) {
        # previous stable version
@@ -26,14 +27,15 @@ update_designer  <- function(update_stable = 0) {
          file.copy(from = "./Rscripts/designer_aky.xlsb",
              to = "./designer.xlsb", overwrite = TRUE)
     }
+    
     # revert back previous stable designer due to corrupt files.
     if (update_stable == 2) {
          file.copy(from = "./Rscripts/designer_prev.xlsb",
              to = "./designer.xlsb", overwrite = TRUE)
          file.copy(from = "./Rscripts/designer_prev.xlsb",
-                 to = "./designer_dev.xlsb", overwrite = TRUE)
+                 to = "./src/bin/designer_dev.xlsb", overwrite = TRUE)
          file.copy(from = "./Rscripts/designer_prev.xlsb",
-                 to = "./designer_aky.xlsb", overwrite = TRUE)
+                 to = "./src/bin/designer_aky.xlsb", overwrite = TRUE)
     }
 }
 
