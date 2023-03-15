@@ -13,6 +13,8 @@
 </p>
 </div>
 
+[:point_right: Setup github Repository](https://github.com/epicentre-msf/outbreak-tools-setup)
+
 #### How it works?
 
 In three steps:
