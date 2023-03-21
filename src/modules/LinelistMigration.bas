@@ -204,11 +204,9 @@ Function TestImportLanguage(WkbImp As Workbook) As Boolean
             'There is no language at all in the metadata, as the user if he wants to quit
             Quit = MsgBox(TranslateLLMsg("MSG_NoLanguage"), vbExclamation + vbYesNo, TranslateLLMsg("MSG_Imports"))
 
-            If Quit = vbYes Then
-
+            If Quit = vbNo Then
                 TestImportLanguage = False
                 Exit Function
-
             End If
 
         End If
