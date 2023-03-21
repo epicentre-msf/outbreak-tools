@@ -130,8 +130,8 @@ Private Sub AddType()
 
     Set cellRng = VarRange()
 
-    varTypes = LCase(Application.WorksheetFunction.Trim(ValueOf("type")))
-    varFormat = LCase(Application.WorksheetFunction.Trim(ValueOf("format")))
+    varTypes = LCase(Application.WorksheetFunction.Trim(ValueOf("variable type")))
+    varFormat = LCase(Application.WorksheetFunction.Trim(ValueOf("variable format")))
 
 
     'Find the format depending on the Types and format
@@ -182,7 +182,7 @@ Private Sub AddType()
             formatText = "#,##0.00 $;-#,##0.00 $;0.00 $;@"
 
         ElseIf varFormat = "dollars" Then
-            
+
             formatText = "[$$-en-US] #,##0.00;[$$-en-US] -#,##0.00;[$$-en-US] 0.00;@"
 
         ElseIf varFormat <> "text" Then
@@ -458,7 +458,7 @@ Private Sub AddValidation()
     Dim excelForm2 As Variant
     Dim cellRng As Range
 
-    varTypes = ValueOf("type")
+    varTypes = ValueOf("variable type")
     varMin = ValueOf("min")
     varMax = ValueOf("max")
     varAlert = ValueOf("alert")

@@ -323,18 +323,18 @@ Private Sub Prepare()
 
     'Import the dictionary data
     Set sh = inpWkb.Worksheets(DICTIONARYSHEET)
-    dict.Import sh, fromStartRow:=4, fromStartcol:=1
+    dict.Import sh, fromStartRow:=5, fromStartcol:=1
 
     'Import the choice data
     Set sh = inpWkb.Worksheets(CHOICESSHEET)
-    choi.Import sh, fromStartRow:=2, fromStartcol:=1
+    choi.Import sh, fromStartRow:=4, fromStartcol:=1
 
     'Import the translations
     trans.ImportTranslation inpWkb
 
     'Import the Exports specifications from the setup
     Set sh = inpWkb.Worksheets(EXPORTSHEET)
-    expobj.ImportSpecs sh, 1, 1
+    expobj.ImportSpecs sh, 4, 1
     
     'Import the analysis
     Set sh = inpWkb.Worksheets(ANALYSISSPECSSHEET)
