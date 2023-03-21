@@ -119,7 +119,7 @@ Public Const C_sChoiHeaderLabShort      As String = "label short"
 
 Public Const C_sExportActive            As String = "active"
 Public Const C_sExportInactive          As String = "inactive"
-Public Const C_sExportHeaderExport      As String = "export"
+Public Const C_sExportHeaderExport      As String = "export number"
 Public Const C_sExportHeaderLabelButton As String = "label button"
 Public Const C_sExportHeaderPassword    As String = "password"
 Public Const C_sExportHeaderStatus      As String = "status"
