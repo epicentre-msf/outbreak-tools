@@ -105,9 +105,10 @@ Private Sub ClassArraysInitialize()
 
     'colnames of the dictionary
     DICTIONARYCOLUMNS.Push "variable name", "main label", "sub label", "note", "sheet name", _
-                           "sheet type", "main section", "sub section", "status", "personal identifier", "type", "format", _
+                           "sheet type", "main section", "sub section", "status", "personal identifier", "variable type", "variable format", _
                             "control", "control details", "unique", _
-                           "export 1", "export 2", "export 3", "export 4", "export 5", "min", "max", "alert", "message", "table name", "column index", _
+                           "export 1", "export 2", "export 3", "export 4", "export 5", "min", "max", "alert", "message", "formatting condition", _ 
+                           "formatting values", "lock cells", "table name", "column index", _
                            "list auto", "visibility"
 End Sub
 

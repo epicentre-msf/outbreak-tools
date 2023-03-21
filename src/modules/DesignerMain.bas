@@ -7,7 +7,7 @@ Public bGeobaseIsImported As Boolean
 
 'LOADING FILES AND FOLDERS ============================================================================================================================================================================
 Private Function TranslateMsg(ByVal msgCode As String)
-    
+
     'Translate a message in the designer
     Dim destrans As IDesTranslation
     Dim trads As ITranslation
@@ -24,26 +24,26 @@ Private Sub ImportLang()
     Dim Wkb As Workbook
     Dim Lo As ListObject
     Dim langTable As BetterArray
- 
+
     inPath = SheetMain.Range("RNG_PathDico").Value
 
     On Error Resume Next
     BeginWork xlsapp:=Application
-    
+
     'Set Events to false to avoid
     Application.EnableEvents = False
     Set Wkb = Workbooks.Open(inPath)
-    
+
     On Error GoTo 0
-    
+
     If Wkb Is Nothing Then Exit Sub
-    
+
     On Error Resume Next
     Set Lo = Wkb.Worksheets("Translations").ListObjects(1)
     On Error GoTo 0
- 
+
     If Lo Is Nothing Then Exit Sub
- 
+
     Set langTable = New BetterArray
     langTable.FromExcelRange Lo.HeaderRowRange
     langTable.ToExcelRange ThisWorkbook.Worksheets("DesignerTranslation").Range("T_LanguageDictionary").Cells(1, 1)
@@ -51,18 +51,18 @@ Private Sub ImportLang()
 
     'Add the language to LLTranslations
     SheetLLTranslation.Range("RNG_DictionaryLanguage").Value = SheetMain.Range("RNG_LangSetup").Value
- 
+
     Wkb.Close savechanges:=False
-    
+
     Application.EnableEvents = True
- 
+
 End Sub
 
 'Loading the Dictionnary File _________________________________________________________________________________________________________________________________________________________________________
 Sub LoadFileDic()
 
     BeginWork xlsapp:=Application
-    
+
     Dim io As IOSFiles
     Set io = OSFiles.Create()
 
@@ -117,9 +117,9 @@ End Sub
 Sub LoadGeoFile()
     Dim io As IOSFiles
     Set io = OSFiles.Create()
-    
+
     io.LoadFile "*.xlsx"
-    
+
     If io.HasValidFile Then
         SheetMain.Range("RNG_PathGeo").Value = io.File()
     Else
@@ -130,7 +130,7 @@ End Sub
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sub GenerateData()
-    
+
     Dim ll As ILinelist
     Dim lData As ILinelistSpecs
     Dim currSheetName As String
@@ -150,11 +150,10 @@ Sub GenerateData()
 
     Application.Cursor = xlWait
     Application.EnableEvents = False
-    
+
     Set wb = ThisWorkbook
     Set lData = LinelistSpecs.Create(wb)
     Set dict = lData.Dictionary() 'Dictionary
-    Set llshs = LLSheets.Create(dict) 'The worksheets object of the dictionary
     Set mainobj = lData.MainObject() 'The main object is an object for dealing with the main sheet interface
     Set llana = lData.Analysis() 'Linelist analysis object
 
@@ -172,6 +171,7 @@ Sub GenerateData()
 
     'Preparing the linelist file
     Set ll = Linelist.Create(lData)
+    Set llshs = LLSheets.Create(dict) 'The worksheets object of the dictionary
 
     mainobj.AddInfo desTrads, "MSG_PreparLL"
 
@@ -179,7 +179,7 @@ Sub GenerateData()
     'linelist class instead of using functions here.
 
     ll.Prepare
-    
+
     mainobj.UpdateStatus (10)
 
     'Should add Error management when something goes wrong
@@ -195,7 +195,7 @@ Sub GenerateData()
     End If
 
     If buildingSheet Is Nothing Then Exit Sub
-    
+
     mainobj.UpdateStatus (15)
     statusValue = 15
     nbOfSheets = dict.UniqueValues("sheet name").Length
@@ -205,11 +205,11 @@ Sub GenerateData()
     buildingSheet.Build
     statusValue = statusValue + increment
     mainobj.UpdateStatus statusValue
-    
+
 
     'Loop through the other sheets and build them also
     Do While (buildingSheet.NextSheet() <> vbNullString)
-        
+
         currSheetName = buildingSheet.NextSheet()
 
         If llshs.sheetInfo(currSheetName) = "vlist1D" Then
@@ -217,11 +217,11 @@ Sub GenerateData()
         ElseIf llshs.sheetInfo(currSheetName) = "hlist2D" Then
             Set buildingSheet = Hlist.Create(currSheetName, ll)
         End If
-        
+
         'If you still remain on the same sheet exit (something weird happened)
         If currSheetName = buildingSheet.NextSheet() Then Exit Do
         buildingSheet.Build
-        
+
         statusValue = statusValue + increment
         mainobj.UpdateStatus statusValue
     Loop
@@ -237,13 +237,13 @@ Sub GenerateData()
 
     Application.Cursor = xlDefault
     Application.EnableEvents = True
-    
+
     'Open the linelist
     outPath = mainobj.OutputPath & Application.PathSeparator & mainobj.LinelistName & ".xlsb"
     If MsgBox(TranslateMsg("MSG_OpenLL") & " " & outPath & " ?", vbQuestion + vbYesNo, "Linelist") = vbYes Then OpenLL
 
     Exit Sub
-    
+
 ErrorBuildingLLManage:
         Application.Cursor = xlDefault
         Application.EnableEvents = True
@@ -254,7 +254,7 @@ ErrorBuildingLLManage:
 ErrorLinelistSpecsManage:
         Application.Cursor = xlDefault
         Application.EnableEvents = True
-        
+
         lData.ErrorManage
         Exit Sub
 End Sub
@@ -262,8 +262,8 @@ End Sub
 
 'Adding some controls before generating the linelist  =================================================================================================================================================
 Public Sub Control()
-    
-  
+
+
     Dim mainobj As IMain
     Dim desTrads As IDesTranslation
     Dim trads As ITranslation
@@ -272,50 +272,50 @@ Public Sub Control()
 
     'Put every range in white before the control
     Call SetInputRangesToWhite
-    
+
     'Create Main object
     Set wb = ThisWorkbook
     Set sh = wb.Worksheets("Main")
     Set mainobj = Main.Create(sh)
-    
+
     'Create the designer translation object
     Set sh = wb.Worksheets("DesignerTranslation")
     Set desTrads = DesTranslation.Create(sh)
     Set trads = desTrads.TransObject(TranslationOfMessages)
-    
+
     'Check readiness of the linelist
     mainobj.CheckReadiness desTrads
-    
+
     'If the main sheet is not ready exit the sub
     If Not mainobj.Ready Then Exit Sub
 
     If Dir(SheetMain.Range("RNG_LLDir").Value & _
            Application.PathSeparator & _
            SheetMain.Range("RNG_LLName").Value & ".xlsb") <> "" Then
-       
+
         SheetMain.Range("RNG_Edition").Value = trads.TranslatedValue("MSG_Correct") & ": " _
                                                                                   & SheetMain.Range("RNG_LLName").Value & ".xlsb " _
                                                                                   & trads.TranslatedValue("MSG_Exists")
-                                                
+
         SheetMain.Range("RNG_Edition").Interior.color = RGB(235, 232, 232)
-        
+
         If MsgBox(SheetMain.Range("RNG_LLName").Value & ".xlsb " & _
                   trads.TranslatedValue("MSG_Exists") & chr(10) & _
                   trads.TranslatedValue("MSG_Question"), vbYesNo, _
                   trads.TranslatedValue("MSG_Title")) = vbNo Then
-            
+
             SheetMain.Range("RNG_LLName").Value = ""
             SheetMain.Range("RNG_LLName").Interior.color = RGB(252, 228, 214)
             Exit Sub
         End If
-        
+
     Else
         SheetMain.Range("RNG_Edition").Value = trads.TranslatedValue("MSG_Correct")
     End If
-    
+
     'Generate all the data
     GenerateData
-    
+
 End Sub
 
 'OPEN THE GENERATED LINELIST ==========================================================================================================================================================================

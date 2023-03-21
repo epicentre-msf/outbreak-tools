@@ -134,8 +134,8 @@ Private Sub AddType()
 
     Set cellRng = VarRange()
 
-    varTypes = LCase(Application.WorksheetFunction.Trim(ValueOf("type")))
-    varFormat = LCase(Application.WorksheetFunction.Trim(ValueOf("format")))
+    varTypes = LCase(Application.WorksheetFunction.Trim(ValueOf("variable type")))
+    varFormat = LCase(Application.WorksheetFunction.Trim(ValueOf("variable format")))
 
     'Find the format depending on the Types and format
     Select Case varTypes
@@ -399,7 +399,7 @@ Private Sub AddValidation()
     Dim excelForm2 As Variant
     Dim cellRng As Range
 
-    varTypes = ValueOf("type")
+    varTypes = ValueOf("variable type")
     varMin = ValueOf("min")
     varMax = ValueOf("max")
     varAlert = ValueOf("alert")
