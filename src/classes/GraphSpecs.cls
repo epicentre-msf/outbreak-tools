@@ -16,6 +16,11 @@ Attribute VB_Exposed = False
 Option Explicit
 Implements IGraphSpecs
 
+'Constants for names of tables in range specs
+Private Const TABONTIMESERIES = "time series analysis"
+Private Const TABONGRAPHTIMESERIES = "graph on time series"
+Private Const TABONTITLEGRAPHSTIMESERIES = "labels for time series graphs"
+
 Public Enum GraphSpecsType
     GraphTypeSimple = 1
     GraphTypeComplex = 2
@@ -113,20 +118,20 @@ Private Sub CheckSpecifications(ByVal loTable As BetterArray)
     'Test for graph title
     Set rng = graphLo.HeaderRowRange()
     titleVal = LCase(Application.WorksheetFunction.Trim(rng.Cells(-1, 1).Value))
-    If titleVal <> "graph on time series" Then _
+    If titleVal <> TABONGRAPHTIMESERIES Then _
     ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table, and then title table. No graph table found the title of first table is: " & titleVal
   
     Set tabLo = loTable.Item(loTable.LowerBound + 1)
     Set rng = tabLo.HeaderRowRange()
     titleVal = LCase(Application.WorksheetFunction.Trim(rng.Cells(-1, 1).Value))
-    If titleVal <> "time series analysis" Then _
+    If titleVal <> TABONTIMESERIES Then _
     ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table and then title table. No time series table found the title second table is: " & titleVal
 
     Set titleLo = loTable.Item(loTable.LowerBound + 2)
     Set rng = titleLo.HeaderRowRange()
 
     titleVal = LCase(Application.WorksheetFunction.Trim(rng.Cells(-1, 1).Value))
-    If titleVal <> "labels for graphs on time series" Then _
+    If titleVal <> TABONTITLEGRAPHSTIMESERIES Then _
     ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table and then title table. No title of graph table found the title of the third table is: " & titleVal
 
 End Sub
