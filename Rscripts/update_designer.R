@@ -4,7 +4,7 @@
 
 # source can take two values: Codes or Github:
 
-# If update is done from github, will just update the 
+# If update is done from github, will just update the
 # designer_aky file with designer file
 
 # If update is done from the source, will just update the
@@ -27,7 +27,7 @@ update_designer  <- function(update_stable = 0) {
          file.copy(from = "./Rscripts/designer_aky.xlsb",
              to = "./designer.xlsb", overwrite = TRUE)
     }
-    
+
     # revert back previous stable designer due to corrupt files.
     if (update_stable == 2) {
          file.copy(from = "./Rscripts/designer_prev.xlsb",
