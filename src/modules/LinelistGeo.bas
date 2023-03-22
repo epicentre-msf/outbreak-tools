@@ -32,14 +32,14 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
     Set T_HistoHF = New BetterArray
     Set transValue = New BetterArray
     Set sh = ThisWorkbook.Worksheets("Geo")
-    
+
     On Error GoTo ErrLoadGeo
     Set geo = LLGeo.Create(sh)
 
     BeginWork xlsapp:=Application
-        
+
     With sh
-    
+
         Select Case iGeoType
             'Load Geo informations
         Case 0
@@ -48,15 +48,15 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
             F_Geo.LBL_Adm2.Caption = .ListObjects("T_ADM4").HeaderRowRange.Item(2).Value
             F_Geo.LBL_Adm3.Caption = .ListObjects("T_ADM4").HeaderRowRange.Item(3).Value
             F_Geo.LBL_Adm4.Caption = .ListObjects("T_ADM4").HeaderRowRange.Item(4).Value
-                
+
             DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin4")
             DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin3")
             DeleteLoDataBodyRange ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin2")
-    
+
             'Before doing the whole all thing, we need to test if the T_Adm data is empty or not
-                
+
             If (Not .ListObjects("T_ADM4").DataBodyRange Is Nothing) Then
-                    
+
                 'T_Adm4.FromExcelRange .ListObjects("T_ADM4").DataBodyRange
                 Set transValue = geo.GeoLevel(LevelAdmin1, CustomTypeGeo)
                 [F_Geo].[LST_Adm1].List = transValue.Items
@@ -65,65 +65,65 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
                 '------ Once the concat is created, add it to the list in the form
                 [F_Geo].LST_ListeAgre.List = T_Concat.Items
             End If
-    
+
             'Historic for geographic data and facility data
             If Not .ListObjects(C_sTabHistoGeo).DataBodyRange Is Nothing Then
                 T_HistoGeo.FromExcelRange .ListObjects(C_sTabHistoGeo).DataBodyRange
                 [F_Geo].LST_Histo.List = T_HistoGeo.Items
             End If
-    
+
             [F_Geo].FRM_Facility.Visible = False
             [F_Geo].FRM_Geo.Visible = True
             [F_Geo].LBL_Fac1.Visible = False
             [F_Geo].LBL_Geo1.Visible = True
-    
+
         Case 1
             'Adding caption for each admnistrative levels in the form of the health facility
             F_Geo.LBL_Adm1F.Caption = .ListObjects("T_HF").HeaderRowRange.Item(4).Value
             F_Geo.LBL_Adm2F.Caption = .ListObjects("T_HF").HeaderRowRange.Item(3).Value
             F_Geo.LBL_Adm3F.Caption = .ListObjects("T_HF").HeaderRowRange.Item(2).Value
             F_Geo.LBL_Adm4F.Caption = .ListObjects("T_HF").HeaderRowRange.Item(1).Value
-    
+
             'Now health facility ----------------------------------------------------------------------------------------------------------
             If (Not .ListObjects("T_HF").DataBodyRange Is Nothing) Then
-    
+
                 transValue.Clear
                 'unique admin 1
                 transValue.FromExcelRange .ListObjects("T_HF").ListColumns(4).DataBodyRange
                 Set transValue = GetUniqueBA(transValue)
                 ' ----- Fill the list of the admins with the unique values of adm1
                 [F_Geo].[LST_AdmF1].List = transValue.Items
-                
+
                 T_ConcatHF.FromExcelRange .ListObjects("T_HF").ListColumns("hf_concat").DataBodyRange
                 T_ConcatHF.Sort
                 '---- Once the concat is created, add it to the HF form using the list for the concat part
                 [F_Geo].LST_ListeAgreF.List = T_ConcatHF.Items
             End If
-    
+
             'Historic HF
             If Not .ListObjects(C_sTabHistoHF).DataBodyRange Is Nothing Then
                 T_HistoHF.FromExcelRange .ListObjects(C_sTabHistoHF).DataBodyRange
                 [F_Geo].LST_HistoF.List = T_HistoHF.Items
             End If
-    
+
             [F_Geo].FRM_Facility.Visible = True
             [F_Geo].FRM_Geo.Visible = False
             [F_Geo].LBL_Fac1.Visible = True
             [F_Geo].LBL_Geo1.Visible = False
-    
+
         End Select
     End With
-        
-         
+
+
     EndWork xlsapp:=Application
-    
+
     [F_Geo].TXT_Msg.Value = vbNullString
     [F_Geo].Show
 
     Exit Sub
 
 ErrLoadGeo:
-    
+
     MsgBox TranslateLLMsg("MSG_ErrGeo"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
     EndWork xlsapp:=Application
 
@@ -291,7 +291,7 @@ Sub ShowLstF4(sAdm3 As String)
 
     'Use the cursor to hide some working steps
     Application.Cursor = xlNorthwestArrow
-    
+
     Set T_Aff = geo.GeoLevel(LevelAdmin4, CustomTypeHF, adminNames)
 
     [F_Geo].TXT_Msg.Value = [F_Geo].LST_AdmF3.Value & " | " & [F_Geo].LST_AdmF2.Value & " | " & [F_Geo].LST_AdmF1.Value
@@ -327,7 +327,7 @@ End Sub
 Sub SearchValue(ByVal sSearchedValue As String)
     Dim T_result As BetterArray
     Set T_result = New BetterArray
-    Dim i As Integer
+    Dim i As Long
 
 
 
@@ -359,7 +359,7 @@ End Sub
 
 Sub SeachHistoValue(sSearchedValue As String)
     Dim T_result As BetterArray
-    Dim i As Integer
+    Dim i As Long
 
     If Len(sSearchedValue) >= 3 Then
         Set T_result = New BetterArray
@@ -387,7 +387,7 @@ End Sub
 
 Sub SearchValueF(sSearchedValue As String)
     Dim T_result As BetterArray
-    Dim i As Integer
+    Dim i As Long
 
     If Len(sSearchedValue) >= 3 Then
         Set T_result = New BetterArray
@@ -416,7 +416,7 @@ End Sub
 Sub SeachHistoValueF(sSearchedValue As String)
 
     Dim T_result As BetterArray
-    Dim i As Integer
+    Dim i As Long
 
     If Len(sSearchedValue) >= 3 Then
         i = 1
@@ -446,7 +446,7 @@ End Sub
 ' This function reverses a string using the | as separator, like in the final selection of the
 ' Health facility form.
 Function ReverseString(sChaine As String)
-    Dim i As Integer
+    Dim i As Long
     Dim T_temp As BetterArray
     Set T_temp = New BetterArray
     T_temp.LowerBound = 1
@@ -464,7 +464,7 @@ End Function
 
 Sub ClearOneHistoricGeobase(iGeoType As Byte)
     Dim WkshGeo As Worksheet
-    Dim ShouldDelete As Integer
+    Dim ShouldDelete As Long
 
     Set WkshGeo = ThisWorkbook.Worksheets(C_sSheetGeo)
 
