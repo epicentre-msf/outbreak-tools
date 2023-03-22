@@ -53,7 +53,7 @@ Private Const CLASSNAME As String = "GraphSpecs"
 'Second one is to give a BetterArray of two listObjects, the output sheet and the linelist Data (For graphs for time series)
 
 Public Function Create(ByVal tabl As ICrossTable) As IGraphSpecs
-  
+
     If tabl Is Nothing Then ThrowErrorUnableInstanciate "Table does not exist"
     If tabl.Specifications.TableType = TypeTimeSeries Then
         ThrowErrorUnableInstanciate "Simple form instanciations are only for non time series table. For time series, use long one"
@@ -73,7 +73,7 @@ End Function
 Public Function CreateRangeSpecs(ByVal loTable As BetterArray, ByVal OutputSh As Worksheet, ByVal lData As ILinelistSpecs) As IGraphSpecs
     'loTable is a table of two listObjects, one for the graphs, and another for the tables.
     'The first table of the list object is the graph table, the second table of the listObject is the list of tables
-    
+
     CheckSpecifications loTable
     If lData Is Nothing Then ThrowErrorUnableInstanciate "No linelist data provided"
     If OutputSh Is Nothing Then ThrowErrorUnableInstanciate "No OutputSheet provided"
@@ -120,7 +120,7 @@ Private Sub CheckSpecifications(ByVal loTable As BetterArray)
     titleVal = LCase(Application.WorksheetFunction.Trim(rng.Cells(-1, 1).Value))
     If titleVal <> TABONGRAPHTIMESERIES Then _
     ThrowErrorUnableInstanciate "The tables order is Graph Table and Then Time Series table, and then title table. No graph table found the title of first table is: " & titleVal
-  
+
     Set tabLo = loTable.Item(loTable.LowerBound + 1)
     Set rng = tabLo.HeaderRowRange()
     titleVal = LCase(Application.WorksheetFunction.Trim(rng.Cells(-1, 1).Value))
@@ -267,14 +267,14 @@ Private Sub PushGraph(ByVal graphId As String)
     Dim tabCatLabel As BetterArray
     Dim tabPrefLabel As BetterArray
     Dim title As String
-    
+
     Set tabSeries = this.chartSeriesName.Clone()
     Set tabType = this.chartSeriesType.Clone()
     Set tabPos = this.chartSeriesPosition.Clone()
     Set tabLabel = this.chartSeriesLabel.Clone()
     Set tabCatLabel = this.chartColumnCategoriesLabel.Clone()
     Set tabPrefLabel = this.chartSeriesLabelPrefix.Clone()
-    
+
     'Check the length of the tabSeries and remove the last element if needed
     'It looks like it is a bug from BetterArray memory management
     If tabSeries.Length = this.chartSeriesName.Length + 1 Then
@@ -290,7 +290,7 @@ Private Sub PushGraph(ByVal graphId As String)
 
     graphSpecsTable.Push tabSeries, tabType, tabPos, _
                          tabLabel, tabCatLabel, tabPrefLabel, title
-  
+
     'Higher Level, for one graph
     If this.graphsChartsSpecs Is Nothing Then
         Set this.graphsChartsSpecs = New BetterArray
@@ -333,9 +333,9 @@ Public Sub CreateSeries()
 
     Dim series As BetterArray
     Set series = New BetterArray
-  
+
     Select Case GraphType
-    
+
     Case GraphTypeSimple
 
         Set tabl = Table
@@ -343,13 +343,13 @@ Public Sub CreateSeries()
         tabId = specs.TableId
         tabType = specs.TableType
         nbCols = tabl.NumberOfColumns
-        
+
         'flip coordinates
         flipCoords = specs.Value("flip")
         plotType = IIf(flipCoords = "yes", "hbar", "bar")
-        
+
         Select Case tabType
-            
+
         Case TypeUnivariate
             'First series, values for column 1
             'Plotype can plot either horizontal or vertical bars depending of the flip coordinates
@@ -364,13 +364,13 @@ Public Sub CreateSeries()
         Case TypeBivariate, TypeSpatial
             'Only values
             Select Case specs.Value("graph")
-      
+
             Case "values"
                 For counter = 1 To nbCols
                     PushSeries "VALUES_COL_" & counter & "_" & tabId, plotType, "left"
                     PushLabels "ROW_CATEGORIES_" & tabId, "LABEL_COL_" & counter & "_" & tabId
                 Next
-      
+
             Case "percentages"
                 If specs.HasPercentage Then
                     For counter = 1 To nbCols
@@ -435,13 +435,13 @@ Private Function GraphTitle(ByVal graphId As String) As String
     Set titleLo = TitlesListObject()
 
     'idRng is the first column of the listobject where there are ids for graphs
-    Set idRng = titleLo.ListColumns(1).DataBodyRange
-    
+    Set idRng = titleLo.ListColumns(3).DataBodyRange
+
     If Not idRng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True) Is Nothing Then
         Set cellRng = idRng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True)
-        title = cellRng.Offset(, 1).Value
+        title = cellRng.Offset(, -2).Value
     End If
- 
+
     'The title can be empty, if unable to find the graphId in the title table
     GraphTitle = title
 End Function
@@ -479,7 +479,7 @@ Private Property Get Valid() As Boolean
         Valid = this.validity
         Exit Property
     End If
-    
+
     If GraphType = GraphTypeSimple Then
         CreateSeries
         Valid = True
@@ -488,7 +488,7 @@ Private Property Get Valid() As Boolean
         this.validity = Not (this.graphsChartsSpecs Is Nothing)
         this.testDone = True
     End If
-    
+
     Valid = this.validity
 End Property
 
@@ -545,7 +545,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
 
     'Convert all times to table id
     For counter = idsList.LowerBound To idsList.UpperBound
-        
+
         val = idsList.Item(counter)
         val = Application.WorksheetFunction.Trim(Replace(LCase(val), "series", vbNullString))
 
@@ -554,7 +554,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
         tabId = specs.TableId
         secId = specs.TableSectionId
         choiValue = choiceList.Item(counter)
-    
+
         labName = TimeSeriesColumnName(choiValue, tabId)
         colName = Switch(choiValue = "Total", "TOTAL_COL_VALUES_" & tabId, _
                         InStr(1, labName, "COLUMN_CATEGORIES_") > 0, "INTERIOR_VALUES_" & tabId, _
@@ -563,13 +563,13 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
         If (percList.Item(counter) = "percentages") Then
             colName = IIf(choiValue = "Total", Replace(labName, "COL", "PERC"), Replace(labName, "LABEL", "PERC"))
         End If
-        
+
         'I could not find the TimeSeriesColumn, in that case we jump to the next iteration
         If colName <> vbNullString Then
             PushSeries colName, typeList.Item(counter), posList.Item(counter)
             PushLabels "ROW_CATEGORIES_" & secId, labName, labelList.Item(counter)
         End If
-        
+
     Next
 
 End Sub
@@ -589,17 +589,17 @@ Private Function TimeSeriesColumnName(ByVal choiValue As String, ByVal tabId As 
         TimeSeriesColumnName = "TOTAL_LABEL_COL_" & tabId
         Exit Function
     End If
-  
+
 
     Set rng = sh.Range("COLUMN_CATEGORIES_" & tabId)
-    
+
     'If Not ValueExists(rng, choiValue, True) Then ThrowError choiValue & " is not in the drawn table " & tabId
     Set cellRng = rng.Find(What:=choiValue, LookAt:=xlWhole, MatchCase:=True)
 
     On Error Resume Next
     If Not cellRng Is Nothing Then colName = cellRng.Name.Name
     On Error GoTo 0
-  
+
     'If colName = vbNullString Then ThrowError choiValue & "Has no name in the table " & tabId
     TimeSeriesColumnName = colName
 End Function
@@ -646,13 +646,13 @@ Private Function GraphIdsList() As BetterArray
     Set graphLo = GraphListObject()
     idIndex = ColumnIndex(graphLo, "graph id")
     Set rng = graphLo.ListColumns(idIndex).Range
-    
+
     counter = 2
     Do While counter <= rng.Rows.Count
-    
+
         If Not idsList.Includes(rng.Cells(counter, 1).Value) And Not IsEmpty(rng.Cells(counter, 1)) Then idsList.Push rng.Cells(counter, 1).Value
         counter = counter + 1
-        
+
     Loop
     Set GraphIdsList = idsList.Clone()
 End Function
@@ -681,7 +681,7 @@ Private Function GraphValues(ByVal colName As String, ByVal graphId As String) A
     Dim Values As BetterArray
     Dim sh As Worksheet
 
-  
+
     Set grLo = GraphListObject()
     Set Values = New BetterArray
     Values.LowerBound = 1
@@ -694,31 +694,31 @@ Private Function GraphValues(ByVal colName As String, ByVal graphId As String) A
 
     Set rng = grLo.ListColumns(idIndex).DataBodyRange
     Set colRng = grLo.ListColumns(colIndex).DataBodyRange
-    
+
     Set sh = rng.Worksheet
 
     If ValueExists(rng, graphId, strictSearch:=True) Then
         With sh
             Do While Not (rng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True, After:=rng.Cells(rng.Rows.Count, 1)) Is Nothing)
                 RowIndex = rng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True, After:=rng.Cells(rng.Rows.Count, 1)).Row - rng.Row + 1
-                
+
                 cellVal = colRng.Cells(RowIndex, 1).Value
-                
+
                 If cellVal = vbNullString Then
-                
+
                     Values.Push "&"
-                
+
                 Else
-                    
+
                     Values.Push cellVal
-                
+
                 End If
-                
+
                 'Important to exit if the range has only one cell since reducing could
                 'return the same range
                 If rng.Rows.Count = 1 Then Exit Do
                 If RowIndex + 1 > rng.Rows.Count Then Exit Do
-                
+
                 'Reduce the ranges for further searches
                 Set rng = .Range(rng.Cells(RowIndex + 1, 1), rng.Cells(rng.Rows.Count, 1))
                 Set colRng = .Range(colRng.Cells(RowIndex + 1, 1), colRng.Cells(colRng.Rows.Count, 1))
