@@ -131,7 +131,7 @@ Private Function FailedFormula(ByVal frmName As String) As Boolean
     Dim prevAlert As Long
     Dim sh As Worksheet
     Dim formTest As String
-    
+
     prevAlert = Application.DisplayAlerts
 
     Set sh = Table.Wksh
@@ -139,15 +139,15 @@ Private Function FailedFormula(ByVal frmName As String) As Boolean
         Application.DisplayAlerts = False
         .Cells(1, 1).Clear
         On Error GoTo Fail
-        
+
         'Test the formula on one cell
         .Cells(1, 1).FormulaArray = "= " & frmName
-        
+
         .Cells(1, 1).Clear
         FailedFormula = False
         Exit Function
     End With
-    
+
     Application.DisplayAlerts = prevAlert
 Fail:
     FailedFormula = True
@@ -226,7 +226,7 @@ Private Property Get CurrentExcelFormula(Optional ByVal scope As ExcelFormulaSco
     Dim eform As String
 
     Set tabFormObject = TableFormula
-       
+
     If scope = 1 Then
         eform = tabFormObject.ParsedLinelistFormula(useTableName:=True, tablePrefix:=prefix)
     Else
@@ -234,7 +234,7 @@ Private Property Get CurrentExcelFormula(Optional ByVal scope As ExcelFormulaSco
         Set cond = FormulaCondition.Create(this.condVars, this.condTests)
         eform = tabFormObject.ParsedAnalysisFormula(cond, tablePrefix:=prefix)
     End If
-  
+
     'Test here the formula before assigining it
     If FailedFormula(eform) Then
         GoTo Fail
@@ -251,9 +251,9 @@ End Property
 
 Private Property Get CurrentSpatialFormula(Optional ByVal scope As ExcelFormulaScope = formulaScopeanalysis, _
                                         Optional ByVal prefix As String = "f") As String
-                                        
-        
-                                        
+
+
+
 End Property
 
 Private Sub AddNonEmptyTableConditions(ByVal varName As String)
@@ -263,6 +263,71 @@ Private Sub AddNonEmptyTableConditions(ByVal varName As String)
     Else
         'For any other function, it is varName <> ""
         AddTableConditions varName, "<>" & EmpStr() 'varName <> ""
+    End If
+End Sub
+
+'Format a range using the provided format in the analysis
+Private Sub AddRngFormat(Byval formatValue As String, ByVal rng As Range)
+    Dim formatText As String
+    Dim nbDecimals As Integer
+    Dim zerosDecimals As String
+
+    nbDecimals = 1 'Default number of decimals
+
+
+    If (formatValue = vbNullString) Then
+
+        Exit Sub
+
+    ElseIf formatValue = "integer" Then
+
+        formatText = "###0;-###0;0;@"
+
+    ElseIf formatValue = "round0" Then
+
+        formatText = "#,##0;-#,##0;0;@"
+
+    ElseIf formatValue = "percentage0" Then
+
+        formatText = "0%"
+
+    ElseIf (InStr(1, formatValue, "round") > 0) Then
+
+        On Error Resume Next
+        nbDecimals = CInt(Replace(formatValue, "round", vbNullString))
+        On Error GoTo 0
+        zerosDecimals = String(nbDecimals, "0")
+        formatText = "#,###0." & zerosDecimals & ";-#,###0." & zerosDecimals & ";0." & zerosDecimals & ";@"
+
+    ElseIf (InStr(1, formatValue, "percentage") > 0) Then
+
+        On Error Resume Next
+        nbDecimals = CInt(Replace(formatValue, "percentage", vbNullString))
+        On Error GoTo 0
+        zerosDecimals = String(nbDecimals, "0")
+        formatText = "0." & zerosDecimals & "%"
+
+    ElseIf formatValue = "euros" Then
+
+        formatText = "#,##0.00 $;-#,##0.00 $;0.00 $;@"
+
+    ElseIf formatValue = "dollars" Then
+
+        formatText = "[$$-en-US] #,##0.00;[$$-en-US] -#,##0.00;[$$-en-US] 0.00;@"
+
+    ElseIf formatValue = "text" Then
+        formatText = "@"
+    Else
+        formatText = "custom"
+    End If
+
+    If formatText <> "custom" Then
+        rng.NumberFormat = formatText
+    Else
+        'If the format is incorrect, nothing is done
+        On Error Resume Next
+        rng.NumberFormat = formatValue
+        On Error GoTo 0
     End If
 End Sub
 
@@ -282,6 +347,7 @@ Private Sub AddFormulas()
     Dim perRng As Range
     Dim rowVar As String
     Dim colVar As String
+    Dim tabFormat As String
     Dim rowCatAddress As String
     Dim colCatAddress As String
     Dim startTimeAddress As String
@@ -294,11 +360,11 @@ Private Sub AddFormulas()
     Dim spTab As ISpatialTables
     Dim tabFormObject As IFormulas
     Dim spTabType As String
-    
+
     Dim specs As ITablesSpecs
-    
+
     If Not Valid() Then Exit Sub                 'Trace here for validity
-    
+
     Set specs = Specifications
     Set vars = LLVariables.Create(specs.Dictionary)
     Set tabl = Table()
@@ -310,7 +376,8 @@ Private Sub AddFormulas()
     HasMissing = specs.HasMissing
     HasTotal = specs.HasTotal
     HasPercentage = specs.HasPercentage
-    
+    tabFormat = specs.Value("format")
+
     With sh
 
         Select Case tabType
@@ -319,10 +386,12 @@ Private Sub AddFormulas()
             finalFormula = CurrentExcelFormula(scope:=1, prefix:="") 'Parse the formula object using table names on analysis
             Set rng = .Range("STARTROW_" & tabId)
             rng.Cells(1, 2).FormulaArray = "= " & finalFormula
+            AddRngFormat tabFormat, rng.Cells(1, 2)
 
             'Now on filtered data (should normaly work if the previous didn't failed)
             finalFormula = CurrentExcelFormula(scope:=1, prefix:="f")
             rng.Cells(1, 3).FormulaArray = "= " & finalFormula
+            AddRngFormat tabFormat, rng.Cells(1, 3)
 
         Case TypeUnivariate
 
@@ -336,6 +405,7 @@ Private Sub AddFormulas()
             Set cellRng = rng.Cells(1, 1)
             cellRng.FormulaArray = "= " & finalFormula
             cellRng.AutoFill Destination:=rng, Type:=xlFillValues
+            AddRngFormat tabFormat, rng
 
             'Missing and percentages
             If HasMissing Then
@@ -348,7 +418,7 @@ Private Sub AddFormulas()
                 rng.Cells(1, 1).FormulaArray = "=" & finalFormula
 
                 Set rng = .Range("TOTAL_ROW_VALUES_" & tabId)
-                
+
                 If SummaryFunction = "N" Or SummaryFunction = "N()" Then
                     ClearTableConditions
                     AddTableConditions rowVar, "= " & NonEmpStr() 'Non empty string for nonempstr()
@@ -356,7 +426,7 @@ Private Sub AddFormulas()
                     finalFormula = finalFormula & " + " & CurrentExcelFormula()
                     rng.Cells(1, 1).FormulaArray = "= " & finalFormula
                 Else
-                
+
                     ClearTableConditions
                     finalFormula = CurrentExcelFormula(scope:=FormulaScopeLinelist)
                     rng.Cells(1, 1).FormulaArray = "= " & finalFormula
@@ -366,7 +436,7 @@ Private Sub AddFormulas()
                 'No Missing
                 Set rng = .Range("TOTAL_ROW_VALUES_" & tabId)
                 ClearTableConditions
-                
+
                 'removing missing is not the same when using COUNTIFS
                 AddNonEmptyTableConditions rowVar
                 finalFormula = CurrentExcelFormula()
@@ -392,7 +462,7 @@ Private Sub AddFormulas()
 
             rowCatAddress = .Range("ROW_CATEGORIES_" & tabId).Cells(1, 1).Address(Rowabsolute:=False)
             tabEndColumn = tabl.EndColumn
-            
+
             'Row categorie
             Set rng = .Range("VALUES_COL_1_" & tabId)
             Set rngLab = .Range("LABEL_COL_1_" & tabId)
@@ -409,6 +479,8 @@ Private Sub AddFormulas()
                 'Test here the finalFormula
                 rng.Cells(1, 1).FormulaArray = "= " & finalFormula
                 rng.Cells(1, 1).AutoFill Destination:=rng, Type:=xlFillValues
+                'Add the format
+                AddRngFormat tabFormat, rng
 
                 'Missing Row
                 If specs.Value("missing") = "row" Or specs.Value("missing") = "all" Then
@@ -418,7 +490,7 @@ Private Sub AddFormulas()
                     AddTableConditions colVar, "= " & rngLab.Address
 
                     finalFormula = CurrentExcelFormula()
-                    
+
                     Set cellRng = .Cells(misRng.Row, rng.Column)
                     cellRng.FormulaArray = "= " & finalFormula
 
@@ -438,7 +510,7 @@ Private Sub AddFormulas()
                     Set cellRng = .Cells(totRng.Row, rng.Column)
                     cellRng.FormulaArray = "= " & finalFormula
                 End If
-                
+
                 'Percentages
                 If HasPercentage Then
                     Select Case specs.Value("percentage")
@@ -472,7 +544,7 @@ Private Sub AddFormulas()
                 finalFormula = CurrentExcelFormula()
                 misRng.Cells(1, 1).FormulaArray = "= " & finalFormula
                 misRng.Cells(1, 1).AutoFill Destination:=misRng, Type:=xlFillValues
-
+                AddRngFormat tabFormat, misRng
                 'Total when there are missing columns
                 ClearTableConditions
                 AddTableConditions rowVar, "= " & rowCatAddress
@@ -490,6 +562,7 @@ Private Sub AddFormulas()
             Set totRng = .Range("TOTAL_COL_VALUES_" & tabId)
             totRng.Cells(1, 1).FormulaArray = "= " & finalFormula
             totRng.Cells(1, 1).AutoFill Destination:=totRng, Type:=xlFillValues
+            AddRngFormat tabFormat, totRng
 
             'missing row, total column
             If RangeExists("MISSING_TOTAL_" & tabId) Then
@@ -497,6 +570,7 @@ Private Sub AddFormulas()
                 AddTableConditions rowVar, "= " & EmpStr()
                 finalFormula = CurrentExcelFormula()
                 .Range("MISSING_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
+                AddRngFormat tabFormat, .Range("MISSING_TOTAL_" & tabId)
             End If
 
             'missing Row, missing column
@@ -506,6 +580,7 @@ Private Sub AddFormulas()
                 AddTableConditions colVar, "= " & EmpStr()
                 finalFormula = CurrentExcelFormula()
                 .Range("MISSING_MISSING_" & tabId).FormulaArray = "= " & finalFormula
+                AddRngFormat tabFormat, .Range("MISSING_MISSING_" & tabId)
             End If
 
             'total row, missing column
@@ -514,6 +589,7 @@ Private Sub AddFormulas()
                 AddTableConditions colVar, "= " & EmpStr()
                 finalFormula = CurrentExcelFormula()
                 .Range("TOTAL_MISSING_" & tabId).FormulaArray = "= " & finalFormula
+                AddRngFormat tabFormat, .Range("TOTAL_MISSING_" & tabId)
             End If
 
             'total row, total column, depend on formula, I will just sum the column
@@ -543,6 +619,7 @@ Private Sub AddFormulas()
                         .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
                     End Select
                 End If
+                AddRngFormat tabFormat, .Range("TOTAL_TOTAL_" & tabId)
             End If
 
         Case TypeTimeSeries                      ' FORMULAS FOR TIME SERIES =====================
@@ -552,7 +629,7 @@ Private Sub AddFormulas()
 
             'Rows for last day, and the period
             If specs.isNewSection() Then         'New sectio on time series
-                
+
                 'Period column
                 Set rng = .Range("ROW_CATEGORIES_" & tabId)
                 Set cellRng = rng.Cells(1, 1)
@@ -562,7 +639,7 @@ Private Sub AddFormulas()
                                   "END_DATE_" & tabId & ")"
 
                 cellRng.AutoFill Destination:=rng, Type:=xlFillValues
-                
+
                 'Start period column
                 Set cellRng = .Range("FIRST_VALUE_START_TIME_" & tabId)
                 cellRng.formula = "= " & "START_DATE_" & tabId
@@ -570,19 +647,19 @@ Private Sub AddFormulas()
                 Set rng = .Range("START_TIME_PERIOD_" & tabId)
                 Set cellRng = rng.Cells(1, 1)
                 cellRng.AutoFill Destination:=rng, Type:=xlFillValues
-      
+
                 'End period column
                 Set rng = .Range("END_TIME_PERIOD_" & tabId)
                 Set cellRng = rng.Cells(1, 1)
                 cellRng.formula = "= FindLastDay(TIME_UNIT_" & tabId & "," & _
                                   cellRng.Cells(1, 0).Address(Rowabsolute:=False) & ")"
                 cellRng.AutoFill Destination:=rng, Type:=xlFillValues
-                
+
                 'Total period
                 Set rng = .Range("TOTAL_ROW_" & tabId)
                 rng.Cells(1, -1).formula = "= START_DATE_" & tabId
                 rng.Cells(1, 0).formula = "= END_DATE_" & tabId
-                
+
                 'Validation max and validation min
                 Set rng = .Range("VALIDATION_MAX_DATE_" & tabId)
                 rng.formula = "=ValidMax(USER_START_DATE_" & tabId & _
@@ -593,7 +670,7 @@ Private Sub AddFormulas()
                 rng.formula = "=ValidMin(USER_START_DATE_" & tabId & _
                               ", USER_END_DATE_" & tabId & ", MIN_MIN_DATE_" & tabId & _
                               ", MAX_MAX_DATE_" & tabId & ", TIME_UNIT_" & tabId & ")"
-                
+
                 'Start Date and end Date
                 Set rng = .Range("START_DATE_" & tabId)
                 rng.formula = "= MAX(USER_START_DATE_" & tabId & ", VALIDATION_MIN_DATE_" & tabId & ")"
@@ -611,7 +688,7 @@ Private Sub AddFormulas()
                 Set rng = .Range("INFO_ANA_PERIOD_" & tabId)
 
                 rng.formula = "= RNG_AnaPeriod & " & " PLAGE_VALUE(START_DATE_" & tabId & "," & "END_DATE_" & tabId & ")"
-                
+
 
                 On Error Resume Next
 
@@ -636,9 +713,9 @@ Private Sub AddFormulas()
             startTimeAddress = cellRng.Address(Rowabsolute:=False)
             endTimeAddress = cellRng.Cells(1, 2).Address(Rowabsolute:=False)
             tabEndColumn = tabl.EndColumn
-            
+
             Do While (rng.Column <= tabEndColumn)
-            
+
                 ClearTableConditions
                 AddTableConditions rowVar, ">=" & startTimeAddress
                 AddTableConditions rowVar, "<=" & endTimeAddress
@@ -648,22 +725,24 @@ Private Sub AddFormulas()
                 'Formula on one column for time series
                 rng.Cells(1, 1).FormulaArray = "= " & Condition(perRng, finalFormula)
                 rng.Cells(1, 1).AutoFill Destination:=rng, Type:=xlFillValues
+                AddRngFormat tabFormat, rng
 
                 'Missing Row
                 ClearTableConditions
                 AddTableConditions rowVar, "= " & EmpStr()
                 AddTableConditions colVar, "= " & rngLab.Address
-                
+
                 finalFormula = CurrentExcelFormula()
 
                 Set cellRng = .Cells(misRng.Row, rng.Column)
                 cellRng.FormulaArray = "= " & finalFormula
+                AddRngFormat tabFormat, cellRng
 
                 'Percentage
                 If HasPercentage Then
-                    
+
                     Select Case specs.Value("percentage")
-                    
+
                     Case "row"
                         Set cellRng = .Range("TOTAL_COL_VALUES_" & tabId).Cells(1, 1)
                         rng.Cells(1, 2).formula = "= " & Percentage(cellRng, rng.Cells(1, 1), rowabs:=False)
@@ -674,12 +753,12 @@ Private Sub AddFormulas()
                         Set cellRng = .Range("TOTAL_TOTAL_" & tabId)
                         rng.Cells(1, 2).formula = "= " & Percentage(cellRng, rng.Cells(1, 1))
                     End Select
-                    
+
                     Set rng = rng.Offset(, 1)    'percentage column range
                     Set rngLab = rngLab.Offset(, 1)
-                    
+
                     rng.Cells(1, 1).AutoFill Destination:=rng, Type:=xlFillValues
-                    
+
                 End If
 
                 Set rng = rng.Offset(, 1)
@@ -689,10 +768,10 @@ Private Sub AddFormulas()
 
             'Missing column and total columns
             If HasMissing Then
-                
+
                 Set misRng = .Range("MISSING_COL_VALUES_" & tabId)
                 Set misRng = .Range(misRng.Cells(1, 1), misRng.Cells(misRng.Rows.Count + 1, 1)) 'Add total line
-                
+
                 'Missing column
                 ClearTableConditions
                 AddTableConditions rowVar, ">=" & startTimeAddress
@@ -700,27 +779,29 @@ Private Sub AddFormulas()
                 AddTableConditions colVar, "= " & EmpStr()
 
                 finalFormula = CurrentExcelFormula()
-                
+
                 misRng.Cells(1, 1).FormulaArray = "= " & Condition(perRng, finalFormula)
                 misRng.Cells(1, 1).AutoFill Destination:=misRng, Type:=xlFillValues
-                
+                AddRngFormat tabFormat, misRng
+
                 'Total including Missing
                 If specs.HasTotal Then
                     ClearTableConditions
                     AddTableConditions rowVar, ">=" & startTimeAddress
                     AddTableConditions rowVar, "<=" & endTimeAddress
-                    
+
                     finalFormula = CurrentExcelFormula()
 
                     Set totRng = .Range("TOTAL_COL_VALUES_" & tabId)
                     totRng.Cells(1, 1).FormulaArray = "= " & Condition(perRng, finalFormula)
                     totRng.Cells(1, 1).AutoFill Destination:=totRng, Type:=xlFillValues
+                    AddRngFormat tabFormat, totRng
                 End If
 
             Else
-                
+
                 'Total, without missing
-                
+
                 If HasTotal Then
                     'Total column, without missing
                     ClearTableConditions
@@ -733,6 +814,7 @@ Private Sub AddFormulas()
                     Set totRng = .Range("TOTAL_COL_VALUES_" & tabId)
                     totRng.Cells(1, 1).FormulaArray = "= " & Condition(perRng, finalFormula)
                     totRng.Cells(1, 1).AutoFill Destination:=totRng, Type:=xlFillValues
+                    AddRngFormat tabFormat, totRng
                 End If
             End If
 
@@ -743,6 +825,7 @@ Private Sub AddFormulas()
                 finalFormula = CurrentExcelFormula()
 
                 .Range("MISSING_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
+                AddRngFormat tabFormat, .Range("MISSING_TOTAL_" & tabId)
             End If
 
             'missing Row, missing column
@@ -759,13 +842,13 @@ Private Sub AddFormulas()
             If RangeExists("TOTAL_TOTAL_" & tabId) Then
                 If SummaryFunction = "N" Or SummaryFunction = "N()" Then
                     .Range("TOTAL_TOTAL_" & tabId).formula = "= SUM(" & .Range("TOTAL_COL_VALUES_" & tabId).Address & ")"
-            
+
                 Else
                     ClearTableConditions
                     Set cellRng = .Range("TOTAL_ROW_" & secId).Cells(1, 0) 'section because I append tables on each new section
                     AddTableConditions rowVar, "<=" & cellRng.Address
                     AddTableConditions rowVar, ">=" & cellRng.Cells(1, 0).Address
-              
+
                     If HasMissing Then
                         finalFormula = CurrentExcelFormula()
                         .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
@@ -775,6 +858,8 @@ Private Sub AddFormulas()
                         .Range("TOTAL_TOTAL_" & tabId).FormulaArray = "=" & finalFormula
                     End If
                 End If
+
+                AddRngFormat tabFormat, .Range("TOTAL_TOTAL_" & tabId)
             End If
 
         Case TypeSpatial '======================== spatial analysis tables
@@ -788,7 +873,7 @@ Private Sub AddFormulas()
                             "hf_" & rowVar, True, "")
 
             colVar = specs.Value("column")
-            
+
             On Error Resume Next
                 If (spTabType = "geo") Then
 
@@ -845,7 +930,7 @@ Private Sub AddFormulas()
                 cellRng.formula = "= FindTopHF(" & cellRng.Cells(1, 0).Address(Rowabsolute:=False) & "," & _
                 chr(34) & rowVar & chr(34) & "," & chr(34) & tabId & chr(34) & ")"
             End If
-            
+
             cellRng.AutoFill Destination:=rng, Type:=xlFillValues
 
 
@@ -854,26 +939,27 @@ Private Sub AddFormulas()
             Set rngLab = .Range("LABEL_COL_1_" & tabId)
             Set misRng = .Range("MISSING_ROW_VALUES_" & tabId)
             tabEndColumn = tabl.EndColumn
-            
+
             Do While (rng.Column <= tabEndColumn)
-            
+
                 ClearTableConditions
 
                 AddTableConditions rowVar, "= " & rowCatAddress
                 AddNonEmptyTableConditions rowVar
                 AddTableConditions colVar, "= " & rngLab.Address
-                
+
                 finalFormula = CurrentExcelFormula()
 
                 'Formula on one column for time series
                 rng.Cells(1, 1).FormulaArray = "= " & finalFormula
                 rng.Cells(1, 1).AutoFill Destination:=rng, Type:=xlFillValues
+                AddRngFormat tabFormat, rng
 
                 'Missing Row
                 ClearTableConditions
                 AddTableConditions rowVar, "= " & EmpStr()
                 AddTableConditions colVar, "= " & rngLab.Address
-                
+
                 finalFormula = CurrentExcelFormula()
 
                 Set cellRng = .Cells(misRng.Row, rng.Column)
@@ -881,15 +967,15 @@ Private Sub AddFormulas()
 
                 'Percentage
                 If HasPercentage Then
-                    
+
                     Set cellRng = .Range("TOTAL_COL_VALUES_" & tabId).Cells(1, 1)
                     rng.Cells(1, 2).formula = "= " & Percentage(cellRng, rng.Cells(1, 1), rowabs:=False)
-                    
+
                     Set rng = rng.Offset(, 1)    'percentage column range
                     Set rngLab = rngLab.Offset(, 1)
-                    
+
                     rng.Cells(1, 1).AutoFill Destination:=rng, Type:=xlFillValues
-                    
+
                 End If
 
                 Set rng = rng.Offset(, 1)
@@ -898,29 +984,31 @@ Private Sub AddFormulas()
 
             'Missing column and total columns
             If HasMissing Then
-                
+
                 Set misRng = .Range("MISSING_COL_VALUES_" & tabId)
-                
+
                 'Missing column
                 ClearTableConditions
                 AddTableConditions rowVar, "= " & rowCatAddress
                 AddTableConditions colVar, "= " & EmpStr()
 
                 finalFormula = CurrentExcelFormula()
-                
+
                 misRng.Cells(1, 1).FormulaArray = "= " & finalFormula
                 misRng.Cells(1, 1).AutoFill Destination:=misRng, Type:=xlFillValues
-                
+                AddRngFormat tabFormat, misRng
+
                 'Total including Missing
                 If specs.HasTotal Then
                     ClearTableConditions
                     AddTableConditions rowVar, "= " & rowCatAddress
-                    
+
                     finalFormula = CurrentExcelFormula()
 
                     Set totRng = .Range("TOTAL_COL_VALUES_" & tabId)
                     totRng.Cells(1, 1).FormulaArray = "= " & finalFormula
                     totRng.Cells(1, 1).AutoFill Destination:=totRng, Type:=xlFillValues
+                    AddRngFormat tabFormat, totRng
                 End If
             Else
                 'Total, without missing
@@ -935,6 +1023,7 @@ Private Sub AddFormulas()
                     Set totRng = .Range("TOTAL_COL_VALUES_" & tabId)
                     totRng.Cells(1, 1).FormulaArray = "= " & finalFormula
                     totRng.Cells(1, 1).AutoFill Destination:=totRng, Type:=xlFillValues
+                    AddRngFormat tabFormat, totRng
                 End If
 
             End If
@@ -946,6 +1035,7 @@ Private Sub AddFormulas()
                 finalFormula = CurrentExcelFormula()
 
                 .Range("MISSING_TOTAL_" & tabId).FormulaArray = "= " & finalFormula
+                AddRngFormat tabFormat, .Range("MISSING_TOTAL_" & tabId)
             End If
 
             'missing Row, missing column
@@ -956,12 +1046,13 @@ Private Sub AddFormulas()
 
                 finalFormula = CurrentExcelFormula()
                 .Range("MISSING_MISSING_" & tabId).FormulaArray = "= " & finalFormula
+                AddRngFormat tabFormat, .Range("MISSING_MISSING_" & tabId)
             End If
 
             'Create the spatial table management
             Set spTab = SpatialTables.Create(tabl)
             Set tabFormObject = TableFormula
-            
+
             spTab.Add tabFormObject
 
         End Select
