@@ -136,6 +136,7 @@ Private Sub AddType()
 
     varTypes = LCase(Application.WorksheetFunction.Trim(ValueOf("variable type")))
     varFormat = LCase(Application.WorksheetFunction.Trim(ValueOf("variable format")))
+    nbDecimals = 1
 
     'Find the format depending on the Types and format
     Select Case varTypes
@@ -170,14 +171,17 @@ Private Sub AddType()
             formatText = "0%"
 
         ElseIf (InStr(1, varFormat, "round") > 0) Then
-
+            On Error Resume Next
             nbDecimals = CInt(Replace(varFormat, "round", vbNullString))
+            On Error GoTo 0
+
             zerosDecimals = String(nbDecimals, "0")
             formatText = "#,###0." & zerosDecimals & ";-#,###0." & zerosDecimals & ";0." & zerosDecimals & ";@"
 
         ElseIf (InStr(1, varFormat, "percentage") > 0) Then
-
+            On Error Resume Next
             nbDecimals = CInt(Replace(varFormat, "percentage", vbNullString))
+            On Error GoTo 0
             zerosDecimals = String(nbDecimals, "0")
             formatText = "0." & zerosDecimals & "%"
 
