@@ -132,7 +132,7 @@ Private Sub AddType()
 
     varTypes = LCase(Application.WorksheetFunction.Trim(ValueOf("variable type")))
     varFormat = LCase(Application.WorksheetFunction.Trim(ValueOf("variable format")))
-
+    nbDecimals = 1
 
     'Find the format depending on the Types and format
 
@@ -150,30 +150,36 @@ Private Sub AddType()
         On Error Resume Next
         If varFormat <> vbNullString Then cellRng.NumberFormat = varFormat
         On Error GoTo 0
-        
+
     Case "decimal", "integer"
 
         If varFormat = vbNullString Then
             'Default format if there is nothing
             formatText = IIf(varTypes = "decimal", "#,##0.00;-#,##0.00;0.00;@", "###0;-###0;0;@")
         'Other formats
+        ElseIf varFormat = "integer" Then
+
+            formatText = "###0;-###0;0;@"
+
         ElseIf varFormat = "round0" Then
 
             formatText = "#,##0;-#,##0;0;@"
-        
+
         ElseIf varFormat = "percentage0" Then
-            
+
             formatText = "0%"
 
         ElseIf (InStr(1, varFormat, "round") > 0) Then
-
+            On Error Resume Next
             nbDecimals = CInt(Replace(varFormat, "round", vbNullString))
+            On Error GoTo 0
             zerosDecimals = String(nbDecimals, "0")
             formatText = "#,###0." & zerosDecimals & ";-#,###0." & zerosDecimals & ";0." & zerosDecimals & ";@"
 
         ElseIf (InStr(1, varFormat, "percentage") > 0) Then
-
+            On Error Resume Next
             nbDecimals = CInt(Replace(varFormat, "percentage", vbNullString))
+            On Error GoTo 0
             zerosDecimals = String(nbDecimals, "0")
             formatText = "0." & zerosDecimals & "%"
 
@@ -222,7 +228,7 @@ Private Function FailedFormula(ByVal frmName As String) As Boolean
         FailedFormula = False
         Exit Function
     End With
-    
+
     Application.DisplayAlerts = prevAlert
 Fail:
     FailedFormula = True
@@ -243,7 +249,7 @@ Private Sub AddFormula()
 
     varControl = ValueOf("control")
     If (varControl <> "formula") And (varControl <> "case_when") And (varControl <> "choice_formula") Then Exit Sub
-    
+
     Set lData = LinelistData()
     Set dict = lData.Dictionary()
     Set varFormData = lData.FormulaDataObject()
@@ -306,7 +312,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     varIndex = CLng(ValueOf("column index"))
     calculated = trans.TranslatedValue("MSG_Calculated")
     mandatory = trans.TranslatedValue("MSG_Mandatory")
-    
+
     If varIndex = 1 Then cellRng.Name = ValueOf("table name") & "_" & "START"
 
     'sublabel
@@ -359,7 +365,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
         design.ApplyFormat cellRng.Offset(-2), scope:=HListGeoHeader
         design.ApplyFormat cellRng, scope:=HListGeo
     End If
-    
+
     'Custom columns, user can modify them
     If (varControl = "custom") Then
         cellRng.Offset(-2).Locked = False
@@ -369,7 +375,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     If varStatus = "hidden" Then
         cellRng.EntireColumn.Hidden = True
     End If
-    
+
     'The cell header itself
     design.ApplyFormat cellRng.Offset(-2), scope:=HListSimpleHeaderCell
     cellRng.Locked = False
@@ -377,7 +383,7 @@ End Sub
 
 'Add the choices
 Private Sub AddChoices()
-    
+
     Dim varControl As String
     Dim dropName As String                       'drop abreviation for dropdown
     Dim varAlert As String
@@ -387,7 +393,7 @@ Private Sub AddChoices()
     Dim drop As IDropdownLists
     Dim cellRng As Range
     Dim geo As ILLGeo
-    
+
     varControl = ValueOf("control")
     If (varControl <> "choice_manual") And (varControl <> "list_auto") And (varControl <> "geo1") Then Exit Sub
 
@@ -409,7 +415,7 @@ Private Sub AddChoices()
         varMessage = ValueOf("message")
 
     Case "list_auto"
-        
+
         dropName = ValueOf("control details")
         'The category is empty It will create an empty table
         cat.Push ""
@@ -438,7 +444,7 @@ Private Sub AddChoices()
         drop.SetValidation cellRng:=cellRng.Offset(, 3), listName:="admin4", _
         alertType:=varAlert, message:=varMessage
     End Select
-    
+
     'Set dropdown validations
     drop.SetValidation cellRng:=cellRng, listName:=dropName, _
                        alertType:=varAlert, message:=varMessage
@@ -446,7 +452,7 @@ End Sub
 
 'Add validation for VList var
 Private Sub AddValidation()
-    
+
     Dim varMin As String
     Dim varMax As String
     Dim varMessage As String
@@ -463,9 +469,9 @@ Private Sub AddValidation()
     varMax = ValueOf("max")
     varAlert = ValueOf("alert")
     varMessage = ValueOf("message")
-    
+
     If (varMin = vbNullString And varMax = vbNullString) Or (varTypes = "text") Then Exit Sub
-    
+
     Set cellRng = VarRange()
 
     With cellRng.validation
@@ -481,10 +487,10 @@ Private Sub AddValidation()
                                   True, xlValidAlertInformation)
 
         If (varMin <> vbNullString) And (varMax = vbNullString) Then
-            
+
             excelForm = ExcelFormula(varMin, validationTypes)
             If IsEmpty(excelForm) Then Exit Sub
-            
+
             .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
                  Operator:=xlGreaterEqual, Formula1:=excelForm
 
@@ -492,16 +498,16 @@ Private Sub AddValidation()
             'Validation on Maximum
             excelForm = ExcelFormula(varMax, validationTypes)
             If IsEmpty(excelForm) Then Exit Sub
-            
+
             .Add Type:=validationTypes, AlertStyle:=validationAlerts, Operator:=xlLessEqual, Formula1:=excelForm
 
         ElseIf (varMin <> vbNullString) And (varMax <> vbNullString) Then
             'Validation on Both minimum and maximum
             excelForm = ExcelFormula(varMin, validationTypes)
             excelForm2 = ExcelFormula(varMax, validationTypes)
-            
+
             If IsEmpty(excelForm) Or IsEmpty(excelForm2) Then Exit Sub
-            
+
             .Add Type:=validationTypes, AlertStyle:=validationAlerts, Operator:=xlBetween, _
                  Formula1:=excelForm, Formula2:=excelForm2
 
@@ -515,7 +521,7 @@ Private Sub AddValidation()
         .errorMessage = varMessage
         .ShowInput = True
         .ShowError = True
-       
+
     End With
 
 End Sub
@@ -529,8 +535,8 @@ Private Function ExcelFormula(ByVal formVal As String, ByVal validationTypes As 
     Dim varFormObject As IFormulas
     Dim excelForm As String
     Dim convForm As Variant
-     
-    
+
+
     'Elements to build the formula
     Set lData = LinelistData()
     Set dict = lData.Dictionary()
@@ -546,12 +552,12 @@ Private Function ExcelFormula(ByVal formVal As String, ByVal validationTypes As 
     'excelForm = OSFormula(excelForm)
 
     excelForm = "= " & excelForm
-    
+
     If Not varFormObject.HasLiterals Then
-        
+
         'Return the required type
         excelForm = Application.WorksheetFunction.Trim(Replace(excelForm, "=", ""))
-      
+
         Select Case validationTypes
         Case xlValidateWholeNumber
             convForm = CInt(excelForm)
@@ -561,12 +567,12 @@ Private Function ExcelFormula(ByVal formVal As String, ByVal validationTypes As 
             convForm = CLng(excelForm)
         End Select
         ExcelFormula = convForm
-      
+
     Else
         'We have a formula, we just return the formula
         ExcelFormula = excelForm
     End If
-    
+
 End Function
 
 'Operating system formula (on Mac, the formula is not in formula Local)
@@ -576,8 +582,8 @@ Private Function OSFormula(ByVal formVal As String) As String
     Dim rng As Range
     Dim sh As Worksheet
     Dim prevForm As String                       'Previous formula
-    
-    
+
+
     If (Application.OperatingSystem Like "*Mac*") Then
         OSFormula = formVal
     Else
@@ -641,5 +647,3 @@ End Sub
 Public Property Get IHListVars_ValueOf(ByVal colName As String) As String
     IHListVars_ValueOf = ValueOf(colName)
 End Property
-
-
