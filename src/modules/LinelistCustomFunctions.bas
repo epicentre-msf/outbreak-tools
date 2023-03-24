@@ -29,7 +29,7 @@ End Function
 '
 '
 '
-Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As String
+Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Variant
 
     Application.Volatile
 
@@ -41,12 +41,12 @@ Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Str
     Dim ColRngVal  As Range                      'Column Range where to return the value from
 
     Dim iColLook As Long                         'columns to look and return values
-    Dim sVal As String
+    Dim retMatch As Variant
     Dim iColVal As Long
+    Dim indexMatch As Long
 
     sValLook = rng.Value
 
-    sVal = vbNullString
 
     If sValLook <> vbNullString Then
         sSheetLook = RngLook.Worksheet.Name
@@ -58,15 +58,17 @@ Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Str
         'There is only one table per worksheet, so I can just take the first listObject
         Set ColRngLook = ThisWorkbook.Worksheets(sSheetLook).ListObjects(1).ListColumns(iColLook).Range
         Set ColRngVal = ThisWorkbook.Worksheets(sSheetVal).ListObjects(1).ListColumns(iColVal).Range
+        indexMatch = -1
 
         On Error Resume Next
         With Application.WorksheetFunction
-            sVal = .Index(ColRngVal, .Match(sValLook, ColRngLook, 0))
+            indexMatch = .Match(sValLook, ColRngLook, 0)
+            retMatch = .Index(ColRngVal, indexMatch)
         End With
         On Error GoTo 0
     End If
 
-    VALUE_OF = sVal
+    If indexMatch <> -1 Then VALUE_OF = retMatch
 End Function
 
 '
