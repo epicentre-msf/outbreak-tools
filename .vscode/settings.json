@@ -18,5 +18,8 @@
         "titleBar.inactiveBackground": "#00000099",
         "titleBar.inactiveForeground": "#e7e7e799",
         "commandCenter.border": "#e7e7e799"
+    },
+    "files.exclude": {
+        "**/.mock": true
     }
 }
