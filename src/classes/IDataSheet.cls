@@ -21,6 +21,10 @@ Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
                               Optional ByVal includeHeaders As Boolean = False) As Range
 End Property
 
+'Get the headerRange of the datarange
+Public Property Get HeaderRange() As Range
+End Property
+
 'Getters for the encapsulated data
 Public Property Get StartRow() As Long: End Property
 
@@ -56,7 +60,8 @@ Public Sub export(ByVal toWkb As Workbook, _
                   Optional ByVal filteredCondition As String = "<>", Optional ByVal Hide As Long = xlSheetHidden)
 End Sub
 
-Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long): End Sub
+Public Sub Import(ByVal importedData As Object): End Sub
+Public Sub ImportFormat(ByVal impRng As Range): End Sub
 
 
 
