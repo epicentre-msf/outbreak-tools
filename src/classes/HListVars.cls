@@ -23,7 +23,7 @@ End Type
 
 Private this As THListVars
 Private Const CLASSNAME As String = "HListVars"
-Private Const StartRow As Long = 8               'Where the variables should start in the output worksheet
+Private Const STARTROW As Long = 8               'Where the variables should start in the output worksheet
 
 Public Function Create(ByVal varName As String, ByVal ll As ILinelist) As IHListVars
 
@@ -104,15 +104,15 @@ Private Property Get ValueOf(ByVal colName As String) As String
 End Property
 
 Private Property Get VarRange() As Range         'Where to input informations on the variable
-    Dim STARTCOL As Long
+    Dim Startcol As Long
     Dim sh As Worksheet
     Dim rng As Range
 
     If this.inputRange Is Nothing Then
         Set sh = Wksh()
         With sh
-            STARTCOL = ValueOf("column index")
-            Set this.inputRange = .Cells(StartRow + 1, STARTCOL)
+            Startcol = ValueOf("column index")
+            Set this.inputRange = .Cells(STARTROW + 1, Startcol)
         End With
     End If
 
@@ -159,7 +159,7 @@ Private Sub AddType()
         'Other formats
         ElseIf varFormat = "integer" Then
 
-            formatText = "###0;-###0;0;@"
+            formatText = "###0;-###0;;@"
 
         ElseIf varFormat = "round0" Then
 
@@ -248,7 +248,8 @@ Private Sub AddFormula()
     Dim varControl As String
 
     varControl = ValueOf("control")
-    If (varControl <> "formula") And (varControl <> "case_when") And (varControl <> "choice_formula") Then Exit Sub
+    If (varControl <> "formula") And (varControl <> "case_when") And _
+     (varControl <> "choice_formula") Then Exit Sub
 
     Set lData = LinelistData()
     Set dict = lData.Dictionary()
@@ -313,10 +314,12 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     calculated = trans.TranslatedValue("MSG_Calculated")
     mandatory = trans.TranslatedValue("MSG_Mandatory")
 
+    'add an anchor to where the table starts
     If varIndex = 1 Then cellRng.Name = ValueOf("table name") & "_" & "START"
 
     'sublabel
-    If (varControl = "formula") Or (varControl = "case_when") Or (varControl = "choice_formula") Then
+    If (varControl = "formula") Or (varControl = "case_when") Or _
+       (varControl = "choice_formula") Then
         varSublab = varSublab & chr(10) & calculated
     End If
 
@@ -359,7 +362,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
 
     'Geo labels
     If (InStr(1, varControl, "geo") > 0) Or (varControl = "hf") Or _
-                                                                (InStr(1, varControl, "pcode") > 0) Then
+        (InStr(1, varControl, "pcode") > 0) Then
 
         'Put geo color
         design.ApplyFormat cellRng.Offset(-2), scope:=HListGeoHeader
@@ -395,7 +398,8 @@ Private Sub AddChoices()
     Dim geo As ILLGeo
 
     varControl = ValueOf("control")
-    If (varControl <> "choice_manual") And (varControl <> "list_auto") And (varControl <> "geo1") Then Exit Sub
+    If (varControl <> "choice_manual") And (varControl <> "list_auto") And _
+     (varControl <> "geo1") Then Exit Sub
 
     Set lData = LinelistData()
     Set drop = Dropdown()
@@ -499,7 +503,8 @@ Private Sub AddValidation()
             excelForm = ExcelFormula(varMax, validationTypes)
             If IsEmpty(excelForm) Then Exit Sub
 
-            .Add Type:=validationTypes, AlertStyle:=validationAlerts, Operator:=xlLessEqual, Formula1:=excelForm
+            .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
+            Operator:=xlLessEqual, Formula1:=excelForm
 
         ElseIf (varMin <> vbNullString) And (varMax <> vbNullString) Then
             'Validation on Both minimum and maximum
@@ -508,7 +513,8 @@ Private Sub AddValidation()
 
             If IsEmpty(excelForm) Or IsEmpty(excelForm2) Then Exit Sub
 
-            .Add Type:=validationTypes, AlertStyle:=validationAlerts, Operator:=xlBetween, _
+            .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
+                 Operator:=xlBetween, _
                  Formula1:=excelForm, Formula2:=excelForm2
 
         End If
@@ -633,9 +639,11 @@ Private Sub CheckRequirements(ByVal varName As String, ll As ILinelist)
     If ll Is Nothing Then ThrowError "No linelist object found"
     Set dict = ll.Dictionary()
     Set varObject = LLVariables.Create(dict)
-    If Not dict.VariableExists(varName) Then ThrowError "Variable" & varName & "Does not exists!"
+    If Not dict.VariableExists(varName) Then _
+     ThrowError "Variable" & varName & "Does not exists!"
     sheetName = varObject.Value(varName:=varName, colName:="sheet name")
-    If Not ll.sheetExists(sheetName) Then ThrowError varName & "worksheet named" & sheetName & "is not created"
+    If Not ll.sheetExists(sheetName) Then _
+     ThrowError varName & "worksheet named" & sheetName & "is not created"
 
 End Sub
 

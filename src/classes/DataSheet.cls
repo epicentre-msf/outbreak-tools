@@ -91,8 +91,6 @@ End Property
 'Data header range
 Public Property Get HeaderRange() As Range
     'updating the header range
-    Dim endCol As Long
-
     With Wksh
         Set HeaderRange = .Range(.Cells(StartRow, StartColumn), .Cells(StartRow, DataEndColumn))
     End With
@@ -210,12 +208,12 @@ Private Function FilterData(ByVal varName As String, _
 
             'end row of data to return
             EndRow = StartRow + returnedRng.Cells.Count - 1 'cells.Count gives the number of cells, even in non contiguous ranges
-            
+
             retEndCol = endCol + 2 + returnedRng.Columns.Count - 1
-            
+
             'return column should be greather than endCol + 2. If it is not the case, there are empty lines causing that
             Set returnedRng = .Range(.Cells(StartRow, endCol + 2), .Cells(EndRow, retEndCol))
-            
+
             returnedData.FromExcelRange returnedRng, DetectLastRow:=False, _
                                         DetectLastColumn:=False
             returnedRng.Cells.Clear
@@ -295,32 +293,83 @@ Private Function FiltersData(ByVal varData As BetterArray, _
 End Function
 
 'Import Sub
-Private Sub Import(ByVal fromWksh As Worksheet, fromStartRow As Long, fromStartcol As Long)
-    Dim dataWksh As Worksheet
-    Dim dataImportData As BetterArray
-    Dim strtcol As Long
-    Dim strtrw As Long
-    Dim Col As Long
-    
-    strtcol = StartColumn()
-    strtrw = StartRow()
-    
-    'Trace on errors on import
-    If (fromWksh Is Nothing) Or (fromStartRow <= 0) Or (fromStartcol <= 0) Then Exit Sub
-    Set dataWksh = Wksh()
-    dataWksh.Cells.Clear
-    Set dataImportData = New BetterArray
-    dataImportData.FromExcelRange fromWksh.Cells(fromStartRow, fromStartcol), DetectLastColumn:=True, DetectLastRow:=True
-    dataImportData.ToExcelRange dataWksh.Cells(strtrw, strtcol)
-    
-    'Change colnames to lowercase
-    Col = strtcol
-    With dataWksh
-        Do While (.Cells(strtrw, Col) <> vbNullString)
-            .Cells(strtrw, Col).Value = LCase(Application.WorksheetFunction.Trim(.Cells(strtrw, Col).Value))
-            Col = Col + 1
-        Loop
-    End With
+Private Sub Import(ByVal importData As Object)
+
+    Dim imphRng As Range 'Import Header Range
+    Dim headerValue As String
+    Dim newHeaderValue As String
+    Dim counter As Long
+    Dim nbImpRows As Long
+    Dim impDataRng As Range
+    Dim currDataRng As Range
+    Dim rng As Range
+    Dim sh As Worksheet
+    Dim toClear As Boolean
+    Dim FUNS As WorksheetFunction
+
+    'You can immport either another datasheet or a custom table
+    If (TypeName(importData) <> "DataSheet") And _
+       (TypeName(importData) <> "CustomTable") Then Exit Sub
+
+    Set imphRng = importData.HeaderRange()
+    Set sh = Wksh()
+    Set FUNS = Application.WorksheetFunction
+
+    For counter = 1 To imphRng.Columns.Count
+        'all the headers are in lowercase and are trimed
+        headerValue = imphRng.Cells(1, counter).Value
+        newHeaderValue = FUNS.Trim(LCase(headerValue))
+
+        If ColumnExists(newHeaderValue) Then
+            'This data Range does not includes colnames. Strict search is to
+            'take in accout cases and enforce a strict search of colnames which is not
+            'tipically done in custom table
+            If TypeName(importData) = "CustomTable" Then
+                Set impDataRng = importData.DataRange(headerValue, strictSearch:=True)
+            Else
+                Set impDataRng = importData.DataRange(headerValue)
+            End If
+            Set currDataRng = DataRange(newHeaderValue)
+            nbImpRows = impDataRng.Rows.Count
+            'Add values if the range does not contains formulas. If the range contains formulas, do nothing
+            Set rng = sh.Range(currDataRng.Cells(1, 1), currDataRng.Cells(nbImpRows, 1))
+            toClear = False
+            On Error Resume Next
+            toClear = (CStr(rng.Cells(1, 1).formula) = CStr(rng.Cells(1, 1).Value))
+            On Error GoTo 0
+            If toClear Then
+                currDataRng.Cells.ClearContents
+                rng.Value = impDataRng.Value
+            End If
+        End If
+    Next
+End Sub
+
+'The import range must include the header
+Private Sub ImportFormat(ByVal impRng As Range)
+    Dim cellRng As Range
+    Dim headerName As String
+    Dim FUN As WorksheetFunction
+    Dim actRng As Range
+
+    Set FUN = Application.WorksheetFunction
+    headerName = FUN.Trim(LCase(impRng.Cells(1, 1).Value))
+
+    'Test if the column exists before proceeding
+    If (Not ColumnExists(headerName)) Or (impRng Is Nothing) Then Exit Sub
+    Set cellRng = impRng.Cells(2, 1)
+    Set actRng = DataRange(headerName).Cells(1, 1)
+    'Check the ranges length
+    If (impRng.Rows.Count - 1) <> actRng.Rows.Count Then Exit Sub
+
+    Do While (cellRng.Value <> vbNullString)
+        actRng.Value = cellRng.Value
+        actRng.Interior.Color = cellRng.Interior.Color
+        actRng.Font.Color = cellRng.Font.Color
+
+        Set cellRng = cellRng.Offset(1)
+        Set actRng = actRng.Offset(1)
+    Loop
 End Sub
 
 'Export
@@ -360,23 +409,34 @@ End Sub
 
 'Errors ----------------------------------------------------------------------
 Private Sub ThrowErrorEmptySheetGiven(Optional ByVal Class As String = ":")
-    Err.Raise VBA.vbObjectError + 513, CLASSNAME, "Unable to create an instance of the class" & Class & " Given Worksheet object does not exists, please verify if you set it."
+    Err.Raise VBA.vbObjectError + 513, CLASSNAME, _
+     "Unable to create an instance of the class" & Class & _
+      " Given Worksheet object does not exists, please verify if you set it."
 End Sub
 
 Private Sub ThrowErrorStartNumber(Optional ByVal startNumber As Long = -1, Optional ByVal startLabel As String = " Start ", Optional ByVal Class As String = ":")
-    Err.Raise VBA.vbObjectError + 514, CLASSNAME, "Unable to create an instance of the class" & Class & " The " & startLabel & _
-                                                 "should be >= 1. " & "Actual value : " & startNumber
+    Err.Raise VBA.vbObjectError + 514, CLASSNAME, _
+     "Unable to create an instance of the class" & Class & _
+      " The " & startLabel & _
+     "should be >= 1. " & "Actual value : " & startNumber
 End Sub
 
 Private Sub ThrowErrorUnFoundColumn(ByVal colName As String)
-    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Column " & colName & " does not exists" & " in worksheet " & Wksh.Name
+    Err.Raise VBA.vbObjectError + 515, CLASSNAME, _
+     "Column " & colName & " does not exists" & " in worksheet " & Wksh.Name
 End Sub
 
 'Inteface ----------------------------------------------------------------------
 
 'Methods
-Public Function IDataSheet_FilterData(ByVal varName As String, ByVal criteriaName As String, ByVal returnedColumnName As String, Optional ByVal includeHeaders As Boolean = False) As BetterArray
-    Set IDataSheet_FilterData = FilterData(varName:=varName, criteriaName:=criteriaName, returnedColumnName:=returnedColumnName, includeHeaders:=includeHeaders)
+Public Function IDataSheet_FilterData(ByVal varName As String, _
+                                      ByVal criteriaName As String, _
+                                      ByVal returnedColumnName As String, _
+                                      Optional ByVal includeHeaders As Boolean = False) As BetterArray
+    Set IDataSheet_FilterData = FilterData(varName:=varName, _
+                                           criteriaName:=criteriaName, _
+                                           returnedColumnName:=returnedColumnName, _
+                                           includeHeaders:=includeHeaders)
 End Function
 
 Public Function IDataSheet_FiltersData(ByVal varData As BetterArray, ByVal criteriaData As BetterArray, ByVal returnedColumnsData As BetterArray) As BetterArray
@@ -420,14 +480,23 @@ Public Property Get IDataSheet_DataEndColumn() As Long
     IDataSheet_DataEndColumn = DataEndColumn()
 End Property
 
+Public Property Get IDataSheet_HeaderRange() As Range
+    Set IDataSheet_HeaderRange = HeaderRange()
+End Property
+
 Public Sub IDataSheet_Export(ByVal toWkb As Workbook, _
                              Optional ByVal filteredVarName As String = "__all__", _
-                             Optional ByVal filteredCondition As String = "<>", Optional ByVal Hide As Long = xlSheetHidden)
+                             Optional ByVal filteredCondition As String = "<>", _
+                             Optional ByVal Hide As Long = xlSheetHidden)
     export toWkb, filteredVarName, filteredCondition, Hide
 End Sub
 
-Public Sub IDataSheet_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
-    Import fromWksh, fromStartRow, fromStartcol
+'Import another datasheet or a custom table
+Public Sub IDataSheet_Import(ByVal importedData As Object)
+    Import importedData
 End Sub
 
-
+'Import the formats of a range
+Public Sub IDataSheet_ImportFormat(ByVal impRng As Range)
+    ImportFormat impRng
+End Sub

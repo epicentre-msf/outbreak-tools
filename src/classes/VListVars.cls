@@ -159,9 +159,14 @@ Private Sub AddType()
         If varFormat = vbNullString Then
 
             'Default format if there is nothing
-            formatText = IIf(varTypes = "decimal", "#,##0.00;-#,##0.00;0.00;@", "###0;-###0;0;@")
+            formatText = IIf(varTypes = "decimal", "#,##0.00;-#,##0.00;0.00;@", _
+                             "###0;-###0;0;@")
 
         'Other formats
+        ElseIf varFormat = "integer" Then
+
+            formatText = "###0;-###0;;@"
+
         ElseIf varFormat = "round0" Then
 
             formatText = "#,##0;-#,##0;0;@"
@@ -176,7 +181,8 @@ Private Sub AddType()
             On Error GoTo 0
 
             zerosDecimals = String(nbDecimals, "0")
-            formatText = "#,###0." & zerosDecimals & ";-#,###0." & zerosDecimals & ";0." & zerosDecimals & ";@"
+            formatText = "#,###0." & zerosDecimals & ";-#,###0." &  _
+                         zerosDecimals & ";0." & zerosDecimals & ";@"
 
         ElseIf (InStr(1, varFormat, "percentage") > 0) Then
             On Error Resume Next
@@ -250,7 +256,8 @@ Private Sub AddFormula()
     Dim varControl As String
 
     varControl = ValueOf("control")
-    If (varControl <> "formula") And (varControl <> "case_when") And (varControl <> "choice_formula") Then Exit Sub
+    If (varControl <> "formula") And (varControl <> "case_when") And _
+     (varControl <> "choice_formula") Then Exit Sub
 
     Set lData = LinelistData()
     Set dict = lData.Dictionary()
@@ -314,7 +321,8 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
 
 
     'sublabel
-    If (varControl = "formula") Or (varControl = "case_when") Or (varControl = "choice_formula") Then
+    If (varControl = "formula") Or (varControl = "case_when") Or _
+      (varControl = "choice_formula") Then
         varSublab = varSublab & chr(10) & calculated
     End If
 
@@ -396,7 +404,7 @@ Private Sub AddValidation()
     Dim varMax As String
     Dim varMessage As String
     Dim varAlert As String
-    Dim varTypes As String                       'Something weird but we can't name a variable varType, so the s is important
+    Dim varTypes As String     'Something weird but we can't name a variable varType, so the s is important
     Dim validationTypes As Long
     Dim validationAlerts As Long
     Dim excelForm As Variant
@@ -438,7 +446,8 @@ Private Sub AddValidation()
             excelForm = ExcelFormula(varMax, validationTypes)
             If IsEmpty(excelForm) Then Exit Sub
 
-            .Add Type:=validationTypes, AlertStyle:=validationAlerts, Operator:=xlLessEqual, Formula1:=excelForm
+            .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
+                 Operator:=xlLessEqual, Formula1:=excelForm
 
         ElseIf (varMin <> vbNullString) And (varMax <> vbNullString) Then
             'Validation on Both minimum and maximum
@@ -465,7 +474,8 @@ Private Sub AddValidation()
 End Sub
 
 'Excel formula uses the OS to convert to local formula
-Private Function ExcelFormula(ByVal formVal As String, ByVal validationTypes As Long) As Variant
+Private Function ExcelFormula(ByVal formVal As String, _
+                              ByVal validationTypes As Long) As Variant
 
     Dim lData As ILinelistSpecs
     Dim dict As ILLdictionary
@@ -525,7 +535,8 @@ Private Function OSFormula(ByVal formVal As String) As String
     If (Application.OperatingSystem Like "*Mac*") Then
         OSFormula = formVal
     Else
-        'On windows, validations are done using the formula Local and not the formula itself
+        'On windows, validations are done using the
+        'formula Local and not the formula itself
         Set sh = Wksh()
         prevForm = sh.Cells(1, 1).formula
         sh.Cells(1, 1).formula = "=" & formVal
@@ -570,9 +581,11 @@ Private Sub CheckRequirements(ByVal varName As String, ll As ILinelist)
     If ll Is Nothing Then ThrowError "No linelist object found"
     Set dict = ll.Dictionary()
     Set varObject = LLVariables.Create(dict)
-    If Not dict.VariableExists(varName) Then ThrowError "Variable" & varName & "Does not exists!"
+    If Not dict.VariableExists(varName) Then _
+    ThrowError "Variable" & varName & "Does not exists!"
     sheetName = varObject.Value(varName:=varName, colName:="sheet name")
-    If Not ll.sheetExists(sheetName) Then ThrowError varName & "worksheet named" & sheetName & "is not created"
+    If Not ll.sheetExists(sheetName) Then  _
+    ThrowError varName & "worksheet named" & sheetName & "is not created"
 
 End Sub
 

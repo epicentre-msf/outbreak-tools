@@ -67,8 +67,10 @@ End Sub
 'Import from another worksheet
 Private Sub ImportSpecs(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
     Dim expData As IDataSheet
+    Dim impExpData As IDataSheet
     Set expData = Data()
-    expData.Import fromWksh, fromStartRow, fromStartcol
+    Set impExpData = DataSheet.Create(fromWksh, fromStartRow, fromStartCol)
+    expData.Import impExpData
 End Sub
 
 Public Sub ILLExport_Translate(ByVal trans As ITranslation)
