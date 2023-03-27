@@ -21,5 +21,7 @@
     },
     "files.exclude": {
         "**/.mock": true
-    }
+    },
+    "editor.lineNumbers": "off",
+    "editor.fontSize": 14
 }

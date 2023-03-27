@@ -16,7 +16,6 @@ Attribute VB_Exposed = False
 Option Explicit
 Implements ILLchoice
 
-
 Private Type Tchoice
     choiceDataSheet As IDataSheet
 End Type
@@ -163,8 +162,11 @@ End Sub
 
 Private Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
     Dim choiData As IDataSheet
+    Dim impChoiData As IDataSheet
     Set choiData = ChoiceData()
-    choiData.Import fromWksh, fromStartRow, fromStartcol
+    Set impChoiData = DataSheet.Create(fromWksh, fromStartRow, fromStartCol)
+
+    choiData.Import impChoiData
 End Sub
 
 'Translation
