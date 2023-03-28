@@ -34,3 +34,5 @@ End Function
 Public Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal newValue As String, Optional ByVal onEmpty As Boolean = False)
 End Sub
 
+Public Property Get CellRange(Byval colName As String, ByVal varName As String) As Range
+End Property

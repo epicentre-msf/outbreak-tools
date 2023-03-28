@@ -61,14 +61,14 @@ End Property
 Private Function Contains(ByVal varName As String) As Boolean
     Dim varRng As Range
     Dim Exist As Boolean
-  
+
     Set varRng = VarRange()
     If varName = vbNullString Then
         Exist = False
     Else
         Exist = Not (varRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
     End If
-  
+
     Contains = Exist
 End Function
 
@@ -86,31 +86,32 @@ End Function
 
 'Value of one column for one variable
 Private Function Value(ByVal colName As String, ByVal varName As String) As String
-
     'Row and columns to return
-    Dim rowNum As Long
-    Dim colNum As Long
     Dim retValue As String
-
-    Dim dict As ILLdictionary
-    Dim Wksh As Worksheet
-
-    Set dict = Dictionary()
-    Set Wksh = dict.Data.Wksh
-
+    Dim retRng As Range
     'return value
     retValue = vbNullString
+    Set retRng = cellRange(colName, varName)
+    If Not (retRng Is Nothing) Then retValue = retRng.Value
+    Value = retValue
+End Function
 
+Private Property Get CellRange(ByVal colName As String, ByVal varName As String) As Range
+
+'Row and columns to return
+    Dim rowNum As Long
+    Dim colNum As Long
+    Dim dict As ILLdictionary
+    Dim Wksh As Worksheet
+    Set dict = Dictionary()
+    Set Wksh = dict.Data.Wksh
     If Contains(varName) And dict.ColumnExists(colName) Then
 
         rowNum = RowIndex(varName)
         colNum = dict.Data.ColumnIndex(colName)
-        retValue = Wksh.Cells(rowNum, colNum).Value
-
+        Set cellRange = Wksh.Cells(rowNum, colNum)
     End If
-
-    Value = retValue
-End Function
+End Property
 
 Private Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal newValue As String, Optional ByVal onEmpty As Boolean = False)
 
@@ -127,7 +128,7 @@ Private Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal new
 
     If Contains(varName) And dict.ColumnExists(colName) Then
         Update = True
-        
+
         rowNum = RowIndex(varName)
         colNum = dict.Data.ColumnIndex(colName)
         If onEmpty Then Update = IsEmpty(Wksh.Cells(rowNum, colNum))
@@ -177,3 +178,6 @@ Public Sub ILLVariables_SetValue(ByVal varName As String, ByVal colName As Strin
     SetValue varName, colName, newValue, onEmpty
 End Sub
 
+Public Property Get ILLVariables_CellRange(Byval colName As String, ByVal varName As String) As Range
+    Set ILLVariables_CellRange = CellRange(colName, varName)
+End Property

@@ -220,11 +220,9 @@ Private Function VariableAddress(ByVal varName As String, Optional ByVal onSheet
     sheetName = vars.Value(colName:="sheet name", varName:=varName)
 
     prefix = vbNullString
-    
-    If (onSheet <> sheetName) Then
-        prefix = "'" & sheetName & "'!"
-    End If
-  
+
+    If (onSheet <> sheetName) Then   prefix = "'" & sheetName & "'!"
+
     rstart = DataBounds(sheetName, 1)
     cstart = DataBounds(sheetName, 3)
 
@@ -236,7 +234,7 @@ Private Function VariableAddress(ByVal varName As String, Optional ByVal onSheet
             varAdd = prefix & dictWksh.Cells(varIndex, cstart).Address(Rowabsolute:=True, ColumnAbsolute:=True)
         End Select
     End If
-  
+
     VariableAddress = varAdd
 End Function
 
