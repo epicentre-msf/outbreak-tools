@@ -77,9 +77,11 @@ End Property
 
 'End row and columns of the dictionary
 Private Property Get DataEndRow() As Long
+    Dim endrw As Long
     With Wksh
-        DataEndRow = .Cells(.Rows.Count, StartColumn).End(xlUp).Row
+        endrw = .Cells(.Rows.Count, StartColumn).End(xlUp).Row
     End With
+    DataEndRow = IIf(endrw = StartRow, StartRow + 1, endrw)
 End Property
 
 Private Property Get DataEndColumn() As Long
@@ -349,26 +351,31 @@ End Sub
 Private Sub ImportFormat(ByVal impRng As Range)
     Dim cellRng As Range
     Dim headerName As String
-    Dim FUN As WorksheetFunction
+    Dim FUNS As WorksheetFunction
     Dim actRng As Range
+    Dim actCellRng As Range 'Cell range of the actual range
+    Dim endrw As Long
 
-    Set FUN = Application.WorksheetFunction
-    headerName = FUN.Trim(LCase(impRng.Cells(1, 1).Value))
+    Set FUNS = Application.WorksheetFunction
+    headerName = FUNS.Trim(LCase(impRng.Cells(1, 1).Value))
 
     'Test if the column exists before proceeding
     If (Not ColumnExists(headerName)) Or (impRng Is Nothing) Then Exit Sub
     Set cellRng = impRng.Cells(2, 1)
-    Set actRng = DataRange(headerName).Cells(1, 1)
+    Set actRng = DataRange(headerName)
+    actRng.ClearFormats
+    Set actCellRng = actRng.Cells(1, 1)
     'Check the ranges length
-    If (impRng.Rows.Count - 1) <> actRng.Rows.Count Then Exit Sub
-
-    Do While (cellRng.Value <> vbNullString)
-        actRng.Value = cellRng.Value
-        actRng.Interior.Color = cellRng.Interior.Color
-        actRng.Font.Color = cellRng.Font.Color
+    endrw = DataEndRow()
+    Do While (cellRng.Row <= endrw)
+        actCellRng.Value = cellRng.Value
+        If (cellRng.Interior.Color <> vbWhite) Then actCellRng.Interior.Color = cellRng.Interior.Color
+        If (cellRng.Font.Color <> vbBlack) Then actCellRng.Font.Color = cellRng.Font.Color
+        actCellRng.Font.Bold = cellRng.Font.Bold
+        actCellRng.Font.Italic = cellRng.Font.Italic
 
         Set cellRng = cellRng.Offset(1)
-        Set actRng = actRng.Offset(1)
+        Set actCellRng = actCellRng.Offset(1)
     Loop
 End Sub
 

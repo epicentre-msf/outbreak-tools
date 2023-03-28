@@ -160,7 +160,7 @@ Private Sub AddType()
 
             'Default format if there is nothing
             formatText = IIf(varTypes = "decimal", "#,##0.00;-#,##0.00;0.00;@", _
-                             "###0;-###0;0;@")
+                             "###0;-###0;;@")
 
         'Other formats
         ElseIf varFormat = "integer" Then
@@ -279,6 +279,38 @@ Private Sub AddFormula()
     End If
     'Apply format of the calculated range
     DesignFormat.ApplyFormat cellRng, scope:=HListCalculatedFormulaCell
+End Sub
+
+'Conditional formatting on variables
+Private Sub AddConditionalFormatting()
+    Dim varValid As String 'variable (dummies for validation, should contain 1 Or 0)
+    Dim cellRng As Range 'Range of the variable
+    Dim formatRng As Range 'Range with values defined for the validation format
+    Dim varObject As ILLVariables 'List of variables
+    Dim shObj As ILLSheets
+    Dim condAdd As String 'condition variable address
+
+    varValid = ValueOf("formatting condition")
+    Set varObject = vars()
+
+    If (varValid = vbNullString) Then Exit Sub
+    If Not varObject.Contains(varValid) Then Exit Sub
+    Set cellRng = VarRange()
+    Set formatRng = varObject.CellRange(colName:="formatting values", _
+                                         varName:=ActualVariable)
+    Set shObj = SheetsObject()
+    condAdd = shObj.VariableAddress(varValid)
+
+    cellRng.FormatConditions.Add Type:=xlExpression, Formula1:="=(" & condAdd & "= 1)"
+    With cellRng.FormatConditions(cellRng.FormatConditions.Count)
+        .Interior.Color = formatRng.Interior.Color
+        .Font.Color = formatRng.Font.Color
+        .Font.Bold = formatRng.Font.Bold
+        .Font.Italic = formatRng.Font.Italic
+        'Stop if this condition is met (This is the first priority)
+        .SetFirstPriority
+        .StopIfTrue = True
+    End With
 End Sub
 
 'Main Label
@@ -566,6 +598,9 @@ Private Sub WriteInfo()
     On Error Resume Next
     AddValidation
     On Error GoTo 0
+
+    'Add conditional formatting
+    AddConditionalFormatting
 End Sub
 
 'Errors

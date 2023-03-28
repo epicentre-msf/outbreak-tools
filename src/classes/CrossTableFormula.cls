@@ -281,7 +281,7 @@ Private Sub AddRngFormat(Byval formatValue As String, ByVal rng As Range)
 
     ElseIf formatValue = "integer" Then
 
-        formatText = "###0;-###0;0;@"
+        formatText = "###0;-###0;;@"
 
     ElseIf formatValue = "round0" Then
 

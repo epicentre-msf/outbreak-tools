@@ -97,6 +97,12 @@ Private Property Get vars() As ILLVariables
     Set vars = LLVariables.Create(dict)
 End Property
 
+Private Property Get SheetsObject() As ILLSheets
+    Dim dict As ILLdictionary
+    Set dict = Dictionary()
+    Set SheetsObject = LLSheets.Create(dict)
+End Property
+
 Private Property Get ValueOf(ByVal colName As String) As String
     Dim varObject As ILLVariables
     Set varObject = vars()
@@ -155,7 +161,7 @@ Private Sub AddType()
 
         If varFormat = vbNullString Then
             'Default format if there is nothing
-            formatText = IIf(varTypes = "decimal", "#,##0.00;-#,##0.00;0.00;@", "###0;-###0;0;@")
+            formatText = IIf(varTypes = "decimal", "#,##0.00;-#,##0.00;0.00;@", "###0;-###0;;@")
         'Other formats
         ElseIf varFormat = "integer" Then
 
@@ -279,6 +285,52 @@ Private Sub AddFormula()
     DesignFormat.ApplyFormat cellRng.Offset(-2), scope:=HListCalculatedFormulaHeader 'Header
 End Sub
 
+'Conditional formatting
+Private Sub AddConditionalFormatting()
+    Dim varValid As String 'variable (dummies for validation, should contain 1 Or 0)
+    Dim cellRng As Range 'Range of the variable
+    Dim formatRng As Range 'Range with values defined for the validation format
+    Dim varObject As ILLVariables 'List of variables
+    Dim shObj As ILLSheets
+    Dim condAdd As String 'condition variable address
+
+    varValid = ValueOf("formatting condition")
+    Set varObject = vars()
+
+    If (varValid = vbNullString) Then Exit Sub
+    If Not varObject.Contains(varValid) Then Exit Sub
+    Set cellRng = VarRange()
+    Set formatRng = varObject.CellRange(colName:="formatting values", _
+                                         varName:=ActualVariable)
+    Set shObj = SheetsObject()
+    condAdd = shObj.VariableAddress(varValid)
+
+    cellRng.FormatConditions.Add Type:=xlExpression, Formula1:="=(" & condAdd & "= 1)"
+    With cellRng.FormatConditions(cellRng.FormatConditions.Count)
+        .Interior.Color = formatRng.Interior.Color
+        .Font.Color = formatRng.Font.Color
+        .Font.Bold = formatRng.Font.Bold
+        .Font.Italic = formatRng.Font.Italic
+        'Stop if this condition is met (This is the first priority)
+        .SetFirstPriority
+        .StopIfTrue = True
+    End With
+End Sub
+
+'Conditional formatting on unique values
+Private Sub AddUniqueConditonalFormatting()
+    Dim varUnique As String
+    Dim cellRng As Range
+    varUnique = ValueOf("unique")
+    If (varUnique <> "yes") Then Exit Sub
+    Set cellRng = VarRange()
+    cellRng.FormatConditions.AddUniqueValues
+    With cellRng.FormatConditions(cellRng.FormatConditions.Count)
+        .DupeUnique = xlDuplicate
+        .Interior.Color = vbRed
+    End With
+End Sub
+
 'Main Label
 Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     Dim varMainLab As String
@@ -370,14 +422,9 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     End If
 
     'Custom columns, user can modify them
-    If (varControl = "custom") Then
-        cellRng.Offset(-2).Locked = False
-    End If
-
+    If (varControl = "custom") Then  cellRng.Offset(-2).Locked = False
     'Hidden columns
-    If varStatus = "hidden" Then
-        cellRng.EntireColumn.Hidden = True
-    End If
+    If varStatus = "hidden" Then  cellRng.EntireColumn.Hidden = True
 
     'The cell header itself
     design.ApplyFormat cellRng.Offset(-2), scope:=HListSimpleHeaderCell
@@ -623,6 +670,12 @@ Private Sub WriteInfo()
     On Error Resume Next
     AddValidation
     On Error GoTo 0
+
+    'Conditional formatting
+    AddConditionalFormatting
+
+    'Conditional formatting on unique values
+    AddUniqueConditonalFormatting
 End Sub
 
 'Errors
