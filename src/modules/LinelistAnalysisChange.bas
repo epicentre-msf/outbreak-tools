@@ -1,4 +1,5 @@
 Attribute VB_Name = "LinelistAnalysisChange"
+Option Explicit
 
 'This event is called when something changes in the sheet analysis.
 'This is for controlling changes related  dropdowns on GoTo sections

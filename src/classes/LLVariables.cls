@@ -91,7 +91,7 @@ Private Function Value(ByVal colName As String, ByVal varName As String) As Stri
     Dim retRng As Range
     'return value
     retValue = vbNullString
-    Set retRng = cellRange(colName, varName)
+    Set retRng = CellRange(colName, varName)
     If Not (retRng Is Nothing) Then retValue = retRng.Value
     Value = retValue
 End Function
@@ -134,7 +134,6 @@ Private Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal new
         If onEmpty Then Update = IsEmpty(Wksh.Cells(rowNum, colNum))
         If Update Then Wksh.Cells(rowNum, colNum).Value = newValue
     End If
-
 End Sub
 
 'Index of a column or a Row of a variable in a worksheet

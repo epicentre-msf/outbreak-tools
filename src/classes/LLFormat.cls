@@ -115,7 +115,6 @@ Private Function DesignValue(ByVal labelName As String, _
     Else
         DesignValue = retdesValue
     End If
-    
 End Function
 
 'Format a range, add lines, or format borders

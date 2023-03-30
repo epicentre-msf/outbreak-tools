@@ -28,6 +28,7 @@ End Type
 
 Private this As TLinelist
 Private Const CLASSNAME  As String = "Linelist"
+Private Const PRINTPREFIX As String = "print_"
 
 Public Function Create(lData As ILinelistSpecs) As ILinelist
 
@@ -107,30 +108,38 @@ Private Property Get Dropdown() As IDropdownLists
 End Property
 
 'Add worksheets to workbook
-Private Sub AddOutputSheet(ByVal sheetName As String, Optional ByVal Hide As Long = xlSheetVeryHidden)
+Private Sub AddOutputSheet(ByVal sheetName As String, _ 
+                          Optional ByVal Hide As Long = xlSheetVeryHidden, _ 
+                          Optional ByVal usePrinted As Boolean = False)
     Dim outWkb As Workbook
-    Set outWkb = Wkb()
+    Dim actSheetName As String
 
-    If sheetExists(sheetName) Then ThrowError "The sheet " & sheetName & "already exists in the output workbook"
+    Set outWkb = Wkb()
+    actSheetName = IIF(usePrinted, PRINTPREFIX & sheetName, sheetName)
+
+    If sheetExists(actSheetName) Then ThrowError "The sheet " & actSheetName & " already exists in the output workbook"
     With outWkb
-        .Worksheets.Add.Name = sheetName
-        .Worksheets(sheetName).Visible = Hide
+        .Worksheets.Add.Name = actSheetName
+        .Worksheets(actSheetName).Visible = Hide
     End With
 End Sub
 
 'Get a Worksheet in the output workbook
-Private Property Get Wksh(ByVal sheetName As String) As Worksheet
+Private Property Get Wksh(ByVal sheetName As String, Optional ByVal usePrinted As Boolean = False) As Worksheet
     Dim sh As Worksheet
     Dim outWkb As Workbook
+    Dim actSheetName As String 'actual sheet name either with the printed prefix, or not
 
     'Test if the sheet Exists
-    If Not sheetExists(sheetName) Then ThrowError "The sheet " & sheetName & "does not exists in current workbook"
+    actSheetName = IIF(usePrinted, PRINTPREFIX & sheetName, sheetName)
+    If Not sheetExists(actSheetName) Then ThrowError "The sheet " & sheetName & "does not exists in current workbook"
     Set outWkb = Wkb()
-    Set sh = outWkb.Worksheets(sheetName)
+    Set sh = outWkb.Worksheets(actSheetName)
     Set Wksh = sh
 End Property
 
-Private Sub TransferCode(moduleName As String, scope As CodeScope)   
+
+Private Sub TransferCode(moduleName As String, scope As CodeScope)
     Dim codeObject As Object                     'Where to stock to code in the workbook
     Dim codeContent As String
     Dim outWkb As Workbook
@@ -139,7 +148,7 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
     Dim sep As String
     Dim outDir As String
     Dim outPath As String
-    
+
     Dim lData As ILinelistSpecs
 
     Set outWkb = Wkb()                           'Output workbook
@@ -148,7 +157,7 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
     Set mainobj = lData.MainObject()
     sep = Application.PathSeparator
     outDir = mainobj.OutputPath() & sep & "LinelistApp_"
-         
+
     'get all the values within the actual module to transfer
     Select Case scope
     Case codeScopeModule
@@ -156,26 +165,26 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
     Case codeScopeClass
         outPath = outDir & sep & "CopieCls.cls"
     End Select
-    
+
     'I need to import/export classes to keep their attribute. (self instanciation, etc.)
     On Error Resume Next
     Kill outPath
     On Error GoTo 0
-         
+
     Set codeObject = inpWkb.VBProject.VBComponents(moduleName)
     codeObject.export outPath
     Set codeObject = outWkb.VBProject.VBComponents
     codeObject.Import outPath
-        
+
     On Error Resume Next
     Kill outPath
-    On Error GoTo 0   
+    On Error GoTo 0
 End Sub
 
 'Transfert code to the workbook
 Private Sub TransferCodeWkb()
     Const LINELISTWORKBOOKMODULENAME = "LinelistWorkbook"
-    
+
     Dim lData As ILinelistSpecs
     Dim codeContent As String                    'a string to contain code to add
     Dim vbProj As Object                         'component, project and modules
@@ -250,7 +259,7 @@ Public Sub TransferForm(formName As String)
     Kill outDir & sep & "CopieUsf.frm"
     Kill outDir & sep & "CopieUsf.frx"
     On Error GoTo 0
-    
+
     formPath = outDir & sep & "CopieUsf.frm"
 
     'Copy the frame to the output directory
@@ -279,9 +288,9 @@ Private Sub Prepare()
     Dim outWkb As Workbook
     Dim prevAlert As Boolean
     Dim classesList As BetterArray
-    
+
     Set outWkb = Wkb()
-    
+
     Set lData = LinelistData()
     Set sheetsList = New BetterArray
     Set trans = lData.TransObject()
@@ -319,16 +328,16 @@ Private Sub Prepare()
         sheetName = sheetsList.Item(counter)
         AddOutputSheet sheetName, xlsheetvisible
     Next
-    
+
     'Admin sheet Name
     AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlsheetvisible
-   
+
     'Delete the first worksheet with name sheet1
     prevAlert = Application.DisplayAlerts
     Application.DisplayAlerts = False
     outWkb.Worksheets(this.firstSheet).Delete
     Application.DisplayAlerts = prevAlert
-    
+
     'Send the User forms and classes to the linelist
     TemporaryFolder Create:=True
 
@@ -356,18 +365,18 @@ Private Sub Prepare()
         codeName = classesList.Item(counter)
         TransferCode codeName, codeScopeModule
     Next
-      
+
     classesList.Clear
     classesList.Push "F_Advanced", "F_Export", "F_ExportMig", "F_Geo", "F_ImportMig", "F_ImportRep", _
                      "F_NomVisible"
-    
+
     For counter = classesList.LowerBound To classesList.UpperBound
         codeName = classesList.Item(counter)
         TransferForm codeName
     Next
-    
+
     'Transfert workbook close codes to the workbook
-    TransferCodeWkb   
+    TransferCodeWkb
     TemporaryFolder Create:=False
     'Prepare the LinelistAdmin sheet
     PrepareAdmin
@@ -415,7 +424,7 @@ Private Sub PrepareAdmin()
     BusyApp
     sh.Activate
     BusyApp
-    
+
     pass.Protect "_active"
 End Sub
 
@@ -458,7 +467,7 @@ Private Sub SaveLL()
 
     'Select the admin sheet before saving
     outWkb.Worksheets(msgTrads.TranslatedValue("LLSHEET_Admin")).Activate
-    
+
     'Protect the workbook structure from eventual deletion/renaming of a worksheet
     passobj.ProtectWkb outWkb
 
@@ -477,6 +486,10 @@ Public Property Get ILinelist_Wksh(ByVal sheetName As String) As Worksheet
     Set ILinelist_Wksh = Wksh(sheetName)
 End Property
 
+Public Property Get ILinelist_PrintWksh(ByVal sheetName As String) As Worksheet
+    Set ILinelist_PrintWksh = Wksh(sheetName, usePrinted:=True)
+End Property
+
 Public Property Get ILinelist_LinelistData() As ILinelistSpecs
     Set ILinelist_LinelistData = LinelistData()
 End Property
@@ -489,6 +502,7 @@ Public Property Get ILinelist_Dropdown() As IDropdownLists
     Set ILinelist_Dropdown = Dropdown()
 End Property
 
+
 'Exposed methods
 Public Sub ILinelist_Prepare()
     Prepare
@@ -498,8 +512,10 @@ Public Function ILinelist_SheetExists(ByVal sheetName As String) As Boolean
     ILinelist_SheetExists = sheetExists(sheetName)
 End Function
 
-Public Sub ILinelist_AddOutputSheet(ByVal sheetName As String, Optional ByVal Hide As Long = xlSheetVeryHidden)
-    AddOutputSheet sheetName, Hide
+Public Sub ILinelist_AddOutputSheet(ByVal sheetName As String, _ 
+                                    Optional ByVal Hide As Long = xlSheetVeryHidden, _ 
+                                    Optional ByVal usePrinted As Boolean = False)
+    AddOutputSheet sheetName, Hide, usePrinted
 End Sub
 
 Public Sub ILinelist_SaveLL()

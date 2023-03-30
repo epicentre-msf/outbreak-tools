@@ -71,6 +71,8 @@ Public Enum FormatScopes
     AnalysisInfoCellLeft = 51
     AnalysisMissingRowWithoutHeader = 52
     LinelistWarning = 53
+    HListPrintedSheet = 54
+    HListPrintedCellHeader = 55
 End Enum
 
 Public Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)

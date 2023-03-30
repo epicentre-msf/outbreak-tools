@@ -110,7 +110,7 @@ Private Sub ClassArraysInitialize()
                             "control", "control details", "unique", _
                            "export 1", "export 2", "export 3", "export 4",  _
                            "export 5", "min", "max", "alert", "message",  _
-                           "formatting condition", _
+                           "formatting condition", "print variable", _
                            "formatting values", "lock cells", "table name", "column index", _
                            "list auto", "visibility"
 End Sub
@@ -672,16 +672,26 @@ Private Sub Import(ByVal fromWksh As Worksheet,  _
     Dim dictData As IDataSheet
     Dim impdictData As IDataSheet
     Dim impRng As Range
+    Dim sh As Worksheet 'Worksheet of the dictionary
 
+    Set sh = Wksh()
     Set dictData = Data()
     Set impdictData = DataSheet.Create(fromWksh, fromStartRow, fromStartCol)
-    'Clean the current data sheet
+
+    'Clear the current worksheet before importing
+    sh.Cells.Clear
+    If DICTIONARYCOLUMNS Is Nothing Then ClassArraysInitialize
+    DICTIONARYCOLUMNS.ToExcelRange sh.Cells(StartRow, StartColumn), TransposeValues:=True
+
+    'Clean the current data sheet (remove unwanted columns)
     Clean removeAddedColumns:=True
     dictData.Import impdictData
 
     'Import the formats of the Range Formatting Values
     Set impRng = impdictData.DataRange("Formatting Values", _
                                       includeHeaders:=True)
+
+    'Import the format for formatting values
     dictData.ImportFormat impRng
 End Sub
 
