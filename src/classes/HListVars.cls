@@ -460,8 +460,6 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
             cellRng.EntireColumn.AutoFit
         Case "hidden"
             cellRng.EntireColumn.Hidden = True
-            design.ApplyFormat cellRng.Offset(-1), scope:=HListPrintedCellHeader
-
         End Select
     Else
         If varStatus = "hidden" Then  cellRng.EntireColumn.Hidden = True

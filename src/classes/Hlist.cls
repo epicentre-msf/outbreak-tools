@@ -151,7 +151,7 @@ Public Sub Build()
     Const REMOVEFILTERCOMMAND As String = "ClearAllFilters"
     Const GEOCOMMAND As String = "ClicCmdGeoApp"
     Const FILTEREDPREFIX  As String = "f"
-    Const PRINTPREFIX As String = "print_"
+    Const PRINTPREFIX As String = "pr"
 
 
     Dim sh As Worksheet
@@ -192,12 +192,11 @@ Public Sub Build()
     sheetName = Name()
 
     'Add Printed Worksheet before building
-    ll.AddOutputSheet sheetName, xlSheetVisible, usePrinted:=True
+    ll.AddOutputSheet sheetName, xlSheetHidden, usePrinted:=True
     Set printsh = ll.Printwksh(sheetName)
 
     'Format the linelist and prepare it
     design.ApplyFormat sh, scope:=AllLinelistSheet
-    design.ApplyFormat printsh, scope:=AllLinelistSheet
     design.ApplyFormat printsh, scope:=HListPrintedSheet
 
     'Change the View of the printed worksheet
@@ -217,9 +216,6 @@ Public Sub Build()
         .FreezePanes = True
     End With
     On Error GoTo 0
-
-
-
 
     'Add the buttons on printed and non printed worksheet
 
@@ -251,6 +247,11 @@ Public Sub Build()
         but.Format design
     End If
 
+    'Show Hide Button on print worksheet
+    Set rng = printsh.Cells(1, 2)
+    Set but = Buttons.Create(outRng:=rng, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
+    but.Add actionCommand:=SHOWHIDECOMMAND, shapeLabel:=trads.TranslatedValue(SHPSHOWHIDE)
+    but.Format design
 
     'Now Build each Section (including sections of printed worksheet)
     Set trads = lData.TransObject(TranslationOfMessages)
@@ -308,17 +309,34 @@ Public Sub Build()
         shrowEnd = llshs.DataBounds(sheetName, 2)
 
         Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
-
-        'On Error Resume Next
-        .calculate
+        .Calculate
         Lo.Resize rng
-        'On Error GoTo 0
 
         design.ApplyFormat Lo, scope:=HListTable
 
         'Format the header range
         Set rng = Lo.HeaderRowRange
         design.ApplyFormat rng, scope:=HListHeader
+    End With
+
+
+    'Create the whole table of the HListPrinted
+    With printsh
+        shrowEnd = shrowStart + 1
+        Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = PRINTPREFIX & tableName
+
+         'Define the listobject before resizing it to keep the format of the cells
+         Set Lo = .ListObjects(PRINTPREFIX & tableName)
+         shrowEnd = llshs.DataBounds(sheetName, 2)
+
+         Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
+         Lo.Resize rng
+         design.ApplyFormat Lo, scope:=HListTable
+
+         'Format the header range
+         Set rng = Lo.HeaderRowRange
+         design.ApplyFormat rng, scope:= HListPrintedHeader
     End With
 
     'FILTERED WORKSHEET --------------------------------------------------------
