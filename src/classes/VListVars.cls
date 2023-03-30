@@ -67,6 +67,13 @@ Private Property Get LinelistData() As ILinelistSpecs
     Set LinelistData = ll.LinelistData()
 End Property
 
+'Get the sheets object
+Private Property Get SheetsObject() As ILLSheets
+    Dim dict As ILLdictionary
+    Set dict = Dictionary()
+    Set SheetsObject = LLSheets.Create(dict)
+End Property
+
 'Get the worksheet Object where the variable should be written
 Public Property Get Wksh() As Worksheet
     Dim ll As ILinelist

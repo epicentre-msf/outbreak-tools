@@ -102,12 +102,12 @@ End Sub
 
 'Testing the sheet info
 '@TestMethod
-Private Sub TestSheetContainsControl()
+Private Sub TestSheetContainsVarsOf()
     On Error GoTo Fail
 
     'Contains list auto
-    Assert.IsTrue sheets.ContainsControl("B-H2D"), "List auto not found in sheet"
-    Assert.IsFalse sheets.ContainsControl("A, B, C"), "List auto does not exists, but Test found one"
+    Assert.IsTrue sheets.ContainsVarsOf("B-H2D"), "List auto not found in sheet"
+    Assert.IsFalse sheets.ContainsVarsOf("A, B, C"), "List auto does not exists, but Test found one"
 
     Exit Sub
 Fail:
