@@ -153,7 +153,7 @@ Private Sub DrawLines(rng As Range, _
                 .weight = weight
                 .LineStyle = line
                 .color = color
-                .TintAndShade = 0.4
+                .TintAndShade = 0.2
             End With
         End With
     End If
@@ -166,7 +166,7 @@ Private Sub DrawBorder(rng As Range, Optional weight As Integer = xlThin, Option
         With rng.Borders(counter)
             .LineStyle = line
             .color = color
-            .TintAndShade = 0.4
+            .TintAndShade = 0.2
             .weight = weight
         End With
     Next
@@ -237,7 +237,7 @@ Private Sub FormatShape(ByVal shp As Shape, _
 End Sub
 
 'Remove GridLines of a worksheet
-Private Sub RemoveGridLines(Wksh As Worksheet, Optional DisplayZeros As Boolean = False)
+Private Sub RemoveGridLines(ByVal Wksh As Worksheet, Optional DisplayZeros As Boolean = False)
     Dim View As WorksheetView
     For Each View In Wksh.Parent.Windows(1).SheetViews
         If View.Sheet.Name = Wksh.Name Then
@@ -246,6 +246,43 @@ Private Sub RemoveGridLines(Wksh As Worksheet, Optional DisplayZeros As Boolean 
             Exit Sub
         End If
     Next
+End Sub
+
+Private Sub PreparePrintSheet(ByVal sh As Worksheet)
+    Application.PrintCommunication = False
+    'Avoid printing rows and column number'
+    With sh.PageSetup
+        'Specifies the margins
+        .LeftMargin = Application.InchesToPoints(0.04)
+        .RightMargin = Application.InchesToPoints(0.04)
+        .TopMargin = Application.InchesToPoints(0.75)
+        .BottomMargin = Application.InchesToPoints(0.20)
+        .HeaderMargin = Application.InchesToPoints(0.31)
+        .FooterMargin = Application.InchesToPoints(0.31)
+        .PrintHeadings = False
+        .PrintGridlines = False
+        .PrintTitleRows = "$5:$8" 'Those are rows to always keep on title
+        .PrintTitleColumns = ""
+        .PrintComments = xlPrintNoComments
+        .PrintNotes = False
+        'The quality of the print
+        .PrintQuality = 600
+        .CenterHorizontally = True
+        .CenterVertically = False
+        'Landscape and paper size
+        .Orientation = xlLandscape
+        .PaperSize = xlPaperA3
+        .FirstPageNumber = xlAutomatic
+        .ORDER = xlDownThenOver
+        .BlackAndWhite = False
+        'Print the whole area and fit all columns in the worksheet
+        .Zoom = False
+        .FitToPagesWide = 1
+        .FitToPagesTall = False
+        'Print Errors to blanks
+        .PrintErrors = xlPrintErrorsBlank
+    End With
+    Application.PrintCommunication = True
 End Sub
 
 Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
@@ -268,7 +305,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
     'Formatting on analysis  part:
     styleValue = DesignValue("analysis base font size", False)
     styleValue = IIf(styleValue = 0, 11, styleValue)
-    
+
     Select Case scope
     Case AllAnalysisSheet, AllLinelistSheet
         If (Not TypeName(formattingObject) = "Worksheet") Then Exit Sub
@@ -293,6 +330,15 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
 
         'Column with of the period and goto section columns
         sh.Columns(3).EntireColumn.ColumnWidth = dimensionValue + 5
+
+    Case HListPrintedSheet
+        If (Not TypeName(formattingObject) = "Worksheet") Then Exit Sub
+        Set sh = formattingObject
+
+        RemoveGridLines sh, DisplayZeros:=True
+        sh.Cells.EntireRow.RowHeight = 20
+        sh.Rows("1:4").EntireRow.RowHeight = 15
+        PreparePrintSheet sh
 
     Case AnalysisSection
 
@@ -534,7 +580,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
 
         'Horizontal alignment to left for cellLeft
         horizAlign = IIf(scope = AnalysisInfoCellLeft, xlHAlignLeft, xlHAlignCenter)
-        
+
         Set rng = formattingObject
         fontColorValue = Switch(scope = LinelistWarning, vbRed, IsEmpty(rng), "", _
                             True, DesignValue("missing font color"))
@@ -599,18 +645,18 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         fontColorValue = DesignValue("vlist sub label font color")
         dimensionValue = DesignValue("vlist sub label font size", False)
         FormatCharacters Char:=Char, FontSize:=dimensionValue, fontColor:=fontColorValue
-    
+
     Case HListSimpleHeaderCell
-    
+
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         FormatRange rng, Verti:=xlVAlignCenter, Horiz:=xlHAlignLeft
-        
+
     Case LinelistSmallButton, AdminLargeButton
-        
+
         If (Not TypeName(formattingObject) = "Shape") Then Exit Sub
         Set shp = formattingObject
-        
+
         fontColorValue = DesignValue("button default font color")
         interiorColorValue = DesignValue("button default interior color")
         dimensionValue = DesignValue("linelist base font size", False)
@@ -646,20 +692,19 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
                 Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count, 3))
             End If
             DrawLines rng, color:=bordersColorValue
-            DrawBorder rng, color:=bordersColorValue
         End With
 
         'format the range.
         Set rng = formattingObject
-      
+
         interiorColorValue = IIf(IsEmpty(rng), "", DesignValue("sub section interior color"))
         fontColorValue = DesignValue("sub section font color")
         dimensionValue = DesignValue("sub section font size", False)
         dimensionValue = IIf(dimensionValue = 0, 11, dimensionValue)
-      
+
         FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue, _
                     isBold:=True
-        
+
         On Error Resume Next
         rng.Locked = False
         rng.Merge
@@ -681,7 +726,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
             Else
                 Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count, 4))
             End If
-        
+
             DrawBorder rng, color:=bordersColorValue
         End With
 
@@ -692,7 +737,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         interiorColorValue = DesignValue("main section interior color")
         dimensionValue = DesignValue("main section font size", False)
         dimensionValue = IIf(dimensionValue = 0, 12, dimensionValue)
-     
+
         FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue, _
                     isBold:=True
 
@@ -707,13 +752,13 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         Set rng = formattingObject
         rng.NumberFormat = "dd/mm/yyyy"
 
-        
+
     Case HListTable
         If (Not TypeName(formattingObject) = "ListObject") Then Exit Sub
         Set Lo = formattingObject
 
         interiorColorValue = DesignValue("entry table style", False)
-        bordersColorValue = DesignValue("hlist and vlist table borders color")
+        bordersColorValue = DesignValue("hlist table borders color")
 
         If interiorColorValue = "None, with borders" Then
             Lo.TableStyle = ""
@@ -726,15 +771,15 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
             Lo.TableStyle = interiorColorValue
             On Error GoTo 0
         End If
-        
-    Case HListHeader
+
+    Case HListHeader, HListPrintedHeader
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
-
+        dimensionValue = IIf(scope =  HListPrintedHeader, 5, 8)
         interiorColorValue = DesignValue("hlist table header color")
-        FormatRange rng, fontColor:=interiorColorValue, interiorColor:=interiorColorValue
+        FormatRange rng, fontColor:=interiorColorValue, interiorColor:=interiorColorValue, _ 
+                    FontSize:=dimensionValue
         rng.Locked = False
-
     End Select
 
 End Sub
