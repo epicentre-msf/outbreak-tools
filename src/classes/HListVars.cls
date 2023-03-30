@@ -19,6 +19,7 @@ Private Type THListVars
     ll As ILinelist
     varName As String
     inputRange As Range
+    inputPrintRange As Range
 End Type
 
 Private this As THListVars
@@ -123,6 +124,24 @@ Private Property Get VarRange() As Range         'Where to input informations on
     End If
 
     Set VarRange = this.inputRange
+End Property
+
+Private Property Get VarPrintRange() As Range
+    Dim ll As ILinelist
+    Dim sh As Worksheet
+    Dim sheetName As String
+    Dim startcol As Long
+
+    sheetName = ValueOf("sheet name")
+    Set ll = LinelistObject()
+    Set sh = ll.PrintWksh(sheetName)
+    If (this.inputPrintRange Is Nothing) Then
+        With sh
+            startcol = ValueOf("column index")
+            Set this.inputPrintRange = .Cells(STARTROW + 1, startcol)
+        End With
+    End If
+    Set VarPrintRange = this.inputPrintRange
 End Property
 
 'Type
@@ -332,7 +351,7 @@ Private Sub AddUniqueConditonalFormatting()
 End Sub
 
 'Main Label
-Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
+Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     Dim varMainLab As String
     Dim varName As String
     Dim varNote As String
@@ -348,13 +367,22 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     Dim mandatory As String
     Dim mainLabLength As Long
     Dim design As ILLFormat
+    Dim varToPrint As String
 
-    Set cellRng = VarRange()
+    'The varRange depends on the usePrinted, on printed worksheet, it is on another
+    'sheet.
+    If usePrinted Then
+        Set cellRng = VarPrintRange()
+    Else
+        Set cellRng = VarRange()
+    End If
+
+
     Set lData = LinelistData()
     Set trans = lData.TransObject()
     Set design = lData.DesignFormat()
 
-
+    varToPrint = ValueOf("print variable")
     varMainLab = ValueOf("main label")
     varName = ValueOf("variable name")
     varNote = ValueOf("note")
@@ -367,7 +395,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     mandatory = trans.TranslatedValue("MSG_Mandatory")
 
     'add an anchor to where the table starts
-    If varIndex = 1 Then cellRng.Name = ValueOf("table name") & "_" & "START"
+    If (varIndex = 1) And (Not usePrinted) Then cellRng.Name = ValueOf("table name") & "_" & "START"
 
     'sublabel
     If (varControl = "formula") Or (varControl = "case_when") Or _
@@ -395,13 +423,13 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     'variable name
     cellRng.Offset(-1).Value = varName
     'Name the cell range
-    cellRng.Offset(-2).Name = varName
+    If Not usePrinted Then cellRng.Offset(-2).Name = varName
 
     'variable note
     If varNote <> vbNullString Then
         cellRng.Offset(-2).AddComment
         cellRng.Offset(-2).Comment.Text Text:=varNote
-        cellRng.Offset(-2).Comment.Visible = notevisibility
+        cellRng.Offset(-2).Comment.Visible = False
     End If
 
     'Control
@@ -423,8 +451,21 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
 
     'Custom columns, user can modify them
     If (varControl = "custom") Then  cellRng.Offset(-2).Locked = False
+
     'Hidden columns
-    If varStatus = "hidden" Then  cellRng.EntireColumn.Hidden = True
+    If usePrinted Then
+        Select Case varToPrint
+        Case "visible, vertical"
+            cellRng.Offset(-2).Orientation = 90
+            cellRng.EntireColumn.AutoFit
+        Case "hidden"
+            cellRng.EntireColumn.Hidden = True
+            design.ApplyFormat cellRng.Offset(-1), scope:=HListPrintedCellHeader
+
+        End Select
+    Else
+        If varStatus = "hidden" Then  cellRng.EntireColumn.Hidden = True
+    End If
 
     'The cell header itself
     design.ApplyFormat cellRng.Offset(-2), scope:=HListSimpleHeaderCell
@@ -676,6 +717,9 @@ Private Sub WriteInfo()
 
     'Conditional formatting on unique values
     AddUniqueConditonalFormatting
+
+    'Add Label for variables to be printed
+    AddLabel usePrinted:=True
 End Sub
 
 'Errors

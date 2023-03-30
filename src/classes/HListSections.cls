@@ -211,6 +211,15 @@ Private Sub Format()
     End With
 
     design.ApplyFormat rng, scope:=HListSection
+
+    'Same for Printed sheet
+    Set sh = ll.PrintWksh(sheetName)
+    With sh
+        Set rng = .Range(.Cells(SECROW, strtcol), .Cells(SECROW, endCol))
+        rng.Cells(1, 1).Value = sectionName
+    End With
+
+    design.ApplyFormat rng, scope:=HListSection
 End Sub
 
 'Errors

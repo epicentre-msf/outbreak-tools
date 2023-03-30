@@ -11,7 +11,6 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("All HList variables")
-'@IgnoreModule
 
 Option Explicit
 
@@ -89,7 +88,7 @@ Public Property Get NextSheet() As String
     Set llshs = LLSheets.Create(dict)
     strtrw = llshs.RowIndex(sheetName)
     endrw = llshs.NumberOfVars(sheetName) + strtrw
-  
+
     'Since datarange does includes the colname, we keep endrw without adding 1
     NextSheet = sheetRng.Cells(endrw, 1)
 End Property
@@ -117,7 +116,7 @@ Private Sub TransferCodeWksh()
     Set inpWkb = lData.specswkb()
     Set sh = Wksh()
     sheetName = Name()
-    
+
 
     'save the code module in the string sNouvCode
     With inpWkb.VBProject.VBComponents(LINELISTCHANGEMODULENAME).CodeModule
@@ -152,8 +151,9 @@ Public Sub Build()
     Const REMOVEFILTERCOMMAND As String = "ClearAllFilters"
     Const GEOCOMMAND As String = "ClicCmdGeoApp"
     Const FILTEREDPREFIX  As String = "f"
+    Const PRINTPREFIX As String = "print_"
 
-    
+
     Dim sh As Worksheet
     Dim filtsh As Worksheet
     Dim llshs As ILLSheets
@@ -179,6 +179,7 @@ Public Sub Build()
     Dim shrowStart As Long
     Dim shrowEnd As Long
     Dim Lo As ListObject
+    Dim printsh As Worksheet
 
     Set sh = Wksh()
     Set dict = Dictionary()
@@ -189,10 +190,22 @@ Public Sub Build()
     Set drop = ll.Dropdown()
     Set pass = lData.Password()
     sheetName = Name()
-    
+
+    'Add Printed Worksheet before building
+    ll.AddOutputSheet sheetName, xlSheetVisible, usePrinted:=True
+    Set printsh = ll.Printwksh(sheetName)
 
     'Format the linelist and prepare it
     design.ApplyFormat sh, scope:=AllLinelistSheet
+    design.ApplyFormat printsh, scope:=AllLinelistSheet
+    design.ApplyFormat printsh, scope:=HListPrintedSheet
+
+    'Change the View of the printed worksheet
+    On Error Resume Next
+        printsh.Activate
+        BusyApp
+        ActiveWindow.View = xlPageLayoutView
+    On Error GoTo 0
 
     'Split the rows and columns
     On Error Resume Next
@@ -205,7 +218,10 @@ Public Sub Build()
     End With
     On Error GoTo 0
 
-    'Add the buttons
+
+
+
+    'Add the buttons on printed and non printed worksheet
 
     'Show Hide button
     Set rng = sh.Cells(1, 2)
@@ -219,7 +235,7 @@ Public Sub Build()
     Set but = Buttons.Create(outRng:=rng, codeName:=SHPADDROWS, scope:=ButtonScopeSmall)
     but.Add actionCommand:=ADDROWSCOMMAND, shapeLabel:=trads.TranslatedValue(SHPADDROWS)
     but.Format design
-    
+
     'Remove Filters
     Set rng = sh.Cells(2, 1)
     Set but = Buttons.Create(outRng:=rng, codeName:=SHPREMOVEFILT, scope:=ButtonScopeSmall)
@@ -227,7 +243,7 @@ Public Sub Build()
     but.Format design
 
     'Geo If neededed
-    hasGeo = llshs.ContainsControl(sheetName, "geo1")
+    hasGeo = llshs.ContainsVarsOf(sheetName, "geo1")
     If hasGeo Then
         Set rng = sh.Cells(3, 1)
         Set but = Buttons.Create(outRng:=rng, codeName:=SHPGEO, scope:=ButtonScopeGeo)
@@ -235,7 +251,8 @@ Public Sub Build()
         but.Format design
     End If
 
-    'Now Build each Section
+
+    'Now Build each Section (including sections of printed worksheet)
     Set trads = lData.TransObject(TranslationOfMessages)
     goToSection = trads.TranslatedValue("MSG_GoToSec")
 
@@ -257,25 +274,25 @@ Public Sub Build()
     Set rng = sh.Cells(1, 1)
     tableName = llshs.sheetInfo(sheetName, 2)
     gotoSectionListName = tableName & "_" & GOTOSECCODE 'Name of the range goTo section
-    
+
     rng.Name = gotoSectionListName
     rng.Value = goToSection
     drop.Add sectionsList, gotoSectionListName
     drop.SetValidation rng, gotoSectionListName
     design.ApplyFormat rng, scope:=LinelistSelectionDropdown
     rng.Locked = False
-    
+
     'Add the sheet type on HList sheet
     Set rng = sh.Cells(1, 3)
     rng.Value = "HList"
     design.ApplyFormat rng, scope:=LinelistHiddenCell
-    
+
     'Add the table name
     Set rng = sh.Cells(1, 4)
     rng.Value = tableName
     design.ApplyFormat rng, scope:=LinelistHiddenCell
-            
-    
+
+
     'Create the whole table of the HList
     With sh
         shrowStart = llshs.DataBounds(sheetName, 1)
@@ -285,24 +302,26 @@ Public Sub Build()
 
         Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = tableName
-        
+
         'Define the listobject before resizing it to keep the format of the cells
         Set Lo = .ListObjects(tableName)
         shrowEnd = llshs.DataBounds(sheetName, 2)
-        
+
         Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
-        
+
         'On Error Resume Next
         .calculate
         Lo.Resize rng
         'On Error GoTo 0
-        
+
         design.ApplyFormat Lo, scope:=HListTable
-        
+
         'Format the header range
         Set rng = Lo.HeaderRowRange
         design.ApplyFormat rng, scope:=HListHeader
     End With
+
+    'FILTERED WORKSHEET --------------------------------------------------------
 
     'Define the same listObject to the filtered worksheet
     ll.AddOutputSheet FILTEREDPREFIX & sheetName, xlSheetVeryHidden
@@ -319,12 +338,16 @@ Public Sub Build()
     rng.Value = filtsh.Name
     design.ApplyFormat rng, scope:=LinelistHiddenCell
 
+
+
     'Transfert code to the worksheet
     TransferCodeWksh
-    
+
+    'Define the Printed Worksheet
+
     'Add editing range for sorting
     'sh.Protection.AllowEditRanges.Add title:="EditAll" & tableName, Range:=Range(tableName & "[#All]")
-    
+
     'Protect the worksheet
     pass.Protect "_active"
 End Sub
@@ -337,7 +360,7 @@ End Sub
 Private Sub CheckRequirements(ByVal sheetName As String, ByVal ll As ILinelist)
     Dim llshs As ILLSheets
     Dim dict As ILLdictionary
-    
+
     If ll Is Nothing Then ThrowError "Please provide a linelist object"
     Set dict = ll.Dictionary()
     Set llshs = LLSheets.Create(dict)

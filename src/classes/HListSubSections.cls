@@ -54,7 +54,7 @@ Public Property Let StartRow(ByVal strt As Long)
 End Property
 
 Public Property Get EndRow() As Long             'End Row of the subsection in the dictionary (Not in the worksheet)
-  
+
     Dim dict As ILLdictionary
     Dim rowNumber As Long
     Dim subSectionRng As Range
@@ -103,7 +103,7 @@ Private Property Get ActualSection() As String
     Dim dict As ILLdictionary
     Dim strt As Long
     Dim sectionRng As Range
-  
+
     Set dict = Dictionary()
     strt = StartRow()
     Set sectionRng = dict.DataRange("main section")
@@ -211,21 +211,20 @@ Private Sub Format()
     Set Varlists = VariableLists()
     Set ll = LinelistObject()
     Set design = ll.LinelistData.DesignFormat()
-  
+
     'compute the endColumn
     varName = Varlists.Item(Varlists.UpperBound)
     endCol = CLng(vars.Value(colName:="column index", varName:=varName))
-  
+
     'compute the start column
     varName = Varlists.Item(Varlists.LowerBound)
     strtcol = CLng(vars.Value(colName:="column index", varName:=varName))
-  
+
     'Actual sub section
     subSectionName = ActualSubSection()
     sheetName = vars.Value(colName:="sheet name", varName:=varName)
 
     Set sh = ll.Wksh(sheetName)
-  
     With sh
         Set rng = .Range(.Cells(SUBSECROW, strtcol), .Cells(SUBSECROW, endCol))
         rng.Cells(1, 1).Value = subSectionName
@@ -233,6 +232,14 @@ Private Sub Format()
 
     design.ApplyFormat rng, scope:=HListSubSection
 
+    'Do the same for the printed Worksheek
+    Set sh = ll.PrintWksh(sheetName)
+    With sh
+        Set rng = .Range(.Cells(SUBSECROW, strtcol), .Cells(SUBSECROW, endCol))
+        rng.Cells(1, 1).Value = subSectionName
+    End With
+
+    design.ApplyFormat rng, scope:=HListSubSection
 End Sub
 
 'Errors
