@@ -356,8 +356,6 @@ Public Sub Build()
     rng.Value = filtsh.Name
     design.ApplyFormat rng, scope:=LinelistHiddenCell
 
-
-
     'Transfert code to the worksheet
     TransferCodeWksh
 
