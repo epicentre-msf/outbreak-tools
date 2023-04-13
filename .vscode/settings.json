@@ -23,5 +23,5 @@
         "**/.mock": true
     },
     "editor.lineNumbers": "off",
-    "editor.fontSize": 16
+    "editor.fontSize": 14
 }

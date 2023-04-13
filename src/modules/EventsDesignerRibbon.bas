@@ -4,6 +4,21 @@ Option Explicit
 '@Folder("Designer Events")
 '@ModuleDescription("Events associated to the Ribbon Menu in the designer")
 
+'speed up process
+'speed app
+Private Sub BusyApp()
+    Application.EnableEvents = False
+    Application.ScreenUpdating = False
+    Application.EnableAnimations = False
+    Application.Calculation = xlCalculationManual
+End Sub
+
+Private Sub NotBusyApp()
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.EnableAnimations = True
+End Sub
+
 
 '@Description("Callback for getLabel (Depending on the language)")
 '@EntryPoint
@@ -26,6 +41,43 @@ End Sub
 '@EntryPoint
 Public Sub clickImpTrans(control As IRibbonControl)
 Attribute clickImpTrans.VB_Description = "Callback for btnTransAdd onAction: Import Linelist translations"
+
+    Const TRADSHEETNAME As String = "LinelistTranslation"
+
+    Dim io As IOSFiles
+    Dim wb As Workbook 'Actual workbook
+    Dim impsh As Worksheet 'Imported worksheet
+    Dim impwb As Workbook 'Imported workbook
+    Dim actsh As Worksheet 'Actual worksheet
+    Dim actLo As ListObject 'Actual ListObject
+    Dim impLo As ListObject 'Imported ListObject
+    Dim actcsTab As ICustomTable 'Actual custom table
+    Dim impcsTab As ICustomTable 'Imported custom table
+
+    Set wb = ThisWorkbook
+    Set actsh = wb.Worksheets(TRADSHEETNAME)
+
+    'Import the translations for the
+    Set io = OSFiles.Create()
+    io.LoadFile "*.xlsb"
+    If io.HasValidFile() Then
+        BusyApp
+        Set impwb = Workbooks.Open(io.File())
+        On Error GoTo ExitTrads
+        Set impsh = impwb.Worksheets(TRADSHEETNAME)
+        For Each Lo In actsh.ListObjects
+            Set actcsTab = CustomTable.Create(Lo)
+            Set impLo = impsh.ListObjects(Lo.Name)
+            Set impcsTab = CustomTable.Create(impLo)
+            actcsTab.Import impcsTab
+        Next
+        On Error GoTo 0
+    End If
+ExitTrads:
+    On Error Resume Next
+    impwb.Close saveChanges:=False
+    NotBusyApp
+    On Error GoTo 0
 End Sub
 
 '@Description("Callback for langDrop onAction: Change the language of the designer")
