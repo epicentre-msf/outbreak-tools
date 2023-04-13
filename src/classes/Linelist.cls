@@ -108,8 +108,8 @@ Private Property Get Dropdown() As IDropdownLists
 End Property
 
 'Add worksheets to workbook
-Private Sub AddOutputSheet(ByVal sheetName As String, _ 
-                          Optional ByVal Hide As Long = xlSheetVeryHidden, _ 
+Private Sub AddOutputSheet(ByVal sheetName As String, _
+                          Optional ByVal Hide As Long = xlSheetVeryHidden, _
                           Optional ByVal usePrinted As Boolean = False)
     Dim outWkb As Workbook
     Dim actSheetName As String
@@ -512,8 +512,8 @@ Public Function ILinelist_SheetExists(ByVal sheetName As String) As Boolean
     ILinelist_SheetExists = sheetExists(sheetName)
 End Function
 
-Public Sub ILinelist_AddOutputSheet(ByVal sheetName As String, _ 
-                                    Optional ByVal Hide As Long = xlSheetVeryHidden, _ 
+Public Sub ILinelist_AddOutputSheet(ByVal sheetName As String, _
+                                    Optional ByVal Hide As Long = xlSheetVeryHidden, _
                                     Optional ByVal usePrinted As Boolean = False)
     AddOutputSheet sheetName, Hide, usePrinted
 End Sub
