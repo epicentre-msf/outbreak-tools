@@ -621,7 +621,7 @@ Sub UpdateSingleSpTable(ByVal rngName As String)
 
     BeginWork xlsapp:=Application
 
-    Set pass = LLPasswords.Create(ThisWorkbook.Worksheets("Password"))
+    Set pass = LLPasswords.Create(ThisWorkbook.Worksheets("__pass"))
 
     pass.UnProtect "_active"
 
@@ -692,7 +692,7 @@ Sub DevideByPopulation(ByVal rngName As String, Optional ByVal revertBack As Boo
 
     BeginWork xlsapp:=Application
     Set sh = ActiveSheet
-    Set pass = LLPasswords.Create(ThisWorkbook.Worksheets("Password"))
+    Set pass = LLPasswords.Create(ThisWorkbook.Worksheets("__pass"))
     pass.UnProtect "_active"
 
     tabId = Replace(rngName, "POPFACT_", vbNullString)
@@ -766,7 +766,7 @@ Sub FormatDevidePop(ByVal rngName)
     Dim tabId As String
 
     Set sh = ActiveSheet
-    Set pass = LLPasswords.Create(ThisWorkbook.Worksheets("Password"))
+    Set pass = LLPasswords.Create(ThisWorkbook.Worksheets("__pass"))
 
     pass.UnProtect "_active"
 
