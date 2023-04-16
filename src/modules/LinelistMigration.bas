@@ -59,7 +59,7 @@ Sub ClearData()
     Application.EnableEvents = False
     
     Set wb = ThisWorkbook
-    Set pass = LLPasswords.Create(wb.Worksheets("Password"))
+    Set pass = LLPasswords.Create(wb.Worksheets("__pass"))
 
 
     For Each Wksh In wb.Worksheets
@@ -246,7 +246,7 @@ Sub ImportSheetData(sheetName As String, shImp As Worksheet, hasData As Boolean,
     'First, sheet of type Adm
 
     Set WkbLL = ThisWorkbook                     'The workbook of Linelist
-    Set pass = LLPasswords.Create(WkbLL.Worksheets("PassWord"))
+    Set pass = LLPasswords.Create(WkbLL.Worksheets("__pass"))
 
     sheetType = WkbLL.Worksheets(sheetName).Cells(1, 3).Value
 
@@ -633,7 +633,7 @@ Sub ImportGeobase()
     
     Set sh = ThisWorkbook.Worksheets("Geo")
     Set geo = LLGeo.Create(sh)
-    Set sh = ThisWorkbook.Worksheets("Password")
+    Set sh = ThisWorkbook.Worksheets("__pass")
     Set pass = LLPasswords.Create(sh)
 
     'Set xlsapp = New Excel.Application

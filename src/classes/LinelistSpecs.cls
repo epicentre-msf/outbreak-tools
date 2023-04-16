@@ -35,8 +35,8 @@ Private Const CLASSNAME                 As String = "LinelistSpecs"
 Private Const DICTIONARYSHEET           As String = "Dictionary"
 Private Const CHOICESSHEET              As String = "Choices"
 Private Const GEOSHEET                  As String = "Geo"
-Private Const PASSWORDSHEET             As String = "Password"
-Private Const FormulaSheet              As String = "ControleFormule"
+Private Const PASSWORDSHEET             As String = "__pass" 'password sheets
+Private Const FORMULASHEET              As String = "__formula" 'sheet with excel formula
 Private Const DICTTRANSLATIONSHEET      As String = "Translations" 'Dictionary translation sheet
 Private Const HLISTTRANSLATIONSHEET     As String = "LinelistTranslation" 'linelist translation (forms, shapes, etc.)
 Private Const ANALYSISSPECSSHEET        As String = "Analysis"
@@ -149,7 +149,7 @@ End Property
 
 Public Property Get FormulaDataObject() As IFormulaData
     Dim sh As Worksheet
-    Set sh = Wkb.Worksheets(FormulaSheet)
+    Set sh = Wkb.Worksheets(FORMULASHEET)
     Set FormulaDataObject = FormulaData.Create(sh)
 End Property
 

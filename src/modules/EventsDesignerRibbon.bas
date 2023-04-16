@@ -53,23 +53,30 @@ Attribute clickImpTrans.VB_Description = "Callback for btnTransAdd onAction: Imp
     Dim impLo As ListObject 'Imported ListObject
     Dim actcsTab As ICustomTable 'Actual custom table
     Dim impcsTab As ICustomTable 'Imported custom table
+    Dim loListName As BetterArray 'List of listObjects to import
 
     Set wb = ThisWorkbook
     Set actsh = wb.Worksheets(TRADSHEETNAME)
 
-    'Import the translations for the
+    'Import the translations for
     Set io = OSFiles.Create()
+    Set loListName = New BetterArray
+
     io.LoadFile "*.xlsb"
     If io.HasValidFile() Then
         BusyApp
         Set impwb = Workbooks.Open(io.File())
         On Error GoTo ExitTrads
         Set impsh = impwb.Worksheets(TRADSHEETNAME)
-        For Each Lo In actsh.ListObjects
-            Set actcsTab = CustomTable.Create(Lo)
-            Set impLo = impsh.ListObjects(Lo.Name)
-            Set impcsTab = CustomTable.Create(impLo)
-            actcsTab.Import impcsTab
+        For Each actLo In actsh.ListObjects
+            If (actLo.Name = "T_TradLLShapes") Or _
+               (actLo.Name = "T_TradLLMsg") Or _
+               (actLo.Name = "T_TradLLForms") Then
+                Set actcsTab = CustomTable.Create(Lo)
+                Set impLo = impsh.ListObjects(Lo.Name)
+                Set impcsTab = CustomTable.Create(impLo)
+                actcsTab.Import impcsTab
+            End If
         Next
         On Error GoTo 0
     End If

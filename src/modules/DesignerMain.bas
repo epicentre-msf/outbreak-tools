@@ -2,17 +2,34 @@ Attribute VB_Name = "DesignerMain"
 Option Explicit
 Option Private Module
 
-Public iUpdateCpt As Integer
-Public bGeobaseIsImported As Boolean
+Private Const DESIGNERTRADSHEET As String = "DesignerTranslation"
+Private Const LINELISTTRADSHEET As String = "Translations"
+Private Const DESIGNERMAINSHEET As String = "Main"
+
+'speed app
+Private Sub BusyApp()
+    Application.EnableEvents = False
+    Application.ScreenUpdating = False
+    Application.EnableAnimations = False
+    Application.Calculation = xlCalculationManual
+End Sub
+
+Private Sub NotBusyApp()
+    Application.EnableEvents = True
+    Application.ScreenUpdating = True
+    Application.EnableAnimations = True
+End Sub
 
 'LOADING FILES AND FOLDERS ============================================================================================================================================================================
 Private Function TranslateMsg(ByVal msgCode As String)
-
     'Translate a message in the designer
     Dim destrans As IDesTranslation
     Dim trads As ITranslation
+    Dim wb As Workbook
     Dim sh As Worksheet
-    Set sh = ThisWorkbook.Worksheets("DesignerTranslation")
+
+    Set wb = ThisWorkbook
+    Set sh = wb.Worksheets(DESIGNERTRADSHEET)
     Set destrans = DesTranslation.Create(sh)
     Set trads = destrans.TransObject()
     TranslateMsg = trads.TranslatedValue(msgCode)
@@ -20,42 +37,41 @@ End Function
 
 'Import the language of the setup
 Private Sub ImportLang()
+
+    Const RNGPATHDICO As String = "RNG_PathDico"
+    Const RNGLANGSETUP As String = "RNG_LangSetup"
+
+
     Dim inPath As String
-    Dim Wkb As Workbook
-    Dim Lo As ListObject
+    Dim actwb As Workbook 'actual workbook
+    Dim impwb As Workbook 'imported setup workbook
+    Dim tradLo As ListObject 'Translation listObject
     Dim langTable As BetterArray
+    Dim mainsh As Worksheet
 
-    inPath = SheetMain.Range("RNG_PathDico").Value
+    Set actwb = ThisWorkbook
+    Set mainsh = actwb.Worksheets(DESIGNERMAINSHEET)
+    inPath = mainsh.Range(RNGPATHDICO).Value
 
-    On Error Resume Next
-    BeginWork xlsapp:=Application
-
-    'Set Events to false to avoid
-    Application.EnableEvents = False
-    Set Wkb = Workbooks.Open(inPath)
-
-    On Error GoTo 0
-
-    If Wkb Is Nothing Then Exit Sub
-
-    On Error Resume Next
-    Set Lo = Wkb.Worksheets("Translations").ListObjects(1)
-    On Error GoTo 0
-
-    If Lo Is Nothing Then Exit Sub
-
+    On Error GoTo ExitImportLang
+    BusyApp
+    Set impwb = Workbooks.Open(inPath)
+    Set tradLo = impwb.Worksheets(LINELISTTRADSHEET).ListObjects(1)
     Set langTable = New BetterArray
-    langTable.FromExcelRange Lo.HeaderRowRange
-    langTable.ToExcelRange ThisWorkbook.Worksheets("DesignerTranslation").Range("T_LanguageDictionary").Cells(1, 1)
-    SheetMain.Range("RNG_LangSetup").Value = langTable.Item(langTable.LowerBound)
+    langTable.FromExcelRange tradLo.HeaderRowRange
+    langTable.ToExcelRange actwb.Worksheets(DESIGNERTRADSHEET).Range("T_LanguageDictionary").Cells(1, 1)
+    mainsh.Range(RNGLANGSETUP).Value = langTable.Item(langTable.LowerBound)
 
     'Add the language to LLTranslations
     SheetLLTranslation.Range("RNG_DictionaryLanguage").Value = SheetMain.Range("RNG_LangSetup").Value
 
     Wkb.Close savechanges:=False
 
-    Application.EnableEvents = True
-
+ExitImporLang:
+    On Error Resume Next
+    impwb.Close savechanges:=False
+    NotBusyApp
+    On Error GoTo 0
 End Sub
 
 'Loading the Dictionnary File _________________________________________________________________________________________________________________________________________________________________________
@@ -158,7 +174,7 @@ Sub GenerateData()
     Set llana = lData.Analysis() 'Linelist analysis object
 
     'Create the designer translation object
-    Set desTrads = DesTranslation.Create(wb.Worksheets("DesignerTranslation"))
+    Set desTrads = DesTranslation.Create(wb.Worksheets(DESIGNERTRADSHEET))
 
     'After preparation steps, update the status
     mainobj.UpdateStatus (5) '5% after preparation steps are done
@@ -279,7 +295,7 @@ Public Sub Control()
     Set mainobj = Main.Create(sh)
 
     'Create the designer translation object
-    Set sh = wb.Worksheets("DesignerTranslation")
+    Set sh = wb.Worksheets(DESIGNERTRADSHEET)
     Set desTrads = DesTranslation.Create(sh)
     Set trads = desTrads.TransObject(TranslationOfMessages)
 

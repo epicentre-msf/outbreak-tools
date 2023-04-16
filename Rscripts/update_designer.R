@@ -31,8 +31,8 @@ update_designer  <- function(update_status = 0) {
     }
 
     #copy the file from the mock designer
-    if (update_status == 3){
-        file.copy(from = "./src/bin/.mock/designer_mock.xlsb",
+    if (update_status == 3) {
+        file.copy(from = "./src/.mock/designer_mock.xlsb",
                 to = "./src/bin/designer_aky.xlsb", overwrite = TRUE)
     }
 }
