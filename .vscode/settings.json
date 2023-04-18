@@ -22,6 +22,7 @@
     "files.exclude": {
         "**/.mock": true
     },
-    "editor.lineNumbers": "off",
-    "editor.fontSize": 12
+    "editor.lineNumbers": "on",
+    "editor.fontSize": 16,
+    "editor.fontFamily": "'Consolas', 'Courier New', monospace"
 }
