@@ -1,8 +1,21 @@
 Attribute VB_Name = "EventsDesignerRibbon"
 Attribute VB_Description = "Events associated to the Ribbon Menu in the designer"
 Option Explicit
+Option Private Module
+
 '@Folder("Designer Events")
 '@ModuleDescription("Events associated to the Ribbon Menu in the designer")
+
+'Designer Translation sheet name
+Private Const DESIGNERTRADSHEET As String = "DesignerTranslation"
+'Setup translation sheet name
+Private Const SETUPTRADSHEET As String = "Translations"
+'Linelist translation sheet name
+Private Const LINELISTTRADSHEET As String = "LinelistTranslation"
+'Designer main sheet name
+Private Const DESIGNERMAINSHEET As String = "Main"
+'Range for informations to user in the main sheet
+Private Const RNGEDITION As String = "RNG_Edition"
 
 'speed up process
 'speed app
@@ -35,6 +48,24 @@ End Sub
 '@Description("Callback for btnClear onAction": Clear the entries)
 '@EntryPoint
 Public Sub clickClearEnt(control As IRibbonControl)
+
+    Dim wb As Workbook
+    Dim mainsh As Worksheet
+
+    Set wb = ThisWorkbook
+    Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
+
+    mainsh.Range("RNG_PathDico").Value = vbNullString
+    mainsh.Range("RNG_PathGeo").Value = vbNullString
+    mainsh.Range("RNG_LLName").Value = vbNullString
+    mainsh.Range("RNG_LLDir").Value = vbNullString
+    mainsh.Range("RNG_Edition").Value = vbNullString
+    mainsh.Range("RNG_Update").Value = vbNullString
+    mainsh.Range("RNG_LangSetup").Value = vbNullString
+
+    'Set all input ranges to while color
+    DesignerMain.SetInputRangesToWhite
+    mainsh.Range("RNG_Update").Interior.color = vbWhite
 End Sub
 
 '@Description("Callback for btnTransAdd onAction: Import Linelist translations")
@@ -97,4 +128,19 @@ End Sub
 '@EntryPoint
 Public Sub clickOpen(control As IRibbonControl)
 Attribute clickOpen.VB_Description = "Callback for btnOpen onAction: Open another linelist file"
+
+    Dim io As IOSFiles
+    Set io = OSFiles.Create()
+
+    io.LoadFile "*.xlsb"                         '
+    If Not io.HasValidFile Then Exit Sub
+
+    On Error GoTo ErrorManage
+    NotBusyApp
+    Application.Workbooks.Open FileName:=io.File(), ReadOnly:=False
+    Exit Sub
+
+ErrorManage:
+    MsgBox DesignerMain.TranslateDesMsg("MSG_TitlePassWord"), vbCritical, _
+    DesignerMain.TranslateDesMsg("MSG_PassWord")
 End Sub
