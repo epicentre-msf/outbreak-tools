@@ -1,4 +1,4 @@
-Attributes VB_Name = "EventsDesignerWorkbook"
+Attribute VB_Name = "EventsDesignerWorkbook"
 
 Option Explicit
 
