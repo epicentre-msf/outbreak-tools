@@ -20,7 +20,7 @@ Private Sub Worksheet_Change(ByVal target As Range)
 
     On Error GoTo ErrManage
 
-    Dim transsh As Worksheet
+    Dim tradssh As Worksheet
     Dim geosh As Worksheet
     Dim passsh As Worksheet
     Dim geo As ILLGeo
@@ -28,13 +28,13 @@ Private Sub Worksheet_Change(ByVal target As Range)
     BusyApp
 
     With ThisWorkbook
-        Set transsh =  .Worksheets("LinelistTranslation")
+        Set tradssh =  .Worksheets("LinelistTranslation")
         Set geosh =  .Worksheets("Geo")
         Set passsh =  .Worksheets("__pass")
     End With
 
     'Language of forms in the dictionary changes
-    If Not (Interset(target, Me.Range("RNG_LLForm")) Is Nothing) Then
+    If Not (Intersect(target, Me.Range("RNG_LLForm")) Is Nothing) Then
 
         'Language of LinelistForms
         tradssh.Range("RNG_LLLanguage").Value = target.Value
@@ -47,14 +47,14 @@ Private Sub Worksheet_Change(ByVal target As Range)
         geosh.calculate
 
     'password changes
-    ElseIf Not (Interset(target, Me.Range("RNG_LLPassword")) Is Nothing)  Then
+    ElseIf Not (Intersect(target, Me.Range("RNG_LLPassword")) Is Nothing)  Then
 
         passsh.Range("RNG_DebuggingPassword").Value = target.Value
 
     'Language of the setup changes (langage of elements in  the linelist)
-    ElseIf Not (Interset(target, Me.Range("RNG_LangSetup")) Is Nothing) Then
-        tradssh.Range("RNG_DictionaryLanguage").Value = Target.Value
-        geosh.Range("RNG_MetaLang").Value = Target.Value
+    ElseIf Not (Intersect(target, Me.Range("RNG_LangSetup")) Is Nothing) Then
+        tradssh.Range("RNG_DictionaryLanguage").Value = target.Value
+        geosh.Range("RNG_MetaLang").Value = target.Value
     End If
 
 ErrManage:
