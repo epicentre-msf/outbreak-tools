@@ -10,24 +10,14 @@ Private Const SETUPTRADSHEET As String = "Translations"
 Private Const LINELISTTRADSHEET As String = "LinelistTranslation"
 'Designer main sheet name
 Private Const DESIGNERMAINSHEET As String = "Main"
-'Range to the dictionary Path in the main sheet
-Private Const RNGPATHDICO As String = "RNG_PathDico"
-'Range for informations to user in the main sheet
-Private Const RNGEDITION As String = "RNG_Edition"
-'Linelist directory range name
-Private Const RNGLLDIR As String = "RNG_LLDir"
-'Linelist name range
-Private Const RNGLLNAME As String = "RNG_LLName"
-'Geobase path
-Private Const RNGGEOPATH As String = "RNG_PathGeo"
-
 
 'speed app
-Private Sub BusyApp()
+Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
     Application.EnableEvents = False
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
     Application.Calculation = xlCalculationManual
+    Application.Cursor = cursor
 End Sub
 
 'Return back to previous state
@@ -35,28 +25,13 @@ Private Sub NotBusyApp()
     Application.EnableEvents = True
     Application.ScreenUpdating = True
     Application.EnableAnimations = True
+    Application.Cursor = xlDefault
 End Sub
 
 'LOADING FILES AND FOLDERS =====================================================
-'Translate code messages in the designer
-Public Function TranslateDesMsg(ByVal msgCode As String)
-    'Translate a message in the designer
-    Dim destrans As IDesTranslation
-    Dim trads As ITranslation
-    Dim wb As Workbook
-    Dim sh As Worksheet
-
-    Set wb = ThisWorkbook
-    Set sh = wb.Worksheets(DESIGNERTRADSHEET)
-    Set destrans = DesTranslation.Create(sh)
-    Set trads = destrans.TransObject()
-    TranslateDesMsg = trads.TranslatedValue(msgCode)
-End Function
-
-'Import the language of the setup
+'@Description("Import the language of the setup")
 Private Sub ImportLang()
 
-    Const RNGLANGSETUP As String = "RNG_LangSetup" 'select the setup lang (mainsh)
     Const RNGDICTLANG As String = "RNG_DictionaryLanguage" 'selected lang (lltradsh)
 
     Dim inPath As String 'Path to the setup file, input path
@@ -64,28 +39,31 @@ Private Sub ImportLang()
     Dim impwb As Workbook 'imported setup workbook
     Dim tradLo As ListObject 'Translation listObject
     Dim langTable As BetterArray 'List of languages in the translation sheet
-    Dim destradsh As Worksheet 'Worksheet for designer translation
-    Dim lltradsh As Worksheet 'Worksheet for linelist translation
-    Dim mainsh As Worksheet 'main worksheet
     Dim LangDictRng As Range 'in destradsh, range of languages in the setup
+    Dim mainobj As IMain
+    Dim trads As IDesTranslation
 
     Set actwb = ThisWorkbook
-    Set mainsh = actwb.Worksheets(DESIGNERMAINSHEET)
-    Set destradsh = actwb.Worksheets(DESIGNERTRADSHEET)
-    Set lltradsh = actwb.Worksheets(LINELISTTRADSHEET)
-    Set LangDictRng = destradsh.Range("LangDictList")
-    inPath = mainsh.Range(RNGPATHDICO).Value
+    Set mainobj = Main.Create(actwb.Worksheets(DESIGNERMAINSHEET))
+    Set trads = DesTranslation.Create(actwb.Worksheets(DESIGNERTRADSHEET))
+    Set LangDictRng = trads.LangListRng() 'This is one cell
+
+    inPath = mainobj.ValueOf("setuppath")
 
     On Error GoTo ExitImportLang
     Set impwb = Workbooks.Open(inPath)
     Set tradLo = impwb.Worksheets(SETUPTRADSHEET).ListObjects(1)
+
+    'add the list of languages
     Set langTable = New BetterArray
     langTable.FromExcelRange tradLo.HeaderRowRange
-    langTable.ToExcelRange LangDictRng.Cells(1, 1)
-    mainsh.Range(RNGLANGSETUP).Value = LangDictRng.Cells(1, 1).Value
+    langTable.ToExcelRange LangDictRng
+
+    mainobj.AddInfo trads, LangDictRng.Value, "setuplang"
 
     'Add the language to LLTranslations
-    lltradsh.Range(RNGDICTLANG).Value = mainsh.Range(RNGLANGSETUP).Value
+    actwb.Worksheets(LINELISTTRADSHEET).Range(RNGDICTLANG).Value = _ 
+    LangDictRng.Value
 
 ExitImporLang:
     On Error Resume Next
@@ -102,21 +80,26 @@ Public Sub LoadFileDic()
     Dim io As IOSFiles
     Dim mainsh As Worksheet
     Dim wb As Workbook
+    Dim tradsh As Worksheet
+    Dim trads As IDesTranslation
+    Dim mainobj As IMain
 
     Set io = OSFiles.Create()
     Set wb = ThisWorkbook
     Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
+    Set tradsh = wb.Worksheets(DESIGNERTRADSHEET)
+    Set trads = DesTranslation.Create(tradsh)
+    Set mainobj = Main.Create(mainsh)
 
     io.LoadFile "*.xlsb"
     'Update messages if the file path is incorrect
     If io.HasValidFile Then
-        mainsh.Range(RNGPATHDICO).Value = io.File
-        mainsh.Range(RNGEDITION).Value = TranslateDesMsg("MSG_ChemFich")
-        mainsh.Range(RNGPATHDICO).Interior.color = vbWhite
+        mainobj.AddInfo trads, io.File, "setuppath"
+        mainobj.AddInfo trads, "MSG_ChemFich", "edition"
         'Import the languages after loading the setup file
         ImportLang
     Else
-        mainsh.Range(RNGEDITION).Value = TranslateDesMsg("MSG_OpeAnnule")
+        mainobj.AddInfo trads, "MSG_OpeAnnule", "edition"
     End If
 
     NotBusyApp
@@ -128,21 +111,26 @@ Sub LinelistDir()
     Dim wb As workbook
     Dim mainsh As Worksheet
     Dim io As IOSFiles
+    Dim trads As IDesTranslation
+    Dim mainobj As IMain
+
+    BusyApp
 
     Set wb = ThisWorkbook
     Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
+    Set trads = DesTranslation.Create(wb.Worksheets(DESIGNERTRADSHEET))
+    Set mainobj = Main.Create(mainsh)
 
     Set io = OSFiles.Create()
     io.LoadFolder
 
-    mainsh.Range(RNGLLDIR) = vbNullString
-
     If (io.HasValidFolder) Then
-        mainsh.Range(RNGLLDIR).Value = io.Folder()
-        mainsh.Range(RNGLLDIR).Interior.color = vbWhite
+        mainobj.AddInfo trads, io.Folder, "lldir"
     Else
-        mainsh.Range(RNGEDITION).Value = TranslateDesMsg("MSG_OpeAnnule")
+        mainobj.AddInfo trads, "MSG_OpeAnnule", "edition"
     End If
+
+    NotBusyApp
 End Sub
 
 '@Description("Load the geobase")
@@ -153,17 +141,25 @@ Public Sub LoadGeoFile()
     Dim wb As workbook
     Dim mainsh As Worksheet
     Dim io As IOSFiles
+    Dim trads As IDesTranslation
+    Dim mainobj As IMain
+
+    BusyApp
 
     Set io = OSFiles.Create()
     Set wb = ThisWorkbook
     Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
+    Set mainobj = Main.Create(mainsh)
+    Set trads = DesTranslation.Create(wb.Worksheets(DESIGNERTRADSHEET))
 
     io.LoadFile "*.xlsx"
     If io.HasValidFile Then
-        mainsh.Range(RNGGEOPATH).Value = io.File()
+        mainobj.AddInfo trads, io.File, "geopath"
     Else
-        mainsh.Range(RNGEDITION).Value = TranslateDesMsg("MSG_OpeAnnule")
+        mainobj.AddInfo trads, "MSG_OpeAnnule", "edition"
     End If
+
+    NotBusyApp
 End Sub
 
 'GENERATE THE LINELIST =========================================================
@@ -186,9 +182,7 @@ Private Sub GenerateData()
     Dim statusValue As Integer
     Dim desTrads As IDesTranslation
 
-   BusyApp
-
-    Application.Cursor = xlWait
+    BusyApp cursor:=xlWait
 
     Set wb = ThisWorkbook
     Set lData = LinelistSpecs.Create(wb)
@@ -224,7 +218,7 @@ Private Sub GenerateData()
     'Should add Error management when something goes wrong
     mainobj.AddInfo desTrads, "MSG_HListVList"
 
-    'On Error GoTo ErrorBuildingLLManage
+    On Error GoTo ErrorBuildingLLManage
 
     currSheetName = dict.DataRange("sheet name").Cells(1, 1).Value
     If llshs.sheetInfo(currSheetName) = "vlist1D" Then
@@ -278,24 +272,21 @@ Private Sub GenerateData()
     Application.EnableEvents = True
 
     'Open the linelist
-    outPath = mainobj.OutputPath & Application.PathSeparator & mainobj.LinelistName & ".xlsb"
-    If MsgBox(TranslateDesMsg("MSG_OpenLL") & " " & outPath & " ?", _
+    outPath = mainobj.ValueOf("lldir") & Application.PathSeparator & mainobj.ValueOf("llname") & ".xlsb"
+    If MsgBox(desTrads.TranslationMsg("MSG_OpenLL") & " " & outPath & " ?", _
              vbQuestion + vbYesNo, "Linelist") = vbYes _
-    Then OpenLL
+    Then mainobj.OpenLL
 
+    NotBusyApp
     Exit Sub
 
 ErrorBuildingLLManage:
-        Application.Cursor = xlDefault
-        Application.EnableEvents = True
-
+        NotBusyApp
         ll.ErrorManage
         Exit Sub
 
 ErrorLinelistSpecsManage:
-        Application.Cursor = xlDefault
-        Application.EnableEvents = True
-
+        NotBusyApp
         lData.ErrorManage
         Exit Sub
 End Sub
@@ -306,26 +297,25 @@ Public Sub Control()
 
     Dim mainobj As IMain
     Dim desTrads As IDesTranslation
-    Dim trads As ITranslation
     Dim wb As Workbook
     Dim mainsh As Worksheet
     Dim tradsh As Worksheet
 
-    'Put every range in white before the control
-    SetInputRangesToWhite
 
     'Create Main object
     Set wb = ThisWorkbook
     Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
     Set mainobj = Main.Create(mainsh)
+    'Put every range in white before the control
+    mainobj.ClearInputRanges
 
     'Create the designer translation object
     Set tradsh = wb.Worksheets(DESIGNERTRADSHEET)
     Set desTrads = DesTranslation.Create(tradsh)
-    Set trads = desTrads.TransObject(TranslationOfMessages)
 
     'Check readiness of the linelist
     mainobj.CheckReadiness desTrads
+    mainobj.CheckFileExistence desTrads
 
     'If the main sheet is not ready exit the sub
     If Not mainobj.Ready Then Exit Sub
@@ -333,56 +323,3 @@ Public Sub Control()
     'Generate all the data in the other case
     GenerateData
 End Sub
-
-'OPEN THE GENERATED LINELIST ===================================================
-
-Private Sub OpenLL()
-    Dim wb As Workbook
-    Dim mainsh As Worksheet
-
-    Set wb = ThisWorkbook
-    Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
-
-    'Be sure that the directory and the linelist name are not empty
-    If mainsh.Range(RNGLLDIR).Value = "" Then
-        mainsh.Range(RNGEDITION).Value = TranslateDesMsg("MSG_PathLL")
-        mainsh.Range(RNGLLDIR).Interior.color = RGB(252, 228, 214)
-        Exit Sub
-    End If
-
-    If mainsh.Range(RNGLLNAME).Value = "" Then
-        mainsh.Range(RNGEDITION).Value = TranslateDesMsg("MSG_LLName")
-        mainsh.Range(RNGLLNAME).Interior.color = RGB(252, 228, 214)
-        Exit Sub
-    End If
-
-    'Be sure the workbook is not already opened
-    If IsWkbOpened(mainsh.Range(RNGLLNAME).Value & ".xlsb") Then
-        mainsh.Range(RNGEDITION).Value = TranslateDesMsg("MSG_CloseLL")
-        mainsh.Range(RNGLLNAME).Interior.color = RGB(252, 228, 214)
-        Exit Sub
-    End If
-
-    'Be sure the workbook exits
-    If Dir(mainsh.Range(RNGLLDIR).Value & Application.PathSeparator & mainsh.Range(RNGLLNAME).Value & ".xlsb") = "" Then
-        mainsh.Range(RNGEDITION).Value = TranslateDesMsg("MSG_CheckLL")
-        mainsh.Range(RNGLLNAME).Interior.color = RGB(252, 228, 214)
-        mainsh.Range(RNGLLDIR).Interior.color = RGB(252, 228, 214)
-        Exit Sub
-    End If
-
-    On Error GoTo no
-    'Then open it
-    Application.Workbooks.Open FileName:=mainsh.Range(RNGLLDIR).Value & Application.PathSeparator & mainsh.Range(RNGLLNAME).Value & ".xlsb"
-    Exit Sub
-no:
-    Exit Sub
-
-End Sub
-
-'Set All the Input ranges to white
-Public Sub SetInputRangesToWhite()
-
-End Sub
-
-

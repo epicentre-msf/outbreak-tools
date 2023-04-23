@@ -11,7 +11,6 @@ Attribute VB_Exposed = False
 
 '@Folder("Designer")
 '@ModuleDescription("Translation of the designer")
-'@IgnoreModule
 
 Option Explicit
 
@@ -29,11 +28,14 @@ Private Const TABSMSG As String = "T_tradMsg"
 Private Const TABLANG As String = "T_Lang"
 Private Const TABLANGDICT As String = "T_LanguageDictionary"
 Private Const CLASSNAME As String = "DesTranslation"
+Private Const RNGMAINLANG As String = "RNG_MainLang"
+Private Const RNGMAINLANGCODE As String = "RNG_MainLangCode"
+Private Const RNGLANGDICTLIST As String = "LangDictList"
 
 Private this As TDesTranslation
 
 Public Function Create(ByVal sh As Worksheet) As IDesTranslation
-  
+
     CheckRequirements sh
 
     With New DesTranslation
@@ -60,7 +62,7 @@ Private Property Get DesignerLanguage() As String
     Dim lang As Variant
     Set sh = Wksh()
 
-    lang = sh.Range("RNG_MainLangCode").Value
+    lang = sh.Range(RNGMAINLANGCODE).Value
 
     If (TypeName(lang) = "String") Then
         DesignerLanguage = lang
@@ -147,6 +149,12 @@ Private Function TranslationMsg(ByVal msgCode As String) As String
     TranslationMsg = msgObject.TranslatedValue(msgCode)
 End Function
 
+Private Property Get LangListRng() As Range
+    Dim sh As Worksheet
+    Set sh = Wksh()
+    Set LangListRng = sh.Range(RNGLANGDICTLIST).Cells(1, 1)
+End Property
+
 'Requirements for instanciation
 Private Sub CheckRequirements(ByVal sh As Worksheet)
     Dim tabl As BetterArray
@@ -156,8 +164,9 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     tabl.Push TABSHAPE, TABRANGE, TABSMSG, TABLANG, TABLANGDICT
     LoExists sh, tabl
 
-    RangeExists sh, "RNG_MainLang"
-    RangeExists sh, "RNG_MainLangCode"
+    RangeExists sh, RNGMAINLANG
+    RangeExists sh, RNGMAINLANGCODE
+    RangeExists sh, RNGLANGDICTLIST
 End Sub
 
 Private Sub ThrowError(ByVal errorMessage As String)
@@ -178,26 +187,31 @@ Private Sub LoExists(sh As Worksheet, ByVal loNames As BetterArray)
 End Sub
 
 Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
-  
+
     Dim rng As Range
-  
+
     On Error Resume Next
     Set rng = sh.Range(rngName)
     On Error GoTo 0
-  
+
     If rng Is Nothing Then ThrowError "Range " & rngName & " does not exists in worksheet " & sh.Name
 
 End Sub
 
-Public Property Get IDesTranslation_TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation
+Private Property Get IDesTranslation_TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation
     Set IDesTranslation_TransObject = TransObject(trans)
 End Property
 
-Public Sub IDesTranslation_TranslateDesigner(ByVal mainsh As Worksheet)
+Private Sub IDesTranslation_TranslateDesigner(ByVal mainsh As Worksheet)
     TranslateDesigner mainsh
 End Sub
 
-Public Function IDesTranslation_TranslationMsg(ByVal msgCode As String) As String
+'Get the range of the languages
+Private Property Get IDesTranslation_LangListRng() As Range
+    Set IDesTranslation_LangListRng = LangListRng()
+End Property
+
+Private Function IDesTranslation_TranslationMsg(ByVal msgCode As String) As String
     IDesTranslation_TranslationMsg = TranslationMsg(msgCode)
 End Function
 

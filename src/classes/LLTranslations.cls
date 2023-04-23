@@ -34,7 +34,7 @@ Private Const SELECTEDLANG           As String = "T_SelectedLLLanguages"
 Private Const CLASSNAME As String = "LLTranslations"
 
 Public Function Create(ByVal lltranssh As Worksheet, dicttranssh As Worksheet) As ILLTranslations
-  
+
     CheckRequirements lltranssh, dicttranssh
 
     With New LLTranslations
@@ -131,7 +131,7 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     outRngAddress = Lo.Range.Address
     Set outRng = outshDictTrans.Range(outRngAddress)
     outRng.Value = Lo.Range.Value
-    
+
     'Define the listobject
     With outshDictTrans
         .ListObjects.Add(xlSrcRange, outRng, , xlYes).Name = Lo.Name
@@ -154,7 +154,7 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     tablRng.Push "RNG_LLLanguage", "RNG_LLLanguageCode", "RNG_GoToSection", _
                  "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _
                  "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered"
-                 
+
     For counter = tablRng.LowerBound To tablRng.UpperBound
         rngName = tablRng.Item(counter)
         outshLLTrans.Range(shLL.Range(rngName).Address).Name = rngName
@@ -185,7 +185,7 @@ Private Sub ImportTranslation(ByVal fromWkb As Workbook)
     Set impsh = fromWkb.Worksheets(sh.Name)
     On Error GoTo 0
     If impsh Is Nothing Then ThrowError "I can't find the sheet " & sh.Name & " for import"
-  
+
     'Test for the listObject existence in the worksheet
     On Error Resume Next
     Set Lo = impsh.ListObjects(DICTTRANS)
@@ -199,14 +199,16 @@ Private Sub ImportTranslation(ByVal fromWkb As Workbook)
         Set rng = .Range(Lo.Range.Address)
         rng.Value = Lo.Range.Value
         'Redefine the list Object
-        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = Lo.Name
-        .ListObjects(Lo.Name).TableStyle = Lo.TableStyle
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = DICTTRANS
+        .ListObjects(DICTTRANS).TableStyle = Lo.TableStyle
     End With
 End Sub
 
 'Requirements for instanciation
 Private Sub CheckRequirements(ByVal lltradsh As Worksheet, dtradsh As Worksheet)
     Dim tabl As BetterArray
+    Dim tablRng As BetterArray 'List of ranges that should exists in the lltradsh
+    Dim counter As Long
 
     If lltradsh Is Nothing Then ThrowError "Unable to instanciate, no linelist translation sheet"
     If dtradsh Is Nothing Then ThrowError "Unable to instanciate, no dictionary translation sheet"
@@ -221,12 +223,14 @@ Private Sub CheckRequirements(ByVal lltradsh As Worksheet, dtradsh As Worksheet)
     tabl.Push DICTTRANS
     LoExists tabl, dtradsh
 
-    'Ranges in the linelist translation worksheet
-    RangeExists rngName:="RNG_LLLanguage", sh:=lltradsh
-    RangeExists rngName:="RNG_LLLanguageCode", sh:=lltradsh
-    RangeExists rngName:="RNG_DictionaryLanguage", sh:=lltradsh
-    RangeExists rngName:="RNG_GoToSection", sh:=lltradsh
-    RangeExists rngName:="RNG_AnaPeriod", sh:=lltradsh
+    Set tablRng = New BetterArray
+
+    tablRng.Push "RNG_LLLanguage", "RNG_LLLanguageCode", "RNG_GoToSection", _
+                 "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _
+                 "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered"
+    For counter = tablRng.LowerBound to tablRng.UpperBound
+        RangeExists rngName:=tablRng.Item(counter), sh:=lltradsh
+    Next
 End Sub
 
 'Check if listobject exists in a worksheet

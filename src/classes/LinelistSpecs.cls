@@ -309,7 +309,7 @@ Private Sub Prepare()
     Set geo = geoObject()
 
     'Import dictionary, and geobase, as well as choices
-    setPath = mainobj.SetupPath()
+    setPath = mainobj.ValueOf("setuppath")
     BusyApp
     Set inpWkb = Workbooks.Open(setPath)
     BusyApp
@@ -343,7 +343,7 @@ Private Sub Prepare()
     inpWkb.Close savechanges:=False
 
     'Import the geobase
-    setPath = mainobj.GeoPath()
+    setPath = mainobj.ValueOf("geopath")
     
     'If the geopath is not empty, then import the geobase
     If (setPath <> vbNullString) Then
