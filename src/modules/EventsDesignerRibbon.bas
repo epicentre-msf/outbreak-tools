@@ -8,14 +8,11 @@ Option Private Module
 
 'Designer Translation sheet name
 Private Const DESIGNERTRADSHEET As String = "DesignerTranslation"
-'Setup translation sheet name
-Private Const SETUPTRADSHEET As String = "Translations"
 'Linelist translation sheet name
 Private Const LINELISTTRADSHEET As String = "LinelistTranslation"
 'Designer main sheet name
 Private Const DESIGNERMAINSHEET As String = "Main"
 'Range for informations to user in the main sheet
-Private Const RNGEDITION As String = "RNG_Edition"
 
 'speed up process
 'speed app
@@ -51,21 +48,12 @@ Public Sub clickClearEnt(control As IRibbonControl)
 
     Dim wb As Workbook
     Dim mainsh As Worksheet
+    Dim mainobj As IMain
 
     Set wb = ThisWorkbook
     Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
-
-    mainsh.Range("RNG_PathDico").Value = vbNullString
-    mainsh.Range("RNG_PathGeo").Value = vbNullString
-    mainsh.Range("RNG_LLName").Value = vbNullString
-    mainsh.Range("RNG_LLDir").Value = vbNullString
-    mainsh.Range("RNG_Edition").Value = vbNullString
-    mainsh.Range("RNG_Update").Value = vbNullString
-    mainsh.Range("RNG_LangSetup").Value = vbNullString
-
-    'Set all input ranges to while color
-    DesignerMain.SetInputRangesToWhite
-    mainsh.Range("RNG_Update").Interior.color = vbWhite
+    Set mainobj = Main.Create(mainsh)
+    mainobj.ClearInputRanges clearValues := True
 End Sub
 
 '@Description("Callback for btnTransAdd onAction: Import Linelist translations")
@@ -103,8 +91,8 @@ Attribute clickImpTrans.VB_Description = "Callback for btnTransAdd onAction: Imp
             If (actLo.Name = "T_TradLLShapes") Or _
                (actLo.Name = "T_TradLLMsg") Or _
                (actLo.Name = "T_TradLLForms") Then
-                Set actcsTab = CustomTable.Create(Lo)
-                Set impLo = impsh.ListObjects(Lo.Name)
+                Set actcsTab = CustomTable.Create(actLo)
+                Set impLo = impsh.ListObjects(actLo.Name)
                 Set impcsTab = CustomTable.Create(impLo)
                 actcsTab.Import impcsTab
             End If
@@ -130,6 +118,7 @@ Public Sub clickOpen(control As IRibbonControl)
 Attribute clickOpen.VB_Description = "Callback for btnOpen onAction: Open another linelist file"
 
     Dim io As IOSFiles
+    Dim trads As IDesTranslation
     Set io = OSFiles.Create()
 
     io.LoadFile "*.xlsb"                         '
@@ -141,6 +130,9 @@ Attribute clickOpen.VB_Description = "Callback for btnOpen onAction: Open anothe
     Exit Sub
 
 ErrorManage:
-    MsgBox DesignerMain.TranslateDesMsg("MSG_TitlePassWord"), vbCritical, _
-    DesignerMain.TranslateDesMsg("MSG_PassWord")
+    On Error Resume Next
+    Set trads = DesTranslation.Create(ThisWorkbook.Worksheets(DESIGNERTRADSHEET))
+    MsgBox trads.TranslationMsg("MSG_TitlePassWord"), vbCritical, _
+    trads.TranslationMsg("MSG_PassWord")
+    On Error GoTo 0
 End Sub
