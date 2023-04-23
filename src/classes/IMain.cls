@@ -11,25 +11,32 @@ Attribute VB_Exposed = False
 
 '@Folder("Designer")
 '@ModuleDescription("Interface of main class")
-'@IgnoreModule
+'@Interface
 
 Option Explicit
 
-Public Property Get OutputPath() As String: End Property 'Linelist Directory
-Public Property Get LinelistName() As String: End Property 'Linelist Name
-Public Property Get SetupPath() As String: End Property 'Setup Path
-Public Property Get GeoPath() As String: End Property ' GeoPath
 
+'Get value from one range
+Public Property Get ValueOf(ByVal tagName As String) As String: End Property
 'Check if all the paths are ready for linelist generation
 Public Property Get Ready() As Boolean: End Property
 
 'Get the linelist password
 Public Property Get LinelistPassWord() As String: End Property
-
 'Add information to end user
-Public Sub AddInfo(ByVal trads As IDesTranslation, ByVal msgCode As String): End Sub
+Public Sub AddInfo(ByVal trads As IDesTranslation, ByVal msgCode As String, _
+                   Optional ByVal infoName As String = "edition"): End Sub
 
 'Exposed methods
 Public Sub CheckReadiness(ByVal trads As IDesTranslation): End Sub
+'Check if the linelist exists and ask for replacement
+Public Sub CheckFileExistence(ByVal trads As IDesTranslation): End Sub
 Public Sub UpdateStatus(ByVal numValue As Integer): End Sub
+'Open a linelist
+'Public Sub OpenLL(): End Sub
+'Set all the input ranges to white
+Public Sub ClearInputRanges(Optional ByVal clearValues As Boolean = False): End Sub
+
+
+
 

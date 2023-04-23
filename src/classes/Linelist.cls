@@ -156,7 +156,7 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
     Set inpWkb = lData.specswkb()
     Set mainobj = lData.MainObject()
     sep = Application.PathSeparator
-    outDir = mainobj.OutputPath() & sep & "LinelistApp_"
+    outDir = mainobj.ValueOf("lldir") & sep & "LinelistApp_"
 
     'get all the values within the actual module to transfer
     Select Case scope
@@ -225,7 +225,7 @@ Public Sub TemporaryFolder(Optional Create As Boolean = True)
 
     Set lData = LinelistData()
     Set mainobj = lData.MainObject()
-    outPath = mainobj.OutputPath()
+    outPath = mainobj.ValueOf("lldir")
     sep = Application.PathSeparator
 
     'required temporary folder for analysis
@@ -252,7 +252,7 @@ Public Sub TransferForm(formName As String)
     Set inpWkb = lData.specswkb()
     Set mainobj = lData.MainObject()
     sep = Application.PathSeparator
-    outDir = mainobj.OutputPath() & sep & "LinelistApp_"
+    outDir = mainobj.ValueOf("lldir") & sep & "LinelistApp_"
 
     'Output dir is where to write the form for import / export
     On Error Resume Next
@@ -462,8 +462,8 @@ Private Sub SaveLL()
     Set passobj = lData.Password()
     Set msgTrads = lData.TransObject()
 
-    passwd = mainobj.LinelistPassWord()
-    outPath = mainobj.OutputPath() & Application.PathSeparator & mainobj.LinelistName & ".xlsb"
+    passwd = mainobj.ValueOf("llpassword")
+    outPath = mainobj.ValueOf("lldir") & Application.PathSeparator & mainobj.ValueOf("llname") & ".xlsb"
 
     'Select the admin sheet before saving
     outWkb.Worksheets(msgTrads.TranslatedValue("LLSHEET_Admin")).Activate
