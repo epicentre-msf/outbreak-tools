@@ -81,34 +81,56 @@ End Sub
 'scope takes two values
 '1 for modules
 '2 for classes
-Public Sub ImportFolder(Optional ByVal scope As Byte = 1)
+Private Sub ImportFolder(Optional ByVal scope As Byte = 1)
     Dim io As IOSFiles
     Dim sh As Worksheet
     Dim rng As Range
     Dim rngName As String
     Dim secondFolder As String
+    Dim secondRngName As String
+    Dim secondRng As Range 'second range for interfaces and test codes
 
     Set sh = ThisWorkbook.Worksheets(DEVSHEETNAME)
     rngName = Switch(scope = 1, "RNG_MODULES_CODES_FOLDER", _
                      scope = 2, "RNG_CLASS_CODES_FOLDER", _
                      True, "RNG_MODULES_CODES_FOLDER")
-    
+    secondRngName = Switch(scope = 1, "RNG_TEST_MODULES_FOLDER", _
+                           scope = 2, "RNG_CLASS_INTERFACE_FOLDER", _
+                           True, "")
+
     secondFolder  = Switch(scope = 1, "tests", _
                      scope = 2, "interfaces", _
                      True, "tests")
 
 
     Set rng = sh.Range(rngName)
+    Set secondRng = sh.Range(secondRngName)
+
     Set io = OSFiles.Create()
     io.LoadFolder
-    If io.HasValidFolder() Then 
-        rng.Value = io.Folder() & Application.PathSeparator & "codes"
+    If io.HasValidFolder() Then
+        rng.Value = io.Folder() & Application.PathSeparator & "implements"
+       secondRng.Value = io.Folder() & Application.PathSeparator & secondFolder
+    End If
+End Sub
 
-        If scope = 1 Then
-            rng.Offset(2).Value = io.Folder() & Application.PathSeparator & "tests"
-        Else
-            rng.Offset(2).Value = io.Folder() & Application.PathSeparator & "interfaces"
-        End If
+'Helper for SaveCodes
+Private Sub SaveOneFolder(ByVal listName As String, outDir As String, scope As Byte, outputAs As Byte)
+
+    Dim codesList As BetterArray
+    Dim sh As Worksheet
+    Dim codeName As String
+    Dim counter As Long
+
+    Set codesList = New BetterArray
+    Set sh = ThisWorkbook.Worksheets(DEVSHEETNAME)
+
+    codesList.FromExcelRange sh.ListObjects(listName).DataBodyRange()
+
+    For counter = codesList.LowerBound To codesList.UpperBound
+        codeName = Application.WorksheetFunction.Trim(codesList.Item(counter))
+        If codeName <> vbNullString Then TransferCode codeName, outDir, scope:=scope, outputAs:=outputAs
+    Next
 End Sub
 
 'Import to folders
@@ -119,38 +141,31 @@ End Sub
 'Scope has two values
 '1- for modules
 '2- for classes
-Public Sub SaveCodes(Optional ByVal outputAs As Byte = 1, Optional ByVal scope As Byte = 1)
-    Dim codesList As BetterArray
+Private Sub SaveCodes(Optional ByVal outputAs As Byte = 1, Optional ByVal scope As Byte = 1)
+
     Dim sh As Worksheet
-    Dim counter As Long
     Dim outDir As String
-    Dim codeName As String
     Dim rngName As String
     Dim listName As String
 
-
     Set sh = ThisWorkbook.Worksheets(DEVSHEETNAME)
-    rngName = Switch(scope = 1, "RNG_MODULES_FOLDER", _
-                     scope = 2, "RNG_CLASS_FOLDER", _
-                     True, "RNG_MODULES_FOLDER")
-
-    listName = Switch(scope = 1, "modulesList", _
-                      scope = 2, "classList", _
-                      True, "modulesList")
-
-    Set codesList = New BetterArray
+    rngName = Switch(scope = 1, "RNG_MODULES_CODES_FOLDER", _
+                     scope = 2, "RNG_CLASS_CODES_FOLDER")
+    listName = Switch(scope = 1, "modulesList", scope = 2, "classList")
+    'Output directory
     outDir = sh.Range(rngName).Value
-
     'Be sure the path exists on the current computer before proceeding, if not, exit
     If Dir(outDir & "*", vbDirectory) = vbNullString Then Exit Sub
 
-    codesList.FromExcelRange sh.ListObjects(listName).DataBodyRange()
+    SaveOneFolder listName, outDir, scope:=scope, outputAs:=outputAs
 
-    For counter = codesList.LowerBound To codesList.UpperBound
-        codeName = Application.WorksheetFunction.Trim(codesList.Item(counter))
-        If codeName <> vbNullString Then TransferCode codeName, outDir, scope:=scope, outputAs:=outputAs
-    Next
+    'Second part to Import/Export
+    listName = Switch(scope = 1, "testModulesList", scope = 2, "classInterfacesList")
+    rngName = Switch(scope = 1, "RNG_TEST_MODULES_FOLDER", _
+                     scope = 2, "RNG_CLASS_INTERFACE_FOLDER")
+    outDir = sh.Range(rngName).Value
 
+    SaveOneFolder listName, outDir, scope:=scope, outputAs:=outputAs
 End Sub
 
 '@Description("Import Codes into the designer")
@@ -303,8 +318,8 @@ Private Sub ReportSave(Optional ByVal outputAs As Byte = 1, Optional ByVal scope
     Set Lo = sh.ListObjects("logImports")
 
     saveName = Switch(outputAs = 1, "Imported ", outputAs = 2, "Exported ", True, "Saved: ")
-    folderName = Switch(scope = 1, "Modules using path: " & sh.Range("RNG_MODULES_FOLDER").Value, _
-                        scope = 2, "Classes using path: " & sh.Range("RNG_CLASS_FOLDER").Value, _
+    folderName = Switch(scope = 1, "Modules using path: " & sh.Range("RNG_MODULES_CODES_FOLDER").Value, _
+                        scope = 2, "Classes using path: " & sh.Range("RNG_CLASS_CODES_FOLDER").Value, _
                         True, "<folder>:")
 
     phraseToWrite = Format(Now, "yyyy-mm-dd hh:mm:ss") & " - " & saveName & folderName
@@ -316,4 +331,44 @@ Private Sub ReportSave(Optional ByVal outputAs As Byte = 1, Optional ByVal scope
     Loop
 
     cellRng.Value = phraseToWrite
+End Sub
+
+'Description("Remove the unnecessary modules/classes")
+'@EntryPoint
+Public Sub RemoveSub()
+    Dim codesList As BetterArray
+    Dim sh As Worksheet
+    Dim codecounter As Long
+    Dim locounter As Long
+    Dim componentObject As Object
+    Dim codeObject As Object
+    Dim wb As Workbook
+    Dim loList As BetterArray
+    Dim excludesList As BetterArray 'List of modules to exclude from removing process
+    Dim moduleName As String
+
+    Set wb = ThisWorkbook
+    Set sh = wb.Worksheets(DEVSHEETNAME)
+    'Modules list
+    Set codesList = New BetterArray
+    Set loList = New BetterArray
+    Set excludesList = New BetterArray
+
+    loList.Push "modulesList", "classList", "testModulesList", "classInterfacesList"
+    excludesList.Push "EventsDesignerRibbon", "DevModule", "DropdownLists", "IDropdownLists", _
+                      "BetterArray", "OSFiles", "IOSFiles"
+
+    For locounter = loList.LowerBound To loList.UpperBound
+        codesList.FromExcelRange sh.ListObjects(loList.Item(locounter)).DataBodyRange
+        For codecounter = codesList.LowerBound To codesList.UpperBound
+            On Error Resume Next
+                moduleName = codesList.Item(codecounter)
+                Set codeObject = Wb.VBProject.VBComponents(moduleName)
+                Set componentObject = Wb.VBProject.VBComponents
+                'remove the module from this
+                If Not excludesList.Includes(moduleName) Then componentObject.Remove codeObject
+                Set codeObject = Nothing
+            On Error GoTo 0
+        Next
+    Next
 End Sub
