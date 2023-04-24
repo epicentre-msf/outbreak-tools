@@ -12,7 +12,8 @@ Private Const DESIGNERTRADSHEET As String = "DesignerTranslation"
 Private Const LINELISTTRADSHEET As String = "LinelistTranslation"
 'Designer main sheet name
 Private Const DESIGNERMAINSHEET As String = "Main"
-'Range for informations to user in the main sheet
+'All the ribbon object Ribbon
+Private ribbonUI As IRibbonUI
 
 'speed up process
 'speed app
@@ -29,17 +30,55 @@ Private Sub NotBusyApp()
     Application.EnableAnimations = True
 End Sub
 
+'@Description("Callback when the button loaded")
+'@EntryPoint
+Public Sub ribbonLoaded(ByRef ribbon As IRibbonUI)
+    Set ribbonUI = ribbon
+End Sub
+
+'@Description("Triggers event to update all the labels by relaunching all the callbacks")
+Private Sub UpdateLabels
+    ribbonUI.Invalidate
+End Sub
 
 '@Description("Callback for getLabel (Depending on the language)")
 '@EntryPoint
 Public Sub LangLabel(control As IRibbonControl, ByRef returnedVal)
-Attribute LangLabel.VB_Description = "Callback for getLabel (Depending on the language)"
+    Attribute LangLabel.VB_Description = "Callback for getLabel (Depending on the language)"
+
+    Dim desTrads As IDesTranslation
+    Dim codeId As String
+    Dim tradsh As Worksheet
+    Dim wb As Workbook
+
+    Set wb = ThisWorkbook
+    Set tradsh = wb.Worksheets("DesignerTranslation")
+    Set desTrads = DesTranslation.Create(tradsh)
+    codeId = control.Id
+
+    returnedVal = desTrads.TranslationMsg(codeId)
 End Sub
 
 '@Description("Callback for btnDelGeo onAction: Delete the geobase")
 '@EntryPoint
 Public Sub clickDelGeo(control As IRibbonControl)
 Attribute clickDelGeo.VB_Description = "Callback for btnDelGeo onAction: Delete the geobase"
+    Dim geosh As Worksheet
+    Dim geo As ILLGeo
+    Dim wb As Workbook
+
+    On Error GoTo ErrGeo
+    BusyApp
+
+    Set wb = ThisWorkbook
+    Set geosh = wb.Worksheets("Geo")
+    Set geo = LLGeo.Create(geosh)
+
+    'Clear the geobase data
+    geo.Clear
+
+ErrGeo:
+    NotBusyApp
 End Sub
 
 '@Description("Callback for btnClear onAction": Clear the entries)
@@ -50,10 +89,17 @@ Public Sub clickClearEnt(control As IRibbonControl)
     Dim mainsh As Worksheet
     Dim mainobj As IMain
 
+    BusyApp
+
+    On Error GoTo ErrEnt
+
     Set wb = ThisWorkbook
     Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
     Set mainobj = Main.Create(mainsh)
     mainobj.ClearInputRanges clearValues := True
+
+ErrEnt:
+    NotBusyApp
 End Sub
 
 '@Description("Callback for btnTransAdd onAction: Import Linelist translations")
@@ -108,8 +154,36 @@ End Sub
 
 '@Description("Callback for langDrop onAction: Change the language of the designer")
 '@EntryPoint
-Public Sub clickLangChange(control As IRibbonControl, id As String, Index As Integer)
-Attribute clickLangChange.VB_Description = "Callback for langDrop onAction: Change the language of the designer"
+Public Sub clickLangChange(control As IRibbonControl, langId As String, Index As Integer)
+    Attribute clickLangChange.VB_Description = "Callback for langDrop onAction: Change the language of the designer"
+
+    'Language code in the designer worksheet
+    Const RNGLANGCODE As String = "RNG_MainLangCode"
+
+    'langId is the language code
+    Dim tradsh As Worksheet
+    Dim desTrads As IDesTranslation
+    Dim mainsh As Worksheet
+    Dim wb As Workbook
+
+    BusyApp
+
+    On Error GoTo ExitLang
+
+    Set wb = ThisWorkbook
+    Set mainsh  = wb.Worksheets("Main")
+    Set tradsh = wb.Worksheets("DesignerTranslation")
+    Set desTrads = DesTranslation.Create(tradsh)
+
+    tradsh.Range(RNGLANGCODE).Value = langId
+    tradsh.Calculate
+    desTrads.TranslateDesigner mainsh
+
+    'Update all the labels on the ribbon
+    UpdateLabels
+
+ExitLang:
+    NotBusyApp
 End Sub
 
 '@Description("Callback for btnOpen onAction: Open another linelist file")

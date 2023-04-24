@@ -105,15 +105,15 @@ Private Sub TranslateDesigner(ByVal mainsh As Worksheet)
     Dim langCode As String                       'Language for the designer
     Dim prevFont As String
     Dim rngCode As String                        'Code Name of the range
+    Dim mainRng As Range
 
     Set sh = Wksh()
 
     langCode = DesignerLanguage()
 
     If (langCode <> vbNullString) Then
-        Application.ScreenUpdating = False
 
-        'List of shapes names
+        'Translation of shapes
         Set shapesNames = New BetterArray
         Set Lo = sh.ListObjects(TABSHAPE)
         Set shpObject = TransObject(TranslationOfShapes)
@@ -130,7 +130,7 @@ Private Sub TranslateDesigner(ByVal mainsh As Worksheet)
             End If
         Next
 
-        'Ranges
+        'Translation of label Ranges
         Set rngNames = New BetterArray
         Set Lo = sh.ListObjects(TABRANGE)
         Set rngObject = TransObject(TranslationOfRanges)
@@ -138,7 +138,15 @@ Private Sub TranslateDesigner(ByVal mainsh As Worksheet)
 
         For counter = rngNames.LowerBound To rngNames.UpperBound
             rngCode = rngNames.Item(counter)
-            mainsh.Range(rngCode).Value = rngObject.TranslatedValue(rngCode)
+            'Test if the range exists before changing its value
+            On Error Resume Next
+            Set mainRng = mainsh.Range(rngCode)
+            On Error GoTo 0
+
+            If Not (mainRng Is Nothing) Then
+                mainRng.Value = rngObject.TranslatedValue(rngCode)
+                Set mainRng = Nothing
+            End If
         Next
     End If
 End Sub
@@ -214,4 +222,3 @@ End Property
 Private Function IDesTranslation_TranslationMsg(ByVal msgCode As String) As String
     IDesTranslation_TranslationMsg = TranslationMsg(msgCode)
 End Function
-
