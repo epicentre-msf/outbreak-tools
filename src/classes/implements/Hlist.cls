@@ -359,8 +359,6 @@ Public Sub Build()
     'Transfert code to the worksheet
     TransferCodeWksh
 
-    'Define the Printed Worksheet
-
     'Add editing range for sorting
     'sh.Protection.AllowEditRanges.Add title:="EditAll" & tableName, Range:=Range(tableName & "[#All]")
 

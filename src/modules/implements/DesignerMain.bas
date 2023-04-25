@@ -1,6 +1,5 @@
 Attribute VB_Name = "DesignerMain"
 Option Explicit
-Option Private Module
 
 'Designer Translation sheet name
 Private Const DESIGNERTRADSHEET As String = "DesignerTranslation"
@@ -65,7 +64,7 @@ Private Sub ImportLang()
     actwb.Worksheets(LINELISTTRADSHEET).Range(RNGDICTLANG).Value = _ 
     LangDictRng.Value
 
-ExitImporLang:
+ExitImportLang:
     On Error Resume Next
     impwb.Close savechanges:=False
     On Error GoTo 0

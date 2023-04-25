@@ -368,7 +368,7 @@ Private Sub Prepare()
 
     classesList.Clear
     classesList.Push "F_Advanced", "F_Export", "F_ExportMig", "F_Geo", "F_ImportMig", "F_ImportRep", _
-                     "F_NomVisible"
+                     "F_ShowHideLL", "F_ShowHidePrint"
 
     For counter = classesList.LowerBound To classesList.UpperBound
         codeName = classesList.Item(counter)

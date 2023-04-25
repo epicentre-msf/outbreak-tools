@@ -36,6 +36,7 @@ Public Sub UpdateStatus(ByVal numValue As Integer): End Sub
 'Public Sub OpenLL(): End Sub
 'Set all the input ranges to white
 Public Sub ClearInputRanges(Optional ByVal clearValues As Boolean = False): End Sub
+Public Sub OpenLL() : End Sub
 
 
 

@@ -1,14 +1,14 @@
 VERSION 5.00
-Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_NomVisible 
+Begin {C62A69F0-16DC-11CE-9E98-00AA00574A4F} F_ShowHideLL 
    Caption         =   "ShowNameApps"
    ClientHeight    =   6024
    ClientLeft      =   -12
    ClientTop       =   -84
    ClientWidth     =   10992
-   OleObjectBlob   =   "F_NomVisible.frx":0000
+   OleObjectBlob   =   "F_ShowHideLL.frx":0000
    StartUpPosition =   1  'CenterOwner
 End
-Attribute VB_Name = "F_NomVisible"
+Attribute VB_Name = "F_ShowHideLL"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -269,7 +269,7 @@ Option Explicit
 Option Base 1
 
 Private Sub CMD_Fermer_Click()
-    F_NomVisible.Hide
+    F_ShowHideLL.Hide
     'Call WriteVisibility
 End Sub
 
