@@ -19,22 +19,33 @@ Implements ILLExport
 
 Private Type TLLExport
     expData As IDataSheet
+    sh As Worksheet
 End Type
 
 Private this As TLLExport
+Private SPECSHEADER As BetterArray
 
 Public Function Create(ByVal sh As Worksheet) As ILLExport
-  
+
     'Set creation of datasheet
     Dim customData As IDataSheet
     Set customData = DataSheet.Create(sh, 1, 1)
 
     With New LLExport
+        Set .Wksh = sh
         Set .Data = customData
         Set Create = .Self()
     End With
 
 End Function
+
+'Initialize the Arrays
+Private Sub ArraysInitialize()
+    Set SPECSHEADER = New BetterArray
+    SPECSHEADER.Push "export number", "label button", "password", _
+                     "status", "export metadata", "export translation", _
+                     "file format", "file name", "export header"
+End Sub
 
 'Data for the exports
 Public Property Get Data() As IDataSheet
@@ -47,6 +58,14 @@ End Property
 
 Public Property Get Self() As ILLExport
     Set Self = Me
+End Property
+
+Public Property Set Wksh( ByVal sh As Worksheet)
+    Set this.sh = sh
+End Property
+
+Public Property Get Wksh() As Worksheet
+    Set Wksh = this.sh
 End Property
 
 'Export specifications to another workbook
@@ -68,7 +87,13 @@ End Sub
 Private Sub ImportSpecs(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
     Dim expData As IDataSheet
     Dim impExpData As IDataSheet
+    Dim sh As Worksheet
+
     Set expData = Data()
+    Set sh = Wksh()
+    If SPECSHEADER Is Nothing Then ArraysInitialize
+    'Here start row and start columns are just 1, 1
+    SPECSHEADER.ToExcelRange sh.Cells(1, 1), TransposeValues:=True
     Set impExpData = DataSheet.Create(fromWksh, fromStartRow, fromStartCol)
     expData.Import impExpData
 End Sub

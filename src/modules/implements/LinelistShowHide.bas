@@ -22,8 +22,8 @@ Sub SetHiddenMandatory()
     sShowMandatory = TranslateLLMsg("MSG_ShowMandatory") 'translate_LineList("Show/Mandatory", Sheets("linelist-translation").[T_tradRange])
     sDesHidden = TranslateLLMsg("MSG_DesHidden")
 
-    F_NomVisible.OPT_Affiche.Caption = sShown
-    F_NomVisible.OPT_Masque.Caption = sHidden
+    F_ShowHideLL.OPT_Show.Caption = sShown
+    F_ShowHideLL.OPT_Hide.Caption = sHidden
 
 End Sub
 
@@ -135,21 +135,19 @@ Sub ClicCmdShowHide()
     Set T_data = T_data.Clone
 
     T_data.Transpose
-    F_NomVisible.LST_NomChamp.ColumnCount = 3
-    F_NomVisible.LST_NomChamp.BoundColumn = 2
-    F_NomVisible.LST_NomChamp.List = T_data.Items
+    F_ShowHideLL.LST_LLVarNames.ColumnCount = 3
+    F_ShowHideLL.LST_LLVarNames.BoundColumn = 2
+    F_ShowHideLL.LST_LLVarNames.List = T_data.Items
     'Setting objects to nothing
 
 
 
     Application.EnableEvents = True
 
-    F_NomVisible.FRM_AffMas.Visible = True
-    F_NomVisible.FRM_AffMas.width = 90
-    F_NomVisible.width = 450
-    F_NomVisible.height = 270
-    F_NomVisible.CMD_Fermer.SetFocus
-    F_NomVisible.Show
+    F_ShowHideLL.width = 450
+    F_ShowHideLL.height = 270
+    F_ShowHideLL.CMD_Back.SetFocus
+    F_ShowHideLL.Show
 
     Call ProtectSheet
 
@@ -169,45 +167,41 @@ Sub UpdateVisibilityStatus(iIndex As Integer)
     Dim T_FormData As BetterArray                'Actual form data
     Set T_FormData = New BetterArray
     T_FormData.LowerBound = 1
-    T_FormData.Items = F_NomVisible.LST_NomChamp.List
+    T_FormData.Items = F_ShowHideLL.LST_LLVarNames.List
 
     BeginWork xlsapp:=Application
     Application.EnableEvents = False
 
 
-    F_NomVisible.FRM_AffMas.Visible = True
     Select Case T_FormData.Items(iIndex + 1, 3)
     Case sMandatory
         TriggerShowHide = False
-        F_NomVisible.OPT_Affiche.Value = 1
-        F_NomVisible.OPT_Affiche.Caption = sShowMandatory
-        F_NomVisible.OPT_Affiche.width = 80
-        F_NomVisible.OPT_Affiche.Left = 0
-        F_NomVisible.OPT_Affiche.Top = 20
+        F_ShowHideLL.OPT_Show.Value = 1
+        F_ShowHideLL.OPT_Show.Caption = sShowMandatory
+        F_ShowHideLL.OPT_Show.Left = 348
+        F_ShowHideLL.OPT_Show.Top = 75
 
-        F_NomVisible.OPT_Masque.Visible = False
+        F_ShowHideLL.OPT_Hide.Visible = False
     Case sHidden                                 'It is hidden, show masking
         TriggerShowHide = False
-        F_NomVisible.OPT_Affiche.Value = 0
-        F_NomVisible.OPT_Affiche.Caption = sShown
-        F_NomVisible.OPT_Affiche.width = 70
-        F_NomVisible.OPT_Affiche.Left = 10
-        F_NomVisible.OPT_Affiche.Top = 6
+        F_ShowHideLL.OPT_Show.Value = 0
+        F_ShowHideLL.OPT_Show.Caption = sShown
+        F_ShowHideLL.OPT_Show.Left = 348
+        F_ShowHideLL.OPT_Show.Top = 72
 
-        F_NomVisible.OPT_Masque.Visible = True
-        F_NomVisible.OPT_Affiche.Visible = True
-        F_NomVisible.OPT_Masque.Value = 1
+        F_ShowHideLL.OPT_Hide.Visible = True
+        F_ShowHideLL.OPT_Show.Visible = True
+        F_ShowHideLL.OPT_Hide.Value = 1
     Case Else
         TriggerShowHide = False                  'It is shown if not
-        F_NomVisible.OPT_Affiche.Value = 1
-        F_NomVisible.OPT_Affiche.Caption = sShown
-        F_NomVisible.OPT_Affiche.width = 70
-        F_NomVisible.OPT_Affiche.Left = 10
-        F_NomVisible.OPT_Affiche.Top = 6
+        F_ShowHideLL.OPT_Show.Value = 1
+        F_ShowHideLL.OPT_Show.Caption = sShown
+        F_ShowHideLL.OPT_Show.Left = 348
+        F_ShowHideLL.OPT_Show.Top = 72
 
-        F_NomVisible.OPT_Masque.Visible = True
-        F_NomVisible.OPT_Affiche.Visible = True
-        F_NomVisible.OPT_Masque.Value = 0
+        F_ShowHideLL.OPT_Hide.Visible = True
+        F_ShowHideLL.OPT_Show.Visible = True
+        F_ShowHideLL.OPT_Hide.Value = 0
     End Select
 
     TriggerShowHide = True
@@ -288,7 +282,7 @@ Sub ShowHideLogic(iIndex As Integer)
         Dim T_FormData As BetterArray
         Set T_FormData = New BetterArray
 
-        T_FormData.Items = F_NomVisible.LST_NomChamp.List
+        T_FormData.Items = F_ShowHideLL.LST_LLVarNames.List
         T_FormData.LowerBound = 1
 
         'Update data in form
@@ -297,7 +291,7 @@ Sub ShowHideLogic(iIndex As Integer)
             'For mutating, we can only use the item method. Items with s, read only values,
             'we can't set values with items
 
-            If F_NomVisible.OPT_Masque.Value Then
+            If F_ShowHideLL.OPT_Hide.Value Then
                 '// --- Here I update the Data to show "Hidden"
                 UpdateFormData T_table:=T_FormData, Index:=iIndex, bhide:=True
                 '//--- Actually hide the column
@@ -312,9 +306,9 @@ Sub ShowHideLogic(iIndex As Integer)
         End If
 
         'Reload it back
-        F_NomVisible.LST_NomChamp.Clear
-        F_NomVisible.LST_NomChamp.List = T_FormData.Items
-        F_NomVisible.LST_NomChamp.Selected(iIndex) = True
+        F_ShowHideLL.LST_LLVarNames.Clear
+        F_ShowHideLL.LST_LLVarNames.List = T_FormData.Items
+        F_ShowHideLL.LST_LLVarNames.Selected(iIndex) = True
 
         Application.EnableEvents = True
         EndWork xlsapp:=Application

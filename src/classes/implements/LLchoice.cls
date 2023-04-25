@@ -22,7 +22,7 @@ End Type
 
 Private this As Tchoice
 
-Private Const listName As String = "list name"
+Private Const LISTNAME As String = "list name"
 Private Const LABEL   As String = "label"
 Private Const ORDER   As String = "ordering list"
 
@@ -86,7 +86,7 @@ Public Property Get Categories(ByVal choiceName As String) As BetterArray
 
     Set dataObject = ChoiceData
 
-    Set Categories = dataObject.FilterData(varName:=listName, _
+    Set Categories = dataObject.FilterData(varName:=LISTNAME, _
                                            criteriaName:=choiceName, returnedColumnName:=LABEL, _
                                            includeHeaders:=False)
 End Property
@@ -101,8 +101,8 @@ Private Sub Sort()
 
     Set dataObject = ChoiceData
 
-    If dataObject.ColumnExists(listName) And dataObject.ColumnExists(ORDER) Then
-        Set listRng = DataRange(listName, includeHeaders:=False)
+    If dataObject.ColumnExists(LISTNAME) And dataObject.ColumnExists(ORDER) Then
+        Set listRng = DataRange(LISTNAME, includeHeaders:=False)
         Set orderRng = DataRange(ORDER, includeHeaders:=False)
         Set choiceRng = DataRange(includeHeaders:=False)
 
@@ -130,7 +130,7 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
     If checkCategories.Length > 0 Then Exit Sub  'Will probably trace log.
 
 
-    Set listRng = DataRange(listName)
+    Set listRng = DataRange(LISTNAME)
     Set labelRng = DataRange(LABEL)
     Set orderRng = DataRange(ORDER)
     Set choicewksh = Wksh()
@@ -163,7 +163,18 @@ End Sub
 Private Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
     Dim choiData As IDataSheet
     Dim impChoiData As IDataSheet
+    Dim sh As Worksheet
+    Dim cellRng As Range
     Set choiData = ChoiceData()
+
+    'Initialize headers before import
+    Set sh = Wksh()
+    Set cellRng = sh.Cells(StartRow, StartColumn)
+    cellRng.Value = LISTNAME
+    cellRng.Offset(, 1).Value = ORDER
+    cellRng.Offset(, 2).Value = LABEL
+
+    'Import the data
     Set impChoiData = DataSheet.Create(fromWksh, fromStartRow, fromStartCol)
 
     choiData.Import impChoiData

@@ -1,5 +1,4 @@
 Attribute VB_Name = "EventsDesignerWorkbook"
-
 Option Explicit
 
 Private Sub Workbook_Open()

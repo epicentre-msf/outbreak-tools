@@ -55,7 +55,7 @@ Public Function FiltersData(ByVal varData As BetterArray, ByVal criteriaData As 
 End Function
 
 'Import and Export Sub
-Public Sub export(ByVal toWkb As Workbook, _
+Public Sub Export(ByVal toWkb As Workbook, _
                   Optional ByVal filteredVarName As String = "__all__", _
                   Optional ByVal filteredCondition As String = "<>", Optional ByVal Hide As Long = xlSheetHidden)
 End Sub

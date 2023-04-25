@@ -9,7 +9,7 @@ Option Explicit
 
 Public Const C_sSheetGeo                As String = "GEO" 'Sheet for storing the geo data // Feuille des donnees geo
 Public Const C_sSheetAdmin              As String = "Admin" 'Name of the sheet for admin data (metadata on a linelist)
-Public Const C_sSheetPassword           As String = "Password" 'sheet for password management
+Public Const C_sSheetPassword           As String = "__pass" 'sheet for password management
 Public Const C_sSheetFormulas           As String = "ControleFormule" 'Sheet for formula management (mainly in the validation)
 Public Const C_sSheetLLTranslation      As String = "LinelistTranslation"
 Public Const C_sSheetTemp               As String = "temp__" 'Temporary sheet for data manipulation and doing stuffs
@@ -149,7 +149,7 @@ Public Const C_sAnaAll                  As String = "all"
 
 Public Const C_sFormExport               As String = "F_Export" 'Export Frame
 Public Const C_sFormGeo                  As String = "F_Geo" 'Geo Frame
-Public Const C_sFormShowHide             As String = "F_NomVisible" 'ShowHide Frame
+Public Const C_sFormShowHide             As String = "F_ShowHideLL" 'ShowHide Frame
 Public Const C_sFormExportMig            As String = "F_ExportMig" 'Export for Migration form
 Public Const C_sFormAdvanced             As String = "F_Advanced" 'Import for Migration form
 Public Const C_sFormImportRep            As String = "F_ImportRep"

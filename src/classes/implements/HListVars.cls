@@ -180,7 +180,7 @@ Private Sub AddType()
 
         If varFormat = vbNullString Then
             'Default format if there is nothing
-            formatText = IIf(varTypes = "decimal", "#,##0.00;-#,##0.00;0.00;@", "###0;-###0;;@")
+            formatText = IIf(varTypes = "decimal", "#,##0.00;-#,##0.00;;@", "###0;-###0;;@")
         'Other formats
         ElseIf varFormat = "integer" Then
 
@@ -188,7 +188,7 @@ Private Sub AddType()
 
         ElseIf varFormat = "round0" Then
 
-            formatText = "#,##0;-#,##0;0;@"
+            formatText = "#,##0;-#,##0;;@"
 
         ElseIf varFormat = "percentage0" Then
 
@@ -382,7 +382,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     Set trans = lData.TransObject()
     Set design = lData.DesignFormat()
 
-    varToPrint = ValueOf("print variable")
+    varToPrint = ValueOf("register book")
     varMainLab = ValueOf("main label")
     varName = ValueOf("variable name")
     varNote = ValueOf("note")
@@ -455,7 +455,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     'Hidden columns
     If usePrinted Then
         Select Case varToPrint
-        Case "visible, vertical"
+        Case "print, vertical header"
             cellRng.Offset(-2).Orientation = 90
             cellRng.EntireColumn.AutoFit
         Case "hidden"
