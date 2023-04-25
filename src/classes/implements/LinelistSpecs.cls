@@ -205,7 +205,7 @@ Private Function Categories(ByVal varName As String) As BetterArray
     Set choi = Choices()
     Set categoryData = New BetterArray
     Set vars = LLVariables.Create(dict)
-    
+
     categoryType = vars.Value(varName:=varName, colName:="control")
     controlDetails = Application.WorksheetFunction.Trim(vars.Value(varName:=varName, colName:="control details"))
 
@@ -244,7 +244,7 @@ End Sub
 Private Sub AddCaseWhenToChoices()
 
     Const CATEGORYPREFIX As String = "__case_when_"
-    
+
     Dim casewhenVars As BetterArray
     Dim dict As ILLdictionary
     Dim casewhenVariableName As String
@@ -335,26 +335,26 @@ Private Sub Prepare()
     'Import the Exports specifications from the setup
     Set sh = inpWkb.Worksheets(EXPORTSHEET)
     expobj.ImportSpecs sh, 4, 1
-    
+
     'Import the analysis
     Set sh = inpWkb.Worksheets(ANALYSISSPECSSHEET)
     ana.Import sh
-    
+
     inpWkb.Close savechanges:=False
 
     'Import the geobase
     setPath = mainobj.ValueOf("geopath")
-    
+
     'If the geopath is not empty, then import the geobase
     If (setPath <> vbNullString) Then
         BusyApp
         Set inpWkb = Workbooks.Open(setPath)
         BusyApp
-        
+
         geo.Import inpWkb
         inpWkb.Close savechanges:=False
     End If
-    
+
     'Define those objects after the imports
     Set dictTrads = TransObject(TranslationOfDictionary)
     Set msgTrads = TransObject()
@@ -385,7 +385,7 @@ Private Sub Prepare()
 
     'Translate the choices
     choi.Translate dictTrads
-    
+
     'Sort the chocies
     choi.Sort
 
@@ -394,7 +394,7 @@ Private Sub Prepare()
 
     'Translate the analysis
     ana.Translate dictTrads
-    
+
     mainobj.UpdateStatus 10
 
     'Return the state of the application
@@ -418,13 +418,13 @@ Private Sub AddListAuto()
 
     For counter = listVars.LowerBound To listVars.UpperBound
         varName = listVars.Item(counter)
-        
+
         'listVars can contains the same variable twice, be sure we need to update with the onEmpty parameter
         vars.SetValue varName:=varName, colName:="list auto", newValue:="list_auto_origin", onEmpty:=True
-            
+
         'If one list auto var is a formula, all the variables in that formula are list auto origin
         'List auto origin triggers update of list auto
-            
+
         varControl = vars.Value(varName:=varName, colName:="control")
         If (varControl = "formula") Or (varControl = "case_when") Or (varControl = "choice_formula") Then RecursiveListAuto varName
     Next
@@ -432,7 +432,7 @@ Private Sub AddListAuto()
 End Sub
 
 Private Sub RecursiveListAuto(ByVal varName As String)
-    
+
     Dim dict As ILLdictionary
     Dim vars As ILLVariables
     Dim controlValue As String
@@ -448,7 +448,7 @@ Private Sub RecursiveListAuto(ByVal varName As String)
     Set vars = LLVariables.Create(dict)
 
     controlValue = vars.Value(varName:=varName, colName:="control")
-    
+
     If (controlValue = "case_when" Or controlValue = "formula" Or controlValue = "choice_formula") Then
         Set fData = FormulaDataObject()
         controlDetailsValue = vars.Value(varName:=varName, colName:="control details")
@@ -456,23 +456,23 @@ Private Sub RecursiveListAuto(ByVal varName As String)
         Set varFormObject = Formulas.Create(dict, fData, controlDetailsValue)
 
         If varFormObject.Valid(formulaType:="linelist") Then
-            
+
             Set formList = varFormObject.Varlists()
-            
+
             counter = formList.LowerBound
-            
+
             Do While counter <= formList.UpperBound
-                
+
                 formvarName = formList.Items(counter)
                 formVarControl = vars.Value(varName:=formvarName, colName:="control")
-                
+
                 vars.SetValue varName:=formvarName, colName:="list auto", newValue:="list_auto_origin", onEmpty:=True
-                
+
                 If (formVarControl = "formula" Or formVarControl = "case_when") Then RecursiveListAuto formvarName
 
                 counter = counter + 1
             Loop
-            
+
         End If
     End If
 
@@ -503,7 +503,7 @@ Private Sub export(ByVal toWkb As Workbook)
     'Add the export language and date to the linelist
 End Sub
 
-'Errors ----------------------------------
+'Errors --------------------------------------------------------------------
 
 'Initialize the array of sheets
 Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
@@ -511,9 +511,9 @@ Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
     Dim counter As Long
     Dim sheetName As String
     Dim sheetsArray As BetterArray
-    
+
     Set sheetsArray = New BetterArray
-    
+
     sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
                      PASSWORDSHEET, FormulaSheet, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
                      EXPORTSHEET, FORMATSHEET, MAINSHEET, DESTRANSSHEET
@@ -530,7 +530,7 @@ End Sub
 Private Sub sheetExists(ByVal specswkb As Workbook, ByVal sheetName As String)
     Dim sh As Worksheet                          'Just try to set the workbook if it fails it is closed
     Dim checkExists As Boolean
-    
+
     On Error Resume Next
     Set sh = specswkb.Worksheets(sheetName)
     checkExists = (Not sh Is Nothing)

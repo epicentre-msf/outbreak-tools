@@ -24,7 +24,7 @@ Sub ClicCmdGeoApp()
         Case "hf"
             iGeoType = 1
             LoadGeo 1
-            
+
         Case Else
             MsgBox TranslateLLMsg("MSG_WrongCells")
         End Select
@@ -242,7 +242,7 @@ End Sub
 Sub EventValueChangeLinelist(Target As Range)
 
     Const GOTOSECCODE As String = "go_to_section" 'Go To section constant
-    
+
     Dim T_geo As BetterArray
     Set T_geo = New BetterArray
     Dim varControl As String                   'Control type
@@ -266,7 +266,7 @@ Sub EventValueChangeLinelist(Target As Range)
     Dim startLine As Long
     Dim calcRng As Range 'calculate range
     Dim nbOffset As Long 'number of offset from the headerrow range
-    
+
     On Error GoTo errHand
     Set sh = ActiveSheet
     tableName = sh.Cells(1, 4).Value
@@ -281,7 +281,7 @@ Sub EventValueChangeLinelist(Target As Range)
     varControl = sh.Cells(startLine - 5, targetColumn).Value
 
     If Target.Row >= startLine Then
-        
+
         nbOffset = Target.Row - hRng.Row
         Set calcRng = hRng.Offset(nbOffset)
         calcRng.calculate
@@ -360,7 +360,7 @@ Sub EventValueChangeLinelist(Target As Range)
         End If
 
     End If
-    
+
     'Update the custom control
     If (Target.Row = startLine - 2) And (varControl = "custom") Then
         Set dict = LLdictionary.Create(ThisWorkbook.Worksheets("Dictionary"), 1, 1)
@@ -375,7 +375,7 @@ Sub EventValueChangeLinelist(Target As Range)
         vars.SetValue varName:=varName, colName:="main label", newValue:=sLabel
 
     End If
-    
+
     'Update the list auto
     If Target.Row >= startLine And _
        sh.Cells(startLine - 6, targetColumn).Value = "list_auto_origin" And _
@@ -383,7 +383,7 @@ Sub EventValueChangeLinelist(Target As Range)
         ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value = "list_auto_change_yes"
     End If
 
-    
+
     'GoTo section
     If Not Intersect(Target, rng) Is Nothing Then
         goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
@@ -516,7 +516,7 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
     Dim endCol As Long
     Dim destRng As Range
     Dim delRng As Range
-    
+
     On Error GoTo ErrUpdate
     BeginWork xlsapp:=Application
 
@@ -573,7 +573,7 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
 
     'caclulate active sheet
     DoEvents
-    
+
     If calculate Then
         ActiveSheet.calculate
         ActiveSheet.UsedRange.calculate
@@ -592,7 +592,7 @@ Sub UpdateSpTables()
     Const SPATIALSHEET As String = "spatial_tables__"
     Dim sp As ILLSpatial
     Dim sh As Worksheet
-    
+
     Set sh = ThisWorkbook.Worksheets(SPATIALSHEET)
     Set sp = LLSpatial.Create(sh)
 
@@ -638,15 +638,15 @@ Sub UpdateSingleSpTable(ByVal rngName As String)
     Set rng = sh.Range("OUTER_VALUES_" & tabId)
 
     For Each cellRng In rng
-        
+
         hasFormula = False
         formulaValue = cellRng.FormulaArray
-        
+
         If formulaValue = vbNullString Then
             formulaValue = cellRng.formula
             hasFormula = True
         End If
-        
+
         If (InStr(1, formulaValue, "concat_" & prevAdmValue) > 0) Then
 
             formulaValue = Replace(formulaValue, "concat_" & prevAdmValue, "concat_" & adminName)
@@ -702,7 +702,7 @@ Sub DevideByPopulation(ByVal rngName As String, Optional ByVal revertBack As Boo
     On Error Resume Next
     factorMult = CLng(Application.WorksheetFunction.Trim(sh.Range(rngName).Value))
     On Error GoTo Err
-    
+
     Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
     selectedAdmin = sh.Range("ADM_DROPDOWN_" & tabId).Value
     adminName = geo.AdminCode(selectedAdmin)
@@ -714,14 +714,14 @@ Sub DevideByPopulation(ByVal rngName As String, Optional ByVal revertBack As Boo
 
         hasFormula = False
         formulaValue = cellRng.FormulaArray
-        
+
         If formulaValue = vbNullString Then
             formulaValue = cellRng.formula
             hasFormula = True
         End If
-        
+
         If (InStr(1, formulaValue, "concat_" & adminName) > 0) And (cellRng.Column > rowRng.Column) Then
-            
+
             popValue = sh.Cells(cellRng.Row, rowRng.Column - 1).Address
 
             If (Not revertBack) And (prevFact = 0) Then
@@ -773,7 +773,7 @@ Sub FormatDevidePop(ByVal rngName)
     tabId = Replace(rngName, "DEVIDEPOP_", "")
 
     If sh.Range(rngName).Value = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_NoDevide").Value Then
-        
+
         'Do not devide
         sh.Range("POPFACT_" & tabId).Font.color = vbWhite
         sh.Range("POPFACT_" & tabId).Locked = True
@@ -784,7 +784,7 @@ Sub FormatDevidePop(ByVal rngName)
         DevideByPopulation rngName:="POPFACT_" & tabId, revertBack:=True
 
     ElseIf sh.Range(rngName).Value = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_Devide").Value Then
-        
+
         'Devide by the population
         sh.Range("POPFACT_" & tabId).Font.color = vbBlack
         sh.Range("POPFACT_" & tabId).Locked = False
@@ -849,9 +849,9 @@ Sub EventValueChangeAnalysis(Target As Range)
 
     On Error GoTo Err
     Set actSh = ActiveSheet
-    
+
     analysisType = actSh.Cells(1, 3).Value
-    
+
     Select Case analysisType
 
     Case "Uni-Bi-Analysis"
@@ -864,7 +864,7 @@ Sub EventValueChangeAnalysis(Target As Range)
         actSh.Columns("A:E").calculate
         'Goto section range for time series analysis
         If InStr(1, rngName, "ts_go_to_section") > 0 Then Set rng = Target
-        
+
     Case "SP-Analysis"
         'GoTo section for spatial analysis
         Set rng = actSh.Range("sp_go_to_section")
@@ -882,7 +882,7 @@ Sub EventValueChangeAnalysis(Target As Range)
         sLabel = Replace(Target.Value, goToSection & ": ", "")
         sLabel = Replace(sLabel, goToHeader & ": ", "")
         sLabel = Replace(sLabel, goToGraph & ": ", "")
-        
+
         Debug.Print sLabel
         Set RngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, LookAt:=xlWhole, _
                                              MatchCase:=True, SearchFormat:=False)
@@ -906,8 +906,8 @@ Sub EventValueChangeVList(Target As Range)
     Dim sh As Worksheet
     Dim tableName As String
     Dim goToSection As String
-    
-    
+
+
     On Error GoTo Err
     Set sh = ActiveSheet
     tableName = sh.Cells(1, 4).Value
@@ -915,10 +915,10 @@ Sub EventValueChangeVList(Target As Range)
     'Calculate the range where the values are entered
     Set rng = sh.Range(tableName & "_" & "PLAGEVALUES")
     rng.calculate
-    
+
     Set rng = sh.Range(tableName & "_" & GOTOSECCODE)
     goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
-    
+
     If Not Intersect(Target, rng) Is Nothing Then
         sLabel = Replace(Target.Value, goToSection & ": ", "")
         Set RngLook = sh.Cells.Find(What:=sLabel, LookAt:=xlWhole, MatchCase:=True)
@@ -948,9 +948,9 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
     Dim T_geo As BetterArray
     Dim geo As ILLGeo
     Dim adminNames As BetterArray
-    
 
-    'On Error GoTo errHand
+
+    On Error GoTo errHand
     Set sh = ActiveSheet
     tableName = sh.Cells(1, 4).Value
     Set hRng = sh.ListObjects(1).HeaderRowRange
@@ -963,7 +963,7 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
     adminNames.LowerBound = 1
 
     If Target.Row < startLine Then Exit Sub
-        
+
     nbOffset = Target.Row - hRng.Row
     Set calcRng = hRng.Offset(nbOffset)
     calcRng.calculate
@@ -974,7 +974,7 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
     Set loAdm2 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin2")
     Set loAdm3 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin3")
     Set loAdm4 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin4")
-    
+
     Select Case varControl
        Case "geo2"
         'adm1 has been modified, we will correct and set validation to adm2
@@ -988,7 +988,7 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
             T_geo.Clear
         End If
         EndWork xlsapp:=Application
-        
+
        Case "geo3"
         'Adm2 has been modified, we will correct and filter adm3
          BeginWork xlsapp:=Application
@@ -1000,11 +1000,11 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
             T_geo.Clear
          End If
          EndWork xlsapp:=Application
-      
+
        Case "geo4"
         'Adm 3 has been modified, correct and filter adm4
          BeginWork xlsapp:=Application
-         
+
          If Target.Value <> vbNullString Then
             DeleteLoDataBodyRange loAdm4
             adminNames.Push Target.Offset(, -3).Value, Target.Offset(, -2).Value, Target.Offset(, -1).Value
@@ -1014,7 +1014,7 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
              T_geo.Clear
          End If
         EndWork xlsapp:=Application
-       
+
        End Select
 errHand:
 End Sub

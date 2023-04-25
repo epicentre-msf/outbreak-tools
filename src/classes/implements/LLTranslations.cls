@@ -194,7 +194,9 @@ Private Sub ImportTranslation(ByVal fromWkb As Workbook)
 
     With sh
         'Unlist the listobject in the translation worksheet
+        On Error Resume Next
         .ListObjects(DICTTRANS).Unlist
+        On Error GoTo 0
         .Cells.Clear
         Set rng = .Range(Lo.Range.Address)
         rng.Value = Lo.Range.Value
@@ -218,10 +220,6 @@ Private Sub CheckRequirements(ByVal lltradsh As Worksheet, dtradsh As Worksheet)
 
     tabl.Push TRADLLMSG, TRADLLSHAPES, TRADLLFORMS, LLLANG, SELECTEDLANG
     LoExists tabl, lltradsh
-
-    tabl.Clear
-    tabl.Push DICTTRANS
-    LoExists tabl, dtradsh
 
     Set tablRng = New BetterArray
 

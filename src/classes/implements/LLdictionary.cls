@@ -110,7 +110,7 @@ Private Sub ClassArraysInitialize()
                             "control", "control details", "unique", _
                            "export 1", "export 2", "export 3", "export 4",  _
                            "export 5", "min", "max", "alert", "message",  _
-                           "formatting condition", "print variable", _
+                           "formatting condition", "register book", _
                            "formatting values", "lock cells", "table name", "column index", _
                            "list auto", "visibility"
 End Sub

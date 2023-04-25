@@ -274,6 +274,19 @@ Private Sub ClearInputRanges(Optional ByVal clearValues As Boolean = False)
     End If
 End Sub
 
+'Open the linelist
+Private Sub OpenLL()
+    Dim mainsh As Worksheet
+    Set mainsh = Wksh()
+    On Error GoTo ErrOpen
+    'Then open it
+    Application.DisplayAlerts = False
+    Application.Workbooks.Open _
+     FileName:=mainsh.Range(RNGLLDIR).Value & Application.PathSeparator &  _
+               mainsh.Range(RNGLLNAME).Value & ".xlsb"
+ErrOpen:
+End Sub
+
 Private Function CorrectLinelistName(ByVal llfileName As String) As String
 
     'In the file name, replace forbidden characters with an underscore
@@ -295,7 +308,7 @@ End Function
 
 'Update the status Bar in the main sheet
 Private Sub UpdateStatus(ByVal numValue As Integer)
-T5
+
     Const NUMBEROFBARS As Integer = 100
 
     Dim CurrentStatus As Integer
@@ -403,7 +416,7 @@ Private Sub IMain_UpdateStatus(ByVal numValue As Integer)
     UpdateStatus numValue
 End Sub
 
-Private Sub IMain_AddInfo(ByVal trads As IDesTranslation, ByVal msgCode As String, _ 
+Private Sub IMain_AddInfo(ByVal trads As IDesTranslation, ByVal msgCode As String, _
                           Optional ByVal infoName As String = "edition")
     AddInfo trads, msgCode, infoName
 End Sub
@@ -411,3 +424,7 @@ End Sub
 Private Property Get IMain_LinelistPassword() As String
     IMain_LinelistPassword = LinelistPassWord()
 End Property
+
+Private Sub IMain_OpenLL()
+    OpenLL
+End Sub
