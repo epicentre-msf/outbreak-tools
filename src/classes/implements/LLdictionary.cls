@@ -50,7 +50,7 @@ Public Property Get Data() As IDataSheet
     Set Data = this.dictDataSheet
 End Property
 
-Friend Property Set Data(ByVal customDataSheet As IDataSheet)
+Public Property Set Data(ByVal customDataSheet As IDataSheet)
     Set this.dictDataSheet = customDataSheet
 End Property
 
@@ -265,8 +265,6 @@ Private Sub GoodSheetNames(ByVal PreservedSheetsNames As BetterArray)
     EndRow = DictEndRow
     Set dictWksh = Wksh()
     sheetNameIndex = ColumnIndex("sheet name")
-
-    If (PreservedSheetsNames Is Nothing) Then ClassArraysInitialize
 
     With dictWksh
         For counter = StartRow + 1 To EndRow

@@ -300,7 +300,7 @@ Private Sub Prepare()
     sheetsList.Push lData.TemporarySheetName(TemporarySingle), lData.TemporarySheetName(TemporarySheetList), _
         lData.TemporarySheetName(TemporarySheetDebug), _
         lData.TemporarySheetName(TemporarySheetAnalysis), lData.TemporarySheetName(TemporarySheetImport), _
-        lData.TemporarySheetName(TemporarySpatial)
+        lData.TemporarySheetName(TemporarySpatial), lData.TemporarySheetName(TemporaryShowHide)
 
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         sheetName = sheetsList.Item(counter)
