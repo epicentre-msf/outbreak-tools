@@ -23,6 +23,6 @@
         "**/.mock": true
     },
     "editor.lineNumbers": "on",
-    "editor.fontSize": 12,
+    "editor.fontSize": 14,
     "editor.fontFamily": "'Consolas', 'Courier New', monospace"
 }
