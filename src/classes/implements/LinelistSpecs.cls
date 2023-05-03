@@ -24,6 +24,7 @@ Public Enum TemporarySheetTypes
     TemporarySheetImport = 5
     TemporarySingle = 6
     TemporarySpatial = 7
+    TemporaryShowHide = 8
 End Enum
 
 Private Type TLinelistSpecs
@@ -185,6 +186,8 @@ Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As St
         TemporarySheetName = "import_temp__"
     Case TemporarySingle
         TemporarySheetName = "temp__"
+    Case TemporaryShowHide
+        TemporarySheetName = "show_hide_temp__"
     Case TemporarySpatial
         TemporarySheetName = "spatial_tables__"
     End Select
@@ -363,11 +366,11 @@ Private Sub Prepare()
     Set PreservedSheetNames = New BetterArray
     PreservedSheetNames.LowerBound = 1
     PreservedSheetNames.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
-                             PASSWORDSHEET, FormulaSheet, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
+                             PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
                              EXPORTSHEET, TemporarySheetName(TemporarySingle), TemporarySheetName(TemporarySheetList), _
                              TemporarySheetName(TemporarySheetDebug), TemporarySheetName(TemporarySheetMetadata), _
                              TemporarySheetName(TemporarySheetAnalysis), TemporarySheetName(TemporarySheetImport), _
-                             TemporarySheetName(TemporarySpatial), _
+                             TemporarySheetName(TemporarySpatial), TemporarySheetName(TemporaryShowHide) _
                              msgTrads.TranslatedValue("LLSHEET_Admin"), msgTrads.TranslatedValue("LLSHEET_Analysis"), _
                              msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), msgTrads.TranslatedValue("LLSHEET_TemporalAnalysis")
 
