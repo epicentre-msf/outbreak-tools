@@ -748,33 +748,6 @@ Public Function SheetListObjectName(sSheetName As String) As String
     On Error GoTo 0
 End Function
 
-'Move Worksheet from one Workbook to another
-Public Function MoveWksh(SrcWkb As Workbook, DestWkb As Workbook, sSheetName As String)
-
-    Dim Wksh As Worksheet
-    Dim ActvSh As Worksheet
-
-    BeginWork xlsapp:=Application
-    Application.EnableEvents = False
-    Set ActvSh = ActiveSheet
-
-    'Now move the sheet if it only exists in the source workbook
-    If Not SheetExistsInWkb(SrcWkb, sSheetName) Then Exit Function
-
-    'First Test if the sheet exists in the destination workbook
-    Set Wksh = DestWkb.Worksheets.Add(After:=DestWkb.Worksheets(DestWkb.Worksheets.Count))
-    If SheetExistsInWkb(DestWkb, sSheetName) Then DestWkb.Worksheets(sSheetName).Delete
-
-    SrcWkb.Worksheets(sSheetName).Copy After:=Wksh
-    Wksh.Delete
-
-    ActvSh.Activate
-
-    EndWork xlsapp:=Application
-    Application.EnableEvents = True
-
-End Function
-
 'FORMULAS AND VALIDATIONS ==============================================================================================================================================================================
 
 'Depending on language settings, find correct translation of excel formulas

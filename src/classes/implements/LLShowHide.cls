@@ -12,9 +12,9 @@ Attribute VB_Description = ""
 
 '@Folder("Linelist")
 '@ModuleDescription("Linelist Show/Hide Class")
-'@IgnoreModule
 
 Option Explicit
+Implements ILLShowHide
 
 'Exposed methods
 Private Const CLASSNAME As String = "LLShowHide"
@@ -36,21 +36,20 @@ End Type
 
 Private this As TShowHide
 'messages for show/hide and mandatory
-Private Const TEMPSHEET As String = "show_hide_temp__"
+Private Const TEMPORARYSHEET As String = "show_hide_temp__"
 Private Const PRINTPREFIX As String = "print_"
 
 'Boolean Value to trigger the launch of the show/hide process
 
-Public Function Create(Byval trads As ITranslations, ByVal dict As ILLdictionary, _
+Public Function Create(Byval trads As ITranslation, ByVal dict As ILLdictionary, _
                        ByVal sh As Worksheet) As ILLShowHide
 
-  CheckRequirements trads, dict, showHideForm
+  CheckRequirements trads, dict, sh
 
   With New LLShowHide
     Set .MessagesTrads = trads
     Set .Dictionary = dict
     Set .Wksh = sh
-    Set .FormObject = showHideForm
     Set Create = .Self()
   End With
 
@@ -94,8 +93,9 @@ Public Property Get ActualScope()
   'Actual scope is in the worksheet
   Dim sh As Worksheet
   Dim rngVal As String
-  Set sh = Wksh()
+  Dim scope As ShowHideScope
 
+  Set sh = Wksh()
   On Error Resume Next
     rngVal = sh.Cells(1, 3).Value
   On Error GoTo 0
@@ -135,7 +135,7 @@ Private Function TempSheet() As Worksheet
 
   Set sh = Wksh()
   Set wb = sh.Parent
-  Set TempSheet = wb.Worksheets(TEMPSHEET)
+  Set TempSheet = wb.Worksheets(TEMPORARYSHEET)
 End Function
 
 'Subs to Enable/disable the show Hide process
@@ -151,9 +151,9 @@ Private Function InShowHideMode() As Boolean
   InShowHideMode = this.TriggerShowHide
 End Function
 
-Private Function ShowHideTable(ByVal tabName As String) As Range
+Private Function ShowHideTable() As Range
 
-    Cons SHOWHIDEPREF As String = "ShowHideTable_"
+    Const SHOWHIDEPREF As String = "ShowHideTable_"
 
     Dim tpsh As Worksheet
     Dim Lo As ListObject
@@ -174,10 +174,12 @@ Private Function ShowHideTable(ByVal tabName As String) As Range
     Dim varName As String
     Dim loRng As Range
     Dim startCol As Long
+    Dim tabName As String
 
-
-    loName = SHOWHIDEPREF & tabName
     Set tpsh = TempSheet()
+    Set sh = Wksh()
+    tabName = sh.Cells(1, 4).Value
+    loName = SHOWHIDEPREF & tabName
 
     If Not LoExists(loName) Then
       'Create the listObject
@@ -185,7 +187,6 @@ Private Function ShowHideTable(ByVal tabName As String) As Range
       Set varRng = dict.DataRange("variable name")
       Set vars = LLVariables.Create(dict)
       scope = ActualScope()
-      Set sh = Wksh()
       showHideColumn = IIf(scope = ShowHideScopePrint, "register book", "visibility")
       'Get the sheet name
       sheetName = IIf(scope = ShowHideScopePrint, _
@@ -216,6 +217,8 @@ Private Function ShowHideTable(ByVal tabName As String) As Range
               .Cells(tempCounter, startCol + 2).Value = varName
               'Status
               .Cells(tempCounter, startCol + 3).Value = vars.Value(varName:=varName, colName:=showHideColumn)
+              'column index (needed for further usages)
+              .Cells(tempCounter, startCol + 4).Value = vars.Value(varName:=varName, colName:="column index")
               tempCounter = tempCounter + 1
             End If
           End If
@@ -224,6 +227,7 @@ Private Function ShowHideTable(ByVal tabName As String) As Range
         .Cells(1, startCol + 1).Value = "main label"
         .Cells(1, startCol + 2).Value = "variable name"
         .Cells(1, startCol + 3).Value = "status"
+        .Cells(1, startCol + 4).Value = "column index"
         Set loRng = .Range(.Cells(startCol, 1), .Cells(tempCounter, startCol + 3))
         .ListObjects.Add(xlSrcRange, loRng, , xlYes).Name = loName
       End With
@@ -239,18 +243,38 @@ Private Function ShowHideTable(ByVal tabName As String) As Range
     Set ShowHideTable = retRng
 End Function
 
+Private Function Value(ByVal lineNumber As Long, Optional ByVal colName As String = "status") As String
+  Dim formRng As Range
+  Dim colIndex As Long
+
+  Set formRng = ShowHideTable()
+
+  Select Case colName
+  Case "status"
+    colIndex = 3
+  Case "main label"
+    colIndex = 1
+  Case "column index"
+    colIndex = 4
+  Case "variable name"
+    colIndex = 2
+  Case Else
+    colIndex = 3
+  End Select
+
+  On Error Resume Next
+  Value = formRng.Cells(lineNumber, colIndex).Value
+  On Error GoTo 0
+End Function
+
 
 Private Sub Load()
-  Dim sh As Worksheet
   Dim formRng As Range 'Range to update the form
   Dim tabName As String 'Table name of the worksheet
   Dim fobj As Object
 
-  Set sh = Wksh()
-  'table name
-  tabName = sh.Cells(1, 4).Value
-  'range of the form
-  Set formRng = ShowHideTable(tabName)
+  'Range of the form
+  Set formRng = ShowHideTable()
   Set fobj = FormObject()
 
   'Initialize the values
@@ -264,18 +288,36 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
 
   Dim scope As ShowHideScope
   Dim fobj As object
-  Dim formRng As Range
-
-
-  Set fobj = FormObject()
 
   'disable the show/hide mode
   DisableShowHide
 
-  Select Case formRng.Cells(indexValue, 3).Value
+  Set fobj = FormObject()
+  scope = ActualScope()
 
-  Case this.PRINTSHOWHORIZ, this.SHOWN, this.PRINTSHOWVERTI
+  Select Case Value(indexValue, "status")
 
+  Case this.PRINTSHOWHORIZ
+
+    fobj.OPT_PrintShowHoriz.Caption = this.PrintShowHoriz
+    fobj.OPT_PrintShowHoriz.Value = 1
+
+  Case this.PRINTSHOWVERTI
+
+    fobj.OPT_PrintShowVerti.Caption = this.PrintShowHoriz
+    fobj.OPT_PrintShowVerti.Value = 1
+
+  'This is the scope linelist (show)
+  Case this.SHOWN
+
+    fobj.OPT_Show.Value = 0
+    fobj.OPT_Show.Caption = this.SHOW
+    fobj.OPT_Show.Left = 348
+    fobj.OPT_Show.Top = 72
+
+    fobj.OPT_Hide.Visible = True
+    fobj.OPT_Show.Visible = True
+    fobj.OPT_Hide.Value = 1
 
   Case this.MANDATORY
 
@@ -284,19 +326,74 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
     fobj.OPT_Show.Top = 75
     fobj.OPT_Hide.Visible = False
 
+  'This is both for scope linelist and print sheet
   Case this.HIDDEN
 
-    fobj.OPT_Show.Caption = sShown
-    fobj.OPT_Show.Left = 348
-    fobj.OPT_Show.Top = 72
+    fobj.OPT_Show.Caption = this.HIDDE
     fobj.OPT_Hide.Visible = True
-    fobj.OPT_Show.Visible = True
     fobj.OPT_Hide.Value = 1
 
+    If scope = ShowHideScopeLinelist Then
+      fobj.OPT_Show.Left = 348
+      fobj.OPT_Show.Top = 72
+    End If
   End Select
 
+  'Enable the Show/Hide process
+  EnableShowHide
+End Sub
 
+Private Sub ShowHideLogic(ByVal indexValue As Long)
 
+  Dim sh As Worksheet
+  Dim fobj As Object
+  Dim scope As ShowHideScope
+  Dim colIndex As Long
+  Dim cellRng As Range
+  Dim orientationValue As Long
+  Dim tabName As String
+
+  Set sh = Wksh()
+  Set fobj = FormObject()
+  scope = ActualScope()
+  tabName = sh.Cells(1, 4).Value
+
+  If Not InShowHideMode() Or indexValue < 0 Then Exit Sub
+  'For mandatory, exit
+  If Value(indexValue, "status") = this.MANDATORY Then Exit Sub
+  'Get the column index of the variable in the actual worksheet
+  On Error Resume Next
+    colIndex = -1
+    colIndex = CLng(Value(indexValue, "column index"))
+  On Error GoTo 0
+  If colIndex = -1 Then Exit Sub
+
+  'Hide Column
+  If fobj.OPT_Hide.Value Then
+    sh.Columns(colIndex).Hidden = True
+    Exit Sub
+  End If
+
+  If scope = ShowHideScopeLinelist Then
+    'Show Column
+    If fobj.OPT_Show.Value Then sh.Columns(colIndex).Hidden = False
+  Else
+    'Linelist print, change the orientation or hide.
+    On Error Resume Next
+      Set cellRng = sh.Range(tabName & "PRINTSTART")
+    On Error GoTo 0
+    'Unable to find the print start Range, exit
+    If cellRng Is Nothing Then Exit Sub
+    'This is the main label header of the variable
+    Set cellRng = sh.Cells(cellRng.Offset(-2).Row, colIndex)
+    'Set the orientation
+    orientationValue = 0 * CLng(fobj.OPT_PrintShowHoriz.Value) + 90 * CLng(fobj.OPT_PrintShowVerti.Value)
+
+    'unhide and change the orientation
+    sh.Columns(colIndex).Hidden = False
+    cellRng.Orientation = orientationValue
+    cellRng.EntireColumn.AutoFit
+  End If
 End Sub
 
 'Errors and Requirements
@@ -313,7 +410,7 @@ Private Sub CheckRequirements(ByVal trads As ITranslation, ByVal dict As ILLdict
   If sh Is Nothing Then ThrowError "Error, unable to find the worksheet where to hide/show variables"
   Set wb = sh.Parent
   On Error Resume Next
-  Set tpsh = wb.Worksheets(TEMPSHEET)
+  Set tpsh = wb.Worksheets(TEMPORARYSHEET)
   On Error GoTo 0
   If tpsh Is Nothing Then ThrowError "Error, no temporary sheet find in current workbook (required for computations)"
 End Sub
@@ -334,3 +431,14 @@ Private Sub ThrowError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
+Private Sub ILLShowHide_Load()
+   Load
+End Sub
+
+Private Sub ILLShowHide_UpdateVisibilityStatus(ByVal index As Long)
+   UpdateVisibilityStatus indexValue:=index
+End Sub
+
+Private Sub ILLShowHide_ShowHideLogic(ByVal index As Long)
+ ShowHideLogic indexValue:=index
+End Sub
