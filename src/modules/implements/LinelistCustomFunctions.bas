@@ -147,29 +147,24 @@ Public Function Epiweek2(currentDate As Long) As Long
 
     Dim inDate As Long
     Dim firstDate As Long
-    Dim firstMondayDate As Long
+    Dim firstDayDate As Long
     Dim borderLeftDate As Long
 
     inDate = DateSerial(Year(currentDate), 1, 1)
-    
 
-    firstMondayDate = inDate - Weekday(inDate, 2) + 1
-  
+    firstDayDate = inDate - Weekday(inDate, 2) + 1
     borderLeftDate = DateSerial(Year(currentDate) - 1, 12, 29)
-    
-    firstDate = IIf(firstMondayDate < borderLeftDate, firstMondayDate + 7, firstMondayDate)
+    firstDate = IIf(firstDayDate < borderLeftDate, firstDayDate + 7, firstDayDate)
 
     If currentDate >= firstDate Then
         Epiweek2 = 1 + (currentDate - firstDate) \ 7
     Else
         Epiweek2 = Epiweek2(borderLeftDate - 1)
     End If
-
 End Function
 
 'Find the quarter, the year, the week or the month depending on the aggregation ============================================
 
-'Quick function to define the aggregate
 'Quick function to define the aggregate
 Private Function GetAgg(sAggregate As String) As String
 

@@ -394,8 +394,9 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     calculated = trans.TranslatedValue("MSG_Calculated")
     mandatory = trans.TranslatedValue("MSG_Mandatory")
 
-    'add an anchor to where the table starts
+    'add an anchor to where the table starts (on printed sheet and on non printed sheet)
     If (varIndex = 1) And (Not usePrinted) Then cellRng.Name = ValueOf("table name") & "_" & "START"
+    If (varIndex = 1) And (usePrinted) Then cellRng.Name = ValueOf("table name") & "_" & "PRINTSTART"
 
     'sublabel
     If (varControl = "formula") Or (varControl = "case_when") Or _

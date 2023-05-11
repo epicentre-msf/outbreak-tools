@@ -197,7 +197,11 @@ Public Sub Build()
 
     'Format the linelist and prepare it
     design.ApplyFormat sh, scope:=AllLinelistSheet
+
+    'Seems like Macos can generate Errors on format
+    On Error Resume Next
     design.ApplyFormat printsh, scope:=HListPrintedSheet
+    On Error GoTo 0
 
     'Change the View of the printed worksheet
     On Error Resume Next
