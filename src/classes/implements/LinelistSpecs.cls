@@ -370,7 +370,7 @@ Private Sub Prepare()
                              EXPORTSHEET, TemporarySheetName(TemporarySingle), TemporarySheetName(TemporarySheetList), _
                              TemporarySheetName(TemporarySheetDebug), TemporarySheetName(TemporarySheetMetadata), _
                              TemporarySheetName(TemporarySheetAnalysis), TemporarySheetName(TemporarySheetImport), _
-                             TemporarySheetName(TemporarySpatial), TemporarySheetName(TemporaryShowHide) _
+                             TemporarySheetName(TemporarySpatial), TemporarySheetName(TemporaryShowHide), _
                              msgTrads.TranslatedValue("LLSHEET_Admin"), msgTrads.TranslatedValue("LLSHEET_Analysis"), _
                              msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), msgTrads.TranslatedValue("LLSHEET_TemporalAnalysis")
 
