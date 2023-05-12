@@ -147,7 +147,7 @@ End Sub
 Public Sub Build()
 
     Const ADDROWSCOMMAND As String = "ClicCmdAddRows"
-    Const SHOWHIDECOMMAND As String = "ClicCmdShowHide"
+    Const SHOWHIDECOMMAND As String = "ClickShowHide"
     Const REMOVEFILTERCOMMAND As String = "ClearAllFilters"
     Const GEOCOMMAND As String = "ClicCmdGeoApp"
     Const FILTEREDPREFIX  As String = "f"
@@ -279,15 +279,16 @@ Public Sub Build()
     rng.Locked = False
 
     'Add the sheet type on HList sheet
-    Set rng = sh.Cells(1, 3)
-    rng.Value = "HList"
-    design.ApplyFormat rng, scope:=LinelistHiddenCell
+    sh.Cells(1, 3).Value = "HList"
+    printsh.Cells(1, 3).Value = "HList Print"
+    design.ApplyFormat sh.Cells(1, 3), scope:=LinelistHiddenCell
+    design.ApplyFormat printsh.Cells(1, 3), scope:=LinelistHiddenCell
 
     'Add the table name
-    Set rng = sh.Cells(1, 4)
-    rng.Value = tableName
-    design.ApplyFormat rng, scope:=LinelistHiddenCell
-
+    sh.Cells(1, 4).Value = tableName
+    printsh.Cells(1, 4).Value = PRINTPREFIX & tableName
+    design.ApplyFormat sh.Cells(1, 4), scope:=LinelistHiddenCell
+    design.ApplyFormat printsh.Cells(1, 4), scope:=LinelistHiddenCell
 
     'Create the whole table of the HList
     With sh
@@ -334,7 +335,7 @@ Public Sub Build()
          design.ApplyFormat rng, scope:= HListPrintedHeader
     End With
 
-    'FILTERED WORKSHEET --------------------------------------------------------
+    'FILTERED WORKSHEET ------------------------------------------------------------------------------
 
     'Define the same listObject to the filtered worksheet
     ll.AddOutputSheet FILTEREDPREFIX & sheetName, xlSheetVeryHidden
