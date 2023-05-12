@@ -24,6 +24,6 @@ End Enum
 'Exposed methods
 
 'Load the show/hide form with values
-Public Sub Load(): End Sub
+Public Sub Load(ByVal tradsform As ITranslation): End Sub
 Public Sub UpdateVisibilityStatus(ByVal index As Long): End Sub
 Public Sub ShowHideLogic(ByVal index As Long): End Sub

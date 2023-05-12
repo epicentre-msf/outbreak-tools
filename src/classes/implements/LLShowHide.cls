@@ -20,7 +20,7 @@ Implements ILLShowHide
 Private Const CLASSNAME As String = "LLShowHide"
 
 Private Type TShowHide
-  trads As ITranslations
+  trads As ITranslation
   dict As ILLdictionary
   sh As Worksheet
   SHOW As String
@@ -54,10 +54,10 @@ Public Function Create(Byval trads As ITranslation, ByVal dict As ILLdictionary,
   End With
 
   'Initialize messages
-  InitializeMessages
+  InitializeMessages trads
 End Function
 
-Public Property Get MessagesTrads() As ITranslations
+Public Property Get MessagesTrads() As ITranslation
   Set MessagesTrads = this.trads
 End Property
 
@@ -85,7 +85,7 @@ Public Property Get FormObject() As Object
   End Select
 End Property
 
-Private Property Set MessagesTrads(ByVal trads As ITranslations)
+Public Property Set MessagesTrads(ByVal trads As ITranslation)
   Set this.trads = trads
 End Property
 
@@ -115,9 +115,7 @@ Public Property Get Self() As ILLShowHide
   Set Self = Me
 End Property
 
-Private Sub InitializeMessages()
-  Dim trads As ITranslations
-  Set trads = MessagesTrads()
+Private Sub InitializeMessages(ByVal trads As ITranslation)
   this.SHOW = trads.TranslatedValue("MSG_Show")
   this.SHOWN = trads.TranslatedValue("MSG_Shown")
   this.HIDE = trads.TranslatedValue("MSG_Hide")
@@ -181,6 +179,7 @@ Private Function ShowHideTable() As Range
     tabName = sh.Cells(1, 4).Value
     loName = SHOWHIDEPREF & tabName
 
+  With tpsh
     If Not LoExists(loName) Then
       'Create the listObject
       Set dict = Dictionary()
@@ -196,7 +195,6 @@ Private Function ShowHideTable() As Range
       Set cellRng = varRng.Cells(1, 1)
 
       'Define the start column
-      With tpsh
         startCol = .Cells(1, .Columns.Count).End(xlToLeft).Column + 1
         tempCounter = 2
         'Loop for all variables in the dictionary (I don't presume the dictionary is sorted on sheet names)
@@ -228,19 +226,25 @@ Private Function ShowHideTable() As Range
         .Cells(1, startCol + 2).Value = "variable name"
         .Cells(1, startCol + 3).Value = "status"
         .Cells(1, startCol + 4).Value = "column index"
-        Set loRng = .Range(.Cells(startCol, 1), .Cells(tempCounter, startCol + 3))
+        'substract 1 for resizing purposes
+        tempCounter = tempCounter - 1
+        Set loRng = .Range(.Cells(1, startCol + 1), .Cells(tempCounter, startCol + 4))
         .ListObjects.Add(xlSrcRange, loRng, , xlYes).Name = loName
-      End With
+
+        Set retRng = .Range(loRng.Cells(2, 1), loRng.Cells(loRng.Rows.Count, 3))
     Else
-      Set Lo = tpsh.ListObjects(loName)
+      Set Lo = .ListObjects(loName)
       If Not (Lo.DataBodyRange Is Nothing) Then
         Set retRng = Lo.DataBodyRange
+        Set retRng = .Range(retRng.Cells(2, 1), retRng.Cells(retRng.Rows.Count, 3))
       Else
         Set retRng = Lo.Range
       End If
     End If
 
-    Set ShowHideTable = retRng
+  End With
+
+  Set ShowHideTable = retRng
 End Function
 
 Private Function Value(ByVal lineNumber As Long, Optional ByVal colName As String = "status") As String
@@ -268,7 +272,7 @@ Private Function Value(ByVal lineNumber As Long, Optional ByVal colName As Strin
 End Function
 
 
-Private Sub Load()
+Private Sub Load(ByVal tradsform As ITranslation)
   Dim formRng As Range 'Range to update the form
   Dim tabName As String 'Table name of the worksheet
   Dim fobj As Object
@@ -281,6 +285,11 @@ Private Sub Load()
   fobj.LST_LLVarNames.ColumnCount = 3
   fobj.LST_LLVarNames.BoundColumn = 2
   fobj.LST_LLVarNames.List = formRng.Value
+
+  'Load the forms
+  fobj.Caption = tradsform.TranslatedValue(fobj.Name)
+  tradsform.TranslateForm fobj
+  fobj.Show
 End Sub
 
 'Update visibility when you select one line of the show hide
@@ -312,8 +321,7 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
 
     fobj.OPT_Show.Value = 0
     fobj.OPT_Show.Caption = this.SHOW
-    fobj.OPT_Show.Left = 348
-    fobj.OPT_Show.Top = 72
+    fobj.OPT_Show.Top = 75
 
     fobj.OPT_Hide.Visible = True
     fobj.OPT_Show.Visible = True
@@ -322,20 +330,18 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
   Case this.MANDATORY
 
     fobj.OPT_Show.Caption = this.MANDATORY
-    fobj.OPT_Show.Left = 348
-    fobj.OPT_Show.Top = 75
+    fobj.OPT_Show.Top = 100
     fobj.OPT_Hide.Visible = False
 
   'This is both for scope linelist and print sheet
   Case this.HIDDEN
 
-    fobj.OPT_Show.Caption = this.HIDDE
+    fobj.OPT_Show.Caption = this.HIDE
     fobj.OPT_Hide.Visible = True
     fobj.OPT_Hide.Value = 1
 
     If scope = ShowHideScopeLinelist Then
-      fobj.OPT_Show.Left = 348
-      fobj.OPT_Show.Top = 72
+      fobj.OPT_Show.Top = 75
     End If
   End Select
 
@@ -417,6 +423,7 @@ End Sub
 
 
 Private Function LoExists(ByVal loName As String) As Boolean
+
   Dim Lo As ListObject
   Dim sh As Worksheet
   Set sh = TempSheet()
@@ -431,12 +438,12 @@ Private Sub ThrowError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
-Private Sub ILLShowHide_Load()
-   Load
+Private Sub ILLShowHide_Load(ByVal tradsform As ITranslation)
+   Load tradsform
 End Sub
 
 Private Sub ILLShowHide_UpdateVisibilityStatus(ByVal index As Long)
-   UpdateVisibilityStatus indexValue:=index
+   UpdateVisibility indexValue:=index
 End Sub
 
 Private Sub ILLShowHide_ShowHideLogic(ByVal index As Long)
