@@ -347,7 +347,7 @@ Private Sub Prepare()
                      "LLdictionary", "ILLdictionary", "LLGeo", "ILLGeo", "LLPasswords", "ILLPasswords", _
                      "LLSheets", "ILLSheets", "LLTranslations", "ILLTranslations", "OSFiles", "IOSFiles", _
                      "Translation", "ITranslation", "LLVariables", "ILLVariables", "ILLSpatial", "LLSpatial", _
-                     "DropdownLists", "IDropdownLists"
+                     "DropdownLists", "IDropdownLists", "LLShowHide", "ILLShowHide"
 
     For counter = classesList.LowerBound To classesList.UpperBound
         codeName = classesList.Item(counter)
@@ -359,7 +359,7 @@ Private Sub Prepare()
     classesList.Clear
     classesList.Push "Helpers", "LinelistConstants", "LinelistCustomFunctions", _
                      "LinelistExport", "LinelistGeo", "LinelistMigration", "LinelistShowHide", _
-                     "LinelistTranslation", "LinelistEvents", "LinelistDictionary"
+                     "LinelistTranslation", "LinelistEvents", "LinelistDictionary", "EventsLinelistRibbon"
 
     For counter = classesList.LowerBound To classesList.UpperBound
         codeName = classesList.Item(counter)

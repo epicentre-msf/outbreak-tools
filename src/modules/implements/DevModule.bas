@@ -236,30 +236,45 @@ Attribute ImportModuleFolder.VB_Description = "Import module folder path"
     ImportFolder scope:=1
 End Sub
 
+'@Description("Add codes to some components")
+Private Sub CopyCodes(Byval importModName As String, ByVal exportCodeName As String)
+    Dim codeContent As String
+    Dim codeMod As Object
+    Dim vbProj As Object
+    Dim vbComp As Object
+
+    Set vbProj = ThisWorkbook.VBProject
+
+    'Extract the code from the actual vbProject
+    With vbProj
+        With .VBComponents(importModName).CodeModule
+            codeContent = .Lines(1, .CountOfLines)
+        End With
+    End With
+
+    'Export codeModule
+    Set vbComp = vbProj.VBComponents(exportCodeName)
+    Set codeMod = vbComp.CodeModule
+
+    'Adding to the export codeModule
+    With codeMod
+        .DeleteLines 1, .CountOfLines
+        .AddFromString codeContent
+    End With
+End Sub
+
 '@Description("Hide some worksheets before deployment")
 '@EntryPoint
 Public Sub PrepareToDeployment()
 Attribute PrepareToDeployment.VB_Description = "Hide some worksheets before deployment"
 
-    Const WBMODULENAME As String = "EventsDesignerWorkbook"
-    Const MAINMODULENAME As String = "EventsMainSheet"
-
     'List of sheets to Hide
     Dim sheetsList As BetterArray
-    Dim wb As Workbook
     Dim sh As Worksheet
     Dim mainsh As Worksheet
     Dim counter As Long
-    'Elements to add Envent code to a worksheet
-    Dim mainCodeContent As String
-    Dim wbCodeContent As String
-    Dim vbProj As Object
-    Dim vbComp As Object
-    Dim mainCodeMod As Object
-    Dim wbCodeMod As Object
 
     Set sheetsList = New BetterArray
-    Set wb = ThisWorkbook
 
     sheetsList.Push "Dictionary", "Choices", "Analysis", "Exports", _
                     "Translations", "__pass", "__formula"
@@ -270,39 +285,22 @@ Attribute PrepareToDeployment.VB_Description = "Hide some worksheets before depl
     Next
 
     'Add a worksheet change event to the main sheet
-    Set mainsh = wb.Worksheets("Main")
+    Set mainsh = ThisWorkbook.Worksheets("Main")
 
-    With wb.VBProject
-        With .VBComponents(MAINMODULENAME).CodeModule
-            mainCodeContent = .Lines(1, .CountOfLines)
-        End With
-        With .VBComponents(WBMODULENAME).CodeModule
-            wbCodeContent = .Lines(1, .CountOfLines)
-        End With
+    'Add commands on Shapes of the main sheet
+    With mainsh
+        .Shapes("SHP_LoadDico").OnAction = "LoadFileDic"
+        .Shapes("SHP_LoadGeo").OnAction = "LoadGeoFile"
+        .Shapes("SHP_LinelistPath").OnAction = "LinelistDir"
+        .Shapes("SHP_CtrlNouv").OnAction = "Control"
     End With
 
-    With wb
-        'main code module
-        Set vbProj = .VBProject
-        Set vbComp = vbProj.VBComponents(mainsh.codeName)
-        Set mainCodeMod = vbComp.CodeModule
+    'Add codes to elements on the actual designer
+    CopyCodes "EventsMainSheet", mainsh.CodeName
+    CopyCodes "EventsDesignerWorkbook", wb.CodeName
+    CopyCodes "FormLogicShowHide", "F_ShowHideLL"
+    CopyCodes "FormLogicShowHidePrint", "F_ShowHidePrint"
 
-        'wb code module
-        Set vbComp = vbProj.VBComponents(.codeName)
-        Set wbCodeMod = vbComp.CodeModule
-    End With
-
-    'Adding the code to main sheet
-    With mainCodeMod
-        .DeleteLines 1, .CountOfLines
-        .AddFromString mainCodeContent
-    End With
-
-    'Adding the code to the workbook
-    With wbCodeMod
-        .DeleteLines 1, .CountOfLines
-        .AddFromString wbCodeContent
-    End With
 End Sub
 
 'Report Import or export
