@@ -427,7 +427,9 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     If Not usePrinted Then cellRng.Offset(-2).Name = varName
 
     'variable note
-    If varNote <> vbNullString Then
+    'it is important to avoid adding comments on printed sheet:
+    'This could result in Memory Errors on MacOs machines.
+    If varNote <> vbNullString And (Not usePrinted) Then
         cellRng.Offset(-2).AddComment
         cellRng.Offset(-2).Comment.Text Text:=varNote
         cellRng.Offset(-2).Comment.Visible = False
