@@ -195,20 +195,11 @@ Public Sub Build()
     ll.AddOutputSheet sheetName, xlSheetHidden, usePrinted:=True
     Set printsh = ll.Printwksh(sheetName)
 
-    'Format the linelist and prepare it
+    'Format the linelist and prepare
     design.ApplyFormat sh, scope:=AllLinelistSheet
 
-    'Seems like Macos can generate Errors on format
-    On Error Resume Next
+    'Macos can generate Errors on format on Application.PrintCommunication (see LLFormat)
     design.ApplyFormat printsh, scope:=HListPrintedSheet
-    On Error GoTo 0
-
-    'Change the View of the printed worksheet
-    On Error Resume Next
-        printsh.Activate
-        BusyApp
-        ActiveWindow.View = xlPageLayoutView
-    On Error GoTo 0
 
     'Split the rows and columns
     On Error Resume Next

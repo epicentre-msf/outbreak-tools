@@ -282,7 +282,10 @@ Private Sub PreparePrintSheet(ByVal sh As Worksheet)
         'Print Errors to blanks
         .PrintErrors = xlPrintErrorsBlank
     End With
+    'Setting PrintCommunication to True can generate errors on MacOS
+    On Error Resume Next
     Application.PrintCommunication = True
+    On Error GoTo 0
 End Sub
 
 Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
