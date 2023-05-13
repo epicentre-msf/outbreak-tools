@@ -145,10 +145,12 @@ Attribute clickImpTrans.VB_Description = "Callback for btnTransAdd onAction: Imp
         Next
         On Error GoTo 0
     End If
+    actsh.Calculate
 ExitTrads:
     On Error Resume Next
     impwb.Close saveChanges:=False
     NotBusyApp
+    MsgBox "Done!"
     On Error GoTo 0
 End Sub
 

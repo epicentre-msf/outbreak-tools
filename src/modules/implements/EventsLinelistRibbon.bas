@@ -9,9 +9,12 @@ Option Private Module
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const TRADSHEET As String = "Translations"
 Private Const DICTSHEET As String = "Dictionary"
+Private Const PASSSHEET As String = "__pass"
+
 Private showHideObject As ILLShowHide
 Private tradsform As ITranslation   'Translation of forms
 Private tradsmess As ITranslation   'Translation of messages
+Private pass As ILLPasswords
 
 'Initialize translation of forms object
 Private Sub InitializeTrads()
@@ -28,7 +31,7 @@ Private Sub InitializeTrads()
     Set tradsform = lltrads.TransObject(TranslationOfForms)
 End Sub
 
-'Callback for click on show/hide in a linelist worksheet
+'@Description("Callback for click on show/hide in a linelist worksheet")
 '@EntryPoint
 Public Sub ClickShowHide()
     Dim sh As Worksheet
@@ -54,14 +57,36 @@ Public Sub ClickShowHide()
     showHideObject.Load tradsform
 End Sub
 
-'Callback for click on the list of showhide
+'@Description("Callback for click on the list of showhide")
 '@EntryPoint
 Public Sub ClickListShowHide(ByVal index As Long)
     showHideObject.UpdateVisibilityStatus index
 End Sub
 
-'Callback for clik on differents show hide options
+'@Description("Callback for clik on differents show hide options")
 '@EntryPoint
 Public Sub ClickOptionsShowHide(ByVal index As Long)
     showHideObject.ShowHideLogic index
+End Sub
+
+'@Description("Callback for click on the Print Button")
+'@EntryPoint
+Public Sub ClickOpenPrint()
+    Const PRINTPREFIX As String = "print_"
+
+    Dim sh As Worksheet
+    Dim printsh As Worksheet
+    Dim wb As Workbook
+
+    Set wb = ThisWorkbook
+
+    Set pass = LLPasswords.Create(wb.Worksheets(PASSSHEET))
+    Set sh = ActiveSheet
+    Set printsh = wb.Worksheets(PRINTPREFIX & sh.Name)
+    'UnProtect current workbook
+    pass.Unprotect wb
+    'Unhide the linelist Print
+    printsh.Visible = xlSheetVisible
+    printsh.Activate
+    pass.Protect wb
 End Sub

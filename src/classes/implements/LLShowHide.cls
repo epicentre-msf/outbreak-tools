@@ -52,9 +52,6 @@ Public Function Create(Byval trads As ITranslation, ByVal dict As ILLdictionary,
     Set .Wksh = sh
     Set Create = .Self()
   End With
-
-  'Initialize messages
-  InitializeMessages trads
 End Function
 
 Public Property Get MessagesTrads() As ITranslation
@@ -271,11 +268,27 @@ Private Function Value(ByVal lineNumber As Long, Optional ByVal colName As Strin
   On Error GoTo 0
 End Function
 
+'Change the status in the table
+Private Sub SetStatus(ByVal lineNumber As Long, ByVal newStatus As String) As String
+  Dim formRng As Range
+  Dim colIndex As Long
+
+  Set formRng = ShowHideTable()
+  'Change the corresponding value in the temporary sheet
+  formRng.Cells(lineNumber, 3).Value = newStatus
+End Sub
+
 
 Private Sub Load(ByVal tradsform As ITranslation)
   Dim formRng As Range 'Range to update the form
   Dim tabName As String 'Table name of the worksheet
   Dim fobj As Object
+  Dim trads As ITranslation
+
+  Set trads = MessagesTrads()
+
+  'Initialize translations
+  InitializeMessages trads
 
   'Range of the form
   Set formRng = ShowHideTable()
@@ -319,13 +332,13 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
   'This is the scope linelist (show)
   Case this.SHOWN
 
-    fobj.OPT_Show.Value = 0
+    fobj.OPT_Show.Value = 1
     fobj.OPT_Show.Caption = this.SHOW
     fobj.OPT_Show.Top = 75
 
     fobj.OPT_Hide.Visible = True
     fobj.OPT_Show.Visible = True
-    fobj.OPT_Hide.Value = 1
+    fobj.OPT_Hide.Value = 0
 
   Case this.MANDATORY
 
@@ -377,6 +390,7 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
   'Hide Column
   If fobj.OPT_Hide.Value Then
     sh.Columns(colIndex).Hidden = True
+    SetStatus indexValue, this.HIDDEN
     Exit Sub
   End If
 
@@ -397,6 +411,7 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
 
     'unhide and change the orientation
     sh.Columns(colIndex).Hidden = False
+    SetStatus indexValue, this.SHOWN
     cellRng.Orientation = orientationValue
     cellRng.EntireColumn.AutoFit
   End If

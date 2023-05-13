@@ -27,8 +27,8 @@ End Sub
 
 'Public Sub LeaveDebugMode(): End Sub
 
-'Export password
-Public Sub export(ByVal toWkb As Workbook): End Sub
+'Export password sheet
+Public Sub Export(ByVal toWkb As Workbook): End Sub
 
 
 'Protect and unprotect a given workbook to avoid sheet name changes.
