@@ -358,7 +358,7 @@ Private Sub Prepare()
     'Send the modules to the linelist
     classesList.Clear
     classesList.Push "Helpers", "LinelistConstants", "LinelistCustomFunctions", _
-                     "LinelistExport", "LinelistGeo", "LinelistMigration", "LinelistShowHide", _
+                     "LinelistExport", "LinelistGeo", "LinelistMigration", _
                      "LinelistTranslation", "LinelistEvents", "LinelistDictionary", "EventsLinelistRibbon"
 
     For counter = classesList.LowerBound To classesList.UpperBound
