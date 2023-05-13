@@ -84,9 +84,15 @@ Public Sub ClickOpenPrint()
     Set sh = ActiveSheet
     Set printsh = wb.Worksheets(PRINTPREFIX & sh.Name)
     'UnProtect current workbook
-    pass.Unprotect wb
+    pass.UnprotectWkb wb
     'Unhide the linelist Print
     printsh.Visible = xlSheetVisible
     printsh.Activate
-    pass.Protect wb
+    pass.ProtectWkb wb
+End Sub
+
+'@Description("Callback for click on column width")
+'@EntryPoint
+Public Sub ClickColWidth(ByVal index As Long)
+    showHideObject.ChangeColWidth index
 End Sub
