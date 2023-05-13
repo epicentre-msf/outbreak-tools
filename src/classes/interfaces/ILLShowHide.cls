@@ -27,3 +27,4 @@ End Enum
 Public Sub Load(ByVal tradsform As ITranslation): End Sub
 Public Sub UpdateVisibilityStatus(ByVal index As Long): End Sub
 Public Sub ShowHideLogic(ByVal index As Long): End Sub
+Public Sub ChangeColWidth(ByVal index As Long): End Sub

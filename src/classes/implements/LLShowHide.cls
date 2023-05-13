@@ -32,6 +32,7 @@ Private Type TShowHide
   PRINTSHOWHORIZ As String
   PRINTSHOWVERTI As String
   TriggerShowHide As Boolean
+  TriggerListClick As Boolean
 End Type
 
 Private this As TShowHide
@@ -146,6 +147,18 @@ Private Function InShowHideMode() As Boolean
   InShowHideMode = this.TriggerShowHide
 End Function
 
+Private Function InClickMode() As Boolean
+  InClickMode = this.TriggerListClick
+End Function
+
+Private Sub EnableClickMode()
+  this.TriggerListClick = True
+End Sub
+
+Private Sub DisableClickMode()
+  this.TriggerListClick = False
+End Sub
+
 Private Function ShowHideTable() As Range
 
     Const SHOWHIDEPREF As String = "ShowHideTable_"
@@ -170,6 +183,8 @@ Private Function ShowHideTable() As Range
     Dim loRng As Range
     Dim startCol As Long
     Dim tabName As String
+    Dim defaultValue As String
+    Dim statusValue As String
 
     Set tpsh = TempSheet()
     Set sh = Wksh()
@@ -184,6 +199,7 @@ Private Function ShowHideTable() As Range
       Set vars = LLVariables.Create(dict)
       scope = ActualScope()
       showHideColumn = IIf(scope = ShowHideScopePrint, "register book", "visibility")
+      defaultValue = IIf(scope = ShowHideScopePrint, this.PRINTSHOWHORIZ, this.SHOWN)
       'Get the sheet name
       sheetName = IIf(scope = ShowHideScopePrint, _
                       Replace(sh.Name, PRINTPREFIX, vbNullString), _
@@ -211,7 +227,11 @@ Private Function ShowHideTable() As Range
               'variable name
               .Cells(tempCounter, startCol + 2).Value = varName
               'Status
-              .Cells(tempCounter, startCol + 3).Value = vars.Value(varName:=varName, colName:=showHideColumn)
+              statusValue = vars.Value(varName:=varName, colName:=showHideColumn)
+              'The default value is the value to write if nothing found as status 
+              '(empty registerbook column)
+              If statusValue = vbNullString Then statusValue = defaultValue
+              .Cells(tempCounter, startCol + 3).Value = statusValue
               'column index (needed for further usages)
               .Cells(tempCounter, startCol + 4).Value = vars.Value(varName:=varName, colName:="column index")
               tempCounter = tempCounter + 1
@@ -227,18 +247,14 @@ Private Function ShowHideTable() As Range
         tempCounter = tempCounter - 1
         Set loRng = .Range(.Cells(1, startCol + 1), .Cells(tempCounter, startCol + 4))
         .ListObjects.Add(xlSrcRange, loRng, , xlYes).Name = loName
-
-        Set retRng = .Range(loRng.Cells(2, 1), loRng.Cells(loRng.Rows.Count, 3))
-    Else
-      Set Lo = .ListObjects(loName)
-      If Not (Lo.DataBodyRange Is Nothing) Then
-        Set retRng = Lo.DataBodyRange
-        Set retRng = .Range(retRng.Cells(2, 1), retRng.Cells(retRng.Rows.Count, 3))
-      Else
-        Set retRng = Lo.Range
-      End If
     End If
-
+    Set Lo = .ListObjects(loName)
+    If Not (Lo.DataBodyRange Is Nothing) Then
+      Set retRng = Lo.DataBodyRange
+      Set retRng = .Range(retRng.Cells(1, 1), retRng.Cells(retRng.Rows.Count, 3))
+    Else
+      Set retRng = Lo.Range
+    End If
   End With
 
   Set ShowHideTable = retRng
@@ -269,7 +285,7 @@ Private Function Value(ByVal lineNumber As Long, Optional ByVal colName As Strin
 End Function
 
 'Change the status in the table
-Private Sub SetStatus(ByVal lineNumber As Long, ByVal newStatus As String) As String
+Private Sub SetStatus(ByVal lineNumber As Long, ByVal newStatus As String)
   Dim formRng As Range
   Dim colIndex As Long
 
@@ -284,6 +300,8 @@ Private Sub Load(ByVal tradsform As ITranslation)
   Dim tabName As String 'Table name of the worksheet
   Dim fobj As Object
   Dim trads As ITranslation
+  Dim scope As ShowHideScope
+  Dim listObject As Object
 
   Set trads = MessagesTrads()
 
@@ -293,15 +311,38 @@ Private Sub Load(ByVal tradsform As ITranslation)
   'Range of the form
   Set formRng = ShowHideTable()
   Set fobj = FormObject()
+  scope = ActualScope()
 
   'Initialize the values
-  fobj.LST_LLVarNames.ColumnCount = 3
-  fobj.LST_LLVarNames.BoundColumn = 2
-  fobj.LST_LLVarNames.List = formRng.Value
+  If scope = ShowHideScopeLinelist Then
+    Set listObject =  fobj.LST_LLVarNames
+  Else
+    Set listObject = fobj.LST_PrintNames
+  End If
+
+  listObject.BoundColumn = 2
+  listObject.ColumnCount = 3
+  listObject.List = formRng.Value
+
+  DisableClickMode
+
+  listObject.Selected(0) = True
+
+  EnableClickMode
+  EnableShowHide
 
   'Load the forms
   fobj.Caption = tradsform.TranslatedValue(fobj.Name)
   tradsform.TranslateForm fobj
+
+  'Add caption to option buttons
+  On Error Resume Next
+    fobj.OPT_Show.Caption = this.SHOW
+    fobj.OPT_PrintShowHoriz.Caption = this.PRINTSHOWHORIZ
+    fobj.OPT_PrintShowVerti.Caption = this.PRINTSHOWVERTI
+    fobj.OPT_Hide.Caption = this.HIDE
+  On Error GoTo 0
+
   fobj.Show
 End Sub
 
@@ -310,6 +351,8 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
 
   Dim scope As ShowHideScope
   Dim fobj As object
+
+  If Not InClickMode Then Exit Sub
 
   'disable the show/hide mode
   DisableShowHide
@@ -321,12 +364,12 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
 
   Case this.PRINTSHOWHORIZ
 
-    fobj.OPT_PrintShowHoriz.Caption = this.PrintShowHoriz
+    fobj.OPT_PrintShowHoriz.Caption = this.PRINTSHOWHORIZ
     fobj.OPT_PrintShowHoriz.Value = 1
 
   Case this.PRINTSHOWVERTI
 
-    fobj.OPT_PrintShowVerti.Caption = this.PrintShowHoriz
+    fobj.OPT_PrintShowVerti.Caption = this.PRINTSHOWVERTI
     fobj.OPT_PrintShowVerti.Value = 1
 
   'This is the scope linelist (show)
@@ -349,13 +392,20 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
   'This is both for scope linelist and print sheet
   Case this.HIDDEN
 
-    fobj.OPT_Show.Caption = this.HIDE
+    fobj.OPT_Show.Caption = this.SHOW
     fobj.OPT_Hide.Visible = True
     fobj.OPT_Hide.Value = 1
 
     If scope = ShowHideScopeLinelist Then
       fobj.OPT_Show.Top = 75
     End If
+  Case Else 'Show Everything, and select show horizontally on printed sheet
+    On Error Resume Next
+    fobj.OPT_Show.Value = 1
+    fobj.OPT_PrintShowHoriz.Value = 1
+    fobj.OPT_Hide.Visible = True
+    fobj.OPT_Show.Caption = this.SHOW
+    On Error GoTo 0
   End Select
 
   'Enable the Show/Hide process
@@ -371,11 +421,16 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
   Dim cellRng As Range
   Dim orientationValue As Long
   Dim tabName As String
+  Dim showValue As String
+  Dim formRng As Range
+  Dim listObject As Object
+  Dim hideCol As Boolean
 
   Set sh = Wksh()
   Set fobj = FormObject()
   scope = ActualScope()
   tabName = sh.Cells(1, 4).Value
+  Set formRng = ShowHideTable() 'To return back showhide table afterwards
 
   If Not InShowHideMode() Or indexValue < 0 Then Exit Sub
   'For mandatory, exit
@@ -387,18 +442,23 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
   On Error GoTo 0
   If colIndex = -1 Then Exit Sub
 
-  'Hide Column
-  If fobj.OPT_Hide.Value Then
-    sh.Columns(colIndex).Hidden = True
-    SetStatus indexValue, this.HIDDEN
-    Exit Sub
-  End If
-
+  'listObject depending of the scope
   If scope = ShowHideScopeLinelist Then
-    'Show Column
-    If fobj.OPT_Show.Value Then sh.Columns(colIndex).Hidden = False
+    'Linelist
+    Set listObject = fobj.LST_LLVarNames
+
+    If fobj.OPT_Hide.Value Then
+      hideCol = True
+      showValue = this.HIDDEN
+    ElseIf fobj.OPT_Show.Value Then
+      hideCol = False
+      showValue = this.SHOWN
+    End If
+
   Else
-    'Linelist print, change the orientation or hide.
+    'Linelist print
+    Set listObject = fobj.LST_PrintNames
+
     On Error Resume Next
       Set cellRng = sh.Range(tabName & "PRINTSTART")
     On Error GoTo 0
@@ -406,15 +466,62 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
     If cellRng Is Nothing Then Exit Sub
     'This is the main label header of the variable
     Set cellRng = sh.Cells(cellRng.Offset(-2).Row, colIndex)
-    'Set the orientation
-    orientationValue = 0 * CLng(fobj.OPT_PrintShowHoriz.Value) + 90 * CLng(fobj.OPT_PrintShowVerti.Value)
 
+    If fobj.OPT_Hide.Value Then
+      hideCol = True
+      showValue = this.HIDDEN
+    ElseIf fobj.OPT_PrintShowHoriz.Value Then
+      hideCol = False
+      showValue = this.PRINTSHOWHORIZ
+      orientationValue = 0
+    ElseIf fobj.OPT_PrintShowVerti.Value Then
+      hideCol = False
+      showValue = this.PRINTSHOWVERTI
+      orientationValue = 90
+    End If
     'unhide and change the orientation
-    sh.Columns(colIndex).Hidden = False
-    SetStatus indexValue, this.SHOWN
     cellRng.Orientation = orientationValue
     cellRng.EntireColumn.AutoFit
   End If
+
+  sh.Columns(colIndex).Hidden = hideCol
+  SetStatus indexValue, showValue
+  listObject.Clear
+  listObject.List = formRng.Value
+  DisableClickMode
+  listObject.Selected(indexValue - 1) = True
+  EnableClickMode
+End Sub
+
+Private Sub ChangeColWidth(ByVal indexValue As Long)
+
+  Dim sh As Worksheet
+  Dim colIndex As Long
+  Dim trads As ITranslation
+  Dim inputValue As String
+  Dim actualWidth As Long
+
+  If ActualScope = ShowHideScopeLinelist Then Exit Sub
+
+  On Error Resume Next
+    colIndex = -1
+    colIndex = CLng(Value(indexValue, "column index"))
+  On Error GoTo 0
+  If colIndex = -1 Then Exit Sub 'Find the column index
+
+  Set sh = Wksh()
+  Set trads = MessagesTrads()
+
+  Do While (True)
+    inputValue = InputBox(trads.TranslatedValue("MSG_ColWidth"), "10")
+    If IsNumeric(inputValue) Then Exit Do
+    If (MsgBox (trads.TranslatedValue("MSG_EnterNumeric"), vbOkCancel, "") = vbCancel) Then Exit Sub
+  Loop
+
+  On Error Resume Next
+    actualWidth = CLng(inputValue)
+    sh.Columns(colIndex).ColumnWidth = actualWidth
+  On Error GoTo 0
 End Sub
 
 'Errors and Requirements
@@ -458,9 +565,13 @@ Private Sub ILLShowHide_Load(ByVal tradsform As ITranslation)
 End Sub
 
 Private Sub ILLShowHide_UpdateVisibilityStatus(ByVal index As Long)
-   UpdateVisibility indexValue:=index
+   UpdateVisibility indexValue:=(index + 1)
 End Sub
 
 Private Sub ILLShowHide_ShowHideLogic(ByVal index As Long)
- ShowHideLogic indexValue:=index
+ ShowHideLogic indexValue:=(index + 1)
+End Sub
+
+Private Sub ILLShowHide_ChangeColWidth(ByVal index As Long)
+  ChangeColWidth indexValue:=(index + 1)
 End Sub
