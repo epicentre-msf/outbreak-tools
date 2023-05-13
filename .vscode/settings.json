@@ -25,5 +25,7 @@
     "editor.lineNumbers": "on",
     "editor.fontSize": 14,
     "editor.fontFamily": "'Fira Code Retina', 'Courier New', monospace",
-    "zenMode.hideStatusBar": false
+    "zenMode.hideStatusBar": false,
+    "editor.minimap.scale": 2,
+    "editor.minimap.renderCharacters": true
 }

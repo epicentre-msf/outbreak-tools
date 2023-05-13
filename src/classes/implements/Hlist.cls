@@ -27,6 +27,7 @@ Private Const SHPGEO As String = "SHP_GeoApps"
 Private Const SHPADDROWS As String = "SHP_Add200L"
 Private Const SHPREMOVEFILT As String = "SHP_ClearFilters"
 Private Const SHPSHOWHIDE As String = "SHP_ShowHide"
+Private Const SHPOPENPRINT As String = "SHP_OpenPrint"
 Private Const GOTOSECCODE As String = "go_to_section"
 
 Public Function Create(ByVal sheetName As String, ll As ILinelist) As IHlist
@@ -148,6 +149,7 @@ Public Sub Build()
 
     Const ADDROWSCOMMAND As String = "ClicCmdAddRows"
     Const SHOWHIDECOMMAND As String = "ClickShowHide"
+    Const OPENPRINTCOMMAND As String = "ClickOpenPrint"
     Const REMOVEFILTERCOMMAND As String = "ClearAllFilters"
     Const GEOCOMMAND As String = "ClicCmdGeoApp"
     Const FILTEREDPREFIX  As String = "f"
@@ -233,10 +235,16 @@ Public Sub Build()
     but.Add actionCommand:=REMOVEFILTERCOMMAND, shapeLabel:=trads.TranslatedValue(SHPREMOVEFILT)
     but.Format design
 
-    'Geo If neededed
+    'Open Print sheet on Linelist Worksheet
+    Set rng = sh.Cells(3, 1)
+    Set but = Buttons.Create(outRng:=rng, codeName:=SHPOPENPRINT, scope:=ButtonScopeSmall)
+    but.Add actionCommand:=OPENPRINTCOMMAND, shapeLabel:=trads.TranslatedValue(SHPOPENPRINT)
+    but.Format design
+
+    'Geo If needded
     hasGeo = llshs.ContainsVarsOf(sheetName, "geo1")
     If hasGeo Then
-        Set rng = sh.Cells(3, 1)
+        Set rng = sh.Cells(3, 2)
         Set but = Buttons.Create(outRng:=rng, codeName:=SHPGEO, scope:=ButtonScopeGeo)
         but.Add actionCommand:=GEOCOMMAND, shapeLabel:=trads.TranslatedValue(SHPGEO)
         but.Format design
