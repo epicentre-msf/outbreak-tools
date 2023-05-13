@@ -351,7 +351,7 @@ Private Sub AddVisibility(ByVal msgTrads As ITranslation)
 
             Case "optional"
 
-                .Cells(counter, endCol + 1) = msgTrads.TranslatedValue("MSG_Show")
+                .Cells(counter, endCol + 1) = msgTrads.TranslatedValue("MSG_Shown")
             End Select
         Next
     End With

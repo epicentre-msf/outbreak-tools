@@ -481,7 +481,7 @@ Private Sub RecursiveListAuto(ByVal varName As String)
 
 End Sub
 
-Private Sub export(ByVal toWkb As Workbook)
+Private Sub Export(ByVal toWkb As Workbook)
     Dim dict As ILLdictionary
     Dim choi As ILLchoice
     Dim geo As ILLGeo                            'Geo Object to add admin names in the preparation steps of the dictionary
