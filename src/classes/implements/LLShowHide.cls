@@ -220,17 +220,27 @@ Private Function ShowHideTable() As Range
               'main label
               mainLab =  vars.Value(varName:=varName, colName:="main label")
               controlVal = vars.Value(varName:=varName, colName:="control")
+
               'For geo variables, add the main label and the section
               If (InStr(1, controlVal, "geo") > 0) Or (InStr(1,controlVal, "hf") > 0) _
               Then mainLab = mainLab & ": " & vars.Value(varName:=varName, colName:="sub section")
+
               .Cells(tempCounter, startCol + 1).Value = mainLab
+
               'variable name
               .Cells(tempCounter, startCol + 2).Value = varName
+
               'Status
               statusValue = vars.Value(varName:=varName, colName:=showHideColumn)
-              'The default value is the value to write if nothing found as status 
+
+              'On admin 1 and Linelist, the status is mandatory
+              If (controlVal = "geo1") And (scope = ShowHideScopeLinelist) Then _
+               statusValue = this.MANDATORY
+
+              'The default value is the value to write if nothing found as status
               '(empty registerbook column)
               If statusValue = vbNullString Then statusValue = defaultValue
+
               .Cells(tempCounter, startCol + 3).Value = statusValue
               'column index (needed for further usages)
               .Cells(tempCounter, startCol + 4).Value = vars.Value(varName:=varName, colName:="column index")
@@ -414,6 +424,8 @@ End Sub
 
 Private Sub ShowHideLogic(ByVal indexValue As Long)
 
+
+
   Const TABPRINTPREFIX As String = "pr" 'Print prefix for tables
 
   Dim sh As Worksheet
@@ -427,6 +439,8 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
   Dim formRng As Range
   Dim listObject As Object
   Dim hideCol As Boolean
+
+  On Error GoTo ErrHand:
 
   Set sh = Wksh()
   Set fobj = FormObject()
@@ -462,7 +476,7 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
     Set listObject = fobj.LST_PrintNames
 
     On Error Resume Next
-      Set cellRng = sh.Range(Replace(tabName, TABPRINTPREFIX, vbNullString) & _ 
+      Set cellRng = sh.Range(Replace(tabName, TABPRINTPREFIX, vbNullString) & _
                              "_" & "PRINTSTART")
     On Error GoTo 0
     'Unable to find the print start Range, exit
@@ -495,6 +509,9 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
   DisableClickMode
   listObject.Selected(indexValue - 1) = True
   EnableClickMode
+
+ErrHand:
+
 End Sub
 
 Private Sub ChangeColWidth(ByVal indexValue As Long)
