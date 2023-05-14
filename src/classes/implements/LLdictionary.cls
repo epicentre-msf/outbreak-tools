@@ -232,7 +232,6 @@ Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject A
         End If
 
         If Not ColumnExists("column index") Then AppendColumnIndex 'Add Column Index
-        If Not ColumnExists("visibility") Then AddVisibility msgTrads 'Add visibility for show/Hide
 
         'Testing control to update the Geo
         Set controlRng = DataRange("control")
@@ -247,6 +246,8 @@ Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject A
         UniqueVarNames
         GoodSheetNames PreservedSheetsNames
 
+        'Add visibility (after adding geoLines)
+        If Not ColumnExists("visibility") Then AddVisibility msgTrads 'Add visibility for show/Hide
 
         Clean
         'Add color to the last line for prepare indication
