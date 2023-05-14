@@ -414,6 +414,8 @@ End Sub
 
 Private Sub ShowHideLogic(ByVal indexValue As Long)
 
+  Const TABPRINTPREFIX As String = "pr" 'Print prefix for tables
+
   Dim sh As Worksheet
   Dim fobj As Object
   Dim scope As ShowHideScope
@@ -460,7 +462,8 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
     Set listObject = fobj.LST_PrintNames
 
     On Error Resume Next
-      Set cellRng = sh.Range(tabName & "PRINTSTART")
+      Set cellRng = sh.Range(Replace(tabName, TABPRINTPREFIX, vbNullString) & _ 
+                             "_" & "PRINTSTART")
     On Error GoTo 0
     'Unable to find the print start Range, exit
     If cellRng Is Nothing Then Exit Sub
@@ -480,6 +483,7 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
       orientationValue = 90
     End If
     'unhide and change the orientation
+    cellRng.EntireRow.RowHeight = 100
     cellRng.Orientation = orientationValue
     cellRng.EntireColumn.AutoFit
   End If
