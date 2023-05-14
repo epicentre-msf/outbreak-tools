@@ -38,8 +38,8 @@ update_designer  <- function(update_status = 0) {
 }
 
 #update the dev file
-#update_designer(update_status = 0) #nolint
+update_designer(update_status = 0) #nolint
 #update the file on root
-#update_designer(update_status = 1) #nolint
+update_designer(update_status = 1) #nolint
 #copy the mock file for development
 update_designer(update_status = 3)
