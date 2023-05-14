@@ -456,16 +456,18 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     If (varControl = "custom") Then  cellRng.Offset(-2).Locked = False
 
     'Hidden columns
+    If varStatus = "hidden" Then  cellRng.EntireColumn.Hidden = True
+
+    'On printed sheet, hide or rotate (otherwise change nothing)
     If usePrinted Then
         Select Case varToPrint
         Case "print, vertical header"
             cellRng.Offset(-2).Orientation = 90
             cellRng.EntireColumn.AutoFit
+            cellRng.EntireRow.RowHeight = 100
         Case "hidden"
             cellRng.EntireColumn.Hidden = True
         End Select
-    Else
-        If varStatus = "hidden" Then  cellRng.EntireColumn.Hidden = True
     End If
 
     'The cell header itself
