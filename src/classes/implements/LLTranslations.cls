@@ -28,6 +28,7 @@ Private this As TLLTranslations
 Private Const TRADLLMSG              As String = "T_TradLLMsg"
 Private Const TRADLLSHAPES           As String = "T_TradLLShapes"
 Private Const TRADLLFORMS            As String = "T_TradLLForms"
+Private Const TRADLLRIBBON           As String = "T_TradLLRibbon"
 Private Const LLLANG                 As String = "T_LLLang"
 Private Const DICTTRANS              As String = "Tab_Translations"
 Private Const SELECTEDLANG           As String = "T_SelectedLLLanguages"
@@ -85,6 +86,8 @@ Private Property Get TransObject(Optional ByVal trans As TradScopes = _
         Set Lo = sh.ListObjects(TRADLLFORMS)
     Case TranslationOfMessages
         Set Lo = sh.ListObjects(TRADLLMSG)
+    Case TranslationOfRibbon
+        Set Lo = sh.ListObjects(TRADLLRIBBON)
     End Select
 
     Set TransObject = Translation.Create(Lo, lang)
