@@ -6,93 +6,73 @@ Option Private Module
 '@Folder("Linelist Events")
 '@ModuleDescription("Events associated with the Ribbon Menu in the linelist")
 
-Private Const LLSHEET As String = "LinelistTranslation"
-Private Const TRADSHEET As String = "Translations"
-Private Const DICTSHEET As String = "Dictionary"
-Private Const PASSSHEET As String = "__pass"
-
-Private showHideObject As ILLShowHide
-Private tradsform As ITranslation   'Translation of forms
-Private tradsmess As ITranslation   'Translation of messages
-Private pass As ILLPasswords
-
-'Initialize translation of forms object
-Private Sub InitializeTrads()
-    Dim lltrads As ILLTranslations
-    Dim lltranssh As Worksheet
-    Dim dicttranssh As Worksheet
 
 
-    Set lltranssh = ThisWorkbook.Worksheets(LLSHEET)
-    Set dicttranssh = ThisWorkbook.Worksheets(TRADSHEET)
-    Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
-
-    Set tradsmess = lltrads.TransObject()
-    Set tradsform = lltrads.TransObject(TranslationOfForms)
+'Callback for customUI.onLoad
+Sub ribbonLoaded(ribbon As IRibbonUI)
 End Sub
 
-'@Description("Callback for click on show/hide in a linelist worksheet")
-'@EntryPoint
-Public Sub ClickShowHide()
-    Dim sh As Worksheet
-    Dim dict As ILLdictionary
-    Dim sheetTag As String
-    Dim fobject As Object 'either translation of shapes or translation of formula
-
-    Set sh = ActiveSheet
-    'Test the sheet type to be sure it is a HList or a HList Print,
-    'and exit if not
-    sheetTag = sh.Cells(1, 3).Value
-    If sheetTag <> "HList" And sheetTag <> "HList Print" Then Exit Sub
-
-    'initialize the translations of forms and messages
-    InitializeTrads
-
-    Set dict = LLdictionary.Create(ThisWorkbook.Worksheets(DICTSHEET), 1, 1)
-
-    'This is the private show hide object, used in future subs.
-    Set showHideObject = LLShowHide.Create(tradsmess, dict, sh)
-
-    'Load elements to the current form
-    showHideObject.Load tradsform
+'Callback for adminTab getLabel
+Sub getLLLang(control As IRibbonControl, ByRef returnedVal)
 End Sub
 
-'@Description("Callback for click on the list of showhide")
-'@EntryPoint
-Public Sub ClickListShowHide(ByVal index As Long)
-    showHideObject.UpdateVisibilityStatus index
+'Callback for btnAdvanced onAction
+Sub clickRibbonAdvanced(control As IRibbonControl)
 End Sub
 
-'@Description("Callback for clik on differents show hide options")
-'@EntryPoint
-Public Sub ClickOptionsShowHide(ByVal index As Long)
-    showHideObject.ShowHideLogic index
+'Callback for btnExport onAction
+Sub clickRibbonExport(control As IRibbonControl)
 End Sub
 
-'@Description("Callback for click on the Print Button")
-'@EntryPoint
-Public Sub ClickOpenPrint()
-    Const PRINTPREFIX As String = "print_"
-
-    Dim sh As Worksheet
-    Dim printsh As Worksheet
-    Dim wb As Workbook
-
-    Set wb = ThisWorkbook
-
-    Set pass = LLPasswords.Create(wb.Worksheets(PASSSHEET))
-    Set sh = ActiveSheet
-    Set printsh = wb.Worksheets(PRINTPREFIX & sh.Name)
-    'UnProtect current workbook
-    pass.UnprotectWkb wb
-    'Unhide the linelist Print
-    printsh.Visible = xlSheetVisible
-    printsh.Activate
-    pass.ProtectWkb wb
+'Callback for btnDebug onAction
+Sub clickRibbonDegug(control As IRibbonControl)
 End Sub
 
-'@Description("Callback for click on column width")
-'@EntryPoint
-Public Sub ClickColWidth(ByVal index As Long)
-    showHideObject.ChangeColWidth index
+'Callback for btnShowHideVar onAction
+Sub clickRibbonShowHideVar(control As IRibbonControl)
 End Sub
+
+'Callback for btnShowHideSec onAction
+Sub clickRibbonShowHideSec(control As IRibbonControl)
+End Sub
+
+'Callback for btnAddRows onAction
+Sub clickRibbonAddRows(control As IRibbonControl)
+End Sub
+
+'Callback for btnResize onAction
+Sub clickRibbonResize(control As IRibbonControl)
+End Sub
+
+'Callback for btnRemFilt onAction
+Sub clickRibbonRemoveFilter(control As IRibbonControl)
+End Sub
+
+'Callback for btnCustomFilt onAction
+Sub clickRibbonCustomFilter(control As IRibbonControl)
+End Sub
+
+'Callback for btnOpenPrint onAction
+Sub clickRibbonOpenPrint(control As IRibbonControl)
+End Sub
+
+'Callback for btnClosePrint onAction
+Sub clickRibbonClosePrint(control As IRibbonControl)
+End Sub
+
+'Callback for btnRotateHead onAction
+Sub clickRibbonRotateAll(control As IRibbonControl)
+End Sub
+
+'Callback for btnRowHeight onAction
+Sub clickRibbonRowHeight(control As IRibbonControl)
+End Sub
+
+'Callback for btnCalc onAction
+Sub clickRibbonCalculate(control As IRibbonControl)
+End Sub
+
+'Callback for btnApplyFilt onAction
+Sub clickRibbonApplyFilt(control As IRibbonControl)
+End Sub
+
