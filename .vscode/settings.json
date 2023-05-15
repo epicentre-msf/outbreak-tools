@@ -27,5 +27,8 @@
     "editor.fontFamily": "'Fira Code', 'Courier New', monospace",
     "zenMode.hideStatusBar": false,
     "editor.minimap.scale": 2,
-    "editor.minimap.renderCharacters": true
+    "editor.minimap.renderCharacters": true,
+    "githubPullRequests.ignoredPullRequestBranches": [
+        "dev"
+    ]
 }
