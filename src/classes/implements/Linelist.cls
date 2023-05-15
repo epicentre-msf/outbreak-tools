@@ -360,7 +360,7 @@ Private Sub Prepare()
     codesList.Push "Helpers", "LinelistConstants", "LinelistCustomFunctions", _
                      "LinelistExport", "LinelistGeo", "LinelistMigration", _
                      "LinelistTranslation", "LinelistEvents", "LinelistDictionary", _
-                     "EventsLinelistRibbon", "EventsSpatialAnalysis"
+                     "EventsLinelistRibbon", "EventsSpatialAnalysis", "EventsLinelistButtons"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
