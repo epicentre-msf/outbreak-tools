@@ -523,22 +523,8 @@ ErrUpdate:
     EndWork xlsapp:=Application
 End Sub
 
-Sub UpdateSpTables()
-    Const SPATIALSHEET As String = "spatial_tables__"
-    Dim sp As ILLSpatial
-    Dim sh As Worksheet
 
-    Set sh = ThisWorkbook.Worksheets(SPATIALSHEET)
-    Set sp = LLSpatial.Create(sh)
-
-    UpdateFilterTables calculate:=False
-    sp.Update
-
-    DoEvents
-    ActiveSheet.calculate
-    ActiveSheet.UsedRange.calculate
-    ActiveSheet.Columns("A:E").calculate
-End Sub
+'Update a table on spatial analysis ==============================
 
 Sub UpdateSingleSpTable(ByVal rngName As String)
 
@@ -636,7 +622,7 @@ Sub DevideByPopulation(ByVal rngName As String, Optional ByVal revertBack As Boo
     factorMult = 100
     On Error Resume Next
     factorMult = CLng(Application.WorksheetFunction.Trim(sh.Range(rngName).Value))
-    On Error GoTo Err
+    On Error GoTo Errkz
 
     Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
     selectedAdmin = sh.Range("ADM_DROPDOWN_" & tabId).Value
@@ -670,7 +656,6 @@ Sub DevideByPopulation(ByVal rngName As String, Optional ByVal revertBack As Boo
                 'Remove the denominator
                 formulaValue = Replace(formulaValue, "/" & popValue, vbNullString)
             End If
-
 
             'some cells have formula, others have formulaArray
             If (hasFormula) Then

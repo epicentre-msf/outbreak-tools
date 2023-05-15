@@ -28,7 +28,7 @@ Private Const CLASSNAME As String = "SpatialTables"
 Private Const SPATIALSHEET As String = "spatial_tables__"
 Private Const ADMIN As String = "adm"
 Private Const HF As String = "hf"
-Private Const Concat As String = "concat_"
+Private Const CONCAT As String = "concat_"
 
 Public Function Create(ByVal tabl As ICrossTable) As ISpatialTables
     
@@ -298,18 +298,21 @@ Private Sub Add(ByVal formObject As IFormulas)
     
     With sh
       
+      'endCounter is the number of tables to create
       endCounter = Switch(spatType = "geo", 4, spatType = "hf", 1, True, 4)
 
       For counter = 1 To endCounter
         
         ClearTableConditions
-
+        
+        'Get the list object unique name (using the admin level and the variable name)
         LoName = Switch(spatType = "geo", CurrentLoName(varName, ADMIN & counter), _
                         spatType = "hf", CurrentLoName(varName, HF))
 
+        'Where to start building the listobject
         colIndex = LastColumn()
         adminName = Switch(spatType = "geo", ADMIN & counter, spatType = "hf", HF)
-        rowVarName = Switch(spatType = "geo", Concat & adminName & "_" & inputVarName, spatType = "hf", HF & "_" & inputVarName)
+        rowVarName = Switch(spatType = "geo", CONCAT & adminName & "_" & inputVarName, spatType = "hf", HF & "_" & inputVarName)
 
 
         'Add the table names for admin 1, only admin1, for admin2, admin1 and admin2, etc...
@@ -325,6 +328,8 @@ Private Sub Add(ByVal formObject As IFormulas)
         'Formula value for total
         cellRng.Cells(1, 2).Value = "formula_" & adminName
         cellRng.Cells(1, 3).Value = "population_" & adminName
+        'Add the attack rate column
+        cellRng.Cells(1, 4).Value = "attack_rate_" & adminName
         
         'final formula
         finalFormula = CurrentExcelFormula(formObject)
@@ -337,6 +342,10 @@ Private Sub Add(ByVal formObject As IFormulas)
         If spatType = "geo" Then
           finalFormula = "= GeoPopulation(" & counter - 1 & ", " & cellRng.Cells(2, 1).Address(Rowabsolute:=False) & ")"
           cellRng.Cells(2, 3).formula = finalFormula
+
+          'formula for the population
+          finalFormula = "= " & cellRng.Cells(2, 2).Address(Rowabsolute:=False) & "/" & cellRng.Cells(2, 3).Address(Rowabsolute:=False)
+          cellRng.Cells(2, 3).Formula = finalFormula 
         End If
 
         'Define the listObject

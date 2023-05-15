@@ -23,7 +23,7 @@ Private this As TLLSpatial
 Private Const CLASSNAME As String = "LLSpatial"
 Private Const SPATIALSHEET As String = "spatial_tables__"
 Private Const ADMIN As String = "adm"
-Private Const Concat As String = "concat_"
+Private Const CONCAT As String = "concat_"
 Private Const HF As String = "hf"
 
 Public Function Create(ByVal sh As Worksheet) As ILLSpatial
@@ -125,11 +125,13 @@ Private Sub Update()
               
               If Exists(varName) Then
                 
-                Set rng = Lo.ListColumns(Concat & ADMIN & "1_" & varName).DataBodyRange()
+                Set rng = Lo.ListColumns(CONCAT & ADMIN & "1_" & varName).DataBodyRange()
                 UpdateSpatialValue rng, varName
               
               End If
 
+              'Skip the columns of geo2, geo3 and geo4 and also skip the 4 columns of pcode
+              'and the other 4 columns of concatenate (4 + 4 + 3 = 11)
               Set cellRng = cellRng.Offset(, 11)
 
             ElseIf controlValue = "hf" Then
@@ -265,6 +267,9 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
         'Calculate the population range by shifting by 1.
          sortRng.Offset(, 1).calculate
 
+        'Calculate the attack rate by shifting by 2
+        sortRng.Offset(, 2).calculate
+
         On Error Resume Next
           Lo.ListColumns(1).DataBodyRange.Sort key1:=sortRng, order1:=xlDescending
         On Error GoTo 0
@@ -272,6 +277,13 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
         Set rng = rng.Offset(, 1)
     Next
   Next
+
+End Sub
+
+Private Sub Sort()
+
+  'Sort the listObject on either the attack rate column or the values column
+
 
 End Sub
 
