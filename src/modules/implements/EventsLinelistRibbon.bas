@@ -9,7 +9,7 @@ Option Private Module
 
 
 'Callback for customUI.onLoad
-Sub ribbonLoaded(ribbon As IRibbonUI)
+Sub ribbonLinelistLoaded(ribbon As IRibbonUI)
 End Sub
 
 'Callback for adminTab getLabel
