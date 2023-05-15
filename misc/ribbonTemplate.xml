@@ -1,0 +1,97 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad = "ribbonLoaded">
+  <ribbon startFromScratch="false">
+    <tabs>
+        <tab id="adminTab" getLabel="getLLLang">
+            <group id="customGroupAdmin" getLabel="getLLLang">
+                <button id="btnAdvanced"
+                    imageMso="OpenStartPage"
+                    getLabel="getLLLang"
+                    size="large"
+                    onAction="clickRibbonAdvanced"/>
+                <button id="btnExport"
+                    getLabel = "getLLLang"
+                    imageMso="ExportExcel"
+                    size="large"
+                    onAction="clickRibbonExport"/>
+                <button id="btnDebug"
+                    getLabel = "getLLLang"
+                    imageMso="TraceError"
+                    size="large"
+                    onAction="clickRibbonDegug"/>
+            </group>
+        </tab>
+        <tab id="dataEntryTab" getLabel="getLLLang">
+            <group id="customGroupTabMan" getLabel="getLLLang">
+                <button id="btnShowHideVar"
+                getLabel="getLLLang"
+                imageMso="HideDetails"
+                size="large"
+                onAction="clickRibbonShowHideVar"/>
+                <button id="btnShowHideSec"
+                getLabel="getLLLang"
+                imageMso="SlideHide"
+                size="large"
+                onAction="clickRibbonShowHideSec"/>
+                <button id="btnAddRows"
+                getLabel="getLLLang"
+                imageMso="QueryShowTable"
+                size="large"
+                onAction="clickRibbonAddRows"/>
+                <button id="btnResize"
+                getLabel="getLLLang"
+                imageMso="SheetRowsDelete"
+                size="large"
+                onAction="clickRibbonResize"/>
+            </group>
+            <group id="customGroupTabFilt" getLabel="getLLLang">
+                <button id="btnRemFilt"
+                getLabel="getLLLang"
+                imageMso="FilterClearAllFilters"
+                size="large"
+                onAction="clickRibbonRemoveFilter"/>
+                <button id="btnCustomFilt"
+                getLabel="getLLLang"
+                imageMso="SortAndFilterAdvanced"
+                size="large"
+                onAction="clickRibbonCustomFilter"/>
+            </group>
+            <group id="customGroupTabPrint" getLabel="getLLLang">
+                <button id="btnOpenPrint"
+                getLabel="getLLLang"
+                imageMso="DefinePrintStyles"
+                size="large"
+                onAction="clickRibbonOpenPrint"/>
+                <button id="btnClosePrint"
+                getLabel="getLLLang"
+                imageMso="PrintPreviewClose"
+                size="large"
+                onAction="clickRibbonClosePrint"/>
+                <button id="btnRotateHead"
+                getLabel="getLLLang"
+                imageMso="ObjectRotateFree"
+                size="large"
+                onAction="clickRibbonRotateAll"/>
+                <button id="btnRowHeight"
+                getLabel="getLLLang"
+                imageMso="RowHeight"
+                size="large"
+                onAction="clickRibbonRowHeight"/>
+            </group>
+        </tab>
+        <tab id="analysisTab" getLabel="getLLLang">
+            <group id="customGroupAna">
+            <button id="btnCalc"
+            imageMso="CalculateSheet"
+            size="large"
+            getLabel = "getLLLang"
+            onAction="clickRibbonCalculate"/>
+            <button id="btnApplyFilt"
+            imageMso="ServerFilterApply"
+            size="large"
+            getLabel = "getLLLang"
+            onAction="clickRibbonApplyFilt"/>
+            </group>
+        </tab>
+    </tabs>
+  </ribbon>
+</customUI>
