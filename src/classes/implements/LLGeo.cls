@@ -183,7 +183,7 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
     Dim counter As Long
     Dim returnedRng As Range
 
-    
+
     Set sh = Wksh()
     Set tabl = TableNames()
 
@@ -291,7 +291,7 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
             Lo.AutoFilter.ShowAllData
             Set outLevels = UniqueValues()
         End If
-        
+
         Lo.AutoFilter.ShowAllData
     End If
 
@@ -305,30 +305,30 @@ End Property
 Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
                              Optional ByVal concatValue As String = vbNullString, _
                              Optional ByVal returnedSuffix As String = "pop") As String
-                             
+
     'Return the population or the pcode of a admin level, by default, return population
     'Returned Suffix is the suffix of the column to return.
 
     Dim sh As Worksheet
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim LoRng As Range
-    Dim returnedValue As Variant
+
     Dim LoName As String
     Dim colIndex As Long
     Dim colRange As Range
     Dim concatRng As Range
-    Dim fun As WorksheetFunction
     Dim tabl As BetterArray
+    Dim cellRng As Range
+    Dim returnedValue As String
 
     Set sh = Wksh()
-    Set fun = Application.WorksheetFunction
     Set tabl = TableNames()
 
     LoName = IIf(adminLevel = LevelHF, "T_HF", tabl.Item(adminLevel))
     Set Lo = sh.ListObjects(LoName)
-    
+
     If Lo.DataBodyRange Is Nothing Then Exit Property
-    
+
     Set LoRng = Lo.DataBodyRange
 
     'returned column index
@@ -345,35 +345,37 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
         Set concatRng = sh.Range("adm1_concat")
 
     Case LevelGeoAdmin2
-    
+
         Set concatRng = sh.Range("adm2_concat")
-    
+
     Case LevelGeoAdmin3
-    
+
         Set concatRng = sh.Range("adm3_concat")
-    
+
     Case LevelGeoAdmin4
-    
+
         Set concatRng = sh.Range("adm4_concat")
-    
+
     Case LevelHF
-    
+
         Set concatRng = sh.Range("hf_concat")
     End Select
 
     'Use index match to get the result
-    On Error Resume Next
-    returnedValue = fun.Index(LoRng, fun.Match(concatValue, concatRng, 0), colIndex)
-    On Error GoTo 0
+    Set cellRng = concatRng.Find(What:=concatValue, LookAt:=xlWhole, MatchCase:=True)
 
-    If TypeName(returnedValue) = "String" Then
-        ValueOf = returnedValue
-    ElseIf TypeName(returnedValue) = "Long" Or TypeName(returnedValue) = "Double" Then
-        ValueOf = CStr(returnedValue)
-    Else
-        ValueOf = vbNullString
+    returnedValue = vbNullString
+
+    If (Not cellRng Is Nothing) Then
+        On Error Resume Next
+        returnedValue = sh.Cells(cellRng.Row, colIndex).Value
+        On Error GoTo 0
     End If
+
+    ValueOf = returnedValue
+
 End Property
+
 
 Private Sub Translate(Optional ByVal rawNames As Boolean = False)
     'Headers for the geo sheet
@@ -402,7 +404,7 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
         LoName = tabl.Item(counter)
         Set Lo = sh.ListObjects(LoName)
         Set hRng = Lo.HeaderRowRange
-        
+
         'Admin 1 to 5, and hf
         For counter2 = 1 To counter
             admname = "adm" & counter2 & "_name"
@@ -411,20 +413,20 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
             hRng.Cells(1, counter2).Value = IIf(rawNames, admname, transGeoName)
         Next
     Next
-    
+
     'Update informations for health facility
     Set Lo = sh.ListObjects("T_HF")
     Set hRng = Lo.HeaderRowRange
     transGeoName = GeoNames("hf_name")
     hRng.Cells(1, 1).Value = IIf(rawNames, "hf_name", transGeoName)
     Set cellRng = hRng.Cells(1, 5)
-    
+
     For counter = 1 To 3
         admname = "adm" & counter & "_name"
         transGeoName = GeoNames(admname)
         cellRng.Offset(, -counter).Value = IIf(rawNames, admname, transGeoName)
     Next
-    
+
     'Informations for next translations
     rng.Value = Replace(rng.Value, ", not translated", "")
     rng.Value = Replace(rng.Value, ", translated", "")
@@ -596,7 +598,7 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
         'Linelist creation date
         .Cells(rng.Rows.Count + 2, 1).Value = "linelist_creation_date"
         .Cells(rng.Rows.Count + 2, 2).Value = Format(Now, "yyyy-mm-dd Hh:Nn")
-        
+
         .Visible = xlSheetVeryHidden
 
     End With
@@ -609,7 +611,7 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     outputWkb.NAMES.Add Name:="adm3_pcode", RefersToR1C1:="=" & "T_ADM3" & "[" & "adm3_pcode" & "]"
     outputWkb.NAMES.Add Name:="adm4_pcode", RefersToR1C1:="=" & "T_ADM4" & "[" & "adm4_pcode" & "]"
     outputWkb.NAMES.Add Name:="hf_pcode", RefersToR1C1:="=" & "T_HF" & "[" & "hf_pcode" & "]"
-    
+
     'concat values
     outputWkb.NAMES.Add Name:="adm1_concat", RefersToR1C1:="=" & "T_ADM1" & "[" & "adm1_concat" & "]"
     outputWkb.NAMES.Add Name:="adm2_concat", RefersToR1C1:="=" & "T_ADM2" & "[" & "adm2_concat" & "]"
@@ -673,14 +675,14 @@ Private Sub Import(ByVal fromWkb As Workbook)
                 Loop
                 'Add a concat table (for admin selections)
                 Set impRng = Lo.ListRows(1).Range
-                    
+
                 Select Case Lo.Name
 
                 Case "T_ADM1"
 
                     'Creating the formula
                     concatFormula = "=" & impRng.Cells(1, 1).Address(Rowabsolute:=False)
-                    
+
                 Case "T_ADM2"
 
                     concatFormula = "=" & impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
@@ -705,7 +707,7 @@ Private Sub Import(ByVal fromWkb As Workbook)
                                     impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
                                     sep & _
                                     impRng.Cells(1, 1).Address(Rowabsolute:=False)
-                    
+
                 Case "T_HF"
 
                     concatFormula = "=" & _
@@ -726,16 +728,16 @@ Private Sub Import(ByVal fromWkb As Workbook)
                 If concatFormula <> vbNullString Then
                     sh.Cells(impRng.Row, hRng.Column + hRng.Cells.Count - 1).formula = concatFormula
                 End If
-                                                            
+
                 'I know that each geo listobject starts on the first line
                 Set actRng = sh.Range(sh.Cells(1, hRng.Column), sh.Cells(LastRow, hRng.Column + hRng.Cells.Count - 1))
-                    
+
                 'Resize the listObject and add a concatenate formula
                 Lo.Resize actRng
             End If
         End With
     Next
-    
+
     'Add the workbook name (Geobase Name)
     sh.Range("RNG_GeoName").Value = Replace(fromWkb.Name, ".xlsx", "")
     sh.Range("RNG_GeoUpdated").Value = "updated"
@@ -798,7 +800,7 @@ End Sub
 
 'Update the geobase admin names in the linelist
 Private Sub Update(ByVal pass As ILLPasswords)
-    
+
     Const DROPDOWNSHEET As String = "dropdown_lists__"
 
     Dim sh As Worksheet
@@ -807,56 +809,56 @@ Private Sub Update(ByVal pass As ILLPasswords)
     Dim controlValue As String
     Dim geoData As BetterArray
     Dim drop As IDropdownLists
-    
+
     Set wb = Wksh.Parent
-    
+
     For Each sh In wb.Worksheets
-    
+
         'Test if it is a Hlist
         If sh.Cells(1, 3).Value = "HList" Then
-            
+
             'Unprotect and update
             pass.UnProtect sh.Name
-            
+
             With sh
-            
+
                 'Start of the table in the HList
                 '.Cells(1, 4) contains the name of table in the linelist HList sheet
                 Set cellRng = .Range(.Cells(1, 4).Value & "_" & "START")
-                
+
                 Do While Not IsEmpty(cellRng.Offset(-1))
-                
+
                     controlValue = cellRng.Offset(-5).Value
-                
+
                     Select Case controlValue
-                
+
                     Case "geo1"
-                
+
                         cellRng.Offset(-2).Value = GeoNames("adm1_name")
-                    
+
                     Case "geo2"
-                    
+
                         cellRng.Offset(-2).Value = GeoNames("adm2_name")
-                    
+
                     Case "geo3"
-                    
+
                         cellRng.Offset(-2).Value = GeoNames("adm3_name")
-                    
+
                     Case "geo4"
-                                    
+
                         cellRng.Offset(-2).Value = GeoNames("adm4_name")
-                    
+
                     Case "hf"
-                    
+
                         cellRng.Offset(-2).Value = GeoNames("hf_name")
-                    
+
                     End Select
-                    
+
                     Set cellRng = cellRng.Offset(, 1)
                 Loop
-                
+
             End With
-            
+
             pass.Protect sh.Name
         End If
     Next

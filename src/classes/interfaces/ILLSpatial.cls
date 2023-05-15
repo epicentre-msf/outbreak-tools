@@ -22,5 +22,10 @@ Public Property Get TopGeoValue(ByVal adminName As String, ByVal levelValue As I
    Optional ByVal tabId As String = vbNullString, Optional ByVal concatValue As Byte = 1) As String
 End Property
 
-Public Property Get TopHFValue(ByVal orderValue As Integer, ByVal inputVarName As String, Optional ByVal tabId As String = vbNullString) As String
+Public Property Get TopHFValue(ByVal orderValue As Integer, _
+                               ByVal inputVarName As String, _
+                               Optional ByVal tabId As String = vbNullString) As String
 End Property
+
+Public Sub Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
+End Sub

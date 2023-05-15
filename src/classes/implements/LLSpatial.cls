@@ -27,7 +27,7 @@ Private Const CONCAT As String = "concat_"
 Private Const HF As String = "hf"
 
 Public Function Create(ByVal sh As Worksheet) As ILLSpatial
-    
+
     'output worksheet to add the spatial tables
     CheckRequirements sh
 
@@ -67,7 +67,7 @@ Private Function Exists(ByVal varName As String) As Boolean
 
   Set sh = Wksh()
   Set listVarsRng = sh.ListObjects("listofgeovars").Range
-  
+
   Exists = (Not (listVarsRng.Find(What:=varName, LookAt:=xlPart, MatchCase:=True) Is Nothing))
 End Function
 
@@ -110,7 +110,7 @@ Private Sub Update()
 
       'Exit the sub if there is no data in the filters
       If Not (filtsh.ListObjects(1).DataBodyRange Is Nothing) Then
-          
+
         tableName = sh.Cells(1, 4).Value
         Set cellRng = sh.Range(tableName & "_" & "START")
         Set Lo = filtsh.ListObjects(1)
@@ -122,12 +122,12 @@ Private Sub Update()
             If controlValue = "geo1" Then
 
               varName = Replace(cellRng.Offset(-1).Value, ADMIN & "1_", "")
-              
+
               If Exists(varName) Then
-                
+
                 Set rng = Lo.ListColumns(CONCAT & ADMIN & "1_" & varName).DataBodyRange()
                 UpdateSpatialValue rng, varName
-              
+
               End If
 
               'Skip the columns of geo2, geo3 and geo4 and also skip the 4 columns of pcode
@@ -141,12 +141,12 @@ Private Sub Update()
 
 
               If Exists(varName) Then
-              
+
                 Set rng = Lo.ListColumns(HF & "_" & varName).DataBodyRange()
                 UpdateSpatialValue rng, varName, isHF:=True
-              
+
               End If
-              
+
               'Jump pcode for health facility
               Set cellRng = cellRng.Offset(, 1)
             End If
@@ -159,7 +159,7 @@ Private Sub Update()
 End Sub
 
 Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
-  
+
   Dim listRng As Range
   Dim cellRng As Range
   Dim sh As Worksheet
@@ -172,11 +172,11 @@ Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
   Do While (Not (listRng.Find(What:=varName, LookAt:=xlPart, MatchCase:=True) Is Nothing))
     Set cellRng = listRng.Find(What:=varName, LookAt:=xlPart, MatchCase:=True)
     listTab.Push cellRng.Value
-    
+
     'Exit the loop on those two conditions
     If (listRng.Rows.Count = 1) Then Exit Do
     If cellRng.Cells(2, 1).Row > listRng.Cells(listRng.Rows.Count, 1).Row Then Exit Do
-    
+
     Set listRng = sh.Range(cellRng.Cells(2, 1), listRng.Cells(listRng.Rows.Count, 1))
   Loop
 
@@ -203,13 +203,13 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
   Dim endCounter As Long
 
   Set sh = Wksh()
-  
+
   'Get the list of varNames concerned
   Set listVars = ListOfExistingVarNames(inputVarName)
 
   'Number of admin tables to update
   endCounter = IIf(isHF, 1, 4)
-  
+
   For counter = listVars.LowerBound To listVars.UpperBound
 
     varName = listVars.Item(counter)
@@ -280,12 +280,58 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
 
 End Sub
 
-Private Sub Sort()
 
-  'Sort the listObject on either the attack rate column or the values column
+'@Description("Sort the tables on either attack rate or values")
+Private Sub Sort(ByVal tabId As String,  Optional ByVal onAR As Boolean = False)
+
+  'onAR is to know if it is needed to sort on attack rate or values. Default
+  'is values. Keep in mind we sort only on "geo" tables because health facilities
+  'don't have a linked population. No sorting is done in "hf" tables.
+
+  Dim sortRng As Range
+  Dim loRng As Range
+  Dim Lo As ListObject
+  Dim sh As Worksheet
+  Dim adminCounter As Long
+  Dim sortRngName As String
+  Dim varName As String
+  Dim listRng As Range
+  Dim cellRng As Range
 
 
+  Set sh = Wksh()
+
+  'Find the corresponding variable name of the table id
+   Set listRng = sh.ListObjects("listofgeovars").Range
+
+   'Look for the table in list range
+   Set cellRng = listRng.Find(What:=tabId, LookAt:=xlPart, MatchCase:=True)
+
+   'If you can't find the table, something went wrong
+   If cellRng Is Nothing Then Exit Sub
+
+   'Table ids are unique, so there is one variable name per table id
+   '(variable name as combination of "dictionary variable name" and tabId)
+   varName = cellRng.Value
+
+  For adminCounter = 1 To 4
+
+    Set Lo = sh.ListObjects(CurrentLoName(varName, ADMIN & adminCounter))
+    If Lo.DataBodyRange Is Nothing Then Exit Sub
+    If IsEmpty(Lo.ListColumns(1).DataBodyRange) Then Exit Sub
+
+    'Define the ranges and sort on them
+    Set LoRng = Lo.DataBodyRange
+    sortRngName = IIf(onAR, "attack_rate_", "formula_")
+    sortRngName = sortRngName & ADMIN & adminCounter
+    Set sortRng = Lo.ListColumns(sortRngName).DataBodyRange
+
+    On Error Resume Next
+      Lo.ListColumns(1).DataBodyRange.Sort key1:=sortRng, order1:=xlDescending
+    On Error GoTo 0
+  Next
 End Sub
+
 
 Private Property Get TopGeoValue(ByVal adminName As String, ByVal orderValue As Integer, ByVal inputVarName As String, _
                                  Optional ByVal tabId As String = vbNullString, Optional ByVal concatValue As Byte = 1) As String
@@ -294,14 +340,14 @@ Private Property Get TopGeoValue(ByVal adminName As String, ByVal orderValue As 
   Dim LoName As String
   Dim varName As String
   Dim rng As Range
-  
+
   Set sh = Wksh()
 
   varName = inputVarName & "_" & tabId
   LoName = CurrentLoName(varName, adminName)
-  
+
   If Not LoExists(LoName) Then Exit Property
-  
+
   Set Lo = sh.ListObjects(LoName)
 
   If concatValue = 1 Then
@@ -309,7 +355,7 @@ Private Property Get TopGeoValue(ByVal adminName As String, ByVal orderValue As 
   Else
     Set rng = Lo.ListColumns(3).DataBodyRange()
   End If
-  
+
   TopGeoValue = CStr(rng.Cells(orderValue, 1).Value)
 
 End Property
@@ -328,7 +374,7 @@ Private Property Get TopHFValue(ByVal orderValue As Integer, ByVal inputVarName 
   If Not LoExists(LoName) Then Exit Property
   Set Lo = sh.ListObjects(LoName)
   Set rng = Lo.ListColumns(1).DataBodyRange()
-  
+
   TopHFValue = rng.Cells(orderValue, 1).Value
 End Property
 
@@ -346,22 +392,26 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Exposed methods
-Public Property Get ILLSpatial_Exists(ByVal varName As String) As Boolean
+Private Property Get ILLSpatial_Exists(ByVal varName As String) As Boolean
     ILLSpatial_Exists = Exists(varName)
 End Property
 
-Public Sub ILLSpatial_Update()
+Private Sub ILLSpatial_Update()
   Update
 End Sub
 
 
-Public Property Get ILLSpatial_TopGeoValue(ByVal adminName As String, ByVal levelValue As Integer, ByVal varName As String, _
+Private Property Get ILLSpatial_TopGeoValue(ByVal adminName As String, ByVal levelValue As Integer, ByVal varName As String, _
   Optional ByVal tabId As String = vbNullString, Optional ByVal concatValue As Byte = 1) As String
   ILLSpatial_TopGeoValue = TopGeoValue(adminName, levelValue, varName, tabId, concatValue)
 End Property
 
 
-Public Property Get ILLSpatial_TopHFValue(ByVal orderValue As Integer, ByVal inputVarName As String, Optional ByVal tabId As String = vbNullString) As String
+Private Property Get ILLSpatial_TopHFValue(ByVal orderValue As Integer, ByVal inputVarName As String, Optional ByVal tabId As String = vbNullString) As String
   ILLSpatial_TopHFValue = TopHFValue(orderValue, inputVarName, tabId)
 End Property
-  
+
+Private Sub ILLSpatial_Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
+  Sort tabId, onAR
+End Sub
+

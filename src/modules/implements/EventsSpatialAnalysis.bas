@@ -9,6 +9,31 @@ Option Private Module
 'spatial analyses Sheet
 Private Const SPATIALSHEET As String = "spatial_tables__"
 Private Const PASSSHEET As String = "__pass"
+Private Const LLSHEET As String = "LinelistTranslation"
+Private Const TRADSHEET As String = "Translations"
+
+Private pass As ILLPasswords
+Private lltrads As ILLTranslations
+Private tradsmess As ITranslation
+Private tradsform As ITranslation
+Private lltranssh As Worksheet
+
+'Initialize trads and passwords
+Private Sub Initialize()
+
+    Dim lltrads As ILLTranslations
+    Dim dicttranssh As Worksheet
+    Dim psh As Worksheet
+
+    Set lltranssh = ThisWorkbook.Worksheets(LLSHEET)
+    Set dicttranssh = ThisWorkbook.Worksheets(TRADSHEET)
+    Set psh = ThisWorkbook.Worksheets(PASSSHEET)
+    Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
+    Set pass = LLPasswords.Create(psh)
+    Set tradsmess = lltrads.TransObject()
+    Set tradsform = lltrads.TransObject(TranslationOfForms)
+
+End Sub
 
 'Subs to speed up the application
 'speed app
@@ -22,7 +47,6 @@ End Sub
 
 'Return back to previous state
 Private Sub NotBusyApp()
-    Application.EnableEvents = True
     Application.ScreenUpdating = True
     Application.EnableAnimations = True
     Application.Cursor = xlDefault
@@ -32,10 +56,8 @@ End Sub
 '@EntryPoint
 Public Sub UpdateSpTables()
     Dim sp As ILLSpatial
-    Dim sh As Worksheet
 
-    Set sh = ThisWorkbook.Worksheets(SPATIALSHEET)
-    Set sp = LLSpatial.Create(sh)
+    Set sp = LLSpatial.Create(ThisWorkbook.Worksheets(SPATIALSHEET))
 
     UpdateFilterTables calculate:=False
 
@@ -58,7 +80,6 @@ End Sub
 
 
 '@Description("Update all values in a table when the user changes the admin level")
-'@EntryPoint
 Public Sub UpdateSingleSpTable(ByVal rngName As String)
 
     'rngName is the name of the range where we have the admin level
@@ -73,11 +94,11 @@ Public Sub UpdateSingleSpTable(ByVal rngName As String)
     Dim sh As Worksheet
     Dim geo As ILLGeo
     Dim hasFormula As Boolean
-    Dim pass As ILLPasswords
 
     BusyApp
 
-    Set pass = LLPasswords.Create(ThisWorkbook.Worksheets("__pass"))
+    'initialize passwords, translations etc.
+    Initialize
     pass.UnProtect "_active"
 
     'Spatial analysis worksheet
@@ -108,7 +129,8 @@ Public Sub UpdateSingleSpTable(ByVal rngName As String)
 
         If (InStr(1, formulaValue, "concat_" & prevAdmValue) > 0) Then
 
-            formulaValue = Replace(formulaValue, "concat_" & prevAdmValue, "concat_" & adminName)
+            formulaValue = Replace(formulaValue, "concat_" & prevAdmValue, _
+                                   "concat_" & adminName)
 
             'some cells have formula, others have formulaArray
             If (hasFormula) Then
@@ -124,15 +146,13 @@ Public Sub UpdateSingleSpTable(ByVal rngName As String)
 
     'Calculate the outer range
     rng.calculate
-
     pass.Protect "_active", True
-    EndWork xlsapp:=Application
+    NotBusyApp
 End Sub
 
-
-
 '@Description("Devide all computed Values by the population")
-Public Sub DevideByPopulation(ByVal rngName As String, Optional ByVal revertBack As Boolean = False)
+Public Sub DevideByPopulation(ByVal rngName As String,  _
+                             Optional ByVal revertBack As Boolean = False)
 
     Dim sh As Worksheet
     Dim hasFormula As Boolean
@@ -148,13 +168,10 @@ Public Sub DevideByPopulation(ByVal rngName As String, Optional ByVal revertBack
     Dim selectedAdmin As String
     Dim popValue As String
     Dim tabId As String
-    Dim pass As ILLPasswords
+    Dim sp As ILLSpatial
 
     BusyApp
-
     Set sh = ActiveSheet
-    Set pass = LLPasswords.Create(ThisWorkbook.Worksheets(PASSSHEET))
-    pass.UnProtect "_active"
 
     tabId = Replace(rngName, "POPFACT_", vbNullString)
     prevFact = sh.Range("POPPREVFACT_" & tabId).Value
@@ -162,14 +179,18 @@ Public Sub DevideByPopulation(ByVal rngName As String, Optional ByVal revertBack
     factorMult = 100
     On Error Resume Next
     factorMult = CLng(Application.WorksheetFunction.Trim(sh.Range(rngName).Value))
-    On Error GoTo Errkz
+    On Error GoTo Err
 
     Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
     selectedAdmin = sh.Range("ADM_DROPDOWN_" & tabId).Value
     adminName = geo.AdminCode(selectedAdmin)
 
+    Set sp = LLSpatial.Create(ThisWorkbook.Worksheets(SPATIALSHEET))
     Set rng = sh.Range("OUTER_VALUES_" & tabId)
     Set rowRng = sh.Range("ROW_CATEGORIES_" & tabId)
+
+    'Sort the spatial tables on either attack rate or values
+    sp.Sort tabId:=tabId, onAR:=(Not revertBack)
 
     For Each cellRng In rng
 
@@ -181,7 +202,8 @@ Public Sub DevideByPopulation(ByVal rngName As String, Optional ByVal revertBack
             hasFormula = True
         End If
 
-        If (InStr(1, formulaValue, "concat_" & adminName) > 0) And (cellRng.Column > rowRng.Column) Then
+        If (InStr(1, formulaValue, "concat_" & adminName) > 0) And _
+           (cellRng.Column > rowRng.Column) Then
 
             popValue = sh.Cells(cellRng.Row, rowRng.Column - 1).Address
 
@@ -190,7 +212,8 @@ Public Sub DevideByPopulation(ByVal rngName As String, Optional ByVal revertBack
                 formulaValue = "= " & factorMult & "*" & formulaValue & "/" & popValue
             ElseIf (Not revertBack) And (prevFact <> 0) Then
                 formulaValue = Replace(formulaValue, prevFact, factorMult)
-            ElseIf (prevFact <> 0) Then 'If the previous factor is 0, then no need to revert Back
+            'If the previous factor is 0, then no need to revert Back
+            ElseIf (prevFact <> 0) Then
                 'Remove the factor
                 formulaValue = Replace(formulaValue, prevFact & "*", vbNullString)
                 'Remove the denominator
@@ -215,9 +238,47 @@ Public Sub DevideByPopulation(ByVal rngName As String, Optional ByVal revertBack
     rng.calculate
 
 Err:
-    pass.Protect "_active", True
     NotBusyApp
 End Sub
 
+'@Description("Format the devide by population")
+Public Sub FormatDevidePop(ByVal rngName)
 
-'
+    Dim sh As Worksheet
+    Dim tabId As String
+
+    Set sh = ActiveSheet
+
+    Initialize
+    BusyApp
+    pass.UnProtect "_active"
+    tabId = Replace(rngName, "DEVIDEPOP_", vbNullString)
+
+    'lltranssh is the linelist translation worksheet in the Initialize sub
+    If sh.Range(rngName).Value = lltranssh.Range("RNG_NoDevide").Value Then
+
+        'Do not devide
+        sh.Range("POPFACT_" & tabId).Font.color = vbWhite
+        sh.Range("POPFACT_" & tabId).Locked = True
+        sh.Range("POPFACTLABEL_" & tabId).Font.color = vbWhite
+        sh.Range("POPFACTLABEL_" & tabId).Locked = True
+        sh.Range("POPFACT_" & tabId).FormulaHidden = True
+
+        DevideByPopulation rngName:="POPFACT_" & tabId, revertBack:=True
+
+    ElseIf sh.Range(rngName).Value = lltranssh.Range("RNG_Devide").Value Then
+
+        'Devide by the population
+        sh.Range("POPFACT_" & tabId).Font.color = vbBlack
+        sh.Range("POPFACT_" & tabId).Locked = False
+        sh.Range("POPFACT_" & tabId).FormulaHidden = False
+        sh.Range("POPFACTLABEL_" & tabId).Font.color = vbBlack
+        sh.Range("POPFACTLABEL_" & tabId).Locked = False
+
+        DevideByPopulation "POPFACT_" & tabId
+
+    End If
+
+    NotBusyApp
+    pass.Protect "_active", True
+End Sub

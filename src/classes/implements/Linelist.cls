@@ -287,7 +287,7 @@ Private Sub Prepare()
     Dim codeName As String
     Dim outWkb As Workbook
     Dim prevAlert As Boolean
-    Dim classesList As BetterArray
+    Dim codesList As BetterArray
 
     Set outWkb = Wkb()
 
@@ -342,36 +342,37 @@ Private Sub Prepare()
     TemporaryFolder Create:=True
 
     'Send the required classes to the linelist
-    Set classesList = New BetterArray
-    classesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", "ILLExport", "LLchoice", "ILLchoice", _
+    Set codesList = New BetterArray
+    codesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", "ILLExport", "LLchoice", "ILLchoice", _
                      "LLdictionary", "ILLdictionary", "LLGeo", "ILLGeo", "LLPasswords", "ILLPasswords", _
                      "LLSheets", "ILLSheets", "LLTranslations", "ILLTranslations", "OSFiles", "IOSFiles", _
                      "Translation", "ITranslation", "LLVariables", "ILLVariables", "ILLSpatial", "LLSpatial", _
                      "DropdownLists", "IDropdownLists", "LLShowHide", "ILLShowHide"
 
-    For counter = classesList.LowerBound To classesList.UpperBound
-        codeName = classesList.Item(counter)
+    For counter = codesList.LowerBound To codesList.UpperBound
+        codeName = codesList.Item(counter)
         TransferCode codeName, codeScopeClass
     Next
     DoEvents
 
     'Send the modules to the linelist
-    classesList.Clear
-    classesList.Push "Helpers", "LinelistConstants", "LinelistCustomFunctions", _
+    codesList.Clear
+    codesList.Push "Helpers", "LinelistConstants", "LinelistCustomFunctions", _
                      "LinelistExport", "LinelistGeo", "LinelistMigration", _
-                     "LinelistTranslation", "LinelistEvents", "LinelistDictionary", "EventsLinelistRibbon"
+                     "LinelistTranslation", "LinelistEvents", "LinelistDictionary", _
+                     "EventsLinelistRibbon", "EventsSpatialAnalysis"
 
-    For counter = classesList.LowerBound To classesList.UpperBound
-        codeName = classesList.Item(counter)
+    For counter = codesList.LowerBound To codesList.UpperBound
+        codeName = codesList.Item(counter)
         TransferCode codeName, codeScopeModule
     Next
 
-    classesList.Clear
-    classesList.Push "F_Advanced", "F_Export", "F_ExportMig", "F_Geo", "F_ImportMig", "F_ImportRep", _
+    codesList.Clear
+    codesList.Push "F_Advanced", "F_Export", "F_ExportMig", "F_Geo", "F_ImportMig", "F_ImportRep", _
                      "F_ShowHideLL", "F_ShowHidePrint"
 
-    For counter = classesList.LowerBound To classesList.UpperBound
-        codeName = classesList.Item(counter)
+    For counter = codesList.LowerBound To codesList.UpperBound
+        codeName = codesList.Item(counter)
         TransferForm codeName
     Next
 

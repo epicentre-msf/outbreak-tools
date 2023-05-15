@@ -31,7 +31,7 @@ Private Const HF As String = "hf"
 Private Const CONCAT As String = "concat_"
 
 Public Function Create(ByVal tabl As ICrossTable) As ISpatialTables
-    
+
     'output worksheet to add the spatial tables
     CheckRequirements tabl '(tabl is exists and spatial_tables__ sheet exists)
 
@@ -48,11 +48,11 @@ End Property
 
 Public Property Get Wksh() As Worksheet
   'The worksheet is the sapatial table worksheet (where to write tables for admins)
-  
+
   Dim tabl As ICrossTable
   Dim wb As Workbook
   Dim sh As Worksheet
-  
+
   If this.sh Is Nothing Then
     Set tabl = Table()
     Set sh = tabl.Wksh()
@@ -74,7 +74,7 @@ End Property
 
 Private Property Get LastColumn() As Long
   'Find the last column of the spatial table sheet.
-  
+
     Dim sh As Worksheet
     Dim colIndex As Long
     Set sh = Wksh()
@@ -127,7 +127,7 @@ Private Function FailedFormula(ByVal frmName As String) As Boolean
   Dim prevAlert As Long
   Dim sh As Worksheet
   Dim formTest As String
-  
+
   prevAlert = Application.DisplayAlerts
 
   Set sh = Wksh
@@ -135,15 +135,15 @@ Private Function FailedFormula(ByVal frmName As String) As Boolean
       Application.DisplayAlerts = False
       .Cells(1, 1).Clear
       On Error GoTo Fail
-      
+
       'Test the formula on one cell
       .Cells(1, 1).FormulaArray = "= " & frmName
-      
+
       .Cells(1, 1).Clear
       FailedFormula = False
       Exit Function
   End With
-  
+
   Application.DisplayAlerts = prevAlert
 Fail:
   FailedFormula = True
@@ -175,7 +175,7 @@ Private Sub AddTableConditions(varName As String, conditionName As String)
       this.condVars.Push varName
       this.condTests.Push conditionName
   End If
-  
+
 End Sub
 
 Private Sub ClearTableConditions(Optional ByVal removeNumber As Integer = 0)
@@ -212,7 +212,7 @@ Private Property Get CurrentExcelFormula(tabFormObject As IFormulas, _
   Dim eform As String
 
   If Not tabFormObject.Valid() Then Exit Property
-     
+
   If scope = 1 Then
       eform = tabFormObject.ParsedLinelistFormula(useTableName:=True, tablePrefix:=prefix)
   Else
@@ -263,7 +263,7 @@ End Sub
 
 'Add New list to the dropdown sheet
 Private Sub Add(ByVal formObject As IFormulas)
-  
+
     Dim sh As Worksheet
     Dim colIndex As Long
     Dim varName As String
@@ -287,24 +287,24 @@ Private Sub Add(ByVal formObject As IFormulas)
     spatType = specs.SpatialTableTypes()
     inputVarName = specs.Value("row")
     varName = inputVarName & "_" & specs.TableId()
-    
+
     If Exists(varName) Then Exit Sub
     If Not LoExists("listofgeovars") Then Prepare
-    
+
     'Add this variable name to the list of geovars (which contains the ids)
     AddVarNameToList varName
-    
+
     Set sh = Wksh()
-    
+
     With sh
-      
+
       'endCounter is the number of tables to create
       endCounter = Switch(spatType = "geo", 4, spatType = "hf", 1, True, 4)
 
       For counter = 1 To endCounter
-        
+
         ClearTableConditions
-        
+
         'Get the list object unique name (using the admin level and the variable name)
         LoName = Switch(spatType = "geo", CurrentLoName(varName, ADMIN & counter), _
                         spatType = "hf", CurrentLoName(varName, HF))
@@ -319,9 +319,9 @@ Private Sub Add(ByVal formObject As IFormulas)
         headerName = CurrentHeaderName(varName, adminName)
         Set cellRng = .Cells(1, colIndex)
         cellRng.Value = headerName
-        
+
         'CellRng IS  THE RANGE WITH THE HEADERNAME OF THE COLUMN OF CONCAT VALUES
-        
+
         'Move to one row bellow to add conditions on rows
         AddTableConditions rowVarName, "= " & cellRng.Cells(2, 1).Address(Rowabsolute:=False)
 
@@ -330,26 +330,28 @@ Private Sub Add(ByVal formObject As IFormulas)
         cellRng.Cells(1, 3).Value = "population_" & adminName
         'Add the attack rate column
         cellRng.Cells(1, 4).Value = "attack_rate_" & adminName
-        
+
         'final formula
         finalFormula = CurrentExcelFormula(formObject)
 
         'Test final formula to see if it returns something
         If finalFormula <> vbNullString Then cellRng.Cells(2, 2).FormulaArray = "= " & finalFormula
-        
+
         'Formula for the population of the admin level
-        
+
         If spatType = "geo" Then
+
+          'formula for the population
           finalFormula = "= GeoPopulation(" & counter - 1 & ", " & cellRng.Cells(2, 1).Address(Rowabsolute:=False) & ")"
           cellRng.Cells(2, 3).formula = finalFormula
 
-          'formula for the population
+          'formula for the attack rate
           finalFormula = "= " & cellRng.Cells(2, 2).Address(Rowabsolute:=False) & "/" & cellRng.Cells(2, 3).Address(Rowabsolute:=False)
-          cellRng.Cells(2, 3).Formula = finalFormula 
+          cellRng.Cells(2, 4).Formula = finalFormula
         End If
 
         'Define the listObject
-        Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(2, 3))
+        Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(2, 4))
 
         'Add A list object table
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = LoName
@@ -360,10 +362,10 @@ Private Sub Add(ByVal formObject As IFormulas)
 End Sub
 
 Private Sub CheckRequirements(ByVal tabl As ICrossTable)
-  
+
   Dim wb As Workbook
   Dim sh As Worksheet
-  
+
   If tabl Is Nothing Then ThrowError "No Table found, please provide a table for instanciation"
   Set sh = tabl.Wksh
   Set wb = sh.Parent
@@ -374,7 +376,7 @@ End Sub
 Private Sub sheetExists(ByVal specswkb As Workbook, ByVal sheetName As String)
     Dim sh As Worksheet                          'Just try to set the workbook if it fails it is closed
     Dim checkExists As Boolean
-    
+
     On Error Resume Next
     Set sh = specswkb.Worksheets(sheetName)
     checkExists = (Not sh Is Nothing)
