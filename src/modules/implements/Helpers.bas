@@ -239,89 +239,6 @@ Public Sub RemoveGridLines(Wksh As Worksheet, Optional DisplayZeros As Boolean =
     Next
 End Sub
 
-'Draw lines arround a range
-Public Sub WriteBorderLines(oRange As Range, Optional iWeight As Integer = xlThin, Optional sColor As String = "Black")
-    Dim i As Integer
-    For i = 7 To 10                              'xltop, left, right and bottom
-        With oRange.Borders(i)
-            .LineStyle = xlContinuous
-            .color = Helpers.GetColor(sColor)
-            .TintAndShade = 0.4
-            .weight = iWeight
-        End With
-    Next
-End Sub
-
-'Draw lines arround borders
-Public Sub DrawLines(rng As Range, _
-                     Optional At As String = "All", _
-                     Optional iWeight As Integer = xlHairline, _
-                     Optional iLine As Integer = xlContinuous, _
-                     Optional sColor As String = "Black")
-
-    Dim BorderPos As Byte
-
-    If At = "All" Then
-        With rng
-            With .Borders
-                .weight = iWeight
-                .LineStyle = iLine
-                .color = GetColor(sColor)
-                .TintAndShade = 0.4
-            End With
-        End With
-    Else
-
-        Select Case At
-        Case "Left"
-            BorderPos = xlEdgeLeft
-        Case "Right"
-            BorderPos = xlEdgeRight
-        Case "Bottom"
-            BorderPos = xlEdgeBottom
-        Case "Top"
-            BorderPos = xlEdgeTop
-        Case Else
-            BorderPos = xlEdgeBottom
-        End Select
-
-        With rng
-            With .Borders(BorderPos)
-                .weight = iWeight
-                .LineStyle = iLine
-                .color = GetColor(sColor)
-                .TintAndShade = 0.4
-            End With
-        End With
-    End If
-End Sub
-
-
-
-'Set validation List on a Range
-Sub SetValidation(oRange As Range, sValidList As String, sAlertType As Byte, Optional sMessage As String = vbNullString)
-
-    With oRange.validation
-        .Delete
-        Select Case sAlertType
-        Case 1                                   '"error"
-            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:=sValidList
-        Case 2                                   '"warning"
-            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertWarning, Operator:=xlBetween, Formula1:=sValidList
-        Case Else                                'for all the others, add an information alert
-            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertInformation, Operator:=xlBetween, Formula1:=sValidList
-        End Select
-
-        .IgnoreBlank = True
-        .InCellDropdown = True
-        .InputTitle = ""
-        .errorTitle = ""
-        .InputMessage = ""
-        .errorMessage = sMessage
-        .ShowInput = True
-        .ShowError = True
-    End With
-End Sub
 
 'Find The last non empty row of a sheet of type linelist
 Function FindLastRow(shLL As Worksheet) As Long
@@ -379,66 +296,6 @@ Function FindLastRow(shLL As Worksheet) As Long
 
     FindLastRow = LastRow + 1
     shTemp.Cells.Clear
-End Function
-
-'DESIGN, FONTS AND COLORS==============================================================================================================================================================================
-
-Public Function GetColor(sColorCode As String)
-    Select Case sColorCode
-    Case "BlueButton"
-        GetColor = RGB(45, 85, 151)
-    Case "BlueEpi"
-        GetColor = RGB(45, 85, 158)
-    Case "RedEpi"
-        GetColor = RGB(252, 228, 214)
-    Case "LightBlueTitle"
-        GetColor = RGB(217, 225, 242)
-    Case "DarkBlueTitle"
-        GetColor = RGB(142, 169, 219)
-    Case "Grey"
-        GetColor = RGB(235, 232, 232)
-    Case "Green"
-        GetColor = RGB(198, 224, 180)
-    Case "Orange"
-        GetColor = RGB(248, 203, 173)
-    Case "White"
-        GetColor = RGB(255, 255, 255)
-    Case "MainSecBlue"
-        GetColor = RGB(47, 117, 181)
-    Case "SubSecBlue"
-        GetColor = RGB(221, 235, 247)
-    Case "SubLabBlue"
-        GetColor = RGB(142, 169, 219)
-    Case "VMainSecFill"
-        GetColor = RGB(242, 236, 225)
-    Case "VMainSecFont"
-        GetColor = RGB(132, 58, 34)
-    Case "VSubSecFill"
-        GetColor = RGB(249, 243, 243)
-    Case "Black"
-        GetColor = RGB(0, 0, 0)
-    Case "DarkBlue"
-        GetColor = RGB(0, 0, 139)
-    Case "LightBlue"
-        GetColor = RGB(221, 235, 245)
-    Case "VeryLightBlue"
-        GetColor = RGB(240, 249, 255)
-    Case "GreyBlue"
-        GetColor = RGB(68, 88, 94)
-    Case "VeryLightGreyBlue"
-        GetColor = RGB(233, 238, 240)
-    Case "LightGrey"
-        GetColor = RGB(218, 218, 218)
-    Case "Grey50"
-        GetColor = RGB(127, 127, 127)
-    Case "VeryDarkBlue"
-        GetColor = RGB(32, 55, 100)
-    Case "GreyFormula"
-        GetColor = RGB(231, 230, 230)
-    Case Else
-        GetColor = vbWhite
-    End Select
-
 End Function
 
 'STRING AND DATA MANIPULATION =========================================================================================================================================================================
@@ -566,40 +423,6 @@ Function GetValidationType(sValidationType As String) As Byte
 
 End Function
 
-'Move a plage of data from the setup sheet to the designer sheet
-Public Sub MoveData(SourceWkb As Workbook, DestWkb As Workbook, sSheetName As String, sStartCell As Integer)
-
-    Dim sData As BetterArray
-    Dim DestWksh As Worksheet
-    Dim sheetExists As Boolean
-    Dim Col As Long                              'iterator to clear the strings when loading
-
-    Set sData = New BetterArray
-    sData.FromExcelRange SourceWkb.Worksheets(sSheetName).Range("A" & CStr(sStartCell)), DetectLastRow:=True, DetectLastColumn:=True
-    sheetExists = False
-    sheetExists = SheetExistsInWkb(DestWkb, sSheetName)
-
-    'Clear the contents if the sheet exists, or create a new sheet if Not
-    If sheetExists Then
-        DestWkb.Worksheets(sSheetName).Cells.Clear
-    Else
-        DestWkb.Worksheets.Add.Name = sSheetName
-    End If
-
-    'Copy the data Now
-    sData.ToExcelRange DestWkb.Worksheets(sSheetName).Range("A1")
-
-    Col = 1
-    With DestWkb.Worksheets(sSheetName)
-        Do While (.Cells(1, Col) <> vbNullString)
-            .Cells(1, Col).Value = LCase(ClearString(.Cells(1, Col).Value))
-            Col = Col + 1
-        Loop
-    End With
-
-    DestWkb.Worksheets(sSheetName).Visible = xlSheetHidden
-End Sub
-
 'Filter a table listobject on one condition and get the values of that table or all the unique values of one column
 Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 As String, _
                               Optional iFiltindex2 As Integer = 0, Optional sValue2 As String = vbNullString, _
@@ -658,33 +481,6 @@ Public Function FilterLoTable(Lo As ListObject, iFiltindex1 As Integer, sValue1 
     Set FilterLoTable = Data.Clone()
 End Function
 
-'Remove duplicates values from one range and excluding also null values
-
-Sub RemoveRangeDuplicates(rng As Range)
-
-    Dim iRow As Long
-    Dim Cellvalue As Variant
-
-    On Error GoTo EndMacro
-    BeginWork xlsapp:=Application
-
-    For iRow = 1 To rng.Rows.Count
-
-        Cellvalue = rng.Cells(iRow, 1).Value
-        If Cellvalue = vbNullString Then
-            rng.Rows(iRow).EntireRow.Delete
-        Else
-            If Application.WorksheetFunction.CountIf(rng.Columns(1), Cellvalue) > 1 Then
-                rng.Rows(iRow).EntireRow.Delete
-            End If
-        End If
-    Next
-    EndWork xlsapp:=Application
-    Exit Sub
-
-EndMacro:
-    EndWork xlsapp:=Application
-End Sub
 
 'Unique of a betteray sorted
 Function GetUniqueBA(BA As BetterArray) As BetterArray
@@ -731,15 +527,6 @@ Public Function SheetNameIsBad(sSheetName As String) As Boolean
 
 End Function
 
-'Ensure a sheet name has good name
-Public Function EnsureGoodSheetName(ByVal sSheetName As String) As String
-    Dim NewName As String
-    NewName = Application.WorksheetFunction.Trim(UCase(Mid(sSheetName, 1, 1)) & Mid(sSheetName, 2, Len(sSheetName)))
-    EnsureGoodSheetName = NewName
-    If SheetNameIsBad(NewName) Then
-        EnsureGoodSheetName = NewName & "_"
-    End If
-End Function
 
 Public Function SheetListObjectName(sSheetName As String) As String
     SheetListObjectName = vbNullString
@@ -749,27 +536,5 @@ Public Function SheetListObjectName(sSheetName As String) As String
 End Function
 
 'FORMULAS AND VALIDATIONS ==============================================================================================================================================================================
-
-'Depending on language settings, find correct translation of excel formulas
-Public Function GetInternationalFormula(sFormula As String, Wksh As Worksheet) As String
-
-    Dim sprevformula As String
-
-    GetInternationalFormula = ""
-
-    'The formula is in English, I need to take the international
-    'value of the formula, and avoid using the table of formulas only
-    'when I deal with Validations
-
-    If (sFormula <> "") Then
-        sprevformula = Wksh.Range("A1").formula
-        'Setting the formula to a range
-        Wksh.Range("A1").formula = "=" & sFormula
-        'retrieving the local formula
-        GetInternationalFormula = Wksh.Range("A1").FormulaLocal
-    End If
-    'Reseting the previous formula
-    Wksh.Range("A1").formula = sprevformula
-End Function
 
 
