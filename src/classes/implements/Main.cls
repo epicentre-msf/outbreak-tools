@@ -27,6 +27,7 @@ Private Const RNGEDITION As String = "RNG_Edition"
 Private Const RNGMAINREADY As String = "RNG_MainReady"
 Private Const RNGUPDATE As String = "RNG_Update"
 Private Const RNGLLPWDOPEN As String = "RNG_LLPwdOpen"
+Private Const RNGTEMPPATH As String = "RNG_LLTemp"
 
 Private Const CLASSNAME As String = "Main"
 
@@ -84,28 +85,45 @@ End Property
 Private Property Get ValueOf(ByVal tagName As String) As String
     Dim rngName As String
     Dim sh As Worksheet
+    Dim retVal As String
 
     Set sh = Wksh()
-    Select Case tagName
-    Case "llpassword"
-        rngName = RNGLLPWDOPEN
-    Case "geopath"
-        rngName = RNGPATHGEO
-    Case "setuppath"
-        rngName = RNGPATHDICO
-    Case "lldir"
-        rngName = RNGLLDIR
-    Case "llname"
-        rngName = RNGLLNAME
-    Case "setuplang"
-        rngName = RNGLANGSETUP
-    Case "lllang"
-        rngName = RNGLLFORM
-    End Select
+    If tagName <> "temppath" Then 'special treatment for temp path
+        Select Case tagName
+        Case "llpassword"
+            rngName = RNGLLPWDOPEN
+        Case "geopath"
+            rngName = RNGPATHGEO
+        Case "setuppath"
+            rngName = RNGPATHDICO
+        Case "lldir"
+            rngName = RNGLLDIR
+        Case "llname"
+            rngName = RNGLLNAME
+        Case "setuplang"
+            rngName = RNGLANGSETUP
+        Case "lllang"
+            rngName = RNGLLFORM
+        End Select
 
+        On Error Resume Next
+            ValueOf = sh.Range(rngName).Value
+        On Error GoTo 0
+        Exit Property 'once you get the value of exit
+    End If
+
+    'for template path, if it is the default, return the _ribbontemplate file
+    ' in the desiger misc directory
     On Error Resume Next
-        ValueOf = sh.Range(rngName).Value
+        retVal = sh.Range(RNGTEMPPATH).Value
     On Error GoTo 0
+
+    If retVal = "_default" Then
+        retVal = ThisWorkbook.Path & Application.PathSeparator & "misc" & _
+            Application.PathSeparator & "_ribbontemplate.xlsb"
+    End If
+
+    ValueOf = retVal
 End Property
 
 'Check if the main sheet is ready for generation process
@@ -346,6 +364,8 @@ Private Sub AddInfo(ByVal trads As IDesTranslation, ByVal msgCode As String, Opt
         rngName = RNGLANGSETUP
     Case "lllang"
         rngName = RNGLLFORM
+    Case "temppath"
+        rngName = RNGTEMPPATH
     Case Else
         rngName = RNGEDITION
     End Select
@@ -374,7 +394,8 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     Set rngTable = New BetterArray
     rngTable.Push RNGLLFORM, RNGLANGSETUP, RNGDESIGNLL, _
                   RNGPATHDICO, RNGPATHGEO, RNGLLDIR, RNGLLNAME, _
-                  RNGEDITION, RNGMAINREADY, RNGUPDATE, RNGLLPWDOPEN
+                  RNGEDITION, RNGMAINREADY, RNGUPDATE, RNGLLPWDOPEN, _
+                  RNGTEMPPATH
 
     For counter = rngTable.LowerBound To rngTable.UpperBound
         rngName = rngTable.Item(counter)

@@ -293,6 +293,7 @@ Attribute PrepareToDeployment.VB_Description = "Hide some worksheets before depl
         .Shapes("SHP_LoadGeo").OnAction = "LoadGeoFile"
         .Shapes("SHP_LinelistPath").OnAction = "LinelistDir"
         .Shapes("SHP_CtrlNouv").OnAction = "Control"
+        .Shapes("SHP_TempFile").OnAction = "LoadTemplateFile"
     End With
 
     'Add codes to elements on the actual designer
