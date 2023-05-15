@@ -104,6 +104,41 @@ Public Sub LoadFileDic()
     NotBusyApp
 End Sub
 
+'@Description("Load the template file")
+'@EntryPoint
+Public Sub LoadTemplateFile()
+    BusyApp
+
+    Dim io As IOSFiles
+    Dim mainsh As Worksheet
+    Dim wb As Workbook
+    Dim tradsh As Worksheet
+    Dim trads As IDesTranslation
+    Dim mainobj As IMain
+
+    Set io = OSFiles.Create()
+    Set wb = ThisWorkbook
+    Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
+    Set tradsh = wb.Worksheets(DESIGNERTRADSHEET)
+    Set trads = DesTranslation.Create(tradsh)
+    Set mainobj = Main.Create(mainsh)
+
+    io.LoadFile "*.xlsb"
+    'Update messages if the file path is incorrect
+    If io.HasValidFile Then
+        mainobj.AddInfo trads, io.File, "temppath"
+        'The user can write _default in the cell, it will not change the path
+        mainobj.AddInfo trads, "MSG_ChemFich", "edition"
+    Else
+        mainobj.AddInfo trads, "MSG_OpeAnnule", "edition"
+    End If
+
+    NotBusyApp
+
+
+    NotBusyApp
+End Sub
+
 '@Description("Path to future Lineist Directory")
 '@EntryPoint
 Sub LinelistDir()
