@@ -205,6 +205,13 @@ Private Sub AddCommands(Optional ByVal scope _
   Dim but As IButtons
   Dim outsh As Worksheet 'output sheet
   Dim trads As ITranslation
+  Dim mainobj As IMain
+  Dim lData As ILinelistSpecs
+
+  Set lData = LinelistData()
+  Set mainobj = lData.MainObject()
+
+  If mainobj.HasTemplate() Then Exit Sub
 
   Set design = DesignFormat()
   Set outsh = OutputSh(scope)
