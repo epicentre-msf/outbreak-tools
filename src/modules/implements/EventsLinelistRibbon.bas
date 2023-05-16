@@ -15,7 +15,6 @@ Private Const PASSSHEET As String = "__pass"
 Private tradrib As ITranslation   'Translation of forms
 Private tradsmess As ITranslation   'Translation of messages
 Private pass As ILLPasswords
-Private ribbonUI As IRibbonUI
 
 'Initialize translation of forms object
 Private Sub InitializeTrads()
@@ -32,18 +31,13 @@ Private Sub InitializeTrads()
     Set tradrib = lltrads.TransObject(TranslationOfRibbon)
 End Sub
 
-'@Description("Callback for customUI.onLoad")
-'@EntryPoint
-Public Sub ribbonLinelistLoaded(ribbon As IRibbonUI)
-     Set ribbonUI = ribbon
-End Sub
-
 '@Description("Callback for adminTab getLabel")
 '@EntryPoint
 Public Sub getLLLang(control As IRibbonControl, ByRef returnedVal)
     Dim codeId As String
+    InitializeTrads
     codeId = control.Id
-    returnedVal = tradrib.TranslationMsg(codeId)
+    returnedVal = tradrib.TranslatedValue(codeId)
 End Sub
 
 '@Description("Callback for btnAdvanced onAction")

@@ -107,7 +107,6 @@ End Sub
 Public Sub clickImpTrans(control As IRibbonControl)
 Attribute clickImpTrans.VB_Description = "Callback for btnTransAdd onAction: Import Linelist translations"
 
-    Const TRADSHEETNAME As String = "LinelistTranslation"
 
     Dim io As IOSFiles
     Dim wb As Workbook 'Actual workbook
@@ -119,33 +118,43 @@ Attribute clickImpTrans.VB_Description = "Callback for btnTransAdd onAction: Imp
     Dim actcsTab As ICustomTable 'Actual custom table
     Dim impcsTab As ICustomTable 'Imported custom table
     Dim loListName As BetterArray 'List of listObjects to import
+    Dim tradsSheetsList As BetterArray 'Listof sheets to import
+    Dim counter As Long
+    Dim sheetName As String
 
     Set wb = ThisWorkbook
-    Set actsh = wb.Worksheets(TRADSHEETNAME)
 
     'Import the translations for
     Set io = OSFiles.Create()
     Set loListName = New BetterArray
+    Set tradsSheetsList = New BetterArray
 
     io.LoadFile "*.xlsb"
     If io.HasValidFile() Then
         BusyApp
+
+        tradsSheetsList.Push LINELISTTRADSHEET, DESIGNERTRADSHEET
+        loListName.Push "T_TradLLShapes", "T_TradLLMsg", "T_TradLLForms", "T_TradLLRibbon", _
+                        "T_tradMsg", "T_tradRange", "T_tradShape"
         Set impwb = Workbooks.Open(io.File())
-        On Error GoTo ExitTrads
-        Set impsh = impwb.Worksheets(TRADSHEETNAME)
-        For Each actLo In actsh.ListObjects
-            If (actLo.Name = "T_TradLLShapes") Or _
-               (actLo.Name = "T_TradLLMsg") Or _
-               (actLo.Name = "T_TradLLForms") Then
-                Set actcsTab = CustomTable.Create(actLo)
-                Set impLo = impsh.ListObjects(actLo.Name)
-                Set impcsTab = CustomTable.Create(impLo)
-                actcsTab.Import impcsTab
-            End If
+
+        For counter = tradsSheetsList.LowerBound To tradsSheetsList.UpperBound
+            sheetName = tradsSheetsList.Item(counter)
+            Set actsh = wb.Worksheets(sheetName)
+            On Error GoTo ExitTrads
+            Set impsh = impwb.Worksheets(sheetName)
+            For Each actLo In actsh.ListObjects
+                If loListName.includes(actLo.Name) Then
+                    Set actcsTab = CustomTable.Create(actLo)
+                    Set impLo = impsh.ListObjects(actLo.Name)
+                    Set impcsTab = CustomTable.Create(impLo)
+                    actcsTab.Import impcsTab
+                End If
+            Next
+            actsh.Calculate
         Next
         On Error GoTo 0
     End If
-    actsh.Calculate
 ExitTrads:
     On Error Resume Next
     impwb.Close saveChanges:=False

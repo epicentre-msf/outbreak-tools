@@ -1,25 +1,6 @@
-<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad = "ribbonLoaded">
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
   <ribbon startFromScratch="false">
     <tabs>
-        <tab id="adminTab" getLabel="getLLLang">
-            <group id="customGroupAdmin" getLabel="getLLLang">
-                <button id="btnAdvanced"
-                    imageMso="OpenStartPage"
-                    getLabel="getLLLang"
-                    size="large"
-                    onAction="clickRibbonAdvanced"/>
-                <button id="btnExport"
-                    getLabel = "getLLLang"
-                    imageMso="ExportExcel"
-                    size="large"
-                    onAction="clickRibbonExport"/>
-                <button id="btnDebug"
-                    getLabel = "getLLLang"
-                    imageMso="TraceError"
-                    size="large"
-                    onAction="clickRibbonDegug"/>
-            </group>
-        </tab>
         <tab id="dataEntryTab" getLabel="getLLLang">
             <group id="customGroupTabMan" getLabel="getLLLang">
                 <button id="btnShowHideVar"
@@ -54,6 +35,13 @@
                 imageMso="SortAndFilterAdvanced"
                 size="large"
                 onAction="clickRibbonCustomFilter"/>
+            </group>
+            <group id="customGroupTabGeo" getLabel="getLLLang">
+                <button id="btnGeo"
+                getLabel="getLLLang"
+                imageMso="CompareAndCombine"
+                size="large"
+                onAction="clickRibbonGeo"/>
             </group>
             <group id="customGroupTabPrint" getLabel="getLLLang">
                 <button id="btnOpenPrint"
@@ -90,6 +78,25 @@
             size="large"
             getLabel = "getLLLang"
             onAction="clickRibbonApplyFilt"/>
+            </group>
+        </tab>
+         <tab id="adminTab" getLabel="getLLLang">
+            <group id="customGroupAdmin" getLabel="getLLLang">
+                <button id="btnAdvanced"
+                    imageMso="OpenStartPage"
+                    getLabel="getLLLang"
+                    size="large"
+                    onAction="clickRibbonAdvanced"/>
+                <button id="btnExport"
+                    getLabel = "getLLLang"
+                    imageMso="ExportExcel"
+                    size="large"
+                    onAction="clickRibbonExport"/>
+                <button id="btnDebug"
+                    getLabel = "getLLLang"
+                    imageMso="TraceError"
+                    size="large"
+                    onAction="clickRibbonDegug"/>
             </group>
         </tab>
     </tabs>
