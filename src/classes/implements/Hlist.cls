@@ -182,6 +182,7 @@ Public Sub Build()
     Dim shrowEnd As Long
     Dim Lo As ListObject
     Dim printsh As Worksheet
+    Dim mainobj As IMain
 
     Set sh = Wksh()
     Set dict = Dictionary()
@@ -191,6 +192,7 @@ Public Sub Build()
     Set design = lData.DesignFormat()
     Set drop = ll.Dropdown()
     Set pass = lData.Password()
+    Set mainobj = lData.MainObject()
     sheetName = Name()
 
     'Add Printed Worksheet before building
@@ -216,45 +218,47 @@ Public Sub Build()
 
     'Add the buttons on printed and non printed worksheet
 
-    'Show Hide button
-    Set rng = sh.Cells(1, 2)
-    Set trads = lData.TransObject(TranslationOfShapes)
-    Set but = Buttons.Create(outRng:=rng, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
-    but.Add actionCommand:=SHOWHIDECOMMAND, shapeLabel:=trads.TranslatedValue(SHPSHOWHIDE)
-    but.Format design
+    If Not mainobj.HasTemplate() Then
+        'Show Hide button
+        Set rng = sh.Cells(1, 2)
+        Set trads = lData.TransObject(TranslationOfShapes)
+        Set but = Buttons.Create(outRng:=rng, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
+        but.Add actionCommand:=SHOWHIDECOMMAND, shapeLabel:=trads.TranslatedValue(SHPSHOWHIDE)
+        but.Format design
 
-    'Add Rows button
-    Set rng = sh.Cells(2, 2)
-    Set but = Buttons.Create(outRng:=rng, codeName:=SHPADDROWS, scope:=ButtonScopeSmall)
-    but.Add actionCommand:=ADDROWSCOMMAND, shapeLabel:=trads.TranslatedValue(SHPADDROWS)
-    but.Format design
+        'Add Rows button
+        Set rng = sh.Cells(2, 2)
+        Set but = Buttons.Create(outRng:=rng, codeName:=SHPADDROWS, scope:=ButtonScopeSmall)
+        but.Add actionCommand:=ADDROWSCOMMAND, shapeLabel:=trads.TranslatedValue(SHPADDROWS)
+        but.Format design
 
-    'Remove Filters
-    Set rng = sh.Cells(2, 1)
-    Set but = Buttons.Create(outRng:=rng, codeName:=SHPREMOVEFILT, scope:=ButtonScopeSmall)
-    but.Add actionCommand:=REMOVEFILTERCOMMAND, shapeLabel:=trads.TranslatedValue(SHPREMOVEFILT)
-    but.Format design
+        'Remove Filters
+        Set rng = sh.Cells(2, 1)
+        Set but = Buttons.Create(outRng:=rng, codeName:=SHPREMOVEFILT, scope:=ButtonScopeSmall)
+        but.Add actionCommand:=REMOVEFILTERCOMMAND, shapeLabel:=trads.TranslatedValue(SHPREMOVEFILT)
+        but.Format design
 
-    'Open Print sheet on Linelist Worksheet
-    Set rng = sh.Cells(3, 1)
-    Set but = Buttons.Create(outRng:=rng, codeName:=SHPOPENPRINT, scope:=ButtonScopeSmall)
-    but.Add actionCommand:=OPENPRINTCOMMAND, shapeLabel:=trads.TranslatedValue(SHPOPENPRINT)
-    but.Format design
+        'Open Print sheet on Linelist Worksheet
+        Set rng = sh.Cells(3, 1)
+        Set but = Buttons.Create(outRng:=rng, codeName:=SHPOPENPRINT, scope:=ButtonScopeSmall)
+        but.Add actionCommand:=OPENPRINTCOMMAND, shapeLabel:=trads.TranslatedValue(SHPOPENPRINT)
+        but.Format design
 
-    'Geo If needded
-    hasGeo = llshs.ContainsVarsOf(sheetName, "geo1")
-    If hasGeo Then
-        Set rng = sh.Cells(3, 2)
-        Set but = Buttons.Create(outRng:=rng, codeName:=SHPGEO, scope:=ButtonScopeGeo)
-        but.Add actionCommand:=GEOCOMMAND, shapeLabel:=trads.TranslatedValue(SHPGEO)
+        'Geo If needded
+        hasGeo = llshs.ContainsVarsOf(sheetName, "geo1")
+        If hasGeo Then
+            Set rng = sh.Cells(3, 2)
+            Set but = Buttons.Create(outRng:=rng, codeName:=SHPGEO, scope:=ButtonScopeGeo)
+            but.Add actionCommand:=GEOCOMMAND, shapeLabel:=trads.TranslatedValue(SHPGEO)
+            but.Format design
+        End If
+
+        'Show Hide Button on print worksheet
+        Set rng = printsh.Cells(1, 2)
+        Set but = Buttons.Create(outRng:=rng, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
+        but.Add actionCommand:=SHOWHIDECOMMAND, shapeLabel:=trads.TranslatedValue(SHPSHOWHIDE)
         but.Format design
     End If
-
-    'Show Hide Button on print worksheet
-    Set rng = printsh.Cells(1, 2)
-    Set but = Buttons.Create(outRng:=rng, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
-    but.Add actionCommand:=SHOWHIDECOMMAND, shapeLabel:=trads.TranslatedValue(SHPSHOWHIDE)
-    but.Format design
 
     'Now Build each Section (including sections of printed worksheet)
     Set trads = lData.TransObject(TranslationOfMessages)
