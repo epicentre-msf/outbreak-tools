@@ -341,6 +341,7 @@ Private Sub Prepare()
     Dim outWkb As Workbook
     Dim prevAlert As Boolean
     Dim codesList As BetterArray
+    Dim mainobj As IMain
 
     'Create temporary folder for preparation steps
     TemporaryFolder Create:=True
@@ -350,6 +351,7 @@ Private Sub Prepare()
     Set sheetsList = New BetterArray
     Set trans = lData.TransObject()
     Set dict = lData.Dictionary()
+    Set mainobj = lData.MainObject()
 
 
     'temporary sheet Names
@@ -385,8 +387,13 @@ Private Sub Prepare()
         AddOutputSheet sheetName, xlsheetvisible
     Next
 
-    'Admin sheet Name
-    AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlsheetvisible
+    'Add admin sheet only if the user chooses buttons
+    If Not mainobj.HasTemplate() Then
+        'Admin sheet Name
+        AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlsheetvisible
+        'Prepare the LinelistAdmin sheet
+        PrepareAdmin
+    End If
 
     'Delete the first worksheet with name sheet1
     prevAlert = Application.DisplayAlerts
@@ -436,8 +443,6 @@ Private Sub Prepare()
     'Transfert workbook close codes to the workbook
     TransferCodeWkb
     TemporaryFolder Create:=False
-    'Prepare the LinelistAdmin sheet
-    PrepareAdmin
 End Sub
 
 Private Sub PrepareAdmin()
@@ -523,7 +528,9 @@ Private Sub SaveLL()
     outPath = mainobj.ValueOf("lldir") & Application.PathSeparator & mainobj.ValueOf("llname") & ".xlsb"
 
     'Select the admin sheet before saving
+    On Error Resume Next
     outWkb.Worksheets(msgTrads.TranslatedValue("LLSHEET_Admin")).Activate
+    On Error GoTo 0
 
     'Protect the workbook structure from eventual deletion/renaming of a worksheet
     passobj.ProtectWkb outWkb

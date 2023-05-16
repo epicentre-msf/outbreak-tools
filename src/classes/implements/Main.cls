@@ -285,13 +285,20 @@ End Sub
 Private Sub CheckRibbonExistence(Byval trads As IDesTranslation)
     Dim tempPath As String
     Dim sh As Worksheet
+    Dim askRibbon As Boolean
 
     Set sh = Wksh()
     sh.Range(RNGMAINTEMP).Value = "has template"
     sh.Range(RNGMAINTEMP).Font.color = vbWhite
 
     tempPath = ValueOf("temppath")
-    If Dir(tempPath) = vbNullString Then
+    If tempPath = vbNullString Then 
+        askRibbon = True
+    ElseIf Dir(tempPath) = vbNullString Then
+        askRibbon = True
+    End If
+
+    If askRibbon Then
         If MsgBox(trads.TranslationMsg("MSG_Tempfile") & " " & _
                   tempPath & " " & trads.TranslationMsg("MSG_NotExists") & " " & _
                   trads.TranslationMsg("MSG_DefaultButton"), vbYesNo, _
