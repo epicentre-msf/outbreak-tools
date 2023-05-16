@@ -5,12 +5,12 @@
             <group id="customGroupTabMan" getLabel="getLLLang">
                 <button id="btnShowHideVar"
                 getLabel="getLLLang"
-                imageMso="HideDetails"
+                image="hide"
                 size="large"
                 onAction="clickRibbonShowHideVar"/>
                 <button id="btnShowHideSec"
                 getLabel="getLLLang"
-                imageMso="SlideHide"
+                image="hidden"
                 size="large"
                 onAction="clickRibbonShowHideSec"/>
                 <button id="btnAddRows"
@@ -83,7 +83,7 @@
          <tab id="adminTab" getLabel="getLLLang">
             <group id="customGroupAdmin" getLabel="getLLLang">
                 <button id="btnAdvanced"
-                    imageMso="OpenStartPage"
+                    image="settings"
                     getLabel="getLLLang"
                     size="large"
                     onAction="clickRibbonAdvanced"/>
