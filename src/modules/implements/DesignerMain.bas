@@ -61,7 +61,7 @@ Private Sub ImportLang()
     mainobj.AddInfo trads, LangDictRng.Value, "setuplang"
 
     'Add the language to LLTranslations
-    actwb.Worksheets(LINELISTTRADSHEET).Range(RNGDICTLANG).Value = _ 
+    actwb.Worksheets(LINELISTTRADSHEET).Range(RNGDICTLANG).Value = _
     LangDictRng.Value
 
 ExitImportLang:
@@ -349,10 +349,18 @@ Public Sub Control()
 
     'Check readiness of the linelist
     mainobj.CheckReadiness desTrads
+    'If the main sheet is not ready exit the sub
+    If Not mainobj.Ready Then Exit Sub
+
     mainobj.CheckFileExistence desTrads
+    'If the main sheet is not ready exit the sub
+    If Not mainobj.Ready Then Exit Sub
+
+    mainobj.CheckRibbonExistence desTrads
 
     'If the main sheet is not ready exit the sub
     If Not mainobj.Ready Then Exit Sub
+
 
     'Generate all the data in the other case
     GenerateData
