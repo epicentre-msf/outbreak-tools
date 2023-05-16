@@ -28,13 +28,13 @@ Private Const RNGMAINREADY As String = "RNG_MainReady"
 Private Const RNGUPDATE As String = "RNG_Update"
 Private Const RNGLLPWDOPEN As String = "RNG_LLPwdOpen"
 Private Const RNGTEMPPATH As String = "RNG_LLTemp"
+Private Const RNGMAINTEMP As String = "RNG_MainTemp"
 
 Private Const CLASSNAME As String = "Main"
 
 
 Private Type TMain
     sh As Worksheet
-    hasTemp As Boolean 'test if the main folder has a valid template file
 End Type
 
 Private this As TMain
@@ -129,7 +129,9 @@ End Property
 
 'Check if the main requires a template
 Private Property Get HasTemplate() As Boolean
-    HasTemplate = this.hasTemp
+    Dim sh As Worksheet
+    Set sh = Wksh()
+    HasTemplate = (sh.Range(RNGMAINTEMP).Value = "has template")
 End Property
 
 'Check if the main sheet is ready for generation process
@@ -285,9 +287,8 @@ Private Sub CheckRibbonExistence(Byval trads As IDesTranslation)
     Dim sh As Worksheet
 
     Set sh = Wksh()
-
-    'By default, use the template file
-    this.hasTemp = True
+    sh.Range(RNGMAINTEMP).Value = "has template"
+    sh.Range(RNGMAINTEMP).Font.color = vbWhite
 
     tempPath = ValueOf("temppath")
     If Dir(tempPath) = vbNullString Then
@@ -307,7 +308,8 @@ Private Sub CheckRibbonExistence(Byval trads As IDesTranslation)
             sh.Range(RNGMAINREADY).Font.color = vbWhite
             Exit Sub
         Else
-            this.hasTemp = False
+               sh.Range(RNGMAINTEMP).Value = "has button"
+               sh.Range(RNGMAINTEMP).Font.color = vbWhite
         End If
     End If
 End Sub
@@ -438,7 +440,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     rngTable.Push RNGLLFORM, RNGLANGSETUP, RNGDESIGNLL, _
                   RNGPATHDICO, RNGPATHGEO, RNGLLDIR, RNGLLNAME, _
                   RNGEDITION, RNGMAINREADY, RNGUPDATE, RNGLLPWDOPEN, _
-                  RNGTEMPPATH
+                  RNGTEMPPATH, RNGMAINTEMP
 
     For counter = rngTable.LowerBound To rngTable.UpperBound
         rngName = rngTable.Item(counter)
