@@ -1,4 +1,4 @@
-Attribute VB_Name = "EventsLinelistButton"
+Attribute VB_Name = "EventsLinelistButtons"
 Attribute VB_Description = "Events associated to eventual buttons in the Linelist"
 Option Explicit
 Option Private Module
