@@ -285,6 +285,7 @@ Public Sub TemporaryFolder(Optional Create As Boolean = True)
     On Error Resume Next
     Kill outPath & sep & "LinelistApp_" & sep & "*.frm"
     Kill outPath & sep & "LinelistApp_" & sep & "*.frx"
+    Kill outPath & sep & "LinelistApp_" & sep & "__temp.xlsb"
     RmDir outPath & sep & "LinelistApp_"
     If Create Then MkDir outPath & sep & "LinelistApp_" 'create a folder for sending all the data from designer
     On Error GoTo 0
@@ -538,6 +539,7 @@ Private Sub SaveLL()
     outWkb.SaveAs FileName:=outPath, fileformat:=xlExcel12, Password:=passwd, _
                   ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     outWkb.Close
+    TemporaryFolder Create:=False
 End Sub
 
 'Errors

@@ -258,6 +258,8 @@ Public Sub Build()
         Set but = Buttons.Create(outRng:=rng, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
         but.Add actionCommand:=SHOWHIDECOMMAND, shapeLabel:=trads.TranslatedValue(SHPSHOWHIDE)
         but.Format design
+    Else
+        sh.Rows("3:4").EntireRow.Hidden = True
     End If
 
     'Now Build each Section (including sections of printed worksheet)
