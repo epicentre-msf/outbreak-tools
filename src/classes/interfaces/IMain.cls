@@ -40,6 +40,3 @@ Public Sub OpenLL() : End Sub
 'Check if the linelist could be built on a ribbon template or not
 Public Property Get HasTemplate() As Boolean: End Property
 Public Sub CheckRibbonExistence(ByVal trads As IDesTranslation): End Sub
-
-
-

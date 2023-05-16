@@ -68,15 +68,28 @@ End Sub
 
 'Workbook
 Public Property Get Wkb() As Workbook
-    Dim xlsapp As Object
+    Dim mainobj As IMain
+    Dim lData As ILinelistSpecs
+    Dim outDir As String
+    Dim sep As String
+
+    Set lData = LinelistData()
+    Set mainobj = lData.MainObject()
+    sep = Application.PathSeparator
+    outDir = mainobj.ValueOf("lldir") & sep & "LinelistApp_"
 
     If this.outWkb Is Nothing Then
-        BusyApp
-        Set this.outWkb = Workbooks.Add()
-        BusyApp
+       'Check if we could move to ribbon menu or use custom workbook
+       If mainobj.HasTemplate() Then
+            BusyApp
+            Set this.outWkb = Workbooks.Open(mainObj.ValueOf("temppath"))
+            this.outWkb.SaveAs FileName:=outDir & sep & "__temp.xlsb", fileformat:=xlExcel12
+        Else
+            BusyApp
+            Set this.outWkb = Workbooks.Add
+        End If
         this.firstSheet = this.outWkb.Worksheets(1).Name
     End If
-
     Set Wkb = this.outWkb
 End Property
 
@@ -141,7 +154,7 @@ End Property
 
 Private Sub TransferCode(moduleName As String, scope As CodeScope)
     Dim codeObject As Object                     'Where to stock to code in the workbook
-    Dim codeContent As String
+    Dim componentObject As Object
     Dim outWkb As Workbook
     Dim inpWkb As Workbook
     Dim mainobj As IMain
@@ -173,12 +186,52 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
 
     Set codeObject = inpWkb.VBProject.VBComponents(moduleName)
     codeObject.export outPath
-    Set codeObject = outWkb.VBProject.VBComponents
-    codeObject.Import outPath
+
+    Set componentObject = outWkb.VBProject.VBComponents
+    componentObject.Import outPath
 
     On Error Resume Next
     Kill outPath
     On Error GoTo 0
+End Sub
+
+'This should be same module Name, in the workbooks
+'Copy codes from a module in the designer, to a module in the template file
+Private Sub CopyCodeModule(ByVal moduleName As String)
+    Dim lData As ILinelistSpecs
+    Dim mainobj As IMain
+    Dim codeContent As String
+    Dim codeMod As Object
+    Dim vbProj As Object
+    Dim vbComp As Object
+    Dim impWkb As Workbook
+    Dim outWkb As Workbook
+
+    Set lData = LinelistData()
+    Set mainobj = lData.MainObject()
+
+    'Only on template files
+    If Not mainobj.HasTemplate() Then Exit Sub
+
+    Set impwkb = lData.specswkb()
+    Set outWkb = Wkb()
+    Set vbProj = impwkb.VBProject
+
+    'Extract the code from the actual vbProject
+    With vbProj
+        With .VBComponents(moduleName).CodeModule
+            codeContent = .Lines(1, .CountOfLines)
+        End With
+    End With
+
+    'Export codeModule on export workbook
+    Set vbProj = outWkb.VBProject
+    Set codeMod = vbProj.VBComponents(moduleName).CodeModule
+    'Adding to the export codeModule
+    With codeMod
+        .DeleteLines 1, .CountOfLines
+        .AddFromString codeContent
+    End With
 End Sub
 
 'Transfert code to the workbook
@@ -289,12 +342,15 @@ Private Sub Prepare()
     Dim prevAlert As Boolean
     Dim codesList As BetterArray
 
-    Set outWkb = Wkb()
+    'Create temporary folder for preparation steps
+    TemporaryFolder Create:=True
 
+    Set outWkb = Wkb()
     Set lData = LinelistData()
     Set sheetsList = New BetterArray
     Set trans = lData.TransObject()
     Set dict = lData.Dictionary()
+
 
     'temporary sheet Names
     sheetsList.Push lData.TemporarySheetName(TemporarySingle), lData.TemporarySheetName(TemporarySheetList), _
@@ -338,9 +394,6 @@ Private Sub Prepare()
     outWkb.Worksheets(this.firstSheet).Delete
     Application.DisplayAlerts = prevAlert
 
-    'Send the User forms and classes to the linelist
-    TemporaryFolder Create:=True
-
     'Send the required classes to the linelist
     Set codesList = New BetterArray
     codesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", "ILLExport", "LLchoice", "ILLchoice", _
@@ -360,13 +413,17 @@ Private Sub Prepare()
     codesList.Push "Helpers", "LinelistConstants", "LinelistCustomFunctions", _
                      "LinelistExport", "LinelistGeo", "LinelistMigration", _
                      "LinelistTranslation", "LinelistEvents", "LinelistDictionary", _
-                     "EventsLinelistRibbon", "EventsSpatialAnalysis", "EventsLinelistButtons"
+                      "EventsSpatialAnalysis", "EventsLinelistButtons"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
         TransferCode codeName, codeScopeModule
     Next
 
+    'Copy codes text from designer to ribbon (if the main object hastemplate)
+    CopyCodeModule "EventsLinelistRibbon"
+
+    'Transfer the forms
     codesList.Clear
     codesList.Push "F_Advanced", "F_Export", "F_ExportMig", "F_Geo", "F_ImportMig", "F_ImportRep", _
                      "F_ShowHideLL", "F_ShowHidePrint"
@@ -396,7 +453,6 @@ Private Sub PrepareAdmin()
     Dim lData As LinelistSpecs
     Dim but As IButtons
     Dim rng As Range
-
 
     Set lData = LinelistData()
     Set design = lData.DesignFormat()
