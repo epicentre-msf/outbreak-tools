@@ -34,6 +34,7 @@ Private Const CLASSNAME As String = "Main"
 
 Private Type TMain
     sh As Worksheet
+    hasTemp As Boolean 'test if the main folder has a valid template file
 End Type
 
 Private this As TMain
@@ -271,6 +272,37 @@ Private Sub CheckFileExistence(ByVal trads As IDesTranslation)
         sh.Range(RNGEDITION).Value = trads.TranslationMsg("MSG_Correct")
     End If
 End Sub
+
+
+'Check Existence of the ribbon file (default to linelist with buttons if not exists)
+Private Sub CheckRibbonExistence(Byval trads As IDesTranslation)
+    Dim tempPath As String
+    Dim sh As Worksheet
+
+    Set sh = Wksh()
+    tempPath = ValueOf("temppath")
+    If Dir(tempPath) = vbNullString Then
+
+        If MsgBox(trads.TranslationMsg("MSG_Tempfile") & _ 
+                  tempPath & trads.TranslationMsg("MSG_NotExists") &
+                  trads.TranslationMsg("MSG_DefaultButton")) = vbNo Then 
+
+            'The user does not want a linelist with button, he should provide
+            'a valid template (If something went wrong with the template, I will default back to buttons.)
+            sh.Range(RNGTEMPPATH).Value = vbNullString
+            sh.Range(RNGTEMPPATH).Interior.color = RGB(252, 228, 214)
+
+            
+            sh.Range(RNGEDITION).Value = trads.TranslationMsg("MSG_ProvTemp")
+        End If
+
+    End If
+
+
+
+End Sub
+
+
 
 Private Sub ClearInputRanges(Optional ByVal clearValues As Boolean = False)
     Dim mainsh As Worksheet
