@@ -119,12 +119,17 @@ Private Property Get ValueOf(ByVal tagName As String) As String
         retVal = sh.Range(RNGTEMPPATH).Value
     On Error GoTo 0
 
-    If retVal = "_default" Then
+    If retVal = "_default" Or retVal = "default" Then
         retVal = ThisWorkbook.Path & Application.PathSeparator & "misc" & _
             Application.PathSeparator & "_ribbontemplate.xlsb"
     End If
 
     ValueOf = retVal
+End Property
+
+'Check if the main requires a template
+Private Property Get HasTemplate() As Boolean
+    HasTemplate = this.hasTemp
 End Property
 
 'Check if the main sheet is ready for generation process
@@ -166,7 +171,7 @@ Public Sub CheckReadiness(ByVal trads As IDesTranslation)
 
     sh.Range(RNGPATHDICO).Interior.color = vbWhite 'if path is OK
 
-    'Checking coherence of the GEO  ------------------------------------------------
+    'Checking coherence of the GEO  ----------------------------------------------------------
 
     'Be sure the geo path is not empty and in that case, test the file.
     'You can create a linelist with an empty geobase though
@@ -280,26 +285,31 @@ Private Sub CheckRibbonExistence(Byval trads As IDesTranslation)
     Dim sh As Worksheet
 
     Set sh = Wksh()
+
+    'By default, use the template file
+    this.hasTemp = True
+
     tempPath = ValueOf("temppath")
     If Dir(tempPath) = vbNullString Then
-
-        If MsgBox(trads.TranslationMsg("MSG_Tempfile") & _ 
-                  tempPath & trads.TranslationMsg("MSG_NotExists") &
-                  trads.TranslationMsg("MSG_DefaultButton")) = vbNo Then 
+        If MsgBox(trads.TranslationMsg("MSG_Tempfile") & " " & _
+                  tempPath & " " & trads.TranslationMsg("MSG_NotExists") & " " & _
+                  trads.TranslationMsg("MSG_DefaultButton"), vbYesNo, _
+                trads.TranslationMsg("MSG_Title")) = vbNo Then
 
             'The user does not want a linelist with button, he should provide
             'a valid template (If something went wrong with the template, I will default back to buttons.)
             sh.Range(RNGTEMPPATH).Value = vbNullString
             sh.Range(RNGTEMPPATH).Interior.color = RGB(252, 228, 214)
-
-            
             sh.Range(RNGEDITION).Value = trads.TranslationMsg("MSG_ProvTemp")
+
+            'Not ready
+            sh.Range(RNGMAINREADY).Value = "not ready"
+            sh.Range(RNGMAINREADY).Font.color = vbWhite
+            Exit Sub
+        Else
+            this.hasTemp = False
         End If
-
     End If
-
-
-
 End Sub
 
 
@@ -312,6 +322,7 @@ Private Sub ClearInputRanges(Optional ByVal clearValues As Boolean = False)
     mainsh.Range(RNGLLNAME).Interior.color = vbWhite
     mainsh.Range(RNGLLDIR).Interior.color = vbWhite
     mainsh.Range(RNGEDITION).Interior.color = vbWhite
+    mainsh.Range(RNGTEMPPATH).Interior.color = vbWhite
 
     If clearValues Then
         mainsh.Range(RNGPATHGEO).Value  = vbNullString
@@ -480,4 +491,12 @@ End Property
 
 Private Sub IMain_OpenLL()
     OpenLL
+End Sub
+
+Private Property Get IMain_HasTemplate() As Boolean
+    IMain_HasTemplate = HasTemplate()
+End Property
+
+Private Sub IMain_CheckRibbonExistence(ByVal trads As IDesTranslation)
+    CheckRibbonExistence trads
 End Sub
