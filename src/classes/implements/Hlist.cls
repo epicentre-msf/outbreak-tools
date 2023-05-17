@@ -151,7 +151,7 @@ Public Sub Build()
     Const SHOWHIDECOMMAND As String = "ClickShowHide"
     Const OPENPRINTCOMMAND As String = "ClickOpenPrint"
     Const REMOVEFILTERCOMMAND As String = "ClickRemoveFilters"
-    Const GEOCOMMAND As String = "ClicCmdGeoApp"
+    Const GEOCOMMAND As String = "ClickGeoApp"
     Const FILTEREDPREFIX  As String = "f"
     Const PRINTPREFIX As String = "pr"
 
