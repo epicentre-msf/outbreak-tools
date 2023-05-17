@@ -24,6 +24,7 @@ End Type
 
 Private this As TLLExport
 Private SPECSHEADER As BetterArray
+Private Const ACTIVESTATUS As String = "active"
 
 Public Function Create(ByVal sh As Worksheet) As ILLExport
 
@@ -68,6 +69,28 @@ Public Property Get Wksh() As Worksheet
     Set Wksh = this.sh
 End Property
 
+'Get a value from export as well as status of export
+Private Property Get Value(ByVal colName As String, ByVal exportNumber As Integer) As String
+    Dim expData As IDataSheet
+    Dim returnedRng As Range
+    Dim returnedVal As String
+
+    returnedVal = vbNullString
+
+    Set expData = Data()
+    Set returnedRng = expData.DataRange(colName)
+    If Not (returnedRng Is Nothing) Then _
+    returnedVal = returnedRng.Cells(exportNumber, 1).Value
+
+    Value = returnedVal
+End Property
+
+
+'Test if an export is active
+Private Property Get IsActive(ByVal exportNumber As Integer) As Boolean
+    IsActive = (Value("status", exportNumber) = ACTIVESTATUS)
+End Property
+
 'Export specifications to another workbook
 Private Sub ExportSpecs(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     Dim expData As IDataSheet
@@ -98,15 +121,24 @@ Private Sub ImportSpecs(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long,
     expData.Import impExpData
 End Sub
 
-Public Sub ILLExport_Translate(ByVal trans As ITranslation)
+
+Private Sub ILLExport_Translate(ByVal trans As ITranslation)
     Translate trans
 End Sub
 
-Public Sub ILLExport_ExportSpecs(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+Private Sub ILLExport_ExportSpecs(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     ExportSpecs toWkb, Hide:=Hide
 End Sub
 
-Public Sub ILLExport_ImportSpecs(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
+Private Sub ILLExport_ImportSpecs(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
     ImportSpecs fromWksh, fromStartRow, fromStartcol
 End Sub
 
+Private Property Get ILLExport_Value(Byval colName As String,  _ 
+                                     ByVal exportNumber As Integer) As String
+    ILLExport_Value = Value(colName:=colName, exportNumber:=exportNumber)
+End Property
+
+Private Property Get ILLExport_IsActive(ByVal exportNumber As Integer) As Boolean
+    ILLExport_IsActive = IsActive(exportNumber)
+End Property

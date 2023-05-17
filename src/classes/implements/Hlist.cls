@@ -147,10 +147,10 @@ End Sub
 
 Public Sub Build()
 
-    Const ADDROWSCOMMAND As String = "ClicCmdAddRows"
+    Const ADDROWSCOMMAND As String = "ClickAddRows"
     Const SHOWHIDECOMMAND As String = "ClickShowHide"
     Const OPENPRINTCOMMAND As String = "ClickOpenPrint"
-    Const REMOVEFILTERCOMMAND As String = "ClearAllFilters"
+    Const REMOVEFILTERCOMMAND As String = "ClickRemoveFilters"
     Const GEOCOMMAND As String = "ClicCmdGeoApp"
     Const FILTEREDPREFIX  As String = "f"
     Const PRINTPREFIX As String = "pr"
@@ -329,6 +329,16 @@ Public Sub Build()
         design.ApplyFormat rng, scope:=HListHeader
     End With
 
+    'Add the total rowcount to take in account when resizing the table
+    'on HList
+    With Lo.ListRows(1)
+        sh.Cells(1, 6).Value = Application.WorksheetFunction.COUNTA(.Range)
+        design.ApplyFormat sh.Cells(1, 6), scope:=LinelistHiddenCell
+
+        'On HListPrint
+        printsh.Cells(1, 6).Value =  Application.WorksheetFunction.COUNTA(.Range)
+        design.ApplyFormat printsh.Cells(1, 6), scope:=LinelistHiddenCell
+    End With
 
     'Create the whole table of the HListPrinted
     With printsh
@@ -337,19 +347,21 @@ Public Sub Build()
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = PRINTPREFIX & tableName
 
          'Define the listobject before resizing it to keep the format of the cells
-         Set Lo = .ListObjects(PRINTPREFIX & tableName)
-         shrowEnd = llshs.DataBounds(sheetName, 2)
+        Set Lo = .ListObjects(PRINTPREFIX & tableName)
+        shrowEnd = llshs.DataBounds(sheetName, 2)
 
-         Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
-         Lo.Resize rng
-         design.ApplyFormat Lo, scope:=HListTable
+        Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
+        Lo.Resize rng
+        design.ApplyFormat Lo, scope:=HListTable
 
-         'Format the header range
-         Set rng = Lo.HeaderRowRange
-         design.ApplyFormat rng, scope:= HListPrintedHeader
+        'Format the header range
+        Set rng = Lo.HeaderRowRange
+        design.ApplyFormat rng, scope:= HListPrintedHeader
     End With
 
-    'FILTERED WORKSHEET ------------------------------------------------------------------------------
+
+
+    'FILTERED WORKSHEET --------------------------------------------------------
 
     'Define the same listObject to the filtered worksheet
     ll.AddOutputSheet FILTEREDPREFIX & sheetName, xlSheetVeryHidden
@@ -366,11 +378,13 @@ Public Sub Build()
     rng.Value = filtsh.Name
     design.ApplyFormat rng, scope:=LinelistHiddenCell
 
+
     'Transfert code to the worksheet
     TransferCodeWksh
 
     'Add editing range for sorting
-    'sh.Protection.AllowEditRanges.Add title:="EditAll" & tableName, Range:=Range(tableName & "[#All]")
+    'sh.Protection.AllowEditRanges.Add title:="EditAll" & tableName,
+    'Range:=Range(tableName & "[#All]")
 
     'Protect the worksheet
     pass.Protect "_active"

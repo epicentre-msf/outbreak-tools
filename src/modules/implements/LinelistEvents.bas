@@ -33,125 +33,7 @@ Sub ClicCmdGeoApp()
     End If
 End Sub
 
-Sub ClicCmdAddRows()
 
-    Dim oLstobj As Object
-    Dim iLastRow As Long
-    Dim iLastCol As Long
-    Dim LoRng As Range
-
-    On Error GoTo errAddRows
-
-    ActiveSheet.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
-    Application.EnableEvents = False
-    Set oLstobj = ActiveSheet.ListObjects(SheetListObjectName(ActiveSheet.Name))
-
-    If Not oLstobj.DataBodyRange Is Nothing Then
-        iLastRow = oLstobj.DataBodyRange.Rows.Count + C_eStartLinesLLData + 1 + C_iNbLinesLLData
-    Else
-        iLastRow = FindLastRow(ActiveSheet) + C_iNbLinesLLData
-    End If
-
-    iLastCol = 1
-
-    Do While ActiveSheet.Cells(C_eStartLinesLLData + 1, iLastCol).Value <> vbNullString
-        iLastCol = iLastCol + 1
-    Loop
-
-    iLastCol = iLastCol - 1
-
-    Set LoRng = Range(Cells(C_eStartLinesLLData + 1, 1), Cells(iLastRow, iLastCol))
-    oLstobj.Resize LoRng
-
-    Call ProtectSheet
-    Application.EnableEvents = True
-    Exit Sub
-
-errAddRows:
-    Application.EnableEvents = True
-    MsgBox TranslateLLMsg("MSG_ErrAddRows"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
-    Exit Sub
-End Sub
-
-Sub ClicCmdExport()
-
-    Dim i As Byte
-    Dim iHeight As Integer
-    Dim Wksh As Worksheet
-    Dim iStatus As Byte
-    Dim iLabel As Byte
-    Dim ExportHeaders As BetterArray
-    Const C_CmdHeight As Integer = 40
-    Const C_CmdGap As Byte = 10
-
-    Set Wksh = ThisWorkbook.Worksheets(C_sParamSheetExport)
-    Set ExportHeaders = GetHeaders(ThisWorkbook, C_sParamSheetExport, 1)
-    ExportHeaders.LowerBound = 1
-    iStatus = ExportHeaders.IndexOf(C_sExportHeaderStatus)
-    iLabel = ExportHeaders.IndexOf(C_sExportHeaderLabelButton)
-
-    iHeight = C_CmdGap
-
-    On Error GoTo errLoadExp
-
-    With F_Export
-        i = 1
-        Do While i <= 5
-            If Not IsError(Wksh.Cells(i, iStatus).Value) Then
-                'i+1 because the first line is for the headers
-                If Wksh.Cells(i + 1, iStatus).Value <> C_sExportActive Then
-                    .Controls("CMD_Export" & i).Visible = False
-                Else
-                    .Controls("CMD_Export" & i).Visible = True
-                    .Controls("CMD_Export" & i).Caption = Wksh.Cells(i + 1, iLabel).Value
-                    .Controls("CMD_Export" & i).Top = iHeight
-                    .Controls("CMD_Export" & i).height = C_CmdHeight
-                    .Controls("CMD_Export" & i).width = 160
-                    .Controls("CMD_Export" & i).Left = 20
-                    iHeight = iHeight + C_CmdHeight + C_CmdGap
-                End If
-            End If
-            i = i + 1
-        Loop
-
-        'Height of checks (use filtered data)
-        .CHK_ExportFiltered.Top = iHeight + 30
-        .CHK_ExportFiltered.Left = 30
-        .CHK_ExportFiltered.width = 160
-
-        iHeight = iHeight + 40 + C_CmdHeight + C_CmdGap
-
-        'Height of command for new key
-        .CMD_NouvCle.Top = iHeight
-        .CMD_NouvCle.height = C_CmdHeight - 10
-        .CMD_NouvCle.width = 160
-        .CMD_NouvCle.Left = 20
-
-        iHeight = iHeight + C_CmdHeight + C_CmdGap
-
-        'Quit command
-        .CMD_Retour.Top = iHeight
-        .CMD_Retour.height = C_CmdHeight - 10
-        .CMD_Retour.width = 160
-        .CMD_Retour.Left = 20
-
-        iHeight = iHeight + C_CmdHeight + C_CmdGap
-
-        'Overall height and width of the form
-
-        .height = iHeight + 50
-        .width = 210
-    End With
-
-
-    F_Export.Show
-    Exit Sub
-
-errLoadExp:
-    MsgBox TranslateLLMsg("MSG_ErrLoadExport"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
-    EndWork xlsapp:=Application
-    Exit Sub
-End Sub
 
 'Protect sheet of type linelist
 Public Sub ProtectSheet(Optional sSheetName As String = "_Active")
@@ -341,10 +223,6 @@ errHand:
 
 End Sub
 
-Sub ClicCmdAdvanced()
-    'Import exported data into the linelist
-    F_Advanced.Show
-End Sub
 
 Sub ClicExportMigration()
 
@@ -523,33 +401,6 @@ ErrUpdate:
     EndWork xlsapp:=Application
 End Sub
 
-
-'Clear All the filters on current sheet =================================================================================
-
-Sub ClearAllFilters()
-    Dim Wksh As Worksheet
-    Set Wksh = ActiveSheet
-
-    'On Error GoTo errHand
-
-    If Not Wksh.ListObjects(1).AutoFilter Is Nothing Then
-
-        BeginWork xlsapp:=Application
-
-        'Unprotect current worksheet
-        Wksh.UnProtect (ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value)
-        'remove the filters
-        Wksh.ListObjects(1).AutoFilter.ShowAllData
-        ProtectSheet Wksh.Name
-
-        EndWork xlsapp:=Application
-
-    End If
-
-    Exit Sub
-errHand:
-    EndWork xlsapp:=Application
-End Sub
 
 'Find the selected column on "GOTO" Area and go to that column
 Sub EventValueChangeAnalysis(Target As Range)

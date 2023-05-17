@@ -33,7 +33,7 @@ End Sub
 
 '@Description("Callback for adminTab getLabel")
 '@EntryPoint
-Public Sub getLLLang(control As IRibbonControl, ByRef returnedVal)
+Public Sub getLLLang(ByRef control As IRibbonControl, ByRef returnedVal)
     Dim codeId As String
     InitializeTrads
     codeId = control.Id
@@ -42,76 +42,91 @@ End Sub
 
 '@Description("Callback for btnAdvanced onAction")
 '@EntryPoint
-Public Sub clickRibbonAdvanced(control As IRibbonControl)
+Public Sub clickRibbonAdvanced(ByRef control As IRibbonControl)
+    'Call the clickAdvanced from buttons
+    ClickAdvanced
 End Sub
 
 '@Description("Callback for btnExport onAction")
 '@EntryPoint
-Public Sub clickRibbonExport(control As IRibbonControl)
+Public Sub clickRibbonExport(ByRef control As IRibbonControl)
+    'call the clickExport from buttons
+    ClickExport
 End Sub
 
 '@Description("Callback for btnDebug onAction")
 '@EntryPoint
-Public Sub clickRibbonDegug(control As IRibbonControl)
+Public Sub clickRibbonDegug(ByRef control As IRibbonControl)
 End Sub
 
 '@Description("Callback for btnShowHideVar onAction")
 '@EntryPoint
-Public Sub clickRibbonShowHideVar(control As IRibbonControl)
+Public Sub clickRibbonShowHideVar(ByRef control As IRibbonControl)
+    ClickShowHide
 End Sub
 
 '@Description("Callback for btnShowHideSec onAction")
 '@EntryPoint
-Public Sub clickRibbonShowHideSec(control As IRibbonControl)
+Public Sub clickRibbonShowHideSec(ByRef control As IRibbonControl)
 End Sub
 
 '@Description("Callback for btnAddRows onAction")
 '@EntryPoint
-Public Sub clickRibbonAddRows(control As IRibbonControl)
+Public Sub clickRibbonAddRows(ByRef control As IRibbonControl)
+    ClickAddRows
 End Sub
 
 '@Description("Callback for btnResize onAction")
 '@EntryPoint
-Public Sub clickRibbonResize(control As IRibbonControl)
+Public Sub clickRibbonResize(ByRef control As IRibbonControl)
+    ClickResize
 End Sub
 
 '@Description("Callback for btnRemFilt onAction")
 '@EntryPoint
-Public Sub clickRibbonRemoveFilter(control As IRibbonControl)
+Public Sub clickRibbonRemoveFilter(ByRef control As IRibbonControl)
+    clickRemoveFilters
 End Sub
 
 '@Description("Callback for btnCustomFilt onAction")
 '@EntryPoint
-Public Sub clickRibbonCustomFilter(control As IRibbonControl)
+Public Sub clickRibbonCustomFilter(ByRef control As IRibbonControl)
 End Sub
 
 '@Description("Callback for btnOpenPrint onAction")
 '@EntryPoint
-Public Sub clickRibbonOpenPrint(control As IRibbonControl)
+Public Sub clickRibbonOpenPrint(ByRef control As IRibbonControl)
+    ClickOpenPrint
 End Sub
 
 '@Description("Callback for btnClosePrint onAction")
 '@EntryPoint
-Public Sub clickRibbonClosePrint(control As IRibbonControl)
+Public Sub clickRibbonClosePrint(ByRef control As IRibbonControl)
+    ClickClosePrint
 End Sub
 
 '@Description("Callback for btnRotateHead onAction")
 '@EntryPoint
-Public Sub clickRibbonRotateAll(control As IRibbonControl)
+Public Sub clickRibbonRotateAll(ByRef control As IRibbonControl)
+    ClickRotateAll
 End Sub
 
 '@Description("Callback for btnRowHeight onAction")
 '@EntryPoint
-Public Sub clickRibbonRowHeight(control As IRibbonControl)
+Public Sub clickRibbonRowHeight(ByRef control As IRibbonControl)
 End Sub
 
 '@Description("Callback for btnCalc onAction")
 '@EntryPoint
-Public Sub clickRibbonCalculate(control As IRibbonControl)
+Public Sub clickRibbonCalculate(ByRef control As IRibbonControl)
 End Sub
 
 '@Description("Callback for btnApplyFilt onAction")
 '@EntryPoint
-Public Sub clickRibbonApplyFilt(control As IRibbonControl)
+Public Sub clickRibbonApplyFilt(ByRef control As IRibbonControl)
 End Sub
 
+'@Description("Callback for btnGeo onAction")
+'@EntryPoint
+Public Sub clickRibbonGeo(ByRef control As IRibbonControl)
+End Sub
