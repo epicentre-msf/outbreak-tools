@@ -98,7 +98,9 @@ Private Sub NotBusyApp()
 End Sub
 
 'Resize a table
-Private Sub Resize(Optional ByVal AddRows As Boolean = False, Optional ByVal totalRowCount As Long = 0)
+Private Sub Resize(Optional ByVal AddRows As Boolean = False, _ 
+                  Optional ByVal totalRowCount As Long = 0, _ 
+                  Optional ByVal nbRows As Long = NBROWSADD)
   Dim Lo As ListObject
   'Begining of the tables
   Dim loRowHeader As Long
@@ -110,6 +112,8 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, Optional ByVal tot
   Dim sh As Worksheet
   Set sh = Wksh()
   Set Lo = Table()
+
+
   'Remove unwanted rows from each listObject
   With sh
     'Rows and columns at the begining of the table to resize
@@ -121,15 +125,15 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, Optional ByVal tot
     rowCounter = loRowsEnd
     If AddRows Then
       loRowsEnd = loRowsEnd + 1 'Start at the bottom of the table
-      For rowCounter = 1 To NBROWSADD + 1
+      For rowCounter = 1 To nbRows + 1
             .Rows(loRowsEnd).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
       Next
-      loRowsEnd = loRowsEnd + NBROWSADD
+      loRowsEnd = loRowsEnd + nbRows
       Lo.Resize .Range(.Cells(loRowHeader, loColHeader), .Cells(loRowsEnd, loColsEnd))
       AddIds
     Else
       Do While (rowCounter > loRowHeader + 1)
-        If (Application.WorksheetFunction.CountA(.Rows(rowCounter)) <= totalRowCount) Then
+        If (Application.WorksheetFunction.COUNTA(.Rows(rowCounter)) <= totalRowCount) Then
           .Rows(rowCounter).EntireRow.Delete
           'update the end rows
           loRowsEnd = loRowsEnd - 1
@@ -448,8 +452,8 @@ Private Sub SortElements(ByVal els As Variant)
   Next
 End Sub
 
-Public Sub ICustomTable_AddRows()
-  Resize AddRows:=True
+Public Sub ICustomTable_AddRows(Optional ByVal nbRows As Long = 100)
+  Resize AddRows:=True, nbRows:=nbRows
 End Sub
 
 Public Sub ICustomTable_RemoveRows(Optional ByVal totalCount As Long = 0)

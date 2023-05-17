@@ -404,11 +404,14 @@ Private Sub Prepare()
 
     'Send the required classes to the linelist
     Set codesList = New BetterArray
-    codesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", "ILLExport", "LLchoice", "ILLchoice", _
-                     "LLdictionary", "ILLdictionary", "LLGeo", "ILLGeo", "LLPasswords", "ILLPasswords", _
-                     "LLSheets", "ILLSheets", "LLTranslations", "ILLTranslations", "OSFiles", "IOSFiles", _
-                     "Translation", "ITranslation", "LLVariables", "ILLVariables", "ILLSpatial", "LLSpatial", _
-                     "DropdownLists", "IDropdownLists", "LLShowHide", "ILLShowHide"
+    codesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", _
+                    "ILLExport", "LLchoice", "ILLchoice", _
+                    "LLdictionary", "ILLdictionary", "LLGeo", _
+                    "ILLGeo", "LLPasswords", "ILLPasswords", _
+                    "LLSheets", "ILLSheets", "LLTranslations", _
+                     "ILLTranslations", "OSFiles", "IOSFiles", _
+                    "Translation", "ITranslation", "LLVariables", "ILLVariables", "ILLSpatial", "LLSpatial", _
+                    "DropdownLists", "IDropdownLists", "LLShowHide", "ILLShowHide", "CustomTable", "ICustomTable"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
@@ -447,8 +450,8 @@ Private Sub Prepare()
 End Sub
 
 Private Sub PrepareAdmin()
-    Const ADVANCEDCOMMAND As String = "ClicCmdAdvanced"
-    Const EXPORTCOMMAND As String = "ClicCmdExport"
+    Const ADVANCEDCOMMAND As String = "ClickAdvanced"
+    Const EXPORTCOMMAND As String = "ClickExport"
     Const SHPADVANCE As String = "SHP_Advanced"
     Const SHPEXPORT As String = "SHP_Export"
 
