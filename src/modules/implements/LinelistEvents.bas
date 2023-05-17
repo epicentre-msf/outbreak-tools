@@ -3,36 +3,7 @@ Attribute VB_Name = "LinelistEvents"
 Option Explicit
 Option Private Module
 
-Public iGeoType As Byte
 Public DebugMode As Boolean
-
-Sub ClicCmdGeoApp()
-
-    Dim targetColumn As Integer
-    Dim sType As String
-
-    targetColumn = ActiveCell.Column
-
-    If ActiveCell.Row > C_eStartLinesLLData + 1 Then
-
-        sType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, targetColumn).Value
-        Select Case sType
-        Case "geo1"
-            iGeoType = 0
-            LoadGeo 0
-
-        Case "hf"
-            iGeoType = 1
-            LoadGeo 1
-
-        Case Else
-            MsgBox TranslateLLMsg("MSG_WrongCells")
-        End Select
-    Else
-        MsgBox TranslateLLMsg("MSG_WrongCells"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
-    End If
-End Sub
-
 
 
 'Protect sheet of type linelist
@@ -317,89 +288,6 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
 
 End Sub
 
-'Update data on Filtered values ========================================================================================
-
-
-Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
-
-    Dim Wksh As Worksheet                        'The actual worksheet
-    Dim filtWksh As Worksheet                    'Filtered worksheet
-    Dim Lo As ListObject
-    Dim rowCounter As Long
-    Dim endCol As Long
-    Dim destRng As Range
-    Dim delRng As Range
-
-    On Error GoTo ErrUpdate
-    BeginWork xlsapp:=Application
-
-    For Each Wksh In ThisWorkbook.Worksheets
-        If Wksh.Cells(1, 3).Value = "HList" Then
-
-            'Unprotect the worksheet
-            With Wksh
-
-                'Clean the filtered table list object
-                Set Lo = .ListObjects(1)
-                endCol = Lo.Range.Columns.Count
-                Set delRng = Nothing
-
-                If Not Lo.DataBodyRange Is Nothing Then
-                    Set filtWksh = ThisWorkbook.Worksheets(.Cells(1, 5).Value)
-
-                    On Error Resume Next
-                        filtWksh.ListObjects(1).DataBodyRange.Delete
-                    On Error GoTo ErrUpdate
-
-                    rowCounter = C_eStartLinesLLData + 1 + Lo.DataBodyRange.Rows.Count
-
-
-                    With filtWksh
-                        Set destRng = .Range(.Cells(C_eStartLinesLLData + 1, 1), .Cells(rowCounter, endCol))
-                        .ListObjects(1).Resize destRng
-                        Set destRng = .Range(.Cells(C_eStartLinesLLData + 2, 1), .Cells(rowCounter, endCol))
-                    End With
-
-                    destRng.Value = Lo.DataBodyRange.Value
-
-                    Do While rowCounter > C_eStartLinesLLData + 1
-
-                        If .Rows(rowCounter).Hidden Then
-                            With filtWksh
-                                If delRng Is Nothing Then
-                                    Set delRng = .Range(.Cells(rowCounter, 1), .Cells(rowCounter, endCol))
-                                Else
-                                    Set delRng = Application.Union(delRng, .Range(.Cells(rowCounter, 1), .Cells(rowCounter, endCol)))
-                                End If
-                            End With
-                        End If
-                        rowCounter = rowCounter - 1
-                    Loop
-
-                    'Delete the ragne if necessary
-                    If Not delRng Is Nothing Then delRng.Delete
-
-                End If
-            End With
-        End If
-    Next
-
-    'caclulate active sheet
-    DoEvents
-
-    If calculate Then
-        ActiveSheet.calculate
-        ActiveSheet.UsedRange.calculate
-        ActiveSheet.Columns("A:E").calculate
-    End If
-
-    EndWork xlsapp:=Application
-    Exit Sub
-
-ErrUpdate:
-    MsgBox TranslateLLMsg("MSG_ErrUpdate"), vbCritical + vbOKOnly
-    EndWork xlsapp:=Application
-End Sub
 
 
 'Find the selected column on "GOTO" Area and go to that column

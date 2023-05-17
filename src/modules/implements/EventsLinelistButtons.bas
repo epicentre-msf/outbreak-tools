@@ -198,6 +198,58 @@ Public Sub ClickRotateAll()
     hRng.RowHeight = 100
 End Sub
 
+'@Description("Change the Row height of cells in the print sheet")
+'@EntryPoint
+Public Sub ClickRowHeight()
+
+    Dim sh As Worksheet
+    Dim Lo As ListObject
+    Dim LoRng As Range
+    Dim sheetTag As String
+    Dim inputValue As String
+    Dim actualRowHeight As Long
+
+    Set sh = ActiveSheet
+
+    sheetTag = sh.Cells(1, 3).Value
+
+    If sheetTag <> "HList" And sheetTag <> "HList Print" Then
+        WarningOnSheet "MSG_PrintOrDataSheet"
+        Exit Sub
+    End If
+
+    InitializeTrads
+
+    BusyApp
+    On Error GoTo ErrHand
+
+    If sheetTag = "HList" Then  Set sh = wb.Worksheets(PRINTPREFIX & sh.Name)
+    Set Lo = sh.ListObjects(1)
+    If (Lo.DataBodyRange Is Nothing) Then
+        Set LoRng = Lo.HeaderRowRange.Offset(1)
+    Else
+        Set LoRng = Lo.DataBodyRange
+    End If
+
+    'Ask for rowheight
+    Do While (True)
+        inputValue = InputBox(tradsmess.TranslatedValue("MSG_RowHeight"), _
+                             tradsmess.TranslatedValue("MSG_Enter"))
+        If IsNumeric(inputValue) Then Exit Do
+        If (MsgBox (tradsmess.TranslatedValue("MSG_EnterNumeric"), _
+             vbOkCancel, "") = vbCancel) Then Exit Sub
+    Loop
+
+    On Error Resume Next
+        actualRowHeight = CLng(inputValue)
+        LoRng.EntireRow.RowHeight = actualRowHeight
+    On Error GoTo 0
+
+ErrHand:
+    NotBusyApp
+End Sub
+
+
 '@Description("Click on show all filters")
 '@EntryPoint
 Public Sub ClickRemoveFilters()
@@ -401,4 +453,35 @@ errLoadExp:
            vbOKOnly + vbCritical, _
            tradsmess.TranslatedValue("MSG_Error")
     Exit Sub
+End Sub
+
+'@Description("Callback for clik on open the geobase")
+'@EntryPoint
+Public iGeoType As Byte
+
+Sub ClickGeoApp()
+
+    Dim targetColumn As Integer
+    Dim sType As String
+
+    targetColumn = ActiveCell.Column
+
+    If ActiveCell.Row > C_eStartLinesLLData + 1 Then
+
+        sType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, targetColumn).Value
+        Select Case sType
+        Case "geo1"
+            iGeoType = 0
+            LoadGeo 0
+
+        Case "hf"
+            iGeoType = 1
+            LoadGeo 1
+
+        Case Else
+            MsgBox TranslateLLMsg("MSG_WrongCells")
+        End Select
+    Else
+        MsgBox TranslateLLMsg("MSG_WrongCells"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
+    End If
 End Sub

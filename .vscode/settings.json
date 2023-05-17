@@ -23,12 +23,25 @@
         "**/.mock": true
     },
     "editor.lineNumbers": "on",
-    "editor.fontSize": 14,
+    "editor.fontSize": 16,
     "editor.fontFamily": "'Fira Code', 'Courier New', monospace",
     "zenMode.hideStatusBar": false,
     "editor.minimap.scale": 2,
     "editor.minimap.renderCharacters": true,
     "githubPullRequests.ignoredPullRequestBranches": [
         "dev"
-    ]
+    ],
+    "spellright.language": [
+        "en"
+    ],
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext"
+    ],
+    "spellright.parserByClass": {
+        "vba": {
+            "parser": "plain"
+        }
+    }
 }
