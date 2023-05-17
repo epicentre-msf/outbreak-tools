@@ -2,7 +2,7 @@ Attribute VB_Name = "LinelistWorkbook"
 Option Explicit
 
 Private Sub Workbook_Open()
-    Application.OnKey "^+g", "ClicCmdGeoApp"
+    Application.OnKey "^+g", "ClickGeoApp"
     Application.Calculation = xlCalculationManual
     Application.EnableEvents = True
 End Sub

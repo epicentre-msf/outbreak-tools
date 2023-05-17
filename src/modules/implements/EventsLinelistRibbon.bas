@@ -85,7 +85,7 @@ End Sub
 '@Description("Callback for btnRemFilt onAction")
 '@EntryPoint
 Public Sub clickRibbonRemoveFilter(ByRef control As IRibbonControl)
-    clickRemoveFilters
+    ClickRemoveFilters
 End Sub
 
 '@Description("Callback for btnCustomFilt onAction")
@@ -114,6 +114,7 @@ End Sub
 '@Description("Callback for btnRowHeight onAction")
 '@EntryPoint
 Public Sub clickRibbonRowHeight(ByRef control As IRibbonControl)
+    ClickRowHeight
 End Sub
 
 '@Description("Callback for btnCalc onAction")
