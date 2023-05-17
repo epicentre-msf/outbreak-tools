@@ -25,6 +25,11 @@ Public Enum ExportScope
 End Enum
 
 'Exposed methods
+Public Property Get Value(Byval colName As String, ByVal exportNumber As Integer) As String
+End Property
+
+Public Property Get IsActive(ByVal exportNumber As Integer) As Boolean
+End Property
 
 Public Sub Translate(ByVal trans As ITranslation): End Sub
 Public Sub ExportSpecs(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden): End Sub

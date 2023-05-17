@@ -38,7 +38,6 @@ End Sub
 'Subs to speed up the application
 'speed app
 Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
-    Application.EnableEvents = False
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
     Application.Calculation = xlCalculationManual
