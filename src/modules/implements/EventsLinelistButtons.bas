@@ -485,3 +485,32 @@ Sub ClickGeoApp()
         MsgBox TranslateLLMsg("MSG_WrongCells"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
     End If
 End Sub
+
+'@Description("Calculate Elements in an analysis worksheet")
+'@EntryPoint
+
+Public Sub ClickCalculate()
+
+    Dim sh As Worksheet
+    Dim sheetTag As String
+
+    Set sh = ActiveSheet
+    sheetTag = sh.Cells(1, 3).Value
+
+    If sheetTag <> "Uni-Bi-Analysis" And sheetTag <> "TS-Analysis" And sheetTag <> "SP-Analysis" Then
+        WarningOnSheet "MSG_AnaSheet"
+        Exit Sub
+    End If
+
+    InitializeTrads
+
+    'Calculate
+    BusyApp
+    Select Case sheetTag
+
+
+    End Select
+
+
+
+End Sub
