@@ -301,7 +301,12 @@ Attribute PrepareToDeployment.VB_Description = "Hide some worksheets before depl
     CopyCodes "EventsDesignerWorkbook", wb.CodeName
     CopyCodes "FormLogicShowHide", "F_ShowHideLL"
     CopyCodes "FormLogicShowHidePrint", "F_ShowHidePrint"
-
+    CopyCodes "FormLogicGeo", "F_Geo"
+    CopyCodes "FormLogicExport", "F_Export"
+    CopyCodes "FormLogicImport", "F_ImportMig"
+    CopyCodes "FormLogicAdvanced", "F_Advanced"
+    CopyCodes "FormLogicExportMigration", "F_ExportMig"
+    CopyCodes "FormLogicImportRep", "F_ImportRep"
 End Sub
 
 'Report Import or export
