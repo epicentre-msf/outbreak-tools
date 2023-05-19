@@ -504,13 +504,19 @@ Public Sub ClickCalculate()
 
     InitializeTrads
 
+    On Error GoTo ErrHand
+
     'Calculate
     BusyApp
+
     Select Case sheetTag
-
-
+    Case "Uni-Bi-Analysis"
+        UpdateFilterTables
+    Case "TS-Analysis"
+        UpdateFilterTables
+    Case "SP-Analysis"
+        UpdateSpTables
     End Select
-
-
-
+ErrHand:
+    NotBusyApp
 End Sub
