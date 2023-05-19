@@ -91,6 +91,24 @@ Private Property Get IsActive(ByVal exportNumber As Integer) As Boolean
     IsActive = (Value("status", exportNumber) = ACTIVESTATUS)
 End Property
 
+'Find a path of an export (using the dictionary)
+' Private Function ExportPath(ByVal scope As ExportScope, _ 
+'                             ByVal dict As ILLdictionary) As String
+
+'     Dim vars As ILLVars
+'     Dim PathData As BetterArray
+'     Dim outPath As String 'Final Path
+'     Dim exportNumber As Integer 'True export Number
+
+
+
+
+
+
+    
+' End Function
+
+
 'Export specifications to another workbook
 Private Sub ExportSpecs(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     Dim expData As IDataSheet

@@ -120,6 +120,7 @@ End Sub
 '@Description("Callback for btnCalc onAction")
 '@EntryPoint
 Public Sub clickRibbonCalculate(ByRef control As IRibbonControl)
+    ClickCalculate
 End Sub
 
 '@Description("Callback for btnApplyFilt onAction")
@@ -130,4 +131,5 @@ End Sub
 '@Description("Callback for btnGeo onAction")
 '@EntryPoint
 Public Sub clickRibbonGeo(ByRef control As IRibbonControl)
+    ClickGeo
 End Sub

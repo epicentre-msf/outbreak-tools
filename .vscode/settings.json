@@ -23,7 +23,7 @@
         "**/.mock": true
     },
     "editor.lineNumbers": "on",
-    "editor.fontSize": 16,
+    "editor.fontSize": 14,
     "editor.fontFamily": "'Fira Code', 'Courier New', monospace",
     "zenMode.hideStatusBar": false,
     "editor.minimap.scale": 2,
