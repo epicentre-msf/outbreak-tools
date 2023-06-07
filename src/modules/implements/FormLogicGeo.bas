@@ -21,7 +21,7 @@ Private Sub CMD_Copier_Click()
 
     On Error GoTo ErrGeo
     
-    selectedValue = [TXT_Msg].Value
+    selectedValue = [F_Geo].TXT_Msg.Value
 
     'Exit if nothing is selected
     If selectedValue = vbNullString Then

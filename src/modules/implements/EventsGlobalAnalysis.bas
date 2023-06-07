@@ -69,7 +69,7 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
 
             If Not Lo.DataBodyRange Is Nothing Then
                 Set LoRng = Lo.DataBodyRange
-                Set filtsh = ThisWorkbook.Worksheets(.Cells(1, 5).Value)
+                Set filtsh = ThisWorkbook.Worksheets(sh.Cells(1, 5).Value)
 
                 rowCounter = LoRng.Rows.Count
 
@@ -86,19 +86,24 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
                     Set destRng = .Range(LoRng.Address)
                     Set filtLoHrng = .ListObjects(1).HeaderRowRange
                     'Initialize the range to delete at the end of the table
-                    Set delRng = filtLoHrng.Offset(destRng.Rows.Count + 1)
+                    Set delRng = Nothing
                 End With
 
                 'move values to filtered sheet
                 destRng.Value = LoRng.Value
 
                 Do While rowCounter >= 1
-                    If LoRng.Cells(rowCounter, 1).EntireRow.Hidden Then _
-                    Set delRng = Application.Union(delRng, filtLoHrng.Offset(rowCounter))
+                    If LoRng.Cells(rowCounter, 1).EntireRow.Hidden Then 
+                        If delRng Is Nothing Then
+                            Set delRng = filtLoHrng.Offset(rowCounter)
+                        Else
+                            Set delRng = Application.Union(delRng, filtLoHrng.Offset(rowCounter))
+                        End If
+                    End If
                     rowCounter = rowCounter - 1
                 Loop
                 'Delete the range if necessary
-                 delRng.Delete
+                 If Not (delRng Is Nothing) Then delRng.Delete
             End If
         End If
     Next
@@ -116,7 +121,7 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
     Exit Sub
 
 ErrUpdate:
-    MsgBox tradsmess.TranslatedValue("MSG_ErrUpdate"), vbCritical + vbOKOnly
+    MsgBox tradsmess.TranslatedValue("MSG_ErrUpdate") & ": " & Err.Description, vbCritical + vbOKOnly
     NotBusyApp
 End Sub
 

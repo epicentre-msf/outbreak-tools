@@ -626,15 +626,22 @@ Sub ImportGeobase()
     
     Dim geo As ILLGeo
     Dim sh As Worksheet
+    Dim dictsh As Worksheet
+    Dim dict As ILLdictionary
     Dim pass As ILLPasswords
     Dim sFilePath As String
     Dim Wkb As Workbook
     Dim shouldQuit As Byte
+    Dim showhidesh As Worksheet
     
     Set sh = ThisWorkbook.Worksheets("Geo")
     Set geo = LLGeo.Create(sh)
     Set sh = ThisWorkbook.Worksheets("__pass")
+    Set dictsh = ThisWorkbook.Worksheets("Dictionary")
     Set pass = LLPasswords.Create(sh)
+    Set dict = LLdictionary.Create(dictsh, 1, 1)
+    Set showhidesh = ThisWorkbook.Worksheets("show_hide_temp__")
+
 
     'Set xlsapp = New Excel.Application
     sFilePath = Helpers.LoadFile("*.xlsx")
@@ -644,6 +651,11 @@ Sub ImportGeobase()
         geo.Import Wkb
         'update other geobase names in the workbook
         geo.Update pass
+        'Update geobase names in the dictionary
+        geo.UpdateDict dict
+        'Update geobase names in the show/hide tables
+        geo.UpdateShowHide showhidesh, dict
+
         Wkb.Close savechanges:=False
         shouldQuit = MsgBox(TranslateLLMsg("MSG_FinishImportGeo"), vbQuestion + vbYesNo, "Import GeoData")
 

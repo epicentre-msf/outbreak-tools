@@ -482,7 +482,7 @@ Public Sub ClickGeoApp()
     InitializeTrads
     
     tabName = sh.Cells(1, 4).Value
-    startRow = sh.Range(tabName & "_" & "START")
+    startRow = sh.Range(tabName & "_" & "START").Row
     targetColumn = ActiveCell.Column
     
 
