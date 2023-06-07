@@ -60,6 +60,60 @@ Private Property Get InDebugMode() As Boolean
     InDebugMode = (sh.Range("RNG_DebugMode").Value = "yes")
 End Property
 
+Private Property Get Value(ByVal tagName As String) As String
+    Dim sh As Worksheet
+    Dim retVal As String
+
+    Set sh = Wksh()
+    
+    Select Case tagName
+    Case "debuggingpassword"
+        retVal = sh.Range("RNG_DebuggingPassword").Value
+    Case "publickey"
+        retVal = sh.Range("RNG_PublicKey").Value
+    Case "privatekey"
+        retVal = sh.Range("RNG_PrivateKey").Value
+    End Select
+
+    Value = retVal
+End Property
+
+'Generate a new key for the file to be saved
+Private Sub GenerateKey(ByVal trads As ITranslation)
+    Dim nbRows As Long
+    Dim randNum As Integer
+    Dim LoKeys As ListObject 'ListObject of keys
+    Dim LoRng As Range
+
+    Set sh = Wksh()
+    Set LoKeys = sh.ListObject(TABKEYS)
+
+    'Don't try to generate new keys if the databodyrange does not exists
+    If LoKeys.DataBodyRange is Nothing Then Exit Sub
+    Set LoRng = LoKeys.DataBodyRange
+    'Number of Rows of the databodyrange of the listobject
+    nbRows = LoRng.Rows.Count
+
+    'Generate a random number
+    randNum = Int(nbRows * Rnd())
+    
+    'Private and Public key values
+    sh.Range("RNG_PublicKey").Value = LoRng.Cells(randNum, 1).Value
+    sh.Range("RNG_PrivateKey").Value = LoRng.Cells(randNum, 2).Value
+
+    'Display the Private key to the user
+    DisplayPrivateKey trads
+End Sub
+
+'Display the private key 
+Private Sub DisplayPrivateKey(ByVal trads As ITranslation)
+    Dim sh As Worksheet
+    Dim privKey As String
+    Set sh = Wksh()
+    privKey = sh.Range("RNG_PrivateKey").Value
+    MsgBox trads.TranslatedValue("MSG_Password") & privKey
+End Sub
+
 'protect
 Private Sub Protect(Optional ByVal sheetName As String = "_active", Optional ByVal allowShapes As Boolean = False)
 
@@ -93,7 +147,6 @@ Private Sub Protect(Optional ByVal sheetName As String = "_active", Optional ByV
         'This is for management of sorting (create editable ranges for future sorting in the linelist)
         'If Not allowShapes Then sh.EnableSelection = xlUnlockedCells
     End If
-
 End Sub
 
 'Protect workbook
@@ -113,7 +166,7 @@ Private Sub UnProtectWkb(ByVal wb As Workbook)
     On Error GoTo 0
 End Sub
 
-
+'UnProtect a workbook
 Private Sub UnProtect(Optional ByVal sheetName As String = "_active")
 
     Dim pwd As String
@@ -132,6 +185,18 @@ Private Sub UnProtect(Optional ByVal sheetName As String = "_active")
     pwd = Password()
     If sh.ProtectContents Then sh.UnProtect pwd
 End Sub
+
+'Enter debug mode in the linelist (when something crashes)
+Private Sub EnterDebugMode()
+
+End Sub
+
+'Leave debug mode in the linelist (when closing the linelist, or after debugging)
+Private Sub LeaveDebugMode()
+
+
+End Sub
+
 
 'Requirements for instanciation
 Private Sub CheckRequirements(ByVal sh As Worksheet)
@@ -232,29 +297,47 @@ Private Sub export(ByVal toWkb As Workbook)
     outsh.Visible = xlSheetVeryHidden
 End Sub
 
-Public Property Get ILLPasswords_PassWord() As String
+Private Property Get ILLPasswords_PassWord() As String
     ILLPasswords_PassWord = Password()
 End Property
 
-Public Sub ILLPasswords_UnProtect(Optional ByVal sheetName As String = "_active")
+Private Sub ILLPasswords_UnProtect(Optional ByVal sheetName As String = "_active")
     UnProtect sheetName
 End Sub
 
-Public Sub ILLPasswords_Protect(Optional ByVal sheetName As String = "_active", Optional ByVal allowShapes As Boolean = False)
+Private Sub ILLPasswords_Protect(Optional ByVal sheetName As String = "_active", Optional ByVal allowShapes As Boolean = False)
     Protect sheetName, allowShapes
 End Sub
 
-Public Sub ILLPasswords_Export(ByVal toWkb As Workbook)
+Private Sub ILLPasswords_Export(ByVal toWkb As Workbook)
     export toWkb
 End Sub
 
     'Protect and unprotect the workbook to avoid sheet name changes
-Public Sub ILLPasswords_ProtectWkb(ByVal wb As Workbook, Optional ByVal protectSheetName As Boolean = True)
+Private Sub ILLPasswords_ProtectWkb(ByVal wb As Workbook, Optional ByVal protectSheetName As Boolean = True)
     ProtectWkb wb, protectSheetName
 End Sub
 
-Public Sub ILLPasswords_UnProtectWkb(ByVal wb As Workbook)
+Private Sub ILLPasswords_UnProtectWkb(ByVal wb As Workbook)
     UnProtectWkb wb
 End Sub
 
+Private Property Get ILLPasswords_Value(ByVal tagName As String) As String
+    Set ILLPasswords_Value = Value(tagName)
+End Property
 
+Private Sub ILLPasswords_DisplayPrivateKey(ByVal trads As ITranslation)
+    DisplayPrivateKey trads
+End Sub
+
+Private Sub ILLPasswords_GenerateKey(ByVal trads As ITranslation)
+    GenerateKey trads
+End Sub
+
+Private Sub ILLPasswords_EnterDebugMode()
+    EnterDebugMode
+End Sub
+
+Private Sub ILLPasswords_LeaveDebugMode()
+    LeaveDebugMode
+End Sub

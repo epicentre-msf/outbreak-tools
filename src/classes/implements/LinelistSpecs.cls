@@ -183,7 +183,7 @@ Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As St
     Case TemporarySheetList
         TemporarySheetName = "dropdown_lists__"
     Case TemporarySheetImport
-        TemporarySheetName = "import_temp__"
+        TemporarySheetName = "import_temp__" 'for import report
     Case TemporarySingle
         TemporarySheetName = "temp__"
     Case TemporaryShowHide

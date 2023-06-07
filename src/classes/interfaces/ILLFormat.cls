@@ -73,6 +73,7 @@ Public Enum FormatScopes
     LinelistWarning = 53
     HListPrintedSheet = 54
     HListPrintedHeader = 55
+    HListPrintedTable = 56
 End Enum
 
 Public Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)

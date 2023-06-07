@@ -2,8 +2,6 @@ Attribute VB_Name = "FormLogicImportRep"
 Attribute VB_Description = "Form implementation of Reports on import"
 Option Explicit
 
-Option Explicit
-
 Private Sub UserForm_Initialize()
     'Manage language
     Me.Caption = TranslateLLMsg(Me.Name)

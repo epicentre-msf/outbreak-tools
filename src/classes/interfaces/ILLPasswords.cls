@@ -17,15 +17,16 @@ Option Explicit
 
 'Exposed methods
 Public Property Get Password() As String: End Property
+Public Property Get Value(Byval tagName As String) As String: End Property
 
 Public Sub UnProtect(Optional ByVal sheetName As String = "_active"): End Sub
 
 Public Sub Protect(Optional ByVal sheetName As String = "_active", Optional ByVal allowShapes As Boolean = False)
 End Sub
 
-'Public Sub EnterDebugMode(): End Sub
+Public Sub EnterDebugMode(): End Sub
 
-'Public Sub LeaveDebugMode(): End Sub
+Public Sub LeaveDebugMode(): End Sub
 
 'Export password sheet
 Public Sub Export(ByVal toWkb As Workbook): End Sub
@@ -35,6 +36,9 @@ Public Sub Export(ByVal toWkb As Workbook): End Sub
 Public Sub ProtectWkb(ByVal wb As Workbook, Optional ByVal protectSheetName As Boolean = True)
 End Sub
 
-Public Sub UnProtectWkb(ByVal wb As Workbook)
-End Sub
+Public Sub UnProtectWkb(ByVal wb As Workbook):End Sub
 
+'Generate new key and display current keys
+Public Sub DisplayPrivateKey(ByVal trads As ITranslation): End Sub
+
+Public Sub GenerateKey(ByVal trads As ITranslation):End Sub

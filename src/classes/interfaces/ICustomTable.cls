@@ -10,8 +10,8 @@ Attribute VB_Exposed = False
 
 
 '@Folder("Dictionary")
-'@ModuleDescription("Interface of ")
-'@IgnoreModule
+'@ModuleDescription("Interface of CustomTable")
+'@Interface
 
 Option Explicit
 
@@ -34,4 +34,7 @@ Public Sub SetValidation(ByVal colName As String, _
                            ByVal drop As IDropdownLists, _
                            ByVal dropName As String, _
                            Optional ByVal alertType As String = "info")
+End Sub
+Public Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray, _ 
+  Optional ByVal useLabels As Boolean = False)
 End Sub

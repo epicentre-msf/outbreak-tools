@@ -125,38 +125,43 @@ Private Sub DrawLines(rng As Range, _
                       Optional weight As Integer = xlHairline, _
                       Optional line As Integer = xlContinuous, _
                       Optional color As Variant = vbBlack)
-    Dim BorderPos As Byte
-    If At = "All" Then
-        With rng
-            With .Borders
-                .weight = weight
-                .LineStyle = line
-                .color = color
-                .TintAndShade = 0.4
-            End With
-        End With
-    Else
-        Select Case At
-        Case "Left"
-            BorderPos = xlEdgeLeft
-        Case "Right"
-            BorderPos = xlEdgeRight
-        Case "Bottom"
-            BorderPos = xlEdgeBottom
-        Case "Top"
-            BorderPos = xlEdgeTop
-        Case Else
-            BorderPos = xlEdgeBottom
-        End Select
-        With rng
-            With .Borders(BorderPos)
+    Dim borderpos As Byte
+    Dim bordersList As BetterArray
+    Dim counter As Long
+
+    Set bordersList = New BetterArray
+
+    Select Case At
+
+    Case "All"
+        bordersList.Push xlEdgeLeft, xlEdgeRight, xlEdgeBottom, xlEdgeTop, xlInsideHorizontal, xlInsideVertical
+    Case "AvoidLeft", "AvoidRight" 
+        bordersList.Push  xlEdgeBottom, xlEdgeTop, xlInsideHorizontal
+    Case "AvoidTop", "AvoidBottom"
+        bordersList.Push xlEdgeLeft, xlEdgeRight, xlInsideVertical
+    Case "Left"
+        bordersList.Push xlEdgeLeft
+    Case "Right"
+        bordersList.Push xlEdgeRight
+    Case "Bottom"
+        bordersList.Push xlEdgeBottom
+    Case "Top"
+        bordersList.Push xlEdgeTop
+    Case Else
+        bordersList.Push xlEdgeBottom
+    End Select
+
+    With rng
+        For counter = bordersList.LowerBound To bordersList.UpperBound
+            borderpos = bordersList.Item(counter)
+            With .Borders(borderpos)
                 .weight = weight
                 .LineStyle = line
                 .color = color
                 .TintAndShade = 0.2
             End With
-        End With
-    End If
+        Next
+    End With
 End Sub
 
 Private Sub DrawBorder(rng As Range, Optional weight As Integer = xlThin, Optional color As Variant = vbBlack, Optional line As Long = xlContinuous)
@@ -291,6 +296,7 @@ End Sub
 Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
 
     Dim rng As Range
+    Dim cellRng As Range
     Dim Char As Characters
     Dim sh As Worksheet
     Dim shp As Shape
@@ -690,11 +696,17 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
 
         With sh
             If scope = HListSubSection Then
-                Set rng = .Range(rng.Cells(1, 1), rng.Cells(3, rng.Columns.Count))
+                Set rng = .Range(rng.Cells(1, 1), rng.Cells(4, rng.Columns.Count))
             Else
                 Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count, 3))
             End If
             DrawLines rng, color:=bordersColorValue
+
+            'Draw borders for the range
+            If scope = HListSubSection Then
+                Set rng = .Range(rng.Cells(1, 1), rng.Cells(4, rng.Columns.Count))
+                Drawborder rng, color:=bordersColorValue
+            End If
         End With
 
         'format the range.
@@ -724,13 +736,15 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         bordersColorValue = DesignValue("hlist and vlist table borders color")
 
         With sh
+
             If scope = HListSection Then
-                Set rng = .Range(rng.Cells(1, 1), rng.Cells(4, rng.Columns.Count))
+                Set rng = .Range(rng.Cells(1, 1), rng.Cells(5, rng.Columns.Count))
+                DrawBorder rng, color:=bordersColorValue, weight:=xlMedium
+                DrawLines rng, color:=bordersColorValue, At:="Bottom"
             Else
                 Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count, 4))
-            End If
-
-            DrawBorder rng, color:=bordersColorValue
+                DrawBorder rng, color:=bordersColorValue, weight:=xlThin
+            End If            
         End With
 
         'format the range
@@ -756,7 +770,8 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         rng.NumberFormat = "dd/mm/yyyy"
 
 
-    Case HListTable
+    Case HListTable, HListPrintedTable
+
         If (Not TypeName(formattingObject) = "ListObject") Then Exit Sub
         Set Lo = formattingObject
 
@@ -764,8 +779,10 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         bordersColorValue = DesignValue("hlist table borders color")
 
         If interiorColorValue = "None, with borders" Then
+            
             Lo.TableStyle = ""
-            DrawLines Lo.DataBodyRange, color:=bordersColorValue
+            DrawLines Lo.DataBodyRange, At:="AvoidLeft", color:=bordersColorValue
+
         ElseIf interiorColorValue = "None" Then
             Lo.TableStyle = ""
         Else
@@ -775,14 +792,53 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
             On Error GoTo 0
         End If
 
+        'Increase the RowHeight of the ListObject on printed sheet
+        If scope = HListPrintedTable Then
+            Lo.DataBodyRange.EntireRow.RowHeight = 70
+        End If
+
     Case HListHeader, HListPrintedHeader
+
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+
         Set rng = formattingObject
         dimensionValue = IIf(scope =  HListPrintedHeader, 5, 8)
         interiorColorValue = DesignValue("hlist table header color")
-        FormatRange rng, fontColor:=interiorColorValue, interiorColor:=interiorColorValue, _ 
+        FormatRange rng, fontColor:=interiorColorValue,  _ 
+                    interiorColor:=interiorColorValue, _ 
                     FontSize:=dimensionValue
         rng.Locked = False
+        rng.EntireRow.Hidden = True
+        
+        If scope = HListPrintedHeader Then
+            'Now formatting the headers (main label)
+            dimensionValue = DesignValue("hlist main label font size", False)
+            dimensionValue = IIf(dimensionValue = 0, 12, dimensionValue + 3)
+            Set rng = rng.Offset(-1)
+            FormatRange rng, FontSize:=dimensionValue
+            rng.EntireRow.RowHeight = 100
+
+            'AutoFit columns
+            For Each cellRng in rng
+                If Not cellRng.EntireColumn.Hidden Then 
+                    cellRng.EntireColumn.ColumnWidth = 50
+                    cellRng.WrapText = True
+                End If
+            Next
+
+            'Formating sub section
+            dimensionValue = DesignValue("sub section font size", False)
+            dimensionValue = IIf(dimensionValue = 0, 18, dimensionValue + 7)
+            Set rng = rng.Offset(-1)
+            FormatRange rng, FontSize:=dimensionValue
+
+            'Formating main section
+            dimensionValue = DesignValue("main section font size", False)
+            dimensionValue = IIf(dimensionValue = 0, 22, dimensionValue + 10)
+            Set rng = rng.Offset(-1)
+            FormatRange rng, FontSize:=dimensionValue
+        End If
+
     End Select
 
 End Sub
