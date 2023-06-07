@@ -2,9 +2,6 @@ Attribute VB_Name = "FormLogicGeo"
 Attribute VB_Description = "Form implementation of GeoApp"
 Option Explicit
 
-
-Option Explicit
-
 'This command is at the end, when you close the geoapp
 'It basically update all the required data and input selected data in the linelist worksheet
 Private Sub CMD_Copier_Click()

@@ -131,5 +131,11 @@ End Sub
 '@Description("Callback for btnGeo onAction")
 '@EntryPoint
 Public Sub clickRibbonGeo(ByRef control As IRibbonControl)
-    ClickGeo
+    ClickGeoApp
+End Sub
+
+'@Description("Callback for btnPrintLL onAction")
+'@EntryPoint
+Public Sub clickRibbonPrintLL(ByRef control As IRibbonControl)
+    ClickPrintLL
 End Sub

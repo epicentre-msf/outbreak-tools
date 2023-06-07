@@ -10,8 +10,8 @@ Attribute VB_Exposed = False
 
 
 '@Folder("Dictionary")
-'@ModuleDescription("")
-'@IgnoreModule
+'@ModuleDescription("Wrapper for Listobjects manipulations")
+
 
 Option Explicit
 Implements ICustomTable
@@ -370,6 +370,49 @@ Private Sub Import(ByVal impTab As Object)
   Next
 End Sub
 
+'Export a Custom Table to a Worksheet
+
+Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray, _ 
+                   Optional ByVal useLabels As Boolean = False)
+
+  Dim counter As Long
+  Dim inpRng As Range
+  Dim outRng As Range
+  Dim headerName As String
+  Dim headerCounter As Long
+
+  If sh Is Nothing Then ThrowError "Unable to export custom table, sheet not initialized"
+  If headersList Is Nothing Then ThrowError "Unable to export custom table, headers list not initialized"
+  If headersList.Length = 0 Then ThrowError "Unable to export custom table, I don't know wich column to export (length of headers = 0)"
+
+  sh.Cells.Clear
+  headerCounter = 1
+
+  For counter = headersList.LowerBound to headersList.UpperBound
+
+    headerName = headersList.Item(counter)
+    
+    If ColumnExists(headerName, strictSearch:=True) Then
+      Set inpRng = DataRange(headerName, strictSearch:=True, includeHeaders:=True)
+      
+      With sh
+        Set outRng = .Range(.Cells(1, headerCounter), .Cells(inpRng.Rows.Count, headerCounter))
+        outRng.Value = inpRng.Value
+      End With
+        
+      'assuming there could be two headers/ top header for labels, second header for variable names
+      On Error Resume Next
+        'Enter is for notes, if you want to use labels, just remove notes (after the Enter)
+        If useLabels Then outRng.Cells(1, 1).Value = Split(inpRng.Cells(0, 1).Value, Chr(10))(0)
+      On Error GoTo 0
+
+      headerCounter = headerCounter + 1
+    End If
+    
+  Next
+
+End Sub
+
 'Sort a listObject on one column (on first element found)
 Private Sub SortOnFirst(ByVal colName As String)
 
@@ -497,6 +540,12 @@ End Sub
 
 Public Sub ICustomTable_Sort(ByVal els As Variant)
   SortElements els
+End Sub
+
+Private Sub ICustomTable_Export(ByVal sh As Worksheet, _ 
+                               ByVal headersList As BetterArray, _ 
+                               Optional ByVal useLabels As Boolean = False)
+  Export sh, headersList, useLabels
 End Sub
 
 'Errors and checkings

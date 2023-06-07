@@ -348,7 +348,7 @@ Public Sub Build()
 
          'Define the listobject before resizing it to keep the format of the cells
         Set Lo = .ListObjects(PRINTPREFIX & tableName)
-        shrowEnd = llshs.DataBounds(sheetName, 2)
+        shrowEnd = shrowEnd + 10
 
         Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
         Lo.Resize rng
@@ -366,6 +366,7 @@ Public Sub Build()
     'Define the same listObject to the filtered worksheet
     ll.AddOutputSheet FILTEREDPREFIX & sheetName, xlSheetVeryHidden
     Set filtsh = ll.Wksh(FILTEREDPREFIX & sheetName)
+    Set Lo = sh.ListObjects(tableName)
     With filtsh
         Set rng = .Range(Lo.Range.Address)
         rng.Value = Lo.Range.Value

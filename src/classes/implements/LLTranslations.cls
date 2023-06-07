@@ -93,6 +93,42 @@ Private Property Get TransObject(Optional ByVal trans As TradScopes = _
     Set TransObject = Translation.Create(Lo, lang)
 End Property
 
+Private Property Get Value(ByVal tagName As String) As String
+    Dim sh As Worksheet
+    Dim retVal As String
+
+    Set sh = LLTransSheet()
+    
+    On Error Resume Next
+    
+    Select Case tagName
+    Case "lllanguage"
+        retVal = sh.Range("RNG_LLLanguage").Value
+    Case "lllanguagecode"
+         retVal = sh.Range("RNG_LLLanguageCode").Value
+    Case "gotosection"
+         retVal = sh.Range("RNG_GoToSection").Value
+    Case "anaperiod"
+        retVal = sh.Range("RNG_AnaPeriod").Value
+    Case "gotoheader"
+         retVal = sh.Range("RNG_GoToHeader").Value
+    Case "dictionarylanguage"
+         retVal = sh.Range("RNG_DictionaryLanguage").Value
+    Case "nodevide"
+        retVal = sh.Range("RNG_NoDevide").Value
+    Case "devide"
+         retVal = sh.Range("RNG_Devide").Value
+    Case "gotograph"
+         retVal = sh.Range("RNG_GoToGraph").Value
+    Case "onfiltered"
+         retVal = sh.Range("RNG_OnFiltered").Value
+    End Select
+
+    On Error GoTo 0
+
+    Value = retVal
+End Property
+
 Private Sub ExportToWkb(ByVal outputWkb As Workbook)
 
     Dim outshLLTrans As Worksheet
@@ -209,6 +245,7 @@ Private Sub ImportTranslation(ByVal fromWkb As Workbook)
     End With
 End Sub
 
+
 'Requirements for instanciation
 Private Sub CheckRequirements(ByVal lltradsh As Worksheet, dtradsh As Worksheet)
     Dim tabl As BetterArray
@@ -275,3 +312,7 @@ End Sub
 Public Sub ILLTranslations_ImportTranslation(ByVal fromWkb As Workbook)
     ImportTranslation fromWkb
 End Sub
+
+Private Property Get ILLTranslations_Value(ByVal tagName As String) As String
+    ILLTranslations_Value = Value(tagName)
+End Property

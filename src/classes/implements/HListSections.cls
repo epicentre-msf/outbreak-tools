@@ -220,6 +220,7 @@ Private Sub Format()
     End With
 
     design.ApplyFormat rng, scope:=HListSection
+
 End Sub
 
 'Errors

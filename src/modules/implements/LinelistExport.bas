@@ -229,7 +229,8 @@ Sub export(iTypeExport As Byte)
 
     'Get Export Path
     sPath = ExportPath(iTypeExport, ExportHeader.IndexOf(C_sExportHeaderFileName))
-    sExportHeaderType = ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, ExportHeader.IndexOf(C_sExportHeaderHeaderType))
+    sExportHeaderType = ThisWorkbook.Worksheets(C_sParamSheetExport).Cells(iTypeExport + 1, _ 
+     ExportHeader.IndexOf(C_sExportHeaderHeaderType))
 
     'Creating the data for the exports
     On Error GoTo exportErrHandData
