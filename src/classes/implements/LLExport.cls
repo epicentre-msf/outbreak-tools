@@ -91,22 +91,99 @@ Private Property Get IsActive(ByVal exportNumber As Integer) As Boolean
     IsActive = (Value("status", exportNumber) = ACTIVESTATUS)
 End Property
 
-'Find a path of an export (using the dictionary)
-' Private Function ExportPath(ByVal scope As ExportScope, _ 
-'                             ByVal dict As ILLdictionary) As String
+Private Function ClearChunk(ByVal chunk As String) As String
 
-'     Dim vars As ILLVars
-'     Dim PathData As BetterArray
-'     Dim outPath As String 'Final Path
-'     Dim exportNumber As Integer 'True export Number
+    'In the file name, replace forbidden characters with an underscore
+    Dim newChuk As String
+
+    newChuk = Replace(chunk, "<", "_")
+    newChuk = Replace(newChuk, ">", "_")
+    newChuk = Replace(newChuk, ":", "_")
+    newChuk = Replace(newChuk, "|", "_")
+    newChuk = Replace(newChuk, "?", "_")
+    newChuk = Replace(newChuk, "/", "_")
+    newChuk = Replace(newChuk, "\", "_")
+    newChuk = Replace(newChuk, "*", "_")
+    newChuk = Replace(newChuk, ".", "_")
+    newChuk = Replace(newChuk, """", "_")
+    newChuk = Replace(newChuk, "&", "_")
+
+    ClearChunk = Application.WorksheetFunction.Trim(newChuk)
+End Function
 
 
+'@Description("Find a path of an export (using the dictionary)")
+Private Function ExportFileName(ByVal scope As ExportScope, _
+                            ByVal dict As ILLdictionary, _ 
+                            Byval pass As ILLPasswords) As String
 
+    Dim vars As ILLVariables
+    Dim PathData As BetterArray
+    Dim fileName As String
+    Dim outFile As String 'Final file name
+    Dim exportNumber As Integer 'True export Number
+    Dim pathCounter As Long
+    Dim fun As WorksheetFunction
+    Dim varSheetName As String
+    Dim varSheetType As String
+    Dim chunkValue As String
+    Dim rangeValue As String
+    Dim sh As Worksheet
+    Dim vlistSh As Worksheet
+    Dim wb As Workbook
 
+    Set sh = Wksh()
+    Set wb = sh.Parent
 
+    If scope = ExportAll Then
+        outFile = Replace(wb.Name, ".xlsb", vbNullString) & _
+                  "_export_data_" & Format(Now, "yyyymmdd-HhNn") & ".xlsx"
+    Else
+        Set PathData = New BetterArray
+        Set fun = Application.WorksheetFunction
+        Set vars = LLVariables.Create(dict)
 
+        exportNumber = CInt(scope)
+        fileName = Value("file name", exportNumber)
     
-' End Function
+        PathData.Items = Split(fileName, "+")
+
+        For PathCounter = 1 To PathData.UpperBound
+
+            'Remove the other + signs in the path name
+            chunkValue = fun.TRIM(Replace(PathData.Item(i), "+", vbNullString))
+            rangeValue = vbNullString
+            
+            varSheetName = vars.Value(varName:=chunkValue, colName:="sheet name")
+            varSheetType = vars.Value(varName:=chunkValue, colName:="sheet type")
+
+            If (varSheetName <> vbNullString) And (varSheetType = "vlist1D") Then
+                On Error Resume Next
+                    Set vlistSh = wb.Worksheets(varSheetName)
+                    rangeValue = vlistSh.Range(chunkValue).Value
+                    rangeValue = ClearChunk(rangeValue)
+                On Error GoTo 0
+            End If
+
+            If rangeValue <> vbNullString Then 
+                PathData.Item(i) = rangeValue
+            Else 'unable to find the rangeValue
+                chunkValue = Replace(chunkValue, Chr(34), vbNullString)
+                chunkValue = ClearChunk(chunkValue)
+                PathData.Item(i) = chunkValue
+            End If
+        Next
+
+        outFile = PathData.ToString(Separator:="-", OpeningDelimiter:=vbNullString,  _ 
+                                    ClosingDelimiter:=vbNullString, QuoteStrings:=False) & _
+                                    "__" & pass.Value("publickey").Value & "__" &  _
+                                    Format(Now, "yyyymmdd-HhNn")
+    End If
+
+    ExportFileName = outFile
+End Function
+
+
 
 
 'Export specifications to another workbook
@@ -152,7 +229,7 @@ Private Sub ILLExport_ImportSpecs(ByVal fromWksh As Worksheet, ByVal fromStartRo
     ImportSpecs fromWksh, fromStartRow, fromStartcol
 End Sub
 
-Private Property Get ILLExport_Value(Byval colName As String,  _ 
+Private Property Get ILLExport_Value(Byval colName As String,  _
                                      ByVal exportNumber As Integer) As String
     ILLExport_Value = Value(colName:=colName, exportNumber:=exportNumber)
 End Property

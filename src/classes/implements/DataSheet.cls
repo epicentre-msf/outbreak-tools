@@ -380,7 +380,7 @@ Private Sub ImportFormat(ByVal impRng As Range)
 End Sub
 
 'Export
-Private Sub export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As String = "__all__", _
+Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As String = "__all__", _
                    Optional ByVal filteredCondition As String = "<>", Optional ByVal Hide As Long = xlSheetHidden)
 
     Dim dataExportData As BetterArray

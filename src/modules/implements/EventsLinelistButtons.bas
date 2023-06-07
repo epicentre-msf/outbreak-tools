@@ -2,6 +2,7 @@ Attribute VB_Name = "EventsLinelistButtons"
 Attribute VB_Description = "Events associated to eventual buttons in the Linelist"
 Option Explicit
 Option Private Module
+Public iGeoType As Byte
 
 '@Folder("Linelist Events")
 '@ModuleDescription("Events associated with click on buttons in the linelist")
@@ -176,6 +177,7 @@ Public Sub ClickRotateAll()
     Dim sh As Worksheet
     Dim Lo As ListObject
     Dim hRng As Range
+    Dim cRng As Range
     Dim sheetTag As String
     Dim actualOrientation As xlOrientation
 
@@ -193,9 +195,12 @@ Public Sub ClickRotateAll()
     Set hRng = Lo.HeaderRowRange.Offset(-1)
     actualOrientation = IIf(hRng.Orientation = xlUpward, xlHorizontal, xlUpward)
     hRng.Orientation = actualOrientation
-    hRng.Font.size = 12
-    hRng.EntireColumn.AutoFit
     hRng.RowHeight = 100
+    
+    'AutoFit only non hidden columns
+    For Each cRng in hRng
+        If Not cRng.EntireColumn.Hidden Then cRng.EntireColumn.AutoFit
+    Next
 End Sub
 
 '@Description("Change the Row height of cells in the print sheet")
@@ -301,7 +306,7 @@ Public Sub ClickAddRows()
     sheetTag = sh.Cells(1, 3).Value
 
     'Warning if not on print or hlist worksheet
-        If sheetTag <> "HList" And sheetTag <> "HList Print" Then
+    If sheetTag <> "HList" And sheetTag <> "HList Print" Then
         WarningOnSheet "MSG_PrintOrDataSheet"
         Exit Sub
     End If
@@ -310,9 +315,9 @@ Public Sub ClickAddRows()
 
     Set Lo = sh.ListObjects(1)
     Set csTab = CustomTable.Create(Lo)
-    nbRows = IIf(sheetTag = "HList", 100, 50)
+    nbRows = IIf(sheetTag = "HList", 100, 10)
     csTab.AddRows nbRows:=nbRows
-
+    
     NotBusyApp
     Application.EnableEvents = True
     pass.Protect "_active"
@@ -455,21 +460,37 @@ errLoadExp:
     Exit Sub
 End Sub
 
-'@Description("Callback for clik on open the geobase")
+'@Description("Callback for clik on open the geobase application")
 '@EntryPoint
-Public iGeoType As Byte
-
-Sub ClickGeoApp()
+Public Sub ClickGeoApp()
 
     Dim targetColumn As Integer
-    Dim sType As String
+    Dim geoOrhf As String
+    Dim sheetTag As String
+    Dim sh As Worksheet
+    Dim startRow As Long
+    Dim tabName As String
 
+    Set sh = ActiveSheet
+    sheetTag = sh.Cells(1, 3).Value
+
+    If sheetTag <> "HList" Then
+        WarningOnSheet "MSG_DataSheet"
+        Exit Sub
+    End If
+
+    InitializeTrads
+    
+    tabName = sh.Cells(1, 4).Value
+    startRow = sh.Range(tabName & "_" & "START")
     targetColumn = ActiveCell.Column
+    
 
-    If ActiveCell.Row > C_eStartLinesLLData + 1 Then
+    If ActiveCell.Row >= startRow Then
 
-        sType = ActiveSheet.Cells(C_eStartLinesLLMainSec - 1, targetColumn).Value
-        Select Case sType
+        geoOrhf = ActiveSheet.Cells(startRow - 5, targetColumn).Value
+        Select Case geoOrhf
+
         Case "geo1"
             iGeoType = 0
             LoadGeo 0
@@ -479,10 +500,11 @@ Sub ClickGeoApp()
             LoadGeo 1
 
         Case Else
-            MsgBox TranslateLLMsg("MSG_WrongCells")
+            MsgBox tradsmess.TranslatedValue("MSG_WrongCells")
         End Select
     Else
-        MsgBox TranslateLLMsg("MSG_WrongCells"), vbOKOnly + vbCritical, TranslateLLMsg("MSG_Error")
+        MsgBox tradsmess.TranslatedValue("MSG_WrongCells"),  _ 
+        vbOKOnly + vbCritical, tradsmess.TranslatedValue("MSG_Error")
     End If
 End Sub
 
@@ -519,4 +541,65 @@ Public Sub ClickCalculate()
     End Select
 ErrHand:
     NotBusyApp
+End Sub
+
+
+'@Description("Print the current linelist")
+'@EntryPoint
+
+Public Sub ClickPrintLL()
+    Dim sh As Worksheet
+    Dim sheetTag As String
+
+    'Set up the sheet with some print Characteristics
+    Set sh = ActiveSheet
+
+    'Test to be sure we are on print or linelist worksheet
+    sheetTag = sh.Cells(1, 3).Value
+
+    'Warning if not on print or hlist worksheet
+    If  sheetTag <> "HList Print" Then
+        WarningOnSheet "MSG_PrintSheet"
+        Exit Sub
+    End If
+
+    On Error Resume Next
+    Application.PrintCommunication = False
+    'Avoid printing rows and column number'
+    With sh.PageSetup
+        'Specifies the margins
+        .LeftMargin = Application.InchesToPoints(0.04)
+        .RightMargin = Application.InchesToPoints(0.04)
+        .TopMargin = Application.InchesToPoints(0.75)
+        .BottomMargin = Application.InchesToPoints(0.20)
+        .HeaderMargin = Application.InchesToPoints(0.31)
+        .FooterMargin = Application.InchesToPoints(0.31)
+        .PrintHeadings = False
+        .PrintGridlines = False
+        .PrintTitleRows = "$5:$8" 'Those are rows to always keep on title
+        .PrintTitleColumns = ""
+        .PrintComments = xlPrintNoComments
+        .PrintNotes = False
+        'The quality of the print
+        .PrintQuality = 600
+        .CenterHorizontally = True
+        .CenterVertically = False
+        'Landscape and paper size
+        .Orientation = xlLandscape
+        .PaperSize = xlPaperA3
+        .FirstPageNumber = xlAutomatic
+        .ORDER = xlDownThenOver
+        .BlackAndWhite = False
+        'Print the whole area and fit all columns in the worksheet
+        .Zoom = 100
+        .FitToPagesWide = 1
+        .FitToPagesTall = False
+        'Print Errors to blanks
+        .PrintArea = sh.ListObjects(1).Range.Address
+        .PrintErrors = xlPrintErrorsBlank
+    End With
+    Application.PrintCommunication = True
+    On Error GoTo 0
+    
+    sh.PrintPreview
 End Sub

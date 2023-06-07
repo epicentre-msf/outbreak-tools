@@ -3,9 +3,14 @@ Attribute VB_Description = "Events associated to buttons and updates in all (uni
 Option Explicit
 Option Private Module
 
-Private tradrib As ITranslation   'Translation of forms
+Private Const LLSHEET As String = "LinelistTranslation"
+Private Const TRADSHEET As String = "Translations"
+Private Const PASSSHEET As String = "__pass"
+
 Private tradsmess As ITranslation   'Translation of messages
 Private pass As ILLPasswords
+Private lltrads As ILLTranslations
+Private wb As Workbook
 
 'Subs to speed up the application
 'speed app
@@ -25,17 +30,17 @@ End Sub
 
 'Initialize translation of forms object
 Private Sub InitializeTrads()
-    Dim lltrads As ILLTranslations
     Dim lltranssh As Worksheet
     Dim dicttranssh As Worksheet
 
+    Set wb = ThisWorkbook
+    Set lltranssh = wb.Worksheets(LLSHEET)
+    Set dicttranssh = wb.Worksheets(TRADSHEET)
 
-    Set lltranssh = ThisWorkbook.Worksheets(LLSHEET)
-    Set dicttranssh = ThisWorkbook.Worksheets(TRADSHEET)
+    'Those are private elms defined on to the top
     Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
-
     Set tradsmess = lltrads.TransObject()
-    Set tradrib = lltrads.TransObject(TranslationOfRibbon)
+    Set pass = LLPasswords.Create(wb.Worksheets(PASSSHEET))
 End Sub
 
 '@Description("Update the table which contains filters data in the linelist")
@@ -57,7 +62,7 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
 
     BusyApp cursor:= xlNorthwestArrow
 
-    For Each sh In ThisWorkbook.Worksheets
+    For Each sh In wb.Worksheets
         If sh.Cells(1, 3).Value = "HList" Then
             'Clean the filtered table list object
             Set Lo = sh.ListObjects(1)
@@ -129,6 +134,7 @@ Sub EventValueChangeAnalysis(Target As Range)
     Dim goToGraph As String
     Dim rngName As String
 
+    InitializeTrads
 
     'Range name if it exists
     On Error Resume Next
@@ -166,9 +172,10 @@ Sub EventValueChangeAnalysis(Target As Range)
     End Select
 
     If (Not (Intersect(Target, rng) Is Nothing)) And (Not rng Is Nothing) Then
-        goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
-        goToHeader = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToHeader").Value
-        goToGraph = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToGraph").Value
+        
+        goToSection = lltrads.Value("gotosection")
+        goToHeader = lltrads.Value("gotoheader")
+        goToGraph = lltrads.Value("gotograph")
 
         sLabel = Replace(Target.Value, goToSection & ": ", "")
         sLabel = Replace(sLabel, goToHeader & ": ", "")
