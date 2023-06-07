@@ -9,9 +9,9 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
 
-'@Folder("Linelist")
+'@Folder("Geobase")
 '@ModuleDescription("Interface of Geo")
-'@IgnoreModule
+'@Interface
 
 Option Explicit
 
@@ -72,6 +72,14 @@ Public Sub ClearHistoric(): End Sub
 
 'Update new Geobase
 Public Sub Update(ByVal pass As ILLPasswords): End Sub
+
+'Update dictionary with new geobase
+Public Sub UpdateDict(ByVal dict As ILLdictionary)
+End Sub
+
+'Update show hide tables
+Public Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
+End Sub
 
 'Get the admin code from a selected admin
 

@@ -9,9 +9,8 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
 
-'@Folder("Linelist")
+'@Folder("Geobase")
 '@ModuleDescription("Geobase management class")
-'@IgnoreModule
 
 Option Explicit
 Implements ILLGeo
@@ -809,6 +808,9 @@ Private Sub Update(ByVal pass As ILLPasswords)
     Dim controlValue As String
     Dim geoData As BetterArray
     Dim drop As IDropdownLists
+    Dim cellPrintRng As Range
+    Dim printsh As Worksheet
+   
 
     Set wb = Wksh.Parent
 
@@ -817,6 +819,7 @@ Private Sub Update(ByVal pass As ILLPasswords)
         'Test if it is a Hlist
         If sh.Cells(1, 3).Value = "HList" Then
 
+
             'Unprotect and update
             pass.UnProtect sh.Name
 
@@ -824,7 +827,10 @@ Private Sub Update(ByVal pass As ILLPasswords)
 
                 'Start of the table in the HList
                 '.Cells(1, 4) contains the name of table in the linelist HList sheet
+
                 Set cellRng = .Range(.Cells(1, 4).Value & "_" & "START")
+                Set printsh = wb.Worksheets("print_" & sh.Name)
+                Set cellPrintRng = printsh.Range(cellRng.Address)
 
                 Do While Not IsEmpty(cellRng.Offset(-1))
 
@@ -835,26 +841,33 @@ Private Sub Update(ByVal pass As ILLPasswords)
                     Case "geo1"
 
                         cellRng.Offset(-2).Value = GeoNames("adm1_name")
+                        cellPrintRng.Offset(-2).Value = GeoNames("adm1_name")
 
                     Case "geo2"
 
                         cellRng.Offset(-2).Value = GeoNames("adm2_name")
+                        cellPrintRng.Offset(-2).Value = GeoNames("adm2_name")
 
                     Case "geo3"
 
                         cellRng.Offset(-2).Value = GeoNames("adm3_name")
+                        cellPrintRng.Offset(-2).Value = GeoNames("adm3_name")
 
                     Case "geo4"
 
                         cellRng.Offset(-2).Value = GeoNames("adm4_name")
+                        cellPrintRng.Offset(-2).Value = GeoNames("adm4_name")
 
                     Case "hf"
 
                         cellRng.Offset(-2).Value = GeoNames("hf_name")
+                        cellPrintRng.Offset(-2).Value = GeoNames("hf_name")
 
                     End Select
 
                     Set cellRng = cellRng.Offset(, 1)
+                    Set cellPrintRng = cellPrintRng.Offset(, 1)
+
                 Loop
 
             End With
@@ -878,6 +891,74 @@ Private Sub Update(ByVal pass As ILLPasswords)
 
 End Sub
 
+Private Sub UpdateDict(ByVal dict As ILLdictionary)
+    
+    Dim controlRng As Range
+    Dim mainlabRng As Range
+    Dim counter As Long
+
+    Set controlRng = dict.DataRange("control")
+    Set mainlabRng = dict.DataRange("main label")
+
+    For counter = 1 to controlRng.Rows.Count
+        Select Case controlRng.Cells(counter, 1).Value
+        Case "geo1"
+            mainlabRng.Cells(counter, 1).Value = GeoNames("adm1_name")
+        Case "geo2"
+            mainlabRng.Cells(counter, 1).Value = GeoNames("adm2_name")    
+        Case "geo3"
+            mainlabRng.Cells(counter, 1).Value = GeoNames("adm3_name")
+        Case "geo4"
+            mainlabRng.Cells(counter, 1).Value = GeoNames("adm4_name")
+        Case "hf"
+            mainlabRng.Cells(counter, 1).Value = GeoNames("hf_name")
+        End Select
+    Next
+End Sub
+
+Private Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
+
+    Dim csTab As ICustomTable
+    Dim vars As ILLVariables
+    Dim Lo As ListObject
+    Dim counter As Long
+    Dim mainlabRng As Range
+    Dim varRng As Range
+    Dim controlValue As String
+    Dim varValue As String
+    Dim subsecValue As String
+
+    Set vars = LLVariables.Create(dict)
+
+    For Each Lo in sh.ListObjects
+
+        Set csTab = CustomTable.Create(Lo)
+        Set mainlabRng = csTab.DataRange("main label")
+        Set varRng = csTab.DataRange("variable name")
+
+        For counter = 1 To varRng.Rows.Count
+
+            varValue = varRng.Cells(counter, 1).Value
+            controlValue = vars.Value(colName:="control", varName:=varValue)
+            subsecValue = vars.Value(colName:="sub section", varName:=varValue)
+
+            Select Case controlValue
+            case "geo1"
+                mainlabRng.Cells(counter, 1).Value = subsecValue & ": " & GeoNames("adm1_name")
+            Case "geo2"
+                mainlabRng.Cells(counter, 1).Value = subsecValue & ": " & GeoNames("adm2_name")    
+            Case "geo3"
+                mainlabRng.Cells(counter, 1).Value = subsecValue & ": " & GeoNames("adm3_name")
+            Case "geo4"
+                mainlabRng.Cells(counter, 1).Value = subsecValue & ": " & GeoNames("adm4_name")
+            Case "hf"
+                mainlabRng.Cells(counter, 1).Value = subsecValue & ": " & GeoNames("hf_name")
+            End Select
+        Next
+    Next
+
+End Sub
+
 'Find the admin level given one admin name
 Private Function AdminCode(ByVal selectedAdmin As String) As String
     Select Case selectedAdmin
@@ -895,7 +976,7 @@ Private Function AdminCode(ByVal selectedAdmin As String) As String
 End Function
 
 'Interfaces
-Public Property Get ILLGeo_GeoLevel(ByVal adminLevel As GeoLevel, _
+Private Property Get ILLGeo_GeoLevel(ByVal adminLevel As GeoLevel, _
                                     Optional ByVal geoType As CustomGeoType = CustomTypeGeo, _
                                     Optional ByVal adminNames As Variant = vbNullString) As BetterArray
 
@@ -903,51 +984,59 @@ Public Property Get ILLGeo_GeoLevel(ByVal adminLevel As GeoLevel, _
 End Property
 
 'Convert the code name to the actual name of the current language
-Public Property Get ILLGeo_GeoNames(ByVal admname As String) As String
+Private Property Get ILLGeo_GeoNames(ByVal admname As String) As String
     ILLGeo_GeoNames = GeoNames(admname)
 End Property
 
 'Get the Population of one administrative level (only for geoType)
-Public Property Get ILLGeo_Population(ByVal adminLevel As GeoLevelOrHF, Optional ByVal concatValue As String = vbNullString) As String
+Private Property Get ILLGeo_Population(ByVal adminLevel As GeoLevelOrHF, Optional ByVal concatValue As String = vbNullString) As String
     ILLGeo_Population = ValueOf(adminLevel:=adminLevel, concatValue:=concatValue, returnedSuffix:="pop")
 End Property
 
-Public Property Get ILLGeo_Pcode(ByVal adminLevel As GeoLevelOrHF, Optional ByVal concatValue As String = vbNullString) As String
+Private Property Get ILLGeo_Pcode(ByVal adminLevel As GeoLevelOrHF, Optional ByVal concatValue As String = vbNullString) As String
     ILLGeo_Pcode = ValueOf(adminLevel:=adminLevel, concatValue:=concatValue, returnedSuffix:="pcode")
 End Property
 
 'Translation
-Public Sub ILLGeo_Translate(Optional ByVal rawNames As Boolean = False)
+Private Sub ILLGeo_Translate(Optional ByVal rawNames As Boolean = False)
     Translate rawNames
 End Sub
 
 'Import a new Geobase from a workbook
-Public Sub ILLGeo_Import(ByVal fromWkb As Workbook)
+Private Sub ILLGeo_Import(ByVal fromWkb As Workbook)
     Import fromWkb
 End Sub
 
 'Export to a workbook
-Public Sub ILLGeo_ExportToFile(ByVal outputWkb As Workbook, Optional ByVal onlyHistory As Boolean = False)
+Private Sub ILLGeo_ExportToFile(ByVal outputWkb As Workbook, Optional ByVal onlyHistory As Boolean = False)
     ExportToFile outputWkb, onlyHistory
 End Sub
 
-Public Sub ILLGeo_ExportToWkb(ByVal outputWkb As Workbook)
+Private Sub ILLGeo_ExportToWkb(ByVal outputWkb As Workbook)
     ExportToWkb outputWkb
 End Sub
 
-Public Sub ILLGeo_Clear()
+Private Sub ILLGeo_Clear()
     Clear
 End Sub
 
-Public Sub ILLGeo_ClearHistoric()
+Private Sub ILLGeo_ClearHistoric()
     ClearHistoric
 End Sub
 
-Public Sub ILLGeo_Update(ByVal pass As ILLPasswords)
+Private Sub ILLGeo_Update(ByVal pass As ILLPasswords)
     Update pass
 End Sub
 
-Public Function ILLGeo_AdminCode(ByVal selectedAdmin As String) As String
+Private Sub ILLGeo_UpdateDict(ByVal dict As ILLdictionary)
+    UpdateDict dict
+End Sub
+
+Private Sub ILLGeo_UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
+    UpdateShowHide sh, dict
+End Sub
+
+Private Function ILLGeo_AdminCode(ByVal selectedAdmin As String) As String
     ILLGeo_AdminCode = AdminCode(selectedAdmin)
 End Function
 

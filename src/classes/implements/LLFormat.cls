@@ -808,9 +808,12 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
                     interiorColor:=interiorColorValue, _ 
                     FontSize:=dimensionValue
         rng.Locked = False
-        rng.EntireRow.Hidden = True
         
         If scope = HListPrintedHeader Then
+
+            'hide the headers
+            rng.EntireRow.Hidden = True
+
             'Now formatting the headers (main label)
             dimensionValue = DesignValue("hlist main label font size", False)
             dimensionValue = IIf(dimensionValue = 0, 12, dimensionValue + 3)

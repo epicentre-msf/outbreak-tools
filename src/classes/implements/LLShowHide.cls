@@ -223,7 +223,7 @@ Private Function ShowHideTable() As Range
 
               'For geo variables, add the main label and the section
               If (InStr(1, controlVal, "geo") > 0) Or (InStr(1,controlVal, "hf") > 0) _
-              Then mainLab = mainLab & ": " & vars.Value(varName:=varName, colName:="sub section")
+              Then mainLab = vars.Value(varName:=varName, colName:="sub section") & ": " & mainLab
 
               .Cells(tempCounter, startCol + 1).Value = mainLab
 
@@ -244,6 +244,8 @@ Private Function ShowHideTable() As Range
               .Cells(tempCounter, startCol + 3).Value = statusValue
               'column index (needed for further usages)
               .Cells(tempCounter, startCol + 4).Value = vars.Value(varName:=varName, colName:="column index")
+              'Control
+              .Cells(tempCounter, startCol + 5).Value = vars.Value(varName:=varName, colName:="control")
               tempCounter = tempCounter + 1
             End If
           End If
@@ -253,12 +255,14 @@ Private Function ShowHideTable() As Range
         .Cells(1, startCol + 2).Value = "variable name"
         .Cells(1, startCol + 3).Value = "status"
         .Cells(1, startCol + 4).Value = "column index"
+        .Cells(1, startCol + 5).Value = "control"
         'substract 1 for resizing purposes
         tempCounter = tempCounter - 1
-        Set loRng = .Range(.Cells(1, startCol + 1), .Cells(tempCounter, startCol + 4))
+        Set loRng = .Range(.Cells(1, startCol + 1), .Cells(tempCounter, startCol + 5))
         .ListObjects.Add(xlSrcRange, loRng, , xlYes).Name = loName
     End If
     Set Lo = .ListObjects(loName)
+    
     If Not (Lo.DataBodyRange Is Nothing) Then
       Set retRng = Lo.DataBodyRange
       Set retRng = .Range(retRng.Cells(1, 1), retRng.Cells(retRng.Rows.Count, 3))
@@ -534,7 +538,8 @@ Private Sub ChangeColWidth(ByVal indexValue As Long)
   Set trads = MessagesTrads()
 
   Do While (True)
-    inputValue = InputBox(trads.TranslatedValue("MSG_ColWidth"), "10")
+    inputValue = InputBox(trads.TranslatedValue("MSG_ColWidth"), trads.TranslatedValue("MSG_Enter"))
+    If (inputValue = vbNullString) Then Exit Sub
     If IsNumeric(inputValue) Then Exit Do
     If (MsgBox (trads.TranslatedValue("MSG_EnterNumeric"), vbOkCancel, "") = vbCancel) Then Exit Sub
   Loop
