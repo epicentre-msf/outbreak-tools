@@ -61,12 +61,21 @@ End Property
 Private Function Contains(ByVal varName As String) As Boolean
     Dim varRng As Range
     Dim Exist As Boolean
+    Dim searchValue As String
+
+    'Removing all wilcards in search
+    searchValue = Replace(varName, "*", "~*")
+    searchValue = Replace(searchValue, "?", "~?")
+    searchValue = Replace(searchValue, "!", "~!")
+    searchValue = Replace(searchValue, "[", "~[")
+    searchValue = Replace(searchValue, "]", "~]")
+    searchValue = Replace(searchValue, "#", "~#")
 
     Set varRng = VarRange()
-    If varName = vbNullString Then
+    If searchValue = vbNullString Then
         Exist = False
     Else
-        Exist = Not (varRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+        Exist = Not (varRng.Find(What:=searchValue, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
     End If
 
     Contains = Exist
