@@ -94,7 +94,7 @@ Public Sub UpdateSingleSpTable(ByVal rngName As String)
     Dim geo As ILLGeo
     Dim hasFormula As Boolean
 
-    BusyApp
+    BusyApp cursor:= xlNorthwestArrow
 
     'initialize passwords, translations etc.
     Initialize
@@ -169,8 +169,11 @@ Public Sub DevideByPopulation(ByVal rngName As String,  _
     Dim tabId As String
     Dim sp As ILLSpatial
 
-    BusyApp
+    BusyApp cursor:= xlNorthwestArrow
+    Initialize
+
     Set sh = ActiveSheet
+    pass.Unprotect "_active"
 
     tabId = Replace(rngName, "POPFACT_", vbNullString)
     prevFact = sh.Range("POPPREVFACT_" & tabId).Value
@@ -235,6 +238,7 @@ Public Sub DevideByPopulation(ByVal rngName As String,  _
         sh.Range("POPPREVFACT_" & tabId).Value = factorMult
     End If
     rng.calculate
+    pass.Protect "_active"
 
 Err:
     NotBusyApp
@@ -249,7 +253,8 @@ Public Sub FormatDevidePop(ByVal rngName)
     Set sh = ActiveSheet
 
     Initialize
-    BusyApp
+    BusyApp cursor:= xlNorthwestArrow
+
     pass.UnProtect "_active"
     tabId = Replace(rngName, "DEVIDEPOP_", vbNullString)
 
