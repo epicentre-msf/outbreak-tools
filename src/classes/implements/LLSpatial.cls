@@ -139,7 +139,6 @@ Private Sub Update()
               'Update spatial values on health facility
               varName = Replace(cellRng.Offset(-1).Value, HF & "_", "")
 
-
               If Exists(varName) Then
 
                 Set rng = Lo.ListColumns(HF & "_" & varName).DataBodyRange()
@@ -156,6 +155,8 @@ Private Sub Update()
       End If
     End If
   Next
+
+  actSh.UsedRange.Calculate
 End Sub
 
 Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
@@ -254,8 +255,8 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
         'Clear the pasting range
         pasteRng.Cells.Clear
 
-        'Resize the listObject
-        Set LoRng = sh.Range(cellRng.Cells(0, 1), cellRng.Cells(nbRows, 3))
+        'Resize the listObject (including the Attack Rate)
+        Set LoRng = sh.Range(cellRng.Cells(0, 1), cellRng.Cells(nbRows, 4))
         Lo.Resize LoRng
 
         'Sort on the formula column
@@ -263,12 +264,6 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
 
         'Sort the Calculate range for formulas
         sortRng.calculate
-
-        'Calculate the population range by shifting by 1.
-         sortRng.Offset(, 1).calculate
-
-        'Calculate the attack rate by shifting by 2
-        sortRng.Offset(, 2).calculate
 
         On Error Resume Next
           Lo.ListColumns(1).DataBodyRange.Sort key1:=sortRng, order1:=xlDescending
@@ -324,10 +319,10 @@ Private Sub Sort(ByVal tabId As String,  Optional ByVal onAR As Boolean = False)
     Set LoRng = Lo.DataBodyRange
     sortRngName = IIf(onAR, "attack_rate_", "formula_")
     sortRngName = sortRngName & ADMIN & adminCounter
-    Set sortRng = Lo.ListColumns(sortRngName).DataBodyRange
+    Set sortRng = Lo.ListColumns(sortRngName).Range
 
     On Error Resume Next
-      Lo.ListColumns(1).DataBodyRange.Sort key1:=sortRng, order1:=xlDescending
+      Lo.ListColumns(1).Range.Sort key1:=sortRng, order1:=xlDescending, Header:= xlYes
     On Error GoTo 0
   Next
 End Sub

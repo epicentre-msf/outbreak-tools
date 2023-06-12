@@ -406,11 +406,11 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
   'This is both for scope linelist and print sheet
   Case this.HIDDEN
 
-    fobj.OPT_Show.Caption = this.SHOW
     fobj.OPT_Hide.Visible = True
     fobj.OPT_Hide.Value = 1
-
+    
     If scope = ShowHideScopeLinelist Then
+      fobj.OPT_Show.Caption = this.SHOW
       fobj.OPT_Show.Top = 75
     End If
   Case Else 'Show Everything, and select show horizontally on printed sheet

@@ -139,6 +139,7 @@ Sub EventValueChangeAnalysis(Target As Range)
     Dim goToGraph As String
     Dim rngName As String
 
+    'Initialize translations (used in lltrads)
     InitializeTrads
 
     'Range name if it exists

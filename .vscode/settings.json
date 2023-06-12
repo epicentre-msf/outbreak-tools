@@ -20,7 +20,9 @@
         "commandCenter.border": "#e7e7e799"
     },
     "files.exclude": {
-        "**/.mock": true
+        "**/.mock": true,
+        "Rscripts/designer_aky.xlsb": true,
+        "Rscripts/designer_prev.xlsb": true
     },
     "editor.lineNumbers": "on",
     "editor.fontSize": 14,
