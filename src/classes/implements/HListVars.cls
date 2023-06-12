@@ -445,7 +445,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
 
     'Geo labels
     If (InStr(1, varControl, "geo") > 0) Or (varControl = "hf") Or _
-        (InStr(1, varControl, "pcode") > 0) Then
+        (InStr(1, varName, "pcode_adm") > 0) Then
 
         'Put geo color
         design.ApplyFormat cellRng.Offset(-2), scope:=HListGeoHeader
@@ -462,6 +462,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     If usePrinted Then
         Select Case varToPrint
         Case "print, vertical header"
+            'Don't take in account
             cellRng.Offset(-2).Orientation = 90
             cellRng.EntireColumn.AutoFit
             cellRng.EntireRow.RowHeight = 100

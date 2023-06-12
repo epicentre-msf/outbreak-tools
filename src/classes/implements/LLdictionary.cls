@@ -372,6 +372,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
     Dim statusIndex As Long
     Dim subSectionIndex As Long
     Dim mainLabelIndex As Long
+    Dim registerIndex As Long
     Dim varName As String
     Dim EndRow As Long
     Dim endCol As Long
@@ -388,6 +389,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
     varNameIndex = ColumnIndex("variable name")
     mainLabelIndex = ColumnIndex("main label")
     subSectionIndex = ColumnIndex("sub section")
+    registerIndex = ColumnIndex("register book")
     statusIndex = ColumnIndex("status")
     varPositionIndex = ColumnIndex("column index")
     controlDetailsIndex = ColumnIndex("control details")
@@ -436,6 +438,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
 
                 'Hide the pcode when everything is done (after the admin names)
                 .Cells(geoRowIndex + counter, statusIndex).Value = "hidden"
+                .Cells(geoRowIndex + counter, registerIndex).Value = "hidden"
                 .Cells(geoRowIndex + counter, controlIndex).Value = "formula"
                 .Cells(geoRowIndex + counter, mainLabelIndex).Value = "geo_pcode_adm" & counter
                 .Cells(geoRowIndex + counter, varNameIndex).Value = "pcode" & "_" & "adm" & counter & "_" & varName
@@ -455,6 +458,7 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
 
                 'Hide the pcode when everything is done (after the admin names)
                 .Cells(geoRowIndex + counter, statusIndex).Value = "hidden"
+                .Cells(geoRowIndex + counter, registerIndex).Value = "hidden"
                 .Cells(geoRowIndex + counter, controlIndex).Value = "formula"
                 .Cells(geoRowIndex + counter, mainLabelIndex).Value = "geo_concat_adm" & counter
                 .Cells(geoRowIndex + counter, varNameIndex).Value = "concat" & "_" & "adm" & counter & "_" & varName

@@ -240,6 +240,7 @@ Public Sub ClickRowHeight()
     Do While (True)
         inputValue = InputBox(tradsmess.TranslatedValue("MSG_RowHeight"), _
                              tradsmess.TranslatedValue("MSG_Enter"))
+        If inputValue = vbNullString Then Exit Sub
         If IsNumeric(inputValue) Then Exit Do
         If (MsgBox (tradsmess.TranslatedValue("MSG_EnterNumeric"), _
              vbOkCancel, "") = vbCancel) Then Exit Sub
@@ -558,11 +559,16 @@ Public Sub ClickPrintLL()
     sheetTag = sh.Cells(1, 3).Value
 
     'Warning if not on print or hlist worksheet
-    If  sheetTag <> "HList Print" Then
-        WarningOnSheet "MSG_PrintSheet"
+    If  sheetTag <> "HList Print" And sheetTag <> "HList" Then
+        WarningOnSheet "MSG_PrintOrDataSheet"
         Exit Sub
     End If
 
+    'On HListSheet, open the print sheet
+    If sheetTag = "HList" Then ClickOpenPrint
+
+    Set sh = ActiveSheet
+    
     On Error Resume Next
     Application.PrintCommunication = False
     'Avoid printing rows and column number'

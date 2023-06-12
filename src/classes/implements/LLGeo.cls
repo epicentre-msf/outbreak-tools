@@ -301,24 +301,24 @@ Err:
     sh.EnableCalculation = True
 End Property
 
+
 Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
-                             Optional ByVal concatValue As String = vbNullString, _
-                             Optional ByVal returnedSuffix As String = "pop") As String
+        Optional ByVal concatValue As String = vbNullString, _
+        Optional ByVal returnedSuffix As String = "pop") As String
 
     'Return the population or the pcode of a admin level, by default, return population
     'Returned Suffix is the suffix of the column to return.
 
     Dim sh As Worksheet
     Dim Lo As listObject
-    Dim LoRng As Range
-
+    Dim rowIndex As Long
     Dim LoName As String
     Dim colIndex As Long
     Dim colRange As Range
     Dim concatRng As Range
     Dim tabl As BetterArray
-    Dim cellRng As Range
     Dim returnedValue As String
+    Dim LoRng As Range
 
     Set sh = Wksh()
     Set tabl = TableNames()
@@ -327,52 +327,54 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
     Set Lo = sh.ListObjects(LoName)
 
     If Lo.DataBodyRange Is Nothing Then Exit Property
-
-    Set LoRng = Lo.DataBodyRange
+    Set LoRng = Lo.Range
 
     'returned column index
     If adminLevel <> LevelHF Then
-        colIndex = GeoColumnIndex("adm" & (adminLevel + 1) & "_" & returnedSuffix, adminLevel)
+    colIndex = GeoColumnIndex("adm" & (adminLevel + 1) & "_" & returnedSuffix, adminLevel)
     Else
-        colIndex = HFColumnIndex("hf_" & returnedSuffix)
+    colIndex = HFColumnIndex("hf_" & returnedSuffix)
     End If
 
     Select Case adminLevel
 
-    Case LevelGeoAdmin1
+        Case LevelGeoAdmin1
 
-        Set concatRng = sh.Range("adm1_concat")
+        Set concatRng = Lo.ListColumns("adm1_concat").Range
 
-    Case LevelGeoAdmin2
+        Case LevelGeoAdmin2
 
-        Set concatRng = sh.Range("adm2_concat")
+        Set concatRng = Lo.ListColumns("adm2_concat").Range
 
-    Case LevelGeoAdmin3
+        Case LevelGeoAdmin3
 
-        Set concatRng = sh.Range("adm3_concat")
+        Set concatRng = Lo.ListColumns("adm3_concat").Range
 
-    Case LevelGeoAdmin4
+        Case LevelGeoAdmin4
 
-        Set concatRng = sh.Range("adm4_concat")
+        Set concatRng = Lo.ListColumns("adm4_concat").Range
 
-    Case LevelHF
+        Case LevelHF
 
-        Set concatRng = sh.Range("hf_concat")
+        Set concatRng = Lo.ListColumns("hf_concat").Range
     End Select
 
     'Use index match to get the result
-    Set cellRng = concatRng.Find(What:=concatValue, LookAt:=xlWhole, MatchCase:=True)
+    rowIndex = 0
+
+    On Error Resume Next
+        rowIndex = Application.WorksheetFunction.Match(concatValue, concatRng, 0)
+    On Error GoTo 0
 
     returnedValue = vbNullString
 
-    If (Not cellRng Is Nothing) Then
+    If (rowIndex <> 0) Then
         On Error Resume Next
-        returnedValue = sh.Cells(cellRng.Row, colIndex).Value
+        returnedValue = LoRng.Cells(rowIndex, colIndex).Value
         On Error GoTo 0
     End If
 
     ValueOf = returnedValue
-
 End Property
 
 
@@ -641,6 +643,7 @@ Private Sub Import(ByVal fromWkb As Workbook)
     Dim actRng As Range
     Dim concatFormula As String
     Dim sep As String
+    Dim concatRng As Range
 
 
     Set admNames = New BetterArray
@@ -675,6 +678,8 @@ Private Sub Import(ByVal fromWkb As Workbook)
                 'Add a concat table (for admin selections)
                 Set impRng = Lo.ListRows(1).Range
 
+                'Clear the adm concat range before writing the formulas.
+                
                 Select Case Lo.Name
 
                 Case "T_ADM1"
@@ -725,6 +730,11 @@ Private Sub Import(ByVal fromWkb As Workbook)
                 End Select
 
                 If concatFormula <> vbNullString Then
+                    'clear the concat range before importing
+                    Set concatRng = sh.Range(sh.Cells(2, hRng.Column + hRng.Cells.Count - 1),  _ 
+                                             sh.Cells(LastRow, hRng.Column + hRng.Cells.Count - 1) _ 
+                                            )
+                    concatRng.ClearContents
                     sh.Cells(impRng.Row, hRng.Column + hRng.Cells.Count - 1).formula = concatFormula
                 End If
 
