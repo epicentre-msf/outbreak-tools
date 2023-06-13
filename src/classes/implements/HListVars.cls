@@ -464,8 +464,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
         Case "print, vertical header"
             'Don't take in account
             cellRng.Offset(-2).Orientation = 90
-            cellRng.EntireColumn.AutoFit
-            cellRng.EntireRow.RowHeight = 100
+            cellRng.Offset(-2).EntireColumn.AutoFit
         Case "hidden"
             cellRng.EntireColumn.Hidden = True
         End Select

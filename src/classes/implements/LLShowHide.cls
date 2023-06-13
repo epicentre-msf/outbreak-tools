@@ -161,38 +161,40 @@ End Sub
 
 Private Function ShowHideTable() As Range
 
-    Const SHOWHIDEPREF As String = "ShowHideTable_"
+  Const SHOWHIDEPREF As String = "ShowHideTable_"
 
-    Dim tpsh As Worksheet
-    Dim Lo As ListObject
-    Dim loName As String
-    Dim dict As ILLdictionary
-    Dim retRng As Range
-    Dim vars As ILLvariables
-    Dim sh As Worksheet
-    Dim varRng As Range
-    Dim showHideColumn As String
-    Dim sheetName As String
-    Dim cellRng As Range
-    Dim tempCounter As Long
-    Dim scope As ShowHideScope
-    Dim counterSheetName As String
-    Dim mainLab As String
-    Dim controlVal As String
-    Dim varName As String
-    Dim loRng As Range
-    Dim startCol As Long
-    Dim tabName As String
-    Dim defaultValue As String
-    Dim statusValue As String
+  Dim tpsh As Worksheet
+  Dim Lo As ListObject
+  Dim loName As String
+  Dim dict As ILLdictionary
+  Dim retRng As Range
+  Dim vars As ILLvariables
+  Dim sh As Worksheet
+  Dim varRng As Range
+  Dim showHideColumn As String
+  Dim sheetName As String
+  Dim cellRng As Range
+  Dim tempCounter As Long
+  Dim scope As ShowHideScope
+  Dim counterSheetName As String
+  Dim mainLab As String
+  Dim controlVal As String
+  Dim varName As String
+  Dim loRng As Range
+  Dim startCol As Long
+  Dim tabName As String
+  Dim defaultValue As String
+  Dim statusValue As String
 
-    Set tpsh = TempSheet()
-    Set sh = Wksh()
-    tabName = sh.Cells(1, 4).Value
-    loName = SHOWHIDEPREF & tabName
+  Set tpsh = TempSheet()
+  Set sh = Wksh()
+  tabName = sh.Cells(1, 4).Value
+  loName = SHOWHIDEPREF & tabName
 
+  
   With tpsh
     If Not LoExists(loName) Then
+
       'Create the listObject
       Set dict = Dictionary()
       Set varRng = dict.DataRange("variable name")
@@ -233,12 +235,26 @@ Private Function ShowHideTable() As Range
               'Status
               statusValue = vars.Value(varName:=varName, colName:=showHideColumn)
 
+              Select Case statusValue
+              Case "mandatory"
+                statusValue = this.MANDATORY
+              Case "optional"
+                statusValue = this.SHOWN
+              Case "print, vertical header"
+                statusValue = this.PRINTSHOWVERTI
+              Case "print, horizontal header"
+                statusValue = this.PRINTSHOWHORIZ
+              Case "hidden"
+                statusValue = this.HIDDEN
+              End Select
+
               'On admin 1 and Linelist, the status is mandatory
               If (controlVal = "geo1") And (scope = ShowHideScopeLinelist) Then _
                statusValue = this.MANDATORY
 
               'The default value is the value to write if nothing found as status
-              '(empty registerbook column)
+              '(empty registerbook column)             
+
               If statusValue = vbNullString Then statusValue = defaultValue
 
               .Cells(tempCounter, startCol + 3).Value = statusValue

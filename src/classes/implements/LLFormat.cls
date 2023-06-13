@@ -824,18 +824,18 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
             'AutoFit columns
             For Each cellRng in rng
                 If Not cellRng.EntireColumn.Hidden Then 
-                    cellRng.EntireColumn.ColumnWidth = 50
+                    cellRng.EntireColumn.ColumnWidth = 30
                     cellRng.WrapText = True
                 End If
             Next
 
-            'Formating sub section
+            'Formating sub section (increasing the font)
             dimensionValue = DesignValue("sub section font size", False)
             dimensionValue = IIf(dimensionValue = 0, 18, dimensionValue + 7)
             Set rng = rng.Offset(-1)
             FormatRange rng, FontSize:=dimensionValue
 
-            'Formating main section
+            'Formating main section (increasing the font)
             dimensionValue = DesignValue("main section font size", False)
             dimensionValue = IIf(dimensionValue = 0, 22, dimensionValue + 10)
             Set rng = rng.Offset(-1)
