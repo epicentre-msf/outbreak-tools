@@ -199,6 +199,8 @@ Private Sub Translate(ByVal trans As ITranslation)
     Set expData = Data()
     Set rng = expData.DataRange("label button")
     trans.TranslateRange rng
+    Set rng = expData.DataRange("file name")
+    trans.TranslateRange rng, containsFormula:=True
 End Sub
 
 'Import from another worksheet
