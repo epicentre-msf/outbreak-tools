@@ -13,25 +13,29 @@ Option Explicit
 '
 '@Example: If "A1" contains date, DATE_RANGE("A1")
 
+Public Enum DayList
+    Monday = 1
+    TuesDay = 2
+    Wednesday = 3
+    Thursday = 4
+    Friday = 5
+    Saturday = 6
+    Sunday = 0
+End Enum
+
 Public Function DATE_RANGE(DateRng As Range) As String
     DATE_RANGE = Format(Application.WorksheetFunction.Min(DateRng), "DD/MM/YYYY") & _
                                                                                   " - " & Format(Application.WorksheetFunction.Max(DateRng), "DD/MM/YYYY")
 End Function
 
-'
-'
-'
-'
+
 Public Function PLAGE_VALUE(rng1 As Range, rng2 As Range) As String
     PLAGE_VALUE = chr(13) & chr(10) & Format(rng1, "d-mmm-yyyy") & " " & ChrW(9472) & " " & Format(rng2, "d-mmm-yyyy")
 End Function
 
-'
-'
-'
 Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Variant
 
-    Application.Volatile
+    'Application.Volatile
 
     Dim sValLook As String
     Dim sSheetLook As String                     'Sheet name where to look for values
@@ -43,7 +47,8 @@ Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Var
     Dim iColLook As Long                         'columns to look and return values
     Dim retMatch As Variant
     Dim iColVal As Long
-    Dim indexMatch As Long
+    Dim cellRngLook As Range
+    Dim cellRngVal As Range
 
     sValLook = rng.Value
 
@@ -58,17 +63,20 @@ Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Var
         'There is only one table per worksheet, so I can just take the first listObject
         Set ColRngLook = ThisWorkbook.Worksheets(sSheetLook).ListObjects(1).ListColumns(iColLook).Range
         Set ColRngVal = ThisWorkbook.Worksheets(sSheetVal).ListObjects(1).ListColumns(iColVal).Range
-        indexMatch = -1
+        Set cellRngLook = ColRngLook.Cells(1, 1)
+        Set cellRngVal = ColRngVal.Cells(1, 1)
+        
+        Do While (cellRngLook.Value <> sValLook) And (cellRngLook.Row <= ColRngLook.Cells(ColRngLook.Rows.Count, 1).Row)
+            Set cellRngLook = cellRngLook.Offset(1)
+            Set cellRngVal = cellRngVal.Offset(1)
+        Loop
+        
+        'Match
+        If cellRngLook.Row <= ColRngLook.Cells(ColRngLook.Rows.Count, 1).Row Then retMatch = cellRngVal.Value
+        
+     End If
 
-        On Error Resume Next
-        With Application.WorksheetFunction
-            indexMatch = .Match(sValLook, ColRngLook, 0)
-            retMatch = .Index(ColRngVal, indexMatch)
-        End With
-        On Error GoTo 0
-    End If
-
-    If indexMatch <> -1 Then VALUE_OF = retMatch
+   VALUE_OF = retMatch
 End Function
 
 '
@@ -104,46 +112,9 @@ Public Function ComputedOnFiltered() As String
 
     ComputedOnFiltered = infoValue
 End Function
-'
-'
-'Epicemiological week function
-Public Function Epiweek(jour As Long) As Long
-    Dim annee As Long
-    Dim Jour0_2014 As Long, Jour0_2015 As Long, Jour0_2016 As Long, Jour0_2017 As Long, Jour0_2018 As Long, Jour0_2019 As Long, Jour0_2020 As Long, Jour0_2021 As Long, Jour0_2022 As Long
-    Jour0_2014 = 41638
-    Jour0_2015 = 42002
-    Jour0_2016 = 42366
-    Jour0_2017 = 42730
-    Jour0_2018 = 43101
-    Jour0_2019 = 43465
-    Jour0_2020 = 43829
-    Jour0_2021 = 44193
-    Jour0_2022 = 44557
-    annee = Year(jour)
-    Select Case annee
-    Case 2014
-        Epiweek = 1 + Int((jour - Jour0_2014) / 7)
-    Case 2015
-        Epiweek = 1 + Int((jour - Jour0_2015) / 7)
-    Case 2016
-        Epiweek = 1 + Int((jour - Jour0_2016) / 7)
-    Case 2017
-        Epiweek = 1 + Int((jour - Jour0_2017) / 7)
-    Case 2018
-        Epiweek = 1 + Int((jour - Jour0_2018) / 7)
-    Case 2019
-        Epiweek = 1 + Int((jour - Jour0_2019) / 7)
-    Case 2020
-        Epiweek = 1 + Int((jour - Jour0_2020) / 7)
-    Case 2021
-        Epiweek = 1 + Int((jour - Jour0_2021) / 7)
-    Case 2022
-        Epiweek = 1 + Int((jour - Jour0_2022) / 7)
-    End Select
-End Function
 
 'Epiweek function without specifying the year in select cases (works with all years)
-Public Function Epiweek2(currentDate As Long) As Long
+Public Function Epiweek(currentDate As Long, Optional ByVal weekStart As DayList = Monday) As Long
 
     Dim inDate As Long
     Dim firstDate As Long
@@ -151,8 +122,8 @@ Public Function Epiweek2(currentDate As Long) As Long
     Dim borderLeftDate As Long
 
     inDate = DateSerial(Year(currentDate), 1, 1)
-
-    firstDayDate = inDate - Weekday(inDate, 2) + 1
+    firstDayDate = inDate - Weekday(inDate, weekStart + 1) + 1
+    
     borderLeftDate = DateSerial(Year(currentDate) - 1, 12, 29)
     firstDate = IIf(firstDayDate < borderLeftDate, firstDayDate + 7, firstDayDate)
 
