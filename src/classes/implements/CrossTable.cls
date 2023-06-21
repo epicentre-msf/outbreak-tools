@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Create and format crosstables for analysis"
 
-'@PredeclareId
+'@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("Create and format crosstables for analysis")
 
@@ -304,13 +304,11 @@ Private Sub AddRows()
     Dim transMissing As String
     Dim transTotal As String
     Dim counter As Long
-    Dim tabId As String
     Dim spatType As String
 
     Start = StartRow
     Set sh = Wksh()
     Set specs = Specifications()
-    tabId = specs.TableId
     Set trans = trads()
     Set vars = LLVariables.Create(specs.Dictionary)
 
