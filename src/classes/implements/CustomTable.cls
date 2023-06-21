@@ -258,7 +258,11 @@ Private Property Get Value(ByVal colName As String, ByVal keyName As String) As 
   Dim colRng As Range
   Dim sh As Worksheet
   Dim FUN As WorksheetFunction
-  Dim formValue As Variant
+  Dim retValue As Variant
+
+  'Iterations for id and return ranges
+  Dim cellidRng As Range
+  Dim cellRetRng As Range
 
   If IdValue = vbNullString Then Exit Property
 
@@ -267,12 +271,22 @@ Private Property Get Value(ByVal colName As String, ByVal keyName As String) As 
   If (Not ColumnExists(colName)) Or (Not ColumnExists(IdValue)) Then Exit Property
   Set idRng = DataRange(IdValue)
   Set colRng = DataRange(colName)
+  Set cellidRng = idRng.Cells(1, 1)
+  Set cellRetRng = colRng.Cells(1, 1)
+
+  Do while (cellidRng.Value <> keyName) And _ 
+           (cellidRng.Row <= idRng.Cells(idRng.Rows.Count, 1).Row)
+    Set cellidRng = cellidRng.Offset(1)
+    Set cellRetRng = cellRetRng.Offset(1)
+  Loop
 
   On Error Resume Next
-  formValue = CStr(FUN.Index(colRng, FUN.Match(keyName, idRng, 0), 1))
+    If cellidRng.Row <= idRng.Cells(idRng.Rows.Count, 1).Row Then
+      retValue = cellRetRng.Value
+    End If
   On Error GoTo 0
 
-  If TypeName(formValue) = "String" Then Value = formValue
+  If TypeName(retValue) = "String" Then Value = retValue
 End Property
 
 Private Property Get Name() As String

@@ -128,9 +128,9 @@ Public Function Epiweek(currentDate As Long, Optional ByVal weekStart As DayList
     firstDate = IIf(firstDayDate < borderLeftDate, firstDayDate + 7, firstDayDate)
 
     If currentDate >= firstDate Then
-        Epiweek2 = 1 + (currentDate - firstDate) \ 7
+        Epiweek = 1 + (currentDate - firstDate) \ 7
     Else
-        Epiweek2 = Epiweek2(borderLeftDate - 1)
+        Epiweek = Epiweek(borderLeftDate - 1)
     End If
 End Function
 

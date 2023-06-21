@@ -311,7 +311,6 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
 
     Dim sh As Worksheet
     Dim Lo As listObject
-    Dim rowIndex As Long
     Dim LoName As String
     Dim colIndex As Long
     Dim colRange As Range
@@ -319,6 +318,8 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
     Dim tabl As BetterArray
     Dim returnedValue As String
     Dim LoRng As Range
+    Dim cellRng As Range
+    Dim retRng As Range
 
     Set sh = Wksh()
     Set tabl = TableNames()
@@ -331,9 +332,9 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
 
     'returned column index
     If adminLevel <> LevelHF Then
-    colIndex = GeoColumnIndex("adm" & (adminLevel + 1) & "_" & returnedSuffix, adminLevel)
+        colIndex = GeoColumnIndex("adm" & (adminLevel + 1) & "_" & returnedSuffix, adminLevel)
     Else
-    colIndex = HFColumnIndex("hf_" & returnedSuffix)
+        colIndex = HFColumnIndex("hf_" & returnedSuffix)
     End If
 
     Select Case adminLevel
@@ -360,17 +361,20 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
     End Select
 
     'Use index match to get the result
-    rowIndex = 0
+    Set cellRng = concatRng.Cells(1, 1)
+    Set retRng = Lo.Cells(1, colIndex)
 
-    On Error Resume Next
-        rowIndex = Application.WorksheetFunction.Match(concatValue, concatRng, 0)
-    On Error GoTo 0
+    Do While (cellRng.Value <> concatValue) And _ 
+             (cellRng.Row <= concatRng.Cells(concatRng.Rows.Count, 1).Row) 
+        Set cellRng = cellRng.Offset(1)
+        Set retRng = retRng.Offset(1)   
+    Loop
 
     returnedValue = vbNullString
 
-    If (rowIndex <> 0) Then
+    If (cellRng.Row <= concatRng.Cells(concatRng.Rows.Count, 1).Row)  Then
         On Error Resume Next
-        returnedValue = LoRng.Cells(rowIndex, colIndex).Value
+        returnedValue = CStr(retRng.Offset(1))
         On Error GoTo 0
     End If
 
@@ -661,7 +665,7 @@ Private Sub Import(ByVal fromWkb As Workbook)
         'Only sheet with valid names are used for import
         With impsh
             If admNames.Includes(.Name) Then
-                LastRow = .UsedRange.Rows.Count
+                LastRow = Application.WorksheetFunction.Max(.UsedRange.Rows.Count, 2)
                 Set Lo = sh.ListObjects("T_" & impsh.Name) 'Lo Name
                 Set hRng = Lo.HeaderRowRange
                 counter = 1
@@ -729,20 +733,21 @@ Private Sub Import(ByVal fromWkb As Workbook)
 
                 End Select
 
-                If concatFormula <> vbNullString Then
-                    'clear the concat range before importing
-                    Set concatRng = sh.Range(sh.Cells(2, hRng.Column + hRng.Cells.Count - 1),  _ 
-                                             sh.Cells(LastRow, hRng.Column + hRng.Cells.Count - 1) _ 
-                                            )
-                    concatRng.ClearContents
-                    sh.Cells(impRng.Row, hRng.Column + hRng.Cells.Count - 1).formula = concatFormula
-                End If
+                'clear the concat range before resizing and setting the formula
+                Set concatRng = sh.Range(sh.Cells(2, hRng.Column + hRng.Cells.Count - 1),  _ 
+                                sh.Cells(Lo.Range.Rows.Count, hRng.Column + hRng.Cells.Count - 1))
+                concatRng.ClearContents
 
                 'I know that each geo listobject starts on the first line
                 Set actRng = sh.Range(sh.Cells(1, hRng.Column), sh.Cells(LastRow, hRng.Column + hRng.Cells.Count - 1))
 
                 'Resize the listObject and add a concatenate formula
                 Lo.Resize actRng
+
+                If concatFormula <> vbNullString Then
+                    sh.Cells(impRng.Row, hRng.Column + hRng.Cells.Count - 1).formula = concatFormula
+                End If
+                
             End If
         End With
     Next
