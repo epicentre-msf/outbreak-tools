@@ -1,5 +1,7 @@
 Attribute VB_Name = "FormLogicShowHide"
 Attribute VB_Description = "Events show/hide in the linelist"
+'@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
+
 Option Explicit
 
 

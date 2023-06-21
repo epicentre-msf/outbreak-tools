@@ -236,7 +236,7 @@ Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, e
     Case "day"
         sValue = Format(endDate, "dd-mmm-yyyy")
     Case "week"
-        epiW = Epiweek2(endDate)
+        epiW = Epiweek(endDate)
         epiYear = IIf(((epiW = 52 Or epiW = 53) And Month(endDate) = 1), Year(endDate) - 1, Year(endDate))
         sValue = TranslateLLMsg("MSG_W") & epiW & " - " & epiYear
     Case "month"

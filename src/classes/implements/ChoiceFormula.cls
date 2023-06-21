@@ -59,7 +59,7 @@ Private Property Get casewhenObject() As ICaseWhen
   formula = ChoiceSpecifications()
   'convert the choice_formula to casewhen for processing
   'The comma here is important!
-  convertedFormula = Application.WorksheetFunction.Trim(Replace(formula, Split(formula, ",")(0) & ",", ""))
+  convertedFormula = Application.WorksheetFunction.Trim(Replace(formula, Split(formula, ",")(0) & ",", vbNullString))
   convertedFormula = "CASE_WHEN(" & convertedFormula
   convertedFormula = Left(convertedFormula, Len(convertedFormula) - 1)
   convertedFormula = convertedFormula & ", " & chr(34) & chr(34) & ")"
@@ -99,7 +99,7 @@ Private Function choiceName() As String
   Dim formula As String
   If Valid() Then
       formula = ChoiceSpecifications()
-      choiceName = Replace(Split(formula, ",")(0), "CHOICE_FORMULA(", "")
+      choiceName = Replace(Split(formula, ",")(0), "CHOICE_FORMULA(", vbNullString)
   End If
 End Function
 
