@@ -362,7 +362,7 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
 
     'Use index match to get the result
     Set cellRng = concatRng.Cells(1, 1)
-    Set retRng = Lo.Cells(1, colIndex)
+    Set retRng = Lo.Range.Cells(1, colIndex)
 
     Do While (cellRng.Value <> concatValue) And _ 
              (cellRng.Row <= concatRng.Cells(concatRng.Rows.Count, 1).Row) 
@@ -374,7 +374,7 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
 
     If (cellRng.Row <= concatRng.Cells(concatRng.Rows.Count, 1).Row)  Then
         On Error Resume Next
-        returnedValue = CStr(retRng.Offset(1))
+        returnedValue = CStr(retRng.Value)
         On Error GoTo 0
     End If
 

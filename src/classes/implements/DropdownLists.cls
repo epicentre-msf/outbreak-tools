@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Add dropdowns to the linelist"
 
-
+'@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Add dropdowns to the linelist")
-'@IgnoreModule
 
 Option Explicit
 Implements IDropdownLists
@@ -193,9 +193,9 @@ Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
 
         .IgnoreBlank = True
         .InCellDropdown = True
-        .InputTitle = ""
-        .errorTitle = ""
-        .InputMessage = ""
+        .InputTitle = vbNullString
+        .errorTitle = vbNullString
+        .InputMessage = vbNullString
         .errorMessage = message
         .ShowInput = True
         .ShowError = True

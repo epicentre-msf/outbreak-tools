@@ -8,7 +8,7 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
-
+'@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Translation of the designer")
 

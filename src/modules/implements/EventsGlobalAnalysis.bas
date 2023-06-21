@@ -54,7 +54,7 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
     Dim delRng As Range
     Dim LoRng As Range
     Dim rowCounter As Long
-    Dim filtLoHrng 'HeaderRowRange of listObject on filtered sheet
+    Dim filtLoHrng As Range 'HeaderRowRange of listObject on filtered sheet
 
     On Error GoTo ErrUpdate
 

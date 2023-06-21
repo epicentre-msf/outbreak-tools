@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Create and format crosstables for analysis"
 
-
-'@Folder("Dictionary")
-'@ModuleDescription("")
-'@IgnoreModule
+'@PredeclareId
+'@Folder("Analysis")
+'@ModuleDescription("Create and format crosstables for analysis")
 
 Option Explicit
 
@@ -32,7 +32,6 @@ Private this As TCrossTable
 Private Const STANDARDSTARTCOL As Long = 3
 Private Const CLASSNAME As String = "CrossTable"
 Private Const NBROWSTIMESERIES As Long = 56
-Private Const COMMANDDEVIDE As String = "DevideByPopulation"
 
 Public Function Create(ByVal specs As ITablesSpecs, ByVal outputWksh As Worksheet, ByVal trans As ITranslation) As ICrossTable
     'Check if values are not defined
@@ -100,7 +99,6 @@ Private Property Get StartRow() As Long
     Dim sh As Worksheet
     Dim specs As ITablesSpecs
     Dim strtRow As Long
-    Dim rowSet As Boolean
     Dim tabId As String                          'Test there is a row specification
 
     Set specs = Specifications()
@@ -186,7 +184,6 @@ Private Property Get EndColumn() As Long
 End Property
 
 Public Property Get HeaderRange() As Range
-    Dim Start As Long
     Dim sh As Worksheet
     Set sh = Wksh()
     With sh
@@ -259,7 +256,7 @@ Public Property Get RowRange(ByVal rowVal As String, Optional ByVal includeHeade
     End If
 End Property
 
-Public Property Get ColumnRange(ByVal colVal As String, Optional ByVal includeHeaders = False, Optional ByVal onlyCategories As Boolean = False) As Range
+Public Property Get ColumnRange(ByVal colVal As String, Optional ByVal includeHeaders As Boolean = False, Optional ByVal onlyCategories As Boolean = False) As Range
     Dim rng As Range
     Dim valueColumn As Long
     Dim Start As Long
@@ -402,7 +399,6 @@ End Function
 
 Private Sub BivariateColumns(ByVal Start As Long, ByVal specs As ITablesSpecs, ByVal trans As ITranslation, _
                              ByVal sh As Worksheet)
-    Dim colVar As String
     Dim colLab As String
     Dim colData As BetterArray
     Dim newColData As BetterArray 'New column data to use for sending empty values when add percentage = True
@@ -412,8 +408,6 @@ Private Sub BivariateColumns(ByVal Start As Long, ByVal specs As ITablesSpecs, B
     Dim transTotal As String
     Dim transPercent As String
     Dim counter As Long
-    Dim totalValue As String
-    Dim tabId As String
 
     Set colData = New BetterArray
     Set newColData = New BetterArray
@@ -421,9 +415,7 @@ Private Sub BivariateColumns(ByVal Start As Long, ByVal specs As ITablesSpecs, B
     colData.LowerBound = 1
     labData.LowerBound = 1
     newColData.LowerBound = 1
-    tabId = specs.TableId
     percentageValue = specs.Value("percentage")
-    totalValue = specs.Value("total")
     transMissing = trans.TranslatedValue("MSG_NA")
     transTotal = trans.TranslatedValue("MSG_Total")
     transPercent = trans.TranslatedValue("MSG_Percent")
@@ -490,13 +482,12 @@ Private Sub AddColumns()
     Dim timeVarLab As String
     Dim tabId As String
 
-
     Start = StartRow
     Set sh = Wksh()
     Set specs = Specifications()
-    tabId = specs.TableId
     Set trans = trads()
     Set vars = LLVariables.Create(specs.Dictionary)
+    tabId = specs.TableId()
     Set colData = New BetterArray
     colData.LowerBound = 1
 
@@ -938,7 +929,6 @@ Private Sub Format(ByVal desFormat As ILLFormat)
     Dim sh As Worksheet
     Dim specs As ITablesSpecs
     Dim rng As Range
-    Dim cellRng As Range
     Dim rngTable As BetterArray
     Dim counter As Long
     Dim rngName As String
@@ -948,14 +938,10 @@ Private Sub Format(ByVal desFormat As ILLFormat)
     Dim HasPercent As Boolean
     Dim NewSection As Boolean
     Dim tablType As AnalysisTablesType
-    Dim but As IButtons
-    Dim trans As ITranslation
-    Dim commandName As String 'command name for devide By button
 
     Set rngTable = New BetterArray
     Set specs = Specifications
     Set sh = Wksh()
-    Set trans = trads()
     Set DesignFormat = desFormat
 
     tabId = specs.TableId
@@ -1259,77 +1245,77 @@ Private Sub ThrowExecutionError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
 End Sub
 
-Public Sub ICrossTable_AddRows()
+Private Sub ICrossTable_AddRows()
     AddRows
 End Sub
 
-Public Sub ICrossTable_AddColumns()
+Private Sub ICrossTable_AddColumns()
     AddColumns
 End Sub
 
-Public Sub ICrossTable_AddHeader()
+Private Sub ICrossTable_AddHeader()
     AddHeader
 End Sub
 
-Public Sub ICrossTable_NameRanges()
+Private Sub ICrossTable_NameRanges()
     NameRanges
 End Sub
 
-Public Sub ICrossTable_Format(ByVal DesignFormat As ILLFormat)
+Private Sub ICrossTable_Format(ByVal DesignFormat As ILLFormat)
     Format DesignFormat
 End Sub
 
-Public Sub ICrossTable_Build()
+Private Sub ICrossTable_Build()
     Build
 End Sub
 
-Public Property Get ICrossTable_HeaderRange() As Range
+Private Property Get ICrossTable_HeaderRange() As Range
     Set ICrossTable_HeaderRange = HeaderRange
 End Property
 
-Public Property Get ICrossTable_TimeSeriesHeader() As String
+Private Property Get ICrossTable_TimeSeriesHeader() As String
     ICrossTable_TimeSeriesHeader = TimeSeriesHeader()
 End Property
 
-Public Property Get ICrossTable_RowsCategoriesRange(Optional ByVal includeHeaders As Boolean = True, Optional ByVal onlyCategories As Boolean = False) As Range
+Private Property Get ICrossTable_RowsCategoriesRange(Optional ByVal includeHeaders As Boolean = True, Optional ByVal onlyCategories As Boolean = False) As Range
     Set ICrossTable_RowsCategoriesRange = RowsCategoriesRange(includeHeaders, onlyCategories)
 End Property
 
-Public Property Get ICrossTable_ColumnRange(ByVal colVal As String, _
+Private Property Get ICrossTable_ColumnRange(ByVal colVal As String, _
                                             Optional ByVal onlyCategories As Boolean = False, _
                                             Optional ByVal includeHeaders As Boolean = False) As Range
     Set ICrossTable_ColumnRange = ColumnRange(colVal, includeHeaders, onlyCategories)
 End Property
 
-Public Property Get ICrossTable_RowRange(ByVal rowVal As String, Optional ByVal includeHeaders As Boolean = True) As Range
+Private Property Get ICrossTable_RowRange(ByVal rowVal As String, Optional ByVal includeHeaders As Boolean = True) As Range
     Set ICrossTable_RowRange = RowRange(rowVal, includeHeaders)
 End Property
 
-Public Property Get ICrossTable_StartRow() As Long
+Private Property Get ICrossTable_StartRow() As Long
     ICrossTable_StartRow = StartRow
 End Property
 
-Public Property Get ICrossTable_Previous() As ICrossTable
+Private Property Get ICrossTable_Previous() As ICrossTable
     Set ICrossTable_Previous = Previous
 End Property
 
-Public Property Get ICrossTable_Specifications() As ITablesSpecs
+Private Property Get ICrossTable_Specifications() As ITablesSpecs
     Set ICrossTable_Specifications = Specifications
 End Property
 
-Public Property Get ICrossTable_Wksh() As Worksheet
+Private Property Get ICrossTable_Wksh() As Worksheet
     Set ICrossTable_Wksh = Wksh()
 End Property
 
-Public Property Get ICrossTable_NumberOfColumns() As Long
+Private Property Get ICrossTable_NumberOfColumns() As Long
     ICrossTable_NumberOfColumns = NumberOfColumns()
 End Property
 
-Public Property Get ICrossTable_EndColumn() As Long
+Private Property Get ICrossTable_EndColumn() As Long
     ICrossTable_EndColumn = EndColumn()
 End Property
 
-Public Property Get ICrossTable_EndRow() As Long
+Private Property Get ICrossTable_EndRow() As Long
     ICrossTable_EndRow = EndRow()
 End Property
 

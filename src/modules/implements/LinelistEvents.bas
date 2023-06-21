@@ -157,8 +157,8 @@ Sub EventValueChangeLinelist(Target As Range)
         varName = sh.Cells(startLine - 1, targetColumn).Value
         varSubLabel = vars.Value(varName:=varName, colName:="sub label")
 
-        sLabel = Replace(Target.Value, varSubLabel, "")
-        sLabel = Replace(sLabel, chr(10), "")
+        sLabel = Replace(Target.Value, varSubLabel, vbNullString)
+        sLabel = Replace(sLabel, chr(10), vbNullString)
 
         vars.SetValue varName:=varName, colName:="main label", newValue:=sLabel
 
@@ -176,7 +176,7 @@ Sub EventValueChangeLinelist(Target As Range)
     If Not Intersect(Target, rng) Is Nothing Then
         goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
 
-        sLabel = Replace(Target.Value, goToSection & ": ", "")
+        sLabel = Replace(Target.Value, goToSection & ": ", vbNullString)
         Set hRng = sh.ListObjects(1).HeaderRowRange
         Set hRng = hRng.Offset(-3)
 
@@ -268,7 +268,7 @@ Public Sub UpdateListAuto(Wksh As Worksheet)
                         iChoiceCol = choiceLo.Range.Column
                         If Not choiceLo.DataBodyRange Is Nothing Then choiceLo.DataBodyRange.Delete
                         arrTable.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
-                        iRow = .Cells(Rows.Count, iChoiceCol).End(xlUp).Row
+                        iRow = .Cells(.Rows.Count, iChoiceCol).End(xlUp).Row
                         choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
                         'Sort in descending order
                         Set rng = choiceLo.ListColumns(1).Range
@@ -313,7 +313,7 @@ Sub EventValueChangeVList(Target As Range)
     goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
 
     If Not Intersect(Target, rng) Is Nothing Then
-        sLabel = Replace(Target.Value, goToSection & ": ", "")
+        sLabel = Replace(Target.Value, goToSection & ": ", vbNullString)
         Set RngLook = sh.Cells.Find(What:=sLabel, LookAt:=xlWhole, MatchCase:=True)
         If Not RngLook Is Nothing Then RngLook.Activate
     End If
