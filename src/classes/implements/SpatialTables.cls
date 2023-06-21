@@ -121,6 +121,25 @@ Private Function LoExists(ByVal LoName As String) As Boolean
   LoExists = (Not Lo Is Nothing)
 End Function
 
+'GeoPopulation function from index and match
+Private Function GeopopulationFunction(ByVal adminName As String, ByVal rangeAddress As String) As String
+  Dim TabName As String 'Name of the table in geo sheet
+  Dim concatName As String 'Name of the concat range
+  Dim centralPart As String 'Part with the INDEX/MATCH function
+  Dim popColIndex As Integer 'Column of the population in the geo sheet
+
+  TabName = "T_" & UCase(adminName)
+  concatName = LCase(adminName) & "_concat"
+  
+  On Error Resume Next
+    popColIndex = CInt(Replace(adminName, ADMIN, vbNullString)) + 1
+  On Error GoTo 0
+
+  centralPart = "INDEX(" & TabName & ", MATCH(" & rangeAddress & ", " & concatName & ", 0), " & popColIndex & ")"
+  GeoPopulationFunction = "IF(ISERROR(" & centralPart & "), 0," & centralPart &")"
+
+End Function
+
 'All the formula management from crossTable
 Private Function FailedFormula(ByVal frmName As String) As Boolean
 
@@ -342,8 +361,8 @@ Private Sub Add(ByVal formObject As IFormulas)
         If spatType = "geo" Then
 
           'formula for the population
-          finalFormula = "= GeoPopulation(" & counter - 1 & ", " & cellRng.Cells(2, 1).Address(Rowabsolute:=False) & ")"
-          cellRng.Cells(2, 3).formula = finalFormula
+          finalFormula = GeoPopulationFunction(adminName, cellRng.Cells(2, 1).Address(Rowabsolute:=False))
+          cellRng.Cells(2, 3).formula = "= " & finalFormula
 
           'formula for the attack rate
           finalFormula = "= " & cellRng.Cells(2, 2).Address(Rowabsolute:=False) & "/" & cellRng.Cells(2, 3).Address(Rowabsolute:=False)
