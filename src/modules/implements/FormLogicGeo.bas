@@ -1,6 +1,26 @@
 Attribute VB_Name = "FormLogicGeo"
 Attribute VB_Description = "Form implementation of GeoApp"
+
+'@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
+
 Option Explicit
+
+Private tradform As ITranslation   'Translation of forms
+Private Const LLSHEET As String = "LinelistTranslation"
+Private Const TRADSHEET As String = "Translations"
+
+'Initialize translation of forms object
+Private Sub InitializeTrads()
+    Dim lltrads As ILLTranslations
+    Dim lltranssh As Worksheet
+    Dim dicttranssh As Worksheet
+
+
+    Set lltranssh = ThisWorkbook.Worksheets(LLSHEET)
+    Set dicttranssh = ThisWorkbook.Worksheets(TRADSHEET)
+    Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
+    Set tradform = lltrads.TransObject(TranslationOfForms)
+End Sub
 
 'This command is at the end, when you close the geoapp
 'It basically update all the required data and input selected data in the linelist worksheet
@@ -209,13 +229,14 @@ Private Sub TXT_RechercheHistoF_Change()
 
 End Sub
 
+'Translate the form, resize it
 Private Sub UserForm_Initialize()
-    'Manage language
-    Me.Caption = TranslateLLMsg(Me.Name)
+    
+    InitializeTrads
 
-    Call TranslateForm(Me)
+    Me.Caption = tradform.TranslatedValue(Me.Name)
+    tradform.TranslateForm Me
 
     Me.width = 650
     Me.height = 450
-
 End Sub

@@ -67,7 +67,7 @@ Private Sub TransferCode(ByVal moduleName As String, ByVal outDir As String, Opt
             Kill outPath
             On Error GoTo 0
 
-            codeObject.export outPath
+            codeObject.Export outPath
         Else
             Debug.Print moduleName & "not found in current workbook"
         End If
@@ -98,7 +98,7 @@ Private Sub ImportFolder(Optional ByVal scope As Byte = 1)
                            scope = 2, "RNG_CLASS_INTERFACE_FOLDER", _
                            True, "")
 
-    secondFolder  = Switch(scope = 1, "tests", _
+    secondFolder = Switch(scope = 1, "tests", _
                      scope = 2, "interfaces", _
                      True, "tests")
 
@@ -237,7 +237,7 @@ Attribute ImportModuleFolder.VB_Description = "Import module folder path"
 End Sub
 
 '@Description("Add codes to some components")
-Private Sub CopyCodes(Byval importModName As String, ByVal exportCodeName As String)
+Private Sub CopyCodes(ByVal importModName As String, ByVal exportCodeName As String)
     Dim codeContent As String
     Dim codeMod As Object
     Dim vbProj As Object
@@ -273,8 +273,10 @@ Attribute PrepareToDeployment.VB_Description = "Hide some worksheets before depl
     Dim sh As Worksheet
     Dim mainsh As Worksheet
     Dim counter As Long
+    Dim wb As Workbook
 
     Set sheetsList = New BetterArray
+    Set wb = ThisWorkbook
 
     sheetsList.Push "Dictionary", "Choices", "Analysis", "Exports", _
                     "Translations", "__pass", "__formula"
@@ -285,7 +287,7 @@ Attribute PrepareToDeployment.VB_Description = "Hide some worksheets before depl
     Next
 
     'Add a worksheet change event to the main sheet
-    Set mainsh = ThisWorkbook.Worksheets("Main")
+    Set mainsh = wb.Worksheets("Main")
 
     'Add commands on Shapes of the main sheet
     With mainsh
@@ -297,8 +299,8 @@ Attribute PrepareToDeployment.VB_Description = "Hide some worksheets before depl
     End With
 
     'Add codes to elements on the actual designer
-    CopyCodes "EventsMainSheet", mainsh.CodeName
-    CopyCodes "EventsDesignerWorkbook", wb.CodeName
+    CopyCodes "EventsMainSheet", mainsh.codeName
+    CopyCodes "EventsDesignerWorkbook", wb.codeName
     CopyCodes "FormLogicShowHide", "F_ShowHideLL"
     CopyCodes "FormLogicShowHidePrint", "F_ShowHidePrint"
     CopyCodes "FormLogicGeo", "F_Geo"
@@ -307,13 +309,14 @@ Attribute PrepareToDeployment.VB_Description = "Hide some worksheets before depl
     CopyCodes "FormLogicAdvanced", "F_Advanced"
     CopyCodes "FormLogicExportMigration", "F_ExportMig"
     CopyCodes "FormLogicImportRep", "F_ImportRep"
+
 End Sub
 
 'Report Import or export
 Private Sub ReportSave(Optional ByVal outputAs As Byte = 1, Optional ByVal scope As Byte = 1)
     Dim sh As Worksheet
     Dim cellRng As Range
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim saveName As String
     Dim folderName As String
     Dim phraseToWrite As String
@@ -347,7 +350,7 @@ Public Sub RemoveSub()
     Dim componentObject As Object
     Dim codeObject As Object
     Dim wb As Workbook
-    Dim loList As BetterArray
+    Dim LoList As BetterArray
     Dim excludesList As BetterArray 'List of modules to exclude from removing process
     Dim moduleName As String
 
@@ -355,20 +358,22 @@ Public Sub RemoveSub()
     Set sh = wb.Worksheets(DEVSHEETNAME)
     'Modules list
     Set codesList = New BetterArray
-    Set loList = New BetterArray
+    Set LoList = New BetterArray
     Set excludesList = New BetterArray
 
-    loList.Push "modulesList", "classList", "testModulesList", "classInterfacesList"
+    LoList.Push "modulesList", "classList", "testModulesList", "classInterfacesList"
     excludesList.Push "EventsDesignerRibbon", "DevModule", "DropdownLists", "IDropdownLists", _
-                      "BetterArray", "OSFiles", "IOSFiles"
+                      "BetterArray", "OSFiles", "IOSFiles", "LLGeo", "ILLGeo", "Translation", "ITranslation", _
+                      "DesTranslation", "IDesTranslation", "Main", "IMain", "CustomTable", "ICustomTable", _
+                      "LLTranslations", "ILLTranslations", "LLPasswords", "ILLPasswords"
 
-    For locounter = loList.LowerBound To loList.UpperBound
-        codesList.FromExcelRange sh.ListObjects(loList.Item(locounter)).DataBodyRange
+    For locounter = LoList.LowerBound To LoList.UpperBound
+        codesList.FromExcelRange sh.ListObjects(LoList.Item(locounter)).DataBodyRange
         For codecounter = codesList.LowerBound To codesList.UpperBound
             On Error Resume Next
                 moduleName = codesList.Item(codecounter)
-                Set codeObject = Wb.VBProject.VBComponents(moduleName)
-                Set componentObject = Wb.VBProject.VBComponents
+                Set codeObject = wb.VBProject.VBComponents(moduleName)
+                Set componentObject = wb.VBProject.VBComponents
                 'remove the module from this
                 If Not excludesList.Includes(moduleName) Then componentObject.Remove codeObject
                 Set codeObject = Nothing

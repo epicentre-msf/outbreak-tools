@@ -612,9 +612,9 @@ Private Sub AddValidation()
 
         .IgnoreBlank = True
         .InCellDropdown = True
-        .InputTitle = ""
-        .errorTitle = ""
-        .InputMessage = ""
+        .InputTitle = vbNullString
+        .errorTitle = vbNullString
+        .InputMessage = vbNullString
         .errorMessage = varMessage
         .ShowInput = True
         .ShowError = True

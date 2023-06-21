@@ -245,7 +245,7 @@ Err:
 End Sub
 
 '@Description("Format the devide by population")
-Public Sub FormatDevidePop(ByVal rngName)
+Public Sub FormatDevidePop(ByVal rngName As String)
 
     Dim sh As Worksheet
     Dim tabId As String

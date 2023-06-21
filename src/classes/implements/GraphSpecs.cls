@@ -7,11 +7,10 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Add specifications for graphs in analysis"
 
-
-'@Folder("Dictionary")
-'@ModuleDescription("")
-'@IgnoreModule
+'@Folder("Analysis")
+'@ModuleDescription("Add specifications for graphs in analysis")
 
 Option Explicit
 Implements IGraphSpecs
@@ -660,7 +659,7 @@ End Function
 Public Property Get GraphIDs() As BetterArray
     If this.GraphIdsList Is Nothing Then
         Set this.GraphIdsList = New BetterArray
-        Set this.GraphIdsList = GraphIldsList()
+        Set this.GraphIdsList = GraphIdsList()
         Set GraphIDs = this.GraphIdsList.Clone()
     Else
         Set GraphIDs = this.GraphIdsList.Clone()

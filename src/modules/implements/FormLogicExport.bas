@@ -1,8 +1,26 @@
 Attribute VB_Name = "FormLogicExport"
 Attribute VB_Description = "Form implementation of Exports"
 
+'@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
 
 Option Explicit
+
+Private tradform As ITranslation   'Translation of forms
+Private Const LLSHEET As String = "LinelistTranslation"
+Private Const TRADSHEET As String = "Translations"
+
+'Initialize translation of forms object
+Private Sub InitializeTrads()
+    Dim lltrads As ILLTranslations
+    Dim lltranssh As Worksheet
+    Dim dicttranssh As Worksheet
+
+
+    Set lltranssh = ThisWorkbook.Worksheets(LLSHEET)
+    Set dicttranssh = ThisWorkbook.Worksheets(TRADSHEET)
+    Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
+    Set tradform = lltrads.TransObject(TranslationOfForms)
+End Sub
 
 Private Sub CMD_Export2_Click()
 
@@ -46,13 +64,15 @@ Private Sub CMD_Retour_Click()
 
 End Sub
 
+'Translate the form, add form sizes.
 Private Sub UserForm_Initialize()
     'Manage language
-    Me.Caption = TranslateLLMsg(Me.Name)
+    
+    InitializeTrads
 
-    Call TranslateForm(Me)
+    Me.Caption = tradform.TranslatedValue(Me.Name)
+    tradform.TranslateForm Me
 
     Me.width = 200
     Me.height = 400
-
 End Sub

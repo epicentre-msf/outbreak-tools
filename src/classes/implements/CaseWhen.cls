@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Handle CaseWhen custom function"
 
-
-'@Folder("Dictionary")
-'@ModuleDescription("")
-'@IgnoreModule
+'@PredeclaredId
+'@Folder("Custom Functions")
+'@ModuleDescription("Handle CaseWhen custom function")
 
 Option Explicit
 Implements ICaseWhen
@@ -50,7 +50,6 @@ Private Property Get Valid() As Boolean
 End Property
 
 Private Property Get CaseWhenTable() As BetterArray
-    Dim validity As Boolean
     Dim parsingTable As BetterArray
     Dim formula As String
     Dim counter As Long
@@ -74,7 +73,7 @@ Private Property Get CaseWhenTable() As BetterArray
         NbClosed = 0
         OpenedQuotes = False
         OpenedParenthesis = False
-        formula = Application.WorksheetFunction.Trim(Replace(casewhenFormula(), "CASE_WHEN(", ""))
+        formula = Application.WorksheetFunction.Trim(Replace(casewhenFormula(), "CASE_WHEN(", vbNullString))
         formula = Left(formula, Len(formula) - 1) 'Removed the closing parenthesis
         For counter = 1 To Len(formula)
             'Manage parenthesis and quotes,
@@ -162,15 +161,15 @@ End Function
 
 'Interface
 
-Public Property Get ICaseWhen_Valid() As Boolean
+Private Property Get ICaseWhen_Valid() As Boolean
     ICaseWhen_Valid = Valid()
 End Property
 
-Public Property Get ICaseWhen_ParsedFormula() As String
+Private Property Get ICaseWhen_ParsedFormula() As String
     ICaseWhen_ParsedFormula = parsedFormula()
 End Property
 
-Public Property Get ICaseWhen_Categories() As BetterArray
+Private Property Get ICaseWhen_Categories() As BetterArray
     Set ICaseWhen_Categories = Categories()
 End Property
 

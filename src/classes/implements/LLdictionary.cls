@@ -9,10 +9,10 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Dictionary Class"
 
+'@PredeclaredId
 '@Folder("Dictionary")
 '@ModuleDescription("Interface for dicitonary in the linelist")
 '@IgnoreModule
-'@PredeclareId
 Option Explicit
 Implements ILLdictionary
 
