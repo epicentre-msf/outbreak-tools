@@ -7,10 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-
+Attribute VB_Description = "Build and manage all HList variables"
 
 '@Folder("Linelist")
-'@ModuleDescription("All HList variables")
+'@ModuleDescription("Build and manage all HList variables")
+'@PredeclaredId
 
 Option Explicit
 
@@ -98,7 +99,7 @@ End Property
 
 Private Sub TransferCodeWksh()
 
-    Const LINELISTCHANGEMODULENAME = "HListChange"
+    Const LINELISTCHANGEMODULENAME As String = "HListChange"
 
     Dim sh As Worksheet                          'Actual worksheet
     Dim inpWkb As Workbook                       'Input workbook

@@ -161,7 +161,6 @@ Public Sub DevideByPopulation(ByVal rngName As String,  _
     Dim cellRng As Range
     Dim formulaValue As String
     Dim adminName As String
-    Dim AdminCode As Byte
     Dim rowRng As Range
     Dim geo As ILLGeo
     Dim selectedAdmin As String

@@ -3,16 +3,6 @@ Option Explicit
 
 'USER DEFINE FUNCTIONS FOR THE LINELIST ==========================================
 
-'@Description("Get the date grande of column of type date which is "minimum date - maximum date")
-'
-'@Arguments:
-'- Rng: a Range
-'
-'@Return:
-'A String
-'
-'@Example: If "A1" contains date, DATE_RANGE("A1")
-
 Public Enum DayList
     Monday = 1
     TuesDay = 2
@@ -23,16 +13,18 @@ Public Enum DayList
     Sunday = 0
 End Enum
 
+'@EntryPoint
 Public Function DATE_RANGE(DateRng As Range) As String
     DATE_RANGE = Format(Application.WorksheetFunction.Min(DateRng), "DD/MM/YYYY") & _
-                                                                                  " - " & Format(Application.WorksheetFunction.Max(DateRng), "DD/MM/YYYY")
+                 " - " & Format(Application.WorksheetFunction.Max(DateRng), "DD/MM/YYYY")
 End Function
 
-
+'@EntryPoint
 Public Function PLAGE_VALUE(rng1 As Range, rng2 As Range) As String
     PLAGE_VALUE = chr(13) & chr(10) & Format(rng1, "d-mmm-yyyy") & " " & ChrW(9472) & " " & Format(rng2, "d-mmm-yyyy")
 End Function
 
+'@EntryPoint
 Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Variant
 
     'Application.Volatile
@@ -79,8 +71,7 @@ Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Var
    VALUE_OF = retMatch
 End Function
 
-'
-'
+'@EntryPoint
 Public Function ComputedOnFiltered() As String
     Application.Volatile
     Dim sh As Worksheet
@@ -114,6 +105,7 @@ Public Function ComputedOnFiltered() As String
 End Function
 
 'Epiweek function without specifying the year in select cases (works with all years)
+'@EntryPoint
 Public Function Epiweek(currentDate As Long, Optional ByVal weekStart As DayList = Monday) As Long
 
     Dim inDate As Long
@@ -165,8 +157,8 @@ Private Function GetAgg(sAggregate As String) As String
  
 End Function
 
+'@EntryPoint
 Public Function FindLastDay(sAggregate As String, inDate As Long) As Long
-
     Application.Volatile
     
     Dim sAgg As String
@@ -209,6 +201,7 @@ End Function
 
 'Format a date to feet the aggregation selection ================================================================
 
+'@EntryPoint
 Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, endDate As Long, MaxDate As Long) As String
 
     Application.Volatile
@@ -253,13 +246,14 @@ Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, e
 End Function
 
 'Format a date range
+'@EntryPoint
 Public Function FormatDateRange(MinDate As Long, MaxDate As Long) As String
 
     FormatDateRange = Format(MinDate, "dd/mm/yyyy") & "-" & Format(MaxDate, "dd/mm/yyyy")
 
 End Function
 
-
+'@EntryPoint
 Public Function FirstAggDayFrom(endDate As Long, agg As String) As Long
     Dim firstDate As Long
     Dim timeAgg As String
@@ -283,6 +277,7 @@ Public Function FirstAggDayFrom(endDate As Long, agg As String) As Long
     
 End Function
 
+'@EntryPoint
 Public Function LastAggDayFrom(startDate As Long, agg As String) As Long
     Dim lastDate As Long
     Dim timeAgg As String
@@ -306,6 +301,7 @@ Public Function LastAggDayFrom(startDate As Long, agg As String) As Long
     
 End Function
 
+'@EntryPoint
 Public Function ValidMin(startDate As Long, endDate As Long, MinDate As Long, MaxDate As Long, agg As String) As Long
     Application.Volatile
     
@@ -329,6 +325,7 @@ Public Function ValidMin(startDate As Long, endDate As Long, MinDate As Long, Ma
     ValidMin = validation
 End Function
 
+'@EntryPoint
 Public Function ValidMax(startDate As Long, endDate As Long, MinDate As Long, MaxDate As Long, agg As String) As Long
     Application.Volatile
     
@@ -356,6 +353,7 @@ Public Function ValidMax(startDate As Long, endDate As Long, MinDate As Long, Ma
     ValidMax = validation
 End Function
 
+'@EntryPoint
 Public Function InfoUser(userDate As Long, actualDate As Long, Optional infotype As Byte = 1) As String
     Application.Volatile
     
@@ -367,6 +365,7 @@ Public Function InfoUser(userDate As Long, actualDate As Long, Optional infotype
     
 End Function
 
+'@EntryPoint
 Public Function GeoPopulation(ByVal adminLevel As Byte, Optional ByVal concatValue As String = vbNullString) As Long
     Application.Volatile
     Dim geo As ILLGeo
@@ -385,6 +384,7 @@ Public Function GeoPopulation(ByVal adminLevel As Byte, Optional ByVal concatVal
 End Function
 'There is No population for health facility
 
+'@EntryPoint
 Public Function GEOCONCAT(cellRng As Range, Level As Byte) As String
     Application.Volatile
     
@@ -419,6 +419,7 @@ Public Function GEOCONCAT(cellRng As Range, Level As Byte) As String
     GEOCONCAT = concatValue
 End Function
 
+'@EntryPoint
 Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varName As String, Optional ByVal tabId As String = vbNullString) As String
 
     Application.Volatile
@@ -443,7 +444,7 @@ Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varNam
 
 End Function
 
-
+'@EntryPoint
 Public Function FindTopPop(adminLevel As String, adminOrder As Integer, varName As String, Optional ByVal tabId As String = vbNullString) As Long
 
     Application.Volatile
@@ -476,7 +477,7 @@ End Function
 
 
 'Find the corresponding value of a top admin for one variable
-
+'@EntryPoint
 Public Function FindTopHF(adminOrder As Integer, varName As String, Optional ByVal tabId As String = vbNullString) As String
 
     Application.Volatile

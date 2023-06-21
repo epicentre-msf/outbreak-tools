@@ -208,19 +208,19 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Exposed methods
-Public Property Get IDropdownLists_Exists(ByVal listName As String) As Boolean
+Private Property Get IDropdownLists_Exists(ByVal listName As String) As Boolean
     IDropdownLists_Exists = Exists(listName)
 End Property
 
-Public Sub IDropdownLists_Add(ByVal listValues As BetterArray, ByVal listName As String)
+Private Sub IDropdownLists_Add(ByVal listValues As BetterArray, ByVal listName As String)
     Add listValues:=listValues, listName:=listName
 End Sub
 
-Public Sub IDropdownLists_Remove(ByVal listName As String)
+Private Sub IDropdownLists_Remove(ByVal listName As String)
     Remove listName:=listName
 End Sub
 
-Public Sub IDropdownLists_SetValidation(ByVal cellRng As Range, ByVal listName As String, _
+Private Sub IDropdownLists_SetValidation(ByVal cellRng As Range, ByVal listName As String, _
                                         Optional ByVal alertType As String = "info", _
                                         Optional ByVal message As String = vbNullString)
 
@@ -228,6 +228,6 @@ Public Sub IDropdownLists_SetValidation(ByVal cellRng As Range, ByVal listName A
 End Sub
 
 
-Public Sub IDropdownLists_Update(ByVal UpdateData As BetterArray, ByVal listName As String)
+Private Sub IDropdownLists_Update(ByVal UpdateData As BetterArray, ByVal listName As String)
     Update UpdateData:=UpdateData, listName:=listName
 End Sub

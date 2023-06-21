@@ -8,8 +8,9 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = ""
+Attribute VB_Description = "Specifications for exports in the linelist"
 
+'@PredeclaredId
 '@Folder("Linelist Exports")
 '@ModuleDescription("Specifications for exports in the linelist")
 

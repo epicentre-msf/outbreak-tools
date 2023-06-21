@@ -8,10 +8,12 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = ""
+Attribute VB_Description = "Linelist Show/Hide Class"
 
+'@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Linelist Show/Hide Class")
+
 
 Option Explicit
 Implements ILLShowHide
@@ -127,7 +129,6 @@ End Sub
 Private Function TempSheet() As Worksheet
   Dim wb As Workbook
   Dim sh As Worksheet
-  Dim tpsh As Worksheet
 
   Set sh = Wksh()
   Set wb = sh.Parent
@@ -317,7 +318,6 @@ End Function
 'Change the status in the table
 Private Sub SetStatus(ByVal lineNumber As Long, ByVal newStatus As String)
   Dim formRng As Range
-  Dim colIndex As Long
 
   Set formRng = ShowHideTable()
   'Change the corresponding value in the temporary sheet
@@ -327,7 +327,6 @@ End Sub
 
 Private Sub Load(ByVal tradsform As ITranslation)
   Dim formRng As Range 'Range to update the form
-  Dim tabName As String 'Table name of the worksheet
   Dim fobj As Object
   Dim trads As ITranslation
   Dim scope As ShowHideScope
