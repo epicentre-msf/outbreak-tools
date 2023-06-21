@@ -2,15 +2,9 @@ Attribute VB_Name = "FormLogicShowHidePrint"
 Attribute VB_Description = "Events show/hide in the printed linelist"
 
 '@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
+'@ModuleDescription("Events show/hide in the printed linelist")
 
 Option Explicit
-
-
-Private Const LLSHEET As String = "LinelistTranslation"
-Private Const TRADSHEET As String = "Translations"
-Private Const DICTSHEET As String = "Dictionary"
-
-Private showHideObject As ILLShowHide
 
 Private Sub LST_PrintNames_Click()
     ClickListShowHide (LST_PrintNames.ListIndex)

@@ -5,7 +5,7 @@ Option Private Module
 Public iGeoType As Byte
 
 '@Folder("Linelist Events")
-'@ModuleDescription("Events associated with click on buttons in the linelist")
+'@ModuleDescription("Events associated to eventual buttons in the Linelist")
 
 
 Private Const LLSHEET As String = "LinelistTranslation"
@@ -64,7 +64,6 @@ Public Sub ClickShowHide()
     Dim sh As Worksheet
     Dim dict As ILLdictionary
     Dim sheetTag As String
-    Dim fobject As Object 'either translation of shapes or translation of formula
 
     Set sh = ActiveSheet
     'Test the sheet type to be sure it is a HList or a HList Print,

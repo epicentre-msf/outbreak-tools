@@ -7,7 +7,9 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "main interface to linelist specifications paths"
 
+'@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("main interface to linelist specifications paths")
 

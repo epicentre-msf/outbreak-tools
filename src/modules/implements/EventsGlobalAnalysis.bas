@@ -1,5 +1,9 @@
 Attribute VB_Name = "EventsGlobalAnalysis"
 Attribute VB_Description = "Events associated to buttons and updates in all (uni, bi and time series analysis)"
+
+'@Folder("Events")          
+'@ModuleDescription("Events associated to buttons and updates in all (uni, bi and time series analysis)")
+
 Option Explicit
 Option Private Module
 
@@ -11,6 +15,7 @@ Private tradsmess As ITranslation   'Translation of messages
 Private pass As ILLPasswords
 Private lltrads As ILLTranslations
 Private wb As Workbook
+
 
 'Subs to speed up the application
 'speed app
