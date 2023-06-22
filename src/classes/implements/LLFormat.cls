@@ -525,6 +525,8 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         DrawLines rng, color:=bordersColorValue
         DrawLines rng, color:=fontColorValue, At:="Top", line:=xlDouble
         DrawLines rng, color:=fontColorValue, At:="Left", line:=xlDouble
+        DrawLines rng, color:=fontColorValue, At:="Bottom", line:=xlDouble
+        DrawLines rng, color:=fontColorValue, At:="Right", line:=xlDouble
 
         If scope = AnalysisMissingRow Then
             Set rng = rng.Cells(1, 0)

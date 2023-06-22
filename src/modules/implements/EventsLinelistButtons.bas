@@ -190,6 +190,15 @@ Public Sub ClickRotateAll()
     End If
 
     If sheetTag = "HList" Then  Set sh = wb.Worksheets(PRINTPREFIX & sh.Name)
+
+    On Error GoTo ErrHand
+
+    InitializeTrads
+
+    'Unprotect the sheet if it is protected.
+    pass.UnProtect sh.Name
+    BusyApp cursor:=xlNorthwestArrow
+
     Set Lo = sh.ListObjects(1)
     Set hRng = Lo.HeaderRowRange.Offset(-1)
     actualOrientation = IIf(hRng.Orientation = xlUpward, xlHorizontal, xlUpward)
@@ -200,6 +209,9 @@ Public Sub ClickRotateAll()
     For Each cRng in hRng
         If Not cRng.EntireColumn.Hidden Then cRng.EntireColumn.AutoFit
     Next
+
+ErrHand:
+    NotBusyApp
 End Sub
 
 '@Description("Change the Row height of cells in the print sheet")
@@ -222,12 +234,14 @@ Public Sub ClickRowHeight()
         Exit Sub
     End If
 
-    InitializeTrads
-
-    BusyApp
     On Error GoTo ErrHand
 
+    InitializeTrads
+    BusyApp cursor:=xlNorthwestArrow
+
     If sheetTag = "HList" Then  Set sh = wb.Worksheets(PRINTPREFIX & sh.Name)
+    pass.UnProtect sh.Name
+
     Set Lo = sh.ListObjects(1)
     If (Lo.DataBodyRange Is Nothing) Then
         Set LoRng = Lo.HeaderRowRange.Offset(1)
@@ -320,7 +334,9 @@ Public Sub ClickAddRows()
     
     NotBusyApp
     Application.EnableEvents = True
-    pass.Protect "_active"
+    'Protect only HList
+
+    If sheetTag = "HList" Then pass.Protect "_active"
     Exit Sub
 
 errAddRows:
@@ -366,7 +382,7 @@ Public Sub ClickResize()
 
     Application.EnableEvents = True
     NotBusyApp
-    pass.Protect "_active"
+    If sheetTag = "HList" Then pass.Protect "_active"
     Exit Sub
 
 errDelRows:
