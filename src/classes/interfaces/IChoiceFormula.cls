@@ -10,9 +10,9 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of choice Formula"
 
 
-'@Folder("Dictionary")
+'@Interface
+'@Folder("Custom Functions")
 '@ModuleDescription("Interface of Choice formula")
-'@IgnoreModule
 
 Option Explicit
 

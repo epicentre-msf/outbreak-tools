@@ -642,8 +642,8 @@ Sub ImportGeobase()
     Set dict = LLdictionary.Create(dictsh, 1, 1)
     Set showhidesh = ThisWorkbook.Worksheets("show_hide_temp__")
 
-
-    'Set xlsapp = New Excel.Application
+    On Error GoTo ErrImportGeo
+    
     sFilePath = Helpers.LoadFile("*.xlsx")
     If sFilePath <> "" Then
         'Open the geo workbook and hide the windows
@@ -673,36 +673,6 @@ ErrImportGeo:
     MsgBox TranslateLLMsg("MSG_ErrImportGeo"), vbCritical + vbOKOnly, TranslateLLMsg("MSG_Imports")
     EndWork xlsapp:=Application
     Exit Sub
-End Sub
-
-Private Sub TranslateImportGeoHead()
-
-    Dim sIsoCountry As String
-    Dim sCountry As String
-    Dim sSubCounty As String
-    Dim sWard As String
-    Dim sPlace As String
-    Dim sFacility As String
-    Dim Wksh As Worksheet
-
-    Set Wksh = ThisWorkbook.Worksheets(C_sSheetLLTranslation)
-
-    'Get the isoCode for the linelist
-    sIsoCountry = Wksh.Range(C_sRngLLLanguageCode).Value
-    Set Wksh = ThisWorkbook.Worksheets(C_sSheetGeo)
-
-    sCountry = Application.WorksheetFunction.HLookup(sIsoCountry, Wksh.ListObjects(C_sTabNames).Range, 2, False)
-    sSubCounty = Application.WorksheetFunction.HLookup(sIsoCountry, Wksh.ListObjects(C_sTabNames).Range, 3, False)
-    sWard = Application.WorksheetFunction.HLookup(sIsoCountry, Wksh.ListObjects(C_sTabNames).Range, 4, False)
-    sPlace = Application.WorksheetFunction.HLookup(sIsoCountry, Wksh.ListObjects(C_sTabNames).Range, 5, False)
-    sFacility = Application.WorksheetFunction.HLookup(sIsoCountry, Wksh.ListObjects(C_sTabNames).Range, 6, False)
-
-    Wksh.Range("A1,E1,J1,P1,Z1").Value = sCountry
-    Wksh.Range("F1,K1,Q1,Y1").Value = sSubCounty
-    Wksh.Range("L1,R1,X1").Value = sWard
-    Wksh.Range("S1").Value = sPlace
-    Wksh.Range("W1").Value = sFacility
-
 End Sub
 
 'Import the only the Historic Data
@@ -829,7 +799,6 @@ Private Sub ExportMigrationData(sLLPath As String)
 
     'Export data and headers
     Dim ExportData As BetterArray
-    Dim ExportHeader As BetterArray
 
     Dim i As Long                                'iterator
     Dim sPrevSheetName As String                 'Previous sheet name  used as temporary variable
@@ -840,7 +809,6 @@ Private Sub ExportMigrationData(sLLPath As String)
 
     Dim Wkb As Workbook
     Set ExportData = New BetterArray
-    Set ExportHeader = New BetterArray
 
     On Error GoTo errExportMig
 

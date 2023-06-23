@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Attribute VB_Description = "Interface of CrossTable Formula"
 
-
+'@Interface
 '@Folder("Analysis")
-'@ModuleDescription("Interface of CrossTable")
-'@IgnoreModule
+'@ModuleDescription("Interface of CrossTable Formula")
 
 Option Explicit
 

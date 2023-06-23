@@ -226,18 +226,6 @@ Public Sub EndWork(xlsapp As Excel.Application, Optional bstatusbar As Boolean =
     xlsapp.DisplayStatusBar = bstatusbar
 End Sub
 
-'Remove Gridlines in a worksheet
-Public Sub RemoveGridLines(Wksh As Worksheet, Optional DisplayZeros As Boolean = False)
-    Dim View As WorksheetView
-
-    For Each View In Wksh.Parent.Windows(1).SheetViews
-        If View.Sheet.Name = Wksh.Name Then
-            View.DisplayGridlines = False
-            View.DisplayZeros = DisplayZeros
-            Exit Sub
-        End If
-    Next
-End Sub
 
 
 'Find The last non empty row of a sheet of type linelist
@@ -320,14 +308,6 @@ Public Function ClearString(ByVal sString As String, Optional bremoveHiphen As B
     ClearString = LCase(sValue)
 End Function
 
-'Clear Unicode Characters and non printable characters in a String
-
-Public Function ClearNonPrintableUnicode(ByVal sString As String) As String
-    Dim sValue As String
-    sValue = Application.WorksheetFunction.SUBSTITUTE(sString, chr(160), " ")
-    sValue = Application.WorksheetFunction.Clean(sValue)
-    ClearNonPrintableUnicode = Application.WorksheetFunction.Trim(sValue)
-End Function
 
 'Get the headers of one sheet from one line (probablly the first line)
 'The headers are cleaned
@@ -354,49 +334,6 @@ Public Function GetHeaders(Wkb As Workbook, sSheet As String, startLine As Long,
     End With
 End Function
 
-'Get the data from one sheet starting from one line
-Public Function GetData(Wkb As Workbook, sSheetName As String, startLine As Long, Optional EndColumn As Long = 0) As BetterArray
-    Dim Data As BetterArray
-    Dim rng As Range
-
-    Dim iLastRow As Long
-    Dim iLastCol As Long
-    Set Data = New BetterArray
-    Data.LowerBound = 1
-
-    With Wkb.Worksheets(sSheetName)
-
-        iLastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
-        iLastCol = EndColumn
-        If EndColumn = 0 Then iLastCol = .Cells(startLine, .Columns.Count).End(xlToLeft).Column
-        Set rng = .Range(.Cells(startLine, 1), .Cells(iLastRow, iLastCol))
-    End With
-
-    Data.FromExcelRange rng
-    'The output of the function is a variant
-    Set GetData = Data
-
-End Function
-
-'Get the validation list using Choices data and choices labels
-'Get the list of validations from the Choices data
-Public Function GetValidationList(ChoicesListData As BetterArray, ChoicesLabelsData As BetterArray, sValidation As String) As BetterArray
-
-    Dim iChoiceIndex As Integer
-    Dim iChoiceLastIndex As Integer
-    Dim ValidationList As BetterArray            'Validation List
-
-    Set ValidationList = New BetterArray
-    ValidationList.LowerBound = 1
-
-    iChoiceIndex = ChoicesListData.IndexOf(sValidation)
-    iChoiceLastIndex = ChoicesListData.LastIndexOf(sValidation)
-
-    If (iChoiceIndex > 0) Then
-        ValidationList.Items = ChoicesLabelsData.Slice(iChoiceIndex, iChoiceLastIndex + 1)
-    End If
-    Set GetValidationList = ValidationList.Clone()
-End Function
 
 'Test if a listobject exists
 Public Function ListObjectExists(Wksh As Worksheet, sListObjectName As String) As Boolean
@@ -406,21 +343,6 @@ Public Function ListObjectExists(Wksh As Worksheet, sListObjectName As String) A
     Set Lo = Wksh.ListObjects(sListObjectName)
     ListObjectExists = (Not Lo Is Nothing)
     On Error GoTo 0
-End Function
-
-'Get validation type
-Function GetValidationType(sValidationType As String) As Byte
-
-    GetValidationType = 3                        'list of validation info, warning or error
-    If sValidationType <> "" Then
-        Select Case LCase(sValidationType)
-        Case "warning"
-            GetValidationType = 2
-        Case "error"
-            GetValidationType = 1
-        End Select
-    End If
-
 End Function
 
 'Filter a table listobject on one condition and get the values of that table or all the unique values of one column

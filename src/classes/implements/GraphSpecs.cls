@@ -738,43 +738,43 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Exposed Properties and methods
-Public Property Get IGraphSpecs_NumberOfSeries() As Long
+Private Property Get IGraphSpecs_NumberOfSeries() As Long
 
     IGraphSpecs_NumberOfSeries = NumberOfSeries()
 End Property
 
-Public Property Get IGraphSpecs_NumberOfGraphs() As Long
+Private Property Get IGraphSpecs_NumberOfGraphs() As Long
     IGraphSpecs_NumberOfGraphs = NumberOfGraphs()
 End Property
 
-Public Property Get IGraphSpecs_SeriesName(ByVal Index As Long) As String
+Private Property Get IGraphSpecs_SeriesName(ByVal Index As Long) As String
     IGraphSpecs_SeriesName = SeriesName(Index)
 End Property
 
-Public Property Get IGraphSpecs_SeriesType(ByVal Index As Long) As String
+Private Property Get IGraphSpecs_SeriesType(ByVal Index As Long) As String
     IGraphSpecs_SeriesType = SeriesType(Index)
 End Property
 
-Public Property Get IGraphSpecs_SeriesPos(ByVal Index As Long) As String
+Private Property Get IGraphSpecs_SeriesPos(ByVal Index As Long) As String
     IGraphSpecs_SeriesPos = SeriesPos(Index)
 End Property
 
-Public Property Get IGraphSpecs_SeriesLabel(ByVal Index As Long) As String
+Private Property Get IGraphSpecs_SeriesLabel(ByVal Index As Long) As String
     IGraphSpecs_SeriesLabel = SeriesLabel(Index)
 End Property
 
-Public Property Get IGraphSpecs_SeriesColumnLabel(ByVal Index As Long) As String
+Private Property Get IGraphSpecs_SeriesColumnLabel(ByVal Index As Long) As String
     IGraphSpecs_SeriesColumnLabel = SeriesColumnLabel(Index)
 End Property
 
-Public Sub IGraphSpecs_CreateSeries()
+Private Sub IGraphSpecs_CreateSeries()
     CreateSeries
 End Sub
 
-Public Property Get IGraphSpecs_SpecsLists() As BetterArray
+Private Property Get IGraphSpecs_SpecsLists() As BetterArray
     Set IGraphSpecs_SpecsLists = SpecsLists()
 End Property
 
-Public Property Get IGraphSpecs_Valid() As Boolean
+Private Property Get IGraphSpecs_Valid() As Boolean
     IGraphSpecs_Valid = Valid()
 End Property

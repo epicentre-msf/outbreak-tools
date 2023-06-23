@@ -7,9 +7,9 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Attribute VB_Description = "Interface of CustomTable"
 
-
-'@Folder("Dictionary")
+'@Folder("General")
 '@ModuleDescription("Interface of CustomTable")
 '@Interface
 
