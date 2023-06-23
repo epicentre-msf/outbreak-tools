@@ -7,9 +7,10 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Wrapper for Listobjects manipulations"
 
 '@PredeclaredId
-'@Folder("Dictionary")
+'@Folder("General")
 '@ModuleDescription("Wrapper for Listobjects manipulations")
 
 

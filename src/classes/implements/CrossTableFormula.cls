@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Formulas for all the cross tables in the analysis"
 
-
+'@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("Formulas for all the cross tables in the analysis")
-'@IgnoreModule
 
 Option Explicit
 Implements ICrossTableFormula

@@ -462,16 +462,6 @@ Sub NewKey()
 
 End Sub
 
-Function LetKey(bPriv As Boolean) As Long
-
-    If bPriv Then
-        LetKey = ThisWorkbook.Worksheets(C_sSheetPassword).Range("PrivateKey").Value
-    Else
-        LetKey = ThisWorkbook.Worksheets(C_sSheetPassword).Range("PublicKey").Value
-    End If
-
-End Function
-
 Private Function TestFilter() As Boolean
 
     Dim ThereIsFilter As Boolean

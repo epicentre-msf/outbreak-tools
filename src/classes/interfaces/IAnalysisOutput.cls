@@ -9,9 +9,9 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
 
-'@Folder("Dictionary")
+'@Folder("Analysis")
 '@ModuleDescription("Interface of Analysis Output")
-'@IgnoreModule
+'@Interface
 
 Option Explicit
 Public Enum AnalysisScope
