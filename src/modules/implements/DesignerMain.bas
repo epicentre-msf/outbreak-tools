@@ -11,20 +11,35 @@ Private Const LINELISTTRADSHEET As String = "LinelistTranslation"
 Private Const DESIGNERMAINSHEET As String = "Main"
 
 'speed app
-Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
+Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault, _ 
+                    Optional Byval changeSeparator As Boolean = False)
     Application.EnableEvents = False
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
     Application.Calculation = xlCalculationManual
     Application.Cursor = cursor
+
+    'The default is to change the separator back to English
+    'And to return it back after all
+    If changeSeparator Then
+       Application.DecimalSeparator = "."
+       Application.UseSystemSeparators = False
+    End If
 End Sub
 
 'Return back to previous state
-Private Sub NotBusyApp()
+Private Sub NotBusyApp(Optional Byval returnSeparator As String = vbNullString, _ 
+                       Optional Byval useSystemSeparators As Boolean = False)
     Application.EnableEvents = True
     Application.ScreenUpdating = True
     Application.EnableAnimations = True
     Application.Cursor = xlDefault
+
+    If returnSeparator <> vbNullString Then
+        Application.DecimalSeparator = returnSeparator
+        Application.UseSystemSeparators = useSystemSeparators
+    End If
+
 End Sub
 
 'LOADING FILES AND FOLDERS =====================================================
@@ -215,9 +230,16 @@ Private Sub GenerateData()
     Dim increment As Integer
     Dim statusValue As Integer
     Dim desTrads As IDesTranslation
+    Dim savedSeparator As String
+    Dim savedUseSep As Boolean
 
-    BusyApp cursor:=xlWait
+    'Change decimal separators for building process
+    savedSeparator = Application.DecimalSeparator
+    savedUseSep = Application.UseSystemSeparators
 
+    BusyApp cursor:=xlWait, changeSeparator:=True
+    
+    
     Set wb = ThisWorkbook
     Set lData = LinelistSpecs.Create(wb)
     Set dict = lData.Dictionary() 'Dictionary
@@ -301,9 +323,8 @@ Private Sub GenerateData()
 
     'Update the status to 100%
     mainobj.UpdateStatus (100)
-
-    Application.Cursor = xlDefault
-    Application.EnableEvents = True
+    
+    NotBusyApp returnSeparator:= savedSeparator, useSystemSeparators:=savedUseSep
 
     'Open the linelist
     outPath = mainobj.ValueOf("lldir") & Application.PathSeparator & mainobj.ValueOf("llname") & ".xlsb"
@@ -315,7 +336,7 @@ Private Sub GenerateData()
     Exit Sub
 
 ErrorBuildingLLManage:
-        NotBusyApp
+        NotBusyApp returnSeparator:=savedSeparator
         ll.ErrorManage
         Exit Sub
 
