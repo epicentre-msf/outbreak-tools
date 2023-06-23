@@ -7,12 +7,12 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
-Attribute VB_Description = "Procedures for data manipulation in the linelist"
+Attribute VB_Description = "Interface of DataSheet Object"
 
 
-'@Folder("Data")
+'@Interface
+'@Folder("General")
 '@ModuleDescription("Interface of DataSheet Object")
-'@IgnoreModule
 
 Option Explicit
 

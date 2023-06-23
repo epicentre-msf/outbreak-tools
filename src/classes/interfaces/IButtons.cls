@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Attribute VB_Description = "Interface of Linelist Buttons"
 
-
-'@Folder("Dictionary")
-'@ModuleDescription("Interface of ")
-'@IgnoreModule
+'@Folder("Linelist")
+'@ModuleDescription("Interface of Linelist Buttons")
+'@Interface
 
 Option Explicit
 

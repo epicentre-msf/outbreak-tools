@@ -6,26 +6,6 @@ Option Private Module
 Public DebugMode As Boolean
 
 
-'Protect sheet of type linelist
-Public Sub ProtectSheet(Optional sSheetName As String = "_Active")
-    Dim pwd As String
-    Dim sh As Worksheet
-
-    If sSheetName = "_Active" Then
-        Set sh = ActiveSheet
-    Else
-        Set sh = ThisWorkbook.Worksheets(sSheetName)
-    End If
-
-    If Not DebugMode Then
-        pwd = ThisWorkbook.Worksheets(C_sSheetPassword).Range(C_sRngDebuggingPassWord).Value
-        sh.Protect Password:=pwd, DrawingObjects:=True, Contents:=True, Scenarios:=True, _
-                   AllowInsertingRows:=True, AllowSorting:=True, AllowFiltering:=True, _
-                   AllowFormattingColumns:=True
-    End If
-
-End Sub
-
 'Trigerring event when the linelist sheet has some values within                                                          -                                                      -
 Sub EventValueChangeLinelist(Target As Range)
 

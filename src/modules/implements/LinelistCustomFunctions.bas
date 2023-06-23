@@ -132,6 +132,7 @@ End Function
 Private Function GetAgg(sAggregate As String) As String
 
     Dim rng As Range
+    Dim aggVal As String
     
     If ActiveSheet.Cells(1, 3).Value <> "TS-Analysis" Then
         GetAgg = "week"
@@ -142,19 +143,20 @@ Private Function GetAgg(sAggregate As String) As String
     Select Case sAggregate
 
     Case rng.Cells(1, 1).Value
-        GetAgg = "day"
+        aggVal = "day"
     Case rng.Cells(2, 1).Value
-        GetAgg = "week"
+        aggVal = "week"
     Case rng.Cells(3, 1).Value
-        GetAgg = "month"
+        aggVal = "month"
     Case rng.Cells(4, 1).Value
-        GetAgg = "quarter"
+        aggVal = "quarter"
     Case rng.Cells(5, 1).Value
-        GetAgg = "year"
+        aggVal = "year"
     Case Else                                    'Aggregate as week if unable to find the aggregate (defensive)
-        GetAgg = "week"
+        aggVal = "week"
     End Select
  
+    GetAgg = aggVal
 End Function
 
 '@EntryPoint
@@ -365,24 +367,6 @@ Public Function InfoUser(userDate As Long, actualDate As Long, Optional infotype
     
 End Function
 
-'@EntryPoint
-Public Function GeoPopulation(ByVal adminLevel As Byte, Optional ByVal concatValue As String = vbNullString) As Long
-    Application.Volatile
-    Dim geo As ILLGeo
-    Dim popValue As String
-    Dim popLng As Long
-    
-    Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
-    popLng = 0
-    popValue = geo.Population(adminLevel, concatValue)
-
-    On Error Resume Next
-        popLng = CLng(popValue)
-    On Error GoTo 0
-
-    GeoPopulation = popLng
-End Function
-'There is No population for health facility
 
 '@EntryPoint
 Public Function GEOCONCAT(cellRng As Range, Level As Byte) As String

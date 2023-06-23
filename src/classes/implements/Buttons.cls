@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Buttons of the linelist"
 
-
+'@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Buttons of the linelist")
-'@IgnoreModule
 
 Option Explicit
 Implements IButtons

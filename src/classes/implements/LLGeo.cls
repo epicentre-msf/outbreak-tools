@@ -7,8 +7,9 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Geobase management class"
 
-
+'@PredeclaredId
 '@Folder("Geobase")
 '@ModuleDescription("Geobase management class")
 
@@ -31,7 +32,6 @@ Private Const HISTOGEO  As String = "HISTOGEO"
 Private Const HISTOHF   As String = "HISTOHF"
 Private Const NAMES     As String = "NAMES"
 Private Const METADATA  As String = "METADATA"
-Private Const Concat    As String = "CONCAT"     'concatenated list of admins
 
 Public Function Create(ByVal sh As Worksheet) As ILLGeo
     CheckRequirements sh
@@ -313,11 +313,9 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
     Dim Lo As listObject
     Dim LoName As String
     Dim colIndex As Long
-    Dim colRange As Range
     Dim concatRng As Range
     Dim tabl As BetterArray
     Dim returnedValue As String
-    Dim LoRng As Range
     Dim cellRng As Range
     Dim retRng As Range
 
@@ -328,7 +326,6 @@ Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
     Set Lo = sh.ListObjects(LoName)
 
     If Lo.DataBodyRange Is Nothing Then Exit Property
-    Set LoRng = Lo.Range
 
     'returned column index
     If adminLevel <> LevelHF Then
@@ -386,7 +383,6 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
     'Headers for the geo sheet
     Dim sh As Worksheet
     Dim tabl As BetterArray
-    Dim colIndex As Long
     Dim counter As Long
     Dim counter2 As Long
     Dim rng As Range
@@ -522,7 +518,6 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     Dim rngTable As BetterArray
     Dim counter As Long
     Dim rngName As String
-    Dim lang As String
 
 
     'Test if a sheet named as the geo sheet already exists

@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Attribute VB_Description = "Interface of CaseWhen"
 
-
-'@Folder("Dictionary")
+'@Interface
+'@Folder("Custom Functions")
 '@ModuleDescription("Interface of CaseWhen")
-'@IgnoreModule
 
 Option Explicit
 
