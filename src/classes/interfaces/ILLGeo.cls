@@ -15,19 +15,19 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
-Public Enum CustomGeoType
-    CustomTypeGeo = 0                            'Geo
-    CustomTypeHF = 1                             'Health Facility
+Public Enum GeoScope
+    GeoScopeAdmin = 0                            'Geo
+    GeoScopeHF = 1                             'Health Facility
 End Enum
 
-Public Enum GeoLevel
+Public Enum AdminOnlyScope
     LevelAdmin1 = 0
     LevelAdmin2 = 1
     LevelAdmin3 = 2
     LevelAdmin4 = 3
 End Enum
 
-Public Enum GeoLevelOrHF
+Public Enum AdminAndHFScope
     LevelGeoAdmin1 = 0
     LevelGeoAdmin2 = 1
     LevelGeoAdmin3 = 2
@@ -37,8 +37,8 @@ End Enum
 
 'Get the list of levels of one admin name (will return either a BetterArray or
 ' a String(for admin4))
-Public Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
-                             Optional ByVal geoType As CustomGeoType = CustomTypeGeo, _
+Public Property Get GeoLevel(ByVal adminLevel As AdminOnlyScope, _
+                             Optional ByVal geoType As GeoScope = GeoScopeAdmin, _
                              Optional ByVal adminNames As Variant = vbNullString _
                              ) As BetterArray
 End Property
@@ -47,11 +47,11 @@ End Property
 Public Property Get GeoNames(ByVal admname As String) As String: End Property
 
 'Get the Population of one administrative level (only for geoType)
-Public Property Get Population(ByVal adminLevel As GeoLevelOrHF, Optional ByVal concatValue As String = vbNullString) As String
+Public Property Get Population(ByVal adminLevel As AdminAndHFScope, Optional ByVal concatValue As String = vbNullString) As String
 End Property
 
 'Get the Population of one administrative level (only for geoType)
-Public Property Get Pcode(ByVal adminLevel As GeoLevelOrHF, Optional ByVal concatValue As String = vbNullString) As String
+Public Property Get Pcode(ByVal adminLevel As AdminAndHFScope, Optional ByVal concatValue As String = vbNullString) As String
 End Property
 
 'Translation

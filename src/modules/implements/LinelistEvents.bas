@@ -78,7 +78,7 @@ Sub EventValueChangeLinelist(Target As Range)
                 If Target.Value <> vbNullString Then
 
                     'Filter on adm1
-                    Set T_geo = geo.GeoLevel(LevelAdmin2, CustomTypeGeo, Target.Value)
+                    Set T_geo = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, Target.Value)
                     'Build the validation list for adm2
                     T_geo.ToExcelRange loAdm2.Range.Cells(2, 1)
                     T_geo.Clear
@@ -99,7 +99,7 @@ Sub EventValueChangeLinelist(Target As Range)
 
                 If Target.Value <> vbNullString Then
                     adminNames.Push Target.Offset(, -1).Value, Target.Value
-                    Set T_geo = geo.GeoLevel(LevelAdmin3, CustomTypeGeo, adminNames)
+                    Set T_geo = geo.GeoLevel(LevelAdmin3, GeoScopeAdmin, adminNames)
                     T_geo.ToExcelRange loAdm3.Range.Cells(2, 1)
                     T_geo.Clear
                 End If
@@ -117,7 +117,7 @@ Sub EventValueChangeLinelist(Target As Range)
 
                     adminNames.Push Target.Offset(, -2).Value, Target.Offset(, -1).Value, Target.Value
                     'Take the adm4 table
-                    Set T_geo = geo.GeoLevel(LevelAdmin4, CustomTypeGeo, adminNames)
+                    Set T_geo = geo.GeoLevel(LevelAdmin4, GeoScopeAdmin, adminNames)
                     T_geo.ToExcelRange loAdm4.Range.Cells(2, 1)
                     T_geo.Clear
                 End If
@@ -355,7 +355,7 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
         If Target.Value <> vbNullString Then
             DeleteLoDataBodyRange loAdm2
           'Filter on adm1
-           Set T_geo = geo.GeoLevel(LevelAdmin2, CustomTypeGeo, Target.Offset(, -1).Value)
+           Set T_geo = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, Target.Offset(, -1).Value)
            'Build the validation list for adm2
             T_geo.ToExcelRange loAdm2.Range.Cells(2, 1)
             T_geo.Clear
@@ -368,7 +368,7 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
          If Target.Value <> vbNullString Then
             DeleteLoDataBodyRange loAdm3
             adminNames.Push Target.Offset(, -2).Value, Target.Offset(, -1).Value
-            Set T_geo = geo.GeoLevel(LevelAdmin3, CustomTypeGeo, adminNames)
+            Set T_geo = geo.GeoLevel(LevelAdmin3, GeoScopeAdmin, adminNames)
             T_geo.ToExcelRange loAdm3.Range.Cells(2, 1)
             T_geo.Clear
          End If
@@ -382,7 +382,7 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
             DeleteLoDataBodyRange loAdm4
             adminNames.Push Target.Offset(, -3).Value, Target.Offset(, -2).Value, Target.Offset(, -1).Value
             'Take the adm4 table
-             Set T_geo = geo.GeoLevel(LevelAdmin4, CustomTypeGeo, adminNames)
+             Set T_geo = geo.GeoLevel(LevelAdmin4, GeoScopeAdmin, adminNames)
              T_geo.ToExcelRange loAdm4.Range.Cells(2, 1)
              T_geo.Clear
          End If
