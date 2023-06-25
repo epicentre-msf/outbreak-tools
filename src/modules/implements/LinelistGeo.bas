@@ -58,7 +58,7 @@ Sub LoadGeo(iGeoType As Byte)                    'Type of geo form to load: Geo 
             If (Not .ListObjects("T_ADM4").DataBodyRange Is Nothing) Then
 
                 'T_Adm4.FromExcelRange .ListObjects("T_ADM4").DataBodyRange
-                Set transValue = geo.GeoLevel(LevelAdmin1, CustomTypeGeo)
+                Set transValue = geo.GeoLevel(LevelAdmin1, GeoScopeAdmin)
                 [F_Geo].[LST_Adm1].List = transValue.Items
                 T_Concat.FromExcelRange .ListObjects("T_ADM4").ListColumns("adm4_concat").DataBodyRange
                 T_Concat.Sort
@@ -147,7 +147,7 @@ Sub ShowLst2(sPlace As String)
     Application.Cursor = xlNorthwestArrow
 
     'Search if the value exists in the 2 dimensional table T_Adm1 previously initialized
-    Set T_Aff = geo.GeoLevel(LevelAdmin2, CustomTypeGeo, sPlace)
+    Set T_Aff = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, sPlace)
 
     [F_Geo].TXT_Msg.Value = sPlace
     'update if only next level is available
@@ -171,7 +171,7 @@ Sub ShowLstF2(sPlace As String)
     Application.Cursor = xlNorthwestArrow
 
     'Just filter and show
-    Set T_Aff = geo.GeoLevel(LevelAdmin2, CustomTypeHF, sPlace)
+    Set T_Aff = geo.GeoLevel(LevelAdmin2, GeoScopeHF, sPlace)
 
     [F_Geo].TXT_Msg.Value = sPlace
 
@@ -202,7 +202,7 @@ Sub ShowLst3(sAdm2 As String)
     adminNames.Push sAdm1, sAdm2
 
     'Just filter and show
-    Set T_Aff = geo.GeoLevel(LevelAdmin3, CustomTypeGeo, adminNames)
+    Set T_Aff = geo.GeoLevel(LevelAdmin3, GeoScopeAdmin, adminNames)
 
     [F_Geo].TXT_Msg.Value = [F_Geo].LST_Adm1.Value & " | " & [F_Geo].LST_Adm2.Value
     'Update the adm3 list in the geoform if the T_Aff3 is not missing
@@ -233,7 +233,7 @@ Sub ShowLstF3(sAdm2 As String)
     Application.Cursor = xlNorthwestArrow
 
     'Here I filter on the Health Facilities instead of the Geo
-    Set T_Aff = geo.GeoLevel(LevelAdmin3, CustomTypeHF, adminNames)
+    Set T_Aff = geo.GeoLevel(LevelAdmin3, GeoScopeHF, adminNames)
 
     [F_Geo].TXT_Msg.Value = [F_Geo].LST_AdmF2.Value & " | " & [F_Geo].LST_AdmF1.Value
 
@@ -265,7 +265,7 @@ Sub ShowLst4(sAdm3 As String)
 
     [F_Geo].TXT_Msg.Value = [F_Geo].LST_Adm1.Value & " | " & [F_Geo].LST_Adm2.Value & " | " & [F_Geo].LST_Adm3.Value
 
-    Set T_Aff = geo.GeoLevel(LevelAdmin4, CustomTypeGeo, adminNames)
+    Set T_Aff = geo.GeoLevel(LevelAdmin4, GeoScopeAdmin, adminNames)
 
     If T_Aff.Length > 0 Then [F_Geo].LST_Adm4.List = T_Aff.Items
 
@@ -292,7 +292,7 @@ Sub ShowLstF4(sAdm3 As String)
     'Use the cursor to hide some working steps
     Application.Cursor = xlNorthwestArrow
 
-    Set T_Aff = geo.GeoLevel(LevelAdmin4, CustomTypeHF, adminNames)
+    Set T_Aff = geo.GeoLevel(LevelAdmin4, GeoScopeHF, adminNames)
 
     [F_Geo].TXT_Msg.Value = [F_Geo].LST_AdmF3.Value & " | " & [F_Geo].LST_AdmF2.Value & " | " & [F_Geo].LST_AdmF1.Value
 
