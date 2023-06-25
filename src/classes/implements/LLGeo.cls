@@ -88,7 +88,7 @@ Private Property Get GeoNames(ByVal admname As String) As String
     End If
 End Property
 
-Private Function GeoColumnIndex(ByVal colName As String, ByVal adminLevel As GeoLevel) As Long
+Private Function GeoColumnIndex(ByVal colName As String, ByVal adminLevel As AdminOnlyScope) As Long
     Dim hRng As Range
     Dim LoName As String
     Dim tabl As BetterArray
@@ -166,8 +166,8 @@ Private Function HFRange(ByVal colName As String) As Range
     Set HFRange = sh.ListObjects("T_" & HF).ListColumns(colIndex).DataBodyRange()
 End Function
 
-Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
-                              Optional ByVal geoType As CustomGeoType = CustomTypeGeo, _
+Private Property Get GeoLevel(ByVal adminLevel As AdminOnlyScope, _
+                              Optional ByVal geoType As GeoScope = GeoScopeAdmin, _
                               Optional ByVal adminNames As Variant = vbNullString _
                               ) As BetterArray
 
@@ -190,7 +190,7 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
 
     sh.EnableCalculation = False
 
-    If geoType = CustomTypeGeo Then
+    If geoType = GeoScopeAdmin Then
         LoName = tabl.Item(adminLevel)
     Else
         LoName = tabl.Item(4)
@@ -219,7 +219,7 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
 
     Select Case geoType
 
-    Case CustomTypeGeo
+    Case GeoScopeAdmin
 
         Select Case adminLevel
 
@@ -247,7 +247,7 @@ Private Property Get GeoLevel(ByVal adminLevel As GeoLevel, _
             colIndex = GeoColumnIndex("adm" & (CLng(adminLevel) + 1) & "_name", adminLevel)
         End Select
 
-    Case CustomTypeHF
+    Case GeoScopeHF
 
         Select Case adminLevel
 
@@ -302,7 +302,7 @@ Err:
 End Property
 
 
-Private Property Get ValueOf(ByVal adminLevel As GeoLevelOrHF, _
+Private Property Get ValueOf(ByVal adminLevel As AdminAndHFScope, _
         Optional ByVal concatValue As String = vbNullString, _
         Optional ByVal returnedSuffix As String = "pop") As String
 
@@ -986,8 +986,8 @@ Private Function AdminCode(ByVal selectedAdmin As String) As String
 End Function
 
 'Interfaces
-Private Property Get ILLGeo_GeoLevel(ByVal adminLevel As GeoLevel, _
-                                    Optional ByVal geoType As CustomGeoType = CustomTypeGeo, _
+Private Property Get ILLGeo_GeoLevel(ByVal adminLevel As AdminOnlyScope, _
+                                    Optional ByVal geoType As GeoScope = GeoScopeAdmin, _
                                     Optional ByVal adminNames As Variant = vbNullString) As BetterArray
 
     Set ILLGeo_GeoLevel = GeoLevel(adminLevel, geoType, adminNames)
@@ -999,11 +999,11 @@ Private Property Get ILLGeo_GeoNames(ByVal admname As String) As String
 End Property
 
 'Get the Population of one administrative level (only for geoType)
-Private Property Get ILLGeo_Population(ByVal adminLevel As GeoLevelOrHF, Optional ByVal concatValue As String = vbNullString) As String
+Private Property Get ILLGeo_Population(ByVal adminLevel As AdminAndHFScope, Optional ByVal concatValue As String = vbNullString) As String
     ILLGeo_Population = ValueOf(adminLevel:=adminLevel, concatValue:=concatValue, returnedSuffix:="pop")
 End Property
 
-Private Property Get ILLGeo_Pcode(ByVal adminLevel As GeoLevelOrHF, Optional ByVal concatValue As String = vbNullString) As String
+Private Property Get ILLGeo_Pcode(ByVal adminLevel As AdminAndHFScope, Optional ByVal concatValue As String = vbNullString) As String
     ILLGeo_Pcode = ValueOf(adminLevel:=adminLevel, concatValue:=concatValue, returnedSuffix:="pcode")
 End Property
 
