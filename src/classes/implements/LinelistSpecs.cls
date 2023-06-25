@@ -144,7 +144,7 @@ Public Property Get Password() As ILLPasswords
 End Property
 
 'Test if the translation form exists
-Public Property Get TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation
+Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation
     Set TransObject = trads.TransObject(trans)
 End Property
 
@@ -579,7 +579,7 @@ Public Sub ILinelistSpecs_Prepare()
     Prepare
 End Sub
 
-Public Property Get ILinelistSpecs_TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation
+Public Property Get ILinelistSpecs_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation
     Set ILinelistSpecs_TransObject = TransObject(trans)
 End Property
 
