@@ -71,7 +71,7 @@ Private Property Get DesignerLanguage() As String
     End If
 End Property
 
-Public Property Get TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation
+Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation
 
     Dim Lo As ListObject
     Dim lang As String
@@ -206,7 +206,7 @@ Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
 
 End Sub
 
-Private Property Get IDesTranslation_TransObject(Optional ByVal trans As TradScopes = TranslationOfMessages) As ITranslation
+Private Property Get IDesTranslation_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation
     Set IDesTranslation_TransObject = TransObject(trans)
 End Property
 
