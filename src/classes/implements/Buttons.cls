@@ -17,7 +17,6 @@ Option Explicit
 Implements IButtons
 
 Private Type TButton
-    trads As ITranslation
     rng As Range
     shapename As String
     scope As ButtonScope
@@ -111,7 +110,6 @@ Public Sub Add(Optional ByVal actionCommand As String = vbNullString, Optional B
     Dim cellRng As Range
     Dim sh As Worksheet
     Dim codeName As String
-    Dim trans As ITranslation
 
 
     If ShapeExists() Then Exit Sub
@@ -175,12 +173,12 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Exposed methods
-Public Sub IButtons_Add(Optional ByVal actionCommand As String = vbNullString, _
+Private Sub IButtons_Add(Optional ByVal actionCommand As String = vbNullString, _
                         Optional ByVal shapeLabel As String = vbNullString)
     Add actionCommand:=actionCommand, shapeLabel:=shapeLabel
 End Sub
 
-Public Sub IButtons_Format(design As ILLFormat)
+Private Sub IButtons_Format(design As ILLFormat)
     Format design
 End Sub
 

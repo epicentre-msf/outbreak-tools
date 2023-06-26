@@ -113,7 +113,7 @@ End Function
 
 
 '@Description("Find a path of an export (using the dictionary)")
-Private Function ExportFileName(ByVal scope As ExportScope, _
+Private Function ExportFileName(ByVal scope As Byte, _
                             ByVal dict As ILLdictionary, _ 
                             Byval pass As ILLPasswords) As String
 

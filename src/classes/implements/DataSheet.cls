@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Data manipulation in a worksheet"
 
-
-'@Folder("Data")
-'@ModuleDescription("Data Worksheet with manipulation methods")
-'@IgnoreModule
+'@PredeclaredId
+'@Folder("General")
+'@ModuleDescription("Data manipulation in a worksheet")
 
 Option Explicit
 Implements IDataSheet
@@ -436,7 +436,7 @@ End Sub
 'Inteface ----------------------------------------------------------------------
 
 'Methods
-Public Function IDataSheet_FilterData(ByVal varName As String, _
+Private Function IDataSheet_FilterData(ByVal varName As String, _
                                       ByVal criteriaName As String, _
                                       ByVal returnedColumnName As String, _
                                       Optional ByVal includeHeaders As Boolean = False) As BetterArray
@@ -446,52 +446,52 @@ Public Function IDataSheet_FilterData(ByVal varName As String, _
                                            includeHeaders:=includeHeaders)
 End Function
 
-Public Function IDataSheet_FiltersData(ByVal varData As BetterArray, ByVal criteriaData As BetterArray, ByVal returnedColumnsData As BetterArray) As BetterArray
+Private Function IDataSheet_FiltersData(ByVal varData As BetterArray, ByVal criteriaData As BetterArray, ByVal returnedColumnsData As BetterArray) As BetterArray
     Set IDataSheet_FiltersData = FiltersData(varData, criteriaData, returnedColumnsData)
 End Function
 
-Public Function IDataSheet_ColumnExists(ByVal colName As String) As Boolean
+Private Function IDataSheet_ColumnExists(ByVal colName As String) As Boolean
     IDataSheet_ColumnExists = ColumnExists(colName)
 End Function
 
-Public Function IDataSheet_ColumnIndex(ByVal colName As String, _
+Private Function IDataSheet_ColumnIndex(ByVal colName As String, _
                                        Optional ByVal inDataRange As Boolean = False, _
                                        Optional shouldExist As Boolean = False) As Long
     IDataSheet_ColumnIndex = ColumnIndex(colName, inDataRange, shouldExist)
 End Function
 
 'Properties
-Public Property Get IDataSheet_DataRange(Optional ByVal colName As String = "__all__", _
+Private Property Get IDataSheet_DataRange(Optional ByVal colName As String = "__all__", _
                                          Optional ByVal includeHeaders As Boolean = False) As Range
     Set IDataSheet_DataRange = DataRange(colName, includeHeaders)
 End Property
 
 'Getters for the encapsulated data
-Public Property Get IDataSheet_StartRow() As Long
+Private Property Get IDataSheet_StartRow() As Long
     IDataSheet_StartRow = StartRow()
 End Property
 
-Public Property Get IDataSheet_StartColumn() As Long
+Private Property Get IDataSheet_StartColumn() As Long
     IDataSheet_StartColumn = StartColumn()
 End Property
 
-Public Property Get IDataSheet_Wksh() As Worksheet
+Private Property Get IDataSheet_Wksh() As Worksheet
     Set IDataSheet_Wksh = Wksh()
 End Property
 
-Public Property Get IDataSheet_DataEndRow() As Long
+Private Property Get IDataSheet_DataEndRow() As Long
     IDataSheet_DataEndRow = DataEndRow()
 End Property
 
-Public Property Get IDataSheet_DataEndColumn() As Long
+Private Property Get IDataSheet_DataEndColumn() As Long
     IDataSheet_DataEndColumn = DataEndColumn()
 End Property
 
-Public Property Get IDataSheet_HeaderRange() As Range
+Private Property Get IDataSheet_HeaderRange() As Range
     Set IDataSheet_HeaderRange = HeaderRange()
 End Property
 
-Public Sub IDataSheet_Export(ByVal toWkb As Workbook, _
+Private Sub IDataSheet_Export(ByVal toWkb As Workbook, _
                              Optional ByVal filteredVarName As String = "__all__", _
                              Optional ByVal filteredCondition As String = "<>", _
                              Optional ByVal Hide As Long = xlSheetHidden)
@@ -499,11 +499,11 @@ Public Sub IDataSheet_Export(ByVal toWkb As Workbook, _
 End Sub
 
 'Import another datasheet or a custom table
-Public Sub IDataSheet_Import(ByVal importedData As Object)
+Private Sub IDataSheet_Import(ByVal importedData As Object)
     Import importedData
 End Sub
 
 'Import the formats of a range
-Public Sub IDataSheet_ImportFormat(ByVal impRng As Range)
+Private Sub IDataSheet_ImportFormat(ByVal impRng As Range)
     ImportFormat impRng
 End Sub
