@@ -20,7 +20,7 @@ Implements IOutputSpecs
 Private Type TExpOut
   outwb As Workbook 'Output workbook
   inpwb As Workbook 'Input workbok
-  scope As ExportScope
+  scope As Byte
 End Type
 
 Private Const CLASSNAME                 As String = "OutputSpecs"
@@ -35,7 +35,7 @@ Private Const EXPORTSHEET               As String = "Exports"
 Private this As TExpOut
 
 
-Public Function Create(currwb As Workbook,  ByVal scope As ExportScope) As IOutputSpecs
+Public Function Create(currwb As Workbook,  ByVal scope As Byte) As IOutputSpecs
 
   CheckRequirements currwb
   
@@ -69,11 +69,11 @@ Public Property Get OutputWkb() As Workbook
   Set OutputWkb = this.outwb
 End Property
 
-Public Property Get ActualScope() As ExportScope
+Public Property Get ActualScope() As Byte
   ActualScope = this.scope
 End Property
 
-Public Property Let ActualScope(ByVal scope As ExportScope)
+Public Property Let ActualScope(ByVal scope As Byte)
     this.scope = scope 
 End Property
 
@@ -113,11 +113,11 @@ Private Sub Prepare()
   Dim expName As String
   Dim dict As ILLdictionary
   Dim expdict As ILLdictionary
-  Dim scope As ExportScope
+  Dim scope As Byte
   Dim sheetNamesList As BetterArray
   Dim outwb As Workbook
   Dim firstSheetName As String
-  Dim exp As ILLExport
+
   Dim counter As Long
   Dim prevSheetName As String
   Dim expDictRng As Range
@@ -129,16 +129,14 @@ Private Sub Prepare()
   Set dictData = New BetterArray
   Set sheetNamesList = New BetterArray
   Set outwb = OutputWkb()
-  Set exp = ExportObject()
 
   firstSheetName = outwb.Worksheets(1).Name
   scope = ActualScope()
 
-
   If scope <> ExportAll Then 
     expName = "export" & " " & CStr(scope)  
     'Filter the dictionary
-    Set dictData = dict.Data.FilterData(varName:=expName, criteriaName:="<>", "__all__")
+    Set dictData = dict.Data.FilterData(varName:=expName, criteriaName:="<>", returnedColumnName:="__all__")
     'The temporary sheet contains the dictionary for the exports
   Else
     dictData.FromExcelRange dict.DataRange(includeHeaders:=True)
@@ -171,7 +169,7 @@ Private Sub Prepare()
   prevSheetName = firstSheetName
 
   If (exp.Value("export metadata", CInt(scope)) = "yes") Or (scope = ExportAll) Then 
-    AddMetaData prevSheetName, scope
+    AddMetaData scope
     prevSheetName = METADATASHEET
   End If
 
@@ -188,7 +186,7 @@ Private Sub Prepare()
   outwb.Worksheets(firstSheetName).Delete
 End Sub
 
-Private Sub AddMetaData(ByVal pevSheetName As String, ByVal scope As ExportScope)
+Private Sub AddMetaData(ByVal scope As Byte)
 
   Dim outwb As Workbook
   Dim inpwb As Workbook
@@ -234,7 +232,7 @@ Private Sub AddMetaData(ByVal pevSheetName As String, ByVal scope As ExportScope
   varRng.Cells(varRng.Rows.Count + 2, 2).Value = Format(Now, "yyyy-mm-dd Hh:Nn")
 End Sub
 
-
+'Add Data to export
 Private Sub AddData(Optional ByVal useFilters As Boolean = False)
 
   Dim expdict As ILLdictionary
@@ -246,8 +244,8 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
   Dim Lo As ListObject
   Dim sheetName As String
   Dim useLabels As Boolean
-  Dim exp As ILLExport
-  Dim scope As ExportScope
+  Dim expobj As ILLExport
+  Dim scope As Byte
   Dim inpsh As Worksheet
   Dim inpwb As Workbook
   Dim outsh As Worksheet
@@ -256,10 +254,10 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
   Set outwb =  OutputWkb()
   Set inpwb = InputWkb()
   Set sheetNamesList = expdict.UniqueValues("sheet name")
-  Set exp = ExportObject()
+  Set expobj = ExportObject()
   scope = ActualScope()
 
-  useLabels = (exp.Value("export header", CInt(scope)) = "variable labels")
+  useLabels = (expobj.Value("export header", CInt(scope)) = "variable labels")
 
   For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
 
@@ -294,7 +292,6 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
     
     End If
   Next
-
 
 End Sub
 

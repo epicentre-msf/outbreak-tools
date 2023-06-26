@@ -9,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Add specifications for graphs in analysis"
 
+'@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("Add specifications for graphs in analysis")
 
@@ -16,9 +17,9 @@ Option Explicit
 Implements IGraphSpecs
 
 'Constants for names of tables in range specs
-Private Const TABONTIMESERIES = "time series analysis"
-Private Const TABONGRAPHTIMESERIES = "graph on time series"
-Private Const TABONTITLEGRAPHSTIMESERIES = "labels for time series graphs"
+Private Const TABONTIMESERIES As String = "time series analysis"
+Private Const TABONGRAPHTIMESERIES As String = "graph on time series"
+Private Const TABONTITLEGRAPHSTIMESERIES As String = "labels for time series graphs"
 
 Public Enum GraphSpecsType
     GraphTypeSimple = 1
@@ -322,16 +323,11 @@ Public Sub CreateSeries()
     Dim tabId As String
     Dim mGraphIds As BetterArray
     Dim graphId As String
-    Dim valueName As String
-    Dim labelName As String
     Dim tabType As AnalysisTablesType
     Dim counter As Long
     Dim nbCols As Long
     Dim plotType As String
     Dim flipCoords As String
-
-    Dim series As BetterArray
-    Set series = New BetterArray
 
     Select Case GraphType
 

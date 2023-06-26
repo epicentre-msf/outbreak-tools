@@ -7,8 +7,9 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = "A class choices formula"
+Attribute VB_Description = "A class for choices formula"
 
+'@PredeclaredId
 '@Folder("Custom Functions")
 '@ModuleDescription("A class for choices formula")
 
@@ -103,20 +104,20 @@ End Function
 
 
 'Interface
-Public Property Get IChoiceFormula_parsedFormula() As String
+Private Property Get IChoiceFormula_parsedFormula() As String
   IChoiceFormula_parsedFormula = parsedFormula()
 End Property
 
 'List of categories
-Public Property Get IChoiceFormula_Categories() As BetterArray
+Private Property Get IChoiceFormula_Categories() As BetterArray
   Set IChoiceFormula_Categories = Categories()
 End Property
 
 'Validity test
-Public Property Get IChoiceFormula_Valid() As Boolean
+Private Property Get IChoiceFormula_Valid() As Boolean
   IChoiceFormula_Valid = Valid()
 End Property
 
-Public Property Get IChoiceFormula_ChoiceName() As String
+Private Property Get IChoiceFormula_ChoiceName() As String
   IChoiceFormula_ChoiceName = choiceName()
 End Property

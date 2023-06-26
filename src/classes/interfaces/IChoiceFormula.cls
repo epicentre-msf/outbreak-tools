@@ -7,12 +7,12 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
-Attribute VB_Description = "Interface of choice Formula"
+Attribute VB_Description = "Interface of choice formula"
 
 
 '@Interface
 '@Folder("Custom Functions")
-'@ModuleDescription("Interface of Choice formula")
+'@ModuleDescription("Interface of choice formula")
 
 Option Explicit
 
