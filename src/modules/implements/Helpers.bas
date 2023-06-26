@@ -40,11 +40,6 @@ Public Function LoadFile(sFilters As String) As String
     End If
 End Function
 
-'Just check if it is Mac
-Public Function isMac()
-    isMac = Application.OperatingSystem Like "*Mac*"
-End Function
-
 'Folder selection depending on the OS   ----------------------------------------------------------------------------
 
 'Folder on Mac

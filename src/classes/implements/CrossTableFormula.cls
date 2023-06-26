@@ -22,7 +22,7 @@ Public Enum ExcelFormulaScope
 End Enum
 
 Private Type TCrossTableFormula
-    tab As ICrossTable
+    tabl As ICrossTable
     fData As IFormulaData
     forml As IFormulas
     condVars As BetterArray
@@ -45,11 +45,11 @@ Public Property Get Self() As ICrossTableFormula
 End Property
 
 Public Property Get Table() As ICrossTable
-    Set Table = this.tab
+    Set Table = this.tabl
 End Property
 
 Public Property Set Table(ByVal tabl As ICrossTable)
-    Set this.tab = tabl
+    Set this.tabl = tabl
 End Property
 
 Public Property Get formData() As IFormulaData
@@ -130,7 +130,6 @@ Private Function FailedFormula(ByVal frmName As String) As Boolean
 
     Dim prevAlert As Long
     Dim sh As Worksheet
-    Dim formTest As String
 
     prevAlert = Application.DisplayAlerts
 
@@ -194,24 +193,27 @@ End Sub
 
 Private Sub ClearTableConditions(Optional ByVal removeNumber As Integer = 0)
     Dim counter As Integer
+    Dim remNum As Integer
+
+    remNum = removeNumber
 
     If this.condVars Is Nothing Then
         Set this.condVars = New BetterArray
         this.condVars.LowerBound = 1
-        removeNumber = 0
+        remNum = 0
     End If
 
     If this.condTests Is Nothing Then
         Set this.condTests = New BetterArray
         this.condTests.LowerBound = 1
-        removeNumber = 0
+        remNum = 0
     End If
 
-    If removeNumber <= 0 Then
+    If remNum <= 0 Then
         this.condVars.Clear
         this.condTests.Clear
     Else
-        For counter = 1 To removeNumber
+        For counter = 1 To remNum
             this.condVars.pop
             this.condTests.pop
         Next
@@ -247,13 +249,6 @@ Fail:
     'Trace Log here on failed formula?
     eform = chr(34) & "##== formula parsing failed :( ==##" & chr(34)
     CurrentExcelFormula = eform
-End Property
-
-Private Property Get CurrentSpatialFormula(Optional ByVal scope As ExcelFormulaScope = formulaScopeanalysis, _
-                                        Optional ByVal prefix As String = "f") As String
-
-
-
 End Property
 
 Private Sub AddNonEmptyTableConditions(ByVal varName As String)
@@ -349,10 +344,8 @@ Private Sub AddFormulas()
     Dim colVar As String
     Dim tabFormat As String
     Dim rowCatAddress As String
-    Dim colCatAddress As String
     Dim startTimeAddress As String
     Dim endTimeAddress As String
-    Dim vars As ILLVariables
     Dim HasMissing As Boolean
     Dim HasTotal As Boolean
     Dim HasPercentage As Boolean
@@ -366,7 +359,6 @@ Private Sub AddFormulas()
     If Not Valid() Then Exit Sub                 'Trace here for validity
 
     Set specs = Specifications
-    Set vars = LLVariables.Create(specs.Dictionary)
     Set tabl = Table()
     Set sh = tabl.Wksh()
 
@@ -1068,11 +1060,11 @@ Private Sub UnFoundRangeError(ByVal sectionName As String, ByVal rngName As Stri
     ThrowExecutionError "On " & sectionName & ", range " & rngName & "Does not Exists in worksheet " & shName
 End Sub
 
-Public Property Get ICrossTableFormula_Valid() As Boolean
+Private Property Get ICrossTableFormula_Valid() As Boolean
     ICrossTableFormula_Valid = Valid
 End Property
 
-Public Sub ICrossTableFormula_AddFormulas()
+Private Sub ICrossTableFormula_AddFormulas()
     AddFormulas
 End Sub
 
