@@ -73,9 +73,20 @@ Private Property Get Value(ByVal tagName As String) As String
         retVal = sh.Range("RNG_PublicKey").Value
     Case "privatekey"
         retVal = sh.Range("RNG_PrivateKey").Value
+    Case "version"
+        retVal = sh.Range("RNG_Version").Value
     End Select
 
     Value = retVal
+End Property
+
+Private Property Get TableRange() As Range
+
+    Dim sh As Worksheet
+
+    Set sh = Wksh()
+    Set TableRange = sh.ListObjects(TABKEYS).DataBodyRange
+
 End Property
 
 'Generate a new key for the file to be saved
@@ -198,49 +209,7 @@ Private Sub LeaveDebugMode()
 End Sub
 
 
-'Requirements for instanciation
-Private Sub CheckRequirements(ByVal sh As Worksheet)
-
-    If sh Is Nothing Then ThrowError "Unable to instanciate, no password sheet"
-
-    'Required listObjects fo translations
-    LoExists TABKEYS, sh
-
-    'Ranges in the linelist translation worksheet
-    RangeExists rngName:="RNG_DebuggingPassword", sh:=sh
-    RangeExists rngName:="RNG_PublicKey", sh:=sh
-    RangeExists rngName:="RNG_LabPublicKey", sh:=sh
-    RangeExists rngName:="RNG_PrivateKey", sh:=sh
-    RangeExists rngName:="RNG_LabPrivateKey", sh:=sh
-    RangeExists rngName:="RNG_DebugMode", sh:=sh
-
-End Sub
-
-'Check if listobject exists in a worksheet
-Private Sub RangeExists(ByVal rngName As String, ByVal sh As Worksheet)
-
-    Dim rng As Range
-    On Error Resume Next
-    Set rng = sh.Range(rngName)
-    On Error GoTo 0
-
-    If rng Is Nothing Then ThrowError "Range " & rngName & " does not exists in worksheet " & sh.Name
-End Sub
-
-Private Sub LoExists(ByVal LoName As String, sh As Worksheet)
-    Dim Lo As ListObject
-    On Error Resume Next
-    Set Lo = sh.ListObjects(LoName)
-    On Error GoTo 0
-    If Lo Is Nothing Then ThrowError "Table " & LoName & " does not exists in Worksheet " & sh.Name
-End Sub
-
-'Error
-Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
-End Sub
-
-Private Sub export(ByVal toWkb As Workbook)
+Private Sub Export(ByVal toWkb As Workbook)
 
     Dim sh As Worksheet
     Dim outsh As Worksheet
@@ -297,6 +266,84 @@ Private Sub export(ByVal toWkb As Workbook)
     outsh.Visible = xlSheetVeryHidden
 End Sub
 
+Private Sub Import(Byval pass As ILLPasswords)
+
+    Dim sh As Worksheet
+    Dim impTabRng As Range
+    Dim actTabRng As Range
+    Dim Lo As ListObject
+
+    Set sh = Wksh()
+    
+    'Set values of ranges
+    sh.Range("RNG_PublicKey").Value = pass.Value("publickey")
+    sh.Range("RNG_PrivateKey").Value = pass.Value("privatekey")
+    sh.Range("RNG_Version").Value = pass.Value("version")
+    
+    Set impTabRng = pass.TableRange()
+    '
+    If impTabRng.Columns.Count <> 2 Then _ 
+    ThrowError "Error when importing, import keys table doesn't have 2 columns"
+    
+    Set Lo = sh.ListObjects(TABKEYS)
+    Set actTabRng = Lo.DataBodyRange
+
+    'Resize the actual Range
+    actTabRng.ClearContents
+    Set actTabRng = sh.Range(actTabRng.Cells(1, 1), actTabRng.Cells(impTabRng.Rows.Count, 2))
+    actTabRng.Value = impTabRng.Value
+
+    'Resize the keys ListObject
+    Set actTabRng = sh.Range(actTabRng.Cells(0, 1), actTabRng.Cells(actTabRng.Rows.Count, 2))
+    Lo.Resize actTabRng
+End Sub
+
+'Requirements for instanciation
+Private Sub CheckRequirements(ByVal sh As Worksheet)
+
+    If sh Is Nothing Then ThrowError "Unable to instanciate, no password sheet"
+
+    'Required listObjects fo translations
+    LoExists TABKEYS, sh
+    
+    If sh.ListObjects(TABKEYS).DataBodyRange Is Nothing Then ThrowError "Unable to instanciate password, the keys table is empty"
+
+    'Ranges in the linelist translation worksheet
+    RangeExists rngName:="RNG_DebuggingPassword", sh:=sh
+    RangeExists rngName:="RNG_PublicKey", sh:=sh
+    RangeExists rngName:="RNG_LabPublicKey", sh:=sh
+    RangeExists rngName:="RNG_PrivateKey", sh:=sh
+    RangeExists rngName:="RNG_LabPrivateKey", sh:=sh
+    RangeExists rngName:="RNG_DebugMode", sh:=sh
+    RangeExists rngName:="RNG_Version", sh:=sh
+
+End Sub
+
+'Check if listobject exists in a worksheet
+Private Sub RangeExists(ByVal rngName As String, ByVal sh As Worksheet)
+
+    Dim rng As Range
+    On Error Resume Next
+    Set rng = sh.Range(rngName)
+    On Error GoTo 0
+
+    If rng Is Nothing Then ThrowError "Range " & rngName & " does not exists in worksheet " & sh.Name
+End Sub
+
+Private Sub LoExists(ByVal LoName As String, sh As Worksheet)
+    Dim Lo As ListObject
+    On Error Resume Next
+    Set Lo = sh.ListObjects(LoName)
+    On Error GoTo 0
+    If Lo Is Nothing Then ThrowError "Table " & LoName & " does not exists in Worksheet " & sh.Name
+End Sub
+
+'Error
+Private Sub ThrowError(ByVal errorMessage As String)
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+End Sub
+
+
 Private Property Get ILLPasswords_PassWord() As String
     ILLPasswords_PassWord = Password()
 End Property
@@ -323,7 +370,7 @@ Private Sub ILLPasswords_UnProtectWkb(ByVal wb As Workbook)
 End Sub
 
 Private Property Get ILLPasswords_Value(ByVal tagName As String) As String
-    Set ILLPasswords_Value = Value(tagName)
+    ILLPasswords_Value = Value(tagName)
 End Property
 
 Private Sub ILLPasswords_DisplayPrivateKey(ByVal trads As ITranslation)
@@ -341,3 +388,11 @@ End Sub
 Private Sub ILLPasswords_LeaveDebugMode()
     LeaveDebugMode
 End Sub
+
+Private Sub ILLPasswords_Import(Byval pass As ILLPasswords)
+    Import pass
+End Sub
+
+Private Property Get ILLPasswords_TableRange() As Range
+    Set ILLPasswords_TableRange = TableRange()
+End Property

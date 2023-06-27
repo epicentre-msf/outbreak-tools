@@ -12,15 +12,17 @@ Private Const DESIGNERTRADSHEET As String = "DesignerTranslation"
 Private Const LINELISTTRADSHEET As String = "LinelistTranslation"
 'Designer main sheet name
 Private Const DESIGNERMAINSHEET As String = "Main"
+Private Const PASSWORDSHEET As String = "__pass"
 'All the ribbon object Ribbon
 Private ribbonUI As IRibbonUI
 
 'speed up process
 'speed app
-Private Sub BusyApp()
+Private Sub BusyApp(Optional ByVal cursor = xlNorthwestArrow)
     Application.EnableEvents = False
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
+    Application.Cursor = cursor
     Application.Calculation = xlCalculationManual
 End Sub
 
@@ -28,6 +30,7 @@ Private Sub NotBusyApp()
     Application.EnableEvents = True
     Application.ScreenUpdating = True
     Application.EnableAnimations = True
+    Application.Cursor = xlDefault
 End Sub
 
 '@Description("Callback when the button loaded")
@@ -219,5 +222,38 @@ ErrorManage:
     Set trads = DesTranslation.Create(ThisWorkbook.Worksheets(DESIGNERTRADSHEET))
     MsgBox trads.TranslationMsg("MSG_TitlePassWord"), vbCritical, _
     trads.TranslationMsg("MSG_PassWord")
+    On Error GoTo 0
+End Sub
+
+'@Description("Callback for btnImpPass onAction: Import passwords from a worksheet")
+'@EntryPoint
+Public Sub clickImpPass(control As IRibbonControl)
+    Attribute clickImpPass.VB_Description = "Callback for btnImpPass onAction: Import passwords from a worksheet"
+
+    Dim io As IOSFiles
+    Dim sh As Worksheet
+    Dim wb As Workbook
+    Dim imppass As ILLPasswords
+    Dim actpass As ILLPasswords
+
+    Set io = OSFiles.Create()
+
+    BusyApp
+    io.LoadFile "*.xlsx"                         '
+    If Not io.HasValidFile Then Exit Sub
+
+    On Error GoTo ErrorManage
+        
+        Set wb  = Workbooks.Open(FileName:=io.File(), ReadOnly:=False)
+        Set imppass = LLPasswords.Create(wb.Worksheets(1))
+        Set actpass = LLPasswords.Create(ThisWorkbook.Worksheets(PASSWORDSHEET))
+        actpass.Import imppass
+        wb.Close saveChanges:=False
+
+ErrorManage:
+    On Error Resume Next
+    wb.Close saveChanges:=False        
+    NotBusyApp
+    MsgBox "Done!"
     On Error GoTo 0
 End Sub
