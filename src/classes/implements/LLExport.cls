@@ -113,15 +113,14 @@ End Function
 
 
 '@Description("Find a path of an export (using the dictionary)")
-Private Function ExportFileName(ByVal scope As Byte, _
-                            ByVal dict As ILLdictionary, _ 
+Private Property Get ExportFileName(ByVal scope As Byte, _
+                            ByVal dict As ILLdictionary, _
                             Byval pass As ILLPasswords) As String
 
     Dim vars As ILLVariables
     Dim PathData As BetterArray
     Dim fileName As String
     Dim outFile As String 'Final file name
-    Dim exportNumber As Integer 'True export Number
     Dim pathCounter As Long
     Dim fun As WorksheetFunction
     Dim varSheetName As String
@@ -137,15 +136,14 @@ Private Function ExportFileName(ByVal scope As Byte, _
 
     If scope = ExportAll Then
         outFile = Replace(wb.Name, ".xlsb", vbNullString) & _
-                  "_export_data_" & Format(Now, "yyyymmdd-HhNn") & ".xlsx"
+                  "_export_data_" & Format(Now, "yyyymmdd-HhNn")
     Else
         Set PathData = New BetterArray
         Set fun = Application.WorksheetFunction
         Set vars = LLVariables.Create(dict)
 
-        exportNumber = CInt(scope)
-        fileName = Value("file name", exportNumber)
-    
+        fileName = Value("file name", CInt(scope))
+
         PathData.Items = Split(fileName, "+")
 
         For PathCounter = 1 To PathData.UpperBound
@@ -153,7 +151,7 @@ Private Function ExportFileName(ByVal scope As Byte, _
             'Remove the other + signs in the path name
             chunkValue = fun.TRIM(Replace(PathData.Item(i), "+", vbNullString))
             rangeValue = vbNullString
-            
+
             varSheetName = vars.Value(varName:=chunkValue, colName:="sheet name")
             varSheetType = vars.Value(varName:=chunkValue, colName:="sheet type")
 
@@ -165,7 +163,7 @@ Private Function ExportFileName(ByVal scope As Byte, _
                 On Error GoTo 0
             End If
 
-            If rangeValue <> vbNullString Then 
+            If rangeValue <> vbNullString Then
                 PathData.Item(i) = rangeValue
             Else 'unable to find the rangeValue
                 chunkValue = Replace(chunkValue, Chr(34), vbNullString)
@@ -174,14 +172,14 @@ Private Function ExportFileName(ByVal scope As Byte, _
             End If
         Next
 
-        outFile = PathData.ToString(Separator:="-", OpeningDelimiter:=vbNullString,  _ 
+        outFile = PathData.ToString(Separator:="-", OpeningDelimiter:=vbNullString,  _
                                     ClosingDelimiter:=vbNullString, QuoteStrings:=False) & _
                                     "__" & pass.Value("publickey").Value & "__" &  _
                                     Format(Now, "yyyymmdd-HhNn")
     End If
 
     ExportFileName = outFile
-End Function
+End Property
 
 
 
@@ -238,4 +236,10 @@ End Property
 
 Private Property Get ILLExport_IsActive(ByVal exportNumber As Integer) As Boolean
     ILLExport_IsActive = IsActive(exportNumber)
+End Property
+
+Private Property Get ILLExport_ExportFileName(ByVal scope As Byte, _
+                                              ByVal dict As ILLdictionary, _
+                                              Byval pass As ILLPasswords) As String
+    ILLExport_ExportFileName = ExportFileName(scope, dict, pass)
 End Property

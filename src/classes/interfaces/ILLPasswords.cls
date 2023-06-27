@@ -18,6 +18,7 @@ Option Explicit
 'Exposed methods
 Public Property Get Password() As String: End Property
 Public Property Get Value(Byval tagName As String) As String: End Property
+Public Property Get TableRange() As Range : End Property
 
 Public Sub UnProtect(Optional ByVal sheetName As String = "_active"): End Sub
 
@@ -36,9 +37,11 @@ Public Sub Export(ByVal toWkb As Workbook): End Sub
 Public Sub ProtectWkb(ByVal wb As Workbook, Optional ByVal protectSheetName As Boolean = True)
 End Sub
 
-Public Sub UnProtectWkb(ByVal wb As Workbook):End Sub
+Public Sub UnProtectWkb(ByVal wb As Workbook): End Sub
 
 'Generate new key and display current keys
 Public Sub DisplayPrivateKey(ByVal trads As ITranslation): End Sub
 
-Public Sub GenerateKey(ByVal trads As ITranslation):End Sub
+Public Sub GenerateKey(ByVal trads As ITranslation): End Sub
+Public Sub Import(ByVal pass As ILLPasswords): End Sub
+  
