@@ -445,18 +445,26 @@ Public Sub ClickExport()
         topPosition = topPosition + 40 + COMMANDHEIGHT + COMMANDGAPS
 
         'Height of command for new key
-        .CMD_NouvCle.Top = topPosition
-        .CMD_NouvCle.height = COMMANDHEIGHT - 10
-        .CMD_NouvCle.width = 160
-        .CMD_NouvCle.Left = 20
+        .CMD_NewKey.Top = topPosition
+        .CMD_NewKey.height = COMMANDHEIGHT - 10
+        .CMD_NewKey.width = 160
+        .CMD_NewKey.Left = 20
+
+        topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
+
+        'Show Private key command
+        .CMD_ShowKey.Top = topPosition
+        .CMD_ShowKey.height = COMMANDHEIGHT - 10
+        .CMD_ShowKey.width = 160
+        .CMD_ShowKey.Left = 20
 
         topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
 
         'Quit command
-        .CMD_Retour.Top = topPosition
-        .CMD_Retour.height = COMMANDHEIGHT - 10
-        .CMD_Retour.width = 160
-        .CMD_Retour.Left = 20
+        .CMD_Back.Top = topPosition
+        .CMD_Back.height = COMMANDHEIGHT - 10
+        .CMD_Back.width = 160
+        .CMD_Back.Left = 20
 
         topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
 

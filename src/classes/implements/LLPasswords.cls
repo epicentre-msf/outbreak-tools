@@ -95,13 +95,15 @@ Private Sub GenerateKey(ByVal trads As ITranslation)
     Dim randNum As Integer
     Dim LoKeys As ListObject 'ListObject of keys
     Dim LoRng As Range
+    Dim sh As Worksheet
 
     Set sh = Wksh()
-    Set LoKeys = sh.ListObject(TABKEYS)
+    Set LoKeys = sh.ListObjects(TABKEYS)
 
     'Don't try to generate new keys if the databodyrange does not exists
     If LoKeys.DataBodyRange is Nothing Then Exit Sub
     Set LoRng = LoKeys.DataBodyRange
+    
     'Number of Rows of the databodyrange of the listobject
     nbRows = LoRng.Rows.Count
 
@@ -248,7 +250,7 @@ Private Sub Export(ByVal toWkb As Workbook)
     'Export all the ranges
     Set rngTable = New BetterArray
     rngTable.Push "RNG_DebuggingPassword", "RNG_PublicKey", "RNG_LabPublicKey", "RNG_PrivateKey", _
-                  "RNG_LabPrivateKey", "RNG_DebugMode"
+                  "RNG_LabPrivateKey", "RNG_DebugMode", "RNG_Version"
 
     For counter = rngTable.LowerBound To rngTable.UpperBound
         rngName = rngTable.Item(counter)

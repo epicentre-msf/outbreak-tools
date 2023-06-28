@@ -639,7 +639,10 @@ End Sub
 
 'Import and export subs
 'Export
-Private Sub export(ByVal Wkb As Workbook, Optional ByVal exportType As String = "__all__")
+Private Sub Export(ByVal Wkb As Workbook, _ 
+                   Optional ByVal exportType As String = "__all__", _ 
+                   Optional Byval addListObject As Boolean = True, _ 
+                   Optional ByVal Hide As Long = xlSheetHidden)
 
     Dim dictData As IDataSheet
     Dim rng As Range
@@ -648,23 +651,25 @@ Private Sub export(ByVal Wkb As Workbook, Optional ByVal exportType As String = 
 
     Set dictData = Data()
     If ColumnExists(exportType) Then
-        dictData.export Wkb, filteredVarName:=exportType
+        dictData.Export Wkb, filteredVarName:=exportType, Hide:=Hide
     ElseIf exportType = "__all__" Then
-        dictData.export Wkb
+        dictData.Export Wkb, Hide:=hide
     End If
 
-    sheetName = Wksh.Name
+    'Add a list object to the dictionnary.
+    If addListObject Then
+        sheetName = Wksh.Name
+        Set sh = Wkb.Worksheets(sheetName)
+        Set rng = DataRange(includeHeaders:=True)
+        Set rng = sh.Range(rng.Address)
 
-    Set sh = Wkb.Worksheets(sheetName)
-    Set rng = DataRange(includeHeaders:=True)
-    Set rng = sh.Range(rng.Address)
-
-    'Add a listObject to the dictionary (for compatibility purposes with previous codes)
-    With sh
-        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "o" & LCase(sheetName)
-        'prepare the dictionary
-        .Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue
-    End With
+        'Add a listObject to the dictionary (for compatibility purposes with previous codes)
+        With sh
+            .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "o" & LCase(sheetName)
+            'prepare the dictionary
+            .Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue
+        End With
+    End If
 End Sub
 
 'Import
@@ -779,8 +784,11 @@ Public Sub ILLdictionary_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow 
     Import fromWksh, fromStartRow, fromStartcol
 End Sub
 
-Public Sub ILLdictionary_Export(ByVal toWkb As Workbook, Optional ByVal exportType As String = "__all__")
-    export toWkb, exportType
+Public Sub ILLdictionary_Export(ByVal toWkb As Workbook,  _ 
+                                Optional ByVal exportType As String = "__all__",  _ 
+                                Optional Byval addListObject As Boolean = True, _ 
+                                Optional ByVal Hide As Long = xlSheetHidden)
+    export toWkb, exportType, addListObject, Hide
 End Sub
 
 Public Sub ILLdictionary_Translate(ByVal TransObject As ITranslation)
