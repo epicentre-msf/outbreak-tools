@@ -570,7 +570,6 @@ End Sub
 
 '@Description("Print the current linelist")
 '@EntryPoint
-
 Public Sub ClickPrintLL()
     Dim sh As Worksheet
     Dim sheetTag As String
@@ -631,4 +630,26 @@ Public Sub ClickPrintLL()
     On Error GoTo 0
     
     sh.PrintPreview
+End Sub
+
+'@Description("Show the Export for Migration form")
+'@EntryPoint
+Public Sub ClickExportMigration()
+
+    'This static variable will keep the selection of
+    'the user after the first click. The variable
+    'will remain active as long As the workbook is open
+    Static AfterFirstClicMig As Boolean
+
+    If AfterFirstClicMig Then
+        [F_ExportMig].Show
+    Else
+        'For the first click Thick Migration and Geo and put historic to false
+        'For subsequent clicks, just show what have been ticked
+        [F_ExportMig].CHK_ExportMigData.Value = True
+        [F_ExportMig].CHK_ExportMigGeo.Value = True
+        [F_ExportMig].CHK_ExportMigGeoHistoric.Value = True
+        [F_ExportMig].Show
+        AfterFirstClicMig = True
+    End If
 End Sub
