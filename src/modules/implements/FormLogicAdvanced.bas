@@ -6,20 +6,26 @@ Attribute VB_Description = "Form implementation of advanced"
 Option Explicit
 
 Private tradform As ITranslation   'Translation of forms
+Private geoObj As ILLGeo 'Geo object
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const TRADSHEET As String = "Translations"
+Private Const GEOSHEET As String = "Geo"
 
 'Initialize translation of forms object
 Private Sub InitializeTrads()
     Dim lltrads As ILLTranslations
     Dim lltranssh As Worksheet
     Dim dicttranssh As Worksheet
+    Dim geosh As Worksheet
+    Dim wb As Workbook
 
-
-    Set lltranssh = ThisWorkbook.Worksheets(LLSHEET)
-    Set dicttranssh = ThisWorkbook.Worksheets(TRADSHEET)
+    Set wb = ThisWorkbook
+    Set lltranssh = wb.Worksheets(LLSHEET)
+    Set dicttranssh = wb.Worksheets(TRADSHEET)
+    SEt geosh = wb.Worksheets(GEOSHEET)
     Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
     Set tradform = lltrads.TransObject(TranslationOfForms)
+    Set geoObj = LLGeo.Create(geosh)
 End Sub
 
 
@@ -33,7 +39,7 @@ End Sub
 
 Private Sub CMD_ExportData_Click()
     F_Advanced.Hide
-    Call ClicExportMigration
+    ClickExportMigration
 End Sub
 
 Private Sub CMD_ImportData_Click()

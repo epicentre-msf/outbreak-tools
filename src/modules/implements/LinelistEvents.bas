@@ -175,23 +175,6 @@ errHand:
 End Sub
 
 
-Sub ClicExportMigration()
-
-    Static AfterFirstClicMig As Boolean
-
-    If AfterFirstClicMig Then
-        [F_ExportMig].Show
-    Else
-        'For the first click Thick Migration and Geo and put historic to false
-        'For subsequent clicks, just show what have been ticked
-        [F_ExportMig].CHK_ExportMigData.Value = True
-        [F_ExportMig].CHK_ExportMigGeo.Value = True
-        [F_ExportMig].CHK_ExportMigGeoHistoric.Value = True
-        [F_ExportMig].Show
-        AfterFirstClicMig = True
-    End If
-End Sub
-
 'Event to update the list_auto when a sheet containing a list_auto is desactivated
 Public Sub EventDesactivateLinelist(ByVal sSheetName As String)
 
