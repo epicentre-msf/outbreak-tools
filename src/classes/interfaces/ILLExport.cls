@@ -7,11 +7,13 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Attribute VB_Description = "Interface of export object"
 
 
+'@Interface
 '@Folder("Linelist")
-'@ModuleDescription("Export Linelist Data")
-'@IgnoreModule
+'@ModuleDescription("Interface of export object")
+
 
 Option Explicit
 
@@ -32,7 +34,7 @@ End Property
 'In the linelist, get the fileName of an export
 Public Property Get ExportFileName(ByVal scope As Byte, _
                                    ByVal dict As ILLdictionary, _
-                                  Byval pass As ILLPasswords)
+                                  Byval pass As ILLPasswords) As String
 End Property
 
 'Test if an export is active

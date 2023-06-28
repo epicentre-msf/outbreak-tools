@@ -35,7 +35,9 @@ Public Sub Clean(): End Sub
 Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
 End Sub
 
-Public Sub export(ByVal toWkb As Workbook, Optional ByVal exportType As String = "__all__")
+Public Sub Export(ByVal toWkb As Workbook, Optional ByVal exportType As String = "__all__",  _ 
+                  Optional Byval addListObject As Boolean = True, _
+                  Optional ByVal Hide As Long = xlSheetHidden)
 End Sub
 
 'Add translation

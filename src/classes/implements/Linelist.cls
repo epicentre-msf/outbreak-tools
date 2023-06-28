@@ -411,7 +411,8 @@ Private Sub Prepare()
                     "LLSheets", "ILLSheets", "LLTranslations", _
                      "ILLTranslations", "OSFiles", "IOSFiles", _
                     "Translation", "ITranslation", "LLVariables", "ILLVariables", "ILLSpatial", "LLSpatial", _
-                    "DropdownLists", "IDropdownLists", "LLShowHide", "ILLShowHide", "CustomTable", "ICustomTable"
+                    "DropdownLists", "IDropdownLists", "LLShowHide", "ILLShowHide", "CustomTable", "ICustomTable", _ 
+                    "OutputSpecs", "IOutputSpecs"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
@@ -422,7 +423,7 @@ Private Sub Prepare()
     'Send the modules to the linelist
     codesList.Clear
     codesList.Push "Helpers", "LinelistConstants", "LinelistCustomFunctions", _
-                     "LinelistExport", "LinelistGeo", "LinelistMigration", _
+                      "LinelistGeo", "LinelistMigration", _
                      "LinelistTranslation", "LinelistEvents", "LinelistDictionary", _
                       "EventsSpatialAnalysis", "EventsLinelistButtons", _
                       "EventsGlobalAnalysis"

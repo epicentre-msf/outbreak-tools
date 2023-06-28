@@ -20,4 +20,4 @@ Option Explicit
 Public Sub Prepare() : End Sub
 'Add Dictionary, Translations or Analysis
 Public Sub AddData(): End Sub
-Public Sub Save(): End Sub
+Public Sub Save(Byval trads As ITranslation, Optional ByVal useFilters As Boolean = False): End Sub

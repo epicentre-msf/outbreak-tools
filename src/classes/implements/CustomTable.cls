@@ -216,8 +216,8 @@ Private Property Get DataRange(ByVal colName As String, _
     On Error GoTo 0
     'You can test here if it is Nothing, in that case the table is Empty, just return the second line
     If rng Is Nothing Then Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).Range.Cells(2, 1)
-    Set DataRange = rng
   End If
+  Set DataRange = rng
 End Property
 
 Private Property Get HeaderRange() As Range
@@ -367,8 +367,7 @@ End Sub
 
 'Export a Custom Table to a Worksheet
 
-Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray, _ 
-                   Optional ByVal useLabels As Boolean = False)
+Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray)
 
   Dim counter As Long
   Dim inpRng As Range
@@ -394,12 +393,6 @@ Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray, _
         Set outRng = .Range(.Cells(1, headerCounter), .Cells(inpRng.Rows.Count, headerCounter))
         outRng.Value = inpRng.Value
       End With
-        
-      'assuming there could be two headers/ top header for labels, second header for variable names
-      On Error Resume Next
-        'Enter is for notes, if you want to use labels, just remove notes (after the Enter)
-        If useLabels Then outRng.Cells(1, 1).Value = Split(inpRng.Cells(0, 1).Value, Chr(10))(0)
-      On Error GoTo 0
 
       headerCounter = headerCounter + 1
     End If
@@ -538,9 +531,8 @@ Private Sub ICustomTable_Sort(ByVal els As Variant)
 End Sub
 
 Private Sub ICustomTable_Export(ByVal sh As Worksheet, _ 
-                               ByVal headersList As BetterArray, _ 
-                               Optional ByVal useLabels As Boolean = False)
-  Export sh, headersList, useLabels
+                               ByVal headersList As BetterArray)
+  Export sh, headersList
 End Sub
 
 'Errors and checkings

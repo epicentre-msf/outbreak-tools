@@ -2,13 +2,13 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-
 Attribute VB_Name = "OutputSpecs"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Specifications for exports in the linelist"
+
 
 '@PredeclaredId
 '@Folder("Linelist Exports")
@@ -35,13 +35,13 @@ Private Const EXPORTSHEET               As String = "Exports"
 Private this As TExpOut
 
 
-Public Function Create(currwb As Workbook,  ByVal scope As Byte) As IOutputSpecs
+Public Function Create(currwb As Workbook, ByVal scope As Byte) As IOutputSpecs
 
   CheckRequirements currwb
 
   With New OutputSpecs
     Set .InputWkb = currwb
-    Set .ActualScope = scope
+     .ActualScope = scope
     Set Create = .Self()
   End With
 
@@ -59,14 +59,15 @@ Public Property Set InputWkb(ByVal currwb As Workbook)
     Set this.inpwb = currwb
 End Property
 
-Public Property Get OutputWkb() As Workbook
+Public Property Get outputWkb() As Workbook
 
-  If this.outwb is Nothing Then
+  If this.outwb Is Nothing Then
     BusyApp
     Set this.outwb = Workbooks.Add
+    ActiveWindow.WindowState = xlMinimized
   End If
 
-  Set OutputWkb = this.outwb
+  Set outputWkb = this.outwb
 End Property
 
 Public Property Get ActualScope() As Byte
@@ -93,13 +94,13 @@ End Property
 Private Property Get ExportObject() As ILLExport
   Dim sh As Worksheet
   Dim wb As Workbook
-  Dim exp As ILLExport
+  Dim expobj As ILLExport
 
   Set wb = InputWkb()
   Set sh = wb.Worksheets(EXPORTSHEET)
-  Set exp = LLExport.Create(sh)
+  Set expobj = LLExport.Create(sh)
 
-  Set ExportObject = exp
+  Set ExportObject = expobj
 End Property
 
 
@@ -117,6 +118,7 @@ Private Sub Prepare()
   Dim sheetNamesList As BetterArray
   Dim outwb As Workbook
   Dim firstSheetName As String
+  Dim expobj As ILLExport
 
   Dim counter As Long
   Dim prevSheetName As String
@@ -128,7 +130,8 @@ Private Sub Prepare()
   Set dict = LLdictionary.Create(dictsh, 1, 1)
   Set dictData = New BetterArray
   Set sheetNamesList = New BetterArray
-  Set outwb = OutputWkb()
+  Set outwb = outputWkb()
+  Set expobj = ExportObject()
 
   firstSheetName = outwb.Worksheets(1).Name
   scope = ActualScope()
@@ -136,7 +139,7 @@ Private Sub Prepare()
   If scope <> ExportAll Then
     expName = "export" & " " & CStr(scope)
     'Filter the dictionary
-    Set dictData = dict.Data.FilterData(varName:=expName, criteriaName:="<>", returnedColumnName:="__all__")
+    Set dictData = dict.Data.FilterData(varName:=expName, criteriaName:="<>", returnedColumnName:="__all__", includeHeaders:=True)
     'The temporary sheet contains the dictionary for the exports
   Else
     dictData.FromExcelRange dict.DataRange(includeHeaders:=True)
@@ -150,25 +153,25 @@ Private Sub Prepare()
   Set expdict = ExportDictionary()
 
   'the export dictionary datarange is used for sorting, and also for preparing the dictionary
-  Set expDictRng = expdict.DataRange(includeHeaders := True)
+  Set expDictRng = expdict.DataRange(includeHeaders:=True)
 
   'Sort on table names and then on export name
   If scope <> ExportAll Then
 
-    expDictRng.Sort key1:= expdict.DataRange("table name", includeHeaders:=True), _
+    expDictRng.Sort key1:=expdict.DataRange("table name", includeHeaders:=True), _
                     key2:=expdict.DataRange(expName, includeHeaders:=True), Header:=xlYes
   End If
 
   'Add the tags for preparation of the dictionary (the dictionary is already prepared in the linelist)
-  expDictRng.Cells(expDictRng.Rows.Count + 1, 1).Font.Color = vbBlue
+  expDictRng.Cells(expDictRng.Rows.Count + 1, 1).Font.color = vbBlue
 
   'Add the required worksheets after sorting
   Set sheetNamesList = expdict.UniqueValues("sheet name")
 
   'Add the metadata and other worksheets
   prevSheetName = firstSheetName
-
-  If (exp.Value("export metadata", CInt(scope)) = "yes") Or (scope = ExportAll) Then
+  
+  If (expobj.Value("export metadata", CInt(scope)) = "yes") Or (scope = ExportAll) Then
     AddMetaData scope
     prevSheetName = METADATASHEET
   End If
@@ -196,24 +199,32 @@ Private Sub AddMetaData(ByVal scope As Byte)
   Dim sh As Worksheet
   Dim varRng As Range
   Dim expName As String
+  Dim dict As ILLdictionary
+  Dim sheetName As String
 
 
   Set sheetNamesList = New BetterArray
   Set inpwb = InputWkb()
-  Set outwb = OutputWkb()
+  Set outwb = outputWkb()
 
-  sheetNamesList.Push METADATASHEET, DICTIONARYSHEET, CHOICESSHEET, DICTTRANSLATIONSHEET
+  sheetNamesList.Push METADATASHEET, CHOICESSHEET, DICTTRANSLATIONSHEET
 
   For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
-    Set sh = inpwb.Worksheets(sheetNamesList.Item(counter))
+    sheetName = sheetNamesList.Item(counter)
+    Set sh = inpwb.Worksheets(sheetName)
     Set csData = DataSheet.Create(sh, 1, 1)
-
     'Then you can just use the export sub from the datasheet
-    csData.Export Wkb:=outwb, Hide:=xlSheetVisible
+    csData.Export toWkb:=outwb, Hide:=xlSheetVisible
   Next
 
+  'Export dictionary of scope of the export
+  Set sh = inpwb.Worksheets(DICTIONARYSHEET)
+  Set dict = LLdictionary.Create(sh, 1, 1)
+  dict.Export toWkb:=outwb, exportType:= "export " & scope, _ 
+              addListObject:=False, Hide:=xlSheetVisible  
+
   'Add informations on metadatasheet
-  Set sh = inpwb.Worksheets(METADATASHEET)
+  Set sh = outwb.Worksheets(METADATASHEET)
   Set csData = DataSheet.Create(sh, 1, 1)
   Set varRng = csData.DataRange("variable")
 
@@ -237,11 +248,12 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
 
   Dim expdict As ILLdictionary
   Dim headersList As BetterArray
+  Dim labelsList As BetterArray
   Dim sheetNamesList As BetterArray
   Dim counter As Long
-  Dim outwb As workbook
+  Dim outwb As Workbook
   Dim csTab As ICustomTable
-  Dim Lo As ListObject
+  Dim Lo As listObject
   Dim sheetName As String
   Dim useLabels As Boolean
   Dim expobj As ILLExport
@@ -251,13 +263,13 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
   Dim outsh As Worksheet
 
   Set expdict = ExportDictionary()
-  Set outwb =  OutputWkb()
+  Set outwb = outputWkb()
   Set inpwb = InputWkb()
   Set sheetNamesList = expdict.UniqueValues("sheet name")
   Set expobj = ExportObject()
   scope = ActualScope()
 
-  useLabels = (expobj.Value("export header", CInt(scope)) = "variable labels")
+  useLabels = (expobj.Value("export header", CInt(scope)) = "variables labels")
 
   For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
 
@@ -265,6 +277,7 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
     sheetName = sheetNamesList.Item(counter)
     Set inpsh = inpwb.Worksheets(sheetName)
     Set headersList = expdict.Data.FilterData("sheet name", sheetName, "variable name")
+    Set labelsList = expdict.Data.FilterData("sheet name", sheetName, "main label")
 
     'Test if the sheet is hlist or vlist
     If (inpsh.Cells(1, 3).Value = "HList") Then
@@ -283,12 +296,15 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
       Set csTab = CustomTable.Create(Lo)
 
       'Export the custom table to the worksheet
-      csTab.Export outsh, headersList, useLabels
+      csTab.Export outsh, headersList
+      
+      'Add labels if required
+      If useLabels Then labelsList.ToExcelRange outsh.Cells(1, 1), TransposeValues:=True
 
     ElseIf (inpsh.Cells(1, 3).Value = "VList") Then
 
       'Add VlistData
-      AddVlistData sheetName,  headersList, useLabels
+      AddVlistData sheetName, headersList, useLabels
 
     End If
   Next
@@ -309,7 +325,7 @@ Private Sub AddVlistData(ByVal sheetName As String, ByVal headersList As BetterA
   Dim headerCounter As Long
 
   Set inpwb = InputWkb()
-  Set outwb = OutputWkb()
+  Set outwb = outputWkb()
 
   Set inpsh = inpwb.Worksheets(sheetName)
   Set outsh = outwb.Worksheets(sheetName)
@@ -328,7 +344,7 @@ Private Sub AddVlistData(ByVal sheetName As String, ByVal headersList As BetterA
 
     On Error Resume Next
       varValue = inpsh.Range(varName).Value
-      If uselabels Then varName = inpsh.Range(varName).Offset(, -1).Value
+      If useLabels Then varName = inpsh.Range(varName).Offset(, -1).Value
     On Error GoTo 0
 
     'Write values to output sheet. I don't know if it suceeded in getting the value
@@ -346,7 +362,7 @@ Private Sub AddVlistData(ByVal sheetName As String, ByVal headersList As BetterA
 End Sub
 
 'Save the output workbook with corresponding elements to export
-Private Sub Save(ByVal trads As ITranslation)
+Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boolean = False)
 
   Dim outwb As Workbook
   Dim inpwb As Workbook
@@ -362,18 +378,19 @@ Private Sub Save(ByVal trads As ITranslation)
   Dim addPassword As Boolean
   Dim filePassword As String
 
+  BusyApp
+  Set io = OSFiles.Create()
+  io.LoadFolder
+
+  If Not io.HasValidFolder() Then Exit Sub
+  
+  scope = ActualScope()
   Set expobj = ExportObject()
   Set inpwb = InputWkb()
-  Set outwb = OutputWkb()
-  Set io = OSFiles.Create()
-  
-  scope = ActualScope() 
-  io.LoadFolder
-  
-  If Not io.HasValildFolder() Then Exit Sub 
+  Set outwb = outputWkb()
   
   Set dict = LLdictionary.Create(inpwb.Worksheets(DICTIONARYSHEET), 1, 1)
-  Set pass = LLPasswords.Create(inpwb.Worksheets(PASSWORDSHEET))  
+  Set pass = LLPasswords.Create(inpwb.Worksheets(PASSWORDSHEET))
   
   'Get the fileName of the export
   fileName = expobj.ExportFileName(scope, dict, pass)
@@ -387,36 +404,38 @@ Private Sub Save(ByVal trads As ITranslation)
 
   'The file format when you save
   fileFormat = IIf(fileExtension = "xlsb", xlExcel12, xlOpenXMLWorkbook)
-  filePath = filePath & "." & fileExtension 
+  filePath = filePath & "." & fileExtension
   
   BusyApp
   'Prepare the output workbook (create required sheets, add metadata)
   Prepare
   'Add the Data to export worksheet
-  AddData
+  AddData useFilters
   
   'Save the file to the corresponding path using corresponding password
   If addPassword Then
     'save with password
-    outwb.SaveAs fileName:=FilePath, _ 
+    outwb.SaveAs fileName:=filePath, _
                  fileFormat:=fileFormat, _
-                 CreateBackup:=False, _ 
+                 CreateBackup:=False, _
                  Password:=filePassword, _
                 ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     'Display the private password!
-    MsgBox trads.TranslatedValue("MSG_FileSaved") & chr(10) & _ 
+    MsgBox trads.TranslatedValue("MSG_FileSaved") & Chr(10) & _
            trads.TranslatedValue("MSG_Password") & ": " & filePassword
   Else
     'save with password
-    outwb.SaveAs fileName:=FilePath, _ 
+    outwb.SaveAs fileName:=filePath, _
     fileFormat:=fileFormat, _
-    CreateBackup:=False, _ 
+    CreateBackup:=False, _
     ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     'Display message that there is no password!
-    MsgBox trads.TranslatedValue("MSG_FileSaved") & chr(10) & _ 
+    MsgBox trads.TranslatedValue("MSG_FileSaved") & Chr(10) & _
            trads.TranslatedValue("MSG_NoPassword")
 
   End If
+
+  outwb.Close saveChanges:=False
 End Sub
 
 
@@ -484,6 +503,6 @@ Private Sub IOutputSpecs_AddData()
   AddData
 End Sub
 
-Private Sub IOutputSpecs_Save()
-  Save
+Private Sub IOutputSpecs_Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boolean = False)
+  Save trads, useFilters
 End Sub
