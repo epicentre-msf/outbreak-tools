@@ -77,10 +77,13 @@ Private Property Get GeoNames(ByVal admname As String) As String
         actualName = sh.Range("RNG_ADM4NAME").Value
     Case "hf_name"
         actualName = sh.Range("RNG_HFNAME").Value
+    Case "geobase"
+        actualName = sh.Range("RNG_GeoName").Value
     Case Else
         actualName = admname
     End Select
 
+    'Important to test the type because those ranges are formulas.
     If TypeName(actualName) = "String" Then
         GeoNames = actualName
     Else
@@ -748,7 +751,7 @@ Private Sub Import(ByVal fromWkb As Workbook)
     Next
 
     'Add the workbook name (Geobase Name)
-    sh.Range("RNG_GeoName").Value = Replace(fromWkb.Name, ".xlsx", "")
+    sh.Range("RNG_GeoName").Value = Replace(fromWkb.Name, ".xlsx", vbNullString)
     sh.Range("RNG_GeoUpdated").Value = "updated"
     Translate rawNames:=False
 End Sub

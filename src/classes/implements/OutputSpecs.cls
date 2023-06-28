@@ -19,8 +19,12 @@ Implements IOutputSpecs
 
 Private Type TExpOut
   outwb As Workbook 'Output workbook
-  inpwb As Workbook 'Input workbok
+  inpwb As Workbook 'Input workbook
   scope As Byte
+  folderpath As String
+  folderSet As Boolean
+  outgeowb As Workbook 'Output geo workbook
+  outgeohistwb As Workbook 'Output for the geobase historic file
 End Type
 
 Private Const CLASSNAME                 As String = "OutputSpecs"
@@ -59,7 +63,7 @@ Public Property Set InputWkb(ByVal currwb As Workbook)
     Set this.inpwb = currwb
 End Property
 
-Public Property Get outputWkb() As Workbook
+Private Property Get outputWkb() As Workbook
 
   If this.outwb Is Nothing Then
     BusyApp
@@ -69,6 +73,31 @@ Public Property Get outputWkb() As Workbook
 
   Set outputWkb = this.outwb
 End Property
+
+'Geobase export workbook
+Private Property Get OutputGeoWkb() As Workbook
+
+  If this.outgeowb Is Nothing Then
+    BusyApp
+    Set this.outgeowb = Workbooks.Add
+    ActiveWindow.WindowState = xlMinimized
+  End If
+
+  Set outputGeoWkb = this.outgeowb
+End Property
+
+'Geobase export workbook
+Private Property Get OutputGeoHistoricWkb() As Workbook
+
+  If this.outgeohistwb Is Nothing Then
+    BusyApp
+    Set this.outgeohistwb = Workbooks.Add
+    ActiveWindow.WindowState = xlMinimized
+  End If
+
+  Set outputGeoHistoricWkb = this.outgeohistwb
+End Property
+
 
 Public Property Get ActualScope() As Byte
   ActualScope = this.scope
@@ -201,6 +230,7 @@ Private Sub AddMetaData(ByVal scope As Byte)
   Dim expName As String
   Dim dict As ILLdictionary
   Dim sheetName As String
+  Dim exportColumn As String
 
 
   Set sheetNamesList = New BetterArray
@@ -220,7 +250,9 @@ Private Sub AddMetaData(ByVal scope As Byte)
   'Export dictionary of scope of the export
   Set sh = inpwb.Worksheets(DICTIONARYSHEET)
   Set dict = LLdictionary.Create(sh, 1, 1)
-  dict.Export toWkb:=outwb, exportType:= "export " & scope, _ 
+
+  exportColumn = IIF(scope <> ExportAll, "export " & scope, "__all__")
+  dict.Export toWkb:=outwb, exportType:= exportColumn, _ 
               addListObject:=False, Hide:=xlSheetVisible  
 
   'Add informations on metadatasheet
@@ -353,13 +385,44 @@ Private Sub AddVlistData(ByVal sheetName As String, ByVal headersList As BetterA
 
     If (varValue <> vbNullString) Then
       outsh.Cells(headerCounter, 1).Value = varName
-      outsh.Cells(headerCounter, 2).Vaue = varValue
+      outsh.Cells(headerCounter, 2).Value = varValue
       varValue = vbNullString
       headerCounter = headerCounter + 1
     End If
   Next
 
 End Sub
+
+'--- Folder management for exports
+
+Private Property Get HasFolder() As Boolean
+  HasFolder = this.folderSet
+End Property
+
+Private Property Let HasFolder(ByVal folderSet As Boolean)
+  If Not this.folderSet Then this.folderSet = folderSet
+End Property
+
+
+Private Property Get ExportFolder() As String
+  Dim io As IOSFiles
+
+  'Test if the folder has been set, in other case set it.  
+  If Not HasFolder() Then 
+    Set io = OSFiles.Create()
+    
+    io.LoadFolder
+    HasFolder = True
+    If Not io.HasValidFolder() Then 
+      this.folderPath = vbNullString
+    Else
+      this.folderPath = io.Folder()
+    End If
+  
+  End If
+
+  ExportFolder = this.folderPath
+End Property
 
 'Save the output workbook with corresponding elements to export
 Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boolean = False)
@@ -374,16 +437,15 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
   Dim filePath As String
   Dim expobj As ILLExport
   Dim fileFormat As Long
-  Dim io As IOSFiles
   Dim addPassword As Boolean
   Dim filePassword As String
+  Dim folderPath As String
 
   BusyApp
-  Set io = OSFiles.Create()
-  io.LoadFolder
-
-  If Not io.HasValidFolder() Then Exit Sub
+  folderPath = ExportFolder()
+  If folderPath = vbNullString Then Exit Sub
   
+
   scope = ActualScope()
   Set expobj = ExportObject()
   Set inpwb = InputWkb()
@@ -394,10 +456,11 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
   
   'Get the fileName of the export
   fileName = expobj.ExportFileName(scope, dict, pass)
-  filePath = io.Folder() & Application.PathSeparator & fileName
-
+  filePath =  folderPath & Application.PathSeparator & fileName
 
   fileExtension = expobj.Value(colName:="file format", exportNumber:=CInt(scope))
+  If fileExtension = vbNullString Then fileExtension = "xlsx" 'Default extension is xlsx
+  
   addPassword = (expobj.Value(colName:="password", exportNumber:=CInt(scope)) = "yes")
 
   If addPassword Then filePassword = pass.Value("privatekey")
@@ -413,6 +476,7 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
   AddData useFilters
   
   'Save the file to the corresponding path using corresponding password
+
   If addPassword Then
     'save with password
     outwb.SaveAs fileName:=filePath, _
@@ -429,17 +493,61 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
     fileFormat:=fileFormat, _
     CreateBackup:=False, _
     ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
-    'Display message that there is no password!
-    MsgBox trads.TranslatedValue("MSG_FileSaved") & Chr(10) & _
-           trads.TranslatedValue("MSG_NoPassword")
+
+    'Show message for only the other exports (not one for migration)
+    If scope <> ExportAll Then
+      'Display message that there is no password!
+      MsgBox trads.TranslatedValue("MSG_FileSaved") & Chr(10) & _
+            trads.TranslatedValue("MSG_NoPassword")
+    End If
 
   End If
 
   outwb.Close saveChanges:=False
 End Sub
 
+'Save the geobase
+Private Sub SaveGeo(ByVal geoObj As ILLGeo,  _ 
+                    Optional ByVal onlyHistoric As Boolean = False)
 
-  'Checking requirements before instanciating the class
+  Dim outwb As Workbook
+  Dim folderPath As String
+  Dim filePath As String
+  Dim geobaseName As String
+
+  folderPath = ExportFolder()
+  If folderPath = vbNullString Then Exit Sub
+  
+  BusyApp
+
+  If onlyHistoric Then
+    Set outwb = OutputGeoHistoricWkb()
+  Else
+    Set outwb = OutputGeoWkb()
+  End If
+
+  geobaseName = geoObj.GeoNames("geobase")
+  
+  'Exported geobase name
+  If (geobaseName = VbNullString Or geobaseName = "geobase") Then geobaseName = "OUTBREAK-TOOLS-GEOBASE-UNKNOWN"
+
+  geobaseName = geobaseName & "_" & "export" & Format(Now, "yyyymmdd")
+  If onlyHistoric Then geobaseName = geobaseName & "_historic" 
+
+  filePath = folderPath & Application.PathSeparator & geobaseName & ".xlsx"
+
+  'Export geo data to the workbook
+  geoObj.ExportToFile outwb, onlyHistoric
+
+  'Save the data exported
+  outwb.SaveAs fileName:=filePath, _
+  CreateBackup:=False, _
+  ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+
+  outwb.Close saveChanges:=False 
+End Sub
+
+'Checking requirements before instanciating the class
 Private Sub CheckRequirements(ByVal currwb As Workbook)
 
   Dim counter As Long
@@ -505,4 +613,13 @@ End Sub
 
 Private Sub IOutputSpecs_Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boolean = False)
   Save trads, useFilters
+End Sub
+
+'Get the exports folderPath
+Private Property Get IOutputSpecs_ExportFolder() As String
+  IOutputSpecs_ExportFolder = ExportFolder()
+End Property
+
+Private Sub IOutputSpecs_SaveGeo(ByVal geoObj As ILLGeo, Optional ByVal onlyHistoric As Boolean = False)
+  SaveGeo geoObj, onlyHistoric
 End Sub
