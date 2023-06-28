@@ -7,11 +7,15 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Export Object of the linelist"
 
 
+
+'@PredeclaredId
+'@Interface
 '@Folder("Linelist")
 '@ModuleDescription("Export Object of the linelist")
-'@IgnoreModule
+
 
 Option Explicit
 
@@ -94,21 +98,24 @@ End Property
 Private Function ClearChunk(ByVal chunk As String) As String
 
     'In the file name, replace forbidden characters with an underscore
-    Dim newChuk As String
+    Dim newChunk As String
 
-    newChuk = Replace(chunk, "<", "_")
-    newChuk = Replace(newChuk, ">", "_")
-    newChuk = Replace(newChuk, ":", "_")
-    newChuk = Replace(newChuk, "|", "_")
-    newChuk = Replace(newChuk, "?", "_")
-    newChuk = Replace(newChuk, "/", "_")
-    newChuk = Replace(newChuk, "\", "_")
-    newChuk = Replace(newChuk, "*", "_")
-    newChuk = Replace(newChuk, ".", "_")
-    newChuk = Replace(newChuk, """", "_")
-    newChuk = Replace(newChuk, "&", "_")
+    
+    newChunk = Replace(chunk, "<", "_")
+    newChunk = Replace(newChunk, Chr(34), vbNullString)
+    newChunk = Replace(newChunk, ">", "_")
+    newChunk = Replace(newChunk, ":", "_")
+    newChunk = Replace(newChunk, "|", "_")
+    newChunk = Replace(newChunk, "?", "_")
+    newChunk = Replace(newChunk, "/", "_")
+    newChunk = Replace(newChunk, "\", "_")
+    newChunk = Replace(newChunk, "*", "_")
+    newChunk = Replace(newChunk, ".", "_")
+    newChunk = Replace(newChunk, """", "_")
+    newChunk = Replace(newChunk, "&", "_")
+    
 
-    ClearChunk = Application.WorksheetFunction.Trim(newChuk)
+    ClearChunk = Application.WorksheetFunction.Trim(newChunk)
 End Function
 
 
@@ -146,10 +153,10 @@ Private Property Get ExportFileName(ByVal scope As Byte, _
 
         PathData.Items = Split(fileName, "+")
 
-        For PathCounter = 1 To PathData.UpperBound
+        For pathCounter = 1 To PathData.UpperBound
 
             'Remove the other + signs in the path name
-            chunkValue = fun.TRIM(Replace(PathData.Item(i), "+", vbNullString))
+            chunkValue = fun.TRIM(Replace(PathData.Item(pathCounter), "+", vbNullString))
             rangeValue = vbNullString
 
             varSheetName = vars.Value(varName:=chunkValue, colName:="sheet name")
@@ -164,21 +171,20 @@ Private Property Get ExportFileName(ByVal scope As Byte, _
             End If
 
             If rangeValue <> vbNullString Then
-                PathData.Item(i) = rangeValue
+                PathData.Item(pathCounter) = rangeValue
             Else 'unable to find the rangeValue
-                chunkValue = Replace(chunkValue, Chr(34), vbNullString)
-                chunkValue = ClearChunk(chunkValue)
-                PathData.Item(i) = chunkValue
+                PathData.Item(pathCounter) = ClearChunk(chunkValue)
             End If
         Next
 
         outFile = PathData.ToString(Separator:="-", OpeningDelimiter:=vbNullString,  _
                                     ClosingDelimiter:=vbNullString, QuoteStrings:=False) & _
-                                    "__" & pass.Value("publickey").Value & "__" &  _
+                                    "__" & "v" & pass.Value("version") & "-" & _ 
+                                    pass.Value("publickey") & "__" &  _
                                     Format(Now, "yyyymmdd-HhNn")
     End If
 
-    ExportFileName = outFile
+    ExportFileName = ClearChunk(outFile)
 End Property
 
 

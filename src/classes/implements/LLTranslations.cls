@@ -167,12 +167,12 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
 
     'Dictionary translation
     Set Lo = shDict.ListObjects(DICTTRANS)
-    outRngAddress = Lo.Range.Address
-    Set outRng = outshDictTrans.Range(outRngAddress)
-    outRng.Value = Lo.Range.Value
 
-    'Define the listobject
+    'I will start at column 1, line 1 for translations in the linelist
     With outshDictTrans
+        Set outRng = .Range(.Cells(1, 1), .Cells(Lo.Range.Rows.Count, Lo.Range.Columns.Count))
+        outRng.Value = Lo.Range.Value
+        'Define the listobject
         .ListObjects.Add(xlSrcRange, outRng, , xlYes).Name = Lo.Name
         .ListObjects(Lo.Name).TableStyle = Lo.TableStyle
     End With

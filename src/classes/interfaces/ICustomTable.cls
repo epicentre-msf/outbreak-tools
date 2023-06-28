@@ -35,6 +35,5 @@ Public Sub SetValidation(ByVal colName As String, _
                            ByVal dropName As String, _
                            Optional ByVal alertType As String = "info")
 End Sub
-Public Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray, _ 
-  Optional ByVal useLabels As Boolean = False)
+Public Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray)
 End Sub
