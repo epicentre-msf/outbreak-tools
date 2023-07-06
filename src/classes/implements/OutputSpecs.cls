@@ -11,7 +11,7 @@ Attribute VB_Description = "Specifications for exports in the linelist"
 
 
 '@PredeclaredId
-'@Folder("Linelist Exports")
+'@Folder("Linelist")
 '@ModuleDescription("Specifications for exports in the linelist")
 
 Option Explicit
@@ -20,12 +20,12 @@ Implements IOutputSpecs
 Private Type TExpOut
   outwb As Workbook 'Output workbook
   inpwb As Workbook 'Input workbook
-  scope As Byte
-  folderpath As String
-  folderSet As Boolean
+  scope As Byte 'The scope of the export: export 1 to 5 or export for migration
+  folderpath As String 'where to save the exports
+  folderSet As Boolean 'Is the path to save the exports set?
   outgeowb As Workbook 'Output geo workbook
   outgeohistwb As Workbook 'Output for the geobase historic file
-End Type
+End Type 
 
 Private Const CLASSNAME                 As String = "OutputSpecs"
 Private Const DICTIONARYSHEET           As String = "Dictionary"

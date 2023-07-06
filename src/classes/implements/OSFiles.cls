@@ -123,7 +123,26 @@ End Function
 
 'Functions to select a file
 
-'File on Mac
+'File on MacOS
+' Here is the list of filters you can use on Mac:
+' - xls : com.microsoft.Excel.xls
+' - xlsx : org.openxmlformats.spreadsheetml.sheet
+' - xlsm : org.openxmlformats.spreadsheetml.sheet.macroenabled
+' - xlsb : com.microsoft.Excel.sheet.binary.macroenabled
+' - csv : public.comma-separated-values-text
+' - doc : com.microsoft.word.doc
+' - docx : org.openxmlformats.wordprocessingml.document
+' - docm : org.openxmlformats.wordprocessingml.document.macroenabled
+' - ppt : com.microsoft.powerpoint.ppt
+' - pptx : org.openxmlformats.presentationml.presentation
+' - pptm : org.openxmlformats.presentationml.presentation.macroenabled
+' - txt : public.plain-text
+' - pdf : com.adobe.pdf
+' - jpg : public.jpeg
+' - png : public.png
+' - QIF : com.apple.traditional-mac-plain-text
+' - htm : public.html
+
 Private Function SelectFileOnMac(ByVal filters As String) As String
 
     Dim sMacFilter As String

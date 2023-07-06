@@ -18,7 +18,7 @@ Option Explicit
 
 Public Enum TemporarySheetTypes
     TemporarySheetAnalysis = 1
-    TemporarySheetDebug = 2
+    TemporarySheetUpdates = 2
     TemporarySheetMetadata = 3
     TemporarySheetList = 4
     TemporarySheetImport = 5
@@ -176,18 +176,18 @@ Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As St
     Select Case scope
     Case TemporarySheetAnalysis
         TemporarySheetName = "ana_temp__"
-    Case TemporarySheetDebug
-        TemporarySheetName = "debug__"
+    Case TemporarySheetUpdates
+        TemporarySheetName = "updates__" 'record informations on some updates
     Case TemporarySheetMetadata
         TemporarySheetName = "Metadata"
     Case TemporarySheetList
         TemporarySheetName = "dropdown_lists__"
     Case TemporarySheetImport
-        TemporarySheetName = "import_temp__" 'for import report
+        TemporarySheetName = "import_rep__" 'for import report
     Case TemporarySingle
-        TemporarySheetName = "temp__"
+        TemporarySheetName = "temp__" 'temporary boggy sheet
     Case TemporaryShowHide
-        TemporarySheetName = "show_hide_temp__"
+        TemporarySheetName = "show_hide__"
     Case TemporarySpatial
         TemporarySheetName = "spatial_tables__"
     End Select
@@ -368,7 +368,7 @@ Private Sub Prepare()
     PreservedSheetNames.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
                              PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
                              EXPORTSHEET, TemporarySheetName(TemporarySingle), TemporarySheetName(TemporarySheetList), _
-                             TemporarySheetName(TemporarySheetDebug), TemporarySheetName(TemporarySheetMetadata), _
+                             TemporarySheetName(TemporarySheetUpdates), TemporarySheetName(TemporarySheetMetadata), _
                              TemporarySheetName(TemporarySheetAnalysis), TemporarySheetName(TemporarySheetImport), _
                              TemporarySheetName(TemporarySpatial), TemporarySheetName(TemporaryShowHide), _
                              msgTrads.TranslatedValue("LLSHEET_Admin"), msgTrads.TranslatedValue("LLSHEET_Analysis"), _
@@ -503,7 +503,6 @@ Private Sub Export(ByVal toWkb As Workbook)
     geo.ExportToWkb toWkb
     passobj.export toWkb
 
-    'Add the export language and date to the linelist
 End Sub
 
 'Errors --------------------------------------------------------------------

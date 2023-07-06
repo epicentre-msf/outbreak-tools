@@ -310,7 +310,7 @@ End Sub
 
 'Import another custom table to this one
 
-Private Sub Import(ByVal impTab As Object)
+Private Sub Import(ByVal impTab As Object, Optional ByVal pasteAtBottom As Boolean = False)
 
   Dim imphRng As Range
   Dim headerValue As String
@@ -321,6 +321,7 @@ Private Sub Import(ByVal impTab As Object)
   Dim rng As Range
   Dim sh As Worksheet
   Dim toClear As Boolean
+  Dim startPastingRow As Long
 
   If (TypeName(impTab) <> "DataSheet") And (TypeName(impTab) <> "CustomTable") Then _
     Exit Sub
@@ -333,6 +334,16 @@ Private Sub Import(ByVal impTab As Object)
   Set imphRng = impTab.HeaderRange()
   Set sh = Wksh()
 
+  'This is where to start pasting the data in the custom table.
+  'I can decide to paste a the end of the table, or clear the data
+  'and replace with new one
+  startPastingRow = 1
+
+  If pasteAtBottom Then 
+    Resize AddRows:=True, nbRows:=impTab.DataRange.Rows.Count
+    startPastingRow = Table.DataBodyRange.Rows.Count + 1
+  End If
+
   For counter = 1 To imphRng.Columns.Count
     headerValue = imphRng.Cells(1, counter).Value
 
@@ -344,13 +355,15 @@ Private Sub Import(ByVal impTab As Object)
       End If
       Set currDataRng = DataRange(headerValue)
       nbImpRows = impDataRng.Rows.Count
-      'Resize to fit the number of required rows
-      Do While (nbImpRows > currDataRng.Rows.Count)
-        Resize AddRows:=True
+      
+      'Resize to fit the number of required rows if needed
+      If (nbImpRows > currDataRng.Rows.Count) And Not (pasteAtBottom) Then
+        Resize AddRows:=True, nbRows:= (currDataRng.Rows.Count - nbImpRows)
         Set currDataRng = DataRange(headerValue)
-      Loop
+      End If
+
       'Add values if the range does not contains formulas. If the range contains formulas, do nothing
-      Set rng = sh.Range(currDataRng.Cells(1, 1), currDataRng.Cells(nbImpRows, 1))
+      Set rng = sh.Range(currDataRng.Cells(startPastingRow, 1), currDataRng.Cells(startPastingRow + nbImpRows - 1, 1))
       toClear = False
 
       On Error Resume Next
