@@ -39,7 +39,7 @@ End Type
 
 Private this As TShowHide
 'messages for show/hide and mandatory
-Private Const TEMPORARYSHEET As String = "show_hide_temp__"
+Private Const TEMPORARYSHEET As String = "show_hide__"
 Private Const PRINTPREFIX As String = "print_"
 
 'Boolean Value to trigger the launch of the show/hide process

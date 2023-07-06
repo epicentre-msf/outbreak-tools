@@ -640,7 +640,7 @@ Sub ImportGeobase()
     Set dictsh = ThisWorkbook.Worksheets("Dictionary")
     Set pass = LLPasswords.Create(sh)
     Set dict = LLdictionary.Create(dictsh, 1, 1)
-    Set showhidesh = ThisWorkbook.Worksheets("show_hide_temp__")
+    Set showhidesh = ThisWorkbook.Worksheets("show_hide__")
 
     On Error GoTo ErrImportGeo
     
