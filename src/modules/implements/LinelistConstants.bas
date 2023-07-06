@@ -16,11 +16,10 @@ Public Const C_sSheetTemp               As String = "temp__" 'Temporary sheet fo
 Public Const C_sSheetMetadata           As String = "Metadata"
 Public Const C_sSheetChoiceAuto         As String = "dropdown_lists__"
 Public Const C_sSheetAnalysisTemp       As String = "Ana_temp_" 'Temporary sheet for analysis and stuffs
-Public Const C_sSheetImportTemp         As String = "import_temp__"
+Public Const C_sSheetImportTemp         As String = "import_rep__"
 Public Const C_sSheetAnalysis           As String = "Analysis" 'Default name of analysis sheet
 Public Const C_sSheetTemporalAnalysis   As String = "Temporal Analysis" 'Default name of sheet for temporal analysis
 Public Const C_sSheetSpatialAnalysis    As String = "Spacial Analysis" 'Default name of sheet for spacial analysis
-Public Const C_sSheetDebug              As String = "debug__"
 
 'Sheets in the setup file: The all starts with Param
 

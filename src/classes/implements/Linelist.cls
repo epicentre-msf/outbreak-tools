@@ -328,6 +328,66 @@ Public Sub TransferForm(formName As String)
     On Error GoTo 0
 End Sub
 
+'@Description("For some temporary sheets, add some range names")
+
+Private Sub PrepareTemporarySheets(ByVal updateSheetName As String, _ 
+                                   ByVal importRepSheetName As String)
+    Dim sh As Worksheet
+    Dim outWkb As Workbook
+    Dim rng As Range
+
+    Set outWkb = Wkb()
+    'On Update sheets
+    Set sh = outWkb.Worksheets(updateSheetName)
+
+    'Range to check if listAuto has been updated
+    sh.Cells(1, 1).Name = "RNG_UpdateListAuto"
+
+    'Range to check if an import has been done
+    sh.Cells(3, 1).Name = "RNG_ImportDone"
+
+    'Check if the geobase has been updated manually by the user
+    sh.Cells(5, 1).Name = "RNG_GeoUpdateManual"
+
+
+
+    '... You can add here some ranges for further analysis
+
+    '----- Import report
+    'Create required tables for import report
+    Set sh = outWkb.Worksheets(importRepSheetName)
+
+    With sh
+
+        .Cells(1, 1).Value = "sheetNotImported"
+        .Cells(1, 3).Value = "sheetNotTouched"
+
+        .Cells(1, 5).Value = "variableNotImported"
+        .Cells(1, 6).Value = "correspondingSheet"
+
+        .Cells(1, 8).Value = "variableNotFound"
+        .Cells(1, 9).Value = "correspondingSheet"
+
+        'Add the corresponding listObjects
+
+        'sheetNotImported ListObject
+        Set rng = .Range(.Cells(1, 1), .Cells(2, 1))
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "reptab_sheetsNotImp"
+
+        'sheetsNot touched listObject
+        Set rng = .Range(.Cells(1, 3), .Cells(2, 3))
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "reptab_sheetsNotTouch"
+
+        'Variable not imported listObject
+        Set rng = .Range(.Cells(1, 5), .Cells(2, 6))
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "reptab_varsNotImp"
+
+        'variable not touched listObject
+        Set rng = .Range(.Cells(1, 8), .Cells(2, 9))
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "reptab_varsNotTouch"
+    End With
+End Sub
+
 'Prepare the Linelist by adding required worksheets
 Private Sub Prepare()
     Const FILTERPREFIX As String = "f"
@@ -357,7 +417,7 @@ Private Sub Prepare()
 
     'temporary sheet Names
     sheetsList.Push lData.TemporarySheetName(TemporarySingle), lData.TemporarySheetName(TemporarySheetList), _
-        lData.TemporarySheetName(TemporarySheetDebug), _
+        lData.TemporarySheetName(TemporarySheetUpdates), _
         lData.TemporarySheetName(TemporarySheetAnalysis), lData.TemporarySheetName(TemporarySheetImport), _
         lData.TemporarySheetName(TemporarySpatial), lData.TemporarySheetName(TemporaryShowHide)
 
@@ -365,6 +425,9 @@ Private Sub Prepare()
         sheetName = sheetsList.Item(counter)
         AddOutputSheet sheetName, xlSheetVeryHidden
     Next
+
+    'Prepare the temporary sheets by adding required ranges
+    PrepareTemporarySheets lData.TemporarySheetName(TemporarySheetUpdates)
 
     DoEvents
 
@@ -410,9 +473,13 @@ Private Sub Prepare()
                     "ILLGeo", "LLPasswords", "ILLPasswords", _
                     "LLSheets", "ILLSheets", "LLTranslations", _
                      "ILLTranslations", "OSFiles", "IOSFiles", _
-                    "Translation", "ITranslation", "LLVariables", "ILLVariables", "ILLSpatial", "LLSpatial", _
-                    "DropdownLists", "IDropdownLists", "LLShowHide", "ILLShowHide", "CustomTable", "ICustomTable", _ 
-                    "OutputSpecs", "IOutputSpecs"
+                    "Translation", "ITranslation", "LLVariables", _
+                    "ILLVariables", "ILLSpatial", "LLSpatial", _
+                    "DropdownLists", "IDropdownLists", "LLShowHide", _ 
+                     "ILLShowHide", "CustomTable", "ICustomTable", _ 
+                    "OutputSpecs", "IOutputSpecs", _ 
+                    "ImpRep", "IImpRep", "ImpSpecs", "IImpSpecs", _
+                    "UpVal", "IUpVal"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)

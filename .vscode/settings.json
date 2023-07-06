@@ -25,7 +25,7 @@
         "Rscripts/designer_prev.xlsb": true
     },
     "editor.lineNumbers": "on",
-    "editor.fontSize": 14,
+    "editor.fontSize": 12,
     "editor.fontFamily": "'Office Code Pro', 'Courier New', monospace",
     "zenMode.hideStatusBar": false,
     "editor.minimap.scale": 2,
