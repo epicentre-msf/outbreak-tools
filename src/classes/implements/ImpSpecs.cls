@@ -19,7 +19,8 @@ Implements IImpSpecs
 
 Private Type TImp
   currwb As Workbook
-  fobj As Object
+  repfobj As Object
+  adfobj As Object
   llFilePath As String
   geoFilePath As String
   geohistFilePath As String
@@ -30,6 +31,7 @@ Private Const CLASSNAME                 As String = "ImpSpecs"
 Private Const DICTIONARYSHEET           As String = "Dictionary"
 Private Const CHOICESSHEET              As String = "Choices"
 Private Const DICTTRANSLATIONSHEET      As String = "Translations"
+Private Const MESSTRANSLATIONSHEET      As String = "LinelistTranslation"
 Private Const METADATASHEET             As String = "Metadata"
 Private Const PASSWORDSHEET             As String = "__pass" 'password sheets
 Private Const REPORTSHEET               As String = "imp_rep__" 'temporary boggy sheet for report
@@ -38,17 +40,23 @@ Private Const UPDATESHEET               As String = ""
 Private RESERVEDSHEETS                  As BetterArray
 Private this                            As TImp
 Private IMPORTEDVARIABLES               As BetterArray
+Private IMPORTEDSHEETS                  As BetterArray
 
 'Exposed methods
-'formObj is the form of the import Report
-Public Function Create(ByVal formObj As Object, ByVal currwb As Workbook) AS IImpSpecs
+'repfobj is the form of the import Report
+'adfobj is the advanced form Object
+Public Function Create(ByVal repfobj As Object, ByVal adfobj As Object, ByVal currwb As Workbook) AS IImpSpecs
 
-  CheckRequirements currwb, fobj
+  CheckRequirements currwb, repfobj, adfobj
   
+  'Initialize some objects and elements of the class,
+  'mainly IMPORTED SHEETS/VARIABLES, RESERVED SHEETS and 
+  'import Paths
   InitializeFileElements
 
   With New ImpSpecs
-    Set .FormObject = formobj
+    Set .ReportFormObject = repfobj
+    Set .AdvanceFormObject = adfobj
     Set .CurrentWorkbook = currwb
     Set Create = .Self()
   End With
@@ -63,12 +71,20 @@ Public Property Get CurrentWorkbook() As Workbook
   Set CurrentWorkbook = this.currwb
 End Property
 
-Public Property Get FormObject() As Object
-  Set FormObject = this.impForm
+Public Property Get ReportFormObject() As Object
+  Set ReportFormObject = this.repfobj
 End Property
 
-Public Property Set FormObject(ByVal fobj As Object)
-  Set this.impForm = fobj
+Public Property Set ReportFormObject(ByVal fobj As Object)
+  Set this.repfobj = fobj
+End Property
+
+Public Property Get AdvanceFormObject() As Object
+  Set AdvanceFormObject = this.adobj
+End Property
+
+Public Property Set AdvanceFormObject(ByVal fobj As Object)
+  Set this.adfobj = fobj
 End Property
 
 Public Property Set CurrentWorkbook(ByVal currwb As Workbook)
@@ -84,10 +100,26 @@ Private Sub InitializeFileElements()
   RESERVEDSHEETS.Push DICTIONARYSHEET, DICTTRANSLATIONSHEET, CHOICESSHEET, METADATASHEET
 
   Set IMPORTEDVARIABLES = New BetterArray
+  Set IMPORTEDSHEETS = New BetterArray
 End Sub
 
+'Speed Up the application
+Private Sub BusyApp(ByVal cursor As Long = xlNorthwestArrow)
+  Application.ScreenUpdating = False
+  Application.DisplayAlerts = False
+  Application.Calculation = xlCalculationManual
+  Application.EnableAnimations = False
+  Application.EnableEvents = False
+  Application.Cursor = cursor
+End Sub
 
-
+Private Sub NotBusyApp()
+  Application.ScreenUpdating = True
+  Application.DisplayAlerts = True
+  Application.EnableAnimations = True
+  Application.EnableEvents = True
+  Application.Cursor = xlDefault
+End Sub
 
 'Tell if the current import Need a report
 Private Property Get RequireReport() As Boolean
@@ -114,11 +146,15 @@ Private Property Get ImportFilePath(Optional Byval scope As String)
     scope = "geobase", this.geoFilePath, _ 
     scope = "geobase-historic", this.geohistFilePath)
 
+  '__notset is a tag to inform about the path not initialized.
+  'The path name is initialized once.
   If filePath = "__notset" Then
 
     Set io = OSFiles.Create()
     io.LoadFile "*.xlsx"
+    
     If io.HasValidFile Then 
+    
       filePath = io.File()
       
       Select Case scope
@@ -155,7 +191,7 @@ Private Property Get ReportObject() As IImpRep
   Dim sh As Worksheet
   Dim fobj As Object
 
-  Set fobj = FormObject()
+  Set fobj = ReportFormObject()
   Set sh = ReportSheet()
   
   Set ReportObject = ImpRep.Create(fobj, sh)
@@ -168,123 +204,103 @@ Private Property Get PasswordsObject() As ILLPasswords
   Set PasswordsObject = LLPasswords.Create(wb.Worksheets(PASSWORDSHEET)) 
 End Property
 
-'Add sheets not imported/not touched to import report
-Private Sub AddReportOnSheets(ByVal outwb As Workbook)
+'Get the linelist Translation object, with all elements related
+'to translations at the linelist level
+Private Property Get LLTradsObject() As ILLTranslations
+  Dim currwb As Workbook
+
+  Set currwb = CurrentWorkbook()
+  Set LLTradsObject() = LLTranslation.Create(currwb.Worksheets(MESSTRANSLATIONSHEET), _
+                                     currwb.Worksheets(DICTTRANSLATIONSHEET))
+End Property
+
+'Get the translation of messages object
+Private Property Get MessagesTrads() As ITranslation
+  Dim lltrads As ILLTranslations
+  Set lltrads = LLTradsObject()
+  Set MessagesTrads = lltrads.TransObject()
+End Property
+
+'Add sheets not touched to import report
+Private Sub AddSheetsNotTouchedToReport()
   
   Dim dict As ILLdictionary
   Dim sheetsList As BetterArray
-  Dim unfoundSheetsList As BetterArray 
-  Dim sh As Worksheet 'Used to iterate on worksheets in imported worbook
   Dim counter As Long
   Dim repObj As IImpRep
+  Dim sheetName As String
 
   Set dict = Dictionary()
   Set sheetsList = dict.UniqueValues("sheet name")
-  Set unfoundSheetsList = New BetterArray
   Set repObj = ReportObject()
 
-  'The scope for add sheets to report can take 2 values:
-  '1- for sheets not imported from the import 
-  '2- for sheets not touched in the current workbook
-
-  'Sheets not imported
-  For Each sh In outwb.Worksheets
-    If (Not sheetsList.Includes(sh.Name)) Then
-      unfoundSheetsList.Push sh.Name
-    End If
-  Next
-
-  repObj.AddSheetsToReport(1, unfoundSheetsList)
-
-  'Sheets in current workbook Not touched
-  unfoundSheetsList.Clear
   For counter = sheetsList.LowerBound to sheetsList.UpperBound
     sheetName = sheetsList.Item(counter)
-    If Not sheetExists(outwb, sheetName) Then unfoundSheetsList.Push sheetName
+    If Not IMPORTESHEETS.Includes(sheetName) Then 
+      SetNeedReportToTrue
+      repObj.AddSheetsToReport(2, sheetName)
+    End If
   Next
-
-  repObj.AddSheetsToReport(2, unfoundSheetsList)
 End Sub
 
 
-'Add variables not imported/not touched to import report
-Private Sub AddReportOnVariables(ByVal outwb As Workbook)
+'Add variables not touched to import report
+Private Sub AddVariablesNotTouchedToReport()
 
   Dim dict As ILLdictionary
-  Dim sh As Worksheet
-  Dim outData As IDatasheet
   Dim repObj As IImpRep
-  Dim impData As IDataSheet 'Data sheet on imported worksheets
-  Dim hRng As Range
-  Dim vars As ILLVariables
   Dim varName As String
-  Dim varsList As BetterArray
   Dim counter As Long 
   Dim varCounter As Long
-  Dim sheetName As String  
+  Dim sheetName As String
+  Dim vars As ILLVariables  
   Dim currSheetsList As BetterArray 'List of sheet names in current workbook
   Dim currVarsList As BetterArray 'For touched sheets, list of variables
+  Dim varControl As String
 
   Set repObj = ReportObject()
   Set dict = Dictionary()
-  Set vars = LLvariables.Create(dict)
-  Set varsList = New BetterArray
+  Set vars = LLVariables.Create(dict)
   Set currVarsList = New BetterArray
   Set currSheetsList = New BetterArray
 
-  'Variables in imported workbook / sheets and not imported
-  For Each sh In outwb.Worksheets
-
-    varsList.Clear
-    'If the sheet has been imported
-    If (Not repObj.Contains(1, sh.Name)) And (Not RESERVEDSHEETS.Includes(sh.Name)) Then
-      'Get the list of variables of the worksheet header
-      Set impData = DataSheet.Create(sh, 1, 1, True)
-      Set hRng = impData.HeaderRange()
-      
-      For counter = 1 To hRng.Columns.Count
-        varName = hRng.Cells(counter, 1).Value
-        'If the variable is not imported
-        If (Not vars.Contains(varName)) Then varsList.Push varName
-      Next
-    End If
-
-    If varsList.Length > 0 Then repObj.AddVariablesToReport(1, sh.Name, varsList)
-
-  Next
-
-  'Variables in the actual workbook / sheets not touched (not found in imported sheet)
-
-  'Get the list of sheet names not found in the current sheet
+  'Get the list of sheet names in the current worksheet
   Set currSheetsList = dict.UniqueValues("sheet name")
 
   For counter = currSheetsList.LowerBound To currSheetsList.UpperBound
-      
-    'Get all variables in the current sheet
+  
     sheetName = currVarsList.Item(counter)
-
     'Test variables of only sheets that have been touched.
-    If Not repObj.Contains(2, sheetName) Then
+    If Not repObj.ContainsSheet(2, sheetName) Then
 
-      varsList.Clear
       Set currVarsList = dict.Data.FilterData("sheet name", sheetName, "variable name")
-
+      
       'For each variable in the list of the variable of one sheet, test if
       'the variable has been imported. If not, report it.
       For varCounter = currVarsList.LowerBound To currVarsList.UpperBound
         varName = currVarsList.Item(varCounter)
-        If Not IMPORTEDVARIABLES.Includes(varName) Then varsList.Push varName
+        varControl = vars.Value(colName:="control", varName:=varName)
+        
+        'report only variables that are not formulas, formulas could be ignored
+        'because they are recomputed
+        If (varControl <> "case_when") And (varControl <> "formula") And _ 
+           (varControl <> "choice_formula") Then
+
+          If Not IMPORTEDVARIABLES.Includes(varName) Then 
+            SetNeedReportToTrue
+            repObj.AddVariablesToReport(2, sheetName, varName)
+          End If
+
+        End If
       Next
 
-      'If the varsList is not empty, add them to the sheets.
-      If varsList.Length > 0 Then repObj.AddVariablesToReport(2, sheetName, varsList)
     End If
   Next
 End Sub
 
 
 'Import data for migration from another workbook
-Private Sub ImportData(ByVal impwb As Workbook)
+Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
   Dim currwb As Workbook
   Dim impsh As worksheet
@@ -294,21 +310,29 @@ Private Sub ImportData(ByVal impwb As Workbook)
   Dim currTab As ICustomTable
   Dim impTab As IDataSheet
   Dim impHeadersList As BetterArray
+  Dim varsNotImpList As BetterArray
   Dim usedImpRng As Range
   Dim counter As Long
-  Dim rngName As String
+  Dim varName As String
   Dim vlistRng As Range
+  Dim repObj As IImpRep
+  Dim nbBlank As Long
 
   Set sheetsList = dict.UniqueValues("sheet name")
   Set currwb = CurrentWorkbook()
   Set pass = PasswordsObject()
-  Set impHeadersList = New BetterArray
+  Set impHeadersList = New BetterArray 'on HList sheet, this will be the list of variables
+  Set repObj = ReportObject()
+  Set varsNotImpList = New BetterArray
 
 
   For Each impsh in impwb.Worksheets
-
-    If sheetsList.Includes(sh.Name) Then
-      Set currsh = currwb.Worksheets(sh.Name)
+    
+    'Save imported worksheet name
+    If Not RESERVEDSHEETS.Includes(impsh.Name) Then IMPORTEDSHEETS.Push impsh.Name
+    
+    If sheetsList.Includes(impsh.Name) Then
+      Set currsh = currwb.Worksheets(impsh.Name)
 
       Select Case currsh.Cells(1, 3).Value
       'On Vlist Sheets
@@ -319,51 +343,414 @@ Private Sub ImportData(ByVal impwb As Workbook)
         For counter = 2 To usedImpRng.Rows.Count
           
           Set vlistRng = Nothing
-          rngName = usedImpRng.Cells(counter, 1).Value
-          
+          'The first column is for variable name
+          varName = usedImpRng.Cells(counter, 1).Value
           
           'Test to see if the range is in the current VList sheet
           On Error Resume Next
-          Set vlistRng = currsh.Range(rngName)
+          Set vlistRng = currsh.Range(varName)
           On Error GoTo 0
           
           'If the range is Not found, then you need to report
           If vlistRng Is Nothing Then
+            repObj.AddVariablesToReport(1, impsh.Name, varName)
             SetNeedReportToTrue
           Else
             vlistRng.Value = usedImpRng.Cells(counter, 2).Value
           End If
           
-          IMPORTEDVARIABLES.Push rngName
+          IMPORTEDVARIABLES.Push varName
         Next
 
         pass.Protect currsh.Name
       'On HList sheets, use custom table to import data from datasheet
+
       Case "HList"
+        'Number of blanks to resize the custom table after import
+        nbBlank = currsh.Cells(1, 6).Value
         pass.UnProtect currsh.Name
         Set currTab = CustomTable.Create(currsh.ListObjects(1))
-        'The endrow here is strictly True, so this will be the last Range
-        'of the worksheet
+        'When instanciating the datasheet, 
+        'the endrow here is strictly True, so this will be the last Row
+        'of the imported worksheet. The function will find the last used rows
+        'and this will be the last non empty row of the worksheet.
         Set impTab = DataShet.Create(impsh, 1, 1, True)
-        currTab.Import impTab
+        currTab.Import impTab, pasteAtBottom
+
+        'Test if variables are not imported, add them to the report
+        If currTab.HasColumnsNotImported() Then
+          Set varsNotImpList = currTab.ImportColumnsNotFound()
+          'variables in the imported sheet not imported
+          repObj.AddVariablesListToReport(1, currsh.Name, varsNotImpList)
+          SetNeedReportToTrue
+        End If
+
+        'Resize the listObject
+        currTab.RemoveRows totalCount:=nbBlank
+        
         'Add the list of variables from the imported Datasheet
         impHeadersList.Clear
         impHeadersList.FromExcelRange impTab.HeaderRange()
-        'Concat is for pasting two tables
+        'Concat is for pasting two tables:
+        'paste the list of variables on a Hslist with the previous list of variables
         IMPORTEDVARIABLES.Concat impHeadersList
+        
         pass.Protect currsh.Name
       End Select
+
     Else
       'If the sheet is not found, ask for report
+      repObj.AddSheetsToReport(1, impsh.Name)
       SetNeedReportToTrue
     End If
     
   Next
+End Sub
 
 
+'Clear data in the workbook
+Private Sub ClearData()
+
+  Dim sh As Worksheet
+  Dim sheetTag As String
+  Dim pass As ILLPasswords
+  Dim currwb As Workbook
+  Dim Lo As ListObject
+  Dim actsh As Worksheet 'current active sheet
+
+  Set pass = PasswordObject()
+  Set currwb = CurrentWorkbook()
+
+  'Deletion process can change the active sheet
+  'so save it and return it back after completion.
+  Set actsh = ActiveSheet
+
+  For Each sh in currwb.Worksheets
+    Select Case sh.Cells(1, 3).Value
+
+    Case "HList"
+
+      pass.UnProtect sh.Name
+      Set Lo = sh.ListObjects(1)
+      If Not Lo.DataBodyRange Is Nothing Then Lo.DataBodyRange.Delete
+      pass.Protect sh.Name
+
+    Case "VList"
+      
+      pass.UnProtect sh.Name
+      'The fourth column is where we write infos on vlist
+      sh.Columns(4).ClearContents
+      pass.Protect sh.Name
+
+    End Select
+  Next
+
+  actsh.Activate
+End Sub
 
 
+Private Sub ControlClearData(Optional ByVal forImports As Boolean = False)
 
+  Dim proceed As Byte
+  Dim inputwbName As String
+  Dim currwb As Workbook
+  Dim goodName As Boolean
+  Dim trads As ITranslation
+
+  On Error GoTo ErrManage
+
+  Set currwb = CurrentWorkbook()
+  Set trads = MessagesTrads()
+
+  'There are two different questions: one for import another to just delete the data.
+  If Not forImports Then
+    proceed = MsgBox(trads.TranslatedValue(entryTag), _ 
+                       vbExclamation + vbYesNo, _ 
+                        trads.TranslatedValue("MSG_Delete"))
+  Else
+    proceed = vbYes
+  End If
+
+  If proceed = vbYes Then    
+    goodName = False
+
+    'ask the user to correct the worksheet name until the name
+    'is good. The user can choose to leave
+    'If he doesn't want to delete the whole workbook's data.
+
+    'The data is deleted upon validation of the workbook name
+    Do While Not goodName
+
+      'Ask the user about the current workbook name for validation before deleting
+      inputwbName = InputBox(trads.TranslatedValue("MSG_LLName"), _ 
+                        trads.TranslatedValue("MSG_Delete"), _ 
+                        trads.TranslatedValue("MSG_EnterWkbName"))
+
+      If inputwbName = Replace(currwb.Name, ".xlsb", vbNullString) Then
+
+          'Proceed only if the user is able to provide the name of the actual workbook, we can delete
+          goodName = True
+          ClearData
+
+      Else
+        'Bad workbook name: Ask again if the user is sure about deleting  the data before leaving
+        'In case the user is not sure, exit the do...while loop
+        If MsgBox(trads.TranslatedValue("MSG_BadLLNameQ"), _ 
+                  vbExclamation + vbYesNo, _ 
+                  trads.TranslatedValue("MSG_Delete")) = vbNo _ 
+        Then Exit Do             
+      End If
+    Loop
+
+  Else 'The user wishes to cancel deletion process
+      MsgBox trads.TranslatedValue("MSG_DelCancel"), _ 
+            vbOKOnly, trads.TranslatedValue("MSG_Delete")
+  End If
+
+  Exit Sub
+
+ErrManage:
+  MsgBox trads.TranslatedValue("MSG_ErrClearData")
+End Sub
+
+
+'Test if there is data in the worksheet
+Private Property Get HasData() As Boolean
+
+  Dim testData As Boolean
+  Dim currwb As Workbook
+  Dim sh As Worksheet
+  Dim nbBlanks As Long
+  Dim Lo As ListObject
+  Dim counter As Long
+
+  Dim proceed As Byte
+  Dim inputwbName As String
+  Dim NotGood As Boolean
+
+  testData = False
+
+  Set currwb = CurrentWorkbook()
+
+  'Loop throughtout all the worksheets
+  For Each sh In currwb.Worksheets
+
+    'On HList sheet, loop through each row of 
+    'the listObject
+    If sh.Cells(1, 3).Value = "HList" Then
+      nbBlanks = sh.Cells(1, 6).Value
+      Set Lo = sh.ListObjects(1)
+      If Not (Lo.DataBodyRange Is Nothing) Then
+        counter = 1
+        Do While (Not testData) And (counter <= Lo.DataBodyRange.Rows.Count)
+          'Once you find a row with data in it, just exit
+          If (Application.WorksheetFunction.COUNTA(Lo.ListRows(counter).Range) > nbBlanks) Then
+            testData = True
+            Exit For
+          End If
+          counter = counter + 1
+        Loop
+      End If  
+    End If
+  Next
+
+  HasData = testData
+End Property
+
+Private Sub ControlHasData()
+
+  Dim trads As ITranslation
+  Dim testData As Boolean 'Test if the workbook contains data
+  Dim proceed As Byte
+  Dim continueAsking As Boolean
+  
+  Set trads = MessagesTrads()
+
+  testData = HasData()
+  'While the workbook contains data, ask if the user wants to delete
+  'in that case delete the data and test if there are data left.
+  'If the user doesn't want to delete the data, exit.
+  Do While (testData) 
+    proceed = MsgBox(trads.TranslatedValue("MSG_DeleteForImport"), _ 
+                      vbExclamation + vbYesNo, _ 
+                      trads.TranslatedValue("MSG_Delete"))
+      
+    If proceed = vbYes Then 
+      ControlClearData forImports:=True
+      testData = HasData()
+    Else
+      Exit Do
+    End If
+  Loop
+
+  ControlHasData = testData
+End Sub
+
+
+Private Function ControlLanguage(ByVal impwb As Workbook) As Boolean
+
+  'metadata sheet is where you store informations about
+  'language in the linelist
+  Const METADATASHEET As String = "Metadata"
+
+  Dim metaTab As IDataSheet
+  Dim lltrads As ILLTranslations
+  Dim varRng As Range
+  Dim trads As ITranslation
+  Dim abortImport As Boolean
+  Dim cellRng As Range
+  'current and imported langauges
+  Dim impLang As String
+  Dim currLang As String
+
+  Set trads = MessagesTrads()
+  Set lltrads = LLTradsObject()
+
+  abortImport = False
+
+  If Not sheetExists(impwb, METADATASHEET) Then
+
+    'If the metadata sheet is not found, ask the user if
+    'he really wants to proceed to import. In that case
+    'abort the imports.
+    abortImport = (MsgBox(trads.TranslatedValue("MSG_NoMetadata"), _
+                  vbExclamation + vbYesNo, _
+                  trads.TranslatedValue("MSG_Imports")) = vbYes)
+  Else
+
+    'The metadata sheet is found, I will just look for the language
+    Set metaTab = DataSheet.Create(impwb.Worksheets(METADATASHEET), 1, 1)
+    Set varRng = metaTab.DataRange("variable")
+    'Find the cellRange with the language value
+    impLang = vbNullString
+    currLang = lltrads.Value("lllanguage")
+    'If there are errors, default back to empty string as import language
+    On Error Resume Next
+      Set cellRng = varRng.Find(What:="language", lookAt:=xlWhole, MatchCase:=False)
+      impLang = cellRng.Offset(,1).Value
+    On Error GoTo 0
+
+    'If the import language is different from the current language, as if the user
+    'is sure to proceed
+    If (impLang <> currLang) And (impLang <> vbNullString) Then
+      abortImport =  (   MsgBox(trads.TranslatedValue("MSG_ActualLanguage") & " " & currLang & _
+                            trads.TranslatedValue("MSG_ImportLanguage") & " " & impLang & _
+                            trads.TranslatedValue("MSG_QuitImports"), vbExclamation + vbYesNo, _
+                            trads.TranslatedValue("MSG_LanguageDifferent")) = vbYes)
+    'If the import language is not found, tell it to the user                        
+    ElseIf (impLang = vbNullString) Then
+      abortImport = (MsgBox(trads.TranslatedValue("MSG_NoLanguage"), _
+                     vbExclamation + vbYesNo, _
+                    trads.TranslatedValue("MSG_Imports")) = vbYes)
+    End If
+  End If
+
+  ControlLanguage = abortImport
+End Sub
+
+
+Private Sub ImportMigration()
+
+  Dim impwb As Workbook
+  Dim inPath As String
+  Dim pasteAtBottom As Boolean
+  Dim actsh As Worksheet
+  Dim trads As ITranslation
+  Dim adfobj As Object
+  
+  BusyApp
+  Set actsh = ActiveSheet
+
+  'Error Management on Import
+  On Error GoTo ErrImport
+
+  'Get the import Path
+  inPath = ImportFilePath("linelist")
+
+  'input the import Path: check if the file is valid, and exit if not
+  'the case. Leave the advanced form as is to give the opportunity to re-do imports
+  If (inPath = vbNullString) Then 
+    NotBusyApp
+    Exit Sub
+  End If
+
+  Set trads = MessagesTrads()
+
+  'Test if the linelist has Data
+  'If the linelist has data in it, I will paste values at the end of tables
+  pasteAtBottom = ControlHasData()
+  
+  'Load the workbook
+  BusyApp
+  Set impwb = Workbooks.Open(inPath)
+  ActiveWindow.WindowState = xlMinimized
+
+  'Test if the language of Imports is the same as language in the workbook 
+  'The user chooses to abort the import because the language is not correct
+  If ControlLanguage(impwb) Then GoTo EndImport
+
+  BusyApp
+  ImportData impwb, pasteAtBottom
+
+  'Report Sheets or variables not found in importReport
+  AddSheetsNotTouchedToReport
+  AddVariablesNotTouchedToReport
+
+  'advance frame object (could be hidden depending on what the user wants)
+  Set adfobj = AdvanceFormObject()
+
+  'If some variables were not imported or touched, then
+  'ask if the user wants to see a report, in that case
+  'show it. Otherwise if the user wants to close the advance form,
+  'close it.
+
+  If RequireReport() Then
+    If MsgBox(trads.TranslatedValue("MSG_FinishImportRep"), _
+              vbQuestion + vbYesNo, _
+              trads.TranslatedValue("MSG_Imports")) = vbYes Then
+      adfobj.Hide
+      Set repObj = ReportObject()
+      repObj.Show
+    End If
+  Else
+    'The user can hide the import form here if there is no report to show
+    If MsgBox(trads.TranslatedValue("MSG_FinishImport"), _ 
+              vbQuestion + vbYesNo, _
+              trads.TranslatedValue("MSG_Imports")) = vbYes Then
+      adfobj.Hide
+    End If
+  End If
+  
+  actsh.Activate
+  NotBusyApp
+  Exit Sub
+
+'Something ended the imports
+EndImport:
+  On Error Resume Next
+  MsgBox trads.TranslatedValue("MSG_AbortImport"), vbOkOnly, trads.TranslatedValue("MSG_Imports")
+  impwb.Close saveChanges:=False
+  actsh.Activate
+  NotBusyApp
+  Exit Sub
+
+'There are errors in the imports
+ErrImport:
+  On Error Resume Next
+  MsgBox trads.TranslatedValue("MSG_ErrorImport"), _
+         vbCritical + vbOKOnly, _
+         trads.TranslatedValue("MSG_Imports")
+  actsh.Activate
+  NotBusyApp
+  Exit Sub
+End Sub
+
+
+'Import the Geobase (including historic or Not)
+Private Sub ImportGeobase(Optional ByVal historic As Boolean = False)
+
+  Dim 
+  Dim filePath As 
 
 
 End Sub
@@ -371,47 +758,11 @@ End Sub
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+'Import the geobase historic
 
 
   'Errors checking at instanciation
-  Private Sub CheckRequirements(ByVal currwb As Workbook, ByVal fobj As Object)
+  Private Sub CheckRequirements(ByVal currwb As Workbook, ByVal repfobj As Object, ByVal adfobj As Object)
 
     Dim counter As Long
     Dim sheetName As String
@@ -419,12 +770,17 @@ End Sub
 
     Set sheetsArray = New BetterArray
 
-    If formObj Is Nothing Then ThrowErrorUnableInstanciate "Form object not defined"
-    If TypeName(formObj) <> "F_ImportRep" Then _ 
+    If repfobj Is Nothing Then ThrowErrorUnableInstanciate "Form for import report object not defined"
+    If adfobj Is Nothing Then ThrowErrorUnableInstanciate "Advanced form object not defined"
+
+    If TypeName(repfobj) <> "F_ImportRep" Then _ 
      ThrowErrorUnableInstanciate "The provided form is not F_ImportRep"
+
+    If TypeName(adfobj) <> "F_Advanced" Then _ 
+    ThrowErrorUnableInstanciate "The provided form for advanced is not F_Advanced"
   
     sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, _
-                     PASSWORDSHEET, REPORTSHEET, UPDATESHEET
+                     PASSWORDSHEET, REPORTSHEET, UPDATESHEET, MESSTRANSLATIONSHEET
   
     For counter = sheetsArray.LowerBound To sheetsArray.UpperBound
       sheetName = sheetsArray.Item(counter)

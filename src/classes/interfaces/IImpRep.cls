@@ -23,13 +23,18 @@ Public Sub Show()
 End Sub
 
 'Add some sheets to the report
-Public Sub AddSheetsToReport(ByVal scope As Byte, ByVal sheetsList As BetterArray)
+Public Sub AddSheetsToReport(ByVal scope As Byte, ByVal sheetName As String)
 End Sub
 
 'Add some variables to the report
 Public Sub AddVariablesToReport(ByVal scope As Byte, _ 
-                                ByVal sheetName As String, _ 
-                                ByVal varsList As BetterArray)
+                                ByVal sheetName As String, _
+                                ByVal varName As String)
+End Sub
+
+Public Sub AddVariablesListToReport(ByVal scope As Byte, _ 
+                                    ByVal sheetName As String, _ 
+                                    ByVal varLists As BetterArray)
 End Sub
 
 Public Sub Clear()

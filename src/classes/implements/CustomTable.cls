@@ -20,11 +20,13 @@ Private Type TCustomTable
   Lo As ListObject
   idCol As String
   idPrefix As String
+  hasImport As Boolean
 End Type
 
 Private this As TCustomTable
 Private Const CLASSNAME As String = "ICustomTable"
 Private Const NBROWSADD As Long = 5 'Number of Rows to add when resizing
+Private NOTIMPORTEDCOLUMNS As BetterArray
 
 Public Function Create(ByVal Lo As ListObject, _
                       Optional ByVal idCol As String = vbNullString, _
@@ -331,6 +333,13 @@ Private Sub Import(ByVal impTab As Object, Optional ByVal pasteAtBottom As Boole
     If Name() <> impTab.Name() Then Exit Sub
   End If
 
+  'Initialize and Clear the private variable NOTIMPORTEDCOLUMNS
+  If NOTIMPORTEDCOLUMNS Is Nothing Then 
+    Set NOTIMPORTEDCOLUMNS = New BetterArray
+  End If
+
+  NOTIMPORTEDCOLUMNS.Clear
+
   Set imphRng = impTab.HeaderRange()
   Set sh = Wksh()
 
@@ -374,9 +383,26 @@ Private Sub Import(ByVal impTab As Object, Optional ByVal pasteAtBottom As Boole
         currDataRng.Cells.ClearContents
         rng.Value = impDataRng.Value
       End If
+    Else
+
+      NOTIMPORTEDCOLUMNS.Push headerValue
     End If
   Next
+  this.hasImport = True
 End Sub
+
+Private Property Get ImportColumnsNotFound() As BetterArray
+  Set ImportColumnsNotFound = NOTIMPORTEDCOLUMNS.Clone()
+End Property
+
+'Test if there are imports in the custom table
+Private Property Get HasColumnsNotImported() As Boolean
+
+  If this.hasImport Then
+    HasColumnsNotImported = Not (NOTIMPORTEDCOLUMNS.Length >= 1)
+  End If
+
+End Property
 
 'Export a Custom Table to a Worksheet
 
@@ -523,9 +549,7 @@ Private Property Get ICustomTable_CellRange(ByVal colName As String, ByVal lineN
   Set ICustomTable_CellRange = CellRange(colName, lineNum)
 End Property
 
-Private Sub ICustomTable_Import(ByVal impTab As Object)
-  Import impTab
-End Sub
+
 
 Private Property Get ICustomTable_HeaderRange() As Range
   Set ICustomTable_HeaderRange = HeaderRange()
@@ -547,6 +571,21 @@ Private Sub ICustomTable_Export(ByVal sh As Worksheet, _
                                ByVal headersList As BetterArray)
   Export sh, headersList
 End Sub
+
+'Imports Functions
+Private Sub ICustomTable_Import(ByVal impTab As Object, _ 
+                                Optional ByVal pasteAtBottom As Boolean = False)
+  Import impTab, pasteAtBottom
+End Sub
+
+Private Property Get ICustomTable_ImportColumnsNotFound() As BetterArray
+  Set ICustomTable_ImportColumnsNotFound = ImportColumnsNotFound()
+End Property
+
+'Test if there are imports in the custom table
+Private Property Get ICustomTable_HasColumnsNotImported() As Boolean
+    ICustomTable_HasColumnsNotImported = HasColumnsNotImported() 
+End Property
 
 'Errors and checkings
 Private Sub ThrowError(ByVal errorMessage As String)
