@@ -25,7 +25,8 @@ Public Property Get CellRange(ByVal colName As String, ByVal lineNum As Long) As
 Public Property Get Value(ByVal colName As String, ByVal keyName As String) As String: End Property
 
 
-Public Sub Import(ByVal impTab As Object): End Sub
+Public Sub Import(ByVal impTab As Object, _
+                  Optional ByVal pasteAtBottom As Boolean = False): End Sub
 Public Sub Clean(): End Sub
 Public Sub Sort(ByVal els As Variant): End Sub
 Public Sub AddRows(Optional ByVal nbRows As Long = 100): End Sub
@@ -35,5 +36,12 @@ Public Sub SetValidation(ByVal colName As String, _
                            ByVal dropName As String, _
                            Optional ByVal alertType As String = "info")
 End Sub
+
+Public Property Get ImportColumnsNotFound() As BetterArray
+End Property  
+'Test if there are imports in the custom table
+Public Property Get HasColumnsNotImported() As Boolean
+End Property
+  
 Public Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray)
 End Sub
