@@ -19,6 +19,7 @@ Option Explicit
 Private Type TRep
   impsh As Worksheet
   impForm As Object
+  sorted As Boolean
 End Type
 
 Private this As TImp
@@ -71,12 +72,21 @@ Private Sub Clear()
   Set sh = Wksh()
   For Each Lo in sh.ListObjects
     'DatabodyRange could be nothing resulting in Error
-    On Error Resume Next 
-     Lo.DataBodyRange.Delete
-    On Error GoTo 0
+    If Not (Lo.DataBodyRange Is Nothing) Then Lo.DataBodyRange.Delete
   Next
 End Sub
 
+Private Sub SetSortedToFalse()
+  this.sorted = False
+End Sub
+
+Private Sub SetSortedToTrue()
+  this.sorted = True
+End Sub
+
+Private Property Get IsSorted() As Boolean
+  IsSorted = this.sorted
+End Property
 
 'Add elements to report at sheet levels --------
 'scope could take 2 values: 1 - sheet not imported, 2, sheet not touched
@@ -84,7 +94,7 @@ End Sub
 'Add sheets not imported or not touched to the import report sheet
 Private Sub AddSheetsToReport(ByVal scope As Byte, ByVal sheetName As String)
   Dim sh As Worksheet
-  Dim loName As String 
+  Dim loName As String
   Dim Lo As ListObject
   Dim rng As Range
   Dim endRow As Long
@@ -101,12 +111,13 @@ Private Sub AddSheetsToReport(ByVal scope As Byte, ByVal sheetName As String)
     endRow = Lo.Range.Rows.Count + 1  
   End If
 
-  Lo.Range.Cells(endRow, 1).
+  Lo.Range.Cells(endRow, 1).Value = sheetName
   
-  sheetsList.ToExcelRange Lo.Range.Cells(endRow, 1)
   'resize the listObject
-  Set rng = sh.Range(Lo.Range.Cells(1, 1), Lo.Range.Cells(sheetsList.Length + endRow - 1, 1))
+  Set rng = sh.Range(Lo.Range.Cells(1, 1), Lo.Range.Cells(endRow, 1))
   Lo.Resize rng
+
+  SetSortedToFalse
 End Sub
 
 'Test if the import report sheet contains sheet not imported or not touched
@@ -129,7 +140,6 @@ Private Property Get ContainsSheet(ByVal scope As Byte,  _
   End If
 
   ContainsSheet = contains
-
 End Property
 
 
@@ -137,8 +147,39 @@ End Property
 'scope takes 2 values 1: variables not imported, 2: variable in current workbook not found
 'in imported workbook
 
+'Add only one variable to the report sheet
 Private Sub AddVariablesToReport(ByVal scope As Byte, ByVal sheetName As String, _ 
-                                 ByVal varsList As BetterArray)
+                                 ByVal varName As String)
+  Dim sh As Worksheet
+  Dim loName As String 
+  Dim Lo As ListObject
+  Dim rng As Range
+  Dim endRow As Long
+
+  Set sh = Wksh()
+  loName = Switch(scope = 1, TABSVARSNOTIMP, scope = 2, TABSVARSNOTTOU)
+  Set Lo = sh.ListObjects(loName)
+
+  If Lo.DataBodyRange Is Nothing Then
+    endRow = 2
+  Else
+    endRow = Lo.Range.Rows.Count + 1
+  End If
+
+  'write the variables and the sheetName
+  Lo.Range.Cells(endRow, 1).Value = varName
+  Lo.Range.Cells(endRow, 2).Value = sheetName
+
+  'Resize the listObject
+  Set rng = sh.Range(Lo.Range.Cells(1, 1), Lo.Range.Cells(endRow, 2))
+  Lo.Resize rng
+
+  SetSortedToFalse
+End Sub
+
+'Add a list of variables to the report sheet
+Private Sub AddVariablesListToReport(ByVal scope As Byte, ByVal sheetName As String, _ 
+                                     ByVal varsList As BetterArray)
   Dim sh As Worksheet
   Dim loName As String 
   Dim Lo As ListObject
@@ -147,6 +188,7 @@ Private Sub AddVariablesToReport(ByVal scope As Byte, ByVal sheetName As String,
 
   Set sh = Wksh()
   loName = Switch(scope = 1, TABVARSNOTIMP, scope = 2, TABVARSNOTTOU)
+  
   Set Lo = sh.ListObjects(loName)
 
   If Lo.DataBodyRange Is Nothing Then
@@ -165,10 +207,14 @@ Private Sub AddVariablesToReport(ByVal scope As Byte, ByVal sheetName As String,
   Next
 
   'Resize the listObject
+
   Set rng = sh.Range(Lo.Range.Cells(1, 1), Lo.Range.Cells(varsList.Length + endRow - 1, 2))
-  Lo.Resize rng    
+  Lo.Resize rng
+
+  SetSortedToFalse    
 End Sub
 
+'Test if the report contains a variable
 Private Property Get ContainsVariable(ByVal scope As Byte, ByVal sheetName As String, _ 
                                       ByVal varName As String) As Boolean
   
@@ -178,16 +224,22 @@ Private Property Get ContainsVariable(ByVal scope As Byte, ByVal sheetName As St
   Dim contains As Boolean
   Dim cellRng As Range
 
-  contains = False
-  loName = Switch(scope = 1, TABVARSNOTIMP, scope = 2, TABVARSNOTTOU)
+  'Important to sort the worksheet before.
+  Sort
   
+  contains = False
+  loName = Switch(scope = 1, TABSVARSNOTIMP, scope = 2, TABSVARSNOTTOU)
+
   'The second column is for worksheets
   Set rng = sh.ListObjects(loName).ListColumns(2).DataBodyRange
   
   'Test if the sheet name exists before testing variable
   If Not rng Is Nothing Then
-    If Not (rng.Find(What:=sheetName, LookAt:=xlWhole, MatchCase:=True) Is Nothing) Then
-      Set cellRng = rng.Find(What:=sheetName, LookAt:=xlWhole, MatchCase:=True)
+    On Error Resume Next
+    Set cellRng = rng.Find(What:=sheetName, LookAt:=xlWhole, MatchCase:=True)
+    On Error GoTo 0
+
+    If Not (cellRng Is Nothing) Then
       Do While (cellRng.Value = sheetName)
 
         'The first column contains the variable names, so I will test at the left
@@ -203,6 +255,48 @@ Private Property Get ContainsVariable(ByVal scope As Byte, ByVal sheetName As St
 
   ContainsVariable = contains
 End Property
+
+'Sort the listObjects on the different columns
+Private Sub Sort()
+  Dim rng As Range
+  Dim Lo As ListObject
+  Dim sh As Worksheet
+
+  Set sh = Wksh()
+  'Sort sheets not imported
+  
+  If isSorted() Then Exit Sub
+
+  Set Lo = sh.ListObjects(TABSHEETNOTIMP)
+  Set rng = Lo.Range
+  On Error Resume Next
+  rng.Sort key1:=rng, Order1:=xlDescending, Header:=xlYes
+  On Error GoTo 0
+
+  'Sort sheets not touched
+  Set Lo = sh.ListObjects(TABSHEETNOTTOU)
+  Set rng = Lo.Range
+  On Error Resume Next
+  rng.Sort key1:=rng, Order1:=xlDescending, Header:=xlYes
+  On Error GoTo 0
+
+  'Sort variables not imported
+  Set Lo = sh.ListObjects(TABSVARSNOTIMP)
+  Set rng = Lo.Range
+  On Error Resume Next
+  rng.Sort key1:=Lo.ListObjects(2).Range, Order1:=xlDescending, Header:=xlYes
+  On Error GoTo 0
+
+  'Sort variables not touched
+  Set Lo = sh.ListObjects(TABSVARSNOTTOU)
+  Set rng = Lo.Range
+  On Error Resume Next
+  rng.Sort key1:=Lo.ListObjects(2).Range, Order1:=xlDescending, Header:=xlYes
+  On Error GoTo 0
+
+  'Update sorted boolean
+  SetSortedToTrue
+End Sub
 
 'Show the report
 Private Sub Show()
@@ -232,7 +326,7 @@ Private Sub Show()
   End If
 
   'Variables Not Imported
-  Set Lo = sh.ListObjects(TABVARSNOTIMP)
+  Set Lo = sh.ListObjects(TABSVARSNOTIMP)
   If Not Lo.DataBodyRange Is Nothing Then
     Set rng = Lo.DataBodyRange
     fobj.LST_ImpRepVarImp.ColumnCount = 2
@@ -240,7 +334,7 @@ Private Sub Show()
   End If
 
   'Variable Not touched
-  Set Lo = sh.ListObjects(TABVARSNOTTOU)
+  Set Lo = sh.ListObjects(TABSVARSNOTTOU)
   If Not Lo.DataBodyRange Is Nothing Then
     Set rng = Lo.DataBodyRange
     fobj.LST_ImpRepVarLL.ColumnCount = 2
@@ -292,14 +386,19 @@ End Sub
 
 'Iterface
 Private Sub IImpRep_Show()
+  Sort
   Show
 End Sub
 
-Private Sub IImpRep_AddSheetsToReport(ByVal scope As Byte, ByVal sheetsList As Variant)
-  AddSheetsToReport scope, sheetsList
+Private Sub IImpRep_AddSheetsToReport(ByVal scope As Byte, ByVal sheetName As String)
+  AddSheetsToReport scope, sheetName
 End Sub
 
-Private Sub IImpRep_AddVariablesToReport(ByVal scope As Byte, ByVal sheetName As String, ByVal varsList As BetterArray)
+Private Sub IImpRep_AddVariablesToReport(ByVal scope As Byte, ByVal sheetName As String, ByVal varName As String)
+  AddVariablesToReport scope, sheetName, varName
+End Sub
+
+Private Sub IImpRep_AddVariablesListToReport(ByVal scope As Byte, ByVal sheetName As String, ByVal varsList As BetterArray)
   AddVariablesToReport scope, sheetName, varsList
 End Sub
 
