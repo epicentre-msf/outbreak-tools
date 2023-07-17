@@ -58,7 +58,7 @@ End Property
 Public Sub Translate(Optional ByVal rawNames As Boolean = False): End Sub
 
 'Import a new Geobase from a workbook
-Public Sub Import(ByVal fromWkb As Workbook): End Sub
+Public Sub Import(ByVal fromWkb As Workbook, Optional ByVal histoOnly As Boolean = False): End Sub
 
 'Export to a workbook
 Public Sub ExportToFile(ByVal outputWkb As Workbook, Optional ByVal onlyHistory As Boolean = False)
