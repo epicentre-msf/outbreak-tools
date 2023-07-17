@@ -631,7 +631,7 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
 
 End Sub
 
-Private Sub Import(ByVal fromWkb As Workbook)
+Private Sub Import(ByVal fromWkb As Workbook, Optional ByVal histoOnly As Boolean = False)
     Dim sh As Worksheet
     Dim impsh As Worksheet
     Dim Lo As ListObject
@@ -649,7 +649,8 @@ Private Sub Import(ByVal fromWkb As Workbook)
 
 
     Set admNames = New BetterArray
-    admNames.Push ADMIN1, ADMIN2, ADMIN3, ADMIN4, HF, HISTOGEO, HISTOHF, NAMES, METADATA
+    admNames.Push HISTOGEO, HISTOHF, METADATA
+    If Not histoOnly Then admNames.Push ADMIN1, ADMIN2, ADMIN3, ADMIN4, HF, NAMES
 
     Set sh = Wksh()
     'Separator for concatenate
@@ -663,6 +664,8 @@ Private Sub Import(ByVal fromWkb As Workbook)
         'Only sheet with valid names are used for import
         With impsh
             If admNames.Includes(.Name) Then
+                'If the lastRow is < 2, then the lastRow is 2. To skip/avoid errors on
+                'Empty worksheets
                 LastRow = Application.WorksheetFunction.Max(.UsedRange.Rows.Count, 2)
                 Set Lo = sh.ListObjects("T_" & impsh.Name) 'Lo Name
                 Set hRng = Lo.HeaderRowRange
@@ -1016,8 +1019,8 @@ Private Sub ILLGeo_Translate(Optional ByVal rawNames As Boolean = False)
 End Sub
 
 'Import a new Geobase from a workbook
-Private Sub ILLGeo_Import(ByVal fromWkb As Workbook)
-    Import fromWkb
+Private Sub ILLGeo_Import(ByVal fromWkb As Workbook, Optional ByVal histoOnly As Boolean = False)
+    Import fromWkb, histoOnly
 End Sub
 
 'Export to a workbook

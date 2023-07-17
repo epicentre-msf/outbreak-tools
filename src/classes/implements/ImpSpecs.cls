@@ -33,8 +33,10 @@ Private Const CHOICESSHEET              As String = "Choices"
 Private Const DICTTRANSLATIONSHEET      As String = "Translations"
 Private Const MESSTRANSLATIONSHEET      As String = "LinelistTranslation"
 Private Const METADATASHEET             As String = "Metadata"
+Private Const GEOSHEET                  As String = "Geo"
 Private Const PASSWORDSHEET             As String = "__pass" 'password sheets
 Private Const REPORTSHEET               As String = "imp_rep__" 'temporary boggy sheet for report
+Private Const SHOWHIDESHEET             As String = "show_hide__"
 Private Const UPDATESHEET               As String = ""
 
 Private RESERVEDSHEETS                  As BetterArray
@@ -202,6 +204,13 @@ Private Property Get PasswordsObject() As ILLPasswords
 
   Set wb = CurrentWorkbook()
   Set PasswordsObject = LLPasswords.Create(wb.Worksheets(PASSWORDSHEET)) 
+End Property
+
+'Geo Object for geobase manibulations
+Private Property Get GeoObject() As ILLGeo
+  Dim wb As Workbook
+  Set wb = CurrentWorkbook()
+  Set GeoObject = LLGeo.Create(GEOSHEET)
 End Property
 
 'Get the linelist Translation object, with all elements related
@@ -510,7 +519,9 @@ Private Sub ControlClearData(Optional ByVal forImports As Boolean = False)
   Exit Sub
 
 ErrManage:
+  On Error Resume Next
   MsgBox trads.TranslatedValue("MSG_ErrClearData")
+  On Error GoTo 0
 End Sub
 
 
@@ -742,27 +753,85 @@ ErrImport:
          trads.TranslatedValue("MSG_Imports")
   actsh.Activate
   NotBusyApp
-  Exit Sub
+  On Error GoTo 0
 End Sub
 
 
 'Import the Geobase (including historic or Not)
-Private Sub ImportGeobase(Optional ByVal historic As Boolean = False)
+Private Sub ImportGeobase(Optional ByVal histoOnly As Boolean = False)
 
-  Dim 
-  Dim filePath As 
+  Dim geo As ILLGeo
+  Dim dict As ILLdictionary
+  Dim pass As ILLPasswords
+  Dim impwb As Workbook
+  Dim showhidesh As Worksheet
+  Dim filePath As String
+  Dim pathTag As String
+  Dim currwb As Workbook
+  Dim trads As ITranslation
+  Dim adfobj As Object
+
+  pathTag = IIf(histoOnly, "geobase-historic", "geobase")
+  Set trads = MessageTrads()
+
+    On Error GoTo ErrImpGeo
+
+    'Get the geobase file Path
+    filePath = ImportFilePath(pathTag)
 
 
+    If filePath <> vbNullString Then
+      BusyApp
+      Set geo = GeoObject()
+      Set currwb = CurrentWorkbook()
+
+      'Open the geobase file
+      Set impwb = Workbooks.Open(filePath)
+      ActiveWindow.WindowState = xlMinimized
+
+      'Import elements of the file
+      geo.Import impwb, histoOnly
+
+      'Update the geobase names in the workbook and the dictionary, and show/hide
+      'If not on historic
+      If Not histoOnly Then
+        Set showhidesh = currwb.Worksheets(SHOWHIDESHEET)
+        Set pass = PasswordObject()
+        Set dict = Dictionary()
+
+        geo.Update pass
+        geo.UpdateDict dict
+        geo.UpdateShowHide showhidesh, dict
+      End If
+
+      impwb.Close savechanges:=False
+
+      'Leaving the import process
+      If MsgBox( _
+            trads.TranslatedValue("MSG_FinishImportGeo"), _
+            vbQuestion + vbYesNo, trads.TranslatedValue("MSG_Imports") _ 
+            ) = vbYes Then
+        Set adfobj = AdvanceFormObject()
+        adfobj.Hide
+      End If
+
+      NotBusyApp
+    End If
+
+    Exit Sub
+
+ErrImpGeo:
+  On Error Resume Next
+  MsgBox trads.TranslatedValue("MSG_ErrImportGeo"), _ 
+         vbCritical + vbOKOnly, _
+        trads.TranslatedValue("MSG_Imports")
+  NotBusyApp
+  On Error GoTo 0
 End Sub
 
 
-
-
-'Import the geobase historic
-
-
   'Errors checking at instanciation
-  Private Sub CheckRequirements(ByVal currwb As Workbook, ByVal repfobj As Object, ByVal adfobj As Object)
+Private Sub CheckRequirements(ByVal currwb As Workbook, ByVal repfobj As Object, ByVal adfobj As Object)
 
     Dim counter As Long
     Dim sheetName As String
@@ -780,7 +849,9 @@ End Sub
     ThrowErrorUnableInstanciate "The provided form for advanced is not F_Advanced"
   
     sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, _
-                     PASSWORDSHEET, REPORTSHEET, UPDATESHEET, MESSTRANSLATIONSHEET
+                     PASSWORDSHEET, REPORTSHEET, UPDATESHEET, _
+                     MESSTRANSLATIONSHEET, _
+                     GEOSHEET, SHOWHIDESHEET
   
     For counter = sheetsArray.LowerBound To sheetsArray.UpperBound
       sheetName = sheetsArray.Item(counter)
