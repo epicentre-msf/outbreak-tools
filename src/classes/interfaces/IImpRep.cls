@@ -37,9 +37,14 @@ Public Sub AddVariablesListToReport(ByVal scope As Byte, _
                                     ByVal varLists As BetterArray)
 End Sub
 
+'Clear the import report
 Public Sub Clear()
 End Sub
 
+'Return true or False if the report sheet contains one sheet or one variable
+'scope can take 2 values:
+'1- sheets or variables not imported
+'2- sheets or variables not used. 
 Public Property Get ContainsSheet(ByVal scope As Byte, ByVal sheetName As String) As Boolean
 End Property
   

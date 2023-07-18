@@ -427,7 +427,8 @@ Private Sub Prepare()
     Next
 
     'Prepare the temporary sheets by adding required ranges
-    PrepareTemporarySheets lData.TemporarySheetName(TemporarySheetUpdates)
+    PrepareTemporarySheets lData.TemporarySheetName(TemporarySheetUpdates), _
+                            lData.TemporarySheetName(TemporarySheetImport)
 
     DoEvents
 
@@ -451,7 +452,7 @@ Private Sub Prepare()
         AddOutputSheet sheetName, xlsheetvisible
     Next
 
-    'Add admin sheet only if the user chooses buttons
+    'Add admin sheet only if the user chooses buttons instead of ribbon linelist
     If Not mainobj.HasTemplate() Then
         'Admin sheet Name
         AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlsheetvisible
@@ -563,7 +564,10 @@ Private Sub PrepareAdmin()
     pass.Protect "_active"
 End Sub
 
-'Ask question on Error to the user:
+'Manage errors when building the linelist:
+'- Asks if the user wants the uncomplete linelist.
+'- If not, close the workbook and leave the application.
+
 Private Sub ErrorManage()
     Dim outWkb As Workbook 'Output workbook
     Dim Quit As Integer
