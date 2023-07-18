@@ -3,17 +3,25 @@ BEGIN
   MultiUse = -1  'True
 END
 
-Attribute VB_Name = "IInpSpecs"
+Attribute VB_Name = "IImpSpecs"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
-Attribute VB_Description = ""
+Attribute VB_Description = "Interface of Import Specs"
 
-'@Folder("Dictionary")
-'@ModuleDescription("Interface of ")
-'@IgnoreModule
+'@Folder("Linelist")
+'@Interface
+'@ModuleDescription("Interface of Import Specs")
 
 Option Explicit
 
 'Exposed methods
+
+'Import a geobase
+Public Sub ImportGeobase(Optional ByVal histoOnly As Boolean = False)
+End Sub
+
+'Import data for migrations
+Public Sub ImportMigration()
+End Sub

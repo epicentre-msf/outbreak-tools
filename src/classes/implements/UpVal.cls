@@ -17,6 +17,7 @@ Attribute VB_Description = "Watch Updated values in the linelist"
 Option Explicit
 
 Implements IUpVal
+
 'Exposed methods
 Private Type TUpdatedVal
   sh As Worksheet
@@ -40,7 +41,7 @@ Public Function Create(ByVal sh As Worksheet) As IUpVal
 
 End Function
 
-Public Property Self() As IUpVal
+Public Property Get Self() As IUpVal
   Set Self = Me
 End Property
 
@@ -55,7 +56,7 @@ End Property
 'Retrieve value from an updated range
 
 Private Property Get Value(ByVal rngName As String) As String
-  Dim retVal As Variant
+  Dim retVal As String
   Dim sh As Worksheet
 
   Set sh = Wksh()
@@ -63,16 +64,14 @@ Private Property Get Value(ByVal rngName As String) As String
   If (rngName = RNGLISTAUTOUPDATED) Or _ 
      (rngName = RNGIMPORTDONE) Or _ 
      (rngName = RNGGEOBASEMANUALUPDATE) Then
-      Set retVal = sh.Range(rngName).Value
+     On Error Resume Next
+      retVal = CStr(sh.Range(rngName).Value)
+     On Error GoTo 0
   End If
 
-  If (TypeName(retVal) = "String") Then 
-    Value = retVal
-  Else
-    Value = vbNullString
-  End If
+  Value = retVal
+
 End Property
-
 
 Private Sub SetValue(ByVal rngName As String, newValue As String)
 
