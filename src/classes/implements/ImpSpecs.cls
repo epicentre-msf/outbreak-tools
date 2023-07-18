@@ -3,7 +3,7 @@ BEGIN
   MultiUse = -1  'True
 END
 
-Attribute VB_Name = "InpSpecs"
+Attribute VB_Name = "ImpSpecs"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -35,9 +35,9 @@ Private Const MESSTRANSLATIONSHEET      As String = "LinelistTranslation"
 Private Const METADATASHEET             As String = "Metadata"
 Private Const GEOSHEET                  As String = "Geo"
 Private Const PASSWORDSHEET             As String = "__pass" 'password sheets
-Private Const REPORTSHEET               As String = "imp_rep__" 'temporary boggy sheet for report
+Private Const IMPREPORTSHEET               As String = "imp_rep__" 'temporary boggy sheet for report
 Private Const SHOWHIDESHEET             As String = "show_hide__"
-Private Const UPDATESHEET               As String = ""
+Private Const UPDATESHEET               As String = "updates__"
 
 Private RESERVEDSHEETS                  As BetterArray
 Private this                            As TImp
@@ -106,7 +106,7 @@ Private Sub InitializeFileElements()
 End Sub
 
 'Speed Up the application
-Private Sub BusyApp(ByVal cursor As Long = xlNorthwestArrow)
+Private Sub BusyApp(Optional ByVal cursor As Long = xlNorthwestArrow)
   Application.ScreenUpdating = False
   Application.DisplayAlerts = False
   Application.Calculation = xlCalculationManual
@@ -179,7 +179,7 @@ Private Property Get ReportSheet() As Worksheet
   Dim wb As Workbook
 
   Set wb = CurrentWorkbook()
-  Set ReportSheet = wb.Worksheets(REPORTSHEET)
+  Set ReportSheet = wb.Worksheets(IMPREPORTSHEET)
 End Property
 
 Private Property Get Dictionary() As ILLdictionary
@@ -208,9 +208,9 @@ End Property
 
 'Geo Object for geobase manibulations
 Private Property Get GeoObject() As ILLGeo
-  Dim wb As Workbook
-  Set wb = CurrentWorkbook()
-  Set GeoObject = LLGeo.Create(GEOSHEET)
+  Dim currwb As Workbook
+  Set currwb = CurrentWorkbook()
+  Set GeoObject = LLGeo.Create(currwb.Worksheets(GEOSHEET))
 End Property
 
 'Get the linelist Translation object, with all elements related
@@ -219,7 +219,7 @@ Private Property Get LLTradsObject() As ILLTranslations
   Dim currwb As Workbook
 
   Set currwb = CurrentWorkbook()
-  Set LLTradsObject() = LLTranslation.Create(currwb.Worksheets(MESSTRANSLATIONSHEET), _
+  Set LLTradsObject() = LLTranslations.Create(currwb.Worksheets(MESSTRANSLATIONSHEET), _
                                      currwb.Worksheets(DICTTRANSLATIONSHEET))
 End Property
 
@@ -229,6 +229,15 @@ Private Property Get MessagesTrads() As ITranslation
   Set lltrads = LLTradsObject()
   Set MessagesTrads = lltrads.TransObject()
 End Property
+
+'Get the update object
+Private Property Get UpdateObject() As IUpVal()
+  Dim currwb As Workbook
+  
+  Set currwb = CurrentWorkbook()
+  Set UpdateObject = UpVal.Create(currwb.Worksheets(UPDATESHEET))
+End Property
+
 
 'Add sheets not touched to import report
 Private Sub AddSheetsNotTouchedToReport()
@@ -245,9 +254,9 @@ Private Sub AddSheetsNotTouchedToReport()
 
   For counter = sheetsList.LowerBound to sheetsList.UpperBound
     sheetName = sheetsList.Item(counter)
-    If Not IMPORTESHEETS.Includes(sheetName) Then 
+    If Not IMPORTEDSHEETS.Includes(sheetName) Then 
       SetNeedReportToTrue
-      repObj.AddSheetsToReport(2, sheetName)
+      repObj.AddSheetsToReport 2, sheetName
     End If
   Next
 End Sub
@@ -297,7 +306,7 @@ Private Sub AddVariablesNotTouchedToReport()
 
           If Not IMPORTEDVARIABLES.Includes(varName) Then 
             SetNeedReportToTrue
-            repObj.AddVariablesToReport(2, sheetName, varName)
+            repObj.AddVariablesToReport 2, sheetName, varName
           End If
 
         End If
@@ -326,7 +335,9 @@ Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
   Dim vlistRng As Range
   Dim repObj As IImpRep
   Dim nbBlank As Long
+  Dim sheetsList As BetterArray
 
+  Set dict = Dictionary()
   Set sheetsList = dict.UniqueValues("sheet name")
   Set currwb = CurrentWorkbook()
   Set pass = PasswordsObject()
@@ -362,7 +373,7 @@ Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
           
           'If the range is Not found, then you need to report
           If vlistRng Is Nothing Then
-            repObj.AddVariablesToReport(1, impsh.Name, varName)
+            repObj.AddVariablesToReport 1, impsh.Name, varName
             SetNeedReportToTrue
           Else
             vlistRng.Value = usedImpRng.Cells(counter, 2).Value
@@ -383,14 +394,14 @@ Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
         'the endrow here is strictly True, so this will be the last Row
         'of the imported worksheet. The function will find the last used rows
         'and this will be the last non empty row of the worksheet.
-        Set impTab = DataShet.Create(impsh, 1, 1, True)
+        Set impTab = DataSheet.Create(impsh, 1, 1, True)
         currTab.Import impTab, pasteAtBottom
 
         'Test if variables are not imported, add them to the report
         If currTab.HasColumnsNotImported() Then
           Set varsNotImpList = currTab.ImportColumnsNotFound()
           'variables in the imported sheet not imported
-          repObj.AddVariablesListToReport(1, currsh.Name, varsNotImpList)
+          repObj.AddVariablesListToReport 1, currsh.Name, varsNotImpList
           SetNeedReportToTrue
         End If
 
@@ -409,7 +420,7 @@ Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
     Else
       'If the sheet is not found, ask for report
-      repObj.AddSheetsToReport(1, impsh.Name)
+      repObj.AddSheetsToReport 1, impsh.Name
       SetNeedReportToTrue
     End If
     
@@ -427,7 +438,7 @@ Private Sub ClearData()
   Dim Lo As ListObject
   Dim actsh As Worksheet 'current active sheet
 
-  Set pass = PasswordObject()
+  Set pass = PasswordsObject()
   Set currwb = CurrentWorkbook()
 
   'Deletion process can change the active sheet
@@ -472,12 +483,14 @@ Private Sub ControlClearData(Optional ByVal forImports As Boolean = False)
   Set trads = MessagesTrads()
 
   'There are two different questions: one for import another to just delete the data.
+
+  proceed = vbYes
+  
   If Not forImports Then
-    proceed = MsgBox(trads.TranslatedValue(entryTag), _ 
+    proceed = MsgBox(trads.TranslatedValue("MSG_DeleteAllData"), _ 
                        vbExclamation + vbYesNo, _ 
                         trads.TranslatedValue("MSG_Delete"))
-  Else
-    proceed = vbYes
+
   End If
 
   If proceed = vbYes Then    
@@ -657,10 +670,12 @@ Private Function ControlLanguage(ByVal impwb As Workbook) As Boolean
   End If
 
   ControlLanguage = abortImport
-End Sub
+End Function
 
 
 Private Sub ImportMigration()
+
+  Const RNGLISTAUTOUPDATED As String = "RNG_UpdateListAuto"
 
   Dim impwb As Workbook
   Dim inPath As String
@@ -668,6 +683,8 @@ Private Sub ImportMigration()
   Dim actsh As Worksheet
   Dim trads As ITranslation
   Dim adfobj As Object
+  Dim upobj As IUpVal
+  Dim repObj As IImpRep
   
   BusyApp
   Set actsh = ActiveSheet
@@ -731,7 +748,11 @@ Private Sub ImportMigration()
       adfobj.Hide
     End If
   End If
-  
+
+  Set upobj = UpdateObject()
+
+  'Set all list auto to yes update
+  upobj.SetValue RNGLISTAUTOUPDATED, "yes"
   actsh.Activate
   NotBusyApp
   Exit Sub
@@ -772,7 +793,7 @@ Private Sub ImportGeobase(Optional ByVal histoOnly As Boolean = False)
   Dim adfobj As Object
 
   pathTag = IIf(histoOnly, "geobase-historic", "geobase")
-  Set trads = MessageTrads()
+  Set trads = MessagesTrads()
 
     On Error GoTo ErrImpGeo
 
@@ -796,11 +817,13 @@ Private Sub ImportGeobase(Optional ByVal histoOnly As Boolean = False)
       'If not on historic
       If Not histoOnly Then
         Set showhidesh = currwb.Worksheets(SHOWHIDESHEET)
-        Set pass = PasswordObject()
+        Set pass = PasswordsObject()
         Set dict = Dictionary()
-
+        'Update geobase headers in each HList worksheet
         geo.Update pass
+        'Update dictionary geo variables
         geo.UpdateDict dict
+        'Update show hide geo variables
         geo.UpdateShowHide showhidesh, dict
       End If
 
@@ -830,7 +853,7 @@ ErrImpGeo:
 End Sub
 
 
-  'Errors checking at instanciation
+'Errors checking at instanciation
 Private Sub CheckRequirements(ByVal currwb As Workbook, ByVal repfobj As Object, ByVal adfobj As Object)
 
     Dim counter As Long
@@ -849,7 +872,7 @@ Private Sub CheckRequirements(ByVal currwb As Workbook, ByVal repfobj As Object,
     ThrowErrorUnableInstanciate "The provided form for advanced is not F_Advanced"
   
     sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, _
-                     PASSWORDSHEET, REPORTSHEET, UPDATESHEET, _
+                     PASSWORDSHEET, IMPREPORTSHEET, UPDATESHEET, _
                      MESSTRANSLATIONSHEET, _
                      GEOSHEET, SHOWHIDESHEET
   
@@ -870,17 +893,9 @@ Private Sub CheckRequirements(ByVal currwb As Workbook, ByVal repfobj As Object,
     On Error GoTo 0
     
     sheetExists = (Not sh Is Nothing)
-  
+
   End Function
-  
-  'Speed up application
-  Private Sub BusyApp()
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
-    Application.Calculation = xlCalculationManual
-    Application.EnableAnimations = False
-  End Sub
-  
+
   
   'Errors managements
   Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
@@ -890,4 +905,12 @@ Private Sub CheckRequirements(ByVal currwb As Workbook, ByVal repfobj As Object,
   
   Private Sub ThrowError(ByVal errorMessage As String)
       Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+  End Sub
+
+  Private Sub IImpSpecs_ImportGeobase(Optional ByVal histoOnly As Boolean = False)
+    ImportGeobase histoOnly
+  End Sub
+
+  Private Sub IImpSpecs_ImportMigration()
+    ImportMigration
   End Sub

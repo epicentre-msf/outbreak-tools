@@ -22,7 +22,6 @@ Private Type TDataSheet
     startLn As Long                              'The line where the data starts
     startCl As Long                             'The column where the data starts (the first column is the column of the variable names.
     forceEnd As Boolean
-    lastRow As Long
 End Type
 
 Private this As TDataSheet
@@ -75,8 +74,8 @@ Public Property Get StartColumn() As Long
     StartColumn = this.startCl
 End Property
 
-Public Property Let StartRow(ByVal dataStartRow As Long)
-    this.startLn = dataStartRow
+Public Property Let StartColumn(ByVal dataStartColumn As Long)
+    this.startCl = dataStartColumn
 End Property
 
 'StrictEnd
@@ -89,7 +88,7 @@ Friend Property Let StrictEnd(ByVal forceEnd As Boolean)
 End Property
 
 'End row and columns of the dictionary
-Private Property Get DataEndRow() As Long
+Private Property Get DataEndRow() As Long 
 
     Dim endrw As Long
     Dim hRng As Range
@@ -98,45 +97,37 @@ Private Property Get DataEndRow() As Long
     Dim hasFormula As Boolean
 
     Set sh = Wksh()
-    
-    If this.lastRow = 0 Then
 
-        With sh
-            If StrictEnd() Then
-                Set hRng = HeaderRange()
-                Set cellRng = hRng.Cells(1, 1)
-                endrw = hRng.Row
-
-                Do while Not IsEmpty(cellRng)
-                    
-                    'For each column, I suppose I will search the last line
-                    'because there is no formula
-                    hasFormula = False
-
-                    'Test if it is a formula 
-                    On Error Resume Next
-                    hasFormula = Not (CStr(cellRng.Cells(2, 1).formula) = _ 
-                                    CStr(cellRng.Cells(2, 1).Value))
-                    On Error GoTo 0
-
-                    'If it is not a formula, test the endrow
-                    If Not hasFormula Then
-                        If endrw < .Cells(.Rows.Count, cellRng.Column).End(xlUp).Row Then _ 
-                         endrw = .Cells(.Rows.Count, cellRng.Column).End(xlUp).Row 
-                    End If
-
-                    Set cellRng = cellRng.Offset(, 1)
-                Loop
-                endrw = endrw + 1
-            Else
-                endrw = .Cells(.Rows.Count, StartColumn).End(xlUp).Row
-            End If
-        End With
+    With sh
+        If StrictEnd() Then
+            Set hRng = HeaderRange()
+            Set cellRng = hRng.Cells(1, 1)
+            endrw = hRng.Row
+            Do while Not IsEmpty(cellRng)
+                
+                'For each column, I suppose I will search the last line
+                'because there is no formula
+                hasFormula = False
+                'Test if it is a formula 
+                On Error Resume Next
+                hasFormula = Not (CStr(cellRng.Cells(2, 1).formula) = _ 
+                                CStr(cellRng.Cells(2, 1).Value))
+                On Error GoTo 0
+                'If it is not a formula, test the endrow
+                If Not hasFormula Then
+                    If endrw < .Cells(.Rows.Count, cellRng.Column).End(xlUp).Row Then _ 
+                     endrw = .Cells(.Rows.Count, cellRng.Column).End(xlUp).Row 
+                End If
+                Set cellRng = cellRng.Offset(, 1)
+            Loop
+            endrw = endrw + 1
+        Else
+            endrw = .Cells(.Rows.Count, StartColumn).End(xlUp).Row
+        End If
+    End With
         
-        this.lastRow = IIf(endrw = StartRow, StartRow + 1, endrw)
-    End If
+    DataEndRow  = IIf(endrw = StartRow, StartRow + 1, endrw)
 
-    DataEndRow = this.lastRow
 End Property
 
 Private Property Get DataEndColumn() As Long

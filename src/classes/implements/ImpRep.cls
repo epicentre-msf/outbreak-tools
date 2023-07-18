@@ -15,6 +15,7 @@ Attribute VB_Description = "Import Reports"
 '@ModuleDescription("Import Reports")
 
 Option Explicit
+Implements IImpRep
 
 Private Type TRep
   impsh As Worksheet
@@ -185,9 +186,10 @@ Private Sub AddVariablesListToReport(ByVal scope As Byte, ByVal sheetName As Str
   Dim Lo As ListObject
   Dim rng As Range
   Dim endRow As Long
+  Dim counter As Long
 
   Set sh = Wksh()
-  loName = Switch(scope = 1, TABVARSNOTIMP, scope = 2, TABVARSNOTTOU)
+  loName = Switch(scope = 1, TABSVARSNOTIMP, scope = 2, TABSVARSNOTTOU)
   
   Set Lo = sh.ListObjects(loName)
 
@@ -223,10 +225,12 @@ Private Property Get ContainsVariable(ByVal scope As Byte, ByVal sheetName As St
   Dim loName As String
   Dim contains As Boolean
   Dim cellRng As Range
+  Dim sh As Worksheet
 
   'Important to sort the worksheet before.
   Sort
-  
+  Set sh = Wksh()
+
   contains = False
   loName = Switch(scope = 1, TABSVARSNOTIMP, scope = 2, TABSVARSNOTTOU)
 
@@ -399,7 +403,7 @@ Private Sub IImpRep_AddVariablesToReport(ByVal scope As Byte, ByVal sheetName As
 End Sub
 
 Private Sub IImpRep_AddVariablesListToReport(ByVal scope As Byte, ByVal sheetName As String, ByVal varsList As BetterArray)
-  AddVariablesToReport scope, sheetName, varsList
+  AddVariablesListToReport scope, sheetName, varsList
 End Sub
 
 Private Sub IImpRep_Clear()
