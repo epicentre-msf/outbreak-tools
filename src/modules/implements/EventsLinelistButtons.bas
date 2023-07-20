@@ -406,7 +406,7 @@ End Sub
 '@EntryPoint
 Public Sub ClickExport()
 
-    Const COMMANDHEIGHT As Integer = 40
+    Const COMMANDHEIGHT As Integer = 50
     Const COMMANDGAPS As Byte = 10
 
     Dim exportNumber As Integer
@@ -434,6 +434,7 @@ Public Sub ClickExport()
                 .Controls("CMD_Export" & exportNumber).height = COMMANDHEIGHT
                 .Controls("CMD_Export" & exportNumber).width = 160
                 .Controls("CMD_Export" & exportNumber).Left = 20
+                .Controls("CMD_Export" & exportNumber).WordWrap = True
                 topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
             End If
         Next

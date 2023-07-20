@@ -69,12 +69,24 @@ Private Property Get LastColumn() As Long
     LastColumn = colIndex
 End Property
 
+'ListObject Name
 Private Property Get CurrentListName(ByVal listName As String) As String
     CurrentListName = Replace(Application.WorksheetFunction.Trim(listName), " ", "_")
 End Property
 
+'Header of the listObject
 Private Property Get CurrentHeaderName(ByVal listName As String) As String
     CurrentHeaderName = HeaderPrefix() & CurrentListName(listName)
+End Property
+
+'Name of the listobject column that will be used as named range
+Private Property Get CurrentDropdownName(ByVal listName As String) As String
+    Dim headerName As String
+
+    headerName = CurrentHeaderName(listName)
+    CurrentDropdownName = IIf(HeaderPrefix() = vbNullString, _ 
+                              "choice_" & headerName, _ 
+                              headerName)
 End Property
 
 Private Property Get CurrentLoName(ByVal listName As String) As String
@@ -100,20 +112,20 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String)
   
     Dim sh As Worksheet
     Dim colIndex As Long
-    Dim headerName As String                     'header Name
-    Dim LoName As String                         'List object name
+    Dim headerName As String              'header Name
+    Dim LoName As String                  'List object name
     Dim rng As Range
     Dim Wkb As Workbook
-    Dim dropdownName As String 
+    Dim dropdownName As String            'dropdown name (used in named ranges)
 
 
     If (Not Exists(listName)) Then
         LoName = CurrentLoName(listName)
         headerName = CurrentHeaderName(listName)
+        dropdownName = CurrentDropdownName(listName)
+
         colIndex = LastColumn()
         Set sh = Wksh()
-        dropdownName = IIf(HeaderPrefix() = vbNullString, "choice_" & headerName, _ 
-                           headerName)
 
         With sh
             listValues.ToExcelRange .Cells(2, colIndex)
@@ -190,21 +202,25 @@ Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
                           Optional ByVal alertType As String = "info", _
                           Optional ByVal message As String = vbNullString)
 
-    Dim headerName As String
+    Dim dropdownName As String
 
     If Not Exists(listName) Then ThrowError "There is no available dropdown for " & listName
 
-    headerName = "= " & CurrentHeaderName(listName)
+    'dropdown names can change. I add the tag 
+    dropdownName = "= " & CurrentDropdownName(listName)
     
     With cellRng.validation
         .Delete
         Select Case alertType
         Case "error"                             '"error"
-            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, Operator:=xlBetween, Formula1:=headerName
+            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _ 
+             Operator:=xlBetween, Formula1:=dropdownName
         Case "warning"                           '"warning"
-            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertWarning, Operator:=xlBetween, Formula1:=headerName
-        Case Else                                'for all the others, add an information alert
-            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertInformation, Operator:=xlBetween, Formula1:=headerName
+            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertWarning, _ 
+             Operator:=xlBetween, Formula1:=dropdownName
+        Case Else            'for all the others, add an information alert
+            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertInformation, _ 
+            Operator:=xlBetween, Formula1:=dropdownName
         End Select
 
         .IgnoreBlank = True
