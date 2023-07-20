@@ -15,9 +15,14 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
-Public Property Get Wksh(ByVal sheetName As String) As Worksheet: End Property
-Public Property Get PrintWksh(ByVal sheetName As String) As Worksheet: End Property
-Public Property Get Dropdown() As IDropdownLists: End Property
+Public Property Get Wksh(ByVal sheetName As String) As Worksheet
+End Property
+
+Public Property Get PrintWksh(ByVal sheetName As String) As Worksheet
+End Property
+
+Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
+End Property
 
 Public Property Get LinelistData() As ILinelistSpecs: End Property
 Public Property Get Dictionary() As ILLdictionary: End Property
@@ -29,7 +34,8 @@ Public Function sheetExists(ByVal sheetName As String) As Boolean: End Function
 'Add output sheet
 Public Sub AddOutputSheet(ByVal sheetName As String,  _
                           Optional ByVal Hide As Long = xlSheetVeryHidden, _
-                          Optional ByVal usePrinted As Boolean = False): End Sub
+                          Optional ByVal usePrinted As Boolean = False)
+End Sub
 
 Public Sub SaveLL(): End Sub
 

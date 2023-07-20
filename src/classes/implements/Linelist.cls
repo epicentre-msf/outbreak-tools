@@ -106,17 +106,36 @@ Private Function sheetExists(ByVal sheetName As String) As Boolean
 End Function
 
 'Get the dropdown object for all the choices in a worksheet
-Private Property Get Dropdown() As IDropdownLists
+'Scope values represent the differents dropdown worksheets:
+
+'1- For choices_manual
+'2- For choices_custom
+
+Private Property Get Dropdown(Optional ByVal scope As Byte = 1) _ 
+                              As IDropdownLists
     Dim sh As Worksheet
     Dim listSheetName As String
     Dim lData As ILinelistSpecs
     Dim drop As IDropdownLists
+    Dim trans As ITranslation
+    Dim headerPrefix As String
 
     Set lData = LinelistData()
-    listSheetName = lData.TemporarySheetName(TemporarySheetList)
+    Set trans = lData.TransObject()
+    
+    Select Case scope
+    Case 1
+
+        listSheetName = lData.TemporarySheetName(TemporarySheetList)
+        headerPrefix = "dropdown_"
+    Case 2
+        listSheetName = trans.TranslatedValue("LLSHEET_CustomChoice")
+        headerPrefix = vbNullString
+    End Select
+
     Set sh = Wksh(listSheetName)
 
-    Set drop = DropdownLists.Create(sh)
+    Set drop = DropdownLists.Create(sh, headerPrefix)
     Set Dropdown = drop
 End Property
 
@@ -439,9 +458,11 @@ Private Sub Prepare()
 
     'Unique sheet Names (HList or VList)
     'Add the sheets for Bivariate Analysis, Time series and spatial Analysis
+    AddOutputSheet trans.TranslatedValue("LLSHEET_CustomChoice"), xlsheetvisible
     AddOutputSheet trans.TranslatedValue("LLSHEET_SpatialAnalysis"), xlsheetvisible
     AddOutputSheet trans.TranslatedValue("LLSHEET_TemporalAnalysis"), xlsheetvisible
     AddOutputSheet trans.TranslatedValue("LLSHEET_Analysis"), xlsheetvisible
+    
 
     sheetsList.Clear
     Set sheetsList = dict.UniqueValues("sheet name")
@@ -640,8 +661,8 @@ Public Property Get ILinelist_Dictionary() As ILLdictionary
     Set ILinelist_Dictionary = Dictionary()
 End Property
 
-Public Property Get ILinelist_Dropdown() As IDropdownLists
-    Set ILinelist_Dropdown = Dropdown()
+Public Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
+    Set ILinelist_Dropdown = Dropdown(scope)
 End Property
 
 

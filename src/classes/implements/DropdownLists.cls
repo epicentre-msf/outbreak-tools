@@ -18,17 +18,21 @@ Implements IDropdownLists
 
 Private Type TDropdownLists
     sh As Worksheet
+    hprefix As String
 End Type
 
 Private this As TDropdownLists
 Private Const CLASSNAME As String = "DropdownLists"
 
-Public Function Create(ByVal outsh As Worksheet) As IDropdownLists
+Public Function Create(ByVal outsh As Worksheet, _ 
+                       Optional ByVal hprefix As String = "dropdown_") _ 
+                       As IDropdownLists
     'Errors
     If outsh Is Nothing Then ThrowError "Dropdown worksheet not initialised"
   
     With New DropdownLists
         Set .Wksh = outsh
+        Let .HeaderPrefix = hprefix
         Set Create = .Self
     End With
 
@@ -44,6 +48,14 @@ End Property
 
 Public Property Set Wksh(ByVal outsh As Worksheet)
     Set this.sh = outsh
+End Property
+
+Public Property Get HeaderPrefix() As String
+    HeaderPrefix = this.hprefix
+End Property
+
+Public Property Let HeaderPrefix(ByVal hprefix As String)
+    this.hprefix = hprefix
 End Property
 
 Private Property Get LastColumn() As Long
@@ -62,7 +74,7 @@ Private Property Get CurrentListName(ByVal listName As String) As String
 End Property
 
 Private Property Get CurrentHeaderName(ByVal listName As String) As String
-    CurrentHeaderName = "dropdown_" & CurrentListName(listName)
+    CurrentHeaderName = HeaderPrefix() & CurrentListName(listName)
 End Property
 
 Private Property Get CurrentLoName(ByVal listName As String) As String
@@ -84,6 +96,7 @@ End Function
 
 'Add New list to the dropdown sheet
 Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String)
+
   
     Dim sh As Worksheet
     Dim colIndex As Long
@@ -91,6 +104,7 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String)
     Dim LoName As String                         'List object name
     Dim rng As Range
     Dim Wkb As Workbook
+    Dim dropdownName As String 
 
 
     If (Not Exists(listName)) Then
@@ -98,6 +112,8 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String)
         headerName = CurrentHeaderName(listName)
         colIndex = LastColumn()
         Set sh = Wksh()
+        dropdownName = IIf(HeaderPrefix() = vbNullString, "choice_" & headerName, _ 
+                           headerName)
 
         With sh
             listValues.ToExcelRange .Cells(2, colIndex)
@@ -109,7 +125,7 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String)
             Set Wkb = .Parent
         End With
 
-        Wkb.NAMES.Add Name:=headerName, RefersToR1C1:="=" & LoName & "[" & headerName & "]"
+        Wkb.NAMES.Add Name:=dropdownName, RefersToR1C1:="=" & LoName & "[" & headerName & "]"
     End If
 End Sub
 

@@ -372,7 +372,8 @@ Private Sub Prepare()
                              TemporarySheetName(TemporarySheetAnalysis), TemporarySheetName(TemporarySheetImport), _
                              TemporarySheetName(TemporarySpatial), TemporarySheetName(TemporaryShowHide), _
                              msgTrads.TranslatedValue("LLSHEET_Admin"), msgTrads.TranslatedValue("LLSHEET_Analysis"), _
-                             msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), msgTrads.TranslatedValue("LLSHEET_TemporalAnalysis")
+                             msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), msgTrads.TranslatedValue("LLSHEET_TemporalAnalysis"), _
+                             msgTrads.TranslatedValue("LLSHEET_CustomChoice")
 
     'Prepare the dictionary
     dict.Prepare PreservedSheetNames, geo, msgTrads, tablePrefix:="table"
