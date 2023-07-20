@@ -32,9 +32,10 @@ Private Const TRADLLRIBBON           As String = "T_TradLLRibbon"
 Private Const LLLANG                 As String = "T_LLLang"
 Private Const DICTTRANS              As String = "Tab_Translations"
 Private Const SELECTEDLANG           As String = "T_SelectedLLLanguages"
-Private Const CLASSNAME As String = "LLTranslations"
+Private Const CLASSNAME              As String = "LLTranslations"
 
-Public Function Create(ByVal lltranssh As Worksheet, dicttranssh As Worksheet) As ILLTranslations
+Public Function Create(ByVal lltranssh As Worksheet, _ 
+                       ByVal dicttranssh As Worksheet) As ILLTranslations
 
     CheckRequirements lltranssh, dicttranssh
 
@@ -122,6 +123,8 @@ Private Property Get Value(ByVal tagName As String) As String
          retVal = sh.Range("RNG_GoToGraph").Value
     Case "onfiltered"
          retVal = sh.Range("RNG_OnFiltered").Value
+    Case "customdropdown"
+        retVal = sh.Range("RNG_CustomDrop").Value 
     End Select
 
     On Error GoTo 0
@@ -192,7 +195,8 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     'Ranges (For more ranghes we should use a table of the range names)
     tablRng.Push "RNG_LLLanguage", "RNG_LLLanguageCode", "RNG_GoToSection", _
                  "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _
-                 "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered"
+                 "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered", _ 
+                 "RNG_CustomDrop"
 
     For counter = tablRng.LowerBound To tablRng.UpperBound
         rngName = tablRng.Item(counter)
@@ -265,7 +269,8 @@ Private Sub CheckRequirements(ByVal lltradsh As Worksheet, dtradsh As Worksheet)
 
     tablRng.Push "RNG_LLLanguage", "RNG_LLLanguageCode", "RNG_GoToSection", _
                  "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _
-                 "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered"
+                 "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered", _ 
+                 "RNG_CustomDrop"
     For counter = tablRng.LowerBound to tablRng.UpperBound
         RangeExists rngName:=tablRng.Item(counter), sh:=lltradsh
     Next
