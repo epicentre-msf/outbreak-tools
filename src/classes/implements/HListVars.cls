@@ -76,14 +76,18 @@ Public Property Get Wksh() As Worksheet
 End Property
 
 'The dropdown object as part of the linelist
-Public Property Get Dropdown() As IDropdownLists
+Private Property Get Dropdown() As IDropdownLists
     Dim ll As ILinelist
-    Dim drop As IDropdownLists
 
     Set ll = LinelistObject()
-    Set drop = ll.Dropdown()
+    Set Dropdown = ll.Dropdown()
+End Property
 
-    Set Dropdown = drop
+Private Property Get CustomDropdown() As IDropdownLists
+    Dim ll As ILinelist
+
+    Set ll = LinelistObject()
+    Set CustomDropdown = ll.Dropdown(scope:=2)
 End Property
 
 Private Property Get Dictionary() As ILLdictionary
@@ -490,10 +494,10 @@ Private Sub AddChoices()
 
     varControl = ValueOf("control")
     If (varControl <> "choice_manual") And (varControl <> "list_auto") And _
-     (varControl <> "geo1") Then Exit Sub
+     (varControl <> "geo1") And (varControl <> "choice_custom") Then Exit Sub
 
     Set lData = LinelistData()
-    Set drop = Dropdown()
+    
     Set cat = New BetterArray
     Set cellRng = VarRange()                     'variable range where to set the validation
 
@@ -502,20 +506,39 @@ Private Sub AddChoices()
         'the control is choices
         'Dropdown list are named dropdown_[dropName] in the workbook
     Case "choice_manual"
+        
+        Set drop = Dropdown()
 
         dropName = ActualVariable()
         Set cat = lData.Categories(dropName)
         drop.Add cat, dropName
         varAlert = ValueOf("alert")
         varMessage = ValueOf("message")
+    
+    Case "choice_custom"
+        
+        Set drop = CustomDropdown()
+
+        dropName = ActualVariable()
+        Set cat = New BetterArray
+        cat.Push vbNullString, vbNullString
+        drop.Add cat, dropName
+        
+        varAlert = ValueOf("alert")
+        varMessage = ValueOf("message")
 
     Case "list_auto"
+        
+        Set drop = Dropdown()
 
         dropName = ValueOf("control details")
         'The category is empty It will create an empty table
         cat.Push ""
         drop.Add cat, dropName
     Case "geo1"
+        
+        Set drop = Dropdown()
+
         dropName = "admin1"                      'The dropdown is only on admin 1 and the logic is done in the worksheet
         'Add the three dropdowns for the four admins
         Set geo = lData.geoObject()

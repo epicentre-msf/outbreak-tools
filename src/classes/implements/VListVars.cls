@@ -87,12 +87,15 @@ End Property
 'The dropdown object as part of the linelist
 Public Property Get Dropdown() As IDropdownLists
     Dim ll As ILinelist
-    Dim drop As IDropdownLists
+    Set ll = LinelistObject()
+    Set Dropdown = ll.Dropdown()
+End Property
+
+Private Property Get CustomDropdown() As IDropdownLists
+    Dim ll As ILinelist
 
     Set ll = LinelistObject()
-    Set drop = ll.Dropdown()
-
-    Set Dropdown = drop
+    Set CustomDropdown = ll.Dropdown(scope := 2)
 End Property
 
 Private Property Get Dictionary() As ILLdictionary
@@ -415,15 +418,26 @@ Private Sub AddChoices()
     Dim cellRng As Range
 
     Set lData = LinelistData()
-    Set drop = Dropdown()
     Set cat = New BetterArray
 
     varName = ActualVariable()
     varControl = ValueOf("control")
 
-    If (varControl <> "choice_manual") Then Exit Sub
+    If (varControl <> "choice_manual") And (varControl <> "choice_custom") _ 
+    Then Exit Sub
 
-    Set cat = lData.Categories(varName)
+
+    Select Case varControl
+
+    Case "choice_manual"
+        Set drop = Dropdown()
+        Set cat = lData.Categories(varName)
+    Case "choice_custom"
+        Set drop = CustomDropdown()
+        Set cat = New BetterArray
+        cat.Push vbNullString, vbNullString
+    End Select
+
     Set cellRng = VarRange()
 
     'Add dropdown

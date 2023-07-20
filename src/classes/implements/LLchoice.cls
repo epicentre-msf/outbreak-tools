@@ -169,6 +169,8 @@ Private Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVa
 
     'Initialize headers before import
     Set sh = Wksh()
+    'clear the choices sheet before imports
+    sh.Cells.Clear
     Set cellRng = sh.Cells(StartRow, StartColumn)
     cellRng.Value = LISTNAME
     cellRng.Offset(, 1).Value = ORDER

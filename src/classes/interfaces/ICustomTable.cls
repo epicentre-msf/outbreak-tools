@@ -16,8 +16,10 @@ Attribute VB_Description = "Interface of CustomTable"
 Option Explicit
 
 
-Public Property Get DataRange(ByVal colName As String, Optional ByVal includeHeaders As Boolean = False, _
-                              Optional ByVal strictSearch As Boolean = False) As Range
+Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
+                              Optional ByVal includeHeaders As Boolean = False, _
+                              Optional ByVal strictSearch As Boolean = False) _ 
+                              As Range
 End Property
 Public Property Get HeaderRange() As Range: End Property
 Public Property Get Name() As String: End Property

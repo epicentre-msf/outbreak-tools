@@ -177,7 +177,7 @@ Private Property Get ExportFileName(ByVal scope As Byte, _
             End If
         Next
 
-        outFile = PathData.ToString(Separator:="-", OpeningDelimiter:=vbNullString,  _
+        outFile = PathData.ToString(Separator:="__", OpeningDelimiter:=vbNullString,  _
                                     ClosingDelimiter:=vbNullString, QuoteStrings:=False) & _
                                     "__" & "v" & pass.Value("version") & "-" & _ 
                                     pass.Value("publickey") & "__" &  _
