@@ -201,24 +201,36 @@ Private Function ColumnIndex(ByVal colName As String, _
     ColumnIndex = Index
 End Function
 
-Private Property Get DataRange(ByVal colName As String, _
+Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
                                Optional ByVal includeHeaders As Boolean = False, _
                                Optional ByVal strictSearch As Boolean = False) As Range
   Dim Lo As ListObject
   Set Lo = Table()
   Dim rng As Range
 
-  If Not ColumnExists(colName, strictSearch) Then Exit Property
-  If includeHeaders Then
-    Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).Range
+  If colName = "__all__" Then
+    If includeHeaders Then
+      Set rng = Lo.Range()
+    Else
+      Set rng = Lo.DataBodyRange()
+      If rng Is Nothing Then Set rng = Lo.HeaderRowRange.Offset(1)
+    End If
   Else
-    'DataBody range could be Nothing
-    On Error Resume Next
-    Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).DataBodyRange
-    On Error GoTo 0
-    'You can test here if it is Nothing, in that case the table is Empty, just return the second line
-    If rng Is Nothing Then Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).Range.Cells(2, 1)
+    If Not ColumnExists(colName, strictSearch) Then Exit Property
+    
+    If includeHeaders Then
+      Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).Range
+    Else
+      'DataBody range could be Nothing
+      On Error Resume Next
+      Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).DataBodyRange
+      On Error GoTo 0
+      'You can test here if it is Nothing, in that case the table is Empty, just return the second line
+      If rng Is Nothing Then Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).Range.Cells(2, 1)
+    End If
+  
   End If
+
   Set DataRange = rng
 End Property
 
@@ -367,7 +379,7 @@ Private Sub Import(ByVal impTab As Object, Optional ByVal pasteAtBottom As Boole
       
       'Resize to fit the number of required rows if needed
       If (nbImpRows > currDataRng.Rows.Count) And Not (pasteAtBottom) Then
-        Resize AddRows:=True, nbRows:= (currDataRng.Rows.Count - nbImpRows)
+        Resize AddRows:=True, nbRows:= (nbImpRows - currDataRng.Rows.Count)
         Set currDataRng = DataRange(headerValue)
       End If
 
@@ -535,7 +547,7 @@ Private Sub ICustomTable_SetValidation(ByVal colName As String, ByVal drop As ID
     SetValidation colName, drop, dropName, alertType
 End Sub
 
-Private Property Get ICustomTable_DataRange(ByVal colName As String, _
+Private Property Get ICustomTable_DataRange(Optional ByVal colName As String = "__all__", _
                                           Optional ByVal includeHeaders As Boolean = False, _
                                           Optional ByVal strictSearch As Boolean = False) As Range
   Set ICustomTable_DataRange = DataRange(colName, includeHeaders, strictSearch)
