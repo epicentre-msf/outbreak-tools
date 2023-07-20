@@ -35,6 +35,7 @@ Private Const METADATASHEET             As String = "Metadata"
 Private Const PASSWORDSHEET             As String = "__pass" 'password sheets
 Private Const TEMPSHEET                 As String = "temp__" 'temporary boggy sheet
 Private Const EXPORTSHEET               As String = "Exports"
+Private Const MESSTRANSLATIONSHEET      As String = "LinelistTranslation"
 
 Private this As TExpOut
 
@@ -72,6 +73,18 @@ Private Property Get outputWkb() As Workbook
   End If
 
   Set outputWkb = this.outwb
+End Property
+
+'Get the linelist Translation object, with all elements related
+'to translations at the linelist level
+Private Property Get LLTradsObject() As ILLTranslations
+  Dim currwb As Workbook
+
+  Set currwb = InputWkb()
+  Set LLTradsObject = LLTranslations.Create( _ 
+                          currwb.Worksheets(MESSTRANSLATIONSHEET), _
+                          currwb.Worksheets(DICTTRANSLATIONSHEET) _ 
+                        )
 End Property
 
 'Geobase export workbook
@@ -231,7 +244,12 @@ Private Sub AddMetaData(ByVal scope As Byte)
   Dim dict As ILLdictionary
   Dim sheetName As String
   Dim exportColumn As String
-
+  'Elements for adding custom choices to exports
+  Dim choi As ILLChoice
+  Dim Lo As ListObject
+  Dim LoValues As BetterArray
+  Dim lltrads As ILLTranslations
+  Dim choiName As String
 
   Set sheetNamesList = New BetterArray
   Set inpwb = InputWkb()
@@ -246,6 +264,22 @@ Private Sub AddMetaData(ByVal scope As Byte)
     'Then you can just use the export sub from the datasheet
     csData.Export toWkb:=outwb, Hide:=xlSheetVisible
   Next
+
+  'Add the dropdown choices for custom choices to export
+  Set choi = LLChoice.Create(outwb.Worksheets(CHOICESSHEET), 1, 1)
+  Set lltrads = LLTradsObject()
+  Set LoValues = New BetterArray
+  'Add each custom dropdown to the choice sheet
+  On Error Resume Next
+  Set sh = inpwb.Worksheets(lltrads.Value("customdropdown"))
+  For Each Lo in sh.ListObjects()
+    'Get the categories of the choice
+    LoValues.FromExcelRange Lo.Range.Cells(2, 1), DetectLastRow:=True, _ 
+            DetectLastColumn:=False
+    choiName = "__choice_custom_" & Lo.Range.Cells(1, 1).Value
+    choi.AddChoice choiName, LoValues
+  Next
+  On Error GoTo 0
 
   'Export dictionary of scope of the export
   Set sh = inpwb.Worksheets(DICTIONARYSHEET)
@@ -556,7 +590,8 @@ Private Sub CheckRequirements(ByVal currwb As Workbook)
   Set sheetsArray = New BetterArray
 
   sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, DICTTRANSLATIONSHEET, _
-                   METADATASHEET, PASSWORDSHEET, TEMPSHEET, EXPORTSHEET
+                   METADATASHEET, PASSWORDSHEET, TEMPSHEET, EXPORTSHEET, _ 
+                   MESSTRANSLATIONSHEET
 
   For counter = sheetsArray.LowerBound To sheetsArray.UpperBound
     sheetName = sheetsArray.Item(counter)
