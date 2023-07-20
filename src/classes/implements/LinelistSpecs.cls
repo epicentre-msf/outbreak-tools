@@ -244,37 +244,6 @@ Private Sub ReturnState()
     Application.EnableAnimations = True
 End Sub
 
-Private Sub AddCaseWhenToChoices()
-
-    Const CATEGORYPREFIX As String = "__case_when_"
-
-    Dim casewhenVars As BetterArray
-    Dim dict As ILLdictionary
-    Dim casewhenVariableName As String
-    Dim counter As Long
-    Dim casewhenObject As ICaseWhen
-    Dim casewhenFormula As String
-    Dim choi As ILLchoice
-    Dim vars As ILLVariables
-
-    Set dict = Dictionary()
-    Set choi = Choices()
-    Set vars = LLVariables.Create(dict)
-
-    'Add case_when to choices
-    Set casewhenVars = dict.Data.FilterData(varName:="control", criteriaName:="case_when", returnedColumnName:="variable name")
-    For counter = casewhenVars.LowerBound To casewhenVars.UpperBound
-        casewhenVariableName = casewhenVars.Item(counter)
-        casewhenFormula = vars.Value(varName:=casewhenVariableName, colName:="control details")
-'
-        Set casewhenObject = CaseWhen.Create(casewhenFormula)
-        'Test validity before parsing categories to choices
-        If casewhenObject.Valid() Then
-            choi.AddChoice choiceName:=CATEGORYPREFIX & casewhenVariableName, CategoriesData:=casewhenObject.Categories
-        End If
-    Next
-End Sub
-
 Private Sub Prepare()
 
     'Start Row of the dictionary
@@ -377,9 +346,6 @@ Private Sub Prepare()
 
     'Prepare the dictionary
     dict.Prepare PreservedSheetNames, geo, msgTrads, tablePrefix:="table"
-
-    'This sub adds case_when variables to choices (No more needed). Need to prepare the dictionary before
-    'AddCaseWhenToChoices
 
     'Add list auto to dictionary (in a recursive way)
     If Not dict.ColumnExists("list auto") Then AddListAuto
