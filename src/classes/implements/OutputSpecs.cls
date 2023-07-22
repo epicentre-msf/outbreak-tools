@@ -402,7 +402,7 @@ Private Sub AddVlistData(ByVal sheetName As String, ByVal headersList As BetterA
 
   'Counter on variables added
   headerCounter = 2
-
+  
   For counter = headersList.LowerBound To headersList.UpperBound
 
     'Get values from input sheet
@@ -413,16 +413,15 @@ Private Sub AddVlistData(ByVal sheetName As String, ByVal headersList As BetterA
       If useLabels Then varName = inpsh.Range(varName).Offset(, -1).Value
     On Error GoTo 0
 
-    'Write values to output sheet. I don't know if it suceeded in getting the value
-    'from the input sheet, that is why I test it before proceeding,
+    'Write values to output sheet. I don't know if it suceeded in getting 
+    'the value from the input sheet, that is why I test it before proceeding,
     'otherwise do nothing
 
-    If (varValue <> vbNullString) Then
-      outsh.Cells(headerCounter, 1).Value = varName
-      outsh.Cells(headerCounter, 2).Value = varValue
-      varValue = vbNullString
-      headerCounter = headerCounter + 1
-    End If
+    outsh.Cells(headerCounter, 1).Value = varName
+    outsh.Cells(headerCounter, 2).Value = varValue
+    varValue = vbNullString
+    headerCounter = headerCounter + 1
+    
   Next
 
 End Sub
