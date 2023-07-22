@@ -23,5 +23,10 @@ Public Sub ImportGeobase(Optional ByVal histoOnly As Boolean = False)
 End Sub
 
 'Import data for migrations
-Public Sub ImportMigration()
-End Sub
+Public Sub ImportMigration() : End Sub
+
+'Clear data in the current linelist
+Public Sub ClearData() : End Sub
+
+'Show the import report
+Public Sub ShowReport(): End Sub

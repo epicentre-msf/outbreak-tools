@@ -650,14 +650,20 @@ Private Sub Import(ByVal fromWkb As Workbook, Optional ByVal histoOnly As Boolea
 
     Set admNames = New BetterArray
     admNames.Push HISTOGEO, HISTOHF, METADATA
-    If Not histoOnly Then admNames.Push ADMIN1, ADMIN2, ADMIN3, ADMIN4, HF, NAMES
+    'Clear historic or all the geobase
+    If histoOnly Then
+        ClearHistoric
+    Else
+        Clear
+        admNames.Push ADMIN1, ADMIN2, ADMIN3, ADMIN4, HF, NAMES
+    End If
 
     Set sh = Wksh()
     'Separator for concatenate
     sep = " & " & chr(34) & " | " & chr(34) & " & "
 
     'Clear the Current Geo
-    Clear
+
     Translate rawNames:=True
 
     For Each impsh In fromWkb.Worksheets
@@ -681,7 +687,7 @@ Private Sub Import(ByVal fromWkb As Workbook, Optional ByVal histoOnly As Boolea
                     counter = counter + 1
                 Loop
                 'Add a concat table (for admin selections)
-                Set impRng = Lo.ListRows(1).Range
+                Set impRng = Lo.HeaderRowRange.Offset(1)
 
                 'Clear the adm concat range before writing the formulas.
                 
@@ -735,9 +741,16 @@ Private Sub Import(ByVal fromWkb As Workbook, Optional ByVal histoOnly As Boolea
                 End Select
 
                 'clear the concat range before resizing and setting the formula
-                Set concatRng = sh.Range(sh.Cells(2, hRng.Column + hRng.Cells.Count - 1),  _ 
-                                sh.Cells(Lo.Range.Rows.Count, hRng.Column + hRng.Cells.Count - 1))
-                concatRng.ClearContents
+                Set concatRng = sh.Range( _ 
+                                    sh.Cells(2,  _ 
+                                             hRng.Column + hRng.Cells.Count - 1), _ 
+                                    sh.Cells(Lo.Range.Rows.Count, _ 
+                                             hRng.Column + hRng.Cells.Count - 1) _ 
+                                )
+                'Clear the concat Range only if there is a concat formula
+                'You need to clear the concat Range before adding the formula
+                'Or resizing the listObject.
+                If concatFormula <> vbNullString Then concatRng.ClearContents
 
                 'I know that each geo listobject starts on the first line
                 Set actRng = sh.Range(sh.Cells(1, hRng.Column), sh.Cells(LastRow, hRng.Column + hRng.Cells.Count - 1))
@@ -745,9 +758,10 @@ Private Sub Import(ByVal fromWkb As Workbook, Optional ByVal histoOnly As Boolea
                 'Resize the listObject and add a concatenate formula
                 Lo.Resize actRng
 
-                If concatFormula <> vbNullString Then
-                    sh.Cells(impRng.Row, hRng.Column + hRng.Cells.Count - 1).formula = concatFormula
-                End If
+                If concatFormula <> vbNullString Then _
+                sh.Cells(impRng.Row, _ 
+                        hRng.Column + hRng.Cells.Count - 1).formula = _ 
+                        concatFormula
                 
             End If
         End With

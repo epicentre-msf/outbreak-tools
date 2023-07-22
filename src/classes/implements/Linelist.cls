@@ -527,7 +527,7 @@ Private Sub Prepare()
 
     'Transfer the forms
     codesList.Clear
-    codesList.Push "F_Advanced", "F_Export", "F_ExportMig", "F_Geo", "F_ImportMig", "F_ImportRep", _
+    codesList.Push "F_Advanced", "F_Export", "F_ExportMig", "F_Geo", "F_ImportRep", _
                      "F_ShowHideLL", "F_ShowHidePrint"
 
     For counter = codesList.LowerBound To codesList.UpperBound

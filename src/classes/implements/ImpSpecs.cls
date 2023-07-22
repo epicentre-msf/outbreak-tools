@@ -21,9 +21,6 @@ Private Type TImp
   currwb As Workbook
   repfobj As Object
   adfobj As Object
-  llFilePath As String
-  geoFilePath As String
-  geohistFilePath As String
   needReport As Boolean
 End Type
 
@@ -35,7 +32,7 @@ Private Const MESSTRANSLATIONSHEET      As String = "LinelistTranslation"
 Private Const METADATASHEET             As String = "Metadata"
 Private Const GEOSHEET                  As String = "Geo"
 Private Const PASSWORDSHEET             As String = "__pass" 'password sheets
-Private Const IMPREPORTSHEET               As String = "imp_rep__" 'temporary boggy sheet for report
+Private Const IMPREPORTSHEET               As String = "import_rep__" 'temporary boggy sheet for report
 Private Const SHOWHIDESHEET             As String = "show_hide__"
 Private Const UPDATESHEET               As String = "updates__"
 
@@ -47,7 +44,8 @@ Private IMPORTEDSHEETS                  As BetterArray
 'Exposed methods
 'repfobj is the form of the import Report
 'adfobj is the advanced form Object
-Public Function Create(ByVal repfobj As Object, ByVal adfobj As Object, ByVal currwb As Workbook) AS IImpSpecs
+Public Function Create(ByVal repfobj As Object, ByVal adfobj As Object, _ 
+                       ByVal currwb As Workbook) AS IImpSpecs
 
   CheckRequirements currwb, repfobj, adfobj
   
@@ -82,7 +80,7 @@ Public Property Set ReportFormObject(ByVal fobj As Object)
 End Property
 
 Public Property Get AdvanceFormObject() As Object
-  Set AdvanceFormObject = this.adobj
+  Set AdvanceFormObject = this.adfobj
 End Property
 
 Public Property Set AdvanceFormObject(ByVal fobj As Object)
@@ -94,9 +92,6 @@ Public Property Set CurrentWorkbook(ByVal currwb As Workbook)
 End Property
 
 Private Sub InitializeFileElements()
-  this.llFilePath = "__notset"
-  this.geoFilePath = "__notset"
-  this.geohistFilePath = "__notset"
 
   Set RESERVEDSHEETS = New BetterArray
   RESERVEDSHEETS.Push DICTIONARYSHEET, DICTTRANSLATIONSHEET, CHOICESSHEET, METADATASHEET
@@ -133,47 +128,14 @@ Private Sub SetNeedReportToTrue()
   If Not this.needReport Then this.needReport = True 
 End Sub
 
-'Get the file path. Scope can take up to 3 different values
-'linelist -- for the linelist import path
-'geobase -- for the geobase file path
-'geobase-historic -- for the geobase historic file path
-
-Private Property Get ImportFilePath(Optional Byval scope As String)
-
-  Dim filePath As String 'will save the file attribute in one variable
+'Get the file path.
+'File path for either geo, linelist or geobase historic
+Private Function ImportFilePath()
   Dim io As IOSFiles
-
-  filePath = Switch( _
-    scope = "linelist", this.llFilePath, _ 
-    scope = "geobase", this.geoFilePath, _ 
-    scope = "geobase-historic", this.geohistFilePath)
-
-  '__notset is a tag to inform about the path not initialized.
-  'The path name is initialized once.
-  If filePath = "__notset" Then
-
-    Set io = OSFiles.Create()
-    io.LoadFile "*.xlsx"
-    
-    If io.HasValidFile Then 
-    
-      filePath = io.File()
-      
-      Select Case scope
-      Case "linelist"
-        this.llFilePath = filePath
-      Case "geobase"
-        this.geoFilePath = filePath
-      Case "geobase-historic"
-        this.geohistFilePath = filePath
-      End Select
-
-    End If
-
-  End If
-
-  ImportFilePath = filePath
-End Property
+  Set io = OSFiles.Create()
+  io.LoadFile "*.xlsx"  
+  If io.HasValidFile Then ImportFilePath = io.File()
+End Function
 
 Private Property Get ReportSheet() As Worksheet
   Dim wb As Workbook
@@ -219,7 +181,7 @@ Private Property Get LLTradsObject() As ILLTranslations
   Dim currwb As Workbook
 
   Set currwb = CurrentWorkbook()
-  Set LLTradsObject() = LLTranslations.Create(currwb.Worksheets(MESSTRANSLATIONSHEET), _
+  Set LLTradsObject = LLTranslations.Create(currwb.Worksheets(MESSTRANSLATIONSHEET), _
                                      currwb.Worksheets(DICTTRANSLATIONSHEET))
 End Property
 
@@ -458,8 +420,8 @@ Private Sub ClearData()
     Case "VList"
       
       pass.UnProtect sh.Name
-      'The fourth column is where we write infos on vlist
-      sh.Columns(4).ClearContents
+      'The fifth column is where we write infos on vlist
+      sh.Columns(5).ClearContents
       pass.Protect sh.Name
 
     End Select
@@ -508,14 +470,18 @@ Private Sub ControlClearData(Optional ByVal forImports As Boolean = False)
                         trads.TranslatedValue("MSG_Delete"), _ 
                         trads.TranslatedValue("MSG_EnterWkbName"))
 
-      If inputwbName = Replace(currwb.Name, ".xlsb", vbNullString) Then
-
-          'Proceed only if the user is able to provide the name of the actual workbook, we can delete
-          goodName = True
-          ClearData
+      If (inputwbName = vbNullString) And (Not forImports) Then
+        Exit Do
+      ElseIf inputwbName = Replace(currwb.Name, ".xlsb", vbNullString) Then
+        
+        'Proceed only if the user is able to provide the name of the actual 
+        'workbook, we can delete
+        goodName = True
+        ClearData
 
       Else
-        'Bad workbook name: Ask again if the user is sure about deleting  the data before leaving
+        'Bad workbook name: Ask again if the user is sure about deleting  
+        'the data before leaving
         'In case the user is not sure, exit the do...while loop
         If MsgBox(trads.TranslatedValue("MSG_BadLLNameQ"), _ 
                   vbExclamation + vbYesNo, _ 
@@ -693,7 +659,7 @@ Private Sub ImportMigration()
   On Error GoTo ErrImport
 
   'Get the import Path
-  inPath = ImportFilePath("linelist")
+  inPath = ImportFilePath()
 
   'input the import Path: check if the file is valid, and exit if not
   'the case. Leave the advanced form as is to give the opportunity to re-do imports
@@ -787,61 +753,55 @@ Private Sub ImportGeobase(Optional ByVal histoOnly As Boolean = False)
   Dim impwb As Workbook
   Dim showhidesh As Worksheet
   Dim filePath As String
-  Dim pathTag As String
   Dim currwb As Workbook
   Dim trads As ITranslation
   Dim adfobj As Object
-
-  pathTag = IIf(histoOnly, "geobase-historic", "geobase")
+  
   Set trads = MessagesTrads()
 
-    On Error GoTo ErrImpGeo
+  On Error GoTo ErrImpGeo
 
     'Get the geobase file Path
-    filePath = ImportFilePath(pathTag)
+  filePath = ImportFilePath()
+  If filePath <> vbNullString Then
 
+    BusyApp
 
-    If filePath <> vbNullString Then
-      BusyApp
-      Set geo = GeoObject()
-      Set currwb = CurrentWorkbook()
-
-      'Open the geobase file
-      Set impwb = Workbooks.Open(filePath)
-      ActiveWindow.WindowState = xlMinimized
-
-      'Import elements of the file
-      geo.Import impwb, histoOnly
-
-      'Update the geobase names in the workbook and the dictionary, and show/hide
-      'If not on historic
-      If Not histoOnly Then
-        Set showhidesh = currwb.Worksheets(SHOWHIDESHEET)
-        Set pass = PasswordsObject()
-        Set dict = Dictionary()
-        'Update geobase headers in each HList worksheet
-        geo.Update pass
-        'Update dictionary geo variables
-        geo.UpdateDict dict
-        'Update show hide geo variables
-        geo.UpdateShowHide showhidesh, dict
-      End If
-
-      impwb.Close savechanges:=False
-
-      'Leaving the import process
-      If MsgBox( _
-            trads.TranslatedValue("MSG_FinishImportGeo"), _
-            vbQuestion + vbYesNo, trads.TranslatedValue("MSG_Imports") _ 
-            ) = vbYes Then
-        Set adfobj = AdvanceFormObject()
-        adfobj.Hide
-      End If
-
-      NotBusyApp
+    Set geo = GeoObject()
+    Set currwb = CurrentWorkbook()
+    'Open the geobase file
+    Set impwb = Workbooks.Open(filePath)
+    ActiveWindow.WindowState = xlMinimized
+    'Import elements of the file
+    geo.Import impwb, histoOnly
+    'Update the geobase names in the workbook and the dictionary, and show/hide
+    'If not on historic
+    If Not histoOnly Then
+      Set showhidesh = currwb.Worksheets(SHOWHIDESHEET)
+      Set pass = PasswordsObject()
+      Set dict = Dictionary()
+      'Update geobase headers in each HList worksheet
+      geo.Update pass
+      'Update dictionary geo variables
+      geo.UpdateDict dict
+      'Update show hide geo variables
+      geo.UpdateShowHide showhidesh, dict
+    End If
+    impwb.Close savechanges:=False
+    'Leaving the import process
+    If MsgBox( _
+          trads.TranslatedValue("MSG_FinishImportGeo"), _
+          vbQuestion + vbYesNo, _ 
+          trads.TranslatedValue("MSG_Imports") _ 
+          ) = vbYes Then
+      Set adfobj = AdvanceFormObject()
+      adfobj.Hide
     End If
 
-    Exit Sub
+    NotBusyApp
+
+  End If
+ Exit Sub
 
 ErrImpGeo:
   On Error Resume Next
@@ -898,19 +858,35 @@ Private Sub CheckRequirements(ByVal currwb As Workbook, ByVal repfobj As Object,
 
   
   'Errors managements
-  Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
+Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 515, CLASSNAME, _
      "Unable to create an instance of the class " & CLASSNAME & ": " & errorMessage
-  End Sub
-  
-  Private Sub ThrowError(ByVal errorMessage As String)
-      Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
-  End Sub
+End Sub
 
-  Private Sub IImpSpecs_ImportGeobase(Optional ByVal histoOnly As Boolean = False)
-    ImportGeobase histoOnly
-  End Sub
 
-  Private Sub IImpSpecs_ImportMigration()
-    ImportMigration
-  End Sub
+'Interfaces --------------------------------------------------------------------
+Private Sub ThrowError(ByVal errorMessage As String)
+  Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+End Sub
+
+Private Sub IImpSpecs_ImportGeobase(Optional ByVal histoOnly As Boolean = False)
+  ImportGeobase histoOnly
+End Sub
+
+Private Sub IImpSpecs_ImportMigration()
+  ImportMigration
+End Sub
+
+Private Sub IImpSpecs_ClearData()
+  BusyApp
+  ControlClearData
+  NotBusyApp
+End Sub
+
+Private Sub IImpSpecs_ShowReport()
+  Dim repObj As IImpRep
+  BusyApp
+  Set repObj = ReportObject()
+  repObj.Show
+  NotBusyApp
+End Sub
