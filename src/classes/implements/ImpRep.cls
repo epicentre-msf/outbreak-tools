@@ -23,7 +23,7 @@ Private Type TRep
   sorted As Boolean
 End Type
 
-Private this As TImp
+Private this As TRep
 Private Const CLASSNAME As String = "ImpRep"
 
 'ListObjects to have in the import sheet
@@ -315,35 +315,27 @@ Private Sub Show()
   Set sh = Wksh()
 
   Set Lo = sh.ListObjects(TABSHEETNOTIMP)
-  If Not Lo.DataBodyRange Is Nothing Then
-    Set rng = Lo.DataBodyRange
-    fobj.LST_ImpRepSheet.ColumnCount = 1
-    fobj.LST_ImpRepSheet.List = rng.Value
-  End If
+  Set rng = Lo.Range.Offset(1)
+  fobj.LST_ImpRepSheet.ColumnCount = 1
+  fobj.LST_ImpRepSheet.List = rng.Value
 
   'Sheets Not touched
   Set Lo =  sh.ListObjects(TABSHEETNOTTOU)
-  If Not Lo.DataBodyRange Is Nothing Then
-    Set rng = Lo.DataBodyRange
-    fobj.LST_ImpLLSheet.ColumnCount = 1
-    fobj.LST_ImpLLSheet.List = rng.Value
-  End If
+  Set rng = Lo.Range.Offset(1)
+  fobj.LST_ImpLLSheet.ColumnCount = 1
+  fobj.LST_ImpLLSheet.List = rng.Value
 
   'Variables Not Imported
   Set Lo = sh.ListObjects(TABSVARSNOTIMP)
-  If Not Lo.DataBodyRange Is Nothing Then
-    Set rng = Lo.DataBodyRange
-    fobj.LST_ImpRepVarImp.ColumnCount = 2
-    fobj.LST_ImpRepVarImp.List = rng.Value
-  End If
+  Set rng = Lo.Range.Offset(1)
+  fobj.LST_ImpRepVarImp.ColumnCount = 2
+  fobj.LST_ImpRepVarImp.List = rng.Value
 
   'Variable Not touched
   Set Lo = sh.ListObjects(TABSVARSNOTTOU)
-  If Not Lo.DataBodyRange Is Nothing Then
-    Set rng = Lo.DataBodyRange
-    fobj.LST_ImpRepVarLL.ColumnCount = 2
-    fobj.LST_ImpRepVarLL.List = rng.Value
-  End If
+  Set rng = Lo.Range.Offset(1)
+  fobj.LST_ImpRepVarLL.ColumnCount = 2
+  fobj.LST_ImpRepVarLL.List = rng.Value
 
   fobj.Show
 End Sub

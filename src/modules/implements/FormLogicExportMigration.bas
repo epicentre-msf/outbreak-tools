@@ -94,7 +94,12 @@ Private Sub CMD_ExportMig_Click()
 End Sub
 
 Private Sub CMD_ExportMigQuit_Click()
-    Me.Hide
+    F_ExportMig.Hide
+End Sub
+
+Private Sub LBL_Previous_Click()
+    F_ExportMig.Hide
+    F_Advanced.Show
 End Sub
 
 Private Sub UserForm_Initialize()

@@ -47,7 +47,9 @@ End Property
 Public Property Get GeoNames(ByVal admname As String) As String: End Property
 
 'Get the Population of one administrative level (only for geoType)
-Public Property Get Population(ByVal adminLevel As Byte, Optional ByVal concatValue As String = vbNullString) As String
+Public Property Get Population(ByVal adminLevel As Byte, _ 
+                             Optional ByVal concatValue As _
+                             String = vbNullString) As String
 End Property
 
 'Get the Population of one administrative level (only for geoType)
