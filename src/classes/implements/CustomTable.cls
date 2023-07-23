@@ -41,7 +41,6 @@ Public Function Create(ByVal Lo As ListObject, _
   End With
 End Function
 
-
 Public Property Get Self() As ICustomTable
   Set Self = Me
 End Property
@@ -52,7 +51,6 @@ Private Function Wksh() As Worksheet
   Set Lo = Table()
   Set Wksh = Lo.Parent
 End Function
-
 
 'Table listObject
 Public Property Get Table() As ListObject
@@ -121,7 +119,7 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
       Lo.Resize .Range(.Cells(loRowHeader, loColHeader), .Cells(loRowsEnd, loColsEnd))
       AddIds
     Else
-      Do While (rowCounter > loRowHeader + 1)
+      Do While (rowCounter > loRowHeader)
         If (Application.WorksheetFunction.COUNTA(.Rows(rowCounter)) <= totalRowCount) Then
           .Rows(rowCounter).EntireRow.Delete
           'update the end rows
@@ -129,6 +127,7 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
         End If
         rowCounter = rowCounter - 1
       Loop
+      loRowsEnd = Application.WorksheetFunction.Max(loRowsEnd, loRowHeader + 1)
       Lo.Resize .Range(.Cells(loRowHeader, loColHeader), .Cells(loRowsEnd, loColsEnd))
     End If
   End With
@@ -225,8 +224,10 @@ Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
       On Error Resume Next
       Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).DataBodyRange
       On Error GoTo 0
-      'You can test here if it is Nothing, in that case the table is Empty, just return the second line
-      If rng Is Nothing Then Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).Range.Cells(2, 1)
+      'You can test here if it is Nothing, in that case the table is Empty, 
+      'just return the second line
+      If rng Is Nothing Then _ 
+       Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).Range.Cells(2, 1)
     End If
   
   End If
@@ -240,7 +241,8 @@ Private Property Get HeaderRange() As Range
   Set HeaderRange = Lo.HeaderRowRange()
 End Property
 
-Private Property Get CellRange(ByVal colName As String, ByVal lineNum As Long) As Range
+Private Property Get CellRange(ByVal colName As String, _ 
+                               ByVal lineNum As Long) As Range
   Dim cellPos As Long
   Dim rng As Range
 
@@ -251,7 +253,8 @@ Private Property Get CellRange(ByVal colName As String, ByVal lineNum As Long) A
   Set CellRange = rng.Cells(cellPos, 1)
 End Property
 
-Private Property Get Value(ByVal colName As String, ByVal keyName As String) As String
+Private Property Get Value(ByVal colName As String, _ 
+                           ByVal keyName As String) As String
 
   Dim idRng As Range
   Dim colRng As Range
@@ -263,7 +266,8 @@ Private Property Get Value(ByVal colName As String, ByVal keyName As String) As 
 
   If IdValue = vbNullString Then Exit Property
 
-  If (Not ColumnExists(colName)) Or (Not ColumnExists(IdValue)) Then Exit Property
+  If (Not ColumnExists(colName)) Or _ 
+     (Not ColumnExists(IdValue)) Then Exit Property
   Set idRng = DataRange(IdValue)
   Set colRng = DataRange(colName)
   Set cellidRng = idRng.Cells(1, 1)
@@ -319,12 +323,14 @@ Private Sub Clean()
     totalCount = 1
   End If
   'Now resize the listObject
-  If Name() <> "Tab_Export" Then Resize AddRows:=False, totalRowCount:=totalCount
+  If Name() <> "Tab_Export" Then _ 
+  Resize AddRows:=False, totalRowCount:=totalCount
 End Sub
 
 'Import another custom table to this one
-
-Private Sub Import(ByVal impTab As Object, Optional ByVal pasteAtBottom As Boolean = False)
+Private Sub Import(ByVal impTab As Object, _ 
+                   Optional ByVal pasteAtBottom As Boolean = False, _ 
+                   Optional Byval strictColumnSearch As Boolean = False)
 
   Dim imphRng As Range
   Dim headerValue As String
@@ -337,8 +343,9 @@ Private Sub Import(ByVal impTab As Object, Optional ByVal pasteAtBottom As Boole
   Dim toClear As Boolean
   Dim startPastingRow As Long
 
-  If (TypeName(impTab) <> "DataSheet") And (TypeName(impTab) <> "CustomTable") Then _
-    Exit Sub
+  If (TypeName(impTab) <> "DataSheet") And _ 
+     (TypeName(impTab) <> "CustomTable") Then _
+      Exit Sub
 
   If (TypeName(impTab) = "CustomTable") Then
     'Test if the custom tables have the same name, otherwise exit.
@@ -361,14 +368,14 @@ Private Sub Import(ByVal impTab As Object, Optional ByVal pasteAtBottom As Boole
   startPastingRow = 1
 
   If pasteAtBottom Then 
-    Resize AddRows:=True, nbRows:=impTab.DataRange.Rows.Count
     startPastingRow = Table.DataBodyRange.Rows.Count + 1
+    Resize AddRows:=True, nbRows:=impTab.DataRange.Rows.Count
   End If
 
   For counter = 1 To imphRng.Columns.Count
     headerValue = imphRng.Cells(1, counter).Value
 
-    If ColumnExists(headerValue) Then
+    If ColumnExists(headerValue, strictColumnSearch) Then
       If (TypeName(impTab) = "CustomTable") Then
         Set impDataRng = impTab.DataRange(colName:=headerValue, strictSearch:=True)
       Else
@@ -384,7 +391,8 @@ Private Sub Import(ByVal impTab As Object, Optional ByVal pasteAtBottom As Boole
       End If
 
       'Add values if the range does not contains formulas. If the range contains formulas, do nothing
-      Set rng = sh.Range(currDataRng.Cells(startPastingRow, 1), currDataRng.Cells(startPastingRow + nbImpRows - 1, 1))
+      Set rng = sh.Range(currDataRng.Cells(startPastingRow, 1), _ 
+                         currDataRng.Cells(startPastingRow + nbImpRows - 1, 1))
       toClear = False
 
       On Error Resume Next
@@ -392,7 +400,9 @@ Private Sub Import(ByVal impTab As Object, Optional ByVal pasteAtBottom As Boole
       On Error GoTo 0
 
       If toClear Then
-        currDataRng.Cells.ClearContents
+        'Clear the cell content only and only there is no paste
+        'pasteAtBottom.
+        If Not pasteAtBottom Then currDataRng.Cells.ClearContents
         rng.Value = impDataRng.Value
       End If
     Else
@@ -409,15 +419,11 @@ End Property
 
 'Test if there are imports in the custom table
 Private Property Get HasColumnsNotImported() As Boolean
-
-  If this.hasImport Then
-    HasColumnsNotImported = Not (NOTIMPORTEDCOLUMNS.Length >= 1)
-  End If
-
+  If this.hasImport Then _
+  HasColumnsNotImported = (NOTIMPORTEDCOLUMNS.Length >= 1)
 End Property
 
 'Export a Custom Table to a Worksheet
-
 Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray)
 
   Dim counter As Long
@@ -426,9 +432,12 @@ Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray)
   Dim headerName As String
   Dim headerCounter As Long
 
-  If sh Is Nothing Then ThrowError "Unable to export custom table, sheet not initialized"
-  If headersList Is Nothing Then ThrowError "Unable to export custom table, headers list not initialized"
-  If headersList.Length = 0 Then ThrowError "Unable to export custom table, I don't know wich column to export (length of headers = 0)"
+  If sh Is Nothing Then ThrowError _ 
+   "Unable to export custom table, sheet not initialized"
+  If headersList Is Nothing Then ThrowError _ 
+   "Unable to export custom table, headers list not initialized"
+  If headersList.Length = 0 Then ThrowError _ 
+  "Unable to export custom table, I don't know wich column to export (length of headers = 0)"
 
   sh.Cells.Clear
   headerCounter = 1
@@ -486,7 +495,8 @@ Private Sub SortOnFirst(ByVal colName As String)
   'Update the number (where you will sort)
   hRng.Cells(1, hRng.Cells.Count + 1).Value = "__number"
   Set numRng = Lo.ListColumns(hRng.Cells.Count + 1).DataBodyRange
-  'Seems like sometimes the databodyrange of a new column could be empty in that case exit
+  'Seems like sometimes the databodyrange of a new column 
+  'could be empty in that case exit
   If numRng Is Nothing Then
     Lo.ListColumns(hRng.Cells.Count + 1).Delete
     Exit Sub
@@ -547,9 +557,10 @@ Private Sub ICustomTable_SetValidation(ByVal colName As String, ByVal drop As ID
     SetValidation colName, drop, dropName, alertType
 End Sub
 
-Private Property Get ICustomTable_DataRange(Optional ByVal colName As String = "__all__", _
-                                          Optional ByVal includeHeaders As Boolean = False, _
-                                          Optional ByVal strictSearch As Boolean = False) As Range
+Private Property Get ICustomTable_DataRange( _ 
+          Optional ByVal colName As String = "__all__", _
+          Optional ByVal includeHeaders As Boolean = False, _
+          Optional ByVal strictSearch As Boolean = False) As Range
   Set ICustomTable_DataRange = DataRange(colName, includeHeaders, strictSearch)
 End Property
 
@@ -560,8 +571,6 @@ End Property
 Private Property Get ICustomTable_CellRange(ByVal colName As String, ByVal lineNum As Long) As Range
   Set ICustomTable_CellRange = CellRange(colName, lineNum)
 End Property
-
-
 
 Private Property Get ICustomTable_HeaderRange() As Range
   Set ICustomTable_HeaderRange = HeaderRange()
@@ -585,9 +594,11 @@ Private Sub ICustomTable_Export(ByVal sh As Worksheet, _
 End Sub
 
 'Imports Functions
-Private Sub ICustomTable_Import(ByVal impTab As Object, _ 
-                                Optional ByVal pasteAtBottom As Boolean = False)
-  Import impTab, pasteAtBottom
+Private Sub ICustomTable_Import( _ 
+              ByVal impTab As Object, _ 
+              Optional ByVal pasteAtBottom As Boolean = False, _ 
+              Optional ByVal strictColumnSearch As Boolean = False)
+  Import impTab, pasteAtBottom, strictColumnSearch
 End Sub
 
 Private Property Get ICustomTable_ImportColumnsNotFound() As BetterArray
