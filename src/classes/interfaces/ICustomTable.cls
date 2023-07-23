@@ -28,7 +28,9 @@ Public Property Get Value(ByVal colName As String, ByVal keyName As String) As S
 
 
 Public Sub Import(ByVal impTab As Object, _
-                  Optional ByVal pasteAtBottom As Boolean = False): End Sub
+                  Optional ByVal pasteAtBottom As Boolean = False, _ 
+                  Optional ByVal strictColumnSearch As Boolean = False)
+End Sub
 Public Sub Clean(): End Sub
 Public Sub Sort(ByVal els As Variant): End Sub
 Public Sub AddRows(Optional ByVal nbRows As Long = 100): End Sub

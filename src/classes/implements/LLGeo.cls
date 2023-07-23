@@ -462,6 +462,8 @@ End Sub
 
 Private Sub ExportToFile(outputWkb As Workbook, Optional ByVal onlyHistory As Boolean = False)
 
+    Const METADATASHEET As String = "Metadata"
+
     Dim sh As Worksheet
     Dim tabl As BetterArray
     Dim outputRng As Range
@@ -482,13 +484,13 @@ Private Sub ExportToFile(outputWkb As Workbook, Optional ByVal onlyHistory As Bo
 
     With outputWkb
         'geo metadata
-        .Worksheets(1).Name = METADATA
+        .Worksheets(1).Name = METADATASHEET
         Set inputRng = sh.ListObjects("T_" & METADATA).Range
-        With .Worksheets(METADATA)
+        With .Worksheets(METADATASHEET)
             Set outputRng = .Range(.Cells(1, 1), .Cells(inputRng.Rows.Count, inputRng.Columns.Count))
         End With
         outputRng.Value = inputRng.Value
-        sheetName = METADATA
+        sheetName = METADATASHEET
 
         'Add the others tables to the worksheet
         For counter = tabl.LowerBound To tabl.UpperBound

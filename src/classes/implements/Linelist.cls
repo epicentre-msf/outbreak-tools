@@ -512,10 +512,9 @@ Private Sub Prepare()
     'Send the modules to the linelist
     codesList.Clear
     codesList.Push "Helpers", "LinelistConstants", "LinelistCustomFunctions", _
-                      "LinelistGeo", "LinelistMigration", _
-                     "LinelistTranslation", "LinelistEvents", "LinelistDictionary", _
-                      "EventsSpatialAnalysis", "EventsLinelistButtons", _
-                      "EventsGlobalAnalysis"
+                    "LinelistGeo", "LinelistTranslation", "LinelistEvents", _ 
+                    "EventsSpatialAnalysis", _
+                    "EventsLinelistButtons", "EventsGlobalAnalysis"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
