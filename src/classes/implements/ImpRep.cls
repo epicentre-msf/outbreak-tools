@@ -205,7 +205,7 @@ Private Sub AddVariablesListToReport(ByVal scope As Byte, ByVal sheetName As Str
 
   'Add the sheetNames
   For counter = endRow To varsList.Length + endRow - 1
-    Lo.Range.Cells(endRow, 2).Value = sheetName
+    Lo.Range.Cells(counter, 2).Value = sheetName
   Next
 
   'Resize the listObject

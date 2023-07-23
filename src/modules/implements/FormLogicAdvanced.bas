@@ -61,10 +61,15 @@ Private Sub CMD_ExportData_Click()
     ClickExportMigration
 End Sub
 
+'Import Migration Data
 Private Sub CMD_ImportData_Click()
-    Call ImportMigrationData
+    Dim impObj As IImpSpecs
+    Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], currwb)
+
+    impObj.ImportMigration
 End Sub
 
+'Import the Geobase
 Private Sub CMD_ImportGeo_Click()
     Dim impObj As IImpSpecs
     Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], currwb)
@@ -72,6 +77,7 @@ Private Sub CMD_ImportGeo_Click()
     impObj.ImportGeobase
 End Sub
 
+'Import historic geobase
 Private Sub CMD_ImportGeoHistoric_Click()
     Dim impObj As IImpSpecs
     Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], currwb)
@@ -79,10 +85,12 @@ Private Sub CMD_ImportGeoHistoric_Click()
     impObj.ImportGeobase histoOnly:=True
 End Sub
 
+'Leave the advanced form
 Private Sub CMD_ImportMigQuit_Click()
     F_Advanced.Hide
 End Sub
 
+'Show import report
 Private Sub CMD_ImportMigRep_Click()
     Dim impObj As IImpSpecs
     Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], currwb)
