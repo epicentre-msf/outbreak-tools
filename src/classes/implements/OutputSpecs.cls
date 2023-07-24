@@ -161,6 +161,7 @@ Private Sub Prepare()
   Dim outwb As Workbook
   Dim firstSheetName As String
   Dim expobj As ILLExport
+  Dim lltrads As ILLTranslations
 
   Dim counter As Long
   Dim prevSheetName As String
@@ -174,6 +175,7 @@ Private Sub Prepare()
   Set sheetNamesList = New BetterArray
   Set outwb = outputWkb()
   Set expobj = ExportObject()
+  Set lltrads = LLTradsObject()
 
   firstSheetName = outwb.Worksheets(1).Name
   scope = ActualScope()
@@ -227,9 +229,30 @@ Private Sub Prepare()
     End With
   Next
 
+  'Add Analysis Worksheets for analysis Exports
+  If (expobj.Value("export analysis", CInt(scope)) = "yes") Then
+    sheetNamesList.Clear
+    sheetNamesList.Push lltrads.Value("uasheet"), lltrads.Value("tssheet"), _ 
+                       lltrads.Value("spsheet"), lltrads.Value("sptsheet")
+    For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
+    With outwb
+      .Worksheets.Add(after:=.Worksheets(prevSheetName)).Name = _
+      sheetNamesList.Item(counter)
+      prevSheetName = sheetNamesList.Item(counter)
+      On Error Resume Next
+       inpwb.Worksheets(prevSheetName).Cells.Copy
+       RemoveGridLines .Worksheets(prevSheetName)
+       .Worksheets(prevSheetName).Cells.PasteSpecial xlPasteValues
+       .Worksheets(prevSheetName).Cells.PasteSpecial xlPasteFormats
+      On Error GoTo 0
+    End With
+    Next
+  End If
+
   'Delete the first sheet of the workbook
   outwb.Worksheets(firstSheetName).Delete
 End Sub
+
 
 Private Sub AddMetaData(ByVal scope As Byte)
 
@@ -622,6 +645,17 @@ Private Sub BusyApp()
   Application.EnableAnimations = False
 End Sub
 
+'Remove gridlines on exported analysis sheets
+Private Sub RemoveGridLines(ByVal sh As Worksheet, Optional DisplayZeros As Boolean = False)
+    Dim View As WorksheetView
+    For Each View In sh.Parent.Windows(1).SheetViews
+        If View.Sheet.Name = sh.Name Then
+            View.DisplayGridlines = False
+            View.DisplayZeros = DisplayZeros
+            Exit Sub
+        End If
+    Next
+End Sub
 
 'Errors managements
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)

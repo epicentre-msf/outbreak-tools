@@ -7,10 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Final linelist workbook"
 
-'@Folder("Linelist")
+'@Folder("Linelist Building")
 '@ModuleDescription("Final linelist workbook")
-'@IgnoreModule
+'@PredeclaredId
 
 Option Explicit
 Implements ILinelist
@@ -52,7 +53,7 @@ Public Property Set LinelistData(ByVal lData As ILinelistSpecs)
 End Property
 
 'Dictionary
-Public Property Get Dictionary() As ILLdictionary
+Private Property Get Dictionary() As ILLdictionary
     Dim lData As ILinelistSpecs
     Set lData = LinelistData()
     Set Dictionary = lData.Dictionary()
@@ -67,7 +68,7 @@ Private Sub BusyApp()
 End Sub
 
 'Workbook
-Public Property Get Wkb() As Workbook
+Private Property Get Wkb() As Workbook
     Dim mainobj As IMain
     Dim lData As ILinelistSpecs
     Dim outDir As String
@@ -143,12 +144,19 @@ End Property
 Private Sub AddOutputSheet(ByVal sheetName As String, _
                           Optional ByVal Hide As Long = xlSheetVeryHidden, _
                           Optional ByVal usePrinted As Boolean = False)
+
+    'Maximum Length for sheetName in excel is 31. If
+    'The sheet Length is > 31, I truncate the sheetName to firsts 30
+    'Characters.
+    Const SHEETNAMEMAXLENGTH As Integer = 30
+
     Dim outWkb As Workbook
     Dim actSheetName As String
 
     Set outWkb = Wkb()
     actSheetName = IIF(usePrinted, PRINTPREFIX & sheetName, sheetName)
-
+    'Truncate sheetnames to 30 characters
+    actSheetName = Left(actSheetName, SHEETNAMEMAXLENGTH)
     If sheetExists(actSheetName) Then ThrowError "The sheet " & actSheetName & " already exists in the output workbook"
     With outWkb
         .Worksheets.Add.Name = actSheetName
@@ -311,7 +319,7 @@ Public Sub TemporaryFolder(Optional Create As Boolean = True)
 End Sub
 
 'Transfert a form to the output workbook
-Public Sub TransferForm(formName As String)
+Private Sub TransferForm(formName As String)
     Dim outDir As String
     Dim lData As ILinelistSpecs
     Dim outWkb As Workbook
@@ -347,37 +355,43 @@ Public Sub TransferForm(formName As String)
     On Error GoTo 0
 End Sub
 
-'@Description("For some temporary sheets, add some range names")
-
-Private Sub PrepareTemporarySheets(ByVal updateSheetName As String, _ 
-                                   ByVal importRepSheetName As String)
+'On some temporary sheets, add some range names
+Private Sub PrepareTemporarySheets()
     Dim sh As Worksheet
     Dim outWkb As Workbook
     Dim rng As Range
+    Dim lData As ILinelistSpecs
+    Dim sheetName As String
+    Dim counter As Long
+    Dim namesArray As BetterArray
+    Dim actName As String
 
     Set outWkb = Wkb()
-    'On Update sheets
-    Set sh = outWkb.Worksheets(updateSheetName)
+    Set lData = LinelistData()
+    Set namesArray = New BetterArray
 
-    'Range to check if listAuto has been updated
-    sh.Cells(1, 1).Name = "RNG_UpdateListAuto"
+    'On Update sheets ----------------------------------------------------------
+    sheetName = lData.TemporarySheetName(TemporarySheetUpdates)
+    Set sh = outWkb.Worksheets(sheetName)
 
-    'Range to check if an import has been done
-    sh.Cells(3, 1).Name = "RNG_ImportDone"
+    'Range to check if:
+    '- listAuto has been updated
+    '- an import has been done
+    '- the geobase has been updated manually by the user
+    '.. You can add here some ranges for further analysis
+    namesArray.Clear
+    namesArray.Push "RNG_UpdateListAuto", "RNG_ImportDone", "RNG_GeoUpdateManual" 
+    Set rng = sh.Cells(1, 1)
+    For counter = namesArray.LowerBound To namesArray.UpperBound
+        rng.Name = namesArray.Item(counter)
+        Set rng = rng.Offset(2)
+    Next
 
-    'Check if the geobase has been updated manually by the user
-    sh.Cells(5, 1).Name = "RNG_GeoUpdateManual"
-
-
-
-    '... You can add here some ranges for further analysis
-
-    '----- Import report
+    'On Import report sheets ---------------------------------------------------
     'Create required tables for import report
-    Set sh = outWkb.Worksheets(importRepSheetName)
-
+    sheetName = lData.TemporarySheetName(TemporarySheetImport)
+    Set sh = outWkb.Worksheets(sheetName)
     With sh
-
         .Cells(1, 1).Value = "sheetNotImported"
         .Cells(1, 3).Value = "sheetNotTouched"
 
@@ -391,6 +405,7 @@ Private Sub PrepareTemporarySheets(ByVal updateSheetName As String, _
 
         'sheetNotImported ListObject
         Set rng = .Range(.Cells(1, 1), .Cells(2, 1))
+        
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "reptab_sheetsNotImp"
 
         'sheetsNot touched listObject
@@ -405,6 +420,34 @@ Private Sub PrepareTemporarySheets(ByVal updateSheetName As String, _
         Set rng = .Range(.Cells(1, 8), .Cells(2, 9))
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "reptab_varsNotTouch"
     End With
+
+    'Analysis Table IDs sheet --------------------------------------------------
+    sheetName = lData.TemporarySheetName(TemporarySheetAnalysis)
+    Set sh = outWkb.Worksheets(sheetName)
+    Set rng = sh.Range(sh.Cells(1, 1), sh.Cells(2, 1))
+    namesArray.Clear
+    namesArray.Push "GS_analysis_ids", "UA_analysis_ids", _ 
+                     "BA_analysis_ids", "TS_analysis_ids", _
+                     "SP_analysis_ids", "SPTEMP_analysis_ids" 
+    For counter = namesArray.LowerBound To namesArray.UpperBound
+        actName = namesArray.Item(counter)
+        'Add headers for table IDs
+        rng.Cells(1, 1).Value = actName
+        'Add ListObject for table IDs
+        sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "list_" & actName
+        Set rng = rng.Offset(, 2)
+    Next
+
+    'Add ranges for each of the analysis worksheets names (avoid using lltrads)
+    'UA and bivariate sheet, TS sheet, spatial sheet and spatio-temporal sheet
+    namesArray.Clear
+    namesArray.Push "RNG_SheetUAName", "RNG_SheetTSName", _ 
+                     "RNG_SheetSPName", "RNG_SheetSPTempName" 
+    Set rng = rng.Offset(, 2)
+    For counter = namesArray.LowerBound To namesArray.UpperBound
+        rng.Name = namesArray.Item(counter)
+        Set rng = rng.Offset(1)
+    Next
 End Sub
 
 'Prepare the Linelist by adding required worksheets
@@ -433,12 +476,14 @@ Private Sub Prepare()
     Set dict = lData.Dictionary()
     Set mainobj = lData.MainObject()
 
-
     'temporary sheet Names
-    sheetsList.Push lData.TemporarySheetName(TemporarySingle), lData.TemporarySheetName(TemporarySheetList), _
+    sheetsList.Push lData.TemporarySheetName(TemporarySingle), _ 
+        lData.TemporarySheetName(TemporarySheetList), _
         lData.TemporarySheetName(TemporarySheetUpdates), _
-        lData.TemporarySheetName(TemporarySheetAnalysis), lData.TemporarySheetName(TemporarySheetImport), _
-        lData.TemporarySheetName(TemporarySpatial), lData.TemporarySheetName(TemporaryShowHide)
+        lData.TemporarySheetName(TemporarySheetAnalysis), _ 
+        lData.TemporarySheetName(TemporarySheetImport), _
+        lData.TemporarySheetName(TemporarySpatial), _ 
+        lData.TemporarySheetName(TemporaryShowHide)
 
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         sheetName = sheetsList.Item(counter)
@@ -446,8 +491,7 @@ Private Sub Prepare()
     Next
 
     'Prepare the temporary sheets by adding required ranges
-    PrepareTemporarySheets lData.TemporarySheetName(TemporarySheetUpdates), _
-                            lData.TemporarySheetName(TemporarySheetImport)
+    PrepareTemporarySheets
 
     DoEvents
 
@@ -459,6 +503,7 @@ Private Sub Prepare()
     'Unique sheet Names (HList or VList)
     'Add the sheets for Bivariate Analysis, Time series and spatial Analysis
     AddOutputSheet trans.TranslatedValue("LLSHEET_CustomChoice"), xlsheetvisible
+    AddOutputSheet trans.TranslatedValue("LLSHEET_SpatioTemporalAnalysis"), xlsheetvisible
     AddOutputSheet trans.TranslatedValue("LLSHEET_SpatialAnalysis"), xlsheetvisible
     AddOutputSheet trans.TranslatedValue("LLSHEET_TemporalAnalysis"), xlsheetvisible
     AddOutputSheet trans.TranslatedValue("LLSHEET_Analysis"), xlsheetvisible
@@ -666,24 +711,24 @@ End Property
 
 
 'Exposed methods
-Public Sub ILinelist_Prepare()
+Private Sub ILinelist_Prepare()
     Prepare
 End Sub
 
-Public Function ILinelist_SheetExists(ByVal sheetName As String) As Boolean
+Private Function ILinelist_SheetExists(ByVal sheetName As String) As Boolean
     ILinelist_SheetExists = sheetExists(sheetName)
 End Function
 
-Public Sub ILinelist_AddOutputSheet(ByVal sheetName As String, _
+Private Sub ILinelist_AddOutputSheet(ByVal sheetName As String, _
                                     Optional ByVal Hide As Long = xlSheetVeryHidden, _
                                     Optional ByVal usePrinted As Boolean = False)
     AddOutputSheet sheetName, Hide, usePrinted
 End Sub
 
-Public Sub ILinelist_SaveLL()
+Private Sub ILinelist_SaveLL()
     SaveLL
 End Sub
 
-Public Sub ILinelist_ErrorManage()
+Private Sub ILinelist_ErrorManage()
     ErrorManage
 End Sub

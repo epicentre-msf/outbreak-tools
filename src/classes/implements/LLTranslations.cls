@@ -124,7 +124,15 @@ Private Property Get Value(ByVal tagName As String) As String
     Case "onfiltered"
          retVal = sh.Range("RNG_OnFiltered").Value
     Case "customdropdown"
-        retVal = sh.Range("RNG_CustomDrop").Value 
+        retVal = sh.Range("RNG_CustomDrop").Value
+    Case "uasheet"
+        retVal = sh.Range("RNG_UASheet").Value
+    Case "tssheet"
+        retVal = sh.Range("RNG_TSSheet").Value
+    Case "spsheet"
+        retVal = sh.Range("RNG_SPSheet").Value
+    Case "sptsheet"
+        retVal = sh.Range("RNG_SPTSheet").Value
     End Select
 
     On Error GoTo 0
@@ -196,7 +204,8 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     tablRng.Push "RNG_LLLanguage", "RNG_LLLanguageCode", "RNG_GoToSection", _
                  "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _
                  "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered", _ 
-                 "RNG_CustomDrop"
+                 "RNG_CustomDrop", "RNG_UASheet", "RNG_TSSheet", "RNG_SPSheet", _ 
+                 "RNG_SPTSheet"
 
     For counter = tablRng.LowerBound To tablRng.UpperBound
         rngName = tablRng.Item(counter)
@@ -270,7 +279,8 @@ Private Sub CheckRequirements(ByVal lltradsh As Worksheet, dtradsh As Worksheet)
     tablRng.Push "RNG_LLLanguage", "RNG_LLLanguageCode", "RNG_GoToSection", _
                  "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _
                  "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered", _ 
-                 "RNG_CustomDrop"
+                 "RNG_CustomDrop", "RNG_UASheet", "RNG_TSSheet", "RNG_SPSheet", _ 
+                 "RNG_SPTSheet"
     For counter = tablRng.LowerBound to tablRng.UpperBound
         RangeExists rngName:=tablRng.Item(counter), sh:=lltradsh
     Next

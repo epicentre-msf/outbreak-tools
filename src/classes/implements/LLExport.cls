@@ -49,6 +49,7 @@ Private Sub ArraysInitialize()
     Set SPECSHEADER = New BetterArray
     SPECSHEADER.Push "export number", "label button", "password", _
                      "status", "export metadata", "export translation", _
+                     "export pcode", "export analysis", _
                      "file format", "file name", "export header"
 End Sub
 
@@ -186,8 +187,6 @@ Private Property Get ExportFileName(ByVal scope As Byte, _
 
     ExportFileName = ClearChunk(outFile)
 End Property
-
-
 
 
 'Export specifications to another workbook
