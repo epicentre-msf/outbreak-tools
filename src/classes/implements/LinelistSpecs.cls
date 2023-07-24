@@ -175,21 +175,21 @@ Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As St
 
     Select Case scope
     Case TemporarySheetAnalysis
-        TemporarySheetName = "ana_temp__"
+        TemporarySheetName = "ana_tabnames__"
     Case TemporarySheetUpdates
         TemporarySheetName = "updates__" 'record informations on some updates
     Case TemporarySheetMetadata
         TemporarySheetName = "Metadata"
     Case TemporarySheetList
-        TemporarySheetName = "dropdown_lists__"
+        TemporarySheetName = "dropdown_lists__" 'Add dropdowns on the linelist
     Case TemporarySheetImport
         TemporarySheetName = "import_rep__" 'for import report
     Case TemporarySingle
-        TemporarySheetName = "temp__" 'temporary boggy sheet
+        TemporarySheetName = "temp__" 'temporary boggy sheet for future computations
     Case TemporaryShowHide
-        TemporarySheetName = "show_hide__"
+        TemporarySheetName = "show_hide__" 'Manage show/hide forms
     Case TemporarySpatial
-        TemporarySheetName = "spatial_tables__"
+        TemporarySheetName = "spatial_tables__" 'add tables for spatial analysis
     End Select
 End Property
 
