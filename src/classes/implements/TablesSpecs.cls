@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "analysis tables specifications"
 
-
+'@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("analysis tables specifications")
-'@IgnoreModule
 
 Option Explicit
 Implements ITablesSpecs
@@ -87,6 +87,8 @@ Public Property Get TableType() As AnalysisTablesType
         tType = TypeTimeSeries
     Case "spatial analysis"
         tType = TypeSpatial
+    Case "spatio-temporal analysis"
+        tType = TypeSpatioTemporal
     Case Else
         ThrowError "Could not find the table type [uni-bivariate, spatial or timeseries? :(]" & ".Actual type is : " & anaType
     End Select
@@ -103,7 +105,11 @@ Private Property Get SpatialTableTypes() As String
     Set lData = LinelistSpecifications
     Set dict = lData.Dictionary
 
-    rowVar = Value("row")
+    If TableType = TypeSpatioTemporal Then
+        rowVar = Value("column")
+    Else
+        rowVar = Value("row")
+    End If
 
     'Find the spatial table type.
     'Use the spatial table type only if the table is valid (you need to check it before)
@@ -141,6 +147,8 @@ Private Property Get TableId() As String
         prefix = "TS"
     Case TypeSpatial
         prefix = "SA"
+    Case TypeSpatioTemporal
+        prefix = "SPT"
     End Select
 
     TableId = prefix & "_tab" & lineNum
@@ -157,7 +165,7 @@ End Property
 Private Property Get HasPercent() As Boolean
     Select Case TableType
 
-    Case TypeGlobalSummary
+    Case TypeGlobalSummary, TypeSpatioTemporal
         HasPercent = False
     Case TypeUnivariate, TypeSpatial
         HasPercent = (Value("percentage") = "yes")
@@ -171,7 +179,7 @@ End Property
 Private Property Get HasTotal() As Boolean
     Select Case TableType
 
-    Case TypeGlobalSummary
+    Case TypeGlobalSummary, TypeSpatioTemporal
         HasTotal = False
     Case TypeUnivariate
         HasTotal = True
@@ -182,7 +190,6 @@ Private Property Get HasTotal() As Boolean
                     (Value("percentage") = "column")) And (Value("column") <> vbNullString)
     Case TypeSpatial
         HasTotal = (Value("column") <> vbNullString)
-
     End Select
 End Property
 
@@ -190,7 +197,7 @@ Public Property Get HasGraph() As Boolean
     Select Case TableType
     Case TypeGlobalSummary
         HasGraph = False
-    Case TypeUnivariate
+    Case TypeUnivariate , TypeSpatioTemporal
         HasGraph = (Value("graph") = "yes")
     Case TypeBivariate
         HasGraph = (Value("graph") = "percentage" Or Value("graph") = "values" Or Value("graph") = "both")
@@ -202,7 +209,7 @@ End Property
 Private Property Get HasMissing() As Boolean
     Select Case TableType
 
-    Case TypeGlobalSummary
+    Case TypeGlobalSummary, TypeSpatioTemporal
         HasMissing = False
     Case TypeUnivariate
         HasMissing = Value("missing") = "yes"
@@ -228,6 +235,7 @@ Public Property Get ValidTable() As Boolean
     Dim colControl As String
     Dim rowControl As String
     Dim vars As ILLVariables
+    Dim rowType As String
 
     Set lData = LinelistSpecifications
     Set dict = lData.Dictionary
@@ -241,24 +249,38 @@ Public Property Get ValidTable() As Boolean
 
     Select Case TableType
     Case TypeGlobalSummary
-        Valid = (Value("label") <> vbNullString) And (Value("function") <> vbNullString)
+        Valid = (Value("label") <> vbNullString) And _ 
+                (Value("function") <> vbNullString)
     Case TypeUnivariate
-        Valid = vars.Contains(rowVar) And (rowControl = "choice_manual" Or rowControl = "choice_formula")
+        Valid = vars.Contains(rowVar) And _ 
+                (rowControl = "choice_manual" Or rowControl = "choice_formula")
     Case TypeBivariate
         Valid = vars.Contains(rowVar) And vars.Contains(colVar) And _
-                                                                (colControl = "choice_manual" Or colControl = "choice_formula") And _
-                                                                (rowControl = "choice_manual" Or rowControl = "choice_formula")
+                (colControl = "choice_manual" Or colControl = "choice_formula") And _
+                (rowControl = "choice_manual" Or rowControl = "choice_formula")
     Case TypeTimeSeries
-        Valid = (colVar = vbNullString Or colControl = "choice_manual" Or colControl = "choice_formula") And  _ 
-        (vars.Value(colName:="variable type", varName:=rowVar) = "date")
+        rowType = vars.Value(colName:="variable type", varName:=rowVar)
+        Valid = (colVar = vbNullString Or  _ 
+                 colControl = "choice_manual" Or _ 
+                 colControl = "choice_formula") And _ 
+                (rowType = "date")
     Case TypeSpatial
-        Valid = (dict.VariableExists("adm1_" & rowVar) Or dict.VariableExists("hf_" & rowVar)) And _
-                (colVar = vbNullString Or colControl = "choice_manual" Or colControl = "choice_formula")
+        Valid = (dict.VariableExists("adm1_" & rowVar) Or _ 
+                 dict.VariableExists("hf_" & rowVar)) And _
+                (colVar = vbNullString Or _ 
+                 colControl = "choice_manual" Or _ 
+                 colControl = "choice_formula")
+
+    Case TypeSpatioTemporal
+         rowType = vars.Value(colName:="variable type", varName:=rowVar)
+         Valid = (dict.VariableExists("adm1_" & rowVar) Or _ 
+                 dict.VariableExists("hf_" & rowVar)) And _
+                 (rowType = "date")
+
     End Select
 
     ValidTable = Valid
 End Property
-
 
 Private Property Get Dictionary() As ILLdictionary
     Dim lData As ILinelistSpecs
@@ -381,64 +403,62 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Interface
-Public Property Get ITablesSpecs_TableType() As AnalysisTablesType
+Private Property Get ITablesSpecs_TableType() As AnalysisTablesType
     ITablesSpecs_TableType = TableType()
 End Property
 
-Public Property Get ITablesSpecs_RowCategories() As BetterArray
+Private Property Get ITablesSpecs_RowCategories() As BetterArray
     Set ITablesSpecs_RowCategories = Data("row")
 End Property
 
-Public Property Get ITablesSpecs_ColumnCategories() As BetterArray
+Private Property Get ITablesSpecs_ColumnCategories() As BetterArray
     Set ITablesSpecs_ColumnCategories = Data("column")
 End Property
 
-Public Property Get ITablesSpecs_Dictionary() As ILLdictionary
+Private Property Get ITablesSpecs_Dictionary() As ILLdictionary
     Set ITablesSpecs_Dictionary = Dictionary()
 End Property
 
-Public Property Get ITablesSpecs_TableId() As String
+Private Property Get ITablesSpecs_TableId() As String
     ITablesSpecs_TableId = TableId()
 End Property
 
-Public Property Get ITablesSpecs_isNewSection() As Boolean
+Private Property Get ITablesSpecs_isNewSection() As Boolean
     ITablesSpecs_isNewSection = isNewSection
 End Property
 
-Public Function ITablesSpecs_Value(ByVal colName As String) As String
+Private Function ITablesSpecs_Value(ByVal colName As String) As String
     ITablesSpecs_Value = Value(colName)
 End Function
 
-Public Property Get ITablesSpecs_HasTotal() As Boolean
+Private Property Get ITablesSpecs_HasTotal() As Boolean
     ITablesSpecs_HasTotal = HasTotal
 End Property
 
-Public Property Get ITablesSpecs_HasPercentage() As Boolean
+Private Property Get ITablesSpecs_HasPercentage() As Boolean
     ITablesSpecs_HasPercentage = HasPercent
 End Property
 
-Public Property Get ITablesSpecs_HasMissing() As Boolean
+Private Property Get ITablesSpecs_HasMissing() As Boolean
     ITablesSpecs_HasMissing = HasMissing
 End Property
 
-Public Property Get ITablesSpecs_HasGraph() As Boolean
+Private Property Get ITablesSpecs_HasGraph() As Boolean
     ITablesSpecs_HasGraph = HasGraph()
 End Property
 
-Public Property Get ITablesSpecs_Previous() As ITablesSpecs
+Private Property Get ITablesSpecs_Previous() As ITablesSpecs
     Set ITablesSpecs_Previous = Previous
 End Property
 
-Public Property Get ITablesSpecs_TableSectionId() As String
+Private Property Get ITablesSpecs_TableSectionId() As String
     ITablesSpecs_TableSectionId = TableSectionId
 End Property
 
-Public Property Get ITablesSpecs_ValidTable() As Boolean
+Private Property Get ITablesSpecs_ValidTable() As Boolean
     ITablesSpecs_ValidTable = ValidTable()
 End Property
 
-Public Property Get ITablesSpecs_SpatialTableTypes() As String
+Private Property Get ITablesSpecs_SpatialTableTypes() As String
     ITablesSpecs_SpatialTableTypes = SpatialTableTypes()
 End Property
-
-
