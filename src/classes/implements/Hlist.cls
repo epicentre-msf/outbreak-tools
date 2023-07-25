@@ -184,6 +184,7 @@ Public Sub Build()
     Dim Lo As ListObject
     Dim printsh As Worksheet
     Dim mainobj As IMain
+    Dim pivotObj As ICustomPivotTables
 
     Set sh = Wksh()
     Set dict = Dictionary()
@@ -194,6 +195,7 @@ Public Sub Build()
     Set drop = ll.Dropdown()
     Set pass = lData.Password()
     Set mainobj = lData.MainObject()
+    Set pivotObj = ll.Pivots()
     sheetName = Name()
 
     'Add Printed Worksheet before building
@@ -360,9 +362,10 @@ Public Sub Build()
         design.ApplyFormat rng, scope:= HListPrintedHeader
     End With
 
+    'Create the corresponding pivot table for the Hlist table
+    pivotObj.Add  sheetName, tableName, trads.TranslatedValue("MSG_PivotTable")
 
-
-    'FILTERED WORKSHEET --------------------------------------------------------
+    'FILTERED WORKSHEET
 
     'Define the same listObject to the filtered worksheet
     ll.AddOutputSheet FILTEREDPREFIX & sheetName, xlSheetVeryHidden
@@ -381,7 +384,7 @@ Public Sub Build()
     design.ApplyFormat rng, scope:=LinelistHiddenCell
 
 
-    'Transfert code to the worksheet
+    'Transfert code to the HList worksheet
     TransferCodeWksh
 
     'Add editing range for sorting
@@ -389,7 +392,7 @@ Public Sub Build()
     'Range:=Range(tableName & "[#All]")
 
     'Protect the worksheet
-    pass.Protect "_active"
+    pass.Protect sheetName
 End Sub
 
 'Error

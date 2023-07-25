@@ -24,6 +24,9 @@ End Property
 Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
 End Property
 
+Public Property Get Pivots() As ICustomPivotTables
+End Property
+
 Public Property Get LinelistData() As ILinelistSpecs: End Property
 Public Property Get Dictionary() As ILLdictionary: End Property
 

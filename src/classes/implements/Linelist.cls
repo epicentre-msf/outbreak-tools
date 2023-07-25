@@ -140,6 +140,19 @@ Private Property Get Dropdown(Optional ByVal scope As Byte = 1) _
     Set Dropdown = drop
 End Property
 
+'Get the pivot tables Object
+Private Property Get Pivots() As ICustomPivotTables
+    Dim sh As Worksheet
+    Dim sheetName As String
+    Dim lData As ILinelistSpecs
+    Dim trans As ITranslation
+    Set lData = LinelistData()
+    Set trans = lData.TransObject()
+    sheetName = trans.TranslatedValue("LLSHEET_CustomPivotTable")
+    Set sh = Wksh(sheetName)
+    Set Pivots = CustomPivotTables.Create(sh)
+End Property
+
 'Add worksheets to workbook
 Private Sub AddOutputSheet(ByVal sheetName As String, _
                           Optional ByVal Hide As Long = xlSheetVeryHidden, _
@@ -506,7 +519,7 @@ Private Sub Prepare()
     sheetsList.Clear
     sheetsList.Push "LLSHEET_Analysis", "LLSHEET_TemporalAnalysis", _  
                     "LLSHEET_SpatialAnalysis", "LLSHEET_SpatioTemporalAnalysis", _
-                    "LLSHEET_CustomChoice"
+                    "LLSHEET_CustomChoice", "LLSHEET_CustomPivotTable"
 
     'Reverse the order to keep the same sheet order in the linelist.
     sheetsList.Reverse
@@ -514,7 +527,7 @@ Private Sub Prepare()
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         sheetName = trans.TranslatedValue(sheetsList.Item(counter))
         AddOutputSheet sheetName, xlsheetvisible
-    Next    
+    Next
 
     sheetsList.Clear
     
@@ -582,7 +595,8 @@ Private Sub Prepare()
 
     'Transfer the forms
     codesList.Clear
-    codesList.Push "F_Advanced", "F_Export", "F_ExportMig", "F_Geo", "F_ImportRep", _
+    codesList.Push   "F_Advanced", "F_Export", "F_ExportMig", _ 
+                     "F_Geo", "F_ImportRep", _
                      "F_ShowHideLL", "F_ShowHidePrint"
 
     For counter = codesList.LowerBound To codesList.UpperBound
@@ -700,26 +714,30 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Properties
-Public Property Get ILinelist_Wksh(ByVal sheetName As String) As Worksheet
+Private Property Get ILinelist_Wksh(ByVal sheetName As String) As Worksheet
     Set ILinelist_Wksh = Wksh(sheetName)
 End Property
 
-Public Property Get ILinelist_PrintWksh(ByVal sheetName As String) As Worksheet
+Private Property Get ILinelist_PrintWksh(ByVal sheetName As String) As Worksheet
     Set ILinelist_PrintWksh = Wksh(sheetName, usePrinted:=True)
 End Property
 
-Public Property Get ILinelist_LinelistData() As ILinelistSpecs
+Private Property Get ILinelist_LinelistData() As ILinelistSpecs
     Set ILinelist_LinelistData = LinelistData()
 End Property
 
-Public Property Get ILinelist_Dictionary() As ILLdictionary
+Private Property Get ILinelist_Dictionary() As ILLdictionary
     Set ILinelist_Dictionary = Dictionary()
 End Property
 
-Public Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
+Private Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
     Set ILinelist_Dropdown = Dropdown(scope)
 End Property
 
+'PivotTables Object
+Private Property Get ILinelist_Pivots() As ICustomPivotTables
+    Set ILinelist_Pivots = Pivots()
+End Property
 
 'Exposed methods
 Private Sub ILinelist_Prepare()

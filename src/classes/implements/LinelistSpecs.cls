@@ -335,14 +335,24 @@ Private Sub Prepare()
     Set PreservedSheetNames = New BetterArray
     PreservedSheetNames.LowerBound = 1
     PreservedSheetNames.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
-                             PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
-                             EXPORTSHEET, TemporarySheetName(TemporarySingle), TemporarySheetName(TemporarySheetList), _
-                             TemporarySheetName(TemporarySheetUpdates), TemporarySheetName(TemporarySheetMetadata), _
-                             TemporarySheetName(TemporarySheetAnalysis), TemporarySheetName(TemporarySheetImport), _
-                             TemporarySheetName(TemporarySpatial), TemporarySheetName(TemporaryShowHide), _
-                             msgTrads.TranslatedValue("LLSHEET_Admin"), msgTrads.TranslatedValue("LLSHEET_Analysis"), _
-                             msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), msgTrads.TranslatedValue("LLSHEET_TemporalAnalysis"), _
-                             msgTrads.TranslatedValue("LLSHEET_CustomChoice")
+                             PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, _  
+                             HLISTTRANSLATIONSHEET, _
+                             EXPORTSHEET, _ 
+                             TemporarySheetName(TemporarySingle), _ 
+                             TemporarySheetName(TemporarySheetList), _
+                             TemporarySheetName(TemporarySheetUpdates), _ 
+                             TemporarySheetName(TemporarySheetMetadata), _
+                             TemporarySheetName(TemporarySheetAnalysis), _ 
+                             TemporarySheetName(TemporarySheetImport), _
+                             TemporarySheetName(TemporarySpatial), _ 
+                             TemporarySheetName(TemporaryShowHide), _
+                             msgTrads.TranslatedValue("LLSHEET_Admin"), _ 
+                             msgTrads.TranslatedValue("LLSHEET_Analysis"), _
+                             msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), _ 
+                             msgTrads.TranslatedValue("LLSHEET_TemporalAnalysis"), _
+                             msgTrads.TranslatedValue("LLSHEET_CustomChoice"), _ 
+                             msgTrads.TranslatedValue("LLSHEET_CustomPivotTable"), _ 
+                             msgTrads.TranslatedValue("LLSHEET_SpatioTemporalAnalysis")
 
     'Prepare the dictionary
     dict.Prepare PreservedSheetNames, geo, msgTrads, tablePrefix:="table"
