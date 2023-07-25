@@ -61,7 +61,7 @@ End Property
 
 'Get univariate, time series or spatial sheets or spatio temporal sheets
 'analysisName can take up to 4 values: ua for univariate, ts for time series
-'sp for spatial and sptemp for spatio-temporal
+'sp for spatial and sptemp for spatio-temporal.
 Private Property Get AnalysisSheet(ByVal analysisName As String) As Worksheet
 
   Dim rngName As String
@@ -85,7 +85,7 @@ Private Property Get AnalysisSheet(ByVal analysisName As String) As Worksheet
 End Property
 
 'Add a table Id to a Worksheet
-Private Sub AddTable(ByVal tabObj As ITableSpecs)
+Private Sub AddTable(ByVal specs As ITableSpecs)
 
   Dim tabId As String
   Dim tabType As Byte
@@ -95,7 +95,7 @@ Private Sub AddTable(ByVal tabObj As ITableSpecs)
   Dim rng As Range
 
   Set sh = Wksh()
-  tabType = tabObj.TableType()
+  tabType = specs.TableType()
 
   Select Case tabType
   Case TypeGlobalSummary
@@ -123,6 +123,12 @@ Private Sub AddTable(ByVal tabObj As ITableSpecs)
                        Lo.Range.Cells(Lo.Range.Rows.Count + 1, 1))
     Lo.Resize rng
   End If
+End Sub
+
+Private Sub TransferRange(ByVal rngName As String, ByVal tag As String, _ 
+                          ByVal outsh As Worksheet)
+  
+
 End Sub
 
 'Export a table to a worksheet
@@ -173,11 +179,13 @@ Private Sub ExportTable(ByVal tabId As String, ByVal outsh As String)
        Set outRng = outsh.Range(inRng.Address)
        outRng.Value = inRng.Value
        outRng.Font.Bold = inRng.Font.Bold
-       outRng.Font.Color = inRng.Font.Color
     End If
 
     'StartRow
     If RangeExists(anash, "STARTROW_"& tabId) Then
+      Set inRng = anash.Range("STARTROW_" & tabId)
+      Set outRng = outsh.Range(inRng.Address)
+      outRng.Value = 
 
     End If
 
@@ -252,18 +260,8 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     'actual Range name
     actName = loArray.Item(counter)
     Set anash = Nothing
-
     If Not RangeExists(sh, actName) Then
       ThrowError "Unable to instanciate AnaTabIds class. Range " & actName & " is missing."
-    End If
-    
-    'Test if Provided worksheets exists in current workbook
-    On Error Resume Next
-    Set anash = wb.Worksheets(actName)
-    On Error GoTo 0
-    If anash Is Nothing Then 
-      ThrowError "Unable to instanciate AnaTabIds class" & _ 
-      "The sheet name " & actName & " is not present in the current workbook."
     End If
   Next
 End Sub
