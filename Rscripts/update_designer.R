@@ -42,4 +42,4 @@ update_designer(update_status = 0) #nolint
 #update the file on root
 update_designer(update_status = 1) #nolint
 #copy the mock file for development
-#update_designer(update_status = 3)
+update_designer(update_status = 3)
