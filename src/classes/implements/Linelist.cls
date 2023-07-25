@@ -442,7 +442,7 @@ Private Sub PrepareTemporarySheets()
     'UA and bivariate sheet, TS sheet, spatial sheet and spatio-temporal sheet
     namesArray.Clear
     namesArray.Push "RNG_SheetUAName", "RNG_SheetTSName", _ 
-                     "RNG_SheetSPName", "RNG_SheetSPTempName" 
+                    "RNG_SheetSPName", "RNG_SheetSPTempName" 
     Set rng = rng.Offset(, 2)
     For counter = namesArray.LowerBound To namesArray.UpperBound
         rng.Name = namesArray.Item(counter)
@@ -500,19 +500,30 @@ Private Sub Prepare()
 
     DoEvents
 
-    'Unique sheet Names (HList or VList)
-    'Add the sheets for Bivariate Analysis, Time series and spatial Analysis
-    AddOutputSheet trans.TranslatedValue("LLSHEET_CustomChoice"), xlsheetvisible
-    AddOutputSheet trans.TranslatedValue("LLSHEET_SpatioTemporalAnalysis"), xlsheetvisible
-    AddOutputSheet trans.TranslatedValue("LLSHEET_SpatialAnalysis"), xlsheetvisible
-    AddOutputSheet trans.TranslatedValue("LLSHEET_TemporalAnalysis"), xlsheetvisible
-    AddOutputSheet trans.TranslatedValue("LLSHEET_Analysis"), xlsheetvisible
-    
+    'Add the sheets for Bivariate Analysis, Time series and spatial,
+    'Spatio-temporal Analysis As well as custom sheets (custom choices)
 
     sheetsList.Clear
-    Set sheetsList = dict.UniqueValues("sheet name")
+    sheetsList.Push "LLSHEET_Analysis", "LLSHEET_TemporalAnalysis", _  
+                    "LLSHEET_SpatialAnalysis", "LLSHEET_SpatioTemporalAnalysis", _
+                    "LLSHEET_CustomChoice"
+
+    'Reverse the order to keep the same sheet order in the linelist.
     sheetsList.Reverse
 
+    For counter = sheetsList.LowerBound To sheetsList.UpperBound
+        sheetName = trans.TranslatedValue(sheetsList.Item(counter))
+        AddOutputSheet sheetName, xlsheetvisible
+    Next    
+
+    sheetsList.Clear
+    
+    'Unique sheet Names List(HList or VList)
+    Set sheetsList = dict.UniqueValues("sheet name")
+    
+    'Important to reverse to keep the worksheets in the same order as
+    'in the dictionary
+    sheetsList.Reverse
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         sheetName = sheetsList.Item(counter)
         AddOutputSheet sheetName, xlsheetvisible
