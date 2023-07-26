@@ -660,5 +660,5 @@ End Sub
 Public Sub ClickOpenVarLab()
 
     'This will open the form with variable name and variable labels for
-    
+    [F_ShowVarLabels].Show
 End Sub
