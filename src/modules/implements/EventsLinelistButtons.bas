@@ -654,3 +654,11 @@ Public Sub ClickExportMigration()
         AfterFirstClicMig = True
     End If
 End Sub
+
+'@Description("For each table, show the variables and corresponding labels")
+'@EntryPoint
+Public Sub ClickOpenVarLab()
+
+    'This will open the form with variable name and variable labels for
+    
+End Sub

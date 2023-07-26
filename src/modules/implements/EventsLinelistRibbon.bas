@@ -140,3 +140,9 @@ End Sub
 Public Sub clickRibbonPrintLL(ByRef control As IRibbonControl)
     ClickPrintLL
 End Sub
+
+'@Description("Callback for btnOpenLab onAction")
+'@EntryPoint
+Public Sub clickRibbonOpenVarLab(ByRef control As IRibbonControl)
+    ClickOpenVarLab
+End Sub
