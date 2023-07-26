@@ -305,10 +305,10 @@ Attribute PrepareToDeployment.VB_Description = "Hide some worksheets before depl
     CopyCodes "FormLogicShowHidePrint", "F_ShowHidePrint"
     CopyCodes "FormLogicGeo", "F_Geo"
     CopyCodes "FormLogicExport", "F_Export"
-    CopyCodes "FormLogicImport", "F_ImportMig"
     CopyCodes "FormLogicAdvanced", "F_Advanced"
     CopyCodes "FormLogicExportMigration", "F_ExportMig"
     CopyCodes "FormLogicImportRep", "F_ImportRep"
+    CopyCodes "FormLogicShowVarLabels", "F_ShowVarLabels"
 
 End Sub
 
@@ -365,7 +365,8 @@ Public Sub RemoveSub()
     excludesList.Push "EventsDesignerRibbon", "DevModule", "DropdownLists", "IDropdownLists", _
                       "BetterArray", "OSFiles", "IOSFiles", "LLGeo", "ILLGeo", "Translation", "ITranslation", _
                       "DesTranslation", "IDesTranslation", "Main", "IMain", "CustomTable", "ICustomTable", _
-                      "LLTranslations", "ILLTranslations", "LLPasswords", "ILLPasswords"
+                      "LLTranslations", "ILLTranslations", "LLPasswords", "ILLPasswords", "LLdictionary", "ILLdictionary", _
+                      "DataSheet", "IDataSheet"
 
     For locounter = LoList.LowerBound To LoList.UpperBound
         codesList.FromExcelRange sh.ListObjects(LoList.Item(locounter)).DataBodyRange
