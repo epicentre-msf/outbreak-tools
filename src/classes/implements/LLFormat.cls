@@ -293,7 +293,7 @@ Private Sub PreparePrintSheet(ByVal sh As Worksheet)
     On Error GoTo 0
 End Sub
 
-Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
+Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Integer)
 
     Dim rng As Range
     Dim cellRng As Range
@@ -348,6 +348,21 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Format
         sh.Cells.EntireRow.RowHeight = 20
         sh.Rows("1:4").EntireRow.RowHeight = 15
         PreparePrintSheet sh
+    
+    Case HListCustomPivotTables
+        If (Not TypeName(formattingObject) = "Worksheet") Then Exit Sub
+        
+        Set sh = formattingObject
+
+        If Not IsEmpty(sh.Cells(1, 1).Value) And (sh.Cells(1, 2).Value <> "formated") Then
+            RemoveGridLines sh, DisplayZeros:=True
+            sh.Cells.EntireRow.RowHeight = 20
+            sh.Visible = xlSheetVisible
+            sh.Cells(1, 2).Value = "formated"
+            sh.Cells(1, 2).Font.Color = vbWhite
+        ElseIf IsEmpty(sh.Cells(1, 1).Value) Then
+            sh.Visible = xlSheetVeryHidden
+        End If
 
     Case AnalysisSection
 

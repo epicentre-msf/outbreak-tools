@@ -503,10 +503,10 @@ Private Sub Prepare()
         AddOutputSheet sheetName, xlSheetVeryHidden
     Next
 
+    DoEvents
+
     'Prepare the temporary sheets by adding required ranges
     PrepareTemporarySheets
-
-    DoEvents
 
     'Export differents parts to the workbook (dictionary, choices, translation, geo)
     lData.export outWkb
@@ -542,6 +542,7 @@ Private Sub Prepare()
         AddOutputSheet sheetName, xlsheetvisible
     Next
 
+
     'Add admin sheet only if the user chooses buttons instead of ribbon linelist
     If Not mainobj.HasTemplate() Then
         'Admin sheet Name
@@ -576,6 +577,7 @@ Private Sub Prepare()
         codeName = codesList.Item(counter)
         TransferCode codeName, codeScopeClass
     Next
+
     DoEvents
 
     'Send the modules to the linelist

@@ -21,3 +21,7 @@ Public Sub Add(ByVal title As String, _
                ByVal tablename As String, _ 
                Optional ByVal pivotName As String = "Pivot Table")
 End Sub
+
+'Format the custom pivot table worksheet
+Public Sub Format(ByVal design As ILLFormat)
+End Sub
