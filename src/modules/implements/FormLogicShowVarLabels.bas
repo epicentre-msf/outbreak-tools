@@ -23,7 +23,6 @@ Private Sub InitializeTrads()
     Set tradform = lltrads.TransObject(TranslationOfForms)
 End Sub
 
-
 Private Sub CMD_Back_Click()
     F_ShowVarLabels.Hide
 End Sub
@@ -37,6 +36,6 @@ Private Sub UserForm_Initialize()
     Me.Caption = tradform.TranslatedValue(Me.Name)
     tradform.TranslateForm Me
 
-    Me.width = 700
-    Me.height = 500
+    Me.width = 650
+    Me.height = 600
 End Sub

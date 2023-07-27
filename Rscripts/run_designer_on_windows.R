@@ -22,7 +22,7 @@ set_path <- function(file_name, out_path = outbreak_tools_path) {
 
 designer_path <- set_path("designer.xlsb")
 setup_path <- set_path("input/outbreak-tools-setup/setup.xlsb")
-#The geobase is optional
+# The geobase is optional
 geo_path <- set_path("input/geobase/geobase_obt_yem_20230112.xlsx")
 output_dir <- set_path("output")
 linelist_name <- shQuote("rinterface_test") # Name of the linelist file
@@ -31,10 +31,12 @@ linelist_lang <- shQuote("English") # Language of the linelist interface
 
 # Sending code to the designer
 
-cmd <- glue::glue("{outbreak_tools_path}/Rscripts/rundesigner.vbs",
-                  " {designer_path} {geo_path} {setup_path}",
-                  " {output_dir} {linelist_name}",
-                  " {setup_lang} {linelist_lang}")
+cmd <- glue::glue(
+  "{outbreak_tools_path}/Rscripts/rundesigner.vbs",
+  " {designer_path} {geo_path} {setup_path}",
+  " {output_dir} {linelist_name}",
+  " {setup_lang} {linelist_lang}"
+)
 
 
 # run the shell command
