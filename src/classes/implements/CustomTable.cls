@@ -349,7 +349,7 @@ Private Sub Import(ByVal impTab As Object, _
 
   If (TypeName(impTab) = "CustomTable") Then
     'Test if the custom tables have the same name, otherwise exit.
-    If Name() <> impTab.Name() Then Exit Sub
+    If LCase(Name()) <> LCase(impTab.Name()) Then Exit Sub
   End If
 
   'Initialize and Clear the private variable NOTIMPORTEDCOLUMNS
