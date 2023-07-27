@@ -132,13 +132,13 @@ Attribute clickImpTrans.VB_Description = "Callback for btnTransAdd onAction: Imp
     Set loListName = New BetterArray
     Set tradsSheetsList = New BetterArray
 
-    io.LoadFile "*.xlsb"
+    io.LoadFile "*.xlsx"
     If io.HasValidFile() Then
         BusyApp
 
         tradsSheetsList.Push LINELISTTRADSHEET, DESIGNERTRADSHEET
-        loListName.Push "T_TradLLShapes", "T_TradLLMsg", "T_TradLLForms", "T_TradLLRibbon", _
-                        "T_tradMsg", "T_tradRange", "T_tradShape"
+        loListName.Push "t_tradllshapes", "t_tradllmsg", "t_tradllforms", "t_tradllribbon", _
+                        "t_tradmsg", "t_tradrange", "t_tradshape"
         Set impwb = Workbooks.Open(io.File())
 
         For counter = tradsSheetsList.LowerBound To tradsSheetsList.UpperBound
@@ -147,7 +147,7 @@ Attribute clickImpTrans.VB_Description = "Callback for btnTransAdd onAction: Imp
             On Error GoTo ExitTrads
             Set impsh = impwb.Worksheets(sheetName)
             For Each actLo In actsh.ListObjects
-                If loListName.includes(actLo.Name) Then
+                If loListName.includes(LCase(actLo.Name)) Then
                     Set actcsTab = CustomTable.Create(actLo)
                     Set impLo = impsh.ListObjects(actLo.Name)
                     Set impcsTab = CustomTable.Create(impLo)
