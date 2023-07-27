@@ -140,6 +140,19 @@ Private Property Get Dropdown(Optional ByVal scope As Byte = 1) _
     Set Dropdown = drop
 End Property
 
+'Get the pivot tables Object
+Private Property Get Pivots() As ICustomPivotTables
+    Dim sh As Worksheet
+    Dim sheetName As String
+    Dim lData As ILinelistSpecs
+    Dim trans As ITranslation
+    Set lData = LinelistData()
+    Set trans = lData.TransObject()
+    sheetName = trans.TranslatedValue("LLSHEET_CustomPivotTable")
+    Set sh = Wksh(sheetName)
+    Set Pivots = CustomPivotTables.Create(sh)
+End Property
+
 'Add worksheets to workbook
 Private Sub AddOutputSheet(ByVal sheetName As String, _
                           Optional ByVal Hide As Long = xlSheetVeryHidden, _
@@ -442,7 +455,7 @@ Private Sub PrepareTemporarySheets()
     'UA and bivariate sheet, TS sheet, spatial sheet and spatio-temporal sheet
     namesArray.Clear
     namesArray.Push "RNG_SheetUAName", "RNG_SheetTSName", _ 
-                     "RNG_SheetSPName", "RNG_SheetSPTempName" 
+                    "RNG_SheetSPName", "RNG_SheetSPTempName" 
     Set rng = rng.Offset(, 2)
     For counter = namesArray.LowerBound To namesArray.UpperBound
         rng.Name = namesArray.Item(counter)
@@ -490,33 +503,45 @@ Private Sub Prepare()
         AddOutputSheet sheetName, xlSheetVeryHidden
     Next
 
+    DoEvents
+
     'Prepare the temporary sheets by adding required ranges
     PrepareTemporarySheets
-
-    DoEvents
 
     'Export differents parts to the workbook (dictionary, choices, translation, geo)
     lData.export outWkb
 
     DoEvents
 
-    'Unique sheet Names (HList or VList)
-    'Add the sheets for Bivariate Analysis, Time series and spatial Analysis
-    AddOutputSheet trans.TranslatedValue("LLSHEET_CustomChoice"), xlsheetvisible
-    AddOutputSheet trans.TranslatedValue("LLSHEET_SpatioTemporalAnalysis"), xlsheetvisible
-    AddOutputSheet trans.TranslatedValue("LLSHEET_SpatialAnalysis"), xlsheetvisible
-    AddOutputSheet trans.TranslatedValue("LLSHEET_TemporalAnalysis"), xlsheetvisible
-    AddOutputSheet trans.TranslatedValue("LLSHEET_Analysis"), xlsheetvisible
-    
+    'Add the sheets for Bivariate Analysis, Time series and spatial,
+    'Spatio-temporal Analysis As well as custom sheets (custom choices)
 
     sheetsList.Clear
-    Set sheetsList = dict.UniqueValues("sheet name")
+    sheetsList.Push "LLSHEET_Analysis", "LLSHEET_TemporalAnalysis", _  
+                    "LLSHEET_SpatialAnalysis", "LLSHEET_SpatioTemporalAnalysis", _
+                    "LLSHEET_CustomChoice", "LLSHEET_CustomPivotTable"
+
+    'Reverse the order to keep the same sheet order in the linelist.
     sheetsList.Reverse
 
+    For counter = sheetsList.LowerBound To sheetsList.UpperBound
+        sheetName = trans.TranslatedValue(sheetsList.Item(counter))
+        AddOutputSheet sheetName, xlsheetvisible
+    Next
+
+    sheetsList.Clear
+    
+    'Unique sheet Names List(HList or VList)
+    Set sheetsList = dict.UniqueValues("sheet name")
+    
+    'Important to reverse to keep the worksheets in the same order as
+    'in the dictionary
+    sheetsList.Reverse
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         sheetName = sheetsList.Item(counter)
         AddOutputSheet sheetName, xlsheetvisible
     Next
+
 
     'Add admin sheet only if the user chooses buttons instead of ribbon linelist
     If Not mainobj.HasTemplate() Then
@@ -552,6 +577,7 @@ Private Sub Prepare()
         codeName = codesList.Item(counter)
         TransferCode codeName, codeScopeClass
     Next
+
     DoEvents
 
     'Send the modules to the linelist
@@ -571,8 +597,9 @@ Private Sub Prepare()
 
     'Transfer the forms
     codesList.Clear
-    codesList.Push "F_Advanced", "F_Export", "F_ExportMig", "F_Geo", "F_ImportRep", _
-                     "F_ShowHideLL", "F_ShowHidePrint"
+    codesList.Push   "F_Advanced", "F_Export", "F_ExportMig", _ 
+                     "F_Geo", "F_ImportRep", _
+                     "F_ShowHideLL", "F_ShowHidePrint", "F_ShowVarLabels"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
@@ -689,26 +716,30 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Properties
-Public Property Get ILinelist_Wksh(ByVal sheetName As String) As Worksheet
+Private Property Get ILinelist_Wksh(ByVal sheetName As String) As Worksheet
     Set ILinelist_Wksh = Wksh(sheetName)
 End Property
 
-Public Property Get ILinelist_PrintWksh(ByVal sheetName As String) As Worksheet
+Private Property Get ILinelist_PrintWksh(ByVal sheetName As String) As Worksheet
     Set ILinelist_PrintWksh = Wksh(sheetName, usePrinted:=True)
 End Property
 
-Public Property Get ILinelist_LinelistData() As ILinelistSpecs
+Private Property Get ILinelist_LinelistData() As ILinelistSpecs
     Set ILinelist_LinelistData = LinelistData()
 End Property
 
-Public Property Get ILinelist_Dictionary() As ILLdictionary
+Private Property Get ILinelist_Dictionary() As ILLdictionary
     Set ILinelist_Dictionary = Dictionary()
 End Property
 
-Public Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
+Private Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
     Set ILinelist_Dropdown = Dropdown(scope)
 End Property
 
+'PivotTables Object
+Private Property Get ILinelist_Pivots() As ICustomPivotTables
+    Set ILinelist_Pivots = Pivots()
+End Property
 
 'Exposed methods
 Private Sub ILinelist_Prepare()

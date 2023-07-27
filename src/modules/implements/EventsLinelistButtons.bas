@@ -14,16 +14,17 @@ Private Const DICTSHEET As String = "Dictionary"
 Private Const PASSSHEET As String = "__pass"
 Private Const EXPORTSHEET As String = "Exports"
 Private Const PRINTPREFIX As String = "print_"
+Private Const TEMPSHEET As String = "temp__"
 
 Private showHideObject As ILLShowHide
 Private tradsform As ITranslation   'Translation of forms
 Private tradsmess As ITranslation   'Translation of messages
 Private pass As ILLPasswords
 Private wb As Workbook
+Private lltrads As ILLTranslations
 
 'Initialize translation of forms object
 Private Sub InitializeTrads()
-    Dim lltrads As ILLTranslations
     Dim lltranssh As Worksheet
     Dim dicttranssh As Worksheet
 
@@ -329,7 +330,7 @@ Public Sub ClickAddRows()
 
     Set Lo = sh.ListObjects(1)
     Set csTab = CustomTable.Create(Lo)
-    nbRows = IIf(sheetTag = "HList", 100, 10)
+    nbRows = IIf(sheetTag = "HList", 199, 10)
     csTab.AddRows nbRows:=nbRows
     
     NotBusyApp
@@ -653,4 +654,80 @@ Public Sub ClickExportMigration()
         [F_ExportMig].Show
         AfterFirstClicMig = True
     End If
+End Sub
+
+'@Description("For each table, show the variables and corresponding labels")
+'@EntryPoint
+Public Sub ClickOpenVarLab()
+    Dim counter As Long 'Counter for the number of tables
+    Dim actsh As Worksheet
+    Dim tempsh As Worksheet
+    Dim dict As ILLdictionary
+    Dim wb As Workbook
+    Dim varRng As Range
+    Dim vars As ILLVariables
+    Dim cellRng As Range
+    Dim pivotTag As String
+    Dim tableName As String
+    Dim varLabTab As BetterArray
+    Dim varName As String
+
+    InitializeTrads
+    Set actsh = ActiveSheet
+    'Be sure we are on custom tables sheets
+    If actsh.Name <> lltrads.Value("customtable") Then
+        WarningOnSheet "MSG_CustomTableSheet"
+        Exit Sub
+    End If
+
+    On Error GoTo ErrHand
+    BusyApp
+
+    'Prepare the temporary Sheet
+    Set wb = ThisWorkbook
+    Set tempsh = ThisWorkbook.worksheets(TEMPSHEET)
+    tempsh.Cells.Clear
+
+    'Fill in values on pivot table names, and corresponding variables
+    Set cellRng = tempsh.Cells(1, 1)
+
+    Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
+    Set vars = LLVariables.Create(dict)
+    
+    'Range for variables, as well as final table for the form
+    Set varRng = dict.DataRange("variable name")
+    Set varLabTab = New BetterArray
+
+    For counter = 1 To varRng.Rows.Count
+        varName = varRng.Cells(counter, 1).Value
+
+        'take only variables on sheet of tyme HList, and add them to the table
+        If vars.Value(colName:="sheet type", varName := varName) = "hlist2D" Then
+
+            tableName = vars.Value(colName:="table name", varName := varName)
+
+            'Pivot table title
+            cellRng.Cells(1, 1).Value = actsh.Range("RNG_PivotTitle_" & tableName).Value
+            'Varname
+            cellRng.Cells(1, 2).Value = varName
+            'Corresponding variable label
+            cellRng.Cells(1, 3).Value = vars.Value( _ 
+                                        colName:="main label", _ 
+                                        varName:= varName)
+            'Move to next line
+            Set cellRng = cellRng.Offset(1)
+        End If
+        'Get the whole table from fill in range
+        varLabTab.FromExcelRange tempsh.Cells(1, 1), _ 
+                                 DetectLastRow:=True, DetectLastColumn:=True
+    Next
+
+    'Affect the table to the list
+    F_ShowVarLabels.LST_CustomTabList.List = varLabTab.Items
+    NotBusyApp
+    
+    'This will open the form with variable name and variable labels for
+    [F_ShowVarLabels].Show
+ErrHand:
+    NotBusyApp
 End Sub

@@ -184,6 +184,7 @@ Public Sub Build()
     Dim Lo As ListObject
     Dim printsh As Worksheet
     Dim mainobj As IMain
+    Dim pivotObj As ICustomPivotTables
 
     Set sh = Wksh()
     Set dict = Dictionary()
@@ -194,6 +195,7 @@ Public Sub Build()
     Set drop = ll.Dropdown()
     Set pass = lData.Password()
     Set mainobj = lData.MainObject()
+    Set pivotObj = ll.Pivots()
     sheetName = Name()
 
     'Add Printed Worksheet before building
@@ -205,6 +207,7 @@ Public Sub Build()
 
     'Macos can generate Errors on format on Application.PrintCommunication (see LLFormat)
     design.ApplyFormat printsh, scope:=HListPrintedSheet
+
 
     'Split the rows and columns
     On Error Resume Next
@@ -218,7 +221,6 @@ Public Sub Build()
     On Error GoTo 0
 
     'Add the buttons on printed and non printed worksheet
-
     If Not mainobj.HasTemplate() Then
         'Show Hide button
         Set rng = sh.Cells(1, 2)
@@ -260,15 +262,19 @@ Public Sub Build()
         but.Add actionCommand:=SHOWHIDECOMMAND, shapeLabel:=trads.TranslatedValue(SHPSHOWHIDE)
         but.Format design
     Else
+        'If there is no button, hide the lines 3 and 4
         sh.Rows("3:4").EntireRow.Hidden = True
     End If
 
+    'BUILD SECTIONS IN THE HLIST------------------------------------------------
+
     'Now Build each Section (including sections of printed worksheet)
+
     Set trads = lData.TransObject(TranslationOfMessages)
     goToSection = trads.TranslatedValue("MSG_GoToSec")
 
     Set sectionsList = New BetterArray
-    strt = llshs.RowIndex(sheetName) - 1         '- 1 because the row index includes the header row of the dictionary
+    strt = llshs.RowIndex(sheetName) - 1        '- 1 because the row index includes the header row of the dictionary
     Set sec = HListSections.Create(strt, ll)
     sec.Build
     sec.Format
@@ -281,27 +287,35 @@ Public Sub Build()
         If sec.Name <> vbNullString Then sectionsList.Push goToSection & ": " & sec.Name
     Loop
 
+    'WORKING ON HIDDEN COLUMNS WITH INFORMATIONS ON HLIST----------------------
+
     'Add dropdown on first cell for GoTo section
     Set rng = sh.Cells(1, 1)
     tableName = llshs.sheetInfo(sheetName, 2)
-    gotoSectionListName = tableName & "_" & GOTOSECCODE 'Name of the range goTo section
-
+    
+    gotoSectionListName = tableName & "_" & GOTOSECCODE
+    
     rng.Name = gotoSectionListName
     rng.Value = goToSection
+    
+    'Add the corresponding dropdown for goToSection
     drop.Add sectionsList, gotoSectionListName
     drop.SetValidation rng, gotoSectionListName
+    
     design.ApplyFormat rng, scope:=LinelistSelectionDropdown
     rng.Locked = False
 
     'Add the sheet type on HList sheet
     sh.Cells(1, 3).Value = "HList"
     printsh.Cells(1, 3).Value = "HList Print"
+    
     design.ApplyFormat sh.Cells(1, 3), scope:=LinelistHiddenCell
     design.ApplyFormat printsh.Cells(1, 3), scope:=LinelistHiddenCell
 
     'Add the table name
     sh.Cells(1, 4).Value = tableName
     printsh.Cells(1, 4).Value = PRINTPREFIX & tableName
+    
     design.ApplyFormat sh.Cells(1, 4), scope:=LinelistHiddenCell
     design.ApplyFormat printsh.Cells(1, 4), scope:=LinelistHiddenCell
 
@@ -309,6 +323,7 @@ Public Sub Build()
     With sh
         shrowStart = llshs.DataBounds(sheetName, 1)
         shrowEnd = shrowStart + 1
+        
         shcolStart = llshs.DataBounds(sheetName, 3)
         shcolEnd = llshs.DataBounds(sheetName, 4)
 
@@ -333,6 +348,7 @@ Public Sub Build()
     'Add the total rowcount to take in account when resizing the table
     'on HList
     With Lo.ListRows(1)
+        
         sh.Cells(1, 6).Value = Application.WorksheetFunction.COUNTA(.Range)
         design.ApplyFormat sh.Cells(1, 6), scope:=LinelistHiddenCell
 
@@ -341,7 +357,13 @@ Public Sub Build()
         design.ApplyFormat printsh.Cells(1, 6), scope:=LinelistHiddenCell
     End With
 
-    'Create the whole table of the HListPrinted
+    'Add the current listobject to pivot tables
+    pivotObj.Add  sheetName, tableName, trads.TranslatedValue("MSG_PivotTable")
+    'Format the pivot sheet
+    pivotObj.Format design
+
+    'PRINTED WORKSHEETSHEET ----------------------------------------------------
+
     With printsh
         shrowEnd = shrowStart + 1
         Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
@@ -360,13 +382,13 @@ Public Sub Build()
         design.ApplyFormat rng, scope:= HListPrintedHeader
     End With
 
-
-
     'FILTERED WORKSHEET --------------------------------------------------------
 
     'Define the same listObject to the filtered worksheet
     ll.AddOutputSheet FILTEREDPREFIX & sheetName, xlSheetVeryHidden
+
     Set filtsh = ll.Wksh(FILTEREDPREFIX & sheetName)
+
     Set Lo = sh.ListObjects(tableName)
     With filtsh
         Set rng = .Range(Lo.Range.Address)
@@ -380,16 +402,13 @@ Public Sub Build()
     rng.Value = filtsh.Name
     design.ApplyFormat rng, scope:=LinelistHiddenCell
 
+    'ADD HLIST CODE, PROTECT HLIST --------------------------------------------
 
-    'Transfert code to the worksheet
+    'Transfert code to the HList worksheet
     TransferCodeWksh
 
-    'Add editing range for sorting
-    'sh.Protection.AllowEditRanges.Add title:="EditAll" & tableName,
-    'Range:=Range(tableName & "[#All]")
-
     'Protect the worksheet
-    pass.Protect "_active"
+    pass.Protect sheetName
 End Sub
 
 'Error

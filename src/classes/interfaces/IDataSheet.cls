@@ -51,7 +51,9 @@ Public Function FilterData(ByVal varName As String, ByVal criteriaName As String
 End Function
 
 'multiple filters
-Public Function FiltersData(ByVal varData As BetterArray, ByVal criteriaData As BetterArray, ByVal returnedColumnsData As BetterArray) As BetterArray
+Public Function FiltersData(ByVal varData As BetterArray, _ 
+                            ByVal criteriaData As BetterArray, _ 
+                            ByVal returnedColumnsData As BetterArray) As BetterArray
 End Function
 
 'Import and Export Sub
