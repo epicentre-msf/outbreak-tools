@@ -70,7 +70,9 @@ Private Property Get OutputRange() As Range
 End Property
 
 'Add a title for the pivot table
-Private Sub AddTitle(ByVal title As String, Byval pivotName As String)
+Private Sub AddTitle(ByVal title As String, _ 
+                     Byval pivotName As String, _ 
+                     ByVal tableName As String)
   Dim sh As Worksheet
   Dim titleRng As Range
 
@@ -79,16 +81,24 @@ Private Sub AddTitle(ByVal title As String, Byval pivotName As String)
   InitializeOutputAddress
   
   Set titleRng = sh.Range(sh.Cells(1, 1).Value).Offset(2)
+  titleRng.Name = "RNG_PivotTitle_" & tableName
   titleRng.Value = pivotName & " " & PIVOTCOUNTER & " - " & title
   titleRng.Font.Color = RGB(155, 109, 88)
   titleRng.Font.Italic = True
+End Sub
+
+'Format the pivot table worksheet
+Private Sub Format(ByVal design As ILLFormat)
+  Dim sh As Worksheet
+  Set sh = Wksh()
+  design.ApplyFormat sh, HListCustomPivotTables
 End Sub
 
 'Add a new pivot table
 '-pivotName: Name of a pivot table depending on the language
 '-title: Name of the title of the pivot table
 '-tablename: name of the pivot table (instead of using pivot table 1, 2, etc)
-Private Sub AddTable(ByVal title As String, ByVal tablename As String, _ 
+Private Sub AddTable(ByVal title As String, ByVal tableName As String, _ 
                      Optional ByVal pivotName As String = "Pivot Table")
 
   Dim outrng As Range
@@ -106,7 +116,7 @@ Private Sub AddTable(ByVal title As String, ByVal tablename As String, _
                       TableDestination:=outrng
   On Error GoTo 0
 
-  AddTitle title, pivotName
+  AddTitle title, pivotName, tableName
   'Change the new output address to another one
   Set rng = sh.Range(sh.Cells(1, 1).Value)
   sh.Cells(1, 1).Value = outrng.Offset(60).Address
@@ -123,11 +133,12 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Interface
-
 Private Sub ICustomPivotTables_Add(ByVal title As String, _ 
                                    ByVal tablename As String, _ 
                                    Optional ByVal pivotName As String = "Pivot Table")
   AddTable title, tableName, pivotName
 End Sub
 
-'Exposed methods
+Private Sub ICustomPivotTables_Format(ByVal design As ILLFormat)
+  Format design
+End Sub

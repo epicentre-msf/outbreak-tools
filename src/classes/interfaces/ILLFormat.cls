@@ -74,6 +74,7 @@ Public Enum FormatScopes
     HListPrintedSheet = 54
     HListPrintedHeader = 55
     HListPrintedTable = 56
+    HListCustomPivotTables = 57
 End Enum
 
 Public Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
