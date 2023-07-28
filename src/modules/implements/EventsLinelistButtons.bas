@@ -731,3 +731,9 @@ Public Sub ClickOpenVarLab()
 ErrHand:
     NotBusyApp
 End Sub
+
+
+'@Description("Sort elements in a current range of a HList worksheet")
+'@EntryPoint
+Public Sub ClickSortTable()
+End Sub

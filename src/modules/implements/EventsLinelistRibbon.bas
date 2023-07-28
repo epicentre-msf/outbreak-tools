@@ -146,3 +146,9 @@ End Sub
 Public Sub clickRibbonOpenVarLab(ByRef control As IRibbonControl)
     ClickOpenVarLab
 End Sub
+
+'@Description("Callback for btnSortTab on Action")
+'@EntryPoint
+Public Sub clickRibbonSortTable(ByRef control As IRibbonControl)
+    ClickSortTable
+End Sub
