@@ -9,7 +9,7 @@ library(stringr)
 master_workbook_path <- "misc/designer_translations.xlsx"
 
 # path to a workbook where corrections have been made
-child_workbook_path <- "~/designer_translations_marine.xlsx"
+child_workbook_path <- "misc/designer_translations_user.xlsx"
 
 #---- Preliminary functions ----------------------------------------------------
 
@@ -94,7 +94,6 @@ targeted_tables <- c(
   "T_tradMsg", "T_tradRange", "T_tradShape"
 )
 
-
 # loading the master workbook tables ===========================================
 
 master_workbook <- loadWorkbook(file = master_workbook_path)
@@ -105,7 +104,8 @@ master_tables_df <- purrr::map_dfr(master_sheets_list, get_all_tables)
 
 # load master table
 master_list_tables <- master_tables_df |>
-  filter(table_name %in% targeted_tables) |>
+  filter((table_name %in% targeted_tables) |
+         (table_name %in% tolower(targeted_tables))) |>
   arrange(table_name) |>
   select(path, range_address) |>
   purrr::pmap(read_a_table)
@@ -121,7 +121,8 @@ child_tables_df <- purrr::map_dfr(
 )
 
 child_list_tables <- child_tables_df |>
-  filter(table_name %in% targeted_tables) |>
+   filter((table_name %in% targeted_tables) |
+         (table_name %in% tolower(targeted_tables))) |>
   arrange(table_name) |>
   select(path, range_address) |>
   purrr::pmap(read_a_table, child_tag = "_child")
