@@ -128,20 +128,29 @@ Private Sub DisplayPrivateKey(ByVal trads As ITranslation)
 End Sub
 
 'protect
-Private Sub Protect(Optional ByVal sheetName As String = "_active", Optional ByVal allowShapes As Boolean = False)
+Private Sub Protect( ByVal sheetObject As Variant, Optional ByVal allowShapes As Boolean = False)
 
     Dim pwd As String
     Dim sh As Worksheet
     Dim wb As Workbook
+
     Set wb = Wksh.Parent
-    
-    If sheetName = "_active" Then
-        Set sh = ActiveSheet
-    Else
-        On Error Resume Next
-        Set sh = wb.Worksheets(sheetName)
-        On Error GoTo 0
+
+    'If the sheetObject is a worksheet, unProtect it, if it is a string
+
+    If (TypeName(sheetObject) = "String") Then
+        If sheetObject = "_active" Then
+            Set sh = ActiveSheet
+        Else
+            On Error Resume Next
+            Set sh = wb.Worksheets(sheetObject)
+            On Error GoTo 0
+        End If
+
+    ElseIf (TypeName(sheetObject) = "Worksheet") Then
+        Set sh = sheetObject
     End If
+
     'Test if the sheet Exists
     If sh Is Nothing Then Exit Sub
     If Not InDebugMode() Then
@@ -161,6 +170,9 @@ Private Sub Protect(Optional ByVal sheetName As String = "_active", Optional ByV
         'If Not allowShapes Then sh.EnableSelection = xlUnlockedCells
     End If
 End Sub
+
+'Protect a worksheet that is not in current workbook, using the LLPassword
+'class
 
 'Protect workbook
 Private Sub ProtectWkb(ByVal wb As Workbook, Optional ByVal protectSheetName As Boolean = True)
@@ -354,8 +366,9 @@ Private Sub ILLPasswords_UnProtect(Optional ByVal sheetName As String = "_active
     UnProtect sheetName
 End Sub
 
-Private Sub ILLPasswords_Protect(Optional ByVal sheetName As String = "_active", Optional ByVal allowShapes As Boolean = False)
-    Protect sheetName, allowShapes
+Private Sub ILLPasswords_Protect(Optional ByVal sheetObject As Variant, _ 
+                                 Optional ByVal allowShapes As Boolean = False)
+    Protect sheetObject, allowShapes
 End Sub
 
 Private Sub ILLPasswords_Export(ByVal toWkb As Workbook)
