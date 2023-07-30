@@ -394,7 +394,8 @@ Public Sub Build()
         Set rng = .Range(Lo.Range.Address)
         rng.Value = Lo.Range.Value
         'Define listObject on the filtered sheet
-        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = FILTEREDPREFIX & tableName
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = FILTEREDPREFIX & _ 
+                                                          tableName
     End With
 
     'Add the name of the filtered worksheet to the HList
@@ -402,13 +403,13 @@ Public Sub Build()
     rng.Value = filtsh.Name
     design.ApplyFormat rng, scope:=LinelistHiddenCell
 
-    'ADD HLIST CODE, PROTECT HLIST --------------------------------------------
+    'ADD HLIST CODE, PROTECT HLIST ---------------------------------------------
 
     'Transfert code to the HList worksheet
     TransferCodeWksh
-
-    'Protect the worksheet
-    pass.Protect sheetName
+    
+    'Protect the HList worksheet
+    pass.Protect sh
 End Sub
 
 'Error
