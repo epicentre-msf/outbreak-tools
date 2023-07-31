@@ -667,7 +667,6 @@ Public Sub ClickOpenVarLab()
     Dim varRng As Range
     Dim vars As ILLVariables
     Dim cellRng As Range
-    Dim pivotTag As String
     Dim tableName As String
     Dim varLabTab As BetterArray
     Dim varName As String
@@ -735,9 +734,74 @@ End Sub
 
 '@Description("Sort elements in a current range of a HList worksheet")
 '@EntryPoint
-Public Sub ClickSortTable()   
-    
+Public Sub ClickSortTable()
 
+    Dim sh As Worksheet
+    Dim sheetTag As String
+    Dim tabName As String
+    Dim targetColumn As Long
+    Static prevRngName As String
+    Static nbTimes As Long
+    Dim LoRng As Range
+    Dim sortRng As Range
+    Dim sortOrder As Long
+    Dim startRow As Long
+    Dim headerName As String
+
+
+    On Error GoTo ErrHand
+
+    Set sh = ActiveSheet
+    sheetTag = sh.Cells(1, 3).Value
+
+    If sheetTag <> "HList" Then
+        WarningOnSheet "MSG_DataSheet"
+        Exit Sub
+    End If
+
+    InitializeTrads
+    
+    tabName = sh.Cells(1, 4).Value
+    startRow = sh.Range(tabName & "_" & "START").Row
+    targetColumn = ActiveCell.Column
+    
+    If ActiveCell.Row >= startRow Then
+
+        headerName = sh.Cells(startRow - 1, targetColumn).Value
+
+        If (prevRngName <> headerName) Then
+            'Ask the user if really want to sort
+            prevRngName = headerName
+            nbTimes = 0
+            If MsgBox( _ 
+                tradsmess.TranslatedValue("MSG_ContinueSort") & " " & headerName, _ 
+                vbYesNo + vbExclamation) = vbNo Then
+                Exit Sub
+            End If
+        Else
+            nbTimes = nbTimes + 1
+        End If
+
+        'The sortorder is related to the number of times you clik on the same range
+        'For the first time, it is increasing, the second time, decreasing, etc..
+
+        sortOrder = IIf((nbTimes Mod 2) = 0, xlAscending, xlDescending)
+        Set LoRng = sh.ListObjects(tabName).Range
+        Set sortRng = sh.ListObjects(tabName).ListColumns(headerName).Range
+        
+        BusyApp
+        'Unprotect the active worksheet, sort the range, and protect back.
+        'I have to keep the protect/unprotect step as far as possible for 
+        'performance issues
+        pass.UnProtect "_active"
+        On Error Resume Next
+        LoRng.Sort key1:=sortRng, order1:=sortOrder, Header:= xlYes
+        On Error GoTo 0
+        pass.Protect "_active"
+    End If
+
+ErrHand:
+    NotBusyApp
 End Sub
 
 
