@@ -744,5 +744,21 @@ End Sub
 '@Description("Export all Analysis worksheets to a workbook")
 '@EntryPoint
 Public Sub ClickExportAnalysis()
+    Dim expOut As IOutputSpecs
 
+    'Add Error management
+    On Error GoTo errHand
+    InitializeTrads
+
+    BusyApp
+    Set expOut = OutputSpecs.Create(wb, ExportAna)
+    expOut.Save tradsmess
+    NotBusyApp
+    Exit Sub
+
+errHand:
+    MsgBox  tradsmess.TranslatedValue("MSG_ErrHandExport"), _ 
+            vbOKOnly + vbCritical, _ 
+            tradsmess.TranslatedValue("MSG_Error")
+    NotBusyApp
 End Sub
