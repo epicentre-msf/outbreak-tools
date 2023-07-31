@@ -147,7 +147,7 @@ End Property
 
 
 'Prepare the output workbook
-Private Sub Prepare()
+Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False)
 
   Dim inpwb As Workbook
   Dim tempsh As Worksheet
@@ -180,12 +180,12 @@ Private Sub Prepare()
   firstSheetName = outwb.Worksheets(1).Name
   scope = ActualScope()
 
-  If scope <> ExportAll Then
+  If (scope <> ExportAll) Then
     expName = "export" & " " & CStr(scope)
     'Filter the dictionary
     Set dictData = dict.Data.FilterData(varName:=expName, criteriaName:="<>", returnedColumnName:="__all__", includeHeaders:=True)
     'The temporary sheet contains the dictionary for the exports
-  Else
+  ElseIf (scope = ExportAll) Then
     dictData.FromExcelRange dict.DataRange(includeHeaders:=True)
   End If
 
@@ -229,30 +229,45 @@ Private Sub Prepare()
     End With
   Next
 
-  'Add Analysis Worksheets for analysis Exports
-  If (expobj.Value("export analysis", CInt(scope)) = "yes") Then
-    sheetNamesList.Clear
-    sheetNamesList.Push lltrads.Value("uasheet"), lltrads.Value("tssheet"), _ 
-                       lltrads.Value("spsheet"), lltrads.Value("sptsheet")
-    For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
-    With outwb
-      .Worksheets.Add(after:=.Worksheets(prevSheetName)).Name = _
-      sheetNamesList.Item(counter)
-      prevSheetName = sheetNamesList.Item(counter)
-      On Error Resume Next
-       inpwb.Worksheets(prevSheetName).Cells.Copy
-       RemoveGridLines .Worksheets(prevSheetName)
-       .Worksheets(prevSheetName).Cells.PasteSpecial xlPasteValues
-       .Worksheets(prevSheetName).Cells.PasteSpecial xlPasteFormats
-      On Error GoTo 0
-    End With
-    Next
-  End If
+  'Add analysis if required
+  If withAnalysis Then AddAnalysis prevSheetName, outwb, inpwb
 
   'Delete the first sheet of the workbook
   outwb.Worksheets(firstSheetName).Delete
 End Sub
 
+'Export Analysis worksheet
+Private Sub AddAnalysis(ByVal prevSheet As String, _ 
+                        ByVal outwb As Workbook, ByVal inpwb As Workbook)
+
+  Dim sheetNamesList As BetterArray
+  Dim counter As Long
+  Dim lltrads As ILLTranslations
+  Dim prevSheetName As String
+
+  Set sheetNamesList = New BetterArray
+  Set lltrads = LLTradsObject()
+  prevSheetName = prevSheet
+
+  'Add Analysis Worksheets for analysis Exports
+  sheetNamesList.Push lltrads.Value("uasheet"), lltrads.Value("tssheet"), _ 
+                     lltrads.Value("spsheet"), lltrads.Value("sptsheet")
+  
+  For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
+    With outwb
+      .Worksheets.Add(after:=.Worksheets(prevSheetName)).Name = _
+      sheetNamesList.Item(counter)
+      prevSheetName = sheetNamesList.Item(counter)
+      On Error Resume Next
+        inpwb.Worksheets(prevSheetName).Cells.Copy
+        RemoveGridLines .Worksheets(prevSheetName)
+        .Worksheets(prevSheetName).Cells.PasteSpecial xlPasteValues
+        .Worksheets(prevSheetName).Cells.PasteSpecial xlPasteFormats
+      On Error GoTo 0
+    End With
+  Next
+
+End Sub
 
 Private Sub AddMetaData(ByVal scope As Byte)
 
@@ -496,6 +511,8 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
   Dim addPassword As Boolean
   Dim filePassword As String
   Dim folderPath As String
+  Dim withAnalysis As Boolean
+  Dim prevSheetName As String
 
   BusyApp
   folderPath = ExportFolder()
@@ -526,10 +543,17 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
   filePath = filePath & "." & fileExtension
   
   BusyApp
+
   'Prepare the output workbook (create required sheets, add metadata)
-  Prepare
-  'Add the Data to export worksheet
-  AddData useFilters
+  If (scope <> ExportAna) Then
+    withAnalysis =  (expobj.Value("export analysis", CInt(scope)) = "yes") 
+    Prepare withAnalysis
+    'Add the Data to export worksheet
+    AddData useFilters
+  Else
+    prevSheetName = outwb.Worksheets(1).Name
+    AddAnalysis prevSheetName, outwb, inpwb
+  End If
   
   'Save the file to the corresponding path using corresponding password
 
@@ -620,7 +644,6 @@ Private Sub CheckRequirements(ByVal currwb As Workbook)
     sheetExists currwb, sheetName
   Next
 End Sub
-
 
 
 'Returns true or false if a sheet or a range exists

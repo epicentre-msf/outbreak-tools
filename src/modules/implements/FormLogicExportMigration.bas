@@ -68,11 +68,11 @@ Private Sub CreateExport()
     folderPath = expOut.ExportFolder()
 
     'Export for migration
-    If Me.CHK_ExportMigData Then expOut.Save tradmess
+    If Me.CHK_ExportMigData.Value Then expOut.Save tradmess
     'Export the geobase
-    If Me.CHK_ExportMigGeo Then expOut.SaveGeo geoObj:=geoObj, onlyHistoric:=False
+    If Me.CHK_ExportMigGeo.Value Then expOut.SaveGeo geoObj:=geoObj, onlyHistoric:=False
     'Export only historic data of the geobase (onlyHistoric:=True)
-    If Me.CHK_ExportMigGeoHistoric Then expOut.SaveGeo geoObj:=geoObj, onlyHistoric:=True
+    If Me.CHK_ExportMigGeoHistoric.Value Then expOut.SaveGeo geoObj:=geoObj, onlyHistoric:=True
     NotBusyApp
 
     'Ask the user if I should quit the form
