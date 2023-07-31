@@ -145,6 +145,9 @@ Private Property Get ExportFileName(ByVal scope As Byte, _
     If scope = ExportAll Then
         outFile = Replace(wb.Name, ".xlsb", vbNullString) & _
                   "_export_data_" & Format(Now, "yyyymmdd-HhNn")
+    ElseIf scope = ExportAna Then
+        outFile = Replace(wb.Name, ".xlsb", vbNullString) & _
+                  "_analysis_outputs_" & Format(Now, "yyyymmdd-HhNn")
     Else
         Set PathData = New BetterArray
         Set fun = Application.WorksheetFunction

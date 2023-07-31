@@ -23,6 +23,7 @@ Public Enum ExportScope
     ExportThree = 3
     ExportFour = 4
     ExportFive = 5
+    ExportAna = 6
     ExportAll = 10
 End Enum
 
