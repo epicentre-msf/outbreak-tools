@@ -103,7 +103,6 @@ Private Sub AddTable(ByVal title As String, ByVal tableName As String, _
 
   Dim outrng As Range
   Dim sh As Worksheet
-  Dim rng As Range
   
   Set sh = Wksh()
   Set outrng = OutputRange()
@@ -118,7 +117,6 @@ Private Sub AddTable(ByVal title As String, ByVal tableName As String, _
 
   AddTitle title, pivotName, tableName
   'Change the new output address to another one
-  Set rng = sh.Range(sh.Cells(1, 1).Value)
   sh.Cells(1, 1).Value = outrng.Offset(60).Address
   PIVOTCOUNTER = PIVOTCOUNTER + 1
   Exit Sub

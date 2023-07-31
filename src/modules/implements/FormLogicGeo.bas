@@ -44,11 +44,11 @@ Private Sub CMD_Copier_Click()
 
     On Error GoTo ErrGeo
     
-    selectedValue = [F_Geo].TXT_Msg.Value
+    selectedValue = Me.TXT_Msg.Value
 
     'Exit if nothing is selected
     If selectedValue = vbNullString Then
-        [F_Geo].Hide
+        Me.Hide
         Exit Sub
     End If
 
@@ -75,8 +75,8 @@ Private Sub CMD_Copier_Click()
         End If
         
         calcRng.calculate
-        [F_Geo].TXT_Msg.Value = ""
-        [F_Geo].Hide
+        Me.TXT_Msg.Value = ""
+        Me.Hide
         
         'Protecting the worksheet
                 
@@ -106,8 +106,8 @@ Private Sub CMD_Copier_Click()
         Application.EnableEvents = True
         'Hide the form
         calcRng.calculate
-        [F_Geo].TXT_Msg.Value = ""
-        [F_Geo].Hide
+        Me.TXT_Msg.Value = ""
+        Me.Hide
         
         'Update the listObject of historic data on health facility
         Set sh = ThisWorkbook.Worksheets("Geo")
@@ -160,7 +160,7 @@ Private Sub LST_Adm3_Click()
 End Sub
 
 Private Sub LST_Adm4_Click()
-    sPlaceSelection = ReverseString([F_Geo].LST_Adm1.Value & " | " & [F_Geo].LST_Adm2.Value & " | " & [F_Geo].LST_Adm3.Value & " | " & [F_Geo].LST_Adm4.Value)
+    sPlaceSelection = ReverseString(Me.LST_Adm1.Value & " | " & Me.LST_Adm2.Value & " | " & Me.LST_Adm3.Value & " | " & Me.LST_Adm4.Value)
     TXT_Msg.Value = sPlaceSelection
 End Sub
 
@@ -180,7 +180,7 @@ Private Sub LST_AdmF3_Click()
 End Sub
 
 Private Sub LST_AdmF4_Click()
-    sPlaceSelection = ReverseString([F_Geo].LST_AdmF1.Value & " | " & [F_Geo].LST_AdmF2.Value & " | " & [F_Geo].LST_AdmF3.Value & " | " & [F_Geo].LST_AdmF4.Value)
+    sPlaceSelection = ReverseString(Me.LST_AdmF1.Value & " | " & Me.LST_AdmF2.Value & " | " & Me.LST_AdmF3.Value & " | " & Me.LST_AdmF4.Value)
     TXT_Msg.Value = sPlaceSelection
 
 End Sub
@@ -211,24 +211,24 @@ End Sub
 
 Private Sub TXT_Recherche_Change()
     'Search any value in geo data
-    Call SearchValue(F_Geo.TXT_Recherche.Value)
+    Call SearchValue(Me.TXT_Recherche.Value)
 End Sub
 
 Private Sub TXT_RechercheF_Change()
     'Search any value in health facility
-    Call SearchValueF(F_Geo.TXT_RechercheF.Value)
+    Call SearchValueF(Me.TXT_RechercheF.Value)
 
 End Sub
 
 Private Sub TXT_RechercheHisto_Change()
     'In case there is a change in the historic geographic Search list
-    Call SeachHistoValue(F_Geo.TXT_RechercheHisto.Value)
+    Call SeachHistoValue(Me.TXT_RechercheHisto.Value)
 
 End Sub
 
 Private Sub TXT_RechercheHistoF_Change()
     'In case there is a change in the historic data
-    Call SeachHistoValueF(F_Geo.TXT_RechercheHistoF.Value)
+    Call SeachHistoValueF(Me.TXT_RechercheHistoF.Value)
 
 End Sub
 

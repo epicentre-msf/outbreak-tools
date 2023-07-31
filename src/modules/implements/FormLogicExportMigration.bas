@@ -68,18 +68,18 @@ Private Sub CreateExport()
     folderPath = expOut.ExportFolder()
 
     'Export for migration
-    If [F_ExportMig].CHK_ExportMigData Then expOut.Save tradmess
+    If Me.CHK_ExportMigData.Value Then expOut.Save tradmess
     'Export the geobase
-    If [F_ExportMig].CHK_ExportMigGeo Then expOut.SaveGeo geoObj:=geoObj, onlyHistoric:=False
+    If Me.CHK_ExportMigGeo.Value Then expOut.SaveGeo geoObj:=geoObj, onlyHistoric:=False
     'Export only historic data of the geobase (onlyHistoric:=True)
-    If [F_ExportMig].CHK_ExportMigGeoHistoric Then expOut.SaveGeo geoObj:=geoObj, onlyHistoric:=True
+    If Me.CHK_ExportMigGeoHistoric.Value Then expOut.SaveGeo geoObj:=geoObj, onlyHistoric:=True
     NotBusyApp
 
     'Ask the user if I should quit the form
     shouldQuit = MsgBox(tradmess.TranslatedValue("MSG_FinishedExports"),  _ 
                         vbQuestion + vbYesNo, _ 
                         tradmess.TranslatedValue("MSG_Migration"))
-    If shouldQuit = vbYes Then F_ExportMig.Hide
+    If shouldQuit = vbYes Then Me.Hide
     Exit Sub
 
 errHand:
@@ -94,11 +94,11 @@ Private Sub CMD_ExportMig_Click()
 End Sub
 
 Private Sub CMD_ExportMigQuit_Click()
-    F_ExportMig.Hide
+    Me.Hide
 End Sub
 
 Private Sub LBL_Previous_Click()
-    F_ExportMig.Hide
+    Me.Hide
     F_Advanced.Show
 End Sub
 

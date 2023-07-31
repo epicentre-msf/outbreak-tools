@@ -120,7 +120,7 @@ Private Function ClearChunk(ByVal chunk As String) As String
 End Function
 
 
-'@Description("Find a path of an export (using the dictionary)")
+'Find a path of an export (using the dictionary)
 Private Property Get ExportFileName(ByVal scope As Byte, _
                             ByVal dict As ILLdictionary, _
                             Byval pass As ILLPasswords) As String
@@ -145,6 +145,9 @@ Private Property Get ExportFileName(ByVal scope As Byte, _
     If scope = ExportAll Then
         outFile = Replace(wb.Name, ".xlsb", vbNullString) & _
                   "_export_data_" & Format(Now, "yyyymmdd-HhNn")
+    ElseIf scope = ExportAna Then
+        outFile = Replace(wb.Name, ".xlsb", vbNullString) & _
+                  "_analysis_outputs_" & Format(Now, "yyyymmdd-HhNn")
     Else
         Set PathData = New BetterArray
         Set fun = Application.WorksheetFunction
