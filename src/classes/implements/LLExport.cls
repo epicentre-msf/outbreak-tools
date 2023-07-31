@@ -120,7 +120,7 @@ Private Function ClearChunk(ByVal chunk As String) As String
 End Function
 
 
-'@Description("Find a path of an export (using the dictionary)")
+'Find a path of an export (using the dictionary)
 Private Property Get ExportFileName(ByVal scope As Byte, _
                             ByVal dict As ILLdictionary, _
                             Byval pass As ILLPasswords) As String

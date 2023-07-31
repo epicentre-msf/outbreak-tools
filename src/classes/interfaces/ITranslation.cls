@@ -1,3 +1,4 @@
+
 VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
@@ -17,7 +18,7 @@ Option Explicit
 
 'Exposed methods
 
-Public Sub TranslateForm(ByVal UserFrm As UserForm)
+Public Sub TranslateForm(ByVal UserFrm As Object)
 End Sub
 
 Public Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
