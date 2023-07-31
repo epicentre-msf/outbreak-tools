@@ -124,8 +124,6 @@ Private Function parsedFormula() As String
             'even number of conditions, there is no default
             formula = formula & chr(34) & chr(34) & parenthesis
         End If
-    Else
-        'Trace log here
     End If
     parsedFormula = formula
 End Function

@@ -350,9 +350,10 @@ Private Sub AddRows()
             If specs.isNewSection() Then
 
                 rowsData.Clear
-                rowsData.Push trans.TranslatedValue("MSG_Period"), ""
+                rowsData.Push trans.TranslatedValue("MSG_Period"), vbNullString
                 For counter = 1 To 13
-                    rowsData.Push "", "", "", ""
+                    rowsData.Push vbNullString, vbNullString, _ 
+                                  vbNullString, vbNullString
                 Next
                 rowsData.Push transTotal, transMissing
                 rowsData.ToExcelRange .Cells(Start + 1, StartColumn)

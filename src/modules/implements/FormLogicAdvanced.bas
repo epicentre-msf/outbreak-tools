@@ -33,7 +33,7 @@ End Sub
 'Clear all the data in the current workbook
 Private Sub CMD_ClearData_Click()
     Dim impObj As IImpSpecs
-    Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], currwb)
+    Set impObj = ImpSpecs.Create([F_ImportRep], Me, currwb)
     impObj.ClearData
 End Sub
 
@@ -57,14 +57,14 @@ End Sub
 
 'Open the export data form for exports
 Private Sub CMD_ExportData_Click()
-    F_Advanced.Hide
+    Me.Hide
     ClickExportMigration
 End Sub
 
 'Import Migration Data
 Private Sub CMD_ImportData_Click()
     Dim impObj As IImpSpecs
-    Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], currwb)
+    Set impObj = ImpSpecs.Create([F_ImportRep], Me, currwb)
 
     impObj.ImportMigration
 End Sub
@@ -72,7 +72,7 @@ End Sub
 'Import the Geobase
 Private Sub CMD_ImportGeo_Click()
     Dim impObj As IImpSpecs
-    Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], currwb)
+    Set impObj = ImpSpecs.Create([F_ImportRep], Me, currwb)
 
     impObj.ImportGeobase
 End Sub
@@ -80,22 +80,22 @@ End Sub
 'Import historic geobase
 Private Sub CMD_ImportGeoHistoric_Click()
     Dim impObj As IImpSpecs
-    Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], currwb)
+    Set impObj = ImpSpecs.Create([F_ImportRep], Me, currwb)
 
     impObj.ImportGeobase histoOnly:=True
 End Sub
 
 'Leave the advanced form
 Private Sub CMD_ImportMigQuit_Click()
-    F_Advanced.Hide
+    Me.Hide
 End Sub
 
 'Show import report
 Private Sub CMD_ImportMigRep_Click()
     Dim impObj As IImpSpecs
-    Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], currwb)
+    Set impObj = ImpSpecs.Create([F_ImportRep], Me, currwb)
 
-    F_Advanced.Hide
+    Me.Hide
     impObj.ShowReport
 End Sub
 

@@ -225,7 +225,7 @@ Public Sub CheckReadiness(ByVal trads As IDesTranslation)
     'Checking coherence of the linelist name ------------------------------------------------------
 
     'be sure the linelist name is not empty
-    If sh.Range(RNGLLNAME) = "" Then
+    If IsEmpty(sh.Range(RNGLLNAME)) Then
         sh.Range(RNGEDITION).Value = trads.TranslationMsg("MSG_LLName")
         sh.Range(RNGLLNAME).Interior.color = redColor
         Exit Sub
@@ -255,7 +255,7 @@ Private Sub CheckFileExistence(ByVal trads As IDesTranslation)
 
     If Dir(sh.Range(RNGLLDIR).Value & _
            Application.PathSeparator & _
-           sh.Range(RNGLLNAME).Value & ".xlsb") <> "" Then
+           sh.Range(RNGLLNAME).Value & ".xlsb") <> vbNullString Then
 
         sh.Range(RNGEDITION).Value = trads.TranslationMsg("MSG_Correct") & ": " _
         & sh.Range(RNGLLNAME).Value & ".xlsb " _
@@ -269,7 +269,7 @@ Private Sub CheckFileExistence(ByVal trads As IDesTranslation)
                   trads.TranslationMsg("MSG_Title")) = vbNo Then
 
             'The user doen't want to change
-            sh.Range(RNGLLNAME).Value = ""
+            sh.Range(RNGLLNAME).Value = vbNullString
             sh.Range(RNGLLNAME).Interior.color = RGB(252, 228, 214)
 
             'not ready

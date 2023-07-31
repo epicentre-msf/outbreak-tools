@@ -77,7 +77,7 @@ Private Sub AskFilter(ByVal tradmess As ITranslation)
     'Initialize the private useFilter
     useFilter = False
 
-    If F_Export.CHK_ExportFiltered.Value Then
+    If Me.CHK_ExportFiltered.Value Then
 
         confirmFilterUse = MsgBox(tradmess.TranslatedValue("MSG_AskFilter"), _ 
                                   vbYesNo + vbQuestion, _ 
@@ -89,7 +89,7 @@ Private Sub AskFilter(ByVal tradmess As ITranslation)
             UpdateFilterTables calculate:=False
             useFilter = True
         Else
-            F_Export.CHK_ExportFiltered.Value = False
+            Me.CHK_ExportFiltered.Value = False
         End If
     End If
 End Sub
@@ -126,7 +126,7 @@ Private Sub CMD_ShowKey_Click()
 End Sub
 
 Private Sub CMD_Back_Click()
-    F_Export.Hide
+    Me.Hide
 End Sub
 
 'Translate the form, add form sizes.

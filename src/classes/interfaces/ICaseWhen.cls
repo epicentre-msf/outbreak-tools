@@ -16,6 +16,7 @@ Attribute VB_Description = "Interface of CaseWhen"
 Option Explicit
 
 Public Property Get Valid() As Boolean: End Property
-Public Property Get parsedFormula() As String: End Property
 
+'@Ignored ProcedureNotUsed
+Public Property Get parsedFormula() As String: End Property
 Public Property Get Categories() As BetterArray: End Property

@@ -177,9 +177,12 @@ Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula
 End Sub
 
 'Translate a Form
-Private Sub TranslateForm(ByVal UserFrm As UserForm)
+Private Sub TranslateForm(ByVal UserFrm As Object)
     Dim counter As Integer
     Dim formControl As Control
+
+    'Be sure the object is a userform
+    If Not (TypeOf UserFrm Is UserForm) Then Exit Sub
 
     For Each formControl In UserFrm.Controls
         If (TypeOf formControl Is MSForms.CommandButton) Or _
@@ -213,7 +216,7 @@ Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
 End Sub
 
 'Interface
-Public Sub ITranslation_TranslateForm(ByVal UserFrm As UserForm)
+Public Sub ITranslation_TranslateForm(ByVal UserFrm As Object)
     TranslateForm UserFrm
 End Sub
 

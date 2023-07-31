@@ -375,7 +375,7 @@ Private Sub AddFormulas()
         Select Case tabType
 
         Case TypeGlobalSummary                   'Global summary formula
-            finalFormula = CurrentExcelFormula(scope:=1, prefix:="") 'Parse the formula object using table names on analysis
+            finalFormula = CurrentExcelFormula(scope:=1, prefix:=vbNullString) 'Parse the formula object using table names on analysis
             Set rng = .Range("STARTROW_" & tabId)
             rng.Cells(1, 2).FormulaArray = "= " & finalFormula
             AddRngFormat tabFormat, rng.Cells(1, 2)
@@ -862,7 +862,7 @@ Private Sub AddFormulas()
 
             'rowvariable depends on the table type
             rowVar = Switch(spTabType = "geo", "concat_adm1_" & rowVar, spTabType = "hf", _
-                            "hf_" & rowVar, True, "")
+                            "hf_" & rowVar, True, vbNullString)
 
             colVar = specs.Value("column")
 
@@ -1054,10 +1054,6 @@ End Sub
 'Errors
 Private Sub ThrowExecutionError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
-End Sub
-
-Private Sub UnFoundRangeError(ByVal sectionName As String, ByVal rngName As String, ByVal shName As String)
-    ThrowExecutionError "On " & sectionName & ", range " & rngName & "Does not Exists in worksheet " & shName
 End Sub
 
 Private Property Get ICrossTableFormula_Valid() As Boolean

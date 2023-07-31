@@ -24,7 +24,7 @@ Private Sub InitializeTrads()
 End Sub
 
 Private Sub CMD_Back_Click()
-    F_ShowVarLabels.Hide
+    Me.Hide
 End Sub
 
 'Set form width and height, add translations
