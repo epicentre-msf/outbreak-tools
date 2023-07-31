@@ -36,10 +36,10 @@ Private Sub UserForm_Initialize()
 End Sub
 
 Private Sub CMD_ImpRepQuit_Click()
-    F_ImportRep.Hide
+    Me.Hide
 End Sub
 
 Private Sub LBL_Previous_Click()
-    F_ImportRep.Hide
+    Me.Hide
     F_Advanced.Show
 End Sub

@@ -20,7 +20,6 @@ Private Type TTablesSpecs
     hRng As Range
     tRng As Range
     lData As ILinelistSpecs
-    tType As AnalysisTablesType
 End Type
 
 Private this As TTablesSpecs
@@ -116,7 +115,7 @@ Private Property Get SpatialTableTypes() As String
     
     spatType = Switch(dict.VariableExists("hf_" & rowVar), "hf", _
                       dict.VariableExists("adm1_" & rowVar), "geo", _
-                      True, "")
+                      True, vbNullString)
     SpatialTableTypes = spatType
 End Property
 
@@ -341,14 +340,11 @@ Private Property Get Previous() As ITablesSpecs
     Dim hRng As Range
     Dim tRng As Range
     Dim actRng As Range                          'Actual range
-    Dim taType As AnalysisTablesType
-    Dim endCol As Long
     Dim precSec As ITablesSpecs
     
     
     If isNewSection() Then ThrowErrorUnableInstanciate "Your table is on a new section, I can't return the previous table"
     
-    taType = TableType()
     Set hRng = HeaderRange()
     Set actRng = TableRange()
     Set lData = LinelistSpecifications()

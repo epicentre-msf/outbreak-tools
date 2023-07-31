@@ -8,8 +8,9 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = "Watch Updated values in the linelist"
+Attribute VB_Description = "Watch updated values in the linelist"
 
+'@IgnoreModule ReadOnlyPropertyAssignment : Ignore when you affect property Value of a range object
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Watch updated values in the linelist")
@@ -107,16 +108,11 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
   
 End Sub
 
-  'Errors managements
+'Errors managements
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
   Err.Raise VBA.vbObjectError + 515, CLASSNAME, _
    "Unable to create an instance of the class " & CLASSNAME & ": " & errorMessage
 End Sub
-
-Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
-End Sub
-
 
 Private Function RangeExists(ByVal sh As Worksheet, ByVal rngName As String) As Boolean
   Dim rng As Range

@@ -556,7 +556,7 @@ Private Sub ChangeColWidth(ByVal indexValue As Long)
     inputValue = InputBox(trads.TranslatedValue("MSG_ColWidth"), trads.TranslatedValue("MSG_Enter"))
     If (inputValue = vbNullString) Then Exit Sub
     If IsNumeric(inputValue) Then Exit Do
-    If (MsgBox (trads.TranslatedValue("MSG_EnterNumeric"), vbOkCancel, "") = vbCancel) Then Exit Sub
+    If (MsgBox (trads.TranslatedValue("MSG_EnterNumeric"), vbOkCancel, vbNullString) = vbCancel) Then Exit Sub
   Loop
 
   On Error Resume Next

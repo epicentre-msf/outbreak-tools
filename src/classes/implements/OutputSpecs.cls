@@ -663,10 +663,6 @@ Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
    "Unable to create an instance of the class " & CLASSNAME & ": " & errorMessage
 End Sub
 
-Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
-End Sub
-
 'Exposed Methods -------------------------------------------------
 
 

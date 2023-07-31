@@ -29,5 +29,6 @@ Public Property Get Valid() As Boolean
 End Property
 
 'Get the choice name
-Public Property Get choiceName() As String
+'@Ignored ProcedureNotUsed
+Public Property Get ChoiceName() As String
 End Property
