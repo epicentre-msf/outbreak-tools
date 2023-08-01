@@ -161,11 +161,16 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False)
   Dim outwb As Workbook
   Dim firstSheetName As String
   Dim expobj As ILLExport
-  Dim lltrads As ILLTranslations
-
   Dim counter As Long
   Dim prevSheetName As String
   Dim expDictRng As Range
+  
+  
+  'Variables for p-codes removal from the exports
+  Dim expNumberRng As Range
+  Dim expMainLabRng As Range
+  Dim pcodesTagList As BetterArray
+  Dim exportpcodes As Boolean
 
   Set inpwb = InputWkb()
   Set tempsh = inpwb.Worksheets(TEMPSHEET)
@@ -175,21 +180,49 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False)
   Set sheetNamesList = New BetterArray
   Set outwb = outputWkb()
   Set expobj = ExportObject()
-  Set lltrads = LLTradsObject()
+  Set pcodesTagList = New BetterArray
 
   firstSheetName = outwb.Worksheets(1).Name
   scope = ActualScope()
 
-  If (scope <> ExportAll) Then
+  If (scope <> ExportAll) Then 'Here export is export 1, 2, 3, 4 or 5.
     expName = "export" & " " & CStr(scope)
-    'Filter the dictionary
-    Set dictData = dict.Data.FilterData(varName:=expName, criteriaName:="<>", returnedColumnName:="__all__", includeHeaders:=True)
+
+    'Export Or Not the p-Codes.
+    'I will add pcodes informations on the dictionary if export pcodes == yes
+    'otherwise pcodes will be removed as default behavior. If you want pcodes
+    'to be exported, you need to explicitly add export pcodes == Yes in the
+    'export sheet of the setup file. Otherwise they will be removed from exports.
+    exportpcodes = (expobj.Value("export pcodes", CInt(scope)) = "yes")
+
+    If Not exportpcodes Then
+      pcodesTagList.Push "geo_pcode_adm1", "geo_pcode_adm2", "geo_pcode_adm3", _ 
+                         "geo_pcode_adm4", "geo_concat_adm1", "geo_concat_adm2", _ 
+                         "geo_concat_adm3", "geo_concat_adm4"
+
+      Set expNumberRng = dict.DataRange(expName)
+      Set expMainLabRng = dict.DataRange("main label")
+
+      'remove the export number for those pcodes elements (including concat elements)
+      For counter = 1 To expMainLabRng.Rows.Count
+        If pcodesTagList.Includes(expMainLabRng.Cells(counter, 1).Value) Then
+          expNumberRng.Cells(counter, 1).ClearContents
+        End If
+      Next
+    End If
+
+    'It is important to remove pcodes elements before filtering the linelist.
+    'Filter the dictionary on only variables to includes in exports
+    Set dictData = dict.Data.FilterData(varName:=expName, _ 
+                                        criteriaName:="<>", _ 
+                                        returnedColumnName:="__all__", _ 
+                                        includeHeaders:=True)
     'The temporary sheet contains the dictionary for the exports
-  ElseIf (scope = ExportAll) Then
+  ElseIf (scope = ExportAll) Then 'Here export is export for migration
     dictData.FromExcelRange dict.DataRange(includeHeaders:=True)
   End If
 
-  BusyApp 'Filetering can return back calculations
+  BusyApp 'Filetering can return back calculations, so important to kill them again
   tempsh.Cells.Clear
   dictData.ToExcelRange tempsh.Cells(1, 1)
 
@@ -199,9 +232,9 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False)
   'the export dictionary datarange is used for sorting, and also for preparing the dictionary
   Set expDictRng = expdict.DataRange(includeHeaders:=True)
 
-  'Sort on table names and then on export name
   If scope <> ExportAll Then
 
+    'Sort the dictionary range on table names and then on export name
     expDictRng.Sort key1:=expdict.DataRange("table name", includeHeaders:=True), _
                     key2:=expdict.DataRange(expName, includeHeaders:=True), Header:=xlYes
   End If

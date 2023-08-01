@@ -83,7 +83,13 @@ Private Property Get Value(ByVal colName As String, ByVal exportNumber As Intege
     returnedVal = vbNullString
 
     Set expData = Data()
+
+    'It is possible that the column does not exists, bypass and continue, you
+    'should return vbNullString in that case
+    On Error Resume Next
     Set returnedRng = expData.DataRange(colName)
+    On Error GoTo 0
+    
     If Not (returnedRng Is Nothing) Then _
     returnedVal = returnedRng.Cells(exportNumber, 1).Value
 
