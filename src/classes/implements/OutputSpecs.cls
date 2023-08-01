@@ -398,11 +398,13 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
   Dim inpsh As Worksheet
   Dim inpwb As Workbook
   Dim outsh As Worksheet
+  Dim pass As ILLPasswords
 
   Set expdict = ExportDictionary()
   Set outwb = outputWkb()
   Set inpwb = InputWkb()
   Set sheetNamesList = expdict.UniqueValues("sheet name")
+  Set pass = LLPasswords.Create(inpwb.Worksheets(PASSWORDSHEET))
   Set expobj = ExportObject()
   scope = ActualScope()
 
@@ -432,9 +434,15 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
       'Define the custom table to export
       Set csTab = CustomTable.Create(Lo)
 
+      'Unprotect the worksheet for export (important to unhide columns)
+      pass.UnProtect inpsh.Name
+
       'Export the custom table to the worksheet
       csTab.Export outsh, headersList
-      
+
+      'Protect back the worksheet
+      pass.Protect inpsh.Name
+    
       'Add labels if required
       If useLabels Then labelsList.ToExcelRange outsh.Cells(1, 1), TransposeValues:=True
 
