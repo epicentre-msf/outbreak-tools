@@ -167,7 +167,7 @@ Sub EventValueChangeLinelist(Target As Range)
 
     If Target.Row = startLine - 1 Then
         Target.Value = Target.Offset(-1).Name.Name
-        MsgBox "Do not modify the Headers!!!!!"
+        MsgBox "You can't modify this header."
     End If
 
 errHand:
