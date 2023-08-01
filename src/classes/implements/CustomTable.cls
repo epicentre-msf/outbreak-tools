@@ -9,6 +9,8 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Wrapper for Listobjects manipulations"
 
+'@IgnoreModule ExcelMemberMayReturnNothing
+
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Wrapper for Listobjects manipulations")
@@ -27,6 +29,7 @@ Private this As TCustomTable
 Private Const CLASSNAME As String = "ICustomTable"
 Private Const NBROWSADD As Long = 5 'Number of Rows to add when resizing
 Private NOTIMPORTEDCOLUMNS As BetterArray
+Private HIDDENCOLUMNSLIST As BetterArray
 
 Public Function Create(ByVal Lo As ListObject, _
                       Optional ByVal idCol As String = vbNullString, _
@@ -356,8 +359,10 @@ Private Sub Import(ByVal impTab As Object, _
   If NOTIMPORTEDCOLUMNS Is Nothing Then 
     Set NOTIMPORTEDCOLUMNS = New BetterArray
   End If
-
   NOTIMPORTEDCOLUMNS.Clear
+
+  'Unhide hidden columns before import
+  UnhideHiddenColumns
 
   Set imphRng = impTab.HeaderRange()
   Set sh = Wksh()
@@ -410,7 +415,11 @@ Private Sub Import(ByVal impTab As Object, _
       NOTIMPORTEDCOLUMNS.Push headerValue
     End If
   Next
+  
   this.hasImport = True
+
+  'return back hidden columns
+  ReturnBackHiddenColumns
 End Sub
 
 Private Property Get ImportColumnsNotFound() As BetterArray
@@ -422,6 +431,46 @@ Private Property Get HasColumnsNotImported() As Boolean
   If this.hasImport Then _
   HasColumnsNotImported = (NOTIMPORTEDCOLUMNS.Length >= 1)
 End Property
+
+'Those functions are for Unhiding and hiding back columns before Import or Exports
+'Sometimes custom table contains hidden columns, range.Find method does not include
+'hidden rows or column when searching, so we need to unhide all columns of 
+'the worksheet before Import/Export and to return back the state of hidden columns
+'after import/export.
+
+Private Sub UnhideHiddenColumns()
+  Dim counter As Long 
+  Dim hRng As Range
+
+  Set hRng = HeaderRange()  
+  
+  Set HIDDENCOLUMNSLIST = New BetterArray
+  HIDDENCOLUMNSLIST.Clear
+
+  For counter = 1 To hRng.Columns.Count
+    If hRng.Cells(1, counter).EntireColumn.Hidden Then
+      On Error Resume Next
+      hRng.Cells(1, counter).EntireColumn.Hidden = False
+      On Error GoTo 0
+      HIDDENCOLUMNSLIST.Push counter
+    End If
+  Next
+End Sub
+
+Private Sub ReturnBackHiddenColumns()
+  Dim counter As Long
+  Dim hRng As Range
+
+  Set hRng = HeaderRange()
+  'We should keep in mind that a returnBack shoud be AFTER a unhide.
+  'For safeguard purposes, I can work toward ignoring errors (variable not set for ex.)
+  On Error Resume Next
+    For counter = HIDDENCOLUMNSLIST.LowerBound To HIDDENCOLUMNSLIST.UpperBound
+      hRng.Cells(1, HIDDENCOLUMNSLIST.Item(counter)).EntireColumn.Hidden = True
+    Next
+  On Error GoTo 0
+End Sub
+
 
 'Export a Custom Table to a Worksheet
 Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray)
@@ -442,6 +491,9 @@ Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray)
   sh.Cells.Clear
   headerCounter = 1
 
+  'This will unhide all hidden columns and keep track of them
+  UnhideHiddenColumns
+
   For counter = headersList.LowerBound to headersList.UpperBound
 
     headerName = headersList.Item(counter)
@@ -459,6 +511,8 @@ Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray)
     
   Next
 
+  'Return back the previously hidden columns
+  ReturnBackHiddenColumns
 End Sub
 
 'Sort a listObject on one column (on first element found)
