@@ -372,6 +372,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     Dim mainLabLength As Long
     Dim design As ILLFormat
     Dim varToPrint As String
+    Dim choicust As String
 
     'The varRange depends on the usePrinted, on printed worksheet, it is on another
     'sheet.
@@ -397,6 +398,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     varIndex = CLng(ValueOf("column index"))
     calculated = trans.TranslatedValue("MSG_Calculated")
     mandatory = trans.TranslatedValue("MSG_Mandatory")
+    choicust = trans.TranslatedValue("MSG_CustomChoice")
 
     'add an anchor to where the table starts (on printed sheet and on non printed sheet)
     If (varIndex = 1) And (Not usePrinted) Then cellRng.Name = ValueOf("table name") & "_" & "START"
@@ -406,6 +408,8 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     If (varControl = "formula") Or (varControl = "case_when") Or _
        (varControl = "choice_formula") Then
         varSublab = varSublab & chr(10) & calculated
+    ElseIf (varControl = "choice_custom") Then
+        varSublab = varSublab & chr(10) & choicust 
     End If
 
     mainLabLength = Len(varMainLab)
