@@ -107,7 +107,7 @@ Private Property Get StartRow() As Long
     With sh
         'Test if there is already a startrow
         If Not RangeExists("STARTROW_" & tabId) Then
-            If specs.isNewSection() Or specs.TableType <> TypeTimeSeries Then
+            If specs.isNewSection() Or (specs.TableType <> TypeTimeSeries And specs.TableType <> TypeSpatioTemporal) Then
                 strtRow = .Cells(.Rows.Count, STANDARDSTARTCOL).End(xlUp).Row + 1
                 strtRow = IIf(strtRow = 2, 6, strtRow) 'Be sure to Start after the 1st lines
                 
@@ -147,17 +147,17 @@ Private Property Get StartColumn() As Long
     Dim specs As ITablesSpecs
     Dim strtcol As Long
     Dim tabId As String
-    Dim tabType As Byte
+    Dim tablType As Byte
 
     Set specs = Specifications
     tabId = specs.TableId
-    tabType = specs.TableType
+    tablType = specs.TableType
 
     Set sh = Wksh
     With sh
         If Not RangeExists("STARTCOL_" & tabId) Then
             'On time series, the startcolumn depends on new section
-            If   (tabType = TypeTimeSeries Or tabType = TypeSpatioTemporal) And _ 
+            If   (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And _ 
                  (Not specs.isNewSection()) Then
                 strtcol = .Cells(StartRow + 1, .Columns.Count).End(xlToLeft).Column
             Else
@@ -210,14 +210,17 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     Dim rend As Long
     Dim sh As Worksheet
     Dim specs As ITablesSpecs
+    Dim tablType As Byte
 
     Set specs = Specifications
-    If specs.TableType = TypeGlobalSummary Then ThrowExecutionError "Global summary does not have a row category"
+    tablType = specs.TableType
+
+    If tablType = TypeGlobalSummary Then ThrowExecutionError "Global summary does not have a row category"
     Set sh = Wksh()
     'Start Row
-    Select Case specs.TableType()
+    Select Case tablType
 
-    Case TypeBivariate, TypeTimeSeries, TypeSpatial
+    Case TypeBivariate, TypeTimeSeries, TypeSpatial, TypeSpatioTemporal
         Start = StartRow + 1
     Case TypeUnivariate, TypeGlobalSummary
         Start = StartRow
@@ -225,9 +228,8 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
     If Not includeHeaders Then Start = Start + 1
 
     'End Row
-    rend = Switch(specs.TableType = TypeTimeSeries And onlyCategories, EndRow - 2, _
-                  specs.TableType = TypeTimeSeries, EndRow, _
-                  (specs.HasTotal Or specs.TableType = TypeSpatial) And onlyCategories, EndRow - 1, _
+    rend = Switch((tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And onlyCategories, EndRow - 2, _
+                  (specs.HasTotal Or tablType = TypeSpatial) And onlyCategories, EndRow - 1, _
                   True, EndRow)
 
     With sh
@@ -267,25 +269,24 @@ Public Property Get ColumnRange(ByVal colVal As String, Optional ByVal includeHe
     Dim sh As Worksheet
     Dim specs As ITablesSpecs
     Dim rend As Long
+    Dim tablType As Byte
 
     Set rng = HeaderRange()
     Set sh = Wksh()
     Set specs = Specifications
+    tablType = specs.TableType
 
     'startRow
-    Start = Switch(specs.TableType = TypeBivariate, StartRow + 2, _
-                   specs.TableType = TypeTimeSeries, StartRow + 2, _
-                   specs.TableType = TypeSpatial, StartRow + 2, _
+    Start = Switch(tablType = TypeBivariate, StartRow + 2, _
+                   (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal), StartRow + 2, _
+                   tablType = TypeSpatial, StartRow + 2, _
                    True, StartRow + 1)
     'End Row
-    rend = Switch(specs.TableType = TypeTimeSeries And onlyCategories, EndRow - 2, _
-                  specs.TableType = TypeTimeSeries, EndRow, _
-                  (specs.HasTotal Or specs.TableType = TypeSpatial) And onlyCategories, EndRow - 1, _
+    rend = Switch((tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And onlyCategories, EndRow - 2, _
+                  (specs.HasTotal Or tablType = TypeSpatial) And onlyCategories, EndRow - 1, _
                   True, EndRow)
 
     If includeHeaders Then Start = Start - 1
-
-
 
     'Test if the value exists
     If ValueExists(rng, colVal) Then
@@ -439,14 +440,14 @@ Private Sub BivariateColumns(ByVal Start As Long, ByVal specs As ITablesSpecs, B
             If specs.HasPercentage Then
                 counter = 1
 
-                Do While counter <= colData.UpperBound
+                Do While counter <= colData.Length
 
                     newColData.Push colData.Item(counter), ""
                     labData.Push colLab, Percent(transPercent, percentageValue)
                     counter = counter + 1
                 Loop
             Else
-                For counter = 1 To colData.UpperBound
+                For counter = 1 To colData.Length
                     labData.Push colLab
                 Next
                 Set newColData = colData.Clone()
@@ -484,7 +485,7 @@ Private Sub AddColumns()
     Dim sumLab As String
     Dim timeVarLab As String
     Dim tabId As String
-    Dim tabType As Byte
+    Dim tablType As Byte
 
     Start = StartRow
     Set sh = Wksh()
@@ -492,7 +493,7 @@ Private Sub AddColumns()
     Set trans = trads()
     Set vars = LLVariables.Create(specs.Dictionary)
     tabId = specs.TableId()
-    tabType = specs.TableType()
+    tablType = specs.TableType()
     Set colData = New BetterArray
     colData.LowerBound = 1
 
@@ -500,7 +501,7 @@ Private Sub AddColumns()
     transPercent = trans.TranslatedValue("MSG_Percent")
 
     With sh
-        Select Case tabType
+        Select Case tablType
         Case TypeGlobalSummary
             'Test if the global summary is set
 
@@ -531,7 +532,7 @@ Private Sub AddColumns()
 
             BivariateColumns Start, specs, trans, sh
 
-            If (tabType = TypeTimeSeries) Then
+            If (tablType = TypeTimeSeries) Then
                 colVarLab = vars.Value(colName:="main label", varName:=specs.Value("column"))
             Else
                 colVarLab = vars.Value(colName:="sub section", varName:="adm1_" & specs.Value("column"))
@@ -553,6 +554,7 @@ Private Sub AddColumns()
         Case TypeSpatial
 
             BivariateColumns Start, specs, trans, sh
+
         End Select
     End With
 End Sub
@@ -772,18 +774,24 @@ Private Sub AddHeader()
                 .Cells(start - 2, StartColumn).Name = "SECTION_" & tabId
 
                 'Anchor for the future table header elements
-                Set rng = .Range("SECTION_" & tabId).Offset(2, 3)
+                Set rng = .Range("SECTION_" & tabId).Offset(2)
 
                 rng.Value = trans.TranslatedValue("MSG_InputGeoLevels")
+                rng.Name = "INPUTSPTGEO_LABEL_" & tabId
 
                 'Add the number of geolevels
 
-                Set rng = rng.Offset(2)
+                Set cellRng = rng.Offset(2)
                 For counter = 1 To nGeo
-                    rng.Cells(counter, 1).Name = "INPUTSPTGEO_" & counter & "_" & tabId
+                    cellRng.Cells(counter, 1).Name = "INPUTSPTGEO_" & counter & "_" & tabId
                 Next
 
-                Set rng = rng.Offset(nGeo + 3, -3)
+                Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(nGeo, 1))
+                rng.Name = "INPUTSPTGEO_USER_" & tabId
+
+                'Add time series elements
+
+                Set rng = cellRng.Offset(nGeo + 3)
                 'Now add the other elements for the time series.
 
                 'Analysis Period Date
@@ -862,6 +870,7 @@ Private Sub NameRanges()
     Dim tabId As String
     Dim cellRng As Range
     Dim tablType As AnalysisTablesType
+    Dim isNewSection As Boolean
 
 
     Set sh = Wksh()
@@ -869,6 +878,7 @@ Private Sub NameRanges()
     Set specs = Specifications
     tabId = specs.TableId
     tablType = specs.TableType
+    isNewSection = specs.isNewSection()
 
     If tablType = TypeGlobalSummary Then Exit Sub 'No name ranges for global summary
 
@@ -881,12 +891,12 @@ Private Sub NameRanges()
         If nbCols = 0 Then ThrowExecutionError "Execution Error: Found a table with number of columns 0: " & tabId
 
         'The label of rows categories of the table (with the missing, will serve for graphs)
-        If (tablType <> TypeTimeSeries) Or (tablType = TypeTimeSeries And specs.isNewSection()) Then
+        If isNewSection Or (tablType <> TypeTimeSeries And tablType <> TypeSpatioTemporal) Then
             Set catRng = RowsCategoriesRange(onlyCategories:=True, includeHeaders:=False)
             catRng.Name = "ROW_CATEGORIES_" & tabId
             catRng.Cells(0, 1).Name = "LABEL_ROW_CATEGORIES_" & tabId
             'Set the start time period and last time period dates
-            If (tablType = TypeTimeSeries) Then
+            If (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) Then
                 Set rng = catRng.Offset(, -1)
                 rng.Name = "END_TIME_PERIOD_" & tabId
                 Set rng = rng.Offset(, -1)
@@ -899,7 +909,7 @@ Private Sub NameRanges()
 
         'On time series and not on new sections, start with the previous end row
 
-        If (tablType = TypeTimeSeries) And Not (specs.isNewSection) Then
+        If (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And Not isNewSection Then
             If Not RangeExists("ENDTABLE_" & specs.Previous.TableId) Then ThrowExecutionError "I can't append the new time series to a previous table, No previous table  were found :("
             Set cellRng = .Range("ENDTABLE_" & specs.TableId)
             Set catRng = .Range(cellRng.Offset(1 - NBROWSTIMESERIES), cellRng.Offset(-3)) 'should be negative the offset (going backward)
@@ -915,7 +925,7 @@ Private Sub NameRanges()
 
             Select Case tablType
 
-            Case TypeBivariate, TypeTimeSeries, TypeSpatial
+            Case TypeBivariate, TypeTimeSeries, TypeSpatial, TypeSpatioTemporal
                 labCol = -1
             Case TypeUnivariate
                 labCol = 0
@@ -1080,7 +1090,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         End If
 
         'Tittle (global summary and time series don't have a title)
-        If tablType <> TypeGlobalSummary And tablType <> TypeTimeSeries Then
+        If (tablType <> TypeGlobalSummary) And (tablType <> TypeTimeSeries) And (tablType <> TypeSpatioTemporal) Then
             Set rng = .Range("TITLE_" & tabId)
             DesignFormat.ApplyFormat rng, AnalysisTableTitle
         End If
@@ -1133,7 +1143,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             Set rng = .Range("STARTCOL_" & tabId)
             DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesLabelColumn
 
-        Case TypeTimeSeries
+        Case TypeTimeSeries, TypeSpatioTemporal
 
             'Row categories are formatted only on new sections
             If NewSection Then
@@ -1160,13 +1170,13 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             Set rng = .Range("ROW_CATEGORIES_" & tabId)
             DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesUnivariateRow
         
-        Case TypeBivariate, TypeTimeSeries, TypeSpatial
+        Case TypeBivariate, TypeTimeSeries, TypeSpatial, TypeSpatioTemporal
             'rows
-            If (tablType <> TypeTimeSeries) Or (NewSection) Then
+            If ((tablType <> TypeTimeSeries) And (tablType <> TypeSpatioTemporal)) Or NewSection Then
                 Set rng = .Range("ROW_CATEGORIES_" & tabId)
                 DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateRow
                 'start and end date columns
-                If tablType = TypeTimeSeries Then
+                If (tablType = TypeTimeSeries) Or (tablType = TypeSpatioTemporal) Then
                     Set rng = rng.Offset(, -1)
                     Set rng = .Range(rng.Cells(1, 0), rng.Cells(rng.Rows.Count + 1, 1))
                     DesignFormat.ApplyFormat rng, scope:=LinelistHiddenCell
@@ -1180,6 +1190,13 @@ Private Sub Format(ByVal desFormat As ILLFormat)
                         DesignFormat.ApplyFormat rng, scope:=AnalysisDateCell
                     Next
                 End If
+            End If
+
+            'For spatio-temporal, there is another row column for selected values
+            'by the user, they will be formated as Rows    
+            If RangeExists("INPUTSPTGEO_USER_" & tabId) Then
+                Set rng = .Range("INPUTSPTGEO_USER_" & tabId)
+                DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateRow
             End If
 
             'columns
@@ -1201,7 +1218,8 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateColumn
             Set rng = rng.Offset(1)
             DesignFormat.ApplyFormat rng, scope:=AnalysisFirstRow
-        
+
+
         End Select
         
         'Interior values =======================================================
@@ -1224,7 +1242,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             If (InStr(1, rngName, "ROW") > 0) And RangeExists(rngName) Then
                 Set rng = .Range(rngName)
                 'On time series will shift the first cell on non new sections
-                If tablType = TypeTimeSeries And (Not NewSection) Then
+                If (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And (Not NewSection) Then
                     DesignFormat.ApplyFormat rng, scope:=AnalysisMissingRowWithoutHeader
                 Else
                     DesignFormat.ApplyFormat rng, scope:=AnalysisMissingRow
@@ -1241,7 +1259,8 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         rngTable.Push "TOTAL_MISSING_", "TOTAL_TOTAL_", _
                       "USER_START_DATE_", "USER_END_DATE_", "TIME_UNIT_", _
                       "MISSING_TOTAL_", "MISSING_MISSING_", "START_DATE_LABEL_", _
-                      "TIME_UNIT_LABEL_", "END_DATE_LABEL_", "POPFACT_", "POPFACTLABEL_"
+                      "TIME_UNIT_LABEL_", "END_DATE_LABEL_", "POPFACT_", "POPFACTLABEL_", _ 
+                      "INPUTSPTGEO_LABEL_"
         
         For counter = rngTable.LowerBound To rngTable.UpperBound
             rngName = rngTable.Item(counter) & tabId
@@ -1310,7 +1329,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         
         'The whole table =======================================================
 
-        wholeTableStart = IIf(tablType = TypeTimeSeries And (Not NewSection), _
+        wholeTableStart = IIf((tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And (Not NewSection), _
                               StartColumn + 1, StartColumn)
         If (tablType <> TypeUnivariate) And (tablType <> TypeGlobalSummary) Then
             Set rng = .Range(.Cells(StartRow, wholeTableStart), .Cells(EndRow, EndColumn))
@@ -1422,5 +1441,3 @@ End Property
 Private Property Get ICrossTable_EndRow() As Long
     ICrossTable_EndRow = EndRow()
 End Property
-
-
