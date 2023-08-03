@@ -324,14 +324,30 @@ Private Property Get Data(ByVal rowOrCol As String) As BetterArray
     Dim nameVar As String
     Dim vars As ILLVariables
     Dim lData As ILinelistSpecs
+    Dim nbGeo As Long
+    Dim counter As Long
 
     Set lData = LinelistSpecifications()
     Set vars = LLVariables.Create(lData.Dictionary)
     Set varsCat = New BetterArray
+    varsCat.LowerBound = 1
+    
     nameVar = Value(rowOrCol)
-    If vars.Contains(nameVar) Then
+
+    'for SpatioTemporal data, change the column categories
+    If (TableType = TypeSpatioTemporal) And (rowOrCol = "column") Then
+        nbGeo = 5
+        On Error Resume Next
+        nbGeo = CLng(Value("n geo"))
+        On Error GoTo 0
+        For counter = 1 To nbGeo
+            varsCat.Push vbNullString
+        Next
+    ElseIf vars.Contains(nameVar) Then
         Set varsCat = lData.Categories(nameVar)
     End If
+
+    
     Set Data = varsCat.Clone()
 End Property
 
