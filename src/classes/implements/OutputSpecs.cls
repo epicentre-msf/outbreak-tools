@@ -618,7 +618,7 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
                 ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     'Display the private password!
     MsgBox trads.TranslatedValue("MSG_FileSaved") & Chr(10) & _
-           trads.TranslatedValue("MSG_Password") & ": " & filePassword
+           trads.TranslatedValue("MSG_Password") & filePassword
   Else
     'save with password
     outwb.SaveAs fileName:=filePath, _
