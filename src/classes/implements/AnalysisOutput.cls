@@ -189,8 +189,8 @@ Private Sub SplitOutputSheet(Optional ByVal scope As AnalysisScope = AnalysisSco
   BusyApp
   With Application.ActiveWindow
     .SplitRow = rowSplit
-    'Split on the third column for Time series only
-    If scope = AnalysisScopeTimeSeries Then .SplitColumn = 3
+    'Split on the third column for Time series and spatio-temporal only
+    If scope = AnalysisScopeTimeSeries Or scope = AnalysisScopeSpatioTemporal Then .SplitColumn = 3
     'For spatial or time series, reduce the zoom for the worksheeet
     If scope <> AnalysisScopeNormal Then .Zoom = 70
     .FreezePanes = True
