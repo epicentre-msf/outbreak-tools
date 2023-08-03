@@ -272,8 +272,8 @@ Public Property Get ValidTable() As Boolean
 
     Case TypeSpatioTemporal
          rowType = vars.Value(colName:="variable type", varName:=rowVar)
-         Valid = (dict.VariableExists("adm1_" & rowVar) Or _ 
-                 dict.VariableExists("hf_" & rowVar)) And _
+         Valid = (dict.VariableExists("adm1_" & colVar) Or _ 
+                 dict.VariableExists("hf_" & colVar)) And _
                  (rowType = "date")
 
     End Select
