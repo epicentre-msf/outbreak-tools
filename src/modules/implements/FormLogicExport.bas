@@ -64,9 +64,13 @@ Private Sub CreateExport(Byval scope As Byte)
     Exit Sub
 
 errHand:
+    On Error Resume Next
     MsgBox  tradmess.TranslatedValue("MSG_ErrHandExport"), _ 
             vbOKOnly + vbCritical, _ 
             tradmess.TranslatedValue("MSG_Error")
+    'Close all oppened workbooks
+    expOut.CloseAll
+    On Error GoTo 0
     NotBusyApp
 End Sub
 

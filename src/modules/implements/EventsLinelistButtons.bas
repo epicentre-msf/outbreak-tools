@@ -769,7 +769,7 @@ Public Sub ClickSortTable()
 
         headerName = sh.Cells(startRow - 1, targetColumn).Value
 
-        If (prevRngName <> headerName) Then
+        If (prevRngName <> headerName) Or (nbTimes = 0) Then
             'Ask the user if really want to sort
             prevRngName = headerName
             nbTimes = 0
@@ -778,8 +778,6 @@ Public Sub ClickSortTable()
                 vbYesNo + vbExclamation) = vbNo Then
                 Exit Sub
             End If
-        Else
-            nbTimes = nbTimes + 1
         End If
 
         'The sortorder is related to the number of times you clik on the same range
@@ -788,8 +786,9 @@ Public Sub ClickSortTable()
         sortOrder = IIf((nbTimes Mod 2) = 0, xlAscending, xlDescending)
         Set LoRng = sh.ListObjects(tabName).Range
         Set sortRng = sh.ListObjects(tabName).ListColumns(headerName).Range
+        nbTimes = nbTimes + 1
         
-        BusyApp
+        BusyApp  cursor:=xlNorthwestArrow
         'Unprotect the active worksheet, sort the range, and protect back.
         'I have to keep the protect/unprotect step as far as possible for 
         'performance issues
