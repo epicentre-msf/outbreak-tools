@@ -23,3 +23,4 @@ Public Sub AddData(): End Sub
 Public Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boolean = False): End Sub
 Public Property Get ExportFolder() As String : End Property
 Public Sub SaveGeo(ByVal geoObj As ILLGeo, Optional ByVal onlyHistoric As Boolean = False): End Sub
+Public Sub CloseAll(): End Sub

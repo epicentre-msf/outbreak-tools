@@ -83,9 +83,12 @@ Private Sub CreateExport()
     Exit Sub
 
 errHand:
+    On Error Resume Next
     MsgBox  tradmess.TranslatedValue("MSG_ErrExportData"), _ 
             vbOKOnly + vbCritical, _ 
             tradmess.TranslatedValue("MSG_Error")
+    expOut.CloseAll
+    On Error GoTo 0
     NotBusyApp
 End Sub
 

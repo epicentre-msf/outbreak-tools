@@ -559,6 +559,14 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
   folderPath = ExportFolder()
   If folderPath = vbNullString Then Exit Sub
   
+  'In case there is a \ or / at the end of the folder path, remove it because
+  'we will need to paste the file name further. On local disks like D:\ this should
+  'avoid ending up with D:\\... as file Path.
+  If InStrRev(folderPath, Application.PathSeparator, _ 
+     Len(folderPath)) = Len(folderPath) Then
+    folderPath = Left(folderPath, (Len(folderPath) - 1) )
+  End If
+  
 
   scope = ActualScope()
   Set expobj = ExportObject()
@@ -570,6 +578,9 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
   
   'Get the fileName of the export
   fileName = expobj.ExportFileName(scope, dict, pass)
+  
+
+
   filePath =  folderPath & Application.PathSeparator & fileName
 
   fileExtension = expobj.Value(colName:="file format", exportNumber:=CInt(scope))
@@ -668,6 +679,15 @@ Private Sub SaveGeo(ByVal geoObj As ILLGeo,  _
   outwb.Close saveChanges:=False 
 End Sub
 
+'Close everything in case of error
+Private Sub CloseAll()
+  On Error Resume Next
+  this.outwb.Close saveChanges:=False
+  this.outgeowb.Close saveChanges:=False
+  this.outgeohistwb.Close saveChanges:=False
+  On Error GoTo 0
+End Sub
+
 'Checking requirements before instanciating the class
 Private Sub CheckRequirements(ByVal currwb As Workbook)
 
@@ -700,6 +720,7 @@ Private Sub sheetExists(ByVal specswkb As Workbook, ByVal sheetName As String)
   If Not checkExists Then ThrowErrorUnableInstanciate " Worksheet " & sheetName & " Not found!"
 
 End Sub
+
 
 'Speed up application
 Private Sub BusyApp()
@@ -750,4 +771,8 @@ End Property
 
 Private Sub IOutputSpecs_SaveGeo(ByVal geoObj As ILLGeo, Optional ByVal onlyHistoric As Boolean = False)
   SaveGeo geoObj, onlyHistoric
+End Sub
+
+Private Sub IOutputSpecs_CloseAll()
+  CloseAll
 End Sub
