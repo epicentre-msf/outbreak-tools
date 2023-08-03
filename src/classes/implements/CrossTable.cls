@@ -147,18 +147,22 @@ Private Property Get StartColumn() As Long
     Dim specs As ITablesSpecs
     Dim strtcol As Long
     Dim tabId As String
+    Dim tabType As Byte
 
     Set specs = Specifications
     tabId = specs.TableId
+    tabType = specs.TableType
+
     Set sh = Wksh
     With sh
         If Not RangeExists("STARTCOL_" & tabId) Then
             'On time series, the startcolumn depends on new section
-
-            strtcol = IIf(specs.TableType = TypeTimeSeries And (Not specs.isNewSection()), _
-                          .Cells(StartRow + 1, .Columns.Count).End(xlToLeft).Column, _
-                          STANDARDSTARTCOL)
-
+            If   (tabType = TypeTimeSeries Or tabType = TypeSpatioTemporal) And _ 
+                 (Not specs.isNewSection()) Then
+                strtcol = .Cells(StartRow + 1, .Columns.Count).End(xlToLeft).Column
+            Else
+                strtcol = STANDARDSTARTCOL
+            End If
             StartColumn = strtcol
             .Cells(StartRow - 1, strtcol + 1).Name = "STARTCOL_" & tabId
         Else
@@ -345,7 +349,7 @@ Private Sub AddRows()
             'Define the endrow
             EndRow = Start + 1 + rowsData.Length
 
-        Case TypeTimeSeries
+        Case TypeTimeSeries, TypeSpatioTemporal
             'Add rows for time series only on new sections
             If specs.isNewSection() Then
 
@@ -480,6 +484,7 @@ Private Sub AddColumns()
     Dim sumLab As String
     Dim timeVarLab As String
     Dim tabId As String
+    Dim tabType As Byte
 
     Start = StartRow
     Set sh = Wksh()
@@ -487,6 +492,7 @@ Private Sub AddColumns()
     Set trans = trads()
     Set vars = LLVariables.Create(specs.Dictionary)
     tabId = specs.TableId()
+    tabType = specs.TableType()
     Set colData = New BetterArray
     colData.LowerBound = 1
 
@@ -494,7 +500,7 @@ Private Sub AddColumns()
     transPercent = trans.TranslatedValue("MSG_Percent")
 
     With sh
-        Select Case specs.TableType()
+        Select Case tabType
         Case TypeGlobalSummary
             'Test if the global summary is set
 
@@ -521,10 +527,16 @@ Private Sub AddColumns()
             BivariateColumns Start, specs, trans, sh
             .Range("STARTCOL_" & tabId).Value = vars.Value(colName:="main label", varName:=specs.Value("column"))
 
-        Case TypeTimeSeries
+        Case TypeTimeSeries, TypeSpatioTemporal
 
             BivariateColumns Start, specs, trans, sh
-            colVarLab = vars.Value(colName:="main label", varName:=specs.Value("column"))
+
+            If (tabType = TypeTimeSeries) Then
+                colVarLab = vars.Value(colName:="main label", varName:=specs.Value("column"))
+            Else
+                colVarLab = vars.Value(colName:="sub section", varName:="adm1_" & specs.Value("column"))
+            End If
+
             timeVarLab = vars.Value(colName:="main label", varName:=specs.Value("time"))
             sumLab = specs.Value("label")
 
@@ -556,6 +568,7 @@ Private Sub AddHeader()
     Dim tabId As String
     Dim rng As Range
     Dim cellRng As Range
+    Dim nGeo As Long
 
     Set sh = Wksh()
     Set specs = Specifications
@@ -594,6 +607,7 @@ Private Sub AddHeader()
         Case TypeTimeSeries
 
             If specs.isNewSection() And (Not RangeExists("SECTION_" & tabId)) Then
+
                 For counter = 1 To 7
                     .Rows(Start - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                 Next
@@ -636,39 +650,42 @@ Private Sub AddHeader()
 
                 rng.Cells(4, 13).Name = "MIN_MIN_DATE_" & tabId
                 rng.Cells(4, 15).Name = "MAX_MAX_DATE_" & tabId
+           
+
+                If (Not RangeExists("TIME_UNIT_LIST")) Then
+                    Set cellRng = .Cells(1, 26)
+                    cellRng.Cells(1, 1).Value = trans.TranslatedValue("MSG_Day")
+                    cellRng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Week")
+                    cellRng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Month")
+                    cellRng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Quarter")
+                    cellRng.Cells(5, 1).Value = trans.TranslatedValue("MSG_Year")
+                    .Range(.Cells(1, cellRng.Column), .Cells(5, cellRng.Column)).Name = "TIME_UNIT_LIST"
+                    .Range("TIME_UNIT_LIST").Font.color = vbWhite
+                    .Range("TIME_UNIT_LIST").Interior.color = vbWhite
+                    .Range("TIME_UNIT_LIST").Locked = True
+
+                    'Add week
+                    .Range("TIME_UNIT_" & tabId).Value = cellRng.Cells(2, 1).Value
+                End If
+
             End If
 
-            If (Not RangeExists("TIME_UNIT_LIST")) Then
-                Set cellRng = .Cells(1, 26)
-                cellRng.Cells(1, 1).Value = trans.TranslatedValue("MSG_Day")
-                cellRng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Week")
-                cellRng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Month")
-                cellRng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Quarter")
-                cellRng.Cells(5, 1).Value = trans.TranslatedValue("MSG_Year")
-                .Range(.Cells(1, cellRng.Column), .Cells(5, cellRng.Column)).Name = "TIME_UNIT_LIST"
-                .Range("TIME_UNIT_LIST").Font.color = vbWhite
-                .Range("TIME_UNIT_LIST").Interior.color = vbWhite
-                .Range("TIME_UNIT_LIST").Locked = True
-
-                'Add week
-                .Range("TIME_UNIT_" & tabId).Value = cellRng.Cells(2, 1).Value
-            End If
 
         Case TypeSpatial
         
              'Add Dropdown for selecting the admins
             If (Not RangeExists("ADMIN_UNIT_LIST")) Then
 
-                    Set cellRng = .Cells(1, 26)
-                    cellRng.Cells(1, 1).formula = "= RNG_ADM1NAME"
-                    cellRng.Cells(2, 1).formula = "= RNG_ADM2NAME"
-                    cellRng.Cells(3, 1).formula = "= RNG_ADM3NAME"
-                    cellRng.Cells(4, 1).formula = "= RNG_ADM4NAME"
-
-                    .Range(.Cells(1, cellRng.Column), .Cells(4, cellRng.Column)).Name = "ADM_UNIT_LIST"
-                    .Range("ADM_UNIT_LIST").Font.color = vbWhite
-                    .Range("ADM_UNIT_LIST").Interior.color = vbWhite
-                    .Range("ADM_UNIT_LIST").Locked = True
+                Set cellRng = .Cells(1, 26)
+                cellRng.Cells(1, 1).formula = "= RNG_ADM1NAME"
+                cellRng.Cells(2, 1).formula = "= RNG_ADM2NAME"
+                cellRng.Cells(3, 1).formula = "= RNG_ADM3NAME"
+                cellRng.Cells(4, 1).formula = "= RNG_ADM4NAME"
+                
+                .Range(.Cells(1, cellRng.Column), .Cells(4, cellRng.Column)).Name = "ADM_UNIT_LIST"
+                .Range("ADM_UNIT_LIST").Font.color = vbWhite
+                .Range("ADM_UNIT_LIST").Interior.color = vbWhite
+                .Range("ADM_UNIT_LIST").Locked = True
             End If
 
             'Range for selecting values for the population
@@ -686,6 +703,7 @@ Private Sub AddHeader()
             If (Not RangeExists("ADM_DROPDOWN_" & tabId)) And (Not RangeExists("HF_DROPDOWN_" & tabId)) Then
 
                 If (specs.SpatialTableTypes = "geo") Then
+                
                     'Range for dropdown for the admins
                     .Cells(Start - 2, STANDARDSTARTCOL).Name = "ADM_DROPDOWN_" & tabId
                     'Add the dropdown only on spatial tables of type geo
@@ -732,7 +750,94 @@ Private Sub AddHeader()
                 rng.Cells(-1, 1).Value = specs.Value("title")
                 rng.Cells(-1, 1).Name = "TITLE_" & tabId
             End If
-            
+
+        'Headers for spatio-temporal tables.
+        Case TypeSpatioTemporal
+
+            'Headers of spatio - temporal
+            If specs.isNewSection() And (Not RangeExists("SECTION_" & tabId)) Then
+                
+                nGeo = 5
+                On Error Resume Next
+                nGeo = CLng(specs.Value("n geo"))
+                On Error GoTo 0
+
+                'Insert rows
+                For counter = 1 To nGeo + 12
+                    .Rows(Start - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+                Next
+
+                'Add the section
+                .Cells(Start - 2, StartColumn).Value = specs.Value("section")
+                .Cells(start - 2, StartColumn).Name = "SECTION_" & tabId
+
+                'Anchor for the future table header elements
+                Set rng = .Range("SECTION_" & tabId).Offset(2, 3)
+
+                rng.Value = trans.TranslatedValue("MSG_InputGeoLevels")
+
+                'Add the number of geolevels
+
+                Set rng = rng.Offset(2)
+                For counter = 1 To nGeo
+                    rng.Cells(counter, 1).Name = "INPUTSPTGEO_" & counter & "_" & tabId
+                Next
+
+                Set rng = rng.Offset(nGeo + 3, -3)
+                'Now add the other elements for the time series.
+
+                'Analysis Period Date
+                rng.Cells(6, 1).Name = "INFO_ANA_PERIOD_" & tabId
+
+                'Start Date
+                rng.Cells(3, 3).Value = trans.TranslatedValue("MSG_StartDate")
+                rng.Cells(3, 3).Name = "START_DATE_LABEL_" & tabId
+                rng.Cells(4, 3).Locked = False
+                rng.Cells(4, 3).Name = "USER_START_DATE_" & tabId
+                rng.Cells(5, 3).Name = "INFO_START_DATE_" & tabId
+                rng.Cells(6, 3).Name = "START_DATE_" & tabId
+
+                'Time Unit
+                rng.Cells(3, 5).Value = trans.TranslatedValue("MSG_TimeUnit")
+                rng.Cells(3, 5).Name = "TIME_UNIT_LABEL_" & tabId
+                rng.Cells(4, 5).Name = "TIME_UNIT_" & tabId
+                rng.Cells(4, 5).Locked = False
+
+                'End Date
+                rng.Cells(3, 7).Value = trans.TranslatedValue("MSG_EndDate")
+                rng.Cells(3, 7).Name = "END_DATE_LABEL_" & tabId
+                rng.Cells(4, 7).Name = "USER_END_DATE_" & tabId
+                rng.Cells(4, 7).Locked = False
+                rng.Cells(5, 7).Name = "INFO_END_DATE_" & tabId
+                rng.Cells(6, 7).Name = "END_DATE_" & tabId
+
+
+                'Minimum / Maximum cell for validiation
+                rng.Cells(4, 9).Name = "VALIDATION_MIN_DATE_" & tabId
+                rng.Cells(4, 11).Name = "VALIDATION_MAX_DATE_" & tabId
+                'Minimum /Maximum of all dates
+
+                rng.Cells(4, 13).Name = "MIN_MIN_DATE_" & tabId
+                rng.Cells(4, 15).Name = "MAX_MAX_DATE_" & tabId
+
+                If (Not RangeExists("SPTIME_UNIT_LIST")) Then
+                    
+                    Set cellRng = .Cells(1, 26)
+                    cellRng.Cells(1, 1).Value = trans.TranslatedValue("MSG_Day")
+                    cellRng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Week")
+                    cellRng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Month")
+                    cellRng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Quarter")
+                    cellRng.Cells(5, 1).Value = trans.TranslatedValue("MSG_Year")
+
+                    .Range(.Cells(1, cellRng.Column), .Cells(5, cellRng.Column)).Name = "SPTIME_UNIT_LIST"
+                    .Range("SPTIME_UNIT_LIST").Font.color = vbWhite
+                    .Range("SPTIME_UNIT_LIST").Interior.color = vbWhite
+                    .Range("SPTIME_UNIT_LIST").Locked = True
+
+                    'Add week
+                    .Range("TIME_UNIT_" & tabId).Value = cellRng.Cells(2, 1).Value
+                End If
+            End If            
         End Select
     End With
 End Sub
