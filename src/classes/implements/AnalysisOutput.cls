@@ -32,6 +32,7 @@ Private Const TIMESERIES As String = "Tab_TimeSeries_Analysis"
 Private Const GRAPHTIMESERIES As String = "Tab_Graph_TimeSeries"
 Private Const TITLEGRAPHTIMESERIES As String = "Tab_Label_TSGraph"
 Private Const SPATIAL As String = "Tab_Spatial_Analysis"
+Private Const SPATIOTEMPORAL As String = "Tab_SpatioTemporal_Analysis"
 
 
 Private Type TAnaOutput
@@ -118,6 +119,8 @@ Private Property Get OutputSh(Optional ByVal scope _
     Set OutputSh = ll.Wksh(trads.TranslatedValue("LLSHEET_SpatialAnalysis"))
   Case AnalysisScopeNormal
     Set OutputSh = ll.Wksh(trads.TranslatedValue("LLSHEET_Analysis"))
+  Case AnalysisScopeSpatioTemporal
+    Set Outputsh = ll.Wksh(trads.TranslatedValue("LLSHEET_SpatioTemporalAnalysis"))
   End Select
 
 End Property
@@ -244,6 +247,8 @@ Private Sub PrepareSheet(Optional ByVal scope As AnalysisScope _
     sheetInfo = "SP-Analysis"
   Case AnalysisScopeNormal
     sheetInfo = "Uni-Bi-Analysis"
+  Case AnalysisScopeSpatioTemporal
+    sheetInfo = "SPT-Analysis"
   End Select
 
   Set outsh = OutputSh(scope)
@@ -445,7 +450,7 @@ Private Sub WriteTable(ByVal LoName As String, _
       'Format the created table
       tabl.Format design
 
-      'Will be used to test if a sheed has a table
+      'Will be used to test if a sheet has a table
       If IsEmpty(outsh.Range("RNG_HasTable")) Then  _
       outsh.Range("RNG_HasTable").Value = "yes"
 
@@ -770,6 +775,22 @@ Private Sub WriteAnalysis()
 
   'Transfer code to spatial analysis sheet
   TransferCodeWksh scope:=scope
+
+  'Spatio-Temporal Analysis worksheet ==========================================
+  scope = AnalysisScopeSpatioTemporal
+  Set outsh = Outputsh(scope)
+  PrepareSheet scope:=scope
+
+  On Error GoTo ErrHand
+  WriteTable LoName:=SPATIOTEMPORAL, scope:=scope
+  On Error GoTo 0
+
+  Set cellRng = outsh.Cells(2, 1)
+  AddGoTo cellRng:=cellRng, scope:="section", goToPrefix:="spt_"
+  AddCommands scope:=scope
+  
+  If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
+  pass.Protect "_active", True
   Exit Sub
 
 ErrHand:

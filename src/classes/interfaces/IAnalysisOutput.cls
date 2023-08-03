@@ -18,6 +18,7 @@ Public Enum AnalysisScope
   AnalysisScopeTimeSeries = 1 'A time series analysis
   AnalysisScopeSpatial = 2 'A spatial analysis
   AnalysisScopeNormal = 3 'A standard univariate / bivariate analysis
+  AnalysisScopeSpatioTemporal = 4 'spatio-Temporal analysis
 End Enum
 
 'Exposed methods
