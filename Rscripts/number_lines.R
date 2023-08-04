@@ -1,0 +1,1 @@
+# count the number of lines for each files in the classes and modules folder.
