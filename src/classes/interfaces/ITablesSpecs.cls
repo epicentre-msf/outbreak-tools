@@ -51,4 +51,3 @@ Public Function Value(ByVal colName As String) As String: End Function 'The sear
 'Find the type of spatial analysis
 Public Property Get SpatialTableTypes() As String
 End Property
-

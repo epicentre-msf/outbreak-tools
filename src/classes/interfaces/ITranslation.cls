@@ -26,4 +26,3 @@ End Sub
 
 Public Function TranslatedValue(ByVal Text As String, Optional ByVal containsFormula As Boolean = False) As String
 End Function
-

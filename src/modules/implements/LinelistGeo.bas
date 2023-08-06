@@ -489,4 +489,3 @@ Sub ClearOneHistoricGeobase(iGeoType As Byte)
         MsgBox "Done", vbInformation, "Delete Historic"
     End If
 End Sub
-

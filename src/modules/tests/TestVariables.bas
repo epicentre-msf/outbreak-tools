@@ -76,4 +76,3 @@ Private Sub TestIndex()
     sheetIndex = vars.Index("varb2")
     Assert.IsTrue (sheetIndex = 2), "Expected index: 2, Obtained index: " & sheetIndex
 End Sub
-

@@ -475,5 +475,3 @@ Public Function FindTopHF(adminOrder As Integer, varName As String, Optional ByV
     Set sp = LLSpatial.Create(sh)
     FindTopHF = sp.TopHFValue(adminOrder, actualVarName, tabId)
 End Function
-
-

@@ -316,4 +316,3 @@ Sub SetUserDefineConstants()
     If sCalculatedForm = vbNullString Then sCalculatedForm = C_sForm
 
 End Sub
-

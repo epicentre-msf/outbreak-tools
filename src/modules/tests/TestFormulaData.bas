@@ -46,4 +46,3 @@ Fail:
     Assert.Fail "Test Special characters failed #" & Err.Number & " : " & Err.Description
 
 End Sub
-

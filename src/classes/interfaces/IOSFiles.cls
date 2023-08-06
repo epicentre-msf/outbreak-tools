@@ -35,4 +35,3 @@ Public Sub LoadFolder(): End Sub
 Public Function HasValidFile() As Boolean: End Function
 'Test if the loaded folder is valid
 Public Function HasValidFolder() As Boolean: End Function
-

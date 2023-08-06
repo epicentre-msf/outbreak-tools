@@ -45,4 +45,3 @@ Private Sub TestPrepare()
     Assert.IsTrue (cat.Length > 0), "case when categories not defined on vara4"
  
 End Sub
-

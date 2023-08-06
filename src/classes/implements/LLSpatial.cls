@@ -409,4 +409,3 @@ End Property
 Private Sub ILLSpatial_Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
   Sort tabId, onAR
 End Sub
-

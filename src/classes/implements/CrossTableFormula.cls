@@ -1051,11 +1051,6 @@ Private Sub AddFormulas()
     End With
 End Sub
 
-'Errors
-Private Sub ThrowExecutionError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
-End Sub
-
 Private Property Get ICrossTableFormula_Valid() As Boolean
     ICrossTableFormula_Valid = Valid
 End Property
@@ -1063,5 +1058,3 @@ End Property
 Private Sub ICrossTableFormula_AddFormulas()
     AddFormulas
 End Sub
-
-
