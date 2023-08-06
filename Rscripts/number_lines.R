@@ -39,7 +39,7 @@ df_classes <- df_classes_interface |>
   dplyr::select(c(ends_with("name"), ends_with("lines")))
 
 
-sink("src/classes_lines.txt")
+sink("src/classes_lines.md")
 knitr::kable(df_classes)
 # print the total number of lines for the class
 cat("\n\n")
@@ -52,7 +52,7 @@ df_modules_implements <- df_modules_implements |>
   dplyr::rename(module_name = file) |>
   dplyr::arrange(desc(number_lines))
 
-sink("src/modules_lines.txt")
+sink("src/modules_lines.md")
 
 knitr::kable(df_modules_implements)
 cat("\n\n")
