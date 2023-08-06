@@ -18,4 +18,3 @@ Option Explicit
 'Exposed methods
 Public Sub WriteInfo(): End Sub
 Public Property Get ValueOf(ByVal colName As String) As String: End Property
-

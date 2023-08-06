@@ -60,4 +60,3 @@ Private Sub testcasewhen()
 Fail:
     Assert.Fail "Test Case when failed #" & Err.Number & " : " & Err.Description
 End Sub
-

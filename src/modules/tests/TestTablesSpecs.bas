@@ -78,4 +78,3 @@ Private Sub TestValueSection()
 Fail:
     Assert.Fail "Row Categories Failed: #" & Err.Number & " : " & Err.Description
 End Sub
-

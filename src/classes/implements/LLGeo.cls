@@ -1071,4 +1071,3 @@ End Sub
 Private Function ILLGeo_AdminCode(ByVal selectedAdmin As String) As String
     ILLGeo_AdminCode = AdminCode(selectedAdmin)
 End Function
-

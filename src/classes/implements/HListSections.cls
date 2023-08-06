@@ -258,5 +258,3 @@ End Sub
 Public Property Get IHListSections_Name() As String
     IHListSections_Name = ActualSectionName()
 End Property
-
-

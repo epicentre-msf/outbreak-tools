@@ -227,5 +227,3 @@ End Sub
 Public Function ITranslation_TranslatedValue(ByVal Text As String, Optional ByVal containsFormula As Boolean = False) As String
     ITranslation_TranslatedValue = TranslatedValue(Text, containsFormula)
 End Function
-
-

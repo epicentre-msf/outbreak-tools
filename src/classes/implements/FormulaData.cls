@@ -122,4 +122,3 @@ End Function
 Public Function IFormulaData_ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
     IFormulaData_ExcelFormulasIncludes = ExcelFormulasIncludes(ExcelFormula)
 End Function
-

@@ -184,5 +184,3 @@ End Function
 Public Function IFormulaCondition_Valid(ByVal dict As ILLdictionary, Optional ByVal tableName As String = vbNullString) As Boolean
     IFormulaCondition_Valid = Valid(dict, tableName)
 End Function
-
-

@@ -19,4 +19,3 @@ Option Explicit
 Public Property Get Valid() As Boolean: End Property
 
 Public Sub AddFormulas(): End Sub
-

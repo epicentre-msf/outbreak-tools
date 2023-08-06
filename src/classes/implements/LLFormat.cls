@@ -884,5 +884,3 @@ End Sub
 Public Function ILLFormat_DesignValue(ByVal labelName As String, Optional ByVal returnColor As Boolean = True) As Variant
     ILLFormat_DesignValue = DesignValue(labelName, returnColor)
 End Function
-
-

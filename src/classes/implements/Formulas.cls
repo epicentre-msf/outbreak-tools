@@ -486,5 +486,3 @@ End Property
 Public Property Get IFormulas_HasLiterals() As Boolean
     IFormulas_HasLiterals = HasLiterals()
 End Property
-
-

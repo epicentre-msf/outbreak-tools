@@ -67,12 +67,3 @@ Public Sub Import(ByVal importedData As Object): End Sub
 'Import a Range By keeping the format of the range, the first cell of the
 'range contains the name of the column
 Public Sub ImportFormat(ByVal impRng As Range): End Sub
-
-
-
-
-
-
-
-
-

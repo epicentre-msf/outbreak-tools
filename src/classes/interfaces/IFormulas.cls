@@ -35,11 +35,3 @@ End Property
 Public Property Get HasLiterals() As Boolean: End Property
 
 'Logs for eventual errors in formula
-
-
-
-
-
-
-
-

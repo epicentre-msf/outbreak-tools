@@ -128,4 +128,3 @@ Private Sub TestSheetVariableAddress()
 Fail:
     Assert.Fail "Variable Address failed #" & Err.Number & " : " & Err.Description
 End Sub
-

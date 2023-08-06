@@ -374,5 +374,3 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
        End Select
 errHand:
 End Sub
-
-

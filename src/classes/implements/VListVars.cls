@@ -653,5 +653,3 @@ End Sub
 Public Property Get IVListVars_ValueOf(ByVal colName As String) As String
     IHListVars_ValueOf = ValueOf(colName)
 End Property
-
-

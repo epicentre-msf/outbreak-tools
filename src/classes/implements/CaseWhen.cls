@@ -170,5 +170,3 @@ End Property
 Private Property Get ICaseWhen_Categories() As BetterArray
     Set ICaseWhen_Categories = Categories()
 End Property
-
-
