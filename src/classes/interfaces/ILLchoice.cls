@@ -43,4 +43,3 @@ End Sub
 
 Public Sub Translate(ByVal TransObject As ITranslation)
 End Sub
-

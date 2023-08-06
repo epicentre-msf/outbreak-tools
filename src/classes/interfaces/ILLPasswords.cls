@@ -45,4 +45,3 @@ Public Sub DisplayPrivateKey(ByVal trads As ITranslation): End Sub
 
 Public Sub GenerateKey(ByVal trads As ITranslation): End Sub
 Public Sub Import(ByVal pass As ILLPasswords): End Sub
-  

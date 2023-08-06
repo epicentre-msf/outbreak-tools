@@ -235,5 +235,3 @@ End Sub
 Public Sub ILLchoice_Translate(ByVal TransObject As ITranslation)
     Translate TransObject
 End Sub
-
-

@@ -57,5 +57,3 @@ End Function
 Function TranslateLLMsg(sMsgCode As String) As String
     TranslateLLMsg = LineListTranslatedValue(sMsgCode, C_sTabTradLLMsg)
 End Function
-
-

@@ -247,5 +247,3 @@ End Sub
 Public Property Get IVListSections_Name() As String
     IVListSections_Name = ActualSectionName()
 End Property
-
-

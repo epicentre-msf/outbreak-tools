@@ -270,5 +270,3 @@ End Sub
 Public Sub IHListSubSections_Format()
     Format
 End Sub
-
-

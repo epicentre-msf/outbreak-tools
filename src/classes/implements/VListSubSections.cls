@@ -266,5 +266,3 @@ End Property
 Public Property Get IVListSubSections_NextSubSection() As IVListSubSections
     Set IVListSubSections_NextSubSection = NextSubSection()
 End Property
-
-

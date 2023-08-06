@@ -366,5 +366,3 @@ Public Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, _
     Format valuesTitle:=valuesTitle, catTitle:=catTitle, plotTitle:=plotTitle, scope:=scope, _
            heightFactor:=heightFactor, hardCodeLabels:=hardCodeLabels
 End Sub
-
-

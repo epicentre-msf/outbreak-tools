@@ -30,9 +30,11 @@ Private Const BUTTONGAP As Long = 5
 
 Public Function Create(ByVal outRng As Range, ByVal codeName As String, _
                        ByVal scope As ButtonScope) As IButtons
-  
+    
+    'Check if the output range is provided
     If outRng Is Nothing Then ThrowError "I don't know where to write the button, no range found."
 
+    'Create a new button object and set properties
     With New Buttons
         Set .OutputRange = outRng
         .Name = codeName
@@ -134,7 +136,7 @@ Public Sub Add(Optional ByVal actionCommand As String = vbNullString, Optional B
     'Add the button
     sh.Shapes.AddShape(msoShapeRoundedRectangle, cellRng.Left + leftGap, cellRng.Top + topGap, width, height).Name = codeName
 
-    'The text to display on the shape
+    'Set The text to display on the shape
     With sh.Shapes(codeName)
         .OnAction = actionCommand
         .Placement = xlFreeFloating
@@ -143,7 +145,7 @@ Public Sub Add(Optional ByVal actionCommand As String = vbNullString, Optional B
     End With
 End Sub
 
-'Format
+'Format the button using the provided design
 Public Sub Format(ByVal design As ILLFormat)
     Dim shp As Shape
     Dim scope As ButtonScope
@@ -181,5 +183,3 @@ End Sub
 Private Sub IButtons_Format(design As ILLFormat)
     Format design
 End Sub
-
-

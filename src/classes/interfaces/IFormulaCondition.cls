@@ -25,5 +25,3 @@ Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tableName As S
 Public Function ConditionString(ByVal tableName As String, ByVal varName As String, _
                                 Optional ByVal Connector As String = "*") As String
 End Function
-
-

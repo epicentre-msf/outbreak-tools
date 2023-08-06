@@ -40,5 +40,3 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal heightFactor As Long = 1, _
                   Optional ByVal hardCodeLabels As Boolean = True)
 End Sub
-
-

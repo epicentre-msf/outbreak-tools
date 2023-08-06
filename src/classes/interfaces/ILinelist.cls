@@ -44,5 +44,3 @@ Public Sub SaveLL(): End Sub
 
 'Error management
 Public Sub ErrorManage(): End Sub
-
-

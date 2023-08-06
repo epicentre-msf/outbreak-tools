@@ -46,4 +46,3 @@ Public Function VariableAddress(ByVal varName As String, Optional ByVal onSheet 
 
 Public Function RowIndex(ByVal sheetName As String) As Long: End Function
 Public Function NumberOfVars(ByVal sheetName As String) As Long: End Function
-

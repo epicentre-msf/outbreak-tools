@@ -73,5 +73,3 @@ Function GetUniqueBA(BA As BetterArray) As BetterArray
     Set GetUniqueBA = Outable.Clone()
 
 End Function
-
-

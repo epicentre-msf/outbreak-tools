@@ -286,5 +286,3 @@ End Function
 Public Function ILLSheets_NumberOfVars(ByVal sheetName As String) As Long
     ILLSheets_NumberOfVars = NumberVars(sheetName)
 End Function
-
-

@@ -571,17 +571,22 @@ Private Sub AddHeader()
     Dim rng As Range
     Dim cellRng As Range
     Dim nGeo As Long
+    Dim tablType As Byte
+    Dim nbShift As Long
+    Dim timeUnitName As String
 
     Set sh = Wksh()
     Set specs = Specifications
     Set trans = trads()
     Start = StartRow
     tabId = specs.TableId
+    tablType = specs.TableType
 
     With sh
-        Select Case specs.TableType
+        Select Case tablType
 
         Case TypeUnivariate, TypeBivariate
+            'Add headers for univariable and bivariate tables ---
 
             .Cells(Start - 2, STANDARDSTARTCOL).Value = specs.Value("title")
             .Cells(Start - 2, STANDARDSTARTCOL).Name = "TITLE_" & tabId
@@ -596,6 +601,7 @@ Private Sub AddHeader()
             End If
 
         Case TypeGlobalSummary
+            'Global summary header ---
 
             If Not RangeExists("ROWGS_SET") Then
                 For counter = 1 To 3
@@ -605,19 +611,57 @@ Private Sub AddHeader()
                 .Cells(Start - 2, STANDARDSTARTCOL).Value = trans.TranslatedValue("MSG_GlobalSummary")
                 .Cells(Start - 2, STANDARDSTARTCOL).Name = "ROWGS_SET"
             End If
+        
 
-        Case TypeTimeSeries
+        Case TypeTimeSeries, TypeSpatioTemporal
+            'Time series headers are almost similar to spatio-temporal headers ---    
 
             If specs.isNewSection() And (Not RangeExists("SECTION_" & tabId)) Then
 
-                For counter = 1 To 7
+                'For spatio temporal, we need to take in account the number of geo
+                If (tablType = TypeSpatioTemporal) Then
+                     nGeo = 5
+                    On Error Resume Next
+                    nGeo = CLng(specs.Value("n geo"))
+                    On Error GoTo 0
+                    nbShift = nGeo + 12
+                Else
+                    nbShift = 7
+                End If
+
+                For counter = 1 To nbShift
                     .Rows(Start - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                 Next
                 .Cells(Start - 2, StartColumn).Value = specs.Value("section")
                 .Cells(Start - 2, StartColumn).Name = "SECTION_" & tabId
+                
+                Set rng = .Range("SECTION_" & tabId)
+
+                'For spatio-temporal, add part for selection of geo-levels
+
+                If (tablType = TypeSpatioTemporal) Then
+                    'Anchor for the future table header elements
+                    Set rng = rng.Offset(2)
+
+                    rng.Value = trans.TranslatedValue("MSG_InputGeoLevels")
+                    rng.Name = "INPUTSPTGEO_LABEL_" & tabId
+
+                    'Add the number of geolevels
+
+                    Set cellRng = rng.Offset(2)
+                    For counter = 1 To nGeo
+                        cellRng.Cells(counter, 1).Name = "INPUTSPTGEO_" & counter & "_" & tabId
+                    Next
+
+                    Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(nGeo, 1))
+                    rng.Name = "INPUTSPTGEO_USER_" & tabId
+
+                    'anchor for time series elements (on TimeSeries, it is the section range)
+                    Set rng = cellRng.Offset(nGeo + 3)
+                End If
+
 
                 'Ranges for start and end dates and for minimum and maximum dates (for validations)
-                Set rng = .Range("SECTION_" & tabId)
 
                 'Analysis Period Date
                 rng.Cells(6, 1).Name = "INFO_ANA_PERIOD_" & tabId
@@ -652,28 +696,28 @@ Private Sub AddHeader()
 
                 rng.Cells(4, 13).Name = "MIN_MIN_DATE_" & tabId
                 rng.Cells(4, 15).Name = "MAX_MAX_DATE_" & tabId
-           
 
-                If (Not RangeExists("TIME_UNIT_LIST")) Then
+                timeUnitName = "TIME_UNIT_LIST"
+                If tablType = TypeSpatioTemporal Then timeUnitName = "SP" & timeUnitName
+
+                If (Not RangeExists(timeUnitName)) Then
                     Set cellRng = .Cells(1, 26)
                     cellRng.Cells(1, 1).Value = trans.TranslatedValue("MSG_Day")
                     cellRng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Week")
                     cellRng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Month")
                     cellRng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Quarter")
                     cellRng.Cells(5, 1).Value = trans.TranslatedValue("MSG_Year")
-                    .Range(.Cells(1, cellRng.Column), .Cells(5, cellRng.Column)).Name = "TIME_UNIT_LIST"
-                    .Range("TIME_UNIT_LIST").Font.color = vbWhite
-                    .Range("TIME_UNIT_LIST").Interior.color = vbWhite
-                    .Range("TIME_UNIT_LIST").Locked = True
-
-                    'Add week
-                    .Range("TIME_UNIT_" & tabId).Value = cellRng.Cells(2, 1).Value
+                    .Range(.Cells(1, cellRng.Column), .Cells(5, cellRng.Column)).Name = timeUnitName
+                    .Range(timeUnitName).Font.color = vbWhite
+                    .Range(timeUnitName).Interior.color = vbWhite
+                    .Range(timeUnitName).Locked = True
                 End If
-
+                    
+                'Add week As default time
+                .Range("TIME_UNIT_" & tabId).Value = cellRng.Cells(2, 1).Value
             End If
 
-
-        Case TypeSpatial
+        Case  TypeSpatial 
         
              'Add Dropdown for selecting the admins
             If (Not RangeExists("ADMIN_UNIT_LIST")) Then
@@ -752,101 +796,7 @@ Private Sub AddHeader()
                 rng.Cells(-1, 1).Value = specs.Value("title")
                 rng.Cells(-1, 1).Name = "TITLE_" & tabId
             End If
-
-        'Headers for spatio-temporal tables.
-        Case TypeSpatioTemporal
-
-            'Headers of spatio - temporal
-            If specs.isNewSection() And (Not RangeExists("SECTION_" & tabId)) Then
-                
-                nGeo = 5
-                On Error Resume Next
-                nGeo = CLng(specs.Value("n geo"))
-                On Error GoTo 0
-
-                'Insert rows
-                For counter = 1 To nGeo + 12
-                    .Rows(Start - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-                Next
-
-                'Add the section
-                .Cells(Start - 2, StartColumn).Value = specs.Value("section")
-                .Cells(start - 2, StartColumn).Name = "SECTION_" & tabId
-
-                'Anchor for the future table header elements
-                Set rng = .Range("SECTION_" & tabId).Offset(2)
-
-                rng.Value = trans.TranslatedValue("MSG_InputGeoLevels")
-                rng.Name = "INPUTSPTGEO_LABEL_" & tabId
-
-                'Add the number of geolevels
-
-                Set cellRng = rng.Offset(2)
-                For counter = 1 To nGeo
-                    cellRng.Cells(counter, 1).Name = "INPUTSPTGEO_" & counter & "_" & tabId
-                Next
-
-                Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(nGeo, 1))
-                rng.Name = "INPUTSPTGEO_USER_" & tabId
-
-                'Add time series elements
-
-                Set rng = cellRng.Offset(nGeo + 3)
-                'Now add the other elements for the time series.
-
-                'Analysis Period Date
-                rng.Cells(6, 1).Name = "INFO_ANA_PERIOD_" & tabId
-
-                'Start Date
-                rng.Cells(3, 3).Value = trans.TranslatedValue("MSG_StartDate")
-                rng.Cells(3, 3).Name = "START_DATE_LABEL_" & tabId
-                rng.Cells(4, 3).Locked = False
-                rng.Cells(4, 3).Name = "USER_START_DATE_" & tabId
-                rng.Cells(5, 3).Name = "INFO_START_DATE_" & tabId
-                rng.Cells(6, 3).Name = "START_DATE_" & tabId
-
-                'Time Unit
-                rng.Cells(3, 5).Value = trans.TranslatedValue("MSG_TimeUnit")
-                rng.Cells(3, 5).Name = "TIME_UNIT_LABEL_" & tabId
-                rng.Cells(4, 5).Name = "TIME_UNIT_" & tabId
-                rng.Cells(4, 5).Locked = False
-
-                'End Date
-                rng.Cells(3, 7).Value = trans.TranslatedValue("MSG_EndDate")
-                rng.Cells(3, 7).Name = "END_DATE_LABEL_" & tabId
-                rng.Cells(4, 7).Name = "USER_END_DATE_" & tabId
-                rng.Cells(4, 7).Locked = False
-                rng.Cells(5, 7).Name = "INFO_END_DATE_" & tabId
-                rng.Cells(6, 7).Name = "END_DATE_" & tabId
-
-
-                'Minimum / Maximum cell for validiation
-                rng.Cells(4, 9).Name = "VALIDATION_MIN_DATE_" & tabId
-                rng.Cells(4, 11).Name = "VALIDATION_MAX_DATE_" & tabId
-                'Minimum /Maximum of all dates
-
-                rng.Cells(4, 13).Name = "MIN_MIN_DATE_" & tabId
-                rng.Cells(4, 15).Name = "MAX_MAX_DATE_" & tabId
-
-                If (Not RangeExists("SPTIME_UNIT_LIST")) Then
-                    
-                    Set cellRng = .Cells(1, 26)
-                    cellRng.Cells(1, 1).Value = trans.TranslatedValue("MSG_Day")
-                    cellRng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Week")
-                    cellRng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Month")
-                    cellRng.Cells(4, 1).Value = trans.TranslatedValue("MSG_Quarter")
-                    cellRng.Cells(5, 1).Value = trans.TranslatedValue("MSG_Year")
-
-                    .Range(.Cells(1, cellRng.Column), .Cells(5, cellRng.Column)).Name = "SPTIME_UNIT_LIST"
-                    .Range("SPTIME_UNIT_LIST").Font.color = vbWhite
-                    .Range("SPTIME_UNIT_LIST").Interior.color = vbWhite
-                    .Range("SPTIME_UNIT_LIST").Locked = True
-
-                    'Add week
-                    .Range("TIME_UNIT_" & tabId).Value = cellRng.Cells(2, 1).Value
-                End If
-            End If            
-        End Select
+        End Select          
     End With
 End Sub
 
