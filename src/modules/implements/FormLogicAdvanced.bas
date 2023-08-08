@@ -1,6 +1,6 @@
-
 Attribute VB_Name = "FormLogicAdvanced"
 Attribute VB_Description = "Form implementation of advanced form"
+
 
 '@Folder("Form logics")
 '@ModuleDescription("Form implementation of advanced form")
@@ -43,14 +43,14 @@ Private Sub CMD_ClearGeo_Click()
 
     Set geoObj = LLGeo.Create(currwb.Worksheets(GEOSHEET))
 
-    If MsgBox(tradmess.TranslatedValue("MSG_HistoricDelete"), _ 
-              vbExclamation + vbYesNo, _ 
+    If MsgBox(tradmess.TranslatedValue("MSG_HistoricDelete"), _
+              vbExclamation + vbYesNo, _
               tradmess.TranslatedValue("MSG_DeleteHistoric")) = vbYes Then
         
         geoObj.ClearHistoric
 
-        Msgbox  tradmess.TranslatedValue("MSG_Done"), _ 
-                vbInformation, _ 
+        MsgBox tradmess.TranslatedValue("MSG_Done"), _
+                vbInformation, _
                 tradmess.TranslatedValue("MSG_DeleteHistoric")
     End If
 End Sub

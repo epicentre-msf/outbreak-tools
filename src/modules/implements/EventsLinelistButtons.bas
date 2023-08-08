@@ -2,7 +2,6 @@ Attribute VB_Name = "EventsLinelistButtons"
 Attribute VB_Description = "Events associated to eventual buttons in the Linelist"
 Option Explicit
 Option Private Module
-Public iGeoType As Byte
 
 '@Folder("Linelist Events")
 '@ModuleDescription("Events associated to eventual buttons in the Linelist")
@@ -40,7 +39,7 @@ End Sub
 
 Private Sub WarningOnSheet(ByVal msgCode As String)
     InitializeTrads
-    MsgBox tradsmess.TranslatedValue(msgCode), vbOkOnly + vbExclamation
+    MsgBox tradsmess.TranslatedValue(msgCode), vbOKOnly + vbExclamation
 End Sub
 
 'Subs to speed up the application
@@ -49,14 +48,14 @@ Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
     Application.Calculation = xlCalculationManual
-    Application.Cursor = cursor
+    Application.cursor = cursor
 End Sub
 
 'Return back to previous state
 Private Sub NotBusyApp()
     Application.ScreenUpdating = True
     Application.EnableAnimations = True
-    Application.Cursor = xlDefault
+    Application.cursor = xlDefault
 End Sub
 
 '@Description("Callback for click on show/hide in a linelist worksheet on a button")
@@ -89,20 +88,20 @@ End Sub
 
 '@Description("Callback for click on the list of showhide")
 '@EntryPoint
-Public Sub ClickListShowHide(ByVal index As Long)
-    showHideObject.UpdateVisibilityStatus index
+Public Sub ClickListShowHide(ByVal Index As Long)
+    showHideObject.UpdateVisibilityStatus Index
 End Sub
 
 '@Description("Callback for clik on differents show hide options on a button")
 '@EntryPoint
-Public Sub ClickOptionsShowHide(ByVal index As Long)
-    showHideObject.ShowHideLogic index
+Public Sub ClickOptionsShowHide(ByVal Index As Long)
+    showHideObject.ShowHideLogic Index
 End Sub
 
 '@Description("Callback for click on column width in show/hide")
 '@EntryPoint
-Public Sub ClickColWidth(ByVal index As Long)
-    showHideObject.ChangeColWidth index
+Public Sub ClickColWidth(ByVal Index As Long)
+    showHideObject.ChangeColWidth Index
 End Sub
 
 
@@ -128,7 +127,7 @@ Public Sub ClickOpenPrint()
 
     Set printsh = wb.Worksheets(PRINTPREFIX & sh.Name)
     'UnProtect current workbook
-    pass.UnprotectWkb wb
+    pass.UnProtectWkb wb
     'Unhide the linelist Print
     printsh.Visible = xlSheetVisible
     printsh.Activate
@@ -163,7 +162,7 @@ Public Sub ClickClosePrint()
         Set printsh = sh
     End If
     'Unprotect workbook
-    pass.UnprotectWkb wb
+    pass.UnProtectWkb wb
     printsh.Visible = xlSheetVeryHidden
 
 ErrClose:
@@ -175,7 +174,7 @@ End Sub
 Public Sub ClickRotateAll()
 
     Dim sh As Worksheet
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim hRng As Range
     Dim cRng As Range
     Dim sheetTag As String
@@ -190,7 +189,7 @@ Public Sub ClickRotateAll()
         Exit Sub
     End If
 
-    If sheetTag = "HList" Then  Set sh = wb.Worksheets(PRINTPREFIX & sh.Name)
+    If sheetTag = "HList" Then Set sh = wb.Worksheets(PRINTPREFIX & sh.Name)
 
     On Error GoTo ErrHand
 
@@ -207,8 +206,8 @@ Public Sub ClickRotateAll()
     hRng.RowHeight = 100
     
     'AutoFit only non hidden columns
-    For Each cRng in hRng
-        If Not cRng.EntireColumn.Hidden Then cRng.EntireColumn.AutoFit
+    For Each cRng In hRng
+        If Not cRng.EntireColumn.HIDDEN Then cRng.EntireColumn.AutoFit
     Next
 
 ErrHand:
@@ -220,7 +219,7 @@ End Sub
 Public Sub ClickRowHeight()
 
     Dim sh As Worksheet
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim LoRng As Range
     Dim sheetTag As String
     Dim inputValue As String
@@ -240,7 +239,7 @@ Public Sub ClickRowHeight()
     InitializeTrads
     BusyApp cursor:=xlNorthwestArrow
 
-    If sheetTag = "HList" Then  Set sh = wb.Worksheets(PRINTPREFIX & sh.Name)
+    If sheetTag = "HList" Then Set sh = wb.Worksheets(PRINTPREFIX & sh.Name)
     pass.UnProtect sh.Name
 
     Set Lo = sh.ListObjects(1)
@@ -256,7 +255,7 @@ Public Sub ClickRowHeight()
                              tradsmess.TranslatedValue("MSG_Enter"))
         If inputValue = vbNullString Then Exit Sub
         If IsNumeric(inputValue) Then Exit Do
-        If (MsgBox (tradsmess.TranslatedValue("MSG_EnterNumeric"), _
+        If (MsgBox(tradsmess.TranslatedValue("MSG_EnterNumeric"), _
              vbOkCancel, "") = vbCancel) Then Exit Sub
     Loop
 
@@ -274,7 +273,7 @@ End Sub
 '@EntryPoint
 Public Sub ClickRemoveFilters()
     Dim sh As Worksheet
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim sheetTag As String
 
     Set sh = ActiveSheet
@@ -287,7 +286,7 @@ Public Sub ClickRemoveFilters()
 
     InitializeTrads
     Set Lo = sh.ListObjects(1)
-    On Error GoTo errHand
+    On Error GoTo ErrHand
 
     If Not (Lo.AutoFilter Is Nothing) Then
         BusyApp cursor:=xlNorthwestArrow
@@ -305,7 +304,7 @@ End Sub
 '@EntryPoint
 Public Sub ClickAddRows()
 
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim csTab As ICustomTable
     Dim sh As Worksheet
     Dim sheetTag As String
@@ -352,7 +351,7 @@ End Sub
 '@Description("Resize the data entry table in the linelist")
 '@EntryPoint
 Public Sub ClickResize()
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim csTab As ICustomTable
     Dim sh As Worksheet
     Dim sheetTag As String
@@ -426,7 +425,7 @@ Public Sub ClickExport()
 
     With F_Export
         For exportNumber = 1 To 5
-            If  Not exp.IsActive(exportNumber) Then
+            If Not exp.IsActive(exportNumber) Then
                 .Controls("CMD_Export" & exportNumber).Visible = False
             Else
                 .Controls("CMD_Export" & exportNumber).Visible = True
@@ -491,11 +490,11 @@ End Sub
 Public Sub ClickGeoApp()
 
     Dim targetColumn As Integer
-    Dim geoOrhf As String
+    Dim hfOrGeo As String
     Dim sheetTag As String
     Dim sh As Worksheet
-    Dim startRow As Long
-    Dim tabName As String
+    Dim StartRow As Long
+    Dim TabName As String
 
     Set sh = ActiveSheet
     sheetTag = sh.Cells(1, 3).Value
@@ -507,29 +506,26 @@ Public Sub ClickGeoApp()
 
     InitializeTrads
     
-    tabName = sh.Cells(1, 4).Value
-    startRow = sh.Range(tabName & "_" & "START").Row
+    TabName = sh.Cells(1, 4).Value
+    StartRow = sh.Range(TabName & "_" & "START").Row
     targetColumn = ActiveCell.Column
     
 
-    If ActiveCell.Row >= startRow Then
+    If ActiveCell.Row >= StartRow Then
 
-        geoOrhf = ActiveSheet.Cells(startRow - 5, targetColumn).Value
-        Select Case geoOrhf
+        hfOrGeo = ActiveSheet.Cells(StartRow - 5, targetColumn).Value
+        Select Case hfOrGeo
 
         Case "geo1"
-            iGeoType = 0
             LoadGeo 0
 
         Case "hf"
-            iGeoType = 1
             LoadGeo 1
-
         Case Else
             MsgBox tradsmess.TranslatedValue("MSG_WrongCells")
         End Select
     Else
-        MsgBox tradsmess.TranslatedValue("MSG_WrongCells"),  _ 
+        MsgBox tradsmess.TranslatedValue("MSG_WrongCells"), _
         vbOKOnly + vbCritical, tradsmess.TranslatedValue("MSG_Error")
     End If
 End Sub
@@ -583,7 +579,7 @@ Public Sub ClickPrintLL()
     sheetTag = sh.Cells(1, 3).Value
 
     'Warning if not on print or hlist worksheet
-    If  sheetTag <> "HList Print" And sheetTag <> "HList" Then
+    If sheetTag <> "HList Print" And sheetTag <> "HList" Then
         WarningOnSheet "MSG_PrintOrDataSheet"
         Exit Sub
     End If
@@ -601,7 +597,7 @@ Public Sub ClickPrintLL()
         .LeftMargin = Application.InchesToPoints(0.04)
         .RightMargin = Application.InchesToPoints(0.04)
         .TopMargin = Application.InchesToPoints(0.75)
-        .BottomMargin = Application.InchesToPoints(0.20)
+        .BottomMargin = Application.InchesToPoints(0.2)
         .HeaderMargin = Application.InchesToPoints(0.31)
         .FooterMargin = Application.InchesToPoints(0.31)
         .PrintHeadings = False
@@ -667,7 +663,7 @@ Public Sub ClickOpenVarLab()
     Dim varRng As Range
     Dim vars As ILLVariables
     Dim cellRng As Range
-    Dim tableName As String
+    Dim tablename As String
     Dim varLabTab As BetterArray
     Dim varName As String
 
@@ -684,7 +680,7 @@ Public Sub ClickOpenVarLab()
 
     'Prepare the temporary Sheet
     Set wb = ThisWorkbook
-    Set tempsh = ThisWorkbook.worksheets(TEMPSHEET)
+    Set tempsh = ThisWorkbook.Worksheets(TEMPSHEET)
     tempsh.Cells.Clear
 
     'Fill in values on pivot table names, and corresponding variables
@@ -701,23 +697,23 @@ Public Sub ClickOpenVarLab()
         varName = varRng.Cells(counter, 1).Value
 
         'take only variables on sheet of tyme HList, and add them to the table
-        If vars.Value(colName:="sheet type", varName := varName) = "hlist2D" Then
+        If vars.Value(colName:="sheet type", varName:=varName) = "hlist2D" Then
 
-            tableName = vars.Value(colName:="table name", varName := varName)
+            tablename = vars.Value(colName:="table name", varName:=varName)
 
             'Pivot table title
-            cellRng.Cells(1, 1).Value = actsh.Range("RNG_PivotTitle_" & tableName).Value
+            cellRng.Cells(1, 1).Value = actsh.Range("RNG_PivotTitle_" & tablename).Value
             'Varname
             cellRng.Cells(1, 2).Value = varName
             'Corresponding variable label
-            cellRng.Cells(1, 3).Value = vars.Value( _ 
-                                        colName:="main label", _ 
-                                        varName:= varName)
+            cellRng.Cells(1, 3).Value = vars.Value( _
+                                        colName:="main label", _
+                                        varName:=varName)
             'Move to next line
             Set cellRng = cellRng.Offset(1)
         End If
         'Get the whole table from fill in range
-        varLabTab.FromExcelRange tempsh.Cells(1, 1), _ 
+        varLabTab.FromExcelRange tempsh.Cells(1, 1), _
                                  DetectLastRow:=True, DetectLastColumn:=True
     Next
 
@@ -738,14 +734,14 @@ Public Sub ClickSortTable()
 
     Dim sh As Worksheet
     Dim sheetTag As String
-    Dim tabName As String
+    Dim TabName As String
     Dim targetColumn As Long
     Static prevRngName As String
     Static nbTimes As Long
     Dim LoRng As Range
     Dim sortRng As Range
     Dim sortOrder As Long
-    Dim startRow As Long
+    Dim StartRow As Long
     Dim headerName As String
 
 
@@ -761,20 +757,20 @@ Public Sub ClickSortTable()
 
     InitializeTrads
     
-    tabName = sh.Cells(1, 4).Value
-    startRow = sh.Range(tabName & "_" & "START").Row
+    TabName = sh.Cells(1, 4).Value
+    StartRow = sh.Range(TabName & "_" & "START").Row
     targetColumn = ActiveCell.Column
     
-    If ActiveCell.Row >= startRow Then
+    If ActiveCell.Row >= StartRow Then
 
-        headerName = sh.Cells(startRow - 1, targetColumn).Value
+        headerName = sh.Cells(StartRow - 1, targetColumn).Value
 
         If (prevRngName <> headerName) Or (nbTimes = 0) Then
             'Ask the user if really want to sort
             prevRngName = headerName
             nbTimes = 0
-            If MsgBox( _ 
-                tradsmess.TranslatedValue("MSG_ContinueSort") & " " & headerName, _ 
+            If MsgBox( _
+                tradsmess.TranslatedValue("MSG_ContinueSort") & " " & headerName, _
                 vbYesNo + vbExclamation) = vbNo Then
                 Exit Sub
             End If
@@ -784,17 +780,17 @@ Public Sub ClickSortTable()
         'For the first time, it is increasing, the second time, decreasing, etc..
 
         sortOrder = IIf((nbTimes Mod 2) = 0, xlAscending, xlDescending)
-        Set LoRng = sh.ListObjects(tabName).Range
-        Set sortRng = sh.ListObjects(tabName).ListColumns(headerName).Range
+        Set LoRng = sh.ListObjects(TabName).Range
+        Set sortRng = sh.ListObjects(TabName).ListColumns(headerName).Range
         nbTimes = nbTimes + 1
         
-        BusyApp  cursor:=xlNorthwestArrow
+        BusyApp cursor:=xlNorthwestArrow
         'Unprotect the active worksheet, sort the range, and protect back.
-        'I have to keep the protect/unprotect step as far as possible for 
+        'I have to keep the protect/unprotect step as far as possible for
         'performance issues
         pass.UnProtect "_active"
         On Error Resume Next
-        LoRng.Sort key1:=sortRng, order1:=sortOrder, Header:= xlYes
+        LoRng.Sort key1:=sortRng, Order1:=sortOrder, Header:=xlYes
         On Error GoTo 0
         pass.Protect "_active"
     End If
@@ -810,7 +806,7 @@ Public Sub ClickExportAnalysis()
     Dim expOut As IOutputSpecs
 
     'Add Error management
-    On Error GoTo errHand
+    On Error GoTo ErrHand
     InitializeTrads
 
     BusyApp
@@ -819,9 +815,9 @@ Public Sub ClickExportAnalysis()
     NotBusyApp
     Exit Sub
 
-errHand:
-    MsgBox  tradsmess.TranslatedValue("MSG_ErrHandExport"), _ 
-            vbOKOnly + vbCritical, _ 
+ErrHand:
+    MsgBox tradsmess.TranslatedValue("MSG_ErrHandExport"), _
+            vbOKOnly + vbCritical, _
             tradsmess.TranslatedValue("MSG_Error")
     NotBusyApp
 End Sub

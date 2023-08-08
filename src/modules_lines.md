@@ -2,23 +2,23 @@
 
 |module_name                  | number_lines|
 |:----------------------------|------------:|
-|EventsLinelistButtons.bas    |          827|
-|LinelistGeo.bas              |          491|
+|EventsLinelistButtons.bas    |          823|
 |LinelistCustomFunctions.bas  |          477|
+|LinelistEvents.bas           |          437|
 |DesignerMain.bas             |          388|
 |DevModule.bas                |          384|
-|LinelistEvents.bas           |          376|
+|FormLogicGeo.bas             |          338|
 |LinelistConstants.bas        |          318|
 |EventsSpatialAnalysis.bas    |          287|
+|LinelistGeo.bas              |          278|
 |EventsDesignerRibbon.bas     |          259|
-|FormLogicGeo.bas             |          245|
 |EventsGlobalAnalysis.bas     |          204|
 |EventsLinelistRibbon.bas     |          160|
 |FormLogicExport.bas          |          147|
 |FormLogicExportMigration.bas |          118|
 |FormLogicAdvanced.bas        |          112|
 |FormLogicShowHidePrint.bas   |           80|
-|Helpers.bas                  |           75|
+|Helpers.bas                  |           73|
 |EventsMainSheet.bas          |           62|
 |LinelistTranslation.bas      |           59|
 |FormLogicImportRep.bas       |           45|
@@ -31,4 +31,6 @@
 |VlistChange.bas              |            8|
 
 
-Total number of modules lines: 5275
+Total number of modules lines: 5210
+
+Median number of modules lines: 118

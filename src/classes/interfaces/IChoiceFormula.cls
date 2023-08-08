@@ -30,5 +30,5 @@ End Property
 
 'Get the choice name
 '@Ignored ProcedureNotUsed
-Public Property Get ChoiceName() As String
+Public Property Get choiceName() As String
 End Property

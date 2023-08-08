@@ -93,7 +93,7 @@ End Property
 
 Private Function GeoColumnIndex(ByVal colName As String, ByVal adminLevel As Byte) As Long
     Dim hRng As Range
-    Dim LoName As String
+    Dim loName As String
     Dim tabl As BetterArray
     Dim sh As Worksheet
     Dim colIndex As Long
@@ -101,12 +101,12 @@ Private Function GeoColumnIndex(ByVal colName As String, ByVal adminLevel As Byt
 
     Set sh = Wksh()
     Set tabl = TableNames()
-    LoName = tabl.Item(adminLevel)
+    loName = tabl.Item(adminLevel)
     actualColName = colName
     If sh.Range("RNG_GeoUpdated").Value = "updated, translated" Then actualColName = GeoNames(colName)
-    Set hRng = sh.ListObjects(LoName).HeaderRowRange
+    Set hRng = sh.ListObjects(loName).HeaderRowRange
     colIndex = ColumnIndex(actualColName, hRng)
-    If colIndex < 0 Then ThrowError "Column " & actualColName & " not found in table " & LoName
+    If colIndex < 0 Then ThrowError "Column " & actualColName & " not found in table " & loName
     GeoColumnIndex = colIndex
 End Function
 
@@ -127,8 +127,8 @@ End Function
 Private Function ColumnIndex(ByVal colName As String, ByVal headerRng As Range, _
                              Optional ByVal inRange As Boolean = True) As Long
     Dim Index As Long
-    If Not (headerRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=True) Is Nothing) Then
-        Index = headerRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=True).Column
+    If Not (headerRng.Find(What:=colName, lookAt:=xlWhole, MatchCase:=True) Is Nothing) Then
+        Index = headerRng.Find(What:=colName, lookAt:=xlWhole, MatchCase:=True).Column
         If inRange Then Index = Index - headerRng.Column + 1
     Else
         Index = -1
@@ -177,10 +177,10 @@ Private Property Get GeoLevel(ByVal adminLevel As Byte, _
     Dim sh As Worksheet
     Dim tabl As BetterArray
     Dim outLevels As BetterArray
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim LoRng As Range
     Dim rng As Range
-    Dim LoName As String
+    Dim loName As String
     Dim colIndex As Long
     Dim counter As Long
     Dim returnedRng As Range
@@ -194,9 +194,9 @@ Private Property Get GeoLevel(ByVal adminLevel As Byte, _
     sh.EnableCalculation = False
 
     If geoType = GeoScopeAdmin Then
-        LoName = tabl.Item(adminLevel)
+        loName = tabl.Item(adminLevel)
     Else
-        LoName = tabl.Item(4)
+        loName = tabl.Item(4)
     End If
 
     'Work only on Geobase with values withing
@@ -214,11 +214,11 @@ Private Property Get GeoLevel(ByVal adminLevel As Byte, _
 
     'Output Levels
     Set outLevels = New BetterArray
-    Set Lo = sh.ListObjects(LoName)
+    Set Lo = sh.ListObjects(loName)
     Set LoRng = Lo.Range
 
     'If the Listobject is Empty, throw error
-    If Lo.DataBodyRange Is Nothing Then ThrowError "The listobject " & LoName & "has no data"
+    If Lo.DataBodyRange Is Nothing Then ThrowError "The listobject " & loName & "has no data"
 
     Select Case geoType
 
@@ -304,84 +304,6 @@ Err:
     sh.EnableCalculation = True
 End Property
 
-
-Private Property Get ValueOf(ByVal adminLevel As Byte, _
-        Optional ByVal concatValue As String = vbNullString, _
-        Optional ByVal returnedSuffix As String = "pop") As String
-
-    'Return the population or the pcode of a admin level, by default, return population
-    'Returned Suffix is the suffix of the column to return.
-
-    Dim sh As Worksheet
-    Dim Lo As listObject
-    Dim LoName As String
-    Dim colIndex As Long
-    Dim concatRng As Range
-    Dim tabl As BetterArray
-    Dim returnedValue As String
-    Dim cellRng As Range
-    Dim retRng As Range
-
-    Set sh = Wksh()
-    Set tabl = TableNames()
-
-    LoName = IIf(adminLevel = LevelHF, "T_HF", tabl.Item(adminLevel))
-    Set Lo = sh.ListObjects(LoName)
-
-    If Lo.DataBodyRange Is Nothing Then Exit Property
-
-    'returned column index
-    If adminLevel <> LevelHF Then
-        colIndex = GeoColumnIndex("adm" & (adminLevel + 1) & "_" & returnedSuffix, adminLevel)
-    Else
-        colIndex = HFColumnIndex("hf_" & returnedSuffix)
-    End If
-
-    Select Case adminLevel
-
-        Case LevelGeoAdmin1
-
-        Set concatRng = Lo.ListColumns("adm1_concat").Range
-
-        Case LevelGeoAdmin2
-
-        Set concatRng = Lo.ListColumns("adm2_concat").Range
-
-        Case LevelGeoAdmin3
-
-        Set concatRng = Lo.ListColumns("adm3_concat").Range
-
-        Case LevelGeoAdmin4
-
-        Set concatRng = Lo.ListColumns("adm4_concat").Range
-
-        Case LevelHF
-
-        Set concatRng = Lo.ListColumns("hf_concat").Range
-    End Select
-
-    'Use index match to get the result
-    Set cellRng = concatRng.Cells(1, 1)
-    Set retRng = Lo.Range.Cells(1, colIndex)
-
-    Do While (cellRng.Value <> concatValue) And _ 
-             (cellRng.Row <= concatRng.Cells(concatRng.Rows.Count, 1).Row) 
-        Set cellRng = cellRng.Offset(1)
-        Set retRng = retRng.Offset(1)   
-    Loop
-
-    returnedValue = vbNullString
-
-    If (cellRng.Row <= concatRng.Cells(concatRng.Rows.Count, 1).Row)  Then
-        On Error Resume Next
-        returnedValue = CStr(retRng.Value)
-        On Error GoTo 0
-    End If
-
-    ValueOf = returnedValue
-End Property
-
-
 Private Sub Translate(Optional ByVal rawNames As Boolean = False)
     'Headers for the geo sheet
     Dim sh As Worksheet
@@ -390,8 +312,8 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
     Dim counter2 As Long
     Dim rng As Range
     Dim cellRng As Range
-    Dim Lo As ListObject
-    Dim LoName As String
+    Dim Lo As listObject
+    Dim loName As String
     Dim admname As String
     Dim transGeoName As String                   'Translated geo Name
     Dim hRng As Range                            'Header Range
@@ -405,8 +327,8 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
     Set tabl = TableNames()
     tabl.LowerBound = 1
     For counter = 1 To 4 'admin 1, 2, 3, 4
-        LoName = tabl.Item(counter)
-        Set Lo = sh.ListObjects(LoName)
+        loName = tabl.Item(counter)
+        Set Lo = sh.ListObjects(loName)
         Set hRng = Lo.HeaderRowRange
 
         'Admin 1 to 5, and hf
@@ -439,7 +361,7 @@ End Sub
 
 Private Sub Clear()
     Dim sh As Worksheet
-    Dim Lo As ListObject
+    Dim Lo As listObject
 
     Set sh = Wksh()
     For Each Lo In sh.ListObjects
@@ -451,12 +373,12 @@ Private Sub Clear()
     sh.Range("RNG_GeoUpdated").Value = "empty"
 End Sub
 
-Private Sub ClearHistoric()
+Private Sub ClearHistoric(Optional ByVal scope As Byte = 3)
     Dim sh As Worksheet
     Set sh = Wksh()
     On Error Resume Next
-    sh.ListObjects("T_" & HISTOGEO).DataBodyRange.Cells.Clear
-    sh.ListObjects("T_" & HISTOHF).DataBodyRange.Cells.Clear
+    If (scope = 0) Or (scope = 3) Then sh.ListObjects("T_" & HISTOGEO).DataBodyRange.Cells.Clear
+    If (scope = 0) Or (scope = 3) Then sh.ListObjects("T_" & HISTOHF).DataBodyRange.Cells.Clear
     On Error GoTo 0
 End Sub
 
@@ -469,7 +391,7 @@ Private Sub ExportToFile(outputWkb As Workbook, Optional ByVal onlyHistory As Bo
     Dim outputRng As Range
     Dim inputRng As Range
     Dim sheetName As String
-    Dim LoName As String
+    Dim loName As String
     Dim counter As Long
 
     Set tabl = New BetterArray
@@ -494,10 +416,10 @@ Private Sub ExportToFile(outputWkb As Workbook, Optional ByVal onlyHistory As Bo
 
         'Add the others tables to the worksheet
         For counter = tabl.LowerBound To tabl.UpperBound
-            LoName = tabl.Item(counter)
-            Set inputRng = sh.ListObjects(LoName).Range
-            .Worksheets.Add(After:=.Worksheets(sheetName)).Name = Replace(LoName, "T_", vbNullString)
-            sheetName = Replace(LoName, "T_", vbNullString)
+            loName = tabl.Item(counter)
+            Set inputRng = sh.ListObjects(loName).Range
+            .Worksheets.Add(after:=.Worksheets(sheetName)).Name = Replace(loName, "T_", vbNullString)
+            sheetName = Replace(loName, "T_", vbNullString)
             With .Worksheets(sheetName)
                 Set outputRng = .Range(.Cells(1, 1), .Cells(inputRng.Rows.Count, inputRng.Columns.Count))
             End With
@@ -516,7 +438,7 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
 
     Dim sh As Worksheet
     Dim outsh As Worksheet
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim expAddress As String
     Dim expRange As Range
     Dim rng As Range
@@ -630,13 +552,16 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     outputWkb.NAMES.Add Name:="adm3_pop", RefersToR1C1:="=" & "T_ADM3" & "[" & "adm3_pop" & "]"
     outputWkb.NAMES.Add Name:="adm4_pop", RefersToR1C1:="=" & "T_ADM4" & "[" & "adm4_pop" & "]"
 
+    'add the histo values
+    outputWkb.NAMES.Add Name:="histo_geo", RefersToR1C1:="=" & "T_HISTOGEO" & "[" & "HistoGeo" & "]"
+    outputWkb.NAMES.Add Name:="histo_hf", RefersToR1C1:="=" & "T_HISTOHF" & "[" & "HistoFacility" & "]"
 
 End Sub
 
 Private Sub Import(ByVal fromWkb As Workbook, Optional ByVal histoOnly As Boolean = False)
     Dim sh As Worksheet
     Dim impsh As Worksheet
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim hRng As Range
     Dim admNames As BetterArray
     Dim counter As Long
@@ -743,11 +668,11 @@ Private Sub Import(ByVal fromWkb As Workbook, Optional ByVal histoOnly As Boolea
                 End Select
 
                 'clear the concat range before resizing and setting the formula
-                Set concatRng = sh.Range( _ 
-                                    sh.Cells(2,  _ 
-                                             hRng.Column + hRng.Cells.Count - 1), _ 
-                                    sh.Cells(Lo.Range.Rows.Count, _ 
-                                             hRng.Column + hRng.Cells.Count - 1) _ 
+                Set concatRng = sh.Range( _
+                                    sh.Cells(2, _
+                                             hRng.Column + hRng.Cells.Count - 1), _
+                                    sh.Cells(Lo.Range.Rows.Count, _
+                                             hRng.Column + hRng.Cells.Count - 1) _
                                 )
                 'Clear the concat Range only if there is a concat formula
                 'You need to clear the concat Range before adding the formula
@@ -761,8 +686,8 @@ Private Sub Import(ByVal fromWkb As Workbook, Optional ByVal histoOnly As Boolea
                 Lo.Resize actRng
 
                 If concatFormula <> vbNullString Then _
-                sh.Cells(impRng.Row, _ 
-                        hRng.Column + hRng.Cells.Count - 1).formula = _ 
+                sh.Cells(impRng.Row, _
+                        hRng.Column + hRng.Cells.Count - 1).formula = _
                         concatFormula
                 
             End If
@@ -817,7 +742,7 @@ Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
 End Sub
 
 Private Sub LoExists(ByVal loNames As BetterArray, sh As Worksheet)
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim counter As Long
     Dim lName As String
     For counter = loNames.LowerBound To loNames.UpperBound
@@ -932,12 +857,12 @@ Private Sub UpdateDict(ByVal dict As ILLdictionary)
     Set controlRng = dict.DataRange("control")
     Set mainlabRng = dict.DataRange("main label")
 
-    For counter = 1 to controlRng.Rows.Count
+    For counter = 1 To controlRng.Rows.Count
         Select Case controlRng.Cells(counter, 1).Value
         Case "geo1"
             mainlabRng.Cells(counter, 1).Value = GeoNames("adm1_name")
         Case "geo2"
-            mainlabRng.Cells(counter, 1).Value = GeoNames("adm2_name")    
+            mainlabRng.Cells(counter, 1).Value = GeoNames("adm2_name")
         Case "geo3"
             mainlabRng.Cells(counter, 1).Value = GeoNames("adm3_name")
         Case "geo4"
@@ -952,7 +877,7 @@ Private Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
 
     Dim csTab As ICustomTable
     Dim vars As ILLVariables
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim counter As Long
     Dim mainlabRng As Range
     Dim varRng As Range
@@ -962,7 +887,7 @@ Private Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
 
     Set vars = LLVariables.Create(dict)
 
-    For Each Lo in sh.ListObjects
+    For Each Lo In sh.ListObjects
 
         Set csTab = CustomTable.Create(Lo)
         Set mainlabRng = csTab.DataRange("main label")
@@ -975,10 +900,10 @@ Private Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
             subsecValue = vars.Value(colName:="sub section", varName:=varValue)
 
             Select Case controlValue
-            case "geo1"
+            Case "geo1"
                 mainlabRng.Cells(counter, 1).Value = subsecValue & ": " & GeoNames("adm1_name")
             Case "geo2"
-                mainlabRng.Cells(counter, 1).Value = subsecValue & ": " & GeoNames("adm2_name")    
+                mainlabRng.Cells(counter, 1).Value = subsecValue & ": " & GeoNames("adm2_name")
             Case "geo3"
                 mainlabRng.Cells(counter, 1).Value = subsecValue & ": " & GeoNames("adm3_name")
             Case "geo4"
@@ -1007,6 +932,46 @@ Private Function AdminCode(ByVal selectedAdmin As String) As String
     End Select
 End Function
 
+'check if the geobase is Empty
+Private Property Get IsEmpty() As Boolean
+    Dim sh As Worksheet
+    Set sh = Wksh()
+    IsEmpty = (sh.Range("RNG_GeoUpdated").Value = "empty")
+End Property
+
+'Update historic data for the geobase
+
+Private Sub UpdateHistoric(ByVal newValue As String, Optional ByVal scope As Byte = 0)
+    
+    Dim sh As Worksheet
+    Dim loName As String
+    Dim LoRng As Range
+    Dim cellRng As Range
+    Dim Lo As listObject
+
+    Set sh = Wksh()
+    loName = IIf(scope = 0, HISTOGEO, HISTOHF)
+    loName = "T_" & loName
+
+    Set Lo = sh.ListObjects(loName)
+    Set LoRng = Lo.Range
+    Set cellRng = LoRng.Cells(LoRng.Rows.Count + 1, 1)
+
+    If (Lo.DataBodyRange Is Nothing) Then
+        Set cellRng = LoRng.Cells(2, 1)
+    ElseIf IsEmpty(Lo.DataBodyRange) Then
+        Set cellRng = LoRng.Cells(2, 1)
+    End If
+
+    'write new value
+    cellRng.Value = newValue
+
+    'resize the list object
+    Lo.Resize sh.Range(LoRng.Cells(1, 1), cellRng)
+    LoRng.RemoveDuplicates Columns:=1, Header:=xlYes
+    LoRng.Sort key1:=LoRng, Header:=xlYes
+End Sub
+
 'Interfaces
 Private Property Get ILLGeo_GeoLevel(ByVal adminLevel As Byte, _
                                     Optional ByVal geoType As Byte = GeoScopeAdmin, _
@@ -1018,15 +983,6 @@ End Property
 'Convert the code name to the actual name of the current language
 Private Property Get ILLGeo_GeoNames(ByVal admname As String) As String
     ILLGeo_GeoNames = GeoNames(admname)
-End Property
-
-'Get the Population of one administrative level (only for geoType)
-Private Property Get ILLGeo_Population(ByVal adminLevel As Byte, Optional ByVal concatValue As String = vbNullString) As String
-    ILLGeo_Population = ValueOf(adminLevel:=adminLevel, concatValue:=concatValue, returnedSuffix:="pop")
-End Property
-
-Private Property Get ILLGeo_Pcode(ByVal adminLevel As Byte, Optional ByVal concatValue As String = vbNullString) As String
-    ILLGeo_Pcode = ValueOf(adminLevel:=adminLevel, concatValue:=concatValue, returnedSuffix:="pcode")
 End Property
 
 'Translation
@@ -1052,8 +1008,8 @@ Private Sub ILLGeo_Clear()
     Clear
 End Sub
 
-Private Sub ILLGeo_ClearHistoric()
-    ClearHistoric
+Private Sub ILLGeo_ClearHistoric(Optional ByVal scope As Byte = 3)
+    ClearHistoric scope
 End Sub
 
 Private Sub ILLGeo_Update(ByVal pass As ILLPasswords)
@@ -1071,3 +1027,11 @@ End Sub
 Private Function ILLGeo_AdminCode(ByVal selectedAdmin As String) As String
     ILLGeo_AdminCode = AdminCode(selectedAdmin)
 End Function
+
+Private Property Get ILLGeo_IsEmpty() As Boolean
+    ILLGeo_IsEmpty = IsEmpty()
+End Property
+
+Private Sub ILLGeo_UpdateHistoric(ByVal newValue As String, Optional ByVal scope As Byte = 0)
+    UpdateHistoric newValue, scope
+End Sub

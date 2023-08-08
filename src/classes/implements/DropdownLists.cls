@@ -24,15 +24,15 @@ End Type
 Private this As TDropdownLists
 Private Const CLASSNAME As String = "DropdownLists"
 
-Public Function Create(ByVal outsh As Worksheet, _ 
-                       Optional ByVal hprefix As String = "dropdown_") _ 
+Public Function Create(ByVal outsh As Worksheet, _
+                       Optional ByVal hprefix As String = "dropdown_") _
                        As IDropdownLists
     'Errors
     If outsh Is Nothing Then ThrowError "Dropdown worksheet not initialised"
   
     With New DropdownLists
         Set .Wksh = outsh
-        Let .HeaderPrefix = hprefix
+        Let .headerPrefix = hprefix
         Set Create = .Self
     End With
 
@@ -50,11 +50,11 @@ Public Property Set Wksh(ByVal outsh As Worksheet)
     Set this.sh = outsh
 End Property
 
-Public Property Get HeaderPrefix() As String
-    HeaderPrefix = this.hprefix
+Public Property Get headerPrefix() As String
+    headerPrefix = this.hprefix
 End Property
 
-Public Property Let HeaderPrefix(ByVal hprefix As String)
+Public Property Let headerPrefix(ByVal hprefix As String)
     this.hprefix = hprefix
 End Property
 
@@ -76,7 +76,7 @@ End Property
 
 'Header of the listObject
 Private Property Get CurrentHeaderName(ByVal listName As String) As String
-    CurrentHeaderName = HeaderPrefix() & CurrentListName(listName)
+    CurrentHeaderName = headerPrefix() & CurrentListName(listName)
 End Property
 
 'Name of the listobject column that will be used as named range
@@ -84,8 +84,8 @@ Private Property Get CurrentDropdownName(ByVal listName As String) As String
     Dim headerName As String
 
     headerName = CurrentHeaderName(listName)
-    CurrentDropdownName = IIf(HeaderPrefix() = vbNullString, _ 
-                              "choice_" & headerName, _ 
+    CurrentDropdownName = IIf(headerPrefix() = vbNullString, _
+                              "choice_" & headerName, _
                               headerName)
 End Property
 
@@ -95,13 +95,13 @@ End Property
 
 'Test if a listobject exists in a sheet
 Public Function Exists(ByVal listName As String) As Boolean
-    Dim Lo As ListObject
-    Dim LoName As String
+    Dim Lo As listObject
+    Dim loName As String
     Dim sh As Worksheet
     Set sh = Wksh()
-    LoName = CurrentLoName(listName)
+    loName = CurrentLoName(listName)
     On Error Resume Next
-    Set Lo = sh.ListObjects(LoName)
+    Set Lo = sh.ListObjects(loName)
     On Error GoTo 0
     Exists = (Not Lo Is Nothing)
 End Function
@@ -113,14 +113,14 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String)
     Dim sh As Worksheet
     Dim colIndex As Long
     Dim headerName As String              'header Name
-    Dim LoName As String                  'List object name
+    Dim loName As String                  'List object name
     Dim rng As Range
     Dim Wkb As Workbook
     Dim dropdownName As String            'dropdown name (used in named ranges)
 
 
     If (Not Exists(listName)) Then
-        LoName = CurrentLoName(listName)
+        loName = CurrentLoName(listName)
         headerName = CurrentHeaderName(listName)
         dropdownName = CurrentDropdownName(listName)
 
@@ -133,45 +133,59 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String)
             Set rng = .Range(.Cells(1, colIndex), .Cells(listValues.Length + 1, colIndex))
 
             'Add A list object table
-            .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = LoName
+            .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName
             Set Wkb = .Parent
         End With
 
-        Wkb.NAMES.Add Name:=dropdownName, RefersToR1C1:="=" & LoName & "[" & headerName & "]"
+        Wkb.NAMES.Add Name:=dropdownName, RefersToR1C1:="=" & loName & "[" & headerName & "]"
     End If
 End Sub
 
-'Remove the validation
+
+'Remove the dropdown
 Private Sub Remove(ByVal listName As String)
     Dim sh As Worksheet
     Dim Wkb As Workbook
     Dim rng As Range
-    Dim LoName As String
-    Dim headerName As String
+    Dim loName As String
+    Dim dropdownName As String
 
-    If Exists(listName) Then
+    If Not Exists(listName) Then Exit Sub
     
-        LoName = CurrentLoName(listName)
-        headerName = CurrentHeaderName(listName)
+    loName = CurrentLoName(listName)
+    dropdownName = CurrentDropdownName(listName)
 
-        Set sh = Wksh()
-        Set rng = sh.ListObjects(LoName).Range
-        Set Wkb = sh.Parent
-    
-        Wkb.NAMES(headerName).Delete
-    
-        If rng.Column = 1 Then
-    
-            rng.EntireColumn.Delete
-    
-        Else
-    
-            rng.EntireColumn.Delete
-            rng.Offset(, 1).EntireColumn.Delete
-    
-        End If
+    Set sh = Wksh()
+    Set rng = sh.ListObjects(loName).Range
+    Set Wkb = sh.Parent
 
+    On Error Resume Next
+        Wkb.NAMES(dropdownName).Delete
+    On Error GoTo 0
+    
+    If rng.Column = 1 Then
+    
+        rng.EntireColumn.Delete
+    
+    Else
+        rng.EntireColumn.Delete
+        rng.Offset(, 1).EntireColumn.Delete
     End If
+End Sub
+
+'Clear a dropdown values
+Private Sub ClearList(ByVal listName As String)
+
+    Dim sh As Worksheet
+    Dim loName As String
+
+    If Not Exists(listName) Then Exit Sub
+
+    loName = CurrentLoName(listName)
+    Set sh = Wksh()
+    On Error Resume Next
+    sh.ListObjects(loName).DataBodyRange.Delete
+    On Error GoTo 0
 End Sub
 
 'Update a list with new values
@@ -180,13 +194,13 @@ Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String)
     Dim sh As Worksheet
     Dim cellRng As Range
     Dim rng As Range
-    Dim LoName As String
-    Dim Lo As ListObject
+    Dim loName As String
+    Dim Lo As listObject
 
     If Not Exists(listName) Then Exit Sub
     Set sh = Wksh()
-    LoName = CurrentLoName(listName)
-    Set Lo = sh.ListObjects(LoName)
+    loName = CurrentLoName(listName)
+    Set Lo = sh.ListObjects(loName)
     Set cellRng = Lo.Range.Cells(2, 1)
     
     'put the new data in the range
@@ -206,20 +220,20 @@ Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
 
     If Not Exists(listName) Then ThrowError "There is no available dropdown for " & listName
 
-    'dropdown names can change. I add the tag 
+    'dropdown names can change. I add the tag
     dropdownName = "= " & CurrentDropdownName(listName)
     
     With cellRng.validation
         .Delete
         Select Case alertType
         Case "error"                             '"error"
-            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _ 
+            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
              Operator:=xlBetween, Formula1:=dropdownName
         Case "warning"                           '"warning"
-            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertWarning, _ 
+            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertWarning, _
              Operator:=xlBetween, Formula1:=dropdownName
         Case Else            'for all the others, add an information alert
-            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertInformation, _ 
+            .Add Type:=xlValidateList, AlertStyle:=xlValidAlertInformation, _
             Operator:=xlBetween, Formula1:=dropdownName
         End Select
 
@@ -232,6 +246,25 @@ Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
         .ShowInput = True
         .ShowError = True
     End With
+End Sub
+
+'Sort a dropdown listObject
+Private Sub Sort(ByVal listName As String, _
+                 Optional ByVal sortOrder As Long = xlAscending)
+
+    Dim loName As String
+    Dim rng As Range
+    Dim sh As Worksheet
+    
+    If Not Exists(listName) Then Exit Sub
+    
+    loName = CurrentLoName(listName)
+    Set sh = Wksh()
+    Set rng = sh.ListObjects(loName).Range
+
+    On Error Resume Next
+    rng.Sort key:=rng, ORDER:=sortOrder, Header:=xlYes
+    On Error GoTo 0
 End Sub
 
 'Errors
@@ -262,4 +295,13 @@ End Sub
 
 Private Sub IDropdownLists_Update(ByVal UpdateData As BetterArray, ByVal listName As String)
     Update UpdateData:=UpdateData, listName:=listName
+End Sub
+
+Private Sub IDropdownLists_ClearList(ByVal listName As String)
+    ClearList listName
+End Sub
+
+Private Sub IDropdownLists_Sort(ByVal listName As String, _
+                                Optional ByVal sortOrder As Long = xlAscending)
+    Sort listName, sortOrder
 End Sub

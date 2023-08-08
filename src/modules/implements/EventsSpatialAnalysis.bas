@@ -41,14 +41,14 @@ Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
     Application.Calculation = xlCalculationManual
-    Application.Cursor = cursor
+    Application.cursor = cursor
 End Sub
 
 'Return back to previous state
 Private Sub NotBusyApp()
     Application.ScreenUpdating = True
     Application.EnableAnimations = True
-    Application.Cursor = xlDefault
+    Application.cursor = xlDefault
 End Sub
 
 '@Description("Update all spatial tables in the spatial sheet")
@@ -94,7 +94,7 @@ Public Sub UpdateSingleSpTable(ByVal rngName As String)
     Dim geo As ILLGeo
     Dim hasFormula As Boolean
 
-    BusyApp cursor:= xlNorthwestArrow
+    BusyApp cursor:=xlNorthwestArrow
 
     'initialize passwords, translations etc.
     Initialize
@@ -150,7 +150,7 @@ Public Sub UpdateSingleSpTable(ByVal rngName As String)
 End Sub
 
 '@Description("Devide all computed Values by the population")
-Public Sub DevideByPopulation(ByVal rngName As String,  _
+Public Sub DevideByPopulation(ByVal rngName As String, _
                              Optional ByVal revertBack As Boolean = False)
 
     Dim sh As Worksheet
@@ -168,11 +168,11 @@ Public Sub DevideByPopulation(ByVal rngName As String,  _
     Dim tabId As String
     Dim sp As ILLSpatial
 
-    BusyApp cursor:= xlNorthwestArrow
+    BusyApp cursor:=xlNorthwestArrow
     Initialize
 
     Set sh = ActiveSheet
-    pass.Unprotect "_active"
+    pass.UnProtect "_active"
 
     tabId = Replace(rngName, "POPFACT_", vbNullString)
     prevFact = sh.Range("POPPREVFACT_" & tabId).Value
@@ -252,7 +252,7 @@ Public Sub FormatDevidePop(ByVal rngName As String)
     Set sh = ActiveSheet
 
     Initialize
-    BusyApp cursor:= xlNorthwestArrow
+    BusyApp cursor:=xlNorthwestArrow
 
     pass.UnProtect "_active"
     tabId = Replace(rngName, "DEVIDEPOP_", vbNullString)

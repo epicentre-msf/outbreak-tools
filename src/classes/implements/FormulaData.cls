@@ -62,20 +62,20 @@ Private Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolea
     Dim rng As Range
 
     Set rng = SpecialCharactersRange
-    SpecialCharacterIncludes = (Not rng.Find(What:=specialChar, LookAt:=xlWhole, MatchCase:=False) Is Nothing)
+    SpecialCharacterIncludes = (Not rng.Find(What:=specialChar, lookAt:=xlWhole, MatchCase:=False) Is Nothing)
 End Function
 
 Private Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
     Dim rng As Range
 
     Set rng = FormulaRange
-    ExcelFormulasIncludes = (Not rng.Find(What:=ExcelFormula, LookAt:=xlWhole, MatchCase:=False) Is Nothing)
+    ExcelFormulasIncludes = (Not rng.Find(What:=ExcelFormula, lookAt:=xlWhole, MatchCase:=False) Is Nothing)
 End Function
 
 'Errors management ---------------------------------------------------------------------------------
 
 Private Sub CheckRequirements(ByVal sh As Worksheet)
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim rng As Range
 
     If sh Is Nothing Then ThrowErrorUnableInstanciate "No worksheet found"
