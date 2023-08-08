@@ -51,8 +51,8 @@ Public Function FilterData(ByVal varName As String, ByVal criteriaName As String
 End Function
 
 'multiple filters
-Public Function FiltersData(ByVal varData As BetterArray, _ 
-                            ByVal criteriaData As BetterArray, _ 
+Public Function FiltersData(ByVal varData As BetterArray, _
+                            ByVal criteriaData As BetterArray, _
                             ByVal returnedColumnsData As BetterArray) As BetterArray
 End Function
 

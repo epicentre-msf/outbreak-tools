@@ -174,14 +174,14 @@ Public Sub Build()
     Dim drop As IDropdownLists
     Dim pass As ILLPasswords
     Dim sectionsList As BetterArray              'The list of all sections in a worksheet (for a dropdown)
-    Dim tableName As String
+    Dim tablename As String
     Dim goToSection As String
     Dim gotoSectionListName As String
     Dim shcolStart As Long
     Dim shcolEnd As Long
     Dim shrowStart As Long
     Dim shrowEnd As Long
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim printsh As Worksheet
     Dim mainobj As IMain
     Dim pivotObj As ICustomPivotTables
@@ -200,7 +200,7 @@ Public Sub Build()
 
     'Add Printed Worksheet before building
     ll.AddOutputSheet sheetName, xlSheetHidden, usePrinted:=True
-    Set printsh = ll.Printwksh(sheetName)
+    Set printsh = ll.PrintWksh(sheetName)
 
     'Format the linelist and prepare
     design.ApplyFormat sh, scope:=AllLinelistSheet
@@ -225,25 +225,25 @@ Public Sub Build()
         'Show Hide button
         Set rng = sh.Cells(1, 2)
         Set trads = lData.TransObject(TranslationOfShapes)
-        Set but = Buttons.Create(outRng:=rng, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
+        Set but = Buttons.Create(outrng:=rng, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
         but.Add actionCommand:=SHOWHIDECOMMAND, shapeLabel:=trads.TranslatedValue(SHPSHOWHIDE)
         but.Format design
 
         'Add Rows button
         Set rng = sh.Cells(2, 2)
-        Set but = Buttons.Create(outRng:=rng, codeName:=SHPADDROWS, scope:=ButtonScopeSmall)
+        Set but = Buttons.Create(outrng:=rng, codeName:=SHPADDROWS, scope:=ButtonScopeSmall)
         but.Add actionCommand:=ADDROWSCOMMAND, shapeLabel:=trads.TranslatedValue(SHPADDROWS)
         but.Format design
 
         'Remove Filters
         Set rng = sh.Cells(2, 1)
-        Set but = Buttons.Create(outRng:=rng, codeName:=SHPREMOVEFILT, scope:=ButtonScopeSmall)
+        Set but = Buttons.Create(outrng:=rng, codeName:=SHPREMOVEFILT, scope:=ButtonScopeSmall)
         but.Add actionCommand:=REMOVEFILTERCOMMAND, shapeLabel:=trads.TranslatedValue(SHPREMOVEFILT)
         but.Format design
 
         'Open Print sheet on Linelist Worksheet
         Set rng = sh.Cells(3, 1)
-        Set but = Buttons.Create(outRng:=rng, codeName:=SHPOPENPRINT, scope:=ButtonScopeSmall)
+        Set but = Buttons.Create(outrng:=rng, codeName:=SHPOPENPRINT, scope:=ButtonScopeSmall)
         but.Add actionCommand:=OPENPRINTCOMMAND, shapeLabel:=trads.TranslatedValue(SHPOPENPRINT)
         but.Format design
 
@@ -251,19 +251,19 @@ Public Sub Build()
         hasGeo = llshs.ContainsVarsOf(sheetName, "geo1")
         If hasGeo Then
             Set rng = sh.Cells(3, 2)
-            Set but = Buttons.Create(outRng:=rng, codeName:=SHPGEO, scope:=ButtonScopeGeo)
+            Set but = Buttons.Create(outrng:=rng, codeName:=SHPGEO, scope:=ButtonScopeGeo)
             but.Add actionCommand:=GEOCOMMAND, shapeLabel:=trads.TranslatedValue(SHPGEO)
             but.Format design
         End If
 
         'Show Hide Button on print worksheet
         Set rng = printsh.Cells(1, 2)
-        Set but = Buttons.Create(outRng:=rng, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
+        Set but = Buttons.Create(outrng:=rng, codeName:=SHPSHOWHIDE, scope:=ButtonScopeSmall)
         but.Add actionCommand:=SHOWHIDECOMMAND, shapeLabel:=trads.TranslatedValue(SHPSHOWHIDE)
         but.Format design
     Else
         'If there is no button, hide the lines 3 and 4
-        sh.Rows("3:4").EntireRow.Hidden = True
+        sh.Rows("3:4").EntireRow.HIDDEN = True
     End If
 
     'BUILD SECTIONS IN THE HLIST------------------------------------------------
@@ -291,9 +291,9 @@ Public Sub Build()
 
     'Add dropdown on first cell for GoTo section
     Set rng = sh.Cells(1, 1)
-    tableName = llshs.sheetInfo(sheetName, 2)
+    tablename = llshs.sheetInfo(sheetName, 2)
     
-    gotoSectionListName = tableName & "_" & GOTOSECCODE
+    gotoSectionListName = tablename & "_" & GOTOSECCODE
     
     rng.Name = gotoSectionListName
     rng.Value = goToSection
@@ -313,8 +313,8 @@ Public Sub Build()
     design.ApplyFormat printsh.Cells(1, 3), scope:=LinelistHiddenCell
 
     'Add the table name
-    sh.Cells(1, 4).Value = tableName
-    printsh.Cells(1, 4).Value = PRINTPREFIX & tableName
+    sh.Cells(1, 4).Value = tablename
+    printsh.Cells(1, 4).Value = PRINTPREFIX & tablename
     
     design.ApplyFormat sh.Cells(1, 4), scope:=LinelistHiddenCell
     design.ApplyFormat printsh.Cells(1, 4), scope:=LinelistHiddenCell
@@ -328,14 +328,14 @@ Public Sub Build()
         shcolEnd = llshs.DataBounds(sheetName, 4)
 
         Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
-        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = tableName
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = tablename
 
         'Define the listobject before resizing it to keep the format of the cells
-        Set Lo = .ListObjects(tableName)
+        Set Lo = .ListObjects(tablename)
         shrowEnd = llshs.DataBounds(sheetName, 2)
 
         Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
-        .Calculate
+        .calculate
         Lo.Resize rng
 
         design.ApplyFormat Lo, scope:=HListTable
@@ -353,12 +353,12 @@ Public Sub Build()
         design.ApplyFormat sh.Cells(1, 6), scope:=LinelistHiddenCell
 
         'On HListPrint
-        printsh.Cells(1, 6).Value =  Application.WorksheetFunction.COUNTA(.Range)
+        printsh.Cells(1, 6).Value = Application.WorksheetFunction.COUNTA(.Range)
         design.ApplyFormat printsh.Cells(1, 6), scope:=LinelistHiddenCell
     End With
 
     'Add the current listobject to pivot tables
-    pivotObj.Add  sheetName, tableName, trads.TranslatedValue("MSG_PivotTable")
+    pivotObj.Add sheetName, tablename, trads.TranslatedValue("MSG_PivotTable")
     'Format the pivot sheet
     pivotObj.Format design
 
@@ -367,10 +367,10 @@ Public Sub Build()
     With printsh
         shrowEnd = shrowStart + 1
         Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
-        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = PRINTPREFIX & tableName
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = PRINTPREFIX & tablename
 
          'Define the listobject before resizing it to keep the format of the cells
-        Set Lo = .ListObjects(PRINTPREFIX & tableName)
+        Set Lo = .ListObjects(PRINTPREFIX & tablename)
         shrowEnd = shrowEnd + 10
 
         Set rng = .Range(.Cells(shrowStart, shcolStart), .Cells(shrowEnd, shcolEnd))
@@ -379,7 +379,7 @@ Public Sub Build()
 
         'Format the header range
         Set rng = Lo.HeaderRowRange
-        design.ApplyFormat rng, scope:= HListPrintedHeader
+        design.ApplyFormat rng, scope:=HListPrintedHeader
     End With
 
     'FILTERED WORKSHEET --------------------------------------------------------
@@ -389,13 +389,13 @@ Public Sub Build()
 
     Set filtsh = ll.Wksh(FILTEREDPREFIX & sheetName)
 
-    Set Lo = sh.ListObjects(tableName)
+    Set Lo = sh.ListObjects(tablename)
     With filtsh
         Set rng = .Range(Lo.Range.Address)
         rng.Value = Lo.Range.Value
         'Define listObject on the filtered sheet
-        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = FILTEREDPREFIX & _ 
-                                                          tableName
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = FILTEREDPREFIX & _
+                                                          tablename
     End With
 
     'Add the name of the filtered worksheet to the HList

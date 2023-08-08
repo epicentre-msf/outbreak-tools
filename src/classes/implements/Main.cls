@@ -284,7 +284,7 @@ End Sub
 
 
 'Check Existence of the ribbon file (default to linelist with buttons if not exists)
-Private Sub CheckRibbonExistence(Byval trads As IDesTranslation)
+Private Sub CheckRibbonExistence(ByVal trads As IDesTranslation)
     Dim tempPath As String
     Dim sh As Worksheet
     Dim askRibbon As Boolean
@@ -294,7 +294,7 @@ Private Sub CheckRibbonExistence(Byval trads As IDesTranslation)
     sh.Range(RNGMAINTEMP).Font.color = vbWhite
 
     tempPath = ValueOf("temppath")
-    If tempPath = vbNullString Then 
+    If tempPath = vbNullString Then
         askRibbon = True
     ElseIf Dir(tempPath) = vbNullString Then
         askRibbon = True
@@ -336,11 +336,11 @@ Private Sub ClearInputRanges(Optional ByVal clearValues As Boolean = False)
     mainsh.Range(RNGTEMPPATH).Interior.color = vbWhite
 
     If clearValues Then
-        mainsh.Range(RNGPATHGEO).Value  = vbNullString
+        mainsh.Range(RNGPATHGEO).Value = vbNullString
         mainsh.Range(RNGPATHDICO).Value = vbNullString
-        mainsh.Range(RNGLLNAME).Value   = vbNullString
-        mainsh.Range(RNGLLDIR).Value    = vbNullString
-        mainsh.Range(RNGEDITION).Value  = vbNullString
+        mainsh.Range(RNGLLNAME).Value = vbNullString
+        mainsh.Range(RNGLLDIR).Value = vbNullString
+        mainsh.Range(RNGEDITION).Value = vbNullString
         mainsh.Range(RNGLANGSETUP).Value = vbNullString
         mainsh.Range(RNGLLFORM).Value = vbNullString
     End If
@@ -354,7 +354,7 @@ Private Sub OpenLL()
     'Then open it
     Application.DisplayAlerts = False
     Application.Workbooks.Open _
-     FileName:=mainsh.Range(RNGLLDIR).Value & Application.PathSeparator &  _
+     fileName:=mainsh.Range(RNGLLDIR).Value & Application.PathSeparator & _
                mainsh.Range(RNGLLNAME).Value & ".xlsb"
 ErrOpen:
 End Sub
@@ -362,20 +362,20 @@ End Sub
 Private Function CorrectLinelistName(ByVal llfileName As String) As String
 
     'In the file name, replace forbidden characters with an underscore
-    Dim FileName As String
+    Dim fileName As String
 
-    FileName = Replace(llfileName, "<", "_")
-    FileName = Replace(FileName, ">", "_")
-    FileName = Replace(FileName, ":", "_")
-    FileName = Replace(FileName, "|", "_")
-    FileName = Replace(FileName, "?", "_")
-    FileName = Replace(FileName, "/", "_")
-    FileName = Replace(FileName, "\", "_")
-    FileName = Replace(FileName, "*", "_")
-    FileName = Replace(FileName, ".", "_")
-    FileName = Replace(FileName, """", "_")
+    fileName = Replace(llfileName, "<", "_")
+    fileName = Replace(fileName, ">", "_")
+    fileName = Replace(fileName, ":", "_")
+    fileName = Replace(fileName, "|", "_")
+    fileName = Replace(fileName, "?", "_")
+    fileName = Replace(fileName, "/", "_")
+    fileName = Replace(fileName, "\", "_")
+    fileName = Replace(fileName, "*", "_")
+    fileName = Replace(fileName, ".", "_")
+    fileName = Replace(fileName, """", "_")
 
-    CorrectLinelistName = Application.WorksheetFunction.Trim(FileName)
+    CorrectLinelistName = Application.WorksheetFunction.Trim(fileName)
 End Function
 
 'Update the status Bar in the main sheet
@@ -429,7 +429,7 @@ Private Sub AddInfo(ByVal trads As IDesTranslation, ByVal msgCode As String, Opt
 
     'End user informations
     infoRng.Value = trads.TranslationMsg(msgCode)
-    infoRng.Interior.Color = vbWhite
+    infoRng.Interior.color = vbWhite
 End Sub
 
 'Errors and checkings
@@ -484,7 +484,7 @@ Private Sub IMain_CheckFileExistence(ByVal trads As IDesTranslation)
 End Sub
 
 Private Sub IMain_ClearInputRanges(Optional ByVal clearValues As Boolean = False)
-    ClearInputRanges clearValues := clearValues
+    ClearInputRanges clearValues:=clearValues
 End Sub
 
 Private Sub IMain_UpdateStatus(ByVal numValue As Integer)

@@ -75,7 +75,7 @@ Private Function Contains(ByVal varName As String) As Boolean
     If searchValue = vbNullString Then
         Exist = False
     Else
-        Exist = Not (varRng.Find(What:=searchValue, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+        Exist = Not (varRng.Find(What:=searchValue, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
     End If
 
     Contains = Exist
@@ -88,7 +88,7 @@ Private Function RowIndex(ByVal varName As String) As Long
     rowNum = -1
     Set varRng = VarRange()
     If Contains(varName) Then
-        rowNum = varRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True).Row
+        rowNum = varRng.Find(What:=varName, lookAt:=xlWhole, MatchCase:=True).Row
     End If
     RowIndex = rowNum
 End Function
@@ -118,7 +118,7 @@ Private Property Get CellRange(ByVal colName As String, ByVal varName As String)
 
         rowNum = RowIndex(varName)
         colNum = dict.Data.ColumnIndex(colName)
-        Set cellRange = Wksh.Cells(rowNum, colNum)
+        Set CellRange = Wksh.Cells(rowNum, colNum)
     End If
 End Property
 
@@ -186,6 +186,6 @@ Public Sub ILLVariables_SetValue(ByVal varName As String, ByVal colName As Strin
     SetValue varName, colName, newValue, onEmpty
 End Sub
 
-Public Property Get ILLVariables_CellRange(Byval colName As String, ByVal varName As String) As Range
+Public Property Get ILLVariables_CellRange(ByVal colName As String, ByVal varName As String) As Range
     Set ILLVariables_CellRange = CellRange(colName, varName)
 End Property

@@ -3,7 +3,7 @@
 |implement_name        |interface_name         | number_interface_lines| number_implement_lines| tot_number_lines|
 |:---------------------|:----------------------|----------------------:|----------------------:|----------------:|
 |CrossTable.cls        |ICrossTable.cls        |                     56|                   1393|             1449|
-|LLGeo.cls             |ILLGeo.cls             |                     88|                   1073|             1161|
+|LLGeo.cls             |ILLGeo.cls             |                     78|                   1037|             1115|
 |CrossTableFormula.cls |ICrossTableFormula.cls |                     21|                   1060|             1081|
 |LLFormat.cls          |ILLFormat.cls          |                     85|                    886|              971|
 |ImpSpecs.cls          |IImpSpecs.cls          |                     32|                    923|              955|
@@ -29,12 +29,12 @@
 |LLAnalysis.cls        |ILLAnalysis.cls        |                     26|                    399|              425|
 |Graphs.cls            |IGraphs.cls            |                     42|                    368|              410|
 |LLTranslations.cls    |ILLTranslations.cls    |                     31|                    335|              366|
+|DropdownLists.cls     |IDropdownLists.cls     |                     33|                    307|              340|
 |LLSheets.cls          |ILLSheets.cls          |                     48|                    288|              336|
 |LLExport.cls          |ILLExport.cls          |                     49|                    259|              308|
 |OSFiles.cls           |IOSFiles.cls           |                     37|                    268|              305|
 |Vlist.cls             |IVlist.cls             |                     23|                    282|              305|
 |HListSubSections.cls  |IHListSubSections.cls  |                     26|                    272|              298|
-|DropdownLists.cls     |IDropdownLists.cls     |                     31|                    265|              296|
 |VListSubSections.cls  |IVListSubSections.cls  |                     26|                    268|              294|
 |AnaTabIds.cls         |IAnaTabIds.cls         |                     19|                    272|              291|
 |HListSections.cls     |IHListSections.cls     |                     29|                    260|              289|
@@ -53,4 +53,6 @@
 |DesignerLog.cls       |IDesignerLog.cls       |                     18|                     18|               36|
 
 
-Total number of classes lines: 24256
+Total number of classes lines: 24254
+
+Median number of classes lines: 425

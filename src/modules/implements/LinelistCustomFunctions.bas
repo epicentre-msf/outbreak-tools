@@ -25,7 +25,7 @@ Public Function PLAGE_VALUE(rng1 As Range, rng2 As Range) As String
 End Function
 
 '@EntryPoint
-Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Variant
+Public Function VALUE_OF(rng As Range, rngLook As Range, rngVal As Range) As Variant
 
     'Application.Volatile
 
@@ -46,11 +46,11 @@ Public Function VALUE_OF(rng As Range, RngLook As Range, RngVal As Range) As Var
 
 
     If sValLook <> vbNullString Then
-        sSheetLook = RngLook.Worksheet.Name
-        sSheetVal = RngVal.Worksheet.Name
+        sSheetLook = rngLook.Worksheet.Name
+        sSheetVal = rngVal.Worksheet.Name
 
-        iColLook = RngLook.Column
-        iColVal = RngVal.Column
+        iColLook = rngLook.Column
+        iColVal = rngVal.Column
 
         'There is only one table per worksheet, so I can just take the first listObject
         Set ColRngLook = ThisWorkbook.Worksheets(sSheetLook).ListObjects(1).ListColumns(iColLook).Range
@@ -78,8 +78,8 @@ Public Function ComputedOnFiltered() As String
     Dim wb As Workbook
     Dim warningInfo As String
     Dim filteredSheet As String
-    Dim Lo As ListObject
-    Dim LoFiltered As ListObject
+    Dim Lo As listObject
+    Dim LoFiltered As listObject
     Dim infoValue As String
 
     Set wb = ThisWorkbook

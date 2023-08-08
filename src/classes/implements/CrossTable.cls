@@ -157,7 +157,7 @@ Private Property Get StartColumn() As Long
     With sh
         If Not RangeExists("STARTCOL_" & tabId) Then
             'On time series, the startcolumn depends on new section
-            If   (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And _ 
+            If (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And _
                  (Not specs.isNewSection()) Then
                 strtcol = .Cells(StartRow + 1, .Columns.Count).End(xlToLeft).Column
             Else
@@ -240,7 +240,7 @@ End Property
 
 'Test if a value Exists in a Range
 Private Function ValueExists(ByVal rng As Range, ByVal Value As String)
-    ValueExists = (Not rng.Find(What:=Value, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+    ValueExists = (Not rng.Find(What:=Value, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
 End Function
 
 Public Property Get RowRange(ByVal rowVal As String, Optional ByVal includeHeaders As Boolean = True) As Range
@@ -254,7 +254,7 @@ Public Property Get RowRange(ByVal rowVal As String, Optional ByVal includeHeade
 
     'Test if Missing exists
     If ValueExists(rng, rowVal) Then
-        valueRow = rng.Find(What:=rowVal, LookAt:=xlWhole, MatchCase:=True).Row
+        valueRow = rng.Find(What:=rowVal, lookAt:=xlWhole, MatchCase:=True).Row
         Start = IIf(includeHeaders, StartColumn, StartColumn + 1)
         With sh
             Set RowRange = .Range(.Cells(valueRow, Start), .Cells(valueRow, EndColumn))
@@ -290,7 +290,7 @@ Public Property Get ColumnRange(ByVal colVal As String, Optional ByVal includeHe
 
     'Test if the value exists
     If ValueExists(rng, colVal) Then
-        valueColumn = rng.Find(What:=colVal, LookAt:=xlWhole, MatchCase:=True).Column
+        valueColumn = rng.Find(What:=colVal, lookAt:=xlWhole, MatchCase:=True).Column
         With sh
             Set ColumnRange = .Range(.Cells(Start, valueColumn), .Cells(rend, valueColumn))
         End With
@@ -357,7 +357,7 @@ Private Sub AddRows()
                 rowsData.Clear
                 rowsData.Push trans.TranslatedValue("MSG_Period"), vbNullString
                 For counter = 1 To 13
-                    rowsData.Push vbNullString, vbNullString, _ 
+                    rowsData.Push vbNullString, vbNullString, _
                                   vbNullString, vbNullString
                 Next
                 rowsData.Push transTotal, transMissing
@@ -434,7 +434,7 @@ Private Sub BivariateColumns(ByVal Start As Long, ByVal specs As ITablesSpecs, B
 
             NumberOfColumns = colData.Length     'Set the number of columns of the categories (Property)
 
-            colData.Concat labData.Items
+            colData.CONCAT labData.Items
             labData.Clear
             'Percentage
             If specs.HasPercentage Then
@@ -614,7 +614,7 @@ Private Sub AddHeader()
         
 
         Case TypeTimeSeries, TypeSpatioTemporal
-            'Time series headers are almost similar to spatio-temporal headers ---    
+            'Time series headers are almost similar to spatio-temporal headers ---
 
             If specs.isNewSection() And (Not RangeExists("SECTION_" & tabId)) Then
 
@@ -717,7 +717,7 @@ Private Sub AddHeader()
                 .Range("TIME_UNIT_" & tabId).Value = cellRng.Cells(2, 1).Value
             End If
 
-        Case  TypeSpatial 
+        Case TypeSpatial
         
              'Add Dropdown for selecting the admins
             If (Not RangeExists("ADMIN_UNIT_LIST")) Then
@@ -796,7 +796,7 @@ Private Sub AddHeader()
                 rng.Cells(-1, 1).Value = specs.Value("title")
                 rng.Cells(-1, 1).Name = "TITLE_" & tabId
             End If
-        End Select          
+        End Select
     End With
 End Sub
 
@@ -1143,7 +1143,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
             End If
 
             'For spatio-temporal, there is another row column for selected values
-            'by the user, they will be formated as Rows    
+            'by the user, they will be formated as Rows
             If RangeExists("INPUTSPTGEO_USER_" & tabId) Then
                 Set rng = .Range("INPUTSPTGEO_USER_" & tabId)
                 DesignFormat.ApplyFormat rng, scope:=AnalysisCategoriesBivariateRow
@@ -1209,7 +1209,7 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         rngTable.Push "TOTAL_MISSING_", "TOTAL_TOTAL_", _
                       "USER_START_DATE_", "USER_END_DATE_", "TIME_UNIT_", _
                       "MISSING_TOTAL_", "MISSING_MISSING_", "START_DATE_LABEL_", _
-                      "TIME_UNIT_LABEL_", "END_DATE_LABEL_", "POPFACT_", "POPFACTLABEL_", _ 
+                      "TIME_UNIT_LABEL_", "END_DATE_LABEL_", "POPFACT_", "POPFACTLABEL_", _
                       "INPUTSPTGEO_LABEL_"
         
         For counter = rngTable.LowerBound To rngTable.UpperBound

@@ -29,7 +29,7 @@ Private this As TDataSheet
 Private Const CLASSNAME As String = "DataSheet"
 
 Public Function Create(ByVal dataWksh As Worksheet, ByVal dataStartRow As Long, _
-                       ByVal dataStartColumn As Long, _ 
+                       ByVal dataStartColumn As Long, _
                        Optional ByVal forceEndRow As Boolean = False) As IDataSheet
 
     'Throw illegal errors before the creation of the dataionary
@@ -88,7 +88,7 @@ Friend Property Let StrictEnd(ByVal forceEnd As Boolean)
 End Property
 
 'End row and columns of the dictionary
-Private Property Get DataEndRow() As Long 
+Private Property Get DataEndRow() As Long
 
     Dim endrw As Long
     Dim hRng As Range
@@ -103,20 +103,20 @@ Private Property Get DataEndRow() As Long
             Set hRng = HeaderRange()
             Set cellRng = hRng.Cells(1, 1)
             endrw = hRng.Row
-            Do while Not IsEmpty(cellRng)
+            Do While Not IsEmpty(cellRng)
                 
                 'For each column, I suppose I will search the last line
                 'because there is no formula
                 hasFormula = False
-                'Test if it is a formula 
+                'Test if it is a formula
                 On Error Resume Next
-                hasFormula = Not (CStr(cellRng.Cells(2, 1).formula) = _ 
+                hasFormula = Not (CStr(cellRng.Cells(2, 1).formula) = _
                                 CStr(cellRng.Cells(2, 1).Value))
                 On Error GoTo 0
                 'If it is not a formula, test the endrow
                 If Not hasFormula Then
-                    If endrw < .Cells(.Rows.Count, cellRng.Column).End(xlUp).Row Then _ 
-                     endrw = .Cells(.Rows.Count, cellRng.Column).End(xlUp).Row 
+                    If endrw < .Cells(.Rows.Count, cellRng.Column).End(xlUp).Row Then _
+                     endrw = .Cells(.Rows.Count, cellRng.Column).End(xlUp).Row
                 End If
                 Set cellRng = cellRng.Offset(, 1)
             Loop
@@ -126,7 +126,7 @@ Private Property Get DataEndRow() As Long
         End If
     End With
         
-    DataEndRow  = IIf(endrw = StartRow, StartRow + 1, endrw)
+    DataEndRow = IIf(endrw = StartRow, StartRow + 1, endrw)
 
 End Property
 
@@ -176,7 +176,7 @@ Private Function ColumnExists(ByVal colName As String) As Boolean
     If colName = vbNullString Then
         Exist = False
     Else
-        Exist = Not (hRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+        Exist = Not (hRng.Find(What:=colName, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
     End If
     ColumnExists = Exist
 End Function
@@ -190,7 +190,7 @@ Private Function ColumnIndex(ByVal colName As String, _
     Set hRng = HeaderRange()
 
     If ColumnExists(colName) Then
-        colIndex = hRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=True).Column
+        colIndex = hRng.Find(What:=colName, lookAt:=xlWhole, MatchCase:=True).Column
         ColumnIndex = IIf(inDataRange, colIndex - StartColumn + 1, colIndex)
     Else
         If shouldExist Then
@@ -341,7 +341,7 @@ Private Function FiltersData(ByVal varData As BetterArray, _
 End Function
 
 'Import Sub
-Private Sub Import(ByVal importData As Object)
+Private Sub Import(ByVal ImportData As Object)
 
     Dim imphRng As Range 'Import Header Range
     Dim headerValue As String
@@ -356,10 +356,10 @@ Private Sub Import(ByVal importData As Object)
     Dim FUNS As WorksheetFunction
 
     'You can immport either another datasheet or a custom table
-    If (TypeName(importData) <> "DataSheet") And _
-       (TypeName(importData) <> "CustomTable") Then Exit Sub
+    If (TypeName(ImportData) <> "DataSheet") And _
+       (TypeName(ImportData) <> "CustomTable") Then Exit Sub
 
-    Set imphRng = importData.HeaderRange()
+    Set imphRng = ImportData.HeaderRange()
     Set sh = Wksh()
     Set FUNS = Application.WorksheetFunction
 
@@ -372,10 +372,10 @@ Private Sub Import(ByVal importData As Object)
             'This data Range does not includes colnames. Strict search is to
             'take in accout cases and enforce a strict search of colnames which is not
             'tipically done in custom table
-            If TypeName(importData) = "CustomTable" Then
-                Set impDataRng = importData.DataRange(headerValue, strictSearch:=True)
+            If TypeName(ImportData) = "CustomTable" Then
+                Set impDataRng = ImportData.DataRange(headerValue, strictSearch:=True)
             Else
-                Set impDataRng = importData.DataRange(headerValue)
+                Set impDataRng = ImportData.DataRange(headerValue)
             End If
             Set currDataRng = DataRange(newHeaderValue)
             nbImpRows = impDataRng.Rows.Count
@@ -415,8 +415,8 @@ Private Sub ImportFormat(ByVal impRng As Range)
     endrw = DataEndRow()
     Do While (cellRng.Row <= endrw)
         actCellRng.Value = cellRng.Value
-        If (cellRng.Interior.Color <> vbWhite) Then actCellRng.Interior.Color = cellRng.Interior.Color
-        If (cellRng.Font.Color <> vbBlack) Then actCellRng.Font.Color = cellRng.Font.Color
+        If (cellRng.Interior.color <> vbWhite) Then actCellRng.Interior.color = cellRng.Interior.color
+        If (cellRng.Font.color <> vbBlack) Then actCellRng.Font.color = cellRng.Font.color
         actCellRng.Font.Bold = cellRng.Font.Bold
         actCellRng.Font.Italic = cellRng.Font.Italic
 
@@ -446,7 +446,7 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As Stri
 
     'Trace on errors on exports
     If sheetDataExist Then Exit Sub
-    Wkb.Worksheets.Add(After:=Wkb.Worksheets(Wkb.Worksheets.Count)).Name = dataWksh.Name
+    Wkb.Worksheets.Add(after:=Wkb.Worksheets(Wkb.Worksheets.Count)).Name = dataWksh.Name
     Set dataExportData = New BetterArray
     Set dataExportWksh = Wkb.Worksheets(dataWksh.Name)
 
@@ -541,7 +541,7 @@ Private Sub IDataSheet_Export(ByVal toWkb As Workbook, _
                              Optional ByVal filteredVarName As String = "__all__", _
                              Optional ByVal filteredCondition As String = "<>", _
                              Optional ByVal Hide As Long = xlSheetHidden)
-    export toWkb, filteredVarName, filteredCondition, Hide
+    Export toWkb, filteredVarName, filteredCondition, Hide
 End Sub
 
 'Import another datasheet or a custom table

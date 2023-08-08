@@ -28,7 +28,7 @@ End Sub
 
 
 'Safely delete databodyrange of a listobject
-Public Sub DeleteLoDataBodyRange(Lo As ListObject)
+Public Sub DeleteLoDataBodyRange(Lo As listObject)
     If Not Lo.DataBodyRange Is Nothing Then Lo.DataBodyRange.Delete
 End Sub
 
@@ -36,7 +36,7 @@ End Sub
 'Test if a listobject exists
 Public Function ListObjectExists(Wksh As Worksheet, sListObjectName As String) As Boolean
     ListObjectExists = False
-    Dim Lo As ListObject
+    Dim Lo As listObject
     On Error Resume Next
     Set Lo = Wksh.ListObjects(sListObjectName)
     ListObjectExists = (Not Lo Is Nothing)
@@ -44,32 +44,30 @@ Public Function ListObjectExists(Wksh As Worksheet, sListObjectName As String) A
 End Function
 
 
-'Unique of a betteray sorted
-Function GetUniqueBA(BA As BetterArray) As BetterArray
-    Dim sVal As String
-    Dim i As Long
+'Unique Values of a BetterArray
+Function GetUniqueBA(inputTable As BetterArray, _
+                     Optional ByVal Sort As Boolean = False) As BetterArray
+    Dim tableValue As String
+    Dim counter As Long
     Dim Outable As BetterArray
-
-    BA.Sort
 
     Set Outable = New BetterArray
     Outable.LowerBound = 1
 
-    sVal = Application.WorksheetFunction.Trim(BA.Item(BA.LowerBound))
+    If inputTable.Length > 0 Then
+        For counter = inputTable.LowerBound To inputTable.UpperBound
 
-    If sVal <> vbNullString Then
-        Outable.Push sVal
-    End If
+            tableValue = Application.WorksheetFunction.Trim( _
+                                inputTable.Item(counter) _
+                        )
 
-    If BA.Length > 0 Then
-        For i = BA.LowerBound To BA.UpperBound
-            If sVal <> Application.WorksheetFunction.Trim(BA.Item(i)) And Application.WorksheetFunction.Trim(BA.Item(i)) <> vbNullString Then
-                sVal = Application.WorksheetFunction.Trim(BA.Item(i))
-                Outable.Push sVal
-            End If
+            If (tableValue <> vbNullString) And _
+               (Not Outable.Includes(tableValue)) Then _
+                Outable.Push tableValue
         Next
     End If
 
+    'sort
+    If Sort Then Outable.Sort
     Set GetUniqueBA = Outable.Clone()
-
 End Function

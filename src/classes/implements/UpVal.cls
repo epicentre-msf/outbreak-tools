@@ -2,13 +2,13 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-
 Attribute VB_Name = "UpVal"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Watch updated values in the linelist"
+
 
 '@IgnoreModule ReadOnlyPropertyAssignment : Ignore when you affect property Value of a range object
 '@PredeclaredId
@@ -62,8 +62,8 @@ Private Property Get Value(ByVal rngName As String) As String
 
   Set sh = Wksh()
 
-  If (rngName = RNGLISTAUTOUPDATED) Or _ 
-     (rngName = RNGIMPORTDONE) Or _ 
+  If (rngName = RNGLISTAUTOUPDATED) Or _
+     (rngName = RNGIMPORTDONE) Or _
      (rngName = RNGGEOBASEMANUALUPDATE) Then
      On Error Resume Next
       retVal = CStr(sh.Range(rngName).Value)
@@ -79,8 +79,8 @@ Private Sub SetValue(ByVal rngName As String, newValue As String)
   Dim sh As Worksheet
   Set sh = Wksh()
   
-  If (rngName = RNGLISTAUTOUPDATED) Or _ 
-     (rngName = RNGIMPORTDONE) Or _ 
+  If (rngName = RNGLISTAUTOUPDATED) Or _
+     (rngName = RNGIMPORTDONE) Or _
      (rngName = RNGGEOBASEMANUALUPDATE) Then
     sh.Range(rngName).Value = newValue
   End If
@@ -98,11 +98,11 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
   Set rngArray = New BetterArray
   If sh Is Nothing Then ThrowErrorUnableInstanciate "Update values worksheet not defined"
 
-  rngArray.Push RNGLISTAUTOUPDATED,  RNGIMPORTDONE,  RNGGEOBASEMANUALUPDATE
+  rngArray.Push RNGLISTAUTOUPDATED, RNGIMPORTDONE, RNGGEOBASEMANUALUPDATE
 
   For counter = rngArray.LowerBound To rngArray.UpperBound
     rngName = rngArray.Item(counter)
-    If Not RangeExists(sh, rngName) Then _ 
+    If Not RangeExists(sh, rngName) Then _
      ThrowErrorUnableInstanciate " Range " & rngName & " Not found!"
   Next
   

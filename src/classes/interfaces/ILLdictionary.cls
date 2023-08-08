@@ -36,16 +36,16 @@ End Property
 Public Property Get Prepared() As Boolean: End Property
 
 'Prepare the dictionary
-Public Sub Prepare(ByVal PreservedSheetNames As BetterArray, _ 
-                   ByVal geoObject As ILLGeo, _ 
-                   ByVal msgTrads As ITranslation, _ 
+Public Sub Prepare(ByVal PreservedSheetNames As BetterArray, _
+                   ByVal geoObject As ILLGeo, _
+                   ByVal msgTrads As ITranslation, _
                    Optional ByVal tablePrefix As String = "table")
 End Sub
 
 
 'Functions
 'Check if a column is present in the dictionary
-Public Function ColumnExists(ByVal colName As String, _ 
+Public Function ColumnExists(ByVal colName As String, _
                              Optional ByVal checkValidity As Boolean) As Boolean
 End Function
 
@@ -65,8 +65,8 @@ Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal
 End Sub
 
 'Export the dictionary to another workbook
-Public Sub Export(ByVal toWkb As Workbook, Optional ByVal exportType As String = "__all__",  _ 
-                  Optional Byval addListObject As Boolean = True, _
+Public Sub Export(ByVal toWkb As Workbook, Optional ByVal exportType As String = "__all__", _
+                  Optional ByVal addListObject As Boolean = True, _
                   Optional ByVal Hide As Long = xlSheetHidden)
 End Sub
 

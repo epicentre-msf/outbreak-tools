@@ -335,23 +335,23 @@ Private Sub Prepare()
     Set PreservedSheetNames = New BetterArray
     PreservedSheetNames.LowerBound = 1
     PreservedSheetNames.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
-                             PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, _  
+                             PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, _
                              HLISTTRANSLATIONSHEET, _
-                             EXPORTSHEET, _ 
-                             TemporarySheetName(TemporarySingle), _ 
+                             EXPORTSHEET, _
+                             TemporarySheetName(TemporarySingle), _
                              TemporarySheetName(TemporarySheetList), _
-                             TemporarySheetName(TemporarySheetUpdates), _ 
+                             TemporarySheetName(TemporarySheetUpdates), _
                              TemporarySheetName(TemporarySheetMetadata), _
-                             TemporarySheetName(TemporarySheetAnalysis), _ 
+                             TemporarySheetName(TemporarySheetAnalysis), _
                              TemporarySheetName(TemporarySheetImport), _
-                             TemporarySheetName(TemporarySpatial), _ 
+                             TemporarySheetName(TemporarySpatial), _
                              TemporarySheetName(TemporaryShowHide), _
-                             msgTrads.TranslatedValue("LLSHEET_Admin"), _ 
+                             msgTrads.TranslatedValue("LLSHEET_Admin"), _
                              msgTrads.TranslatedValue("LLSHEET_Analysis"), _
-                             msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), _ 
+                             msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), _
                              msgTrads.TranslatedValue("LLSHEET_TemporalAnalysis"), _
-                             msgTrads.TranslatedValue("LLSHEET_CustomChoice"), _ 
-                             msgTrads.TranslatedValue("LLSHEET_CustomPivotTable"), _ 
+                             msgTrads.TranslatedValue("LLSHEET_CustomChoice"), _
+                             msgTrads.TranslatedValue("LLSHEET_CustomPivotTable"), _
                              msgTrads.TranslatedValue("LLSHEET_SpatioTemporalAnalysis")
 
     'Prepare the dictionary
@@ -437,7 +437,7 @@ Private Sub RecursiveListAuto(ByVal varName As String)
 
         If varFormObject.Valid(formulaType:="linelist") Then
 
-            Set formList = varFormObject.Varlists()
+            Set formList = varFormObject.varLists()
 
             counter = formList.LowerBound
 
@@ -473,12 +473,12 @@ Private Sub Export(ByVal toWkb As Workbook)
     Set geo = geoObject()
     Set passobj = Password()
 
-    dict.export toWkb
-    choi.export toWkb, Hide:=xlSheetVeryHidden
+    dict.Export toWkb
+    choi.Export toWkb, Hide:=xlSheetVeryHidden
     trans.ExportToWkb toWkb
     expobj.ExportSpecs toWkb, Hide:=xlSheetVeryHidden
     geo.ExportToWkb toWkb
-    passobj.export toWkb
+    passobj.Export toWkb
 
 End Sub
 
@@ -494,7 +494,7 @@ Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
     Set sheetsArray = New BetterArray
 
     sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
-                     PASSWORDSHEET, FormulaSheet, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
+                     PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
                      EXPORTSHEET, FORMATSHEET, MAINSHEET, DESTRANSSHEET
 
     For counter = sheetsArray.LowerBound To sheetsArray.UpperBound
@@ -593,5 +593,5 @@ Public Property Get ILinelistSpecs_Analysis() As ILLAnalysis
 End Property
 
 Public Sub ILinelistSpecs_Export(ByVal toWkb As Workbook)
-    export toWkb
+    Export toWkb
 End Sub

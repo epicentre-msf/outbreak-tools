@@ -39,7 +39,7 @@ Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
     Application.Calculation = xlCalculationManual
-    Application.Cursor = cursor
+    Application.cursor = cursor
     Application.DisplayAlerts = False
 End Sub
 
@@ -47,7 +47,7 @@ End Sub
 Private Sub NotBusyApp()
     Application.ScreenUpdating = True
     Application.EnableAnimations = True
-    Application.Cursor = xlDefault
+    Application.cursor = xlDefault
     Application.DisplayAlerts = True
 End Sub
 
@@ -76,16 +76,16 @@ Private Sub CreateExport()
     NotBusyApp
 
     'Ask the user if I should quit the form
-    shouldQuit = MsgBox(tradmess.TranslatedValue("MSG_FinishedExports"),  _ 
-                        vbQuestion + vbYesNo, _ 
+    shouldQuit = MsgBox(tradmess.TranslatedValue("MSG_FinishedExports"), _
+                        vbQuestion + vbYesNo, _
                         tradmess.TranslatedValue("MSG_Migration"))
     If shouldQuit = vbYes Then Me.Hide
     Exit Sub
 
-errHand:
+ErrHand:
     On Error Resume Next
-    MsgBox  tradmess.TranslatedValue("MSG_ErrExportData"), _ 
-            vbOKOnly + vbCritical, _ 
+    MsgBox tradmess.TranslatedValue("MSG_ErrExportData"), _
+            vbOKOnly + vbCritical, _
             tradmess.TranslatedValue("MSG_Error")
     expOut.CloseAll
     On Error GoTo 0
@@ -111,7 +111,7 @@ Private Sub UserForm_Initialize()
     'Manage language
     Me.Caption = tradform.TranslatedValue(Me.Name)
 
-    tradform.TranslateForm  Me
+    tradform.TranslateForm Me
 
     Me.width = 200
     Me.height = 300

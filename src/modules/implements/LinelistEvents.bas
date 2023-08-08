@@ -3,282 +3,342 @@ Attribute VB_Name = "LinelistEvents"
 Option Explicit
 Option Private Module
 
-Public DebugMode As Boolean
+Private Const GOTOSECCODE As String = "go_to_section" 'Go To section constant
+Private Const DROPDOWNSHEET As String = "dropdown_lists__"
+Private Const GEOSHEET As String = "Geo"
+Private Const DICTSHEET As String = "Dictionary"
+Private Const LLSHEET As String = "LinelistTranslation"
+Private Const TRADSHEET As String = "Translations"
+Private Const UPSHEET As String = "updates__"  'worksheet for updated values
+
+Private tradmess As ITranslation              'Translation of messages object
+Private lltrads As ILLTranslations
+Private wb As Workbook
+
+'Speed up before a work
+Private Sub BusyApp()
+    Application.ScreenUpdating = False
+    Application.DisplayAlerts = False
+    Application.Calculation = xlCalculationManual
+    Application.EnableAnimations = False
+End Sub
+
+'Return previous state
+Private Sub NotBusyApp()
+    Application.ScreenUpdating = True
+    Application.DisplayAlerts = True
+    Application.EnableAnimations = True
+End Sub
+
+
+'Initialize translation
+Private Sub InitializeTrads()
+    Set wb = ThisWorkbook
+    Set lltrads = LLTranslations.Create( _
+                                        wb.Worksheets(LLSHEET), _
+                                        wb.Worksheets(TRADSHEET) _
+                                        )
+    Set tradmess = lltrads.TransObject()
+End Sub
 
 
 'Trigerring event when the linelist sheet has some values within                                                          -                                                      -
-Sub EventValueChangeLinelist(Target As Range)
+Public Sub EventValueChangeLinelist(Target As Range)
 
-    Const GOTOSECCODE As String = "go_to_section" 'Go To section constant
-
-    Dim T_geo As BetterArray
-    Set T_geo = New BetterArray
-    Dim varControl As String                   'Control type
-    Dim sLabel As String
-    Dim varName As String
-    Dim varSubLabel As String
-    Dim targetColumn As Long 'column of the target range
+    Dim adminTable As BetterArray              'Table with admin names (input by user)
+    Dim adminNames As BetterArray              'Table with admin names (extracted from geobase)
+    Dim sh As Worksheet                        'Active sheet where the event fires
+    
     Dim rng As Range
-    Dim loAdm2 As ListObject
-    Dim loAdm3 As ListObject
-    Dim loAdm4 As ListObject
-    Dim tableName As String
-    Dim adminNames As BetterArray
-    Dim sh As Worksheet 'Active sheet where the event fires
-    Dim geo As ILLGeo
+    Dim hRng As Range                          'Header Row Range of the listObject
+    Dim calcRng As Range                       'Calculate range
     Dim cellRng As Range
-    Dim hRng As Range 'Header Row Range of the listObject
-    Dim goToSection As String
-    Dim vars As ILLVariables
+    
+    Dim varControl As String                   'Control of variable
+    Dim varLabel As String                     'Updated variable labels
+    Dim varName As String                      'Variable name
+    Dim varSubLabel As String                  'variable sub-label to remove
+    Dim tablename As String                    'Name of the listObject on Hlist
+    Dim varEditable As String                  'Test if a variable is editable or not
+    Dim sectionName As String                  'Section name for GoTo Section
+    
+    Dim targetColumn As Long                   'Column of the target range
+    Dim startLine As Long                      'The row of the anchor range for table start
+    Dim nbOffset As Long                       'Number of offset from the headerrow range
+    
+    Dim drop As IDropdownLists                 'Dropdown Object for updating geolevels
+    Dim geo As ILLGeo
+    Dim upobj As IUpVal
     Dim dict As ILLdictionary
-    Dim startLine As Long
-    Dim calcRng As Range 'calculate range
-    Dim nbOffset As Long 'number of offset from the headerrow range
+    Dim vars As ILLVariables
 
-    On Error GoTo errHand
+    On Error GoTo ErrHand
+    
     Set sh = ActiveSheet
-    tableName = sh.Cells(1, 4).Value
-    Set rng = sh.Range(tableName & "_" & GOTOSECCODE)
-    Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
     Set hRng = sh.ListObjects(1).HeaderRowRange
     Set adminNames = New BetterArray
-    adminNames.LowerBound = 1
+    adminNames.LowerBound = 1                  'This is mandatory for geolevel function, lowerbound = 1
+    Set adminTable = New BetterArray
 
+    'Initialize translations
+    InitializeTrads
+
+    tablename = sh.Cells(1, 4).Value
     targetColumn = Target.Column
-    startLine = sh.Range(tableName & "_START").Row
+    startLine = sh.Range(tablename & "_START").Row
     varControl = sh.Cells(startLine - 5, targetColumn).Value
 
-    If Target.Row >= startLine Then
+    If (Target.Row >= startLine) Then
 
         nbOffset = Target.Row - hRng.Row
         Set calcRng = hRng.Offset(nbOffset)
+        
         calcRng.calculate
 
-        If (varControl = "geo1") Or (varControl = "geo2") Or (varControl = "geo3") Or (varControl = "geo4") Then
+        'Geo variables
+        If (varControl = "geo1") Or _
+           (varControl = "geo2") Or _
+           (varControl = "geo3") Or _
+           (varControl = "geo4") Then
 
-            Set loAdm2 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin2")
-            Set loAdm3 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin3")
-            Set loAdm4 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin4")
-
+            If (Target.Value = vbNullString) Then Exit Sub
+                        
+            Set drop = DropdownLists.Create(wb.Worksheets(DROPDOWNSHEET))
+            Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
 
             Select Case varControl
 
             Case "geo1"
-                'adm1 has been modified, we will correct and set validation to adm2
-
-                BeginWork xlsapp:=Application
-
-                DeleteLoDataBodyRange loAdm2
+                'adm1 has been modified, we will correct and set validation to adm2-4
+                BusyApp
+                
+                'Clear admin2, admin3 and admin4, update admin2 dropdown
+                drop.ClearList "admin2"
                 Target.Offset(, 1).Value = vbNullString
-                DeleteLoDataBodyRange loAdm3
+                drop.ClearList "admin3"
                 Target.Offset(, 2).Value = vbNullString
-                DeleteLoDataBodyRange loAdm4
+                drop.ClearList "admin4"
                 Target.Offset(, 3).Value = vbNullString
 
-                If Target.Value <> vbNullString Then
+                'Filter the geobase on admin1
+                Set adminTable = geo.GeoLevel(LevelAdmin2, _
+                                              GeoScopeAdmin, _
+                                              Target.Value)
 
-                    'Filter on adm1
-                    Set T_geo = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, Target.Value)
-                    'Build the validation list for adm2
-                    T_geo.ToExcelRange loAdm2.Range.Cells(2, 1)
-                    T_geo.Clear
-                End If
+                'Update the validation list for admin2
+                drop.Update adminTable, "admin2"
 
-
-                EndWork xlsapp:=Application
+                NotBusyApp
 
             Case "geo2"
 
-                'Adm2 has been modified, we will correct and filter adm3
-                BeginWork xlsapp:=Application
-
-                DeleteLoDataBodyRange loAdm3
+                'Adm2 has been modified, we will correct and filter adm3 and 4
+                BusyApp
+                    
+                'Clear admin3 and admin4, update admin 3 dropdown
+                drop.ClearList "admin3"
                 Target.Offset(, 1).Value = vbNullString
-                DeleteLoDataBodyRange loAdm4
+                drop.ClearList "admin4"
                 Target.Offset(, 2).Value = vbNullString
+                adminNames.Push Target.Offset(, -1).Value, Target.Value
+                Set adminTable = geo.GeoLevel(LevelAdmin3, _
+                                              GeoScopeAdmin, _
+                                              adminNames)
 
-                If Target.Value <> vbNullString Then
-                    adminNames.Push Target.Offset(, -1).Value, Target.Value
-                    Set T_geo = geo.GeoLevel(LevelAdmin3, GeoScopeAdmin, adminNames)
-                    T_geo.ToExcelRange loAdm3.Range.Cells(2, 1)
-                    T_geo.Clear
-                End If
+                'Update the validation list for admin3
+                drop.Update adminTable, "admin3"
 
-                EndWork xlsapp:=Application
+                NotBusyApp
 
             Case "geo3"
+                
                 'Adm 3 has been modified, correct and filter adm4
-                BeginWork xlsapp:=Application
+                BusyApp
 
-                DeleteLoDataBodyRange loAdm4
+                drop.ClearList "admin4"
                 Target.Offset(, 1).Value = vbNullString
 
-                If Target.Value <> vbNullString Then
+                adminNames.Push Target.Offset(, -2).Value, _
+                                    Target.Offset(, -1).Value, _
+                                    Target.Value
+                'Take the adm4 table
+                Set adminTable = geo.GeoLevel(LevelAdmin4, _
+                                              GeoScopeAdmin, _
+                                              adminNames)
+                drop.Update adminTable, "admin4"
 
-                    adminNames.Push Target.Offset(, -2).Value, Target.Offset(, -1).Value, Target.Value
-                    'Take the adm4 table
-                    Set T_geo = geo.GeoLevel(LevelAdmin4, GeoScopeAdmin, adminNames)
-                    T_geo.ToExcelRange loAdm4.Range.Cells(2, 1)
-                    T_geo.Clear
-                End If
-
-                EndWork xlsapp:=Application
+                NotBusyApp
 
             End Select
+        
+        'Exit as soon as geo variables are updated
+        Exit Sub
         End If
-
     End If
 
-    'Update the custom control
-    If (Target.Row = startLine - 2) And (varControl = "custom") Then
-        Set dict = LLdictionary.Create(ThisWorkbook.Worksheets("Dictionary"), 1, 1)
-        Set vars = LLVariables.Create(dict)
-        'The name of custom variables has been updated, update the dictionary
+    'Update variables with editable column
+    If (Target.Row = startLine - 2) Then
+
         varName = sh.Cells(startLine - 1, targetColumn).Value
+        varEditable = vars.Value(varName:=varName, colName:="editable label")
+        
+        If (varEditable <> "yes") Then Exit Sub
+
+        Set dict = LLdictionary.Create(wb.Worksheets("Dictionary"), 1, 1)
+        Set vars = LLVariables.Create(dict)
+            
+        'The name of custom variables has been updated, update the dictionary
         varSubLabel = vars.Value(varName:=varName, colName:="sub label")
 
-        sLabel = Replace(Target.Value, varSubLabel, vbNullString)
-        sLabel = Replace(sLabel, chr(10), vbNullString)
+        varLabel = Replace(Target.Value, varSubLabel, vbNullString)
+        varLabel = Replace(varLabel, chr(10), vbNullString)
 
-        vars.SetValue varName:=varName, colName:="main label", newValue:=sLabel
+        vars.SetValue varName:=varName, colName:="main label", _
+                      newValue:=varLabel
 
+        Exit Sub
     End If
 
     'Update the list auto
-    If Target.Row >= startLine And _
-       sh.Cells(startLine - 6, targetColumn).Value = "list_auto_origin" And _
-        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value <> "list_auto_change_yes" Then
-        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value = "list_auto_change_yes"
-    End If
+    If (Target.Row >= startLine) And _
+       (sh.Cells(startLine - 6, targetColumn).Value = "list_auto_origin") Then
+        
+        Set upobj = UpVal.Create(wb.Worksheets(UPSHEET))
+        upobj.SetValue "RNG_UpdateListAuto", "yes"
 
+        Exit Sub
+    End If
 
     'GoTo section
-    If Not Intersect(Target, rng) Is Nothing Then
-        goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
+    Set rng = sh.Range(tablename & "_" & GOTOSECCODE)
 
-        sLabel = Replace(Target.Value, goToSection & ": ", vbNullString)
-        Set hRng = sh.ListObjects(1).HeaderRowRange
+    If Not (Intersect(Target, rng) Is Nothing) Then
+
+        sectionName = Replace(Target.Value, _
+                         lltrads.Value("gotosection") & ": ", _
+                         vbNullString)
+
         Set hRng = hRng.Offset(-3)
-
-        Set cellRng = hRng.Find(What:=sLabel, LookAt:=xlWhole, MatchCase:=True)
-
+        Set cellRng = hRng.Find(What:=sectionName, lookAt:=xlWhole, MatchCase:=True)
         If Not cellRng Is Nothing Then cellRng.Activate
-    End If
 
-    If Target.Row = startLine - 1 Then
+        Exit Sub
+    End If
+    
+    'Avoid modifying headers of the table (with variable names)
+    If (Target.Row = startLine - 1) Then
+        
         Target.Value = Target.Offset(-1).Name.Name
-        MsgBox "You can't modify this header."
+        MsgBox tradmess.TranslatedValue("MSG_NotModify"), _
+                vbOKOnly + vbCritical, _
+                tradmess.TranslatedValue("MSG_Error")
+
+        Exit Sub
     End If
 
-errHand:
-
+ErrHand:
+    NotBusyApp
 End Sub
 
-
 'Event to update the list_auto when a sheet containing a list_auto is desactivated
-Public Sub EventDesactivateLinelist(ByVal sSheetName As String)
+Public Sub EventDesactivateLinelist(ByVal prevSheetName As String)
 
-    Dim PrevWksh As Worksheet
+    Dim prevsh As Worksheet
+    Dim upobj As IUpVal
 
-    On Error GoTo errHand
+    On Error GoTo ErrHand
 
-    If ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value = "list_auto_change_yes" Then
+    InitializeTrads
 
-        Set PrevWksh = ThisWorkbook.Worksheets(sSheetName)
-        BeginWork xlsapp:=Application
+    Set upobj = UpVal.Create(wb.Worksheets(UPSHEET))
 
-        UpdateListAuto PrevWksh
-        ThisWorkbook.Worksheets(C_sSheetImportTemp).Cells(1, 15).Value = "list_auto_change_no"
+    'Update the listAuto only and only if update list auto is yes
+    If upobj.Value("RNG_UpdateListAuto") <> "yes" Then Exit Sub
+    
+    Set prevsh = wb.Worksheets(prevSheetName)
 
-        EndWork xlsapp:=Application
-        Exit Sub
+    BusyApp
+    UpdateListAuto prevsh
+    upobj.SetValue "RNG_UpdateListAuto", "no"
+    NotBusyApp
+    Exit Sub
 
-    End If
-errHand:
-    EndWork xlsapp:=Application
+ErrHand:
+   NotBusyApp
 End Sub
 
 'Update the list Auto of one Sheet
+Public Sub UpdateListAuto(ByVal sh As Worksheet)
 
-Public Sub UpdateListAuto(Wksh As Worksheet)
-
-    Dim iChoiceCol As Integer
-    Dim choiceLo As ListObject
-    Dim sVarName As String
-    Dim iRow As Long
-    Dim i As Long
+    Dim varName As String
+    Dim drop As IDropdownLists
     Dim arrTable As BetterArray
-    Dim listAutoSheet As Worksheet
-
-    Dim rng As Range
+    Dim cellRng As Range
+    Dim tablename As String
 
     Set arrTable = New BetterArray
-    i = 1
+    Set drop = DropdownLists.Create(wb.Worksheets(DROPDOWNSHEET))
 
-    Set listAutoSheet = ThisWorkbook.Worksheets(C_sSheetChoiceAuto)
-    With Wksh
-        .calculate
-        Do While (.Cells(C_eStartLinesLLData, i) <> vbNullString)
-            Select Case .Cells(C_eStartLinesLLMainSec - 2, i).Value
-            Case C_sDictControlChoiceAuto & "_origin"
-                sVarName = .Cells(C_eStartLinesLLData + 1, i).Value
-                If ListObjectExists(listAutoSheet, "list_" & sVarName) Then
-                    arrTable.FromExcelRange .Cells(C_eStartLinesLLData + 2, i), DetectLastColumn:=False, DetectLastRow:=True
-                    'Unique values (removing the spaces and the Null strings and keeping the case (The remove duplicates doesn't do that))
-                    Set arrTable = GetUniqueBA(arrTable)
-                    With listAutoSheet
-                        Set choiceLo = .ListObjects("list_" & sVarName)
-                        iChoiceCol = choiceLo.Range.Column
-                        If Not choiceLo.DataBodyRange Is Nothing Then choiceLo.DataBodyRange.Delete
-                        arrTable.ToExcelRange .Cells(C_eStartlinesListAuto + 1, iChoiceCol)
-                        iRow = .Cells(.Rows.Count, iChoiceCol).End(xlUp).Row
-                        choiceLo.Resize .Range(.Cells(C_eStartlinesListAuto, iChoiceCol), .Cells(iRow, iChoiceCol))
-                        'Sort in descending order
-                        Set rng = choiceLo.ListColumns(1).Range
-                        With choiceLo.Sort
-                            .SortFields.Clear
-                            .SortFields.Add Key:=rng, SortOn:=xlSortOnValues, ORDER:=xlDescending
-                            .Header = xlYes
-                            .Apply
-                        End With
-                    End With
-                End If
-            Case Else
-            End Select
-            i = i + 1
-        Loop
-    End With
+    tablename = sh.Cells(1, 4).Value
+    Set cellRng = sh.Range(tablename & "_START").Offset(-2)
 
+    Do While (Not IsEmpty(cellRng))
+
+        If cellRng.Offset(-4).Value = "list_auto_origin" Then
+
+            varName = cellRng.Offset(1).Value
+                
+            If drop.Exists(varName) Then
+                
+                'Unique values (removing the spaces and the Null strings and keeping the case
+                '(The remove duplicates doesn't do that))
+                arrTable.FromExcelRange cellRng.Offset(2), _
+                                        DetectLastColumn:=False, _
+                                        DetectLastRow:=True
+
+                Set arrTable = GetUniqueBA(arrTable)
+
+                drop.ClearList varName
+                drop.Update arrTable, varName
+                drop.Sort varName, xlDescending
+
+            End If
+
+        End If
+            
+        Set cellRng = cellRng.Offset(, 1)
+    Loop
 End Sub
 
 
 Sub EventValueChangeVList(Target As Range)
 
-    Const GOTOSECCODE As String = "go_to_section" 'Go To section constant
-
-    Dim rng As Range
-    Dim RngLook As Range
-    Dim sLabel As String
+   
     Dim sh As Worksheet
-    Dim tableName As String
-    Dim goToSection As String
-
+    Dim rng As Range
+    Dim rngLook As Range
+    Dim varLabel As String
+    Dim tablename As String
 
     On Error GoTo Err
+
+    InitializeTrads
+
     Set sh = ActiveSheet
-    tableName = sh.Cells(1, 4).Value
+    tablename = sh.Cells(1, 4).Value
 
     'Calculate the range where the values are entered
-    Set rng = sh.Range(tableName & "_" & "PLAGEVALUES")
+    Set rng = sh.Range(tablename & "_" & "PLAGEVALUES")
     rng.calculate
 
-    Set rng = sh.Range(tableName & "_" & GOTOSECCODE)
-    goToSection = ThisWorkbook.Worksheets("LinelistTranslation").Range("RNG_GoToSection").Value
+    Set rng = sh.Range(tablename & "_" & GOTOSECCODE)
 
     If Not Intersect(Target, rng) Is Nothing Then
-        sLabel = Replace(Target.Value, goToSection & ": ", vbNullString)
-        Set RngLook = sh.Cells.Find(What:=sLabel, LookAt:=xlWhole, MatchCase:=True)
-        If Not RngLook Is Nothing Then RngLook.Activate
+        varLabel = Replace(Target.Value, _
+                           lltrads.Value("gotosection") & ": ", _
+                           vbNullString)
+        Set rngLook = sh.Cells.Find(What:=varLabel, lookAt:=xlWhole, MatchCase:=True)
+        If Not rngLook Is Nothing Then rngLook.Activate
     End If
 
     Exit Sub
@@ -297,80 +357,79 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
     Dim calcRng As Range
     Dim startLine As Long
     Dim varControl As String
-    Dim tableName As String
-    Dim loAdm2 As ListObject
-    Dim loAdm3 As ListObject
-    Dim loAdm4 As ListObject
-    Dim T_geo As BetterArray
+    Dim tablename As String
+    Dim adminTable As BetterArray
     Dim geo As ILLGeo
     Dim adminNames As BetterArray
+    Dim drop As IDropdownLists
 
 
-    On Error GoTo errHand
+    On Error GoTo ErrHand
+
     Set sh = ActiveSheet
-    tableName = sh.Cells(1, 4).Value
-    Set hRng = sh.ListObjects(1).HeaderRowRange
+    tablename = sh.Cells(1, 4).Value
+    startLine = sh.Range(tablename & "_START").Row
 
-    targetColumn = Target.Column
-    startLine = sh.Range(tableName & "_START").Row
-    varControl = sh.Cells(startLine - 5, targetColumn).Value
-    Set geo = LLGeo.Create(ThisWorkbook.Worksheets("Geo"))
-    Set adminNames = New BetterArray
-    adminNames.LowerBound = 1
-
+    'First test if we are on a good line
     If Target.Row < startLine Then Exit Sub
-
+    
+    'Calculate the line
+    Set hRng = sh.ListObjects(1).HeaderRowRange
     nbOffset = Target.Row - hRng.Row
     Set calcRng = hRng.Offset(nbOffset)
     calcRng.calculate
 
+    'Test for geo control (Exit if not the case)
+    targetColumn = Target.Column
+    varControl = sh.Cells(startLine - 5, targetColumn).Value
+    
     If (varControl <> "geo2") And _
-     (varControl <> "geo3") And (varControl <> "geo4") Then Exit Sub
+       (varControl <> "geo3") And _
+       (varControl <> "geo4") Then _
+        Exit Sub
 
-    Set loAdm2 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin2")
-    Set loAdm3 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin3")
-    Set loAdm4 = ThisWorkbook.Worksheets(C_sSheetChoiceAuto).ListObjects("list_admin4")
+    InitializeTrads
+
+    Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
+    Set adminNames = New BetterArray
+    'This is mandatory for geolevel function, lowerbound should be 1
+    adminNames.LowerBound = 1
+    Set drop = DropdownLists.Create(wb.Worksheets(DROPDOWNSHEET))
 
     Select Case varControl
-       Case "geo2"
-        'adm1 has been modified, we will correct and set validation to adm2
-        BeginWork xlsapp:=Application
-        If Target.Value <> vbNullString Then
-            DeleteLoDataBodyRange loAdm2
-          'Filter on adm1
-           Set T_geo = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, Target.Offset(, -1).Value)
-           'Build the validation list for adm2
-            T_geo.ToExcelRange loAdm2.Range.Cells(2, 1)
-            T_geo.Clear
-        End If
-        EndWork xlsapp:=Application
 
-       Case "geo3"
-        'Adm2 has been modified, we will correct and filter adm3
-         BeginWork xlsapp:=Application
-         If Target.Value <> vbNullString Then
-            DeleteLoDataBodyRange loAdm3
-            adminNames.Push Target.Offset(, -2).Value, Target.Offset(, -1).Value
-            Set T_geo = geo.GeoLevel(LevelAdmin3, GeoScopeAdmin, adminNames)
-            T_geo.ToExcelRange loAdm3.Range.Cells(2, 1)
-            T_geo.Clear
-         End If
-         EndWork xlsapp:=Application
+    Case "geo2"
+        
+        BusyApp
+        
+        'Get admin 2 list for the corresponding admin1
+        drop.ClearList "admin2"
+        Set adminTable = geo.GeoLevel(LevelAdmin2, GeoScopeAdmin, Target.Offset(, -1).Value)
+        'Build the validation list for adm2
+        drop.Update adminTable, "admin2"
+        NotBusyApp
 
-       Case "geo4"
-        'Adm 3 has been modified, correct and filter adm4
-         BeginWork xlsapp:=Application
+    Case "geo3"
+        'Adm3 has been selected, we will update the corresponding dropdown
+        ' using admin1, and admin2
+        BusyApp
+        drop.ClearList "admin3"
+        adminNames.Push Target.Offset(, -2).Value, Target.Offset(, -1).Value
+        Set adminTable = geo.GeoLevel(LevelAdmin3, GeoScopeAdmin, adminNames)
+        drop.Update adminTable, "admin3"
+        NotBusyApp
 
-         If Target.Value <> vbNullString Then
-            DeleteLoDataBodyRange loAdm4
-            adminNames.Push Target.Offset(, -3).Value, Target.Offset(, -2).Value, Target.Offset(, -1).Value
-            'Take the adm4 table
-             Set T_geo = geo.GeoLevel(LevelAdmin4, GeoScopeAdmin, adminNames)
-             T_geo.ToExcelRange loAdm4.Range.Cells(2, 1)
-             T_geo.Clear
-         End If
-        EndWork xlsapp:=Application
+    Case "geo4"
 
-       End Select
-errHand:
+        'Adm 4 has been selected, will update corresponding dropdown using admin1-3
+        BusyApp
+        drop.ClearList "admin4"
+        'Take the adm4 table
+        adminNames.Push Target.Offset(, -3).Value, Target.Offset(, -2).Value, Target.Offset(, -1).Value
+        Set adminTable = geo.GeoLevel(LevelAdmin4, GeoScopeAdmin, adminNames)
+        drop.Update adminTable, "admin4"
+        NotBusyApp
+
+    End Select
+ErrHand:
 End Sub

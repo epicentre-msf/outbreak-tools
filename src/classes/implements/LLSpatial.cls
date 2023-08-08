@@ -68,16 +68,16 @@ Private Function Exists(ByVal varName As String) As Boolean
   Set sh = Wksh()
   Set listVarsRng = sh.ListObjects("listofgeovars").Range
 
-  Exists = (Not (listVarsRng.Find(What:=varName, LookAt:=xlPart, MatchCase:=True) Is Nothing))
+  Exists = (Not (listVarsRng.Find(What:=varName, lookAt:=xlPart, MatchCase:=True) Is Nothing))
 End Function
 
-Private Function LoExists(ByVal LoName As String) As Boolean
+Private Function LoExists(ByVal loName As String) As Boolean
   Dim sh As Worksheet
-  Dim Lo As ListObject
+  Dim Lo As listObject
   Set sh = Wksh()
 
   On Error Resume Next
-    Set Lo = sh.ListObjects(LoName)
+    Set Lo = sh.ListObjects(loName)
   On Error GoTo 0
 
   LoExists = (Not Lo Is Nothing)
@@ -87,19 +87,19 @@ End Function
 
 
 Private Sub Update()
-  Dim actSh As Worksheet 'Actual worksheet (the spatial worksheet)
+  Dim actsh As Worksheet 'Actual worksheet (the spatial worksheet)
   Dim sh As Worksheet 'All worksheets in the workbook
   Dim filtsh As Worksheet
   Dim wb As Workbook
   Dim rng As Range
-  Dim tableName As String
+  Dim tablename As String
   Dim varName As String
   Dim cellRng As Range
   Dim controlValue As String
-  Dim Lo As ListObject
+  Dim Lo As listObject
 
-  Set actSh = Wksh()
-  Set wb = actSh.Parent
+  Set actsh = Wksh()
+  Set wb = actsh.Parent
 
   For Each sh In wb.Worksheets
 
@@ -111,8 +111,8 @@ Private Sub Update()
       'Exit the sub if there is no data in the filters
       If Not (filtsh.ListObjects(1).DataBodyRange Is Nothing) Then
 
-        tableName = sh.Cells(1, 4).Value
-        Set cellRng = sh.Range(tableName & "_" & "START")
+        tablename = sh.Cells(1, 4).Value
+        Set cellRng = sh.Range(tablename & "_" & "START")
         Set Lo = filtsh.ListObjects(1)
 
           'Offset - 1 is the range with the variable names
@@ -156,7 +156,7 @@ Private Sub Update()
     End If
   Next
 
-  actSh.UsedRange.Calculate
+  actsh.UsedRange.calculate
 End Sub
 
 Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
@@ -170,8 +170,8 @@ Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
   Set listTab = New BetterArray
   Set listRng = sh.ListObjects("listofgeovars").Range
 
-  Do While (Not (listRng.Find(What:=varName, LookAt:=xlPart, MatchCase:=True) Is Nothing))
-    Set cellRng = listRng.Find(What:=varName, LookAt:=xlPart, MatchCase:=True)
+  Do While (Not (listRng.Find(What:=varName, lookAt:=xlPart, MatchCase:=True) Is Nothing))
+    Set cellRng = listRng.Find(What:=varName, lookAt:=xlPart, MatchCase:=True)
     listTab.Push cellRng.Value
 
     'Exit the loop on those two conditions
@@ -189,12 +189,12 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
 
   Dim pasteRng As Range
   Dim counter As Long
-  Dim admincounter As Long
+  Dim adminCounter As Long
   Dim sh As Worksheet
   Dim cellRng As Range
   Dim rng As Range
-  Dim Lo As ListObject
-  Dim LoName As String
+  Dim Lo As listObject
+  Dim loName As String
   Dim adminName As String
   Dim sortRng As Range
   Dim nbRows As Long
@@ -216,13 +216,13 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
     varName = listVars.Item(counter)
     Set rng = inputRng
 
-    For admincounter = 1 To endCounter
+    For adminCounter = 1 To endCounter
         nbRows = rng.Cells.Count
 
-        LoName = IIf(isHF, CurrentLoName(varName, HF), CurrentLoName(varName, ADMIN & admincounter))
-        adminName = IIf(isHF, HF, ADMIN & admincounter)
+        loName = IIf(isHF, CurrentLoName(varName, HF), CurrentLoName(varName, ADMIN & adminCounter))
+        adminName = IIf(isHF, HF, ADMIN & adminCounter)
 
-        Set Lo = sh.ListObjects(LoName)
+        Set Lo = sh.ListObjects(loName)
 
         'First cell where to paste the values of the range
         Set cellRng = sh.Range("RNG_PastingCol")
@@ -266,7 +266,7 @@ Private Sub UpdateSpatialValue(ByVal inputRng As Range, ByVal inputVarName As St
         sortRng.calculate
 
         On Error Resume Next
-          Lo.ListColumns(1).DataBodyRange.Sort key1:=sortRng, order1:=xlDescending
+          Lo.ListColumns(1).DataBodyRange.Sort key1:=sortRng, Order1:=xlDescending
         On Error GoTo 0
 
         Set rng = rng.Offset(, 1)
@@ -277,15 +277,15 @@ End Sub
 
 
 '@Description("Sort the tables on either attack rate or values")
-Private Sub Sort(ByVal tabId As String,  Optional ByVal onAR As Boolean = False)
+Private Sub Sort(ByVal tabId As String, Optional ByVal onAR As Boolean = False)
 
   'onAR is to know if it is needed to sort on attack rate or values. Default
   'is values. Keep in mind we sort only on "geo" tables because health facilities
   'don't have a linked population. No sorting is done in "hf" tables.
 
   Dim sortRng As Range
-  Dim loRng As Range
-  Dim Lo As ListObject
+  Dim LoRng As Range
+  Dim Lo As listObject
   Dim sh As Worksheet
   Dim adminCounter As Long
   Dim sortRngName As String
@@ -300,7 +300,7 @@ Private Sub Sort(ByVal tabId As String,  Optional ByVal onAR As Boolean = False)
    Set listRng = sh.ListObjects("listofgeovars").Range
 
    'Look for the table in list range
-   Set cellRng = listRng.Find(What:=tabId, LookAt:=xlPart, MatchCase:=True)
+   Set cellRng = listRng.Find(What:=tabId, lookAt:=xlPart, MatchCase:=True)
 
    'If you can't find the table, something went wrong
    If cellRng Is Nothing Then Exit Sub
@@ -322,7 +322,7 @@ Private Sub Sort(ByVal tabId As String,  Optional ByVal onAR As Boolean = False)
     Set sortRng = Lo.ListColumns(sortRngName).Range
 
     On Error Resume Next
-      Lo.ListColumns(1).Range.Sort key1:=sortRng, order1:=xlDescending, Header:= xlYes
+      Lo.ListColumns(1).Range.Sort key1:=sortRng, Order1:=xlDescending, Header:=xlYes
     On Error GoTo 0
   Next
 End Sub
@@ -331,19 +331,19 @@ End Sub
 Private Property Get TopGeoValue(ByVal adminName As String, ByVal orderValue As Integer, ByVal inputVarName As String, _
                                  Optional ByVal tabId As String = vbNullString, Optional ByVal concatValue As Byte = 1) As String
   Dim sh As Worksheet
-  Dim Lo As ListObject
-  Dim LoName As String
+  Dim Lo As listObject
+  Dim loName As String
   Dim varName As String
   Dim rng As Range
 
   Set sh = Wksh()
 
   varName = inputVarName & "_" & tabId
-  LoName = CurrentLoName(varName, adminName)
+  loName = CurrentLoName(varName, adminName)
 
-  If Not LoExists(LoName) Then Exit Property
+  If Not LoExists(loName) Then Exit Property
 
-  Set Lo = sh.ListObjects(LoName)
+  Set Lo = sh.ListObjects(loName)
 
   If concatValue = 1 Then
     Set rng = Lo.ListColumns(1).DataBodyRange()
@@ -357,17 +357,17 @@ End Property
 
 Private Property Get TopHFValue(ByVal orderValue As Integer, ByVal inputVarName As String, Optional ByVal tabId As String = vbNullString) As String
   Dim sh As Worksheet
-  Dim Lo As ListObject
-  Dim LoName As String
+  Dim Lo As listObject
+  Dim loName As String
   Dim varName As String
   Dim rng As Range
   Set sh = Wksh()
 
   varName = inputVarName & "_" & tabId
-  LoName = CurrentLoName(varName, HF)
+  loName = CurrentLoName(varName, HF)
 
-  If Not LoExists(LoName) Then Exit Property
-  Set Lo = sh.ListObjects(LoName)
+  If Not LoExists(loName) Then Exit Property
+  Set Lo = sh.ListObjects(loName)
   Set rng = Lo.ListColumns(1).DataBodyRange()
 
   TopHFValue = rng.Cells(orderValue, 1).Value

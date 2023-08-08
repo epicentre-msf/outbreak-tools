@@ -17,8 +17,8 @@ Option Explicit
 
 'Exposed methods
 Public Property Get Password() As String: End Property
-Public Property Get Value(Byval tagName As String) As String: End Property
-Public Property Get TableRange() As Range : End Property
+Public Property Get Value(ByVal tagName As String) As String: End Property
+Public Property Get TableRange() As Range: End Property
 
 Public Sub UnProtect(Optional ByVal sheetName As String = "_active"): End Sub
 
