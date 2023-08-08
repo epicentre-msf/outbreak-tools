@@ -72,10 +72,10 @@ Private Property Get SummaryFunction() As String
 
 End Property
 
-Private Property Get Id() As String
+Private Property Get ID() As String
     Dim specs As ITablesSpecs
     Set specs = Specifications
-    Id = specs.TableId()
+    ID = specs.TableId()
 End Property
 
 Private Property Get sectionId() As String
@@ -262,7 +262,7 @@ Private Sub AddNonEmptyTableConditions(ByVal varName As String)
 End Sub
 
 'Format a range using the provided format in the analysis
-Private Sub AddRngFormat(Byval formatValue As String, ByVal rng As Range)
+Private Sub AddRngFormat(ByVal formatValue As String, ByVal rng As Range)
     Dim formatText As String
     Dim nbDecimals As Integer
     Dim zerosDecimals As String
@@ -362,7 +362,7 @@ Private Sub AddFormulas()
     Set tabl = Table()
     Set sh = tabl.Wksh()
 
-    tabId = Id()
+    tabId = ID()
     secId = sectionId()
     tabType = TableType
     HasMissing = specs.HasMissing

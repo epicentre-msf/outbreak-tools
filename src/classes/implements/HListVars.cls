@@ -24,7 +24,7 @@ End Type
 
 Private this As THListVars
 Private Const CLASSNAME As String = "HListVars"
-Private Const STARTROW As Long = 8               'Where the variables should start in the output worksheet
+Private Const StartRow As Long = 8               'Where the variables should start in the output worksheet
 
 Public Function Create(ByVal varName As String, ByVal ll As ILinelist) As IHListVars
 
@@ -115,15 +115,15 @@ Private Property Get ValueOf(ByVal colName As String) As String
 End Property
 
 Private Property Get VarRange() As Range         'Where to input informations on the variable
-    Dim Startcol As Long
+    Dim STARTCOL As Long
     Dim sh As Worksheet
     Dim rng As Range
 
     If this.inputRange Is Nothing Then
         Set sh = Wksh()
         With sh
-            Startcol = ValueOf("column index")
-            Set this.inputRange = .Cells(STARTROW + 1, Startcol)
+            STARTCOL = ValueOf("column index")
+            Set this.inputRange = .Cells(StartRow + 1, STARTCOL)
         End With
     End If
 
@@ -134,15 +134,15 @@ Private Property Get VarPrintRange() As Range
     Dim ll As ILinelist
     Dim sh As Worksheet
     Dim sheetName As String
-    Dim startcol As Long
+    Dim STARTCOL As Long
 
     sheetName = ValueOf("sheet name")
     Set ll = LinelistObject()
     Set sh = ll.PrintWksh(sheetName)
     If (this.inputPrintRange Is Nothing) Then
         With sh
-            startcol = ValueOf("column index")
-            Set this.inputPrintRange = .Cells(STARTROW + 1, startcol)
+            STARTCOL = ValueOf("column index")
+            Set this.inputPrintRange = .Cells(StartRow + 1, STARTCOL)
         End With
     End If
     Set VarPrintRange = this.inputPrintRange
@@ -330,8 +330,8 @@ Private Sub AddConditionalFormatting()
 
     cellRng.FormatConditions.Add Type:=xlExpression, Formula1:="=(" & condAdd & "= 1)"
     With cellRng.FormatConditions(cellRng.FormatConditions.Count)
-        .Interior.Color = formatRng.Interior.Color
-        .Font.Color = formatRng.Font.Color
+        .Interior.color = formatRng.Interior.color
+        .Font.color = formatRng.Font.color
         .Font.Bold = formatRng.Font.Bold
         .Font.Italic = formatRng.Font.Italic
         'Stop if this condition is met (This is the first priority)
@@ -350,7 +350,7 @@ Private Sub AddUniqueConditonalFormatting()
     cellRng.FormatConditions.AddUniqueValues
     With cellRng.FormatConditions(cellRng.FormatConditions.Count)
         .DupeUnique = xlDuplicate
-        .Interior.Color = vbRed
+        .Interior.color = vbRed
     End With
 End Sub
 
@@ -409,7 +409,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
        (varControl = "choice_formula") Then
         varSublab = varSublab & chr(10) & calculated
     ElseIf (varControl = "choice_custom") Then
-        varSublab = varSublab & chr(10) & choicust 
+        varSublab = varSublab & chr(10) & choicust
     End If
 
     mainLabLength = Len(varMainLab)
@@ -461,10 +461,10 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     End If
 
     'Custom columns, user can modify them
-    If (varControl = "custom") Then  cellRng.Offset(-2).Locked = False
+    If (varControl = "custom") Then cellRng.Offset(-2).Locked = False
 
     'Hidden columns
-    If varStatus = "hidden" Then  cellRng.EntireColumn.Hidden = True
+    If varStatus = "hidden" Then cellRng.EntireColumn.HIDDEN = True
 
     'On printed sheet, hide or rotate (otherwise change nothing)
     If usePrinted Then
@@ -474,7 +474,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
             cellRng.Offset(-2).Orientation = 90
             cellRng.Offset(-2).EntireColumn.AutoFit
         Case "hidden"
-            cellRng.EntireColumn.Hidden = True
+            cellRng.EntireColumn.HIDDEN = True
         End Select
     End If
 

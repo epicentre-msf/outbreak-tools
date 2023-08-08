@@ -27,7 +27,7 @@ Private this As TLLFormat
 'instanciation:
 
 Public Function Create(formatSh As Worksheet, designType As String) As ILLFormat
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim rng As Range
     Dim design As String
 
@@ -54,7 +54,7 @@ Public Function Create(formatSh As Worksheet, designType As String) As ILLFormat
 End Function
 
 Private Function ValueExist(ByVal Value As String, ByVal rng As Range) As Boolean
-    ValueExist = (Not rng.Find(What:=Value, LookAt:=xlPart, MatchCase:=False) Is Nothing)
+    ValueExist = (Not rng.Find(What:=Value, lookAt:=xlPart, MatchCase:=False) Is Nothing)
 End Function
 
 Public Property Get Self() As ILLFormat
@@ -97,10 +97,10 @@ Private Function DesignValue(ByVal labelName As String, _
     With sh
         Set labelColumnRng = .ListObjects(1).ListColumns("label").Range
         Set headerRng = .ListObjects(1).HeaderRowRange
-        desIndex = headerRng.Find(What:=design, LookAt:=xlPart, MatchCase:=False).Column
+        desIndex = headerRng.Find(What:=design, lookAt:=xlPart, MatchCase:=False).Column
         If ValueExist(labelName, labelColumnRng) Then
 
-            labIndex = labelColumnRng.Find(What:=labelName, LookAt:=xlPart, MatchCase:=False).Row
+            labIndex = labelColumnRng.Find(What:=labelName, lookAt:=xlPart, MatchCase:=False).Row
 
             If returnColor Then
                 retdesValue = .Cells(labIndex, desIndex).Interior.color
@@ -135,8 +135,8 @@ Private Sub DrawLines(rng As Range, _
 
     Case "All"
         bordersList.Push xlEdgeLeft, xlEdgeRight, xlEdgeBottom, xlEdgeTop, xlInsideHorizontal, xlInsideVertical
-    Case "AvoidLeft", "AvoidRight" 
-        bordersList.Push  xlEdgeBottom, xlEdgeTop, xlInsideHorizontal
+    Case "AvoidLeft", "AvoidRight"
+        bordersList.Push xlEdgeBottom, xlEdgeTop, xlInsideHorizontal
     Case "AvoidTop", "AvoidBottom"
         bordersList.Push xlEdgeLeft, xlEdgeRight, xlInsideVertical
     Case "Left"
@@ -261,7 +261,7 @@ Private Sub PreparePrintSheet(ByVal sh As Worksheet)
         .LeftMargin = Application.InchesToPoints(0.04)
         .RightMargin = Application.InchesToPoints(0.04)
         .TopMargin = Application.InchesToPoints(0.75)
-        .BottomMargin = Application.InchesToPoints(0.20)
+        .BottomMargin = Application.InchesToPoints(0.2)
         .HeaderMargin = Application.InchesToPoints(0.31)
         .FooterMargin = Application.InchesToPoints(0.31)
         .PrintHeadings = False
@@ -300,7 +300,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
     Dim Char As Characters
     Dim sh As Worksheet
     Dim shp As Shape
-    Dim Lo As ListObject
+    Dim Lo As listObject
 
     Dim fontColorValue As Variant
     Dim interiorColorValue As Variant
@@ -359,7 +359,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
             sh.Cells.EntireRow.RowHeight = 20
             sh.Visible = xlSheetVisible
             sh.Cells(1, 2).Value = "formated"
-            sh.Cells(1, 2).Font.Color = vbWhite
+            sh.Cells(1, 2).Font.color = vbWhite
         ElseIf IsEmpty(sh.Cells(1, 1).Value) Then
             sh.Visible = xlSheetVeryHidden
         End If
@@ -722,7 +722,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
             'Draw borders for the range
             If scope = HListSubSection Then
                 Set rng = .Range(rng.Cells(1, 1), rng.Cells(4, rng.Columns.Count))
-                Drawborder rng, color:=bordersColorValue
+                DrawBorder rng, color:=bordersColorValue
             End If
         End With
 
@@ -761,7 +761,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
             Else
                 Set rng = .Range(rng.Cells(1, 1), rng.Cells(rng.Rows.Count, 4))
                 DrawBorder rng, color:=bordersColorValue, weight:=xlThin
-            End If            
+            End If
         End With
 
         'format the range
@@ -819,17 +819,17 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
 
         Set rng = formattingObject
-        dimensionValue = IIf(scope =  HListPrintedHeader, 5, 8)
+        dimensionValue = IIf(scope = HListPrintedHeader, 5, 8)
         interiorColorValue = DesignValue("hlist table header color")
-        FormatRange rng, fontColor:=interiorColorValue,  _ 
-                    interiorColor:=interiorColorValue, _ 
+        FormatRange rng, fontColor:=interiorColorValue, _
+                    interiorColor:=interiorColorValue, _
                     FontSize:=dimensionValue
         rng.Locked = False
         
         If scope = HListPrintedHeader Then
 
             'hide the headers
-            rng.EntireRow.Hidden = True
+            rng.EntireRow.HIDDEN = True
 
             'Now formatting the headers (main label)
             dimensionValue = DesignValue("hlist main label font size", False)
@@ -839,8 +839,8 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
             rng.EntireRow.RowHeight = 100
 
             'AutoFit columns
-            For Each cellRng in rng
-                If Not cellRng.EntireColumn.Hidden Then 
+            For Each cellRng In rng
+                If Not cellRng.EntireColumn.HIDDEN Then
                     cellRng.EntireColumn.ColumnWidth = 30
                     cellRng.WrapText = True
                 End If

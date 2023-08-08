@@ -73,7 +73,7 @@ Private Function Contains(ByVal sheetName As String) As Boolean
     If sheetName = vbNullString Or sheetName = "sheet name" Then
         Exists = False
     Else
-        Exists = Not (sheetRng.Find(What:=sheetName, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+        Exists = Not (sheetRng.Find(What:=sheetName, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
     End If
 
     Contains = Exists
@@ -86,7 +86,7 @@ Private Function RowIndex(ByVal sheetName As String) As Long
     rowNum = -1
     Set sheetRng = SheetRange()
     If Contains(sheetName) Then
-        rowNum = sheetRng.Find(What:=sheetName, LookAt:=xlWhole, MatchCase:=True).Row
+        rowNum = sheetRng.Find(What:=sheetName, lookAt:=xlWhole, MatchCase:=True).Row
     End If
     RowIndex = rowNum
 End Function
@@ -222,7 +222,7 @@ Private Function VariableAddress(ByVal varName As String, Optional ByVal onSheet
 
     prefix = vbNullString
 
-    If (onSheet <> sheetName) Then   prefix = "'" & sheetName & "'!"
+    If (onSheet <> sheetName) Then prefix = "'" & sheetName & "'!"
 
     rstart = DataBounds(sheetName, 1)
     cstart = DataBounds(sheetName, 3)

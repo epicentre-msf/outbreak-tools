@@ -41,7 +41,7 @@ Private Sub CMD_PrintLL_Click()
         .LeftMargin = Application.InchesToPoints(0.04)
         .RightMargin = Application.InchesToPoints(0.04)
         .TopMargin = Application.InchesToPoints(0.75)
-        .BottomMargin = Application.InchesToPoints(0.20)
+        .BottomMargin = Application.InchesToPoints(0.2)
         .HeaderMargin = Application.InchesToPoints(0.31)
         .FooterMargin = Application.InchesToPoints(0.31)
         .PrintHeadings = False

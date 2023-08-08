@@ -43,7 +43,12 @@ sink("src/classes_lines.md")
 knitr::kable(df_classes)
 # print the total number of lines for the class
 cat("\n\n")
-glue::glue("Total number of classes lines: {sum(df_classes$tot_number_lines)}")
+glue::glue(
+  "Total number of classes lines: {sum(df_classes$tot_number_lines)}",
+  "\n\n",
+  "Median number of classes lines: ",
+  "{median(df_classes$tot_number_lines)}"
+)
 
 sink()
 
@@ -58,6 +63,9 @@ knitr::kable(df_modules_implements)
 cat("\n\n")
 glue::glue(
   "Total number of modules lines: ",
-  "{sum(df_modules_implements$number_lines)}"
+  "{sum(df_modules_implements$number_lines)}",
+  "\n\n",
+  "Median number of modules lines: ",
+  "{median(df_modules_implements$number_lines)}"
 )
 sink()

@@ -28,15 +28,15 @@ Private Const BUTTONWIDTH As Long = 105
 Private Const BUTTONHEIGHT As Long = 30
 Private Const BUTTONGAP As Long = 5
 
-Public Function Create(ByVal outRng As Range, ByVal codeName As String, _
+Public Function Create(ByVal outrng As Range, ByVal codeName As String, _
                        ByVal scope As ButtonScope) As IButtons
     
     'Check if the output range is provided
-    If outRng Is Nothing Then ThrowError "I don't know where to write the button, no range found."
+    If outrng Is Nothing Then ThrowError "I don't know where to write the button, no range found."
 
     'Create a new button object and set properties
     With New Buttons
-        Set .OutputRange = outRng
+        Set .OutputRange = outrng
         .Name = codeName
         .ShapeScope = scope
         Set Create = .Self()

@@ -2,13 +2,13 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-
 Attribute VB_Name = "ImpSpecs"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Specifications for import in the linelist"
+
 
 '@PredeclaredId
 '@Folder("Linelist")
@@ -44,8 +44,8 @@ Private IMPORTEDSHEETS                  As BetterArray
 'Exposed methods
 'repfobj is the form of the import Report
 'adfobj is the advanced form Object
-Public Function Create(ByVal repfobj As Object, ByVal adfobj As Object, _ 
-                       ByVal currwb As Workbook) AS IImpSpecs
+Public Function Create(ByVal repfobj As Object, ByVal adfobj As Object, _
+                       ByVal currwb As Workbook) As IImpSpecs
 
   CheckRequirements currwb, repfobj, adfobj
 
@@ -102,7 +102,7 @@ Private Sub BusyApp(Optional ByVal cursor As Long = xlNorthwestArrow)
   Application.Calculation = xlCalculationManual
   Application.EnableAnimations = False
   Application.EnableEvents = False
-  Application.Cursor = cursor
+  Application.cursor = cursor
 End Sub
 
 Private Sub NotBusyApp()
@@ -110,7 +110,7 @@ Private Sub NotBusyApp()
   Application.DisplayAlerts = True
   Application.EnableAnimations = True
   Application.EnableEvents = True
-  Application.Cursor = xlDefault
+  Application.cursor = xlDefault
 End Sub
 
 'Tell if the current import Need a report
@@ -120,7 +120,7 @@ End Property
 
 'Set need Report to true
 Private Sub SetNeedReportToTrue()
-  If Not this.needReport Then this.needReport = True 
+  If Not this.needReport Then this.needReport = True
 End Sub
 
 'Get the file path.
@@ -128,7 +128,7 @@ End Sub
 Private Function ImportFilePath()
   Dim io As IOSFiles
   Set io = OSFiles.Create()
-  io.LoadFile "*.xlsx"  
+  io.LoadFile "*.xlsx"
   If io.HasValidFile Then ImportFilePath = io.File()
 End Function
 
@@ -164,10 +164,10 @@ Private Property Get PasswordsObject() As ILLPasswords
 End Property
 
 'Geo Object for geobase manibulations
-Private Property Get GeoObject() As ILLGeo
+Private Property Get geoObject() As ILLGeo
   Dim currwb As Workbook
   Set currwb = CurrentWorkbook()
-  Set GeoObject = LLGeo.Create(currwb.Worksheets(GEOSHEET))
+  Set geoObject = LLGeo.Create(currwb.Worksheets(GEOSHEET))
 End Property
 
 'Get the linelist Translation object, with all elements related
@@ -209,9 +209,9 @@ Private Sub AddSheetsNotTouchedToReport()
   Set sheetsList = dict.UniqueValues("sheet name")
   Set repObj = ReportObject()
 
-  For counter = sheetsList.LowerBound to sheetsList.UpperBound
+  For counter = sheetsList.LowerBound To sheetsList.UpperBound
     sheetName = sheetsList.Item(counter)
-    If Not IMPORTEDSHEETS.Includes(sheetName) Then 
+    If Not IMPORTEDSHEETS.Includes(sheetName) Then
       SetNeedReportToTrue
       repObj.AddSheetsToReport 2, sheetName
     End If
@@ -225,10 +225,10 @@ Private Sub AddVariablesNotTouchedToReport()
   Dim dict As ILLdictionary
   Dim repObj As IImpRep
   Dim varName As String
-  Dim counter As Long 
+  Dim counter As Long
   Dim varCounter As Long
   Dim sheetName As String
-  Dim vars As ILLVariables  
+  Dim vars As ILLVariables
   Dim currSheetsList As BetterArray 'List of sheet names in current workbook
   Dim currVarsList As BetterArray 'For touched sheets, list of variables
   Dim varControl As String
@@ -258,10 +258,10 @@ Private Sub AddVariablesNotTouchedToReport()
         
         'report only variables that are not formulas, formulas could be ignored
         'because they are recomputed
-        If (varControl <> "case_when") And (varControl <> "formula") And _ 
+        If (varControl <> "case_when") And (varControl <> "formula") And _
            (varControl <> "choice_formula") Then
 
-          If Not IMPORTEDVARIABLES.Includes(varName) Then 
+          If Not IMPORTEDVARIABLES.Includes(varName) Then
             SetNeedReportToTrue
             repObj.AddVariablesToReport 2, sheetName, varName
           End If
@@ -278,7 +278,7 @@ End Sub
 Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
 
   Dim currwb As Workbook
-  Dim impsh As worksheet
+  Dim impsh As Worksheet
   Dim currsh As Worksheet
   Dim dict As ILLdictionary
   Dim pass As ILLPasswords
@@ -308,7 +308,7 @@ Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
   'Clear the report object before adding new elements.
   repObj.Clear
 
-  For Each impsh in impwb.Worksheets
+  For Each impsh In impwb.Worksheets
     
     'Save imported worksheet name
     If Not RESERVEDSHEETS.Includes(impsh.Name) Then IMPORTEDSHEETS.Push impsh.Name
@@ -340,7 +340,7 @@ Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
             repObj.AddVariablesToReport 1, impsh.Name, varName
             SetNeedReportToTrue
           Else
-            If Not hasFormula Then _ 
+            If Not hasFormula Then _
             vlistRng.Value = usedImpRng.Cells(counter, 2).Value
           End If
           
@@ -355,7 +355,7 @@ Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
         nbBlank = currsh.Cells(1, 6).Value
         pass.UnProtect currsh.Name
         Set currTab = CustomTable.Create(currsh.ListObjects(1))
-        'When instanciating the datasheet, 
+        'When instanciating the datasheet,
         'the endrow here is strictly True, so this will be the last Row
         'of the imported worksheet. The function will find the last used rows
         'and this will be the last non empty row of the worksheet.
@@ -380,7 +380,7 @@ Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
         
         'Concat is for pasting two tables:
         'paste the list of variables on a Hslist with the previous list of variables
-        IMPORTEDVARIABLES.Concat impHeadersList.Items
+        IMPORTEDVARIABLES.CONCAT impHeadersList.Items
         
         pass.Protect currsh.Name
       End Select
@@ -388,7 +388,7 @@ Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
       'Calculate the used Range on the imported sheet
       'Calculation could result in a lot of unexpected behaviours.
       On Error Resume Next
-      currsh.UsedRange.Calculate
+      currsh.UsedRange.calculate
       On Error GoTo 0
 
     ElseIf Not RESERVEDSHEETS.Includes(impsh.Name) Then
@@ -408,7 +408,7 @@ Private Sub ClearData()
   Dim sheetTag As String
   Dim pass As ILLPasswords
   Dim currwb As Workbook
-  Dim Lo As ListObject
+  Dim Lo As listObject
   Dim actsh As Worksheet 'current active sheet
   Dim labelRng As Range
   Dim valueRng As Range
@@ -421,7 +421,7 @@ Private Sub ClearData()
   'so save it and return it back after completion.
   Set actsh = ActiveSheet
 
-  For Each sh in currwb.Worksheets
+  For Each sh In currwb.Worksheets
     Select Case sh.Cells(1, 3).Value
 
     Case "HList"
@@ -473,13 +473,13 @@ Private Sub ControlClearData(Optional ByVal forImports As Boolean = False)
   proceed = vbYes
   
   If Not forImports Then
-    proceed = MsgBox(trads.TranslatedValue("MSG_DeleteAllData"), _ 
-                       vbExclamation + vbYesNo, _ 
+    proceed = MsgBox(trads.TranslatedValue("MSG_DeleteAllData"), _
+                       vbExclamation + vbYesNo, _
                         trads.TranslatedValue("MSG_Delete"))
 
   End If
 
-  If proceed = vbYes Then    
+  If proceed = vbYes Then
     goodName = False
 
     'ask the user to correct the worksheet name until the name
@@ -490,32 +490,32 @@ Private Sub ControlClearData(Optional ByVal forImports As Boolean = False)
     Do While Not goodName
 
       'Ask the user about the current workbook name for validation before deleting
-      inputwbName = InputBox(trads.TranslatedValue("MSG_LLName"), _ 
-                        trads.TranslatedValue("MSG_Delete"), _ 
+      inputwbName = InputBox(trads.TranslatedValue("MSG_LLName"), _
+                        trads.TranslatedValue("MSG_Delete"), _
                         trads.TranslatedValue("MSG_EnterWkbName"))
 
       If (inputwbName = vbNullString) And (Not forImports) Then
         Exit Do
       ElseIf inputwbName = Replace(currwb.Name, ".xlsb", vbNullString) Then
         
-        'Proceed only if the user is able to provide the name of the actual 
+        'Proceed only if the user is able to provide the name of the actual
         'workbook, we can delete
         goodName = True
         ClearData
 
       Else
-        'Bad workbook name: Ask again if the user is sure about deleting  
+        'Bad workbook name: Ask again if the user is sure about deleting
         'the data before leaving
         'In case the user is not sure, exit the do...while loop
-        If MsgBox(trads.TranslatedValue("MSG_BadLLNameQ"), _ 
-                  vbExclamation + vbYesNo, _ 
-                  trads.TranslatedValue("MSG_Delete")) = vbNo _ 
-        Then Exit Do             
+        If MsgBox(trads.TranslatedValue("MSG_BadLLNameQ"), _
+                  vbExclamation + vbYesNo, _
+                  trads.TranslatedValue("MSG_Delete")) = vbNo _
+        Then Exit Do
       End If
     Loop
 
   Else 'The user wishes to cancel deletion process
-      MsgBox trads.TranslatedValue("MSG_DelCancel"), _ 
+      MsgBox trads.TranslatedValue("MSG_DelCancel"), _
             vbOKOnly, trads.TranslatedValue("MSG_Delete")
   End If
 
@@ -535,7 +535,7 @@ Private Property Get HasData() As Boolean
   Dim currwb As Workbook
   Dim sh As Worksheet
   Dim nbBlanks As Long
-  Dim Lo As ListObject
+  Dim Lo As listObject
   Dim counter As Long
 
   Dim proceed As Byte
@@ -549,7 +549,7 @@ Private Property Get HasData() As Boolean
   'Loop throughtout all the worksheets
   For Each sh In currwb.Worksheets
 
-    'On HList sheet, loop through each row of 
+    'On HList sheet, loop through each row of
     'the listObject
     If sh.Cells(1, 3).Value = "HList" Then
       nbBlanks = sh.Cells(1, 6).Value
@@ -564,7 +564,7 @@ Private Property Get HasData() As Boolean
           End If
           counter = counter + 1
         Loop
-      End If  
+      End If
     End If
   Next
 
@@ -584,12 +584,12 @@ Private Function ControlHasData() As Boolean
   'While the workbook contains data, ask if the user wants to delete
   'in that case delete the data and test if there are data left.
   'If the user doesn't want to delete the data, exit.
-  Do While (testData) 
-    proceed = MsgBox(trads.TranslatedValue("MSG_DeleteForImport"), _ 
-                      vbExclamation + vbYesNo, _ 
+  Do While (testData)
+    proceed = MsgBox(trads.TranslatedValue("MSG_DeleteForImport"), _
+                      vbExclamation + vbYesNo, _
                       trads.TranslatedValue("MSG_Delete"))
       
-    If proceed = vbYes Then 
+    If proceed = vbYes Then
       ControlClearData forImports:=True
       testData = HasData()
     Else
@@ -641,17 +641,17 @@ Private Function ControlLanguage(ByVal impwb As Workbook) As Boolean
     'If there are errors, default back to empty string as import language
     On Error Resume Next
       Set cellRng = varRng.Find(What:="language", lookAt:=xlWhole, MatchCase:=False)
-      impLang = cellRng.Offset(,1).Value
+      impLang = cellRng.Offset(, 1).Value
     On Error GoTo 0
 
     'If the import language is different from the current language, as if the user
     'is sure to proceed
     If (impLang <> currLang) And (impLang <> vbNullString) Then
-      abortImport =  (MsgBox(trads.TranslatedValue("MSG_ActualLanguage") & " " & currLang & _
+      abortImport = (MsgBox(trads.TranslatedValue("MSG_ActualLanguage") & " " & currLang & _
                             trads.TranslatedValue("MSG_ImportLanguage") & " " & impLang & _
                             trads.TranslatedValue("MSG_QuitImports"), vbExclamation + vbYesNo, _
                             trads.TranslatedValue("MSG_LanguageDifferent")) = vbNo)
-    'If the import language is not found, tell it to the user                        
+    'If the import language is not found, tell it to the user
     ElseIf (impLang = vbNullString) Then
       abortImport = (MsgBox(trads.TranslatedValue("MSG_NoLanguage"), _
                      vbExclamation + vbYesNo, _
@@ -687,7 +687,7 @@ Private Sub ImportMigration()
 
   'input the import Path: check if the file is valid, and exit if not
   'the case. Leave the advanced form as is to give the opportunity to re-do imports
-  If (inPath = vbNullString) Then 
+  If (inPath = vbNullString) Then
     NotBusyApp
     Exit Sub
   End If
@@ -703,7 +703,7 @@ Private Sub ImportMigration()
   Set impwb = Workbooks.Open(inPath)
   ActiveWindow.WindowState = xlMinimized
 
-  'Test if the language of Imports is the same as language in the workbook 
+  'Test if the language of Imports is the same as language in the workbook
   'The user chooses to abort the import because the language is not correct
   If ControlLanguage(impwb) Then GoTo EndImport
 
@@ -715,7 +715,7 @@ Private Sub ImportMigration()
   AddVariablesNotTouchedToReport
 
   'Set all list auto to yes update
-  impwb.Close saveChanges:=False
+  impwb.Close savechanges:=False
   BusyApp
   actsh.Activate
   BusyApp
@@ -742,7 +742,7 @@ Private Sub ImportMigration()
     End If
   Else
     'The user can hide the import form here if there is no report to show
-    If MsgBox(trads.TranslatedValue("MSG_FinishImport"), _ 
+    If MsgBox(trads.TranslatedValue("MSG_FinishImport"), _
               vbQuestion + vbYesNo, _
               trads.TranslatedValue("MSG_Imports")) = vbYes Then
       adfobj.Hide
@@ -755,9 +755,9 @@ Private Sub ImportMigration()
 'Something ended the imports
 EndImport:
   On Error Resume Next
-  MsgBox trads.TranslatedValue("MSG_AbortImport"), _ 
-         vbOkOnly, trads.TranslatedValue("MSG_Imports")
-  impwb.Close saveChanges:=False
+  MsgBox trads.TranslatedValue("MSG_AbortImport"), _
+         vbOKOnly, trads.TranslatedValue("MSG_Imports")
+  impwb.Close savechanges:=False
   actsh.Activate
   NotBusyApp
   On Error GoTo 0
@@ -798,7 +798,7 @@ Private Sub ImportGeobase(Optional ByVal histoOnly As Boolean = False)
 
     BusyApp
 
-    Set geo = GeoObject()
+    Set geo = geoObject()
     Set currwb = CurrentWorkbook()
     'Open the geobase file
     Set impwb = Workbooks.Open(filePath)
@@ -822,8 +822,8 @@ Private Sub ImportGeobase(Optional ByVal histoOnly As Boolean = False)
     'Leaving the import process
     If MsgBox( _
           trads.TranslatedValue("MSG_FinishImportGeo"), _
-          vbQuestion + vbYesNo, _ 
-          trads.TranslatedValue("MSG_Imports") _ 
+          vbQuestion + vbYesNo, _
+          trads.TranslatedValue("MSG_Imports") _
           ) = vbYes Then
       Set adfobj = AdvanceFormObject()
       adfobj.Hide
@@ -836,7 +836,7 @@ Private Sub ImportGeobase(Optional ByVal histoOnly As Boolean = False)
 
 ErrImpGeo:
   On Error Resume Next
-  MsgBox trads.TranslatedValue("MSG_ErrImportGeo"), _ 
+  MsgBox trads.TranslatedValue("MSG_ErrImportGeo"), _
          vbCritical + vbOKOnly, _
         trads.TranslatedValue("MSG_Imports")
   NotBusyApp
@@ -856,10 +856,10 @@ Private Sub CheckRequirements(ByVal currwb As Workbook, ByVal repfobj As Object,
     If repfobj Is Nothing Then ThrowErrorUnableInstanciate "Form for import report object not defined"
     If adfobj Is Nothing Then ThrowErrorUnableInstanciate "Advanced form object not defined"
 
-    If TypeName(repfobj) <> "F_ImportRep" Then _ 
+    If TypeName(repfobj) <> "F_ImportRep" Then _
      ThrowErrorUnableInstanciate "The provided form is not F_ImportRep"
 
-    If TypeName(adfobj) <> "F_Advanced" Then _ 
+    If TypeName(adfobj) <> "F_Advanced" Then _
     ThrowErrorUnableInstanciate "The provided form for advanced is not F_Advanced"
   
     sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, _
@@ -869,7 +869,7 @@ Private Sub CheckRequirements(ByVal currwb As Workbook, ByVal repfobj As Object,
   
     For counter = sheetsArray.LowerBound To sheetsArray.UpperBound
       sheetName = sheetsArray.Item(counter)
-      If Not sheetExists(currwb, sheetName) Then _ 
+      If Not sheetExists(currwb, sheetName) Then _
        ThrowErrorUnableInstanciate " Worksheet " & sheetName & " Not found!"
     Next
   End Sub

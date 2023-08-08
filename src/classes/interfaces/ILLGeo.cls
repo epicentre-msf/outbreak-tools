@@ -45,44 +45,34 @@ End Property
 
 'Convert the code name to the actual name of the current language
 Public Property Get GeoNames(ByVal admname As String) As String: End Property
-
-'Get the Population of one administrative level (only for geoType)
-Public Property Get Population(ByVal adminLevel As Byte, _ 
-                             Optional ByVal concatValue As _
-                             String = vbNullString) As String
-End Property
-
-'Get the Population of one administrative level (only for geoType)
-Public Property Get Pcode(ByVal adminLevel As Byte, Optional ByVal concatValue As String = vbNullString) As String
-End Property
+Public Property Get IsEmpty() As Boolean: End Property
 
 'Translation
 Public Sub Translate(Optional ByVal rawNames As Boolean = False): End Sub
 
 'Import a new Geobase from a workbook
-Public Sub Import(ByVal fromWkb As Workbook, Optional ByVal histoOnly As Boolean = False): End Sub
+Public Sub Import(ByVal fromWkb As Workbook, _
+                  Optional ByVal histoOnly As Boolean = False)
+End Sub
 
 'Export to a workbook
-Public Sub ExportToFile(ByVal outputWkb As Workbook, Optional ByVal onlyHistory As Boolean = False)
+Public Sub ExportToFile(ByVal outputWkb As Workbook, _
+                        Optional ByVal onlyHistory As Boolean = False)
 End Sub
 
 Public Sub ExportToWkb(ByVal Wkb As Workbook): End Sub
-
 Public Sub Clear(): End Sub
-
-Public Sub ClearHistoric(): End Sub
-
+Public Sub ClearHistoric(Optional ByVal scope As Byte = 3): End Sub
+'Update historic of geobase
+Public Sub UpdateHistoric(ByVal newValue As String, _
+                          Optional ByVal scope As Byte = 0)
+End Sub
 'Update new Geobase
 Public Sub Update(ByVal pass As ILLPasswords): End Sub
-
 'Update dictionary with new geobase
-Public Sub UpdateDict(ByVal dict As ILLdictionary)
-End Sub
-
+Public Sub UpdateDict(ByVal dict As ILLdictionary): End Sub
 'Update show hide tables
 Public Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
 End Sub
-
 'Get the admin code from a selected admin
-
 Public Function AdminCode(ByVal selectedAdmin As String) As String:  End Function

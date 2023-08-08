@@ -44,5 +44,5 @@ Public Function Categories(ByVal varName As String) As BetterArray: End Function
 Public Sub Prepare(): End Sub
 
 'Export specifications to workbook
-Public Sub export(ByVal toWkb As Workbook): End Sub
+Public Sub Export(ByVal toWkb As Workbook): End Sub
 Public Sub ErrorManage(): End Sub

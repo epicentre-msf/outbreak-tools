@@ -17,7 +17,7 @@ Option Explicit
 
 'Exposed methods
 
-Public Property Get Varlists() As BetterArray: End Property
+Public Property Get varLists() As BetterArray: End Property
 Public Property Get FormulaTableList() As BetterArray: End Property
 
 Public Property Get Valid(Optional ByVal formulaType As String = "analysis") As Boolean: End Property

@@ -120,7 +120,7 @@ Private Property Get OutputSh(Optional ByVal scope _
   Case AnalysisScopeNormal
     Set OutputSh = ll.Wksh(trads.TranslatedValue("LLSHEET_Analysis"))
   Case AnalysisScopeSpatioTemporal
-    Set Outputsh = ll.Wksh(trads.TranslatedValue("LLSHEET_SpatioTemporalAnalysis"))
+    Set OutputSh = ll.Wksh(trads.TranslatedValue("LLSHEET_SpatioTemporalAnalysis"))
   End Select
 
 End Property
@@ -224,7 +224,7 @@ Private Sub AddCommands(Optional ByVal scope _
   'Update shapeLabel and commandName depending on the scope of the butto
   commandName = IIf(scope = AnalysisScopeSpatial, UPDATESPCOMMAND, UPDATEFILTERCOMMAND)
   shapeLabel = trads.TranslatedValue(SHPFILTERNAME)
-  Set but = Buttons.Create(outRng:=cellRng, _
+  Set but = Buttons.Create(outrng:=cellRng, _
                            codeName:=SHPFILTERNAME, _
                            scope:=ButtonScopeSmall)
   but.Add actionCommand:=commandName, shapeLabel:=shapeLabel
@@ -371,7 +371,7 @@ Private Sub AddGoTo(ByVal cellRng As Range, _
 End Sub
 
 'Write tables of one section: Global summary, univariate or bivariate or spatial
-Private Sub WriteTable(ByVal LoName As String, _
+Private Sub WriteTable(ByVal loName As String, _
                        Optional ByVal scope As AnalysisScope = AnalysisScopeNormal)
   Dim sh As Worksheet
   Dim outsh As Worksheet
@@ -382,7 +382,7 @@ Private Sub WriteTable(ByVal LoName As String, _
   Dim tabl As ICrossTable
   Dim tabform As ICrossTableFormula
   Dim gr As IGraphs
-  Dim Lo As ListObject
+  Dim Lo As listObject
   Dim specs As ITablesSpecs
   Dim lData As LinelistSpecs
   Dim goToSection As String
@@ -396,7 +396,7 @@ Private Sub WriteTable(ByVal LoName As String, _
   Dim design As ILLFormat
 
   'Variables for Time Series Tables
-  Dim tableName As String
+  Dim tablename As String
   Dim rowVar As String
   Dim minFormula As String
   Dim maxFormula As String
@@ -415,7 +415,7 @@ Private Sub WriteTable(ByVal LoName As String, _
   Set sh = Wksh()
   'Output Worksheet
   Set outsh = OutputSh(scope)
-  Set Lo = sh.ListObjects(LoName)
+  Set Lo = sh.ListObjects(loName)
   Set lData = LinelistData()
   Set trads = TransObject()
   Set formData = lData.FormulaDataObject()
@@ -451,7 +451,7 @@ Private Sub WriteTable(ByVal LoName As String, _
       tabl.Format design
 
       'Will be used to test if a sheet has a table
-      If IsEmpty(outsh.Range("RNG_HasTable")) Then  _
+      If IsEmpty(outsh.Range("RNG_HasTable")) Then _
       outsh.Range("RNG_HasTable").Value = "yes"
 
       'Minimum and maximum formula for Time series; GoTo Headers for time series
@@ -462,12 +462,12 @@ Private Sub WriteTable(ByVal LoName As String, _
         On Error GoTo 0
 
         rowVar = specs.Value("row")
-        tableName = vars.Value(colName:="table name", varName:=rowVar)
+        tablename = vars.Value(colName:="table name", varName:=rowVar)
         'Initialize the minimum and Maximum formulas
         If (prevSpecs Is Nothing) Then
           'First New section, minimum and maximum formulas
-          minFormula = "MIN(" & tableName & "[" & rowVar & "]" & ")"
-          maxFormula = "MAX(" & tableName & "[" & rowVar & "]" & ")"
+          minFormula = "MIN(" & tablename & "[" & rowVar & "]" & ")"
+          maxFormula = "MAX(" & tablename & "[" & rowVar & "]" & ")"
 
           'add goTo Headers
           Push goToHeader & ": " & tabl.TimeSeriesHeader(), scope:="header"
@@ -481,8 +481,8 @@ Private Sub WriteTable(ByVal LoName As String, _
           outsh.Range("MAX_MAX_DATE_" & prevSecId).formula = "= MAX(" & maxFormula & ")"
           outsh.Range("MIN_MIN_DATE_" & prevSecId).formula = "= MIN(" & minFormula & ")"
 
-          minFormula = "MIN(" & tableName & "[" & rowVar & "]" & ")"
-          maxFormula = "MAX(" & tableName & "[" & rowVar & "]" & ")"
+          minFormula = "MIN(" & tablename & "[" & rowVar & "]" & ")"
+          maxFormula = "MAX(" & tablename & "[" & rowVar & "]" & ")"
 
           'Add goTo Header to the previous section
           Set cellRng = outsh.Range("SECTION_" & prevSecId).Offset(1, -2)
@@ -491,8 +491,8 @@ Private Sub WriteTable(ByVal LoName As String, _
 
         ElseIf (Not specs.isNewSection()) Then
           'No new section, update minimum and maximum formula
-          minFormula = minFormula & ", " & "MIN(" & tableName & "[" & rowVar & "]" & ")"
-          maxFormula = maxFormula & ", " & "MAX(" & tableName & "[" & rowVar & "]" & ")"
+          minFormula = minFormula & ", " & "MIN(" & tablename & "[" & rowVar & "]" & ")"
+          maxFormula = maxFormula & ", " & "MAX(" & tablename & "[" & rowVar & "]" & ")"
 
           Push goToHeader & ": " & tabl.TimeSeriesHeader(), scope:="header"
         End If
@@ -577,9 +577,9 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
   Dim seriesCounter As Long
 
   'ListObject for graphs, table and title
-  Dim grLo As ListObject
-  Dim tabLo As ListObject
-  Dim grTitleLo As ListObject
+  Dim grLo As listObject
+  Dim tabLo As listObject
+  Dim grTitleLo As listObject
   Dim grSpecs As IGraphSpecs
   Dim grTitle As String
   Dim gr As IGraphs
@@ -709,17 +709,17 @@ Private Sub WriteAnalysis()
   'Add an Error Management for the tables
    On Error GoTo ErrHand
   ' --- Write Global summary
-   WriteTable LoName:=GLOBALSUMMARY, scope:=scope
+   WriteTable loName:=GLOBALSUMMARY, scope:=scope
    ' ---- Write Univariate Analysis
-   WriteTable LoName:=UNIVARIATE, scope:=scope
+   WriteTable loName:=UNIVARIATE, scope:=scope
    ' ---- Write the Bivariate Analysis
-   WriteTable LoName:=BIVARIATE, scope:=scope
+   WriteTable loName:=BIVARIATE, scope:=scope
 
    On Error GoTo 0
 
    'Add The goTo for sections
    Set cellRng = outsh.Cells(2, 1)
-   AddGoTo cellRng:=cellRng, goToprefix:="ua_", scope:="section"
+   AddGoTo cellRng:=cellRng, goToPrefix:="ua_", scope:="section"
    'Add the command
    AddCommands scope:=scope
 
@@ -737,7 +737,7 @@ Private Sub WriteAnalysis()
   'Write the tables of time series
   On Error GoTo ErrHand
 
-  WriteTable LoName:=TIMESERIES, scope:=scope
+  WriteTable loName:=TIMESERIES, scope:=scope
   'Write the graphs
   WriteTimeSeriesGraphs graphLoName:=GRAPHTIMESERIES, _
                         graphTitleLoName:=TITLEGRAPHTIMESERIES, _
@@ -762,7 +762,7 @@ Private Sub WriteAnalysis()
   PrepareSheet scope:=scope
 
   On Error GoTo ErrHand
-  WriteTable LoName:=SPATIAL, scope:=scope
+  WriteTable loName:=SPATIAL, scope:=scope
   On Error GoTo 0
 
   Set cellRng = outsh.Cells(2, 1)
@@ -778,11 +778,11 @@ Private Sub WriteAnalysis()
 
   'Spatio-Temporal Analysis worksheet ==========================================
   scope = AnalysisScopeSpatioTemporal
-  Set outsh = Outputsh(scope)
+  Set outsh = OutputSh(scope)
   PrepareSheet scope:=scope
 
   On Error GoTo ErrHand
-  WriteTable LoName:=SPATIOTEMPORAL, scope:=scope
+  WriteTable loName:=SPATIOTEMPORAL, scope:=scope
   On Error GoTo 0
 
   Set cellRng = outsh.Cells(2, 1)
@@ -794,7 +794,7 @@ Private Sub WriteAnalysis()
   Exit Sub
 
 ErrHand:
-    Debug.Print "Error: " & Err.Number & " " &  Err.Description
+    Debug.Print "Error: " & Err.Number & " " & Err.Description
     Resume Next
 End Sub
 

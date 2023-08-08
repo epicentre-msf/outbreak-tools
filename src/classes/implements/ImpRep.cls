@@ -2,13 +2,13 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-
 Attribute VB_Name = "ImpRep"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Import Reports"
+
 
 '@PredeclaredId
 '@Folder("Linelist")
@@ -40,7 +40,7 @@ Public Function Create(ByVal formObj As Object, impsh As Worksheet) As IImpRep
   
   With New ImpRep
     Set .Wksh = impsh
-    Set .FormObject = formObj
+    Set .formObject = formObj
     Set Create = .Self()
   End With
 
@@ -58,20 +58,20 @@ Public Property Set Wksh(ByVal impsh As Worksheet)
   Set this.impsh = impsh
 End Property
 
-Public Property Get FormObject() As Object
-  Set FormObject = this.impForm
+Public Property Get formObject() As Object
+  Set formObject = this.impForm
 End Property
 
-Public Property Set FormObject(ByVal fobj As Object)
+Public Property Set formObject(ByVal fobj As Object)
   Set this.impForm = fobj
 End Property
 
 'Clear the report
 Private Sub Clear()
   Dim sh As Worksheet
-  Dim Lo As ListObject
+  Dim Lo As listObject
   Set sh = Wksh()
-  For Each Lo in sh.ListObjects
+  For Each Lo In sh.ListObjects
     'DatabodyRange could be nothing resulting in Error
     If Not (Lo.DataBodyRange Is Nothing) Then Lo.DataBodyRange.Delete
   Next
@@ -96,9 +96,9 @@ End Property
 Private Sub AddSheetsToReport(ByVal scope As Byte, ByVal sheetName As String)
   Dim sh As Worksheet
   Dim loName As String
-  Dim Lo As ListObject
+  Dim Lo As listObject
   Dim rng As Range
-  Dim endRow As Long
+  Dim EndRow As Long
 
   Set sh = Wksh()
   loName = Switch(scope = 1, TABSHEETNOTIMP, scope = 2, TABSHEETNOTTOU)
@@ -106,41 +106,41 @@ Private Sub AddSheetsToReport(ByVal scope As Byte, ByVal sheetName As String)
   Set Lo = sh.ListObjects(loName)
 
   'Where to paste the data
-  If Lo.DataBodyRange Is Nothing Then 
-    endRow = 2
+  If Lo.DataBodyRange Is Nothing Then
+    EndRow = 2
   Else
-    endRow = Lo.Range.Rows.Count + 1  
+    EndRow = Lo.Range.Rows.Count + 1
   End If
 
-  Lo.Range.Cells(endRow, 1).Value = sheetName
+  Lo.Range.Cells(EndRow, 1).Value = sheetName
   
   'resize the listObject
-  Set rng = sh.Range(Lo.Range.Cells(1, 1), Lo.Range.Cells(endRow, 1))
+  Set rng = sh.Range(Lo.Range.Cells(1, 1), Lo.Range.Cells(EndRow, 1))
   Lo.Resize rng
 
   SetSortedToFalse
 End Sub
 
 'Test if the import report sheet contains sheet not imported or not touched
-Private Property Get ContainsSheet(ByVal scope As Byte,  _ 
+Private Property Get ContainsSheet(ByVal scope As Byte, _
                                   ByVal sheetName As String) As Boolean
 
   Dim rng As Range
   Dim sh As Worksheet
   Dim loName As String
-  Dim contains As Boolean
+  Dim Contains As Boolean
 
-  contains = False
+  Contains = False
 
   Set sh = Wksh()
   loName = Switch(scope = 1, TABSHEETNOTIMP, scope = 2, TABSHEETNOTTOU)
   Set rng = sh.ListObjects(loName).DataBodyRange
 
   If Not (rng Is Nothing) Then
-    contains = Not (rng.Find(What:=sheetName, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+    Contains = Not (rng.Find(What:=sheetName, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
   End If
 
-  ContainsSheet = contains
+  ContainsSheet = Contains
 End Property
 
 
@@ -149,43 +149,43 @@ End Property
 'in imported workbook
 
 'Add only one variable to the report sheet
-Private Sub AddVariablesToReport(ByVal scope As Byte, ByVal sheetName As String, _ 
+Private Sub AddVariablesToReport(ByVal scope As Byte, ByVal sheetName As String, _
                                  ByVal varName As String)
   Dim sh As Worksheet
-  Dim loName As String 
-  Dim Lo As ListObject
+  Dim loName As String
+  Dim Lo As listObject
   Dim rng As Range
-  Dim endRow As Long
+  Dim EndRow As Long
 
   Set sh = Wksh()
   loName = Switch(scope = 1, TABSVARSNOTIMP, scope = 2, TABSVARSNOTTOU)
   Set Lo = sh.ListObjects(loName)
 
   If Lo.DataBodyRange Is Nothing Then
-    endRow = 2
+    EndRow = 2
   Else
-    endRow = Lo.Range.Rows.Count + 1
+    EndRow = Lo.Range.Rows.Count + 1
   End If
 
   'write the variables and the sheetName
-  Lo.Range.Cells(endRow, 1).Value = varName
-  Lo.Range.Cells(endRow, 2).Value = sheetName
+  Lo.Range.Cells(EndRow, 1).Value = varName
+  Lo.Range.Cells(EndRow, 2).Value = sheetName
 
   'Resize the listObject
-  Set rng = sh.Range(Lo.Range.Cells(1, 1), Lo.Range.Cells(endRow, 2))
+  Set rng = sh.Range(Lo.Range.Cells(1, 1), Lo.Range.Cells(EndRow, 2))
   Lo.Resize rng
 
   SetSortedToFalse
 End Sub
 
 'Add a list of variables to the report sheet
-Private Sub AddVariablesListToReport(ByVal scope As Byte, ByVal sheetName As String, _ 
+Private Sub AddVariablesListToReport(ByVal scope As Byte, ByVal sheetName As String, _
                                      ByVal varsList As BetterArray)
   Dim sh As Worksheet
-  Dim loName As String 
-  Dim Lo As ListObject
+  Dim loName As String
+  Dim Lo As listObject
   Dim rng As Range
-  Dim endRow As Long
+  Dim EndRow As Long
   Dim counter As Long
 
   Set sh = Wksh()
@@ -194,36 +194,36 @@ Private Sub AddVariablesListToReport(ByVal scope As Byte, ByVal sheetName As Str
   Set Lo = sh.ListObjects(loName)
 
   If Lo.DataBodyRange Is Nothing Then
-    endRow = 2
+    EndRow = 2
   Else
-    endRow = Lo.Range.Rows.Count + 1
+    EndRow = Lo.Range.Rows.Count + 1
   End If
 
   'write the list of the variables
   'The first column is for variables, the second one for the corresponding sheets
-  varsList.ToExcelRange Lo.Range.Cells(endRow, 1)
+  varsList.ToExcelRange Lo.Range.Cells(EndRow, 1)
 
   'Add the sheetNames
-  For counter = endRow To varsList.Length + endRow - 1
+  For counter = EndRow To varsList.Length + EndRow - 1
     Lo.Range.Cells(counter, 2).Value = sheetName
   Next
 
   'Resize the listObject
 
-  Set rng = sh.Range(Lo.Range.Cells(1, 1), Lo.Range.Cells(varsList.Length + endRow - 1, 2))
+  Set rng = sh.Range(Lo.Range.Cells(1, 1), Lo.Range.Cells(varsList.Length + EndRow - 1, 2))
   Lo.Resize rng
 
-  SetSortedToFalse    
+  SetSortedToFalse
 End Sub
 
 'Test if the report contains a variable
-Private Property Get ContainsVariable(ByVal scope As Byte, ByVal sheetName As String, _ 
+Private Property Get ContainsVariable(ByVal scope As Byte, ByVal sheetName As String, _
                                       ByVal varName As String) As Boolean
   
   Dim rng As Range
   Dim sh As Worksheet
   Dim loName As String
-  Dim contains As Boolean
+  Dim Contains As Boolean
   Dim cellRng As Range
   Dim sh As Worksheet
 
@@ -231,7 +231,7 @@ Private Property Get ContainsVariable(ByVal scope As Byte, ByVal sheetName As St
   Sort
   Set sh = Wksh()
 
-  contains = False
+  Contains = False
   loName = Switch(scope = 1, TABSVARSNOTIMP, scope = 2, TABSVARSNOTTOU)
 
   'The second column is for worksheets
@@ -240,7 +240,7 @@ Private Property Get ContainsVariable(ByVal scope As Byte, ByVal sheetName As St
   'Test if the sheet name exists before testing variable
   If Not rng Is Nothing Then
     On Error Resume Next
-    Set cellRng = rng.Find(What:=sheetName, LookAt:=xlWhole, MatchCase:=True)
+    Set cellRng = rng.Find(What:=sheetName, lookAt:=xlWhole, MatchCase:=True)
     On Error GoTo 0
 
     If Not (cellRng Is Nothing) Then
@@ -248,28 +248,28 @@ Private Property Get ContainsVariable(ByVal scope As Byte, ByVal sheetName As St
 
         'The first column contains the variable names, so I will test at the left
         If cellRng.Offset(, -1).Value = varName Then
-          contains = True
+          Contains = True
           Exit Do
         End If
 
-        Set cellRng = cellRng.Offset(1) 
+        Set cellRng = cellRng.Offset(1)
       Loop
-    End If      
+    End If
   End If
 
-  ContainsVariable = contains
+  ContainsVariable = Contains
 End Property
 
 'Sort the listObjects on the different columns
 Private Sub Sort()
   Dim rng As Range
-  Dim Lo As ListObject
+  Dim Lo As listObject
   Dim sh As Worksheet
 
   Set sh = Wksh()
   'Sort sheets not imported
   
-  If isSorted() Then Exit Sub
+  If IsSorted() Then Exit Sub
 
   Set Lo = sh.ListObjects(TABSHEETNOTIMP)
   Set rng = Lo.Range
@@ -307,9 +307,9 @@ Private Sub Show()
   Dim sh As Worksheet
   Dim fobj As Object
   Dim rng As Range
-  Dim Lo As ListObject
+  Dim Lo As listObject
 
-  Set fobj = FormObject()
+  Set fobj = formObject()
 
   'Sheets Not imported
   Set sh = Wksh()
@@ -320,7 +320,7 @@ Private Sub Show()
   fobj.LST_ImpRepSheet.List = rng.Value
 
   'Sheets Not touched
-  Set Lo =  sh.ListObjects(TABSHEETNOTTOU)
+  Set Lo = sh.ListObjects(TABSHEETNOTTOU)
   Set rng = Lo.Range.Offset(1)
   fobj.LST_ImpLLSheet.ColumnCount = 1
   fobj.LST_ImpLLSheet.List = rng.Value
@@ -358,8 +358,8 @@ Private Sub CheckRequirements(ByVal formObj As Object, ByVal impsh As Worksheet)
 End Sub
   
 'Returns true or false if a sheet or a range exists
-Private Sub LoExists(ByVal sh As WorkSheet, ByVal loName As String)
-  Dim Lo As ListObject                         
+Private Sub LoExists(ByVal sh As Worksheet, ByVal loName As String)
+  Dim Lo As listObject
   Dim checkExists As Boolean
 
   On Error Resume Next
@@ -406,8 +406,8 @@ Private Property Get IImpRep_ContainsSheet(ByVal scope As Byte, ByVal sheetName 
   IImpRep_ContainsSheet = ContainsSheet(scope, sheetName)
 End Property
 
-Private Property Get IImpRep_ContainsVariable(ByVal scope As Byte, _ 
-                                              ByVal sheetName As String, _ 
+Private Property Get IImpRep_ContainsVariable(ByVal scope As Byte, _
+                                              ByVal sheetName As String, _
                                               ByVal varName As String) As Boolean
 
   IImpRep_ContainsVariable = ContainsVariable(scope, sheetName, varName)

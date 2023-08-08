@@ -18,7 +18,7 @@ Option Explicit
 
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
                               Optional ByVal includeHeaders As Boolean = False, _
-                              Optional ByVal strictSearch As Boolean = False) _ 
+                              Optional ByVal strictSearch As Boolean = False) _
                               As Range
 End Property
 Public Property Get HeaderRange() As Range: End Property
@@ -28,7 +28,7 @@ Public Property Get Value(ByVal colName As String, ByVal keyName As String) As S
 
 
 Public Sub Import(ByVal impTab As Object, _
-                  Optional ByVal pasteAtBottom As Boolean = False, _ 
+                  Optional ByVal pasteAtBottom As Boolean = False, _
                   Optional ByVal strictColumnSearch As Boolean = False)
 End Sub
 Public Sub Clean(): End Sub
@@ -42,7 +42,7 @@ Public Sub SetValidation(ByVal colName As String, _
 End Sub
 
 Public Property Get ImportColumnsNotFound() As BetterArray
-End Property  
+End Property
 'Test if there are imports in the custom table
 Public Property Get HasColumnsNotImported() As Boolean
 End Property

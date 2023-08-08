@@ -83,8 +83,8 @@ Private Property Get Wkb() As Workbook
        'Check if we could move to ribbon menu or use custom workbook
        If mainobj.HasTemplate() Then
             BusyApp
-            Set this.outWkb = Workbooks.Open(mainObj.ValueOf("temppath"))
-            this.outWkb.SaveAs FileName:=outDir & sep & "__temp.xlsb", fileformat:=xlExcel12
+            Set this.outWkb = Workbooks.Open(mainobj.ValueOf("temppath"))
+            this.outWkb.SaveAs fileName:=outDir & sep & "__temp.xlsb", fileFormat:=xlExcel12
         Else
             BusyApp
             Set this.outWkb = Workbooks.Add
@@ -112,7 +112,7 @@ End Function
 '1- For choices_manual
 '2- For choices_custom
 
-Private Property Get Dropdown(Optional ByVal scope As Byte = 1) _ 
+Private Property Get Dropdown(Optional ByVal scope As Byte = 1) _
                               As IDropdownLists
     Dim sh As Worksheet
     Dim listSheetName As String
@@ -167,7 +167,7 @@ Private Sub AddOutputSheet(ByVal sheetName As String, _
     Dim actSheetName As String
 
     Set outWkb = Wkb()
-    actSheetName = IIF(usePrinted, PRINTPREFIX & sheetName, sheetName)
+    actSheetName = IIf(usePrinted, PRINTPREFIX & sheetName, sheetName)
     'Truncate sheetnames to 30 characters
     actSheetName = Left(actSheetName, SHEETNAMEMAXLENGTH)
     If sheetExists(actSheetName) Then ThrowError "The sheet " & actSheetName & " already exists in the output workbook"
@@ -184,7 +184,7 @@ Private Property Get Wksh(ByVal sheetName As String, Optional ByVal usePrinted A
     Dim actSheetName As String 'actual sheet name either with the printed prefix, or not
 
     'Test if the sheet Exists
-    actSheetName = IIF(usePrinted, PRINTPREFIX & sheetName, sheetName)
+    actSheetName = IIf(usePrinted, PRINTPREFIX & sheetName, sheetName)
     If Not sheetExists(actSheetName) Then ThrowError "The sheet " & sheetName & "does not exists in current workbook"
     Set outWkb = Wkb()
     Set sh = outWkb.Worksheets(actSheetName)
@@ -225,7 +225,7 @@ Private Sub TransferCode(moduleName As String, scope As CodeScope)
     On Error GoTo 0
 
     Set codeObject = inpWkb.VBProject.VBComponents(moduleName)
-    codeObject.export outPath
+    codeObject.Export outPath
 
     Set componentObject = outWkb.VBProject.VBComponents
     componentObject.Import outPath
@@ -253,9 +253,9 @@ Private Sub CopyCodeModule(ByVal moduleName As String)
     'Only on template files
     If Not mainobj.HasTemplate() Then Exit Sub
 
-    Set impwkb = lData.specswkb()
+    Set impWkb = lData.specswkb()
     Set outWkb = Wkb()
-    Set vbProj = impwkb.VBProject
+    Set vbProj = impWkb.VBProject
 
     'Extract the code from the actual vbProject
     With vbProj
@@ -357,7 +357,7 @@ Private Sub TransferForm(formName As String)
     formPath = outDir & sep & "CopieUsf.frm"
 
     'Copy the frame to the output directory
-    inpWkb.VBProject.VBComponents(formName).export formPath
+    inpWkb.VBProject.VBComponents(formName).Export formPath
     outWkb.VBProject.VBComponents.Import formPath
 
     DoEvents
@@ -393,7 +393,7 @@ Private Sub PrepareTemporarySheets()
     '- the geobase has been updated manually by the user
     '.. You can add here some ranges for further analysis
     namesArray.Clear
-    namesArray.Push "RNG_UpdateListAuto", "RNG_ImportDone", "RNG_GeoUpdateManual" 
+    namesArray.Push "RNG_UpdateListAuto", "RNG_ImportDone", "RNG_GeoUpdateManual"
     Set rng = sh.Cells(1, 1)
     For counter = namesArray.LowerBound To namesArray.UpperBound
         rng.Name = namesArray.Item(counter)
@@ -439,9 +439,9 @@ Private Sub PrepareTemporarySheets()
     Set sh = outWkb.Worksheets(sheetName)
     Set rng = sh.Range(sh.Cells(1, 1), sh.Cells(2, 1))
     namesArray.Clear
-    namesArray.Push "GS_analysis_ids", "UA_analysis_ids", _ 
+    namesArray.Push "GS_analysis_ids", "UA_analysis_ids", _
                      "BA_analysis_ids", "TS_analysis_ids", _
-                     "SP_analysis_ids", "SPTEMP_analysis_ids" 
+                     "SP_analysis_ids", "SPTEMP_analysis_ids"
     For counter = namesArray.LowerBound To namesArray.UpperBound
         actName = namesArray.Item(counter)
         'Add headers for table IDs
@@ -454,8 +454,8 @@ Private Sub PrepareTemporarySheets()
     'Add ranges for each of the analysis worksheets names (avoid using lltrads)
     'UA and bivariate sheet, TS sheet, spatial sheet and spatio-temporal sheet
     namesArray.Clear
-    namesArray.Push "RNG_SheetUAName", "RNG_SheetTSName", _ 
-                    "RNG_SheetSPName", "RNG_SheetSPTempName" 
+    namesArray.Push "RNG_SheetUAName", "RNG_SheetTSName", _
+                    "RNG_SheetSPName", "RNG_SheetSPTempName"
     Set rng = rng.Offset(, 2)
     For counter = namesArray.LowerBound To namesArray.UpperBound
         rng.Name = namesArray.Item(counter)
@@ -490,12 +490,12 @@ Private Sub Prepare()
     Set mainobj = lData.MainObject()
 
     'temporary sheet Names
-    sheetsList.Push lData.TemporarySheetName(TemporarySingle), _ 
+    sheetsList.Push lData.TemporarySheetName(TemporarySingle), _
         lData.TemporarySheetName(TemporarySheetList), _
         lData.TemporarySheetName(TemporarySheetUpdates), _
-        lData.TemporarySheetName(TemporarySheetAnalysis), _ 
+        lData.TemporarySheetName(TemporarySheetAnalysis), _
         lData.TemporarySheetName(TemporarySheetImport), _
-        lData.TemporarySheetName(TemporarySpatial), _ 
+        lData.TemporarySheetName(TemporarySpatial), _
         lData.TemporarySheetName(TemporaryShowHide)
 
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
@@ -509,7 +509,7 @@ Private Sub Prepare()
     PrepareTemporarySheets
 
     'Export differents parts to the workbook (dictionary, choices, translation, geo)
-    lData.export outWkb
+    lData.Export outWkb
 
     DoEvents
 
@@ -517,7 +517,7 @@ Private Sub Prepare()
     'Spatio-temporal Analysis As well as custom sheets (custom choices)
 
     sheetsList.Clear
-    sheetsList.Push "LLSHEET_Analysis", "LLSHEET_TemporalAnalysis", _  
+    sheetsList.Push "LLSHEET_Analysis", "LLSHEET_TemporalAnalysis", _
                     "LLSHEET_SpatialAnalysis", "LLSHEET_SpatioTemporalAnalysis", _
                     "LLSHEET_CustomChoice", "LLSHEET_CustomPivotTable"
 
@@ -526,7 +526,7 @@ Private Sub Prepare()
 
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         sheetName = trans.TranslatedValue(sheetsList.Item(counter))
-        AddOutputSheet sheetName, xlsheetvisible
+        AddOutputSheet sheetName, xlSheetVisible
     Next
 
     sheetsList.Clear
@@ -539,14 +539,14 @@ Private Sub Prepare()
     sheetsList.Reverse
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         sheetName = sheetsList.Item(counter)
-        AddOutputSheet sheetName, xlsheetvisible
+        AddOutputSheet sheetName, xlSheetVisible
     Next
 
 
     'Add admin sheet only if the user chooses buttons instead of ribbon linelist
     If Not mainobj.HasTemplate() Then
         'Admin sheet Name
-        AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlsheetvisible
+        AddOutputSheet trans.TranslatedValue("LLSHEET_Admin"), xlSheetVisible
         'Prepare the LinelistAdmin sheet
         PrepareAdmin
     End If
@@ -567,9 +567,9 @@ Private Sub Prepare()
                      "ILLTranslations", "OSFiles", "IOSFiles", _
                     "Translation", "ITranslation", "LLVariables", _
                     "ILLVariables", "ILLSpatial", "LLSpatial", _
-                    "DropdownLists", "IDropdownLists", "LLShowHide", _ 
-                     "ILLShowHide", "CustomTable", "ICustomTable", _ 
-                    "OutputSpecs", "IOutputSpecs", _ 
+                    "DropdownLists", "IDropdownLists", "LLShowHide", _
+                     "ILLShowHide", "CustomTable", "ICustomTable", _
+                    "OutputSpecs", "IOutputSpecs", _
                     "ImpRep", "IImpRep", "ImpSpecs", "IImpSpecs", _
                     "UpVal", "IUpVal"
 
@@ -583,7 +583,7 @@ Private Sub Prepare()
     'Send the modules to the linelist
     codesList.Clear
     codesList.Push "Helpers", "LinelistConstants", "LinelistCustomFunctions", _
-                    "LinelistGeo", "LinelistTranslation", "LinelistEvents", _ 
+                    "LinelistGeo", "LinelistTranslation", "LinelistEvents", _
                     "EventsSpatialAnalysis", _
                     "EventsLinelistButtons", "EventsGlobalAnalysis"
 
@@ -597,7 +597,7 @@ Private Sub Prepare()
 
     'Transfer the forms
     codesList.Clear
-    codesList.Push   "F_Advanced", "F_Export", "F_ExportMig", _ 
+    codesList.Push "F_Advanced", "F_Export", "F_ExportMig", _
                      "F_Geo", "F_ImportRep", _
                      "F_ShowHideLL", "F_ShowHidePrint", "F_ShowVarLabels"
 
@@ -639,13 +639,13 @@ Private Sub PrepareAdmin()
 
     'Advance button
     Set rng = sh.Cells(2, 3)
-    Set but = Buttons.Create(outRng:=rng, codeName:=SHPADVANCE, scope:=ButtonScopeLarge)
+    Set but = Buttons.Create(outrng:=rng, codeName:=SHPADVANCE, scope:=ButtonScopeLarge)
     but.Add actionCommand:=ADVANCEDCOMMAND, shapeLabel:=trads.TranslatedValue(SHPADVANCE)
     but.Format design
 
     'Import button
     Set rng = sh.Cells(2, 5)
-    Set but = Buttons.Create(outRng:=rng, codeName:=SHPEXPORT, scope:=ButtonScopeLarge)
+    Set but = Buttons.Create(outrng:=rng, codeName:=SHPEXPORT, scope:=ButtonScopeLarge)
     but.Add actionCommand:=EXPORTCOMMAND, shapeLabel:=trads.TranslatedValue(SHPEXPORT)
     but.Format design
 
@@ -704,7 +704,7 @@ Private Sub SaveLL()
     'Protect the workbook structure from eventual deletion/renaming of a worksheet
     passobj.ProtectWkb outWkb
 
-    outWkb.SaveAs FileName:=outPath, fileformat:=xlExcel12, Password:=passwd, _
+    outWkb.SaveAs fileName:=outPath, fileFormat:=xlExcel12, Password:=passwd, _
                   ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     outWkb.Close
     TemporaryFolder Create:=False

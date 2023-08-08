@@ -35,7 +35,7 @@ Public Sub Prepare(): End Sub
 
 Public Function sheetExists(ByVal sheetName As String) As Boolean: End Function
 'Add output sheet
-Public Sub AddOutputSheet(ByVal sheetName As String,  _
+Public Sub AddOutputSheet(ByVal sheetName As String, _
                           Optional ByVal Hide As Long = xlSheetVeryHidden, _
                           Optional ByVal usePrinted As Boolean = False)
 End Sub

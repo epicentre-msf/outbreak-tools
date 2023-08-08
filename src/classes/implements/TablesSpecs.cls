@@ -196,7 +196,7 @@ Public Property Get HasGraph() As Boolean
     Select Case TableType
     Case TypeGlobalSummary
         HasGraph = False
-    Case TypeUnivariate , TypeSpatioTemporal
+    Case TypeUnivariate, TypeSpatioTemporal
         HasGraph = (Value("graph") = "yes")
     Case TypeBivariate
         HasGraph = (Value("graph") = "percentage" Or Value("graph") = "values" Or Value("graph") = "both")
@@ -248,10 +248,10 @@ Public Property Get ValidTable() As Boolean
 
     Select Case TableType
     Case TypeGlobalSummary
-        Valid = (Value("label") <> vbNullString) And _ 
+        Valid = (Value("label") <> vbNullString) And _
                 (Value("function") <> vbNullString)
     Case TypeUnivariate
-        Valid = vars.Contains(rowVar) And _ 
+        Valid = vars.Contains(rowVar) And _
                 (rowControl = "choice_manual" Or rowControl = "choice_formula")
     Case TypeBivariate
         Valid = vars.Contains(rowVar) And vars.Contains(colVar) And _
@@ -259,20 +259,20 @@ Public Property Get ValidTable() As Boolean
                 (rowControl = "choice_manual" Or rowControl = "choice_formula")
     Case TypeTimeSeries
         rowType = vars.Value(colName:="variable type", varName:=rowVar)
-        Valid = (colVar = vbNullString Or  _ 
-                 colControl = "choice_manual" Or _ 
-                 colControl = "choice_formula") And _ 
+        Valid = (colVar = vbNullString Or _
+                 colControl = "choice_manual" Or _
+                 colControl = "choice_formula") And _
                 (rowType = "date")
     Case TypeSpatial
-        Valid = (dict.VariableExists("adm1_" & rowVar) Or _ 
+        Valid = (dict.VariableExists("adm1_" & rowVar) Or _
                  dict.VariableExists("hf_" & rowVar)) And _
-                (colVar = vbNullString Or _ 
-                 colControl = "choice_manual" Or _ 
+                (colVar = vbNullString Or _
+                 colControl = "choice_manual" Or _
                  colControl = "choice_formula")
 
     Case TypeSpatioTemporal
          rowType = vars.Value(colName:="variable type", varName:=rowVar)
-         Valid = (dict.VariableExists("adm1_" & colVar) Or _ 
+         Valid = (dict.VariableExists("adm1_" & colVar) Or _
                  dict.VariableExists("hf_" & colVar)) And _
                  (rowType = "date")
 
@@ -290,14 +290,14 @@ End Property
 Private Function ColumnExists(ByVal colName As String) As Boolean
     Dim hRng As Range
     Set hRng = HeaderRange
-    ColumnExists = (Not hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False) Is Nothing)
+    ColumnExists = (Not hRng.Find(What:=colName, lookAt:=xlPart, MatchCase:=False) Is Nothing)
 End Function
 
 Private Function ColumnIndex(ByVal colName As String) As Long
     Dim hRng As Range
     Set hRng = HeaderRange
     If ColumnExists(colName) Then
-        ColumnIndex = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False).Column - hRng.Column + 1
+        ColumnIndex = hRng.Find(What:=colName, lookAt:=xlPart, MatchCase:=False).Column - hRng.Column + 1
     Else
         ColumnIndex = -1
     End If
