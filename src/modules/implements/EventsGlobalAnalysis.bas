@@ -9,10 +9,8 @@ Option Private Module
 
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const TRADSHEET As String = "Translations"
-Private Const PASSSHEET As String = "__pass"
 
 Private tradsmess As ITranslation   'Translation of messages
-Private pass As ILLPasswords
 Private lltrads As ILLTranslations
 Private wb As Workbook
 
@@ -45,12 +43,12 @@ Private Sub InitializeTrads()
     'Those are private elms defined on to the top
     Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
     Set tradsmess = lltrads.TransObject()
-    Set pass = LLPasswords.Create(wb.Worksheets(PASSSHEET))
 End Sub
 
 '@Description("Update the table which contains filters data in the linelist")
 '@EntryPoint
 Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
+    Attribute UpdateFilterTables.VB_Description = "Update the table which contains filters data in the linelist"
 
     Dim sh As Worksheet                        'The actual worksheet
     Dim filtsh As Worksheet                    'Filtered worksheet
@@ -188,9 +186,9 @@ Sub EventValueChangeAnalysis(Target As Range)
         goToHeader = lltrads.Value("gotoheader")
         goToGraph = lltrads.Value("gotograph")
 
-        sLabel = Replace(Target.Value, goToSection & ": ", "")
-        sLabel = Replace(sLabel, goToHeader & ": ", "")
-        sLabel = Replace(sLabel, goToGraph & ": ", "")
+        sLabel = Replace(Target.Value, goToSection & ": ", vbNullString)
+        sLabel = Replace(sLabel, goToHeader & ": ", vbNullString)
+        sLabel = Replace(sLabel, goToGraph & ": ", vbNullString)
 
         Debug.Print sLabel
         Set rngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, lookAt:=xlWhole, _

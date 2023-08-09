@@ -9,9 +9,10 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of main class"
 
+'@Interface
 '@Folder("Designer")
 '@ModuleDescription("Interface of main class")
-'@Interface
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

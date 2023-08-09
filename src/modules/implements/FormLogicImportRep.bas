@@ -2,6 +2,7 @@ Attribute VB_Name = "FormLogicImportRep"
 Attribute VB_Description = "Form implementation of Reports on import"
 
 '@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
+'@ModuleDescription("Form implementation of Reports on import")
 
 Option Explicit
 

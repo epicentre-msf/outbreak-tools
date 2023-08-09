@@ -9,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Add specifications for graphs in analysis"
 
+'@IgnoreModule IIfSideEffect, ExcelMemberMayReturnNothing
 '@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("Add specifications for graphs in analysis")

@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Export Object of the linelist"
 
 
-
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Interface
 '@Folder("Linelist")

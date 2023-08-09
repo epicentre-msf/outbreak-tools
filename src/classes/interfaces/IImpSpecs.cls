@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of Import Specs"
 
-
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@Folder("Linelist")
 '@Interface
 '@ModuleDescription("Interface of Import Specs")

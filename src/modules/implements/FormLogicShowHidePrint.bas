@@ -7,19 +7,19 @@ Attribute VB_Description = "Events show/hide in the printed linelist"
 Option Explicit
 
 Private Sub LST_PrintNames_Click()
-    ClickListShowHide (LST_PrintNames.ListIndex)
+    ClickListShowHide Me.LST_PrintNames.ListIndex
 End Sub
 
 Private Sub OPT_PrintShowHoriz_Click()
-    ClickOptionsShowHide (LST_PrintNames.ListIndex)
+    ClickOptionsShowHide Me.LST_PrintNames.ListIndex
 End Sub
 
 Private Sub OPT_PrintShowVerti_Click()
-    ClickOptionsShowHide (LST_PrintNames.ListIndex)
+    ClickOptionsShowHide Me.LST_PrintNames.ListIndex
 End Sub
 
 Private Sub OPT_Hide_Click()
-    ClickOptionsShowHide (LST_PrintNames.ListIndex)
+    ClickOptionsShowHide Me.LST_PrintNames.ListIndex
 End Sub
 
 Private Sub CMD_PrintBack_Click()
@@ -47,7 +47,7 @@ Private Sub CMD_PrintLL_Click()
         .PrintHeadings = False
         .PrintGridlines = False
         .PrintTitleRows = "$5:$8" 'Those are rows to always keep on title
-        .PrintTitleColumns = ""
+        .PrintTitleColumns = vbNullString
         .PrintComments = xlPrintNoComments
         .PrintNotes = False
         'The quality of the print
@@ -76,5 +76,5 @@ Private Sub CMD_PrintLL_Click()
 End Sub
 
 Private Sub CMD_ColWidth_Click()
-    ClickColWidth (LST_PrintNames.ListIndex)
+    ClickColWidth Me.LST_PrintNames.ListIndex
 End Sub

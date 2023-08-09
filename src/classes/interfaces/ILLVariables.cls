@@ -8,15 +8,15 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
-
+'@Interface
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of Variable class")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
 'Properties
-Private Property Get Dictionary() As ILLdictionary: End Property
+Public Property Get Dictionary() As ILLdictionary: End Property
 
 
 'Exposed methods

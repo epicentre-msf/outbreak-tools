@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of ")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 'Differents scopes for graphs
 Public Enum GraphScope

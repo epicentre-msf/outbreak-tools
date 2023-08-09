@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Specifications for exports in the linelist"
 
-
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Specifications for exports in the linelist")

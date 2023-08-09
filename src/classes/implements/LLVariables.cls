@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Dictionary")
 '@ModuleDescription("Linelist Variable Class")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -165,7 +165,7 @@ End Sub
 
 'Properties
 Public Property Get ILLVariables_Dictionary() As ILLdictionary
-    Set ILLVariables_Dictionary = Dictionary
+    Set ILLVariables_Dictionary = Dictionary()
 End Property
 
 'Exposed methods

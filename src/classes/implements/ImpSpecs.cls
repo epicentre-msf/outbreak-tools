@@ -13,6 +13,7 @@ Attribute VB_Description = "Specifications for import in the linelist"
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Specifications for import in the linelist")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IImpSpecs
@@ -405,7 +406,6 @@ End Sub
 Private Sub ClearData()
 
   Dim sh As Worksheet
-  Dim sheetTag As String
   Dim pass As ILLPasswords
   Dim currwb As Workbook
   Dim Lo As listObject
@@ -538,10 +538,6 @@ Private Property Get HasData() As Boolean
   Dim Lo As listObject
   Dim counter As Long
 
-  Dim proceed As Byte
-  Dim inputwbName As String
-  Dim NotGood As Boolean
-
   testData = False
 
   Set currwb = CurrentWorkbook()
@@ -576,7 +572,6 @@ Private Function ControlHasData() As Boolean
   Dim trads As ITranslation
   Dim testData As Boolean 'Test if the workbook contains data
   Dim proceed As Byte
-  Dim continueAsking As Boolean
   
   Set trads = MessagesTrads()
 
@@ -892,12 +887,6 @@ Private Sub CheckRequirements(ByVal currwb As Workbook, ByVal repfobj As Object,
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 515, CLASSNAME, _
      "Unable to create an instance of the class " & CLASSNAME & ": " & errorMessage
-End Sub
-
-
-'Interfaces --------------------------------------------------------------------
-Private Sub ThrowError(ByVal errorMessage As String)
-  Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 Private Sub IImpSpecs_ImportGeobase(Optional ByVal histoOnly As Boolean = False)

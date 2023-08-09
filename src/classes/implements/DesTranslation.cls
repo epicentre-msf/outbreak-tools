@@ -7,7 +7,10 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Translation of the designer"
 
+
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Translation of the designer")

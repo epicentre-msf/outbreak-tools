@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of DataSheet Object"
 
-
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@Interface
 '@Folder("General")
 '@ModuleDescription("Interface of DataSheet Object")

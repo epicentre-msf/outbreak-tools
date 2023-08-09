@@ -12,6 +12,7 @@ Attribute VB_Description = "Interface of Dictionary Class"
 '@Interface
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of Dictionary Class")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

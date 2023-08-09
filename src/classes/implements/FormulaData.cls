@@ -9,10 +9,10 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Data Used for the Formula Object"
 
-
+'@PredeclaredId
 '@Folder("Formula")
-'@ModuleDescription("Formula Data Class")
-'@IgnoreModule
+'@ModuleDescription("Data Used for the Formula Object")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Private Const CLASSNAME As String = "FormulaData"
 Private Const SPECCHAR As String = "T_ascii"
@@ -115,10 +115,10 @@ Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
 End Sub
 
 'Exposed methods
-Public Function IFormulaData_SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
+Private Function IFormulaData_SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
     IFormulaData_SpecialCharacterIncludes = SpecialCharacterIncludes(specialChar)
 End Function
 
-Public Function IFormulaData_ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
+Private Function IFormulaData_ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
     IFormulaData_ExcelFormulasIncludes = ExcelFormulasIncludes(ExcelFormula)
 End Function

@@ -13,6 +13,7 @@ Attribute VB_Description = "Import Reports"
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Import Reports")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IImpRep
@@ -228,8 +229,8 @@ Private Property Get ContainsVariable(ByVal scope As Byte, ByVal sheetName As St
   Dim sh As Worksheet
 
   'Important to sort the worksheet before.
-  Sort
   Set sh = Wksh()
+  Sort
 
   Contains = False
   loName = Switch(scope = 1, TABSVARSNOTIMP, scope = 2, TABSVARSNOTTOU)
@@ -288,14 +289,14 @@ Private Sub Sort()
   Set Lo = sh.ListObjects(TABSVARSNOTIMP)
   Set rng = Lo.Range
   On Error Resume Next
-  rng.Sort key1:=Lo.ListObjects(2).Range, Order1:=xlDescending, Header:=xlYes
+  rng.Sort key1:=Lo.ListColumns(2).Range, Order1:=xlDescending, Header:=xlYes
   On Error GoTo 0
 
   'Sort variables not touched
   Set Lo = sh.ListObjects(TABSVARSNOTTOU)
   Set rng = Lo.Range
   On Error Resume Next
-  rng.Sort key1:=Lo.ListObjects(2).Range, Order1:=xlDescending, Header:=xlYes
+  rng.Sort key1:=Lo.ListColumns(2).Range, Order1:=xlDescending, Header:=xlYes
   On Error GoTo 0
 
   'Update sorted boolean
@@ -374,10 +375,6 @@ End Sub
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
   Err.Raise VBA.vbObjectError + 515, CLASSNAME, _
    "Unable to create an instance of the class " & CLASSNAME & ": " & errorMessage
-End Sub
-
-Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
 'Iterface

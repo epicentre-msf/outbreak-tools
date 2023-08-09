@@ -9,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Formulas for all the cross tables in the analysis"
 
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("Formulas for all the cross tables in the analysis")
@@ -30,7 +31,6 @@ Private Type TCrossTableFormula
 End Type
 
 Private this As TCrossTableFormula
-Private Const CLASSNAME As String = "CrossTableFormula"
 
 Public Function Create(ByVal tabl As ICrossTable, fData As IFormulaData) As ICrossTableFormula
     With New CrossTableFormula

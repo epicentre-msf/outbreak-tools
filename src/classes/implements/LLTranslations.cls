@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Linelist Translations")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -135,6 +135,14 @@ Private Property Get Value(ByVal tagName As String) As String
         retVal = sh.Range("RNG_SPTSheet").Value
     Case "customtable"
         retVal = sh.Range("RNG_CustomPivot").Value
+    Case "week"        
+        retVal = sh.Range("RNG_Week").Value
+    Case "quarter"    
+        retVal = sh.Range("RNG_Quarter").Value
+    Case "infostart"    
+        retVal = sh.Range("RNG_InfoStart").Value
+    Case "infoend"    
+        retVal = sh.Range("RNG_InfoEnd").Value
     End Select
 
     On Error GoTo 0
@@ -207,7 +215,8 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
                  "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _
                  "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered", _
                  "RNG_CustomDrop", "RNG_UASheet", "RNG_TSSheet", "RNG_SPSheet", _
-                 "RNG_SPTSheet", "RNG_CustomPivot"
+                 "RNG_SPTSheet", "RNG_CustomPivot", "RNG_Week", "RNG_Quarter", _ 
+                 "RNG_InfoStart", "RNG_InfoEnd"
 
     For counter = tablRng.LowerBound To tablRng.UpperBound
         rngName = tablRng.Item(counter)
@@ -282,7 +291,9 @@ Private Sub CheckRequirements(ByVal lltradsh As Worksheet, dtradsh As Worksheet)
                  "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _
                  "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered", _
                  "RNG_CustomDrop", "RNG_UASheet", "RNG_TSSheet", "RNG_SPSheet", _
-                 "RNG_SPTSheet", "RNG_CustomPivot"
+                 "RNG_SPTSheet", "RNG_CustomPivot", "RNG_Week", "RNG_Quarter", _ 
+                 "RNG_InfoStart", "RNG_InfoEnd"
+
     For counter = tablRng.LowerBound To tablRng.UpperBound
         RangeExists rngName:=tablRng.Item(counter), sh:=lltradsh
     Next

@@ -7,6 +7,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Attribute VB_Description = "Interface of Geo"
 
 
 '@Folder("Geobase")
@@ -45,7 +46,7 @@ End Property
 
 'Convert the code name to the actual name of the current language
 Public Property Get GeoNames(ByVal admname As String) As String: End Property
-Public Property Get IsEmpty() As Boolean: End Property
+Public Property Get HasNoData() As Boolean: End Property
 
 'Translation
 Public Sub Translate(Optional ByVal rawNames As Boolean = False): End Sub

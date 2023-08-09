@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist Passwords")
 '@ModuleDescription("Manage passwords in the linelist")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

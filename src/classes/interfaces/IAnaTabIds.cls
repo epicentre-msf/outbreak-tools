@@ -12,7 +12,7 @@ Attribute VB_Description = ""
 
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of ")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

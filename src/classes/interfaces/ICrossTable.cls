@@ -12,6 +12,7 @@ Attribute VB_Description = "Interface of crosstable"
 '@Folder("Analysis")
 '@ModuleDescription("Interface of crosstable")
 '@Interface
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

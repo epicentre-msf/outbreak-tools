@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("HList variables")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 Option Explicit
 Implements IHListVars
 

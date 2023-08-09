@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Format of the linelist")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILLFormat

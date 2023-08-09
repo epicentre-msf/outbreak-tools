@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Dictionary")
 '@ModuleDescription("")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

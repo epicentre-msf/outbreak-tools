@@ -12,6 +12,7 @@ Attribute VB_Description = "Interface of CustomTable"
 '@Folder("General")
 '@ModuleDescription("Interface of CustomTable")
 '@Interface
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

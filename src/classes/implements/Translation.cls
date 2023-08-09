@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Dictionary")
 '@ModuleDescription("Translation class for dictionary and the linelist")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ITranslation
