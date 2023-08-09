@@ -9,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "analysis tables specifications"
 
+'@IgnoreModule IIfSideEffect, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("analysis tables specifications")

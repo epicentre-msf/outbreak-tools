@@ -64,7 +64,7 @@ Private Property Get LastColumn() As Long
     Set sh = Wksh()
     With sh
         colIndex = .Cells(1, .Columns.Count).End(xlToLeft).Column
-        colIndex = IIf(colIndex = 1 And .Cells(1, 1).Value <> "", colIndex, colIndex + 2)
+        colIndex = IIf(colIndex = 1 And .Cells(1, 1).Value <> vbNullString, colIndex, colIndex + 2)
     End With
     LastColumn = colIndex
 End Property

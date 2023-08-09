@@ -7,12 +7,12 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = "Module to put all together for the analysis"
+Attribute VB_Description = "Build And format the analysis"
 
-
+'@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("Build And format the analysis")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IAnalysisOutput
@@ -22,7 +22,6 @@ Private Const UPDATEFILTERCOMMAND As String = "UpdateFilterTables"
 Private Const SHPFILTERNAME As String = "SHP_Filter"
 Private Const GOTOSECCODE As String = "go_to_section" 'Goto section code
 Private Const UPDATESPCOMMAND As String = "UpdateSpTables" 'Spatial tables update
-Private Const CLASSNAME As String = "AnalysisOutput"
 
 'Names of listobjects in the analysis worksheet
 Private Const GLOBALSUMMARY As String = "Tab_global_summary"
@@ -133,10 +132,9 @@ Private Sub BusyApp()
     Application.EnableAnimations = False
 End Sub
 
-Private Sub TransferCodeWksh(Optional ByVal scope _
-                             As AnalysisScope = AnalysisScopeNormal)
+Private Sub TransferCodeWksh(Optional ByVal scope As AnalysisScope = AnalysisScopeNormal)
 
-    Const CHANGEMODULENAME = "LinelistAnalysisChange"
+    Const CHANGEMODULENAME As String = "LinelistAnalysisChange"
 
     Dim sh As Worksheet                          'Actual worksheet
     Dim inpWkb As Workbook                       'Input workbook
@@ -327,7 +325,6 @@ Private Sub AddGoTo(ByVal cellRng As Range, _
   Dim drop As IDropdownLists
   Dim ll As ILinelist
   Dim dropArray As BetterArray
-  Dim trads As ITranslation
   Dim dropName As String
   Dim design As ILLFormat
 
@@ -345,7 +342,6 @@ Private Sub AddGoTo(ByVal cellRng As Range, _
   Set ll = OutputLL()
   Set drop = ll.Dropdown()
   Set design = DesignFormat()
-  Set trads = TransObject()
 
   'dropdown name
   dropName = goToPrefix & "gotosection" & goToSuffix
@@ -581,7 +577,6 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
   Dim tabLo As listObject
   Dim grTitleLo As listObject
   Dim grSpecs As IGraphSpecs
-  Dim grTitle As String
   Dim gr As IGraphs
   Dim trads As ITranslation
   Dim design As ILLFormat
@@ -798,12 +793,7 @@ ErrHand:
     Resume Next
 End Sub
 
-'Errors
-Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
-End Sub
-
-Public Sub IAnalysisOutput_WriteAnalysis()
+Private Sub IAnalysisOutput_WriteAnalysis()
   'write analysis
   WriteAnalysis
 End Sub

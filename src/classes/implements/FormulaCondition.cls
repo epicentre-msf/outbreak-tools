@@ -7,12 +7,12 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = "A Class for dealing with Conditions in formulas"
+Attribute VB_Description = "Conditons Used to create formulas for analysis"
 
+'@PredeclaredId
 '@Folder("Formulas")
 '@ModuleDescription("Conditons Used to create formulas for analysis")
-'@IgnoreModule
-'@PredeclareId
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 Option Explicit
 Implements IFormulaCondition
 
@@ -164,23 +164,23 @@ Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
 End Sub
 
 'Implement interfaces
-Public Property Get IFormulaCondition_Variables() As BetterArray
+Private Property Get IFormulaCondition_Variables() As BetterArray
     Set IFormulaCondition_Variables = Variable
 End Property
 
-Public Property Get IFormulaCondition_Conditions() As BetterArray
+Private Property Get IFormulaCondition_Conditions() As BetterArray
     Set IFormulaCondition_Conditions = Condition
 End Property
 
-Public Property Get IFormulaCondition_VariablesTable(ByVal dict As ILLdictionary) As String
+Private Property Get IFormulaCondition_VariablesTable(ByVal dict As ILLdictionary) As String
     IFormulaCondition_VariablesTable = VariablesTable(dict)
 End Property
 
-Public Function IFormulaCondition_ConditionString(ByVal tablename As String, ByVal varName As String, _
+Private Function IFormulaCondition_ConditionString(ByVal tablename As String, ByVal varName As String, _
                                                   Optional ByVal Connector As String = "*") As String
     IFormulaCondition_ConditionString = ConditionString(tablename:=tablename, varName:=varName, Connector:=Connector)
 End Function
 
-Public Function IFormulaCondition_Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean
+Private Function IFormulaCondition_Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean
     IFormulaCondition_Valid = Valid(dict, tablename)
 End Function

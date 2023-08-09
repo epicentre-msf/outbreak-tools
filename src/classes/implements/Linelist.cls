@@ -10,6 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Final linelist workbook"
 
 '@Folder("Linelist Building")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@ModuleDescription("Final linelist workbook")
 '@PredeclaredId
 
@@ -243,7 +244,6 @@ Private Sub CopyCodeModule(ByVal moduleName As String)
     Dim codeContent As String
     Dim codeMod As Object
     Dim vbProj As Object
-    Dim vbComp As Object
     Dim impWkb As Workbook
     Dim outWkb As Workbook
 
@@ -276,14 +276,13 @@ End Sub
 
 'Transfert code to the workbook
 Private Sub TransferCodeWkb()
-    Const LINELISTWORKBOOKMODULENAME = "LinelistWorkbook"
+    Const LINELISTWORKBOOKMODULENAME As String = "LinelistWorkbook"
 
     Dim lData As ILinelistSpecs
     Dim codeContent As String                    'a string to contain code to add
     Dim vbProj As Object                         'component, project and modules
     Dim vbComp As Object
     Dim codeMod As Object
-    Dim sheetName As String
     Dim inpWkb As Workbook
     Dim outWkb As Workbook
 
@@ -465,7 +464,6 @@ End Sub
 
 'Prepare the Linelist by adding required worksheets
 Private Sub Prepare()
-    Const FILTERPREFIX As String = "f"
 
     Dim dict As ILLdictionary
     Dim trans As ITranslation
@@ -582,8 +580,8 @@ Private Sub Prepare()
 
     'Send the modules to the linelist
     codesList.Clear
-    codesList.Push "Helpers", "LinelistConstants", "LinelistCustomFunctions", _
-                    "LinelistGeo", "LinelistTranslation", "LinelistEvents", _
+    codesList.Push  "LinelistCustomFunctions", _
+                    "LinelistGeo", "LinelistEvents", _
                     "EventsSpatialAnalysis", _
                     "EventsLinelistButtons", "EventsGlobalAnalysis"
 

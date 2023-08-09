@@ -7,11 +7,12 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Sections of Horizontal worksheets of the linelist"
 
-
+'@PredeclaredId
 '@Folder("Linelist")
-'@ModuleDescription("Sections of Horizontal linelist")
-'@IgnoreModule
+'@ModuleDescription("Sections of Horizontal worksheets of the linelist")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IHListSections
@@ -148,7 +149,6 @@ End Property
 Private Sub Build()
     'Build subsequent sections
     Dim subsec As IHListSubSections
-    Dim counter As Long
     Dim ll As ILinelist
     Dim strt As Long
 
@@ -236,25 +236,25 @@ End Sub
 
 'Exposed methods
 
-Public Property Get IHListSections_HasNext() As Boolean
+Private Property Get IHListSections_HasNext() As Boolean
     IHListSections_HasNext = HasNext()
 End Property
 
-Public Property Get IHListSections_NextSection() As IHListSections
+Private Property Get IHListSections_NextSection() As IHListSections
     Set IHListSections_NextSection = NextSection()
 End Property
 
 'Build the sub sections
-Public Sub IHListSections_Build()
+Private Sub IHListSections_Build()
     Build
 End Sub
 
 'Format the subSection
-Public Sub IHListSections_Format()
+Private Sub IHListSections_Format()
     Format
 End Sub
 
 'Add section Name
-Public Property Get IHListSections_Name() As String
+Private Property Get IHListSections_Name() As String
     IHListSections_Name = ActualSectionName()
 End Property

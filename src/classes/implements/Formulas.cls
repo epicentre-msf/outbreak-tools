@@ -7,11 +7,12 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Formula Object"
 
-
+'@PredeclaredId
 '@Folder("Formulas")
 '@ModuleDescription("Formula Object")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation, IIfSideEffect
 
 Option Explicit
 Implements IFormulas
@@ -309,14 +310,14 @@ FormulaIsNotValid:
 End Property
 
 'List of formulas
-Public Property Get varLists(Optional ByVal formulaType As String = "analysis") As BetterArray
+Public Property Get VarLists(Optional ByVal formulaType As String = "analysis") As BetterArray
     Dim varTable As BetterArray
     Set varTable = New BetterArray
     varTable.LowerBound = 1
     If Valid(formulaType) Then
         Set varTable = this.formulavariables.Clone()
     End If
-    Set varLists = varTable.Clone()
+    Set VarLists = varTable.Clone()
 End Property
 
 'Parse the formula for linelist
@@ -342,7 +343,9 @@ Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean
         chunk = formulaTable.Item(counter)
         If vars.Contains(chunk) Then
             If useTableName Then
-                formulaTable.Item(counter) = tablePrefix & vars.Value(colName:="table name", varName:=chunk) & "[" & chunk & "]"
+                formulaTable.Item(counter) = tablePrefix & _ 
+                         vars.Value(colName:="table name", varName:=chunk) & _ 
+                         "[" & chunk & "]"
             Else
                 formshName = FORMULASHEET()
                 formulaTable.Item(counter) = sheets.VariableAddress(chunk, formshName)
@@ -352,8 +355,9 @@ Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean
         End If
     Next
 
-    ParsedLinelistFormula = formulaTable.ToString(separator:="", OpeningDelimiter:="", _
-                                                  ClosingDelimiter:="", QuoteStrings:=False)
+    ParsedLinelistFormula = formulaTable.ToString( _ 
+                separator:=vbNullString, OpeningDelimiter:=vbNullString, _
+                ClosingDelimiter:=vbNullString, QuoteStrings:=False)
 End Property
 
 'Parse the formula for the analysis
@@ -361,7 +365,6 @@ Public Property Get ParsedAnalysisFormula(formCond As IFormulaCondition, _
                                           Optional ByVal tablePrefix As String = vbNullString, _
                                           Optional ByVal Connector As String = "*") As String
     Dim vars As ILLVariables
-    Dim sheets As ILLSheets
     Dim dict As ILLdictionary
     Dim tablename As String
     Dim formulaTable As BetterArray
@@ -372,7 +375,6 @@ Public Property Get ParsedAnalysisFormula(formCond As IFormulaCondition, _
 
 
     Set vars = Variables()
-    Set sheets = FormulaSheets()
     Set dict = Dictionary()
 
     If Valid(formulaType:="analysis") Then
@@ -402,8 +404,9 @@ Public Property Get ParsedAnalysisFormula(formCond As IFormulaCondition, _
         Loop
     End If
 
-    ParsedAnalysisFormula = formulaTable.ToString(separator:="", OpeningDelimiter:="", _
-                                                  ClosingDelimiter:="", QuoteStrings:=False)
+    ParsedAnalysisFormula = formulaTable.ToString( _ 
+                    separator:=vbNullString, OpeningDelimiter:=vbNullString, _
+                    ClosingDelimiter:=vbNullString, QuoteStrings:=False)
 End Property
 
 Private Function Quoted(ByVal val As String)
@@ -461,11 +464,11 @@ Private Function ParsedCustomFormula(ByVal customFunction As String, ByVal formC
 End Function
 
 'Interfaces
-Public Property Get IFormulas_Varlists() As BetterArray
-    Set IFormulas_Varlists = varLists()
+Private Property Get IFormulas_Varlists() As BetterArray
+    Set IFormulas_Varlists = VarLists()
 End Property
 
-Public Property Get IFormulas_Valid(Optional ByVal formulaType As String = "analysis") As Boolean
+Private Property Get IFormulas_Valid(Optional ByVal formulaType As String = "analysis") As Boolean
     IFormulas_Valid = Valid(formulaType)
 End Property
 
@@ -473,16 +476,19 @@ Private Property Get IFormulas_FormulaTableList() As BetterArray
     Set IFormulas_FormulaTableList = FormulaTableList
 End Property
 
-Public Property Get IFormulas_ParsedLinelistFormula(Optional ByVal useTableName As Boolean = False, _
-                                                    Optional ByVal tablePrefix As String = vbNullString) As String
+Private Property Get IFormulas_ParsedLinelistFormula( _ 
+            Optional ByVal useTableName As Boolean = False, _
+            Optional ByVal tablePrefix As String = vbNullString) As String
     IFormulas_ParsedLinelistFormula = ParsedLinelistFormula(useTableName, tablePrefix)
 End Property
 
-Public Property Get IFormulas_ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, Optional ByVal tablePrefix As String = vbNullString, _
-                                                    Optional ByVal Connector As String = "*") As String
+Private Property Get IFormulas_ParsedAnalysisFormula( _ 
+        ByVal formCond As IFormulaCondition, Optional ByVal tablePrefix As String = vbNullString, _
+        Optional ByVal Connector As String = "*") As String
+
     IFormulas_ParsedAnalysisFormula = ParsedAnalysisFormula(formCond, tablePrefix, Connector)
 End Property
 
-Public Property Get IFormulas_HasLiterals() As Boolean
+Private Property Get IFormulas_HasLiterals() As Boolean
     IFormulas_HasLiterals = HasLiterals()
 End Property

@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Watch updated values in the linelist"
 
 
-'@IgnoreModule ReadOnlyPropertyAssignment : Ignore when you affect property Value of a range object
+'@IgnoreModule ReadOnlyPropertyAssignment, UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Watch updated values in the linelist")

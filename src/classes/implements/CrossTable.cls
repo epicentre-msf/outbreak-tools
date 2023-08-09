@@ -9,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Create and format crosstables for analysis"
 
+'@IgnoreModule IIfSideEffect, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("Create and format crosstables for analysis")
@@ -380,7 +381,7 @@ Private Sub AddRows()
             End If
 
             For counter = 1 To CLng(specs.Value("geo max"))
-                rowsData.Push ""
+                rowsData.Push vbNullString
             Next
 
             rowsData.Push transMissing
@@ -442,7 +443,7 @@ Private Sub BivariateColumns(ByVal Start As Long, ByVal specs As ITablesSpecs, B
 
                 Do While counter <= colData.Length
 
-                    newColData.Push colData.Item(counter), ""
+                    newColData.Push colData.Item(counter), vbNullString
                     labData.Push colLab, Percent(transPercent, percentageValue)
                     counter = counter + 1
                 Loop

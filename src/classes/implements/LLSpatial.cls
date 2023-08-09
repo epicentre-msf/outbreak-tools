@@ -12,7 +12,8 @@ Option Explicit
 
 '@Folder("Linelist")
 '@ModuleDescription("Manage the Spatial analysis tables")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
+
 Implements ILLSpatial
 
 Private Type TLLSpatial

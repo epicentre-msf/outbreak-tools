@@ -10,6 +10,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Table Ids for export of analysis"
 
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@Folder("Linelist")
 '@ModuleDescription("Table Ids For export of analysis")
 

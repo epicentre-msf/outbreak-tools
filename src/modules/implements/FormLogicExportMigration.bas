@@ -2,6 +2,7 @@ Attribute VB_Name = "FormLogicExportMigration"
 Attribute VB_Description = "Form implementation of Exports for Migration"
 
 '@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
+'@ModuleDescription("Form implementation of Exports for Migration")
 Option Explicit
 
 Private tradform As ITranslation  'Translation of forms
@@ -19,7 +20,6 @@ Private Sub InitializeTrads()
     Dim lltranssh As Worksheet
     Dim dicttranssh As Worksheet
     Dim geosh As Worksheet
-    Dim expsh As Worksheet
 
     Set currwb = ThisWorkbook
     Set lltranssh = currwb.Worksheets(LLSHEET)
@@ -54,18 +54,16 @@ End Sub
 Private Sub CreateExport()
 
     Dim scope As Byte
-    Dim folderPath As String
     Dim shouldQuit As Byte
     
     'Add Error management
-    'On Error GoTo errHand
+    On Error GoTo errHand
     
     scope = ExportAll
     BusyApp cursor:=xlNorthwestArrow
     
     InitializeTrads
     Set expOut = OutputSpecs.Create(currwb, scope)
-    folderPath = expOut.ExportFolder()
 
     'Export for migration
     If Me.CHK_ExportMigData.Value Then expOut.Save tradmess

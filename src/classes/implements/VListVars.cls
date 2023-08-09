@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Vlist sheet")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -651,5 +651,5 @@ Public Sub IVListVars_WriteInfo()
 End Sub
 
 Public Property Get IVListVars_ValueOf(ByVal colName As String) As String
-    IHListVars_ValueOf = ValueOf(colName)
+    IVListVars_ValueOf = ValueOf(colName)
 End Property

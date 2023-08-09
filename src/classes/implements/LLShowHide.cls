@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Linelist Show/Hide Class"
 
-
+'@IgnoreModule IIfSideEffect
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Linelist Show/Hide Class")

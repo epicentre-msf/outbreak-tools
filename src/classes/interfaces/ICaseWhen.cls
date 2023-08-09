@@ -10,13 +10,12 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of CaseWhen"
 
 '@Interface
+'@IgnoreModule ProcedureNotUsed, UseMeaningfulName, HungarianNotation
 '@Folder("Custom Functions")
 '@ModuleDescription("Interface of CaseWhen")
 
 Option Explicit
 
 Public Property Get Valid() As Boolean: End Property
-
-'@Ignored ProcedureNotUsed
 Public Property Get parsedFormula() As String: End Property
 Public Property Get Categories() As BetterArray: End Property

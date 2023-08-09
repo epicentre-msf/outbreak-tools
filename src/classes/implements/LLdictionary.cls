@@ -12,7 +12,8 @@ Attribute VB_Description = "Dictionary Class"
 '@PredeclaredId
 '@Folder("Dictionary")
 '@ModuleDescription("Interface for dicitonary in the linelist")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
+
 Option Explicit
 Implements ILLdictionary
 
@@ -120,11 +121,6 @@ Public Property Get DataRange(Optional colName As String = "__all__", Optional i
     Dim customDataSheet As IDataSheet
     Set customDataSheet = Data()
     Set DataRange = customDataSheet.DataRange(colName, includeHeaders)
-End Property
-
-Private Property Get Variables() As ILLVariables
-    Dim var As ILLVariables
-    Set var = LLVariables.Create(Self)
 End Property
 
 'Functions ---------------------------------------------------------------------

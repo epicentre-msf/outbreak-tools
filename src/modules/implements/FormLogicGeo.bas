@@ -2,7 +2,7 @@ Attribute VB_Name = "FormLogicGeo"
 Attribute VB_Description = "Form implementation of GeoApp"
 
 '@ModuleDescription("Form implementation of GeoApp")
-'@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
+'@IgnoreModule UnassignedVariableUsage, UndeclaredVariable, ImplicitActiveSheetReference
 
 'Unused variables should be ignored because this module is copied to the geo form
 
@@ -34,10 +34,18 @@ Private Sub InitializeTrads()
     Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
 End Sub
 
+Private Sub InitializeElements()
+    'Initialize hf or geo
+    If Me.FRM_Geo.Visible Then
+        hfOrGeo = GeoScopeAdmin
+    Else
+        hfOrGeo = GeoScopeHF
+    End If
+End Sub
+
 ' This function reverses a string using the | as separator, like in the final selection of the
 Private Function ReverseString(stringValue As String, _
                                Optional ByVal separator As String = sep)
-    Dim counter As Long
     Dim tempTable As BetterArray 'Temporary table for data manipulation purposes
 
     Set tempTable = New BetterArray
@@ -92,10 +100,10 @@ Private Sub searchValue(ByVal searchedValue As String, _
     End If
 
     'Create a table of the found values (called resultTable)
-    If Len(sSearchedValue) >= 3 Then
+    If Len(searchedValue) >= 3 Then
 
         For counter = concatTab.LowerBound To concatTab.UpperBound
-            If InStr(1, LCase(concatTab.Item(counter)), LCase(sSearchedValue)) > 0 Then
+            If InStr(1, LCase(concatTab.Item(counter)), LCase(searchedValue)) > 0 Then
                 resultTable.Push concatTab.Item(counter)
             End If
         Next
@@ -120,15 +128,14 @@ Private Sub CMD_Copier_Click()
 
     Dim tempTable As BetterArray 'Temporary table for data manipulation purposes
     Dim selectedValue As String
-    Dim Lo As listObject
-    Dim LoRng As Range
     Dim sh As Worksheet
     Dim cellRng As Range
     Dim hRng As Range
     Dim nbOffset As Long
     Dim calcRng As Range 'Range to calculate
     
-    On Error GoTo ErrGeo
+    'On Error GoTo ErrGeo
+    InitializeElements
     
     selectedValue = Me.TXT_Msg.Value
 
@@ -210,7 +217,7 @@ Private Sub ClearOneHistoricGeobase(Optional ByVal scope As Byte = 0)
     End If
     
     geo.ClearHistoric scope
-    lstObj.List.Clear
+    lstObj.Clear
     'It is done, inform the user
     MsgBox tradmess.TranslatedValue("MSG_Done"), _
            vbInformation, _
@@ -219,6 +226,7 @@ End Sub
 
 
 Private Sub CMD_GeoClearHisto_Click()
+    InitializeElements
     ClearOneHistoricGeobase hfOrGeo
 End Sub
 
@@ -230,15 +238,15 @@ End Sub
 'Those are procedures to show the following list in one item is selected.
 'They rely on ShowAdmin*List functions coded in the LinelistGeo module
 Private Sub LST_Adm1_Click()
-    ShowAdmin2List LST_Adm1.Value, GeoScopeAdmin
+    ShowAdmin2List Me.LST_Adm1.Value, GeoScopeAdmin
 End Sub
 
 Private Sub LST_Adm2_Click()
-    ShowAdmin3List LST_Adm2.Value, GeoScopeAdmin, sep
+    ShowAdmin3List Me.LST_Adm2.Value, GeoScopeAdmin, sep
 End Sub
 
 Private Sub LST_Adm3_Click()
-    ShowAdmin4List LST_Adm3.Value, GeoScopeAdmin, sep
+    ShowAdmin4List Me.LST_Adm3.Value, GeoScopeAdmin, sep
 End Sub
 
 Private Sub LST_Adm4_Click()
@@ -254,15 +262,15 @@ Private Sub LST_Adm4_Click()
 End Sub
 
 Private Sub LST_AdmF1_Click()
-    ShowAdmin2List LST_AdmF1.Value, GeoScopeHF
+    ShowAdmin2List Me.LST_AdmF1.Value, GeoScopeHF
 End Sub
 
 Private Sub LST_AdmF2_Click()
-    ShowAdmin3List LST_AdmF2.Value, GeoScopeHF, sep
+    ShowAdmin3List Me.LST_AdmF2.Value, GeoScopeHF, sep
 End Sub
 
 Private Sub LST_AdmF3_Click()
-    ShowAdmin4List LST_AdmF3.Value, GeoScopeHF, sep
+    ShowAdmin4List Me.LST_AdmF3.Value, GeoScopeHF, sep
 End Sub
 
 Private Sub LST_AdmF4_Click()
@@ -278,22 +286,23 @@ End Sub
 
 'Those are trigerring event for the Histo
 Private Sub LST_Histo_Click()
-    TXT_Msg.Value = ReverseString(LST_Histo.Value, sep)
+    Me.TXT_Msg.Value = ReverseString(Me.LST_Histo.Value, sep)
 End Sub
 
 Private Sub LST_HistoF_Click()
-    TXT_Msg.Value = LST_HistoF.Value
+    Me.TXT_Msg.Value = Me.LST_HistoF.Value
 End Sub
 
 Private Sub LST_ListeAgre_Click()
-    TXT_Msg.Value = ReverseString(LST_ListeAgre.Value, sep)
+    Me.TXT_Msg.Value = Me.LST_ListeAgre.Value
 End Sub
 
 Private Sub LST_ListeAgreF_Click()
-    TXT_Msg.Value = LST_ListeAgreF.Value
+    Me.TXT_Msg.Value = Me.LST_ListeAgreF.Value
 End Sub
 
 Private Sub TXT_Recherche_Change()
+    InitializeElements
     'Search any value in geo data
     searchValue searchedValue:=Me.TXT_Recherche.Value, _
                 scope:=hfOrGeo, onHistoric:=False
@@ -301,11 +310,15 @@ End Sub
 
 Private Sub TXT_RechercheF_Change()
     'Search any value in hf data
+    InitializeElements
+
     searchValue searchedValue:=Me.TXT_RechercheF.Value, _
                 scope:=hfOrGeo, onHistoric:=False
 End Sub
 
 Private Sub TXT_RechercheHisto_Change()
+    InitializeElements
+
     'Search any value in historic geo data
     searchValue searchedValue:=Me.TXT_RechercheHisto.Value, _
                 scope:=hfOrGeo, onHistoric:=True
@@ -313,6 +326,8 @@ Private Sub TXT_RechercheHisto_Change()
 End Sub
 
 Private Sub TXT_RechercheHistoF_Change()
+    InitializeElements
+
     'Search any value in historic facility data
     searchValue searchedValue:=Me.TXT_RechercheHistoF.Value, _
                 scope:=hfOrGeo, onHistoric:=True
@@ -322,15 +337,10 @@ End Sub
 Private Sub UserForm_Initialize()
     
     InitializeTrads
+    InitializeElements
 
     Me.Caption = tradform.TranslatedValue(Me.Name)
     tradform.TranslateForm Me
-
-    If Me.FRM_Geo.Visible Then
-        hfOrGeo = GeoScopeAdmin
-    Else
-        hfOrGeo = GeoScopeHF
-    End If
 
     Me.width = 650
     Me.height = 450

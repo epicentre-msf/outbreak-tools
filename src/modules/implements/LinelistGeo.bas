@@ -8,7 +8,6 @@ Option Private Module
 Private Const GEOSHEET As String = "Geo"
 Private Const DROPDOWNSHEET As String = "dropdown_lists__"
 Private Const TRADSHEET As String = "Translations"
-Private Const UPSHEET As String = "updates__"       'worksheet for updated values
 Private Const LLSHEET As String = "LinelistTranslation"
 
 Private historicGeoTable As BetterArray                    'Historic of Geo
@@ -85,7 +84,7 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
         drop.ClearList "admin4"
 
         'Before doing the whole all thing, we need to test if the T_Adm data is empty or not
-        If (Not geo.IsEmpty()) Then
+        If (Not geo.HasNoData()) Then
             
             'Update admin 1
             Set transValue = geo.GeoLevel(LevelAdmin1, GeoScopeAdmin)
@@ -109,12 +108,12 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
     Case GeoScopeHF 'HF
 
         'Adding caption for each admnistrative levels
-        F_Geo.LBL_Adm1F.Caption = geo.GeoNames("hf_name")
-        F_Geo.LBL_Adm2F.Caption = geo.GeoNames("adm3_name")
-        F_Geo.LBL_Adm3F.Caption = geo.GeoNames("adm2_name")
-        F_Geo.LBL_Adm4F.Caption = geo.GeoNames("adm1_name")
+        F_Geo.LBL_Adm4F.Caption = geo.GeoNames("hf_name")
+        F_Geo.LBL_Adm3F.Caption = geo.GeoNames("adm3_name")
+        F_Geo.LBL_Adm2F.Caption = geo.GeoNames("adm2_name")
+        F_Geo.LBL_Adm1F.Caption = geo.GeoNames("adm1_name")
 
-        If (Not geo.IsEmpty()) Then
+        If (Not geo.HasNoData()) Then
             Set transValue = geo.GeoLevel(LevelAdmin1, GeoScopeHF)
             F_Geo.LST_AdmF1.List = transValue.Items
             'There is a range named hf_concat in the workbook

@@ -13,6 +13,7 @@ Attribute VB_Description = "Interface of updated values"
 '@Interface
 '@Folder("Linelist")
 '@ModuleDescription("Interface of updated values")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

@@ -1,7 +1,9 @@
 Attribute VB_Name = "LinelistCustomFunctions"
 Option Explicit
 
-'USER DEFINE FUNCTIONS FOR THE LINELIST ==========================================
+'@IgnoreModule IIfSideEffect
+
+'USER DEFINE FUNCTIONS FOR THE LINELIST ========================================
 
 Public Enum DayList
     Monday = 1
@@ -12,6 +14,7 @@ Public Enum DayList
     Saturday = 6
     Sunday = 0
 End Enum
+
 
 '@EntryPoint
 Public Function DATE_RANGE(DateRng As Range) As String
@@ -57,15 +60,15 @@ Public Function VALUE_OF(rng As Range, rngLook As Range, rngVal As Range) As Var
         Set ColRngVal = ThisWorkbook.Worksheets(sSheetVal).ListObjects(1).ListColumns(iColVal).Range
         Set cellRngLook = ColRngLook.Cells(1, 1)
         Set cellRngVal = ColRngVal.Cells(1, 1)
-        
+
         Do While (cellRngLook.Value <> sValLook) And (cellRngLook.Row <= ColRngLook.Cells(ColRngLook.Rows.Count, 1).Row)
             Set cellRngLook = cellRngLook.Offset(1)
             Set cellRngVal = cellRngVal.Offset(1)
         Loop
-        
+
         'Match
         If cellRngLook.Row <= ColRngLook.Cells(ColRngLook.Rows.Count, 1).Row Then retMatch = cellRngVal.Value
-        
+
      End If
 
    VALUE_OF = retMatch
@@ -106,7 +109,8 @@ End Function
 
 'Epiweek function without specifying the year in select cases (works with all years)
 '@EntryPoint
-Public Function Epiweek(currentDate As Long, Optional ByVal weekStart As DayList = Monday) As Long
+Public Function Epiweek(ByVal currentDate As Long, _ 
+                        Optional ByVal weekStart As DayList = Monday) As Long
 
     Dim inDate As Long
     Dim firstDate As Long
@@ -115,7 +119,7 @@ Public Function Epiweek(currentDate As Long, Optional ByVal weekStart As DayList
 
     inDate = DateSerial(Year(currentDate), 1, 1)
     firstDayDate = inDate - Weekday(inDate, weekStart + 1) + 1
-    
+
     borderLeftDate = DateSerial(Year(currentDate) - 1, 12, 29)
     firstDate = IIf(firstDayDate < borderLeftDate, firstDayDate + 7, firstDayDate)
 
@@ -126,19 +130,19 @@ Public Function Epiweek(currentDate As Long, Optional ByVal weekStart As DayList
     End If
 End Function
 
-'Find the quarter, the year, the week or the month depending on the aggregation ============================================
+'Find the quarter, the year, the week or the month depending on the aggregation
 
 'Quick function to define the aggregate
 Private Function GetAgg(sAggregate As String) As String
 
     Dim rng As Range
     Dim aggVal As String
-    
+
     If ActiveSheet.Cells(1, 3).Value <> "TS-Analysis" Then
         GetAgg = "week"
         Exit Function
     End If
-    
+
     Set rng = ActiveSheet.Range("TIME_UNIT_LIST")
     Select Case sAggregate
 
@@ -152,22 +156,23 @@ Private Function GetAgg(sAggregate As String) As String
         aggVal = "quarter"
     Case rng.Cells(5, 1).Value
         aggVal = "year"
-    Case Else                                    'Aggregate as week if unable to find the aggregate (defensive)
+    'Aggregate as week if unable to find the aggregate
+    Case Else
         aggVal = "week"
     End Select
- 
+
     GetAgg = aggVal
 End Function
 
 '@EntryPoint
 Public Function FindLastDay(sAggregate As String, inDate As Long) As Long
     Application.Volatile
-    
+
     Dim sAgg As String
     Dim dLastDay As Long
     Dim monthQuarter As Integer
     Dim monthDate As Integer
-    
+
     sAgg = GetAgg(sAggregate)
 
     Select Case sAgg
@@ -188,7 +193,6 @@ Public Function FindLastDay(sAggregate As String, inDate As Long) As Long
 
         monthDate = Month(inDate)
         monthQuarter = 3 * (IIf((monthDate Mod 3) = 0, ((monthDate - 1) \ 3), (monthDate \ 3))) + 1
-
         dLastDay = DateSerial(Year(inDate), monthQuarter + 3, 0)
 
     Case "year"
@@ -201,10 +205,13 @@ Public Function FindLastDay(sAggregate As String, inDate As Long) As Long
 
 End Function
 
-'Format a date to feet the aggregation selection ================================================================
+'Format a date to feet the aggregation selection ===============================
 
 '@EntryPoint
-Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, endDate As Long, MaxDate As Long) As String
+Public Function FormatDateFromLastDay(sAggregate As String, _ 
+                                      startDate As Long, _ 
+                                      endDate As Long, _ 
+                                      MaxDate As Long) As String
 
     Application.Volatile
     'enDate is the date of the end of the aggregation period
@@ -217,13 +224,22 @@ Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, e
     Dim quarterDate As Integer
     Dim epiYear As Long
     Dim epiW As Long
-    
-    
+    Dim quarterTag As String
+    Dim lltradsh As Worksheet
+    Dim weekTag As String
+
+
     If startDate > MaxDate Or (ActiveSheet.Cells(1, 3).Value <> "TS-Analysis") Then
         FormatDateFromLastDay = vbNullString
         Exit Function
     End If
-    
+
+    On Error Resume Next
+        Set lltradsh = ThisWorkbook.Worksheets("LinelistTranslation")
+        quarterTag = lltradsh.Range("RNG_Quarter").Value
+        weekTag = lltradsh.Range("RNG_Week").Value
+    On Error GoTo 0
+
 
     sAgg = GetAgg(sAggregate)
 
@@ -232,14 +248,16 @@ Public Function FormatDateFromLastDay(sAggregate As String, startDate As Long, e
         sValue = Format(endDate, "dd-mmm-yyyy")
     Case "week"
         epiW = Epiweek(endDate)
-        epiYear = IIf(((epiW = 52 Or epiW = 53) And Month(endDate) = 1), Year(endDate) - 1, Year(endDate))
-        sValue = TranslateLLMsg("MSG_W") & epiW & " - " & epiYear
+        epiYear = IIf(((epiW = 52 Or epiW = 53) And Month(endDate) = 1), _ 
+                        Year(endDate) - 1, Year(endDate))
+        sValue = weekTag & epiW & " - " & epiYear
     Case "month"
         sValue = Format(endDate, "mmm - yyyy")
     Case "quarter"
         monthDate = Month(endDate)
-        quarterDate = (IIf((monthDate Mod 3) = 0, ((monthDate - 1) \ 3), (monthDate \ 3))) + 1
-        sValue = TranslateLLMsg("MSG_Q") & quarterDate & " - " & Year(endDate)
+        quarterDate = (IIf((monthDate Mod 3) = 0, ((monthDate - 1) \ 3), _ 
+                           (monthDate \ 3))) + 1
+        sValue = quarterTag & quarterDate & " - " & Year(endDate)
     Case "year"
         sValue = Year(endDate)
     End Select
@@ -251,7 +269,8 @@ End Function
 '@EntryPoint
 Public Function FormatDateRange(MinDate As Long, MaxDate As Long) As String
 
-    FormatDateRange = Format(MinDate, "dd/mm/yyyy") & "-" & Format(MaxDate, "dd/mm/yyyy")
+    FormatDateRange = Format(MinDate, "dd/mm/yyyy") & "-" & _ 
+                      Format(MaxDate, "dd/mm/yyyy")
 
 End Function
 
@@ -259,9 +278,9 @@ End Function
 Public Function FirstAggDayFrom(endDate As Long, agg As String) As Long
     Dim firstDate As Long
     Dim timeAgg As String
-    
+
     timeAgg = GetAgg(agg)
-    
+
     Select Case timeAgg
     Case "day"
         firstDate = endDate - 53
@@ -274,18 +293,18 @@ Public Function FirstAggDayFrom(endDate As Long, agg As String) As Long
     Case "year"
         firstDate = DateSerial(Year(endDate) - 53, Month(endDate), Day(endDate))
     End Select
-    
+
     FirstAggDayFrom = firstDate
-    
+
 End Function
 
 '@EntryPoint
 Public Function LastAggDayFrom(startDate As Long, agg As String) As Long
     Dim lastDate As Long
     Dim timeAgg As String
-    
+
     timeAgg = GetAgg(agg)
-    
+
     Select Case timeAgg
     Case "day"
         lastDate = startDate + 53
@@ -298,18 +317,20 @@ Public Function LastAggDayFrom(startDate As Long, agg As String) As Long
     Case "year"
         lastDate = DateSerial(Year(startDate) + 53, Month(startDate), Day(startDate))
     End Select
-    
+
     LastAggDayFrom = lastDate
-    
+
 End Function
 
 '@EntryPoint
-Public Function ValidMin(startDate As Long, endDate As Long, MinDate As Long, MaxDate As Long, agg As String) As Long
+Public Function ValidMin(startDate As Long, endDate As Long, _ 
+                         MinDate As Long, _ 
+                         MaxDate As Long, agg As String) As Long
     Application.Volatile
-    
+
     Dim validation As Long
     Dim timeStamp As Long
-    
+
     If startDate = 0 And endDate = 0 Then
         'Test if the minimum and the maximum are 0
         If MaxDate = 0 And MinDate = 0 Then
@@ -323,17 +344,20 @@ Public Function ValidMin(startDate As Long, endDate As Long, MinDate As Long, Ma
     Else
         validation = Application.WorksheetFunction.Max(MinDate, startDate)
     End If
-    
+
     ValidMin = validation
 End Function
 
 '@EntryPoint
-Public Function ValidMax(startDate As Long, endDate As Long, MinDate As Long, MaxDate As Long, agg As String) As Long
+Public Function ValidMax(startDate As Long, _ 
+                         endDate As Long, _ 
+                         MinDate As Long, MaxDate As Long, agg As String) As Long
     Application.Volatile
-    
+
     Dim validation As Long
     Dim timeStamp As Long
     
+
     'The two dates are equal to 0
     If startDate = 0 And endDate = 0 Then
         'Test if the minimum and the maximum are 0
@@ -351,32 +375,45 @@ Public Function ValidMax(startDate As Long, endDate As Long, MinDate As Long, Ma
         timeStamp = LastAggDayFrom(startDate, agg)
         validation = Application.WorksheetFunction.Min(timeStamp, endDate, MaxDate)
     End If
-    
+
     ValidMax = validation
 End Function
 
 '@EntryPoint
-Public Function InfoUser(userDate As Long, actualDate As Long, Optional infotype As Byte = 1) As String
+Public Function InfoUser(userDate As Long, _ 
+                         actualDate As Long, _ 
+                         Optional infotype As Byte = 1) As String
     Application.Volatile
+
+    Dim lltradsh As Worksheet
+    Dim infoStartTag As String
+    Dim infoEndTag As String
+
     
+    On Error Resume Next
+        Set lltradsh = ThisWorkbook.Worksheets("LinelistTranslation")
+        infoStartTag = lltradsh.Range("RNG_InfoStart").Value
+        infoEndTag = lltradsh.Range("RNG_InfoEnd").Value
+    On Error GoTo 0
+
     Dim info As String
     If ((userDate <> actualDate) And (userDate <> 0)) Then
-        info = IIf(infotype = 1, TranslateLLMsg("MSG_InfoStart"), TranslateLLMsg("MSG_InfoEnd"))
+        info = IIf(infotype = 1, infoStartTag, infoEndTag)
         InfoUser = info & " " & Format(actualDate, "dd/mm/yyyy")
     End If
-    
+
 End Function
 
 
 '@EntryPoint
 Public Function GEOCONCAT(cellRng As Range, Level As Byte) As String
     Application.Volatile
-    
+
     Dim concatValue As String
     Dim nonEmptyValue As Boolean
 
     Select Case Level
-    
+
     Case 1
 
         concatValue = cellRng.Value
@@ -404,10 +441,12 @@ Public Function GEOCONCAT(cellRng As Range, Level As Byte) As String
 End Function
 
 '@EntryPoint
-Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varName As String, Optional ByVal tabId As String = vbNullString) As String
+Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, _ 
+                             varName As String, _ 
+                             Optional ByVal tabId As String = vbNullString) As String
 
     Application.Volatile
-    
+
     Dim geo As ILLGeo
     Dim sp As ILLSpatial
     Dim adminName As String
@@ -429,10 +468,11 @@ Public Function FindTopAdmin(adminLevel As String, adminOrder As Integer, varNam
 End Function
 
 '@EntryPoint
-Public Function FindTopPop(adminLevel As String, adminOrder As Integer, varName As String, Optional ByVal tabId As String = vbNullString) As Long
+Public Function FindTopPop(adminLevel As String, adminOrder As Integer, _ 
+                           varName As String, Optional ByVal tabId As String = vbNullString) As Long
 
     Application.Volatile
-    
+
     Dim geo As ILLGeo
     Dim sp As ILLSpatial
     Dim adminName As String
@@ -457,15 +497,16 @@ Public Function FindTopPop(adminLevel As String, adminOrder As Integer, varName 
 
     FindTopPop = pop
 End Function
-    
+
 
 
 'Find the corresponding value of a top admin for one variable
 '@EntryPoint
-Public Function FindTopHF(adminOrder As Integer, varName As String, Optional ByVal tabId As String = vbNullString) As String
+Public Function FindTopHF(adminOrder As Integer, varName As String, _ 
+                         Optional ByVal tabId As String = vbNullString) As String
 
     Application.Volatile
-    
+
     Dim sp As ILLSpatial
     Dim sh As Worksheet
     Dim actualVarName As String
