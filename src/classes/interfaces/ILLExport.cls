@@ -13,7 +13,7 @@ Attribute VB_Description = "Interface of export object"
 '@Interface
 '@Folder("Linelist")
 '@ModuleDescription("Interface of export object")
-
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Wrapper for Listobjects manipulations"
 
-'@IgnoreModule ExcelMemberMayReturnNothing
+'@IgnoreModule ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 '@PredeclaredId
 '@Folder("General")

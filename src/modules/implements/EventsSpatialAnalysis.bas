@@ -1,4 +1,5 @@
 Attribute VB_Name = "EventsSpatialAnalysis"
+Attribute VB_Description = "Events related to spatial analysis tables"
 
 Option Explicit
 Option Private Module
@@ -14,25 +15,19 @@ Private Const TRADSHEET As String = "Translations"
 
 Private pass As ILLPasswords
 Private lltrads As ILLTranslations
-Private tradsmess As ITranslation
-Private tradsform As ITranslation
-Private lltranssh As Worksheet
 
 'Initialize trads and passwords
 Private Sub Initialize()
 
-    Dim lltrads As ILLTranslations
     Dim dicttranssh As Worksheet
     Dim psh As Worksheet
+    Dim lltranssh As Worksheet
 
     Set lltranssh = ThisWorkbook.Worksheets(LLSHEET)
     Set dicttranssh = ThisWorkbook.Worksheets(TRADSHEET)
     Set psh = ThisWorkbook.Worksheets(PASSSHEET)
     Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
     Set pass = LLPasswords.Create(psh)
-    Set tradsmess = lltrads.TransObject()
-    Set tradsform = lltrads.TransObject(TranslationOfForms)
-
 End Sub
 
 'Subs to speed up the application
@@ -54,8 +49,9 @@ End Sub
 '@Description("Update all spatial tables in the spatial sheet")
 '@EntryPoint
 Public Sub UpdateSpTables()
-    Dim sp As ILLSpatial
+    Attribute UpdateSpTables.VB_Description = "Update all spatial tables in the spatial sheet"
 
+    Dim sp As ILLSpatial
     Set sp = LLSpatial.Create(ThisWorkbook.Worksheets(SPATIALSHEET))
 
     UpdateFilterTables calculate:=False
@@ -80,6 +76,7 @@ End Sub
 
 '@Description("Update all values in a table when the user changes the admin level")
 Public Sub UpdateSingleSpTable(ByVal rngName As String)
+    Attribute UpdateSingleSpTable.VB_Description = "Update all values in a table when the user changes the admin level"
 
     'rngName is the name of the range where we have the admin level
 
@@ -110,7 +107,7 @@ Public Sub UpdateSingleSpTable(ByVal rngName As String)
     adminName = geo.AdminCode(selectedAdmin)
 
     'remove the admdropdown to get the table id
-    tabId = Replace(rngName, "ADM_DROPDOWN_", "")
+    tabId = Replace(rngName, "ADM_DROPDOWN_", vbNullString)
     prevAdmValue = sh.Range("PREVIOUS_ADM_" & tabId).Value
 
     'Interior table range, including missing row and total column ranges
@@ -152,6 +149,7 @@ End Sub
 '@Description("Devide all computed Values by the population")
 Public Sub DevideByPopulation(ByVal rngName As String, _
                              Optional ByVal revertBack As Boolean = False)
+    Attribute DevideByPopulation.VB_Description = "Devide all computed Values by the population"
 
     Dim sh As Worksheet
     Dim hasFormula As Boolean
@@ -245,6 +243,7 @@ End Sub
 
 '@Description("Format the devide by population")
 Public Sub FormatDevidePop(ByVal rngName As String)
+    Attribute FormatDevidePop.VB_Description = "Format the devide by population"
 
     Dim sh As Worksheet
     Dim tabId As String
@@ -257,8 +256,8 @@ Public Sub FormatDevidePop(ByVal rngName As String)
     pass.UnProtect "_active"
     tabId = Replace(rngName, "DEVIDEPOP_", vbNullString)
 
-    'lltranssh is the linelist translation worksheet in the Initialize sub
-    If sh.Range(rngName).Value = lltranssh.Range("RNG_NoDevide").Value Then
+    'lltrads is the linelist translation object in the Initialize sub
+    If sh.Range(rngName).Value = lltrads.Value("nodevide") Then
 
         'Do not devide
         sh.Range("POPFACT_" & tabId).Font.color = vbWhite
@@ -269,7 +268,7 @@ Public Sub FormatDevidePop(ByVal rngName As String)
 
         DevideByPopulation rngName:="POPFACT_" & tabId, revertBack:=True
 
-    ElseIf sh.Range(rngName).Value = lltranssh.Range("RNG_Devide").Value Then
+    ElseIf sh.Range(rngName).Value = lltrads.Value("devide") Then
 
         'Devide by the population
         sh.Range("POPFACT_" & tabId).Font.color = vbBlack

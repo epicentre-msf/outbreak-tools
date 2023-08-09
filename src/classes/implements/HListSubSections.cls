@@ -7,11 +7,12 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Subsections of a Horizontal variable sheet"
 
-
+'@PredeclaredId
 '@Folder("Dictionary")
 '@ModuleDescription("Subsections of a Horizontal variable sheet")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IHListSubSections
@@ -253,20 +254,19 @@ Private Sub CheckRequirements(ByVal strt As Long, ll As ILinelist)
     If strt < 0 Or strt > ll.Dictionary.Data.DataEndRow() Then ThrowError "Start row should be a positive integer less or equal than end row of the dictionary"
 End Sub
 
-Public Property Get IHListSubSections_HasNext() As Boolean
+'Interface
+Private Property Get IHListSubSections_HasNext() As Boolean
     IHListSubSections_HasNext = HasNext()
 End Property
 
-Public Property Get IHListSubSections_NextSubSection() As IHListSubSections
+Private Property Get IHListSubSections_NextSubSection() As IHListSubSections
     Set IHListSubSections_NextSubSection = NextSubSection()
 End Property
 
-'Build the sub sections
-Public Sub IHListSubSections_Build()
+Private Sub IHListSubSections_Build()
     Build
 End Sub
 
-'Format the subSection
-Public Sub IHListSubSections_Format()
+Private Sub IHListSubSections_Format()
     Format
 End Sub

@@ -45,6 +45,7 @@ End Sub
 'LOADING FILES AND FOLDERS =====================================================
 '@Description("Import the language of the setup")
 Private Sub ImportLang()
+    Attribute ImportLang.VB_Description = "Import the language of the setup"
 
     Const RNGDICTLANG As String = "RNG_DictionaryLanguage" 'selected lang (lltradsh)
 
@@ -88,6 +89,7 @@ End Sub
 '@Description("Load the dictionary file")
 '@EntryPoint
 Public Sub LoadFileDic()
+    Attribute LoadFileDic.VB_Description = "Load the dictionary file"
 
     BusyApp
 
@@ -122,6 +124,8 @@ End Sub
 '@Description("Load the template file")
 '@EntryPoint
 Public Sub LoadTemplateFile()
+    Attribute LoadTemplateFile.VB_Description = "Load the template file"
+
     BusyApp
 
     Dim io As IOSFiles
@@ -157,6 +161,8 @@ End Sub
 '@Description("Path to future Lineist Directory")
 '@EntryPoint
 Sub LinelistDir()
+    Attribute LinelistDir.VB_Description = "Path to future Lineist Directory"
+
     Dim wb As Workbook
     Dim mainsh As Worksheet
     Dim io As IOSFiles
@@ -185,6 +191,7 @@ End Sub
 '@Description("Load the geobase")
 '@EntryPoint
 Public Sub LoadGeoFile()
+    Attribute LoadGeoFile.VB_Description = "Load the geobase"
     'Geobase path range name
 
     Dim wb As Workbook
@@ -213,7 +220,7 @@ End Sub
 
 'GENERATE THE LINELIST =========================================================
 
-'Generate the linelist after control
+'Generate the linelist after passing through all the control and checkings
 Private Sub GenerateData()
 
     Dim ll As ILinelist
@@ -349,6 +356,7 @@ End Sub
 '@Description("Check everything is fine and generate the linelist")
 '@EntryPoint
 Public Sub Control()
+    Attribute Control.VB_Description = "Check everything is fine and generate the linelist"
 
     Dim mainobj As IMain
     Dim desTrads As IDesTranslation
@@ -361,6 +369,7 @@ Public Sub Control()
     Set wb = ThisWorkbook
     Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
     Set mainobj = Main.Create(mainsh)
+    
     'Put every range in white before the control
     mainobj.ClearInputRanges
 
@@ -370,6 +379,7 @@ Public Sub Control()
 
     'Check readiness of the linelist
     mainobj.CheckReadiness desTrads
+    
     'If the main sheet is not ready exit the sub
     If Not mainobj.Ready Then Exit Sub
 
@@ -381,7 +391,6 @@ Public Sub Control()
 
     'If the main sheet is not ready exit the sub
     If Not mainobj.Ready Then Exit Sub
-
 
     'Generate all the data in the other case
     GenerateData

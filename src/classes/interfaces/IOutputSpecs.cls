@@ -7,10 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Attribute VB_Description = "Interface of Output Specs"
 
 
 '@Folder("Linelist")
-'@ModuleDescription("Interface of Output yjr ")
+'@ModuleDescription("Interface of Output Specs")
 
 Option Explicit
 

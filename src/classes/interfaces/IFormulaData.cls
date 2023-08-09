@@ -12,7 +12,7 @@ Attribute VB_Description = "Interface of FormulaData"
 
 '@Folder("Formula")
 '@ModuleDescription("Interface of FormulaData")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

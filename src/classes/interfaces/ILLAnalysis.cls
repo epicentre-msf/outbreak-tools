@@ -9,10 +9,10 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of Analysis Class"
 
-
+'@Interface
 '@Folder("Analysis")
 '@ModuleDescription("Interface of Analysis Class")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

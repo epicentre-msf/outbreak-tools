@@ -12,7 +12,7 @@ Attribute VB_Description = "main interface to linelist specifications paths"
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("main interface to linelist specifications paths")
-
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IMain

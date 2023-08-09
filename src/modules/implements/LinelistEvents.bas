@@ -41,6 +41,34 @@ Private Sub InitializeTrads()
     Set tradmess = lltrads.TransObject()
 End Sub
 
+'Unique Values of a BetterArray
+Private Function GetUniqueBA(inputTable As BetterArray, _
+                     Optional ByVal Sort As Boolean = False) As BetterArray
+    Dim tableValue As String
+    Dim counter As Long
+    Dim Outable As BetterArray
+
+    Set Outable = New BetterArray
+    Outable.LowerBound = 1
+
+    If inputTable.Length > 0 Then
+        For counter = inputTable.LowerBound To inputTable.UpperBound
+
+            tableValue = Application.WorksheetFunction.Trim( _
+                                inputTable.Item(counter) _
+                        )
+
+            If (tableValue <> vbNullString) And _
+               (Not Outable.Includes(tableValue)) Then _
+                Outable.Push tableValue
+        Next
+    End If
+
+    'sort
+    If Sort Then Outable.Sort
+    Set GetUniqueBA = Outable.Clone()
+End Function
+
 
 'Trigerring event when the linelist sheet has some values within                                                          -                                                      -
 Public Sub EventValueChangeLinelist(Target As Range)
@@ -184,7 +212,7 @@ Public Sub EventValueChangeLinelist(Target As Range)
         
         If (varEditable <> "yes") Then Exit Sub
 
-        Set dict = LLdictionary.Create(wb.Worksheets("Dictionary"), 1, 1)
+        Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
         Set vars = LLVariables.Create(dict)
             
         'The name of custom variables has been updated, update the dictionary

@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of Import Report"
 
-
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@Interface
 '@Folder("Linelist")
 '@ModuleDescription("Interface of Import Report")

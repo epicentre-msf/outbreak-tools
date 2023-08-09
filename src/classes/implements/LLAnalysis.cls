@@ -11,7 +11,7 @@ Attribute VB_Description = "Analysis Class"
 
 '@Folder("Analysis")
 '@ModuleDescription("Analysis Class")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILLAnalysis

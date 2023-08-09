@@ -9,6 +9,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of Linelist Buttons"
 
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@Folder("Linelist")
 '@ModuleDescription("Interface of Linelist Buttons")
 '@Interface

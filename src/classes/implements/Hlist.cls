@@ -10,6 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Build and manage all HList variables"
 
 '@Folder("Linelist")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@ModuleDescription("Build and manage all HList variables")
 '@PredeclaredId
 
@@ -429,10 +430,10 @@ Private Sub CheckRequirements(ByVal sheetName As String, ByVal ll As ILinelist)
 End Sub
 
 'Exposed methods
-Public Sub IHList_Build()
+Private Sub IHList_Build()
     Build
 End Sub
 
-Public Property Get IHList_NextSheet() As String
+Private Property Get IHList_NextSheet() As String
     IHList_NextSheet = NextSheet()
 End Property

@@ -61,6 +61,8 @@ End Sub
 '@Description("Callback for click on show/hide in a linelist worksheet on a button")
 '@EntryPoint
 Public Sub ClickShowHide()
+    Attribute ClickShowHide.VB_Description = "Callback for click on show/hide in a linelist worksheet on a button"
+
     Dim sh As Worksheet
     Dim dict As ILLdictionary
     Dim sheetTag As String
@@ -89,18 +91,21 @@ End Sub
 '@Description("Callback for click on the list of showhide")
 '@EntryPoint
 Public Sub ClickListShowHide(ByVal Index As Long)
+    Attribute ClickListShowHide.VB_Description = "Callback for click on the list of showhide"
     showHideObject.UpdateVisibilityStatus Index
 End Sub
 
 '@Description("Callback for clik on differents show hide options on a button")
 '@EntryPoint
 Public Sub ClickOptionsShowHide(ByVal Index As Long)
+    Attribute ClickOptionsShowHide.VB_Description = "Callback for clik on differents show hide options on a button"
     showHideObject.ShowHideLogic Index
 End Sub
 
 '@Description("Callback for click on column width in show/hide")
 '@EntryPoint
 Public Sub ClickColWidth(ByVal Index As Long)
+    Attribute ClickColWidth.VB_Description = "Callback for click on column width in show/hide"
     showHideObject.ChangeColWidth Index
 End Sub
 
@@ -108,6 +113,7 @@ End Sub
 '@Description("Callback for click on the Print Button")
 '@EntryPoint
 Public Sub ClickOpenPrint()
+    Attribute ClickOpenPrint.VB_Description = "Callback for click on the Print Button"
 
     Dim sh As Worksheet
     Dim printsh As Worksheet
@@ -139,6 +145,7 @@ End Sub
 '@Description("Callback for click on close print sheet")
 '@EntryPoint
 Public Sub ClickClosePrint()
+    Attribute ClickClosePrint.VB_Description = "Callback for click on close print sheet"
 
     Dim sh As Worksheet
     Dim sheetTag As String
@@ -172,6 +179,7 @@ End Sub
 '@Description("Rotate all headers in the Print sheet")
 '@EntryPoint
 Public Sub ClickRotateAll()
+    Attribute ClickRotateAll.VB_Description = "Rotate all headers in the Print sheet"
 
     Dim sh As Worksheet
     Dim Lo As listObject
@@ -217,6 +225,7 @@ End Sub
 '@Description("Change the Row height of cells in the print sheet")
 '@EntryPoint
 Public Sub ClickRowHeight()
+    Attribute ClickRowHeight.VB_Description = "Change the Row height of cells in the print sheet"
 
     Dim sh As Worksheet
     Dim Lo As listObject
@@ -256,7 +265,7 @@ Public Sub ClickRowHeight()
         If inputValue = vbNullString Then Exit Sub
         If IsNumeric(inputValue) Then Exit Do
         If (MsgBox(tradsmess.TranslatedValue("MSG_EnterNumeric"), _
-             vbOkCancel, "") = vbCancel) Then Exit Sub
+             vbOkCancel, vbNullString) = vbCancel) Then Exit Sub
     Loop
 
     On Error Resume Next
@@ -272,6 +281,8 @@ End Sub
 '@Description("Click on show all filters")
 '@EntryPoint
 Public Sub ClickRemoveFilters()
+    Attribute ClickRemoveFilters.VB_Description = "Click on show all filters"
+
     Dim sh As Worksheet
     Dim Lo As listObject
     Dim sheetTag As String
@@ -303,6 +314,7 @@ End Sub
 '@Description("Add rows to a data entry table in the Linelist")
 '@EntryPoint
 Public Sub ClickAddRows()
+    Attribute ClickAddRows.VB_Description = "Add rows to a data entry table in the Linelist"
 
     Dim Lo As listObject
     Dim csTab As ICustomTable
@@ -351,6 +363,8 @@ End Sub
 '@Description("Resize the data entry table in the linelist")
 '@EntryPoint
 Public Sub ClickResize()
+    Attribute ClickResize.VB_Description = "Resize the data entry table in the linelist"
+
     Dim Lo As listObject
     Dim csTab As ICustomTable
     Dim sh As Worksheet
@@ -398,6 +412,8 @@ End Sub
 '@Description("Callback for click on advance configurations")
 '@EntryPoint
 Public Sub ClickAdvanced()
+    Attribute ClickAdvanced.VB_Description = "Callback for click on advance configurations"
+
     'Import exported data into the linelist
     F_Advanced.Show
 End Sub
@@ -405,6 +421,7 @@ End Sub
 '@Description("Callback for clik on Export")
 '@EntryPoint
 Public Sub ClickExport()
+    Attribute ClickExport.VB_Description = "Callback for clik on Export"
 
     Const COMMANDHEIGHT As Integer = 50
     Const COMMANDGAPS As Byte = 10
@@ -488,6 +505,7 @@ End Sub
 '@Description("Callback for clik on open the geobase application")
 '@EntryPoint
 Public Sub ClickGeoApp()
+    Attribute ClickGeoApp.VB_Description = "Callback for clik on open the geobase application"
 
     Dim targetColumn As Integer
     Dim hfOrGeo As String
@@ -532,8 +550,8 @@ End Sub
 
 '@Description("Calculate Elements in an analysis worksheet")
 '@EntryPoint
-
 Public Sub ClickCalculate()
+    Attribute ClickCalculate.VB_Description = "Calculate Elements in an analysis worksheet"
 
     Dim sh As Worksheet
     Dim sheetTag As String
@@ -569,6 +587,8 @@ End Sub
 '@Description("Print the current linelist")
 '@EntryPoint
 Public Sub ClickPrintLL()
+    Attribute ClickPrintLL.VB_Description = "Print the current linelist"
+
     Dim sh As Worksheet
     Dim sheetTag As String
 
@@ -603,7 +623,7 @@ Public Sub ClickPrintLL()
         .PrintHeadings = False
         .PrintGridlines = False
         .PrintTitleRows = "$5:$8" 'Those are rows to always keep on title
-        .PrintTitleColumns = ""
+        .PrintTitleColumns = vbNullString
         .PrintComments = xlPrintNoComments
         .PrintNotes = False
         'The quality of the print
@@ -633,6 +653,7 @@ End Sub
 '@Description("Show the Export for Migration form")
 '@EntryPoint
 Public Sub ClickExportMigration()
+    Attribute ClickExportMigration.VB_Description = "Show the Export for Migration form"
 
     'This static variable will keep the selection of
     'the user after the first click. The variable
@@ -655,6 +676,8 @@ End Sub
 '@Description("For each table, show the variables and corresponding labels")
 '@EntryPoint
 Public Sub ClickOpenVarLab()
+    Attribute ClickOpenVarLab.VB_Description = "For each table, show the variables and corresponding labels"
+
     Dim counter As Long 'Counter for the number of tables
     Dim actsh As Worksheet
     Dim tempsh As Worksheet
@@ -731,6 +754,7 @@ End Sub
 '@Description("Sort elements in a current range of a HList worksheet")
 '@EntryPoint
 Public Sub ClickSortTable()
+    Attribute ClickSortTable.VB_Description = "Sort elements in a current range of a HList worksheet"
 
     Dim sh As Worksheet
     Dim sheetTag As String
@@ -803,6 +827,8 @@ End Sub
 '@Description("Export all Analysis worksheets to a workbook")
 '@EntryPoint
 Public Sub ClickExportAnalysis()
+    Attribute ClickExportAnalysis.VB_Description = "Export all Analysis worksheets to a workbook"
+    
     Dim expOut As IOutputSpecs
 
     'Add Error management

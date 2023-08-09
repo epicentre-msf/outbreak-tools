@@ -12,6 +12,7 @@ Attribute VB_Description = "Interface of OSFiles"
 '@Interface
 '@Folder("General")
 '@ModuleDescription("Interface of OSFiles")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

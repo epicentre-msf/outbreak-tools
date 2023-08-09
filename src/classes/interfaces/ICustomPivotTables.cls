@@ -13,6 +13,7 @@ Attribute VB_Description = "Interface of CustomPivotTable"
 '@Interface
 '@Folder("Linelist Building")
 '@ModuleDescription("Interface of CustomPivotTable")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

@@ -9,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Geobase management class"
 
+'@IgnoreModule ExcelMemberMayReturnNothing, IIfSideEffect
 '@PredeclaredId
 '@Folder("Geobase")
 '@ModuleDescription("Geobase management class")
@@ -136,29 +137,19 @@ Private Function ColumnIndex(ByVal colName As String, ByVal headerRng As Range, 
     ColumnIndex = Index
 End Function
 
-Private Function UniqueValues() As BetterArray
-    Dim EndRow As Long
-    Dim endCol As Long
-    Dim sh As Worksheet
-    Dim pasteRng As Range
-    Dim returnedValues As BetterArray
+Private Function UniqueRangeValue(ByVal rng As Range) As BetterArray
+    Dim cellRng As Range
+    Dim retVal As BetterArray
 
-    Set returnedValues = New BetterArray
-    Set sh = Wksh()
+    Set retVal = New BetterArray
 
-    With sh
-        endCol = .Range("RNG_PastingGeoCol").Column
-        EndRow = .Cells(.Rows.Count, endCol).End(xlUp).Row
-        Set pasteRng = .Range(.Cells(1, endCol), .Cells(EndRow, endCol))
-        pasteRng.RemoveDuplicates Columns:=1, Header:=xlNo
-        EndRow = .Cells(.Rows.Count, endCol).End(xlUp).Row 'New endrow after removing duplicates
-        Set pasteRng = .Range(.Cells(1, endCol), .Cells(EndRow, endCol))
-        returnedValues.FromExcelRange pasteRng, DetectLastRow:=False, _
-                                      DetectLastColumn:=False
-    End With
+    For Each cellRng in rng
+        If Not retVal.Includes(cellRng.Value) Then retVal.Push cellRng.Value
+    Next
 
-    Set UniqueValues = returnedValues.Clone()
+    Set UniqueRangeValue = retVal.Clone()
 End Function
+
 
 Private Function HFRange(ByVal colName As String) As Range
     Dim sh As Worksheet
@@ -257,8 +248,7 @@ Private Property Get GeoLevel(ByVal adminLevel As Byte, _
         Case LevelAdmin1
 
             Set rng = HFRange("adm1_name")
-            rng.Copy sh.Range("RNG_PastingGeoCol")
-            Set outLevels = UniqueValues()
+            Set outLevels = UniqueRangeValue(rng)
 
         Case LevelAdmin2
 
@@ -289,15 +279,12 @@ Private Property Get GeoLevel(ByVal adminLevel As Byte, _
         Set returnedRng = Lo.ListColumns(colIndex).DataBodyRange.SpecialCells(xlCellTypeVisible)
         On Error GoTo Err
         If Not returnedRng Is Nothing Then
-            returnedRng.Copy sh.Range("RNG_PastingGeoCol")
             Lo.AutoFilter.ShowAllData
-            Set outLevels = UniqueValues()
+            Set outLevels = UniqueRangeValue(returnedRng)
         End If
 
         Lo.AutoFilter.ShowAllData
     End If
-
-    sh.Range("RNG_PastingGeoCol").EntireColumn.Cells.Clear
 
 Err:
     Set GeoLevel = outLevels.Clone()
@@ -354,8 +341,8 @@ Private Sub Translate(Optional ByVal rawNames As Boolean = False)
     Next
 
     'Informations for next translations
-    rng.Value = Replace(rng.Value, ", not translated", "")
-    rng.Value = Replace(rng.Value, ", translated", "")
+    rng.Value = Replace(rng.Value, ", not translated", vbNullString)
+    rng.Value = Replace(rng.Value, ", translated", vbNullString)
     rng.Value = IIf(rawNames, rng.Value & ", not translated", rng.Value & ", translated")
 End Sub
 
@@ -933,10 +920,10 @@ Private Function AdminCode(ByVal selectedAdmin As String) As String
 End Function
 
 'check if the geobase is Empty
-Private Property Get IsEmpty() As Boolean
+Private Property Get HasNoData() As Boolean
     Dim sh As Worksheet
     Set sh = Wksh()
-    IsEmpty = (sh.Range("RNG_GeoUpdated").Value = "empty")
+    HasNoData = (sh.Range("RNG_GeoUpdated").Value = "empty")
 End Property
 
 'Update historic data for the geobase
@@ -966,10 +953,12 @@ Private Sub UpdateHistoric(ByVal newValue As String, Optional ByVal scope As Byt
     'write new value
     cellRng.Value = newValue
 
-    'resize the list object
+    'resize the list object and sort.
     Lo.Resize sh.Range(LoRng.Cells(1, 1), cellRng)
+    On Error Resume Next
     LoRng.RemoveDuplicates Columns:=1, Header:=xlYes
     LoRng.Sort key1:=LoRng, Header:=xlYes
+    On Error GoTo 0
 End Sub
 
 'Interfaces
@@ -1028,8 +1017,8 @@ Private Function ILLGeo_AdminCode(ByVal selectedAdmin As String) As String
     ILLGeo_AdminCode = AdminCode(selectedAdmin)
 End Function
 
-Private Property Get ILLGeo_IsEmpty() As Boolean
-    ILLGeo_IsEmpty = IsEmpty()
+Private Property Get ILLGeo_HasNoData() As Boolean
+    ILLGeo_HasNoData = HasNoData()
 End Property
 
 Private Sub ILLGeo_UpdateHistoric(ByVal newValue As String, Optional ByVal scope As Byte = 0)

@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Build")
 '@ModuleDescription("Object containing specifications for the linelist")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 Implements ILinelistSpecs
 
 Option Explicit
