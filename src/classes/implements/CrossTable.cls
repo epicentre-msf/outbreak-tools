@@ -654,8 +654,12 @@ Private Sub AddHeader()
                         cellRng.Cells(counter, 1).Name = "INPUTSPTGEO_" & counter & "_" & tabId
                     Next
 
-                    Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(nGeo, 1))
+                    'Add HF input cell
+                    cellRng.Cells(counter, 1).Name = "INPUTSPTHF_" & tabId
+
+                    Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(counter, 1))
                     rng.Name = "INPUTSPTGEO_USER_" & tabId
+                    rng.Locked = False
 
                     'anchor for time series elements (on TimeSeries, it is the section range)
                     Set rng = cellRng.Offset(nGeo + 3)

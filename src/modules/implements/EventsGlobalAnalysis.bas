@@ -161,7 +161,7 @@ Sub EventValueChangeAnalysis(Target As Range)
         'GoTo section range for univariate and bivariate analysis
         Set rng = actsh.Range("ua_go_to_section")
 
-    Case "TS-Analysis"
+    Case "TS-Analysis", "SPT-Analysis"
         actsh.calculate
         actsh.UsedRange.calculate
         actsh.Columns("A:E").calculate

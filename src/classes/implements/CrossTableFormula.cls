@@ -353,6 +353,7 @@ Private Sub AddFormulas()
     Dim spTab As ISpatialTables
     Dim tabFormObject As IFormulas
     Dim spTabType As String
+    Dim counter As Long 'A counter for spatio-temporal formulas on headers
 
     Dim specs As ITablesSpecs
 
@@ -614,10 +615,20 @@ Private Sub AddFormulas()
                 AddRngFormat tabFormat, .Range("TOTAL_TOTAL_" & tabId)
             End If
 
-        Case TypeTimeSeries                      ' FORMULAS FOR TIME SERIES =====================
+        Case TypeTimeSeries, TypeSpatioTemporal  ' FORMULAS FOR TIME SERIES AND SPATIO-TEMPORAL =====================
 
             rowVar = specs.Value("time")
             colVar = specs.Value("column")
+            spTabType = specs.SpatialTableTypes()
+            counter = 1
+
+            'For spatio temporal, column variable could be either hf or geo.
+            If tabType = TypeSpatioTemporal Then
+                spTabType = specs.SpatialTableTypes()
+                colVar = Switch(spTabType = "geo", _ 
+                                 "concat_adm1_" & colVar, spTabType = "hf", _
+                                 "hf_" & colVar, True, vbNullString)
+            End If
 
             'Rows for last day, and the period
             If specs.isNewSection() Then         'New sectio on time series
@@ -751,6 +762,17 @@ Private Sub AddFormulas()
 
                     rng.Cells(1, 1).AutoFill Destination:=rng, Type:=xlFillValues
 
+                End If
+
+                'Add formula for range label in case of Spatio temporal
+
+                If (tabType = TypeSpatioTemporal) Then
+                    If spTabType = "geo" Then
+                        rngLab.Formula = "= INPUTSPTGEO_" & counter & "_" & secId
+                    Else
+                        rngLab.Formula = "= INPUTSPTHF_" & secId
+                    End If                
+                    counter = counter + 1
                 End If
 
                 Set rng = rng.Offset(, 1)
