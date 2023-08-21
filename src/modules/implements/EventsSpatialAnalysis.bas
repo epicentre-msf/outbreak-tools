@@ -284,3 +284,90 @@ Public Sub FormatDevidePop(ByVal rngName As String)
     NotBusyApp
     pass.Protect "_active", True
 End Sub
+
+'@Description("Update formulas in spatio-temporal tables")
+'@EntryPoint
+Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, ByVal actAdm As Long)
+    Attribute UpdateSpatioTemporalFormulas.VB_Description = "Update formulas in spatio-temporal tables"
+
+    Dim tabId As String
+    Dim prevAdm As Long
+    Dim sh As Worksheet
+    Dim counter As Long
+    Dim headerRng As Range
+    Dim cellRng As Range
+    Dim valuesRng As Range
+    Dim headerFormula As String
+    Dim valuesFormula As String
+    Dim headerCellName As String
+    Dim hasFormula As Boolean
+    
+
+    BusyApp cursor:=xlNorthwestArrow
+    Initialize
+    
+    On Error GoTo Err
+
+    Set sh = ActiveSheet
+    tabId = "SPT_" & Split(rngName, "_")(3)
+    Set headerRng = sh.Range("SPT_FORMULA_COLUMN_" & tabId)
+    prevAdm = sh.Range(rngName).Offset(, 1).Value
+
+    pass.UnProtect "_active"
+
+    For counter = 1 To headerRng.Columns.Count
+        headerFormula = Replace(headerRng.Cells(1, counter).Formula, "=", vbNullString)
+        headerFormula = Application.WorksheetFunction.Trim(headerFormula)
+
+        If (headerFormula = rngName) Then
+            
+            Set valuesRng = Nothing
+
+            On Error Resume Next
+            headerCellName = headerRng.Cells(1, counter).Name.Name
+            'replace LABEL with VALUES to get the column range of values
+            Set valuesRng = sh.Range(Replace(headerCellName, "LABEL", "VALUES"))
+            On Error GoTo Err
+
+            If (Not valuesRng Is Nothing) Then
+                'Shift values Rng to take in account total and missing lines
+                Set valuesRng = sh.Range(valuesRng.Cells(1, 1), _ 
+                                         valuesRng.Cells(valuesRng.Rows.Count + 2, 1))
+
+                For Each cellRng In valuesRng
+
+                    hasFormula = False
+                    valuesFormula = cellRng.FormulaArray
+
+                    If valuesFormula = vbNullString Then
+                        valuesFormula = cellRng.formula
+                        hasFormula = True
+                    End If
+
+                    If (InStr(1, valuesFormula, "concat_adm" & prevAdm) > 0) Then
+
+                        valuesFormula = Replace( _ 
+                                            valuesFormula, _ 
+                                            "concat_adm" & prevAdm, _
+                                            "concat_adm" & actAdm)
+
+                        'some cells have formula, others have formulaArray
+                        If (hasFormula) Then
+                            cellRng.formula = valuesFormula
+                        Else
+                            cellRng.FormulaArray = valuesFormula
+                        End If
+                    End If
+                Next
+            End If
+        End If
+    Next
+
+    'Change previous admin values
+    sh.Range(rngName).Offset(, 1).Value = actAdm
+    sh.UsedRange.Calculate
+
+Err:
+    pass.Protect sh, True
+    NotBusyApp
+End Sub

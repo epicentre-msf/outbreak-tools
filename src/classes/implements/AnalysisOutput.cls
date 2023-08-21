@@ -390,6 +390,7 @@ Private Sub WriteTable(ByVal loName As String, _
   Dim design As ILLFormat
   Dim anchorRng As Range 'the last Range of the listobject
   Dim containsTimeSeries As Boolean
+  Dim spatRng As Range 'Spatio-temporal plage for one table
 
   'Variables for Time Series Tables
   Dim tablename As String
@@ -405,6 +406,7 @@ Private Sub WriteTable(ByVal loName As String, _
   Dim grHeight As Long
   Dim isNewSection As Boolean 'Test if a specification is new section
   Dim addMinMaxFormula As Boolean 'Test if there is a need to update min/max formula
+  Dim addSpatioTemporalName As Boolean 'Test if we should add spatio temporal name range to update formulas
 
   'Prefix for add Goto on time series vs spatial analysis
   Dim goToPrefix As String
@@ -435,15 +437,19 @@ Private Sub WriteTable(ByVal loName As String, _
   Set tabRng = Lo.ListRows(1).Range
 
   Do
+    
     Set specs = TablesSpecs.Create(hRng, tabRng, lData)
     Set nextSpecs = Nothing
     addMinMaxFormula = False
+    addSpatioTemporalName = False
 
+    'For non valid table move to next one
     If Not specs.ValidTable() Then GoTo continueLoop
 
     tabType = specs.TableType()
     isNewSection = specs.isNewSection()
     containsTimeSeries = (tabType = TypeTimeSeries Or tabType = TypeSpatioTemporal)
+    tabId = specs.TableId()  
     
 
     'Update goto section list on new section
@@ -462,8 +468,7 @@ Private Sub WriteTable(ByVal loName As String, _
 
     'Add Graphs
     If specs.HasGraph() And (Not containsTimeSeries) Then
-
-      tabId = specs.TableId()      
+    
       'The graph height depends on the number of elements in Geo,
       'but could result in error if n geo is not found
       grHeight = 1
@@ -533,14 +538,19 @@ Private Sub WriteTable(ByVal loName As String, _
     If isNewSection And (Not prevSpecs Is Nothing)  Then
       prevSecId = prevSpecs.TableSectionId()
       addMinMaxFormula = True
+
+      'Add Name for range of the whole table for spatio-temporal analysis
+      'This is used to update formulas
+      addSpatioTemporalName = (tabType = TypeSpatioTemporal)
     End If
 
-    If (Not nextSpecs Is Nothing) Then
+    If (Not (nextSpecs Is Nothing)) Then
       
       If (nextSpecs.IsNewSection() And isNewSection) Then
         'A time series table with only one section, and with next sections
         prevSecId = specs.TableSectionId()
         addMinMaxFormula = True
+        addSpatioTemporalName = (tabType = TypeSpatioTemporal)
       End If
     Else
       'last section of a time series table
@@ -549,10 +559,11 @@ Private Sub WriteTable(ByVal loName As String, _
 
       'Add an anchor to where to start building graphs for time series (START_GRAPHS_TS)
       Set cellRng = outsh.Range("ENDTABLE_" & prevSecId).Offset(5, 2)
-      cellRng.Name = "START_GRAPHS_TS"
+      If tabType = TypeTimeSeries Then cellRng.Name = "START_GRAPHS_TS"
+      If tabType = TypeSpatioTemporal Then cellRng.Name = "START_GRAPHS_SPT"
     End If
 
-    If (Not isNewSection) Then
+    If (Not isNewSection) And (Not (nextSpecs Is Nothing)) Then
       addMinMaxFormula = False
       'No new section, update minimum and maximum formula
       minFormula = minFormula & ", " & "MIN(" & tablename & "[" & rowVar & "]" & ")"
@@ -576,6 +587,18 @@ Private Sub WriteTable(ByVal loName As String, _
       Set cellRng = outsh.Range("SECTION_" & prevSecId).Offset(1, -2)
       AddGoTo cellRng:=cellRng, goToPrefix:=goToPrefix, _ 
               scope:="header",  goToSuffix:=prevSecId
+    End If
+
+    'Add name for spatio-temporal table
+    If addSpatioTemporalName Then
+      With outsh
+        Set cellRng = .Range("COLUMN_CATEGORIES_" & tabId)
+        Set spatRng = .Range( _ 
+                        .Range("COLUMN_CATEGORIES_" & prevSecId).Cells(1, 1), _ 
+                        cellRng.Cells(1, cellRng.Columns.Count) _ 
+                      )
+      End With
+      spatRng.Name = "SPT_FORMULA_COLUMN_" & prevSecId
     End If
 
   continueLoop:

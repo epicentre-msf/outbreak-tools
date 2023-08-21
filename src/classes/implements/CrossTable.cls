@@ -621,7 +621,7 @@ Private Sub AddHeader()
 
                 'For spatio temporal, we need to take in account the number of geo
                 If (tablType = TypeSpatioTemporal) Then
-                     nGeo = 5
+                    nGeo = 5
                     On Error Resume Next
                     nGeo = CLng(specs.Value("n geo"))
                     On Error GoTo 0
@@ -646,12 +646,15 @@ Private Sub AddHeader()
 
                     rng.Value = trans.TranslatedValue("MSG_InputGeoLevels")
                     rng.Name = "INPUTSPTGEO_LABEL_" & tabId
+                    rng.Cells(2, 1).Value = nGeo
+                    rng.Cells(2, 1).Name = "INPUTSPTGEO_NGEO_" & tabId
 
                     'Add the number of geolevels
 
                     Set cellRng = rng.Offset(2)
                     For counter = 1 To nGeo
                         cellRng.Cells(counter, 1).Name = "INPUTSPTGEO_" & counter & "_" & tabId
+                        cellRng.Cells(counter, 2).Value = 1
                     Next
 
                     'Add HF input cell
@@ -660,6 +663,8 @@ Private Sub AddHeader()
                     Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(counter, 1))
                     rng.Name = "INPUTSPTGEO_USER_" & tabId
                     rng.Locked = False
+                    'Where to write previous admin from 
+                    rng.Offset(, 1).Name = "INPUTPREVADM_USER_" & tabId
 
                     'anchor for time series elements (on TimeSeries, it is the section range)
                     Set rng = cellRng.Offset(nGeo + 3)
@@ -1248,7 +1253,8 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
         'Hidden cells (no matter what)
         rngTable.Clear
-        rngTable.Push "PREVIOUS_ADM_", "POPPREVFACT_", "POPFACT_", "POPFACTLABEL_"
+        rngTable.Push "PREVIOUS_ADM_", "POPPREVFACT_", "POPFACT_", "POPFACTLABEL_", _ 
+                      "INPUTSPTGEO_NGEO_", "INPUTPREVADM_USER_"
         
         For counter = rngTable.LowerBound To rngTable.UpperBound
             rngName = rngTable.Item(counter) & tabId
