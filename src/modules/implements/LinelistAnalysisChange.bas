@@ -9,3 +9,9 @@ Private Sub Worksheet_Change(ByVal Target As Range)
     EventValueChangeAnalysis Target
     Application.EnableEvents = True
 End Sub
+
+Private Sub Worksheet_BeforeDoubleClick(ByVal Target As Range, Cancel As Boolean)
+    Application.EnableEvents = False
+    EventDoubleClickAnalysis Target
+    Application.EnableEvents = True
+End Sub

@@ -130,7 +130,7 @@ End Sub
 
 '@Description("Find the selected column on "GOTO" Area and go to that column")
 '@EntryPoint
-Sub EventValueChangeAnalysis(Target As Range)
+Public Sub EventValueChangeAnalysis(Target As Range)
 
     Dim rng As Range
     Dim rngLook As Range
@@ -167,6 +167,8 @@ Sub EventValueChangeAnalysis(Target As Range)
         actsh.Columns("A:E").calculate
         'Goto section range for time series analysis
         If InStr(1, rngName, "ts_go_to_section") > 0 Then Set rng = Target
+        'GoTo section range for spatio temporal analysis
+        If InStr(1, rngName, "spt_go_to_section") > 0 Then Set rng = Target
 
     Case "SP-Analysis"
         'GoTo section for spatial analysis
@@ -198,5 +200,30 @@ Sub EventValueChangeAnalysis(Target As Range)
     End If
 
     Exit Sub
+Err:
+End Sub
+
+
+'@Description("Intercept double click on a Spatio-temporal analysis sheet")
+'@EntryPoint
+Public Sub EventDoubleClickAnalysis(Target As Range)
+    
+    Dim rngName As String
+    Dim sheetTag As String
+    Dim actsh As Worksheet
+
+    On Error Resume Next
+        rngName = Target.Name.Name
+    On Error GoTo Err
+
+    Set actsh = ActiveSheet
+    sheetTag = actsh.Cells(1, 3).Value
+    If sheetTag <> "SPT-Analysis" Then Exit Sub
+    
+    If (InStr(1, rngName, "INPUTSPTGEO_") > 0) Then
+        LoadGeo 0
+    ElseIf (InStr(1, rngName, "INPUTSPTHF_") > 0) Then
+        LoadGeo 1
+    End If
 Err:
 End Sub
