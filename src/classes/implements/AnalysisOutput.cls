@@ -373,7 +373,6 @@ Private Sub WriteTable(ByVal loName As String, _
   Dim outsh As Worksheet
   Dim tabRng As Range
   Dim hRng As Range
-  Dim tabCounter As Long 'counter for tables
   Dim graphCounter As Long 'counter for graphs
   Dim tabl As ICrossTable
   Dim tabform As ICrossTableFormula
@@ -388,21 +387,27 @@ Private Sub WriteTable(ByVal loName As String, _
   Dim grSpecs As IGraphSpecs
   Dim tabId As String
   Dim tabType As AnalysisTablesType
-  Dim addGraph As String
   Dim design As ILLFormat
+  Dim anchorRng As Range 'the last Range of the listobject
+  Dim containsTimeSeries As Boolean
 
   'Variables for Time Series Tables
   Dim tablename As String
   Dim rowVar As String
   Dim minFormula As String
   Dim maxFormula As String
-  Dim lastValid As ITablesSpecs
   Dim prevSpecs As ITablesSpecs 'Previous specs (could be Nothing)
+  Dim nextSpecs As ITablesSpecs 'Next specs (could be a non valid table)
   Dim prevSecId As String 'Previous table Id
   Dim dict As ILLdictionary
   Dim vars As ILLVariables
   Dim goToHeader As String
   Dim grHeight As Long
+  Dim isNewSection As Boolean 'Test if a specification is new section
+  Dim addMinMaxFormula As Boolean 'Test if there is a need to update min/max formula
+
+  'Prefix for add Goto on time series vs spatial analysis
+  Dim goToPrefix As String
 
   'Initialize the arrays
   InitializeArrays
@@ -423,139 +428,159 @@ Private Sub WriteTable(ByVal loName As String, _
   goToHeader = GoToLabel("header")
 
   If Lo.DataBodyRange Is Nothing Then Exit Sub
+  
+  'This is the last range of the listObject for anchor purposes
   Set hRng = Lo.HeaderRowRange()
+  Set anchorRng = hRng.Offset(Lo.ListRows.Count)
+  Set tabRng = Lo.ListRows(1).Range
 
-  For tabCounter = 1 To Lo.ListRows.Count
-    Set tabRng = Lo.ListRows(tabCounter).Range
+  Do
     Set specs = TablesSpecs.Create(hRng, tabRng, lData)
+    Set nextSpecs = Nothing
+    addMinMaxFormula = False
+
+    If Not specs.ValidTable() Then GoTo continueLoop
+
     tabType = specs.TableType()
+    isNewSection = specs.isNewSection()
+    containsTimeSeries = (tabType = TypeTimeSeries Or tabType = TypeSpatioTemporal)
+    
 
-    If specs.ValidTable() Then
+    'Update goto section list on new section
+    If isNewSection Then Push goToSection & ": " & specs.Value("section"), scope:="section"
 
-      If specs.isNewSection() Then
-        Push goToSection & ": " & specs.Value("section"), scope:="section"
-        'The last valid specs is the specs of the last valid new section for TS
-        Set lastValid = specs
-      End If
+    Set tabl = CrossTable.Create(specs, outsh, trads)
+    tabl.Build
+    'Add Formulas
+    Set tabform = CrossTableFormula.Create(tabl, formData)
+    tabform.AddFormulas
+    'Format the created table
+    tabl.Format design
 
-      Set tabl = CrossTable.Create(specs, outsh, trads)
-      tabl.Build
-      'Add Formulas
-      Set tabform = CrossTableFormula.Create(tabl, formData)
-      tabform.AddFormulas
-      'Format the created table
-      tabl.Format design
+    'Will be used to test if a sheet has a table
+    If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Range("RNG_HasTable").Value = "yes"
 
-      'Will be used to test if a sheet has a table
-      If IsEmpty(outsh.Range("RNG_HasTable")) Then _
-      outsh.Range("RNG_HasTable").Value = "yes"
+    'Add Graphs
+    If specs.HasGraph() And (Not containsTimeSeries) Then
 
-      'Minimum and maximum formula for Time series; GoTo Headers for time series
-      If (tabType = TypeTimeSeries) Then
-        'Get the previous specs for time series
-        On Error Resume Next
-        Set prevSpecs = specs.Previous()
-        On Error GoTo 0
+      tabId = specs.TableId()      
+      'The graph height depends on the number of elements in Geo,
+      'but could result in error if n geo is not found
+      grHeight = 1
+      On Error Resume Next
+      grHeight = CLng(specs.Value("n geo"))
+      On Error GoTo 0
+      
+      'cellRng is where to write the graph on the worksheet
+      Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
+      'For spatial table move three columns to keep room for deviding by population
+      If tabType = TypeSpatial Then Set cellRng = cellRng.Offset(, 2)
 
-        rowVar = specs.Value("row")
-        tablename = vars.Value(colName:="table name", varName:=rowVar)
-        'Initialize the minimum and Maximum formulas
-        If (prevSpecs Is Nothing) Then
-          'First New section, minimum and maximum formulas
-          minFormula = "MIN(" & tablename & "[" & rowVar & "]" & ")"
-          maxFormula = "MAX(" & tablename & "[" & rowVar & "]" & ")"
-
-          'add goTo Headers
-          Push goToHeader & ": " & tabl.TimeSeriesHeader(), scope:="header"
-
-          'It is Possible to have new section and previous section is Nothing
-        ElseIf specs.isNewSection() And (Not prevSpecs Is Nothing) Then
-
-          'New section after the first New Section
-          prevSecId = prevSpecs.TableSectionId()
-
-          outsh.Range("MAX_MAX_DATE_" & prevSecId).formula = "= MAX(" & maxFormula & ")"
-          outsh.Range("MIN_MIN_DATE_" & prevSecId).formula = "= MIN(" & minFormula & ")"
-
-          minFormula = "MIN(" & tablename & "[" & rowVar & "]" & ")"
-          maxFormula = "MAX(" & tablename & "[" & rowVar & "]" & ")"
-
-          'Add goTo Header to the previous section
-          Set cellRng = outsh.Range("SECTION_" & prevSecId).Offset(1, -2)
-          AddGoTo cellRng:=cellRng, goToPrefix:="ts_", scope:="header", _
-                   goToSuffix:=prevSecId
-
-        ElseIf (Not specs.isNewSection()) Then
-          'No new section, update minimum and maximum formula
-          minFormula = minFormula & ", " & "MIN(" & tablename & "[" & rowVar & "]" & ")"
-          maxFormula = maxFormula & ", " & "MAX(" & tablename & "[" & rowVar & "]" & ")"
-
-          Push goToHeader & ": " & tabl.TimeSeriesHeader(), scope:="header"
-        End If
-      End If
-
-      'Add graphs if needed for bivariate, univariate and spatial
-      addGraph = specs.Value("graph")
-
-      If (addGraph = "yes" And tabType = TypeUnivariate) Or _
-        ((addGraph = "values" Or addGraph = "percentages") _
-         And ((tabType = TypeBivariate) Or (tabType = TypeSpatial))) Then
-
-         'The graph height depends on the number of elements in Geo,
-         'but could result in error if n geo is not found
-         grHeight = 1
-         On Error Resume Next
-         grHeight = CLng(specs.Value("n geo"))
-         On Error GoTo 0
-
-        'cellRng is where to write the graph on the worksheet
-        Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
-        tabId = specs.TableId()
-
-        'For spatial table move three columns to keep room for deviding by population
-        If tabType = TypeSpatial Then Set cellRng = cellRng.Offset(, 2)
-
-        'Create the specs of the graph and add it
-        Set grSpecs = GraphSpecs.Create(tabl)
-        'Create series uses informations on the table to create columns of
-        'series of ranges to plot.
-        grSpecs.CreateSeries
-        Set gr = Graphs.Create(outsh, cellRng)
-        gr.Add
-
-        'Add
-        For graphCounter = 1 To grSpecs.NumberOfSeries()
-          'Add the series
-          gr.AddSeries grSpecs.SeriesName(graphCounter), _
-          grSpecs.SeriesType(graphCounter), grSpecs.SeriesPos(graphCounter)
-
-          'Add the series label
-          gr.AddLabels grSpecs.SeriesLabel(graphCounter), _
-          grSpecs.SeriesColumnLabel(graphCounter), hardCodeLabels:=False
-        Next
-
-        'format the graph
-        gr.Format catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _
-        valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _
-        scope:=scope, heightFactor:=grHeight
-      End If
+      'Create the specs of the graph and add it
+      Set grSpecs = GraphSpecs.Create(tabl)
+      
+      'Create series uses informations on the table to create columns of
+      'series of ranges to plot.
+      grSpecs.CreateSeries
+      Set gr = Graphs.Create(outsh, cellRng)
+      
+      gr.Add
+      'Add the graph
+      For graphCounter = 1 To grSpecs.NumberOfSeries()
+        'Add the series
+        gr.AddSeries grSpecs.SeriesName(graphCounter), _
+        grSpecs.SeriesType(graphCounter), grSpecs.SeriesPos(graphCounter)
+       'Add the series label
+        gr.AddLabels grSpecs.SeriesLabel(graphCounter), _
+        grSpecs.SeriesColumnLabel(graphCounter), hardCodeLabels:=False
+      Next
+      
+      'Format the graph
+      gr.Format catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _
+                valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _
+                scope:=scope, heightFactor:=grHeight
     End If
-  Next
 
-  'Add minimum and maximum formula for last section if on time series
-  If (Not lastValid Is Nothing) And (tabType = TypeTimeSeries) Then
-    tabId = lastValid.TableSectionId
-    outsh.Range("MAX_MAX_DATE_" & tabId).formula = "= MAX(" & maxFormula & ")"
-    outsh.Range("MIN_MIN_DATE_" & tabId).formula = "= MIN(" & minFormula & ")"
-    Set cellRng = outsh.Range("SECTION_" & tabId).Offset(1, -2)
-    'Add dropdown
-    AddGoTo cellRng:=cellRng, goToPrefix:="ts_", scope:="header", _
-                   goToSuffix:=tabId
-    'Add an anchor to where to start building graphs for time series (START_GRAPHS_TS)
-    Set cellRng = outsh.Range("ENDTABLE_" & lastValid.TableId).Offset(5, 2)
-    cellRng.Name = "START_GRAPHS_TS"
-  End If
+    'For TimeSeries and Spatio-Temporal, add formula for minimum and Maximum
+    If Not containsTimeSeries Then GoTo continueLoop
 
+    'Get the previous specs for time series
+    On Error Resume Next
+    Set prevSpecs = specs.Previous()
+    Set nextSpecs = specs.NextSpecs(anchorRng)
+    On Error GoTo 0
+
+    rowVar = specs.Value("row")
+    tablename = vars.Value(colName:="table name", varName:=rowVar)
+        
+    'Initialize the minimum and Maximum formulas
+    goToPrefix = IIF(tabType = TypeTimeSeries, "ts_", "spt_")
+
+    'If previous section is Nothing, initialize minimum and maximum
+    'formulas
+
+    If (prevSpecs Is Nothing) Then  
+      'First New section, minimum and maximum formulas
+      minFormula = "MIN(" & tablename & "[" & rowVar & "]" & ")"
+      maxFormula = "MAX(" & tablename & "[" & rowVar & "]" & ")"
+      'add goTo Headers
+      Push goToHeader & ": " & tabl.TimeSeriesHeader(), scope:="header"
+      addMinMaxFormula = False
+    End If
+
+    'We are on a new section, and at the end of previous section
+    'New section after the first New Section
+    If isNewSection And (Not prevSpecs Is Nothing)  Then
+      prevSecId = prevSpecs.TableSectionId()
+      addMinMaxFormula = True
+    End If
+
+    If (Not nextSpecs Is Nothing) Then
+      
+      If (nextSpecs.IsNewSection() And isNewSection) Then
+        'A time series table with only one section, and with next sections
+        prevSecId = specs.TableSectionId()
+        addMinMaxFormula = True
+      End If
+    Else
+      'last section of a time series table
+      prevSecId = specs.TableSectionId()
+      addMinMaxFormula = True
+
+      'Add an anchor to where to start building graphs for time series (START_GRAPHS_TS)
+      Set cellRng = outsh.Range("ENDTABLE_" & prevSecId).Offset(5, 2)
+      cellRng.Name = "START_GRAPHS_TS"
+    End If
+
+    If (Not isNewSection) Then
+      addMinMaxFormula = False
+      'No new section, update minimum and maximum formula
+      minFormula = minFormula & ", " & "MIN(" & tablename & "[" & rowVar & "]" & ")"
+      maxFormula = maxFormula & ", " & "MAX(" & tablename & "[" & rowVar & "]" & ")"
+      Push goToHeader & ": " & tabl.TimeSeriesHeader(), scope:="header"
+    End If
+
+    'Add minimum and maximum formulas
+    If addMinMaxFormula Then
+
+      outsh.Range("MAX_MAX_DATE_" & prevSecId).formula = "= MAX(" & maxFormula & ")"
+      outsh.Range("MIN_MIN_DATE_" & prevSecId).formula = "= MIN(" & minFormula & ")"
+
+      'On new section update min and max formula
+      If isNewSection Then
+        minFormula = "MIN(" & tablename & "[" & rowVar & "]" & ")"
+        maxFormula = "MAX(" & tablename & "[" & rowVar & "]" & ")"
+      End If
+
+      'Add goTo Header to the previous section
+      Set cellRng = outsh.Range("SECTION_" & prevSecId).Offset(1, -2)
+      AddGoTo cellRng:=cellRng, goToPrefix:=goToPrefix, _ 
+              scope:="header",  goToSuffix:=prevSecId
+    End If
+
+  continueLoop:
+  Set tabRng = tabRng.Offset(1)
+  Loop While (tabRng.Row <= anchorRng.Row)
 End Sub
 
 'Write table for time series (oe table of type long table)
@@ -784,8 +809,12 @@ Private Sub WriteAnalysis()
   AddGoTo cellRng:=cellRng, scope:="section", goToPrefix:="spt_"
   AddCommands scope:=scope
   
-  pass.Protect outsh, True
+  'pass.Protect outsh, True
   If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
+
+  'Transfer code to spatio-temporal analysis sheet
+  TransferCodeWksh scope:=scope
+
   Exit Sub
 
 ErrHand:

@@ -137,13 +137,15 @@ Private Function GetAgg(sAggregate As String) As String
 
     Dim rng As Range
     Dim aggVal As String
+    Dim tagName As String
 
-    If ActiveSheet.Cells(1, 3).Value <> "TS-Analysis" Then
+    tagName = ActiveSheet.Cells(1, 3).Value
+    If (tagName <> "TS-Analysis") And (tagName <> "SPT-Analysis") Then
         GetAgg = "week"
         Exit Function
     End If
 
-    Set rng = ActiveSheet.Range("TIME_UNIT_LIST")
+    Set rng = Range("TIME_UNIT_LIST")
     Select Case sAggregate
 
     Case rng.Cells(1, 1).Value
@@ -227,9 +229,10 @@ Public Function FormatDateFromLastDay(sAggregate As String, _
     Dim quarterTag As String
     Dim lltradsh As Worksheet
     Dim weekTag As String
+    Dim tagName As String
 
-
-    If startDate > MaxDate Or (ActiveSheet.Cells(1, 3).Value <> "TS-Analysis") Then
+    tagName = ActiveSheet.Cells(1, 3).Value
+    If startDate > MaxDate Or ((tagName <> "TS-Analysis") And (tagName <> "SPT-Analysis"))  Then
         FormatDateFromLastDay = vbNullString
         Exit Function
     End If
