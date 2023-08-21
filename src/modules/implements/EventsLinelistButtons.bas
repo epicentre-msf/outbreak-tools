@@ -559,7 +559,8 @@ Public Sub ClickCalculate()
     Set sh = ActiveSheet
     sheetTag = sh.Cells(1, 3).Value
 
-    If sheetTag <> "Uni-Bi-Analysis" And sheetTag <> "TS-Analysis" And sheetTag <> "SP-Analysis" Then
+    If sheetTag <> "Uni-Bi-Analysis" And sheetTag <> "TS-Analysis" And _ 
+       sheetTag <> "SP-Analysis" And sheetTag <> "SPT-Analysis" Then
         WarningOnSheet "MSG_AnaSheet"
         Exit Sub
     End If
@@ -572,9 +573,7 @@ Public Sub ClickCalculate()
     BusyApp
 
     Select Case sheetTag
-    Case "Uni-Bi-Analysis"
-        UpdateFilterTables
-    Case "TS-Analysis"
+    Case "Uni-Bi-Analysis", "TS-Analysis", "SPT-Analysis"
         UpdateFilterTables
     Case "SP-Analysis"
         UpdateSpTables
