@@ -511,41 +511,54 @@ Public Sub ClickGeoApp()
     Dim hfOrGeo As String
     Dim sheetTag As String
     Dim sh As Worksheet
-    Dim StartRow As Long
-    Dim TabName As String
+    Dim startRow As Long
+    Dim tabName As String
+    Dim rngName As String
 
     Set sh = ActiveSheet
     sheetTag = sh.Cells(1, 3).Value
 
-    If sheetTag <> "HList" Then
-        WarningOnSheet "MSG_DataSheet"
+    If (sheetTag <> "HList") And (sheetTag <> "SPT-Analysis") Then
+        WarningOnSheet "MSG_DataOrSpatioSheet"
         Exit Sub
     End If
 
     InitializeTrads
     
-    TabName = sh.Cells(1, 4).Value
-    StartRow = sh.Range(TabName & "_" & "START").Row
-    targetColumn = ActiveCell.Column
-    
+    Select Case sheetTag
 
-    If ActiveCell.Row >= StartRow Then
+    Case "HList"
 
-        hfOrGeo = ActiveSheet.Cells(StartRow - 5, targetColumn).Value
-        Select Case hfOrGeo
+        tabName = sh.Cells(1, 4).Value
+        startRow = sh.Range(TabName & "_" & "START").Row
+        targetColumn = ActiveCell.Column
 
-        Case "geo1"
+        If ActiveCell.Row >= StartRow Then
+
+            hfOrGeo = ActiveSheet.Cells(StartRow - 5, targetColumn).Value
+            Select Case hfOrGeo
+            Case "geo1"
+                LoadGeo 0
+            Case "hf"
+                LoadGeo 1
+            Case Else
+                MsgBox tradsmess.TranslatedValue("MSG_WrongCells")
+            End Select
+        Else
+            MsgBox tradsmess.TranslatedValue("MSG_WrongCells"), _
+            vbOKOnly + vbCritical, tradsmess.TranslatedValue("MSG_Error")
+        End If
+
+    Case "SPT-Analysis"
+        On Error Resume Next
+        rngName = ActiveCell.Name.Name
+        On Error GoTo 0
+        If (InStr(1, rngName, "INPUTSPTGEO_") > 0) Then
             LoadGeo 0
-
-        Case "hf"
+        ElseIf (InStr(1, rngName, "INPUTSPTHF_") > 0) Then
             LoadGeo 1
-        Case Else
-            MsgBox tradsmess.TranslatedValue("MSG_WrongCells")
-        End Select
-    Else
-        MsgBox tradsmess.TranslatedValue("MSG_WrongCells"), _
-        vbOKOnly + vbCritical, tradsmess.TranslatedValue("MSG_Error")
-    End If
+        End If
+    End Select
 End Sub
 
 '@Description("Calculate Elements in an analysis worksheet")

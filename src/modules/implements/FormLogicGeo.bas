@@ -11,7 +11,9 @@ Option Explicit
 Private Const GEOSHEET As String = "Geo"
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const TRADSHEET As String = "Translations"
-Private Const sep As String = " | " 'This is the separator for values in the text box at the bottom
+Private Const SEP As String = " | " 'This is the separator for values in the text box at the bottom
+Private Const NACHAR As String = " | N/A"
+Private Const NACHARREV As String = "N/A | "
 
 Private tradform As ITranslation   'Translation of forms
 Private tradmess As ITranslation
@@ -133,8 +135,10 @@ Private Sub CMD_Copier_Click()
     Dim hRng As Range
     Dim nbOffset As Long
     Dim calcRng As Range 'Range to calculate
+    Dim sheetTag As String
+    Dim cellName As String
     
-    'On Error GoTo ErrGeo
+    On Error GoTo ErrGeo
     InitializeElements
     
     selectedValue = Me.TXT_Msg.Value
@@ -147,50 +151,87 @@ Private Sub CMD_Copier_Click()
 
     Set cellRng = ActiveCell 'First cell for a geo value
     Set sh = ActiveSheet 'Linelist sheet
-    Set hRng = sh.ListObjects(1).HeaderRowRange
-    nbOffset = cellRng.Row - hRng.Row
-    Set calcRng = hRng.Offset(nbOffset)
+    sheetTag = sh.Cells(1, 3).Value
 
-    Set tempTable = New BetterArray
-    tempTable.LowerBound = 1
-    
-    Select Case hfOrGeo
-        'In case you selected the Geo data
-    Case GeoScopeAdmin
-    
-        'Writing the selected data in the linelist sheet
-        tempTable.Items = Split(selectedValue, sep)
+    Select Case sheetTag
 
-        If tempTable.Length > 0 Then
+    Case "HList"
+
+        Set hRng = sh.ListObjects(1).HeaderRowRange
+        nbOffset = cellRng.Row - hRng.Row
+        Set calcRng = hRng.Offset(nbOffset)
+
+        Set tempTable = New BetterArray
+        tempTable.LowerBound = 1
+        
+        Select Case hfOrGeo
+            'In case you selected the Geo data
+        Case GeoScopeAdmin
+        
+            'Writing the selected data in the linelist sheet
+            tempTable.Items = Split(selectedValue, SEP)
+
+            If tempTable.Length > 0 Then
+                
+                'Clear the cells before filling
+                Application.EnableEvents = False
+                
+                sh.Range(cellRng, cellRng.Offset(, 3)).ClearContents
+                If tempTable.Length = 4 Then tempTable.Reverse
+                
+                tempTable.ToExcelRange Destination:=Range(ActiveCell.Address), _
+                                    TransposeValues:=True
+                Application.EnableEvents = True
+            End If
             
-            'Clear the cells before filling
+            geo.UpdateHistoric ReverseString(selectedValue), GeoScopeAdmin
+            
+            'In Case we are dealing with the health facility
+            '(basically the same thing with little modifications)
+        Case GeoScopeHF
+            
             Application.EnableEvents = False
-            
-            sh.Range(cellRng, cellRng.Offset(, 3)).ClearContents
-            If tempTable.Length = 4 Then tempTable.Reverse
-            
-            tempTable.ToExcelRange Destination:=Range(ActiveCell.Address), _
-                                   TransposeValues:=True
+            cellRng.Value = selectedValue
             Application.EnableEvents = True
-        End If
-        
-        geo.UpdateHistoric ReverseString(selectedValue), GeoScopeAdmin
-        
-        'In Case we are dealing with the health facility
-        '(basically the same thing with little modifications)
-    Case GeoScopeHF
-        
-        Application.EnableEvents = False
-        cellRng.Value = selectedValue
-        Application.EnableEvents = True
-        
-        geo.UpdateHistoric selectedValue, GeoScopeHF
-    End Select
+            
+            geo.UpdateHistoric selectedValue, GeoScopeHF
+        End Select
 
-    calcRng.calculate
-    Me.TXT_Msg.Value = vbNullString
-    Me.Hide
-    Exit Sub
+        calcRng.calculate
+        Me.TXT_Msg.Value = vbNullString
+        Me.Hide
+        Exit Sub
+
+    Case "SPT-Analysis"
+        Select Case hfOrGeo
+
+        Case GeoScopeHF
+            Application.EnableEvents = False
+            cellRng.Value = selectedValue
+            Application.EnableEvents = True
+        Case GeoScopeAdmin
+
+            Set tempTable = New BetterArray
+            selectedValue = Application.WorksheetFunction.Trim(Replace(selectedValue, NACHAR, vbNullString))
+            selectedValue = Application.WorksheetFunction.Trim(Replace(selectedValue, NACHARREV, vbNullString))
+            tempTable.Items = Split(selectedValue, SEP)
+            If tempTable.Length = 4 Then tempTable.Reverse
+            selectedValue = tempTable.ToString(separator:=SEP, OpeningDelimiter:=vbNullString, _
+                                               ClosingDelimiter:=vbNullString, QuoteStrings:=False)
+
+            Application.EnableEvents = False
+            cellRng.Value = selectedValue
+            On Error Resume Next
+            cellName = cellRng.Name.Name
+            on Error GoTo 0
+            UpdateSpatioTemporalFormulas cellName, tempTable.Length 
+            Application.EnableEvents = True
+        End Select
+
+        Me.TXT_Msg.Value = vbNullString
+        Me.Hide
+        Exit Sub
+    End Select
 
 ErrGeo:
     MsgBox tradmess.TranslatedValue("MSG_ErrWriteGeo"), vbCritical + vbOKOnly
@@ -253,9 +294,9 @@ Private Sub LST_Adm4_Click()
     Dim selectedValue As String
 
     'SEP is a constant defined above, which is the separator
-    selectedValue = Me.LST_Adm4.Value & sep & _
-                    Me.LST_Adm3.Value & sep & _
-                    Me.LST_Adm2.Value & sep & _
+    selectedValue = Me.LST_Adm4.Value & SEP & _
+                    Me.LST_Adm3.Value & SEP & _
+                    Me.LST_Adm2.Value & SEP & _
                     Me.LST_Adm1.Value
 
     Me.TXT_Msg.Value = selectedValue
@@ -277,9 +318,9 @@ Private Sub LST_AdmF4_Click()
     Dim selectedValue As String
 
     'SEP is a constant defined above, which is the separator
-    selectedValue = Me.LST_AdmF4.Value & sep & _
-                    Me.LST_AdmF3.Value & sep & _
-                    Me.LST_AdmF2.Value & sep & _
+    selectedValue = Me.LST_AdmF4.Value & SEP & _
+                    Me.LST_AdmF3.Value & SEP & _
+                    Me.LST_AdmF2.Value & SEP & _
                     Me.LST_AdmF1.Value
     Me.TXT_Msg.Value = selectedValue
 End Sub
