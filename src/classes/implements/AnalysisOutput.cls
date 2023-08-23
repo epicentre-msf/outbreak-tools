@@ -559,6 +559,7 @@ Private Sub WriteTable(ByVal loName As String, _
 
       'Add an anchor to where to start building graphs for time series (START_GRAPHS_TS)
       Set cellRng = outsh.Range("ENDTABLE_" & prevSecId).Offset(5, 2)
+
       If tabType = TypeTimeSeries Then cellRng.Name = "START_GRAPHS_TS"
       If tabType = TypeSpatioTemporal Then cellRng.Name = "START_GRAPHS_SPT"
     End If
@@ -730,6 +731,95 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
           goToPrefix:="ts_", goToSuffix:="_graph"
 End Sub
 
+'Write spatio temporal graphs
+Private Sub WriteSpatioTemporalGraph(ByVal loName As String)
+
+
+  Dim sh As Worksheet 'Worksheet with informations on the spatio-temporal setups
+  Dim outsh As Worksheet
+  Dim cellRng As Range
+  Dim specs As ITablesSpecs
+  Dim lData As LinelistSpecs
+  Dim design As ILLFormat
+  Dim hRng As Range
+  Dim tabRng As Range
+  Dim anchorRng As Range 'the last Range of the listobject
+  Dim gr As IGraphs
+  Dim grSpecs As IGraphSpecs
+  Dim plotTitle As String
+  Dim tabId As String
+  Dim graphCounter As Long
+  Dim trads As ITranslation
+  Dim Lo As ListObject
+  Dim tabl As ICrossTable
+
+  'Worksheet of the analyses
+  Set sh = Wksh()
+  'Output Worksheet
+  Set outsh = OutputSh(AnalysisScopeSpatioTemporal)
+  Set Lo = sh.ListObjects(loName)
+  Set lData = LinelistData()
+  Set trads = TransObject()
+  Set design = DesignFormat()
+
+
+  If Lo.DataBodyRange Is Nothing Then Exit Sub
+
+  Set cellRng = outsh.Range("START_GRAPHS_SPT")
+  Set hRng = Lo.HeaderRowRange()
+  Set anchorRng = hRng.Offset(Lo.ListRows.Count)
+  Set tabRng = Lo.ListRows(1).Range
+
+  Do
+    
+    Set specs = TablesSpecs.Create(hRng, tabRng, lData)
+
+    If Not specs.ValidTable() Then GoTo continueLoop
+    If Not specs.HasGraph() Then GoTo continueLoop
+
+    tabId = specs.TableId()
+    Set tabl = CrossTable.Create(specs, outsh, trads)
+    
+    'Create the specs of the graph and add it
+    Set grSpecs = GraphSpecs.Create(tabl)
+    plotTitle = trads.TranslatedValue("MSG_Graph") & outsh.Range("STARTCOL_" & tabId).Value
+      
+    'Create series uses informations on the table to create columns of
+    'series of ranges to plot.
+    grSpecs.CreateSeries
+    Set gr = Graphs.Create(outsh, cellRng)
+    gr.Add
+    
+    Debug.Print grSpecs.NumberOfSeries()
+
+    'Add the graph
+    For graphCounter = 1 To grSpecs.NumberOfSeries()
+      'Add the series
+      gr.AddSeries grSpecs.SeriesName(graphCounter), _
+      grSpecs.SeriesType(graphCounter), grSpecs.SeriesPos(graphCounter)
+     'Add the series label
+      gr.AddLabels grSpecs.SeriesLabel(graphCounter), _
+      grSpecs.SeriesColumnLabel(graphCounter), hardCodeLabels:=False
+    Next
+      
+    'Format the graph
+    gr.Format catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _
+              valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _
+              scope:=GraphScopeTimeSeries, plotTitle:=plotTitle
+
+    cellRng.Value = plotTitle
+    design.ApplyFormat cellRng, scope:=LinelistHiddenCell
+    Push GoToLabel("graph") & ": " & plotTitle, scope:="graph"
+    Set cellRng = cellRng.Offset(50)
+
+  continueLoop:
+  Set tabRng = tabRng.Offset(1)
+  Loop While (tabRng.Row <= anchorRng.Row)
+
+  'Add the GoTo graph dropdown
+  AddGoTo outsh.Cells(3, 1), scope:="graph", goToPrefix:="spt_", goToSuffix:="_graph"
+End Sub
+
 'Write the table
 Private Sub WriteAnalysis()
   Dim outsh As Worksheet
@@ -805,7 +895,7 @@ Private Sub WriteAnalysis()
   PrepareSheet scope:=scope
 
   On Error GoTo ErrHand
-  WriteTable loName:=SPATIAL, scope:=scope
+    WriteTable loName:=SPATIAL, scope:=scope
   On Error GoTo 0
 
   Set cellRng = outsh.Cells(2, 1)
@@ -825,7 +915,8 @@ Private Sub WriteAnalysis()
   PrepareSheet scope:=scope
 
   On Error GoTo ErrHand
-  WriteTable loName:=SPATIOTEMPORAL, scope:=scope
+    WriteTable loName:=SPATIOTEMPORAL, scope:=scope
+    WriteSpatioTemporalGraph loName:=SPATIOTEMPORAL
   On Error GoTo 0
 
   Set cellRng = outsh.Cells(2, 1)
