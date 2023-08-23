@@ -72,7 +72,7 @@ Public Function Create(ByVal tabl As ICrossTable) As IGraphSpecs
 End Function
 
 Public Function CreateRangeSpecs(ByVal loTable As BetterArray, ByVal OutputSh As Worksheet, ByVal lData As ILinelistSpecs) As IGraphSpecs
-    'loTable is a table of two listObjects, one for the graphs, and another for the tables.
+    'loTable is a table of trhee listObjects, one for the graphs, and another for the tables.
     'The first table of the list object is the graph table, the second table of the listObject is the list of tables
 
     CheckSpecifications loTable
@@ -329,6 +329,7 @@ Public Sub CreateSeries()
     Dim nbCols As Long
     Dim plotType As String
     Dim flipCoords As String
+    Dim tabSecId As String
 
     Select Case GraphType
 
@@ -339,6 +340,16 @@ Public Sub CreateSeries()
         tabId = specs.TableId
         tabType = specs.TableType
         nbCols = tabl.NumberOfColumns
+
+        If tabType = TypeSpatioTemporal Then
+            'Default value for the number of columns for 
+            'spatio-temporal is 5
+            nbCols = 5
+            On Error Resume Next
+            nbCols = CLng(specs.Value("n geo"))
+            On Error GoTo 0
+            tabSecId = specs.TableSectionId
+        End If
 
         'flip coordinates
         flipCoords = specs.Value("flip")
@@ -357,14 +368,19 @@ Public Sub CreateSeries()
                 PushLabels "ROW_CATEGORIES_" & tabId, "PERC_LABEL_COL_" & tabId
             End If
 
-        Case TypeBivariate, TypeSpatial
-            'Only values
+        Case TypeBivariate, TypeSpatial, TypeSpatioTemporal
+
             Select Case specs.Value("graph")
 
-            Case "values"
+            'Only values (yes is for spatio-temporal)
+            Case "values", "yes"
                 For counter = 1 To nbCols
                     PushSeries "VALUES_COL_" & counter & "_" & tabId, plotType, "left"
-                    PushLabels "ROW_CATEGORIES_" & tabId, "LABEL_COL_" & counter & "_" & tabId
+                    If tabType = TypeSpatioTemporal Then
+                        PushLabels "ROW_CATEGORIES_" & tabSecId, "LABEL_COL_" & counter & "_" & tabId
+                    Else
+                        PushLabels "ROW_CATEGORIES_" & tabId, "LABEL_COL_" & counter & "_" & tabId
+                    End If
                 Next
 
             Case "percentages"
