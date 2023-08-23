@@ -319,6 +319,7 @@ Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, ByVal actAdm As
         headerFormula = Replace(headerRng.Cells(1, counter).Formula, "=", vbNullString)
         headerFormula = Application.WorksheetFunction.Trim(headerFormula)
 
+        'Change the formula for only columns where headers are the selected input
         If (headerFormula = rngName) Then
             
             Set valuesRng = Nothing

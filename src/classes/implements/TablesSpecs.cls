@@ -199,7 +199,9 @@ Public Property Get HasGraph() As Boolean
     Case TypeBivariate
         HasGraph = (Value("graph") = "percentage" Or Value("graph") = "values" Or Value("graph") = "both")
     Case TypeSpatial
-        HasGraph = (Value("graph") = "yes") And (Value("column") <> vbNullString)
+        HasGraph = (Value("graph") = "yes")
+    Case TypeSpatioTemporal
+        HasGraph = (Value("graph") = "yes")
     End Select
 End Property
 
@@ -405,6 +407,8 @@ Private Property Get NextSpecs(ByVal anchorRng As Range) As ITablesSpecs
         Set nextsp = Create(hRng, tRng, lData)
         Set tRng = tRng.Offset(1)        
     Loop
+
+    If Not nextsp.ValidTable() Then Exit Property
     
     Set NextSpecs = nextsp
 End Property
