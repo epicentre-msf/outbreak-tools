@@ -100,6 +100,8 @@ Public Sub EventValueChangeLinelist(Target As Range)
     Dim dict As ILLdictionary
     Dim vars As ILLVariables
 
+    Dim choiSep As String                      'Choice separator for multiple choices selection
+
     On Error GoTo ErrHand
     
     Set sh = ActiveSheet
@@ -264,9 +266,28 @@ Public Sub EventValueChangeLinelist(Target As Range)
         Exit Sub
     End If
 
+    'Update multiple choices dropdown
+    If Instr(1, varControl, "choice_multiple") = 1 Then
+
+        On Error Resume Next
+            choiSep = Split(varControl, "(" & Chr(34))(1)
+            choiSep = Replace(choiSep,  Chr(34) & ")", vbNullString)
+        On Error GoTo 0
+        
+        If (choiSep = vbNullString) Or _ 
+           (Instr(1, choiSep, "choice_multiple") = 1) Then _ 
+            choiSep = ", "
+
+        BusyApp
+        UpdateMultipleChoice Target, choiSep
+        NotBusyApp
+        Exit Sub
+    End If
+
 ErrHand:
     NotBusyApp
 End Sub
+
 
 'Event to update the list_auto when a sheet containing a list_auto is desactivated
 Public Sub EventDesactivateLinelist(ByVal prevSheetName As String)
@@ -339,7 +360,7 @@ Public Sub UpdateListAuto(ByVal sh As Worksheet)
 End Sub
 
 
-Sub EventValueChangeVList(Target As Range)
+Public Sub EventValueChangeVList(Target As Range)
 
    
     Dim sh As Worksheet
@@ -460,4 +481,49 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
 
     End Select
 ErrHand:
+End Sub
+
+
+
+Private Sub UpdateMultipleChoice(ByVal Target As Range, ByVal choiSep As String)
+
+    Dim actualValue As String
+    Dim prevValue As String
+    Dim prevTab As BetterArray
+    Dim actTab As BetterArray
+    
+    Set prevTab = New BetterArray
+    Set actTab = New BetterArray
+
+    If IsEmpty(Target) Then Exit Sub
+
+    actualValue = Target.Value
+
+    On Error Resume Next
+    Application.Undo
+    On Error GoTo Err
+
+    If IsEmpty(Target) Then GoTo KeepValue
+
+    prevValue = Target.Value
+    prevTab.Items = Split(prevValue, choiSep)
+    actTab.Items = Split(actualValue, choiSep)
+
+    'Length reduction, keep values
+    If (actTab.Length > 1) And (actTab.Length < prevTab.Length) Then GoTo KeepValue
+
+    'There is no length reduction. Test for presence of actual element
+    If prevTab.Includes(actualValue) Then
+        Target.Value = prevValue
+        Exit Sub
+    End If
+
+    'Length of actual Tab is One, previous Tab does not includes newvalue
+    Target.Value = prevValue & choiSep & actualValue            
+    Exit Sub
+
+KeepValue:
+    Target.Value = actualValue
+
+Err:
 End Sub

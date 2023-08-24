@@ -214,7 +214,8 @@ End Sub
 'Set a validation on a range
 Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
                           Optional ByVal alertType As String = "info", _
-                          Optional ByVal message As String = vbNullString)
+                          Optional ByVal message As String = vbNullString, _ 
+                          Optional ByVal showError As Boolean = True)
 
     Dim dropdownName As String
 
@@ -243,8 +244,8 @@ Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
         .errorTitle = vbNullString
         .InputMessage = vbNullString
         .errorMessage = message
-        .ShowInput = True
-        .ShowError = True
+        .ShowInput = showError
+        .ShowError = showError
     End With
 End Sub
 
@@ -287,9 +288,12 @@ End Sub
 
 Private Sub IDropdownLists_SetValidation(ByVal cellRng As Range, ByVal listName As String, _
                                         Optional ByVal alertType As String = "info", _
-                                        Optional ByVal message As String = vbNullString)
+                                        Optional ByVal message As String = vbNullString, _ 
+                                        Optional ByVal showError As Boolean = True)
 
-    SetValidation cellRng:=cellRng, listName:=listName, alertType:=alertType, message:=message
+    SetValidation cellRng:=cellRng, listName:=listName, _ 
+                  alertType:=alertType, message:=message, _ 
+                  showError:=showError
 End Sub
 
 
