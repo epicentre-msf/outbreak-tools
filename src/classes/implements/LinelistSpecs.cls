@@ -210,22 +210,24 @@ Private Function Categories(ByVal varName As String) As BetterArray
     Set vars = LLVariables.Create(dict)
 
     categoryType = vars.Value(varName:=varName, colName:="control")
+    'This is for multiple choices
+    On Error Resume Next
+    categoryType = Application.WorksheetFunction.Trim(Split(categoryType, "(")(0))
+    On Error GoTo 0
     controlDetails = Application.WorksheetFunction.Trim(vars.Value(varName:=varName, colName:="control details"))
 
     If categoryType = "choice_formula" Then
         categoryName = Replace(Split(controlDetails, ",")(0), "CHOICE_FORMULA(", "")
-    ElseIf categoryType = "choice_manual" Then
+    ElseIf (categoryType = "choice_manual") Or _ 
+           (categoryType = "choice_multiple") Or _ 
+           (categoryType = "choice_custom") Then
 
         categoryName = vars.Value(varName:=varName, colName:="control details")
-        'Normally there is no more case_when category, but I keep it
-    ElseIf categoryType = "case_when" Then
-        categoryName = "__case_when_" & varName
     End If
 
     'Test the case_when
     Set categoryData = choi.Categories(categoryName)
     Set Categories = categoryData.Clone()
-
 End Function
 
 'Speed up before a work
