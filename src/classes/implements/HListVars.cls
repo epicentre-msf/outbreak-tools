@@ -497,35 +497,42 @@ Private Sub AddChoices()
     Dim geo As ILLGeo
 
     varControl = ValueOf("control")
+
+    On Error Resume Next
+        varControl = Split(varControl, "(")(0) 'To take in account choice_multiple with eventual parenthesis
+    On Error GoTo 0
+
     If (varControl <> "choice_manual") And (varControl <> "list_auto") And _
-     (varControl <> "geo1") And (varControl <> "choice_custom") Then Exit Sub
+     (varControl <> "geo1") And (varControl <> "choice_custom") And _ 
+     (varControl <> "choice_multiple") Then Exit Sub
 
     Set lData = LinelistData()
     
     Set cat = New BetterArray
     Set cellRng = VarRange()                     'variable range where to set the validation
 
+
     Select Case varControl
         'dropName is the name of the dropdown, not the variable. Tt is the variable name only if
         'the control is choices
         'Dropdown list are named dropdown_[dropName] in the workbook
-    Case "choice_manual"
-        
-        Set drop = Dropdown()
+    Case "choice_manual", "choice_multiple"
 
+        Set drop = Dropdown()
         dropName = ActualVariable()
         Set cat = lData.Categories(dropName)
         drop.Add cat, dropName
         varAlert = ValueOf("alert")
         varMessage = ValueOf("message")
     
+    
     Case "choice_custom"
         
         Set drop = CustomDropdown()
 
         dropName = ActualVariable()
-        Set cat = New BetterArray
-        cat.Push vbNullString, vbNullString
+        Set cat = lData.Categories(dropName)
+        If cat.Length = 0 Then cat.Push vbNullString, vbNullString
         drop.Add cat, dropName
         
         varAlert = ValueOf("alert")
@@ -569,7 +576,8 @@ Private Sub AddChoices()
 
     'Set dropdown validations
     drop.SetValidation cellRng:=cellRng, listName:=dropName, _
-                       alertType:=varAlert, message:=varMessage
+                       alertType:=varAlert, message:=varMessage, _ 
+                       showError:= (varControl <> "choice_multiple")
 End Sub
 
 'Add validation for VList var
