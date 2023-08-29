@@ -391,6 +391,7 @@ Private Sub PrepareTemporarySheets()
     '- an import has been done
     '- the geobase has been updated manually by the user
     '.. You can add here some ranges for further analysis
+
     namesArray.Clear
     namesArray.Push "RNG_UpdateListAuto", "RNG_ImportDone", "RNG_GeoUpdateManual"
     Set rng = sh.Cells(1, 1)
@@ -400,6 +401,7 @@ Private Sub PrepareTemporarySheets()
     Next
 
     'On Import report sheets ---------------------------------------------------
+
     'Create required tables for import report
     sheetName = lData.TemporarySheetName(TemporarySheetImport)
     Set sh = outWkb.Worksheets(sheetName)
@@ -434,6 +436,7 @@ Private Sub PrepareTemporarySheets()
     End With
 
     'Analysis Table IDs sheet --------------------------------------------------
+
     sheetName = lData.TemporarySheetName(TemporarySheetAnalysis)
     Set sh = outWkb.Worksheets(sheetName)
     Set rng = sh.Range(sh.Cells(1, 1), sh.Cells(2, 1))
@@ -460,6 +463,19 @@ Private Sub PrepareTemporarySheets()
         rng.Name = namesArray.Item(counter)
         Set rng = rng.Offset(1)
     Next
+
+    'Custom Filters sheet-------------------------------------------------------
+
+    sheetName = lData.TemporarySheetName(TemporaryCustomFilters)
+    Set sh = outWkb.Worksheets(sheetName)
+
+    With sh
+        .Cells(1, 1).Value = "sheetName"
+        .Cells(1, 2).Value = "filterName"
+        .Cells(1, 3).Value = "filterIndex" 
+        Set rng = .Range(.Cells(1, 1), Cells(2, 3))
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "csfilter__"
+    End With
 End Sub
 
 'Prepare the Linelist by adding required worksheets
