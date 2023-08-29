@@ -597,7 +597,8 @@ Private Sub Prepare()
     codesList.Clear
     codesList.Push "F_Advanced", "F_Export", "F_ExportMig", _
                      "F_Geo", "F_ImportRep", _
-                     "F_ShowHideLL", "F_ShowHidePrint", "F_ShowVarLabels"
+                     "F_ShowHideLL", "F_ShowHidePrint", "F_ShowVarLabels", _
+                     "F_Filters"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
