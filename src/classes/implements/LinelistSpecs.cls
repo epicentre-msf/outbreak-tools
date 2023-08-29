@@ -25,6 +25,7 @@ Public Enum TemporarySheetTypes
     TemporarySingle = 6
     TemporarySpatial = 7
     TemporaryShowHide = 8
+    TemporaryCustomFilters = 8
 End Enum
 
 Private Type TLinelistSpecs
@@ -190,6 +191,8 @@ Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As St
         TemporarySheetName = "show_hide__" 'Manage show/hide forms
     Case TemporarySpatial
         TemporarySheetName = "spatial_tables__" 'add tables for spatial analysis
+    Case TemporaryCustomFilters
+        TemporarySheetName = "custom_filters__"
     End Select
 End Property
 
@@ -348,6 +351,7 @@ Private Sub Prepare()
                              TemporarySheetName(TemporarySheetImport), _
                              TemporarySheetName(TemporarySpatial), _
                              TemporarySheetName(TemporaryShowHide), _
+                             TemporarySheetName(TemporaryCustomFilters), _
                              msgTrads.TranslatedValue("LLSHEET_Admin"), _
                              msgTrads.TranslatedValue("LLSHEET_Analysis"), _
                              msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), _
