@@ -443,8 +443,6 @@ End Sub
 
 Private Sub ShowHideLogic(ByVal indexValue As Long)
 
-
-
   Const TABPRINTPREFIX As String = "pr" 'Print prefix for tables
 
   Dim sh As Worksheet

@@ -859,3 +859,19 @@ ErrHand:
             tradsmess.TranslatedValue("MSG_Error")
     NotBusyApp
 End Sub
+
+
+'@Description("Add a custom using actual filtered data on HList")
+'@EntryPoint
+Public Sub ClickAddCustomFilter()
+    Attribute ClickAddCustomFilter.VB_Description = "Add a custom using actual filtered data on HList"
+
+End Sub
+
+'@Description("Load the custom filters form")
+'@EntryPoint
+Public Sub ClickCustomFilter()
+    Attribute ClickCustomFilter.VB_Description = "Load the custom filters form"
+    
+End Sub
+
