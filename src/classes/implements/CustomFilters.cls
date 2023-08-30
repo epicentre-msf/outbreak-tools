@@ -108,12 +108,13 @@ End Sub
 
 
 'Rename a filter
-Private Sub RenameFilter(index As )
+Private Sub RenameFilter(index As Long)
   
   Dim Lo As ListObject
   Dim trads As ITranslation
   Dim sh As Worksheet
   Dim lstFiltersName As BetterArray
+  Dim newName As String
   
 
   Set trads = TransObject()
@@ -122,7 +123,24 @@ Private Sub RenameFilter(index As )
   Set lstFiltersName = New BetterArray
 
   Set rng = Lo.ListColumns(2).Range
+  lstFiltersName.FromExcelRange rng, DetectLastRow:=False, DetectLastColumn:=False
 
+  'Now as for new value
+
+  Do
+
+    newName = InputBox(trads.TranslatedValue("MSG_LLName"), _
+                        trads.TranslatedValue("MSG_RenameFilt"), _
+                        trads.TranslatedValue("MSG_EnterNewName"))
+    
+    If (lstFiltersName.Includes(newName)) Then
+      MsgBox 
+
+    End If
+
+    If (newName = vbNullString) Then Exit Sub
+                      
+  Loop While (lstFiltersName.Includes(newName))
 
 End Sub
 
