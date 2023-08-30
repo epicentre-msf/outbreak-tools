@@ -215,7 +215,7 @@ Private Sub CMD_Copier_Click()
             selectedValue = Application.WorksheetFunction.Trim(Replace(selectedValue, NACHAR, vbNullString))
             selectedValue = Application.WorksheetFunction.Trim(Replace(selectedValue, NACHARREV, vbNullString))
             tempTable.Items = Split(selectedValue, SEP)
-            If tempTable.Length = 4 Then tempTable.Reverse
+            If tempTable.Length < 4 Then tempTable.Reverse
             selectedValue = tempTable.ToString(separator:=SEP, OpeningDelimiter:=vbNullString, _
                                                ClosingDelimiter:=vbNullString, QuoteStrings:=False)
 

@@ -25,7 +25,7 @@ Public Enum TemporarySheetTypes
     TemporarySingle = 6
     TemporarySpatial = 7
     TemporaryShowHide = 8
-    TemporaryCustomFilters = 8
+    TemporaryCustomFilters = 9
 End Enum
 
 Private Type TLinelistSpecs
