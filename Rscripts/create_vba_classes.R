@@ -96,4 +96,4 @@ create_class <- function(class_name, description = "", module_description = "") 
 }
 
 # You can create the class here by precising the class name
-#create_class("CustomFilters") #nolint
+# create_class("CustomFilters") #nolint
