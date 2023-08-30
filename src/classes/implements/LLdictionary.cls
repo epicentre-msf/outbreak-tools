@@ -105,7 +105,7 @@ Private Sub ClassArraysInitialize()
     Set DICTIONARYCOLUMNS = New BetterArray
 
     'colnames of the dictionary
-    DICTIONARYCOLUMNS.Push "variable name", "main label", "sub label", "note", "sheet name", _
+    DICTIONARYCOLUMNS.Push "variable name", "main label", "editable label", "sub label", "note", "sheet name", _
                            "sheet type", "main section", "sub section", "status", _
                             "personal identifier", "variable type", "variable format", _
                             "control", "control details", "unique", _
