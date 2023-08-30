@@ -473,7 +473,7 @@ Private Sub PrepareTemporarySheets()
         .Cells(1, 1).Value = "sheetName"
         .Cells(1, 2).Value = "filterName"
         .Cells(1, 3).Value = "filterIndex" 
-        Set rng = .Range(.Cells(1, 1), Cells(2, 3))
+        Set rng = .Range(.Cells(1, 1), .Cells(2, 3))
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "csfilter__"
     End With
 End Sub
@@ -510,7 +510,8 @@ Private Sub Prepare()
         lData.TemporarySheetName(TemporarySheetAnalysis), _
         lData.TemporarySheetName(TemporarySheetImport), _
         lData.TemporarySheetName(TemporarySpatial), _
-        lData.TemporarySheetName(TemporaryShowHide)
+        lData.TemporarySheetName(TemporaryShowHide), _ 
+        lData.TemporarySheetName(TemporaryCustomFilters)
 
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         sheetName = sheetsList.Item(counter)
