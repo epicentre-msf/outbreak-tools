@@ -188,7 +188,9 @@ Private Sub SplitOutputSheet(Optional ByVal scope As AnalysisScope = AnalysisSco
   With Application.ActiveWindow
     .SplitRow = rowSplit
     'Split on the third column for Time series and spatio-temporal only
-    If scope = AnalysisScopeTimeSeries Or scope = AnalysisScopeSpatioTemporal Then .SplitColumn = 3
+    If scope = AnalysisScopeTimeSeries Or _ 
+       scope = AnalysisScopeSpatioTemporal Then _ 
+      .SplitColumn = 3
     'For spatial or time series, reduce the zoom for the worksheeet
     If scope <> AnalysisScopeNormal Then .Zoom = 70
     .FreezePanes = True
@@ -236,17 +238,22 @@ Private Sub PrepareSheet(Optional ByVal scope As AnalysisScope _
   Dim outsh As Worksheet
   Dim cellRng As Range
   Dim sheetInfo As String
+  Dim rngName As String
   Dim design As ILLFormat
 
   Select Case scope
   Case AnalysisScopeTimeSeries
     sheetInfo = "TS-Analysis"
+    rngName = "RNG_HasTable_TS"
   Case AnalysisScopeSpatial
     sheetInfo = "SP-Analysis"
+    rngName = "RNG_HasTable_SP"
   Case AnalysisScopeNormal
     sheetInfo = "Uni-Bi-Analysis"
+    rngName = "RNG_HasTable_UNI"
   Case AnalysisScopeSpatioTemporal
     sheetInfo = "SPT-Analysis"
+    rngName = "RNG_HasTable_SPT"
   End Select
 
   Set outsh = OutputSh(scope)
@@ -254,7 +261,7 @@ Private Sub PrepareSheet(Optional ByVal scope As AnalysisScope _
 
   'Create a range called RGN_HasTable whith value Yes if there are tables
   Set cellRng = outsh.Cells(1, 10)
-  cellRng.Name = "RNG_HasTable"
+  cellRng.Name = rngName
   design.ApplyFormat cellRng, scope:=LinelistHiddenCell
 
   'Add the whole format of the worksheet
@@ -391,6 +398,7 @@ Private Sub WriteTable(ByVal loName As String, _
   Dim anchorRng As Range 'the last Range of the listobject
   Dim containsTimeSeries As Boolean
   Dim spatRng As Range 'Spatio-temporal plage for one table
+  Dim sheetInfo As String 'Tag on sheet scope
 
   'Variables for Time Series Tables
   Dim tablename As String
@@ -407,6 +415,7 @@ Private Sub WriteTable(ByVal loName As String, _
   Dim isNewSection As Boolean 'Test if a specification is new section
   Dim addMinMaxFormula As Boolean 'Test if there is a need to update min/max formula
   Dim addSpatioTemporalName As Boolean 'Test if we should add spatio temporal name range to update formulas
+  Dim upRngName As String
 
   'Prefix for add Goto on time series vs spatial analysis
   Dim goToPrefix As String
@@ -425,6 +434,9 @@ Private Sub WriteTable(ByVal loName As String, _
   Set dict = lData.Dictionary()
   Set vars = LLVariables.Create(dict)
   Set design = DesignFormat()
+  sheetInfo = outsh.Cells(1, 3).Value
+  upRngName = "RNG_HasTable_" & UCase(Split(sheetInfo, "-")(0))
+
 
   goToSection = GoToLabel("section")
   goToHeader = GoToLabel("header")
@@ -448,12 +460,14 @@ Private Sub WriteTable(ByVal loName As String, _
 
     tabType = specs.TableType()
     isNewSection = specs.isNewSection()
-    containsTimeSeries = (tabType = TypeTimeSeries Or tabType = TypeSpatioTemporal)
+    containsTimeSeries = (tabType = TypeTimeSeries Or _ 
+                          tabType = TypeSpatioTemporal)
     tabId = specs.TableId()  
     
 
     'Update goto section list on new section
-    If isNewSection Then Push goToSection & ": " & specs.Value("section"), scope:="section"
+    If isNewSection Then Push goToSection & ": " & specs.Value("section"), _ 
+       scope:="section"
 
     Set tabl = CrossTable.Create(specs, outsh, trads)
     tabl.Build
@@ -464,7 +478,7 @@ Private Sub WriteTable(ByVal loName As String, _
     tabl.Format design
 
     'Will be used to test if a sheet has a table
-    If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Range("RNG_HasTable").Value = "yes"
+    If IsEmpty(outsh.Range(upRngName)) Then outsh.Range(upRngName).Value = "yes"
 
     'Add Graphs
     If specs.HasGraph() And (Not containsTimeSeries) Then
@@ -478,7 +492,8 @@ Private Sub WriteTable(ByVal loName As String, _
       
       'cellRng is where to write the graph on the worksheet
       Set cellRng = outsh.Cells(tabl.StartRow - 2, tabl.EndColumn + 2)
-      'For spatial table move three columns to keep room for deviding by population
+      'For spatial table move three columns to keep room for deviding by 
+      'population
       If tabType = TypeSpatial Then Set cellRng = cellRng.Offset(, 2)
 
       'Create the specs of the graph and add it
@@ -649,7 +664,7 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
   Set sh = Wksh()
   Set outsh = OutputSh(AnalysisScopeTimeSeries)
 
-  If IsEmpty(outsh.Range("RNG_HasTable")) Then Exit Sub
+  If IsEmpty(outsh.Range("RNG_HasTable_TS")) Then Exit Sub
 
   'Initialize the arrays
   Set grBAinput = New BetterArray '
@@ -782,7 +797,8 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String)
     
     'Create the specs of the graph and add it
     Set grSpecs = GraphSpecs.Create(tabl)
-    plotTitle = trads.TranslatedValue("MSG_Graph") & outsh.Range("STARTCOL_" & tabId).Value
+    plotTitle = trads.TranslatedValue("MSG_Graph") & _ 
+                outsh.Range("STARTCOL_" & tabId).Value
       
     'Create series uses informations on the table to create columns of
     'series of ranges to plot.
@@ -817,7 +833,8 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String)
   Loop While (tabRng.Row <= anchorRng.Row)
 
   'Add the GoTo graph dropdown
-  AddGoTo outsh.Cells(3, 1), scope:="graph", goToPrefix:="spt_", goToSuffix:="_graph"
+  AddGoTo outsh.Cells(3, 1), scope:="graph", goToPrefix:="spt_", _ 
+          goToSuffix:="_graph"
 End Sub
 
 'Write the table
@@ -843,6 +860,7 @@ Private Sub WriteAnalysis()
    On Error GoTo ErrHand
   ' --- Write Global summary
    WriteTable loName:=GLOBALSUMMARY, scope:=scope
+   Push GoToLabel("section") & ""
    ' ---- Write Univariate Analysis
    WriteTable loName:=UNIVARIATE, scope:=scope
    ' ---- Write the Bivariate Analysis
@@ -858,7 +876,8 @@ Private Sub WriteAnalysis()
 
    'Hide the output sheet if required
    pass.Protect outsh, True
-   If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
+   If IsEmpty(outsh.Range("RNG_HasTable_UNI")) Then _ 
+    outsh.Visible = xlSheetHidden
 
    'Transfer code to the worksheet
    TransferCodeWksh scope:=scope
@@ -883,7 +902,8 @@ Private Sub WriteAnalysis()
   AddCommands scope:=scope
 
   pass.Protect outsh, True
-  If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
+  If IsEmpty(outsh.Range("RNG_HasTable_TS")) Then _ 
+   outsh.Visible = xlSheetHidden
 
   'Transfert code to worksheet
    TransferCodeWksh scope:=scope
@@ -904,7 +924,8 @@ Private Sub WriteAnalysis()
   AddCommands scope:=scope
 
   pass.Protect outsh, True
-  If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
+  If IsEmpty(outsh.Range("RNG_HasTable_SP")) Then _ 
+   outsh.Visible = xlSheetHidden
 
   'Transfer code to spatial analysis sheet
   TransferCodeWksh scope:=scope
@@ -924,7 +945,8 @@ Private Sub WriteAnalysis()
   AddCommands scope:=scope
   
   'pass.Protect outsh, True
-  If IsEmpty(outsh.Range("RNG_HasTable")) Then outsh.Visible = xlSheetHidden
+  If IsEmpty(outsh.Range("RNG_HasTable_SPT")) Then _ 
+   outsh.Visible = xlSheetHidden
 
   'Transfer code to spatio-temporal analysis sheet
   TransferCodeWksh scope:=scope
