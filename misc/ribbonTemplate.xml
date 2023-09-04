@@ -25,6 +25,21 @@
                 imageMso="FilterClearAllFilters"
                 size="large"
                 onAction="clickRibbonRemoveFilter"/>
+                <button id="btnSortTab"
+                getLabel="getLLLang"
+                image="sort"
+                size="large"
+                onAction="clickRibbonSortTable"/>
+                <button id="btnCustomFilt"
+                getLabel="getLLLang"
+                image="customfilter"
+                size="large"
+                onAction="clickRibbonCustomFilter"/>
+                <button id="btnAddCustomFilt"
+                getLabel="getLLLang"
+                image="addfilters"
+                size="large"
+                onAction="clickRibbonAddCustomFilter"/>
             </group>
             <group id="customGroupTabGeo" getLabel="getLLLang">
                 <button id="btnGeo"
@@ -72,11 +87,11 @@
         </tab>
         <tab id="customPivotTab" getLabel="getLLLang">
             <group id="customGroupPivot">
-            <button id="btnOpenLab"
-            image="openvarlabels"
-            size="large"
-            getLabel = "getLLLang"
-            onAction="clickRibbonOpenVarLab"/>
+                <button id="btnOpenLab"
+                image="openvarlabels"
+                size="large"
+                getLabel = "getLLLang"
+                onAction="clickRibbonOpenVarLab"/>
             </group>
         </tab>
          <tab id="adminTab" getLabel="getLLLang">
@@ -91,6 +106,11 @@
                     image="download"
                     size="large"
                     onAction="clickRibbonExport"/>
+                <button id="btnExpAna"
+                    image="anaexport"
+                    size="large"
+                    getLabel = "getLLLang"
+                    onAction="clickRibbonExportAnalysis"/>
             </group>
         </tab>
     </tabs>

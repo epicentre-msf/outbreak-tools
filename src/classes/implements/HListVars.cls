@@ -373,6 +373,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     Dim design As ILLFormat
     Dim varToPrint As String
     Dim choicust As String
+    Dim varEditLab As String
 
     'The varRange depends on the usePrinted, on printed worksheet, it is on another
     'sheet.
@@ -393,6 +394,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     varNote = ValueOf("note")
     varSublab = ValueOf("sub label")
     varControl = ValueOf("control")
+    varEditLab = ValueOf("editable label")
     varStatus = ValueOf("status")
     varListAutoOrigin = ValueOf("list auto")
     varIndex = CLng(ValueOf("column index"))
@@ -460,8 +462,8 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
         design.ApplyFormat cellRng, scope:=HListGeo
     End If
 
-    'Custom columns, user can modify them
-    If (varControl = "custom") Then cellRng.Offset(-2).Locked = False
+    'Custom columns, user can modify their names
+    If (varEditLab = "yes") Then cellRng.Offset(-2).Locked = False
 
     'Hidden columns
     If varStatus = "hidden" Then cellRng.EntireColumn.HIDDEN = True

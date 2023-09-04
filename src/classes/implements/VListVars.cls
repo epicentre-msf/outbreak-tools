@@ -423,23 +423,21 @@ Private Sub AddChoices()
     varName = ActualVariable()
     varControl = ValueOf("control")
 
-    If (varControl <> "choice_manual") And (varControl <> "choice_custom") _
-    Then Exit Sub
+    If (varControl <> "choice_manual") And _
+        (varControl <> "choice_custom") And (varControl <> "choice_multiple") _
+        Then Exit Sub
 
 
     Select Case varControl
 
-    Case "choice_manual"
+    Case "choice_manual", "choice_multiple"
         Set drop = Dropdown()
-        Set cat = lData.Categories(varName)
     Case "choice_custom"
         Set drop = CustomDropdown()
-        Set cat = New BetterArray
-        cat.Push vbNullString, vbNullString
     End Select
 
+    Set cat = lData.Categories(varName)
     Set cellRng = VarRange()
-
     'Add dropdown
     drop.Add cat, varName
     varAlert = ValueOf("alert")
