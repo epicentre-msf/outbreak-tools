@@ -34,7 +34,8 @@ Private Const STANDARDSTARTCOL As Long = 3
 Private Const CLASSNAME As String = "CrossTable"
 Private Const NBROWSTIMESERIES As Long = 56
 
-Public Function Create(ByVal specs As ITablesSpecs, ByVal outputWksh As Worksheet, ByVal trans As ITranslation) As ICrossTable
+Public Function Create(ByVal specs As ITablesSpecs, ByVal outputWksh As Worksheet, _
+                       ByVal trans As ITranslation) As ICrossTable
     'Check if values are not defined
     If specs Is Nothing Then ThrowErrorUnableInstanciate " Table specifications not defined"
     If outputWksh Is Nothing Then ThrowErrorUnableInstanciate " Output worksheet not defined"
@@ -575,6 +576,7 @@ Private Sub AddHeader()
     Dim tablType As Byte
     Dim nbShift As Long
     Dim timeUnitName As String
+    Dim sptGeorngTag As String 'Spatio - temporal geo range Tag
 
     Set sh = Wksh()
     Set specs = Specifications
@@ -582,6 +584,9 @@ Private Sub AddHeader()
     Start = StartRow
     tabId = specs.TableId
     tablType = specs.TableType
+
+    sptGeorngTag = "INPUTSPTGEO_"
+    If specs.Value("Section Type") = "hf" Then  sptGeorngTag = "INPUTSPTHF_"
 
     With sh
         Select Case tablType
@@ -653,14 +658,12 @@ Private Sub AddHeader()
 
                     Set cellRng = rng.Offset(2)
                     For counter = 1 To nGeo
-                        cellRng.Cells(counter, 1).Name = "INPUTSPTGEO_" & counter & "_" & tabId
+                        'Add HF or Geo depending on the section type
+                        cellRng.Cells(counter, 1).Name = sptGeorngTag & counter & "_" & tabId
                         cellRng.Cells(counter, 2).Value = 1
                     Next
 
-                    'Add HF input cell
-                    cellRng.Cells(counter, 1).Name = "INPUTSPTHF_" & tabId
-
-                    Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(counter, 1))
+                    Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(nGeo, 1))
                     rng.Name = "INPUTSPTGEO_USER_" & tabId
                     rng.Locked = False
                     'Where to write previous admin from 
