@@ -9,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Formulas for all the cross tables in the analysis"
 
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("Formulas for all the cross tables in the analysis")
@@ -30,7 +31,6 @@ Private Type TCrossTableFormula
 End Type
 
 Private this As TCrossTableFormula
-Private Const CLASSNAME As String = "CrossTableFormula"
 
 Public Function Create(ByVal tabl As ICrossTable, fData As IFormulaData) As ICrossTableFormula
     With New CrossTableFormula
@@ -72,10 +72,10 @@ Private Property Get SummaryFunction() As String
 
 End Property
 
-Private Property Get Id() As String
+Private Property Get ID() As String
     Dim specs As ITablesSpecs
     Set specs = Specifications
-    Id = specs.TableId()
+    ID = specs.TableId()
 End Property
 
 Private Property Get sectionId() As String
@@ -262,7 +262,7 @@ Private Sub AddNonEmptyTableConditions(ByVal varName As String)
 End Sub
 
 'Format a range using the provided format in the analysis
-Private Sub AddRngFormat(Byval formatValue As String, ByVal rng As Range)
+Private Sub AddRngFormat(ByVal formatValue As String, ByVal rng As Range)
     Dim formatText As String
     Dim nbDecimals As Integer
     Dim zerosDecimals As String
@@ -353,6 +353,7 @@ Private Sub AddFormulas()
     Dim spTab As ISpatialTables
     Dim tabFormObject As IFormulas
     Dim spTabType As String
+    Dim counter As Long 'A counter for spatio-temporal formulas on headers
 
     Dim specs As ITablesSpecs
 
@@ -362,7 +363,7 @@ Private Sub AddFormulas()
     Set tabl = Table()
     Set sh = tabl.Wksh()
 
-    tabId = Id()
+    tabId = ID()
     secId = sectionId()
     tabType = TableType
     HasMissing = specs.HasMissing
@@ -614,10 +615,20 @@ Private Sub AddFormulas()
                 AddRngFormat tabFormat, .Range("TOTAL_TOTAL_" & tabId)
             End If
 
-        Case TypeTimeSeries                      ' FORMULAS FOR TIME SERIES =====================
+        Case TypeTimeSeries, TypeSpatioTemporal  ' FORMULAS FOR TIME SERIES AND SPATIO-TEMPORAL =====================
 
             rowVar = specs.Value("time")
             colVar = specs.Value("column")
+            spTabType = specs.SpatialTableTypes()
+            counter = 1
+
+            'For spatio temporal, column variable could be either hf or geo.
+            If tabType = TypeSpatioTemporal Then
+                spTabType = specs.SpatialTableTypes()
+                colVar = Switch(spTabType = "geo", _ 
+                                 "concat_adm1_" & colVar, spTabType = "hf", _
+                                 "hf_" & colVar, True, vbNullString)
+            End If
 
             'Rows for last day, and the period
             If specs.isNewSection() Then         'New sectio on time series
@@ -751,6 +762,17 @@ Private Sub AddFormulas()
 
                     rng.Cells(1, 1).AutoFill Destination:=rng, Type:=xlFillValues
 
+                End If
+
+                'Add formula for range label in case of Spatio temporal
+
+                If (tabType = TypeSpatioTemporal) Then
+                    If spTabType = "geo" Then
+                        rngLab.Formula = "= INPUTSPTGEO_" & counter & "_" & secId
+                    Else
+                        rngLab.Formula = "= INPUTSPTHF_" & secId
+                    End If                
+                    counter = counter + 1
                 End If
 
                 Set rng = rng.Offset(, 1)
@@ -1051,11 +1073,6 @@ Private Sub AddFormulas()
     End With
 End Sub
 
-'Errors
-Private Sub ThrowExecutionError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
-End Sub
-
 Private Property Get ICrossTableFormula_Valid() As Boolean
     ICrossTableFormula_Valid = Valid
 End Property
@@ -1063,5 +1080,3 @@ End Property
 Private Sub ICrossTableFormula_AddFormulas()
     AddFormulas
 End Sub
-
-

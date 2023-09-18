@@ -8,9 +8,10 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of FormulaCondition"
+
 '@Folder("Formulas")
 '@ModuleDescription("Conditons Used to create formulas for analysis")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -20,10 +21,8 @@ Public Property Get Conditions() As BetterArray: End Property
 Public Property Get VariablesTable(ByVal dict As ILLdictionary) As String: End Property
 
 'Methods
-Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tableName As String = vbNullString) As Boolean: End Function
+Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As String = vbNullString) As Boolean: End Function
 
-Public Function ConditionString(ByVal tableName As String, ByVal varName As String, _
+Public Function ConditionString(ByVal tablename As String, ByVal varName As String, _
                                 Optional ByVal Connector As String = "*") As String
 End Function
-
-

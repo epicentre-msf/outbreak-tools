@@ -8,10 +8,9 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
-
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of ")
-'@IgnoreModule
 
 Option Explicit
 

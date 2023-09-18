@@ -4,6 +4,7 @@ Option Explicit
 Option Private Module
 
 '@Folder("Designer Events")
+'@IgnoreModule ParameterNotUsed
 '@ModuleDescription("Events associated to the Ribbon Menu in the designer")
 
 'Designer Translation sheet name
@@ -18,7 +19,7 @@ Private ribbonUI As IRibbonUI
 
 'speed up process
 'speed app
-Private Sub BusyApp(Optional ByVal cursor = xlNorthwestArrow)
+Private Sub BusyApp(Optional ByVal cursor As Long = xlNorthwestArrow)
     Application.EnableEvents = False
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
@@ -36,17 +37,18 @@ End Sub
 '@Description("Callback when the button loaded")
 '@EntryPoint
 Public Sub ribbonLoaded(ByRef ribbon As IRibbonUI)
+    Attribute ribbonLoaded.VB_Description = "Callback when the button loaded"
     Set ribbonUI = ribbon
 End Sub
 
-'@Description("Triggers event to update all the labels by relaunching all the callbacks")
+'Triggers event to update all the labels by relaunching all the callbacks
 Private Sub UpdateLabels
     ribbonUI.Invalidate
 End Sub
 
 '@Description("Callback for getLabel (Depending on the language)")
 '@EntryPoint
-Public Sub LangLabel(control As IRibbonControl, ByRef returnedVal)
+Public Sub LangLabel(control As IRibbonControl, ByRef returnedVal As String)
     Attribute LangLabel.VB_Description = "Callback for getLabel (Depending on the language)"
 
     Dim desTrads As IDesTranslation
@@ -231,7 +233,6 @@ Public Sub clickImpPass(control As IRibbonControl)
     Attribute clickImpPass.VB_Description = "Callback for btnImpPass onAction: Import passwords from a worksheet"
 
     Dim io As IOSFiles
-    Dim sh As Worksheet
     Dim wb As Workbook
     Dim imppass As ILLPasswords
     Dim actpass As ILLPasswords

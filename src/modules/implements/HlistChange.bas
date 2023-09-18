@@ -6,11 +6,11 @@ Attribute VB_Name = "HlistChange"
 Option Explicit
 
 Private Sub Worksheet_Change(ByVal Target As Range)
-    Application.Cursor = xlNorthwestArrow
+    Application.cursor = xlNorthwestArrow
     Application.EnableEvents = False
     EventValueChangeLinelist Target
     Application.EnableEvents = True
-    Application.Cursor = xlDefault
+    Application.cursor = xlDefault
 End Sub
 
 Private Sub Worksheet_Deactivate()
@@ -28,10 +28,9 @@ End Sub
 
 
 Private Sub Worksheet_SelectionChange(ByVal Target As Range)
-    Application.Cursor = xlNorthwestArrow
+    Application.cursor = xlNorthwestArrow
     Application.EnableEvents = False
     EventSelectionLinelist Target
     Application.EnableEvents = True
-    Application.Cursor = xlDefault
+    Application.cursor = xlDefault
 End Sub
-

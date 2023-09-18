@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of DataSheet Object"
 
-
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@Interface
 '@Folder("General")
 '@ModuleDescription("Interface of DataSheet Object")
@@ -51,8 +51,8 @@ Public Function FilterData(ByVal varName As String, ByVal criteriaName As String
 End Function
 
 'multiple filters
-Public Function FiltersData(ByVal varData As BetterArray, _ 
-                            ByVal criteriaData As BetterArray, _ 
+Public Function FiltersData(ByVal varData As BetterArray, _
+                            ByVal criteriaData As BetterArray, _
                             ByVal returnedColumnsData As BetterArray) As BetterArray
 End Function
 
@@ -67,12 +67,3 @@ Public Sub Import(ByVal importedData As Object): End Sub
 'Import a Range By keeping the format of the range, the first cell of the
 'range contains the name of the column
 Public Sub ImportFormat(ByVal impRng As Range): End Sub
-
-
-
-
-
-
-
-
-

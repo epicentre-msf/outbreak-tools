@@ -8,10 +8,9 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
-
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@Folder("Designer")
 '@ModuleDescription("Interface of translation Object for the designer")
-'@IgnoreModule
 
 Option Explicit
 
@@ -21,4 +20,3 @@ Public Sub TranslateDesigner(ByVal mainsh As Worksheet): End Sub
 Public Property Get LangListRng() As Range: End Property
 'Get translated value of a message code
 Public Function TranslationMsg(ByVal msgCode As String) As String: End Function
-

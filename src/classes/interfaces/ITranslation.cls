@@ -1,4 +1,3 @@
-
 VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
@@ -9,10 +8,10 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
-
+'@Interface
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of ")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -26,4 +25,3 @@ End Sub
 
 Public Function TranslatedValue(ByVal Text As String, Optional ByVal containsFormula As Boolean = False) As String
 End Function
-

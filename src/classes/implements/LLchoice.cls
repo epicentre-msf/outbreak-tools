@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Dictionary")
 '@ModuleDescription("Linelist choice Class")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILLchoice
@@ -22,7 +22,7 @@ End Type
 
 Private this As Tchoice
 
-Private Const LISTNAME As String = "list name"
+Private Const listName As String = "list name"
 Private Const LABEL   As String = "label"
 Private Const ORDER   As String = "ordering list"
 
@@ -86,7 +86,7 @@ Public Property Get Categories(ByVal choiceName As String) As BetterArray
 
     Set dataObject = ChoiceData
 
-    Set Categories = dataObject.FilterData(varName:=LISTNAME, _
+    Set Categories = dataObject.FilterData(varName:=listName, _
                                            criteriaName:=choiceName, returnedColumnName:=LABEL, _
                                            includeHeaders:=False)
 End Property
@@ -101,12 +101,12 @@ Private Sub Sort()
 
     Set dataObject = ChoiceData
 
-    If dataObject.ColumnExists(LISTNAME) And dataObject.ColumnExists(ORDER) Then
-        Set listRng = DataRange(LISTNAME, includeHeaders:=False)
+    If dataObject.ColumnExists(listName) And dataObject.ColumnExists(ORDER) Then
+        Set listRng = DataRange(listName, includeHeaders:=False)
         Set orderRng = DataRange(ORDER, includeHeaders:=False)
         Set choiceRng = DataRange(includeHeaders:=False)
 
-        choiceRng.Sort key1:=listRng, order1:=xlAscending, key2:=orderRng, order2:=xlAscending
+        choiceRng.Sort key1:=listRng, Order1:=xlAscending, key2:=orderRng, order2:=xlAscending
     End If
 End Sub
 
@@ -130,7 +130,7 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
     If checkCategories.Length > 0 Then Exit Sub  'Will probably trace log.
 
 
-    Set listRng = DataRange(LISTNAME)
+    Set listRng = DataRange(listName)
     Set labelRng = DataRange(LABEL)
     Set orderRng = DataRange(ORDER)
     Set choicewksh = Wksh()
@@ -154,10 +154,10 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
 End Sub
 
 'Import and export Sub
-Private Sub export(Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+Private Sub Export(Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     Dim choiData As IDataSheet
     Set choiData = ChoiceData()
-    ChoiceData.export Wkb, Hide:=Hide
+    ChoiceData.Export Wkb, Hide:=Hide
 End Sub
 
 Private Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
@@ -172,12 +172,12 @@ Private Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVa
     'clear the choices sheet before imports
     sh.Cells.Clear
     Set cellRng = sh.Cells(StartRow, StartColumn)
-    cellRng.Value = LISTNAME
+    cellRng.Value = listName
     cellRng.Offset(, 1).Value = ORDER
     cellRng.Offset(, 2).Value = LABEL
 
     'Import the data
-    Set impChoiData = DataSheet.Create(fromWksh, fromStartRow, fromStartCol)
+    Set impChoiData = DataSheet.Create(fromWksh, fromStartRow, fromStartcol)
 
     choiData.Import impChoiData
 End Sub
@@ -225,7 +225,7 @@ End Sub
 
 'Export and Import
 Public Sub ILLchoice_Export(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
-    export toWkb, Hide:=Hide
+    Export toWkb, Hide:=Hide
 End Sub
 
 Public Sub ILLchoice_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
@@ -235,5 +235,3 @@ End Sub
 Public Sub ILLchoice_Translate(ByVal TransObject As ITranslation)
     Translate TransObject
 End Sub
-
-

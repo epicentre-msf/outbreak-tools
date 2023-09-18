@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist Passwords")
 '@ModuleDescription("Manage passwords in the linelist")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -93,7 +93,7 @@ End Property
 Private Sub GenerateKey(ByVal trads As ITranslation)
     Dim nbRows As Long
     Dim randNum As Integer
-    Dim LoKeys As ListObject 'ListObject of keys
+    Dim LoKeys As listObject 'ListObject of keys
     Dim LoRng As Range
     Dim sh As Worksheet
 
@@ -101,7 +101,7 @@ Private Sub GenerateKey(ByVal trads As ITranslation)
     Set LoKeys = sh.ListObjects(TABKEYS)
 
     'Don't try to generate new keys if the databodyrange does not exists
-    If LoKeys.DataBodyRange is Nothing Then Exit Sub
+    If LoKeys.DataBodyRange Is Nothing Then Exit Sub
     Set LoRng = LoKeys.DataBodyRange
     
     'Number of Rows of the databodyrange of the listobject
@@ -118,7 +118,7 @@ Private Sub GenerateKey(ByVal trads As ITranslation)
     DisplayPrivateKey trads
 End Sub
 
-'Display the private key 
+'Display the private key
 Private Sub DisplayPrivateKey(ByVal trads As ITranslation)
     Dim sh As Worksheet
     Dim privKey As String
@@ -128,7 +128,7 @@ Private Sub DisplayPrivateKey(ByVal trads As ITranslation)
 End Sub
 
 'protect
-Private Sub Protect( ByVal sheetObject As Variant, Optional ByVal allowShapes As Boolean = False)
+Private Sub Protect(ByVal sheetObject As Variant, Optional ByVal allowShapes As Boolean = False)
 
     Dim pwd As String
     Dim sh As Worksheet
@@ -227,7 +227,7 @@ Private Sub Export(ByVal toWkb As Workbook)
 
     Dim sh As Worksheet
     Dim outsh As Worksheet
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim expAddress As String
     Dim expRange As Range
     Dim rngTable As BetterArray
@@ -280,12 +280,12 @@ Private Sub Export(ByVal toWkb As Workbook)
     outsh.Visible = xlSheetVeryHidden
 End Sub
 
-Private Sub Import(Byval pass As ILLPasswords)
+Private Sub Import(ByVal pass As ILLPasswords)
 
     Dim sh As Worksheet
     Dim impTabRng As Range
     Dim actTabRng As Range
-    Dim Lo As ListObject
+    Dim Lo As listObject
 
     Set sh = Wksh()
     
@@ -296,7 +296,7 @@ Private Sub Import(Byval pass As ILLPasswords)
     
     Set impTabRng = pass.TableRange()
     '
-    If impTabRng.Columns.Count <> 2 Then _ 
+    If impTabRng.Columns.Count <> 2 Then _
     ThrowError "Error when importing, import keys table doesn't have 2 columns"
     
     Set Lo = sh.ListObjects(TABKEYS)
@@ -344,12 +344,12 @@ Private Sub RangeExists(ByVal rngName As String, ByVal sh As Worksheet)
     If rng Is Nothing Then ThrowError "Range " & rngName & " does not exists in worksheet " & sh.Name
 End Sub
 
-Private Sub LoExists(ByVal LoName As String, sh As Worksheet)
-    Dim Lo As ListObject
+Private Sub LoExists(ByVal loName As String, sh As Worksheet)
+    Dim Lo As listObject
     On Error Resume Next
-    Set Lo = sh.ListObjects(LoName)
+    Set Lo = sh.ListObjects(loName)
     On Error GoTo 0
-    If Lo Is Nothing Then ThrowError "Table " & LoName & " does not exists in Worksheet " & sh.Name
+    If Lo Is Nothing Then ThrowError "Table " & loName & " does not exists in Worksheet " & sh.Name
 End Sub
 
 'Error
@@ -366,13 +366,13 @@ Private Sub ILLPasswords_UnProtect(Optional ByVal sheetName As String = "_active
     UnProtect sheetName
 End Sub
 
-Private Sub ILLPasswords_Protect(Optional ByVal sheetObject As Variant, _ 
+Private Sub ILLPasswords_Protect(Optional ByVal sheetObject As Variant, _
                                  Optional ByVal allowShapes As Boolean = False)
     Protect sheetObject, allowShapes
 End Sub
 
 Private Sub ILLPasswords_Export(ByVal toWkb As Workbook)
-    export toWkb
+    Export toWkb
 End Sub
 
     'Protect and unprotect the workbook to avoid sheet name changes
@@ -404,7 +404,7 @@ Private Sub ILLPasswords_LeaveDebugMode()
     LeaveDebugMode
 End Sub
 
-Private Sub ILLPasswords_Import(Byval pass As ILLPasswords)
+Private Sub ILLPasswords_Import(ByVal pass As ILLPasswords)
     Import pass
 End Sub
 

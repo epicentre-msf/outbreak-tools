@@ -7,11 +7,13 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Build Graphs for the analysis"
 
 
+'@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("Build Graphs for the analysis")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IGraphs
@@ -96,7 +98,7 @@ Public Sub Add()
     Set this.co = co
 End Sub
 
-Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _ 
+Public Sub AddSeries(ByVal rngName As String, ByVal chrtType As String, _
                     Optional axisPos As String = vbNullString)
 
     Dim co As ChartObject
@@ -186,20 +188,23 @@ Public Sub AddLabels(ByVal catName As String, _
 
     Dim co As ChartObject
     Dim sh As Worksheet
-    Set co = graphChart
-    Set sh = Wksh()
     Dim labelValue As String
     Dim ind As Long
+    Dim currPrefix As String
+
+    Set co = graphChart
+    Set sh = Wksh()
 
     ind = seriesIndex
 
     'Adding prefix to the label name of graphs (useful for time series graphs)
-    If prefix <> vbNullString And (Not prefixOnly) Then prefix = prefix & " - "
+    currPrefix = prefix
+    If currPrefix <> vbNullString And (Not prefixOnly) Then currPrefix = currPrefix & " - "
 
     If prefixOnly Then
-        labelValue = prefix
+        labelValue = currPrefix
     ElseIf RangeExist(lblName) Then
-        labelValue = prefix & sh.Range(lblName).Value
+        labelValue = currPrefix & sh.Range(lblName).Value
     End If
 
     'Throw error when co is Nothing
@@ -344,20 +349,20 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
     
 End Sub
 
-Public Sub IGraphs_Add()
+Private Sub IGraphs_Add()
     Add
 End Sub
 
-Public Sub IGraphs_AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional axisPos As String = vbNullString)
+Private Sub IGraphs_AddSeries(ByVal rngName As String, ByVal chrtType As String, Optional axisPos As String = vbNullString)
     AddSeries rngName, chrtType, axisPos
 End Sub
 
-Public Sub IGraphs_AddLabels(ByVal catName As String, ByVal lblName As String, Optional ByVal prefix As String = vbNullString, _
+Private Sub IGraphs_AddLabels(ByVal catName As String, ByVal lblName As String, Optional ByVal prefix As String = vbNullString, _
                             Optional ByVal prefixOnly As Boolean = False, Optional ByVal hardCodeLabels As Boolean = True)
     AddLabels catName, lblName, prefix, prefixOnly, hardCodeLabels
 End Sub
 
-Public Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, _
+Private Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, _
                           Optional ByVal catTitle As String = vbNullString, _
                           Optional ByVal plotTitle As String = vbNullString, _
                           Optional ByVal scope As GraphScope = GraphScopeNormal, _
@@ -366,5 +371,3 @@ Public Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, _
     Format valuesTitle:=valuesTitle, catTitle:=catTitle, plotTitle:=plotTitle, scope:=scope, _
            heightFactor:=heightFactor, hardCodeLabels:=hardCodeLabels
 End Sub
-
-

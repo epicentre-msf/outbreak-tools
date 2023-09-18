@@ -11,11 +11,10 @@ Attribute VB_Exposed = False
 
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of ")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
 'Exposed methods
 Public Sub Build(): End Sub
 Public Property Get NextSheet() As String: End Property
-

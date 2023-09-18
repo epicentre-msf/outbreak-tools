@@ -9,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Add specifications for graphs in analysis"
 
+'@IgnoreModule IIfSideEffect, ExcelMemberMayReturnNothing
 '@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("Add specifications for graphs in analysis")
@@ -71,7 +72,7 @@ Public Function Create(ByVal tabl As ICrossTable) As IGraphSpecs
 End Function
 
 Public Function CreateRangeSpecs(ByVal loTable As BetterArray, ByVal OutputSh As Worksheet, ByVal lData As ILinelistSpecs) As IGraphSpecs
-    'loTable is a table of two listObjects, one for the graphs, and another for the tables.
+    'loTable is a table of trhee listObjects, one for the graphs, and another for the tables.
     'The first table of the list object is the graph table, the second table of the listObject is the list of tables
 
     CheckSpecifications loTable
@@ -92,11 +93,11 @@ End Function
 
 Private Sub CheckSpecifications(ByVal loTable As BetterArray)
     Dim counter As Long
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim testLo As Variant
-    Dim graphLo As ListObject
-    Dim tabLo As ListObject
-    Dim titleLo As ListObject
+    Dim graphLo As listObject
+    Dim tabLo As listObject
+    Dim titleLo As listObject
     Dim rng As Range
     Dim titleVal As String
 
@@ -181,15 +182,15 @@ Public Property Set LoList(ByVal los As BetterArray)
     Set this.timelos = los.Clone()
 End Property
 
-Private Property Get GraphListObject() As ListObject
+Private Property Get GraphListObject() As listObject
     Set GraphListObject = LoList.Item(LoList.LowerBound)
 End Property
 
-Private Property Get TimeSeriesListObject() As ListObject
+Private Property Get TimeSeriesListObject() As listObject
     Set TimeSeriesListObject = LoList.Item(LoList.LowerBound + 1)
 End Property
 
-Private Property Get TitlesListObject() As ListObject
+Private Property Get TitlesListObject() As listObject
     Set TitlesListObject = LoList.Item(LoList.LowerBound + 2)
 End Property
 
@@ -328,6 +329,7 @@ Public Sub CreateSeries()
     Dim nbCols As Long
     Dim plotType As String
     Dim flipCoords As String
+    Dim tabSecId As String
 
     Select Case GraphType
 
@@ -338,6 +340,16 @@ Public Sub CreateSeries()
         tabId = specs.TableId
         tabType = specs.TableType
         nbCols = tabl.NumberOfColumns
+
+        If tabType = TypeSpatioTemporal Then
+            'Default value for the number of columns for 
+            'spatio-temporal is 5
+            nbCols = 5
+            On Error Resume Next
+            nbCols = CLng(specs.Value("n geo"))
+            On Error GoTo 0
+            tabSecId = specs.TableSectionId
+        End If
 
         'flip coordinates
         flipCoords = specs.Value("flip")
@@ -356,14 +368,19 @@ Public Sub CreateSeries()
                 PushLabels "ROW_CATEGORIES_" & tabId, "PERC_LABEL_COL_" & tabId
             End If
 
-        Case TypeBivariate, TypeSpatial
-            'Only values
+        Case TypeBivariate, TypeSpatial, TypeSpatioTemporal
+
             Select Case specs.Value("graph")
 
-            Case "values"
+            'Only values (yes is for spatio-temporal)
+            Case "values", "yes"
                 For counter = 1 To nbCols
                     PushSeries "VALUES_COL_" & counter & "_" & tabId, plotType, "left"
-                    PushLabels "ROW_CATEGORIES_" & tabId, "LABEL_COL_" & counter & "_" & tabId
+                    If tabType = TypeSpatioTemporal Then
+                        PushLabels "ROW_CATEGORIES_" & tabSecId, "LABEL_COL_" & counter & "_" & tabId
+                    Else
+                        PushLabels "ROW_CATEGORIES_" & tabId, "LABEL_COL_" & counter & "_" & tabId
+                    End If
                 Next
 
             Case "percentages"
@@ -422,7 +439,7 @@ Private Function GraphTitle(ByVal graphId As String) As String
     'The first column of the listObject is for ids, the second column is for the title
 
     Dim title As String
-    Dim titleLo As ListObject
+    Dim titleLo As listObject
     Dim idRng As Range
     Dim cellRng As Range
 
@@ -432,8 +449,8 @@ Private Function GraphTitle(ByVal graphId As String) As String
     'idRng is the first column of the listobject where there are ids for graphs
     Set idRng = titleLo.ListColumns(3).DataBodyRange
 
-    If Not idRng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True) Is Nothing Then
-        Set cellRng = idRng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True)
+    If Not idRng.Find(What:=graphId, lookAt:=xlWhole, MatchCase:=True) Is Nothing Then
+        Set cellRng = idRng.Find(What:=graphId, lookAt:=xlWhole, MatchCase:=True)
         title = cellRng.Offset(, -2).Value
     End If
 
@@ -491,7 +508,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
     'Defines Specs for one grpah Id of type complex
     'Complex graphs are graphs for time series (They are tables of tables of graphs)
 
-    Dim tsLo As ListObject
+    Dim tsLo As listObject
     Dim counter As Long
     Dim lData As ILinelistSpecs
     Dim specs As ITablesSpecs
@@ -589,7 +606,7 @@ Private Function TimeSeriesColumnName(ByVal choiValue As String, ByVal tabId As 
     Set rng = sh.Range("COLUMN_CATEGORIES_" & tabId)
 
     'If Not ValueExists(rng, choiValue, True) Then ThrowError choiValue & " is not in the drawn table " & tabId
-    Set cellRng = rng.Find(What:=choiValue, LookAt:=xlWhole, MatchCase:=True)
+    Set cellRng = rng.Find(What:=choiValue, lookAt:=xlWhole, MatchCase:=True)
 
     On Error Resume Next
     If Not cellRng Is Nothing Then colName = cellRng.Name.Name
@@ -603,24 +620,24 @@ End Function
 'or starts after cell(1, 1))
 Private Function ValueExists(ByVal rng As Range, ByVal Value As String, Optional ByVal strictSearch As Boolean = False)
     If Not strictSearch Then
-        ValueExists = (Not rng.Find(What:=Value, LookAt:=xlPart, MatchCase:=False) Is Nothing)
+        ValueExists = (Not rng.Find(What:=Value, lookAt:=xlPart, MatchCase:=False) Is Nothing)
     Else
-        ValueExists = (Not rng.Find(What:=Value, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+        ValueExists = (Not rng.Find(What:=Value, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
     End If
 
 End Function
 
 'Column Index of a colname in a listObject
-Private Function ColumnIndex(ByVal Lo As ListObject, ByVal colName As String, Optional ByVal inRange As Boolean = True) As Long
+Private Function ColumnIndex(ByVal Lo As listObject, ByVal colName As String, Optional ByVal inRange As Boolean = True) As Long
     Dim Index As Long
     Dim hRng As Range
 
     Set hRng = Lo.HeaderRowRange
     If ValueExists(hRng, colName) Then
         If inRange Then
-            Index = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False).Column - hRng.Column + 1
+            Index = hRng.Find(What:=colName, lookAt:=xlPart, MatchCase:=False).Column - hRng.Column + 1
         Else
-            Index = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False).Column
+            Index = hRng.Find(What:=colName, lookAt:=xlPart, MatchCase:=False).Column
         End If
     Else
         Index = -1
@@ -631,7 +648,7 @@ End Function
 
 Private Function GraphIdsList() As BetterArray
     Dim idsList As BetterArray
-    Dim graphLo As ListObject
+    Dim graphLo As listObject
     Dim idIndex As Long
     Dim rng As Range
     Dim counter As Long
@@ -669,7 +686,7 @@ Private Function GraphValues(ByVal colName As String, ByVal graphId As String) A
     Dim idIndex As Long
     Dim RowIndex As Long
     Dim colIndex As Long
-    Dim grLo As ListObject
+    Dim grLo As listObject
     Dim rng As Range
     Dim colRng As Range
     Dim cellVal As String
@@ -694,8 +711,8 @@ Private Function GraphValues(ByVal colName As String, ByVal graphId As String) A
 
     If ValueExists(rng, graphId, strictSearch:=True) Then
         With sh
-            Do While Not (rng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True, After:=rng.Cells(rng.Rows.Count, 1)) Is Nothing)
-                RowIndex = rng.Find(What:=graphId, LookAt:=xlWhole, MatchCase:=True, After:=rng.Cells(rng.Rows.Count, 1)).Row - rng.Row + 1
+            Do While Not (rng.Find(What:=graphId, lookAt:=xlWhole, MatchCase:=True, after:=rng.Cells(rng.Rows.Count, 1)) Is Nothing)
+                RowIndex = rng.Find(What:=graphId, lookAt:=xlWhole, MatchCase:=True, after:=rng.Cells(rng.Rows.Count, 1)).Row - rng.Row + 1
 
                 cellVal = colRng.Cells(RowIndex, 1).Value
 

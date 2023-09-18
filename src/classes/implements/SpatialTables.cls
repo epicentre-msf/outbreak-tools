@@ -11,7 +11,8 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Manage the Spatial analysis tables")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
+
 Option Explicit
 
 Implements ISpatialTables
@@ -98,24 +99,24 @@ End Property
 Private Function Exists(ByVal varName As String) As Boolean
   Dim counter As Long
   Dim testExistence As Boolean
-  Dim LoName As String
+  Dim loName As String
 
   For counter = 1 To 4
-    LoName = CurrentLoName(varName, ADMIN & counter)
-    testExistence = LoExists(LoName)
+    loName = CurrentLoName(varName, ADMIN & counter)
+    testExistence = LoExists(loName)
     If Not testExistence Then Exit For
   Next
 
   Exists = testExistence
 End Function
 
-Private Function LoExists(ByVal LoName As String) As Boolean
+Private Function LoExists(ByVal loName As String) As Boolean
   Dim sh As Worksheet
-  Dim Lo As ListObject
+  Dim Lo As listObject
   Set sh = Wksh()
 
   On Error Resume Next
-    Set Lo = sh.ListObjects(LoName)
+    Set Lo = sh.ListObjects(loName)
   On Error GoTo 0
 
   LoExists = (Not Lo Is Nothing)
@@ -136,7 +137,7 @@ Private Function GeopopulationFunction(ByVal adminName As String, ByVal rangeAdd
   On Error GoTo 0
 
   centralPart = "INDEX(" & TabName & ", MATCH(" & rangeAddress & ", " & concatName & ", 0), " & popColIndex & ")"
-  GeoPopulationFunction = "IF(ISERROR(" & centralPart & "), 0," & centralPart &")"
+  GeopopulationFunction = "IF(ISERROR(" & centralPart & "), 0," & centralPart & ")"
 
 End Function
 
@@ -269,14 +270,14 @@ End Sub
 
 Private Sub AddVarNameToList(ByVal varName As String)
   Dim sh As Worksheet
-  Dim Lo As ListObject
+  Dim Lo As listObject
   Dim nbRows As Long
 
   Set sh = Wksh()
   Set Lo = sh.ListObjects("listofgeovars")
 
   'Add the variable to the listobject
-  nbRows = Application.WorksheetFunction.CountA(Lo.Range)
+  nbRows = Application.WorksheetFunction.COUNTA(Lo.Range)
   sh.Cells(nbRows + 1, Lo.Range.Column).Value = varName
 End Sub
 
@@ -287,7 +288,7 @@ Private Sub Add(ByVal formObject As IFormulas)
     Dim colIndex As Long
     Dim varName As String
     Dim headerName As String                     'header Name
-    Dim LoName As String                         'List object name
+    Dim loName As String                         'List object name
     Dim rng As Range
     Dim Wkb As Workbook
     Dim counter As Long
@@ -325,7 +326,7 @@ Private Sub Add(ByVal formObject As IFormulas)
         ClearTableConditions
 
         'Get the list object unique name (using the admin level and the variable name)
-        LoName = Switch(spatType = "geo", CurrentLoName(varName, ADMIN & counter), _
+        loName = Switch(spatType = "geo", CurrentLoName(varName, ADMIN & counter), _
                         spatType = "hf", CurrentLoName(varName, HF))
 
         'Where to start building the listobject
@@ -361,19 +362,19 @@ Private Sub Add(ByVal formObject As IFormulas)
         If spatType = "geo" Then
 
           'formula for the population
-          finalFormula = GeoPopulationFunction(adminName, cellRng.Cells(2, 1).Address(Rowabsolute:=False))
+          finalFormula = GeopopulationFunction(adminName, cellRng.Cells(2, 1).Address(Rowabsolute:=False))
           cellRng.Cells(2, 3).formula = "= " & finalFormula
 
           'formula for the attack rate
           finalFormula = "= " & cellRng.Cells(2, 2).Address(Rowabsolute:=False) & "/" & cellRng.Cells(2, 3).Address(Rowabsolute:=False)
-          cellRng.Cells(2, 4).Formula = finalFormula
+          cellRng.Cells(2, 4).formula = finalFormula
         End If
 
         'Define the listObject
         Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(2, 4))
 
         'Add A list object table
-        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = LoName
+        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName
 
       Next
 

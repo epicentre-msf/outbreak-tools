@@ -8,10 +8,10 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
-
+'@Interface
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of Linelist sheets")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -46,4 +46,3 @@ Public Function VariableAddress(ByVal varName As String, Optional ByVal onSheet 
 
 Public Function RowIndex(ByVal sheetName As String) As Long: End Function
 Public Function NumberOfVars(ByVal sheetName As String) As Long: End Function
-

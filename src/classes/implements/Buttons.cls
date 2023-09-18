@@ -9,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Buttons of the linelist"
 
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Buttons of the linelist")
@@ -28,13 +29,15 @@ Private Const BUTTONWIDTH As Long = 105
 Private Const BUTTONHEIGHT As Long = 30
 Private Const BUTTONGAP As Long = 5
 
-Public Function Create(ByVal outRng As Range, ByVal codeName As String, _
+Public Function Create(ByVal outrng As Range, ByVal codeName As String, _
                        ByVal scope As ButtonScope) As IButtons
-  
-    If outRng Is Nothing Then ThrowError "I don't know where to write the button, no range found."
+    
+    'Check if the output range is provided
+    If outrng Is Nothing Then ThrowError "I don't know where to write the button, no range found."
 
+    'Create a new button object and set properties
     With New Buttons
-        Set .OutputRange = outRng
+        Set .OutputRange = outrng
         .Name = codeName
         .ShapeScope = scope
         Set Create = .Self()
@@ -134,7 +137,7 @@ Public Sub Add(Optional ByVal actionCommand As String = vbNullString, Optional B
     'Add the button
     sh.Shapes.AddShape(msoShapeRoundedRectangle, cellRng.Left + leftGap, cellRng.Top + topGap, width, height).Name = codeName
 
-    'The text to display on the shape
+    'Set The text to display on the shape
     With sh.Shapes(codeName)
         .OnAction = actionCommand
         .Placement = xlFreeFloating
@@ -143,7 +146,7 @@ Public Sub Add(Optional ByVal actionCommand As String = vbNullString, Optional B
     End With
 End Sub
 
-'Format
+'Format the button using the provided design
 Public Sub Format(ByVal design As ILLFormat)
     Dim shp As Shape
     Dim scope As ButtonScope
@@ -181,5 +184,3 @@ End Sub
 Private Sub IButtons_Format(design As ILLFormat)
     Format design
 End Sub
-
-

@@ -96,7 +96,7 @@ Private Sub ImportFolder(Optional ByVal scope As Byte = 1)
                      True, "RNG_MODULES_CODES_FOLDER")
     secondRngName = Switch(scope = 1, "RNG_TEST_MODULES_FOLDER", _
                            scope = 2, "RNG_CLASS_INTERFACE_FOLDER", _
-                           True, "")
+                           True, vbNullString)
 
     secondFolder = Switch(scope = 1, "tests", _
                      scope = 2, "interfaces", _
@@ -236,7 +236,8 @@ Attribute ImportModuleFolder.VB_Description = "Import module folder path"
     ImportFolder scope:=1
 End Sub
 
-'@Description("Add codes to some components")
+'Add codes to some components
+'@EntryPoint
 Private Sub CopyCodes(ByVal importModName As String, ByVal exportCodeName As String)
     Dim codeContent As String
     Dim codeMod As Object
@@ -309,6 +310,7 @@ Attribute PrepareToDeployment.VB_Description = "Hide some worksheets before depl
     CopyCodes "FormLogicExportMigration", "F_ExportMig"
     CopyCodes "FormLogicImportRep", "F_ImportRep"
     CopyCodes "FormLogicShowVarLabels", "F_ShowVarLabels"
+    CopyCodes "FormLogicCustomFilters", "F_Filters"
 
 End Sub
 

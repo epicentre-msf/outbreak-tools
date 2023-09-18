@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of ")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -23,9 +23,12 @@ Public Sub Remove(ByVal listName As String): End Sub
 
 Public Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
                          Optional ByVal alertType As String = "info", _
-                         Optional ByVal message As String = vbNullString)
+                         Optional ByVal message As String = vbNullString, _ 
+                         Optional ByVal showError As Boolean = True)
 End Sub
-
-
 Public Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String)
+End Sub
+Public Sub ClearList(ByVal listName As String)
+End Sub
+Public Sub Sort(ByVal listName As String, Optional ByVal sortOrder As Long = xlAscending)
 End Sub

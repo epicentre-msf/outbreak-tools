@@ -8,17 +8,17 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
-
+'@Interface
 '@Folder("Linelist")
 '@ModuleDescription("Interface of Password")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
 'Exposed methods
 Public Property Get Password() As String: End Property
-Public Property Get Value(Byval tagName As String) As String: End Property
-Public Property Get TableRange() As Range : End Property
+Public Property Get Value(ByVal tagName As String) As String: End Property
+Public Property Get TableRange() As Range: End Property
 
 Public Sub UnProtect(Optional ByVal sheetName As String = "_active"): End Sub
 
@@ -45,4 +45,3 @@ Public Sub DisplayPrivateKey(ByVal trads As ITranslation): End Sub
 
 Public Sub GenerateKey(ByVal trads As ITranslation): End Sub
 Public Sub Import(ByVal pass As ILLPasswords): End Sub
-  

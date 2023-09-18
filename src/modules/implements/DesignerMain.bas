@@ -11,33 +11,33 @@ Private Const LINELISTTRADSHEET As String = "LinelistTranslation"
 Private Const DESIGNERMAINSHEET As String = "Main"
 
 'speed app
-Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault, _ 
-                    Optional Byval changeSeparator As Boolean = False)
+Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault, _
+                    Optional ByVal changeSeparator As Boolean = False)
     Application.EnableEvents = False
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
     Application.Calculation = xlCalculationManual
-    Application.Cursor = cursor
+    Application.cursor = cursor
 
     'The default is to change the separator back to English
     'And to return it back after all
     If changeSeparator Then
        Application.DecimalSeparator = "."
-       Application.UseSystemSeparators = False
+       Application.useSystemSeparators = False
     End If
 End Sub
 
 'Return back to previous state
-Private Sub NotBusyApp(Optional Byval returnSeparator As String = vbNullString, _ 
-                       Optional Byval useSystemSeparators As Boolean = False)
+Private Sub NotBusyApp(Optional ByVal returnSeparator As String = vbNullString, _
+                       Optional ByVal useSystemSeparators As Boolean = False)
     Application.EnableEvents = True
     Application.ScreenUpdating = True
     Application.EnableAnimations = True
-    Application.Cursor = xlDefault
+    Application.cursor = xlDefault
 
     If returnSeparator <> vbNullString Then
         Application.DecimalSeparator = returnSeparator
-        Application.UseSystemSeparators = useSystemSeparators
+        Application.useSystemSeparators = useSystemSeparators
     End If
 
 End Sub
@@ -45,13 +45,14 @@ End Sub
 'LOADING FILES AND FOLDERS =====================================================
 '@Description("Import the language of the setup")
 Private Sub ImportLang()
+    Attribute ImportLang.VB_Description = "Import the language of the setup"
 
     Const RNGDICTLANG As String = "RNG_DictionaryLanguage" 'selected lang (lltradsh)
 
     Dim inPath As String 'Path to the setup file, input path
     Dim actwb As Workbook 'actual workbook
     Dim impwb As Workbook 'imported setup workbook
-    Dim tradLo As ListObject 'Translation listObject
+    Dim tradLo As listObject 'Translation listObject
     Dim langTable As BetterArray 'List of languages in the translation sheet
     Dim LangDictRng As Range 'in destradsh, range of languages in the setup
     Dim mainobj As IMain
@@ -88,6 +89,7 @@ End Sub
 '@Description("Load the dictionary file")
 '@EntryPoint
 Public Sub LoadFileDic()
+    Attribute LoadFileDic.VB_Description = "Load the dictionary file"
 
     BusyApp
 
@@ -122,6 +124,8 @@ End Sub
 '@Description("Load the template file")
 '@EntryPoint
 Public Sub LoadTemplateFile()
+    Attribute LoadTemplateFile.VB_Description = "Load the template file"
+
     BusyApp
 
     Dim io As IOSFiles
@@ -157,7 +161,9 @@ End Sub
 '@Description("Path to future Lineist Directory")
 '@EntryPoint
 Sub LinelistDir()
-    Dim wb As workbook
+    Attribute LinelistDir.VB_Description = "Path to future Lineist Directory"
+
+    Dim wb As Workbook
     Dim mainsh As Worksheet
     Dim io As IOSFiles
     Dim trads As IDesTranslation
@@ -185,9 +191,10 @@ End Sub
 '@Description("Load the geobase")
 '@EntryPoint
 Public Sub LoadGeoFile()
+    Attribute LoadGeoFile.VB_Description = "Load the geobase"
     'Geobase path range name
 
-    Dim wb As workbook
+    Dim wb As Workbook
     Dim mainsh As Worksheet
     Dim io As IOSFiles
     Dim trads As IDesTranslation
@@ -213,7 +220,7 @@ End Sub
 
 'GENERATE THE LINELIST =========================================================
 
-'Generate the linelist after control
+'Generate the linelist after passing through all the control and checkings
 Private Sub GenerateData()
 
     Dim ll As ILinelist
@@ -235,7 +242,7 @@ Private Sub GenerateData()
 
     'Change decimal separators for building process
     savedSeparator = Application.DecimalSeparator
-    savedUseSep = Application.UseSystemSeparators
+    savedUseSep = Application.useSystemSeparators
 
     BusyApp cursor:=xlWait, changeSeparator:=True
     
@@ -324,7 +331,7 @@ Private Sub GenerateData()
     'Update the status to 100%
     mainobj.UpdateStatus (100)
     
-    NotBusyApp returnSeparator:= savedSeparator, useSystemSeparators:=savedUseSep
+    NotBusyApp returnSeparator:=savedSeparator, useSystemSeparators:=savedUseSep
 
     'Open the linelist
     outPath = mainobj.ValueOf("lldir") & Application.PathSeparator & mainobj.ValueOf("llname") & ".xlsb"
@@ -349,6 +356,7 @@ End Sub
 '@Description("Check everything is fine and generate the linelist")
 '@EntryPoint
 Public Sub Control()
+    Attribute Control.VB_Description = "Check everything is fine and generate the linelist"
 
     Dim mainobj As IMain
     Dim desTrads As IDesTranslation
@@ -361,6 +369,7 @@ Public Sub Control()
     Set wb = ThisWorkbook
     Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
     Set mainobj = Main.Create(mainsh)
+    
     'Put every range in white before the control
     mainobj.ClearInputRanges
 
@@ -370,6 +379,7 @@ Public Sub Control()
 
     'Check readiness of the linelist
     mainobj.CheckReadiness desTrads
+    
     'If the main sheet is not ready exit the sub
     If Not mainobj.Ready Then Exit Sub
 
@@ -381,7 +391,6 @@ Public Sub Control()
 
     'If the main sheet is not ready exit the sub
     If Not mainobj.Ready Then Exit Sub
-
 
     'Generate all the data in the other case
     GenerateData

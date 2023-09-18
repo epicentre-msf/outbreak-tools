@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of ")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -43,4 +43,3 @@ End Sub
 Public Property Get SpecsLists() As BetterArray: End Property
 
 Public Property Get Valid() As Boolean: End Property
-

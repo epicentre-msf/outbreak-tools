@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Interface of HListVars")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -19,4 +19,3 @@ Option Explicit
 
 Public Sub WriteInfo(): End Sub
 Public Property Get ValueOf(ByVal colName As String) As String: End Property
-

@@ -2,47 +2,144 @@ Attribute VB_Name = "FormLogicGeo"
 Attribute VB_Description = "Form implementation of GeoApp"
 
 '@ModuleDescription("Form implementation of GeoApp")
-'@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
+'@IgnoreModule UnassignedVariableUsage, UndeclaredVariable, ImplicitActiveSheetReference
 
 'Unused variables should be ignored because this module is copied to the geo form
 
 Option Explicit
 
-Private tradform As ITranslation   'Translation of forms
+Private Const GEOSHEET As String = "Geo"
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const TRADSHEET As String = "Translations"
+Private Const SEP As String = " | " 'This is the separator for values in the text box at the bottom
+Private Const NACHAR As String = " | N/A"
+Private Const NACHARREV As String = "N/A | "
+
+Private tradform As ITranslation   'Translation of forms
+Private tradmess As ITranslation
+Private geo As ILLGeo
+Private hfOrGeo As Byte
 
 'Initialize translation of forms object
 Private Sub InitializeTrads()
     Dim lltrads As ILLTranslations
     Dim lltranssh As Worksheet
     Dim dicttranssh As Worksheet
+    Dim wb As Workbook
 
-
-    Set lltranssh = ThisWorkbook.Worksheets(LLSHEET)
-    Set dicttranssh = ThisWorkbook.Worksheets(TRADSHEET)
+    Set wb = ThisWorkbook
+    Set lltranssh = wb.Worksheets(LLSHEET)
+    Set dicttranssh = wb.Worksheets(TRADSHEET)
     Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
     Set tradform = lltrads.TransObject(TranslationOfForms)
+    Set tradmess = lltrads.TransObject()
+    Set geo = LLGeo.Create(wb.Worksheets(GEOSHEET))
+End Sub
+
+Private Sub InitializeElements()
+    'Initialize hf or geo
+    If Me.FRM_Geo.Visible Then
+        hfOrGeo = GeoScopeAdmin
+    Else
+        hfOrGeo = GeoScopeHF
+    End If
+End Sub
+
+' This function reverses a string using the | as separator, like in the final selection of the
+Private Function ReverseString(stringValue As String, _
+                               Optional ByVal separator As String = sep)
+    Dim tempTable As BetterArray 'Temporary table for data manipulation purposes
+
+    Set tempTable = New BetterArray
+    tempTable.Items = Split(stringValue, separator)
+    tempTable.Reverse
+    ReverseString = tempTable.ToString( _
+                            separator:=separator, _
+                            OpeningDelimiter:=vbNullString, _
+                            ClosingDelimiter:=vbNullString, _
+                            QuoteStrings:=False)
+End Function
+
+
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+'Search values in the search box
+'concatenateGeoTable is The concatenate data
+'searchedvalue is the string to searrch
+'1 - search in the concatenated table
+'2- Add values where there are some matches in another table
+'3- Render the table if it is not empty
+'~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Private Sub searchValue(ByVal searchedValue As String, _
+                Optional ByVal scope As Byte = 0, _
+                Optional ByVal onHistoric As Boolean = False)
+
+    Dim resultTable As BetterArray
+    Set resultTable = New BetterArray
+    Dim counter As Long
+    Dim lstObj As Object 'Form List Object
+    Dim concatTab As BetterArray
+
+    Set concatTab = New BetterArray
+
+    If scope = GeoScopeAdmin Then
+        'You can search either on historic, or on aggregated values
+        If onHistoric Then
+            Set lstObj = Me.LST_Histo
+            concatTab.FromExcelRange Range("histo_geo")
+        Else
+            Set lstObj = Me.LST_ListeAgre
+            concatTab.FromExcelRange Range("adm4_concat")
+        End If
+    Else
+        If onHistoric Then
+            Set lstObj = Me.LST_HistoF
+            concatTab.FromExcelRange Range("histo_hf")
+        Else
+            Set lstObj = Me.LST_ListeAgreF
+            concatTab.FromExcelRange Range("hf_concat")
+        End If
+    End If
+
+    'Create a table of the found values (called resultTable)
+    If Len(searchedValue) >= 3 Then
+
+        For counter = concatTab.LowerBound To concatTab.UpperBound
+            If InStr(1, LCase(concatTab.Item(counter)), LCase(searchedValue)) > 0 Then
+                resultTable.Push concatTab.Item(counter)
+            End If
+        Next
+
+        'Render the table if some values are found
+        If resultTable.Length > 0 Then
+            resultTable.Sort
+            lstObj.List = resultTable.Items
+        Else
+            'If Not, check if there have been some input in the concat and render
+            lstObj.Clear
+        End If
+    Else
+        lstObj.List = concatTab.Items
+    End If
 End Sub
 
 'This command is at the end, when you close the geoapp
-'It basically update all the required data and input selected data in the linelist worksheet
+'It basically update all the required data and input selected data in
+'the linelist worksheet
 Private Sub CMD_Copier_Click()
 
-    Dim T_temp As BetterArray
+    Dim tempTable As BetterArray 'Temporary table for data manipulation purposes
     Dim selectedValue As String
-    Dim Lo As ListObject
-    Dim LoRng As Range
     Dim sh As Worksheet
     Dim cellRng As Range
     Dim hRng As Range
     Dim nbOffset As Long
     Dim calcRng As Range 'Range to calculate
+    Dim sheetTag As String
+    Dim cellName As String
     
-    Set T_temp = New BetterArray
-    T_temp.LowerBound = 1
-
     On Error GoTo ErrGeo
+    InitializeElements
     
     selectedValue = Me.TXT_Msg.Value
 
@@ -54,87 +151,124 @@ Private Sub CMD_Copier_Click()
 
     Set cellRng = ActiveCell 'First cell for a geo value
     Set sh = ActiveSheet 'Linelist sheet
-    Set hRng = sh.ListObjects(1).HeaderRowRange
-    nbOffset = cellRng.Row - hRng.Row
-    Set calcRng = hRng.Offset(nbOffset)
-    
-    Select Case iGeoType
-        'In case you selected the Geo data
-    Case 0
-    
-        'Writing the selected data in the linelist sheet
-        T_temp.Clear
-        T_temp.Items = Split(selectedValue, " | ")
-        If T_temp.Length > 0 Then
-            'Clear the cells before filling
-            Application.EnableEvents = False
-            sh.Range(cellRng, cellRng.Offset(, 3)).Value = ""
-            If T_temp.Length = 4 Then T_temp.Reverse
-            T_temp.ToExcelRange Destination:=Range(ActiveCell.Address), TransposeValues:=True
-            Application.EnableEvents = True
-        End If
+    sheetTag = sh.Cells(1, 3).Value
+
+    Select Case sheetTag
+
+    Case "HList"
+
+        Set hRng = sh.ListObjects(1).HeaderRowRange
+        nbOffset = cellRng.Row - hRng.Row
+        Set calcRng = hRng.Offset(nbOffset)
+
+        Set tempTable = New BetterArray
+        tempTable.LowerBound = 1
         
-        calcRng.calculate
-        Me.TXT_Msg.Value = ""
-        Me.Hide
+        Select Case hfOrGeo
+            'In case you selected the Geo data
+        Case GeoScopeAdmin
         
-        'Protecting the worksheet
+            'Writing the selected data in the linelist sheet
+            tempTable.Items = Split(selectedValue, SEP)
+
+            If tempTable.Length > 0 Then
                 
-        'updating the histo data if needed
-        T_temp.Clear
-        Set sh = ThisWorkbook.Worksheets("Geo")
-        Set Lo = sh.ListObjects("T_HISTOGEO")
-        Set LoRng = Lo.Range
-        
-        'only update if you don't find actual value then update
-        If Not T_HistoGeo.Includes(ReverseString(selectedValue)) Then T_HistoGeo.Push ReverseString(selectedValue)
-        
-        'Now rewrite the histo data in the list object
-        If (T_HistoGeo.Length > (LoRng.Rows.Count - 1)) Or (T_HistoGeo.Length = 1) Then
-            T_HistoGeo.ToExcelRange Destination:=LoRng.Cells(2, 1)
-            'resize the list object
-            Lo.Resize sh.Range(LoRng.Cells(1, 1), LoRng.Cells(T_HistoGeo.Length + 1, 1))
-            Set LoRng = Lo.DataBodyRange
-            LoRng.RemoveDuplicates Columns:=1, Header:=xlYes
-            LoRng.Sort key1:=LoRng, Header:=xlYes
-        End If
-        
-        'In Case we are dealing with the health facility (basically the same thing with little modifications)
-    Case 1
-        Application.EnableEvents = False
-        cellRng.Value = selectedValue
-        Application.EnableEvents = True
-        'Hide the form
-        calcRng.calculate
-        Me.TXT_Msg.Value = ""
-        Me.Hide
-        
-        'Update the listObject of historic data on health facility
-        Set sh = ThisWorkbook.Worksheets("Geo")
-        Set Lo = sh.ListObjects("T_HISTOHF")
-        Set LoRng = Lo.Range
-         
-        If Not T_HistoHF.Includes(selectedValue) Then T_HistoHF.Push selectedValue
+                'Clear the cells before filling
+                Application.EnableEvents = False
+                
+                sh.Range(cellRng, cellRng.Offset(, 3)).ClearContents
+                If tempTable.Length = 4 Then tempTable.Reverse
+                
+                tempTable.ToExcelRange Destination:=Range(ActiveCell.Address), _
+                                    TransposeValues:=True
+                Application.EnableEvents = True
+            End If
             
-        'Now rewrite the histo data in the list object
-        If (T_HistoHF.Length > (LoRng.Rows.Count - 1)) Or (T_HistoHF.Length = 1) Then
-            T_HistoHF.ToExcelRange Destination:=LoRng.Cells(2, 1)
-            'resize the list object
-            Lo.Resize sh.Range(LoRng.Cells(1, 1), LoRng.Cells(T_HistoHF.Length + 1, 1))
-            Set LoRng = Lo.DataBodyRange
-            LoRng.RemoveDuplicates Columns:=1, Header:=xlYes
-            LoRng.Sort key1:=LoRng, Header:=xlYes
-        End If
+            geo.UpdateHistoric ReverseString(selectedValue), GeoScopeAdmin
+            
+            'In Case we are dealing with the health facility
+            '(basically the same thing with little modifications)
+        Case GeoScopeHF
+            
+            Application.EnableEvents = False
+            cellRng.Value = selectedValue
+            Application.EnableEvents = True
+            
+            geo.UpdateHistoric selectedValue, GeoScopeHF
+        End Select
+
+        calcRng.calculate
+        Me.TXT_Msg.Value = vbNullString
+        Me.Hide
+        Exit Sub
+
+    Case "SPT-Analysis"
+        Select Case hfOrGeo
+
+        Case GeoScopeHF
+            Application.EnableEvents = False
+            cellRng.Value = selectedValue
+            Application.EnableEvents = True
+        Case GeoScopeAdmin
+
+            Set tempTable = New BetterArray
+            selectedValue = Application.WorksheetFunction.Trim(Replace(selectedValue, NACHAR, vbNullString))
+            selectedValue = Application.WorksheetFunction.Trim(Replace(selectedValue, NACHARREV, vbNullString))
+            tempTable.Items = Split(selectedValue, SEP)
+            If tempTable.Length < 4 Then tempTable.Reverse
+            selectedValue = tempTable.ToString(separator:=SEP, OpeningDelimiter:=vbNullString, _
+                                               ClosingDelimiter:=vbNullString, QuoteStrings:=False)
+
+            Application.EnableEvents = False
+            cellRng.Value = selectedValue
+            On Error Resume Next
+            cellName = cellRng.Name.Name
+            on Error GoTo 0
+            UpdateSpatioTemporalFormulas cellName, tempTable.Length 
+            Application.EnableEvents = True
+        End Select
+
+        Me.TXT_Msg.Value = vbNullString
+        Me.Hide
+        Exit Sub
     End Select
 
-    Exit Sub
-
 ErrGeo:
-    MsgBox TranslateLLMsg("MSG_ErrWriteGeo"), vbCritical + vbOKOnly
+    MsgBox tradmess.TranslatedValue("MSG_ErrWriteGeo"), vbCritical + vbOKOnly
 End Sub
 
+'Clear one historic (either hf or geo) for the geobase
+Private Sub ClearOneHistoricGeobase(Optional ByVal scope As Byte = 0)
+    
+    Dim confirm As Boolean
+    Dim lstObj As Object
+
+    confirm = (MsgBox( _
+                    tradmess.TranslatedValue("MSG_DeleteOneHistoric"), _
+                    vbExclamation + vbYesNo, _
+                    tradmess.TranslatedValue("MSG_DeleteHistoric")) = _
+                    vbYes)
+
+    If Not confirm Then Exit Sub
+
+    If scope = GeoScopeAdmin Then
+        Set lstObj = Me.LST_Histo
+    Else
+        Set lstObj = Me.LST_HistoF
+    End If
+    
+    geo.ClearHistoric scope
+    lstObj.Clear
+    'It is done, inform the user
+    MsgBox tradmess.TranslatedValue("MSG_Done"), _
+           vbInformation, _
+           tradmess.TranslatedValue("MSG_DeleteHistoric")
+End Sub
+
+
 Private Sub CMD_GeoClearHisto_Click()
-    Call ClearOneHistoricGeobase(iGeoType)
+    InitializeElements
+    ClearOneHistoricGeobase hfOrGeo
 End Sub
 
 'Closing the Geoapp
@@ -143,99 +277,108 @@ Private Sub CMD_Retour_Geo_Click()
 End Sub
 
 'Those are procedures to show the following list in one item is selected.
-'They rely on ShowLst* functions coded in the Geo module
+'They rely on ShowAdmin*List functions coded in the LinelistGeo module
 Private Sub LST_Adm1_Click()
-    Call ShowLst2(LST_Adm1.Value)
-    sPlaceSelection = TXT_Msg.Value
+    ShowAdmin2List Me.LST_Adm1.Value, GeoScopeAdmin
 End Sub
 
 Private Sub LST_Adm2_Click()
-    Call ShowLst3(LST_Adm2.Value)
-    sPlaceSelection = TXT_Msg.Value
+    ShowAdmin3List Me.LST_Adm2.Value, GeoScopeAdmin, sep
 End Sub
 
 Private Sub LST_Adm3_Click()
-    Call ShowLst4(LST_Adm3.Value)
-    sPlaceSelection = TXT_Msg.Value
+    ShowAdmin4List Me.LST_Adm3.Value, GeoScopeAdmin, sep
 End Sub
 
 Private Sub LST_Adm4_Click()
-    sPlaceSelection = ReverseString(Me.LST_Adm1.Value & " | " & Me.LST_Adm2.Value & " | " & Me.LST_Adm3.Value & " | " & Me.LST_Adm4.Value)
-    TXT_Msg.Value = sPlaceSelection
+    Dim selectedValue As String
+
+    'SEP is a constant defined above, which is the separator
+    selectedValue = Me.LST_Adm4.Value & SEP & _
+                    Me.LST_Adm3.Value & SEP & _
+                    Me.LST_Adm2.Value & SEP & _
+                    Me.LST_Adm1.Value
+
+    Me.TXT_Msg.Value = selectedValue
 End Sub
 
 Private Sub LST_AdmF1_Click()
-    Call ShowLstF2(LST_AdmF1.Value)
-    sPlaceSelection = TXT_Msg.Value
+    ShowAdmin2List Me.LST_AdmF1.Value, GeoScopeHF
 End Sub
 
 Private Sub LST_AdmF2_Click()
-    Call ShowLstF3(LST_AdmF2.Value)
-    sPlaceSelection = TXT_Msg.Value
+    ShowAdmin3List Me.LST_AdmF2.Value, GeoScopeHF, sep
 End Sub
 
 Private Sub LST_AdmF3_Click()
-    Call ShowLstF4(LST_AdmF3.Value)
-    sPlaceSelection = TXT_Msg.Value
+    ShowAdmin4List Me.LST_AdmF3.Value, GeoScopeHF, sep
 End Sub
 
 Private Sub LST_AdmF4_Click()
-    sPlaceSelection = ReverseString(Me.LST_AdmF1.Value & " | " & Me.LST_AdmF2.Value & " | " & Me.LST_AdmF3.Value & " | " & Me.LST_AdmF4.Value)
-    TXT_Msg.Value = sPlaceSelection
+    Dim selectedValue As String
 
+    'SEP is a constant defined above, which is the separator
+    selectedValue = Me.LST_AdmF4.Value & SEP & _
+                    Me.LST_AdmF3.Value & SEP & _
+                    Me.LST_AdmF2.Value & SEP & _
+                    Me.LST_AdmF1.Value
+    Me.TXT_Msg.Value = selectedValue
 End Sub
 
 'Those are trigerring event for the Histo
 Private Sub LST_Histo_Click()
-    TXT_Msg.Value = ReverseString(LST_Histo.Value)
-    sPlaceSelection = LST_Histo.Value
+    Me.TXT_Msg.Value = ReverseString(Me.LST_Histo.Value, sep)
 End Sub
 
 Private Sub LST_HistoF_Click()
-    If LST_HistoF.Value <> "" Then
-        TXT_Msg.Value = LST_HistoF.Value
-        sPlaceSelection = LST_HistoF.Value
-    End If
+    Me.TXT_Msg.Value = Me.LST_HistoF.Value
 End Sub
 
 Private Sub LST_ListeAgre_Click()
-    TXT_Msg.Value = LST_ListeAgre.Value
-    sPlaceSelection = LST_ListeAgre.Value
+    Me.TXT_Msg.Value = Me.LST_ListeAgre.Value
 End Sub
 
 Private Sub LST_ListeAgreF_Click()
-    TXT_Msg.Value = LST_ListeAgreF.Value
-    sPlaceSelection = LST_ListeAgreF.Value
-
+    Me.TXT_Msg.Value = Me.LST_ListeAgreF.Value
 End Sub
 
 Private Sub TXT_Recherche_Change()
+    InitializeElements
     'Search any value in geo data
-    Call SearchValue(Me.TXT_Recherche.Value)
+    searchValue searchedValue:=Me.TXT_Recherche.Value, _
+                scope:=hfOrGeo, onHistoric:=False
 End Sub
 
 Private Sub TXT_RechercheF_Change()
-    'Search any value in health facility
-    Call SearchValueF(Me.TXT_RechercheF.Value)
+    'Search any value in hf data
+    InitializeElements
 
+    searchValue searchedValue:=Me.TXT_RechercheF.Value, _
+                scope:=hfOrGeo, onHistoric:=False
 End Sub
 
 Private Sub TXT_RechercheHisto_Change()
-    'In case there is a change in the historic geographic Search list
-    Call SeachHistoValue(Me.TXT_RechercheHisto.Value)
+    InitializeElements
+
+    'Search any value in historic geo data
+    searchValue searchedValue:=Me.TXT_RechercheHisto.Value, _
+                scope:=hfOrGeo, onHistoric:=True
 
 End Sub
 
 Private Sub TXT_RechercheHistoF_Change()
-    'In case there is a change in the historic data
-    Call SeachHistoValueF(Me.TXT_RechercheHistoF.Value)
+    InitializeElements
 
+    'Search any value in historic facility data
+    searchValue searchedValue:=Me.TXT_RechercheHistoF.Value, _
+                scope:=hfOrGeo, onHistoric:=True
 End Sub
 
 'Translate the form, resize it
 Private Sub UserForm_Initialize()
     
     InitializeTrads
+    InitializeElements
 
     Me.Caption = tradform.TranslatedValue(Me.Name)
     tradform.TranslateForm Me

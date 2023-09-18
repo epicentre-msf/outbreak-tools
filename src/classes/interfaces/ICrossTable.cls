@@ -12,6 +12,7 @@ Attribute VB_Description = "Interface of crosstable"
 '@Folder("Analysis")
 '@ModuleDescription("Interface of crosstable")
 '@Interface
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -54,10 +55,3 @@ Public Sub NameRanges(): End Sub
 Public Sub Build(): End Sub
 
 Public Sub Format(ByVal DesignFormat As ILLFormat): End Sub
-
-
-
-
-
-
-

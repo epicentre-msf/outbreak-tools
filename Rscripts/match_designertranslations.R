@@ -105,7 +105,7 @@ master_tables_df <- purrr::map_dfr(master_sheets_list, get_all_tables)
 # load master table
 master_list_tables <- master_tables_df |>
   filter((table_name %in% targeted_tables) |
-         (table_name %in% tolower(targeted_tables))) |>
+    (table_name %in% tolower(targeted_tables))) |>
   arrange(table_name) |>
   select(path, range_address) |>
   purrr::pmap(read_a_table)
@@ -121,8 +121,8 @@ child_tables_df <- purrr::map_dfr(
 )
 
 child_list_tables <- child_tables_df |>
-   filter((table_name %in% targeted_tables) |
-         (table_name %in% tolower(targeted_tables))) |>
+  filter((table_name %in% targeted_tables) |
+    (table_name %in% tolower(targeted_tables))) |>
   arrange(table_name) |>
   select(path, range_address) |>
   purrr::pmap(read_a_table, child_tag = "_child")

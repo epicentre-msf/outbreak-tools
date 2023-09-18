@@ -7,11 +7,12 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Subsections of a Horizontal variable sheet"
 
-
+'@PredeclaredId
 '@Folder("Dictionary")
 '@ModuleDescription("Subsections of a Horizontal variable sheet")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IHListSubSections
@@ -21,7 +22,7 @@ Private Type THListSubSections
     strt As Long
     endrw As Long
     ll As ILinelist
-    Varlists As BetterArray
+    varLists As BetterArray
 End Type
 
 Private this As THListSubSections
@@ -131,7 +132,7 @@ Private Property Get VariableLists() As BetterArray
     Dim varRng As Range
     Dim dict As ILLdictionary
 
-    If this.Varlists Is Nothing Then
+    If this.varLists Is Nothing Then
         Set dict = Dictionary()
         Set varl = New BetterArray
         Set varRng = dict.DataRange("variable name")
@@ -142,11 +143,11 @@ Private Property Get VariableLists() As BetterArray
             varl.Push varRng.Cells(counter, 1).Value
         Next
 
-        Set this.Varlists = New BetterArray
-        Set this.Varlists = varl.Clone()
+        Set this.varLists = New BetterArray
+        Set this.varLists = varl.Clone()
     End If
 
-    Set VariableLists = this.Varlists.Clone()
+    Set VariableLists = this.varLists.Clone()
 End Property
 
 Private Property Get HasNext() As Boolean
@@ -177,15 +178,15 @@ End Property
 'Build variables in a subsection
 Private Sub Build()
     Dim vars As IHListVars
-    Dim Varlists As BetterArray
+    Dim varLists As BetterArray
     Dim counter As Long
     Dim varName As String
     Dim ll As ILinelist
     Set ll = LinelistObject()
-    Set Varlists = VariableLists()
+    Set varLists = VariableLists()
     'For each variable in one subSection build that sub section
-    For counter = Varlists.LowerBound To Varlists.UpperBound
-        varName = Varlists.Item(counter)
+    For counter = varLists.LowerBound To varLists.UpperBound
+        varName = varLists.Item(counter)
         Set vars = HListVars.Create(varName, ll)
         vars.WriteInfo
     Next
@@ -194,7 +195,7 @@ End Sub
 'Format the sub section
 Private Sub Format()
     Dim rng As Range
-    Dim Varlists As BetterArray
+    Dim varLists As BetterArray
     Dim strtcol As Long                          'Start Column of the subsecction
     Dim endCol As Long                           'End column of the sub section
     Dim ll As ILinelist
@@ -208,16 +209,16 @@ Private Sub Format()
 
     Set dict = Dictionary()
     Set vars = LLVariables.Create(dict)
-    Set Varlists = VariableLists()
+    Set varLists = VariableLists()
     Set ll = LinelistObject()
     Set design = ll.LinelistData.DesignFormat()
 
     'compute the endColumn
-    varName = Varlists.Item(Varlists.UpperBound)
+    varName = varLists.Item(varLists.UpperBound)
     endCol = CLng(vars.Value(colName:="column index", varName:=varName))
 
     'compute the start column
-    varName = Varlists.Item(Varlists.LowerBound)
+    varName = varLists.Item(varLists.LowerBound)
     strtcol = CLng(vars.Value(colName:="column index", varName:=varName))
 
     'Actual sub section
@@ -253,22 +254,19 @@ Private Sub CheckRequirements(ByVal strt As Long, ll As ILinelist)
     If strt < 0 Or strt > ll.Dictionary.Data.DataEndRow() Then ThrowError "Start row should be a positive integer less or equal than end row of the dictionary"
 End Sub
 
-Public Property Get IHListSubSections_HasNext() As Boolean
+'Interface
+Private Property Get IHListSubSections_HasNext() As Boolean
     IHListSubSections_HasNext = HasNext()
 End Property
 
-Public Property Get IHListSubSections_NextSubSection() As IHListSubSections
+Private Property Get IHListSubSections_NextSubSection() As IHListSubSections
     Set IHListSubSections_NextSubSection = NextSubSection()
 End Property
 
-'Build the sub sections
-Public Sub IHListSubSections_Build()
+Private Sub IHListSubSections_Build()
     Build
 End Sub
 
-'Format the subSection
-Public Sub IHListSubSections_Format()
+Private Sub IHListSubSections_Format()
     Format
 End Sub
-
-

@@ -8,10 +8,10 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
-
+'@Interface
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of Choice class")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -35,7 +35,7 @@ Public Sub Sort(): End Sub
 Public Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As BetterArray): End Sub
 
 'Import and exports
-Public Sub export(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+Public Sub Export(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
 End Sub
 
 Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
@@ -43,4 +43,3 @@ End Sub
 
 Public Sub Translate(ByVal TransObject As ITranslation)
 End Sub
-

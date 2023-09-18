@@ -11,8 +11,8 @@ Attribute VB_Exposed = False
 Attribute VB_Description = ""
 
 '@Folder("Dictionary")
-'@ModuleDescription("Interface of ")
-'@IgnoreModule
+'@ModuleDescription("Interface of Analysis Table Ids")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

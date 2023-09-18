@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Export Object of the linelist"
 
 
-
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Interface
 '@Folder("Linelist")
@@ -66,7 +66,7 @@ Public Property Get Self() As ILLExport
     Set Self = Me
 End Property
 
-Public Property Set Wksh( ByVal sh As Worksheet)
+Public Property Set Wksh(ByVal sh As Worksheet)
     Set this.sh = sh
 End Property
 
@@ -109,7 +109,7 @@ Private Function ClearChunk(ByVal chunk As String) As String
 
     
     newChunk = Replace(chunk, "<", "_")
-    newChunk = Replace(newChunk, Chr(34), vbNullString)
+    newChunk = Replace(newChunk, chr(34), vbNullString)
     newChunk = Replace(newChunk, ">", "_")
     newChunk = Replace(newChunk, ":", "_")
     newChunk = Replace(newChunk, "|", "_")
@@ -129,7 +129,7 @@ End Function
 'Find a path of an export (using the dictionary)
 Private Property Get ExportFileName(ByVal scope As Byte, _
                             ByVal dict As ILLdictionary, _
-                            Byval pass As ILLPasswords) As String
+                            ByVal pass As ILLPasswords) As String
 
     Dim vars As ILLVariables
     Dim PathData As BetterArray
@@ -166,7 +166,7 @@ Private Property Get ExportFileName(ByVal scope As Byte, _
         For pathCounter = 1 To PathData.UpperBound
 
             'Remove the other + signs in the path name
-            chunkValue = fun.TRIM(Replace(PathData.Item(pathCounter), "+", vbNullString))
+            chunkValue = fun.Trim(Replace(PathData.Item(pathCounter), "+", vbNullString))
             rangeValue = vbNullString
 
             varSheetName = vars.Value(varName:=chunkValue, colName:="sheet name")
@@ -187,10 +187,10 @@ Private Property Get ExportFileName(ByVal scope As Byte, _
             End If
         Next
 
-        outFile = PathData.ToString(Separator:="__", OpeningDelimiter:=vbNullString,  _
+        outFile = PathData.ToString(separator:="__", OpeningDelimiter:=vbNullString, _
                                     ClosingDelimiter:=vbNullString, QuoteStrings:=False) & _
-                                    "__" & "v" & pass.Value("version") & "-" & _ 
-                                    pass.Value("publickey") & "__" &  _
+                                    "__" & "v" & pass.Value("version") & "-" & _
+                                    pass.Value("publickey") & "__" & _
                                     Format(Now, "yyyymmdd-HhNn")
     End If
 
@@ -202,7 +202,7 @@ End Property
 Private Sub ExportSpecs(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     Dim expData As IDataSheet
     Set expData = Data()
-    expData.export toWkb, Hide:=Hide
+    expData.Export toWkb, Hide:=Hide
 End Sub
 
 Private Sub Translate(ByVal trans As ITranslation)
@@ -226,7 +226,7 @@ Private Sub ImportSpecs(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long,
     If SPECSHEADER Is Nothing Then ArraysInitialize
     'Here start row and start columns are just 1, 1
     SPECSHEADER.ToExcelRange sh.Cells(1, 1), TransposeValues:=True
-    Set impExpData = DataSheet.Create(fromWksh, fromStartRow, fromStartCol)
+    Set impExpData = DataSheet.Create(fromWksh, fromStartRow, fromStartcol)
     expData.Import impExpData
 End Sub
 
@@ -243,7 +243,7 @@ Private Sub ILLExport_ImportSpecs(ByVal fromWksh As Worksheet, ByVal fromStartRo
     ImportSpecs fromWksh, fromStartRow, fromStartcol
 End Sub
 
-Private Property Get ILLExport_Value(Byval colName As String,  _
+Private Property Get ILLExport_Value(ByVal colName As String, _
                                      ByVal exportNumber As Integer) As String
     ILLExport_Value = Value(colName:=colName, exportNumber:=exportNumber)
 End Property
@@ -254,6 +254,6 @@ End Property
 
 Private Property Get ILLExport_ExportFileName(ByVal scope As Byte, _
                                               ByVal dict As ILLdictionary, _
-                                              Byval pass As ILLPasswords) As String
+                                              ByVal pass As ILLPasswords) As String
     ILLExport_ExportFileName = ExportFileName(scope, dict, pass)
 End Property

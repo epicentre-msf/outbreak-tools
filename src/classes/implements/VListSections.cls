@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Dictionary")
 '@ModuleDescription("")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -247,5 +247,3 @@ End Sub
 Public Property Get IVListSections_Name() As String
     IVListSections_Name = ActualSectionName()
 End Property
-
-

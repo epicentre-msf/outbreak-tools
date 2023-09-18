@@ -9,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Handle CaseWhen custom function"
 
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Custom Functions")
 '@ModuleDescription("Handle CaseWhen custom function")
@@ -170,5 +171,3 @@ End Property
 Private Property Get ICaseWhen_Categories() As BetterArray
     Set ICaseWhen_Categories = Categories()
 End Property
-
-

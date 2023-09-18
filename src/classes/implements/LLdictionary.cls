@@ -12,7 +12,8 @@ Attribute VB_Description = "Dictionary Class"
 '@PredeclaredId
 '@Folder("Dictionary")
 '@ModuleDescription("Interface for dicitonary in the linelist")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
+
 Option Explicit
 Implements ILLdictionary
 
@@ -104,12 +105,12 @@ Private Sub ClassArraysInitialize()
     Set DICTIONARYCOLUMNS = New BetterArray
 
     'colnames of the dictionary
-    DICTIONARYCOLUMNS.Push "variable name", "main label", "sub label", "note", "sheet name", _
+    DICTIONARYCOLUMNS.Push "variable name", "main label", "editable label", "sub label", "note", "sheet name", _
                            "sheet type", "main section", "sub section", "status", _
                             "personal identifier", "variable type", "variable format", _
                             "control", "control details", "unique", _
-                           "export 1", "export 2", "export 3", "export 4",  _
-                           "export 5", "min", "max", "alert", "message",  _
+                           "export 1", "export 2", "export 3", "export 4", _
+                           "export 5", "min", "max", "alert", "message", _
                            "formatting condition", "register book", _
                            "formatting values", "lock cells", "table name", "column index", _
                            "list auto", "visibility"
@@ -120,11 +121,6 @@ Public Property Get DataRange(Optional colName As String = "__all__", Optional i
     Dim customDataSheet As IDataSheet
     Set customDataSheet = Data()
     Set DataRange = customDataSheet.DataRange(colName, includeHeaders)
-End Property
-
-Private Property Get Variables() As ILLVariables
-    Dim var As ILLVariables
-    Set var = LLVariables.Create(Self)
 End Property
 
 'Functions ---------------------------------------------------------------------
@@ -183,7 +179,7 @@ Private Function VariableExists(varName As String) As Boolean
     Dim varRng As Range
     Set varRng = DataRange("variable name")
 
-    VariableExists = Not (varRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+    VariableExists = Not (varRng.Find(What:=varName, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
 End Function
 
 '------ Prepare and clean the dictionary
@@ -236,8 +232,8 @@ Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject A
         'Testing control to update the Geo
         Set controlRng = DataRange("control")
         If (Not controlRng Is Nothing) Then
-            If (Not controlRng.Find(What:="geo", LookAt:=xlWhole, MatchCase:=True) Is Nothing) And _
-                                                                                               (controlRng.Find(What:="geo2", LookAt:=xlWhole, MatchCase:=True) Is Nothing) Then
+            If (Not controlRng.Find(What:="geo", lookAt:=xlWhole, MatchCase:=True) Is Nothing) And _
+                                                                                               (controlRng.Find(What:="geo2", lookAt:=xlWhole, MatchCase:=True) Is Nothing) Then
                 'Update the Geo
                 AppendGeoLines geoObject
             End If
@@ -401,9 +397,9 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
     With dictWksh
 
         'Geo lines
-        Do While (Not dictRng.Find(What:="geo", LookAt:=xlWhole, MatchCase:=True) Is Nothing)
+        Do While (Not dictRng.Find(What:="geo", lookAt:=xlWhole, MatchCase:=True) Is Nothing)
 
-            geoRowIndex = dictRng.Find(What:="geo", LookAt:=xlWhole, MatchCase:=True).Row
+            geoRowIndex = dictRng.Find(What:="geo", lookAt:=xlWhole, MatchCase:=True).Row
 
             Set geoRng = .Range(.Cells(geoRowIndex, StartColumn), .Cells(geoRowIndex, endCol))
             varName = .Cells(geoRowIndex, varNameIndex).Value
@@ -475,8 +471,8 @@ Private Sub AppendGeoLines(ByVal geoObject As ILLGeo)
         'Hf Lines
         'On Hf lines I only insert the pcode value
         Set dictRng = DataRange("control")
-        Do While (Not dictRng.Find(What:="hf", LookAt:=xlWhole, MatchCase:=True) Is Nothing)
-            geoRowIndex = dictRng.Find(What:="hf", LookAt:=xlWhole, MatchCase:=True).Row
+        Do While (Not dictRng.Find(What:="hf", lookAt:=xlWhole, MatchCase:=True) Is Nothing)
+            geoRowIndex = dictRng.Find(What:="hf", lookAt:=xlWhole, MatchCase:=True).Row
             Set geoRng = .Range(.Cells(geoRowIndex, StartColumn), .Cells(geoRowIndex, endCol))
             varName = .Cells(geoRowIndex, varNameIndex).Value
             varPosition = .Cells(geoRowIndex, varPositionIndex).Value
@@ -554,13 +550,13 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
 
         'Sort on table name
         Set dictRng = DataRange
-        dictRng.Sort key1:=DataRange("number_" & newColumn), order1:=xlAscending
+        dictRng.Sort key1:=DataRange("number_" & newColumn), Order1:=xlAscending
 
         endCol = DictEndColumn
         .Cells(StartRow, endCol + 1).Value = newColumn
         .Cells(StartRow + 1, endCol + 1).formula = "= " & chr(34) & tablePrefix & _
                                                      chr(34) & " " & chr(38) & _
-                                                      " " & .Cells(StartRow + 1,  _
+                                                      " " & .Cells(StartRow + 1, _
                                                       endCol).Address(Rowabsolute:=False)
         Set dictRng = DataRange(newColumn)
 
@@ -607,14 +603,14 @@ Private Sub AppendColumnIndex()
         firstmainSectionCell = .Cells(StartRow + 1, mainSectionIndex).Address(Rowabsolute:=False)
         .Cells(StartRow + 1, endCol + 1).formula = "= IF(" & firstmainSectionCell & "=" & chr(34) & chr(34) & _
                                                    ", ROW(" & firstmainSectionCell & ")" & ", " & _
-                                                   firstsheetNameCell & chr(38) & chr(34) &  _
+                                                   firstsheetNameCell & chr(38) & chr(34) & _
                                                    " - " & chr(34) & chr(38) & firstmainSectionCell & _
                                                    ")"
         Set dictRng = DataRange("main section sort")
         .Cells(StartRow + 1, endCol + 1).AutoFill dictRng, Type:=xlFillValues
 
         'Now append and sort
-        AppendNumberColumn onColName:="main section sort",  _
+        AppendNumberColumn onColName:="main section sort", _
         tablePrefix:="main section", newColumn:="main section index"
 
         'Filling column index
@@ -639,9 +635,9 @@ End Sub
 
 'Import and export subs
 'Export
-Private Sub Export(ByVal Wkb As Workbook, _ 
-                   Optional ByVal exportType As String = "__all__", _ 
-                   Optional Byval addListObject As Boolean = True, _ 
+Private Sub Export(ByVal Wkb As Workbook, _
+                   Optional ByVal exportType As String = "__all__", _
+                   Optional ByVal addListObject As Boolean = True, _
                    Optional ByVal Hide As Long = xlSheetHidden)
 
     Dim dictData As IDataSheet
@@ -653,7 +649,7 @@ Private Sub Export(ByVal Wkb As Workbook, _
     If ColumnExists(exportType) Then
         dictData.Export Wkb, filteredVarName:=exportType, Hide:=Hide
     ElseIf exportType = "__all__" Then
-        dictData.Export Wkb, Hide:=hide
+        dictData.Export Wkb, Hide:=Hide
     End If
 
     'Add a list object to the dictionnary.
@@ -673,7 +669,7 @@ Private Sub Export(ByVal Wkb As Workbook, _
 End Sub
 
 'Import
-Private Sub Import(ByVal fromWksh As Worksheet,  _
+Private Sub Import(ByVal fromWksh As Worksheet, _
                    ByVal fromStartRow As Long, _
                    ByVal fromStartcol As Long)
 
@@ -684,7 +680,7 @@ Private Sub Import(ByVal fromWksh As Worksheet,  _
 
     Set sh = Wksh()
     Set dictData = Data()
-    Set impdictData = DataSheet.Create(fromWksh, fromStartRow, fromStartCol)
+    Set impdictData = DataSheet.Create(fromWksh, fromStartRow, fromStartcol)
 
     'Clear the current worksheet before importing
     sh.Cells.Clear
@@ -784,11 +780,11 @@ Public Sub ILLdictionary_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow 
     Import fromWksh, fromStartRow, fromStartcol
 End Sub
 
-Public Sub ILLdictionary_Export(ByVal toWkb As Workbook,  _ 
-                                Optional ByVal exportType As String = "__all__",  _ 
-                                Optional Byval addListObject As Boolean = True, _ 
+Public Sub ILLdictionary_Export(ByVal toWkb As Workbook, _
+                                Optional ByVal exportType As String = "__all__", _
+                                Optional ByVal addListObject As Boolean = True, _
                                 Optional ByVal Hide As Long = xlSheetHidden)
-    export toWkb, exportType, addListObject, Hide
+    Export toWkb, exportType, addListObject, Hide
 End Sub
 
 Public Sub ILLdictionary_Translate(ByVal TransObject As ITranslation)

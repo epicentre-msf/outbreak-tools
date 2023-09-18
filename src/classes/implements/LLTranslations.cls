@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Linelist Translations")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -34,7 +34,7 @@ Private Const DICTTRANS              As String = "Tab_Translations"
 Private Const SELECTEDLANG           As String = "T_SelectedLLLanguages"
 Private Const CLASSNAME              As String = "LLTranslations"
 
-Public Function Create(ByVal lltranssh As Worksheet, _ 
+Public Function Create(ByVal lltranssh As Worksheet, _
                        ByVal dicttranssh As Worksheet) As ILLTranslations
 
     CheckRequirements lltranssh, dicttranssh
@@ -69,7 +69,7 @@ End Property
 Private Property Get TransObject(Optional ByVal trans As Byte = _
                                  TranslationOfMessages) As ITranslation
 
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim lang As String
     Dim sh As Worksheet
 
@@ -135,6 +135,14 @@ Private Property Get Value(ByVal tagName As String) As String
         retVal = sh.Range("RNG_SPTSheet").Value
     Case "customtable"
         retVal = sh.Range("RNG_CustomPivot").Value
+    Case "week"        
+        retVal = sh.Range("RNG_Week").Value
+    Case "quarter"    
+        retVal = sh.Range("RNG_Quarter").Value
+    Case "infostart"    
+        retVal = sh.Range("RNG_InfoStart").Value
+    Case "infoend"    
+        retVal = sh.Range("RNG_InfoEnd").Value
     End Select
 
     On Error GoTo 0
@@ -148,8 +156,8 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     Dim outshDictTrans As Worksheet
     Dim shLL As Worksheet
     Dim shDict As Worksheet
-    Dim Lo As ListObject
-    Dim outRng As Range
+    Dim Lo As listObject
+    Dim outrng As Range
     Dim outRngAddress As String
     Dim rngTable As BetterArray
     Dim tablRng As BetterArray
@@ -183,21 +191,21 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
 
     'I will start at column 1, line 1 for translations in the linelist
     With outshDictTrans
-        Set outRng = .Range(.Cells(1, 1), .Cells(Lo.Range.Rows.Count, Lo.Range.Columns.Count))
-        outRng.Value = Lo.Range.Value
+        Set outrng = .Range(.Cells(1, 1), .Cells(Lo.Range.Rows.Count, Lo.Range.Columns.Count))
+        outrng.Value = Lo.Range.Value
         'Define the listobject
-        .ListObjects.Add(xlSrcRange, outRng, , xlYes).Name = Lo.Name
+        .ListObjects.Add(xlSrcRange, outrng, , xlYes).Name = Lo.Name
         .ListObjects(Lo.Name).TableStyle = Lo.TableStyle
     End With
 
     'All the listObjects in the linelistTranslation
     For Each Lo In shLL.ListObjects
         outRngAddress = Lo.Range.Address
-        Set outRng = outshLLTrans.Range(outRngAddress)
-        outRng.Value = Lo.Range.Value
+        Set outrng = outshLLTrans.Range(outRngAddress)
+        outrng.Value = Lo.Range.Value
         'Add the listObject
         With outshLLTrans
-            .ListObjects.Add(xlSrcRange, outRng, , xlYes).Name = Lo.Name
+            .ListObjects.Add(xlSrcRange, outrng, , xlYes).Name = Lo.Name
             .ListObjects(Lo.Name).TableStyle = Lo.TableStyle
         End With
     Next
@@ -205,9 +213,10 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     'Ranges (For more ranghes we should use a table of the range names)
     tablRng.Push "RNG_LLLanguage", "RNG_LLLanguageCode", "RNG_GoToSection", _
                  "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _
-                 "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered", _ 
-                 "RNG_CustomDrop", "RNG_UASheet", "RNG_TSSheet", "RNG_SPSheet", _ 
-                 "RNG_SPTSheet", "RNG_CustomPivot"
+                 "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered", _
+                 "RNG_CustomDrop", "RNG_UASheet", "RNG_TSSheet", "RNG_SPSheet", _
+                 "RNG_SPTSheet", "RNG_CustomPivot", "RNG_Week", "RNG_Quarter", _ 
+                 "RNG_InfoStart", "RNG_InfoEnd"
 
     For counter = tablRng.LowerBound To tablRng.UpperBound
         rngName = tablRng.Item(counter)
@@ -229,7 +238,7 @@ Private Sub ImportTranslation(ByVal fromWkb As Workbook)
 
     Dim sh As Worksheet
     Dim impsh As Worksheet
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim rng As Range
 
     Set sh = DictTransSheet()
@@ -280,10 +289,12 @@ Private Sub CheckRequirements(ByVal lltradsh As Worksheet, dtradsh As Worksheet)
 
     tablRng.Push "RNG_LLLanguage", "RNG_LLLanguageCode", "RNG_GoToSection", _
                  "RNG_AnaPeriod", "RNG_GoToHeader", "RNG_DictionaryLanguage", _
-                 "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered", _ 
-                 "RNG_CustomDrop", "RNG_UASheet", "RNG_TSSheet", "RNG_SPSheet", _ 
-                 "RNG_SPTSheet", "RNG_CustomPivot"
-    For counter = tablRng.LowerBound to tablRng.UpperBound
+                 "RNG_NoDevide", "RNG_Devide", "RNG_GoToGraph", "RNG_OnFiltered", _
+                 "RNG_CustomDrop", "RNG_UASheet", "RNG_TSSheet", "RNG_SPSheet", _
+                 "RNG_SPTSheet", "RNG_CustomPivot", "RNG_Week", "RNG_Quarter", _ 
+                 "RNG_InfoStart", "RNG_InfoEnd"
+
+    For counter = tablRng.LowerBound To tablRng.UpperBound
         RangeExists rngName:=tablRng.Item(counter), sh:=lltradsh
     Next
 End Sub
@@ -300,7 +311,7 @@ Private Sub RangeExists(ByVal rngName As String, ByVal sh As Worksheet)
 End Sub
 
 Private Sub LoExists(ByVal loNames As BetterArray, sh As Worksheet)
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim counter As Long
     Dim lName As String
     For counter = loNames.LowerBound To loNames.UpperBound

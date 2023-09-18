@@ -9,10 +9,10 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Data Used for the Formula Object"
 
-
+'@PredeclaredId
 '@Folder("Formula")
-'@ModuleDescription("Formula Data Class")
-'@IgnoreModule
+'@ModuleDescription("Data Used for the Formula Object")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Private Const CLASSNAME As String = "FormulaData"
 Private Const SPECCHAR As String = "T_ascii"
@@ -62,20 +62,20 @@ Private Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolea
     Dim rng As Range
 
     Set rng = SpecialCharactersRange
-    SpecialCharacterIncludes = (Not rng.Find(What:=specialChar, LookAt:=xlWhole, MatchCase:=False) Is Nothing)
+    SpecialCharacterIncludes = (Not rng.Find(What:=specialChar, lookAt:=xlWhole, MatchCase:=False) Is Nothing)
 End Function
 
 Private Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
     Dim rng As Range
 
     Set rng = FormulaRange
-    ExcelFormulasIncludes = (Not rng.Find(What:=ExcelFormula, LookAt:=xlWhole, MatchCase:=False) Is Nothing)
+    ExcelFormulasIncludes = (Not rng.Find(What:=ExcelFormula, lookAt:=xlWhole, MatchCase:=False) Is Nothing)
 End Function
 
 'Errors management ---------------------------------------------------------------------------------
 
 Private Sub CheckRequirements(ByVal sh As Worksheet)
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim rng As Range
 
     If sh Is Nothing Then ThrowErrorUnableInstanciate "No worksheet found"
@@ -115,11 +115,10 @@ Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
 End Sub
 
 'Exposed methods
-Public Function IFormulaData_SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
+Private Function IFormulaData_SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
     IFormulaData_SpecialCharacterIncludes = SpecialCharacterIncludes(specialChar)
 End Function
 
-Public Function IFormulaData_ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
+Private Function IFormulaData_ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
     IFormulaData_ExcelFormulasIncludes = ExcelFormulasIncludes(ExcelFormula)
 End Function
-

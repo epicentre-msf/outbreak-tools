@@ -8,14 +8,13 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
-
+'@Interface
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of VlistVars")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
 'Exposed methods
 Public Sub WriteInfo(): End Sub
 Public Property Get ValueOf(ByVal colName As String) As String: End Property
-

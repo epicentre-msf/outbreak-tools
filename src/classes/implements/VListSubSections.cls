@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Vlist sub sections")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IVListSubSections
@@ -21,7 +21,7 @@ Private Type TVListSubIVListSubSections
     strt As Long
     endrw As Long
     ll As ILinelist
-    Varlists As BetterArray
+    varLists As BetterArray
 End Type
 
 Private this As TVListSubIVListSubSections
@@ -157,7 +157,7 @@ Private Property Get VariableLists() As BetterArray
     Dim varRng As Range
     Dim dict As ILLdictionary
 
-    If this.Varlists Is Nothing Then
+    If this.varLists Is Nothing Then
         Set dict = Dictionary()
         Set varl = New BetterArray
         Set varRng = dict.DataRange("variable name")
@@ -168,25 +168,25 @@ Private Property Get VariableLists() As BetterArray
             varl.Push varRng.Cells(counter, 1).Value
         Next
 
-        Set this.Varlists = New BetterArray
-        Set this.Varlists = varl.Clone()
+        Set this.varLists = New BetterArray
+        Set this.varLists = varl.Clone()
     End If
 
-    Set VariableLists = this.Varlists.Clone()
+    Set VariableLists = this.varLists.Clone()
 End Property
 
 'Build variables in a subsection
 Private Sub Build()
     Dim vars As IVListVars
-    Dim Varlists As BetterArray
+    Dim varLists As BetterArray
     Dim counter As Long
     Dim varName As String
     Dim ll As ILinelist
     Set ll = LinelistObject()
-    Set Varlists = VariableLists()
+    Set varLists = VariableLists()
     'For each variable in one subSection build that sub section
-    For counter = Varlists.LowerBound To Varlists.UpperBound
-        varName = Varlists.Item(counter)
+    For counter = varLists.LowerBound To varLists.UpperBound
+        varName = varLists.Item(counter)
         Set vars = VListVars.Create(varName, ll)
         vars.WriteInfo
     Next
@@ -195,7 +195,7 @@ End Sub
 'Format the sub section
 Private Sub Format()
     Dim rng As Range
-    Dim Varlists As BetterArray
+    Dim varLists As BetterArray
     Dim strtrw As Long                           'Start Row of the subsecction (in vlist linelist)
     Dim endrw As Long                            'End Row of the sub section
     Dim ll As ILinelist
@@ -210,16 +210,16 @@ Private Sub Format()
 
     Set dict = Dictionary()
     Set vars = LLVariables.Create(dict)
-    Set Varlists = VariableLists()
+    Set varLists = VariableLists()
     Set ll = LinelistObject()
     Set design = ll.LinelistData.DesignFormat()
   
     'compute the endColumn
-    varName = Varlists.Item(Varlists.UpperBound)
+    varName = varLists.Item(varLists.UpperBound)
     endrw = CLng(vars.Value(colName:="column index", varName:=varName))
   
     'compute the start column
-    varName = Varlists.Item(Varlists.LowerBound)
+    varName = varLists.Item(varLists.LowerBound)
     strtrw = CLng(vars.Value(colName:="column index", varName:=varName))
   
     'Actual sub section
@@ -266,5 +266,3 @@ End Property
 Public Property Get IVListSubSections_NextSubSection() As IVListSubSections
     Set IVListSubSections_NextSubSection = NextSubSection()
 End Property
-
-

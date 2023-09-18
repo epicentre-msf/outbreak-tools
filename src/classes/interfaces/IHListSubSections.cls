@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Interface of Horizontal sub sections")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -24,4 +24,3 @@ Public Sub Build():  End Sub
     
 'Format the subSection
 Public Sub Format(): End Sub
-

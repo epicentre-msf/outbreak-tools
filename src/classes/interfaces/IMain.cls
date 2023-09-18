@@ -9,9 +9,10 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of main class"
 
+'@Interface
 '@Folder("Designer")
 '@ModuleDescription("Interface of main class")
-'@Interface
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -36,7 +37,7 @@ Public Sub UpdateStatus(ByVal numValue As Integer): End Sub
 'Public Sub OpenLL(): End Sub
 'Set all the input ranges to white
 Public Sub ClearInputRanges(Optional ByVal clearValues As Boolean = False): End Sub
-Public Sub OpenLL() : End Sub
+Public Sub OpenLL(): End Sub
 'Check if the linelist could be built on a ribbon template or not
 Public Property Get HasTemplate() As Boolean: End Property
 Public Sub CheckRibbonExistence(ByVal trads As IDesTranslation): End Sub

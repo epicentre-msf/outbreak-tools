@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("OS")
 '@ModuleDescription("I/O from operating system to the linelist or designer")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IOSFiles
@@ -266,5 +266,3 @@ End Property
 Public Property Get IOSFiles_Folder() As String
     IOSFiles_Folder = Folder()
 End Property
-
-

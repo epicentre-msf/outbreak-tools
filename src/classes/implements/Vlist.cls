@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Build All Vlist variables")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -159,14 +159,14 @@ Public Sub Build()
     Dim drop As IDropdownLists
     Dim pass As ILLPasswords
     Dim sectionsList As BetterArray              'The list of all sections in a worksheet (for a dropdown)
-    Dim tableName As String
+    Dim tablename As String
     Dim goToSection As String
     Dim gotoSectionListName As String
     Dim shcolStart As Long
     Dim shcolEnd As Long
     Dim shrowStart As Long
     Dim shrowEnd As Long
-    Dim Lo As ListObject
+    Dim Lo As listObject
     
 
     Set sh = Wksh()
@@ -214,8 +214,8 @@ Public Sub Build()
 
     'Add dropdown on first cell for GoTo section
     Set rng = sh.Cells(1, 1)
-    tableName = llshs.sheetInfo(sheetName, 2)
-    gotoSectionListName = tableName & "_" & GOTOSECCODE 'Name of the range goTo section
+    tablename = llshs.sheetInfo(sheetName, 2)
+    gotoSectionListName = tablename & "_" & GOTOSECCODE 'Name of the range goTo section
     rng.Name = gotoSectionListName
     rng.Value = goToSection
     drop.Add sectionsList, gotoSectionListName
@@ -230,10 +230,10 @@ Public Sub Build()
     
     'Add the table Name
     Set rng = sh.Cells(1, 4)
-    rng.Value = tableName
+    rng.Value = tablename
     design.ApplyFormat rng, scope:=LinelistHiddenCell
 
-    Set cellRng = sh.Range(tableName & "_" & "START")
+    Set cellRng = sh.Range(tablename & "_" & "START")
     'Add a name to all the plage where to enter values (Use to update calculations of the VList)
     Set rng = cellRng.Offset(, -1)
 
@@ -246,7 +246,7 @@ Public Sub Build()
     End With
 
     'Name the plage where all the values are entered
-    rng.Name = tableName & "_" & "PLAGEVALUES"
+    rng.Name = tablename & "_" & "PLAGEVALUES"
 
 
     'Transfert code to the worksheet
@@ -280,5 +280,3 @@ End Sub
 Public Property Get IVlist_NextSheet() As String
     IVlist_NextSheet = NextSheet()
 End Property
-
-

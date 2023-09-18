@@ -8,10 +8,10 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
-
+'@Interface
 '@Folder("Linelist")
 '@ModuleDescription("Interface of Vlist")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -21,4 +21,3 @@ Option Explicit
 Public Sub Build(): End Sub
 
 Public Property Get NextSheet() As String: End Property
-

@@ -12,6 +12,7 @@ Attribute VB_Description = "Interface of OSFiles"
 '@Interface
 '@Folder("General")
 '@ModuleDescription("Interface of OSFiles")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -35,4 +36,3 @@ Public Sub LoadFolder(): End Sub
 Public Function HasValidFile() As Boolean: End Function
 'Test if the loaded folder is valid
 Public Function HasValidFolder() As Boolean: End Function
-

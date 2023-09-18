@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of ")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -27,4 +27,3 @@ Public Sub Build(): End Sub
 
 'Format the subSection
 Public Sub Format(): End Sub
-

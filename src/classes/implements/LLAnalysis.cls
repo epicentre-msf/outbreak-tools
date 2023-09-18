@@ -11,7 +11,7 @@ Attribute VB_Description = "Analysis Class"
 
 '@Folder("Analysis")
 '@ModuleDescription("Analysis Class")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILLAnalysis
@@ -56,8 +56,8 @@ End Property
 Private Sub CheckTablesRequirements()
     Dim loTable As BetterArray
     Dim counter As Long
-    Dim Lo As ListObject
-    Dim LoName As String
+    Dim Lo As listObject
+    Dim loName As String
 
     Set loTable = New BetterArray
 
@@ -65,36 +65,36 @@ Private Sub CheckTablesRequirements()
                  GRAPHTIMESERIES, TITLEGRAPHTIMESERIES, SPATIAL
 
     For counter = loTable.LowerBound To loTable.UpperBound
-        LoName = loTable.Items(counter)
+        loName = loTable.Items(counter)
         On Error Resume Next
-        Set Lo = Wksh.ListObjects(LoName)
-        If Lo Is Nothing Then ThrowErrorUnableInstanciate " Listobject " & LoName & " does not exist in analysis worksheet "
+        Set Lo = Wksh.ListObjects(loName)
+        If Lo Is Nothing Then ThrowErrorUnableInstanciate " Listobject " & loName & " does not exist in analysis worksheet "
         On Error GoTo 0
     Next
 End Sub
 
 'Find if a column Exists in a listObject of the analysis
-Private Function ColumnExists(ByVal Lo As ListObject, ByVal colName As String) As Boolean
+Private Function ColumnExists(ByVal Lo As listObject, ByVal colName As String) As Boolean
     Dim hRng As Range
     Set hRng = Lo.HeaderRowRange
 
-    ColumnExists = (Not hRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=False) Is Nothing)
+    ColumnExists = (Not hRng.Find(What:=colName, lookAt:=xlWhole, MatchCase:=False) Is Nothing)
 End Function
 
-Private Function ColumnIndex(ByVal Lo As ListObject, ByVal colName) As Long
+Private Function ColumnIndex(ByVal Lo As listObject, ByVal colName) As Long
     Dim Index As Long
     Dim hRng As Range
 
     Set hRng = Lo.HeaderRowRange
     If ColumnExists(Lo, colName) Then
-        Index = hRng.Find(What:=colName, LookAt:=xlWhole, MatchCase:=False).Column - hRng.Column + 1
+        Index = hRng.Find(What:=colName, lookAt:=xlWhole, MatchCase:=False).Column - hRng.Column + 1
     Else
         Index = -1
     End If
     ColumnIndex = Index
 End Function
 
-Private Function DataRange(ByVal Lo As ListObject, ByVal colName As String) As Range
+Private Function DataRange(ByVal Lo As listObject, ByVal colName As String) As Range
     If ColumnExists(Lo, colName) Then Set DataRange = Lo.ListColumns(ColumnIndex(Lo, colName)).Range
 End Function
 
@@ -153,7 +153,7 @@ Private Sub Import(ByVal impWksh As Worksheet)
     Dim impRng As Range
     Dim actRng As Range
     Dim impAddress As String
-    Dim impLo As ListObject
+    Dim impLo As listObject
 
     Set anash = Wksh()
 
@@ -201,7 +201,7 @@ LoFail:
 End Sub
 
 
-Private Sub SortListOnFirst(ByVal Lo As ListObject, ByVal colIndex As Long)
+Private Sub SortListOnFirst(ByVal Lo As listObject, ByVal colIndex As Long)
 
     Dim numRng As Range 'Number range
     Dim colRng As Range 'Colum range to sort on
@@ -264,13 +264,13 @@ Private Sub SortListOnFirst(ByVal Lo As ListObject, ByVal colIndex As Long)
       End If
     Next
      'Now sort the listObject on the column
-     LoRng.Sort key1:=numRng, order1:=xlAscending, Header:=xlYes
+     LoRng.Sort key1:=numRng, Order1:=xlAscending, Header:=xlYes
      'Remove the _number column
      Lo.ListColumns(hRng.Cells.Count + 1).Delete
 End Sub
 
 'Resize a listobject to resize every listObject after loading.
-Private Sub ResizeLo(Lo As ListObject, Optional totalRowCount As Long = 0)
+Private Sub ResizeLo(Lo As listObject, Optional totalRowCount As Long = 0)
 
     'Begining of the tables
     Dim loRowHeader As Long
@@ -295,7 +295,7 @@ Private Sub ResizeLo(Lo As ListObject, Optional totalRowCount As Long = 0)
         loColsEnd = loColHeader + Lo.Range.Columns.Count - 1
         rowCounter = loRowsEnd
         Do While (rowCounter > loRowHeader + 1)
-            If (Application.WorksheetFunction.CountA(.Rows(rowCounter)) <= totalRowCount) Then
+            If (Application.WorksheetFunction.COUNTA(.Rows(rowCounter)) <= totalRowCount) Then
                 .Rows(rowCounter).EntireRow.Delete
                 'update the end rows
                 loRowsEnd = loRowsEnd - 1
@@ -311,11 +311,11 @@ End Sub
 Private Sub SortAnalysis()
 
     Dim sh As Worksheet
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim colIndex As Long
     Dim tabl As BetterArray 'Will contain the list of listObjects to sort
     Dim counter As Long
-    Dim LoName As String
+    Dim loName As String
     Dim rowCount As Long
 
     Set tabl = New BetterArray
@@ -327,15 +327,15 @@ Private Sub SortAnalysis()
 
     For counter = 1 To tabl.Length
 
-        LoName = tabl.Items(counter)
-        Set Lo = sh.ListObjects(LoName)
+        loName = tabl.Items(counter)
+        Set Lo = sh.ListObjects(loName)
 
         'Row count is the number of elements in the row that triggers deletion of the
         'entire row of the listObject
-        rowCount = Switch(LoName = TIMESERIES, 2, LoName = GRAPHTIMESERIES, 4, True, 0)
+        rowCount = Switch(loName = TIMESERIES, 2, loName = GRAPHTIMESERIES, 4, True, 0)
 
         colIndex = ColumnIndex(Lo, "section")
-        If LoName = GRAPHTIMESERIES Or LoName = TITLEGRAPHTIMESERIES Then colIndex = ColumnIndex(Lo, "graph id")
+        If loName = GRAPHTIMESERIES Or loName = TITLEGRAPHTIMESERIES Then colIndex = ColumnIndex(Lo, "graph id")
 
         SortListOnFirst Lo, colIndex
 
@@ -349,7 +349,7 @@ Private Sub Translate(ByVal TransObject As ITranslation)
     Dim transCols As BetterArray
     Dim anash As Worksheet
     Dim counter As Long
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim colRng As Range
 
     'TransObject is the translation object (from Translation.cls). It can

@@ -2,7 +2,6 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-
 Attribute VB_Name = "CustomPivotTables"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
@@ -10,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Custom Pivot Tables for the linelist"
 
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Custom Pivot Tables for the linelist")
@@ -32,7 +32,7 @@ Public Function Create(ByVal sh As Worksheet) As ICustomPivotTables
   If sh Is Nothing Then ThrowError "Unable to create custom pivot, sheet not found"
   
   With New CustomPivotTables
-    Set .Wksh = sh 
+    Set .Wksh = sh
     Set Create = .Self
   End With
 End Function
@@ -55,8 +55,8 @@ Private Sub InitializeOutputAddress()
   Set sh = Wksh()
   If IsEmpty(sh.Cells(1, 1)) Then
     sh.Cells(1, 1).Value = "$B$2"
-    sh.Cells(1, 1).Font.Color = vbWhite
-    pivotCounter = 1
+    sh.Cells(1, 1).Font.color = vbWhite
+    PIVOTCOUNTER = 1
   End If
 End Sub
 
@@ -70,9 +70,9 @@ Private Property Get OutputRange() As Range
 End Property
 
 'Add a title for the pivot table
-Private Sub AddTitle(ByVal title As String, _ 
-                     Byval pivotName As String, _ 
-                     ByVal tableName As String)
+Private Sub AddTitle(ByVal title As String, _
+                     ByVal pivotName As String, _
+                     ByVal tablename As String)
   Dim sh As Worksheet
   Dim titleRng As Range
 
@@ -81,9 +81,9 @@ Private Sub AddTitle(ByVal title As String, _
   InitializeOutputAddress
   
   Set titleRng = sh.Range(sh.Cells(1, 1).Value).Offset(2)
-  titleRng.Name = "RNG_PivotTitle_" & tableName
+  titleRng.Name = "RNG_PivotTitle_" & tablename
   titleRng.Value = pivotName & " " & PIVOTCOUNTER & " - " & title
-  titleRng.Font.Color = RGB(155, 109, 88)
+  titleRng.Font.color = RGB(155, 109, 88)
   titleRng.Font.Italic = True
 End Sub
 
@@ -98,7 +98,7 @@ End Sub
 '-pivotName: Name of a pivot table depending on the language
 '-title: Name of the title of the pivot table
 '-tablename: name of the pivot table (instead of using pivot table 1, 2, etc)
-Private Sub AddTable(ByVal title As String, ByVal tableName As String, _ 
+Private Sub AddTable(ByVal title As String, ByVal tablename As String, _
                      Optional ByVal pivotName As String = "Pivot Table")
 
   Dim outrng As Range
@@ -111,17 +111,17 @@ Private Sub AddTable(ByVal title As String, ByVal tableName As String, _
     'Add the pivot table before adding the title and other elements
     'If it fails, the title is not added
     sh.PivotTableWizard SourceType:=xlDatabase, SourceData:=tablename, _
-                      TableName:=PIVOTPREFIX & tablename, _ 
+                      tablename:=PIVOTPREFIX & tablename, _
                       TableDestination:=outrng
   On Error GoTo 0
 
-  AddTitle title, pivotName, tableName
+  AddTitle title, pivotName, tablename
   'Change the new output address to another one
   sh.Cells(1, 1).Value = outrng.Offset(60).Address
   PIVOTCOUNTER = PIVOTCOUNTER + 1
   Exit Sub
 ErrAdding:
-  Debug.Print "Unable to add pivot table " & tablename & ":" & Err.Number & "-" & Err.Description  
+  Debug.Print "Unable to add pivot table " & tablename & ":" & Err.Number & "-" & Err.Description
 End Sub
 
 
@@ -131,10 +131,10 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Interface
-Private Sub ICustomPivotTables_Add(ByVal title As String, _ 
-                                   ByVal tablename As String, _ 
+Private Sub ICustomPivotTables_Add(ByVal title As String, _
+                                   ByVal tablename As String, _
                                    Optional ByVal pivotName As String = "Pivot Table")
-  AddTable title, tableName, pivotName
+  AddTable title, tablename, pivotName
 End Sub
 
 Private Sub ICustomPivotTables_Format(ByVal design As ILLFormat)

@@ -2,6 +2,7 @@ Attribute VB_Name = "FormLogicExport"
 Attribute VB_Description = "Form implementation of Exports"
 
 '@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
+'@ModuleDescription("Form implementation of Exports")
 
 Option Explicit
 
@@ -39,22 +40,22 @@ Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
     Application.Calculation = xlCalculationManual
-    Application.Cursor = cursor
+    Application.cursor = cursor
 End Sub
 
 'Return back to previous state
 Private Sub NotBusyApp()
     Application.ScreenUpdating = True
     Application.EnableAnimations = True
-    Application.Cursor = xlDefault
+    Application.cursor = xlDefault
 End Sub
 
-Private Sub CreateExport(Byval scope As Byte)
+Private Sub CreateExport(ByVal scope As Byte)
 
     BusyApp cursor:=xlNorthwestArrow
     
     'Add Error management
-    On Error GoTo errHand
+    On Error GoTo ErrHand
 
     InitializeTrads
     AskFilter tradmess
@@ -63,10 +64,10 @@ Private Sub CreateExport(Byval scope As Byte)
     NotBusyApp
     Exit Sub
 
-errHand:
+ErrHand:
     On Error Resume Next
-    MsgBox  tradmess.TranslatedValue("MSG_ErrHandExport"), _ 
-            vbOKOnly + vbCritical, _ 
+    MsgBox tradmess.TranslatedValue("MSG_ErrHandExport"), _
+            vbOKOnly + vbCritical, _
             tradmess.TranslatedValue("MSG_Error")
     'Close all oppened workbooks
     expOut.CloseAll
@@ -83,8 +84,8 @@ Private Sub AskFilter(ByVal tradmess As ITranslation)
 
     If Me.CHK_ExportFiltered.Value Then
 
-        confirmFilterUse = MsgBox(tradmess.TranslatedValue("MSG_AskFilter"), _ 
-                                  vbYesNo + vbQuestion, _ 
+        confirmFilterUse = MsgBox(tradmess.TranslatedValue("MSG_AskFilter"), _
+                                  vbYesNo + vbQuestion, _
                                   tradmess.TranslatedValue("MSG_ThereIsFilter"))
 
         If confirmFilterUse = vbYes Then

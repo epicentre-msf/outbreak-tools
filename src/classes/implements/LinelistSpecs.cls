@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Build")
 '@ModuleDescription("Object containing specifications for the linelist")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 Implements ILinelistSpecs
 
 Option Explicit
@@ -25,6 +25,7 @@ Public Enum TemporarySheetTypes
     TemporarySingle = 6
     TemporarySpatial = 7
     TemporaryShowHide = 8
+    TemporaryCustomFilters = 9
 End Enum
 
 Private Type TLinelistSpecs
@@ -190,6 +191,8 @@ Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As St
         TemporarySheetName = "show_hide__" 'Manage show/hide forms
     Case TemporarySpatial
         TemporarySheetName = "spatial_tables__" 'add tables for spatial analysis
+    Case TemporaryCustomFilters
+        TemporarySheetName = "custom_filters__"
     End Select
 End Property
 
@@ -210,22 +213,24 @@ Private Function Categories(ByVal varName As String) As BetterArray
     Set vars = LLVariables.Create(dict)
 
     categoryType = vars.Value(varName:=varName, colName:="control")
+    'This is for multiple choices
+    On Error Resume Next
+    categoryType = Application.WorksheetFunction.Trim(Split(categoryType, "(")(0))
+    On Error GoTo 0
     controlDetails = Application.WorksheetFunction.Trim(vars.Value(varName:=varName, colName:="control details"))
 
     If categoryType = "choice_formula" Then
         categoryName = Replace(Split(controlDetails, ",")(0), "CHOICE_FORMULA(", "")
-    ElseIf categoryType = "choice_manual" Then
+    ElseIf (categoryType = "choice_manual") Or _ 
+           (categoryType = "choice_multiple") Or _ 
+           (categoryType = "choice_custom") Then
 
         categoryName = vars.Value(varName:=varName, colName:="control details")
-        'Normally there is no more case_when category, but I keep it
-    ElseIf categoryType = "case_when" Then
-        categoryName = "__case_when_" & varName
     End If
 
     'Test the case_when
     Set categoryData = choi.Categories(categoryName)
     Set Categories = categoryData.Clone()
-
 End Function
 
 'Speed up before a work
@@ -335,23 +340,24 @@ Private Sub Prepare()
     Set PreservedSheetNames = New BetterArray
     PreservedSheetNames.LowerBound = 1
     PreservedSheetNames.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
-                             PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, _  
+                             PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, _
                              HLISTTRANSLATIONSHEET, _
-                             EXPORTSHEET, _ 
-                             TemporarySheetName(TemporarySingle), _ 
+                             EXPORTSHEET, _
+                             TemporarySheetName(TemporarySingle), _
                              TemporarySheetName(TemporarySheetList), _
-                             TemporarySheetName(TemporarySheetUpdates), _ 
+                             TemporarySheetName(TemporarySheetUpdates), _
                              TemporarySheetName(TemporarySheetMetadata), _
-                             TemporarySheetName(TemporarySheetAnalysis), _ 
+                             TemporarySheetName(TemporarySheetAnalysis), _
                              TemporarySheetName(TemporarySheetImport), _
-                             TemporarySheetName(TemporarySpatial), _ 
+                             TemporarySheetName(TemporarySpatial), _
                              TemporarySheetName(TemporaryShowHide), _
-                             msgTrads.TranslatedValue("LLSHEET_Admin"), _ 
+                             TemporarySheetName(TemporaryCustomFilters), _
+                             msgTrads.TranslatedValue("LLSHEET_Admin"), _
                              msgTrads.TranslatedValue("LLSHEET_Analysis"), _
-                             msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), _ 
+                             msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), _
                              msgTrads.TranslatedValue("LLSHEET_TemporalAnalysis"), _
-                             msgTrads.TranslatedValue("LLSHEET_CustomChoice"), _ 
-                             msgTrads.TranslatedValue("LLSHEET_CustomPivotTable"), _ 
+                             msgTrads.TranslatedValue("LLSHEET_CustomChoice"), _
+                             msgTrads.TranslatedValue("LLSHEET_CustomPivotTable"), _
                              msgTrads.TranslatedValue("LLSHEET_SpatioTemporalAnalysis")
 
     'Prepare the dictionary
@@ -437,7 +443,7 @@ Private Sub RecursiveListAuto(ByVal varName As String)
 
         If varFormObject.Valid(formulaType:="linelist") Then
 
-            Set formList = varFormObject.Varlists()
+            Set formList = varFormObject.varLists()
 
             counter = formList.LowerBound
 
@@ -473,12 +479,12 @@ Private Sub Export(ByVal toWkb As Workbook)
     Set geo = geoObject()
     Set passobj = Password()
 
-    dict.export toWkb
-    choi.export toWkb, Hide:=xlSheetVeryHidden
+    dict.Export toWkb
+    choi.Export toWkb, Hide:=xlSheetVeryHidden
     trans.ExportToWkb toWkb
     expobj.ExportSpecs toWkb, Hide:=xlSheetVeryHidden
     geo.ExportToWkb toWkb
-    passobj.export toWkb
+    passobj.Export toWkb
 
 End Sub
 
@@ -494,7 +500,7 @@ Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
     Set sheetsArray = New BetterArray
 
     sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, GEOSHEET, _
-                     PASSWORDSHEET, FormulaSheet, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
+                     PASSWORDSHEET, FORMULASHEET, DICTTRANSLATIONSHEET, HLISTTRANSLATIONSHEET, _
                      EXPORTSHEET, FORMATSHEET, MAINSHEET, DESTRANSSHEET
 
     For counter = sheetsArray.LowerBound To sheetsArray.UpperBound
@@ -593,5 +599,5 @@ Public Property Get ILinelistSpecs_Analysis() As ILLAnalysis
 End Property
 
 Public Sub ILinelistSpecs_Export(ByVal toWkb As Workbook)
-    export toWkb
+    Export toWkb
 End Sub

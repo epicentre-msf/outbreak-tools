@@ -9,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "analysis tables specifications"
 
+'@IgnoreModule IIfSideEffect, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("analysis tables specifications")
@@ -27,18 +28,15 @@ Private Const CLASSNAME As String = "TableSpecs"
 
 'Instanciation
 
-Public Function Create(headerRng As Range, tableSpecsRng As Range, LinelistData As ILinelistSpecs) As ITablesSpecs
-    If headerRng Is Nothing Then ThrowErrorUnableInstanciate "Header range not defined"
-    If tableSpecsRng Is Nothing Then ThrowErrorUnableInstanciate "Table range not defined"
-    If LinelistData Is Nothing Then ThrowErrorUnableInstanciate "Linelist specifications not defined"
-    If headerRng.Columns.Count <> tableSpecsRng.Columns.Count Then ThrowErrorUnableInstanciate "Header range and sepicification range don't have same length"
-    If headerRng.Row > tableSpecsRng.Row Then ThrowErrorUnableInstanciate "Seems like header comes range after specification range. Maybe you reversed the order? "
-    If headerRng.Row < 1 Then ThrowErrorUnableInstanciate "Header range should be at row > 1"
+Public Function Create(ByVal headerRng As Range, ByVal tableSpecsRng As Range, ByVal lData As ILinelistSpecs) As ITablesSpecs
+    
+    'Check requirements when instanciating a table specification
+    CheckRequirements headerRng, tableSpecsRng, lData
 
     With New TablesSpecs
         Set .HeaderRange = headerRng
         Set .TableRange = tableSpecsRng
-        Set .LinelistSpecifications = LinelistData
+        Set .LinelistSpecifications = lData
         Set Create = .Self
     End With
 End Function
@@ -196,12 +194,14 @@ Public Property Get HasGraph() As Boolean
     Select Case TableType
     Case TypeGlobalSummary
         HasGraph = False
-    Case TypeUnivariate , TypeSpatioTemporal
+    Case TypeUnivariate, TypeSpatioTemporal
         HasGraph = (Value("graph") = "yes")
     Case TypeBivariate
         HasGraph = (Value("graph") = "percentage" Or Value("graph") = "values" Or Value("graph") = "both")
     Case TypeSpatial
-        HasGraph = (Value("graph") = "yes") And (Value("column") <> vbNullString)
+        HasGraph = (Value("graph") = "yes")
+    Case TypeSpatioTemporal
+        HasGraph = (Value("graph") = "yes")
     End Select
 End Property
 
@@ -248,10 +248,10 @@ Public Property Get ValidTable() As Boolean
 
     Select Case TableType
     Case TypeGlobalSummary
-        Valid = (Value("label") <> vbNullString) And _ 
+        Valid = (Value("label") <> vbNullString) And _
                 (Value("function") <> vbNullString)
     Case TypeUnivariate
-        Valid = vars.Contains(rowVar) And _ 
+        Valid = vars.Contains(rowVar) And _
                 (rowControl = "choice_manual" Or rowControl = "choice_formula")
     Case TypeBivariate
         Valid = vars.Contains(rowVar) And vars.Contains(colVar) And _
@@ -259,20 +259,20 @@ Public Property Get ValidTable() As Boolean
                 (rowControl = "choice_manual" Or rowControl = "choice_formula")
     Case TypeTimeSeries
         rowType = vars.Value(colName:="variable type", varName:=rowVar)
-        Valid = (colVar = vbNullString Or  _ 
-                 colControl = "choice_manual" Or _ 
-                 colControl = "choice_formula") And _ 
+        Valid = (colVar = vbNullString Or _
+                 colControl = "choice_manual" Or _
+                 colControl = "choice_formula") And _
                 (rowType = "date")
     Case TypeSpatial
-        Valid = (dict.VariableExists("adm1_" & rowVar) Or _ 
+        Valid = (dict.VariableExists("adm1_" & rowVar) Or _
                  dict.VariableExists("hf_" & rowVar)) And _
-                (colVar = vbNullString Or _ 
-                 colControl = "choice_manual" Or _ 
+                (colVar = vbNullString Or _
+                 colControl = "choice_manual" Or _
                  colControl = "choice_formula")
 
     Case TypeSpatioTemporal
          rowType = vars.Value(colName:="variable type", varName:=rowVar)
-         Valid = (dict.VariableExists("adm1_" & colVar) Or _ 
+         Valid = (dict.VariableExists("adm1_" & colVar) Or _
                  dict.VariableExists("hf_" & colVar)) And _
                  (rowType = "date")
 
@@ -290,14 +290,14 @@ End Property
 Private Function ColumnExists(ByVal colName As String) As Boolean
     Dim hRng As Range
     Set hRng = HeaderRange
-    ColumnExists = (Not hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False) Is Nothing)
+    ColumnExists = (Not hRng.Find(What:=colName, lookAt:=xlPart, MatchCase:=False) Is Nothing)
 End Function
 
 Private Function ColumnIndex(ByVal colName As String) As Long
     Dim hRng As Range
     Set hRng = HeaderRange
     If ColumnExists(colName) Then
-        ColumnIndex = hRng.Find(What:=colName, LookAt:=xlPart, MatchCase:=False).Column - hRng.Column + 1
+        ColumnIndex = hRng.Find(What:=colName, lookAt:=xlPart, MatchCase:=False).Column - hRng.Column + 1
     Else
         ColumnIndex = -1
     End If
@@ -336,13 +336,18 @@ Private Property Get Data(ByVal rowOrCol As String) As BetterArray
 
     'for SpatioTemporal data, change the column categories
     If (TableType = TypeSpatioTemporal) And (rowOrCol = "column") Then
-        nbGeo = 5
-        On Error Resume Next
-        nbGeo = CLng(Value("n geo"))
-        On Error GoTo 0
-        For counter = 1 To nbGeo
+        If SpatialTableTypes() = "geo" Then
+            nbGeo = 5
+            On Error Resume Next
+            nbGeo = CLng(Value("n geo"))
+            On Error GoTo 0
+            For counter = 1 To nbGeo
+                varsCat.Push vbNullString
+            Next
+        Else
+            'For health facilities, just push one column
             varsCat.Push vbNullString
-        Next
+        End If
     ElseIf vars.Contains(nameVar) Then
         Set varsCat = lData.Categories(nameVar)
     End If
@@ -380,9 +385,37 @@ Private Property Get Previous() As ITablesSpecs
     
 End Property
 
+'Next Specs. anchorRng is the lastRange of the listObject
+Private Property Get NextSpecs(ByVal anchorRng As Range) As ITablesSpecs
+
+    Dim tRng As Range
+    Dim hRng As Range
+    Dim nextsp As ITablesSpecs
+    Dim lData As ILinelistSpecs
+
+    Set tRng = TableRange()
+    Set hRng = HeaderRange()
+    Set lData = LinelistSpecifications()
+
+    Set tRng = tRng.Offset(1)
+    If tRng.Row > anchorRng.Row Then Exit Property
+    
+    Set nextsp = Create(hRng, tRng, lData)
+    Set tRng = tRng.Offset(1)
+
+    Do While (Not nextsp.ValidTable()) And (tRng.Row <= anchorRng.Row)
+        Set nextsp = Create(hRng, tRng, lData)
+        Set tRng = tRng.Offset(1)        
+    Loop
+
+    If Not nextsp.ValidTable() Then Exit Property
+    
+    Set NextSpecs = nextsp
+End Property
+
 Private Property Get isNewSection() As Boolean
     Dim sectIndex As Long
-    Dim ActualSection As String
+    Dim actualSection As String
     Dim previousSection As String
     Dim oldSec As Boolean
     Dim tRng As Range
@@ -395,7 +428,7 @@ Private Property Get isNewSection() As Boolean
 
     If ColumnExists("section") Then
         sectIndex = ColumnIndex("section")
-        ActualSection = Value("section")
+        actualSection = Value("section")
         Set prevCell = tRng.Cells(0, sectIndex)  '0 for previous line (we can also offset)
         previousSection = prevCell.Value
         oldSec = (ActualSection = previousSection) And (prevCell.Row <> hRng.Row)
@@ -404,7 +437,6 @@ Private Property Get isNewSection() As Boolean
     isNewSection = (Not oldSec) And (TableType <> TypeGlobalSummary)
 End Property
 
-'Errors
 'Errors ---------------------------------------------------------------------------------
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
@@ -413,6 +445,16 @@ End Sub
 Private Sub ThrowError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error: " & errorMessage
 End Sub
+
+Private Sub CheckRequirements(ByVal headerRng As Range, ByVal tableSpecsRng As Range, ByVal lData As ILinelistSpecs)
+    If headerRng Is Nothing Then ThrowErrorUnableInstanciate "Header range not defined"
+    If tableSpecsRng Is Nothing Then ThrowErrorUnableInstanciate "Table range not defined"
+    If lData Is Nothing Then ThrowErrorUnableInstanciate "Linelist specifications not defined"
+    If headerRng.Columns.Count <> tableSpecsRng.Columns.Count Then ThrowErrorUnableInstanciate "Header range and sepicification range don't have same length"
+    If headerRng.Row > tableSpecsRng.Row Then ThrowErrorUnableInstanciate "Seems like header comes range after specification range. Maybe you reversed the order? "
+    If headerRng.Row < 1 Then ThrowErrorUnableInstanciate "Header range should be at row > 1"
+End Sub
+
 
 'Interface
 Private Property Get ITablesSpecs_TableType() As AnalysisTablesType
@@ -461,6 +503,10 @@ End Property
 
 Private Property Get ITablesSpecs_Previous() As ITablesSpecs
     Set ITablesSpecs_Previous = Previous
+End Property
+
+Private Property Get ITablesSpecs_NextSpecs(ByVal anchorRng As Range) As ITablesSpecs
+    Set ITablesSpecs_NextSpecs = NextSpecs(anchorRng)
 End Property
 
 Private Property Get ITablesSpecs_TableSectionId() As String

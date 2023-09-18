@@ -7,7 +7,10 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Translation of the designer"
 
+
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Translation of the designer")
@@ -73,7 +76,7 @@ End Property
 
 Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation
 
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim lang As String
     Dim sh As Worksheet
 
@@ -100,7 +103,7 @@ Private Sub TranslateDesigner(ByVal mainsh As Worksheet)
     Dim counter As Long
     Dim shapesNames As BetterArray               'Name of all shapes to translate in worksheet main
     Dim rngNames As BetterArray                  'List of all named ranges in the worksheet main
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim sh As Worksheet
     Dim langCode As String                       'Language for the designer
     Dim prevFont As String
@@ -182,7 +185,7 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 Private Sub LoExists(sh As Worksheet, ByVal loNames As BetterArray)
-    Dim Lo As ListObject
+    Dim Lo As listObject
     Dim counter As Long
     Dim lName As String
     For counter = loNames.LowerBound To loNames.UpperBound

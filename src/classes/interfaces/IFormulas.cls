@@ -7,17 +7,18 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Attribute VB_Description = "Interface of Formulas Object"
 
-
+'@Interface
 '@Folder("Formulas")
 '@ModuleDescription("Interface of Formulas Object")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
 'Exposed methods
 
-Public Property Get Varlists() As BetterArray: End Property
+Public Property Get VarLists() As BetterArray: End Property
 Public Property Get FormulaTableList() As BetterArray: End Property
 
 Public Property Get Valid(Optional ByVal formulaType As String = "analysis") As Boolean: End Property
@@ -33,13 +34,3 @@ End Property
 
 'Test if there are litterals in the Formulas
 Public Property Get HasLiterals() As Boolean: End Property
-
-'Logs for eventual errors in formula
-
-
-
-
-
-
-
-

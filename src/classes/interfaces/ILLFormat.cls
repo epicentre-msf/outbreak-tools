@@ -8,10 +8,10 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
-
+'@Interface
 '@Folder("Linelist")
 '@ModuleDescription("Interface of linelist format")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -83,5 +83,3 @@ End Sub
 Public Function DesignValue(ByVal labelName As String, _
                             Optional ByVal returnedColor As Boolean = True) As Variant
 End Function
-
-

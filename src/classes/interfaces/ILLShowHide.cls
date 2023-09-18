@@ -2,13 +2,13 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-
 Attribute VB_Name = "ILLShowHide"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
-Attribute VB_Description = ""
+Attribute VB_Description = "Interface of Show/Hide form"
+
 
 '@Folder("Linelist")
 '@ModuleDescription("Interface of Show/Hide form")
@@ -25,6 +25,6 @@ End Enum
 
 'Load the show/hide form with values
 Public Sub Load(ByVal tradsform As ITranslation): End Sub
-Public Sub UpdateVisibilityStatus(ByVal index As Long): End Sub
-Public Sub ShowHideLogic(ByVal index As Long): End Sub
-Public Sub ChangeColWidth(ByVal index As Long): End Sub
+Public Sub UpdateVisibilityStatus(ByVal Index As Long): End Sub
+Public Sub ShowHideLogic(ByVal Index As Long): End Sub
+Public Sub ChangeColWidth(ByVal Index As Long): End Sub

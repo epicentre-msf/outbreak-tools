@@ -8,15 +8,15 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
-
+'@Interface
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of Variable class")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
 'Properties
-Private Property Get Dictionary() As ILLdictionary: End Property
+Public Property Get Dictionary() As ILLdictionary: End Property
 
 
 'Exposed methods
@@ -34,5 +34,5 @@ End Function
 Public Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal newValue As String, Optional ByVal onEmpty As Boolean = False)
 End Sub
 
-Public Property Get CellRange(Byval colName As String, ByVal varName As String) As Range
+Public Property Get CellRange(ByVal colName As String, ByVal varName As String) As Range
 End Property

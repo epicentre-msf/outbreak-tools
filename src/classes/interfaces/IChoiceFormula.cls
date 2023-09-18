@@ -13,6 +13,7 @@ Attribute VB_Description = "Interface of choice formula"
 '@Interface
 '@Folder("Custom Functions")
 '@ModuleDescription("Interface of choice formula")
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -30,5 +31,5 @@ End Property
 
 'Get the choice name
 '@Ignored ProcedureNotUsed
-Public Property Get ChoiceName() As String
+Public Property Get choiceName() As String
 End Property

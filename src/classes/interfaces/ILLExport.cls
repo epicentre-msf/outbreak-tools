@@ -13,7 +13,7 @@ Attribute VB_Description = "Interface of export object"
 '@Interface
 '@Folder("Linelist")
 '@ModuleDescription("Interface of export object")
-
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -29,13 +29,13 @@ End Enum
 
 'Exposed methods
 'Get the value of one column for one expor type
-Public Property Get Value(Byval colName As String, ByVal exportNumber As Integer) As String
+Public Property Get Value(ByVal colName As String, ByVal exportNumber As Integer) As String
 End Property
 
 'In the linelist, get the fileName of an export
 Public Property Get ExportFileName(ByVal scope As Byte, _
                                    ByVal dict As ILLdictionary, _
-                                  Byval pass As ILLPasswords) As String
+                                  ByVal pass As ILLPasswords) As String
 End Property
 
 'Test if an export is active

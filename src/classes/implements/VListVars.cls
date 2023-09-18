@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Vlist sheet")
-'@IgnoreModule
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -95,7 +95,7 @@ Private Property Get CustomDropdown() As IDropdownLists
     Dim ll As ILinelist
 
     Set ll = LinelistObject()
-    Set CustomDropdown = ll.Dropdown(scope := 2)
+    Set CustomDropdown = ll.Dropdown(scope:=2)
 End Property
 
 Private Property Get Dictionary() As ILLdictionary
@@ -191,7 +191,7 @@ Private Sub AddType()
             On Error GoTo 0
 
             zerosDecimals = String(nbDecimals, "0")
-            formatText = "#,###0." & zerosDecimals & ";-#,###0." &  _
+            formatText = "#,###0." & zerosDecimals & ";-#,###0." & _
                          zerosDecimals & ";0." & zerosDecimals & ";@"
 
         ElseIf (InStr(1, varFormat, "percentage") > 0) Then
@@ -313,8 +313,8 @@ Private Sub AddConditionalFormatting()
 
     cellRng.FormatConditions.Add Type:=xlExpression, Formula1:="=(" & condAdd & "= 1)"
     With cellRng.FormatConditions(cellRng.FormatConditions.Count)
-        .Interior.Color = formatRng.Interior.Color
-        .Font.Color = formatRng.Font.Color
+        .Interior.color = formatRng.Interior.color
+        .Font.color = formatRng.Font.color
         .Font.Bold = formatRng.Font.Bold
         .Font.Italic = formatRng.Font.Italic
         'Stop if this condition is met (This is the first priority)
@@ -398,7 +398,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     End If
 
     'Hidden Row
-    If varStatus = "hidden" Then cellRng.EntireRow.Hidden = True
+    If varStatus = "hidden" Then cellRng.EntireRow.HIDDEN = True
     cellRng.Locked = False
     cellRng.Offset(, -1).Locked = False
     cellRng.Offset(, -2).Locked = False
@@ -423,7 +423,7 @@ Private Sub AddChoices()
     varName = ActualVariable()
     varControl = ValueOf("control")
 
-    If (varControl <> "choice_manual") And (varControl <> "choice_custom") _ 
+    If (varControl <> "choice_manual") And (varControl <> "choice_custom") _
     Then Exit Sub
 
 
@@ -640,7 +640,7 @@ Private Sub CheckRequirements(ByVal varName As String, ll As ILinelist)
     If Not dict.VariableExists(varName) Then _
     ThrowError "Variable" & varName & "Does not exists!"
     sheetName = varObject.Value(varName:=varName, colName:="sheet name")
-    If Not ll.sheetExists(sheetName) Then  _
+    If Not ll.sheetExists(sheetName) Then _
     ThrowError varName & "worksheet named" & sheetName & "is not created"
 
 End Sub
@@ -651,7 +651,5 @@ Public Sub IVListVars_WriteInfo()
 End Sub
 
 Public Property Get IVListVars_ValueOf(ByVal colName As String) As String
-    IHListVars_ValueOf = ValueOf(colName)
+    IVListVars_ValueOf = ValueOf(colName)
 End Property
-
-

@@ -2,7 +2,6 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-
 Attribute VB_Name = "LLShowHide"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
@@ -10,6 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Linelist Show/Hide Class"
 
+'@IgnoreModule IIfSideEffect
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Linelist Show/Hide Class")
@@ -25,11 +25,11 @@ Private Type TShowHide
   trads As ITranslation
   dict As ILLdictionary
   sh As Worksheet
-  SHOW As String
+  Show As String
   SHOWN As String
-  HIDE As String
+  Hide As String
   HIDDEN As String
-  MANDATORY As String
+  mandatory As String
   DESIGNERHIDDEN As String
   PRINTSHOWHORIZ As String
   PRINTSHOWVERTI As String
@@ -44,7 +44,7 @@ Private Const PRINTPREFIX As String = "print_"
 
 'Boolean Value to trigger the launch of the show/hide process
 
-Public Function Create(Byval trads As ITranslation, ByVal dict As ILLdictionary, _
+Public Function Create(ByVal trads As ITranslation, ByVal dict As ILLdictionary, _
                        ByVal sh As Worksheet) As ILLShowHide
 
   CheckRequirements trads, dict, sh
@@ -73,15 +73,15 @@ Public Property Get Dictionary() As ILLdictionary
   Set Dictionary = this.dict
 End Property
 
-Public Property Get FormObject() As Object
+Public Property Get formObject() As Object
   Dim scope As ShowHideScope
 
   scope = ActualScope()
   Select Case scope
   Case ShowHideScopeLinelist
-    Set FormObject = [F_ShowHideLL]
+    Set formObject = [F_ShowHideLL]
   Case ShowHideScopePrint
-    Set FormObject = [F_ShowHidePrint]
+    Set formObject = [F_ShowHidePrint]
   End Select
 End Property
 
@@ -116,23 +116,23 @@ Public Property Get Self() As ILLShowHide
 End Property
 
 Private Sub InitializeMessages(ByVal trads As ITranslation)
-  this.SHOW = trads.TranslatedValue("MSG_Show")
+  this.Show = trads.TranslatedValue("MSG_Show")
   this.SHOWN = trads.TranslatedValue("MSG_Shown")
-  this.HIDE = trads.TranslatedValue("MSG_Hide")
+  this.Hide = trads.TranslatedValue("MSG_Hide")
   this.HIDDEN = trads.TranslatedValue("MSG_Hidden")
-  this.MANDATORY = trads.TranslatedValue("MSG_Mandatory")
+  this.mandatory = trads.TranslatedValue("MSG_Mandatory")
   this.DESIGNERHIDDEN = trads.TranslatedValue("MSG_DesHidden")
   this.PRINTSHOWHORIZ = trads.TranslatedValue("MSG_ShowHoriz")
   this.PRINTSHOWVERTI = trads.TranslatedValue("MSG_ShowVerti")
 End Sub
 
-Private Function TempSheet() As Worksheet
+Private Function TEMPSHEET() As Worksheet
   Dim wb As Workbook
   Dim sh As Worksheet
 
   Set sh = Wksh()
   Set wb = sh.Parent
-  Set TempSheet = wb.Worksheets(TEMPORARYSHEET)
+  Set TEMPSHEET = wb.Worksheets(TEMPORARYSHEET)
 End Function
 
 'Subs to Enable/disable the show Hide process
@@ -165,11 +165,11 @@ Private Function ShowHideTable() As Range
   Const SHOWHIDEPREF As String = "ShowHideTable_"
 
   Dim tpsh As Worksheet
-  Dim Lo As ListObject
+  Dim Lo As listObject
   Dim loName As String
   Dim dict As ILLdictionary
   Dim retRng As Range
-  Dim vars As ILLvariables
+  Dim vars As ILLVariables
   Dim sh As Worksheet
   Dim varRng As Range
   Dim showHideColumn As String
@@ -181,16 +181,16 @@ Private Function ShowHideTable() As Range
   Dim mainLab As String
   Dim controlVal As String
   Dim varName As String
-  Dim loRng As Range
-  Dim startCol As Long
-  Dim tabName As String
+  Dim LoRng As Range
+  Dim STARTCOL As Long
+  Dim TabName As String
   Dim defaultValue As String
   Dim statusValue As String
 
-  Set tpsh = TempSheet()
+  Set tpsh = TEMPSHEET()
   Set sh = Wksh()
-  tabName = sh.Cells(1, 4).Value
-  loName = SHOWHIDEPREF & tabName
+  TabName = sh.Cells(1, 4).Value
+  loName = SHOWHIDEPREF & TabName
 
   
   With tpsh
@@ -211,7 +211,7 @@ Private Function ShowHideTable() As Range
       Set cellRng = varRng.Cells(1, 1)
 
       'Define the start column
-        startCol = .Cells(1, .Columns.Count).End(xlToLeft).Column + 1
+        STARTCOL = .Cells(1, .Columns.Count).End(xlToLeft).Column + 1
         tempCounter = 2
         'Loop for all variables in the dictionary (I don't presume the dictionary is sorted on sheet names)
         Do While cellRng.Value <> vbNullString
@@ -221,24 +221,24 @@ Private Function ShowHideTable() As Range
             'If it is not hidden by the designer
             If (vars.Value(varName:=varName, colName:="status") <> "hidden") Then
               'main label
-              mainLab =  vars.Value(varName:=varName, colName:="main label")
+              mainLab = vars.Value(varName:=varName, colName:="main label")
               controlVal = vars.Value(varName:=varName, colName:="control")
 
               'For geo variables, add the main label and the section
-              If (InStr(1, controlVal, "geo") > 0) Or (InStr(1,controlVal, "hf") > 0) _
+              If (InStr(1, controlVal, "geo") > 0) Or (InStr(1, controlVal, "hf") > 0) _
               Then mainLab = vars.Value(varName:=varName, colName:="sub section") & ": " & mainLab
 
-              .Cells(tempCounter, startCol + 1).Value = mainLab
+              .Cells(tempCounter, STARTCOL + 1).Value = mainLab
 
               'variable name
-              .Cells(tempCounter, startCol + 2).Value = varName
+              .Cells(tempCounter, STARTCOL + 2).Value = varName
 
               'Status
               statusValue = vars.Value(varName:=varName, colName:=showHideColumn)
 
               Select Case statusValue
               Case "mandatory"
-                statusValue = this.MANDATORY
+                statusValue = this.mandatory
               Case "optional"
                 statusValue = this.SHOWN
               Case "print, vertical header"
@@ -251,32 +251,32 @@ Private Function ShowHideTable() As Range
 
               'On admin 1 and Linelist, the status is mandatory
               If (controlVal = "geo1") And (scope = ShowHideScopeLinelist) Then _
-               statusValue = this.MANDATORY
+               statusValue = this.mandatory
 
               'The default value is the value to write if nothing found as status
-              '(empty registerbook column)             
+              '(empty registerbook column)
 
               If statusValue = vbNullString Then statusValue = defaultValue
 
-              .Cells(tempCounter, startCol + 3).Value = statusValue
+              .Cells(tempCounter, STARTCOL + 3).Value = statusValue
               'column index (needed for further usages)
-              .Cells(tempCounter, startCol + 4).Value = vars.Value(varName:=varName, colName:="column index")
+              .Cells(tempCounter, STARTCOL + 4).Value = vars.Value(varName:=varName, colName:="column index")
               'Control
-              .Cells(tempCounter, startCol + 5).Value = vars.Value(varName:=varName, colName:="control")
+              .Cells(tempCounter, STARTCOL + 5).Value = vars.Value(varName:=varName, colName:="control")
               tempCounter = tempCounter + 1
             End If
           End If
           Set cellRng = cellRng.Offset(1)
         Loop
-        .Cells(1, startCol + 1).Value = "main label"
-        .Cells(1, startCol + 2).Value = "variable name"
-        .Cells(1, startCol + 3).Value = "status"
-        .Cells(1, startCol + 4).Value = "column index"
-        .Cells(1, startCol + 5).Value = "control"
+        .Cells(1, STARTCOL + 1).Value = "main label"
+        .Cells(1, STARTCOL + 2).Value = "variable name"
+        .Cells(1, STARTCOL + 3).Value = "status"
+        .Cells(1, STARTCOL + 4).Value = "column index"
+        .Cells(1, STARTCOL + 5).Value = "control"
         'substract 1 for resizing purposes
         tempCounter = tempCounter - 1
-        Set loRng = .Range(.Cells(1, startCol + 1), .Cells(tempCounter, startCol + 5))
-        .ListObjects.Add(xlSrcRange, loRng, , xlYes).Name = loName
+        Set LoRng = .Range(.Cells(1, STARTCOL + 1), .Cells(tempCounter, STARTCOL + 5))
+        .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = loName
     End If
     Set Lo = .ListObjects(loName)
     
@@ -339,12 +339,12 @@ Private Sub Load(ByVal tradsform As ITranslation)
 
   'Range of the form
   Set formRng = ShowHideTable()
-  Set fobj = FormObject()
+  Set fobj = formObject()
   scope = ActualScope()
 
   'Initialize the values
   If scope = ShowHideScopeLinelist Then
-    Set listObject =  fobj.LST_LLVarNames
+    Set listObject = fobj.LST_LLVarNames
   Else
     Set listObject = fobj.LST_PrintNames
   End If
@@ -366,10 +366,10 @@ Private Sub Load(ByVal tradsform As ITranslation)
 
   'Add caption to option buttons
   On Error Resume Next
-    fobj.OPT_Show.Caption = this.SHOW
+    fobj.OPT_Show.Caption = this.Show
     fobj.OPT_PrintShowHoriz.Caption = this.PRINTSHOWHORIZ
     fobj.OPT_PrintShowVerti.Caption = this.PRINTSHOWVERTI
-    fobj.OPT_Hide.Caption = this.HIDE
+    fobj.OPT_Hide.Caption = this.Hide
   On Error GoTo 0
 
   fobj.Show
@@ -379,14 +379,14 @@ End Sub
 Private Sub UpdateVisibility(ByVal indexValue As Long)
 
   Dim scope As ShowHideScope
-  Dim fobj As object
+  Dim fobj As Object
 
   If Not InClickMode Then Exit Sub
 
   'disable the show/hide mode
   DisableShowHide
 
-  Set fobj = FormObject()
+  Set fobj = formObject()
   scope = ActualScope()
 
   Select Case Value(indexValue, "status")
@@ -405,16 +405,16 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
   Case this.SHOWN
 
     fobj.OPT_Show.Value = 1
-    fobj.OPT_Show.Caption = this.SHOW
+    fobj.OPT_Show.Caption = this.Show
     fobj.OPT_Show.Top = 75
 
     fobj.OPT_Hide.Visible = True
     fobj.OPT_Show.Visible = True
     fobj.OPT_Hide.Value = 0
 
-  Case this.MANDATORY
+  Case this.mandatory
 
-    fobj.OPT_Show.Caption = this.MANDATORY
+    fobj.OPT_Show.Caption = this.mandatory
     fobj.OPT_Show.Top = 100
     fobj.OPT_Hide.Visible = False
 
@@ -425,7 +425,7 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
     fobj.OPT_Hide.Value = 1
     
     If scope = ShowHideScopeLinelist Then
-      fobj.OPT_Show.Caption = this.SHOW
+      fobj.OPT_Show.Caption = this.Show
       fobj.OPT_Show.Top = 75
     End If
   Case Else 'Show Everything, and select show horizontally on printed sheet
@@ -433,7 +433,7 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
     fobj.OPT_Show.Value = 1
     fobj.OPT_PrintShowHoriz.Value = 1
     fobj.OPT_Hide.Visible = True
-    fobj.OPT_Show.Caption = this.SHOW
+    fobj.OPT_Show.Caption = this.Show
     On Error GoTo 0
   End Select
 
@@ -443,8 +443,6 @@ End Sub
 
 Private Sub ShowHideLogic(ByVal indexValue As Long)
 
-
-
   Const TABPRINTPREFIX As String = "pr" 'Print prefix for tables
 
   Dim sh As Worksheet
@@ -453,7 +451,7 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
   Dim colIndex As Long
   Dim cellRng As Range
   Dim orientationValue As Long
-  Dim tabName As String
+  Dim TabName As String
   Dim showValue As String
   Dim formRng As Range
   Dim listObject As Object
@@ -462,14 +460,14 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
   On Error GoTo ErrHand:
 
   Set sh = Wksh()
-  Set fobj = FormObject()
+  Set fobj = formObject()
   scope = ActualScope()
-  tabName = sh.Cells(1, 4).Value
+  TabName = sh.Cells(1, 4).Value
   Set formRng = ShowHideTable() 'To return back showhide table afterwards
 
   If Not InShowHideMode() Or indexValue < 0 Then Exit Sub
   'For mandatory, exit
-  If Value(indexValue, "status") = this.MANDATORY Then Exit Sub
+  If Value(indexValue, "status") = this.mandatory Then Exit Sub
   'Get the column index of the variable in the actual worksheet
   On Error Resume Next
     colIndex = -1
@@ -495,7 +493,7 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
     Set listObject = fobj.LST_PrintNames
 
     On Error Resume Next
-      Set cellRng = sh.Range(Replace(tabName, TABPRINTPREFIX, vbNullString) & _
+      Set cellRng = sh.Range(Replace(TabName, TABPRINTPREFIX, vbNullString) & _
                              "_" & "PRINTSTART")
     On Error GoTo 0
     'Unable to find the print start Range, exit
@@ -521,7 +519,7 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
     cellRng.EntireColumn.AutoFit
   End If
 
-  sh.Columns(colIndex).Hidden = hideCol
+  sh.Columns(colIndex).HIDDEN = hideCol
   SetStatus indexValue, showValue
   listObject.Clear
   listObject.List = formRng.Value
@@ -556,7 +554,7 @@ Private Sub ChangeColWidth(ByVal indexValue As Long)
     inputValue = InputBox(trads.TranslatedValue("MSG_ColWidth"), trads.TranslatedValue("MSG_Enter"))
     If (inputValue = vbNullString) Then Exit Sub
     If IsNumeric(inputValue) Then Exit Do
-    If (MsgBox (trads.TranslatedValue("MSG_EnterNumeric"), vbOkCancel, vbNullString) = vbCancel) Then Exit Sub
+    If (MsgBox(trads.TranslatedValue("MSG_EnterNumeric"), vbOkCancel, vbNullString) = vbCancel) Then Exit Sub
   Loop
 
   On Error Resume Next
@@ -587,9 +585,9 @@ End Sub
 
 Private Function LoExists(ByVal loName As String) As Boolean
 
-  Dim Lo As ListObject
+  Dim Lo As listObject
   Dim sh As Worksheet
-  Set sh = TempSheet()
+  Set sh = TEMPSHEET()
   On Error Resume Next
     Set Lo = sh.ListObjects(loName)
   On Error GoTo 0
@@ -605,14 +603,14 @@ Private Sub ILLShowHide_Load(ByVal tradsform As ITranslation)
    Load tradsform
 End Sub
 
-Private Sub ILLShowHide_UpdateVisibilityStatus(ByVal index As Long)
-   UpdateVisibility indexValue:=(index + 1)
+Private Sub ILLShowHide_UpdateVisibilityStatus(ByVal Index As Long)
+   UpdateVisibility indexValue:=(Index + 1)
 End Sub
 
-Private Sub ILLShowHide_ShowHideLogic(ByVal index As Long)
- ShowHideLogic indexValue:=(index + 1)
+Private Sub ILLShowHide_ShowHideLogic(ByVal Index As Long)
+ ShowHideLogic indexValue:=(Index + 1)
 End Sub
 
-Private Sub ILLShowHide_ChangeColWidth(ByVal index As Long)
-  ChangeColWidth indexValue:=(index + 1)
+Private Sub ILLShowHide_ChangeColWidth(ByVal Index As Long)
+  ChangeColWidth indexValue:=(Index + 1)
 End Sub

@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Specifications for exports in the linelist"
 
-
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Specifications for exports in the linelist")
@@ -21,11 +21,11 @@ Private Type TExpOut
   outwb As Workbook 'Output workbook
   inpwb As Workbook 'Input workbook
   scope As Byte 'The scope of the export: export 1 to 5 or export for migration
-  folderpath As String 'where to save the exports
+  folderPath As String 'where to save the exports
   folderSet As Boolean 'Is the path to save the exports set?
   outgeowb As Workbook 'Output geo workbook
   outgeohistwb As Workbook 'Output for the geobase historic file
-End Type 
+End Type
 
 Private Const CLASSNAME                 As String = "OutputSpecs"
 Private Const DICTIONARYSHEET           As String = "Dictionary"
@@ -81,9 +81,9 @@ Private Property Get LLTradsObject() As ILLTranslations
   Dim currwb As Workbook
 
   Set currwb = InputWkb()
-  Set LLTradsObject = LLTranslations.Create( _ 
+  Set LLTradsObject = LLTranslations.Create( _
                           currwb.Worksheets(MESSTRANSLATIONSHEET), _
-                          currwb.Worksheets(DICTTRANSLATIONSHEET) _ 
+                          currwb.Worksheets(DICTTRANSLATIONSHEET) _
                         )
 End Property
 
@@ -96,7 +96,7 @@ Private Property Get OutputGeoWkb() As Workbook
     ActiveWindow.WindowState = xlMinimized
   End If
 
-  Set outputGeoWkb = this.outgeowb
+  Set OutputGeoWkb = this.outgeowb
 End Property
 
 'Geobase export workbook
@@ -108,7 +108,7 @@ Private Property Get OutputGeoHistoricWkb() As Workbook
     ActiveWindow.WindowState = xlMinimized
   End If
 
-  Set outputGeoHistoricWkb = this.outgeohistwb
+  Set OutputGeoHistoricWkb = this.outgeohistwb
 End Property
 
 
@@ -196,8 +196,8 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False)
     exportpcodes = (expobj.Value("export pcodes", CInt(scope)) = "yes")
 
     If Not exportpcodes Then
-      pcodesTagList.Push "geo_pcode_adm1", "geo_pcode_adm2", "geo_pcode_adm3", _ 
-                         "geo_pcode_adm4", "geo_concat_adm1", "geo_concat_adm2", _ 
+      pcodesTagList.Push "geo_pcode_adm1", "geo_pcode_adm2", "geo_pcode_adm3", _
+                         "geo_pcode_adm4", "geo_concat_adm1", "geo_concat_adm2", _
                          "geo_concat_adm3", "geo_concat_adm4"
 
       Set expNumberRng = dict.DataRange(expName)
@@ -213,9 +213,9 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False)
 
     'It is important to remove pcodes elements before filtering the linelist.
     'Filter the dictionary on only variables to includes in exports
-    Set dictData = dict.Data.FilterData(varName:=expName, _ 
-                                        criteriaName:="<>", _ 
-                                        returnedColumnName:="__all__", _ 
+    Set dictData = dict.Data.FilterData(varName:=expName, _
+                                        criteriaName:="<>", _
+                                        returnedColumnName:="__all__", _
                                         includeHeaders:=True)
     'The temporary sheet contains the dictionary for the exports
   ElseIf (scope = ExportAll) Then 'Here export is export for migration
@@ -270,7 +270,7 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False)
 End Sub
 
 'Export Analysis worksheet
-Private Sub AddAnalysis(ByVal prevSheet As String, _ 
+Private Sub AddAnalysis(ByVal prevSheet As String, _
                         ByVal outwb As Workbook, ByVal inpwb As Workbook)
 
   Dim sheetNamesList As BetterArray
@@ -283,7 +283,7 @@ Private Sub AddAnalysis(ByVal prevSheet As String, _
   prevSheetName = prevSheet
 
   'Add Analysis Worksheets for analysis Exports
-  sheetNamesList.Push lltrads.Value("uasheet"), lltrads.Value("tssheet"), _ 
+  sheetNamesList.Push lltrads.Value("uasheet"), lltrads.Value("tssheet"), _
                      lltrads.Value("spsheet"), lltrads.Value("sptsheet")
   
   For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
@@ -316,8 +316,8 @@ Private Sub AddMetaData(ByVal scope As Byte)
   Dim sheetName As String
   Dim exportColumn As String
   'Elements for adding custom choices to exports
-  Dim choi As ILLChoice
-  Dim Lo As ListObject
+  Dim choi As ILLchoice
+  Dim Lo As listObject
   Dim LoValues As BetterArray
   Dim lltrads As ILLTranslations
   Dim choiName As String
@@ -337,15 +337,15 @@ Private Sub AddMetaData(ByVal scope As Byte)
   Next
 
   'Add the dropdown choices for custom choices to export
-  Set choi = LLChoice.Create(outwb.Worksheets(CHOICESSHEET), 1, 1)
+  Set choi = LLchoice.Create(outwb.Worksheets(CHOICESSHEET), 1, 1)
   Set lltrads = LLTradsObject()
   Set LoValues = New BetterArray
   'Add each custom dropdown to the choice sheet
   On Error Resume Next
   Set sh = inpwb.Worksheets(lltrads.Value("customdropdown"))
-  For Each Lo in sh.ListObjects()
+  For Each Lo In sh.ListObjects()
     'Get the categories of the choice
-    LoValues.FromExcelRange Lo.Range.Cells(2, 1), DetectLastRow:=True, _ 
+    LoValues.FromExcelRange Lo.Range.Cells(2, 1), DetectLastRow:=True, _
             DetectLastColumn:=False
     choiName = "__choice_custom_" & Lo.Range.Cells(1, 1).Value
     choi.AddChoice choiName, LoValues
@@ -356,9 +356,9 @@ Private Sub AddMetaData(ByVal scope As Byte)
   Set sh = inpwb.Worksheets(DICTIONARYSHEET)
   Set dict = LLdictionary.Create(sh, 1, 1)
 
-  exportColumn = IIF(scope <> ExportAll, "export " & scope, "__all__")
-  dict.Export toWkb:=outwb, exportType:= exportColumn, _ 
-              addListObject:=False, Hide:=xlSheetVisible  
+  exportColumn = IIf(scope <> ExportAll, "export " & scope, "__all__")
+  dict.Export toWkb:=outwb, exportType:=exportColumn, _
+              addListObject:=False, Hide:=xlSheetVisible
 
   'Add informations on metadatasheet
   Set sh = outwb.Worksheets(METADATASHEET)
@@ -492,7 +492,7 @@ Private Sub AddVlistData(ByVal sheetName As String, ByVal headersList As BetterA
       If useLabels Then varName = inpsh.Range(varName).Offset(, -1).Value
     On Error GoTo 0
 
-    'Write values to output sheet. I don't know if it suceeded in getting 
+    'Write values to output sheet. I don't know if it suceeded in getting
     'the value from the input sheet, that is why I test it before proceeding,
     'otherwise do nothing
 
@@ -519,13 +519,13 @@ End Property
 Private Property Get ExportFolder() As String
   Dim io As IOSFiles
 
-  'Test if the folder has been set, in other case set it.  
-  If Not HasFolder() Then 
+  'Test if the folder has been set, in other case set it.
+  If Not HasFolder() Then
     Set io = OSFiles.Create()
     
     io.LoadFolder
     HasFolder = True
-    If Not io.HasValidFolder() Then 
+    If Not io.HasValidFolder() Then
       this.folderPath = vbNullString
     Else
       this.folderPath = io.Folder()
@@ -562,9 +562,9 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
   'In case there is a \ or / at the end of the folder path, remove it because
   'we will need to paste the file name further. On local disks like D:\ this should
   'avoid ending up with D:\\... as file Path.
-  If InStrRev(folderPath, Application.PathSeparator, _ 
+  If InStrRev(folderPath, Application.PathSeparator, _
      Len(folderPath)) = Len(folderPath) Then
-    folderPath = Left(folderPath, (Len(folderPath) - 1) )
+    folderPath = Left(folderPath, (Len(folderPath) - 1))
   End If
   
 
@@ -581,7 +581,7 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
   
 
 
-  filePath =  folderPath & Application.PathSeparator & fileName
+  filePath = folderPath & Application.PathSeparator & fileName
 
   fileExtension = expobj.Value(colName:="file format", exportNumber:=CInt(scope))
   If fileExtension = vbNullString Then fileExtension = "xlsx" 'Default extension is xlsx
@@ -598,7 +598,7 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
 
   'Prepare the output workbook (create required sheets, add metadata)
   If (scope <> ExportAna) Then
-    withAnalysis =  (expobj.Value("export analysis", CInt(scope)) = "yes") 
+    withAnalysis = (expobj.Value("export analysis", CInt(scope)) = "yes")
     Prepare withAnalysis
     'Add the Data to export worksheet
     AddData useFilters
@@ -617,7 +617,7 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
                  Password:=filePassword, _
                 ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     'Display the private password!
-    MsgBox trads.TranslatedValue("MSG_FileSaved") & Chr(10) & _
+    MsgBox trads.TranslatedValue("MSG_FileSaved") & chr(10) & _
            trads.TranslatedValue("MSG_Password") & filePassword
   Else
     'save with password
@@ -629,17 +629,17 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
     'Show message for only the other exports (not one for migration)
     If scope <> ExportAll Then
       'Display message that there is no password!
-      MsgBox trads.TranslatedValue("MSG_FileSaved") & Chr(10) & _
+      MsgBox trads.TranslatedValue("MSG_FileSaved") & chr(10) & _
             trads.TranslatedValue("MSG_NoPassword")
     End If
 
   End If
 
-  outwb.Close saveChanges:=False
+  outwb.Close savechanges:=False
 End Sub
 
 'Save the geobase
-Private Sub SaveGeo(ByVal geoObj As ILLGeo,  _ 
+Private Sub SaveGeo(ByVal geoObj As ILLGeo, _
                     Optional ByVal onlyHistoric As Boolean = False)
 
   Dim outwb As Workbook
@@ -661,10 +661,10 @@ Private Sub SaveGeo(ByVal geoObj As ILLGeo,  _
   geobaseName = geoObj.GeoNames("geobase")
   
   'Exported geobase name
-  If (geobaseName = VbNullString Or geobaseName = "geobase") Then geobaseName = "OUTBREAK-TOOLS-GEOBASE-UNKNOWN"
+  If (geobaseName = vbNullString Or geobaseName = "geobase") Then geobaseName = "OUTBREAK-TOOLS-GEOBASE-UNKNOWN"
 
   geobaseName = geobaseName & "_" & "export" & Format(Now, "yyyymmdd")
-  If onlyHistoric Then geobaseName = geobaseName & "_historic" 
+  If onlyHistoric Then geobaseName = geobaseName & "_historic"
 
   filePath = folderPath & Application.PathSeparator & geobaseName & ".xlsx"
 
@@ -676,15 +676,15 @@ Private Sub SaveGeo(ByVal geoObj As ILLGeo,  _
   CreateBackup:=False, _
   ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
 
-  outwb.Close saveChanges:=False 
+  outwb.Close savechanges:=False
 End Sub
 
 'Close everything in case of error
 Private Sub CloseAll()
   On Error Resume Next
-  this.outwb.Close saveChanges:=False
-  this.outgeowb.Close saveChanges:=False
-  this.outgeohistwb.Close saveChanges:=False
+  this.outwb.Close savechanges:=False
+  this.outgeowb.Close savechanges:=False
+  this.outgeohistwb.Close savechanges:=False
   On Error GoTo 0
 End Sub
 
@@ -697,7 +697,7 @@ Private Sub CheckRequirements(ByVal currwb As Workbook)
   Set sheetsArray = New BetterArray
 
   sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, DICTTRANSLATIONSHEET, _
-                   METADATASHEET, PASSWORDSHEET, TEMPSHEET, EXPORTSHEET, _ 
+                   METADATASHEET, PASSWORDSHEET, TEMPSHEET, EXPORTSHEET, _
                    MESSTRANSLATIONSHEET
 
   For counter = sheetsArray.LowerBound To sheetsArray.UpperBound
