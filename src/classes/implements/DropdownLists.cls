@@ -137,7 +137,7 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String)
             Set Wkb = .Parent
         End With
 
-        Wkb.NAMES.Add Name:=dropdownName, RefersToR1C1:="=" & loName & "[" & headerName & "]"
+        Wkb.Names.Add Name:=dropdownName, RefersToR1C1:="=" & loName & "[" & headerName & "]"
     End If
 End Sub
 
@@ -264,7 +264,7 @@ Private Sub Sort(ByVal listName As String, _
     Set rng = sh.ListObjects(loName).Range
 
     On Error Resume Next
-    rng.Sort key:=rng, ORDER:=sortOrder, Header:=xlYes
+    rng.Sort key1:=rng, ORDER:=sortOrder, Header:=xlYes
     On Error GoTo 0
 End Sub
 

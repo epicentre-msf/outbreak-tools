@@ -72,10 +72,15 @@ Private Function Contains(ByVal varName As String) As Boolean
     searchValue = Replace(searchValue, "#", "~#")
 
     Set varRng = VarRange()
-    If searchValue = vbNullString Then
+    If (searchValue = vbNullString) Then
         Exist = False
     Else
-        Exist = Not (varRng.Find(What:=searchValue, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
+        On Error Resume Next
+        Exist = Not (varRng.Find(What:=searchValue, _ 
+                                 LookAt:=xlWhole, _ 
+                                 MatchCase:=True) Is Nothing _ 
+                    )
+        On Error GoTo 0
     End If
 
     Contains = Exist
@@ -88,7 +93,7 @@ Private Function RowIndex(ByVal varName As String) As Long
     rowNum = -1
     Set varRng = VarRange()
     If Contains(varName) Then
-        rowNum = varRng.Find(What:=varName, lookAt:=xlWhole, MatchCase:=True).Row
+        rowNum = varRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True).Row
     End If
     RowIndex = rowNum
 End Function
