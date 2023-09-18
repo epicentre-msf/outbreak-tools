@@ -162,14 +162,17 @@ End Property
 Private Property Get HasPercent() As Boolean
     Select Case TableType
 
+    'spatio-temporal does not have percentages
     Case TypeGlobalSummary, TypeSpatioTemporal
         HasPercent = False
-    Case TypeUnivariate, TypeSpatial
+    Case TypeUnivariate
         HasPercent = (Value("percentage") = "yes")
     Case TypeBivariate
         HasPercent = (Value("percentage")) = "row" Or (Value("percentage") = "column") Or (Value("percentage") = "total")
     Case TypeTimeSeries
         HasPercent = ((Value("percentage")) = "row" Or (Value("percentage") = "column")) And HasTotal()
+    Case TypeSpatial
+        HasPercent = (Value("percentage") = "yes") And HasTotal()
     End Select
 End Property
 
