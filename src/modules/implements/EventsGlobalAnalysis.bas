@@ -52,7 +52,8 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
 
     Dim sh As Worksheet                        'The actual worksheet
     Dim filtsh As Worksheet                    'Filtered worksheet
-    Dim Lo As listObject
+    Dim Lo As ListObject
+    Dim filtCsTab As ICustomTable                'Filtered listObject custom table
     Dim destRng As Range
     Dim delRng As Range
     Dim LoRng As Range
@@ -76,20 +77,22 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
 
                 rowCounter = LoRng.Rows.Count
 
-                On Error Resume Next
-                    filtsh.ListObjects(1).DataBodyRange.Delete
-                On Error GoTo ErrUpdate
-
-                'Lo is the listObject
-                'LoRng is the listobject databodyrange in HList
-                'destRng is the listObject databodyrange in filtered sheet
                 With filtsh
+                    On Error Resume Next
+                        .ListObjects(1).DataBodyRange.Delete
+                    On Error GoTo ErrUpdate
+
+                    'Lo is the listObject
+                    'LoRng is the listobject databodyrange in HList
+                    'destRng is the listObject databodyrange in filtered sheet
+                
                     .ListObjects(1).Resize .Range(Lo.Range.Address)
                     'This is the dataBodyRange of the filtered sheet
                     Set destRng = .Range(LoRng.Address)
                     Set filtLoHrng = .ListObjects(1).HeaderRowRange
                     'Initialize the range to delete at the end of the table
                     Set delRng = Nothing
+                    Set filtCsTab = CustomTable.Create(.ListObjects(1))
                 End With
 
                 'move values to filtered sheet
@@ -107,6 +110,9 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
                 Loop
                 'Delete the range if necessary
                  If Not (delRng Is Nothing) Then delRng.Delete
+
+                'Resize the custom table on the filtered worksheet (remove completly empty rows)
+                filtCsTab.RemoveRows
             End If
         End If
     Next
