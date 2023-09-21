@@ -619,7 +619,6 @@ Private Sub AddFormulas()
 
             rowVar = specs.Value("time")
             colVar = specs.Value("column")
-            spTabType = specs.SpatialTableTypes()
             counter = 1
 
             'For spatio temporal, column variable could be either hf or geo.

@@ -45,22 +45,6 @@ Private Sub InitializeElements()
     End If
 End Sub
 
-' This function reverses a string using the | as separator, like in the final selection of the
-Private Function ReverseString(stringValue As String, _
-                               Optional ByVal separator As String = sep)
-    Dim tempTable As BetterArray 'Temporary table for data manipulation purposes
-
-    Set tempTable = New BetterArray
-    tempTable.Items = Split(stringValue, separator)
-    tempTable.Reverse
-    ReverseString = tempTable.ToString( _
-                            separator:=separator, _
-                            OpeningDelimiter:=vbNullString, _
-                            ClosingDelimiter:=vbNullString, _
-                            QuoteStrings:=False)
-End Function
-
-
 '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 'Search values in the search box
 'concatenateGeoTable is The concatenate data
@@ -177,14 +161,13 @@ Private Sub CMD_Copier_Click()
                 Application.EnableEvents = False
                 
                 sh.Range(cellRng, cellRng.Offset(, 3)).ClearContents
-                If tempTable.Length = 4 Then tempTable.Reverse
                 
                 tempTable.ToExcelRange Destination:=Range(ActiveCell.Address), _
                                     TransposeValues:=True
                 Application.EnableEvents = True
             End If
             
-            geo.UpdateHistoric ReverseString(selectedValue), GeoScopeAdmin
+            geo.UpdateHistoric selectedValue, GeoScopeAdmin
             
             'In Case we are dealing with the health facility
             '(basically the same thing with little modifications)
@@ -215,7 +198,7 @@ Private Sub CMD_Copier_Click()
             selectedValue = Application.WorksheetFunction.Trim(Replace(selectedValue, NACHAR, vbNullString))
             selectedValue = Application.WorksheetFunction.Trim(Replace(selectedValue, NACHARREV, vbNullString))
             tempTable.Items = Split(selectedValue, SEP)
-            If tempTable.Length < 4 Then tempTable.Reverse
+
             selectedValue = tempTable.ToString(separator:=SEP, OpeningDelimiter:=vbNullString, _
                                                ClosingDelimiter:=vbNullString, QuoteStrings:=False)
 
@@ -230,6 +213,7 @@ Private Sub CMD_Copier_Click()
 
         Me.TXT_Msg.Value = vbNullString
         Me.Hide
+        sh.UsedRange.WrapText = TRUE
         Exit Sub
     End Select
 
@@ -294,10 +278,10 @@ Private Sub LST_Adm4_Click()
     Dim selectedValue As String
 
     'SEP is a constant defined above, which is the separator
-    selectedValue = Me.LST_Adm4.Value & SEP & _
-                    Me.LST_Adm3.Value & SEP & _
+    selectedValue = Me.LST_Adm1.Value & SEP & _
                     Me.LST_Adm2.Value & SEP & _
-                    Me.LST_Adm1.Value
+                    Me.LST_Adm3.Value & SEP & _
+                    Me.LST_Adm4.Value
 
     Me.TXT_Msg.Value = selectedValue
 End Sub
@@ -327,7 +311,7 @@ End Sub
 
 'Those are trigerring event for the Histo
 Private Sub LST_Histo_Click()
-    Me.TXT_Msg.Value = ReverseString(Me.LST_Histo.Value, sep)
+    Me.TXT_Msg.Value = Me.LST_Histo.Value
 End Sub
 
 Private Sub LST_HistoF_Click()
