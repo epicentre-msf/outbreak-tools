@@ -805,8 +805,6 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String)
     grSpecs.CreateSeries
     Set gr = Graphs.Create(outsh, cellRng)
     gr.Add
-    
-    Debug.Print grSpecs.NumberOfSeries()
 
     'Add the graph
     For graphCounter = 1 To grSpecs.NumberOfSeries()
@@ -954,6 +952,7 @@ Private Sub WriteAnalysis()
   Exit Sub
 
 ErrHand:
+    Debug.Print "scope: " & scope
     Debug.Print "Error: " & Err.Number & " " & Err.Description
     Resume Next
 End Sub
