@@ -79,26 +79,30 @@ Public Function ComputedOnFiltered() As String
     Application.Volatile
     Dim sh As Worksheet
     Dim wb As Workbook
-    Dim warningInfo As String
     Dim Lo As listObject
-    Dim infoValue As String
+    Dim filtCounter As Long
 
     Set wb = ThisWorkbook
-    warningInfo = wb.Worksheets("LinelistTranslation").Range("RNG_OnFiltered").Value
 
     For Each sh In wb.Worksheets
         If sh.Cells(1, 3).Value = "HList" Then
             On Error Resume Next
                 Set Lo = sh.ListObjects(1)
-                If (Not Lo.AutoFilter Is Nothing) Then
-                    infoValue = warningInfo
-                    Exit For
-                End If
+                'Loop through all the filters in the listObject
+                With Lo.AutoFilter.Filters
+                    For filtCounter = 1 To .Count
+                        If .Item(filtCounter).On Then GoTo AddWarning
+                    Next
+                End With
             On Error GoTo 0
         End If
     Next
 
-    ComputedOnFiltered = infoValue
+    ComputedOnFiltered = vbNullString
+    Exit Function
+
+AddWarning:
+    ComputedOnFiltered = wb.Worksheets("LinelistTranslation").Range("RNG_OnFiltered").Value
 End Function
 
 'Epiweek function without specifying the year in select cases (works with all years)
@@ -417,16 +421,16 @@ Public Function GEOCONCAT(cellRng As Range, Level As Byte) As String
 
     Case 2
         nonEmptyValue = (Not IsEmpty(cellRng)) And (Not IsEmpty(cellRng.Offset(, 1)))
-        concatValue = IIf(nonEmptyValue, cellRng.Offset(, 1).Value & " | " & cellRng.Value, vbNullString)
+        concatValue = IIf(nonEmptyValue, cellRng.Value & " | " & cellRng.Offset(, 1).Value , vbNullString)
 
     Case 3
         nonEmptyValue = (Not IsEmpty(cellRng)) And (Not IsEmpty(cellRng.Offset(, 1))) And (Not IsEmpty(cellRng.Offset(, 2)))
-        concatValue = IIf(nonEmptyValue, cellRng.Offset(, 2).Value & " | " & cellRng.Offset(, 1).Value & " | " & cellRng.Value, vbNullString)
+        concatValue = IIf(nonEmptyValue, cellRng.Value & " | " &  cellRng.Offset(, 1).Value & " | " & cellRng.Offset(, 2).Value, vbNullString)
 
     Case 4
 
         nonEmptyValue = (Not IsEmpty(cellRng)) And (Not IsEmpty(cellRng.Offset(, 1))) And (Not IsEmpty(cellRng.Offset(, 2))) And (Not IsEmpty(cellRng.Offset(, 3)))
-        concatValue = IIf(nonEmptyValue, cellRng.Offset(, 3).Value & " | " & cellRng.Offset(, 2).Value & " | " & cellRng.Offset(, 1).Value & " | " & cellRng.Value, vbNullString)
+        concatValue = IIf(nonEmptyValue, cellRng.Value & " | " & cellRng.Offset(, 1).Value & " | " & cellRng.Offset(, 2).Value & " | " & cellRng.Offset(, 3).Value, vbNullString)
 
     Case Else
 

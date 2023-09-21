@@ -614,28 +614,28 @@ Private Sub Import(ByVal fromWkb As Workbook, Optional ByVal histoOnly As Boolea
 
                 Case "T_ADM2"
 
-                    concatFormula = "=" & impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
+                    concatFormula = "=" & impRng.Cells(1, 1).Address(Rowabsolute:=False) & _
                                                                                          sep & _
-                                                                                         impRng.Cells(1, 1).Address(Rowabsolute:=False)
+                                                                                         impRng.Cells(1, 2).Address(Rowabsolute:=False)
                 Case "T_ADM3"
 
                     concatFormula = "=" & _
-                                    impRng.Cells(1, 3).Address(Rowabsolute:=False) & _
+                                    impRng.Cells(1, 1).Address(Rowabsolute:=False) & _
                                     sep & _
                                     impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
                                     sep & _
-                                    impRng.Cells(1, 1).Address(Rowabsolute:=False)
+                                    impRng.Cells(1, 3).Address(Rowabsolute:=False)
 
                 Case "T_ADM4"
 
                     concatFormula = "=" & _
-                                    impRng.Cells(1, 4).Address(Rowabsolute:=False) & _
-                                    sep & _
-                                    impRng.Cells(1, 3).Address(Rowabsolute:=False) & _
+                                    impRng.Cells(1, 1).Address(Rowabsolute:=False) & _
                                     sep & _
                                     impRng.Cells(1, 2).Address(Rowabsolute:=False) & _
                                     sep & _
-                                    impRng.Cells(1, 1).Address(Rowabsolute:=False)
+                                    impRng.Cells(1, 3).Address(Rowabsolute:=False) & _
+                                    sep & _
+                                    impRng.Cells(1, 4).Address(Rowabsolute:=False)
 
                 Case "T_HF"
 

@@ -586,7 +586,7 @@ Private Sub AddHeader()
     tablType = specs.TableType
 
     sptGeorngTag = "INPUTSPTGEO_"
-    If specs.Value("Section Type") = "hf" Then  sptGeorngTag = "INPUTSPTHF_"
+    If specs.Value("section type") = "hf" Then  sptGeorngTag = "INPUTSPTHF_"
 
     With sh
         Select Case tablType
