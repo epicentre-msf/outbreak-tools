@@ -89,6 +89,7 @@ End Property
 
 'Resize a table
 Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
+                   Optional ByVal insertShift As Boolean = True, _
                   Optional ByVal totalRowCount As Long = 0, _
                   Optional ByVal nbRows As Long = NBROWSADD)
   Dim Lo As listObject
@@ -114,10 +115,12 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
     loColsEnd = loColHeader + Lo.Range.Columns.Count - 1
     rowCounter = loRowsEnd
     If AddRows Then
-      loRowsEnd = loRowsEnd + 1 'Start at the bottom of the table
-      For rowCounter = 1 To nbRows + 1
-            .Rows(loRowsEnd).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
-      Next
+      If insertShift Then 
+        loRowsEnd = loRowsEnd + 1 'Start at the bottom of the table
+        For rowCounter = 1 To nbRows + 1
+              .Rows(loRowsEnd).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+        Next
+      End If
       loRowsEnd = loRowsEnd + nbRows
       Lo.Resize .Range(.Cells(loRowHeader, loColHeader), .Cells(loRowsEnd, loColsEnd))
       AddIds
@@ -333,7 +336,8 @@ End Sub
 'Import another custom table to this one
 Private Sub Import(ByVal impTab As Object, _
                    Optional ByVal pasteAtBottom As Boolean = False, _
-                   Optional ByVal strictColumnSearch As Boolean = False)
+                   Optional ByVal strictColumnSearch As Boolean = False, _ 
+                   Optional ByVal insertShift As Boolean = True)
 
   Dim imphRng As Range
   Dim headerValue As String
@@ -391,7 +395,7 @@ Private Sub Import(ByVal impTab As Object, _
       
       'Resize to fit the number of required rows if needed
       If (nbImpRows > currDataRng.Rows.Count) And Not (pasteAtBottom) Then
-        Resize AddRows:=True, nbRows:=(nbImpRows - currDataRng.Rows.Count)
+        Resize AddRows:=True, nbRows:=(nbImpRows - currDataRng.Rows.Count), insertShift:=insertShift
         Set currDataRng = DataRange(headerValue)
       End If
 
@@ -598,8 +602,13 @@ Private Sub SortElements(ByVal els As Variant)
   Next
 End Sub
 
-Private Sub ICustomTable_AddRows(Optional ByVal nbRows As Long = 100)
-  Resize AddRows:=True, nbRows:=nbRows
+'On Linelist, there are not stacked listObjects on one worksheet,
+'So there is no need to insert shifts like in analysis custom table. Inserting
+'shifts is time consuming.
+Private Sub ICustomTable_AddRows(Optional ByVal nbRows As Long = 100, _ 
+                                 Optional Byval insertShift As Boolean = False)
+
+  Resize AddRows:=True, nbRows:=nbRows, insertShift:=insertShift
 End Sub
 
 Private Sub ICustomTable_RemoveRows(Optional ByVal totalCount As Long = 0)
@@ -651,8 +660,9 @@ End Sub
 Private Sub ICustomTable_Import( _
               ByVal impTab As Object, _
               Optional ByVal pasteAtBottom As Boolean = False, _
-              Optional ByVal strictColumnSearch As Boolean = False)
-  Import impTab, pasteAtBottom, strictColumnSearch
+              Optional ByVal strictColumnSearch As Boolean = False, _
+              Optional ByVal insertShift As Boolean = True)
+  Import impTab, pasteAtBottom, strictColumnSearch, insertShift
 End Sub
 
 Private Property Get ICustomTable_ImportColumnsNotFound() As BetterArray

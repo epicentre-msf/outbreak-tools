@@ -352,6 +352,7 @@ Public Sub ClickAddRows()
     Exit Sub
 
 errAddRows:
+    On Error Resume Next
     NotBusyApp
     Application.EnableEvents = True
     MsgBox tradsmess.TranslatedValue("MSG_ErrAddRows"), _
@@ -372,7 +373,7 @@ Public Sub ClickResize()
     Dim nbBlank As Long
 
     On Error GoTo errDelRows
-    BusyApp cursor:=xlNorthwestArrow
+    BusyApp cursor:=xlWait
     InitializeTrads
     pass.UnProtect "_active"
 
@@ -400,6 +401,7 @@ Public Sub ClickResize()
     Exit Sub
 
 errDelRows:
+    On Error Resume Next
     NotBusyApp
     Application.EnableEvents = True
     MsgBox tradsmess.TranslatedValue("MSG_ErrDelRows"), _
@@ -496,6 +498,7 @@ Public Sub ClickExport()
     Exit Sub
 
 errLoadExp:
+    On Error Resume Next
     MsgBox tradsmess.TranslatedValue("MSG_ErrLoadExport"), _
            vbOKOnly + vbCritical, _
            tradsmess.TranslatedValue("MSG_Error")
