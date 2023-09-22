@@ -101,6 +101,8 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
   Dim loRowsEnd As Long
   Dim loColsEnd As Long
   Dim sh As Worksheet
+  Dim delRng As Range
+
   Set sh = Wksh()
   Set Lo = Table()
 
@@ -125,14 +127,23 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
       Lo.Resize .Range(.Cells(loRowHeader, loColHeader), .Cells(loRowsEnd, loColsEnd))
       AddIds
     Else
+
       Do While (rowCounter > loRowHeader)
         If (Application.WorksheetFunction.COUNTA(.Rows(rowCounter)) <= totalRowCount) Then
-          .Rows(rowCounter).EntireRow.Delete
+          
+          If (delRng Is Nothing) Then
+            Set delRng = .Rows(rowCounter)
+          Else
+            Set delRng = Application.Union(delRng, .Rows(rowCounter))
+          End If
           'update the end rows
           loRowsEnd = loRowsEnd - 1
         End If
         rowCounter = rowCounter - 1
       Loop
+      'Delete the range if necessary
+      If Not (delRng Is Nothing) Then delRng.Delete
+      'Resize the new listObject
       loRowsEnd = Application.WorksheetFunction.Max(loRowsEnd, loRowHeader + 1)
       Lo.Resize .Range(.Cells(loRowHeader, loColHeader), .Cells(loRowsEnd, loColsEnd))
     End If
@@ -504,6 +515,7 @@ Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray)
     
     If ColumnExists(headerName, strictSearch:=True) Then
       Set inpRng = DataRange(headerName, strictSearch:=True, includeHeaders:=True)
+      inpRng.Calculate
       
       With sh
         Set outrng = .Range(.Cells(1, headerCounter), .Cells(inpRng.Rows.Count, headerCounter))
