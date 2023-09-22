@@ -209,13 +209,14 @@ Public Sub EventValueChangeLinelist(Target As Range)
     'Update variables with editable column
     If (Target.Row = startLine - 2) Then
 
+        Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
+        Set vars = LLVariables.Create(dict)
+
         varName = sh.Cells(startLine - 1, targetColumn).Value
         varEditable = vars.Value(varName:=varName, colName:="editable label")
         
         If (varEditable <> "yes") Then Exit Sub
 
-        Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
-        Set vars = LLVariables.Create(dict)
             
         'The name of custom variables has been updated, update the dictionary
         varSubLabel = vars.Value(varName:=varName, colName:="sub label")

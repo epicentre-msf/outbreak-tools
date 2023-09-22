@@ -499,22 +499,25 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
     'Add the metadata sheet
     outputWkb.Worksheets.Add.Name = METADATASHEET
     Set outsh = outputWkb.Worksheets(METADATASHEET)
-    Set rng = sh.ListObjects("T_" & METADATA).Range
+    Set rng = sh.ListObjects("T_" & METADATA).Range.Offset(1)
 
     With outsh
-        Set expRange = .Range(.Cells(1, 1), .Cells(rng.Rows.Count, rng.Columns.Count))
-        expRange.Value = rng.Value
+        'variable and value
+        .Cells(1, 1).Value = "variable"
+        .Cells(1, 2).Value = "value"
 
         'Linelist language
-        .Cells(rng.Rows.Count + 1, 1).Value = "language"
-        .Cells(rng.Rows.Count + 1, 2).Value = sh.Range("RNG_MetaLang").Value
+        .Cells(2, 1).Value = "language"
+        .Cells(2, 2).Value = sh.Range("RNG_MetaLang").Value
 
         'Linelist creation date
-        .Cells(rng.Rows.Count + 2, 1).Value = "linelist_creation_date"
-        .Cells(rng.Rows.Count + 2, 2).Value = Format(Now, "yyyy-mm-dd Hh:Nn")
+        .Cells(3, 1).Value = "linelist_creation_date"
+        .Cells(3, 2).Value = Format(Now, "yyyy-mm-dd Hh:Nn")
 
+        Set expRange = .Range(.Cells(4, 1), .Cells(rng.Rows.Count, rng.Columns.Count))
+        expRange.Value = rng.Value
+        
         .Visible = xlSheetVeryHidden
-
     End With
 
     'Add the names to the output workbook
@@ -685,6 +688,8 @@ Private Sub Import(ByVal fromWkb As Workbook, Optional ByVal histoOnly As Boolea
     sh.Range("RNG_GeoName").Value = Replace(fromWkb.Name, ".xlsx", vbNullString)
     sh.Range("RNG_GeoUpdated").Value = "updated"
     Translate rawNames:=False
+
+    UpdateMetaData
 End Sub
 
 'Errors and checkings
@@ -901,6 +906,39 @@ Private Sub UpdateShowHide(ByVal sh As Worksheet, ByVal dict As ILLdictionary)
         Next
     Next
 
+End Sub
+
+Private Sub UpdateMetadata()
+
+    Const METADATASHEET As String = "Metadata"
+
+    Dim sh As Worksheet
+    Dim metash As Worksheet
+    Dim rng As Range
+    Dim expRng As Range
+    Dim lastRow As Long
+
+    'If there is no metadatasheet, this could result in error, just ignore
+    On Error GoTo EndUpdate
+
+    Set sh = Wksh()
+    Set metash = sh.Parent.Worksheets(METADATASHEET)
+    With metash
+        lastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+
+        If lastRow > 3 Then
+            'Clean from row 4
+            Set rng = .Range(.Cells(4, 1), .Cells(lastRow, 2))
+            rng.ClearContents
+        End If
+
+        'Add new metadata to the metadata sheet
+        Set rng = sh.ListObjects("T_" & METADATA).Range.Offset(1)
+        Set expRng = .Range(.Cells(4, 1), .Cells(rng.Rows.Count, rng.Columns.Count))
+        expRng.Value = rng.Value
+    End With
+
+EndUpdate:
 End Sub
 
 'Find the admin level given one admin name
