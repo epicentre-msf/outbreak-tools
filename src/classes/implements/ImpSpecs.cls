@@ -361,8 +361,9 @@ Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
         'of the imported worksheet. The function will find the last used rows
         'and this will be the last non empty row of the worksheet.
         'The last True value is for strict search for column names.
+        'Speed up without adding shift
         Set impTab = DataSheet.Create(impsh, 1, 1, True)
-        currTab.Import impTab, pasteAtBottom, True
+        currTab.Import impTab, pasteAtBottom, True, False
 
         'Test if variables are not imported, add them to the report
         If currTab.HasColumnsNotImported() Then

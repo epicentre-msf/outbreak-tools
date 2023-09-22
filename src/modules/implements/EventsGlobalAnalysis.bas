@@ -53,7 +53,6 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
     Dim sh As Worksheet                        'The actual worksheet
     Dim filtsh As Worksheet                    'Filtered worksheet
     Dim Lo As ListObject
-    Dim filtCsTab As ICustomTable                'Filtered listObject custom table
     Dim destRng As Range
     Dim delRng As Range
     Dim LoRng As Range
@@ -92,14 +91,13 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
                     Set filtLoHrng = .ListObjects(1).HeaderRowRange
                     'Initialize the range to delete at the end of the table
                     Set delRng = Nothing
-                    Set filtCsTab = CustomTable.Create(.ListObjects(1))
                 End With
 
                 'move values to filtered sheet
                 destRng.Value = LoRng.Value
 
                 Do While rowCounter >= 1
-                    If LoRng.Cells(rowCounter, 1).EntireRow.HIDDEN Then
+                    If (LoRng.Cells(rowCounter, 1).EntireRow.HIDDEN) Or IsEmpty(filtLoHrng.Offset(rowCounter)) Then
                         If delRng Is Nothing Then
                             Set delRng = filtLoHrng.Offset(rowCounter)
                         Else
@@ -110,9 +108,6 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
                 Loop
                 'Delete the range if necessary
                  If Not (delRng Is Nothing) Then delRng.Delete
-
-                'Resize the custom table on the filtered worksheet (remove completly empty rows)
-                filtCsTab.RemoveRows
             End If
         End If
     Next
