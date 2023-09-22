@@ -428,7 +428,6 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
         'ListObject on printed sheet the
         Set Lo = inpwb.Worksheets(inpsh.Cells(1, 5).Value).ListObjects(1)
       Else
-        inpsh.UsedRange.Calculate
         Set Lo = inpsh.ListObjects(1)
       End If
 
@@ -450,7 +449,6 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
     ElseIf (inpsh.Cells(1, 3).Value = "VList") Then
 
       'Add VlistData
-      inpsh.UsedRange.Calculate
       AddVlistData sheetName, headersList, useLabels
 
     End If
