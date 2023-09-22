@@ -52,7 +52,7 @@ End Sub
 
 Private Sub CreateExport(ByVal scope As Byte)
 
-    BusyApp cursor:=xlNorthwestArrow
+    BusyApp cursor:=xlWait
     
     'Add Error management
     On Error GoTo ErrHand
