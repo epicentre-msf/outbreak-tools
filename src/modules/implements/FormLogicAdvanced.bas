@@ -61,12 +61,23 @@ Private Sub CMD_ExportData_Click()
     ClickExportMigration
 End Sub
 
+
 'Import Migration Data
 Private Sub CMD_ImportData_Click()
     Dim impObj As IImpSpecs
     Set impObj = ImpSpecs.Create([F_ImportRep], Me, currwb)
 
     impObj.ImportMigration
+
+    'Update all the listAuto in the workbook
+    UpdateAllListAuto currwb
+End Sub
+
+Private Sub UpdateAllListAuto(ByVal wb As Workbook)
+    Dim sh As Worksheet
+    For Each sh in wb.Worksheets
+        If sh.Cells(1, 3) = "HList" Then UpdateListAuto sh
+    Next
 End Sub
 
 'Import the Geobase
