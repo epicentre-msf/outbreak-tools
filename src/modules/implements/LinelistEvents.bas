@@ -54,9 +54,11 @@ Private Function GetUniqueBA(inputTable As BetterArray, _
     If inputTable.Length > 0 Then
         For counter = inputTable.LowerBound To inputTable.UpperBound
 
+            On Error Resume Next
             tableValue = Application.WorksheetFunction.Trim( _
                                 inputTable.Item(counter) _
                         )
+            On Error GoTo 0
 
             If (tableValue <> vbNullString) And _
                (Not Outable.Includes(tableValue)) Then _
@@ -318,6 +320,7 @@ ErrHand:
 End Sub
 
 'Update the list Auto of one Sheet
+'@EntryPoint
 Public Sub UpdateListAuto(ByVal sh As Worksheet)
 
     Dim varName As String
@@ -325,6 +328,8 @@ Public Sub UpdateListAuto(ByVal sh As Worksheet)
     Dim arrTable As BetterArray
     Dim cellRng As Range
     Dim tablename As String
+
+    If wb Is Nothing Then Set wb = ThisWorkbook
 
     Set arrTable = New BetterArray
     Set drop = DropdownLists.Create(wb.Worksheets(DROPDOWNSHEET))

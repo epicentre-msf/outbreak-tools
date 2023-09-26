@@ -30,7 +30,7 @@ End Function
 '@EntryPoint
 Public Function VALUE_OF(rng As Range, rngLook As Range, rngVal As Range) As Variant
 
-    'Application.Volatile
+    Application.Volatile
 
     Dim sValLook As String
     Dim sSheetLook As String                     'Sheet name where to look for values
@@ -71,7 +71,11 @@ Public Function VALUE_OF(rng As Range, rngLook As Range, rngVal As Range) As Var
 
      End If
 
-   VALUE_OF = retMatch
+    If IsError(retMatch) Then
+        VALUE_OF = vbNullString
+    Else
+        VALUE_OF = retMatch
+    End If
 End Function
 
 '@EntryPoint

@@ -374,7 +374,7 @@ Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
         End If
 
         'Resize the listObject
-        currTab.RemoveRows totalCount:=nbBlank
+        'currTab.RemoveRows totalCount:=nbBlank
         
         'Add the list of variables from the imported Datasheet
         impHeadersList.Clear

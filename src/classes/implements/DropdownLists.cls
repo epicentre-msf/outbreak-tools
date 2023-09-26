@@ -264,7 +264,7 @@ Private Sub Sort(ByVal listName As String, _
     Set rng = sh.ListObjects(loName).Range
 
     On Error Resume Next
-    rng.Sort key1:=rng, ORDER:=sortOrder, Header:=xlYes
+    rng.Sort key1:=rng, Order1:=sortOrder, Header:=xlYes
     On Error GoTo 0
 End Sub
 
