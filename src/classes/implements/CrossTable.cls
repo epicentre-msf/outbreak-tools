@@ -586,7 +586,7 @@ Private Sub AddHeader()
     tablType = specs.TableType
 
     sptGeorngTag = "INPUTSPTGEO_"
-    If specs.Value("section type") = "hf" Then  sptGeorngTag = "INPUTSPTHF_"
+    If specs.Value("spatial type") = "hf" Then  sptGeorngTag = "INPUTSPTHF_"
 
     With sh
         Select Case tablType
@@ -713,8 +713,8 @@ Private Sub AddHeader()
                 timeUnitName = "TIME_UNIT_LIST"
                 If tablType = TypeSpatioTemporal Then timeUnitName = "SP" & timeUnitName
 
+                Set cellRng = .Cells(1, 26)
                 If (Not RangeExists(timeUnitName)) Then
-                    Set cellRng = .Cells(1, 26)
                     cellRng.Cells(1, 1).Value = trans.TranslatedValue("MSG_Day")
                     cellRng.Cells(2, 1).Value = trans.TranslatedValue("MSG_Week")
                     cellRng.Cells(3, 1).Value = trans.TranslatedValue("MSG_Month")
@@ -1305,7 +1305,9 @@ Private Sub Format(ByVal desFormat As ILLFormat)
 
         'The end table for gap for graphs ======================================
 
-        If RangeExists("ENDTABLE_" & tabId) Then
+        If RangeExists("ENDTABLE_" & tabId) And _ 
+          (tablType <> TypeTimeSeries) And _ 
+          (tablType <> TypeSpatioTemporal) Then
             Set rng = .Range("ENDTABLE_" & tabId)
             DesignFormat.ApplyFormat rng, scope:=AnalysisEndTable
         End If

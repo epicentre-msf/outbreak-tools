@@ -769,7 +769,7 @@ Private Sub AddFormulas()
                     If spTabType = "geo" Then
                         rngLab.Formula = "= INPUTSPTGEO_" & counter & "_" & secId
                     Else
-                        rngLab.Formula = "= INPUTSPTHF_" & secId
+                        rngLab.Formula = "= INPUTSPTHF_" & counter & "_" & secId
                     End If                
                     counter = counter + 1
                 End If

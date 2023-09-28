@@ -58,10 +58,12 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
     Dim LoRng As Range
     Dim rowCounter As Long
     Dim filtLoHrng As Range 'HeaderRowRange of listObject on filtered sheet
+    Dim wsFunc As WorksheetFunction
 
     On Error GoTo ErrUpdate
 
     InitializeTrads
+    Set wsFunc = Application.WorksheetFunction
 
     BusyApp cursor:=xlNorthwestArrow
 
@@ -97,7 +99,8 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
                 destRng.Value = LoRng.Value
 
                 Do While rowCounter >= 1
-                    If (LoRng.Cells(rowCounter, 1).EntireRow.HIDDEN) Or IsEmpty(filtLoHrng.Offset(rowCounter)) Then
+                    If (LoRng.Cells(rowCounter, 1).EntireRow.HIDDEN) Or _ 
+                        (wsFunc.CountA(filtLoHrng.Offset(rowCounter)) = 0) Then
                         If delRng Is Nothing Then
                             Set delRng = filtLoHrng.Offset(rowCounter)
                         Else
