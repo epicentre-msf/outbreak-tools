@@ -339,18 +339,13 @@ Private Property Get Data(ByVal rowOrCol As String) As BetterArray
 
     'for SpatioTemporal data, change the column categories
     If (TableType = TypeSpatioTemporal) And (rowOrCol = "column") Then
-        If SpatialTableTypes() = "geo" Then
-            nbGeo = 5
-            On Error Resume Next
-            nbGeo = CLng(Value("n geo"))
-            On Error GoTo 0
-            For counter = 1 To nbGeo
-                varsCat.Push vbNullString
-            Next
-        Else
-            'For health facilities, just push one column
+        nbGeo = 5
+        On Error Resume Next
+        nbGeo = CLng(Value("n geo"))
+        On Error GoTo 0
+        For counter = 1 To nbGeo
             varsCat.Push vbNullString
-        End If
+        Next
     ElseIf vars.Contains(nameVar) Then
         Set varsCat = lData.Categories(nameVar)
     End If
