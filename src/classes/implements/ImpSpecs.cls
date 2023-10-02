@@ -414,6 +414,7 @@ Private Sub ClearData()
   Dim labelRng As Range
   Dim valueRng As Range
   Dim hasFormula As Boolean
+  Dim counter As Long
 
   Set pass = PasswordsObject()
   Set currwb = CurrentWorkbook()
@@ -429,9 +430,25 @@ Private Sub ClearData()
 
       pass.UnProtect sh.Name
       Set Lo = sh.ListObjects(1)
-      If Not Lo.DataBodyRange Is Nothing Then Lo.DataBodyRange.Delete
-      pass.Protect sh.Name
+      'Deleting the databody range of a listObject removes all formulas
+      'we need to make sure we could delete values in a range before proceeding
+      If Not Lo.DataBodyRange Is Nothing Then
+        For counter = 1 To Lo.DataBodyRange.Columns.Count
+          Set valueRng = Lo.ListColumns(counter).DataBodyRange
+          On Error Resume Next
+            hasFormula = (CStr(valueRng.Cells(1, 1).formula) <> CStr(valueRng.Cells(1, 1).Value))
+          On Error GoTo 0
+          If Not hasFormula Then valueRng.ClearContents
+        Next
 
+        'Now resize the listObject after cleaning non formula cells
+        With sh
+          Lo.Resize .Range(Lo.Range.Cells(1, 1), _ 
+                           Lo.Range.Cells(2, Lo.Range.Columns.Count))
+        End With
+      End If
+      pass.Protect sh.Name
+      
     Case "VList"
       
       pass.UnProtect sh.Name

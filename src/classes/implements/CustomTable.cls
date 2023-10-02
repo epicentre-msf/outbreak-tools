@@ -388,7 +388,10 @@ Private Sub Import(ByVal impTab As Object, _
   startPastingRow = 1
 
   If pasteAtBottom Then
+    'DataBodyRange could be Nothing, in that case, the startPastingRow is 1.
+    On Error Resume Next
     startPastingRow = Table.DataBodyRange.Rows.Count + 1
+    On Error GoTo 0
     Resize AddRows:=True, nbRows:=impTab.DataRange.Rows.Count
   End If
 
