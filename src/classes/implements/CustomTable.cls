@@ -400,17 +400,17 @@ Private Sub Import(ByVal impTab As Object, _
 
     If ColumnExists(headerValue, strictColumnSearch) Then
       If (TypeName(impTab) = "CustomTable") Then
-        Set impDataRng = impTab.DataRange(colName:=headerValue, strictSearch:=True)
+        Set impDataRng = impTab.DataRange(colName:=headerValue, strictSearch:=strictColumnSearch)
       Else
         Set impDataRng = impTab.DataRange(headerValue)
       End If
-      Set currDataRng = DataRange(headerValue)
+      Set currDataRng = DataRange(colName:=headerValue, strictSearch:=strictColumnSearch)
       nbImpRows = impDataRng.Rows.Count
       
       'Resize to fit the number of required rows if needed
       If (nbImpRows > currDataRng.Rows.Count) And Not (pasteAtBottom) Then
         Resize AddRows:=True, nbRows:=(nbImpRows - currDataRng.Rows.Count), insertShift:=insertShift
-        Set currDataRng = DataRange(headerValue)
+        Set currDataRng = DataRange(colName:=headerValue, strictSearch:=strictColumnSearch)
       End If
 
       'Add values if the range does not contains formulas. If the range contains formulas, do nothing
