@@ -857,24 +857,38 @@ Public Sub ClickExportAnalysis()
     Exit Sub
 
 ErrHand:
+    On Error Resume Next
     MsgBox tradsmess.TranslatedValue("MSG_ErrHandExport"), _
             vbOKOnly + vbCritical, _
             tradsmess.TranslatedValue("MSG_Error")
     NotBusyApp
 End Sub
 
-
-'@Description("Add a custom using actual filtered data on HList")
+'@Description("Import new data in the linelist")
 '@EntryPoint
-Public Sub ClickAddCustomFilter()
-    Attribute ClickAddCustomFilter.VB_Description = "Add a custom using actual filtered data on HList"
+Public Sub clickImportData(ByRef Control As IRibbonControl)
+    Attribute clickImportData.VB_Description = "Import new data in the linelist"
+    
+    Dim impObj As IImpSpecs
+    Dim currwb As Workbook
 
+    Set currwb = ThisWorkbook
+    Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], currwb)
+    impObj.ImportMigration
+
+    'Update all the listAuto in the workbook
+    UpdateAllListAuto currwb
 End Sub
 
-'@Description("Load the custom filters form")
+'@Description("Import a new geobase in the linelist")
 '@EntryPoint
-Public Sub ClickCustomFilter()
-    Attribute ClickCustomFilter.VB_Description = "Load the custom filters form"
+Public Sub clickImportGeobase(ByRef Control As IRibbonControl)
+    Attribute clickImportGeobase.VB_Description = "Import a new geobase in the linelist"
     
+    Dim impObj As IImpSpecs
+    Dim currwb As Workbook
+
+    Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], currwb)
+    impObj.ImportGeobase
 End Sub
 

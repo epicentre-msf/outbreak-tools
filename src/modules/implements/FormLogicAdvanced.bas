@@ -73,13 +73,6 @@ Private Sub CMD_ImportData_Click()
     UpdateAllListAuto currwb
 End Sub
 
-Private Sub UpdateAllListAuto(ByVal wb As Workbook)
-    Dim sh As Worksheet
-    For Each sh in wb.Worksheets
-        If sh.Cells(1, 3) = "HList" Then UpdateListAuto sh
-    Next
-End Sub
-
 'Import the Geobase
 Private Sub CMD_ImportGeo_Click()
     Dim impObj As IImpSpecs

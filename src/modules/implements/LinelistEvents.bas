@@ -365,6 +365,15 @@ Public Sub UpdateListAuto(ByVal sh As Worksheet)
     Loop
 End Sub
 
+'Update all the listAuto in the workbook
+'@EntryPoint
+Public Sub UpdateAllListAuto(ByVal wb As Workbook)
+    Dim sh As Worksheet
+    For Each sh in wb.Worksheets
+        If sh.Cells(1, 3) = "HList" Then UpdateListAuto sh
+    Next
+End Sub
+
 
 Public Sub EventValueChangeVList(Target As Range)
 

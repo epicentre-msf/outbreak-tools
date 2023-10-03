@@ -413,7 +413,6 @@ Private Sub ClearData()
   Dim actsh As Worksheet 'current active sheet
   Dim labelRng As Range
   Dim valueRng As Range
-  Dim hasFormula As Boolean
   Dim counter As Long
 
   Set pass = PasswordsObject()
@@ -433,20 +432,15 @@ Private Sub ClearData()
       'Deleting the databody range of a listObject removes all formulas
       'we need to make sure we could delete values in a range before proceeding
       If Not Lo.DataBodyRange Is Nothing Then
+
         For counter = 1 To Lo.DataBodyRange.Columns.Count
           Set valueRng = Lo.ListColumns(counter).DataBodyRange
-          On Error Resume Next
-            hasFormula = (CStr(valueRng.Cells(1, 1).formula) <> CStr(valueRng.Cells(1, 1).Value))
-          On Error GoTo 0
-          If Not hasFormula Then valueRng.ClearContents
+          If Not valueRng.Cells(1, 1).HasFormula Then valueRng.ClearContents
         Next
 
-        'Now resize the listObject after cleaning non formula cells
-        With sh
-          Lo.Resize .Range(Lo.Range.Cells(1, 1), _ 
-                           Lo.Range.Cells(2, Lo.Range.Columns.Count))
-        End With
+        Lo.Range.Calculate
       End If
+
       pass.Protect sh.Name
       
     Case "VList"
@@ -457,13 +451,11 @@ Private Sub ClearData()
       Set labelRng = sh.Cells(4, 4)
       Do While Not IsEmpty(labelRng)
         Set valueRng = labelRng.Offset(, 1)
-        hasFormula = True
-        On Error Resume Next
-         hasFormula = (CStr(valueRng.formula) <> CStr(valueRng.Value))
-        On Error GoTo 0
-        If Not hasFormula Then valueRng.ClearContents
+        If Not valueRng.HasFormula Then valueRng.ClearContents
         Set labelRng = labelRng.Offset(1)
       Loop
+
+      sh.UsedRange.Calculate
       pass.Protect sh.Name
 
     End Select
