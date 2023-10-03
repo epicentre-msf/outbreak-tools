@@ -121,6 +121,8 @@ Private Sub CMD_Copier_Click()
     Dim calcRng As Range 'Range to calculate
     Dim sheetTag As String
     Dim cellName As String
+    Dim selectedRng As Range 'Selected Range to fill the values with
+    Dim nbLines As Long
     
     On Error GoTo ErrGeo
     InitializeElements
@@ -134,6 +136,10 @@ Private Sub CMD_Copier_Click()
     End If
 
     Set cellRng = ActiveCell 'First cell for a geo value
+    On Error Resume Next
+        Set selectedRng = Selection
+    On Error GoTo 0
+
     Set sh = ActiveSheet 'Linelist sheet
     sheetTag = sh.Cells(1, 3).Value
 
@@ -162,8 +168,18 @@ Private Sub CMD_Copier_Click()
                 
                 sh.Range(cellRng, cellRng.Offset(, 3)).ClearContents
                 
-                tempTable.ToExcelRange Destination:=Range(ActiveCell.Address), _
-                                    TransposeValues:=True
+                'Test if a range has been selected and fill all selected value
+                If Not (selectedRng Is Nothing) Then
+                        nbLines = 1
+                        Do While (nbLines <= selectedRng.Rows.Count)
+                            'For each rows in the selection, add the values
+                            tempTable.ToExcelRange Destination:=selectedRng.Cells(nbLines, 1), TransposeValues:=True
+                            nbLines = nbLines + 1
+                        Loop
+                Else
+                    tempTable.ToExcelRange Destination:=cellRng, TransposeValues:=True
+                End If
+
                 Application.EnableEvents = True
             End If
             
@@ -174,9 +190,18 @@ Private Sub CMD_Copier_Click()
         Case GeoScopeHF
             
             Application.EnableEvents = False
-            cellRng.Value = selectedValue
+
+            If Not (selectedRng Is Nothing) Then
+                nbLines = 1
+                Do While (nbLines <= selectedRng.Rows.Count)
+                    selectedRng.Cells(nbLines, 1).Value = selectedValue
+                    nbLines = nbLines + 1
+                Loop
+            Else
+                cellRng.Value = selectedValue
+            End If
+
             Application.EnableEvents = True
-            
             geo.UpdateHistoric selectedValue, GeoScopeHF
         End Select
 
@@ -213,6 +238,7 @@ Private Sub CMD_Copier_Click()
 
         Me.TXT_Msg.Value = vbNullString
         Me.Hide
+        sh.UsedRange.Calculate
         sh.UsedRange.WrapText = TRUE
         Exit Sub
     End Select
