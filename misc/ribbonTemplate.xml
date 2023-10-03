@@ -11,20 +11,22 @@
                     <button id="btnRemFilt" getLabel="getLLLang" imageMso="FilterClearAllFilters" size="large" onAction="clickRibbonRemoveFilter"/>
                     <button id="btnSortTab" getLabel="getLLLang" image="sort" size="large" onAction="clickRibbonSortTable"/>
                 </group>
-                <group id="customGroupTabGeo" getLabel="getLLLang">
+                <group id="customGroupVarLab">
+                    <button id="btnOpenLab" image="openvarlabels" size="large"  getLabel = "getLLLang" onAction="clickRibbonOpenVarLab"/>
+                </group>
+                <group id="customGroupTabGeo">
                     <button id="btnGeo" getLabel="getLLLang" image="globe" size="large" onAction="clickRibbonGeo"/>
                 </group>
-                <group id = "customGroupAdmin" getLabel = "getLLLang">
-                    <button id="btnExport"
-                    getLabel = "getLLLang" image="download" size="large" onAction="clickRibbonExport"/>
+                <group id="customGroupAna">
+                    <button id="btnCalc" imageMso="CalculateSheet" size="large" getLabel = "getLLLang" onAction="clickRibbonCalculate"/>
                 </group>
-                <group id="customGroupAna" getLabel="getLLLang">
-                    <button id="btnCalc" imageMso="CalculateSheet" size="large"
-            getLabel = "getLLLang" onAction="clickRibbonCalculate"/>
-                    <button id="btnExpAna" image="anaexport" size="large"
-                    getLabel = "getLLLang" onAction="clickRibbonExportAnalysis"/>
-                    <button id="btnOpenLab" image="openvarlabels" size="large"
-                getLabel = "getLLLang" onAction="clickRibbonOpenVarLab"/>
+                <group id="customGroupExport" getLabel="getLLLang">
+                    <button id="btnExport"  getLabel = "getLLLang" image="download" size="normal" onAction="clickRibbonExport"/>
+                    <button id="btnExpAna" image="anaexport" size="normal"  getLabel = "getLLLang" onAction="clickRibbonExportAnalysis"/>
+                </group>
+                <group id="customGroupImport" getLabel="getLLLang">
+                    <button id="btnImport"  getLabel = "getLLLang" image="import" size="normal" onAction="clickRibbonImport"/>
+                    <button id="btnImportGeo" image="importgeo" size="normal"  getLabel = "getLLLang" onAction="clickRibbonImportGeobase"/>
                 </group>
                 <group id="customGroupTabPrint" getLabel="getLLLang">
                     <button id="btnOpenPrint" getLabel="getLLLang" image="openprint" size="normal" onAction="clickRibbonOpenPrint"/>

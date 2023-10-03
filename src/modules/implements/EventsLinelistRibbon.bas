@@ -183,3 +183,17 @@ Public Sub clickRibbonAddCustomFilter(ByRef Control As IRibbonControl)
     Attribute clickRibbonAddCustomFilter.VB_Description = "Callback for btnAddCustomFilt On Action"
     ClickAddCustomFilter
 End Sub
+
+'@Description("Callback for btnImport On Action")
+'@EntryPoint
+Public Sub clickRibbonImport(ByRef Control As IRibbonControl)
+    Attribute clickRibbonImport.VB_Description = "Callback for btnImport On Action"
+    clickImportData
+End Sub
+
+'@Description("Callback for btnImportGeo On Action")
+'@EntryPoint
+Public Sub clickRibbonImportGeobase(ByRef Control As IRibbonControl)
+    Attribute clickRibbonImportGeobase.VB_Description = "Callback for btnImport On Action"
+    clickImportGeobase
+End Sub
