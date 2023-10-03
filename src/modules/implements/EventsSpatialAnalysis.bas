@@ -139,6 +139,7 @@ Public Sub UpdateSingleSpTable(ByVal rngName As String)
 
     'change the previous admin
     sh.Range("PREVIOUS_ADM_" & tabId).Value = adminName
+    sh.Columns("C").EntireColumn.AutoFit
 
     'Calculate the outer range
     rng.calculate

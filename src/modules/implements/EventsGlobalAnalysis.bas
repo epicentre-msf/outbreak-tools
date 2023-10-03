@@ -166,9 +166,9 @@ Public Sub EventValueChangeAnalysis(Target As Range)
         Set rng = actsh.Range("ua_go_to_section")
 
     Case "TS-Analysis", "SPT-Analysis"
-        actsh.calculate
-        actsh.UsedRange.calculate
-        actsh.Columns("A:E").calculate
+        actsh.Calculate
+        actsh.UsedRange.Calculate
+        actsh.Columns("A:E").Calculate
         'Goto section range for time series analysis
         If InStr(1, rngName, "ts_go_to_section") > 0 Then Set rng = Target
         'GoTo section range for spatio temporal analysis
