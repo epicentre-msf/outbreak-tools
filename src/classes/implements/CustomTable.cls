@@ -358,7 +358,6 @@ Private Sub Import(ByVal impTab As Object, _
   Dim currDataRng As Range
   Dim rng As Range
   Dim sh As Worksheet
-  Dim toClear As Boolean
   Dim startPastingRow As Long
 
   If (TypeName(impTab) <> "DataSheet") And _
@@ -416,13 +415,8 @@ Private Sub Import(ByVal impTab As Object, _
       'Add values if the range does not contains formulas. If the range contains formulas, do nothing
       Set rng = sh.Range(currDataRng.Cells(startPastingRow, 1), _
                          currDataRng.Cells(startPastingRow + nbImpRows - 1, 1))
-      toClear = False
 
-      On Error Resume Next
-      toClear = (CStr(rng.Cells(1, 1).formula) = CStr(rng.Cells(1, 1).Value))
-      On Error GoTo 0
-
-      If toClear Then
+      If (Not rng.Cells(1, 1).HasFormula) Then
         'Clear the cell content only and only there is no paste
         'pasteAtBottom.
         If Not pasteAtBottom Then currDataRng.Cells.ClearContents
