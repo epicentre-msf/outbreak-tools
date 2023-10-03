@@ -192,6 +192,8 @@ Public Sub ClickRotateAll()
 
     sheetTag = sh.Cells(1, 3).Value
 
+    InitializeTrads
+
     If sheetTag <> "HList" And sheetTag <> "HList Print" Then
         WarningOnSheet "MSG_PrintOrDataSheet"
         Exit Sub
@@ -200,8 +202,6 @@ Public Sub ClickRotateAll()
     If sheetTag = "HList" Then Set sh = wb.Worksheets(PRINTPREFIX & sh.Name)
 
     On Error GoTo ErrHand
-
-    InitializeTrads
 
     'Unprotect the sheet if it is protected.
     pass.UnProtect sh.Name
@@ -697,7 +697,6 @@ Public Sub ClickOpenVarLab()
     Dim actsh As Worksheet
     Dim tempsh As Worksheet
     Dim dict As ILLdictionary
-    Dim wb As Workbook
     Dim varRng As Range
     Dim vars As ILLVariables
     Dim cellRng As Range
@@ -706,18 +705,12 @@ Public Sub ClickOpenVarLab()
     Dim varName As String
 
     InitializeTrads
-    Set actsh = ActiveSheet
-    'Be sure we are on custom tables sheets
-    If actsh.Name <> lltrads.Value("customtable") Then
-        WarningOnSheet "MSG_CustomTableSheet"
-        Exit Sub
-    End If
-
     On Error GoTo ErrHand
-    BusyApp
 
     'Prepare the temporary Sheet
-    Set wb = ThisWorkbook
+    Set actsh = wb.Worksheets(lltrads.Value("customtable"))
+    BusyApp
+
     Set tempsh = ThisWorkbook.Worksheets(TEMPSHEET)
     tempsh.Cells.Clear
 
@@ -866,7 +859,7 @@ End Sub
 
 '@Description("Import new data in the linelist")
 '@EntryPoint
-Public Sub clickImportData(ByRef Control As IRibbonControl)
+Public Sub clickImportData()
     Attribute clickImportData.VB_Description = "Import new data in the linelist"
     
     Dim impObj As IImpSpecs
@@ -882,12 +875,13 @@ End Sub
 
 '@Description("Import a new geobase in the linelist")
 '@EntryPoint
-Public Sub clickImportGeobase(ByRef Control As IRibbonControl)
+Public Sub clickImportGeobase()
     Attribute clickImportGeobase.VB_Description = "Import a new geobase in the linelist"
     
     Dim impObj As IImpSpecs
     Dim currwb As Workbook
 
+    Set currwb = ThisWorkbook
     Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], currwb)
     impObj.ImportGeobase
 End Sub
