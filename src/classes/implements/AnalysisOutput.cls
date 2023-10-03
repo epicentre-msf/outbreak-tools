@@ -177,7 +177,7 @@ Private Sub SplitOutputSheet(Optional ByVal scope As AnalysisScope = AnalysisSco
 
   'OUtput worksheet
   Set outsh = OutputSh(scope)
-  rowSplit = IIf(scope = AnalysisScopeTimeSeries, 3, 2)
+  rowSplit = IIf(scope = AnalysisScopeTimeSeries Or scope = AnalysisScopeSpatioTemporal, 3, 2)
   On Error Resume Next
   'Activating the worksheet restores all the application
   'status to true, remember to recall the busy app just
@@ -188,11 +188,9 @@ Private Sub SplitOutputSheet(Optional ByVal scope As AnalysisScope = AnalysisSco
   With Application.ActiveWindow
     .SplitRow = rowSplit
     'Split on the third column for Time series and spatio-temporal only
-    If scope = AnalysisScopeTimeSeries Or _ 
-       scope = AnalysisScopeSpatioTemporal Then _ 
-      .SplitColumn = 3
+    .SplitColumn = 3
     'For spatial or time series, reduce the zoom for the worksheeet
-    If scope <> AnalysisScopeNormal Then .Zoom = 70
+    .Zoom = 80
     .FreezePanes = True
   End With
   On Error GoTo 0
@@ -600,7 +598,7 @@ Private Sub WriteTable(ByVal loName As String, _
       End If
 
       'Add goTo Header to the previous section
-      Set cellRng = outsh.Range("SECTION_" & prevSecId).Offset(1, -2)
+      Set cellRng = outsh.Range("SECTION_" & prevSecId).Offset(2)
       AddGoTo cellRng:=cellRng, goToPrefix:=goToPrefix, _ 
               scope:="header",  goToSuffix:=prevSecId
     End If
@@ -742,7 +740,7 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
   End If
 
   'Add the GoTo graph dropdown
-  AddGoTo outsh.Cells(3, 1), scope:="graph", _
+  AddGoTo outsh.Cells(3, 3), scope:="graph", _
           goToPrefix:="ts_", goToSuffix:="_graph"
 End Sub
 
@@ -831,7 +829,7 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String)
   Loop While (tabRng.Row <= anchorRng.Row)
 
   'Add the GoTo graph dropdown
-  AddGoTo outsh.Cells(3, 1), scope:="graph", goToPrefix:="spt_", _ 
+  AddGoTo outsh.Cells(3, 3), scope:="graph", goToPrefix:="spt_", _ 
           goToSuffix:="_graph"
 End Sub
 
@@ -867,7 +865,7 @@ Private Sub WriteAnalysis()
    On Error GoTo 0
 
    'Add The goTo for sections
-   Set cellRng = outsh.Cells(2, 1)
+   Set cellRng = outsh.Cells(2, 3)
    AddGoTo cellRng:=cellRng, goToPrefix:="ua_", scope:="section"
    'Add the command
    AddCommands scope:=scope
@@ -894,7 +892,7 @@ Private Sub WriteAnalysis()
                         tabLoName:=TIMESERIES
   On Error GoTo 0
 
-  Set cellRng = outsh.Cells(2, 1)
+  Set cellRng = outsh.Cells(2, 3)
   AddGoTo cellRng:=cellRng, scope:="section", goToPrefix:="ts_"
   'Add the commands
   AddCommands scope:=scope
@@ -916,7 +914,7 @@ Private Sub WriteAnalysis()
     WriteTable loName:=SPATIAL, scope:=scope
   On Error GoTo 0
 
-  Set cellRng = outsh.Cells(2, 1)
+  Set cellRng = outsh.Cells(2, 3)
 
   AddGoTo cellRng:=cellRng, scope:="section", goToPrefix:="sp_"
   AddCommands scope:=scope
@@ -938,7 +936,7 @@ Private Sub WriteAnalysis()
     WriteSpatioTemporalGraph loName:=SPATIOTEMPORAL
   On Error GoTo 0
 
-  Set cellRng = outsh.Cells(2, 1)
+  Set cellRng = outsh.Cells(2, 3)
   AddGoTo cellRng:=cellRng, scope:="section", goToPrefix:="spt_"
   AddCommands scope:=scope
   

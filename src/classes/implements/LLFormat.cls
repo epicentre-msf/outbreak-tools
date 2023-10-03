@@ -324,21 +324,24 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         If scope = AllAnalysisSheet Then
             RemoveGridLines sh, DisplayZeros:=True
             dimensionValue = DesignValue("default analysis column width", False)
-            sh.Rows("2:3").RowHeight = 40
+            sh.Rows("2:3").RowHeight = 25
         Else
             RemoveGridLines sh
             styleValue = DesignValue("linelist base font size", False)
             dimensionValue = DesignValue("default linelist column width", False)
-            sh.Rows("1:4").RowHeight = 30
+            sh.Rows("1:4").RowHeight = 25
         End If
 
         styleValue = IIf(styleValue = 0, 9, styleValue)
-        dimensionValue = IIf(dimensionValue = 0, 30, dimensionValue)
+        dimensionValue = IIf(dimensionValue = 0, 25, dimensionValue)
         sh.Cells.Font.Size = styleValue
         sh.Cells.EntireColumn.ColumnWidth = dimensionValue
 
         'Column with of the period and goto section columns
-        sh.Columns(3).EntireColumn.ColumnWidth = dimensionValue + 5
+        If scope = AllAnalysisSheet Then
+            sh.Columns(3).EntireColumn.ColumnWidth = dimensionValue + 5
+            sh.Columns("A:B").EntireColumn.ColumnWidth = 5
+        End If
 
     Case HListPrintedSheet
         If (Not TypeName(formattingObject) = "Worksheet") Then Exit Sub
@@ -389,6 +392,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         rng.Offset(1).EntireRow.RowHeight = dimensionValue
         On Error GoTo 0
         rng.Locked = False
+        rng.Cells(1, 1).WrapText = True
 
     Case AnalysisTableTitle
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
@@ -403,10 +407,9 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         rng.WrapText = False
         rng.Font.Italic = True
 
-        'Gap for graphs
         On Error Resume Next
         'Gap for graphs
-        rng.EntireRow.RowHeight = 60
+        rng.EntireRow.RowHeight = 50
         rng.EntireRow.RowHeight = dimensionValue
         On Error GoTo 0
 
@@ -524,6 +527,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         DrawLines rng, At:="Left", color:=bordersColorValue, line:=xlDouble
         DrawLines rng, At:="Bottom", color:=bordersColorValue, line:=xlDouble
         DrawLines rng, At:="Right", color:=bordersColorValue, line:=xlDouble
+        rng.WrapText = True
 
     Case AnalysisMissingRow, AnalysisMissingColumn, AnalysisMissingRowWithoutHeader
 
@@ -592,8 +596,8 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         On Error Resume Next
 
         'Gap for graphs
-        rng.EntireRow.RowHeight = 60
-        rng.Offset(1).EntireRow.RowHeight = 60
+        rng.EntireRow.RowHeight = 50
+        rng.Offset(1).EntireRow.RowHeight = 50
 
         rng.EntireRow.RowHeight = dimensionValue
         rng.Offset(1).EntireRow.RowHeight = dimensionValue

@@ -488,6 +488,7 @@ Private Sub AddColumns()
     Dim timeVarLab As String
     Dim tabId As String
     Dim tablType As Byte
+    Dim spType As String
 
     Start = StartRow
     Set sh = Wksh()
@@ -498,6 +499,7 @@ Private Sub AddColumns()
     tablType = specs.TableType()
     Set colData = New BetterArray
     colData.LowerBound = 1
+    spType = specs.SpatialTableTypes()
 
     percentageValue = specs.Value("percentage")
     transPercent = trans.TranslatedValue("MSG_Percent")
@@ -536,8 +538,10 @@ Private Sub AddColumns()
 
             If (tablType = TypeTimeSeries) Then
                 colVarLab = vars.Value(colName:="main label", varName:=specs.Value("column"))
-            Else
+            ElseIf spType = "geo" Then
                 colVarLab = vars.Value(colName:="sub section", varName:="adm1_" & specs.Value("column"))
+            ElseIf spType = "hf" Then
+                colVarLab = vars.Value(colName:="main label", varName:="hf_" & specs.Value("column"))
             End If
 
             timeVarLab = vars.Value(colName:="main label", varName:=specs.Value("time"))
@@ -630,7 +634,9 @@ Private Sub AddHeader()
                     On Error Resume Next
                     nGeo = CLng(specs.Value("n geo"))
                     On Error GoTo 0
-                    nbShift = nGeo + 12
+                    'This is a bit touchy, if you want to add some rows before
+                    'the table, remember to change the number of rows to shift
+                    nbShift = nGeo + 14
                 Else
                     nbShift = 7
                 End If
@@ -647,16 +653,17 @@ Private Sub AddHeader()
 
                 If (tablType = TypeSpatioTemporal) Then
                     'Anchor for the future table header elements
-                    Set rng = rng.Offset(2)
+                    Set rng = rng.Offset(4)
 
                     rng.Value = trans.TranslatedValue("MSG_InputGeoLevels")
                     rng.Name = "INPUTSPTGEO_LABEL_" & tabId
-                    rng.Cells(2, 1).Value = nGeo
-                    rng.Cells(2, 1).Name = "INPUTSPTGEO_NGEO_" & tabId
+                    rng.Cells(1, 2).Value = nGeo
+                    rng.Cells(1, 2).Name = "INPUTSPTGEO_NGEO_" & tabId
 
                     'Add the number of geolevels
 
                     Set cellRng = rng.Offset(2)
+
                     For counter = 1 To nGeo
                         'Add HF or Geo depending on the section type
                         cellRng.Cells(counter, 1).Name = sptGeorngTag & counter & "_" & tabId
@@ -666,6 +673,7 @@ Private Sub AddHeader()
                     Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(nGeo, 1))
                     rng.Name = "INPUTSPTGEO_USER_" & tabId
                     rng.Locked = False
+
                     'Where to write previous admin from 
                     rng.Offset(, 1).Name = "INPUTPREVADM_USER_" & tabId
 

@@ -247,7 +247,7 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
     Set sh = Wksh()
 
     coef = 1
-    If (scope = GraphScopeTimeSeries) Then coef = 3
+    If (scope = GraphScopeTimeSeries) Then coef = 1.75
     heightCoef = IIf(heightFactor <= 1, 1, (heightFactor + 1) * 0.08)
 
     'Coerce again the width and the height
@@ -276,17 +276,18 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                 .AxisTitle.Caption = catTitle
             End If
 
-            .TickLabels.Font.Size = 8
+            .TickLabels.Font.Size = 10
             
             'Reverse plot order for spatial analysis
             If (scope = GraphScopeSpatial) Then .ReversePlotOrder = True
         End With
         
+        'Formatting on principal axis
         With .Axes(xlValue, xlPrimary)
             .HasTitle = True
             .HasMajorGridlines = True
             .MajorGridlines.Border.color = RGB(255, 255, 255)
-            .TickLabels.Font.Size = 8
+            .TickLabels.Font.Size = 10
             .TickLabels.Font.Name = "+mj-lt"
 
             If (Not hardCodeLabels) And RangeExist(valuesTitle) Then
@@ -319,7 +320,7 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                 .HasTitle = True
                 .HasMajorGridlines = False
                 .MajorGridlines.Border.color = RGB(255, 255, 255)
-                .TickLabels.Font.Size = 8
+                .TickLabels.Font.Size = 10
                 .TickLabels.Font.Name = "+mj-lt"
                 .AxisTitle.Text = "%"
                 If secondAxisTitle <> vbNullString Then .AxisTitle.Text = secondAxisTitle

@@ -767,9 +767,13 @@ Private Sub AddFormulas()
 
                 If (tabType = TypeSpatioTemporal) Then
                     If spTabType = "geo" Then
-                        rngLab.Formula = "= INPUTSPTGEO_" & counter & "_" & secId
+                        rngLab.Formula = "= IF(ISBLANK(INPUTSPTGEO_" & counter & "_" & secId & ")" & _ 
+                                        ", " & Chr(34) & Chr(34) & ", " & "INPUTSPTGEO_" & counter & "_" & secId & _ 
+                                        ")"
                     Else
-                        rngLab.Formula = "= INPUTSPTHF_" & counter & "_" & secId
+                        rngLab.Formula = "= IF(ISBLANK(INPUTSPTHF_" & counter & "_" & secId & ")" & _ 
+                                        ", " & Chr(34) & Chr(34) & ", " & "INPUTSPTHF_" & counter & "_" & secId & _ 
+                                        ")"
                     End If                
                     counter = counter + 1
                 End If
