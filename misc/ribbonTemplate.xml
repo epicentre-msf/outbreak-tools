@@ -6,8 +6,6 @@
                     <button id="btnShowHideVar" getLabel="getLLLang" image="hide" size="large" onAction="clickRibbonShowHideVar"/>
                     <button id="btnAddRows" getLabel="getLLLang" imageMso="QueryShowTable" size="large" onAction="clickRibbonAddRows"/>
                     <button id="btnResize" getLabel="getLLLang" imageMso="SheetRowsDelete" size="large" onAction="clickRibbonResize"/>
-                </group>
-                <group id="customGroupTabFilt" getLabel="getLLLang">
                     <button id="btnRemFilt" getLabel="getLLLang" imageMso="FilterClearAllFilters" size="large" onAction="clickRibbonRemoveFilter"/>
                     <button id="btnSortTab" getLabel="getLLLang" image="sort" size="large" onAction="clickRibbonSortTable"/>
                 </group>
