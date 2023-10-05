@@ -61,7 +61,7 @@ Public Sub ExportToFile(ByVal outputWkb As Workbook, _
                         Optional ByVal onlyHistory As Boolean = False)
 End Sub
 
-Public Sub ExportToWkb(ByVal Wkb As Workbook): End Sub
+Public Sub ExportToWkb(ByVal Wkb As Workbook, Optional ByVal llName As String = vbNullString): End Sub
 Public Sub Clear(): End Sub
 Public Sub ClearHistoric(Optional ByVal scope As Byte = 3): End Sub
 'Update historic of geobase

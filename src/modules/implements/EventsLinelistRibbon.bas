@@ -93,13 +93,6 @@ Public Sub clickRibbonRemoveFilter(ByRef Control As IRibbonControl)
     ClickRemoveFilters
 End Sub
 
-'@Description("Callback for btnCustomFilt onAction")
-'@EntryPoint
-Public Sub clickRibbonCustomFilter(ByRef Control As IRibbonControl)
-    Attribute clickRibbonCustomFilter.VB_Description = "Callback for btnCustomFilt onAction"
-    ClickCustomFilter
-End Sub
-
 '@Description("Callback for btnOpenPrint onAction")
 '@EntryPoint
 Public Sub clickRibbonOpenPrint(ByRef Control As IRibbonControl)
@@ -174,14 +167,6 @@ End Sub
 Public Sub clickRibbonExportAnalysis(ByRef Control As IRibbonControl)
     Attribute clickRibbonExportAnalysis.VB_Description = "Callback for btnExpAna on Action"
     ClickExportAnalysis
-End Sub
-
-
-'@Description("Callback for btnAddCustomFilt On Action")
-'@EntryPoint
-Public Sub clickRibbonAddCustomFilter(ByRef Control As IRibbonControl)
-    Attribute clickRibbonAddCustomFilter.VB_Description = "Callback for btnAddCustomFilt On Action"
-    ClickAddCustomFilter
 End Sub
 
 '@Description("Callback for btnImport On Action")

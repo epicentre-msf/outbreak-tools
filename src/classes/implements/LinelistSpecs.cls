@@ -25,7 +25,6 @@ Public Enum TemporarySheetTypes
     TemporarySingle = 6
     TemporarySpatial = 7
     TemporaryShowHide = 8
-    TemporaryCustomFilters = 9
 End Enum
 
 Private Type TLinelistSpecs
@@ -191,8 +190,6 @@ Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As St
         TemporarySheetName = "show_hide__" 'Manage show/hide forms
     Case TemporarySpatial
         TemporarySheetName = "spatial_tables__" 'add tables for spatial analysis
-    Case TemporaryCustomFilters
-        TemporarySheetName = "custom_filters__"
     End Select
 End Property
 
@@ -351,7 +348,6 @@ Private Sub Prepare()
                              TemporarySheetName(TemporarySheetImport), _
                              TemporarySheetName(TemporarySpatial), _
                              TemporarySheetName(TemporaryShowHide), _
-                             TemporarySheetName(TemporaryCustomFilters), _
                              msgTrads.TranslatedValue("LLSHEET_Admin"), _
                              msgTrads.TranslatedValue("LLSHEET_Analysis"), _
                              msgTrads.TranslatedValue("LLSHEET_SpatialAnalysis"), _
@@ -471,6 +467,7 @@ Private Sub Export(ByVal toWkb As Workbook)
     Dim trans As ILLTranslations
     Dim expobj As ILLExport
     Dim passobj As ILLPasswords
+    Dim mainObj As IMain
 
     Set dict = Dictionary()
     Set choi = Choices()
@@ -478,12 +475,13 @@ Private Sub Export(ByVal toWkb As Workbook)
     Set expobj = Exports()
     Set geo = geoObject()
     Set passobj = Password()
+    Set mainObj = MainObject()
 
     dict.Export toWkb
     choi.Export toWkb, Hide:=xlSheetVeryHidden
     trans.ExportToWkb toWkb
     expobj.ExportSpecs toWkb, Hide:=xlSheetVeryHidden
-    geo.ExportToWkb toWkb
+    geo.ExportToWkb toWkb, mainObj.ValueOf("llname")
     passobj.Export toWkb
 
 End Sub
