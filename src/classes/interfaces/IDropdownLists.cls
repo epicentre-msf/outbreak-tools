@@ -26,7 +26,8 @@ Public Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
                          Optional ByVal message As String = vbNullString, _ 
                          Optional ByVal showError As Boolean = True)
 End Sub
-Public Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String)
+Public Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _ 
+                  Optional ByVal pasteAtBottom As Boolean = False)
 End Sub
 Public Sub ClearList(ByVal listName As String)
 End Sub
