@@ -485,7 +485,9 @@ Public Function FindTopPop(adminLevel As String, adminOrder As Integer, _
     Dim actualVarName As String
     Dim pop As Long
 
-    actualVarName = Split(varName, "_")(2)
+    '12 is the length of the "concat_adm1_" part which is added at the begining
+    'of the variable name
+    actualVarName = Right(varName, (Len(varName) - 12))
 
 
     Set sh = ThisWorkbook.Worksheets("Geo")
@@ -516,7 +518,10 @@ Public Function FindTopHF(adminOrder As Integer, varName As String, _
     Dim sh As Worksheet
     Dim actualVarName As String
 
-    actualVarName = Split(varName, "_")(1)
+    '3 is the length of the "hf_" part which is added at the begining of the
+    'variable name
+    actualVarName = Right(varName, (Len(varName) - 3))
+
     Set sh = ThisWorkbook.Worksheets("spatial_tables__")
     Set sp = LLSpatial.Create(sh)
     FindTopHF = sp.TopHFValue(adminOrder, actualVarName, tabId)
