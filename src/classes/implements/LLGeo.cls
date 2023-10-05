@@ -419,7 +419,7 @@ End Sub
 
 
 'Export by keeping the actual format of the Worksheet
-Private Sub ExportToWkb(ByVal outputWkb As Workbook)
+Private Sub ExportToWkb(ByVal outputWkb As Workbook, Optional ByVal llName As String = vbNullString)
 
     Const METADATASHEET As String = "Metadata"
 
@@ -514,7 +514,11 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook)
         .Cells(3, 1).Value = "linelist_creation_date"
         .Cells(3, 2).Value = Format(Now, "yyyy-mm-dd Hh:Nn")
 
-        Set expRange = .Range(.Cells(4, 1), .Cells(rng.Rows.Count, rng.Columns.Count))
+        'Linelist name
+        .Cells(4, 1).Value = "linelist_creation_name"
+        .Cells(4, 2).Value = llName
+
+        Set expRange = .Range(.Cells(5, 1), .Cells(rng.Rows.Count, rng.Columns.Count))
         expRange.Value = rng.Value
         
         .Visible = xlSheetVeryHidden
@@ -927,14 +931,14 @@ Private Sub UpdateMetadata()
         lastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
 
         If lastRow > 3 Then
-            'Clean from row 4
-            Set rng = .Range(.Cells(4, 1), .Cells(lastRow, 2))
+            'Clean from row 5
+            Set rng = .Range(.Cells(5, 1), .Cells(lastRow, 2))
             rng.ClearContents
         End If
 
         'Add new metadata to the metadata sheet
         Set rng = sh.ListObjects("T_" & METADATA).Range.Offset(1)
-        Set expRng = .Range(.Cells(4, 1), .Cells(rng.Rows.Count, rng.Columns.Count))
+        Set expRng = .Range(.Cells(5, 1), .Cells(rng.Rows.Count, rng.Columns.Count))
         expRng.Value = rng.Value
     End With
 
@@ -1027,8 +1031,8 @@ Private Sub ILLGeo_ExportToFile(ByVal outputWkb As Workbook, Optional ByVal only
     ExportToFile outputWkb, onlyHistory
 End Sub
 
-Private Sub ILLGeo_ExportToWkb(ByVal outputWkb As Workbook)
-    ExportToWkb outputWkb
+Private Sub ILLGeo_ExportToWkb(ByVal outputWkb As Workbook, Optional ByVal llName As String = vbNullString)
+    ExportToWkb outputWkb, llName
 End Sub
 
 Private Sub ILLGeo_Clear()
