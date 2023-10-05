@@ -310,7 +310,6 @@ Attribute PrepareToDeployment.VB_Description = "Hide some worksheets before depl
     CopyCodes "FormLogicExportMigration", "F_ExportMig"
     CopyCodes "FormLogicImportRep", "F_ImportRep"
     CopyCodes "FormLogicShowVarLabels", "F_ShowVarLabels"
-    CopyCodes "FormLogicCustomFilters", "F_Filters"
 
 End Sub
 

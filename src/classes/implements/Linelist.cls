@@ -463,19 +463,6 @@ Private Sub PrepareTemporarySheets()
         rng.Name = namesArray.Item(counter)
         Set rng = rng.Offset(1)
     Next
-
-    'Custom Filters sheet-------------------------------------------------------
-
-    sheetName = lData.TemporarySheetName(TemporaryCustomFilters)
-    Set sh = outWkb.Worksheets(sheetName)
-
-    With sh
-        .Cells(1, 1).Value = "sheetName"
-        .Cells(1, 2).Value = "filterName"
-        .Cells(1, 3).Value = "filterIndex" 
-        Set rng = .Range(.Cells(1, 1), .Cells(2, 3))
-        .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "csfilter__"
-    End With
 End Sub
 
 'Prepare the Linelist by adding required worksheets
@@ -510,8 +497,7 @@ Private Sub Prepare()
         lData.TemporarySheetName(TemporarySheetAnalysis), _
         lData.TemporarySheetName(TemporarySheetImport), _
         lData.TemporarySheetName(TemporarySpatial), _
-        lData.TemporarySheetName(TemporaryShowHide), _ 
-        lData.TemporarySheetName(TemporaryCustomFilters)
+        lData.TemporarySheetName(TemporaryShowHide)
 
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         sheetName = sheetsList.Item(counter)
