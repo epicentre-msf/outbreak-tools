@@ -667,6 +667,46 @@ Private Function ControlLanguage(ByVal impwb As Workbook) As Boolean
   ControlLanguage = abortImport
 End Function
 
+'import custom dropdown
+Private Sub ImportCustomDropdown(ByVal inpwb As Workbook, ByVal pasteAtBottom As Boolean)
+
+  Dim currwb As Workbook
+  Dim lltrads AS ILLTranslations
+  Dim drop As IDropdownLists 'Dropdown on custom choices
+  Dim Lo As ListObject
+  Dim listName As String
+  Dim choiceName As String
+  Dim dropsh As Worksheet 'Dropdown worksheet
+  Dim choiobj As ILLchoice 'Choices worksheet in the imported workbook
+  Dim updateData As BetterArray
+
+
+  If Not sheetExists(inpwb, "Choices") Then Exit Sub
+
+  Set lltrads = LLTradsObject()
+  Set currwb = CurrentWorkbook()
+  Set choiobj = LLchoice.Create(inpwb.Worksheets("Choices"), 1, 1)
+  Set dropsh = currwb.Worksheets(lltrads.Value("customdropdown"))
+  'There is no prefix for dropdowns on customdropdown
+  Set drop = DropdownLists.Create(dropsh, vbNullString)
+  Set updateData = New BetterArray
+
+  For Each Lo in dropsh.ListObjects
+    
+    updateData.Clear
+    listName = lo.Name
+    listName = Right(listName, (Len(listName) - 5))
+    choiceName = "__choice_custom_" & listName
+
+    On Error Resume Next
+      Set updateData = choiobj.Categories(choiceName)
+    On Error GoTo 0
+
+    'Update the dropdown only if it is necessary
+    If (updateData.Length > 0) Then drop.Update updateData, listName, pasteAtBottom
+  Next
+End Sub
+
 
 Private Sub ImportMigration()
 
@@ -713,11 +753,17 @@ Private Sub ImportMigration()
   If ControlLanguage(impwb) Then GoTo EndImport
 
   BusyApp
+
+  'Import all data from HList and VList worksheets
   ImportData impwb, pasteAtBottom
+
+  'Import the custom dropdowns
+  ImportCustomDropdown impwb, pasteAtBottom
 
   'Report Sheets or variables not found in importReport
   AddSheetsNotTouchedToReport
   AddVariablesNotTouchedToReport
+
 
   'Set all list auto to yes update
   impwb.Close savechanges:=False

@@ -189,26 +189,47 @@ Private Sub ClearList(ByVal listName As String)
 End Sub
 
 'Update a list with new values
-Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String)
+Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _ 
+                   Optional ByVal pasteAtBottom As Boolean = False)
     
     Dim sh As Worksheet
     Dim cellRng As Range
     Dim rng As Range
+    Dim loRng As Range
     Dim loName As String
     Dim Lo As listObject
+    Dim tabLength As Long
 
     If Not Exists(listName) Then Exit Sub
     Set sh = Wksh()
     loName = CurrentLoName(listName)
     Set Lo = sh.ListObjects(loName)
-    Set cellRng = Lo.Range.Cells(2, 1)
+    Set loRng = Lo.Range
+
+    If (Not pasteAtBottom) Then
+        On Error Resume Next
+            Lo.DataBodyRange.ClearContents
+        On Error GoTo 0
+        Set cellRng = loRng.Cells(2, 1)
+        tabLength = UpdateData.Length + 1
+    Else
+        tabLength = loRng.Rows.Count + UpdateData.Length
+        Set cellRng = loRng.Cells(loRng.Rows.Count + 1, 1)
+    End If
     
     'put the new data in the range
     UpdateData.ToExcelRange cellRng
     
     'Resize the listObject to the new Range
-    Set rng = sh.Range(cellRng.Cells(0, 1), cellRng.Cells(UpdateData.Length, 1))
+    Set rng = sh.Range(loRng.Cells(1, 1), loRng.Cells(tabLength, 1))
     Lo.Resize rng
+
+    'Remove duplicates if pasteAtBottom (the loRng has changed with a resize)
+    If pasteAtBottom Then
+        On Error Resume Next
+            Lo.Range.RemoveDuplicates Columns:=1, Header:=xlYes
+        On Error GoTo 0
+    End If
 End Sub
 
 'Set a validation on a range
@@ -297,8 +318,12 @@ Private Sub IDropdownLists_SetValidation(ByVal cellRng As Range, ByVal listName 
 End Sub
 
 
-Private Sub IDropdownLists_Update(ByVal UpdateData As BetterArray, ByVal listName As String)
-    Update UpdateData:=UpdateData, listName:=listName
+Private Sub IDropdownLists_Update(ByVal UpdateData As BetterArray, _ 
+                                  ByVal listName As String, _ 
+                                  Optional ByVal pasteAtBottom As Boolean = False)
+    Update UpdateData:=UpdateData, _ 
+           listName:=listName, _ 
+           pasteAtBottom:=pasteAtBottom
 End Sub
 
 Private Sub IDropdownLists_ClearList(ByVal listName As String)

@@ -196,7 +196,6 @@ Public Sub EventValueChangeAnalysis(Target As Range)
         sLabel = Replace(sLabel, goToHeader & ": ", vbNullString)
         sLabel = Replace(sLabel, goToGraph & ": ", vbNullString)
 
-        Debug.Print sLabel
         Set rngLook = ActiveSheet.Cells.Find(What:=sLabel, LookIn:=xlValues, lookAt:=xlWhole, _
                                              MatchCase:=True, SearchFormat:=False)
 
