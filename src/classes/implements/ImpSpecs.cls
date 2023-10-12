@@ -793,11 +793,8 @@ Private Sub ImportMigration()
     End If
   Else
     'The user can hide the import form here if there is no report to show
-    If MsgBox(trads.TranslatedValue("MSG_FinishImport"), _
-              vbQuestion + vbYesNo, _
-              trads.TranslatedValue("MSG_Imports")) = vbYes Then
-      adfobj.Hide
-    End If
+    MsgBox trads.TranslatedValue("MSG_FinishImport"), _
+              vbOkOnly,  trads.TranslatedValue("MSG_Imports")
   End If
 
   NotBusyApp
@@ -871,15 +868,8 @@ Private Sub ImportGeobase(Optional ByVal histoOnly As Boolean = False)
     End If
     impwb.Close savechanges:=False
     'Leaving the import process
-    If MsgBox( _
-          trads.TranslatedValue("MSG_FinishImportGeo"), _
-          vbQuestion + vbYesNo, _
-          trads.TranslatedValue("MSG_Imports") _
-          ) = vbYes Then
-      Set adfobj = AdvanceFormObject()
-      adfobj.Hide
-    End If
-
+    MsgBox trads.TranslatedValue("MSG_FinishImportGeo"), _
+            vbOkOnly, trads.TranslatedValue("MSG_Imports")
     NotBusyApp
 
   End If

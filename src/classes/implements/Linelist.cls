@@ -372,7 +372,9 @@ Private Sub PrepareTemporarySheets()
     Dim sh As Worksheet
     Dim outWkb As Workbook
     Dim rng As Range
+    Dim cellRng As Range
     Dim lData As ILinelistSpecs
+    Dim trads As ITranslation
     Dim sheetName As String
     Dim counter As Long
     Dim namesArray As BetterArray
@@ -381,6 +383,7 @@ Private Sub PrepareTemporarySheets()
     Set outWkb = Wkb()
     Set lData = LinelistData()
     Set namesArray = New BetterArray
+    Set trads = lData.TransObject()
 
     'On Update sheets ----------------------------------------------------------
     sheetName = lData.TemporarySheetName(TemporarySheetUpdates)
@@ -439,18 +442,55 @@ Private Sub PrepareTemporarySheets()
 
     sheetName = lData.TemporarySheetName(TemporarySheetAnalysis)
     Set sh = outWkb.Worksheets(sheetName)
-    Set rng = sh.Range(sh.Cells(1, 1), sh.Cells(2, 1))
+    Set cellRng = sh.Cells(1, 1)
     namesArray.Clear
-    namesArray.Push "GS_analysis_ids", "UA_analysis_ids", _
-                     "BA_analysis_ids", "TS_analysis_ids", _
-                     "SP_analysis_ids", "SPTEMP_analysis_ids"
+    namesArray.Push "uba", "ts", _
+                     "sp", "sptemp"
     For counter = namesArray.LowerBound To namesArray.UpperBound
         actName = namesArray.Item(counter)
+        
         'Add headers for table IDs
-        rng.Cells(1, 1).Value = actName
+        cellRng.Value = "tabId"
+        cellRng.Cells(1, 2).Value = "tabRange"
+        cellRng.Cells(1, 3).Value = "exportTable"
+
         'Add ListObject for table IDs
-        sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "list_" & actName
-        Set rng = rng.Offset(, 2)
+        Set rng = sh.Range(cellRng, cellRng.Cells(2, 3))
+        sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "tab_ids_" & actName
+
+        'Add ListObject for the graph Ids
+        Set cellRng = cellRng.Cells(1, 5) 
+
+        cellRng.Value = "tabId"
+        cellRng.Cells(1, 2).Value = "graphId"
+        cellRng.Cells(1, 3).Value = "SeriesName"
+        cellRng.Cells(1, 4).Value = "SeriesType"
+        cellRng.Cells(1, 5).Value = "SeriesPos"
+        cellRng.Cells(1, 6).Value = "SeriesLabel"
+        cellRng.Cells(1, 7).Value = "SeriesColumnLabel"
+        cellRng.Cells(1, 8).Value = "hardCodeLabels"
+        cellRng.Cells(1, 9).Value = "outRangeAddress"
+        cellRng.Cells(1, 10).Value = "prefix"
+        cellRng.Cells(1, 11).Value = "prefixOnly"
+        
+
+        Set rng = sh.Range(cellRng, cellRng.Cells(2, 11))
+        sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "graph_ids_" & actName
+
+        'Add ListObject for graphs label and Name
+        Set cellRng = cellRng.Cells(1, 13)
+        cellRng.Value = "tabId"
+        cellRng.Cells(1, 2).Value = "graphId"
+        cellRng.Cells(1, 3).Value = "catTitle"
+        cellRng.Cells(1, 4).Value = "valuesTitle"
+        cellRng.Cells(1, 5).Value = "hardCodeLabels"
+        cellRng.Cells(1, 6).Value = "heightFactor"
+        cellRng.Cells(1, 7).Value = "plotTitle"
+
+        Set rng = sh.Range(cellRng, cellRng.Cells(2, 7))
+        sh.ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "graph_formats_" & actName
+
+        Set cellRng = cellRng.Cells(1, 10)
     Next
 
     'Add ranges for each of the analysis worksheets names (avoid using lltrads)
@@ -458,11 +498,17 @@ Private Sub PrepareTemporarySheets()
     namesArray.Clear
     namesArray.Push "RNG_SheetUAName", "RNG_SheetTSName", _
                     "RNG_SheetSPName", "RNG_SheetSPTempName"
-    Set rng = rng.Offset(, 2)
+    Set cellRng = cellRng.Offset(, 2)
     For counter = namesArray.LowerBound To namesArray.UpperBound
-        rng.Name = namesArray.Item(counter)
-        Set rng = rng.Offset(1)
+        cellRng.Name = namesArray.Item(counter)
+        Set cellRng = cellRng.Offset(1)
     Next
+
+    'write the sheet names for analysis, time series, spatial and spatio-temporal
+    sh.Range("RNG_SheetUAName").Value = trads.TranslatedValue("LLSHEET_Analysis")
+    sh.Range("RNG_SheetTSName").Value = trads.TranslatedValue("LLSHEET_TemporalAnalysis")
+    sh.Range("RNG_SheetSPName").Value = trads.TranslatedValue("LLSHEET_SpatialAnalysis")
+    sh.Range("RNG_SheetSPTempName").Value = trads.TranslatedValue("LLSHEET_SpatioTemporalAnalysis")
 End Sub
 
 'Prepare the Linelist by adding required worksheets
@@ -572,7 +618,8 @@ Private Sub Prepare()
                      "ILLShowHide", "CustomTable", "ICustomTable", _
                     "OutputSpecs", "IOutputSpecs", _
                     "ImpRep", "IImpRep", "ImpSpecs", "IImpSpecs", _
-                    "UpVal", "IUpVal"
+                    "UpVal", "IUpVal", "IGraphs", "Graphs", "AnaTabIds", _ 
+                    "IAnaTabIds"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)

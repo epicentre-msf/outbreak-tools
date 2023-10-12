@@ -33,6 +33,7 @@ Private this As TCrossTable
 Private Const STANDARDSTARTCOL As Long = 3
 Private Const CLASSNAME As String = "CrossTable"
 Private Const NBROWSTIMESERIES As Long = 56
+Private ALLRANGESNAMES As BetterArray
 
 Public Function Create(ByVal specs As ITablesSpecs, ByVal outputWksh As Worksheet, _
                        ByVal trans As ITranslation) As ICrossTable
@@ -84,6 +85,10 @@ End Property
 
 Private Property Let NumberOfColumns(ByVal Col As Long)
     this.nbCols = Col
+End Property
+
+Private Property Get NamedRangesList() As BetterArray
+    Set NamedRangesList = ALLRANGESNAMES.Clone()
 End Property
 
 Private Function RangeExists(ByVal rngName As String) As Boolean
@@ -585,6 +590,9 @@ Private Sub AddHeader()
     Set sh = Wksh()
     Set specs = Specifications
     Set trans = trads()
+
+    Set ALLRANGESNAMES = New BetterArray
+
     Start = StartRow
     tabId = specs.TableId
     tablType = specs.TableType
@@ -600,6 +608,7 @@ Private Sub AddHeader()
 
             .Cells(Start - 2, STANDARDSTARTCOL).Value = specs.Value("title")
             .Cells(Start - 2, STANDARDSTARTCOL).Name = "TITLE_" & tabId
+            ALLRANGESNAMES.Push "TITLE_" & tabId
 
             If specs.isNewSection() And (Not RangeExists("SECTION_" & tabId)) Then
                 For counter = 1 To 3
@@ -608,6 +617,7 @@ Private Sub AddHeader()
                 'Jump two rows before the title for the section
                 .Range("TITLE_" & tabId).Cells(-1, 1) = specs.Value("section")
                 .Range("TITLE_" & tabId).Cells(-1, 1).Name = "SECTION_" & tabId
+                ALLRANGESNAMES.Push "SECTION_" & tabId
             End If
 
         Case TypeGlobalSummary
@@ -620,6 +630,7 @@ Private Sub AddHeader()
 
                 .Cells(Start - 2, STANDARDSTARTCOL).Value = trans.TranslatedValue("MSG_GlobalSummary")
                 .Cells(Start - 2, STANDARDSTARTCOL).Name = "ROWGS_SET"
+                ALLRANGESNAMES.Push "ROWGS_SET"
             End If
         
 
@@ -645,8 +656,9 @@ Private Sub AddHeader()
                     .Rows(Start - 2).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                 Next
                 .Cells(Start - 2, StartColumn).Value = specs.Value("section")
-                .Cells(Start - 2, StartColumn).Name = "SECTION_" & tabId
-                
+                .Cells(Start - 2, StartColumn).Name = "SECTION_" & tabId                
+                ALLRANGESNAMES.Push "SECTION_" & tabId
+
                 Set rng = .Range("SECTION_" & tabId)
 
                 'For spatio-temporal, add part for selection of geo-levels
@@ -657,6 +669,7 @@ Private Sub AddHeader()
 
                     rng.Value = trans.TranslatedValue("MSG_InputGeoLevels")
                     rng.Name = "INPUTSPTGEO_LABEL_" & tabId
+                    ALLRANGESNAMES.Push "INPUTSPTGEO_LABEL_" & tabId
                     rng.Cells(1, 2).Value = nGeo
                     rng.Cells(1, 2).Name = "INPUTSPTGEO_NGEO_" & tabId
 
@@ -672,6 +685,8 @@ Private Sub AddHeader()
 
                     Set rng = .Range(cellRng.Cells(1, 1), cellRng.Cells(nGeo, 1))
                     rng.Name = "INPUTSPTGEO_USER_" & tabId
+                    ALLRANGESNAMES.Push "INPUTSPTGEO_USER_" & tabId
+                    
                     rng.Locked = False
 
                     'Where to write previous admin from 
@@ -717,6 +732,13 @@ Private Sub AddHeader()
 
                 rng.Cells(4, 13).Name = "MIN_MIN_DATE_" & tabId
                 rng.Cells(4, 15).Name = "MAX_MAX_DATE_" & tabId
+
+                ALLRANGESNAMES.Push "INFO_ANA_PERIOD_" & tabId, _ 
+                    "START_DATE_LABEL_" & tabId, "USER_START_DATE_" & tabId, _ 
+                    "INFO_START_DATE_" & tabId, "START_DATE_" & tabId, _ 
+                    "END_DATE_LABEL_" & tabId, "USER_END_DATE_" & tabId, _ 
+                    "INFO_END_DATE_" & tabId, "END_DATE_" & tabId
+
 
                 timeUnitName = "TIME_UNIT_LIST"
                 If tablType = TypeSpatioTemporal Then timeUnitName = "SP" & timeUnitName
@@ -795,12 +817,17 @@ Private Sub AddHeader()
                     'Add name to button where you divide by the population
                     rng.Cells(1, 5).Name = "POPPREVFACT_" & tabId
                     rng.Cells(1, 5).Value = "0"
+
+                    ALLRANGESNAMES.Push "DEVIDEPOP_" & tabId, "POPFACT_" & tabId, _ 
+                                        "ADM_DROPDOWN_" & tabId
                 
                 ElseIf (specs.SpatialTableTypes = "hf") Then
                     'Range for information on Type of admin level
                     .Cells(Start - 2, STANDARDSTARTCOL).Name = "HF_DROPDOWN_" & tabId
                     Set rng = .Range("HF_DROPDOWN_" & tabId)
                     rng.Cells(1, 1).Value = trans.TranslatedValue("MSG_HF")
+
+                    ALLRANGESNAMES.Push "HF_DROPDOWN_" & tabId
                 End If
 
                 'New Section
@@ -810,12 +837,16 @@ Private Sub AddHeader()
                     Next
                     rng.Cells(-3, 1).Value = specs.Value("section")
                     rng.Cells(-3, 1).Name = "SECTION_" & tabId
+
+                    ALLRANGESNAMES.Push "SECTION_" & tabId
                 End If
                 
                 'Table Title
                 .Rows(rng.Row - 1).Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
                 rng.Cells(-1, 1).Value = specs.Value("title")
                 rng.Cells(-1, 1).Name = "TITLE_" & tabId
+
+                ALLRANGESNAMES.Push "TITLE_" & tabId
             End If
         End Select
     End With
@@ -863,9 +894,15 @@ Private Sub NameRanges()
 
         'The label of rows categories of the table (with the missing, will serve for graphs)
         If isNewSection Or (tablType <> TypeTimeSeries And tablType <> TypeSpatioTemporal) Then
+
             Set catRng = RowsCategoriesRange(onlyCategories:=True, includeHeaders:=False)
             catRng.Name = "ROW_CATEGORIES_" & tabId
             catRng.Cells(0, 1).Name = "LABEL_ROW_CATEGORIES_" & tabId
+            
+            'Stock the row and label row categories name somewhere
+            ALLRANGESNAMES.Push "LABEL_ROW_CATEGORIES_" & tabId
+            ALLRANGESNAMES.Push "ROW_CATEGORIES_" & tabId
+
             'Set the start time period and last time period dates
             If (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) Then
                 Set rng = catRng.Offset(, -1)
@@ -892,7 +929,9 @@ Private Sub NameRanges()
         Set rng = catRng.Offset(, 1)
 
         Do While (counter <= EndColumn) And (nbcolCounter <= nbCols)
+            
             rng.Name = "VALUES_COL_" & nbcolCounter & "_" & tabId
+            ALLRANGESNAMES.Push "VALUES_COL_" & nbcolCounter & "_" & tabId
 
             Select Case tablType
 
@@ -904,15 +943,23 @@ Private Sub NameRanges()
 
             'Name the header witch will serve as labels
             rng.Cells(labCol, 1).Name = "LABEL_COL_" & nbcolCounter & "_" & tabId
-
+            ALLRANGESNAMES.Push "LABEL_COL_" & nbcolCounter & "_" & tabId
+            
             'Movte to next Range
             Set rng = rng.Offset(, 1)
             
             DoEvents
             
             If specs.HasPercentage Then
+
                 rng.Name = "PERC_COL_" & nbcolCounter & "_" & tabId
-                If tablType = TypeUnivariate Then rng.Cells(labCol, 1).Name = "PERC_LABEL_COL_" & tabId
+                ALLRANGESNAMES.Push "PERC_COL_" & nbcolCounter & "_" & tabId
+
+                If tablType = TypeUnivariate Then 
+                    rng.Cells(labCol, 1).Name = "PERC_LABEL_COL_" & tabId
+                    ALLRANGESNAMES.Push "PERC_LABEL_COL_" & tabId
+                End If
+
                 Set rng = rng.Offset(, 1)
                 counter = counter + 1
             End If
@@ -934,9 +981,14 @@ Private Sub NameRanges()
             Set rng = RowRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=True)
 
             If (Not rng Is Nothing) Then
+                
                 rng.Name = cData.Item(counter) & "_ROW_" & tabId
+                ALLRANGESNAMES.Push cData.Item(counter) & "_ROW_" & tabId
+
                 Set rng = RowRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=False)
+                
                 rng.Name = cData.Item(counter) & "_ROW_VALUES_" & tabId
+                ALLRANGESNAMES.Push cData.Item(counter) & "_ROW_VALUES_" & tabId
             End If
 
             'Missing /Total Column
@@ -944,13 +996,16 @@ Private Sub NameRanges()
                 Set rng = ColumnRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=True, onlyCategories:=True)
                 If (Not rng Is Nothing) Then
                     rng.Name = cData.Item(counter) & "_COL_" & tabId
+                    ALLRANGESNAMES.Push cData.Item(counter) & "_COL_" & tabId
                     rng.Cells(0, 1).Name = cData.Item(counter) & "_LABEL_COL_" & tabId
                     Set rng = ColumnRange(trans.TranslatedValue(tData.Item(counter)), includeHeaders:=False, onlyCategories:=True)
                     rng.Name = cData.Item(counter) & "_COL_VALUES_" & tabId
+                    ALLRANGESNAMES.Push cData.Item(counter) & "_COL_VALUES_" & tabId
                     'Percentages on Missing/Total column
                     If specs.HasPercentage Then
                         Set rng = rng.Offset(, 1)
                         rng.Name = cData.Item(counter) & "_PERC_VALUES_" & tabId
+                        ALLRANGESNAMES.Push cData.Item(counter) & "_PERC_VALUES_" & tabId
                         'All the percentage columns (including label)
                         .Range(cData.Item(counter) & "_COL_" & tabId).Offset(, 1).Name = cData.Item(counter) & "_PERC_" & tabId
                     End If
@@ -967,15 +1022,18 @@ Private Sub NameRanges()
                 rw = .Range("TOTAL_ROW_" & tabId).Row
                 Col = .Range("TOTAL_COL_" & tabId).Column
                 .Cells(rw, Col).Name = "TOTAL_TOTAL_" & tabId
+                ALLRANGESNAMES.Push "TOTAL_TOTAL_" & tabId
             End If
 
             If RangeExists("MISSING_ROW_" & tabId) Then
                 rw = .Range("MISSING_ROW_" & tabId).Row
                 Col = .Range("TOTAL_COL_" & tabId).Column
                 .Cells(rw, Col).Name = "MISSING_TOTAL_" & tabId
+                ALLRANGESNAMES.Push "MISSING_TOTAL_" & tabId
                 If RangeExists("MISSING_COL_" & tabId) Then
                     Col = .Range("MISSING_COL_" & tabId).Column
                     .Cells(rw, Col).Name = "MISSING_MISSING_" & tabId
+                    ALLRANGESNAMES.Push "MISSING_MISSING_" & tabId
                 End If
             End If
         End If
@@ -986,6 +1044,7 @@ Private Sub NameRanges()
                 Col = .Range("MISSING_COL_" & tabId).Column
                 rw = .Range("TOTAL_ROW_" & tabId).Row
                 .Cells(rw, Col).Name = "TOTAL_MISSING_" & tabId
+                ALLRANGESNAMES.Push "TOTAL_MISSING_" & tabId
             End If
         End If
 
@@ -994,17 +1053,20 @@ Private Sub NameRanges()
         addEnd = IIf(specs.HasPercentage, "PERC_COL_", "VALUES_COL_")
         addEnd = Split(.Range(addEnd & nbCols & "_" & tabId).Address, ":")(1)
         .Range(addBegin & ":" & addEnd).Name = "INTERIOR_VALUES_" & tabId
+        ALLRANGESNAMES.Push  "INTERIOR_VALUES_" & tabId
 
         'For spatial table, add a new name (outer_values for future computations)
         If tablType = TypeSpatial Then
             Set rng = .Range("INTERIOR_VALUES_" & tabId)
             Set rng = .Range(rng.Cells(1, -1), rng.Cells(rng.Rows.Count + 1, rng.Columns.Count + 4))
             rng.Name = "OUTER_VALUES_" & tabId
+            ALLRANGESNAMES.Push  "OUTER_VALUES_" & tabId
         End If
 
         'Header Row with column categories
         Set rng = HeaderRange()
         rng.Name = "COLUMN_CATEGORIES_" & tabId
+        ALLRANGESNAMES.Push "COLUMN_CATEGORIES_" & tabId
     End With
 End Sub
 
@@ -1414,4 +1476,8 @@ End Property
 
 Private Property Get ICrossTable_EndRow() As Long
     ICrossTable_EndRow = EndRow()
+End Property
+
+Private Property Get ICrossTable_NamedRangesList() As BetterArray
+    Set ICrossTable_NamedRangesList = NamedRangesList()
 End Property
