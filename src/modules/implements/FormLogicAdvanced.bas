@@ -61,6 +61,13 @@ Private Sub CMD_ExportData_Click()
     ClickExportMigration
 End Sub
 
+'Reset all columns
+Private Sub CMD_ResetCols_Click()
+
+    ClickResetColumns
+
+End Sub
+
 'Import historic geobase
 Private Sub CMD_ImportGeoHistoric_Click()
     Dim impObj As IImpSpecs
@@ -92,5 +99,5 @@ Private Sub UserForm_Initialize()
     tradform.TranslateForm Me
 
     Me.width = 250
-    Me.height = 450
+    Me.height = 550
 End Sub
