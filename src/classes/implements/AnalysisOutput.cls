@@ -124,6 +124,23 @@ Private Property Get OutputSh(Optional ByVal scope _
 
 End Property
 
+Private Property Get NamesObject() As IAnaTabIds
+
+  Dim lData As ILinelistSpecs
+  Dim ll As ILinelist
+  Dim sh As Worksheet
+  Dim shName As String
+
+  Set ll = OutputLL()
+  Set lData = ll.LinelistData()
+
+  shName = lData.TemporarySheetName(TemporarySheetAnalysis)
+  Set sh = ll.Wksh(shName)
+
+  'Don't check conformity when creating the object
+  Set NamesObject = AnaTabIds.Create(sh, False)
+End Property
+
 'Speed Up the application
 Private Sub BusyApp()
     Application.ScreenUpdating = False
@@ -397,6 +414,8 @@ Private Sub WriteTable(ByVal loName As String, _
   Dim containsTimeSeries As Boolean
   Dim spatRng As Range 'Spatio-temporal plage for one table
   Dim sheetInfo As String 'Tag on sheet scope
+  Dim namObj As IAnaTabIds
+  Dim tabRangesNames As BetterArray
 
   'Variables for Time Series Tables
   Dim tablename As String
@@ -432,6 +451,8 @@ Private Sub WriteTable(ByVal loName As String, _
   Set dict = lData.Dictionary()
   Set vars = LLVariables.Create(dict)
   Set design = DesignFormat()
+  Set namObj = NamesObject()
+
   sheetInfo = outsh.Cells(1, 3).Value
   upRngName = "RNG_HasTable_" & UCase(Split(sheetInfo, "-")(0))
 
@@ -475,6 +496,10 @@ Private Sub WriteTable(ByVal loName As String, _
     'Format the created table
     tabl.Format design
 
+    'Save the table named ranges for future exports
+    Set tabRangesNames = tabl.NamedRangesList()
+    namObj.AddTableInfos scope, tabId, tabRangesNames
+
     'Will be used to test if a sheet has a table
     If IsEmpty(outsh.Range(upRngName)) Then outsh.Range(upRngName).Value = "yes"
 
@@ -508,15 +533,30 @@ Private Sub WriteTable(ByVal loName As String, _
         'Add the series
         gr.AddSeries grSpecs.SeriesName(graphCounter), _
         grSpecs.SeriesType(graphCounter), grSpecs.SeriesPos(graphCounter)
+
        'Add the series label
         gr.AddLabels grSpecs.SeriesLabel(graphCounter), _
         grSpecs.SeriesColumnLabel(graphCounter), hardCodeLabels:=False
+
+        namObj.AddGraphInfo scope:=scope, tabId:=tabId, graphId:=tabId, _ 
+                            SeriesName:=grSpecs.SeriesName(graphCounter), _ 
+                            SeriesType:=grSpecs.SeriesType(graphCounter), _ 
+                            SeriesPos:=grSpecs.SeriesPos(graphCounter), _ 
+                            SeriesLabel:=grSpecs.SeriesLabel(graphCounter), _ 
+                            SeriesColumnLabel:=grSpecs.SeriesColumnLabel(graphCounter), _ 
+                            hardCodeLabels:=False, _
+                            outRangeAddress:=cellRng.Address
       Next
       
       'Format the graph
       gr.Format catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _
                 valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _
                 scope:=scope, heightFactor:=grHeight
+
+      namObj.AddGraphFormat scope:=scope, tabId:=tabId, graphId:=tabId, _ 
+                            catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _
+                            valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _
+                            heightFactor:=grHeight                
     End If
 
     'For TimeSeries and Spatio-Temporal, add formula for minimum and Maximum
@@ -642,6 +682,7 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
   Dim gr As IGraphs
   Dim trads As ITranslation
   Dim design As ILLFormat
+  Dim namObj As IAnaTabIds 'Name objects
 
   'Different BetterArrays for stocking informations on graphs
   Dim grBAinput As BetterArray 'input elements for graph specs
@@ -674,6 +715,7 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
   Set tabLabel = New BetterArray
   Set tabColLabel = New BetterArray
   Set tabPrefLabel = New BetterArray
+  Set namObj = NamesObject()
 
 
   'ListObjects and linelist data
@@ -721,6 +763,18 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
           gr.AddLabels catName:=tabLabel.Item(seriesCounter), _
                        lblName:=tabColLabel.Item(seriesCounter), _
                        prefix:=tabPrefLabel.Item(seriesCounter), prefixOnly:=True
+          'Add graph informations
+          namObj.AddGraphInfo   scope:=AnalysisScopeTimeSeries, tabId:=graphCounter, _ 
+                                graphId:=graphCounter, _ 
+                                SeriesName:=tabSeries.Item(seriesCounter), _ 
+                                SeriesType:=tabTypes.Item(seriesCounter), _ 
+                                SeriesPos:=tabPos.Item(seriesCounter), _ 
+                                SeriesLabel:=tabLabel.Item(seriesCounter), _ 
+                                SeriesColumnLabel:=vbNullString, _ 
+                                outRangeAddress:=cellRng.Address, _ 
+                                prefix:=tabPrefLabel.Item(seriesCounter), _ 
+                                prefixOnly:=True
+
       Next
 
       'Format the graphs
@@ -731,6 +785,13 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
 
       'Add the graph title to graph lists
       cellRng.Value = plotTitle
+
+      'Add graph formatting informations
+      namObj.AddGraphFormat scope:=AnalysisScopeTimeSeries, tabId:=graphCounter, _ 
+                            graphId:=graphCounter, _ 
+                            catTitle:=trads.TranslatedValue("MSG_Period"), _
+                            valuesTitle:=trads.TranslatedValue("MSG_Values"), _
+                            plotTitle:=plotTitle
 
       'Format the plot title cell
       design.ApplyFormat cellRng, scope:=LinelistHiddenCell
@@ -765,6 +826,7 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String)
   Dim trads As ITranslation
   Dim Lo As ListObject
   Dim tabl As ICrossTable
+  Dim namObj As IAnaTabIds
 
   'Worksheet of the analyses
   Set sh = Wksh()
@@ -774,6 +836,7 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String)
   Set lData = LinelistData()
   Set trads = TransObject()
   Set design = DesignFormat()
+  Set namObj = NamesObject()
 
 
   If Lo.DataBodyRange Is Nothing Then Exit Sub
@@ -812,12 +875,27 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String)
      'Add the series label
       gr.AddLabels grSpecs.SeriesLabel(graphCounter), _
       grSpecs.SeriesColumnLabel(graphCounter), hardCodeLabels:=False
+
+      namObj.AddGraphInfo scope:=AnalysisScopeSpatioTemporal, tabId:=tabId, _ 
+                           graphId:=tabId, _ 
+                            SeriesName:=grSpecs.SeriesName(graphCounter), _ 
+                            SeriesType:=grSpecs.SeriesType(graphCounter), _ 
+                            SeriesPos:=grSpecs.SeriesPos(graphCounter), _ 
+                            SeriesLabel:=grSpecs.SeriesLabel(graphCounter), _ 
+                            SeriesColumnLabel:=grSpecs.SeriesColumnLabel(graphCounter), _ 
+                            hardCodeLabels:=False, _ 
+                            outRangeAddress:=cellRng.Address
     Next
       
     'Format the graph
     gr.Format catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _
               valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _
               scope:=GraphScopeTimeSeries, plotTitle:=plotTitle
+    
+    namObj.AddGraphFormat scope:=AnalysisScopeSpatioTemporal, tabId:=tabId, graphId:=tabId, _ 
+                            catTitle:="LABEL_ROW_CATEGORIES_" & tabId, _
+                            valuesTitle:=specs.Value("label"), hardCodeLabels:=False, _
+                            heightFactor:=1, plotTitle:=plotTitle 
 
     cellRng.Value = plotTitle
     design.ApplyFormat cellRng, scope:=LinelistHiddenCell

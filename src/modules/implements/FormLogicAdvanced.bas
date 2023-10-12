@@ -61,26 +61,6 @@ Private Sub CMD_ExportData_Click()
     ClickExportMigration
 End Sub
 
-
-'Import Migration Data
-Private Sub CMD_ImportData_Click()
-    Dim impObj As IImpSpecs
-    Set impObj = ImpSpecs.Create([F_ImportRep], Me, currwb)
-
-    impObj.ImportMigration
-
-    'Update all the listAuto in the workbook
-    UpdateAllListAuto currwb
-End Sub
-
-'Import the Geobase
-Private Sub CMD_ImportGeo_Click()
-    Dim impObj As IImpSpecs
-    Set impObj = ImpSpecs.Create([F_ImportRep], Me, currwb)
-
-    impObj.ImportGeobase
-End Sub
-
 'Import historic geobase
 Private Sub CMD_ImportGeoHistoric_Click()
     Dim impObj As IImpSpecs
@@ -112,5 +92,5 @@ Private Sub UserForm_Initialize()
     tradform.TranslateForm Me
 
     Me.width = 250
-    Me.height = 550
+    Me.height = 450
 End Sub

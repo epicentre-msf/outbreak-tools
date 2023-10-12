@@ -35,6 +35,7 @@ Private Const METADATASHEET             As String = "Metadata"
 Private Const PASSWORDSHEET             As String = "__pass" 'password sheets
 Private Const TEMPSHEET                 As String = "temp__" 'temporary boggy sheet
 Private Const EXPORTSHEET               As String = "Exports"
+Private Const ANANAMESSHEET             As String = "ana_tabnames__"
 Private Const MESSTRANSLATIONSHEET      As String = "LinelistTranslation"
 
 Private this As TExpOut
@@ -274,31 +275,49 @@ Private Sub AddAnalysis(ByVal prevSheet As String, _
                         ByVal outwb As Workbook, ByVal inpwb As Workbook)
 
   Dim sheetNamesList As BetterArray
+  Dim scopeNamesList As BetterArray
+  Dim scope As Byte
   Dim counter As Long
   Dim lltrads As ILLTranslations
   Dim prevSheetName As String
+  Dim namObj As IAnaTabIds
+  Dim outsh As Worksheet
+  Dim sheetName As String
 
   Set sheetNamesList = New BetterArray
+  Set scopeNamesList = New BetterArray
   Set lltrads = LLTradsObject()
+
   prevSheetName = prevSheet
 
   'Add Analysis Worksheets for analysis Exports
   sheetNamesList.Push lltrads.Value("uasheet"), lltrads.Value("tssheet"), _
                      lltrads.Value("spsheet"), lltrads.Value("sptsheet")
+  scopeNamesList.Push AnalysisIdsScopeNormal,  AnalysisIdsScopeTimeSeries, _ 
+                      AnalysisIdsScopeSpatial, AnalysisIdsScopeSpatioTemporal
+
+  Set namObj = AnaTabIds.Create(inpwb.Worksheets(ANANAMESSHEET))
   
-  For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
-    With outwb
-      .Worksheets.Add(after:=.Worksheets(prevSheetName)).Name = _
-      sheetNamesList.Item(counter)
-      prevSheetName = sheetNamesList.Item(counter)
+  With outwb
+    For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
+      sheetName =  sheetNamesList.Item(counter)
+      scope = scopeNamesList.Item(counter)
+      .Worksheets.Add(after:=.Worksheets(prevSheetName)).Name = sheetName
+      prevSheetName = sheetName
+      Set outsh = .Worksheets(sheetName)
+
+      'Clear Excel clipboard
+      Application.CutCopyMode = False
+
       On Error Resume Next
-        inpwb.Worksheets(prevSheetName).Cells.Copy
         RemoveGridLines .Worksheets(prevSheetName)
+        inpwb.Worksheets(prevSheetName).Cells.Copy
         .Worksheets(prevSheetName).Cells.PasteSpecial xlPasteValues
         .Worksheets(prevSheetName).Cells.PasteSpecial xlPasteFormats
+        namObj.WriteGraphs outsh,  scope
       On Error GoTo 0
-    End With
-  Next
+    Next
+  End With
 
 End Sub
 
