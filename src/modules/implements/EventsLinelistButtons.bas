@@ -14,6 +14,7 @@ Private Const PASSSHEET As String = "__pass"
 Private Const EXPORTSHEET As String = "Exports"
 Private Const PRINTPREFIX As String = "print_"
 Private Const TEMPSHEET As String = "temp__"
+Private Const SHOWHIDESHEET As String = "show_hide__"
 
 Private showHideObject As ILLShowHide
 Private tradsform As ITranslation   'Translation of forms
@@ -358,7 +359,7 @@ errAddRows:
     MsgBox tradsmess.TranslatedValue("MSG_ErrAddRows"), _
           vbOKOnly + vbCritical, _
           tradsmess.TranslatedValue("MSG_Error")
-    Exit Sub
+    On Error GoTo 0
 End Sub
 
 '@Description("Resize the data entry table in the linelist")
@@ -407,7 +408,7 @@ errDelRows:
     MsgBox tradsmess.TranslatedValue("MSG_ErrDelRows"), _
           vbOKOnly + vbCritical, _
           tradsmess.TranslatedValue("MSG_Error")
-    Exit Sub
+    On Error GoTo 0
 
 End Sub
 
@@ -503,6 +504,7 @@ errLoadExp:
            vbOKOnly + vbCritical, _
            tradsmess.TranslatedValue("MSG_Error")
     Exit Sub
+    On Error GoTo 0
 End Sub
 
 '@Description("Callback for clik on open the geobase application")
@@ -855,6 +857,7 @@ ErrHand:
             vbOKOnly + vbCritical, _
             tradsmess.TranslatedValue("MSG_Error")
     NotBusyApp
+    On Error GoTo 0
 End Sub
 
 '@Description("Import new data in the linelist")
@@ -886,3 +889,114 @@ Public Sub clickImportGeobase()
     impObj.ImportGeobase
 End Sub
 
+Private Sub RestaureHiddenStatus(ByVal cellRng As Range, Optional ByVal ondict As Boolean = True)
+
+    Dim dict As ILLdictionary
+    Dim vars As ILLVariables
+    Dim sh As Worksheet
+    Dim varName As String
+    Dim varSheetName As String
+    Dim hideStatus As Boolean
+    Dim varStatus As String
+    Dim varColumnIndex As Long
+    Dim sheetInfo As String
+    Dim prevSheetName As String
+
+    Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
+    Set vars = LLVariables.Create(dict)
+
+    'Hide all hidden variables
+
+    Do While (Not IsEmpty(cellRng))
+        
+        varName = cellRng.Value
+
+        If ondict Then 
+            varStatus = vars.Value(colName:="status", varName:=varName)
+        Else
+            'on the show/hide worksheet the variable status is related
+            'to the language
+            Select Case cellRng.Offset( ,1).Value
+
+            Case tradsmess.TranslatedValue("MSG_Hidden")
+
+                 varStatus = "hidden"
+            Case tradsmess.TranslatedValue("MSG_Mandatory")
+                 
+                 varStatus = "mandatory"
+            Case tradsmess.TranslatedValue("MSG_Shown")
+                
+                varStatus = "shown"
+
+            End Select
+        End If
+
+        varSheetName = vars.Value(colName:="sheet name", varName:=varName)
+        varColumnIndex = 0
+
+        On Error Resume Next
+            varColumnIndex = CLng(vars.Value(colName:="column index", varName:=varName))
+        On Error GoTo 0
+
+        'If unable to identify the column, skip    
+        If varColumnIndex = 0 Then GoTo ContinueLoop
+        'On mandatory variables in the show/hide worksheet, skip
+        If ((Not ondict) And (varStatus = "mandatory")) Then GoTo ContinueLoop
+
+        'Only hidden variables are hidden, otherwise show them (mandatory or shown)
+        hideStatus = IIF(varStatus = "hidden", True, False)
+
+        'sheet of the variable
+        If prevSheetName <> varSheetName Then
+            
+            If prevSheetName <> vbNullString Then pass.Protect prevSheetName
+
+            Set sh = wb.Worksheets(varSheetName)
+            prevSheetName = varSheetName
+            pass.UnProtect varSheetName
+        End If
+        
+        sheetInfo = vars.Value(colName:="sheet type", varName:=varName)
+        
+        'On VList, hide the line, on Hlist the column
+        If sheetInfo = "vlist1D" Then
+            sh.Cells(varColumnIndex, 1).EntireRow.Hidden = hideStatus
+        ElseIf sheetInfo = "hlist2D" Then
+            sh.Cells(1, varColumnIndex).EntireColumn.Hidden = hideStatus
+        End If
+
+    ContinueLoop:
+        Set cellRng = cellRng.Offset(1)
+    Loop
+
+    pass.Protect varSheetName
+End Sub
+
+'@Description("Reset hidden columns in the linelist")
+'@EntryPoint
+Public Sub clickResetColumns()
+    Attribute clickResetColumns.VB_Description = "Reset hidden columns in the linelist"
+    
+   Dim Lo As ListObject
+   Dim cellRng As Range
+
+    BusyApp
+
+    InitializeTrads
+
+    'On Error GoTo ErrHand
+
+    'Return the state of variables in the dictionary
+    Set cellRng = wb.Worksheets(DICTSHEET).Cells(2, 1)
+    RestaureHiddenStatus cellRng
+
+    'Return the state of the variables in show/hide worksheet
+    For Each Lo in wb.Worksheets(SHOWHIDESHEET).ListObjects
+        'cellRange
+        Set cellRng = Lo.Range.Cells(1, 2)
+        RestaureHiddenStatus cellRng, False
+    Next
+
+'ErrHand:
+    NotBusyApp
+End Sub
