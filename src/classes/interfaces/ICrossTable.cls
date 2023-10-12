@@ -28,24 +28,17 @@ End Property
 Public Property Get RowRange(ByVal rowVal As String, _
                              Optional ByVal includeHeaders As Boolean = True) As Range
 End Property
-
 Public Property Get StartRow() As Long: End Property
 Public Property Get Previous() As ICrossTable: End Property 'Previous table in the same section
-
 Public Property Get Specifications() As ITablesSpecs: End Property
 Public Property Get Wksh() As Worksheet: End Property
-
 Public Property Get NumberOfColumns() As Long: End Property
 Public Property Get EndColumn() As Long: End Property
-
 Public Property Get EndRow() As Long: End Property
-
-Public Property Get TimeSeriesHeader() As String
-End Property
-
+Public Property Get TimeSeriesHeader() As String: End Property
+Public Property Get NamedRangesList() As BetterArray: End Property
 
 'Exposed methods
-
 Public Sub AddRows(): End Sub
 
 Public Sub AddColumns(): End Sub

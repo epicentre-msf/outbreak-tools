@@ -298,11 +298,11 @@ Private Property Get Value(ByVal colName As String, _
 
   On Error Resume Next
     If cellidRng.Row <= idRng.Cells(idRng.Rows.Count, 1).Row Then
-      retValue = cellRetRng.Value
+      retValue = CStr(cellRetRng.Value)
     End If
   On Error GoTo 0
 
-  If TypeName(retValue) = "String" Then Value = retValue
+  Value = retValue
 End Property
 
 Private Property Get Name() As String
