@@ -930,7 +930,7 @@ Private Sub UpdateMetadata()
     With metash
         lastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
 
-        If lastRow > 3 Then
+        If lastRow > 4 Then
             'Clean from row 5
             Set rng = .Range(.Cells(5, 1), .Cells(lastRow, 2))
             rng.ClearContents
