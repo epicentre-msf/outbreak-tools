@@ -388,6 +388,22 @@ Private Sub AddGoTo(ByVal cellRng As Range, _
   End Select
 End Sub
 
+'Add Minimum and maximum formula on a spatio-temporal table
+Private Sub MinMaxFormula(ByVal outsh As Worksheet, ByVal secId As String, _ 
+                          ByVal minFormula As String, ByVal maxFormula As String, _ 
+                          ByVal goToPrefix As String)
+  Dim cellRng As Range
+  
+  outsh.Range("MAX_MAX_DATE_" & secId).formula = "= MAX(" & maxFormula & ")"
+  outsh.Range("MIN_MIN_DATE_" & secId).formula = "= MIN(" & minFormula & ")"
+
+  'Add goTo Header to the previous section
+  Set cellRng = outsh.Range("SECTION_" & secId).Offset(2)
+  AddGoTo cellRng:=cellRng, goToPrefix:=goToPrefix, scope:="header", _ 
+          goToSuffix:=secId
+
+End Sub
+
 'Write tables of one section: Global summary, univariate or bivariate or spatial
 Private Sub WriteTable(ByVal loName As String, _
                        Optional ByVal scope As AnalysisScope = AnalysisScopeNormal)
@@ -424,13 +440,15 @@ Private Sub WriteTable(ByVal loName As String, _
   Dim maxFormula As String
   Dim prevSpecs As ITablesSpecs 'Previous specs (could be Nothing)
   Dim nextSpecs As ITablesSpecs 'Next specs (could be a non valid table)
-  Dim prevSecId As String 'Previous table Id
+  Dim prevSecId As String 'Previous section table Id on temporal tables
+  Dim secId As String 'Actual section Id on temporal tables
   Dim dict As ILLdictionary
   Dim vars As ILLVariables
   Dim goToHeader As String
   Dim grHeight As Long
   Dim isNewSection As Boolean 'Test if a specification is new section
-  Dim addMinMaxFormula As Boolean 'Test if there is a need to update min/max formula
+  Dim addPrevSecMinMaxFormula As Boolean 'Test if there is a need to update min/max formula on previous section
+  Dim addActSecMinMaxFormula As Boolean 'Test if there is a need to update min/max formula on actual section
   Dim addSpatioTemporalName As Boolean 'Test if we should add spatio temporal name range to update formulas
   Dim upRngName As String
 
@@ -471,10 +489,12 @@ Private Sub WriteTable(ByVal loName As String, _
     
     Set specs = TablesSpecs.Create(hRng, tabRng, lData)
     Set nextSpecs = Nothing
-    addMinMaxFormula = False
+    addPrevSecMinMaxFormula = False
+    addActSecMinMaxFormula = False
     addSpatioTemporalName = False
 
-    'For non valid table move to next one
+    'For non valid
+    'Table move to next one
     If Not specs.ValidTable() Then GoTo continueLoop
 
     tabType = specs.TableType()
@@ -559,6 +579,8 @@ Private Sub WriteTable(ByVal loName As String, _
                             heightFactor:=grHeight                
     End If
 
+    'Time Series and Spatio - Temporal =========================================
+
     'For TimeSeries and Spatio-Temporal, add formula for minimum and Maximum
     If Not containsTimeSeries Then GoTo continueLoop
 
@@ -583,65 +605,67 @@ Private Sub WriteTable(ByVal loName As String, _
       maxFormula = "MAX(" & tablename & "[" & rowVar & "]" & ")"
       'add goTo Headers
       Push goToHeader & ": " & tabl.TimeSeriesHeader(), scope:="header"
-      addMinMaxFormula = False
+      addPrevSecMinMaxFormula = False
     End If
 
-    'We are on a new section, and at the end of previous section
+    'We are on a new section, and at the 
+    'end of previous section
     'New section after the first New Section
     If isNewSection And (Not prevSpecs Is Nothing)  Then
       prevSecId = prevSpecs.TableSectionId()
-      addMinMaxFormula = True
-
-      'Add Name for range of the whole table for spatio-temporal analysis
+      addPrevSecMinMaxFormula = True
       'This is used to update formulas
       addSpatioTemporalName = (tabType = TypeSpatioTemporal)
     End If
 
-    If (Not (nextSpecs Is Nothing)) Then
-      
+    If (Not (nextSpecs Is Nothing)) Then 
       If (nextSpecs.IsNewSection() And isNewSection) Then
-        'A time series table with only one section, and with next sections
-        prevSecId = specs.TableSectionId()
-        addMinMaxFormula = True
+        'A time series table with only one section, and
+        'with next sections
+        secId = specs.TableSectionId()
+        addActSecMinMaxFormula = True
         addSpatioTemporalName = (tabType = TypeSpatioTemporal)
       End If
     Else
       'last section of a time series table
-      prevSecId = specs.TableSectionId()
-      addMinMaxFormula = True
+      secId = specs.TableSectionId()
+      addActSecMinMaxFormula = True
 
-      'Add an anchor to where to start building graphs for time series (START_GRAPHS_TS)
-      Set cellRng = outsh.Range("ENDTABLE_" & prevSecId).Offset(5, 2)
-
+      'Add an anchor to where to start building graph's for time series (START_GRAPHS_TS)
+      Set cellRng = outsh.Range("ENDTABLE_" & secId).Offset(5, 2)
       If tabType = TypeTimeSeries Then cellRng.Name = "START_GRAPHS_TS"
       If tabType = TypeSpatioTemporal Then cellRng.Name = "START_GRAPHS_SPT"
     End If
 
     If (Not isNewSection) And (Not (nextSpecs Is Nothing)) Then
-      addMinMaxFormula = False
-      'No new section, update minimum and maximum formula
+      addPrevSecMinMaxFormula = False
+      addActSecMinMaxFormula = False
+      'No new section, update minimum and maximum for
       minFormula = minFormula & ", " & "MIN(" & tablename & "[" & rowVar & "]" & ")"
       maxFormula = maxFormula & ", " & "MAX(" & tablename & "[" & rowVar & "]" & ")"
       Push goToHeader & ": " & tabl.TimeSeriesHeader(), scope:="header"
     End If
 
     'Add minimum and maximum formulas
-    If addMinMaxFormula Then
-
-      outsh.Range("MAX_MAX_DATE_" & prevSecId).formula = "= MAX(" & maxFormula & ")"
-      outsh.Range("MIN_MIN_DATE_" & prevSecId).formula = "= MIN(" & minFormula & ")"
-
-      'On new section update min and max formula
-      If isNewSection Then
-        minFormula = "MIN(" & tablename & "[" & rowVar & "]" & ")"
-        maxFormula = "MAX(" & tablename & "[" & rowVar & "]" & ")"
-      End If
-
-      'Add goTo Header to the previous section
-      Set cellRng = outsh.Range("SECTION_" & prevSecId).Offset(2)
-      AddGoTo cellRng:=cellRng, goToPrefix:=goToPrefix, _ 
-              scope:="header",  goToSuffix:=prevSecId
+    If addPrevSecMinMaxFormula Then
+      MinMaxFormula outsh:=outsh, secId:=prevSecId, _ 
+                    minFormula:=minFormula, maxFormula:=maxFormula, _ 
+                    goToPrefix:=goToPrefix
     End If
+
+
+    If addActSecMinMaxFormula Then
+      MinMaxFormula outsh:=outsh, secId:=secId, _ 
+                    minFormula:=minFormula, maxFormula:=maxFormula, _ 
+                    goToPrefix:=goToPrefix
+    End If
+
+    'On new section update min and max formula
+    If isNewSection Then
+      minFormula = "MIN(" & tablename & "[" & rowVar & "]" & ")"
+      maxFormula = "MAX(" & tablename & "[" & rowVar & "]" & ")"
+    End If
+    
 
     'Add name for spatio-temporal table
     If addSpatioTemporalName Then

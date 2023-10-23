@@ -309,6 +309,7 @@ Public Sub ClickRemoveFilters()
         pass.Protect "_active"
     End If
 ErrHand:
+    pass.Protect "_active"
     NotBusyApp
 End Sub
 
@@ -354,6 +355,7 @@ Public Sub ClickAddRows()
 
 errAddRows:
     On Error Resume Next
+    If sheetTag = "HList" Then pass.Protect "_active"
     NotBusyApp
     Application.EnableEvents = True
     MsgBox tradsmess.TranslatedValue("MSG_ErrAddRows"), _
@@ -403,6 +405,7 @@ Public Sub ClickResize()
 
 errDelRows:
     On Error Resume Next
+    If sheetTag = "HList" Then pass.Protect "_active"
     NotBusyApp
     Application.EnableEvents = True
     MsgBox tradsmess.TranslatedValue("MSG_ErrDelRows"), _
@@ -866,14 +869,41 @@ Public Sub clickImportData()
     Attribute clickImportData.VB_Description = "Import new data in the linelist"
     
     Dim impObj As IImpSpecs
-    Dim currwb As Workbook
+    Dim sh As Worksheet
+    Dim csTab As ICustomTable
+    Dim Lo As ListObject
+    Dim nbBlank As Long
 
-    Set currwb = ThisWorkbook
-    Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], currwb)
+    InitializeTrads
+    BusyApp
+
+    Set impObj = ImpSpecs.Create([F_ImportRep], [F_Advanced], wb)
+    
+    'Resize all the table on all HList worksheets
+    Application.EnableEvents = False
+    For Each sh in wb.Worksheets
+        If sh.Cells(1, 3).Value = "HList" Then
+            nbBlank = sh.Cells(1, 6).Value
+            Set Lo = sh.ListObjects(1)
+            Set csTab = CustomTable.Create(Lo)
+            pass.UnProtect sh.Name
+            On Error Resume Next
+            csTab.RemoveRows totalCount:=nbBlank
+            On Error GoTo 0
+            pass.Protect sh.Name
+        End If
+    Next
+    
+    On Error GoTo ErrManage
+
     impObj.ImportMigration
 
     'Update all the listAuto in the workbook
-    UpdateAllListAuto currwb
+    UpdateAllListAuto wb
+
+ErrManage:
+    NotBusyApp
+    Application.EnableEvents = True
 End Sub
 
 '@Description("Import a new geobase in the linelist")

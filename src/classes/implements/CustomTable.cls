@@ -102,10 +102,11 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
   Dim loColsEnd As Long
   Dim sh As Worksheet
   Dim delRng As Range
+  Dim hRng As Range
 
   Set sh = Wksh()
   Set Lo = Table()
-
+  Set hRng = HeaderRowRange()
 
   'Remove unwanted rows from each listObject
   With sh
@@ -130,11 +131,11 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
 
       Do While (rowCounter > loRowHeader)
         If (Application.WorksheetFunction.COUNTA(.Rows(rowCounter)) <= totalRowCount) Then
-          
+
           If (delRng Is Nothing) Then
-            Set delRng = .Rows(rowCounter)
+            Set delRng = hRng.Offset(rowCounter - loRowHeader)
           Else
-            Set delRng = Application.Union(delRng, .Rows(rowCounter))
+            Set delRng = Application.Union(delRng,  hRng.Offset(rowCounter - loRowHeader))
           End If
           'update the end rows
           loRowsEnd = loRowsEnd - 1
@@ -391,7 +392,7 @@ Private Sub Import(ByVal impTab As Object, _
     On Error Resume Next
     startPastingRow = Table.DataBodyRange.Rows.Count + 1
     On Error GoTo 0
-    Resize AddRows:=True, nbRows:=impTab.DataRange.Rows.Count
+    Resize AddRows:=True, nbRows:=impTab.DataRange.Rows.Count, insertShift:=insertShift
   End If
 
   For counter = 1 To imphRng.Columns.Count
