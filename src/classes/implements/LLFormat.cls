@@ -733,10 +733,10 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         'format the range.
         Set rng = formattingObject
 
-        interiorColorValue = IIf(IsEmpty(rng), "", DesignValue("sub section interior color"))
+        interiorColorValue = DesignValue("sub section interior color")
         fontColorValue = DesignValue("sub section font color")
+        dimensionValue = 11
         dimensionValue = DesignValue("sub section font size", False)
-        dimensionValue = IIf(dimensionValue = 0, 11, dimensionValue)
 
         FormatRange rng, interiorColor:=interiorColorValue, fontColor:=fontColorValue, FontSize:=dimensionValue, _
                     isBold:=True
