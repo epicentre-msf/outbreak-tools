@@ -588,6 +588,8 @@ Private Sub WriteTable(ByVal loName As String, _
     On Error Resume Next
     Set prevSpecs = specs.Previous()
     Set nextSpecs = specs.NextSpecs(anchorRng)
+    prevSecId = prevSpecs.TableSectionId()
+    secId = specs.TableSectionId()
     On Error GoTo 0
 
     rowVar = specs.Value("row")
@@ -612,7 +614,6 @@ Private Sub WriteTable(ByVal loName As String, _
     'end of previous section
     'New section after the first New Section
     If isNewSection And (Not prevSpecs Is Nothing)  Then
-      prevSecId = prevSpecs.TableSectionId()
       addPrevSecMinMaxFormula = True
       'This is used to update formulas
       addSpatioTemporalName = (tabType = TypeSpatioTemporal)
@@ -622,15 +623,12 @@ Private Sub WriteTable(ByVal loName As String, _
       If (nextSpecs.IsNewSection() And isNewSection) Then
         'A time series table with only one section, and
         'with next sections
-        secId = specs.TableSectionId()
         addActSecMinMaxFormula = True
         addSpatioTemporalName = (tabType = TypeSpatioTemporal)
       End If
     Else
       'last section of a time series table
-      secId = specs.TableSectionId()
       addActSecMinMaxFormula = True
-
       'Add an anchor to where to start building graph's for time series (START_GRAPHS_TS)
       Set cellRng = outsh.Range("ENDTABLE_" & secId).Offset(5, 2)
       If tabType = TypeTimeSeries Then cellRng.Name = "START_GRAPHS_TS"
@@ -666,17 +664,16 @@ Private Sub WriteTable(ByVal loName As String, _
       maxFormula = "MAX(" & tablename & "[" & rowVar & "]" & ")"
     End If
     
-
     'Add name for spatio-temporal table
     If addSpatioTemporalName Then
       With outsh
         Set cellRng = .Range("COLUMN_CATEGORIES_" & tabId)
         Set spatRng = .Range( _ 
-                        .Range("COLUMN_CATEGORIES_" & prevSecId).Cells(1, 1), _ 
+                        .Range("COLUMN_CATEGORIES_" & secId).Cells(1, 1), _ 
                         cellRng.Cells(1, cellRng.Columns.Count) _ 
                       )
       End With
-      spatRng.Name = "SPT_FORMULA_COLUMN_" & prevSecId
+      spatRng.Name = "SPT_FORMULA_COLUMN_" & secId
     End If
 
   continueLoop:
