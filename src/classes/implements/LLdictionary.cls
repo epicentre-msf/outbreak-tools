@@ -105,7 +105,7 @@ Private Sub ClassArraysInitialize()
     Set DICTIONARYCOLUMNS = New BetterArray
 
     'colnames of the dictionary
-    DICTIONARYCOLUMNS.Push "variable name", "main label", "editable label", "sub label", "note", "sheet name", _
+    DICTIONARYCOLUMNS.Push "variable name", "main label", "dev comments", "editable label", "sub label", "note", "sheet name", _
                            "sheet type", "main section", "sub section", "status", _
                             "personal identifier", "variable type", "variable format", _
                             "control", "control details", "unique", _
@@ -707,7 +707,7 @@ Private Sub Translate(ByVal TransObject As ITranslation)
 
     Set transCols = New BetterArray
 
-    transCols.Push "main label", "sub label", "sheet name", "note", _
+    transCols.Push "main label", "sub label", "dev comments", "sheet name", "note", _
                    "main section", "sub section", "message"
 
     For counter = transCols.LowerBound To transCols.UpperBound
