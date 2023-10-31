@@ -23,8 +23,14 @@ Public Enum ExportScope
     ExportThree = 3
     ExportFour = 4
     ExportFive = 5
-    ExportAna = 6
-    ExportAll = 10
+    ExportSix = 6
+    ExportSeven = 7
+    ExportEight = 8
+    ExportNine = 9
+    ExportTen = 10
+    
+    ExportAna = 98
+    ExportAll = 99
 End Enum
 
 'Exposed methods
