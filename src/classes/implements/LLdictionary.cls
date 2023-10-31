@@ -27,6 +27,7 @@ Private DICTIONARYCOLUMNS As BetterArray
 Private Const SHEETTYPEVERTICAL As String = "vlist1D"
 Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
 Private Const CLASSNAME As String = "ILLdictionary"
+Private Const TOTALNUMBEROFEXPORTS As Integer = 5
 
 Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, _
                        ByVal dictStartColumn As Long) As ILLdictionary
@@ -103,16 +104,23 @@ End Property
 Private Sub ClassArraysInitialize()
 
     Set DICTIONARYCOLUMNS = New BetterArray
+    Dim counter As Long
 
     'colnames of the dictionary
     DICTIONARYCOLUMNS.Push "variable name", "main label", "dev comments", "editable label", "sub label", "note", "sheet name", _
                            "sheet type", "main section", "sub section", "status", _
                             "personal identifier", "variable type", "variable format", _
-                            "control", "control details", "unique", _
-                           "export 1", "export 2", "export 3", "export 4", _
-                           "export 5", "min", "max", "alert", "message", _
+                            "control", "control details", "unique"
+
+    'Push the number of allowed exports                        
+    For counter = 1 To TOTALNUMBEROFEXPORTS
+        DICTIONARYCOLUMNS.Push "export " & CStr(counter)
+    Next
+
+    DICTIONARYCOLUMNS.Push  "min", "max", "alert", "message", _
                            "formatting condition", "register book", _
-                           "formatting values", "lock cells", "table name", "column index", _
+                           "formatting values", "lock cells", _ 
+                            "table name", "column index", _
                            "list auto", "visibility"
 End Sub
 

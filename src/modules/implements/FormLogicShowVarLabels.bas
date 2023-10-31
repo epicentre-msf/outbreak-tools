@@ -37,5 +37,5 @@ Private Sub UserForm_Initialize()
     tradform.TranslateForm Me
 
     Me.width = 650
-    Me.height = 600
+    Me.height = 380
 End Sub

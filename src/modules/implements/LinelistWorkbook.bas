@@ -5,6 +5,14 @@ Private Sub Workbook_Open()
     Application.OnKey "^+g", "ClickGeoApp"
     Application.Calculation = xlCalculationManual
     Application.EnableEvents = True
+    
+    'If you want to add a time stamp to the linelist
+
+    'On Error Resume Next
+    '   Application.Iteration = True
+    '  Application.MaxIterations = 1
+    'On Error GoTo 0
+    
 End Sub
 
 Private Sub Workbook_BeforeClose(Cancel As Boolean)

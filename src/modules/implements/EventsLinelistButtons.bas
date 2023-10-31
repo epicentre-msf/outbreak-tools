@@ -431,6 +431,7 @@ Public Sub ClickExport()
 
     Const COMMANDHEIGHT As Integer = 50
     Const COMMANDGAPS As Byte = 10
+    Const MAXIMUMNUMBEROFEXPORTS As Integer = 10
 
     Dim exportNumber As Integer
     Dim topPosition As Integer
@@ -447,7 +448,7 @@ Public Sub ClickExport()
     On Error GoTo errLoadExp
 
     With F_Export
-        For exportNumber = 1 To 5
+        For exportNumber = 1 To MAXIMUMNUMBEROFEXPORTS
             If Not exp.IsActive(exportNumber) Then
                 .Controls("CMD_Export" & exportNumber).Visible = False
             Else
@@ -685,6 +686,9 @@ Public Sub ClickExportMigration()
     Else
         'For the first click Thick Migration and Geo and put historic to false
         'For subsequent clicks, just show what have been ticked
+        [F_ExportMig].CHK_ExportMigData.Value = True
+        [F_ExportMig].CHK_ExportMigEditableLabel.Value = True
+        [F_ExportMig].CHK_ExportMigShowHide.Value = True
         [F_ExportMig].CHK_ExportMigData.Value = True
         [F_ExportMig].CHK_ExportMigGeo.Value = True
         [F_ExportMig].CHK_ExportMigGeoHistoric.Value = True

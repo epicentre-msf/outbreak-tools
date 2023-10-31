@@ -280,7 +280,7 @@ Attribute PrepareToDeployment.VB_Description = "Hide some worksheets before depl
     Set wb = ThisWorkbook
 
     sheetsList.Push "Dictionary", "Choices", "Analysis", "Exports", _
-                    "Translations", "__pass", "__formula"
+                    "Translations", "__pass", "__formula", "Dev", "__names"
 
     For counter = sheetsList.LowerBound To sheetsList.UpperBound
         Set sh = wb.Worksheets(sheetsList.Item(counter))
