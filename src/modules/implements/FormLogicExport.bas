@@ -120,6 +120,26 @@ Private Sub CMD_Export5_Click()
     CreateExport 5
 End Sub
 
+Private Sub CMD_Export6_Click()
+    CreateExport 6
+End Sub
+
+Private Sub CMD_Export7_Click()
+    CreateExport 7
+End Sub
+
+Private Sub CMD_Export8_Click()
+    CreateExport 8
+End Sub
+
+Private Sub CMD_Export9_Click()
+    CreateExport 9
+End Sub
+
+Private Sub CMD_Export10_Click()
+    CreateExport 10
+End Sub
+
 Private Sub CMD_NewKey_Click()
     InitializeTrads
     pass.GenerateKey tradmess

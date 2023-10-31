@@ -1,0 +1,26 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad = "ribbonLoaded">
+    <ribbon startFromScratch="false">
+        <tabs>
+            <tab id="customTab" label="Designer">
+                <group id="customGroupManage" getLabel="LangLabel">
+                    <button id="btnDelGeo" imageMso="ClearAll" getLabel="LangLabel" size="large" onAction="clickDelGeo"/>
+                    <button id="btnClear"  getLabel = "LangLabel" imageMso="WordArtClear" size="large" onAction="clickClearEnt"/>
+                    <dropDown id = "langDrop" imageMso="TranslationPane" onAction="clickLangChange" getLabel = "LangLabel">
+                        <item id = "FRA" label = "Français" />
+                        <item id = "ENG" label = "English" />
+                        <item id = "ARA" label = "عربى"/>
+                        <item id = "SPA" label = "Español"/>
+                        <item id = "POR" label = "Portugués"/>
+                    </dropDown>
+                </group>
+                <group id="customGroupImp" getLabel="LangLabel">
+                    <button id="btnTransImp" getLabel="LangLabel" image="translation" size="large" onAction="clickImpTrans"/>
+                    <button id="btnImpPass" getLabel="LangLabel" image="dbpassword" size="large" onAction="clickImpPass"/>
+                </group>
+                <group id="customGroupAdvanced" getLabel="LangLabel">
+                    <button id="btnOpen" imageMso="FileOpen" size="large" getLabel = "LangLabel" onAction="clickOpen"/>
+                </group>
+            </tab>
+        </tabs>
+    </ribbon>
+</customUI>
