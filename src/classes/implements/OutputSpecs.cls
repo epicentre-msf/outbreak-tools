@@ -37,6 +37,7 @@ Private Const TEMPSHEET                 As String = "temp__" 'temporary boggy sh
 Private Const EXPORTSHEET               As String = "Exports"
 Private Const ANANAMESSHEET             As String = "ana_tabnames__"
 Private Const MESSTRANSLATIONSHEET      As String = "LinelistTranslation"
+Private Const SHOWHIDESHEET             As String = "show_hide__"
 
 Private this As TExpOut
 
@@ -148,7 +149,12 @@ End Property
 
 
 'Prepare the output workbook
-Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False)
+'withAnalysis: Add analysis worksheets
+'includeShowHide: Add show/hide in the output
+'keepLabels: Add a tag for updating editableLabel variables on import
+Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False, _ 
+                    Optional ByVal includeShowHide As Boolean = False, _ 
+                    Optional ByVal keepLabels As Boolean = False)
 
   Dim inpwb As Workbook
   Dim tempsh As Worksheet
@@ -249,8 +255,16 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False)
   'Add the metadata and other worksheets
   prevSheetName = firstSheetName
   
-  If (expobj.Value("export metadata", CInt(scope)) = "yes") Or (scope = ExportAll) Then
-    AddMetaData scope
+  If (expobj.Value("export metadata", CInt(scope)) = "yes") Then
+    'In the metadata sheet add tags for show/hide or for 
+    AddMetaData scope:=scope, _ 
+                includeShowHide:=True, _ 
+                keepLabels:=True
+    prevSheetName = METADATASHEET
+  ElseIf (scope = ExportAll) Then
+    AddMetaData scope:=scope, _ 
+                includeShowHide:=includeShowHide, _ 
+                keepLabels:=keepLabels
     prevSheetName = METADATASHEET
   End If
 
@@ -321,7 +335,7 @@ Private Sub AddAnalysis(ByVal prevSheet As String, _
 
 End Sub
 
-Private Sub AddMetaData(ByVal scope As Byte)
+Private Sub AddMetaData(ByVal scope As Byte, ByVal includeShowHide As Boolean, ByVal keepLabels As Boolean)
 
   Dim outwb As Workbook
   Dim inpwb As Workbook
@@ -340,11 +354,12 @@ Private Sub AddMetaData(ByVal scope As Byte)
   Dim LoValues As BetterArray
   Dim lltrads As ILLTranslations
   Dim choiName As String
-
+  
   Set sheetNamesList = New BetterArray
   Set inpwb = InputWkb()
   Set outwb = outputWkb()
 
+  'Export all the used worksheets choices, metadata and translations
   sheetNamesList.Push METADATASHEET, CHOICESSHEET, DICTTRANSLATIONSHEET
 
   For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
@@ -354,6 +369,15 @@ Private Sub AddMetaData(ByVal scope As Byte)
     'Then you can just use the export sub from the datasheet
     csData.Export toWkb:=outwb, Hide:=xlSheetVisible
   Next
+
+  'Export dictionary of scope of the export
+  Set sh = inpwb.Worksheets(DICTIONARYSHEET)
+  Set dict = LLdictionary.Create(sh, 1, 1)
+
+  exportColumn = IIf(scope <> ExportAll, "export " & scope, "__all__")
+  dict.Export toWkb:=outwb, exportType:=exportColumn, _
+              addListObject:=False, Hide:=xlSheetVisible
+
 
   'Add the dropdown choices for custom choices to export
   Set choi = LLchoice.Create(outwb.Worksheets(CHOICESSHEET), 1, 1)
@@ -370,14 +394,6 @@ Private Sub AddMetaData(ByVal scope As Byte)
     choi.AddChoice choiName, LoValues
   Next
   On Error GoTo 0
-
-  'Export dictionary of scope of the export
-  Set sh = inpwb.Worksheets(DICTIONARYSHEET)
-  Set dict = LLdictionary.Create(sh, 1, 1)
-
-  exportColumn = IIf(scope <> ExportAll, "export " & scope, "__all__")
-  dict.Export toWkb:=outwb, exportType:=exportColumn, _
-              addListObject:=False, Hide:=xlSheetVisible
 
   'Add informations on metadatasheet
   Set sh = outwb.Worksheets(METADATASHEET)
@@ -397,6 +413,111 @@ Private Sub AddMetaData(ByVal scope As Byte)
   'Add the Date of the export
   varRng.Cells(varRng.Rows.Count + 2, 1).Value = "export_date"
   varRng.Cells(varRng.Rows.Count + 2, 2).Value = Format(Now, "yyyy-mm-dd Hh:Nn")
+  
+  'Keep editable labels on import (default is no)
+  varRng.Cells(varRng.Rows.Count + 3, 1).Value = "editable_labels"
+  varRng.Cells(varRng.Rows.Count + 3, 2).Value = "no update on import"
+
+  'keep show/hide on import (default is no)
+  varRng.Cells(varRng.Rows.Count + 4, 1).Value = "show_hide"
+  varRng.Cells(varRng.Rows.Count + 4, 2).Value = "no update on import"
+
+  'keep Labels when importing the file
+  If keepLabels Then  varRng.Cells(varRng.Rows.Count + 3, 2).Value = "update on import"
+
+  'include the show/hide on import
+  If includeShowHide Then
+    'Add the tab on metadata sheet
+    varRng.Cells(varRng.Rows.Count + 4, 2).Value = "update on import"
+    AddShowHide outwb:=outwb, inpwb:=inpwb
+  End If
+
+End Sub
+
+Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
+
+  'Input/output worksheets used when moving ListObjects from showhide worksheet
+  Dim inpsh As Worksheet
+  Dim outsh As Worksheet
+  Dim inpRng As Range
+  Dim outRng As Range
+  Dim Lo As ListObject
+  Dim colWidth As Long
+  Dim outdict As ILLdictionary
+  Dim counter As Long
+  Dim cellRng As Range 'move between headers of the show/hide output
+  Dim varName As String 'variable Name on the show/hide worksheet
+  Dim sheetName As String 'sheet Name on the show/hide worksheet
+  Dim outDictRng As Range 'dictionary range of the output workbook
+  Dim outvars As ILLVariables
+  Dim statusValue As String
+  Dim colIndex As Long
+
+  'Add the show/hide worksheet, and initialize elements
+  With outwb
+    .Worksheets.Add(.Worksheets(.Worksheets.Count)).Name = SHOWHIDESHEET
+    Set inpsh = inpwb.Worksheets(SHOWHIDESHEET)
+    Set outsh = .Worksheets(SHOWHIDESHEET)
+    Set outdict = LLdictionary.Create(.Worksheets(DICTIONARYSHEET), 1, 1)
+    Set outDictRng = outdict.DataRange()
+  End With
+  
+  'Add preparation steps to output dictionary (to be able to use variables)
+  outDictRng.Cells(outDictRng.Rows.Count + 1, 1).Font.color = vbBlue
+
+  'output variables (operate on dictionary in output workbook)
+  Set outvars = LLVariables.Create(outdict)  
+  
+  'This is the first cell of the show/hide worksheet outsh is the show/hide worksheet
+  Set cellRng = outsh.Cells(1, 1)
+
+  'Import all existing variables of all ListObjects from the show/hide worksheet
+  'in the input workbook inpsh is the show/hide worksheet
+  For Each Lo In inpsh.ListObjects
+
+    Set inpRng = Lo.Range
+    cellRng.Value = "variable name"
+    cellRng.Cells(1, 2).Value = "status"
+    cellRng.Cells(1, 3).Value = "column width"
+
+    'First cell of the listObject  
+    Set cellRng = cellRng.Offset(1)
+
+    For counter = 2 To inpRng.Rows.Count
+
+      varName = inpRng.Cells(counter, 2).Value
+      statusValue = inpRng.Cells(counter, 3).Value
+      
+      If outvars.Contains(varName) Then
+        
+        sheetName = outvars.Value(colName:="sheet name", varName:=varName)
+        
+        On Error Resume Next
+        colWidth = 0
+        colIndex = CLng(outvars.Value(colName:="column index", varName:=varName))
+        colWidth = inpwb.Worksheets(sheetName).Columns(colIndex).ColumnWidth
+        On Error GoTo 0
+        'add variable Name
+        cellRng.Value = varName
+        'add status
+        cellRng.Cells(1, 2).Value = statusValue 
+        'write column width
+        cellRng.Cells(1, 3).Value = colWidth
+        'move to next line
+        Set cellRng = cellRng.Offset(1)
+      End If 
+    Next
+
+    'outRng is the range of the ListObject on output worksheet, this is done only when
+    'you are done with the variables.
+    With outsh
+      Set outRng = .Range(.Cells(1, cellRng.Column), .Cells((cellRng.Row - 1), cellRng.Column + 2))
+      'Add the listObject Name
+      .ListObjects.Add(xlSrcRange, outRng, , xlYes).Name = Lo.Name
+      .ListObjects(Lo.Name).TableStyle = "TableStyleLight13"
+      Set cellRng = .Cells(1, cellRng.Column + 5)
+    End With
+  Next
 End Sub
 
 'Add Data to export
@@ -556,7 +677,10 @@ Private Property Get ExportFolder() As String
 End Property
 
 'Save the output workbook with corresponding elements to export
-Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boolean = False)
+Private Sub Save(ByVal trads As ITranslation, _
+                Optional ByVal useFilters As Boolean = False, _ 
+                Optional ByVal includeShowHide As Boolean = False, _ 
+                Optional ByVal keepLabels As Boolean = False)
 
   Dim outwb As Workbook
   Dim inpwb As Workbook
@@ -595,14 +719,11 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
   Set dict = LLdictionary.Create(inpwb.Worksheets(DICTIONARYSHEET), 1, 1)
   Set pass = LLPasswords.Create(inpwb.Worksheets(PASSWORDSHEET))
   
-  'Get the fileName of the export
+  'Get the fileName, filePath and fileExtension of the export
   fileName = expobj.ExportFileName(scope, dict, pass)
-  
-
-
   filePath = folderPath & Application.PathSeparator & fileName
-
   fileExtension = expobj.Value(colName:="file format", exportNumber:=CInt(scope))
+  
   If fileExtension = vbNullString Then fileExtension = "xlsx" 'Default extension is xlsx
   
   addPassword = (expobj.Value(colName:="password", exportNumber:=CInt(scope)) = "yes")
@@ -618,7 +739,7 @@ Private Sub Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boole
   'Prepare the output workbook (create required sheets, add metadata)
   If (scope <> ExportAna) Then
     withAnalysis = (expobj.Value("export analysis", CInt(scope)) = "yes")
-    Prepare withAnalysis
+    Prepare withAnalysis, includeShowHide, keepLabels 
     'Add the Data to export worksheet
     AddData useFilters
   Else
@@ -717,7 +838,7 @@ Private Sub CheckRequirements(ByVal currwb As Workbook)
 
   sheetsArray.Push DICTIONARYSHEET, CHOICESSHEET, DICTTRANSLATIONSHEET, _
                    METADATASHEET, PASSWORDSHEET, TEMPSHEET, EXPORTSHEET, _
-                   MESSTRANSLATIONSHEET
+                   MESSTRANSLATIONSHEET, SHOWHIDESHEET
 
   For counter = sheetsArray.LowerBound To sheetsArray.UpperBound
     sheetName = sheetsArray.Item(counter)
@@ -779,8 +900,11 @@ Private Sub IOutputSpecs_AddData()
   AddData
 End Sub
 
-Private Sub IOutputSpecs_Save(ByVal trads As ITranslation, Optional ByVal useFilters As Boolean = False)
-  Save trads, useFilters
+Private Sub IOutputSpecs_Save(ByVal trads As ITranslation, _ 
+                              Optional ByVal useFilters As Boolean = False, _ 
+                              Optional ByVal includeShowHide As Boolean = False, _ 
+                              Optional ByVal keepLabels As Boolean = False)
+  Save trads, useFilters, includeShowHide, keepLabels
 End Sub
 
 'Get the exports folderPath

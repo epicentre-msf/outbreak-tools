@@ -660,10 +660,11 @@ Private Sub Export(ByVal Wkb As Workbook, _
         dictData.Export Wkb, Hide:=Hide
     End If
 
+    sheetName = Wksh.Name
+    Set sh = Wkb.Worksheets(sheetName)
+
     'Add a list object to the dictionnary.
     If addListObject Then
-        sheetName = Wksh.Name
-        Set sh = Wkb.Worksheets(sheetName)
         Set rng = DataRange(includeHeaders:=True)
         Set rng = sh.Range(rng.Address)
 
@@ -672,6 +673,16 @@ Private Sub Export(ByVal Wkb As Workbook, _
             .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "o" & LCase(sheetName)
             'prepare the dictionary
             .Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue
+        End With
+    Else
+        With sh
+            .Cells.EntireColumn.ColumnWidth = 25
+            .Cells.Font.Size = 9
+            .Rows(1).Font.Size = 12
+            .Rows(1).Interior.Color = RGB(240, 240, 244)
+            .Rows(1).Font.Bold = True
+            .Cells.WrapText = False
+            .Cells.EntireRow.AutoFit
         End With
     End If
 End Sub
