@@ -53,6 +53,7 @@ End Sub
 
 Private Sub CreateExport()
 
+    'Scope is the scope of the export, by default, it exports all
     Dim scope As Byte
     Dim shouldQuit As Byte
     
@@ -65,8 +66,14 @@ Private Sub CreateExport()
     InitializeTrads
     Set expOut = OutputSpecs.Create(currwb, scope)
 
-    'Export for migration
-    If Me.CHK_ExportMigData.Value Then expOut.Save tradmess
+    'Export for migration ()
+    If Me.CHK_ExportMigData.Value Then 
+        expOut.Save trads:=tradmess, _ 
+                    useFilters:=False, _ 
+                    includeShowHide:=CHK_ExportMigShowHide.Value, _ 
+                    keepLabels:=CHK_ExportMigEditableLabel.Value
+    End If
+
     'Export the geobase
     If Me.CHK_ExportMigGeo.Value Then expOut.SaveGeo geoObj:=geoObj, onlyHistoric:=False
     'Export only historic data of the geobase (onlyHistoric:=True)
@@ -98,6 +105,14 @@ Private Sub CMD_ExportMigQuit_Click()
     Me.Hide
 End Sub
 
+'When you click on All data, change the attribute values also
+
+Private Sub CHK_ExportMigData_Click()
+    Me.CHK_ExportMigEditableLabel.Value = CHK_ExportMigData.Value
+    Me.CHK_ExportMigShowHide.Value = CHK_ExportMigData.Value
+End Sub
+
+
 Private Sub LBL_Previous_Click()
     Me.Hide
     F_Advanced.Show
@@ -112,5 +127,5 @@ Private Sub UserForm_Initialize()
     tradform.TranslateForm Me
 
     Me.width = 200
-    Me.height = 400
+    Me.height = 330
 End Sub
