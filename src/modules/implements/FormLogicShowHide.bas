@@ -21,3 +21,7 @@ End Sub
 Private Sub CMD_Back_Click()
     Me.Hide
 End Sub
+
+Private Sub CMD_ShowHideMinimal_Click()
+    ClickShowHideMinimal
+End Sub

@@ -5,6 +5,10 @@ library(purrr)
 library(dplyr)
 library(stringr)
 
+#----- copy the designer translation user file from the drive
+onedrive_translation <- "D:/MSF/OutbreakTools - DEV/ressources/designer_translations_user.xlsx"
+file.copy(from = onedrive_translation, to = "misc/", overwrite = TRUE)
+
 # path to the master designer_translation workbook
 master_workbook_path <- "misc/designer_translations.xlsx"
 

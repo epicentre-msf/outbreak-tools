@@ -24,7 +24,13 @@ End Enum
 'Exposed methods
 
 'Load the show/hide form with values
-Public Sub Load(ByVal tradsform As ITranslation): End Sub
+Public Sub Load(ByVal tradsform As ITranslation, Optional ByVal showForm As Boolean = True, Optional ByVal showOptional As Boolean = False)
+End Sub
+'Retrieve the ShowHide table Range
+Public Property Get ShowHideTable() As ICustomTable
+End Property
+'Initialize show/hide table, without loading the form
+Public Sub InitializeTable():End Sub
 Public Sub UpdateVisibilityStatus(ByVal Index As Long): End Sub
 Public Sub ShowHideLogic(ByVal Index As Long): End Sub
 Public Sub ChangeColWidth(ByVal Index As Long): End Sub

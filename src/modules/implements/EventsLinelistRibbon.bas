@@ -173,12 +173,12 @@ End Sub
 '@EntryPoint
 Public Sub clickRibbonImport(ByRef Control As IRibbonControl)
     Attribute clickRibbonImport.VB_Description = "Callback for btnImport On Action"
-    clickImportData
+    ClickImportData
 End Sub
 
 '@Description("Callback for btnImportGeo On Action")
 '@EntryPoint
 Public Sub clickRibbonImportGeobase(ByRef Control As IRibbonControl)
     Attribute clickRibbonImportGeobase.VB_Description = "Callback for btnImport On Action"
-    clickImportGeobase
+    ClickImportGeobase
 End Sub
