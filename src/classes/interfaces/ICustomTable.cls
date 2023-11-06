@@ -45,8 +45,13 @@ Public Sub SetValidation(ByVal colName As String, _
                            Optional ByVal alertType As String = "info")
 End Sub
 
+'Use very wisely, could modify the custom table values
+Public Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
+End Sub
+
 Public Property Get ImportColumnsNotFound() As BetterArray
 End Property
+
 'Test if there are imports in the custom table
 Public Property Get HasColumnsNotImported() As Boolean
 End Property

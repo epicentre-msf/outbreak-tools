@@ -346,6 +346,8 @@ Private Sub AddMetaData(ByVal scope As Byte, ByVal includeShowHide As Boolean, B
   Dim varRng As Range
   Dim expName As String
   Dim dict As ILLdictionary
+  Dim outdict As ILLdictionary
+  Dim outDictRng As Range
   Dim sheetName As String
   Dim exportColumn As String
   'Elements for adding custom choices to exports
@@ -378,6 +380,11 @@ Private Sub AddMetaData(ByVal scope As Byte, ByVal includeShowHide As Boolean, B
   dict.Export toWkb:=outwb, exportType:=exportColumn, _
               addListObject:=False, Hide:=xlSheetVisible
 
+  'This Tag shows that the exported dictionary is prepared (important for eventual imports process)
+  Set outdict = LLdictionary.Create(outwb.Worksheets(DICTIONARYSHEET), 1, 1)
+  Set outDictRng = outdict.DataRange()
+   'Add preparation steps to output dictionary (to be able to use variables)
+  outDictRng.Cells(outDictRng.Rows.Count + 1, 1).Font.color = vbBlue
 
   'Add the dropdown choices for custom choices to export
   Set choi = LLchoice.Create(outwb.Worksheets(CHOICESSHEET), 1, 1)
@@ -436,6 +443,8 @@ End Sub
 
 Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
 
+  Const SHOWHIDEPREF As String = "ShowHideTable_"
+
   'Input/output worksheets used when moving ListObjects from showhide worksheet
   Dim inpsh As Worksheet
   Dim outsh As Worksheet
@@ -448,10 +457,10 @@ Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
   Dim cellRng As Range 'move between headers of the show/hide output
   Dim varName As String 'variable Name on the show/hide worksheet
   Dim sheetName As String 'sheet Name on the show/hide worksheet
-  Dim outDictRng As Range 'dictionary range of the output workbook
   Dim outvars As ILLVariables
   Dim statusValue As String
   Dim colIndex As Long
+  Dim tabName As String
 
   'Add the show/hide worksheet, and initialize elements
   With outwb
@@ -459,12 +468,8 @@ Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
     Set inpsh = inpwb.Worksheets(SHOWHIDESHEET)
     Set outsh = .Worksheets(SHOWHIDESHEET)
     Set outdict = LLdictionary.Create(.Worksheets(DICTIONARYSHEET), 1, 1)
-    Set outDictRng = outdict.DataRange()
   End With
   
-  'Add preparation steps to output dictionary (to be able to use variables)
-  outDictRng.Cells(outDictRng.Rows.Count + 1, 1).Font.color = vbBlue
-
   'output variables (operate on dictionary in output workbook)
   Set outvars = LLVariables.Create(outdict)  
   
@@ -489,8 +494,10 @@ Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
       statusValue = inpRng.Cells(counter, 3).Value
       
       If outvars.Contains(varName) Then
-        
+        tabName = Replace(Lo.Name, SHOWHIDEPREF, vbNullString)
         sheetName = outvars.Value(colName:="sheet name", varName:=varName)
+        'could be either on print or non data worksheet
+        If (InStr(1, tabName, "pr") = 1) Then sheetName = "print_" & sheetName
         
         On Error Resume Next
         colWidth = 0

@@ -1039,9 +1039,8 @@ Private Sub WriteAnalysis()
   AddGoTo cellRng:=cellRng, scope:="section", goToPrefix:="spt_"
   AddCommands scope:=scope
   
-  'pass.Protect outsh, True
-  If IsEmpty(outsh.Range("RNG_HasTable_SPT")) Then _ 
-   outsh.Visible = xlSheetHidden
+  pass.Protect outsh, True
+  If IsEmpty(outsh.Range("RNG_HasTable_SPT")) Then outsh.Visible = xlSheetHidden
 
   'Transfer code to spatio-temporal analysis sheet
   TransferCodeWksh scope:=scope

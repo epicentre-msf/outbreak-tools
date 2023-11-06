@@ -41,6 +41,7 @@ Private RESERVEDSHEETS                  As BetterArray
 Private this                            As TImp
 Private IMPORTEDVARIABLES               As BetterArray
 Private IMPORTEDSHEETS                  As BetterArray
+Private HASSAMELANGUAGE                 As Boolean
 
 'Exposed methods
 'repfobj is the form of the import Report
@@ -90,7 +91,7 @@ End Property
 Private Sub InitializeFileElements()
 
   Set RESERVEDSHEETS = New BetterArray
-  RESERVEDSHEETS.Push DICTIONARYSHEET, DICTTRANSLATIONSHEET, CHOICESSHEET, METADATASHEET
+  RESERVEDSHEETS.Push DICTIONARYSHEET, DICTTRANSLATIONSHEET, CHOICESSHEET, METADATASHEET, SHOWHIDESHEET
 
   Set IMPORTEDVARIABLES = New BetterArray
   Set IMPORTEDSHEETS = New BetterArray
@@ -608,10 +609,6 @@ End Function
 
 Private Function ControlLanguage(ByVal impwb As Workbook) As Boolean
 
-  'metadata sheet is where you store informations about
-  'language in the linelist
-  Const METADATASHEET As String = "Metadata"
-
   Dim metaTab As IDataSheet
   Dim lltrads As ILLTranslations
   Dim varRng As Range
@@ -632,6 +629,7 @@ Private Function ControlLanguage(ByVal impwb As Workbook) As Boolean
     'If the metadata sheet is not found, ask the user if
     'he really wants to proceed to import. In that case
     'abort the imports.
+    HASSAMELANGUAGE = False
     abortImport = (MsgBox(trads.TranslatedValue("MSG_NoMetadata"), _
                   vbExclamation + vbYesNo, _
                   trads.TranslatedValue("MSG_Imports")) = vbYes)
@@ -656,16 +654,165 @@ Private Function ControlLanguage(ByVal impwb As Workbook) As Boolean
                             trads.TranslatedValue("MSG_ImportLanguage") & " " & impLang & _
                             trads.TranslatedValue("MSG_QuitImports"), vbExclamation + vbYesNo, _
                             trads.TranslatedValue("MSG_LanguageDifferent")) = vbNo)
+    HASSAMELANGUAGE = False
     'If the import language is not found, tell it to the user
     ElseIf (impLang = vbNullString) Then
       abortImport = (MsgBox(trads.TranslatedValue("MSG_NoLanguage"), _
                      vbExclamation + vbYesNo, _
                     trads.TranslatedValue("MSG_Imports")) = vbNo)
+      HASSAMELANGUAGE = False
+    ElseIf (impLang = currLang) Then
+      HASSAMELANGUAGE = True
     End If
   End If
 
   ControlLanguage = abortImport
 End Function
+
+'Import show/hide on import
+'It is crucial that imports has the same language as the linelist. It it is not the case
+'safely avoid importing show/hide objects
+Private Sub ImportShowHide(ByVal inpwb As Workbook)
+
+  Const SHOWHIDEPREF As String = "ShowHideTable_"
+
+  Dim metaTab As IDataSheet
+  Dim varRng As Range
+  Dim tradsmess As ITranslation
+  Dim cellRng As Range 'used for eventual stuffs
+  Dim updateShowHide As Boolean
+  Dim currwb As Workbook
+  Dim sh As Worksheet
+  Dim currDict As ILLdictionary 'current Dictionary in the current workbook
+  Dim showHideObject As ILLShowHide 'Show/Hide Object
+  Dim currLo As ListObject
+  'Custom tables for import and current worksheet
+  Dim inpCsTab As ICustomTable
+  Dim currCsTab As ICustomTable
+  'Input and current show/hide
+  Dim inpsh As Worksheet
+  Dim currsh As Worksheet
+  Dim varName As String
+  Dim sheetName As String
+  Dim colIndex As Long
+  Dim colWidth As Long
+  Dim varStatus As String
+  Dim inpDict As ILLDictionary 'Imported dictionary
+  Dim inpVarRng As Range
+  Dim currVarRng As Range
+  Dim currVarObj As ILLVariables
+  Dim counter As Long
+  Dim tabName As String
+  
+  'If you import with different language, do not even attempt to update show/hide
+  If Not HASSAMELANGUAGE Then Exit Sub
+  'If there is no metadata, exit the sub (should have a warning or a report)
+  If Not sheetExists(inpwb, METADATASHEET) Then Exit Sub
+  'if There is no show/hide worksheet in the imported workbook, exits
+  If Not sheetExists(inpwb, SHOWHIDESHEET) Then Exit Sub
+  If Not sheetExists(inpwb, DICTIONARYSHEET) Then Exit Sub
+  
+  'The imported dictionary should be prepared
+  Set inpDict = LLdictionary.Create(inpwb.Worksheets(DICTIONARYSHEET), 1, 1)
+  If Not inpDict.Prepared Then Exit Sub
+
+  'The metadata sheet is found, I will just look for the import show hide tag
+  Set metaTab = DataSheet.Create(inpwb.Worksheets(METADATASHEET), 1, 1)
+  Set varRng = metaTab.DataRange("variable")
+  updateShowHide = False
+  On Error Resume Next
+      Set cellRng = varRng.Find(What:="show_hide", lookAt:=xlWhole, MatchCase:=False)
+      updateShowHide = (cellRng.Offset(, 1).Value = "update on import")
+  On Error GoTo 0
+
+  'If there is no need to update, because update show/hide != update on import: Exit
+  If Not updateShowHide Then Exit Sub
+
+  'Step1: Initialize all the show/hide tables of the workbbok
+  Set currwb = CurrentWorkbook()
+
+  'Translation message
+  Set tradsmess = MessagesTrads()
+  Set currDict = Dictionary()
+  'Initialize show/hide tables
+  For Each sh In currwb.Worksheets
+    If (sh.Cells(1, 3).Value = "HList") Or (sh.Cells(1, 3).Value = "HList Print") Then
+      Set showHideObject = LLShowHide.Create(tradsmess, currDict, sh)
+      showHideObject.InitializeTable
+    End If
+  Next
+
+  'Step2: For each ListObjects of the current show/hide worksheet, initialize values of the
+  Set currsh = currwb.Worksheets(SHOWHIDESHEET) 'show hide worksheet in the current workbook
+  Set inpsh = inpwb.Worksheets(SHOWHIDESHEET) 'show hide worksheet in the imported workbook
+  Set currVarObj = LLVariables.Create(currDict)
+
+  For Each currLo in currsh.ListObjects
+
+    If LoExists(inpsh, currLo.Name) Then
+      Set inpCsTab = CustomTable.Create(inpsh.ListObjects(currLo.Name), idCol:="variable name")
+      Set currCsTab = CustomTable.Create(currLo, idCol:="variable name")
+
+      Set inpVarRng = inpCsTab.DataRange("variable name", strictSearch:=True)
+      Set currVarRng = currCsTab.DataRange("variable name", strictSearch:=True)
+     
+      For counter = 2 To inpVarRng.Rows.Count
+        varName = inpVarRng.Cells(counter, 1).Value
+
+        'Test if variable is present in the current variable name range 
+        If Not (currVarRng.Find(What:=varName, LookAt:=xlWhole, MatchCase:=True) Is Nothing) Then
+          
+          'Change the status
+          varStatus = inpVarRng.Cells(counter, 2).Value
+          currCsTab.SetValue keyName:=varName, colName:="status", newValue:=varStatus
+          
+          'Change the column width
+          colWidth = 22
+          On Error Resume Next
+            colWidth = CLng(inpVarRng.Cells(counter, 3).Value)
+          On Error GoTo 0
+
+          'Change the column width of the corresponding variable
+          colIndex = 0
+          On Error Resume Next
+          colIndex = CLng(currVarObj.Value(colName:="column index", varName:=varName))
+          On Error GoTo 0
+
+          'For hidden variables, the column width is 0, so they will be hidden
+          If colIndex <> 0 Then
+            
+            sheetName = currVarObj.Value(colName:="sheet name", varName:=varName)
+            tabName = Replace(currLo.Name, SHOWHIDEPREF, vbNullString)
+            
+            'could be on printed or data worksheet
+            If (InStr(1, tabName, "pr") > 0 ) Then sheetName = "print_" & sheetName
+            Set sh = currwb.Worksheets(sheetName)
+            
+            On Error Resume Next
+            sh.Columns(colIndex).ColumnWidth = colWidth
+            On Error GoTo 0
+
+            'On printed worksheet, if orientation is vertical, rotate the header
+            If (varStatus = tradsmess.TranslatedValue("MSG_ShowVerti")) Then
+              On Error Resume Next
+              Set cellRng = sh.Range(Replace(tabName, "pr", vbNullString) & "_" & "PRINTSTART")
+              Set cellRng = sh.Cells(cellRng.Offset(-2).Row, colIndex) 
+              cellRng.EntireRow.RowHeight = 100
+              cellRng.Orientation = 90
+              On Error GoTo 0
+            End If
+          End If
+        End If
+      Next
+    End If
+  Next
+End Sub
+
+'Update Editable Labels on Import
+Private Sub UpdateEditableLabels(ByVal impwb As Workbook)
+
+
+End Sub
 
 'import custom dropdown
 Private Sub ImportCustomDropdown(ByVal inpwb As Workbook, ByVal pasteAtBottom As Boolean)
@@ -764,6 +911,8 @@ Private Sub ImportMigration()
   AddSheetsNotTouchedToReport
   AddVariablesNotTouchedToReport
 
+  'Import show/hide elements
+  ImportShowHide impwb
 
   'Set all list auto to yes update
   impwb.Close savechanges:=False
@@ -917,15 +1066,20 @@ Private Sub CheckRequirements(ByVal currwb As Workbook, ByVal repfobj As Object,
 
   'Check if a sheet Exists in a workbook
   Private Function sheetExists(ByVal wb As Workbook, ByVal sheetName As String) As Boolean
-    
     Dim sh As Worksheet
-
     On Error Resume Next
     Set sh = wb.Worksheets(sheetName)
-    On Error GoTo 0
-    
+    On Error GoTo 0  
     sheetExists = (Not sh Is Nothing)
+  End Function
 
+  'Check if a listObject Exists in a workbook
+  Private Function LoExists(ByVal sh As Worksheet, ByVal loName As String) As Boolean
+    Dim Lo As ListObject
+    On Error Resume Next
+    Set Lo = sh.ListObjects(loName)
+    On Error GoTo 0
+    LoExists = (Not Lo Is Nothing)
   End Function
 
   
