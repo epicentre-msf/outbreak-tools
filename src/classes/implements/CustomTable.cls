@@ -271,21 +271,18 @@ Private Property Get CellRange(ByVal colName As String, _
   Set CellRange = rng.Cells(cellPos, 1)
 End Property
 
-Private Property Get Value(ByVal colName As String, _
-                           ByVal keyName As String) As String
+Private Function ValueRange(ByVal colName As String, ByVal keyName As String) As Range
 
   Dim idRng As Range
   Dim colRng As Range
-  Dim retValue As Variant
 
   'Iterations for id and return ranges
   Dim cellidRng As Range
   Dim cellRetRng As Range
 
-  If IdValue = vbNullString Then Exit Property
+  If IdValue = vbNullString Then Exit Function
 
-  If (Not ColumnExists(colName)) Or _
-     (Not ColumnExists(IdValue)) Then Exit Property
+  If (Not ColumnExists(colName)) Or  (Not ColumnExists(IdValue)) Then Exit Function
   Set idRng = DataRange(IdValue)
   Set colRng = DataRange(colName)
   Set cellidRng = idRng.Cells(1, 1)
@@ -297,14 +294,36 @@ Private Property Get Value(ByVal colName As String, _
     Set cellRetRng = cellRetRng.Offset(1)
   Loop
 
-  On Error Resume Next
-    If cellidRng.Row <= idRng.Cells(idRng.Rows.Count, 1).Row Then
-      retValue = CStr(cellRetRng.Value)
-    End If
-  On Error GoTo 0
+  If cellidRng.Row <= idRng.Cells(idRng.Rows.Count, 1).Row Then
+    Set ValueRange = cellRetRng
+  End If
+End Function
 
+Private Property Get Value(ByVal colName As String, _
+                           ByVal keyName As String) As String
+  Dim retValue As String
+  Dim cellRetRng As Range
+
+  'Get the value Range and retrieve (try) it value
+  'On error (unable to convert to string for ex) nothing is done, returned value is null string
+  On Error Resume Next
+    Set cellRetRng = ValueRange(colName, keyName)
+    retValue = CStr(cellRetRng.Value)
+  On Error GoTo 0
   Value = retValue
 End Property
+
+Private Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
+
+  Dim cellRetRng As Range
+
+  'Get the value Range and assign (try) it the newValue
+  'On error (cellRetRng is Nothing for ex, nothing is done)
+  On Error Resume Next
+    Set cellRetRng = ValueRange(colName, keyName)
+    cellRetRng.Value = newValue
+  On Error GoTo 0
+End Sub
 
 Private Property Get Name() As String
   Name = Table.Name
@@ -673,6 +692,11 @@ Private Sub ICustomTable_Import( _
               Optional ByVal strictColumnSearch As Boolean = False, _
               Optional ByVal insertShift As Boolean = True)
   Import impTab, pasteAtBottom, strictColumnSearch, insertShift
+End Sub
+
+Private Sub ICustomTable_SetValue(ByVal colName As String, ByVal keyName As String, _ 
+                           ByVal newValue As String)
+  SetValue colName, keyName, newValue
 End Sub
 
 Private Property Get ICustomTable_ImportColumnsNotFound() As BetterArray

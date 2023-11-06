@@ -78,3 +78,8 @@ End Sub
 Private Sub CMD_ColWidth_Click()
     ClickColWidth Me.LST_PrintNames.ListIndex
 End Sub
+
+'Restaure show/hide from the linelist
+Private Sub CMD_MatchLLShowHide_Click()
+    ClickMatchLinelistShowHide
+End Sub

@@ -30,6 +30,9 @@ Private Const CLASSNAME As String = "UpVal"
 Private Const RNGLISTAUTOUPDATED As String = "RNG_UpdateListAuto"
 Private Const RNGIMPORTDONE As String = "RNG_ImportDone"
 Private Const RNGGEOBASEMANUALUPDATE As String = "RNG_GeoUpdateManual"
+Private Const RNGSHOWALLOPTIONALS As String = "RNG_ShowAllOptionals"
+
+Private UPDATERANGESLIST As BetterArray
 
 Public Function Create(ByVal sh As Worksheet) As IUpVal
 
@@ -54,6 +57,14 @@ Public Property Set Wksh(ByVal sh As Worksheet)
   Set this.sh = sh
 End Property
 
+Private Sub InitalizeRanges()
+  If UPDATERANGESLIST Is Nothing Then
+    Set UPDATERANGESLIST = New BetterArray
+    UPDATERANGESLIST.Push RNGLISTAUTOUPDATED, RNGIMPORTDONE, RNGGEOBASEMANUALUPDATE, _ 
+                          RNGSHOWALLOPTIONALS
+  End If
+End Sub
+
 'Retrieve value from an updated range
 
 Private Property Get Value(ByVal rngName As String) As String
@@ -61,29 +72,22 @@ Private Property Get Value(ByVal rngName As String) As String
   Dim sh As Worksheet
 
   Set sh = Wksh()
+  InitalizeRanges
 
-  If (rngName = RNGLISTAUTOUPDATED) Or _
-     (rngName = RNGIMPORTDONE) Or _
-     (rngName = RNGGEOBASEMANUALUPDATE) Then
-     On Error Resume Next
-      retVal = CStr(sh.Range(rngName).Value)
-     On Error GoTo 0
-  End If
+  On Error Resume Next
+  If  UPDATERANGESLIST.Includes(rngName) Then retVal = CStr(sh.Range(rngName).Value)
+  On Error GoTo 0
 
   Value = retVal
-
 End Property
 
 Private Sub SetValue(ByVal rngName As String, newValue As String)
-
   Dim sh As Worksheet
-  Set sh = Wksh()
   
-  If (rngName = RNGLISTAUTOUPDATED) Or _
-     (rngName = RNGIMPORTDONE) Or _
-     (rngName = RNGGEOBASEMANUALUPDATE) Then
-    sh.Range(rngName).Value = newValue
-  End If
+  Set sh = Wksh()
+  InitalizeRanges
+  
+  If UPDATERANGESLIST.Includes(rngName) Then sh.Range(rngName).Value = newValue
 
 End Sub
 
@@ -98,7 +102,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
   Set rngArray = New BetterArray
   If sh Is Nothing Then ThrowErrorUnableInstanciate "Update values worksheet not defined"
 
-  rngArray.Push RNGLISTAUTOUPDATED, RNGIMPORTDONE, RNGGEOBASEMANUALUPDATE
+  rngArray.Push RNGLISTAUTOUPDATED, RNGIMPORTDONE, RNGGEOBASEMANUALUPDATE, RNGSHOWALLOPTIONALS
 
   For counter = rngArray.LowerBound To rngArray.UpperBound
     rngName = rngArray.Item(counter)

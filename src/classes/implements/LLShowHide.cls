@@ -41,6 +41,7 @@ Private this As TShowHide
 'messages for show/hide and mandatory
 Private Const TEMPORARYSHEET As String = "show_hide__"
 Private Const PRINTPREFIX As String = "print_"
+Private Const SHOWHIDEPREF As String = "ShowHideTable_"
 
 'Boolean Value to trigger the launch of the show/hide process
 
@@ -126,13 +127,13 @@ Private Sub InitializeMessages(ByVal trads As ITranslation)
   this.PRINTSHOWVERTI = trads.TranslatedValue("MSG_ShowVerti")
 End Sub
 
-Private Function TEMPSHEET() As Worksheet
+Private Function TempSheet() As Worksheet
   Dim wb As Workbook
   Dim sh As Worksheet
 
   Set sh = Wksh()
   Set wb = sh.Parent
-  Set TEMPSHEET = wb.Worksheets(TEMPORARYSHEET)
+  Set TempSheet = wb.Worksheets(TEMPORARYSHEET)
 End Function
 
 'Subs to Enable/disable the show Hide process
@@ -162,7 +163,38 @@ End Sub
 
 Private Function ShowHideTable() As Range
 
-  Const SHOWHIDEPREF As String = "ShowHideTable_"
+  Dim tpsh As Worksheet
+  Dim Lo As listObject
+  Dim loName As String
+  Dim retRng As Range
+  Dim tabName As String
+  Dim sh As Worksheet
+
+  'The temporary sheet is the show_hide__ worksheet
+  Set tpsh = TempSheet()
+  Set sh = Wksh()
+  tabName = sh.Cells(1, 4).Value
+  loName = SHOWHIDEPREF & tabName
+
+  With tpsh
+    'Initialize the table will create the listObject in the temporary show_hide__ worksheet
+    InitializeTable
+    
+    Set Lo = .ListObjects(loName)
+    If Not (Lo.DataBodyRange Is Nothing) Then
+      Set retRng = Lo.DataBodyRange
+      Set retRng = .Range(retRng.Cells(1, 1), retRng.Cells(retRng.Rows.Count, 3))
+    Else
+      Set retRng = Lo.Range
+    End If
+  End With
+
+  Set ShowHideTable = retRng
+End Function
+
+
+'Initialize the show/hide table
+Private Sub InitializeTable()
 
   Dim tpsh As Worksheet
   Dim Lo As listObject
@@ -182,116 +214,100 @@ Private Function ShowHideTable() As Range
   Dim controlVal As String
   Dim varName As String
   Dim LoRng As Range
-  Dim STARTCOL As Long
-  Dim TabName As String
+  Dim StartCol As Long
+  Dim tabName As String
   Dim defaultValue As String
   Dim statusValue As String
 
-  Set tpsh = TEMPSHEET()
-  Set sh = Wksh()
-  TabName = sh.Cells(1, 4).Value
-  loName = SHOWHIDEPREF & TabName
-
   
+  'The temporary sheet is the show_hide__ worksheet
+  Set tpsh = TempSheet()
+  Set sh = Wksh()
+  tabName = sh.Cells(1, 4).Value
+  loName = SHOWHIDEPREF & tabName
+  
+  'No initialisation if the listObject already exists
+  If LoExists(loName) Then Exit Sub
+
   With tpsh
-    If Not LoExists(loName) Then
+    'Create the listObject
+    Set dict = Dictionary()
+    Set varRng = dict.DataRange("variable name")
+    Set vars = LLVariables.Create(dict)
+    scope = ActualScope()
+    showHideColumn = IIf(scope = ShowHideScopePrint, "register book", "visibility")
+    defaultValue = IIf(scope = ShowHideScopePrint, this.PRINTSHOWHORIZ, this.SHOWN)
+    'Get the sheet name
+    sheetName = IIf(scope = ShowHideScopePrint, _
+                    Replace(sh.Name, PRINTPREFIX, vbNullString), _
+                    sh.Name)
+    sheetName = Application.WorksheetFunction.Trim(sheetName)
+    Set cellRng = varRng.Cells(1, 1)
+    'Define the start column
+    StartCol = .Cells(1, .Columns.Count).End(xlToLeft).Column + 1
+    tempCounter = 2
+    'Loop for all variables in the dictionary (I don't presume the dictionary is sorted on sheet names)
+    Do While cellRng.Value <> vbNullString
+      varName = cellRng.Value
+      counterSheetName = vars.Value(varName:=varName, colName:="sheet name")
+      If counterSheetName = sheetName Then
+        'If it is not hidden by the designer
+        If (vars.Value(varName:=varName, colName:="status") <> "hidden") Then
+          'main label
+          mainLab = vars.Value(varName:=varName, colName:="main label")
+          controlVal = vars.Value(varName:=varName, colName:="control")
+          'For geo variables, add the main label and the section
+          If (InStr(1, controlVal, "geo") > 0) Or (InStr(1, controlVal, "hf") > 0) _
+          Then mainLab = vars.Value(varName:=varName, colName:="sub section") & ": " & mainLab
+          .Cells(tempCounter, StartCol + 1).Value = mainLab
+          'variable name
+          .Cells(tempCounter, StartCol + 2).Value = varName
+          'Status
+          statusValue = vars.Value(varName:=varName, colName:=showHideColumn)
+          Select Case statusValue
+          Case "mandatory"
+            statusValue = this.mandatory
+          Case "optional"
+            statusValue = this.SHOWN
+          Case "print, vertical header"
+            statusValue = this.PRINTSHOWVERTI
+          Case "print, horizontal header"
+            statusValue = this.PRINTSHOWHORIZ
+          Case "hidden"
+            statusValue = this.HIDDEN
+          End Select
+          'On admin 1 and Linelist, the status is mandatory
+          If (controlVal = "geo1") And (scope = ShowHideScopeLinelist) Then _
+           statusValue = this.mandatory
+          'The default value is the value to write if nothing found as status
+          '(empty registerbook column)
+          If statusValue = vbNullString Then statusValue = defaultValue
+          .Cells(tempCounter, StartCol + 3).Value = statusValue
+          'column index (needed for further usages)
+          .Cells(tempCounter, StartCol + 4).Value = vars.Value(varName:=varName, colName:="column index")
+          'Control
+          .Cells(tempCounter, StartCol + 5).Value = vars.Value(varName:=varName, colName:="control")
+          tempCounter = tempCounter + 1
+        End If
+      End If
+      Set cellRng = cellRng.Offset(1)
+    Loop
 
-      'Create the listObject
-      Set dict = Dictionary()
-      Set varRng = dict.DataRange("variable name")
-      Set vars = LLVariables.Create(dict)
-      scope = ActualScope()
-      showHideColumn = IIf(scope = ShowHideScopePrint, "register book", "visibility")
-      defaultValue = IIf(scope = ShowHideScopePrint, this.PRINTSHOWHORIZ, this.SHOWN)
-      'Get the sheet name
-      sheetName = IIf(scope = ShowHideScopePrint, _
-                      Replace(sh.Name, PRINTPREFIX, vbNullString), _
-                      sh.Name)
-      sheetName = Application.WorksheetFunction.Trim(sheetName)
-      Set cellRng = varRng.Cells(1, 1)
-
-      'Define the start column
-        STARTCOL = .Cells(1, .Columns.Count).End(xlToLeft).Column + 1
-        tempCounter = 2
-        'Loop for all variables in the dictionary (I don't presume the dictionary is sorted on sheet names)
-        Do While cellRng.Value <> vbNullString
-          varName = cellRng.Value
-          counterSheetName = vars.Value(varName:=varName, colName:="sheet name")
-          If counterSheetName = sheetName Then
-            'If it is not hidden by the designer
-            If (vars.Value(varName:=varName, colName:="status") <> "hidden") Then
-              'main label
-              mainLab = vars.Value(varName:=varName, colName:="main label")
-              controlVal = vars.Value(varName:=varName, colName:="control")
-
-              'For geo variables, add the main label and the section
-              If (InStr(1, controlVal, "geo") > 0) Or (InStr(1, controlVal, "hf") > 0) _
-              Then mainLab = vars.Value(varName:=varName, colName:="sub section") & ": " & mainLab
-
-              .Cells(tempCounter, STARTCOL + 1).Value = mainLab
-
-              'variable name
-              .Cells(tempCounter, STARTCOL + 2).Value = varName
-
-              'Status
-              statusValue = vars.Value(varName:=varName, colName:=showHideColumn)
-
-              Select Case statusValue
-              Case "mandatory"
-                statusValue = this.mandatory
-              Case "optional"
-                statusValue = this.SHOWN
-              Case "print, vertical header"
-                statusValue = this.PRINTSHOWVERTI
-              Case "print, horizontal header"
-                statusValue = this.PRINTSHOWHORIZ
-              Case "hidden"
-                statusValue = this.HIDDEN
-              End Select
-
-              'On admin 1 and Linelist, the status is mandatory
-              If (controlVal = "geo1") And (scope = ShowHideScopeLinelist) Then _
-               statusValue = this.mandatory
-
-              'The default value is the value to write if nothing found as status
-              '(empty registerbook column)
-
-              If statusValue = vbNullString Then statusValue = defaultValue
-
-              .Cells(tempCounter, STARTCOL + 3).Value = statusValue
-              'column index (needed for further usages)
-              .Cells(tempCounter, STARTCOL + 4).Value = vars.Value(varName:=varName, colName:="column index")
-              'Control
-              .Cells(tempCounter, STARTCOL + 5).Value = vars.Value(varName:=varName, colName:="control")
-              tempCounter = tempCounter + 1
-            End If
-          End If
-          Set cellRng = cellRng.Offset(1)
-        Loop
-        .Cells(1, STARTCOL + 1).Value = "main label"
-        .Cells(1, STARTCOL + 2).Value = "variable name"
-        .Cells(1, STARTCOL + 3).Value = "status"
-        .Cells(1, STARTCOL + 4).Value = "column index"
-        .Cells(1, STARTCOL + 5).Value = "control"
-        'substract 1 for resizing purposes
-        tempCounter = tempCounter - 1
-        Set LoRng = .Range(.Cells(1, STARTCOL + 1), .Cells(tempCounter, STARTCOL + 5))
-        .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = loName
-    End If
-    Set Lo = .ListObjects(loName)
-    
-    If Not (Lo.DataBodyRange Is Nothing) Then
-      Set retRng = Lo.DataBodyRange
-      Set retRng = .Range(retRng.Cells(1, 1), retRng.Cells(retRng.Rows.Count, 3))
-    Else
-      Set retRng = Lo.Range
-    End If
+    .Cells(1, StartCol + 1).Value = "main label"
+    .Cells(1, StartCol + 2).Value = "variable name"
+    .Cells(1, StartCol + 3).Value = "status"
+    .Cells(1, StartCol + 4).Value = "column index"
+    .Cells(1, StartCol + 5).Value = "control"
+    'substract 1 for resizing purposes
+    tempCounter = tempCounter - 1
+    Set LoRng = .Range(.Cells(1, StartCol + 1), .Cells(tempCounter, StartCol + 5))
+    .ListObjects.Add(xlSrcRange, LoRng, , xlYes).Name = loName
   End With
+End Sub
 
-  Set ShowHideTable = retRng
-End Function
 
 Private Function Value(ByVal lineNumber As Long, Optional ByVal colName As String = "status") As String
+  
   Dim formRng As Range
   Dim colIndex As Long
 
@@ -325,7 +341,9 @@ Private Sub SetStatus(ByVal lineNumber As Long, ByVal newStatus As String)
 End Sub
 
 
-Private Sub Load(ByVal tradsform As ITranslation)
+Private Sub Load(ByVal tradsform As ITranslation, _ 
+                Optional ByVal showForm As Boolean = True, _
+                Optional ByVal showOptional As Boolean = False)
   Dim formRng As Range 'Range to update the form
   Dim fobj As Object
   Dim trads As ITranslation
@@ -339,6 +357,8 @@ Private Sub Load(ByVal tradsform As ITranslation)
 
   'Range of the form
   Set formRng = ShowHideTable()
+
+  'Add Elements to the form
   Set fobj = formObject()
   scope = ActualScope()
 
@@ -370,9 +390,15 @@ Private Sub Load(ByVal tradsform As ITranslation)
     fobj.OPT_PrintShowHoriz.Caption = this.PRINTSHOWHORIZ
     fobj.OPT_PrintShowVerti.Caption = this.PRINTSHOWVERTI
     fobj.OPT_Hide.Caption = this.Hide
+
+    If showOptional Then
+      fobj.CMD_ShowHideMinimal.Caption = trads.TranslatedValue("MSG_ShowAllOptional")
+    Else
+      fobj.CMD_ShowHideMinimal.Caption = trads.TranslatedValue("MSG_HideAllOptional")
+    End If
   On Error GoTo 0
 
-  fobj.Show
+  If showForm Then fobj.Show
 End Sub
 
 'Update visibility when you select one line of the show hide
@@ -587,7 +613,7 @@ Private Function LoExists(ByVal loName As String) As Boolean
 
   Dim Lo As listObject
   Dim sh As Worksheet
-  Set sh = TEMPSHEET()
+  Set sh = TempSheet()
   On Error Resume Next
     Set Lo = sh.ListObjects(loName)
   On Error GoTo 0
@@ -599,8 +625,14 @@ Private Sub ThrowError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
-Private Sub ILLShowHide_Load(ByVal tradsform As ITranslation)
-   Load tradsform
+Private Sub ILLShowHide_Load(ByVal tradsform As ITranslation, _ 
+                             Optional ByVal showForm As Boolean = True, _ 
+                            Optional ByVal showOptional As Boolean = False)
+   Load tradsform, showForm, showOptional
+End Sub
+
+Private Sub ILLShowHide_InitializeTable()
+  InitializeTable
 End Sub
 
 Private Sub ILLShowHide_UpdateVisibilityStatus(ByVal Index As Long)
@@ -614,3 +646,18 @@ End Sub
 Private Sub ILLShowHide_ChangeColWidth(ByVal Index As Long)
   ChangeColWidth indexValue:=(Index + 1)
 End Sub
+
+Private Property Get ILLShowHide_ShowHideTable() As ICustomTable
+  Dim sh As Worksheet
+  Dim tabName As String
+  Dim loName As String
+  Dim tpsh As Worksheet
+
+  Set sh = Wksh()
+  Set tpsh = TempSheet()
+  tabName = sh.Cells(1, 4).Value
+  loName = SHOWHIDEPREF & tabName
+  'Initialize the table if needed
+  InitializeTable
+  Set ILLShowHide_ShowHideTable = CustomTable.Create(tpsh.ListObjects(loName), idCol:="variable name")
+End Property
