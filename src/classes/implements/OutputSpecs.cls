@@ -461,6 +461,7 @@ Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
   Dim statusValue As String
   Dim colIndex As Long
   Dim tabName As String
+  Dim sheetInfo As String
 
   'Add the show/hide worksheet, and initialize elements
   With outwb
@@ -502,7 +503,13 @@ Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
         On Error Resume Next
         colWidth = 0
         colIndex = CLng(outvars.Value(colName:="column index", varName:=varName))
-        colWidth = inpwb.Worksheets(sheetName).Columns(colIndex).ColumnWidth
+        sheetInfo = outvars.Value(colName:="sheet type", varName:=varName)
+        If sheetInfo = "vlist1D" Then
+          colWidth = inpwb.Worksheets(sheetName).Rows(colIndex).RowHeight
+        Else
+          colWidth = inpwb.Worksheets(sheetName).Columns(colIndex).ColumnWidth
+        End If
+
         On Error GoTo 0
         'add variable Name
         cellRng.Value = varName
@@ -521,10 +528,15 @@ Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
       Set outRng = .Range(.Cells(1, cellRng.Column), .Cells((cellRng.Row - 1), cellRng.Column + 2))
       'Add the listObject Name
       .ListObjects.Add(xlSrcRange, outRng, , xlYes).Name = Lo.Name
-      .ListObjects(Lo.Name).TableStyle = "TableStyleLight13"
+      .ListObjects(Lo.Name).TableStyle = "TableStyleLight4"
       Set cellRng = .Cells(1, cellRng.Column + 5)
     End With
   Next
+
+  'Auto fit columns for the show/hide worksheet
+  On Error Resume Next
+  outsh.Cells.EntireColumn.AutoFit
+  On Error GoTo 0
 End Sub
 
 'Add Data to export
@@ -564,11 +576,10 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
     Set inpsh = inpwb.Worksheets(sheetName)
     Set headersList = expdict.Data.FilterData("sheet name", sheetName, "variable name")
     Set labelsList = expdict.Data.FilterData("sheet name", sheetName, "main label")
+    Set outsh = outwb.Worksheets(sheetName)
 
     'Test if the sheet is hlist or vlist
     If (inpsh.Cells(1, 3).Value = "HList") Then
-
-      Set outsh = outwb.Worksheets(sheetName)
 
       'Test if I should use filtered Data or actual data
       If useFilters Then
@@ -599,6 +610,22 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
       AddVlistData sheetName, headersList, useLabels
 
     End If
+
+    'Format the cells of the output worksheet
+    With outsh
+      On Error Resume Next
+      .Cells.EntireRow.RowHeight = 14
+      .Cells.EntireColumn.ColumnWidth = 35
+      .Cells.Font.Name = "Consolas"
+      .Cells.Font.Size = 9
+      .Rows(1).Font.Size = 10
+      .Rows(1).RowHeight = 25
+      .Rows(1).Interior.Color = RGB(188, 212, 230)
+      .Rows(1).VerticalAlignment = xlVAlignCenter
+      .Rows(1).Font.Bold = True
+      .Cells.EntireColumn.AutoFit
+      On Error GoTo 0
+    End With
   Next
 
 End Sub

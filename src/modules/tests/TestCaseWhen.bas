@@ -32,10 +32,6 @@ End Sub
 Private Sub TestInitialize()
 End Sub
 
-Private Function Quoted(ByVal Text As String)
-    Quoted = chr(34) & Text & chr(34)
-End Function
-
 '@TestMethod
 Private Sub testcasewhen()
     Dim cat As BetterArray

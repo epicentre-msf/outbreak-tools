@@ -321,10 +321,9 @@ Public Sub UpdateSpatioTemporalFormulas(ByVal rngName As String, ByVal actAdm As
         headerFormula = Application.WorksheetFunction.Trim(headerFormula)
 
         'Change the formula for only columns where headers are the selected input
-        If (headerFormula = rngName) Then
+        If (InStr(1, headerFormula, rngName) > 0) Then
             
             Set valuesRng = Nothing
-
             On Error Resume Next
             headerCellName = headerRng.Cells(1, counter).Name.Name
             'replace LABEL with VALUES to get the column range of values

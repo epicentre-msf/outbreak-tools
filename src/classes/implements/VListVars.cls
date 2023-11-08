@@ -398,7 +398,10 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     End If
 
     'Hidden Row
-    If varStatus = "hidden" Then cellRng.EntireRow.HIDDEN = True
+    If (varStatus = "hidden") Or (varStatus = "optional, hidden") Then 
+        cellRng.EntireRow.HIDDEN = True
+    End If
+    
     cellRng.Locked = False
     cellRng.Offset(, -1).Locked = False
     cellRng.Offset(, -2).Locked = False

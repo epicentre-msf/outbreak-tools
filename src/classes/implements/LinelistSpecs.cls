@@ -99,7 +99,7 @@ Public Property Get Choices() As ILLchoice
 
 End Property
 
-Public Property Get trads() As ILLTranslations
+Public Property Get Trads() As ILLTranslations
     Dim trans As ILLTranslations
     Dim shtransLL As Worksheet
     Dim shtransDict As Worksheet
@@ -108,27 +108,27 @@ Public Property Get trads() As ILLTranslations
     Set shtransDict = Wkb.Worksheets(DICTTRANSLATIONSHEET)
 
     Set trans = LLTranslations.Create(shtransLL, shtransDict)
-    Set trads = trans
+    Set Trads = trans
 End Property
 
-Public Property Get desTrads() As IDesTranslation
+Public Property Get DesTrads() As IDesTranslation
     Dim sh As Worksheet
     Set sh = Wkb.Worksheets(DESTRANSSHEET)
-    Set desTrads = DesTranslation.Create(sh)
+    Set DesTrads = DesTranslation.Create(sh)
 End Property
 
-Public Property Get geoObject() As ILLGeo
+Public Property Get GeoObject() As ILLGeo
     Dim sh As Worksheet
     Dim geo As ILLGeo
     Set sh = Wkb.Worksheets(GEOSHEET)
     Set geo = LLGeo.Create(sh)
-    Set geoObject = geo
+    Set GeoObject = geo
 End Property
 
-Public Property Get Exports() As ILLExport
+Public Property Get ExportObject() As ILLExport
     Dim sh As Worksheet
     Set sh = Wkb.Worksheets(EXPORTSHEET)
-    Set Exports = LLExport.Create(sh)
+    Set ExportObject = LLExport.Create(sh)
 End Property
 
 Public Property Get Analysis() As ILLAnalysis
@@ -145,7 +145,7 @@ End Property
 
 'Test if the translation form exists
 Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation
-    Set TransObject = trads.TransObject(trans)
+    Set TransObject = Trads.TransObject(trans)
 End Property
 
 Public Property Get FormulaDataObject() As IFormulaData
@@ -277,8 +277,8 @@ Private Sub Prepare()
 
     Set dict = Dictionary()
     Set choi = Choices()
-    Set trans = trads()
-    Set expobj = Exports()
+    Set trans = Trads()
+    Set expobj = ExportObject()
     Set ana = Analysis()
     Set geo = geoObject()
 
@@ -471,13 +471,13 @@ Private Sub Export(ByVal toWkb As Workbook)
 
     Set dict = Dictionary()
     Set choi = Choices()
-    Set trans = trads()
-    Set expobj = Exports()
-    Set geo = geoObject()
+    Set trans = Trads()
+    Set expobj = ExportObject()
+    Set geo = GeoObject()
     Set passobj = Password()
     Set mainObj = MainObject()
 
-    dict.Export toWkb
+    dict.Export toWkb, Hide:=xlSheetVeryHidden
     choi.Export toWkb, Hide:=xlSheetVeryHidden
     trans.ExportToWkb toWkb
     expobj.ExportSpecs toWkb, Hide:=xlSheetVeryHidden

@@ -246,7 +246,7 @@ Public Property Get RowsCategoriesRange(Optional ByVal includeHeaders As Boolean
 End Property
 
 'Test if a value Exists in a Range
-Private Function ValueExists(ByVal rng As Range, ByVal Value As String)
+Private Function ValueExists(ByVal rng As Range, ByVal Value As String) As Boolean
     ValueExists = (Not rng.Find(What:=Value, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
 End Function
 
@@ -262,7 +262,13 @@ Public Property Get RowRange(ByVal rowVal As String, Optional ByVal includeHeade
     'Test if Missing exists
     If ValueExists(rng, rowVal) Then
         valueRow = rng.Find(What:=rowVal, lookAt:=xlWhole, MatchCase:=True).Row
-        Start = IIf(includeHeaders, StartColumn, StartColumn + 1)
+        
+        If includeHeaders Then
+            Start = StartColumn
+        Else 
+            start = StartColumn + 1
+        End If
+
         With sh
             Set RowRange = .Range(.Cells(valueRow, Start), .Cells(valueRow, EndColumn))
         End With
@@ -1362,9 +1368,11 @@ Private Sub Format(ByVal desFormat As ILLFormat)
         End If
         
         'The whole table =======================================================
+        wholeTableStart = StartColumn
+        If (tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And (Not NewSection) Then
+            wholeTableStart = StartColumn + 1
+        End If
 
-        wholeTableStart = IIf((tablType = TypeTimeSeries Or tablType = TypeSpatioTemporal) And (Not NewSection), _
-                              StartColumn + 1, StartColumn)
         If (tablType <> TypeUnivariate) And (tablType <> TypeGlobalSummary) Then
             Set rng = .Range(.Cells(StartRow, wholeTableStart), .Cells(EndRow, EndColumn))
             DesignFormat.ApplyFormat rng, scope:=AnalysisWholeTable
@@ -1446,7 +1454,8 @@ Private Property Get ICrossTable_ColumnRange(ByVal colVal As String, _
     Set ICrossTable_ColumnRange = ColumnRange(colVal, includeHeaders, onlyCategories)
 End Property
 
-Private Property Get ICrossTable_RowRange(ByVal rowVal As String, Optional ByVal includeHeaders As Boolean = True) As Range
+Private Property Get ICrossTable_RowRange(ByVal rowVal As String, _ 
+                                         Optional ByVal includeHeaders As Boolean = True) As Range
     Set ICrossTable_RowRange = RowRange(rowVal, includeHeaders)
 End Property
 
