@@ -465,19 +465,17 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     'Custom columns, user can modify their names
     If (varEditLab = "yes") Then cellRng.Offset(-2).Locked = False
 
-    'Hidden columns
-    If varStatus = "hidden" Then cellRng.EntireColumn.HIDDEN = True
+    'Hidden columns (entirely hidden, or "optional, hidden" on Linelist, or "hidden" on Printed Linelist)
+    If (varStatus = "hidden") Or _ 
+       ((varStatus = "optional, hidden") And (Not usePrinted)) Or _
+       ((varToPrint = "hidden") And usePrinted) Then 
+       cellRng.EntireColumn.HIDDEN = True
+    End If
 
-    'On printed sheet, hide or rotate (otherwise change nothing)
-    If usePrinted Then
-        Select Case varToPrint
-        Case "print, vertical header"
-            'Don't take in account
-            cellRng.Offset(-2).Orientation = 90
-            cellRng.Offset(-2).EntireColumn.AutoFit
-        Case "hidden"
-            cellRng.EntireColumn.HIDDEN = True
-        End Select
+    'On printed sheet, rotate vertical headers (otherwise change nothing)
+    If (usePrinted And (varToPrint = "print, vertical header")) Then
+        cellRng.Offset(-2).Orientation = 90
+        cellRng.Offset(-2).EntireColumn.AutoFit
     End If
 
     'The cell header itself

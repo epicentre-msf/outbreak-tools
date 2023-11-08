@@ -88,6 +88,9 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
             
             'Update admin 1
             Set transValue = geo.GeoLevel(LevelAdmin1, GeoScopeAdmin)
+            
+            'Clear selected values on Geo
+            ClearLists
             F_Geo.LST_Adm1.List = transValue.Items
             
             'There is a range named adm4_concat in the workbook
@@ -115,6 +118,9 @@ Public Sub LoadGeo(ByVal hfOrGeo As Byte)
 
         If (Not geo.HasNoData()) Then
             Set transValue = geo.GeoLevel(LevelAdmin1, GeoScopeHF)
+            
+            'Clear selected values on health facility
+            ClearLists
             F_Geo.LST_AdmF1.List = transValue.Items
             'There is a range named hf_concat in the workbook
             concatenateHFTable.FromExcelRange Range("hf_concat")
@@ -142,6 +148,23 @@ ErrLoadGeo:
            vbOKOnly + vbCritical, _
            tradmess.TranslatedValue("MSG_Error")
     NotBusyApp
+End Sub
+
+Private Sub ClearLists()
+    Dim counter As Integer
+
+    With F_Geo
+        .LST_AdmF1.Value = ""
+        .LST_Adm1.Value = ""
+        .LST_ListeAgreF.Value = ""
+        .LST_ListeAgre.Value = ""
+        .LST_Histo.Value = ""
+        .LST_HistoF.Value = ""
+        For counter = 2 To 4
+            .Controls("LST_Adm" & counter).Clear
+            .Controls("LST_AdmF" & counter).Clear
+        Next
+    End With
 End Sub
 
 

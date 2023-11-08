@@ -25,11 +25,11 @@ Private Type TShowHide
   trads As ITranslation
   dict As ILLdictionary
   sh As Worksheet
-  Show As String
+  SHOW As String
   SHOWN As String
-  Hide As String
+  HIDE As String
   HIDDEN As String
-  mandatory As String
+  MANDATORY As String
   DESIGNERHIDDEN As String
   PRINTSHOWHORIZ As String
   PRINTSHOWVERTI As String
@@ -62,6 +62,10 @@ Public Property Get MessagesTrads() As ITranslation
   Set MessagesTrads = this.trads
 End Property
 
+Public Property Set MessagesTrads(ByVal trads As ITranslation)
+  Set this.trads = trads
+End Property
+
 Public Property Get Wksh() As Worksheet
   Set Wksh = this.sh
 End Property
@@ -74,40 +78,6 @@ Public Property Get Dictionary() As ILLdictionary
   Set Dictionary = this.dict
 End Property
 
-Public Property Get formObject() As Object
-  Dim scope As ShowHideScope
-
-  scope = ActualScope()
-  Select Case scope
-  Case ShowHideScopeLinelist
-    Set formObject = [F_ShowHideLL]
-  Case ShowHideScopePrint
-    Set formObject = [F_ShowHidePrint]
-  End Select
-End Property
-
-Public Property Set MessagesTrads(ByVal trads As ITranslation)
-  Set this.trads = trads
-End Property
-
-Public Property Get ActualScope()
-  'Actual scope is in the worksheet
-  Dim sh As Worksheet
-  Dim rngVal As String
-  Dim scope As ShowHideScope
-
-  Set sh = Wksh()
-  On Error Resume Next
-    rngVal = sh.Cells(1, 3).Value
-  On Error GoTo 0
-  If rngVal = "HList" Then
-    scope = ShowHideScopeLinelist
-  ElseIf rngVal = "HList Print" Then
-    scope = ShowHideScopePrint
-  End If
-  ActualScope = scope
-End Property
-
 Public Property Set Dictionary(ByVal dict As ILLdictionary)
   Set this.dict = dict
 End Property
@@ -116,12 +86,45 @@ Public Property Get Self() As ILLShowHide
   Set Self = Me
 End Property
 
+Private Property Get formObject() As Object
+  Dim scope As Byte
+
+  scope = ActualScope()
+  Select Case scope
+  Case ShowHideScopeHList, ShowHideScopeVList
+    Set formObject = [F_ShowHideLL]
+  Case ShowHideScopePrint
+    Set formObject = [F_ShowHidePrint]
+  End Select
+End Property
+
+Private Property Get ActualScope() As Byte
+  'Actual scope is in the worksheet
+  Dim sh As Worksheet
+  Dim rngVal As String
+  Dim scope As Byte
+
+  Set sh = Wksh()
+  On Error Resume Next
+    rngVal = sh.Cells(1, 3).Value
+  On Error GoTo 0
+  Select Case rngVal
+  Case "HList"
+    scope = ShowHideScopeHList
+  Case "VList"
+    scope = ShowHideScopeVList
+  Case = "HList Print"
+    scope = ShowHideScopePrint
+  End Select
+  ActualScope = scope
+End Property
+
 Private Sub InitializeMessages(ByVal trads As ITranslation)
-  this.Show = trads.TranslatedValue("MSG_Show")
+  this.SHOW = trads.TranslatedValue("MSG_Show")
   this.SHOWN = trads.TranslatedValue("MSG_Shown")
-  this.Hide = trads.TranslatedValue("MSG_Hide")
+  this.HIDE = trads.TranslatedValue("MSG_Hide")
   this.HIDDEN = trads.TranslatedValue("MSG_Hidden")
-  this.mandatory = trads.TranslatedValue("MSG_Mandatory")
+  this.MANDATORY = trads.TranslatedValue("MSG_Mandatory")
   this.DESIGNERHIDDEN = trads.TranslatedValue("MSG_DesHidden")
   this.PRINTSHOWHORIZ = trads.TranslatedValue("MSG_ShowHoriz")
   this.PRINTSHOWVERTI = trads.TranslatedValue("MSG_ShowVerti")
@@ -208,7 +211,7 @@ Private Sub InitializeTable()
   Dim sheetName As String
   Dim cellRng As Range
   Dim tempCounter As Long
-  Dim scope As ShowHideScope
+  Dim scope As Byte
   Dim counterSheetName As String
   Dim mainLab As String
   Dim controlVal As String
@@ -237,11 +240,12 @@ Private Sub InitializeTable()
     scope = ActualScope()
     showHideColumn = IIf(scope = ShowHideScopePrint, "register book", "visibility")
     defaultValue = IIf(scope = ShowHideScopePrint, this.PRINTSHOWHORIZ, this.SHOWN)
-    'Get the sheet name
-    sheetName = IIf(scope = ShowHideScopePrint, _
-                    Replace(sh.Name, PRINTPREFIX, vbNullString), _
-                    sh.Name)
+
+    'Get the sheet name (remove the print_ tag at the begining on printed worksheet)
+    sheetName = sh.Name
+    If(scope = ShowHideScopePrint) Then sheetName =  Right(sh.Name, (Len(sh.Name) - 6))
     sheetName = Application.WorksheetFunction.Trim(sheetName)
+
     Set cellRng = varRng.Cells(1, 1)
     'Define the start column
     StartCol = .Cells(1, .Columns.Count).End(xlToLeft).Column + 1
@@ -265,20 +269,20 @@ Private Sub InitializeTable()
           'Status
           statusValue = vars.Value(varName:=varName, colName:=showHideColumn)
           Select Case statusValue
-          Case "mandatory"
-            statusValue = this.mandatory
-          Case "optional"
+          Case "always visible"
+            statusValue = this.MANDATORY
+          Case "visible on creation"
             statusValue = this.SHOWN
           Case "print, vertical header"
             statusValue = this.PRINTSHOWVERTI
           Case "print, horizontal header"
             statusValue = this.PRINTSHOWHORIZ
-          Case "hidden"
+          Case "hidden", "hidden on creation" 'The first hidden is for Print sheet, the second for LL
             statusValue = this.HIDDEN
           End Select
           'On admin 1 and Linelist, the status is mandatory
-          If (controlVal = "geo1") And (scope = ShowHideScopeLinelist) Then _
-           statusValue = this.mandatory
+          If (controlVal = "geo1") And (scope = ShowHideScopeHList) Then _
+           statusValue = this.MANDATORY
           'The default value is the value to write if nothing found as status
           '(empty registerbook column)
           If statusValue = vbNullString Then statusValue = defaultValue
@@ -347,7 +351,7 @@ Private Sub Load(ByVal tradsform As ITranslation, _
   Dim formRng As Range 'Range to update the form
   Dim fobj As Object
   Dim trads As ITranslation
-  Dim scope As ShowHideScope
+  Dim scope As Byte
   Dim listObject As Object
 
   Set trads = MessagesTrads()
@@ -363,10 +367,10 @@ Private Sub Load(ByVal tradsform As ITranslation, _
   scope = ActualScope()
 
   'Initialize the values
-  If scope = ShowHideScopeLinelist Then
-    Set listObject = fobj.LST_LLVarNames
+  If scope = ShowHideScopePrint Then
+    Set listObject = fobj.LST_PrintNames 
   Else
-    Set listObject = fobj.LST_PrintNames
+    Set listObject = fobj.LST_LLVarNames
   End If
 
   listObject.BoundColumn = 2
@@ -386,10 +390,10 @@ Private Sub Load(ByVal tradsform As ITranslation, _
 
   'Add caption to option buttons
   On Error Resume Next
-    fobj.OPT_Show.Caption = this.Show
+    fobj.OPT_Show.Caption = this.SHOW
     fobj.OPT_PrintShowHoriz.Caption = this.PRINTSHOWHORIZ
     fobj.OPT_PrintShowVerti.Caption = this.PRINTSHOWVERTI
-    fobj.OPT_Hide.Caption = this.Hide
+    fobj.OPT_Hide.Caption = this.HIDE
 
     If showOptional Then
       fobj.CMD_ShowHideMinimal.Caption = trads.TranslatedValue("MSG_ShowAllOptional")
@@ -404,7 +408,7 @@ End Sub
 'Update visibility when you select one line of the show hide
 Private Sub UpdateVisibility(ByVal indexValue As Long)
 
-  Dim scope As ShowHideScope
+  Dim scope As Byte
   Dim fobj As Object
 
   If Not InClickMode Then Exit Sub
@@ -431,16 +435,16 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
   Case this.SHOWN
 
     fobj.OPT_Show.Value = 1
-    fobj.OPT_Show.Caption = this.Show
+    fobj.OPT_Show.Caption = this.SHOW
     fobj.OPT_Show.Top = 75
 
     fobj.OPT_Hide.Visible = True
     fobj.OPT_Show.Visible = True
     fobj.OPT_Hide.Value = 0
 
-  Case this.mandatory
+  Case this.MANDATORY
 
-    fobj.OPT_Show.Caption = this.mandatory
+    fobj.OPT_Show.Caption = this.MANDATORY
     fobj.OPT_Show.Top = 100
     fobj.OPT_Hide.Visible = False
 
@@ -450,8 +454,8 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
     fobj.OPT_Hide.Visible = True
     fobj.OPT_Hide.Value = 1
     
-    If scope = ShowHideScopeLinelist Then
-      fobj.OPT_Show.Caption = this.Show
+    If (scope = ShowHideScopeHList) Or (scope = ShowHideScopeVList) Then
+      fobj.OPT_Show.Caption = this.SHOW
       fobj.OPT_Show.Top = 75
     End If
   Case Else 'Show Everything, and select show horizontally on printed sheet
@@ -459,7 +463,7 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
     fobj.OPT_Show.Value = 1
     fobj.OPT_PrintShowHoriz.Value = 1
     fobj.OPT_Hide.Visible = True
-    fobj.OPT_Show.Caption = this.Show
+    fobj.OPT_Show.Caption = this.SHOW
     On Error GoTo 0
   End Select
 
@@ -473,7 +477,7 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
 
   Dim sh As Worksheet
   Dim fobj As Object
-  Dim scope As ShowHideScope
+  Dim scope As Byte
   Dim colIndex As Long
   Dim cellRng As Range
   Dim orientationValue As Long
@@ -481,7 +485,7 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
   Dim showValue As String
   Dim formRng As Range
   Dim listObject As Object
-  Dim hideCol As Boolean
+  Dim hideRowOrCol As Boolean
 
   On Error GoTo ErrHand:
 
@@ -493,7 +497,7 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
 
   If Not InShowHideMode() Or indexValue < 0 Then Exit Sub
   'For mandatory, exit
-  If Value(indexValue, "status") = this.mandatory Then Exit Sub
+  If Value(indexValue, "status") = this.MANDATORY Then Exit Sub
   'Get the column index of the variable in the actual worksheet
   On Error Resume Next
     colIndex = -1
@@ -502,19 +506,23 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
   If colIndex = -1 Then Exit Sub
 
   'listObject depending of the scope
-  If scope = ShowHideScopeLinelist Then
-    'Linelist
+  Select Case scope
+
+    Case ShowHideScopeHList, ShowHideScopeVList
+    
+    'Linelist, HList or VList
     Set listObject = fobj.LST_LLVarNames
 
     If fobj.OPT_Hide.Value Then
-      hideCol = True
+      hideRowOrCol = True
       showValue = this.HIDDEN
     ElseIf fobj.OPT_Show.Value Then
-      hideCol = False
+      hideRowOrCol = False
       showValue = this.SHOWN
     End If
 
-  Else
+    Case ShowHideScopePrint
+    
     'Linelist print
     Set listObject = fobj.LST_PrintNames
 
@@ -528,14 +536,14 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
     Set cellRng = sh.Cells(cellRng.Offset(-2).Row, colIndex)
 
     If fobj.OPT_Hide.Value Then
-      hideCol = True
+      hideRowOrCol = True
       showValue = this.HIDDEN
     ElseIf fobj.OPT_PrintShowHoriz.Value Then
-      hideCol = False
+      hideRowOrCol = False
       showValue = this.PRINTSHOWHORIZ
       orientationValue = 0
     ElseIf fobj.OPT_PrintShowVerti.Value Then
-      hideCol = False
+      hideRowOrCol = False
       showValue = this.PRINTSHOWVERTI
       orientationValue = 90
     End If
@@ -543,9 +551,17 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
     cellRng.EntireRow.RowHeight = 100
     cellRng.Orientation = orientationValue
     cellRng.EntireColumn.AutoFit
-  End If
+  End Select
 
-  sh.Columns(colIndex).HIDDEN = hideCol
+  Select Case scope
+    'On print sheet or linelist HList, hide entire column
+    Case ShowHideScopePrint, ShowHideScopeHList
+    sh.Columns(colIndex).HIDDEN = hideRowOrCol
+    'On VList (Info worksheet), hide entire row
+    Case ShowHideScopeVList
+    sh.Rows(colIndex).HIDDEN = hideRowOrCol
+  End Select
+
   SetStatus indexValue, showValue
   listObject.Clear
   listObject.List = formRng.Value
@@ -565,7 +581,7 @@ Private Sub ChangeColWidth(ByVal indexValue As Long)
   Dim inputValue As String
   Dim actualWidth As Long
 
-  If ActualScope = ShowHideScopeLinelist Then Exit Sub
+  If ActualScope <> ShowHideScopePrint Then Exit Sub
 
   On Error Resume Next
     colIndex = -1

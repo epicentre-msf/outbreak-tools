@@ -75,7 +75,7 @@ Public Sub ClickShowHide()
     'Test the sheet type to be sure it is a HList or a HList Print,
     'and exit if not
     sheetTag = sh.Cells(1, 3).Value
-    If sheetTag <> "HList" And sheetTag <> "HList Print" Then
+    If sheetTag <> "HList" And sheetTag <> "HList Print" And sheetTag <> "VList" Then
         WarningOnSheet "MSG_PrintOrDataSheet"
         Exit Sub
     End If
@@ -945,7 +945,6 @@ Private Sub RestaureHiddenStatus(ByVal cellRng As Range, Optional ByVal scope As
     Dim varStatus As String
     Dim varColumnIndex As Long
     Dim sheetInfo As String
-    Dim prevSheetName As String
     Dim labCellRng As Range
 
     Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
@@ -995,20 +994,11 @@ Private Sub RestaureHiddenStatus(ByVal cellRng As Range, Optional ByVal scope As
 
         'Only hidden variables are hidden, otherwise show them (mandatory or shown)
         hideStatus = IIF(varStatus = "hidden", True, False)
-
-        'Protect or unprotect the sheet of the variable (There is no need to protect/unproctect on print sheet)
-        If (prevSheetName <> varSheetName) And (scope <> 3) Then 
-            If (prevSheetName <> vbNullString) Then pass.Protect prevSheetName
-            Set sh = wb.Worksheets(varSheetName)
-            prevSheetName = varSheetName
-            pass.UnProtect varSheetName
-        End If
-        
         sheetInfo = vars.Value(colName:="sheet type", varName:=varName)
         Set sh = ThisWorkbook.Worksheets(varSheetName)
 
         'On VList, hide the line, on Hlist the column
-        If (sheetInfo = "vlist1D") And (scope = 1) Then
+        If (sheetInfo = "vlist1D") Then
             sh.Cells(varColumnIndex, 1).EntireRow.Hidden = hideStatus
         ElseIf sheetInfo = "hlist2D" Then
             sh.Cells(1, varColumnIndex).EntireColumn.Hidden = hideStatus
@@ -1029,7 +1019,6 @@ Private Sub RestaureHiddenStatus(ByVal cellRng As Range, Optional ByVal scope As
         Set cellRng = cellRng.Offset(1)
     Loop
 
-    pass.Protect varSheetName
 End Sub
 
 '@Description("Reset hidden columns in the linelist")
@@ -1087,6 +1076,7 @@ Public Sub ClickShowHideMinimal()
     Dim dict As ILLdictionary
     Dim vars As ILLVariables
     Dim upObj As IUpVal
+    Dim sheetTag As String
 
     On Error GoTo ErrHand
 
@@ -1112,6 +1102,7 @@ Public Sub ClickShowHideMinimal()
 
     'Custom table of the show/hide
     Set sh = ActiveSheet
+    sheetTag = sh.Cells(1, 3).Value
     Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
     Set vars = LLVariables.Create(dict)
     Set showHideObject = LLShowHide.Create(tradsmess, dict, sh)      
@@ -1127,17 +1118,16 @@ Public Sub ClickShowHideMinimal()
             colIndex = 0
             On Error Resume Next
             colIndex = CLng(vars.Value(varName:=varName, colName:="column index"))
-
-            'Hide the column index of the variable
-            If colIndex <> 0 Then
-                If showOptional Then
-                    sh.Columns(colIndex).ColumnWidth = 22
-                Else
-                    sh.Columns(colIndex).ColumnWidth = 0
-                End If
-                'Change the status in the show/hide worksheet
+            Select Case sheetTag
+                'Hide the column index of the variable
+            Case "VList"
+                sh.Rows(colIndex).HIDDEN = (Not showOptional)
                 shCsTab.SetValue colName:="status", keyName:=varName, newValue:=hiddenShowTag
-            End If
+            Case "HList", "HList Print"
+                sh.Columns(colIndex).HIDDEN = (Not showOptional)
+                shCsTab.SetValue colName:="status", keyName:=varName, newValue:=hiddenShowTag
+            End Select
+                'Change the status in the show/hide worksheet
             On Error GoTo 0
         End If
     Next
@@ -1178,10 +1168,13 @@ Public Sub ClickMatchLinelistShowHide()
     Dim varStatus As String
     Dim colIndex As Long
     Dim hiddenTag As String
+    Dim showHorizTag As String
     Dim printsh As Worksheet
     Dim sh As Worksheet
     Dim dict As ILLdictionary
     Dim sheetName As String
+    Dim tabName As String
+    Dim labCellRng As Range
 
     On Error GoTo ErrHand
 
@@ -1197,6 +1190,7 @@ Public Sub ClickMatchLinelistShowHide()
     If Not checkConfirm Then GoTo ErrHand
 
     hiddenTag = tradsmess.TranslatedValue("MSG_Hidden")
+    showHorizTag = tradsmess.TranslatedValue("MSG_ShowHoriz")
 
     'Custom table of the show/hide
     Set printsh = ActiveSheet
@@ -1204,7 +1198,9 @@ Public Sub ClickMatchLinelistShowHide()
     '6 is the length of the print_ tag at the begining of the print worksheet name
     sheetName = Right(printsh.Name, (Len(printsh.Name) - 6))
     
+    'Initializing elements for the loop
     Set sh = wb.Worksheets(sheetName)
+    tabName = sh.Cells(1, 4).Value
     Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEET), 1, 1)
     Set showHideObject = LLShowHide.Create(tradsmess, dict, sh)
     Set showHidePrintObject = LLShowHide.Create(tradsmess, dict, printsh)      
@@ -1213,24 +1209,30 @@ Public Sub ClickMatchLinelistShowHide()
     Set varRng = shCsTab.DataRange("variable name", strictSearch:=True)
 
     For counter = 1 To varRng.Rows.Count
-        
         varName = varRng.Cells(counter, 1).Value
         varStatus = vbNullString
         varStatus = shCsTab.Value(keyName:=varName, colName:="status")
 
-        If varStatus = hiddenTag Then
-            colIndex = 0
-            On Error Resume Next
-            colIndex = CLng(shCsTab.Value(keyName:=varName, colName:="column index"))
-
-            'Hide the column index of the variable
-            If colIndex <> 0 Then
-                printsh.Columns(colIndex).ColumnWidth = 0
+        colIndex = 0
+        On Error Resume Next
+        colIndex = CLng(shCsTab.Value(keyName:=varName, colName:="column index"))
+        'Hide the column index of the variable
+        'If the status is not hidden, the column is shown by default
+        If (colIndex <> 0) Then
+            If (varStatus = hiddenTag) Then
+                printsh.Columns(colIndex).HIDDEN = True
                 'Change the status in the show/hide worksheet, on the print table
                 shPrintCsTab.SetValue colName:="status", keyName:=varName, newValue:=hiddenTag
+            Else
+                'If the status is mandatory or shown convert to "print, horizontal"
+                printsh.Columns(colIndex).HIDDEN = False
+                Set labCellRng = printsh.Range(tabName & "_" & "PRINTSTART")
+                Set labCellRng = printsh.Cells(labCellRng.Offset(-2).Row, colIndex) 
+                labCellRng.Orientation = 0
+                shPrintCsTab.SetValue colName:="status", keyName:=varName, newValue:=showHorizTag
             End If
-            On Error GoTo 0
         End If
+        On Error GoTo 0
     Next
 
     showHidePrintObject.Load tradsform:=tradsform, showForm:=False

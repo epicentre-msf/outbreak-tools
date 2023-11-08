@@ -126,8 +126,12 @@ Private Property Get DataEndRow() As Long
             endrw = .Cells(.Rows.Count, StartColumn).End(xlUp).Row
         End If
     End With
-        
-    DataEndRow = IIf(endrw = StartRow, StartRow + 1, endrw)
+    
+    If (endrw = StartRow) Then
+        DataEndRow = StartRow + 1
+    Else
+        DataEndRow = endrw
+    End If
 
 End Property
 
@@ -155,7 +159,8 @@ Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
     Set dataWksh = Wksh()
 
     With dataWksh
-        customStartRow = IIf(includeHeaders, StartRow, StartRow + 1)
+        customStartRow = StartRow + 1
+        If includeHeaders Then customStartRow = StartRow
         If colName = "__all__" Then
             customStartCol = StartColumn
             endCol = DataEndColumn
@@ -192,7 +197,11 @@ Private Function ColumnIndex(ByVal colName As String, _
 
     If ColumnExists(colName) Then
         colIndex = hRng.Find(What:=colName, lookAt:=xlWhole, MatchCase:=True).Column
-        ColumnIndex = IIf(inDataRange, colIndex - StartColumn + 1, colIndex)
+        If inDataRange Then
+            ColumnIndex = colIndex - StartColumn + 1
+        Else
+            ColumnIndex = colIndex
+        End If
     Else
         If shouldExist Then
             ThrowErrorUnFoundColumn colName
@@ -229,7 +238,9 @@ Private Function FilterData(ByVal varName As String, _
     endCol = DataEndColumn()                     'End column and rows of the dictionary
     EndRow = DataEndRow()
 
-    startRetRow = IIf(includeHeaders, StartRow, StartRow + 1)
+    
+    startRetRow = StartRow + 1 
+    If includeHeaders Then startRetRow = StartRow
 
     If returnedColumnName = "__all__" Then
         startRetColIndex = StartColumn
@@ -459,6 +470,23 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As Stri
 
     dataExportData.ToExcelRange dataExportWksh.Cells(StartRow, StartColumn)
     dataExportWksh.Visible = Hide
+
+    'Change the font and other elements on exports
+    With dataExportWksh
+        On Error Resume Next
+        .Cells.EntireColumn.ColumnWidth = 25
+        .Cells.Font.Size = 9
+        .Rows(1).Font.Size = 10
+        .Rows(1).RowHeight = 20
+        .Rows(1).Interior.Color = RGB(240, 240, 244)
+        .Rows(1).Font.Bold = True
+        .Cells.Font.Name = "Consolas"
+        .Cells.WrapText = True
+        .Cells.HorizontalAlignment = xlHAlignLeft
+        .Cells.VerticalAlignment = xlVAlignCenter
+        .Cells.EntireRow.AutoFit
+        On Error GoTo 0
+    End With
 End Sub
 
 'Errors ----------------------------------------------------------------------

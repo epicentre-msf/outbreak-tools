@@ -120,7 +120,7 @@ Private Sub TestSheetVariableAddress()
     On Error GoTo Fail
 
     'Address on a H2D worksheet
-    Assert.IsTrue sheets.VariableAddress("vara1") = "'A, B, C'!$E$4", "Vlist1D variable address is not correct"
+    Assert.IsTrue sheets.VariableAddress("vara1") = "'A, B, C'!$E$4", "vlist1D variable address is not correct"
     Assert.IsTrue sheets.VariableAddress("varb2") = "'B-H2D'!$B10", "hlist 2D variable address is not correct"
 
     'Address on a V1D worksheet

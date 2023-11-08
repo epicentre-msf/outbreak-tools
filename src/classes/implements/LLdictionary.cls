@@ -241,7 +241,7 @@ Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject A
         Set controlRng = DataRange("control")
         If (Not controlRng Is Nothing) Then
             If (Not controlRng.Find(What:="geo", lookAt:=xlWhole, MatchCase:=True) Is Nothing) And _
-                                                                                               (controlRng.Find(What:="geo2", lookAt:=xlWhole, MatchCase:=True) Is Nothing) Then
+                (controlRng.Find(What:="geo2", lookAt:=xlWhole, MatchCase:=True) Is Nothing) Then
                 'Update the Geo
                 AppendGeoLines geoObject
             End If
@@ -251,7 +251,7 @@ Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject A
         GoodSheetNames PreservedSheetsNames
 
         'Add visibility (after adding geoLines)
-        If Not ColumnExists("visibility") Then AddVisibility msgTrads 'Add visibility for show/Hide
+        If Not ColumnExists("visibility") Then AddVisibility 'Add visibility for show/Hide
 
         Clean
         'Add color to the last line for prepare indication
@@ -321,7 +321,7 @@ Private Sub UniqueVarNames()
 End Sub
 
 'Add the visibility for show Hide
-Private Sub AddVisibility(ByVal msgTrads As ITranslation)
+Private Sub AddVisibility()
 
     Dim dictWksh As Worksheet
     Dim EndRow As Long
@@ -343,20 +343,15 @@ Private Sub AddVisibility(ByVal msgTrads As ITranslation)
         .Cells(StartRow, endCol + 1).Value = "visibility"
         For counter = StartRow + 1 To EndRow
             statusValue = .Cells(counter, statusIndex).Value
-
             Select Case statusValue
-
             Case "hidden"
-
-                .Cells(counter, endCol + 1).Value = msgTrads.TranslatedValue("MSG_DesHidden")
-
+                .Cells(counter, endCol + 1).Value = "always hidden"
             Case "mandatory"
-
-                .Cells(counter, endCol + 1) = msgTrads.TranslatedValue("MSG_Mandatory")
-
-            Case "optional"
-
-                .Cells(counter, endCol + 1) = msgTrads.TranslatedValue("MSG_Shown")
+                .Cells(counter, endCol + 1) = "always visible"
+            Case "optional, hidden"
+                .Cells(counter, endCol + 1) = "hidden on creation"
+            Case "optional, visible", "optional"
+                .Cells(counter, endCol + 1) = "visible on creation"
             End Select
         Next
     End With
@@ -673,18 +668,22 @@ Private Sub Export(ByVal Wkb As Workbook, _
             .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = "o" & LCase(sheetName)
             'prepare the dictionary
             .Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue
-        End With
-    Else
-        With sh
-            .Cells.EntireColumn.ColumnWidth = 25
-            .Cells.Font.Size = 9
-            .Rows(1).Font.Size = 12
-            .Rows(1).Interior.Color = RGB(240, 240, 244)
-            .Rows(1).Font.Bold = True
-            .Cells.WrapText = False
-            .Cells.EntireRow.AutoFit
+            .ListObjects("o" & LCase(sheetName)).TableStyle = ""
         End With
     End If
+
+    With sh
+        On Error Resume Next
+        .Cells.EntireRow.RowHeight = 14
+        .Cells.Font.Size = 9
+        .Rows(1).Font.Size = 10
+        .Rows(1).RowHeight = 20
+        .Rows(1).Interior.Color = RGB(240, 240, 244)
+        .Rows(1).Font.Bold = True
+        .Cells.Font.Name = "Consolas"
+        .Cells.EntireColumn.AutoFit
+        On Error GoTo 0
+    End With
 End Sub
 
 'Import

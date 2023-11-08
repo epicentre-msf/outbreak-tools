@@ -618,7 +618,8 @@ End Function
 
 'Test if a value Exists in a Range (pay attention the .Find is a tricky function, be sure your range does not contains duplicates
 'or starts after cell(1, 1))
-Private Function ValueExists(ByVal rng As Range, ByVal Value As String, Optional ByVal strictSearch As Boolean = False)
+Private Function ValueExists(ByVal rng As Range, _ 
+                             ByVal Value As String, Optional ByVal strictSearch As Boolean = False) As Boolean
     If Not strictSearch Then
         ValueExists = (Not rng.Find(What:=Value, lookAt:=xlPart, MatchCase:=False) Is Nothing)
     Else
