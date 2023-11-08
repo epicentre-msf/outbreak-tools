@@ -17,8 +17,9 @@ Attribute VB_Description = "Interface of Show/Hide form"
 Option Explicit
 
 Public Enum ShowHideScope
-  ShowHideScopeLinelist = 1
+  ShowHideScopeHList = 1
   ShowHideScopePrint = 2
+  ShowHideScopeVList = 3
 End Enum
 
 'Exposed methods

@@ -23,7 +23,8 @@ Public Property Get TableRange() As Range: End Property
 Public Sub UnProtect(Optional ByVal sheetName As String = "_active"): End Sub
 
 Public Sub Protect(Optional ByVal sheetObject As Variant, _
-                   Optional ByVal allowShapes As Boolean = False)
+                   Optional ByVal allowShapes As Boolean = False, _ 
+                   Optional ByVal allowDeletingRows As Boolean = True)
 End Sub
 
 Public Sub EnterDebugMode(): End Sub

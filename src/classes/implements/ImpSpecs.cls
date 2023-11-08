@@ -127,7 +127,7 @@ End Sub
 
 'Get the file path.
 'File path for either geo, linelist or geobase historic
-Private Function ImportFilePath()
+Private Function ImportFilePath() As String
   Dim io As IOSFiles
   Set io = OSFiles.Create()
   io.LoadFile "*.xlsx"
@@ -703,6 +703,7 @@ Private Sub ImportShowHide(ByVal inpwb As Workbook)
   Dim currVarObj As ILLVariables
   Dim counter As Long
   Dim tabName As String
+  Dim sheetTag As String
   
   'If you import with different language, do not even attempt to update show/hide
   If Not HASSAMELANGUAGE Then Exit Sub
@@ -787,9 +788,14 @@ Private Sub ImportShowHide(ByVal inpwb As Workbook)
             'could be on printed or data worksheet
             If (InStr(1, tabName, "pr") > 0 ) Then sheetName = "print_" & sheetName
             Set sh = currwb.Worksheets(sheetName)
-            
+            sheetTag = sh.Cells(1, 3).Value
+
             On Error Resume Next
-            sh.Columns(colIndex).ColumnWidth = colWidth
+            If (sheetTag = "VList") Then
+              sh.Rows(colIndex).RowHeight = colWidth
+            Else
+              sh.Columns(colIndex).ColumnWidth = colWidth
+            End If
             On Error GoTo 0
 
             'On printed worksheet, if orientation is vertical, rotate the header

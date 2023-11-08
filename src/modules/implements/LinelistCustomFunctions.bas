@@ -109,7 +109,7 @@ AddWarning:
     ComputedOnFiltered = wb.Worksheets("LinelistTranslation").Range("RNG_OnFiltered").Value
 End Function
 
-'Epiweek function without specifying the year in select cases (works with all years)
+'Epiweek function without specifying the year in select cases - works with all years.
 '@EntryPoint
 Public Function Epiweek(ByVal currentDate As Long, _ 
                         Optional ByVal weekStart As DayList = Monday) As Long

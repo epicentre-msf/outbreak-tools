@@ -128,7 +128,8 @@ Private Sub DisplayPrivateKey(ByVal trads As ITranslation)
 End Sub
 
 'protect
-Private Sub Protect(ByVal sheetObject As Variant, Optional ByVal allowShapes As Boolean = False)
+Private Sub Protect(ByVal sheetObject As Variant, Optional ByVal allowShapes As Boolean = False, _ 
+                    Optional ByVal allowDeletingRows As Boolean = True)
 
     Dim pwd As String
     Dim sh As Worksheet
@@ -162,12 +163,17 @@ Private Sub Protect(ByVal sheetObject As Variant, Optional ByVal allowShapes As 
         'DrawingObjects: You can change graphs dimensions, move them and / or add new shapes
         'You can remove alowing scenario and unable selection of lock cells
         
-        sh.Protect Password:=pwd, DrawingObjects:=(Not allowShapes), Contents:=True, Scenarios:=True, _
-                   AllowInsertingRows:=True, AllowSorting:=False, AllowFiltering:=True, _
-                   AllowFormattingCells:=True, AllowDeletingRows:=True, AllowFormattingColumns:=True
-        
-        'This is for management of sorting (create editable ranges for future sorting in the linelist)
-        'If Not allowShapes Then sh.EnableSelection = xlUnlockedCells
+        sh.Protect Password:=pwd, _ 
+                   DrawingObjects:=(Not allowShapes), _ 
+                   Contents:=True, _ 
+                   Scenarios:=True, _
+                   AllowInsertingRows:=True, _ 
+                   AllowSorting:=False, _ 
+                   AllowFiltering:=True, _
+                   AllowFormattingCells:=True, _ 
+                   AllowDeletingRows:=allowDeletingRows, _ 
+                   AllowFormattingColumns:=True, _
+                   AllowFormattingRows:=True
     End If
 End Sub
 
@@ -367,8 +373,9 @@ Private Sub ILLPasswords_UnProtect(Optional ByVal sheetName As String = "_active
 End Sub
 
 Private Sub ILLPasswords_Protect(Optional ByVal sheetObject As Variant, _
-                                 Optional ByVal allowShapes As Boolean = False)
-    Protect sheetObject, allowShapes
+                                 Optional ByVal allowShapes As Boolean = False, _ 
+                                 Optional ByVal allowDeletingRows As Boolean = True)
+    Protect sheetObject, allowShapes, allowDeletingRows
 End Sub
 
 Private Sub ILLPasswords_Export(ByVal toWkb As Workbook)
