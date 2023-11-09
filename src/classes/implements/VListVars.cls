@@ -340,6 +340,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     Dim mandatory As String
     Dim mainLabLength As Long
     Dim design As ILLFormat
+    Dim varEditLab As String
 
 
     Set cellRng = VarRange()
@@ -354,13 +355,13 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     varControl = ValueOf("control")
     varStatus = ValueOf("status")
     varIndex = CLng(ValueOf("column index"))
+    varEditLab = ValueOf("editable label")
 
     calculated = trans.TranslatedValue("MSG_Calculated")
     mandatory = trans.TranslatedValue("MSG_Mandatory")
 
     'Add the table start name
     If varIndex = 4 Then cellRng.Name = ValueOf("table name") & "_" & "START"
-
 
     'sublabel
     If (varControl = "formula") Or (varControl = "case_when") Or _
@@ -403,9 +404,10 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     End If
     
     cellRng.Locked = False
-    cellRng.Offset(, -1).Locked = False
-    cellRng.Offset(, -2).Locked = False
-    cellRng.Offset(, -3).Locked = False
+    'On Editable label = yes, unlock the cell
+    If (varEditLab = "yes") Then cellRng.Offset(, -1).Locked = False
+    cellRng.Offset(, -2).Locked = True
+    cellRng.Offset(, -3).Locked = True
 End Sub
 
 'Add the choices

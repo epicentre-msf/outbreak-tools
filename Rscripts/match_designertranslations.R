@@ -114,7 +114,7 @@ master_list_tables <- master_tables_df |>
   select(path, range_address) |>
   purrr::pmap(read_a_table)
 
-# loading the child workbook tables ============================================
+# loading the child workbook tables ====================================================
 
 child_workbook <- loadWorkbook(file = child_workbook_path)
 child_sheets_list <- getSheetNames(file = child_workbook_path)
@@ -143,7 +143,7 @@ targeted_tables <- sort(targeted_tables)
 names(joined_data) <- sort(targeted_tables)
 
 
-# write back to an empty workbook ==============================================
+# write back to an empty workbook =========================================================
 source("Rscripts/functions_tabulations.R")
 
 header_names <- c(
@@ -156,7 +156,7 @@ wb <- initiate_workbook(
   headernames = header_names
 )
 
-# linelist_translations --------------------------------------------------------
+# linelist_translations -----------------------------------------------------------------
 
 ll_tables_names <- c(
   "T_TradLLShapes", "T_TradLLMsg",
@@ -181,7 +181,7 @@ push_all_tables(
   listoftables = ll_tables
 )
 
-# designer translations -------------------------------------------------------
+# designer translations -------------------------------------------------------------------
 
 des_tables_names <- c("T_tradMsg", "T_tradRange", "T_tradShape")
 
@@ -203,3 +203,4 @@ push_all_tables(
 )
 
 saveWorkbook(wb, file = "misc/designer_translations_merged.xlsx", overwrite = TRUE)
+file.copy(from = "misc/designer_translations_merged.xlsx", to = onedrive_translation, overwrite = TRUE)

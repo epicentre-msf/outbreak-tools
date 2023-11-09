@@ -375,14 +375,18 @@ Public Sub UpdateAllListAuto(ByVal wb As Workbook)
 End Sub
 
 
-Public Sub EventValueChangeVList(Target As Range)
+Public Sub EventValueChangeVList(ByVal Target As Range)
 
-   
     Dim sh As Worksheet
     Dim rng As Range
     Dim rngLook As Range
     Dim varLabel As String
     Dim tablename As String
+    Dim dict As ILLdictionary
+    Dim vars As ILLVariables
+    Dim varSubLabel As String
+    Dim varEditable As String
+    Dim varName As String
 
     On Error GoTo Err
 
@@ -395,8 +399,29 @@ Public Sub EventValueChangeVList(Target As Range)
     Set rng = sh.Range(tablename & "_" & "PLAGEVALUES")
     rng.calculate
 
-    Set rng = sh.Range(tablename & "_" & GOTOSECCODE)
+    'Test if editable Labels have been modified
+    Set rng = sh.Range(tablename & "_START")
 
+    'Update variables with editable column
+    If (Target.Column = rng.Offset(, -1).Column) Then
+        Set dict = LLdictionary.Create(ThisWorkbook.Worksheets(DICTSHEET), 1, 1)
+        Set vars = LLVariables.Create(dict)
+
+        varName = (Target.Offset(, 1).Name.Name)
+        varEditable = vars.Value(varName:=varName, colName:="editable label")  
+        If (varEditable <> "yes") Then Exit Sub
+            
+        'The name of custom variables has been updated, update the dictionary
+        varSubLabel = vars.Value(varName:=varName, colName:="sub label")
+        varLabel = Replace(Target.Value, varSubLabel, vbNullString)
+        varLabel = Replace(varLabel, chr(10), vbNullString)
+        vars.SetValue varName:=varName, colName:="main label", _
+                      newValue:=varLabel
+        Exit Sub
+    End If
+
+    'Jump to GoTo section
+    Set rng = sh.Range(tablename & "_" & GOTOSECCODE)
     If Not Intersect(Target, rng) Is Nothing Then
         varLabel = Replace(Target.Value, _
                            lltrads.Value("gotosection") & ": ", _
