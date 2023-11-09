@@ -463,7 +463,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     End If
 
     'Custom columns, user can modify their names
-    If (varEditLab = "yes") Then cellRng.Offset(-2).Locked = False
+    If ((varEditLab = "yes") Or (varControl = "custom")) Then cellRng.Offset(-2).Locked = False
 
     'Hidden columns (entirely hidden, or "optional, hidden" on Linelist, or "hidden" on Printed Linelist)
     If (varStatus = "hidden") Or _ 
