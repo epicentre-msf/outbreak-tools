@@ -26,7 +26,8 @@ Private this As TLLFormat
 
 'instanciation:
 
-Public Function Create(formatSh As Worksheet, designType As String) As ILLFormat
+Public Function Create(formatSh As Worksheet, _  
+                      Optional ByVal designType As String = "design 1") As ILLFormat
     Dim Lo As listObject
     Dim rng As Range
     Dim design As String
@@ -39,7 +40,7 @@ Public Function Create(formatSh As Worksheet, designType As String) As ILLFormat
     'Test if design 1 or default is present
     Set rng = Lo.HeaderRowRange
     If (Not ValueExist("design 1", rng)) Then ThrowError "Not default (design 1) found in format sheet, can you seet a design 1 on table " & Lo.Name & "?"
-    If Lo.Range.Rows.Count = 1 Then ThrowError "The table " & Lo.Name & "is empty"
+    If Lo.Range.Rows.Count = 2 Then ThrowError "The table " & Lo.Name & "is empty"
     If (Not ValueExist("label", rng)) Then ThrowError "No label column found in the design table " & Lo.Name
     If (Not ValueExist(designType, rng)) Then
         'Trace or log here on the design (not choosen)
@@ -742,7 +743,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
                     isBold:=True
 
         On Error Resume Next
-        rng.Locked = False
+        rng.Locked = True
         rng.Merge
         On Error GoTo 0
 
@@ -780,7 +781,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
                     isBold:=True
 
         On Error Resume Next
-        rng.Locked = False
+        rng.Locked = True
         rng.Merge
         On Error GoTo 0
 
@@ -867,6 +868,56 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
 
 End Sub
 
+Private Sub Import(ByVal inpsh As Worksheet)
+
+    Dim actsh As Worksheet
+    Dim inpTab As ICustomTable 'imported table with style values
+    Dim actTab As ICustomTable 'actual custom table with style values
+    Dim inpLo As ListObject 'imported listObject with style values
+    Dim actLo As ListObject 'actual custom listObject with style values
+    'Elements for importing interior colors
+    Dim counter As Long
+    Dim desValuesList As BetterArray
+    Dim inpRng As Range
+    Dim currRng As Range
+    Dim rngCounter As Long
+    Dim rngName As String
+
+    
+    If inpsh Is Nothing Then Exit Sub
+    If Not RangeExists(inpsh, "DESIGNTYPE") Then Exit Sub
+
+    On Error Resume Next
+    Set inpLo = inpsh.ListObjects(1)
+    On Error GoTo 0
+    
+    If inpLo Is Nothing Then Exit Sub
+
+    Set actsh = Wksh()
+    Set actLo = actsh.ListObjects(1)
+    Set inpTab = CustomTable.Create(inpLo)
+    Set actTab = CustomTable.Create(actLo)
+    Set desValuesList = New BetterArray
+    desValuesList.Push "design 1", "design 2", "user defined"
+
+    'Import the inputTab in actual tab
+    actTab.Import inpTab, strictColumnSearch:=True
+
+    'Import value of design type
+    actsh.Range("DESIGNTYPE").Value = inpsh.Range("DESIGNTYPE").Value 
+
+    'Now import the font and colors
+    For counter = desValuesList.LowerBound To desValuesList.UpperBound
+        rngName = desValuesList.Item(counter)
+        Set currRng = actTab.DataRange(rngName)
+        Set inpRng = inpTab.DataRange(rngName)
+        For rngCounter = 1 To currRng.Rows.Count
+            currRng.Cells(rngCounter, 1).Interior.Color = inpRng.Cells(rngCounter, 1).Interior.Color
+            currRng.Cells(rngCounter, 1).Font.Color = inpRng.Cells(rngCounter, 1).Font.Color
+        Next
+    Next    
+End Sub
+
 Private Function RangeExists(ByVal sh As Worksheet, rngName As String) As Boolean
     Dim rng As Range
     On Error Resume Next
@@ -881,10 +932,14 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Exposed methods---------------------------------------------------------------------
-Public Sub ILLFormat_ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
+Private Sub ILLFormat_ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
     ApplyFormat formattingObject:=formattingObject, scope:=scope
 End Sub
 
-Public Function ILLFormat_DesignValue(ByVal labelName As String, Optional ByVal returnColor As Boolean = True) As Variant
+Private Sub ILLFormat_Import(ByVal inpsh As Worksheet)
+    Import inpsh
+End Sub
+
+Private Function ILLFormat_DesignValue(ByVal labelName As String, Optional ByVal returnColor As Boolean = True) As Variant
     ILLFormat_DesignValue = DesignValue(labelName, returnColor)
 End Function

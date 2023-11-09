@@ -23,7 +23,7 @@ Private Sub BusyApp(Optional ByVal cursor As Long = xlNorthwestArrow)
     Application.EnableEvents = False
     Application.ScreenUpdating = False
     Application.EnableAnimations = False
-    Application.Cursor = cursor
+    Application.cursor = cursor
     Application.Calculation = xlCalculationManual
 End Sub
 
@@ -31,25 +31,25 @@ Private Sub NotBusyApp()
     Application.EnableEvents = True
     Application.ScreenUpdating = True
     Application.EnableAnimations = True
-    Application.Cursor = xlDefault
+    Application.cursor = xlDefault
 End Sub
 
 '@Description("Callback when the button loaded")
 '@EntryPoint
 Public Sub ribbonLoaded(ByRef ribbon As IRibbonUI)
-    Attribute ribbonLoaded.VB_Description = "Callback when the button loaded"
+Attribute ribbonLoaded.VB_Description = "Callback when the button loaded"
     Set ribbonUI = ribbon
 End Sub
 
 'Triggers event to update all the labels by relaunching all the callbacks
-Private Sub UpdateLabels
+Private Sub UpdateLabels()
     ribbonUI.Invalidate
 End Sub
 
 '@Description("Callback for getLabel (Depending on the language)")
 '@EntryPoint
-Public Sub LangLabel(control As IRibbonControl, ByRef returnedVal As String)
-    Attribute LangLabel.VB_Description = "Callback for getLabel (Depending on the language)"
+Public Sub LangLabel(Control As IRibbonControl, ByRef returnedVal)
+Attribute LangLabel.VB_Description = "Callback for getLabel (Depending on the language)"
 
     Dim desTrads As IDesTranslation
     Dim codeId As String
@@ -59,14 +59,14 @@ Public Sub LangLabel(control As IRibbonControl, ByRef returnedVal As String)
     Set wb = ThisWorkbook
     Set tradsh = wb.Worksheets("DesignerTranslation")
     Set desTrads = DesTranslation.Create(tradsh)
-    codeId = control.Id
+    codeId = Control.ID
 
     returnedVal = desTrads.TranslationMsg(codeId)
 End Sub
 
 '@Description("Callback for btnDelGeo onAction: Delete the geobase")
 '@EntryPoint
-Public Sub clickDelGeo(control As IRibbonControl)
+Public Sub clickDelGeo(Control As IRibbonControl)
 Attribute clickDelGeo.VB_Description = "Callback for btnDelGeo onAction: Delete the geobase"
     Dim geosh As Worksheet
     Dim geo As ILLGeo
@@ -88,7 +88,7 @@ End Sub
 
 '@Description("Callback for btnClear onAction": Clear the entries)
 '@EntryPoint
-Public Sub clickClearEnt(control As IRibbonControl)
+Public Sub clickClearEnt(Control As IRibbonControl)
 
     Dim wb As Workbook
     Dim mainsh As Worksheet
@@ -101,7 +101,7 @@ Public Sub clickClearEnt(control As IRibbonControl)
     Set wb = ThisWorkbook
     Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
     Set mainobj = Main.Create(mainsh)
-    mainobj.ClearInputRanges clearValues := True
+    mainobj.ClearInputRanges clearValues:=True
 
 ErrEnt:
     NotBusyApp
@@ -109,7 +109,7 @@ End Sub
 
 '@Description("Callback for btnTransAdd onAction: Import Linelist translations")
 '@EntryPoint
-Public Sub clickImpTrans(control As IRibbonControl)
+Public Sub clickImpTrans(Control As IRibbonControl)
 Attribute clickImpTrans.VB_Description = "Callback for btnTransAdd onAction: Import Linelist translations"
 
 
@@ -118,8 +118,8 @@ Attribute clickImpTrans.VB_Description = "Callback for btnTransAdd onAction: Imp
     Dim impsh As Worksheet 'Imported worksheet
     Dim impwb As Workbook 'Imported workbook
     Dim actsh As Worksheet 'Actual worksheet
-    Dim actLo As ListObject 'Actual ListObject
-    Dim impLo As ListObject 'Imported ListObject
+    Dim actLo As listObject 'Actual ListObject
+    Dim impLo As listObject 'Imported ListObject
     Dim actcsTab As ICustomTable 'Actual custom table
     Dim impcsTab As ICustomTable 'Imported custom table
     Dim loListName As BetterArray 'List of listObjects to import
@@ -149,20 +149,20 @@ Attribute clickImpTrans.VB_Description = "Callback for btnTransAdd onAction: Imp
             On Error GoTo ExitTrads
             Set impsh = impwb.Worksheets(sheetName)
             For Each actLo In actsh.ListObjects
-                If loListName.includes(LCase(actLo.Name)) Then
+                If loListName.Includes(LCase(actLo.Name)) Then
                     Set actcsTab = CustomTable.Create(actLo)
                     Set impLo = impsh.ListObjects(actLo.Name)
                     Set impcsTab = CustomTable.Create(impLo)
                     actcsTab.Import impcsTab
                 End If
             Next
-            actsh.Calculate
+            actsh.calculate
         Next
         On Error GoTo 0
     End If
 ExitTrads:
     On Error Resume Next
-    impwb.Close saveChanges:=False
+    impwb.Close savechanges:=False
     NotBusyApp
     MsgBox "Done!"
     On Error GoTo 0
@@ -170,8 +170,8 @@ End Sub
 
 '@Description("Callback for langDrop onAction: Change the language of the designer")
 '@EntryPoint
-Public Sub clickLangChange(control As IRibbonControl, langId As String, Index As Integer)
-    Attribute clickLangChange.VB_Description = "Callback for langDrop onAction: Change the language of the designer"
+Public Sub clickLangChange(Control As IRibbonControl, langId As String, Index As Integer)
+Attribute clickLangChange.VB_Description = "Callback for langDrop onAction: Change the language of the designer"
 
     'Language code in the designer worksheet
     Const RNGLANGCODE As String = "RNG_MainLangCode"
@@ -187,12 +187,12 @@ Public Sub clickLangChange(control As IRibbonControl, langId As String, Index As
     On Error GoTo ExitLang
 
     Set wb = ThisWorkbook
-    Set mainsh  = wb.Worksheets("Main")
+    Set mainsh = wb.Worksheets("Main")
     Set tradsh = wb.Worksheets("DesignerTranslation")
     Set desTrads = DesTranslation.Create(tradsh)
 
     tradsh.Range(RNGLANGCODE).Value = langId
-    tradsh.Calculate
+    tradsh.calculate
     desTrads.TranslateDesigner mainsh
 
     'Update all the labels on the ribbon
@@ -204,7 +204,7 @@ End Sub
 
 '@Description("Callback for btnOpen onAction: Open another linelist file")
 '@EntryPoint
-Public Sub clickOpen(control As IRibbonControl)
+Public Sub clickOpen(Control As IRibbonControl)
 Attribute clickOpen.VB_Description = "Callback for btnOpen onAction: Open another linelist file"
 
     Dim io As IOSFiles
@@ -216,7 +216,7 @@ Attribute clickOpen.VB_Description = "Callback for btnOpen onAction: Open anothe
 
     On Error GoTo ErrorManage
     NotBusyApp
-    Application.Workbooks.Open FileName:=io.File(), ReadOnly:=False
+    Application.Workbooks.Open fileName:=io.File(), ReadOnly:=False
     Exit Sub
 
 ErrorManage:
@@ -229,8 +229,8 @@ End Sub
 
 '@Description("Callback for btnImpPass onAction: Import passwords from a worksheet")
 '@EntryPoint
-Public Sub clickImpPass(control As IRibbonControl)
-    Attribute clickImpPass.VB_Description = "Callback for btnImpPass onAction: Import passwords from a worksheet"
+Public Sub clickImpPass(Control As IRibbonControl)
+Attribute clickImpPass.VB_Description = "Callback for btnImpPass onAction: Import passwords from a worksheet"
 
     Dim io As IOSFiles
     Dim wb As Workbook
@@ -245,16 +245,47 @@ Public Sub clickImpPass(control As IRibbonControl)
 
     On Error GoTo ErrorManage
         
-        Set wb  = Workbooks.Open(FileName:=io.File(), ReadOnly:=False)
+        Set wb = Workbooks.Open(fileName:=io.File(), ReadOnly:=False)
         Set imppass = LLPasswords.Create(wb.Worksheets(1))
         Set actpass = LLPasswords.Create(ThisWorkbook.Worksheets(PASSWORDSHEET))
         actpass.Import imppass
-        wb.Close saveChanges:=False
+        wb.Close savechanges:=False
+
+    MsgBox "Done!"
+ErrorManage:
+    On Error Resume Next
+    wb.Close savechanges:=False
+    NotBusyApp
+    On Error GoTo 0
+End Sub
+
+
+'@EntryPoint
+Public Sub clickImpStyle(control As IRibbonControl)
+Attribute clickImpStyle.VB_Description = "Callback for btnImpStyle onAction: Import Linelist Style"
+
+    Dim io As IOSFiles
+    Dim wb As Workbook
+    Dim currformatObj As ILLFormat
+    
+    Set io = OSFiles.Create()
+    
+    BusyApp
+    io.LoadFile "*.xlsx"
+    If Not io.HasValidFile Then Exit Sub
+
+    On Error GoTo ErrorManage
+
+    Set wb = Workbooks.Open(fileName:=io.File(), ReadOnly:=False)
+    Set currformatObj = LLFormat.Create(ThisWorkbook.Worksheets(FORMATSHEET))
+
+    currformatObj.Import wb.Worksheets(1)
+    wb.Close saveChanges:=False
+    MsgBox "Done!"
 
 ErrorManage:
     On Error Resume Next
-    wb.Close saveChanges:=False        
+    wb.Close saveChanges:=False
     NotBusyApp
-    MsgBox "Done!"
     On Error GoTo 0
 End Sub

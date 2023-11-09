@@ -737,7 +737,9 @@ Private Sub ImportShowHide(ByVal inpwb As Workbook)
   Set currDict = Dictionary()
   'Initialize show/hide tables
   For Each sh In currwb.Worksheets
-    If (sh.Cells(1, 3).Value = "HList") Or (sh.Cells(1, 3).Value = "HList Print") Then
+    If (sh.Cells(1, 3).Value = "HList") Or _ 
+       (sh.Cells(1, 3).Value = "HList Print") Or _ 
+       (sh.Cells(1, 3).Value = "VList") Then
       Set showHideObject = LLShowHide.Create(tradsmess, currDict, sh)
       showHideObject.InitializeTable
     End If
@@ -815,9 +817,94 @@ Private Sub ImportShowHide(ByVal inpwb As Workbook)
 End Sub
 
 'Update Editable Labels on Import
-Private Sub UpdateEditableLabels(ByVal impwb As Workbook)
+Private Sub UpdateEditableLabels(ByVal inpwb As Workbook)
 
+  Dim metaTab As IDataSheet
+  Dim varRng As Range
+  Dim cellRng As Range 'used for eventual stuffs
+  Dim updateLabels As Boolean
+  Dim currwb As Workbook
+  Dim sheetTag As String
+  Dim inpDict As ILLdictionary
+  Dim currDict As ILLdictionary
+  Dim currVars As ILLVariables
+  Dim inpVars As ILLVariables
+  Dim counter As Long
+  Dim varName As String
+  Dim newLabel As String
+  Dim sheetName As String
+  Dim sheetInfo As String
+  Dim sh As Worksheet
+  Dim colIndex As Long
 
+  
+  'If you import with different language, do not even attempt to update show/hide
+  If Not HASSAMELANGUAGE Then Exit Sub
+  'If there is no metadata, exit the sub (should have a warning or a report)
+  If Not sheetExists(inpwb, METADATASHEET) Then Exit Sub
+  'if There is no dictionary worksheet in the imported workbook, exits
+  If Not sheetExists(inpwb, DICTIONARYSHEET) Then Exit Sub
+  'The imported dictionary should be prepared, otherwise exit
+  Set inpDict = LLdictionary.Create(inpwb.Worksheets(DICTIONARYSHEET), 1, 1)
+  If Not inpDict.Prepared Then Exit Sub
+
+  'The metadata sheet is found, I will just look for the import show hide tag
+  Set metaTab = DataSheet.Create(inpwb.Worksheets(METADATASHEET), 1, 1)
+  Set varRng = metaTab.DataRange("variable")
+  updateLabels = False
+  On Error Resume Next
+      Set cellRng = varRng.Find(What:="editable_labels", lookAt:=xlWhole, MatchCase:=False)
+      updateLabels = (cellRng.Offset(, 1).Value = "update on import")
+  On Error GoTo 0
+
+  'If there is no need to update, because update show/hide != update on import: Exit
+  If Not updateLabels Then Exit Sub
+  Set currwb = CurrentWorkbook()
+  Set currDict = Dictionary()
+  Set currVars = LLVariables.Create(currDict)
+  Set inpVars = LLVariables.Create(inpDict)
+  Set varRng = currDict.DataRange("variable name")
+
+  For counter = 1 To varRng.Rows.Count
+    
+    varName = varRng.Cells(counter, 1).Value
+    If Not inpVars.Contains(varName) Then GoTo ContinueLoop
+    'If not editable label, change the values
+    If (currVars.Value(varName:=varName, colName:="editable label") <> "yes") Then GoTo ContinueLoop
+
+    'Change the corresponding label in the worksheet ==============================================
+    newLabel = inpVars.Value(varName:=varName, colName:="main label")
+    'Retrieve the column index of the variable
+    colIndex = 0
+    On Error Resume Next
+    colIndex = CLng(currVars.Value(varName:=varName, colName:="column index"))
+    On Error GoTo 0
+    'On incorrect column indexes, skip
+    If colIndex = 0 Then GoTo ContinueLoop
+    'On correct column indexes, change the label
+    'Change the label in the worksheet (the cell is not protected)
+    sheetName = currVars.Value(varName:=varName, colName:="sheet name")
+    sheetInfo = currVars.Value(varName:=varName, colName:="sheet type")
+    Set sh = currwb.Worksheets(sheetName)
+
+    'update Label (in case it seems impossible, skip and continue)
+    On Error GoTo ContinueLoop
+    Set cellRng = sh.Range(sh.Cells(1, 4).Value & "_START")
+    If (sheetInfo = "hlist2D") Then  
+      Set cellRng = sh.Cells(cellRng.Offset(-2).Row, colIndex)
+      cellRng.Value = newLabel
+    ElseIf (sheetInfo = "vlist1D") Then
+      Set cellRng = sh.Cells(colIndex, cellRng.Offset( ,-1).Column)
+      cellRng.Value = newLabel
+    End If
+    On Error GoTo 0
+
+    'Change the label in the dictionary ======================================================
+    '(only if you are able to change the label on the worksheet)
+    currVars.SetValue varName:=varName, colName:="main label", newValue:=newLabel
+
+  ContinueLoop:
+  Next
 End Sub
 
 'import custom dropdown
@@ -919,6 +1006,9 @@ Private Sub ImportMigration()
 
   'Import show/hide elements
   ImportShowHide impwb
+
+  'Update the values of editable labels
+  UpdateEditableLabels impwb
 
   'Set all list auto to yes update
   impwb.Close savechanges:=False
