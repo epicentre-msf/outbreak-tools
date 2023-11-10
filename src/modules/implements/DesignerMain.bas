@@ -332,12 +332,15 @@ Private Sub GenerateData()
     mainobj.UpdateStatus (100)
     
     NotBusyApp returnSeparator:=savedSeparator, useSystemSeparators:=savedUseSep
+    
+    If (mainobj.ValueOf("askopen") = "yes") Then
+        'Open the linelist
+        outPath = mainobj.ValueOf("lldir") & Application.PathSeparator & mainobj.ValueOf("llname") & ".xlsb"
+        If MsgBox(desTrads.TranslationMsg("MSG_OpenLL") & " " & outPath & " ?", _
+                 vbQuestion + vbYesNo, "Linelist") = vbYes _
+        Then mainobj.OpenLL
+    End If
 
-    'Open the linelist
-    outPath = mainobj.ValueOf("lldir") & Application.PathSeparator & mainobj.ValueOf("llname") & ".xlsb"
-    If MsgBox(desTrads.TranslationMsg("MSG_OpenLL") & " " & outPath & " ?", _
-             vbQuestion + vbYesNo, "Linelist") = vbYes _
-    Then mainobj.OpenLL
 
     NotBusyApp
     Exit Sub

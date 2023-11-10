@@ -221,6 +221,7 @@ Private Sub InitializeTable()
   Dim tabName As String
   Dim defaultValue As String
   Dim statusValue As String
+  Dim trads As ITranslation
 
   
   'The temporary sheet is the show_hide__ worksheet
@@ -231,6 +232,10 @@ Private Sub InitializeTable()
   
   'No initialisation if the listObject already exists
   If LoExists(loName) Then Exit Sub
+
+  'Initialization of messages for the show/hide
+  Set trads = MessagesTrads()
+  InitializeMessages trads
 
   With tpsh
     'Create the listObject

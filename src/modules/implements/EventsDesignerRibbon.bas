@@ -14,6 +14,9 @@ Private Const LINELISTTRADSHEET As String = "LinelistTranslation"
 'Designer main sheet name
 Private Const DESIGNERMAINSHEET As String = "Main"
 Private Const PASSWORDSHEET As String = "__pass"
+'Linelist Style worksheet
+Private Const FORMATSHEET As String = "LinelistStyle"
+
 'All the ribbon object Ribbon
 Private ribbonUI As IRibbonUI
 
