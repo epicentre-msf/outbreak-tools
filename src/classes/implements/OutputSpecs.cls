@@ -89,6 +89,14 @@ Private Property Get LLTradsObject() As ILLTranslations
                         )
 End Property
 
+
+'Get the translation of messages object
+Private Property Get MessagesTrads() As ITranslation
+  Dim lltrads As ILLTranslations
+  Set lltrads = LLTradsObject()
+  Set MessagesTrads = lltrads.TransObject()
+End Property
+
 'Geobase export workbook
 Private Property Get OutputGeoWkb() As Workbook
 
@@ -301,38 +309,40 @@ Private Sub AddAnalysis(ByVal prevSheet As String, _
   Set sheetNamesList = New BetterArray
   Set scopeNamesList = New BetterArray
   Set lltrads = LLTradsObject()
-
   prevSheetName = prevSheet
 
   'Add Analysis Worksheets for analysis Exports
   sheetNamesList.Push lltrads.Value("uasheet"), lltrads.Value("tssheet"), _
                      lltrads.Value("spsheet"), lltrads.Value("sptsheet")
+  
   scopeNamesList.Push AnalysisIdsScopeNormal,  AnalysisIdsScopeTimeSeries, _ 
                       AnalysisIdsScopeSpatial, AnalysisIdsScopeSpatioTemporal
 
   Set namObj = AnaTabIds.Create(inpwb.Worksheets(ANANAMESSHEET))
   
-  With outwb
-    For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
-      sheetName =  sheetNamesList.Item(counter)
-      scope = scopeNamesList.Item(counter)
+  For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
+    sheetName =  sheetNamesList.Item(counter)
+    scope = scopeNamesList.Item(counter)
+    With outwb
       .Worksheets.Add(after:=.Worksheets(prevSheetName)).Name = sheetName
       prevSheetName = sheetName
-      Set outsh = .Worksheets(sheetName)
+      Set outsh = .Worksheets(prevSheetName)
+    End With
 
-      'Clear Excel clipboard
+    On Error Resume Next
       Application.CutCopyMode = False
-
-      On Error Resume Next
-        RemoveGridLines .Worksheets(prevSheetName)
-        inpwb.Worksheets(prevSheetName).Cells.Copy
-        .Worksheets(prevSheetName).Cells.PasteSpecial xlPasteValues
-        .Worksheets(prevSheetName).Cells.PasteSpecial xlPasteFormats
-        namObj.WriteGraphs outsh,  scope
-      On Error GoTo 0
-    Next
-  End With
-
+      inpwb.Worksheets(prevSheetName).Cells.Copy
+      outsh.Cells.PasteSpecial xlPasteValues
+      DoEvents
+      Application.CutCopyMode = False
+      inpwb.Worksheets(prevSheetName).Cells.Copy
+      outsh.Cells.PasteSpecial xlPasteFormats
+      DoEvents
+      RemoveGridLines outsh
+      DoEvents
+      namObj.WriteGraphs outsh, scope
+    On Error GoTo 0
+  Next
 End Sub
 
 Private Sub AddMetaData(ByVal scope As Byte, ByVal includeShowHide As Boolean, ByVal keepLabels As Boolean)
@@ -448,6 +458,7 @@ Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
   'Input/output worksheets used when moving ListObjects from showhide worksheet
   Dim inpsh As Worksheet
   Dim outsh As Worksheet
+  Dim sh As Worksheet
   Dim inpRng As Range
   Dim outRng As Range
   Dim Lo As ListObject
@@ -462,6 +473,28 @@ Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
   Dim colIndex As Long
   Dim tabName As String
   Dim sheetInfo As String
+  Dim currDict As ILLdictionary
+  Dim tradsmess As ITranslation
+  Dim showHideObj As ILLShowHide
+
+
+  'Step 1: Initialize all the show/hide tables in  the current workbook -------------------------
+
+  'Initialize all show/hide elements in the current workbook
+  Set tradsmess = MessagesTrads()
+  Set currDict = LLdictionary.Create(inpwb.Worksheets(DICTIONARYSHEET), 1, 1)
+  
+  'Initialize show/hide tables
+  For Each sh In inpwb.Worksheets
+    If (sh.Cells(1, 3).Value = "HList") Or _ 
+       (sh.Cells(1, 3).Value = "HList Print") Or _ 
+       (sh.Cells(1, 3).Value = "VList") Then
+      Set showHideObj = LLShowHide.Create(tradsmess, currDict, sh)
+      showHideObj.InitializeTable
+    End If
+  Next
+
+  'Step 2: Add all the show/hide elements to the export ------------------------------------
 
   'Add the show/hide worksheet, and initialize elements
   With outwb
@@ -476,7 +509,7 @@ Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
   
   'This is the first cell of the show/hide worksheet outsh is the show/hide worksheet
   Set cellRng = outsh.Cells(1, 1)
-
+  
   'Import all existing variables of all ListObjects from the show/hide worksheet
   'in the input workbook inpsh is the show/hide worksheet
   For Each Lo In inpsh.ListObjects

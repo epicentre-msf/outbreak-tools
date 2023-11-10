@@ -804,7 +804,7 @@ Private Sub ImportShowHide(ByVal inpwb As Workbook)
             If (varStatus = tradsmess.TranslatedValue("MSG_ShowVerti")) Then
               On Error Resume Next
               Set cellRng = sh.Range(Replace(tabName, "pr", vbNullString) & "_" & "PRINTSTART")
-              Set cellRng = sh.Cells(cellRng.Offset(-2).Row, colIndex) 
+              Set cellRng = sh.Cells(cellRng.Offset(-2).Row, colIndex)
               cellRng.EntireRow.RowHeight = 100
               cellRng.Orientation = 90
               On Error GoTo 0
