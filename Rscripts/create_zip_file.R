@@ -18,7 +18,7 @@ setup_folder  <- dplyr::case_when(
 rel_date <- lubridate::today()
 
 file.copy(from = glue::glue("{obt_folder}/designer.xlsb"),
-          to = "./src/OBT_all/designer-{rel_date}.xlsb",
+          to = glue::glue("./src/OBT_all/designer-{rel_date}.xlsb"),
           overwrite = TRUE)
 
 # # copy the ribbon template
@@ -30,12 +30,9 @@ file.copy(from = glue::glue("{obt_folder}/misc/_ribbontemplate.xlsb"),
 # # copy the empty setup
 file.copy(
     from = glue::glue("{setup_folder}/setup.xlsb"),
-    to = "./src/OBT_all/setup-{rel_date}.xlsb",
+    to = glue::glue("./src/OBT_all/setup-{rel_date}.xlsb"),
     overwrite = TRUE
 )
-
-r_script <- 
-vbs_script 
 
 # add the files to a zip file for demo
 utils::zip(
