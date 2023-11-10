@@ -3,7 +3,7 @@
 
 ##  Quickly build a linelist from an excel designer :snail:
 
-[![Download All](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all.svg)](https://github.com/epicentre-msf/outbreak-tools-setup/raw/main/src/OBT_all.zip)
+[![Download All](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/OBT_all.zip)
 [![Download Latest version of setup file](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/setup_file.svg)](https://github.com/epicentre-msf/outbreak-tools-setup/raw/main/setup.xlsb)
 [![Download Latest stable version of the designer](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/stable_designer.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/main/designer.xlsb)
 [![Download Latest development version of the designer](https://github.com/epicentre-msf/outbreak-tools/raw/dev/src/imgs/ribbon_template.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/main/misc/_ribbontemplate.xlsb)

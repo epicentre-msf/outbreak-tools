@@ -43,5 +43,6 @@ utils::zip(
     glue::glue("./src/OBT_all/_ribbontemplate.xlsb"),
     "./Rscripts/run_designer_on_windows.R",
     "./Rscripts/rundesigner.vbs"
-    )
+    ),
+    flags = "-j"
 )
