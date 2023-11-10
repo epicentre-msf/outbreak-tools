@@ -378,6 +378,7 @@ Private Sub WriteGraphs(ByVal outsh As Worksheet, ByVal scope As Byte)
       'Create a new graph on new Id
       Set outCellRng = outsh.Range(outRangeAddress)
       Set gr = Graphs.Create(outsh, outCellRng)
+      Application.GoTo outCellRng
       gr.Add
     End If
 

@@ -31,6 +31,7 @@ Private Const RNGUPDATE As String = "RNG_Update"
 Private Const RNGLLPWDOPEN As String = "RNG_LLPwdOpen"
 Private Const RNGTEMPPATH As String = "RNG_LLTemp"
 Private Const RNGMAINTEMP As String = "RNG_MainTemp"
+Private Const RNGASKOPEN As String = "RNG_AskOpen"
 
 Private Const CLASSNAME As String = "Main"
 
@@ -107,6 +108,8 @@ Private Property Get ValueOf(ByVal tagName As String) As String
             rngName = RNGLANGSETUP
         Case "lllang"
             rngName = RNGLLFORM
+        Case "askopen"
+            rngName = RNGASKOPEN
         End Select
 
         On Error Resume Next
@@ -122,8 +125,7 @@ Private Property Get ValueOf(ByVal tagName As String) As String
     On Error GoTo 0
 
     If retVal = "_default" Or retVal = "default" Then
-        retVal = ThisWorkbook.Path & Application.PathSeparator & "misc" & _
-            Application.PathSeparator & "_ribbontemplate.xlsb"
+        retVal = ThisWorkbook.Path & Application.PathSeparator & "_ribbontemplate.xlsb"
     End If
 
     ValueOf = retVal
@@ -449,7 +451,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     rngTable.Push RNGLLFORM, RNGLANGSETUP, RNGDESIGNLL, _
                   RNGPATHDICO, RNGPATHGEO, RNGLLDIR, RNGLLNAME, _
                   RNGEDITION, RNGMAINREADY, RNGUPDATE, RNGLLPWDOPEN, _
-                  RNGTEMPPATH, RNGMAINTEMP
+                  RNGTEMPPATH, RNGMAINTEMP, RNGASKOPEN
 
     For counter = rngTable.LowerBound To rngTable.UpperBound
         rngName = rngTable.Item(counter)

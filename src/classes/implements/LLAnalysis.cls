@@ -30,11 +30,13 @@ Private Const TIMESERIES As String = "Tab_TimeSeries_Analysis"
 Private Const GRAPHTIMESERIES As String = "Tab_Graph_TimeSeries"
 Private Const TITLEGRAPHTIMESERIES As String = "Tab_Label_TSGraph"
 Private Const SPATIAL As String = "Tab_Spatial_Analysis"
+Private Const SPATIOTEMPORAL As String = "Tab_SpatioTemporal_Analysis"
+Private Const SPATIOTEMPSPECS As String = "Tab_SpatioTemporal_Specs"
 
 'Exposed methods
 Public Function Create(ByVal anaWksh As Worksheet) As ILLAnalysis
     If anaWksh Is Nothing Then ThrowErrorUnableInstanciate "Worksheet object not defined"
-    CheckTablesRequirements
+    'There is no cheking at instanciation since the worksheet could be empty
     With New LLAnalysis
         Set .Wksh = anaWksh
         Set Create = .Self
@@ -62,14 +64,15 @@ Private Sub CheckTablesRequirements()
     Set loTable = New BetterArray
 
     loTable.Push GLOBALSUMMARY, UNIVARIATE, BIVARIATE, TIMESERIES, _
-                 GRAPHTIMESERIES, TITLEGRAPHTIMESERIES, SPATIAL
+                 GRAPHTIMESERIES, TITLEGRAPHTIMESERIES, SPATIAL, SPATIOTEMPORAL, _ 
+                 SPATIOTEMPSPECS
 
     For counter = loTable.LowerBound To loTable.UpperBound
         loName = loTable.Items(counter)
         On Error Resume Next
         Set Lo = Wksh.ListObjects(loName)
-        If Lo Is Nothing Then ThrowErrorUnableInstanciate " Listobject " & loName & " does not exist in analysis worksheet "
         On Error GoTo 0
+        If Lo Is Nothing Then ThrowError " Listobject " & loName & " does not exist in analysis worksheet "
     Next
 End Sub
 
@@ -103,40 +106,6 @@ Private Sub BusyApp()
     Application.DisplayAlerts = False
     Application.Calculation = xlCalculationManual
     Application.EnableAnimations = False
-End Sub
-
-Private Sub TransferCodeWksh(ByVal sh As Worksheet, ll As ILinelist)
-
-    Const moduleName As String = "LinelistAnalysisChange"
-
-    Dim inpWkb As Workbook                       'Input workbook
-    Dim lData As ILinelistSpecs
-    Dim codeContent As String                    'a string to contain code to add
-    Dim vbProj As Object                         'component, project and modules
-    Dim vbComp As Object
-    Dim codeMod As Object
-    Dim sheetName As String
-
-    Set lData = ll.LinelistData()
-    Set inpWkb = lData.specswkb()
-    sheetName = sh.Name
-
-    'save the code module in the string sNouvCode
-    With inpWkb.VBProject.VBComponents(moduleName).CodeModule
-        codeContent = .Lines(1, .CountOfLines)
-    End With
-
-    With sh.Parent
-        Set vbProj = .VBProject
-        Set vbComp = vbProj.VBComponents(.sheets(sheetName).codeName)
-        Set codeMod = vbComp.CodeModule
-    End With
-
-    'Adding the code
-    With codeMod
-        .DeleteLines 1, .CountOfLines
-        .AddFromString codeContent
-    End With
 End Sub
 
 Private Sub Build(ByVal ll As Linelist)
@@ -307,7 +276,6 @@ Private Sub ResizeLo(Lo As listObject, Optional totalRowCount As Long = 0)
 End Sub
 
 
-
 Private Sub SortAnalysis()
 
     Dim sh As Worksheet
@@ -358,7 +326,9 @@ Private Sub Translate(ByVal TransObject As ITranslation)
     Set transCols = New BetterArray
     Set anash = Wksh()
     transCols.Push "section", "table title", "graph title", "summary label", _
-                   "choices", "label" 'choices is for the time series graphs translation
+                   "choices", "label", "section (select)"
+ 
+    'choices is for the time series graphs translation
 
     For Each Lo In anash.ListObjects
         For counter = transCols.LowerBound To transCols.UpperBound
@@ -379,6 +349,10 @@ End Sub
 'Errors ---------------------------------------------------------------------------------
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
+End Sub
+
+Private Sub ThrowError(ByVal errorMessage As String)
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, errorMessage
 End Sub
 
 'Interface
