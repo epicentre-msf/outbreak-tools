@@ -629,6 +629,7 @@ Private Sub WriteTable(ByVal loName As String, _
     Else
       'last section of a time series table
       addActSecMinMaxFormula = True
+      addSpatioTemporalName = (tabType = TypeSpatioTemporal)
       'Add an anchor to where to start building graph's for time series (START_GRAPHS_TS)
       Set cellRng = outsh.Range("ENDTABLE_" & secId).Offset(5, 2)
       If tabType = TypeTimeSeries Then cellRng.Name = "START_GRAPHS_TS"
