@@ -354,12 +354,15 @@ Private Sub AddUniqueConditonalFormatting()
     End With
 End Sub
 
+'Set Main label and sublabel style and values
+
+
 'Main Label
 Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     Dim varMainLab As String
     Dim varName As String
     Dim varNote As String
-    Dim varSublab As String
+    Dim varSubLab As String
     Dim varStatus As String
     Dim varListAutoOrigin As String
     Dim varControl As String
@@ -392,7 +395,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     varMainLab = ValueOf("main label")
     varName = ValueOf("variable name")
     varNote = ValueOf("note")
-    varSublab = ValueOf("sub label")
+    varSubLab = ValueOf("sub label")
     varControl = ValueOf("control")
     varEditLab = ValueOf("editable label")
     varStatus = ValueOf("status")
@@ -409,27 +412,28 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     'sublabel
     If (varControl = "formula") Or (varControl = "case_when") Or _
        (varControl = "choice_formula") Then
-        varSublab = varSublab & chr(10) & calculated
-    ElseIf (varControl = "choice_custom") Then
-        varSublab = varSublab & chr(10) & choicust
+        varSubLab = varSubLab & chr(10) & calculated
     End If
 
     mainLabLength = Len(varMainLab)
 
     'Add subLabel to main label
-    If (varSublab <> vbNullString) Then
-        varMainLab = varMainLab & chr(10) & varSublab
+    If (varSubLab <> vbNullString) Then
+        varMainLab = varMainLab & chr(10) & varSubLab
     End If
 
     'Status to add to Notes
     If varStatus = "mandatory" Then varNote = mandatory & chr(10) & varNote
 
-    'variable main label and sub lable
-    cellRng.Offset(-2).Value = varMainLab
-    design.ApplyFormat cellRng.Offset(-2).Characters(Start:=1, Length:=mainLabLength), _
-        scope:=HListMainLab                      'format of the main label
-    design.ApplyFormat cellRng.Offset(-2).Characters(Start:=mainLabLength + 1), _
-        scope:=HListSublab                       'format of the sub label
+    'variable main label and sub label
+    'For choice custom, add the links before setting those values
+    If varControl <> "choice_custom" Then 
+        cellRng.Offset(-2).Value = varMainLab
+        design.ApplyFormat cellRng.Offset(-2).Characters(Start:=1, Length:=mainLabLength), _
+            scope:=HListMainLab                      'format of the main label
+        design.ApplyFormat cellRng.Offset(-2).Characters(Start:=mainLabLength + 1), _
+            scope:=HListSublab                       'format of the sub label
+    End If
 
     'variable name
     cellRng.Offset(-1).Value = varName
@@ -483,6 +487,8 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     cellRng.Locked = False
 End Sub
 
+
+
 'Add the choices
 Private Sub AddChoices()
 
@@ -495,6 +501,16 @@ Private Sub AddChoices()
     Dim drop As IDropdownLists
     Dim cellRng As Range
     Dim geo As ILLGeo
+    Dim choicust As String
+    Dim trans As ITranslation
+    Dim varMainLab As String
+    Dim varSubLab As String
+    Dim sh As Worksheet
+    Dim labRng As Range
+    Dim targetAddress As String
+    Dim mainLabLength As Long
+    Dim design As ILLFormat
+
 
     varControl = ValueOf("control")
 
@@ -510,7 +526,10 @@ Private Sub AddChoices()
     
     Set cat = New BetterArray
     Set cellRng = VarRange()                     'variable range where to set the validation
-
+    Set sh = cellRng.Parent
+    
+    varAlert = ValueOf("alert")
+    varMessage = ValueOf("message")
 
     Select Case varControl
         'dropName is the name of the dropdown, not the variable. Tt is the variable name only if
@@ -522,22 +541,50 @@ Private Sub AddChoices()
         dropName = ActualVariable()
         Set cat = lData.Categories(dropName)
         drop.Add cat, dropName
-        varAlert = ValueOf("alert")
-        varMessage = ValueOf("message")
-    
-    
+
     Case "choice_custom"
         
         Set drop = CustomDropdown()
+        Set trans = lData.TransObject()
+        Set design = lData.DesignFormat()
+        choicust = trans.TranslatedValue("MSG_CustomChoice")
+        varSubLab = ValueOf("sub label")
+        varMainLab = ValueOf("main label")
+        mainLabLength = Len(varMainLab)
 
         dropName = ActualVariable()
         Set cat = lData.Categories(dropName)
         If cat.Length = 0 Then cat.Push vbNullString, vbNullString
-        drop.Add cat, dropName
-        
-        varAlert = ValueOf("alert")
-        varMessage = ValueOf("message")
 
+        drop.Add cat, dropName, addLabel:=True, counterPrefix:=choicust
+
+        Set labRng = drop.LabelRange(dropName)
+        targetAddress = "'" & labRng.Parent.Name & "'" & "!" & labRng.Address
+        'Adding hyperlinks remove the writings (sub label and so on, so need to set it back)
+        With sh
+            .Hyperlinks.Add _ 
+            Anchor:=cellRng.Offset(-2), _ 
+            Address:="", _
+            SubAddress:= targetAddress, _
+            TextToDisplay:= ""
+        End With
+
+        cellRng.Offset(-2).Font.UnderLine = xlUnderlineStyleNone
+
+        'Add the custom dropdown label value (including the number) to sub label
+        varSubLab = varSubLab & chr(10) & "(" & labRng.Value & ")"
+        varMainLab = varMainLab & chr(10) & varSubLab
+
+        'Set the style back for main label and sub label (could be removed)
+        cellRng.Offset(-2).Value = varMainLab
+        design.ApplyFormat cellRng.Offset(-2).Characters(Start:=1, Length:=mainLabLength), _
+            scope:=HListMainLab                      'format of the main label
+        design.ApplyFormat cellRng.Offset(-2).Characters(Start:=mainLabLength + 1), _
+            scope:=HListSublab
+
+        'Add return link from the dropdown worksheet
+        drop.AddReturnLink listName:=dropName, returnRng:=cellRng.Offset(-2)
+        
     Case "list_auto"
         
         Set drop = Dropdown()
@@ -546,10 +593,10 @@ Private Sub AddChoices()
         'The category is empty It will create an empty table
         cat.Push ""
         drop.Add cat, dropName
+
     Case "geo1"
         
         Set drop = Dropdown()
-
         dropName = "admin1"                      'The dropdown is only on admin 1 and the logic is done in the worksheet
         'Add the three dropdowns for the four admins
         Set geo = lData.geoObject()

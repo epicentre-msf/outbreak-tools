@@ -17,7 +17,13 @@ Option Explicit
 
 'Exposed methods
 Public Property Get Exists(ByVal listName As String) As Boolean: End Property
-Public Sub Add(ByVal listValues As BetterArray, ByVal listName As String): End Sub
+Public Property Get LabelRange(ByVal listName As String) As Range: End Property
+
+Public Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _ 
+               Optional ByVal addLabel As Boolean = False, _
+               Optional ByVal counterPrefix As String = vbNullString, _ 
+               Optional ByVal tableStyle As String = "TableStyleLight13")
+End Sub
 
 Public Sub Remove(ByVal listName As String): End Sub
 
@@ -33,3 +39,4 @@ Public Sub ClearList(ByVal listName As String)
 End Sub
 Public Sub Sort(ByVal listName As String, Optional ByVal sortOrder As Long = xlAscending)
 End Sub
+Public Sub AddReturnLink(ByVal listName As String, ByVal returnRng As Range): End Sub

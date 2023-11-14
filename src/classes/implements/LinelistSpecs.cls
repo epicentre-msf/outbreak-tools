@@ -377,8 +377,6 @@ Private Sub Prepare()
     'Translate the analysis
     ana.Translate dictTrads
 
-    mainobj.UpdateStatus 10
-
     'Return the state of the application
 End Sub
 
