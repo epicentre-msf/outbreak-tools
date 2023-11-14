@@ -380,10 +380,9 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     'variable main label and sub lable
     cellRng.Offset(, -1).Value = varMainLab
 
-    design.ApplyFormat cellRng.Offset(, -1).Characters(Start:=1, Length:=mainLabLength), _
+    If varControl <> "choice_custom" Then
+        design.ApplyFormat cellRng.Offset(, -1).Characters(Start:=1, Length:=mainLabLength), _
         scope:=VListMainLab                      'format of the main label
-
-    If (varSublab <> vbNullString) Then
         design.ApplyFormat cellRng.Offset(, -1).Characters(Start:=mainLabLength + 1), _
         scope:=VListSublab                       'format of the sub label
     End If
@@ -421,36 +420,94 @@ Private Sub AddChoices()
     Dim cat As BetterArray
     Dim drop As IDropdownLists
     Dim cellRng As Range
+    Dim choicust As String
+    Dim trans As ITranslation
+    Dim varMainLab As String
+    Dim varSubLab As String
+    Dim sh As Worksheet
+    Dim labRng As Range
+    Dim targetAddress As String
+    Dim mainLabLength As Long
+    Dim design As ILLFormat
 
-    Set lData = LinelistData()
-    Set cat = New BetterArray
-
-    varName = ActualVariable()
+    
     varControl = ValueOf("control")
 
     If (varControl <> "choice_manual") And _
         (varControl <> "choice_custom") And (varControl <> "choice_multiple") _
         Then Exit Sub
+    
+    varName = ActualVariable()
+    varAlert = ValueOf("alert")
+    varMessage = ValueOf("message")
 
+    Set lData = LinelistData()
+    Set cat = New BetterArray
+    Set cellRng = VarRange()
 
     Select Case varControl
 
     Case "choice_manual", "choice_multiple"
-        Set drop = Dropdown()
-    Case "choice_custom"
-        Set drop = CustomDropdown()
-    End Select
 
-    Set cat = lData.Categories(varName)
-    Set cellRng = VarRange()
-    'Add dropdown
-    drop.Add cat, varName
-    varAlert = ValueOf("alert")
-    varMessage = ValueOf("message")
+        Set drop = Dropdown()
+        Set cat = lData.Categories(varName)
+        'Add dropdown
+        drop.Add cat, varName
+
+    Case "choice_custom"
+
+        Set drop = CustomDropdown()
+        Set cat = lData.Categories(varName)
+        Set trans = lData.TransObject()
+        Set design = lData.DesignFormat()
+        Set sh = cellRng.Parent
+        
+        varSubLab = ValueOf("sub label")
+        varMainLab = ValueOf("main label")
+        mainLabLength = Len(varMainLab)
+        
+        If cat.Length = 0 Then cat.Push vbNullString, vbNullString
+
+        choicust = trans.TranslatedValue("MSG_CustomChoice")
+        drop.Add cat, varName, addLabel:=True, counterPrefix:=choicust
+    
+        'For choice customs, special treatment to add the main label and sub label after
+        'adding a link
+        'If the labRng is Nothing, just continue
+        On Error Resume Next
+            Set labRng = drop.LabelRange(varName)
+            targetAddress = "'" & labRng.Parent.Name & "'" & "!" & labRng.Address
+            'Adding hyperlinks remove the writings (sub label and so on, so need to set it back)
+            With sh
+                .Hyperlinks.Add _ 
+                Anchor:=cellRng.Offset(, -1), _ 
+                Address:="", _
+                SubAddress:= targetAddress, _
+                TextToDisplay:= ""
+            End With
+        On Error GoTo 0
+
+        cellRng.Offset(, -1).Font.UnderLine = xlUnderlineStyleNone
+
+        'Add the custom dropdown label value (including the number) to sub label
+        varSubLab = varSubLab & chr(10) & "(" & labRng.Value & ")"
+        varMainLab = varMainLab & chr(10) & varSublab
+
+        cellRng.Offset(, -1).Value = varMainLab
+        'Set the style back for main label and sub label (could be removed)
+        design.ApplyFormat cellRng.Offset(, -1).Characters(Start:=1, Length:=mainLabLength), _
+        scope:=VListMainLab                      'format of the main label
+        design.ApplyFormat cellRng.Offset(, -1).Characters(Start:=mainLabLength + 1), _
+        scope:=VListSublab
+
+        'Add a return link to the vlist var worksheet
+        drop.AddReturnLink listName:=varName, returnRng:=cellRng.Offset(, -1)
+    End Select
 
     'Set dropdown validations
     drop.SetValidation cellRng:=cellRng, listName:=varName, _
-                       alertType:=varAlert, message:=varMessage
+                       alertType:=varAlert, message:=varMessage, _ 
+                       showError:= (varControl <> "choice_multiple")
 End Sub
 
 'Add validation for VList var

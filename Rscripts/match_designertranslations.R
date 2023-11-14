@@ -7,13 +7,16 @@ library(stringr)
 
 #----- copy the designer translation user file from the drive
 onedrive_translation <- "D:/MSF/OutbreakTools - DEV/ressources/designer_translations_user.xlsx"
-file.copy(from = onedrive_translation, to = "misc/", overwrite = TRUE)
+obt_repo <- "D:/Projects/outbreak-tools"
+
+file.copy(from = onedrive_translation, to = glue::glue("{obt_repo}/misc/"), 
+          overwrite = TRUE)
 
 # path to the master designer_translation workbook
-master_workbook_path <- "misc/designer_translations.xlsx"
+master_workbook_path <- glue::glue("{obt_repo}/misc/designer_translations.xlsx")
 
 # path to a workbook where corrections have been made
-child_workbook_path <- "misc/designer_translations_user.xlsx"
+child_workbook_path <- glue::glue("{obt_repo}/misc/designer_translations_user.xlsx")
 
 #---- Preliminary functions ----------------------------------------------------
 
@@ -144,7 +147,7 @@ names(joined_data) <- sort(targeted_tables)
 
 
 # write back to an empty workbook =========================================================
-source("Rscripts/functions_tabulations.R")
+source(glue::glue("{obt_repo}/automation/functions_tabulations.R"))
 
 header_names <- c(
   "Tables for translations of the linelist",
@@ -202,5 +205,9 @@ push_all_tables(
   listoftables = des_tables
 )
 
-saveWorkbook(wb, file = "misc/designer_translations_merged.xlsx", overwrite = TRUE)
-file.copy(from = "misc/designer_translations_merged.xlsx", to = onedrive_translation, overwrite = TRUE)
+saveWorkbook(wb, 
+             file = glue::glue("{obt_repo}/misc/designer_translations_merged.xlsx"), 
+             overwrite = TRUE)
+
+file.copy(from = glue::glue("{obt_repo}/misc/designer_translations_merged.xlsx"), 
+          to = onedrive_translation, overwrite = TRUE)
