@@ -406,8 +406,8 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     choicust = trans.TranslatedValue("MSG_CustomChoice")
 
     'add an anchor to where the table starts (on printed sheet and on non printed sheet)
-    If (varIndex = 1) And (Not usePrinted) Then cellRng.Name = ValueOf("table name") & "_" & "START"
-    If (varIndex = 1) And (usePrinted) Then cellRng.Name = ValueOf("table name") & "_" & "PRINTSTART"
+    If (varIndex = 1) And (Not usePrinted) Then cellRng.Offset(-1).Name = ValueOf("table name") & "_START"
+    If (varIndex = 1) And (usePrinted) Then cellRng.Offset(-1).Name = ValueOf("table name") & "_PRINTSTART"
 
     'sublabel
     If (varControl = "formula") Or (varControl = "case_when") Or _

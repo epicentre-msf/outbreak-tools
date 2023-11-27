@@ -69,15 +69,13 @@ End Property
 Private Function LanguageIndex() As Long
 
     Dim lngIndex As Long
-    Dim STARTCOL As Long
     Dim hRng As Range
     Dim lng As String
 
     lng = Language
     If LanguageExists() Then
         Set hRng = Table.HeaderRowRange
-        STARTCOL = hRng.Column
-        lngIndex = hRng.Find(What:=lng, lookAt:=xlWhole, MatchCase:=True).Column - STARTCOL + 1
+        lngIndex = hRng.Find(What:=lng, lookAt:=xlWhole, MatchCase:=True).Column -  hRng.Column + 1
     Else
         lngIndex = -1
     End If
@@ -102,12 +100,10 @@ End Function
 Private Function ValueIndex(ByVal Text As String) As Long
     Dim Index As Long
     Dim keyRng As Range
-    Dim StartRow As Long
 
     If ValueExists(Text) Then
         Set keyRng = Table.ListColumns(1).Range
-        StartRow = keyRng.Row
-        Index = keyRng.Find(What:=Text, lookAt:=xlWhole, MatchCase:=True).Row - StartRow + 1
+        Index = keyRng.Find(What:=Text, lookAt:=xlWhole, MatchCase:=True).Row - keyRng.Row + 1
     Else
         Index = -1
     End If
@@ -116,7 +112,9 @@ Private Function ValueIndex(ByVal Text As String) As Long
 End Function
 
 Private Function TranslatedValue(ByVal textTotranslate As String, Optional ByVal containsFormula As Boolean = False) As String
+    
     'Test if the language Exists
+    Dim cleanedText As String
     Dim transText As String
     Dim formTransText As String
     Dim formulaText As String
@@ -125,24 +123,34 @@ Private Function TranslatedValue(ByVal textTotranslate As String, Optional ByVal
     Dim LoRng As Range
     Dim counter As Long
     Dim quoteStart As Long
-    Dim Text As String
+    Dim chunkToTrans As String
+    Dim repLists As BetterArray
     
-    'Remove trailing spaces before translations
-    Text = Application.WorksheetFunction.Trim(textTotranslate)
+    'Replace all the non breaking spaces with empty character
+    cleanedText = Application.WorksheetFunction.SUBSTITUTE(textTotranslate, chr(160), " ")
+    cleanedText = Application.WorksheetFunction.CLEAN(cleanedText)
+    cleanedText = Application.WorksheetFunction.TRIM(cleanedText)
 
     If containsFormula Then
-        formTransText = Text
+        
+        formTransText = cleanedText
+        formulaText = Replace(cleanedText, chr(34) & chr(34), vbNullString)
+        Set repLists = New BetterArray
 
         'Remove empty characters from the formula.
-        formulaText = Replace(Text, chr(34) & chr(34), vbNullString)
         If InStr(1, formulaText, chr(34)) > 0 Then
             For counter = 1 To Len(formulaText)
                 If Mid(formulaText, counter, 1) = chr(34) Then
                     If quoteStart = 0 Then
                         quoteStart = counter + 1
                     Else
-                        transText = TranslatedValue(Mid(formulaText, quoteStart, counter - quoteStart))
-                        formTransText = Replace(formTransText, Mid(formulaText, quoteStart, counter - quoteStart), transText)
+                        chunkToTrans = Mid(formulaText, quoteStart, counter - quoteStart)
+                        'Stock the list of elements already translated, and skip if it is translated already
+                        If Not (repLists.Includes(chunkToTrans)) Then
+                            transText = TranslatedValue(chunkToTrans)
+                            formTransText = Replace(formTransText, chr(34) & chunkToTrans & chr(34), chr(34) & transText & chr(34))
+                            repLists.Push chunkToTrans
+                        End If
                         quoteStart = 0
                     End If
                 End If
@@ -151,15 +159,14 @@ Private Function TranslatedValue(ByVal textTotranslate As String, Optional ByVal
 
         TranslatedValue = formTransText
     Else
-        If ValueExists(Text) Then
-            
+        If ValueExists(cleanedText) Then
             Set LoRng = Table.Range
-            valIndex = ValueIndex(Text)
+            valIndex = ValueIndex(cleanedText)
             lngCol = LanguageIndex()
             transText = LoRng.Cells(valIndex, lngCol).Value
             TranslatedValue = transText
         Else
-            TranslatedValue = Text
+            TranslatedValue = cleanedText
         End If
     End If
 End Function

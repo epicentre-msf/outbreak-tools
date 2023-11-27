@@ -65,11 +65,6 @@ Public Sub UpdateSpTables()
 
     sp.Update
 
-    DoEvents
-    ActiveSheet.calculate
-    ActiveSheet.UsedRange.calculate
-    ActiveSheet.Columns("A:E").calculate
-
     NotBusyApp
 End Sub
 
