@@ -361,7 +361,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     mandatory = trans.TranslatedValue("MSG_Mandatory")
 
     'Add the table start name
-    If varIndex = 4 Then cellRng.Name = ValueOf("table name") & "_" & "START"
+    If varIndex = 4 Then cellRng.Name = ValueOf("table name") & "_START"
 
     'sublabel
     If (varControl = "formula") Or (varControl = "case_when") Or _

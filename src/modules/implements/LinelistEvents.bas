@@ -117,7 +117,7 @@ Public Sub EventValueChangeLinelist(Target As Range)
 
     tablename = sh.Cells(1, 4).Value
     targetColumn = Target.Column
-    startLine = sh.Range(tablename & "_START").Row
+    startLine = sh.Range(tablename & "_START").Row + 1
     varControl = sh.Cells(startLine - 5, targetColumn).Value
 
     If (Target.Row >= startLine) Then
@@ -335,7 +335,7 @@ Public Sub UpdateListAuto(ByVal sh As Worksheet)
     Set drop = DropdownLists.Create(wb.Worksheets(DROPDOWNSHEET))
 
     tablename = sh.Cells(1, 4).Value
-    Set cellRng = sh.Range(tablename & "_START").Offset(-2)
+    Set cellRng = sh.Range(tablename & "_START").Offset(-1)
 
     Do While (Not IsEmpty(cellRng))
 
@@ -457,7 +457,7 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
 
     Set sh = ActiveSheet
     tablename = sh.Cells(1, 4).Value
-    startLine = sh.Range(tablename & "_START").Row
+    startLine = sh.Range(tablename & "_START").Row + 1
 
     'First test if we are on a good line
     If Target.Row < startLine Then Exit Sub
