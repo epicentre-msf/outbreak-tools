@@ -526,6 +526,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
     Dim choiValue As String
     Dim hRng As Range
     Dim tabRng As Range
+    Dim cellRng As Range
 
 
     Set posList = New BetterArray
@@ -559,9 +560,17 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
     For counter = idsList.LowerBound To idsList.UpperBound
 
         val = idsList.Item(counter)
-        val = Application.WorksheetFunction.Trim(Replace(LCase(val), "series", vbNullString))
-
-        Set tabRng = tsLo.ListRows(CLng(val)).Range
+        val = Application.WorksheetFunction.Trim(val)
+        
+        'Look for the series in the listObject of timeSeries and find the corresponding row
+        Set cellRng = Nothing
+        Set cellRng = tsLo.ListColumns(1).Range.Find(What:=val, LookAt:=xlWhole, MatchCase:=False)
+        
+        'If not able to find the series, then continue the loop
+        If (cellRng Is Nothing) Then GoTo ContinueLoop
+        If (cellRng.Row <= hRng.Row) Then GoTo ContinueLoop
+        
+        Set tabRng = tsLo.ListRows(cellRng.Row - hRng.Row).Range
         Set specs = TablesSpecs.Create(hRng, tabRng, lData)
         tabId = specs.TableId
         secId = specs.TableSectionId
@@ -582,6 +591,7 @@ Private Sub DefineGraphSpecs(ByVal graphId As String)
             PushLabels "ROW_CATEGORIES_" & secId, labName, labelList.Item(counter)
         End If
 
+    ContinueLoop:
     Next
 
 End Sub

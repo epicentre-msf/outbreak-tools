@@ -544,12 +544,12 @@ Public Sub ClickGeoApp()
     Case "HList"
 
         tabName = sh.Cells(1, 4).Value
-        startRow = sh.Range(TabName & "_" & "START").Row
+        startRow = sh.Range(tabName & "_START").Row + 1
         targetColumn = ActiveCell.Column
 
-        If ActiveCell.Row >= StartRow Then
+        If ActiveCell.Row >= startRow Then
 
-            hfOrGeo = ActiveSheet.Cells(StartRow - 5, targetColumn).Value
+            hfOrGeo = ActiveSheet.Cells(startRow - 5, targetColumn).Value
             Select Case hfOrGeo
             Case "geo1"
                 LoadGeo 0
@@ -581,30 +581,39 @@ Public Sub ClickCalculate()
     Attribute ClickCalculate.VB_Description = "Calculate Elements in an analysis worksheet"
 
     Dim sh As Worksheet
-    Dim sheetTag As String
+    Dim sheetName As String
+    Dim anaSheetsList As BetterArray
+    Static previousHit As Long
+    Dim timePeriod As Long
+    Dim counter As Long
 
-    Set sh = ActiveSheet
-    sheetTag = sh.Cells(1, 3).Value
-
-    If sheetTag <> "Uni-Bi-Analysis" And sheetTag <> "TS-Analysis" And _ 
-       sheetTag <> "SP-Analysis" And sheetTag <> "SPT-Analysis" Then
-        WarningOnSheet "MSG_AnaSheet"
-        Exit Sub
+    If (previousHit = 0) Then 
+        previousHit = Now()
+        timePeriod = 0
+    Else
+        timePeriod = Now() - previousHit
     End If
 
+    'If the duration is less than 2 minutes, Exit to avoid mutiple recomputations
+    If (timePeriod < 60 & timePeriod > 0) Then Exit Sub
+    
     InitializeTrads
-
     On Error GoTo ErrHand
 
     'Calculate
     BusyApp
+    UpdateSpTables
+    
+    Set anaSheetsList = New BetterArray
+    anaSheetsList.Push "uasheet", "tssheet", "spsheet", "sptsheet"
 
-    Select Case sheetTag
-    Case "Uni-Bi-Analysis", "TS-Analysis", "SPT-Analysis"
-        UpdateFilterTables
-    Case "SP-Analysis"
-        UpdateSpTables
-    End Select
+    For counter = anaSheetsList.LowerBound To anaSheetsList.UpperBound
+        sheetName = lltrads.Value(anaSheetsList.Item(counter))
+        Set sh = wb.Worksheets(sheetName)
+        sh.UsedRange.calculate
+        sh.Columns("A:E").calculate
+    Next
+
 ErrHand:
     NotBusyApp
 End Sub
@@ -780,7 +789,7 @@ Public Sub ClickSortTable()
 
     Dim sh As Worksheet
     Dim sheetTag As String
-    Dim TabName As String
+    Dim tabName As String
     Dim targetColumn As Long
     Static prevRngName As String
     Static nbTimes As Long
@@ -803,8 +812,8 @@ Public Sub ClickSortTable()
 
     InitializeTrads
     
-    TabName = sh.Cells(1, 4).Value
-    StartRow = sh.Range(TabName & "_" & "START").Row
+    tabName = sh.Cells(1, 4).Value
+    startRow = sh.Range(tabName & "_START").Row + 1
     targetColumn = ActiveCell.Column
     
     If ActiveCell.Row >= StartRow Then
