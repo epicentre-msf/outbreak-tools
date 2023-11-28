@@ -640,7 +640,7 @@ Private Function ControlLanguage(ByVal impwb As Workbook) As Boolean
     Set varRng = metaTab.DataRange("variable")
     'Find the cellRange with the language value
     impLang = vbNullString
-    currLang = lltrads.Value("lllanguage")
+    currLang = lltrads.Value("dictionarylanguage")
     'If there are errors, default back to empty string as import language
     On Error Resume Next
       Set cellRng = varRng.Find(What:="language", lookAt:=xlWhole, MatchCase:=False)
@@ -651,8 +651,8 @@ Private Function ControlLanguage(ByVal impwb As Workbook) As Boolean
     'is sure to proceed
     If (impLang <> currLang) And (impLang <> vbNullString) Then
       abortImport = (MsgBox(trads.TranslatedValue("MSG_ActualLanguage") & " " & currLang & _
-                            trads.TranslatedValue("MSG_ImportLanguage") & " " & impLang & _
-                            trads.TranslatedValue("MSG_QuitImports"), vbExclamation + vbYesNo, _
+                            ". " & trads.TranslatedValue("MSG_ImportLanguage") & " " & impLang & _
+                            ". " & trads.TranslatedValue("MSG_QuitImports"), vbExclamation + vbYesNo, _
                             trads.TranslatedValue("MSG_LanguageDifferent")) = vbNo)
     HASSAMELANGUAGE = False
     'If the import language is not found, tell it to the user
@@ -891,7 +891,7 @@ Private Sub UpdateEditableLabels(ByVal inpwb As Workbook)
     On Error GoTo ContinueLoop
     Set cellRng = sh.Range(sh.Cells(1, 4).Value & "_START")
     If (sheetInfo = "hlist2D") Then  
-      Set cellRng = sh.Cells(cellRng.Offset(-2).Row, colIndex)
+      Set cellRng = sh.Cells(cellRng.Offset(-1).Row, colIndex)
       cellRng.Value = newLabel
     ElseIf (sheetInfo = "vlist1D") Then
       Set cellRng = sh.Cells(colIndex, cellRng.Offset( ,-1).Column)

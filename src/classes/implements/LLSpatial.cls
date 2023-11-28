@@ -113,16 +113,16 @@ Private Sub Update()
       If Not (filtsh.ListObjects(1).DataBodyRange Is Nothing) Then
 
         tablename = sh.Cells(1, 4).Value
-        Set cellRng = sh.Range(tablename & "_" & "START")
+        Set cellRng = sh.Range(tablename & "_START")
         Set Lo = filtsh.ListObjects(1)
 
           'Offset - 1 is the range with the variable names
-          Do While Not IsEmpty(cellRng.Offset(-1))
-            controlValue = cellRng.Offset(-5).Value
+          Do While Not IsEmpty(cellRng)
+            controlValue = cellRng.Offset(-4).Value
 
             If controlValue = "geo1" Then
 
-              varName = Replace(cellRng.Offset(-1).Value, ADMIN & "1_", "")
+              varName = Replace(cellRng.Value, ADMIN & "1_", "")
 
               If Exists(varName) Then
 
@@ -138,7 +138,7 @@ Private Sub Update()
             ElseIf controlValue = "hf" Then
 
               'Update spatial values on health facility
-              varName = Replace(cellRng.Offset(-1).Value, HF & "_", "")
+              varName = Replace(cellRng.Value, HF & "_", "")
 
               If Exists(varName) Then
 

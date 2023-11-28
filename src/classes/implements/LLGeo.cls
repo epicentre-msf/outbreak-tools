@@ -781,40 +781,40 @@ Private Sub Update(ByVal pass As ILLPasswords)
                 'Start of the table in the HList
                 '.Cells(1, 4) contains the name of table in the linelist HList sheet
 
-                Set cellRng = .Range(.Cells(1, 4).Value & "_" & "START")
+                Set cellRng = .Range(.Cells(1, 4).Value & "_START")
                 Set printsh = wb.Worksheets("print_" & sh.Name)
                 Set cellPrintRng = printsh.Range(cellRng.Address)
 
-                Do While Not IsEmpty(cellRng.Offset(-1))
+                Do While Not IsEmpty(cellRng)
 
-                    controlValue = cellRng.Offset(-5).Value
+                    controlValue = cellRng.Offset(-4).Value
 
                     Select Case controlValue
 
                     Case "geo1"
 
-                        cellRng.Offset(-2).Value = GeoNames("adm1_name")
-                        cellPrintRng.Offset(-2).Value = GeoNames("adm1_name")
+                        cellRng.Offset(-1).Value = GeoNames("adm1_name")
+                        cellPrintRng.Offset(-1).Value = GeoNames("adm1_name")
 
                     Case "geo2"
 
-                        cellRng.Offset(-2).Value = GeoNames("adm2_name")
-                        cellPrintRng.Offset(-2).Value = GeoNames("adm2_name")
+                        cellRng.Offset(-1).Value = GeoNames("adm2_name")
+                        cellPrintRng.Offset(-1).Value = GeoNames("adm2_name")
 
                     Case "geo3"
 
-                        cellRng.Offset(-2).Value = GeoNames("adm3_name")
-                        cellPrintRng.Offset(-2).Value = GeoNames("adm3_name")
+                        cellRng.Offset(-1).Value = GeoNames("adm3_name")
+                        cellPrintRng.Offset(-1).Value = GeoNames("adm3_name")
 
                     Case "geo4"
 
-                        cellRng.Offset(-2).Value = GeoNames("adm4_name")
-                        cellPrintRng.Offset(-2).Value = GeoNames("adm4_name")
+                        cellRng.Offset(-1).Value = GeoNames("adm4_name")
+                        cellPrintRng.Offset(-1).Value = GeoNames("adm4_name")
 
                     Case "hf"
 
-                        cellRng.Offset(-2).Value = GeoNames("hf_name")
-                        cellPrintRng.Offset(-2).Value = GeoNames("hf_name")
+                        cellRng.Offset(-1).Value = GeoNames("hf_name")
+                        cellPrintRng.Offset(-1).Value = GeoNames("hf_name")
 
                     End Select
 

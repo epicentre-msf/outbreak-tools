@@ -233,7 +233,7 @@ Public Sub Build()
     rng.Value = tablename
     design.ApplyFormat rng, scope:=LinelistHiddenCell
 
-    Set cellRng = sh.Range(tablename & "_" & "START")
+    Set cellRng = sh.Range(tablename & "_START")
     'Add a name to all the plage where to enter values (Use to update calculations of the VList)
     Set rng = cellRng.Offset(, -1)
 
