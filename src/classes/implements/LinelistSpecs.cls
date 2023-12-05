@@ -505,8 +505,6 @@ Private Sub CheckSheetsRequirements(ByVal specswkb As Workbook)
     Next
 End Sub
 
-'Chek if a sheet really exists
-
 'Check if a sheet Exists
 Private Sub sheetExists(ByVal specswkb As Workbook, ByVal sheetName As String)
     Dim sh As Worksheet                          'Just try to set the workbook if it fails it is closed
@@ -540,60 +538,68 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Implement the interfaces
-Public Property Get ILinelistSpecs_Dictionary() As ILLdictionary
+Private Property Get ILinelistSpecs_Dictionary() As ILLdictionary
     Set ILinelistSpecs_Dictionary = Dictionary()
 End Property
 
-Public Property Get ILinelistSpecs_Choices() As ILLchoice
+Private Property Get ILinelistSpecs_Choices() As ILLchoice
     Set ILinelistSpecs_Choices = Choices()
 End Property
 
 'Categories of one variable
-Public Function ILinelistSpecs_Categories(ByVal varName As String) As BetterArray
+Private Function ILinelistSpecs_Categories(ByVal varName As String) As BetterArray
     Set ILinelistSpecs_Categories = Categories(varName)
 End Function
 
-Public Sub ILinelistSpecs_Prepare()
+Private Sub ILinelistSpecs_Prepare()
     Prepare
 End Sub
 
-Public Property Get ILinelistSpecs_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation
+Private Property Get ILinelistSpecs_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation
     Set ILinelistSpecs_TransObject = TransObject(trans)
 End Property
 
 'Formula data object
-Public Property Get ILinelistSpecs_FormulaDataObject() As IFormulaData
+Private Property Get ILinelistSpecs_FormulaDataObject() As IFormulaData
     Set ILinelistSpecs_FormulaDataObject = FormulaDataObject()
 End Property
 
-Public Property Get ILinelistSpecs_TemporarysheetName(ByVal scope As TemporarySheetTypes) As String
+Private Property Get ILinelistSpecs_TemporarysheetName(ByVal scope As TemporarySheetTypes) As String
     ILinelistSpecs_TemporarysheetName = TemporarySheetName(scope)
 End Property
 
-Public Property Get ILinelistSpecs_DesignFormat() As ILLFormat
+Private Property Get ILinelistSpecs_DesignFormat() As ILLFormat
     Set ILinelistSpecs_DesignFormat = DesignFormat()
 End Property
 
-Public Property Get ILinelistSpecs_SpecsWkb() As Workbook
+Private Property Get ILinelistSpecs_SpecsWkb() As Workbook
     Set ILinelistSpecs_SpecsWkb = Wkb()
 End Property
 
-Public Property Get ILinelistSpecs_MainObject() As IMain
+Private Property Get ILinelistSpecs_MainObject() As IMain
     Set ILinelistSpecs_MainObject = MainObject()
 End Property
 
-Public Property Get ILinelistSpecs_Password() As ILLPasswords
+Private Property Get ILinelistSpecs_Password() As ILLPasswords
     Set ILinelistSpecs_Password = Password()
 End Property
 
-Public Property Get ILinelistSpecs_GeoObject() As ILLGeo
+Private Property Get ILinelistSpecs_GeoObject() As ILLGeo
     Set ILinelistSpecs_GeoObject = geoObject()
 End Property
 
-Public Property Get ILinelistSpecs_Analysis() As ILLAnalysis
+Private Property Get ILinelistSpecs_Analysis() As ILLAnalysis
     Set ILinelistSpecs_Analysis = Analysis()
 End Property
 
-Public Sub ILinelistSpecs_Export(ByVal toWkb As Workbook)
+Private Sub ILinelistSpecs_Export(ByVal toWkb As Workbook)
     Export toWkb
+End Sub
+
+Private Sub ILinelistSpecs_ErrorManage(Optional ByVal textMessage As String = vbNullString)
+    'Ask the user if he wants to see (Or not) the uncompleted linelist
+    MsgBox "An internal Error occured when dealing with the setup with specified informations: " & _ 
+            Chr(10) &  textMessage & Chr(10) & _
+            "Aborting linelist creation process.", _
+            vbExclamation + vbOkOnly, "ERROR"
 End Sub

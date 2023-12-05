@@ -56,26 +56,40 @@ End Property
 Public Property Get EndRow() As Long             'End Row of the subsection in the dictionary (Not in the worksheet)
   
     Dim dict As ILLdictionary
+    Dim strt As Long
     Dim rowNumber As Long
     Dim subSectionRng As Range
     Dim sectionRng As Range
+    Dim sheetRng As Range
     Dim subSectionEnd As Boolean
     Dim subSectionName As String
     Dim sectionName As String
+    Dim sheetName As String
 
     If this.endrw = 0 Then
+        
+        'row number is for testing and is incremented,
+        'strt is for extracting values, not modified
+
+        strt = StartRow()
         rowNumber = StartRow()
+
         Set dict = Dictionary()
         Set subSectionRng = dict.DataRange("sub section")
         Set sectionRng = dict.DataRange("main section")
-        subSectionName = ActualSubSection()
-        sectionName = ActualSection()
+        Set sheetRng = dict.DataRange("sheet name")
+
+        subSectionName = subSectionRng.Cells(strt, 1).Value
+        sectionName = sectionRng.Cells(strt, 1).Value
+        sheetName = sheetRng.Cells(strt, 1).Value
+
         subSectionEnd = False
 
         Do While Not subSectionEnd
             rowNumber = rowNumber + 1
             subSectionEnd = (subSectionRng.Cells(rowNumber, 1).Value <> subSectionName) Or _
-                                                                                        (sectionRng.Cells(rowNumber, 1).Value <> sectionName)
+                            (sectionRng.Cells(rowNumber, 1).Value <> sectionName) Or _
+                            (sheetRng.Cells(rowNumber, 1).Value <> sheetName)
         Loop
     
         this.endrw = rowNumber - 1
@@ -99,29 +113,26 @@ Public Property Get Dictionary() As ILLdictionary
     Set Dictionary = ll.Dictionary()
 End Property
 
-Private Property Get ActualSection() As String
-    Dim dict As ILLdictionary
-    Dim strt As Long
-    Dim sectionRng As Range
-  
-    Set dict = Dictionary()
-    strt = StartRow()
-    Set sectionRng = dict.DataRange("main section")
-
-    ActualSection = sectionRng.Cells(strt, 1).Value
-End Property
-
 Private Property Get HasNext() As Boolean
     Dim endrw As Long
+    Dim strt As Long
     Dim dict As ILLdictionary
     Dim sectRng As Range
+    Dim sheetRng As Range
     Dim sectName As String
+    Dim sheetName As String
     
     endrw = EndRow() + 1
-    sectName = ActualSection()
+    strt = StartRow()
     Set dict = Dictionary()
     Set sectRng = dict.DataRange("main section")
-    HasNext = (sectRng.Cells(endrw, 1).Value = sectName) And (endrw <= dict.Data.DataEndRow)
+    Set sheetRng = dict.DataRange("sheet name")
+    
+    sheetName = sheetRng.Cells(strt, 1).Value
+    sectName = sectRng.Cells(strt, 1).Value
+    HasNext = (sectRng.Cells(endrw, 1).Value = sectName) And _
+             (endrw <= dict.Data.DataEndRow) And _ 
+             (sheetRng.Cells(endrw, 1).Value = sheetName)
 End Property
 
 Private Property Get NextSubSection() As IVListSubSections

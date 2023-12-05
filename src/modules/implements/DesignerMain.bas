@@ -153,9 +153,6 @@ Public Sub LoadTemplateFile()
     End If
 
     NotBusyApp
-
-
-    NotBusyApp
 End Sub
 
 '@Description("Path to future Lineist Directory")
@@ -246,6 +243,9 @@ Private Sub GenerateData()
 
     BusyApp cursor:=xlWait, changeSeparator:=True
     
+    'Linelist specs is the specification of the linelist. In case of
+    'error when dealing with the specifications (in the setup), just abort
+    On Error GoTo ErrorLinelistSpecsManage
     
     Set wb = ThisWorkbook
     Set lData = LinelistSpecs.Create(wb)
@@ -264,10 +264,13 @@ Private Sub GenerateData()
 
     'Preparing the setup and specification files
     lData.Prepare
+    'You need to prepare the dictionary before creating the linelist sheets object
+    Set llshs = LLSheets.Create(dict) 'The worksheets object of the dictionary
+
+    On Error GoTo ErrorBuildingLLManage
 
     'Preparing the linelist file
     Set ll = Linelist.Create(lData)
-    Set llshs = LLSheets.Create(dict) 'The worksheets object of the dictionary
 
     mainobj.AddInfo desTrads, "MSG_PreparLL"
 
@@ -281,7 +284,6 @@ Private Sub GenerateData()
     'Should add Error management when something goes wrong
     mainobj.AddInfo desTrads, "MSG_HListVList"
 
-    On Error GoTo ErrorBuildingLLManage
 
     currSheetName = dict.DataRange("sheet name").Cells(1, 1).Value
     If llshs.sheetInfo(currSheetName) = "vlist1D" Then
@@ -322,14 +324,16 @@ Private Sub GenerateData()
         mainobj.UpdateStatus statusValue
     Loop
 
-    'Save the linelist
+    'Building the analyses (other 20% remaining)
     mainobj.AddInfo desTrads, "MSG_BuildAna"
 
     llana.Build ll
-    ll.SaveLL
 
-    'Update the status to 100%
+    'Update the status to 100% once the analyses are done
     mainobj.UpdateStatus (100)
+
+    'Saving the linelist
+    ll.SaveLL
     
     NotBusyApp returnSeparator:=savedSeparator, useSystemSeparators:=savedUseSep
     
@@ -347,12 +351,12 @@ Private Sub GenerateData()
 
 ErrorBuildingLLManage:
         NotBusyApp returnSeparator:=savedSeparator
-        ll.ErrorManage
+        ll.ErrorManage Err.Description & " - " & Err.Source
         Exit Sub
 
 ErrorLinelistSpecsManage:
         NotBusyApp
-        lData.ErrorManage
+        lData.ErrorManage Err.Description & " - " & Err.Source
         Exit Sub
 End Sub
 

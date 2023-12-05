@@ -43,4 +43,4 @@ End Sub
 Public Sub SaveLL(): End Sub
 
 'Error management
-Public Sub ErrorManage(): End Sub
+Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString): End Sub

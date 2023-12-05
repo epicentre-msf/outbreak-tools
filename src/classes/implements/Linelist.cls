@@ -708,12 +708,14 @@ End Sub
 '- Asks if the user wants the uncomplete linelist.
 '- If not, close the workbook and leave the application.
 
-Private Sub ErrorManage()
+Private Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
     Dim outWkb As Workbook 'Output workbook
     Dim Quit As Integer
 
     'Ask the user if he wants to see (Or not) the uncompleted linelist
-    Quit = MsgBox("An internal Error occured, do you want to see the uncompleted linelist?", _
+    Quit = MsgBox("An internal Error occured with specified informations: " & Chr(10) & _ 
+                  textMessage & Chr(10) & _
+                  "do you want to see the uncompleted linelist?", _
                   vbExclamation + vbYesNo, "ERROR")
 
     If Quit = vbYes Then
@@ -808,6 +810,6 @@ Private Sub ILinelist_SaveLL()
     SaveLL
 End Sub
 
-Private Sub ILinelist_ErrorManage()
-    ErrorManage
+Private Sub ILinelist_ErrorManage(Optional ByVal textMessage As String = vbNullString)
+    ErrorManage textMessage
 End Sub

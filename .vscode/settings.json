@@ -25,8 +25,8 @@
         "Rscripts/designer_prev.xlsb": true
     },
     "editor.lineNumbers": "on",
-    "editor.fontSize": 16,
-    "editor.fontFamily": "'Consolas', 'Courier New', monospace",
+    "editor.fontSize": 14,
+    "editor.fontFamily": "'Office Code Pro', 'Courier New', monospace",
     "zenMode.hideStatusBar": false,
     "editor.minimap.scale": 2,
     "editor.minimap.renderCharacters": true,
@@ -46,5 +46,6 @@
             "parser": "plain"
         }
     },
-    "peacock.color": "1b3149"
+    "peacock.color": "1b3149",
+    "r.lsp.promptToInstall": false
 }
