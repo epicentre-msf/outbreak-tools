@@ -6,11 +6,13 @@ user_name  <- Sys.info()[["user"]]
 
 obt_folder  <- dplyr::case_when(
     user_name == "Y-AMEVOIN" ~ "D:/Projects/outbreak-tools",
+    user_name == "komlaviamevoin" ~ "~/Documents/Projects/outbreak-tools",
     TRUE ~ "~/outbreak-tools"
 )
 
 setup_folder  <- dplyr::case_when(
     user_name == "Y-AMEVOIN" ~ "D:/Projects/outbreak-tools-setup",
+    user_name == "komlaviamevoin" ~ "~/Documents/Projects/outbreak-tools-setup",
     TRUE ~ "~/outbreak-tools-setup"
 )
 
