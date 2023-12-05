@@ -339,7 +339,7 @@ Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
         .InputTitle = vbNullString
         .errorTitle = vbNullString
         .InputMessage = vbNullString
-        .errorMessage = message
+        .errorMessage = Left(message, 254)
         .ShowInput = showError
         .ShowError = showError
     End With
