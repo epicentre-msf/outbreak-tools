@@ -93,7 +93,7 @@ Public Property Get NextSheet() As String
     endrw = llshs.NumberOfVars(sheetName) + strtrw
 
     'Since datarange does includes the colname, we keep endrw without adding 1
-    NextSheet = sheetRng.Cells(endrw, 1)
+    NextSheet = sheetRng.Cells(endrw, 1).Value
 End Property
 
 'Transfert codes to a worksheet
