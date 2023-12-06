@@ -30,11 +30,17 @@ Automation of the work can be done on R (**only works on a windows machine**) us
 
 #### Structure of the repo
 
-The repo contains codes and input files for a linelist builder written in VBA.
-
-- `input` folder contains All the input files needed for building the linelist:
-
-  - Setup files in the `setup` folder in `.xlsb` format.
-  - Geobase files in the `geobase` folder: (Geobase data in excel `.xlsx` formats that could be loaded in the designer)
-- `src` folder contains all the source codes in flat files used in the designer.
+- `automation`: Codes for automating linelist creation and development process in R
+- `docs`: Documentation in html format
+- `src`: Source codes in flat files used in the designer, and compressed version of the materials (setup, designer, ribbon)
 - `designer.xlsb` is the designer file.
+
+#### Limitations
+
+Outbreak tool is limited by Excel's limitations. Using Excel 2010, here are your limitations:
+
+- Maximum Number of variables in HList: 16384 (including hidden columns for geo variables)
+- Maximum number of dropdowns you can use : 8184 (including at least one geo variable)
+- Maximum length of data validation messages: 255
+
+
