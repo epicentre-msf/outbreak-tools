@@ -239,7 +239,7 @@ Private Sub SortListOnFirst(ByVal Lo As listObject, ByVal colIndex As Long)
 End Sub
 
 'Resize a listobject to resize every listObject after loading.
-Private Sub ResizeLo(Lo As listObject, Optional totalRowCount As Long = 0)
+Private Sub ResizeLo(ByVal Lo As listObject, Optional ByVal totalRowCount As Long = 0)
 
     'Begining of the tables
     Dim loRowHeader As Long

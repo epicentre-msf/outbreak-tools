@@ -40,9 +40,9 @@ Public Sub AddRows(Optional ByVal nbRows As Long = 100, _
 End Sub
 Public Sub RemoveRows(Optional ByVal totalCount As Long = 0): End Sub
 Public Sub SetValidation(ByVal colName As String, _
-                           ByVal drop As IDropdownLists, _
-                           ByVal dropName As String, _
-                           Optional ByVal alertType As String = "info")
+                         ByVal drop As IDropdownLists, _
+                         ByVal dropName As String, _
+                         Optional ByVal alertType As String = "info")
 End Sub
 
 'Use very wisely, could modify the custom table values
