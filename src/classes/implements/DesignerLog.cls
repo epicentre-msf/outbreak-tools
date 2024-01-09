@@ -7,13 +7,13 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Inform user about stuffs in linelist building process"
 
+'@PredeclaredId
 '@IgnoreModule UseMeaningfulName, HungarianNotation
 
-'@Folder("Dictionary")
-'@ModuleDescription("")
-'@IgnoreModule
+'@Folder("General")
+'@ModuleDescription("Inform user about stuffs in linelist building process")
 
 Option Explicit
 
-'Exposed methods

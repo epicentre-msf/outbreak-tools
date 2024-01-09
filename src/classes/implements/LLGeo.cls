@@ -369,7 +369,7 @@ Private Sub ClearHistoric(Optional ByVal scope As Byte = 3)
     On Error GoTo 0
 End Sub
 
-Private Sub ExportToFile(outputWkb As Workbook, Optional ByVal onlyHistory As Boolean = False)
+Private Sub ExportToFile(ByVal outputWkb As Workbook, Optional ByVal onlyHistory As Boolean = False)
 
     Const METADATASHEET As String = "Metadata"
 

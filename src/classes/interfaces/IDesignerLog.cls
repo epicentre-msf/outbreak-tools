@@ -7,11 +7,14 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Attribute VB_Description = "Interface of Designer logging"
 
 '@IgnoreModule UseMeaningfulName, HungarianNotation
-'@Folder("Dictionary")
-'@ModuleDescription("Interface of ")
+
+'@Folder("General")
+'@ModuleDescription("Interface of Designer logging")
 
 Option Explicit
 
 'Exposed methods
+

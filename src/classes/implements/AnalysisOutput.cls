@@ -95,16 +95,14 @@ Private Property Get DesignFormat() As ILLFormat
 End Property
 
 'Translation of shapes and messages
-Public Property Get TransObject(Optional ByVal scope As _
-                                TradScopes = TranslationOfMessages) As ITranslation
+Public Property Get TransObject(Optional ByVal scope As Byte = TranslationOfMessages) As ITranslation
   Dim lData As ILinelistSpecs
   Set lData = LinelistData()
   Set TransObject = lData.TransObject(scope)
 End Property
 
 'Output Worksheets (where to write the analysis)
-Private Property Get OutputSh(Optional ByVal scope _
-                             As AnalysisScope = AnalysisScopeNormal) As Worksheet
+Private Property Get OutputSh(Optional ByVal scope As Byte = AnalysisScopeNormal) As Worksheet
   Dim trads As ITranslation
   Dim ll As ILinelist
 
@@ -149,7 +147,7 @@ Private Sub BusyApp()
     Application.EnableAnimations = False
 End Sub
 
-Private Sub TransferCodeWksh(Optional ByVal scope As AnalysisScope = AnalysisScopeNormal)
+Private Sub TransferCodeWksh(Optional ByVal scope As Byte = AnalysisScopeNormal)
 
     Const CHANGEMODULENAME As String = "LinelistAnalysisChange"
 
@@ -188,7 +186,7 @@ Private Sub TransferCodeWksh(Optional ByVal scope As AnalysisScope = AnalysisSco
 End Sub
 
 'Split the output sheet
-Private Sub SplitOutputSheet(Optional ByVal scope As AnalysisScope = AnalysisScopeNormal)
+Private Sub SplitOutputSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
   Dim outsh As Worksheet
   Dim rowSplit As Integer
 
@@ -214,8 +212,7 @@ Private Sub SplitOutputSheet(Optional ByVal scope As AnalysisScope = AnalysisSco
 End Sub
 
 'Add the command buttons to a worksheet
-Private Sub AddCommands(Optional ByVal scope _
-                       As AnalysisScope = AnalysisScopeNormal)
+Private Sub AddCommands(Optional ByVal scope As Byte = AnalysisScopeNormal)
   Dim cellRng As Range
   Dim commandName As String
   Dim shapeLabel As String
@@ -247,8 +244,7 @@ Private Sub AddCommands(Optional ByVal scope _
 End Sub
 
 'Initialize the output worksheet (format, values)
-Private Sub PrepareSheet(Optional ByVal scope As AnalysisScope _
-                         = AnalysisScopeNormal)
+Private Sub PrepareSheet(Optional ByVal scope As Byte = AnalysisScopeNormal)
 
   Dim outsh As Worksheet
   Dim cellRng As Range
