@@ -154,7 +154,7 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
 End Sub
 
 'Import and export Sub
-Private Sub Export(Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+Private Sub Export(ByVal Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     Dim choiData As IDataSheet
     Set choiData = ChoiceData()
     ChoiceData.Export Wkb, Hide:=Hide

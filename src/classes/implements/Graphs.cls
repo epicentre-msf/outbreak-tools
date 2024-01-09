@@ -231,7 +231,7 @@ Public Sub Format(Optional ByVal valuesTitle As String = vbNullString, _
                   Optional ByVal catTitle As String = vbNullString, _
                   Optional ByVal plotTitle As String = vbNullString, _
                   Optional ByVal secondAxisTitle As String = vbNullString, _
-                  Optional ByVal scope As GraphScope = GraphScopeNormal, _
+                  Optional ByVal scope As Byte = GraphScopeNormal, _
                   Optional ByVal heightFactor As Long = 1, _
                   Optional ByVal hardCodeLabels As Boolean = True)
     
@@ -366,7 +366,7 @@ End Sub
 Private Sub IGraphs_Format(Optional ByVal valuesTitle As String = vbNullString, _
                           Optional ByVal catTitle As String = vbNullString, _
                           Optional ByVal plotTitle As String = vbNullString, _
-                          Optional ByVal scope As GraphScope = GraphScopeNormal, _
+                          Optional ByVal scope As Byte = GraphScopeNormal, _
                           Optional ByVal heightFactor As Long = 1, _
                           Optional ByVal hardCodeLabels As Boolean = True)
     Format valuesTitle:=valuesTitle, catTitle:=catTitle, plotTitle:=plotTitle, scope:=scope, _

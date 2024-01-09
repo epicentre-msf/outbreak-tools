@@ -224,8 +224,8 @@ Private Sub ClearTableConditions(Optional ByVal removeNumber As Integer = 0)
   End If
 End Sub
 
-Private Property Get CurrentExcelFormula(tabFormObject As IFormulas, _
-                                        Optional ByVal scope As ExcelFormulaScope = formulaScopeanalysis, _
+Private Property Get CurrentExcelFormula(ByVal tabFormObject As IFormulas, _
+                                         Optional ByVal scope As ExcelFormulaScope = formulaScopeanalysis, _
                                          Optional ByVal prefix As String = "f") As String
   'use the formula
   Dim cond As IFormulaCondition

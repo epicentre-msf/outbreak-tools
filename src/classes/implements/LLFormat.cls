@@ -26,7 +26,7 @@ Private this As TLLFormat
 
 'instanciation:
 
-Public Function Create(formatSh As Worksheet, _  
+Public Function Create(ByVal formatSh As Worksheet, _  
                       Optional ByVal designType As String = "design 1") As ILLFormat
     Dim Lo As listObject
     Dim rng As Range
@@ -121,7 +121,7 @@ End Function
 'Format a range, add lines, or format borders
 
 'Draw lines arround borders
-Private Sub DrawLines(rng As Range, _
+Private Sub DrawLines(ByVal rng As Range, _
                       Optional At As String = "All", _
                       Optional weight As Integer = xlHairline, _
                       Optional line As Integer = xlContinuous, _
@@ -165,7 +165,7 @@ Private Sub DrawLines(rng As Range, _
     End With
 End Sub
 
-Private Sub DrawBorder(rng As Range, Optional weight As Integer = xlThin, Optional color As Variant = vbBlack, Optional line As Long = xlContinuous)
+Private Sub DrawBorder(ByVal rng As Range, Optional weight As Integer = xlThin, Optional color As Variant = vbBlack, Optional line As Long = xlContinuous)
 
     Dim counter As Integer
     For counter = 7 To 10                        'xltop, left, right and bottom
