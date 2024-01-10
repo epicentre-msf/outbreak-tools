@@ -415,6 +415,9 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
         varSubLab = varSubLab & chr(10) & calculated
     End If
 
+    'Custom choice sub label
+    If (varControl = "choice_custom") Then varSubLab = varSubLab & chr(10) & "(" & choicust & ")"
+
     mainLabLength = Len(varMainLab)
 
     'Add subLabel to main label
@@ -427,7 +430,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
 
     'variable main label and sub label
     'For choice custom, add the links before setting those values
-    If varControl <> "choice_custom" Then 
+    If (varControl <> "choice_custom") Or (usePrinted) Then 
         cellRng.Offset(-2).Value = varMainLab
         design.ApplyFormat cellRng.Offset(-2).Characters(Start:=1, Length:=mainLabLength), _
             scope:=HListMainLab                      'format of the main label
