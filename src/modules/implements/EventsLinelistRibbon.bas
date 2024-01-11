@@ -100,6 +100,13 @@ Public Sub clickRibbonOpenPrint(ByRef Control As IRibbonControl)
     ClickOpenPrint
 End Sub
 
+'@Description("Callback for btnOpenForm onAction")
+'@EntryPoint
+Public Sub clickRibbonOpenCRF(ByRef Control As IRibbonControl)
+    Attribute clickRibbonOpenCRF.VB_Description = "Callback for btnOpenForm onAction"
+    ClickOpenCRF
+End Sub
+
 '@Description("Callback for btnClosePrint onAction")
 '@EntryPoint
 Public Sub clickRibbonClosePrint(ByRef Control As IRibbonControl)

@@ -31,6 +31,7 @@ End Type
 Private this As TLinelist
 Private Const CLASSNAME  As String = "Linelist"
 Private Const PRINTPREFIX As String = "print_"
+Private Const CRFPREFIX As String = "crf_"
 
 Public Function Create(lData As ILinelistSpecs) As ILinelist
 
@@ -154,10 +155,13 @@ Private Property Get Pivots() As ICustomPivotTables
     Set Pivots = CustomPivotTables.Create(sh)
 End Property
 
+'sheetScope can take 3 values: 1 for normal worksheet, 2 for printed worksheet,
+'3 for crf worksheet
+
 'Add worksheets to workbook
 Private Sub AddOutputSheet(ByVal sheetName As String, _
                           Optional ByVal Hide As Long = xlSheetVeryHidden, _
-                          Optional ByVal usePrinted As Boolean = False)
+                          Optional ByVal sheetScope As Byte = 1)
 
     'Maximum Length for sheetName in excel is 31. If
     'The sheet Length is > 31, I truncate the sheetName to firsts 30
@@ -168,7 +172,16 @@ Private Sub AddOutputSheet(ByVal sheetName As String, _
     Dim actSheetName As String
 
     Set outWkb = Wkb()
-    actSheetName = IIf(usePrinted, PRINTPREFIX & sheetName, sheetName)
+    
+    Select Case sheetScope
+    Case 1
+     actSheetName = sheetName
+    Case 2
+     actSheetName = PRINTPREFIX & sheetName
+    Case 3
+     actSheetName = CRFPREFIX & sheetName
+    End Select
+   
     'Truncate sheetnames to 30 characters
     actSheetName = Left(actSheetName, SHEETNAMEMAXLENGTH)
     If sheetExists(actSheetName) Then ThrowError "The sheet " & actSheetName & " already exists in the output workbook"
@@ -179,13 +192,24 @@ Private Sub AddOutputSheet(ByVal sheetName As String, _
 End Sub
 
 'Get a Worksheet in the output workbook
-Private Property Get Wksh(ByVal sheetName As String, Optional ByVal usePrinted As Boolean = False) As Worksheet
+'Sheet scope can take 3 values:
+' 1 for normal sheetName,
+' 2 for printed worksheet
+' 3 for crf worksheet
+Private Property Get Wksh(ByVal sheetName As String, Optional ByVal sheetScope As Byte = 1) As Worksheet
     Dim sh As Worksheet
     Dim outWkb As Workbook
     Dim actSheetName As String 'actual sheet name either with the printed prefix, or not
 
-    'Test if the sheet Exists
-    actSheetName = IIf(usePrinted, PRINTPREFIX & sheetName, sheetName)
+    Select Case sheetScope
+    Case 1
+     actSheetName = sheetName
+    Case 2
+     actSheetName = PRINTPREFIX & sheetName
+    Case 3
+     actSheetName = CRFPREFIX & sheetName
+    End Select
+
     If Not sheetExists(actSheetName) Then ThrowError "The sheet " & sheetName & "does not exists in current workbook"
     Set outWkb = Wkb()
     Set sh = outWkb.Worksheets(actSheetName)
@@ -771,7 +795,11 @@ Private Property Get ILinelist_Wksh(ByVal sheetName As String) As Worksheet
 End Property
 
 Private Property Get ILinelist_PrintWksh(ByVal sheetName As String) As Worksheet
-    Set ILinelist_PrintWksh = Wksh(sheetName, usePrinted:=True)
+    Set ILinelist_PrintWksh = Wksh(sheetName, sheetScope:=2)
+End Property
+
+Private Property Get ILinelist_CRFWksh(ByVal sheetName As String) As Worksheet
+    Set ILinelist_PrintWksh = Wksh(sheetName, sheetScope:=3)
 End Property
 
 Private Property Get ILinelist_LinelistData() As ILinelistSpecs
@@ -802,8 +830,8 @@ End Function
 
 Private Sub ILinelist_AddOutputSheet(ByVal sheetName As String, _
                                     Optional ByVal Hide As Long = xlSheetVeryHidden, _
-                                    Optional ByVal usePrinted As Boolean = False)
-    AddOutputSheet sheetName, Hide, usePrinted
+                                    Optional ByVal sheetScope As Byte = 1)
+    AddOutputSheet sheetName, Hide, sheetScope
 End Sub
 
 Private Sub ILinelist_SaveLL()

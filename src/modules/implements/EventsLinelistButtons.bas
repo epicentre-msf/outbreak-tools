@@ -13,6 +13,7 @@ Private Const DICTSHEET As String = "Dictionary"
 Private Const PASSSHEET As String = "__pass"
 Private Const EXPORTSHEET As String = "Exports"
 Private Const PRINTPREFIX As String = "print_"
+Private Const CRFPREFIX As String = "crf_"
 Private Const TEMPSHEET As String = "temp__"
 Private Const SHOWHIDESHEET As String = "show_hide__"
 Private Const UPDATESHEET As String = "updates__"
@@ -148,14 +149,49 @@ ErrOpen:
     pass.ProtectWkb wb
 End Sub
 
+
+'@Description("Callback for click on the CRF Button")
+'@EntryPoint
+Public Sub ClickOpenCRF()
+    Attribute ClickOpenPrint.VB_Description = "Callback for click on the CRF Button"
+
+    Dim sh As Worksheet
+    Dim crfsh As Worksheet
+    Dim sheetTag As String
+
+    On Error GoTo ErrOpen
+
+    Set sh = ActiveSheet
+    sheetTag = sh.Cells(1, 3).Value
+
+    InitializeTrads
+
+    If sheetTag <> "HList" Then
+        WarningOnSheet "MSG_DataSheet"
+        Exit Sub
+    End If
+
+    Set crfsh = wb.Worksheets(CRFPREFIX & sh.Name)
+
+    'UnProtect current workbook
+    pass.UnProtectWkb wb
+    'Unhide the linelist Print
+    crfsh.Visible = xlSheetVisible
+    crfsh.Activate
+
+ErrOpen:
+    pass.ProtectWkb wb
+End Sub
+
 '@Description("Callback for click on close print sheet")
 '@EntryPoint
 Public Sub ClickClosePrint()
-    Attribute ClickClosePrint.VB_Description = "Callback for click on close print sheet"
+    Attribute ClickClosePrint.VB_Description = "Callback for click on close print/crf sheet"
 
     Dim sh As Worksheet
     Dim sheetTag As String
     Dim printsh As Worksheet
+    Dim crfsh As Worksheet
 
     On Error GoTo ErrClose
     Set sh = ActiveSheet
@@ -164,19 +200,27 @@ Public Sub ClickClosePrint()
 
     sheetTag = sh.Cells(1, 3).Value
 
-    If sheetTag <> "HList" And sheetTag <> "HList Print" Then
-        WarningOnSheet "MSG_PrintOrDataSheet"
+    If sheetTag <> "HList" And sheetTag <> "HList Print" And sheetTag <> "HList CRF" Then
+        WarningOnSheet "MSG_PrintCRFOrDataSheet"
         Exit Sub
     End If
 
-    If sheetTag = "HList" Then
-        Set printsh = wb.Worksheets(PRINTPREFIX & sh.Name)
-    Else
-        Set printsh = sh
-    End If
     'Unprotect workbook
     pass.UnProtectWkb wb
-    printsh.Visible = xlSheetVeryHidden
+    
+    If sheetTag = "HList" Then
+        Set printsh = wb.Worksheets(PRINTPREFIX & sh.Name)
+        Set crfsh = wb.Worksheets(CRFPREFIX & sh.Name)
+        printsh.Visible = xlSheetVeryHidden
+        crfsh.Visible = xlSheetVeryHidden
+    ElseIf sheetTag = "HList Print" Then
+        Set printsh = sh
+        printsh.Visible = xlSheetVeryHidden
+    ElseIf sheetTag = "HList CRF" Then
+        Set crfsh = sh
+        crfsh.Visible = xlSheetVeryHidden
+    End If
+
 
 ErrClose:
     pass.ProtectWkb wb
