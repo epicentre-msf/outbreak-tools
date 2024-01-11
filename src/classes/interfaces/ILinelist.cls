@@ -21,6 +21,9 @@ End Property
 Public Property Get PrintWksh(ByVal sheetName As String) As Worksheet
 End Property
 
+Public Property Get CRFWksh(ByVal sheetName As String) As Worksheet
+End Property
+
 Public Property Get Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
 End Property
 
@@ -37,7 +40,7 @@ Public Function sheetExists(ByVal sheetName As String) As Boolean: End Function
 'Add output sheet
 Public Sub AddOutputSheet(ByVal sheetName As String, _
                           Optional ByVal Hide As Long = xlSheetVeryHidden, _
-                          Optional ByVal usePrinted As Boolean = False)
+                          Optional ByVal sheetScope As Byte = 1)
 End Sub
 
 Public Sub SaveLL(): End Sub
