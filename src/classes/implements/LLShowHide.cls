@@ -538,7 +538,9 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
     'Unable to find the print start Range, exit
     If cellRng Is Nothing Then Exit Sub
     'This is the main label header of the variable
-    Set cellRng = sh.Cells(cellRng.Offset(-2).Row, colIndex)
+    'Changed the offset of the cellRng because the PRINTSTART is on the first line now.
+
+    Set cellRng = sh.Cells(cellRng.Offset(-1).Row, colIndex)
 
     If fobj.OPT_Hide.Value Then
       hideRowOrCol = True
