@@ -248,6 +248,18 @@ Private Sub Format()
     End With
 
     design.ApplyFormat rng, scope:=HListSubSection
+
+    'Add subsections on crf worksheet
+    'For CRF sheet sub sections sections
+    Set sh = ll.CRFWksh(sheetName)
+
+    With sh
+        Set rng = .Cells(.Cells(.Rows.Count, 1).End(xlUp).Row + 2, 1)
+        Set rng = .Range(rng, rng.Cells(1, 7))
+        rng.Cells(1, 1).Value = subSectionName
+    End With
+
+    design.ApplyFormat rng, scope:=HListCRFSubSection
 End Sub
 
 'Errors

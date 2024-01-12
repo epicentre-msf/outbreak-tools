@@ -799,7 +799,7 @@ Private Property Get ILinelist_PrintWksh(ByVal sheetName As String) As Worksheet
 End Property
 
 Private Property Get ILinelist_CRFWksh(ByVal sheetName As String) As Worksheet
-    Set ILinelist_PrintWksh = Wksh(sheetName, sheetScope:=3)
+    Set ILinelist_CRFWksh = Wksh(sheetName, sheetScope:=3)
 End Property
 
 Private Property Get ILinelist_LinelistData() As ILinelistSpecs
