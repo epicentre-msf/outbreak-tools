@@ -243,10 +243,10 @@ Private Sub FormatShape(ByVal shp As Shape, _
 End Sub
 
 'Remove GridLines of a worksheet
-Private Sub RemoveGridLines(ByVal Wksh As Worksheet, Optional DisplayZeros As Boolean = False)
+Private Sub RemoveGridLines(ByVal sh As Worksheet, Optional DisplayZeros As Boolean = False)
     Dim View As WorksheetView
-    For Each View In Wksh.Parent.Windows(1).SheetViews
-        If View.Sheet.Name = Wksh.Name Then
+    For Each View In sh.Parent.Windows(1).SheetViews
+        If View.Sheet.Name = sh.Name Then
             View.DisplayGridlines = False
             View.DisplayZeros = DisplayZeros
             Exit Sub
@@ -343,6 +343,13 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
             sh.Columns(3).EntireColumn.ColumnWidth = dimensionValue + 5
             sh.Columns("A:B").EntireColumn.ColumnWidth = 5
         End If
+    
+    Case HListCRFSheet
+    
+        If (Not TypeName(formattingObject) = "Worksheet") Then Exit Sub
+        Set sh = formattingObject
+        RemoveGridLines sh, DisplayZeros:=True
+        sh.Cells.Font.Size = 10
 
     Case HListPrintedSheet
         If (Not TypeName(formattingObject) = "Worksheet") Then Exit Sub

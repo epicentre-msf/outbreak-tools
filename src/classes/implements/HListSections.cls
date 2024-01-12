@@ -221,12 +221,12 @@ Private Sub Format()
 
     design.ApplyFormat rng, scope:=HListSection
 
-    'For CRF sheet
+    'For CRF sheet sections
     Set sh = ll.CRFWksh(sheetName)
     With sh
-        Set rng = .Cells(.Range(.Rows.Count, 3).End(xlUp).Row + 3, 3)
+        Set rng = .Cells(.Cells(.Rows.Count, 1).End(xlUp).Row + 4, 1)
         Set rng = .Range(rng, rng.Cells(1, 7))
-        rng.Value = sectionName
+        rng.Cells(1, 1).Value = sectionName
     End With
 
     design.ApplyFormat rng, scope:=HListCRFSection
