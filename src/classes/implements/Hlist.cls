@@ -214,6 +214,15 @@ Public Sub Build()
     'Macos can generate Errors on format on Application.PrintCommunication (see LLFormat)
     design.ApplyFormat printsh, scope:=HListPrintedSheet
 
+    'Format the CRF worksheet
+    design.ApplyFormat crfsh, scope:=HListCRFSheet
+
+    'Apply the pagelayout to the crf worksheet
+    On Error Resume Next
+        crfsh.Activate
+        BusyApp
+        ActiveWindow.View = xlPageLayoutView
+    On Error GoTo 0
 
     'Split the rows and columns
     On Error Resume Next
