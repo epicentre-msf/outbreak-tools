@@ -421,6 +421,35 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         rng.EntireRow.RowHeight = dimensionValue
         On Error GoTo 0
 
+    Case HListCRFSection
+
+        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        Set rng = formattingObject
+
+        fontColorValue = DesignValue("main section font color")
+        dimensionValue = DesignValue("main section font size", False)
+        dimensionValue = IIf(dimensionValue = 0, 12, dimensionValue)
+        
+        FormatRange rng, FontSize:=dimensionValue, _
+                    fontColor:=fontColorValue, Horiz:=xlHAlignLeft, Verti:=xlVAlignBottom, _
+                    isBold:=True
+        DrawLines rng, color:=fontColorValue, At:="Bottom", weight:=xlThick
+        
+    Case HListCRFSubSection
+
+        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        Set rng = formattingObject
+        
+        fontColorValue = DesignValue("sub section font color")
+        dimensionValue = DesignValue("sub section font size", False)
+        dimensionValue = IIf(dimensionValue = 0, 11, dimensionValue)
+
+        FormatRange rng, FontSize:=dimensionValue, _
+                    fontColor:=fontColorValue, Horiz:=xlHAlignLeft, Verti:=xlVAlignBottom, _
+                    isBold:=False
+
+        DrawLines rng, color:=fontColorValue, At:="Bottom"
+
     Case LinelistSelectionDropdown
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
@@ -504,6 +533,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         End With
 
     Case AnalysisInteriorTable, AnalysisWholeTable
+
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         bordersColorValue = DesignValue("analysis table borders color")
@@ -518,8 +548,8 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
 
         If scope = AnalysisWholeTable Then DrawBorder rng, color:=bordersColorValue
 
-
     Case AnalysisTimeSeriesHeader
+
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         fontColorValue = DesignValue("time series header font")
