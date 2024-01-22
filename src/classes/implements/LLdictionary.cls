@@ -110,7 +110,7 @@ Private Sub ClassArraysInitialize()
     DICTIONARYCOLUMNS.Push "variable name", "main label", "dev comments", "editable label", "sub label", "note", "sheet name", _
                            "sheet type", "main section", "sub section", "status", _
                             "personal identifier", "variable type", "variable format", _
-                            "control", "control details", "unique"
+                            "control", "control details", "unique", "CRF line index"
 
     'Push the number of allowed exports                        
     For counter = 1 To TOTALNUMBEROFEXPORTS
@@ -637,7 +637,69 @@ Private Sub AppendColumnIndex()
     End With
 End Sub
 
+'Adding the line index for crf in the dictionary
 Private Sub AppendCRFLineIndex()
+
+    Dim sh As Worksheet
+    Dim sectRng As Range 'section Range
+
+    'Actual section and sub sections
+    Dim actSec As String
+    Dim actSubSec As String
+
+    'section sheet and crf lines
+    Dim subsectRng As Range 'sub section Range
+    Dim sheetRng As Range
+    Dim crfLineRng As Range
+    Dim lineCounter As Long 'Line counter for section/subsections, etc.
+    Dim counter As Long
+    Dim endCounter As Long
+    Dim endRow As Long
+
+    Set sh = Wksh()
+    endCounter = DictEndRow
+    endRow = DictEndRow
+
+    Set subSectRng = DataRange("sub section")
+    Set sectRng = DataRange("main section")
+    Set sheetRng = DataRange("sheet name")
+
+    'Counter for line of the variable in the crf
+    lineCounter = 0
+
+    'Initializing actual sections, subsections and worksheet
+    'to values almost impossible to have
+    actSec = "&&&&&&;-------"
+    actSubSec = "&&&&&&;-------"
+    actSheet = "&&&&&&;-------"
+
+
+    sh.Cells(StartRow, endRow + 1).Value = "CRF line index"
+    Set crfLineRng = DataRange("CRF line index")
+
+    For counter = 1 To endCounter
+
+        If actSheet <> sheetRng.Cells(counter, 1).Value Then
+            'For new worksheet
+            lineCounter = lineCounter + 5
+            actSheet = sheetRng.Cells(counter, 1).Value
+        ElseIf actSec <> sectRng.Cells(counter, 1).Value Then
+            'For new section
+            lineCounter = lineCounter + 4
+            actSect = sectRng.Cells(counter, 1).Value
+
+        ElseIf actSubSec <> subSectRng.Cells(counter, 1).Value Then
+            'New subsection
+            lineCounter = lineCounter + 3
+        Else
+            'New variable, but old section/subsection/worksheet
+            lineCounter = lineCounter + 1
+        End If
+
+        crfLineRng.Cells(counter, 1).Value = lineCounter
+    Next
+
+End Sub
 
 'Import and export subs
 'Export
