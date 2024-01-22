@@ -279,7 +279,6 @@ Private Sub GoodSheetNames(ByVal PreservedSheetsNames As BetterArray)
             End If
         Next
     End With
-
 End Sub
 
 'Make unique variable names
@@ -539,6 +538,8 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
         sheetTrackData.Push .Cells(StartRow + 1, sheetNameIndex).Value
         tableTrackData.Push tableOrder
 
+        'Important to keep values tables to be as much as possible close to
+        'what the user inputs
         For counter = StartRow + 1 To EndRow
             sheetName = .Cells(counter, sheetNameIndex).Value
             If sheetTrackData.Includes(sheetName) Then
@@ -635,6 +636,8 @@ Private Sub AppendColumnIndex()
         Next
     End With
 End Sub
+
+Private Sub AppendCRFLineIndex()
 
 'Import and export subs
 'Export
