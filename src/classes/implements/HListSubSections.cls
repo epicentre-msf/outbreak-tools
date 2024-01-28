@@ -213,6 +213,7 @@ Private Sub Format()
     Dim sheetName As String
     Dim sh As Worksheet
     Dim design As ILLFormat
+    Dim crfLine As Long
 
     Set dict = Dictionary()
     Set vars = LLVariables.Create(dict)
@@ -227,6 +228,7 @@ Private Sub Format()
     'compute the start column
     varName = varLists.Item(varLists.LowerBound)
     strtcol = CLng(vars.Value(colName:="column index", varName:=varName))
+    crfLine = CLng(vars.Value(colName:="crf index", varName:=varName))
 
     'Actual sub section
     subSectionName = ActualSubSection()
@@ -252,10 +254,8 @@ Private Sub Format()
     'Add subsections on crf worksheet
     'For CRF sheet sub sections sections
     Set sh = ll.CRFWksh(sheetName)
-
     With sh
-        Set rng = .Cells(.Cells(.Rows.Count, 1).End(xlUp).Row + 2, 1)
-        Set rng = .Range(rng, rng.Cells(1, 7))
+        Set rng = .Range(.Cells(crfLine - 2, 1), .Cells(crfLine - 2, 7))
         rng.Cells(1, 1).Value = subSectionName
     End With
 

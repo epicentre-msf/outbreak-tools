@@ -182,6 +182,7 @@ Private Sub Format()
     Dim varName As String
     Dim sh As Worksheet
     Dim design As ILLFormat
+    Dim crfLine As Long
 
     Set ll = LinelistObject()
     Set design = ll.LinelistData.DesignFormat()
@@ -195,6 +196,7 @@ Private Sub Format()
     'Compute the startColumn
     varName = varRng.Cells(strtrw, 1).Value
     strtcol = vars.Value(varName:=varName, colName:="column index")
+    crfLine = CLng(vars.Value(colName:="crf index", varName:=varName))
 
     'Compute the endColumn
     varName = varRng.Cells(endrw, 1).Value
@@ -224,8 +226,7 @@ Private Sub Format()
     'For CRF sheet sections
     Set sh = ll.CRFWksh(sheetName)
     With sh
-        Set rng = .Cells(.Cells(.Rows.Count, 1).End(xlUp).Row + 4, 1)
-        Set rng = .Range(rng, rng.Cells(1, 7))
+        Set rng = .Range(.Cells(crfLine - 3, 1), .Cells(crfLine - 3, 7))
         rng.Cells(1, 1).Value = sectionName
     End With
 

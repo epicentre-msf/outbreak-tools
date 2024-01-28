@@ -78,6 +78,7 @@ Public Enum FormatScopes
     HListCRFSection = 58
     HListCRFSubSection = 59
     HListCRFSheet = 60
+    CRFTextVariable = 61
 End Enum
 
 Public Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
