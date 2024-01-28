@@ -91,13 +91,14 @@ Private Property Get DictEndColumn() As Long
 End Property
 
 'Is the dictionary prepared for linelist?
+
 Public Property Get Prepared() As Boolean
     Dim dictWksh As Worksheet
     Set dictWksh = Wksh()
     Prepared = (dictWksh.Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue) And _
-                                                                                 ColumnExists("table name") And ColumnExists("column index") And _
-                                                                                 ColumnExists("visibility") And _
-                                                                                 (Not ColumnExists("main section sort")) And (Not ColumnExists("main section index"))
+            ColumnExists("table name") And ColumnExists("column index") And _
+            ColumnExists("visibility") And ColumnExists("crf index") And _
+            (Not ColumnExists("main section sort")) And (Not ColumnExists("main section index"))
 End Property
 
 'Initialize the Headers  -----------------------------------------------------
@@ -110,7 +111,7 @@ Private Sub ClassArraysInitialize()
     DICTIONARYCOLUMNS.Push "variable name", "main label", "dev comments", "editable label", "sub label", "note", "sheet name", _
                            "sheet type", "main section", "sub section", "status", _
                             "personal identifier", "variable type", "variable format", _
-                            "control", "control details", "unique", "CRF line index"
+                            "control", "control details", "unique"
 
     'Push the number of allowed exports                        
     For counter = 1 To TOTALNUMBEROFEXPORTS
@@ -119,13 +120,16 @@ Private Sub ClassArraysInitialize()
 
     DICTIONARYCOLUMNS.Push  "min", "max", "alert", "message", _
                            "formatting condition", "register book", _
-                           "formatting values", "lock cells", _ 
-                            "table name", "column index", _
-                           "list auto", "visibility"
+                           "formatting values", "lock cells"
+
+    'Thos are columns that are added during preprocessing steps
+    DICTIONARYCOLUMNS.Push  "table name", "column index", "list auto", _
+                            "visibility", "crf index"
 End Sub
 
 'Dictionary data Range
-Public Property Get DataRange(Optional colName As String = "__all__", Optional includeHeaders As Boolean = False) As Range
+Public Property Get DataRange(Optional colName As String = "__all__", _
+                              Optional includeHeaders As Boolean = False) As Range
     Dim customDataSheet As IDataSheet
     Set customDataSheet = Data()
     Set DataRange = customDataSheet.DataRange(colName, includeHeaders)
@@ -210,7 +214,8 @@ Private Sub Clean(Optional ByVal removeAddedColumns As Boolean = False)
                 ((colName = "table name") Or _
                  (colName = "column index") Or _
                  (colName = "list auto") Or _
-                 (colName = "visibility"))
+                 (colName = "visibility") Or _
+                 (colName = "crf index"))
             If (Not ColumnExists(colName, checkValidity:=True)) Or _
                  removeAdded Then _
                 .Columns(counter).EntireColumn.Delete
@@ -250,8 +255,11 @@ Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject A
         UniqueVarNames
         GoodSheetNames PreservedSheetsNames
 
-        'Add visibility (after adding geoLines)
+        'Add visibility (after adding geoLines)                                             w
         If Not ColumnExists("visibility") Then AddVisibility 'Add visibility for show/Hide
+
+        'Add the crf line for the crf
+        If Not ColumnExists("crf index") Then AppendCRFLineIndex
 
         Clean
         'Add color to the last line for prepare indication
@@ -646,6 +654,7 @@ Private Sub AppendCRFLineIndex()
     'Actual section and sub sections
     Dim actSec As String
     Dim actSubSec As String
+    Dim actSheet As String
 
     'section sheet and crf lines
     Dim subsectRng As Range 'sub section Range
@@ -653,12 +662,10 @@ Private Sub AppendCRFLineIndex()
     Dim crfLineRng As Range
     Dim lineCounter As Long 'Line counter for section/subsections, etc.
     Dim counter As Long
-    Dim endCounter As Long
-    Dim endRow As Long
+    Dim endCol As Long
 
     Set sh = Wksh()
-    endCounter = DictEndRow
-    endRow = DictEndRow
+    endCol = DictEndColumn
 
     Set subSectRng = DataRange("sub section")
     Set sectRng = DataRange("main section")
@@ -673,24 +680,26 @@ Private Sub AppendCRFLineIndex()
     actSubSec = "&&&&&&;-------"
     actSheet = "&&&&&&;-------"
 
+    sh.Cells(StartRow, endCol + 1).Value = "crf index"
+    Set crfLineRng = DataRange("crf index")
 
-    sh.Cells(StartRow, endRow + 1).Value = "CRF line index"
-    Set crfLineRng = DataRange("CRF line index")
-
-    For counter = 1 To endCounter
+    For counter = 1 To crfLineRng.Rows.Count
 
         If actSheet <> sheetRng.Cells(counter, 1).Value Then
             'For new worksheet
-            lineCounter = lineCounter + 5
+            lineCounter = 5
             actSheet = sheetRng.Cells(counter, 1).Value
+            actSec = sectRng.Cells(counter, 1).Value
+            actSubSec = subSectRng.Cells(counter, 1).Value
         ElseIf actSec <> sectRng.Cells(counter, 1).Value Then
             'For new section
-            lineCounter = lineCounter + 4
-            actSect = sectRng.Cells(counter, 1).Value
-
+            lineCounter = lineCounter + 5
+            actSec = sectRng.Cells(counter, 1).Value
+            actSubSec = subSectRng.Cells(counter, 1).Value
         ElseIf actSubSec <> subSectRng.Cells(counter, 1).Value Then
             'New subsection
-            lineCounter = lineCounter + 3
+            lineCounter = lineCounter + 4
+            actSubSec = subSectRng.Cells(counter, 1).Value
         Else
             'New variable, but old section/subsection/worksheet
             lineCounter = lineCounter + 1

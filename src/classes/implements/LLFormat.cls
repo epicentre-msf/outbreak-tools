@@ -350,6 +350,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         Set sh = formattingObject
         RemoveGridLines sh, DisplayZeros:=True
         sh.Cells.Font.Size = 10
+        sh.Range("A1").EntireColumn.ColumnWidth = 20
 
     Case HListPrintedSheet
         If (Not TypeName(formattingObject) = "Worksheet") Then Exit Sub
@@ -426,21 +427,21 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
 
-        fontColorValue = DesignValue("main section font color")
+        fontColorValue = DesignValue("main section interior color")
         dimensionValue = DesignValue("main section font size", False)
         dimensionValue = IIf(dimensionValue = 0, 12, dimensionValue)
         
         FormatRange rng, FontSize:=dimensionValue, _
                     fontColor:=fontColorValue, Horiz:=xlHAlignLeft, Verti:=xlVAlignBottom, _
                     isBold:=True
-        DrawLines rng, color:=fontColorValue, At:="Bottom", weight:=xlThick
+        If (rng.Cells(1, 1).Value <> vbNullString) Then DrawLines rng, color:=fontColorValue, At:="Bottom", weight:=xlMedium 
         
     Case HListCRFSubSection
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         
-        fontColorValue = DesignValue("sub section font color")
+        fontColorValue = DesignValue("main section interior color")
         dimensionValue = DesignValue("sub section font size", False)
         dimensionValue = IIf(dimensionValue = 0, 11, dimensionValue)
 
@@ -448,7 +449,15 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
                     fontColor:=fontColorValue, Horiz:=xlHAlignLeft, Verti:=xlVAlignBottom, _
                     isBold:=False
 
+        If (rng.Cells(1, 1).Value <> vbNullString) Then DrawLines rng, color:=fontColorValue, At:="Bottom", weight:=xlThin
+    
+    Case CRFTextVariable
+
+        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        Set rng = formattingObject
+        fontColorValue = DesignValue("main section interior color")
         DrawLines rng, color:=fontColorValue, At:="Bottom"
+
 
     Case LinelistSelectionDropdown
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
