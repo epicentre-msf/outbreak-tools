@@ -17,3 +17,4 @@ Attribute VB_Description = "Interface of LinelistCRF"
 Option Explicit
 
 Public Sub Build(): End Sub
+Public Sub Initialize() : End Sub
