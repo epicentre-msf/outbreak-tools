@@ -24,6 +24,7 @@ End Type
 
 Private this As TDictionary
 Private DICTIONARYCOLUMNS As BetterArray
+Private DICTIONARYADDEDCOLUMNS As BetterArray
 Private Const SHEETTYPEVERTICAL As String = "vlist1D"
 Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
 Private Const CLASSNAME As String = "ILLdictionary"
@@ -105,6 +106,7 @@ End Property
 Private Sub ClassArraysInitialize()
 
     Set DICTIONARYCOLUMNS = New BetterArray
+    Set DICTIONARYADDEDCOLUMNS = New BetterArray
     Dim counter As Long
 
     'colnames of the dictionary
@@ -123,8 +125,10 @@ Private Sub ClassArraysInitialize()
                            "formatting values", "lock cells"
 
     'Thos are columns that are added during preprocessing steps
-    DICTIONARYCOLUMNS.Push  "table name", "column index", "list auto", _
-                            "visibility", "crf index"
+    DICTIONARYADDEDCOLUMNS.Push  "table name", "column index", "list auto", _
+                            "visibility", "crf index", "crf choices" 
+
+    DICTIONARYCOLUMNS.Concat DICTIONARYADDEDCOLUMNS.Items
 End Sub
 
 'Dictionary data Range
@@ -207,15 +211,13 @@ Private Sub Clean(Optional ByVal removeAddedColumns As Boolean = False)
     Set rng = dictWksh.UsedRange
     counter = rng.Column + rng.Columns.Count - 1
 
+    If (DICTIONARYADDEDCOLUMNS Is Nothing) Then ClassArraysInitialize
+
     With dictWksh
         Do While counter >= 1
             colName = .Cells(StartRow, counter).Value
             removeAdded = removeAddedColumns And _
-                ((colName = "table name") Or _
-                 (colName = "column index") Or _
-                 (colName = "list auto") Or _
-                 (colName = "visibility") Or _
-                 (colName = "crf index"))
+                          DICTIONARYADDEDCOLUMNS.Includes(colName)
             If (Not ColumnExists(colName, checkValidity:=True)) Or _
                  removeAdded Then _
                 .Columns(counter).EntireColumn.Delete
@@ -255,7 +257,7 @@ Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject A
         UniqueVarNames
         GoodSheetNames PreservedSheetsNames
 
-        'Add visibility (after adding geoLines)                                             w
+        'Add visibility (after adding geoLines)                                            
         If Not ColumnExists("visibility") Then AddVisibility 'Add visibility for show/Hide
 
         'Add the crf line for the crf
@@ -656,13 +658,22 @@ Private Sub AppendCRFLineIndex()
     Dim actSubSec As String
     Dim actSheet As String
 
+    'Actual/Previous control and control details
+    Dim actCtrl As String
+    Dim actCtrlDet As String
+    Dim prevCtrlDet As String
+
     'section sheet and crf lines
     Dim subsectRng As Range 'sub section Range
     Dim sheetRng As Range
+    Dim controlRng As Range
+    Dim controlDetRng As Range
     Dim crfLineRng As Range
+    Dim choiTagRng As Range 'Tag range for begining of choice for the crf
     Dim lineCounter As Long 'Line counter for section/subsections, etc.
     Dim counter As Long
     Dim endCol As Long
+    
 
     Set sh = Wksh()
     endCol = DictEndColumn
@@ -670,6 +681,8 @@ Private Sub AppendCRFLineIndex()
     Set subSectRng = DataRange("sub section")
     Set sectRng = DataRange("main section")
     Set sheetRng = DataRange("sheet name")
+    Set controlRng = DataRange("control")
+    Set controlDetRng = DataRange("control details")
 
     'Counter for line of the variable in the crf
     lineCounter = 0
@@ -680,10 +693,24 @@ Private Sub AppendCRFLineIndex()
     actSubSec = "&&&&&&;-------"
     actSheet = "&&&&&&;-------"
 
+    'Control and control details initializations
+    actCtrl = "&&&&&&;-------"
+    actCtrlDet = "&&&&&&;-------"
+
     sh.Cells(StartRow, endCol + 1).Value = "crf index"
+    sh.Cells(StartRow, endCol + 2).Value = "crf choices"
+
     Set crfLineRng = DataRange("crf index")
+    Set choiTagRng = DataRange("crf choices")
 
     For counter = 1 To crfLineRng.Rows.Count
+
+        'initializing control and control details values
+        'The previous control details is the actual one before
+        'making update
+        prevCtrlDet = actCtrlDet
+        actCtrl = controlRng.Cells(counter, 1).Value
+        actCtrlDet = controlDetRng.Cells(counter, 1).Value
 
         If actSheet <> sheetRng.Cells(counter, 1).Value Then
             'For new worksheet
@@ -693,13 +720,18 @@ Private Sub AppendCRFLineIndex()
             actSubSec = subSectRng.Cells(counter, 1).Value
         ElseIf actSec <> sectRng.Cells(counter, 1).Value Then
             'For new section
-            lineCounter = lineCounter + 5
+            lineCounter = lineCounter + 6
             actSec = sectRng.Cells(counter, 1).Value
             actSubSec = subSectRng.Cells(counter, 1).Value
         ElseIf actSubSec <> subSectRng.Cells(counter, 1).Value Then
             'New subsection
-            lineCounter = lineCounter + 4
+            lineCounter = lineCounter + 5
             actSubSec = subSectRng.Cells(counter, 1).Value
+            
+        'New choices chunk, without continuity with previous one
+        ElseIf (actCtrl = "choice_manual") And (actCtrlDet <> prevCtrlDet) Then
+            lineCounter = lineCounter + 3
+            choiTagRng.Cells(counter, 1).Value = "yes"
         Else
             'New variable, but old section/subsection/worksheet
             lineCounter = lineCounter + 1

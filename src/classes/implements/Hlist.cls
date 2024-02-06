@@ -184,7 +184,6 @@ Public Sub Build()
     Dim shrowEnd As Long
     Dim Lo As listObject
     Dim printsh As Worksheet
-    Dim crfsh As Worksheet
     Dim mainobj As IMain
     Dim pivotObj As ICustomPivotTables
 
@@ -204,25 +203,12 @@ Public Sub Build()
     ll.AddOutputSheet sheetName, xlSheetHidden, sheetScope:=2
     Set printsh = ll.PrintWksh(sheetName)
 
-    'Add the crf Worksheet
-    ll.AddOutputSheet sheetName, xlSheetHidden, sheetScope:=3
-    Set crfsh = ll.CRFWksh(sheetName)
 
     'Format the linelist and prepare
     design.ApplyFormat sh, scope:=AllLinelistSheet
 
     'Macos can generate Errors on format on Application.PrintCommunication (see LLFormat)
     design.ApplyFormat printsh, scope:=HListPrintedSheet
-
-    'Format the CRF worksheet
-    design.ApplyFormat crfsh, scope:=HListCRFSheet
-
-    'Apply the pagelayout to the crf worksheet
-    On Error Resume Next
-        crfsh.Activate
-        BusyApp
-        ActiveWindow.View = xlPageLayoutView
-    On Error GoTo 0
 
     'Split the rows and columns
     On Error Resume Next
@@ -283,7 +269,7 @@ Public Sub Build()
 
     'BUILD SECTIONS IN THE HLIST------------------------------------------------
 
-    'Now Build each Section (including sections of printed worksheet and crf worksheet)
+    'Now Build each Section (including sections of printed worksheet)
 
     Set trads = lData.TransObject(TranslationOfMessages)
     goToSection = trads.TranslatedValue("MSG_GoToSec")
@@ -323,11 +309,9 @@ Public Sub Build()
     'Add the sheet type on HList sheet
     sh.Cells(1, 3).Value = "HList"
     printsh.Cells(1, 3).Value = "HList Print"
-    crfsh.Cells(1, 3).Value = "HList CRF"
     
     design.ApplyFormat sh.Cells(1, 3), scope:=LinelistHiddenCell
     design.ApplyFormat printsh.Cells(1, 3), scope:=LinelistHiddenCell
-    design.ApplyFormat crfsh.Cells(1, 3), scope:=LinelistHiddenCell
 
     'Add the table name
     sh.Cells(1, 4).Value = tablename

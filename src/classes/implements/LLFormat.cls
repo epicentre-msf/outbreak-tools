@@ -294,7 +294,8 @@ Private Sub PreparePrintSheet(ByVal sh As Worksheet)
     On Error GoTo 0
 End Sub
 
-Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Integer)
+Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Integer, _
+                        Optional ByVal nbDecimals As Integer = 0)
 
     Dim rng As Range
     Dim cellRng As Range
@@ -451,12 +452,93 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
 
         If (rng.Cells(1, 1).Value <> vbNullString) Then DrawLines rng, color:=fontColorValue, At:="Bottom", weight:=xlThin
     
-    Case CRFTextVariable
+    Case CRFText
+
+        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        Set rng = formattingObject
+        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 5))
+        fontColorValue = DesignValue("main section interior color")
+        DrawLines rng, color:=fontColorValue, At:="Bottom", weight:=xlThin
+
+    Case CRFDate
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         fontColorValue = DesignValue("main section interior color")
-        DrawLines rng, color:=fontColorValue, At:="Bottom"
+
+        'Day
+
+        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 3))
+        DrawLines rng, At:="AvoidTop"
+        DrawLines rng, At:="Left", weight:=xlMedium, color:=fontColorValue
+        DrawLines rng, At:="Right", weight:=xlMedium, color:=fontColorValue
+
+        'Month
+        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 3))
+        DrawLines rng, At:="AvoidTop"
+        DrawLines rng, At:="Right", weight:=xlMedium, color:=fontColorValue
+
+        'Year
+        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 5))
+        DrawLines rng, At:="AvoidTop"
+        DrawLines rng, At:="Right", weight:=xlMedium, color:=fontColorValue
+
+    Case CRFInteger
+
+        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        Set rng = formattingObject
+        fontColorValue = DesignValue("main section interior color")
+
+        'Draw 3 squares
+        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 4))
+        DrawLines rng, At:="AvoidTop", weight:=xlMedium, color:=fontColorValue
+
+    Case CRFDecimal, CRFPercentage
+
+        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        Set rng = formattingObject
+        fontColorValue = DesignValue("main section interior color")
+        
+        'Draw 3 squares
+        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 4))
+        DrawLines rng, At:="AvoidTop", weight:=xlMedium, color:=fontColorValue
+
+        'Draw Decimals
+        rng.Cells(1, 2).Value = "."
+
+        'Draw the cases for the number of decimals
+        If nbDecimals > 0 Then
+            Set rng = rng.Parent.Range(rng.Cells(1, 3), rng.Cells(1, 3 + nbDecimals))
+            DrawLines rng, At:="AvoidTop", weight:=xlMedium, color:=fontColorValue
+        End If
+
+        'Add percentage if required
+        If scope = CRFPercentage Then rng.Cells(1, 4 + nbDecimals).Value = "%"
+
+    Case CRFChoiceHeader
+
+        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        Set rng = formattingObject
+        fontColorValue = DesignValue("main section interior color")
+        FormatRange rng, fontColor:=fontColorValue, isBold:=True, _
+                         Verti:=xlVAlignCenter, FontSize:=styleValue - 2  
+
+    Case CRFChoiceValues
+
+        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        Set rng = formattingObject
+        fontColorValue = DesignValue("main section interior color")
+        DrawBoders rng, color:=fontColorValue
+
+    Case CRFFormatCustom
+
+        If (Not TypeName(formattingObject) = "Range") Then Exit Sub
+        Set rng = formattingObject
+        fontColorValue = DesignValue("main section interior color")
+        
+        'Draw 5 squares
+        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 6))
+        DrawLines rng, At:="AvoidTop", weight:=xlMedium, color:=fontColorValue
 
 
     Case LinelistSelectionDropdown
@@ -793,7 +875,6 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         rng.Merge
         On Error GoTo 0
 
-
     Case HListSection, VListSection
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
@@ -978,8 +1059,9 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Exposed methods---------------------------------------------------------------------
-Private Sub ILLFormat_ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes)
-    ApplyFormat formattingObject:=formattingObject, scope:=scope
+Private Sub ILLFormat_ApplyFormat(ByVal formattingObject As Variant, ByVal scope As FormatScopes, _ 
+                                  Optional ByVal nbDecimals As Integer = 0)
+    ApplyFormat formattingObject:=formattingObject, scope:=scope, nbDecimals:=nbDecimals
 End Sub
 
 Private Sub ILLFormat_Import(ByVal inpsh As Worksheet)
