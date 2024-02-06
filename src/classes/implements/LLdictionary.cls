@@ -720,21 +720,21 @@ Private Sub AppendCRFLineIndex()
             actSubSec = subSectRng.Cells(counter, 1).Value
         ElseIf actSec <> sectRng.Cells(counter, 1).Value Then
             'For new section
-            lineCounter = lineCounter + 6
+            lineCounter = lineCounter + 7
             actSec = sectRng.Cells(counter, 1).Value
             actSubSec = subSectRng.Cells(counter, 1).Value
         ElseIf actSubSec <> subSectRng.Cells(counter, 1).Value Then
             'New subsection
-            lineCounter = lineCounter + 5
+            lineCounter = lineCounter + 6
             actSubSec = subSectRng.Cells(counter, 1).Value
             
         'New choices chunk, without continuity with previous one
         ElseIf (actCtrl = "choice_manual") And (actCtrlDet <> prevCtrlDet) Then
-            lineCounter = lineCounter + 3
+            lineCounter = lineCounter + 4
             choiTagRng.Cells(counter, 1).Value = "yes"
         Else
             'New variable, but old section/subsection/worksheet
-            lineCounter = lineCounter + 1
+            lineCounter = lineCounter + 2
         End If
 
         crfLineRng.Cells(counter, 1).Value = lineCounter

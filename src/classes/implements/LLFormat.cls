@@ -458,7 +458,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         Set rng = formattingObject
         Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 5))
         fontColorValue = DesignValue("main section interior color")
-        DrawLines rng, color:=fontColorValue, At:="Bottom", weight:=xlThin
+        DrawLines rng, color:=fontColorValue, At:="Bottom"
 
     Case CRFDate
 
@@ -466,21 +466,26 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         Set rng = formattingObject
         fontColorValue = DesignValue("main section interior color")
 
+        'Format the overall range
+        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 9))
+        DrawLines rng, At:="Bottom", weight:=xlMedium, color:=fontColorValue
+        rng.EntireColumn.ColumnWidth = 8
+
         'Day
 
         Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 3))
-        DrawLines rng, At:="AvoidTop"
+        DrawLines rng, At:="AvoidTop", color:=fontColorValue
         DrawLines rng, At:="Left", weight:=xlMedium, color:=fontColorValue
-        DrawLines rng, At:="Right", weight:=xlMedium, color:=fontColorValue
 
         'Month
         Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 3))
         DrawLines rng, At:="AvoidTop"
-        DrawLines rng, At:="Right", weight:=xlMedium, color:=fontColorValue
+        DrawLines rng, At:="Left", weight:=xlMedium, color:=fontColorValue
 
         'Year
         Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 5))
         DrawLines rng, At:="AvoidTop"
+        DrawLines rng, At:="Left", weight:=xlMedium, color:=fontColorValue
         DrawLines rng, At:="Right", weight:=xlMedium, color:=fontColorValue
 
     Case CRFInteger
@@ -492,6 +497,8 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         'Draw 3 squares
         Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 4))
         DrawLines rng, At:="AvoidTop", weight:=xlMedium, color:=fontColorValue
+        DrawLines rng, At:="Bottom", weight:=xlMedium, color:=fontColorValue
+        rng.EntireColumn.ColumnWidth = 8
 
     Case CRFDecimal, CRFPercentage
 
@@ -528,7 +535,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         fontColorValue = DesignValue("main section interior color")
-        DrawBoders rng, color:=fontColorValue
+        DrawBorder rng, color:=fontColorValue
 
     Case CRFFormatCustom
 
