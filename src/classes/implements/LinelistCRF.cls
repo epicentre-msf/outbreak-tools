@@ -60,6 +60,7 @@ End Property
 
 Private Property Get Wksh() As Worksheet
   Dim ll As ILinelist
+  Set ll = LinelistObject()
   Set Wksh = ll.CRFWksh(Name)
 End Property
 
@@ -200,13 +201,13 @@ Private Sub AddLabel(ByVal varName As String)
 
   mainLabLength = Len(varMainLab)
 
-  If (varSubLab <> vbNullStriing) Then
+  If (varSubLab <> vbNullString) Then
     varMainLab = varMainLab & chr(10) & varSubLab
   End If
 
   'writing the main label and formatting
   crfRng.Value = varMainLab
-  design.ApplyFormat crfRng.Offset(-2).Characters(Start:=1, Length:=mainLabLength), scope:=HListMainLab                      
+  design.ApplyFormat crfRng.Characters(Start:=1, Length:=mainLabLength), scope:=HListMainLab                      
   design.ApplyFormat crfRng.Characters(Start:=mainLabLength + 1), scope:=HListSublab
 
   'Hidding the columns not to put in crfs
@@ -225,7 +226,6 @@ Private Sub AddType(ByVal varName As String)
   Dim varTypes As String
   Dim varFormat As String
   Dim varControl As String
-  Dim crfRng As Range
   Dim scope As FormatScopes
   Dim nbDecimals As Integer
   Dim design As ILLFormat
@@ -304,6 +304,8 @@ Private Sub AddChoices(ByVal varName As String)
   Dim crfRng As Range
   Dim cellRng As Range
   Dim counter As Long
+  Dim varControl As String
+  Dim design As ILLFormat
 
   Set varobj = Vars()
   varControl = varobj.Value(colName:="control", varName:=varName)
@@ -312,6 +314,7 @@ Private Sub AddChoices(ByVal varName As String)
   
   Set lData = LinelistData()
   Set crfRng = VarCRFRange(varName)
+  Set design = DesignFormat()
   Set cat = New BetterArray
   Set cat = lData.Categories(varName)
   cat.LowerBound = 1
@@ -350,9 +353,6 @@ Private Sub Build()
   Dim varName As String
 
 
-  'Initialize the worksheet
-  Initialize
-
   'For each variable, add the label, the type and the choices
   Set dict = Dictionary()
   Set varRng = dict.DataRange("variable name")
@@ -363,12 +363,15 @@ Private Sub Build()
     addType varName:=varName
     addChoices varName:=varName
   Next
-
 End Sub
 
 
 Private Sub ILinelistCRF_Build()
   Build
+End Sub
+
+Private Sub ILinelistCRF_Initialize()
+  Initialize
 End Sub
 
 'Error

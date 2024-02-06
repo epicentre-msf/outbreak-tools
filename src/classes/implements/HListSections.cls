@@ -197,7 +197,7 @@ Private Sub Format()
     varName = varRng.Cells(strtrw, 1).Value
     strtcol = vars.Value(varName:=varName, colName:="column index")
     crfLine = CLng(vars.Value(colName:="crf index", varName:=varName))
-
+ 
     'Compute the endColumn
     varName = varRng.Cells(endrw, 1).Value
     endCol = vars.Value(varName:=varName, colName:="column index")

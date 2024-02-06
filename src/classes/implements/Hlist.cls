@@ -186,6 +186,7 @@ Public Sub Build()
     Dim printsh As Worksheet
     Dim mainobj As IMain
     Dim pivotObj As ICustomPivotTables
+    Dim crfObj As ILinelistCRF
 
     Set sh = Wksh()
     Set dict = Dictionary()
@@ -202,7 +203,9 @@ Public Sub Build()
     'Add Printed Worksheet before building
     ll.AddOutputSheet sheetName, xlSheetHidden, sheetScope:=2
     Set printsh = ll.PrintWksh(sheetName)
+    Set crfObj = LinelistCRF.Create(sheetName, ll)
 
+    crfObj.Initialize
 
     'Format the linelist and prepare
     design.ApplyFormat sh, scope:=AllLinelistSheet
@@ -403,6 +406,10 @@ Public Sub Build()
     Set rng = sh.Cells(1, 5)
     rng.Value = filtsh.Name
     design.ApplyFormat rng, scope:=LinelistHiddenCell
+
+    'CRF Worksheet -------------------------------------------------------------
+
+    crfobj.Build
 
     'ADD HLIST CODE, PROTECT HLIST ---------------------------------------------
 
