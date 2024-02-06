@@ -20,7 +20,6 @@ Private Type THListVars
     varName As String
     inputRange As Range
     inputPrintRange As Range
-    inputCRFRange As Range
 End Type
 
 Private this As THListVars
@@ -147,27 +146,6 @@ Private Property Get VarPrintRange() As Range
     Set VarPrintRange = this.inputPrintRange
 End Property
 
-Private Property Get VarCRFRange() As Range
-
-    Dim ll As ILinelist
-    Dim sh As Worksheet
-    Dim sheetName As String
-    Dim crfLine As String
-
-
-    Set ll = LinelistObject()
-    sheetName = ValueOf("sheet name")
-
-    Set sh = ll.CRFWksh(sheetName)
-
-    If (this.inputCRFRange is Nothing) Then
-        crfLine = ValueOf("crf index")
-        Set this.inputCRFRange = sh.Cells(crfLine, 1)
-    End If
-
-    Set VarCRFRange = this.inputCRFRange
-
-End Property
 
 'Type
 Private Sub AddType()
@@ -177,15 +155,10 @@ Private Sub AddType()
     Dim nbDecimals As Integer
     Dim zerosDecimals As String
     Dim formatText As String
-    Dim crfRng As Range
-    Dim rng As Range
-    Dim sh As Worksheet
     Dim design As ILLFormat
     Dim lData As ILinelistSpecs
 
     Set cellRng = VarRange()
-    Set crfRng = VarCRFRange()
-    Set sh = crfRng.Parent
     Set lData = LinelistData()
     Set design = lData.DesignFormat()
 
@@ -200,9 +173,7 @@ Private Sub AddType()
     Case "text"
 
         cellRng.NumberFormat = "@"
-        Set rng = sh.Range(crfRng.Offset(, 1), crfRng.Offset(, 4))
-        design.ApplyFormat rng, scope:=CRFTextVariable
-
+        
     Case "date"
 
         'Apply default type before changing
@@ -410,7 +381,6 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     Dim varToPrint As String
     Dim choicust As String
     Dim varEditLab As String
-    Dim crfRng As Range
 
     'The varRange depends on the usePrinted, on printed worksheet, it is on another
     'sheet.
@@ -418,11 +388,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
         Set cellRng = VarPrintRange()
     Else
         Set cellRng = VarRange()
-        'crf Range of the variable
-        Set crfRng = VarCRFRange()
     End If
-
-
 
     Set lData = LinelistData()
     Set trans = lData.TransObject()
@@ -445,7 +411,6 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     'add an anchor to where the table starts (on printed sheet and on non printed sheet)
     If (varIndex = 1) And (Not usePrinted) Then 
         cellRng.Offset(-1).Name = ValueOf("table name") & "_START"
-        crfRng.Name = ValueOf("table name") & "_CRFSTART"
     End If
 
     'Add an anchor to printed worksheet
@@ -484,16 +449,6 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
             scope:=HListSublab                       'format of the sub label
     End If
 
-    'On the crf worksheet, add the main label and sub label and format them
-
-    If (Not usePrinted) Then
-        crfRng.Value = varMainLab
-        design.ApplyFormat cellRng.Offset(-2).Characters(Start:=1, Length:=mainLabLength), _
-            scope:=HListMainLab                      'format of the main label
-        design.ApplyFormat crfRng.Characters(Start:=mainLabLength + 1), _
-            scope:=HListSublab   
-    End If
-
 
     'VARIABLE NAME --------------------------------------------------------------------------------------
 
@@ -505,7 +460,6 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
 
     'VARIABLE NOTES -------------------------------------------------------------------------------------
 
-    'It is important to avoid adding comments on printed sheet as well as crf worksheet
     'This could result in Memory Errors on MacOs machines.
     If varNote <> vbNullString And (Not usePrinted) Then
         cellRng.Offset(-2).AddComment
@@ -542,12 +496,6 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     If ((varStatus = "hidden") Or (varStatus = "optional, hidden")) And (Not usePrinted) Then
 
        cellRng.EntireColumn.HIDDEN = True
-       'hide rows on crf worksheet
-       crfRng.EntireRow.HIDDEN = True 
-    'Hidde calculated variables on crf worksheet
-    ElseIf ((varControl = "formula") Or (varControl = "choice_formula") Or (varControl = "case_when")) And _
-           (Not usePrinted) Then
-        crfRng.EntireRow.HIDDEN = True 
     'On print worksheet, hide hidden columns    
     ElseIf ((varToPrint = "hidden" Or varStatus = "hidden") And usePrinted) Then 
        cellRng.EntireColumn.HIDDEN = True
