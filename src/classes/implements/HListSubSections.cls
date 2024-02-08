@@ -185,6 +185,7 @@ End Property
 'Build variables in a subsection
 Private Sub Build()
     Dim vars As IHListVars
+    Dim crfv As ICRFVars
     Dim varLists As BetterArray
     Dim counter As Long
     Dim varName As String
@@ -196,6 +197,9 @@ Private Sub Build()
         varName = varLists.Item(counter)
         Set vars = HListVars.Create(varName, ll)
         vars.WriteInfo
+        'Write informations for the crf variable
+        Set crfv = CRFVars.Create(varName, ll)
+        crfv.WriteInfo
     Next
 End Sub
 
