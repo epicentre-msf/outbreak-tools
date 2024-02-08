@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of HList"
 
 
-'@Folder("Dictionary")
+'@Folder("Linelist")
 '@ModuleDescription("Interface of HList")
 '@IgnoreModule UseMeaningfulName, HungarianNotation
 
