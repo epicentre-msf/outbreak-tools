@@ -224,13 +224,15 @@ Private Sub Format()
     design.ApplyFormat rng, scope:=HListSection
 
     'For CRF sheet sections
-    Set sh = ll.CRFWksh(sheetName)
-    With sh
-        Set rng = .Range(.Cells(crfLine - 3, 1), .Cells(crfLine - 3, 7))
-        rng.Cells(1, 1).Value = sectionName
-    End With
+    If (sectionName <> vbNullString) Then
+        Set sh = ll.CRFWksh(sheetName)
+        With sh
+            Set rng = .Range(.Cells(crfLine - 4, 1), .Cells(crfLine - 4, 7))
+            rng.Cells(1, 1).Value = sectionName
+        End With
 
-    design.ApplyFormat rng, scope:=HListCRFSection
+        design.ApplyFormat rng, scope:=HListCRFSection
+    End If
 End Sub
 
 'Errors
