@@ -38,7 +38,8 @@ Public Property Get Analysis() As ILLAnalysis: End Property 'Analysis
 
 'Exposed methods
 'Categories of one variable
-Public Function Categories(ByVal varName As String) As BetterArray: End Function
+Public Function Categories(ByVal varName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray
+End Function
 
 'Void methods
 Public Sub Prepare(): End Sub

@@ -340,7 +340,7 @@ Private Sub AddChoices()
   Set design = DesignFormat()
   Set cat = New BetterArray
   varName = ActualVariable
-  Set cat = lData.Categories(varName)
+  Set cat = lData.Categories(varName, useShortlabels:=True)
   cat.LowerBound = 1
 
   'If no categories, just exit
