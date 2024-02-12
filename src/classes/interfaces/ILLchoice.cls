@@ -23,7 +23,7 @@ Public Property Get StartColumn() As Long: End Property
 Public Property Get ChoiceData() As IDataSheet: End Property
 
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range: End Property
-Public Property Get Categories(ByVal choiceName As String) As BetterArray: End Property
+Public Property Get Categories(ByVal choiceName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray: End Property
 
 'Exposed methods
 
