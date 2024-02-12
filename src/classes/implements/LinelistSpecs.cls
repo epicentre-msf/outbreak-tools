@@ -194,7 +194,7 @@ Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As St
 End Property
 
 'Get Categories for one variable
-Private Function Categories(ByVal varName As String) As BetterArray
+Private Function Categories(ByVal varName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray
 
     Dim categoryData As BetterArray
     Dim vars As ILLVariables
@@ -226,7 +226,7 @@ Private Function Categories(ByVal varName As String) As BetterArray
     End If
 
     'Test the case_when
-    Set categoryData = choi.Categories(categoryName)
+    Set categoryData = choi.Categories(categoryName, useShortlabels)
     Set Categories = categoryData.Clone()
 End Function
 
@@ -547,8 +547,8 @@ Private Property Get ILinelistSpecs_Choices() As ILLchoice
 End Property
 
 'Categories of one variable
-Private Function ILinelistSpecs_Categories(ByVal varName As String) As BetterArray
-    Set ILinelistSpecs_Categories = Categories(varName)
+Private Function ILinelistSpecs_Categories(ByVal varName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray
+    Set ILinelistSpecs_Categories = Categories(varName, useShortlabels)
 End Function
 
 Private Sub ILinelistSpecs_Prepare()
