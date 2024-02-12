@@ -714,27 +714,28 @@ Private Sub AppendCRFLineIndex()
 
         If actSheet <> sheetRng.Cells(counter, 1).Value Then
             'For new worksheet
-            lineCounter = 5
+            lineCounter = 6
             actSheet = sheetRng.Cells(counter, 1).Value
             actSec = sectRng.Cells(counter, 1).Value
             actSubSec = subSectRng.Cells(counter, 1).Value
-        ElseIf actSec <> sectRng.Cells(counter, 1).Value Then
+        ElseIf (actSec <> sectRng.Cells(counter, 1).Value) And (sectRng.Cells(counter, 1).Value <> vbNullString) Then
             'For new section
             lineCounter = lineCounter + 7
             actSec = sectRng.Cells(counter, 1).Value
             actSubSec = subSectRng.Cells(counter, 1).Value
-        ElseIf actSubSec <> subSectRng.Cells(counter, 1).Value Then
+        ElseIf (actSubSec <> subSectRng.Cells(counter, 1).Value) And (subsectRng.Cells(counter, 1).Value <> vbNullString) Then
             'New subsection
             lineCounter = lineCounter + 6
             actSubSec = subSectRng.Cells(counter, 1).Value
-            
-        'New choices chunk, without continuity with previous one
-        ElseIf (actCtrl = "choice_manual") And (actCtrlDet <> prevCtrlDet) Then
-            lineCounter = lineCounter + 4
-            choiTagRng.Cells(counter, 1).Value = "yes"
         Else
             'New variable, but old section/subsection/worksheet
             lineCounter = lineCounter + 2
+        End If
+
+                'New choices chunk, without continuity with previous one
+        If (actCtrl = "choice_manual") And (actCtrlDet <> prevCtrlDet) Then
+            lineCounter = lineCounter + 2
+            choiTagRng.Cells(counter, 1).Value = "yes"
         End If
 
         crfLineRng.Cells(counter, 1).Value = lineCounter

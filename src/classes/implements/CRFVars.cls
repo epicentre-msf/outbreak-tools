@@ -218,13 +218,13 @@ Private Sub AddLabel()
   On Error Resume Next
   crfLine = CLng(ValueOf("crf index"))
   On Error GoTo 0
-  If crfLine = 0 Then Exit Sub
+  'If crfLine = 0 Then Exit Sub
   
   'Get the crf range
   Set crfRng = sh.Cells(crfLine, 1)
 
   'On the first cell of a crf worksheet, add an anchor
-  If crfLine = 5 Then crfRng.Name = tabName & "_CRFSTART"
+  If crfLine = 6 Then crfRng.Name = tabName & "_CRFSTART"
 
   mainLabLength = Len(varMainLab)
 
@@ -261,7 +261,7 @@ Private Sub AddType()
   Set crfRng = CRFRange()
 
   varTypes = LCase(ValueOf("variable type"))
-  varFormat = LCase(ValueOf("variable format))
+  varFormat = LCase(ValueOf("variable format"))
   varFormat = Application.WorksheetFunction.Trim(varFormat)
   varControl = ValueOf("control")
   nbDecimals = 0
@@ -388,7 +388,7 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Checking requirements when building the class
-PPrivate Sub CheckRequirements(ByVal varName As String, ll As ILinelist)
+Private Sub CheckRequirements(ByVal varName As String, ll As ILinelist)
 
     Dim dict As ILLdictionary
     Dim varObject As ILLVariables
