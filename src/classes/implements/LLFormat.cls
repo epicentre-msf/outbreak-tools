@@ -430,7 +430,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
 
-        fontColorValue = DesignValue("main section interior color")
+        fontColorValue = DesignValue("sub section font color")
         dimensionValue = DesignValue("main section font size", False)
         dimensionValue = IIf(dimensionValue = 0, 12, dimensionValue)
         
@@ -447,7 +447,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         
-        fontColorValue = DesignValue("main section interior color")
+        fontColorValue = DesignValue("sub section font color")
         dimensionValue = DesignValue("sub section font size", False)
         dimensionValue = IIf(dimensionValue = 0, 11, dimensionValue)
 
@@ -496,7 +496,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
     Case CRFInteger
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        fontColorValue = DesignValue("main section interior color")
+        fontColorValue = DesignValue("sub section font color")
 
         'Draw 3 squares
         Set rng = formattingObject.Parent.Range(formattingObject.Cells(1, 2), formattingObject.Cells(1, 4))
@@ -506,7 +506,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
     Case CRFDecimal, CRFPercentage
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        fontColorValue = DesignValue("main section interior color")
+        fontColorValue = DesignValue("sub section font color")
         
         'Draw 3 squares
         Set rng = formattingObject.Parent.Range(formattingObject.Cells(1, 2), formattingObject.Cells(1, 7))
@@ -534,7 +534,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
-        fontColorValue = DesignValue("main section interior color")
+        fontColorValue = DesignValue("sub section font color")
         FormatRange rng, fontColor:=fontColorValue, isBold:=False, _
                          Verti:=xlVAlignCenter, FontSize:=styleValue - 2  
 
@@ -542,14 +542,14 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
-        fontColorValue = DesignValue("main section interior color")
+        fontColorValue = DesignValue("sub section font color")
         DrawBorder rng, color:=fontColorValue
 
     Case CRFFormatCustom
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
-        fontColorValue = DesignValue("main section interior color")
+        fontColorValue = DesignValue("sub section font color")
         
         'Draw 5 squares
         Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 6))
