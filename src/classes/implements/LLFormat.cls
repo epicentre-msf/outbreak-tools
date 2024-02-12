@@ -350,8 +350,10 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         If (Not TypeName(formattingObject) = "Worksheet") Then Exit Sub
         Set sh = formattingObject
         RemoveGridLines sh, DisplayZeros:=True
-        sh.Cells.Font.Size = 10
-        sh.Range("A1").EntireColumn.ColumnWidth = 20
+        sh.Cells.Font.Size = 9
+        sh.Cells.EntireColumn.ColumnWidth = 4
+        sh.Cells.EntireRow.RowHeight = 11
+        sh.Range("A1").EntireColumn.ColumnWidth = 30
 
     Case HListPrintedSheet
         If (Not TypeName(formattingObject) = "Worksheet") Then Exit Sub
@@ -435,7 +437,10 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
         FormatRange rng, FontSize:=dimensionValue, _
                     fontColor:=fontColorValue, Horiz:=xlHAlignLeft, Verti:=xlVAlignBottom, _
                     isBold:=True
-        If (rng.Cells(1, 1).Value <> vbNullString) Then DrawLines rng, color:=fontColorValue, At:="Bottom", weight:=xlMedium 
+        If (rng.Cells(1, 1).Value <> vbNullString) Then 
+            DrawLines rng, color:=fontColorValue, At:="Bottom", weight:=xlMedium
+            rng.EntireRow.RowHeight = 14
+        End If
         
     Case HListCRFSubSection
 
@@ -450,40 +455,40 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
                     fontColor:=fontColorValue, Horiz:=xlHAlignLeft, Verti:=xlVAlignBottom, _
                     isBold:=False
 
-        If (rng.Cells(1, 1).Value <> vbNullString) Then DrawLines rng, color:=fontColorValue, At:="Bottom", weight:=xlThin
+        If (rng.Cells(1, 1).Value <> vbNullString) Then 
+            DrawLines rng, color:=fontColorValue, At:="Bottom", weight:=xlThin
+            rng.EntireRow.RowHeight = 14
+        End If
     
     Case CRFText
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
-        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 5))
+        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 9))
         fontColorValue = DesignValue("main section interior color")
         DrawLines rng, color:=fontColorValue, At:="Bottom"
 
     Case CRFDate
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
         fontColorValue = DesignValue("main section interior color")
-
         'Format the overall range
-        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 9))
+        Set rng = formattingObject.Parent.Range(formattingObject.Cells(1, 2), formattingObject.Cells(1, 9))
         DrawLines rng, At:="Bottom", weight:=xlMedium, color:=fontColorValue
-        rng.EntireColumn.ColumnWidth = 8
 
         'Day
 
-        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 3))
+        Set rng = rng.Parent.Range(formattingObject.Cells(1, 2), formattingObject.Cells(1, 3))
         DrawLines rng, At:="AvoidTop", color:=fontColorValue
         DrawLines rng, At:="Left", weight:=xlMedium, color:=fontColorValue
 
         'Month
-        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 3))
+        Set rng = rng.Parent.Range(formattingObject.Cells(1, 4), formattingObject.Cells(1, 5))
         DrawLines rng, At:="AvoidTop"
         DrawLines rng, At:="Left", weight:=xlMedium, color:=fontColorValue
 
         'Year
-        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 5))
+        Set rng = rng.Parent.Range(formattingObject.Cells(1, 6), formattingObject.Cells(1, 9))
         DrawLines rng, At:="AvoidTop"
         DrawLines rng, At:="Left", weight:=xlMedium, color:=fontColorValue
         DrawLines rng, At:="Right", weight:=xlMedium, color:=fontColorValue
@@ -491,43 +496,46 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Intege
     Case CRFInteger
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
         fontColorValue = DesignValue("main section interior color")
 
         'Draw 3 squares
-        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 4))
+        Set rng = formattingObject.Parent.Range(formattingObject.Cells(1, 2), formattingObject.Cells(1, 4))
         DrawLines rng, At:="AvoidTop", weight:=xlMedium, color:=fontColorValue
         DrawLines rng, At:="Bottom", weight:=xlMedium, color:=fontColorValue
-        rng.EntireColumn.ColumnWidth = 8
 
     Case CRFDecimal, CRFPercentage
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
-        Set rng = formattingObject
         fontColorValue = DesignValue("main section interior color")
         
         'Draw 3 squares
-        Set rng = rng.Parent.Range(rng.Cells(1, 2), rng.Cells(1, 4))
+        Set rng = formattingObject.Parent.Range(formattingObject.Cells(1, 2), formattingObject.Cells(1, 7))
         DrawLines rng, At:="AvoidTop", weight:=xlMedium, color:=fontColorValue
+        DrawLines rng, At:="Bottom", weight:=xlMedium, color:=fontColorValue
 
         'Draw Decimals
-        rng.Cells(1, 2).Value = "."
+        FormatRange rng.Cells(1, 3), fillValue:=".", Horiz:=xlHAlignCenter, _ 
+                    Verti:=xlVAlignCenter, FontSize:=16, isBold:=True
 
         'Draw the cases for the number of decimals
         If nbDecimals > 0 Then
-            Set rng = rng.Parent.Range(rng.Cells(1, 3), rng.Cells(1, 3 + nbDecimals))
+            Set rng = rng.Parent.Range(rng.Cells(1, 4), rng.Cells(1, 4 + nbDecimals))
             DrawLines rng, At:="AvoidTop", weight:=xlMedium, color:=fontColorValue
+            DrawLines rng, At:="Bottom", weight:=xlMedium, color:=fontColorValue
         End If
 
         'Add percentage if required
-        If scope = CRFPercentage Then rng.Cells(1, 4 + nbDecimals).Value = "%"
+        If scope = CRFPercentage Then 
+           FormatRange rng.Cells(1, 5 + nbDecimals), fillValue:="%", Horiz:=xlHAlignCenter, _ 
+                    Verti:=xlVAlignCenter, FontSize:=16, isBold:=True
+        End If
 
     Case CRFChoiceHeader
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
         fontColorValue = DesignValue("main section interior color")
-        FormatRange rng, fontColor:=fontColorValue, isBold:=True, _
+        FormatRange rng, fontColor:=fontColorValue, isBold:=False, _
                          Verti:=xlVAlignCenter, FontSize:=styleValue - 2  
 
     Case CRFChoiceValues

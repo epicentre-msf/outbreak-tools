@@ -257,13 +257,15 @@ Private Sub Format()
 
     'Add subsections on crf worksheet
     'For CRF sheet sub sections sections
+    If (subSectionName <> vbNullString) Then
     Set sh = ll.CRFWksh(sheetName)
-    With sh
-        Set rng = .Range(.Cells(crfLine - 2, 1), .Cells(crfLine - 2, 7))
-        rng.Cells(1, 1).Value = subSectionName
-    End With
+        With sh
+            Set rng = .Range(.Cells(crfLine - 3, 1), .Cells(crfLine - 3, 7))
+            rng.Cells(1, 1).Value = subSectionName
+        End With
 
-    design.ApplyFormat rng, scope:=HListCRFSubSection
+        design.ApplyFormat rng, scope:=HListCRFSubSection
+    End If
 End Sub
 
 'Errors
