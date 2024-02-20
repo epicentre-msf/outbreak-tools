@@ -135,7 +135,8 @@ Private Sub DrawLines(ByVal rng As Range, _
     Select Case At
 
     Case "All"
-        bordersList.Push xlEdgeLeft, xlEdgeRight, xlEdgeBottom, xlEdgeTop, xlInsideHorizontal, xlInsideVertical
+        bordersList.Push xlEdgeLeft, xlEdgeRight, xlEdgeBottom, xlEdgeTop, _ 
+                         xlInsideHorizontal, xlInsideVertical
     Case "AvoidLeft", "AvoidRight"
         bordersList.Push xlEdgeBottom, xlEdgeTop, xlInsideHorizontal
     Case "AvoidTop", "AvoidBottom"
@@ -165,7 +166,9 @@ Private Sub DrawLines(ByVal rng As Range, _
     End With
 End Sub
 
-Private Sub DrawBorder(ByVal rng As Range, Optional weight As Integer = xlThin, Optional color As Variant = vbBlack, Optional line As Long = xlContinuous)
+Private Sub DrawBorder(ByVal rng As Range, Optional weight As Integer = xlThin, _ 
+                       Optional color As Variant = vbBlack, _ 
+                       Optional line As Long = xlContinuous)
 
     Dim counter As Integer
     For counter = 7 To 10                        'xltop, left, right and bottom
@@ -294,7 +297,8 @@ Private Sub PreparePrintSheet(ByVal sh As Worksheet)
     On Error GoTo 0
 End Sub
 
-Private Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Integer, _
+Private Sub ApplyFormat(ByVal formattingObject As Variant, _ 
+                        ByVal scope As Integer, _
                         Optional ByVal nbDecimals As Integer = 0)
 
     Dim rng As Range
@@ -1083,6 +1087,7 @@ Private Sub ILLFormat_Import(ByVal inpsh As Worksheet)
     Import inpsh
 End Sub
 
-Private Function ILLFormat_DesignValue(ByVal labelName As String, Optional ByVal returnColor As Boolean = True) As Variant
+Private Function ILLFormat_DesignValue(ByVal labelName As String, _ 
+                                       Optional ByVal returnColor As Boolean = True) As Variant
     ILLFormat_DesignValue = DesignValue(labelName, returnColor)
 End Function

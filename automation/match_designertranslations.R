@@ -6,8 +6,11 @@ library(dplyr)
 library(stringr)
 
 #----- copy the designer translation user file from the drive
-onedrive_translation <- "D:/MSF/OutbreakTools - DEV/ressources/designer_translations_user.xlsx"
-obt_repo <- "D:/Projects/outbreak-tools"
+obt_onedrivedev_folder <- Sys.getenv("OBTDEV")
+onedrive_translation <- glue::glue(
+  "{obt_onedrivedev_folder}/ressources/designer_translations_user.xlsx"
+)
+obt_repo <- here::here()
 
 file.copy(from = onedrive_translation, to = glue::glue("{obt_repo}/misc/"), 
           overwrite = TRUE)
@@ -16,7 +19,9 @@ file.copy(from = onedrive_translation, to = glue::glue("{obt_repo}/misc/"),
 master_workbook_path <- glue::glue("{obt_repo}/misc/designer_translations.xlsx")
 
 # path to a workbook where corrections have been made
-child_workbook_path <- glue::glue("{obt_repo}/misc/designer_translations_user.xlsx")
+child_workbook_path <- glue::glue(
+  "{obt_repo}/misc/designer_translations_user.xlsx"
+)
 
 #---- Preliminary functions ----------------------------------------------------
 
@@ -56,7 +61,8 @@ read_a_table <- function(path, sheet_name, range_address, child_tag = "") {
     )
 }
 
-# compare elements and replace between child and master (child contains the corrections)
+# compare elements and replace between child and master 
+#(child contains the corrections)
 
 compare_elements <- function(master_data, child_data) {
   new_data <- left_join(master_data, child_data,
@@ -112,12 +118,12 @@ master_tables_df <- purrr::map_dfr(master_sheets_list, get_all_tables)
 # load master table
 master_list_tables <- master_tables_df |>
   filter((table_name %in% targeted_tables) |
-    (table_name %in% tolower(targeted_tables))) |>
+           (table_name %in% tolower(targeted_tables))) |>
   arrange(table_name) |>
   select(path, range_address) |>
   purrr::pmap(read_a_table)
 
-# loading the child workbook tables ====================================================
+# loading the child workbook tables ============================================
 
 child_workbook <- loadWorkbook(file = child_workbook_path)
 child_sheets_list <- getSheetNames(file = child_workbook_path)
@@ -146,7 +152,7 @@ targeted_tables <- sort(targeted_tables)
 names(joined_data) <- sort(targeted_tables)
 
 
-# write back to an empty workbook =========================================================
+# write back to an empty workbook ==============================================
 source(glue::glue("{obt_repo}/automation/functions_tabulations.R"))
 
 header_names <- c(
@@ -159,7 +165,7 @@ wb <- initiate_workbook(
   headernames = header_names
 )
 
-# linelist_translations -----------------------------------------------------------------
+# linelist_translations --------------------------------------------------------
 
 ll_tables_names <- c(
   "T_TradLLShapes", "T_TradLLMsg",
@@ -169,7 +175,8 @@ ll_tables_names <- c(
 ll_tables <- joined_data[ll_tables_names]
 ll_tables_labels <- c(
   "Translation of shapes (buttons in the the linelist worksheets)",
-  "Translation of various messages of the user interface, including special worksheets names",
+  glue::glue("Translation of various messages of the user interface, ",
+             "including special worksheets names"),
   "Translation of forms in the linelist",
   "Translation of elements of the ribbon menu in the linelist"
 )
@@ -184,13 +191,14 @@ push_all_tables(
   listoftables = ll_tables
 )
 
-# designer translations -------------------------------------------------------------------
+# designer translations --------------------------------------------------------
 
 des_tables_names <- c("T_tradMsg", "T_tradRange", "T_tradShape")
 
 des_tables <- joined_data[des_tables_names]
 des_tables_labels <- c(
-  "Translation of various messages in main worksheet, including ribbon menu elements",
+  glue::glue("Translation of various messages in main worksheet, ",
+             "including ribbon menu elements"),
   "Translation of messages in ranges of main worksheet",
   "Translation of shapes (buttons in the main worksheet)"
 )
@@ -205,9 +213,12 @@ push_all_tables(
   listoftables = des_tables
 )
 
-saveWorkbook(wb, 
-             file = glue::glue("{obt_repo}/misc/designer_translations_merged.xlsx"), 
-             overwrite = TRUE)
+saveWorkbook(wb,
+  file = glue::glue("{obt_repo}/misc/designer_translations_merged.xlsx"),
+  overwrite = TRUE
+)
 
-file.copy(from = glue::glue("{obt_repo}/misc/designer_translations_merged.xlsx"), 
-          to = onedrive_translation, overwrite = TRUE)
+file.copy(
+  from = glue::glue("{obt_repo}/misc/designer_translations_merged.xlsx"),
+  to = onedrive_translation, overwrite = TRUE
+)
