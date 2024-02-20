@@ -48,5 +48,6 @@
         }
     },
     "peacock.color": "1b3149",
-    "r.lsp.promptToInstall": false
+    "r.lsp.promptToInstall": false,
+    "editor.rulers": [80, 120, 160]
 }

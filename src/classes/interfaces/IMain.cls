@@ -28,8 +28,12 @@ Public Property Get LinelistPassWord() As String: End Property
 Public Sub AddInfo(ByVal trads As IDesTranslation, ByVal msgCode As String, _
                    Optional ByVal infoName As String = "edition"): End Sub
 
-'Exposed methods
-Public Sub CheckReadiness(ByVal trads As IDesTranslation): End Sub
+'Check if the linelist is ready for linelist generation
+Public Sub CheckReadiness(ByVal trads As IDesTranslation):End Sub
+'Check eventual warning messages
+Public Sub CheckWarnings(ByVal trads As IDesTranslation, _ 
+                         Optional ByVal passversion As String = vbNullString)
+End Sub
 'Check if the linelist exists and ask for replacement
 Public Sub CheckFileExistence(ByVal trads As IDesTranslation): End Sub
 Public Sub UpdateStatus(ByVal numValue As Integer): End Sub

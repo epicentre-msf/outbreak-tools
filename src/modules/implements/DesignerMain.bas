@@ -370,12 +370,16 @@ Public Sub Control()
     Dim wb As Workbook
     Dim mainsh As Worksheet
     Dim tradsh As Worksheet
+    Dim lData As ILinelistSpecs
+    Dim passversion As String 'version of the password worksheet
 
 
     'Create Main object
     Set wb = ThisWorkbook
     Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
     Set mainobj = Main.Create(mainsh)
+    Set lData = LinelistSpecs.Create(wb)
+    passversion = lData.Password.Value("version")
     
     'Put every range in white before the control
     mainobj.ClearInputRanges
@@ -384,9 +388,15 @@ Public Sub Control()
     Set tradsh = wb.Worksheets(DESIGNERTRADSHEET)
     Set desTrads = DesTranslation.Create(tradsh)
 
+    'Check warnings
+    mainobj.CheckWarnings desTrads, passversion
+
+    'If you decide to stop and fix warnings, exit
+    If Not mainobj.Ready Then Exit Sub
+
     'Check readiness of the linelist
     mainobj.CheckReadiness desTrads
-    
+
     'If the main sheet is not ready exit the sub
     If Not mainobj.Ready Then Exit Sub
 
