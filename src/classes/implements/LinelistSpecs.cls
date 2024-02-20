@@ -479,7 +479,7 @@ Private Sub Export(ByVal toWkb As Workbook)
     choi.Export toWkb, Hide:=xlSheetVeryHidden
     trans.ExportToWkb toWkb
     expobj.ExportSpecs toWkb, Hide:=xlSheetVeryHidden
-    geo.ExportToWkb toWkb, mainObj.ValueOf("llname")
+    geo.ExportToWkb toWkb, mainObj.ValueOf("llname"), mainObj.ValueOf("setuppath")
     passobj.Export toWkb
 
 End Sub

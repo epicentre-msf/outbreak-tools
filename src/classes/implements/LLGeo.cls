@@ -419,7 +419,9 @@ End Sub
 
 
 'Export by keeping the actual format of the Worksheet
-Private Sub ExportToWkb(ByVal outputWkb As Workbook, Optional ByVal llName As String = vbNullString)
+Private Sub ExportToWkb(ByVal outputWkb As Workbook, _ 
+                        Optional ByVal llName As String = vbNullString, _ 
+                        Optional ByVal setupPath As String = vbNullString)
 
     Const METADATASHEET As String = "Metadata"
 
@@ -432,6 +434,10 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook, Optional ByVal llName As St
     Dim rngTable As BetterArray
     Dim counter As Long
     Dim rngName As String
+    'New metadata key/values
+    Dim metaKeys As BetterArray
+    Dim metaValues As BetterArray
+    Dim setupName As String
 
 
     'Test if a sheet named as the geo sheet already exists
@@ -501,26 +507,31 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook, Optional ByVal llName As St
     Set outsh = outputWkb.Worksheets(METADATASHEET)
     Set rng = sh.ListObjects("T_" & METADATA).Range.Offset(1)
 
+    'Test if the metadata has more than 2 columns
+
+    'Adding metadata key, values
+    Set metaKeys = New BetterArray
+    Set metaValues = New BetterArray
+    setupName = Split(setupPath, Application.PathSeparator)(UBound(Split(setupPath, Application.PathSeparator)))
+
+    metaKeys.Push "variable", "language", "linelist_creation_date", _
+                  "linelist_creation_name", "used_setup_name"
+
+    metaValues.Push "value", sh.Range("RNG_MetaLang").Value, _ 
+                     Format(Now(), "yyyy-mm-dd Hh:Nn"), _
+                     llName, setupName
+    
+
     With outsh
         'variable and value
-        .Cells(1, 1).Value = "variable"
-        .Cells(1, 2).Value = "value"
-
-        'Linelist language
-        .Cells(2, 1).Value = "language"
-        .Cells(2, 2).Value = sh.Range("RNG_MetaLang").Value
-
-        'Linelist creation date
-        .Cells(3, 1).Value = "linelist_creation_date"
-        .Cells(3, 2).Value = Format(Now, "yyyy-mm-dd Hh:Nn")
-
-        'Linelist name
-        .Cells(4, 1).Value = "linelist_creation_name"
-        .Cells(4, 2).Value = llName
-
-        Set expRange = .Range(.Cells(5, 1), .Cells(rng.Rows.Count, rng.Columns.Count))
-        expRange.Value = rng.Value
+        metaKeys.ToExcelRange .Cells(1, 1)
+        metaValues.ToExcelRange .Cells(1, 2)
         
+        Set expRange = .Cells(metaKeys.Length + 1, 1)
+        expRange.Name = "RNG_Meta_Anchor"
+        Set expRange = .Range(expRange, expRange.Offset(rng.Rows.Count - 1, 1))
+        expRange.Value = rng.Value
+        'Add an anchor for the first cell of the metadata from the geo
         .Visible = xlSheetVeryHidden
     End With
 
@@ -929,16 +940,17 @@ Private Sub UpdateMetadata()
     Set metash = sh.Parent.Worksheets(METADATASHEET)
     With metash
         lastRow = .Cells(.Rows.Count, 1).End(xlUp).Row
+        Set expRng = .Range("RNG_Meta_Anchor")
 
-        If lastRow > 4 Then
-            'Clean from row 5
-            Set rng = .Range(.Cells(5, 1), .Cells(lastRow, 2))
+        If lastRow >= expRng.Row Then
+            Set rng = .Range(expRng, .Cells(lastRow, 2))
             rng.ClearContents
         End If
 
         'Add new metadata to the metadata sheet
         Set rng = sh.ListObjects("T_" & METADATA).Range.Offset(1)
-        Set expRng = .Range(.Cells(5, 1), .Cells(rng.Rows.Count, rng.Columns.Count))
+        
+        Set expRng = .Range(expRng, expRng.Offset(rng.Rows.Count -1, 1))
         expRng.Value = rng.Value
     End With
 
@@ -1031,8 +1043,10 @@ Private Sub ILLGeo_ExportToFile(ByVal outputWkb As Workbook, Optional ByVal only
     ExportToFile outputWkb, onlyHistory
 End Sub
 
-Private Sub ILLGeo_ExportToWkb(ByVal outputWkb As Workbook, Optional ByVal llName As String = vbNullString)
-    ExportToWkb outputWkb, llName
+Private Sub ILLGeo_ExportToWkb(ByVal outputWkb As Workbook, _ 
+                               Optional ByVal llName As String = vbNullString, _ 
+                               Optional ByVal setupPath As String = vbNullString)
+    ExportToWkb outputWkb, llName, setupPath
 End Sub
 
 Private Sub ILLGeo_Clear()
