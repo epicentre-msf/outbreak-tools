@@ -32,6 +32,9 @@ Private Const RNGLLPWDOPEN As String = "RNG_LLPwdOpen"
 Private Const RNGTEMPPATH As String = "RNG_LLTemp"
 Private Const RNGMAINTEMP As String = "RNG_MainTemp"
 Private Const RNGASKOPEN As String = "RNG_AskOpen"
+Private Const RNGWARNING As String = "RNG_Warning"
+Private Const RNGMAINALERT As String = "RNG_MainAlert"
+Private Const PASSDEFVERS As String = "d0099" 'Password default version
 
 Private Const CLASSNAME As String = "Main"
 
@@ -138,9 +141,67 @@ Private Property Get HasTemplate() As Boolean
     HasTemplate = (sh.Range(RNGMAINTEMP).Value = "has template")
 End Property
 
-'Check if the main sheet is ready for generation process
+'Check if the password has been loaded
+Private Sub CheckWarnings(ByVal trads As IDesTranslation, Optional ByVal passversion As String = vbNullString)
 
-Public Sub CheckReadiness(ByVal trads As IDesTranslation)
+    Dim sh As Worksheet
+    Dim alertStatus As Boolean
+    Dim rng As Range
+    
+    Set sh = Wksh()
+
+    alertStatus = (sh.Range(RNGMAINALERT).Value = "alert")
+    'If you want to avoid alerts, exit
+    If Not alertStatus Then
+        sh.Range(RNGMAINREADY).Value = "ready"
+        Exit Sub
+    End If
+
+    sh.Range(RNGMAINREADY).Value = "not ready"
+
+    'Clear all the warnings
+    Set rng = sh.Range(RNGWARNING)
+    Do While (Not IsEmpty(rng))
+        rng.Value = vbNullString
+        rng.Interior.Color = vbWhite
+        Set rng = rng.Offset(1)
+    Loop
+
+    'Checking for update for password worksheet --------------------------------
+    If (passversion = PASSDEFVERS Or passversion = vbNullString) And alertStatus Then
+        If MsgBox(trads.TranslationMsg("MSG_UpdatePassQ"), vbYesNo + vbExclamation) = vbYes Then
+            AddWarning trads.TranslationMsg("MSG_UpdatePass")
+            Exit Sub
+        End If
+    End If
+
+    'Other future warnings ----
+
+    'When everything is okay
+    sh.Range(RNGMAINREADY).Value = "ready"
+End Sub
+
+Private Sub AddWarning(Optional ByVal warningMess As String = vbNullString)
+    
+    Dim sh As Worksheet
+    Dim rngWarn As Range
+
+    Set sh = Wksh()
+
+    Set rngWarn = sh.Range(RNGWARNING)
+    'Find the first non empty cell
+    Do While Not IsEmpty(rngWarn)
+        Set rngWarn = rngWarn.Offset(1)
+        If rngWarn.Row = sh.Rows.Count Then Exit Do
+    Loop
+
+    rngWarn.Value = warningMess
+    rngWarn.Font.Color = RGB(234, 57, 43)
+End Sub
+
+'Check if the main sheet is ready for generation process
+Private Sub CheckReadiness(ByVal trads As IDesTranslation, _ 
+                          Optional ByVal passversion As String = vbNullString)
     Dim sh As Worksheet
     Dim wkbName As String                        'Eventual Workbook name to check if a workbook is opened
     Dim redColor As Variant
@@ -243,7 +304,6 @@ Public Sub CheckReadiness(ByVal trads As IDesTranslation)
     'Be sure the linelist name is well written (or change it)
     sh.Range(RNGLLNAME).Value = CorrectLinelistName(sh.Range(RNGLLNAME).Value)
 
-
     'If everything is ready
     sh.Range(RNGMAINREADY).Value = "ready"
     sh.Range(RNGMAINREADY).Font.color = vbWhite
@@ -329,6 +389,7 @@ End Sub
 
 Private Sub ClearInputRanges(Optional ByVal clearValues As Boolean = False)
     Dim mainsh As Worksheet
+    Dim rng As Range
     Set mainsh = Wksh()
     mainsh.Range(RNGPATHGEO).Interior.color = vbWhite
     mainsh.Range(RNGPATHDICO).Interior.color = vbWhite
@@ -345,6 +406,14 @@ Private Sub ClearInputRanges(Optional ByVal clearValues As Boolean = False)
         mainsh.Range(RNGEDITION).Value = vbNullString
         mainsh.Range(RNGLANGSETUP).Value = vbNullString
         mainsh.Range(RNGLLFORM).Value = vbNullString
+        mainsh.Range(RNGWARNING).Value = vbNullString
+
+        Set rng = mainsh.Range(RNGWARNING)
+        Do While (Not IsEmpty(rng))
+            rng.Value = vbNullString
+            rng.Interior.Color = vbWhite
+            Set rng = rng.Offset(1)
+        Loop
     End If
 End Sub
 
@@ -422,6 +491,10 @@ Private Sub AddInfo(ByVal trads As IDesTranslation, ByVal msgCode As String, Opt
         rngName = RNGLLFORM
     Case "temppath"
         rngName = RNGTEMPPATH
+    Case "warning"
+        rngName = RNGWARNING
+    Case "alert"
+        rngName = RNGMAINALERT
     Case Else
         rngName = RNGEDITION
     End Select
@@ -451,7 +524,8 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     rngTable.Push RNGLLFORM, RNGLANGSETUP, RNGDESIGNLL, _
                   RNGPATHDICO, RNGPATHGEO, RNGLLDIR, RNGLLNAME, _
                   RNGEDITION, RNGMAINREADY, RNGUPDATE, RNGLLPWDOPEN, _
-                  RNGTEMPPATH, RNGMAINTEMP, RNGASKOPEN
+                  RNGTEMPPATH, RNGMAINTEMP, RNGASKOPEN, RNGWARNING, _ 
+                  RNGMAINALERT
 
     For counter = rngTable.LowerBound To rngTable.UpperBound
         rngName = rngTable.Item(counter)
@@ -479,6 +553,11 @@ End Property
 
 Private Sub IMain_CheckReadiness(ByVal trads As IDesTranslation)
     CheckReadiness trads
+End Sub
+
+Private Sub IMain_CheckWarnings(ByVal trads As IDesTranslation, _ 
+                                 Optional ByVal passversion As String = vbNullString)
+    CheckWarnings trads, passversion
 End Sub
 
 Private Sub IMain_CheckFileExistence(ByVal trads As IDesTranslation)
