@@ -130,7 +130,7 @@ Private Property Get ValueOf(ByVal tagName As String) As String
     If retVal = "_default" Or retVal = "default" Then
         retVal = ThisWorkbook.Path & Application.PathSeparator & "_ribbontemplate.xlsb"
     End If
-
+    
     ValueOf = retVal
 End Property
 
