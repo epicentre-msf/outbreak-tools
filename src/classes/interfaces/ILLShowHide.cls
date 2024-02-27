@@ -20,6 +20,7 @@ Public Enum ShowHideScope
   ShowHideScopeHList = 1
   ShowHideScopePrint = 2
   ShowHideScopeVList = 3
+  ShowHideScopeCRF = 4
 End Enum
 
 'Exposed methods

@@ -91,10 +91,12 @@ Private Property Get formObject() As Object
 
   scope = ActualScope()
   Select Case scope
-  Case ShowHideScopeHList, ShowHideScopeVList
+  Case ShowHideScopeHList, ShowHideScopeVList, 
     Set formObject = [F_ShowHideLL]
   Case ShowHideScopePrint
     Set formObject = [F_ShowHidePrint]
+  Case ShowHideScopeCRF
+    Set formObject = [F_ShowHideLL]
   End Select
 End Property
 
@@ -115,6 +117,8 @@ Private Property Get ActualScope() As Byte
     scope = ShowHideScopeVList
   Case = "HList Print"
     scope = ShowHideScopePrint
+  Case = "HList CRF"
+    scope = ShowHideScopeCRF
   End Select
   ActualScope = scope
 End Property
@@ -208,6 +212,7 @@ Private Sub InitializeTable()
   Dim sh As Worksheet
   Dim varRng As Range
   Dim showHideColumn As String
+  Dim positionColumn As String
   Dim sheetName As String
   Dim cellRng As Range
   Dim tempCounter As Long
@@ -222,6 +227,7 @@ Private Sub InitializeTable()
   Dim defaultValue As String
   Dim statusValue As String
   Dim trads As ITranslation
+  Dim excludeVariable As Boolean 'Condition to not even include the variable in show/hide
 
   
   'The temporary sheet is the show_hide__ worksheet
@@ -237,42 +243,63 @@ Private Sub InitializeTable()
   Set trads = MessagesTrads()
   InitializeMessages trads
 
+  'Create the listObject
+  Set dict = Dictionary()
+  Set varRng = dict.DataRange("variable name")
+  Set vars = LLVariables.Create(dict)
+  scope = ActualScope()
+  
+  showHideColumn = Switch( _
+    scope = ShowHideScopePrint, "register book", _ 
+    scope = ShowHideScopeCRF, "crf status", _
+    True, "visibility")
+    
+  positionColumn = Switch( _
+    scope = ShowHideScopeCRF, "crf index", _ 
+    True, "column index")
+
+  defaultValue = IIf(scope = ShowHideScopePrint, this.PRINTSHOWHORIZ, this.SHOWN)
+
+  'Get the sheet name (remove the print_ tag at the begining on printed worksheet)
+  sheetName = sh.Name
+  If(scope = ShowHideScopePrint) Then sheetName =  Right(sh.Name, (Len(sh.Name) - 6))
+  'remove the crf_ tag at the begining on the crf worksheet
+  If (scope = ShowHideScopeCRF) Then sheetName =  Right(sh.Name, (Len(sh.Name) - 4))
+
+  sheetName = Application.WorksheetFunction.Trim(sheetName)
+
+  Set cellRng = varRng.Cells(1, 1)
+
+
   With tpsh
-    'Create the listObject
-    Set dict = Dictionary()
-    Set varRng = dict.DataRange("variable name")
-    Set vars = LLVariables.Create(dict)
-    scope = ActualScope()
-    showHideColumn = IIf(scope = ShowHideScopePrint, "register book", "visibility")
-    defaultValue = IIf(scope = ShowHideScopePrint, this.PRINTSHOWHORIZ, this.SHOWN)
-
-    'Get the sheet name (remove the print_ tag at the begining on printed worksheet)
-    sheetName = sh.Name
-    If(scope = ShowHideScopePrint) Then sheetName =  Right(sh.Name, (Len(sh.Name) - 6))
-    sheetName = Application.WorksheetFunction.Trim(sheetName)
-
-    Set cellRng = varRng.Cells(1, 1)
     'Define the start column
     StartCol = .Cells(1, .Columns.Count).End(xlToLeft).Column + 1
     tempCounter = 2
+    
     'Loop for all variables in the dictionary (I don't presume the dictionary is sorted on sheet names)
     Do While cellRng.Value <> vbNullString
+      
       varName = cellRng.Value
       counterSheetName = vars.Value(varName:=varName, colName:="sheet name")
+
       If counterSheetName = sheetName Then
         'If it is not hidden by the designer
         If (vars.Value(varName:=varName, colName:="status") <> "hidden") Then
+          
           'main label
           mainLab = vars.Value(varName:=varName, colName:="main label")
           controlVal = vars.Value(varName:=varName, colName:="control")
+          
           'For geo variables, add the main label and the section
           If (InStr(1, controlVal, "geo") > 0) Or (InStr(1, controlVal, "hf") > 0) _
           Then mainLab = vars.Value(varName:=varName, colName:="sub section") & ": " & mainLab
+          
           .Cells(tempCounter, StartCol + 1).Value = mainLab
           'variable name
           .Cells(tempCounter, StartCol + 2).Value = varName
           'Status
           statusValue = vars.Value(varName:=varName, colName:=showHideColumn)
+          
           Select Case statusValue
           Case "always visible"
             statusValue = this.MANDATORY
@@ -282,7 +309,8 @@ Private Sub InitializeTable()
             statusValue = this.PRINTSHOWVERTI
           Case "print, horizontal header"
             statusValue = this.PRINTSHOWHORIZ
-          Case "hidden", "hidden on creation" 'The first hidden is for Print sheet, the second for LL
+            'The first hidden is for Print sheet, the second for LL, the third one is for the crf
+          Case "hidden", "hidden on creation", "always hidden" 
             statusValue = this.HIDDEN
           End Select
           'On admin 1 and Linelist, the status is mandatory
@@ -293,7 +321,7 @@ Private Sub InitializeTable()
           If statusValue = vbNullString Then statusValue = defaultValue
           .Cells(tempCounter, StartCol + 3).Value = statusValue
           'column index (needed for further usages)
-          .Cells(tempCounter, StartCol + 4).Value = vars.Value(varName:=varName, colName:="column index")
+          .Cells(tempCounter, StartCol + 4).Value = vars.Value(varName:=varName, colName:=positionColumn)
           'Control
           .Cells(tempCounter, StartCol + 5).Value = vars.Value(varName:=varName, colName:="control")
           tempCounter = tempCounter + 1
@@ -305,7 +333,7 @@ Private Sub InitializeTable()
     .Cells(1, StartCol + 1).Value = "main label"
     .Cells(1, StartCol + 2).Value = "variable name"
     .Cells(1, StartCol + 3).Value = "status"
-    .Cells(1, StartCol + 4).Value = "column index"
+    .Cells(1, StartCol + 4).Value = "position index"
     .Cells(1, StartCol + 5).Value = "control"
     'substract 1 for resizing purposes
     tempCounter = tempCounter - 1
@@ -327,7 +355,7 @@ Private Function Value(ByVal lineNumber As Long, Optional ByVal colName As Strin
     colIndex = 3
   Case "main label"
     colIndex = 1
-  Case "column index"
+  Case "position index"
     colIndex = 4
   Case "variable name"
     colIndex = 2
@@ -458,17 +486,21 @@ Private Sub UpdateVisibility(ByVal indexValue As Long)
 
     fobj.OPT_Hide.Visible = True
     fobj.OPT_Hide.Value = 1
+
+    '0762806018
     
-    If (scope = ShowHideScopeHList) Or (scope = ShowHideScopeVList) Then
+    If (scope = ShowHideScopeHList) Or _ 
+       (scope = ShowHideScopeVList) Or _ 
+       (scope = ShowHideScopeCRF) Then
       fobj.OPT_Show.Caption = this.SHOW
       fobj.OPT_Show.Top = 75
     End If
   Case Else 'Show Everything, and select show horizontally on printed sheet
     On Error Resume Next
-    fobj.OPT_Show.Value = 1
-    fobj.OPT_PrintShowHoriz.Value = 1
-    fobj.OPT_Hide.Visible = True
-    fobj.OPT_Show.Caption = this.SHOW
+      fobj.OPT_Show.Value = 1
+      fobj.OPT_PrintShowHoriz.Value = 1
+      fobj.OPT_Hide.Visible = True
+      fobj.OPT_Show.Caption = this.SHOW
     On Error GoTo 0
   End Select
 
