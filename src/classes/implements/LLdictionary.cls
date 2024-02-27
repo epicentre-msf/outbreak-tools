@@ -98,7 +98,8 @@ Public Property Get Prepared() As Boolean
     Set dictWksh = Wksh()
     Prepared = (dictWksh.Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue) And _
             ColumnExists("table name") And ColumnExists("column index") And _
-            ColumnExists("visibility") And ColumnExists("crf index") And _
+            ColumnExists("visibility") And ColumnExists("crf index") And 
+            ColumnExists("crf choices") And ColumnExists("crf status") And _
             (Not ColumnExists("main section sort")) And (Not ColumnExists("main section index"))
 End Property
 
@@ -126,7 +127,7 @@ Private Sub ClassArraysInitialize()
 
     'Thos are columns that are added during preprocessing steps
     DICTIONARYADDEDCOLUMNS.Push  "table name", "column index", "list auto", _
-                            "visibility", "crf index", "crf choices" 
+                            "visibility", "crf index", "crf choices", "crf status"
 
     DICTIONARYCOLUMNS.Concat DICTIONARYADDEDCOLUMNS.Items
 End Sub
@@ -258,7 +259,7 @@ Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject A
         GoodSheetNames PreservedSheetsNames
 
         'Add visibility (after adding geoLines)                                            
-        If Not ColumnExists("visibility") Then AddVisibility 'Add visibility for show/Hide
+        If Not ColumnExists("visibility") And Not ColumnExists("crf status")) Then AddVisibility 'Add visibility for show/Hide
 
         'Add the crf line for the crf
         If Not ColumnExists("crf index") Then AppendCRFLineIndex
@@ -339,28 +340,61 @@ Private Sub AddVisibility()
     Dim statusIndex As Long
     Dim colIndex As Long
     Dim statusValue As String
+    Dim visibilityIndex As Long
+    Dim crfstatIndex As Long
+    Dim controlIndex As Long
+    Dim controlValue As String
 
 
     Set dictWksh = Wksh()
     EndRow = DictEndRow()
     endCol = DictEndColumn()
 
+    'add visibility and status column
+    AddColumn "visibility"
+    AddColumn "crf status"
+
+
     statusIndex = ColumnIndex("status")
     colIndex = ColumnIndex("column index")
+    visibilityIndex = ColumnIndex("visibility")
+    crfstatIndex = ColumnIndex("crf status")
+    controlIndex = ColumnIndex("control")
 
     With dictWksh
-        .Cells(StartRow, endCol + 1).Value = "visibility"
         For counter = StartRow + 1 To EndRow
             statusValue = .Cells(counter, statusIndex).Value
+
             Select Case statusValue
+
             Case "hidden"
-                .Cells(counter, endCol + 1).Value = "always hidden"
+                
+                .Cells(counter, visibilityIndex).Value = "always hidden"
+                .Cells(counter, crfstatIndex).Value = "always hidden"
+
             Case "mandatory"
-                .Cells(counter, endCol + 1) = "always visible"
+
+                .Cells(counter, visibilityIndex).Value = "always visible"
+                
+                controlValue = .Cells(counter, controlIndex).Value
+
+                If (controlValue = "formula") Or (controlValue = "choice_formula") Or _ 
+                    (controlValue = "case_when") Then
+                    .Cells(counter, crfstatIndex).Value = "always hidden"
+                Else
+                    .Cells(counter, crfstatIndex).Value = "visible on creation"
+                End If
+
             Case "optional, hidden"
-                .Cells(counter, endCol + 1) = "hidden on creation"
+                
+                .Cells(counter, visibilityIndex).Value = "hidden on creation"
+                .Cells(counter, crfstatIndex).Value = "hidden on creation"
+
             Case "optional, visible", "optional"
-                .Cells(counter, endCol + 1) = "visible on creation"
+                
+                .Cells(counter, visibilityIndex).Value = "visible on creation"
+                .Cells(counter, crfstatIndex).Value = "visible on creation"
+            
             End Select
         Next
     End With

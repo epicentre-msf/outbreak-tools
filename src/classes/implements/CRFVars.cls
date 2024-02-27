@@ -109,6 +109,7 @@ End Sub
 
 'Initialize the CRF worksheet if required
 Private Sub InitializeCRFSheet()
+  Const SHCRFPREFIX As String = "crf_"
 
   Dim ll As ILinelist
   Dim sh As Worksheet
@@ -119,7 +120,8 @@ Private Sub InitializeCRFSheet()
   Set ll = LinelistObject()
   Set design = DesignFormat()
   sheetName = ValueOf("sheet name")
-  tabName = ValueOf("table name")
+  'add the prefix for the crf on the name of the table
+  tabName = SHCRFPREFIX & ValueOf("table name")
   
   'Create the crf worksheet
   ll.AddOutputSheet sheetName, xlSheetHidden, sheetScope:=3
