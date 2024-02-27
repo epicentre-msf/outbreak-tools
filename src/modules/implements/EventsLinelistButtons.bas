@@ -76,7 +76,8 @@ Public Sub ClickShowHide()
     'Test the sheet type to be sure it is a HList or a HList Print,
     'and exit if not
     sheetTag = sh.Cells(1, 3).Value
-    If sheetTag <> "HList" And sheetTag <> "HList Print" And sheetTag <> "VList" Then
+    If (sheetTag <> "HList" And sheetTag <> "HList Print" And sheetTag <> "VList" _ 
+       And sheetTag <> "HList CRF") Then
         WarningOnSheet "MSG_PrintOrDataSheet"
         Exit Sub
     End If
