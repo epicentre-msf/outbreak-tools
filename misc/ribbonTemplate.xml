@@ -28,6 +28,7 @@
                 </group>
                 <group id="customGroupTabPrint" getLabel="getLLLang">
                     <button id="btnOpenPrint" getLabel="getLLLang" image="openprint" size="normal" onAction="clickRibbonOpenPrint"/>
+                    <button id = "btnOpenForm" getLabel="getLLLang" imageMso="ControlSubFormReport" size="normal" onAction="clickRibbonOpenCRF"/>
                     <button id="btnClosePrint" getLabel="getLLLang" imageMso="PrintPreviewClose" size="normal" onAction="clickRibbonClosePrint"/>
                     <button id="btnRotateHead" getLabel="getLLLang" imageMso="ObjectRotateFree" size="normal" onAction="clickRibbonRotateAll"/>
                     <button id="btnRowHeight" getLabel="getLLLang" imageMso="RowHeight" size="normal" onAction="clickRibbonRowHeight"/>

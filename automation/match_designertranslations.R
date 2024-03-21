@@ -6,7 +6,7 @@ library(dplyr)
 library(stringr)
 
 #----- copy the designer translation user file from the drive
-obt_onedrivedev_folder <- Sys.getenv("OBTDEV")
+obt_onedrivedev_folder <- normalizePath(Sys.getenv("OBTDEV"))
 onedrive_translation <- glue::glue(
   "{obt_onedrivedev_folder}/ressources/designer_translations_user.xlsx"
 )
