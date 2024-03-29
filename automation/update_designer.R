@@ -33,6 +33,12 @@ update_designer <- function(update_status = 0, osname = "windows"){
     )
     cat("Replaced the main designer by aky designer", "\n")
     cat("\n")
+
+    # update the new stable version on bin
+    file.copy(
+      from = "./automation/designer_aky.xlsb",
+      to = "./src/bin/designer_main.xlsb", overwrite = TRUE
+    )
   }
 
   # revert back previous stable designer due to corrupt files.

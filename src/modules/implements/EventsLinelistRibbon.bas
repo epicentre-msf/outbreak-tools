@@ -189,3 +189,10 @@ Public Sub clickRibbonImportGeobase(ByRef Control As IRibbonControl)
     Attribute clickRibbonImportGeobase.VB_Description = "Callback for btnImport On Action"
     ClickImportGeobase
 End Sub
+
+'@Description("Callback for btnAutoFit On Action")
+'@EntryPoint
+Public Sub clickRibbonAutoFit(ByRef Control As IRibbonControl)
+    Attribute clickRibbonAutoFit.VB_Description = "Callback for btnAutoFit On Action"
+    clickAutoFit
+End Sub

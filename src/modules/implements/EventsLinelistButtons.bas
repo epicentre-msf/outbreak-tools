@@ -1292,3 +1292,42 @@ Public Sub ClickMatchLinelistShowHide()
 ErrHand:
     NotBusyApp
 End Sub
+
+'@Description("AutoFit columns/rows in a linelist worksheet")
+'@EntryPoint
+Public Sub clickAutoFit()
+    Attribute clickAutoFit.VB_Description = "AutoFit columns/rows in a linelist worksheet"
+    
+    Dim sh As Worksheet
+    Dim sheetTag As String
+    Dim Lo As ListObject
+    Dim LoRng As Range
+    Dim counter As Long
+
+    On Error GoTo ErrHand
+
+    Set sh = ActiveSheet
+    sheetTag = sh.Cells(1, 3).Value
+
+    If sheetTag <> "HList" Then
+        WarningOnSheet "MSG_DataSheet"
+        Exit Sub
+    End If
+
+    BusyApp
+    'Table data entry on linelist
+    Set Lo = sh.ListObjects(1)
+
+    For counter = 1 To Lo.ListColumns.Count
+        Set LoRng = Lo.ListColumns(counter).Range
+        
+        If (Not LoRng.EntireColumn.Hidden) Then
+            'Autofit the column after wrapping the text
+            LoRng.WrapText = True
+            LoRng.EntireColumn.AutoFit
+        End If
+    Next
+ErrHand:
+    On Error Resume Next
+    NotBusyApp    
+End Sub

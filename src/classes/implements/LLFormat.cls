@@ -332,7 +332,8 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, _
             dimensionValue = DesignValue("default analysis column width", False)
             sh.Rows("2:3").RowHeight = 25
         Else
-            RemoveGridLines sh
+            'on Linelist worksheets, show zeros
+            RemoveGridLines sh, DisplayZeros:=(scope=AllLinelistSheet)
             styleValue = DesignValue("linelist base font size", False)
             dimensionValue = DesignValue("default linelist column width", False)
             sh.Rows("1:4").RowHeight = 25
@@ -970,7 +971,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, _
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
 
         Set rng = formattingObject
-        dimensionValue = IIf(scope = HListPrintedHeader, 5, 8)
+        dimensionValue = IIf(scope = HListPrintedHeader, 5, 1)
         interiorColorValue = DesignValue("hlist table header color")
         FormatRange rng, fontColor:=interiorColorValue, _
                     interiorColor:=interiorColorValue, _

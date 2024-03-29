@@ -8,31 +8,30 @@
                     <button id="btnResize" getLabel="getLLLang" imageMso="SheetRowsDelete" size="large" onAction="clickRibbonResize"/>
                     <button id="btnRemFilt" getLabel="getLLLang" imageMso="FilterClearAllFilters" size="large" onAction="clickRibbonRemoveFilter"/>
                     <button id="btnSortTab" getLabel="getLLLang" image="sort" size="large" onAction="clickRibbonSortTable"/>
-                </group>
-                <group id="customGroupVarLab">
-                    <button id="btnOpenLab" image="openvarlabels" size="large"  getLabel = "getLLLang" onAction="clickRibbonOpenVarLab"/>
-                </group>
-                <group id="customGroupTabGeo">
+                    <button id="btnAutoFit" getLabel="getLLLang" image="autofit" size="large" onAction="clickRibbonAutoFit"/>
                     <button id="btnGeo" getLabel="getLLLang" image="globe" size="large" onAction="clickRibbonGeo"/>
                 </group>
                 <group id="customGroupAna">
                     <button id="btnCalc" imageMso="CalculateSheet" size="large" getLabel = "getLLLang" onAction="clickRibbonCalculate"/>
                 </group>
-                <group id="customGroupExport" getLabel="getLLLang">
-                    <button id="btnExport"  getLabel = "getLLLang" image="download" size="normal" onAction="clickRibbonExport"/>
-                    <button id="btnExpAna" image="anaexport" size="normal"  getLabel = "getLLLang" onAction="clickRibbonExportAnalysis"/>
-                </group>
                 <group id="customGroupImport" getLabel="getLLLang">
                     <button id="btnImport"  getLabel = "getLLLang" image="import" size="normal" onAction="clickRibbonImport"/>
                     <button id="btnImportGeo" image="importgeo" size="normal"  getLabel = "getLLLang" onAction="clickRibbonImportGeobase"/>
                 </group>
+                <group id="customGroupExport" getLabel="getLLLang">
+                    <button id="btnExport"  getLabel = "getLLLang" image="download" size="normal" onAction="clickRibbonExport"/>
+                    <button id="btnExpAna" image="anaexport" size="normal"  getLabel = "getLLLang" onAction="clickRibbonExportAnalysis"/>
+                </group>
                 <group id="customGroupTabPrint" getLabel="getLLLang">
                     <button id="btnOpenPrint" getLabel="getLLLang" image="openprint" size="normal" onAction="clickRibbonOpenPrint"/>
-                    <button id = "btnOpenForm" getLabel="getLLLang" imageMso="ControlSubFormReport" size="normal" onAction="clickRibbonOpenCRF"/>
+                    <!--<button id = "btnOpenForm" getLabel="getLLLang" imageMso="ControlSubFormReport" size="normal" onAction="clickRibbonOpenCRF"/>-->
                     <button id="btnClosePrint" getLabel="getLLLang" imageMso="PrintPreviewClose" size="normal" onAction="clickRibbonClosePrint"/>
                     <button id="btnRotateHead" getLabel="getLLLang" imageMso="ObjectRotateFree" size="normal" onAction="clickRibbonRotateAll"/>
                     <button id="btnRowHeight" getLabel="getLLLang" imageMso="RowHeight" size="normal" onAction="clickRibbonRowHeight"/>
                     <button id="btnPrintLL" getLabel="getLLLang" imageMso="FilePrint" size="normal" onAction="clickRibbonPrintLL"/>
+                </group>
+                 <group id="customGroupVarLab">
+                    <button id="btnOpenLab" image="openvarlabels" size="large"  getLabel = "getLLLang" onAction="clickRibbonOpenVarLab"/>
                 </group>
                 <group id="customGroupAdvanced">
                     <button id="btnAdvanced" image="settings" getLabel="getLLLang" size="large" onAction="clickRibbonAdvanced"/>
