@@ -52,7 +52,7 @@ utils::zip(
     files = c(
     glue::glue("{obt_all_folder}/setup-{rel_date}.xlsb"),
     glue::glue("{obt_all_folder}/designer_{actual_branch}-{rel_date}.xlsb"),
-    glue::glue("{obt_all_folder}/_ribbontemplate_{actual_branch}.xlsb"),
+    glue::glue("{obt_all_folder}/_ribbontemplate_{actual_branch}-{rel_date}.xlsb"),
     "./automation/run_designer_on_windows.R",
     "./automation/rundesigner.vbs"
     ),
