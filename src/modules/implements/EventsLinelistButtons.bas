@@ -950,7 +950,11 @@ Public Sub ClickImportData()
             Set csTab = CustomTable.Create(Lo)
             pass.UnProtect sh.Name
             On Error Resume Next
+            'Remove all Filters for the listObjects in the current worksheet before import
+            If Not (Lo.AutoFilter Is Nothing) Then Lo.AutoFilter.ShowAllData
+            'Delete all empty rows brefore import (resize)
             csTab.RemoveRows totalCount:=nbBlank
+
             On Error GoTo 0
             pass.Protect sh.Name
         End If
