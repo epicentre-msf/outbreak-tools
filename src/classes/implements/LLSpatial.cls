@@ -172,7 +172,8 @@ Private Function ListOfExistingVarNames(ByVal varName As String) As BetterArray
   Set listRng = sh.ListObjects("listofgeovars").Range
 
   Do While (Not (listRng.Find(What:=varName, lookAt:=xlPart, MatchCase:=True) Is Nothing))
-    Set cellRng = listRng.Find(What:=varName, lookAt:=xlPart, MatchCase:=True)
+    Set cellRng = listRng.Find(What:=varName, lookAt:=xlPart, MatchCase:=True, _
+                               after:=listRng.Cells(listRng.Rows.Count, 1))
     listTab.Push cellRng.Value
 
     'Exit the loop on those two conditions
