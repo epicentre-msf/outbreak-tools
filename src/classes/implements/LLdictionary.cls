@@ -28,7 +28,7 @@ Private DICTIONARYADDEDCOLUMNS As BetterArray
 Private Const SHEETTYPEVERTICAL As String = "vlist1D"
 Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
 Private Const CLASSNAME As String = "ILLdictionary"
-Private Const TOTALNUMBEROFEXPORTS As Integer = 5
+Private Const TOTALNUMBEROFEXPORTS As Integer = 6
 
 Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, _
                        ByVal dictStartColumn As Long) As ILLdictionary
