@@ -187,15 +187,15 @@ Private Sub AddType()
 
         If varFormat = vbNullString Then
             'Default format if there is nothing
-            formatText = IIf(varTypes = "decimal", "#,##0.00;-#,##0.00;;@", "###0;-###0;;@")
+            formatText = IIf(varTypes = "decimal", "#,##0.00;-#,##0.00;0.00;@", "###0;-###0;0;@")
         'Other formats
         ElseIf varFormat = "integer" Then
 
-            formatText = "###0;-###0;;@"
+            formatText = "###0;-###0;0;@"
 
         ElseIf varFormat = "round0" Then
 
-            formatText = "#,##0;-#,##0;;@"
+            formatText = "#,##0;-#,##0;0;@"
 
         ElseIf varFormat = "percentage0" Then
 
