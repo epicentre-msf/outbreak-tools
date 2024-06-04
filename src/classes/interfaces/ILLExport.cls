@@ -18,25 +18,19 @@ Attribute VB_Description = "Interface of export object"
 Option Explicit
 
 Public Enum ExportScope
-    ExportOne = 1
-    ExportTwo = 2
-    ExportThree = 3
-    ExportFour = 4
-    ExportFive = 5
-    ExportSix = 6
-    ExportSeven = 7
-    ExportEight = 8
-    ExportNine = 9
-    ExportTen = 10
-    
-    ExportAna = 98
-    ExportAll = 99
+  ExportAna = 98
+  ExportAll = 99
 End Enum
 
 'Exposed methods
 'Get the value of one column for one expor type
 Public Property Get Value(ByVal colName As String, ByVal exportNumber As Integer) As String
 End Property
+
+'Get the total number of exports
+Public Property Get NumberOfExports() As Long
+End Property
+
 
 'In the linelist, get the fileName of an export
 Public Property Get ExportFileName(ByVal scope As Byte, _

@@ -125,6 +125,9 @@ Private Function ClearChunk(ByVal chunk As String) As String
     ClearChunk = Application.WorksheetFunction.Trim(newChunk)
 End Function
 
+Private Property Get NumberOfExports() As Long
+    NumberOfExports = Data.DataRange.Rows.Count
+End Property
 
 'Find a path of an export (using the dictionary)
 Private Property Get ExportFileName(ByVal scope As Byte, _
@@ -256,4 +259,8 @@ Private Property Get ILLExport_ExportFileName(ByVal scope As Byte, _
                                               ByVal dict As ILLdictionary, _
                                               ByVal pass As ILLPasswords) As String
     ILLExport_ExportFileName = ExportFileName(scope, dict, pass)
+End Property
+
+Private Property Get ILLExport_NumberOfExports()
+    ILLExport_NumberOfExports = NumberOfExports()
 End Property
