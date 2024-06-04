@@ -31,6 +31,7 @@ Private Const RNGLISTAUTOUPDATED As String = "RNG_UpdateListAuto"
 Private Const RNGIMPORTDONE As String = "RNG_ImportDone"
 Private Const RNGGEOBASEMANUALUPDATE As String = "RNG_GeoUpdateManual"
 Private Const RNGSHOWALLOPTIONALS As String = "RNG_ShowAllOptionals"
+Private Const RNGEXPORTINIT As String = "RNG_ExportInit"
 
 Private UPDATERANGESLIST As BetterArray
 

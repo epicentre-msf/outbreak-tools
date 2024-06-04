@@ -420,7 +420,8 @@ Private Sub PrepareTemporarySheets()
     '.. You can add here some ranges for further analysis
 
     namesArray.Clear
-    namesArray.Push "RNG_UpdateListAuto", "RNG_ImportDone", "RNG_GeoUpdateManual", "RNG_ShowAllOptionals"
+    namesArray.Push "RNG_UpdateListAuto", "RNG_ImportDone", "RNG_GeoUpdateManual", _ 
+                    "RNG_ShowAllOptionals", "RNG_ExportInit"
     Set rng = sh.Cells(1, 1)
     For counter = namesArray.LowerBound To namesArray.UpperBound
         rng.Name = namesArray.Item(counter)

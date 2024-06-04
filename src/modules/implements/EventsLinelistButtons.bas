@@ -481,75 +481,109 @@ Public Sub ClickExport()
 
     Const COMMANDHEIGHT As Integer = 35
     Const COMMANDGAPS As Byte = 10
-    Const MAXIMUMNUMBEROFEXPORTS As Integer = 10
+    
 
     Dim exportNumber As Integer
     Dim topPosition As Integer
-    Dim exp As ILLExport
+    Dim expObj As ILLExport
     Dim expsh As Worksheet
-
-    Set expsh = ThisWorkbook.Worksheets(EXPORTSHEET)
-    Set exp = LLExport.Create(expsh)
+    Dim totalNumberOfExports As Long
+    Dim controlCommand As String
+    'Dynamically allocate dimensions of the buttons on the form
+    Dim dynamicHeight As Long
+    Dim dynamicGap As Long
+    Dim upObj As IUpVal
+    Dim expInit As Boolean 'Test if the export has been initialized
+    Dim vbComp As Object
 
     'initialize translations
     InitializeTrads
-    topPosition = COMMANDGAPS
+
+    Set upObj = UpVal.Create(ThisWorkbook.Worksheets(UPDATESHEET))
+    expInit = (upObj.Value("RNG_ExportInit") = "yes")
+    Set vbComp = wb.VBProject.VBComponents("F_Export")
+    
 
     On Error GoTo errLoadExp
 
     With F_Export
-        For exportNumber = 1 To MAXIMUMNUMBEROFEXPORTS
-            If Not exp.IsActive(exportNumber) Then
-                .Controls("CMD_Export" & exportNumber).Visible = False
-            Else
-                .Controls("CMD_Export" & exportNumber).Visible = True
-                .Controls("CMD_Export" & exportNumber).Caption = exp.Value("label button", exportNumber)
-                .Controls("CMD_Export" & exportNumber).Top = topPosition
-                .Controls("CMD_Export" & exportNumber).height = COMMANDHEIGHT
-                .Controls("CMD_Export" & exportNumber).width = 160
-                .Controls("CMD_Export" & exportNumber).Left = 20
-                .Controls("CMD_Export" & exportNumber).WordWrap = True
-                topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
+        'Dynamically create and add buttons to the form
+        Set expsh = ThisWorkbook.Worksheets(EXPORTSHEET)
+        Set expObj = LLExport.Create(expsh)
+        
+        totalNumberOfExports = expObj.NumberOfExports()
+        topPosition = COMMANDGAPS
+        dynamicHeight = COMMANDHEIGHT * totalNumberOfExports / 5
+        dynamicGap = COMMANDGAPS * totalNumberOfExports / 5
+        
+        For exportNumber = 1 To totalNumberOfExports
+            'Add the control if not initialized
+            If (Not expInit) Then
+                .Controls.Add("Forms.CommandButton.1", "CMDExport" & exportNumber, False)
+                'Add the code of the export in the module
+                controlCommand = "Private Sub " & "CMDExport" & _ 
+                                 "_Click()" & Chr(13) & _
+                                 "CreateExport " & exportNumber & _ 
+                                  Chr(13) & "End Sub"
+                With vbComp
+                    .InsertLines .CountOfLines + 4, controlCommand
+                End With
+            End If
+
+            If expObj.IsActive(exportNumber) Then 
+                .Controls("CMDExport" & exportNumber).Visible = True
+                .Controls("CMDExport" & exportNumber).Caption = expObj.Value("label button", exportNumber)
+                .Controls("CMDExport" & exportNumber).Top = topPosition
+                .Controls("CMDExport" & exportNumber).height = dynamicHeight
+                .Controls("CMDExport" & exportNumber).width = 160
+                .Controls("CMDExport" & exportNumber).Left = 20
+                .Controls("CMDExport" & exportNumber).WordWrap = True
+                topPosition = topPosition + dynamicHeight + dynamicGap
             End If
         Next
+
+        'Initialize the export form
+        expObj.SetValue "RNG_ExportInit", "yes"
+
+        'Overall height and width of the form and other parts of the form ------
 
         'Height of checks (use filtered data)
         .CHK_ExportFiltered.Top = topPosition + 30
         .CHK_ExportFiltered.Left = 30
         .CHK_ExportFiltered.width = 160
-        topPosition = topPosition + 40 + COMMANDHEIGHT + COMMANDGAPS
+        topPosition = topPosition + 40 + dynamicHeight + dynamicGap
 
         'Height of command for new key
         .CMD_NewKey.Top = topPosition
-        .CMD_NewKey.height = COMMANDHEIGHT - 10
+        .CMD_NewKey.height = dynamicHeight - 10
         .CMD_NewKey.width = 160
         .CMD_NewKey.Left = 20
 
-        topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
+        topPosition = topPosition + dynamicHeight + dynamicGap
 
         'Show Private key command
         .CMD_ShowKey.Top = topPosition
-        .CMD_ShowKey.height = COMMANDHEIGHT - 10
+        .CMD_ShowKey.height = dynamicHeight - 10
         .CMD_ShowKey.width = 160
         .CMD_ShowKey.Left = 20
 
-        topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
+        topPosition = topPosition + dynamicHeight + dynamicGap
 
         'Quit command
         .CMD_Back.Top = topPosition
-        .CMD_Back.height = COMMANDHEIGHT - 10
+        .CMD_Back.height = dynamicHeight - 10
         .CMD_Back.width = 160
         .CMD_Back.Left = 20
 
-        topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
-
-        'Overall height and width of the form
+        topPosition = topPosition + dynamicHeight + dynamicGap
 
         .height = topPosition + 50
         .width = 200
+
+        'Show the form
+        .Show
     End With
 
-    F_Export.Show
     Exit Sub
 
 errLoadExp:
