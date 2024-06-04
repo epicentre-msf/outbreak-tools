@@ -18,8 +18,8 @@ Attribute VB_Description = "Interface of export object"
 Option Explicit
 
 Public Enum ExportScope
-  ExportAna = 98
-  ExportAll = 99
+  ExportAna = 998
+  ExportAll = 999
 End Enum
 
 'Exposed methods

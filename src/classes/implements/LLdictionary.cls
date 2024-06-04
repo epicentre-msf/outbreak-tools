@@ -20,6 +20,7 @@ Implements ILLdictionary
 'Types of the class
 Private Type TDictionary
     dictDataSheet As IDataSheet                  'Worksheet data of the dictionary
+    numberOfExports As Long
 End Type
 
 Private this As TDictionary
@@ -28,10 +29,11 @@ Private DICTIONARYADDEDCOLUMNS As BetterArray
 Private Const SHEETTYPEVERTICAL As String = "vlist1D"
 Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
 Private Const CLASSNAME As String = "ILLdictionary"
-Private Const TOTALNUMBEROFEXPORTS As Integer = 6
+Private Const DEFAULTNUMBEROFEXPORTS As Long = 20
 
 Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, _
-                       ByVal dictStartColumn As Long) As ILLdictionary
+                       ByVal dictStartColumn As Long,
+                       Optional ByVal numberOfExports As Long = DEFAULTNUMBEROFEXPORTS) As ILLdictionary
 
     Dim customDataSheet As IDataSheet
 
@@ -40,6 +42,7 @@ Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, 
 
     With New LLdictionary
         Set .Data = customDataSheet
+        .TotalNumberOfExports = numberOfExports
         Set Create = .Self
     End With
 End Function
@@ -55,6 +58,18 @@ End Property
 
 Public Property Set Data(ByVal customDataSheet As IDataSheet)
     Set this.dictDataSheet = customDataSheet
+End Property
+
+Public Property Get TotalNumberOfExports() As Long
+    TotalNumberOfExports = this.numberOfExports
+End Property
+
+Public Property Let TotalNumberOfExports(ByVal numberOfExports As Long)
+    If numberOfExports <> 0 Then
+        this.numberOfExports = numberOfExports
+    Else
+        this.numberOfExports = DEFAULTNUMBEROFEXPORTS
+    End If
 End Property
 
 'Worksheet
@@ -117,7 +132,7 @@ Private Sub ClassArraysInitialize()
                             "control", "control details", "unique"
 
     'Push the number of allowed exports                        
-    For counter = 1 To TOTALNUMBEROFEXPORTS
+    For counter = 1 To TotalNumberOfExports()
         DICTIONARYCOLUMNS.Push "export " & CStr(counter)
     Next
 

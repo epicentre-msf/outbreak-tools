@@ -33,8 +33,9 @@ Public Property Get DesignFormat() As ILLFormat: End Property
 Public Property Get MainObject() As IMain: End Property
 Public Property Get Password() As ILLPasswords: End Property 'Passwords
 
-Public Property Get geoObject() As ILLGeo: End Property 'Geo object
-Public Property Get Analysis() As ILLAnalysis: End Property 'Analysis
+Public Property Get geoObject() As ILLGeo: End Property      'Geo object
+Public Property Get Analysis() As ILLAnalysis: End Property  'Analysis
+Public Property Get NumberOfExports() As Long: End Property  'Get the number of exports of the linelist
 
 'Exposed methods
 'Categories of one variable

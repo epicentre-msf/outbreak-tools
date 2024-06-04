@@ -135,10 +135,12 @@ Private Property Get ExportDictionary() As ILLdictionary
   Dim dict As ILLdictionary
   Dim wb As Workbook
   Dim tempsh As Worksheet
+  Dim nbExp As Long
 
   Set wb = InputWkb()
   Set tempsh = wb.Worksheets(TEMPSHEET)
-  Set dict = LLdictionary.Create(tempsh, 1, 1)
+  nbExp = NumberOfExports()
+  Set dict = LLdictionary.Create(tempsh, 1, 1, nbExp)
   Set ExportDictionary = dict
 
 End Property
@@ -155,6 +157,11 @@ Private Property Get ExportObject() As ILLExport
   Set ExportObject = expobj
 End Property
 
+Private Property Get NumberOfExports() As Long
+  Dim expObj As ILLExport
+  Set expObj = ExportObject()
+  NumberOfExports = expObj.NumerOfExports()
+End Property
 
 'Prepare the output workbook
 'withAnalysis: Add analysis worksheets
@@ -179,6 +186,7 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False, _
   Dim counter As Long
   Dim prevSheetName As String
   Dim expDictRng As Range
+  Dim nbExp As Long
   
   
   'Variables for p-codes removal from the exports
@@ -190,7 +198,8 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False, _
   Set inpwb = InputWkb()
   Set tempsh = inpwb.Worksheets(TEMPSHEET)
   Set dictsh = inpwb.Worksheets(DICTIONARYSHEET)
-  Set dict = LLdictionary.Create(dictsh, 1, 1)
+  nbExp = NumberOfExports()
+  Set dict = LLdictionary.Create(dictsh, 1, 1, nbExp)
   Set dictData = New BetterArray
   Set sheetNamesList = New BetterArray
   Set outwb = outputWkb()
@@ -384,14 +393,14 @@ Private Sub AddMetaData(ByVal scope As Byte, ByVal includeShowHide As Boolean, B
 
   'Export dictionary of scope of the export
   Set sh = inpwb.Worksheets(DICTIONARYSHEET)
-  Set dict = LLdictionary.Create(sh, 1, 1)
+  Set dict = LLdictionary.Create(sh, 1, 1, NumberOfExports())
 
   exportColumn = IIf(scope <> ExportAll, "export " & scope, "__all__")
   dict.Export toWkb:=outwb, exportType:=exportColumn, _
               addListObject:=False, Hide:=xlSheetVisible
 
   'This Tag shows that the exported dictionary is prepared (important for eventual imports process)
-  Set outdict = LLdictionary.Create(outwb.Worksheets(DICTIONARYSHEET), 1, 1)
+  Set outdict = LLdictionary.Create(outwb.Worksheets(DICTIONARYSHEET), 1, 1, NumberOfExports())
   Set outDictRng = outdict.DataRange()
    'Add preparation steps to output dictionary (to be able to use variables)
   outDictRng.Cells(outDictRng.Rows.Count + 1, 1).Font.color = vbBlue
@@ -482,7 +491,7 @@ Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
 
   'Initialize all show/hide elements in the current workbook
   Set tradsmess = MessagesTrads()
-  Set currDict = LLdictionary.Create(inpwb.Worksheets(DICTIONARYSHEET), 1, 1)
+  Set currDict = LLdictionary.Create(inpwb.Worksheets(DICTIONARYSHEET), 1, 1, NumberOfExports())
   
   'Initialize show/hide tables
   For Each sh In inpwb.Worksheets
@@ -501,7 +510,7 @@ Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
     .Worksheets.Add(.Worksheets(.Worksheets.Count)).Name = SHOWHIDESHEET
     Set inpsh = inpwb.Worksheets(SHOWHIDESHEET)
     Set outsh = .Worksheets(SHOWHIDESHEET)
-    Set outdict = LLdictionary.Create(.Worksheets(DICTIONARYSHEET), 1, 1)
+    Set outdict = LLdictionary.Create(.Worksheets(DICTIONARYSHEET), 1, 1, NumberOfExports())
   End With
   
   'output variables (operate on dictionary in output workbook)
@@ -783,7 +792,7 @@ Private Sub Save(ByVal trads As ITranslation, _
   Set inpwb = InputWkb()
   Set outwb = outputWkb()
   
-  Set dict = LLdictionary.Create(inpwb.Worksheets(DICTIONARYSHEET), 1, 1)
+  Set dict = LLdictionary.Create(inpwb.Worksheets(DICTIONARYSHEET), 1, 1, NumberOfExports())
   Set pass = LLPasswords.Create(inpwb.Worksheets(PASSWORDSHEET))
   
   'Get the fileName, filePath and fileExtension of the export

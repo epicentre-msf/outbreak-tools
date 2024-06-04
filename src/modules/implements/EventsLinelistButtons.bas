@@ -84,9 +84,9 @@ Public Sub ClickShowHide()
 
     'initialize the translations of forms and messages
     InitializeTrads
-
-    Set dict = LLdictionary.Create(ThisWorkbook.Worksheets(DICTSHEET), 1, 1)
+    
     Set upObj = UpVal.Create(ThisWorkbook.Worksheets(UPDATESHEET))
+    Set dict = LLdictionary.Create(ThisWorkbook.Worksheets(DICTSHEET), 1, 1)
 
     'This is the private show hide object, used in future subs.
     Set showHideObject = LLShowHide.Create(tradsmess, dict, sh)

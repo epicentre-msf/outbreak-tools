@@ -126,7 +126,9 @@ Private Function ClearChunk(ByVal chunk As String) As String
 End Function
 
 Private Property Get NumberOfExports() As Long
+    On Error Resume Next
     NumberOfExports = Data.DataRange.Rows.Count
+    On Error GoTo 0
 End Property
 
 'Find a path of an export (using the dictionary)
