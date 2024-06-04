@@ -83,7 +83,7 @@ Public Property Get Dictionary() As ILLdictionary
     Set sh = Wkb.Worksheets(DICTIONARYSHEET)
 
     'StartRow is 1, start column is 1
-    Set dict = LLdictionary.Create(sh, 1, 1)
+    Set dict = LLdictionary.Create(sh, 1, 1, NumberOfExports())
     Set Dictionary = dict
 End Property
 
@@ -129,6 +129,10 @@ Public Property Get ExportObject() As ILLExport
     Dim sh As Worksheet
     Set sh = Wkb.Worksheets(EXPORTSHEET)
     Set ExportObject = LLExport.Create(sh)
+End Property
+
+Private Property Get NumberOfExports() As Long
+    NumberOfExports = ExportObject.NumerOfExports()
 End Property
 
 Public Property Get Analysis() As ILLAnalysis
@@ -218,8 +222,8 @@ Private Function Categories(ByVal varName As String, Optional ByVal useShortlabe
 
     If categoryType = "choice_formula" Then
         categoryName = Replace(Split(controlDetails, ",")(0), "CHOICE_FORMULA(", "")
-    ElseIf (categoryType = "choice_manual") Or _ 
-           (categoryType = "choice_multiple") Or _ 
+    ElseIf (categoryType = "choice_manual") Or _
+           (categoryType = "choice_multiple") Or _
            (categoryType = "choice_custom") Then
 
         categoryName = vars.Value(varName:=varName, colName:="control details")
@@ -275,13 +279,7 @@ Private Sub Prepare()
     mainobj.CheckReadiness mainTrads
     If Not mainobj.Ready() Then Exit Sub
 
-    Set dict = Dictionary()
-    Set choi = Choices()
-    Set trans = Trads()
-    Set expobj = ExportObject()
-    Set ana = Analysis()
     Set geo = geoObject()
-
     'Import dictionary, and geobase, as well as choices
     setPath = mainobj.ValueOf("setuppath")
     BusyApp
@@ -295,23 +293,28 @@ Private Sub Prepare()
     sheetExists inpWkb, EXPORTSHEET
     sheetExists inpWkb, ANALYSISSPECSSHEET
 
+    'Import the Exports specifications from the setup (Number of exports is used in the dictionary)
+    Set expobj = ExportObject()
+    Set sh = inpWkb.Worksheets(EXPORTSHEET)
+    expobj.ImportSpecs sh, 4, 1
+
     'Import the dictionary data
+    Set dict = Dictionary()    
     Set sh = inpWkb.Worksheets(DICTIONARYSHEET)
     dict.Import sh, fromStartRow:=5, fromStartcol:=1
 
     'Import the choice data
     Set sh = inpWkb.Worksheets(CHOICESSHEET)
+    Set choi = Choices()
     choi.Import sh, fromStartRow:=4, fromStartcol:=1
 
     'Import the translations
+    Set trans = Trads()
     trans.ImportTranslation inpWkb
-
-    'Import the Exports specifications from the setup
-    Set sh = inpWkb.Worksheets(EXPORTSHEET)
-    expobj.ImportSpecs sh, 4, 1
 
     'Import the analysis
     Set sh = inpWkb.Worksheets(ANALYSISSPECSSHEET)
+    Set ana = Analysis()
     ana.Import sh
 
     inpWkb.Close savechanges:=False
@@ -376,8 +379,6 @@ Private Sub Prepare()
 
     'Translate the analysis
     ana.Translate dictTrads
-
-    'Return the state of the application
 End Sub
 
 'Add list auto origin informations
@@ -598,8 +599,12 @@ End Sub
 
 Private Sub ILinelistSpecs_ErrorManage(Optional ByVal textMessage As String = vbNullString)
     'Ask the user if he wants to see (Or not) the uncompleted linelist
-    MsgBox "An internal Error occured when dealing with the setup with specified informations: " & _ 
+    MsgBox "An internal Error occured when dealing with the setup with specified informations: " & _
             Chr(10) &  textMessage & Chr(10) & _
             "Aborting linelist creation process.", _
             vbExclamation + vbOkOnly, "ERROR"
 End Sub
+
+Private Property Get ILinelistSpecs_NumberOfExports() As Long
+    ILinelistSpecs_NumberOfExports = NumberOfExports()
+End Property

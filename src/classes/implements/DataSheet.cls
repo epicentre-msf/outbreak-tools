@@ -415,7 +415,10 @@ Private Sub ImportFormat(ByVal impRng As Range)
     Dim endrw As Long
 
     Set FUNS = Application.WorksheetFunction
+    
+    On Error Resume Next
     headerName = FUNS.Trim(LCase(impRng.Cells(1, 1).Value))
+    On Error GoTo 0
 
     'Test if the column exists before proceeding
     If (Not ColumnExists(headerName)) Or (impRng Is Nothing) Then Exit Sub

@@ -410,6 +410,7 @@ Private Sub PrepareTemporarySheets()
     Set trads = lData.TransObject()
 
     'On Update sheets ----------------------------------------------------------
+    
     sheetName = lData.TemporarySheetName(TemporarySheetUpdates)
     Set sh = outWkb.Worksheets(sheetName)
 
@@ -421,12 +422,15 @@ Private Sub PrepareTemporarySheets()
 
     namesArray.Clear
     namesArray.Push "RNG_UpdateListAuto", "RNG_ImportDone", "RNG_GeoUpdateManual", _ 
-                    "RNG_ShowAllOptionals", "RNG_ExportInit"
+                    "RNG_ShowAllOptionals", "RNG_ExportInit", "RNG_NumberExports"
     Set rng = sh.Cells(1, 1)
+    
     For counter = namesArray.LowerBound To namesArray.UpperBound
         rng.Name = namesArray.Item(counter)
         Set rng = rng.Offset(2)
     Next
+
+    sh.Range("RNG_NumberExports").Value = lData.NumerOfExports()
 
     'On Import report sheets ---------------------------------------------------
 

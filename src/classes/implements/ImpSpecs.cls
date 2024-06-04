@@ -33,7 +33,7 @@ Private Const MESSTRANSLATIONSHEET      As String = "LinelistTranslation"
 Private Const METADATASHEET             As String = "Metadata"
 Private Const GEOSHEET                  As String = "Geo"
 Private Const PASSWORDSHEET             As String = "__pass" 'password sheets
-Private Const IMPREPORTSHEET               As String = "import_rep__" 'temporary boggy sheet for report
+Private Const IMPREPORTSHEET            As String = "import_rep__" 'temporary boggy sheet for report
 Private Const SHOWHIDESHEET             As String = "show_hide__"
 Private Const UPDATESHEET               As String = "updates__"
 
@@ -143,9 +143,16 @@ End Property
 
 Private Property Get Dictionary() As ILLdictionary
   Dim wb As Workbook
+  Dim upobj As IUpVal
+  Dim nbExp As Long
 
   Set wb = CurrentWorkbook()
-  Set Dictionary = LLdictionary.Create(wb.Worksheets(DICTIONARYSHEET), 1, 1)
+  Set upObj = UpdateObject()
+  On Error Resume Next
+  nbExp = CLng(upObj.Value("RNG_NumberExports"))
+  On Error GoTo 0
+
+  Set Dictionary = LLdictionary.Create(wb.Worksheets(DICTIONARYSHEET), 1, 1, nbExp)
 End Property
 
 Private Property Get ReportObject() As IImpRep
