@@ -32,6 +32,7 @@ Private Const RNGIMPORTDONE As String = "RNG_ImportDone"
 Private Const RNGGEOBASEMANUALUPDATE As String = "RNG_GeoUpdateManual"
 Private Const RNGSHOWALLOPTIONALS As String = "RNG_ShowAllOptionals"
 Private Const RNGEXPORTINIT As String = "RNG_ExportInit"
+Private Const RNGNUMBEXP As String = "RNG_NumberExports"
 
 Private UPDATERANGESLIST As BetterArray
 
@@ -103,7 +104,8 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
   Set rngArray = New BetterArray
   If sh Is Nothing Then ThrowErrorUnableInstanciate "Update values worksheet not defined"
 
-  rngArray.Push RNGLISTAUTOUPDATED, RNGIMPORTDONE, RNGGEOBASEMANUALUPDATE, RNGSHOWALLOPTIONALS
+  rngArray.Push RNGLISTAUTOUPDATED, RNGIMPORTDONE, RNGGEOBASEMANUALUPDATE, RNGSHOWALLOPTIONALS, _ 
+                RNGEXPORTINIT, RNGNUMBEXP
 
   For counter = rngArray.LowerBound To rngArray.UpperBound
     rngName = rngArray.Item(counter)
