@@ -301,11 +301,19 @@ Private Sub SortAnalysis()
         'Row count is the number of elements in the row that triggers deletion of the
         'entire row of the listObject
         rowCount = Switch(loName = TIMESERIES, 2, loName = GRAPHTIMESERIES, 4, True, 0)
-
-        colIndex = ColumnIndex(Lo, "section")
-        If loName = GRAPHTIMESERIES Or loName = TITLEGRAPHTIMESERIES Then colIndex = ColumnIndex(Lo, "graph id")
+        
+        If (loName = GRAPHTIMESERIES Or loName = TITLEGRAPHTIMESERIES) Then 
+            colIndex = ColumnIndex(Lo, "graph id")
+        ElseIf (loName = TIMESERIES) Then
+            colIndex = ColumnIndex(Lo, "table order")
+        Else
+            colIndex = ColumnIndex(Lo, "section")
+        End If
 
         SortListOnFirst Lo, colIndex
+
+        'Sort on table order for timeseries after sorting on table order
+        If (loName = TIMESERIES) Then SortListOnFirst Lo, ColumnIndex(Lo, "section")
 
         'resize the listObject
         ResizeLo Lo, totalRowCount:=rowCount
