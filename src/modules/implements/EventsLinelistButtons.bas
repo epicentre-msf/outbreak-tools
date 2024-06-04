@@ -500,21 +500,21 @@ Public Sub ClickExport()
     InitializeTrads
 
     Set upObj = UpVal.Create(ThisWorkbook.Worksheets(UPDATESHEET))
-    expInit = (upObj.Value("RNG_ExportInit") = "yes")
     Set vbComp = wb.VBProject.VBComponents("F_Export")
+    Set expsh = ThisWorkbook.Worksheets(EXPORTSHEET)
+    Set expObj = LLExport.Create(expsh)
+        
+    expInit = (upObj.Value("RNG_ExportInit") = "yes")
+    totalNumberOfExports = expObj.NumberOfExports()
+    topPosition = COMMANDGAPS
+    dynamicHeight = COMMANDHEIGHT * totalNumberOfExports / 5
+    dynamicGap = COMMANDGAPS * totalNumberOfExports / 5
     
 
     On Error GoTo errLoadExp
 
     With F_Export
         'Dynamically create and add buttons to the form
-        Set expsh = ThisWorkbook.Worksheets(EXPORTSHEET)
-        Set expObj = LLExport.Create(expsh)
-        
-        totalNumberOfExports = expObj.NumberOfExports()
-        topPosition = COMMANDGAPS
-        dynamicHeight = COMMANDHEIGHT * totalNumberOfExports / 5
-        dynamicGap = COMMANDGAPS * totalNumberOfExports / 5
         
         For exportNumber = 1 To totalNumberOfExports
             'Add the control if not initialized
@@ -523,7 +523,7 @@ Public Sub ClickExport()
                 'Add the code of the export in the module
                 controlCommand = "Private Sub " & "CMDExport" & _ 
                                  "_Click()" & Chr(13) & _
-                                 "CreateExport " & exportNumber & _ 
+                                 "  CreateExport " & exportNumber & _ 
                                   Chr(13) & "End Sub"
                 With vbComp
                     .InsertLines .CountOfLines + 4, controlCommand

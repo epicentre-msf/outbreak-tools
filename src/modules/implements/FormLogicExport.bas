@@ -100,46 +100,6 @@ Private Sub AskFilter(ByVal tradmess As ITranslation)
 End Sub
 
 
-Private Sub CMD_Export1_Click()
-    CreateExport 1
-End Sub
-
-Private Sub CMD_Export2_Click()
-    CreateExport 2
-End Sub
-
-Private Sub CMD_Export3_Click()
-    CreateExport 3
-End Sub
-
-Private Sub CMD_Export4_Click()
-    CreateExport 4
-End Sub
-
-Private Sub CMD_Export5_Click()
-    CreateExport 5
-End Sub
-
-Private Sub CMD_Export6_Click()
-    CreateExport 6
-End Sub
-
-Private Sub CMD_Export7_Click()
-    CreateExport 7
-End Sub
-
-Private Sub CMD_Export8_Click()
-    CreateExport 8
-End Sub
-
-Private Sub CMD_Export9_Click()
-    CreateExport 9
-End Sub
-
-Private Sub CMD_Export10_Click()
-    CreateExport 10
-End Sub
-
 Private Sub CMD_NewKey_Click()
     InitializeTrads
     pass.GenerateKey tradmess
