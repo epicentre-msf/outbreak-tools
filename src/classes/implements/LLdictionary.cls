@@ -32,7 +32,7 @@ Private Const CLASSNAME As String = "ILLdictionary"
 Private Const DEFAULTNUMBEROFEXPORTS As Long = 20
 
 Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, _
-                       ByVal dictStartColumn As Long,
+                       ByVal dictStartColumn As Long, _
                        Optional ByVal numberOfExports As Long = DEFAULTNUMBEROFEXPORTS) As ILLdictionary
 
     Dim customDataSheet As IDataSheet
@@ -113,7 +113,7 @@ Public Property Get Prepared() As Boolean
     Set dictWksh = Wksh()
     Prepared = (dictWksh.Cells(DictEndRow + 1, StartColumn).Font.color = vbBlue) And _
             ColumnExists("table name") And ColumnExists("column index") And _
-            ColumnExists("visibility") And ColumnExists("crf index") And 
+            ColumnExists("visibility") And ColumnExists("crf index") And _
             ColumnExists("crf choices") And ColumnExists("crf status") And _
             (Not ColumnExists("main section sort")) And (Not ColumnExists("main section index"))
 End Property
@@ -274,7 +274,7 @@ Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject A
         GoodSheetNames PreservedSheetsNames
 
         'Add visibility (after adding geoLines)                                            
-        If Not ColumnExists("visibility") And Not ColumnExists("crf status")) Then AddVisibility 'Add visibility for show/Hide
+        If (Not ColumnExists("visibility")) And (Not ColumnExists("crf status")) Then AddVisibility 'Add visibility for show/Hide
 
         'Add the crf line for the crf
         If Not ColumnExists("crf index") Then AppendCRFLineIndex

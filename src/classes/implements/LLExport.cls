@@ -263,6 +263,6 @@ Private Property Get ILLExport_ExportFileName(ByVal scope As Byte, _
     ILLExport_ExportFileName = ExportFileName(scope, dict, pass)
 End Property
 
-Private Property Get ILLExport_NumberOfExports()
+Private Property Get ILLExport_NumberOfExports() As Long
     ILLExport_NumberOfExports = NumberOfExports()
 End Property
