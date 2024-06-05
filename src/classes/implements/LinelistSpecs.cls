@@ -132,7 +132,7 @@ Public Property Get ExportObject() As ILLExport
 End Property
 
 Private Property Get NumberOfExports() As Long
-    NumberOfExports = ExportObject.NumerOfExports()
+    NumberOfExports = ExportObject.NumberOfExports()
 End Property
 
 Public Property Get Analysis() As ILLAnalysis

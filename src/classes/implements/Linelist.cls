@@ -430,7 +430,7 @@ Private Sub PrepareTemporarySheets()
         Set rng = rng.Offset(2)
     Next
 
-    sh.Range("RNG_NumberExports").Value = lData.NumerOfExports()
+    sh.Range("RNG_NumberExports").Value = lData.NumberOfExports()
 
     'On Import report sheets ---------------------------------------------------
 
