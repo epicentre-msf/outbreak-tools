@@ -495,58 +495,62 @@ Public Sub ClickExport()
     Dim upObj As IUpVal
     Dim expInit As Boolean 'Test if the export has been initialized
     Dim vbComp As Object
+    Dim codeMod As Object
+    Dim btn As MSForms.CommandButton
 
     'initialize translations
     InitializeTrads
 
     Set upObj = UpVal.Create(ThisWorkbook.Worksheets(UPDATESHEET))
     Set vbComp = wb.VBProject.VBComponents("F_Export")
+    Set codeMod = vbComp.CodeModule
     Set expsh = ThisWorkbook.Worksheets(EXPORTSHEET)
     Set expObj = LLExport.Create(expsh)
         
     expInit = (upObj.Value("RNG_ExportInit") = "yes")
     totalNumberOfExports = expObj.NumberOfExports()
     topPosition = COMMANDGAPS
-    dynamicHeight = COMMANDHEIGHT * totalNumberOfExports / 5
-    dynamicGap = COMMANDGAPS * totalNumberOfExports / 5
+    dynamicHeight = COMMANDHEIGHT
+    dynamicGap = COMMANDGAPS 
     
 
     On Error GoTo errLoadExp
 
-    With F_Export
-        'Dynamically create and add buttons to the form
+    'Dynamically create and add buttons to the form
         
-        For exportNumber = 1 To totalNumberOfExports
-            'Add the control if not initialized
-            If (Not expInit) Then
-                .Controls.Add("Forms.CommandButton.1", "CMDExport" & exportNumber, False)
-                'Add the code of the export in the module
-                controlCommand = "Private Sub " & "CMDExport" & _ 
-                                 "_Click()" & Chr(13) & _
-                                 "  CreateExport " & exportNumber & _ 
-                                  Chr(13) & "End Sub"
-                With vbComp
-                    .InsertLines .CountOfLines + 4, controlCommand
-                End With
-            End If
+    For exportNumber = 1 To totalNumberOfExports
+        'Add the control if not initialized
+        If (Not expInit) Then
+            Set btn = vbComp.Designer.Controls.Add("Forms.CommandButton.1")
+            btn.Name = "CMDExport" & exportNumber
+            'Add the code of the export in the module
+            controlCommand = "Private Sub " & "CMDExport" & exportNumber & _ 
+                            "_Click()" & Chr(13) & _
+                            "  CreateExport " & exportNumber & _ 
+                            Chr(13) & "End Sub"
+                
+            With codeMod
+                .InsertLines .CountOfLines + 4, controlCommand
+            End With
+        End If
 
-            If expObj.IsActive(exportNumber) Then 
-                .Controls("CMDExport" & exportNumber).Visible = True
-                .Controls("CMDExport" & exportNumber).Caption = expObj.Value("label button", exportNumber)
-                .Controls("CMDExport" & exportNumber).Top = topPosition
-                .Controls("CMDExport" & exportNumber).height = dynamicHeight
-                .Controls("CMDExport" & exportNumber).width = 160
-                .Controls("CMDExport" & exportNumber).Left = 20
-                .Controls("CMDExport" & exportNumber).WordWrap = True
-                topPosition = topPosition + dynamicHeight + dynamicGap
-            End If
-        Next
+        If expObj.IsActive(exportNumber) Then 
+            btn.Visible = True
+            btn.Caption = expObj.Value("label button", exportNumber)
+            btn.Top = topPosition
+            btn.height = dynamicHeight
+            btn.width = 160
+            btn.Left = 20
+            btn.WordWrap = True
+            topPosition = topPosition + dynamicHeight + dynamicGap
+        End If
+    Next
 
-        'Initialize the export form
-        expObj.SetValue "RNG_ExportInit", "yes"
+    'Initialize the export form
+    upObj.SetValue "RNG_ExportInit", "yes"
 
-        'Overall height and width of the form and other parts of the form ------
-
+    'Overall height and width of the form and other parts of the form ------
+    With F_Export
         'Height of checks (use filtered data)
         .CHK_ExportFiltered.Top = topPosition + 30
         .CHK_ExportFiltered.Left = 30
@@ -578,7 +582,7 @@ Public Sub ClickExport()
         topPosition = topPosition + dynamicHeight + dynamicGap
 
         .height = topPosition + 50
-        .width = 200
+        .width = 210
 
         'Show the form
         .Show

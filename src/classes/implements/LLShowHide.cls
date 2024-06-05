@@ -91,7 +91,7 @@ Private Property Get formObject() As Object
 
   scope = ActualScope()
   Select Case scope
-  Case ShowHideScopeHList, ShowHideScopeVList, 
+  Case ShowHideScopeHList, ShowHideScopeVList
     Set formObject = [F_ShowHideLL]
   Case ShowHideScopePrint
     Set formObject = [F_ShowHidePrint]
