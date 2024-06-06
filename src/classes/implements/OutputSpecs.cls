@@ -20,7 +20,7 @@ Implements IOutputSpecs
 Private Type TExpOut
   outwb As Workbook 'Output workbook
   inpwb As Workbook 'Input workbook
-  scope As Byte 'The scope of the export: export 1 to 5 or export for migration
+  scope As Integer 'The scope of the export: export 1 to 5 or more, or export for migration
   folderPath As String 'where to save the exports
   folderSet As Boolean 'Is the path to save the exports set?
   outgeowb As Workbook 'Output geo workbook
@@ -42,7 +42,7 @@ Private Const SHOWHIDESHEET             As String = "show_hide__"
 Private this As TExpOut
 
 
-Public Function Create(currwb As Workbook, ByVal scope As Byte) As IOutputSpecs
+Public Function Create(currwb As Workbook, ByVal scope As Integer) As IOutputSpecs
 
   CheckRequirements currwb
 
@@ -122,11 +122,11 @@ Private Property Get OutputGeoHistoricWkb() As Workbook
 End Property
 
 
-Public Property Get ActualScope() As Byte
+Public Property Get ActualScope() As Integer
   ActualScope = this.scope
 End Property
 
-Public Property Let ActualScope(ByVal scope As Byte)
+Public Property Let ActualScope(ByVal scope As Integer)
     this.scope = scope
 End Property
 
@@ -178,7 +178,7 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False, _
   Dim expName As String
   Dim dict As ILLdictionary
   Dim expdict As ILLdictionary
-  Dim scope As Byte
+  Dim scope As Integer
   Dim sheetNamesList As BetterArray
   Dim outwb As Workbook
   Dim firstSheetName As String
@@ -217,7 +217,7 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False, _
     'otherwise pcodes will be removed as default behavior. If you want pcodes
     'to be exported, you need to explicitly add export pcodes == Yes in the
     'export sheet of the setup file. Otherwise they will be removed from exports.
-    exportpcodes = (expobj.Value("export pcodes", CInt(scope)) = "yes")
+    exportpcodes = (expobj.Value("export pcodes", scope) = "yes")
 
     If Not exportpcodes Then
       pcodesTagList.Push "geo_pcode_adm1", "geo_pcode_adm2", "geo_pcode_adm3", _
@@ -272,7 +272,7 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False, _
   'Add the metadata and other worksheets
   prevSheetName = firstSheetName
   
-  If (expobj.Value("export metadata", CInt(scope)) = "yes") Then
+  If (expobj.Value("export metadata", scope) = "yes") Then
     'In the metadata sheet add tags for show/hide or for 
     AddMetaData scope:=scope, _ 
                 includeShowHide:=True, _ 
@@ -354,7 +354,7 @@ Private Sub AddAnalysis(ByVal prevSheet As String, _
   Next
 End Sub
 
-Private Sub AddMetaData(ByVal scope As Byte, ByVal includeShowHide As Boolean, ByVal keepLabels As Boolean)
+Private Sub AddMetaData(ByVal scope As Integer, ByVal includeShowHide As Boolean, ByVal keepLabels As Boolean)
 
   Dim outwb As Workbook
   Dim inpwb As Workbook
@@ -595,7 +595,7 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
   Dim sheetName As String
   Dim useLabels As Boolean
   Dim expobj As ILLExport
-  Dim scope As Byte
+  Dim scope As Integer
   Dim inpsh As Worksheet
   Dim inpwb As Workbook
   Dim outsh As Worksheet
@@ -609,7 +609,7 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
   Set expobj = ExportObject()
   scope = ActualScope()
 
-  useLabels = (expobj.Value("export header", CInt(scope)) = "variables labels")
+  useLabels = (expobj.Value("export header", scope) = "variables labels")
 
   For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
 
@@ -762,7 +762,7 @@ Private Sub Save(ByVal trads As ITranslation, _
   Dim inpwb As Workbook
   Dim dict As ILLdictionary
   Dim pass As ILLPasswords
-  Dim scope As Byte
+  Dim scope As Integer
   Dim fileExtension As String
   Dim fileName As String
   Dim filePath As String
@@ -798,11 +798,11 @@ Private Sub Save(ByVal trads As ITranslation, _
   'Get the fileName, filePath and fileExtension of the export
   fileName = expobj.ExportFileName(scope, dict, pass)
   filePath = folderPath & Application.PathSeparator & fileName
-  fileExtension = expobj.Value(colName:="file format", exportNumber:=CInt(scope))
+  fileExtension = expobj.Value(colName:="file format", exportNumber:=scope)
   
   If fileExtension = vbNullString Then fileExtension = "xlsx" 'Default extension is xlsx
   
-  addPassword = (expobj.Value(colName:="password", exportNumber:=CInt(scope)) = "yes")
+  addPassword = (expobj.Value(colName:="password", exportNumber:=scope) = "yes")
 
   If addPassword Then filePassword = pass.Value("privatekey")
 
@@ -814,7 +814,7 @@ Private Sub Save(ByVal trads As ITranslation, _
 
   'Prepare the output workbook (create required sheets, add metadata)
   If (scope <> ExportAna) Then
-    withAnalysis = (expobj.Value("export analysis", CInt(scope)) = "yes")
+    withAnalysis = (expobj.Value("export analysis", scope) = "yes")
     Prepare withAnalysis, includeShowHide, keepLabels 
     'Add the Data to export worksheet
     AddData useFilters
