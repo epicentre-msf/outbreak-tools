@@ -481,7 +481,6 @@ Public Sub ClickExport()
 
     Const COMMANDHEIGHT As Integer = 35
     Const COMMANDGAPS As Byte = 10
-    
 
     Dim exportNumber As Integer
     Dim topPosition As Integer
@@ -489,13 +488,9 @@ Public Sub ClickExport()
     Dim expsh As Worksheet
     Dim totalNumberOfExports As Long
     Dim controlCommand As String
-    'Dynamically allocate dimensions of the buttons on the form
-    Dim dynamicHeight As Long
-    Dim dynamicGap As Long
+
     Dim upObj As IUpVal
     Dim expInit As Boolean 'Test if the export has been initialized
-    Dim vbComp As Object
-    Dim codeMod As Object
     Dim btn As MSForms.CommandButton
 
     'initialize translations
@@ -510,76 +505,70 @@ Public Sub ClickExport()
     expInit = (upObj.Value("RNG_ExportInit") = "yes")
     totalNumberOfExports = expObj.NumberOfExports()
     topPosition = COMMANDGAPS
-    dynamicHeight = COMMANDHEIGHT
-    dynamicGap = COMMANDGAPS 
-    
 
     On Error GoTo errLoadExp
 
     'Dynamically create and add buttons to the form
-        
-    For exportNumber = 1 To totalNumberOfExports
-        'Add the control if not initialized
-        If (Not expInit) Then
-            Set btn = vbComp.Designer.Controls.Add("Forms.CommandButton.1")
-            btn.Name = "CMDExport" & exportNumber
-            'Add the code of the export in the module
-            controlCommand = "Private Sub " & "CMDExport" & exportNumber & _ 
-                            "_Click()" & Chr(13) & _
-                            "  CreateExport " & exportNumber & _ 
-                            Chr(13) & "End Sub"
-                
-            With codeMod
-                .InsertLines .CountOfLines + 4, controlCommand
-            End With
-        End If
-
-        If expObj.IsActive(exportNumber) Then 
-            btn.Visible = True
-            btn.Caption = expObj.Value("label button", exportNumber)
-            btn.Top = topPosition
-            btn.height = dynamicHeight
-            btn.width = 160
-            btn.Left = 20
-            btn.WordWrap = True
-            topPosition = topPosition + dynamicHeight + dynamicGap
-        End If
-    Next
-
-    'Initialize the export form
-    upObj.SetValue "RNG_ExportInit", "yes"
-
-    'Overall height and width of the form and other parts of the form ------
     With F_Export
+        
+        For exportNumber = 1 To totalNumberOfExports
+            'Add the control if not initialized
+            If (Not expInit) Then
+                btn.Name = "CMDExport" & exportNumber
+                'Add the code of the export in the module
+                controlCommand = "Private Sub " & "CMDExport" & exportNumber & _ 
+                                "_Click()" & Chr(13) & _
+                                "  CreateExport " & exportNumber & _ 
+                                Chr(13) & "End Sub"
+                    
+            End If
+
+            If expObj.IsActive(exportNumber) Then 
+                btn.Visible = True
+                btn.Caption = expObj.Value("label button", exportNumber)
+                btn.Top = topPosition
+                btn.height = COMMANDHEIGHT
+                btn.width = 160
+                btn.Left = 20
+                btn.WordWrap = True
+                topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
+            End If
+        Next
+
+        'Initialize the export form
+        upObj.SetValue "RNG_ExportInit", "yes"
+
+        'Overall height and width of the form and other parts of the form ------
+    
         'Height of checks (use filtered data)
         .CHK_ExportFiltered.Top = topPosition + 30
         .CHK_ExportFiltered.Left = 30
         .CHK_ExportFiltered.width = 160
-        topPosition = topPosition + 40 + dynamicHeight + dynamicGap
+        topPosition = topPosition + 40 + COMMANDHEIGHT + COMMANDGAPS
 
         'Height of command for new key
         .CMD_NewKey.Top = topPosition
-        .CMD_NewKey.height = dynamicHeight - 10
+        .CMD_NewKey.height = COMMANDHEIGHT - 10
         .CMD_NewKey.width = 160
         .CMD_NewKey.Left = 20
 
-        topPosition = topPosition + dynamicHeight + dynamicGap
+        topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
 
         'Show Private key command
         .CMD_ShowKey.Top = topPosition
-        .CMD_ShowKey.height = dynamicHeight - 10
+        .CMD_ShowKey.height = COMMANDHEIGHT - 10
         .CMD_ShowKey.width = 160
         .CMD_ShowKey.Left = 20
 
-        topPosition = topPosition + dynamicHeight + dynamicGap
+        topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
 
         'Quit command
         .CMD_Back.Top = topPosition
-        .CMD_Back.height = dynamicHeight - 10
+        .CMD_Back.height = COMMANDHEIGHT - 10
         .CMD_Back.width = 160
         .CMD_Back.Left = 20
 
-        topPosition = topPosition + dynamicHeight + dynamicGap
+        topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
 
         .height = topPosition + 50
         .width = 210
