@@ -318,6 +318,7 @@ Private Sub SortAnalysis()
         'resize the listObject
         ResizeLo Lo, totalRowCount:=rowCount
     Next
+
 End Sub
 
 'Translate
