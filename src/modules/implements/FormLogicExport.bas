@@ -12,9 +12,7 @@ Private Const TRADSHEET As String = "Translations"
 Private pass As ILLPasswords
 Private tradform As ITranslation   'Translation of forms
 Private tradmess As ITranslation 'Translation of messasges
-Private expOut As IOutputSpecs
-Private currwb As Workbook
-Private useFilter As Boolean
+
 
 'Initialize translation of forms object
 Private Sub InitializeTrads()
@@ -22,6 +20,7 @@ Private Sub InitializeTrads()
     Dim lltranssh As Worksheet
     Dim dicttranssh As Worksheet
     Dim passsh As Worksheet
+    Dim currwb As Workbook
 
     Set currwb = ThisWorkbook
     Set lltranssh = currwb.Worksheets(LLSHEET)
@@ -31,72 +30,6 @@ Private Sub InitializeTrads()
     Set tradmess = lltrads.TransObject()
     Set passsh = currwb.Worksheets(PASSWORDSHEET)
     Set pass = LLPasswords.Create(passsh)
-
-End Sub
-
-'Subs to speed up the application
-'speed app
-Private Sub BusyApp(Optional ByVal cursor As Long = xlDefault)
-    Application.ScreenUpdating = False
-    Application.EnableAnimations = False
-    Application.Calculation = xlCalculationManual
-    Application.cursor = cursor
-End Sub
-
-'Return back to previous state
-Private Sub NotBusyApp()
-    Application.ScreenUpdating = True
-    Application.EnableAnimations = True
-    Application.cursor = xlDefault
-End Sub
-
-Private Sub CreateExport(ByVal scope As Byte)
-
-    BusyApp cursor:=xlWait
-    
-    'Add Error management
-    On Error GoTo ErrHand
-
-    InitializeTrads
-    AskFilter tradmess
-    Set expOut = OutputSpecs.Create(currwb, scope)
-    expOut.Save tradmess, useFilter
-    NotBusyApp
-    Exit Sub
-
-ErrHand:
-    On Error Resume Next
-    MsgBox tradmess.TranslatedValue("MSG_ErrHandExport"), _
-            vbOKOnly + vbCritical, _
-            tradmess.TranslatedValue("MSG_Error")
-    'Close all oppened workbooks
-    expOut.CloseAll
-    On Error GoTo 0
-    NotBusyApp
-End Sub
-
-Private Sub AskFilter(ByVal tradmess As ITranslation)
-    
-    Dim confirmFilterUse As Byte
-
-    'Initialize the private useFilter
-    useFilter = False
-
-    If Me.CHK_ExportFiltered.Value Then
-
-        confirmFilterUse = MsgBox(tradmess.TranslatedValue("MSG_AskFilter"), _
-                                  vbYesNo + vbQuestion, _
-                                  tradmess.TranslatedValue("MSG_ThereIsFilter"))
-
-        If confirmFilterUse = vbYes Then
-            'This function is in EventsGlobal Analysis, update filtertables will update all
-            'filters in the current workbook.
-            UpdateFilterTables calculate:=False
-            useFilter = True
-        Else
-            Me.CHK_ExportFiltered.Value = False
-        End If
-    End If
 End Sub
 
 
