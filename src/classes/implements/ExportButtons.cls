@@ -31,9 +31,9 @@ Private this As TExpBut
 
 'Exposed methods
 
-Public Function Create(ByVal currwb As Workbook, 
-                       ByVal trads As ITranslation,
-                       Byval expBtn As MSForms.CommandButton,
+Public Function Create(ByVal currwb As Workbook, _
+                       ByVal trads As ITranslation, _
+                       Byval expBtn As MSForms.CommandButton, _
                        ByVal expChk As MSForms.CheckBox) As IExportButtons
 
   CheckRequirements currwb, trads, expBtn, expChk
@@ -84,7 +84,7 @@ Private Property Get UseFilter() As Boolean
   UseFilter = chkFilt.Value
 End Property
 
-Private Property Set UseFilter(ByVal expFilt As Boolean)
+Private Property Let UseFilter(ByVal expFilt As Boolean)
   chkFilt.Value = expFilt
 End Property
 
@@ -169,7 +169,6 @@ End Sub
 Private Sub ConfirmFilterUse()    
   Dim confirm As Integer
 
-  Set trads = MessTrads()
   If UseFilter() Then
       confirm = MsgBox(TranslatedValue("MSG_AskFilter"), _
                       vbYesNo + vbQuestion, _
@@ -189,6 +188,7 @@ Private Sub CreateExport()
   Dim scope As Integer
   Dim expOut As IOutputSpecs
   Dim trads As ITranslation
+  Dim currwb As Workbook
 
   'Add Error management
   On Error GoTo ErrHand
@@ -232,7 +232,7 @@ Private Sub NotBusyApp()
 End Sub
 
 Private Sub CheckRequirements(ByVal wb As Workbook, ByVal trads As ITranslation, _ 
-                              ByVal expBtn MSForms.CommandButton, _ 
+                              ByVal expBtn As MSForms.CommandButton, _ 
                               ByVal expChk As MSForms.CheckBox)
 
   If wb Is Nothing Then ThrowError "Unable to initialize the class, provide a workbook"

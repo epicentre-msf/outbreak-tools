@@ -479,8 +479,8 @@ End Sub
 Public Sub ClickExport()
     Attribute ClickExport.VB_Description = "Callback for clik on Export"
 
-    Const COMMANDHEIGHT As Integer = 35
-    Const COMMANDGAPS As Byte = 10
+    Const COMMANDHEIGHT As Integer = 25
+    Const COMMANDGAPS As Byte = 6
 
     Dim exportNumber As Integer
     Dim topPosition As Integer
@@ -495,8 +495,6 @@ Public Sub ClickExport()
     'initialize translations
     InitializeTrads
 
-    Set vbComp = wb.VBProject.VBComponents("F_Export")
-    Set codeMod = vbComp.CodeModule
     Set expsh = ThisWorkbook.Worksheets(EXPORTSHEET)
     Set expObj = LLExport.Create(expsh)
     Set cmdArray = New BetterArray
@@ -507,12 +505,11 @@ Public Sub ClickExport()
     On Error GoTo errLoadExp
 
     'Dynamically create and add buttons to the form
-    With F_Export
         
         For exportNumber = 1 To totalNumberOfExports
             'Add the control if not initialized  
             If expObj.IsActive(exportNumber) Then
-                Set btn = .Controls.Add("Forms.CommandButton1", "CMDExport" & exportNumber, True)
+                Set btn = F_Export.Controls.Add("Forms.CommandButton.1", "CMDExport" & exportNumber, True)
                 btn.Caption = expObj.Value("label button", exportNumber)
                 btn.Top = topPosition
                 btn.height = COMMANDHEIGHT
@@ -520,23 +517,24 @@ Public Sub ClickExport()
                 btn.Left = 20
                 btn.WordWrap = True
                 topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
-                Set btnObj = ExportButtons.Create(ThisWorkbook, tradsmess, btn, .CHK_ExportFiltered)
+                Set btnObj = ExportButtons.Create(ThisWorkbook, tradsmess, btn, F_Export.CHK_ExportFiltered)
                 cmdArray.Push btnObj
                 Set btnObj = Nothing
             End If
         Next
 
+    With F_Export
         'Overall height and width of the form and other parts of the form ------
     
         'Height of checks (use filtered data)
         .CHK_ExportFiltered.Top = topPosition + 30
-        .CHK_ExportFiltered.Left = 30
+        .CHK_ExportFiltered.Left = 40
         .CHK_ExportFiltered.width = 160
         topPosition = topPosition + 40 + COMMANDHEIGHT + COMMANDGAPS
 
         'Height of command for new key
         .CMD_NewKey.Top = topPosition
-        .CMD_NewKey.height = COMMANDHEIGHT - 10
+        .CMD_NewKey.height = COMMANDHEIGHT
         .CMD_NewKey.width = 160
         .CMD_NewKey.Left = 20
 
@@ -544,7 +542,7 @@ Public Sub ClickExport()
 
         'Show Private key command
         .CMD_ShowKey.Top = topPosition
-        .CMD_ShowKey.height = COMMANDHEIGHT - 10
+        .CMD_ShowKey.height = COMMANDHEIGHT - 0.1 * COMMANDHEIGHT
         .CMD_ShowKey.width = 160
         .CMD_ShowKey.Left = 20
 
@@ -552,14 +550,14 @@ Public Sub ClickExport()
 
         'Quit command
         .CMD_Back.Top = topPosition
-        .CMD_Back.height = COMMANDHEIGHT - 10
+        .CMD_Back.height = COMMANDHEIGHT - 0.1 * COMMANDHEIGHT
         .CMD_Back.width = 160
         .CMD_Back.Left = 20
 
         topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
 
-        .height = topPosition + 50
-        .width = 210
+        .Height = topPosition + 50
+        .Width = 210
 
         'Show the form
         .Show
