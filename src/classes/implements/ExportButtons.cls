@@ -18,6 +18,8 @@ Implements IExportButtons
 
 Private Const CLASSNAME As String = "ExportButtons"
 Private Const NAMETAG As String = "CMDExport"
+
+'Objects of the form, the command and the check
 Private WithEvents Btn As MSForms.CommandButton
 Private chkFilt As MSForms.CheckBox
 
@@ -74,16 +76,6 @@ Public Property Get Self() As IExportButtons
     Set Self = Me
 End Property
 
-Private Sub CheckRequirements(ByVal wb As Workbook, ByVal trads As ITranslation, _ 
-                              ByVal expBtn MSForms.CommandButton, _ 
-                              ByVal expChk As MSForms.CheckBox)
-
-  If wb Is Nothing Then ThrowError "Provide a workbook"
-  If trads Is Nothing Then ThrowError "Provide translation"
-  If expBtn Is Nothing Then ThrowError "Please provide a command button"
-  If expChk Is Nothing Then ThrowError "Please provide export check"
-End Sub
-
 Private Property Get ExportNumber() As Integer
   ExportNumber = CInt(Replace(Btn.Name, NAMETAG, vbNullString))
 End Property
@@ -91,6 +83,15 @@ End Property
 Private Property Get UseFilter() As Boolean
   UseFilter = chkFilt.Value
 End Property
+
+Private Property Set UseFilter(ByVal expFilt As Boolean)
+  chkFilt.Value = expFilt
+End Property
+
+'Event Fired when you ask for a typical export
+Private Sub Btn_Click()
+  CreateExport
+End Sub
 
 Private Function TranslatedValue(ByVal msgCode As String) As String
   Dim trads As ITranslation
@@ -165,30 +166,52 @@ ErrUpdate:
 End Sub
 
 
+Private Sub ConfirmFilterUse()    
+  Dim confirm As Integer
 
-Private Sub CreateExport(ByVal scope As Integer)
+  Set trads = MessTrads()
+  If UseFilter() Then
+      confirm = MsgBox(TranslatedValue("MSG_AskFilter"), _
+                      vbYesNo + vbQuestion, _
+                      TranslatedValue("MSG_ThereIsFilter"))
+      If confirm = vbYes Then
+        'This function is in EventsGlobal Analysis, update filtertables will update all
+        'filters in the current workbook.
+        UpdateData
+      Else
+        useFilter = False
+      End If
+  End If
+End Sub
 
-    BusyApp cursor:=xlWait
-    
-    'Add Error management
-    On Error GoTo ErrHand
+Private Sub CreateExport()
 
-    InitializeTrads
-    AskFilter tradmess
-    Set expOut = OutputSpecs.Create(currwb, Integer)
-    expOut.Save tradmess, useFilter
-    NotBusyApp
-    Exit Sub
+  Dim scope As Integer
+  Dim expOut As IOutputSpecs
+  Dim trads As ITranslation
+
+  'Add Error management
+  On Error GoTo ErrHand
+  BusyApp cursor:=xlWait
+  scope = ExportNumber()
+  Set currwb = CurrentWorkbook()
+  Set trads = MessTrads()
+  ConfirmFilterUse
+  Set expOut = OutputSpecs.Create(currwb, scope)
+  expOut.Save trads, useFilter()
+  
+  NotBusyApp
+  Exit Sub
 
 ErrHand:
-    On Error Resume Next
-    MsgBox tradmess.TranslatedValue("MSG_ErrHandExport"), _
-            vbOKOnly + vbCritical, _
-            tradmess.TranslatedValue("MSG_Error")
-    'Close all oppened workbooks
-    expOut.CloseAll
-    On Error GoTo 0
-    NotBusyApp
+  On Error Resume Next
+  MsgBox TranslatedValue("MSG_ErrHandExport"), _
+          vbOKOnly + vbCritical, _
+          TranslatedValue("MSG_Error")
+  'Close all oppened workbooks
+  expOut.CloseAll
+  On Error GoTo 0
+  NotBusyApp
 End Sub
 
 
@@ -208,6 +231,22 @@ Private Sub NotBusyApp()
     Application.cursor = xlDefault
 End Sub
 
+Private Sub CheckRequirements(ByVal wb As Workbook, ByVal trads As ITranslation, _ 
+                              ByVal expBtn MSForms.CommandButton, _ 
+                              ByVal expChk As MSForms.CheckBox)
+
+  If wb Is Nothing Then ThrowError "Unable to initialize the class, provide a workbook"
+  If trads Is Nothing Then ThrowError "Unable to initialize the class, provide translation"
+  If expBtn Is Nothing Then ThrowError "Unable to initialize the class, Please provide a command button"
+  If expChk Is Nothing Then ThrowError "Unable to initialize the class, Please provide export check"
+End Sub
+
+
 Private Sub ThrowError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASSNAME, errorMessage
+End Sub
+
+
+Private Sub IExportButtons_CreateExport()
+  CreateExport
 End Sub

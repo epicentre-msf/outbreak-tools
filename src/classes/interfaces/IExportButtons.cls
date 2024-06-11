@@ -17,7 +17,7 @@ Attribute VB_Description = ""
 Option Explicit
 
 'Exposed methods
-
-Public Event ClickExport(ByVal exportNumber As Long)
+'Create an export from a button
+Public Sub CreateExport() : End Sub
 
 
