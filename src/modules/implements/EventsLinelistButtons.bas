@@ -488,21 +488,19 @@ Public Sub ClickExport()
     Dim expsh As Worksheet
     Dim totalNumberOfExports As Long
     Dim controlCommand As String
-
-    Dim upObj As IUpVal
-    Dim expInit As Boolean 'Test if the export has been initialized
+    Dim cmdArray As BetterArray 'List of controls
     Dim btn As MSForms.CommandButton
+    Dim btnObj As IExportButtons
 
     'initialize translations
     InitializeTrads
 
-    Set upObj = UpVal.Create(ThisWorkbook.Worksheets(UPDATESHEET))
     Set vbComp = wb.VBProject.VBComponents("F_Export")
     Set codeMod = vbComp.CodeModule
     Set expsh = ThisWorkbook.Worksheets(EXPORTSHEET)
     Set expObj = LLExport.Create(expsh)
+    Set cmdArray = New BetterArray
         
-    expInit = (upObj.Value("RNG_ExportInit") = "yes")
     totalNumberOfExports = expObj.NumberOfExports()
     topPosition = COMMANDGAPS
 
@@ -512,19 +510,9 @@ Public Sub ClickExport()
     With F_Export
         
         For exportNumber = 1 To totalNumberOfExports
-            'Add the control if not initialized
-            If (Not expInit) Then
-                btn.Name = "CMDExport" & exportNumber
-                'Add the code of the export in the module
-                controlCommand = "Private Sub " & "CMDExport" & exportNumber & _ 
-                                "_Click()" & Chr(13) & _
-                                "  CreateExport " & exportNumber & _ 
-                                Chr(13) & "End Sub"
-                    
-            End If
-
-            If expObj.IsActive(exportNumber) Then 
-                btn.Visible = True
+            'Add the control if not initialized  
+            If expObj.IsActive(exportNumber) Then
+                Set btn = .Controls.Add("Forms.CommandButton1", "CMDExport" & exportNumber, True)
                 btn.Caption = expObj.Value("label button", exportNumber)
                 btn.Top = topPosition
                 btn.height = COMMANDHEIGHT
@@ -532,11 +520,11 @@ Public Sub ClickExport()
                 btn.Left = 20
                 btn.WordWrap = True
                 topPosition = topPosition + COMMANDHEIGHT + COMMANDGAPS
+                Set btnObj = ExportButtons.Create(ThisWorkbook, tradsmess, btn, .CHK_ExportFiltered)
+                cmdArray.Push btnObj
+                Set btnObj = Nothing
             End If
         Next
-
-        'Initialize the export form
-        upObj.SetValue "RNG_ExportInit", "yes"
 
         'Overall height and width of the form and other parts of the form ------
     
