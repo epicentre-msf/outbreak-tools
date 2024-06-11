@@ -160,7 +160,7 @@ End Property
 Private Property Get NumberOfExports() As Long
   Dim expObj As ILLExport
   Set expObj = ExportObject()
-  NumberOfExports = expObj.NumerOfExports()
+  NumberOfExports = expObj.NumberOfExports()
 End Property
 
 'Prepare the output workbook

@@ -648,7 +648,7 @@ Private Sub Prepare()
                     "OutputSpecs", "IOutputSpecs", _
                     "ImpRep", "IImpRep", "ImpSpecs", "IImpSpecs", _
                     "UpVal", "IUpVal", "IGraphs", "Graphs", "AnaTabIds", _ 
-                    "IAnaTabIds"
+                    "IAnaTabIds", "ExportButtons", "IExportButtons"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
