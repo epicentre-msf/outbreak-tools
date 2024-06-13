@@ -195,6 +195,10 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False, _
   Dim pcodesTagList As BetterArray
   Dim exportpcodes As Boolean
 
+  'Variables for personal identifiers removal from the export
+  Dim expIdentiferRng As Range
+  Dim exportPI As Boolean
+
   Set inpwb = InputWkb()
   Set tempsh = inpwb.Worksheets(TEMPSHEET)
   Set dictsh = inpwb.Worksheets(DICTIONARYSHEET)
@@ -209,7 +213,7 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False, _
   firstSheetName = outwb.Worksheets(1).Name
   scope = ActualScope()
 
-  If (scope <> ExportAll) Then 'Here export is export 1, 2, 3, 4 or 5.
+  If (scope <> ExportAll) Then 'Here export is export 1, 2, 3, 4 or 5 or ...
     expName = "export" & " " & CStr(scope)
 
     'Export Or Not the p-Codes.
@@ -217,7 +221,7 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False, _
     'otherwise pcodes will be removed as default behavior. If you want pcodes
     'to be exported, you need to explicitly add export pcodes == Yes in the
     'export sheet of the setup file. Otherwise they will be removed from exports.
-    exportpcodes = (expobj.Value("export pcodes", scope) = "yes")
+    exportpcodes = (expobj.Value("include p-codes", scope) = "yes")
 
     If Not exportpcodes Then
       pcodesTagList.Push "geo_pcode_adm1", "geo_pcode_adm2", "geo_pcode_adm3", _
@@ -232,6 +236,22 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False, _
         If pcodesTagList.Includes(expMainLabRng.Cells(counter, 1).Value) Then
           expNumberRng.Cells(counter, 1).ClearContents
         End If
+      Next
+    End If
+
+    'Export or Not the Personal identifiers
+    'personal identifiers informations are added only if required by the user
+    exportPI = (expobj.Value("include personal identifiers", scope) = "yes")
+
+    'Exclude personal indentifiers from the exports
+    If Not exportPI Then
+      Set expNumberRng = dict.DataRange(expName)
+      Set expIdentiferRng = dict.DataRange("personal identifier")
+
+      For counter = 1 To expIdentiferRng.Rows.Count
+          If (expIdentiferRng.Cells(counter, 1).Value = "yes") Then
+              expNumberRng.Cells(counter, 1).ClearContents
+          End If
       Next
     End If
 
@@ -272,7 +292,7 @@ Private Sub Prepare(Optional ByVal withAnalysis As Boolean = False, _
   'Add the metadata and other worksheets
   prevSheetName = firstSheetName
   
-  If (expobj.Value("export metadata", scope) = "yes") Then
+  If (expobj.Value("export metadata sheets", scope) = "yes") Then
     'In the metadata sheet add tags for show/hide or for 
     AddMetaData scope:=scope, _ 
                 includeShowHide:=True, _ 
@@ -609,7 +629,7 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
   Set expobj = ExportObject()
   scope = ActualScope()
 
-  useLabels = (expobj.Value("export header", scope) = "variables labels")
+  useLabels = (expobj.Value("header format", scope) = "variables labels")
 
   For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
 
@@ -814,7 +834,7 @@ Private Sub Save(ByVal trads As ITranslation, _
 
   'Prepare the output workbook (create required sheets, add metadata)
   If (scope <> ExportAna) Then
-    withAnalysis = (expobj.Value("export analysis", scope) = "yes")
+    withAnalysis = (expobj.Value("export analyses sheets", scope) = "yes")
     Prepare withAnalysis, includeShowHide, keepLabels 
     'Add the Data to export worksheet
     AddData useFilters

@@ -10,6 +10,7 @@ Private Const DICTSHEET As String = "Dictionary"
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const TRADSHEET As String = "Translations"
 Private Const UPSHEET As String = "updates__"  'worksheet for updated values
+Private Const PASSSHEET As String = "__pass"
 
 Private tradmess As ITranslation              'Translation of messages object
 Private lltrads As ILLTranslations
@@ -451,6 +452,10 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
     Dim geo As ILLGeo
     Dim adminNames As BetterArray
     Dim drop As IDropdownLists
+    Dim endLine As Long
+    Dim Lo As ListObject
+    Dim csTab As ICustomTable
+    Dim pass As ILLPasswords
 
 
     On Error GoTo ErrHand
@@ -458,9 +463,23 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
     Set sh = ActiveSheet
     tablename = sh.Cells(1, 4).Value
     startLine = sh.Range(tablename & "_START").Row + 1
+    Set Lo = sh.ListObjects(1)
+    endLine = Lo.Range.Cells(Lo.Range.Rows.Count, 1).Row + 1
+
 
     'First test if we are on a good line
-    If Target.Row < startLine Then Exit Sub
+    If (Target.Row < startLine) Or (Target.Row <> endLine)  Then Exit Sub
+
+    If (Target.Row = endLine) Then
+        On Error Resume Next
+        Set pass = LLPasswords.Create(ThisWorkbook.Worksheets(PASSSHEET))
+        Set csTab = CustomTable.Create(Lo)
+        pass.UnProtect "_active"
+        csTab.AddRows nbRows:=5
+        pass.Protect "_active"
+        On Error GoTo 0
+        Exit Sub
+    End If
     
     'Calculate the line
     Set hRng = sh.ListObjects(1).HeaderRowRange

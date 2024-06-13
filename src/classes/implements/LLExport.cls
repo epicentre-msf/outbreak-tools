@@ -47,10 +47,11 @@ End Function
 'Initialize the Arrays
 Private Sub ArraysInitialize()
     Set SPECSHEADER = New BetterArray
-    SPECSHEADER.Push "export number", "label button", "password", _
-                     "status", "export metadata", "export translation", _
-                     "export pcodes", "export analysis", _
-                     "file format", "file name", "export header"
+    SPECSHEADER.Push "export number", "status", "label button", _ 
+                     "file format", "file name", "password", _
+                     "include personal identifiers", "include p-codes", _
+                     "header format", "export metadata sheets", _
+                     "export analyses sheets"
 End Sub
 
 'Data for the exports
