@@ -196,3 +196,11 @@ Public Sub clickRibbonAutoFit(ByRef Control As IRibbonControl)
     Attribute clickRibbonAutoFit.VB_Description = "Callback for btnAutoFit On Action"
     clickAutoFit
 End Sub
+
+
+'@Description("Callback for btnSetEpiWeek On Action")
+'@EntryPoint
+Public Sub clickRibbonSetEpiWeek(ByRef Control As IRibbonControl)
+ Attribute clickRibbonSetEpiWeek.VB_Description = "Callback for btnSetEpiWeek On Action"
+    [F_EpiWeek].Show
+End Sub

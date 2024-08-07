@@ -33,7 +33,7 @@ End Property
 
 
 'In the linelist, get the fileName of an export
-Public Property Get ExportFileName(ByVal scope As Byte, _
+Public Property Get ExportFileName(ByVal scope As Integer, _
                                    ByVal dict As ILLdictionary, _
                                   ByVal pass As ILLPasswords) As String
 End Property

@@ -79,6 +79,8 @@ update_designer <- function(update_status = 0, osname = "windows"){
   }
 }
 
+# add warning on import!
+
 sysname  <-  tolower(Sys.info()[["sysname"]])
 
 # copy the mock file for development
