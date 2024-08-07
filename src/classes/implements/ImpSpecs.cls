@@ -25,6 +25,12 @@ Private Type TImp
   needReport As Boolean
 End Type
 
+Private Enum PastingRule
+  PastingRuleBottom = 1
+  PastingRuleEmpty = 2
+  PastingRuleStop = 3
+End Enum
+
 Private Const CLASSNAME                 As String = "ImpSpecs"
 Private Const DICTIONARYSHEET           As String = "Dictionary"
 Private Const CHOICESSHEET              As String = "Choices"
@@ -512,8 +518,10 @@ Private Sub ControlClearData(Optional ByVal forImports As Boolean = False)
                         trads.TranslatedValue("MSG_Delete"), _
                         trads.TranslatedValue("MSG_EnterWkbName"))
 
-      If (inputwbName = vbNullString) And (Not forImports) Then
-        Exit Do
+      If StrPtr(inputwbName) = 0 Then
+        'in case the user cancels, exit
+        GoTo ExitDeletion
+
       ElseIf inputwbName = Replace(currwb.Name, ".xlsb", vbNullString) Then
         
         'Proceed only if the user is able to provide the name of the actual
@@ -532,11 +540,16 @@ Private Sub ControlClearData(Optional ByVal forImports As Boolean = False)
       End If
     Loop
 
-  Else 'The user wishes to cancel deletion process
-      MsgBox trads.TranslatedValue("MSG_DelCancel"), _
-            vbOKOnly, trads.TranslatedValue("MSG_Delete")
+  Else
+    GoTo ExitDeletion
   End If
 
+  Exit Sub
+
+ExitDeletion:
+  'The user wishes to cancel deletion process, exit.
+   MsgBox trads.TranslatedValue("MSG_DelCancel"), _
+          vbOKOnly, trads.TranslatedValue("MSG_Delete")
   Exit Sub
 
 ErrManage:
@@ -585,32 +598,61 @@ Private Property Get HasData() As Boolean
   HasData = testData
 End Property
 
-Private Function ControlHasData() As Boolean
+'The function takes 3 values
+
+'PastingRuleBottom is for has data, so paste at the bottom
+'PastingRuleEmpty is for does not have data
+'PastingRuleStop is for cancel everything and stop the exports
+
+Private Function ControlHasData() As Byte
 
   Dim trads As ITranslation
   Dim testData As Boolean 'Test if the workbook contains data
   Dim proceed As Byte
+  Dim controlRes As Integer
   
   Set trads = MessagesTrads()
 
   testData = HasData()
+  controlRes = PastingRuleEmpty
+
   'While the workbook contains data, ask if the user wants to delete
   'in that case delete the data and test if there are data left.
   'If the user doesn't want to delete the data, exit.
+
   Do While (testData)
+
     proceed = MsgBox(trads.TranslatedValue("MSG_DeleteForImport"), _
-                      vbExclamation + vbYesNo, _
-                      trads.TranslatedValue("MSG_Delete"))
-      
-    If proceed = vbYes Then
+                     vbExclamation + vbYesNoCancel, _
+                     trads.TranslatedValue("MSG_Delete"))
+    
+    Select Case proceed
+
+    Case vbYes
+       
       ControlClearData forImports:=True
       testData = HasData()
-    Else
+      
+      If (Not testData) Then 
+        controlRes = PastingRuleEmpty
+        Exit Do
+      End If
+
+    Case vbNo
+      
+      testData = HasData()
+      controlRes = IIf(testData, PastingRuleBottom, PastingRuleEmpty)
       Exit Do
-    End If
+
+    Case vbCancel
+
+      controlRes = PastingRuleStop
+      Exit Do
+    End Select
+  
   Loop
 
-  ControlHasData = testData
+  ControlHasData = controlRes
 End Function
 
 
@@ -962,6 +1004,7 @@ Private Sub ImportMigration()
   Dim impwb As Workbook
   Dim inPath As String
   Dim pasteAtBottom As Boolean
+  Dim controlResult As Byte
   Dim actsh As Worksheet
   Dim trads As ITranslation
   Dim adfobj As Object
@@ -984,11 +1027,23 @@ Private Sub ImportMigration()
     Exit Sub
   End If
 
+
   Set trads = MessagesTrads()
+
+  'Ask for confirmation for import
+  If (MsgBox(trads.TranslatedValue("MSG_ImportConfirm"), _
+            vbOkCancel, trads.TranslatedValue("MSG_Confirm")) = vbCancel) Then _ 
+            GoTo EndImport
+
 
   'Test if the linelist has Data
   'If the linelist has data in it, I will paste values at the end of tables
-  pasteAtBottom = ControlHasData()
+  'If the user which to. If not, I will just stop the imports completely
+  controlResult = ControlHasData()
+
+  If (controlResult = PastingRuleStop) Then GoTo EndImport
+
+  pasteAtBottom = (controlResult = PastingRuleBottom)
   
   'Load the workbook
   BusyApp

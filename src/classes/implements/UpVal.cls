@@ -33,6 +33,7 @@ Private Const RNGGEOBASEMANUALUPDATE As String = "RNG_GeoUpdateManual"
 Private Const RNGSHOWALLOPTIONALS As String = "RNG_ShowAllOptionals"
 Private Const RNGEXPORTINIT As String = "RNG_ExportInit"
 Private Const RNGNUMBEXP As String = "RNG_NumberExports"
+Private Const RNGEPIWEEKSTART As String = "RNG_EpiWeekStart"
 
 Private UPDATERANGESLIST As BetterArray
 
@@ -63,7 +64,7 @@ Private Sub InitalizeRanges()
   If UPDATERANGESLIST Is Nothing Then
     Set UPDATERANGESLIST = New BetterArray
     UPDATERANGESLIST.Push RNGLISTAUTOUPDATED, RNGIMPORTDONE, RNGGEOBASEMANUALUPDATE, _ 
-                          RNGSHOWALLOPTIONALS, RNGEXPORTINIT, RNGNUMBEXP
+                          RNGSHOWALLOPTIONALS, RNGEXPORTINIT, RNGNUMBEXP, RNGEPIWEEKSTART
   End If
 End Sub
 
@@ -105,7 +106,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
   If sh Is Nothing Then ThrowErrorUnableInstanciate "Update values worksheet not defined"
 
   rngArray.Push RNGLISTAUTOUPDATED, RNGIMPORTDONE, RNGGEOBASEMANUALUPDATE, RNGSHOWALLOPTIONALS, _ 
-                RNGEXPORTINIT, RNGNUMBEXP
+                RNGEXPORTINIT, RNGNUMBEXP, RNGEPIWEEKSTART
 
   For counter = rngArray.LowerBound To rngArray.UpperBound
     rngName = rngArray.Item(counter)
