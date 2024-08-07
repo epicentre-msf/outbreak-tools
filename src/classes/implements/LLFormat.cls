@@ -189,7 +189,8 @@ Private Sub FormatRange(ByVal rng As Range, _
                         Optional ByVal Horiz As Integer = xlHAlignCenter, _
                         Optional ByVal Verti As Integer = xlVAlignCenter, _
                         Optional ByVal FontSize As Double = 0, _
-                        Optional ByVal NumFormat As String = "")
+                        Optional ByVal NumFormat As String = "", _
+                        Optional ByVal wrap As String = vbNullString)
 
     With rng
         If interiorColor <> vbNullString Then .Interior.color = interiorColor
@@ -200,6 +201,7 @@ Private Sub FormatRange(ByVal rng As Range, _
         .HorizontalAlignment = Horiz
         .VerticalAlignment = Verti
         If fillValue <> vbNullString Then .Value = fillValue
+        If wrap = "wrap" Then .WrapText = True
     End With
 End Sub
 
@@ -421,7 +423,6 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, _
         FormatRange rng, FontSize:=styleValue, _
                     fontColor:=fontColorValue, Horiz:=xlHAlignLeft, _
                     Verti:=xlVAlignBottom
-        rng.WrapText = False
         rng.Font.Italic = True
 
         On Error Resume Next
@@ -569,9 +570,8 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, _
         FormatRange rng, fontColor:=fontColorValue, _
                     interiorColor:=interiorColorValue, _
                     isBold:=False, FontSize:=styleValue - 2, _
-                    Verti:=xlVAlignCenter
+                    Verti:=xlVAlignCenter, wrap:="wrap"
         DrawLines rng:=rng, weight:=xlThin, color:=vbWhite
-        rng.WrapText = True
         rng.Locked = False
 
     Case AnalysisCategoriesLabelRow, AnalysisCategoriesLabelColumn, AnalysisUnivariateHeader
@@ -583,8 +583,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, _
 
         fontColorValue = DesignValue("categories names font color")
         FormatRange rng, fontColor:=fontColorValue, isBold:=True, FontSize:=styleValue - 1, _
-                    Horiz:=horizAlign, Verti:=verticalAlign
-        rng.WrapText = True
+                    Horiz:=horizAlign, Verti:=verticalAlign, wrap:="wrap"
 
     Case AnalysisCategoriesUnivariateRow, AnalysisFirstRow, AnalysisCategoriesBivariateRow, AnalysisCategoriesBivariateColumn
 
@@ -671,12 +670,12 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, _
         rng.Merge
         On Error GoTo 0
         FormatRange rng, fontColor:=fontColorValue, interiorColor:=interiorColorValue, _
-                    FontSize:=styleValue + 1, Horiz:=xlHAlignCenter, Verti:=xlVAlignCenter, isBold:=True
+                    FontSize:=styleValue + 1, Horiz:=xlHAlignCenter, Verti:=xlVAlignCenter, isBold:=True, _ 
+                    wrap:="wrap"
         DrawLines rng, At:="Top", color:=bordersColorValue, line:=xlDouble
         DrawLines rng, At:="Left", color:=bordersColorValue, line:=xlDouble
         DrawLines rng, At:="Bottom", color:=bordersColorValue, line:=xlDouble
         DrawLines rng, At:="Right", color:=bordersColorValue, line:=xlDouble
-        rng.WrapText = True
 
     Case AnalysisMissingRow, AnalysisMissingColumn, AnalysisMissingRowWithoutHeader
 
@@ -767,9 +766,8 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, _
         FormatRange rng, fontColor:=fontColorValue, _
                     FontSize:=Switch(scope = AnalysisInfoCellLeft, 11, scope = LinelistWarning, 12, True, 8), _
                     isBold:=(scope = AnalysisInfoCellLeft Or scope = LinelistWarning), _
-                    Horiz:=horizAlign, Verti:=xlVAlignCenter
+                    Horiz:=horizAlign, Verti:=xlVAlignCenter, wrap:="wrap"
         If scope <> LinelistWarning Then rng.EntireRow.RowHeight = 45
-        rng.WrapText = True
 
     Case HListMainLab
         If (Not TypeName(formattingObject) = "Characters") Then Exit Sub
@@ -829,7 +827,7 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, _
 
         If (Not TypeName(formattingObject) = "Range") Then Exit Sub
         Set rng = formattingObject
-        FormatRange rng, Verti:=xlVAlignCenter, Horiz:=xlHAlignLeft
+        FormatRange rng, Verti:=xlVAlignCenter, Horiz:=xlHAlignLeft, wrap:="wrap"
 
     Case LinelistSmallButton, AdminLargeButton
 

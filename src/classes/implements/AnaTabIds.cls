@@ -234,7 +234,6 @@ End Sub
 
 Private Sub TransferRange(ByVal inpsh As Worksheet, ByVal outsh As Worksheet, ByVal rngName As String)
 
-
   Dim inpRng As Range
   Dim outRng As Range
  

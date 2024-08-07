@@ -422,7 +422,8 @@ Private Sub PrepareTemporarySheets()
 
     namesArray.Clear
     namesArray.Push "RNG_UpdateListAuto", "RNG_ImportDone", "RNG_GeoUpdateManual", _ 
-                    "RNG_ShowAllOptionals", "RNG_ExportInit", "RNG_NumberExports"
+                    "RNG_ShowAllOptionals", "RNG_ExportInit", "RNG_NumberExports", _
+                    "RNG_EpiWeekStart"
     Set rng = sh.Cells(1, 1)
     
     For counter = namesArray.LowerBound To namesArray.UpperBound
@@ -565,6 +566,15 @@ Private Sub Prepare()
     Set dict = lData.Dictionary()
     Set mainobj = lData.MainObject()
 
+    'Select/unhide the instruction worksheet
+    If mainObj.HasTemplate() And (mainObj.ValueOf("instruct") = "add") Then
+        With outWkb
+            .Worksheets(trans.TranslatedValue("INSTSHEET")).Visible = xlSheetVisible
+            .Worksheets(trans.TranslatedValue("INSTSHEET")).Name = trans.TranslatedValue("INSTSHEETNAME")
+            .Worksheets(trans.TranslatedValue("INSTSHEETNAME")).Move Before:=.Worksheets(this.firstSheet)
+        End with
+    End If
+
     'temporary sheet Names
     sheetsList.Push lData.TemporarySheetName(TemporarySingle), _
         lData.TemporarySheetName(TemporarySheetList), _
@@ -633,6 +643,7 @@ Private Sub Prepare()
     outWkb.Worksheets(this.firstSheet).Delete
     Application.DisplayAlerts = prevAlert
 
+
     'Send the required classes to the linelist
     Set codesList = New BetterArray
     codesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", _
@@ -676,7 +687,8 @@ Private Sub Prepare()
     codesList.Clear
     codesList.Push "F_Advanced", "F_Export", "F_ExportMig", _
                      "F_Geo", "F_ImportRep", _
-                     "F_ShowHideLL", "F_ShowHidePrint", "F_ShowVarLabels"
+                     "F_ShowHideLL", "F_ShowHidePrint", "F_ShowVarLabels", _
+                     "F_EpiWeek"
 
     For counter = codesList.LowerBound To codesList.UpperBound
         codeName = codesList.Item(counter)
@@ -778,7 +790,9 @@ Private Sub SaveLL()
     'Select the admin sheet before saving
     On Error Resume Next
     outWkb.Worksheets(msgTrads.TranslatedValue("LLSHEET_Admin")).Activate
+    outWkb.Worksheets(msgTrads.TranslatedValue("INSTSHEETNAME")).Activate
     On Error GoTo 0
+    
 
     'Protect the workbook structure from eventual deletion/renaming of a worksheet
     passobj.ProtectWkb outWkb

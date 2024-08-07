@@ -2,7 +2,6 @@ Attribute VB_Name = "EventsDesignerRibbon"
 Attribute VB_Description = "Events associated to the Ribbon Menu in the designer"
 Option Explicit
 Option Private Module
-
 '@Folder("Designer Events")
 '@IgnoreModule ParameterNotUsed
 '@ModuleDescription("Events associated to the Ribbon Menu in the designer")
@@ -16,7 +15,6 @@ Private Const DESIGNERMAINSHEET As String = "Main"
 Private Const PASSWORDSHEET As String = "__pass"
 'Linelist Style worksheet
 Private Const FORMATSHEET As String = "LinelistStyle"
-
 'All the ribbon object Ribbon
 Private ribbonUI As IRibbonUI
 
@@ -40,7 +38,6 @@ End Sub
 '@Description("Callback when the button loaded")
 '@EntryPoint
 Public Sub ribbonLoaded(ByRef ribbon As IRibbonUI)
-Attribute ribbonLoaded.VB_Description = "Callback when the button loaded"
     Set ribbonUI = ribbon
 End Sub
 
@@ -51,8 +48,7 @@ End Sub
 
 '@Description("Callback for getLabel (Depending on the language)")
 '@EntryPoint
-Public Sub LangLabel(Control As IRibbonControl, ByRef returnedVal)
-Attribute LangLabel.VB_Description = "Callback for getLabel (Depending on the language)"
+Public Sub LangLabel(control As IRibbonControl, ByRef returnedVal)
 
     Dim desTrads As IDesTranslation
     Dim codeId As String
@@ -62,15 +58,14 @@ Attribute LangLabel.VB_Description = "Callback for getLabel (Depending on the la
     Set wb = ThisWorkbook
     Set tradsh = wb.Worksheets("DesignerTranslation")
     Set desTrads = DesTranslation.Create(tradsh)
-    codeId = Control.ID
+    codeId = control.ID
 
     returnedVal = desTrads.TranslationMsg(codeId)
 End Sub
 
 '@Description("Callback for btnDelGeo onAction: Delete the geobase")
 '@EntryPoint
-Public Sub clickDelGeo(Control As IRibbonControl)
-Attribute clickDelGeo.VB_Description = "Callback for btnDelGeo onAction: Delete the geobase"
+Public Sub clickDelGeo(control As IRibbonControl)
     Dim geosh As Worksheet
     Dim geo As ILLGeo
     Dim wb As Workbook
@@ -91,7 +86,7 @@ End Sub
 
 '@Description("Callback for btnClear onAction": Clear the entries)
 '@EntryPoint
-Public Sub clickClearEnt(Control As IRibbonControl)
+Public Sub clickClearEnt(control As IRibbonControl)
 
     Dim wb As Workbook
     Dim mainsh As Worksheet
@@ -112,8 +107,7 @@ End Sub
 
 '@Description("Callback for btnTransAdd onAction: Import Linelist translations")
 '@EntryPoint
-Public Sub clickImpTrans(Control As IRibbonControl)
-Attribute clickImpTrans.VB_Description = "Callback for btnTransAdd onAction: Import Linelist translations"
+Public Sub clickImpTrans(control As IRibbonControl)
 
 
     Dim io As IOSFiles
@@ -165,7 +159,7 @@ Attribute clickImpTrans.VB_Description = "Callback for btnTransAdd onAction: Imp
     End If
 ExitTrads:
     On Error Resume Next
-    impwb.Close savechanges:=False
+    impwb.Close saveChanges:=False
     NotBusyApp
     MsgBox "Done!"
     On Error GoTo 0
@@ -173,8 +167,7 @@ End Sub
 
 '@Description("Callback for langDrop onAction: Change the language of the designer")
 '@EntryPoint
-Public Sub clickLangChange(Control As IRibbonControl, langId As String, Index As Integer)
-Attribute clickLangChange.VB_Description = "Callback for langDrop onAction: Change the language of the designer"
+Public Sub clickLangChange(control As IRibbonControl, langId As String, Index As Integer)
 
     'Language code in the designer worksheet
     Const RNGLANGCODE As String = "RNG_MainLangCode"
@@ -190,7 +183,7 @@ Attribute clickLangChange.VB_Description = "Callback for langDrop onAction: Chan
     On Error GoTo ExitLang
 
     Set wb = ThisWorkbook
-    Set mainsh = wb.Worksheets("Main")
+    Set mainsh = wb.Worksheets(DESIGNERMAINSHEET)
     Set tradsh = wb.Worksheets("DesignerTranslation")
     Set desTrads = DesTranslation.Create(tradsh)
 
@@ -207,8 +200,7 @@ End Sub
 
 '@Description("Callback for btnOpen onAction: Open another linelist file")
 '@EntryPoint
-Public Sub clickOpen(Control As IRibbonControl)
-Attribute clickOpen.VB_Description = "Callback for btnOpen onAction: Open another linelist file"
+Public Sub clickOpen(control As IRibbonControl)
 
     Dim io As IOSFiles
     Dim trads As IDesTranslation
@@ -232,8 +224,7 @@ End Sub
 
 '@Description("Callback for btnImpPass onAction: Import passwords from a worksheet")
 '@EntryPoint
-Public Sub clickImpPass(Control As IRibbonControl)
-Attribute clickImpPass.VB_Description = "Callback for btnImpPass onAction: Import passwords from a worksheet"
+Public Sub clickImpPass(control As IRibbonControl)
 
     Dim io As IOSFiles
     Dim wb As Workbook
@@ -252,20 +243,19 @@ Attribute clickImpPass.VB_Description = "Callback for btnImpPass onAction: Impor
         Set imppass = LLPasswords.Create(wb.Worksheets(1))
         Set actpass = LLPasswords.Create(ThisWorkbook.Worksheets(PASSWORDSHEET))
         actpass.Import imppass
-        wb.Close savechanges:=False
+        wb.Close saveChanges:=False
 
-    MsgBox "Done!"
 ErrorManage:
     On Error Resume Next
-    wb.Close savechanges:=False
+    wb.Close saveChanges:=False
     NotBusyApp
+    MsgBox "Done!"
     On Error GoTo 0
 End Sub
 
 
 '@EntryPoint
 Public Sub clickImpStyle(control As IRibbonControl)
-Attribute clickImpStyle.VB_Description = "Callback for btnImpStyle onAction: Import Linelist Style"
 
     Dim io As IOSFiles
     Dim wb As Workbook
@@ -291,4 +281,62 @@ ErrorManage:
     wb.Close saveChanges:=False
     NotBusyApp
     On Error GoTo 0
+End Sub
+
+
+'Callback for chkAlert getPressed
+Public Sub initMainAlert(control As IRibbonControl, ByRef returnedVal)
+
+    Dim mainsh As Worksheet
+    
+    Set mainsh = ThisWorkbook.Worksheets(DESIGNERMAINSHEET)
+    
+    If mainsh.Range("RNG_MainAlert").Value = "alert" Then
+        returnedVal = False
+    Else
+        returnedVal = True
+    End If
+End Sub
+
+'Callback for chkAlert onAction
+Public Sub clickMainAlert(control As IRibbonControl, pressed As Boolean)
+
+    Dim mainsh As Worksheet
+    Set mainsh = ThisWorkbook.Worksheets(DESIGNERMAINSHEET)
+    
+    Select Case pressed
+        Case True
+        mainsh.Range("RNG_MainAlert").Value = "avoid alerts"
+        Case False
+        mainsh.Range("RNG_MainAlert").Value = "alert"
+    End Select
+End Sub
+
+
+'Callback for chkInstruct getPressed
+Public Sub initMainInstruct(control As IRibbonControl, ByRef returnedVal)
+
+    Dim mainsh As Worksheet
+    
+    Set mainsh = ThisWorkbook.Worksheets(DESIGNERMAINSHEET)
+    
+    If mainsh.Range("RNG_MainInstruct").Value = "add" Then
+        returnedVal = True
+    Else
+        returnedVal = False
+    End If
+End Sub
+
+'Callback for chkAlert onAction
+Public Sub clickMainInstruct(control As IRibbonControl, pressed As Boolean)
+
+    Dim mainsh As Worksheet
+    Set mainsh = ThisWorkbook.Worksheets(DESIGNERMAINSHEET)
+    
+    Select Case pressed
+        Case True
+        mainsh.Range("RNG_MainInstruct").Value = "add"
+        Case False
+        mainsh.Range("RNG_MainInstruct").Value = "not add"
+    End Select
 End Sub

@@ -111,13 +111,18 @@ End Function
 
 'Epiweek function without specifying the year in select cases - works with all years.
 '@EntryPoint
-Public Function Epiweek(ByVal currentDate As Long, _ 
-                        Optional ByVal weekStart As DayList = Monday) As Long
+Public Function Epiweek(ByVal currentDate As Long) As Long
 
     Dim inDate As Long
     Dim firstDate As Long
     Dim firstDayDate As Long
     Dim borderLeftDate As Long
+    Dim weekStart As Long
+
+    On Error Resume Next
+        weekStart = 1
+        weekStart = CLng(ThisWorkbook.Worksheets("updates__").Range("RNG_EpiWeekStart").Value)
+    On Error GoTo 0
 
     inDate = DateSerial(Year(currentDate), 1, 1)
     firstDayDate = inDate - Weekday(inDate, weekStart + 1) + 1

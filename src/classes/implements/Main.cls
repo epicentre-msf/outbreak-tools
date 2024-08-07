@@ -34,6 +34,7 @@ Private Const RNGMAINTEMP As String = "RNG_MainTemp"
 Private Const RNGASKOPEN As String = "RNG_AskOpen"
 Private Const RNGWARNING As String = "RNG_Warning"
 Private Const RNGMAINALERT As String = "RNG_MainAlert"
+Private Const RNGMAININSTRUCT As String = "RNG_MainInstruct"
 Private Const PASSDEFVERS As String = "d0099" 'Password default version
 
 Private Const CLASSNAME As String = "Main"
@@ -113,6 +114,8 @@ Private Property Get ValueOf(ByVal tagName As String) As String
             rngName = RNGLLFORM
         Case "askopen"
             rngName = RNGASKOPEN
+        Case "instruct"
+            rngName = RNGMAININSTRUCT
         End Select
 
         On Error Resume Next
@@ -525,7 +528,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
                   RNGPATHDICO, RNGPATHGEO, RNGLLDIR, RNGLLNAME, _
                   RNGEDITION, RNGMAINREADY, RNGUPDATE, RNGLLPWDOPEN, _
                   RNGTEMPPATH, RNGMAINTEMP, RNGASKOPEN, RNGWARNING, _ 
-                  RNGMAINALERT
+                  RNGMAINALERT, RNGMAININSTRUCT
 
     For counter = rngTable.LowerBound To rngTable.UpperBound
         rngName = rngTable.Item(counter)
