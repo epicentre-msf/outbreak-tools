@@ -133,7 +133,7 @@ Private Property Get NumberOfExports() As Long
 End Property
 
 'Find a path of an export (using the dictionary)
-Private Property Get ExportFileName(ByVal scope As Byte, _
+Private Property Get ExportFileName(ByVal scope As Integer, _
                             ByVal dict As ILLdictionary, _
                             ByVal pass As ILLPasswords) As String
 
@@ -165,7 +165,7 @@ Private Property Get ExportFileName(ByVal scope As Byte, _
         Set fun = Application.WorksheetFunction
         Set vars = LLVariables.Create(dict)
 
-        fileName = Value("file name", CInt(scope))
+        fileName = Value("file name", scope)
 
         PathData.Items = Split(fileName, "+")
 
@@ -258,7 +258,7 @@ Private Property Get ILLExport_IsActive(ByVal exportNumber As Integer) As Boolea
     ILLExport_IsActive = IsActive(exportNumber)
 End Property
 
-Private Property Get ILLExport_ExportFileName(ByVal scope As Byte, _
+Private Property Get ILLExport_ExportFileName(ByVal scope As Integer, _
                                               ByVal dict As ILLdictionary, _
                                               ByVal pass As ILLPasswords) As String
     ILLExport_ExportFileName = ExportFileName(scope, dict, pass)

@@ -538,14 +538,14 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
   'Get the column index of the variable in the actual worksheet
   On Error Resume Next
     colIndex = -1
-    colIndex = CLng(Value(indexValue, "column index"))
+    colIndex = CLng(Value(indexValue, "position index"))
   On Error GoTo 0
   If colIndex = -1 Then Exit Sub
 
   'listObject depending of the scope
   Select Case scope
 
-    Case ShowHideScopeHList, ShowHideScopeVList
+    Case ShowHideScopeHList, ShowHideScopeVList, ShowHideScopeCRF
     
     'Linelist, HList or VList
     Set listObject = fobj.LST_LLVarNames
@@ -597,8 +597,9 @@ Private Sub ShowHideLogic(ByVal indexValue As Long)
     Case ShowHideScopePrint, ShowHideScopeHList
     sh.Columns(colIndex).HIDDEN = hideRowOrCol
     'On VList (Info worksheet), hide entire row
-    Case ShowHideScopeVList
+    Case ShowHideScopeVList, ShowHideScopeCRF
     sh.Rows(colIndex).HIDDEN = hideRowOrCol
+
   End Select
 
   SetStatus indexValue, showValue
