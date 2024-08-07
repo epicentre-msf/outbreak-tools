@@ -54,7 +54,7 @@ End Sub
 Private Sub CreateExport()
 
     'Scope is the scope of the export, by default, it exports all
-    Dim scope As Byte
+    Dim scope As Integer
     Dim shouldQuit As Byte
     
     'Add Error management
