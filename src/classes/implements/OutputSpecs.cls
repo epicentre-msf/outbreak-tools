@@ -662,7 +662,7 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
 
       'Protect back the worksheet
       pass.Protect inpsh.Name
-    
+
       'Add labels if required
       If useLabels Then labelsList.ToExcelRange outsh.Cells(1, 1), TransposeValues:=True
 
