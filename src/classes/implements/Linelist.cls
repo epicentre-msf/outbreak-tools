@@ -569,8 +569,7 @@ Private Sub Prepare()
     'Select/unhide the instruction worksheet
     If mainObj.HasTemplate() And (mainObj.ValueOf("instruct") = "add") Then
         With outWkb
-            .Worksheets(trans.TranslatedValue("INSTSHEET")).Visible = xlSheetVisible
-            .Worksheets(trans.TranslatedValue("INSTSHEET")).Name = trans.TranslatedValue("INSTSHEETNAME")
+            .Worksheets(trans.TranslatedValue("INSTSHEETNAME")).Visible = xlSheetVisible
             .Worksheets(trans.TranslatedValue("INSTSHEETNAME")).Move Before:=.Worksheets(this.firstSheet)
         End with
     End If
