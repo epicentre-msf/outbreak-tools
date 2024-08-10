@@ -518,6 +518,7 @@ End Sub
 'Add validation for VList var
 Private Sub AddValidation()
 
+
     Dim varMin As String
     Dim varMax As String
     Dim varMessage As String
@@ -537,6 +538,7 @@ Private Sub AddValidation()
 
     If (varMin = vbNullString And varMax = vbNullString) Or (varTypes = "text") Then Exit Sub
 
+    On Error GoTo validationError
 
     Set cellRng = VarRange()
     With cellRng.validation
@@ -581,14 +583,21 @@ Private Sub AddValidation()
 
         .IgnoreBlank = True
         .InCellDropdown = True
-        .InputTitle = ""
-        .errorTitle = ""
-        .InputMessage = ""
+        .InputTitle = vbNullString
+        .errorTitle = vbNullString
+        .InputMessage = vbNullString
         .errorMessage = varMessage
         .ShowInput = True
         .ShowError = True
 
     End With
+    Exit Sub
+
+    validationError:
+        Debug.Print "Validation error on variable " & ActualVariable() & "----------"
+        Debug.Print "Excel formula: " & excelForm
+        Debug.Print "Excel second formula: " & excelForm2
+        Debug.Print Err.Description
 End Sub
 
 'Excel formula uses the OS to convert to local formula
@@ -619,12 +628,13 @@ Private Function ExcelFormula(ByVal formVal As String, _
     excelForm = "= " & excelForm
 
 
-    If Not varFormObject.HasLiterals Then
+    If (Not varFormObject.HasLiterals) Then
 
         'Return the required type
         excelForm = Application.WorksheetFunction.Trim(Replace(excelForm, "=", ""))
 
         Select Case validationTypes
+        
         Case xlValidateWholeNumber
             convForm = CInt(excelForm)
         Case xlValidateDate
@@ -632,11 +642,12 @@ Private Function ExcelFormula(ByVal formVal As String, _
         Case xlValidateDecimal
             convForm = CLng(excelForm)
         End Select
+
         ExcelFormula = convForm
     Else
 
         'We have a formula, we just return the formula
-        ExcelFormula = "= " & excelForm
+        ExcelFormula = excelForm
     End If
 
 End Function
@@ -680,13 +691,14 @@ Private Sub WriteInfo()
     'Choices
     AddChoices
 
-    'Addvalidation
+    'Add conditional formatting
+    AddConditionalFormatting
+
+        'Addvalidation
     On Error Resume Next
     AddValidation
     On Error GoTo 0
 
-    'Add conditional formatting
-    AddConditionalFormatting
 End Sub
 
 'Errors

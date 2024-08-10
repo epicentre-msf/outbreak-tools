@@ -670,6 +670,8 @@ Private Sub AddValidation()
 
     If (varMin = vbNullString And varMax = vbNullString) Or (varTypes = "text") Then Exit Sub
 
+    On Error GoTo validationError
+
     Set cellRng = VarRange()
 
     With cellRng.validation
@@ -723,6 +725,13 @@ Private Sub AddValidation()
         .ShowError = True
 
     End With
+    Exit Sub
+    
+    validationError:
+        Debug.Print "Validation error on variable " & ActualVariable() & "----------"
+        Debug.Print Err.Description & " -- " & Err.Number
+        Debug.Print "Excel formula: " & excelForm
+        Debug.Print "Excel second formula: " & excelForm2
 
 End Sub
 
