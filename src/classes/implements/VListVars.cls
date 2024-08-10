@@ -390,6 +390,7 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     'variable name
     cellRng.Name = varName
 
+
     'variable note
     If varNote <> vbNullString Then
         cellRng.AddComment
@@ -407,6 +408,10 @@ Private Sub AddLabel(Optional ByVal notevisibility As Boolean = False)
     If (varEditLab = "yes") Then cellRng.Offset(, -1).Locked = False
     cellRng.Offset(, -2).Locked = True
     cellRng.Offset(, -3).Locked = True
+
+    'Adding variable control for future usage
+    cellRng.Offset(, 1).Value = varControl
+    design.ApplyFormat cellRng.Offset(, 1), scope:=LinelistHiddenCell
 End Sub
 
 'Add the choices

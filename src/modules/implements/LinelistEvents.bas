@@ -388,6 +388,9 @@ Public Sub EventValueChangeVList(ByVal Target As Range)
     Dim varSubLabel As String
     Dim varEditable As String
     Dim varName As String
+    Dim varControl As String
+    Dim choiSep As String
+
 
     On Error GoTo Err
 
@@ -419,6 +422,29 @@ Public Sub EventValueChangeVList(ByVal Target As Range)
         vars.SetValue varName:=varName, colName:="main label", _
                       newValue:=varLabel
         Exit Sub
+    End If
+
+    'Update the choice multiple
+    If Target.Column = rng.Column Then
+       
+       varControl = Target.Offset(, 1).Value
+        'Update multiple choices dropdown
+        If Instr(1, varControl, "choice_multiple") = 1 Then
+
+            On Error Resume Next
+                choiSep = Split(varControl, "(" & Chr(34))(1)
+                choiSep = Replace(choiSep,  Chr(34) & ")", vbNullString)
+            On Error GoTo 0
+            
+            If (choiSep = vbNullString) Or _ 
+            (Instr(1, choiSep, "choice_multiple") = 1) Then _ 
+                choiSep = ", "
+
+            BusyApp
+            UpdateMultipleChoice Target, choiSep
+            NotBusyApp
+            Exit Sub
+        End If
     End If
 
     'Jump to GoTo section
