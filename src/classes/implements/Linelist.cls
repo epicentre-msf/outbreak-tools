@@ -568,10 +568,7 @@ Private Sub Prepare()
 
     'Select/unhide the instruction worksheet
     If mainObj.HasTemplate() And (mainObj.ValueOf("instruct") = "add") Then
-        With outWkb
-            .Worksheets(trans.TranslatedValue("INSTSHEETNAME")).Visible = xlSheetVisible
-            .Worksheets(trans.TranslatedValue("INSTSHEETNAME")).Move Before:=.Worksheets(this.firstSheet)
-        End with
+        outWkb.Worksheets(trans.TranslatedValue("INSTSHEETNAME")).Visible = xlSheetVisible
     End If
 
     'temporary sheet Names
@@ -627,6 +624,10 @@ Private Sub Prepare()
         AddOutputSheet sheetName, xlSheetVisible
     Next
 
+    With outWkb
+        .Worksheets(trans.TranslatedValue("INSTSHEETNAME")).Move _
+         Before:=.Worksheets(sheetsList.Item(counter - 1))
+    End With
 
     'Add admin sheet only if the user chooses buttons instead of ribbon linelist
     If Not mainobj.HasTemplate() Then
