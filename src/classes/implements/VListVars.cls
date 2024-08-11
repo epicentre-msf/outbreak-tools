@@ -518,16 +518,17 @@ End Sub
 'Add validation for VList var
 Private Sub AddValidation()
 
-
     Dim varMin As String
     Dim varMax As String
     Dim varMessage As String
     Dim varAlert As String
-    Dim varTypes As String     'Something weird but we can't name a variable varType, so the s is important
+    Dim varTypes As String                       'Something weird but we can't name a variable varType, so the s is important
     Dim validationTypes As Long
     Dim validationAlerts As Long
     Dim excelForm As Variant
+    Dim excelOSForm As Variant
     Dim excelForm2 As Variant
+    Dim excelOSForm2 As Variant
     Dim cellRng As Range
 
     varTypes = ValueOf("variable type")
@@ -538,9 +539,8 @@ Private Sub AddValidation()
 
     If (varMin = vbNullString And varMax = vbNullString) Or (varTypes = "text") Then Exit Sub
 
-    On Error GoTo validationError
-
     Set cellRng = VarRange()
+
     With cellRng.validation
         .Delete
 
@@ -556,28 +556,64 @@ Private Sub AddValidation()
         If (varMin <> vbNullString) And (varMax = vbNullString) Then
 
             excelForm = ExcelFormula(varMin, validationTypes)
+            excelOSForm = ExcelFormula(varMin, validationTypes, useOS:=True)
+
             If IsEmpty(excelForm) Then Exit Sub
+
+            On Error Resume Next
+            .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
+                 Operator:=xlGreaterEqual, Formula1:=excelOSForm
 
             .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
                  Operator:=xlGreaterEqual, Formula1:=excelForm
+            On Error GoTo 0
 
         ElseIf (varMin = vbNullString) And (varMax <> vbNullString) Then
+            
             'Validation on Maximum
             excelForm = ExcelFormula(varMax, validationTypes)
+            excelOSForm = ExcelFormula(varMin, validationTypes, useOS:=True)
+
             If IsEmpty(excelForm) Then Exit Sub
 
+            On Error Resume Next
+
             .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
-                 Operator:=xlLessEqual, Formula1:=excelForm
+            Operator:=xlLessEqual, Formula1:=excelOSForm
+
+            .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
+            Operator:=xlLessEqual, Formula1:=excelForm
+
+            On Error GoTo 0
 
         ElseIf (varMin <> vbNullString) And (varMax <> vbNullString) Then
+
             'Validation on Both minimum and maximum
             excelForm = ExcelFormula(varMin, validationTypes)
+            excelOSForm = ExcelFormula(varMin, validationTypes, useOS:=True)
             excelForm2 = ExcelFormula(varMax, validationTypes)
+            excelOSForm2 = ExcelFormula(varMax, validationTypes, useOS:=True)
+
+            Debug.Print "ExcelForm: " & excelForm
+            Debug.Print "ExcelOSForm: " & excelOSForm
+
+            Debug.Print "ExcelForm2: " & excelForm2
+            Debug.Print "ExcelOSForm2: " & excelOSForm2
+
 
             If IsEmpty(excelForm) Or IsEmpty(excelForm2) Then Exit Sub
 
-            .Add Type:=validationTypes, AlertStyle:=validationAlerts, Operator:=xlBetween, _
+            On Error Resume Next
+
+            .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
+                 Operator:=xlBetween, _
+                 Formula1:=excelOSForm, Formula2:=excelOSForm2
+
+            .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
+                 Operator:=xlBetween, _
                  Formula1:=excelForm, Formula2:=excelForm2
+
+            On Error GoTo 0
 
         End If
 
@@ -593,16 +629,12 @@ Private Sub AddValidation()
     End With
     Exit Sub
 
-    validationError:
-        Debug.Print "Validation error on variable " & ActualVariable() & "----------"
-        Debug.Print "Excel formula: " & excelForm
-        Debug.Print "Excel second formula: " & excelForm2
-        Debug.Print Err.Description
 End Sub
 
 'Excel formula uses the OS to convert to local formula
-Private Function ExcelFormula(ByVal formVal As String, _
-                              ByVal validationTypes As Long) As Variant
+Private Function ExcelFormula(ByVal formVal As String, _ 
+                              ByVal validationTypes As Long, _
+                              Optional ByVal useOS As Boolean = False) As Variant
 
     Dim lData As ILinelistSpecs
     Dim dict As ILLdictionary
@@ -622,19 +654,20 @@ Private Function ExcelFormula(ByVal formVal As String, _
     If Not varFormObject.Valid(formulaType:="linelist") Then Exit Function
     excelForm = varFormObject.ParsedLinelistFormula()
     If FailedFormula(excelForm) Then Exit Function
+
     'Removed conversion to OS formula on french desktops
-    'excelForm = OSFormula(excelForm)
+    If useOS Then
+        excelForm = OSFormula(excelForm)
+    Else
+        excelForm = "= " & excelForm
+    End If
 
-    excelForm = "= " & excelForm
-
-
-    If (Not varFormObject.HasLiterals) Then
+    If Not varFormObject.HasLiterals Then
 
         'Return the required type
         excelForm = Application.WorksheetFunction.Trim(Replace(excelForm, "=", ""))
 
         Select Case validationTypes
-        
         Case xlValidateWholeNumber
             convForm = CInt(excelForm)
         Case xlValidateDate
@@ -642,10 +675,9 @@ Private Function ExcelFormula(ByVal formVal As String, _
         Case xlValidateDecimal
             convForm = CLng(excelForm)
         End Select
-
         ExcelFormula = convForm
-    Else
 
+    Else
         'We have a formula, we just return the formula
         ExcelFormula = excelForm
     End If
@@ -694,7 +726,7 @@ Private Sub WriteInfo()
     'Add conditional formatting
     AddConditionalFormatting
 
-        'Addvalidation
+    'Addvalidation
     On Error Resume Next
     AddValidation
     On Error GoTo 0

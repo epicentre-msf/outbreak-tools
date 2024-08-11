@@ -659,7 +659,9 @@ Private Sub AddValidation()
     Dim validationTypes As Long
     Dim validationAlerts As Long
     Dim excelForm As Variant
+    Dim excelOSForm As Variant
     Dim excelForm2 As Variant
+    Dim excelOSForm2 As Variant
     Dim cellRng As Range
 
     varTypes = ValueOf("variable type")
@@ -669,8 +671,6 @@ Private Sub AddValidation()
     varMessage = ValueOf("message")
 
     If (varMin = vbNullString And varMax = vbNullString) Or (varTypes = "text") Then Exit Sub
-
-    On Error GoTo validationError
 
     Set cellRng = VarRange()
 
@@ -689,29 +689,64 @@ Private Sub AddValidation()
         If (varMin <> vbNullString) And (varMax = vbNullString) Then
 
             excelForm = ExcelFormula(varMin, validationTypes)
+            excelOSForm = ExcelFormula(varMin, validationTypes, useOS:=True)
+
             If IsEmpty(excelForm) Then Exit Sub
+
+            On Error Resume Next
+            .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
+                 Operator:=xlGreaterEqual, Formula1:=excelOSForm
 
             .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
                  Operator:=xlGreaterEqual, Formula1:=excelForm
+            On Error GoTo 0
 
         ElseIf (varMin = vbNullString) And (varMax <> vbNullString) Then
+            
             'Validation on Maximum
             excelForm = ExcelFormula(varMax, validationTypes)
+            excelOSForm = ExcelFormula(varMin, validationTypes, useOS:=True)
+
             If IsEmpty(excelForm) Then Exit Sub
+
+            On Error Resume Next
+
+            .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
+            Operator:=xlLessEqual, Formula1:=excelOSForm
 
             .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
             Operator:=xlLessEqual, Formula1:=excelForm
 
+            On Error GoTo 0
+
         ElseIf (varMin <> vbNullString) And (varMax <> vbNullString) Then
+
             'Validation on Both minimum and maximum
             excelForm = ExcelFormula(varMin, validationTypes)
+            excelOSForm = ExcelFormula(varMin, validationTypes, useOS:=True)
             excelForm2 = ExcelFormula(varMax, validationTypes)
+            excelOSForm2 = ExcelFormula(varMax, validationTypes, useOS:=True)
+
+            Debug.Print "ExcelForm: " & excelForm
+            Debug.Print "ExcelOSForm: " & excelOSForm
+
+            Debug.Print "ExcelForm2: " & excelForm2
+            Debug.Print "ExcelOSForm2: " & excelOSForm2
+
 
             If IsEmpty(excelForm) Or IsEmpty(excelForm2) Then Exit Sub
+
+            On Error Resume Next
+
+            .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
+                 Operator:=xlBetween, _
+                 Formula1:=excelOSForm, Formula2:=excelOSForm2
 
             .Add Type:=validationTypes, AlertStyle:=validationAlerts, _
                  Operator:=xlBetween, _
                  Formula1:=excelForm, Formula2:=excelForm2
+
+            On Error GoTo 0
 
         End If
 
@@ -726,17 +761,13 @@ Private Sub AddValidation()
 
     End With
     Exit Sub
-    
-    validationError:
-        Debug.Print "Validation error on variable " & ActualVariable() & "----------"
-        Debug.Print Err.Description & " -- " & Err.Number
-        Debug.Print "Excel formula: " & excelForm
-        Debug.Print "Excel second formula: " & excelForm2
 
 End Sub
 
 'Excel formula uses the OS to convert to local formula
-Private Function ExcelFormula(ByVal formVal As String, ByVal validationTypes As Long) As Variant
+Private Function ExcelFormula(ByVal formVal As String, _ 
+                              ByVal validationTypes As Long, _
+                              Optional ByVal useOS As Boolean = False) As Variant
 
     Dim lData As ILinelistSpecs
     Dim dict As ILLdictionary
@@ -758,9 +789,11 @@ Private Function ExcelFormula(ByVal formVal As String, ByVal validationTypes As 
     If FailedFormula(excelForm) Then Exit Function
 
     'Removed conversion to OS formula on french desktops
-    'excelForm = OSFormula(excelForm)
-
-    excelForm = "= " & excelForm
+    If useOS Then
+        excelForm = OSFormula(excelForm)
+    Else
+        excelForm = "= " & excelForm
+    End If
 
     If Not varFormObject.HasLiterals Then
 
@@ -792,18 +825,16 @@ Private Function OSFormula(ByVal formVal As String) As String
     Dim sh As Worksheet
     Dim prevForm As String                       'Previous formula
 
+    'Sometimes, validations are done using the formula Local and not the formula itself,
+    'so will test the two.
+    
+    Set sh = Wksh()
+    prevForm = sh.Cells(1, 1).formula
+    sh.Cells(1, 1).formula = "=" & formVal
+    OSFormula = sh.Cells(1, 1).FormulaLocal
+    'restore previous formula in cell
+    sh.Cells(1, 1).formula = prevForm
 
-    If (Application.OperatingSystem Like "*Mac*") Then
-        OSFormula = formVal
-    Else
-        'On windows, validations are done using the formula Local and not the formula itself
-        Set sh = Wksh()
-        prevForm = sh.Cells(1, 1).formula
-        sh.Cells(1, 1).formula = "=" & formVal
-        OSFormula = sh.Cells(1, 1).FormulaLocal
-        'restore previous formula in cell
-        sh.Cells(1, 1).formula = prevForm
-    End If
 End Function
 
 'Write one variable information in the corresponding cell.
