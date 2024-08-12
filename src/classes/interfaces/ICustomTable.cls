@@ -34,7 +34,7 @@ Public Sub Import(ByVal impTab As Object, _
                   Optional ByVal insertShift As Boolean = True)
 End Sub
 Public Sub Clean(): End Sub
-Public Sub Sort(ByVal els As Variant): End Sub
+Public Sub Sort(ByVal els As Variant, Optional ByVal onFirst As Boolean = True): End Sub
 Public Sub AddRows(Optional ByVal nbRows As Long = 100, _ 
                    Optional ByVal insertShift As Boolean = False)
 End Sub

@@ -569,7 +569,7 @@ Private Sub SortOnFirst(ByVal colName As String)
   'Sort on values only If there is data
   Set Lo = Table()
   Set LoRng = Lo.DataBodyRange
-  Set colRng = DataRange(colName)
+  Set colRng = DataRange(colName, strictSearch:=True)
 
   If (LoRng Is Nothing) Or IsEmpty(LoRng) Or (colRng Is Nothing) Or _
      (IsEmpty(colRng)) Then Exit Sub
@@ -614,8 +614,25 @@ Private Sub SortOnFirst(ByVal colName As String)
   Lo.ListColumns(hRng.Cells.Count + 1).Delete
 End Sub
 
+Private Sub SortSimple(ByVal colName As String)
+
+  Dim colRng As Range
+  Dim LoRng As Range
+  Dim Lo As ListObject
+
+  Set Lo = Table()
+  Set LoRng = Lo.Range
+  Set colRng = DataRange(colName, strictSearch:=True)
+
+  If (LoRng Is Nothing) Or IsEmpty(LoRng) Or (colRng Is Nothing) Or _
+      (IsEmpty(colRng)) Then Exit Sub
+
+  LoRng.Sort key1:=colRng, Order1:=xlAscending, Header:=xlYes
+
+End Sub
+
 'Sucessively sort the listObject on multiple elements (in a BetterArray with colname values)
-Private Sub SortElements(ByVal els As Variant)
+Private Sub SortElements(ByVal els As Variant, Optional ByVal onFirst As Boolean = True)
   Dim colName As String
   Dim counter As Long
 
@@ -623,13 +640,21 @@ Private Sub SortElements(ByVal els As Variant)
 
   If (TypeName(els) = "String") Then
     colName = els
-    SortOnFirst colName
+    If onFirst Then 
+      SortOnFirst colName
+    Else
+      SortSimple colName
+    End If
     Exit Sub
   End If
 
   For counter = els.LowerBound To els.UpperBound
     colName = els.Item(counter)
-    SortOnFirst colName
+    If onFirst Then
+      SortOnFirst colName
+    Else
+      SortSimple colName
+    End If
   Next
 End Sub
 
@@ -678,8 +703,8 @@ Private Sub ICustomTable_Clean()
   Clean
 End Sub
 
-Private Sub ICustomTable_Sort(ByVal els As Variant)
-  SortElements els
+Private Sub ICustomTable_Sort(ByVal els As Variant, Optional ByVal onFirst As Boolean = True)
+  SortElements els, onFirst
 End Sub
 
 Private Sub ICustomTable_Export(ByVal sh As Worksheet, _

@@ -623,6 +623,7 @@ Private Sub WriteTable(ByVal loName As String, _
         addSpatioTemporalName = (tabType = TypeSpatioTemporal)
       End If
     Else
+    
       'last section of a time series table
       addActSecMinMaxFormula = True
       addSpatioTemporalName = (tabType = TypeSpatioTemporal)
@@ -630,6 +631,8 @@ Private Sub WriteTable(ByVal loName As String, _
       Set cellRng = outsh.Range("ENDTABLE_" & secId).Offset(5, 2)
       If tabType = TypeTimeSeries Then cellRng.Name = "START_GRAPHS_TS"
       If tabType = TypeSpatioTemporal Then cellRng.Name = "START_GRAPHS_SPT"
+
+      Push goToHeader & ": " & tabl.TimeSeriesHeader(), scope:="header"
     End If
 
     If (Not isNewSection) And (Not (nextSpecs Is Nothing)) Then
@@ -949,35 +952,38 @@ Private Sub WriteAnalysis()
   PrepareSheet scope:=scope
 
   'Add an Error Management for the tables
-   On Error GoTo ErrHand
+
+  On Error GoTo ErrHand
+  
   ' --- Write Global summary
-   WriteTable loName:=GLOBALSUMMARY, scope:=scope
-   Push GoToLabel("section") & ""
-   ' ---- Write Univariate Analysis
-   WriteTable loName:=UNIVARIATE, scope:=scope
-   ' ---- Write the Bivariate Analysis
-   WriteTable loName:=BIVARIATE, scope:=scope
+  WriteTable loName:=GLOBALSUMMARY, scope:=scope
+  Push GoToLabel("section") & ""
+  ' ---- Write Univariate Analysis
+  WriteTable loName:=UNIVARIATE, scope:=scope
+  ' ---- Write the Bivariate Analysis
+  WriteTable loName:=BIVARIATE, scope:=scope
 
-   On Error GoTo 0
+  On Error GoTo 0
 
-   'Add The goTo for sections
-   Set cellRng = outsh.Cells(2, 3)
-   AddGoTo cellRng:=cellRng, goToPrefix:="ua_", scope:="section"
-   'Add the command
-   AddCommands scope:=scope
+  'Add The goTo for sections
+  Set cellRng = outsh.Cells(2, 3)
+  AddGoTo cellRng:=cellRng, goToPrefix:="ua_", scope:="section"
+  'Add the command
+  AddCommands scope:=scope
 
-   'Hide the output sheet if required
-   pass.Protect outsh, True
-   If IsEmpty(outsh.Range("RNG_HasTable_UNI")) Then _ 
-    outsh.Visible = xlSheetHidden
+  'Hide the output sheet if required
+  pass.Protect outsh, True
+  If IsEmpty(outsh.Range("RNG_HasTable_UNI")) Then outsh.Visible = xlSheetHidden
 
-   'Transfer code to the worksheet
-   TransferCodeWksh scope:=scope
+  'Transfer code to the worksheet
+  TransferCodeWksh scope:=scope
 
-   'Time Series Analysis Worksheet =============================================
+  'Time Series Analysis Worksheet =============================================
+  
   scope = AnalysisScopeTimeSeries
   Set outsh = OutputSh(scope)
   PrepareSheet scope:=scope
+  
   'Write the tables of time series
   On Error GoTo ErrHand
 
@@ -1001,6 +1007,7 @@ Private Sub WriteAnalysis()
    TransferCodeWksh scope:=scope
 
   'Spatial Analysis Worksheet ==================================================
+
   scope = AnalysisScopeSpatial
   Set outsh = OutputSh(scope)
 
@@ -1023,6 +1030,7 @@ Private Sub WriteAnalysis()
   TransferCodeWksh scope:=scope
 
   'Spatio-Temporal Analysis worksheet ==========================================
+
   scope = AnalysisScopeSpatioTemporal
   Set outsh = OutputSh(scope)
   PrepareSheet scope:=scope
