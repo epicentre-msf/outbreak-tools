@@ -334,6 +334,9 @@ Private Sub GenerateData()
 
     'Saving the linelist
     ll.SaveLL
+
+    'Information on linelist created in the corresponding directory
+    mainobj.AddInfo desTrads, "MSG_LLCreated"
     
     NotBusyApp returnSeparator:=savedSeparator, useSystemSeparators:=savedUseSep
     
