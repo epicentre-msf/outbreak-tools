@@ -129,7 +129,9 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
       AddIds
     Else
 
-      Do While (rowCounter > loRowHeader)
+      'Tend to delete formulas in the first line when every thing is empty.
+      'I will let the user sort and then delete afterward instead.
+      Do While (rowCounter > loRowHeader + 1)
         If (Application.WorksheetFunction.COUNTA(.Rows(rowCounter)) <= totalRowCount) Then
 
           If (delRng Is Nothing) Then
