@@ -257,6 +257,7 @@ Private Sub Prepare()
     Dim PreservedSheetNames As BetterArray
 
     Dim dict As ILLdictionary
+    Dim impDict As ILLdictionary 'Imported dictionary for checkings
     Dim choi As ILLchoice
     Dim geo As ILLGeo                            'Geo Object to add admin names in the preparation steps of the dictionary
     Dim dictTrads As ITranslation
@@ -280,7 +281,7 @@ Private Sub Prepare()
     If Not mainobj.Ready() Then Exit Sub
 
     Set geo = geoObject()
-    'Import dictionary, and geobase, as well as choices
+        'Import dictionary, and geobase, as well as choices
     setPath = mainobj.ValueOf("setuppath")
     BusyApp
     Set inpWkb = Workbooks.Open(setPath)
@@ -301,6 +302,16 @@ Private Sub Prepare()
     'Import the dictionary data
     Set dict = Dictionary()    
     Set sh = inpWkb.Worksheets(DICTIONARYSHEET)
+
+    'Exit if the imported dictionary is completely empty
+    Set impDict = LLdictionary.Create(sh, 5, 1)
+    
+    If (Application.WorksheetFunction.COUNTA(impDict.DataRange) = 0) Then
+        inpWkb.Close savechanges:=False 
+        ThrowError "The dictionary is empty"
+    End If
+    
+    'Import the dicitonary in the current designer
     dict.Import sh, fromStartRow:=5, fromStartcol:=1
 
     'Import the choice data
