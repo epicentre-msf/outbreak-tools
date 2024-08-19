@@ -493,8 +493,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     'HIDDEN ROWS AND COLUMNS, ROTATION ------------------------------------------------------------------------------
 
     'Hidden columns (entirely hidden, or "optional, hidden" on Linelist, or "hidden" on Printed Linelist)
-    If ((varStatus = "hidden") Or (varStatus = "optional, hidden")) And (Not usePrinted) Then
-
+    If ((varStatus = "hidden") Or (varStatus = "optional, hidden")) And (Not usePrinted) And (cellRng.Column > 1) Then
        cellRng.EntireColumn.HIDDEN = True
     'On print worksheet, hide hidden columns    
     ElseIf ((varToPrint = "hidden" Or varStatus = "hidden") And usePrinted) Then 
@@ -504,6 +503,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
         cellRng.Offset(-2).Orientation = 90
         cellRng.Offset(-2).EntireColumn.AutoFit
     End If
+
 
     'The cell header itself
     design.ApplyFormat cellRng.Offset(-2), scope:=HListSimpleHeaderCell
