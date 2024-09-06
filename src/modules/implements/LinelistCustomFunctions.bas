@@ -111,18 +111,27 @@ End Function
 
 'Epiweek function without specifying the year in select cases - works with all years.
 '@EntryPoint
-Public Function Epiweek(ByVal currentDate As Long) As Long
+Public Function Epiweek(ByVal currentDate As Long, Optional ByVal userStart As Integer = -1) As Long
 
     Dim inDate As Long
     Dim firstDate As Long
     Dim firstDayDate As Long
     Dim borderLeftDate As Long
-    Dim weekStart As Long
+    Dim weekStart As Integer
 
     On Error Resume Next
-        weekStart = 1
-        weekStart = CLng(ThisWorkbook.Worksheets("updates__").Range("RNG_EpiWeekStart").Value)
+        weekStart = CInt(ThisWorkbook.Worksheets("updates__").Range("RNG_EpiWeekStart").Value)
     On Error GoTo 0
+
+    'week Start
+    If weekStart = - 1 And userStart = -1 Then
+        weekStart = 1
+    'week start not initialized by the user.
+    ElseIf weekStart = -1 Then
+        weekStart = IIf((userStart > 0) And (userStart <= 6), userStart, 1)
+    Else
+        weekStart = IIf((weekStart > 0) And (weekStart <= 6), weekStart, 1)  
+    End If
 
     inDate = DateSerial(Year(currentDate), 1, 1)
     firstDayDate = inDate - Weekday(inDate, weekStart + 1) + 1
