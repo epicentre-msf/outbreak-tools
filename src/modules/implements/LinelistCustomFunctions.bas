@@ -120,6 +120,7 @@ Public Function Epiweek(ByVal currentDate As Long, Optional ByVal userStart As I
     Dim weekStart As Integer
 
     On Error Resume Next
+        weekStart = 1
         weekStart = CInt(ThisWorkbook.Worksheets("updates__").Range("RNG_EpiWeekStart").Value)
     On Error GoTo 0
 
@@ -128,9 +129,7 @@ Public Function Epiweek(ByVal currentDate As Long, Optional ByVal userStart As I
         weekStart = 1
     'week start not initialized by the user.
     ElseIf weekStart = -1 Then
-        weekStart = IIf((userStart > 0) And (userStart <= 6), userStart, 1)
-    Else
-        weekStart = IIf((weekStart > 0) And (weekStart <= 6), weekStart, 1)  
+        weekStart = IIf((userStart > 0) And (userStart <= 6), userStart, 1)  
     End If
 
     inDate = DateSerial(Year(currentDate), 1, 1)
