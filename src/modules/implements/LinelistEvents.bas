@@ -494,7 +494,7 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
 
 
     'First test if we are on a good line
-    If (Target.Row < startLine) Or (Target.Row <> endLine)  Then Exit Sub
+    If (Target.Row < startLine) Or (Target.Row > endLine)  Then Exit Sub
 
     If (Target.Row = endLine) Then
         On Error Resume Next
