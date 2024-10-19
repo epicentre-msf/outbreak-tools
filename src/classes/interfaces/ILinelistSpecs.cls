@@ -35,7 +35,7 @@ Public Property Get Password() As ILLPasswords: End Property 'Passwords
 
 Public Property Get geoObject() As ILLGeo: End Property      'Geo object
 Public Property Get Analysis() As ILLAnalysis: End Property  'Analysis
-Public Property Get NumberOfExports() As Long: End Property  'Get the number of exports of the linelist
+Public Property Get Value(ByVal tagName As String) As String: End Property 'Get the designer value of some specs
 
 'Exposed methods
 'Categories of one variable
