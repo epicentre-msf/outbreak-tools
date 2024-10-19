@@ -23,6 +23,7 @@ Public Enum TradScopes
     TranslationOfMessages = 4
     TranslationOfRanges = 5
     TranslationOfRibbon = 6
+    TranslationOfDropdowns = 7
 End Enum
 
 'Exposed methods

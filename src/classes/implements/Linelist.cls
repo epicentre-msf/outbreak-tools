@@ -431,8 +431,8 @@ Private Sub PrepareTemporarySheets()
         Set rng = rng.Offset(2)
     Next
 
-    sh.Range("RNG_NumberExports").Value = lData.NumberOfExports()
-    sh.Range("RNG_EpiWeekStart").Value = -1
+    sh.Range("RNG_NumberExports").Value = lData.Value("numberofexports")
+    sh.Range("RNG_EpiWeekStart").Value = lData.Value("epiweekstart")
 
     'On Import report sheets ---------------------------------------------------
 

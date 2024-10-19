@@ -38,6 +38,8 @@ Private Const EXPORTSHEET               As String = "Exports"
 Private Const ANANAMESSHEET             As String = "ana_tabnames__"
 Private Const MESSTRANSLATIONSHEET      As String = "LinelistTranslation"
 Private Const SHOWHIDESHEET             As String = "show_hide__"
+Private Const UPDATESHEET               As String = "updates__"
+Private Const RNGEPIWEEKSTART           As String = "RNG_EpiWeekStart"
 
 Private this As TExpOut
 
@@ -128,6 +130,13 @@ End Property
 
 Public Property Let ActualScope(ByVal scope As Integer)
     this.scope = scope
+End Property
+
+Private Property Get UpObject() As IUpVal
+  Dim currwb As Workbook
+
+  Set currwb = InputWkb()  
+  Set UpObject = UpVal.Create(currwb.Worksheets(UPDATESHEET))
 End Property
 
 Private Property Get ExportDictionary() As ILLdictionary
@@ -467,6 +476,10 @@ Private Sub AddMetaData(ByVal scope As Integer, ByVal includeShowHide As Boolean
   'keep show/hide on import (default is no)
   varRng.Cells(varRng.Rows.Count + 4, 1).Value = "show_hide"
   varRng.Cells(varRng.Rows.Count + 4, 2).Value = "no update on import"
+
+  'Export the epiweek start status
+  varRng.Cells(varRng.Rows.Count + 5, 1).Value = "epiweekstart"
+  varRng.Cells(varRng.Rows.Count + 5, 2).Value = UpObject.Value(RNGEPIWEEKSTART)
 
   'keep Labels when importing the file
   If keepLabels Then  varRng.Cells(varRng.Rows.Count + 3, 2).Value = "update on import"
