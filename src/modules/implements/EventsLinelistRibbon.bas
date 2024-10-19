@@ -202,5 +202,5 @@ End Sub
 '@EntryPoint
 Public Sub clickRibbonSetEpiWeek(ByRef Control As IRibbonControl)
  Attribute clickRibbonSetEpiWeek.VB_Description = "Callback for btnSetEpiWeek On Action"
-    [F_EpiWeek].Show
+    F_EpiWeek.ShowDefaultEpiWeek
 End Sub

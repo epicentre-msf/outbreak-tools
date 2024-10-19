@@ -181,8 +181,15 @@ Public Function FindLastDay(sAggregate As String, inDate As Long) As Long
     Dim dLastDay As Long
     Dim monthQuarter As Integer
     Dim monthDate As Integer
+    'Adding the weekstart on hot fixes from the lastday (import from dev modifs)
+    Dim weekStart As Long
 
     sAgg = GetAgg(sAggregate)
+
+    On Error Resume Next
+        weekStart = 2
+        weekStart = CLng(ThisWorkbook.Worksheets("updates__").Range("RNG_EpiWeekStart").Value) + 1
+    On Error GoTo 0
 
     Select Case sAgg
 
@@ -191,8 +198,8 @@ Public Function FindLastDay(sAggregate As String, inDate As Long) As Long
         dLastDay = inDate
 
     Case "week"
-
-        dLastDay = inDate - Weekday(inDate, 2) + 7
+        'replace the start of the week with the selected start for epiWeek
+        dLastDay = inDate - Weekday(inDate, weekStart) + 7
 
     Case "month"
 

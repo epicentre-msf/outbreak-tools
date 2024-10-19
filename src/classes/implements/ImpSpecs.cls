@@ -42,6 +42,7 @@ Private Const PASSWORDSHEET             As String = "__pass" 'password sheets
 Private Const IMPREPORTSHEET            As String = "import_rep__" 'temporary boggy sheet for report
 Private Const SHOWHIDESHEET             As String = "show_hide__"
 Private Const UPDATESHEET               As String = "updates__"
+Private Const RNGEPIWEEKSTART           As String = "RNG_EpiWeekStart"
 
 Private RESERVEDSHEETS                  As BetterArray
 Private this                            As TImp
@@ -956,6 +957,32 @@ Private Sub UpdateEditableLabels(ByVal inpwb As Workbook)
   Next
 End Sub
 
+
+Private Sub UpdateSingleValues(ByVal inpwb As Workbook)
+
+  Dim metaTab As IDataSheet
+  Dim varRng As Range
+  Dim cellRng As Range 'used for eventual stuffs
+  Dim varValue As String
+
+  'If you import with different language, do not even attempt to update show/hide
+  If Not HASSAMELANGUAGE Then Exit Sub
+  'If there is no metadata, exit the sub (should have a warning or a report)
+  If Not sheetExists(inpwb, METADATASHEET) Then Exit Sub
+   'The metadata sheet is found, I will just look for the import show hide tag
+  Set metaTab = DataSheet.Create(inpwb.Worksheets(METADATASHEET), 1, 1)
+  Set varRng = metaTab.DataRange("variable")
+
+  'Retrieve and update the epiweek start
+  On Error Resume Next
+      Set cellRng = varRng.Find(What:="epiweekstart", lookAt:=xlWhole, MatchCase:=False)
+      varValue = cellRng.Offset(, 1).Value
+  
+    If varValue <> vbNullString Then UpdateObject.SetValue RNGEPIWEEKSTART, varValue
+  On Error GoTo 0
+
+End Sub
+
 'import custom dropdown
 Private Sub ImportCustomDropdown(ByVal inpwb As Workbook, ByVal pasteAtBottom As Boolean)
 
@@ -1071,6 +1098,9 @@ Private Sub ImportMigration()
 
   'Update the values of editable labels
   UpdateEditableLabels impwb
+
+  'Update some single values in the metadata, by replacing values in the current workbook
+  UpdateSingleValues impwb
 
   'Set all list auto to yes update
   impwb.Close savechanges:=False
@@ -1190,6 +1220,10 @@ ErrImpGeo:
   NotBusyApp
   On Error GoTo 0
 End Sub
+
+
+
+'Update some 
 
 
 'Errors checking at instanciation

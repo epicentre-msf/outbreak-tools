@@ -29,6 +29,7 @@ Private Const TABSHAPE As String = "T_tradShape"
 Private Const TABRANGE As String = "T_tradRange"
 Private Const TABSMSG As String = "T_tradMsg"
 Private Const TABLANG As String = "T_Lang"
+Private Const TABDROP As String = "T_tradDrop"
 Private Const TABLANGDICT As String = "T_LanguageDictionary"
 Private Const CLASSNAME As String = "DesTranslation"
 Private Const RNGMAINLANG As String = "RNG_MainLang"
@@ -90,6 +91,8 @@ Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMess
         Set Lo = sh.ListObjects(TABSHAPE)
     Case TranslationOfRanges
         Set Lo = sh.ListObjects(TABRANGE)
+    Case TranslationOfDropdowns
+        Set Lo = sh.ListObjects(TABDROP)
     End Select
 
     Set TransObject = Translation.Create(Lo, lang)
@@ -97,8 +100,7 @@ End Property
 
 Private Sub TranslateDesigner(ByVal mainsh As Worksheet)
 
-    Dim shpObject As ITranslation
-    Dim rngObject As ITranslation
+    Dim tradobj As ITranslation
     Dim shp As Shape
     Dim counter As Long
     Dim shapesNames As BetterArray               'Name of all shapes to translate in worksheet main
@@ -114,44 +116,80 @@ Private Sub TranslateDesigner(ByVal mainsh As Worksheet)
 
     langCode = DesignerLanguage()
 
-    If (langCode <> vbNullString) Then
+    If (langCode = vbNullString) Then Exit Sub
 
-        'Translation of shapes
-        Set shapesNames = New BetterArray
-        Set Lo = sh.ListObjects(TABSHAPE)
-        Set shpObject = TransObject(TranslationOfShapes)
-        shapesNames.FromExcelRange Lo.ListColumns(1).DataBodyRange, DetectLastRow:=False, DetectLastColumn:=False
+     'Translation of shapes
+     Set shapesNames = New BetterArray
+     Set Lo = sh.ListObjects(TABSHAPE)
+     Set tradobj = TransObject(TranslationOfShapes)
+     shapesNames.FromExcelRange Lo.ListColumns(1).DataBodyRange, DetectLastRow:=False, DetectLastColumn:=False
 
-        For Each shp In mainsh.Shapes
-            If shapesNames.Includes(shp.Name) Then
-                With shp
-                    'keep the previous font
-                    prevFont = .TextFrame.Characters.Font.Name
-                    .TextFrame.Characters.Text = shpObject.TranslatedValue(shp.Name)
-                    .TextFrame.Characters.Font.Name = prevFont
-                End With
-            End If
-        Next
+    For Each shp In mainsh.Shapes
+         If shapesNames.Includes(shp.Name) Then
+             With shp
+                 'keep the previous font
+                 prevFont = .TextFrame.Characters.Font.Name
+                 .TextFrame.Characters.Text = tradobj.TranslatedValue(shp.Name)
+                 .TextFrame.Characters.Font.Name = prevFont
+             End With
+         End If
+    Next
 
-        'Translation of label Ranges
-        Set rngNames = New BetterArray
-        Set Lo = sh.ListObjects(TABRANGE)
-        Set rngObject = TransObject(TranslationOfRanges)
-        rngNames.FromExcelRange Lo.ListColumns(1).DataBodyRange, DetectLastRow:=False, DetectLastColumn:=False
+   'Translation of label Ranges
+     Set rngNames = New BetterArray
+     Set Lo = sh.ListObjects(TABRANGE)
+     Set tradobj = TransObject(TranslationOfRanges)
+     rngNames.FromExcelRange Lo.ListColumns(1).DataBodyRange, DetectLastRow:=False, DetectLastColumn:=False
 
-        For counter = rngNames.LowerBound To rngNames.UpperBound
-            rngCode = rngNames.Item(counter)
-            'Test if the range exists before changing its value
-            On Error Resume Next
-            Set mainRng = mainsh.Range(rngCode)
-            On Error GoTo 0
+    For counter = rngNames.LowerBound To rngNames.UpperBound
+         rngCode = rngNames.Item(counter)
+         'Test if the range exists before changing its value
+         On Error Resume Next
+         Set mainRng = mainsh.Range(rngCode)
+         On Error GoTo 0
 
-            If Not (mainRng Is Nothing) Then
-                mainRng.Value = rngObject.TranslatedValue(rngCode)
-                Set mainRng = Nothing
-            End If
-        Next
-    End If
+       If Not (mainRng Is Nothing) Then
+             mainRng.Value = tradobj.TranslatedValue(rngCode)
+             Set mainRng = Nothing
+         End If
+    Next
+
+    'Translation of dropdowns
+    Set rngNames = New BetterArray
+     Set Lo = sh.ListObjects(TABDROP)
+     Set tradobj = TransObject(TranslationOfDropdowns)
+     rngNames.FromExcelRange Lo.ListColumns(1).DataBodyRange, DetectLastRow:=False, DetectLastColumn:=False
+
+    For counter = rngNames.LowerBound To rngNames.UpperBound
+        rngCode = rngNames.Item(counter)
+        'Test if the range exists before changing its value
+        On Error Resume Next
+        Set mainRng = mainsh.Range(rngCode)
+        
+
+        If Not (mainRng Is Nothing) Then
+
+            With mainRng.validation
+                .Delete
+                'for all the others, add an information alert
+                .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
+                Operator:=xlBetween, Formula1:="= " & tradobj.TranslatedValue(rngCode)
+
+                .IgnoreBlank = True
+                .InCellDropdown = True
+                .InputTitle = vbNullString
+                .errorTitle = vbNullString
+                .InputMessage = vbNullString
+                .errorMessage = vbNullString
+                .ShowInput = True
+                .ShowError = True
+            End With
+            
+            mainRng.ClearContents
+            Set mainRng = Nothing
+        End If
+        On Error GoTo 0
+    Next
 End Sub
 
 Private Function TranslationMsg(ByVal msgCode As String) As String
