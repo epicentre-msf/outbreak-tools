@@ -104,7 +104,7 @@ compare_elements <- function(master_data, child_data) {
 targeted_tables <- c(
   "T_TradLLShapes", "T_TradLLMsg",
   "T_TradLLForms", "T_TradLLRibbon",
-  "T_tradMsg", "T_tradRange", "T_tradShape"
+  "T_tradMsg", "T_tradRange", "T_tradShape", "T_tradDrop"
 )
 
 # loading the master workbook tables ===========================================
