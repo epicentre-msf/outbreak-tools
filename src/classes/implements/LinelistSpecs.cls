@@ -175,6 +175,23 @@ Public Property Get MainObject() As IMain
     Set MainObject = Main.Create(sh)
 End Property
 
+Private Property Get Value(ByVal tagName As String) As String
+
+    Dim outval As String
+    Dim sh As Worksheet
+
+    Select Case tagName
+    
+    Case "numberofexports"
+
+        outval = CStr(ExportObject.NumberOfExports())
+    Case Else
+        outval = MainObject.ValueOf(tagName)
+    End Select
+
+    Value = outval
+End Property
+
 Public Property Get TemporarySheetName(ByVal scope As TemporarySheetTypes) As String
 
     Select Case scope
@@ -618,4 +635,8 @@ End Sub
 
 Private Property Get ILinelistSpecs_NumberOfExports() As Long
     ILinelistSpecs_NumberOfExports = NumberOfExports()
+End Property
+
+Private Property Get ILinelistSpecs_Value(ByVal tagName As String) As String
+    ILinelistSpecs_Value = Value(tagName)
 End Property

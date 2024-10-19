@@ -193,7 +193,7 @@ push_all_tables(
 
 # designer translations --------------------------------------------------------
 
-des_tables_names <- c("T_tradMsg", "T_tradRange", "T_tradShape")
+des_tables_names <- c("T_tradMsg", "T_tradRange", "T_tradShape", "T_tradDrop")
 
 des_tables <- joined_data[des_tables_names]
 des_tables_labels <- c(
