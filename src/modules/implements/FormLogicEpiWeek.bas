@@ -16,6 +16,7 @@ Private Const RNGEPIWEEKSTART As String = "RNG_EpiWeekStart"
 Private upobj As IUpVal
 Private tradform As ITranslation   'Translation of forms
 Private tradmess As ITranslation
+Private TriggerMode As Boolean
 
 
 'Initialize translation of forms object
@@ -31,6 +32,7 @@ Private Sub InitializeTrads()
     Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
     Set tradform = lltrads.TransObject(TranslationOfForms)
     Set tradmess = lltrads.TransObject()
+    Set upobj = UpVal.Create(ThisWorkbook.Worksheets(UPDATESHEET))
 End Sub
 
 Private Sub RecomputeAndUpdate(ByVal startVal As Integer, ByVal captionValue As String)
@@ -39,10 +41,6 @@ Private Sub RecomputeAndUpdate(ByVal startVal As Integer, ByVal captionValue As 
     Dim sh As Worksheet
     Dim tagValues As BetterArray
     Dim confirm As Integer
-
-
-    'Initializing translations
-    InitializeTrads
     
     'Ask for confirmation before proceeding
     confirm = MsgBox( _
@@ -55,7 +53,6 @@ Private Sub RecomputeAndUpdate(ByVal startVal As Integer, ByVal captionValue As 
 
 
     'Update the value on the update worksheet
-    Set upobj = UpVal.Create(ThisWorkbook.Worksheets(UPDATESHEET))
     upobj.SetValue RNGEPIWEEKSTART, startVal
 
     Set wb = ThisWorkbook
@@ -82,31 +79,38 @@ End Sub
 
 
 Private Sub OptionMonday_Click()
-   RecomputeAndUpdate 1, Me.OptionMonday.Caption
+    If Not TriggerMode Then Exit Sub
+    RecomputeAndUpdate 1, Me.OptionMonday.Caption
 End Sub
 
 Private Sub OptionTuesday_Click()
+    If Not TriggerMode Then Exit Sub
     RecomputeAndUpdate 2, Me.OptionTuesday.Caption
 End Sub
 
 Private Sub OptionWednesday_Click()
-   RecomputeAndUpdate 3, Me.OptionWednesday.Caption
+    If Not TriggerMode Then Exit Sub
+    RecomputeAndUpdate 3, Me.OptionWednesday.Caption
 End Sub
 
 Private Sub OptionThursday_Click()
+    If Not TriggerMode Then Exit Sub
     RecomputeAndUpdate 4, Me.OptionThursday.Caption
 End Sub
 
 Private Sub OptionFriday_Click()
-     RecomputeAndUpdate 5, Me.OptionFriday.Caption
+    If Not TriggerMode Then Exit Sub
+    RecomputeAndUpdate 5, Me.OptionFriday.Caption
 End Sub
 
 Private Sub OptionSaturday_Click()
-     RecomputeAndUpdate 6, Me.OptionSaturday.Caption
+    If Not TriggerMode Then Exit Sub
+    RecomputeAndUpdate 6, Me.OptionSaturday.Caption
 End Sub
 
 Private Sub OptionSunday_Click()
-     RecomputeAndUpdate 0, Me.OptionSunday.Caption
+    If Not TriggerMode Then Exit Sub
+    RecomputeAndUpdate 0, Me.OptionSunday.Caption
 End Sub
 
 Private Sub UserForm_Initialize()
@@ -119,4 +123,34 @@ Private Sub UserForm_Initialize()
 
     Me.width = 170
     Me.height = 390
+End Sub
+
+'@EntryPoint
+Public Sub ShowDefaultEpiWeek()
+
+    InitializeTrads
+    TriggerMode = False
+
+    On Error GoTo ErrHand
+
+    Select Case CLng(upobj.Value(RNGEPIWEEKSTART))
+    Case 1
+        Me.OptionMonday.Value = True
+    Case 2
+        Me.OptionTuesday.Value = True
+    Case 3
+        Me.OptionWednesday.Value = True
+    Case 4
+        Me.OptionThursday.Value = True
+    Case 5
+        Me.OptionFriday.Value = True
+    Case 6
+        Me.OptionSaturday.Value = True
+    Case 0
+        Me.OptionSunday.Value = True
+    End Select
+
+ErrHand:
+    TriggerMode = True
+    Me.Show
 End Sub
