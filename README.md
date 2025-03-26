@@ -1,7 +1,7 @@
 <div align="center">
 <p align="center">
 
-##  Quickly build a linelist from an excel designer :snail:
+##  Quickly build a linelist from an excel dictionary :snail:
 
 [![Download All](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/main/releases/latest/OBT-main-latest.zip)
 [![Download All Dev](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all_dev.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/latest/OBT-dev-latest.zip)
