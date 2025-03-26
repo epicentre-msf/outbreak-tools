@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.42">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Define linelist tables and their variables">
+
+<title>Dictionary sheet – OutbreakTools documentation</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../../">
+<link href="../../site/images/icon.png" rel="icon" type="image/png">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-2f5df379a58b258e96c21c0638c20c03.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap-fb624012e1408dce1b6513995e0e2fac.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/quarto-contrib/fontawesome6-0.1.0/all.css" rel="stylesheet">
+<link href="../../site_libs/quarto-contrib/fontawesome6-0.1.0/latex-fontsize.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a href="../../index.html" class="navbar-brand navbar-brand-logo">
+    <img src="../../site/images/icon.png" alt="" class="navbar-logo">
+    </a>
+    <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">OutbreakTools documentation</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../site/getting_started/home_linelist.html"> 
+<span class="menu-text">Getting started with the linelist</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../getting_started/home_obt.qmd"> 
+<span class="menu-text">Getting started with OBT</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../site/reference/home_reference.html"> 
+<span class="menu-text">Reference</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../site/how_to/home_how_to.html"> 
+<span class="menu-text">How-to</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../site/cheatsheets/home_cheatsheets.html"> 
+<span class="menu-text">Cheatsheets</span></a>
+  </li>  
+  <li class="nav-item">
+    <a class="nav-link" href="../../site/tutorial.html"> 
+<span class="menu-text">Tutoriel</span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+    <a href="https://github.com/epicentre-msf/outbreak-tools" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="1">
+    <h2 id="toc-title">Table of content</h2>
+   
+  <ul>
+  <li><a href="#variable-names-and-labels" id="toc-variable-names-and-labels" class="nav-link active" data-scroll-target="#variable-names-and-labels">Variable names and labels</a>
+  <ul>
+  <li><a href="#variable-name" id="toc-variable-name" class="nav-link" data-scroll-target="#variable-name">Variable Name</a></li>
+  <li><a href="#main-label" id="toc-main-label" class="nav-link" data-scroll-target="#main-label">Main Label</a></li>
+  <li><a href="#dev-comment" id="toc-dev-comment" class="nav-link" data-scroll-target="#dev-comment">Dev Comment</a></li>
+  <li><a href="#sec-editable-label" id="toc-sec-editable-label" class="nav-link" data-scroll-target="#sec-editable-label">Editable Label</a></li>
+  <li><a href="#sec-sub-label" id="toc-sec-sub-label" class="nav-link" data-scroll-target="#sec-sub-label">Sub Label</a></li>
+  <li><a href="#sec-note" id="toc-sec-note" class="nav-link" data-scroll-target="#sec-note">Note</a></li>
+  <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a></li>
+  </ul></li>
+  <li><a href="#sheets-and-sections" id="toc-sheets-and-sections" class="nav-link" data-scroll-target="#sheets-and-sections">Sheets and sections</a>
+  <ul>
+  <li><a href="#sheet-name" id="toc-sheet-name" class="nav-link" data-scroll-target="#sheet-name">Sheet Name</a></li>
+  <li><a href="#sec-sheet-types" id="toc-sec-sheet-types" class="nav-link" data-scroll-target="#sec-sheet-types">Sheet Type</a></li>
+  <li><a href="#sec-main-section" id="toc-sec-main-section" class="nav-link" data-scroll-target="#sec-main-section">Main Section</a></li>
+  <li><a href="#sub-section" id="toc-sub-section" class="nav-link" data-scroll-target="#sub-section">Sub Section</a></li>
+  <li><a href="#sec-sheet-sections-example" id="toc-sec-sheet-sections-example" class="nav-link" data-scroll-target="#sec-sheet-sections-example">Example</a>
+  <ul>
+  <li><a href="#vlist1d" id="toc-vlist1d" class="nav-link" data-scroll-target="#vlist1d">vlist1D</a></li>
+  <li><a href="#hlist2d" id="toc-hlist2d" class="nav-link" data-scroll-target="#hlist2d">hlist2D</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#properties" id="toc-properties" class="nav-link" data-scroll-target="#properties">Properties</a>
+  <ul>
+  <li><a href="#sec-visibility-status" id="toc-sec-visibility-status" class="nav-link" data-scroll-target="#sec-visibility-status">Status</a>
+  <ul>
+  <li><a href="#example-1" id="toc-example-1" class="nav-link" data-scroll-target="#example-1">Example</a></li>
+  </ul></li>
+  <li><a href="#register-book" id="toc-register-book" class="nav-link" data-scroll-target="#register-book">Register Book</a></li>
+  <li><a href="#sec-personal-identifiers" id="toc-sec-personal-identifiers" class="nav-link" data-scroll-target="#sec-personal-identifiers">Personal Identifier</a></li>
+  <li><a href="#thinking-about-variables" id="toc-thinking-about-variables" class="nav-link" data-scroll-target="#thinking-about-variables">Thinking about variables</a></li>
+  <li><a href="#sec-var-type" id="toc-sec-var-type" class="nav-link" data-scroll-target="#sec-var-type">Variable Type</a></li>
+  <li><a href="#sec-var-format" id="toc-sec-var-format" class="nav-link" data-scroll-target="#sec-var-format">Variable Format</a></li>
+  <li><a href="#sec-var-control" id="toc-sec-var-control" class="nav-link" data-scroll-target="#sec-var-control">Control</a>
+  <ul>
+  <li><a href="#dropdown-menu-variables" id="toc-dropdown-menu-variables" class="nav-link" data-scroll-target="#dropdown-menu-variables">Dropdown menu variables</a>
+  <ul class="collapse">
+  <li><a href="#choice_manual" id="toc-choice_manual" class="nav-link" data-scroll-target="#choice_manual">choice_manual</a></li>
+  <li><a href="#choice_multiple" id="toc-choice_multiple" class="nav-link" data-scroll-target="#choice_multiple">choice_multiple</a></li>
+  <li><a href="#sec-custom-dropdowns" id="toc-sec-custom-dropdowns" class="nav-link" data-scroll-target="#sec-custom-dropdowns">choice_custom</a></li>
+  <li><a href="#sec-list-auto" id="toc-sec-list-auto" class="nav-link" data-scroll-target="#sec-list-auto">list_auto</a></li>
+  </ul></li>
+  <li><a href="#sec-geo-data" id="toc-sec-geo-data" class="nav-link" data-scroll-target="#sec-geo-data">Special case of administrative levels and health facilities</a>
+  <ul class="collapse">
+  <li><a href="#sec-geo-variable" id="toc-sec-geo-variable" class="nav-link" data-scroll-target="#sec-geo-variable">geo</a></li>
+  <li><a href="#hf" id="toc-hf" class="nav-link" data-scroll-target="#hf">hf</a></li>
+  </ul></li>
+  <li><a href="#calculated-variables" id="toc-calculated-variables" class="nav-link" data-scroll-target="#calculated-variables">Calculated variables</a>
+  <ul class="collapse">
+  <li><a href="#formula" id="toc-formula" class="nav-link" data-scroll-target="#formula">formula</a></li>
+  <li><a href="#case_when" id="toc-case_when" class="nav-link" data-scroll-target="#case_when">case_when</a></li>
+  <li><a href="#choice_formula" id="toc-choice_formula" class="nav-link" data-scroll-target="#choice_formula">choice_formula</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#sec-var-control-details" id="toc-sec-var-control-details" class="nav-link" data-scroll-target="#sec-var-control-details">Control details</a>
+  <ul>
+  <li><a href="#defining-dropdown-menu-categories" id="toc-defining-dropdown-menu-categories" class="nav-link" data-scroll-target="#defining-dropdown-menu-categories">Defining dropdown menu categories</a></li>
+  <li><a href="#sec-formulas" id="toc-sec-formulas" class="nav-link" data-scroll-target="#sec-formulas">Formulas</a>
+  <ul class="collapse">
+  <li><a href="#sec-formula-control" id="toc-sec-formula-control" class="nav-link" data-scroll-target="#sec-formula-control">formula control</a></li>
+  <li><a href="#case_when-control" id="toc-case_when-control" class="nav-link" data-scroll-target="#case_when-control">case_when control</a></li>
+  <li><a href="#choice_formula-control" id="toc-choice_formula-control" class="nav-link" data-scroll-target="#choice_formula-control">choice_formula control</a></li>
+  <li><a href="#example-2" id="toc-example-2" class="nav-link" data-scroll-target="#example-2">Example</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#unique" id="toc-unique" class="nav-link" data-scroll-target="#unique">Unique</a></li>
+  </ul></li>
+  <li><a href="#data-exports" id="toc-data-exports" class="nav-link" data-scroll-target="#data-exports">Data exports</a>
+  <ul>
+  <li><a href="#rules" id="toc-rules" class="nav-link" data-scroll-target="#rules">Rules</a></li>
+  <li><a href="#example-3" id="toc-example-3" class="nav-link" data-scroll-target="#example-3">Example</a></li>
+  </ul></li>
+  <li><a href="#sec-data-validation" id="toc-sec-data-validation" class="nav-link" data-scroll-target="#sec-data-validation">Data validation</a>
+  <ul>
+  <li><a href="#min" id="toc-min" class="nav-link" data-scroll-target="#min">Min</a></li>
+  <li><a href="#max" id="toc-max" class="nav-link" data-scroll-target="#max">Max</a></li>
+  <li><a href="#sec-alert" id="toc-sec-alert" class="nav-link" data-scroll-target="#sec-alert">Alert</a></li>
+  <li><a href="#message" id="toc-message" class="nav-link" data-scroll-target="#message">Message</a></li>
+  <li><a href="#examples" id="toc-examples" class="nav-link" data-scroll-target="#examples">Examples</a>
+  <ul>
+  <li><a href="#a-continuous-variable-patients-age" id="toc-a-continuous-variable-patients-age" class="nav-link" data-scroll-target="#a-continuous-variable-patients-age">A continuous variable: patient’s age</a></li>
+  <li><a href="#a-categorical-variable-age-unit" id="toc-a-categorical-variable-age-unit" class="nav-link" data-scroll-target="#a-categorical-variable-age-unit">A categorical variable: age unit</a></li>
+  <li><a href="#a-date-variable" id="toc-a-date-variable" class="nav-link" data-scroll-target="#a-date-variable">A date variable</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#sec-conditional-formating" id="toc-sec-conditional-formating" class="nav-link" data-scroll-target="#sec-conditional-formating">Conditional Formatting</a>
+  <ul>
+  <li><a href="#formatting-condition" id="toc-formatting-condition" class="nav-link" data-scroll-target="#formatting-condition">Formatting condition</a></li>
+  <li><a href="#formatting-values" id="toc-formatting-values" class="nav-link" data-scroll-target="#formatting-values">Formatting values</a></li>
+  <li><a href="#lock-cells" id="toc-lock-cells" class="nav-link" data-scroll-target="#lock-cells">Lock cells</a></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Dictionary sheet</h1>
+  <div class="quarto-categories">
+    <div class="quarto-category">Setup</div>
+    <div class="quarto-category">Sheet</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    Define linelist tables and their variables
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>The metadata about linelist variable, which is commonly called the <em>variable dictionary</em> is stored in two of the <strong>setup file</strong> sheets, the <em>Dictionary</em> sheet and the <a href="../../site/reference/choices_sheet.html"><em>Choices</em> sheet</a>. Most of the variable attributes/metadata are stored in the <em>Dictionary</em> sheet, while only the categories of categorical variables are stored in the <em>Choices</em> sheet.</p>
+<p>Variable metadata on the <em>Dictionary</em> sheet are organised in one (big) table in which <strong>one line corresponds to one variable</strong>. This table is divided in sections:</p>
+<table class="caption-top table">
+<caption>Sections of variable metadata</caption>
+<colgroup>
+<col style="width: 23%">
+<col style="width: 69%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Section</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Variable names and labels</td>
+<td>List the variables to be collected by defining their main characteristics</td>
+</tr>
+<tr class="even">
+<td>Sheets and Sections</td>
+<td>Define sheets and table structure; organise variables in sheets, sections and sub-sections</td>
+</tr>
+<tr class="odd">
+<td>Properties</td>
+<td>Define variable specs: visibility, type, format, formulas…</td>
+</tr>
+<tr class="even">
+<td>Data exports</td>
+<td>Selects and order the variables to be exported</td>
+</tr>
+<tr class="odd">
+<td>Data validation</td>
+<td>Define accepted MIN and MAX values, and alert or error when an input is outside the rules.</td>
+</tr>
+</tbody>
+</table>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Warning
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>When compiling the setup, make sure that all the columns from this sheet are unhidden.</p>
+</div>
+</div>
+<section id="variable-names-and-labels" class="level2">
+<h2 class="anchored" data-anchor-id="variable-names-and-labels">Variable names and labels</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/im-003-variable-names-and-labels.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+</figure>
+</div>
+<section id="variable-name" class="level3">
+<h3 class="anchored" data-anchor-id="variable-name">Variable Name</h3>
+<p>This is a free text field used to <strong>uniquely identify the variables</strong>. The name can be used to refer to the variable in formulas or in the <a href="../../site/reference/analyses_sheet.html"><em>Analyses</em> sheet</a>.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/im-004-variable-names-and-labels.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+</figure>
+</div>
+<p>After you build the linelist, the variable name can be found in the formula bar of the grey cells from the eight-th row (of the linelist sheet) for 2-dimensions tables like patient data), or in the cell name zone for cells of a 1-dimension table (like the <em>Info</em> sheet).</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Warning
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The variable name is what allows the scripts to uniquely identify variable, in any language the linelist is built in. By opposition, variable labels can change or be translated.</p>
+<p>Variable names are used to migrate data from one linelist file to the other: changing the variable name of a variable in the setup is equivalent to creating a new variable: the migration script will not be able to match the variables.</p>
+</div>
+</div>
+<p><strong>Variable names rules:</strong></p>
+<ul>
+<li>Names must be unique in the <strong>setup file</strong>, even if the variables are on different sheets.<br>
+</li>
+<li>Names must be <strong>at least 4 characters long</strong> to be valid.<br>
+</li>
+<li>Names should not contain special characters (except for “<em>_</em>”).<br>
+</li>
+<li>Names will be automatically converted to lower-case during compilation.</li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>As a general advice, try to create short but explicit names (easier said than done).</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled" title="Names must be made unique">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Names must be made unique
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>To ensure that variable names are unique, you can add the name of the sheet in which the variable will appear as a prefix, or use numbers.</p>
+<p>If by error two or more variables have the same name, the second occurrence will automatically be suffixed with the value “1”; if there is a third, it will be suffixed with the value “2”, and so on.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>We recommend that you do not leave any blanks in the variable name. Instead, replace them with “<em>_</em>”.</p>
+</div>
+</div>
+</section>
+<section id="main-label" class="level3">
+<h3 class="anchored" data-anchor-id="main-label">Main Label</h3>
+<p>This is a free text field that defines the variables labels, which are quick descriptions of the variables, which the linelist user can read. They are typically more descriptive and longer than names, but we recommend to keep them moderately short for legibility reasons.</p>
+<p>In the linelist, the main label appears in black and bold. It cannot be modified by the end user (with the exception of explicitly <a href="#sec-editable-label">editable labels</a>.</p>
+<p><img src="images/im-004-variable-names-and-labels.png" class="img-fluid"></p>
+<div class="callout callout-style-default callout-note callout-titled" title="Tip: add more information">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-6-contents" aria-controls="callout-6" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip: add more information
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-6" class="callout-6-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>To add more details, you can use the following fields: <a href="#sec-sub-label">Sub Label</a> and <a href="sec-note">Note</a>.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="dev-comment" class="level3">
+<h3 class="anchored" data-anchor-id="dev-comment">Dev Comment</h3>
+<p>This free text column is for the sole benefit of the <strong>setup file</strong> developer (in all probability, you), to add technical or practical information. <strong>It is not read by the designer and does not affect the generated file.</strong></p>
+<div class="callout callout-style-default callout-note callout-titled" title="Tip: Example of one user usage">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-7-contents" aria-controls="callout-7" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip: Example of one user usage
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-7" class="callout-7-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>One of the author of this doc uses these tags:</p>
+<ul>
+<li><p><strong>Format</strong>: calculated columns created for applying <a href="#sec-conditional-formating">conditional formatting</a>. These columns are very specific, and pure format. Tagging them helps to quickly make sure that they are never exported</p></li>
+<li><p><strong>MoH</strong>: columns created when a general setup is adapted to a specific MoH format by adding a dedicated export for that format. Usually, we need to create some calculated columns that match the MoH export (recoding levels, or perhaps merging information of several variables…). I like to keep track of which columns are from the general setup and which are specific adaptations.</p></li>
+<li><p><strong>WHO/Epinetwork</strong>: sometimes I want to keep the information that a column is here because it comes from the Epinetwork or the WHO CRF, and should probably not be modified.</p></li>
+<li><p><strong>Boilerplate</strong>: calculated columns that are needed for graphs, or because the information is important (such as epiweeks). These columns are often hidden, but not necessarily, and they sometimes can be exported too.</p></li>
+</ul>
+</div>
+</div>
+</div>
+<p>Feel free to use this column in a ways that helps you work, or to ignore it!</p>
+</section>
+<section id="sec-editable-label" class="level3">
+<h3 class="anchored" data-anchor-id="sec-editable-label">Editable Label</h3>
+<p>This is a <em>yes/no</em> column. If the value is “<em>yes</em>”, the label of the variable in the linelist can be modified by its user. If the value is “<em>no</em>” or if the field remains empty, the variable label in the linelist is protected.</p>
+<div class="callout callout-style-default callout-tip callout-titled" title="Tip: add customisable variables in your linelists">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip: add customisable variables in your linelists
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>It is often desirable to add a couple of columns with editable labels at the end of the linelist, in case the user want to collect some extra information. It gives some freedom to users to collect some site specific data without needing an update of the setup. When I do that, I usually provide a couple of free text variables, and a couple of <a href="#sec-custom-dropdowns">customisable dropdowns variables</a></p>
+</div>
+</div>
+</section>
+<section id="sec-sub-label" class="level3">
+<h3 class="anchored" data-anchor-id="sec-sub-label">Sub Label</h3>
+<p>This is a free text field used to add a brief description under the variable label, such as the format in which a date is expected, a unit, or any other information to help with filling the variable in.</p>
+<p>In the linelist, the sub-label appears just below the main label, in blue and slightly smaller font. It cannot be modified by the end user.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The sub-labels “<em>Calculated</em>” and “<em>Custom dropdown</em>” are added automatically, no need to add them manually.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled" title="Tip: example of common sub-labels">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-10-contents" aria-controls="callout-10" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip: example of common sub-labels
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-10" class="callout-10-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<ul>
+<li>Yes / No</li>
+<li>Yes / No / Unk.</li>
+<li>Free text</li>
+<li>The format of your date (ex: DD/MM/YYYY)</li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-note" class="level3">
+<h3 class="anchored" data-anchor-id="sec-note">Note</h3>
+<p>This is a free text field which content is added to the linelist as a <em>comment</em> on the corresponding cell. The comment in the linelist can be read by hovering the cursor over the cell. It cannot be modified by the end user.</p>
+</section>
+<section id="example" class="level3">
+<h3 class="anchored" data-anchor-id="example">Example</h3>
+<p>Definitions in the <strong>setup file</strong>:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/im-010-example-en.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+</figure>
+</div>
+<p>Display in the <strong>linelist file</strong>:</p>
+<p><img src="images/im-011-example-en.png" class="img-fluid"></p>
+</section>
+</section>
+<section id="sheets-and-sections" class="level2">
+<h2 class="anchored" data-anchor-id="sheets-and-sections">Sheets and sections</h2>
+<p>This part of the table organises variables within <strong>sheets</strong> and <strong>tables</strong>, and thus defines the <strong>structure</strong> of the linelist (at least for data-entry sheets).</p>
+<p><strong>One data entry sheet can contain only one table</strong> but the structure of the table (<em>i.e</em>. the organisation of the variables) can vary.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/im-012-sheets-and-sections-en.png" class="img-fluid figure-img"></p>
+<figcaption>Sheet and sections in the <strong>setup file</strong></figcaption>
+</figure>
+</div>
+<section id="sheet-name" class="level3">
+<h3 class="anchored" data-anchor-id="sheet-name">Sheet Name</h3>
+<p>This is a free text field that contains the <em>name of the sheet</em> in which the variable will appear.</p>
+<p>In general, your linelists will contain at least a patient data sheet, and an info/metadata sheet.</p>
+<div class="callout callout-style-default callout-note callout-titled" title="Note on linelist sheets">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-11-contents" aria-controls="callout-11" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note on linelist sheets
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-11" class="callout-11-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>The created linelist will contain more sheets than the one you specify in this section, as some of the sheets are added automatically during compilation (an instruction sheet, a sheet for the geobase, etc.) and more sheets can be added if you choose to include <a href="../../site/reference/analyses_sheet.html">analyses</a>.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-sheet-types" class="level3">
+<h3 class="anchored" data-anchor-id="sec-sheet-types">Sheet Type</h3>
+<p>This is a dropdown menu field used to define the <em>type of table</em> contained in the sheet. There are two options:</p>
+<ul>
+<li><p><strong>vlist1D</strong>: corresponds to a table built <em>Vertically</em>, so the variables labels are in the same column, and <strong>only one entry is expected for each variable</strong>. This structure of data is well adapted to collect metadata about the health structure, the project or the data collection itself.</p></li>
+<li><p><strong>hlist2D</strong>: corresponds to a table built <em>Horizontally</em>, so the variables labels appear in the same row, and <strong>several entries are possible for each variable</strong>. This type of sheet is used to collect patient data.</p></li>
+</ul>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/im-015-sheet-type.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+</figure>
+</div>
+</section>
+<section id="sec-main-section" class="level3">
+<h3 class="anchored" data-anchor-id="sec-main-section">Main Section</h3>
+<p>This is a free text field used to define the <em>name</em> of the main section in which the variable is located. This makes it possible to group variables by theme to make data entry and navigation easier.</p>
+<p>In the linelist file, the main sections appear in a darker colour in rows or columns, depending on the type of table (dark blue in the <a href="#sec-sheet-sections-example">example</a>). They cannot be modified by the end user.</p>
+<div class="callout callout-style-default callout-tip callout-titled" title="Tip: organise variables">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip: organise variables
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>To make the dictionary easier to read, we recommend that you group (write one below another) the variables of a same sheet and a same section.</p>
+</div>
+</div>
+</section>
+<section id="sub-section" class="level3">
+<h3 class="anchored" data-anchor-id="sub-section">Sub Section</h3>
+<p>This is a free text field that allows you to further refine the organisation of variables in the table by creating a second level of grouping.</p>
+<p>In the linelist file, the sub-sections appear in a lighter colour in the row or column, depending on the type of table (light blue in the <a href="#sec-sheet-sections-example">example</a>). They cannot be modified by the end user.</p>
+</section>
+<section id="sec-sheet-sections-example" class="level3">
+<h3 class="anchored" data-anchor-id="sec-sheet-sections-example">Example</h3>
+<section id="vlist1d" class="level4">
+<h4 class="anchored" data-anchor-id="vlist1d">vlist1D</h4>
+<p>Definition in the <strong>setup file</strong>:</p>
+<p><img src="images/im-018-vlist1d.png" class="img-fluid"></p>
+<p>Display in the <strong>linelist file</strong>:</p>
+<p><img src="images/im-019-vlist1d.png" class="img-fluid"></p>
+</section>
+<section id="hlist2d" class="level4">
+<h4 class="anchored" data-anchor-id="hlist2d">hlist2D</h4>
+<p>Definition in the <strong>setup file</strong>:</p>
+<p><img src="images/im-020-hlist2d.png" class="img-fluid"></p>
+<p>Display in the <strong>linelist file</strong>:</p>
+<p><img src="images/im-021-hlist2d.png" class="img-fluid"></p>
+</section>
+</section>
+</section>
+<section id="properties" class="level2">
+<h2 class="anchored" data-anchor-id="properties">Properties</h2>
+<p>The properties section of the table controls variable visibility, uniqueness, and the type and format of the variable (what it contains, in which form, and in which display).</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/im-022-properties-en.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+</figure>
+</div>
+<section id="sec-visibility-status" class="level3">
+<h3 class="anchored" data-anchor-id="sec-visibility-status">Status</h3>
+<p>This is a dropdown field that contains four options for defining the <strong>visibility</strong> of the variable. The linelist has a functionality to <a href="../../site/how_to/show_hide_variables.html">show or hide optional variables</a> depending on the data needs on the field.</p>
+<ul>
+<li><p><em>mandatory</em>: variable displayed by default, <strong>it cannot be hidden</strong> in the linelist</p></li>
+<li><p><em>optional, visible</em>: variable displayed by default, it can be displayed or hidden by the linelist user</p></li>
+<li><p><em>optional, hidden</em>: variable hidden by default, it can be displayed or hidden by the linelist user</p></li>
+<li><p><em>hidden</em>: variable hidden by default, it cannot be displayed in the linelist</p></li>
+</ul>
+<p>Variables can be shown or hidden using the “Show/Hide” button of the <a href="../../site/reference/ribbons_linelist.html">linelist OutbreakTools menu</a> in the <strong>linelist file</strong>. See the <a href="../../site/how_to/show_hide_variables.html">how to</a>.</p>
+<div class="callout callout-style-default callout-note callout-titled" title="Note on showing and hiding columns manually">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-13-contents" aria-controls="callout-13" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note on showing and hiding columns manually
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-13" class="callout-13-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>Technically, the linelist user can forcefully hide/un-hide columns.</p>
+<p>Un-hiding hidden (usually calculated) columns is usually desirable during linelist debug or to go check data that may interest you (<em>e.g</em>. a hidden calculated epiweek of exit). You can hide them after consultation without consequences on the rest of the linelist.</p>
+<p>It is however more dangerous to forcefully hide “mandatory” columns. These columns are often fundamental variables in the linelist, that are needed for data understanding and analyses (<em>e.g</em>. date of admission, age or sex). If you choose to hide one of these columns, know that some analyses might not function as expected, or not at all because they rely on the hidden columns.</p>
+<p>Finally, any change of column visibility that is not made via the “Hide/show variable” button of the linelist will not be recorded and migrated to a new linelist.</p>
+</div>
+</div>
+</div>
+<section id="example-1" class="level4">
+<h4 class="anchored" data-anchor-id="example-1">Example</h4>
+<p>Definition in the <strong>setup file</strong>:</p>
+<p><img src="images/im-024-example.png" class="img-fluid"></p>
+<p>Display in the <strong>linelist file</strong>:</p>
+<p><img src="images/im-025-example.png" class="img-fluid"></p>
+<p><img src="images/im-026-example.png" class="img-fluid"></p>
+</section>
+</section>
+<section id="register-book" class="level3">
+<h3 class="anchored" data-anchor-id="register-book">Register Book</h3>
+<p>This is a <em>yes/no</em> dropdown menu field used to predefine the variables to be included in the register to be printed. This step is not mandatory and can be managed later, directly in the <strong>linelist file</strong>.</p>
+</section>
+<section id="sec-personal-identifiers" class="level3">
+<h3 class="anchored" data-anchor-id="sec-personal-identifiers">Personal Identifier</h3>
+<p>This is a <em>yes/no</em> dropdown menu field that indicates that the variable contains personal data (such as names, phone numbers etc.).</p>
+<p>This column has two uses:</p>
+<ul>
+<li><p>it allows the setup developer to quickly identify variables containing personal data in its dictionary</p></li>
+<li><p>it is used to remove variables automatically from the exports if such a behaviour is needed (see the <a href="../../site/reference/exports_sheet.html">Exports sheet</a>).</p></li>
+</ul>
+</section>
+<section id="thinking-about-variables" class="level3">
+<h3 class="anchored" data-anchor-id="thinking-about-variables">Thinking about variables</h3>
+<p>There are many ways of thinking about variables and of classifying them.</p>
+<p>In general we can distinguished between <em>input</em> variables, where the user enters raw data, and <em>calculated</em> (or derived) variables which require no input. Both of them can be created in OutbreakTools.</p>
+<p>Independently of this distinction, a variety of <strong>variables types</strong> can exist, containing numbers or text in various forms. In Excel, we will often use the types <em>integer</em>, <em>decimals</em>, <em>dates</em> and <em>text</em>.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. These types are <a href="#sec-var-type">implemented</a> in OutbreakTools linelists.</p>
+<p>For input variables, you could think of two ways of entering data: a <em>free text</em> approach, where user can enter the value of their choice, and a <em>controlled</em> (constrained) approach, where the values the user can enter are limited. In Excel, this is generally implemented through <em>dropdown menus</em> from which the data encoder selects a value. In OutbreakTools, there have several ways of building dropdown menus, depending on whether you know the categories in advance or not. This is what we call <a href="sec-var-control">variable control</a>.</p>
+<p>Finally, many softwares allow the user to set the way the data is <em>displayed</em>, which we here call <a href="#sec-var-format">variable format</a>. For example:</p>
+<ul>
+<li>The date first of January of 2023 can be displayed as “01/01/2024”, or “1/1/24” or 1-Jan-24” etc.<br>
+</li>
+<li>The number “1” could be displayed as “1” simply, or “001”<br>
+</li>
+<li>The number 0.01 could be displayed with different levels of rounding, or even as “10%” if the column contains proportions that can be displayed as percentages.</li>
+</ul>
+</section>
+<section id="sec-var-type" class="level3">
+<h3 class="anchored" data-anchor-id="sec-var-type">Variable Type</h3>
+<p>This column proposes a dropdown menu field containing four options for defining the type<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> of each variable:</p>
+<ul>
+<li><p><strong>Text</strong>: creates a column of text<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>. The entry of the text may be free or <a href="#sec-var-control">constrained by a dropdown menu</a>.</p></li>
+<li><p><strong>Date</strong>: creates a date column, whose exact format is defined in the <a href="#sec-var-format">Variable format</a> column. The default format is <em>jj-mmm-aaaa</em>.</p></li>
+<li><p><strong>Integer</strong>: creates an integer column</p></li>
+<li><p><strong>Decimal</strong>: creates a column with decimal numbers. The number of digits after the decimal point is defined in the <a href="#sec-var-format">Variable format</a>.</p></li>
+</ul>
+<p><img src="images/im-127-var-types.png" class="img-fluid"></p>
+</section>
+<section id="sec-var-format" class="level3">
+<h3 class="anchored" data-anchor-id="sec-var-format">Variable Format</h3>
+<p>This field is used to specify the <em>format</em> of the variable (which depends on its <em>type</em>).</p>
+<p>There is a predefined dropdown list with common options, but you can enter any format by hand, as long as it is written in <strong>Excel syntax</strong> (see <a href="https://www.ablebits.com/office-addins-blog/excel-format-number-text/">here</a> and <a href="https://www.ablebits.com/office-addins-blog/custom-excel-number-format/">here</a> for information).</p>
+<p><img src="images/im-034-variable-format.png" class="img-fluid"></p>
+<p>Example: for an integer to appear with at least 2 characters, enter the format: # #00</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Note that the default date format is <em>jj-mmm-aaaa</em>.</p>
+</div>
+</div>
+</section>
+<section id="sec-var-control" class="level3">
+<h3 class="anchored" data-anchor-id="sec-var-control">Control</h3>
+<p>This is a dropdown field containing nine options for defining variables that are not free text:</p>
+<ul>
+<li>choice_manual</li>
+<li>choice_custom</li>
+<li>choice_multiple</li>
+<li>list_auto</li>
+<li>geo</li>
+<li>hf</li>
+<li>formula</li>
+<li>case_when</li>
+<li>choice_formula</li>
+</ul>
+<p>These options broadly correspond to two sorts of variables to be created:</p>
+<ul>
+<li><strong>input categorical</strong> variables with constrained values and filled <em>via</em> a dropdown menu<br>
+</li>
+<li><strong>calculated</strong> variables</li>
+</ul>
+<p>In OutbreakTools, the variables to fill in geographic information are treated as a special case of categorical variable and have their own <a href="#sec-geo-variable">dedicated control</a>.</p>
+<table class="caption-top table">
+<caption>Summary of the types of control available in OutbreakTools</caption>
+<colgroup>
+<col style="width: 29%">
+<col style="width: 31%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Sort of variable</th>
+<th>Controls</th>
+<th>Data entry in the linelist</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Categorical</td>
+<td>choice_manual, choice_custom, choice_multiple, list_auto</td>
+<td>Dropdown menu</td>
+</tr>
+<tr class="even">
+<td>Geo-related columns (a special case of categorical)</td>
+<td>geo, hf</td>
+<td>GeoHelper or dropdown menu</td>
+</tr>
+<tr class="odd">
+<td>Calculated</td>
+<td>formula, choice_formula, case_when</td>
+<td>No user input needed in these columns</td>
+</tr>
+</tbody>
+</table>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="../images/im-128-var-control.png" class="img-fluid figure-img"></p>
+<figcaption>Guide to choosing variable control in OBT</figcaption>
+</figure>
+</div>
+<div class="callout callout-style-default callout-note callout-titled" title="Note on data validation">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note on data validation
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For non-text variable (integers, decimals, dates) is is possible to restrict values using <a href="#sec-data-validation">data validation</a></p>
+</div>
+</div>
+<section id="dropdown-menu-variables" class="level4">
+<h4 class="anchored" data-anchor-id="dropdown-menu-variables">Dropdown menu variables</h4>
+<p>This table summarises the different options:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 21%">
+<col style="width: 29%">
+<col style="width: 28%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Control</th>
+<th>How to populate the dropdown menu</th>
+<th>Where are values defined?</th>
+<th>Data entry</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>choice_manual</td>
+<td>Predefined values</td>
+<td>In the <strong>setup file</strong>, in the <em>Choices</em> sheet</td>
+<td><strong>One value</strong> selected from a dropdown menu</td>
+</tr>
+<tr class="even">
+<td>choice_multiple</td>
+<td>Predefined values</td>
+<td>In the <strong>setup file</strong>, in the <em>Choices</em> sheet</td>
+<td><strong>Several values</strong> selected from a dropdown menu</td>
+</tr>
+<tr class="odd">
+<td>choice_custom</td>
+<td>User-defined values (but see details)</td>
+<td>In the <strong>Linelist file</strong>, in the <em>Custom dropdown</em> sheet</td>
+<td><strong>One value</strong> selected from a dropdown menu</td>
+</tr>
+<tr class="even">
+<td>list_auto</td>
+<td>User-defined values but from another data column</td>
+<td>In the <strong>Linelist file</strong>, in another column</td>
+<td><strong>One value</strong> selected from a dropdown menu populated by the values of another variable</td>
+</tr>
+</tbody>
+</table>
+<section id="choice_manual" class="level5">
+<h5 class="anchored" data-anchor-id="choice_manual">choice_manual</h5>
+<p>This control creates a categorical variable with a <strong>static dropdown menu</strong> in the linelist, from which <strong>one value</strong> can be selected. The authorised values from the dropdown menu are <strong>defined in advance in the setup</strong> and cannot be modified by the users of the linelist (hence the “static” description).</p>
+<p>In the <strong>setup file</strong>, we define these values in a list stored in the <em>Choices</em> sheet, and fill the name of that list in the <a href="#sec-var-control-details">Control details</a> column.</p>
+</section>
+<section id="choice_multiple" class="level5">
+<h5 class="anchored" data-anchor-id="choice_multiple">choice_multiple</h5>
+<p>This control is similar to the “choice_manual” control, in that it creates a <strong>static dropdown menu</strong> in the linelist from <strong>predefined values</strong> entered in the <strong>setup file</strong>.</p>
+<p>The difference is that in the created linelist, the user can use the dropdown menu several times to select <strong>multiple values</strong>. These values will be concatenated and stored as a chain of character. By default, the separator is a coma (“,”), but you can modify this in the control column. For example, entering <em>choice_multiple(“_”)</em> will use the character “_” to separate values instead of “,”.</p>
+<p><strong>Example</strong>: if the user selects “Azythromicin”, then “Ampicilin” from a dropdown menu, the value “Azythromicin, Ampicilin” will be stored in the cell.</p>
+<div class="callout callout-style-default callout-warning callout-titled" title="Warning: cannot be used for analyses">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Warning: cannot be used for analyses
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>A choice_multiple column cannot be used in the <a href="../../site/reference/analyses_sheet.html">Analyses sheets</a> as the designer cannot predict the number of combinations the user will create, and thus cannot create tables with appropriate size.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled" title="Tip: inform the linelist user">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip: inform the linelist user
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Since columns allowing multiple choices are rare in linelists in general, we advise you to use the <a href="#sec-sub-label">sub-label</a> and possibly a note to inform the linelist user that they can enter several values, and how to do it.</p>
+</div>
+</div>
+</section>
+<section id="sec-custom-dropdowns" class="level5">
+<h5 class="anchored" data-anchor-id="sec-custom-dropdowns">choice_custom</h5>
+<p>This control creates a <strong>dynamic dropdown menu</strong> in the linelist, but contrary to the previous controls, the values are not (necessarily) predefined in the <strong>setup file</strong>, but instead <strong>defined by the user</strong>. This control is useful for variables where one would like to enforce standardization of values, but the values to encode are not known in advance.</p>
+<p><strong>Example</strong>: you wish to create a column containing the name of facilities patients can be transferred to. The names of these facilities is site dependent, thus unknown in advance.</p>
+<p>Using this control for at least one variable adds a “<em>Custom dropdown</em> sheet in the linelist, where the user can fill-in values to populate the <strong>dynamic, customised dropdown menu</strong>.</p>
+<p>While by default the dropdown menu created is empty, it is possible to pre-fill it by filling the “Control Details” column with a list of choices, like for the other types of dropdowns menus (see the <a href="#sec-var-control-details%20section">details on setting up dropdown menus</a> below). The table in the <em>Custom dropdown</em> sheet of the linelist will still be created and future users will be able to modify it.</p>
+</section>
+<section id="sec-list-auto" class="level5">
+<h5 class="anchored" data-anchor-id="sec-list-auto">list_auto</h5>
+<p>This control also creates a <strong>dynamic dropdown menu</strong>, but the values come from the data entered in another column.</p>
+<p><strong>Example</strong>: a linelist contains two data-entry sheets:</p>
+<ul>
+<li>the first data entry sheet contains patient data<br>
+</li>
+<li>a second data entry sheet contains more variables for a subset of re-admitted patients.</li>
+</ul>
+<p>The “list_auto” control allows to create a column on the second sheet with a dropdown menu populated dynamically with the patient IDs from the first sheet.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="../images/im-130-list-auto-3.png" class="img-fluid quarto-figure quarto-figure-center figure-img"></p>
+</figure>
+</div>
+<p>In the <strong>setup file</strong>, the <strong>variable</strong> used to populate the dropdown menu is defined in <a href="#sec-var-control-details%20section">Control Details</a>.</p>
+</section>
+</section>
+<section id="sec-geo-data" class="level4">
+<h4 class="anchored" data-anchor-id="sec-geo-data">Special case of administrative levels and health facilities</h4>
+<p>Two controls allow the user of the linelist to enter geographic information, or information about health facilities. While the created variables are technically dropdown menus, they are treated as a special type of variables in OubtbreakTools linelists, with dedicated tools and analyses.</p>
+<p>OutbreakTool linelists all have a button to <a href="../../site/how_to/import_geobase.html">import a geobase</a>, a standardised file containing lists of administrative levels to describe places. Once the geobase is successfully imported, the values from its lists populate specific dropdown menus.</p>
+<section id="sec-geo-variable" class="level5">
+<h5 class="anchored" data-anchor-id="sec-geo-variable">geo</h5>
+<p>The “geo” control indicates that geographic data is expected. In the linelist, this results in the creation of <strong>four columns</strong>, one for each administrative level, which will be populated by values imported from a geobase. The user can enter data by using the <em>GeoHelper</em> button in the linelist or by selecting values from the cascading dropdown menus in the linelist.</p>
+<p>The “geo” control does not need additional information to be filled in the “Control Details” column.</p>
+<p>In the linelist, the variable labels appear in <strong>orange cells</strong>, which means that the “GeoHelper” button can be used to fill in the corresponding cells.</p>
+<p><strong>Example:</strong></p>
+<p>Definition in the <strong>setup file</strong>:</p>
+<p><img src="images/im-037-example-en.png" class="img-fluid"></p>
+<p>Display in the <strong>linelist file</strong>:</p>
+<p><img src="images/im-038-example-en.png" class="img-fluid"></p>
+<p>Display in the <strong>linelist file</strong> after importing a geobase (here a Nigeria geobase, note the personalisation of the labels):</p>
+<p><img src="images/im-038-example-bis-en.png" class="img-fluid"></p>
+</section>
+<section id="hf" class="level5">
+<h5 class="anchored" data-anchor-id="hf">hf</h5>
+<p>The “hf” control means that the user will enter health facility names. By identifying hf data in this way, you can use the <em>GeoHelper</em> button in the linelist to fill in the column.</p>
+<p>Similarly to the “geo” control, the “hf” control does not need additional information to be filled in the “Control Details” column.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The variable label appears in an orange cell, which means that the <em>GeoHelper</em> button can be used to fill in the corresponding cells.</p>
+</div>
+</div>
+<p><strong>Example:</strong></p>
+<p>Definition in the <strong>setup file</strong>:</p>
+<p><img src="images/im-039-example-hf.png" class="img-fluid"></p>
+<p>Display in the <strong>linelist</strong>:</p>
+<p><img src="images/im-040-example-hf.png" class="img-fluid"></p>
+</section>
+</section>
+<section id="calculated-variables" class="level4">
+<h4 class="anchored" data-anchor-id="calculated-variables">Calculated variables</h4>
+<p>Three controls allow the creation of calculated columns. In general, the user can define a column by providing an Excel <em>formula</em> <a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>, but the <strong>setup file</strong> also provides two custom functions, <code>CASE_WHEN</code> and <code>CHOICE_FORMULA</code> to simplify formula syntax.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 23%">
+<col style="width: 15%">
+<col style="width: 20%">
+<col style="width: 23%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Control</th>
+<th>Functions</th>
+<th>Use</th>
+<th>Default value</th>
+<th>Can be used in used in analyses tables</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>formula</td>
+<td>Any combination of Excel functions (in English)</td>
+<td>Anything</td>
+<td></td>
+<td>Continuous variables: yes Categorical variables: no</td>
+</tr>
+<tr class="even">
+<td>case_when</td>
+<td><code>CASE_WHEN</code>(Excel functions optional)</td>
+<td>Replaces nested Ifs</td>
+<td>Empty cells; user can modify it</td>
+<td>No</td>
+</tr>
+<tr class="odd">
+<td>choice_formula</td>
+<td><code>CHOICE_FORMULA</code> (Excel functions optional)</td>
+<td>Replaces nested <code>IF</code></td>
+<td>Empty character; user cannot modify it</td>
+<td>Yes</td>
+</tr>
+</tbody>
+</table>
+<section id="formula" class="level5">
+<h5 class="anchored" data-anchor-id="formula">formula</h5>
+<p>When using the “formula” control, the value displayed is calculated according to a formula defined in the <a href="#sec-var-control-details">Control details</a> column of the dictionary.</p>
+</section>
+<section id="case_when" class="level5">
+<h5 class="anchored" data-anchor-id="case_when">case_when</h5>
+<p>Variables of control “case_when” use a specifically developed function, <code>CASE_WHEN</code>, which replaces a succession of nested <code>IF</code>. While you could write the formula with nested <code>IF</code>, <code>CASE_WHEN</code> is easier to read, thus simpler to use.</p>
+<p><strong>Usercase</strong> You want to recode a variable, but you do not know which values will be generated. For example, the raw data contains a columns for the age value and a column for the age unit. You use <code>CASE_WHEN</code> to create a column “age_years”. The values which will be present in the column can take many decimal value in the range of reasonable ages.</p>
+<div class="callout callout-style-default callout-important callout-titled" title="Important: CASE_WHEN and analyses">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important: CASE_WHEN and analyses
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Categorical variable created with this control <strong>cannot be used in univariate or bivariate tables</strong> in analyses sheets, because the designer cannot know in advance how many modalities the variable will take, and thus cannot build the tables.</p>
+<p>On the other hand, numeric variables created with this control (such as age in years) can be summarised in the analyses. Indeed, taking the <code>mean</code> or the <code>median</code> of a numeric variable variable outputs one value, so the designer knows what to expect.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Warning
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>To work properly the “case_when” control must be associated with a <code>CASE_WHEN</code>function in the <a href="#sec-var-control-details">Control details</a> column, or the designer will not work properly because the function is not native.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-note callout-titled" title="Why not using more recent Excel functions?">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-21-contents" aria-controls="callout-21" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Why not using more recent Excel functions?
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-21" class="callout-21-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>If you are using a recent version of Excel, you may know the functions <code>IFS</code> or <code>SWITCH</code>. OutbreakTools does not rely on them as they are not retro-compatible with some older versions of Excel. Use a <code>CASE_WHEN</code> or <code>CHOICE_FORMULA</code> instead.</p>
+</div>
+</div>
+</div>
+<p>Read more about writing the formula in the <a href="#sec-formulas">Control details</a> column below.</p>
+</section>
+<section id="choice_formula" class="level5">
+<h5 class="anchored" data-anchor-id="choice_formula">choice_formula</h5>
+<p>This control indicates the use of the <code>CHOICE_FORMULA</code> function, another custom function. This function is a special case of the <code>CASE_WHEN</code> formula, with more constrains on it. Indeed, the values that the calculated variable can take are known in advance and predefined in the <a href="../../site/reference/choices_sheet.html">Choices</a> sheet.</p>
+<p>Columns generated with this control can be used in univariate or bivariate tables, as the number of possible categories is known in advance.</p>
+<p>Read more about writing the formula in the <a href="#sec-var-control-details">Control details</a> column below.</p>
+</section>
+</section>
+</section>
+<section id="sec-var-control-details" class="level3">
+<h3 class="anchored" data-anchor-id="sec-var-control-details">Control details</h3>
+<p>This is a free text field, which accepts three types of values:</p>
+<ul>
+<li>the name of a <em>list</em> (defined in the <a href="../../site/reference/choices_sheet.html">Choices</a> sheet),</li>
+<li>the name of a <em>variable</em> (defined in the <em>Dictionary</em> sheet)</li>
+<li>a <a href="#sec-formulas"><em>formula</em></a>.</li>
+</ul>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 25%">
+<col style="width: 21%">
+<col style="width: 49%">
+<col style="width: 1%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Control type</th>
+<th>Control column</th>
+<th>Value expected in the “Control details” column</th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Static dropdown menu</td>
+<td>choice_manual choice_custom choice_multiple</td>
+<td>The name of a <em>list</em> that contains the authorised values defined in the <em>Choice</em> sheet (“List Name” column)</td>
+<td></td>
+</tr>
+<tr class="even">
+<td>Dynamic dropdown</td>
+<td>list_auto</td>
+<td>The name of an existing <em>variable</em></td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>Calculated</td>
+<td>formula case_when choice_formula</td>
+<td colspan="2">An Excel formula (that can contain one or | more functions, including the custom | functions <code>CASE_WHEN</code> and <code>CHOICE_FORMULA</code>)</td>
+</tr>
+</tbody>
+</table>
+<section id="defining-dropdown-menu-categories" class="level4">
+<h4 class="anchored" data-anchor-id="defining-dropdown-menu-categories">Defining dropdown menu categories</h4>
+<p>When the controls “choice_manual”, “choice_multiple” (and optionally “choice_custom”) are selected in the <a href="#sec-var-control">Control</a> column, you need to define the values the dropdown menu will contain (<em>i.e.</em> the <em>categories</em>).</p>
+<p>These values are specified in the <a href="../../site/reference/choices_sheet.html">Choices sheet</a>. Categories of a same variable are bundled into named <em>lists</em>. The name of the list is then entered in the “Control details” column of the <em>Dictionary</em> sheet.</p>
+<p><img src="images/im-041-choices.png" class="img-fluid"></p>
+<p>In the case of “list_auto” variables, you only need to provide the <em>name of another variable</em> in the “Control details” column. In the linelist, the values present in the referred variable will be automatically used to populate the dropdown menu. See <a href="../../site/how_to/link_tables.html#sec-ht-list_auto">this How to</a> for an example.</p>
+</section>
+<section id="sec-formulas" class="level4">
+<h4 class="anchored" data-anchor-id="sec-formulas">Formulas</h4>
+<p>If you have selected “formula”, “choice_formula” or “case_when” in the <a href="#sec-var-control">Control</a> column, you need to provide the formula to be applied in this column.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The information given in the <a href="#sec-formula-control">Formula control</a> section below are also valid for “choice_formula” and “case_when” controls as these, while based on custom functions, are still formulas.</p>
+</div>
+</div>
+<section id="sec-formula-control" class="level5">
+<h5 class="anchored" data-anchor-id="sec-formula-control">formula control</h5>
+<p>The formula is written <strong>in English, without an “=” sign</strong>. During compilation, the formulas will automatically be translated into the Excel language defined on the computer used to generate the linelist.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>When writing a formula, make sure that it returns an empty value for rows without an ID, as all the rows with non-null values in it will be counted in the <em>Analyses</em> sheets. If your graphs show a lot of “Missing” values that do not reflect how well a column is filled, check that a calculated column is not responsible for it.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-important callout-titled" title="Important: english proof your formulas!">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important: english proof your formulas!
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If your Excel is not configured to use English, pay special attention to the following:</p>
+<ul>
+<li><p>Use the English function names, such as <code>MEAN</code> instead of <code>MOYENNE</code>, or <code>IF</code> instead of <code>SI</code>.</p></li>
+<li><p>Function arguments are separated by <strong>“,”</strong> in English. Beware of lingering “;” if you are used to Excel in French!</p></li>
+<li><p>Similarly, English Excel uses <strong>“.”</strong> for decimals, not “,” like in French.</p></li>
+</ul>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled" title="Tip: improve formual readibility">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-25-contents" aria-controls="callout-25" aria-expanded="false" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip: improve formual readibility
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-25" class="callout-25-contents callout-collapse collapse">
+<div class="callout-body-container callout-body">
+<p>In Excel, you can use <code>ALT+ENTRY</code> to insert a carriage return to go to the next line. This does not affect the execution of your formulas, but greatly increases the readability. The same goes for inserting spaces around operators. Contrast these two formulas:</p>
+<p><img src="images/im-129-formula-style.png" class="img-fluid"></p>
+</div>
+</div>
+</div>
+</section>
+<section id="case_when-control" class="level5">
+<h5 class="anchored" data-anchor-id="case_when-control">case_when control</h5>
+<p>Use the <code>CASE_WHEN</code> function to replace nested <code>IF</code> (therefore limiting the risk of error when writing the formula), in this form:</p>
+<blockquote class="blockquote">
+<p>CASE_WHEN(condition1, value1,<br>
+condition2, value2,<br>
+condition3, value3,<br>
+…, …,<br>
+DEFAULT_VALUE)</p>
+</blockquote>
+<p>You need at least one pair of conditions-values but the function shines when there are many pairs. As in the nested <code>IF</code> or in the <code>IFS</code> functions, the conditional statement are <em>tested in the order they are written</em>.</p>
+<p>By default, any case that is not covered by the previous conditions will return an empty cell, unless you provide a default value (the “else”).</p>
+<p><strong>Example</strong></p>
+<p>You could write a formula with nested <code>IF</code> to calculate an age_years column:</p>
+<blockquote class="blockquote">
+<p>IF(age_unit = “months”, age_value / 12, IF(age_unit = “days”, age_value / 365, IF(age_unit = “years”, age_value, IF(ISBLANK(age_unit), ““))))</p>
+</blockquote>
+<p>Or write the equivalent with <code>CASE_WHEN</code>:</p>
+<blockquote class="blockquote">
+<p>CASE_WHEN(age_unit = “months”,<br>
+age_value / 12, age_unit = “days”,<br>
+age_value / 365, age_unit = “years”,<br>
+age_value)</p>
+</blockquote>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The information about the more generalist “formula” control are also valid here.</p>
+</div>
+</div>
+</section>
+<section id="choice_formula-control" class="level5">
+<h5 class="anchored" data-anchor-id="choice_formula-control">choice_formula control</h5>
+<p>The <code>CHOICE_FORMULA</code> function is a subcase of <code>CASE_WHEN</code> for when we want to encode a few <strong>known modalities</strong>.</p>
+<p>The pseudo-code is very similar to the CASE_WHEN function:</p>
+<blockquote class="blockquote">
+<p>CHOICE_FORMULA(list_values_choices,<br>
+condition1, value1,<br>
+condition2, value2,<br>
+condition3, value3,<br>
+…, … )</p>
+</blockquote>
+<p>But here, the value1, value2, value3 etc. are pre-defined in the list “list_values_choices” in the <em>“Choices”</em> sheet, as if these values were for a dropdown menu <a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>.</p>
+<p>Since we know exactly which modalities this variable can take, we can use it as a categorical variable in the <em>Analyses</em> sheet, to build a uni or a bivariate table.</p>
+<p><strong>Example:</strong></p>
+<blockquote class="blockquote">
+<p>CHOICE_FORMULA(list_age_group, age_years &lt; 5, “0 – 4 years”, age_years &lt; 10, “5 – 9 years, age_years &lt; 15,”10 – 14 years, age_years &lt; 20, “15 – 19 years, AND(age_years &gt;= 20, age_years &lt; 120),”20+ years” )</p>
+</blockquote>
+<p>Here, “list_age_group” corresponds to the list where the potential values to be returned are predefined; “age_years” is an existing variable that contains the age in years. The values between inverted commas (“0 – 5 years”) correspond to the possible results, predefined in “list_age_group”.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>The information about the more generalist “formula” control are also valid here.</p>
+</div>
+</div>
+</section>
+<section id="example-2" class="level5">
+<h5 class="anchored" data-anchor-id="example-2">Example</h5>
+<p>Here is an example of a setup that codes for two input columns (age value and age unit) and three calculated columns.</p>
+<ul>
+<li><code>age_num</code> is a numeric column, with no special control</li>
+<li><code>age_unit</code> contains a dropdown with categories “Day”/“Month/”Year”</li>
+<li><code>age_years</code> uses <code>CASE_WHEN</code> to transform the input data into the age in years and keeping the formula easy to read. This column is continous, and can be used in the analyses to calculate a <code>mean</code> or a <code>median</code> (or any relevant summary statistics)</li>
+<li><code>age_months</code> is a simpler formula based on <code>age_years</code>.</li>
+<li><code>age_group</code> uses <code>CHOICE_FORMULA</code> so this column can be used in univariate or bivariate tables to count the nomber of patients in each class, and to build an age pyramid.</li>
+</ul>
+<p><img src="images/im-132-example-formulas.png" class="img-fluid"></p>
+</section>
+</section>
+</section>
+<section id="unique" class="level3">
+<h3 class="anchored" data-anchor-id="unique">Unique</h3>
+<p>This is a <em>yes/no</em> dropdown menu field. If the variable should have unique values (such as the patient ID in some cases), special data validation will be applied to duplicated values.</p>
+</section>
+</section>
+<section id="data-exports" class="level2">
+<h2 class="anchored" data-anchor-id="data-exports">Data exports</h2>
+<p>OutbreakTools linelist have extensive data export functionalities. It is possible to define several personalised exports from the setup.</p>
+<p>To define a specific export, you need to fill both the “Export” section in the <em>Dictionary</em> sheet and the <a href="../reference/exports_sheet/qmd">Exports</a> sheet. The <em>Export</em> sheet contains metadata for each export, while the “Export” columns in the <em>Dictionary</em> sheet allows to decide individually for each variable whether to export it or not in a given export.</p>
+<p>To create a new export, first fill the <a href="../reference/exports_sheet/qmd">Exports</a> sheet, which will add corresponding columns to the <em>Dictionary</em> sheet.</p>
+<section id="rules" class="level3">
+<h3 class="anchored" data-anchor-id="rules">Rules</h3>
+<ul>
+<li><p>Variables with <strong>any value</strong> entered in the “Export” columns will be exported. If you want to <strong>not</strong> export a variable, you need to keep the cells <strong>empty</strong>.</p></li>
+<li><p>You can define the order in which variables are displayed in exports by entering numbers in the export column. If two variables have the same number (in the same export column), they will be exported in the order they are defined in the setup (from top to bottom).</p></li>
+</ul>
+<div class="callout callout-style-default callout-tip callout-titled" title="Tip: create anonymous exports">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip: create anonymous exports
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If you wish to create an anonymous export, i.e.&nbsp;one containing no personal identifier, you can filter the “personal identifier” column to <em>yes</em> and check that the column corresponding to the anonymous export is empty.</p>
+</div>
+</div>
+</section>
+<section id="example-3" class="level3">
+<h3 class="anchored" data-anchor-id="example-3">Example</h3>
+<p>In the following example, two exports have been created. The first one exports all variables present in the order that they appear in the setup. The other export (perhaps a specific MoH export) only export some variable, and choses the order (<code>facility_name</code> is exported first, then <code>facility_type</code>, then etc.).</p>
+<p><img src="images/im-133-exports.png" class="img-fluid"></p>
+</section>
+</section>
+<section id="sec-data-validation" class="level2">
+<h2 class="anchored" data-anchor-id="sec-data-validation">Data validation</h2>
+<p>To improve the quality of the data entered, it is possible to alert or block the user if they attempt to enter invalid data.</p>
+<p>For continuous variables, you can to specify the <code>min</code> and or <code>max</code> values (see below). For categorical variables with dropdown menus, go directly to the <a href="#sec-alert">Alert</a> column.</p>
+<section id="min" class="level3">
+<h3 class="anchored" data-anchor-id="min">Min</h3>
+<p>This is a free text field that defines the minimal authorised value in the variable. It can be an integer, a decimal number, the name of a variable or a formula.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>As with <a href="#sec-formula-control">formulas</a>, do not start with an “=” sign!</p>
+</div>
+</div>
+<p><strong>Examples: </strong></p>
+<ul>
+<li>“0” to forbid negative values in an age in month or year column</li>
+<li><code>date_notification</code> to not allow the date of exit to be before the arrival in the health facility</li>
+<li><code>today() - 2 * 365</code> to avoid dates older than two years if you know that the linelist is not used to enter retrospective data</li>
+</ul>
+</section>
+<section id="max" class="level3">
+<h3 class="anchored" data-anchor-id="max">Max</h3>
+<p>This is a free text field used to define the upper limit of authorised values. It can be an integer, a decimal number, a variable name or a formula.</p>
+<div class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>As with the formulas, the “=” sign is <strong>not</strong> placed in front of the limits you define.</p>
+</div>
+</div>
+<p><strong>Examples: </strong></p>
+<ul>
+<li>“120” to limit the age in year</li>
+<li><code>today()</code> to not allow dates after the day of data entry in the case of most date columns</li>
+</ul>
+</section>
+<section id="sec-alert" class="level3">
+<h3 class="anchored" data-anchor-id="sec-alert">Alert</h3>
+<p>This is a dropdown field. There are two possible options:</p>
+<ul>
+<li>error</li>
+<li>warning</li>
+</ul>
+<p>❌ The “error” option blocks data entry: it is impossible to force the entry of a value other than the authorised one. It is symbolised by a cross in a red circle <a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a>.</p>
+<p>⚠️ “warning” warns the end user that the data entered is not within the expected values, but if they wish they can still force this data in. It is symbolised by an exclamation mark in an orange triangle.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You can add error and warnings to columns with dropdown menus, the messages will appear if the user tries to enter a value not from the dropdown menu.</p>
+</div>
+</div>
+</section>
+<section id="message" class="level3">
+<h3 class="anchored" data-anchor-id="message">Message</h3>
+<p>This is a free text field used to give the end user an indication of why their entry is invalid.</p>
+</section>
+<section id="examples" class="level3">
+<h3 class="anchored" data-anchor-id="examples">Examples</h3>
+<section id="a-continuous-variable-patients-age" class="level4">
+<h4 class="anchored" data-anchor-id="a-continuous-variable-patients-age">A continuous variable: patient’s age</h4>
+<p>Definition in the <strong>setup file</strong>:</p>
+<p><img src="images/im-044-patients-age.png" class="img-fluid"></p>
+<p>How it is encoded in the data validation system of the <strong>linelist file</strong>:</p>
+<p><img src="images/im-045-patients-age.png" class="img-fluid"></p>
+<p>A warning box appearing when the user attempts to enter invalid data:</p>
+<p><img src="images/im-046-warnings.png" class="img-fluid"></p>
+</section>
+<section id="a-categorical-variable-age-unit" class="level4">
+<h4 class="anchored" data-anchor-id="a-categorical-variable-age-unit">A categorical variable: age unit</h4>
+<p>Definition in the <strong>setup file</strong>:</p>
+<p><img src="images/im-047-age-unit.png" class="img-fluid"></p>
+<p>Display in the linelist:</p>
+<p><img src="images/im-048-age-unit.png" class="img-fluid"></p>
+</section>
+<section id="a-date-variable" class="level4">
+<h4 class="anchored" data-anchor-id="a-date-variable">A date variable</h4>
+<p>Definition in the <strong>setup file</strong>:</p>
+<p><img src="images/im-049-date.png" class="img-fluid"></p>
+<p>How it is encoded in the data validation system of the <strong>linelist file</strong>:</p>
+<p><img src="images/im-050-date.png" class="img-fluid"></p>
+<p>Warning box appearing when the user attempts to enter invalid data:</p>
+<p><img src="images/im-051-warning.png" class="img-fluid"></p>
+</section>
+</section>
+</section>
+<section id="sec-conditional-formating" class="level2">
+<h2 class="anchored" data-anchor-id="sec-conditional-formating">Conditional Formatting</h2>
+<p><img src="images/im-052-conditional-formatting.png" class="img-fluid"></p>
+<p>This section is used to define conditional formatting rules.</p>
+<section id="formatting-condition" class="level3">
+<h3 class="anchored" data-anchor-id="formatting-condition">Formatting condition</h3>
+<p>The “Formatting Condition” column is a free text column where one must provide the <strong>name of a variable to use as a reference</strong>. Rows for which the reference column contains <em>1</em> will be formatted with the formatting defined in the “Formatting Values” column. Row containing <em>0</em> will have no special formatting.</p>
+<p>This means that in most cases, you will need to calculate a dummy variable, with a result of 1 or 0, to guide the formatting.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>you can give special names to these calculated columns to easily identify them (<em>e.g.</em> <em>format_xxx</em>).</p>
+</div>
+</div>
+</section>
+<section id="formatting-values" class="level3">
+<h3 class="anchored" data-anchor-id="formatting-values">Formatting values</h3>
+<p>This is a free text column, but what matters is not the text entered in it but the formatting applied to it, which is read and applied to the cells in the <strong>linelist file</strong> if the formatting condition is met.</p>
+</section>
+<section id="lock-cells" class="level3">
+<h3 class="anchored" data-anchor-id="lock-cells">Lock cells</h3>
+<p>The Lock Cells section is not currently available.</p>
+
+
+</section>
+</section>
+
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>Note that we used the word “type” in its <em>computer science</em> meaning, which differs a bit from the <em>statistics</em> one.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>sometimes called <em>class</em> in some software<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>also called character string in some softwares<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p><em>i.e.</em> a combination of Excel <em>functions</em><a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p>you can of course give the list any name that you wish, such as “list_age_group” for example if you were recoding age<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6"><p>Sometimes the user manage to break through by pasting values though<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/epicentre-msf\.github\.io\/outbreak-tools\/");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Developed by <a href="https://epicentre.msf.org/"><img src="images/epicentre.png" class="img-fluid" alt="Epicentre logo" width="65"></a></p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>This website is built with <i class="fa-solid fa-heart" title="a heart" aria-label="heart"></i>, <a href="https://github.com" target="_blank"><i class="fa-brands fa-github" title="GitHub octocat logo" aria-label="github"></i></a>, <a href="https://www.r-project.org/about.html" target="_blank"><i class="fa-brands fa-r-project" title="R Project" aria-label="r-project"></i></a> and <a href="https://quarto.org/" target="_blank">Quarto</a></p>
+</div>
+  </div>
+</footer>
+
+
+
+
+</body></html>
