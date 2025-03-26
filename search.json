@@ -408,49 +408,49 @@
   {
     "objectID": "Options.html",
     "href": "Options.html",
-    "title": "OutbreakTools documentation",
+    "title": "OutbreakTools",
     "section": "",
     "text": "A ‘Setup Options’ menu has been specially created in the top ribbon, bringing together all the functions specific to the setup file:"
   },
   {
     "objectID": "Options.html#tables-management",
     "href": "Options.html#tables-management",
-    "title": "OutbreakTools documentation",
+    "title": "OutbreakTools",
     "section": "Tables Management",
     "text": "Tables Management\n\nAdd rows to tables in current sheet\n\n\n\n\n\nIf you need more rows to define the linelist, choices or analyses, use the “Add rows to tables in current sheet” button.\nWhen this functionality is used in the analysis definition page, you can use the drop-down menu in cell A1 to choose whether you want to apply the functionality to all tables or just one in particular.\n\n\n\n\n\n\n\nResize tables in current sheet\n\n\n\n\n\nTo ensure that there are no empty rows in a table, click on the “Resize tables in current sheet” button.\nWhen this functionality is used in the analysis definition page, you can use the drop-down menu in cell A1 to choose whether you want to apply the functionality to all tables or just one in particular.\n\n\n\n\n\n\n\nRemove all filters\n\n\n\n\n\nIf you have used filters and want to display everything again, you can use the “Remove all filters” button. This will return the table to its initial state."
   },
   {
     "objectID": "Options.html#translations",
     "href": "Options.html#translations",
-    "title": "OutbreakTools documentation",
+    "title": "OutbreakTools",
     "section": "Translations",
     "text": "Translations\nSee the Translations section above."
   },
   {
     "objectID": "Options.html#import",
     "href": "Options.html#import",
-    "title": "OutbreakTools documentation",
+    "title": "OutbreakTools",
     "section": "Import",
     "text": "Import\n\n\n\n\n\n\nImport data from another setup\nYou can import data from an older setup file into a new blank file. This can be useful if a file is broken or corrupted, or if the setup template has been upgraded (new column, new function, debugged, etc).\n\n\nImport data from disease\nThis button is used to import a disease from a disease Master file. This file is being piloted for Epinetwork discussions."
   },
   {
     "objectID": "Options.html#advanced",
     "href": "Options.html#advanced",
-    "title": "OutbreakTools documentation",
+    "title": "OutbreakTools",
     "section": "Advanced",
     "text": "Advanced\n\n\n\n\n\n\nCheck current setup for errors\nThe setup file comes with a series of checks on its content to help you debug your dictionary. After adding major components to your setup file, or before compiling a linelist with the designer, you can (should) click on the button “Check current setup for errors” to see any errors in the “__checkRep” sheet.\nThere is a table for each sheet or section (in the case of analyses), with the following three columns:\n\n“Incoherences Type” preceded by the name of the sheet,\n“Where?”, which shows the name of the sheet or section and the line where the incoherence is located,\n“Details”, which gives details of the incoherence.\n\nThere are several types information that could appear in the Incoherence column:\n\nInfo (in grey): this is not strictly speaking an inconsistency, but simply a piece of information about something that will not block the compilation of the linelist.\nWarning (in yellow): these are problems that need to be fixed because there is a real inconsistency. It could be an error in a formula, for example.1\nNote (in blue): this is something that has been defined in the setup, but will not be applied, and is therefore not blocking. For example, in the analyses, certain choices are contradictory by design, such as the display of percentages, which is not authorised when you choose to invert the display of the table (horizontal display instead of vertical).\n\n\n\n\n\n\n\n\nClear data in current setup\nThis feature allows you to delete all the data entered in the setup file."
   },
   {
     "objectID": "Options.html#dev",
     "href": "Options.html#dev",
-    "title": "OutbreakTools documentation",
+    "title": "OutbreakTools",
     "section": "Dev",
     "text": "Dev\n\n\n\n\n\nThese functions are for the use of developers only, you can ignore them."
   },
   {
     "objectID": "Options.html#footnotes",
     "href": "Options.html#footnotes",
-    "title": "OutbreakTools documentation",
+    "title": "OutbreakTools",
     "section": "Footnotes",
     "text": "Footnotes\n\n\nNote that the checkup does its best, but some formula errors can be missed and create problems in your formulas. Always test the calculated colums after compilation!↩︎"
   },
@@ -513,9 +513,9 @@
   {
     "objectID": "index.html",
     "href": "index.html",
-    "title": "OutbreakTools documentation",
+    "title": "OutbreakTools",
     "section": "",
-    "text": "Generate robust linelists from a dictionary without fancy VBA skills\nOutbreakTools is a set of solutions designed by Epicentre EpiDS team to quickly create linelists to collect field data during outbreaks. These linelists have a number of functionalities including descriptive analyses, buttons to migrate data to or from the linelist, or to import geographic data to better describe locations.\nDocumentation\nThis site contains documentation both on how to develop and modify an OBT linelist, and how to use it.\n\n\n\n\nI want to use a linelist Get started with any OutbreakTools linelist and the associated tools (GeoApp, dashboard)   Start\n\n\n\n\nI want to make a linelist Documentation for the setup file and designer that generate linelists.  Start\n\n\n\n\n\n\n Back to top"
+    "text": "Quickly build a linelist from an excel dictionary\nOutbreakTools is a set of solutions designed by Epicentre EpiDS team to quickly create linelists to collect field data during outbreaks without relying on fancy VBA skills. These linelists have a number of functionalities including descriptive analyses, buttons to migrate data to or from the linelist, or to import geographic data to better describe locations.\nDocumentation\nThis site contains documentation both on how to develop and modify an OBT linelist, and how to use it.\n\n\n\n\nI want to use a linelist Get started with any OutbreakTools linelist and the associated tools (GeoApp, dashboard)   Start\n\n\n\n\nI want to make a linelist Documentation for the setup file and designer that generate linelists.  Start\n\n\n\n\n\n\n Back to top"
   },
   {
     "objectID": "getting_started/home_obt.html",
