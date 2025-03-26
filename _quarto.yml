@@ -8,8 +8,8 @@ execute:
 format:
   html:
     theme: 
-      - flatly
-      - styles.css
+      - cosmo
+      - css/styles.css
     
     toc: true
     toc-depth: 5
