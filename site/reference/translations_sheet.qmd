@@ -1,0 +1,84 @@
+---
+title: "Translation sheet"
+description: Generate a linelist in several languages
+categories: 
+  - Setup
+  - Sheet
+---
+
+OutbreakTools can create linelists in different languages from the same dictionary, which makes maintenance of a linelist much easier (only one place to make a change, before compiling in all the languages).
+
+The *Translation* sheet contains all text values to translate. This works because by design, the text fields that require translation in the various sheets of the **setup file** are tagged with a "translate as text" tag.^[which you can actually see in light grey font above the columns to be translated.]
+
+The *Translation* sheet contains at least one column, with the default language, *i.e*. the language you chose to complete the **setup file**.
+
+The columns headings can be modified. It is important to name the languages in the table headings, as they will be used to populate a dropdown menu in the **designer file** when the linelist is to be compiled.
+
+## Update the translation table
+
+Click on the button *"Update translation table"* from the [Setup Options ribbon](../reference/ribbons_setup.qmd) to scrap the file and import all the fields to be translated into the table. They are listed in alphabetical order.
+
+## Add a new language
+
+To add a language to the table, use the *Setup Options* ribbon.
+
+![](../reference/images/im-103-translations-sheet.png){fig-align="center"}
+
+In the "Translation" tab, in the "Add language" field, enter the name of the language you want to add, then press the "Enter" key on your keyboard.
+
+The new language is added to the table:
+
+![](../reference/images/im-104-translations-sheet.png){fig-align="center"}
+
+![](../images/fleche.png){fig-align="center"}
+
+![](../reference/images/im-105-translations-sheet.png){fig-align="center"}
+
+![](../images/fleche.png){fig-align="center"}
+
+![](../reference/images/im-106-translations-sheet.png){fig-align="center"}
+
+![](../images/fleche.png){fig-align="center"}
+
+![](../reference/images/im-107-translations-sheet.png){fig-align="center"}
+
+![](../images/fleche.png){fig-align="center"}
+
+![](../reference/images/im-108-translations-sheet.png){fig-align="center"}
+
+![](../images/fleche.png){fig-align="center"}
+
+![](../reference/images/im-109-translations-sheet.png){fig-align="center"}
+
+You can then fill in your translations.
+
+If you are making changes to the setup and want to ensure that all the translatable fields are correctly listed, click Update translation table. A message will then inform you of the number of missing fields per language.
+
+![](../reference/images/im-110-translations-sheet.png){fig-align="center"}
+
+![](../images/fleche.png){fig-align="center"}
+
+![](../reference/images/im-111-translations-sheet.png){fig-align="center"}
+
+![](../images/fleche.png){fig-align="center"}
+
+![](../reference/images/im-112-translations-sheet.png){fig-align="center"}
+
+::: {.callout-warning}
+There is no control or intelligence behind the notions of default language and other languages, *i.e*. if you name the first column "French" and the second "English", even though you have used English in the **setup file**, it is the first column named "French" that will contain the values in English.
+
+Similarly, if you have mixed several languages across the **setup file**, all the values will be in the same column, the first column of the table.
+:::
+
+
+::: {.callout-important}
+There should not be duplicates (two pieces of text in one language translated in the exact same text in another language), as these will prevent automatic translation during data compilation.
+:::
+
+::: {.callout-note}
+Trailing white spaces can sometimes cause problem, remove them from the setup.
+:::
+
+::: {.callout-note}
+If, when the linelist is generated, certain fields of the chosen language are missing, these fields will appear in the default language (the first column). That being said, if a string of text contains special characters, this could cause a bug. In general, we advise to fill all cells in all languages.
+:::

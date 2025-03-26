@@ -1,0 +1,188 @@
+---
+title: "Exports sheet"
+description: Define export buttons and files
+categories: 
+  - Setup
+  - Sheet
+---
+
+![](../reference/images/im-088-exports-sheet.png){fig-align="center"}
+
+It is possible to predefine exports, such as a specific export for a given MoH. The preparation of exports is done in two different sheets:
+
+- In the *Exports* sheet you define the export: metadata, button label, exported file name, type of headers etc. 
+
+- In the *Dictionary* sheet you define which variable is exported in each export, and in which order  
+
+A sheet in the **linelist file** corresponds to a sheet in the **exported file**.
+
+::: {.callout-warning}
+Without some of export metadata, it may simply not be possible to generate an export or it may contain only the variables selected, in raw format.
+:::
+
+
+## Export number
+
+One line corresponds to one export. The exports are numbered from 1 to how many exports are available.
+
+In line "1", we define the parameters for export 1, whose variables to be exported have been defined in the *Dictionary* sheet in the "Export 1" column, etc.
+
+![](../reference/images/im-089-export-number.png){fig-align="center"}
+
+![](../reference/images/im-090-export-number.png){fig-align="center"}
+
+Note that you can use the "*Add rows to table in current sheet*" button or the "*Resize tables in current sheet*" button to add more exports or removed empty rows (see the [ribbon help](../reference/ribbons_setup.qmd).
+
+
+## Status
+
+This is an *active/inactive* drop-down menu field. It is used to activate or deactivate an export button.
+
+Example:
+
+Definition in the **setup file**:
+
+![](../reference/images/im-091-status-exports-sheet.png){fig-align="center"}
+
+Display in the **linelist file**:
+
+![](../reference/images/im-092-status-exports-sheet.png){fig-align="center"}
+
+## Label button
+
+This is a free text field that contains the label of the export button in the linelist. It should be fairly concise or it may overflow the button box.
+
+Example :
+
+Definition in the **setup file**:
+
+![](../reference/images/im-093-label-button-exports-sheet.png){fig-align="center"}
+
+Display in the **linelist file**:
+
+![](../reference/images/im-094-label-button-exports-sheet.png){fig-align="center"}
+
+## File format
+
+This is a dropdown menu that allows choosing between the **.xlsx** and **.xlsb** file format for the exported file.
+
+
+## File name
+
+This is a free text field used to define the **name** of the export. 
+
+You can either define **fixed** export names (ex: "export_moh") or **dynamic** exports names, that use values collected from variables in the linelist (such as the country, the section etc.).
+
+For dynamic names, you can only use variables that contain only one value (**vlist1D** variables), usually defined in the "Info" sheet of the linelist.
+
+
+### Rules to create a name
+
+-   **Character strings** passed to this field must be enclosed in inverted commas like these: *"a character string*"
+-   **Variable names** passed to this field must be naked (not surrounded by inverted comas), similarly to how we refer to variables in the *Dictionary* sheet columns.
+-   Different components of the name are separated by '*+*', which will create names where the components are separated by '*\_\_*'.
+-   No need to add a date to the export: the date and time at which an export is made is appended at the end of the name automatically.
+-   If the export is to be password protected (see below), the public key for opening the file will be included in the name.
+
+### Example
+
+![](../reference/images/im-095-example-file-name.png){fig-align="center"}
+
+Here, the pieces in green, surrounded by inverted comas are fixed bits of texts (character strings). The blue pieces are *vlist1D variables* that were defined for that linelist (in the Info sheet, hence their suffixes).
+
+This name specification will result in the following export names, depending on where the linelist is used (hence depending on how they filled the metadata):
+
+-   MNG_linelist\_\_MNG24\_\_SSD\_\_MSF-OCP\_\_Aweil\_\_anonyme\_\_vb-1003\_\_20240617-1901.xlsb if the linelist was used by OCP in Aweil (South Sudan)
+-   MNG_linelist\_\_MNG24\_\_NER\_\_WaCa\_\_Maradi\_\_anonyme\_\_vb-2035\_\_20240617-1903.xlsb if the linelist was used by WaCa in Maradi (Niger)
+-   ...
+
+
+::: {.callout-note}
+If a variable is referred to in the name but remains empty in the linelist, the **name of the variable** is used as a placeholder. In the example above, if the data encoder filled none of the variables in the metadata, the created file would have the following name:
+
+MNG_linelist\_\_info_outbreak_code\_\_info_country_code\_\_info_organisation\_\_info_facility_name\_\_anonyme\_\_vb-1003\_\_20240617-1906.xlsb
+:::
+
+## Password
+
+This is a *yes/no* drop-down field that is used to define whether or not the export should be password-protected.
+
+If so, the password will be displayed automatically when the export is created.
+
+Example:
+
+Definition in the **setup file**:
+
+![](../reference/images/im-096-example-password.png){fig-align="center"}
+
+Display in the **linelist file**:
+
+![](../reference/images/im-097-example-password.png){fig-align="center"}
+
+![](../reference/images/im-098-example-password.png){fig-align="center"}
+
+
+## Include personal identifiers
+
+This is a *yes/no* dropdown menu which controls whether *variables* that are tagged as [Personal identifier](#sec-personal-identifiers) in the *Dictionary* sheet should be included in the export.^[Remember, in the *Dictionary* sheet, any variable with *anything* written in the export columns will be exported in the corresponding exports (even if it is written "no").]
+
+The column defaults to "*no*". 
+
+
+## Include P-code
+
+This is a *yes/no* drop-down field that controls whether the hidden columns that contains processed geographic data such as P-codes should be exported in addition to the raw data columns.^[These columns are automatically calculated when *geo* and *hf* variables are created in the linelist. They contain concatenated administrative levels at different scales, and p-codes. They are used for creating maps.]
+
+
+## Header format
+
+This is a *variables names/variables labels* drop-down menu field. It allows you to define whether you want the column headings in the export to correspond to the *variable names*, their *labels*, or both.
+
+
+::: {.callout-tip title="Tip: choosing the header format"}
+If you create an export for analyses purpose, use the *variable names* to avoid having to format and rename when importing in your favourite statistical software. 
+
+If you are exporting data to the MoH or other partners, it might be easier for them to have the *variables labels*, which are more descriptive about the content of the variable.
+:::
+
+**Example**:
+
+Definition in the **setup file**:
+
+![](../reference/images/im-099-example-header-format.png){fig-align="center"}
+
+Display in export:
+
+![](../reference/images/im-100-example-header-format.png){fig-align="center"}
+
+Definition in the **setup file**:
+
+![](../reference/images/im-101-example-header-format.png){fig-align="center"}
+
+Display in export:
+
+![](../reference/images/im-102-example-header-format.png){fig-align="center"}
+
+
+## Export Metadata Sheets
+
+This is a *yes/no* drop-down field. By selecting "*yes*", you decide that in addition to the data to be exported, you will also export:
+
+-   The "*Dictionary*" sheet
+-   The "*Choices*" sheet
+-   A metadata sheet^[we are not speaking of the sheet usually created for linelists that contains variables to collect metadata about the project (MSF section, disease, facility name...), but of hidden linelist metadata (when the file was compiled, language, version etc.)]
+
+
+## Export Translation
+
+This is a *yes/no* drop-down field. Selecting "*yes*" means that, in addition to the data to be exported, we will also have the sheet containing the translations.
+
+
+## Export Analysis Sheet
+
+This is a *yes/no* drop-down field. By selecting '*yes*', you decide that in addition to the data to be exported, you will also export all the analysis tables (but not the graphs).
+
+
+::: {.callout-tip}
+It is also possible to export analysis tables directly from the linelist using the "*Export analyses*" button.
+:::

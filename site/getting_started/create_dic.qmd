@@ -1,0 +1,83 @@
+---
+title: "Create a dictionary"
+description: Create a linelist dictionary (setup file) that contains the specification of your linelist
+---
+
+## Get the tools ready 🛠 {#sec-get-tools-ready}
+
+1. [Download](../getting_started/download.qmd#download) the files from github to get the most updated versions and unzip it.
+
+2. Save the empty **setup file** in you working directory, locally. Open the file using Desktop Excel (web-based Excel cannot run macros).
+
+::: {.callout-warning}
+OneDrive and macro-enabled Excel files [do not work well together in general](https://stackoverflow.com/questions/69282968/onedrive-corrupts-macro-enabled-files). To avoid random file corruption, we advise that you work in a non synchronise folder, or that you disable OneDrive while you are writting the **setup file**.
+:::
+
+## Grow your setup file 🌱
+
+The first step is to create the **variable dictionary**. The other steps are optional and can be completed if and when needed.
+
+### Create the variable dictionary 📘
+
+Aka fill the [Dictionary](../reference/dictionary_sheet.qmd) and [Choices](../reference/choices_sheet.qmd) sheets. The first sheet is a database about all the *variables* present in the linelist you want to create. The *Choices* sheet contains the categories for categorical variables.
+
+The different sections of the *Dictionary* sheet will define, for each variable:
+
+-   name, label, sublabel, notes
+-   sheet, section, subsection, hence also defining the *structure* of the linelist sheets and tables
+- variable visibility
+-  variable type (*e.g.* a date or a decimal), format (*e.g.* the number of decimals in a case of a decimal), control (is it free text, a dropdown menu, a formula, a fancy *geo* section etc.)
+-   export status: should the variable be exported in one or more exports
+-   data validation rules: define min and max values, as well as error messages for values that do not respect rules
+-   whether to apply special formatting and how
+-   *and more!*
+
+When you have first draft of your dictionary, go to the [OutbreakTools ribbon](../getting_started/workflow.qmd#fig-setup-ribbon) and click on the button "Check current setup for errors". This will run a couple of automatic checks on the setup and raise warnings and errors.
+
+
+### Fill other sheets as needed
+
+Fill the [Exports](../reference/exports_sheet.qmd) sheet to **define one or more personalised exports**: their names, pseudo-anonymisation, the label of their button, whether to export variable names or labels, how much metadata to export etc.
+
+Fill the [Analyses](../reference/analyses_sheet.qmd) sheet to **define basic analyses** to include in the linelist:
+
+- uni and bivariate analyses (figures and tables)  
+- temporal analyses (epicurves and corresponding tables)  
+- spatial analyses: top X location with... (most case, most deceased, most...)  
+- spatio-temporal analyses: temporal analyses but for a couple of user-specified places  
+
+Fill the [Translations](../reference/analyses_sheet.qmd) sheet to translate strings of text so that the **linelist can automatically be built in other languages** than the one in the setup.
+
+As for when defining the dictionary, check for errors regularly with the "Check current setup for errors".
+
+
+### Build the linelist and stress-test it ✔
+
+After correcting errors and checking warnings, you can go to the next step and [compile the setup](../getting_started/compile.qmd) to build the linelist using the **designer file**. This will create the linelist.
+
+**Test you linelist!** Enter false data and check your variables:
+
+- is the format of the variable correct?
+- are the formulas working as expected?
+- is the formatting applied correctly (which boils down to a formula problem, SEE SECTION)?
+- do the analyses work as expected?
+
+In all likelihood, you will need a couple of cycles "improve setup -> build linelist -> debug" to get a working linelist, do not despair!
+
+::: {.callout-tip collapse=true}
+
+## Tip to check calculated variables
+
+Don't hesitate to manually *unhide all columns* in the created linelist to check hidden columns formulas, you have the user rights to do it.
+
+Reverse to the original state by going to the "Advanced" section of the OutbreakTools ribbon, and click on the "Restore state of hidden columns"
+:::
+
+::: {.callout-tip collapse=true}
+
+## Save your testing data
+
+If you spend time entering false data to check your linelist, you can save this data for your next test, to avoid spending time re-entering it. 
+
+To do that, go to the "Advanced" section of the [OutbreakTools ribbon](../reference/ribbons_linelist.qmd) and click on the "Export for migration" button. This will create a data export, that can be later imported in a new empty linelist by clicking on the "Import data" button from the same ribbon.
+:::

@@ -1,0 +1,44 @@
+---
+title: "Add a new language"
+description: Add a new language to a setup file
+categories: 
+  - Setup
+---
+
+## A note about languages
+
+There are two levels of translation:
+
+- the language of the *interface* (buttons and fuctionalities): standardised for all linelists, since all linelists produced by OBT have the same set of buttons and functionalities
+
+- the language of *linelist content* (variable labels, categories...)
+
+The *linelist interface* has built-in translations for: English, French, Arabic, Spanish and Portuguese. The translations are buil-in the **designer file** itself. If another language needs to be added to this list, you can contact Yves Amevoin or the EpiDS team to request it.
+
+The *content* of the linelist depends on the setup, so each **setup file** must come with its own translations (if several languages needed).
+
+Both levels of translation are selected during the [compilation](../getting_started/compile.qmd) steps of a given linelist.
+
+
+## Add a new language to a setup
+
+Go to the [OutbreakTools tab](../reference/ribbons_setup.qmd) of the setup top ribbon. One section contains buttons for translation:
+
+![Translation section in the OutbreakTools tab](images/img-003-ribbon-setup-translations.png){fig-align="center"}
+
+To add a new linelist language:
+
+1. Click on the "Update translation table", which is going to scrap all text bits from the setup and add them to the translation table (even if there is only one language in the sheet). This step can be done at a later stage, and each time you modify or add a label in the setup.
+
+2. Fill the name of the language you want to add in the rectangular box
+
+3. Click on the "Add language" button: it will add a new empty column on the right of the column(s) already present in the [Translation sheet](../reference/translations_sheet.qmd), and open the
+
+4. Provide translation for each string of text.
+
+
+::: {.callout-tip}
+You can use Deepl or Google translate on bits of the column to provide for first draft, and ask a collegue to review the translation afterwards.
+:::
+
+To know more about translations, go to the [Tranlation sheet](../reference/translations_sheet.qmd).

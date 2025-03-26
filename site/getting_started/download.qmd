@@ -1,0 +1,35 @@
+---
+title: "Obtain OutbreakTools files"
+description: Download all the tools to generate a linelist on your own
+---
+
+## Download the OutbreakTools archive 📦 {#sec-download}
+
+Go to the [OutbreakTools github repo](https://github.com/epicentre-msf/outbreak-tools), scroll down to the README and click on the yellow button to donwload `.zip` archive that contains the file you need.
+
+![](images/img-001-download.png)
+
+Save the archive locally on your computer and unzip it.
+
+
+
+## Install the OubreakTools files {#sec-obt-files}
+
+The solution is based on VBA scripts in Excel files, so there is nothing to install.
+
+You should however [authorise VBA macros in Excel](https://support.microsoft.com/en-us/office/enable-or-disable-macros-in-microsoft-365-files-12b036fd-d140-4e74-b45e-16fed1a7e5c6) so that the files work as expected (or at all, in fact).
+
+The archive contains several timestamped files:
+
+- `setup-YYYY-MM-DD.xlsb`: an empty **setup file**
+- `designer_main-YYYY-MM-DD.xlsb`: the **designer file** that is used to compile the setup
+- `_ribbontemplate_main-YYYY-MM-DD.xlsb`: a template file containing information used during compilation
+- `run_designer_on_windows.R` and `rundesigner.vbs`: files that can be used to compile from R (experimental and yet undocumented)
+
+:::{.callout-note}
+The excel files are in the `.xlsb` format, a compressed, more efficient Excel format that allows VBA macros.
+:::
+
+## Update to a new version of OutbreakTools
+
+The OutbreakTools solution is in active development, so there are regular updates to the files, to add new functionalities or correct bugs. To upgrade, just [dowload the tools](https://github.com/epicentre-msf/outbreak-tools) again and use the new **setup** and **designer**. If you already have a working setup for a linelist, it is possible to [migrate](../how_to/migrate_setup.qmd) its content to a new empty **setup file**.
