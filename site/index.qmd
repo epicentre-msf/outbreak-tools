@@ -14,9 +14,9 @@ home:
 
 ::: {.div #homepage-text}
 
-[Generate robust linelists from a dictionary without fancy VBA skills]{.h1}
+[Quickly build a linelist from an excel dictionary]{.h1}
 
-**OutbreakTools** is a set of solutions designed by [Epicentre](https://epicentre.msf.org/) [EpiDS team](https://apps.epicentre-msf.org/public/) to quickly create linelists to collect field data during outbreaks. These linelists have a number of functionalities including descriptive analyses, buttons to migrate data to or from the linelist, or to import geographic data to better describe locations.
+**OutbreakTools** is a set of solutions designed by [Epicentre](https://epicentre.msf.org/) [EpiDS team](https://apps.epicentre-msf.org/public/) to quickly create linelists to collect field data during outbreaks without relying on fancy VBA skills. These linelists have a number of functionalities including descriptive analyses, buttons to migrate data to or from the linelist, or to import geographic data to better describe locations.
 
 [Documentation]{.h1}
 

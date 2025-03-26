@@ -19,7 +19,7 @@ format:
     footnotes-hover: true
 
 website:
-  title: "OutbreakTools documentation"
+  title: "OutbreakTools"
   favicon: images/icon.png
   repo-url: https://github.com/epicentre-msf/outbreak-tools/site
   
