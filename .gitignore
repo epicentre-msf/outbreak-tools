@@ -1,0 +1,37 @@
+/node_modules
+logs
+
+# eventual R-files
+*.Rmd
+
+# temporary files
+*.temporary
+temp
+*.temp
+*temp\\.?*
+config.json
+*.test
+output_test
+output
+migration
+migrations
+outputs
+demo
+*Sheet1.cls
+*Sheet2.cls
+*Sheet3.cls
+*Sheet4.cls
+*Sheet5.cls
+config.json
+demo
+local
+debug
+
+
+.DS_Store
+\\.vscode/
+
+.quarto/
+*.Rproj
+docs/
+
