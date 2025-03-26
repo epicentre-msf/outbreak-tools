@@ -3,9 +3,9 @@
 
 ##  Quickly build a linelist from an excel designer :snail:
 
-[![Download All](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/OBT_all_main.zip)
-[![Download All Dev](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all_dev.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/dev/src/OBT_all_dev.zip)
-[![Download Latest version of setup file](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/setup_file.svg)](https://github.com/epicentre-msf/outbreak-tools-setup/raw/main/setup.xlsb)
+[![Download All](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/main/releases/latest/OBT-main-latest.zip)
+[![Download All Dev](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/download_all_dev.svg)](https://github.com/epicentre-msf/outbreak-tools/raw/dev/releases/latest/OBT-dev-latest.zip)
+[![Download the master setup](https://github.com/epicentre-msf/outbreak-tools/raw/main/src/imgs/setup_file.svg)](https://github.com/epicentre-msf/outbreak-tools-setup/raw/main/releases/latest/disease_setup-latest.xlsb)
 </p>
 </div>
 
@@ -26,14 +26,14 @@ For more informations about the setup, please [browse]((https://github.com/epice
 
 #### Automation
 
-Automation of the work can be done on R (**only works on a windows machine**) using the provided [R script](https://github.com/epicentre-msf/outbreak-tools/raw/main/automation/run_designer_on_windows.R) as example. It sends the required parameters for the designer to a [vbscript](https://github.com/epicentre-msf/outbreak-tools/raw/main/automation/rundesigner.vbs) which in turn opens excel and runs the routines for linelist creation.
+Automation of the work can be done on R (**only works on a windows machine**) using the provided [R script](https://github.com/epicentre-msf/outbreak-tools/raw/main/automate/codes/run_designer_on_windows.R) as example. It sends the required parameters for the designer to a [vbscript](https://github.com/epicentre-msf/outbreak-tools/raw/main/automate/codes/rundesigner.vbs) which in turn opens excel and runs the routines for linelist creation.
 
 #### Structure of the repo
 
-- `automation`: Codes for automating linelist creation and development process in R
-- `docs`: Documentation in html format
-- `src`: Source codes in flat files used in the designer, and compressed version of the materials (setup, designer, ribbon)
-- `designer.xlsb` is the designer file.
+- `automate`: Codes for automating linelist creation and development process in R
+- `docs`: Documentation website
+- `src`: Source codes
+- `releases`: Releases of OBT versions.
 
 #### Limitations
 

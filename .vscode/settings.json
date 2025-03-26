@@ -3,13 +3,13 @@
         "activityBar.activeBorder": "#606020"
     },
     "files.exclude": {
-        "**/.mock": true,
+        "**/.mock": false,
         "Rscripts/designer_aky.xlsb": true,
         "Rscripts/designer_prev.xlsb": true
     },
     "editor.lineNumbers": "on",
     "editor.fontSize": 14,
-    "editor.fontFamily": "'Office Code Pro', 'Fira Code Light', 'Consolas', 'Office Code Pro', 'Courier New', monospace",
+    "editor.fontFamily": "'Office Code Pro', 'Courier New', monospace",
     "editor.fontLigatures": true,
     "zenMode.hideStatusBar": false,
     "editor.minimap.scale": 2,
@@ -31,5 +31,6 @@
         }
     },
     "r.lsp.promptToInstall": false,
-    "editor.rulers": [80, 120, 160]
+    "editor.rulers": [80, 120, 160],
+    "editor.inlineSuggest.enabled": false
 }
