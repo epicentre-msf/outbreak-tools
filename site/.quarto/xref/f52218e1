@@ -1,0 +1,1 @@
+{"entries":[{"caption":"Constrain possibles values for patient IDs in the secondary table with list_auto","key":"sec-ht-list_auto","order":{"number":1,"section":[0,2,2,1,0,0,0]}}],"headings":["independent-data-tables","non-independent-tables","refer-to-a-single-value-in-a-formula","link-two-tables","sec-ht-list_auto","import-values-from-the-other-table-with-value_of"]}
