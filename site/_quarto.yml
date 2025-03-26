@@ -39,25 +39,29 @@ website:
     #  - text: About
     #    href: index.qmd
     
-    right: 
-      - text: Getting started with the linelist
-        href: getting_started/home_linelist.qmd
-    
-      - text: Getting started with OBT
-        href: getting_started/home_obt.qmd
-          
-      - text: Reference
-        href: reference/home_reference.qmd
+    right:
+      - text: "Getting started"
+        menu:
+          - text: Getting started with the linelist
+            href: getting_started/home_linelist.qmd
         
-      - text: How-to 
-        href: how_to/home_how_to.qmd
-
+          - text: Getting started with OBT
+            href: getting_started/home_obt.qmd
+      
       - text: Cheatsheets
         href: cheatsheets/home_cheatsheets.qmd
+
+      - text: "Ressources"
+        menu:
+          - text: Reference
+            href: reference/home_reference.qmd
             
-      - text: Tutorial
-        href: tutorial.qmd
-        
+          - text: How-to 
+            href: how_to/home_how_to.qmd
+
+          - text: Tutorial
+            href: tutorial.qmd
+            
     tools:
       - icon: github
         text: Source Code
