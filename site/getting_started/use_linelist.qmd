@@ -1,0 +1,128 @@
+---
+title: "Getting started with the linelist"
+---
+
+OutbreakTools (OBT) linelist are linelist created using the OBT solution. They always have the same functionalities, which include:
+
+-	Possibility to upload pre-formatted geobases to standardise geographical information
+-	Basic analyses (uni and bivariate tables, epicurves, top x locations with the most cases etc.)
+-	Data and analyses export (anonymous or not)
+-	Possibility to show or hide optional variables
+-	Possibility to migrate data to a newer version of the linelist
+-	…
+
+
+## Steps to prepare a linelist for deployment
+
+
+1.	Download the empty linelist template in the language of your choice.^[you can expect English and French as default, but Spanish, Portuguese or Arabic translations have been developed when needed, don't hesitate to ask.]  
+
+2.	[Prepare geographic information](../how_to/import_geobase.qmd):
+    a)	Go to the [Geoapp](https://reports.msf.net/secure/app/outbreak-tools-geoapp) and download the geo-base for the area of interest (it can be cross-border).  
+    b)	In the linelist, go to the [OutbreakTools menu](../reference/ribbons_linelist.qmd) and click on the ["Import geobase" button](../reference/ribbons_linelist.qmd#sec-import-geobase)  
+  
+![Prepare geo data](../getting_started/images/img-006-geobase-process.png){fig-align="center"}
+
+3.	Set up the day of the week: "Week start" button in the [OutbreakTools menu](../reference/ribbons_linelist.qmd)
+
+4. Optional: modify variable visibility: "Show/Hide variables" button from the [OutbreakTools menu](../reference/ribbons_linelist.qmd)  
+
+5.	Optional: prepare and print a register and/or Case Report Form to enter data on paper ("Register and Case report form" section of the [OutbreakTools menu](../reference/ribbons_linelist.qmd))
+    
+5.	Send the linelist to the sites. There should be one linelist per site.  
+
+6.	Each site should fill the *Info sheet* in their linelist before entering patient data.
+
+After data has been encoded in the linelist, you can [export data and send it to Epicentre](../how_to/send_data_to_dashboard.qmd) for visualisation on an dashboard if the corresponding dashboards exist (which is usually the case for intersection approved linelists).
+
+
+**Current dashboards include**: cholera, measles, hepatitis E, diphtheria, mpox, meningitis. Other are added as the list of available OutbreakTools linelists grow.
+
+
+## Working with the file
+
+### Save the file locally
+
+OneDrive cannot live synchronise macro-enable Excel files *while you are using them*^[One drive does syncrhornise the file once you saved and closed it though]. If OneDrive is causing syncrhonisation issues, turn if off for a while or save the file is a folder nor syncrhonised by OneDrive.
+
+### Use the Excel Desktop version
+Most of the functionalities of the linelist are not supported by the internet Excel version.
+
+
+### Unprotect the file and authorise macros
+
+The OubreakTools linelist rely on macros for functionalities, so at minima the macro needs to be enabled, but sometimes more steps are needed to authorise the use.
+
+1.	Make sure the file is **unlocked**^[This is distinct from the password protection that is customs for linelists: sometimes when a file comes from the internet through mail or Teams, Windows applies an extra layer of blocking]: right click on the file you saved on your computer, and go to the “Properties” popup. If you can see an “Unprotect” checkbox at the bottom right, tick it. If you do not see such a checkbox, it means the file is unprotected.
+ 
+![File property window](../getting_started/images/img-007-unblock.png){fig-align="center"}
+ 
+2.	Open the file (a password may be needed at this stage)
+
+3.	If VBA macros are already in you Excel, you may need to authorise VBA macros for this file when you first open it (popup windows, yellow or red band above the sheet). If you have never enabled macros, [authorise VBA macros in options](https://support.microsoft.com/en-us/office/enable-or-disable-macros-in-microsoft-365-files-12b036fd-d140-4e74-b45e-16fed1a7e5c6). You will probably need to restart the file after that for the changes to be taken into account.
+
+## The OutbreakTools ribbon
+
+Most of the important features of the linelist can be accessed through the [OutbreakTools Menu](../reference/ribbons_linelist.qmd) at the top of Excel interface. Go and explore it!
+ 
+ 
+## Structure of the file
+
+At minima, an OutbreakTools linelist will contain these sheets:
+
+1.	An *Info* sheet which contains metadata about the project  
+2.	At least one *data entry sheet* to enter patient data  
+3.	Some or all of the following analyses sheets containing basic exploration of data:  
+
+    - Uni and bivariate analyses
+    - Temporal analyses (epicurves and their associated tables)
+    - Spatial analyses (top X locations of cases)
+    - Spatio-temporal analyses (epicurves for chosen locations)
+    
+4.	A Custom dropdown sheet where the user can define categories for some specific variables
+5.	A Custom tables sheet where the user can create a pivot table of the data
+6.	A Geo sheet showing the loaded geobase. 
+
+
+## Enter data for locations
+
+Geographical location are encoded using four columns that can accommodate up to four administrative levels, and these columns have a special status in OutbreakTools linelists. You can recognise them by the orange background of their labels. 
+
+When you import a geobase in a linelist:
+
+- The labels of the columns are updated with the administrative levels present in the geobase (e.g. “adm1_name” will change to “Province” for DRC).
+- The categories of the dropdown menus update.  
+
+You can fill the variables either by using the cascading dropdown menus, or by using the [GeoHelper button](../reference/ribbons_linelist.qmd#sec-geo-helper) from the OutbreakTools menu.
+
+:::{.callout-note title="Search options in the Geohelper"}
+The first tab of the [GeoHelper popup window](../reference/ribbons_linelist.qmd#sec-geo-helper) allows you to pick the location level after level; the second tab allows you to search for a name in the geobase and the third tab displays the past values previously picked in the GeoHelper.
+:::
+
+
+## Fill dropdown menus for Custom Dropdowns variables {#sec-custom-dropdown}
+
+Custom dropdowns columns are categorical columns for which the dropdown menu categories are defined by the user. They are useful for variables that rely on local, field specific information.
+
+**To define categories:**  
+
+1.	Click on the column label to go to the *Custom dropdown* sheet where you can define the content of the dropdown menu^[You can also navigate to that sheet using the bottom tabs, as you would do any other sheet].
+
+2.	Enter categories in the table
+
+3.	Click on the head of the table to be brought back to the corresponding column in the linelist sheet to enter data^[Again, this is a shortcut but you could go back using normal sheet navigation]
+
+
+### Extra columns
+
+OBT linelists often come with “extra columns” at the end (which may be show or hidden by default, go to the Show/hide variable popup to see them). The user can change the label of the columns and use them to collect whichever information they wish.
+
+Usually, a couple of free text/numeric and a couple of custom dropdown menus are available.
+
+1.	Decide which additional variable you wish to collect
+
+2.	Rename the variable (select the label cell and write the new label)
+
+3.	Optional: define the categories for the dropdown menu (see @sec-custom-dropdown)
+
+4.	Fill in data

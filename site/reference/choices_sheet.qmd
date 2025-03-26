@@ -1,0 +1,61 @@
+---
+title: "Choices sheet"
+description:  Define variable categories
+categories: 
+  - Setup
+  - Sheet
+---
+
+This sheet is used to define the **dropdown menus categories** to be used for categorical variables, or the possible values for "choice_formula" type variables. 
+
+## Rules
+
+- a *list* is made of several consecutive lines  
+- a *line* represents one value of a given list, and correspond to one item of the associated dropdown menu  
+- different lists are written one below the other  
+- you can define as many lists as needed
+
+![](images/im-134-choices_sheet.png)    
+
+
+## List Name
+
+This is a free text field used to define a dropdown list. Lines with the same *name* filled belong to the same list. This name is used in the *Dictionary* sheet to identify the dropdown list to be used for a given variable, in the [Control details](../reference/dictionary_sheet.qmd#sec-var-control-details) column.
+
+
+![](images/im-041-choices.png)   
+
+::: {.callout-tip}
+## Naming lists
+
+It is not mandatory, but we advise that you begin all your list names by "list_" to easily separate them from variable names in the dictionary.
+
+With the exception of lists used for "choice_custom" type variables, it is recommended not to leave any blanks in the list name. Instead, replace them with "\_", for example.
+:::
+
+
+## Ordering list
+
+This is a free text field. Fill in integers to define the order in which the options are displayed in the dropdown menu.
+
+
+## Label
+
+This is a free text field used to list the different values to be displayed in the dropdown menus.
+
+::: {.callout-warning}
+Categories names should not begin with a "\<" or a "\>".
+:::
+
+## Short label
+
+This is a free text field in which you can enter a shortened version of the label, to be used in the Case Report Form generation tool in the linelist, to make the CRF more condensed.
+
+## Example
+
+In the **setup file**: 
+
+![](images/im-134-choices_sheet.png)    
+
+In the linelist, for the age unit column:
+![](images/im-134-choices_sheet_result.png)    

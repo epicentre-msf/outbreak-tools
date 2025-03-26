@@ -1,0 +1,62 @@
+---
+title: "Show or hide variables"
+description: Use the OBT ribbon to change the visibility status of columns
+categories: 
+  - Linelist
+---
+
+
+## Visibility status
+
+In OutbreakTools, there are several visibility status, which can be modified using a button in the [OutbreakTools Menu](../reference/ribbons_linelist.qmd):
+
+- **mandatory**: the columns cannot be hidden using the Show/Hide 
+- **hiden**: the columns are internal and cannot be shows using the Show/Hide
+- **optional**: the linelist user can decide to show or hide the variable based on their needs.
+
+These linelist status are derived from the **setup file** [status property](../reference/dictionary_sheet.qmd#sec-visibility-status).
+
+
+## Show and hide variables
+
+Clicking on the "Show/hide variables" button opens a window listing all the variables in the current sheet. 
+
+![OutbreakTools tab in the created linelist](../reference/images/img-012-ll-show-hide.png){fig-align="center"}
+
+
+The *optional, hidden* variables in the **setup file** appear as *Hidden* by default. However, the user can change the status by choosing *Show*, in which case the column will become visible.
+
+![](../how_to/images/im-027-example.png)
+
+
+![](../how_to/images/im-028-example.png)
+
+
+The "Notification year" variable does not appear in the list of
+variables because it is in "hidden" status in the **setup file**.
+
+The *optional, visible* variables in the **setup file** appear as *Shown* by default. However, you can change the status by choosing *Hide*, in which case the column will no longer be visible.
+
+
+![](../how_to/images/im-029-example.png)
+
+*Mandatory* variables in the **setup file** appear as *Mandatory in the
+"Show/Hide" pop up, and cannot be hidden.
+
+:::{.callout-note}
+Columns that were defined as *hidden* in the setup file will not appear in the Show/Hide. They were deemed unlikely top be of interest to the linelist user (calculated columns used to apply formatting for example).
+:::
+
+
+::: {.callout-warning collapse="true"}
+
+## Note on showing and hiding columns manually
+
+Technically, the linelist user can forcefully hide/un-hide columns.
+
+Un-hiding hidden (usually calculated) columns is usually desirable during linelist debug or to go check data that may interest you (*e.g*. a hidden calculated epiweek of exit). You can hide them after consultation without consequences on the rest of the linelist.
+
+It is however more dangerous to forcefully hide "mandatory" columns. These columns are often fundamental variables in the linelist, that are needed for data understanding and analyses (*e.g*. date of admission, age or sex). If you choose to hide one of these columns, know that some analyses might not function as expected, or not at all because they rely on the hidden columns.
+
+Finally, any change of column visibility that is not made via the "Hide/show variable" button of the linelist will not be recorded and migrated to a new linelist.
+:::

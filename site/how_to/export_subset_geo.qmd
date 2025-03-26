@@ -1,0 +1,43 @@
+---
+title: "Export a subset of geographic columns"
+description: Creata a MoH export with only some of the geo columns
+categories: 
+  - Linelist
+---
+
+## Problem
+
+You need to create a MoH export with only the admin 3 and 4 columns. Or with admin 1 to 4, but in a different order form the linelist.
+
+But in the **setup file** geographic columns are represented by [one *"geo"* variable](../reference/dictionary_sheet.qmd#geo-variable), which is translated in 4 columns in the generated linelist^[Admins levels 1, 2, 3 and 4, with cascading dropdown menus]. In the **setup file**, if you indicate that this "*geo*" variable should be exported for a given export, the linelist export will contain the four admin levels columns^[ And more if you choose to export p-codes, see the "*Exports*" sheet options in the **setup file**].
+
+
+## Solution
+
+**The solution**: derive calculated columns from the automatically created "*geo*" variables, and exports these individually to the MoH export, in the order of your choice.
+
+**How does it works**? The "*geo*" variable **name** is used to automatically create the four columns in the linelist. For example, if the "*geo*" variable in the **setup file** is called "*origin*", four columns will be created in the linelist: -
+
+-   adm1_*origin*,
+
+-   adm2_*origin*,
+
+-   adm3_*origin*,
+
+-   adm4_*origin*.
+
+**Even though these columns do not appear in the setup file, they are created in the linelist!** This means that you can reference them and use them in formulas in other parts of the *Dictionary* sheet, like you would do for any other variable defined in that sheet.
+
+## Example
+
+You specify a *geo* variable named "residence" in the **setup file** (in green below), which  triggers the creation of four columns in the linelist. 
+
+The blue variables are *calculated* variables that refer to the *geo* columns that are automatically created. You can decide for each of these whether to export them or not in a given export.
+
+![](images/im-123-export-a-subset-of-geographic-columns.png){fig-align="center"}
+
+::: callout-warning
+Because the "geo" variables 1 to 4 do not appear in the **setup file**, the *checkRep* *check* will raise a warning, saying that the formulas will fail (because it references a variable that seem not to exist). In this specific instance, it is wrong: ***the columns will be created***, and the formula will thus work in the linelist.
+
+![](images/im-124-export-a-subset-of-geographic-columns.png){fig-align="center"}
+:::

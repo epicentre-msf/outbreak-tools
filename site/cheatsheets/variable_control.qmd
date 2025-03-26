@@ -1,0 +1,56 @@
+---
+title: "Variables in OutbreakTools"
+description: Summary of variable type and control in OBT
+categories: 
+  - Setup
+---
+
+## Categorical and calculated variables
+
+OutbreakTools allows both **input variables** in which the user enters data and **calculated variables** derived from the raw data.
+
+When it comes to **text input** variables, there are two primary methods for data entry: 
+
+- a *free text* approach, allowing users to input any value they choose, 
+- a *controlled* approach, where user options are restricted. 
+
+In Excel, the controlled approach for text variables is typically implemented with **dropdown menus**, which allow data entry of pre-defined categories. OutbreakTools offers multiple ways to create dropdown menus, depending on whether you have predefined categories or not. 
+
+The columns [Control](../reference/dictionary_sheet.qmd#sec-var-control) together with [Control details](../reference/dictionary_sheet.qmd#sec-var-control-details) are use to constrain the values that a text variable can take, or provide with a formula in the case of a calculated variable.
+
++----------------------+---------------------------+----------------+
+| Sort of variable     | Controls                  | Data entry in  |
+|                      |                           | the linelist   |
++======================+===========================+================+
+| Free entry           | (none specified)          | Free           |
++----------------------+---------------------------+----------------+
+| Categorical          | choice_manual             | Dropdown menu  |
+|                      | choice_custom             |                |
+|                      | choice_multiple           |                |
+|                      |                           |                |
+|                      | geo, hf (special cases)   | GeoHelper or   |
+|                      |                           | dropdown menu  |
++----------------------+---------------------------+----------------+
+| Calculated           | formula                   | No user input  |
+|                      | choice_formula            | needed in      |
+|                      | case_when                 | these columns  |
++----------------------+---------------------------+----------------+
+: Summary of the types of control available in OutbreakTools
+
+::: {.callout-note}
+If no control is selected, the text variable is free text.
+:::
+
+::: {.callout-note}
+The variables that contain geographic information are treated as a special case of categorical variable and have their own [dedicated control](../reference/dictionary_sheet.qmd#sec-geo-data).
+:::
+
+
+::: {.callout-note}
+For non text variable (integers, decimals, dates) is is possible to restrict values using [data validation](../reference/dictionary_sheet.qmd#sec-data-validation)
+:::
+
+
+## Flowchart: choose your variable control
+
+![Available options for control in OBT](../images/im-128-var-control.png){fig-align="center"}

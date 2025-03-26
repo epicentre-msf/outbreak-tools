@@ -1,0 +1,9 @@
+---
+title: "How to"
+listing:
+  contents: "../how_to/*.qmd"
+  sort: 
+    - "categories"
+  categories: true
+---
+
