@@ -7,7 +7,9 @@ execute:
 
 format:
   html:
-    theme: cosmo
+    theme: 
+      light: cosmo
+      dark: darkly
     css: styles.css
     
     toc: true
@@ -53,7 +55,7 @@ website:
       - text: Cheatsheets
         href: cheatsheets/home_cheatsheets.qmd
             
-      - text: Tutoriel
+      - text: Tutorial
         href: tutorial.qmd
         
     tools:
