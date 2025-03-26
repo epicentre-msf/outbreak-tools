@@ -1,0 +1,9 @@
+---
+title: "Reference"
+listing:
+  contents: "../reference/*.qmd"
+  sort: 
+    - "categories"
+  categories: true
+---
+

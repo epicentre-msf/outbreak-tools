@@ -1,0 +1,6 @@
+---
+title: "Cheatsheets"
+listing:
+  contents: "../cheatsheets/*.qmd"
+  categories: true
+---

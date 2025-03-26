@@ -1,0 +1,44 @@
+---
+title: "Designer ribbon"
+description: The special OBT menu
+categories: 
+  - Designer
+  - OBT menu
+---
+
+
+Recent version of Excel have a top [ribbon/menu](https://www.ablebits.com/office-addins-blog/excel-ribbon-guide/) that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities.
+
+
+![OutbreakTools tab in the designer](../images/img-003-ribbon-designer.png){fig-align="center"}
+
+## Manage the designer
+
+### Clear the geobase
+
+Remove any geobase that was loaded in the designer.
+
+### Clear entries
+
+Remove all user entered data from fields.
+
+### Language of the designer
+
+Use the dropdown menu to change the language of the designer interface. Available languages: English, French, Arabic, Spanish and Portuguese. 
+
+
+
+## Imports
+
+### Import translations
+
+If the user wishes to modify the linelist interface translations, it is possible to ask for the config file to EpiDS/Yves Amevoin, tweak it and import it with this button.
+
+### Import passwords
+
+The designer is loaded with a pasword table, with private and public keys to protect export if the user want a password-protected export. However, the designer is on Github, in a public repo, so if you compile a linelist that needs a password protection, it is best to ask for the config file to EpiDS/Yves Amevoin and import it using the "Import button".
+
+### Import styles {#sec-setup-styles}
+
+The designer comes with two default styles for linelist themes. It is possible to personalise it. To do that, ask for the config file to EpiDS/Yves Amevoin, tweak it and import it with this button.
+

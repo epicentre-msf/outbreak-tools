@@ -1,0 +1,85 @@
+
+
+A *'Setup Options'* menu has been specially created in the top ribbon, bringing together all the functions specific to the **setup file**:
+
+![](imgs/im-113-setup-options-ribbon.png){fig-align="center"}
+
+## Tables Management
+
+### Add rows to tables in current sheet
+
+![](imgs/im-114-table-managment.png){fig-align="center"}
+
+If you need more rows to define the linelist, choices or analyses, use the "*Add rows to tables in current sheet*" button.
+
+When this functionality is used in the analysis definition page, you can use the drop-down menu in cell A1 to choose whether you want to apply the functionality to all tables or just one in particular.
+
+![](imgs/im-115-table-managment.png){fig-align="center"}
+
+### Resize tables in current sheet
+
+![](imgs/im-116-table-managment.png){fig-align="center"}
+
+To ensure that there are no empty rows in a table, click on the "*Resize tables in current sheet*" button.
+
+When this functionality is used in the analysis definition page, you can use the drop-down menu in cell A1 to choose whether you want to apply the functionality to all tables or just one in particular.
+
+![](imgs/im-117-table-managment.png){fig-align="center"}
+
+### Remove all filters
+
+![](imgs/im-118-table-managment.png){fig-align="center"}
+
+If you have used filters and want to display everything again, you can use the "*Remove all filters*" button. This will return the table to its initial state.
+
+## Translations
+
+See the [Translations](#translations-sheet) section above.
+
+## Import
+
+![](imgs/im-119-import.png){fig-align="center"}
+
+### Import data from another setup
+
+You can import data from an older **setup file** into a new blank file. This can be useful if a file is broken or corrupted, or if the setup template has been upgraded (new column, new function, debugged, etc).
+
+### Import data from disease
+
+This button is used to import a disease from a disease **Master file**. This file is being piloted for Epinetwork discussions.
+
+## Advanced
+
+![](imgs/im-120-advanced.png){fig-align="center"}
+
+### Check current setup for errors
+
+The **setup file** comes with a series of checks on its content to help you debug your dictionary. After adding major components to your **setup file**, or before compiling a linelist with the designer, you can (should) click on the button "*Check current setup for errors*" to see any errors in the *"\_\_checkRep*" sheet.
+
+There is a table for each sheet or section (in the case of analyses), with the following three columns:
+
+-   "**Incoherences Type**" preceded by the name of the sheet,  
+
+-   "**Where?**", which shows the name of the sheet or section and the line where the incoherence is located,  
+
+-   "**Details**", which gives details of the incoherence.
+
+There are several types information that could appear in the Incoherence column:
+
+-   **Info** (in grey): this is not strictly speaking an inconsistency, but simply a piece of information about something that will not block the compilation of the linelist.    
+
+-   **Warning** (in yellow): these are problems that need to be fixed because there is a real inconsistency. It could be an error in a formula, for example.^[Note that the checkup does its best, but some formula errors can be missed and create problems in your formulas. Always test the calculated colums after compilation!]  
+
+-   **Note** (in blue): this is something that has been defined in the setup, but will not be applied, and is therefore not blocking. For example, in the analyses, certain choices are contradictory by design, such as the display of percentages, which is not authorised when you choose to invert the display of the table (horizontal display instead of vertical).
+
+![](imgs/im-121-check-current-setup-for-errors.png){fig-align="center"}
+
+### Clear data in current setup
+
+This feature allows you to delete all the data entered in the **setup file**.
+
+## Dev
+
+![](imgs/im-122-dev.png){fig-align="center"}
+
+These functions are for the use of developers only, you can ignore them.

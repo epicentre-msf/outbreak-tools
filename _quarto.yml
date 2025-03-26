@@ -1,0 +1,72 @@
+project:
+  type: website
+  output-dir: docs
+  
+execute:
+  freeze: auto
+
+format:
+  html:
+    theme: 
+      - flatly
+      - site/styles.css
+    
+    toc: true
+    toc-depth: 5
+    toc-expand: 1
+    toc-title: Table of content
+    
+    citations-hover: true
+    footnotes-hover: true
+
+website:
+  title: "OutbreakTools documentation"
+  favicon: images/icon.png
+  repo-url: https://github.com/epicentre-msf/outbreak-tools/site
+  
+  # Options
+  page-navigation: true
+  back-to-top-navigation: true
+
+  
+  # Navbar
+  navbar:
+    search: true
+    logo: images/icon.png
+    
+    # left:
+    #  - text: About
+    #    href: index.qmd
+    
+    right: 
+      - text: Getting started with the linelist
+        href: site/getting_started/home_linelist.qmd
+    
+      - text: Getting started with OBT
+        href: site/getting_started/home_obt.qmd
+          
+      - text: Reference
+        href: site/reference/home_reference.qmd
+        
+      - text: How-to 
+        href: site/how_to/home_how_to.qmd
+
+      - text: Cheatsheets
+        href: site/cheatsheets/home_cheatsheets.qmd
+            
+      - text: Tutoriel
+        href: site/tutorial.qmd
+        
+    tools:
+      - icon: github
+        text: Source Code
+        href: https://github.com/epicentre-msf/outbreak-tools
+
+  # sidebar:
+  #   contents: auto
+
+  # Footer
+  page-footer:
+    left: Developed by [![](images/epicentre.png){fig-alt="Epicentre logo" width=65px}](https://epicentre.msf.org/)
+    right: This website is built with {{< fa heart title="a heart" >}}, [{{< fa brands github title="GitHub octocat logo" >}}](https://github.com){target=_blank}, [{{< fa brands r-project title="R Project" >}}](https://www.r-project.org/about.html){target=_blank} and [Quarto](https://quarto.org/){target=_blank}
+

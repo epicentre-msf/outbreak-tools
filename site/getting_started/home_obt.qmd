@@ -1,0 +1,15 @@
+---
+title: Generate a linelist
+description: "Learn how to modify or create an OBT linelist"
+listing:
+  - id: articles-links
+    sort: false
+    contents:
+      - "../getting_started/download.qmd"
+      - "../getting_started/workflow.qmd"
+      - "../getting_started/create_dic.qmd"
+      - "../getting_started/compile.qmd"
+      
+---
+
+Follow these steps to generate a linelist from a setup file.
