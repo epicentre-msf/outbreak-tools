@@ -1,0 +1,989 @@
+[
+  {
+    "objectID": "site/getting_started/workflow.html",
+    "href": "site/getting_started/workflow.html",
+    "title": "General workflow and files",
+    "section": "",
+    "text": "Follow these steps to create a linelist with OutbreakTools:\n\nFill a setup file to define linelist specs\nCompile the setup file using the designer file\nTest the created linelist\nCorrect bugs in the setup file\nRinse and repeat until the linelist is functional\n\n\n\n\n\n\n\nFigure 1: Simplified workflow"
+  },
+  {
+    "objectID": "site/getting_started/workflow.html#workflow",
+    "href": "site/getting_started/workflow.html#workflow",
+    "title": "General workflow and files",
+    "section": "",
+    "text": "Follow these steps to create a linelist with OutbreakTools:\n\nFill a setup file to define linelist specs\nCompile the setup file using the designer file\nTest the created linelist\nCorrect bugs in the setup file\nRinse and repeat until the linelist is functional\n\n\n\n\n\n\n\nFigure 1: Simplified workflow"
+  },
+  {
+    "objectID": "site/getting_started/workflow.html#setup-file",
+    "href": "site/getting_started/workflow.html#setup-file",
+    "title": "General workflow and files",
+    "section": "Setup file",
+    "text": "Setup file\nThe setup file is an excel file that describes the various sheets of the linelist to be created, in a predefined and standardised format. It allows you to specify:\n\nthe structure of the data entry sheets of the linelist\nthe variables for all data entry tables\nthe basic analyses to be included in the linelist (uni and bivarites, epicurves, geo data etc.)\npersonalised exports\ntranslations to create linelists in several languages\n\nMost of the work developing a linelist is spent filling a setup file template to define all the aspects of the linelist you want to create.\nThe setup file contains the following sheets:\n\nSheets in the setup file and their uses.\n\n\n\n\n\n\n\nSetup file sheet\nDescription\nCorrespondence in linelist file\n\n\n\n\nDictionary\nDescribes all the variables to be collected, their format, etc.\nData entry sheets (typically, Info sheet and Linelist sheets)\n\n\nChoices\nDefines the categories/levels accepted for categorical variables, in the form of a list\nDropdown menus in linelist sheets\n\n\nExports\nDefines the characteristics of exports, such as protection, choice of variables or sheets to export and export names\nExport button in the OutbreakTools ribbon\n\n\nAnalyses\nDescribes the analyses to include is the linelist in tabular form, by selecting the variables and indicating the formulas to be applied\nAnalysis sheets\n\n\nTranslation\nAutomatically displays the list of strings of text/fields to be translated and adds new columns where the user can provide translated text in a desired language (one column = one language)\nChoice of linelist language when created (designer)\n\n\n\nThe setup file has a dedicated OutbreakTools section in the top option ribbon from Excel:\n\n\n\n\n\n\nFigure 2: OutbreakTools tab in the setup file\n\n\n\nGo to the reference to know more about the ribbon buttons."
+  },
+  {
+    "objectID": "site/getting_started/workflow.html#designer-file",
+    "href": "site/getting_started/workflow.html#designer-file",
+    "title": "General workflow and files",
+    "section": "Designer file",
+    "text": "Designer file\nThe designer is another excel file, that contains the code to build a linelist from a setup file.\nWhen the setup file is ready (or at least a first draft is), you load it into a designer, fill a couple of fields1 and let the designer build the linelist.\nThe designer file also has a dedicated OutbreakTools section in the top option ribbon from Excel:\n\n\n\n\n\n\nFigure 3: OutbreakTools tab in the setup file"
+  },
+  {
+    "objectID": "site/getting_started/workflow.html#linelist",
+    "href": "site/getting_started/workflow.html#linelist",
+    "title": "General workflow and files",
+    "section": "Linelist",
+    "text": "Linelist\nThe linelists created from a compiled setup file will contain several sheets:\n\nData entry sheets\nAnalysis and graph sheets\n\nCustomisation sheets for custom drop-down menus and the geographic base\n\nIn addition to that, the OBT linelists also have a dedicated OutbreakTools ribbon in addition to the other excel options in the top ribbon.\n\n\n\nOutbreakTools ribbon in the created linelist files"
+  },
+  {
+    "objectID": "site/getting_started/workflow.html#footnotes",
+    "href": "site/getting_started/workflow.html#footnotes",
+    "title": "General workflow and files",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nWhat is the name of the created linelist, where to save it, should it be password protected and if yes, which password etc.↩︎"
+  },
+  {
+    "objectID": "site/getting_started/use_linelist.html",
+    "href": "site/getting_started/use_linelist.html",
+    "title": "Getting started with the linelist",
+    "section": "",
+    "text": "OutbreakTools (OBT) linelist are linelist created using the OBT solution. They always have the same functionalities, which include:"
+  },
+  {
+    "objectID": "site/getting_started/use_linelist.html#steps-to-prepare-a-linelist-for-deployment",
+    "href": "site/getting_started/use_linelist.html#steps-to-prepare-a-linelist-for-deployment",
+    "title": "Getting started with the linelist",
+    "section": "Steps to prepare a linelist for deployment",
+    "text": "Steps to prepare a linelist for deployment\n\nDownload the empty linelist template in the language of your choice.1\nPrepare geographic information:\n\nGo to the Geoapp and download the geo-base for the area of interest (it can be cross-border).\n\nIn the linelist, go to the OutbreakTools menu and click on the “Import geobase” button\n\n\n\n\n\nPrepare geo data\n\n\n\nSet up the day of the week: “Week start” button in the OutbreakTools menu\nOptional: modify variable visibility: “Show/Hide variables” button from the OutbreakTools menu\nOptional: prepare and print a register and/or Case Report Form to enter data on paper (“Register and Case report form” section of the OutbreakTools menu)\nSend the linelist to the sites. There should be one linelist per site.\nEach site should fill the Info sheet in their linelist before entering patient data.\n\nAfter data has been encoded in the linelist, you can export data and send it to Epicentre for visualisation on an dashboard if the corresponding dashboards exist (which is usually the case for intersection approved linelists).\nCurrent dashboards include: cholera, measles, hepatitis E, diphtheria, mpox, meningitis. Other are added as the list of available OutbreakTools linelists grow."
+  },
+  {
+    "objectID": "site/getting_started/use_linelist.html#working-with-the-file",
+    "href": "site/getting_started/use_linelist.html#working-with-the-file",
+    "title": "Getting started with the linelist",
+    "section": "Working with the file",
+    "text": "Working with the file\n\nSave the file locally\nOneDrive cannot live synchronise macro-enable Excel files while you are using them2. If OneDrive is causing syncrhonisation issues, turn if off for a while or save the file is a folder nor syncrhonised by OneDrive.\n\n\nUse the Excel Desktop version\nMost of the functionalities of the linelist are not supported by the internet Excel version.\n\n\nUnprotect the file and authorise macros\nThe OubreakTools linelist rely on macros for functionalities, so at minima the macro needs to be enabled, but sometimes more steps are needed to authorise the use.\n\nMake sure the file is unlocked3: right click on the file you saved on your computer, and go to the “Properties” popup. If you can see an “Unprotect” checkbox at the bottom right, tick it. If you do not see such a checkbox, it means the file is unprotected.\n\n\n\n\nFile property window\n\n\n\nOpen the file (a password may be needed at this stage)\nIf VBA macros are already in you Excel, you may need to authorise VBA macros for this file when you first open it (popup windows, yellow or red band above the sheet). If you have never enabled macros, authorise VBA macros in options. You will probably need to restart the file after that for the changes to be taken into account."
+  },
+  {
+    "objectID": "site/getting_started/use_linelist.html#the-outbreaktools-ribbon",
+    "href": "site/getting_started/use_linelist.html#the-outbreaktools-ribbon",
+    "title": "Getting started with the linelist",
+    "section": "The OutbreakTools ribbon",
+    "text": "The OutbreakTools ribbon\nMost of the important features of the linelist can be accessed through the OutbreakTools Menu at the top of Excel interface. Go and explore it!"
+  },
+  {
+    "objectID": "site/getting_started/use_linelist.html#structure-of-the-file",
+    "href": "site/getting_started/use_linelist.html#structure-of-the-file",
+    "title": "Getting started with the linelist",
+    "section": "Structure of the file",
+    "text": "Structure of the file\nAt minima, an OutbreakTools linelist will contain these sheets:\n\nAn Info sheet which contains metadata about the project\n\nAt least one data entry sheet to enter patient data\n\nSome or all of the following analyses sheets containing basic exploration of data:\n\nUni and bivariate analyses\nTemporal analyses (epicurves and their associated tables)\nSpatial analyses (top X locations of cases)\nSpatio-temporal analyses (epicurves for chosen locations)\n\nA Custom dropdown sheet where the user can define categories for some specific variables\nA Custom tables sheet where the user can create a pivot table of the data\nA Geo sheet showing the loaded geobase."
+  },
+  {
+    "objectID": "site/getting_started/use_linelist.html#enter-data-for-locations",
+    "href": "site/getting_started/use_linelist.html#enter-data-for-locations",
+    "title": "Getting started with the linelist",
+    "section": "Enter data for locations",
+    "text": "Enter data for locations\nGeographical location are encoded using four columns that can accommodate up to four administrative levels, and these columns have a special status in OutbreakTools linelists. You can recognise them by the orange background of their labels.\nWhen you import a geobase in a linelist:\n\nThe labels of the columns are updated with the administrative levels present in the geobase (e.g. “adm1_name” will change to “Province” for DRC).\nThe categories of the dropdown menus update.\n\nYou can fill the variables either by using the cascading dropdown menus, or by using the GeoHelper button from the OutbreakTools menu.\n\n\n\n\n\n\nSearch options in the Geohelper\n\n\n\nThe first tab of the GeoHelper popup window allows you to pick the location level after level; the second tab allows you to search for a name in the geobase and the third tab displays the past values previously picked in the GeoHelper."
+  },
+  {
+    "objectID": "site/getting_started/use_linelist.html#sec-custom-dropdown",
+    "href": "site/getting_started/use_linelist.html#sec-custom-dropdown",
+    "title": "Getting started with the linelist",
+    "section": "Fill dropdown menus for Custom Dropdowns variables",
+    "text": "Fill dropdown menus for Custom Dropdowns variables\nCustom dropdowns columns are categorical columns for which the dropdown menu categories are defined by the user. They are useful for variables that rely on local, field specific information.\nTo define categories:\n\nClick on the column label to go to the Custom dropdown sheet where you can define the content of the dropdown menu4.\nEnter categories in the table\nClick on the head of the table to be brought back to the corresponding column in the linelist sheet to enter data5\n\n\nExtra columns\nOBT linelists often come with “extra columns” at the end (which may be show or hidden by default, go to the Show/hide variable popup to see them). The user can change the label of the columns and use them to collect whichever information they wish.\nUsually, a couple of free text/numeric and a couple of custom dropdown menus are available.\n\nDecide which additional variable you wish to collect\nRename the variable (select the label cell and write the new label)\nOptional: define the categories for the dropdown menu (see Section 6)\nFill in data"
+  },
+  {
+    "objectID": "site/getting_started/use_linelist.html#footnotes",
+    "href": "site/getting_started/use_linelist.html#footnotes",
+    "title": "Getting started with the linelist",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nyou can expect English and French as default, but Spanish, Portuguese or Arabic translations have been developed when needed, don’t hesitate to ask.↩︎\nOne drive does syncrhornise the file once you saved and closed it though↩︎\nThis is distinct from the password protection that is customs for linelists: sometimes when a file comes from the internet through mail or Teams, Windows applies an extra layer of blocking↩︎\nYou can also navigate to that sheet using the bottom tabs, as you would do any other sheet↩︎\nAgain, this is a shortcut but you could go back using normal sheet navigation↩︎"
+  },
+  {
+    "objectID": "site/getting_started/home_obt.html",
+    "href": "site/getting_started/home_obt.html",
+    "title": "Generate a linelist",
+    "section": "",
+    "text": "Follow these steps to generate a linelist from a setup file.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nObtain OutbreakTools files\n\n\n\n\n\nDownload all the tools to generate a linelist on your own\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGeneral workflow and files\n\n\n\n\n\nLearn about the general workflow to prepare a linelist dictionary and generate a new linelist file\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCreate a dictionary\n\n\n\n\n\nCreate a linelist dictionary (setup file) that contains the specification of your linelist\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCompile a linelist\n\n\n\n\n\nCompile a linelist from the dictionary and the designer file\n\n\n\n\n\n\n\n\n\nNo matching items\n\n Back to top"
+  },
+  {
+    "objectID": "site/getting_started/compile.html",
+    "href": "site/getting_started/compile.html",
+    "title": "Compile a linelist",
+    "section": "",
+    "text": "The designer file reads a setup file, compiles it and generates a linelist file."
+  },
+  {
+    "objectID": "site/getting_started/compile.html#out-of-the-box-compilation",
+    "href": "site/getting_started/compile.html#out-of-the-box-compilation",
+    "title": "Compile a linelist",
+    "section": "Out-of-the-box compilation",
+    "text": "Out-of-the-box compilation\n\nOpen a designer file\nChoose the language of the interface of the linelist you want to build\nClick on the blue button “Path to the dictionary file” to select the setup you want to use\nUse the dropdown menu “Language of the dictionary file” to select one of the languages present in the setup file for the linelist content (the dropdown is on the right of the blue button)\nClick on the button “Select the folder of the linelist” to select the folder where the linelist will be saved\nClick on the button “Select template file” to provide the path to the ribbon template file (the file was in the OutbreakTools zip archive that you downloaded). This step is important to have the OutbreakTools option tab at the top of the file.\nProvide the name of the linelist you want to generate\nClick on the “New linelist” button and wait while compilation occurs. It could take several minutes.1\n\n\n\n\n\n\n\nFigure 2: Simple compilation"
+  },
+  {
+    "objectID": "site/getting_started/compile.html#extra-customisations",
+    "href": "site/getting_started/compile.html#extra-customisations",
+    "title": "Compile a linelist",
+    "section": "Extra customisations",
+    "text": "Extra customisations\nThere are a couple of extra steps you can take.\n\n\n\n\n\n\nFigure 3: Customise linelist\n\n\n\n\nChange style\nYou can select the other “Linelist design” using the dropdown menu (see the ribbon to import your own style)\n\n\nImport a geobase\nIf you are compiling a linelist for a given country, you could generate the linelist with the geobase already imported. Click on the “Import de geobase” button to import a geobase in excel format (learn how to get a geobase) before compiling.\n\n\n\n\n\n\nNote\n\n\n\nIf no geobase is imported during compilation, the linelist user can import one at a later stage.\n\n\n\n\nAdd passwords\nIt is highly recommended to add passwords, both to forbid user capacity to modify the content (and break the file) and to limit outside parties from opening the file.\nTo do that, just fill the passwords in the little blue boxes before compiling."
+  },
+  {
+    "objectID": "site/getting_started/compile.html#advanced-customisations",
+    "href": "site/getting_started/compile.html#advanced-customisations",
+    "title": "Compile a linelist",
+    "section": "Advanced customisations",
+    "text": "Advanced customisations\nThere are a couple more customisations available through the OutbreakTools option ribbon.\n\n\n\nOutbreakTools tab in the designer file"
+  },
+  {
+    "objectID": "site/getting_started/compile.html#compilation-advice",
+    "href": "site/getting_started/compile.html#compilation-advice",
+    "title": "Compile a linelist",
+    "section": "Compilation advice",
+    "text": "Compilation advice\nThe linelist compilation relies on Excel VBA and can be a bit finicky. Here is some advice.\n\nRun the checks on the setup before attempting compilation to verify that everything is ready.\nMake sure there are no hidden columns or filters on the sheets of the setup file.\nPause Onedrive or work in a non-synchronised folder (see here for more information)\nThe compilation is sensitive to RAM limitations: if it fails it might be worth closing a couple of greedy applications and try again.2\nIn general, it is always worth trying again: sometimes an action you did in another applications perturbed the process.\nIf it fails, start with a new designer file, in case the previous one got corrupted when compilation failed.\nExcel VBA sometimes interact with other Office applications. If all goes well, no problem. But in case of unexpected failures, try avoiding using Office applications while compiling.\n\n\n\n\n\n\n\nTip\n\n\n\nI prepare the setup file, the designer file, and then copy both of them and use the copies to compile. If a compilation fails, I delete both copies and start from fresh, just in case the failure to compile corrupted any of the file."
+  },
+  {
+    "objectID": "site/getting_started/compile.html#footnotes",
+    "href": "site/getting_started/compile.html#footnotes",
+    "title": "Compile a linelist",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nThe more calculated columns and analyses there are, the longer it takes.↩︎\nFor example, attempting compilation while sharing screen in a Teams call might ending up in failure on bad days.↩︎"
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html",
+    "href": "site/reference/exports_sheet.html",
+    "title": "Exports sheet",
+    "section": "",
+    "text": "It is possible to predefine exports, such as a specific export for a given MoH. The preparation of exports is done in two different sheets:\nA sheet in the linelist file corresponds to a sheet in the exported file."
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html#export-number",
+    "href": "site/reference/exports_sheet.html#export-number",
+    "title": "Exports sheet",
+    "section": "Export number",
+    "text": "Export number\nOne line corresponds to one export. The exports are numbered from 1 to how many exports are available.\nIn line “1”, we define the parameters for export 1, whose variables to be exported have been defined in the Dictionary sheet in the “Export 1” column, etc.\n\n\n\n\n\n\n\n\n\n\nNote that you can use the “Add rows to table in current sheet” button or the “Resize tables in current sheet” button to add more exports or removed empty rows (see the ribbon help."
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html#status",
+    "href": "site/reference/exports_sheet.html#status",
+    "title": "Exports sheet",
+    "section": "Status",
+    "text": "Status\nThis is an active/inactive drop-down menu field. It is used to activate or deactivate an export button.\nExample:\nDefinition in the setup file:\n\n\n\n\n\nDisplay in the linelist file:"
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html#label-button",
+    "href": "site/reference/exports_sheet.html#label-button",
+    "title": "Exports sheet",
+    "section": "Label button",
+    "text": "Label button\nThis is a free text field that contains the label of the export button in the linelist. It should be fairly concise or it may overflow the button box.\nExample :\nDefinition in the setup file:\n\n\n\n\n\nDisplay in the linelist file:"
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html#file-format",
+    "href": "site/reference/exports_sheet.html#file-format",
+    "title": "Exports sheet",
+    "section": "File format",
+    "text": "File format\nThis is a dropdown menu that allows choosing between the .xlsx and .xlsb file format for the exported file."
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html#file-name",
+    "href": "site/reference/exports_sheet.html#file-name",
+    "title": "Exports sheet",
+    "section": "File name",
+    "text": "File name\nThis is a free text field used to define the name of the export.\nYou can either define fixed export names (ex: “export_moh”) or dynamic exports names, that use values collected from variables in the linelist (such as the country, the section etc.).\nFor dynamic names, you can only use variables that contain only one value (vlist1D variables), usually defined in the “Info” sheet of the linelist.\n\nRules to create a name\n\nCharacter strings passed to this field must be enclosed in inverted commas like these: “a character string”\nVariable names passed to this field must be naked (not surrounded by inverted comas), similarly to how we refer to variables in the Dictionary sheet columns.\nDifferent components of the name are separated by ‘+’, which will create names where the components are separated by ‘__’.\nNo need to add a date to the export: the date and time at which an export is made is appended at the end of the name automatically.\nIf the export is to be password protected (see below), the public key for opening the file will be included in the name.\n\n\n\nExample\n\n\n\n\n\nHere, the pieces in green, surrounded by inverted comas are fixed bits of texts (character strings). The blue pieces are vlist1D variables that were defined for that linelist (in the Info sheet, hence their suffixes).\nThis name specification will result in the following export names, depending on where the linelist is used (hence depending on how they filled the metadata):\n\nMNG_linelist__MNG24__SSD__MSF-OCP__Aweil__anonyme__vb-1003__20240617-1901.xlsb if the linelist was used by OCP in Aweil (South Sudan)\nMNG_linelist__MNG24__NER__WaCa__Maradi__anonyme__vb-2035__20240617-1903.xlsb if the linelist was used by WaCa in Maradi (Niger)\n…\n\n\n\n\n\n\n\nNote\n\n\n\nIf a variable is referred to in the name but remains empty in the linelist, the name of the variable is used as a placeholder. In the example above, if the data encoder filled none of the variables in the metadata, the created file would have the following name:\nMNG_linelist__info_outbreak_code__info_country_code__info_organisation__info_facility_name__anonyme__vb-1003__20240617-1906.xlsb"
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html#password",
+    "href": "site/reference/exports_sheet.html#password",
+    "title": "Exports sheet",
+    "section": "Password",
+    "text": "Password\nThis is a yes/no drop-down field that is used to define whether or not the export should be password-protected.\nIf so, the password will be displayed automatically when the export is created.\nExample:\nDefinition in the setup file:\n\n\n\n\n\nDisplay in the linelist file:"
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html#include-personal-identifiers",
+    "href": "site/reference/exports_sheet.html#include-personal-identifiers",
+    "title": "Exports sheet",
+    "section": "Include personal identifiers",
+    "text": "Include personal identifiers\nThis is a yes/no dropdown menu which controls whether variables that are tagged as Personal identifier in the Dictionary sheet should be included in the export.1\nThe column defaults to “no”."
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html#include-p-code",
+    "href": "site/reference/exports_sheet.html#include-p-code",
+    "title": "Exports sheet",
+    "section": "Include P-code",
+    "text": "Include P-code\nThis is a yes/no drop-down field that controls whether the hidden columns that contains processed geographic data such as P-codes should be exported in addition to the raw data columns.2"
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html#header-format",
+    "href": "site/reference/exports_sheet.html#header-format",
+    "title": "Exports sheet",
+    "section": "Header format",
+    "text": "Header format\nThis is a variables names/variables labels drop-down menu field. It allows you to define whether you want the column headings in the export to correspond to the variable names, their labels, or both.\n\n\n\n\n\n\nTip: choosing the header format\n\n\n\nIf you create an export for analyses purpose, use the variable names to avoid having to format and rename when importing in your favourite statistical software.\nIf you are exporting data to the MoH or other partners, it might be easier for them to have the variables labels, which are more descriptive about the content of the variable.\n\n\nExample:\nDefinition in the setup file:\n\n\n\n\n\nDisplay in export:\n\n\n\n\n\nDefinition in the setup file:\n\n\n\n\n\nDisplay in export:"
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html#export-metadata-sheets",
+    "href": "site/reference/exports_sheet.html#export-metadata-sheets",
+    "title": "Exports sheet",
+    "section": "Export Metadata Sheets",
+    "text": "Export Metadata Sheets\nThis is a yes/no drop-down field. By selecting “yes”, you decide that in addition to the data to be exported, you will also export:\n\nThe “Dictionary” sheet\nThe “Choices” sheet\nA metadata sheet3"
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html#export-translation",
+    "href": "site/reference/exports_sheet.html#export-translation",
+    "title": "Exports sheet",
+    "section": "Export Translation",
+    "text": "Export Translation\nThis is a yes/no drop-down field. Selecting “yes” means that, in addition to the data to be exported, we will also have the sheet containing the translations."
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html#export-analysis-sheet",
+    "href": "site/reference/exports_sheet.html#export-analysis-sheet",
+    "title": "Exports sheet",
+    "section": "Export Analysis Sheet",
+    "text": "Export Analysis Sheet\nThis is a yes/no drop-down field. By selecting ‘yes’, you decide that in addition to the data to be exported, you will also export all the analysis tables (but not the graphs).\n\n\n\n\n\n\nTip\n\n\n\nIt is also possible to export analysis tables directly from the linelist using the “Export analyses” button."
+  },
+  {
+    "objectID": "site/reference/exports_sheet.html#footnotes",
+    "href": "site/reference/exports_sheet.html#footnotes",
+    "title": "Exports sheet",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nRemember, in the Dictionary sheet, any variable with anything written in the export columns will be exported in the corresponding exports (even if it is written “no”).↩︎\nThese columns are automatically calculated when geo and hf variables are created in the linelist. They contain concatenated administrative levels at different scales, and p-codes. They are used for creating maps.↩︎\nwe are not speaking of the sheet usually created for linelists that contains variables to collect metadata about the project (MSF section, disease, facility name…), but of hidden linelist metadata (when the file was compiled, language, version etc.)↩︎"
+  },
+  {
+    "objectID": "site/reference/analyses_sheet.html",
+    "href": "site/reference/analyses_sheet.html",
+    "title": "Analyses sheet",
+    "section": "",
+    "text": "This sheet contains several tables for defining different types of analyses and their corresponding graphs:\nFlowchart to help you figure out which of these tables to use for different analyse:"
+  },
+  {
+    "objectID": "site/reference/analyses_sheet.html#global-summary",
+    "href": "site/reference/analyses_sheet.html#global-summary",
+    "title": "Analyses sheet",
+    "section": "Global Summary",
+    "text": "Global Summary\n\nThe “Global Summary” table summarises certain indicators for the current epidemic. It has 3 columns:\n\nSummary Label: free text field for entering a short but explicit label describing the analysis\nSummary function: free text field for entering the Excel formula that will display the desired indicator. See the formula specifications here.\nFormat: dropdown menu for defining the **display format* of the expected result (see variable format)\n\n\nExample\nDefinition in the setup file:\n\n\n\n\n\nDisplay in the linelist:"
+  },
+  {
+    "objectID": "site/reference/analyses_sheet.html#univariate-analysis",
+    "href": "site/reference/analyses_sheet.html#univariate-analysis",
+    "title": "Analyses sheet",
+    "section": "Univariate Analysis",
+    "text": "Univariate Analysis\nThe “Univariate Analysis” table is used to describe analyses based on a single variable.\n\n\n\n\n\nIt has 10 columns:\nSection: this is a free field used to group univariate analyses on a theme, for example all the tables grouping patient characteristics. It makes it possible to navigate between sections in the linelist using the “Go to section” dropdown menu.\nTable title: this is a free field for entering the name of the table with the analyses. It should be fairly explicit and short.\nGroup by variable (row): this is a static dropdown menu containing the variables that can be analysed. Only categorical variables with known modalities can be used (i.e. “choice_manual” and “choice_formula” variables).\nAdd missing data: this is a yes/no field used to indicate whether you want to count missing data for the selected variable.\nSummary function: this is a free field in which to enter the formula corresponding to the desired analysis. The formula must always be written without the “=” sign and in English, whatever the language in which the setup file is written (see the formula specifications here for more informations on formulas).\n\n\n\n\n\n\nTip\n\n\n\nIf you want to count the numbers of rows for each modality of the grouping variable, use the N function.\nYou are however not limited to counts, and can use Excel formulas, as long as the formula returns a single value:\n\nmedian(lenght_stay)\nmean(age_years) & \" (\" & min(age_years) & \" - \" & max(age_years) & \")\"\n\n\n\nSummary label: this is a free field which corresponds to the label which will be displayed above the results column.\nFormat: this is a static dropdown menu with a pre-selection of possible display formats (see variable format for more information)\nAdd percentage: this is a yes/no field used to indicate whether you want to see the results as a percentage as well as a value. If “yes”, a “%” column will be added to the right of the “summary function” column in the linelist.\nAdd graph: this is a yes/no field used to indicate whether you want a vertical bar graph near the table.\n\n\n\n\n\n\nNote\n\n\n\nIf the previous “Add percentage” option is set to “yes”, the percentage will be displayed on the secondary vertical axis of the graph.\n\n\nFlip coordinates: this is a yes/no field used to indicate whether you want the graphic to be displayed horizontally rather than vertically.\n\n\n\n\n\n\nNote\n\n\n\nIf the “Add percentage” and “Flip coordinates” options are set to “yes”, the graph will not contain the percentages, as the two options are incompatible and the vertical display of the graph will prevail.\nA “Note” message will be displayed in the “__checkRep” sheet.\n\n\n\n\n\n\n\n\nExample\n\n\n\n\n\nDefinition in the setup file:\nDisplay in the linelist:\n\n\n\n\n\n\n\nSummary\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nSection\nFree text\nYes\nGroup tables by section\n\n\nTable title\nFree text\nYes\nShort title\n\n\nGroup by variable (row)\nDropdown\nYes\nOne categorical variable to summarise\n\n\nAdd missing data\nDropdown (yes/no)\n\nAdd rows with missing values counts?\n\n\nSummary function\nFree text\nYes\nN to count rows, other formulas accepted\n\n\nSummary label\nFree text\n\nName of the summary\n\n\nFormat\nDropdown\n\nFormat of the summary\n\n\nAdd percentage\nDropdown (yes/no)\n\n\n\n\nAdd graph\nDropdown (yes/no)\n\n\n\n\nFlip coordinates\nDropdown (yes/no)\n\nInverse x and y axis of the graph"
+  },
+  {
+    "objectID": "site/reference/analyses_sheet.html#bivariate-analysis",
+    "href": "site/reference/analyses_sheet.html#bivariate-analysis",
+    "title": "Analyses sheet",
+    "section": "Bivariate Analysis",
+    "text": "Bivariate Analysis\nThe “Bivariate Analysis” table is used to describe analyses that cross two variables.\n\n\n\n\n\nIt has the following columns:\nSection: this is a free field used to group analyses on a theme, for example all the tables grouping patient characteristics. It will also be possible to navigate between sections in the linelist using the “Go to section” dropdown menu.\nTable title: this is a free field for entering the name of the table with the analyses. It should be fairly explicit and short.\nGroup by variable (row): this is a static dropdown menu containing the variables that can be analysed. Only categorical variables with known modalities can be used (i.e. “choice_manual” and “choice_formula” variables).\nGroup by variable (column): this is a static dropdown menu containing the variables that can be analysed. Only categorical variables with known modalities can be used (i.e. “choice_manual” and “choice_formula” variables).\nAdd missing data: this is a dropdown menu with 4 possible options, which allows you to indicate whether you want to count missing data for the selected variable(s):\n\nno: missing data is not added\nrow: missing data is added to variables in rows\ncolumn: missing is are added to variables in columns\nall: missing data is added to both column and row variables\n\nSummary function: this is a free field in which to enter the formula corresponding to the desired analysis. The formula must always be written without the “=” sign and in English, whatever the language in which the setup file is written (see the formula specifications here for more informations on formulas).\n\n\n\n\n\n\nTip\n\n\n\nIf you want to count the numbers of rows for each modality of the grouping variables, use the N function. You are however not limited to counts, and can use Excel formulas, as long as the formula returns a single value.\n\n\nSummary label: this is a free field which corresponds to the label which will be displayed above the results column.\nFormat: this is a static dropdown menu with a pre-selection of possible display formats (see variable format for more information).\nAdd percentage: this is a yes/no field used to indicate whether you want to see the results as a percentage as well as a value. If yes, a “%” column will be added to the right of the “summary function” column in the linelist.\nAdd graph: this is a yes/no field used to indicate whether you want a vertical bar graph.\nIf the previous “Add percentage” option is set to “yes”, the percentage will be displayed on the secondary vertical axis of the graph.\nFlip coordinates: this is a yes/no field used to indicate whether you want the graphic to be displayed horizontally rather than vertically.\n\n\n\n\n\n\nNote\n\n\n\nIf the “Add percentage” and “Flip coordinates” options are set to “yes”, the graph will not contain the percentages, as the two options are incompatible and the vertical display of the graph will prevail.\nA “Note” message will be displayed in the “__checkRep” sheet.\n\n\n\nExample\nDefinition in the setup file:\n\n\n\n\n\nDisplay in the linelist:\n\n\n\n\n\n\n\nSummary\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nSection\nFree text\nYes\nGroup tables by section\n\n\nTable title\nFree text\nYes\nShort title\n\n\nGroup by variable (row)\nDropdown\nYes\nOne categorical variable to summarise\n\n\nGroup by variable (column)\n\nYes\n\n\n\nAdd missing data\nDropdown (no/row/column/all)\n\nAdd missing values counts?\n\n\nSummary function\nFree text\nYes\nN to count rows, but formula accepted\n\n\nSummary label\nFree text\n\nName of the summary\n\n\nFormat\nDropdown\n\nFormat of the summary\n\n\nAdd percentage\nDropdown (yes/no)\n\n\n\n\nAdd graph\nDropdown (values/percentage)\n\n\n\n\nFlip coordinates\nDropdown (yes/no)\n\nInverse x and y axis of the graph"
+  },
+  {
+    "objectID": "site/reference/analyses_sheet.html#time-series-analysis",
+    "href": "site/reference/analyses_sheet.html#time-series-analysis",
+    "title": "Analyses sheet",
+    "section": "Time series Analysis",
+    "text": "Time series Analysis\nTime series analyses and graphs are defined using 3 different tables:\n\none to define the table(s) (and the series to add to the graphs)\none to define the list of associated graphs and their metadata\none to define the characteristics of graphs (the series to be plotted)\n\nSee a diagram at the end of the section.\n\nTime series analysis\n\n\n\n\n\nThe first table is used to define the different tables. It has 12 columns, and one line represents one summary per variable.1 If you take the option to add a total or missing values, or if the variable is categorical, the table created will have several columns.\nSeries ID: this is acalculated field: each row in this table is automatically assigned a ID, which is used in particular to define graphs.\nSection: this is a free field which can be used to combine analyses on a theme in a single table, for example patient characteristics over time. Each section corresponds to a table in the linelist. They are displayed one above the other, and it is possible to navigate between them using the “Go to section” dropdown menu.\nTime variable (row): this is a static dropdown menu containing all date variables from the dictionary.\n\n\n\n\n\n\nWarning\n\n\n\nDo not force other type of variables, such as a week or a year variable: the linelist has the functionality to switch between date, weeks, months and years for the display.\n\n\nGroup by variable (column): this is a static dropdown menu containing the variables that can be analysed. Only categorical variables with known modalities can be used (i.e. “choice_manual” and “choice_formula” variables). It is also possible to leave this field empty, and define the analysis solely on the basis of a formula in the “Summary function” field (for example, taking the median delay before admission across time, without any grouping).\nTitle (header): this is a calculated field. It is the name which will be displayed at the top of the table, above the corresponding analyses. It is made up of the “summary label” (described below), the label of the “time variable (row)” and the label of the variable to be analysed (“Group by variable (column)”, if any).\nAdd missing data: this is a yes/no field which allows you to indicate whether you want to count missing data for the selected variable. If yes is selected, a column with the missing values will be added to the right of the other columns created for each mode of the variable to be analysed.\nSummary function: this is a free field in which to enter the formula corresponding to the desired analysis. The formula must always be written without the “=” sign and in English, whatever the language in which the setup file is written (See the formula specifications here for more information).\n\n\n\n\n\n\nTip\n\n\n\nIf you want to count the numbers of rows across time use the N function. You are however not limited to counts, and can use Excel formulas, as long as the formula returns a single value.\nIf you use the N function without specifying a grouping variable, the function will simply count the number of non-empty cells in the chosen time variable.\n\n\nSummary label: this is a free field which corresponds to the label used to create the “Title header” and which is used to label the column containing the results of the “summary function”.\nFormat: this is a static dropdown menu with a preselection of possible display formats (see variable format for more information).\nAdd percentage: this is a static dropdown menu with 3 options:\n\nNo: no percentage is added\nRow: there is an additional column to the right of each value listed to show the percentage according to the time scale. The percentage is calculated on the total number of patients in the row.\nColumn: there is an additional column to the right of each value listed to show the percentage according to the time scale. The percentage is calculated on the total number of patients in the column.\n\nAdd total: this is a yes/no field used to add a row at the bottom of the table in with the totals for the entire period selected.\nTable Order: this is a read field which can be used to reorganise the order of analyses in the final table without having to modify the order of lines in the setup. By default, analyses are displayed from left to right in the order in which they are described in the Time series Analysis table in the setup.\n\nSummary of the first table\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nSeries ID\n-\nAutomatic\n\n\n\nSection\nFree text\nYes\nGroup columns by section\n\n\nTitle\n-\nAutomatic\n\n\n\nAdd missing data\nDropdown (yes/no)\n\nAdd missing values counts?\n\n\nSummary function\nFree text\nYes\nN to count rows, but formula accepted\n\n\nSummary label\nFree text\n\nName of the summary\n\n\nFormat\nDropdown\n\nFormat of the summary\n\n\nAdd percentage\nDropdown (column/row/no)\n\n\n\n\nAdd total\nDropdown (yes/no)\n\n\n\n\nTable order\nFree text\n\n\n\n\n\n\n\nLabels for Time Series Graphs\n\n\n\n\n\nThe second Time Series table is used to define the titles and order of the graphs associated with the time series defined above.\nThe table has 3 columns:\n\nGraph title: this is a free text field for naming the graph\nGraph order: this is a free text field which allows you to organise the graphs in the desired order.\nGraph ID: this is an automatically calculated field, with the ID incremented by 1 on each line.\n\nOne line represents one graph.\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nGraph title\nFree text\nYes\nShort title\n\n\nGraph order\nFree text\nYes\n\n\n\nGraph ID\nAutomatic\nYes\n\n\n\n\n\n\nGraph on Time Series\nThis table is used to define the characteristics of each graph.\n\n\n\n\n\nOne line represent one series to plot on a graph, and a graph can have one or more series. A graph with the number of each outcome over time would thus be represented by as many lines as there are of types of outcomes (or as there are modalities that you wish to show on the graph).\nGraph title: this is a dropdown menu fed by the “Labels for Time Series Graphs” table. To define a graph, it must first be named in the previous table. Use the same graph title in different rows to indicate that several series should be on the same graph.\nSeries title: this is a dropdown menu fed by the “Time Series Analysis” table. It is used to link a graph to the characteristics of a group of series (variables to be displayed).\nGraph ID: this field is filled in automatically once the “Graph Title” has been selected.\nSeries ID: this field is automatically filled in once the “Series title” has been selected.\nGraph order: this field is filled in automatically once the “Graph title” has been selected. To change the order in which the graphs are displayed, simply change the order in the “Labels for Time Series Graphs” table; it is not necessary to change the order of the lines.\nTime variable (row): this field is automatically filled in once the “Series title” has been selected. It searches for the time variable defined for the time series.\nGroup by variable (column): this field is filled in automatically once the “Series title” has been selected. It searches for the variable to be calculated defined for the time series.\nChoices: this is a dynamic dropdown menu updated once the “Series title” has been selected. It displays the choices for the variable to be calculated.\nLabel: this is a free text column that contains le label corresponding to the choice, which will appear in the graph legend.\nPlot values or percentage: this is a static dropdown menu with two options: values or percentages, which lets you choose whether to display the results in the graph as values or percentages.\nChart type: this is a static dropdown menu with three options: bar, line or dot. This lets you choose between 3 pre-selected chart types (bar, line or dot). Chart display can be customised directly from the linelist.\nY-Axis: this is a static dropdown menu with two options: left or right, which lets you choose which side of the Y axis to display. This is particularly useful for displaying two different pieces of information on a single graph (e.g. Epicurve with the number of deaths in value and the CFR in %).\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nGraph title\nDropdown\nYes\nDefined in the previous table\n\n\nSeries title\nDropdown\nYes\nChoose which variable summary to plot (ex: counts for outcomes)\n\n\nGraph ID\n-\nAutomatic\n\n\n\nSeries ID\n-\nAutomatic\n\n\n\nGraph order\n-\nAutomatic\n\n\n\nTime variable (row)\n-\nAutomatic\n\n\n\nGroup by variable (column\n-\nAutomatic\n\n\n\nChoices\nDropdown (variable modality)\nYes\nChoose modality to plot (ex: deads)\n\n\nLabel\nFree text\n\nLabel of the modality\n\n\nPlot values or percentages\nDropdown (values/percentage)\nYes\n\n\n\nChart type\nDropdown (bar/line/point)\n\n\n\n\nY-axis\nDropdown (left/right)\n\n\n\n\n\n\n\nExample\n\n\n\n\n\nDefinition in the setup file:\n\n\n\n\n\nDisplay in the linelist:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nDiagrams"
+  },
+  {
+    "objectID": "site/reference/analyses_sheet.html#spatial-analysis",
+    "href": "site/reference/analyses_sheet.html#spatial-analysis",
+    "title": "Analyses sheet",
+    "section": "Spatial Analysis",
+    "text": "Spatial Analysis\n\n\n\n\n\nThe spatial analyses are described in a table with 11 columns. They are described in a similar way to the bivariate analyses, the difference being that the variables chosen for the rows are necessarily variables containing geographical data.\nSection: this is a free field used to define blocks of analyses on the same theme. It will also be possible to navigate between sections in the linelist using the “Go to section” dropdown menu.\nTable Title: this is a free field for entering the name of the table with the analyses. It should be fairly explicit and short.\nGeo/HF variable (row): this is a dynamic dropdown menu containing all variables of type “hf” or “geo”.\nN geo max: This is the maximum number of lines you want to see for each analysis. (e.g. if you want a top 10, enter 10).\nGroup by variable (row): this is a static dropdown menu containing the variables that can be analysed. In other words, variables with known modalities, i.e. choice_manual and choice_formula variables. If the field remains empty, we will just count the number of occurrences per modality of the chosen time variable and these are the Ns (defined with the “N geo max” variable).\nAdd missing data: this is a yes/no field used to indicate whether you want to count missing data for the selected variable.\nSummary function: this is a free field in which to enter the formula corresponding to the desired analysis. The formula must always be written without the “=” sign and in English, whatever the language in which the setup file is written (see the formula specifications here for more informations on formulas).\n\n\n\n\n\n\nTip\n\n\n\nIf you want to count the numbers of rows for each modality of the grouping variable, use the N function.\n\n\nSummary label: this is a free field which corresponds to the label which will be displayed above the results column.\nFormat: this is a static dropdown menu containing a pre-selection of possible display formats (see variable format for more information).\nAdd percentage: this is a yes/no field used to indicate whether you want to see the results as a percentage as well as a value. If yes, a “%” column will be added to the right of the “summary function” column in the linelist.\nAdd graph: this is a yes/no field used to indicate whether you want a vertical bar graph.\nIf the previous “Add percentage” option is set to yes, the percentage will be displayed on the secondary vertical axis of the graph.\nFlip coordinates: this is a yes/no field used to indicate whether you want the graphic to be displayed vertically or horizontally.\n\n\n\n\n\n\nNote\n\n\n\nIf the “Add percentage” and “Flip coordinates” options are set to “yes”, the graph will not contain the percentages, as the two options are incompatible and the vertical display of the graph will prevail.\nA “Note” message will be displayed in the “__checkRep” sheet.\n\n\n\nExample\nDefinition in the setup file:\n\n\n\n\n\nDisplay in the linelist:"
+  },
+  {
+    "objectID": "site/reference/analyses_sheet.html#spatio-temporal-analysis",
+    "href": "site/reference/analyses_sheet.html#spatio-temporal-analysis",
+    "title": "Analyses sheet",
+    "section": "Spatio-Temporal Analysis",
+    "text": "Spatio-Temporal Analysis\nSpatio-temporal analyses and graphs are defined using 2 different tables:\n\nA “Specification for Spatio-Temporal Analysis” table\nA “Spatio-Temporal Analysis” table\n\n\nSpecification for Spatio-Temporal Analysis\n\n\n\n\n\nThe table has 3 columns:\nSection: this is a free field which can be used to combine analyses on a theme in a single table, for example patient characteristics over time. Each section corresponds to a table in the linelist. They are displayed one above the other, and it is possible to navigate between them using the “Go to section” dropdown menu.\nN geo max: This is the maximum number of lines you want to see for each analysis. (e.g. if you want a top 10, enter 10).\nSpatial type: this is a static dropdown menu with two options, geo or hf. This defines the type of geographic variable to be used in the section (a geo variable or a health facility).\n\n\nSpatio-Temporal Analysis\n\n\n\n\n\nThe table has 10 columns:\nSection (select): this is a dropdown menu created automatically and fed by the “Specification for Spatio-Temporal Analysis” table.\nTime variable (row): this is a static dropdown menu containing time variables. In other words, variables of type date.\nGeo/HF variable (column): this is a dropdown menu created automatically and fed by the “Specification for Spatio-Temporal Analysis” table.\nN geo max: this field is automatically filled in on the basis of the section selected and defined in the previous “Specifications for Spatio-Temporal Analysis” table.\nTitle (header): this is a calculated field. It is the name which will be displayed at the top of the table, above the corresponding analyses. It is made up of the summary label (described below), the label of the time variable (row) and the label of the selected geographic variable (column).\nSpatial type: this field is automatically filled in on the basis of the section selected and defined in the previous “Specifications for Spatio-Temporal Analysis” table.\nSummary function: this is a free field in which to enter the formula corresponding to the desired analysis. The formula must always be written without the “=” sign and in English, whatever the language in which the setup file is written (see the formula specifications here for more informations on formulas).\n\n\n\n\n\n\nTip\n\n\n\nIf you want to count the numbers of rows for each modality of the grouping variable, use the N function.\n\n\nSummary label: this is a free field which corresponds to the label which will be displayed above the results column.\nFormat: this is a static dropdown menu with a pre-selection of possible display formats (see variable format for more information).\nAdd graph: this is a yes/no field used to indicate whether you want a vertical bar graph.\n\n\nExample\nDefinition in the setup file:\n\n\n\n\n\nDisplay in the linelist file:"
+  },
+  {
+    "objectID": "site/reference/analyses_sheet.html#footnotes",
+    "href": "site/reference/analyses_sheet.html#footnotes",
+    "title": "Analyses sheet",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nex: counts for the different types of outcomes; or median for the length of stay)↩︎"
+  },
+  {
+    "objectID": "site/reference/home_reference.html",
+    "href": "site/reference/home_reference.html",
+    "title": "Reference",
+    "section": "",
+    "text": "Designer ribbon\n\n\n\n\n\n\nDesigner\n\n\nOBT menu\n\n\n\nThe special OBT menu\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nLinelist ribbon\n\n\n\n\n\n\nLinelist\n\n\nOBT menu\n\n\n\nThe special OBT menu\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nSetup ribbon\n\n\n\n\n\n\nSetup\n\n\nOBT menu\n\n\n\nThe special OBT menu\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCustom formulas\n\n\n\n\n\n\nSetup\n\n\nOther\n\n\n\nList of formulas specific to OBT\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAnalyses sheet\n\n\n\n\n\n\nSetup\n\n\nSheet\n\n\n\nDefine basic analyses\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nChoices sheet\n\n\n\n\n\n\nSetup\n\n\nSheet\n\n\n\nDefine variable categories\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nDictionary sheet\n\n\n\n\n\n\nSetup\n\n\nSheet\n\n\n\nDefine linelist tables and their variables\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nExports sheet\n\n\n\n\n\n\nSetup\n\n\nSheet\n\n\n\nDefine export buttons and files\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nTranslation sheet\n\n\n\n\n\n\nSetup\n\n\nSheet\n\n\n\nGenerate a linelist in several languages\n\n\n\n\n\n\n\n\n\nNo matching items\n\n Back to top"
+  },
+  {
+    "objectID": "site/reference/dictionary_sheet.html",
+    "href": "site/reference/dictionary_sheet.html",
+    "title": "Dictionary sheet",
+    "section": "",
+    "text": "The metadata about linelist variable, which is commonly called the variable dictionary is stored in two of the setup file sheets, the Dictionary sheet and the Choices sheet. Most of the variable attributes/metadata are stored in the Dictionary sheet, while only the categories of categorical variables are stored in the Choices sheet.\nVariable metadata on the Dictionary sheet are organised in one (big) table in which one line corresponds to one variable. This table is divided in sections:"
+  },
+  {
+    "objectID": "site/reference/dictionary_sheet.html#variable-names-and-labels",
+    "href": "site/reference/dictionary_sheet.html#variable-names-and-labels",
+    "title": "Dictionary sheet",
+    "section": "Variable names and labels",
+    "text": "Variable names and labels\n\n\n\n\n\n\nVariable Name\nThis is a free text field used to uniquely identify the variables. The name can be used to refer to the variable in formulas or in the Analyses sheet.\n\n\n\n\n\nAfter you build the linelist, the variable name can be found in the formula bar of the grey cells from the eight-th row (of the linelist sheet) for 2-dimensions tables like patient data), or in the cell name zone for cells of a 1-dimension table (like the Info sheet).\n\n\n\n\n\n\nWarning\n\n\n\nThe variable name is what allows the scripts to uniquely identify variable, in any language the linelist is built in. By opposition, variable labels can change or be translated.\nVariable names are used to migrate data from one linelist file to the other: changing the variable name of a variable in the setup is equivalent to creating a new variable: the migration script will not be able to match the variables.\n\n\nVariable names rules:\n\nNames must be unique in the setup file, even if the variables are on different sheets.\n\nNames must be at least 4 characters long to be valid.\n\nNames should not contain special characters (except for “_”).\n\nNames will be automatically converted to lower-case during compilation.\n\n\n\n\n\n\n\nTip\n\n\n\nAs a general advice, try to create short but explicit names (easier said than done).\n\n\n\n\n\n\n\n\nNames must be made unique\n\n\n\nTo ensure that variable names are unique, you can add the name of the sheet in which the variable will appear as a prefix, or use numbers.\nIf by error two or more variables have the same name, the second occurrence will automatically be suffixed with the value “1”; if there is a third, it will be suffixed with the value “2”, and so on.\n\n\n\n\n\n\n\n\nTip\n\n\n\nWe recommend that you do not leave any blanks in the variable name. Instead, replace them with “_”.\n\n\n\n\nMain Label\nThis is a free text field that defines the variables labels, which are quick descriptions of the variables, which the linelist user can read. They are typically more descriptive and longer than names, but we recommend to keep them moderately short for legibility reasons.\nIn the linelist, the main label appears in black and bold. It cannot be modified by the end user (with the exception of explicitly editable labels.\n\n\n\n\n\n\n\nTip: add more information\n\n\n\n\n\nTo add more details, you can use the following fields: Sub Label and Note.\n\n\n\n\n\nDev Comment\nThis free text column is for the sole benefit of the setup file developer (in all probability, you), to add technical or practical information. It is not read by the designer and does not affect the generated file.\n\n\n\n\n\n\nTip: Example of one user usage\n\n\n\n\n\nOne of the author of this doc uses these tags:\n\nFormat: calculated columns created for applying conditional formatting. These columns are very specific, and pure format. Tagging them helps to quickly make sure that they are never exported\nMoH: columns created when a general setup is adapted to a specific MoH format by adding a dedicated export for that format. Usually, we need to create some calculated columns that match the MoH export (recoding levels, or perhaps merging information of several variables…). I like to keep track of which columns are from the general setup and which are specific adaptations.\nWHO/Epinetwork: sometimes I want to keep the information that a column is here because it comes from the Epinetwork or the WHO CRF, and should probably not be modified.\nBoilerplate: calculated columns that are needed for graphs, or because the information is important (such as epiweeks). These columns are often hidden, but not necessarily, and they sometimes can be exported too.\n\n\n\n\nFeel free to use this column in a ways that helps you work, or to ignore it!\n\n\nEditable Label\nThis is a yes/no column. If the value is “yes”, the label of the variable in the linelist can be modified by its user. If the value is “no” or if the field remains empty, the variable label in the linelist is protected.\n\n\n\n\n\n\nTip: add customisable variables in your linelists\n\n\n\nIt is often desirable to add a couple of columns with editable labels at the end of the linelist, in case the user want to collect some extra information. It gives some freedom to users to collect some site specific data without needing an update of the setup. When I do that, I usually provide a couple of free text variables, and a couple of customisable dropdowns variables\n\n\n\n\nSub Label\nThis is a free text field used to add a brief description under the variable label, such as the format in which a date is expected, a unit, or any other information to help with filling the variable in.\nIn the linelist, the sub-label appears just below the main label, in blue and slightly smaller font. It cannot be modified by the end user.\n\n\n\n\n\n\nNote\n\n\n\nThe sub-labels “Calculated” and “Custom dropdown” are added automatically, no need to add them manually.\n\n\n\n\n\n\n\n\nTip: example of common sub-labels\n\n\n\n\n\n\nYes / No\nYes / No / Unk.\nFree text\nThe format of your date (ex: DD/MM/YYYY)\n\n\n\n\n\n\nNote\nThis is a free text field which content is added to the linelist as a comment on the corresponding cell. The comment in the linelist can be read by hovering the cursor over the cell. It cannot be modified by the end user.\n\n\nExample\nDefinitions in the setup file:\n\n\n\n\n\nDisplay in the linelist file:"
+  },
+  {
+    "objectID": "site/reference/dictionary_sheet.html#sheets-and-sections",
+    "href": "site/reference/dictionary_sheet.html#sheets-and-sections",
+    "title": "Dictionary sheet",
+    "section": "Sheets and sections",
+    "text": "Sheets and sections\nThis part of the table organises variables within sheets and tables, and thus defines the structure of the linelist (at least for data-entry sheets).\nOne data entry sheet can contain only one table but the structure of the table (i.e. the organisation of the variables) can vary.\n\n\n\nSheet and sections in the setup file\n\n\n\nSheet Name\nThis is a free text field that contains the name of the sheet in which the variable will appear.\nIn general, your linelists will contain at least a patient data sheet, and an info/metadata sheet.\n\n\n\n\n\n\nNote on linelist sheets\n\n\n\n\n\nThe created linelist will contain more sheets than the one you specify in this section, as some of the sheets are added automatically during compilation (an instruction sheet, a sheet for the geobase, etc.) and more sheets can be added if you choose to include analyses.\n\n\n\n\n\nSheet Type\nThis is a dropdown menu field used to define the type of table contained in the sheet. There are two options:\n\nvlist1D: corresponds to a table built Vertically, so the variables labels are in the same column, and only one entry is expected for each variable. This structure of data is well adapted to collect metadata about the health structure, the project or the data collection itself.\nhlist2D: corresponds to a table built Horizontally, so the variables labels appear in the same row, and several entries are possible for each variable. This type of sheet is used to collect patient data.\n\n\n\n\n\n\n\n\nMain Section\nThis is a free text field used to define the name of the main section in which the variable is located. This makes it possible to group variables by theme to make data entry and navigation easier.\nIn the linelist file, the main sections appear in a darker colour in rows or columns, depending on the type of table (dark blue in the example). They cannot be modified by the end user.\n\n\n\n\n\n\nTip: organise variables\n\n\n\nTo make the dictionary easier to read, we recommend that you group (write one below another) the variables of a same sheet and a same section.\n\n\n\n\nSub Section\nThis is a free text field that allows you to further refine the organisation of variables in the table by creating a second level of grouping.\nIn the linelist file, the sub-sections appear in a lighter colour in the row or column, depending on the type of table (light blue in the example). They cannot be modified by the end user.\n\n\nExample\n\nvlist1D\nDefinition in the setup file:\n\nDisplay in the linelist file:\n\n\n\nhlist2D\nDefinition in the setup file:\n\nDisplay in the linelist file:"
+  },
+  {
+    "objectID": "site/reference/dictionary_sheet.html#properties",
+    "href": "site/reference/dictionary_sheet.html#properties",
+    "title": "Dictionary sheet",
+    "section": "Properties",
+    "text": "Properties\nThe properties section of the table controls variable visibility, uniqueness, and the type and format of the variable (what it contains, in which form, and in which display).\n\n\n\n\n\n\nStatus\nThis is a dropdown field that contains four options for defining the visibility of the variable. The linelist has a functionality to show or hide optional variables depending on the data needs on the field.\n\nmandatory: variable displayed by default, it cannot be hidden in the linelist\noptional, visible: variable displayed by default, it can be displayed or hidden by the linelist user\noptional, hidden: variable hidden by default, it can be displayed or hidden by the linelist user\nhidden: variable hidden by default, it cannot be displayed in the linelist\n\nVariables can be shown or hidden using the “Show/Hide” button of the linelist OutbreakTools menu in the linelist file. See the how to.\n\n\n\n\n\n\nNote on showing and hiding columns manually\n\n\n\n\n\nTechnically, the linelist user can forcefully hide/un-hide columns.\nUn-hiding hidden (usually calculated) columns is usually desirable during linelist debug or to go check data that may interest you (e.g. a hidden calculated epiweek of exit). You can hide them after consultation without consequences on the rest of the linelist.\nIt is however more dangerous to forcefully hide “mandatory” columns. These columns are often fundamental variables in the linelist, that are needed for data understanding and analyses (e.g. date of admission, age or sex). If you choose to hide one of these columns, know that some analyses might not function as expected, or not at all because they rely on the hidden columns.\nFinally, any change of column visibility that is not made via the “Hide/show variable” button of the linelist will not be recorded and migrated to a new linelist.\n\n\n\n\nExample\nDefinition in the setup file:\n\nDisplay in the linelist file:\n\n\n\n\n\nRegister Book\nThis is a yes/no dropdown menu field used to predefine the variables to be included in the register to be printed. This step is not mandatory and can be managed later, directly in the linelist file.\n\n\nPersonal Identifier\nThis is a yes/no dropdown menu field that indicates that the variable contains personal data (such as names, phone numbers etc.).\nThis column has two uses:\n\nit allows the setup developer to quickly identify variables containing personal data in its dictionary\nit is used to remove variables automatically from the exports if such a behaviour is needed (see the Exports sheet).\n\n\n\nThinking about variables\nThere are many ways of thinking about variables and of classifying them.\nIn general we can distinguished between input variables, where the user enters raw data, and calculated (or derived) variables which require no input. Both of them can be created in OutbreakTools.\nIndependently of this distinction, a variety of variables types can exist, containing numbers or text in various forms. In Excel, we will often use the types integer, decimals, dates and text.1. These types are implemented in OutbreakTools linelists.\nFor input variables, you could think of two ways of entering data: a free text approach, where user can enter the value of their choice, and a controlled (constrained) approach, where the values the user can enter are limited. In Excel, this is generally implemented through dropdown menus from which the data encoder selects a value. In OutbreakTools, there have several ways of building dropdown menus, depending on whether you know the categories in advance or not. This is what we call variable control.\nFinally, many softwares allow the user to set the way the data is displayed, which we here call variable format. For example:\n\nThe date first of January of 2023 can be displayed as “01/01/2024”, or “1/1/24” or 1-Jan-24” etc.\n\nThe number “1” could be displayed as “1” simply, or “001”\n\nThe number 0.01 could be displayed with different levels of rounding, or even as “10%” if the column contains proportions that can be displayed as percentages.\n\n\n\nVariable Type\nThis column proposes a dropdown menu field containing four options for defining the type2 of each variable:\n\nText: creates a column of text3. The entry of the text may be free or constrained by a dropdown menu.\nDate: creates a date column, whose exact format is defined in the Variable format column. The default format is jj-mmm-aaaa.\nInteger: creates an integer column\nDecimal: creates a column with decimal numbers. The number of digits after the decimal point is defined in the Variable format.\n\n\n\n\nVariable Format\nThis field is used to specify the format of the variable (which depends on its type).\nThere is a predefined dropdown list with common options, but you can enter any format by hand, as long as it is written in Excel syntax (see here and here for information).\n\nExample: for an integer to appear with at least 2 characters, enter the format: # #00\n\n\n\n\n\n\nNote\n\n\n\nNote that the default date format is jj-mmm-aaaa.\n\n\n\n\nControl\nThis is a dropdown field containing nine options for defining variables that are not free text:\n\nchoice_manual\nchoice_custom\nchoice_multiple\nlist_auto\ngeo\nhf\nformula\ncase_when\nchoice_formula\n\nThese options broadly correspond to two sorts of variables to be created:\n\ninput categorical variables with constrained values and filled via a dropdown menu\n\ncalculated variables\n\nIn OutbreakTools, the variables to fill in geographic information are treated as a special case of categorical variable and have their own dedicated control.\n\nSummary of the types of control available in OutbreakTools\n\n\n\n\n\n\n\nSort of variable\nControls\nData entry in the linelist\n\n\n\n\nCategorical\nchoice_manual, choice_custom, choice_multiple, list_auto\nDropdown menu\n\n\nGeo-related columns (a special case of categorical)\ngeo, hf\nGeoHelper or dropdown menu\n\n\nCalculated\nformula, choice_formula, case_when\nNo user input needed in these columns\n\n\n\n\n\n\nGuide to choosing variable control in OBT\n\n\n\n\n\n\n\n\nNote on data validation\n\n\n\nFor non-text variable (integers, decimals, dates) is is possible to restrict values using data validation\n\n\n\nDropdown menu variables\nThis table summarises the different options:\n\n\n\n\n\n\n\n\n\nControl\nHow to populate the dropdown menu\nWhere are values defined?\nData entry\n\n\n\n\nchoice_manual\nPredefined values\nIn the setup file, in the Choices sheet\nOne value selected from a dropdown menu\n\n\nchoice_multiple\nPredefined values\nIn the setup file, in the Choices sheet\nSeveral values selected from a dropdown menu\n\n\nchoice_custom\nUser-defined values (but see details)\nIn the Linelist file, in the Custom dropdown sheet\nOne value selected from a dropdown menu\n\n\nlist_auto\nUser-defined values but from another data column\nIn the Linelist file, in another column\nOne value selected from a dropdown menu populated by the values of another variable\n\n\n\n\nchoice_manual\nThis control creates a categorical variable with a static dropdown menu in the linelist, from which one value can be selected. The authorised values from the dropdown menu are defined in advance in the setup and cannot be modified by the users of the linelist (hence the “static” description).\nIn the setup file, we define these values in a list stored in the Choices sheet, and fill the name of that list in the Control details column.\n\n\nchoice_multiple\nThis control is similar to the “choice_manual” control, in that it creates a static dropdown menu in the linelist from predefined values entered in the setup file.\nThe difference is that in the created linelist, the user can use the dropdown menu several times to select multiple values. These values will be concatenated and stored as a chain of character. By default, the separator is a coma (“,”), but you can modify this in the control column. For example, entering choice_multiple(“_”) will use the character “_” to separate values instead of “,”.\nExample: if the user selects “Azythromicin”, then “Ampicilin” from a dropdown menu, the value “Azythromicin, Ampicilin” will be stored in the cell.\n\n\n\n\n\n\nWarning: cannot be used for analyses\n\n\n\nA choice_multiple column cannot be used in the Analyses sheets as the designer cannot predict the number of combinations the user will create, and thus cannot create tables with appropriate size.\n\n\n\n\n\n\n\n\nTip: inform the linelist user\n\n\n\nSince columns allowing multiple choices are rare in linelists in general, we advise you to use the sub-label and possibly a note to inform the linelist user that they can enter several values, and how to do it.\n\n\n\n\nchoice_custom\nThis control creates a dynamic dropdown menu in the linelist, but contrary to the previous controls, the values are not (necessarily) predefined in the setup file, but instead defined by the user. This control is useful for variables where one would like to enforce standardization of values, but the values to encode are not known in advance.\nExample: you wish to create a column containing the name of facilities patients can be transferred to. The names of these facilities is site dependent, thus unknown in advance.\nUsing this control for at least one variable adds a “Custom dropdown sheet in the linelist, where the user can fill-in values to populate the dynamic, customised dropdown menu.\nWhile by default the dropdown menu created is empty, it is possible to pre-fill it by filling the “Control Details” column with a list of choices, like for the other types of dropdowns menus (see the details on setting up dropdown menus below). The table in the Custom dropdown sheet of the linelist will still be created and future users will be able to modify it.\n\n\nlist_auto\nThis control also creates a dynamic dropdown menu, but the values come from the data entered in another column.\nExample: a linelist contains two data-entry sheets:\n\nthe first data entry sheet contains patient data\n\na second data entry sheet contains more variables for a subset of re-admitted patients.\n\nThe “list_auto” control allows to create a column on the second sheet with a dropdown menu populated dynamically with the patient IDs from the first sheet.\n\n\n\n\n\nIn the setup file, the variable used to populate the dropdown menu is defined in Control Details.\n\n\n\nSpecial case of administrative levels and health facilities\nTwo controls allow the user of the linelist to enter geographic information, or information about health facilities. While the created variables are technically dropdown menus, they are treated as a special type of variables in OubtbreakTools linelists, with dedicated tools and analyses.\nOutbreakTool linelists all have a button to import a geobase, a standardised file containing lists of administrative levels to describe places. Once the geobase is successfully imported, the values from its lists populate specific dropdown menus.\n\ngeo\nThe “geo” control indicates that geographic data is expected. In the linelist, this results in the creation of four columns, one for each administrative level, which will be populated by values imported from a geobase. The user can enter data by using the GeoHelper button in the linelist or by selecting values from the cascading dropdown menus in the linelist.\nThe “geo” control does not need additional information to be filled in the “Control Details” column.\nIn the linelist, the variable labels appear in orange cells, which means that the “GeoHelper” button can be used to fill in the corresponding cells.\nExample:\nDefinition in the setup file:\n\nDisplay in the linelist file:\n\nDisplay in the linelist file after importing a geobase (here a Nigeria geobase, note the personalisation of the labels):\n\n\n\nhf\nThe “hf” control means that the user will enter health facility names. By identifying hf data in this way, you can use the GeoHelper button in the linelist to fill in the column.\nSimilarly to the “geo” control, the “hf” control does not need additional information to be filled in the “Control Details” column.\n\n\n\n\n\n\nNote\n\n\n\nThe variable label appears in an orange cell, which means that the GeoHelper button can be used to fill in the corresponding cells.\n\n\nExample:\nDefinition in the setup file:\n\nDisplay in the linelist:\n\n\n\n\nCalculated variables\nThree controls allow the creation of calculated columns. In general, the user can define a column by providing an Excel formula 4, but the setup file also provides two custom functions, CASE_WHEN and CHOICE_FORMULA to simplify formula syntax.\n\n\n\n\n\n\n\n\n\n\nControl\nFunctions\nUse\nDefault value\nCan be used in used in analyses tables\n\n\n\n\nformula\nAny combination of Excel functions (in English)\nAnything\n\nContinuous variables: yes Categorical variables: no\n\n\ncase_when\nCASE_WHEN(Excel functions optional)\nReplaces nested Ifs\nEmpty cells; user can modify it\nNo\n\n\nchoice_formula\nCHOICE_FORMULA (Excel functions optional)\nReplaces nested IF\nEmpty character; user cannot modify it\nYes\n\n\n\n\nformula\nWhen using the “formula” control, the value displayed is calculated according to a formula defined in the Control details column of the dictionary.\n\n\ncase_when\nVariables of control “case_when” use a specifically developed function, CASE_WHEN, which replaces a succession of nested IF. While you could write the formula with nested IF, CASE_WHEN is easier to read, thus simpler to use.\nUsercase You want to recode a variable, but you do not know which values will be generated. For example, the raw data contains a columns for the age value and a column for the age unit. You use CASE_WHEN to create a column “age_years”. The values which will be present in the column can take many decimal value in the range of reasonable ages.\n\n\n\n\n\n\nImportant: CASE_WHEN and analyses\n\n\n\nCategorical variable created with this control cannot be used in univariate or bivariate tables in analyses sheets, because the designer cannot know in advance how many modalities the variable will take, and thus cannot build the tables.\nOn the other hand, numeric variables created with this control (such as age in years) can be summarised in the analyses. Indeed, taking the mean or the median of a numeric variable variable outputs one value, so the designer knows what to expect.\n\n\n\n\n\n\n\n\nWarning\n\n\n\nTo work properly the “case_when” control must be associated with a CASE_WHENfunction in the Control details column, or the designer will not work properly because the function is not native.\n\n\n\n\n\n\n\n\nWhy not using more recent Excel functions?\n\n\n\n\n\nIf you are using a recent version of Excel, you may know the functions IFS or SWITCH. OutbreakTools does not rely on them as they are not retro-compatible with some older versions of Excel. Use a CASE_WHEN or CHOICE_FORMULA instead.\n\n\n\nRead more about writing the formula in the Control details column below.\n\n\nchoice_formula\nThis control indicates the use of the CHOICE_FORMULA function, another custom function. This function is a special case of the CASE_WHEN formula, with more constrains on it. Indeed, the values that the calculated variable can take are known in advance and predefined in the Choices sheet.\nColumns generated with this control can be used in univariate or bivariate tables, as the number of possible categories is known in advance.\nRead more about writing the formula in the Control details column below.\n\n\n\n\nControl details\nThis is a free text field, which accepts three types of values:\n\nthe name of a list (defined in the Choices sheet),\nthe name of a variable (defined in the Dictionary sheet)\na formula.\n\n\n\n\n\n\n\n\n\n\nControl type\nControl column\nValue expected in the “Control details” column\n\n\n\n\n\nStatic dropdown menu\nchoice_manual choice_custom choice_multiple\nThe name of a list that contains the authorised values defined in the Choice sheet (“List Name” column)\n\n\n\nDynamic dropdown\nlist_auto\nThe name of an existing variable\n\n\n\nCalculated\nformula case_when choice_formula\nAn Excel formula (that can contain one or | more functions, including the custom | functions CASE_WHEN and CHOICE_FORMULA)\n\n\n\n\nDefining dropdown menu categories\nWhen the controls “choice_manual”, “choice_multiple” (and optionally “choice_custom”) are selected in the Control column, you need to define the values the dropdown menu will contain (i.e. the categories).\nThese values are specified in the Choices sheet. Categories of a same variable are bundled into named lists. The name of the list is then entered in the “Control details” column of the Dictionary sheet.\n\nIn the case of “list_auto” variables, you only need to provide the name of another variable in the “Control details” column. In the linelist, the values present in the referred variable will be automatically used to populate the dropdown menu. See this How to for an example.\n\n\nFormulas\nIf you have selected “formula”, “choice_formula” or “case_when” in the Control column, you need to provide the formula to be applied in this column.\n\n\n\n\n\n\nNote\n\n\n\nThe information given in the Formula control section below are also valid for “choice_formula” and “case_when” controls as these, while based on custom functions, are still formulas.\n\n\n\nformula control\nThe formula is written in English, without an “=” sign. During compilation, the formulas will automatically be translated into the Excel language defined on the computer used to generate the linelist.\n\n\n\n\n\n\nImportant\n\n\n\nWhen writing a formula, make sure that it returns an empty value for rows without an ID, as all the rows with non-null values in it will be counted in the Analyses sheets. If your graphs show a lot of “Missing” values that do not reflect how well a column is filled, check that a calculated column is not responsible for it.\n\n\n\n\n\n\n\n\nImportant: english proof your formulas!\n\n\n\nIf your Excel is not configured to use English, pay special attention to the following:\n\nUse the English function names, such as MEAN instead of MOYENNE, or IF instead of SI.\nFunction arguments are separated by “,” in English. Beware of lingering “;” if you are used to Excel in French!\nSimilarly, English Excel uses “.” for decimals, not “,” like in French.\n\n\n\n\n\n\n\n\n\nTip: improve formual readibility\n\n\n\n\n\nIn Excel, you can use ALT+ENTRY to insert a carriage return to go to the next line. This does not affect the execution of your formulas, but greatly increases the readability. The same goes for inserting spaces around operators. Contrast these two formulas:\n\n\n\n\n\n\ncase_when control\nUse the CASE_WHEN function to replace nested IF (therefore limiting the risk of error when writing the formula), in this form:\n\nCASE_WHEN(condition1, value1,\ncondition2, value2,\ncondition3, value3,\n…, …,\nDEFAULT_VALUE)\n\nYou need at least one pair of conditions-values but the function shines when there are many pairs. As in the nested IF or in the IFS functions, the conditional statement are tested in the order they are written.\nBy default, any case that is not covered by the previous conditions will return an empty cell, unless you provide a default value (the “else”).\nExample\nYou could write a formula with nested IF to calculate an age_years column:\n\nIF(age_unit = “months”, age_value / 12, IF(age_unit = “days”, age_value / 365, IF(age_unit = “years”, age_value, IF(ISBLANK(age_unit), ““))))\n\nOr write the equivalent with CASE_WHEN:\n\nCASE_WHEN(age_unit = “months”,\nage_value / 12, age_unit = “days”,\nage_value / 365, age_unit = “years”,\nage_value)\n\n\n\n\n\n\n\nNote\n\n\n\nThe information about the more generalist “formula” control are also valid here.\n\n\n\n\nchoice_formula control\nThe CHOICE_FORMULA function is a subcase of CASE_WHEN for when we want to encode a few known modalities.\nThe pseudo-code is very similar to the CASE_WHEN function:\n\nCHOICE_FORMULA(list_values_choices,\ncondition1, value1,\ncondition2, value2,\ncondition3, value3,\n…, … )\n\nBut here, the value1, value2, value3 etc. are pre-defined in the list “list_values_choices” in the “Choices” sheet, as if these values were for a dropdown menu 5.\nSince we know exactly which modalities this variable can take, we can use it as a categorical variable in the Analyses sheet, to build a uni or a bivariate table.\nExample:\n\nCHOICE_FORMULA(list_age_group, age_years &lt; 5, “0 – 4 years”, age_years &lt; 10, “5 – 9 years, age_years &lt; 15,”10 – 14 years, age_years &lt; 20, “15 – 19 years, AND(age_years &gt;= 20, age_years &lt; 120),”20+ years” )\n\nHere, “list_age_group” corresponds to the list where the potential values to be returned are predefined; “age_years” is an existing variable that contains the age in years. The values between inverted commas (“0 – 5 years”) correspond to the possible results, predefined in “list_age_group”.\n\n\n\n\n\n\nNote\n\n\n\nThe information about the more generalist “formula” control are also valid here.\n\n\n\n\nExample\nHere is an example of a setup that codes for two input columns (age value and age unit) and three calculated columns.\n\nage_num is a numeric column, with no special control\nage_unit contains a dropdown with categories “Day”/“Month/”Year”\nage_years uses CASE_WHEN to transform the input data into the age in years and keeping the formula easy to read. This column is continous, and can be used in the analyses to calculate a mean or a median (or any relevant summary statistics)\nage_months is a simpler formula based on age_years.\nage_group uses CHOICE_FORMULA so this column can be used in univariate or bivariate tables to count the nomber of patients in each class, and to build an age pyramid.\n\n\n\n\n\n\nUnique\nThis is a yes/no dropdown menu field. If the variable should have unique values (such as the patient ID in some cases), special data validation will be applied to duplicated values."
+  },
+  {
+    "objectID": "site/reference/dictionary_sheet.html#data-exports",
+    "href": "site/reference/dictionary_sheet.html#data-exports",
+    "title": "Dictionary sheet",
+    "section": "Data exports",
+    "text": "Data exports\nOutbreakTools linelist have extensive data export functionalities. It is possible to define several personalised exports from the setup.\nTo define a specific export, you need to fill both the “Export” section in the Dictionary sheet and the Exports sheet. The Export sheet contains metadata for each export, while the “Export” columns in the Dictionary sheet allows to decide individually for each variable whether to export it or not in a given export.\nTo create a new export, first fill the Exports sheet, which will add corresponding columns to the Dictionary sheet.\n\nRules\n\nVariables with any value entered in the “Export” columns will be exported. If you want to not export a variable, you need to keep the cells empty.\nYou can define the order in which variables are displayed in exports by entering numbers in the export column. If two variables have the same number (in the same export column), they will be exported in the order they are defined in the setup (from top to bottom).\n\n\n\n\n\n\n\nTip: create anonymous exports\n\n\n\nIf you wish to create an anonymous export, i.e. one containing no personal identifier, you can filter the “personal identifier” column to yes and check that the column corresponding to the anonymous export is empty.\n\n\n\n\nExample\nIn the following example, two exports have been created. The first one exports all variables present in the order that they appear in the setup. The other export (perhaps a specific MoH export) only export some variable, and choses the order (facility_name is exported first, then facility_type, then etc.)."
+  },
+  {
+    "objectID": "site/reference/dictionary_sheet.html#sec-data-validation",
+    "href": "site/reference/dictionary_sheet.html#sec-data-validation",
+    "title": "Dictionary sheet",
+    "section": "Data validation",
+    "text": "Data validation\nTo improve the quality of the data entered, it is possible to alert or block the user if they attempt to enter invalid data.\nFor continuous variables, you can to specify the min and or max values (see below). For categorical variables with dropdown menus, go directly to the Alert column.\n\nMin\nThis is a free text field that defines the minimal authorised value in the variable. It can be an integer, a decimal number, the name of a variable or a formula.\n\n\n\n\n\n\nImportant\n\n\n\nAs with formulas, do not start with an “=” sign!\n\n\nExamples: \n\n“0” to forbid negative values in an age in month or year column\ndate_notification to not allow the date of exit to be before the arrival in the health facility\ntoday() - 2 * 365 to avoid dates older than two years if you know that the linelist is not used to enter retrospective data\n\n\n\nMax\nThis is a free text field used to define the upper limit of authorised values. It can be an integer, a decimal number, a variable name or a formula.\n\n\n\n\n\n\nImportant\n\n\n\nAs with the formulas, the “=” sign is not placed in front of the limits you define.\n\n\nExamples: \n\n“120” to limit the age in year\ntoday() to not allow dates after the day of data entry in the case of most date columns\n\n\n\nAlert\nThis is a dropdown field. There are two possible options:\n\nerror\nwarning\n\n❌ The “error” option blocks data entry: it is impossible to force the entry of a value other than the authorised one. It is symbolised by a cross in a red circle 6.\n⚠️ “warning” warns the end user that the data entered is not within the expected values, but if they wish they can still force this data in. It is symbolised by an exclamation mark in an orange triangle.\n\n\n\n\n\n\nNote\n\n\n\nYou can add error and warnings to columns with dropdown menus, the messages will appear if the user tries to enter a value not from the dropdown menu.\n\n\n\n\nMessage\nThis is a free text field used to give the end user an indication of why their entry is invalid.\n\n\nExamples\n\nA continuous variable: patient’s age\nDefinition in the setup file:\n\nHow it is encoded in the data validation system of the linelist file:\n\nA warning box appearing when the user attempts to enter invalid data:\n\n\n\nA categorical variable: age unit\nDefinition in the setup file:\n\nDisplay in the linelist:\n\n\n\nA date variable\nDefinition in the setup file:\n\nHow it is encoded in the data validation system of the linelist file:\n\nWarning box appearing when the user attempts to enter invalid data:"
+  },
+  {
+    "objectID": "site/reference/dictionary_sheet.html#sec-conditional-formating",
+    "href": "site/reference/dictionary_sheet.html#sec-conditional-formating",
+    "title": "Dictionary sheet",
+    "section": "Conditional Formatting",
+    "text": "Conditional Formatting\n\nThis section is used to define conditional formatting rules.\n\nFormatting condition\nThe “Formatting Condition” column is a free text column where one must provide the name of a variable to use as a reference. Rows for which the reference column contains 1 will be formatted with the formatting defined in the “Formatting Values” column. Row containing 0 will have no special formatting.\nThis means that in most cases, you will need to calculate a dummy variable, with a result of 1 or 0, to guide the formatting.\n\n\n\n\n\n\nTip\n\n\n\nyou can give special names to these calculated columns to easily identify them (e.g. format_xxx).\n\n\n\n\nFormatting values\nThis is a free text column, but what matters is not the text entered in it but the formatting applied to it, which is read and applied to the cells in the linelist file if the formatting condition is met.\n\n\nLock cells\nThe Lock Cells section is not currently available."
+  },
+  {
+    "objectID": "site/reference/dictionary_sheet.html#footnotes",
+    "href": "site/reference/dictionary_sheet.html#footnotes",
+    "title": "Dictionary sheet",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nNote that we used the word “type” in its computer science meaning, which differs a bit from the statistics one.↩︎\nsometimes called class in some software↩︎\nalso called character string in some softwares↩︎\ni.e. a combination of Excel functions↩︎\nyou can of course give the list any name that you wish, such as “list_age_group” for example if you were recoding age↩︎\nSometimes the user manage to break through by pasting values though↩︎"
+  },
+  {
+    "objectID": "site/reference/custom_formulas.html",
+    "href": "site/reference/custom_formulas.html",
+    "title": "Custom formulas",
+    "section": "",
+    "text": "EPIWEEK: returns the week number.\nN: count the number of lines, mostly used in the analyses\nDATE_RANGE: range of a date column, mostly used in the global summary table"
+  },
+  {
+    "objectID": "site/reference/custom_formulas.html#custom-formulas",
+    "href": "site/reference/custom_formulas.html#custom-formulas",
+    "title": "Custom formulas",
+    "section": "",
+    "text": "EPIWEEK: returns the week number.\nN: count the number of lines, mostly used in the analyses\nDATE_RANGE: range of a date column, mostly used in the global summary table"
+  },
+  {
+    "objectID": "site/cheatsheets/variable_control.html",
+    "href": "site/cheatsheets/variable_control.html",
+    "title": "Variables in OutbreakTools",
+    "section": "",
+    "text": "OutbreakTools allows both input variables in which the user enters data and calculated variables derived from the raw data.\nWhen it comes to text input variables, there are two primary methods for data entry:\n\na free text approach, allowing users to input any value they choose,\na controlled approach, where user options are restricted.\n\nIn Excel, the controlled approach for text variables is typically implemented with dropdown menus, which allow data entry of pre-defined categories. OutbreakTools offers multiple ways to create dropdown menus, depending on whether you have predefined categories or not.\nThe columns Control together with Control details are use to constrain the values that a text variable can take, or provide with a formula in the case of a calculated variable.\n\nSummary of the types of control available in OutbreakTools\n\n\n\n\n\n\n\nSort of variable\nControls\nData entry in the linelist\n\n\n\n\nFree entry\n(none specified)\nFree\n\n\nCategorical\nchoice_manual choice_custom choice_multiple\ngeo, hf (special cases)\nDropdown menu\nGeoHelper or dropdown menu\n\n\nCalculated\nformula choice_formula case_when\nNo user input needed in these columns\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nIf no control is selected, the text variable is free text.\n\n\n\n\n\n\n\n\nNote\n\n\n\nThe variables that contain geographic information are treated as a special case of categorical variable and have their own dedicated control.\n\n\n\n\n\n\n\n\nNote\n\n\n\nFor non text variable (integers, decimals, dates) is is possible to restrict values using data validation"
+  },
+  {
+    "objectID": "site/cheatsheets/variable_control.html#categorical-and-calculated-variables",
+    "href": "site/cheatsheets/variable_control.html#categorical-and-calculated-variables",
+    "title": "Variables in OutbreakTools",
+    "section": "",
+    "text": "OutbreakTools allows both input variables in which the user enters data and calculated variables derived from the raw data.\nWhen it comes to text input variables, there are two primary methods for data entry:\n\na free text approach, allowing users to input any value they choose,\na controlled approach, where user options are restricted.\n\nIn Excel, the controlled approach for text variables is typically implemented with dropdown menus, which allow data entry of pre-defined categories. OutbreakTools offers multiple ways to create dropdown menus, depending on whether you have predefined categories or not.\nThe columns Control together with Control details are use to constrain the values that a text variable can take, or provide with a formula in the case of a calculated variable.\n\nSummary of the types of control available in OutbreakTools\n\n\n\n\n\n\n\nSort of variable\nControls\nData entry in the linelist\n\n\n\n\nFree entry\n(none specified)\nFree\n\n\nCategorical\nchoice_manual choice_custom choice_multiple\ngeo, hf (special cases)\nDropdown menu\nGeoHelper or dropdown menu\n\n\nCalculated\nformula choice_formula case_when\nNo user input needed in these columns\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nIf no control is selected, the text variable is free text.\n\n\n\n\n\n\n\n\nNote\n\n\n\nThe variables that contain geographic information are treated as a special case of categorical variable and have their own dedicated control.\n\n\n\n\n\n\n\n\nNote\n\n\n\nFor non text variable (integers, decimals, dates) is is possible to restrict values using data validation"
+  },
+  {
+    "objectID": "site/cheatsheets/variable_control.html#flowchart-choose-your-variable-control",
+    "href": "site/cheatsheets/variable_control.html#flowchart-choose-your-variable-control",
+    "title": "Variables in OutbreakTools",
+    "section": "Flowchart: choose your variable control",
+    "text": "Flowchart: choose your variable control\n\n\n\nAvailable options for control in OBT"
+  },
+  {
+    "objectID": "site/cheatsheets/home_cheatsheets.html",
+    "href": "site/cheatsheets/home_cheatsheets.html",
+    "title": "Cheatsheets",
+    "section": "",
+    "text": "Cheatsheet analyses\n\n\n\n\n\n\nSetup\n\n\n\nPick the correct analyses type in the setup file\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nVariables in OutbreakTools\n\n\n\n\n\n\nSetup\n\n\n\nSummary of variable type and control in OBT\n\n\n\n\n\n\n\n\n\nNo matching items\n\n Back to top"
+  },
+  {
+    "objectID": "site/how_to/migrate_linelist.html",
+    "href": "site/how_to/migrate_linelist.html",
+    "title": "Migrate linelist data",
+    "section": "",
+    "text": "OutbreakTools linelist have handy functionalities to import and export data. Whith them you can:\nIf no breaking changes were introduced (see Important 1), migrating data from one linelist to the other is straightforward:\nIf the new file is empty, the data is simply copied into the file. Is the new file already contains data, the new data is pasted under the existing data (variable by variable)."
+  },
+  {
+    "objectID": "site/how_to/migrate_linelist.html#migrate-the-linelist-to-a-newer-version",
+    "href": "site/how_to/migrate_linelist.html#migrate-the-linelist-to-a-newer-version",
+    "title": "Migrate linelist data",
+    "section": "Migrate the linelist to a newer version",
+    "text": "Migrate the linelist to a newer version\nNew linelist versions are often generated for a given disease:\n\nthe variable dictionary for this specific linelist might get updated as a request of epidemiologists or the Epinetwork: added variables, improved labels, additional analyses…\nthe functionalities of the OutbreakTools itself may improve (bug fixes or addition of new functionalities1) and all linelist in use would benefit getting updated.\n\nHere, typically, the new file is a new version of the linelist, and it is empty (it might also be an empty version of the same linelist if you suspect that your current file is corrupted and behaves weirdly).\nSteps:\n\nClear data filters\nGo to the OutbreakTools menu of this setup file and click on the button “Export for migration”.\nTick all the boxes you want (usually, “All data” + “Geobase”). This will create three files in the folder of your choice:\n\nA file containing the data\nA file containing the geobase and the geobase history\nOptionaly, a file containing uniquely the geobase history, which we will ignore now.\n\nOpen a new, emtpy linelist file\nGo to the import section of the OutbreakTools menu. Use the “Import data” button to import the data export file, and the “Import geobase” button to import the geobase files (which contains the history, if an history existed).\n\n\n\n\nExport for migration\n\n\nOnce you are used to the steps, migrating data should take you only a couple of minutes.\n\n\n\n\n\n\nTip: export a subset of data\n\n\n\n\n\nHere we described a case where you wanted to migrate the whole data. If you need to split the data between two linelists (maybe before and after a date, or active / inactive cohort), you can use filters on patient data to only export a subset of the rows."
+  },
+  {
+    "objectID": "site/how_to/migrate_linelist.html#make-a-master-linelist",
+    "href": "site/how_to/migrate_linelist.html#make-a-master-linelist",
+    "title": "Migrate linelist data",
+    "section": "Make a master linelist",
+    "text": "Make a master linelist\nIt is possible to gather data from several linelists (with the same version of the dictionary). There are several use cases:\n\nseveral facilities enter data in their own linelist, and the epidemiologist or medCo would like to study the analyses at the region or mission level, pooling data from all sites. It is possible to make a temporary master linelist to do that.\nthe caseload is high and you would like two data encoders to work on the linelist. You can split the daily work between themselves: one completes existing rows, adding the outcome status for example (main file), while the other encodes new patients (new rows). Every night they import the new patients into the main file. The next morning, the person encoding “new patients” starts with a new empty file for new lines.\n\nSteps:\n\nExport the data from each facility linelist using the “Export data” button from the the OutbreakTools menu. Since you only want to pool patient data, there is no need to use the “Export for migration” button as you don’t care for metadata in this context: the anonymous export is enough.\nGet an empty linelist file. This will become your temporary master linelist.\nImport the all the exports into the master file one by one, using the “Import data” button from the OutbreakTools menu. When a warning pop up opens, tell it that you want to add the data at the bottom of the existing data.\nRefresh analyses (always!) before examining the analyses.\n\n\n\n\n\n\n\nWarning: do not modify data in this file\n\n\n\nThis master-linelist should not be used to enter more data/clean data, as these change will not be reflected on the site linelists. It should only be used for perusing the analyses at a higher scale.\nSimilarly, you should not send a pooled export for the dashboard, as the scripts are encoded to import the site one by one, keeping the site metadata."
+  },
+  {
+    "objectID": "site/how_to/migrate_linelist.html#footnotes",
+    "href": "site/how_to/migrate_linelist.html#footnotes",
+    "title": "Migrate linelist data",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nthe later often generating a couple of the former for a while↩︎"
+  },
+  {
+    "objectID": "site/how_to/import_geobase.html",
+    "href": "site/how_to/import_geobase.html",
+    "title": "Import a geobase in the linelist",
+    "section": "",
+    "text": "Import geobase\n\n\n\nIn you internet browser, go to the Geoapp.\nUse your account to connect. If you do not have one already, create one here first then connect to the Geoapp.\nSelect one or more countries from the dropdown menu in the top left of the screen. The Admin 1 regions of each country will be rendered on the map.\nClick on the regions you require geo data for. Selected regions turn red. If you want to select the whole country, click the “Select all regions” button under the country dropdown menu. Once one region has been selected, buttons to inspect and download the data will appear below the country dropdown menu.\n\n\n\n\nImport geobase\n\n\n\nClick on the “Download Geobase” button to download the data for the selected regions in an excel format that can be directly imported into an OutbreakTools Linelist.\n\n\n\n\n\n\n\nNote\n\n\n\nThe geospatial administrative boundary data used to build the geobase can also be downloaded in the format of your choice, compatible with GIS software (e.g. QGIS, ArcGIS) and the R statistical software by clicking on the “Download geo Data” button.\n\n\n\n\n\n\n\n\nTip\n\n\n\nYou can select one or more countries. And you can select one or more regions of these countries. This allow you to select (cross-border) zones of interest and lighter geobases."
+  },
+  {
+    "objectID": "site/how_to/import_geobase.html#sec-geobase-download",
+    "href": "site/how_to/import_geobase.html#sec-geobase-download",
+    "title": "Import a geobase in the linelist",
+    "section": "",
+    "text": "Import geobase\n\n\n\nIn you internet browser, go to the Geoapp.\nUse your account to connect. If you do not have one already, create one here first then connect to the Geoapp.\nSelect one or more countries from the dropdown menu in the top left of the screen. The Admin 1 regions of each country will be rendered on the map.\nClick on the regions you require geo data for. Selected regions turn red. If you want to select the whole country, click the “Select all regions” button under the country dropdown menu. Once one region has been selected, buttons to inspect and download the data will appear below the country dropdown menu.\n\n\n\n\nImport geobase\n\n\n\nClick on the “Download Geobase” button to download the data for the selected regions in an excel format that can be directly imported into an OutbreakTools Linelist.\n\n\n\n\n\n\n\nNote\n\n\n\nThe geospatial administrative boundary data used to build the geobase can also be downloaded in the format of your choice, compatible with GIS software (e.g. QGIS, ArcGIS) and the R statistical software by clicking on the “Download geo Data” button.\n\n\n\n\n\n\n\n\nTip\n\n\n\nYou can select one or more countries. And you can select one or more regions of these countries. This allow you to select (cross-border) zones of interest and lighter geobases."
+  },
+  {
+    "objectID": "site/how_to/import_geobase.html#sec-geobase-import",
+    "href": "site/how_to/import_geobase.html#sec-geobase-import",
+    "title": "Import a geobase in the linelist",
+    "section": "Import a geobase in a linelist",
+    "text": "Import a geobase in a linelist\nOnce you have downloaded a geobase from the Geoapp, you can import it in an OBT linelist.\n\nOpen the linelist\nGo to the OutbreakTools Menu\nClick on the “Import geobase” button"
+  },
+  {
+    "objectID": "site/how_to/send_data_to_dashboard.html",
+    "href": "site/how_to/send_data_to_dashboard.html",
+    "title": "Send data to the dashboard",
+    "section": "",
+    "text": "If you are using a linelist for which a dashboard was developed, you can send password-protected anonymous data to Epicentre. The scripts run automatically every hour, so you can choose the frequency at which you send the data depending on your needs1."
+  },
+  {
+    "objectID": "site/how_to/send_data_to_dashboard.html#steps",
+    "href": "site/how_to/send_data_to_dashboard.html#steps",
+    "title": "Send data to the dashboard",
+    "section": "Steps",
+    "text": "Steps\n\nPrepare data\n\nClean your data as much as you can. Pay special attention to dates (date format, date in the future, impossible dates…) and geographic data (see Note 1)\nMake sure that the general information metadata is properly filled (country, site name, section…) as this data is used in the dashboard.\nClear filters: you want to send the whole dataset, not only the current week. (see Important 1). If you know that automatic calculations get stuck sometimes, hit F9/“Recalculate now” Excel button to force formula updates.\n\n\n\nExport and send\n\nExport data using the “Export data” button of the OutbreakTools menu, and chose the “Anonymous export to MSF” option (or a similar name). You will be prompted for a place to save the genarated export.\nSend the data to epi-data [at] epicentre.msf.org without renaming the file.\nRince and repeat for all the linelists you have.\n\nThe file generated is a password protected excel file, whose password is provided at export. It has the Info sheet and patient data, as well as some automatically generated metadata (language, linelist version etc.).\nThe name of the export file is generated automatically based on the matadata you filled so make sure these data are filled correctly once and for all. Consequently, if their metadata are filled correctly, you can send several exports in the same mail (from different sites, or even different diseases), the scripts will parse the name to sort the files on our end\n\n\n\n\n\n\nImportant 1\n\n\n\nOnly the last occurrence of data you sent is loaded on the dashboard.\nConsequently, it is perfectly fine to clean and amend past data even if you sent it previously (past exports will be ignored).\nIf you need to archive older data to work on a smaller and lighter linelist, contact the EpiDS team to make the setup so that both new and archive data go to the dashboard.\n\n\n\n\n\n\n\n\nNote 1: Geodata matching\n\n\n\nThe dashboard displays a map, where you can visualise data at several administrative levels (1 to 4), but it depends on the resolution of the data you and other send). For patients to appear on the map at a given resolution level, their geolocations needs to match the geobase for this level because the geobase loaded with the linelist corresponds to shapes used to create maps.\nIf a place of origin cannot be matched for a given level (e.g. health area), the patient will not be included on the map at the “health area” level resolution If the above level (here the health zone) is matched, the patient will be accounted in the health zone resolution map.\nThe patient will be counted in other tables/graphs as long as the relevant information is filled, regardless of the geomatching."
+  },
+  {
+    "objectID": "site/how_to/send_data_to_dashboard.html#footnotes",
+    "href": "site/how_to/send_data_to_dashboard.html#footnotes",
+    "title": "Send data to the dashboard",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\ne.g. twice a day for a cholera outbreak at its peak, or once every week etc.↩︎"
+  },
+  {
+    "objectID": "site/how_to/export_subset_geo.html",
+    "href": "site/how_to/export_subset_geo.html",
+    "title": "Export a subset of geographic columns",
+    "section": "",
+    "text": "You need to create a MoH export with only the admin 3 and 4 columns. Or with admin 1 to 4, but in a different order form the linelist.\nBut in the setup file geographic columns are represented by one “geo” variable, which is translated in 4 columns in the generated linelist1. In the setup file, if you indicate that this “geo” variable should be exported for a given export, the linelist export will contain the four admin levels columns2."
+  },
+  {
+    "objectID": "site/how_to/export_subset_geo.html#problem",
+    "href": "site/how_to/export_subset_geo.html#problem",
+    "title": "Export a subset of geographic columns",
+    "section": "",
+    "text": "You need to create a MoH export with only the admin 3 and 4 columns. Or with admin 1 to 4, but in a different order form the linelist.\nBut in the setup file geographic columns are represented by one “geo” variable, which is translated in 4 columns in the generated linelist1. In the setup file, if you indicate that this “geo” variable should be exported for a given export, the linelist export will contain the four admin levels columns2."
+  },
+  {
+    "objectID": "site/how_to/export_subset_geo.html#solution",
+    "href": "site/how_to/export_subset_geo.html#solution",
+    "title": "Export a subset of geographic columns",
+    "section": "Solution",
+    "text": "Solution\nThe solution: derive calculated columns from the automatically created “geo” variables, and exports these individually to the MoH export, in the order of your choice.\nHow does it works? The “geo” variable name is used to automatically create the four columns in the linelist. For example, if the “geo” variable in the setup file is called “origin”, four columns will be created in the linelist: -\n\nadm1_origin,\nadm2_origin,\nadm3_origin,\nadm4_origin.\n\nEven though these columns do not appear in the setup file, they are created in the linelist! This means that you can reference them and use them in formulas in other parts of the Dictionary sheet, like you would do for any other variable defined in that sheet."
+  },
+  {
+    "objectID": "site/how_to/export_subset_geo.html#example",
+    "href": "site/how_to/export_subset_geo.html#example",
+    "title": "Export a subset of geographic columns",
+    "section": "Example",
+    "text": "Example\nYou specify a geo variable named “residence” in the setup file (in green below), which triggers the creation of four columns in the linelist.\nThe blue variables are calculated variables that refer to the geo columns that are automatically created. You can decide for each of these whether to export them or not in a given export.\n\n\n\n\n\n\n\n\n\n\n\nWarning\n\n\n\nBecause the “geo” variables 1 to 4 do not appear in the setup file, the checkRep check will raise a warning, saying that the formulas will fail (because it references a variable that seem not to exist). In this specific instance, it is wrong: the columns will be created, and the formula will thus work in the linelist."
+  },
+  {
+    "objectID": "site/how_to/export_subset_geo.html#footnotes",
+    "href": "site/how_to/export_subset_geo.html#footnotes",
+    "title": "Export a subset of geographic columns",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nAdmins levels 1, 2, 3 and 4, with cascading dropdown menus↩︎\n And more if you choose to export p-codes, see the “Exports” sheet options in the setup file↩︎"
+  },
+  {
+    "objectID": "site/index.html",
+    "href": "site/index.html",
+    "title": "OutbreakTools documentation",
+    "section": "",
+    "text": "Generate robust linelists from a dictionary without fancy VBA skills\nOutbreakTools is a set of solutions designed by Epicentre EpiDS team to quickly create linelists to collect field data during outbreaks. These linelists have a number of functionalities including descriptive analyses, buttons to migrate data to or from the linelist, or to import geographic data to better describe locations.\nDocumentation\nThis site contains documentation both on how to develop and modify an OBT linelist, and how to use it.\n\n\n\n\nI want to use a linelist Get started with any OutbreakTools linelist and the associated tools (GeoApp, dashboard)   Start\n\n\n\n\nI want to make a linelist Documentation for the setup file and designer that generate linelists.  Start\n\n\n\n\n\n\n Back to top"
+  },
+  {
+    "objectID": "site/tutorial.html",
+    "href": "site/tutorial.html",
+    "title": "Show case of outbreak-tools usage",
+    "section": "",
+    "text": "Authors: Anton Camacho, Yves Amevoin, Marine Durthaler"
+  },
+  {
+    "objectID": "site/tutorial.html#introduction",
+    "href": "site/tutorial.html#introduction",
+    "title": "Show case of outbreak-tools usage",
+    "section": "Introduction",
+    "text": "Introduction\nOutbreak-tools is a set of tools to facilitate the creation and maintainance of Excel linelists. In particular, you can easily:\n\ndefine different types of variables (dropdown lists, Excel formulas) their format and data validation rules\nprint a register book that perfectly match your linelist. Translate your linelist into several languages\nuse pre-defined geo databases for patient origin\n\ndisplay custom analyses (univariate, bivariate, temporal, spatial) as tables and graphs\n\nexport the entire data or selected variables/lines\nmigrate the data to an updated version of the linelist\n\nThe linelist is defined in a configuration file called setup. This setup file is then loaded into another file that designs the linelist (the designer). The designer creates the linelist, based on the configurations of the setup.\nThere are 3 steps to creating a linelist:\n\nOpen the setup file and define your needs. The configuration of the file is inspired from Kobo’s XLS forms. No in-depth knowledge of Excel is required. A setup file can be used to create linelists in several languages.\nDownload geographic data for the targeted area: there is a Geo-App available online to download the geobase for the region of interest (new users must register). The Geo-App is updated as new geographical information becomes available.\nOpen the designer, load the setup and geobase files, set the options (languages etc) and generate your linelist."
+  },
+  {
+    "objectID": "site/tutorial.html#use-case",
+    "href": "site/tutorial.html#use-case",
+    "title": "Show case of outbreak-tools usage",
+    "section": "Use-case",
+    "text": "Use-case\nIn this demo, you’ll familiarise yourself with the various features of the tool and simulate a scenario well known to epidemiologists in the field: upgrading a linelist that already contains data to a new version. This often happens when you want to collect new variables as the epidemic unfold and you need to answer new questions.\nThe folders contain all the materials needed to perform the exercises."
+  },
+  {
+    "objectID": "site/tutorial.html#prepare-the-materials",
+    "href": "site/tutorial.html#prepare-the-materials",
+    "title": "Show case of outbreak-tools usage",
+    "section": "Prepare the materials",
+    "text": "Prepare the materials\n\nDownload and unzip the materials\nYou can download the exercices bundled in azip file for offline use here.\n\n\nUnlock files if necessary\nSometimes Excel files with macro downloaded from the web are automatically “blocked” for security reasons. You can unblock the files with the following steps:\n\nRight click on the file\nSelect “Properties”\n\nCheck the Unblock box on the bottom right (if you don’t see such a button on the bottom right it means that the file is already unprotected - for this level of protections).\n\n\n\nActivate macros before exercises\nIf you’re going to run the designer to build a linelist, you’ll need to enable VBA macros in Excel, as well as access to the VBA object model:\n\nOpen Excel\nDisplay the Developer tab in Excel.\nIn the Developer tab, click on Macro security. Check the options as shown in the following image:"
+  },
+  {
+    "objectID": "site/tutorial.html#exercise-1-getting-started.",
+    "href": "site/tutorial.html#exercise-1-getting-started.",
+    "title": "Show case of outbreak-tools usage",
+    "section": "Exercise 1: Getting started.",
+    "text": "Exercise 1: Getting started.\n\nOpen the linelist linelist_measles_en_ex1.xlsb located in the linelist folder. The file password is 5678. It contains a mock measles dataset.\nTake a quick look at the different sheets to get an overview of the structure of the file.\nIn the Linelist patients sheet, add one or two patients manually. In particular, use the geo-Helper to enter the patients’ origin (see Data table section of the OutbreakTools ribbon).\nExplore univariate, bivariate, temporal and spatial analyses. Use button “Refresh analyses” in the OutbreakTools ribbon to update the analyses.\nIn the temporal analysis, change the start/end dates as well as the time unit of the analysis.\nIn the spatial analysis, change the administrative level and divide by the population size to get attack rates (note we don’t have population estimates below the health-zone level).\nGo back to the Linelist patients and use the filters to show only patients under 2 years of age. Then go back to the analyses sheets and recalculate (use button “Refresh analyses”).\nExport the filtered data using the anonymous export for MSF (see Export button in the OutbreakTools ribbon). Open and browse the exported file.\nFinally, print a register book for the Linelist patients (see the Register book section of the OutbreakTools ribbon)."
+  },
+  {
+    "objectID": "site/tutorial.html#exercise-2-adding-new-variables",
+    "href": "site/tutorial.html#exercise-2-adding-new-variables",
+    "title": "Show case of outbreak-tools usage",
+    "section": "Exercise 2: Adding new variables",
+    "text": "Exercise 2: Adding new variables\nOpen the setup file setup_measles_base_ex2.xlsb in the setup folder. This setup file corresponds to the linelist you have been working with. Take a look at the different sheets and see how they relate to the linelist.\nNow, we would like to add the following variables:\n\nIn the Admission section of Linelist patients sheet, just before the hospitalisation sub-section: a variable called muac (MUAC) that can take three values: “Green (125+mm)”, “Yellow (115-124mm)”, “Red (&lt; 115mm)”\nIn the Vaccination section of Linelist patients sheet, just after Vaccination against measles:\n\nA variable called vacci_measles_doses (Number of doses received) which is a numeric variable.\nCreate a data validation rule to ensure that this variable remains between 0 and 4.\n\nTranslate newly added labels into French (see the Setup Options ribbon and the Setup Translation sheet).\nCheck the setup for potential errors (see the Setup Options ribbon).\n\n\n\n\n\n\n\nNote\n\n\n\nYou should normally have a configuration file identical to setup_measles_exercise_two.xlsb in the setup folder. You can also start from this file if you like.\n\n\n\nRegenerate a new linelist named linelist_measles_en_ex2 using the designer located in the designer folder. Save the linelist in the demo folder, making sure you have selected English as the language. You will use the file geobase-cod-2023-03-13_20230612.xlsx in the geobase folder as your geobase.\n\n\n\n\n\n\n\nWarning for Mac users\n\n\n\nSometimes generating the linelist using a ribbon file can fail on Mac. In that case, it will default back to a linelist with buttons instead, but you should be able to pursue the exercices with this linelist. We are working to provide full support for Ribbon on Mac Os.\nYou might experience screen flickering during the linelist creation process.\n\n\n\nYou are now ready to migrate your data from the old to the new linelist. You need to proceed in 2 steps:\n\nFirst, go back to the linelist linelist_measles_en_ex1.xlsb and remove all filters (see the linelist options ribbon). Then, export the data (use the Export data button in the same ribbon) to a location of your choice. This migration file contains all your data.\nSecond, go back to the new linelist linelist_measles_en_ex2.xlsb and import the migration file (see the button “Import data” from the linelist options ribbon). Look at the importation report and browse the data in the new linelist."
+  },
+  {
+    "objectID": "site/tutorial.html#exercise-3-adding-new-analyses",
+    "href": "site/tutorial.html#exercise-3-adding-new-analyses",
+    "title": "Show case of outbreak-tools usage",
+    "section": "Exercise 3: Adding new analyses",
+    "text": "Exercise 3: Adding new analyses\nWe have decided to add some analyses on the type of discharge (variable outcome) to the linelist.\n\nOpen the setup file setup_measles_base_ex3.xlsb located in the setup folder.\nIn the Analyses sheet, section Univariate Analysis, add a univariate table showing the number of patients by type of discharge. Add percentages and a graph for this table.\nIn the Analyses sheet, section Time Series Analysis, add a temporal table showing the number of patient by type of discharge and notification date. Add percentages by row and add total.\nIn the Analyses sheet, section Labels for Time Series Graphs, add a graph title Deaths. In the section Graph on Time Series graph specifications, add the number of deaths per notification date, in bars.\nTranslate newly added labels into French (see Setup Options ribbon).\nCheck the setup for potential errors (see Setup Options ribbon).\n\n\n\n\n\n\n\nNote\n\n\n\nYou should get a configuration file identical to setup_measles_exercise_three.xlsb in the setup folder. You can also start from this file if you like.\n\n\n\nRegenerate a new linelist named linelist_measles_en_ex3 using the designer located in the designer folder. Save the linelist in the demo folder, making sure you have selected English as the language. You willl use the file geobase-cod-2023-03-13_20230612.xlsx in the geobase folder as your geobase.\nYou are now ready to migrate your data from the old to the new linelist. You need to proceed in 2 steps:\n\nFirst, go back to the linelist linelist_measles_en_ex1.xlsb and remove all filters. Then, export the data to a location of your choice. This migration file contains all your data.\nSecond, go back to the new linelist linelist_measles_en_ex3.xlsb and import the migration file. Look at the importation report and browse the data in the new linelist."
+  },
+  {
+    "objectID": "site/how_to/home_how_to.html",
+    "href": "site/how_to/home_how_to.html",
+    "title": "How to",
+    "section": "",
+    "text": "Export a subset of geographic columns\n\n\n\n\n\n\nLinelist\n\n\n\nCreata a MoH export with only some of the geo columns\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nImport a geobase in the linelist\n\n\n\n\n\n\nLinelist\n\n\n\nConnect to the GeoApp to download a geobase and import it in the linelist\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nMigrate linelist data\n\n\n\n\n\n\nLinelist\n\n\n\nMove data from one linelist file to another\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nSend data to the dashboard\n\n\n\n\n\n\nLinelist\n\n\n\nExport data and send it to Epicentre for compilation and visualisation on a dashboard\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nShow or hide variables\n\n\n\n\n\n\nLinelist\n\n\n\nUse the OBT ribbon to change the visibility status of columns\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAdd a new language\n\n\n\n\n\n\nSetup\n\n\n\nAdd a new language to a setup file\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCreate linelists with more than one entry sheets\n\n\n\n\n\n\nSetup\n\n\n\nDefine linelists with several tables which may nor may not be connected\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nMigrate setup data\n\n\n\n\n\n\nSetup\n\n\n\nMigrate the content of a setup file to a new setup file\n\n\n\n\n\n\n\n\n\nNo matching items\n\n Back to top"
+  },
+  {
+    "objectID": "site/how_to/add_language.html",
+    "href": "site/how_to/add_language.html",
+    "title": "Add a new language",
+    "section": "",
+    "text": "There are two levels of translation:\n\nthe language of the interface (buttons and fuctionalities): standardised for all linelists, since all linelists produced by OBT have the same set of buttons and functionalities\nthe language of linelist content (variable labels, categories…)\n\nThe linelist interface has built-in translations for: English, French, Arabic, Spanish and Portuguese. The translations are buil-in the designer file itself. If another language needs to be added to this list, you can contact Yves Amevoin or the EpiDS team to request it.\nThe content of the linelist depends on the setup, so each setup file must come with its own translations (if several languages needed).\nBoth levels of translation are selected during the compilation steps of a given linelist."
+  },
+  {
+    "objectID": "site/how_to/add_language.html#a-note-about-languages",
+    "href": "site/how_to/add_language.html#a-note-about-languages",
+    "title": "Add a new language",
+    "section": "",
+    "text": "There are two levels of translation:\n\nthe language of the interface (buttons and fuctionalities): standardised for all linelists, since all linelists produced by OBT have the same set of buttons and functionalities\nthe language of linelist content (variable labels, categories…)\n\nThe linelist interface has built-in translations for: English, French, Arabic, Spanish and Portuguese. The translations are buil-in the designer file itself. If another language needs to be added to this list, you can contact Yves Amevoin or the EpiDS team to request it.\nThe content of the linelist depends on the setup, so each setup file must come with its own translations (if several languages needed).\nBoth levels of translation are selected during the compilation steps of a given linelist."
+  },
+  {
+    "objectID": "site/how_to/add_language.html#add-a-new-language-to-a-setup",
+    "href": "site/how_to/add_language.html#add-a-new-language-to-a-setup",
+    "title": "Add a new language",
+    "section": "Add a new language to a setup",
+    "text": "Add a new language to a setup\nGo to the OutbreakTools tab of the setup top ribbon. One section contains buttons for translation:\n\n\n\nTranslation section in the OutbreakTools tab\n\n\nTo add a new linelist language:\n\nClick on the “Update translation table”, which is going to scrap all text bits from the setup and add them to the translation table (even if there is only one language in the sheet). This step can be done at a later stage, and each time you modify or add a label in the setup.\nFill the name of the language you want to add in the rectangular box\nClick on the “Add language” button: it will add a new empty column on the right of the column(s) already present in the Translation sheet, and open the\nProvide translation for each string of text.\n\n\n\n\n\n\n\nTip\n\n\n\nYou can use Deepl or Google translate on bits of the column to provide for first draft, and ask a collegue to review the translation afterwards.\n\n\nTo know more about translations, go to the Tranlation sheet."
+  },
+  {
+    "objectID": "site/how_to/migrate_setup.html",
+    "href": "site/how_to/migrate_setup.html",
+    "title": "Migrate setup data",
+    "section": "",
+    "text": "Get a new, empty setup file\nGo to the OutbreakTools menu of this setup file and click on the button “Import data from another setup”.\n\n\n\n\nImport section\n\n\nIt opens a popup windowto select the file to import data from.\n\n\n\n\n\n\nSelect what to import from the original by ticking the boxes. If you are doing a standard setup file upgrade, you should tick all the boxes to iport everything.\nDecide if you want to run a checkup of the setup file after import by ticking the box or not (you probably want to, but you can also do it at a later stage)\nClick on the “Import” button and wait.\n\n\n\n\n Back to top"
+  },
+  {
+    "objectID": "site/how_to/show_hide_variables.html",
+    "href": "site/how_to/show_hide_variables.html",
+    "title": "Show or hide variables",
+    "section": "",
+    "text": "In OutbreakTools, there are several visibility status, which can be modified using a button in the OutbreakTools Menu:\n\nmandatory: the columns cannot be hidden using the Show/Hide\nhiden: the columns are internal and cannot be shows using the Show/Hide\noptional: the linelist user can decide to show or hide the variable based on their needs.\n\nThese linelist status are derived from the setup file status property."
+  },
+  {
+    "objectID": "site/how_to/show_hide_variables.html#visibility-status",
+    "href": "site/how_to/show_hide_variables.html#visibility-status",
+    "title": "Show or hide variables",
+    "section": "",
+    "text": "In OutbreakTools, there are several visibility status, which can be modified using a button in the OutbreakTools Menu:\n\nmandatory: the columns cannot be hidden using the Show/Hide\nhiden: the columns are internal and cannot be shows using the Show/Hide\noptional: the linelist user can decide to show or hide the variable based on their needs.\n\nThese linelist status are derived from the setup file status property."
+  },
+  {
+    "objectID": "site/how_to/show_hide_variables.html#show-and-hide-variables",
+    "href": "site/how_to/show_hide_variables.html#show-and-hide-variables",
+    "title": "Show or hide variables",
+    "section": "Show and hide variables",
+    "text": "Show and hide variables\nClicking on the “Show/hide variables” button opens a window listing all the variables in the current sheet.\n\n\n\nOutbreakTools tab in the created linelist\n\n\nThe optional, hidden variables in the setup file appear as Hidden by default. However, the user can change the status by choosing Show, in which case the column will become visible.\n\n\nThe “Notification year” variable does not appear in the list of variables because it is in “hidden” status in the setup file.\nThe optional, visible variables in the setup file appear as Shown by default. However, you can change the status by choosing Hide, in which case the column will no longer be visible.\n\nMandatory variables in the setup file appear as *Mandatory in the “Show/Hide” pop up, and cannot be hidden.\n\n\n\n\n\n\nNote\n\n\n\nColumns that were defined as hidden in the setup file will not appear in the Show/Hide. They were deemed unlikely top be of interest to the linelist user (calculated columns used to apply formatting for example).\n\n\n\n\n\n\n\n\nNote on showing and hiding columns manually\n\n\n\n\n\nTechnically, the linelist user can forcefully hide/un-hide columns.\nUn-hiding hidden (usually calculated) columns is usually desirable during linelist debug or to go check data that may interest you (e.g. a hidden calculated epiweek of exit). You can hide them after consultation without consequences on the rest of the linelist.\nIt is however more dangerous to forcefully hide “mandatory” columns. These columns are often fundamental variables in the linelist, that are needed for data understanding and analyses (e.g. date of admission, age or sex). If you choose to hide one of these columns, know that some analyses might not function as expected, or not at all because they rely on the hidden columns.\nFinally, any change of column visibility that is not made via the “Hide/show variable” button of the linelist will not be recorded and migrated to a new linelist."
+  },
+  {
+    "objectID": "site/how_to/link_tables.html",
+    "href": "site/how_to/link_tables.html",
+    "title": "Create linelists with more than one entry sheets",
+    "section": "",
+    "text": "You want the linelist to contain several data entry sheets. The important thing to think about is how the tables should be linked, if at all."
+  },
+  {
+    "objectID": "site/how_to/link_tables.html#independent-data-tables",
+    "href": "site/how_to/link_tables.html#independent-data-tables",
+    "title": "Create linelists with more than one entry sheets",
+    "section": "Independent data tables",
+    "text": "Independent data tables\nIf you need to create two independent data tables1, just use different sheet names in the Dictionary sheet.\n\n\n\n\n\n\nNote\n\n\n\nTechnically, a linelist with an “Info” and a “Patient linelist” sheet already has two entry sheets, one with a 1-dimension table and one with a 2-dimensions table.\nSince the two tables are created independently, you could have two sheets with 2-dimensions table."
+  },
+  {
+    "objectID": "site/how_to/link_tables.html#non-independent-tables",
+    "href": "site/how_to/link_tables.html#non-independent-tables",
+    "title": "Create linelists with more than one entry sheets",
+    "section": "Non independent tables",
+    "text": "Non independent tables\nSometimes you need to refer to data from another table, whether it is to use in a formula, to copy data or to populate a dropdown menu.\n\nRefer to a single value in a formula\nIt is straightforward to use the values of vlist1D variable in a formula: just use the name of the variable in the formula2.\nExample: the linelist user wants a variable with the name of the health structure in the data but in your setup, one site fills one excel file. In this case, you can create a calculated column that gets the name of the facility from a metadata sheet so that data encoders do not have to fill the name of the health structure again and again and again:\n\nIF(ISBLANK(case_id), ““, info_facility_name)\n\nSee the page on formulas and formulas controls\n\n\nLink two tables\nA more complex situation is when you have two 2-dimensions tables that are not independent. In this case, the tables should at minima be linked by a key.\nExample of a user case:\n\na main data entry sheet with general patient data (e.g. a Patient linelist sheet)\na secondary entry sheet with additional variables for a subset of patients (e.g. readmission variables or extensive lab testing).\n\nIn this case, the natural way to link the tables is to have the ID of the patient in both tables.\n\nConstrain possibles values for patient IDs in the secondary table with list_auto\nIn the user case above, the patients from the Readmission sheet are a subset from the Patient linelist sheet so we expect the IDs from Readmission to match the ones from Patient linelist.\nThe minimal (unsafe) option is to have two free text patient ID columns, one in each table, where data encoders enter IDs manually. This process however increases the risk of typing error and thus of merging nightmare.\nA safer way is to create a categorical variable in the Readmission sheet whose dropdown menu is populated by values present in the case_id column of the Patient linelist sheet. As the data encoder can only choose from existing patients from the Patient linelist sheet, the opportunity for encoding error and thus unmatched patients is greatly reduced.3\n\n\n\nUse of list_auto to link two columns\n\n\nSeethe section on list_auto and its control for a description on how to use the list_auto control.\n\n\nImport values from the other table with VALUE_OF\nIn addition to key columns to be able to join the tables, it might be desirable to bring some of the patient data in the secondary table, to calculate new variables, or just to facilitate reading and understanding without having fill the value on each line.\nFor example, we might want to bring in the name and surname of the patient, without entering it again, or the date of exit, to be able to calculate the number of days between the exit of the first admission and the date of readmission.\nThe custom function VALUE_OF can do that. It works sort of like a LOOKUP function, except we provide variable names, and it matches the value you need.\nIt takes three arguments, all variable names:\n\nVALUE_OF(key_variable1, key_variable2, variable_values)\n\n\nkey_variable1: the list_auto in the current sheet (the key column that contains IDs, e.g. readmission_id)\n\n\nkey_variable2: the source of the list_auto in the other sheet (the IDs from the main sheet, e.g. case_id)\n\n\nvariable_values: the variable which values we want to import.\n\n\n\n\nIllustration of the use of VALLUE_OF\n\n\n\n\n\n\n\n\nWarning\n\n\n\nkey_variable2 and variable_values must be on the same sheet or the function will return nothing.\n\n\nThe function matches the values from columns key_variable1 and key_variable2, and returns values from variable_values column at the corresponding row.\n\n\n\n\n\n\nNote\n\n\n\nIf the function finds more than two matches, it will return the values from the first match (the first line found)."
+  },
+  {
+    "objectID": "site/how_to/link_tables.html#footnotes",
+    "href": "site/how_to/link_tables.html#footnotes",
+    "title": "Create linelists with more than one entry sheets",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nExample: a sheet containing patient data and a sheet containing bed occupancy data↩︎\nThese variables can take only one value, see the different sorts of tables for more information.↩︎\nIf data are exported in R or Stata, you will be able to merge/join them extremely easily with the two IDs variables.↩︎"
+  },
+  {
+    "objectID": "site/cheatsheets/analyses.html#univariate-analyses",
+    "href": "site/cheatsheets/analyses.html#univariate-analyses",
+    "title": "Cheatsheet analyses",
+    "section": "Univariate analyses",
+    "text": "Univariate analyses\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nSection\nFree text\nYes\nGroup tables by section\n\n\nTable title\nFree text\nYes\nShort title\n\n\nGroup by variable (row)\nDropdown\nYes\nOne categorical variable to summarise\n\n\nAdd missing data\nDropdown (yes/no)\n\nAdd rows with missing values counts?\n\n\nSummary function\nFree text\nYes\nN to count rows, other formulas accepted\n\n\nSummary label\nFree text\n\nName of the summary\n\n\nFormat\nDropdown\n\nFormat of the summary\n\n\nAdd percentage\nDropdown (yes/no)\n\n\n\n\nAdd graph\nDropdown (yes/no)\n\n\n\n\nFlip coordinates\nDropdown (yes/no)\n\nInverse x and y axis of the graph"
+  },
+  {
+    "objectID": "site/cheatsheets/analyses.html#bivariate-analyses",
+    "href": "site/cheatsheets/analyses.html#bivariate-analyses",
+    "title": "Cheatsheet analyses",
+    "section": "Bivariate analyses",
+    "text": "Bivariate analyses\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nSection\nFree text\nYes\nGroup tables by section\n\n\nTable title\nFree text\nYes\nShort title\n\n\nGroup by variable (row)\nDropdown\nYes\nOne categorical variable to summarise\n\n\nGroup by variable (column)\n\nYes\n\n\n\nAdd missing data\nDropdown (no/row/column/all)\n\nAdd missing values counts?\n\n\nSummary function\nFree text\nYes\nN to count rows, but formulas accepted\n\n\nSummary label\nFree text\n\nName of the summary\n\n\nFormat\nDropdown\n\nFormat of the summary\n\n\nAdd percentage\nDropdown (yes/no)\n\n\n\n\nAdd graph\nDropdown (values/percentage)\n\n\n\n\nFlip coordinates\nDropdown (yes/no)\n\nInverse x and y axis of the graph"
+  },
+  {
+    "objectID": "site/cheatsheets/analyses.html#time-series",
+    "href": "site/cheatsheets/analyses.html#time-series",
+    "title": "Cheatsheet analyses",
+    "section": "Time series",
+    "text": "Time series\n\nTable 1\nDefines the tables (organise them in sections, which temporal variable, which grouping variable if any, title, summarising formula etc. )\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nSeries ID\n-\nAutomatic\n\n\n\nSection\nFree text\nYes\nGroup columns by section\n\n\nTitle\n-\nAutomatic\n\n\n\nAdd missing data\nDropdown (yes/no)\n\nAdd missing values counts?\n\n\nSummary function\nFree text\nYes\nN to count rows, but formula accepted\n\n\nSummary label\nFree text\n\nName of the summary\n\n\nFormat\nDropdown\n\nFormat of the summary\n\n\nAdd percentage\nDropdown (column/row/no)\n\n\n\n\nAdd total\nDropdown (yes/no)\n\n\n\n\nTable order\nFree text\n\n\n\n\n\n\n\nTable 2: graph metadata\nThis table table is used to define the title and order of the graphs associated with the time series.\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nGraph title\nFree text\nYes\nShort title\n\n\nGraph order\nFree text\nYes\n\n\n\nGraph ID\nAutomatic\nYes\n\n\n\n\n\n\nTable 3: define the graph\nThis table defines the graphs. It imports a lot of information from the two other tables. One graph can plot several series. A series is a column in a time series table.\nExample: a graph plotting the number of “Cured” and “Dead” across time is plotting two series, the number of cured and the number of dead, which were obtained from one table where the exit_status was used as grouping variable.\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nGraph title\nDropdown\nYes\nDefined in the previous table\n\n\nSeries title\nDropdown\nYes\nChoose which variable summary to plot (ex: counts for outcomes)\n\n\nGraph ID\n-\nAutomatic\n\n\n\nSeries ID\n-\nAutomatic\n\n\n\nGraph order\n-\nAutomatic\n\n\n\nTime variable (row)\n-\nAutomatic\n\n\n\nGroup by variable (column\n-\nAutomatic\n\n\n\nChoices\nDropdown (variable modality)\nYes\nChoose modality to plot (ex: deads)\n\n\nLabel\nFree text\n\nLabel of the modality\n\n\nPlot values or percentages\nDropdown (values/percentage)\nYes\n\n\n\nChart type\nDropdown (bar/line/point)\n\n\n\n\nY-axis\nDropdown (left/right)\n\n\n\n\n\n\n\nSummary"
+  },
+  {
+    "objectID": "site/cheatsheets/analyses.html#some-functionsexamples",
+    "href": "site/cheatsheets/analyses.html#some-functionsexamples",
+    "title": "Cheatsheet analyses",
+    "section": "Some functions/examples",
+    "text": "Some functions/examples\n\nIn the global summary\nDATE_RANGE is a custom funtion to display the min and max of a date variable. Example: DATE_RANGE(visit_date).\nCOUNTA(case_id): counts the number of non empty case_id.\nCOUNTIF(hospit_yn, \"Yes\") counts the number of Yes in the hospit_yn variable\n\n\nCount rows\nN: count the number of rows for each modality of a variable. The setup user defines for each analysis whether the empty cells should be added in the table (as their own categories).\n\n\nCalculate a CFR\nSUM(cfr_numerator) / SUM(cfr_denominator) to calculate a Case Fatality Rate. - The cfr_numerator is a calculated variable based on the outcome column; it takes 1 for deceased patient and zero for others. - The cfr_denominator is also a calculated column, which takes 1 for discharged patients and 0 for other patients.\nDon’t forget to pick a percent format with appropriate rounding level.\n\n\nSpatial analyses or spatio-temporal analyses\nFor the top ten (or whichever value you chose) areas with the most cases, use N as the function summary. For the top ten areas for the number of deaths, use SUM(is_dead_01) where is_dead_01 here is a calculated variable that takes 1 if the patient is dead and 0 otherwhise."
+  },
+  {
+    "objectID": "site/Options.html",
+    "href": "site/Options.html",
+    "title": "OutbreakTools documentation",
+    "section": "",
+    "text": "A ‘Setup Options’ menu has been specially created in the top ribbon, bringing together all the functions specific to the setup file:"
+  },
+  {
+    "objectID": "site/Options.html#tables-management",
+    "href": "site/Options.html#tables-management",
+    "title": "OutbreakTools documentation",
+    "section": "Tables Management",
+    "text": "Tables Management\n\nAdd rows to tables in current sheet\n\n\n\n\n\nIf you need more rows to define the linelist, choices or analyses, use the “Add rows to tables in current sheet” button.\nWhen this functionality is used in the analysis definition page, you can use the drop-down menu in cell A1 to choose whether you want to apply the functionality to all tables or just one in particular.\n\n\n\n\n\n\n\nResize tables in current sheet\n\n\n\n\n\nTo ensure that there are no empty rows in a table, click on the “Resize tables in current sheet” button.\nWhen this functionality is used in the analysis definition page, you can use the drop-down menu in cell A1 to choose whether you want to apply the functionality to all tables or just one in particular.\n\n\n\n\n\n\n\nRemove all filters\n\n\n\n\n\nIf you have used filters and want to display everything again, you can use the “Remove all filters” button. This will return the table to its initial state."
+  },
+  {
+    "objectID": "site/Options.html#translations",
+    "href": "site/Options.html#translations",
+    "title": "OutbreakTools documentation",
+    "section": "Translations",
+    "text": "Translations\nSee the Translations section above."
+  },
+  {
+    "objectID": "site/Options.html#import",
+    "href": "site/Options.html#import",
+    "title": "OutbreakTools documentation",
+    "section": "Import",
+    "text": "Import\n\n\n\n\n\n\nImport data from another setup\nYou can import data from an older setup file into a new blank file. This can be useful if a file is broken or corrupted, or if the setup template has been upgraded (new column, new function, debugged, etc).\n\n\nImport data from disease\nThis button is used to import a disease from a disease Master file. This file is being piloted for Epinetwork discussions."
+  },
+  {
+    "objectID": "site/Options.html#advanced",
+    "href": "site/Options.html#advanced",
+    "title": "OutbreakTools documentation",
+    "section": "Advanced",
+    "text": "Advanced\n\n\n\n\n\n\nCheck current setup for errors\nThe setup file comes with a series of checks on its content to help you debug your dictionary. After adding major components to your setup file, or before compiling a linelist with the designer, you can (should) click on the button “Check current setup for errors” to see any errors in the “__checkRep” sheet.\nThere is a table for each sheet or section (in the case of analyses), with the following three columns:\n\n“Incoherences Type” preceded by the name of the sheet,\n“Where?”, which shows the name of the sheet or section and the line where the incoherence is located,\n“Details”, which gives details of the incoherence.\n\nThere are several types information that could appear in the Incoherence column:\n\nInfo (in grey): this is not strictly speaking an inconsistency, but simply a piece of information about something that will not block the compilation of the linelist.\nWarning (in yellow): these are problems that need to be fixed because there is a real inconsistency. It could be an error in a formula, for example.1\nNote (in blue): this is something that has been defined in the setup, but will not be applied, and is therefore not blocking. For example, in the analyses, certain choices are contradictory by design, such as the display of percentages, which is not authorised when you choose to invert the display of the table (horizontal display instead of vertical).\n\n\n\n\n\n\n\n\nClear data in current setup\nThis feature allows you to delete all the data entered in the setup file."
+  },
+  {
+    "objectID": "site/Options.html#dev",
+    "href": "site/Options.html#dev",
+    "title": "OutbreakTools documentation",
+    "section": "Dev",
+    "text": "Dev\n\n\n\n\n\nThese functions are for the use of developers only, you can ignore them."
+  },
+  {
+    "objectID": "site/Options.html#footnotes",
+    "href": "site/Options.html#footnotes",
+    "title": "OutbreakTools documentation",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nNote that the checkup does its best, but some formula errors can be missed and create problems in your formulas. Always test the calculated colums after compilation!↩︎"
+  },
+  {
+    "objectID": "site/reference/ribbons_designer.html",
+    "href": "site/reference/ribbons_designer.html",
+    "title": "Designer ribbon",
+    "section": "",
+    "text": "Recent version of Excel have a top ribbon/menu that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities."
+  },
+  {
+    "objectID": "site/reference/ribbons_designer.html#manage-the-designer",
+    "href": "site/reference/ribbons_designer.html#manage-the-designer",
+    "title": "Designer ribbon",
+    "section": "Manage the designer",
+    "text": "Manage the designer\n\nClear the geobase\nRemove any geobase that was loaded in the designer.\n\n\nClear entries\nRemove all user entered data from fields.\n\n\nLanguage of the designer\nUse the dropdown menu to change the language of the designer interface. Available languages: English, French, Arabic, Spanish and Portuguese."
+  },
+  {
+    "objectID": "site/reference/ribbons_designer.html#imports",
+    "href": "site/reference/ribbons_designer.html#imports",
+    "title": "Designer ribbon",
+    "section": "Imports",
+    "text": "Imports\n\nImport translations\nIf the user wishes to modify the linelist interface translations, it is possible to ask for the config file to EpiDS/Yves Amevoin, tweak it and import it with this button.\n\n\nImport passwords\nThe designer is loaded with a pasword table, with private and public keys to protect export if the user want a password-protected export. However, the designer is on Github, in a public repo, so if you compile a linelist that needs a password protection, it is best to ask for the config file to EpiDS/Yves Amevoin and import it using the “Import button”.\n\n\nImport styles\nThe designer comes with two default styles for linelist themes. It is possible to personalise it. To do that, ask for the config file to EpiDS/Yves Amevoin, tweak it and import it with this button."
+  },
+  {
+    "objectID": "site/reference/ribbons_setup.html",
+    "href": "site/reference/ribbons_setup.html",
+    "title": "Setup ribbon",
+    "section": "",
+    "text": "Recent version of Excel have a top ribbon/menu that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities."
+  },
+  {
+    "objectID": "site/reference/ribbons_setup.html#table-management",
+    "href": "site/reference/ribbons_setup.html#table-management",
+    "title": "Setup ribbon",
+    "section": "Table management",
+    "text": "Table management\nThe buttons of this section provide action on tables within the setup: main table on the Dictionary sheet, table for choices, table for exports, tables for analyses etc.\n\n\n\nTable management section\n\n\n\nAdd rows\nThis button insert rows at the bottom of the table in the current sheet.\nWhen this functionality is used in the Analyses sheet, you can use the drop-down menu in cell A1 to choose whether you want to add rows to all tables or just one in particular.\n\n\n\nButton to add or remove rows of diffeent analyses tables\n\n\n\n\nResize table in the current sheet\nThis button remove empty rows (whether at the end or in the middle).\nWhen this functionality is used in the Analyses sheet, you can use the drop-down menu in cell A1 to choose whether you want to remove empty rows to all tables or just one in particular.\n\n\n\nButton to add or remove rows of diffeent analyses tables\n\n\n\n\nRemove filters\nThis button clears filters. It is usefull if you have applied Excel filters in several columns, no need to track them all one by one, just clear them in one go."
+  },
+  {
+    "objectID": "site/reference/ribbons_setup.html#translation",
+    "href": "site/reference/ribbons_setup.html#translation",
+    "title": "Setup ribbon",
+    "section": "Translation",
+    "text": "Translation\nThis section provides functionalities for the Translation sheet.\n\n\n\nTranslation section\n\n\n\nAdd language\nThis button adds a new column to translations sheet, to add a new linelist language.\n\nFill the name of the language in the box\nClick on the button: it will add a new empty column on the right of the columns already present.\n\nMore information to add a language\n\n\nUpdate translation table\nClick on this button to update the whole translation table. You can use it whether there is only one language or more.\nThe script will scrap the setup and import all the fields to be translated into the table, listed in alphabetical order.\nAt the end, it will open a popup window with information on the update of the translation table.\n\n\n\nMessage of end of translation update\n\n\nGo to the Translation sheet for more information on translations."
+  },
+  {
+    "objectID": "site/reference/ribbons_setup.html#import",
+    "href": "site/reference/ribbons_setup.html#import",
+    "title": "Setup ribbon",
+    "section": "Import",
+    "text": "Import\nThese buttons allow to import data into an empty setup.\n\n\n\nImport section\n\n\n\nImport data from another setup\nUse this button to migrate data from one setup file to another empty setup file1.\n\nClick on the button; it opens a popup window\nClick on the “Load another setup file” button. It will open a window to select the file to import data from.\nSelect what to import from the original by ticking the boxes.\nDecide if you want to run a checkup of the setup file after import by ticking the box or not\nClick on the “Import” button and wait.\n\n\n\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nIf you are migrating a setup to a new setup file, you should check all boxes to import everything.\nYou can run the coherence checks now, or do it at a later stage with the Check setup button\n\n\n\n\nImport from disease (in developpment)\nThis button is used to import a “disease setup” from a disease Master file. This file is being piloted for Epinetwork discussions."
+  },
+  {
+    "objectID": "site/reference/ribbons_setup.html#sec-advanced",
+    "href": "site/reference/ribbons_setup.html#sec-advanced",
+    "title": "Setup ribbon",
+    "section": "Advanced",
+    "text": "Advanced\n\n\n\nAdvanced section\n\n\n\nCheck current setup for errors\nThe setup file comes with a series of checks on its content to help you debug your dictionary. After adding major components to your setup file, or before compiling a linelist with the designer, you can should click on the button “Check current setup for errors” to see any errors in the “__checkRep” sheet.\nThere is a table for each sheet or section (in the case of analyses), with the following three columns:\n\nIncoherences Type preceded by the name of the sheet,\nWhere?, which shows the name of the sheet or section and the line where the incoherence is located,\nDetails, which gives details of the incoherence.\n\nThere are several types information that could appear in the Incoherence column:\n\nInfo (in grey): this is not an inconsistency, but simply a piece of information about something that will not block the compilation of the linelist.\nWarning (in yellow): these are problems that need to be fixed because there is a real inconsistency or problem. It could be an error in a formula, for example.2\nNote (in blue): this is something that has been defined in the setup, but will not be applied, and is therefore not blocking. For example, in the analyses, certain choices are contradictory by design, such as the display of percentages, which is not authorised when you choose to invert the display of the table (horizontal display instead of vertical).\n\n\n\n\n\n\n\n\nClear data in current setup\nThis feature allows you to delete all the data entered in the setup file.\n\nClick on the button; it opens a popup window to decide which part of the setup you want to clear\nTick boxes to select sheets to clean\nClick on the “Clear” button. It will open a window to ask you if you are very sure."
+  },
+  {
+    "objectID": "site/reference/ribbons_setup.html#dev",
+    "href": "site/reference/ribbons_setup.html#dev",
+    "title": "Setup ribbon",
+    "section": "Dev",
+    "text": "Dev\nThe dev tab is for the OBT developer and you can ignore it."
+  },
+  {
+    "objectID": "site/reference/ribbons_setup.html#footnotes",
+    "href": "site/reference/ribbons_setup.html#footnotes",
+    "title": "Setup ribbon",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nAn upgraded version, or an empty file fo the same version in case the original file got corrupted.↩︎\nNote that the checkup does its best, but some formula errors can be missed and create problems in your formulas. Always test the calculated columns after compilation!↩︎"
+  },
+  {
+    "objectID": "site/reference/ribbons_linelist.html",
+    "href": "site/reference/ribbons_linelist.html",
+    "title": "Linelist ribbon",
+    "section": "",
+    "text": "Recent version of Excel have a top ribbon/menu that display most buttons and functionalities in several tabs. Outbreaktools files (setup, designer and linelists) each have an extra tab in this menu containing OutbreakTools functionalities."
+  },
+  {
+    "objectID": "site/reference/ribbons_linelist.html#sec-data-table",
+    "href": "site/reference/ribbons_linelist.html#sec-data-table",
+    "title": "Linelist ribbon",
+    "section": "Data table",
+    "text": "Data table\n\n\n\nButtons acting on data entry tables\n\n\n\nShow / Hide variables\nClicking on the “Show/hide variables” button opens a window listing all the variables in this linelist sheet.\n\n\n\nShow hide button and pop-up window\n\n\nVariable can have three visibility status:\n\nMandatory: variables cannot be hidden with the Show/Hide\nShown: variables are currently visible but can be hidden by ticking “Hide” on the right\nHide: variables are currently hidden but can be made visible by ticking “Show” on the right\n\n\n\n\n\n\n\nTip\n\n\n\nYou can hide all optional variables in one go by clicking on the “Hide all optional variables” button.1\nThe button will change to “Show all optional variables”, to allow the reverse action.\n\n\n\n\nAdd rows\nBy default, the linelist has 200 empty lines. But you can add more when these are filled. Click on the “Add Rows” button to add 200 new empty rows.\n\n\nResize table\nYou can resize the table to remove empty rows at the bottom of the table on the linelist sheet. Click on the “Resize table” button to remove any empty row.\n\n\nClear all filters\nTo remove all the filters at once, click on the “Clear all filters” button. This is useful if you applied filters to several columns scattered left and right of the table and want to reverse to the full view without missing a sneaky filter somewhere.\n\n\nSort the variable\nIf you need to visualize your data by sorting on specific variables (date of notification for example), you need to use the sorting function. Place the cursor in a cell of the column you want to sort (from line 9) and click on the button.\nThe first time you click, you have a message to confirm the action, once you click yes, you cannot undo it. The first time it sorts by ascending order, if you click again, it will sort by descending order.\n\n\nWeek start\nChose the day that starts the week in your country using the “Week start” button. The selected value will be applied to the whole linelist (calculated epiweeks, as well as in the analyses).\nWhen you click on the button, a pop up window appears, where you can select the day of the week. Then close the window.\n\n\nAutofit columns\nUse this button to improve column width so that the columns take less space. The fit takes into account the label, the length of categories of the variable (if any) and the name of the variable (hidden).\n\n\n\n\n\n\nTip\n\n\n\nYou can manually modify the width of columns in the linelist table to adjust to content the way you would do in any Excel file.\n\n\n\n\nGeoHelper\nThe GeoHelper is a popup window that helps you entering geographic data such as the origin of the patient or the name of the facility (if the “hf” control was used for the variable). It is mostly used to enter data on the patient data sheet, but it is also useful on the Spatio-Temporal analysis sheet.\nTo use it, place your cursor in a “geo” or “hf” column (you can recognise them thanks to the orange headers), in the admin 1 level. Click on the “GeoHelper” button, or hit the shortcut Ctrl + Shift + G. It opens a window, with several tabs, depending on whether you are in a “geo” (described by four visible columns) or in “hf” (described by one visible column).\nIf you are in a “geo” section, you will have three tabs that you can use to select administrative levels.\n\nCascade: select the admin levels with cascading menus, by selecting one admin level after the other, starting from the highest one.\nSearch: search by typing the name (needs at least 3 letters)\nHistory: quickly find a previous entry entered through the GeoHelper (does not work for data entered using the regular cascading dropdowns).\n\nOnce the location has been found, select it and click on “OK”."
+  },
+  {
+    "objectID": "site/reference/ribbons_linelist.html#refresh-analyses",
+    "href": "site/reference/ribbons_linelist.html#refresh-analyses",
+    "title": "Linelist ribbon",
+    "section": "Refresh analyses",
+    "text": "Refresh analyses\n\n\n\nRefresh analyses button\n\n\nHit the “Refresh analyses” button to update analyses on all analyses sheets in one go. You should use it whenever you entered new data or when you applied filters to existing data and want to see the analyses on this subset of data.2"
+  },
+  {
+    "objectID": "site/reference/ribbons_linelist.html#sec-import-data",
+    "href": "site/reference/ribbons_linelist.html#sec-import-data",
+    "title": "Linelist ribbon",
+    "section": "Imports",
+    "text": "Imports\n\n\n\nImports section\n\n\n\nImport data\nThe « Import Data » button allows you to import data in the linelist. This data must be in a special format typically produced by exporting data from another OutbreakTools linelist for the same disease.\nFirst a window opens to select the file to import. Select it and click on “OK”. At the end, a message will inform you of the success and provide a little import report is you wish so. Inspect it to see if there are any unexpected discrepancies (loosing variables should always be investigated!).\n\n\n\n\n\n\nImportant\n\n\n\nThe same button is used whether the data is partial (generated by the regular export button, anonymised or not, with metadata or not), or extensive (generated through the “Export for migration” button, from the Advanced section of the ribbon).\n\n\nIf there is already data in the file, a message will inform you of that fact and ask you what you wish to do. It is possible to append the new data at the bottom of the already present data. This is a handy way to create temporary master linelists, or to gather data entered by two data-encoders.\n\n\n\n\n\n\nWarning\n\n\n\nMake sure the data is not overlapping before importing, as the import will just paste the data at the bottom of the existing data, and you would end up with duplicates to clean.\n\n\n\n\nImport geobase\n“Import geobase” allows you to import a geobase in the linelist. If the current linelist had already a geobase, it will be replaced.\n\n\n\n\n\n\nWarning\n\n\n\nThe import of the geobase does not affect the data already entered in the linelist, it only fills the modalities offered by dropdown menus. If data is already present in the linelist and the new geobase has different levels, you need to correct them yourselves.\n\n\nGo here to learn how to download a geobase."
+  },
+  {
+    "objectID": "site/reference/ribbons_linelist.html#sec-export-data",
+    "href": "site/reference/ribbons_linelist.html#sec-export-data",
+    "title": "Linelist ribbon",
+    "section": "Exports",
+    "text": "Exports\nThe regular exports buttons are available in the “Export section” of the ribbon, and the “Export for migration” is available in the Advanced section of the ribbon.\n\n\n\nExports section\n\n\n\nExport data\nOutbreakTools linelists have the feature to export data in a separated excel file, to share with partners or perform more advance analyses. The characteristics of the exports (which variables, anonymisation or not, password protected or not etc.) are pre-defined in the setup file that is used to generate the linelist.\nWhile Epicentre linelists should have at minima be an “Anonymous export for MSF” button, the other available exports differ between linelists created.\nTo export data, click on the “Export Data” button, which opens a popup window, with several options. At the top, you will see buttons for different exports. After clicking on the desired export, a window pops-up for saving the export. If “Export Filtered Data” is selected, a confirmation message will pop-up first to ask you whether this is what you really want.\nOnce the folder has been selected and after clicking “OK”, a new window opens to confirm the export and, if the export is protected, provide the associated password.\n\n\n\n\n\n\nTip\n\n\n\nIf you forgot the password, click on the “Export Button” again, and then click on the “Show actual private key” to display the password again.\n\n\nClick on the button “Generate new password” to change the password used by default.\n\n\nExport analyses\nYou can export all the tables from the analysis sheets in one document by using the “Export the analysis sheets” button and selecting the directory where you want to save them.\n\n\n\n\n\n\nWarning\n\n\n\nIf the analysis are made on filtered data, the tables will be exported as such."
+  },
+  {
+    "objectID": "site/reference/ribbons_linelist.html#register-and-case-report-form",
+    "href": "site/reference/ribbons_linelist.html#register-and-case-report-form",
+    "title": "Linelist ribbon",
+    "section": "Register and Case report form",
+    "text": "Register and Case report form\nYou can print a register directly based on the linelist.\n\n\n\nRegister and case report form section\n\n\nThe features from this category only work if you are on a data entry sheet, otherwise you get an error message.\nClick on “Show register”; it opens a new sheet that contains all the variables from the linelist. On this sheet, you can use the Data Table features can be used just as in the original linelist sheet:\n\n“Add rows” and “Resize table” work exactly the same (except that it adds 10 rows at once)\n“Show/Hide variables” works the same but looks a bit different. Instead of “Show” you can select “print” and the orientation of the header. You can also import the parametrisation of hidden/shown columns from the regular linelist table, or change column width.\n\nYou can rotate all the labels at once by clicking the “Rotate headers” button. You can define the heigh of the row by clicking directly on “Row height”, a pop-up opens where you can define the heigh.\nAll labels are editable.\n\n\n\n\n\n\nTip\n\n\n\nYou should hide all calculted variable, they have no place i a register book\n\n\nOnce customized, you can close the sheet by clicking the red cross, all your modifications are saved.\nOnce ready, you can use the “Print” button to open the print preview view (whether you are on the register sheet or the linelist sheet). All the variables to be printed fit one page (landscape). If you are satisfied, you can print."
+  },
+  {
+    "objectID": "site/reference/ribbons_linelist.html#sec-linelist-advanced",
+    "href": "site/reference/ribbons_linelist.html#sec-linelist-advanced",
+    "title": "Linelist ribbon",
+    "section": "Advanced",
+    "text": "Advanced\n\n\n\nAdvanced button and pop-up window\n\n\n\nExport for migration\nThis button exports raw data and metadata for migration to another linelist file.3\nYou can choose to export the patient data, the geobase and the history of the geobase (history list in the GeoHelper), by ticking the matching cases. There are also options to include metadata on the state of hidden/shown columns (to not have to redo the full setup in the new file), and the updated labels of the custom variables, if you used these variables.\n\n\n\nExport for migration\n\n\nAfter selecting the options and clicking on “Export”, a window pops-up for saving the export. Select the folder and click on “OK”. Once finished a message appears to ask if you want to close the window.\nThe export creates three files:\n\na file containing the data and all sort of metadata\na file containing the geobase that is currently in the linelist, as well as the history from the GeoHelper\na file containing only the GeoHelper history (in case you want to upgrade to a new version of the geobase but wished to keep your GeoHelper history)\n\n\n\nImport geobase history\nThis button allows you to import a file containing the history of the geobase (such a file was created by exporting the data from migration, see above).\n\n\nLast Import Report\nThe button allows you to display the report from the last import made.\n\n\nDelete data or geobase history\nThis are a dangerous buttons that allows you to delete data or geobase history from the linelist.\n“Delete all data” allows you to remove all the data you entered from the workbook. After clicking, you will have a warning message. To confirm the deletion, you will need to enter the full name of the file.\n“Delete geobase history” allows you to empty the table with the geobase history so the list of suggestion of the history method from the GeoHelper will be empty.\n\n\nRestore the state of hidden columns\nThis button allows you to restore the state of hidden columns (i.e. hide them all again) if, for any reasons these columns had been shown.\nNote that hidden columns are not supposed to be shown, and the user can thus not modify their visibility state from the regular Show/Hide variables button, hence this button."
+  },
+  {
+    "objectID": "site/reference/ribbons_linelist.html#footnotes",
+    "href": "site/reference/ribbons_linelist.html#footnotes",
+    "title": "Linelist ribbon",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nIf the linelist has a lot of optional variables shown by default and you wish to make a very minimal linelist, this might be faster than hiding most variables one by one: just unhide the variables that you need if any↩︎\nDo not forget to remove the filters and refresh the analyses at the end to not be confused but the numbers in a couple of days↩︎\nWhether that is to upgrade versions, move out of a corrupt file or create a temporary master-linelist↩︎"
+  },
+  {
+    "objectID": "site/reference/choices_sheet.html",
+    "href": "site/reference/choices_sheet.html",
+    "title": "Choices sheet",
+    "section": "",
+    "text": "This sheet is used to define the dropdown menus categories to be used for categorical variables, or the possible values for “choice_formula” type variables."
+  },
+  {
+    "objectID": "site/reference/choices_sheet.html#rules",
+    "href": "site/reference/choices_sheet.html#rules",
+    "title": "Choices sheet",
+    "section": "Rules",
+    "text": "Rules\n\na list is made of several consecutive lines\n\na line represents one value of a given list, and correspond to one item of the associated dropdown menu\n\ndifferent lists are written one below the other\n\nyou can define as many lists as needed"
+  },
+  {
+    "objectID": "site/reference/choices_sheet.html#list-name",
+    "href": "site/reference/choices_sheet.html#list-name",
+    "title": "Choices sheet",
+    "section": "List Name",
+    "text": "List Name\nThis is a free text field used to define a dropdown list. Lines with the same name filled belong to the same list. This name is used in the Dictionary sheet to identify the dropdown list to be used for a given variable, in the Control details column.\n\n\n\n\n\n\n\nNaming lists\n\n\n\nIt is not mandatory, but we advise that you begin all your list names by “list_” to easily separate them from variable names in the dictionary.\nWith the exception of lists used for “choice_custom” type variables, it is recommended not to leave any blanks in the list name. Instead, replace them with “_”, for example."
+  },
+  {
+    "objectID": "site/reference/choices_sheet.html#ordering-list",
+    "href": "site/reference/choices_sheet.html#ordering-list",
+    "title": "Choices sheet",
+    "section": "Ordering list",
+    "text": "Ordering list\nThis is a free text field. Fill in integers to define the order in which the options are displayed in the dropdown menu."
+  },
+  {
+    "objectID": "site/reference/choices_sheet.html#label",
+    "href": "site/reference/choices_sheet.html#label",
+    "title": "Choices sheet",
+    "section": "Label",
+    "text": "Label\nThis is a free text field used to list the different values to be displayed in the dropdown menus.\n\n\n\n\n\n\nWarning\n\n\n\nCategories names should not begin with a “&lt;” or a “&gt;”."
+  },
+  {
+    "objectID": "site/reference/choices_sheet.html#short-label",
+    "href": "site/reference/choices_sheet.html#short-label",
+    "title": "Choices sheet",
+    "section": "Short label",
+    "text": "Short label\nThis is a free text field in which you can enter a shortened version of the label, to be used in the Case Report Form generation tool in the linelist, to make the CRF more condensed."
+  },
+  {
+    "objectID": "site/reference/choices_sheet.html#example",
+    "href": "site/reference/choices_sheet.html#example",
+    "title": "Choices sheet",
+    "section": "Example",
+    "text": "Example\nIn the setup file:\n\nIn the linelist, for the age unit column:"
+  },
+  {
+    "objectID": "site/reference/translations_sheet.html",
+    "href": "site/reference/translations_sheet.html",
+    "title": "Translation sheet",
+    "section": "",
+    "text": "OutbreakTools can create linelists in different languages from the same dictionary, which makes maintenance of a linelist much easier (only one place to make a change, before compiling in all the languages).\nThe Translation sheet contains all text values to translate. This works because by design, the text fields that require translation in the various sheets of the setup file are tagged with a “translate as text” tag.1\nThe Translation sheet contains at least one column, with the default language, i.e. the language you chose to complete the setup file.\nThe columns headings can be modified. It is important to name the languages in the table headings, as they will be used to populate a dropdown menu in the designer file when the linelist is to be compiled."
+  },
+  {
+    "objectID": "site/reference/translations_sheet.html#update-the-translation-table",
+    "href": "site/reference/translations_sheet.html#update-the-translation-table",
+    "title": "Translation sheet",
+    "section": "Update the translation table",
+    "text": "Update the translation table\nClick on the button “Update translation table” from the Setup Options ribbon to scrap the file and import all the fields to be translated into the table. They are listed in alphabetical order."
+  },
+  {
+    "objectID": "site/reference/translations_sheet.html#add-a-new-language",
+    "href": "site/reference/translations_sheet.html#add-a-new-language",
+    "title": "Translation sheet",
+    "section": "Add a new language",
+    "text": "Add a new language\nTo add a language to the table, use the Setup Options ribbon.\n\n\n\n\n\nIn the “Translation” tab, in the “Add language” field, enter the name of the language you want to add, then press the “Enter” key on your keyboard.\nThe new language is added to the table:\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nYou can then fill in your translations.\nIf you are making changes to the setup and want to ensure that all the translatable fields are correctly listed, click Update translation table. A message will then inform you of the number of missing fields per language.\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nWarning\n\n\n\nThere is no control or intelligence behind the notions of default language and other languages, i.e. if you name the first column “French” and the second “English”, even though you have used English in the setup file, it is the first column named “French” that will contain the values in English.\nSimilarly, if you have mixed several languages across the setup file, all the values will be in the same column, the first column of the table.\n\n\n\n\n\n\n\n\nImportant\n\n\n\nThere should not be duplicates (two pieces of text in one language translated in the exact same text in another language), as these will prevent automatic translation during data compilation.\n\n\n\n\n\n\n\n\nNote\n\n\n\nTrailing white spaces can sometimes cause problem, remove them from the setup.\n\n\n\n\n\n\n\n\nNote\n\n\n\nIf, when the linelist is generated, certain fields of the chosen language are missing, these fields will appear in the default language (the first column). That being said, if a string of text contains special characters, this could cause a bug. In general, we advise to fill all cells in all languages."
+  },
+  {
+    "objectID": "site/reference/translations_sheet.html#footnotes",
+    "href": "site/reference/translations_sheet.html#footnotes",
+    "title": "Translation sheet",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nwhich you can actually see in light grey font above the columns to be translated.↩︎"
+  },
+  {
+    "objectID": "site/getting_started/create_dic.html",
+    "href": "site/getting_started/create_dic.html",
+    "title": "Create a dictionary",
+    "section": "",
+    "text": "Download the files from github to get the most updated versions and unzip it.\nSave the empty setup file in you working directory, locally. Open the file using Desktop Excel (web-based Excel cannot run macros).\n\n\n\n\n\n\n\nWarning\n\n\n\nOneDrive and macro-enabled Excel files do not work well together in general. To avoid random file corruption, we advise that you work in a non synchronise folder, or that you disable OneDrive while you are writting the setup file."
+  },
+  {
+    "objectID": "site/getting_started/create_dic.html#sec-get-tools-ready",
+    "href": "site/getting_started/create_dic.html#sec-get-tools-ready",
+    "title": "Create a dictionary",
+    "section": "",
+    "text": "Download the files from github to get the most updated versions and unzip it.\nSave the empty setup file in you working directory, locally. Open the file using Desktop Excel (web-based Excel cannot run macros).\n\n\n\n\n\n\n\nWarning\n\n\n\nOneDrive and macro-enabled Excel files do not work well together in general. To avoid random file corruption, we advise that you work in a non synchronise folder, or that you disable OneDrive while you are writting the setup file."
+  },
+  {
+    "objectID": "site/getting_started/create_dic.html#grow-your-setup-file",
+    "href": "site/getting_started/create_dic.html#grow-your-setup-file",
+    "title": "Create a dictionary",
+    "section": "Grow your setup file 🌱",
+    "text": "Grow your setup file 🌱\nThe first step is to create the variable dictionary. The other steps are optional and can be completed if and when needed.\n\nCreate the variable dictionary 📘\nAka fill the Dictionary and Choices sheets. The first sheet is a database about all the variables present in the linelist you want to create. The Choices sheet contains the categories for categorical variables.\nThe different sections of the Dictionary sheet will define, for each variable:\n\nname, label, sublabel, notes\nsheet, section, subsection, hence also defining the structure of the linelist sheets and tables\nvariable visibility\nvariable type (e.g. a date or a decimal), format (e.g. the number of decimals in a case of a decimal), control (is it free text, a dropdown menu, a formula, a fancy geo section etc.)\nexport status: should the variable be exported in one or more exports\ndata validation rules: define min and max values, as well as error messages for values that do not respect rules\nwhether to apply special formatting and how\nand more!\n\nWhen you have first draft of your dictionary, go to the OutbreakTools ribbon and click on the button “Check current setup for errors”. This will run a couple of automatic checks on the setup and raise warnings and errors.\n\n\nFill other sheets as needed\nFill the Exports sheet to define one or more personalised exports: their names, pseudo-anonymisation, the label of their button, whether to export variable names or labels, how much metadata to export etc.\nFill the Analyses sheet to define basic analyses to include in the linelist:\n\nuni and bivariate analyses (figures and tables)\n\ntemporal analyses (epicurves and corresponding tables)\n\nspatial analyses: top X location with… (most case, most deceased, most…)\n\nspatio-temporal analyses: temporal analyses but for a couple of user-specified places\n\nFill the Translations sheet to translate strings of text so that the linelist can automatically be built in other languages than the one in the setup.\nAs for when defining the dictionary, check for errors regularly with the “Check current setup for errors”.\n\n\nBuild the linelist and stress-test it ✔\nAfter correcting errors and checking warnings, you can go to the next step and compile the setup to build the linelist using the designer file. This will create the linelist.\nTest you linelist! Enter false data and check your variables:\n\nis the format of the variable correct?\nare the formulas working as expected?\nis the formatting applied correctly (which boils down to a formula problem, SEE SECTION)?\ndo the analyses work as expected?\n\nIn all likelihood, you will need a couple of cycles “improve setup -&gt; build linelist -&gt; debug” to get a working linelist, do not despair!\n\n\n\n\n\n\nTip to check calculated variables\n\n\n\n\n\nDon’t hesitate to manually unhide all columns in the created linelist to check hidden columns formulas, you have the user rights to do it.\nReverse to the original state by going to the “Advanced” section of the OutbreakTools ribbon, and click on the “Restore state of hidden columns”\n\n\n\n\n\n\n\n\n\nSave your testing data\n\n\n\n\n\nIf you spend time entering false data to check your linelist, you can save this data for your next test, to avoid spending time re-entering it.\nTo do that, go to the “Advanced” section of the OutbreakTools ribbon and click on the “Export for migration” button. This will create a data export, that can be later imported in a new empty linelist by clicking on the “Import data” button from the same ribbon."
+  },
+  {
+    "objectID": "site/getting_started/download.html",
+    "href": "site/getting_started/download.html",
+    "title": "Obtain OutbreakTools files",
+    "section": "",
+    "text": "Go to the OutbreakTools github repo, scroll down to the README and click on the yellow button to donwload .zip archive that contains the file you need.\n\nSave the archive locally on your computer and unzip it."
+  },
+  {
+    "objectID": "site/getting_started/download.html#sec-download",
+    "href": "site/getting_started/download.html#sec-download",
+    "title": "Obtain OutbreakTools files",
+    "section": "",
+    "text": "Go to the OutbreakTools github repo, scroll down to the README and click on the yellow button to donwload .zip archive that contains the file you need.\n\nSave the archive locally on your computer and unzip it."
+  },
+  {
+    "objectID": "site/getting_started/download.html#sec-obt-files",
+    "href": "site/getting_started/download.html#sec-obt-files",
+    "title": "Obtain OutbreakTools files",
+    "section": "Install the OubreakTools files",
+    "text": "Install the OubreakTools files\nThe solution is based on VBA scripts in Excel files, so there is nothing to install.\nYou should however authorise VBA macros in Excel so that the files work as expected (or at all, in fact).\nThe archive contains several timestamped files:\n\nsetup-YYYY-MM-DD.xlsb: an empty setup file\ndesigner_main-YYYY-MM-DD.xlsb: the designer file that is used to compile the setup\n_ribbontemplate_main-YYYY-MM-DD.xlsb: a template file containing information used during compilation\nrun_designer_on_windows.R and rundesigner.vbs: files that can be used to compile from R (experimental and yet undocumented)\n\n\n\n\n\n\n\nNote\n\n\n\nThe excel files are in the .xlsb format, a compressed, more efficient Excel format that allows VBA macros."
+  },
+  {
+    "objectID": "site/getting_started/download.html#update-to-a-new-version-of-outbreaktools",
+    "href": "site/getting_started/download.html#update-to-a-new-version-of-outbreaktools",
+    "title": "Obtain OutbreakTools files",
+    "section": "Update to a new version of OutbreakTools",
+    "text": "Update to a new version of OutbreakTools\nThe OutbreakTools solution is in active development, so there are regular updates to the files, to add new functionalities or correct bugs. To upgrade, just dowload the tools again and use the new setup and designer. If you already have a working setup for a linelist, it is possible to migrate its content to a new empty setup file."
+  },
+  {
+    "objectID": "site/getting_started/home_linelist.html",
+    "href": "site/getting_started/home_linelist.html",
+    "title": "Getting started with an OBT linelist",
+    "section": "",
+    "text": "Getting started with the linelist\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nNo matching items\n\n Back to top"
+  }
+]

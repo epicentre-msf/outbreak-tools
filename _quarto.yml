@@ -9,7 +9,7 @@ format:
   html:
     theme: 
       - flatly
-      - site/styles.css
+      - styles.css
     
     toc: true
     toc-depth: 5
@@ -21,7 +21,7 @@ format:
 
 website:
   title: "OutbreakTools documentation"
-  favicon: images/icon.png
+  favicon: site/images/icon.png
   repo-url: https://github.com/epicentre-msf/outbreak-tools/site
   
   # Options
@@ -32,7 +32,7 @@ website:
   # Navbar
   navbar:
     search: true
-    logo: images/icon.png
+    logo: site/images/icon.png
     
     # left:
     #  - text: About
@@ -43,7 +43,7 @@ website:
         href: site/getting_started/home_linelist.qmd
     
       - text: Getting started with OBT
-        href: site/getting_started/home_obt.qmd
+        href: getting_started/home_obt.qmd
           
       - text: Reference
         href: site/reference/home_reference.qmd
