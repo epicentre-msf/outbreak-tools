@@ -4,7 +4,6 @@ about: Bug Report on outbreak-tools
 title: ''
 labels: 3. bug
 assignees: yves-amevoin
-
 ---
 
 **Scope**

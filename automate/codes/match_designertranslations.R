@@ -11,16 +11,22 @@ onedrive_translation <- glue::glue(
   "{obt_onedrivedev_folder}/ressources/designer_translations_user.xlsx"
 )
 obt_repo <- here::here()
+translation_repo <- glue("{obt_repo}/trads")
 
-file.copy(from = onedrive_translation, to = glue::glue("{obt_repo}/misc/"), 
-          overwrite = TRUE)
+file.copy(
+  from = onedrive_translation,
+  to = glue::glue("{translation_repo}/"),
+  overwrite = TRUE
+)
 
 # path to the master designer_translation workbook
-master_workbook_path <- glue::glue("{obt_repo}/misc/designer_translations.xlsx")
+master_workbook_path <- glue::glue(
+  "{translation_repo}/designer_translations.xlsx"
+)
 
 # path to a workbook where corrections have been made
 child_workbook_path <- glue::glue(
-  "{obt_repo}/misc/designer_translations_user.xlsx"
+  "{translation_repo}/designer_translations_user.xlsx"
 )
 
 #---- Preliminary functions ----------------------------------------------------
@@ -56,18 +62,20 @@ read_a_table <- function(path, sheet_name, range_address, child_tag = "") {
     # select names in that order
     filter(!is.na(msg_id)) |>
     select(
-      msg_id, starts_with("eng"), starts_with("fra"),
-      starts_with("spa"), starts_with("por"), starts_with("ara")
+      msg_id,
+      starts_with("eng"),
+      starts_with("fra"),
+      starts_with("spa"),
+      starts_with("por"),
+      starts_with("ara")
     )
 }
 
-# compare elements and replace between child and master 
+# compare elements and replace between child and master
 #(child contains the corrections)
 
 compare_elements <- function(master_data, child_data) {
-  new_data <- left_join(master_data, child_data,
-    by = "msg_id"
-  )
+  new_data <- left_join(master_data, child_data, by = "msg_id")
   new_data <- new_data |>
     mutate(
       eng = case_when(
@@ -92,7 +100,12 @@ compare_elements <- function(master_data, child_data) {
       )
     ) |>
     select(
-      msg_id, eng, fra, spa, por, ara
+      msg_id,
+      eng,
+      fra,
+      spa,
+      por,
+      ara
     ) |>
     arrange(msg_id)
 
@@ -102,9 +115,14 @@ compare_elements <- function(master_data, child_data) {
 }
 
 targeted_tables <- c(
-  "T_TradLLShapes", "T_TradLLMsg",
-  "T_TradLLForms", "T_TradLLRibbon",
-  "T_tradMsg", "T_tradRange", "T_tradShape", "T_tradDrop"
+  "T_TradLLShapes",
+  "T_TradLLMsg",
+  "T_TradLLForms",
+  "T_TradLLRibbon",
+  "T_tradMsg",
+  "T_tradRange",
+  "T_tradShape",
+  "T_tradDrop"
 )
 
 # loading the master workbook tables ===========================================
@@ -117,8 +135,10 @@ master_tables_df <- purrr::map_dfr(master_sheets_list, get_all_tables)
 
 # load master table
 master_list_tables <- master_tables_df |>
-  filter((table_name %in% targeted_tables) |
-           (table_name %in% tolower(targeted_tables))) |>
+  filter(
+    (table_name %in% targeted_tables) |
+      (table_name %in% tolower(targeted_tables))
+  ) |>
   arrange(table_name) |>
   select(path, range_address) |>
   purrr::pmap(read_a_table)
@@ -129,13 +149,16 @@ child_workbook <- loadWorkbook(file = child_workbook_path)
 child_sheets_list <- getSheetNames(file = child_workbook_path)
 
 child_tables_df <- purrr::map_dfr(
-  child_sheets_list, get_all_tables,
+  child_sheets_list,
+  get_all_tables,
   path = child_workbook_path
 )
 
 child_list_tables <- child_tables_df |>
-  filter((table_name %in% targeted_tables) |
-    (table_name %in% tolower(targeted_tables))) |>
+  filter(
+    (table_name %in% targeted_tables) |
+      (table_name %in% tolower(targeted_tables))
+  ) |>
   arrange(table_name) |>
   select(path, range_address) |>
   purrr::pmap(read_a_table, child_tag = "_child")
@@ -143,7 +166,8 @@ child_list_tables <- child_tables_df |>
 # now join and clean everything
 
 joined_data <- purrr::map2(
-  master_list_tables, child_list_tables,
+  master_list_tables,
+  child_list_tables,
   compare_elements
 )
 
@@ -153,7 +177,7 @@ names(joined_data) <- sort(targeted_tables)
 
 
 # write back to an empty workbook ==============================================
-source(glue::glue("{obt_repo}/automation/functions_tabulations.R"))
+source(glue::glue("{obt_repo}/automate/codes/functions_tabulations.R"))
 
 header_names <- c(
   "Tables for translations of the linelist",
@@ -168,15 +192,19 @@ wb <- initiate_workbook(
 # linelist_translations --------------------------------------------------------
 
 ll_tables_names <- c(
-  "T_TradLLShapes", "T_TradLLMsg",
-  "T_TradLLForms", "T_TradLLRibbon"
+  "T_TradLLShapes",
+  "T_TradLLMsg",
+  "T_TradLLForms",
+  "T_TradLLRibbon"
 )
 
 ll_tables <- joined_data[ll_tables_names]
 ll_tables_labels <- c(
   "Translation of shapes (buttons in the the linelist worksheets)",
-  glue::glue("Translation of various messages of the user interface, ",
-             "including special worksheets names"),
+  glue::glue(
+    "Translation of various messages of the user interface, ",
+    "including special worksheets names"
+  ),
   "Translation of forms in the linelist",
   "Translation of elements of the ribbon menu in the linelist"
 )
@@ -197,8 +225,10 @@ des_tables_names <- c("T_tradMsg", "T_tradRange", "T_tradShape", "T_tradDrop")
 
 des_tables <- joined_data[des_tables_names]
 des_tables_labels <- c(
-  glue::glue("Translation of various messages in main worksheet, ",
-             "including ribbon menu elements"),
+  glue::glue(
+    "Translation of various messages in main worksheet, ",
+    "including ribbon menu elements"
+  ),
   "Translation of messages in ranges of main worksheet",
   "Translation of shapes (buttons in the main worksheet)"
 )
@@ -213,12 +243,14 @@ push_all_tables(
   listoftables = des_tables
 )
 
-saveWorkbook(wb,
-  file = glue::glue("{obt_repo}/misc/designer_translations_merged.xlsx"),
+saveWorkbook(
+  wb,
+  file = glue::glue("{translation_repo}/designer_translations_merged.xlsx"),
   overwrite = TRUE
 )
 
 file.copy(
-  from = glue::glue("{obt_repo}/misc/designer_translations_merged.xlsx"),
-  to = onedrive_translation, overwrite = TRUE
+  from = glue::glue("{translation_repo}/designer_translations_merged.xlsx"),
+  to = onedrive_translation,
+  overwrite = TRUE
 )

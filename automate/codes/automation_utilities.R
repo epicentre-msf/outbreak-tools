@@ -1,7 +1,7 @@
 # RUN THE DESIGNER FROM R
 # Yves Amevoin, Epicentre
 # Last modification date: 11 November 2023
- 
+
 # Description:
 # ------------------------------------------------------------------------------
 # This is a quick R script to automate some works in the designer
@@ -20,9 +20,6 @@
 
 # Function to import a translation into the designer.
 
-
-
 # Function to import a password into the designer.
-
 
 # Import a new design into the designer.
