@@ -7,9 +7,8 @@ execute:
 
 format:
   html:
-    theme: 
-      - cosmo
-      - styles.css
+    theme: cosmo
+    css: styles.css
     
     toc: true
     toc-depth: 5
@@ -21,7 +20,7 @@ format:
 
 website:
   title: "OutbreakTools documentation"
-  favicon: site/images/icon.png
+  favicon: images/icon.png
   repo-url: https://github.com/epicentre-msf/outbreak-tools/site
   
   # Options
@@ -32,7 +31,7 @@ website:
   # Navbar
   navbar:
     search: true
-    logo: site/images/icon.png
+    logo: images/icon.png
     
     # left:
     #  - text: About
@@ -40,22 +39,22 @@ website:
     
     right: 
       - text: Getting started with the linelist
-        href: site/getting_started/home_linelist.qmd
+        href: getting_started/home_linelist.qmd
     
       - text: Getting started with OBT
         href: getting_started/home_obt.qmd
           
       - text: Reference
-        href: site/reference/home_reference.qmd
+        href: reference/home_reference.qmd
         
       - text: How-to 
-        href: site/how_to/home_how_to.qmd
+        href: how_to/home_how_to.qmd
 
       - text: Cheatsheets
-        href: site/cheatsheets/home_cheatsheets.qmd
+        href: cheatsheets/home_cheatsheets.qmd
             
       - text: Tutoriel
-        href: site/tutorial.qmd
+        href: tutorial.qmd
         
     tools:
       - icon: github
@@ -67,6 +66,6 @@ website:
 
   # Footer
   page-footer:
-    left: Developed by [![](site/images/epicentre.png){fig-alt="Epicentre logo" width=65px}](https://epicentre.msf.org/)
+    left: Developed by [![](images/epicentre.png){fig-alt="Epicentre logo" width=65px}](https://epicentre.msf.org/)
     right: This website is built with {{< fa heart title="a heart" >}}, [{{< fa brands github title="GitHub octocat logo" >}}](https://github.com){target=_blank}, [{{< fa brands r-project title="R Project" >}}](https://www.r-project.org/about.html){target=_blank} and [Quarto](https://quarto.org/){target=_blank}
 
