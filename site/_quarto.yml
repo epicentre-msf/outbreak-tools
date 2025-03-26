@@ -7,9 +7,7 @@ execute:
 
 format:
   html:
-    theme: 
-      light: cosmo
-      dark: darkly
+    theme: cosmo
     css: styles.css
     
     toc: true
@@ -61,7 +59,7 @@ website:
 
           - text: Tutorial
             href: tutorial.qmd
-            
+
     tools:
       - icon: github
         text: Source Code
