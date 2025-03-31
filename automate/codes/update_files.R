@@ -98,6 +98,6 @@ update_master_setup <- function(tag = "mock") {
 }
 
 # copy the mock file for development
-# update_designer(tag = "mock")
-# update_setup(tag = "mock")
-# update_master_setup(tag = "mock")
+update_designer(tag = "mock")
+update_setup(tag = "mock")
+update_master_setup(tag = "mock")

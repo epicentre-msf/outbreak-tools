@@ -56,5 +56,5 @@ End Property
 Public Property Get HasColumnsNotImported() As Boolean
 End Property
   
-Public Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray)
+Public Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray, Optional ByVal startLine As Long = 1)
 End Sub

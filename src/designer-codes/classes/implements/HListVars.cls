@@ -357,7 +357,37 @@ Private Sub AddUniqueConditonalFormatting()
     End With
 End Sub
 
-'Set Main label and sublabel style and values
+'Conditional formatting for geo variables
+Private Sub AddGeoConditionalFormatting()
+
+    Dim varValid As String 'Geo concat variable name
+    Dim cellRng As Range 'Range of the variable
+    Dim varObject As ILLVariables 'List of variables
+    Dim shObj As ILLSheets 'List of all worksheets
+    Dim condAdd As String 'condition variable address
+    Dim varControl As String
+    Dim actAdd As String
+
+
+    varControl = ValueOf("control")
+    If Not (InStr(1, varControl, "geo") > 1) Then Exit Sub
+    varValid = "pcode" & "_" & ActualVariable()
+
+    Set varObject = vars()
+    If Not varObject.Contains(varValid) Then Exit Sub
+    Set cellRng = VarRange()
+    Set shObj = SheetsObject()
+    condAdd = shObj.VariableAddress(varValid)
+    actAdd = shObj.VariableAddress(ActualVariable)
+
+    cellRng.FormatConditions.Add Type:=xlExpression, _ 
+    Formula1:="= AND(" & condAdd & "= " & Chr(34) & Chr(34) & "," & actAdd & "<>" & Chr(34) & Chr(34) & ")"
+    With cellRng.FormatConditions(cellRng.FormatConditions.Count)
+        .Interior.color = RGB(242, 147, 12)
+        .SetFirstPriority
+        .StopIfTrue = True
+    End With
+End Sub
 
 
 'Main Label
@@ -705,7 +735,7 @@ Private Sub AddValidation()
             
             'Validation on Maximum
             excelForm = ExcelFormula(varMax, validationTypes)
-            excelOSForm = ExcelFormula(varMin, validationTypes, useOS:=True)
+            excelOSForm = ExcelFormula(varMax, validationTypes, useOS:=True)
 
             If IsEmpty(excelForm) Then Exit Sub
 
@@ -857,6 +887,8 @@ Private Sub WriteInfo()
     On Error Resume Next
     AddValidation
     On Error GoTo 0
+
+    AddGeoConditionalFormatting
 
     'Conditional formatting
     AddConditionalFormatting

@@ -507,7 +507,8 @@ End Sub
 
 
 'Export a Custom Table to a Worksheet
-Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray)
+'startLine: Where to start exporting
+Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray, Optional ByVal startLine As Long = 1)
 
   Dim counter As Long
   Dim inpRng As Range
@@ -537,7 +538,7 @@ Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray)
       inpRng.Calculate
       
       With sh
-        Set outrng = .Range(.Cells(1, headerCounter), .Cells(inpRng.Rows.Count, headerCounter))
+        Set outrng = .Range(.Cells(startLine, headerCounter), .Cells(inpRng.Rows.Count + startLine - 1, headerCounter))
         outrng.Value = inpRng.Value
       End With
 
@@ -708,8 +709,9 @@ Private Sub ICustomTable_Sort(ByVal els As Variant, Optional ByVal onFirst As Bo
 End Sub
 
 Private Sub ICustomTable_Export(ByVal sh As Worksheet, _
-                               ByVal headersList As BetterArray)
-  Export sh, headersList
+                               ByVal headersList As BetterArray, _
+                               Optional ByVal startLine As Long = 1)
+  Export sh, headersList, startLine
 End Sub
 
 'Imports Functions

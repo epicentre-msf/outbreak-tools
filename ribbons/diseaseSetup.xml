@@ -1,0 +1,38 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="ribbonLoaded">
+    <ribbon startFromScratch="false">
+        <tabs>
+            <tab id="customTab" getLabel="LangLabel">
+                <group id="customGroupManage" getLabel="LangLabel">
+                    <button id="btnAdd" getLabel="LangLabel" image="addrows" size="large" onAction="clickAddRows"/>
+                    <button id="btnRes" getLabel="LangLabel" imageMso="SheetRowsDelete" size="large" onAction="clickResize"/>
+                    <button id="btnFilt" getLabel="LangLabel" imageMso="FilterClearAllFilters" size="large" onAction="clickFilters"/>
+                </group>
+                <group id="customGroupDisease" getLabel="LangLabel">
+                    <button id="btnAddSheet" getLabel="LangLabel" image="addsheet" size="large" onAction="clickAddSheet"/>
+                    <button id="btnRemSheet" getLabel="LangLabel" image="removesheet" size="large" onAction="clickRemSheet"/>
+                    <button id="btnClear" getLabel="LangLabel" imageMso="ClearAll" size="large" onAction="clickClearSheet"/>
+                </group>
+                <group id="customGroupTrans" getLabel="LangLabel">
+                    <button id="btnTransAdd" getLabel="LangLabel" image="updatetrans" size="normal" onAction="clickAddTrans"/>
+                    <editBox id="editLang" label="LangLabel" image="language" onChange="clickAddLang"/>
+                     <dropDown id = "langDrop" imageMso="TranslationPane" onAction="clickLangChange" getLabel = "LangLabel">
+                        <item id = "FRA" label = "Français" />
+                        <item id = "ENG" label = "English" />
+                        <item id = "ARA" label = "عربى"/>
+                        <item id = "SPA" label = "Español"/>
+                        <item id = "POR" label = "Portugués"/>
+                    </dropDown>
+                </group>
+                <group id="customGroupAdv" getLabel="LangLabel">
+                    <button id="btnExp" getLabel="LangLabel" image="export" size="large" onAction="clickExpSheet"/>
+                </group>
+                <group id="customGroupDev" getLabel="LangLabel">
+                    <button id="btnExpMig" getLabel="LangLabel" image="upgrade" size="normal" onAction="clickExp"/>
+                    <button id="btnImpMig" getLabel="LangLabel" image="download" size="normal" onAction="clickImp"/>
+                    <button id="btnTransUp" getLabel="LangLabel" image="updatecolumns" size="normal" onAction="clickUpdateTranslate"/>
+                    <!--<button id="btnPrep" getLabel="LangLabel" image="production" size="normal" onAction="clickPrepareProd"/>-->
+                </group>
+            </tab>
+        </tabs>
+    </ribbon>
+</customUI>
