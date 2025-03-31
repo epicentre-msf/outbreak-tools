@@ -90,7 +90,8 @@ End Property
 'Resize a table
 Private Sub Resize(Optional ByVal AddRows As Boolean = False, _ 
                    Optional ByVal totalRowCount As Long = 0, _ 
-                   Optional ByVal nbRows As Long = NBROWSADD)
+                   Optional ByVal nbRows As Long = NBROWSADD, _
+                   Optional ByVal includeIds As Boolean = True)
   Dim Lo As ListObject
   'Begining of the tables
   Dim loRowHeader As Long
@@ -122,7 +123,7 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
       Next
       loRowsEnd = loRowsEnd + nbRows
       Lo.Resize .Range(.Cells(loRowHeader, loColHeader), .Cells(loRowsEnd, loColsEnd))
-      AddIds
+      If includeIds Then AddIds
     Else
       'On analysis sheets, there are formulas, you should stop/avoid the first row
       delStop = IIf(sh.Name = "Analysis", loRowHeader + 1, loRowHeader)
@@ -139,7 +140,7 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
       loRowsEnd = Application.WorksheetFunction.Max(loRowsEnd, loRowHeader + 1)
       Lo.Resize .Range(.Cells(loRowHeader, loColHeader), .Cells(loRowsEnd, loColsEnd))
       'Add the IDs after resizing
-      AddIds
+      If includeIds Then AddIds
     End If
   End With
 End Sub
@@ -561,12 +562,12 @@ Private Sub SortElements(ByVal els As Variant)
   Next
 End Sub
 
-Private Sub ICustomTable_AddRows(Optional ByVal nbRows As Long = NBROWSADD)
-  Resize AddRows:=True, nbRows:=nbRows
+Private Sub ICustomTable_AddRows(Optional ByVal nbRows As Long = NBROWSADD, Optional ByVal includeIds As Boolean = True)
+  Resize AddRows:=True, nbRows:=nbRows, includeIds:=includeIds
 End Sub
 
-Private Sub ICustomTable_RemoveRows(Optional ByVal totalCount As Long = 0)
-  Resize AddRows:=False, totalRowCount:=totalCount
+Private Sub ICustomTable_RemoveRows(Optional ByVal totalCount As Long = 0, Optional ByVal includeIds As Boolean = True)
+  Resize AddRows:=False, totalRowCount:=totalCount, includeIds:=includeIds
 End Sub
 
 Private Sub ICustomTable_SetValidation(ByVal colName As String, ByVal drop As IDropdownLists, _

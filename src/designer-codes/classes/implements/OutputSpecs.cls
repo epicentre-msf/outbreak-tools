@@ -633,6 +633,7 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
   Dim inpwb As Workbook
   Dim outsh As Worksheet
   Dim pass As ILLPasswords
+  Dim startLine As Long
 
   Set expdict = ExportDictionary()
   Set outwb = outputWkb()
@@ -642,7 +643,10 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
   Set expobj = ExportObject()
   scope = ActualScope()
 
-  useLabels = (expobj.Value("header format", scope) = "variables labels")
+  useLabels = (expobj.Value("header format", scope) = "variables labels") Or _ 
+              (expobj.Value("header format", scope) = "variable names + variable labels")
+
+  startLine = IIf((expobj.Value("header format", scope) = "variable names + variable labels"), 2, 1)
 
   For counter = sheetNamesList.LowerBound To sheetNamesList.UpperBound
 
@@ -671,7 +675,7 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
       pass.UnProtect inpsh.Name
 
       'Export the custom table to the worksheet
-      csTab.Export outsh, headersList
+      csTab.Export outsh, headersList, startLine
 
       'Protect back the worksheet
       pass.Protect inpsh.Name
@@ -682,7 +686,7 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
     ElseIf (inpsh.Cells(1, 3).Value = "VList") Then
 
       'Add VlistData
-      AddVlistData sheetName, headersList, useLabels
+      AddVlistData sheetName, headersList, useLabels, startLine
 
     End If
 
@@ -706,8 +710,9 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
 End Sub
 
 'Add data to vlist sheet
+'startLine: where to start adding the data
 Private Sub AddVlistData(ByVal sheetName As String, ByVal headersList As BetterArray, _
-                         ByVal useLabels As Boolean)
+                         ByVal useLabels As Boolean, Optional ByVal starColumn As Long = 1)
 
   Dim outsh As Worksheet
   Dim inpsh As Worksheet
@@ -715,6 +720,7 @@ Private Sub AddVlistData(ByVal sheetName As String, ByVal headersList As BetterA
   Dim inpwb As Workbook
   Dim varValue As String
   Dim varName As String
+  Dim varLabel As String
   Dim counter As Long
   Dim headerCounter As Long
 
@@ -725,8 +731,13 @@ Private Sub AddVlistData(ByVal sheetName As String, ByVal headersList As BetterA
   Set outsh = outwb.Worksheets(sheetName)
 
   outsh.Cells.Clear
-  outsh.Cells(1, 1).Value = "variable"
-  outsh.Cells(1, 2).Value = "value"
+  If startColumn = 1 Then
+    outsh.Cells(1, 1).Value = "variable"
+    outsh.Cells(1, 2).Value = "value"
+  Else
+    outsh.Cells(1, startColumn).Value = "variable"
+    outsh.Cells(1, startColumn + 1).Value = "value"
+  End If
 
   'Counter on variables added
   headerCounter = 2
@@ -738,18 +749,26 @@ Private Sub AddVlistData(ByVal sheetName As String, ByVal headersList As BetterA
 
     On Error Resume Next
       varValue = inpsh.Range(varName).Value
-      If useLabels Then varName = inpsh.Range(varName).Offset(, -1).Value
+      varLabel = inpsh.Range(varName).Offset(, -1).Value
     On Error GoTo 0
 
     'Write values to output sheet. I don't know if it suceeded in getting
     'the value from the input sheet, that is why I test it before proceeding,
     'otherwise do nothing
 
-    outsh.Cells(headerCounter, 1).Value = varName
-    outsh.Cells(headerCounter, 2).Value = varValue
+    If startColumn <= 1 Then
+      outsh.Cells(headerCounter, 1).Value = varName
+      outsh.Cells(headerCounter, 2).Value = varValue
+      If useLabels Then outsh.Cells(headerCounter, 1).Value = varLabel
+    Else
+      outsh.Cells(headerCounter, startColumn).Value = varName
+      outsh.Cells(headerCounter, startColumn + 1).Value = varValue
+      If useLabels Then outsh.Cells(headerCounter, startColumn -1).Value = varLabel
+    End If
+
     varValue = vbNullString
+    varLabel = vbNullString
     headerCounter = headerCounter + 1
-    
   Next
 
 End Sub

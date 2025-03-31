@@ -1,0 +1,77 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon startFromScratch="false">
+    <tabs>
+      <tab id="customTab" label="Setup Options">
+        <group id="customGroupManage" label="Tables Management">
+          <button id="btnAdd" 
+           label="Add rows to tables in current sheet" 
+           imageMso="QueryShowTable" 
+           size="large" 
+           onAction="clickAddRows"/>
+          <button id="btnRes" 
+          label="Resize tables in current sheet" 
+          imageMso="SheetRowsDelete" 
+          size="large" 
+          onAction="clickResize"/>
+          <button id="btnFilt" 
+          label="Remove all filters" 
+          imageMso="FilterClearAllFilters" 
+          size="large" 
+          onAction="clickFilters"/>
+        </group>
+        <group id="customGroupTrans" label="Translation">
+          <editBox id="editLang" 
+          label="Add language" 
+          image="translation"
+          onChange="clickAddLang"/>
+          <button id="btnTransAdd" 
+           label="Update translation table" 
+           imageMso="TranslationPane" 
+           size="normal" 
+           onAction="clickAddTrans"/>
+        </group>
+        <group id="customGroupImport" label="Import">  
+          <button id="btnImp" 
+          label="Import data from another setup" 
+          image="download" 
+          size="normal" 
+          onAction="clickImport"/>
+          <button id="btnImpExp" 
+           label="Import from disease" 
+           image="importdisease"
+           size="normal" 
+           onAction="clickImportDisease"/>
+         </group>
+         <group id="customGroupAdvanced" label="Advanced">
+          <button id="btnChk" 
+          label="Check current setup for errors" 
+          imageMso="ErrorChecking" 
+          size="normal" 
+          onAction="clickCheck"/>  
+          <button id="btnClear" 
+          label="Clear data in current setup" 
+          imageMso="ClearAll" 
+          size="normal" 
+          onAction="clickClearSetup"/>
+         </group>
+          <group id="customGroupDev" label="Dev">
+          <button id="btnTransUp" 
+           label="Update columns tags" 
+           image="updatecolumns"
+           size="normal" 
+           onAction="clickUpdateTranslate"/>
+           <button id="btnInit" 
+           label="Initialize" 
+           imageMso="ArrowsMore"
+           size="normal" 
+           onAction="clickInitializeSetup"/>
+           <button id="btnPrep" 
+           label="Prepare for production" 
+           imageMso="GridSettings"
+           size="normal" 
+           onAction="clickPrepareProd"/>
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

@@ -8,16 +8,17 @@ Private Sub Workbook_Open()
     
     'If you want to add a time stamp to the linelist
 
-    'On Error Resume Next
-    '   Application.Iteration = True
-    '  Application.MaxIterations = 1
-    'On Error GoTo 0
+    On Error Resume Next
+     Application.FormatStaleValues = False
+    On Error GoTo 0
     
 End Sub
 
 Private Sub Workbook_BeforeClose(Cancel As Boolean)
     'Add functions to move directly in non debug mode
-    
+    On Error Resume Next
+     Application.FormatStaleValues = True
+    On Error GoTo 0
 End Sub
 
 

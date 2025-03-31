@@ -515,11 +515,11 @@ Private Sub ExportToWkb(ByVal outputWkb As Workbook, _
     setupName = Split(setupPath, Application.PathSeparator)(UBound(Split(setupPath, Application.PathSeparator)))
 
     metaKeys.Push "variable", "language", "linelist_creation_date", _
-                  "linelist_creation_name", "used_setup_name"
+                  "linelist_creation_name", "used_setup_name", "used_designer_name"
 
     metaValues.Push "value", sh.Range("RNG_MetaLang").Value, _ 
                      Format(Now(), "yyyy-mm-dd Hh:Nn"), _
-                     llName, setupName
+                     llName, setupName, ThisWorkbook.Name
     
 
     With outsh

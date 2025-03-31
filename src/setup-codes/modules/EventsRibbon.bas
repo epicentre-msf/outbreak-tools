@@ -11,6 +11,7 @@ Private Const TABTRANSLATION As String = "Tab_Translations"
 Private Const PASSSHEETNAME As String = "__pass"
 Private Const UPDATEDSHEETNAME As String = "__updated"
 Private Const DICTSHEETNAME As String = "Dictionary"
+Private Const EXPORTSHEETNAME As String = "Exports"
 
 'Private Subs to speed up process
 Private Sub BusyApp()

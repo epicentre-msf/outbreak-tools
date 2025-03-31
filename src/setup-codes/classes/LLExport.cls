@@ -74,8 +74,8 @@ Private Sub ManageRows(Optional ByVal del As Boolean = False)
     Set tabl = CustomTable.Create(Lo, "export number")
 
     If del Then
-        tabl.RemoveRows totalCount:=2
-        Lo.Range.Cells(2, 1).Value = 1
+        tabl.RemoveRows totalCount:=2, includeIds:=False
+        'Lo.Range.Cells(2, 1).Value = 1
     Else
         tabl.AddRows nbRows:=1
         'Add "no" to include identifiers
