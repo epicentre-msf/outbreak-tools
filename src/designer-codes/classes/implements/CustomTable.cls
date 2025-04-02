@@ -27,7 +27,6 @@ End Type
 
 Private this As TCustomTable
 Private Const CLASSNAME As String = "ICustomTable"
-Private Const NBROWSADD As Long = 5 'Number of Rows to add when resizing
 Private NOTIMPORTEDCOLUMNS As BetterArray
 Private HIDDENCOLUMNSLIST As BetterArray
 
@@ -88,10 +87,11 @@ Private Property Get HeaderRowRange() As Range
 End Property
 
 'Resize a table
-Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
-                   Optional ByVal insertShift As Boolean = True, _
-                  Optional ByVal totalRowCount As Long = 0, _
-                  Optional ByVal nbRows As Long = NBROWSADD)
+Private Sub Resize( Optional ByVal AddRows As Boolean = False, _
+                    Optional ByVal insertShift As Boolean = True, _
+                    Optional ByVal totalRowCount As Long = 0, _
+                    Optional ByVal nbRows As Long = 5, _ 
+                    Optional ByVal includeIds As Boolean = True)
   Dim Lo As listObject
   'Begining of the tables
   Dim loRowHeader As Long
@@ -126,7 +126,7 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
       End If
       loRowsEnd = loRowsEnd + nbRows
       Lo.Resize .Range(.Cells(loRowHeader, loColHeader), .Cells(loRowsEnd, loColsEnd))
-      AddIds
+
     Else
 
       'Tend to delete formulas in the first line when every thing is empty.
@@ -151,6 +151,9 @@ Private Sub Resize(Optional ByVal AddRows As Boolean = False, _
       Lo.Resize .Range(.Cells(loRowHeader, loColHeader), .Cells(loRowsEnd, loColsEnd))
     End If
   End With
+
+  'Add Ids if it is required by the user
+  If includeIds Then AddIds
 End Sub
 
 Private Sub AddIds()
@@ -192,7 +195,7 @@ Private Function ColumnExists(ByVal colName As String, _
     Dim Exist As Boolean
     Dim hRng As Range
     Set hRng = HeaderRowRange
-    Exist = False
+ 
     On Error Resume Next
     Exist = (Not hRng.Find(What:=colName, _
                            lookAt:=IIf(strictSearch, xlWhole, xlPart), _
@@ -332,45 +335,60 @@ Private Property Get Name() As String
 End Property
 
 'Clean every columns of the listObject and avoid formula columns
-Private Sub Clean()
+Private Sub Clean(Optional ByVal excludeNames As Object = Nothing, _ 
+                  Optional ByVal totalCount As Long = 0, _
+                  Optional ByVal clearContent As Boolean = False, _
+                  Optional ByVal addNewRows As Boolean = False)
+  
   Dim rng As Range
   Dim hRng As Range
   Dim Lo As listObject
   Dim headerValue As String
   Dim counter As Long
   Dim toClear As Boolean
-  Dim totalCount As Long
 
   Set Lo = Table()
   Set hRng = Lo.HeaderRowRange
-  totalCount = 0
 
-  For counter = 1 To hRng.Columns.Count
-    headerValue = hRng.Cells(1, counter).Value
-    Set rng = DataRange(headerValue)
-    toClear = False
+  If clearContent Then
     On Error Resume Next
-    toClear = (CStr(rng.Cells(1, 1).formula) = CStr(rng.Cells(1, 1).Value))
+    Lo.DataBodyRange.Delete
     On Error GoTo 0
-    If toClear Then rng.ClearContents
-  Next
+  Else
+    For counter = 1 To hRng.Columns.Count  
+      headerValue = hRng.Cells(1, counter).Value
+      Set rng = DataRange(headerValue)
 
-  If Name() = "Tab_Translations" Then
-    On Error Resume Next
-    Lo.DataBodyRange.ClearContents
-    On Error GoTo 0
-    totalCount = 1
+      'On formula colunms, no clearing is done, clear only "non formula" columns
+      toClear = (Not rng.Cells(1, 1).HasFormula)
+
+      If (TypeName(excludeNames) = "BetterArray") Then toClear =  toClear And (Not excludeNames.Includes(headerValue))
+
+      'clear the content if needed
+      If toClear Then rng.ClearContents
+    Next
   End If
-  'Now resize the listObject
-  If Name() <> "Tab_Export" Then _
-  Resize AddRows:=False, totalRowCount:=totalCount
+
+  'The user want to add new rows after cleaning
+  If addNewRows Then 
+    'Now resize the listObject  
+    Resize AddRows:=False, totalRowCount:=totalCount
+  End If
 End Sub
 
+
 'Import another custom table to this one
+'
+'pasteAtBottom: paste the data at the bottom of the current table
+'strictColumnSearch: Use strict rules when searching column names in the current table (case sensitive etc.)
+'insertShift: Insert some lines when extending the table (Default is true)
+'formatHeaders: A BetterArray of headers names where column format should be kept
+
 Private Sub Import(ByVal impTab As Object, _
                    Optional ByVal pasteAtBottom As Boolean = False, _
                    Optional ByVal strictColumnSearch As Boolean = False, _ 
-                   Optional ByVal insertShift As Boolean = True)
+                   Optional ByVal insertShift As Boolean = True, _ 
+                   Optional ByVal formatHeaders As Object = Nothing)
 
   Dim imphRng As Range
   Dim headerValue As String
@@ -382,19 +400,14 @@ Private Sub Import(ByVal impTab As Object, _
   Dim sh As Worksheet
   Dim startPastingRow As Long
 
-  If (TypeName(impTab) <> "DataSheet") And _
-     (TypeName(impTab) <> "CustomTable") Then _
-      Exit Sub
-
-  If (TypeName(impTab) = "CustomTable") Then
-    'Test if the custom tables have the same name, otherwise exit.
-    If LCase(Name()) <> LCase(impTab.Name()) Then Exit Sub
+  If ((TypeName(impTab) <> "DataSheet") And (TypeName(impTab) <> "CustomTable")) Or _ 
+     ((TypeName(impTab) = "CustomTable") And (LCase(Name()) <> LCase(impTab.Name()))) Then
+    Exit Sub
   End If
 
   'Initialize and Clear the private variable NOTIMPORTEDCOLUMNS
-  If NOTIMPORTEDCOLUMNS Is Nothing Then
-    Set NOTIMPORTEDCOLUMNS = New BetterArray
-  End If
+  If NOTIMPORTEDCOLUMNS Is Nothing Then Set NOTIMPORTEDCOLUMNS = New BetterArray
+
   NOTIMPORTEDCOLUMNS.Clear
 
   'Unhide hidden columns before import
@@ -444,8 +457,12 @@ Private Sub Import(ByVal impTab As Object, _
         If Not pasteAtBottom Then currDataRng.Cells.ClearContents
         rng.Value = impDataRng.Value
       End If
-    Else
 
+      'Import the format/Comment from some ranges
+      If TypeName(formatHeaders) = "BetterArray" Then
+        If formatHeaders.Includes(newHeaderValue) Then ImportFormat impRng:=impDataRng, currRng:=rng
+      End If
+    Else
       NOTIMPORTEDCOLUMNS.Push headerValue
     End If
   Next
@@ -454,6 +471,142 @@ Private Sub Import(ByVal impTab As Object, _
 
   'return back hidden columns
   ReturnBackHiddenColumns
+
+  'Format Headers are
+End Sub
+
+'Import All is the Sub that imports by keeping the imported object as the master
+'one. It is assumed that all the columns of the imported Object SHOULD be imported, and
+'will replace all the current columns WITH all the imported ones
+
+Private Sub ImportAll(ByVal impTab As Object)
+
+  Dim currhRng As Range
+  Dim imphRng As Range
+  Dim currLo As ListObject
+  Dim sh As Worksheet
+  Dim impTabList As BetterArray 'Data of imported Table
+  Dim bodyRng As Range
+  Dim cellRng As Range
+
+  'I want to import by keeping all the headers of the imported tab.
+  'First I need to clean the current tab and then I copy and paste
+  'the data from the imported table
+  'I would avoid doing it with DataSheet, just to make sure we are importing
+  'the same "elements", but it is still possible do import All elements of a DataSheet
+
+  If ((TypeName(impTab) <> "DataSheet") And (TypeName(impTab) <> "CustomTable")) Or _ 
+      ((TypeName(impTab) = "CustomTable") And (LCase(Name()) <> LCase(impTab.Name()))) Then
+    Exit Sub
+  End If
+
+  'Initialize and Clear the private variable NOTIMPORTEDCOLUMNS
+  If NOTIMPORTEDCOLUMNS Is Nothing Then Set NOTIMPORTEDCOLUMNS = New BetterArray
+  NOTIMPORTEDCOLUMNS.Clear
+
+  'Unhide previously hidden columns in the custom table. Those will not be
+  'returned back after importAll because of the importing mecanism
+  UnhideHiddenColumns
+
+  'Clean the actual customTable object
+  Clean
+  Set currLo = Table()
+  Set currhRng = currLo.HeaderRowRange()
+  Set imphRng = impTab.HeaderRange()
+  Set impTabList = New BetterArray
+  Set sh = Wksh()
+
+  'Get the data from imported listObject
+  impTabList.FromExcelRange imphRng.Cells(1, 1), _ 
+                            DetectLastRow:=True, DetectLastColumn:=True
+
+  'AddRows to the current Table
+  Resize AddRows:=True, nbRows:=impTabList.Length
+  'Paste data with betterarray
+  impTabList.ToExcelRange currhRng.Cells(1, 1)
+  'Resize the new listObject with imported elements
+  With sh
+    Set bodyRng = .Range(currhRng.Cells(1, 1), currhRng.Cells(impTabList.Length, imphRng.Columns.Count))
+    currLo.Resize bodyRng
+  End With
+
+  'Clear elements after the end of the table (in case imported table has
+  'less columns compare to current table)
+  Set cellRng = currhRng.Cells(1, imphRng.Columns.Count + 1)
+
+  Do while Not IsEmpty(cellRng)
+    cellRng.EntireColumn.Cells.Clear
+    cellRng.EntireColumn.Locked = False
+    Set cellRng = cellRng.Offset(, 1)
+  Loop
+
+  
+
+  'Typically in this case all the columns from the imported Object are imported,
+  'so normally the NOTIMPORTEDCOLUMNS object is empty.
+  this.hasImport = True
+End Sub
+
+'This sub is an internal sub to import columns formats (If required)
+
+'impRng: The importing range
+'currRng the current range in the current CustomTable
+
+Private Sub ImportFormat(impRng As Range, ByVal currRng As Range)
+
+  Dim formatCounter As Long
+  Dim hasComment As Boolean
+  Dim hasCommentThreaded As Boolean
+  Dim commentText As String
+  Dim commentThreadedText As String
+      
+  'Clear all eventual comments on the range
+  currRng.ClearComments
+
+  For formatCounter = 1 To impDataRng.Rows.Count
+    'keep the comment if there is one
+    hasComment = False
+    hasCommentThreaded = False
+        
+    'On some excel version there is no CommentThread. So it would
+    'result in Error.
+    On Error Resume Next
+      hasCommentThreaded = (impRng.Cells(formatCounter, 1).CommentThreaded.Text <> vbNullString)
+      hasComment = (impRng.Cells(formatCounter, 1).Comment.Text <> vbNullString)
+      commentThreadedText = impRng.Cells(formatCounter, 1).CommentThreaded.Text
+      commentText = impRng.Cells(formatCounter, 1).Comment.Text
+    On Error GoTo 0
+
+    'Add comment and commentThread are converted to comments. No threads is 
+    'added here
+
+    If hasComment Then
+      On Error Resume Next
+      currRng.Cells(formatCounter, 1).AddComment
+      currRng.Cells(formatCounter, 1).Comment.Text Text:=commentText
+      currRng.Cells(formatCounter, 1).Comment.Visible = False
+      On Error GoTo 0
+    End If
+
+    If hasCommentThreaded Then
+      On Error Resume Next
+        currRng.Cells(formatCounter, 1).AddComment
+        currRng.Cells(formatCounter, 1).Comment.Text Text:=commentThreadedText
+      On Error GoTo 0
+    End If
+        'Add interiror color
+    If (impRng.Cells(formatCounter, 1).Interior.color <> vbWhite) Then 
+      currRng.Cells(formatCounter, 1).Interior.color = impRng.Cells(formatCounter, 1).Interior.color
+    End If
+        
+    'Add Font color
+    If (impRng.Cells(formatCounter, 1) <> vbBlack) Then
+      currRng.Cells(formatCounter, 1).Font.color = impRng.Cells(formatCounter, 1).Font.color
+    End If
+    'Add Font weight and decoration
+    currRng.Cells(formatCounter, 1).Font.Bold = impRng.Cells(formatCounter, 1).Font.Bold
+    currRng.Cells(formatCounter, 1).Font.Italic = impRng.Cells(formatCounter, 1).Font.Italic
+  Next
 End Sub
 
 Private Property Get ImportColumnsNotFound() As BetterArray
@@ -662,14 +815,15 @@ End Sub
 'On Linelist, there are not stacked listObjects on one worksheet,
 'So there is no need to insert shifts like in analysis custom table. Inserting
 'shifts is time consuming.
-Private Sub ICustomTable_AddRows(Optional ByVal nbRows As Long = 100, _ 
-                                 Optional Byval insertShift As Boolean = False)
+Private Sub ICustomTable_AddRows(Optional ByVal nbRows As Long = 5, _ 
+                                 Optional Byval insertShift As Boolean = False, _ 
+                                 Optional ByVal includeIds As Boolean = True)
 
-  Resize AddRows:=True, nbRows:=nbRows, insertShift:=insertShift
+  Resize AddRows:=True, nbRows:=nbRows, insertShift:=insertShift, includeIds:=includeIds
 End Sub
 
 Private Sub ICustomTable_RemoveRows(Optional ByVal totalCount As Long = 0)
-  Resize AddRows:=False, totalRowCount:=totalCount
+  Resize AddRows:=False, totalRowCount:=totalCount, includeIds:=includeIds
 End Sub
 
 Private Sub ICustomTable_SetValidation(ByVal colName As String, ByVal drop As IDropdownLists, _
@@ -719,8 +873,15 @@ Private Sub ICustomTable_Import( _
               ByVal impTab As Object, _
               Optional ByVal pasteAtBottom As Boolean = False, _
               Optional ByVal strictColumnSearch As Boolean = False, _
-              Optional ByVal insertShift As Boolean = True)
-  Import impTab, pasteAtBottom, strictColumnSearch, insertShift
+              Optional ByVal insertShift As Boolean = True, _ 
+              Optional ByVal keepImportHeaders As Boolean = False)
+
+  'keepImportHeaders means the import Object is the master
+  If keepImportHeaders Then
+    ImportAll impTab
+  Else
+    Import impTab, pasteAtBottom, strictColumnSearch, insertShift
+  End If
 End Sub
 
 Private Sub ICustomTable_SetValue(ByVal colName As String, ByVal keyName As String, _ 
