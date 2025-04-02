@@ -304,8 +304,7 @@ Private Sub Clean(ByVal excludeNames As BetterArray)
     headerValue = hRng.Cells(1, counter).Value
     Set rng = DataRange(headerValue)
 
-    If (Not rng.Cells(1, 1).HasFormula) And _ 
-       (Not excludeNames.Includes(headerValue)) Then 
+    If (Not rng.Cells(1, 1).HasFormula) And (Not excludeNames.Includes(headerValue)) Then 
       rng.ClearContents
     End If
   Next

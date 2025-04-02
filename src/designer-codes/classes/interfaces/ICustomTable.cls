@@ -27,15 +27,21 @@ Public Property Get Name() As String: End Property
 Public Property Get CellRange(ByVal colName As String, ByVal lineNum As Long) As Range: End Property
 Public Property Get Value(ByVal colName As String, ByVal keyName As String) As String: End Property
 
-
+'ImpTab could be either a customTable or a DataSheet Object
+'pasteAtBottom: paste the new imported data at the bottom of the previous one
+'strictColumnSearch: When looking for columns matching in import, do it the strict way (case sensitive)
+'insertShift: When resizing before import, insert some shift (maybe time consuming) instead of extending the
+'table.
 Public Sub Import(ByVal impTab As Object, _
                   Optional ByVal pasteAtBottom As Boolean = False, _
                   Optional ByVal strictColumnSearch As Boolean = False, _ 
-                  Optional ByVal insertShift As Boolean = True)
+                  Optional ByVal insertShift As Boolean = True, _
+                  Optional ByVal keepImportHeaders As Boolean = False)
 End Sub
+
 Public Sub Clean(): End Sub
 Public Sub Sort(ByVal els As Variant, Optional ByVal onFirst As Boolean = True): End Sub
-Public Sub AddRows(Optional ByVal nbRows As Long = 100, _ 
+Public Sub AddRows(Optional ByVal nbRows As Long = 5, _ 
                    Optional ByVal insertShift As Boolean = False)
 End Sub
 Public Sub RemoveRows(Optional ByVal totalCount As Long = 0): End Sub
