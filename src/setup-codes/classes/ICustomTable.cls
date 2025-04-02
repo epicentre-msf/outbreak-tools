@@ -12,10 +12,9 @@ Attribute VB_Description = "Interface of CustomTable"
 '@Folder("General")
 '@ModuleDescription("Interface of CustomTable")
 '@Interface
+'@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
-
-Private Const NBROWSADD As Long = 5 'Default Number of Rows to add when resizing
 
 
 Public Property Get DataRange(ByVal colName As String, _ 
@@ -38,7 +37,7 @@ Public Sub Import(ByVal impTab As ICustomTable, _
 End Sub
 Public Sub Clean(ByVal excludeNames As BetterArray): End Sub
 Public Sub Sort(ByVal els As Variant): End Sub
-Public Sub AddRows(Optional ByVal nbRows As Long = NBROWSADD, Optional ByVal includeIds As Boolean = True): End Sub
+Public Sub AddRows(Optional ByVal nbRows As Long = 5, Optional ByVal includeIds As Boolean = True): End Sub
 Public Sub RemoveRows(Optional ByVal totalCount As Long = 0, Optional ByVal includeIds As Boolean = True): End Sub
 Public Sub SetValidation(ByVal colName As String, _
                            ByVal drop As IDropdownLists, _
