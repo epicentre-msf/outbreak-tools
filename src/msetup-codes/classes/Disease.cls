@@ -271,7 +271,7 @@ Private Sub Add(ByVal disName As String, _
     .Cells(4, 4).Value = trads.TranslatedValue("varChoice")
     .Cells(4, 5).Value = trads.TranslatedValue("choiceVal")
     .Cells(4, 6).Value = trads.TranslatedValue("varStatus")
-    .Cells(4, 7).Value = trads.TranslatedValue("varVis")
+    '.Cells(4, 7).Value = trads.TranslatedValue("varVis")
     
     'Validation for variable Name
     With .Cells(5, 2).Validation
@@ -311,16 +311,16 @@ Private Sub Add(ByVal disName As String, _
 
     'Variable status
      dropObj.SetValidation cellRng:=.Cells(5, 6), _ 
-                          listName:="__var_status_en", _ 
+                          listName:="__var_status", _ 
                           alertType:= "error", _
                           message:=selectValue
 
     'Variable visibility
-     dropObj.SetValidation cellRng:=.Cells(5, 7), _ 
-                          listName:="__var_visibility_en", _ 
-                          alertType:= "error", _
-                          message:=selectValue
-    'Creating the listObject
+    '  dropObj.SetValidation cellRng:=.Cells(5, 7), _ 
+    '                       listName:="__var_visibility", _ 
+    '                       alertType:= "error", _
+    '                       message:=selectValue
+    ' 'Creating the listObject
     Set loRng = .Range(.Cells(4, 2), .Cells(5, 6))
     .ListObjects.Add(xlSrcRange, loRng, , xlYes).Name = TABTAG & nbDis
   End With

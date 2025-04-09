@@ -1,5 +1,5 @@
-
 Attribute VB_Name = "EventsRibbon"
+
 Option Explicit
 
 '@Folder("Events")
@@ -13,6 +13,7 @@ Private Const UPDATEDSHEETNAME As String = "__updated"
 Private Const TRADTABLE As String = "TabTransId"
 Private Const TRADTABLESHEET As String = "__ribbonTranslation"
 Private Const RNG_FileLang As String = "RNG_FileLang"
+Private Const DROPSHEET As String = "__dropdowns"
 
 'All the ribbon object
 Private ribbonUI As IRibbonUI
@@ -33,8 +34,8 @@ Private Sub NotBusyApp()
 End Sub
 
 '@Description("Resize the listObjects in the current sheet")
-Private Sub ResizeLo(Optional ByVal removeRows As Boolean = False, Optional ByVal totalCount As Long = 0)
-Attribute clickAddRows.VB_Description = "Resize the listObjects in the current sheet"
+Private Sub ResizeLo(Optional ByVal RemoveRows As Boolean = False, Optional ByVal totalCount As Long = 0)
+Attribute ResizeLo.VB_Description = "Resize the listObjects in the current sheet"
     Dim sh As Worksheet
     Dim wb As Workbook
     Dim Lo As ListObject
@@ -51,11 +52,11 @@ Attribute clickAddRows.VB_Description = "Resize the listObjects in the current s
 
     'Speed up application
     BusyApp
-    pass.Unprotect sh
+    pass.UnProtect sh
 
-    For Each Lo in sh.ListObjects
+    For Each Lo In sh.ListObjects
         Set csTab = CustomTable.Create(Lo)
-        If removeRows Then
+        If RemoveRows Then
             csTab.RemoveRows totalCount:=totalCount
         Else
             csTab.AddRows
@@ -74,7 +75,7 @@ End Sub
 
 '@EntryPoint
 '@Description("Callback for btnAdd onAction")
-Sub clickAddRows(control As IRibbonControl)
+Sub clickAddRows(Control As IRibbonControl)
 Attribute clickAddRows.VB_Description = "Callback for btnAdd onAction"
 
     Dim drop As IDropdownLists
@@ -93,7 +94,7 @@ End Sub
 
 '@EntryPoint
 '@Description("Callback for btnRes onAction")
-Sub clickResize(control As IRibbonControl)
+Sub clickResize(Control As IRibbonControl)
 Attribute clickResize.VB_Description = "Callback for btnRes onAction"
 
     Dim drop As IDropdownLists
@@ -107,16 +108,16 @@ Attribute clickResize.VB_Description = "Callback for btnRes onAction"
     Set configSheets = New BetterArray
     Set configSheets = drop.Items("__configSheets")
 
-    If Not configSheets.Includes(ActiveSheet.Name) Then 
+    If Not configSheets.Includes(ActiveSheet.Name) Then
         Set actsh = ActiveSheet
         totalCount = IIf(actsh.Cells(2, 4).Value = "DISSHEET", 2, 0)
-        ResizeLo removeRows:=True, totalCount:=totalCount
+        ResizeLo RemoveRows:=True, totalCount:=totalCount
     End If
 End Sub
 
 '@Description("Callback for btnFilt onAction: clear all the filters in the current sheet")
 '@EntryPoint
-Public Sub clickFilters(ByRef control As IRibbonControl)
+Public Sub clickFilters(ByRef Control As IRibbonControl)
 Attribute clickFilters.VB_Description = "Callback for btnFilt onAction: clear all the filters in the current sheet"
 
     Dim pass As IPasswords
@@ -129,13 +130,13 @@ Attribute clickFilters.VB_Description = "Callback for btnFilt onAction: clear al
     Set sh = ActiveSheet
     Set pass = Passwords.Create(wb.Worksheets(PASSSHEETNAME))
 
-    pass.Unprotect sh
-    For Each Lo in sh.ListObjects    
+    pass.UnProtect sh
+    For Each Lo In sh.ListObjects
         If Not Lo.AutoFilter Is Nothing Then
             On Error Resume Next
                 Lo.AutoFilter.ShowAllData
             On Error GoTo 0
-        End If    
+        End If
     Next
 
     pass.Protect sh
@@ -146,7 +147,7 @@ End Sub
 
 '@Description("Callback for editLang onChange: Add a language to translation table")
 '@EntryPoint
-Public Sub clickAddLang(ByRef control As IRibbonControl, ByRef text As String)
+Public Sub clickAddLang(ByRef Control As IRibbonControl, ByRef Text As String)
 Attribute clickAddLang.VB_Description = "Callback for editLang onChange: Add a language to translation table"
 
     Dim pass As IPasswords
@@ -159,7 +160,7 @@ Attribute clickAddLang.VB_Description = "Callback for editLang onChange: Add a l
     Dim fileLang As String
     Dim drop As IDropdownLists
 
-    If text = vbNullString Then Exit Sub
+    If Text = vbNullString Then Exit Sub
     BusyApp
 
     On Error GoTo errHand
@@ -176,22 +177,22 @@ Attribute clickAddLang.VB_Description = "Callback for editLang onChange: Add a l
     'Ask before proceeding
     Set trads = Translation.Create(Lo, fileLang)
 
-    If (MsgBox(trads.TranslatedValue("addLang") & text, _
+    If (MsgBox(trads.TranslatedValue("addLang") & Text, _
         vbYesNo, trads.TranslatedValue("askConfirm")) = vbNo) Then Exit Sub
 
     pass.UnProtect TRADSHEETNAME
-    tradchk.AddTransLang text
+    tradchk.AddTransLang Text
     pass.Protect TRADSHEETNAME, True, True
 
     MsgBox trads.TranslatedValue("done")
 
-ErrHand:
+errHand:
     NotBusyApp
 End Sub
 
 '@Description("Callback for btnTransUp onAction: Update columns to be translated")
 '@EntryPoint
-Public Sub clickUpdateTranslate(ByRef control As IRibbonControl)
+Public Sub clickUpdateTranslate(ByRef Control As IRibbonControl)
 Attribute clickUpdateTranslate.VB_Description = "Callback for btnTransUp onAction: Update columns to be translated"
     'remove update columns and add new columns to watch
     
@@ -266,7 +267,7 @@ End Sub
 
 '@Description("Callback for btnTransAdd onAction: Import all words to be translated")
 '@EntryPoint
-Public Sub clickAddTrans(ByRef control As IRibbonControl)
+Public Sub clickAddTrans(ByRef Control As IRibbonControl)
 Attribute clickAddTrans.VB_Description = "Callback for btnTransAdd onAction: Import all words to be translated"
 
     Dim pass As IPasswords
@@ -340,7 +341,7 @@ End Sub
 '@Description("Callback for btnClear onAction: Clear all data in the current disease worksheet")
 '@EntryPoint
 Public Sub clickClearSheet(Control As IRibbonControl)
-Attribute clickClearSheet.VB_Description="Callback for btnClear onAction: Clear all data in the current disease worksheet"
+Attribute clickClearSheet.VB_Description = "Callback for btnClear onAction: Clear all data in the current disease worksheet"
     ManageDiseases.ClearDiseaseSheet
 End Sub
 
@@ -349,7 +350,7 @@ End Sub
 '@Description("Callback for btnExp onAction: Export the current disease file for setup import")
 '@EntryPoint
 Public Sub clickExpSheet(Control As IRibbonControl)
-Attribute clickExpSheet.VB_Description="Callback for btnExp onAction: Export the current disease file for setup import"
+Attribute clickExpSheet.VB_Description = "Callback for btnExp onAction: Export the current disease file for setup import"
     Exports.ExportToSetup
 End Sub
 
@@ -357,14 +358,14 @@ End Sub
 '@Description("Callback for btnComp onAction: Compare two diseases")
 '@EntryPoint
 Public Sub clickComp(Control As IRibbonControl)
-Attribute clickComp.VB_Description="Callback for btnComp onAction: Compare two diseases"  
+Attribute clickComp.VB_Description = "Callback for btnComp onAction: Compare two diseases"
     Misc.Compare
 End Sub
 
 '@Description("Callback for btnImp onAction: Import flat disease file")
 '@EntryPoint
 Public Sub clickImp(Control As IRibbonControl)
-Attribute clickImp.VB_Description="Callback for btnImp onAction: Import flat disease file"
+Attribute clickImp.VB_Description = "Callback for btnImp onAction: Import flat disease file"
     Exports.ImportFlatFile
 End Sub
 
@@ -372,7 +373,7 @@ End Sub
 '@EntryPoint
 '@Description("Callback for btnExpMig onAction: Export the current file for Migration")
 Public Sub clickExp(Control As IRibbonControl)
-Attribute clickExp.VB_Description="Callback for btnExpMig onAction: Export the current file for Migration"
+Attribute clickExp.VB_Description = "Callback for btnExpMig onAction: Export the current file for Migration"
     Exports.ExportForMigration
 End Sub
 
@@ -424,7 +425,7 @@ Attribute clickLangChange.VB_Description = "Callback for langDrop onAction: Chan
 
     BusyApp
 
-    On Error GoTo ExitLang
+    'On Error GoTo ExitLang
 
     Set wb = ThisWorkbook
     Set tradsh = wb.Worksheets(TRADTABLESHEET)
@@ -434,31 +435,33 @@ Attribute clickLangChange.VB_Description = "Callback for langDrop onAction: Chan
     UpdateLabels
 
     'Translate elements in the worksheets
+    Application.EnableEvents = False
     TranslateWbElmts langId
 
 ExitLang:
     NotBusyApp
+    Application.EnableEvents = True
 End Sub
 
 
 
-Private Sub TranslateWbElmts(Byval langId As String)
+Public Sub TranslateWbElmts(ByVal langId As String)
 
     Dim wb As Workbook
     Dim pass As IPasswords
     Dim drop As IDropdownLists
     Dim sh As Worksheet
-    Dim pass As IPasswords
     Dim hRng As Range
     Dim trads As ITranslation
     Dim selectValue As String
-
+    
+    Set wb = ThisWorkbook
     Set pass = Passwords.Create(wb.Worksheets(PASSSHEETNAME))
     Set trads = Translation.Create(wb.Worksheets(TRADTABLESHEET).ListObjects(1), langId)
     Set drop = DropdownLists.Create(wb.Worksheets(DROPSHEET))
     selectValue = trads.TranslatedValue("selectValue")
 
-    For sh in wb.Worksheets
+    For Each sh In wb.Worksheets
 
         'Update elements in the disease worksheet
         If sh.Cells(2, 4).Value = "DISSHEET" Then
@@ -466,30 +469,31 @@ Private Sub TranslateWbElmts(Byval langId As String)
 
             'Change the headers to the corresponding language
             Set hRng = sh.ListObjects(1).HeaderRowRange
-            hRng.Cells(1, 1).Value = trads.TranslatedValue("varName")
-            hRng.Cells(1, 2).Value = trads.TranslatedValue("varLabel")
-            hRng.Cells(1, 3).Value = trads.TranslatedValue("varChoice")
-            hRng.Cells(1, 4).Value = trads.TranslatedValue("choiceVal")
-            hRng.Cells(1, 5).Value = trads.TranslatedValue("varStatus")
-            hRng.Cells(1, 6).Value = trads.TranslatedValue("varVis")
+            hRng.Cells(1, 1).Value = trads.TranslatedValue("varSection")
+            hRng.Cells(1, 2).Value = trads.TranslatedValue("varName")
+            hRng.Cells(1, 3).Value = trads.TranslatedValue("varLabel")
+            hRng.Cells(1, 4).Value = trads.TranslatedValue("varOrder")
+            hRng.Cells(1, 5).Value = trads.TranslatedValue("varChoice")
+            hRng.Cells(1, 6).Value = trads.TranslatedValue("choiceVal")
+            hRng.Cells(1, 7).Value = trads.TranslatedValue("varStatus")
+
 
             'Change the dropdown values for the columns status and visibility
             With sh.ListObjects(1)
                 
                 'variable status
-                drop.SetValidation cellRng:=.ListColumns(5).DataBdoyRange, _ 
+                drop.SetValidation cellRng:=.ListColumns(5).DataBdoyRange, _
                                    listName:="__var_status_" & LCase(langId), _
-                                   alertType:="error", _ 
+                                   alertType:="error", _
                                    message:=selectValue
                 
                 'variable visibility
-                drop.SetValidation cellRng:=.ListColumns(6).DataBodyRange, _ 
-                                   listName:="__var_status_" & LCase(langId), _ 
+                drop.SetValidation cellRng:=.ListColumns(6).DataBodyRange, _
+                                   listName:="__var_status_" & LCase(langId), _
                                    alertType:="error", message:=selectValue
             End With
 
             pass.Protect sh
-
 
         'Update columns in the variable worksheet
         
@@ -498,38 +502,32 @@ Private Sub TranslateWbElmts(Byval langId As String)
 
             Set hRng = sh.ListObjects(1).HeaderRowRange
             
-            pass.Unprotect sh
+            pass.UnProtect sh
             
             hRng.Cells(1, 1).Value = trads.TranslatedValue("varName")
             hRng.Cells(1, 2).Value = trads.TranslatedValue("varLabel")
             hRng.Cells(1, 3).Value = trads.TranslatedValue("defChoice")
             hRng.Cells(1, 4).Value = trads.TranslatedValue("choiceVal")
-            hRng.Cells(1, 5).Value = trads.TransatedValue("defStatus")
+            hRng.Cells(1, 5).Value = trads.TranslatedValue("defStatus")
             hRng.Cells(1, 6).Value = trads.TranslatedValue("comments")
 
             'Variable status validation
-            drop.SetValidation cellRng:= sh.ListObjects(1).ListColumns(5).DataBodyRange, _ 
-                               listName:="__var_status_" & LCase(langId), _
-                               alertType:="error", message:=selectValue
-
             pass.Protect sh
 
-        ElseIf sh.Name = "Choices"
+        ElseIf sh.Name = "Choices" Then
 
             Set hRng = sh.ListObjects(1).HeaderRowRange
             
             pass.UnProtect sh
 
-            hRng.Cells(1, 1).Value = trads.TranslatedValue("varName")
-            hRng.Cells(1, 2).Value = trads.TranslatedValue("varLabel")
-            hRng.Cells(1, 3).Value = trads.TranslatedValue("defChoice")
+            hRng.Cells(1, 1).Value = trads.TranslatedValue("listName")
+            hRng.Cells(1, 2).Value = trads.TranslatedValue("orderingList")
+            hRng.Cells(1, 3).Value = trads.TranslatedValue("longLabel")
+            hRng.Cells(1, 4).Value = trads.TranslatedValue("shortLabel")
             
 
             pass.Protect sh
         End If
 
     Next
-
-
-
 End Sub

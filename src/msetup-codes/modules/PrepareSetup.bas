@@ -54,17 +54,14 @@ End Sub
 Private Sub CreateDropdowns()
     AddElements "__yes_no", "yes", "no"
     'initialize the diseases list with worksheets names not to put in disease
-    AddElements "__diseases_list", "Choices", "Variables", "Translations", _ 
-                 "Dev", "__pass", "__updated", "__compRep", "__ribbonTranslation", _ 
+    AddElements "__diseases_list", "Choices", "Variables", "Translations", _
+                 "Dev", "__pass", "__updated", "__compRep", "__ribbonTranslation", _
                  "__dropdowns"
 
     AddElements "__configSheets", "Dev", "__pass", "__updated", "__compRep", "__ribbonTranslation", "__dropdowns"
     AddElements "__languages", vbNullString
     AddElements "__file_languages", vbNullString
-    AddElements "__var_status_en", "core", "non core"
-    AddElements "__var_visibility_en", "always visible", "visible by default", "hidden by default"
-    'AddElements "__var_status_fr", "variable core", "variable non core"
-    'Rembember to add visibility and status for the other languages also
+    AddElements "__var_status", "mandatory", "optional, visible", "optional, hidden"
 End Sub
 
 Private Sub AddLanguages()

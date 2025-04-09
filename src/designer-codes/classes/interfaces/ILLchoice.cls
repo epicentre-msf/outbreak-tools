@@ -43,3 +43,8 @@ End Sub
 
 Public Sub Translate(ByVal TransObject As ITranslation)
 End Sub
+
+
+'Add and remove rows from the choice listObject
+Public Sub AddRows(): End Sub
+Public Sub RemoveRows(): End Sub
