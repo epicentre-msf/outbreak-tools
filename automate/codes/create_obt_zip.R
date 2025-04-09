@@ -172,11 +172,11 @@ create_master_setup_release <- function(
   rel_folder <- here("releases", glue("{actual_branch}")) |> dir_create()
   # copy the master setup file to the corresponding folder
   file_copy(
-    here("src", "bin", "master-setup", "disease_setup.xlsb"),
+    here("src", "bin", "master-setup", "master_setup.xlsb"),
     here(
       glue("{rel_folder}"),
       "master-setup",
-      glue("disease_setup_{actual_branch}-{rel_date}.xlsb")
+      glue("master_setup_{actual_branch}-{rel_date}.xlsb")
     ),
     overwrite = TRUE
   )
@@ -184,14 +184,14 @@ create_master_setup_release <- function(
   if (latest) {
     # add the file to the lastest folder
     file_copy(
-      here("src", "bin", "master-setup", "disease_setup.xlsb"),
-      here("releases", "latest", "disease_setup-latest.xlsb")
+      here("src", "bin", "master-setup", "master_setup.xlsb"),
+      here("releases", "latest", "master_setup-latest.xlsb")
     )
 
     # copy to old versions
     file_copy(
-      here("src", "bin", "master-setup", "disease_setup.xlsb"),
-      here("releases", "old", glue("disease_setup-{rel_date}.xlsb")),
+      here("src", "bin", "master-setup", "master_setup.xlsb"),
+      here("releases", "old", glue("master_setup-{rel_date}.xlsb")),
       overwrite = TRUE
     )
   }

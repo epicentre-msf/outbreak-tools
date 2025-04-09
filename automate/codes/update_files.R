@@ -77,7 +77,7 @@ update_master_setup <- function(tag = "mock") {
     mock = {
       file_copy(
         here(".mock", "disease_mock.xlsb"),
-        here("src", "bin", "master-setup", "disease_setup_dev.xlsb"),
+        here("src", "bin", "master-setup", "master_setup_dev.xlsb"),
         overwrite = TRUE
       )
       cli_alert_success("Sucesfully replaced the disease dev file")
@@ -87,8 +87,8 @@ update_master_setup <- function(tag = "mock") {
     #(the one without the _dev tag)
     main = {
       file_copy(
-        here("src", "bin", "master-setup", "disease_setup_dev.xlsb"),
-        here("src", "bin", "master-setup", "disease_setup.xlsb"),
+        here("src", "bin", "master-setup", "master_setup_dev.xlsb"),
+        here("src", "bin", "master-setup", "master_setup.xlsb"),
         overwrite = TRUE
       )
       cli_alert_success("Sucessfully replace the disease main file")

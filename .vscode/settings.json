@@ -12,7 +12,7 @@
     "editor.fontFamily": "'Office Code Pro',  Menlo, 'Courier New', monospace",
     "editor.fontLigatures": true,
     "zenMode.hideStatusBar": false,
-    "editor.minimap.scale": 2,
+    "editor.minimap.scale": 1,
     "editor.minimap.renderCharacters": true,
     "githubPullRequests.ignoredPullRequestBranches": [
         "dev"

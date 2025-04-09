@@ -117,7 +117,7 @@ Public Sub UpdateDiseaseSheet(ByVal disSh As Worksheet, ByVal Target As Range)
 
     Set wb = ThisWorkbook
     Set ribSh = wb.Worksheets("__ribbonTranslation")
-    Set ribTrads = Translation.Create(rbSh.ListObjects(1), rbSh.Range("RNG_FileLang").Value)
+    Set ribTrads = Translation.Create(ribSh.ListObjects(1), ribSh.Range("RNG_FileLang").Value)
     Set Lo = dissh.ListObjects(1)
     Set tradLo = wb.Worksheets("Translations").ListObjects(1)
     Set choiObj = Choices.Create(wb.Worksheets("Choices"), 4, 1, ribTrads)
