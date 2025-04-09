@@ -29,15 +29,15 @@ End Type
 
 Private this As Tchoice
 
-Private Const LISTNAMECODE As String = "ListName"
-Private Const LABELCODE   As String = "Label"
-Private Const LABELSHORTCODE As String = "ShortLabel"
-Private Const ORDERINLISTCODE   As String = "OrderingList"
+Private Const LISTNAMECODE As String = "listName"
+Private Const LABELCODE   As String = "longLabel"
+Private Const LABELSHORTCODE As String = "shortLabel"
+Private Const ORDERINLISTCODE   As String = "orderingList"
 Private Const DEFAULTCHOICESEPARATOR As String = " | "
 
 'Instanciation
-Public Function Create(ByVal choiceWorksheet As Worksheet, _ 
-                       ByVal choiceStartRow As Long, _ 
+Public Function Create(ByVal choiceWorksheet As Worksheet, _
+                       ByVal choiceStartRow As Long, _
                        ByVal choiceStartColumn As Long, _
                        ByVal trads As ITranslation) As IChoices
 
@@ -46,7 +46,7 @@ Public Function Create(ByVal choiceWorksheet As Worksheet, _
 
     With New Choices
         Set .ChoiceData = customDataSheet
-        Set .TradsObject = trads
+        Set .TradObject = trads
         Set Create = .Self
     End With
 End Function
@@ -71,14 +71,14 @@ Public Property Set TradObject(ByVal trads As ITranslation)
     Set this.trads = trads
 End Property
 
-Private Property Get ListName() As String
+Private Property Get listName() As String
     Dim trads As ITranslation
-    If this.listNameValue = VbNullString Then 
+    If this.listNameValue = vbNullString Then
         Set trads = TradObject()
         this.listNameValue = trads.TranslatedValue(LISTNAMECODE)
     End If
 
-    ListName = this.listNameValue
+    listName = this.listNameValue
 End Property
 
 Private Property Get Label() As String
@@ -88,7 +88,8 @@ Private Property Get Label() As String
         Set trads = TradObject()
         this.labelValue = trads.TranslatedValue(LABELCODE)
     End If
-
+    
+    Label = this.labelValue
 End Property
 
 Private Property Get LabelShort() As String
@@ -135,7 +136,7 @@ Private Sub AddHeaders()
     Set sh = Wksh()
     Set cellRng = sh.Cells(StartRow(), StartColumn())
 
-    cellRng.Value = ListName()
+    cellRng.Value = listName()
     cellRng.Offset(, 1).Value = OrderingList()
     cellRng.Offset(, 2).Value = Label()
     cellRng.Offset(, 3).Value = LabelShort()
@@ -150,7 +151,8 @@ Public Property Set ChoiceData(ByVal customDataSheet As IDataSheet)
 End Property
 
 'Get the data range
-Private Property Get DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders As Boolean = True) As Range
+Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
+                               Optional ByVal includeHeaders As Boolean = True) As Range
     Dim dataObject As IDataSheet
     Set dataObject = ChoiceData
 
@@ -166,8 +168,8 @@ Private Property Get ChoiceExists(ByVal choiceName As String) As Boolean
     exist = False
 
     Set dataObject = ChoiceData
-    If dataObject.ColumnExists(ListName()) Then
-        Set listRng = DataRange(ListName(), includeHeaders:=False)
+    If dataObject.ColumnExists(listName()) Then
+        Set listRng = DataRange(listName(), includeHeaders:=False)
         exist = Not (listRng.Find(What:=choiceName, lookAt:=xlWhole, _
                                   MatchCase:=True, After:=listRng.Cells(listRng.Rows.Count, 1)) Is Nothing)
     End If
@@ -183,7 +185,7 @@ Private Property Get Categories(ByVal choiceName As String) As BetterArray
     Set lst = New BetterArray
 
     If ChoiceExists(choiceName) Then
-        Set rngName = DataRange(ListName(), includeHeaders:=False)
+        Set rngName = DataRange(listName(), includeHeaders:=False)
         Set rngLabel = DataRange(Label(), includeHeaders:=False)
         For counter = 1 To rngName.Rows.Count
             If rngName.Cells(counter, 1).Value = choiceName Then _
@@ -200,6 +202,7 @@ Private Property Get PasteTranslatedCategories(ByVal choiceName As String, ByVal
     Dim counter As Long
     Dim pasteValue As String
 
+    If choiceName = vbNullString Then Exit Property
     If Not ChoiceExists(choiceName) Then Exit Property
     Set lst = Categories(choiceName)
     pasteValue = trads.TranslatedValue(lst.Item(lst.LowerBound))
@@ -216,14 +219,15 @@ Private Property Get PasteCategories(ByVal choiName As String, Optional ByVal se
 
     Dim lst As BetterArray
 
+    If choiName = vbNullString Then Exit Property
     If Not ChoiceExists(choiName) Then Exit Property
     Set lst = Categories(choiName)
 
-    PasteCategories = lst.ToString( _ 
-                     Separator:=separator, _ 
-                     OpeningDelimiter:=vbNullString, _ 
+    PasteCategories = lst.ToString( _
+                     separator:=separator, _
+                     OpeningDelimiter:=vbNullString, _
                      ClosingDelimiter:=vbNullString, _
-                     QuoteString:=False)
+                     QuoteStrings:=False)
 End Property
 
 'Sort the Choices sheet
@@ -236,12 +240,12 @@ Private Sub Sort()
 
     Set dataObject = ChoiceData
 
-    If dataObject.ColumnExists(ListName()) And dataObject.ColumnExists(OrderingList()) Then
-        Set listRng = DataRange(ListName(), includeHeaders:=False)
+    If dataObject.ColumnExists(listName()) And dataObject.ColumnExists(OrderingList()) Then
+        Set listRng = DataRange(listName(), includeHeaders:=False)
         Set orderRng = DataRange(OrderingList(), includeHeaders:=False)
         Set choiceRng = DataRange(includeHeaders:=False)
 
-        choiceRng.Sort key1:=listRng, order1:=xlAscending, key2:=orderRng, order2:=xlAscending
+        choiceRng.Sort key1:=listRng, Order1:=xlAscending, key2:=orderRng, order2:=xlAscending
     End If
 End Sub
 
@@ -251,7 +255,7 @@ Private Property Get AllChoices() As BetterArray
     Dim counter As Long 'counter for the number of rows of one range
 
     Set lstChoi = New BetterArray
-    Set lstRng = DataRange(ListName(), includeHeaders:=False)
+    Set lstRng = DataRange(listName(), includeHeaders:=False)
     For counter = 1 To lstRng.Rows.Count
         If Not lstChoi.Includes(lstRng.Cells(counter, 1).Value) Then _
             lstChoi.Push lstRng.Cells(counter, 1).Value
@@ -278,7 +282,7 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
     Set checkCategories = Categories(choiceName)
     If checkCategories.Length > 0 Then Exit Sub  'Will probably trace log.
 
-    Set listRng = DataRange(ListName())
+    Set listRng = DataRange(listName())
     Set labelRng = DataRange(Label())
     Set orderRng = DataRange(OrderingList())
     Set choicewksh = Wksh()
@@ -375,7 +379,7 @@ Private Property Get IChoices_PasteTranslatedCategories(ByVal choiceName As Stri
 End Property
 
 
-Private Property Get IChoices_PasteCategories(ByVal choiceName As String, _ 
+Private Property Get IChoices_PasteCategories(ByVal choiceName As String, _
                                               Optional ByVal separator As String = DEFAULTCHOICESEPARATOR) As String
     IChoices_PasteCategories = PasteCategories(choiceName, separator)
 End Property
