@@ -1,28 +1,16 @@
 [
   {
-    "listing": "/how_to/home_how_to.html",
+    "listing": "/reference/home_reference.html",
     "items": [
-      "/how_to/export_subset_geo.html",
-      "/how_to/import_geobase.html",
-      "/how_to/migrate_linelist.html",
-      "/how_to/send_data_to_dashboard.html",
-      "/how_to/show_hide_variables.html",
-      "/how_to/add_language.html",
-      "/how_to/link_tables.html",
-      "/how_to/migrate_setup.html"
-    ]
-  },
-  {
-    "listing": "/getting_started/home_linelist.html",
-    "items": [
-      "/getting_started/use_linelist.html"
-    ]
-  },
-  {
-    "listing": "/cheatsheets/home_cheatsheets.html",
-    "items": [
-      "/cheatsheets/analyses.html",
-      "/cheatsheets/variable_control.html"
+      "/reference/ribbons_designer.html",
+      "/reference/ribbons_linelist.html",
+      "/reference/ribbons_setup.html",
+      "/reference/custom_formulas.html",
+      "/reference/analyses_sheet.html",
+      "/reference/choices_sheet.html",
+      "/reference/dictionary_sheet.html",
+      "/reference/exports_sheet.html",
+      "/reference/translations_sheet.html"
     ]
   },
   {
@@ -35,17 +23,30 @@
     ]
   },
   {
-    "listing": "/reference/home_reference.html",
+    "listing": "/cheatsheets/home_cheatsheets.html",
     "items": [
-      "/reference/ribbons_designer.html",
-      "/reference/ribbons_linelist.html",
-      "/reference/ribbons_setup.html",
-      "/reference/custom_formulas.html",
-      "/reference/analyses_sheet.html",
-      "/reference/choices_sheet.html",
-      "/reference/dictionary_sheet.html",
-      "/reference/exports_sheet.html",
-      "/reference/translations_sheet.html"
+      "/cheatsheets/analyses.html",
+      "/cheatsheets/variable_control.html"
+    ]
+  },
+  {
+    "listing": "/getting_started/home_linelist.html",
+    "items": [
+      "/getting_started/use_linelist.html"
+    ]
+  },
+  {
+    "listing": "/how_to/home_how_to.html",
+    "items": [
+      "/how_to/export_subset_geo.html",
+      "/how_to/import_geobase.html",
+      "/how_to/migrate_linelist.html",
+      "/how_to/show_hide_variables.html",
+      "/how_to/connect_dashboard.html",
+      "/how_to/send_data_to_dashboard.html",
+      "/how_to/add_language.html",
+      "/how_to/link_tables.html",
+      "/how_to/migrate_setup.html"
     ]
   }
 ]
