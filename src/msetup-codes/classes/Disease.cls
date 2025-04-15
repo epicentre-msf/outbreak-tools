@@ -265,13 +265,13 @@ Private Sub Add(ByVal disName As String, _
                           message:=trads.TranslatedValue("errLang")
 
     'Add the listObject for the disease
-
-    .Cells(4, 2).Value = trads.TranslatedValue("varName")
-    .Cells(4, 3).Value = trads.TranslatedValue("varLabel")
-    .Cells(4, 4).Value = trads.TranslatedValue("varChoice")
-    .Cells(4, 5).Value = trads.TranslatedValue("choiceVal")
-    .Cells(4, 6).Value = trads.TranslatedValue("varStatus")
-    '.Cells(4, 7).Value = trads.TranslatedValue("varVis")
+    .Cells(4, 2).Value = trads.TranslatedValue("varOrder")
+    .Cells(4, 3).Value = trads.TranslatedValue("varSection")
+    .Cells(4, 4).Value = trads.TranslatedValue("varName")
+    .Cells(4, 5).Value = trads.TranslatedValue("varLabel")
+    .Cells(4, 6).Value = trads.TranslatedValue("varChoice")
+    .Cells(4, 7).Value = trads.TranslatedValue("choiceVal")
+    .Cells(4, 8).Value = trads.TranslatedValue("varStatus")
     
     'Validation for variable Name
     With .Cells(5, 2).Validation
@@ -321,7 +321,7 @@ Private Sub Add(ByVal disName As String, _
     '                       alertType:= "error", _
     '                       message:=selectValue
     ' 'Creating the listObject
-    Set loRng = .Range(.Cells(4, 2), .Cells(5, 6))
+    Set loRng = .Range(.Cells(4, 2), .Cells(15, 8))
     .ListObjects.Add(xlSrcRange, loRng, , xlYes).Name = TABTAG & nbDis
   End With
 
@@ -494,11 +494,12 @@ Private Sub ExportDisease(ByVal disName As String)
   FormatSheet outwb.Worksheets("Dictionary")
   Set sh = outwb.Worksheets("Dictionary")
 
-  sh.Cells(1, 1).Value = "Variable Name"
-  sh.Cells(1, 2).Value = "Main Label"
-  sh.Cells(1, 3).Value = "Control"
-  sh.Cells(1, 4).Value = "Status"
-  sh.Cells(1, 5).Value = "Visibility"
+  sh.Cells(1, 1).Value = "Variable Order"
+  sh.Cells(1, 2).Value = "Variable Section"
+  sh.Cells(1, 3).Value = "Variable Name"
+  sh.Cells(1, 4).Value = "Main Label"
+  sh.Cells(1, 5).Value = "Control"
+  sh.Cells(1, 6).Value = "Status"
 
   Set cellRng = disWksh.Cells(5, 2)
   counter = 2
@@ -508,17 +509,18 @@ Private Sub ExportDisease(ByVal disName As String)
     sh.Cells(counter, 1).Value = cellRng.Value
     sh.Cells(counter, 2).Value = cellRng.Offset(, 1).Value
     sh.Cells(counter, 3).Value = cellRng.Offset(, 2).Value
-    'The third offset is for choices values separated with a |
+    sh.Cells(counter, 4).Value = cellRng.Offset(, 3).Value
+    sh.Cells(counter, 5).Value = cellRng.Offset(, 4).Value
+        'The third offset is for choices values separated with a |
     'Status and visibility (status has only two values: Core, non core)
     'visibility has only three values (always show, optional show, optional hidden)
-    sh.Cells(counter, 4).Value = cellRng.Offset(, 4).Value
-    sh.Cells(counter, 5).Value = cellRng.Offset(, 5).Value
+    sh.Cells(counter, 6).Value = cellRng.Offset(, 6).Value
 
     'The third column is the control column in the dictionary worksheet (choice Name)
-    choiName = sh.Cells(counter, 3).Value
+    choiName = sh.Cells(counter, 5).Value
     listCols.Clear
     'Those are the translated values of the choices
-    listCols.Items = Split(cellRng.Offset(, 4).Value, DEFAULTCHOICESEPARATOR)
+    listCols.Items = Split(cellRng.Offset(, 5).Value, DEFAULTCHOICESEPARATOR)
     choiObj.AddChoice choiName, listCols
 
     'Loop over
@@ -835,22 +837,22 @@ Private Sub ExportForMigration()
     Set Lo = disWksh.ListObjects(1)
     Set LoRng = Lo.Range
 
-    With sh
-      lastColumn = .Cells(3, .Columns.Count).End(xlToLeft).Column + 2
-      'Remove 1 when adding to take in account the whole plage of the range
-      Set outLoRng = .Range(.Cells(3, lastColumn),  _ 
-                        .Cells(2 + LoRng.Rows.Count, lastColumn + LoRng.Columns.Count - 1))
-      outLoRng.Value = LoRng.Value
-      .ListObjects.Add(xlSrcRange, outLoRng, , xlYes).Name = Lo.Name
+    ' With sh
+    '   lastColumn = .Cells(3, .Columns.Count).End(xlToLeft).Column + 2
+    '   'Remove 1 when adding to take in account the whole plage of the range
+    '   Set outLoRng = .Range(.Cells(3, lastColumn),  _ 
+    '                     .Cells(2 + LoRng.Rows.Count, lastColumn + LoRng.Columns.Count - 1))
+    '   outLoRng.Value = LoRng.Value
+    '   .ListObjects.Add(xlSrcRange, outLoRng, , xlYes).Name = Lo.Name
 
-      'Add the language, the disease tag
-      .Cells(2, lastColumn).Value = disWksh.Name
-      .Cells(2, lastColumn + 1).Value = disWksh.Cells(2, 2).Value
-      .Cells(2, lastColumn + 2).Value = disWksh.Cells(2, 3).Value
+    '   'Add the language, the disease tag
+    '   .Cells(2, lastColumn).Value = disWksh.Name
+    '   .Cells(2, lastColumn + 1).Value = disWksh.Cells(2, 2).Value
+    '   .Cells(2, lastColumn + 2).Value = disWksh.Cells(2, 3).Value
 
-      FormatRange .Range(.Cells(2, lastColumn), .Cells(2, lastColumn + 2)), _ 
-                  fontColor:=RGB(178, 190, 181)
-    End With
+    '   FormatRange .Range(.Cells(2, lastColumn), .Cells(2, lastColumn + 2)), _ 
+    '               fontColor:=RGB(178, 190, 181)
+    ' End With
   Next
 
   'Save the workbook to the corresponding filePath
@@ -864,7 +866,6 @@ Private Sub ExportForMigration()
   ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
   Application.DisplayAlerts = prevAlert
   outwb.Close saveChanges:=False
-  
 End Sub
 
 
