@@ -248,7 +248,7 @@ Public Sub ManageRows(ByVal sheetName As String, _
     Case "Dictionary"
         Set part = LLdictionary.Create(sh, 5, 1)
     Case "Choices"
-        Set part = LLchoice.Create(sh, 4, 1)
+        Set part = LLChoices.Create(sh, 4, 1)
     Case "Analysis"
         If allAnalysis Then sh.Range("RNG_SelectTable").Value = "Add or remove rows of all tables"
         Set part = Analysis.Create(sh)
