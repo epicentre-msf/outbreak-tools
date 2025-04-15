@@ -24,7 +24,7 @@ End Type
 
 Private this As TCustomTable
 Private Const CLASSNAME As String = "ICustomTable"
-Private Const NBROWSADD As Long = 5 'Number of Rows to add when resizing
+Private Const NBROWSADD As Long = 10 'Number of Rows to add when resizing
 Private Const TABTRANSLATIONS As String = "Tab_Translations"
 Private Const TABEXPORT As String = "Tab_Export"
 

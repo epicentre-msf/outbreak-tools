@@ -93,7 +93,7 @@ Public Sub ExportForMigration()
     Dim outwb As Workbook
 
     BusyApp
-    On Error GoTo ExitExport
+    'On Error GoTo ExitExport
 
     InitializeTrads
 
@@ -123,17 +123,6 @@ Public Sub ImportFlatFile()
     Dim counter As Long
     Dim lstSheets As BetterArray
     Dim io As IOSFiles
-
-
-
-    Set lstSheets = New BetterArray
-    Set io = OSFiles.Create
-
-    'Load the corresponding file for import
-
-
-    'Import translation, Choices, and variables
-    lstSheets.Push 
 
 
 

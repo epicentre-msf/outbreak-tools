@@ -58,7 +58,7 @@ Public Sub checkUpdateStatus(ByVal sh As Worksheet, ByVal Target As Range)
     
     If sh.Name = "Variables" Then
         Set Lo = sh.ListObjects(1)
-        If Not (Intersect(Target, Lo.ListColumns(3).Range) Is Nothing) Then
+        If (Target.Column =  Lo.ListColumns(3).Column) Then
             'Test if Default choices has been modified
             Set pass = Passwords.Create(wb.Worksheets(PASSSHEETNAME))
             Set ribSh = wb.Worksheets(RIBBONTRADSHEET)
@@ -131,7 +131,7 @@ Public Sub UpdateDiseaseSheet(ByVal disSh As Worksheet, ByVal Target As Range)
     If Not (Intersect(Target, disSh.Cells(2, 2)) Is Nothing) Then Set tradRng = Lo.DataBodyRange
 
     'Update Variable label, status, choice and Default choice
-    If Not (Intersect(Target, Lo.ListColumns(1).Range) Is Nothing) Then Set tradRng = Target
+    If Not (Intersect(Target, Lo.ListColumns(3).Range) Is Nothing) Then Set tradRng = Target
 
 
     'Update translation elements
@@ -158,7 +158,7 @@ Public Sub UpdateDiseaseSheet(ByVal disSh As Worksheet, ByVal Target As Range)
     End If
 
     'Update Categories
-    If Not (Intersect(Target, Lo.ListColumns(3).Range) Is Nothing) Then
+    If Not (Intersect(Target, Lo.ListColumns(5).Range) Is Nothing) Then
         For counter = 1 To Target.Rows.Count
             choiValue = Target.Value
             Target.Cells(counter, 2).Value = choiObj.PasteTranslatedCategories(choiValue, trads)
@@ -167,23 +167,23 @@ Public Sub UpdateDiseaseSheet(ByVal disSh As Worksheet, ByVal Target As Range)
 
 
     'For core variables, update the visibility to always visible if possible
-    If Not (Intersect(Target, Lo.ListColumns(5).Range) Is Nothing) Then
-        For counter = 1 To Target.Rows.Count    
-            If Target.Cells(counter, 1).Value = ribTrads.TranslatedValue("coreVar") Then
-                On Error Resume Next
-                    Target.Cells(counter, 2).Value = ribTrads.TranslatedValue("alwaysVis")
-                    Target.Cells(counter, 2).Font.Color = RGB(59, 8, 145)
-                    Target.Cells(counter, 2).Font.Italic = True
-                On Error GoTo 0
-            Else
-                On Error Resume Next
-                    Target.Cells(counter, 2).ClearContents
-                    Target.Cells(counter, 2).Font.Color = vbBlack
-                    Target.Cells(counter, 2).Font.Italic = False
-                On Error GoTo 0
-            End If
-        Next
-    End If
+    ' If Not (Intersect(Target, Lo.ListColumns(5).Range) Is Nothing) Then
+    '     For counter = 1 To Target.Rows.Count    
+    '         If Target.Cells(counter, 1).Value = ribTrads.TranslatedValue("coreVar") Then
+    '             On Error Resume Next
+    '                 Target.Cells(counter, 2).Value = ribTrads.TranslatedValue("alwaysVis")
+    '                 Target.Cells(counter, 2).Font.Color = RGB(59, 8, 145)
+    '                 Target.Cells(counter, 2).Font.Italic = True
+    '             On Error GoTo 0
+    '         Else
+    '             On Error Resume Next
+    '                 Target.Cells(counter, 2).ClearContents
+    '                 Target.Cells(counter, 2).Font.Color = vbBlack
+    '                 Target.Cells(counter, 2).Font.Italic = False
+    '             On Error GoTo 0
+    '         End If
+    '     Next
+    ' End If
 
     pass.Protect dissh
 End Sub
