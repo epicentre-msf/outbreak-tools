@@ -648,7 +648,7 @@ Private Sub Prepare()
     'Send the required classes to the linelist
     Set codesList = New BetterArray
     codesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", _
-                    "ILLExport", "LLchoice", "ILLchoice", _
+                    "ILLExport", "LLChoices", "ILLChoices", _
                     "LLdictionary", "ILLdictionary", "LLGeo", _
                     "ILLGeo", "LLPasswords", "ILLPasswords", _
                     "LLSheets", "ILLSheets", "LLTranslations", _

@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "IChoices"
+Attribute VB_Name = "ILLChoices"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
@@ -29,7 +29,7 @@ Public Property Get ChoiceData() As IDataSheet: End Property
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders As Boolean = True) As Range: End Property
 Public Property Get Categories(ByVal choiceName As String) As BetterArray: End Property
 Public Property Get ChoiceExists(ByVal choiceName As String) As Boolean: End Property
-Public Property Get AllChoices() As BetterArray: End Property
+Public Property Get ALLChoices() As BetterArray: End Property
 Public Property Get PasteTranslatedCategories(ByVal choiceName As String, ByVal trads As ITranslation, _
                                     Optional ByVal separator As String = DEFAULTCHOICESEPARATOR) As String
 End Property

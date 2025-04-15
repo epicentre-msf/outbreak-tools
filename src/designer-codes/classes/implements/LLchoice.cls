@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "LLchoice"
+Attribute VB_Name = "LLChoices"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -14,7 +14,7 @@ Attribute VB_Exposed = False
 '@IgnoreModule UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements ILLchoice
+Implements ILLChoices
 
 Private Type Tchoice
     choiceDataSheet As IDataSheet
@@ -28,19 +28,19 @@ Private Const LABELSHORT As String = "short label"
 Private Const ORDER   As String = "ordering list"
 
 'Instanciation
-Public Function Create(ByVal choiceWorksheet As Worksheet, ByVal choiceStartRow As Long, ByVal choiceStartColumn As Long) As ILLchoice
+Public Function Create(ByVal choiceWorksheet As Worksheet, ByVal choiceStartRow As Long, ByVal choiceStartColumn As Long) As ILLChoices
 
     Dim customDataSheet As IDataSheet
     Set customDataSheet = DataSheet.Create(choiceWorksheet, choiceStartRow, choiceStartColumn)
 
-    With New LLchoice
+    With New LLChoices
         Set .ChoiceData = customDataSheet
         Set Create = .Self
     End With
 End Function
 
 'Self
-Public Property Get Self() As LLchoice
+Public Property Get Self() As LLChoices
     Set Self = Me
 End Property
 
@@ -225,49 +225,49 @@ Private Sub Translate(ByVal TransObject As ITranslation)
 End Sub
 
 'Properties
-Public Property Get ILLchoice_Wksh() As Worksheet
-    Set ILLchoice_Wksh = Wksh()
+Public Property Get ILLChoices_Wksh() As Worksheet
+    Set ILLChoices_Wksh = Wksh()
 End Property
 
-Public Property Get ILLchoice_StartRow() As Long
-    ILLchoice_StartRow = StartRow()
+Public Property Get ILLChoices_StartRow() As Long
+    ILLChoices_StartRow = StartRow()
 End Property
 
-Public Property Get ILLchoice_StartColumn() As Long
-    ILLchoice_StartColumn = StartColumn()
+Public Property Get ILLChoices_StartColumn() As Long
+    ILLChoices_StartColumn = StartColumn()
 End Property
 
-Public Property Get ILLchoice_ChoiceData() As IDataSheet
-    Set ILLchoice_ChoiceData = ChoiceData
+Public Property Get ILLChoices_ChoiceData() As IDataSheet
+    Set ILLChoices_ChoiceData = ChoiceData
 End Property
 
-Public Property Get ILLchoice_DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range
-    Set ILLchoice_DataRange = DataRange(colName, includeHeaders)
+Public Property Get ILLChoices_DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range
+    Set ILLChoices_DataRange = DataRange(colName, includeHeaders)
 End Property
 
-Public Property Get ILLchoice_Categories(ByVal choiceName As String, _ 
+Public Property Get ILLChoices_Categories(ByVal choiceName As String, _ 
                                          Optional ByVal useShortlabels As Boolean = False) As BetterArray
-    Set ILLchoice_Categories = Categories(choiceName, useShortlabels)
+    Set ILLChoices_Categories = Categories(choiceName, useShortlabels)
 End Property
 
 'Void methods
-Public Sub ILLchoice_Sort()
+Public Sub ILLChoices_Sort()
     Sort
 End Sub
 
-Public Sub ILLchoice_AddChoice(ByVal choiceName As String, ByVal CategoriesData As BetterArray)
+Public Sub ILLChoices_AddChoice(ByVal choiceName As String, ByVal CategoriesData As BetterArray)
     AddChoice choiceName:=choiceName, CategoriesData:=CategoriesData
 End Sub
 
 'Export and Import
-Public Sub ILLchoice_Export(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+Public Sub ILLChoices_Export(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     Export toWkb, Hide:=Hide
 End Sub
 
-Public Sub ILLchoice_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
+Public Sub ILLChoices_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
     Import fromWksh, fromStartRow, fromStartcol
 End Sub
 
-Public Sub ILLchoice_Translate(ByVal TransObject As ITranslation)
+Public Sub ILLChoices_Translate(ByVal TransObject As ITranslation)
     Translate TransObject
 End Sub

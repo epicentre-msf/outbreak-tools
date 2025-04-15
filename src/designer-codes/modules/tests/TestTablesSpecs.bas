@@ -31,13 +31,13 @@ End Sub
 '@TestInitialize
 Private Sub TestInitialize()
     Dim dict As ILLdictionary
-    Dim choi As ILLchoice
+    Dim choi As ILLChoices
     Dim headRng As Range
     Dim rowRng As Range
     Dim Lo As ListObject
 
     Set dict = LLdictionary.Create(ThisWorkbook.Worksheets("TestDictionary"), 1, 1)
-    Set choi = LLchoice.Create(ThisWorkbook.Worksheets("TestChoices"), 1, 1)
+    Set choi = LLChoices.Create(ThisWorkbook.Worksheets("TestChoices"), 1, 1)
     Set lData = LinelistSpecs.Create(dict, choi)
     Set Lo = ThisWorkbook.Worksheets("Analysis").ListObjects(2)
     Set headRng = Lo.HeaderRowRange

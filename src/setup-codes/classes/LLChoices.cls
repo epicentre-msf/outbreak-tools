@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "LLchoice"
+Attribute VB_Name = "LLChoices"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -14,7 +14,7 @@ Attribute VB_Description = "Linelist choice class"
 '@ModuleDescription("Linelist choice class")
 
 Option Explicit
-Implements ILLchoice
+Implements ILLChoices
 
 
 Private Type Tchoice
@@ -29,19 +29,19 @@ Private Const LABELSHORT As String = "Short Label"
 Private Const ORDER   As String = "Ordering List"
 
 'Instanciation
-Public Function Create(ByVal choiceWorksheet As Worksheet, ByVal choiceStartRow As Long, ByVal choiceStartColumn As Long) As ILLchoice
+Public Function Create(ByVal choiceWorksheet As Worksheet, ByVal choiceStartRow As Long, ByVal choiceStartColumn As Long) As ILLChoices
 
     Dim customDataSheet As IDataSheet
     Set customDataSheet = DataSheet.Create(choiceWorksheet, choiceStartRow, choiceStartColumn)
 
-    With New LLchoice
+    With New LLChoices
         Set .ChoiceData = customDataSheet
         Set Create = .Self
     End With
 End Function
 
 'Self
-Public Property Get Self() As LLchoice
+Public Property Get Self() As ILLChoices
     Set Self = Me
 End Property
 
@@ -211,53 +211,53 @@ Private Sub ManageRows(Optional ByVal del As Boolean = False)
 End Sub
 
 'Properties
-Private Property Get ILLchoice_Wksh() As Worksheet
-    Set ILLchoice_Wksh = Wksh()
+Private Property Get ILLChoices_Wksh() As Worksheet
+    Set ILLChoices_Wksh = Wksh()
 End Property
 
-Private Property Get ILLchoice_StartRow() As Long
-    ILLchoice_StartRow = StartRow()
+Private Property Get ILLChoices_StartRow() As Long
+    ILLChoices_StartRow = StartRow()
 End Property
 
-Private Property Get ILLchoice_StartColumn() As Long
-    ILLchoice_StartColumn = StartColumn()
+Private Property Get ILLChoices_StartColumn() As Long
+    ILLChoices_StartColumn = StartColumn()
 End Property
 
-Private Property Get ILLchoice_ChoiceData() As IDataSheet
-    Set ILLchoice_ChoiceData = ChoiceData
+Private Property Get ILLChoices_ChoiceData() As IDataSheet
+    Set ILLChoices_ChoiceData = ChoiceData
 End Property
 
-Private Property Get ILLchoice_DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders As Boolean = True) As Range
-    Set ILLchoice_DataRange = DataRange(colName, includeHeaders)
+Private Property Get ILLChoices_DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders As Boolean = True) As Range
+    Set ILLChoices_DataRange = DataRange(colName, includeHeaders)
 End Property
 
-Private Property Get ILLchoice_Categories(ByVal choiceName As String) As BetterArray
-    Set ILLchoice_Categories = Categories(choiceName)
+Private Property Get ILLChoices_Categories(ByVal choiceName As String) As BetterArray
+    Set ILLChoices_Categories = Categories(choiceName)
 End Property
 
 '@Ignore ProcedureNotUsed
-Private Property Get ILLChoice_ChoiceExists(ByVal choiceName As String) As Boolean
-    ILLChoice_ChoiceExists = ChoiceExists(choiceName)
+Private Property Get ILLChoices_ChoiceExists(ByVal choiceName As String) As Boolean
+    ILLChoices_ChoiceExists = ChoiceExists(choiceName)
 End Property
 
 'Void methods
-Private Sub ILLchoice_Sort()
+Private Sub ILLChoices_Sort()
     Sort
 End Sub
 
-Private Sub ILLchoice_AddChoice(ByVal choiceName As String, ByVal CategoriesData As BetterArray)
+Private Sub ILLChoices_AddChoice(ByVal choiceName As String, ByVal CategoriesData As BetterArray)
     AddChoice choiceName:=choiceName, CategoriesData:=CategoriesData
 End Sub
 
-Private Sub ILLchoice_AddRows()
+Private Sub ILLChoices_AddRows()
     ManageRows
 End Sub
 
-Private Sub ILLchoice_RemoveRows()
+Private Sub ILLChoices_RemoveRows()
     ManageRows del:=True
 End Sub
 
-Private Property Get ILLchoice_AllChoices() As BetterArray
-    Set ILLchoice_AllChoices = AllChoices()
+Private Property Get ILLChoices_AllChoices() As BetterArray
+    Set ILLChoices_AllChoices = AllChoices()
 End Property
 

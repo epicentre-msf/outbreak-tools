@@ -187,7 +187,7 @@ Public Sub AddChoicesDropdown(ByVal Target As Range)
             choiceName = choi.choiceName()
             Set dropArray = choi.Categories()
         Else
-            Set choi = LLchoice.Create(wb.Worksheets(CHOICESHEET), 4, 1)
+            Set choi = LLChoices.Create(wb.Worksheets(CHOICESHEET), 4, 1)
             Set dropArray = choi.Categories(choiceName)
         End If
 
