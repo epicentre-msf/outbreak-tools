@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "Choices"
+Attribute VB_Name = "LLChoices"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -15,7 +15,7 @@ Attribute VB_Description = "Linelist choice class"
 '@IgnoreModule ConstantNotUsed
 
 Option Explicit
-Implements IChoices
+Implements ILLChoices
 
 
 Private Type Tchoice
@@ -39,7 +39,7 @@ Private Const DEFAULTCHOICESEPARATOR As String = " | "
 Public Function Create(ByVal choiceWorksheet As Worksheet, _
                        ByVal choiceStartRow As Long, _
                        ByVal choiceStartColumn As Long, _
-                       ByVal trads As ITranslation) As IChoices
+                       ByVal trads As ITranslation) As ILLChoices
 
     Dim customDataSheet As IDataSheet
     Set customDataSheet = DataSheet.Create(choiceWorksheet, choiceStartRow, choiceStartColumn)
@@ -52,7 +52,7 @@ Public Function Create(ByVal choiceWorksheet As Worksheet, _
 End Function
 
 'Self
-Public Property Get Self() As IChoices
+Public Property Get Self() As ILLChoices
     Set Self = Me
 End Property
 
@@ -249,7 +249,7 @@ Private Sub Sort()
     End If
 End Sub
 
-Private Property Get AllChoices() As BetterArray
+Private Property Get ALLChoices() As BetterArray
     Dim lstChoi As BetterArray
     Dim lstRng As Range
     Dim counter As Long 'counter for the number of rows of one range
@@ -261,7 +261,7 @@ Private Property Get AllChoices() As BetterArray
             lstChoi.Push lstRng.Cells(counter, 1).Value
     Next
     
-    Set AllChoices = lstChoi.Clone()
+    Set ALLChoices = lstChoi.Clone()
 End Property
 
 'Add New Categories
@@ -369,8 +369,8 @@ Private Sub IChoices_RemoveRows()
     ManageRows del:=True
 End Sub
 
-Private Property Get IChoices_AllChoices() As BetterArray
-    Set IChoices_AllChoices = AllChoices()
+Private Property Get IChoices_ALLChoices() As BetterArray
+    Set IChoices_ALLChoices = ALLChoices()
 End Property
 
 Private Property Get IChoices_PasteTranslatedCategories(ByVal choiceName As String, ByVal trads As ITranslation, _

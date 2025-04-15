@@ -63,7 +63,7 @@ Public Sub checkUpdateStatus(ByVal sh As Worksheet, ByVal Target As Range)
             Set pass = Passwords.Create(wb.Worksheets(PASSSHEETNAME))
             Set ribSh = wb.Worksheets(RIBBONTRADSHEET)
             Set ribTrads = Translation.Create(ribSh.ListObjects(1), ribSh.Range("RNG_FileLang").Value)
-            Set choiObj = Choices.Create(wb.Worksheets("Choices"), 4, 1, ribTrads)
+            Set choiObj = LLChoices.Create(wb.Worksheets("Choices"), 4, 1, ribTrads)
             pass.UnProtect sh
             Target.Offset(, 1).Value = choiObj.PasteCategories(Target.Value)
             pass.Protect sh
@@ -120,7 +120,7 @@ Public Sub UpdateDiseaseSheet(ByVal disSh As Worksheet, ByVal Target As Range)
     Set ribTrads = Translation.Create(ribSh.ListObjects(1), ribSh.Range("RNG_FileLang").Value)
     Set Lo = dissh.ListObjects(1)
     Set tradLo = wb.Worksheets("Translations").ListObjects(1)
-    Set choiObj = Choices.Create(wb.Worksheets("Choices"), 4, 1, ribTrads)
+    Set choiObj = LLChoices.Create(wb.Worksheets("Choices"), 4, 1, ribTrads)
     newLang = disSh.Cells(2, 2).Value
     Set trads = Translation.Create(tradLo, newLang)
     Set pass = Passwords.Create(wb.Worksheets(PASSSHEETNAME))

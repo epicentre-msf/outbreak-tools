@@ -20,7 +20,7 @@ Private Type TTablesSpecs
     hRng As Range
     tRng As Range
     dict As ILLdictionary
-    choi As ILLchoice
+    choi As ILLChoices
     reason As String
 End Type
 
@@ -35,7 +35,7 @@ Private Const TYPECOLUMN As String = "Variable Type"
 'tableRange is the range of one line of the table, corresponding to the
 'specifications of one table in the analysis. (rowvar, colvar, etc.)
 Public Function Create(ByVal headerRng As Range, ByVal tableSpecsRng As Range, _
-                       ByVal dict As ILLdictionary, ByVal choi As ILLchoice) As ITablesSpecs
+                       ByVal dict As ILLdictionary, ByVal choi As ILLChoices) As ITablesSpecs
 
     CheckRequirements headerRng, tableSpecsRng, dict, choi
 
@@ -65,11 +65,11 @@ Public Property Set TableRange(ByVal tRng As Range)
     Set this.tRng = tRng
 End Property
 
-Public Property Get Choice() As ILLchoice
+Public Property Get Choice() As ILLChoices
     Set Choice = this.choi
 End Property
 
-Public Property Set Choice(ByVal choi As ILLchoice)
+Public Property Set Choice(ByVal choi As ILLChoices)
     Set this.choi = choi
 End Property
 
@@ -447,7 +447,7 @@ Private Property Get Data(ByVal rowOrCol As String) As BetterArray
     Dim varControl As String 'control and control details of the variable
     Dim varControlDet As String
     Dim vars As ILLVariables
-    Dim choi As ILLchoice
+    Dim choi As ILLChoices
     Dim choiform As ChoiceFormula
 
     Set dict = Dictionary()
@@ -480,7 +480,7 @@ Private Property Get Previous() As ITablesSpecs
     Dim actRng As Range                          'Actual range
     Dim precSec As ITablesSpecs
     Dim dict As ILLdictionary
-    Dim choi As ILLchoice
+    Dim choi As ILLChoices
 
 
     If isNewSection() Then ThrowErrorUnableInstanciate "Your table is on a new section, I can't return the previous table"
@@ -541,7 +541,7 @@ End Sub
 
 
 Private Sub CheckRequirements(ByVal headerRng As Range, ByVal tableSpecsRng As Range, _
-                            ByVal dict As ILLdictionary, ByVal choi As ILLchoice)
+                            ByVal dict As ILLdictionary, ByVal choi As ILLChoices)
     If headerRng Is Nothing Then ThrowErrorUnableInstanciate "Header range not defined"
     If tableSpecsRng Is Nothing Then ThrowErrorUnableInstanciate "Table range not defined"
     If dict Is Nothing Then ThrowErrorUnableInstanciate "dictionary not defined"

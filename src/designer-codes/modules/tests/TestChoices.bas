@@ -8,7 +8,7 @@ Option Private Module
 Private Assert As Object
 Private Fakes As Object
 Private formCond As IFormulaCondition
-Private choice As ILLchoice
+Private choice As ILLChoices
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
@@ -31,7 +31,7 @@ Private Sub TestInitialize()
     Dim choiceWorksheet As Worksheet
 
     Set choiceWorksheet = ThisWorkbook.Worksheets("TestChoices")
-    Set choice = LLchoice.Create(choiceWorksheet, 1, 1)
+    Set choice = LLChoices.Create(choiceWorksheet, 1, 1)
 End Sub
 
 '@TestMethod

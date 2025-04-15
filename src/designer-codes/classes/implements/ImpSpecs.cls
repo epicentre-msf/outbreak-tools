@@ -993,7 +993,7 @@ Private Sub ImportCustomDropdown(ByVal inpwb As Workbook, ByVal pasteAtBottom As
   Dim listName As String
   Dim choiceName As String
   Dim dropsh As Worksheet 'Dropdown worksheet
-  Dim choiobj As ILLchoice 'Choices worksheet in the imported workbook
+  Dim choiobj As ILLChoices 'Choices worksheet in the imported workbook
   Dim updateData As BetterArray
 
 
@@ -1001,7 +1001,7 @@ Private Sub ImportCustomDropdown(ByVal inpwb As Workbook, ByVal pasteAtBottom As
 
   Set lltrads = LLTradsObject()
   Set currwb = CurrentWorkbook()
-  Set choiobj = LLchoice.Create(inpwb.Worksheets("Choices"), 1, 1)
+  Set choiobj = LLChoices.Create(inpwb.Worksheets("Choices"), 1, 1)
   Set dropsh = currwb.Worksheets(lltrads.Value("customdropdown"))
   'There is no prefix for dropdowns on customdropdown
   Set drop = DropdownLists.Create(dropsh, vbNullString)

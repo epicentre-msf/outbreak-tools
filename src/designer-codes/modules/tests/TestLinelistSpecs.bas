@@ -10,7 +10,7 @@ Private Assert As Object
 Private Fakes As Object
 Private lData As ILinelistSpecs
 Private dict As ILLdictionary
-Private choi As ILLchoice
+Private choi As ILLChoices
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
@@ -31,7 +31,7 @@ End Sub
 '@TestInitialize
 Private Sub TestInitialize()
     Set dict = LLdictionary.Create(ThisWorkbook.Worksheets("TestDictionary"), 1, 1)
-    Set choi = LLchoice.Create(ThisWorkbook.Worksheets("TestChoices"), 1, 1)
+    Set choi = LLChoices.Create(ThisWorkbook.Worksheets("TestChoices"), 1, 1)
  
     Set lData = LinelistSpecs.Create(dict, choi)
 End Sub

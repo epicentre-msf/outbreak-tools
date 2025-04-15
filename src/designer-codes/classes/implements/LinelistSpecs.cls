@@ -87,14 +87,14 @@ Public Property Get Dictionary() As ILLdictionary
     Set Dictionary = dict
 End Property
 
-Public Property Get Choices() As ILLchoice
+Public Property Get Choices() As ILLChoices
 
-    Dim choi As ILLchoice
+    Dim choi As ILLChoices
     Dim sh As Worksheet
 
     Set sh = Wkb.Worksheets(CHOICESSHEET)
 
-    Set choi = LLchoice.Create(sh, 1, 1)
+    Set choi = LLChoices.Create(sh, 1, 1)
     Set Choices = choi
 
 End Property
@@ -220,7 +220,7 @@ Private Function Categories(ByVal varName As String, Optional ByVal useShortlabe
     Dim categoryData As BetterArray
     Dim vars As ILLVariables
     Dim dict As ILLdictionary
-    Dim choi As ILLchoice
+    Dim choi As ILLChoices
     Dim categoryName As String
     Dim categoryType As String
     Dim controlDetails As String
@@ -275,7 +275,7 @@ Private Sub Prepare()
 
     Dim dict As ILLdictionary
     Dim impDict As ILLdictionary 'Imported dictionary for checkings
-    Dim choi As ILLchoice
+    Dim choi As ILLChoices
     Dim geo As ILLGeo                            'Geo Object to add admin names in the preparation steps of the dictionary
     Dim dictTrads As ITranslation
     Dim msgTrads As ITranslation                 'Translations of messages object used in preserve sheet Names
@@ -489,7 +489,7 @@ End Sub
 
 Private Sub Export(ByVal toWkb As Workbook)
     Dim dict As ILLdictionary
-    Dim choi As ILLchoice
+    Dim choi As ILLChoices
     Dim geo As ILLGeo                            'Geo Object to add admin names in the preparation steps of the dictionary
     Dim trans As ILLTranslations
     Dim expobj As ILLExport
@@ -571,7 +571,7 @@ Private Property Get ILinelistSpecs_Dictionary() As ILLdictionary
     Set ILinelistSpecs_Dictionary = Dictionary()
 End Property
 
-Private Property Get ILinelistSpecs_Choices() As ILLchoice
+Private Property Get ILinelistSpecs_Choices() As ILLChoices
     Set ILinelistSpecs_Choices = Choices()
 End Property
 

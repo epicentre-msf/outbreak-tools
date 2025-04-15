@@ -399,7 +399,7 @@ Private Sub AddMetaData(ByVal scope As Integer, ByVal includeShowHide As Boolean
   Dim sheetName As String
   Dim exportColumn As String
   'Elements for adding custom choices to exports
-  Dim choi As ILLchoice
+  Dim choi As ILLChoices
   Dim Lo As listObject
   Dim LoValues As BetterArray
   Dim lltrads As ILLTranslations
@@ -435,7 +435,7 @@ Private Sub AddMetaData(ByVal scope As Integer, ByVal includeShowHide As Boolean
   outDictRng.Cells(outDictRng.Rows.Count + 1, 1).Font.color = vbBlue
 
   'Add the dropdown choices for custom choices to export
-  Set choi = LLchoice.Create(outwb.Worksheets(CHOICESSHEET), 1, 1)
+  Set choi = LLChoices.Create(outwb.Worksheets(CHOICESSHEET), 1, 1)
   Set lltrads = LLTradsObject()
   Set LoValues = New BetterArray
   'Add each custom dropdown to the choice sheet

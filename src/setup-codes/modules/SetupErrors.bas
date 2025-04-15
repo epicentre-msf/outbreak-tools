@@ -18,7 +18,7 @@ Private errTab As ICustomTable 'Custom table for Error Messages
 Private pass As IPasswords
 Private dict As ILLdictionary
 Private formData As IFormulaData
-Private choi As ILLchoice
+Private choi As ILLChoices
 
 Private Sub Initialize()
     Dim shform As Worksheet
@@ -34,7 +34,7 @@ Private Sub Initialize()
     Set errTab = CustomTable.Create(shform.ListObjects("Tab_Error_Messages"), idCol:="Key")
     Set pass = Passwords.Create(wb.Worksheets("__pass"))
     Set dict = LLdictionary.Create(wb.Worksheets(DICTSHEETNAME), 5, 1)
-    Set choi = LLchoice.Create(wb.Worksheets(CHOICESHEETNAME), 4, 1)
+    Set choi = LLChoices.Create(wb.Worksheets(CHOICESHEETNAME), 4, 1)
 End Sub
 
 Private Function FormulaMessage(ByVal formValue As String, _
@@ -361,7 +361,7 @@ Private Sub CheckChoice()
     Set dictTab = CustomTable.Create(shdict.ListObjects(1))
 
     'List of all choice names
-    Set choiLst = choi.AllChoices()
+    Set choiLst = choi.ALLChoices()
     Set choiNameRng = choiTab.DataRange("List Name")
     Set cntrlRng = dictTab.DataRange("Control")
     Set cntrlDetRng = dictTab.DataRange("Control Details")

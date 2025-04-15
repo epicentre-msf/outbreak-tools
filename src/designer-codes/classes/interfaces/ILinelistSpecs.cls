@@ -18,7 +18,7 @@ Option Explicit
 'Exposed methods
 
 Public Property Get Dictionary() As ILLdictionary:   End Property
-Public Property Get Choices() As ILLchoice:   End Property
+Public Property Get Choices() As ILLChoices:   End Property
 Public Property Get specswkb() As Workbook: End Property
 
 'Translation objects (messages, shapes and userforms)
