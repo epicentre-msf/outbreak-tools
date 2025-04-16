@@ -1,0 +1,109 @@
+---
+title: "Troubleshoot the linelist"
+description: Troubleshooting linelist data
+categories: 
+  - Linelist
+  - Dashboard
+---
+
+## Linelist file
+
+### File corruption
+
+*The file is getting corrupted, things do not work properly any more*
+
+**Reason**
+
+It might be because OneDrive tried to synchronise the file while it was opened, but failed because VBA macros prevent synchronisation.
+
+**Solution**
+
+- Migrate the data in an empty, uncorrupted linelist
+- Save file in a folder not synchronized by OneDrive or stop OneDrive when you are working on the file.
+
+
+### Buttons form the OBT menu not working
+
+*Buttons do not work, file is being weird*
+
+**Reason**
+
+Macro are not executing / the file is protected
+
+**Solution**
+
+Follow the steps [here](../getting_started/use_linelist.qmd#sec-unprotect-file) to unprotect the file and authorise macros.
+
+
+### Not enough rows
+
+*I arrived at the end of the lines where I can enter data*
+
+**Solution**
+
+Click on the "Add rows" button of the [OutbreakTools Menu](../reference/ribbons_linelist.qmd). 
+
+Additionaly, try t upgrade your linelist to a more recent version: recent builds automatically insert rows when you start entering data in the last row.
+
+
+### Formulas
+
+*Formula are not updating*
+
+**Solution**
+
+- Make sure the macros are authorised
+- Hit F9 / CALCULATE NOW BUTTON (in the native Excel Formula ribbon).
+
+
+*There are errors/“VALUES”  in the epiweeks formula*
+
+**Solution**
+
+- Go to the "Week start" button in the [OutbreakTools Menu](../reference/ribbons_linelist.qmd) and fill the day you want, then hit F9
+
+- Check that the corresponding date exists (e.g. is not a 30th of February and is in the correct format (and thus parsed as a date by Excel)
+
+
+
+### Analyses
+
+*My analyses sheets di not update after I entered data*
+
+**Solution**
+
+1. Verify that your data are not filtered (or the filter you applied are the one you want to see reflected in the analyses sheet). If you want to clear out all filters you can use the button in the [OutbreakTools Menu](../reference/ribbons_linelist.qmd)
+2. Hit F9 in the patient datasheet make sure all formula are up-to-date
+3. Hit the "Refresh analyses button" in the [OutbreakTools Menu](../reference/ribbons_linelist.qmd).
+
+
+If problems remain, check the concerned columns: 
+
+- Are they filled correctly (right format, exact options from the dropdown menu…)? 
+- Do they depend on other variables, and if yes, are these variables filled^[For example, tracking the outcome in the *Temporal analyses* sheet requires the outcome date to be filled.] properly^[Text instead of numbers, out of bound values, impossible dates, bad dates format...]. 
+
+If the data is clean and the problem remains, contact your referent epi or the developers.
+
+
+
+## Sending data to the dashboard
+
+*I sent the data yesterday but it does not appear on the dashboard*
+
+-	Did you send the data to the mail address epi-data [at] epicentre.msf.org? Sharing a file with OneDrive does not work.
+-	Did you send the whole linelist file instead of the anonymous export? You should have received a feedback automatic message explaining the problem.
+-	Was the linelist *Info* sheet correctly filled? Scripts cannot compile the data if any of these are missing:
+    
+    - Organization
+    - Country Name
+    - Name of facility (unless you filled the facility column if it exists)
+    - Outbreak code (for old linelists, but it is getting depreciated)
+-	Open the export (it’s an excel file) to see if anything is weird. There should be several sheets, among which:
+  
+    - Metadata sheet containing information about the export
+    - *Info* sheet containing the information of the linelist
+    - Patient linelist sheet(s) containing your data
+-	In the linelist, force recalculation (by button or by pressing F9). Try to export and send again.
+
+If this does not work, contact a member of the EpiDS team.
+

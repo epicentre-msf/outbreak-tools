@@ -22,7 +22,7 @@ If you are using a linelist for which a dashboard was developed, you can send pa
 
 ### Export and send
 
-- Export data using the "Export data" button of the [OutbreakTools menu](../reference/ribbons_linelist.qmd#sec-export-data), and chose the “Anonymous export to MSF” option (or a similar name). You will be prompted for a place to save the genarated export.
+- Export data using the "Export data" button of the [OutbreakTools menu](../reference/ribbons_linelist.qmd#sec-export-data), and chose the “Anonymous export to MSF” option (or a similar name). You will be prompted for a place to save the generated export (avoid root folder like PC, C:\, D:\).
 
 - Send the data to *epi-data [at] epicentre.msf.org* **without renaming the file**.
 
