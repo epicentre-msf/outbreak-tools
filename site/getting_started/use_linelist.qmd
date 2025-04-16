@@ -39,7 +39,7 @@ After data has been encoded in the linelist, you can [export data and send it to
 **Current dashboards include**: cholera, measles, hepatitis E, diphtheria, mpox, meningitis. Other are added as the list of available OutbreakTools linelists grow.
 
 
-## Working with the file
+## Working with the file {#sec-unprotect-file}
 
 ### Save the file locally
 
