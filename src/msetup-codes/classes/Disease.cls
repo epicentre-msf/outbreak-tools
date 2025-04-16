@@ -487,7 +487,7 @@ Private Sub ExportDisease(ByVal disName As String)
   'sh is now the choices worksheet
   FormatSheet outwb.Worksheets("Choices")
   Set sh = outwb.Worksheets("Choices")
-  Set choiObj = Choices.Create(sh, 1, 1, ribTrads)
+  Set choiObj = LLChoices.Create(sh, 1, 1, ribTrads)
   choiObj.AddHeaders
 
   'sh is now the dictionary worksheet

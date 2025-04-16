@@ -361,7 +361,7 @@ Private Sub CheckChoice()
     Set dictTab = CustomTable.Create(shdict.ListObjects(1))
 
     'List of all choice names
-    Set choiLst = choi.ALLChoices()
+    Set choiLst = choi.AllChoices()
     Set choiNameRng = choiTab.DataRange("List Name")
     Set cntrlRng = dictTab.DataRange("Control")
     Set cntrlDetRng = dictTab.DataRange("Control Details")
