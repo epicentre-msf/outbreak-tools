@@ -29,10 +29,10 @@ End Type
 
 Private this As Tchoice
 
-Private Const LISTNAMECODE As String = "listName"
-Private Const LABELCODE   As String = "longLabel"
-Private Const LABELSHORTCODE As String = "shortLabel"
-Private Const ORDERINLISTCODE   As String = "orderingList"
+Private Const LISTNAMECODE As String = "list name"
+Private Const LABELCODE   As String = "long label"
+Private Const LABELSHORTCODE As String = "short label"
+Private Const ORDERINLISTCODE   As String = "ordering list"
 Private Const DEFAULTCHOICESEPARATOR As String = " | "
 
 'Instanciation
@@ -44,7 +44,7 @@ Public Function Create(ByVal choiceWorksheet As Worksheet, _
     Dim customDataSheet As IDataSheet
     Set customDataSheet = DataSheet.Create(choiceWorksheet, choiceStartRow, choiceStartColumn)
 
-    With New Choices
+    With New LLChoices
         Set .ChoiceData = customDataSheet
         Set .TradObject = trads
         Set Create = .Self
@@ -52,7 +52,7 @@ Public Function Create(ByVal choiceWorksheet As Worksheet, _
 End Function
 
 'Self
-Public Property Get Self() As ILLChoices
+Public Property Get Self() As LLChoices
     Set Self = Me
 End Property
 
