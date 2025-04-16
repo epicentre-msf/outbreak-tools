@@ -10,9 +10,10 @@ categories:
 
 ### File corruption
 
-*The file is getting corrupted, things do not work properly anymore*
+*The file is getting corrupted, things do not work properly any more*
 
 **Reason**
+
 It might be because OneDrive tried to synchronise the file while it was opened, but failed because VBA macros prevent synchronisation.
 
 **Solution**
@@ -23,12 +24,14 @@ It might be because OneDrive tried to synchronise the file while it was opened, 
 
 ### Buttons form the OBT menu not working
 
-**Buttons do not work, file is being weird**
+*Buttons do not work, file is being weird*
 
 **Reason**
+
 Macro are not executing / the file is protected
 
 **Solution**
+
 Follow the steps [here](../getting_started/use_linelist.qmd#sec-unprotect-file) to unprotect the file and authorise macros.
 
 
@@ -37,6 +40,7 @@ Follow the steps [here](../getting_started/use_linelist.qmd#sec-unprotect-file) 
 *I arrived at the end of the lines where I can enter data*
 
 **Solution**
+
 Click on the "Add rows" button of the [OutbreakTools Menu](../reference/ribbons_linelist.qmd). 
 
 Additionaly, try t upgrade your linelist to a more recent version: recent builds automatically insert rows when you start entering data in the last row.
@@ -86,22 +90,20 @@ If the data is clean and the problem remains, contact your referent epi or the d
 
 *I sent the data yesterday but it does not appear on the dashboard*
 
--	Did you send the data to the mail adress epi-data [at] epicentre.msf.org? Sharing a file with OneDrive does not work.
-
+-	Did you send the data to the mail address epi-data [at] epicentre.msf.org? Sharing a file with OneDrive does not work.
 -	Did you send the whole linelist file instead of the anonymous export? You should have received a feedback automatic message explaining the problem.
-
--	Was the OutbreakTool linelist Info sheet correctly filled? Scripts cannot compile the data if any of these are missing:
-  - Organization
-  - Country Name
-  - Name of facility (unless you filled the facility column if it exists)
-  - Outbreak code (for old linelists, but it is getting depreciated)
-  
+-	Was the linelist *Info* sheet correctly filled? Scripts cannot compile the data if any of these are missing:
+    
+    - Organization
+    - Country Name
+    - Name of facility (unless you filled the facility column if it exists)
+    - Outbreak code (for old linelists, but it is getting depreciated)
 -	Open the export (it’s an excel file) to see if anything is weird. There should be several sheets, among which:
-  - Metadata sheet containing information about the export
-  - Info sheet containing the information of the linelist
-  - Patient linelist sheet(s) containing your data
   
+    - Metadata sheet containing information about the export
+    - *Info* sheet containing the information of the linelist
+    - Patient linelist sheet(s) containing your data
 -	In the linelist, force recalculation (by button or by pressing F9). Try to export and send again.
 
-If this does not work, contact a member of the EpiDS team
+If this does not work, contact a member of the EpiDS team.
 
