@@ -18,29 +18,55 @@ Implements ILLChoices
 
 Private Type Tchoice
     choiceDataSheet As IDataSheet
+    listNameValue As String
+    labelValue As String
+    labelShortValue As String
+    orderValue As String
+    hasTrads As Boolean
+    trads As ITranslation
 End Type
 
 Private this As Tchoice
 
-Private Const LISTNAME As String = "list name"
-Private Const LABEL   As String = "label"
-Private Const LABELSHORT As String = "short label"
-Private Const ORDER   As String = "ordering list"
+Private Const LISTNAMECODE As String = "list name"
+Private Const LABELCODE   As String = "label"
+Private Const LABELSHORTCODE As String = "short label"
+Private Const ORDERINLISTCODE   As String = "ordering list"
 
 'Instanciation
-Public Function Create(ByVal choiceWorksheet As Worksheet, ByVal choiceStartRow As Long, ByVal choiceStartColumn As Long) As ILLChoices
+Public Function Create(ByVal choiceWorksheet As Worksheet, _ 
+                       ByVal choiceStartRow As Long, _
+                       ByVal choiceStartColumn As Long, _ 
+                       Optional ByVal trads As ITranslation = Nothing) As ILLChoices
 
     Dim customDataSheet As IDataSheet
-    Set customDataSheet = DataSheet.Create(choiceWorksheet, choiceStartRow, choiceStartColumn)
 
+    Set customDataSheet = DataSheet.Create(choiceWorksheet, choiceStartRow, choiceStartColumn)
+    
     With New LLChoices
         Set .ChoiceData = customDataSheet
         Set Create = .Self
+        If  (Not trads Is Nothing) Then
+            If TypeName(trads) = "Translation" Then
+                'Set the translation object if required
+                .HasTranslation = True
+                Set .TradObject = trads
+            End If
+        End If
     End With
 End Function
 
+
+Public Property Let HasTranslation(ByVal hastrads As Boolean)
+    this.hasTrads = hastrads
+End Property
+
+Public Property Get HasTranslation() As Boolean
+    HasTranslation = this.hasTrads
+End Property
+
 'Self
-Public Property Get Self() As LLChoices
+Public Property Get Self() As ILLChoices
     Set Self = Me
 End Property
 
@@ -49,6 +75,14 @@ Public Property Get Wksh() As Worksheet
     Dim dataObject As IDataSheet
     Set dataObject = ChoiceData
     Set Wksh = dataObject.Wksh()
+End Property
+
+Public Property Get TradObject()
+    Set TradObject = this.trads
+End Property
+
+Public Property Set TradObject(ByVal trads As ITranslation)
+    Set this.trads = trads
 End Property
 
 'StartRow
@@ -72,6 +106,89 @@ End Property
 Friend Property Set ChoiceData(ByVal customDataSheet As IDataSheet)
     Set this.choiceDataSheet = customDataSheet
 End Property
+
+' Sub / properties for Getting the headers ===========================================
+' Depending on whether there is a translation or NOT attached to the choice object
+
+'Get the label, the list name, the short label and other values
+Private Property Get listName() As String
+    Dim trads As ITranslation
+
+    If Not HasTranslation() Then
+        listName = LISTNAMECODE
+        Exit Property
+    End If
+
+    If this.listNameValue = vbNullString Then
+        Set trads = TradObject()
+        this.listNameValue = trads.TranslatedValue(LISTNAMECODE)
+    End If
+
+    listName = this.listNameValue
+End Property
+
+Private Property Get label() As String
+    Dim trads As ITranslation
+
+    If Not HasTranslation() Then
+        Label = LABELCODE
+        Exit Property
+    End If
+
+    If this.labelValue = vbNullString Then
+        Set trads = TradObject()
+        this.labelValue = trads.TranslatedValue(LABELCODE)
+    End If
+    
+    Label = this.labelValue
+End Property
+
+Private Property Get LabelShort() As String
+    Dim trads As ITranslation
+
+    If Not HasTranslation() Then
+        LabelShort = LABELSHORTCODE
+        Exit Property
+    End If
+
+    If this.labelShortValue = vbNullString Then
+        Set trads = TradObject()
+        this.labelShortValue = trads.TranslatedValue(LABELSHORTCODE)
+    End If
+
+    LabelShort = this.labelShortValue
+End Property
+
+Private Property Get OrderingList() As String
+    Dim trads As ITranslation
+
+    If Not HasTranslation() Then
+        OrderingList = ORDERINLISTCODE
+        Exit Property
+    End If
+
+    If this.orderValue = vbNullString Then
+        Set trads = TradObject()
+        this.orderValue = trads.TranslatedValue(ORDERINLISTCODE)
+    End If
+
+    OrderingList = this.orderValue
+End Property
+
+Private Sub AddHeaders()
+
+    Dim sh As Worksheet
+    Dim cellRng As Range
+
+    Set sh = Wksh()
+    Set cellRng = sh.Cells(StartRow(), StartColumn())
+
+    cellRng.Value = listName()
+    cellRng.Offset(, 1).Value = OrderingList()
+    cellRng.Offset(, 2).Value = Label()
+    cellRng.Offset(, 3).Value = LabelShort()
+End Sub
+
 
 'Get the data range
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", _ 
@@ -97,15 +214,18 @@ Public Property Get Categories(ByVal choiceName As String, _
     Set shrtcat = New BetterArray
 
     'Long Categories
-    Set lngcat = dataObject.FilterData(varName:=LISTNAME, _
-                                           criteriaName:=choiceName, returnedColumnName:=LABEL, _
+    Set lngcat = dataObject.FilterData(varName:=listName(), _
+                                        criteriaName:=choiceName, returnedColumnName:=label(), _
                                        includeHeaders:=False)
     'Only look for shortlabels in case there is a need
     If useShortlabels Then
         'Short Categories values
-        Set shrtcat = dataObject.FilterData(varName:=LISTNAME, _
-                                           criteriaName:=choiceName, returnedColumnName:=LABELSHORT, _
-                                           includeHeaders:=False)
+        Set shrtcat = dataObject.FilterData( _ 
+            varName:=listName(), _
+            criteriaName:=choiceName, _
+            returnedColumnName:=labelShort(), _
+            includeHeaders:=False _
+        )
 
         'In case the long and short categories don't have the same 
         'length, return the long one
@@ -250,6 +370,10 @@ Public Property Get ILLChoices_Categories(ByVal choiceName As String, _
     Set ILLChoices_Categories = Categories(choiceName, useShortlabels)
 End Property
 
+Public Property Get ILLChoices_HasTranslation() As Boolean
+    ILLChoices_HasTranslation = HasTranslation()
+End Property
+
 'Void methods
 Public Sub ILLChoices_Sort()
     Sort
@@ -271,3 +395,5 @@ End Sub
 Public Sub ILLChoices_Translate(ByVal TransObject As ITranslation)
     Translate TransObject
 End Sub
+
+
