@@ -2,7 +2,7 @@
 title: "Export a subset of geographic columns"
 description: Creata a MoH export with only some of the geo columns
 categories: 
-  - Linelist
+  - Setup
 ---
 
 ## Problem
