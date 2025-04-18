@@ -2,10 +2,8 @@
 # return lines
 
 #--- working on a module file
+pacman::p_load(tidyverse, glue, here, fs)
 
-library(tidyverse)
-library(glue)
-library(here)
 
 KEYWORDS <- list(
   INDENT = c(
@@ -137,4 +135,6 @@ align_comment <- function(line, indent_level, com_col = COMMENT_COLUMN) {
 
   # separate code and comment on line (especially if there is a
   # comment after the code)
+  parts <- str_split_fixed(line, "'", 2)
+  code <- part
 }
