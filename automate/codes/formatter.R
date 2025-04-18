@@ -103,7 +103,7 @@ break_line <- function(
     return(list(formatted_lines = line, indent = indent_level))
 
   # start breaking the line
-  remaining <- line
+  remaining <- str_squish(line)
   prefix <- str_dup(indent_unit, indent_level)
   formatted_lines <- c()
 
@@ -129,4 +129,12 @@ break_line <- function(
   return(list(formatted_lines = formatted_lines, indent = indent_level))
 }
 
-writeLines(break_line(line_test, 3)$formatted_lines, "tmp.txt")
+# align comment on multiple lines
+align_comment <- function(line, indent_level, com_col = COMMENT_COLUMN) {
+  stripped <- str_squish(line)
+  if (!str_detect(line, "'"))
+    return(list(formatted_lines = stripped, indent = indent_level))
+
+  # separate code and comment on line (especially if there is a
+  # comment after the code)
+}
