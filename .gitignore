@@ -34,6 +34,8 @@ debug
 .quarto/
 *.Rproj
 docs/
+.Rprofile
+.Renviron
 
 
 /.quarto/
