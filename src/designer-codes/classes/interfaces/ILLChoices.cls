@@ -22,11 +22,18 @@ Public Property Get StartRow() As Long: End Property
 Public Property Get StartColumn() As Long: End Property
 Public Property Get ChoiceData() As IDataSheet: End Property
 Public Property Get HasTranslation() As Boolean: End Property
+Public Property Get HasCheckings() As Boolean: End Property
 
-Public Property Get DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range: End Property
-Public Property Get Categories(ByVal choiceName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray: End Property
+Public Property Get DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range
+End Property
+
+Public Property Get Categories( _ 
+  ByVal choiceName As String, _
+  Optional ByVal useShortlabels As Boolean = False) As BetterArray
+End Property
 
 'Exposed methods
+Public Property Get TraceValues() As Object: End Property
 
 'Void methods
 'Sort the choices sheet
@@ -42,8 +49,7 @@ End Sub
 Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
 End Sub
 
-Public Sub Translate(ByVal TransObject As ITranslation)
-End Sub
+Public Sub Translate(ByVal TransObject As ITranslation): End Sub
 
 
 'Add and remove rows from the choice listObject

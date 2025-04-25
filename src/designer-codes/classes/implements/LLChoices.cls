@@ -24,8 +24,10 @@ Private Type Tchoice
     orderValue As String
     hasTrads As Boolean
     trads As ITranslation
-    checks As IChecking
+    hasChecks As Boolean
 End Type
+
+
 
 Private this As Tchoice
 
@@ -33,6 +35,13 @@ Private Const LISTNAMECODE As String = "list name"
 Private Const LABELCODE   As String = "label"
 Private Const LABELSHORTCODE As String = "short label"
 Private Const ORDERINLISTCODE   As String = "ordering list"
+
+'Those are for log tracing in case
+Private checkCounter As Integer
+Private internalChecks As IChecking
+
+'constant / keys for tracing something to the checks class
+
 
 'Instanciation
 Public Function Create(ByVal choiceWorksheet As Worksheet, _ 
@@ -46,7 +55,6 @@ Public Function Create(ByVal choiceWorksheet As Worksheet, _
     
     With New LLChoices
         Set .ChoiceData = customDataSheet
-        Set Create = .Self
         If  (Not trads Is Nothing) Then
             If TypeName(trads) = "Translation" Then
                 'Set the translation object if required
@@ -54,6 +62,7 @@ Public Function Create(ByVal choiceWorksheet As Worksheet, _
                 Set .TradObject = trads
             End If
         End If
+        Set Create = .Self
     End With
 End Function
 
@@ -104,8 +113,34 @@ Private Property Get ChoiceData() As IDataSheet
     Set ChoiceData = this.choiceDataSheet
 End Property
 
-Friend Property Set ChoiceData(ByVal customDataSheet As IDataSheet)
+Private Property Set ChoiceData(ByVal customDataSheet As IDataSheet)
     Set this.choiceDataSheet = customDataSheet
+End Property
+
+'Sub / Properties for checking and tracing ===========================================
+Private Property Get HasCheckings() As Boolean
+    HasCheckings = this.hasChecks
+End Property
+
+
+Private Sub AddTrace(ByVal label As String, Optional ByVal scope As Byte = checkingNote)
+
+    Const CHECKNAME = "Choices object trace"
+    'First, instanciante the internalCheks Objects
+    If internalChecks Is Nothing Then Set internalChecks = Checking.Create(CHECKNAME)
+    internalChecks.Add Cstr(checkCounter), label, scope
+    checkCounter = checkCounter + 1
+    If Not this.hasChecks Then this.hasChecks = True
+End Sub
+
+Private Property Get TraceValues() As Object
+
+    'If there is no checking, exit the property
+    If Not HasCheckings() Then 
+        Exit Property
+    End If
+
+    Set TraceValues = internalChecks
 End Property
 
 ' Sub / properties for Getting the headers ===========================================
@@ -176,6 +211,7 @@ Private Sub AddHeaders()
     cellRng.Offset(, 1).Value = OrderingList()
     cellRng.Offset(, 2).Value = Label()
     cellRng.Offset(, 3).Value = LabelShort()
+
 End Sub
 
 
@@ -269,8 +305,10 @@ Private Sub AddChoice(ByVal choiceName As String, ByVal CategoriesData As Better
     'Test if the choice already exists
     Set checkCategories = New BetterArray
     Set checkCategories = Categories(choiceName)
-    If checkCategories.Length > 0 Then Exit Sub  'Will probably trace log.
-
+    If checkCategories.Length > 0 Then 
+        AddTrace "The choice " & choiceName "already exists and is not added"
+        Exit Sub
+    End If 
 
     Set listRng = DataRange(LISTNAME)
     Set labelRng = DataRange(LABEL)
@@ -361,6 +399,14 @@ End Property
 
 Public Property Get ILLChoices_HasTranslation() As Boolean
     ILLChoices_HasTranslation = HasTranslation()
+End Property
+
+Private Property Get ILLChoices_HasCheckings() As Boolean
+    ILLChoices_HasCheckings = HasCheckings()
+End Property
+
+Public Property Get ILLChoices_TraceValues() As Object
+     Set ILLChoices_TraceValues = TraceValues()
 End Property
 
 'Void methods
