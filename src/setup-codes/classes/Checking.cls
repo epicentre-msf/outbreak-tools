@@ -11,7 +11,7 @@ Attribute VB_Description = "Checking of the setup"
 
 '@PredeclaredId
 '@Folder("Checks")
-'@ModuleDescription("Checking of the setup")
+'@ModuleDescription("Checking of the elements")
 
 Option Explicit
 Implements IChecking
@@ -97,7 +97,7 @@ End Function
 'Add new values to the checking
 
 Private Sub Add(ByVal keyName As String, ByVal LABEL As String, _
-                Optional ByVal scope As CheckingScope = checkingNote)
+                Optional ByVal scope As Byte = checkingNote)
 
   If keyExists(keyName) Then ThrowError keyName & " already exists, keys should be unique."
 
@@ -121,10 +121,10 @@ End Sub
 'Get either the label or the type of one key in the checkings
 'The checking value could be either the checking label,
 '(the text) or the checking color or the checkingType (Note, warning, info Or Error)
-Private Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As CheckingValue = 1) As String
+Private Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
   Dim indexValue As Long
   Dim returnedValue As String
-  Dim actualScope As CheckingScope
+  Dim actualScope As Byte
 
   If (Not keyExists(keyName)) Then ThrowError keyName & " does not exists in this checking"
 
@@ -170,7 +170,7 @@ End Sub
 
 'Exposed methods
 Private Sub IChecking_Add(ByVal keyName As String, ByVal LABEL As String, _
-                Optional ByVal scope As CheckingScope = checkingNote)
+                Optional ByVal scope As Byte = checkingNote)
     Add keyName, LABEL, scope
 End Sub
 Private Property Get IChecking_ListOfKeys() As BetterArray
@@ -183,6 +183,6 @@ Private Property Get IChecking_Heading(Optional ByVal subTitle As Boolean = Fals
 End Property
 
 'You can retrieve the label, the scope or the color
-Private Property Get IChecking_ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As CheckingValue = 1) As String
+Private Property Get IChecking_ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
   IChecking_ValueOf = ValueOf(keyName, retrievedValue)
 End Property
