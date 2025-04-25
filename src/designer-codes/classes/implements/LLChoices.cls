@@ -24,6 +24,7 @@ Private Type Tchoice
     orderValue As String
     hasTrads As Boolean
     trads As ITranslation
+    checks As IChecking
 End Type
 
 Private this As Tchoice
@@ -114,10 +115,7 @@ End Property
 Private Property Get listName() As String
     Dim trads As ITranslation
 
-    If Not HasTranslation() Then
-        listName = LISTNAMECODE
-        Exit Property
-    End If
+    If Not HasTranslation() Then this.listNameValue = LISTNAMECODE
 
     If this.listNameValue = vbNullString Then
         Set trads = TradObject()
@@ -130,10 +128,7 @@ End Property
 Private Property Get label() As String
     Dim trads As ITranslation
 
-    If Not HasTranslation() Then
-        Label = LABELCODE
-        Exit Property
-    End If
+    If Not HasTranslation() Then this.labelValue = LABELCODE
 
     If this.labelValue = vbNullString Then
         Set trads = TradObject()
@@ -146,10 +141,7 @@ End Property
 Private Property Get LabelShort() As String
     Dim trads As ITranslation
 
-    If Not HasTranslation() Then
-        LabelShort = LABELSHORTCODE
-        Exit Property
-    End If
+    If Not HasTranslation() Then this.labelShortValue = LABELSHORTCODE
 
     If this.labelShortValue = vbNullString Then
         Set trads = TradObject()
@@ -162,10 +154,7 @@ End Property
 Private Property Get OrderingList() As String
     Dim trads As ITranslation
 
-    If Not HasTranslation() Then
-        OrderingList = ORDERINLISTCODE
-        Exit Property
-    End If
+    If Not HasTranslation() Then this.orderValue = ORDERINLISTCODE
 
     If this.orderValue = vbNullString Then
         Set trads = TradObject()

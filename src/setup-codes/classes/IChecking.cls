@@ -31,10 +31,10 @@ Option Explicit
 
 'Exposed methods
 Public Sub Add(ByVal keyName As String, ByVal LABEL As String, _
-                Optional ByVal scope As CheckingScope = checkingNote)
+                Optional ByVal scope As Byte = checkingNote)
 End Sub
 Public Property Get ListOfKeys() As BetterArray: End Property
 'Heading could be subtitle or title.
 Public Property Get Heading(Optional ByVal subTitle As Boolean = False) As String: End Property
 'You can retrieve the label, the scope or the color
-Public Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As CheckingValue = 1) As String: End Property
+Public Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String: End Property
