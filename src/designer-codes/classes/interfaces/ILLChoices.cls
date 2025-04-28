@@ -24,7 +24,8 @@ Public Property Get ChoiceData() As IDataSheet: End Property
 Public Property Get HasTranslation() As Boolean: End Property
 Public Property Get HasCheckings() As Boolean: End Property
 
-Public Property Get DataRange(Optional ByVal colName As String = "__all__", Optional ByVal includeHeaders = True) As Range
+Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
+                              Optional ByVal includeHeaders = True) As Range
 End Property
 
 Public Property Get Categories( _ 
