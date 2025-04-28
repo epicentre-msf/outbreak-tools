@@ -1,2 +1,0 @@
-- [ ] Change the checking split "--" to a splitValue (in the CheckingOutput to match a coherent way of working with it)
-- [ ] Use BetterArray output instead of just writing the result of the Split
