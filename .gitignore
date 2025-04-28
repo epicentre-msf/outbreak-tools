@@ -38,3 +38,6 @@ docs/
 
 /.quarto/
 .Rproj.user
+.Rprofile
+.Renviron
+**/~$*.xlsb
