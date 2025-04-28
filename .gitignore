@@ -41,4 +41,4 @@ docs/
 .Rprofile
 .Renviron
 **/~$*.xlsb
-.todo
+**/.todo
