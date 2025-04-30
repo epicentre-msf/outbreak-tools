@@ -150,50 +150,7 @@ Public Property Set ChoiceData(ByVal customDataSheet As IDataSheet)
     Set this.choiceDataSheet = customDataSheet
 End Property
 
-'Get the data range
-Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
-                               Optional ByVal includeHeaders As Boolean = True) As Range
-    Dim dataObject As IDataSheet
-    Set dataObject = ChoiceData
 
-    Set DataRange = dataObject.DataRange(colName, includeHeaders)
-End Property
-
-'Test if a choice Exists in the choice sheet
-Private Property Get ChoiceExists(ByVal choiceName As String) As Boolean
-    Dim listRng As Range
-    Dim exist As Boolean
-    Dim dataObject As IDataSheet
-
-    exist = False
-
-    Set dataObject = ChoiceData
-    If dataObject.ColumnExists(listName()) Then
-        Set listRng = DataRange(listName(), includeHeaders:=False)
-        exist = Not (listRng.Find(What:=choiceName, lookAt:=xlWhole, _
-                                  MatchCase:=True, After:=listRng.Cells(listRng.Rows.Count, 1)) Is Nothing)
-    End If
-    ChoiceExists = exist
-End Property
-
-'Get the categories
-Private Property Get Categories(ByVal choiceName As String) As BetterArray
-    Dim counter As Long
-    Dim rngName As Range
-    Dim rngLabel As Range
-    Dim lst As BetterArray
-    Set lst = New BetterArray
-
-    If ChoiceExists(choiceName) Then
-        Set rngName = DataRange(listName(), includeHeaders:=False)
-        Set rngLabel = DataRange(Label(), includeHeaders:=False)
-        For counter = 1 To rngName.Rows.Count
-            If rngName.Cells(counter, 1).Value = choiceName Then _
-             lst.Push rngLabel.Cells(counter, 1).Value
-        Next
-    End If
-    Set Categories = lst.Clone()
-End Property
 
 
 Private Property Get PasteTranslatedCategories(ByVal choiceName As String, ByVal trads As ITranslation, _
@@ -212,22 +169,6 @@ Private Property Get PasteTranslatedCategories(ByVal choiceName As String, ByVal
 
     PasteTranslatedCategories = pasteValue
     
-End Property
-
-
-Private Property Get PasteCategories(ByVal choiName As String, Optional ByVal separator As String = " | ") As String
-
-    Dim lst As BetterArray
-
-    If choiName = vbNullString Then Exit Property
-    If Not ChoiceExists(choiName) Then Exit Property
-    Set lst = Categories(choiName)
-
-    PasteCategories = lst.ToString( _
-                     separator:=separator, _
-                     OpeningDelimiter:=vbNullString, _
-                     ClosingDelimiter:=vbNullString, _
-                     QuoteStrings:=False)
 End Property
 
 'Sort the Choices sheet
