@@ -23,7 +23,8 @@
     "spellright.documentTypes": [
         "markdown",
         "latex",
-        "plaintext"
+        "plaintext",
+        "vba"
     ],
     "spellright.parserByClass": {
         "vba": {
@@ -34,6 +35,10 @@
     "editor.rulers": [80, 120, 160],
     "editor.inlineSuggest.enabled": false,
     "terminal.integrated.fontSize": 16,
-    "terminal.integrated.fontFamily": "'Office Code Pro',  Menlo, 'Courier New', monospace"
-
+    "terminal.integrated.fontFamily": "'Office Code Pro',  Menlo, 'Courier New', monospace",
+    "inline-bookmarks.default.words.blue": "@audit\\-info[\\s], @todo[\\s], @note[\\s], @remind[\\s], @info[\\s], @prop\\-title[\\s]",
+    "inline-bookmarks.default.words.green": "@audit\\-ok[\\s], @section[\\s], @sub\\-section[\\s]",
+    "inline-bookmarks.view.words.hide": false,
+    "inline-bookmarks.enable": true,
+    "inline-bookmarks.view.showVisibleFilesOnly": true
 }
