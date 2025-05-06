@@ -30,6 +30,16 @@ Private Const CLASSNAME As String = "ICustomTable"
 Private NOTIMPORTEDCOLUMNS As BetterArray
 Private HIDDENCOLUMNSLIST As BetterArray
 
+'@section Instanciation
+'@description
+'The custom data table is created just with one listObject. It is a wrapper arround
+'the listobject class. Which basically add some functionalities to ease the
+'data-manipulation process. A custom data table can have a id column (or not).
+'If you want id column values to have some prefix when resizing (adding new rows), you 
+'can provide the prefix at instanciation.
+'
+'
+'@
 Public Function Create(ByVal Lo As listObject, _
                       Optional ByVal idCol As String = vbNullString, _
                       Optional ByVal idPrefix As String = vbNullString) As ICustomTable
@@ -811,6 +821,8 @@ Private Sub SortElements(ByVal els As Variant, Optional ByVal onFirst As Boolean
     End If
   Next
 End Sub
+
+'@section Interface
 
 'On Linelist, there are not stacked listObjects on one worksheet,
 'So there is no need to insert shifts like in analysis custom table. Inserting
