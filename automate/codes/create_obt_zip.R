@@ -71,7 +71,7 @@ create_obt_release <- function(actual_branch = branch, latest = FALSE) {
     # create the latest folder if it does not exist
 
     latest_folder <- here(
-      "release",
+      "releases",
       "latest",
       glue("OBT-{actual_branch}-latest")
     ) |>
@@ -80,7 +80,7 @@ create_obt_release <- function(actual_branch = branch, latest = FALSE) {
     # remove all the files in the latest OBT folder (the folder should be empty)
     file_delete(
       path = here(
-        "release",
+        "releases",
         "latest",
         glue("OBT-{actual_branch}-latest")
       ) |>
@@ -156,7 +156,7 @@ create_obt_release <- function(actual_branch = branch, latest = FALSE) {
     # copy the new release to the old folder
     file_copy(
       here("releases", "old", glue("OBT-{actual_branch}-{rel_date}.zip")),
-      here("latest", glue("OBT-{actual_branch}-latest.zip")),
+      here("releases", "latest", glue("OBT-{actual_branch}-latest.zip")),
       overwrite = TRUE
     )
   }
@@ -197,5 +197,5 @@ create_master_setup_release <- function(
   }
 }
 
-# create_obt_release(latest = TRUE)
+create_obt_release(latest = TRUE)
 # create_master_setup_release(latest = TRUE)

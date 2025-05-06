@@ -1,0 +1,30 @@
+---
+title: "Connect to the dashboard"
+description: Connect to the intersectional dashboard
+categories: 
+  - Linelist
+  - Dashboard
+---
+
+## Existing dashboards
+
+Epicentre maintains several dashboards:
+
+- [Intersectionnal](https://apps.epicentre-msf.org/secure/app/intersectional-surveillance)
+- [Diphtheria](https://apps.epicentre-msf.org/secure/app/west-africa-diphtheria) (will be migrated to the intersectionnal dashboard at some point)
+- [Mpox](https://apps.epicentre-msf.org/secure/app/obt-dashboard) (too)
+- [Malnutrition](https://reports.msf.net/secure/app/malnut) (non OBT)
+
+Some of these dashboards will be merged at some point in the future.
+
+
+## Getting access
+
+Most dashboards require an account to be able to connect to it:
+
+![Connect to a dashboard](../how_to/images/img-007-connect-dashboard.png){fig-align="center"}
+
+If you do not have an account, it is quick and easy to create one: go to [this page](https://reports.msf.net/signup/) and fill the boxes (do not forget to save your password!). If you use an MSF or Epicentre mail adress the account will be validated automatically and soon you will be able to use the account you just created to connect to a dashboard.
+
+If you are an external user, contact Paul Campbell from the EpiDS team to get access.
+
