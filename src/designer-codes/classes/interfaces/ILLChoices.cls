@@ -28,9 +28,9 @@ Public Property Get DataRange( _
           Optional ByVal colName As String = "__all__", _
           Optional ByVal includeHeaders = True) As Range
 End Property
-Public Property Get HasCheckings() As Boolean: End Property
 
 '@section Working with Choices
+
 Public Property Get ChoiceExists(ByVal choiceName As String) As Boolean
 End Property
 
@@ -43,32 +43,50 @@ Public Sub AddChoice(ByVal choiceName As String, _
                      Optional ByVal shortLabelData As Object = Nothing)
 End Sub
 
+'Remove choice
+Public Sub RemoveChoice(ByVal choiceNames As String, Optional ByVal sep As String = ";")
+End Sub
 
+'Remove Rows in the choice worksheet if there is a custom table attached
+Public Sub AddRows(Optional ByVal nbRows As Long = 5, Optional ByVal insertShift As Boolean = False)
+End Sub
+
+Public Sub RemoveRows(): End Sub
+
+Public Sub Translate(ByVal trads As ITranslation): End Sub
+
+'Retrieve all the choices in the choice object
+Public Property Get AllChoices() As BetterArray: End Property
+
+'@section Working with categories
 
 Public Property Get Categories( _ 
   ByVal choiceName As String, _
   Optional ByVal useShortlabels As Boolean = False) As BetterArray
 End Property
 
+Public Property Get ConcatenateCategories( _ 
+        ByVal choiceName As String, _ 
+        Optional ByVal separator As String = " | ", _
+        Optional ByVal trads As Object = Nothing) As String
+End Property
 
-
-
-'Exposed methods
-Public Property Get TraceValues() As Object: End Property
-
-
-
+'@section Input/output (Import/Export)
 
 'Import and exports
+'Export the choice object to a workbook
 Public Sub Export(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
 End Sub
 
-Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
+'Import a choice object to a new workbook
+Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, _ 
+                  ByVal fromStartcol As Long)
 End Sub
 
-Public Sub Translate(ByVal TransObject As ITranslation): End Sub
+'@section Checkings
 
+'Check if the current choice has some checkings
+Public Property Get HasCheckings() As Boolean: End Property
 
-'Add and remove rows from the choice listObject
-Public Sub AddRows(): End Sub
-Public Sub RemoveRows(): End Sub
+'Errors and checkings
+Public Property Get CheckingValues() As Object: End Property
