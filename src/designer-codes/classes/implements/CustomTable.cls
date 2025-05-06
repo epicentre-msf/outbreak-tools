@@ -23,6 +23,7 @@ Private Type TCustomTable
   idCol As String
   idPrefix As String
   hasImport As Boolean
+  hasChecks As Boolean
 End Type
 
 Private this As TCustomTable
@@ -30,19 +31,30 @@ Private Const CLASSNAME As String = "ICustomTable"
 Private NOTIMPORTEDCOLUMNS As BetterArray
 Private HIDDENCOLUMNSLIST As BetterArray
 
+'checking objects
+Private checkCounter As Integer
+Private internalChecks As IChecking
+
 '@section Instanciation
+
 '@description
 'The custom data table is created just with one listObject. It is a wrapper arround
 'the listobject class. Which basically add some functionalities to ease the
-'data-manipulation process. A custom data table can have a id column (or not).
-'If you want id column values to have some prefix when resizing (adding new rows), you 
-'can provide the prefix at instanciation.
+'data-manipulation process. A custom data table can have a "id" column. This 
+'is a column where values are not duplicated, used to locate lines. When adding
+'new rows to a table, one can decide to automatically number the id column in 
+'a sequential way (1, 2, 3, ...) or a a prefix before those numbers. ie "line 1", "line 2".
+'The prefix and the id column are provided at instanciation.
 '
 '
-'@
+'@param Lo A ListObject
+'@param idCol A String, the ID column of the custom table. Default is empty string
+'@param idPrefix A String. A prefix to add to each values of the ID column when adding rows.
+'       Default is empty string.        
 Public Function Create(ByVal Lo As listObject, _
                       Optional ByVal idCol As String = vbNullString, _
                       Optional ByVal idPrefix As String = vbNullString) As ICustomTable
+  
   If Lo Is Nothing Then ThrowError "Unable to initialize the class, no listobject provided"
 
   With New CustomTable
@@ -57,12 +69,14 @@ Public Property Get Self() As ICustomTable
   Set Self = Me
 End Property
 
-'Worksheet of the listObject
-Private Function Wksh() As Worksheet
+'@section Custom table Elements
+
+'@prop-title Worksheet of the listObject
+Private Property Get Wksh() As Worksheet
   Dim Lo As listObject
   Set Lo = Table()
   Set Wksh = Lo.Parent
-End Function
+End Property
 
 'Table listObject
 Public Property Get Table() As listObject
