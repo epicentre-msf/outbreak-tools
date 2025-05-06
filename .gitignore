@@ -37,6 +37,8 @@ docs/
 
 
 /.quarto/
-.Renviron
+.Rproj.user
 .Rprofile
-.todo
+.Renviron
+**/~$*.xlsb
+**/.todo
