@@ -830,4 +830,3 @@ Private Sub ILLChoices_Import(ByVal fromWksh As Worksheet, _
                               ByVal fromStartcol As Long)
     Import fromWksh, fromStartRow, fromStartcol
 End Sub
-
