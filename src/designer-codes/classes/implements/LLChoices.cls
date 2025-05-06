@@ -27,6 +27,7 @@ Private Type Tchoice
     hasTrads As Boolean
     trads As ITranslation
     hasChecks As Boolean
+    choiceName As String
 End Type
 
 
@@ -65,7 +66,8 @@ Private internalChecks As IChecking
 Public Function Create(ByVal choiceWorksheet As Worksheet, _ 
                        ByVal choiceStartRow As Long, _
                        ByVal choiceStartColumn As Long, _ 
-                       Optional ByVal trads As ITranslation = Nothing) As _ 
+                       Optional ByVal trads As ITranslation = Nothing,
+                       Optional ByVal choiceName As String = vbNullString) As _ 
                        ILLChoices
 
     Dim customDataSheet As IDataSheet
@@ -81,6 +83,7 @@ Public Function Create(ByVal choiceWorksheet As Worksheet, _
                 Set .TradObject = trads
             End If
         End If
+        .Name = choiceName
         Set Create = .Self
     End With
 End Function
@@ -113,6 +116,17 @@ End Property
 
 Public Property Set TradObject(ByVal trads As ITranslation)
     Set this.trads = trads
+End Property
+
+'@prop-title Setting the name of the choice object
+'@return String
+'@export
+Public Property Get Name() As String
+    Name = this.choiceName
+End Property
+
+Public Property Let Name(ByVal choiceName As String)
+    this.choiceName = choiceName
 End Property
 
 '@note Sub/properties for Getting the headers ---
@@ -368,6 +382,64 @@ Private Sub AddChoice(ByVal choiceName As String, _
     End With
 End Sub
 
+'@sub-title Remove one choice
+'@param choiceName String, the choice to remove
+Private Sub RemoveOneChoice(ByVal choiceName As String)
+
+    Dim listRng As Range
+    Dim cellRng As Range
+
+    'exit if the choice does not exists
+    If Not ChoiceExists(choiceName) Then
+        LogInfo "Choice " & choiceName & " can not be deleted, it does not exists"
+        Debug.Print "Check the choice object Log: " & choiceName & " not deleted"
+        Exit Sub
+    End If
+
+    If Not HeadersExists() Then
+        LogInfo "Choice " & choiceName " can not be deleted, some headers are missing"
+        ShowDebug
+        Exit Sub
+    End If
+
+    Set listRng = DataRange(ListName(), includeHeaders:=False)
+    
+    'Look for the choiceName in the listRange
+    'Sort the actual choice object before going through
+    Sort
+
+    'I am sure here that the choice exists, so cellRng Is not Nothing
+    Set cellRng = listRng.Find( _ 
+            What:=choiceName, _ 
+            lookAt:=xlWhole, _
+            MatchCase:=True, _
+            After:=listRng.Cells(listRng.Rows.Count, 1) _ 
+        )
+
+    Do While (cellRng.value = choiceName)
+        Set cellRng = cellRng.Offset(1)
+        'Move one cell upward for deleting
+        cellRng.Offset(-1).EntireRow.Delete
+    Loop
+End Sub
+
+'@sub-title Remove multiple choices at once
+'@param choiNames String. A list of choice names separated by separator.
+'@param sep String, separator for choices. Default is semi-colon ";"
+Private Sub RemoveChoice(Byval choiceNames As String, Optional ByVal sep As String = ";")
+    Dim namesData As BetterArray
+    Dim counter As Long
+    Dim choiceValue As String
+
+    Set namesData = New BetterArray
+    namesData.Items = Split(choiceNames, sep)
+
+    For counter = namesData.LowerBound to namesData.UpperBound
+        choiceValue = namesData.Item(counter)
+        RemoveOneChoice choiceName:=choiceValue
+    Next
+End Sub
+
 '@sub-title Translate the current Choice worksheet
 '@param trads ITranslation object used for translations
 Private Sub Translate(ByVal trads As ITranslation)
@@ -389,9 +461,59 @@ Private Sub Translate(ByVal trads As ITranslation)
 End Sub
 
 
-'@note Working with Categories ===
+'@sub-title Resize the custom table in the worksheet
+'@param del Boolean. Delete or Add new rows
+'@param nbRows Long, number of rows to add. Default is 5
+'@param insertShift Boolean. Insert new lines when Adding new rows (Default is False)
+'Add / Remove Rows
+Private Sub Resize(Optional ByVal del As Boolean = False, _ 
+                   Optional ByVal nbRows As Long = 5, _ 
+                   Optional ByVal insertShift As Boolean = False)
+    Dim sh As Worksheet
+    Dim Lo As ListObject
+    Dim tabl As ICustomTable
 
-'Get the categories of a choice
+    Set sh = Wksh()
+
+    On Error Resume Next
+    Set Lo = sh.ListObjects(1)
+    On Error GoTo 0
+    If Lo Is Nothing Then Exit Sub
+
+    Set tabl = CustomTable.Create(Lo)
+    If del Then
+        tabl.RemoveRows
+    Else
+        tabl.AddRows nbRows:=nbRows, insertShift:=insertShift
+    End If
+End Sub
+
+'@prop-title Get all the choices in a BetterArray
+'@return A BetterArray
+'@export
+Private Property Get AllChoices() As BetterArray
+    Dim lstChoi As BetterArray
+    Dim lstRng As Range
+    Dim counter As Long
+
+    Set lstChoi = New BetterArray
+
+
+    If Not HasValidHeaders() Then Exit Property
+
+    Set lstRng = DataRange(ListName(), includeHeaders:=False)
+    For counter = 1 To lstRng.Rows.Count
+        If Not lstChoi.Includes(lstRng.Cells(counter, 1).Value) Then
+            lstChoi.Push lstRng.Cells(counter, 1).Value
+        End If
+    Next
+    
+    Set AllChoices = lstChoi.Clone()
+End Property
+
+'@section Working with Categories
+
+'@prop-title Categories of a choice
 '
 '@description
 'Given a choice, get the list of all categories as a BetterArray Object.
@@ -404,10 +526,9 @@ End Sub
 '@pram choiceName String. The name of choice where we want categories from
 '@param useShortlabels Boolean. Return the long or the Short labels. Default is False
 '@return A BetterArray with all the categories
-Public Property Get Categories( _ 
-                                ByVal choiceName As String, _ 
-                                Optional ByVal useShortlabels As Boolean = False _ 
-                    ) As BetterArray
+Public Property Get Categories(ByVal choiceName As String, _ 
+                               Optional ByVal useShortlabels As Boolean = False) _ 
+                               As BetterArray
     
     'Variables
     Dim dataObject As IDataSheet 
@@ -416,7 +537,7 @@ Public Property Get Categories( _
     Dim counter As Long
 
     'Initializations
-    Set dataObject = ChoiceData
+    Set dataObject = ChoiceData()
     Set lngcat = New BetterArray
     Set shrtcat = New BetterArray
 
@@ -427,7 +548,7 @@ Public Property Get Categories( _
     Set lngcat = dataObject.FilterData( _ 
                             varName:=listName(), _
                             criteriaName:=choiceName, _ 
-                            returnedColumnName:=label(), _
+                            returnedColumnName:=Label(), _
                             includeHeaders:=False)
     'Only look for shortlabels in case there is a need
     If useShortlabels Then
@@ -435,7 +556,7 @@ Public Property Get Categories( _
         Set shrtcat = dataObject.FilterData( _ 
             varName:=listName(), _
             criteriaName:=choiceName, _
-            returnedColumnName:=labelShort(), _
+            returnedColumnName:=LabelShort(), _
             includeHeaders:=False _
         )
 
@@ -456,19 +577,37 @@ ReturnLongCat:
     Set Categories = lngcat.Clone()
 End Property
 
-'Concatenate all the categories of one choice, with a separator
+'@prop-title Concatenate all the categories of one choice
 '
-'@param choiName String. The choice
+'@description
+'Retrieve the categories, concatenated with a separator. The default separator 
+'is " | ". It is possible to get categories translated, if a translation object
+'is provided. In case the translation object is nothing, it is defaulted to the
+'simple categories.
+'
+'
+'@param choiceName String. The choice
 '@param separator String. The separator to use for concatenation
+'@param trads A Translation Object. Optional, see description.
 '@return String
-'@export
+'@export A concatenated String (translated or not)
 Private Property Get ConcatenateCategories( _ 
-        ByVal choiName As String, _ 
-        Optional ByVal separator As String = " | ") As String
+        ByVal choiceName As String, _ 
+        Optional ByVal separator As String = " | ", _
+        Optional ByVal trads As Object = Nothing) As String
 
     Dim lst As BetterArray
+    Dim counter As Long
 
-    Set lst = Categories(choiName)
+    Set lst = Categories(choiceName)
+
+    If lst.Length = 0 Then Exit Property
+
+    If (TypeName(trads) = "Translation") Then
+        For counter = lst.LowerBound To lst.UpperBound
+            lst.Item(counter) = trads.TranslatedValue(lst.Item(counter))
+        Next
+    End If
 
     ConcatenateCategories = lst.ToString( _
                      separator:=separator, _
@@ -477,35 +616,10 @@ Private Property Get ConcatenateCategories( _
                      QuoteStrings:=False)
 End Property
 
+'@section Input/output
 
-'Sub / Properties for checking and tracing ===
-Private Property Get HasCheckings() As Boolean
-    HasCheckings = this.hasChecks
-End Property
-
-'
-Private Sub AddTrace(ByVal label As String, Optional ByVal scope As Byte = checkingNote)
-
-    Const CHECKNAME = "Choices object trace"
-    'First, instanciante the internalCheks Objects
-    If internalChecks Is Nothing Then Set internalChecks = Checking.Create(CHECKNAME)
-    internalChecks.Add Cstr(checkCounter), label, scope
-    checkCounter = checkCounter + 1
-    If Not this.hasChecks Then this.hasChecks = True
-End Sub
-
-Private Property Get TraceValues() As Object
-
-    'If there is no checking, exit the property
-    If Not HasCheckings() Then 
-        Exit Property
-    End If
-
-    Set TraceValues = internalChecks
-End Property
-
-
-
+'@sub-title Add the headers to the current choice object
+'@export
 Private Sub AddHeaders()
 
     Dim sh As Worksheet
@@ -514,39 +628,44 @@ Private Sub AddHeaders()
     Set sh = Wksh()
     Set cellRng = sh.Cells(StartRow(), StartColumn())
 
-    cellRng.Value = listName()
+    cellRng.Value = ListName()
     cellRng.Offset(, 1).Value = OrderingList()
     cellRng.Offset(, 2).Value = Label()
     cellRng.Offset(, 3).Value = LabelShort()
-
 End Sub
 
-
-'Get the categories
-
-'Import and export Sub
+'@sub-title Export the current choice object to a workbook
+'@param wkb Workbook. Output workbook
+'@param Hide. Optional, Long. Sheet hidden attribute. Default is xlSheetHidden. 
+'@export
 Private Sub Export(ByVal Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
     Dim choiData As IDataSheet
     Set choiData = ChoiceData()
     ChoiceData.Export Wkb, Hide:=Hide
 End Sub
 
-Private Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
+'@sub-title Import elements of a worksheet into the current choice object
+'@param fromWksh A Worksheet containing the choices to import
+'@param fromStartRow, fromStartCol. Long, start row and column of the choice in 
+'        the imported worksheet
+'@export
+Private Sub Import(ByVal fromWksh As Worksheet, _ 
+                   ByVal fromStartRow As Long, _
+                   ByVal fromStartcol As Long)
+    
     Dim choiData As IDataSheet
     Dim impChoiData As IDataSheet
     Dim sh As Worksheet
     Dim cellRng As Range
-    Set choiData = ChoiceData()
+
 
     'Initialize headers before import
     Set sh = Wksh()
+    Set choiData = ChoiceData()
+
     'clear the choices sheet before imports
     sh.Cells.Clear
-    Set cellRng = sh.Cells(StartRow, StartColumn)
-    cellRng.Value = LISTNAME
-    cellRng.Offset(, 1).Value = ORDER
-    cellRng.Offset(, 2).Value = LABEL
-    cellRng.Offset(, 3).Value = LABELSHORT
+    AddHeaders
 
     'Import the data
     Set impChoiData = DataSheet.Create(fromWksh, fromStartRow, fromStartcol)
@@ -555,8 +674,46 @@ Private Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVa
 End Sub
 
 
+'@section checkings
 
-'@note Interface Properties ====
+'@description
+'@sub-title Add elements to the checking object for future notes
+'
+'@param label. String, the message to add.
+'@param scope, Byte. The scope of the checking object
+'@export
+Private Sub LogInfo(ByVal label As String, _ 
+                    Optional ByVal scope As Byte = checkingNote)
+
+    Dim checkName As String
+
+    checkName = "Choices " & Name() & " object trace"
+
+    'First, instanciante the internalCheks Objects
+    If internalChecks Is Nothing Then Set internalChecks = Checking.Create(checkName)
+    
+    'Add new informations to the checking object
+    internalChecks.Add Cstr(checkCounter), label, scope
+    checkCounter = checkCounter + 1
+
+    If Not this.hasChecks Then this.hasChecks = True
+End Sub
+
+'@prop-title Check if the object has checkings 
+Private Property Get HasCheckings() As Boolean
+    HasCheckings = this.hasChecks
+End Property
+
+'@prop-title Get the cheking values
+Private Property Get CheckingValues() As Object
+
+    'If there is no checking, exit the property
+    If Not HasCheckings() Then  Exit Property
+
+    Set CheckingValues = internalChecks
+End Property
+
+'@section Interfaces
 
 'Translations of headers ---
 Private Property Get ILLChoices_HasTranslation() As Boolean
@@ -611,38 +768,66 @@ Private Sub ILLChoices_AddChoice(ByVal choiceName As String, _
              shortLabelData:=shortLabelData
 End Sub
 
+Private Sub ILLChoices_RemoveChoice(ByVal choiceNames As String, _ 
+                                    Optional ByVal sep As String = ";")
+    RemoveChoice choiceNames, sep
+End Sub
 
-Private Property Get ILLChoices_Categories( _ 
-                                        ByVal choiceName As String, _ 
+'Remove Rows in the choice worksheet if there is a custom table attached
+Private Sub ILLChoices_AddRows(Optional ByVal nbRows As Long = 5, _ 
+                              Optional ByVal insertShift As Boolean = False)
+    Resize del:=False, insertShift:=inserShift, nbRows:=nbRows
+End Sub
+
+Private Sub ILLChoices_RemoveRows()
+    Resize del:=True
+End Sub
+
+Private Property Get ILLChoices_AllChoices() As BetterArray
+    Set ILLChoices_AllChoices = AllChoices()
+End Property
+
+'Get the categories of one choice
+Private Property Get ILLChoices_Categories(ByVal choiceName As String, _ 
                                         Optional ByVal useShortlabels As Boolean = False) _ 
                                         As BetterArray
     Set ILLChoices_Categories = Categories(choiceName, useShortlabels)
 End Property
 
+'Working with categories
+Private Property Get ILLChoices_ConcatenateCategories( _ 
+        ByVal choiceName As String, Optional ByVal separator As String = " | ", _
+        Optional ByVal trads As Object = Nothing) As String
+
+    ILLChoices_ConcatenateCategories = ConcatenateCategories(choiceName, separator, trads)
+
+End Property
 
 Private Property Get ILLChoices_HasCheckings() As Boolean
     ILLChoices_HasCheckings = HasCheckings()
 End Property
 
-Private Property Get ILLChoices_TraceValues() As Object
-     Set ILLChoices_TraceValues = TraceValues()
+Private Property Get ILLChoices_CheckingValues() As Object
+     Set ILLChoices_CheckingValues = CheckingValues()
 End Property
 
-
-
-'Void methods
-
-
-
-
 'Export and Import
-Private Sub ILLChoices_Export(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+
+'add the headers to the choice object
+Private Sub ILLChoices_AddHeaders()
+    AddHeaders
+End Sub
+
+'export the choice object to another workisheet
+Private Sub ILLChoices_Export(ByVal toWkb As Workbook, _ 
+                              Optional ByVal Hide As Long = xlSheetHidden)
     Export toWkb, Hide:=Hide
 End Sub
 
-Private Sub ILLChoices_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
+'import the choice object
+Private Sub ILLChoices_Import(ByVal fromWksh As Worksheet, _ 
+                              ByVal fromStartRow As Long, _ 
+                              ByVal fromStartcol As Long)
     Import fromWksh, fromStartRow, fromStartcol
 End Sub
-
-
 

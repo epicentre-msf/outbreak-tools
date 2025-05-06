@@ -162,6 +162,7 @@ Private Property Get PasteTranslatedCategories(ByVal choiceName As String, ByVal
     If choiceName = vbNullString Then Exit Property
     If Not ChoiceExists(choiceName) Then Exit Property
     Set lst = Categories(choiceName)
+    
     pasteValue = trads.TranslatedValue(lst.Item(lst.LowerBound))
     For counter = lst.LowerBound + 1 To lst.UpperBound
         pasteValue = pasteValue & separator & trads.TranslatedValue(lst.Item(counter))
