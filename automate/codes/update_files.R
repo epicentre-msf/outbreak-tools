@@ -24,8 +24,8 @@ update_designer <- function(tag = "mock") {
     #(the one without the _dev tag)
     main = {
       file_copy(
-        here("src", "designer", "designer_dev.xlsb"),
-        here("src", "designer", "designer.xlsb"),
+        here("src", "bin", "designer", "designer_dev.xlsb"),
+        here("src", "bin", "designer", "designer.xlsb"),
         overwrite = TRUE
       )
       cli_alert_success("Sucessfully replaced the designer main file")
@@ -98,6 +98,6 @@ update_master_setup <- function(tag = "mock") {
 }
 
 # copy the mock file for development
-# update_designer(tag = "mock")
+update_designer(tag = "main")
 # update_setup(tag = "mock")
-update_master_setup(tag = "mock")
+update_master_setup(tag = "main")
