@@ -18,7 +18,9 @@ Option Explicit
 
 'Data Range
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
-                              Optional ByVal includeHeaders As Boolean = False) As Range
+                              Optional ByVal includeHeaders As Boolean = False, _
+                              Optional ByVal strictSearch As Boolean = True, _ 
+                              Optional ByVal matchCase As Boolean = True) As Range
 End Property
 
 'Get the headerRange of the datarange
@@ -36,12 +38,17 @@ Public Property Get Wksh() As Worksheet: End Property
 
 'Exposed methods
 'Check if a column exists
-Public Function ColumnExists(ByVal colName As String) As Boolean: End Function
+Public Function ColumnExists(ByVal colName As String, _ 
+                             Optional ByVal strictSearch As Boolean = True, _ 
+                             Optional ByVal matchCase As Boolean = True) As Boolean
+End Function
 
 'Return the column index
 Public Function ColumnIndex(ByVal colName As String, _
                             Optional ByVal inDataRange As Boolean = False, _
-                            Optional shouldExist As Boolean = False) As Long
+                            Optional shouldExist As Boolean = False, _ 
+                            Optional ByVal strictSearch As Boolean = True, _ 
+                            Optional ByVal matchCase As Boolean = True) As Long
 End Function
 
 'simple filter
