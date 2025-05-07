@@ -151,7 +151,9 @@ End Property
 
 'Data data Range
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
-                              Optional ByVal includeHeaders As Boolean = False) As Range
+                              Optional ByVal includeHeaders As Boolean = False, _ 
+                              Optional ByVal strictSearch As Boolean = True, _ 
+                              Optional ByVal matchCase As Boolean = True) As Range
     Dim customStartRow As Long
     Dim dataWksh As Worksheet
     Dim endCol As Long
@@ -165,7 +167,7 @@ Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
             customStartCol = StartColumn
             endCol = DataEndColumn
         Else
-            customStartCol = ColumnIndex(colName, shouldExist:=True)
+            customStartCol = ColumnIndex(colName, shouldExist:=True, strictSearch:=strictSearch, matchCase:=matchCase)
             endCol = customStartCol
         End If
         Set DataRange = .Range(.Cells(customStartRow, customStartCol), .Cells(DataEndRow, endCol))
@@ -175,14 +177,18 @@ End Property
 'Methods -----------------------------------------------------------------------
 
 'Check if colname exists
-Private Function ColumnExists(ByVal colName As String) As Boolean
+Private Function ColumnExists(ByVal colName As String, _ 
+                              Optional ByVal strictSearch As Boolean = True, _
+                              Optional ByVal matchCase As Boolean = True) As Boolean
     Dim hRng As Range
     Dim Exist As Boolean
     Set hRng = HeaderRange()                     'Header Range of the dictionary
     If colName = vbNullString Then
         Exist = False
     Else
-        Exist = Not (hRng.Find(What:=colName, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
+        Exist = Not (hRng.Find(What:=colName, _ 
+                     lookAt:=IIF(strictSearch, xlWhole, xlPart), _ 
+                     MatchCase:=matchCase) Is Nothing)
     End If
     ColumnExists = Exist
 End Function
@@ -190,13 +196,17 @@ End Function
 'Column Index within the data range of the dictionary
 Private Function ColumnIndex(ByVal colName As String, _
                              Optional ByVal inDataRange As Boolean = False, _
-                             Optional ByVal shouldExist As Boolean = False) As Long
+                             Optional ByVal shouldExist As Boolean = False, _ 
+                             Optional ByVal strictSearch As Boolean = True, _
+                             Optional ByVal matchCase As Boolean = True) As Long
     Dim hRng As Range
     Dim colIndex As Long
     Set hRng = HeaderRange()
 
     If ColumnExists(colName) Then
-        colIndex = hRng.Find(What:=colName, lookAt:=xlWhole, MatchCase:=True).Column
+        colIndex = hRng.Find(What:=colName, _ 
+                            lookAt:=IIF(strictSearch, xlWhole, xlPart), _ 
+                            MatchCase:=matchCase).Column
         If inDataRange Then
             ColumnIndex = colIndex - StartColumn + 1
         Else
@@ -499,7 +509,9 @@ Private Sub ThrowErrorEmptySheetGiven(Optional ByVal Class As String = ":")
       " Given Worksheet object does not exists, please verify if you set it."
 End Sub
 
-Private Sub ThrowErrorStartNumber(Optional ByVal startNumber As Long = -1, Optional ByVal startLabel As String = " Start ", Optional ByVal Class As String = ":")
+Private Sub ThrowErrorStartNumber(Optional ByVal startNumber As Long = -1, _ 
+                                 Optional ByVal startLabel As String = " Start ", _
+                                 Optional ByVal Class As String = ":")
     Err.Raise VBA.vbObjectError + 514, CLASSNAME, _
      "Unable to create an instance of the class" & Class & _
       " The " & startLabel & _
@@ -524,24 +536,32 @@ Private Function IDataSheet_FilterData(ByVal varName As String, _
                                            includeHeaders:=includeHeaders)
 End Function
 
-Private Function IDataSheet_FiltersData(ByVal varData As BetterArray, ByVal criteriaData As BetterArray, ByVal returnedColumnsData As BetterArray) As BetterArray
+Private Function IDataSheet_FiltersData(ByVal varData As BetterArray, ByVal criteriaData As BetterArray, _ 
+                                        ByVal returnedColumnsData As BetterArray) As BetterArray
     Set IDataSheet_FiltersData = FiltersData(varData, criteriaData, returnedColumnsData)
 End Function
 
-Private Function IDataSheet_ColumnExists(ByVal colName As String) As Boolean
-    IDataSheet_ColumnExists = ColumnExists(colName)
+Private Function IDataSheet_ColumnExists(ByVal colName As String, _ 
+                                         Optional ByVal strictSearch As Boolean = True, _ 
+                                         Optional ByVal matchCase As Boolean = True) As Boolean
+
+    IDataSheet_ColumnExists = ColumnExists(colName, strictSearch, matchCase)
 End Function
 
 Private Function IDataSheet_ColumnIndex(ByVal colName As String, _
                                        Optional ByVal inDataRange As Boolean = False, _
-                                       Optional shouldExist As Boolean = False) As Long
-    IDataSheet_ColumnIndex = ColumnIndex(colName, inDataRange, shouldExist)
+                                       Optional shouldExist As Boolean = False, _ 
+                                       Optional ByVal strictSearch As Boolean = True, _ 
+                                       Optional ByVal matchCase As Boolean = True) As Long
+    IDataSheet_ColumnIndex = ColumnIndex(colName, inDataRange, shouldExist, strictSearch, matchCase)
 End Function
 
 'Properties
 Private Property Get IDataSheet_DataRange(Optional ByVal colName As String = "__all__", _
-                                         Optional ByVal includeHeaders As Boolean = False) As Range
-    Set IDataSheet_DataRange = DataRange(colName, includeHeaders)
+                                         Optional ByVal includeHeaders As Boolean = False, _ 
+                                         Optional ByVal strictSearch As Boolean = True, _ 
+                                         Optional ByVal matchCase As Boolean = True) As Range
+    Set IDataSheet_DataRange = DataRange(colName, includeHeaders, strictSearch, matchCase)
 End Property
 
 'Getters for the encapsulated data

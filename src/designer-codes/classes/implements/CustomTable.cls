@@ -69,7 +69,7 @@ Public Property Get Self() As ICustomTable
   Set Self = Me
 End Property
 
-'@section Custom table Elements
+'@section CustomTable elements
 
 '@prop-title Worksheet of the listObject
 Private Property Get Wksh() As Worksheet
@@ -78,7 +78,7 @@ Private Property Get Wksh() As Worksheet
   Set Wksh = Lo.Parent
 End Property
 
-'Table listObject
+'@prop-title Table listObject
 Public Property Get Table() As listObject
   Set Table = this.Lo
 End Property
@@ -87,6 +87,7 @@ Public Property Set Table(ByVal Lo As listObject)
   Set this.Lo = Lo
 End Property
 
+'@prop-title IDs
 Public Property Get IdValue() As String
   IdValue = this.idCol
 End Property
@@ -103,12 +104,81 @@ Public Property Let PrefixValue(ByVal idPrefix As String)
   this.idPrefix = idPrefix
 End Property
 
-'HeaderRowRange
-Private Property Get HeaderRowRange() As Range
+'@prop-title Header row Range
+Private Property Get HeaderRange() As Range
   Dim Lo As listObject
   Set Lo = Table()
-  Set HeaderRowRange = Lo.HeaderRowRange()
+  Set HeaderRange = Lo.HeaderRowRange()
 End Property
+
+'@prop-title Return the column index of a Range
+Private Function ColumnIndex(ByVal colName As String, _
+                             Optional ByVal strictSearch As Boolean = False) As Long
+    Dim Index As Long
+    Dim hRng As Range
+
+    Set hRng = HeaderRange()
+    If ColumnExists(colName) Then
+        Index = hRng.Find(What:=colName, _
+                         lookAt:=IIf(strictSearch, xlWhole, xlPart), _
+                         MatchCase:=strictSearch, _
+                         after:=hRng.Cells(1, hRng.Columns.Count) _
+                         ).Column - hRng.Column + 1
+    Else
+        Index = -1
+    End If
+    ColumnIndex = Index
+End Function
+
+'@prop-title Get the Range of a column
+'
+'@description
+'Return a Data Range given a column name. When strictSearch is false, the 
+'search for the column name is done using partial match. The first partial match
+'found is the returned column. If the column names of the custom table are quite
+'unique, the partial match returns unique values. In case some colunm names share
+'some text, make sure to use strictSearch = True to avoid unexpected output.
+'
+'
+'@param colName String, the name of the column to look for
+'@param includeHeaders Boolean. Whether to return the colunmn plus the headers, default is false
+'@param strictSearch Boolean. Look for partial values when searching the column name,
+'                    without case sensitive search. Default is False.                     
+Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
+                               Optional ByVal includeHeaders As Boolean = False, _
+                               Optional ByVal strictSearch As Boolean = False) As Range
+  Dim Lo As listObject
+  Set Lo = Table()
+  Dim rng As Range
+
+  If colName = "__all__" Then
+    If includeHeaders Then
+      Set rng = Lo.Range()
+    Else
+      Set rng = Lo.DataBodyRange()
+      If rng Is Nothing Then Set rng = Lo.HeaderRowRange.Offset(1)
+    End If
+  Else
+    If Not ColumnExists(colName, strictSearch) Then Exit Property
+    
+    If includeHeaders Then
+      Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).Range
+    Else
+      'DataBody range could be Nothing
+      On Error Resume Next
+      Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).DataBodyRange
+      On Error GoTo 0
+      'You can test here if it is Nothing, in that case the table is Empty,
+      'just return the second line
+      If rng Is Nothing Then _
+       Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).Range.Cells(2, 1)
+    End If
+  
+  End If
+
+  Set DataRange = rng
+End Property
+
 
 'Resize a table
 Private Sub Resize( Optional ByVal AddRows As Boolean = False, _
@@ -130,7 +200,7 @@ Private Sub Resize( Optional ByVal AddRows As Boolean = False, _
 
   Set sh = Wksh()
   Set Lo = Table()
-  Set hRng = HeaderRowRange()
+  Set hRng = HeaderRange()
 
   'Remove unwanted rows from each listObject
   With sh
@@ -218,7 +288,7 @@ Private Function ColumnExists(ByVal colName As String, _
                               Optional ByVal strictSearch As Boolean = False) As Boolean
     Dim Exist As Boolean
     Dim hRng As Range
-    Set hRng = HeaderRowRange
+    Set hRng = HeaderRange()
  
     On Error Resume Next
     Exist = (Not hRng.Find(What:=colName, _
@@ -228,65 +298,6 @@ Private Function ColumnExists(ByVal colName As String, _
     On Error GoTo 0
     ColumnExists = Exist
 End Function
-
-Private Function ColumnIndex(ByVal colName As String, _
-                             Optional ByVal strictSearch As Boolean = False) As Long
-    Dim Index As Long
-    Dim hRng As Range
-
-    Set hRng = HeaderRowRange()
-    If ColumnExists(colName) Then
-        Index = hRng.Find(What:=colName, _
-                         lookAt:=IIf(strictSearch, xlWhole, xlPart), _
-                         MatchCase:=strictSearch, _
-                         after:=hRng.Cells(1, hRng.Columns.Count) _
-                         ).Column - hRng.Column + 1
-    Else
-        Index = -1
-    End If
-    ColumnIndex = Index
-End Function
-
-Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
-                               Optional ByVal includeHeaders As Boolean = False, _
-                               Optional ByVal strictSearch As Boolean = False) As Range
-  Dim Lo As listObject
-  Set Lo = Table()
-  Dim rng As Range
-
-  If colName = "__all__" Then
-    If includeHeaders Then
-      Set rng = Lo.Range()
-    Else
-      Set rng = Lo.DataBodyRange()
-      If rng Is Nothing Then Set rng = Lo.HeaderRowRange.Offset(1)
-    End If
-  Else
-    If Not ColumnExists(colName, strictSearch) Then Exit Property
-    
-    If includeHeaders Then
-      Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).Range
-    Else
-      'DataBody range could be Nothing
-      On Error Resume Next
-      Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).DataBodyRange
-      On Error GoTo 0
-      'You can test here if it is Nothing, in that case the table is Empty,
-      'just return the second line
-      If rng Is Nothing Then _
-       Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).Range.Cells(2, 1)
-    End If
-  
-  End If
-
-  Set DataRange = rng
-End Property
-
-Private Property Get HeaderRange() As Range
-  Dim Lo As listObject
-  Set Lo = Table()
-  Set HeaderRange = Lo.HeaderRowRange()
-End Property
 
 Private Property Get CellRange(ByVal colName As String, _
                                ByVal lineNum As Long) As Range
