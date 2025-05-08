@@ -82,7 +82,7 @@ Private Property Get ListOfKeys() As BetterArray
 End Property
 
 'Test if a key already exists
-Private Function keyExists(ByVal keyName As String) As Boolean
+Private Function KeyExists(ByVal keyName As String) As Boolean
   Dim keyTabl As BetterArray
 
   If (keyName = vbNullString) Then
@@ -91,7 +91,7 @@ Private Function keyExists(ByVal keyName As String) As Boolean
   End If
 
   Set keyTabl = ListOfKeys()
-  keyExists = keyTabl.Includes(keyName)
+  KeyExists = keyTabl.Includes(keyName)
 End Function
 
 'Add new values to the checking
@@ -99,7 +99,7 @@ End Function
 Private Sub Add(ByVal keyName As String, ByVal LABEL As String, _
                 Optional ByVal scope As Byte = checkingNote)
 
-  If keyExists(keyName) Then ThrowError keyName & " already exists, keys should be unique."
+  If KeyExists(keyName) Then ThrowError keyName & " already exists, keys should be unique."
 
   'Initialize the tables
   If (this.labelsTable Is Nothing) And (this.scopesTable Is Nothing) Then

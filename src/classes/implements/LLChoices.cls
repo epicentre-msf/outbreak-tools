@@ -67,7 +67,7 @@ Private internalChecks As IChecking
 Public Function Create(ByVal choiceWorksheet As Worksheet, _ 
                        ByVal choiceStartRow As Long, _
                        ByVal choiceStartColumn As Long, _ 
-                       Optional ByVal trads As ITranslation = Nothing,
+                       Optional ByVal trads As ITranslation = Nothing, _
                        Optional ByVal choiceName As String = vbNullString) As _ 
                        ILLChoices
 
@@ -238,7 +238,7 @@ Private Property Get DataRange( _
 
     'The range is obtained without case matching, because it can
     'change depending on the context (title in setup, lowercase in designer, etc.)
-    Set DataRange = dataObject.DataRange(_ 
+    Set DataRange = dataObject.DataRange( _ 
                         colName, includeHeaders, _
                          matchCase:=False)
 End Property
@@ -415,7 +415,7 @@ Private Sub RemoveOneChoice(ByVal choiceName As String)
     End If
 
     If Not HeadersExists() Then
-        LogInfo "Choice " & choiceName " can not be deleted, some headers are missing", _ 
+        LogInfo "Choice " & choiceName & " can not be deleted, some headers are missing", _ 
                  scope:=checkingWarning
         ShowDebug
         Exit Sub
@@ -436,7 +436,7 @@ Private Sub RemoveOneChoice(ByVal choiceName As String)
         )
 
     If (cellRng Is Nothing) Then 
-        LogInfo "Choice " & choiceName " Not deleted, something went wrong"
+        LogInfo "Choice " & choiceName & " Not deleted, something went wrong"
         ShowDebug
         Exit Sub
     End If
