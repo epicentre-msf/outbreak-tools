@@ -16,15 +16,25 @@ Attribute VB_Description = "Interface of CustomTable"
 
 Option Explicit
 
+'@section CustomTable elements
 
+'Header row range
+Public Property Get HeaderRange() As Range: End Property
+
+'Range of a column
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
                               Optional ByVal includeHeaders As Boolean = False, _
                               Optional ByVal strictSearch As Boolean = False) _
                               As Range
 End Property
-Public Property Get HeaderRange() As Range: End Property
+
+'Name of the attached listObject
 Public Property Get Name() As String: End Property
+
+'Specific cell in the customtable
 Public Property Get CellRange(ByVal colName As String, ByVal lineNum As Long) As Range: End Property
+
+'Specific value of a customtable with ID column
 Public Property Get Value(ByVal colName As String, ByVal keyName As String) As String: End Property
 
 'ImpTab could be either a customTable or a DataSheet Object
@@ -64,3 +74,11 @@ End Property
   
 Public Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray, Optional ByVal startLine As Long = 1)
 End Sub
+
+'@section Checkings
+
+'Check if the current choice has some checkings
+Public Property Get HasCheckings() As Boolean: End Property
+
+'Errors and checkings
+Public Property Get CheckingValues() As Object: End Property

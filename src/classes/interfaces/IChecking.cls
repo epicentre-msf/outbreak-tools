@@ -30,7 +30,7 @@ Option Explicit
 
 
 'Exposed methods
-Public Sub Add(ByVal keyName As String, ByVal LABEL As String, _
+Public Sub Add(ByVal keyName As String, ByVal label As String, _
                 Optional ByVal scope As Byte = checkingNote)
 End Sub
 Public Property Get ListOfKeys() As BetterArray: End Property
