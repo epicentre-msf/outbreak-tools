@@ -37,6 +37,8 @@ Private internalChecks As IChecking
 
 '@section Instanciation
 
+'@sub-title Create a CustomTable object
+
 '@description
 'The custom data table is created just with one listObject. It is a wrapper arround
 'the listobject class. Which basically add some functionalities to ease the
@@ -50,7 +52,9 @@ Private internalChecks As IChecking
 '@param Lo A ListObject
 '@param idCol A String, the ID column of the custom table. Default is empty string
 '@param idPrefix A String. A prefix to add to each values of the ID column when adding rows.
-'       Default is empty string.        
+'       Default is empty string.
+'@return A Custom Table Object
+'@export        
 Public Function Create(ByVal Lo As listObject, _
                       Optional ByVal idCol As String = vbNullString, _
                       Optional ByVal idPrefix As String = vbNullString) As ICustomTable
@@ -105,6 +109,7 @@ Public Property Let PrefixValue(ByVal idPrefix As String)
 End Property
 
 '@prop-title Header row Range
+'@export
 Private Property Get HeaderRange() As Range
   Dim Lo As listObject
   Set Lo = Table()
@@ -143,7 +148,9 @@ End Function
 '@param colName String, the name of the column to look for
 '@param includeHeaders Boolean. Whether to return the colunmn plus the headers, default is false
 '@param strictSearch Boolean. Look for partial values when searching the column name,
-'                    without case sensitive search. Default is False.                     
+'                    without case sensitive search. Default is False.
+'@return A Range Object
+'@export                     
 Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
                                Optional ByVal includeHeaders As Boolean = False, _
                                Optional ByVal strictSearch As Boolean = False) As Range
@@ -159,7 +166,11 @@ Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
       If rng Is Nothing Then Set rng = Lo.HeaderRowRange.Offset(1)
     End If
   Else
-    If Not ColumnExists(colName, strictSearch) Then Exit Property
+    If Not ColumnExists(colName, strictSearch) Then
+      LogInfo "Unable of find the column name " & colName & " of " & Name()
+      ShowDebug
+      Exit Property
+    End If
     
     If includeHeaders Then
       Set rng = Lo.ListColumns(ColumnIndex(colName, strictSearch)).Range
@@ -180,8 +191,54 @@ Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
 End Property
 
 
-'Resize a table
-Private Sub Resize( Optional ByVal AddRows As Boolean = False, _
+'@prop-title Name of the attached listObject
+'@return String
+'@export
+Private Property Get Name() As String
+  Name = Table.Name
+End Property
+
+'@prop-title Get a specific cell
+'@description
+'using the line number in a worksheet and a column name, get the corresponding
+'cell at the intersection
+'@param colName As String, the column of the cell
+'@param lineNum Long, the line number in the excel worksheet
+'@return
+'@export
+Private Property Get CellRange(ByVal colName As String, _
+                               ByVal lineNum As Long) As Range
+  Dim cellPos As Long
+  Dim rng As Range
+
+  If Not ColumnExists(colName) Then Exit Property
+  Set rng = DataRange(colName)
+  cellPos = lineNum - rng.Row + 1
+  If cellPos < 0 Then Exit Property
+  Set CellRange = rng.Cells(cellPos, 1)
+End Property
+
+
+'@sub-title Resize a custom table
+'@description 
+'Dellete some  empty rows or add new rows to a custom table, resizing the 
+'listobject. Empty rows are defined as rows where the total row count is less
+'than a given value provided by the user. The default value here is 0. There
+'are different ways to add new rows: insert rows in the worksheet, or just
+'expand the range of the listobject. The first option is useful when there are
+'multiple list objects on the same worksheet and avoids overlaps.
+'
+'@param addRows Optional, Boolean. Whether to Resize by adding rows. Default is
+'       False.
+'@param insertShift Optional, Boolean. When adding rows, insert new line. Default
+'       is True
+'@param totalRowCount Optional, Long. Row count threshold for deleting a line. Default is 0
+'@param nbRows Optional, Long. Number or fows to add when adding new rows. Default
+'       is 5.
+'@includeIds Optional, Boolean. Whether to number in a sequential way the ID column after
+'            resizing. Default is True.
+'@export
+Private Sub Resize( Optional ByVal addRows As Boolean = False, _
                     Optional ByVal insertShift As Boolean = True, _
                     Optional ByVal totalRowCount As Long = 0, _
                     Optional ByVal nbRows As Long = 5, _ 
@@ -250,6 +307,8 @@ Private Sub Resize( Optional ByVal AddRows As Boolean = False, _
   If includeIds Then AddIds
 End Sub
 
+'@sub-title Add Ids to the ID column in a sequential way
+'@export
 Private Sub AddIds()
   Dim rng As Range
   Dim counter As Long
@@ -266,7 +325,7 @@ Private Sub AddIds()
   Next
 End Sub
 
-
+'@sub
 Private Sub SetValidation(ByVal colName As String, _
                           ByVal drop As IDropdownLists, _
                           ByVal dropName As String, _
@@ -298,18 +357,6 @@ Private Function ColumnExists(ByVal colName As String, _
     On Error GoTo 0
     ColumnExists = Exist
 End Function
-
-Private Property Get CellRange(ByVal colName As String, _
-                               ByVal lineNum As Long) As Range
-  Dim cellPos As Long
-  Dim rng As Range
-
-  If Not ColumnExists(colName) Then Exit Property
-  Set rng = DataRange(colName)
-  cellPos = lineNum - rng.Row + 1
-  If cellPos < 0 Then Exit Property
-  Set CellRange = rng.Cells(cellPos, 1)
-End Property
 
 Private Function ValueRange(ByVal colName As String, ByVal keyName As String) As Range
 
@@ -364,10 +411,6 @@ Private Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal new
     cellRetRng.Value = newValue
   On Error GoTo 0
 End Sub
-
-Private Property Get Name() As String
-  Name = Table.Name
-End Property
 
 'Clean every columns of the listObject and avoid formula columns
 Private Sub Clean(Optional ByVal excludeNames As Object = Nothing, _ 
@@ -847,7 +890,81 @@ Private Sub SortElements(ByVal els As Variant, Optional ByVal onFirst As Boolean
   Next
 End Sub
 
+'@section Checkings
+
+'@sub-title Add elements to the checking object for future notes
+'
+'@param label. String, the message to add.
+'@param scope, Byte. The scope of the checking object
+'@export
+Private Sub LogInfo(ByVal label As String, _ 
+                    Optional ByVal scope As Byte = checkingNote)
+
+    Dim checkName As String
+
+    checkName = "CustomTable " & Name() & " object trace"
+
+    'First, instanciante the internalCheks Objects
+    If internalChecks Is Nothing Then Set internalChecks = Checking.Create(checkName)
+    
+    'Add new informations to the checking object
+    internalChecks.Add Cstr(checkCounter), label, scope
+    checkCounter = checkCounter + 1
+
+    If Not this.hasChecks Then this.hasChecks = True
+End Sub
+
+'@prop-title Check if the object has checkings
+'@export
+Private Property Get HasCheckings() As Boolean
+    HasCheckings = this.hasChecks
+End Property
+
+'@prop-title Get the cheking values
+'@export
+Private Property Get CheckingValues() As Object
+
+    'If there is no checking, exit the property
+    If Not HasCheckings() Then  Exit Property
+
+    Set CheckingValues = internalChecks
+End Property
+
+
 '@section Interface
+
+'CustomTable elements ----------------------------------------------------------
+
+'Header row range
+Private Property Get ICustomTable_HeaderRange() As Range
+  Set ICustomTable_HeaderRange = HeaderRange()
+End Property
+
+'Range of a column
+Private Property Get ICustomTable_DataRange( _
+          Optional ByVal colName As String = "__all__", _
+          Optional ByVal includeHeaders As Boolean = False, _
+          Optional ByVal strictSearch As Boolean = False) As Range
+  Set ICustomTable_DataRange = DataRange(colName, includeHeaders, strictSearch)
+End Property
+
+'Name of attached listObject
+Private Property Get ICustomTable_Name() As String
+  ICustomTable_Name = Name()
+End Property
+
+'Specific cell in the customtable
+Private Property Get ICustomTable_CellRange(ByVal colName As String, ByVal lineNum As Long) As Range
+  Set ICustomTable_CellRange = CellRange(colName, lineNum)
+End Property
+
+'Specific value of a customtable with ID column
+Private Property Get ICustomTable_Value(ByVal colName As String, ByVal keyName As String) As String
+  ICustomTable_Value = Value(colName, keyName)
+End Property
+
+
+
 
 'On Linelist, there are not stacked listObjects on one worksheet,
 'So there is no need to insert shifts like in analysis custom table. Inserting
@@ -868,28 +985,10 @@ Private Sub ICustomTable_SetValidation(ByVal colName As String, ByVal drop As ID
     SetValidation colName, drop, dropName, alertType
 End Sub
 
-Private Property Get ICustomTable_DataRange( _
-          Optional ByVal colName As String = "__all__", _
-          Optional ByVal includeHeaders As Boolean = False, _
-          Optional ByVal strictSearch As Boolean = False) As Range
-  Set ICustomTable_DataRange = DataRange(colName, includeHeaders, strictSearch)
-End Property
 
-Private Property Get ICustomTable_Value(ByVal colName As String, ByVal keyName As String) As String
-  ICustomTable_Value = Value(colName, keyName)
-End Property
 
-Private Property Get ICustomTable_CellRange(ByVal colName As String, ByVal lineNum As Long) As Range
-  Set ICustomTable_CellRange = CellRange(colName, lineNum)
-End Property
 
-Private Property Get ICustomTable_HeaderRange() As Range
-  Set ICustomTable_HeaderRange = HeaderRange()
-End Property
 
-Private Property Get ICustomTable_Name() As String
-  ICustomTable_Name = Name()
-End Property
 
 Private Sub ICustomTable_Clean()
   Clean
@@ -935,7 +1034,20 @@ Private Property Get ICustomTable_HasColumnsNotImported() As Boolean
     ICustomTable_HasColumnsNotImported = HasColumnsNotImported()
 End Property
 
+
+
 'Errors and checkings
+
 Private Sub ThrowError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
+
+Private Property Get ICustomTable_HasCheckings() As Boolean
+    ICustomTable_HasCheckings = HasCheckings()
+End Property
+
+Private Property Get ICustomTable_CheckingValues() As Object
+     Set ICustomTable_CheckingValues = CheckingValues()
+End Property
+
+
