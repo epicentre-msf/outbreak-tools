@@ -74,6 +74,7 @@ Public Property Get Self() As ICustomTable
   Set Self = Me
 End Property
 
+'@label:elements
 '@section CustomTable elements
 
 '@prop-title Worksheet of the listObject
@@ -109,6 +110,7 @@ Public Property Let PrefixValue(ByVal idPrefix As String)
   this.idPrefix = idPrefix
 End Property
 
+'@label:HeaderRange
 '@prop-title Header row Range
 '@export
 Private Property Get HeaderRange() As Range
@@ -136,6 +138,28 @@ Private Function ColumnIndex(ByVal colName As String, _
     ColumnIndex = Index
 End Function
 
+
+'@prop-title: Check if a column exists in the custom table
+'@param colName String, column name to search
+'@param strictSearch Boolean. Whether to search strictly with matchase, and the whole string or not.
+' Default is False
+Private Function ColumnExists(ByVal colName As String, _
+                              Optional ByVal strictSearch As Boolean = False) As Boolean
+    Dim Exist As Boolean
+    Dim hRng As Range
+    Set hRng = HeaderRange()
+ 
+    On Error Resume Next
+    Exist = (Not hRng.Find(What:=colName, _
+                           lookAt:=IIf(strictSearch, xlWhole, xlPart), _
+                           MatchCase:=strictSearch, _
+                           after:=hRng.Cells(1, hRng.Columns.Count)) Is Nothing)
+    On Error GoTo 0
+    ColumnExists = Exist
+End Function
+
+
+'@label:DataRange
 '@prop-title Get the Range of a column
 '
 '@description
@@ -191,7 +215,7 @@ Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
   Set DataRange = rng
 End Property
 
-
+'@label:Name
 '@prop-title Name of the attached listObject
 '@return String
 '@export
@@ -199,6 +223,7 @@ Private Property Get Name() As String
   Name = Table.Name
 End Property
 
+'@label:CellRange
 '@prop-title Get a specific cell
 '@description
 'using the line number in a worksheet and a column name, get the corresponding
@@ -252,7 +277,7 @@ Private Function ValueRange(ByVal colName As String, ByVal keyName As String) As
   End If
 End Function
 
-
+'@label:Value
 '@prop-title Get one specific value on a table with key
 '@description
 'For tables with a key column, extract one specific value for a column name
@@ -276,6 +301,9 @@ Private Property Get Value(ByVal colName As String, _
   Value = retValue
 End Property
 
+'
+
+'@label:modify
 '@section Modify the table
 
 '@sub-title Resize a custom table
@@ -357,6 +385,29 @@ Private Sub Resize( Optional ByVal addRows As Boolean = False, _
   If includeIds Then AddIds
 End Sub
 
+'@label:AddIds
+'@sub-title Add Ids to the ID column in a sequential way
+'@description
+'For some tables with key columns when resizing it is possible to add automatically 
+'a sequential number (with prefix) to the ID column which is not modified by 
+'the user, and in general is locked.
+'@export
+Private Sub AddIds()
+  Dim rng As Range
+  Dim counter As Long
+  Dim idPref As String
+  Dim ID As String
+
+  ID = IdValue()
+  If (ID = vbNullString) Then Exit Sub
+  If Not (ColumnExists(ID)) Then Exit Sub
+  idPref = PrefixValue()
+  Set rng = DataRange(ID)
+  For counter = 1 To rng.Rows.Count
+    rng.Cells(counter, 1).Value = Application.WorksheetFunction.Trim(idPref & " " & counter)
+  Next
+End Sub
+
 
 '@label:AddRows
 '@sub-title Add Rows to a custom table
@@ -385,6 +436,7 @@ Private Sub AddRows(Optional ByVal nbRows As Long = 5, _
 End Sub
 
 
+'@label:RemoveRows
 '@sub-title Remove empty rows from a custom table
 '
 '@description
@@ -405,36 +457,20 @@ Private Sub RemoveRows(Optional ByVal totalCount As Long = 0, _
   Resize AddRows:=False, totalRowCount:=totalCount, includeIds:=includeIds
 End Sub
 
-
-
-
-'@sub-title Add Ids to the ID column in a sequential way
-'@description
-'For some tables with key columns when resizing it is possible to add automatically 
-'a sequential number (with prefix) to the ID column which is not modified by 
-'the user, and in general is locked.
+'@label:SetValidation
+'@sub-title Set some validations on the listObject cell
+'@param colName String. Name of column to set the validation on
+'@param drop A Dropdown Object.
+'@param dropName String. The name of the dropdown to select from the dropdown object
+'@param alertType Optional, String. Type of alert to raise if values are not in dropdown. Could take 
+' "info", "warning", "error". Default is "info".
+'@param message Optional, String. Message to raise if values are not in the dropdown. Default is vbNullString
 '@export
-Private Sub AddIds()
-  Dim rng As Range
-  Dim counter As Long
-  Dim idPref As String
-  Dim ID As String
-
-  ID = IdValue()
-  If (ID = vbNullString) Then Exit Sub
-  If Not (ColumnExists(ID)) Then Exit Sub
-  idPref = PrefixValue()
-  Set rng = DataRange(ID)
-  For counter = 1 To rng.Rows.Count
-    rng.Cells(counter, 1).Value = Application.WorksheetFunction.Trim(idPref & " " & counter)
-  Next
-End Sub
-
-'@sub
 Private Sub SetValidation(ByVal colName As String, _
                           ByVal drop As IDropdownLists, _
                           ByVal dropName As String, _
-                          Optional ByVal alertType As String = "info")
+                          Optional ByVal alertType As String = "info",
+                          Optional ByVal message As String = vbNullString)
 
     Dim rng As Range
 
@@ -443,80 +479,196 @@ Private Sub SetValidation(ByVal colName As String, _
     Set rng = DataRange(colName)
     'set validation for each cell in the datarange
     drop.SetValidation cellRng:=rng, listName:=dropName, _
-                       alertType:=alertType
+                       alertType:=alertType, message:=message
 End Sub
 
 
-'Column Range and column Index of a custom table
-Private Function ColumnExists(ByVal colName As String, _
-                              Optional ByVal strictSearch As Boolean = False) As Boolean
-    Dim Exist As Boolean
-    Dim hRng As Range
-    Set hRng = HeaderRange()
- 
-    On Error Resume Next
-    Exist = (Not hRng.Find(What:=colName, _
-                           lookAt:=IIf(strictSearch, xlWhole, xlPart), _
-                           MatchCase:=strictSearch, _
-                           after:=hRng.Cells(1, hRng.Columns.Count)) Is Nothing)
-    On Error GoTo 0
-    ColumnExists = Exist
-End Function
-
+'@label:SetValue
+'@sub-title Change the value of one specific cell in the custom table
+'@description
+'
+'Given one specific cell in the custom table, change value the the cell. The
+'cell is identified using the key of the row and the column name of the column.
+'Use with caution as it modifies data inside the listobject
+'
+'@param colName String. Column name of the cell to modify
+'@param keyName String. They key of the cell to modify
+'@param newValue String. The new value to add
+'@export
 Private Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
 
   Dim cellRetRng As Range
 
   'Get the value Range and assign (try) it the newValue
   'On error (cellRetRng is Nothing for ex, nothing is done)
+  'also if for some reasons it is not possible to change the values of the cell,
+  'nothing is done
   On Error Resume Next
     Set cellRetRng = ValueRange(colName, keyName)
     cellRetRng.Value = newValue
   On Error GoTo 0
 End Sub
 
-'Clean every columns of the listObject and avoid formula columns
-Private Sub Clean(Optional ByVal excludeNames As Object = Nothing, _ 
-                  Optional ByVal totalCount As Long = 0, _
-                  Optional ByVal clearContent As Boolean = False, _
-                  Optional ByVal addNewRows As Boolean = False)
-  
+'@label:Clean
+'@sub-title Clean all the columns of the custom table except the key column
+'@export
+Private Sub Clean()
   Dim rng As Range
   Dim hRng As Range
-  Dim Lo As listObject
   Dim headerValue As String
   Dim counter As Long
-  Dim toClear As Boolean
 
-  Set Lo = Table()
-  Set hRng = Lo.HeaderRowRange
+  Set hRng = HeaderRange()
 
-  If clearContent Then
-    On Error Resume Next
-    Lo.DataBodyRange.Delete
-    On Error GoTo 0
-  Else
-    For counter = 1 To hRng.Columns.Count  
-      headerValue = hRng.Cells(1, counter).Value
-      Set rng = DataRange(headerValue)
+  'Clean only columns without formulas that are not keys (key columns are kept as it).
+  For counter = 1 To hRng.Columns.Count
+    headerValue = hRng.Cells(1, counter).Value
 
-      'On formula colunms, no clearing is done, clear only "non formula" columns
-      toClear = (Not rng.Cells(1, 1).HasFormula)
+    If headerValue <> IdValue() Then
+        Set rng = DataRange(colName:=headerValue, strictValue:=True)
+        'On formula colunms, Or  no clearing is done, 
+        'clear only "non formula" columns      
+        If (Not rng.Cells(1, 1).HasFormula) Then rng.ClearContents
+    End If
+  Next
+End Sub
 
-      If (TypeName(excludeNames) = "BetterArray") Then toClear =  toClear And (Not excludeNames.Includes(headerValue))
+'@label:Sort
+'@sub-title Sort The Current table on some columns
+'@description
+'Sort the columns in Ascending order. One can either sort one column or 
+'sort multiple columns provided in a BetterArray Object. The sort is done
+'on the provided column first and then on the BetterArray.
+'@param colName Optional String. The column to sort the table on. Default is vbNullString
+'@param colList Optional, an Object, expecting a BetterArray of colNames. Default is Nothing
+'@param directSort Optional, Boolean. Whether to sort on first element or to sort directly. Default is
+'       True, sort directly.
+'@param sortOrder Optional, String. Sort
+'@export
+Private Sub Sort(Optional ByVal colName As String = vbNullString, _ 
+                 Optional ByVal colList As Object = Nothing, _
+                 Optional ByVal directSort As Boolean = True)
+  
+  Dim counter As Long
+  Dim cName As String
 
-      'clear the content if needed
-      If toClear Then rng.ClearContents
-    Next
-  End If
+  'Exit if there is no need to sort on
+  If (colName = vbNullString) And (colList Is Nothing) Then Exit Sub
 
-  'The user want to add new rows after cleaning
-  If addNewRows Then 
-    'Now resize the listObject  
-    Resize AddRows:=False, totalRowCount:=totalCount
+  'Sort only one colName
+  SortHelper colName:=colName, directSort:=directSort
+
+  'Sort multiple column names (in a Betterarray)
+  If (TypeName(colList) = "BetterArray") Then
+    If (colList.Length > 0) Then
+      For counter = colList.LowerBound To colList.UpperBound
+
+        cName = colList.Item(counter)
+        SortHelper colName:=cName, directSort:=directSort
+
+      Next
+    End If
   End If
 End Sub
 
+'@sub-title Helper for the sort sub
+'@colName String. The column to sort on
+'@directSort Boolean. Sort directly or on first element? Default is True.
+Private Sub SortHelper(ByVal colName As String, Optional ByVal directSort As Boolean = True)
+  If (colName <> vbNullString) Then 
+    If directSort Then 
+      SortSimple colName
+    Else
+      SortOnFirst colName
+    End If
+  End If
+End Sub
+
+'@sub-title Sort a column name by bringing together first values found
+'@param colName A String. The name of the column to sort on
+Private Sub SortOnFirst(ByVal colName As String)
+
+  Dim numRng As Range 
+  Dim colRng As Range 
+  Dim LoRng As Range 
+  Dim hRng As Range
+  Dim counter As Long
+  Dim trackData As BetterArray
+  Dim sh As Worksheet
+  Dim sortedValue As String
+  Dim num As Long
+  Dim numData As BetterArray
+  Dim resRng As Range
+  Dim Lo As ListObject
+
+  'Sort on values only If there is data
+  Set Lo = Table()
+  Set LoRng = DataRange(includeHeaders:=False)
+  Set colRng = DataRange(colName, strictSearch:=True)
+
+  'Exit if there is nothing
+  If (LoRng Is Nothing) Or IsEmpty(LoRng) Or (colRng Is Nothing) Or _
+     (IsEmpty(colRng)) Then Exit Sub
+
+  Set trackData = New BetterArray
+  Set numData = New BetterArray
+  Set sh = Wksh()
+  Set hRng = HeaderRange()
+
+  'Test values progressively
+  'If the trackData does not contains the values,
+  'Update the number (where you will sort)
+  hRng.Cells(1, hRng.Cells.Count + 1).Value = "__number"
+  Set numRng = Lo.ListColumns(hRng.Cells.Count + 1).DataBodyRange
+  'Seems like sometimes the databodyrange of a new column
+  'could be empty in that case exit
+  If numRng Is Nothing Then
+    Lo.ListColumns(hRng.Cells.Count + 1).Delete
+    Exit Sub
+  End If
+  num = 1 'Number to sort later on
+  'Resize the listObject to be sure it includes the number added
+  With sh
+      Set resRng = .Range(hRng.Cells(1, 1), _ 
+                          LoRng.Cells(LoRng.Rows.Count, LoRng.Columns.Count + 1))
+      Lo.Resize resRng
+  End With
+
+  For counter = 1 To colRng.Cells.Count
+     sortedValue = colRng.Cells(counter, 1).Value
+    If Not trackData.Includes(sortedValue) Then
+      trackData.Push sortedValue
+      numData.Push num
+      numRng.Cells(counter, 1).Value = num
+      num = num + 1
+    Else
+      numRng.Cells(counter, 1) = numData.Items(trackData.IndexOf(sortedValue))
+    End If
+  Next
+  'Now sort the listObject on the __number column
+  resRng.Sort key1:=numRng, Order1:=xlAscending, Header:=xlYes
+  'Remove the __number column
+  Lo.ListColumns(hRng.Cells.Count + 1).Delete
+End Sub
+
+Private Sub SortSimple(ByVal colName As String)
+
+  Dim colRng As Range
+  Dim LoRng As Range
+
+  Set LoRng = DataRange(includeHeaders:=True)
+  Set colRng = DataRange(colName, strictSearch:=True)
+
+  If (LoRng Is Nothing) Or IsEmpty(LoRng) Or (colRng Is Nothing) Or _
+      (IsEmpty(colRng)) Then Exit Sub
+
+  LoRng.Sort key1:=colRng, Order1:=xlAscending, Header:=xlYes
+
+End Sub
+
+
+'@label:ImportExport
+'@section Import Exports
 
 'Import another custom table to this one
 '
@@ -652,7 +804,7 @@ Private Sub ImportAll(ByVal impTab As Object)
   'Clean the actual customTable object
   Clean
   Set currLo = Table()
-  Set currhRng = currLo.HeaderRowRange()
+  Set currhRng = HeaderRange()
   Set imphRng = impTab.HeaderRange()
   Set impTabList = New BetterArray
   Set sh = Wksh()
@@ -845,113 +997,6 @@ Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray, Opti
   ReturnBackHiddenColumns
 End Sub
 
-'Sort a listObject on one column (on first element found)
-Private Sub SortOnFirst(ByVal colName As String)
-
-  Dim numRng As Range 'Number range
-  Dim colRng As Range 'Colum range to sort on
-  Dim LoRng As Range 'ListObject Range
-  Dim hRng As Range 'Header Range of the list Object
-  Dim counter As Long
-  Dim trackData As BetterArray
-  Dim sh As Worksheet
-  Dim sortedValue As String
-  Dim num As Long
-  Dim numData As BetterArray
-  Dim resRng As Range
-  Dim Lo As listObject
-
-  'Sort on values only If there is data
-  Set Lo = Table()
-  Set LoRng = Lo.DataBodyRange
-  Set colRng = DataRange(colName, strictSearch:=True)
-
-  If (LoRng Is Nothing) Or IsEmpty(LoRng) Or (colRng Is Nothing) Or _
-     (IsEmpty(colRng)) Then Exit Sub
-
-  Set trackData = New BetterArray
-  Set numData = New BetterArray
-  Set sh = Wksh()
-  Set hRng = Lo.HeaderRowRange
-
-  'Test values progressively
-  'If the trackData does not contains the values,
-  'Update the number (where you will sort)
-  hRng.Cells(1, hRng.Cells.Count + 1).Value = "__number"
-  Set numRng = Lo.ListColumns(hRng.Cells.Count + 1).DataBodyRange
-  'Seems like sometimes the databodyrange of a new column
-  'could be empty in that case exit
-  If numRng Is Nothing Then
-    Lo.ListColumns(hRng.Cells.Count + 1).Delete
-    Exit Sub
-  End If
-  num = 1 'Number to sort later on
-  'Resize the listObject to be sure it includes the number added
-  With sh
-      Set resRng = .Range(hRng.Cells(1, 1), LoRng.Cells(LoRng.Rows.Count, LoRng.Columns.Count + 1))
-      Lo.Resize resRng
-  End With
-
-  For counter = 1 To colRng.Cells.Count
-     sortedValue = colRng.Cells(counter, 1).Value
-    If Not trackData.Includes(sortedValue) Then
-      trackData.Push sortedValue
-      numData.Push num
-      numRng.Cells(counter, 1).Value = num
-      num = num + 1
-    Else
-      numRng.Cells(counter, 1) = numData.Items(trackData.IndexOf(sortedValue))
-    End If
-  Next
-  'Now sort the listObject on the __number column
-  resRng.Sort key1:=numRng, Order1:=xlAscending, Header:=xlYes
-  'Remove the __number column
-  Lo.ListColumns(hRng.Cells.Count + 1).Delete
-End Sub
-
-Private Sub SortSimple(ByVal colName As String)
-
-  Dim colRng As Range
-  Dim LoRng As Range
-  Dim Lo As ListObject
-
-  Set Lo = Table()
-  Set LoRng = Lo.Range
-  Set colRng = DataRange(colName, strictSearch:=True)
-
-  If (LoRng Is Nothing) Or IsEmpty(LoRng) Or (colRng Is Nothing) Or _
-      (IsEmpty(colRng)) Then Exit Sub
-
-  LoRng.Sort key1:=colRng, Order1:=xlAscending, Header:=xlYes
-
-End Sub
-
-'Sucessively sort the listObject on multiple elements (in a BetterArray with colname values)
-Private Sub SortElements(ByVal els As Variant, Optional ByVal onFirst As Boolean = True)
-  Dim colName As String
-  Dim counter As Long
-
-  If (TypeName(els) <> "String") And (TypeName(els) <> "BetterArray") Then Exit Sub
-
-  If (TypeName(els) = "String") Then
-    colName = els
-    If onFirst Then 
-      SortOnFirst colName
-    Else
-      SortSimple colName
-    End If
-    Exit Sub
-  End If
-
-  For counter = els.LowerBound To els.UpperBound
-    colName = els.Item(counter)
-    If onFirst Then
-      SortOnFirst colName
-    Else
-      SortSimple colName
-    End If
-  Next
-End Sub
 
 '@section Checkings
 
@@ -994,15 +1039,19 @@ Private Property Get CheckingValues() As Object
 End Property
 
 
+'@jump:Create
 '@section Interface
 
+'@jump:elements
 'CustomTable elements ----------------------------------------------------------
 
+'@jump:HeaderRange
 'Header row range
 Private Property Get ICustomTable_HeaderRange() As Range
   Set ICustomTable_HeaderRange = HeaderRange()
 End Property
 
+'@jump:DataRange
 'Range of a column
 Private Property Get ICustomTable_DataRange( _
           Optional ByVal colName As String = "__all__", _
@@ -1011,24 +1060,34 @@ Private Property Get ICustomTable_DataRange( _
   Set ICustomTable_DataRange = DataRange(colName, includeHeaders, strictSearch)
 End Property
 
+'@jump:Name
 'Name of attached listObject
 Private Property Get ICustomTable_Name() As String
   ICustomTable_Name = Name()
 End Property
 
+'@jump:CellRange
 'Specific cell in the customtable
 Private Property Get ICustomTable_CellRange(ByVal colName As String, _ 
                                             ByVal lineNum As Long) As Range
   Set ICustomTable_CellRange = CellRange(colName, lineNum)
 End Property
 
+'@jump:Value
 'Specific value of a customtable with ID column
 Private Property Get ICustomTable_Value(ByVal colName As String, _ 
                                         ByVal keyName As String) As String
   ICustomTable_Value = Value(colName, keyName)
 End Property
 
+'@jump:modify
 'Modify the custom table -------------------------------------------------------
+
+'@jump:AddIds
+'AddIds to the custom table
+Private Sub ICustomTable_AddIds()
+    AddIds
+End Sub
 
 
 '@jump:AddRows
@@ -1037,36 +1096,64 @@ Private Sub ICustomTable_AddRows(Optional ByVal nbRows As Long = 5, _
                                  Optional Byval insertShift As Boolean = False, _ 
                                  Optional ByVal includeIds As Boolean = True)
 
-  Resize AddRows:=True, nbRows:=nbRows, insertShift:=insertShift, includeIds:=includeIds
+    AddRows nbRows:=nbRows, _ 
+            insertShift:=insertShift, _ 
+            includeIds:=includeIds
 End Sub
 
-Private Sub ICustomTable_RemoveRows(Optional ByVal totalCount As Long = 0)
-  Resize AddRows:=False, totalRowCount:=totalCount, includeIds:=includeIds
-End Sub
-
-Private Sub ICustomTable_SetValidation(ByVal colName As String, ByVal drop As IDropdownLists, _
-                                      ByVal dropName As String, Optional ByVal alertType As String = "info")
-    SetValidation colName, drop, dropName, alertType
+'@jump:RemoveRows
+'Remove rows to a custom table
+Private Sub ICustomTable_RemoveRows(Optional ByVal totalCount As Long = 0, includeIds:=True)
+  RemoveRows totalRowCount:=totalCount, includeIds:=includeIds
 End Sub
 
 
+'@jump:SetValidation
+'Set validations on one specific column of the listObject
+Private Sub ICustomTable_SetValidation(ByVal colName As String, _ 
+     ByVal drop As IDropdownLists, _
+     ByVal dropName As String, _ 
+     Optional ByVal alertType As String = "info", _ 
+     Optional ByVal message As String = vbNullString _ 
+    )
+    SetValidation colName:=colName, drop:=drop, dropName:=dropName, _ 
+                  alertType:=alertType, message:=message
+End Sub
 
 
+'@jump:SetValue
+'change the values of one cell
+Private Sub ICustomTable_SetValue(ByVal colName As String, _ 
+        ByVal keyName As String, _ 
+        ByVal newValue As String)
+    SetValue colName, keyName, newValue
+End Sub
 
 
+'@jump:Clean
+'Clean the custom table
 Private Sub ICustomTable_Clean()
   Clean
 End Sub
 
-Private Sub ICustomTable_Sort(ByVal els As Variant, Optional ByVal onFirst As Boolean = True)
-  SortElements els, onFirst
+
+'@jump:Sort
+'Sort a custom table
+Private Sub ICustomTable_Sort(Optional ByVal colName As String = vbNullString, _ 
+                              Optional ByVal colList As Object = Nothing, _ 
+                              Optional ByVal directSort As Boolean = True)
+  Sort colName:=colName, colList:=colList, directSort:=directSort
 End Sub
+
 
 Private Sub ICustomTable_Export(ByVal sh As Worksheet, _
                                ByVal headersList As BetterArray, _
                                Optional ByVal startLine As Long = 1)
   Export sh, headersList, startLine
 End Sub
+
+'@jump:ImportExport
+'Import Export Functions -------------------------------------------------------
 
 'Imports Functions
 Private Sub ICustomTable_Import( _
@@ -1084,10 +1171,6 @@ Private Sub ICustomTable_Import( _
   End If
 End Sub
 
-Private Sub ICustomTable_SetValue(ByVal colName As String, ByVal keyName As String, _ 
-                           ByVal newValue As String)
-  SetValue colName, keyName, newValue
-End Sub
 
 Private Property Get ICustomTable_ImportColumnsNotFound() As BetterArray
   Set ICustomTable_ImportColumnsNotFound = ImportColumnsNotFound()

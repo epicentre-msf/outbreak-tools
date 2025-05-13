@@ -14,14 +14,17 @@ Attribute VB_Description = "Interface of CustomTable"
 '@Interface
 '@IgnoreModule UseMeaningfulName, HungarianNotation
 
+'@jump:Create
+
 Option Explicit
 
 '@section CustomTable elements
 
-'@label:HeaderRange
+'@jump:HeaderRange
 'Header row range
 Public Property Get HeaderRange() As Range: End Property
 
+'@jump:DataRange
 'Range of a column
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
                               Optional ByVal includeHeaders As Boolean = False, _
@@ -29,14 +32,55 @@ Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
                               As Range
 End Property
 
+'@jump:Name
 'Name of the attached listObject
 Public Property Get Name() As String: End Property
 
+'@jump:CellRange
 'Specific cell in the customtable
 Public Property Get CellRange(ByVal colName As String, ByVal lineNum As Long) As Range: End Property
 
 'Specific value of a customtable with ID column
 Public Property Get Value(ByVal colName As String, ByVal keyName As String) As String: End Property
+
+'@section Modify the table
+
+'@jump:AddIds
+'Add Ids to the ID Column in a sequential way
+Public Sub AddIds: End Sub
+
+'@jump:AddRows
+'Add Rows to the custom table
+Public Sub AddRows(Optional ByVal nbRows As Long = 5, _ 
+                   Optional ByVal insertShift As Boolean = False)
+End Sub
+
+'@jump:RemoveRows
+'Remove rows to the custom table
+Public Sub RemoveRows(Optional ByVal totalCount As Long = 0): End Sub
+
+'@jump:SetValidation
+'Set validation on one specific column of the listObject
+Public Sub SetValidation(ByVal colName As String, _
+                         ByVal drop As IDropdownLists, _
+                         ByVal dropName As String, _
+                         Optional ByVal alertType As String = "info", _
+                         Optional ByVal message As String = vbNullString)
+End Sub
+
+'@jump:SetValue
+'Use very wisely, could modify the custom table values
+Public Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
+End Sub
+
+'@jump:sort
+'Sort columns
+Public Sub Sort(Optional ByVal colName As String = vbNullString, _ 
+                Optional ByVal colList As Object = Nothing, _ 
+                Optional ByVal directSort As Boolean = True)
+End Sub
+
+'@section Import Export
 
 'ImpTab could be either a customTable or a DataSheet Object
 'pasteAtBottom: paste the new imported data at the bottom of the previous one
@@ -51,20 +95,10 @@ Public Sub Import(ByVal impTab As Object, _
 End Sub
 
 Public Sub Clean(): End Sub
-Public Sub Sort(ByVal els As Variant, Optional ByVal onFirst As Boolean = True): End Sub
-Public Sub AddRows(Optional ByVal nbRows As Long = 5, _ 
-                   Optional ByVal insertShift As Boolean = False)
-End Sub
-Public Sub RemoveRows(Optional ByVal totalCount As Long = 0): End Sub
-Public Sub SetValidation(ByVal colName As String, _
-                         ByVal drop As IDropdownLists, _
-                         ByVal dropName As String, _
-                         Optional ByVal alertType As String = "info")
-End Sub
 
-'Use very wisely, could modify the custom table values
-Public Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
-End Sub
+
+
+
 
 Public Property Get ImportColumnsNotFound() As BetterArray
 End Property
