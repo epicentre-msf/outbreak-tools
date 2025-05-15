@@ -16,27 +16,30 @@ VBADocParser <- R6Class(
       private$folder <- path_abs(folder)
       private$output_folder <- path_abs(output_folder)
       private$proj_path <- proj_path
-      dir_create(output_folder)
-      cli::cli_inform("Parser initialized for folder: {folder}")
-      cli::cli_inform("Parser will write in: {output_folder}")
+      dir_create(private$output_folder)
+      cli::cli_inform(glue("Parser initialized for folder: {folder}"))
+      cli::cli_inform(glue("Parser will write in: {output_folder}"))
     },
 
     init_folder = function() private$folder,
     write_folder = function() private$output_folder,
     doc_classes = function() private$class_names,
 
-    parse = function() {
+    parse = function(exclude_files = NULL) {
       cls_files <- dir_ls(
         self$init_folder(),
-        regexp = "\\.cls$",
-        recurse = TRUE
+        recurse = TRUE,
+        regexp = "\\.cls$"
       )
+
+      cls_files <- setdiff(cls_files, exclude_files)
+
       private$class_names <- path_ext_remove(path_file(cls_files))
 
-      for (idx in seq_along(cls_files)) {
-        file <- cls_files[idx]
-        class_name <- self$doc_classes()[idx]
-        cli::cli_inform("Parsing: {path_file(file)}")
+      for (i in seq_along(cls_files)) {
+        file <- cls_files[i]
+        class_name <- private$class_names[i]
+        cli::cli_inform(glue("Parsing: {path_file(file)}"))
 
         lines <- read_lines(file)
         doc_info <- private$extract_doc_blocks(lines)
@@ -47,32 +50,33 @@ VBADocParser <- R6Class(
             doc_info$externals,
             doc_info$internals,
             doc_info$tocs,
-            self$doc_classes()
+            private$class_names
           )
           write_file(md, path(self$write_folder(), glue("{class_name}.md")))
-          cli::cli_inform("Written: {class_name}.md")
+          cli::cli_inform(glue("Written: {class_name}.md"))
         } else {
-          cli::cli_alert_warning(
+          cli::cli_alert_warning(glue(
             "No valid documentation blocks found in {class_name}"
-          )
+          ))
         }
       }
     },
 
-    detect_usages = function() {
+    detect_usages = function(exclude_files = NULL) {
       all_files <- dir_ls(
         self$init_folder(),
         recurse = TRUE,
         regexp = "\\.(cls|bas)$"
       )
+      all_files <- setdiff(all_files, exclude_files)
       usage_map <- setNames(
-        vector("list", length(self$doc_classes())),
-        self$doc_classes()
+        vector("list", length(private$class_names)),
+        private$class_names
       )
 
       for (file in all_files) {
         content <- read_file(file)
-        for (class_name in self$doc_classes()) {
+        for (class_name in private$class_names) {
           iface <- paste0("I", class_name)
           if (str_detect(content, fixed(iface))) {
             usage_map[[class_name]] <- unique(c(
@@ -101,25 +105,68 @@ VBADocParser <- R6Class(
               "</details>"
             )
             md <- c(md, section)
+            write_lines(md, md_path)
+            cli::cli_inform(glue("Updated usages for: {class_name}"))
           }
-          write_lines(md, md_path)
-          cli::cli_inform(glue("Updated usages for: {class_name}"))
         }
       }
+    },
+
+    extract_enums = function(exclude_files = NULL) {
+      files <- dir_ls(
+        self$init_folder(),
+        recurse = TRUE,
+        regexp = "\\.(cls|bas)$"
+      )
+
+      files <- setdiff(files, exclude_files)
+      enum_blocks <- list()
+
+      for (file in files) {
+        lines <- read_lines(file)
+        i <- 1L
+        n <- length(lines)
+
+        while (i <= n) {
+          if (str_detect(lines[i], "^\\	?\\s*Public\\s+Enum\\s+")) {
+            enum_name <- str_match(lines[i], "Public\\s+Enum\\s+(\\w+)")[, 2]
+            members <- c()
+            i <- i + 1L
+            while (i <= n && !str_detect(lines[i], "^\\s*End\\s+Enum")) {
+              line <- str_trim(lines[i])
+              if (line != "" && !str_starts(line, "'")) {
+                members <- c(members, line)
+              }
+              i <- i + 1L
+            }
+            enum_blocks[[enum_name]] <- members
+          }
+          i <- i + 1L
+        }
+      }
+
+      out <- c("# Enumerations", "")
+      for (enum in names(enum_blocks)) {
+        out <- c(out, glue("## {enum}"), "")
+        out <- c(out, paste0("- `", enum_blocks[[enum]], "`"), "")
+      }
+
+      write_lines(out, path(self$write_folder(), "Enumerations.md"))
+      cli::cli_inform("Written: Enumerations.md")
     }
   ),
 
   private = list(
     folder = NULL,
     output_folder = NULL,
-    class_names = NULL,
     proj_path = NULL,
+    class_names = NULL,
 
     extract_doc_blocks = function(lines) {
-      external <- list()
-      internal <- list()
-      toc <- list()
-      i <- 1
+      externals <- list()
+      internals <- list()
+      tocs <- list()
+      i <- 1L
       n <- length(lines)
 
       while (i <= n) {
@@ -128,35 +175,35 @@ VBADocParser <- R6Class(
         if (str_detect(line, "^'@label:")) {
           doc <- list()
           headers <- list()
-
           doc$label <- str_remove(line, "^'@label:\\s*")
+          i <- i + 1L
 
-          i <- i + 1
-          # Parse doc lines
           while (i <= n && str_detect(lines[i], "^'")) {
             l <- str_trim(lines[i])
             tag_match <- str_match(l, "^'@([\\-a-z]+):?\\s*(.*)$")
-            if (!is.na(tag_match[1, 1])) {
-              tag <- str_to_lower(tag_match[1, 2])
-              content <- str_trim(tag_match[1, 3])
-              if (tag == "description") {
+            if (!is.na(tag_match[1])) {
+              tag <- str_to_lower(tag_match[2])
+              content <- str_trim(tag_match[3])
+              if (tag == "details") {
                 desc <- content
-                i <- i + 1
+                i <- i + 1L
                 while (i <= n && str_detect(lines[i], "^'[^@]")) {
                   desc <- paste0(desc, "\n", str_remove(lines[i], "^'"))
-                  i <- i + 1
+                  i <- i + 1L
                 }
-                doc$description <- desc
+                doc$details <- desc
                 next
               } else if (tag == "param") {
                 if (is.null(doc$params)) doc$params <- list()
                 param_parts <- str_match(content, "(\\w+)(.*)$")
-                if (!is.na(param_parts[1, 1])) {
-                  params <- list(
-                    name = param_parts[1, 2],
-                    description = param_parts[1, 3]
+                if (!is.na(param_parts[1])) {
+                  doc$params <- append(
+                    doc$params,
+                    list(list(
+                      name = param_parts[2],
+                      details = str_trim(param_parts[3])
+                    ))
                   )
-                  doc$params <- append(doc$params, list(params))
                 }
               } else if (tag %in% c("section", "sub-title", "prop-title")) {
                 headers <- list(entry = content, tag = tag)
@@ -165,10 +212,9 @@ VBADocParser <- R6Class(
                 doc[[tag]] <- content
               }
             }
-            i <- i + 1
+            i <- i + 1L
           }
 
-          # check for Sub/Property line
           if (
             i <= n &&
               str_detect(
@@ -177,29 +223,29 @@ VBADocParser <- R6Class(
               )
           ) {
             signature <- lines[i]
-            # check for the whole signature
             while (!str_detect(lines[i], "\\)")) {
-              i <- i + 1
+              i <- i + 1L
               signature <- glue("{signature}{lines[i]}")
             }
-
-            doc$signature <- str_remove_all(signature, "_")
+            doc$signature <- str_replace_all(
+              signature,
+              ",\\s*_\\s+",
+              ", _\n     "
+            )
 
             if (!is.null(doc$export)) {
-              toc <- append(toc, list(headers))
-              external <- append(external, list(doc))
+              tocs <- append(tocs, list(headers))
+              externals <- append(externals, list(doc))
             } else {
-              # @labels without export, internal content
-              internal <- append(internal, list(doc))
+              internals <- append(internals, list(doc))
             }
-
-            i <- i + 1
+            i <- i + 1L
           }
         } else {
-          i <- i + 1
+          i <- i + 1L
         }
       }
-      list(externals = external, internals = internal, tocs = toc)
+      list(externals = externals, internals = internals, tocs = tocs)
     },
 
     build_markdown = function(
@@ -209,76 +255,95 @@ VBADocParser <- R6Class(
       tocs,
       class_names
     ) {
-      output <- c(glue("# {class_name}"), "")
+      output <- c(
+        "---",
+        glue("title: {class_name}"),
+        "format:",
+        "  html:",
+        "    toc: true",
+        "    theme: 'cosmo'",
+        "---",
+        ""
+      )
 
-      # creating the table of contents output
-      output <- c(output, "## Table of Contents")
-      for (toc in tocs) {
-        if (!is.null(toc$entry)) {
-          entry <- toc$entry
-          anchor <- tolower(entry) |> trimws() |> str_replace_all("\\s+", "-")
-          output <- c(output, glue("- [{entry}](#{anchor})"), "")
-        }
-      }
+      output <- c(
+        output,
+        "</details>",
+        "\n---\n",
+        private$resolve_doc(externals, class_names),
+        ""
+      )
 
-      # writing the external parts of the document
-      output <- c(output, private$resolve_doc(externals), "")
-
-      # writing the internal parts of the doucment
       output <- c(
         output,
         "",
-        "<details>",
-        "<summary> Not exported </summary>",
-        glue("{private$resolve_doc(internals)}"),
-        "</details>"
+        "::: {.callout-note collapse=\"true\" title=\"Additional not exported Subs \"}",
+        glue("{private$resolve_doc(internals, class_names)}"),
+        ":::"
       )
-
-      return(paste(output, collapse = "\n"))
+      paste(output, collapse = "\n")
     },
 
     resolve_links = function(text, class_names) {
       str_replace_all(text, "see::([A-Za-z0-9_]+)", function(m) {
         cls <- str_match(m, "see::([A-Za-z0-9_]+)")[, 2]
-        if (cls %in% class_names) {
-          glue("[{cls}]({cls}.md)")
-        } else {
-          glue("{cls}")
-        }
+        if (cls %in% class_names) glue("[{cls}]({cls}.md)") else cls
       })
     },
-    resolve_doc = function(lst_doc) {
-      # resolve the documents
-      output <- "---\n"
 
+    resolve_doc = function(lst_doc, class_names) {
+      output <- ""
       for (doc in lst_doc) {
-        label <- doc[["label"]]
-        sig <- doc[["signature"]]
-        desc <- doc[["description"]]
+        label <- doc$label
+        sig <- doc$signature
+        desc <- doc$details
 
-        title <- ifelse(
-          !is.null(doc[["prop-title"]]),
-          glue("Property `{label}`: {doc[['prop-title']]}"),
-          glue("Sub `{label}`: {doc[['sub-title']]}")
+        if (!is.null(doc[["prop-title"]])) {
+          anchor <- tolower(doc[["prop-title"]]) |>
+            trimws() |>
+            str_remove_all("[[:punct:]]") |>
+            str_replace_all("\\s+", "-")
+          title <- glue("`{label}` {{#sec-{anchor}}}")
+          desc <- glue("{doc[['prop-title']]}")
+        } else {
+          anchor <- tolower(doc[["sub-title"]]) |>
+            trimws() |>
+            str_remove_all("[[:punct:]]") |>
+            str_replace_all("\\s+", "-")
+          title <- glue("`{label}` {{#sec-{anchor}}}")
+          desc <- glue("{doc[['sub-title']]} ")
+        }
+
+        block <- c(
+          glue("\n### {title}"),
+          "",
+          glue("**{desc}**"),
+          "",
+          "**Signature:**",
+          "\n```vb",
+          sig,
+          "```",
+          ""
         )
 
-        output <- c(output, glue("\n### {title}"))
-        output <- c(output, "")
-        output <- c(output, glue("**Signature:** `{sig}`"), "")
+        if (!is.null(doc$params)) {
+          block <- c(block, "**Parameters:**", "")
+          for (p in doc$params) {
+            block <- c(block, glue("  - `{p$name}`: {p$details}"))
+          }
+          block <- c(block, "")
+        }
 
         if (!is.null(desc)) {
           desc <- private$resolve_links(desc, class_names)
-          output <- c(output, glue("**Description:**\n\n{desc}"), "")
+          block <- c(block, glue("**Details:**\n\n{desc}"), "")
         }
 
-        if (!is.null(doc$params)) {
-          output <- c(output, "**Parameters:**")
-          for (p in doc$params) {
-            output <- c(output, glue("- `{p$name}`: {p$description}"))
-          }
-          output <- c(output, "")
+        if (!is.null(doc$returned)) {
+          block <- c(block, glue("**Return: {doc$returned}**"))
         }
-        output <- c(output, "\n---\n")
+
+        output <- c(output, block, "\n---\n")
       }
       paste(output, collapse = "\n")
     }
@@ -286,6 +351,7 @@ VBADocParser <- R6Class(
 )
 
 # Example usage:
-# parser <- VBADocParser$new(here::here("src/classes"), proj_path = here::here())
+# parser <- VBADocParser$new("src")
 # parser$parse()
 # parser$detect_usages()
+# parser$extract_enums()
