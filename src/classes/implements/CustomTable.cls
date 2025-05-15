@@ -584,6 +584,7 @@ Private Sub SortHelper(ByVal colName As String, Optional ByVal directSort As Boo
   End If
 End Sub
 
+'@label:SortOnFirst
 '@sub-title Sort a column name by bringing together first values found
 '@param colName A String. The name of the column to sort on
 Private Sub SortOnFirst(ByVal colName As String)
@@ -663,20 +664,23 @@ Private Sub SortSimple(ByVal colName As String)
       (IsEmpty(colRng)) Then Exit Sub
 
   LoRng.Sort key1:=colRng, Order1:=xlAscending, Header:=xlYes
-
 End Sub
 
 
 '@label:ImportExport
 '@section Import Exports
-
+'
+'@label:Import
+'@sub-title: Import a DataSheet or a CustomTable
+'@description
 'Import another custom table to this one
 '
 'pasteAtBottom: paste the data at the bottom of the current table
-'strictColumnSearch: Use strict rules when searching column names in the current table (case sensitive etc.)
+'strictColumnSearch: Use strict rules when searching column names in the 
+'current table (case sensitive etc.)
 'insertShift: Insert some lines when extending the table (Default is true)
 'formatHeaders: A BetterArray of headers names where column format should be kept
-
+'@export
 Private Sub Import(ByVal impTab As Object, _
                    Optional ByVal pasteAtBottom As Boolean = False, _
                    Optional ByVal strictColumnSearch As Boolean = False, _ 
@@ -1155,6 +1159,7 @@ End Sub
 '@jump:ImportExport
 'Import Export Functions -------------------------------------------------------
 
+'@jump:Import
 'Imports Functions
 Private Sub ICustomTable_Import( _
               ByVal impTab As Object, _
