@@ -12,7 +12,7 @@ Attribute VB_Description = "Interface of CustomTable"
 '@Folder("General")
 '@ModuleDescription("Interface of CustomTable")
 '@Interface
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 '@jump:Create
 
@@ -47,7 +47,7 @@ Public Property Get Value(ByVal colName As String, ByVal keyName As String) As S
 
 '@jump:AddIds
 'Add Ids to the ID Column in a sequential way
-Public Sub AddIds: End Sub
+Public Sub AddIds(): End Sub
 
 '@jump:AddRows
 'Add Rows to the custom table
@@ -57,7 +57,8 @@ End Sub
 
 '@jump:RemoveRows
 'Remove rows to the custom table
-Public Sub RemoveRows(Optional ByVal totalCount As Long = 0): End Sub
+Public Sub RemoveRows(Optional ByVal totalCount As Long = 0, Optional ByVal includeIds As Boolean = True)
+End Sub
 
 '@jump:SetValidation
 'Set validation on one specific column of the listObject
@@ -80,8 +81,12 @@ Public Sub Sort(Optional ByVal colName As String = vbNullString, _
                 Optional ByVal directSort As Boolean = True)
 End Sub
 
+'@jump:Clean
+Public Sub Clean(): End Sub
+
 '@section Import Export
 
+'@jump:Import
 'ImpTab could be either a customTable or a DataSheet Object
 'pasteAtBottom: paste the new imported data at the bottom of the previous one
 'strictColumnSearch: When looking for columns matching in import, do it the strict way (case sensitive)
@@ -94,26 +99,32 @@ Public Sub Import(ByVal impTab As Object, _
                   Optional ByVal keepImportHeaders As Boolean = False)
 End Sub
 
-Public Sub Clean(): End Sub
+
+'@jump:ImportAll
+Public Sub ImportAll(ByVal impTab As Object): End Sub
 
 
-
-
-
+'@jump:ImportColumnsNotFound
 Public Property Get ImportColumnsNotFound() As BetterArray
 End Property
 
+'@jump:HasColumnsNotImported
 'Test if there are imports in the custom table
 Public Property Get HasColumnsNotImported() As Boolean
 End Property
-  
-Public Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray, Optional ByVal startLine As Long = 1)
+
+'@jump:Export
+Public Sub Export(ByVal sh As Worksheet,  _ 
+                  Optional ByVal headersTable As Object = Nothing, _ 
+                  Optional ByVal startLine As Long = 1)
 End Sub
 
 '@section Checkings
 
+'@jump:HasCheckings
 'Check if the current choice has some checkings
 Public Property Get HasCheckings() As Boolean: End Property
 
-'Errors and checkings
+'@jump:CheckingValues
+'Return checking values
 Public Property Get CheckingValues() As Object: End Property
