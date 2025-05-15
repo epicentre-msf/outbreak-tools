@@ -109,7 +109,7 @@ Private Sub Update()
 
       Set filtsh = wb.Worksheets(sh.Cells(1, 5).Value)
 
-      'Exit the sub if there is no data in the filters
+      'Exit if there is no data in the filters
       If Not (filtsh.ListObjects(1).DataBodyRange Is Nothing) Then
 
         tablename = sh.Cells(1, 4).Value

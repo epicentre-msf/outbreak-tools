@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Wrapper for Listobjects manipulations"
 
-'@IgnoreModule ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
+'@IgnoreModule SuperfluousAnnotationArgument, MissingAnnotationArgument, ReadOnlyPropertyAssignment, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 '@PredeclaredId
 '@Folder("General")
@@ -36,11 +36,13 @@ Private HIDDENCOLUMNSLIST As BetterArray
 Private checkCounter As Integer
 Private internalChecks As IChecking
 
+
 '@section Instanciation
 
+'@label:Create
 '@sub-title Create a CustomTable object
 
-'@description
+'@details
 'The custom data table is created just with one listObject. It is a wrapper arround
 'the listobject class. Which basically add some functionalities to ease the
 'data-manipulation process. A custom data table can have a "id" column. This 
@@ -51,10 +53,10 @@ Private internalChecks As IChecking
 '
 '
 '@param Lo A ListObject
-'@param idCol A String, the ID column of the custom table. Default is empty string
+'@param idCol A String, the ID column of the CustomTable. Default is empty string
 '@param idPrefix A String. A prefix to add to each values of the ID column when adding rows.
 '       Default is empty string.
-'@return A Custom Table Object
+'@returned A CustomTable Object
 '@export        
 Public Function Create(ByVal Lo As listObject, _
                       Optional ByVal idCol As String = vbNullString, _
@@ -111,15 +113,22 @@ Public Property Let PrefixValue(ByVal idPrefix As String)
 End Property
 
 '@label:HeaderRange
-'@prop-title Header row Range
+'@prop-title Header row Range of the CustomTable
 '@export
+'@returned A Range object
 Private Property Get HeaderRange() As Range
   Dim Lo As listObject
   Set Lo = Table()
   Set HeaderRange = Lo.HeaderRowRange()
 End Property
 
-'@prop-title Return the column index of a Range
+'@label:ColumnIndex
+'@prop-title Column index of a Range
+'@details
+'If the column is not found, returns -1.
+'@param colName A String. Column name
+'@param stricSearch Boolean. Should you search column strictly? Default is False.
+'@returned A Long
 Private Function ColumnIndex(ByVal colName As String, _
                              Optional ByVal strictSearch As Boolean = False) As Long
     Dim Index As Long
@@ -139,10 +148,11 @@ Private Function ColumnIndex(ByVal colName As String, _
 End Function
 
 
-'@prop-title: Check if a column exists in the custom table
-'@param colName String, column name to search
-'@param strictSearch Boolean. Whether to search strictly with matchase, and the whole string or not.
-' Default is False
+'@label:ColumnExists
+'@prop-title Check if a column exists in the CustomTable
+'@param colName String. Column name to search
+'@param strictSearch Boolean. Whether to search strictly with matchase, and the whole string or not. Default is False
+'@returned A Boolean
 Private Function ColumnExists(ByVal colName As String, _
                               Optional ByVal strictSearch As Boolean = False) As Boolean
     Dim Exist As Boolean
@@ -162,10 +172,10 @@ End Function
 '@label:DataRange
 '@prop-title Get the Range of a column
 '
-'@description
+'@details
 'Return a Data Range given a column name. When strictSearch is false, the 
 'search for the column name is done using partial match. The first partial match
-'found is the returned column. If the column names of the custom table are quite
+'found is the returned column. If the column names of the CustomTable are quite
 'unique, the partial match returns unique values. In case some colunm names share
 'some text, make sure to use strictSearch = True to avoid unexpected output.
 '
@@ -174,8 +184,8 @@ End Function
 '@param includeHeaders Boolean. Whether to return the colunmn plus the headers, default is false
 '@param strictSearch Boolean. Look for partial values when searching the column name,
 '                    without case sensitive search. Default is False.
-'@return A Range Object
-'@export                     
+'@returned A Range object
+'@export                    
 Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
                                Optional ByVal includeHeaders As Boolean = False, _
                                Optional ByVal strictSearch As Boolean = False) As Range
@@ -216,21 +226,21 @@ Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
 End Property
 
 '@label:Name
-'@prop-title Name of the attached listObject
-'@return String
+'@prop-title Name of the attached ListObject
+'@returned A String
 '@export
 Private Property Get Name() As String
   Name = Table.Name
 End Property
 
 '@label:CellRange
-'@prop-title Get a specific cell
-'@description
+'@prop-title A specific Cell of the CustomTable
+'@details
 'using the line number in a worksheet and a column name, get the corresponding
 'cell at the intersection of the line and the column name.
 '@param colName As String, the column of the cell
 '@param lineNum Long, the line number in the excel worksheet
-'@return
+'@returned A Range object
 '@export
 Private Property Get CellRange(ByVal colName As String, _
                                ByVal lineNum As Long) As Range
@@ -245,10 +255,11 @@ Private Property Get CellRange(ByVal colName As String, _
 End Property
 
 
-'@prop-title Get one specific value on a table with key
+'@label:ValueRange
+'@prop-title The range of a value
 '@param colName String. The name of the column of the table
 '@param keyName String. Key. Keys should be unique.
-'@return Range
+'@returned Range
 Private Function ValueRange(ByVal colName As String, ByVal keyName As String) As Range
 
   Dim idRng As Range
@@ -279,14 +290,17 @@ End Function
 
 '@label:Value
 '@prop-title Get one specific value on a table with key
-'@description
+'@details
+'
 'For tables with a key column, extract one specific value for a column name
 'and given a keyvalue. If the table does not have a key, it returns an empty
-'String.
+'String. An empty string is returned in case it is impossible to convert the cell
+'value to string
 '
 '@param colName String, the column name to extract the value from
 '@param keyName String, the key
 '@export
+'@returned A String. The value of the cell converted
 Private Property Get Value(ByVal colName As String, _
                            ByVal keyName As String) As String
   Dim retValue As String
@@ -306,16 +320,13 @@ End Property
 '@label:modify
 '@section Modify the table
 
-'@sub-title Resize a custom table
-'@param addRows Optional, Boolean. Whether to Resize by adding rows. Default is
-'       False.
-'@param insertShift Optional, Boolean. When adding rows, insert new line. Default
-'       is True
+'@label:Resize
+'@sub-title Resize a CustomTable
+'@param addRows Optional, Boolean. Whether to Resize by adding rows. Default is False.
+'@param insertShift Optional, Boolean. When adding rows, insert new line. Default is True
 '@param totalRowCount Optional, Long. Row count threshold for deleting a line. Default is 0
-'@param nbRows Optional, Long. Number or fows to add when adding new rows. Default
-'       is 5.
-'@includeIds Optional, Boolean. Whether to number in a sequential way the ID column after
-'            resizing. Default is True.
+'@param nbRows Optional, Long. Number or fows to add when adding new rows. Default is 5.
+'@includeIds Optional, Boolean. Whether to number in a sequential way the ID column after resizing. Default is True.
 Private Sub Resize( Optional ByVal addRows As Boolean = False, _
                     Optional ByVal insertShift As Boolean = True, _
                     Optional ByVal totalRowCount As Long = 0, _
@@ -387,7 +398,7 @@ End Sub
 
 '@label:AddIds
 '@sub-title Add Ids to the ID column in a sequential way
-'@description
+'@details
 'For some tables with key columns when resizing it is possible to add automatically 
 'a sequential number (with prefix) to the ID column which is not modified by 
 'the user, and in general is locked.
@@ -410,16 +421,16 @@ End Sub
 
 
 '@label:AddRows
-'@sub-title Add Rows to a custom table
+'@sub-title Add Rows to a CustomTable
 '
-'@description
-'Add rows to a custom table, either by inserting rows before resizing the 
+'@details
+'Add rows to a CustomTable, either by inserting rows before resizing the 
 'corresponding listObject or just by resizing the listObject directly. 
 'There are different ways to add new rows: insert rows in the worksheet, or just
 'expand the range of the listobject. The first option is useful when there are
 'multiple list objects on the same worksheet and avoids overlaps. 
 'On Linelist HList worksheet, there are no stacked listObjects on one worksheet.
-'So there is no need to insert shifts like in analysis. This is really time consuming.
+'So there is no need to insert shifts like in analysis. This is time consuming.
 '
 '@param nbRows Optional, Long. number of rows to add. Default is 5
 '@param insertShift Optional, Boolean. When adding rows, insert new line. Default is True
@@ -437,10 +448,10 @@ End Sub
 
 
 '@label:RemoveRows
-'@sub-title Remove empty rows from a custom table
+'@sub-title Remove empty rows from a CustomTable
 '
-'@description
-'Delete some  empty rows in the custom table, and resize the listObject afterwards.
+'@details
+'Delete some  empty rows in the CustomTable, and resize the listObject afterwards.
 'Empty rows are defined as rows where the total row count is less
 'than a given value provided by the user. The default value here is 0. In the
 'linelist HList, the total row count is number of  formulas on the line. Formulas
@@ -462,14 +473,13 @@ End Sub
 '@param colName String. Name of column to set the validation on
 '@param drop A Dropdown Object.
 '@param dropName String. The name of the dropdown to select from the dropdown object
-'@param alertType Optional, String. Type of alert to raise if values are not in dropdown. Could take 
-' "info", "warning", "error". Default is "info".
+'@param alertType Optional, String. Type of alert to raise if values are not in dropdown. Could take "info", "warning", "error". Default is "info".
 '@param message Optional, String. Message to raise if values are not in the dropdown. Default is vbNullString
 '@export
 Private Sub SetValidation(ByVal colName As String, _
                           ByVal drop As IDropdownLists, _
                           ByVal dropName As String, _
-                          Optional ByVal alertType As String = "info",
+                          Optional ByVal alertType As String = "info", _
                           Optional ByVal message As String = vbNullString)
 
     Dim rng As Range
@@ -484,12 +494,12 @@ End Sub
 
 
 '@label:SetValue
-'@sub-title Change the value of one specific cell in the custom table
-'@description
+'@sub-title Change the value of one specific cell in the CustomTable
+'@details
 '
-'Given one specific cell in the custom table, change value the the cell. The
+'Given one specific cell in the CustomTable, change value of the cell. The
 'cell is identified using the key of the row and the column name of the column.
-'Use with caution as it modifies data inside the listobject
+'Use with caution as it modifies data inside the ListObject.
 '
 '@param colName String. Column name of the cell to modify
 '@param keyName String. They key of the cell to modify
@@ -510,7 +520,7 @@ Private Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal new
 End Sub
 
 '@label:Clean
-'@sub-title Clean all the columns of the custom table except the key column
+'@sub-title Clean all the columns of the CustomTable except the key column
 '@export
 Private Sub Clean()
   Dim rng As Range
@@ -525,7 +535,7 @@ Private Sub Clean()
     headerValue = hRng.Cells(1, counter).Value
 
     If headerValue <> IdValue() Then
-        Set rng = DataRange(colName:=headerValue, strictValue:=True)
+        Set rng = DataRange(colName:=headerValue, strictValue:=True, includeHeaders:=False)
         'On formula colunms, Or  no clearing is done, 
         'clear only "non formula" columns      
         If (Not rng.Cells(1, 1).HasFormula) Then rng.ClearContents
@@ -535,14 +545,15 @@ End Sub
 
 '@label:Sort
 '@sub-title Sort The Current table on some columns
-'@description
+'@details
+'
 'Sort the columns in Ascending order. One can either sort one column or 
 'sort multiple columns provided in a BetterArray Object. The sort is done
-'on the provided column first and then on the BetterArray.
+'on the provided column first and then on the BetterArray if there is one.
+'
 '@param colName Optional String. The column to sort the table on. Default is vbNullString
 '@param colList Optional, an Object, expecting a BetterArray of colNames. Default is Nothing
-'@param directSort Optional, Boolean. Whether to sort on first element or to sort directly. Default is
-'       True, sort directly.
+'@param directSort Optional, Boolean. Whether to sort on first element or to sort directly. Default is True, sort directly.
 '@param sortOrder Optional, String. Sort
 '@export
 Private Sub Sort(Optional ByVal colName As String = vbNullString, _ 
@@ -571,6 +582,7 @@ Private Sub Sort(Optional ByVal colName As String = vbNullString, _
   End If
 End Sub
 
+'@label:SortHelper
 '@sub-title Helper for the sort sub
 '@colName String. The column to sort on
 '@directSort Boolean. Sort directly or on first element? Default is True.
@@ -586,7 +598,7 @@ End Sub
 
 '@label:SortOnFirst
 '@sub-title Sort a column name by bringing together first values found
-'@param colName A String. The name of the column to sort on
+'@param colName A String. The name of the column
 Private Sub SortOnFirst(ByVal colName As String)
 
   Dim numRng As Range 
@@ -672,16 +684,48 @@ End Sub
 '
 '@label:Import
 '@sub-title: Import a DataSheet or a CustomTable
-'@description
-'Import another custom table to this one
 '
-'pasteAtBottom: paste the data at the bottom of the current table
-'strictColumnSearch: Use strict rules when searching column names in the 
-'current table (case sensitive etc.)
-'insertShift: Insert some lines when extending the table (Default is true)
-'formatHeaders: A BetterArray of headers names where column format should be kept
+'@details
+'
+'If keepImportHeaders = True, the import process will import the incoming data, 
+'by keeping the imported data as "Master". All the the headers of the
+'incoming data are kept as is and all the headers of the current data are 
+'removed. keepImportHeaders = True will completly clean the data in the current
+'CustomTable and import ALL data in the incoming object.
+'
+'
+'@param impTab DataSheet of CustomTable Object. The table to import
+'@param pasteAtBottom Optional, Boolean. Paste the data at the bottom of the current table. Default is False
+'@param strictColumnSearch Optional, Boolean. Use strict rules when searching column names in the current table. Default is False
+'@param keepImportHeaders Optional, Boolean. Replace the headers of the current table by the imported ones. Default is False
+'@param insertShift Optional, Boolean. Insert some lines when extending the table. Default is True.
+'@param formatHeaders A BetterArray of headers names where column format should be kept
 '@export
 Private Sub Import(ByVal impTab As Object, _
+                   Optional ByVal pasteAtBottom As Boolean = False, _
+                   Optional ByVal strictColumnSearch As Boolean = False, _ 
+                   Optional ByVal insertShift As Boolean = True, _ 
+                   Optional ByVal formatHeaders As Object = Nothing, _ 
+                   Optional ByVal keepImportHeaders As Boolean = False)
+
+  If keepImportHeaders Then
+    ImportObject impTab:=impTab, pasteAtBottom:=pasteAtBottom, _ 
+                 strictColumnSearch:=strictColumnSearch, _ 
+                 insertShfit:=insertShift, _ 
+                 formatHeaders:=formatHeaders
+
+  Else
+    ImportAll impTab
+  End If
+End Sub
+
+'@sub-title Import a DataSheet or a CustomTable
+'@param impTab DataSheet of CustomTable Object. The table to import
+'@param pasteAtBottom Optional, Boolean. Paste the data at the bottom of the current table. Default is False
+'@param strictColumnSearch Optional, Boolean. Use strict rules when searching column names in the current table. Default is False
+'@param insertShift Optional, Boolean. Insert some lines when extending the table. Default is True.
+'@param formatHeaders A BetterArray of headers names where column format should be kept
+Private Sub ImportObject(ByVal impTab As Object, _
                    Optional ByVal pasteAtBottom As Boolean = False, _
                    Optional ByVal strictColumnSearch As Boolean = False, _ 
                    Optional ByVal insertShift As Boolean = True, _ 
@@ -699,6 +743,9 @@ Private Sub Import(ByVal impTab As Object, _
 
   If ((TypeName(impTab) <> "DataSheet") And (TypeName(impTab) <> "CustomTable")) Or _ 
      ((TypeName(impTab) = "CustomTable") And (LCase(Name()) <> LCase(impTab.Name()))) Then
+     LogInfo "Import not done: imported elements are not tables or datasheet", _ 
+             checkingWarning
+      ShowDebug
     Exit Sub
   End If
 
@@ -713,7 +760,7 @@ Private Sub Import(ByVal impTab As Object, _
   Set imphRng = impTab.HeaderRange()
   Set sh = Wksh()
 
-  'This is where to start pasting the data in the custom table.
+  'This is where to start pasting the data in the CustomTable.
   'I can decide to paste a the end of the table, or clear the data
   'and replace with new one
   startPastingRow = 1
@@ -757,7 +804,9 @@ Private Sub Import(ByVal impTab As Object, _
 
       'Import the format/Comment from some ranges
       If TypeName(formatHeaders) = "BetterArray" Then
-        If formatHeaders.Includes(newHeaderValue) Then ImportFormat impRng:=impDataRng, currRng:=rng
+        If formatHeaders.Includes(headerValue) Then
+          ImportFormat impRng:=impDataRng, currRng:=rng
+        End If
       End If
     Else
       NOTIMPORTEDCOLUMNS.Push headerValue
@@ -768,88 +817,12 @@ Private Sub Import(ByVal impTab As Object, _
 
   'return back hidden columns
   ReturnBackHiddenColumns
-
-  'Format Headers are
 End Sub
 
-'Import All is the Sub that imports by keeping the imported object as the master
-'one. It is assumed that all the columns of the imported Object SHOULD be imported, and
-'will replace all the current columns WITH all the imported ones
-
-Private Sub ImportAll(ByVal impTab As Object)
-
-  Dim currhRng As Range
-  Dim imphRng As Range
-  Dim currLo As ListObject
-  Dim sh As Worksheet
-  Dim impTabList As BetterArray 'Data of imported Table
-  Dim bodyRng As Range
-  Dim cellRng As Range
-
-  'I want to import by keeping all the headers of the imported tab.
-  'First I need to clean the current tab and then I copy and paste
-  'the data from the imported table
-  'I would avoid doing it with DataSheet, just to make sure we are importing
-  'the same "elements", but it is still possible do import All elements of a DataSheet
-
-  If ((TypeName(impTab) <> "DataSheet") And (TypeName(impTab) <> "CustomTable")) Or _ 
-      ((TypeName(impTab) = "CustomTable") And (LCase(Name()) <> LCase(impTab.Name()))) Then
-    Exit Sub
-  End If
-
-  'Initialize and Clear the private variable NOTIMPORTEDCOLUMNS
-  If NOTIMPORTEDCOLUMNS Is Nothing Then Set NOTIMPORTEDCOLUMNS = New BetterArray
-  NOTIMPORTEDCOLUMNS.Clear
-
-  'Unhide previously hidden columns in the custom table. Those will not be
-  'returned back after importAll because of the importing mecanism
-  UnhideHiddenColumns
-
-  'Clean the actual customTable object
-  Clean
-  Set currLo = Table()
-  Set currhRng = HeaderRange()
-  Set imphRng = impTab.HeaderRange()
-  Set impTabList = New BetterArray
-  Set sh = Wksh()
-
-  'Get the data from imported listObject
-  impTabList.FromExcelRange imphRng.Cells(1, 1), _ 
-                            DetectLastRow:=True, DetectLastColumn:=True
-
-  'AddRows to the current Table
-  Resize AddRows:=True, nbRows:=impTabList.Length
-  'Paste data with betterarray
-  impTabList.ToExcelRange currhRng.Cells(1, 1)
-  'Resize the new listObject with imported elements
-  With sh
-    Set bodyRng = .Range(currhRng.Cells(1, 1), currhRng.Cells(impTabList.Length, imphRng.Columns.Count))
-    currLo.Resize bodyRng
-  End With
-
-  'Clear elements after the end of the table (in case imported table has
-  'less columns compare to current table)
-  Set cellRng = currhRng.Cells(1, imphRng.Columns.Count + 1)
-
-  Do while Not IsEmpty(cellRng)
-    cellRng.EntireColumn.Cells.Clear
-    cellRng.EntireColumn.Locked = False
-    Set cellRng = cellRng.Offset(, 1)
-  Loop
-
-  
-
-  'Typically in this case all the columns from the imported Object are imported,
-  'so normally the NOTIMPORTEDCOLUMNS object is empty.
-  this.hasImport = True
-End Sub
-
-'This sub is an internal sub to import columns formats (If required)
-
-'impRng: The importing range
-'currRng the current range in the current CustomTable
-
-Private Sub ImportFormat(impRng As Range, ByVal currRng As Range)
+'@sub-title Import the formatting of a range into a currrent range
+'@param impRng The range to  importing range
+'@param currRng the current range in the current CustomTable
+Private Sub ImportFormat(ByVal impRng As Range, ByVal currRng As Range)
 
   Dim formatCounter As Long
   Dim hasComment As Boolean
@@ -860,7 +833,7 @@ Private Sub ImportFormat(impRng As Range, ByVal currRng As Range)
   'Clear all eventual comments on the range
   currRng.ClearComments
 
-  For formatCounter = 1 To impDataRng.Rows.Count
+  For formatCounter = 1 To impRng.Rows.Count
     'keep the comment if there is one
     hasComment = False
     hasCommentThreaded = False
@@ -906,22 +879,120 @@ Private Sub ImportFormat(impRng As Range, ByVal currRng As Range)
   Next
 End Sub
 
+
+'@label:ImportAll
+'@sub-title Import a CustomTable and a DataSheet
+'@details
+'
+'All the columns of the imported Object ARE  imported, and
+'replace all the current columns WITH all the imported ones
+'
+'@param impTab A CustomTable or DataSheet Object
+'@export
+Private Sub ImportAll(ByVal impTab As Object)
+
+  Dim currhRng As Range
+  Dim imphRng As Range
+  Dim currLo As ListObject
+  Dim sh As Worksheet
+  Dim impTabList As BetterArray 'Data of imported Table
+  Dim bodyRng As Range
+  Dim cellRng As Range
+  Dim colRng As Range
+  Dim headerValue As String
+
+  'I want to import by keeping all the headers of the imported tab.
+  'First I need to clean the current tab and then I copy and paste
+  'the data from the imported table
+  'I would avoid doing it with DataSheet, just to make sure we are importing
+  'the same "elements", but it is still possible do import All elements of a DataSheet
+
+  If ((TypeName(impTab) <> "DataSheet") And (TypeName(impTab) <> "CustomTable")) Or _ 
+      ((TypeName(impTab) = "CustomTable") And (LCase(Name()) <> LCase(impTab.Name()))) Then
+    Exit Sub
+  End If
+
+  'Initialize and Clear the private variable NOTIMPORTEDCOLUMNS
+  If NOTIMPORTEDCOLUMNS Is Nothing Then Set NOTIMPORTEDCOLUMNS = New BetterArray
+  NOTIMPORTEDCOLUMNS.Clear
+
+  'Unhide previously hidden columns in the CustomTable. Those will not be
+  'returned back after importAll because of the importing mecanism
+  UnhideHiddenColumns
+
+  'Clean the actual customTable object
+  Clean
+  Set currLo = Table()
+  Set currhRng = HeaderRange()
+  Set imphRng = impTab.HeaderRange()
+  Set impTabList = New BetterArray
+  Set sh = Wksh()
+
+  'Get the data from imported listObject
+  impTabList.FromExcelRange imphRng.Cells(1, 1), _ 
+                            DetectLastRow:=True, DetectLastColumn:=True
+
+  'AddRows to the current Table
+  Resize AddRows:=True, nbRows:=impTabList.Length
+  'Paste data with betterarray
+  impTabList.ToExcelRange currhRng.Cells(1, 1)
+  'Resize the new listObject with imported elements
+  With sh
+    Set bodyRng = .Range(currhRng.Cells(1, 1), currhRng.Cells(impTabList.Length, imphRng.Columns.Count))
+    currLo.Resize bodyRng
+  End With
+
+  'Clear elements after the end of the table (in case imported table has
+  'less columns compare to current table)
+  Set cellRng = currhRng.Cells(1, imphRng.Columns.Count + 1)
+
+  Do while Not IsEmpty(cellRng)
+    headerValue = cellRng.Cells(1, 1).Value
+    Set colRng = DataRange(headerValue, includeHeaders:=True, stricSearch:=True)
+    If (Not colRng Is Nothing) Then
+      colRng.Cells.Clear
+      colRng.Locked = False
+    End If
+    Set cellRng = cellRng.Offset(, 1)
+  Loop
+
+  'Typically in this case all the columns from the imported Object are imported,
+  'so normally the NOTIMPORTEDCOLUMNS object is empty.
+  this.hasImport = True
+End Sub
+
+
+'@label:ImportColumnsNotFound
+'@prop-title After one import, get the columns not imported
+'@export
+'return A BetterArray object
 Private Property Get ImportColumnsNotFound() As BetterArray
+
+  If Not this.hasImport Then
+    LogInfo "The current table " & Name() & "has no imports"
+    ShowDebug
+    Exit Property
+  End If
+
   Set ImportColumnsNotFound = NOTIMPORTEDCOLUMNS.Clone()
 End Property
 
-'Test if there are imports in the custom table
+'@label:HasColumnsNotImported
+'@prop-title Are there imports in the CustomTable?
+'@export
+'@returned A Boolean
 Private Property Get HasColumnsNotImported() As Boolean
   If this.hasImport Then _
-  HasColumnsNotImported = (NOTIMPORTEDCOLUMNS.Length >= 1)
+    HasColumnsNotImported = (NOTIMPORTEDCOLUMNS.Length >= 1)
 End Property
 
 'Those functions are for Unhiding and hiding back columns before Import or Exports
-'Sometimes custom table contains hidden columns, range.Find method does not include
+'Sometimes CustomTable contains hidden columns, range.Find method does not include
 'hidden rows or column when searching, so we need to unhide all columns of
 'the worksheet before Import/Export and to return back the state of hidden columns
 'after import/export.
 
+'@sub-title UnhideHiddenColumns
 Private Sub UnhideHiddenColumns()
   Dim counter As Long
   Dim hRng As Range
@@ -941,6 +1012,7 @@ Private Sub UnhideHiddenColumns()
   Next
 End Sub
 
+'@sub-title ReturnBackHiddenColumns
 Private Sub ReturnBackHiddenColumns()
   Dim counter As Long
   Dim hRng As Range
@@ -955,23 +1027,40 @@ Private Sub ReturnBackHiddenColumns()
   On Error GoTo 0
 End Sub
 
-
-'Export a Custom Table to a Worksheet
-'startLine: Where to start exporting
-Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray, Optional ByVal startLine As Long = 1)
+'@label:Export
+'@sub-title Export a CustomTable to a Worksheet
+'@details
+'
+'Export the current CustomTable to a worksheet. The startLine is where to paste
+'the data in the current worksheet.
+'
+'@param hedersTable BetterArray Object, the list of the columns to export
+'@param startLine Optional, Long. The line where to start exporting in the worksheet. Default is 1.
+Private Sub Export(ByVal sh As Worksheet, _ 
+           Optional ByVal headersTable As Object = Nothing, _ 
+           Optional ByVal startLine As Long = 1)
 
   Dim counter As Long
   Dim inpRng As Range
   Dim outrng As Range
   Dim headerName As String
   Dim headerCounter As Long
+  Dim headersList As BetterArray
 
-  If sh Is Nothing Then ThrowError _
-   "Unable to export custom table, sheet not initialized"
-  If headersList Is Nothing Then ThrowError _
-   "Unable to export custom table, headers list not initialized"
-  If headersList.Length = 0 Then ThrowError _
-  "Unable to export custom table, I don't know wich column to export (length of headers = 0)"
+  If sh Is Nothing Then 
+    LogInfo "Unable to export CustomTable, sheet not initialized", checkingError
+    Exit Sub
+  End If
+
+  Set headersList = New BetterArray
+
+  If (TypeName(headersTable) = "BetterArray") Then
+    Set headersList = headersTable.Clone()
+  Else
+    LogInfo "Provided headersTable for export not found, all the headers are exported"
+    ShowDebug
+    headersList.FromExcelRange HeaderRange(), DetectLastRow:=False, DetectLastColumn:=False
+  End If
 
   sh.Cells.Clear
   headerCounter = 1
@@ -1001,13 +1090,12 @@ Private Sub Export(ByVal sh As Worksheet, ByVal headersList As BetterArray, Opti
   ReturnBackHiddenColumns
 End Sub
 
-
+'@label:Checkings
 '@section Checkings
 
 '@sub-title Add elements to the checking object for future notes
-'
-'@param label. String, the message to add.
-'@param scope, Byte. The scope of the checking object
+'@param Label String, the message to add.
+'@param scope Byte. The scope of the checking object.
 '@export
 Private Sub LogInfo(ByVal label As String, _ 
                     Optional ByVal scope As Byte = checkingNote)
@@ -1026,12 +1114,14 @@ Private Sub LogInfo(ByVal label As String, _
     If Not this.hasChecks Then this.hasChecks = True
 End Sub
 
+'@label:HasChecking
 '@prop-title Check if the object has checkings
 '@export
 Private Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
+'@label:CheckingValues
 '@prop-title Get the cheking values
 '@export
 Private Property Get CheckingValues() As Object
@@ -1043,8 +1133,17 @@ Private Property Get CheckingValues() As Object
 End Property
 
 
+Private Sub ShowDebug()
+    Debug.Print "Check the informations of choice object " & Name()
+End Sub
+
+
+Private Sub ThrowError(ByVal errorMessage As String)
+    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
+End Sub
+
+
 '@jump:Create
-'@section Interface
 
 '@jump:elements
 'CustomTable elements ----------------------------------------------------------
@@ -1085,10 +1184,10 @@ Private Property Get ICustomTable_Value(ByVal colName As String, _
 End Property
 
 '@jump:modify
-'Modify the custom table -------------------------------------------------------
+'Modify the CustomTable -------------------------------------------------------
 
 '@jump:AddIds
-'AddIds to the custom table
+'AddIds to the CustomTable
 Private Sub ICustomTable_AddIds()
     AddIds
 End Sub
@@ -1106,8 +1205,9 @@ Private Sub ICustomTable_AddRows(Optional ByVal nbRows As Long = 5, _
 End Sub
 
 '@jump:RemoveRows
-'Remove rows to a custom table
-Private Sub ICustomTable_RemoveRows(Optional ByVal totalCount As Long = 0, includeIds:=True)
+'Remove rows to a CustomTable
+Private Sub ICustomTable_RemoveRows(Optional ByVal totalCount As Long = 0, _ 
+                                    Optional ByVal includeIds As Boolean = True)
   RemoveRows totalRowCount:=totalCount, includeIds:=includeIds
 End Sub
 
@@ -1135,14 +1235,14 @@ End Sub
 
 
 '@jump:Clean
-'Clean the custom table
+'Clean the CustomTable
 Private Sub ICustomTable_Clean()
   Clean
 End Sub
 
 
 '@jump:Sort
-'Sort a custom table
+'Sort a CustomTable
 Private Sub ICustomTable_Sort(Optional ByVal colName As String = vbNullString, _ 
                               Optional ByVal colList As Object = Nothing, _ 
                               Optional ByVal directSort As Boolean = True)
@@ -1150,17 +1250,11 @@ Private Sub ICustomTable_Sort(Optional ByVal colName As String = vbNullString, _
 End Sub
 
 
-Private Sub ICustomTable_Export(ByVal sh As Worksheet, _
-                               ByVal headersList As BetterArray, _
-                               Optional ByVal startLine As Long = 1)
-  Export sh, headersList, startLine
-End Sub
-
 '@jump:ImportExport
 'Import Export Functions -------------------------------------------------------
 
 '@jump:Import
-'Imports Functions
+'Imports an object
 Private Sub ICustomTable_Import( _
               ByVal impTab As Object, _
               Optional ByVal pasteAtBottom As Boolean = False, _
@@ -1168,38 +1262,52 @@ Private Sub ICustomTable_Import( _
               Optional ByVal insertShift As Boolean = True, _ 
               Optional ByVal keepImportHeaders As Boolean = False)
 
-  'keepImportHeaders means the import Object is the master
-  If keepImportHeaders Then
-    ImportAll impTab
-  Else
-    Import impTab, pasteAtBottom, strictColumnSearch, insertShift
-  End If
+  Import impTab:=impTab, pasteAtBottom:=pasteAtBottom, _ 
+         strictColumnSearch:=strictColumnSearch, _ 
+         insertShift:=insertShift, _ 
+         keepImportHeaders:=keepImportHeaders
+
 End Sub
 
 
+'@jump:Export
+'Export to a worksheet
+Private Sub ICustomTable_Export(ByVal sh As Worksheet, _
+                               Optional ByVal headersTable As Object = Nothing, _
+                               Optional ByVal startLine As Long = 1)
+  Export sh, headersTable, startLine
+End Sub
+
+
+'@jump:ImportAll
+'import with imported as master
+Private Sub ICustomTable_ImportAll(ByVal impTab As Object)
+  ImportAll impTab
+End Sub
+
+
+'@jump:ImportColumnsNotFound
+'import columns not found
 Private Property Get ICustomTable_ImportColumnsNotFound() As BetterArray
   Set ICustomTable_ImportColumnsNotFound = ImportColumnsNotFound()
 End Property
 
-'Test if there are imports in the custom table
+'@jump:HasColumnsNotImported
+'Test if there are imports in the CustomTable
 Private Property Get ICustomTable_HasColumnsNotImported() As Boolean
     ICustomTable_HasColumnsNotImported = HasColumnsNotImported()
 End Property
 
 
+'@jump:Checkings
+'Errors and checkings----------------------------------------------------------
 
-'Errors and checkings
-
-Private Sub ThrowError(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
-End Sub
-
+'@jump:HasCheckings
 Private Property Get ICustomTable_HasCheckings() As Boolean
     ICustomTable_HasCheckings = HasCheckings()
 End Property
 
+'@jump:CheckingValues
 Private Property Get ICustomTable_CheckingValues() As Object
      Set ICustomTable_CheckingValues = CheckingValues()
 End Property
-
-

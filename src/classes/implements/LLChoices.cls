@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Dictionary")
 '@ModuleDescription("Linelist choice Class")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILLChoices
@@ -38,7 +38,7 @@ Private Const LABELSHORTCODE As String = "short label"
 Private Const ORDERINLISTCODE   As String = "ordering list"
 
 'Those are for log tracing in case
-Private checkCounter As Integer
+Private checkCounter As Long
 Private internalChecks As IChecking
 
 'constant / keys for tracing something to the checks class
@@ -47,7 +47,7 @@ Private internalChecks As IChecking
 '@section Instanciation
 ' Create a choice object
 '
-'@description
+'@details
 'A choice Object is a worksheet which contains the definitions of the choices
 'used in dropdowns and multiple dropdown.
 '
@@ -569,7 +569,7 @@ End Property
 '@label:Categories
 '@prop-title Categories of a choice
 '
-'@description
+'@details
 'Given a choice, get the list of all categories as a BetterArray Object.
 'If useShortLabels is True, the short label categories are used instead.
 '
@@ -636,7 +636,7 @@ End Property
 '@label:ConcatenateCategories
 '@prop-title Concatenate all the categories of one choice
 '
-'@description
+'@details
 'Retrieve the categories, concatenated with a separator. The default separator 
 'is " | ". It is possible to get categories translated, if a translation object
 'is provided. In case the translation object is nothing, it is defaulted to the
@@ -791,7 +791,7 @@ Private Sub LogInfo(ByVal label As String, _
 End Sub
 
 Private Sub ShowDebug()
-    Debug.Print "Check the informations of choice object " & Name()
+    Debug.Print "Check the informations of CustomTable object " & Name()
 End Sub
 
 '@label:HasCheckings
