@@ -6,9 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="description" content="Move data from one linelist file to another">
+<meta name="description" content="Troubleshooting linelist data">
 
-<title>Migrate linelist data – OutbreakTools</title>
+<title>Troubleshoot the linelist – OutbreakTools</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -151,8 +151,15 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">Table of content</h2>
    
   <ul>
-  <li><a href="#migrate-the-linelist-to-a-newer-version" id="toc-migrate-the-linelist-to-a-newer-version" class="nav-link active" data-scroll-target="#migrate-the-linelist-to-a-newer-version">Migrate the linelist to a newer version</a></li>
-  <li><a href="#make-a-master-linelist" id="toc-make-a-master-linelist" class="nav-link" data-scroll-target="#make-a-master-linelist">Make a master linelist</a></li>
+  <li><a href="#linelist-file" id="toc-linelist-file" class="nav-link active" data-scroll-target="#linelist-file">Linelist file</a>
+  <ul>
+  <li><a href="#file-corruption" id="toc-file-corruption" class="nav-link" data-scroll-target="#file-corruption">File corruption</a></li>
+  <li><a href="#buttons-form-the-obt-menu-not-working" id="toc-buttons-form-the-obt-menu-not-working" class="nav-link" data-scroll-target="#buttons-form-the-obt-menu-not-working">Buttons form the OBT menu not working</a></li>
+  <li><a href="#not-enough-rows" id="toc-not-enough-rows" class="nav-link" data-scroll-target="#not-enough-rows">Not enough rows</a></li>
+  <li><a href="#formulas" id="toc-formulas" class="nav-link" data-scroll-target="#formulas">Formulas</a></li>
+  <li><a href="#analyses" id="toc-analyses" class="nav-link" data-scroll-target="#analyses">Analyses</a></li>
+  </ul></li>
+  <li><a href="#sending-data-to-the-dashboard" id="toc-sending-data-to-the-dashboard" class="nav-link" data-scroll-target="#sending-data-to-the-dashboard">Sending data to the dashboard</a></li>
   </ul>
 </nav>
     </div>
@@ -161,15 +168,16 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Migrate linelist data</h1>
+<h1 class="title">Troubleshoot the linelist</h1>
   <div class="quarto-categories">
     <div class="quarto-category">Linelist</div>
+    <div class="quarto-category">Dashboard</div>
   </div>
   </div>
 
 <div>
   <div class="description">
-    Move data from one linelist file to another
+    Troubleshooting linelist data
   </div>
 </div>
 
@@ -186,120 +194,88 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>OutbreakTools linelist have handy functionalities to import and export data. Whith them you can:</p>
+<section id="linelist-file" class="level2">
+<h2 class="anchored" data-anchor-id="linelist-file">Linelist file</h2>
+<section id="file-corruption" class="level3">
+<h3 class="anchored" data-anchor-id="file-corruption">File corruption</h3>
+<p><em>The file is getting corrupted, things do not work properly any more</em></p>
+<p><strong>Reason</strong></p>
+<p>It might be because OneDrive tried to synchronise the file while it was opened, but failed because VBA macros prevent synchronisation.</p>
+<p><strong>Solution</strong></p>
 <ul>
-<li>upgrade to a newer version of a given linelist file</li>
-<li>move data to a the same version of a linelist, but in an uncorrupted file</li>
-<li>assemble data from several sites using the same linelist</li>
+<li>Migrate the data in an empty, uncorrupted linelist</li>
+<li>Save file in a folder not synchronized by OneDrive or stop OneDrive when you are working on the file.</li>
 </ul>
-<p>If no breaking changes were introduced (see <a href="#imp-breaking-changes" class="quarto-xref">Important&nbsp;1</a>), migrating data from one linelist to the other is straightforward:</p>
-<ul>
-<li>you export patient data, the geobase, the geobase history and as many metadata as possible<br>
-</li>
-<li>you reimport these into a new file, which may or may not be empty</li>
-</ul>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="../how_to/images/img-005-migration-linelist.png" class="img-fluid figure-img"></p>
-<figcaption>Import section</figcaption>
-</figure>
-</div>
-<p>If the new file is empty, the data is simply copied into the file. Is the new file already contains data, the new data is pasted under the existing data (variable by variable).</p>
-<div id="imp-breaking-changes" class="callout callout-style-default callout-important callout-titled" title="About breaking changes">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Important&nbsp;1: About breaking changes
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>The migration is based on exporting data, and re-importing it by <em>matching the variable names</em>. Consequently:</p>
-<ul>
-<li>if a variable name was changed, the data from the original linelist will not be imported in the new linelist (the label can change though, if needed to clarify something)<br>
-</li>
-<li>if the categories in a categorical variable were changed, the data will not be modified, you will have to do the matching manually in the linelist or in the export file before importing<br>
-</li>
-<li>the script blindly copies and paste columns based on variable names, so there is not duplication detections: if you import twice the same data in a linelist, you will have to clean you duplicated rows manually.</li>
-</ul>
-<p>If you modify variable names or categories within variables, that would be a <strong>breaking change</strong>, that needs special handling (<em>i.e.</em> you modifying the column name and the categories manually in the export file before importing).</p>
-<p>Changing the order of variables is not a breaking change though, because the variables are imported one by one and matched by name, not by position.</p>
-</div>
-</div>
-<section id="migrate-the-linelist-to-a-newer-version" class="level2">
-<h2 class="anchored" data-anchor-id="migrate-the-linelist-to-a-newer-version">Migrate the linelist to a newer version</h2>
-<p>New linelist versions are often generated for a given disease:</p>
-<ul>
-<li><p>the variable dictionary for this specific linelist might get updated as a request of epidemiologists or the Epinetwork: added variables, improved labels, additional analyses…</p></li>
-<li><p>the functionalities of the OutbreakTools itself may improve (bug fixes or addition of new functionalities<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>) and all linelist in use would benefit getting updated.</p></li>
-</ul>
-<p>Here, typically, the new file is a new version of the linelist, and it is empty (it might also be an empty version of the same linelist if you suspect that your current file is corrupted and behaves weirdly).</p>
-<p>Steps:</p>
-<ol type="1">
-<li><p>Clear data filters</p></li>
-<li><p>Go to the <a href="../reference/ribbons_linelist.html#sec-linelist-advanced">OutbreakTools menu</a> of this setup file and click on the button “Export for migration”.</p></li>
-<li><p>Tick all the boxes you want (usually, “All data” + “Geobase”). This will create three files in the folder of your choice:</p>
-<ol type="a">
-<li>A file containing the data</li>
-<li>A file containing the geobase <em>and the geobase history</em></li>
-<li>Optionaly, a file containing <em>uniquely the geobase history</em>, which we will ignore now.</li>
-</ol></li>
-<li><p>Open a new, emtpy linelist file</p></li>
-<li><p>Go to the <a href="../reference/ribbons_linelist.html#sec-import-data">import section of the OutbreakTools menu</a>. Use the “Import data” button to import the data export file, and the “Import geobase” button to import the geobase files (which contains the history, if an history existed).</p></li>
-</ol>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="../reference/images/img-013-ll-export-migration.png" class="img-fluid figure-img"></p>
-<figcaption>Export for migration</figcaption>
-</figure>
-</div>
-<p>Once you are used to the steps, migrating data should take you only a couple of minutes.</p>
-<div class="callout callout-style-default callout-tip callout-titled" title="Tip: export a subset of data">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Tip: export a subset of data
-</div>
-<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
-</div>
-<div id="callout-2" class="callout-2-contents callout-collapse collapse">
-<div class="callout-body-container callout-body">
-<p>Here we described a case where you wanted to migrate the whole data. If you need to split the data between two linelists (maybe before and after a date, or active / inactive cohort), you can use filters on patient data to only export a <em>subset</em> of the rows.</p>
-</div>
-</div>
-</div>
 </section>
-<section id="make-a-master-linelist" class="level2">
-<h2 class="anchored" data-anchor-id="make-a-master-linelist">Make a master linelist</h2>
-<p>It is possible to gather data from several linelists (with the same version of the dictionary). There are several use cases:</p>
+<section id="buttons-form-the-obt-menu-not-working" class="level3">
+<h3 class="anchored" data-anchor-id="buttons-form-the-obt-menu-not-working">Buttons form the OBT menu not working</h3>
+<p><em>Buttons do not work, file is being weird</em></p>
+<p><strong>Reason</strong></p>
+<p>Macro are not executing / the file is protected</p>
+<p><strong>Solution</strong></p>
+<p>Follow the steps <a href="../getting_started/use_linelist.html#sec-unprotect-file">here</a> to unprotect the file and authorise macros.</p>
+</section>
+<section id="not-enough-rows" class="level3">
+<h3 class="anchored" data-anchor-id="not-enough-rows">Not enough rows</h3>
+<p><em>I arrived at the end of the lines where I can enter data</em></p>
+<p><strong>Solution</strong></p>
+<p>Click on the “Add rows” button of the <a href="../reference/ribbons_linelist.html">OutbreakTools Menu</a>.</p>
+<p>Additionaly, try t upgrade your linelist to a more recent version: recent builds automatically insert rows when you start entering data in the last row.</p>
+</section>
+<section id="formulas" class="level3">
+<h3 class="anchored" data-anchor-id="formulas">Formulas</h3>
+<p><em>Formula are not updating</em></p>
+<p><strong>Solution</strong></p>
 <ul>
-<li><p>several facilities enter data in their own linelist, and the epidemiologist or medCo would like to study the analyses at the region or mission level, pooling data from all sites. It is possible to make a temporary master linelist to do that.</p></li>
-<li><p>the caseload is high and you would like two data encoders to work on the linelist. You can split the daily work between themselves: one completes existing rows, adding the outcome status for example (main file), while the other encodes new patients (new rows). Every night they import the new patients into the main file. The next morning, the person encoding “new patients” starts with a new <strong>empty</strong> file for new lines.</p></li>
+<li>Make sure the macros are authorised</li>
+<li>Hit F9 / CALCULATE NOW BUTTON (in the native Excel Formula ribbon).</li>
 </ul>
-<p><strong>Steps:</strong></p>
+<p><em>There are errors/“VALUES” in the epiweeks formula</em></p>
+<p><strong>Solution</strong></p>
+<ul>
+<li><p>Go to the “Week start” button in the <a href="../reference/ribbons_linelist.html">OutbreakTools Menu</a> and fill the day you want, then hit F9</p></li>
+<li><p>Check that the corresponding date exists (e.g.&nbsp;is not a 30th of February and is in the correct format (and thus parsed as a date by Excel)</p></li>
+</ul>
+</section>
+<section id="analyses" class="level3">
+<h3 class="anchored" data-anchor-id="analyses">Analyses</h3>
+<p><em>My analyses sheets di not update after I entered data</em></p>
+<p><strong>Solution</strong></p>
 <ol type="1">
-<li><p>Export the data from each facility linelist using the “Export data” button from the the <a href="../reference/ribbons_linelist.html#sec-export-data">OutbreakTools menu</a>. Since you only want to pool patient data, there is no need to use the “Export for migration” button as you don’t care for metadata in this context: the anonymous export is enough.</p></li>
-<li><p>Get an empty linelist file. This will become your temporary master linelist.</p></li>
-<li><p>Import the all the exports into the master file one by one, using the “Import data” button from the <a href="../reference/ribbons_linelist.html#sec-import-data">OutbreakTools menu</a>. When a warning pop up opens, tell it that you want to add the data at the bottom of the existing data.</p></li>
-<li><p>Refresh analyses (always!) before examining the analyses.</p></li>
+<li>Verify that your data are not filtered (or the filter you applied are the one you want to see reflected in the analyses sheet). If you want to clear out all filters you can use the button in the <a href="../reference/ribbons_linelist.html">OutbreakTools Menu</a></li>
+<li>Hit F9 in the patient datasheet make sure all formula are up-to-date</li>
+<li>Hit the “Refresh analyses button” in the <a href="../reference/ribbons_linelist.html">OutbreakTools Menu</a>.</li>
 </ol>
-<div class="callout callout-style-default callout-warning callout-titled" title="Warning: do not modify data in this file">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Warning: do not modify data in this file
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>This master-linelist should not be used to enter more data/clean data, as these change will not be reflected on the site linelists. It should only be used for perusing the analyses at a higher scale.</p>
-<p>Similarly, you should not send a pooled export for the dashboard, as the scripts are encoded to import the site one by one, keeping the site metadata.</p>
-</div>
-</div>
+<p>If problems remain, check the concerned columns:</p>
+<ul>
+<li>Are they filled correctly (right format, exact options from the dropdown menu…)?</li>
+<li>Do they depend on other variables, and if yes, are these variables filled<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> properly<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</li>
+</ul>
+<p>If the data is clean and the problem remains, contact your referent epi or the developers.</p>
+</section>
+</section>
+<section id="sending-data-to-the-dashboard" class="level2">
+<h2 class="anchored" data-anchor-id="sending-data-to-the-dashboard">Sending data to the dashboard</h2>
+<p><em>I sent the data yesterday but it does not appear on the dashboard</em></p>
+<ul>
+<li><p>Did you send the data to the mail address epi-data [at] epicentre.msf.org? Sharing a file with OneDrive does not work.</p></li>
+<li><p>Did you send the whole linelist file instead of the anonymous export? You should have received a feedback automatic message explaining the problem.</p></li>
+<li><p>Was the linelist <em>Info</em> sheet correctly filled? Scripts cannot compile the data if any of these are missing:</p>
+<ul>
+<li>Organization</li>
+<li>Country Name</li>
+<li>Name of facility (unless you filled the facility column if it exists)</li>
+<li>Outbreak code (for old linelists, but it is getting depreciated)</li>
+</ul></li>
+<li><p>Open the export (it’s an excel file) to see if anything is weird. There should be several sheets, among which:</p>
+<ul>
+<li>Metadata sheet containing information about the export</li>
+<li><em>Info</em> sheet containing the information of the linelist</li>
+<li>Patient linelist sheet(s) containing your data</li>
+</ul></li>
+<li><p>In the linelist, force recalculation (by button or by pressing F9). Try to export and send again.</p></li>
+</ul>
+<p>If this does not work, contact a member of the EpiDS team.</p>
 
 
 </section>
@@ -308,7 +284,8 @@ Warning: do not modify data in this file
 <a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
 
 <ol>
-<li id="fn1"><p>the later often generating a couple of the former for a while<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1"><p>For example, tracking the outcome in the <em>Temporal analyses</em> sheet requires the outcome date to be filled.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>Text instead of numbers, out of bound values, impossible dates, bad dates format…<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
