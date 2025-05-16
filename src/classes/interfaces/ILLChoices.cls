@@ -9,9 +9,9 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
 '@Interface
-'@Folder("Dictionary")
+'@Folder("GeneralInterface")
 '@ModuleDescription("Interface of Choice class")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

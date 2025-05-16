@@ -33,14 +33,14 @@ Private NOTIMPORTEDCOLUMNS As BetterArray
 Private HIDDENCOLUMNSLIST As BetterArray
 
 'checking objects
-Private checkCounter As Integer
+Private checkCounter As Long
 Private internalChecks As IChecking
 
 
 '@section Instanciation
 
 '@label:Create
-'@sub-title Create a CustomTable object
+'@prop-title Create a CustomTable object
 
 '@details
 'The custom data table is created just with one listObject. It is a wrapper arround
