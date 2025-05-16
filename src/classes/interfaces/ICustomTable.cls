@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of CustomTable"
 
-'@Folder("General")
+'@Folder("GeneralInterface")
 '@ModuleDescription("Interface of CustomTable")
 '@Interface
 '@IgnoreModule SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
