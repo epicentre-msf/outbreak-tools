@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Save warnings, information and errors on objects"
 
 '@PredeclaredId
-'@Folder("Checks")
+'@Folder("General")
 '@ModuleDescription("Save warnings, information and errors on objects")
 
 Option Explicit
