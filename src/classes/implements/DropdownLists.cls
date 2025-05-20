@@ -12,6 +12,8 @@ Attribute VB_Description = "A wrapper for dropdowns"
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("A wrapper for dropdowns")
+'@IgnoreModule SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
+
 
 Option Explicit
 Implements IDropdownLists
@@ -26,7 +28,9 @@ Private this As TDropdownLists
 Private Const CLASSNAME As String = "DropdownLists"
 Private Const DEFAULTNAMEPREFIX As String = "choice_"
 
-'increment by default each dropdown counter by 1. This is the number of
+'increment by default the counter on the number of dropdowns by 1. Everytime a
+'dropdown is added to the current worksheet. The counter is saved somewhere the
+'first cell fo the worksheet. It starts at 1.
 'dropdowns in the current dropdown worksheet.
 Private Const DROPDOWNCOUNTERINCREMENT As Byte = 1 
 
@@ -46,12 +50,12 @@ Private internalChecks As IChecking
 '@prop-title Create a Dropdownlist Object
 '
 '@details
-'A dropdownlist object is a worksheet with listObjects of one column. Those
+'A dropdownlist object is a worksheet with multiple listObjects of one column. Those
 'listObjects are used as dropdowns. The dropdowns can be used as data validation
-' or data entry tools. Using ListObjects of one columns can help with dynamically
-'extending the dropdown entries. The prefix can help with creating multiple
-'dropdown lists in the same workbook as prefixes are used when creating names
-'for references.
+'or data entry tools elsewhere in the workbook. Using ListObjects of one columns
+'can help with dynamically extending the dropdown entries. The prefix can help 
+'with creating multiple dropdown lists in the same workbook as prefixes are used
+'when creating names for references.
 '
 '@param outsh A Worksheet Object. The worksheet of the listobjects
 '@hprefix Optional, String. The prefix used when creating the dropdown tables. Default is "dropdown_"
@@ -60,7 +64,7 @@ Private internalChecks As IChecking
 Public Function Create(ByVal outsh As Worksheet, _
                        Optional ByVal hprefix As String = "dropdown_") _
                        As IDropdownLists
-    If outsh Is Nothing Then ThrowError "Dropdown worksheet not initialised"
+    If outsh Is Nothing Then ThrowError "Dropdown worksheet not found"
   
     With New DropdownLists
         Set .Wksh = outsh
@@ -112,6 +116,7 @@ Public Property Let headerPrefix(ByVal hprefix As String)
     this.hprefix = hprefix
 End Property
 
+'@label:Name
 '@prop-title Name of the dropdown object
 '@details
 'The name of the dropdown Object is the same as the name of the worksheet
@@ -156,8 +161,8 @@ End Property
 '
 '@details
 'In references, the name used is a combination of the prefix and the name
-'of the first column. The default name is with choice_[headerName] in case there is no
-'prefix.
+'of the first column. The default name is with choice_[headerName] in case there 
+'is no prefix.
 '
 '@param listName A String. The name of the dropdown
 '@returned A String
@@ -177,7 +182,29 @@ Private Property Get CurrentLoName(ByVal listName As String) As String
     CurrentLoName = "list_" & CurrentListName(listName)
 End Property
 
-'Test if a listobject exists in a sheet
+'@prop-title Label of the dropdown
+'@details
+'The dropdown label is the label written at the top of the dropdown listObject.
+'It is for reading purposes and is only for user readability. In the linelist
+'for example, the label is "Custom dropdown"
+'@return String
+Private Function CurrentDropdownLabel(ByVal labelPrefix As String) As String
+    Dim dropCounter As Long
+    Dim sh As Worksheet
+
+    Set sh = Wksh()
+
+    On Error Resume Next
+        dropCounter = CLng(sh.Cells(1, 1).Value)
+    On Error GoTo 0
+    CurrentDropdownLabel = labelPrefix & " " & dropCounter
+End Function
+
+'@label:exists
+'@prop-title Test if a dropdown is present in the dropdown worksheets
+'@param listName A String. The name of dropdown searched
+'@export
+'@returned A Boolean
 Private Function Exists(ByVal listName As String) As Boolean
     Dim Lo As listObject
     Dim loName As String
@@ -190,20 +217,32 @@ Private Function Exists(ByVal listName As String) As Boolean
     Exists = (Not Lo Is Nothing)
 End Function
 
-'Dropdown label using the dropdown counter
-Private Function CurrentDropdownLabel(ByVal labelPrefix As String) As String
-    Dim dropCounter As Long
+'@label:LabelRange
+'prop-title Retrieve the Range of one specific dropdown
+'@param listName A String, the name of the dropdown
+'@export
+'@return A Range object. The Label Range of the dropdown, generally the cell above the ListObject
+Private Property Get LabelRange(ByVal listName As String) As Range
+
+    Dim loName As String
     Dim sh As Worksheet
 
+    If Not Exists(listName) Then Exit Property
     Set sh = Wksh()
-    dropCounter = 0
-    On Error Resume Next
-        dropCounter = CLng(sh.Cells(1, 1).Value)
-    On Error GoTo 0
-    CurrentDropdownLabel = labelPrefix & " " & dropCounter
-End Function
+    loName = CurrentLoName(listName)
+    'Top header of the range of the listObject
+    Set LabelRange = sh.ListObjects(loName).Range.Cells(0, 1)
+End Property
 
-'Update the counter of the number of dropdowns in the worksheet (separate from retrieving the current dropdown label)
+'@label:modify
+'@section Modify the dropdownlist
+
+'@prop-title Update the counters of the dropdown
+'@details
+'The counter on the number of dropdown in the current dropdown worksheet
+'is store in the first cell of the worksheet. The UpdateDropdownCounter sub
+'adds the default increment to the counter stored in the first cell of the
+'worksheet.
 Private Sub UpdateDropdownCounter()
     Dim sh As Worksheet
     Dim dropCounter As Long
@@ -220,7 +259,21 @@ Private Sub UpdateDropdownCounter()
     counterRng.Value = dropCounter
 End Sub
 
-'Add New list to the dropdown sheet
+'@label:Add
+'@sub-title Add table values to the dropdown list
+'@details
+'Given a onedimensional BetterArray, of strings, add the items of the betterArray 
+'to a new listObject and create references to the listObject for future use. Label
+'is added using the prefix provided by counterPrefix. For example (Custom Dropdown 1,
+' Custom Dropdown 2, etc.). If the table style does not exists,
+'the default table style when creating listObjects in the current excel version
+'is used.
+'
+'@param listValues BetterArray Object. Table of string values to fill the listObject
+'@param addLabel Optional, Boolean. Add label on top of the dropdown listobject. Default is False
+'@param conterPrefix Optional, String. Prefix to use when adding label. Default is vbNullString
+'@param tableStyle Optional, String. Table style to use for the listObject. Default is "TableStyleLight13".
+'@export
 Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _ 
                 Optional ByVal addLabel As Boolean = False, _
                 Optional ByVal counterPrefix As String = vbNullString, _ 
@@ -234,21 +287,27 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
     Dim rng As Range
     Dim Wkb As Workbook
     Dim dropdownName As String            'dropdown name (used in named ranges)
-    Dim dropdownLabel As String
 
     'Do not add a new dropdown if there is already another one
-    If Exists(listName) Then Exit Sub
+    If Exists(listName) Then
+        LogInfo "Dropdown " & listName & " already exits: not added"
+        ShowDebug
+        Exit Sub
+    End If
 
     loName = CurrentLoName(listName)
     headerName = CurrentHeaderName(listName)
     dropdownName = CurrentDropdownName(listName)
     colIndex = LastColumn()
     Set sh = Wksh()
+
     'dropdown startRow is where to add the ListObject
     With sh
         listValues.ToExcelRange .Cells(DROPDOWNSTARTROW + 1, colIndex)
         .Cells(DROPDOWNSTARTROW, colIndex).Value = headerName
-        Set rng = .Range(.Cells(DROPDOWNSTARTROW, colIndex), .Cells(DROPDOWNSTARTROW + listValues.Length, colIndex))
+        Set rng = .Range(.Cells(DROPDOWNSTARTROW, colIndex), _ 
+                         .Cells(DROPDOWNSTARTROW + listValues.Length, colIndex))
+
         'Add A list object table
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName
         'Add a style to the listObject
@@ -260,7 +319,7 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
 
         'Add the label, with a prefix if needed
         If addLabel Then
-            
+
             'Add an increment to the dropdown counter
             UpdateDropdownCounter
 
@@ -269,7 +328,6 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
             .Cells(DROPDOWNSTARTROW - 1, colIndex).Font.Color = RGB(91, 155, 213)
             .Cells(DROPDOWNSTARTROW - 1, colIndex).Font.Bold = True
             .Cells(DROPDOWNSTARTROW - 1, colIndex).Font.Italic = True
-
         End If
 
         'Auto fit dropdown column, and increment the dropdown counter
@@ -277,20 +335,13 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
     End With
 End Sub
 
-'Retrieve the range of label of a dropdown
-Private Property Get LabelRange(ByVal listName As String) As Range
-    Dim cellRng As Range
-    Dim loName As String
-    Dim sh As Worksheet
-
-    If Not Exists(listName) Then Exit Property
-    Set sh = Wksh()
-    loName = CurrentLoName(listName)
-    'Top header of the range of the listObject
-    Set LabelRange = sh.ListObjects(loName).Range.Cells(0, 1)
-End Property
-
-'Remove the dropdown
+'@label:Remove
+'@sub-title Remove a dropdown that was added
+'@details
+'Use with caution as it will delete the listObject of the dropdown as well as 
+'any references in the workbook
+'@param listName A String, the dropdown name
+'@return
 Private Sub Remove(ByVal listName As String)
     Dim sh As Worksheet
     Dim Wkb As Workbook
@@ -298,7 +349,11 @@ Private Sub Remove(ByVal listName As String)
     Dim loName As String
     Dim dropdownName As String
 
-    If Not Exists(listName) Then Exit Sub
+    If Not Exists(listName) Then
+        LogInfo "Can not delete a dropdown that does not exits: " & listName & "Not found"
+        ShowDebug
+        Exit Sub
+    End If
     
     loName = CurrentLoName(listName)
     dropdownName = CurrentDropdownName(listName)
@@ -311,6 +366,7 @@ Private Sub Remove(ByVal listName As String)
         Wkb.NAMES(dropdownName).Delete
     On Error GoTo 0
     
+    'On the first column delete only the listObject
     If rng.Column = 1 Then
         rng.EntireColumn.Delete
     Else
@@ -319,13 +375,23 @@ Private Sub Remove(ByVal listName As String)
     End If
 End Sub
 
-'Clear a dropdown values
+'@label:ClearList
+'@sub-title Clear values in a dropdown table
+'@details
+'Given one dropdown, clear the entries and remove all values, without deleting
+'the dropdown itself.
+'@param listName A String. The name of the dropdown
+'@export
 Private Sub ClearList(ByVal listName As String)
 
     Dim sh As Worksheet
     Dim loName As String
 
-    If Not Exists(listName) Then Exit Sub
+    If Not Exists(listName) Then
+        LogInfo "Can not clear a dropdown that does not exits: " & listName & " Not found"
+        ShowDebug
+        Exit Sub
+    End If
 
     loName = CurrentLoName(listName)
     Set sh = Wksh()
@@ -334,7 +400,16 @@ Private Sub ClearList(ByVal listName As String)
     On Error GoTo 0
 End Sub
 
-'Update a list with new values
+'@label:Update
+'@sub-title Update values in a dropdown table
+'@details
+'Either replace all the values in a dropdown with new values, or add 
+'values at the bottom of the table. In the last case, if `pasteAtBottom=True`,
+'duplicate values are removed.
+'@param UpdateData A BetterArray, with new values to add
+'@param listName A String, the name of the dropdown to update
+'@param pasteAtBottom Boolean. Update by pasting new values at the bottom of the table. Default is False
+'@export
 Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _ 
                    Optional ByVal pasteAtBottom As Boolean = False)
     
@@ -346,7 +421,12 @@ Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _
     Dim Lo As listObject
     Dim tabLength As Long
 
-    If Not Exists(listName) Then Exit Sub
+    If Not Exists(listName) Then 
+        LogInfo "Can not Update a dropdown that does not exists: " & listName & " Not found"
+        ShowDebug 
+        Exit Sub
+    End If
+
     Set sh = Wksh()
     loName = CurrentLoName(listName)
     Set Lo = sh.ListObjects(loName)
@@ -378,7 +458,50 @@ Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _
     End If
 End Sub
 
-'Set a validation on a range
+'@label:Sort
+'@sub-title Sort a dropdown listObject
+'@param listName A String, the dropdown name
+'@param sortOrder A Long, the sortOrder as a `xlSortOder` enumeration. Default is xlAscending
+Private Sub Sort(ByVal listName As String, _
+                 Optional ByVal sortOrder As Long = xlAscending)
+
+    Dim loName As String
+    Dim rng As Range
+    Dim sh As Worksheet
+    
+    If Not Exists(listName) Then
+        LogInfo "Can not sort a dropdown that does not exits: " & listName & " not found."
+        ShowDebug
+        Exit Sub
+    End If
+    
+    loName = CurrentLoName(listName)
+    Set sh = Wksh()
+    Set rng = sh.ListObjects(loName).Range
+
+    On Error Resume Next
+    rng.Sort key1:=rng, Order1:=sortOrder, Header:=xlYes
+    On Error GoTo 0
+End Sub
+
+
+'@label:operate
+'@section Operate with the outside world
+
+'@label:SetValidation
+'@sub-title Use a dropdown to set validation on a Range
+'@details
+'
+'alertType can take three values: "info" for raising information in case the entered values
+'are not present in the dropdown, "warning" for raising a warning and "error" for raising error.
+'"error" prevent entering values outside the dropdown values.
+' 
+'@param cellRng A Range object, where to se the validation
+'@param listName A String, the name of the dropdown to use for validation
+'@param alertType Optional, A String. Se details
+'@param message Optional, A String. Message to show the user in case validation failed. Default is vbNullString
+'@param showError Optional, Boolean. Show validation error. Default is True.
+'@export
 Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
                           Optional ByVal alertType As String = "info", _
                           Optional ByVal message As String = vbNullString, _ 
@@ -386,7 +509,17 @@ Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
 
     Dim dropdownName As String
 
-    If Not Exists(listName) Then ThrowError "There is no available dropdown for " & listName
+    If Not Exists(listName) Then 
+        LogInfo "There is no available dropdown for " & listName
+        ShowDebug
+        Exit Sub
+    End If
+
+    If cellRng Is Nothing Then
+        LogInfo "There is no range to set the validation of " & listName & " on."
+        ShowDebug
+        Exit Sub
+    End If
 
     'dropdown names can change. I add the tag
     dropdownName = "= " & CurrentDropdownName(listName)
@@ -394,13 +527,13 @@ Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
     With cellRng.validation
         .Delete
         Select Case alertType
-        Case "error"                             '"error"
+        Case "error"
             .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
              Operator:=xlBetween, Formula1:=dropdownName
-        Case "warning"                           '"warning"
+        Case "warning"
             .Add Type:=xlValidateList, AlertStyle:=xlValidAlertWarning, _
              Operator:=xlBetween, Formula1:=dropdownName
-        Case Else            'for all the others, add an information alert
+        Case Else
             .Add Type:=xlValidateList, AlertStyle:=xlValidAlertInformation, _
             Operator:=xlBetween, Formula1:=dropdownName
         End Select
@@ -416,7 +549,12 @@ Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
     End With
 End Sub
 
-'Add Return link on a label (to return back to the variable)
+
+'@label:AddReturnLink
+'@sub-title Add hyperlink on a range that targets the dropdown
+'@param listName A String, the name of the dropdown targeted
+'@param returnRng A Range. The Range where you want to return when you clik on the label.
+'@return
 Private Sub AddReturnLink(ByVal listName As String, ByVal returnRng As Range)
     
     Dim loName As String
@@ -428,8 +566,17 @@ Private Sub AddReturnLink(ByVal listName As String, ByVal returnRng As Range)
     Dim savedFontColor As Long
 
 
-    If Not Exists(listName) Then Exit Sub
-    If (returnRng Is Nothing) Then Exit Sub
+    If Not Exists(listName) Then
+        LogInfo "Can not add a returnlink on a non existing dropdown: " & listName & " not found."
+        ShowDebug
+        Exit Sub
+    End If
+
+    If (returnRng Is Nothing) Then 
+        LogInfo "Can not add a returnlink to a non existing Range: " & listName & " not found." 
+        ShowDebug
+        Exit Sub
+    End If
 
     loName = CurrentLoName(listName)
     Set sh = Wksh()
@@ -441,7 +588,8 @@ Private Sub AddReturnLink(ByVal listName As String, ByVal returnRng As Range)
     savedInteriorColor = rng.Interior.Color
     savedFontColor = rng.Font.Color
 
-    'Adding hyperlinks remove the writings (sub label and so on, so need to set it back)
+    'Adding hyperlinks remove the writings 
+    '(sub label and so on, so need to set it back)
     With sh
         .Hyperlinks.Add _ 
         Anchor:=rng, _ 
@@ -461,27 +609,52 @@ Private Sub AddReturnLink(ByVal listName As String, ByVal returnRng As Range)
     End With
 End Sub
 
-'Sort a dropdown listObject
-Private Sub Sort(ByVal listName As String, _
-                 Optional ByVal sortOrder As Long = xlAscending)
+'AddHyperLink to one specific Range
+'@label:AddHyperLink
+'@details
+'The link will target one dropdown in the dropdownlist. The targeted adress is
+'the top of the dropdown, the label Range.
+'@param listName A String, the name of dropdown to target
+'@param linkRng A Range. Where to add the link
+'@export
+Private Sub AddHyperLink(ByVal listName As String, ByVal linkRng As Range)
 
-    Dim loName As String
-    Dim rng As Range
+    Dim labRng As Range
+    Dim targetAddress As String
     Dim sh As Worksheet
-    
-    If Not Exists(listName) Then Exit Sub
-    
-    loName = CurrentLoName(listName)
-    Set sh = Wksh()
-    Set rng = sh.ListObjects(loName).Range
+    Dim currsh As Worksheet
 
-    On Error Resume Next
-    rng.Sort key1:=rng, Order1:=sortOrder, Header:=xlYes
-    On Error GoTo 0
+    If Not Exists(listName) Then
+        LogInfo "Can not add a hyperlink with a non existing dropdown: " & listName & " not found."
+        ShowDebug
+        Exit Sub
+    End If
+
+    If (linkRng Is Nothing) Then 
+        LogInfo "Can not add a hyperlink to a non existing Range: " & listName & " not found." 
+        ShowDebug
+        Exit Sub
+    End If
+
+    'The worksheet is the one of the linkRng
+    Set sh = linkRng.Parent
+    Set currsh = Wksh()
+    Set labRng = LabelRange(listName)
+
+    targetAddress = "'" & currsh.Name & "'" & "!" & labRng.Address
+
+    'Add the HyperLink
+    With sh
+        .Hyperlinks.Add _ 
+        Anchor:=linkRng, _ 
+        Address:="", _
+        SubAddress:= targetAddress, _
+        TextToDisplay:= ""
+    End With
 End Sub
 
 
-'@label:Checkings
+'@label:checkings
 '@section Checkings
 
 '@sub-title Add elements to the checking object for future notes
@@ -537,30 +710,67 @@ End Sub
 
 '@jump:elements
 'DropdownList Elements --------------------------------------------------------
+
+'@jump:exists
+'Test if a dropdown is present in the worksheet
 Private Property Get IDropdownLists_Exists(ByVal listName As String) As Boolean
     IDropdownLists_Exists = Exists(listName)
 End Property
 
+'@jump:Name
+'Get the name of the dropdown object
+Private Property Get IDropdownLists_Name() As String
+    IDropdownLists_Name = Name()
+End Property
 
+'@jump:LabelRange
+Private Property Get IDropdownLists_LabelRange(ByVal listName As String) As Range
+    Set IDropdownLists_LabelRange = LabelRange(listName)
+End Property
 
+'@jump:modify
+'Modify the dropdownlist -------------------------------------------------------
 
-Private Sub IDropdownLists_Add(ByVal listValues As BetterArray, ByVal listName As String, _ 
-                            Optional ByVal addLabel As Boolean = False, _
-                            Optional ByVal counterPrefix As String = vbNullString, _ 
-                            Optional ByVal tableStyle As String = "TableStyleLight13")
+'@jump:Add
+Private Sub IDropdownLists_Add(ByVal listValues As BetterArray, _ 
+                               ByVal listName As String, _ 
+                               Optional ByVal addLabel As Boolean = False, _
+                               Optional ByVal counterPrefix As String = vbNullString, _ 
+                               Optional ByVal tableStyle As String = "TableStyleLight13")
 
     Add listValues:=listValues, listName:=listName, _ 
         addLabel:=addLabel, counterPrefix:=counterPrefix, tableStyle:=tableStyle
 End Sub
 
+'@jump:Remove
 Private Sub IDropdownLists_Remove(ByVal listName As String)
     Remove listName:=listName
 End Sub
 
-Private Property Get IDropdownLists_LabelRange(ByVal listName As String) As Range
-    Set IDropdownLists_LabelRange = LabelRange(listName)
-End Property
+'@jump:ClearList
+Private Sub IDropdownLists_ClearList(ByVal listName As String)
+    ClearList listName
+End Sub
 
+'@jump:Update
+Private Sub IDropdownLists_Update(ByVal UpdateData As BetterArray, _ 
+                                  ByVal listName As String, _ 
+                                  Optional ByVal pasteAtBottom As Boolean = False)
+    Update UpdateData:=UpdateData, _ 
+           listName:=listName, _ 
+           pasteAtBottom:=pasteAtBottom
+End Sub
+
+'@jump:Sort
+Private Sub IDropdownLists_Sort(ByVal listName As String, _
+                                Optional ByVal sortOrder As Long = xlAscending)
+    Sort listName, sortOrder
+End Sub
+
+'@jump:operate
+'Operate with the outside world-------------------------------------------------
+
+'@jump:SetValidation
 Private Sub IDropdownLists_SetValidation(ByVal cellRng As Range, ByVal listName As String, _
                                         Optional ByVal alertType As String = "info", _
                                         Optional ByVal message As String = vbNullString, _ 
@@ -571,24 +781,28 @@ Private Sub IDropdownLists_SetValidation(ByVal cellRng As Range, ByVal listName 
                   showError:=showError
 End Sub
 
-
-Private Sub IDropdownLists_Update(ByVal UpdateData As BetterArray, _ 
-                                  ByVal listName As String, _ 
-                                  Optional ByVal pasteAtBottom As Boolean = False)
-    Update UpdateData:=UpdateData, _ 
-           listName:=listName, _ 
-           pasteAtBottom:=pasteAtBottom
-End Sub
-
-Private Sub IDropdownLists_ClearList(ByVal listName As String)
-    ClearList listName
-End Sub
-
-Private Sub IDropdownLists_Sort(ByVal listName As String, _
-                                Optional ByVal sortOrder As Long = xlAscending)
-    Sort listName, sortOrder
-End Sub
-
+'@jump:AddReturnLink
 Private Sub IDropdownLists_AddReturnLink(ByVal listName As String, ByVal returnRng As Range)
     AddReturnLink listName, returnRng
 End Sub
+
+
+'@jump:AddHyperLink
+Private Sub IDropdownLists_AddHyperLink(ByVal listName As String, ByVal linkRng As Range)
+    AddHyperLink listName, linkRng
+End Sub
+
+'@jump:checkings
+'Checkings----------------------------------------------------------------------
+
+'@jump:HasChekings
+'Test if the object has checkings
+Private Property Get IDropdownLists_HasCheckings() As Boolean
+ IDropdownLists_HasCheckings = HasCheckings()
+End Property
+
+'@jump:CheckingValues
+'Get the checking values
+Private Property Get IDropdownLists_CheckingValues() As Object
+    Set IDropdownLists_CheckingValues = CheckingValues()
+End Property
