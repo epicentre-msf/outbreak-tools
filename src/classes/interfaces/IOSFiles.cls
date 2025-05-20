@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of OSFiles"
 
 '@Interface
-'@Folder("General")
+'@Folder("GeneralInterface")
 '@ModuleDescription("Interface of OSFiles")
 '@IgnoreModule SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 

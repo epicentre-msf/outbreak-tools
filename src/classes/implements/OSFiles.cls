@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Importing files from the operating system"
 
 
-'@Folder("OS")
+'@Folder("General")
 '@ModuleDescription("Importing files from the operating system")
 '@IgnoreModule SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
