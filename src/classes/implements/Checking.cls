@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = "Checking of the setup"
+Attribute VB_Description = "Save warnings, information and errors on objects"
 
 '@PredeclaredId
 '@Folder("Checks")
-'@ModuleDescription("Checking of the elements")
+'@ModuleDescription("Save warnings, information and errors on objects")
 
 Option Explicit
 Implements IChecking
