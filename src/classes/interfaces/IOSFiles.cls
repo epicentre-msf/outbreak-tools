@@ -12,7 +12,7 @@ Attribute VB_Description = "Interface of OSFiles"
 '@Interface
 '@Folder("General")
 '@ModuleDescription("Interface of OSFiles")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -25,14 +25,34 @@ Option Explicit
 
 'Ideas based on https://macexcel.com/examples/filesandfolders/selectfiles/
 
+'@section Elements
+
+'@jump:File
 'Return back the loaded File/Folder
 Public Property Get File() As String: End Property
+
+'@jump:Folder
+'Return back the loaded folder
 Public Property Get Folder() As String: End Property
+
+'@section Selecting
+
+'@jump:LoadFile
 'Load a file by adding filtes
-Public Sub LoadFile(ByVal filters As String): End Sub
+Public Sub LoadFile(ByVal filters As String, _ 
+                    Optional ByVal customMacFilter As String = vbNullString)
+End Sub
+
+'@jump:LoadFolder
 'Load a folder
 Public Sub LoadFolder(): End Sub
+
+'@section Validation
+
+'@jump:HasValidFile
 'Test if the loaded file is valid (shoud be after loading)
 Public Function HasValidFile() As Boolean: End Function
+
+'@jump:HasValidFolder
 'Test if the loaded folder is valid
 Public Function HasValidFolder() As Boolean: End Function
