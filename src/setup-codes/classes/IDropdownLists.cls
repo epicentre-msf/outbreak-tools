@@ -14,8 +14,10 @@ Attribute VB_Description = "Interface of dropdown class"
 Option Explicit
 
 'Exposed methods
-Public Property Get Exists(ByVal listName As String) As Boolean: End Property
-Public Sub Add(ByVal listValues As BetterArray, ByVal listName As String): End Sub
+Public Property Get Exists(ByVal listName As String) As Boolean
+End Property
+Public Sub Add(ByVal listValues As BetterArray, ByVal listName As String)
+End Sub
 
 Public Sub Remove(ByVal listName As String): End Sub
 Public Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
