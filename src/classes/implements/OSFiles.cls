@@ -29,7 +29,7 @@ Private this As TOSFiles
 
 '@label:Create
 '@sub-title Create an OSFile object
-'@description
+'@details
 'OSFile is a class to import files from different operation systems 
 '(Mac or Windows). 
 'The main advantage of OSFiles is that it could work on both Macos and Windows
