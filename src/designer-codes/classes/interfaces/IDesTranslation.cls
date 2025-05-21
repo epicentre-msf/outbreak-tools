@@ -15,7 +15,7 @@ Attribute VB_Exposed = False
 Option Explicit
 
 'Exposed methods
-Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation: End Property
+Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject: End Property
 Public Sub TranslateDesigner(ByVal mainsh As Worksheet): End Sub
 Public Property Get LangListRng() As Range: End Property
 'Get translated value of a message code

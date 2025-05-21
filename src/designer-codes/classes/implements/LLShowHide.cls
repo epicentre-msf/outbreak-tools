@@ -22,7 +22,7 @@ Implements ILLShowHide
 Private Const CLASSNAME As String = "LLShowHide"
 
 Private Type TShowHide
-  trads As ITranslation
+  trads As ITranslationObject
   dict As ILLdictionary
   sh As Worksheet
   SHOW As String
@@ -45,7 +45,7 @@ Private Const SHOWHIDEPREF As String = "ShowHideTable_"
 
 'Boolean Value to trigger the launch of the show/hide process
 
-Public Function Create(ByVal trads As ITranslation, ByVal dict As ILLdictionary, _
+Public Function Create(ByVal trads As ITranslationObject, ByVal dict As ILLdictionary, _
                        ByVal sh As Worksheet) As ILLShowHide
 
   CheckRequirements trads, dict, sh
@@ -58,11 +58,11 @@ Public Function Create(ByVal trads As ITranslation, ByVal dict As ILLdictionary,
   End With
 End Function
 
-Public Property Get MessagesTrads() As ITranslation
+Public Property Get MessagesTrads() As ITranslationObject
   Set MessagesTrads = this.trads
 End Property
 
-Public Property Set MessagesTrads(ByVal trads As ITranslation)
+Public Property Set MessagesTrads(ByVal trads As ITranslationObject)
   Set this.trads = trads
 End Property
 
@@ -123,7 +123,7 @@ Private Property Get ActualScope() As Byte
   ActualScope = scope
 End Property
 
-Private Sub InitializeMessages(ByVal trads As ITranslation)
+Private Sub InitializeMessages(ByVal trads As ITranslationObject)
   this.SHOW = trads.TranslatedValue("MSG_Show")
   this.SHOWN = trads.TranslatedValue("MSG_Shown")
   this.HIDE = trads.TranslatedValue("MSG_Hide")
@@ -226,7 +226,7 @@ Private Sub InitializeTable()
   Dim tabName As String
   Dim defaultValue As String
   Dim statusValue As String
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Dim excludeVariable As Boolean 'Condition to not even include the variable in show/hide
 
   
@@ -378,12 +378,12 @@ Private Sub SetStatus(ByVal lineNumber As Long, ByVal newStatus As String)
 End Sub
 
 
-Private Sub Load(ByVal tradsform As ITranslation, _ 
+Private Sub Load(ByVal tradsform As ITranslationObject, _ 
                 Optional ByVal showForm As Boolean = True, _
                 Optional ByVal showOptional As Boolean = False)
   Dim formRng As Range 'Range to update the form
   Dim fobj As Object
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Dim scope As Byte
   Dim listObject As Object
 
@@ -617,7 +617,7 @@ Private Sub ChangeColWidth(ByVal indexValue As Long)
 
   Dim sh As Worksheet
   Dim colIndex As Long
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Dim inputValue As String
   Dim actualWidth As Long
 
@@ -646,7 +646,7 @@ Private Sub ChangeColWidth(ByVal indexValue As Long)
 End Sub
 
 'Errors and Requirements
-Private Sub CheckRequirements(ByVal trads As ITranslation, ByVal dict As ILLdictionary, ByVal sh As Worksheet)
+Private Sub CheckRequirements(ByVal trads As ITranslationObject, ByVal dict As ILLdictionary, ByVal sh As Worksheet)
 
   Dim wb As Workbook
   Dim tpsh As Worksheet
@@ -681,7 +681,7 @@ Private Sub ThrowError(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Error : " & errorMessage
 End Sub
 
-Private Sub ILLShowHide_Load(ByVal tradsform As ITranslation, _ 
+Private Sub ILLShowHide_Load(ByVal tradsform As ITranslationObject, _ 
                              Optional ByVal showForm As Boolean = True, _ 
                             Optional ByVal showOptional As Boolean = False)
    Load tradsform, showForm, showOptional

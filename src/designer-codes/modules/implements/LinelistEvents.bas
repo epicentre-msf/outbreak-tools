@@ -12,7 +12,7 @@ Private Const TRADSHEET As String = "Translations"
 Private Const UPSHEET As String = "updates__"  'worksheet for updated values
 Private Const PASSSHEET As String = "__pass"
 
-Private tradmess As ITranslation              'Translation of messages object
+Private tradmess As ITranslationObject              'Translation of messages object
 Private lltrads As ILLTranslations
 Private wb As Workbook
 

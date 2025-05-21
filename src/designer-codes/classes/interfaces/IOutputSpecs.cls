@@ -20,7 +20,7 @@ Option Explicit
 Public Sub Prepare(): End Sub
 'Add Dictionary, Translations or Analysis
 Public Sub AddData(): End Sub
-Public Sub Save(ByVal trads As ITranslation, _ 
+Public Sub Save(ByVal trads As ITranslationObject, _ 
                Optional ByVal useFilters As Boolean = False, _ 
                Optional ByVal includeShowHide As Boolean = False, _ 
                Optional ByVal keepLabels As Boolean = False)

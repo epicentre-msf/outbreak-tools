@@ -25,14 +25,14 @@ Private chkFilt As MSForms.CheckBox
 
 Private Type TExpBut
   currwb As Workbook
-  trads As ITranslation
+  trads As ITranslationObject
 End Type
 Private this As TExpBut
 
 'Exposed methods
 
 Public Function Create(ByVal currwb As Workbook, _
-                       ByVal trads As ITranslation, _
+                       ByVal trads As ITranslationObject, _
                        Byval expBtn As MSForms.CommandButton, _
                        ByVal expChk As MSForms.CheckBox) As IExportButtons
 
@@ -56,11 +56,11 @@ Public Property Get CurrentWorkbook() As Workbook
   Set CurrentWorkbook = this.currwb
 End Property
 
-Public Property Set MessTrads(ByVal trads As ITranslation)
+Public Property Set MessTrads(ByVal trads As ITranslationObject)
   Set this.trads = trads
 End Property
 
-Public Property Get MessTrads() As ITranslation
+Public Property Get MessTrads() As ITranslationObject
   Set MessTrads = this.trads
 End Property
 
@@ -94,7 +94,7 @@ Private Sub Btn_Click()
 End Sub
 
 Private Function TranslatedValue(ByVal msgCode As String) As String
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Set trads = MessTrads()
   TranslatedValue = trads.TranslatedValue(msgCode)
 End Function
@@ -187,7 +187,7 @@ Private Sub CreateExport()
 
   Dim scope As Integer
   Dim expOut As IOutputSpecs
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Dim currwb As Workbook
 
   'Add Error management
@@ -231,7 +231,7 @@ Private Sub NotBusyApp()
     Application.cursor = xlDefault
 End Sub
 
-Private Sub CheckRequirements(ByVal wb As Workbook, ByVal trads As ITranslation, _ 
+Private Sub CheckRequirements(ByVal wb As Workbook, ByVal trads As ITranslationObject, _ 
                               ByVal expBtn As MSForms.CommandButton, _ 
                               ByVal expChk As MSForms.CheckBox)
 

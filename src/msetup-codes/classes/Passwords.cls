@@ -91,7 +91,7 @@ Private Property Get TableRange() As Range
 End Property
 
 'Generate a new key for the file to be saved
-Private Sub GenerateKey(ByVal trads As ITranslation)
+Private Sub GenerateKey(ByVal trads As ITranslationObject)
     Dim nbRows As Long
     Dim randNum As Integer
     Dim LoKeys As listObject 'ListObject of keys
@@ -120,7 +120,7 @@ Private Sub GenerateKey(ByVal trads As ITranslation)
 End Sub
 
 'Display the private key
-Private Sub DisplayPrivateKey(ByVal trads As ITranslation)
+Private Sub DisplayPrivateKey(ByVal trads As ITranslationObject)
     Dim sh As Worksheet
     Dim privKey As String
     Set sh = Wksh()
@@ -404,11 +404,11 @@ Private Property Get IPasswords_Value(ByVal tagName As String) As String
     IPasswords_Value = Value(tagName)
 End Property
 
-Private Sub IPasswords_DisplayPrivateKey(ByVal trads As ITranslation)
+Private Sub IPasswords_DisplayPrivateKey(ByVal trads As ITranslationObject)
     DisplayPrivateKey trads
 End Sub
 
-Private Sub IPasswords_GenerateKey(ByVal trads As ITranslation)
+Private Sub IPasswords_GenerateKey(ByVal trads As ITranslationObject)
     GenerateKey trads
 End Sub
 

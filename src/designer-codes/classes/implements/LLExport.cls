@@ -211,7 +211,7 @@ Private Sub ExportSpecs(ByVal toWkb As Workbook, Optional ByVal Hide As Long = x
     expData.Export toWkb, Hide:=Hide
 End Sub
 
-Private Sub Translate(ByVal trans As ITranslation)
+Private Sub Translate(ByVal trans As ITranslationObject)
     Dim expData As IDataSheet
     Dim rng As Range
     Set expData = Data()
@@ -237,7 +237,7 @@ Private Sub ImportSpecs(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long,
 End Sub
 
 
-Private Sub ILLExport_Translate(ByVal trans As ITranslation)
+Private Sub ILLExport_Translate(ByVal trans As ITranslationObject)
     Translate trans
 End Sub
 

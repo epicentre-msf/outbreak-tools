@@ -16,7 +16,7 @@ Private concatenateGeoTable As BetterArray
 Private concatenateHFTable As BetterArray
 Private geo As ILLGeo
 Private drop As IDropdownLists
-Private tradmess As ITranslation
+Private tradmess As ITranslationObject
 Private lltrads As ILLTranslations
 
 'Initialize some elements

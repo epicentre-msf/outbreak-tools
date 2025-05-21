@@ -46,7 +46,7 @@ Public Sub checkUpdateStatus(ByVal sh As Worksheet, ByVal Target As Range)
     Dim wb As Workbook
     Dim choiObj As IChoices
     Dim pass As IPasswords
-    Dim ribTrads As ITranslation
+    Dim ribTrads As ITranslationObject
     Dim ribSh As Worksheet
 
     BusyApp
@@ -98,10 +98,10 @@ Public Sub UpdateDiseaseSheet(ByVal disSh As Worksheet, ByVal Target As Range)
 
     Dim Lo As ListObject
     Dim tradLo As ListObject
-    Dim ribTrads As ITranslation
+    Dim ribTrads As ITranslationObject
     Dim ribSh As Worksheet
     Dim varLo As ListObject
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
     Dim wb As Workbook
     Dim newLang As String
     Dim tradRng As Range
@@ -113,7 +113,7 @@ Public Sub UpdateDiseaseSheet(ByVal disSh As Worksheet, ByVal Target As Range)
     Dim statusValue As String
     Dim choiObj As IChoices
     Dim pass As IPasswords
-    Dim tradRib As ITranslation
+    Dim tradRib As ITranslationObject
 
     Set wb = ThisWorkbook
     Set ribSh = wb.Worksheets("__ribbonTranslation")

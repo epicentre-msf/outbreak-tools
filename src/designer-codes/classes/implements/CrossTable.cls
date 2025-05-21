@@ -22,7 +22,7 @@ Implements ICrossTable
 Private Type TCrossTable
     specs As ITablesSpecs
     OutputSh As Worksheet
-    trans As ITranslation
+    trans As ITranslationObject
     endrw As Long
     endCol As Long
     nbCols As Long
@@ -36,7 +36,7 @@ Private Const NBROWSTIMESERIES As Long = 56
 Private ALLRANGESNAMES As BetterArray
 
 Public Function Create(ByVal specs As ITablesSpecs, ByVal outputWksh As Worksheet, _
-                       ByVal trans As ITranslation) As ICrossTable
+                       ByVal trans As ITranslationObject) As ICrossTable
     'Check if values are not defined
     If specs Is Nothing Then ThrowErrorUnableInstanciate " Table specifications not defined"
     If outputWksh Is Nothing Then ThrowErrorUnableInstanciate " Output worksheet not defined"
@@ -71,11 +71,11 @@ Public Property Set Specifications(ByVal specs As ITablesSpecs)
     Set this.specs = specs
 End Property
 
-Public Property Get trads() As ITranslation
+Public Property Get trads() As ITranslationObject
     Set trads = this.trans
 End Property
 
-Public Property Set trads(ByVal trans As ITranslation)
+Public Property Set trads(ByVal trans As ITranslationObject)
     Set this.trans = trans
 End Property
 
@@ -139,7 +139,7 @@ Private Property Get Previous() As ICrossTable
     Dim prevSpecs As ITablesSpecs
     Dim specs As ITablesSpecs
     Dim sh As Worksheet
-    Dim trans As ITranslation
+    Dim trans As ITranslationObject
 
     Set specs = Specifications
     Set prevSpecs = specs.Previous
@@ -317,7 +317,7 @@ Private Sub AddRows()
     Dim vars As ILLVariables
     Dim rowVar As String
     Dim rowsData As BetterArray
-    Dim trans As ITranslation
+    Dim trans As ITranslationObject
     Dim missingValue As String
     Dim transMissing As String
     Dim transTotal As String
@@ -414,7 +414,7 @@ Private Function Percent(ByVal percentVal As String, Optional ByVal percentType 
     End Select
 End Function
 
-Private Sub BivariateColumns(ByVal Start As Long, ByVal specs As ITablesSpecs, ByVal trans As ITranslation, _
+Private Sub BivariateColumns(ByVal Start As Long, ByVal specs As ITablesSpecs, ByVal trans As ITranslationObject, _
                              ByVal sh As Worksheet)
     Dim colLab As String
     Dim colData As BetterArray
@@ -489,7 +489,7 @@ Private Sub AddColumns()
     Dim specs As ITablesSpecs
     Dim sh As Worksheet
     Dim vars As ILLVariables
-    Dim trans As ITranslation
+    Dim trans As ITranslationObject
     Dim percentageValue As String
     Dim transPercent As String
     Dim colLab As String
@@ -583,7 +583,7 @@ Private Sub AddHeader()
     Dim sh As Worksheet
     Dim specs As ITablesSpecs
     Dim counter As Long
-    Dim trans As ITranslation
+    Dim trans As ITranslationObject
     Dim tabId As String
     Dim rng As Range
     Dim cellRng As Range
@@ -867,7 +867,7 @@ Private Sub NameRanges()
     Dim rng As Range
     Dim nbcolCounter As Long
     Dim counter As Long
-    Dim trans As ITranslation
+    Dim trans As ITranslationObject
     Dim labCol As Long
     Dim cData As BetterArray
     Dim tData As BetterArray

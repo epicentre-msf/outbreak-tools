@@ -26,7 +26,7 @@ End Enum
 'Exposed methods
 
 'Load the show/hide form with values
-Public Sub Load(ByVal tradsform As ITranslation, Optional ByVal showForm As Boolean = True, Optional ByVal showOptional As Boolean = False)
+Public Sub Load(ByVal tradsform As ITranslationObject, Optional ByVal showForm As Boolean = True, Optional ByVal showOptional As Boolean = False)
 End Sub
 'Retrieve the ShowHide table Range
 Public Property Get ShowHideTable() As ICustomTable

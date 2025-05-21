@@ -6,7 +6,7 @@ Attribute VB_Description = "Form implementation of Reports on import"
 
 Option Explicit
 
-Private tradform As ITranslation   'Translation of forms
+Private tradform As ITranslationObject   'Translation of forms
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const TRADSHEET As String = "Translations"
 

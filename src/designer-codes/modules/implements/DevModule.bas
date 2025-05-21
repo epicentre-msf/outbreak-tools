@@ -364,7 +364,7 @@ Public Sub RemoveSub()
 
     LoList.Push "modulesList", "classList", "testModulesList", "classInterfacesList"
     excludesList.Push "EventsDesignerRibbon", "DevModule", "DropdownLists", "IDropdownLists", _
-                      "BetterArray", "OSFiles", "IOSFiles", "LLGeo", "ILLGeo", "Translation", "ITranslation", _
+                      "BetterArray", "OSFiles", "IOSFiles", "LLGeo", "ILLGeo", "TranslationObject", "ITranslationObject", _
                       "DesTranslation", "IDesTranslation", "Main", "IMain", "CustomTable", "ICustomTable", _
                       "LLTranslations", "ILLTranslations", "LLPasswords", "ILLPasswords", "LLdictionary", "ILLdictionary", _
                       "DataSheet", "IDataSheet"

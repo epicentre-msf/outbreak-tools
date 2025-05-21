@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "LLPasswords"
+Attribute VB_Name = "Passwords"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -16,7 +16,7 @@ Attribute VB_Exposed = False
 Option Explicit
 
 'Exposed methods
-Implements ILLPasswords
+Implements IPasswords
 
 Private Type TPassWord
     sh As Worksheet
@@ -24,13 +24,13 @@ End Type
 
 Private this As TPassWord
 
-Private Const CLASSNAME As String = "LLPasswords"
+Private Const CLASSNAME As String = "Passwords"
 Private Const TABKEYS   As String = "T_keys"
 
-Public Function Create(ByVal sh As Worksheet) As ILLPasswords
+Public Function Create(ByVal sh As Worksheet) As IPasswords
     CheckRequirements sh
 
-    With New LLPasswords
+    With New Passwords
         Set .Wksh = sh
         Set Create = .Self()
     End With
@@ -44,7 +44,7 @@ Public Property Set Wksh(ByVal sh As Worksheet)
     Set this.sh = sh
 End Property
 
-Public Property Get Self() As ILLPasswords
+Public Property Get Self() As IPasswords
     Set Self = Me
 End Property
 
@@ -286,7 +286,7 @@ Private Sub Export(ByVal toWkb As Workbook)
     outsh.Visible = xlSheetVeryHidden
 End Sub
 
-Private Sub Import(ByVal pass As ILLPasswords)
+Private Sub Import(ByVal pass As IPasswords)
 
     Dim sh As Worksheet
     Dim impTabRng As Range
@@ -364,57 +364,57 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 
-Private Property Get ILLPasswords_PassWord() As String
-    ILLPasswords_PassWord = Password()
+Private Property Get IPasswords_PassWord() As String
+    IPasswords_PassWord = Password()
 End Property
 
-Private Sub ILLPasswords_UnProtect(Optional ByVal sheetName As String = "_active")
+Private Sub IPasswords_UnProtect(Optional ByVal sheetName As String = "_active")
     UnProtect sheetName
 End Sub
 
-Private Sub ILLPasswords_Protect(Optional ByVal sheetObject As Variant, _
+Private Sub IPasswords_Protect(Optional ByVal sheetObject As Variant, _
                                  Optional ByVal allowShapes As Boolean = False, _ 
                                  Optional ByVal allowDeletingRows As Boolean = True)
     Protect sheetObject, allowShapes, allowDeletingRows
 End Sub
 
-Private Sub ILLPasswords_Export(ByVal toWkb As Workbook)
+Private Sub IPasswords_Export(ByVal toWkb As Workbook)
     Export toWkb
 End Sub
 
     'Protect and unprotect the workbook to avoid sheet name changes
-Private Sub ILLPasswords_ProtectWkb(ByVal wb As Workbook, Optional ByVal protectSheetName As Boolean = True)
+Private Sub IPasswords_ProtectWkb(ByVal wb As Workbook, Optional ByVal protectSheetName As Boolean = True)
     ProtectWkb wb, protectSheetName
 End Sub
 
-Private Sub ILLPasswords_UnProtectWkb(ByVal wb As Workbook)
+Private Sub IPasswords_UnProtectWkb(ByVal wb As Workbook)
     UnProtectWkb wb
 End Sub
 
-Private Property Get ILLPasswords_Value(ByVal tagName As String) As String
-    ILLPasswords_Value = Value(tagName)
+Private Property Get IPasswords_Value(ByVal tagName As String) As String
+    IPasswords_Value = Value(tagName)
 End Property
 
-Private Sub ILLPasswords_DisplayPrivateKey(ByVal trads As ITranslation)
+Private Sub IPasswords_DisplayPrivateKey(ByVal trads As ITranslation)
     DisplayPrivateKey trads
 End Sub
 
-Private Sub ILLPasswords_GenerateKey(ByVal trads As ITranslation)
+Private Sub IPasswords_GenerateKey(ByVal trads As ITranslation)
     GenerateKey trads
 End Sub
 
-Private Sub ILLPasswords_EnterDebugMode()
+Private Sub IPasswords_EnterDebugMode()
     EnterDebugMode
 End Sub
 
-Private Sub ILLPasswords_LeaveDebugMode()
+Private Sub IPasswords_LeaveDebugMode()
     LeaveDebugMode
 End Sub
 
-Private Sub ILLPasswords_Import(ByVal pass As ILLPasswords)
+Private Sub IPasswords_Import(ByVal pass As IPasswords)
     Import pass
 End Sub
 
-Private Property Get ILLPasswords_TableRange() As Range
-    Set ILLPasswords_TableRange = TableRange()
+Private Property Get IPasswords_TableRange() As Range
+    Set IPasswords_TableRange = TableRange()
 End Property

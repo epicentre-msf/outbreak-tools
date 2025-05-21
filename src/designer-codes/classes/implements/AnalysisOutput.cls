@@ -95,7 +95,7 @@ Private Property Get DesignFormat() As ILLFormat
 End Property
 
 'Translation of shapes and messages
-Public Property Get TransObject(Optional ByVal scope As Byte = TranslationOfMessages) As ITranslation
+Public Property Get TransObject(Optional ByVal scope As Byte = TranslationOfMessages) As ITranslationObject
   Dim lData As ILinelistSpecs
   Set lData = LinelistData()
   Set TransObject = lData.TransObject(scope)
@@ -103,7 +103,7 @@ End Property
 
 'Output Worksheets (where to write the analysis)
 Private Property Get OutputSh(Optional ByVal scope As Byte = AnalysisScopeNormal) As Worksheet
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Dim ll As ILinelist
 
   Set ll = OutputLL()
@@ -219,7 +219,7 @@ Private Sub AddCommands(Optional ByVal scope As Byte = AnalysisScopeNormal)
   Dim design As ILLFormat
   Dim but As IButtons
   Dim outsh As Worksheet 'output sheet
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Dim mainobj As IMain
   Dim lData As ILinelistSpecs
 
@@ -313,7 +313,7 @@ End Sub
 
 'Add a GoTo (could be section or Header, or Graphs)
 Private Sub InitializeArrays()
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
 
     Set trads = TransObject()
     this.goToSection = trads.TranslatedValue("MSG_GoToSec")
@@ -415,7 +415,7 @@ Private Sub WriteTable(ByVal loName As String, _
   Dim specs As ITablesSpecs
   Dim lData As LinelistSpecs
   Dim goToSection As String
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Dim formData As IFormulaData
   Dim cellRng As Range
   Dim grSpecs As IGraphSpecs
@@ -701,7 +701,7 @@ Private Sub WriteTimeSeriesGraphs(ByVal graphLoName As String, _
   Dim grTitleLo As listObject
   Dim grSpecs As IGraphSpecs
   Dim gr As IGraphs
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Dim design As ILLFormat
   Dim namObj As IAnaTabIds 'Name objects
 
@@ -844,7 +844,7 @@ Private Sub WriteSpatioTemporalGraph(ByVal loName As String)
   Dim plotTitle As String
   Dim tabId As String
   Dim graphCounter As Long
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Dim Lo As ListObject
   Dim tabl As ICrossTable
   Dim namObj As IAnaTabIds

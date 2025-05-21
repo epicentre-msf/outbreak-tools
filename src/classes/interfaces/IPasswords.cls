@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "ILLPasswords"
+Attribute VB_Name = "IPasswords"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
@@ -44,7 +44,7 @@ End Sub
 Public Sub UnProtectWkb(ByVal wb As Workbook): End Sub
 
 'Generate new key and display current keys
-Public Sub DisplayPrivateKey(ByVal trads As ITranslation): End Sub
+Public Sub DisplayPrivateKey(ByVal trads As ITranslationObject): End Sub
 
-Public Sub GenerateKey(ByVal trads As ITranslation): End Sub
-Public Sub Import(ByVal pass As ILLPasswords): End Sub
+Public Sub GenerateKey(ByVal trads As ITranslationObject): End Sub
+Public Sub Import(ByVal pass As IPasswords): End Sub

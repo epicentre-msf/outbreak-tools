@@ -188,7 +188,7 @@ Private Sub SortAnalysis()
 End Sub
 
 'Translate
-Private Sub Translate(ByVal TransObject As ITranslation)
+Private Sub Translate(ByVal TransObject As ITranslationObject)
     Dim transCols As BetterArray
     Dim anash As Worksheet
     Dim counter As Long
@@ -234,7 +234,7 @@ Public Sub ILLAnalysis_Import(ByVal impWksh As Worksheet)
     Import impWksh
 End Sub
 
-Public Sub ILLAnalysis_Translate(ByVal TransObject As ITranslation)
+Public Sub ILLAnalysis_Translate(ByVal TransObject As ITranslationObject)
     Translate TransObject
 End Sub
 

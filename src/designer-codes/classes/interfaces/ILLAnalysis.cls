@@ -22,5 +22,5 @@ Public Property Get Wksh() As Worksheet: End Property
 'Exposed methods
 Public Sub Import(ByVal Wksh As Worksheet): End Sub
 
-Public Sub Translate(ByVal TransObject As ITranslation): End Sub
+Public Sub Translate(ByVal TransObject As ITranslationObject): End Sub
 Public Sub Build(ll As ILinelist): End Sub

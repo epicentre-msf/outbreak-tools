@@ -25,7 +25,7 @@ Private Type Tchoice
     labelShortValue As String
     orderValue As String
     hasTrads As Boolean
-    trads As ITranslation
+    trads As ITranslationObject
     hasChecks As Boolean
     choiceName As String
 End Type
@@ -67,7 +67,7 @@ Private internalChecks As IChecking
 Public Function Create(ByVal choiceWorksheet As Worksheet, _ 
                        ByVal choiceStartRow As Long, _
                        ByVal choiceStartColumn As Long, _ 
-                       Optional ByVal trads As ITranslation = Nothing, _
+                       Optional ByVal trads As ITranslationObject = Nothing, _
                        Optional ByVal choiceName As String = vbNullString) As _ 
                        ILLChoices
 
@@ -116,11 +116,11 @@ End Property
 '@prop-title Translation object used for translating the headers
 '@return Translation Object for the headers. Could be Nothing if no translation available.
 '@export
-Public Property Get TradObject() As ITranslation
+Public Property Get TradObject() As ITranslationObject
     Set TradObject = this.trads
 End Property
 
-Public Property Set TradObject(ByVal trads As ITranslation)
+Public Property Set TradObject(ByVal trads As ITranslationObject)
     Set this.trads = trads
 End Property
 
@@ -130,7 +130,7 @@ End Property
 'Depending on whether there is a translation or NOT attached to the choice object
 'Get the label, the list name, the short label and other values
 Private Property Get ListName() As String
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
 
     If Not HasTranslation() Then this.listNameValue = LISTNAMECODE
 
@@ -143,7 +143,7 @@ Private Property Get ListName() As String
 End Property
 
 Private Property Get ChoiceLabel() As String
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
 
     If Not HasTranslation() Then this.labelValue = LABELCODE
 
@@ -156,7 +156,7 @@ Private Property Get ChoiceLabel() As String
 End Property
 
 Private Property Get LabelShort() As String
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
 
     If Not HasTranslation() Then this.labelShortValue = LABELSHORTCODE
 
@@ -169,7 +169,7 @@ Private Property Get LabelShort() As String
 End Property
 
 Private Property Get OrderingList() As String
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
 
     If Not HasTranslation() Then this.orderValue = ORDERINLISTCODE
 
@@ -471,7 +471,7 @@ End Sub
 '@sub-title Translate the current Choice worksheet
 '@param trads ITranslation object used for translations
 '@export
-Private Sub Translate(ByVal trads As ITranslation)
+Private Sub Translate(ByVal trads As ITranslationObject)
 
     Dim lblRng As Range
 
