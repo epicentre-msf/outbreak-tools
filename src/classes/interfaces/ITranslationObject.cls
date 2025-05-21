@@ -21,6 +21,10 @@ Option Explicit
 'translation class of the setup or other translation elements. This
 'one is only for translating chunks.
 
+
+'@jump:elements
+'@section Elements
+
 '@jump:Name
 Public Property Get Name() As String
 End Property
@@ -29,6 +33,12 @@ End Property
 Public Property Get ValueExists(ByVal text As String) As Boolean
 End Property
 
+'@jump:TranslatedValue
+Public Function TranslatedValue(ByVal Text As String, Optional ByVal containsFormula As Boolean = False) As String
+End Function
+
+'@jump:outside
+'@section Outside
 
 '@jump:TranslateForm
 Public Sub TranslateForm(ByVal UserFrm As Object)
@@ -37,10 +47,6 @@ End Sub
 '@jump:TranslateRange
 Public Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
 End Sub
-
-'@jump:TranslatedValue
-Public Function TranslatedValue(ByVal Text As String, Optional ByVal containsFormula As Boolean = False) As String
-End Function
 
 
 '@section checkings
