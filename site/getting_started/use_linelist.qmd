@@ -25,7 +25,7 @@ OutbreakTools (OBT) linelist are linelist created using the OBT solution. They a
 
 3.	Set up the day of the week: "Week start" button in the [OutbreakTools menu](../reference/ribbons_linelist.qmd)
 
-4. Optional: modify variable visibility: "Show/Hide variables" button from the [OutbreakTools menu](../reference/ribbons_linelist.qmd)  
+4. Optional: modify variable visibility: "Show/Hide variables" button from the [OutbreakTools menu](../reference/show_hide_variables.qmd)  
 
 5.	Optional: prepare and print a register and/or Case Report Form to enter data on paper ("Register and Case report form" section of the [OutbreakTools menu](../reference/ribbons_linelist.qmd))
     
@@ -39,7 +39,7 @@ After data has been encoded in the linelist, you can [export data and send it to
 **Current dashboards include**: cholera, measles, hepatitis E, diphtheria, mpox, meningitis. Other are added as the list of available OutbreakTools linelists grow.
 
 
-## Working with the file
+## Working with the file {#sec-unprotect-file}
 
 ### Save the file locally
 
