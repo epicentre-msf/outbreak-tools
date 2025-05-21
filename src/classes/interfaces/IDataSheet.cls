@@ -11,7 +11,7 @@ Attribute VB_Description = "Interface of DataSheet Object"
 
 '@IgnoreModule UseMeaningfulName, HungarianNotation
 '@Interface
-'@Folder("General")
+'@Folder("GeneralInterface")
 '@ModuleDescription("Interface of DataSheet Object")
 
 Option Explicit
