@@ -41,6 +41,8 @@ The button will change to “Show all optional variables”, to allow the revers
 
 By default, the linelist has 200 empty lines. But you can add more when these are filled. Click on the "Add Rows" button to add 200 new empty rows.
 
+In addition, five new rows appear when you start entering data in the last row
+
 ### Resize table
 
 You can resize the table to remove empty rows at the bottom of the table on the linelist sheet. Click on the “Resize table" button to remove any empty row.
@@ -64,6 +66,8 @@ When you click on the button, a pop up window appears, where you can select the 
 ### Autofit columns
 
 Use this button to improve column width so that the columns take less space. The fit takes into account the label, the length of categories of the variable (if any) and the name of the variable (hidden). 
+
+In addition, the sheet is not protected against column width modifications, so you can manually adjust the width of some columns.
 
 ::: {.callout-tip}
 You can manually modify the width of columns in the linelist table to adjust to content the way you would do in any Excel file.
@@ -139,7 +143,7 @@ While Epicentre linelists should have at minima be an "Anonymous export for MSF�
 
 To export data, click on the “Export Data” button, which opens a popup window, with several options. At the top, you will see buttons for different exports. After clicking on the desired export, a window pops-up for saving the export. If “Export Filtered Data” is selected, a confirmation message will pop-up first to ask you whether this is what you really want.
 
-Once the folder has been selected and after clicking "OK", a new window opens to confirm the export and, if the export is protected, provide the associated password.
+Once the folder has been selected (avoid root folder like PC, C:\, D:\) and after clicking "OK", a new window opens to confirm the export and, if the export is protected, provide the associated password.
 
 ::: {.callout-tip}
 If you forgot the password, click on the "Export Button" again, and then click on the “Show actual private key” to display the password again.
