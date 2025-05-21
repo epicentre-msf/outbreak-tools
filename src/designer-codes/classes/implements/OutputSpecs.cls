@@ -93,7 +93,7 @@ End Property
 
 
 'Get the translation of messages object
-Private Property Get MessagesTrads() As ITranslation
+Private Property Get MessagesTrads() As ITranslationObject
   Dim lltrads As ILLTranslations
   Set lltrads = LLTradsObject()
   Set MessagesTrads = lltrads.TransObject()
@@ -516,7 +516,7 @@ Private Sub AddShowHide(ByVal outwb As Workbook, ByVal inpwb As Workbook)
   Dim tabName As String
   Dim sheetInfo As String
   Dim currDict As ILLdictionary
-  Dim tradsmess As ITranslation
+  Dim tradsmess As ITranslationObject
   Dim showHideObj As ILLShowHide
 
 
@@ -805,7 +805,7 @@ Private Property Get ExportFolder() As String
 End Property
 
 'Save the output workbook with corresponding elements to export
-Private Sub Save(ByVal trads As ITranslation, _
+Private Sub Save(ByVal trads As ITranslationObject, _
                 Optional ByVal useFilters As Boolean = False, _ 
                 Optional ByVal includeShowHide As Boolean = False, _ 
                 Optional ByVal keepLabels As Boolean = False)
@@ -1028,7 +1028,7 @@ Private Sub IOutputSpecs_AddData()
   AddData
 End Sub
 
-Private Sub IOutputSpecs_Save(ByVal trads As ITranslation, _ 
+Private Sub IOutputSpecs_Save(ByVal trads As ITranslationObject, _ 
                               Optional ByVal useFilters As Boolean = False, _ 
                               Optional ByVal includeShowHide As Boolean = False, _ 
                               Optional ByVal keepLabels As Boolean = False)

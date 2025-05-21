@@ -120,7 +120,7 @@ Private Property Get Dropdown(Optional ByVal scope As Byte = 1) _
     Dim listSheetName As String
     Dim lData As ILinelistSpecs
     Dim drop As IDropdownLists
-    Dim trans As ITranslation
+    Dim trans As ITranslationObject
     Dim headerPrefix As String
 
     Set lData = LinelistData()
@@ -147,7 +147,7 @@ Private Property Get Pivots() As ICustomPivotTables
     Dim sh As Worksheet
     Dim sheetName As String
     Dim lData As ILinelistSpecs
-    Dim trans As ITranslation
+    Dim trans As ITranslationObject
     Set lData = LinelistData()
     Set trans = lData.TransObject()
     sheetName = trans.TranslatedValue("LLSHEET_CustomPivotTable")
@@ -398,7 +398,7 @@ Private Sub PrepareTemporarySheets()
     Dim rng As Range
     Dim cellRng As Range
     Dim lData As ILinelistSpecs
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
     Dim sheetName As String
     Dim counter As Long
     Dim namesArray As BetterArray
@@ -546,7 +546,7 @@ End Sub
 Private Sub Prepare()
 
     Dim dict As ILLdictionary
-    Dim trans As ITranslation
+    Dim trans As ITranslationObject
     Dim sheetsList As BetterArray
     Dim lData As ILinelistSpecs
     Dim counter As Long
@@ -653,7 +653,7 @@ Private Sub Prepare()
                     "ILLGeo", "LLPasswords", "ILLPasswords", _
                     "LLSheets", "ILLSheets", "LLTranslations", _
                      "ILLTranslations", "OSFiles", "IOSFiles", _
-                    "Translation", "ITranslation", "LLVariables", _
+                    "TranslationObject", "ITranslationObject", "LLVariables", _
                     "ILLVariables", "ILLSpatial", "LLSpatial", _
                     "DropdownLists", "IDropdownLists", "LLShowHide", _
                      "ILLShowHide", "CustomTable", "ICustomTable", _
@@ -708,7 +708,7 @@ Private Sub PrepareAdmin()
     Const SHPEXPORT As String = "SHP_Export"
 
     Dim sh As Worksheet
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
     Dim design As ILLFormat
     Dim pass As ILLPasswords
     Dim lData As LinelistSpecs
@@ -777,7 +777,7 @@ Private Sub SaveLL()
     Dim lData As ILinelistSpecs
     Dim mainobj As IMain
     Dim passobj As ILLPasswords
-    Dim msgTrads As ITranslation
+    Dim msgTrads As ITranslationObject
 
     Set lData = LinelistData()
     Set outWkb = Wkb()

@@ -75,7 +75,7 @@ Private Property Get DesignerLanguage() As String
     End If
 End Property
 
-Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation
+Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
 
     Dim Lo As listObject
     Dim lang As String
@@ -95,12 +95,12 @@ Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMess
         Set Lo = sh.ListObjects(TABDROP)
     End Select
 
-    Set TransObject = Translation.Create(Lo, lang)
+    Set TransObject = TranslationObject.Create(Lo, lang)
 End Property
 
 Private Sub TranslateDesigner(ByVal mainsh As Worksheet)
 
-    Dim tradobj As ITranslation
+    Dim tradobj As ITranslationObject
     Dim shp As Shape
     Dim counter As Long
     Dim shapesNames As BetterArray               'Name of all shapes to translate in worksheet main
@@ -193,7 +193,7 @@ Private Sub TranslateDesigner(ByVal mainsh As Worksheet)
 End Sub
 
 Private Function TranslationMsg(ByVal msgCode As String) As String
-    Dim msgObject As ITranslation
+    Dim msgObject As ITranslationObject
     Set msgObject = TransObject(TranslationOfMessages)
     TranslationMsg = msgObject.TranslatedValue(msgCode)
 End Function
@@ -247,7 +247,7 @@ Private Sub RangeExists(ByVal sh As Worksheet, ByVal rngName As String)
 
 End Sub
 
-Private Property Get IDesTranslation_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation
+Private Property Get IDesTranslation_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
     Set IDesTranslation_TransObject = TransObject(trans)
 End Property
 

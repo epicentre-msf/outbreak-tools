@@ -8,7 +8,7 @@ Option Private Module
 
 Private Assert As Object
 Private Fakes As Object
-Private TransObject As ITranslation
+Private TransObject As ITranslationObject
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
@@ -39,7 +39,7 @@ Private Sub TestTranslation()
 
     Dim Lo As ListObject
     Set Lo = ThisWorkbook.Worksheets("LinelistTranslation").ListObjects("T_TradLLMsg")
-    Set TransObject = Translation.Create(Lo, "FRA")
+    Set TransObject = TranslationObject.Create(Lo, "FRA")
 
     Assert.IsTrue (TransObject.TranslatedValue("MSG_Day") = "Jour"), "Bad translated value"
     Assert.IsTrue (TransObject.TranslatedValue("www&!") = "www&!"), "unfound translated value found"

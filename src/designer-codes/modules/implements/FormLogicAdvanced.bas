@@ -7,8 +7,8 @@ Attribute VB_Description = "Form implementation of advanced form"
 '@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
 Option Explicit
 
-Private tradform As ITranslation   'Translation of forms
-Private tradmess As ITranslation 'Translation of messages
+Private tradform As ITranslationObject   'Translation of forms
+Private tradmess As ITranslationObject 'Translation of messages
 Private currwb As Workbook 'Current workbook (used for creating import classes)
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const TRADSHEET As String = "Translations"

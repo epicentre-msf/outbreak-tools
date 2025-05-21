@@ -15,8 +15,8 @@ Private Const SEP As String = " | " 'This is the separator for values in the tex
 Private Const NACHAR As String = " | N/A"
 Private Const NACHARREV As String = "N/A | "
 
-Private tradform As ITranslation   'Translation of forms
-Private tradmess As ITranslation
+Private tradform As ITranslationObject   'Translation of forms
+Private tradmess As ITranslationObject
 Private geo As ILLGeo
 Private hfOrGeo As Byte
 

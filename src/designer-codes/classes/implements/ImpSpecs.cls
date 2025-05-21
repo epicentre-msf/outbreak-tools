@@ -197,7 +197,7 @@ Private Property Get LLTradsObject() As ILLTranslations
 End Property
 
 'Get the translation of messages object
-Private Property Get MessagesTrads() As ITranslation
+Private Property Get MessagesTrads() As ITranslationObject
   Dim lltrads As ILLTranslations
   Set lltrads = LLTradsObject()
   Set MessagesTrads = lltrads.TransObject()
@@ -486,7 +486,7 @@ Private Sub ControlClearData(Optional ByVal forImports As Boolean = False)
   Dim inputwbName As String
   Dim currwb As Workbook
   Dim goodName As Boolean
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
 
   On Error GoTo ErrManage
 
@@ -607,7 +607,7 @@ End Property
 
 Private Function ControlHasData() As Byte
 
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Dim testData As Boolean 'Test if the workbook contains data
   Dim proceed As Byte
   Dim controlRes As Integer
@@ -662,7 +662,7 @@ Private Function ControlLanguage(ByVal impwb As Workbook) As Boolean
   Dim metaTab As IDataSheet
   Dim lltrads As ILLTranslations
   Dim varRng As Range
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Dim abortImport As Boolean
   Dim cellRng As Range
   'current and imported langauges
@@ -728,7 +728,7 @@ Private Sub ImportShowHide(ByVal inpwb As Workbook)
 
   Dim metaTab As IDataSheet
   Dim varRng As Range
-  Dim tradsmess As ITranslation
+  Dim tradsmess As ITranslationObject
   Dim cellRng As Range 'used for eventual stuffs
   Dim updateShowHide As Boolean
   Dim currwb As Workbook
@@ -1033,7 +1033,7 @@ Private Sub ImportMigration()
   Dim pasteAtBottom As Boolean
   Dim controlResult As Byte
   Dim actsh As Worksheet
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Dim adfobj As Object
   Dim upobj As IUpVal
   Dim repObj As IImpRep
@@ -1170,7 +1170,7 @@ Private Sub ImportGeobase(Optional ByVal histoOnly As Boolean = False)
   Dim showhidesh As Worksheet
   Dim filePath As String
   Dim currwb As Workbook
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   Dim adfobj As Object
   
   Set trads = MessagesTrads()

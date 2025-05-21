@@ -90,7 +90,7 @@ Public Property Set DropdownObject(ByVal dropObj As IDropdownLists)
   Set this.dropObj = dropObj
 End Property
 
-Private Property Get RibTradObject() As ITranslation
+Private Property Get RibTradObject() As ITranslationObject
 
   Dim ribLo As ListObject
   Dim fileLang As String
@@ -213,7 +213,7 @@ Private Sub Add(ByVal disName As String, _
   Dim nbDis As Long
   Dim loRng As Range
   Dim selectValue As String
-  Dim trads As ITranslation
+  Dim trads As ITranslationObject
   
 
   'If the disease is present, exit
@@ -440,7 +440,7 @@ Private Sub ExportDisease(ByVal disName As String)
   Dim filePath As String
   Dim folderPath As String
   Dim prevAlert As Long
-  Dim ribTrads As ITranslation
+  Dim ribTrads As ITranslationObject
   Dim ribSh As Worksheet
 
 

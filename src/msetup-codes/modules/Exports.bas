@@ -11,7 +11,7 @@ Private Const TRANSLATIONSHEET As String = "Translations"
 Private Const VARIABLESHEET As String = "Variables"
 Private Const CHOICESHEET As String = "Choices"
 
-Private trads As ITranslation
+Private trads As ITranslationObject
 Private wb As Workbook
 
 '@Folder("Import And Exports")

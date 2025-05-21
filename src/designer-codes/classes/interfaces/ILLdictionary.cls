@@ -39,7 +39,7 @@ Public Property Get Prepared() As Boolean: End Property
 'Prepare the dictionary
 Public Sub Prepare(ByVal PreservedSheetNames As BetterArray, _
                    ByVal geoObject As ILLGeo, _
-                   ByVal msgTrads As ITranslation, _
+                   ByVal msgTrads As ITranslationObject, _
                    Optional ByVal tablePrefix As String = "table")
 End Sub
 
@@ -72,7 +72,7 @@ Public Sub Export(ByVal toWkb As Workbook, Optional ByVal exportType As String =
 End Sub
 
 'Translate the dictionary using a translation object
-Public Sub Translate(ByVal TransObject As ITranslation)
+Public Sub Translate(ByVal TransObject As ITranslationObject)
 End Sub
 
 'Add new column to the dictionary (use with care, the dictionary should normally not be modified)

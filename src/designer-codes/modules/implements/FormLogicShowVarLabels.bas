@@ -6,7 +6,7 @@ Attribute VB_Description = "Show the variables with corresponding labels in cust
 
 Option Explicit
 
-Private tradform As ITranslation   'Translation of forms
+Private tradform As ITranslationObject   'Translation of forms
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const TRADSHEET As String = "Translations"
 

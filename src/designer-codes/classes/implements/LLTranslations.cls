@@ -67,7 +67,7 @@ Public Property Set DictTransSheet(ByVal sh As Worksheet)
 End Property
 
 Private Property Get TransObject(Optional ByVal trans As Byte = _
-                                 TranslationOfMessages) As ITranslation
+                                 TranslationOfMessages) As ITranslationObject
 
     Dim Lo As listObject
     Dim lang As String
@@ -91,7 +91,7 @@ Private Property Get TransObject(Optional ByVal trans As Byte = _
         Set Lo = sh.ListObjects(TRADLLRIBBON)
     End Select
 
-    Set TransObject = Translation.Create(Lo, lang)
+    Set TransObject = TranslationObject.Create(Lo, lang)
 End Property
 
 Private Property Get Value(ByVal tagName As String) As String
@@ -329,7 +329,7 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 'Interfaces
-Public Property Get ILLTranslations_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation
+Public Property Get ILLTranslations_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
     Set ILLTranslations_TransObject = TransObject(trans)
 End Property
 

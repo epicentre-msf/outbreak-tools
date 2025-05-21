@@ -14,8 +14,8 @@ Private Const RNGEPIWEEKSTART As String = "RNG_EpiWeekStart"
 
 
 Private upobj As IUpVal
-Private tradform As ITranslation   'Translation of forms
-Private tradmess As ITranslation
+Private tradform As ITranslationObject   'Translation of forms
+Private tradmess As ITranslationObject
 Private TriggerMode As Boolean
 
 
