@@ -10,8 +10,8 @@ Private Const PASSWORDSHEET As String = "__pass"
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const TRADSHEET As String = "Translations"
 Private pass As ILLPasswords
-Private tradform As ITranslation   'Translation of forms
-Private tradmess As ITranslation 'Translation of messasges
+Private tradform As ITranslationObject   'Translation of forms
+Private tradmess As ITranslationObject 'Translation of messasges
 
 
 'Initialize translation of forms object

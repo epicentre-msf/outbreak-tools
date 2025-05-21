@@ -244,7 +244,7 @@ End Sub
 
 'Prepare the dictionary for designer
 Private Sub Prepare(ByVal PreservedSheetsNames As BetterArray, ByVal geoObject As ILLGeo, _
-                    ByVal msgTrads As ITranslation, _
+                    ByVal msgTrads As ITranslationObject, _
                     Optional ByVal tablePrefix As String = "table")
     Dim endCol As Long
     Dim dictWksh As Worksheet
@@ -874,7 +874,7 @@ Private Sub Import(ByVal fromWksh As Worksheet, _
 End Sub
 
 'Translation
-Private Sub Translate(ByVal TransObject As ITranslation)
+Private Sub Translate(ByVal TransObject As ITranslationObject)
     Dim transCols As BetterArray
     Dim rng As Range
     Dim counter As Long
@@ -941,7 +941,7 @@ End Function
 
 'void methods
 Public Sub ILLdictionary_Prepare(ByVal PreservedSheetsNames As BetterArray, _
-                                 ByVal geoObject As ILLGeo, ByVal msgTrads As ITranslation, _
+                                 ByVal geoObject As ILLGeo, ByVal msgTrads As ITranslationObject, _
                                  Optional ByVal tablePrefix As String = "table")
     Prepare PreservedSheetsNames, geoObject, msgTrads, tablePrefix
 End Sub
@@ -961,7 +961,7 @@ Public Sub ILLdictionary_Export(ByVal toWkb As Workbook, _
     Export toWkb, exportType, addListObject, Hide
 End Sub
 
-Public Sub ILLdictionary_Translate(ByVal TransObject As ITranslation)
+Public Sub ILLdictionary_Translate(ByVal TransObject As ITranslationObject)
     Translate TransObject
 End Sub
 

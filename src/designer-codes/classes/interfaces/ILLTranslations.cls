@@ -27,7 +27,7 @@ Public Enum TradScopes
 End Enum
 
 'Exposed methods
-Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation: End Property
+Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject: End Property
 Public Sub ExportToWkb(ByVal outputWkb As Workbook): End Sub
 Public Sub ImportTranslation(ByVal fromWkb As Workbook): End Sub
 Public Property Get Value(ByVal tagName As String) As String: End Property

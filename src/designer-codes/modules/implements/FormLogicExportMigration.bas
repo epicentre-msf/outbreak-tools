@@ -5,8 +5,8 @@ Attribute VB_Description = "Form implementation of Exports for Migration"
 '@ModuleDescription("Form implementation of Exports for Migration")
 Option Explicit
 
-Private tradform As ITranslation  'Translation of forms
-Private tradmess As ITranslation 'Translation messages
+Private tradform As ITranslationObject  'Translation of forms
+Private tradmess As ITranslationObject 'Translation messages
 Private geoObj As ILLGeo 'Geo object
 Private expOut As IOutputSpecs
 Private currwb As Workbook 'Current workbook

@@ -148,7 +148,7 @@ Public Sub Build()
     Dim ll As ILinelist
     Dim lData As ILinelistSpecs
     Dim but As IButtons
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
     Dim rng As Range
     Dim cellRng As Range
     Dim design As ILLFormat

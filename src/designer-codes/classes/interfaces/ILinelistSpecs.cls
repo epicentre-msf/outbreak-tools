@@ -22,7 +22,7 @@ Public Property Get Choices() As ILLChoices:   End Property
 Public Property Get specswkb() As Workbook: End Property
 
 'Translation objects (messages, shapes and userforms)
-Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation: End Property
+Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject: End Property
 
 'Formula data object
 Public Property Get FormulaDataObject() As IFormulaData: End Property

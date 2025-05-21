@@ -6,7 +6,7 @@ Private Const TRADTABLESHEET As String = "__ribbonTranslation"
 Private Const DROPSHEET As String = "__dropdowns"
 Private Const PASSSHEET As String = "__pass"
 Private Const RNG_FileLang As String = "RNG_FileLang"
-Private trads As ITranslation
+Private trads As ITranslationObject
 Private wb As Workbook
 Private pass As IPasswords
 

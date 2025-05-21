@@ -10,7 +10,7 @@ Option Private Module
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const TRADSHEET As String = "Translations"
 
-Private tradrib As ITranslation   'Translation of forms
+Private tradrib As ITranslationObject   'Translation of forms
 
 'Initialize translation of forms object
 Private Sub InitializeTrads()

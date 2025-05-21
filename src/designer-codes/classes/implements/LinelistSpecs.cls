@@ -148,7 +148,7 @@ Public Property Get Password() As ILLPasswords
 End Property
 
 'Test if the translation form exists
-Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation
+Public Property Get TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
     Set TransObject = Trads.TransObject(trans)
 End Property
 
@@ -277,8 +277,8 @@ Private Sub Prepare()
     Dim impDict As ILLdictionary 'Imported dictionary for checkings
     Dim choi As ILLChoices
     Dim geo As ILLGeo                            'Geo Object to add admin names in the preparation steps of the dictionary
-    Dim dictTrads As ITranslation
-    Dim msgTrads As ITranslation                 'Translations of messages object used in preserve sheet Names
+    Dim dictTrads As ITranslationObject
+    Dim msgTrads As ITranslationObject                 'Translations of messages object used in preserve sheet Names
     Dim mainTrads As IDesTranslation             'Translation of the designer: the main sheet
     Dim mainobj As IMain
     Dim trans As ILLTranslations
@@ -584,7 +584,7 @@ Private Sub ILinelistSpecs_Prepare()
     Prepare
 End Sub
 
-Private Property Get ILinelistSpecs_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslation
+Private Property Get ILinelistSpecs_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
     Set ILinelistSpecs_TransObject = TransObject(trans)
 End Property
 

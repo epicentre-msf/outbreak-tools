@@ -19,8 +19,8 @@ Private Const SHOWHIDESHEET As String = "show_hide__"
 Private Const UPDATESHEET As String = "updates__"
 
 Private showHideObject As ILLShowHide
-Private tradsform As ITranslation   'Translation of forms
-Private tradsmess As ITranslation   'Translation of messages
+Private tradsform As ITranslationObject   'Translation of forms
+Private tradsmess As ITranslationObject   'Translation of messages
 Private pass As ILLPasswords
 Private wb As Workbook
 Private lltrads As ILLTranslations

@@ -402,7 +402,7 @@ Private Sub AddLabel(Optional ByVal usePrinted As Boolean = False)
     Dim varControl As String
     Dim varIndex As Long
     Dim cellRng As Range
-    Dim trans As ITranslation
+    Dim trans As ITranslationObject
     Dim lData As ILinelistSpecs
     Dim calculated As String
     Dim mandatory As String
@@ -553,7 +553,7 @@ Private Sub AddChoices()
     Dim cellRng As Range
     Dim geo As ILLGeo
     Dim choicust As String
-    Dim trans As ITranslation
+    Dim trans As ITranslationObject
     Dim varMainLab As String
     Dim varSubLab As String
     Dim sh As Worksheet

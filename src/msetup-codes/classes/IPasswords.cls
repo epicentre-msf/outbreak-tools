@@ -45,7 +45,7 @@ End Sub
 Public Sub UnProtectWkb(ByVal wb As Workbook): End Sub
 
 'Generate new key and display current keys
-Public Sub DisplayPrivateKey(ByVal trads As ITranslation): End Sub
+Public Sub DisplayPrivateKey(ByVal trads As ITranslationObject): End Sub
 
-Public Sub GenerateKey(ByVal trads As ITranslation): End Sub
+Public Sub GenerateKey(ByVal trads As ITranslationObject): End Sub
 Public Sub Import(ByVal pass As IPasswords): End Sub

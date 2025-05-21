@@ -42,7 +42,7 @@ End Property
 Public Property Get IsActive(ByVal exportNumber As Integer) As Boolean
 End Property
 
-Public Sub Translate(ByVal trans As ITranslation): End Sub
+Public Sub Translate(ByVal trans As ITranslationObject): End Sub
 
 'Import/export specifications from the export worksheet to / in another worksheet
 Public Sub ExportSpecs(ByVal toWkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden): End Sub

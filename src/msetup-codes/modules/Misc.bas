@@ -57,7 +57,7 @@ Public Sub TranslateWbElmts(ByVal langId As String)
     Dim drop As IDropdownLists
     Dim sh As Worksheet
     Dim hRng As Range
-    Dim trads As ITranslation
+    Dim trads As ITranslationObject
     Dim selectValue As String
     
     Set wb = ThisWorkbook
