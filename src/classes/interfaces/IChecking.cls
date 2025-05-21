@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of setup checkings"
 
 
-'@Folder("General")
+'@Folder("GeneralInterface")
 '@ModuleDescription("Interface of setup checkings")
 
 Public Enum CheckingScope
