@@ -9,26 +9,40 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Translate various objects from one language to another"
 
-
+'@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Translate various objects from one language to another")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
+
 
 Option Explicit
-Implements ITranslationObjectObject
+Implements ITranslationObject
 
 Private Const CLASSNAME As String = "TranslationObject"
 
 Private Type TTranslationObject
     transLo As listObject
     transLng As String
+    hasChecks As Boolean
 End Type
 
 Private this As TTranslationObject
 
-'Instanciation
+'checking objects
+Private checkCounter As Long
+Private internalChecks As IChecking
 
-Public Function Create(ByVal translationLo As listObject, ByVal translationLang As String) As ITranslationObjectObject
+'@label:Create
+'@prop-title Create a translation Object
+'@details
+' A translation object is a listObject with a specific language which is the
+' language you want to translate elements to. 
+' The first column of the listObject contains the tags for translation. In 
+' case tags are not found during the translation process. The tag is returned
+' as is without any translation done.
+'@return A ITranslationObject
+'@export
+Public Function Create(ByVal translationLo As listObject, ByVal translationLang As String) As ITranslationObject
 
     'Test if the listobject is empty
     If translationLo Is Nothing Then ThrowErrorUnableInstanciate "Listobject is not defined"
@@ -39,7 +53,10 @@ Public Function Create(ByVal translationLo As listObject, ByVal translationLang 
     End With
 End Function
 
-Public Property Get Self() As ITranslationObjectObject
+'@label:elements
+'@section Translation elements
+
+Public Property Get Self() As ITranslationObject
     Set Self = Me
 End Property
 
@@ -51,14 +68,25 @@ Public Property Set Table(ByVal Lo As listObject)
     Set this.transLo = Lo
 End Property
 
+'@prop-title Translation language to translate elements
+'@details
+'The languages are headers of the list Object (except the first column)
+'@return A String, one of the languages.
 Public Property Get Language() As String
     Language = this.transLng
 End Property
+
 
 Public Property Let Language(ByVal transLng As String)
     this.transLng = transLng
 End Property
 
+'@prop-title Name of the translation Object
+Private Property Get Name() As String
+    Name = "Table: " & Table.Name & " - Language: " & Language
+End Property
+
+'@prop-title Check if the provided language exists
 Private Property Get LanguageExists() As Boolean
     Dim lng As String
     Dim hRng As Range
@@ -67,6 +95,10 @@ Private Property Get LanguageExists() As Boolean
     LanguageExists = (Not hRng.Find(What:=lng, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
 End Property
 
+
+
+'@prop-title where is the language column
+'@return A Long
 Private Function LanguageIndex() As Long
 
     Dim lngIndex As Long
@@ -84,6 +116,12 @@ Private Function LanguageIndex() As Long
     LanguageIndex = lngIndex
 End Function
 
+'@label:ValueExists
+'@prop-title Check if a tag is present in the first column of the 
+'@details
+'Check if a tag is present in the first column of the worksheet
+'@return A Boolean
+'@export
 Private Function ValueExists(ByVal Text As String) As Boolean
     Dim textExists As Boolean
     Dim keyRng As Range
@@ -93,11 +131,17 @@ Private Function ValueExists(ByVal Text As String) As Boolean
     Set Lo = Table()
     Set keyRng = Lo.ListColumns(1).Range
 
-    If LanguageExists() Then textExists = (Not keyRng.Find(What:=Text, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
+    If LanguageExists() Then
+        textExists = (Not keyRng.Find(What:=Text, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
+    End If
 
     ValueExists = textExists
 End Function
 
+'@prop-title Line of a value
+'@details
+'In case a value is present, return the line index relative to the worksheet
+'@return Long
 Private Function ValueIndex(ByVal Text As String) As Long
     Dim Index As Long
     Dim keyRng As Range
@@ -112,9 +156,18 @@ Private Function ValueIndex(ByVal Text As String) As Long
     ValueIndex = Index
 End Function
 
-Private Function TranslatedValue(ByVal textTotranslate As String, Optional ByVal containsFormula As Boolean = False) As String
+'@label:TranslatedValue
+'@prop-title Translated value of a translation Object
+'@details
+'In case here is a need to translate like formula, only characters present in quotes "
+'are translated. Unquoted characters are not.
+'@param textToTranslate A String
+'@param containsFormula Optional, Boolean translate the text as as Formula. Default is False
+'@return A String
+'@export
+Private Function TranslatedValue(ByVal textTotranslate As String, _ 
+                                 Optional ByVal containsFormula As Boolean = False) As String
     
-    'Test if the language Exists
     Dim cleanedText As String
     Dim transText As String
     Dim formTransText As String
@@ -172,7 +225,14 @@ Private Function TranslatedValue(ByVal textTotranslate As String, Optional ByVal
     End If
 End Function
 
-'Translate a Range
+'@label:operate
+'@section Operate with the outside world
+
+'@label:TranslateRange
+'@sub-title Translate a Range
+'@param colRng A Range Object to translate.
+'@param containsFormula Optional, Boolean. Translate each values in the range as formula. Default is False
+'@export
 Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
     Dim counter As Long
     Dim EndRow As Long
@@ -184,13 +244,20 @@ Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula
     Next
 End Sub
 
-'Translate a Form
+'@label:TranslateForm
+'@sub-title Translate a Form
+'@param UserFrm A Form Object
+'@export
 Private Sub TranslateForm(ByVal UserFrm As Object)
     Dim counter As Integer
     Dim formControl As Control
 
     'Be sure the object is a userform
-    If Not (TypeOf UserFrm Is UserForm) Then Exit Sub
+    If Not (TypeOf UserFrm Is UserForm) Then
+        LogInfo "Attempt to translate an object that is not a form", checkingNote
+        ShowDebug
+        Exit Sub
+    End If
 
     For Each formControl In UserFrm.Controls
         If (TypeOf formControl Is MSForms.CommandButton) Or _
@@ -218,20 +285,100 @@ Private Sub TranslateForm(ByVal UserFrm As Object)
     Next
 End Sub
 
-'Errors ---------------------------------------------------------------------------------
+'@label:checkings
+'@section Checkings and Errors
+
+'@sub-title Add elements to the checking object for future notes
+'@param Label String, the message to add.
+'@param scope Byte. The scope of the checking object.
+'@export
+Private Sub LogInfo(ByVal label As String, _ 
+                    Optional ByVal scope As Byte = checkingNote)
+
+    Dim checkName As String
+
+    checkName = "Translation " & Name() & " object trace"
+
+    'First, instanciante the internalCheks Objects
+    If internalChecks Is Nothing Then Set internalChecks = Checking.Create(checkName)
+    
+    'Add new informations to the checking object
+    internalChecks.Add Cstr(checkCounter), label, scope
+    checkCounter = checkCounter + 1
+
+    If Not this.hasChecks Then this.hasChecks = True
+End Sub
+
+'@label:HasCheckings
+'@prop-title Check if the object has checkings
+'@export
+Private Property Get HasCheckings() As Boolean
+    HasCheckings = this.hasChecks
+End Property
+
+'@label:CheckingValues
+'@prop-title Get the cheking values
+'@export
+Private Property Get CheckingValues() As Object
+
+    'If there is no checking, exit the property
+    If Not HasCheckings() Then  Exit Property
+
+    Set CheckingValues = internalChecks
+End Property
+
+Private Sub ShowDebug()
+    Debug.Print "Check the informations of Translation object " & Name()
+End Sub
+
+'@sub-title Raise Error on instanciation
 Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
     Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
 End Sub
 
-'Interface
-Public Sub ITranslationObject_TranslateForm(ByVal UserFrm As Object)
-    TranslateForm UserFrm
-End Sub
+'@section Interface
 
-Public Sub ITranslationObject_TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
+'@jump:elements
+'Elements----------------------------------------------------------------------
+
+'@jump:ValueExists
+Private Property Get ITranslationObject_ValueExists(ByVal text As String) As Boolean
+    ITranslationObject_ValueExists = ValueExists(text)
+End Property
+
+'@jump:TranslatedValue
+Private Function ITranslationObject_TranslatedValue(ByVal Text As String, _ 
+                                                   Optional ByVal containsFormula As Boolean = False) As String
+    ITranslationObject_TranslatedValue = TranslatedValue(Text, containsFormula)
+End Function
+
+'@jump:operate
+'Outside world -----------------------------------------------------------------
+
+'@jump:TranslateRange
+Private Sub ITranslationObject_TranslateRange(ByVal colRng As Range, _ 
+                                             Optional ByVal containsFormula As Boolean = False)
     TranslateRange colRng:=colRng, containsFormula:=containsFormula
 End Sub
 
-Public Function ITranslationObject_TranslatedValue(ByVal Text As String, Optional ByVal containsFormula As Boolean = False) As String
-    ITranslationObject_TranslatedValue = TranslatedValue(Text, containsFormula)
-End Function
+
+'@jump:TranslateForm
+Private Sub ITranslationObject_TranslateForm(ByVal UserFrm As Object)
+    TranslateForm UserFrm
+End Sub
+
+'@jump:checkings
+'checkings----------------------------------------------------------------------
+
+'@jump:HasCheckings
+Private Property Get ITranslationObject_HasCheckings() As Boolean
+    ITranslationObject_HasCheckings = HasCheckings()
+End Property
+
+'@jump:CheckingValues
+Private Property Get ITranslationObject_CheckingValues() As Object
+    Set ITranslationObject_CheckingValues = CheckingValues()
+End Property
+
+
+

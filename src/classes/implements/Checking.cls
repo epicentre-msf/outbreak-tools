@@ -30,7 +30,8 @@ Private this As TChecking
 
 'Exposed methods
 Public Function Create(ByVal titleName As String, _
-                       Optional ByVal subtitleName As String = vbNullString) As IChecking
+                       Optional ByVal subtitleName As String = vbNullString) As _ 
+                      IChecking
   If titleName = vbNullString Then ThrowError "Checkings should have a title"
   With New Checking
     .CheckingTitle = titleName
