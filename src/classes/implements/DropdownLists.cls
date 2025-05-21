@@ -697,7 +697,7 @@ Private Property Get CheckingValues() As Object
 End Property
 
 Private Sub ShowDebug()
-    Debug.Print "Check the informations of choice object " & Name()
+    Debug.Print "Check the informations of dropdownlist object " & Name()
 End Sub
 
 'Errors
