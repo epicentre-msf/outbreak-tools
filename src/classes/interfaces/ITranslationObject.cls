@@ -2,16 +2,17 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "ITranslation"
+Attribute VB_Name = "ITranslationObject"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Attribute VB_Description = "Interface of translation object"
 
 '@Interface
-'@Folder("Dictionary")
-'@ModuleDescription("Interface of ")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@Folder("GeneralInterface")
+'@ModuleDescription("Interface of translation object")
+'@IgnoreModule SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
