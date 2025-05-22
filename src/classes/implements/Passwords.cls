@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Lock/unlock workbooks and worksheets"
 
-
-'@Folder("Linelist Passwords")
-'@ModuleDescription("Manage passwords in the linelist")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@Folder("General")
+'@ModuleDescription("Lock/unlock workbooks and worksheets")
+'@IgnoreModule SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -20,13 +20,32 @@ Implements IPasswords
 
 Private Type TPassWord
     sh As Worksheet
+    hasChecks As Boolean
 End Type
 
 Private this As TPassWord
 
 Private Const CLASSNAME As String = "Passwords"
 Private Const TABKEYS   As String = "T_keys"
+Private Const TABPROTECTION As String = "T_ProtectedSheets"
 
+
+'checking objects
+Private checkCounter As Long
+Private internalChecks As IChecking
+
+'@label:Create
+'@prop-title create a password object
+'@details
+'The password object is a worksheet with one listObject table in it called
+'password. The listObject default name should be T_Keys. The table key
+'has basically two column: one for private key and another one for public key.
+'Private keys are used for locking the exports, public keys are the corresponding
+'key use to find private keys when opening automatically the files. The password
+'object also contains the debugging password which is the password used for
+'locking/unlocking the worksheets and workbook where the password is.
+'@return A IPasswords Object
+'@export
 Public Function Create(ByVal sh As Worksheet) As IPasswords
     CheckRequirements sh
 
@@ -36,6 +55,8 @@ Public Function Create(ByVal sh As Worksheet) As IPasswords
     End With
 End Function
 
+'@label:elements
+'@section Password Elements
 Public Property Get Wksh() As Worksheet
     Set Wksh = this.sh
 End Property
@@ -48,18 +69,36 @@ Public Property Get Self() As IPasswords
     Set Self = Me
 End Property
 
+'@prop-title Name of the password object
+'@return A String
+'@export
+Private Property Get Name() As String
+    Name = Wksh.Name
+End Property
+
+'@prop-title Get the current debugging password
+'@return A string, the password in the DebuggingPassword range
+'@return A String
 Private Property Get Password() As String
     Dim sh As Worksheet
     Set sh = Wksh()
     Password = sh.Range("RNG_DebuggingPassword").Value
 End Property
 
-Private Property Get InDebugMode() As Boolean
-    Dim sh As Worksheet
-    Set sh = Wksh()
-    InDebugMode = (sh.Range("RNG_DebugMode").Value = "yes")
-End Property
 
+'@label:Value
+'@prop-title Get specific value of ranges in the password worksheet
+'
+'@details
+'In case the values are not found, a vbNullString is returned. Three tag names
+'are actually availaible:
+'- debuggingpassword to retrieve the debugging password
+'- publickey to retrieve the public key
+'- version to retrieve the version
+'
+'@tagName String, the tag of the value to look for.
+'@return A String
+'@export
 Private Property Get Value(ByVal tagName As String) As String
     Dim sh As Worksheet
     Dim retVal As String
@@ -80,16 +119,132 @@ Private Property Get Value(ByVal tagName As String) As String
     Value = retVal
 End Property
 
-Private Property Get TableRange() As Range
+'@label:TableRange
+'@prop-title Get one table of the password worksheet
+'@param tabName Optional, String. The name of the table to return
+'@export
+'@return A Range Object
+Private Property Get TableRange(Optional ByVal tabName As String = TABKEYS) As Range
 
     Dim sh As Worksheet
+    Dim outRng As Range
 
     Set sh = Wksh()
-    Set TableRange = sh.ListObjects(TABKEYS).DataBodyRange
 
+    On Error Resume Next
+    Set outRng = sh.ListObjects(tabName).DataBodyRange
+    On Error GoTo 0
+
+    If outRng Is Nothing Then
+        'come here for logging because the table is empty
+    End If
+
+    Set TableRange = outRng
 End Property
 
-'Generate a new key for the file to be saved
+'@label:protections
+'@section Protections
+
+
+'@label:InDebugMode
+'@prop-title Check if the current workbook is in debug mode
+'return A Boolean
+'@export
+Private Property Get InDebugMode() As Boolean
+    Dim sh As Worksheet
+    Set sh = Wksh()
+    InDebugMode = (sh.Range("RNG_DebugMode").Value = "yes")
+End Property
+
+'@label:EnterDebugMode
+'@prop-title Enter a debug mode
+'@details
+'Debug Mode is a mode where all the worksheets of the current workbook are
+'unprotected as well as the workbook. This will give the current user all the
+'power to modify, use and delete data in the current workbook. This is 
+'usually useful in case something go wrong in the workbook on in a debugging
+'process
+'
+'@export
+Private Sub EnterDebugMode(Optional ByVal wb As Object = Nothing)
+
+    Dim targetWb As Workbook
+    Dim psh As Worksheet
+    Dim sh As Worksheet
+
+    Set psh = Wksh()
+
+
+    'The default targeted workbook is the 
+    'current workbook (where the password)
+    If( TypeName(wb) = "Nothing") Then
+        Set targetWb = psh.Parent
+    ElseIf (TypeName(wb) = "Workbook") Then
+        Set targetwb = wb
+    End If
+
+
+    'Unprotect the current workbook
+    UnProtectWkb targetwb, useTable:=True
+
+    For Each sh In targetWb
+        If IsProtected(sh.Name) Then
+            UnProtect sh.Name, useTable:=True
+        End If
+    Next
+
+    psh.Range("RNG_DebugMode").Value = "yes"
+
+    ShowDebug
+    LogInfo "The current workbook is in debug mode", checkingWarning
+End Sub
+
+
+'@label:LeaveDebugMode
+'@prop-title Leave the debug mode
+'@details
+'Debug Mode is a mode where all the worksheets of the current workbook are
+'unprotected as well as the workbook. This will give the current user all the
+'power to modify, use and delete data in the current workbook. This is 
+'usually useful in case something go wrong in the workbook on in a debugging
+'process
+'
+'@export
+Private Sub LeaveDebugMode(Optional ByVal wb As Object = Nothing)
+
+    Dim targetWb As Workbook
+    Dim psh As Worksheet
+    Dim sh As Worksheet
+
+    Set psh = Wksh()
+
+    'The default targeted workbook is the 
+    'current workbook (where the password)
+    If( TypeName(wb) = "Nothing") Then
+        Set targetWb = psh.Parent
+    ElseIf (TypeName(wb) = "Workbook") Then
+        Set targetwb = wb
+    End If
+
+    'Unprotect the current workbook
+    ProtectWkb targetwb, useTable:=True
+
+    For Each sh In targetWb
+        If Not IsProtected(sh.Name) Then
+            Protect sh.Name, useTable:=True
+        End If
+    Next
+
+    psh.Range("RNG_DebugMode").Value = "no"
+End Sub
+
+
+
+'@prop-title Generate a new public/private key
+'@details
+'Shuffle the table and select one pair of public/private key after shuffling.
+'@export
+'@return
 Private Sub GenerateKey(ByVal trads As ITranslation)
     Dim nbRows As Long
     Dim randNum As Integer
@@ -101,7 +256,12 @@ Private Sub GenerateKey(ByVal trads As ITranslation)
     Set LoKeys = sh.ListObjects(TABKEYS)
 
     'Don't try to generate new keys if the databodyrange does not exists
-    If LoKeys.DataBodyRange Is Nothing Then Exit Sub
+    If LoKeys.DataBodyRange Is Nothing Then 
+        'Come here for logging
+        Exit Sub
+    End If
+
+
     Set LoRng = LoKeys.DataBodyRange
     
     'Number of Rows of the databodyrange of the listobject
@@ -217,17 +377,6 @@ Private Sub UnProtect(Optional ByVal sheetName As String = "_active")
     If sh.ProtectContents Then sh.UnProtect pwd
 End Sub
 
-'Enter debug mode in the linelist (when something crashes)
-Private Sub EnterDebugMode()
-
-End Sub
-
-'Leave debug mode in the linelist (when closing the linelist, or after debugging)
-Private Sub LeaveDebugMode()
-
-
-End Sub
-
 
 Private Sub Export(ByVal toWkb As Workbook)
 
@@ -318,6 +467,49 @@ Private Sub Import(ByVal pass As IPasswords)
     Lo.Resize actTabRng
 End Sub
 
+'@label:checkings
+'@section Checkings
+
+@label:HasChecking
+'@prop-title Check if the object has checkings
+'@export
+Private Property Get HasCheckings() As Boolean
+    HasCheckings = this.hasChecks
+End Property
+
+'@label:CheckingValues
+'@prop-title Get the cheking values
+'@export
+Private Property Get CheckingValues() As Object
+
+    'If there is no checking, exit the property
+    If Not HasCheckings() Then  Exit Property
+
+    Set CheckingValues = internalChecks
+End Property
+
+
+'@sub-title Add elements to the checking object for future notes
+'@param Label String, the message to add.
+'@param scope Byte. The scope of the checking object.
+'@export
+Private Sub LogInfo(ByVal label As String, _ 
+                    Optional ByVal scope As Byte = checkingNote)
+
+    Dim checkName As String
+
+    checkName = "DropdownList " & Name() & " object trace"
+
+    'First, instanciante the internalCheks Objects
+    If internalChecks Is Nothing Then Set internalChecks = Checking.Create(checkName)
+    
+    'Add new informations to the checking object
+    internalChecks.Add Cstr(checkCounter), label, scope
+    checkCounter = checkCounter + 1
+
+    If Not this.hasChecks Then this.hasChecks = True
+End Sub
+
 'Requirements for instanciation
 Private Sub CheckRequirements(ByVal sh As Worksheet)
 
@@ -325,10 +517,11 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
 
     'Required listObjects fo translations
     LoExists TABKEYS, sh
+    LoExists TABPROTECTION, sh
     
     If sh.ListObjects(TABKEYS).DataBodyRange Is Nothing Then ThrowError "Unable to instanciate password, the keys table is empty"
 
-    'Ranges in the linelist translation worksheet
+    'Ranges in the password worksheets that should be present
     RangeExists rngName:="RNG_DebuggingPassword", sh:=sh
     RangeExists rngName:="RNG_PublicKey", sh:=sh
     RangeExists rngName:="RNG_LabPublicKey", sh:=sh
@@ -338,6 +531,12 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     RangeExists rngName:="RNG_Version", sh:=sh
 
 End Sub
+
+
+Private Sub ShowDebug()
+    Debug.Print "Check the informations of dropdownlist object " & Name()
+End Sub
+
 
 'Check if listobject exists in a worksheet
 Private Sub RangeExists(ByVal rngName As String, ByVal sh As Worksheet)
@@ -364,9 +563,48 @@ Private Sub ThrowError(ByVal errorMessage As String)
 End Sub
 
 
+
+'@jump:Create
+'@section Interface
+
+'@jump:elements
+'Password object elements ------------------------------------------------------
+
+'password object name
+Private Property Get IPasswords_Name() As String
+    IPasswords_Name = Name()
+End Property
+
+'debugging password
 Private Property Get IPasswords_PassWord() As String
     IPasswords_PassWord = Password()
 End Property
+
+'table range
+Private Property Get IPasswords_TableRange(ByVal tagName As String) As Range
+    Set IPasswords_TableRange = TableRange(tabName)
+End Property
+
+'one value of a range in the password object
+Private Property Get IPasswords_Value(ByVal tagName As String) As String
+    IPasswords_Value = Value(tagName)
+End Property
+
+'@jump:protections
+'protections -------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+'@jump:importexport
+'Import/export -----------------------------------------------------------------
+
 
 Private Sub IPasswords_UnProtect(Optional ByVal sheetName As String = "_active")
     UnProtect sheetName
@@ -391,10 +629,6 @@ Private Sub IPasswords_UnProtectWkb(ByVal wb As Workbook)
     UnProtectWkb wb
 End Sub
 
-Private Property Get IPasswords_Value(ByVal tagName As String) As String
-    IPasswords_Value = Value(tagName)
-End Property
-
 Private Sub IPasswords_DisplayPrivateKey(ByVal trads As ITranslation)
     DisplayPrivateKey trads
 End Sub
@@ -415,6 +649,18 @@ Private Sub IPasswords_Import(ByVal pass As IPasswords)
     Import pass
 End Sub
 
-Private Property Get IPasswords_TableRange() As Range
-    Set IPasswords_TableRange = TableRange()
+
+'@jump:checkings
+'Checkings ---------------------------------------------------------------------
+
+'@jump:HasChekings
+'Test if the object has checkings
+Private Property Get IPasswords_HasCheckings() As Boolean
+ IPasswords_HasCheckings = HasCheckings()
+End Property
+
+'@jump:CheckingValues
+'Get the checking values
+Private Property Get IPasswords_CheckingValues() As Object
+    Set IPasswords_CheckingValues = CheckingValues()
 End Property
