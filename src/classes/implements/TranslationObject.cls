@@ -81,6 +81,7 @@ Public Property Let Language(ByVal transLng As String)
     this.transLng = transLng
 End Property
 
+'@label:Name
 '@prop-title Name of the translation Object
 Private Property Get Name() As String
     Name = "Table: " & Table.Name & " - Language: " & Language
@@ -340,6 +341,11 @@ End Sub
 
 '@jump:elements
 'Elements----------------------------------------------------------------------
+
+'@jump:Name
+Private Property Get ITranslationObject_Name() As String
+    ITranslationObject_Name = Name()
+End Property
 
 '@jump:ValueExists
 Private Property Get ITranslationObject_ValueExists(ByVal text As String) As Boolean
