@@ -104,7 +104,7 @@ Private Property Get Value(ByVal tagName As String) As String
     Dim retVal As String
 
     Set sh = Wksh()
-    
+
     Select Case tagName
     Case "debuggingpassword"
         retVal = sh.Range("RNG_DebuggingPassword").Value
@@ -161,7 +161,7 @@ End Property
 '@details
 'Debug Mode is a mode where all the worksheets of the current workbook are
 'unprotected as well as the workbook. This will give the current user all the
-'power to modify, use and delete data in the current workbook. This is 
+'power to modify, use and delete data in the current workbook. This is
 'usually useful in case something go wrong in the workbook on in a debugging
 'process
 '
@@ -175,7 +175,7 @@ Private Sub EnterDebugMode(Optional ByVal wb As Object = Nothing)
     Set psh = Wksh()
 
 
-    'The default targeted workbook is the 
+    'The default targeted workbook is the
     'current workbook (where the password)
     If( TypeName(wb) = "Nothing") Then
         Set targetWb = psh.Parent
@@ -205,7 +205,7 @@ End Sub
 '@details
 'Debug Mode is a mode where all the worksheets of the current workbook are
 'unprotected as well as the workbook. This will give the current user all the
-'power to modify, use and delete data in the current workbook. This is 
+'power to modify, use and delete data in the current workbook. This is
 'usually useful in case something go wrong in the workbook on in a debugging
 'process
 '
@@ -218,7 +218,7 @@ Private Sub LeaveDebugMode(Optional ByVal wb As Object = Nothing)
 
     Set psh = Wksh()
 
-    'The default targeted workbook is the 
+    'The default targeted workbook is the
     'current workbook (where the password)
     If( TypeName(wb) = "Nothing") Then
         Set targetWb = psh.Parent
@@ -238,13 +238,11 @@ Private Sub LeaveDebugMode(Optional ByVal wb As Object = Nothing)
     psh.Range("RNG_DebugMode").Value = "no"
 End Sub
 
-
-
-'@prop-title Generate a new public/private key
+'@label:GenerateKey
+'@sub-title Generate a new public/private key
 '@details
 'Shuffle the table and select one pair of public/private key after shuffling.
 '@export
-'@return
 Private Sub GenerateKey(ByVal trads As ITranslation)
     Dim nbRows As Long
     Dim randNum As Integer
@@ -256,20 +254,20 @@ Private Sub GenerateKey(ByVal trads As ITranslation)
     Set LoKeys = sh.ListObjects(TABKEYS)
 
     'Don't try to generate new keys if the databodyrange does not exists
-    If LoKeys.DataBodyRange Is Nothing Then 
-        'Come here for logging
+    If LoKeys.DataBodyRange Is Nothing Then
+        LogInfo "Table for private/public key is empty"
+        ShowDebug
         Exit Sub
     End If
 
-
     Set LoRng = LoKeys.DataBodyRange
-    
+
     'Number of Rows of the databodyrange of the listobject
     nbRows = LoRng.Rows.Count
 
     'Generate a random number
     randNum = Int(nbRows * Rnd())
-    
+
     'Private and Public key values
     sh.Range("RNG_PublicKey").Value = LoRng.Cells(randNum, 1).Value
     sh.Range("RNG_PrivateKey").Value = LoRng.Cells(randNum, 2).Value
@@ -278,7 +276,11 @@ Private Sub GenerateKey(ByVal trads As ITranslation)
     DisplayPrivateKey trads
 End Sub
 
-'Display the private key
+
+'@label:DisplayPrivateKey
+'@sub-title Display the value of the private key
+'@param trads A Translation Object used to show messages
+'@export
 Private Sub DisplayPrivateKey(ByVal trads As ITranslation)
     Dim sh As Worksheet
     Dim privKey As String
@@ -287,29 +289,52 @@ Private Sub DisplayPrivateKey(ByVal trads As ITranslation)
     MsgBox trads.TranslatedValue("MSG_Password") & privKey
 End Sub
 
-'protect
-Private Sub Protect(ByVal sheetObject As Variant, Optional ByVal allowShapes As Boolean = False, _ 
-                    Optional ByVal allowDeletingRows As Boolean = True)
+'@label:Protect
+'@sub-title Protect one worksheet
+'@details
+'The protect sub can have a worksheet, or a worksheet name as argument. It
+'can also use a "_active" tag to protect the current active worksheet. If useTables
+'is true, protected worksheets are added to the current protected sheets table.
+'@param sheetObject A Variant; either the worksheet or the worksheet name
+'@param allowShapes Optional, Boolean. Allow drowing objects. Used
+'for graphs. Default is False.
+'@param allowDeletingRow Optional, Boolean. Default is True
+'@param useTable Optional, Boolean. Use the Protected table parameters for locking. Default is False.
+'@export
+Private Sub Protect(ByVal sheetObject As Variant, _
+                    Optional ByVal allowShapes As Boolean = False, _
+                    Optional ByVal allowDeletingRows As Boolean = True, _
+                    Optional ByVal useTable As Boolean = False)
 
     Dim pwd As String
     Dim sh As Worksheet
     Dim wb As Workbook
+    Dim drawObjects As Boolean
+    Dim deleteRow As Boolean
 
     Set wb = Wksh.Parent
 
     'If the sheetObject is a worksheet, unProtect it, if it is a string
+    If Not useTable Then
+        If (TypeName(sheetObject) = "String") Then
+            If sheetObject = "_active" Then
+                Set sh = ActiveSheet
+            Else
+                On Error Resume Next
+                Set sh = wb.Worksheets(sheetObject)
+                On Error GoTo 0
+            End If
 
-    If (TypeName(sheetObject) = "String") Then
-        If sheetObject = "_active" Then
-            Set sh = ActiveSheet
-        Else
-            On Error Resume Next
-            Set sh = wb.Worksheets(sheetObject)
-            On Error GoTo 0
+        ElseIf (TypeName(sheetObject) = "Worksheet") Then
+            Set sh = sheetObject
         End If
 
-    ElseIf (TypeName(sheetObject) = "Worksheet") Then
-        Set sh = sheetObject
+        drawObjects = (Not allowShapes)
+        deleteRow = allowDeletingRows
+
+    Else
+        drawObjects = TableValue(sheetObject, "drawObject") <> "no")
+        deleteRows = TableValue(sheetObject, "deleteRows") <> "no")
     End If
 
     'Test if the sheet Exists
@@ -317,28 +342,127 @@ Private Sub Protect(ByVal sheetObject As Variant, Optional ByVal allowShapes As 
     If Not InDebugMode() Then
 
         pwd = Password()
-        
+
         'Contents: Protect graphs data, and Locked cells in one sheet
         'Scenarios: Protect scenarios
         'DrawingObjects: You can change graphs dimensions, move them and / or add new shapes
         'You can remove alowing scenario and unable selection of lock cells
-        
-        sh.Protect Password:=pwd, _ 
-                   DrawingObjects:=(Not allowShapes), _ 
-                   Contents:=True, _ 
+
+        sh.Protect Password:=pwd, _
+                   DrawingObjects:=drawObjects, _
+                   Contents:=True, _
                    Scenarios:=True, _
-                   AllowInsertingRows:=True, _ 
-                   AllowSorting:=False, _ 
+                   AllowInsertingRows:=True, _
+                   AllowSorting:=False, _
                    AllowFiltering:=True, _
-                   AllowFormattingCells:=True, _ 
-                   AllowDeletingRows:=allowDeletingRows, _ 
+                   AllowFormattingCells:=True, _
+                   AllowDeletingRows:=deleteRows _
                    AllowFormattingColumns:=True, _
                    AllowFormattingRows:=True
+
+        If useTable Then AddValue sheetObject, drawObjects, deleteRows
     End If
 End Sub
 
-'Protect a worksheet that is not in current workbook, using the LLPassword
-'class
+
+'Extract some properties from the table where we have informations on worksheets
+'protected
+Private Function TableValue(ByVal sheetObject As Variant, _
+                            Optional ByVal colIndex As Byte = 1) As String
+
+    Dim sh As Worksheet
+    Dim idkey As String
+    Dim idRng As Range
+    Dim cellRng As Range
+    Dim outValue As String
+    Dim Lo As ListObject
+
+    Set sh = Wksh()
+    Set Lo = sh.ListObjects(TABPROTECTION)
+
+    If (TypeName(sheetObject) = "Worksheet") Then
+      TableValue sheetObject.Name, colIndex
+    End If
+
+    If (TypeName(sheetObject) <> "String") Then
+        LogInfo "Tried to add values with something that is not a worksheet", checkingWarning
+        ShowDebug
+        Exit Sub
+    End If
+    idKey = sheetObject
+    idRng = Lo.ListColumns(1).DataBodyRange
+
+    'Look for the worksheet/Workbook value and retrieve it
+    On Error Resume Next
+        Set cellRng = idRng.Find(What:=idKey, LooAt:=xlWhole, MatchCase:=True, _ 
+                                 after:=idRng.Cells(idRng.Rows.Count, 1))
+    On Error GoTo 0
+    
+    'in case nothing is found, return vbNullString
+    If Not (cellRng Is Nothing) Then
+        outValue = cellRng.Cells(1, colIndex).Value
+    End If
+
+    TableValue = outValue
+End Function
+
+
+Private Sub AddValue(ByVal sheetObject As Variant, _
+                     Optional ByVal drawObjects As Boolean = True, _
+                     Optional ByVal deleteRows As Boolean = True)
+
+
+    Dim Lo As ListObject
+    Dim IdRng As Range
+    Dim cellRng As Range
+    Dim idValue As String
+    Dim resizeLo As Boolean
+    Dim sh As Worksheet
+
+    If (TypeName(sheetObject) = "Worksheet") Then
+        AddValue sheetObject.Name, allowShape, allowDeletingRows
+    End If
+
+    If (TypeName(sheetObject) <> "String") Then
+        LogInfo "Tried to add values with something that is not a worksheet", checkingWarning
+        ShowDebug
+        Exit Sub
+    End If
+
+    idValue = sheetObject
+
+    Set sh = Wksh()
+    Set Lo = sh.ListObjects(TABPROTECTION)
+    Set idRng = Lo.ListColumns(1).DataBodyRange
+
+    On Error Resume Next
+        Set cellRng = idRng.Find(What:=idValue, MatchCase:=True, LookAt:=xlWhole, _
+                                after:=idRng.Cells(idRng.Rows.Count, 1))
+    On Error GoTo 0
+
+    If (cellRng Is Nothing) Then
+        '
+        Set cellRng = idRng.Cells(1, 1)
+        Do While (cellRng.Value <> vbNullString)
+            Set cellRng = cellRng.Offset(1)
+        Loop
+        resizeLo = (cellRng.Row > idRng.cells(idRng.Rows.Count, 1).Row)
+    End If
+
+    cellRng.Value = idValue
+    cellRng.Offset(, 1).Value = IIf(allowShape, "yes", "no")
+    cellRng.Offset(, 2).Value = IIf(allowDeletingRows, "yes", "no")
+
+    'Resize the listObject if necessary
+    If resizeLo Then
+        With sh
+            Set cellRng = .Range(idRng.Cells(0, 1), cellRng.Cells(1, 3))
+        End With
+        Lo.Resize cellRng
+    End If
+End Sub
+
+
 
 'Protect workbook
 Private Sub ProtectWkb(ByVal wb As Workbook, Optional ByVal protectSheetName As Boolean = True)
@@ -443,17 +567,17 @@ Private Sub Import(ByVal pass As IPasswords)
     Dim Lo As listObject
 
     Set sh = Wksh()
-    
+
     'Set values of ranges
     sh.Range("RNG_PublicKey").Value = pass.Value("publickey")
     sh.Range("RNG_PrivateKey").Value = pass.Value("privatekey")
     sh.Range("RNG_Version").Value = pass.Value("version")
-    
+
     Set impTabRng = pass.TableRange()
     '
     If impTabRng.Columns.Count <> 2 Then _
     ThrowError "Error when importing, import keys table doesn't have 2 columns"
-    
+
     Set Lo = sh.ListObjects(TABKEYS)
     Set actTabRng = Lo.DataBodyRange
 
@@ -493,7 +617,7 @@ End Property
 '@param Label String, the message to add.
 '@param scope Byte. The scope of the checking object.
 '@export
-Private Sub LogInfo(ByVal label As String, _ 
+Private Sub LogInfo(ByVal label As String, _
                     Optional ByVal scope As Byte = checkingNote)
 
     Dim checkName As String
@@ -502,7 +626,7 @@ Private Sub LogInfo(ByVal label As String, _
 
     'First, instanciante the internalCheks Objects
     If internalChecks Is Nothing Then Set internalChecks = Checking.Create(checkName)
-    
+
     'Add new informations to the checking object
     internalChecks.Add Cstr(checkCounter), label, scope
     checkCounter = checkCounter + 1
@@ -518,7 +642,7 @@ Private Sub CheckRequirements(ByVal sh As Worksheet)
     'Required listObjects fo translations
     LoExists TABKEYS, sh
     LoExists TABPROTECTION, sh
-    
+
     If sh.ListObjects(TABKEYS).DataBodyRange Is Nothing Then ThrowError "Unable to instanciate password, the keys table is empty"
 
     'Ranges in the password worksheets that should be present
@@ -593,12 +717,27 @@ End Property
 '@jump:protections
 'protections -------------------------------------------------------------------
 
+'Enter and leave degub mode
 
+'@jump:EnterDebugMode
+Private Sub IPasswords_EnterDebugMode()
+    EnterDebugMode
+End Sub
 
+'@jump:LeaveDebugMode
+Private Sub IPasswords_LeaveDebugMode()
+    LeaveDebugMode
+End Sub
 
+'@jump:GenerateKey
+Private Sub IPasswords_GenerateKey(ByVal trads As ITranslation)
+    GenerateKey trads
+End Sub
 
-
-
+'@jump:DisplayPrivateKey
+Private Sub IPasswords_DisplayPrivateKey(ByVal trads As ITranslation)
+    DisplayPrivateKey trads
+End Sub
 
 
 
@@ -611,7 +750,7 @@ Private Sub IPasswords_UnProtect(Optional ByVal sheetName As String = "_active")
 End Sub
 
 Private Sub IPasswords_Protect(Optional ByVal sheetObject As Variant, _
-                                 Optional ByVal allowShapes As Boolean = False, _ 
+                                 Optional ByVal allowShapes As Boolean = False, _
                                  Optional ByVal allowDeletingRows As Boolean = True)
     Protect sheetObject, allowShapes, allowDeletingRows
 End Sub
@@ -629,21 +768,9 @@ Private Sub IPasswords_UnProtectWkb(ByVal wb As Workbook)
     UnProtectWkb wb
 End Sub
 
-Private Sub IPasswords_DisplayPrivateKey(ByVal trads As ITranslation)
-    DisplayPrivateKey trads
-End Sub
 
-Private Sub IPasswords_GenerateKey(ByVal trads As ITranslation)
-    GenerateKey trads
-End Sub
 
-Private Sub IPasswords_EnterDebugMode()
-    EnterDebugMode
-End Sub
 
-Private Sub IPasswords_LeaveDebugMode()
-    LeaveDebugMode
-End Sub
 
 Private Sub IPasswords_Import(ByVal pass As IPasswords)
     Import pass
