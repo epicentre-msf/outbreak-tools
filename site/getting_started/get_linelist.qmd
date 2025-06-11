@@ -1,0 +1,26 @@
+---
+title: "Get a linelist template"
+description: Where to obtain an OBT linelist?
+---
+
+There are several ways to obtain a template:
+
+1. Go to the public page of the [Epinetwork sharepoint](https://msfintl.sharepoint.com/sites/OCG/Projects/GRP-MSF-EpiNetwork/Library/Forms/AllItems.aspx?id=%2Fsites%2FOCG%2FProjects%2FGRP-MSF-EpiNetwork%2FLibrary%2F01%20Outbreaks&viewid=36a61edd-2f15-4105-835a-d580bada0924&FolderCTID=0x012001) where all the last versions of the existing OBT tools are stored, organised by by disease.
+
+::: {callout-note}
+If you have access to it, the private Epinetwork site should have the same versions of the files.
+:::
+
+2. If you are working in a big project, with several OCs and a dedicated SharePoint, the linelist template might have been droped in it^[As was the case for Cholera in Haiti, measles and cholera in East Africa, RDC mpox, West Africa Diphtheria etc.].
+
+3. Ask your epi-advisor (or equivalent position from your OC) who can access the Epinetwork Sharepoint
+
+4. In last resort, you can contact the EpiDS team who can send you the last version.
+
+::: {.callout-important}
+Always check the date in the template files name! As OBT tools are still in development, there are often new versions with new functionalities or bug fixes. Dictionaries might also be updated if there was a request for it. So if the date is more than four or five months old, it is best to check if there is a more recent version.
+
+If someone handled you a file that is more than one year old, definitely ask around for newer versions and migrate the data!
+:::
+
+
