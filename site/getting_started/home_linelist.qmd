@@ -1,7 +1,10 @@
 ---
 title: Getting started with an OBT linelist
 listing:
-  - contents: "../getting_started/use_linelist.qmd"
+  - id: articles-links
+    contents:
+      - "../getting_started/get_linelist.qmd"
+      - "../getting_started/use_linelist.qmd"
 ---
 
 
