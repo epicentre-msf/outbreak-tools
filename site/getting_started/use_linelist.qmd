@@ -1,5 +1,6 @@
 ---
 title: "Getting started with the linelist"
+description: Lern the first steps to use an OBT linelist
 ---
 
 OutbreakTools (OBT) linelist are linelist created using the OBT solution. They always have the same functionalities, which include:
