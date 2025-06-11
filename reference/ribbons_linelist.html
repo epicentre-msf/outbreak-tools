@@ -41,7 +41,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="../site_libs/quarto-html/quarto-syntax-highlighting-e1a5c8363afafaef2c763b6775fbf3ca.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-2d2c3c1dc8fcebd689918bbad00a5354.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-6a4c75c897c7090e25337f92bebeec5a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <link href="../site_libs/quarto-contrib/fontawesome6-0.1.0/all.css" rel="stylesheet">
 <link href="../site_libs/quarto-contrib/fontawesome6-0.1.0/latex-fontsize.css" rel="stylesheet">
 <script id="quarto-search-options" type="application/json">{
@@ -157,7 +157,7 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#add-rows" id="toc-add-rows" class="nav-link" data-scroll-target="#add-rows">Add rows</a></li>
   <li><a href="#resize-table" id="toc-resize-table" class="nav-link" data-scroll-target="#resize-table">Resize table</a></li>
   <li><a href="#clear-all-filters" id="toc-clear-all-filters" class="nav-link" data-scroll-target="#clear-all-filters">Clear all filters</a></li>
-  <li><a href="#sort-the-variable" id="toc-sort-the-variable" class="nav-link" data-scroll-target="#sort-the-variable">Sort the variable</a></li>
+  <li><a href="#sort-a-variable" id="toc-sort-a-variable" class="nav-link" data-scroll-target="#sort-a-variable">Sort a variable</a></li>
   <li><a href="#week-start" id="toc-week-start" class="nav-link" data-scroll-target="#week-start">Week start</a></li>
   <li><a href="#autofit-columns" id="toc-autofit-columns" class="nav-link" data-scroll-target="#autofit-columns">Autofit columns</a></li>
   <li><a href="#sec-geo-helper" id="toc-sec-geo-helper" class="nav-link" data-scroll-target="#sec-geo-helper">GeoHelper</a></li>
@@ -220,7 +220,7 @@ ul.task-list li input[type="checkbox"] {
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="../images/img-002-ribbon-linelist.png" class="img-fluid figure-img"></p>
-<figcaption>OutbreakTools tab in the created linelist</figcaption>
+<figcaption>OutbreakTools menu in OBT linelists</figcaption>
 </figure>
 </div>
 <section id="sec-data-table" class="level2">
@@ -256,38 +256,38 @@ Tip
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>You can hide all optional variables in one go by clicking on the “Hide all optional variables” button.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
-<p>The button will change to “Show all optional variables”, to allow the reverse action.</p>
+<p>You can hide all optional variables in one go by clicking on the “Hide all optional variables” button.</p>
+<p>This is useful if you want to create a minimal linelist because the provided linelist has a lot of variables shown by default.</p>
+<p>After use, the button will change to “Show all optional variables”, to allow the reverse action.</p>
 </div>
 </div>
 </section>
 <section id="add-rows" class="level3">
 <h3 class="anchored" data-anchor-id="add-rows">Add rows</h3>
-<p>By default, the linelist has 200 empty lines. But you can add more when these are filled. Click on the “Add Rows” button to add 200 new empty rows.</p>
-<p>In addition, five new rows appear when you start entering data in the last row</p>
+<p>By default, the linelist has 200 empty lines. Click on the “Add Rows” button to add 200 new empty rows.</p>
+<p>In addition, five new rows automatically appear when you start entering data in the last row.</p>
 </section>
 <section id="resize-table" class="level3">
 <h3 class="anchored" data-anchor-id="resize-table">Resize table</h3>
-<p>You can resize the table to remove empty rows at the bottom of the table on the linelist sheet. Click on the “Resize table” button to remove any empty row.</p>
+<p>Click on the “Resize table” button to remove any empty rows at the end or in the middle of the linelist.</p>
 </section>
 <section id="clear-all-filters" class="level3">
 <h3 class="anchored" data-anchor-id="clear-all-filters">Clear all filters</h3>
-<p>To remove all the filters at once, click on the “Clear all filters” button. This is useful if you applied filters to several columns scattered left and right of the table and want to reverse to the full view without missing a sneaky filter somewhere.</p>
+<p>To remove all the filters at once, click on the “Clear all filters” button. This is useful if you applied several filters across the table and want to reverse to the full view without missing one.</p>
 </section>
-<section id="sort-the-variable" class="level3">
-<h3 class="anchored" data-anchor-id="sort-the-variable">Sort the variable</h3>
-<p>If you need to visualize your data by sorting on specific variables (date of notification for example), you need to use the sorting function. Place the cursor in a cell of the column you want to sort (from line 9) and click on the button.</p>
-<p>The first time you click, you have a message to confirm the action, once you click <em>yes</em>, you cannot undo it. The first time it sorts by ascending order, if you click again, it will sort by descending order.</p>
+<section id="sort-a-variable" class="level3">
+<h3 class="anchored" data-anchor-id="sort-a-variable">Sort a variable</h3>
+<p>If you need to visualise your data by sorting on a specific variable, you need to use the sorting function. Place the cursor in a cell of the column you want to sort (from line 9) and click on the button.</p>
+<p>The first time you click, you have a message to confirm the action, once you click <em>yes</em>, you cannot undo it. The first click sorts by ascending order, the second by descending order.</p>
 </section>
 <section id="week-start" class="level3">
 <h3 class="anchored" data-anchor-id="week-start">Week start</h3>
-<p>Chose the day that starts the week in your country using the “Week start” button. The selected value will be applied to the whole linelist (calculated epiweeks, as well as in the analyses).</p>
-<p>When you click on the button, a pop up window appears, where you can select the day of the week. Then close the window.</p>
+<p>The “Week start” button controls the day that starts the week in the linelist. The selected value will be applied to the whole linelist (calculated epiweeks, as well as in the analyses).</p>
+<p>When you click on the button, a pop up window appears, where you can select the day of the week corresponding to your country.</p>
 </section>
 <section id="autofit-columns" class="level3">
 <h3 class="anchored" data-anchor-id="autofit-columns">Autofit columns</h3>
 <p>Use this button to improve column width so that the columns take less space. The fit takes into account the label, the length of categories of the variable (if any) and the name of the variable (hidden).</p>
-<p>In addition, the sheet is not protected against column width modifications, so you can manually adjust the width of some columns.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -298,7 +298,7 @@ Tip
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>You can manually modify the width of columns in the linelist table to adjust to content the way you would do in any Excel file.</p>
+<p>Additionaly, you can manually modify the width of columns in the linelist to adjust to content the way you would do in any Excel file. The width of the column is also migrated during migration.</p>
 </div>
 </div>
 </section>
@@ -323,7 +323,26 @@ Tip
 <figcaption>Refresh analyses button</figcaption>
 </figure>
 </div>
-<p>Hit the “Refresh analyses” button to update analyses on all analyses sheets in one go. You should use it whenever you entered new data or when you applied filters to existing data and want to see the analyses on this subset of data.<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></p>
+<p>Hit the “Refresh analyses” button to update analyses on all analyses sheets in one go. You should use it whenever you entered new data or when you applied filters to existing data and want to see the analyses on this subset of data.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If the numbers in the analyses are striken, it is because of a <a href="https://techcommunity.microsoft.com/blog/microsoft365insiderblog/stale-value-formatting-now-available-in-excel-for-windows/4281372">new Excel functionality</a>. The documentation is limited and we have not been able to modify the refresh button to take it into account yet. You have two options: use the F9 shortcut before hitting “Refresh analyses”, or un-tick the “Format Stale Values” option in the Calculation options of the <em>Formula</em> tab of Excel options.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="../reference/images/ribbons-006-ll-stale.png" class="img-fluid figure-img"></p>
+<figcaption>Excel Calculation options</figcaption>
+</figure>
+</div>
+</div>
+</div>
 </section>
 <section id="sec-import-data" class="level2">
 <h2 class="anchored" data-anchor-id="sec-import-data">Imports</h2>
@@ -335,8 +354,8 @@ Tip
 </div>
 <section id="import-data" class="level3">
 <h3 class="anchored" data-anchor-id="import-data">Import data</h3>
-<p>The « Import Data » button allows you to import data in the linelist. This data must be in a special format typically produced by exporting data from another OutbreakTools linelist for the same disease.</p>
-<p>First a window opens to select the file to import. Select it and click on “OK”. At the end, a message will inform you of the success and provide a little import report is you wish so. Inspect it to see if there are any unexpected discrepancies (loosing variables should always be investigated!).</p>
+<p>The “Import Data” button allows you to import data in the linelist. This data must be in a special format typically produced by exporting data from another OutbreakTools linelist for the same disease<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</p>
+<p>Select the file to import using the navigating windows and click “Ok” to launch the import. At the end, a message informs you of the success and provide a little import report. Inspect it to see if there are any unexpected discrepancies (loosing variables unexpectedly is a red flag!).</p>
 <div class="callout callout-style-default callout-important callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -347,10 +366,10 @@ Important
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>The same button is used whether the data is <em>partial</em> (generated by the regular export button, anonymised or not, with metadata or not), or <em>extensive</em> (generated through the “Export for migration” button, from the <a href="#sec-linelist-advanced">Advanced</a> section of the ribbon).</p>
+<p>The same button is used whether the data was generated with the “Export data button” from the <a href="#sec-export-data">Exports</a> section<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> or the “Export for migration” button from the <a href="#sec-linelist-advanced">Advanced</a> section of the ribbon<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>.</p>
 </div>
 </div>
-<p>If there is already data in the file, a message will inform you of that fact and ask you what you wish to do. It is possible to append the new data at the bottom of the already present data. This is a handy way to create temporary master linelists, or to gather data entered by two data-encoders.</p>
+<p>If there is already data in the file, a message will inform you of that fact and ask you what you wish to do. It is possible to append the new data at the bottom of the already present data. This is a handy way to create temporary master linelist, or to gather data entered by two data-encoders.</p>
 <div class="callout callout-style-default callout-warning callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -361,13 +380,13 @@ Warning
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Make sure the data is not overlapping before importing, as the import will just paste the data at the bottom of the existing data, and you would end up with duplicates to clean.</p>
+<p>Make sure the data is not overlapping before importing, as the import just pastes the new data at the bottom of the existing data, and you would end up with duplicates to clean manually.</p>
 </div>
 </div>
 </section>
 <section id="sec-import-geobase" class="level3">
 <h3 class="anchored" data-anchor-id="sec-import-geobase">Import geobase</h3>
-<p>“Import geobase” allows you to import a geobase in the linelist. If the current linelist had already a geobase, it will be replaced.</p>
+<p>The “Import geobase” button allows you to import a <a href="../how_to/download_geobase.qmd#sec-geobase-download">geobase</a> in the linelist. If the current linelist already has a geobase, it is replaced.</p>
 <div class="callout callout-style-default callout-warning callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -381,11 +400,11 @@ Warning
 <p>The import of the geobase does not affect the data already entered in the linelist, it only fills the modalities offered by dropdown menus. If data is already present in the linelist and the new geobase has different levels, you need to correct them yourselves.</p>
 </div>
 </div>
-<p>Go <a href="../how_to/import_geobase.html#sec-geobase-download">here</a> to learn how to download a geobase.</p>
 </section>
 </section>
 <section id="sec-export-data" class="level2">
 <h2 class="anchored" data-anchor-id="sec-export-data">Exports</h2>
+<p>OutbreakTools linelists have the feature to export data in a separate Excel file, to share with partners or perform more advance analyses. The characteristics of the exports (which variables, anonymised or not, password protected or not etc.) are pre-defined in the <strong>setup file</strong> that is used to generate the linelist.</p>
 <p>The regular exports buttons are available in the “Export section” of the ribbon, and the “Export for migration” is available in the <a href="#sec-linelist-advanced">Advanced</a> section of the ribbon.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
@@ -395,9 +414,8 @@ Warning
 </div>
 <section id="export-data" class="level3">
 <h3 class="anchored" data-anchor-id="export-data">Export data</h3>
-<p>OutbreakTools linelists have the feature to export data in a separated excel file, to share with partners or perform more advance analyses. The characteristics of the exports (which variables, anonymisation or not, password protected or not etc.) are pre-defined in the <a href="../reference/exports_sheet.html">setup file</a> that is used to generate the linelist.</p>
-<p>While Epicentre linelists should have at minima be an “Anonymous export for MSF” button, the other available exports differ between linelists created.</p>
-<p>To export data, click on the “Export Data” button, which opens a popup window, with several options. At the top, you will see buttons for different exports. After clicking on the desired export, a window pops-up for saving the export. If “Export Filtered Data” is selected, a confirmation message will pop-up first to ask you whether this is what you really want.</p>
+<p>All OBT linelists created by Epicentre should have at minima an “Anonymous export for MSF” button. In addition to that, other exports may be available in specific linelist files.</p>
+<p>Click on the “Export Data” button to open a popup window, with several options. At the top there are buttons for different exports. After clicking on the desired one, a window pops-up for saving the export. If “Export Filtered Data” is selected, a confirmation message will pop-up first to ask you whether this is what you really want.</p>
 <p>Once the folder has been selected (avoid root folder like PC, C:, D:) and after clicking “OK”, a new window opens to confirm the export and, if the export is protected, provide the associated password.</p>
 <div class="callout callout-style-default callout-tip callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -410,9 +428,9 @@ Tip
 </div>
 <div class="callout-body-container callout-body">
 <p>If you forgot the password, click on the “Export Button” again, and then click on the “Show actual private key” to display the password again.</p>
-</div>
-</div>
 <p>Click on the button “Generate new password” to change the password used by default.</p>
+</div>
+</div>
 </section>
 <section id="export-analyses" class="level3">
 <h3 class="anchored" data-anchor-id="export-analyses">Export analyses</h3>
@@ -442,10 +460,10 @@ Warning
 </figure>
 </div>
 <p>The features from this category <em>only work if you are on a data entry sheet</em>, otherwise you get an error message.</p>
-<p>Click on “Show register”; it opens a new <em>sheet</em> that contains all the variables from the linelist. On this sheet, you can use the <a href="#sec-data-table">Data Table</a> features can be used just as in the original linelist sheet:</p>
+<p>Click on “Show register” to open a new <em>sheet</em> that contains all the variables from the linelist. On this sheet, you can use the <a href="#sec-data-table">Data Table</a> features just as in the original linelist sheet:</p>
 <ul>
 <li><p>“Add rows” and “Resize table” work exactly the same (except that it adds 10 rows at once)</p></li>
-<li><p>“Show/Hide variables” works the same but looks a bit different. Instead of “Show” you can select “print” and the orientation of the header. You can also import the parametrisation of hidden/shown columns from the regular linelist table, or change column width.</p></li>
+<li><p>“Show/Hide variables” works the same but looks a bit different. Instead of “Show” you can select “Print” and the orientation of the header. You can also import the parametrisation of hidden/shown columns from the regular linelist table, or change column width.</p></li>
 </ul>
 <p>You can rotate all the labels at once by clicking the “Rotate headers” button. You can define the heigh of the row by clicking directly on “Row height”, a pop-up opens where you can define the heigh.</p>
 <p>All labels are editable.</p>
@@ -459,14 +477,15 @@ Tip
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>You should hide all calculted variable, they have no place i a register book</p>
+<p>You can hide all calculated variables which are not needed in a paper register.</p>
 </div>
 </div>
-<p>Once customized, you can close the sheet by clicking the red cross, all your modifications are saved.</p>
-<p>Once ready, you can use the “Print” button to open the print preview view (whether you are on the register sheet or the linelist sheet). All the variables to be printed fit one page (landscape). If you are satisfied, you can print.</p>
+<p>Once customized, you can <em>close</em> the sheet by clicking the red cross (it actually <em>hides</em> the sheet, but it still exists, so all your modifications are saved until the moment you reopen the sheet to print it again).</p>
+<p>Once ready, you can use the “Print” button to open the print preview view (whether you are on the register sheet or the linelist sheet). If you are satisfied, you can print.</p>
 </section>
 <section id="sec-linelist-advanced" class="level2">
 <h2 class="anchored" data-anchor-id="sec-linelist-advanced">Advanced</h2>
+<p>There is an “Advanced” button on the right of the ribbon, that opens a popup window with options that are used less often.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="../reference/images/img-011-ll-advanced.png" class="img-fluid figure-img"></p>
@@ -475,20 +494,19 @@ Tip
 </div>
 <section id="export-for-migration" class="level3">
 <h3 class="anchored" data-anchor-id="export-for-migration">Export for migration</h3>
-<p>This button exports raw data and metadata for migration to another linelist file.<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></p>
-<p>You can choose to export the patient data, the geobase and the history of the geobase (history list in the GeoHelper), by ticking the matching cases. There are also options to include metadata on the state of hidden/shown columns (to not have to redo the full setup in the new file), and the updated labels of the custom variables, if you used these variables.</p>
+<p>This button exports raw data and metadata for migration to another linelist file.<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a></p>
+<p>You can choose to export the patient data and/or the geobase and/or the history of the geobase (history list in the GeoHelper). There are also options to include metadata on the state of hidden/shown columns (to not have to redo the configuration in the new file), and the updated labels of the custom variables, if you used these variables.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="../reference/images/img-013-ll-export-migration.png" class="img-fluid figure-img"></p>
 <figcaption>Export for migration</figcaption>
 </figure>
 </div>
-<p>After selecting the options and clicking on “Export”, a window pops-up for saving the export. Select the folder and click on “OK”. Once finished a message appears to ask if you want to close the window.</p>
-<p>The export creates three files:</p>
+<p>Select the options and click on “Export”; a window pops-up asking where to save the exported file. Select the folder and click on “OK”.</p>
 <ul>
-<li>a file containing the <strong>data</strong> and all sort of metadata</li>
-<li>a file containing the <strong>geobase</strong> that is currently in the linelist, as well as the history from the GeoHelper</li>
-<li>a file containing only the GeoHelper <strong>history</strong> (in case you want to upgrade to a new version of the geobase but wished to keep your GeoHelper history)</li>
+<li>a file containing the <strong>data</strong> and <strong>metadata</strong></li>
+<li>a file containing the <strong>geobase</strong> that is currently in the linelist, <strong>as well as the history from the GeoHelper</strong></li>
+<li>a file containing *only the GeoHelper **history*<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></li>
 </ul>
 </section>
 <section id="import-geobase-history" class="level3">
@@ -501,14 +519,28 @@ Tip
 </section>
 <section id="delete-data-or-geobase-history" class="level3">
 <h3 class="anchored" data-anchor-id="delete-data-or-geobase-history">Delete data or geobase history</h3>
-<p>This are a dangerous buttons that allows you to delete data or geobase history from the linelist.</p>
-<p>“Delete all data” allows you to remove all the data you entered from the workbook. After clicking, you will have a warning message. To confirm the deletion, you will need to enter the full name of the file.</p>
-<p>“Delete geobase history” allows you to empty the table with the geobase history so the list of suggestion of the history method from the GeoHelper will be empty.</p>
+<p>This are dangerous buttons that allow you to delete data or geobase history from the linelist.</p>
+<ul>
+<li><p>“Delete all data” removes all the data you entered from the workbook. After clicking on it, you will have a warning message. To confirm the deletion, you will need to enter the full name of the file.</p></li>
+<li><p>“Delete geobase history” allows you to empty the table with the geobase history so the list of suggestion of the history method from the GeoHelper will be empty.</p></li>
+</ul>
 </section>
 <section id="restore-the-state-of-hidden-columns" class="level3">
 <h3 class="anchored" data-anchor-id="restore-the-state-of-hidden-columns">Restore the state of hidden columns</h3>
 <p>This button allows you to restore the state of hidden columns (i.e.&nbsp;hide them all again) if, for any reasons these columns had been shown.</p>
-<p>Note that hidden columns are not supposed to be shown, and the user can thus not modify their visibility state from the regular Show/Hide variables button, hence this button.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Hidden columns are not supposed to be shown, and the user can thus not modify their visibility state from the regular Show/Hide variables button, hence this button.</p>
+</div>
+</div>
 
 
 </section>
@@ -518,9 +550,12 @@ Tip
 <a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
 
 <ol>
-<li id="fn1"><p>If the linelist has a lot of optional variables shown by default and you wish to make a very minimal linelist, this might be faster than hiding most variables one by one: just unhide the variables that you need if any<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn2"><p>Do not forget to remove the filters and refresh the analyses at the end to not be confused but the numbers in a couple of days<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
-<li id="fn3"><p>Whether that is to upgrade versions, move out of a corrupt file or create a temporary master-linelist<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn1"><p>Do not forget to remove the filters and refresh the analyses at the end to not be confused by the numbers in a couple of days<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>But a good R script can mimic the format too<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>This data may or may not be anonymised, contain all columns or have extensive metadata depending on how the exports are encoded<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p>This export contains all the columns, and as much metadata as possible<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p>Whether that is to upgrade versions, move out of a corrupt file or create a temporary master-linelist.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6"><p>This option is useful if you want to upgrade to a new version of the geobase but wish to keep your GeoHelper history. You do not have to use it for general purpose migration.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

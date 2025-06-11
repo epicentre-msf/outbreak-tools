@@ -1,18 +1,5 @@
 [
   {
-    "listing": "/cheatsheets/home_cheatsheets.html",
-    "items": [
-      "/cheatsheets/analyses.html",
-      "/cheatsheets/variable_control.html"
-    ]
-  },
-  {
-    "listing": "/getting_started/home_linelist.html",
-    "items": [
-      "/getting_started/use_linelist.html"
-    ]
-  },
-  {
     "listing": "/reference/home_reference.html",
     "items": [
       "/reference/ribbons_designer.html",
@@ -24,6 +11,20 @@
       "/reference/dictionary_sheet.html",
       "/reference/exports_sheet.html",
       "/reference/translations_sheet.html"
+    ]
+  },
+  {
+    "listing": "/getting_started/home_linelist.html",
+    "items": [
+      "/getting_started/get_linelist.html",
+      "/getting_started/use_linelist.html"
+    ]
+  },
+  {
+    "listing": "/cheatsheets/home_cheatsheets.html",
+    "items": [
+      "/cheatsheets/analyses.html",
+      "/cheatsheets/variable_control.html"
     ]
   },
   {
