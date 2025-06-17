@@ -53,7 +53,7 @@
     "href": "index.html",
     "title": "OutbreakTools",
     "section": "",
-    "text": "Quickly build a linelist from an excel dictionary\nOutbreakTools is a set of solutions designed by Epicentre EpiDS team to quickly create linelists to collect field data during outbreaks without relying on fancy VBA skills. These linelists have a number of functionalities including descriptive analyses, buttons to migrate data to or from the linelist, or to import geographic data to better describe locations.\nDocumentation\nThis site contains documentation both on how to develop and modify an OBT linelist, and how to use it.\n\n\n\n\nI want to use a linelist Get started with any OutbreakTools linelist and the associated tools (GeoApp, dashboard)   Start\n\n\n\n\nI want to make a linelist Documentation for the setup file and designer that generate linelists.  Start\n\n\n\n\n\n\n Back to top"
+    "text": "Quickly build a linelist from an Excel dictionary\nOutbreakTools is a set of solutions designed by Epicentre EpiDS team to quickly create linelists to collect field data during outbreaks without relying on fancy VBA skills. These linelists have a number of functionalities including descriptive analyses, buttons to migrate data to or from the linelist, or to import geographic data to better describe locations.\nDocumentation\nThis site contains documentation both on how to develop and modify an OBT linelist, and how to use it.\n\n\n\n\nI want to use a linelist Get started with any OutbreakTools linelist and the associated tools (GeoApp, dashboard)   Start\n\n\n\n\nI want to make a linelist Documentation for the setup file and designer that generate linelists.  Start\n\n\n\n\n\n\n Back to top"
   },
   {
     "objectID": "reference/choices_sheet.html",
@@ -140,11 +140,11 @@
     "text": "Data table\n\n\n\nButtons acting on data entry tables\n\n\n\nShow / Hide variables\nClicking on the “Show/hide variables” button opens a window listing all the variables in this linelist sheet.\n\n\n\nShow hide button and pop-up window\n\n\nVariable can have three visibility status:\n\nMandatory: variables cannot be hidden with the Show/Hide\nShown: variables are currently visible but can be hidden by ticking “Hide” on the right\nHide: variables are currently hidden but can be made visible by ticking “Show” on the right\n\n\n\n\n\n\n\nTip\n\n\n\nYou can hide all optional variables in one go by clicking on the “Hide all optional variables” button.\nThis is useful if you want to create a minimal linelist because the provided linelist has a lot of variables shown by default.\nAfter use, the button will change to “Show all optional variables”, to allow the reverse action.\n\n\n\n\nAdd rows\nBy default, the linelist has 200 empty lines. Click on the “Add Rows” button to add 200 new empty rows.\nIn addition, five new rows automatically appear when you start entering data in the last row.\n\n\nResize table\nClick on the “Resize table” button to remove any empty rows at the end or in the middle of the linelist.\n\n\nClear all filters\nTo remove all the filters at once, click on the “Clear all filters” button. This is useful if you applied several filters across the table and want to reverse to the full view without missing one.\n\n\nSort a variable\nIf you need to visualise your data by sorting on a specific variable, you need to use the sorting function. Place the cursor in a cell of the column you want to sort (from line 9) and click on the button.\nThe first time you click, you have a message to confirm the action, once you click yes, you cannot undo it. The first click sorts by ascending order, the second by descending order.\n\n\nWeek start\nThe “Week start” button controls the day that starts the week in the linelist. The selected value will be applied to the whole linelist (calculated epiweeks, as well as in the analyses).\nWhen you click on the button, a pop up window appears, where you can select the day of the week corresponding to your country.\n\n\nAutofit columns\nUse this button to improve column width so that the columns take less space. The fit takes into account the label, the length of categories of the variable (if any) and the name of the variable (hidden).\n\n\n\n\n\n\nTip\n\n\n\nAdditionaly, you can manually modify the width of columns in the linelist to adjust to content the way you would do in any Excel file. The width of the column is also migrated during migration.\n\n\n\n\nGeoHelper\nThe GeoHelper is a popup window that helps you entering geographic data such as the origin of the patient or the name of the facility (if the “hf” control was used for the variable). It is mostly used to enter data on the patient data sheet, but it is also useful on the Spatio-Temporal analysis sheet.\nTo use it, place your cursor in a “geo” or “hf” column (you can recognise them thanks to the orange headers), in the admin 1 level. Click on the “GeoHelper” button, or hit the shortcut Ctrl + Shift + G. It opens a window, with several tabs, depending on whether you are in a “geo” (described by four visible columns) or in “hf” (described by one visible column).\nIf you are in a “geo” section, you will have three tabs that you can use to select administrative levels.\n\nCascade: select the admin levels with cascading menus, by selecting one admin level after the other, starting from the highest one.\nSearch: search by typing the name (needs at least 3 letters)\nHistory: quickly find a previous entry entered through the GeoHelper (does not work for data entered using the regular cascading dropdowns).\n\nOnce the location has been found, select it and click on “OK”."
   },
   {
-    "objectID": "reference/ribbons_linelist.html#refresh-analyses",
-    "href": "reference/ribbons_linelist.html#refresh-analyses",
+    "objectID": "reference/ribbons_linelist.html#refresh-analyses-sec-refresh",
+    "href": "reference/ribbons_linelist.html#refresh-analyses-sec-refresh",
     "title": "Linelist ribbon",
-    "section": "Refresh analyses",
-    "text": "Refresh analyses\n\n\n\nRefresh analyses button\n\n\nHit the “Refresh analyses” button to update analyses on all analyses sheets in one go. You should use it whenever you entered new data or when you applied filters to existing data and want to see the analyses on this subset of data.1\n\n\n\n\n\n\nNote\n\n\n\nIf the numbers in the analyses are striken, it is because of a new Excel functionality. The documentation is limited and we have not been able to modify the refresh button to take it into account yet. You have two options: use the F9 shortcut before hitting “Refresh analyses”, or un-tick the “Format Stale Values” option in the Calculation options of the Formula tab of Excel options.\n\n\n\nExcel Calculation options"
+    "section": "Refresh analyses {sec-refresh}",
+    "text": "Refresh analyses {sec-refresh}\n\n\n\nRefresh analyses button\n\n\nHit the “Refresh analyses” button to update analyses on all analyses sheets in one go. You should use it whenever you entered new data or when you applied filters to existing data and want to see the analyses on this subset of data.1\n\n\n\n\n\n\nNote\n\n\n\nIf the numbers in the analyses are striken, it is because of a new Excel functionality. The documentation is limited and we have not been able to modify the refresh button to take it into account yet. You have two options: use the F9 shortcut before hitting “Refresh analyses”, or un-tick the “Format Stale Values” option in the Calculation options of the Formula tab of Excel options.\n\n\n\nExcel Calculation options"
   },
   {
     "objectID": "reference/ribbons_linelist.html#sec-import-data",
@@ -240,65 +240,65 @@
   {
     "objectID": "getting_started/use_linelist.html",
     "href": "getting_started/use_linelist.html",
-    "title": "Getting started with the linelist",
+    "title": "Get started with a linelist",
     "section": "",
     "text": "OutbreakTools (OBT) linelist are linelist created using the OBT solution. They always have the same functionalities, which include:"
   },
   {
     "objectID": "getting_started/use_linelist.html#steps-to-prepare-a-linelist-for-deployment",
     "href": "getting_started/use_linelist.html#steps-to-prepare-a-linelist-for-deployment",
-    "title": "Getting started with the linelist",
+    "title": "Get started with a linelist",
     "section": "Steps to prepare a linelist for deployment",
     "text": "Steps to prepare a linelist for deployment\n\nDownload the empty linelist template in the language of your choice.1\nPrepare geographic information:\n\nGo to the Geoapp and download the geo-base for the area of interest (it can be cross-border).\n\nIn the linelist, go to the OutbreakTools menu and click on the “Import geobase” button\n\n\n\n\n\nPrepare geo data\n\n\n\nSet up the day of the week: “Week start” button in the OutbreakTools menu\nOptional: modify variable visibility: “Show/Hide variables” button from the OutbreakTools menu\nOptional: prepare and print a register and/or Case Report Form to enter data on paper (“Register and Case report form” section of the OutbreakTools menu)\nSend the linelist to the sites. There should be one linelist per site.\nEach site should fill the Info sheet in their linelist before entering patient data.\n\nAfter data has been encoded in the linelist, you can export data and send it to Epicentre for visualisation on an dashboard if the corresponding dashboards exist (which is usually the case for intersection approved linelists).\nCurrent dashboards include: cholera, measles, hepatitis E, diphtheria, mpox, meningitis. Other are added as the list of available OutbreakTools linelists grow."
   },
   {
     "objectID": "getting_started/use_linelist.html#sec-unprotect-file",
     "href": "getting_started/use_linelist.html#sec-unprotect-file",
-    "title": "Getting started with the linelist",
+    "title": "Get started with a linelist",
     "section": "Working with the file",
     "text": "Working with the file\n\nSave the file locally\nOneDrive cannot live synchronise macro-enable Excel files while you are using them2. If OneDrive is causing syncrhonisation issues, turn if off for a while or save the file is a folder nor syncrhonised by OneDrive.\n\n\nUse the Excel Desktop version\nMost of the functionalities of the linelist are not supported by the internet Excel version.\n\n\nUnprotect the file and authorise macros\nThe OubreakTools linelist rely on macros for functionalities, so at minima the macro needs to be enabled, but sometimes more steps are needed to authorise the use.\n\nMake sure the file is unlocked3: right click on the file you saved on your computer, and go to the “Properties” popup. If you can see an “Unprotect” checkbox at the bottom right, tick it. If you do not see such a checkbox, it means the file is unprotected.\n\n\n\n\nFile property window\n\n\n\nOpen the file (a password may be needed at this stage)\nIf VBA macros are already in you Excel, you may need to authorise VBA macros for this file when you first open it (popup windows, yellow or red band above the sheet). If you have never enabled macros, authorise VBA macros in options. You will probably need to restart the file after that for the changes to be taken into account."
   },
   {
     "objectID": "getting_started/use_linelist.html#the-outbreaktools-ribbon",
     "href": "getting_started/use_linelist.html#the-outbreaktools-ribbon",
-    "title": "Getting started with the linelist",
+    "title": "Get started with a linelist",
     "section": "The OutbreakTools ribbon",
     "text": "The OutbreakTools ribbon\nMost of the important features of the linelist can be accessed through the OutbreakTools Menu at the top of Excel interface. Go and explore it!"
   },
   {
     "objectID": "getting_started/use_linelist.html#structure-of-the-file",
     "href": "getting_started/use_linelist.html#structure-of-the-file",
-    "title": "Getting started with the linelist",
+    "title": "Get started with a linelist",
     "section": "Structure of the file",
     "text": "Structure of the file\nAt minima, an OutbreakTools linelist will contain these sheets:\n\nAn Info sheet which contains metadata about the project\n\nAt least one data entry sheet to enter patient data\n\nSome or all of the following analyses sheets containing basic exploration of data:\n\nUni and bivariate analyses\nTemporal analyses (epicurves and their associated tables)\nSpatial analyses (top X locations of cases)\nSpatio-temporal analyses (epicurves for chosen locations)\n\nA Custom dropdown sheet where the user can define categories for some specific variables\nA Custom tables sheet where the user can create a pivot table of the data\nA Geo sheet showing the loaded geobase."
   },
   {
     "objectID": "getting_started/use_linelist.html#enter-data-for-locations",
     "href": "getting_started/use_linelist.html#enter-data-for-locations",
-    "title": "Getting started with the linelist",
+    "title": "Get started with a linelist",
     "section": "Enter data for locations",
     "text": "Enter data for locations\nGeographical location are encoded using four columns that can accommodate up to four administrative levels, and these columns have a special status in OutbreakTools linelists. You can recognise them by the orange background of their labels.\nWhen you import a geobase in a linelist:\n\nThe labels of the columns are updated with the administrative levels present in the geobase (e.g. “adm1_name” will change to “Province” for DRC).\nThe categories of the dropdown menus update.\n\nYou can fill the variables either by using the cascading dropdown menus, or by using the GeoHelper button from the OutbreakTools menu.\n\n\n\n\n\n\nSearch options in the Geohelper\n\n\n\nThe first tab of the GeoHelper popup window allows you to pick the location level after level; the second tab allows you to search for a name in the geobase and the third tab displays the past values previously picked in the GeoHelper."
   },
   {
     "objectID": "getting_started/use_linelist.html#sec-custom-dropdown",
     "href": "getting_started/use_linelist.html#sec-custom-dropdown",
-    "title": "Getting started with the linelist",
+    "title": "Get started with a linelist",
     "section": "Fill dropdown menus for Custom Dropdowns variables",
     "text": "Fill dropdown menus for Custom Dropdowns variables\nCustom dropdowns columns are categorical columns for which the dropdown menu categories are defined by the user. They are useful for variables that rely on local, field specific information.\nTo define categories:\n\nClick on the column label to go to the Custom dropdown sheet where you can define the content of the dropdown menu4.\nEnter categories in the table\nClick on the head of the table to be brought back to the corresponding column in the linelist sheet to enter data5\n\n\nExtra columns\nOBT linelists often come with “extra columns” at the end (which may be show or hidden by default, go to the Show/hide variable popup to see them). The user can change the label of the columns and use them to collect whichever information they wish.\nUsually, a couple of free text/numeric and a couple of custom dropdown menus are available.\n\nDecide which additional variable you wish to collect\nRename the variable (select the label cell and write the new label)\nOptional: define the categories for the dropdown menu (see Section 6)\nFill in data"
   },
   {
     "objectID": "getting_started/use_linelist.html#footnotes",
     "href": "getting_started/use_linelist.html#footnotes",
-    "title": "Getting started with the linelist",
+    "title": "Get started with a linelist",
     "section": "Footnotes",
     "text": "Footnotes\n\n\nyou can expect English and French as default, but Spanish, Portuguese or Arabic translations have been developed when needed, don’t hesitate to ask.↩︎\nOne drive does syncrhornise the file once you saved and closed it though↩︎\nThis is distinct from the password protection that is customs for linelists: sometimes when a file comes from the internet through mail or Teams, Windows applies an extra layer of blocking↩︎\nYou can also navigate to that sheet using the bottom tabs, as you would do any other sheet↩︎\nAgain, this is a shortcut but you could go back using normal sheet navigation↩︎"
   },
   {
     "objectID": "getting_started/home_linelist.html",
     "href": "getting_started/home_linelist.html",
-    "title": "Getting started with an OBT linelist",
+    "title": "Get started with an OBT linelist",
     "section": "",
-    "text": "Get a linelist template\n\n\nWhere to obtain an OBT linelist?\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGetting started with the linelist\n\n\nLern the first steps to use an OBT linelist\n\n\n\n\n\n\n\n\nNo matching items\n Back to top"
+    "text": "Get a linelist template\n\n\nWhere to obtain an OBT linelist?\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nGet started with a linelist\n\n\nLearn the first steps to use an OBT linelist\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nThe linelist analyses sheets\n\n\nExplore your data from within the linelist with the the analyses sheets\n\n\n\n\n\n\n\n\nNo matching items\n Back to top"
   },
   {
     "objectID": "getting_started/compile.html",
@@ -343,193 +343,165 @@
     "text": "Footnotes\n\n\nThe more calculated columns and analyses there are, the longer it takes.↩︎\nFor example, attempting compilation while sharing screen in a Teams call might ending up in failure on bad days.↩︎"
   },
   {
-    "objectID": "getting_started/get_linelist.html",
-    "href": "getting_started/get_linelist.html",
-    "title": "Get a linelist template",
+    "objectID": "getting_started/use_analyses_sheets.html",
+    "href": "getting_started/use_analyses_sheets.html",
+    "title": "The linelist analyses sheets",
     "section": "",
-    "text": "There are several ways to obtain a template:"
+    "text": "OBT linelist contain analyses sheets with basic exploration of the data. Which sheets, and their exact content vary between diseases and what was encoded in the dictionary, but you can expect some or all of the following:"
   },
   {
-    "objectID": "getting_started/get_linelist.html#footnotes",
-    "href": "getting_started/get_linelist.html#footnotes",
-    "title": "Get a linelist template",
+    "objectID": "getting_started/use_analyses_sheets.html#updating-analyses",
+    "href": "getting_started/use_analyses_sheets.html#updating-analyses",
+    "title": "The linelist analyses sheets",
+    "section": "Updating analyses",
+    "text": "Updating analyses\nThe most important thing to know is that you should update the analyses before looking at them:\n\nDecide which data should be included in the analyses (see Important 1)\nHit F9 (forced recalculation, in case some formula got stuck)\nHit the “Refresh button” in the OutbreakTools menu, which will update all the data used by all the sheets.\n\n\n\n\nRefresh button in the OBT menu\n\n\n\n\n\n\n\n\nImportant 1\n\n\n\nIf you filter data in the main patient sheet, it will be reflected in the analyses sheets after you refresh (a red warning will appear to remind you). If you apply no filter or remove them, the analyses are performed on the whole dataset."
+  },
+  {
+    "objectID": "getting_started/use_analyses_sheets.html#person-uni-and-bivariate-analyses",
+    "href": "getting_started/use_analyses_sheets.html#person-uni-and-bivariate-analyses",
+    "title": "The linelist analyses sheets",
+    "section": "Person: Uni and bivariate analyses",
+    "text": "Person: Uni and bivariate analyses\nThis sheet is straightforward as there is nothing to parametrise on it: the tables and graphs are updated when you refresh the analyses.\n\n\n\n\n\n\nTip\n\n\n\nYou can alter the appearance of the graphs on all the sheets1, the same way you would do for your own figures, with any Excel tool.\nNote that graphs modifications will be lost during data migration to a new version of the linelist, so I advise you to restrict the modifications to graphs that you want to export to reports / slides, or which are really making your eyes bleed.\n\n\n\n\n\n\n\n\nTip\n\n\n\nAll the analyses sheets have a blue button on the top left with a dropdown menu containing shortcuts to the sections, to facilitate navigation when the analyses are long."
+  },
+  {
+    "objectID": "getting_started/use_analyses_sheets.html#time-temporal-analyses",
+    "href": "getting_started/use_analyses_sheets.html#time-temporal-analyses",
+    "title": "The linelist analyses sheets",
+    "section": "Time: temporal analyses",
+    "text": "Time: temporal analyses\nThis sheet contains tables across time and epicurves (below the tables). To see the analyses, you need to select a time unit: days, weeks, months, quarter, years. The table has 53 rows by default, and can thus accommodate up to:\n\n53 days (start of the outbreak, or a zoom on a specific period)\n53 weeks (aka one year)\n53 months (if you have several years worth of data)\n53 quarters or years (rarer user case of OBT, at least for linelists)\n\nBy default the table starts at the first admission/visit/notification date present in your data, but you can zoom on a specific time period by filling a start and even an end date of analysis.\n\n\n\nTemporal analysis settings"
+  },
+  {
+    "objectID": "getting_started/use_analyses_sheets.html#place-spatial-analyses",
+    "href": "getting_started/use_analyses_sheets.html#place-spatial-analyses",
+    "title": "The linelist analyses sheets",
+    "section": "Place: spatial analyses",
+    "text": "Place: spatial analyses\nThe “Spatial analyses” sheet displays the top X areas with the most cases, where X is defined in the linelist dictionary2.\nSome linelists may have several such analyses, depending on the information available in the linelist:\n\nTop X areas of residence\nTop X areas of origin\nTop X areas of residence of deceased patients\netc.\n\nTo see data on this sheet you need to select the admin level at which you want to see the data displayed (blue button, admin 1 to 4). If you imported a geobase, you should see the names of the administrative levels from the geobase appear in the dropdown menu.\nIf there is population data that you trust in the geobase, you can use the button “Select if you want to divide by population” to show attack rates instead of number of cases3.\n\n\n\n\n\n\nNote\n\n\n\nIf you have population data that is not in the geobase for levels of interest, or wish to correct existing ones, you can enter them in the “Geo” sheet (at the end of the linelist sheets)."
+  },
+  {
+    "objectID": "getting_started/use_analyses_sheets.html#place-and-person-spatio-temporal-analyses",
+    "href": "getting_started/use_analyses_sheets.html#place-and-person-spatio-temporal-analyses",
+    "title": "The linelist analyses sheets",
+    "section": "Place and person: spatio-temporal analyses",
+    "text": "Place and person: spatio-temporal analyses\nThe last analysis sheet that you may encounter in an OBT linelist is a crossover between the temporal analysis and the spatial analysis: it allows you to look at the number of cases (usually) for a couple of chosen administrative levels across time.\nTo use the sheet:\n\nPlace your cursor in one of the blue cells on the left (starting from C14 and down).\nClick on the “GeoHelper” button in the OutbreakTools menu4 and select an administrative level of interest (could be from any level)\nIf you want to, go to the next blue cell and use the Geohelper to select another place of interest\nSelect a unit for the analysis (day/month etc.)\n\n\n\n\nSpatio temporal analysis\n\n\nYou can track as many locations as there are blue cells (this number may vary between diseases)."
+  },
+  {
+    "objectID": "getting_started/use_analyses_sheets.html#extra-analysis-pivot-table",
+    "href": "getting_started/use_analyses_sheets.html#extra-analysis-pivot-table",
+    "title": "The linelist analyses sheets",
+    "section": "Extra analysis: pivot table",
+    "text": "Extra analysis: pivot table\nAn additional analyses sheet is available to create pivot tables (“Custom table”). In this sheet, there is one pivot table per existing linelist sheet in the workbook (usually, one). It works as regular pivot table, except the source is pre-defined."
+  },
+  {
+    "objectID": "getting_started/use_analyses_sheets.html#footnotes",
+    "href": "getting_started/use_analyses_sheets.html#footnotes",
+    "title": "The linelist analyses sheets",
     "section": "Footnotes",
-    "text": "Footnotes\n\n\nAs was the case for Cholera in Haiti, measles and cholera in East Africa, RDC mpox, West Africa Diphtheria etc.↩︎"
+    "text": "Footnotes\n\n\nGraphs and tables are created automatically and admittedly a bit ugly↩︎\nDepending on the disease, it might be the top 10 places, or the top 30 places.↩︎\nIf you elect to show attack rates when there is no population data, you will obtain errors in the table.↩︎\nOr hit CTRL + G keys.↩︎"
   },
   {
-    "objectID": "how_to/migrate_setup.html",
-    "href": "how_to/migrate_setup.html",
-    "title": "Migrate setup data",
+    "objectID": "how_to/link_tables.html",
+    "href": "how_to/link_tables.html",
+    "title": "Create linelists with more than one entry sheets",
     "section": "",
-    "text": "Get a new, empty setup file\nGo to the OutbreakTools menu of this setup file and click on the button “Import data from another setup”.\n\n\n\n\nImport section\n\n\nIt opens a popup windowto select the file to import data from.\n\n\n\n\n\n\nSelect what to import from the original by ticking the boxes. If you are doing a standard setup file upgrade, you should tick all the boxes to iport everything.\nDecide if you want to run a checkup of the setup file after import by ticking the box or not (you probably want to, but you can also do it at a later stage)\nClick on the “Import” button and wait.\n\n\n\n\n Back to top"
+    "text": "You want the linelist to contain several data entry sheets. The important thing to think about is how the tables should be linked, if at all."
   },
   {
-    "objectID": "how_to/send_data_to_dashboard.html",
-    "href": "how_to/send_data_to_dashboard.html",
-    "title": "Send data to the dashboard",
-    "section": "",
-    "text": "OBT linelists developed by the EpiDS team are usually paired with a dashboard, at least in the case of intersection linelists or big multi-sections projects. As a consequence, all linelists created by the EpiDS team can generate password-protected anonymous data, ready to be sent to Epicentre for compilation and visualisation.\nIf you are using a linelist for which a dashboard was developed, you can send data to Epicentre. The scripts run automatically every hours, so you can choose the frequency at which you send the data depending on your needs."
+    "objectID": "how_to/link_tables.html#independent-data-tables",
+    "href": "how_to/link_tables.html#independent-data-tables",
+    "title": "Create linelists with more than one entry sheets",
+    "section": "Independent data tables",
+    "text": "Independent data tables\nIf you need to create two independent data tables1, just use different sheet names in the Dictionary sheet.\n\n\n\n\n\n\nNote\n\n\n\nTechnically, a linelist with an “Info” and a “Patient linelist” sheet already has two entry sheets, one with a 1-dimension table and one with a 2-dimensions table.\nSince the two tables are created independently, you could have two sheets with 2-dimensions table."
   },
   {
-    "objectID": "how_to/send_data_to_dashboard.html#steps",
-    "href": "how_to/send_data_to_dashboard.html#steps",
-    "title": "Send data to the dashboard",
-    "section": "Steps",
-    "text": "Steps\n\nPrepare data\n\nClean your data as much as you can. Pay special attention to dates (date format, dates in the future, impossible dates…) and geographic data (see Note 1)\nMake sure that the general information metadata is properly filled (country, site name, section…) as this data is used in the dashboard.\nClear filters: you want to send the whole dataset, not only the current week (see Important 1). If you know that automatic calculations get stuck sometimes, hit F9/“Recalculate now” Excel button to force formula updates.\n\n\n\nExport and send\n\nExport data using the “Export data” button of the OutbreakTools menu, and chose the “Anonymous export to MSF” option (or a similar name). You will be prompted for a place to save the generated export (avoid root folder like PC, C:, D:).\nSend the data to epi-data [at] epicentre.msf.org without renaming the file.\nRince and repeat for all the linelists you have.\n\nThe file generated is a password protected excel file, whose password is provided at export. It has the Info sheet and patient data, as well as some automatically generated metadata (language, linelist version etc.).\nThe name of the export file is generated automatically based on the metadata you filled so make sure these data are filled correctly once and for all. If that is the case, you can send several exports in the same mail (from different sites, or even different diseases), the scripts will parse the export names to sort the files on our end.\n\n\n\n\n\n\nImportant 1\n\n\n\nOnly the last occurrence of data you sent is loaded on the dashboard.\nConsequently, it is perfectly fine to clean and amend past data even if you sent it previously (past exports will be ignored).\nIf you need to archive older data to work on a smaller and lighter linelist, contact the EpiDS team to make the setup so that both new and archived data go to the dashboard.\n\n\n\n\n\n\n\n\nNote 1: Geodata matching\n\n\n\nThe dashboard displays a map, where you can visualise data at several administrative levels (1 to 4), but it depends on the resolution of the data you and other send). For patients to appear on the map at a given resolution level, their geolocations needs to match the geobase for this level because the geobase loaded with the linelist corresponds to shapes used to create maps.\nIf a place of origin cannot be matched for a given level (e.g. health area), the patient will not be included on the map at the “health area” level resolution. If the above level (here the health zone) is matched, the patient will be accounted in the health zone resolution map.\nThe patient will be counted in other tables/graphs as long as the relevant information is filled, regardless of the geomatching."
+    "objectID": "how_to/link_tables.html#non-independent-tables",
+    "href": "how_to/link_tables.html#non-independent-tables",
+    "title": "Create linelists with more than one entry sheets",
+    "section": "Non independent tables",
+    "text": "Non independent tables\nSometimes you need to refer to data from another table, whether it is to use in a formula, to copy data or to populate a dropdown menu.\n\nRefer to a single value in a formula\nIt is straightforward to use the values of vlist1D variable in a formula: just use the name of the variable in the formula2.\nExample: the linelist user wants a variable with the name of the health structure in the data but in your setup, one site fills one excel file. In this case, you can create a calculated column that gets the name of the facility from a metadata sheet so that data encoders do not have to fill the name of the health structure again and again and again:\n\nIF(ISBLANK(case_id), ““, info_facility_name)\n\nSee the page on formulas and formulas controls\n\n\nLink two tables\nA more complex situation is when you have two 2-dimensions tables that are not independent. In this case, the tables should at minima be linked by a key.\nExample of a user case:\n\na main data entry sheet with general patient data (e.g. a Patient linelist sheet)\na secondary entry sheet with additional variables for a subset of patients (e.g. readmission variables or extensive lab testing).\n\nIn this case, the natural way to link the tables is to have the ID of the patient in both tables.\n\nConstrain possibles values for patient IDs in the secondary table with list_auto\nIn the user case above, the patients from the Readmission sheet are a subset from the Patient linelist sheet so we expect the IDs from Readmission to match the ones from Patient linelist.\nThe minimal (unsafe) option is to have two free text patient ID columns, one in each table, where data encoders enter IDs manually. This process however increases the risk of typing error and thus of merging nightmare.\nA safer way is to create a categorical variable in the Readmission sheet whose dropdown menu is populated by values present in the case_id column of the Patient linelist sheet. As the data encoder can only choose from existing patients from the Patient linelist sheet, the opportunity for encoding error and thus unmatched patients is greatly reduced.3\n\n\n\nUse of list_auto to link two columns\n\n\nSeethe section on list_auto and its control for a description on how to use the list_auto control.\n\n\nImport values from the other table with VALUE_OF\nIn addition to key columns to be able to join the tables, it might be desirable to bring some of the patient data in the secondary table, to calculate new variables, or just to facilitate reading and understanding without having fill the value on each line.\nFor example, we might want to bring in the name and surname of the patient, without entering it again, or the date of exit, to be able to calculate the number of days between the exit of the first admission and the date of readmission.\nThe custom function VALUE_OF can do that. It works sort of like a LOOKUP function, except we provide variable names, and it matches the value you need.\nIt takes three arguments, all variable names:\n\nVALUE_OF(key_variable1, key_variable2, variable_values)\n\n\nkey_variable1: the list_auto in the current sheet (the key column that contains IDs, e.g. readmission_id)\n\n\nkey_variable2: the source of the list_auto in the other sheet (the IDs from the main sheet, e.g. case_id)\n\n\nvariable_values: the variable which values we want to import.\n\n\n\n\nIllustration of the use of VALLUE_OF\n\n\n\n\n\n\n\n\nWarning\n\n\n\nkey_variable2 and variable_values must be on the same sheet or the function will return nothing.\n\n\nThe function matches the values from columns key_variable1 and key_variable2, and returns values from variable_values column at the corresponding row.\n\n\n\n\n\n\nNote\n\n\n\nIf the function finds more than two matches, it will return the values from the first match (the first line found)."
   },
   {
-    "objectID": "how_to/troubleshoot_linelist.html",
-    "href": "how_to/troubleshoot_linelist.html",
-    "title": "Troubleshoot the linelist",
-    "section": "",
-    "text": "The file is getting corrupted, things do not work properly any more\nReason\nIt might be because OneDrive tried to synchronise the file while it was opened, but failed because VBA macros prevent synchronisation.\nSolution\n\nMigrate the data in an empty, uncorrupted linelist\nSave file in a folder not synchronized by OneDrive or stop OneDrive when you are working on the file.\n\n\n\n\nButtons do not work, file is being weird\nReason\nMacro are not executing / the file is protected\nSolution\nFollow the steps here to unprotect the file and authorise macros.\n\n\n\nI arrived at the end of the lines where I can enter data\nSolution\nClick on the “Add rows” button of the OutbreakTools Menu.\nAdditionaly, try t upgrade your linelist to a more recent version: recent builds automatically insert rows when you start entering data in the last row.\n\n\n\nFormula are not updating\nSolution\n\nMake sure the macros are authorised\nHit F9 / CALCULATE NOW BUTTON (in the native Excel Formula ribbon).\n\nThere are errors/“VALUES” in the epiweeks formula\nSolution\n\nGo to the “Week start” button in the OutbreakTools Menu and fill the day you want, then hit F9\nCheck that the corresponding date exists (e.g. is not a 30th of February and is in the correct format (and thus parsed as a date by Excel)\n\n\n\n\nMy analyses sheets di not update after I entered data\nSolution\n\nVerify that your data are not filtered (or the filter you applied are the one you want to see reflected in the analyses sheet). If you want to clear out all filters you can use the button in the OutbreakTools Menu\nHit F9 in the patient datasheet make sure all formula are up-to-date\nHit the “Refresh analyses button” in the OutbreakTools Menu.\n\nIf problems remain, check the concerned columns:\n\nAre they filled correctly (right format, exact options from the dropdown menu…)?\nDo they depend on other variables, and if yes, are these variables filled1 properly2.\n\nIf the data is clean and the problem remains, contact your referent epi or the developers."
-  },
-  {
-    "objectID": "how_to/troubleshoot_linelist.html#linelist-file",
-    "href": "how_to/troubleshoot_linelist.html#linelist-file",
-    "title": "Troubleshoot the linelist",
-    "section": "",
-    "text": "The file is getting corrupted, things do not work properly any more\nReason\nIt might be because OneDrive tried to synchronise the file while it was opened, but failed because VBA macros prevent synchronisation.\nSolution\n\nMigrate the data in an empty, uncorrupted linelist\nSave file in a folder not synchronized by OneDrive or stop OneDrive when you are working on the file.\n\n\n\n\nButtons do not work, file is being weird\nReason\nMacro are not executing / the file is protected\nSolution\nFollow the steps here to unprotect the file and authorise macros.\n\n\n\nI arrived at the end of the lines where I can enter data\nSolution\nClick on the “Add rows” button of the OutbreakTools Menu.\nAdditionaly, try t upgrade your linelist to a more recent version: recent builds automatically insert rows when you start entering data in the last row.\n\n\n\nFormula are not updating\nSolution\n\nMake sure the macros are authorised\nHit F9 / CALCULATE NOW BUTTON (in the native Excel Formula ribbon).\n\nThere are errors/“VALUES” in the epiweeks formula\nSolution\n\nGo to the “Week start” button in the OutbreakTools Menu and fill the day you want, then hit F9\nCheck that the corresponding date exists (e.g. is not a 30th of February and is in the correct format (and thus parsed as a date by Excel)\n\n\n\n\nMy analyses sheets di not update after I entered data\nSolution\n\nVerify that your data are not filtered (or the filter you applied are the one you want to see reflected in the analyses sheet). If you want to clear out all filters you can use the button in the OutbreakTools Menu\nHit F9 in the patient datasheet make sure all formula are up-to-date\nHit the “Refresh analyses button” in the OutbreakTools Menu.\n\nIf problems remain, check the concerned columns:\n\nAre they filled correctly (right format, exact options from the dropdown menu…)?\nDo they depend on other variables, and if yes, are these variables filled1 properly2.\n\nIf the data is clean and the problem remains, contact your referent epi or the developers."
-  },
-  {
-    "objectID": "how_to/troubleshoot_linelist.html#sending-data-to-the-dashboard",
-    "href": "how_to/troubleshoot_linelist.html#sending-data-to-the-dashboard",
-    "title": "Troubleshoot the linelist",
-    "section": "Sending data to the dashboard",
-    "text": "Sending data to the dashboard\nI sent the data yesterday but it does not appear on the dashboard\n\nDid you send the data to the mail address epi-data [at] epicentre.msf.org? Sharing a file with OneDrive does not work.\nDid you send the whole linelist file instead of the anonymous export? You should have received a feedback automatic message explaining the problem.\nWas the linelist Info sheet correctly filled? Scripts cannot compile the data if any of these are missing:\n\nOrganization\nCountry Name\nName of facility (unless you filled the facility column if it exists)\nOutbreak code (for old linelists, but it is getting depreciated)\n\nOpen the export (it’s an excel file) to see if anything is weird. There should be several sheets, among which:\n\nMetadata sheet containing information about the export\nInfo sheet containing the information of the linelist\nPatient linelist sheet(s) containing your data\n\nIn the linelist, force recalculation (by button or by pressing F9). Try to export and send again.\n\nIf this does not work, contact a member of the EpiDS team."
-  },
-  {
-    "objectID": "how_to/troubleshoot_linelist.html#footnotes",
-    "href": "how_to/troubleshoot_linelist.html#footnotes",
-    "title": "Troubleshoot the linelist",
+    "objectID": "how_to/link_tables.html#footnotes",
+    "href": "how_to/link_tables.html#footnotes",
+    "title": "Create linelists with more than one entry sheets",
     "section": "Footnotes",
-    "text": "Footnotes\n\n\nFor example, tracking the outcome in the Temporal analyses sheet requires the outcome date to be filled.↩︎\nText instead of numbers, out of bound values, impossible dates, bad dates format…↩︎"
+    "text": "Footnotes\n\n\nExample: a sheet containing patient data and a sheet containing bed occupancy data↩︎\nThese variables can take only one value, see the different sorts of tables for more information.↩︎\nIf data are exported in R or Stata, you will be able to merge/join them extremely easily with the two IDs variables.↩︎"
   },
   {
-    "objectID": "how_to/import_geobase.html",
-    "href": "how_to/import_geobase.html",
-    "title": "Import a geobase in the linelist",
+    "objectID": "how_to/migrate_linelist.html",
+    "href": "how_to/migrate_linelist.html",
+    "title": "Migrate linelist data",
     "section": "",
-    "text": "Import geobase\n\n\n\nIn you internet browser, go to the Geoapp.\nUse your account to connect. If you do not have one already, create one here first1 then connect to the GeoApp.\nSelect one or more countries from the dropdown menu in the top left of the screen. The Admin 1 regions of each country will be rendered on the map.\nClick on the regions you require geo data for. Selected regions turn red. If you want to select the whole country, click the “Select all regions” button under the country dropdown menu. Once one region has been selected, buttons to inspect and download the data will appear below the country dropdown menu.\n\n\n\n\nImport geobase\n\n\n\nClick on the “Download Geobase” button to download the data for the selected regions in an excel format that can be directly imported into an OutbreakTools Linelist.\n\n\n\n\n\n\n\nTip\n\n\n\nYou can select one or more countries. And you can select one or more regions of these countries. This allow you to select (cross-border) zones of interest and / or create lighter geobases.\n\n\n\n\n\n\n\n\nNote\n\n\n\nThe geospatial administrative boundary data used to build the geobase can also be downloaded in the format of your choice, compatible with GIS software (e.g. QGIS, ArcGIS) and the R statistical software by clicking on the “Download geo Data” button."
+    "text": "OutbreakTools linelist have handy functionalities to import and export data. Whith them you can:\nIf no breaking changes were introduced (see Important 1), migrating data from one linelist to the other is straightforward:\nIf the new file is empty, the data is simply copied into the file. Is the new file already contains data, the new data is pasted under the existing data (variable by variable)."
   },
   {
-    "objectID": "how_to/import_geobase.html#sec-geobase-download",
-    "href": "how_to/import_geobase.html#sec-geobase-download",
-    "title": "Import a geobase in the linelist",
-    "section": "",
-    "text": "Import geobase\n\n\n\nIn you internet browser, go to the Geoapp.\nUse your account to connect. If you do not have one already, create one here first1 then connect to the GeoApp.\nSelect one or more countries from the dropdown menu in the top left of the screen. The Admin 1 regions of each country will be rendered on the map.\nClick on the regions you require geo data for. Selected regions turn red. If you want to select the whole country, click the “Select all regions” button under the country dropdown menu. Once one region has been selected, buttons to inspect and download the data will appear below the country dropdown menu.\n\n\n\n\nImport geobase\n\n\n\nClick on the “Download Geobase” button to download the data for the selected regions in an excel format that can be directly imported into an OutbreakTools Linelist.\n\n\n\n\n\n\n\nTip\n\n\n\nYou can select one or more countries. And you can select one or more regions of these countries. This allow you to select (cross-border) zones of interest and / or create lighter geobases.\n\n\n\n\n\n\n\n\nNote\n\n\n\nThe geospatial administrative boundary data used to build the geobase can also be downloaded in the format of your choice, compatible with GIS software (e.g. QGIS, ArcGIS) and the R statistical software by clicking on the “Download geo Data” button."
+    "objectID": "how_to/migrate_linelist.html#migrate-the-linelist-to-a-newer-version",
+    "href": "how_to/migrate_linelist.html#migrate-the-linelist-to-a-newer-version",
+    "title": "Migrate linelist data",
+    "section": "Migrate the linelist to a newer version",
+    "text": "Migrate the linelist to a newer version\nNew linelist versions are often generated for a given disease:\n\nthe variable dictionary for this specific linelist might get updated as a request of epidemiologists or the Epinetwork: added variables, improved labels, additional analyses…\nthe functionalities of the OutbreakTools itself may improve (bug fixes or addition of new functionalities1) and all linelist in use would benefit getting updated.\n\nHere, typically, the new file is a new version of the linelist, and it is empty (it might also be an empty version of the same linelist if you suspect that your current file is corrupted and behaves weirdly).\nSteps:\n\nClear data filters\nGo to the OutbreakTools menu of this setup file and click on the button “Export for migration”.\nTick all the boxes you want (usually, “All data” + “Geobase”). This will create three files in the folder of your choice:\n\nA file containing the data\nA file containing the geobase and the geobase history\nOptionaly, a file containing uniquely the geobase history, which we will ignore now.\n\nOpen a new, emtpy linelist file\nGo to the import section of the OutbreakTools menu. Use the “Import data” button to import the data export file, and the “Import geobase” button to import the geobase files (which contains the history, if an history existed).\n\n\n\n\nExport for migration\n\n\nOnce you are used to the steps, migrating data should take you only a couple of minutes.\n\n\n\n\n\n\nTip: export a subset of data\n\n\n\n\n\nHere we described a case where you wanted to migrate the whole data. If you need to split the data between two linelists (maybe before and after a date, or active / inactive cohort), you can use filters on patient data to only export a subset of the rows."
   },
   {
-    "objectID": "how_to/import_geobase.html#sec-geobase-import",
-    "href": "how_to/import_geobase.html#sec-geobase-import",
-    "title": "Import a geobase in the linelist",
-    "section": "Import a geobase in a linelist",
-    "text": "Import a geobase in a linelist\nOnce you have downloaded a geobase from the Geoapp, you can import it in an OBT linelist.\n\nOpen the linelist\nGo to the OutbreakTools Menu\nClick on the “Import geobase” button"
+    "objectID": "how_to/migrate_linelist.html#make-a-master-linelist",
+    "href": "how_to/migrate_linelist.html#make-a-master-linelist",
+    "title": "Migrate linelist data",
+    "section": "Make a master linelist",
+    "text": "Make a master linelist\nIt is possible to gather data from several linelists (with the same version of the dictionary). There are several use cases:\n\nseveral facilities enter data in their own linelist, and the epidemiologist or medCo would like to study the analyses at the region or mission level, pooling data from all sites. It is possible to make a temporary master linelist to do that.\nthe caseload is high and you would like two data encoders to work on the linelist. You can split the daily work between themselves: one completes existing rows, adding the outcome status for example (main file), while the other encodes new patients (new rows). Every night they import the new patients into the main file. The next morning, the person encoding “new patients” starts with a new empty file for new lines.\n\nSteps:\n\nExport the data from each facility linelist using the “Export data” button from the the OutbreakTools menu. Since you only want to pool patient data, there is no need to use the “Export for migration” button as you don’t care for metadata in this context: the anonymous export is enough.\nGet an empty linelist file. This will become your temporary master linelist.\nImport the all the exports into the master file one by one, using the “Import data” button from the OutbreakTools menu. When a warning pop up opens, tell it that you want to add the data at the bottom of the existing data.\nRefresh analyses (always!) before examining the analyses.\n\n\n\n\n\n\n\nWarning: do not modify data in this file\n\n\n\nThis master-linelist should not be used to enter more data/clean data, as these change will not be reflected on the site linelists. It should only be used for perusing the analyses at a higher scale.\nSimilarly, you should not send a pooled export for the dashboard, as the scripts are encoded to import the site one by one, keeping the site metadata."
   },
   {
-    "objectID": "how_to/import_geobase.html#footnotes",
-    "href": "how_to/import_geobase.html#footnotes",
-    "title": "Import a geobase in the linelist",
+    "objectID": "how_to/migrate_linelist.html#footnotes",
+    "href": "how_to/migrate_linelist.html#footnotes",
+    "title": "Migrate linelist data",
     "section": "Footnotes",
-    "text": "Footnotes\n\n\nYou will need an MSF mail adress↩︎"
+    "text": "Footnotes\n\n\nthe later often generating a couple of the former for a while↩︎"
   },
   {
-    "objectID": "how_to/add_language.html",
-    "href": "how_to/add_language.html",
-    "title": "Add a new language",
+    "objectID": "how_to/show_hide_variables.html",
+    "href": "how_to/show_hide_variables.html",
+    "title": "Show or hide variables",
     "section": "",
-    "text": "There are two levels of translation:\n\nthe language of the interface (buttons and fuctionalities): standardised for all linelists, since all linelists produced by OBT have the same set of buttons and functionalities\nthe language of linelist content (variable labels, categories…)\n\nThe linelist interface has built-in translations for: English, French, Arabic, Spanish and Portuguese. The translations are buil-in the designer file itself. If another language needs to be added to this list, you can contact Yves Amevoin or the EpiDS team to request it.\nThe content of the linelist depends on the setup, so each setup file must come with its own translations (if several languages needed).\nBoth levels of translation are selected during the compilation steps of a given linelist."
+    "text": "In OutbreakTools, there are several visibility status, which can be modified using a button in the OutbreakTools Menu:\n\nmandatory: the columns cannot be hidden using the Show/Hide\nhiden: the columns are internal and cannot be shows using the Show/Hide\noptional: the linelist user can decide to show or hide the variable based on their needs.\n\nThese linelist status are derived from the setup file status property."
   },
   {
-    "objectID": "how_to/add_language.html#a-note-about-languages",
-    "href": "how_to/add_language.html#a-note-about-languages",
-    "title": "Add a new language",
+    "objectID": "how_to/show_hide_variables.html#visibility-status",
+    "href": "how_to/show_hide_variables.html#visibility-status",
+    "title": "Show or hide variables",
     "section": "",
-    "text": "There are two levels of translation:\n\nthe language of the interface (buttons and fuctionalities): standardised for all linelists, since all linelists produced by OBT have the same set of buttons and functionalities\nthe language of linelist content (variable labels, categories…)\n\nThe linelist interface has built-in translations for: English, French, Arabic, Spanish and Portuguese. The translations are buil-in the designer file itself. If another language needs to be added to this list, you can contact Yves Amevoin or the EpiDS team to request it.\nThe content of the linelist depends on the setup, so each setup file must come with its own translations (if several languages needed).\nBoth levels of translation are selected during the compilation steps of a given linelist."
+    "text": "In OutbreakTools, there are several visibility status, which can be modified using a button in the OutbreakTools Menu:\n\nmandatory: the columns cannot be hidden using the Show/Hide\nhiden: the columns are internal and cannot be shows using the Show/Hide\noptional: the linelist user can decide to show or hide the variable based on their needs.\n\nThese linelist status are derived from the setup file status property."
   },
   {
-    "objectID": "how_to/add_language.html#add-a-new-language-to-a-setup",
-    "href": "how_to/add_language.html#add-a-new-language-to-a-setup",
-    "title": "Add a new language",
-    "section": "Add a new language to a setup",
-    "text": "Add a new language to a setup\nGo to the OutbreakTools tab of the setup top ribbon. One section contains buttons for translation:\n\n\n\nTranslation section in the OutbreakTools tab\n\n\nTo add a new linelist language:\n\nClick on the “Update translation table”, which is going to scrap all text bits from the setup and add them to the translation table (even if there is only one language in the sheet). This step can be done at a later stage, and each time you modify or add a label in the setup.\nFill the name of the language you want to add in the rectangular box\nClick on the “Add language” button: it will add a new empty column on the right of the column(s) already present in the Translation sheet, and open the\nProvide translation for each string of text.\n\n\n\n\n\n\n\nTip\n\n\n\nYou can use Deepl or Google translate on bits of the column to provide for first draft, and ask a collegue to review the translation afterwards.\n\n\nTo know more about translations, go to the Tranlation sheet."
+    "objectID": "how_to/show_hide_variables.html#show-and-hide-variables",
+    "href": "how_to/show_hide_variables.html#show-and-hide-variables",
+    "title": "Show or hide variables",
+    "section": "Show and hide variables",
+    "text": "Show and hide variables\nClicking on the “Show/hide variables” button opens a window listing all the variables in the current sheet.\n\n\n\nOutbreakTools tab in the created linelist\n\n\nThe optional, hidden variables in the setup file appear as Hidden by default. However, the user can change the status by choosing Show, in which case the column will become visible.\n\n\nThe “Notification year” variable does not appear in the list of variables because it is in “hidden” status in the setup file.\nThe optional, visible variables in the setup file appear as Shown by default. However, you can change the status by choosing Hide, in which case the column will no longer be visible.\n\nMandatory variables in the setup file appear as *Mandatory in the “Show/Hide” pop up, and cannot be hidden.\n\n\n\n\n\n\nNote\n\n\n\nColumns that were defined as hidden in the setup file will not appear in the Show/Hide. They were deemed unlikely top be of interest to the linelist user (calculated columns used to apply formatting for example).\n\n\n\n\n\n\n\n\nNote on showing and hiding columns manually\n\n\n\n\n\nTechnically, the linelist user can forcefully hide/un-hide columns.\nUn-hiding hidden (usually calculated) columns is usually desirable during linelist debug or to go check data that may interest you (e.g. a hidden calculated epiweek of exit). You can hide them after consultation without consequences on the rest of the linelist.\nIt is however more dangerous to forcefully hide “mandatory” columns. These columns are often fundamental variables in the linelist, that are needed for data understanding and analyses (e.g. date of admission, age or sex). If you choose to hide one of these columns, know that some analyses might not function as expected, or not at all because they rely on the hidden columns.\nFinally, any change of column visibility that is not made via the “Hide/show variable” button of the linelist will not be recorded and migrated to a new linelist."
   },
   {
-    "objectID": "how_to/connect_to_dashboard.html",
-    "href": "how_to/connect_to_dashboard.html",
+    "objectID": "how_to/connect_dashboard.html",
+    "href": "how_to/connect_dashboard.html",
     "title": "Connect to the dashboard",
     "section": "",
     "text": "Epicentre maintains several dashboards:\n\nIntersectionnal\nDiphtheria (will be migrated to the intersectionnal dashboard at some point)\nMpox (too)\nMalnutrition (non OBT)\n\nSome of these dashboards will be merged at some point in the future."
   },
   {
-    "objectID": "how_to/connect_to_dashboard.html#existing-dashboards",
-    "href": "how_to/connect_to_dashboard.html#existing-dashboards",
+    "objectID": "how_to/connect_dashboard.html#existing-dashboards",
+    "href": "how_to/connect_dashboard.html#existing-dashboards",
     "title": "Connect to the dashboard",
     "section": "",
     "text": "Epicentre maintains several dashboards:\n\nIntersectionnal\nDiphtheria (will be migrated to the intersectionnal dashboard at some point)\nMpox (too)\nMalnutrition (non OBT)\n\nSome of these dashboards will be merged at some point in the future."
   },
   {
-    "objectID": "how_to/connect_to_dashboard.html#getting-access",
-    "href": "how_to/connect_to_dashboard.html#getting-access",
+    "objectID": "how_to/connect_dashboard.html#getting-access",
+    "href": "how_to/connect_dashboard.html#getting-access",
     "title": "Connect to the dashboard",
     "section": "Getting access",
     "text": "Getting access\nMost dashboards require an account to be able to connect to it:\n\n\n\nConnect to a dashboard\n\n\nIf you do not have an account, it is quick and easy to create one: go to this page and fill the boxes (do not forget to save your password!). If you use an MSF or Epicentre mail adress the account will be validated automatically and soon you will be able to use the account you just created to connect to a dashboard.\nIf you are an external user, contact Paul Campbell from the EpiDS team to get access."
   },
   {
-    "objectID": "cheatsheets/variable_control.html",
-    "href": "cheatsheets/variable_control.html",
-    "title": "Variables in OutbreakTools",
+    "objectID": "how_to/home_how_to.html",
+    "href": "how_to/home_how_to.html",
+    "title": "How to",
     "section": "",
-    "text": "OutbreakTools allows both input variables in which the user enters data and calculated variables derived from the raw data.\nWhen it comes to text input variables, there are two primary methods for data entry:\n\na free text approach, allowing users to input any value they choose,\na controlled approach, where user options are restricted.\n\nIn Excel, the controlled approach for text variables is typically implemented with dropdown menus, which allow data entry of pre-defined categories. OutbreakTools offers multiple ways to create dropdown menus, depending on whether you have predefined categories or not.\nThe columns Control together with Control details are use to constrain the values that a text variable can take, or provide with a formula in the case of a calculated variable.\n\nSummary of the types of control available in OutbreakTools\n\n\n\n\n\n\n\nSort of variable\nControls\nData entry in the linelist\n\n\n\n\nFree entry\n(none specified)\nFree\n\n\nCategorical\nchoice_manual choice_custom choice_multiple\ngeo, hf (special cases)\nDropdown menu\nGeoHelper or dropdown menu\n\n\nCalculated\nformula choice_formula case_when\nNo user input needed in these columns\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nIf no control is selected, the text variable is free text.\n\n\n\n\n\n\n\n\nNote\n\n\n\nThe variables that contain geographic information are treated as a special case of categorical variable and have their own dedicated control.\n\n\n\n\n\n\n\n\nNote\n\n\n\nFor non text variable (integers, decimals, dates) is is possible to restrict values using data validation"
-  },
-  {
-    "objectID": "cheatsheets/variable_control.html#categorical-and-calculated-variables",
-    "href": "cheatsheets/variable_control.html#categorical-and-calculated-variables",
-    "title": "Variables in OutbreakTools",
-    "section": "",
-    "text": "OutbreakTools allows both input variables in which the user enters data and calculated variables derived from the raw data.\nWhen it comes to text input variables, there are two primary methods for data entry:\n\na free text approach, allowing users to input any value they choose,\na controlled approach, where user options are restricted.\n\nIn Excel, the controlled approach for text variables is typically implemented with dropdown menus, which allow data entry of pre-defined categories. OutbreakTools offers multiple ways to create dropdown menus, depending on whether you have predefined categories or not.\nThe columns Control together with Control details are use to constrain the values that a text variable can take, or provide with a formula in the case of a calculated variable.\n\nSummary of the types of control available in OutbreakTools\n\n\n\n\n\n\n\nSort of variable\nControls\nData entry in the linelist\n\n\n\n\nFree entry\n(none specified)\nFree\n\n\nCategorical\nchoice_manual choice_custom choice_multiple\ngeo, hf (special cases)\nDropdown menu\nGeoHelper or dropdown menu\n\n\nCalculated\nformula choice_formula case_when\nNo user input needed in these columns\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nIf no control is selected, the text variable is free text.\n\n\n\n\n\n\n\n\nNote\n\n\n\nThe variables that contain geographic information are treated as a special case of categorical variable and have their own dedicated control.\n\n\n\n\n\n\n\n\nNote\n\n\n\nFor non text variable (integers, decimals, dates) is is possible to restrict values using data validation"
-  },
-  {
-    "objectID": "cheatsheets/variable_control.html#flowchart-choose-your-variable-control",
-    "href": "cheatsheets/variable_control.html#flowchart-choose-your-variable-control",
-    "title": "Variables in OutbreakTools",
-    "section": "Flowchart: choose your variable control",
-    "text": "Flowchart: choose your variable control\n\n\n\nAvailable options for control in OBT"
-  },
-  {
-    "objectID": "cheatsheets/analyses.html#univariate-analyses",
-    "href": "cheatsheets/analyses.html#univariate-analyses",
-    "title": "Cheatsheet analyses",
-    "section": "Univariate analyses",
-    "text": "Univariate analyses\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nSection\nFree text\nYes\nGroup tables by section\n\n\nTable title\nFree text\nYes\nShort title\n\n\nGroup by variable (row)\nDropdown\nYes\nOne categorical variable to summarise\n\n\nAdd missing data\nDropdown (yes/no)\n\nAdd rows with missing values counts?\n\n\nSummary function\nFree text\nYes\nN to count rows, other formulas accepted\n\n\nSummary label\nFree text\n\nName of the summary\n\n\nFormat\nDropdown\n\nFormat of the summary\n\n\nAdd percentage\nDropdown (yes/no)\n\n\n\n\nAdd graph\nDropdown (yes/no)\n\n\n\n\nFlip coordinates\nDropdown (yes/no)\n\nInverse x and y axis of the graph"
-  },
-  {
-    "objectID": "cheatsheets/analyses.html#bivariate-analyses",
-    "href": "cheatsheets/analyses.html#bivariate-analyses",
-    "title": "Cheatsheet analyses",
-    "section": "Bivariate analyses",
-    "text": "Bivariate analyses\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nSection\nFree text\nYes\nGroup tables by section\n\n\nTable title\nFree text\nYes\nShort title\n\n\nGroup by variable (row)\nDropdown\nYes\nOne categorical variable to summarise\n\n\nGroup by variable (column)\n\nYes\n\n\n\nAdd missing data\nDropdown (no/row/column/all)\n\nAdd missing values counts?\n\n\nSummary function\nFree text\nYes\nN to count rows, but formulas accepted\n\n\nSummary label\nFree text\n\nName of the summary\n\n\nFormat\nDropdown\n\nFormat of the summary\n\n\nAdd percentage\nDropdown (yes/no)\n\n\n\n\nAdd graph\nDropdown (values/percentage)\n\n\n\n\nFlip coordinates\nDropdown (yes/no)\n\nInverse x and y axis of the graph"
-  },
-  {
-    "objectID": "cheatsheets/analyses.html#time-series",
-    "href": "cheatsheets/analyses.html#time-series",
-    "title": "Cheatsheet analyses",
-    "section": "Time series",
-    "text": "Time series\n\nTable 1\nDefines the tables (organise them in sections, which temporal variable, which grouping variable if any, title, summarising formula etc. )\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nSeries ID\n-\nAutomatic\n\n\n\nSection\nFree text\nYes\nGroup columns by section\n\n\nTitle\n-\nAutomatic\n\n\n\nAdd missing data\nDropdown (yes/no)\n\nAdd missing values counts?\n\n\nSummary function\nFree text\nYes\nN to count rows, but formula accepted\n\n\nSummary label\nFree text\n\nName of the summary\n\n\nFormat\nDropdown\n\nFormat of the summary\n\n\nAdd percentage\nDropdown (column/row/no)\n\n\n\n\nAdd total\nDropdown (yes/no)\n\n\n\n\nTable order\nFree text\n\n\n\n\n\n\n\nTable 2: graph metadata\nThis table table is used to define the title and order of the graphs associated with the time series.\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nGraph title\nFree text\nYes\nShort title\n\n\nGraph order\nFree text\nYes\n\n\n\nGraph ID\nAutomatic\nYes\n\n\n\n\n\n\nTable 3: define the graph\nThis table defines the graphs. It imports a lot of information from the two other tables. One graph can plot several series. A series is a column in a time series table.\nExample: a graph plotting the number of “Cured” and “Dead” across time is plotting two series, the number of cured and the number of dead, which were obtained from one table where the exit_status was used as grouping variable.\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nGraph title\nDropdown\nYes\nDefined in the previous table\n\n\nSeries title\nDropdown\nYes\nChoose which variable summary to plot (ex: counts for outcomes)\n\n\nGraph ID\n-\nAutomatic\n\n\n\nSeries ID\n-\nAutomatic\n\n\n\nGraph order\n-\nAutomatic\n\n\n\nTime variable (row)\n-\nAutomatic\n\n\n\nGroup by variable (column\n-\nAutomatic\n\n\n\nChoices\nDropdown (variable modality)\nYes\nChoose modality to plot (ex: deads)\n\n\nLabel\nFree text\n\nLabel of the modality\n\n\nPlot values or percentages\nDropdown (values/percentage)\nYes\n\n\n\nChart type\nDropdown (bar/line/point)\n\n\n\n\nY-axis\nDropdown (left/right)\n\n\n\n\n\n\n\nSummary"
-  },
-  {
-    "objectID": "cheatsheets/analyses.html#some-functionsexamples",
-    "href": "cheatsheets/analyses.html#some-functionsexamples",
-    "title": "Cheatsheet analyses",
-    "section": "Some functions/examples",
-    "text": "Some functions/examples\n\nIn the global summary\nDATE_RANGE is a custom funtion to display the min and max of a date variable. Example: DATE_RANGE(visit_date).\nCOUNTA(case_id): counts the number of non empty case_id.\nCOUNTIF(hospit_yn, \"Yes\") counts the number of Yes in the hospit_yn variable\n\n\nCount rows\nN: count the number of rows for each modality of a variable. The setup user defines for each analysis whether the empty cells should be added in the table (as their own categories).\n\n\nCalculate a CFR\nSUM(cfr_numerator) / SUM(cfr_denominator) to calculate a Case Fatality Rate. - The cfr_numerator is a calculated variable based on the outcome column; it takes 1 for deceased patient and zero for others. - The cfr_denominator is also a calculated column, which takes 1 for discharged patients and 0 for other patients.\nDon’t forget to pick a percent format with appropriate rounding level.\n\n\nSpatial analyses or spatio-temporal analyses\nFor the top ten (or whichever value you chose) areas with the most cases, use N as the function summary. For the top ten areas for the number of deaths, use SUM(is_dead_01) where is_dead_01 here is a calculated variable that takes 1 if the patient is dead and 0 otherwhise."
-  },
-  {
-    "objectID": "cheatsheets/home_cheatsheets.html",
-    "href": "cheatsheets/home_cheatsheets.html",
-    "title": "Cheatsheets",
-    "section": "",
-    "text": "Cheatsheet analyses\n\n\n\nSetup\n\n\n\nPick the correct analyses type in the setup file\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nVariables in OutbreakTools\n\n\n\nSetup\n\n\n\nSummary of variable type and control in OBT\n\n\n\n\n\n\n\n\nNo matching items\n Back to top"
+    "text": "Connect to the dashboard\n\n\n\nDashboard\n\n\n\nConnect to the intersectional dashboard\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nImport a geobase in the linelist\n\n\n\nLinelist\n\n\n\nConnect to the GeoApp to download a geobase and import it in the linelist\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nMigrate linelist data\n\n\n\nLinelist\n\n\n\nMove data from one linelist file to another\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nShow or hide variables\n\n\n\nLinelist\n\n\n\nUse the OBT ribbon to change the visibility status of columns\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nConnect to the dashboard\n\n\n\nLinelist\n\nDashboard\n\n\n\nConnect to the intersectional dashboard\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nSend data to the dashboard\n\n\n\nLinelist\n\nDashboard\n\n\n\nExport data and send it to Epicentre for compilation and visualisation on a dashboard\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nTroubleshoot the linelist\n\n\n\nLinelist\n\nDashboard\n\n\n\nTroubleshooting linelist data\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAdd a new language\n\n\n\nSetup\n\n\n\nAdd a new language to a setup file\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nExport a subset of geographic columns\n\n\n\nSetup\n\n\n\nCreata a MoH export with only some of the geo columns\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCreate linelists with more than one entry sheets\n\n\n\nSetup\n\n\n\nDefine linelists with several tables which may nor may not be connected\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nMigrate setup data\n\n\n\nSetup\n\n\n\nMigrate the content of a setup file to a new setup file\n\n\n\n\n\n\n\n\nNo matching items\n Back to top"
   },
   {
     "objectID": "how_to/export_subset_geo.html",
@@ -567,109 +539,186 @@
     "text": "Footnotes\n\n\nAdmins levels 1, 2, 3 and 4, with cascading dropdown menus↩︎\n And more if you choose to export p-codes, see the “Exports” sheet options in the setup file↩︎"
   },
   {
-    "objectID": "how_to/home_how_to.html",
-    "href": "how_to/home_how_to.html",
-    "title": "How to",
+    "objectID": "cheatsheets/home_cheatsheets.html",
+    "href": "cheatsheets/home_cheatsheets.html",
+    "title": "Cheatsheets",
     "section": "",
-    "text": "Import a geobase in the linelist\n\n\n\nLinelist\n\n\n\nConnect to the GeoApp to download a geobase and import it in the linelist\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nMigrate linelist data\n\n\n\nLinelist\n\n\n\nMove data from one linelist file to another\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nShow or hide variables\n\n\n\nLinelist\n\n\n\nUse the OBT ribbon to change the visibility status of columns\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nConnect to the dashboard\n\n\n\nLinelist\n\nDashboard\n\n\n\nConnect to the intersectional dashboard\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nConnect to the dashboard\n\n\n\nLinelist\n\nDashboard\n\n\n\nConnect to the intersectional dashboard\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nSend data to the dashboard\n\n\n\nLinelist\n\nDashboard\n\n\n\nExport data and send it to Epicentre for compilation and visualisation on a dashboard\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nTroubleshoot the linelist\n\n\n\nLinelist\n\nDashboard\n\n\n\nTroubleshooting linelist data\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAdd a new language\n\n\n\nSetup\n\n\n\nAdd a new language to a setup file\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nExport a subset of geographic columns\n\n\n\nSetup\n\n\n\nCreata a MoH export with only some of the geo columns\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCreate linelists with more than one entry sheets\n\n\n\nSetup\n\n\n\nDefine linelists with several tables which may nor may not be connected\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nMigrate setup data\n\n\n\nSetup\n\n\n\nMigrate the content of a setup file to a new setup file\n\n\n\n\n\n\n\n\nNo matching items\n Back to top"
+    "text": "Cheatsheet analyses\n\n\n\nSetup\n\n\n\nPick the correct analyses type in the setup file\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nVariables in OutbreakTools\n\n\n\nSetup\n\n\n\nSummary of variable type and control in OBT\n\n\n\n\n\n\n\n\nNo matching items\n Back to top"
   },
   {
-    "objectID": "how_to/connect_dashboard.html",
-    "href": "how_to/connect_dashboard.html",
+    "objectID": "cheatsheets/analyses.html#univariate-analyses",
+    "href": "cheatsheets/analyses.html#univariate-analyses",
+    "title": "Cheatsheet analyses",
+    "section": "Univariate analyses",
+    "text": "Univariate analyses\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nSection\nFree text\nYes\nGroup tables by section\n\n\nTable title\nFree text\nYes\nShort title\n\n\nGroup by variable (row)\nDropdown\nYes\nOne categorical variable to summarise\n\n\nAdd missing data\nDropdown (yes/no)\n\nAdd rows with missing values counts?\n\n\nSummary function\nFree text\nYes\nN to count rows, other formulas accepted\n\n\nSummary label\nFree text\n\nName of the summary\n\n\nFormat\nDropdown\n\nFormat of the summary\n\n\nAdd percentage\nDropdown (yes/no)\n\n\n\n\nAdd graph\nDropdown (yes/no)\n\n\n\n\nFlip coordinates\nDropdown (yes/no)\n\nInverse x and y axis of the graph"
+  },
+  {
+    "objectID": "cheatsheets/analyses.html#bivariate-analyses",
+    "href": "cheatsheets/analyses.html#bivariate-analyses",
+    "title": "Cheatsheet analyses",
+    "section": "Bivariate analyses",
+    "text": "Bivariate analyses\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nSection\nFree text\nYes\nGroup tables by section\n\n\nTable title\nFree text\nYes\nShort title\n\n\nGroup by variable (row)\nDropdown\nYes\nOne categorical variable to summarise\n\n\nGroup by variable (column)\n\nYes\n\n\n\nAdd missing data\nDropdown (no/row/column/all)\n\nAdd missing values counts?\n\n\nSummary function\nFree text\nYes\nN to count rows, but formulas accepted\n\n\nSummary label\nFree text\n\nName of the summary\n\n\nFormat\nDropdown\n\nFormat of the summary\n\n\nAdd percentage\nDropdown (yes/no)\n\n\n\n\nAdd graph\nDropdown (values/percentage)\n\n\n\n\nFlip coordinates\nDropdown (yes/no)\n\nInverse x and y axis of the graph"
+  },
+  {
+    "objectID": "cheatsheets/analyses.html#time-series",
+    "href": "cheatsheets/analyses.html#time-series",
+    "title": "Cheatsheet analyses",
+    "section": "Time series",
+    "text": "Time series\n\nTable 1\nDefines the tables (organise them in sections, which temporal variable, which grouping variable if any, title, summarising formula etc. )\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nSeries ID\n-\nAutomatic\n\n\n\nSection\nFree text\nYes\nGroup columns by section\n\n\nTitle\n-\nAutomatic\n\n\n\nAdd missing data\nDropdown (yes/no)\n\nAdd missing values counts?\n\n\nSummary function\nFree text\nYes\nN to count rows, but formula accepted\n\n\nSummary label\nFree text\n\nName of the summary\n\n\nFormat\nDropdown\n\nFormat of the summary\n\n\nAdd percentage\nDropdown (column/row/no)\n\n\n\n\nAdd total\nDropdown (yes/no)\n\n\n\n\nTable order\nFree text\n\n\n\n\n\n\n\nTable 2: graph metadata\nThis table table is used to define the title and order of the graphs associated with the time series.\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nGraph title\nFree text\nYes\nShort title\n\n\nGraph order\nFree text\nYes\n\n\n\nGraph ID\nAutomatic\nYes\n\n\n\n\n\n\nTable 3: define the graph\nThis table defines the graphs. It imports a lot of information from the two other tables. One graph can plot several series. A series is a column in a time series table.\nExample: a graph plotting the number of “Cured” and “Dead” across time is plotting two series, the number of cured and the number of dead, which were obtained from one table where the exit_status was used as grouping variable.\n\n\n\n\n\n\n\n\n\nColumn\nType\nMandatory\nDetails\n\n\n\n\nGraph title\nDropdown\nYes\nDefined in the previous table\n\n\nSeries title\nDropdown\nYes\nChoose which variable summary to plot (ex: counts for outcomes)\n\n\nGraph ID\n-\nAutomatic\n\n\n\nSeries ID\n-\nAutomatic\n\n\n\nGraph order\n-\nAutomatic\n\n\n\nTime variable (row)\n-\nAutomatic\n\n\n\nGroup by variable (column\n-\nAutomatic\n\n\n\nChoices\nDropdown (variable modality)\nYes\nChoose modality to plot (ex: deads)\n\n\nLabel\nFree text\n\nLabel of the modality\n\n\nPlot values or percentages\nDropdown (values/percentage)\nYes\n\n\n\nChart type\nDropdown (bar/line/point)\n\n\n\n\nY-axis\nDropdown (left/right)\n\n\n\n\n\n\n\nSummary"
+  },
+  {
+    "objectID": "cheatsheets/analyses.html#some-functionsexamples",
+    "href": "cheatsheets/analyses.html#some-functionsexamples",
+    "title": "Cheatsheet analyses",
+    "section": "Some functions/examples",
+    "text": "Some functions/examples\n\nIn the global summary\nDATE_RANGE is a custom funtion to display the min and max of a date variable. Example: DATE_RANGE(visit_date).\nCOUNTA(case_id): counts the number of non empty case_id.\nCOUNTIF(hospit_yn, \"Yes\") counts the number of Yes in the hospit_yn variable\n\n\nCount rows\nN: count the number of rows for each modality of a variable. The setup user defines for each analysis whether the empty cells should be added in the table (as their own categories).\n\n\nCalculate a CFR\nSUM(cfr_numerator) / SUM(cfr_denominator) to calculate a Case Fatality Rate. - The cfr_numerator is a calculated variable based on the outcome column; it takes 1 for deceased patient and zero for others. - The cfr_denominator is also a calculated column, which takes 1 for discharged patients and 0 for other patients.\nDon’t forget to pick a percent format with appropriate rounding level.\n\n\nSpatial analyses or spatio-temporal analyses\nFor the top ten (or whichever value you chose) areas with the most cases, use N as the function summary. For the top ten areas for the number of deaths, use SUM(is_dead_01) where is_dead_01 here is a calculated variable that takes 1 if the patient is dead and 0 otherwhise."
+  },
+  {
+    "objectID": "cheatsheets/variable_control.html",
+    "href": "cheatsheets/variable_control.html",
+    "title": "Variables in OutbreakTools",
+    "section": "",
+    "text": "OutbreakTools allows both input variables in which the user enters data and calculated variables derived from the raw data.\nWhen it comes to text input variables, there are two primary methods for data entry:\n\na free text approach, allowing users to input any value they choose,\na controlled approach, where user options are restricted.\n\nIn Excel, the controlled approach for text variables is typically implemented with dropdown menus, which allow data entry of pre-defined categories. OutbreakTools offers multiple ways to create dropdown menus, depending on whether you have predefined categories or not.\nThe columns Control together with Control details are use to constrain the values that a text variable can take, or provide with a formula in the case of a calculated variable.\n\nSummary of the types of control available in OutbreakTools\n\n\n\n\n\n\n\nSort of variable\nControls\nData entry in the linelist\n\n\n\n\nFree entry\n(none specified)\nFree\n\n\nCategorical\nchoice_manual choice_custom choice_multiple\ngeo, hf (special cases)\nDropdown menu\nGeoHelper or dropdown menu\n\n\nCalculated\nformula choice_formula case_when\nNo user input needed in these columns\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nIf no control is selected, the text variable is free text.\n\n\n\n\n\n\n\n\nNote\n\n\n\nThe variables that contain geographic information are treated as a special case of categorical variable and have their own dedicated control.\n\n\n\n\n\n\n\n\nNote\n\n\n\nFor non text variable (integers, decimals, dates) is is possible to restrict values using data validation"
+  },
+  {
+    "objectID": "cheatsheets/variable_control.html#categorical-and-calculated-variables",
+    "href": "cheatsheets/variable_control.html#categorical-and-calculated-variables",
+    "title": "Variables in OutbreakTools",
+    "section": "",
+    "text": "OutbreakTools allows both input variables in which the user enters data and calculated variables derived from the raw data.\nWhen it comes to text input variables, there are two primary methods for data entry:\n\na free text approach, allowing users to input any value they choose,\na controlled approach, where user options are restricted.\n\nIn Excel, the controlled approach for text variables is typically implemented with dropdown menus, which allow data entry of pre-defined categories. OutbreakTools offers multiple ways to create dropdown menus, depending on whether you have predefined categories or not.\nThe columns Control together with Control details are use to constrain the values that a text variable can take, or provide with a formula in the case of a calculated variable.\n\nSummary of the types of control available in OutbreakTools\n\n\n\n\n\n\n\nSort of variable\nControls\nData entry in the linelist\n\n\n\n\nFree entry\n(none specified)\nFree\n\n\nCategorical\nchoice_manual choice_custom choice_multiple\ngeo, hf (special cases)\nDropdown menu\nGeoHelper or dropdown menu\n\n\nCalculated\nformula choice_formula case_when\nNo user input needed in these columns\n\n\n\n\n\n\n\n\n\nNote\n\n\n\nIf no control is selected, the text variable is free text.\n\n\n\n\n\n\n\n\nNote\n\n\n\nThe variables that contain geographic information are treated as a special case of categorical variable and have their own dedicated control.\n\n\n\n\n\n\n\n\nNote\n\n\n\nFor non text variable (integers, decimals, dates) is is possible to restrict values using data validation"
+  },
+  {
+    "objectID": "cheatsheets/variable_control.html#flowchart-choose-your-variable-control",
+    "href": "cheatsheets/variable_control.html#flowchart-choose-your-variable-control",
+    "title": "Variables in OutbreakTools",
+    "section": "Flowchart: choose your variable control",
+    "text": "Flowchart: choose your variable control\n\n\n\nAvailable options for control in OBT"
+  },
+  {
+    "objectID": "how_to/connect_to_dashboard.html",
+    "href": "how_to/connect_to_dashboard.html",
     "title": "Connect to the dashboard",
     "section": "",
     "text": "Epicentre maintains several dashboards:\n\nIntersectionnal\nDiphtheria (will be migrated to the intersectionnal dashboard at some point)\nMpox (too)\nMalnutrition (non OBT)\n\nSome of these dashboards will be merged at some point in the future."
   },
   {
-    "objectID": "how_to/connect_dashboard.html#existing-dashboards",
-    "href": "how_to/connect_dashboard.html#existing-dashboards",
+    "objectID": "how_to/connect_to_dashboard.html#existing-dashboards",
+    "href": "how_to/connect_to_dashboard.html#existing-dashboards",
     "title": "Connect to the dashboard",
     "section": "",
     "text": "Epicentre maintains several dashboards:\n\nIntersectionnal\nDiphtheria (will be migrated to the intersectionnal dashboard at some point)\nMpox (too)\nMalnutrition (non OBT)\n\nSome of these dashboards will be merged at some point in the future."
   },
   {
-    "objectID": "how_to/connect_dashboard.html#getting-access",
-    "href": "how_to/connect_dashboard.html#getting-access",
+    "objectID": "how_to/connect_to_dashboard.html#getting-access",
+    "href": "how_to/connect_to_dashboard.html#getting-access",
     "title": "Connect to the dashboard",
     "section": "Getting access",
     "text": "Getting access\nMost dashboards require an account to be able to connect to it:\n\n\n\nConnect to a dashboard\n\n\nIf you do not have an account, it is quick and easy to create one: go to this page and fill the boxes (do not forget to save your password!). If you use an MSF or Epicentre mail adress the account will be validated automatically and soon you will be able to use the account you just created to connect to a dashboard.\nIf you are an external user, contact Paul Campbell from the EpiDS team to get access."
   },
   {
-    "objectID": "how_to/show_hide_variables.html",
-    "href": "how_to/show_hide_variables.html",
-    "title": "Show or hide variables",
+    "objectID": "how_to/add_language.html",
+    "href": "how_to/add_language.html",
+    "title": "Add a new language",
     "section": "",
-    "text": "In OutbreakTools, there are several visibility status, which can be modified using a button in the OutbreakTools Menu:\n\nmandatory: the columns cannot be hidden using the Show/Hide\nhiden: the columns are internal and cannot be shows using the Show/Hide\noptional: the linelist user can decide to show or hide the variable based on their needs.\n\nThese linelist status are derived from the setup file status property."
+    "text": "There are two levels of translation:\n\nthe language of the interface (buttons and fuctionalities): standardised for all linelists, since all linelists produced by OBT have the same set of buttons and functionalities\nthe language of linelist content (variable labels, categories…)\n\nThe linelist interface has built-in translations for: English, French, Arabic, Spanish and Portuguese. The translations are buil-in the designer file itself. If another language needs to be added to this list, you can contact Yves Amevoin or the EpiDS team to request it.\nThe content of the linelist depends on the setup, so each setup file must come with its own translations (if several languages needed).\nBoth levels of translation are selected during the compilation steps of a given linelist."
   },
   {
-    "objectID": "how_to/show_hide_variables.html#visibility-status",
-    "href": "how_to/show_hide_variables.html#visibility-status",
-    "title": "Show or hide variables",
+    "objectID": "how_to/add_language.html#a-note-about-languages",
+    "href": "how_to/add_language.html#a-note-about-languages",
+    "title": "Add a new language",
     "section": "",
-    "text": "In OutbreakTools, there are several visibility status, which can be modified using a button in the OutbreakTools Menu:\n\nmandatory: the columns cannot be hidden using the Show/Hide\nhiden: the columns are internal and cannot be shows using the Show/Hide\noptional: the linelist user can decide to show or hide the variable based on their needs.\n\nThese linelist status are derived from the setup file status property."
+    "text": "There are two levels of translation:\n\nthe language of the interface (buttons and fuctionalities): standardised for all linelists, since all linelists produced by OBT have the same set of buttons and functionalities\nthe language of linelist content (variable labels, categories…)\n\nThe linelist interface has built-in translations for: English, French, Arabic, Spanish and Portuguese. The translations are buil-in the designer file itself. If another language needs to be added to this list, you can contact Yves Amevoin or the EpiDS team to request it.\nThe content of the linelist depends on the setup, so each setup file must come with its own translations (if several languages needed).\nBoth levels of translation are selected during the compilation steps of a given linelist."
   },
   {
-    "objectID": "how_to/show_hide_variables.html#show-and-hide-variables",
-    "href": "how_to/show_hide_variables.html#show-and-hide-variables",
-    "title": "Show or hide variables",
-    "section": "Show and hide variables",
-    "text": "Show and hide variables\nClicking on the “Show/hide variables” button opens a window listing all the variables in the current sheet.\n\n\n\nOutbreakTools tab in the created linelist\n\n\nThe optional, hidden variables in the setup file appear as Hidden by default. However, the user can change the status by choosing Show, in which case the column will become visible.\n\n\nThe “Notification year” variable does not appear in the list of variables because it is in “hidden” status in the setup file.\nThe optional, visible variables in the setup file appear as Shown by default. However, you can change the status by choosing Hide, in which case the column will no longer be visible.\n\nMandatory variables in the setup file appear as *Mandatory in the “Show/Hide” pop up, and cannot be hidden.\n\n\n\n\n\n\nNote\n\n\n\nColumns that were defined as hidden in the setup file will not appear in the Show/Hide. They were deemed unlikely top be of interest to the linelist user (calculated columns used to apply formatting for example).\n\n\n\n\n\n\n\n\nNote on showing and hiding columns manually\n\n\n\n\n\nTechnically, the linelist user can forcefully hide/un-hide columns.\nUn-hiding hidden (usually calculated) columns is usually desirable during linelist debug or to go check data that may interest you (e.g. a hidden calculated epiweek of exit). You can hide them after consultation without consequences on the rest of the linelist.\nIt is however more dangerous to forcefully hide “mandatory” columns. These columns are often fundamental variables in the linelist, that are needed for data understanding and analyses (e.g. date of admission, age or sex). If you choose to hide one of these columns, know that some analyses might not function as expected, or not at all because they rely on the hidden columns.\nFinally, any change of column visibility that is not made via the “Hide/show variable” button of the linelist will not be recorded and migrated to a new linelist."
+    "objectID": "how_to/add_language.html#add-a-new-language-to-a-setup",
+    "href": "how_to/add_language.html#add-a-new-language-to-a-setup",
+    "title": "Add a new language",
+    "section": "Add a new language to a setup",
+    "text": "Add a new language to a setup\nGo to the OutbreakTools tab of the setup top ribbon. One section contains buttons for translation:\n\n\n\nTranslation section in the OutbreakTools tab\n\n\nTo add a new linelist language:\n\nClick on the “Update translation table”, which is going to scrap all text bits from the setup and add them to the translation table (even if there is only one language in the sheet). This step can be done at a later stage, and each time you modify or add a label in the setup.\nFill the name of the language you want to add in the rectangular box\nClick on the “Add language” button: it will add a new empty column on the right of the column(s) already present in the Translation sheet, and open the\nProvide translation for each string of text.\n\n\n\n\n\n\n\nTip\n\n\n\nYou can use Deepl or Google translate on bits of the column to provide for first draft, and ask a collegue to review the translation afterwards.\n\n\nTo know more about translations, go to the Tranlation sheet."
   },
   {
-    "objectID": "how_to/migrate_linelist.html",
-    "href": "how_to/migrate_linelist.html",
-    "title": "Migrate linelist data",
+    "objectID": "how_to/import_geobase.html",
+    "href": "how_to/import_geobase.html",
+    "title": "Import a geobase in the linelist",
     "section": "",
-    "text": "OutbreakTools linelist have handy functionalities to import and export data. Whith them you can:\nIf no breaking changes were introduced (see Important 1), migrating data from one linelist to the other is straightforward:\nIf the new file is empty, the data is simply copied into the file. Is the new file already contains data, the new data is pasted under the existing data (variable by variable)."
+    "text": "Import geobase\n\n\n\nIn you internet browser, go to the Geoapp.\nUse your account to connect. If you do not have one already, create one here first1 then connect to the GeoApp.\nSelect one or more countries from the dropdown menu in the top left of the screen. The Admin 1 regions of each country will be rendered on the map.\nClick on the regions you require geo data for. Selected regions turn red. If you want to select the whole country, click the “Select all regions” button under the country dropdown menu. Once one region has been selected, buttons to inspect and download the data will appear below the country dropdown menu.\n\n\n\n\nImport geobase\n\n\n\nClick on the “Download Geobase” button to download the data for the selected regions in an excel format that can be directly imported into an OutbreakTools Linelist.\n\n\n\n\n\n\n\nTip\n\n\n\nYou can select one or more countries. And you can select one or more regions of these countries. This allow you to select (cross-border) zones of interest and / or create lighter geobases.\n\n\n\n\n\n\n\n\nNote\n\n\n\nThe geospatial administrative boundary data used to build the geobase can also be downloaded in the format of your choice, compatible with GIS software (e.g. QGIS, ArcGIS) and the R statistical software by clicking on the “Download geo Data” button."
   },
   {
-    "objectID": "how_to/migrate_linelist.html#migrate-the-linelist-to-a-newer-version",
-    "href": "how_to/migrate_linelist.html#migrate-the-linelist-to-a-newer-version",
-    "title": "Migrate linelist data",
-    "section": "Migrate the linelist to a newer version",
-    "text": "Migrate the linelist to a newer version\nNew linelist versions are often generated for a given disease:\n\nthe variable dictionary for this specific linelist might get updated as a request of epidemiologists or the Epinetwork: added variables, improved labels, additional analyses…\nthe functionalities of the OutbreakTools itself may improve (bug fixes or addition of new functionalities1) and all linelist in use would benefit getting updated.\n\nHere, typically, the new file is a new version of the linelist, and it is empty (it might also be an empty version of the same linelist if you suspect that your current file is corrupted and behaves weirdly).\nSteps:\n\nClear data filters\nGo to the OutbreakTools menu of this setup file and click on the button “Export for migration”.\nTick all the boxes you want (usually, “All data” + “Geobase”). This will create three files in the folder of your choice:\n\nA file containing the data\nA file containing the geobase and the geobase history\nOptionaly, a file containing uniquely the geobase history, which we will ignore now.\n\nOpen a new, emtpy linelist file\nGo to the import section of the OutbreakTools menu. Use the “Import data” button to import the data export file, and the “Import geobase” button to import the geobase files (which contains the history, if an history existed).\n\n\n\n\nExport for migration\n\n\nOnce you are used to the steps, migrating data should take you only a couple of minutes.\n\n\n\n\n\n\nTip: export a subset of data\n\n\n\n\n\nHere we described a case where you wanted to migrate the whole data. If you need to split the data between two linelists (maybe before and after a date, or active / inactive cohort), you can use filters on patient data to only export a subset of the rows."
+    "objectID": "how_to/import_geobase.html#sec-geobase-download",
+    "href": "how_to/import_geobase.html#sec-geobase-download",
+    "title": "Import a geobase in the linelist",
+    "section": "",
+    "text": "Import geobase\n\n\n\nIn you internet browser, go to the Geoapp.\nUse your account to connect. If you do not have one already, create one here first1 then connect to the GeoApp.\nSelect one or more countries from the dropdown menu in the top left of the screen. The Admin 1 regions of each country will be rendered on the map.\nClick on the regions you require geo data for. Selected regions turn red. If you want to select the whole country, click the “Select all regions” button under the country dropdown menu. Once one region has been selected, buttons to inspect and download the data will appear below the country dropdown menu.\n\n\n\n\nImport geobase\n\n\n\nClick on the “Download Geobase” button to download the data for the selected regions in an excel format that can be directly imported into an OutbreakTools Linelist.\n\n\n\n\n\n\n\nTip\n\n\n\nYou can select one or more countries. And you can select one or more regions of these countries. This allow you to select (cross-border) zones of interest and / or create lighter geobases.\n\n\n\n\n\n\n\n\nNote\n\n\n\nThe geospatial administrative boundary data used to build the geobase can also be downloaded in the format of your choice, compatible with GIS software (e.g. QGIS, ArcGIS) and the R statistical software by clicking on the “Download geo Data” button."
   },
   {
-    "objectID": "how_to/migrate_linelist.html#make-a-master-linelist",
-    "href": "how_to/migrate_linelist.html#make-a-master-linelist",
-    "title": "Migrate linelist data",
-    "section": "Make a master linelist",
-    "text": "Make a master linelist\nIt is possible to gather data from several linelists (with the same version of the dictionary). There are several use cases:\n\nseveral facilities enter data in their own linelist, and the epidemiologist or medCo would like to study the analyses at the region or mission level, pooling data from all sites. It is possible to make a temporary master linelist to do that.\nthe caseload is high and you would like two data encoders to work on the linelist. You can split the daily work between themselves: one completes existing rows, adding the outcome status for example (main file), while the other encodes new patients (new rows). Every night they import the new patients into the main file. The next morning, the person encoding “new patients” starts with a new empty file for new lines.\n\nSteps:\n\nExport the data from each facility linelist using the “Export data” button from the the OutbreakTools menu. Since you only want to pool patient data, there is no need to use the “Export for migration” button as you don’t care for metadata in this context: the anonymous export is enough.\nGet an empty linelist file. This will become your temporary master linelist.\nImport the all the exports into the master file one by one, using the “Import data” button from the OutbreakTools menu. When a warning pop up opens, tell it that you want to add the data at the bottom of the existing data.\nRefresh analyses (always!) before examining the analyses.\n\n\n\n\n\n\n\nWarning: do not modify data in this file\n\n\n\nThis master-linelist should not be used to enter more data/clean data, as these change will not be reflected on the site linelists. It should only be used for perusing the analyses at a higher scale.\nSimilarly, you should not send a pooled export for the dashboard, as the scripts are encoded to import the site one by one, keeping the site metadata."
+    "objectID": "how_to/import_geobase.html#sec-geobase-import",
+    "href": "how_to/import_geobase.html#sec-geobase-import",
+    "title": "Import a geobase in the linelist",
+    "section": "Import a geobase in a linelist",
+    "text": "Import a geobase in a linelist\nOnce you have downloaded a geobase from the Geoapp, you can import it in an OBT linelist.\n\nOpen the linelist\nGo to the OutbreakTools Menu\nClick on the “Import geobase” button"
   },
   {
-    "objectID": "how_to/migrate_linelist.html#footnotes",
-    "href": "how_to/migrate_linelist.html#footnotes",
-    "title": "Migrate linelist data",
+    "objectID": "how_to/import_geobase.html#footnotes",
+    "href": "how_to/import_geobase.html#footnotes",
+    "title": "Import a geobase in the linelist",
     "section": "Footnotes",
-    "text": "Footnotes\n\n\nthe later often generating a couple of the former for a while↩︎"
+    "text": "Footnotes\n\n\nYou will need an MSF mail adress↩︎"
   },
   {
-    "objectID": "how_to/link_tables.html",
-    "href": "how_to/link_tables.html",
-    "title": "Create linelists with more than one entry sheets",
-    "section": "",
-    "text": "You want the linelist to contain several data entry sheets. The important thing to think about is how the tables should be linked, if at all."
+    "objectID": "how_to/troubleshoot_linelist.html#linelist-file",
+    "href": "how_to/troubleshoot_linelist.html#linelist-file",
+    "title": "Troubleshoot the linelist",
+    "section": "Linelist file",
+    "text": "Linelist file\n\nFile corruption\nThe file is getting corrupted, things do not work properly any more\nReason\nIt might be because OneDrive tried to synchronise the file while it was opened, but failed because VBA macros prevent synchronisation.\nSolution\n\nMigrate the data in an empty, uncorrupted linelist\nSave file in a folder not synchronized by OneDrive or stop OneDrive when you are working on the file.\n\n\n\nButtons form the OBT menu not working\nButtons do not work, file is being weird\nReason\nMacro are not executing / the file is protected\nSolution\nFollow the steps here to unprotect the file and authorise macros.\n\n\nNot enough rows\nI arrived at the end of the lines where I can enter data\nSolution\nClick on the “Add rows” button of the OutbreakTools Menu.\nAdditionaly, try t upgrade your linelist to a more recent version: recent builds automatically insert rows when you start entering data in the last row.\n\n\nFormulas\nFormula are not updating\nSolution\n\nMake sure the macros are authorised\nHit F9 / CALCULATE NOW BUTTON (in the native Excel Formula ribbon).\n\nThere are errors/“VALUES” in the epiweeks formula\nSolution\n\nGo to the “Week start” button in the OutbreakTools Menu and fill the day you want, then hit F9\nCheck that the corresponding date exists (e.g. is not a 30th of February and is in the correct format (and thus parsed as a date by Excel)\n\n\n\nAnalyses\nMy analyses sheets do not update after I enter data\nSolution\n\nVerify that your data are not filtered (or the filter you applied are the one you want to see reflected in the analyses sheet). If you want to clear out all filters you can use the button in the OutbreakTools Menu\nHit F9 in the patient data sheet make sure all formula are up-to-date\nHit the “Refresh analyses button” in the OutbreakTools Menu.\nIn the temporal analyses sheet and the spatio-temporal one, select the unit you want to display.\n\nIf problems remain, check the concerned columns:\n\nAre they filled correctly (right format, exact options from the dropdown menu…)?\nDo they depend on other variables, and if yes, are these variables filled1 properly2.\n\nIf the data is clean and the problem remains, contact your referent epi or the developers.\nRead more about the analyses sheets in the linelist."
   },
   {
-    "objectID": "how_to/link_tables.html#independent-data-tables",
-    "href": "how_to/link_tables.html#independent-data-tables",
-    "title": "Create linelists with more than one entry sheets",
-    "section": "Independent data tables",
-    "text": "Independent data tables\nIf you need to create two independent data tables1, just use different sheet names in the Dictionary sheet.\n\n\n\n\n\n\nNote\n\n\n\nTechnically, a linelist with an “Info” and a “Patient linelist” sheet already has two entry sheets, one with a 1-dimension table and one with a 2-dimensions table.\nSince the two tables are created independently, you could have two sheets with 2-dimensions table."
+    "objectID": "how_to/troubleshoot_linelist.html#sending-data-to-the-dashboard",
+    "href": "how_to/troubleshoot_linelist.html#sending-data-to-the-dashboard",
+    "title": "Troubleshoot the linelist",
+    "section": "Sending data to the dashboard",
+    "text": "Sending data to the dashboard\nI sent the data yesterday but it does not appear on the dashboard\n\nDid you send the data to the mail address epi-data [at] epicentre.msf.org? Sharing a file with OneDrive does not work.\nDid you send the whole linelist file instead of the anonymous export? You should have received a feedback automatic message explaining the problem.\nWas the linelist Info sheet correctly filled? Scripts cannot compile the data if any of these are missing:\n\nOrganization\nCountry Name\nName of facility (unless you filled the facility column if it exists)\nOutbreak code (for old linelists, but it is getting depreciated)\n\nOpen the export (it’s an excel file) to see if anything is weird. There should be several sheets, among which:\n\nMetadata sheet containing information about the export\nInfo sheet containing the information of the linelist\nPatient linelist sheet(s) containing your data\n\nIn the linelist, force recalculation (by button or by pressing F9). Try to export and send again.\n\nIf this does not work, contact a member of the EpiDS team."
   },
   {
-    "objectID": "how_to/link_tables.html#non-independent-tables",
-    "href": "how_to/link_tables.html#non-independent-tables",
-    "title": "Create linelists with more than one entry sheets",
-    "section": "Non independent tables",
-    "text": "Non independent tables\nSometimes you need to refer to data from another table, whether it is to use in a formula, to copy data or to populate a dropdown menu.\n\nRefer to a single value in a formula\nIt is straightforward to use the values of vlist1D variable in a formula: just use the name of the variable in the formula2.\nExample: the linelist user wants a variable with the name of the health structure in the data but in your setup, one site fills one excel file. In this case, you can create a calculated column that gets the name of the facility from a metadata sheet so that data encoders do not have to fill the name of the health structure again and again and again:\n\nIF(ISBLANK(case_id), ““, info_facility_name)\n\nSee the page on formulas and formulas controls\n\n\nLink two tables\nA more complex situation is when you have two 2-dimensions tables that are not independent. In this case, the tables should at minima be linked by a key.\nExample of a user case:\n\na main data entry sheet with general patient data (e.g. a Patient linelist sheet)\na secondary entry sheet with additional variables for a subset of patients (e.g. readmission variables or extensive lab testing).\n\nIn this case, the natural way to link the tables is to have the ID of the patient in both tables.\n\nConstrain possibles values for patient IDs in the secondary table with list_auto\nIn the user case above, the patients from the Readmission sheet are a subset from the Patient linelist sheet so we expect the IDs from Readmission to match the ones from Patient linelist.\nThe minimal (unsafe) option is to have two free text patient ID columns, one in each table, where data encoders enter IDs manually. This process however increases the risk of typing error and thus of merging nightmare.\nA safer way is to create a categorical variable in the Readmission sheet whose dropdown menu is populated by values present in the case_id column of the Patient linelist sheet. As the data encoder can only choose from existing patients from the Patient linelist sheet, the opportunity for encoding error and thus unmatched patients is greatly reduced.3\n\n\n\nUse of list_auto to link two columns\n\n\nSeethe section on list_auto and its control for a description on how to use the list_auto control.\n\n\nImport values from the other table with VALUE_OF\nIn addition to key columns to be able to join the tables, it might be desirable to bring some of the patient data in the secondary table, to calculate new variables, or just to facilitate reading and understanding without having fill the value on each line.\nFor example, we might want to bring in the name and surname of the patient, without entering it again, or the date of exit, to be able to calculate the number of days between the exit of the first admission and the date of readmission.\nThe custom function VALUE_OF can do that. It works sort of like a LOOKUP function, except we provide variable names, and it matches the value you need.\nIt takes three arguments, all variable names:\n\nVALUE_OF(key_variable1, key_variable2, variable_values)\n\n\nkey_variable1: the list_auto in the current sheet (the key column that contains IDs, e.g. readmission_id)\n\n\nkey_variable2: the source of the list_auto in the other sheet (the IDs from the main sheet, e.g. case_id)\n\n\nvariable_values: the variable which values we want to import.\n\n\n\n\nIllustration of the use of VALLUE_OF\n\n\n\n\n\n\n\n\nWarning\n\n\n\nkey_variable2 and variable_values must be on the same sheet or the function will return nothing.\n\n\nThe function matches the values from columns key_variable1 and key_variable2, and returns values from variable_values column at the corresponding row.\n\n\n\n\n\n\nNote\n\n\n\nIf the function finds more than two matches, it will return the values from the first match (the first line found)."
-  },
-  {
-    "objectID": "how_to/link_tables.html#footnotes",
-    "href": "how_to/link_tables.html#footnotes",
-    "title": "Create linelists with more than one entry sheets",
+    "objectID": "how_to/troubleshoot_linelist.html#footnotes",
+    "href": "how_to/troubleshoot_linelist.html#footnotes",
+    "title": "Troubleshoot the linelist",
     "section": "Footnotes",
-    "text": "Footnotes\n\n\nExample: a sheet containing patient data and a sheet containing bed occupancy data↩︎\nThese variables can take only one value, see the different sorts of tables for more information.↩︎\nIf data are exported in R or Stata, you will be able to merge/join them extremely easily with the two IDs variables.↩︎"
+    "text": "Footnotes\n\n\nFor example, tracking the outcome in the Temporal analyses sheet requires the outcome date to be filled.↩︎\nText instead of numbers, out of bound values, impossible dates, bad dates format…↩︎"
+  },
+  {
+    "objectID": "how_to/send_data_to_dashboard.html",
+    "href": "how_to/send_data_to_dashboard.html",
+    "title": "Send data to the dashboard",
+    "section": "",
+    "text": "OBT linelists developed by the EpiDS team are usually paired with a dashboard, at least in the case of intersection linelists or big multi-sections projects. As a consequence, all linelists created by the EpiDS team can generate password-protected anonymous data, ready to be sent to Epicentre for compilation and visualisation.\nIf you are using a linelist for which a dashboard was developed, you can send data to Epicentre. The scripts run automatically every hour, so you can choose the frequency at which you send the data depending on your needs."
+  },
+  {
+    "objectID": "how_to/send_data_to_dashboard.html#steps",
+    "href": "how_to/send_data_to_dashboard.html#steps",
+    "title": "Send data to the dashboard",
+    "section": "Steps",
+    "text": "Steps\n\nPrepare data\n\nClean your data as much as you can. Pay special attention to dates (date format, dates in the future, impossible dates…) and geographic data (see Note 1)\nMake sure that the general information metadata is properly filled (country, site name, section…) as this data is used in the dashboard.\nClear filters: you want to send the whole dataset, not only the current week (see Important 1). If you know that automatic calculations get stuck sometimes, hit F9/“Recalculate now” Excel button to force formula updates.\n\n\n\nExport and send\n\nExport data using the “Export data” button of the OutbreakTools menu, and chose the “Anonymous export to MSF” option (or a similar name). You will be prompted for a place to save the generated export (avoid root folder like PC, C:, D:).\nSend the data to epi-data [at] epicentre.msf.org without renaming the file.\n\nThe file generated is a password protected excel file, whose password is provided at export. It has the Info sheet and patient data, as well as some automatically generated metadata (language, linelist version etc.).\nThe name of the export file is generated automatically based on the metadata you filled so make sure these data are filled correctly once and for all.\n\n\n\n\n\n\nTip\n\n\n\nIf the export names are correct, you can send several exports in the same mail (from different sites, or even different diseases), the scripts will parse the export names to sort the files on our end.\n\n\n\n\n\n\n\n\nImportant 1\n\n\n\nOnly the last occurrence of data you sent is loaded on the dashboard.\nConsequently, it is perfectly fine to clean and amend past data even if you sent it previously (past exports will be ignored).\nIf you need to archive older data to work on a smaller and lighter linelist, contact the EpiDS team to make the setup so that both new and archived data go to the dashboard.\n\n\n\n\n\n\n\n\nNote 1: Geodata matching\n\n\n\nThe dashboard displays a map, where you can visualise data at several administrative levels (1 to 4), but it depends on the resolution of the data you and other send). For patients to appear on the map at a given resolution level, their geolocations needs to match the geobase for this level because the geobase loaded with the linelist corresponds to shapes used to create maps.\nIf a place of origin cannot be matched for a given level (e.g. health area), the patient will not be included on the map at the “health area” level resolution. If the above level (here the health zone) is matched, the patient will be accounted in the health zone resolution map.\nThe patient will be counted in other tables/graphs as long as the relevant information is filled, regardless of the geomatching."
+  },
+  {
+    "objectID": "how_to/migrate_setup.html",
+    "href": "how_to/migrate_setup.html",
+    "title": "Migrate setup data",
+    "section": "",
+    "text": "Get a new, empty setup file\nGo to the OutbreakTools menu of this setup file and click on the button “Import data from another setup”.\n\n\n\n\nImport section\n\n\nIt opens a popup windowto select the file to import data from.\n\n\n\n\n\n\nSelect what to import from the original by ticking the boxes. If you are doing a standard setup file upgrade, you should tick all the boxes to iport everything.\nDecide if you want to run a checkup of the setup file after import by ticking the box or not (you probably want to, but you can also do it at a later stage)\nClick on the “Import” button and wait.\n\n\n\n\n Back to top"
+  },
+  {
+    "objectID": "getting_started/get_linelist.html",
+    "href": "getting_started/get_linelist.html",
+    "title": "Get a linelist template",
+    "section": "",
+    "text": "There are several ways to obtain a template:"
+  },
+  {
+    "objectID": "getting_started/get_linelist.html#footnotes",
+    "href": "getting_started/get_linelist.html#footnotes",
+    "title": "Get a linelist template",
+    "section": "Footnotes",
+    "text": "Footnotes\n\n\nIf you have access to it, the private Epinetwork site should have the same versions of the files.↩︎\nAs was the case for cholera in Haiti, measles and cholera in East Africa, RDC mpox, West Africa diphtheria etc.↩︎"
   },
   {
     "objectID": "getting_started/create_dic.html",

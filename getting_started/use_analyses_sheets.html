@@ -6,9 +6,9 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="description" content="Use the OBT ribbon to change the visibility status of columns">
+<meta name="description" content="Explore your data from within the linelist with the the analyses sheets">
 
-<title>Show or hide variables – OutbreakTools</title>
+<title>The linelist analyses sheets – OutbreakTools</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -151,8 +151,12 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">Table of content</h2>
    
   <ul>
-  <li><a href="#visibility-status" id="toc-visibility-status" class="nav-link active" data-scroll-target="#visibility-status">Visibility status</a></li>
-  <li><a href="#show-and-hide-variables" id="toc-show-and-hide-variables" class="nav-link" data-scroll-target="#show-and-hide-variables">Show and hide variables</a></li>
+  <li><a href="#updating-analyses" id="toc-updating-analyses" class="nav-link active" data-scroll-target="#updating-analyses">Updating analyses</a></li>
+  <li><a href="#person-uni-and-bivariate-analyses" id="toc-person-uni-and-bivariate-analyses" class="nav-link" data-scroll-target="#person-uni-and-bivariate-analyses">Person: Uni and bivariate analyses</a></li>
+  <li><a href="#time-temporal-analyses" id="toc-time-temporal-analyses" class="nav-link" data-scroll-target="#time-temporal-analyses">Time: temporal analyses</a></li>
+  <li><a href="#place-spatial-analyses" id="toc-place-spatial-analyses" class="nav-link" data-scroll-target="#place-spatial-analyses">Place: spatial analyses</a></li>
+  <li><a href="#place-and-person-spatio-temporal-analyses" id="toc-place-and-person-spatio-temporal-analyses" class="nav-link" data-scroll-target="#place-and-person-spatio-temporal-analyses">Place and person: spatio-temporal analyses</a></li>
+  <li><a href="#extra-analysis-pivot-table" id="toc-extra-analysis-pivot-table" class="nav-link" data-scroll-target="#extra-analysis-pivot-table">Extra analysis: pivot table</a></li>
   </ul>
 </nav>
     </div>
@@ -161,7 +165,7 @@ ul.task-list li input[type="checkbox"] {
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
-<h1 class="title">Show or hide variables</h1>
+<h1 class="title">The linelist analyses sheets</h1>
   <div class="quarto-categories">
     <div class="quarto-category">Linelist</div>
   </div>
@@ -169,7 +173,7 @@ ul.task-list li input[type="checkbox"] {
 
 <div>
   <div class="description">
-    Use the OBT ribbon to change the visibility status of columns
+    Explore your data from within the linelist with the the analyses sheets
   </div>
 </div>
 
@@ -186,32 +190,106 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<section id="visibility-status" class="level2">
-<h2 class="anchored" data-anchor-id="visibility-status">Visibility status</h2>
-<p>In OutbreakTools, there are several visibility status, which can be modified using a button in the <a href="../reference/ribbons_linelist.html">OutbreakTools Menu</a>:</p>
+<p>OBT linelist contain analyses sheets with basic exploration of the data. Which sheets, and their exact content vary between diseases and what was encoded in the dictionary, but you can expect some or all of the following:</p>
 <ul>
-<li><strong>mandatory</strong>: the columns cannot be hidden using the Show/Hide</li>
-<li><strong>hiden</strong>: the columns are internal and cannot be shows using the Show/Hide</li>
-<li><strong>optional</strong>: the linelist user can decide to show or hide the variable based on their needs.</li>
+<li>Uni and bivariate analyses</li>
+<li>Temporal analyses (epicurves and their associated tables)</li>
+<li>Spatial analyses (top X residence of cases, or deceased patients)</li>
+<li>Spatio-temporal analyses (epicurves for locations of your choice)</li>
 </ul>
-<p>These linelist status are derived from the <strong>setup file</strong> <a href="../reference/dictionary_sheet.html#sec-visibility-status">status property</a>.</p>
-</section>
-<section id="show-and-hide-variables" class="level2">
-<h2 class="anchored" data-anchor-id="show-and-hide-variables">Show and hide variables</h2>
-<p>Clicking on the “Show/hide variables” button opens a window listing all the variables in the current sheet.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="../reference/images/img-012-ll-show-hide.png" class="img-fluid figure-img"></p>
-<figcaption>OutbreakTools tab in the created linelist</figcaption>
+<p><img src="../getting_started/images/img-011-a-graph.png" class="quarto-figure quarto-figure-center figure-img" height="100"></p>
 </figure>
 </div>
-<p>The <em>optional, hidden</em> variables in the <strong>setup file</strong> appear as <em>Hidden</em> by default. However, the user can change the status by choosing <em>Show</em>, in which case the column will become visible.</p>
-<p><img src="../how_to/images/im-027-example.png" class="img-fluid"></p>
-<p><img src="../how_to/images/im-028-example.png" class="img-fluid"></p>
-<p>The “Notification year” variable does not appear in the list of variables because it is in “hidden” status in the <strong>setup file</strong>.</p>
-<p>The <em>optional, visible</em> variables in the <strong>setup file</strong> appear as <em>Shown</em> by default. However, you can change the status by choosing <em>Hide</em>, in which case the column will no longer be visible.</p>
-<p><img src="../how_to/images/im-029-example.png" class="img-fluid"></p>
-<p><em>Mandatory</em> variables in the <strong>setup file</strong> appear as *Mandatory in the “Show/Hide” pop up, and cannot be hidden.</p>
+<section id="updating-analyses" class="level2">
+<h2 class="anchored" data-anchor-id="updating-analyses">Updating analyses</h2>
+<p>The most important thing to know is that you should update the analyses before looking at them:</p>
+<ol type="1">
+<li><p>Decide which data should be included in the analyses (see <a href="#imp-filters" class="quarto-xref">Important&nbsp;1</a>)</p></li>
+<li><p>Hit <strong>F9</strong> (forced recalculation, in case some formula got stuck)</p></li>
+<li><p>Hit the “Refresh button” in the <a href="../reference/ribbons_linelist.html#sec-refresh">OutbreakTools menu</a>, which will update all the data used by all the sheets.</p></li>
+</ol>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="../getting_started/images/img-008-refresh-button.png" class="img-fluid figure-img"></p>
+<figcaption>Refresh button in the OBT menu</figcaption>
+</figure>
+</div>
+<div id="imp-filters" class="callout callout-style-default callout-important callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Important&nbsp;1
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>If you <strong>filter data</strong> in the main patient sheet, it will be reflected in the analyses sheets <em>after you refresh</em> (a red warning will appear to remind you). If you apply no filter or remove them, the analyses are performed on the whole dataset.</p>
+</div>
+</div>
+</section>
+<section id="person-uni-and-bivariate-analyses" class="level2">
+<h2 class="anchored" data-anchor-id="person-uni-and-bivariate-analyses">Person: Uni and bivariate analyses</h2>
+<p>This sheet is straightforward as there is nothing to parametrise on it: the tables and graphs are updated when you refresh the analyses.</p>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>You can alter the appearance of the graphs on all the sheets<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>, the same way you would do for your own figures, with any <a href="https://www.howtogeek.com/how-to-format-your-chart-in-excel/">Excel tool</a>.</p>
+<p>Note that graphs modifications will be lost during data migration to a new version of the linelist, so I advise you to restrict the modifications to graphs that you want to export to reports / slides, or which are <em>really</em> making your eyes bleed.</p>
+</div>
+</div>
+<div class="callout callout-style-default callout-tip callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Tip
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>All the analyses sheets have a blue button on the top left with a dropdown menu containing shortcuts to the sections, to facilitate navigation when the analyses are long.</p>
+</div>
+</div>
+</section>
+<section id="time-temporal-analyses" class="level2">
+<h2 class="anchored" data-anchor-id="time-temporal-analyses">Time: temporal analyses</h2>
+<p>This sheet contains tables across time and epicurves (below the tables). To see the analyses, you need to <strong>select a time unit</strong>: days, weeks, months, quarter, years. The table has 53 rows by default, and can thus accommodate up to:</p>
+<ul>
+<li>53 days (start of the outbreak, or a zoom on a specific period)</li>
+<li>53 weeks (aka one year)</li>
+<li>53 months (if you have several years worth of data)</li>
+<li>53 quarters or years (rarer user case of OBT, at least for linelists)</li>
+</ul>
+<p>By default the table starts at the first admission/visit/notification date present in your data, but you can zoom on a specific time period by filling a start and even an end date of analysis.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="../getting_started/images/img-009-temporal-table.png" class="img-fluid figure-img"></p>
+<figcaption>Temporal analysis settings</figcaption>
+</figure>
+</div>
+</section>
+<section id="place-spatial-analyses" class="level2">
+<h2 class="anchored" data-anchor-id="place-spatial-analyses">Place: spatial analyses</h2>
+<p>The “Spatial analyses” sheet displays the <strong>top X areas</strong> with the most cases, where X is defined in the linelist dictionary<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</p>
+<p>Some linelists may have several such analyses, depending on the information available in the linelist:</p>
+<ul>
+<li>Top X areas of residence</li>
+<li>Top X areas of origin</li>
+<li>Top X areas of residence of deceased patients</li>
+<li>etc.</li>
+</ul>
+<p>To see data on this sheet you need to <strong>select the admin level</strong> at which you want to see the data displayed (blue button, admin 1 to 4). If you imported a geobase, you should see the names of the administrative levels from the geobase appear in the dropdown menu.</p>
+<p><em>If there is population data that you trust</em> in the geobase, you can use the button “Select if you want to divide by population” to show attack rates instead of number of cases<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>.</p>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -222,33 +300,45 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Columns that were defined as <em>hidden</em> in the setup file will not appear in the Show/Hide. They were deemed unlikely top be of interest to the linelist user (calculated columns used to apply formatting for example).</p>
+<p>If you have population data that is not in the geobase for levels of interest, or wish to correct existing ones, you can enter them in the “Geo” sheet (at the end of the linelist sheets).</p>
 </div>
 </div>
-<div class="callout callout-style-default callout-warning callout-titled">
-<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-2-contents" aria-controls="callout-2" aria-expanded="false" aria-label="Toggle callout">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
+</section>
+<section id="place-and-person-spatio-temporal-analyses" class="level2">
+<h2 class="anchored" data-anchor-id="place-and-person-spatio-temporal-analyses">Place and person: spatio-temporal analyses</h2>
+<p>The last analysis sheet that you may encounter in an OBT linelist is a crossover between the temporal analysis and the spatial analysis: it allows you to look at the number of cases (usually) for a couple of chosen administrative levels across time.</p>
+<p>To use the sheet:</p>
+<ol type="1">
+<li><p>Place your cursor in one of the blue cells on the left (starting from C14 and down).</p></li>
+<li><p>Click on the “GeoHelper” button in the <a href="../reference/ribbons_linelist.html#sec-geo-helper">OutbreakTools menu</a><a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> and select an administrative level of interest (could be from any level)</p></li>
+<li><p>If you want to, go to the next blue cell and use the Geohelper to select another place of interest</p></li>
+<li><p>Select a unit for the analysis (day/month etc.)</p></li>
+</ol>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="../getting_started/images/img-010-spatio-temporal.png" class="img-fluid figure-img"></p>
+<figcaption>Spatio temporal analysis</figcaption>
+</figure>
 </div>
-<div class="callout-title-container flex-fill">
-Note on showing and hiding columns manually
-</div>
-<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
-</div>
-<div id="callout-2" class="callout-2-contents callout-collapse collapse">
-<div class="callout-body-container callout-body">
-<p>Technically, the linelist user can forcefully hide/un-hide columns.</p>
-<p>Un-hiding hidden (usually calculated) columns is usually desirable during linelist debug or to go check data that may interest you (<em>e.g</em>. a hidden calculated epiweek of exit). You can hide them after consultation without consequences on the rest of the linelist.</p>
-<p>It is however more dangerous to forcefully hide “mandatory” columns. These columns are often fundamental variables in the linelist, that are needed for data understanding and analyses (<em>e.g</em>. date of admission, age or sex). If you choose to hide one of these columns, know that some analyses might not function as expected, or not at all because they rely on the hidden columns.</p>
-<p>Finally, any change of column visibility that is not made via the “Hide/show variable” button of the linelist will not be recorded and migrated to a new linelist.</p>
-</div>
-</div>
-</div>
+<p>You can track as many locations as there are blue cells (this number may vary between diseases).</p>
+</section>
+<section id="extra-analysis-pivot-table" class="level2">
+<h2 class="anchored" data-anchor-id="extra-analysis-pivot-table">Extra analysis: pivot table</h2>
+<p>An additional analyses sheet is available to create pivot tables (“Custom table”). In this sheet, there is one pivot table per existing linelist sheet in the workbook (usually, one). It works as regular pivot table, except the source is pre-defined.</p>
 
 
 </section>
 
-<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a></main> <!-- /main -->
+
+<a onclick="window.scrollTo(0, 0); return false;" role="button" id="quarto-back-to-top"><i class="bi bi-arrow-up"></i> Back to top</a><div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>Graphs and tables are created automatically and admittedly a bit ugly<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>Depending on the disease, it might be the top 10 places, or the top 30 places.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>If you elect to show attack rates when there is no population data, you will obtain errors in the table.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p>Or hit CTRL + G keys.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
     const icon = "";
