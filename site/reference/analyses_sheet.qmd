@@ -8,11 +8,11 @@ categories:
 
 This sheet contains several tables for defining different types of analyses and their corresponding graphs:
 
--   a table to defining a "Global Summary" section, containing general indicators
--   a table for defining analyses on single variables: "Univariate Analysis"
--   a table for defining analyses crossing two variables: "Bivariate Analysis"
--   three tables for defining time series and their graphs: "Time Series Analysis", "Labels for Time Series Graphs", "Graph on Time Series"
--   two tables for defining spatio-temporal analyses: "Specification for Spatio-Temporal Analysis", "Spatio-Temporal Analysis"
+- a table to define a "Global Summary" section, containing general indicators
+- a table to define analyses on single variables: "Univariate Analysis"
+- a table to define analyses crossing two variables: "Bivariate Analysis"
+- three tables to define time series and their graphs: "Time Series Analysis", "Labels for Time Series Graphs", "Graph on Time Series"
+- two tables to define spatio-temporal analyses: "Specification for Spatio-Temporal Analysis", "Spatio-Temporal Analysis"
 
 Flowchart to help you figure out which of these tables to use for different analyse: 
 
