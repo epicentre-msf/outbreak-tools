@@ -6,6 +6,10 @@ categories:
   - Dashboard
 ---
 
+
+
+![](../how_to/images/img-008-troubleshooting.png){fig-align="center" height=100}
+
 ## Linelist file
 
 ### File corruption
