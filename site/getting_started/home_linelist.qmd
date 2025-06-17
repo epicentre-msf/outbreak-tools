@@ -1,5 +1,5 @@
 ---
-title: Getting started with an OBT linelist
+title: Get started with an OBT linelist
 listing:
   - id: articles-links
     contents:
