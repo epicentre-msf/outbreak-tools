@@ -5,7 +5,6 @@ categories:
   - Linelist
 ---
 
-
 OBT linelist contain analyses sheets with basic exploration of the data. Which sheets, and their exact content vary between diseases and what was encoded in the dictionary, but you can expect some or all of the following:  
 
 - Uni and bivariate analyses
@@ -13,6 +12,8 @@ OBT linelist contain analyses sheets with basic exploration of the data. Which s
 - Spatial analyses (top X residence of cases, or deceased patients)
 - Spatio-temporal analyses (epicurves for locations of your choice)
 
+
+![](../getting_started/images/img-011-a-graph.png){fig-align="center" height=100}
 
 ## Updating analyses
 
