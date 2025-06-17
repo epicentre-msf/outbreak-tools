@@ -73,7 +73,7 @@ At minima, an OutbreakTools linelist will contain these sheets:
 
 1.	An *Info* sheet which contains metadata about the project  
 2.	At least one *data entry sheet* to enter patient data  
-3.	Some or all of the following analyses sheets containing basic exploration of data:  
+3.	Some or all of the following [analyses sheets](../getting_started/use_analyses_sheets.qmd) containing basic exploration of data:  
 
     - Uni and bivariate analyses
     - Temporal analyses (epicurves and their associated tables)
