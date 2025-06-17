@@ -73,10 +73,9 @@ Additionaly, try t upgrade your linelist to a more recent version: recent builds
 **Solution**
 
 1. Verify that your data are not filtered (or the filter you applied are the one you want to see reflected in the analyses sheet). If you want to clear out all filters you can use the button in the [OutbreakTools Menu](../reference/ribbons_linelist.qmd)
-2. Hit F9 in the patient data sheet make sure all formula are up-to-date
+2. Hit **F9** in the patient data sheet make sure all formula are up-to-date
 3. Hit the "Refresh analyses button" in the [OutbreakTools Menu](../reference/ribbons_linelist.qmd).
-4. In the temporal analyses sheet and the spatio-temporal one, select the unit you want to display.
-
+4. In the temporal analyses sheet and the spatio-temporal one, **select the unit you want to display**.
 
 If problems remain, check the concerned columns: 
 
@@ -85,6 +84,7 @@ If problems remain, check the concerned columns:
 
 If the data is clean and the problem remains, contact your referent epi or the developers.
 
+Read more about the [analyses sheets](../getting_started/use_analyses_sheets.qmd) in the linelist.
 
 
 ## Sending data to the dashboard
