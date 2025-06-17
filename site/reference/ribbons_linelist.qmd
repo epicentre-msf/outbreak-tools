@@ -90,14 +90,14 @@ If you are in a "geo" section, you will have three tabs that you can use to sele
 Once the location has been found, select it and click on “OK".
 
 
-## Refresh analyses
+## Refresh analyses {sec-refresh}
 
 ![Refresh analyses button](../reference/images/img-007-ll-refresh-analyses.png){fig-align="center"}
 
-Hit the "Refresh analyses" button to update analyses on all analyses sheets in one go. You should use it whenever you entered new data or when you applied filters to existing data and want to see the analyses on this subset of data.^[Do not forget to remove the filters and refresh the analyses at the end to not be confused by the numbers in a couple of days]
+Hit the "Refresh analyses" button to update analyses on all [analyses sheets]((../getting_started/use_analyses_sheets.qmd)) in one go. You should use it whenever you entered new data or when you applied filters to existing data and want to see the analyses on this subset of data.^[Do not forget to remove the filters and refresh the analyses at the end to not be confused by the numbers in a couple of days]
 
 ::: {.callout-note}
-If the numbers in the analyses are striken, it is because of a [new Excel functionality](https://techcommunity.microsoft.com/blog/microsoft365insiderblog/stale-value-formatting-now-available-in-excel-for-windows/4281372). The documentation is limited and we have not been able to modify the refresh button to take it into account yet. You have two options: use the F9 shortcut before hitting "Refresh analyses", or un-tick the "Format Stale Values" option in the Calculation options of the *Formula* tab of Excel options.
+If the numbers in the analyses are striken, it is because of a [new Excel functionality](https://techcommunity.microsoft.com/blog/microsoft365insiderblog/stale-value-formatting-now-available-in-excel-for-windows/4281372). The documentation is limited and we have not been able to modify the refresh button to take it into account yet. You have two options: use the **F9** shortcut before hitting "Refresh analyses", or un-tick the "Format Stale Values" option in the Calculation options of the *Formula* tab of Excel options.
 
 ![Excel Calculation options](../reference/images/ribbons-006-ll-stale.png){fig-align="center"}
 :::
