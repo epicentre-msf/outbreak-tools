@@ -1,6 +1,6 @@
 ---
-title: "Use the analyses sheets"
-description: Investigate your data within the linelist with the the analyses sheets
+title: "The linelist analyses sheets"
+description: Explore your data from within the linelist with the the analyses sheets
 categories: 
   - Linelist
 ---
@@ -19,10 +19,12 @@ OBT linelist contain analyses sheets with basic exploration of the data. Which s
 The most important thing to know is that you should update the analyses before looking at them:
 
 1) Decide which data should be included in the analyses (see @imp-filters)
+
 2) Hit **F9** (forced recalculation, in case some formula got stuck)
+
 3) Hit the "Refresh button" in the [OutbreakTools menu](../reference/ribbons_linelist.qmd#sec-refresh), which will update all the data used by all the sheets.
 
-![Refresh button in the OBT menu](../how_to/images/img-008-refresh-button.png){fig-align="center"}
+![Refresh button in the OBT menu](../getting_started/images/img-008-refresh-button.png){fig-align="center"}
 
 ::: {#imp-filters .callout-important}
 If you **filter data** in the main patient sheet, it will be reflected in the analyses sheets *after you refresh* (a red warning will appear to remind you).
@@ -57,7 +59,7 @@ This sheet contains tables across time and epicurves (below the tables). To see 
 
 By default the table starts at the first admission/visit/notification date present in your data, but you can zoom on a specific time period by filling a start and even an end date of analysis. 
 
-![Temporal analysis settings](../how_to/images/img-009-temporal-table.png){fig-align="center"}
+![Temporal analysis settings](../getting_started/images/img-009-temporal-table.png){fig-align="center"}
 
 
 
@@ -89,11 +91,14 @@ The last analysis sheet that you may encounter in an OBT linelist is a crossover
 To use the sheet:
 
 1) Place your cursor in one of the blue cells on the left (starting from C14 and down).
+
 2) Click on the “GeoHelper” button in the [OutbreakTools menu](../reference/ribbons_linelist.qmd#sec-geo-helper)^[Or hit CTRL + G keys.] and select an administrative level of interest (could be from any level)
+
 3) If you want to, go to the next blue cell and use the Geohelper to select another place of interest
+
 4) Select a unit for the analysis (day/month etc.)
 
-![Spatio temporal analysis](../how_to/images/img-010-spatio-temporal.png){fig-align="center"}
+![Spatio temporal analysis](../getting_started/images/img-010-spatio-temporal.png){fig-align="center"}
 
 You can track as many locations as there are blue cells (this number may vary between diseases).
 
