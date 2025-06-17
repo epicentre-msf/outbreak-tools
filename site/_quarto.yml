@@ -54,7 +54,8 @@ website:
       - text: Reference
         href: reference/home_reference.qmd
 
-      - text: Resources      
+      - text: Resources
+        menu:
           - text: Cheatsheets
             href: cheatsheets/home_cheatsheets.qmd
 
