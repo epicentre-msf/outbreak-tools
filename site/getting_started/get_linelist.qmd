@@ -3,6 +3,8 @@ title: "Get a linelist template"
 description: Where to obtain an OBT linelist?
 ---
 
+![](../getting_started/images/img-008-download.png){fig-align="center"}
+
 There are several ways to obtain a template:
 
 1. Go to the public page of the [Epinetwork sharepoint](https://msfintl.sharepoint.com/sites/OCG/Projects/GRP-MSF-EpiNetwork/Library/Forms/AllItems.aspx?id=%2Fsites%2FOCG%2FProjects%2FGRP-MSF-EpiNetwork%2FLibrary%2F01%20Outbreaks&viewid=36a61edd-2f15-4105-835a-d580bada0924&FolderCTID=0x012001) where all the last versions of the existing OBT tools are stored, organised by by disease.
