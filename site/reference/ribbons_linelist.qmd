@@ -90,7 +90,7 @@ If you are in a "geo" section, you will have three tabs that you can use to sele
 Once the location has been found, select it and click on “OK".
 
 
-## Refresh analyses
+## Refresh analyses {sec-refresh}
 
 ![Refresh analyses button](../reference/images/img-007-ll-refresh-analyses.png){fig-align="center"}
 
