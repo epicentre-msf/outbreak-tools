@@ -97,7 +97,32 @@ update_master_setup <- function(tag = "mock") {
   return(invisible())
 }
 
-# copy the mock file for development
-update_designer(tag = "main")
-# update_setup(tag = "mock")
-update_master_setup(tag = "main")
+# update the unit test file
+update_unit_test <- function(tag = "mock") {
+  # move previous version of my designer
+  # replace the dev designer
+  switch(
+    tag,
+    # update the actual mock file
+    mock = {
+      file_copy(
+        here(".mock", "unit_test_mock.xlsb"),
+        here("src", "bin", "test-files", "unit_tests_dev.xlsb"),
+        overwrite = TRUE
+      )
+      cli_alert_success("Sucessfully copied the unit tests mock file")
+    },
+
+    # udate the main designer file on the designer folder
+    #(the one without the _dev tag)
+    main = {
+      file_copy(
+        here("src", "bin", "test-files", "unit_tests_dev.xlsb"),
+        here("src", "bin", "test-files", "unit_tests.xlsb"),
+        overwrite = TRUE
+      )
+      cli_alert_success("Successfully replaced the unit tests main file")
+    }
+  )
+  return(invisible())
+}

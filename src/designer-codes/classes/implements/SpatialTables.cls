@@ -37,8 +37,8 @@ Public Function Create(ByVal tabl As ICrossTable) As ISpatialTables
     CheckRequirements tabl '(tabl is exists and spatial_tables__ sheet exists)
 
     With New SpatialTables
-        Set .Table = tabl
-        Set Create = .Self
+      Set .Table = tabl
+      Set Create = .Self
     End With
 
 End Function

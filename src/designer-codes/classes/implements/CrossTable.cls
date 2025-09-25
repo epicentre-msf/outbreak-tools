@@ -954,7 +954,6 @@ Private Sub NameRanges()
             'Movte to next Range
             Set rng = rng.Offset(, 1)
             
-            DoEvents
             
             If specs.HasPercentage Then
 
@@ -974,7 +973,7 @@ Private Sub NameRanges()
             nbcolCounter = nbcolCounter + 1
         Loop
         
-        DoEvents
+        
         Set cData = New BetterArray
         Set tData = New BetterArray
 

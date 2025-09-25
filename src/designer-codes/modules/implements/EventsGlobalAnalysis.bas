@@ -116,7 +116,7 @@ Public Sub UpdateFilterTables(Optional ByVal calculate As Boolean = True)
     Next
 
     'caclulate active sheet
-    DoEvents
+    
 
     If calculate Then
         ActiveSheet.calculate
