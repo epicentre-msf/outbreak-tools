@@ -1,0 +1,116 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "unix2dos src",
+            "type": "shell",
+            "command": "find src -type f \\( -name '*.cls' -o -name '*.bas' \\) -print0 | xargs -0 unix2dos",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "replace unit test dev",
+            "type": "shell",
+            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_unit_test('mock')\"",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update designer mock",
+            "type": "shell",
+            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_designer('mock')\"",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update designer main",
+            "type": "shell",
+            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_designer('main')\"",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update setup mock",
+            "type": "shell",
+            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_setup('mock')\"",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update setup main",
+            "type": "shell",
+            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_setup('main')\"",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update master setup mock",
+            "type": "shell",
+            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_master_setup('mock')\"",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update master setup main",
+            "type": "shell",
+            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_master_setup('main')\"",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "update unit test main",
+            "type": "shell",
+            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_unit_test('main')\"",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "create vba class",
+            "type": "shell",
+            "command": "Rscript -e \"source('automate/codes/create_vba_classes.R'); create_class('${input:className}')\"",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ],
+    "inputs": [
+        {
+            "id": "className",
+            "type": "promptString",
+            "description": "Name of the VBA class to generate",
+            "default": "NewClass"
+        }
+    ]
+
+}

@@ -383,7 +383,7 @@ Private Sub TransferForm(formName As String)
     inpWkb.VBProject.VBComponents(formName).Export formPath
     outWkb.VBProject.VBComponents.Import formPath
 
-    DoEvents
+    
 
     On Error Resume Next
     Kill outDir & sep & "CopieUsf.frm"
@@ -586,7 +586,7 @@ Private Sub Prepare()
         AddOutputSheet sheetName, xlSheetVeryHidden
     Next
 
-    DoEvents
+    
 
     'Prepare the temporary sheets by adding required ranges
     PrepareTemporarySheets
@@ -594,7 +594,7 @@ Private Sub Prepare()
     'Export differents parts to the workbook (dictionary, choices, translation, geo)
     lData.Export outWkb
 
-    DoEvents
+    
 
     'Add the sheets for Bivariate Analysis, Time series and spatial,
     'Spatio-temporal Analysis As well as custom sheets (custom choices)
@@ -667,7 +667,7 @@ Private Sub Prepare()
         TransferCode codeName, codeScopeClass
     Next
 
-    DoEvents
+    
 
     'Send the modules to the linelist
     codesList.Clear

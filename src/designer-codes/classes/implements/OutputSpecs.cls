@@ -371,13 +371,13 @@ Private Sub AddAnalysis(ByVal prevSheet As String, _
       Application.CutCopyMode = False
       inpwb.Worksheets(prevSheetName).Cells.Copy
       outsh.Cells.PasteSpecial xlPasteValues
-      DoEvents
+      
       Application.CutCopyMode = False
       inpwb.Worksheets(prevSheetName).Cells.Copy
       outsh.Cells.PasteSpecial xlPasteFormats
-      DoEvents
+      
       RemoveGridLines outsh
-      DoEvents
+      
       namObj.WriteGraphs outsh, scope
     On Error GoTo 0
   Next
