@@ -118,7 +118,7 @@ Public Sub ImportOrCleanSetup()
         End If
     End Select
 
-    DoEvents
+    
 
     'If there is a checking done, no need to add new message
     If Not conformityCheck Then
