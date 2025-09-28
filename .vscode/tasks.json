@@ -5,8 +5,22 @@
     "tasks": [
         {
             "label": "unix2dos src",
-            "type": "shell",
-            "command": "find src -type f \\( -name '*.cls' -o -name '*.bas' \\) -print0 | xargs -0 unix2dos",
+            "type": "process",
+            "command": "/bin/bash",
+            "args": [
+                "-lc",
+                "find src -type f \\( -name '*.cls' -o -name '*.bas' \\) -print0 | xargs -0 unix2dos"
+            ],
+            "windows": {
+                "command": "powershell",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "Get-ChildItem -Path src -Recurse -Include *.cls,*.bas -File | ForEach-Object { $content = Get-Content -LiteralPath $_.FullName -Raw; $normalized = $content -replace \"`r?`n\", \"`r`n\"; [System.IO.File]::WriteAllText($_.FullName, $normalized) }"
+                ]
+            },
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -15,8 +29,15 @@
         },
         {
             "label": "replace unit test dev",
-            "type": "shell",
-            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_unit_test('mock')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_unit_test('mock')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -25,8 +46,15 @@
         },
         {
             "label": "update designer mock",
-            "type": "shell",
-            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_designer('mock')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_designer('mock')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -35,8 +63,15 @@
         },
         {
             "label": "update designer main",
-            "type": "shell",
-            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_designer('main')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_designer('main')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -45,8 +80,15 @@
         },
         {
             "label": "update setup mock",
-            "type": "shell",
-            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_setup('mock')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_setup('mock')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -55,8 +97,15 @@
         },
         {
             "label": "update setup main",
-            "type": "shell",
-            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_setup('main')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_setup('main')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -65,8 +114,15 @@
         },
         {
             "label": "update master setup mock",
-            "type": "shell",
-            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_master_setup('mock')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_master_setup('mock')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -75,8 +131,15 @@
         },
         {
             "label": "update master setup main",
-            "type": "shell",
-            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_master_setup('main')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_master_setup('main')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -85,8 +148,15 @@
         },
         {
             "label": "update unit test main",
-            "type": "shell",
-            "command": "Rscript -e \"source('automate/codes/update_files.R'); update_unit_test('main')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/update_files.R'); update_unit_test('main')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -95,8 +165,15 @@
         },
         {
             "label": "create vba class",
-            "type": "shell",
-            "command": "Rscript -e \"source('automate/codes/create_vba_classes.R'); create_class('${input:className}')\"",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/create_vba_classes.R'); create_class('${input:className}')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
             "presentation": {
                 "reveal": "always",
                 "panel": "shared"
@@ -112,5 +189,5 @@
             "default": "NewClass"
         }
     ]
-
 }
+
