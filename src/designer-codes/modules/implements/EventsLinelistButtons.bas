@@ -37,7 +37,7 @@ Private Sub InitializeTrads()
     Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
     Set tradsmess = lltrads.TransObject()
     Set tradsform = lltrads.TransObject(TranslationOfForms)
-    Set pass = LLPasswords.Create(wb.Worksheets(PASSSHEET))
+    Set pass = Passwords.Create(wb.Worksheets(PASSSHEET))
 End Sub
 
 Private Sub WarningOnSheet(ByVal msgCode As String)

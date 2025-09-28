@@ -144,10 +144,10 @@ Private Sub SaveOneFolder(ByVal listName As String, outDir As String, scope As B
     Set sh = ThisWorkbook.Worksheets(DEVSHEETNAME)
 
     On Error Resume Next
-    Set codeRng = sh.ListObjects(listName).ListColumns(1).DataBodyRange
+    Set colRng = sh.ListObjects(listName).ListColumns(1).DataBodyRange
     On Error GoTo 0
 
-    If codeRng Is Nothing Then Exit Sub
+    If colRng Is Nothing Then Exit Sub
 
     For counter = 1 To colRng.Rows.Count
         codeName = Application.WorksheetFunction.Trim(colRng.Cells(counter, 1).Value)
