@@ -18,8 +18,8 @@ Option Explicit
 Private Const DEVSHEETNAME As String = "Dev"
 
 Private Const MODULECODESRANGE As String = "ModulesCodes"
-Private Const CLASSCODESRANGE As String = "TestsCodes"
-Private Const TESTCODESRANGE As String = "ClassesImplementation"
+Private Const CLASSCODESRANGE As String = "ClassesImplementation"
+Private Const TESTCODESRANGE As String = "TestsCodes"
 
 Private ClassFolders As String
 Private TestFolders As String
@@ -122,6 +122,8 @@ Public Sub clickRibbonFolder(ByRef Control As IRibbonControl)
 End Sub
 
 Private Sub ResolveOutputDirs()
+    Dim sh As Worksheet
+    Set sh = ThisWorkbook.Worksheets(DEVSHEETNAME)
 
     ClassFolders = sh.Range(CLASSCODESRANGE).Value
     TestFolders = sh.Range(TESTCODESRANGE).Value
@@ -132,30 +134,32 @@ End Sub
 'Helper for SaveCodes
 Private Sub SaveOneFolder(ByVal listName As String, outDir As String, scope As Byte, outputAs As Byte, Optional ByVal interFace As Boolean = True)
 
-    Dim codesList As BetterArray
     Dim sh As Worksheet
     Dim codeName As String
     Dim codeNameInterFace As String
     Dim counter As Long
+    Dim colRng As Range
 
 
-    Set codesList = New BetterArray
     Set sh = ThisWorkbook.Worksheets(DEVSHEETNAME)
 
-    codesList.FromExcelRange sh.ListObjects(listName).DataBodyRange()
+    On Error Resume Next
+    Set codeRng = sh.ListObjects(listName).ListColumns(1).DataBodyRange
+    On Error GoTo 0
 
-    For counter = codesList.LowerBound To codesList.UpperBound
-        codeName = Application.WorksheetFunction.Trim(codesList.Item(counter))
+    If codeRng Is Nothing Then Exit Sub
+
+    For counter = 1 To colRng.Rows.Count
+        codeName = Application.WorksheetFunction.Trim(colRng.Cells(counter, 1).Value)
 
         If codeName <> vbNullString Then
 
             TransferCode codeName, outDir, scope:=scope, outputAs:=outputAs
 
-            If interFace Then 
+            If interFace And (Cstr(colRng.Cells(counter, 2).Value) = "yes") Then 
                 codeNameInterFace = "I" & codeName
                 TransferCode codeNameInterFace, outDir, scope:=scope, outputAs:=outputAs
             End If
-
         End If
     Next
 End Sub
@@ -190,7 +194,6 @@ Private Sub SaveCodes(Lo As ListObject, Optional ByVal outputAs As Byte = Import
     
     codeScope = Cstr(Lo.Range.Cells(0, 1).Value)
     codeFolder = Cstr(Lo.Range.Cells(-1, 1).Value)
-    hasInterface = True
     listName = Lo.Name
 
     Select Case codeScope
@@ -208,12 +211,12 @@ Private Sub SaveCodes(Lo As ListObject, Optional ByVal outputAs As Byte = Import
     Case "tests classes"
 
         outDir = TestFolders & Application.PathSeparator & "classes"
-        hasInterface = False
         importScope = classImport
 
     Case "general classes"
         outDir = ClassFolders 
         importScope = classImport
+        hasInterFace = True
 
     End Select
 

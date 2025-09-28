@@ -20,12 +20,14 @@ Option Explicit
 '@section Public constants
 '===============================================================================
 'Byte-coded identifiers for Password tags to avoid Enum usage (macOS safe).
-Public Const PasswordTagDebug As Byte = 1
-Public Const PasswordTagPublic As Byte = 2
-Public Const PasswordTagPrivate As Byte = 3
-Public Const PasswordTagVersion As Byte = 4
-Public Const PasswordTagLabPublic As Byte = 5
-Public Const PasswordTagLabPrivate As Byte = 6
+Public Enum PaswordTag
+  PasswordTagDebug = 1
+  PasswordTagPublic = 2
+  PasswordTagPrivate = 3
+  PasswordTagVersion = 4
+  PasswordTagLabPublic = 5
+  PasswordTagLabPrivate = 6
+End Enum
 
 '@section Factory
 '===============================================================================
@@ -70,7 +72,7 @@ End Property
 Public Sub EnterDebugMode(Optional ByVal targetWorkbook As Workbook)
 End Sub
 
-'@details Restore workbook protections previously removed by EnterDebugMode.
+'@details Restore workbook protections previously removed by EnterDebugMode
 Public Sub LeaveDebugMode(Optional ByVal targetWorkbook As Workbook)
 End Sub
 
