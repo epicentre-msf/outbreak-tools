@@ -57,6 +57,6 @@
         "src/setup-codes"
     ],
     "internalLinker.implementsPath": "src/classes/implements",
-    "internalLinker.interfacePath": "src/classes/interface"
-
+    "internalLinker.interfacePath": "src/classes/interface",
+    "files.eol": "\r\n"
 }
