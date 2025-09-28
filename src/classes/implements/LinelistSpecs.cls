@@ -513,7 +513,7 @@ Private Sub EnsurePasswords()
     If this.passwords Is Nothing Then
         Dim passwordSheet As Worksheet
         Set passwordSheet = ResolveSheet(LinelistSpecConstants.SHEET_PASSWORDS)
-        Set this.passwords = LLPasswords.Create(passwordSheet)
+        Set this.passwords = Passwords.Create(passwordSheet)
     End If
 End Sub
 

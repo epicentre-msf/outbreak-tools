@@ -240,8 +240,8 @@ Public Sub clickImpPass(control As IRibbonControl)
     On Error GoTo ErrorManage
         
         Set wb = Workbooks.Open(fileName:=io.File(), ReadOnly:=False)
-        Set imppass = LLPasswords.Create(wb.Worksheets(1))
-        Set actpass = LLPasswords.Create(ThisWorkbook.Worksheets(PASSWORDSHEET))
+        Set imppass = Passwords.Create(wb.Worksheets(1))
+        Set actpass = Passwords.Create(ThisWorkbook.Worksheets(PASSWORDSHEET))
         actpass.Import imppass
         wb.Close saveChanges:=False
 

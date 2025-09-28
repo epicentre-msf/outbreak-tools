@@ -27,7 +27,7 @@ Private Sub Initialize()
     Set dicttranssh = ThisWorkbook.Worksheets(TRADSHEET)
     Set psh = ThisWorkbook.Worksheets(PASSSHEET)
     Set lltrads = LLTranslations.Create(lltranssh, dicttranssh)
-    Set pass = LLPasswords.Create(psh)
+    Set pass = Passwords.Create(psh)
 End Sub
 
 'Subs to speed up the application
