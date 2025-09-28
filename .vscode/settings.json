@@ -9,7 +9,7 @@
     },
     "editor.lineNumbers": "on",
     "editor.fontSize": 14,
-    "editor.fontFamily": "'Fira Code Retina', Menlo, 'Courier New', monospace",
+    "editor.fontFamily": "'Fira Code', Menlo, 'Courier New', monospace",
     "editor.fontLigatures": true,
     "zenMode.hideStatusBar": false,
     "editor.minimap.scale": 1,

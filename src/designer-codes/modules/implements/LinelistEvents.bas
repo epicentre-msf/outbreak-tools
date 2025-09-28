@@ -498,7 +498,7 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
 
     If (Target.Row = endLine) Then
         On Error Resume Next
-        Set pass = LLPasswords.Create(ThisWorkbook.Worksheets(PASSSHEET))
+        Set pass = Passwords.Create(ThisWorkbook.Worksheets(PASSSHEET))
         Set csTab = CustomTable.Create(Lo)
         pass.UnProtect "_active"
         csTab.AddRows nbRows:=5

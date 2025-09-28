@@ -131,7 +131,7 @@ Private Function KeysTableMatrix() As Variant
 
     Dim rows As Variant
 
-    rows = Array(_
+    rows = Array( _
         Array("PublicKeys", "PrivateKeys"), _
         Array("1234", "1234"), _
         Array("6789", "6789"))
@@ -143,7 +143,7 @@ Private Function ProtectedTableMatrix() As Variant
 
     Dim rows As Variant
 
-    rows = Array(_
+    rows = Array( _
         Array("ID", "DrawObjects", "DeleteRows"), _
         Array("", "", ""))
 

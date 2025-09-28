@@ -29,7 +29,7 @@ Private Sub InitializeTrads()
     Set tradform = lltrads.TransObject(TranslationOfForms)
     Set tradmess = lltrads.TransObject()
     Set passsh = currwb.Worksheets(PASSWORDSHEET)
-    Set pass = LLPasswords.Create(passsh)
+    Set pass = Passwords.Create(passsh)
 End Sub
 
 

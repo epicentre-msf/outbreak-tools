@@ -639,7 +639,7 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
   Set outwb = outputWkb()
   Set inpwb = InputWkb()
   Set sheetNamesList = expdict.UniqueValues("sheet name")
-  Set pass = LLPasswords.Create(inpwb.Worksheets(PASSWORDSHEET))
+  Set pass = Passwords.Create(inpwb.Worksheets(PASSWORDSHEET))
   Set expobj = ExportObject()
   scope = ActualScope()
 
@@ -845,7 +845,7 @@ Private Sub Save(ByVal trads As ITranslationObject, _
   Set outwb = outputWkb()
   
   Set dict = LLdictionary.Create(inpwb.Worksheets(DICTIONARYSHEET), 1, 1, NumberOfExports())
-  Set pass = LLPasswords.Create(inpwb.Worksheets(PASSWORDSHEET))
+  Set pass = Passwords.Create(inpwb.Worksheets(PASSWORDSHEET))
   
   'Get the fileName, filePath and fileExtension of the export
   fileName = expobj.ExportFileName(scope, dict, pass)

@@ -176,7 +176,7 @@ Private Property Get PasswordsObject() As ILLPasswords
   Dim wb As Workbook
 
   Set wb = CurrentWorkbook()
-  Set PasswordsObject = LLPasswords.Create(wb.Worksheets(PASSWORDSHEET))
+  Set PasswordsObject = Passwords.Create(wb.Worksheets(PASSWORDSHEET))
 End Property
 
 'Geo Object for geobase manibulations
