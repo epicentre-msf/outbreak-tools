@@ -12,7 +12,7 @@ Attribute VB_Description = "Manage translations of the current setup"
 '@PredeclaredId
 '@Folder("Dictionary")
 '@ModuleDescription("Manage translations of the current setup")
-'@IgnoreModule ImplicitActiveSheetReference : I will use Range method without referring to a worksheet.
+'@IgnoreModule UnrecognizedAnnotation, ImplicitActiveSheetReference : I will use Range method without referring to a worksheet.
 
 Option Explicit
 Implements ITranslations

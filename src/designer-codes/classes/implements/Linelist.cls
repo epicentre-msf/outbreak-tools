@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Final linelist workbook"
 
 '@Folder("Linelist Building")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 '@ModuleDescription("Final linelist workbook")
 '@PredeclaredId
 

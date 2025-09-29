@@ -7,12 +7,13 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Variables of the dictionary"
 
 
 '@Folder("Dictionary")
-'@ModuleDescription("Linelist Variable Class")
+'@ModuleDescription("Variables of the dictionary")
 '@depends Checking
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule PropertyNotUsed, ReadOnlyPropertyAssignment, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

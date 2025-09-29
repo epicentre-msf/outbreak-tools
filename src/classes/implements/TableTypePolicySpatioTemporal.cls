@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Folder("Analysis")
 '@ModuleDescription("Implements TableSpecs rules for spatio-temporal tables")
 '@depends TableSpecsPolicyHelpers
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

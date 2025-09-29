@@ -3,7 +3,7 @@ Attribute VB_Description = "Events associated to the Ribbon Menu in the designer
 Option Explicit
 Option Private Module
 '@Folder("Designer Events")
-'@IgnoreModule ParameterNotUsed
+'@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed
 '@ModuleDescription("Events associated to the Ribbon Menu in the designer")
 
 'Designer Translation sheet name

@@ -5,7 +5,7 @@ Option Private Module
 
 '@TestModule
 '@Folder("Tests")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const EXPORT_SHEET As String = "LLExportSpec"
 Private Const DICT_SHEET As String = "LLExportDict"

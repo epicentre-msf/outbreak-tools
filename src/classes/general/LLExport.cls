@@ -12,8 +12,11 @@ Attribute VB_Description = "Unified export specification handler"
 '@PredeclaredId
 '@Folder("Exports")
 '@ModuleDescription("Unified linelist export specification handler")
-'@depends Checking, CustomTable, LLVariables
 
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
+
+
+'@depends Checking, CustomTable, LLVariables
 Option Explicit
 
 Implements ILLExport

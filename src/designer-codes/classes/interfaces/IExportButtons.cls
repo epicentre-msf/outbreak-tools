@@ -12,7 +12,7 @@ Attribute VB_Description = ""
 
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of Export button")
-'@IgnoreModule
+'@IgnoreModule UnrecognizedAnnotation,
 
 Option Explicit
 

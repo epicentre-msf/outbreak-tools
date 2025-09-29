@@ -5,7 +5,7 @@ Option Private Module
 '@TestModule
 '@Folder("Tests")
 '@ModuleDescription("Tests for the ListBuildService high-level orchestrator")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As Object
 Private DictionarySheet As Worksheet

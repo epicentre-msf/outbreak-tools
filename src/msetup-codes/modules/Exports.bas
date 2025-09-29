@@ -15,7 +15,7 @@ Private trads As ITranslationObject
 Private wb As Workbook
 
 '@Folder("Import And Exports")
-'@IgnoreModule UseMeaningfulName, HungarianNotation, EmptyMethod
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, EmptyMethod
 '@ModuleDescription("Import and Export the disease to the outside world")
 
 Private Sub InitializeTrads()

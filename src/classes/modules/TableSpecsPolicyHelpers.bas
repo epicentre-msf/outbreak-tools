@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Analysis")
 '@ModuleDescription("Shared utilities and constants for TableSpecs policy strategy objects")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Public Const TABLE_TYPE_GLOBAL_SUMMARY As Byte = 1
 Public Const TABLE_TYPE_UNIVARIATE As Byte = 2

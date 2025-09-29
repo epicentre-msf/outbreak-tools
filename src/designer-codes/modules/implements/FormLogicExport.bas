@@ -1,7 +1,7 @@
 Attribute VB_Name = "FormLogicExport"
 Attribute VB_Description = "Form implementation of Exports"
 
-'@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
+'@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
 '@ModuleDescription("Form implementation of Exports")
 
 Option Explicit

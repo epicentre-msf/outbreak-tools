@@ -5,7 +5,7 @@ Option Private Module
 '@TestModule
 '@Folder("Tests")
 '@ModuleDescription("Unit tests for the default ListWorksheetPreparer implementation")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As Object
 Private Preparer As ListWorksheetPreparer

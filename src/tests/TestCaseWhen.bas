@@ -4,7 +4,7 @@ Attribute VB_Description = "Verifies the CaseWhen parser"
 Option Explicit
 Option Private Module
 
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing
 
 '@TestModule
 '@Folder("Tests")

@@ -5,7 +5,7 @@ Option Private Module
 
 '@TestModule
 '@Folder("Tests")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As Object
 Private PasswordSubject As IPasswords

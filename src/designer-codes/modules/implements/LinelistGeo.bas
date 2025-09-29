@@ -1,5 +1,5 @@
 Attribute VB_Name = "LinelistGeo"
-'@IgnoreModule ImplicitActiveSheetReference
+'@IgnoreModule UnrecognizedAnnotation, ImplicitActiveSheetReference
 
 Option Explicit
 Option Base 1

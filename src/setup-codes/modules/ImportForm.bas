@@ -1,5 +1,5 @@
 Attribute VB_Name = "ImportForm"
-'@IgnoreModule SheetAccessedUsingString
+'@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString
 Option Explicit
 
 '@Folder("Import/Export")

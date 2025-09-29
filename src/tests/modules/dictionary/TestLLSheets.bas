@@ -1,12 +1,13 @@
 Attribute VB_Name = "TestLLSheets"
+Attribute VB_Description = "Tests for the LLSheets class"
 
 Option Explicit
 Option Private Module
 
 '@TestModule
 '@Folder("Tests")
-'@ModuleDescription("Tests for the LLSheets helper")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@ModuleDescription("Tests for the LLSheets class")
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const DICT_SHEET As String = "LLSheetsDict"
 Private Const SHEET_VERTICAL As String = "vlist1D-sheet1"
@@ -103,6 +104,7 @@ Private Sub TestDataBoundsRejectsUnknownSelector()
     On Error GoTo ExpectError
 
     Dim unused As Long
+    '@Ignore VariableNotUsed
     unused = Sheets.DataBounds(SHEET_VERTICAL, 99)
     Assert.Fail "DataBounds should raise for unsupported selectors"
     Exit Sub
@@ -118,6 +120,7 @@ Private Sub TestSheetInfoRaisesWhenTableColumnMissing()
     On Error GoTo ExpectError
 
     Dim unused As String
+    '@Ignore VariableNotUsed
     unused = Sheets.SheetInfo(SHEET_VERTICAL, SheetInfoType.SheetInfoSheetTable)
     Assert.Fail "SheetInfo should raise when table name column is missing"
     Exit Sub
@@ -147,6 +150,7 @@ Private Sub TestNumberOfVarsRaisesWhenSheetMissing()
     On Error GoTo ExpectError
 
     Dim unused As Long
+    '@Ignore VariableNotUsed
     unused = Sheets.NumberOfVars("unknown-sheet")
     Assert.Fail "NumberOfVars should raise when the sheet is absent"
     Exit Sub
@@ -162,6 +166,7 @@ Private Sub TestVariableAddressRequiresPreparedDictionary()
     On Error GoTo ExpectError
 
     Dim unused As String
+    '@Ignore VariableNotUsed
     unused = Sheets.VariableAddress(KNOWN_VARIABLE)
     Assert.Fail "VariableAddress should require a prepared dictionary"
     Exit Sub

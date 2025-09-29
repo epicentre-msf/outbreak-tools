@@ -5,7 +5,7 @@ Option Private Module
 
 '@Folder("Tests")
 '@ModuleDescription("Shared helpers for section writer tests")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const HEADER_ROW As Long = 1
 Private Const DATA_START_ROW As Long = 2

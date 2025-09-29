@@ -5,7 +5,7 @@ Option Private Module
 
 '@TestModule
 '@Folder("Tests")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const DICT_SHEET As String = "FormulaConditionDict"
 

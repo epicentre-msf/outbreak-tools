@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Formulas")
 '@ModuleDescription("Interface for parsed setup formulas")
-'@IgnoreModule UseMeaningfulName, HungarianNotation, ExcelMemberMayReturnNothing
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ExcelMemberMayReturnNothing
 '@Interface
 '@depends BetterArray, Checking, IFormulaCondition
 

@@ -11,7 +11,7 @@ Attribute VB_Description = "Interface of FormulaData"
 
 '@Folder("Formula")
 '@ModuleDescription("Contract for cached formula metadata")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 '@Interface
 
 Option Explicit

@@ -3,7 +3,7 @@ Attribute VB_Description = "Shared helpers for LLFormat tests"
 
 Option Explicit
 
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("Tests")
 '@ModuleDescription("Shared helpers for LLFormat tests using workbook fixtures")
 

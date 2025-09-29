@@ -3,7 +3,7 @@ Attribute VB_Description = "Shared choices fixture for LLChoices tests"
 
 Option Explicit
 
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("Tests")
 '@ModuleDescription("Shared choices fixture for LLChoices tests")
 
@@ -96,12 +96,6 @@ Public Function ChoicesFixtureHeaders() As Variant
     ChoicesFixtureHeaders = fixtureHeaders
 End Function
 
-'@description Retrieve the fixture rows.
-'@return Variant array of row arrays.
-Public Function ChoicesFixtureRows() As Variant
-    EnsureFixtureLoaded
-    ChoicesFixtureRows = fixtureRows
-End Function
 
 '@section Fixture Data
 '===============================================================================

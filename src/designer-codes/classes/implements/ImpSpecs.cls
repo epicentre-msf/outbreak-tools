@@ -13,7 +13,7 @@ Attribute VB_Description = "Specifications for import in the linelist"
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Specifications for import in the linelist")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IImpSpecs

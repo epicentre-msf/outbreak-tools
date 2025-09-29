@@ -5,7 +5,7 @@ Option Private Module
 '@TestModule
 '@Folder("Tests")
 '@ModuleDescription("Unit tests covering the ListBuilderCoordinator orchestration")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As Object
 Private Coordinator As IListBuilderCoordinator

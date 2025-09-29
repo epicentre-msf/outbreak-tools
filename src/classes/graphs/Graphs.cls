@@ -12,7 +12,7 @@ Attribute VB_Description = "Manage Excel graphs"
 '@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("Manage Excel graphs")
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation, ExcelMemberMayReturnNothing
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation, ExcelMemberMayReturnNothing
 
 Option Explicit
 Implements IGraphs

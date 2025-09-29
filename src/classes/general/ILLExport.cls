@@ -7,11 +7,14 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
-Attribute VB_Description = "Interface for unified export handler"
+Attribute VB_Description = "Interface describing the unified linelist export handler"
 
 '@Interface
 '@Folder("Exports")
 '@ModuleDescription("Interface describing the unified linelist export handler")
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
+
+
 '@depends Checking
 
 Option Explicit

@@ -5,7 +5,7 @@ Option Private Module
 
 '@TestModule
 '@Folder("Tests")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As Object
 
@@ -37,13 +37,13 @@ Private Sub TestHorizontalSectionWriterFormatsHeaders()
     Set writer = HListSectionWriter.Create(context)
     writer.WriteSection 2, 4
 
-    Assert.AreEqual 1, design.ScopeCount(FormatScopeHListSection), _
+    Assert.AreEqual 1, design.ScopeCount(HListSection), _
                      "Horizontal section header should use HListSection scope"
-    Assert.AreEqual 2, design.ScopeCount(FormatScopeHListSubSection), _
+    Assert.AreEqual 2, design.ScopeCount(HListSubSection), _
                      "Subsections should format headers with HListSubSection scope"
-    Assert.AreEqual 1, design.ScopeCount(FormatScopeHListCRFSection), _
+    Assert.AreEqual 1, design.ScopeCount(HListCRFSection), _
                      "CRF section formatting should be applied once"
-    Assert.AreEqual 1, design.ScopeCount(FormatScopeHListCRFSubSection), _
+    Assert.AreEqual 1, design.ScopeCount(HListCRFSubSection), _
                      "CRF subsection formatting should mirror header scopes"
 
     Dim sheet As Worksheet
@@ -68,9 +68,9 @@ Private Sub TestVerticalSectionWriterFormatsHeaders()
     Set writer = VListSectionWriter.Create(context)
     writer.WriteSection 2, 3
 
-    Assert.AreEqual 1, design.ScopeCount(FormatScopeVListSection), _
+    Assert.AreEqual 1, design.ScopeCount(VListSection), _
                      "Vertical section header should use VListSection scope"
-    Assert.AreEqual 1, design.ScopeCount(FormatScopeVListSubSection), _
+    Assert.AreEqual 1, design.ScopeCount(VListSubSection), _
                      "Vertical subsection header should use VListSubSection scope"
 
     Dim sheet As Worksheet

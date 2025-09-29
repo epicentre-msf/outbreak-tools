@@ -8,7 +8,7 @@ Option Private Module
 ''src/classes/implements/draft.csv` so every consumer (DataSheet, LLdictionary,
 'etc.) exercises the same dataset without touching the filesystem.
 
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@TestModule
 '@Folder("Tests")
 
@@ -221,7 +221,6 @@ Private Sub TestExportCreatesWorkbook()
     Assert.IsTrue (exportedSheet.Cells(expectedRow, expectedCol).Font.Color = vbBlue), "Export should mark the sheet as prepared"
     Assert.IsTrue (DICTIONARY_FIXTURE_LAST_COLOR = exportedSheet.Cells(Dictionary.Data.DataEndRow, Dictionary.Data.DataEndColumn).Interior.Color), "Fixture formatting should persist after export"
 
-CleanExit:
     If Not exportBook Is Nothing Then DeleteWorkbook exportBook
     Exit Sub
 

@@ -13,7 +13,7 @@ Attribute VB_Description = "Lock/unlock workbooks and worksheets"
 '@Folder("Security")
 '@ModuleDescription("Lock/unlock workbooks and worksheets")
 '@depends Checking, BetterArray
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
+'@IgnoreModule ProcedureNotUsed, ReadOnlyPropertyAssignment, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
@@ -713,7 +713,6 @@ End Function
 
 Private Function NamedRange(ByVal rangeName As String) As Range
 
-    Dim cached As Variant
     Dim idx As Long
     Dim entry As Variant
     Dim result As Range

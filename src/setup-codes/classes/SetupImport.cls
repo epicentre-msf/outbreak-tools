@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Imports")
 '@ModuleDescription("Import another setup to this new one")
-'@IgnoreModule
+'@IgnoreModule UnrecognizedAnnotation,
 
 Option Explicit
 

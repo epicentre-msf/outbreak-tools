@@ -3,7 +3,7 @@ Attribute VB_Name = "TestCheckingOutput"
 Option Explicit
 Option Private Module
 
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing
 
 '@TestModule
 '@Folder("Tests")

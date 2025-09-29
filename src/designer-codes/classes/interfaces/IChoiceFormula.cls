@@ -13,7 +13,7 @@ Attribute VB_Description = "Interface of choice formula"
 '@Interface
 '@Folder("Custom Functions")
 '@ModuleDescription("Interface of choice formula")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

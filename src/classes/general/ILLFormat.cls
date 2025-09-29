@@ -12,7 +12,7 @@ Attribute VB_Description = "Interface of linelist format"
 '@Interface
 '@Folder("Linelist")
 '@ModuleDescription("Interface of linelist format")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

@@ -12,7 +12,7 @@ Attribute VB_Description = "Translate various objects from one language to anoth
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Translate various objects from one language to another")
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 
 Option Explicit
