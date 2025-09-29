@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Tests")
 '@ModuleDescription("Test double providing minimal writer hooks")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILLVarWriterHooks

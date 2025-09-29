@@ -12,7 +12,7 @@ Attribute VB_Description = "A wrapper for dropdowns"
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("A wrapper for dropdowns")
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 
 Option Explicit

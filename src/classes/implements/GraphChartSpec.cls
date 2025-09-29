@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Folder("Analysis.Graphs")
 '@ModuleDescription("Concrete chart specification storing graph series metadata")
 '@depends ProjectError
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

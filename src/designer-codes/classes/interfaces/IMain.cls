@@ -12,7 +12,7 @@ Attribute VB_Description = "Interface of main class"
 '@Interface
 '@Folder("Designer")
 '@ModuleDescription("Interface of main class")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

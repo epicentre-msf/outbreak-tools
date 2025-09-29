@@ -13,7 +13,7 @@ Attribute VB_Description = "Interface of Passwords"
 '@Folder("Security")
 '@ModuleDescription("Interface exposing workbook password management behaviours")
 '@depends Checking
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

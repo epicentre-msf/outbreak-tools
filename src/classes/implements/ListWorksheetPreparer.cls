@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Folder("Linelist.Shared")
 '@ModuleDescription("Default worksheet preparer tracking busy state for list builders")
 '@depends ProjectError
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

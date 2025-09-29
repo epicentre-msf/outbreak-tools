@@ -4,7 +4,7 @@ Attribute VB_Description = "Form implementation of advanced form"
 
 '@Folder("Form logics")
 '@ModuleDescription("Form implementation of advanced form")
-'@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
+'@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
 Option Explicit
 
 Private tradform As ITranslationObject   'Translation of forms

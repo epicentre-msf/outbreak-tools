@@ -12,12 +12,14 @@ Attribute VB_Description = "Interface of checking output"
 Option Explicit
 
 '@Interface
-'@Folder("Checks")
+'@Folder("General")
 '@ModuleDescription("Interface of checking output")
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
 
-'@label:ICheckingOutput
+
 '@section Overview
 '@details Declares the surface area required to print checking results and apply worksheet filters.
+
 
 '@jump:create
 

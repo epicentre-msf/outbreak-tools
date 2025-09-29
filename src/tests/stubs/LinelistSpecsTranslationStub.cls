@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Tests.Stubs")
 '@ModuleDescription("Lightweight ITranslationObject stub for unit tests")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ITranslationObject

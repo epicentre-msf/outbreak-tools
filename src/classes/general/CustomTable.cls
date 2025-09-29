@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Wrapper for Listobjects manipulations"
 
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, ReadOnlyPropertyAssignment, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument,  ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, ReadOnlyPropertyAssignment, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 '@PredeclaredId
 '@Folder("General")
@@ -34,7 +34,6 @@ Private Type TCustomTable
 End Type
 
 Private this As TCustomTable
-Private Const CLASSNAME As String = "CustomTable"
 Private Const CACHE_SEPARATOR As String = "|"
 Private NOTIMPORTEDCOLUMNS As BetterArray
 Private HIDDENCOLUMNSLIST As BetterArray
@@ -671,13 +670,14 @@ Private Sub EnsureRowCapacity(ByVal requiredRows As Long, ByVal insertShift As B
   'Guarantee the table contains at least the requested number of data rows.
   Dim currentRows As Long
   Dim missingRows As Long
+  Dim trimedRows As Long
 
-  requiredRows = Application.WorksheetFunction.Max(1, requiredRows)
+  trimedRows = Application.WorksheetFunction.Max(1, requiredRows)
   currentRows = Application.WorksheetFunction.Max(0, DataRowCount())
 
-  If currentRows >= requiredRows Then Exit Sub
+  If currentRows >= trimedRows Then Exit Sub
 
-  missingRows = requiredRows - currentRows
+  missingRows = trimedRows - currentRows
   AddTableRows Table(), missingRows, insertShift
 End Sub
 
@@ -687,16 +687,17 @@ Private Sub EnsureColumnCapacity(ByVal requiredColumns As Long)
   Dim currCols As Long
   Dim Lo As ListObject
   Dim counter As Long
+  Dim trimedColumns As Long
 
   EnsureTableInitialized
 
-  requiredColumns = Application.WorksheetFunction.Max(0, requiredColumns)
+  trimedColumns = Application.WorksheetFunction.Max(0, requiredColumns)
   currCols = Application.WorksheetFunction.Max(1, DataColumnCount())
 
-  If currCols <= requiredColumns Then Exit Sub
+  If currCols <= trimedColumns Then Exit Sub
   Set Lo = Table()
 
-  For counter = requiredColumns + 1 To currCols
+  For counter = trimedColumns + 1 To currCols
     Lo.ListColumns(counter).Range.Cells.Clear
     Lo.ListColumns(counter).Delete
   Next

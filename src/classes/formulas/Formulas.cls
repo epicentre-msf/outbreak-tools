@@ -12,7 +12,7 @@ Attribute VB_Description = "Convert formulas from setup to excel"
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Convert formulas from setup to Excel")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, MissingAnnotationArgument, ReadOnlyPropertyAssignment, UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, MissingAnnotationArgument, ReadOnlyPropertyAssignment, UseMeaningfulName, HungarianNotation
 '@depends BetterArray, Checking, LLdictionary, LLVariables, LLSheets, CaseWhen, ChoiceFormula
 
 Option Explicit

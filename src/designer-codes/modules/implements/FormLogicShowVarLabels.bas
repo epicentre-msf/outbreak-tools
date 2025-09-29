@@ -1,7 +1,7 @@
 Attribute VB_Name = "FormLogicShowVarLabels"
 Attribute VB_Description = "Show the variables with corresponding labels in custom pivots tables"
 
-'@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
+'@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
 '@ModuleDescription("Show the variables with corresponding labels in custom pivots tables")
 
 Option Explicit

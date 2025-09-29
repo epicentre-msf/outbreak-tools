@@ -12,7 +12,7 @@ Attribute VB_Description = "Interface of CRF Variables"
 
 '@Folder("Linelist")
 '@ModuleDescription("Interface of CRF Variables")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

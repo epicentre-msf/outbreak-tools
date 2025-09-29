@@ -2,7 +2,7 @@ Attribute VB_Name = "FormLogicGeo"
 Attribute VB_Description = "Form implementation of GeoApp"
 
 '@ModuleDescription("Form implementation of GeoApp")
-'@IgnoreModule UnassignedVariableUsage, UndeclaredVariable, ImplicitActiveSheetReference
+'@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable, ImplicitActiveSheetReference
 
 'Unused variables should be ignored because this module is copied to the geo form
 

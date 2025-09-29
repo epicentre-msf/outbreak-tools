@@ -11,15 +11,15 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("CRF-specific hooks for the reusable linelist writer")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILLVarWriterHooks
 
 Private Const CLASSNAME As String = "LLVarWriterHooksCRF"
-Private Const HIDDEN_SCOPE As Byte = FormatScopeLinelistHiddenCell
-Private Const MAIN_LABEL_SCOPE As Byte = FormatScopeHListMainLab
-Private Const SUB_LABEL_SCOPE As Byte = FormatScopeHListSublab
+Private Const HIDDEN_SCOPE As Byte = LinelistHiddenCell
+Private Const MAIN_LABEL_SCOPE As Byte = HListMainLab
+Private Const SUB_LABEL_SCOPE As Byte = HListSublab
 
 '@section Helpers
 '===============================================================================
@@ -79,7 +79,7 @@ Private Function EnsureCRFWorksheet(ByVal context As ILLVarContext) As Worksheet
 
         Set design = context.Design
         If Not design Is Nothing Then
-            design.ApplyFormat targetSheet, scope:=FormatScopeHListCRFSheet
+            design.ApplyFormat targetSheet, scope:=HListCRFSheet
             design.ApplyFormat targetSheet.Cells(1, 3), scope:=HIDDEN_SCOPE
             design.ApplyFormat targetSheet.Cells(1, 4), scope:=HIDDEN_SCOPE
         End If
@@ -147,34 +147,34 @@ Private Sub ApplyCRFTypeFormat(ByVal context As ILLVarContext, _
 
     Select Case varType
     Case "text"
-        scope = FormatScopeCRFText
+        scope = CRFText
 
     Case "date"
         If LenB(varFormat) = 0 Then
-            scope = FormatScopeCRFDate
+            scope = CRFDate
         Else
-            scope = FormatScopeCRFFormatCustom
+            scope = CRFFormatCustom
         End If
 
     Case "decimal", "integer"
         If LenB(varFormat) = 0 Then
-            scope = IIf(varType = "decimal", FormatScopeCRFDecimal, FormatScopeCRFInteger)
+            scope = IIf(varType = "decimal", CRFDecimal, CRFInteger)
         ElseIf varFormat = "integer" Or varFormat = "round0" Then
-            scope = FormatScopeCRFInteger
+            scope = CRFInteger
         ElseIf varFormat = "percentage0" Then
-            scope = FormatScopeCRFPercentage
+            scope = CRFPercentage
         ElseIf Left$(varFormat, 5) = "round" Then
             On Error Resume Next
                 decimalsCount = CLng(Mid$(varFormat, 6))
             On Error GoTo 0
-            scope = FormatScopeCRFDecimal
+            scope = CRFDecimal
         ElseIf Left$(varFormat, 10) = "percentage" Then
             On Error Resume Next
                 decimalsCount = CLng(Mid$(varFormat, 11))
             On Error GoTo 0
-            scope = FormatScopeCRFPercentage
+            scope = CRFPercentage
         Else
-            scope = FormatScopeCRFFormatCustom
+            scope = CRFFormatCustom
         End If
     End Select
 
@@ -217,7 +217,7 @@ Private Sub WriteChoiceColumns(ByVal context As ILLVarContext, _
             headerCell.Value = categories.Item(idx)
             If Not design Is Nothing Then
                 On Error Resume Next
-                    design.ApplyFormat headerCell, scope:=FormatScopeCRFChoiceHeader
+                    design.ApplyFormat headerCell, scope:=CRFChoiceHeader
                 On Error GoTo 0
             End If
             Set headerCell = headerCell.Offset(0, 2)
@@ -228,7 +228,7 @@ Private Sub WriteChoiceColumns(ByVal context As ILLVarContext, _
     For idx = categories.LowerBound To categories.UpperBound
         If Not design Is Nothing Then
             On Error Resume Next
-                design.ApplyFormat headerCell, scope:=FormatScopeCRFChoiceValues
+                design.ApplyFormat headerCell, scope:=CRFChoiceValues
             On Error GoTo 0
         End If
         Set headerCell = headerCell.Offset(0, 2)

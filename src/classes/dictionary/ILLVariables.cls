@@ -7,18 +7,20 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
+Attribute VB_Description = "Interface of the dictionary variable class"
 
 '@Interface
 '@Folder("Dictionary")
-'@ModuleDescription("Interface of Variable class")
+'@ModuleDescription("Interface of the dictionary variable class")
 '@depends Checking
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+
+'@IgnoreModule PropertyNotUsed, ReadOnlyPropertyAssignment, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
+
 
 Option Explicit
 
 'Properties
 Public Property Get Dictionary() As ILLdictionary: End Property
-
 
 'Exposed methods
 Public Function Value(ByVal colName As String, ByVal varName As String) As String

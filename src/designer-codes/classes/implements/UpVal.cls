@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Watch updated values in the linelist"
 
 
-'@IgnoreModule ReadOnlyPropertyAssignment, UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, ReadOnlyPropertyAssignment, UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Watch updated values in the linelist")

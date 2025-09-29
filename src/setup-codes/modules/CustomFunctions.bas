@@ -1,7 +1,7 @@
 Attribute VB_Name = "CustomFunctions"
 Option Explicit
 'Custom functions for the setup
-'@IgnoreModule SheetAccessedUsingString
+'@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString
 '@Folder("User Define Functions")
 
 '@Description("Get the headers for the time series")

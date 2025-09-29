@@ -12,7 +12,7 @@ Attribute VB_Description = "Interface of updated values class"
 '@Folder("setup file")
 '@ModuleDescription("Interface of updated values class")
 '@Interface
-'@IgnoreModule ProcedureNotUsed
+'@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed
 
 Option Explicit
 

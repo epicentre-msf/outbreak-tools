@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Folder("Linelist.Shared")
 '@ModuleDescription("Coordinates worksheet preparation, section building, and layout strategies for linelist outputs")
 '@depends ProjectError
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

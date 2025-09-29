@@ -2,7 +2,7 @@ Attribute VB_Name = "TestGraphSeriesBuilder"
 Option Explicit
 Option Private Module
 
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@TestModule
 '@Folder("Tests")
 '@ModuleDescription("Tests validating the GraphSeriesBuilder and related classes")

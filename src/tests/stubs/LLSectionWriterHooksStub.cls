@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Tests")
 '@ModuleDescription("Test double for section writer hooks")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILLSectionWriterHooks

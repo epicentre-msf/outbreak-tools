@@ -12,11 +12,12 @@ Attribute VB_Description = "Interface of CustomTable"
 '@Folder("GeneralInterface")
 '@ModuleDescription("Interface of CustomTable")
 '@Interface
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
+
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 '@jump:Create
-
 Option Explicit
+
 
 '@section Overview
 '===============================================================================

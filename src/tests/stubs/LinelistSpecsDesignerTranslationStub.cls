@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Tests.Stubs")
 '@ModuleDescription("Test double exposing a minimal IDesTranslation implementation")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IDesTranslation

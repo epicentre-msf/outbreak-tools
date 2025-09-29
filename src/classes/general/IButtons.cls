@@ -9,15 +9,14 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of Linelist Buttons"
 
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@Interface
 '@Folder("Linelist")
 '@ModuleDescription("Interface of Linelist Buttons")
-'@Interface
-'@label:IButtons
-'@section Overview
-'@details Declares the operations required to instantiate and format linelist buttons, and enumerates available button scopes.
-'@jump:IButtons
 
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
+
+
+'@jump:Create
 Option Explicit
 
 '@section Enumerations
@@ -33,7 +32,7 @@ End Enum
 '@section Interface
 '===============================================================================
 
-'@label:Add
+
 '@jump:Add
 '@sub-title Create a button shape at the configured location
 '@details Implementations should create the shape only when absent and optionally wire a macro command and label.
@@ -41,7 +40,7 @@ End Enum
 '@param shapeLabel Optional String label to display atop the button.
 Public Sub Add(Optional ByVal actionCommand As String = vbNullString, Optional ByVal shapeLabel As String = vbNullString): End Sub
 
-'@label:Format
+
 '@jump:Format
 '@sub-title Apply a design provider to an existing button shape
 '@details Delegates to an `ILLFormat` implementation so callers can maintain visual consistency.
@@ -52,14 +51,14 @@ Public Sub Format(design As ILLFormat): End Sub
 '@section Checkings
 '===============================================================================
 
-'@label:HasCheckings
+
 '@jump:HasCheckings
 '@sub-title Determine whether the button has recorded diagnostic entries
 '@return Boolean True when at least one checking was logged.
 '@depends Checking
 Public Property Get HasCheckings() As Boolean: End Property
 
-'@label:CheckingValues
+
 '@jump:CheckingValues
 '@sub-title Retrieve the recorded diagnostic entries
 '@details Returns the underlying `IChecking` instance so callers can inspect messages.

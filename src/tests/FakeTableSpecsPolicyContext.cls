@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Tests")
 '@ModuleDescription("Test double implementing ITableSpecsPolicyContext for policy unit tests")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

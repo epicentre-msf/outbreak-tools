@@ -3,7 +3,7 @@ Attribute VB_Description = "Events for changes in a worksheet"
 Option Explicit
 
 '@ModuleDescription("Events for changes in a worksheet")
-'@IgnoreModule UndeclaredVariable, UnassignedVariableUsage, ProcedureNotUsed, VariableNotAssigned
+'@IgnoreModule UnrecognizedAnnotation, UndeclaredVariable, UnassignedVariableUsage, ProcedureNotUsed, VariableNotAssigned
 '@Folder("Events")
 
 'speed app

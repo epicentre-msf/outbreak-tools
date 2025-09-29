@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Data manipulation in a worksheet"
 
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  IIfSideEffect, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  IIfSideEffect, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Data manipulation in a worksheet")
@@ -601,6 +601,7 @@ Private Sub Import(ByVal importData As Object, Optional ByVal strictColumnSearch
     
     'importformats
     ImportFormat importData:=importData
+    this.hasImport = True
 End Sub
 
 '@label:importformat
@@ -649,7 +650,7 @@ Private Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumns
             
             If (impRng.Rows.Count <> actRng.Rows.Count) Then
                 'Add a warning on the the checkings here
-                'import range and actual range have different lengths
+                LogInfo "Importing Range " & colName & "formatting is truncated; source and target columns have different rows", checkingWarning
             End If
 
             'Start importing formats

@@ -12,7 +12,7 @@ Attribute VB_Description = "Interface of Graph object"
 
 '@Folder("Analysis")
 '@ModuleDescription("Interface of Graph object")
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation
 
 'Differents scopes for graphs. Depending on the scope, the size and other
 'adjustments are made. For example, on Time Series, the graph will appear

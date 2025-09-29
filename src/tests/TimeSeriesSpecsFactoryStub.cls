@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Tests.Stubs")
 '@ModuleDescription("Stubbed ITimeSeriesTableSpecsFactory returning pre-registered specs per series id")
-'@IgnoreModule UseMeaningfulName, HungarianNotation, SuperfluousAnnotationArgument
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, SuperfluousAnnotationArgument
 
 Option Explicit
 

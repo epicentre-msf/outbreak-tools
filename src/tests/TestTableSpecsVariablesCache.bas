@@ -2,7 +2,7 @@ Attribute VB_Name = "TestTableSpecsVariablesCache"
 Option Explicit
 Option Private Module
 
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@TestModule
 '@Folder("Tests")
 '@ModuleDescription("Tests for the TableSpecsVariablesCache helper")

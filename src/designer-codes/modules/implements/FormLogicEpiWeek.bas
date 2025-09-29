@@ -1,7 +1,7 @@
 Attribute VB_Name = "FormLogicEpiWeek"
 Attribute VB_Description = "Events for epiweek start selection"
 
-'@IgnoreModule UnassignedVariableUsage, UndeclaredVariable
+'@IgnoreModule UnrecognizedAnnotation, UnassignedVariableUsage, UndeclaredVariable
 '@ModuleDescription("Events for epiweek start selection")
 
 Option Explicit

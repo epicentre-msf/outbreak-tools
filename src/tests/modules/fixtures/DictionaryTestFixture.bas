@@ -3,7 +3,7 @@ Attribute VB_Description = "Shared dictionary fixture for tests"
 
 Option Explicit
 
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 '@Folder("Tests")
 '@ModuleDescription("Shared dictionary fixture for tests")

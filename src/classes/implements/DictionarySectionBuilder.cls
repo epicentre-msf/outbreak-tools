@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Folder("Linelist.Shared")
 '@ModuleDescription("Builds list sections using dictionary metadata via LLSheets")
 '@depends ProjectError, LLSheets, ListSectionDescriptor
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

@@ -6,7 +6,7 @@ Option Private Module
 '@TestModule
 '@Folder("Tests")
 '@ModuleDescription("Smoke tests for the modernised linelist specifications facade")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As Object
 Private SpecsWorkbook As Workbook

@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Tests.Stubs")
 '@ModuleDescription("Minimal ILinelist implementation exposing a dictionary reference")
-'@IgnoreModule UseMeaningfulName, HungarianNotation, SuperfluousAnnotationArgument
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, SuperfluousAnnotationArgument
 
 Option Explicit
 
