@@ -27,7 +27,7 @@ Attribute VB_Description = \"{description}\"
 
 '@Folder(\"Dictionary\")
 '@ModuleDescription(\"{module_description}\")
-'@IgnoreModule
+'@IgnoreModule UnrecognizedAnnotation,
 
 Option Explicit
 

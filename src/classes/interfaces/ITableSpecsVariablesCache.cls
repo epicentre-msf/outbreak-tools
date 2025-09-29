@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Interface
 '@Folder("Analysis")
 '@ModuleDescription("Caches dictionary-driven variable lookups for TableSpecs helpers")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

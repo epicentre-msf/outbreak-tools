@@ -13,7 +13,7 @@ Attribute VB_Description = "Import Reports"
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Import Reports")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IImpRep

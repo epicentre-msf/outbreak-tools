@@ -13,7 +13,7 @@ Attribute VB_Description = "Core analysis management capabilities"
 '@Interface
 '@Folder("Analysis")
 '@ModuleDescription("Core analysis management capabilities")
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

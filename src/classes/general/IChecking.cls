@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of setup checkings"
 
 '@Interface
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("General")
 '@ModuleDescription("Interface of setup checkings")
 

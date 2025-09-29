@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Interface
 '@Folder("Linelist.Shared")
 '@ModuleDescription("Applies orientation-specific layout logic during list building")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

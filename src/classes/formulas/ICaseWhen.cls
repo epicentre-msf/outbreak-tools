@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Interface of CaseWhen"
 
 '@Interface
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  ProcedureNotUsed, UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  ProcedureNotUsed, UseMeaningfulName, HungarianNotation
 '@Folder("Custom Functions")
 '@ModuleDescription("Interface of CaseWhen")
 

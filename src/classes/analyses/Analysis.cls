@@ -14,7 +14,7 @@ Option Explicit
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Core analysis worksheet manager")
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation
 
 Implements IAnalysis
 

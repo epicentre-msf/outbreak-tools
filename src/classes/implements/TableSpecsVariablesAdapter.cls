@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Folder("Analysis")
 '@ModuleDescription("Wraps ILLVariables so policies can query controls and types")
 '@depends ProjectError
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

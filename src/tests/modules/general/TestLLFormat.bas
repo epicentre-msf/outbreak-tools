@@ -5,7 +5,7 @@ Option Private Module
 
 '@TestModule
 '@Folder("Tests")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As Object
 Private FormatWorkbook As Workbook
@@ -103,7 +103,7 @@ Private Sub TestApplyFormatPercentSetsNumberFormat()
     target.Clear
     target.Value = 0.25
 
-    FormatUnderTest.ApplyFormat target, FormatScopeAnalysisPercent
+    FormatUnderTest.ApplyFormat target, AnalysisPercent
 
     Assert.AreEqual "0.00%", target.NumberFormat, _
                      "Percent scope should enforce 2 decimal percent format"

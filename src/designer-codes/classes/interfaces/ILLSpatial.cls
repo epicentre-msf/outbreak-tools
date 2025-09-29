@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Interface
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of Spatial analysis maangement")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

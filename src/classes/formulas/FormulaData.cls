@@ -12,7 +12,7 @@ Attribute VB_Description = "Data Used for the Formula Object"
 '@PredeclaredId
 '@Folder("Formula")
 '@ModuleDescription("Provides cached lookups for formula parsing")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 '@depends BetterArray
 
 Option Explicit

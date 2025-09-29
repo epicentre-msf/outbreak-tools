@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Contract describing reusable linelist specifications accessors")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 '@InterfaceDescription("Surface area consumed by linelist writers and contexts to retrieve workbook driven specifications")
 
 Option Explicit

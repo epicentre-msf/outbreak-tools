@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Interface
 '@Folder("Linelist.Shared")
 '@ModuleDescription("Caches frequently accessed linelist collaborators (dictionary, variables, linelist)")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

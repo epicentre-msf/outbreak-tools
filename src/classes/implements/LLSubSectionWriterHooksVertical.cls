@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Hooks for vertical subsection writer")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILLSubSectionWriterHooks
@@ -41,7 +41,7 @@ Private Sub ILLSubSectionWriterHooks_FormatHeader(ByVal context As ILLSectionCon
     If design Is Nothing Then Exit Sub
 
     On Error Resume Next
-        If Not headerRange Is Nothing Then design.ApplyFormat headerRange, scope:=FormatScopeVListSubSection
+        If Not headerRange Is Nothing Then design.ApplyFormat headerRange, scope:=VListSubSection
     On Error GoTo 0
 End Sub
 

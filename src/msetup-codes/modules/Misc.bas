@@ -11,7 +11,7 @@ Private Const TRADTABLESHEET As String = "__ribbonTranslation"
 Private Const RNG_FileLang As String = "RNG_FileLang"
 Private Const DROPSHEET As String = "__dropdowns"
 
-'@IgnoreModule EmptyMethod
+'@IgnoreModule UnrecognizedAnnotation, EmptyMethod
 
 Public Sub TransferCodeWksh(ByVal sheetName As String)
 

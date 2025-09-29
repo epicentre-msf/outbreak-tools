@@ -2,7 +2,7 @@ Attribute VB_Name = "ImportModuleAndClasses"
 Option Explicit
 
 '@Folder("Dev")
-'@IgnoreModule
+'@IgnoreModule UnrecognizedAnnotation,
 
 'Working with import/export of the code in the designer
 'Scope can take 2 values :

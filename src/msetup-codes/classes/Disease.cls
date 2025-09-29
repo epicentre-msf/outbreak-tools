@@ -13,7 +13,7 @@ Attribute VB_Description = "Add, create and manipulate new diseases"
 '@Folder("Diseases")
 '@PredeclaredId
 '@ModuleDescription("Add, create and manipulate new diseases")
-'@IgnoreModule ConstantNotUsed, ProcedureNotUsed
+'@IgnoreModule UnrecognizedAnnotation, ConstantNotUsed, ProcedureNotUsed
 
 Implements IDisease
 

@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Tests")
 '@ModuleDescription("Test double implementing the ILinelist contract for LLVarContext tests")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILinelist

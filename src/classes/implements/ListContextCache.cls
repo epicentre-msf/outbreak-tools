@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Folder("Linelist.Shared")
 '@ModuleDescription("Stores linelist-related collaborators so builders can reuse them without repeated lookups")
 '@depends ProjectError
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

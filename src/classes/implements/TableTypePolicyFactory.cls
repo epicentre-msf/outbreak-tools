@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Folder("Analysis")
 '@ModuleDescription("Factory returning strategy objects for TableSpecs table types")
 '@depends ProjectError, TableSpecsPolicyHelpers
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

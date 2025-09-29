@@ -51,6 +51,14 @@
 		]
 	},
 
+	"Insert ignores": {
+		"prefix": "igno",
+		"body": [
+"'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation, ExcelMemberMayReturnNothing"
+		]
+
+	},
+
 	"Insert prop": {
 		"prefix": "iprop",
 		"body": [

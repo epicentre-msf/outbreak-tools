@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Hook interface for section writer customisation")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 '@InterfaceDescription("Supplies orientation-specific behaviour to LLSectionWriterBase")
 
 Option Explicit

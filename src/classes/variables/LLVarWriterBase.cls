@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Reusable writer orchestrating shared linelist variable steps")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILLVarWriter
@@ -225,7 +225,7 @@ Private Sub ApplyValueType()
     End Select
 
     If Not design Is Nothing Then
-        If Not targetCell Is Nothing Then design.ApplyFormat targetCell, FormatScopeLinelistHiddenCell
+        If Not targetCell Is Nothing Then design.ApplyFormat targetCell, LinelistHiddenCell
     End If
 
     this.hooks.AfterType this.context, this.layout, targetCell

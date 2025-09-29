@@ -1,11 +1,11 @@
 Attribute VB_Name = "PasswordsTestFixture"
-Attribute VB_Description = "Shared password fixture for tests"
+Attribute VB_Description = "Password tests fixtures"
 
 Option Explicit
 
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("Tests")
-'@ModuleDescription("Password worksheet fixture seeded from CSV drafts")
+'@ModuleDescription("Password tests fixtures")
 
 '@section Constants
 '===============================================================================

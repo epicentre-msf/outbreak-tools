@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Formulas for all the cross tables in the analysis"
 
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("Formulas for all the cross tables in the analysis")

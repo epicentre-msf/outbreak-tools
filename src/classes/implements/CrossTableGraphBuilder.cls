@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Folder("Analysis.Graphs")
 '@ModuleDescription("Builds chart specifications for non time-series analysis tables")
 '@depends ProjectError, GraphSeriesBuilder
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

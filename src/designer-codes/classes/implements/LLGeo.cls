@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Geobase management class"
 
-'@IgnoreModule ExcelMemberMayReturnNothing, IIfSideEffect
+'@IgnoreModule UnrecognizedAnnotation, ExcelMemberMayReturnNothing, IIfSideEffect
 '@PredeclaredId
 '@Folder("Geobase")
 '@ModuleDescription("Geobase management class")

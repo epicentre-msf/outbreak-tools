@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Tests.Stubs")
 '@ModuleDescription("Stub implementation of ITablesSpecs for navigator tests")
-'@IgnoreModule UseMeaningfulName, HungarianNotation, SuperfluousAnnotationArgument
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, SuperfluousAnnotationArgument
 
 Option Explicit
 

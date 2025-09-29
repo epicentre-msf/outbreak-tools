@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Hook contract for subsection writers")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 '@InterfaceDescription("Provides orientation-specific behaviour to LLSubSectionWriterBase")
 
 Option Explicit

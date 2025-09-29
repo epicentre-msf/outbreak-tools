@@ -12,7 +12,7 @@ Attribute VB_Description = "Interface of Choice class"
 '@Interface
 '@Folder("GeneralInterface")
 '@ModuleDescription("Interface of Choice class")
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

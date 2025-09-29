@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Tests.Stubs")
 '@ModuleDescription("Minimal ILinelistSpecs double that exposes a configurable dictionary for TableSpecs tests")
-'@IgnoreModule UseMeaningfulName, HungarianNotation, SuperfluousAnnotationArgument
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, SuperfluousAnnotationArgument
 
 Option Explicit
 

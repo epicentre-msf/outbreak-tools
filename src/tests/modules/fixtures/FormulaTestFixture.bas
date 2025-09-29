@@ -3,7 +3,7 @@ Attribute VB_Description = "Fixture helpers for formula tests"
 
 Option Explicit
 
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("Tests")
 '@ModuleDescription("Provides in-memory fixtures for formula-related tests")
 

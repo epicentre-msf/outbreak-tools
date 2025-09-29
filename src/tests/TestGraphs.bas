@@ -3,7 +3,7 @@ Attribute VB_Name = "TestGraphs"
 Option Explicit
 Option Private Module
 
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulNames
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulNames
 '@TestModule
 '@Folder("Tests")
 

@@ -13,7 +13,7 @@ Option Explicit
 '@Interface
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of Dictionary class")
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation
 
 
 '@section Data Access

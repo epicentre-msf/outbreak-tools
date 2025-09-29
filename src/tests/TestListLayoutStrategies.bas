@@ -5,7 +5,7 @@ Option Private Module
 '@TestModule
 '@Folder("Tests")
 '@ModuleDescription("Smoke tests for horizontal and vertical list layout strategies")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As Object
 Private Section As IListSectionDescriptor

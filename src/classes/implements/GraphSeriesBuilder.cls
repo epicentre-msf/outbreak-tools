@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Folder("Analysis.Graphs")
 '@ModuleDescription("Builder that accumulates graph series data before producing chart specs")
 '@depends ProjectError
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

@@ -13,7 +13,7 @@ Attribute VB_Description = "Conditons Used to create formulas for analysis"
 '@Folder("Formulas")
 '@ModuleDescription("Conditions used to create formulas for analysis")
 '@depends Checking
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 Option Explicit
 Implements IFormulaCondition
 

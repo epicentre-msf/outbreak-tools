@@ -13,7 +13,7 @@ Attribute VB_Description = "Linelist choice Class"
 '@PredeclaredID
 '@Folder("General")
 '@ModuleDescription("Linelist choice Class")
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 
 Option Explicit

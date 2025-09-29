@@ -11,10 +11,11 @@ Attribute VB_Description = "Linelist dictionary utilities"
 Option Explicit
 
 
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation, ExcelMemberMayReturnNothing
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation, ExcelMemberMayReturnNothing
 '@PredeclaredId
 '@Folder("Dictionary")
 '@ModuleDescription("Linelist dictionary utilities")
+
 
 Implements ILLdictionary
 

@@ -7,10 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
+Attribute VB_Description = "Linelist sheets of a dictionary"
 
 '@Folder("Dictionary")
-'@ModuleDescription("Linelist sheets")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@ModuleDescription("Linelist sheets of a dictionary")
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 '@depends LLdictionary, LLVariables
 
 Option Explicit

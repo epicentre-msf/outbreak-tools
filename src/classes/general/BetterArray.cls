@@ -11,7 +11,7 @@ Attribute VB_Description = "An array class for VBA providing features found in m
 '@Folder("General")
 '@ModuleDescription("An array class for VBA providing features found in more modern languages ")
 ' Copyright (c) 2021 Nick Morgan. See License: https://github.com/Senipah/VBA-Better-Array/blob/master/LICENSE
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing, 
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing, 
 
 Option Explicit
 

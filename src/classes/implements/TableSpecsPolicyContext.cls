@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Folder("Analysis")
 '@ModuleDescription("Aggregates TableSpecs data needed by table-type policies")
 '@depends ProjectError, TableSpecsPolicyHelpers
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 

@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Buttons of the linelist"
 
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 '@PredeclaredId
 '@Folder("General")
@@ -95,13 +95,6 @@ Public Property Get Self() As IButtons
 End Property
 
 '@label:OutputRange
-'@jump:OutputRange
-'@sub-title Retrieve the anchor range used for placement
-'@return Range top-left reference for the button.
-Public Property Get OutputRange() As Range
-    Set OutputRange = this.rng
-End Property
-
 '@sub-title Update the anchor range used for placement
 '@param rng Range providing the top-left anchor cell.
 Public Property Set OutputRange(ByVal rng As Range)

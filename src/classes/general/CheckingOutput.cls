@@ -12,11 +12,11 @@ Attribute VB_Description = "Writes checking results to a worksheet"
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Writes checking results to a worksheet")
-'@label:CheckingOutput
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
+
+
 '@section Overview
 '@details Provides facilities to print checking results and filter them directly within the worksheet context.
-'@jump:CheckingOutput
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ICheckingOutput
@@ -437,7 +437,6 @@ Handler:
 End Sub
 
 '@label:FilterWorksheet
-'@jump:FilterWorksheet
 '@sub-title Apply filtering logic using the backing worksheet
 '@details Allows consumers to reapply the worksheet filtering logic without relying on events.
 '@param selectionValue Optional manual filter selection that overrides the worksheet drop-down value.
@@ -449,7 +448,6 @@ Public Sub FilterWorksheet(Optional ByVal selectionValue As String = vbNullStrin
 End Sub
 
 '@label:ApplyWorksheetFilter
-'@jump:ApplyWorksheetFilter
 '@sub-title Internal helper that performs filtering
 '@details Centralises the filtering algorithm so both the public API and worksheet events reuse the same logic.
 '@param targetSheet Worksheet hosting the checking output data.
@@ -534,7 +532,7 @@ CleanExit:
     If Err.Number <> 0 Then RaiseError Err.Description
 End Sub
 
-'@label:FilterWorksheetInterface
+
 '@jump:FilterWorksheetInterface
 '@sub-title Interface shim delegating to FilterWorksheet
 '@details Bridges the interface call to the public filtering routine so callers can filter without casting.

@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Translation of the designer"
 
 
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Designer")
 '@ModuleDescription("Translation of the designer")

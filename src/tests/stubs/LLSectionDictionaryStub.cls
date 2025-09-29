@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Tests")
 '@ModuleDescription("ILLdictionary test double for section context tests")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILLdictionary

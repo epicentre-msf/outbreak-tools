@@ -3,7 +3,7 @@ Attribute VB_Name = "EventsRibbon"
 Option Explicit
 
 '@Folder("Events")
-'@IgnoreModule SheetAccessedUsingString, ParameterCanBeByVal, ParameterNotUsed : some parameters of controls are not used
+'@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString, ParameterCanBeByVal, ParameterNotUsed : some parameters of controls are not used
 
 'Private constants for Ribbon Events
 Private Const TRADSHEETNAME As String = "Translations"

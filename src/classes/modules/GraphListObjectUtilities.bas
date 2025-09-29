@@ -3,7 +3,7 @@ Option Explicit
 
 '@Folder("Analysis.Graphs")
 '@ModuleDescription("Shared list-object utilities optimised for graph/table specification workflows")
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '
 'The helper routines centralise common lookups such as column indexing,
 'case-insensitive value detection, and unique value extraction so that

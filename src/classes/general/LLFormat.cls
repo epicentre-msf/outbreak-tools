@@ -9,10 +9,11 @@ Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
-
+'@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Formatting the linelist")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
 
 Option Explicit
 Implements ILLFormat
@@ -111,6 +112,7 @@ Private Sub EnsureFormatSheetReady(ByVal sh As Worksheet, ByRef resolvedDesign A
     End If
 End Sub
 
+'Log informations in the checking object
 Private Sub LogInfo(ByVal label As String)
     If this.checks Is Nothing Then
         Set this.checks = Checking.Create("LLFormat trace")
@@ -169,8 +171,9 @@ Private Function DesignColumnIndex(ByVal designName As String) As Long
     For idx = this.designColumnCache.LowerBound To this.designColumnCache.UpperBound
         entry = this.designColumnCache.Item(idx)
         If IsArray(entry) Then
-            If StrComp(CStr(entry(0)), designName, vbTextCompare) = 0 Then
-                DesignColumnIndex = CLng(entry(1))
+            'With lowerbound = 1 for the BetterArray, the inner stored array starts at 1
+            If StrComp(CStr(entry(1)), designName, vbTextCompare) = 0 Then
+                DesignColumnIndex = CLng(entry(2))
                 Exit Function
             End If
         End If
@@ -193,8 +196,9 @@ Private Function LabelRowIndex(ByVal labelName As String) As Long
     For idx = this.labelRowCache.LowerBound To this.labelRowCache.UpperBound
         entry = this.labelRowCache.Item(idx)
         If IsArray(entry) Then
-            If StrComp(CStr(entry(0)), labelName, vbTextCompare) = 0 Then
-                LabelRowIndex = CLng(entry(1))
+            'With lowerbound = 1 for the BetterArray, the stored array starts at 1
+            If StrComp(CStr(entry(1)), labelName, vbTextCompare) = 0 Then
+                LabelRowIndex = CLng(entry(2))
                 Exit Function
             End If
         End If
@@ -1247,13 +1251,13 @@ Private Sub Import(ByVal inpsh As Worksheet)
     End If
 
     EnsureFormatReady
-    Set targetSheet = Me.sheet
+    Set targetSheet = Wksh()
     Set targetTable = FormatTable()
     Set inputTable = inpsh.ListObjects(1)
 
     Set targetTab = CustomTable.Create(targetTable)
     Set inputTab = CustomTable.Create(inputTable)
-    targetTab.Import inputTab, strictColumnSearch:=True
+    targetTab.Import inputTab, strictColumnSearch:=True, 
 
     targetSheet.Range("DESIGNTYPE").Value = inpsh.Range("DESIGNTYPE").Value
     Me.designName = CStr(targetSheet.Range("DESIGNTYPE").Value)

@@ -12,7 +12,7 @@ Attribute VB_Description = "Build And format the analysis"
 '@PredeclaredId
 '@Folder("Analysis")
 '@ModuleDescription("Build And format the analysis")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements IAnalysisOutput

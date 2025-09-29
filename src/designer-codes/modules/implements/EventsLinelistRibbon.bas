@@ -3,7 +3,7 @@ Attribute VB_Description = "Events associated with the Ribbon Menu in the lineli
 Option Explicit
 Option Private Module
 
-'@IgnoreModule ParameterNotUsed
+'@IgnoreModule UnrecognizedAnnotation, ParameterNotUsed
 '@Folder("Linelist Events")
 '@ModuleDescription("Events associated with the Ribbon Menu in the linelist")
 

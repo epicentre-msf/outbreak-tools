@@ -12,7 +12,7 @@ Attribute VB_Description = "Interface of Disease class"
 
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of Disease class")
-'@IgnoreModule ProcedureNotUsed
+'@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed
 '@Interface
 
 Option Explicit

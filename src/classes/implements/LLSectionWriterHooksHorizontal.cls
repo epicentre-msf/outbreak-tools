@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 
 '@Folder("Linelist")
 '@ModuleDescription("Horizontal section writer hooks")
-'@IgnoreModule UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ILLSectionWriterHooks
@@ -30,9 +30,9 @@ Private Sub ILLSectionWriterHooks_FormatSectionHeader(ByVal context As ILLSectio
     If design Is Nothing Then Exit Sub
 
     On Error Resume Next
-        If Not headerRange Is Nothing Then design.ApplyFormat headerRange, scope:=FormatScopeHListSection
-        If Not printHeaderRange Is Nothing Then design.ApplyFormat printHeaderRange, scope:=FormatScopeHListSection
-        If Not crfHeaderRange Is Nothing Then design.ApplyFormat crfHeaderRange, scope:=FormatScopeHListCRFSection
+        If Not headerRange Is Nothing Then design.ApplyFormat headerRange, scope:=HListSection
+        If Not printHeaderRange Is Nothing Then design.ApplyFormat printHeaderRange, scope:=HListSection
+        If Not crfHeaderRange Is Nothing Then design.ApplyFormat crfHeaderRange, scope:=HListCRFSection
     On Error GoTo 0
 End Sub
 

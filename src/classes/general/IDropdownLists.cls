@@ -11,7 +11,7 @@ Attribute VB_Description = "Interface of dropdowns"
 
 '@Folder("GeneralInterface")
 '@ModuleDescription("Interface of dropdowns")
-'@IgnoreModule SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 '@jump:Create
 Option Explicit

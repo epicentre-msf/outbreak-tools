@@ -11,7 +11,7 @@ Attribute VB_Exposed = False
 '@Folder("Linelist.Shared")
 '@ModuleDescription("Concrete IListBuildContext capturing the worksheet and table metadata for a build")
 '@depends ProjectError
-'@IgnoreModule SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 
