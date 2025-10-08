@@ -2,7 +2,6 @@ Attribute VB_Name = "TestPasswords"
 
 Option Explicit
 
-Private Const TESTOUTPUTSHEET As String = "testsResults"
 
 
 '@Folder("CustomTests")
@@ -14,6 +13,7 @@ Private FixtureSheet As Worksheet
 Private ProtectedSheet As Worksheet
 Private FixtureWorkbook As Workbook
 
+Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 Private Const DEFAULTPASSWORDSHEET As String = "PasswordsFixture"
 Private Const PROTECTEDSHEETNAME As String = "PasswordsProtectedFixture"
 Private Const TABLEKEYS As String = "T_keys"
@@ -63,7 +63,7 @@ End Function
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
-    EnsureWorksheet TESTOUTPUTSHEET
+    EnsureWorksheet TESTOUTPUTSHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TESTOUTPUTSHEET)
     Assert.SetModuleName "TestPasswords"
 End Sub

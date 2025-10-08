@@ -141,6 +141,7 @@ End Function
 '@ModuleInitialize
 '@description Configure common test state and build the assertion helper.
 Private Sub ModuleInitialize()
+    EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestLLFormat"
     Set FormatWorkbook = ThisWorkbook
