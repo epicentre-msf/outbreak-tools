@@ -26,6 +26,7 @@ Public Sub clickRibbonTests(ByRef Control As IRibbonControl)
     Dim nm As Name
 
     BusyApp
+    EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     ThisWorkbook.Worksheets(TEST_OUTPUT_SHEET).Cells.Clear
     Set nm = ThisWorkbook.Worksheets(CODESHEET).Names(DEFAULT_TEST_LONAME)
     

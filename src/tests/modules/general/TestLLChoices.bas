@@ -106,6 +106,7 @@ End Sub
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
+    EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestLLChoices"
     ResetChoices
