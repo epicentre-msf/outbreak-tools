@@ -64,7 +64,7 @@ End Function
 '@param rowData Variant array representing the row values.
 '@param noteIndex Long index of the Note column.
 '@return Boolean True when the row should be skipped.
-Private Function ShouldSkipFormulaRow(ByVal rowData As Variant, _
+Private Function ShouldSkipFormulaRow( rowData As Variant, _
                                       ByVal noteIndex As Long) As Boolean
     Dim noteText As String
     If noteIndex >= LBound(rowData) And noteIndex <= UBound(rowData) Then
@@ -79,7 +79,7 @@ End Function
 '@param rowData Variant array representing the row values.
 '@param columnIndex Long index to extract.
 '@return String column value or vbNullString when index is out of range.
-Private Function RowValue(ByVal rowData As Variant, ByVal columnIndex As Long) As String
+Private Function RowValue( rowData As Variant, ByVal columnIndex As Long) As String
     If columnIndex >= LBound(rowData) And columnIndex <= UBound(rowData) Then
         RowValue = CStr(rowData(columnIndex))
     End If

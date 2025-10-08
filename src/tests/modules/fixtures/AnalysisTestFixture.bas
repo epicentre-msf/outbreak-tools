@@ -162,8 +162,8 @@ End Function
 Private Function AddAnalysisTable(ByVal hostSheet As Worksheet, _
                                   ByVal startRow As Long, _
                                   ByVal tableName As String, _
-                                  ByVal headers As Variant, _
-                                  Optional ByVal dataRows As Variant) As Long
+                                   headers As Variant, _
+                                  Optional  dataRows As Variant) As Long
 
     Dim headerMatrix As Variant
     Dim dataMatrix As Variant

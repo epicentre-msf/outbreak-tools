@@ -21,11 +21,22 @@ Private Type TSpecState
     tableId As String
     sectionId As String
     hasPercentage As Boolean
+    hasMissing As Boolean
+    hasTotal As Boolean
+    hasGraph As Boolean
+    isNewSection As Boolean
+    previousSpecs As ITablesSpecs
+    rowCategories As BetterArray
+    columnCategories As BetterArray
     keys As BetterArray
     values As BetterArray
 End Type
 
 Private this As TSpecState
+
+Private Sub Class_Initialize()
+    this.hasGraph = True
+End Sub
 
 Public Sub Configure(ByVal tableTypeCode As Byte, _
                      ByVal tableId As String, _
@@ -37,6 +48,48 @@ End Sub
 
 Public Sub SetHasPercentage(ByVal hasPercentage As Boolean)
     this.hasPercentage = hasPercentage
+End Sub
+
+Public Sub SetHasMissing(ByVal hasMissing As Boolean)
+    this.hasMissing = hasMissing
+End Sub
+
+Public Sub SetHasTotal(ByVal hasTotal As Boolean)
+    this.hasTotal = hasTotal
+End Sub
+
+Public Sub SetHasGraph(ByVal hasGraph As Boolean)
+    this.hasGraph = hasGraph
+End Sub
+
+Public Sub SetIsNewSection(ByVal isNew As Boolean)
+    this.isNewSection = isNew
+End Sub
+
+Public Sub SetPrevious(ByVal previousSpecs As ITablesSpecs)
+    Set this.previousSpecs = previousSpecs
+End Sub
+
+Public Sub SetRowCategories(ParamArray categories() As Variant)
+    Dim idx As Long
+
+    Set this.rowCategories = New BetterArray
+    this.rowCategories.LowerBound = 1
+
+    For idx = LBound(categories) To UBound(categories)
+        this.rowCategories.Push categories(idx)
+    Next idx
+End Sub
+
+Public Sub SetColumnCategories(ParamArray categories() As Variant)
+    Dim idx As Long
+
+    Set this.columnCategories = New BetterArray
+    this.columnCategories.LowerBound = 1
+
+    For idx = LBound(categories) To UBound(categories)
+        this.columnCategories.Push categories(idx)
+    Next idx
 End Sub
 
 Public Sub SetValue(ByVal columnName As String, ByVal valueText As String)
@@ -76,15 +129,15 @@ Private Property Get ITablesSpecs_Dictionary() As ILLdictionary
 End Property
 
 Private Property Get ITablesSpecs_RowCategories() As BetterArray
-    Set ITablesSpecs_RowCategories = Nothing
+    Set ITablesSpecs_RowCategories = this.rowCategories
 End Property
 
 Private Property Get ITablesSpecs_ColumnCategories() As BetterArray
-    Set ITablesSpecs_ColumnCategories = Nothing
+    Set ITablesSpecs_ColumnCategories = this.columnCategories
 End Property
 
 Private Property Get ITablesSpecs_isNewSection() As Boolean
-    ITablesSpecs_isNewSection = False
+    ITablesSpecs_isNewSection = this.isNewSection
 End Property
 
 Private Property Get ITablesSpecs_TableId() As String
@@ -96,15 +149,15 @@ Private Property Get ITablesSpecs_ValidTable() As Boolean
 End Property
 
 Private Property Get ITablesSpecs_HasMissing() As Boolean
-    ITablesSpecs_HasMissing = False
+    ITablesSpecs_HasMissing = this.hasMissing
 End Property
 
 Private Property Get ITablesSpecs_HasTotal() As Boolean
-    ITablesSpecs_HasTotal = False
+    ITablesSpecs_HasTotal = this.hasTotal
 End Property
 
 Private Property Get ITablesSpecs_HasGraph() As Boolean
-    ITablesSpecs_HasGraph = True
+    ITablesSpecs_HasGraph = this.hasGraph
 End Property
 
 Private Property Get ITablesSpecs_HasPercentage() As Boolean
@@ -116,7 +169,7 @@ Private Property Get ITablesSpecs_SpatialTableTypes() As String
 End Property
 
 Private Property Get ITablesSpecs_Previous() As ITablesSpecs
-    Set ITablesSpecs_Previous = Nothing
+    Set ITablesSpecs_Previous = this.previousSpecs
 End Property
 
 Private Property Get ITablesSpecs_NextSpecs(ByVal anchorRng As Range) As ITablesSpecs

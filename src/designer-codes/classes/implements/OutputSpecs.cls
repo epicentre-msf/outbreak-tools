@@ -632,7 +632,7 @@ Private Sub AddData(Optional ByVal useFilters As Boolean = False)
   Dim inpsh As Worksheet
   Dim inpwb As Workbook
   Dim outsh As Worksheet
-  Dim pass As ILLPasswords
+  Dim pass As IPasswords
   Dim startLine As Long
 
   Set expdict = ExportDictionary()
@@ -813,7 +813,7 @@ Private Sub Save(ByVal trads As ITranslationObject, _
   Dim outwb As Workbook
   Dim inpwb As Workbook
   Dim dict As ILLdictionary
-  Dim pass As ILLPasswords
+  Dim pass As IPasswords
   Dim scope As Integer
   Dim fileExtension As String
   Dim fileName As String

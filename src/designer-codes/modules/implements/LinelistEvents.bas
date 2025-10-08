@@ -481,7 +481,7 @@ Public Sub EventSelectionLinelist(ByVal Target As Range)
     Dim endLine As Long
     Dim Lo As ListObject
     Dim csTab As ICustomTable
-    Dim pass As ILLPasswords
+    Dim pass As IPasswords
 
 
     On Error GoTo ErrHand

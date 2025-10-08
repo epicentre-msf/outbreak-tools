@@ -28,6 +28,27 @@
             "problemMatcher": []
         },
         {
+            "label": "convert harness (perl)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/harness_test_replacements.pl",
+                "${file}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\harness_test_replacements.pl",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "replace unit test dev",
             "type": "process",
             "command": "Rscript",
@@ -179,6 +200,160 @@
                 "panel": "shared"
             },
             "problemMatcher": []
+        },
+        {
+            "label": "remove const underscores (file)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/remove_const_underscores.pl",
+                "${file}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\remove_const_underscores.pl",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "remove const underscores (folder)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/remove_const_underscores.pl",
+                "${input:constTargetFolder}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\remove_const_underscores.pl",
+                    "${input:constTargetFolder}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "merge vba modules (file)",
+            "type": "process",
+            "command": "python3",
+            "args": [
+                "automate/codes/merge_vba_modules.py",
+                "--output",
+                "${input:mergeOutputPath}",
+                "${file}"
+            ],
+            "windows": {
+                "command": "python",
+                "args": [
+                    "automate\\codes\\merge_vba_modules.py",
+                    "--output",
+                    "${input:mergeOutputPath}",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "merge vba modules (folder)",
+            "type": "process",
+            "command": "python3",
+            "args": [
+                "automate/codes/merge_vba_modules.py",
+                "--output",
+                "${input:mergeFolderOutputPath}",
+                "--recursive",
+                "${input:mergeTargetFolder}"
+            ],
+            "windows": {
+                "command": "python",
+                "args": [
+                    "automate\\codes\\merge_vba_modules.py",
+                    "--output",
+                    "${input:mergeFolderOutputPath}",
+                    "--recursive",
+                    "${input:mergeTargetFolder}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "print vba to pdf (file)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/print_vba_to_pdf.pl",
+                "--output",
+                "${input:printPdfOutputPath}",
+                "--title",
+                "${input:printPdfTitle}",
+                "${file}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\print_vba_to_pdf.pl",
+                    "--output",
+                    "${input:printPdfOutputPath}",
+                    "--title",
+                    "${input:printPdfTitle}",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "print vba to pdf (folder)",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/print_vba_to_pdf.pl",
+                "--output",
+                "${input:printPdfFolderOutputPath}",
+                "--title",
+                "${input:printPdfTitle}",
+                "--recursive",
+                "${input:printPdfTargetFolder}"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\print_vba_to_pdf.pl",
+                    "--output",
+                    "${input:printPdfFolderOutputPath}",
+                    "--title",
+                    "${input:printPdfTitle}",
+                    "--recursive",
+                    "${input:printPdfTargetFolder}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
         }
     ],
     "inputs": [
@@ -187,7 +362,60 @@
             "type": "promptString",
             "description": "Name of the VBA class to generate",
             "default": "NewClass"
+        },
+        {
+            "id": "testModulePath",
+            "type": "promptString",
+            "description": "Path to the VBA test module to migrate (e.g. src/tests/modules/general/TestChecking.bas)",
+            "default": "src/tests/modules/general/TestChecking.bas"
+        },
+        {
+            "id": "constTargetFolder",
+            "type": "promptString",
+            "description": "Folder to process when stripping underscores from constant names",
+            "default": "src"
+        },
+        {
+            "id": "mergeOutputPath",
+            "type": "promptString",
+            "description": "Output file path for the merged VBA content",
+            "default": "merged_modules.bas"
+        },
+        {
+            "id": "mergeTargetFolder",
+            "type": "promptString",
+            "description": "Folder to merge recursively when combining VBA modules",
+            "default": "src"
+        },
+        {
+            "id": "mergeFolderOutputPath",
+            "type": "promptString",
+            "description": "Output file path when merging a VBA folder",
+            "default": "merged_folder_modules.bas"
+        },
+        {
+            "id": "printPdfOutputPath",
+            "type": "promptString",
+            "description": "PDF output path when printing the active file",
+            "default": "printed_module.pdf"
+        },
+        {
+            "id": "printPdfTargetFolder",
+            "type": "promptString",
+            "description": "Folder to include when printing modules to PDF",
+            "default": "src"
+        },
+        {
+            "id": "printPdfFolderOutputPath",
+            "type": "promptString",
+            "description": "PDF output path when printing a folder",
+            "default": "printed_folder_modules.pdf"
+        },
+        {
+            "id": "printPdfTitle",
+            "type": "promptString",
+            "description": "Title to display on the PDF output",
+            "default": "VBA Modules"
         }
     ]
 }
-

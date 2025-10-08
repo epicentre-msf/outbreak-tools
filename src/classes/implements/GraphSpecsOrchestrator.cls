@@ -67,7 +67,7 @@ End Property
 
 '@section Initialisation helpers
 '===============================================================================
-Friend Sub InitialiseForCrossTable(ByVal table As ICrossTable, _
+Public Sub InitialiseForCrossTable(ByVal table As ICrossTable, _
                                    ByVal crossBuilder As ICrossTableGraphBuilder)
 
     ValidateCrossTable table
@@ -83,7 +83,7 @@ Friend Sub InitialiseForCrossTable(ByVal table As ICrossTable, _
     ResetCharts
 End Sub
 
-Friend Sub InitialiseForTimeSeries(ByVal graphList As ListObject, _
+Public Sub InitialiseForTimeSeries(ByVal graphList As ListObject, _
                                    ByVal timeSeriesList As ListObject, _
                                    ByVal titleList As ListObject, _
                                    ByVal linelist As ILinelistSpecs, _

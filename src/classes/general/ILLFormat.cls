@@ -93,7 +93,7 @@ End Enum
 
 '@section Exposed Members
 '===============================================================================
-Public Sub ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Byte, _
+Public Sub ApplyFormat(formattingObject As Variant, ByVal scope As Byte, _
                        Optional ByVal nbDecimals As Integer = 0)
 End Sub
 

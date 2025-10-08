@@ -96,7 +96,7 @@ Private Sub TestPreviousSkipsInvalidRows()
         Set previousSpec = Navigator.PreviousSpec
     On Error GoTo Fail
 
-    Assert.IsNotNothing previousSpec, "Navigator should return a previous specification"
+    Assert.ObjectExists previousSpec, "ITablesSpecs", "Navigator should return a previous specification"
     Assert.AreEqual "TableSpecsNavigatorSpecStub", TypeName(previousSpec), "Returned spec should match stub type"
 
     Set stub = previousSpec
@@ -145,7 +145,7 @@ Private Sub TestNextSpecReturnsNextValid()
     Set anchorRange = WorksheetForTests.Range("A5:C5")
 
     Set nextSpec = Navigator.NextSpec(anchorRange)
-    Assert.IsNotNothing nextSpec, "Navigator should return the next valid spec"
+    Assert.ObjectExists nextSpec, "ITablesSpecs", "Navigator should return the next valid spec"
     Assert.AreEqual "TableSpecsNavigatorSpecStub", TypeName(nextSpec)
 
     Set stub = nextSpec

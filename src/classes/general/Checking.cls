@@ -2,13 +2,13 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-
 Attribute VB_Name = "Checking"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Save warnings, information and errors on objects"
+
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@PredeclaredId
@@ -22,7 +22,7 @@ Private Const CLASSNAME As String = "Checking"
 
 Private Type TChecking
   title As String
-  subTitle As String
+  subtitle As String
   keysTable As BetterArray
   labelsTable As BetterArray
   scopesTable As BetterArray
@@ -35,7 +35,7 @@ Private this As TChecking
 '@prop-title Create a checking object
 '@details
 'Checking objects are a collection of messages tagged with some scope (Error, Warning, Notes)
-'for logging purposes. The checkings are stored in three betterarray tables 
+'for logging purposes. The checkings are stored in three betterarray tables
 '(one for label, one for scopes, and one for keys).
 'Checkings must have a name, which is the title of the messages. One can create
 ' checkings on specific thematics. Optionally, checkings could have subtitles.
@@ -49,9 +49,9 @@ Private this As TChecking
 '@depends BetterArray
 '@export
 Public Function Create(ByVal titleName As String, _
-                       Optional ByVal subtitleName As String = vbNullString) As _ 
+                       Optional ByVal subtitleName As String = vbNullString) As _
                       IChecking
-  With New Checking
+  With New checking
     .CheckingTitle = titleName
     .CheckingSubTitle = subtitleName
     Set Create = .Self()
@@ -72,7 +72,7 @@ Public Property Get CheckingTitle() As String
 End Property
 
 Public Property Get CheckingSubTitle() As String
-  CheckingSubTitle = this.subTitle
+  CheckingSubTitle = this.subtitle
 End Property
 
 Public Property Let CheckingTitle(ByVal titleName As String)
@@ -80,7 +80,7 @@ Public Property Let CheckingTitle(ByVal titleName As String)
 End Property
 
 Public Property Let CheckingSubTitle(ByVal subtitleName As String)
-  this.subTitle = subtitleName
+  this.subtitle = subtitleName
 End Property
 
 '@label:Name
@@ -96,8 +96,8 @@ End Property
 '@param subTitle Boolean whether to return to subtitle instead of the title. Default is False
 '@export
 '@return A String
-Private Property Get Heading(Optional ByVal subTitle As Boolean = False) As String
-  If subTitle Then
+Private Property Get Heading(Optional ByVal subtitle As Boolean = False) As String
+  If subtitle Then
     Heading = CheckingSubTitle()
     Exit Property
   End If
@@ -124,7 +124,7 @@ Private Property Get ListOfKeys() As BetterArray
   'If the keysTable is unitialised, initialize it
   If this.keysTable Is Nothing Then
     Set this.keysTable = New BetterArray
-    this.keysTable.LowerBound = 1
+    this.keysTable.lowerBound = 1
   End If
   Set ListOfKeys = this.keysTable.Clone()
 End Property
@@ -138,7 +138,7 @@ Private Function KeyExists(ByVal keyName As String) As Boolean
   Dim keyTabl As BetterArray
 
   If (keyName = vbNullString) Then
-    keyExists = False
+    KeyExists = False
     Exit Function
   End If
 
@@ -159,11 +159,11 @@ End Function
 '@param label A String, the message corresponding to the key
 '@param scope Optional, Byte. The checking scope (Error, Warning, Info)
 '@export
-Private Sub Add(ByVal keyName As String, ByVal label As String, _
+Public Sub Add(ByVal keyName As String, ByVal label As String, _
                 Optional ByVal scope As Byte = checkingNote)
 
-  If KeyExists(keyName) Then 
-    ThrowError ProjectError.ElementShouldNotExists, _ 
+  If KeyExists(keyName) Then
+    ThrowError ProjectError.ElementShouldNotExists, _
                keyName & " already exists, keys should be unique."
   End If
 
@@ -173,9 +173,9 @@ Private Sub Add(ByVal keyName As String, ByVal label As String, _
     Set this.scopesTable = New BetterArray
     Set this.keysTable = New BetterArray
 
-    this.labelsTable.LowerBound = 1
-    this.scopesTable.LowerBound = 1
-    this.keysTable.LowerBound = 1
+    this.labelsTable.lowerBound = 1
+    this.scopesTable.lowerBound = 1
+    this.keysTable.lowerBound = 1
   End If
 
   'Push the three values
@@ -193,14 +193,14 @@ End Sub
 '@param retrievedValue A Byte, checkingValue Enum. Value to retrieve. Default is checkingLabel.
 '@return A String
 '@export
-Private Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
+ Private Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
 
   Dim indexValue As Long
   Dim returnedValue As String
   Dim actualScope As Byte
 
-  If (Not keyExists(keyName)) Then 
-    ThrowError ProjectError.ElementShouldExists, _ 
+  If (Not KeyExists(keyName)) Then
+    ThrowError ProjectError.ElementShouldExists, _
                keyName & " does not exists in this checking"
   End If
 
@@ -214,13 +214,15 @@ Private Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedVa
     Case checkingType
       Select Case actualScope
         Case checkingNote
-          returnedValue = "Note"
+          returnedValue = ChrW(9998) & " Note"
         Case checkingError
-          returnedValue = "Error"
+          returnedValue = ChrW(10060) & " Error"
         Case checkingWarning
-          returnedValue = "Warning"
+          returnedValue = ChrW(9888) & " Warning"
         Case checkingInfo
-          returnedValue = "Info"
+          returnedValue = ChrW(8505) & " Info"
+        Case checkingSuccess
+          returnedValue = ChrW(10004) & " Success"
       End Select
     Case checkingColor
       Select Case actualScope
@@ -232,10 +234,52 @@ Private Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedVa
           returnedValue = "orange"
         Case checkingInfo
           returnedValue = "grey"
+        Case checkingSuccess
+          returnedValue = "green"
       End Select
   End Select
   ValueOf = returnedValue
 End Property
+
+'@label:Clone
+'@prop-title Produce a deep copy of the current checking entries
+'@details
+'Creates a new checking instance with the same title, subtitle, and logged
+'entries. This is required so that flushing a checking into another
+'BetterArray does not keep a live reference to the current object, which would
+'be cleared afterwards.
+'@return IChecking independent clone
+Private Function Clone() As IChecking
+  Dim cloneInstance As checking
+  Dim idx As Long
+  Dim lowerBound As Long
+  Dim upperBound As Long
+
+  Set cloneInstance = New checking
+  cloneInstance.CheckingTitle = this.title
+  cloneInstance.CheckingSubTitle = this.subtitle
+
+  If this.nbElmts <= 0 Then
+    Set Clone = cloneInstance.Self
+    Exit Function
+  End If
+
+  If this.keysTable Is Nothing Then
+    Set Clone = cloneInstance.Self
+    Exit Function
+  End If
+
+  lowerBound = this.keysTable.lowerBound
+  upperBound = this.keysTable.upperBound
+
+  For idx = lowerBound To upperBound
+    cloneInstance.Add CStr(this.keysTable.Item(idx)), _
+                     CStr(this.labelsTable.Item(idx)), _
+                     CByte(this.scopesTable.Item(idx))
+  Next idx
+
+  Set Clone = cloneInstance.Self()
+End Function
 
 
 'Errors and checkings -----------------------------------------------------------
@@ -258,8 +302,8 @@ Private Property Get IChecking_Name() As String
 End Property
 
 'Title or subtitle of the checking object
-Private Property Get IChecking_Heading(Optional ByVal subTitle As Boolean = False) As String
-  IChecking_Heading = Heading(subTitle)
+Private Property Get IChecking_Heading(Optional ByVal subtitle As Boolean = False) As String
+  IChecking_Heading = Heading(subtitle)
 End Property
 
 'Length of the checkings
@@ -295,3 +339,7 @@ End Sub
 Private Property Get IChecking_ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
   IChecking_ValueOf = ValueOf(keyName, retrievedValue)
 End Property
+
+Private Function IChecking_Clone() As IChecking
+  Set IChecking_Clone = Clone()
+End Function

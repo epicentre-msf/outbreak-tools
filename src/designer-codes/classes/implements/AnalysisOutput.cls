@@ -937,7 +937,7 @@ Private Sub WriteAnalysis()
   Dim outsh As Worksheet
   Dim cellRng As Range
   Dim scope As AnalysisScope
-  Dim pass As ILLPasswords
+  Dim pass As IPasswords
   Dim lData As ILinelistSpecs
 
   Set lData = LinelistData()

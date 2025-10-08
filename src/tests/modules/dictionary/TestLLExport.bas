@@ -1,18 +1,17 @@
 Attribute VB_Name = "TestLLExport"
 
 Option Explicit
-Option Private Module
 
-'@TestModule
-'@Folder("Tests")
+'@Folder("CustomTests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const EXPORT_SHEET As String = "LLExportSpec"
 Private Const DICT_SHEET As String = "LLExportDict"
 Private Const VLIST_SHEET As String = "vlist1D-sheet1"
 Private Const PASSWORD_SHEET As String = "LLExportPasswords"
 
-Private Assert As Object
+Private Assert As ICustomTest
 Private DictionarySheet As Worksheet
 Private ExportSheet As Worksheet
 Private VListSheet As Worksheet
@@ -21,13 +20,14 @@ Private PasswordSheet As Worksheet
 Private PasswordsSubject As IPasswords
 
 '@ModuleInitialize
-Private Sub ModuleInitialize()
-    Set Assert = CreateObject("Rubberduck.AssertClass")
+Public Sub ModuleInitialize()
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestLLExport"
     PrepareTestSheets
 End Sub
 
 '@ModuleCleanup
-Private Sub ModuleCleanup()
+Public Sub ModuleCleanup()
     On Error Resume Next
     ThisWorkbook.Names("choi_v1").Delete
     DeleteWorksheet EXPORT_SHEET
@@ -35,30 +35,38 @@ Private Sub ModuleCleanup()
     DeleteWorksheet VLIST_SHEET
     DeleteWorksheet PASSWORD_SHEET
     On Error GoTo 0
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
     Set Assert = Nothing
 End Sub
 
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
     PrepareTestSheets
     Set Manager = LLExport.Create(ExportSheet)
     Set PasswordsSubject = Passwords.Create(PasswordSheet)
 End Sub
 
 '@TestCleanup
-Private Sub TestCleanup()
+Public Sub TestCleanup()
+    If Not Assert Is Nothing Then
+        Assert.FlushCurrentTest
+    End If
     Set Manager = Nothing
     Set PasswordsSubject = Nothing
 End Sub
 
 '@TestMethod("LLExport")
-Private Sub TestCreateInitialisesData()
+Public Sub TestCreateInitialisesData()
+    CustomTestSetTitles Assert, "LLExport", "TestCreateInitialisesData"
     Assert.IsTrue (Not Manager.Data Is Nothing), "Expected Data to be initialised"
     Assert.AreEqual 1, Manager.NumberOfExports, "Should report single export row"
 End Sub
 
 '@TestMethod("LLExport")
-Private Sub TestAddRowsAppliesDefaults()
+Public Sub TestAddRowsAppliesDefaults()
+    CustomTestSetTitles Assert, "LLExport", "TestAddRowsAppliesDefaults"
     Manager.AddRows 1
     Assert.AreEqual 2, Manager.NumberOfExports, "Row count should grow by one"
     Assert.AreEqual "no", Manager.ColumnValue(2, "include personal identifiers"), _
@@ -66,7 +74,8 @@ Private Sub TestAddRowsAppliesDefaults()
 End Sub
 
 '@TestMethod("LLExport")
-Private Sub TestRemoveRowsDeletesEmpty()
+Public Sub TestRemoveRowsDeletesEmpty()
+    CustomTestSetTitles Assert, "LLExport", "TestRemoveRowsDeletesEmpty"
     Manager.AddRows 1
     ExportSheet.ListObjects(1).DataBodyRange.Rows(2).ClearContents
     Manager.RemoveRows totalCount:=0
@@ -74,7 +83,8 @@ Private Sub TestRemoveRowsDeletesEmpty()
 End Sub
 
 '@TestMethod("LLExport")
-Private Sub TestExportFileNameBuildsFromTemplate()
+Public Sub TestExportFileNameBuildsFromTemplate()
+    CustomTestSetTitles Assert, "LLExport", "TestExportFileNameBuildsFromTemplate"
     Dim fileName As String
     fileName = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
     Assert.IsTrue InStr(1, fileName, "custom_value", vbTextCompare) > 0, _
@@ -83,7 +93,8 @@ Private Sub TestExportFileNameBuildsFromTemplate()
 End Sub
 
 '@TestMethod("LLExport")
-Private Sub TestExportFileNameLogsWhenInactive()
+Public Sub TestExportFileNameLogsWhenInactive()
+    CustomTestSetTitles Assert, "LLExport", "TestExportFileNameLogsWhenInactive"
     Manager.AddRows 1
     ExportSheet.ListObjects(1).DataBodyRange.Cells(2, ColumnIndexOf("status")).Value = "inactive"
     Dim name As String
@@ -93,25 +104,28 @@ Private Sub TestExportFileNameLogsWhenInactive()
 End Sub
 
 '@TestMethod("LLExport")
-Private Sub TestExportAllOverridesScope()
+Public Sub TestExportAllOverridesScope()
+    CustomTestSetTitles Assert, "LLExport", "TestExportAllOverridesScope"
     Dim name As String
     name = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject, exportAll:=True)
     Assert.IsTrue InStr(1, name, "export_all", vbTextCompare) > 0, "ExportAll should override scope"
 End Sub
 
 '@TestMethod("LLExport")
-Private Sub TestIsActiveReflectsStatus()
+Public Sub TestIsActiveReflectsStatus()
+    CustomTestSetTitles Assert, "LLExport", "TestIsActiveReflectsStatus"
     Assert.IsTrue Manager.IsActive(1), "Row with active status should be active"
     ExportSheet.ListObjects(1).DataBodyRange.Cells(1, ColumnIndexOf("status")).Value = "inactive"
     Assert.IsFalse Manager.IsActive(1), "Row with inactive status should report false"
 End Sub
 
 '@TestMethod("LLExport")
-Private Sub TestAddRowsRejectsInvalidCount()
+Public Sub TestAddRowsRejectsInvalidCount()
+    CustomTestSetTitles Assert, "LLExport", "TestAddRowsRejectsInvalidCount"
     On Error GoTo ExpectError
 
     Manager.AddRows 0
-    Assert.Fail "AddRows should reject counts smaller than one"
+    Assert.LogFailure "AddRows should reject counts smaller than one"
     Exit Sub
 
 ExpectError:
@@ -121,7 +135,8 @@ ExpectError:
 End Sub
 
 '@TestMethod("LLExport")
-Private Sub TestActiveExportNumbersReturnsActiveRows()
+Public Sub TestActiveExportNumbersReturnsActiveRows()
+    CustomTestSetTitles Assert, "LLExport", "TestActiveExportNumbersReturnsActiveRows"
     Manager.AddRows 2
 
     Dim statusCol As Long
@@ -141,7 +156,8 @@ Private Sub TestActiveExportNumbersReturnsActiveRows()
 End Sub
 
 '@TestMethod("LLExport")
-Private Sub TestExportFileNameLogsMissingChunk()
+Public Sub TestExportFileNameLogsMissingChunk()
+    CustomTestSetTitles Assert, "LLExport", "TestExportFileNameLogsMissingChunk"
     ExportSheet.ListObjects(1).DataBodyRange.Cells(1, ColumnIndexOf("file name")).Value = "unknown_chunk"
 
     Dim fileName As String

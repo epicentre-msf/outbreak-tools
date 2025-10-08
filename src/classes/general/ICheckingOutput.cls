@@ -23,6 +23,8 @@ Option Explicit
 
 '@jump:create
 
+'@jump:Wksh
+Public Property Get Wksh() As Worksheet: End Property
 
 '@jump:PrintOutput
 '@sub-title Write checking values to a worksheet
@@ -35,4 +37,14 @@ Public Sub PrintOutput(ByVal checkTable As BetterArray): End Sub
 '@sub-title Apply the active filter on the output worksheet
 '@details Re-evaluates the drop-down filter to hide or reveal rows matching the requested severity.
 '@param selectionValue Optional String value matching the filter (All/Errors/Warnings/Notes/Infos)
-Public Sub FilterWorksheet(Optional ByVal selectionValue As String = vbNullString): End Sub
+'@param titleSelection Optional String limiting rows to a specific checking title
+Public Sub FilterWorksheet(Optional ByVal selectionValue As String = vbNullString, _
+                           Optional ByVal titleSelection As String = vbNullString): End Sub
+
+'@jump:Name
+'@prop-title Name of the output object
+Public Property Get Name() As String: End Property
+
+'@jump:EnsureWorksheetChangeHandler
+'@sub-title EnsureWorksheetChangeHandler
+Public Sub EnsureWorksheetChangeHandler(): End Sub

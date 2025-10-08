@@ -49,7 +49,7 @@ Public Property Get Self() As ITimeSeriesGraphBuilder
     Set Self = Me
 End Property
 
-Friend Sub Initialise(ByVal graphCache As IGraphSpecsCache, _
+Public Sub Initialise(ByVal graphCache As IGraphSpecsCache, _
                       ByVal timeSeriesList As ListObject, _
                       ByVal titleList As ListObject, _
                       ByVal linelist As ILinelistSpecs, _

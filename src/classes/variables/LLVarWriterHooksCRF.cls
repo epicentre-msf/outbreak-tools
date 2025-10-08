@@ -23,7 +23,7 @@ Private Const SUB_LABEL_SCOPE As Byte = HListSublab
 
 '@section Helpers
 '===============================================================================
-Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal messageText As String)
+Private Sub ThrowError(ByVal errNumber As Long, ByVal messageText As String)
     Err.Raise errNumber, CLASSNAME, messageText
 End Sub
 

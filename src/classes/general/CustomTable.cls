@@ -1152,6 +1152,7 @@ Private Sub ImportObject(ByVal impTab As Object, _
     targetRowCount = incomingRows
   End If
 
+  '@Ignore AssignmentNotUsed
   targetRowCount = Application.WorksheetFunction.Max(1, targetRowCount)
 
   If DataRowCount() < targetRowCount Then
@@ -1529,7 +1530,7 @@ Private Sub ShowDebug()
 End Sub
 
 
-Private Sub ThrowError(ByVal errNumb As ProjectError, ByVal errorMessage As String)
+Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, "CustomTable", "Error: " & errorMessage
 End Sub
 

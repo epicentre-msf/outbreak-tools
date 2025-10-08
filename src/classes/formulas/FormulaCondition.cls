@@ -209,7 +209,7 @@ Public Function ConditionPredicate(ByVal tablename As String, Optional ByVal Con
 End Function
 
 'Errors ---------------------------------------------------------------------------------
-Private Sub ThrowError(ByVal errNumb As ProjectError, ByVal errorMessage As String)
+Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, errorMessage
 End Sub
 

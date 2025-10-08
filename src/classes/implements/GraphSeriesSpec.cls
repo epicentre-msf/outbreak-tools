@@ -49,7 +49,7 @@ Public Property Get Self() As IGraphSeriesSpec
     Set Self = Me
 End Property
 
-Friend Sub InitialiseSeries(ByVal seriesName As String, _
+Public Sub InitialiseSeries(ByVal seriesName As String, _
                             ByVal seriesType As String, _
                             ByVal seriesPosition As String)
     this.seriesName = seriesName

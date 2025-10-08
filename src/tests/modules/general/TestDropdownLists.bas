@@ -1,17 +1,19 @@
 Attribute VB_Name = "TestDropdownLists"
 
 Option Explicit
-Option Private Module
+
+
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 '@TestModule
-'@Folder("Tests")
+'@Folder("CustomTests")
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const DROPTESTONE As String = "DropTestList1"
 Private Const DROPTESTTWO As String = "DropTestList2"
 Private Const DROPOUTPUT As String = "DataOut"
 
-Private Assert As Object
+Private Assert As ICustomTest
 Private Fakes As Object
 Private dropOne As IDropdownLists
 Private dropTwo As IDropdownLists
@@ -37,14 +39,17 @@ End Sub
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
-    Set Assert = CreateObject("Rubberduck.AssertClass")
-    Set Fakes = CreateObject("Rubberduck.FakesProvider")
     BusyApp
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestDropdownLists"
     EnsureDropSheets
 End Sub
 
 '@ModuleCleanup
 Private Sub ModuleCleanup()
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
     Set Assert = Nothing
     Set Fakes = Nothing
     DeleteWorksheets DROPOUTPUT, DROPTESTONE, DROPTESTTWO
@@ -61,11 +66,16 @@ Private Sub TestInitialize()
 
 End Sub
 
+Private Sub TestCleanup()
+    If Not Assert Is Nothing Then Assert.Flush
+End Sub
+
 '@section Tests
 '===============================================================================
 
 '@TestMethod("DropdownLists")
 Public Sub TestCreateCheck()
+    CustomTestSetTitles Assert, "DropdownLists", "TestCreateCheck"
 
     Dim workbook As Workbook
     Dim sheet As Worksheet
@@ -93,21 +103,23 @@ Public Sub TestCreateCheck()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestCreateCheck"
+    CustomTestLogFailure Assert, "TestCreateCheck", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("DropdownLists")
 Public Sub TestName()
+    CustomTestSetTitles Assert, "DropdownLists", "TestName"
     On Error GoTo Fail
     Assert.IsTrue (dropOne.Name = DROPTESTONE), "Name the dropdown object is not correctly set"
 
     Exit Sub
 Fail:
-    FailUnexpectedError Assert, "TestName"
+    CustomTestLogFailure Assert, "TestName", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("DropdownLists, Add")
+'@TestMethod("DropdownLists")
 Public Sub TestAdd()
+    CustomTestSetTitles Assert, "DropdownLists", "TestAdd"
     Dim valuesList As BetterArray
 
     On Error GoTo Fail
@@ -125,12 +137,13 @@ Public Sub TestAdd()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestAdd"
+    CustomTestLogFailure Assert, "TestAdd", Err.Number, Err.Description
 End Sub
 
 
-'@TestMethod("DropdownLists, Adding existing")
+'@TestMethod("DropdownLists")
 Public Sub TestAddExisting()
+    CustomTestSetTitles Assert, "DropdownLists", "TestAddExisting"
 
     Dim checking As IChecking
     Dim valuesList As BetterArray
@@ -152,11 +165,12 @@ Public Sub TestAddExisting()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestAddExisting"
+    CustomTestLogFailure Assert, "TestAddExisting", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("DropdownLists")
 Public Sub TestRemove()
+    CustomTestSetTitles Assert, "DropdownLists", "TestRemove"
     Dim valuesList As BetterArray
 
     On Error GoTo Fail
@@ -168,12 +182,13 @@ Public Sub TestRemove()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestRemove"
+    CustomTestLogFailure Assert, "TestRemove", Err.Number, Err.Description
 End Sub
 
 
 '@TestMethod("DropdownLists")
 Public Sub TestExists()
+    CustomTestSetTitles Assert, "DropdownLists", "TestExists"
     Dim valuesList As BetterArray
 
     On Error GoTo Fail
@@ -189,13 +204,14 @@ Public Sub TestExists()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestExists"
+    CustomTestLogFailure Assert, "TestExists", Err.Number, Err.Description
 End Sub
 
 
 
-'@TestMethod("DropdownLists, LabelRange")
+'@TestMethod("DropdownLists")
 Public Sub TestLabelRange()
+    CustomTestSetTitles Assert, "DropdownLists", "TestLabelRange"
 
     Dim labelText As String
     Dim valuesList As BetterArray
@@ -215,11 +231,12 @@ Public Sub TestLabelRange()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestLabelRange"
+    CustomTestLogFailure Assert, "TestLabelRange", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("DropdownLists, Values")
 Public Sub TestValues()
+    CustomTestSetTitles Assert, "DropdownLists", "TestValues"
 
     Dim valuesResult As BetterArray
     Dim valuesList As BetterArray
@@ -243,11 +260,12 @@ Public Sub TestValues()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestValues"
+    CustomTestLogFailure Assert, "TestValues", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("DropdownLists, Length")
 Public Sub TestLength()
+    CustomTestSetTitles Assert, "DropdownLists", "TestLength"
 
     Dim valuesList As BetterArray
     Dim index As Long
@@ -268,11 +286,12 @@ Public Sub TestLength()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestLength"
+    CustomTestLogFailure Assert, "TestLength", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("DropdownLists, Sort")
+'@TestMethod("DropdownLists")
 Public Sub TestSort()
+    CustomTestSetTitles Assert, "DropdownLists", "TestSort"
 
     Dim valuesList As BetterArray
     Dim resultList As BetterArray
@@ -300,12 +319,13 @@ Public Sub TestSort()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestSort"
+    CustomTestLogFailure Assert, "TestSort", Err.Number, Err.Description
 End Sub
 
 
-'@TestMethod("DropdownLists, ClearList")
+'@TestMethod("DropdownLists")
 Public Sub TestClearListAndUpdate()
+    CustomTestSetTitles Assert, "DropdownLists", "TestClearListAndUpdate"
 
     Dim baseValues As BetterArray
     Dim updateValues As BetterArray
@@ -338,11 +358,12 @@ Public Sub TestClearListAndUpdate()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestClearListAndUpdate"
+    CustomTestLogFailure Assert, "TestClearListAndUpdate", Err.Number, Err.Description
 End Sub
 
- '@TestMethod("DropdownLists, Validation and HyperLinks")
+'@TestMethod("DropdownLists")
 Public Sub TestValidationAndHyperLinks()
+    CustomTestSetTitles Assert, "DropdownLists", "TestValidationAndHyperLinks"
 
     Dim outputSheet As Worksheet
     Dim cellRange As Range
@@ -394,7 +415,5 @@ Public Sub TestValidationAndHyperLinks()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestValidationAndHyperLinks"
-
+    CustomTestLogFailure Assert, "TestValidationAndHyperLinks", Err.Number, Err.Description
 End Sub
-

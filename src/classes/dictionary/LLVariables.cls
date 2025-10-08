@@ -9,7 +9,7 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Variables of the dictionary"
 
-
+'@PredeclaredId
 '@Folder("Dictionary")
 '@ModuleDescription("Variables of the dictionary")
 '@depends Checking
@@ -73,7 +73,7 @@ Public Property Set Dictionary(ByVal dict As ILLdictionary)
     RefreshVariableRange
 End Property
 
-Friend Property Get VarRange() As Range
+Public Property Get VarRange() As Range
     EnsureVariableRange
     Set VarRange = this.varRng
 End Property
@@ -469,63 +469,63 @@ Private Function Index(ByVal varName As String) As Long
 End Function
 
 'Errors ------------------------------------------------------------------------------------------------------------------------------------
-Private Sub ThrowError(ByVal errNumb As ProjectError, ByVal errorMessage As String)
+Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, errorMessage
 End Sub
 
 'Interface ---------------------------------------------------------------------------------------------------------------------------------
 
 'Properties
-Public Property Get ILLVariables_Dictionary() As ILLdictionary
+Private Property Get ILLVariables_Dictionary() As ILLdictionary
     Set ILLVariables_Dictionary = Dictionary()
 End Property
 
 'Exposed methods
-Public Function ILLVariables_Value(ByVal colName As String, ByVal varName As String) As String
+Private Function ILLVariables_Value(ByVal colName As String, ByVal varName As String) As String
     ILLVariables_Value = Value(colName, varName)
 End Function
 
 'column or row index in the sheet of one variable
-Public Function ILLVariables_Index(ByVal varName As String) As Long
+Private Function ILLVariables_Index(ByVal varName As String) As Long
     ILLVariables_Index = Index(varName)
 End Function
 
-Public Function ILLVariables_Contains(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As Boolean
+Private Function ILLVariables_Contains(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As Boolean
     ILLVariables_Contains = Contains(varName, matchCase)
 End Function
 
-Public Sub ILLVariables_SetValue(ByVal varName As String, ByVal colName As String, ByVal newValue As String, Optional ByVal onEmpty As Boolean = False)
+Private Sub ILLVariables_SetValue(ByVal varName As String, ByVal colName As String, ByVal newValue As String, Optional ByVal onEmpty As Boolean = False)
     SetValue varName, colName, newValue, onEmpty
 End Sub
 
-Public Property Get ILLVariables_CellRange(ByVal colName As String, ByVal varName As String) As Range
+Private Property Get ILLVariables_CellRange(ByVal colName As String, ByVal varName As String) As Range
     Set ILLVariables_CellRange = CellRange(colName, varName)
 End Property
 
-Public Function ILLVariables_VariableNames() As BetterArray
+Private Function ILLVariables_VariableNames() As BetterArray
     Set ILLVariables_VariableNames = VariableNamesList()
 End Function
 
-Public Function ILLVariables_SheetName(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
+Private Function ILLVariables_SheetName(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
     ILLVariables_SheetName = SheetName(varName, matchCase)
 End Function
 
-Public Function ILLVariables_ControlType(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
+Private Function ILLVariables_ControlType(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As String
     ILLVariables_ControlType = ControlType(varName, matchCase)
 End Function
 
-Public Function ILLVariables_TableName(ByVal varName As String) As String
+Private Function ILLVariables_TableName(ByVal varName As String) As String
     ILLVariables_TableName = TableName(varName)
 End Function
 
-Public Sub ILLVariables_InvalidateCaches()
+Private Sub ILLVariables_InvalidateCaches()
     InvalidateCaches
 End Sub
 
-Public Function ILLVariables_HasCheckings() As Boolean
+Private Function ILLVariables_HasCheckings() As Boolean
     ILLVariables_HasCheckings = HasInternalChecks
 End Function
 
-Public Property Get ILLVariables_CheckingValues() As IChecking
+Private Property Get ILLVariables_CheckingValues() As IChecking
     If HasInternalChecks Then Set ILLVariables_CheckingValues = this.internalChecks
 End Property
