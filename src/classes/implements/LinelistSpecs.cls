@@ -25,7 +25,7 @@ Private Type TLinelistSpecs
     geo As ILLGeo
     exports As ILLExport
     analysis As ILLAnalysis
-    passwords As ILLPasswords
+    passwords As IPasswords
     format As ILLFormat
     formulaData As IFormulaData
     main As IMain
@@ -68,7 +68,7 @@ Public Property Get Workbook() As Workbook
     Set Workbook = this.specsWkb
 End Property
 
-Friend Property Set InternalWorkbook(ByVal specsWorkbook As Workbook)
+Public Property Set InternalWorkbook(ByVal specsWorkbook As Workbook)
     Set this.specsWkb = specsWorkbook
 End Property
 
@@ -782,7 +782,7 @@ Public Property Get ExportObject() As ILLExport
     Set ExportObject = this.exports
 End Property
 
-Public Property Get Password() As ILLPasswords
+Public Property Get Password() As IPasswords
     EnsurePasswords
     Set Password = this.passwords
 End Property
@@ -1051,7 +1051,7 @@ Public Sub Export(ByVal toWkb As Workbook)
     Dim translations As ILLTranslations
     Dim exports As ILLExport
     Dim geo As ILLGeo
-    Dim passwords As ILLPasswords
+    Dim passwords As IPasswords
     Dim mainObj As IMain
 
     On Error GoTo HandleError
@@ -1106,21 +1106,21 @@ End Sub
 
 '@section Error handling
 '===============================================================================
-Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal messageText As String)
+Private Sub ThrowError(ByVal errNumber As Long, ByVal messageText As String)
     Err.Raise errNumber, CLASSNAME, messageText
 End Sub
 
 '@section Test support
 '===============================================================================
-Friend Sub TestAssignMain(ByVal mainObj As IMain)
+Public Sub TestAssignMain(ByVal mainObj As IMain)
     Set this.main = mainObj
 End Sub
 
-Friend Sub TestAssignDesignerTranslations(ByVal designerTrads As IDesTranslation)
+Public Sub TestAssignDesignerTranslations(ByVal designerTrads As IDesTranslation)
     Set this.designerTranslations = designerTrads
 End Sub
 
-Friend Sub TestAssignTranslations(ByVal translations As ILLTranslations)
+Public Sub TestAssignTranslations(ByVal translations As ILLTranslations)
     Set this.translations = translations
     ResetTranslationCache
 End Sub
@@ -1155,7 +1155,7 @@ Private Property Get ILinelistSpecs_ExportObject() As ILLExport
     Set ILinelistSpecs_ExportObject = Me.ExportObject
 End Property
 
-Private Property Get ILinelistSpecs_Password() As ILLPasswords
+Private Property Get ILinelistSpecs_Password() As IPasswords
     Set ILinelistSpecs_Password = Me.Password
 End Property
 

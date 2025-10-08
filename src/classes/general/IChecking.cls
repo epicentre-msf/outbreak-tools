@@ -20,6 +20,7 @@ Public Enum CheckingScope
   checkingWarning = 2
   checkingInfo = 3
   checkingNote = 4
+  checkingSuccess = 5
 End Enum
 
 'Checking Values
@@ -38,6 +39,7 @@ Public Enum ProjectError
   ElementShouldExists = 1005
   ElementShouldNotExists = 1006
   ElementNotFound = 1007
+  SomethingWentWrong = 1008
 End Enum
 
 Option Explicit
@@ -54,7 +56,7 @@ End Property
 
 '@jump:Heading
 'Title or Subtitle of checkings
-Public Property Get Heading(Optional ByVal subTitle As Boolean = False) As String
+Public Property Get Heading(Optional ByVal subtitle As Boolean = False) As String
 End Property
 
 '@jump:keys
@@ -87,3 +89,8 @@ End Sub
 'Retrieve a property of one specific key
 Public Property Get ValueOf(ByVal keyName As String, Optional ByVal retrievedValue As Byte = 1) As String
 End Property
+
+'@jump:Clone
+'Return an independent copy of the current checking object
+Public Function Clone() As IChecking
+End Function

@@ -66,7 +66,7 @@ Private Sub EnsureSpecs()
     End If
 End Sub
 
-Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal messageText As String)
+Private Sub ThrowError(ByVal errNumber As Long, ByVal messageText As String)
     Err.Raise errNumber, CLASSNAME, messageText
 End Sub
 
@@ -106,7 +106,7 @@ Private Function FetchColumnRange(ByVal columnName As String) As Range
     Set FetchColumnRange = cached
 End Function
 
-Private Function NormaliseColumns(ByVal columnNames As Variant) As BetterArray
+Private Function NormaliseColumns(columnNames As Variant) As BetterArray
     Dim result As BetterArray
     Dim idx As Long
 
@@ -264,7 +264,7 @@ Private Function ILLSectionContext_Value(ByVal columnName As String, _
     ILLSectionContext_Value = ResolveValue(columnName, targetRow)
 End Function
 
-Private Function ILLSectionContext_EndRow(ByVal columnNames As Variant) As Long
+Private Function ILLSectionContext_EndRow(columnNames As Variant) As Long
     Dim columns As BetterArray
     Dim endRowValue As Long
 
@@ -276,7 +276,7 @@ Private Function ILLSectionContext_EndRow(ByVal columnNames As Variant) As Long
     ILLSectionContext_EndRow = endRowValue
 End Function
 
-Private Function ILLSectionContext_HasNext(ByVal columnNames As Variant) As Boolean
+Private Function ILLSectionContext_HasNext(columnNames As Variant) As Boolean
     Dim endRowValue As Long
     Dim columns As BetterArray
 
@@ -304,7 +304,7 @@ Private Function ILLSectionContext_HasNext(ByVal columnNames As Variant) As Bool
     Next idx
 End Function
 
-Private Function ILLSectionContext_NextStartRow(ByVal columnNames As Variant) As Long
+Private Function ILLSectionContext_NextStartRow(columnNames As Variant) As Long
     Dim endRowValue As Long
 
     If Not ILLSectionContext_HasNext(columnNames) Then

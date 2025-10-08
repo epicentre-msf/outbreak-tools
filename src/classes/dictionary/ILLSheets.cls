@@ -12,7 +12,7 @@ Attribute VB_Description = "Interface of Linelist sheets of a dictionary"
 '@Interface
 '@Folder("Dictionary")
 '@ModuleDescription("Interface of Linelist sheets of a dictionary")
-'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 

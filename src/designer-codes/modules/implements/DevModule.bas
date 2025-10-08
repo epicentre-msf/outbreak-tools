@@ -366,7 +366,7 @@ Public Sub RemoveSub()
     excludesList.Push "EventsDesignerRibbon", "DevModule", "DropdownLists", "IDropdownLists", _
                       "BetterArray", "OSFiles", "IOSFiles", "LLGeo", "ILLGeo", "TranslationObject", "ITranslationObject", _
                       "DesTranslation", "IDesTranslation", "Main", "IMain", "CustomTable", "ICustomTable", _
-                      "LLTranslations", "ILLTranslations", "LLPasswords", "ILLPasswords", "LLdictionary", "ILLdictionary", _
+                      "LLTranslations", "ILLTranslations", "Passwords", "IPasswords", "LLdictionary", "ILLdictionary", _
                       "DataSheet", "IDataSheet"
 
     For locounter = LoList.LowerBound To LoList.UpperBound

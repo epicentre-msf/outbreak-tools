@@ -1,7 +1,9 @@
 Attribute VB_Name = "TestCustomTable"
 
 Option Explicit
-Option Private Module
+
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
@@ -15,7 +17,7 @@ Private Const DATASHEETNAME As String = "CustomTableData"
 Private Const MULTITABLESHEET As String = "CustomTableMulti"
 Private Const EXPORTSHEETNAME As String = "CustomTableExport"
 
-Private Assert As Object
+Private Assert As ICustomTest
 Private Fakes As Object
 
 '@section Helpers
@@ -63,7 +65,7 @@ Private Sub PrepareCustomTableWithFormula(ByVal sheetName As String, ByVal table
     listObject.ListColumns("Calc").DataBodyRange.FormulaR1C1 = "=RC[-1]*2"
 End Sub
 
-Private Function CreateDataSheet(ByVal sheetName As String, ByVal headers As Variant, ByVal rows As Variant) As IDataSheet
+Private Function CreateDataSheet(ByVal sheetName As String, headers As Variant, rows As Variant) As IDataSheet
 
     Dim hostSheet As Worksheet
     Dim rowIndex As Long
@@ -120,8 +122,8 @@ End Function
 
 Private Function CreateCustomTableWithData(ByVal sheetName As String, _
                                           ByVal tableName As String, _
-                                          ByVal headers As Variant, _
-                                          ByVal rows As Variant, _
+                                          headers As Variant, _
+                                          rows As Variant, _
                                           Optional ByVal idColumnName As String = "ID", _
                                           Optional ByVal idPrefix As String = "row") As ICustomTable
 
@@ -209,15 +211,18 @@ End Sub
 '===============================================================================
 
 '@ModuleInitialize
-Private Sub ModuleInitialize()
-    Set Assert = CreateObject("Rubberduck.AssertClass")
-    Set Fakes = CreateObject("Rubberduck.FakesProvider")
+Public Sub ModuleInitialize()
     BusyApp
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestCustomTable"
     PrepareCustomTable
 End Sub
 
 '@ModuleCleanup
-Private Sub ModuleCleanup()
+Public Sub ModuleCleanup()
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
     DeleteWorksheet TABLESHEETNAME
     DeleteWorksheet SOURCE_SHEETNAME
     DeleteWorksheet DATASHEETNAME
@@ -229,16 +234,24 @@ Private Sub ModuleCleanup()
 End Sub
 
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
     BusyApp
     PrepareCustomTable
+End Sub
+
+'@TestCleanUp
+Public Sub TestCleanup()
+    If Not Assert Is Nothing Then
+        Assert.FlushCurrentTest
+    End If
 End Sub
 
 '@section Tests
 '===============================================================================
 
 '@TestMethod("CustomTable")
-Private Sub TestCreateInitialisesTable()
+Public Sub TestCreateInitialisesTable()
+    CustomTestSetTitles Assert, "CustomTable", "TestCreateInitialisesTable"
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
@@ -249,11 +262,12 @@ Private Sub TestCreateInitialisesTable()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestCreateInitialisesTable"
+    CustomTestLogFailure Assert, "TestCreateInitialisesTable", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestAddRowsAssignsIds()
+Public Sub TestAddRowsAssignsIds()
+    CustomTestSetTitles Assert, "CustomTable", "TestAddRowsAssignsIds"
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
@@ -272,11 +286,12 @@ Private Sub TestAddRowsAssignsIds()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestAddRowsAssignsIds"
+    CustomTestLogFailure Assert, "TestAddRowsAssignsIds", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestRemoveRowsDeletesEmpty()
+Public Sub TestRemoveRowsDeletesEmpty()
+    CustomTestSetTitles Assert, "CustomTable", "TestRemoveRowsDeletesEmpty"
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
@@ -295,11 +310,12 @@ Private Sub TestRemoveRowsDeletesEmpty()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestRemoveRowsDeletesEmpty"
+    CustomTestLogFailure Assert, "TestRemoveRowsDeletesEmpty", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestSetValueUpdatesCell()
+Public Sub TestSetValueUpdatesCell()
+    CustomTestSetTitles Assert, "CustomTable", "TestSetValueUpdatesCell"
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
@@ -311,11 +327,12 @@ Private Sub TestSetValueUpdatesCell()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestSetValueUpdatesCell"
+    CustomTestLogFailure Assert, "TestSetValueUpdatesCell", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestImportWithMatchingHeaders()
+Public Sub TestImportWithMatchingHeaders()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportWithMatchingHeaders"
     On Error GoTo Fail
 
     Dim sourceTable As ICustomTable
@@ -336,11 +353,12 @@ Private Sub TestImportWithMatchingHeaders()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestImportWithMatchingHeaders"
+    CustomTestLogFailure Assert, "TestImportWithMatchingHeaders", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestImportShrinksTrailingRows()
+Public Sub TestImportShrinksTrailingRows()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportShrinksTrailingRows"
     On Error GoTo Fail
 
     Dim targetTable As ICustomTable
@@ -369,11 +387,12 @@ Private Sub TestImportShrinksTrailingRows()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestImportShrinksTrailingRows"
+    CustomTestLogFailure Assert, "TestImportShrinksTrailingRows", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestImportFromDataSheetPreservesFormulas()
+Public Sub TestImportFromDataSheetPreservesFormulas()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportFromDataSheetPreservesFormulas"
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
@@ -405,11 +424,12 @@ Private Sub TestImportFromDataSheetPreservesFormulas()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestImportFromDataSheetPreservesFormulas"
+    CustomTestLogFailure Assert, "TestImportFromDataSheetPreservesFormulas", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestAddRowsRespectsAdjacentTables()
+Public Sub TestAddRowsRespectsAdjacentTables()
+    CustomTestSetTitles Assert, "CustomTable", "TestAddRowsRespectsAdjacentTables"
     On Error GoTo Fail
 
     Dim topLo As ListObject
@@ -430,11 +450,12 @@ Private Sub TestAddRowsRespectsAdjacentTables()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestAddRowsRespectsAdjacentTables"
+    CustomTestLogFailure Assert, "TestAddRowsRespectsAdjacentTables", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestImportRecordsMissingColumns()
+Public Sub TestImportRecordsMissingColumns()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportRecordsMissingColumns"
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
@@ -465,11 +486,12 @@ Private Sub TestImportRecordsMissingColumns()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestImportRecordsMissingColumns"
+    CustomTestLogFailure Assert, "TestImportRecordsMissingColumns", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestImportPreservesHiddenColumns()
+Public Sub TestImportPreservesHiddenColumns()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportPreservesHiddenColumns"
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
@@ -499,11 +521,12 @@ Private Sub TestImportPreservesHiddenColumns()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestImportPreservesHiddenColumns"
+    CustomTestLogFailure Assert, "TestImportPreservesHiddenColumns", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestImportFailureRestoresSnapshot()
+Public Sub TestImportFailureRestoresSnapshot()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportFailureRestoresSnapshot"
     
     Dim tableObject As ICustomTable
     Dim headers As Variant
@@ -532,7 +555,8 @@ Private Sub TestImportFailureRestoresSnapshot()
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestImportAllCustomTableShiftsFollowingTables()
+Public Sub TestImportAllCustomTableShiftsFollowingTables()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportAllCustomTableShiftsFollowingTables"
     On Error GoTo Fail
 
     Dim topLo As ListObject
@@ -572,11 +596,12 @@ Private Sub TestImportAllCustomTableShiftsFollowingTables()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestImportAllCustomTableShiftsFollowingTables"
+    CustomTestLogFailure Assert, "TestImportAllCustomTableShiftsFollowingTables", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestImportAllDataSheetShiftsFollowingTables()
+Public Sub TestImportAllDataSheetShiftsFollowingTables()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportAllDataSheetShiftsFollowingTables"
     On Error GoTo Fail
 
     Dim topLo As ListObject
@@ -617,11 +642,12 @@ Private Sub TestImportAllDataSheetShiftsFollowingTables()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestImportAllDataSheetShiftsFollowingTables"
+    CustomTestLogFailure Assert, "TestImportAllDataSheetShiftsFollowingTables", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestImportWithFormatHeadersCopiesStyling()
+Public Sub TestImportWithFormatHeadersCopiesStyling()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportWithFormatHeadersCopiesStyling"
     On Error GoTo Fail
 
     Dim targetTable As ICustomTable
@@ -664,11 +690,12 @@ Private Sub TestImportWithFormatHeadersCopiesStyling()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestImportWithFormatHeadersCopiesStyling"
+    CustomTestLogFailure Assert, "TestImportWithFormatHeadersCopiesStyling", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestExportWritesSelectedHeadersAtRow()
+Public Sub TestExportWritesSelectedHeadersAtRow()
+    CustomTestSetTitles Assert, "CustomTable", "TestExportWritesSelectedHeadersAtRow"
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
@@ -693,11 +720,12 @@ Private Sub TestExportWritesSelectedHeadersAtRow()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestExportWritesSelectedHeadersAtRow"
+    CustomTestLogFailure Assert, "TestExportWritesSelectedHeadersAtRow", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestExportRestoresHiddenColumns()
+Public Sub TestExportRestoresHiddenColumns()
+    CustomTestSetTitles Assert, "CustomTable", "TestExportRestoresHiddenColumns"
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
@@ -721,17 +749,18 @@ Private Sub TestExportRestoresHiddenColumns()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestExportRestoresHiddenColumns"
+    CustomTestLogFailure Assert, "TestExportRestoresHiddenColumns", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestCreateRejectsMissingListObject()
+Public Sub TestCreateRejectsMissingListObject()
+    CustomTestSetTitles Assert, "CustomTable", "TestCreateRejectsMissingListObject"
     On Error GoTo ExpectError
 
     Dim tableObject As ICustomTable
     '@Ignore AssignmentNotUsed
     Set tableObject = CustomTable.Create(Nothing)
-    Assert.Fail "Create should raise when no ListObject is supplied"
+    Assert.LogFailure "Create should raise when no ListObject is supplied"
     Exit Sub
 
 ExpectError:
@@ -741,7 +770,8 @@ ExpectError:
 End Sub
 
 '@TestMethod("CustomTable")
-Private Sub TestDataRangeReturnsNothingWhenEmpty()
+Public Sub TestDataRangeReturnsNothingWhenEmpty()
+    CustomTestSetTitles Assert, "CustomTable", "TestDataRangeReturnsNothingWhenEmpty"
     On Error GoTo Fail
 
     PrepareCustomTable includeData:=False
@@ -756,5 +786,5 @@ Private Sub TestDataRangeReturnsNothingWhenEmpty()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestDataRangeReturnsNothingWhenEmpty"
+    CustomTestLogFailure Assert, "TestDataRangeReturnsNothingWhenEmpty", Err.Number, Err.Description
 End Sub

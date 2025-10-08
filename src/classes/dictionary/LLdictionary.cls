@@ -100,7 +100,7 @@ Public Property Get Data() As IDataSheet
     Set Data = this.dictDataSheet
 End Property
 
-Friend Property Set Data(ByVal customDataSheet As IDataSheet)
+Public Property Set Data(ByVal customDataSheet As IDataSheet)
     Set this.dictDataSheet = customDataSheet
 End Property
 
@@ -914,6 +914,7 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
     Set sortRange = DataRange
     sortRange.Sort key1:=DataRange("number_" & newColumn), Order1:=xlAscending
 
+    '@Ignore AssignmentNotUsed
     endCol = DictEndColumn()
     hostSheet.Cells(StartRow(), endCol + 1).Value = newColumn
     hostSheet.Cells(StartRow() + 1, endCol + 1).Formula = "= " & Chr$(34) & tablePrefix & Chr$(34) & " " & Chr$(38) & " " & hostSheet.Cells(StartRow() + 1, endCol).Address(Rowabsolute:=False)

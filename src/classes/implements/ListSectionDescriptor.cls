@@ -49,7 +49,7 @@ Public Property Get Self() As IListSectionDescriptor
 End Property
 
 'Initialise instance state; internal helper used by the factory.
-Friend Sub Initialise(ByVal sectionName As String, _
+Public Sub Initialise(ByVal sectionName As String, _
                       ByVal anchorRow As Long, _
                       ByVal anchorColumn As Long)
 

@@ -9,9 +9,10 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Linelist sheets of a dictionary"
 
+'@PredeclaredId
 '@Folder("Dictionary")
 '@ModuleDescription("Linelist sheets of a dictionary")
-'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation, ExcelMemberMayReturnNothing
 '@depends LLdictionary, LLVariables
 
 Option Explicit
@@ -589,48 +590,48 @@ End Sub
 '@sub-title Raise a ProjectError-coded runtime error
 '@param errNumb ProjectError enumeration value.
 '@param errorMessage String human readable description.
-Private Sub ThrowError(ByVal errNumb As ProjectError, ByVal errorMessage As String)
+Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, errorMessage
 End Sub
 
 '@section Interface
 '===============================================================================
 
-Public Property Get ILLSheets_Dictionary() As ILLdictionary
+Private Property Get ILLSheets_Dictionary() As ILLdictionary
     Set ILLSheets_Dictionary = Dictionary()
 End Property
 
-Public Function ILLSheets_SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = SheetInfoType.SheetInfoSheetType) As String
+Private Function ILLSheets_SheetInfo(ByVal sheetName As String, Optional ByVal info As Byte = SheetInfoType.SheetInfoSheetType) As String
     ILLSheets_SheetInfo = sheetInfo(sheetName, info)
 End Function
 
-Public Function ILLSheets_Contains(ByVal sheetName As String) As Boolean
+Private Function ILLSheets_Contains(ByVal sheetName As String) As Boolean
     ILLSheets_Contains = Contains(sheetName)
 End Function
 
-Public Function ILLSheets_DataBounds(ByVal sheetName As String, _
+Private Function ILLSheets_DataBounds(ByVal sheetName As String, _
                                      Optional ByVal Bound As Byte = SheetBound.RowSart) As Long
     ILLSheets_DataBounds = DataBounds(sheetName, Bound)
 End Function
 
-Public Function ILLSheets_ContainsControl(ByVal sheetName As String, _
+Private Function ILLSheets_ContainsControl(ByVal sheetName As String, _
                                           Optional ByVal Control As String = "list_auto", _
                                           Optional ByVal colName As String = COL_CONTROL) As Boolean
     ILLSheets_ContainsControl = ContainsControl(sheetName, Control, colName)
 End Function
 
-Public Function ILLSheets_VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
+Private Function ILLSheets_VariableAddress(ByVal varName As String, Optional ByVal onSheet As String = vbNullString) As String
     ILLSheets_VariableAddress = VariableAddress(varName, onSheet)
 End Function
 
-Public Function ILLSheets_RowIndex(ByVal sheetName As String) As Long
+Private Function ILLSheets_RowIndex(ByVal sheetName As String) As Long
     ILLSheets_RowIndex = RowIndex(sheetName)
 End Function
 
-Public Function ILLSheets_NumberOfVars(ByVal sheetName As String) As Long
+Private Function ILLSheets_NumberOfVars(ByVal sheetName As String) As Long
     ILLSheets_NumberOfVars = NumberVars(sheetName)
 End Function
 
-Public Sub ILLSheets_InvalidateCaches()
+Private Sub ILLSheets_InvalidateCaches()
     InvalidateCaches
 End Sub

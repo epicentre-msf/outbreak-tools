@@ -46,7 +46,7 @@ Public Property Get Self() As ListBuilderFactory
 End Property
 
 'Assign the context cache after validation.
-Friend Property Set ContextCache(ByVal cache As IListContextCache)
+Public Property Set ContextCache(ByVal cache As IListContextCache)
     If cache Is Nothing Then
         ThrowError CLng(ProjectError.InvalidArgument), "contextCache cannot be Nothing"
     End If

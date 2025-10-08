@@ -10,10 +10,6 @@ Option Explicit
 '@section Constants
 '===============================================================================
 
-Private Const BASE_PATH As String = "\src\tests\"
-Private Const FILE_KEYS_RANGES As String = "draft3.csv"
-Private Const FILE_KEYS_TABLE As String = "draft4.csv"
-Private Const FILE_PROTECTED_TABLE As String = "draft5.csv"
 
 Private Const NAME_DEBUG_PASSWORD As String = "RNG_DebuggingPassword"
 Private Const NAME_PUBLIC_KEY As String = "RNG_PublicKey"
@@ -68,8 +64,8 @@ Private Sub SeedNamedRanges(ByVal sh As Worksheet)
     AddNamedRange sh, ADDRESS_DEBUG_PASSWORD, NAME_DEBUG_PASSWORD, "1234"
     AddNamedRange sh, ADDRESS_DEBUG_MODE, NAME_DEBUG_MODE, "No"
     AddNamedRange sh, ADDRESS_VERSION, NAME_VERSION, "d0099"
-    AddNamedRange sh, ADDRESS_LAB_PUBLIC, NAME_LAB_PUBLIC_KEY, vbNullString
-    AddNamedRange sh, ADDRESS_LAB_PRIVATE, NAME_LAB_PRIVATE_KEY, vbNullString
+    AddNamedRange sh, ADDRESS_LAB_PUBLIC, NAME_LAB_PUBLIC_KEY, "LABPUB123"
+    AddNamedRange sh, ADDRESS_LAB_PRIVATE, NAME_LAB_PRIVATE_KEY, "LABPRIV456"
 End Sub
 
 Private Sub SeedKeysTable(ByVal sh As Worksheet)
@@ -134,7 +130,9 @@ Private Function KeysTableMatrix() As Variant
     rows = Array( _
         Array("PublicKeys", "PrivateKeys"), _
         Array("1234", "1234"), _
-        Array("6789", "6789"))
+        Array("6789", "6789"), _
+        Array("ABCD", "WXYZ"), _
+        Array("ZXCV", "BNMQ"))
 
     KeysTableMatrix = TestHelpers.RowsToMatrix(rows)
 End Function

@@ -23,7 +23,7 @@ Private Sub Class_Initialize()
     Set categoriesMap = New Collection
 End Sub
 
-Public Sub SetCategories(ByVal varName As String, ByVal values As Variant)
+Public Sub SetCategories(ByVal varName As String, values As Variant)
     Dim categoryList As BetterArray
     Dim idx As Long
     Dim key As String
@@ -85,7 +85,7 @@ Private Function ILinelistSpecs_MainObject() As IMain
     Set ILinelistSpecs_MainObject = Nothing
 End Function
 
-Private Function ILinelistSpecs_Password() As ILLPasswords
+Private Function ILinelistSpecs_Password() As IPasswords
     Set ILinelistSpecs_Password = Nothing
 End Function
 

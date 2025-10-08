@@ -98,7 +98,7 @@ End Function
 '===============================================================================
 
 '@description Transform a one-dimensional list of values into single-column rows.
-Private Function SingleColumnRows(ByVal values As Variant) As Variant
+Private Function SingleColumnRows(values As Variant) As Variant
     Dim result() As Variant
     Dim idx As Long
     Dim lower As Long

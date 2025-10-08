@@ -143,7 +143,7 @@ End Function
 '@description Return variables whose control column matches supplied values.
 '@param controls Variant array of control values to match.
 '@return BetterArray of variable names.
-Public Function DictionaryControlMatches(ByVal controls As Variant) As BetterArray
+Public Function DictionaryControlMatches(controls As Variant) As BetterArray
     Dim matches As BetterArray
     Dim rowData As Variant
     Dim controlValue As String

@@ -908,8 +908,8 @@ End Sub
 'Format a Range
 Private Sub FormatRange(ByVal rng As Range, _
                         Optional ByVal fillValue As String = "", _
-                        Optional ByVal interiorColor As Variant = "", _
-                        Optional ByVal fontColor As Variant = "", _
+                        Optional  interiorColor As Variant = "", _
+                        Optional  fontColor As Variant = "", _
                         Optional ByVal isBold As Boolean = False, _
                         Optional ByVal Horiz As Integer = xlHAlignCenter, _
                         Optional ByVal Verti As Integer = xlVAlignCenter, _

@@ -25,7 +25,7 @@ End Sub
 Private Function BuildCRFContext(ByVal controlType As String, _
                                  ByVal statusValue As String, _
                                  Optional ByVal crfChoices As String = "no", _
-                                 Optional ByVal categories As Variant) As ILLVarContext
+                                 Optional  categories As Variant) As ILLVarContext
 
     Dim linelistStub As LLVarContextLinelistStub
     Dim variablesStub As LLVarContextVariablesStub

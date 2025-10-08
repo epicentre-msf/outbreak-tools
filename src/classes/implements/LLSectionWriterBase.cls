@@ -28,7 +28,7 @@ Private Const CLASSNAME As String = "LLSectionWriterBase"
 
 '@section Guard helpers
 '===============================================================================
-Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal messageText As String)
+Private Sub ThrowError(ByVal errNumber As Long, ByVal messageText As String)
     Err.Raise errNumber, CLASSNAME, messageText
 End Sub
 

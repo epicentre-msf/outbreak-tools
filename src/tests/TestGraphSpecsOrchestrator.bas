@@ -119,7 +119,7 @@ End Sub
 '@section Helper functions
 '===============================================================================
 
-Private Function CreateSampleChart(ByVal graphId As String, ByVal graphTitle As String, ByVal seriesNames As Variant) As IGraphChartSpec
+Private Function CreateSampleChart(ByVal graphId As String, ByVal graphTitle As String,  seriesNames As Variant) As IGraphChartSpec
     Dim builder As IGraphSeriesBuilder
     Dim idx As Long
     Dim nameText As String
@@ -135,7 +135,7 @@ Private Function CreateSampleChart(ByVal graphId As String, ByVal graphTitle As 
     Set CreateSampleChart = builder.BuildGraph(graphId, graphTitle)
 End Function
 
-Private Function CreateChartList(ByVal graphIds As Variant) As BetterArray
+Private Function CreateChartList( graphIds As Variant) As BetterArray
     Dim charts As BetterArray
     Dim idx As Long
     Dim chart As IGraphChartSpec

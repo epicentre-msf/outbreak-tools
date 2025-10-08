@@ -162,7 +162,7 @@ End Function
 
 Private Property Get GeoLevel(ByVal adminLevel As Byte, _
                               Optional ByVal geoType As Byte = GeoScopeAdmin, _
-                              Optional ByVal adminNames As Variant = vbNullString _
+                              Optional  adminNames As Variant = vbNullString _
                               ) As BetterArray
 
     Dim sh As Worksheet
@@ -762,7 +762,7 @@ Private Sub LoExists(ByVal loNames As BetterArray, sh As Worksheet)
 End Sub
 
 'Update the geobase admin names in the linelist
-Private Sub Update(ByVal pass As ILLPasswords)
+Private Sub Update(ByVal pass As IPasswords)
 
     Const DROPDOWNSHEET As String = "dropdown_lists__"
 
@@ -1018,7 +1018,7 @@ End Sub
 'Interfaces
 Private Property Get ILLGeo_GeoLevel(ByVal adminLevel As Byte, _
                                     Optional ByVal geoType As Byte = GeoScopeAdmin, _
-                                    Optional ByVal adminNames As Variant = vbNullString) As BetterArray
+                                    Optional  adminNames As Variant = vbNullString) As BetterArray
 
     Set ILLGeo_GeoLevel = GeoLevel(adminLevel, geoType, adminNames)
 End Property
@@ -1057,7 +1057,7 @@ Private Sub ILLGeo_ClearHistoric(Optional ByVal scope As Byte = 3)
     ClearHistoric scope
 End Sub
 
-Private Sub ILLGeo_Update(ByVal pass As ILLPasswords)
+Private Sub ILLGeo_Update(ByVal pass As IPasswords)
     Update pass
 End Sub
 

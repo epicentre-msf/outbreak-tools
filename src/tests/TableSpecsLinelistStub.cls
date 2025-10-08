@@ -58,7 +58,7 @@ Private Property Get ILinelistSpecs_ExportObject() As ILLExport
     Set ILinelistSpecs_ExportObject = Nothing
 End Property
 
-Private Property Get ILinelistSpecs_Password() As ILLPasswords
+Private Property Get ILinelistSpecs_Password() As IPasswords
     Set ILinelistSpecs_Password = Nothing
 End Property
 

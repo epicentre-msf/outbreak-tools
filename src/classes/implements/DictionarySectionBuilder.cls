@@ -44,7 +44,7 @@ Public Property Get Self() As IListSectionBuilder
 End Property
 
 'Internal setter used by the factory.
-Friend Property Set ContextCache(ByVal cache As IListContextCache)
+Public Property Set ContextCache(ByVal cache As IListContextCache)
     If cache Is Nothing Then
         ThrowError CLng(ProjectError.InvalidArgument), "Context cache cannot be Nothing"
     End If

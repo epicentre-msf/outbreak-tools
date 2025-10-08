@@ -7,13 +7,12 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
-Attribute VB_Description = "Interface describing the unified linelist export handler"
+Attribute VB_Description = "Interface of exports"
 
 '@Interface
-'@Folder("Exports")
-'@ModuleDescription("Interface describing the unified linelist export handler")
+'@Folder("General")
+'@ModuleDescription("Interface of exports")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
-
 
 '@depends Checking
 
@@ -101,7 +100,7 @@ End Sub
 '@param exportAll Optional flag to force the export-all naming scheme.
 Public Function ExportFileName(ByVal exportNumber As Long, _
                                ByVal dict As ILLdictionary, _
-                               ByVal pass As ILLPasswords, _
+                               ByVal pass As IPasswords, _
                                Optional ByVal exportAll As Boolean = False) As String
 End Function
 

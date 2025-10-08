@@ -172,7 +172,7 @@ Private Property Get ReportObject() As IImpRep
   Set ReportObject = ImpRep.Create(fobj, sh)
 End Property
 
-Private Property Get PasswordsObject() As ILLPasswords
+Private Property Get PasswordsObject() As IPasswords
   Dim wb As Workbook
 
   Set wb = CurrentWorkbook()
@@ -297,7 +297,7 @@ Private Sub ImportData(ByVal impwb As Workbook, ByVal pasteAtBottom As Boolean)
   Dim impsh As Worksheet
   Dim currsh As Worksheet
   Dim dict As ILLdictionary
-  Dim pass As ILLPasswords
+  Dim pass As IPasswords
   Dim currTab As ICustomTable
   Dim impTab As IDataSheet
   Dim impHeadersList As BetterArray
@@ -422,7 +422,7 @@ End Sub
 Private Sub ClearData()
 
   Dim sh As Worksheet
-  Dim pass As ILLPasswords
+  Dim pass As IPasswords
   Dim currwb As Workbook
   Dim Lo As listObject
   Dim actsh As Worksheet 'current active sheet
@@ -1165,7 +1165,7 @@ Private Sub ImportGeobase(Optional ByVal histoOnly As Boolean = False)
 
   Dim geo As ILLGeo
   Dim dict As ILLdictionary
-  Dim pass As ILLPasswords
+  Dim pass As IPasswords
   Dim impwb As Workbook
   Dim showhidesh As Worksheet
   Dim filePath As String

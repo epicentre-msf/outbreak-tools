@@ -54,7 +54,7 @@ Private Sub InitialiseValueCells()
     End If
 End Sub
 
-Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
+Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
     Err.Raise errNumber, CLASSNAME, errorMessage
 End Sub
 

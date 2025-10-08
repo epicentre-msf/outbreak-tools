@@ -41,7 +41,7 @@ End Property
 
 '@section ILLFormat implementation
 '===============================================================================
-Private Sub ILLFormat_ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Byte, _
+Private Sub ILLFormat_ApplyFormat(formattingObject As Variant, ByVal scope As Byte, _
                                   Optional ByVal nbDecimals As Integer = 0)
     this.scopes.Add scope
 End Sub

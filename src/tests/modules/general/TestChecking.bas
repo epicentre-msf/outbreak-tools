@@ -10,8 +10,8 @@ Option Private Module
 
 Private Assert As Object
 Private Fakes As Object
-Private checkingTitle As String
-Private checkingSubtitle As String
+Private CheckingTitle As String
+Private CheckingSubTitle As String
 Private checkingUnderTest As IChecking
 
 '@section Helpers
@@ -23,6 +23,19 @@ Private Sub PopulateDefaultEntries(ByVal checkingInstance As IChecking)
     checkingInstance.Add "key-3", "Key 3, Note", checkingNote
     checkingInstance.Add "key-4", "Key 4, Info", checkingInfo
 End Sub
+
+Private Function NormaliseTypeLabel(ByVal typeLabel As String) As String
+    Dim cleaned As String
+
+    cleaned = typeLabel
+    cleaned = Replace(cleaned, ChrW(10060), vbNullString)
+    cleaned = Replace(cleaned, ChrW(9888), vbNullString)
+    cleaned = Replace(cleaned, ChrW(8505), vbNullString)
+    cleaned = Replace(cleaned, ChrW(9998), vbNullString)
+    cleaned = Replace(cleaned, ChrW(10004), vbNullString)
+
+    NormaliseTypeLabel = Trim$(cleaned)
+End Function
 
 '@section Module lifecycle
 '===============================================================================
@@ -41,9 +54,9 @@ End Sub
 
 '@TestInitialize
 Private Sub TestInitialize()
-    checkingTitle = "Test Checking title"
-    checkingSubtitle = "Test Checking subtitle"
-    Set checkingUnderTest = Checking.Create(checkingTitle, checkingSubtitle)
+    CheckingTitle = "Test Checking title"
+    CheckingSubTitle = "Test Checking subtitle"
+    Set checkingUnderTest = checking.Create(CheckingTitle, CheckingSubTitle)
     PopulateDefaultEntries checkingUnderTest
 End Sub
 
@@ -57,10 +70,10 @@ Public Sub TestCreateCheck()
     Dim checkingInstance As IChecking
 
     '@
-    Set checkingInstance = Checking.Create("A title")
+    Set checkingInstance = checking.Create("A title")
     Assert.IsTrue (Not checkingInstance Is Nothing), "Unable to create a checking object with title only"
 
-    Set checkingInstance = Checking.Create("A title", "A subtitle")
+    Set checkingInstance = checking.Create("A title", "A subtitle")
     Assert.IsTrue (Not checkingInstance Is Nothing), "Unable to create a checking object with title and subtitle"
     Exit Sub
 
@@ -72,7 +85,7 @@ End Sub
 Public Sub TestNameCheck()
     On Error GoTo Fail
 
-    Assert.AreEqual checkingTitle, checkingUnderTest.Name, "Name of the checking object is not correctly set"
+    Assert.AreEqual CheckingTitle, checkingUnderTest.Name, "Name of the checking object is not correctly set"
     Exit Sub
 
 Fail:
@@ -84,7 +97,7 @@ Public Sub TestHeadingsCheck()
     On Error GoTo Fail
 
     Assert.AreEqual checkingUnderTest.Name, checkingUnderTest.Heading, "Checks name and heading returning different results"
-    Assert.AreEqual checkingSubtitle, checkingUnderTest.Heading(True), "Checks subtitle not correctly returned"
+    Assert.AreEqual CheckingSubTitle, checkingUnderTest.Heading(True), "Checks subtitle not correctly returned"
     Exit Sub
 
 Fail:
@@ -97,7 +110,7 @@ Public Sub TestAddValuesCheck()
 
     Dim checkingInstance As IChecking
 
-    Set checkingInstance = Checking.Create(checkingTitle, checkingSubtitle)
+    Set checkingInstance = checking.Create(CheckingTitle, CheckingSubTitle)
     PopulateDefaultEntries checkingInstance
     Assert.IsTrue (checkingInstance.Length = 4), "Expected four entries after adding values"
     Exit Sub
@@ -121,9 +134,9 @@ End Sub
 Public Sub TestKeysCheck()
     On Error GoTo Fail
 
-    Assert.IsTrue (checkingUnderTest.ListOfKeys.LowerBound = 1), "BetterArray of list of keys lowerbound is not 1"
+    Assert.IsTrue (checkingUnderTest.ListOfKeys.lowerBound = 1), "BetterArray of list of keys lowerbound is not 1"
     Assert.IsTrue (checkingUnderTest.ListOfKeys.Length = 4), "Checking list of keys length is not correct"
-    Assert.AreEqual "key-1", checkingUnderTest.ListOfKeys.Items(1), "Unable to retrieve the value of the first key item"
+    Assert.AreEqual "key-1", checkingUnderTest.ListOfKeys.items(1), "Unable to retrieve the value of the first key item"
     Assert.IsTrue checkingUnderTest.KeyExists("key-3"), "key-3 not found in the list of keys"
     Assert.IsFalse checkingUnderTest.KeyExists("key-5"), "key-5 is not added, but mentioned as present"
 
@@ -145,14 +158,49 @@ Public Sub TestRetrieveValuesCheck()
     On Error GoTo Fail
 
     Assert.AreEqual "Key 1, error", checkingUnderTest.ValueOf("key-1", checkingLabel), "Unable to retrieve correct label value"
-    Assert.AreEqual "Error", checkingUnderTest.ValueOf("key-1", checkingType), "Unable to retrieve correct type value for a checking Error"
-    Assert.AreEqual "Warning", checkingUnderTest.ValueOf("key-2", checkingType), "Unable to retrieve correct type value for a checking Warning"
-    Assert.AreEqual "Note", checkingUnderTest.ValueOf("key-3", checkingType), "Unable to retrieve correct type value for a checking Note"
-    Assert.AreEqual "Info", checkingUnderTest.ValueOf("key-4", checkingType), "Unable to retrieve correct type value for a checking Info"
-    Assert.AreEqual "purple", checkingUnderTest.ValueOf("key-3", checkingColor), "Unable to retrieve correct color value for a checking note"
-    Assert.AreEqual "grey", checkingUnderTest.ValueOf("key-4", checkingColor), "Unable to retrieve correct color value for a checking info"
+    Assert.AreEqual "Error", NormaliseTypeLabel(checkingUnderTest.ValueOf("key-1", checkingType)), "Unable to retrieve correct type value for a checking Error"
+    Assert.AreEqual "Warning", NormaliseTypeLabel(checkingUnderTest.ValueOf("key-2", checkingType)), "Unable to retrieve correct type value for a checking Warning"
+    Assert.AreEqual "Note", NormaliseTypeLabel(checkingUnderTest.ValueOf("key-3", checkingType)), "Unable to retrieve correct type value for a checking Note"
+    Assert.AreEqual "Info", NormaliseTypeLabel(checkingUnderTest.ValueOf("key-4", checkingType)), "Unable to retrieve correct type value for a checking Info"
+    Assert.AreEqual "purple", NormaliseTypeLabel(checkingUnderTest.ValueOf("key-3", checkingColor)), "Unable to retrieve correct color value for a checking note"
+    Assert.AreEqual "grey", NormaliseTypeLabel(checkingUnderTest.ValueOf("key-4", checkingColor)), "Unable to retrieve correct color value for a checking info"
     Exit Sub
 
 Fail:
     FailUnexpectedError Assert, "TestRetrieveValuesCheck"
+End Sub
+
+'@TestMethod("Checkings")
+Public Sub TestCloneProducesIndependentCopy()
+    On Error GoTo Fail
+
+    Dim original As IChecking
+    Dim cloned As IChecking
+
+    Set original = checking.Create(CheckingTitle, CheckingSubTitle)
+    PopulateDefaultEntries original
+
+    Set cloned = original.Clone
+
+    Assert.IsTrue (Not cloned Is Nothing), "Clone should return a new checking instance"
+    Assert.AreEqual original.Length, cloned.Length, "Clone should carry over existing entries"
+    Assert.AreEqual original.Name, cloned.Name, "Clone should copy the checking title"
+    Assert.AreEqual original.Heading(True), cloned.Heading(True), "Clone should copy the subtitle"
+
+    cloned.Add "key-clone", "Clone-only entry", checkingError
+
+    Assert.IsTrue (cloned.Length = 5), "Clone should record newly added entries"
+    Assert.IsTrue (original.Length = 4), "Original should remain unchanged when clone mutates"
+    Assert.IsFalse original.KeyExists("key-clone"), "Original should not see clone-only entries"
+    Assert.IsTrue cloned.KeyExists("key-clone"), "Clone should contain its new entry"
+
+    original.Add "key-original", "Original-only entry", checkingWarning
+
+    Assert.IsTrue (original.Length = 5), "Original should record its own new entries"
+    Assert.IsTrue (cloned.Length = 5), "Clone should remain unchanged when original mutates"
+    Assert.IsFalse cloned.KeyExists("key-original"), "Clone should not see original-only entries"
+    Exit Sub
+
+Fail:
+    FailUnexpectedError Assert, "TestCloneProducesIndependentCopy"
 End Sub

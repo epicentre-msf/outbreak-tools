@@ -1,171 +1,205 @@
 {
-	// Place your global snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and 
-	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope 
-	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is 
-	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are: 
-	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders. 
-	// Placeholders with the same ids are connected.
-	// Example snippet for R:
-	// "switch": {
-	// 	"scope": "r",
-	// 	"prefix": "switch",
-	// 	"body": [
-	// 		"switch(${1:object},",
-	// 		"\t${2:case} = ${3:action}",
-	// 		")"
-	// 	],
-	// 	"description": "Define a switch statement"
-	// },
-	// Example snippet for Python:
-	// "match-case": {
-	// 	"scope": "python",
-	// 	"prefix": "match",
-	// 	"body": [
-	// 		"match ${1:expression}:",
-	// 		"\tcase ${2:pattern}:",
-	// 		"\t\t${3:# action}",
-	// 		"\tcase _:",
-	// 		"\t\t${4:# default action}"
-	// 	],
-	// 	"description": "Define a match-case statement (Python 3.10+)"
-	// }
+  // Place your global snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and
+  // description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope
+  // is left empty or omitted, the snippet gets applied to all languages. The prefix is what is
+  // used to trigger the snippet and the body will be expanded and inserted. Possible variables are:
+  // $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders.
+  // Placeholders with the same ids are connected.
+  // Example snippet for R:
+  // "switch": {
+  //   "scope": "r",
+  //   "prefix": "switch",
+  //   "body": [
+  //     "switch(${1:object},",
+  //     "\t${2:case} = ${3:action}",
+  //     ")"
+  //   ],
+  //   "description": "Define a switch statement"
+  // },
+  // Example snippet for Python:
+  // "match-case": {
+  //   "scope": "python",
+  //   "prefix": "match",
+  //   "body": [
+  //     "match ${1:expression}:",
+  //     "\tcase ${2:pattern}:",
+  //     "\t\t${3:# action}",
+  //     "\tcase _:",
+  //     "\t\t${4:# default action}"
+  //   ],
+  //   "description": "Define a match-case statement (Python 3.10+)"
+  // }
 
-	"Insert section": {
-		"prefix": "isec",
-		"body": [
-			"'@section $1\n'==============================================================================="
-		]
-	},
+  "Insert section": {
+    "prefix": "isec",
+    "body": [
+      "'@section $1",
+      "'==============================================================================="
+    ]
+  },
 
-	"Insert Lines": {
-		"prefix": "iln",
-		"body": [
-			"'==============================================================================="
-		]
-	},
+  "Insert Lines": {
+    "prefix": "iln",
+    "body": [
+      "'==============================================================================="
+    ]
+  },
 
-		"Insert sub": {
-		"prefix": "isub",
-		"body": [
-			"'@sub-title $1"
-		]
-	},
+  "Insert sub": {
+    "prefix": "isub",
+    "body": [
+      "'@sub-title $1"
+    ]
+  },
 
-	"Insert ignores": {
-		"prefix": "igno",
-		"body": [
-"'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation, ExcelMemberMayReturnNothing"
-		]
+  "Insert function": {
+    "prefix": "ifun",
+    "body": [
+      "'@fun-title $1"
+    ]
+  },
 
-	},
+  "Insert LogInfo": {
+    "prefix": "iloginfo",
+    "body": [
+      "'@details Append an informational entry to the internal checking log, initialising it on first use.",
+      "'@param label Message describing the event.",
+      "'@param scope Checking severity classification (note/warning/error).",
+      "'@param addTimeStamp Boolean, whether to add a time stamp to reporting, default is True.",
+      "Private Sub LogInfo(ByVal label As String, _",
+      "                    Optional ByVal scope As Byte = checkingNote, _",
+      "                    Optional ByVal addTimeStamp As Boolean = True)",
+      "",
+      "    Dim descrip As String",
+      "",
+      "    If this.checks Is Nothing Then",
+      "        Set this.checks = Checking.Create(CHECKING_CONTEXT)",
+      "    End If",
+      "",
+      "    descrip = label",
+      "    If addTimeStamp Then descrip = Format(Now(), \"yyyy-mm-dd hh:nn:ss\") & \" - \" & descrip",
+      "",
+      "    this.checks.Add CStr(this.checkCounter), , scope",
+      "    this.checkCounter = this.checkCounter + 1",
+      "    this.hasChecks = True",
+      "End Sub"
+    ]
+  },
 
-	"Insert prop": {
-		"prefix": "iprop",
-		"body": [
-			"'@prop-title $1"
-		]
-	},
+  "Insert ignores": {
+    "prefix": "igno",
+    "body": [
+      "'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation"
+    ]
+  },
 
-	"Private Property": {
-		"prefix" : "pprop",
-		"body": [
-			"Private Property Get $1()\nEnd Property"
-		]
-	},
+  "Insert prop": {
+    "prefix": "iprop",
+    "body": [
+      "'@prop-title $1"
+    ]
+  },
 
-	"Private Sub": {
-		"prefix" : "psub",
-		"body": [
-			"Private Sub $1()\nEnd Sub"
-		]
-	},
+  "Private Property": {
+    "prefix": "pprop",
+    "body": [
+      "Private Property Get $1()",
+      "End Property"
+    ]
+  },
 
-		"Parameter": {
-		"prefix": "ipar",
-		"body": [
-			"'@param $1"
-		]
-	},
+  "Private Sub": {
+    "prefix": "psub",
+    "body": [
+      "Private Sub $1()",
+      "End Sub"
+    ]
+  },
 
+  "Parameter": {
+    "prefix": "ipar",
+    "body": [
+      "'@param $1"
+    ]
+  },
 
-			"Export": {
-		"prefix": "iexp",
-		"body": [
-			"'@export"
-		]
-	},
+  "Export": {
+    "prefix": "iexp",
+    "body": [
+      "'@export"
+    ]
+  },
 
-				"Return": {
-		"prefix": "iret",
-		"body": [
-			"'@return $1"
-		]
-	},
+  "Return": {
+    "prefix": "iret",
+    "body": [
+      "'@return $1"
+    ]
+  },
 
-					"Details": {
-		"prefix": "idet",
-		"body": [
-			"'@details\n$1"
-		]
-	},
+  "Details": {
+    "prefix": "idet",
+    "body": [
+      "'@details",
+      "$1"
+    ]
+  },
 
-	"Label": {
-		"prefix": "ilab",
-		"body": [
-			"'@label:$1"
-		]
-	},
+  "Label": {
+    "prefix": "ilab",
+    "body": [
+      "'@label:$1"
+    ]
+  },
 
+  "Jump": {
+    "prefix": "ijmp",
+    "body": [
+      "'@jump:$1"
+    ]
+  },
 
-	"Jump": {
-		"prefix": "ijmp",
-		"body": [
-			"'@jump:$1"
-		]
-	},
+  "Public Sub": {
+    "prefix": "gsub",
+    "body": [
+      "Public Sub $1()",
+      "End Sub"
+    ]
+  },
 
-	"Public Sub": {
-		"prefix": "gsub",
-		"body": [
-			"Public Sub $1()\nEnd Sub"
-		]
-	},
+  "Public Property": {
+    "prefix": "gprop",
+    "body": [
+      "Public Property Get $1()",
+      "End Property"
+    ]
+  },
 
-	"Public Property": {
-		"prefix": "gprop",
-		"body": [
-			"Public Property Get $1()\nEnd Property"
-		]
-	},
+  "Exit Sub": {
+    "prefix": "esub",
+    "body": [
+      "Exit Sub"
+    ]
+  },
 
-	"Exit Sub": {
-		"prefix": "esub",
-		"body": [
-			"Exit Sub\n"
-		]
-	},
+  "Exit Property": {
+    "prefix": "eprp",
+    "body": [
+      "Exit Property"
+    ]
+  },
 
-	"Exit Property": {
-		"prefix": "eprp",
-		"body": [
-			"Exit Property\n"
-		]
-	},
+  "On Error": {
+    "prefix": "oerr",
+    "body": [
+      "On Error $1"
+    ]
+  },
 
-	"On Error": {
-		"prefix": "oerr",
-		"body": [
-			"On Error $1"
-		]
-	},
-
-	"Dependency": {
-		"prefix": "idep",
-		"body": [
-			"'@depends $1"
-		]
-	}
-
-
-
+  "Dependency": {
+    "prefix": "idep",
+    "body": [
+      "'@depends $1"
+    ]
+  }
 }

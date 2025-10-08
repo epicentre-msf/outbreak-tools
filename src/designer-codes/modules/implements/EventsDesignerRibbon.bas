@@ -228,8 +228,8 @@ Public Sub clickImpPass(control As IRibbonControl)
 
     Dim io As IOSFiles
     Dim wb As Workbook
-    Dim imppass As ILLPasswords
-    Dim actpass As ILLPasswords
+    Dim imppass As IPasswords
+    Dim actpass As IPasswords
 
     Set io = OSFiles.Create()
 

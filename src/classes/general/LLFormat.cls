@@ -12,8 +12,12 @@ Attribute VB_Exposed = False
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Formatting the linelist")
+'@details Applies LL format table metadata to Worksheets, ranges, and shapes.
 
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
+
+'@section Overview
+'@details LLFormat reads design information from the LL format table and exposes helpers to apply those styles while caching lookups for performance.
 
 Option Explicit
 Implements ILLFormat
@@ -217,6 +221,7 @@ End Function
 
 '@section Factory
 '===============================================================================
+'@fun-title Instantiate an LL format engine for a worksheet
 '@param formatSh Worksheet containing the format specification table.
 '@param designType Optional design column to use; defaults to "design 1".
 '@return A fully initialised LLFormat instance.
@@ -245,32 +250,46 @@ Private Function ColumnExists(ByVal header As Range, ByVal columnName As String)
     ColumnExists = Not (found Is Nothing)
 End Function
 
+'@section Public Interface
+'===============================================================================
+'@prop-title Retrieve this formatter as an interface
+'@return ILLFormat reference.
 Public Property Get Self() As ILLFormat
     Set Self = Me
 End Property
 
+'@prop-title Retrieve the worksheet hosting the format table
+'@return Worksheet reference.
 Public Property Get Wksh() As Worksheet
     Set Wksh = this.sheet
 End Property
 
+'@description Assign the worksheet backing this formatter and clear caches
 Public Property Set Wksh(ByVal sh As Worksheet)
     Set this.sheet = sh
     ResetCaches
 End Property
 
+'@prop-title Name of the active design column
+'@return String design name.
 Public Property Get designName() As String
     designName = this.design
 End Property
 
+'@description Change the active design column and reset cached lookups
 Public Property Let designName(ByVal design As String)
     this.design = design
     ResetCaches
 End Property
 
+'@prop-title Determine whether any checking entries were recorded
+'@return True when checking entries exist.
 Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
+'@prop-title Retrieve the recorded checking entries for missing labels
+'@return IChecking instance or Nothing.
 Public Property Get CheckingValues() As IChecking
     If this.hasChecks Then
         Set CheckingValues = this.checks
@@ -279,6 +298,7 @@ End Property
 
 '@section Design Lookups
 '===============================================================================
+'@fun-title Look up a design value or colour
 '@details Retrieve either the fill color or value associated with a format label.
 '@param labelName Label text stored in the format table.
 '@param returnColor When True (default) returns Interior.Color; otherwise returns the raw cell value.
@@ -501,7 +521,7 @@ End Sub
 '@param formattingObject Variant that will receive formatting (Worksheet, Range, Shape, etc.).
 '@param scope Byte constant describing the formatting scenario.
 '@param nbDecimals Optional decimal count for numeric formatting.
-Private Sub ApplyFormat(ByVal formattingObject As Variant, _ 
+Private Sub ApplyFormat(ByVal formattingObject As Variant, _
                         ByVal scope As Byte, _
                         Optional ByVal nbDecimals As Integer = 0)
 
@@ -550,10 +570,10 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, _
         sh.Cells.Font.Size = styleValue
         sh.Cells.EntireColumn.ColumnWidth = dimensionValue
 
-        'Column with of the period and goto section columns
+        'Column widths for dedicated sections
         If scope = AllAnalysisSheet Then
             sh.Columns(3).EntireColumn.ColumnWidth = dimensionValue + 5
-            sh.Columns("A:B").EntireColumn.ColumnWidth = 5
+            sh.Columns("A:B").EntireColumn.ColumnWidth = dimensionValue
         End If
     
     Case HListCRFSheet
@@ -1257,7 +1277,7 @@ Private Sub Import(ByVal inpsh As Worksheet)
 
     Set targetTab = CustomTable.Create(targetTable)
     Set inputTab = CustomTable.Create(inputTable)
-    targetTab.Import inputTab, strictColumnSearch:=True, 
+    targetTab.Import inputTab, strictColumnSearch:=True
 
     targetSheet.Range("DESIGNTYPE").Value = inpsh.Range("DESIGNTYPE").Value
     Me.designName = CStr(targetSheet.Range("DESIGNTYPE").Value)
@@ -1301,7 +1321,7 @@ Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As St
 End Sub
 
 'Exposed methods---------------------------------------------------------------------
-Private Sub ILLFormat_ApplyFormat(ByVal formattingObject As Variant, ByVal scope As Byte, _ 
+Private Sub ILLFormat_ApplyFormat(formattingObject As Variant, ByVal scope As Byte, _ 
                                   Optional ByVal nbDecimals As Integer = 0)
     ApplyFormat formattingObject:=formattingObject, scope:=scope, nbDecimals:=nbDecimals
 End Sub

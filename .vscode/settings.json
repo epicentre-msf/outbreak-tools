@@ -8,7 +8,7 @@
         "Rscripts/designer_prev.xlsb": true
     },
     "editor.lineNumbers": "on",
-    "editor.fontSize": 14,
+    "editor.fontSize": 12,
     "editor.fontFamily": "'Fira Code', Menlo, 'Courier New', monospace",
     "editor.fontLigatures": true,
     "zenMode.hideStatusBar": false,
@@ -17,37 +17,18 @@
     "githubPullRequests.ignoredPullRequestBranches": [
         "dev"
     ],
-    "spellright.language": [
-        "en"
-    ],
-    "spellright.documentTypes": [
-        "markdown",
-        "latex",
-        "plaintext",
-        "vba"
-    ],
-    "spellright.parserByClass": {
-        "vba": {
-            "parser": "plain"
-        }
-    },
     "r.lsp.promptToInstall": false,
     "editor.rulers": [80, 120, 160],
     "editor.inlineSuggest.enabled": false,
-    "console.fontSize": 16,
     "terminal.integrated.fontSize": 16,
     "terminal.integrated.fontFamily": "'Office Code Pro',  Menlo, 'Courier New', monospace",
-    "inline-bookmarks.default.words.blue": "@audit\\-info[\\s], @todo[\\s], @note[\\s], @remind[\\s], @info[\\s], @prop\\-title[\\s]",
-    "inline-bookmarks.default.words.green": "@audit\\-ok[\\s], @section[\\s], @sub\\-section[\\s]",
-    "inline-bookmarks.default.words.purple": "@audit\\-issue[\\s], @sub\\-title[\\s]",
+    "inline-bookmarks.default.words.green": "@prop\\-title[\\s]",
+    "inline-bookmarks.default.words.red": "@section[\\s]",
+    "inline-bookmarks.default.words.purple": "@sub\\-title[\\s]",
+    "inline-bookmarks.default.words.blue": "@fun\\-title[\\s]",
     "inline-bookmarks.view.words.hide": false,
     "inline-bookmarks.enable": true,
     "inline-bookmarks.view.showVisibleFilesOnly": true,
-    "positron.assistant.enable": true,
-    "positron.assistant.consoleActions.enable": true,
-    "positron.assistant.showTokenUsage.enable": true,
-    "positron.assistant.toolDetails.enable": true,
-    "positron.r.quietMode": true,
       "[r]": {
         "editor.formatOnSave": true
     },
@@ -56,7 +37,12 @@
         "src/msetup-codes",
         "src/setup-codes"
     ],
-    "internalLinker.implementsPath": "src/classes/implements",
-    "internalLinker.interfacePath": "src/classes/interface",
-    "files.eol": "\r\n"
+    "internalLinker.classFolders": [
+        "src"
+    ],
+    "internalLinker.jumpLensTitle": "Go to ",
+    "internalLinker.labelLensTitle": "Implements: ",
+    "internalLinker.interfaceLensTitle": "GoTo Interface: ",
+    "files.eol": "\r\n",
+    "print.sourcecode.colourScheme":"QTcreator"
 }

@@ -63,6 +63,7 @@ Private Sub TestCreateRejectsNullDictionary()
     On Error GoTo ExpectError
 
     Dim invalid As ILLSheets
+    '@Ignore AssignmentNotUsed
     Set invalid = LLSheets.Create(Nothing)
     Assert.Fail "Create should raise when dictionary is Nothing"
     Exit Sub
@@ -104,7 +105,7 @@ Private Sub TestDataBoundsRejectsUnknownSelector()
     On Error GoTo ExpectError
 
     Dim unused As Long
-    '@Ignore VariableNotUsed
+    '@Ignore VariableNotUsed, AssignmentNotUsed
     unused = Sheets.DataBounds(SHEET_VERTICAL, 99)
     Assert.Fail "DataBounds should raise for unsupported selectors"
     Exit Sub
@@ -120,7 +121,7 @@ Private Sub TestSheetInfoRaisesWhenTableColumnMissing()
     On Error GoTo ExpectError
 
     Dim unused As String
-    '@Ignore VariableNotUsed
+    '@Ignore VariableNotUsed, AssignmentNotUsed
     unused = Sheets.SheetInfo(SHEET_VERTICAL, SheetInfoType.SheetInfoSheetTable)
     Assert.Fail "SheetInfo should raise when table name column is missing"
     Exit Sub
@@ -150,7 +151,7 @@ Private Sub TestNumberOfVarsRaisesWhenSheetMissing()
     On Error GoTo ExpectError
 
     Dim unused As Long
-    '@Ignore VariableNotUsed
+    '@Ignore VariableNotUsed, AssignmentNotUsed
     unused = Sheets.NumberOfVars("unknown-sheet")
     Assert.Fail "NumberOfVars should raise when the sheet is absent"
     Exit Sub
@@ -166,7 +167,7 @@ Private Sub TestVariableAddressRequiresPreparedDictionary()
     On Error GoTo ExpectError
 
     Dim unused As String
-    '@Ignore VariableNotUsed
+    '@Ignore VariableNotUsed, AssignmentNotUsed
     unused = Sheets.VariableAddress(KNOWN_VARIABLE)
     Assert.Fail "VariableAddress should require a prepared dictionary"
     Exit Sub

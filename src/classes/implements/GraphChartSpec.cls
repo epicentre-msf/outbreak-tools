@@ -42,7 +42,7 @@ Public Property Get Self() As IGraphChartSpec
     Set Self = Me
 End Property
 
-Friend Sub Initialise(ByVal graphId As String, ByVal graphTitle As String)
+Public Sub Initialise(ByVal graphId As String, ByVal graphTitle As String)
     this.graphId = Trim$(graphId)
     this.title = Trim$(graphTitle)
     Set this.seriesList = New BetterArray
