@@ -44,7 +44,7 @@ Private Sub EnsureReady()
     End If
 End Sub
 
-Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal messageText As String)
+Private Sub ThrowError(ByVal errNumber As Long, ByVal messageText As String)
     Err.Raise errNumber, CLASSNAME, messageText
 End Sub
 

@@ -1,21 +1,18 @@
 Attribute VB_Name = "TestTranslationObject"
 
 Option Explicit
-Option Private Module
-
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-
-'@TestModule
-'@Folder("Tests")
+'@Folder("CustomTests")
 
 Private Const TRANSLATIONNAME As String = "TranslationFixture"
 Private Const TRANSLATIONTABLE As String = "tblTranslation"
 Private Const TARGETLANGUAGE As String = "French"
+Private Const DEFAULTOUTPUTSHEET As String = "testsOutputs"
 
-Private Assert As Object
-Private Fakes As Object
+Private Assert As ICustomTest
 Private Translator As ITranslationObject
+Private wb As Workbook
 
 '@section Helpers
 '===============================================================================
@@ -64,38 +61,39 @@ End Sub
 '===============================================================================
 
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
     BusyApp
-    Set Assert = CreateObject("Rubberduck.AssertClass")
-    Set Fakes = CreateObject("Rubberduck.FakesProvider")
+    Set wb = ThisWorkbook
+    Set Assert = CustomTest.Create(wb, DEFAULTOUTPUTSHEET)
     ResetTranslator
 End Sub
 
 '@ModuleCleanup
-Private Sub ModuleCleanup()
-    Set Translator = Nothing
+Public Sub ModuleCleanup()
     DeleteWorksheet TRANSLATIONNAME
-
+    Assert.PrintResults
+    Set Translator = Nothing
     Set Assert = Nothing
-    Set Fakes = Nothing
 End Sub
 
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
     BusyApp
     ResetTranslator
 End Sub
 
 '@TestCleanup
-Private Sub TestCleanup()
+Public Sub TestCleanup()
     Set Translator = Nothing
+    Assert.Flush
 End Sub
 
 '@section Tests
 '===============================================================================
 
 '@TestMethod("TranslationObject")
-Private Sub TestCreateInitialisesTranslation()
+Public Sub TestCreateInitialisesTranslation()
+    CustomTestSetTitles Assert, "TranslationObject", "TestCreateInitialisesTranslation"
     On Error GoTo Fail
 
     Assert.IsTrue Translator.ValueExists("greeting"), "Expected greeting tag to exist"
@@ -104,12 +102,13 @@ Private Sub TestCreateInitialisesTranslation()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestCreateInitialisesTranslation"
+    CustomTestLogFailure Assert, "TestCreateInitialisesTranslation", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("TranslationObject")
-Private Sub TestTranslateRangeHandlesFormulas()
+Public Sub TestTranslateRangeHandlesFormulas()
     On Error GoTo Fail
+    CustomTestSetTitles Assert, "TranslationObject", "TestCreateInitialisesTranslation"
 
     Dim translationSheet As Worksheet
 

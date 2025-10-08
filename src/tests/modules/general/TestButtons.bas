@@ -1,20 +1,22 @@
 Attribute VB_Name = "TestButtons"
 
 Option Explicit
-Option Private Module
+
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-'@TestModule
-'@Folder("Tests")
+'@Folder("CustomTests")
 
 Private Const BUTTONS_SHEET As String = "ButtonsFixture"
 Private Const DEFAULT_BUTTON_NAME As String = "FixtureButton"
+Private Const FORMAT_TEMPLATE_SHEET As String = "LLFormatTemplate"
 Private Const BUTTON_FORMAT_SHEET As String = "LLFormatFixture_Buttons"
 Private Const FIXTURE_DEFAULT_DESIGN As String = "design 1"
 Private Const LABEL_BUTTON_INTERIOR As String = "button default interior color"
 Private Const LABEL_BUTTON_FONT As String = "button default font color"
 
-Private Assert As Object
+Private Assert As ICustomTest
 Private Fakes As Object
 Private FixtureSheet As Worksheet
 
@@ -43,14 +45,17 @@ End Function
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
-    Set Assert = CreateObject("Rubberduck.AssertClass")
-    Set Fakes = CreateObject("Rubberduck.FakesProvider")
     BusyApp
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestButtons"
     ResetButtonsSheet
 End Sub
 
 '@ModuleCleanup
 Private Sub ModuleCleanup()
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
     DeleteWorksheet BUTTONS_SHEET
     LLFormatTestFixture.DeleteLLFormatFixture BUTTON_FORMAT_SHEET
     RestoreApp
@@ -67,6 +72,9 @@ End Sub
 
 '@TestCleanup
 Private Sub TestCleanup()
+    If Not Assert Is Nothing Then
+        Assert.Flush
+    End If
     On Error Resume Next
         LLFormatTestFixture.DeleteLLFormatFixture BUTTON_FORMAT_SHEET
     On Error GoTo 0
@@ -77,7 +85,8 @@ End Sub
 '===============================================================================
 
 '@TestMethod("Buttons")
-Private Sub TestCreateInitialisesState()
+Public Sub TestCreateInitialisesState()
+    CustomTestSetTitles Assert, "Buttons", "TestCreateInitialisesState"
     Dim buttonHelper As IButtons
     Dim anchor As Range
 
@@ -104,11 +113,12 @@ Private Sub TestCreateInitialisesState()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestCreateInitialisesState"
+    CustomTestLogFailure Assert, "TestCreateInitialisesState", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Buttons")
-Private Sub TestAddCreatesShape()
+Public Sub TestAddCreatesShape()
+    CustomTestSetTitles Assert, "Buttons", "TestAddCreatesShape"
     Dim buttonHelper As IButtons
     Dim createdShape As Shape
 
@@ -123,16 +133,18 @@ Private Sub TestAddCreatesShape()
     Assert.AreEqual "TestMacro", createdShape.OnAction, "Add should assign the action command"
     Assert.AreEqual "Press me", createdShape.TextFrame2.TextRange.Characters.Text, _
                    "Add should populate the provided label"
+
     Assert.IsFalse buttonHelper.HasCheckings, "Creating the button should not log checkings"
 
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestAddCreatesShape"
+    CustomTestLogFailure Assert, "TestAddCreatesShape", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Buttons")
-Private Sub TestAddExistingRecordsCheckings()
+Public Sub TestAddExistingRecordsCheckings()
+    CustomTestSetTitles Assert, "Buttons", "TestAddExistingRecordsCheckings"
     Dim buttonHelper As IButtons
     Dim logs As IChecking
 
@@ -155,11 +167,12 @@ Private Sub TestAddExistingRecordsCheckings()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestAddExistingRecordsCheckings"
+    CustomTestLogFailure Assert, "TestAddExistingRecordsCheckings", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Buttons")
-Private Sub TestFormatAppliesScopeUsingWorkbookDesign()
+Public Sub TestFormatAppliesScopeUsingWorkbookDesign()
+    CustomTestSetTitles Assert, "Buttons", "TestFormatAppliesScopeUsingWorkbookDesign"
     Dim buttonHelper As IButtons
     Dim design As ILLFormat
     Dim createdShape As Shape
@@ -170,7 +183,7 @@ Private Sub TestFormatAppliesScopeUsingWorkbookDesign()
 
     On Error GoTo Fail
 
-    Set templateSheet = LLFormatTestFixture.LLFormatTemplate
+    Set templateSheet = LLFormatTestFixture.PrepareLLFormatFixture(FORMAT_TEMPLATE_SHEET)
     expectedFillColor = CLng(LLFormatTestFixture.FixtureCell(templateSheet, _
                                      LABEL_BUTTON_INTERIOR, FIXTURE_DEFAULT_DESIGN).Interior.Color)
     expectedFontColor = CLng(LLFormatTestFixture.FixtureCell(templateSheet, _
@@ -194,10 +207,11 @@ Private Sub TestFormatAppliesScopeUsingWorkbookDesign()
     GoTo Cleanup
 
 Fail:
-    FailUnexpectedError Assert, "TestFormatAppliesScopeUsingWorkbookDesign"
+    CustomTestLogFailure Assert, "TestFormatAppliesScopeUsingWorkbookDesign", Err.Number, Err.Description
     Resume Cleanup
 
 Cleanup:
-    LLFormatTestFixture.DeleteLLFormatFixture BUTTON_FORMAT_SHEET
+    DeleteWorksheet FORMAT_TEMPLATE_SHEET
+    DeleteWorksheet BUTTON_FORMAT_SHEET
     Exit Sub
 End Sub

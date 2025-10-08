@@ -623,7 +623,7 @@ End Property
 '@section ErrorHandling
 '===============================================================================
 
-Private Sub ThrowError(ByVal errNumb As ProjectError, ByVal errorMessage As String)
+Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, "Error: " & errorMessage
 End Sub
 

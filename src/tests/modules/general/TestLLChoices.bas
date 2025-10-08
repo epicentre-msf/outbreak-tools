@@ -1,20 +1,22 @@
 Attribute VB_Name = "TestLLChoices"
 
 Option Explicit
-Option Private Module
+
+
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 '@TestModule
-'@Folder("Tests")
+'@Folder("CustomTests")
 
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const CHOICESSHEET As String = "LLChoicesTest"
 Private Const CHOICESTRANSLATIONSHEET As String = "LLChoicesTranslation"
 Private Const CHOICESTRANSLATIONTABLE As String = "tblLLChoicesTranslation"
 Private Const CHOICESTRANSLATIONLANGUAGE As String = "Translated"
 Private Const CHOICESIMPORTSHEET As String = "LLChoicesImportSource"
 
-Private Assert As Object
+Private Assert As ICustomTest
 Private Fakes As Object
 Private Choices As ILLChoices
 
@@ -104,13 +106,16 @@ End Sub
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
-    Set Assert = CreateObject("Rubberduck.AssertClass")
-    Set Fakes = CreateObject("Rubberduck.FakesProvider")
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestLLChoices"
     ResetChoices
 End Sub
 
 '@ModuleCleanup
 Private Sub ModuleCleanup()
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
     CleanupChoicesTranslation
     CleanupChoicesImportSource
     DeleteWorksheet CHOICESSHEET
@@ -130,6 +135,9 @@ End Sub
 
 '@TestCleanup
 Private Sub TestCleanup()
+    If Not Assert Is Nothing Then
+        Assert.Flush
+    End If
     CleanupChoicesTranslation
     CleanupChoicesImportSource
     Set Choices = Nothing
@@ -139,14 +147,16 @@ End Sub
 '===============================================================================
 
 '@TestMethod("LLChoices")
-Private Sub TestCreateInitialisesChoice()
+Public Sub TestCreateInitialisesChoice()
+    CustomTestSetTitles Assert, "LLChoices", "TestCreateInitialisesChoice"
     Assert.IsTrue (TypeName(Choices) = "LLChoices"), "Expected Create to return ILLChoices implementation"
     Assert.AreEqual CHOICESSHEET, Choices.Wksh.Name, "Choice object should target the configured sheet"
     Assert.IsFalse Choices.HasTranslation, "Fixture does not configure translations by default"
 End Sub
 
 '@TestMethod("LLChoices")
-Private Sub TestAllChoicesReturnsDistinctNames()
+Public Sub TestAllChoicesReturnsDistinctNames()
+    CustomTestSetTitles Assert, "LLChoices", "TestAllChoicesReturnsDistinctNames"
     On Error GoTo Fail
 
     Dim listValues As BetterArray
@@ -164,11 +174,12 @@ Private Sub TestAllChoicesReturnsDistinctNames()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestAllChoicesReturnsDistinctNames"
+    CustomTestLogFailure Assert, "TestAllChoicesReturnsDistinctNames", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLChoices")
-Private Sub TestCategoriesHonoursShortLabels()
+Public Sub TestCategoriesHonoursShortLabels()
+    CustomTestSetTitles Assert, "LLChoices", "TestCategoriesHonoursShortLabels"
     On Error GoTo Fail
 
     Dim shortCategories As BetterArray
@@ -189,11 +200,12 @@ Private Sub TestCategoriesHonoursShortLabels()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestCategoriesHonoursShortLabels"
+    CustomTestLogFailure Assert, "TestCategoriesHonoursShortLabels", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLChoices")
-Private Sub TestSortReordersChoicesByOrdering()
+Public Sub TestSortReordersChoicesByOrdering()
+    CustomTestSetTitles Assert, "LLChoices", "TestSortReordersChoicesByOrdering"
     On Error GoTo Fail
 
     Dim beforeSort As BetterArray
@@ -220,11 +232,12 @@ Private Sub TestSortReordersChoicesByOrdering()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestSortReordersChoicesByOrdering"
+    CustomTestLogFailure Assert, "TestSortReordersChoicesByOrdering", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLChoices")
-Private Sub TestConcatenateCategoriesUsesDefaultSeparator()
+Public Sub TestConcatenateCategoriesUsesDefaultSeparator()
+    CustomTestSetTitles Assert, "LLChoices", "TestConcatenateCategoriesUsesDefaultSeparator"
     On Error GoTo Fail
 
     Dim resultText As String
@@ -237,11 +250,12 @@ Private Sub TestConcatenateCategoriesUsesDefaultSeparator()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestConcatenateCategoriesUsesDefaultSeparator"
+    CustomTestLogFailure Assert, "TestConcatenateCategoriesUsesDefaultSeparator", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLChoices")
-Private Sub TestExportCreatesHiddenCopy()
+Public Sub TestExportCreatesHiddenCopy()
+    CustomTestSetTitles Assert, "LLChoices", "TestExportCreatesHiddenCopy"
     On Error GoTo Fail
 
     Dim exportBook As Workbook
@@ -272,11 +286,12 @@ Private Sub TestExportCreatesHiddenCopy()
 
 Fail:
     If Not exportBook Is Nothing Then DeleteWorkbook exportBook
-    FailUnexpectedError Assert, "TestExportCreatesHiddenCopy"
+    CustomTestLogFailure Assert, "TestExportCreatesHiddenCopy", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLChoices")
-Private Sub TestAddChoiceAddsNewEntries()
+Public Sub TestAddChoiceAddsNewEntries()
+    CustomTestSetTitles Assert, "LLChoices", "TestAddChoiceAddsNewEntries"
     On Error GoTo Fail
 
     Dim longLabels As BetterArray
@@ -296,11 +311,12 @@ Private Sub TestAddChoiceAddsNewEntries()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestAddChoiceAddsNewEntries"
+    CustomTestLogFailure Assert, "TestAddChoiceAddsNewEntries", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLChoices")
-Private Sub TestRemoveChoiceDeletesRequestedList()
+Public Sub TestRemoveChoiceDeletesRequestedList()
+    CustomTestSetTitles Assert, "LLChoices", "TestRemoveChoiceDeletesRequestedList"
     On Error GoTo Fail
 
     Assert.IsTrue Choices.ChoiceExists("list_multiple"), "Precondition failed: fixture should contain list_multiple"
@@ -309,11 +325,12 @@ Private Sub TestRemoveChoiceDeletesRequestedList()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestRemoveChoiceDeletesRequestedList"
+    CustomTestLogFailure Assert, "TestRemoveChoiceDeletesRequestedList", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLChoices")
-Private Sub TestImportReplacesChoices()
+Public Sub TestImportReplacesChoices()
+    CustomTestSetTitles Assert, "LLChoices", "TestImportReplacesChoices"
     On Error GoTo Fail
 
     Dim importSheet As Worksheet
@@ -333,11 +350,12 @@ Private Sub TestImportReplacesChoices()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestImportReplacesChoices"
+    CustomTestLogFailure Assert, "TestImportReplacesChoices", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLChoices")
-Private Sub TestTranslateUpdatesLabels()
+Public Sub TestTranslateUpdatesLabels()
+    CustomTestSetTitles Assert, "LLChoices", "TestTranslateUpdatesLabels"
     On Error GoTo Fail
 
     Dim translator As ITranslationObject
@@ -352,5 +370,5 @@ Private Sub TestTranslateUpdatesLabels()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestTranslateUpdatesLabels"
+    CustomTestLogFailure Assert, "TestTranslateUpdatesLabels", Err.Number, Err.Description
 End Sub

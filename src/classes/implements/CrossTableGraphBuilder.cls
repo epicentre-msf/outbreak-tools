@@ -37,7 +37,7 @@ Public Property Get Self() As ICrossTableGraphBuilder
     Set Self = Me
 End Property
 
-Friend Sub Initialise(Optional ByVal seriesBuilder As IGraphSeriesBuilder = Nothing)
+Public Sub Initialise(Optional ByVal seriesBuilder As IGraphSeriesBuilder = Nothing)
     If seriesBuilder Is Nothing Then
         Set this.seriesBuilder = GraphSeriesBuilder.Create
     Else

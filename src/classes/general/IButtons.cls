@@ -33,6 +33,23 @@ End Enum
 '===============================================================================
 
 
+'@jump:OutputRange
+'@sub-title Anchor range used for placement
+'@details Exposes the configured anchor so tests can inspect placement.
+'@return Range top-left anchor cell.
+Public Property Get OutputRange() As Range: End Property
+
+'@sub-title Update the anchor range used for placement
+'@param rng Range providing the top-left anchor cell.
+Public Property Set OutputRange(ByVal rng As Range): End Property
+
+'@jump:Name
+'@prop-title Name of the Button class instance
+Public Property Get Name() As String : End Property
+
+'@jump:ShapeScope
+Public Property Get ShapeScope() As Byte: End Property
+
 '@jump:Add
 '@sub-title Create a button shape at the configured location
 '@details Implementations should create the shape only when absent and optionally wire a macro command and label.

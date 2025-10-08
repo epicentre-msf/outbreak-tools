@@ -56,13 +56,13 @@ Public Function Value(ByVal columnName As String, _
                       Optional ByVal rowOffset As Long = 0) As String
 End Function
 
-Public Function EndRow(ByVal columnNames As Variant) As Long
+Public Function EndRow( columnNames As Variant) As Long
 End Function
 
-Public Function HasNext(ByVal columnNames As Variant) As Boolean
+Public Function HasNext(columnNames As Variant) As Boolean
 End Function
 
-Public Function NextStartRow(ByVal columnNames As Variant) As Long
+Public Function NextStartRow(columnNames As Variant) As Long
 End Function
 
 Public Function VariableNames(ByVal firstRow As Long, _

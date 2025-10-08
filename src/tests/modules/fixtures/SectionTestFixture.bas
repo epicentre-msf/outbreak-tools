@@ -45,7 +45,7 @@ Public Function VerticalSectionRows() As Variant
 End Function
 
 Public Function CreateSectionContext(ByVal baseName As String, _
-                                     ByVal rows As Variant, _
+                                      rows As Variant, _
                                      ByVal startRow As Long, _
                                      ByVal design As ILLFormat) As ILLSectionContext
 

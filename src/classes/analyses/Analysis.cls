@@ -249,7 +249,7 @@ Public Sub Import(ByVal fromWksh As Worksheet)
 
     LogInfo "Import completed", checkingNote
 
-    targetSh.Cells(2, 3).Value = "analysis imported - " & Format(Now(), "yyyy-mm-dd Hh:Nn")
+    targetSh.Cells(2, 3).Value = "analysis imported - " & Format(Now(), "yyyy-mm-dd hh:nn:ss")
     targetSh.Cells(2, 3).Font.Color = RGB(176, 196, 222)
 
     'Sort the analysis worksheet

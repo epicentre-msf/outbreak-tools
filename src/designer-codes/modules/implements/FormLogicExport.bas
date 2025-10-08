@@ -9,7 +9,7 @@ Option Explicit
 Private Const PASSWORDSHEET As String = "__pass"
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const TRADSHEET As String = "Translations"
-Private pass As ILLPasswords
+Private pass As IPasswords
 Private tradform As ITranslationObject   'Translation of forms
 Private tradmess As ITranslationObject 'Translation of messasges
 

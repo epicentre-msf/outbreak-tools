@@ -43,7 +43,7 @@ End Property
 Public Property Get ExportObject() As ILLExport
 End Property
 
-Public Property Get Password() As ILLPasswords
+Public Property Get Password() As IPasswords
 End Property
 
 Public Property Get GeoObject() As ILLGeo

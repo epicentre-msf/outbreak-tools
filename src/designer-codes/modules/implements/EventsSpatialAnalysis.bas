@@ -13,7 +13,7 @@ Private Const PASSSHEET As String = "__pass"
 Private Const LLSHEET As String = "LinelistTranslation"
 Private Const TRADSHEET As String = "Translations"
 
-Private pass As ILLPasswords
+Private pass As IPasswords
 Private lltrads As ILLTranslations
 
 'Initialize trads and passwords

@@ -650,7 +650,7 @@ Private Sub Prepare()
     codesList.Push "BetterArray", "DataSheet", "IDataSheet", "LLExport", _
                     "ILLExport", "LLChoices", "ILLChoices", _
                     "LLdictionary", "ILLdictionary", "LLGeo", _
-                    "ILLGeo", "LLPasswords", "ILLPasswords", _
+                    "ILLGeo", "Passwords", "IPasswords", _
                     "LLSheets", "ILLSheets", "LLTranslations", _
                      "ILLTranslations", "OSFiles", "IOSFiles", _
                     "TranslationObject", "ITranslationObject", "LLVariables", _
@@ -710,7 +710,7 @@ Private Sub PrepareAdmin()
     Dim sh As Worksheet
     Dim trads As ITranslationObject
     Dim design As ILLFormat
-    Dim pass As ILLPasswords
+    Dim pass As IPasswords
     Dim lData As LinelistSpecs
     Dim but As IButtons
     Dim rng As Range
@@ -776,7 +776,7 @@ Private Sub SaveLL()
     Dim outPath As String
     Dim lData As ILinelistSpecs
     Dim mainobj As IMain
-    Dim passobj As ILLPasswords
+    Dim passobj As IPasswords
     Dim msgTrads As ITranslationObject
 
     Set lData = LinelistData()

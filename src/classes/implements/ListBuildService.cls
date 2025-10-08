@@ -42,7 +42,7 @@ Public Property Get Self() As ListBuildService
 End Property
 
 'Assign the factory after validation.
-Friend Property Set Factory(ByVal factory As ListBuilderFactory)
+Public Property Set Factory(ByVal factory As ListBuilderFactory)
     If factory Is Nothing Then
         ThrowError CLng(ProjectError.InvalidArgument), _
                   "factory cannot be Nothing"

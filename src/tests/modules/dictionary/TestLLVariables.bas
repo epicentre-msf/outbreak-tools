@@ -100,6 +100,7 @@ Private Sub TestIndexRaisesWhenColumnMissing()
 
     On Error GoTo ExpectError
         Dim idx As Long
+        '@Ignore VariableNotUsed, AssignmentNotUsed
         idx = Variables.Index("choi_v1")
         Assert.Fail "Index should raise when column index column is missing"
         Exit Sub
@@ -121,9 +122,6 @@ End Sub
 '@TestMethod("LLVariables")
 Private Sub TestSetValueRaisesWhenColumnMissingAfterCache()
     On Error GoTo ExpectError
-
-    Dim tempValue As String
-    tempValue = Variables.Value("Dev Comments", "choi_v1")
 
     Dictionary.RemoveColumn "Dev Comments"
     Variables.SetValue "choi_v1", "Dev Comments", "should fail"

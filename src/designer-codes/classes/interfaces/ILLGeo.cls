@@ -40,7 +40,7 @@ End Enum
 ' a String(for admin4))
 Public Property Get GeoLevel(ByVal adminLevel As Byte, _
                              Optional ByVal geoType As Byte = GeoScopeAdmin, _
-                             Optional ByVal adminNames As Variant = vbNullString _
+                             Optional  adminNames As Variant = vbNullString _
                              ) As BetterArray
 End Property
 
@@ -72,7 +72,7 @@ Public Sub UpdateHistoric(ByVal newValue As String, _
                           Optional ByVal scope As Byte = 0)
 End Sub
 'Update new Geobase
-Public Sub Update(ByVal pass As ILLPasswords): End Sub
+Public Sub Update(ByVal pass As IPasswords): End Sub
 'Update dictionary with new geobase
 Public Sub UpdateDict(ByVal dict As ILLdictionary): End Sub
 'Update show hide tables

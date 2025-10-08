@@ -1,6 +1,8 @@
 Attribute VB_Name = "TestDataSheet"
 Option Explicit
-Option Private Module
+
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulNames
 '@TestModule
@@ -12,8 +14,7 @@ Private Const DICTOUTPUTSHEET As String = "DataOut"
 Private fixtureRowCount As Long
 Private fixtureColumnCount As Long
 
-Private Assert As Object
-Private Fakes As Object
+Private Assert As ICustomTest
 Private dataObject As IDataSheet
 Private dataWorksheet As Worksheet
 
@@ -30,10 +31,10 @@ End Sub
 '===============================================================================
 
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
     BusyApp
-    Set Assert = CreateObject("Rubberduck.AssertClass")
-    Set Fakes = CreateObject("Rubberduck.FakesProvider")
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestDataSheet"
     ResetDataSheet
     EnsureWorksheet DICTOUTPUTSHEET
     fixtureRowCount = DictionaryFixtureRowCount()
@@ -41,15 +42,17 @@ Private Sub ModuleInitialize()
 End Sub
 
 '@ModuleCleanup
-Private Sub ModuleCleanup()
+Public Sub ModuleCleanup()
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
     Set Assert = Nothing
-    Set Fakes = Nothing
     DeleteWorksheet DICTOUTPUTSHEET
     DeleteWorksheet DICTIONARYFIXTURESHEET
 End Sub
 
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
     BusyApp
     ResetDataSheet
     On Error Resume Next
@@ -57,11 +60,17 @@ Private Sub TestInitialize()
     On Error GoTo 0
 End Sub
 
+'@TestCleanUp
+Public Sub TestCleanUp()
+    Assert.Flush
+End Sub
+
 '@section Tests
 '===============================================================================
 
 '@TestMethod("Datasheet")
-Private Sub TestObjectInit()
+Public Sub TestObjectInit()
+    CustomTestSetTitles Assert, "Datasheet", "TestObjectInit"
     Assert.IsTrue (dataObject.DataStartColumn = 1), "Start column changed"
     Assert.IsTrue (dataObject.DataStartRow = 1), "Start line changed"
     Assert.IsTrue (dataObject.Wksh.Name = DICTIONARYFIXTURESHEET), "Dictionary name changed"
@@ -71,7 +80,8 @@ Private Sub TestObjectInit()
 End Sub
 
 '@TestMethod("Datasheet")
-Private Sub TestDataRange()
+Public Sub TestDataRange()
+    CustomTestSetTitles Assert, "Datasheet", "TestDataRange"
     On Error GoTo Fail
 
     Dim values As BetterArray
@@ -107,11 +117,12 @@ Private Sub TestDataRange()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestDataRange"
+    CustomTestLogFailure Assert, "TestDataRange", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("DataSheet")
-Private Sub TestColumnExist()
+Public Sub TestColumnExist()
+    CustomTestSetTitles Assert, "DataSheet", "TestColumnExist"
     Assert.IsFalse dataObject.ColumnExists("&222!\"), "Weird column Name found"
     Assert.IsFalse dataObject.ColumnExists(""), "Empty column name found"
     Assert.IsTrue dataObject.ColumnExists("Variable Name"), "Variable Name not found"
@@ -120,18 +131,20 @@ Private Sub TestColumnExist()
 End Sub
 
 '@TestMethod("DataSheet")
-Private Sub TestAddFormat()
+Public Sub TestAddFormat()
+    CustomTestSetTitles Assert, "DataSheet", "TestAddFormat"
     On Error GoTo Fail
 
     dataObject.AddFormatsColumns False, "formatting condition", "formatting values"
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestAddFormat"
+    CustomTestLogFailure Assert, "TestAddFormat", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("DataSheet")
-Private Sub TestSimpleFilter()
+Public Sub TestSimpleFilter()
+    CustomTestSetTitles Assert, "DataSheet", "TestSimpleFilter"
     On Error GoTo Fail
 
     Dim values As BetterArray
@@ -155,11 +168,12 @@ Private Sub TestSimpleFilter()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestSimpleFilter"
+    CustomTestLogFailure Assert, "TestSimpleFilter", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("DataSheet")
-Private Sub TestMultipleFilters()
+Public Sub TestMultipleFilters()
+    CustomTestSetTitles Assert, "DataSheet", "TestMultipleFilters"
     On Error GoTo Fail
 
     Dim returnedValues As BetterArray
@@ -194,11 +208,12 @@ Private Sub TestMultipleFilters()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestMultipleFilters"
+    CustomTestLogFailure Assert, "TestMultipleFilters", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("DataSheet")
-Private Sub TestExport()
+Public Sub TestExport()
+    CustomTestSetTitles Assert, "DataSheet", "TestExport"
     On Error GoTo Fail
 
     Dim exportBook As Workbook
@@ -222,11 +237,12 @@ Private Sub TestExport()
 
 Fail:
     If Not exportBook Is Nothing Then DeleteWorkbook exportBook
-    FailUnexpectedError Assert, "TestExport"
+    CustomTestLogFailure Assert, "TestExport", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("DataSheet")
-Private Sub TestImport()
+Public Sub TestImport()
+    CustomTestSetTitles Assert, "DataSheet", "TestImport"
     On Error GoTo Fail
 
     Dim outputSheet As Worksheet
@@ -256,5 +272,5 @@ Private Sub TestImport()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestImport"
+    CustomTestLogFailure Assert, "TestImport", Err.Number, Err.Description
 End Sub

@@ -1,8 +1,10 @@
 Attribute VB_Name = "ImportModuleAndClasses"
+Attribute VB_Description = "Import modules and classes into the test worksheet"
 Option Explicit
 
+'@ModuleDescription("Import modules and classes into the test worksheet")
 '@Folder("Dev")
-'@IgnoreModule UnrecognizedAnnotation,
+'@IgnoreModule UnrecognizedAnnotation
 
 'Working with import/export of the code in the designer
 'Scope can take 2 values :
@@ -16,6 +18,7 @@ Option Explicit
 'outDir is the output directory
 'moduleName is the name of the module in the output directory
 Private Const DEVSHEETNAME As String = "Dev"
+Private Const CODESHEET   As String = "Codes"
 
 Private Const MODULECODESRANGE As String = "ModulesCodes"
 Private Const CLASSCODESRANGE As String = "ClassesImplementation"
@@ -102,7 +105,7 @@ End Sub
 '1 for modules
 '2 for classes
 
-'@Description("Callback for btnResize onAction")
+
 '@EntryPoint
 Public Sub clickRibbonFolder(ByRef Control As IRibbonControl)
     Dim io As IOSFiles
@@ -140,8 +143,7 @@ Private Sub SaveOneFolder(ByVal listName As String, outDir As String, scope As B
     Dim counter As Long
     Dim colRng As Range
 
-
-    Set sh = ThisWorkbook.Worksheets(DEVSHEETNAME)
+    Set sh = ThisWorkbook.Worksheets(CODESHEET)
 
     On Error Resume Next
     Set colRng = sh.ListObjects(listName).ListColumns(1).DataBodyRange
@@ -156,7 +158,7 @@ Private Sub SaveOneFolder(ByVal listName As String, outDir As String, scope As B
 
             TransferCode codeName, outDir, scope:=scope, outputAs:=outputAs
 
-            If interFace And (Cstr(colRng.Cells(counter, 2).Value) = "yes") Then 
+            If interFace And (CStr(colRng.Cells(counter, 2).Value) = "yes") Then
                 codeNameInterFace = "I" & codeName
                 TransferCode codeNameInterFace, outDir, scope:=scope, outputAs:=outputAs
             End If
@@ -164,7 +166,7 @@ Private Sub SaveOneFolder(ByVal listName As String, outDir As String, scope As B
     Next
 End Sub
 
-'@Description("Callback for btnVBE onAction")
+
 '@EntryPoint
 Public Sub clickRibbonVBE(ByRef Control As IRibbonControl)
     Application.VBE.MainWindow.Visible = True
@@ -180,7 +182,6 @@ End Sub
 '2- for classes
 Private Sub SaveCodes(Lo As ListObject, Optional ByVal outputAs As Byte = ImportIntoFile)
 
-    Dim sh As Worksheet
     Dim outDir As String
     Dim codeScope As String
     Dim codeFolder As String
@@ -188,12 +189,11 @@ Private Sub SaveCodes(Lo As ListObject, Optional ByVal outputAs As Byte = Import
     Dim hasInterface As Boolean
     Dim importScope As Byte
 
-    Set sh = ThisWorkbook.Worksheets(DEVSHEETNAME)
     
     ResolveOutputDirs
     
-    codeScope = Cstr(Lo.Range.Cells(0, 1).Value)
-    codeFolder = Cstr(Lo.Range.Cells(-1, 1).Value)
+    codeScope = CStr(Lo.Range.Cells(0, 1).Value)
+    codeFolder = CStr(Lo.Range.Cells(-1, 1).Value)
     listName = Lo.Name
 
     Select Case codeScope
@@ -214,12 +214,15 @@ Private Sub SaveCodes(Lo As ListObject, Optional ByVal outputAs As Byte = Import
         importScope = classImport
 
     Case "general classes"
-        outDir = ClassFolders 
+        outDir = ClassFolders
         importScope = classImport
-        hasInterFace = True
+        hasInterface = True
 
+    Case Else
+        Exit Sub
     End Select
 
+    '@Ignore AssignmentNotUsed
     outDir = outDir & Application.PathSeparator & codeFolder
 
     
@@ -231,42 +234,52 @@ Private Sub SaveCodes(Lo As ListObject, Optional ByVal outputAs As Byte = Import
     
 End Sub
 
-'@Description("Import Codes into the designer")
 '@EntryPoint
 Public Sub clickRibbonImport(ByRef Control As IRibbonControl)
-    Dim sh As Worksheet
+    Dim codesh As Worksheet
+    Dim devSh As Worksheet
     Dim Lo As ListObject
 
-    Set sh = ThisWorkbook.Worksheets(DEVSHEETNAME)
+    Set codesh = ThisWorkbook.Worksheets(CODESHEET)
+    Set devSh = ThisWorkbook.Worksheets(DEVSHEETNAME)
 
-    If Not sh.ProtectContents Then
+    If Not codesh.ProtectContents Then
         If MsgBox("Are you sure you want to import the codes ?", vbYesNo) = vbYes Then
 
-            For Each Lo In sh.ListObjects
+            For Each Lo In codesh.ListObjects
                 SaveCodes Lo
             Next
 
-            sh.Range("Informations").Value = "Finished Imports At: " & Format(Now(), "yyyy-mm-dd hh:mm:ss")
+            MsgBox "Done!"
+            devSh.Range("Informations").Value = "Finished Imports At: " & format(Now(), "yyyy-mm-dd hh:mm:ss")
         End If
     Else
-        sh.Range("Informations").Value = "Unlock the worksheet before proceeding"
+        devSh.Range("Informations").Value = "Unlock the worksheet before proceeding"
     End If
 End Sub
 
-'@Description("Export codes into the designer")
 '@EntryPoint
 Public Sub clickRibbonExport(ByRef Control As IRibbonControl)
-    Dim sh As Worksheet
-    Set sh = ThisWorkbook.Worksheets(DEVSHEETNAME)
+    Dim codesh As Worksheet
+    Dim devSh As Worksheet
+    Dim Lo As ListObject
 
-    If Not sh.ProtectContents Then
+
+    Set codesh = ThisWorkbook.Worksheets(CODESHEET)
+    Set devSh = ThisWorkbook.Worksheets(DEVSHEETNAME)
+
+    If Not codesh.ProtectContents Then
         If MsgBox("Are you sure to export the codes?", vbYesNo) = vbYes Then
-            SaveCodes outputAs:=ExportToPath
+            
+            For Each Lo In codesh.ListObjects
+                SaveCodes Lo, outputAs:=ExportToPath
+            Next
+
             MsgBox "Done!"
-            sh.Range("Informations").Value = "Finished Exports"
+            devSh.Range("Informations").Value = "Finished Exports"
         End If
     Else
-        sh.Range("Informations").Value = "Unlock the worksheet before proceeding"
+        devSh.Range("Informations").Value = "Unlock the worksheet before proceeding"
     End If
 End Sub
 
@@ -283,7 +296,7 @@ Private Sub ReportSave(Optional ByVal path As String = vbNullString, Optional By
 
     saveName = Switch(outputAs = 1, "Imported ", outputAs = 2, "Exported ", True, "Saved: ")
     folderName = Switch(scope = 1, "Modules using path: " & path, scope = 2, "Classes using path: " & path, True, "<folder>:")
-    phraseToWrite = Format(Now, "yyyy-mm-dd hh:mm:ss") & " - " & saveName & folderName
+    phraseToWrite = format(Now, "yyyy-mm-dd hh:mm:ss") & " - " & saveName & folderName
 
     Set cellRng = sh.Range("Informations").Offset(9)
     Do While Not IsEmpty(cellRng)

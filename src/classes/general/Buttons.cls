@@ -28,7 +28,7 @@ Implements IButtons
 Private Type TButton
     rng As Range
     shapeName As String
-    scope As ButtonScope
+    scope As Byte
     hasChecks As Boolean
 End Type
 
@@ -67,7 +67,7 @@ Private internalChecks As IChecking
 '@return IButtons fully initialised helper.
 '@export
 Public Function Create(ByVal outrng As Range, ByVal codeName As String, _
-                       ByVal scope As ButtonScope) As IButtons
+                       ByVal scope As Byte) As IButtons
 
     If outrng Is Nothing Then
         LogCheck "Missing output range while creating button", checkingError
@@ -95,6 +95,12 @@ Public Property Get Self() As IButtons
 End Property
 
 '@label:OutputRange
+'@sub-title Retrieve the anchor range used for placement
+'@return Range providing the top-left anchor cell.
+Public Property Get OutputRange() As Range
+    Set OutputRange = this.rng
+End Property
+
 '@sub-title Update the anchor range used for placement
 '@param rng Range providing the top-left anchor cell.
 Public Property Set OutputRange(ByVal rng As Range)
@@ -119,7 +125,7 @@ End Property
 '@jump:ShapeScope
 '@sub-title Retrieve the formatting scope applied to the button
 '@return ButtonScope value describing the button flavour.
-Public Property Get ShapeScope() As ButtonScope
+Public Property Get ShapeScope() As Byte
     If this.scope = 0 Then
         LogCheck "Shape scope not initialised; defaulting to small", checkingWarning
         this.scope = ButtonScopeSmall
@@ -129,7 +135,7 @@ End Property
 
 '@sub-title Store the formatting scope applied to the button
 '@param scope ButtonScope describing the button flavour.
-Public Property Let ShapeScope(ByVal scope As ButtonScope)
+Public Property Let ShapeScope(ByVal scope As Byte)
     Select Case scope
         Case ButtonScopeLarge, ButtonScopeSmall, ButtonScopeGeo
             this.scope = scope
@@ -196,7 +202,7 @@ Public Sub Add(Optional ByVal actionCommand As String = vbNullString, _
     Dim newShape As Shape
 
     If ShapeExists Then
-        LogCheck "Button " & Name & " already exists; skipping creation", checkingNote
+        LogCheck "Button " & Name & " already exists; skipping creation", checkingWarning
         Exit Sub
     End If
 
@@ -219,7 +225,6 @@ Public Sub Add(Optional ByVal actionCommand As String = vbNullString, _
         .TextFrame2.TextRange.Characters.Text = labelText
     End With
 
-    LogCheck "Button " & shapeName & " created at " & anchor.Address(False, False), checkingInfo
 End Sub
 
 '@label:Format
@@ -253,8 +258,7 @@ Public Sub Format(ByVal design As ILLFormat)
                        "Unsupported button scope: " & CStr(ShapeScope)
     End Select
 
-design.ApplyFormat shp, scope:=formatToken
-LogCheck "Applied design to button " & Name & " using scope token " & CStr(formatToken), checkingNote
+    design.ApplyFormat shp, scope:=formatToken
 End Sub
 
 '@section Checkings
@@ -328,7 +332,7 @@ End Function
 '@sub-title Resolve button dimensions from the scope definition
 '@param scope ButtonScope describing the button flavour.
 '@return TDimensions with width and height in points.
-Private Function ResolveDimensions(ByVal scope As ButtonScope) As TDimensions
+Private Function ResolveDimensions(ByVal scope As Byte) As TDimensions
     Dim dims As TDimensions
 
     Select Case scope
@@ -379,9 +383,21 @@ Private Sub IButtons_Add(Optional ByVal actionCommand As String = vbNullString, 
     Add actionCommand:=actionCommand, shapeLabel:=shapeLabel
 End Sub
 
-Private Sub IButtons_Format(ByVal design As ILLFormat)
+Private Sub IButtons_Format(design As ILLFormat)
     Format design
 End Sub
+
+Private Property Get IButtons_OutputRange() As Range
+    Set IButtons_OutputRange = OutputRange
+End Property
+
+Private Property Get IButtons_Name() As String
+    IButtons_Name = Name()
+End Property
+
+Private Property Set IButtons_OutputRange(ByVal rng As Range)
+    Set OutputRange = rng
+End Property
 
 Private Property Get IButtons_HasCheckings() As Boolean
     IButtons_HasCheckings = HasCheckings
@@ -389,4 +405,8 @@ End Property
 
 Private Property Get IButtons_CheckingValues() As Object
     Set IButtons_CheckingValues = CheckingValues
+End Property
+
+Private Property Get IButtons_ShapeScope() As Byte
+    IButtons_ShapeScope = ShapeScope()
 End Property

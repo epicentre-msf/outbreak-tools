@@ -51,21 +51,21 @@ Public Property Get Self() As IListBuilderCoordinator
 End Property
 
 'Internal helpers used by the factory to initialise state.
-Friend Property Set LayoutStrategy(ByVal layout As IListLayoutStrategy)
+Public Property Set LayoutStrategy(ByVal layout As IListLayoutStrategy)
     ValidateLayout layout
     Set this.layout = layout
 End Property
 
-Friend Property Get LayoutStrategy() As IListLayoutStrategy
+Public Property Get LayoutStrategy() As IListLayoutStrategy
     Set LayoutStrategy = this.layout
 End Property
 
-Friend Property Set SectionBuilder(ByVal sectionBuilder As IListSectionBuilder)
+Public Property Set SectionBuilder(ByVal sectionBuilder As IListSectionBuilder)
     ValidateSectionBuilder sectionBuilder
     Set this.sectionBuilder = sectionBuilder
 End Property
 
-Friend Property Set WorksheetPreparer(ByVal preparer As IListWorksheetPreparer)
+Public Property Set WorksheetPreparer(ByVal preparer As IListWorksheetPreparer)
     ValidatePreparer preparer
     Set this.preparer = preparer
 End Property

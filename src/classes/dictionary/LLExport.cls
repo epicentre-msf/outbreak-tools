@@ -7,11 +7,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = "Unified export specification handler"
+Attribute VB_Description = "Manage linelist and setup exports"
 
 '@PredeclaredId
-'@Folder("Exports")
-'@ModuleDescription("Unified linelist export specification handler")
+'@Folder("General")
+'@ModuleDescription("Manage linelist and setup exports")
 
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
 
@@ -80,13 +80,13 @@ End Function
 
 '@label:SetInternalData
 '@param exportData Datasheet wrapper over the specification table.
-Friend Property Set InternalData(ByVal exportData As IDataSheet)
+Public Property Set InternalData(ByVal exportData As IDataSheet)
     Set this.expData = exportData
 End Property
 
 '@label:SetInternalWorksheet
 '@param exportSheet Worksheet that stores the export specification table.
-Friend Property Set InternalWorksheet(ByVal exportSheet As Worksheet)
+Public Property Set InternalWorksheet(ByVal exportSheet As Worksheet)
     Set this.exportSheet = exportSheet
 End Property
 
@@ -243,7 +243,7 @@ End Sub
 '@throws ProjectError.ObjectNotInitialized when required collaborators are missing.
 Public Function ExportFileName(ByVal exportNumber As Long, _
                                ByVal dict As ILLdictionary, _
-                               ByVal pass As ILLPasswords, _
+                               ByVal pass As IPasswords, _
                                Optional ByVal exportAll As Boolean = False) As String
 
     Dim workbook As Workbook
@@ -368,7 +368,7 @@ End Sub
 
 '@label:ValidatePasswords
 '@prop-title Validate password provider dependency
-Private Sub ValidatePasswords(ByVal pass As ILLPasswords)
+Private Sub ValidatePasswords(ByVal pass As IPasswords)
     If pass Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Passwords object is required"
     End If
@@ -624,14 +624,15 @@ End Function
 '@prop-title Replace characters unsupported in filenames
 Private Function ReplaceInvalidCharacters(ByVal value As String) As String
     Dim invalidChar As Variant
+    Dim newValue As String
 
     EnsureSanitizeList
 
     For Each invalidChar In this.sanitizeList
-        value = Replace(value, CStr(invalidChar), "_")
+        newValue = Replace(value, CStr(invalidChar), "_")
     Next invalidChar
 
-    ReplaceInvalidCharacters = value
+    ReplaceInvalidCharacters = newValue
 End Function
 
 '@label:EnsureSanitizeList
@@ -645,7 +646,7 @@ End Sub
 
 '@label:BuildVersionSuffix
 '@prop-title Compose version/public key suffix for filenames
-Private Function BuildVersionSuffix(ByVal pass As ILLPasswords) As String
+Private Function BuildVersionSuffix(ByVal pass As IPasswords) As String
     Dim versionValue As String
     Dim publicKeyValue As String
 
@@ -669,7 +670,7 @@ End Function
 
 '@label:BuildExportAllName
 '@prop-title Compose filename when exporting all outputs
-Private Function BuildExportAllName(ByVal workbook As Workbook, ByVal pass As ILLPasswords) As String
+Private Function BuildExportAllName(ByVal workbook As Workbook, ByVal pass As IPasswords) As String
     Dim baseName As String
 
     baseName = SanitizeChunk(WorkbookBaseName(workbook)) & "_export_all"
@@ -703,7 +704,7 @@ End Sub
 '===============================================================================
 '@label:ThrowError
 '@prop-title Raise a ProjectError coded runtime error
-Private Sub ThrowError(ByVal errNumb As ProjectError, ByVal errorMessage As String)
+Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, errorMessage
 End Sub
 
@@ -754,7 +755,7 @@ End Sub
 
 Private Function ILLExport_ExportFileName(ByVal exportNumber As Long, _
                                           ByVal dict As ILLdictionary, _
-                                          ByVal pass As ILLPasswords, _
+                                          ByVal pass As IPasswords, _
                                           Optional ByVal exportAll As Boolean = False) As String
     ILLExport_ExportFileName = ExportFileName(exportNumber, dict, pass, exportAll)
 End Function

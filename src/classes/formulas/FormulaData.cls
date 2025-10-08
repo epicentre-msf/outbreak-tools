@@ -257,7 +257,7 @@ End Function
 '@sub-title Raise a consistent error for this class
 '@param errNumb ProjectError describing the failure.
 '@param errorMessage String human-readable explanation.
-Private Sub ThrowError(ByVal errNumb As ProjectError, ByVal errorMessage As String)
+Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, "Error: " & errorMessage
 End Sub
 

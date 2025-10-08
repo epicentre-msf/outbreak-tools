@@ -47,7 +47,7 @@ Public Property Get Self() As IListBuildContext
 End Property
 
 'Initialise the context; helper used by the factory.
-Friend Sub Initialise(ByVal worksheetName As String, _
+Public Sub Initialise(ByVal worksheetName As String, _
                       ByVal tableTypeCode As Byte, _
                       ByVal linelist As Object)
 
