@@ -53,6 +53,7 @@ Private Const TITLE_FILTER_DEFAULT As String = "All Titles"
 Private Const EVENT_MARKER_NAME As String = "CheckingOutputEventInstalled"
 Private Const DEFAULT_SEPARATOR As String = "--"
 Private Const ROW_MARKER_NAME As String = "CheckingOutputStartingRow"
+Private Const END_TAG As String = "__end__checkings___"
 
 '@section Factory
 '===============================================================================
@@ -638,133 +639,125 @@ Private Sub EnsureWorksheetChangeHandler()
 
     dq = """"
 
-    handlerCode = "Private Function StripIcons(ByVal txt As String) As String" & vbCrLf
-    handlerCode = handlerCode & "    Dim stripped As String" & vbCrLf
-    handlerCode = handlerCode & "    'Remove severity glyphs so comparisons remain text based" & vbCrLf
-    handlerCode = handlerCode & "    stripped = Replace(txt, ChrW(10060), """")" & vbCrLf
-    handlerCode = handlerCode & "    stripped = Replace(stripped, ChrW(9888), """")" & vbCrLf
-    handlerCode = handlerCode & "    stripped = Replace(stripped, ChrW(8505), """")" & vbCrLf
-    handlerCode = handlerCode & "    stripped = Replace(stripped, ChrW(9998), """")" & vbCrLf
-    handlerCode = handlerCode & "    stripped = Replace(stripped, ChrW(10004), """")" & vbCrLf
-    handlerCode = handlerCode & "    StripIcons = Trim$(stripped)" & vbCrLf
-    handlerCode = handlerCode & "End Function" & vbCrLf
-    handlerCode = handlerCode & vbCrLf
-    handlerCode = handlerCode & "Private Function ResolveMatchType(ByVal candidate As String) As String" & vbCrLf
-    handlerCode = handlerCode & "    'Normalise the requested status so the filtering block can branch quickly" & vbCrLf
-    handlerCode = handlerCode & "    Select Case UCase$(Trim$(candidate))" & vbCrLf
-    handlerCode = handlerCode & "        Case """", ""ALL""" & vbCrLf
-    handlerCode = handlerCode & "            ResolveMatchType = ""ALL""" & vbCrLf
-    handlerCode = handlerCode & "        Case ""ERROR"", ""ERRORS""" & vbCrLf
-    handlerCode = handlerCode & "            ResolveMatchType = ""ERROR""" & vbCrLf
-    handlerCode = handlerCode & "        Case ""WARNING"", ""WARNINGS""" & vbCrLf
-    handlerCode = handlerCode & "            ResolveMatchType = ""WARNING""" & vbCrLf
-    handlerCode = handlerCode & "        Case ""NOTE"", ""NOTES""" & vbCrLf
-    handlerCode = handlerCode & "            ResolveMatchType = ""NOTE""" & vbCrLf
-    handlerCode = handlerCode & "        Case ""INFO"", ""INFOS""" & vbCrLf
-    handlerCode = handlerCode & "            ResolveMatchType = ""INFO""" & vbCrLf
-    handlerCode = handlerCode & "        Case ""SUCCESS"", ""SUCCESSES""" & vbCrLf
-    handlerCode = handlerCode & "            ResolveMatchType = ""SUCCESS""" & vbCrLf
-    handlerCode = handlerCode & "        Case ""WITHOUT SUCCESS"", ""WITHOUT SUCCESSES""" & vbCrLf
-    handlerCode = handlerCode & "            ResolveMatchType = ""WITHOUT_SUCCESS""" & vbCrLf
-    handlerCode = handlerCode & "        Case Else" & vbCrLf
-    handlerCode = handlerCode & "            ResolveMatchType = ""ALL""" & vbCrLf
-    handlerCode = handlerCode & "    End Select" & vbCrLf
-    handlerCode = handlerCode & "End Function" & vbCrLf
-    handlerCode = handlerCode & vbCrLf
-    handlerCode = handlerCode & "Private Function ShouldFilterByTitle(ByVal candidate As String) As Boolean" & vbCrLf
-    handlerCode = handlerCode & "    Dim trimmedTitle As String" & vbCrLf
-    handlerCode = handlerCode & "    trimmedTitle = Trim$(candidate)" & vbCrLf
-    handlerCode = handlerCode & "    'The default item keeps all titles visible" & vbCrLf
-    handlerCode = handlerCode & "    ShouldFilterByTitle = LenB(trimmedTitle) > 0 And StrComp(trimmedTitle, """ & TITLE_FILTER_DEFAULT & """, vbTextCompare) <> 0" & vbCrLf
-    handlerCode = handlerCode & "End Function" & vbCrLf
-    handlerCode = handlerCode & vbCrLf
-    handlerCode = handlerCode & "Private Sub Worksheet_Change(ByVal Target As Range)" & vbCrLf
-    handlerCode = handlerCode & "    On Error GoTo ExitHandler" & vbCrLf
-    handlerCode = handlerCode & "    Dim statusCell As Range" & vbCrLf
-    handlerCode = handlerCode & "    Dim titleCell As Range" & vbCrLf
-    handlerCode = handlerCode & "    Dim statusChanged As Boolean" & vbCrLf
-    handlerCode = handlerCode & "    Dim titleChanged As Boolean" & vbCrLf
-    handlerCode = handlerCode & "    Set statusCell = Me.Range(" & dq & FILTER_CELL_ADDRESS & dq & ")" & vbCrLf
-    handlerCode = handlerCode & "    Set titleCell = Me.Range(" & dq & TITLE_FILTER_CELL_ADDRESS & dq & ")" & vbCrLf
-    handlerCode = handlerCode & "    statusChanged = Not Intersect(Target, statusCell) Is Nothing" & vbCrLf
-    handlerCode = handlerCode & "    titleChanged = Not Intersect(Target, titleCell) Is Nothing" & vbCrLf
-    handlerCode = handlerCode & "    'Ignore edits triggered outside of the filter cells" & vbCrLf
-    handlerCode = handlerCode & "    If Not statusChanged And Not titleChanged Then GoTo ExitHandler" & vbCrLf
-    handlerCode = handlerCode & "    Application.EnableEvents = False" & vbCrLf
-    handlerCode = handlerCode & "    Application.ScreenUpdating = False" & vbCrLf
-    handlerCode = handlerCode & "    Application.Calculation = xlCalculationManual" & vbCrLf
-    handlerCode = handlerCode & "    If titleChanged And Not statusChanged Then" & vbCrLf
-    handlerCode = handlerCode & "        'Status filters are secondary; show all severities for the chosen title" & vbCrLf
-    handlerCode = handlerCode & "        statusCell.Value = ""All""" & vbCrLf
-    handlerCode = handlerCode & "    End If" & vbCrLf
-    handlerCode = handlerCode & "    'Reapply visibility with the refreshed selections" & vbCrLf
-    handlerCode = handlerCode & "    FilterCheckingOutputRows statusCell.Value, titleCell.Value, statusChanged, titleChanged" & vbCrLf
-    handlerCode = handlerCode & "ExitHandler:" & vbCrLf
-    handlerCode = handlerCode & "    Application.EnableEvents = True" & vbCrLf
-    handlerCode = handlerCode & "    Application.ScreenUpdating = True" & vbCrLf
-    handlerCode = handlerCode & "    Application.Calculation = xlCalculationAutomatic" & vbCrLf
-    handlerCode = handlerCode & "End Sub" & vbCrLf
-    handlerCode = handlerCode & vbCrLf
-    handlerCode = handlerCode & "Private Sub FilterCheckingOutputRows(ByVal statusValue As String, _" & vbCrLf
-    handlerCode = handlerCode & "                                    ByVal titleValue As String, _" & vbCrLf
-    handlerCode = handlerCode & "                                    ByVal statusChanged As Boolean, _" & vbCrLf
-    handlerCode = handlerCode & "                                    ByVal titleChanged As Boolean)" & vbCrLf
-    handlerCode = handlerCode & "    Dim effectiveStatus As String" & vbCrLf
-    handlerCode = handlerCode & "    Dim matchType As String" & vbCrLf
-    handlerCode = handlerCode & "    Dim applyTitleFilter As Boolean" & vbCrLf
-    handlerCode = handlerCode & "    Dim lastRow As Long" & vbCrLf
-    handlerCode = handlerCode & "    Dim rowIndex As Long" & vbCrLf
-    handlerCode = handlerCode & "    Dim rowType As String" & vbCrLf
-    handlerCode = handlerCode & "    Dim rowTitle As String" & vbCrLf
-    handlerCode = handlerCode & "    Dim hasLabel As Boolean" & vbCrLf
-    handlerCode = handlerCode & vbCrLf
-    handlerCode = handlerCode & "    effectiveStatus = statusValue" & vbCrLf
-    handlerCode = handlerCode & "    If titleChanged And Not statusChanged Then" & vbCrLf
-    handlerCode = handlerCode & "        'Let the title drive the result set when the severity stayed untouched" & vbCrLf
-    handlerCode = handlerCode & "        effectiveStatus = ""All""" & vbCrLf
-    handlerCode = handlerCode & "    End If" & vbCrLf
-    handlerCode = handlerCode & vbCrLf
-    handlerCode = handlerCode & "    matchType = ResolveMatchType(effectiveStatus)" & vbCrLf
-    handlerCode = handlerCode & "    applyTitleFilter = ShouldFilterByTitle(titleValue)" & vbCrLf
-    handlerCode = handlerCode & vbCrLf
-    handlerCode = handlerCode & "    lastRow = Me.Cells(Me.Rows.Count, " & FIRST_OUTPUT_COLUMN & ").End(xlUp).Row" & vbCrLf
-    handlerCode = handlerCode & "    'Exit early when no printable rows are present" & vbCrLf
-    handlerCode = handlerCode & "    If lastRow < " & FIRST_ROW_OUTPUT & " Then Exit Sub" & vbCrLf
-    handlerCode = handlerCode & vbCrLf
-    handlerCode = handlerCode & "    For rowIndex = " & FIRST_ROW_OUTPUT & " To lastRow" & vbCrLf
-    handlerCode = handlerCode & "        'Start by revealing rows before applying filters" & vbCrLf
-    handlerCode = handlerCode & "        Me.Rows(rowIndex).Hidden = False" & vbCrLf
-    handlerCode = handlerCode & "        rowTitle = Trim$(CStr(Me.Cells(rowIndex, " & HIDDEN_TITLE_COLUMN & ").Value))" & vbCrLf
-    handlerCode = handlerCode & vbCrLf
-    handlerCode = handlerCode & "        If applyTitleFilter Then" & vbCrLf
-    handlerCode = handlerCode & "            'Hide any row whose stored parent title differs from the selection" & vbCrLf
-    handlerCode = handlerCode & "            If StrComp(rowTitle, Trim$(titleValue), vbTextCompare) <> 0 Then" & vbCrLf
-    handlerCode = handlerCode & "                Me.Rows(rowIndex).Hidden = True" & vbCrLf
-    handlerCode = handlerCode & "                GoTo ContinueRow" & vbCrLf
-    handlerCode = handlerCode & "            End If" & vbCrLf
-    handlerCode = handlerCode & "        End If" & vbCrLf
-    handlerCode = handlerCode & vbCrLf
-    handlerCode = handlerCode & "        'Labels differentiate data rows from headers" & vbCrLf
-    handlerCode = handlerCode & "        hasLabel = LenB(CStr(Me.Cells(rowIndex, " & (FIRST_OUTPUT_COLUMN + 1) & ").Value)) > 0" & vbCrLf
-    handlerCode = handlerCode & vbCrLf
-    handlerCode = handlerCode & "        If hasLabel Then" & vbCrLf
-    handlerCode = handlerCode & "            rowType = StripIcons(CStr(Me.Cells(rowIndex, " & FIRST_OUTPUT_COLUMN & ").Value))" & vbCrLf
-    handlerCode = handlerCode & "            'Apply severity matching only to data rows" & vbCrLf
-    handlerCode = handlerCode & "            Select Case matchType" & vbCrLf
-    handlerCode = handlerCode & "                Case ""ALL""" & vbCrLf
-    handlerCode = handlerCode & "                    'No filtering required for ALL" & vbCrLf
-    handlerCode = handlerCode & "                Case ""SUCCESS""" & vbCrLf
-    handlerCode = handlerCode & "                    If StrComp(rowType, ""Success"", vbTextCompare) <> 0 Then Me.Rows(rowIndex).Hidden = True" & vbCrLf
-    handlerCode = handlerCode & "                Case ""WITHOUT_SUCCESS""" & vbCrLf
-    handlerCode = handlerCode & "                    If StrComp(rowType, ""Success"", vbTextCompare) = 0 Then Me.Rows(rowIndex).Hidden = True" & vbCrLf
-    handlerCode = handlerCode & "                Case Else" & vbCrLf
-    handlerCode = handlerCode & "                    If StrComp(rowType, matchType, vbTextCompare) <> 0 Then Me.Rows(rowIndex).Hidden = True" & vbCrLf
-    handlerCode = handlerCode & "            End Select" & vbCrLf
-    handlerCode = handlerCode & "        End If" & vbCrLf
-    handlerCode = handlerCode & "ContinueRow:" & vbCrLf
-    handlerCode = handlerCode & "    Next rowIndex" & vbCrLf
-    handlerCode = handlerCode & "End Sub" & vbCrLf
-    handlerCode = handlerCode & vbCrLf
+    handlerCode = "Private Function StripIcons(ByVal txt As String) As String" & vbNewLine
+    handlerCode = handlerCode & "    Dim stripped As String" & vbNewLine
+    handlerCode = handlerCode & "    'Remove severity glyphs so comparisons remain text based" & vbNewLine
+    handlerCode = handlerCode & "    stripped = Replace(txt, ChrW(10060), """")" & vbNewLine
+    handlerCode = handlerCode & "    stripped = Replace(stripped, ChrW(9888), """")" & vbNewLine
+    handlerCode = handlerCode & "    stripped = Replace(stripped, ChrW(8505), """")" & vbNewLine
+    handlerCode = handlerCode & "    stripped = Replace(stripped, ChrW(9998), """")" & vbNewLine
+    handlerCode = handlerCode & "    stripped = Replace(stripped, ChrW(10004), """")" & vbNewLine
+    handlerCode = handlerCode & "    StripIcons = Trim$(stripped)" & vbNewLine
+    handlerCode = handlerCode & "End Function" & vbNewLine
+    handlerCode = handlerCode & vbNewLine
+    handlerCode = handlerCode & "Private Function ResolveMatchType(ByVal candidate As String) As String" & vbNewLine
+    handlerCode = handlerCode & "    'Normalise the requested status so the filtering block can branch quickly" & vbNewLine
+    handlerCode = handlerCode & "    Select Case UCase$(Trim$(candidate))" & vbNewLine
+    handlerCode = handlerCode & "        Case """", ""ALL""" & vbNewLine
+    handlerCode = handlerCode & "            ResolveMatchType = ""ALL""" & vbNewLine
+    handlerCode = handlerCode & "        Case ""ERROR"", ""ERRORS""" & vbNewLine
+    handlerCode = handlerCode & "            ResolveMatchType = ""ERROR""" & vbNewLine
+    handlerCode = handlerCode & "        Case ""WARNING"", ""WARNINGS""" & vbNewLine
+    handlerCode = handlerCode & "            ResolveMatchType = ""WARNING""" & vbNewLine
+    handlerCode = handlerCode & "        Case ""NOTE"", ""NOTES""" & vbNewLine
+    handlerCode = handlerCode & "            ResolveMatchType = ""NOTE""" & vbNewLine
+    handlerCode = handlerCode & "        Case ""INFO"", ""INFOS""" & vbNewLine
+    handlerCode = handlerCode & "            ResolveMatchType = ""INFO""" & vbNewLine
+    handlerCode = handlerCode & "        Case ""SUCCESS"", ""SUCCESSES""" & vbNewLine
+    handlerCode = handlerCode & "            ResolveMatchType = ""SUCCESS""" & vbNewLine
+    handlerCode = handlerCode & "        Case ""WITHOUT SUCCESS"", ""WITHOUT SUCCESSES""" & vbNewLine
+    handlerCode = handlerCode & "            ResolveMatchType = ""WITHOUT_SUCCESS""" & vbNewLine
+    handlerCode = handlerCode & "        Case Else" & vbNewLine
+    handlerCode = handlerCode & "            ResolveMatchType = ""ALL""" & vbNewLine
+    handlerCode = handlerCode & "    End Select" & vbNewLine
+    handlerCode = handlerCode & "End Function" & vbNewLine
+    handlerCode = handlerCode & vbNewLine
+    handlerCode = handlerCode & "Private Function ShouldFilterByTitle(ByVal candidate As String) As Boolean" & vbNewLine
+    handlerCode = handlerCode & "    Dim trimmedTitle As String" & vbNewLine
+    handlerCode = handlerCode & "    trimmedTitle = Trim$(candidate)" & vbNewLine
+    handlerCode = handlerCode & "    'The default item keeps all titles visible" & vbNewLine
+    handlerCode = handlerCode & "    ShouldFilterByTitle = LenB(trimmedTitle) > 0 And StrComp(trimmedTitle, """ & TITLE_FILTER_DEFAULT & """, vbTextCompare) <> 0" & vbNewLine
+    handlerCode = handlerCode & "End Function" & vbNewLine
+    handlerCode = handlerCode & vbNewLine
+    handlerCode = handlerCode & "Private Sub Worksheet_Change(ByVal Target As Range)" & vbNewLine
+    handlerCode = handlerCode & "    On Error GoTo ExitHandler" & vbNewLine
+    handlerCode = handlerCode & "    Dim statusCell As Range" & vbNewLine
+    handlerCode = handlerCode & "    Dim titleCell As Range" & vbNewLine
+    handlerCode = handlerCode & "    Dim statusChanged As Boolean" & vbNewLine
+    handlerCode = handlerCode & "    Dim titleChanged As Boolean" & vbNewLine
+    handlerCode = handlerCode & "    Set statusCell = Me.Range(" & dq & FILTER_CELL_ADDRESS & dq & ")" & vbNewLine
+    handlerCode = handlerCode & "    Set titleCell = Me.Range(" & dq & TITLE_FILTER_CELL_ADDRESS & dq & ")" & vbNewLine
+    handlerCode = handlerCode & "    statusChanged = Not Intersect(Target, statusCell) Is Nothing" & vbNewLine
+    handlerCode = handlerCode & "    titleChanged = Not Intersect(Target, titleCell) Is Nothing" & vbNewLine
+    handlerCode = handlerCode & "    'Ignore edits triggered outside of the filter cells" & vbNewLine
+    handlerCode = handlerCode & "    If Not statusChanged And Not titleChanged Then GoTo ExitHandler" & vbNewLine
+    handlerCode = handlerCode & "    Application.EnableEvents = False" & vbNewLine
+    handlerCode = handlerCode & "    Application.ScreenUpdating = False" & vbNewLine
+    handlerCode = handlerCode & "    Application.Calculation = xlCalculationManual" & vbNewLine
+    handlerCode = handlerCode & "    'Reapply visibility with the refreshed selections" & vbNewLine
+    handlerCode = handlerCode & "    FilterCheckingOutputRows statusCell.Value, titleCell.Value, statusChanged, titleChanged" & vbNewLine
+    handlerCode = handlerCode & "ExitHandler:" & vbNewLine
+    handlerCode = handlerCode & "    Application.EnableEvents = True" & vbNewLine
+    handlerCode = handlerCode & "    Application.ScreenUpdating = True" & vbNewLine
+    handlerCode = handlerCode & "    Application.Calculation = xlCalculationAutomatic" & vbNewLine
+    handlerCode = handlerCode & "End Sub" & vbNewLine
+    handlerCode = handlerCode & vbNewLine
+    handlerCode = handlerCode & "Private Sub FilterCheckingOutputRows(ByVal statusValue As String, _" & vbNewLine
+    handlerCode = handlerCode & "                                    ByVal titleValue As String, _" & vbNewLine
+    handlerCode = handlerCode & "                                    ByVal statusChanged As Boolean, _" & vbNewLine
+    handlerCode = handlerCode & "                                    ByVal titleChanged As Boolean)" & vbNewLine
+    handlerCode = handlerCode & "    Dim effectiveStatus As String" & vbNewLine
+    handlerCode = handlerCode & "    Dim matchType As String" & vbNewLine
+    handlerCode = handlerCode & "    Dim applyTitleFilter As Boolean" & vbNewLine
+    handlerCode = handlerCode & "    Dim lastRow As Long" & vbNewLine
+    handlerCode = handlerCode & "    Dim rowIndex As Long" & vbNewLine
+    handlerCode = handlerCode & "    Dim rowType As String" & vbNewLine
+    handlerCode = handlerCode & "    Dim rowTitle As String" & vbNewLine
+    handlerCode = handlerCode & "    Dim hasLabel As Boolean" & vbNewLine
+    handlerCode = handlerCode & vbNewLine
+    handlerCode = handlerCode & "    effectiveStatus = statusValue" & vbNewLine
+    handlerCode = handlerCode & vbNewLine
+    handlerCode = handlerCode & "    matchType = ResolveMatchType(effectiveStatus)" & vbNewLine
+    handlerCode = handlerCode & "    applyTitleFilter = ShouldFilterByTitle(titleValue)" & vbNewLine
+    handlerCode = handlerCode & vbNewLine
+    handlerCode = handlerCode & "    lastRow = Me.Cells(Me.Rows.Count, " & FIRST_OUTPUT_COLUMN & ").End(xlUp).Row" & vbNewLine
+    handlerCode = handlerCode & "    'Exit early when no printable rows are present" & vbNewLine
+    handlerCode = handlerCode & "    If lastRow < " & FIRST_ROW_OUTPUT & " Then Exit Sub" & vbNewLine
+    handlerCode = handlerCode & vbNewLine
+    handlerCode = handlerCode & "    For rowIndex = " & FIRST_ROW_OUTPUT & " To lastRow" & vbNewLine
+    handlerCode = handlerCode & "        'Start by revealing rows before applying filters" & vbNewLine
+    handlerCode = handlerCode & "        Me.Rows(rowIndex).Hidden = False" & vbNewLine
+    handlerCode = handlerCode & "        rowTitle = Trim$(CStr(Me.Cells(rowIndex, " & HIDDEN_TITLE_COLUMN & ").Value))" & vbNewLine
+    handlerCode = handlerCode & vbNewLine
+    handlerCode = handlerCode & "        If applyTitleFilter Then" & vbNewLine
+    handlerCode = handlerCode & "            'Hide any row whose stored parent title differs from the selection" & vbNewLine
+    handlerCode = handlerCode & "            If (StrComp(rowTitle, Trim$(titleValue), vbTextCompare) <> 0) And (rowTitle <> " & dq & END_TAG & dq & ") Then" & vbNewLine
+    handlerCode = handlerCode & "                Me.Rows(rowIndex).Hidden = True" & vbNewLine
+    handlerCode = handlerCode & "                GoTo ContinueRow" & vbNewLine
+    handlerCode = handlerCode & "            End If" & vbNewLine
+    handlerCode = handlerCode & "        End If" & vbNewLine
+    handlerCode = handlerCode & vbNewLine
+    handlerCode = handlerCode & "        'Labels differentiate data rows from headers" & vbNewLine
+    handlerCode = handlerCode & "        hasLabel = LenB(CStr(Me.Cells(rowIndex, " & (FIRST_OUTPUT_COLUMN + 1) & ").Value)) > 0" & vbNewLine
+    handlerCode = handlerCode & vbNewLine
+    handlerCode = handlerCode & "        If hasLabel Then" & vbNewLine
+    handlerCode = handlerCode & "            rowType = StripIcons(CStr(Me.Cells(rowIndex, " & FIRST_OUTPUT_COLUMN & ").Value))" & vbNewLine
+    handlerCode = handlerCode & "            'Apply severity matching only to data rows" & vbNewLine
+    handlerCode = handlerCode & "            Select Case matchType" & vbNewLine
+    handlerCode = handlerCode & "                Case ""ALL""" & vbNewLine
+    handlerCode = handlerCode & "                    'No filtering required for ALL" & vbNewLine
+    handlerCode = handlerCode & "                Case ""SUCCESS""" & vbNewLine
+    handlerCode = handlerCode & "                    If StrComp(rowType, ""Success"", vbTextCompare) <> 0 Then Me.Rows(rowIndex).Hidden = True" & vbNewLine
+    handlerCode = handlerCode & "                Case ""WITHOUT_SUCCESS""" & vbNewLine
+    handlerCode = handlerCode & "                    If StrComp(rowType, ""Success"", vbTextCompare) = 0 Then Me.Rows(rowIndex).Hidden = True" & vbNewLine
+    handlerCode = handlerCode & "                Case Else" & vbNewLine
+    handlerCode = handlerCode & "                    If StrComp(rowType, matchType, vbTextCompare) <> 0 Then Me.Rows(rowIndex).Hidden = True" & vbNewLine
+    handlerCode = handlerCode & "            End Select" & vbNewLine
+    handlerCode = handlerCode & "        End If" & vbNewLine
+    handlerCode = handlerCode & "ContinueRow:" & vbNewLine
+    handlerCode = handlerCode & "    Next rowIndex" & vbNewLine
+    handlerCode = handlerCode & "End Sub" & vbNewLine
+    handlerCode = handlerCode & vbNewLine
 
     codeModule.InsertLines moduleLines + 1, handlerCode
 
@@ -930,7 +923,7 @@ Private Sub ICheckingOutput_PrintOutput(ByVal checkTable As BetterArray)
 
     '@Ignore AssignmentNotUsed
     currentRow = currentRow + 4
-    WriteRow currentRow, formatTag:="level 4", textValue:="End of checkings " & Name()
+    WriteRow currentRow, formatTag:="level 4", textValue:="End of checkings " & Name(), parentTitle:=END_TAG
     StoreCustomProperty ROW_MARKER_NAME, CStr(currentRow)
 
     EnsureWorksheetChangeHandler

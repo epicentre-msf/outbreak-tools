@@ -69,7 +69,8 @@ End Sub
 '@param targetBook Optional Workbook. Defaults to ThisWorkbook.
 '@return Worksheet ensured for use.
 Public Function EnsureWorksheet(ByVal sheetName As String, _
-                                Optional ByVal targetBook As workbook) As Worksheet
+                                Optional ByVal targetBook As workbook, _
+                                Optional ByVal clearSheet As Boolean = True) As Worksheet
 
     Dim wb As workbook
     Dim sh As Worksheet
@@ -91,7 +92,10 @@ Public Function EnsureWorksheet(ByVal sheetName As String, _
         sh.Name = sheetName
     End If
 
-    ClearWorksheet sh
+    If clearSheet Then 
+        ClearWorksheet sh
+    End If
+    
     Set EnsureWorksheet = sh
 End Function
 
