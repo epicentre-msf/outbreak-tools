@@ -25,9 +25,11 @@ Public Sub clickRibbonTests(ByRef Control As IRibbonControl)
     Dim moduleName As String
     Dim nm As Name
 
-    BusyApp
+    'Load to keep the screen cool
+
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     ThisWorkbook.Worksheets(TEST_OUTPUT_SHEET).Cells.Clear
+    ThisWorkbook.Worksheets(TEST_OUTPUT_SHEET).Activate
     Set nm = ThisWorkbook.Worksheets(CODESHEET).Names(DEFAULT_TEST_LONAME)
     
     On Error Resume Next
@@ -36,8 +38,6 @@ Public Sub clickRibbonTests(ByRef Control As IRibbonControl)
 
     If loRng Is Nothing Then Exit Sub
 
-    Application.Cursor = xlNorthwestArrow
-
     On Error GoTo CleanExit
     For counter = 1 To loRng.Rows.Count
         moduleName = loRng.Cells(counter, 1).Value
@@ -45,16 +45,12 @@ Public Sub clickRibbonTests(ByRef Control As IRibbonControl)
     Next
     
 CleanExit:
-
     If Err.Number <> 0 Then
         Debug.Print "Not 0 exit status: Error " & Err.Number & " - Description: " & Err.Description
     Else
         MsgBox "Done!"
     End If
 
-    RestoreApp
-    Application.ScreenUpdating = True
-    Application.Cursor = xlDefault
 End Sub
 
 

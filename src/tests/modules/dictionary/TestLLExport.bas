@@ -88,9 +88,38 @@ Public Sub TestExportFileNameBuildsFromTemplate()
     CustomTestSetTitles Assert, "LLExport", "TestExportFileNameBuildsFromTemplate"
     Dim fileName As String
     fileName = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
-    Assert.IsTrue InStr(1, fileName, "custom_value", vbTextCompare) > 0, _
-                  "Filename should include resolved variable value"
-    Assert.IsTrue fileName Like "*__v001-PK__*", "Version suffix should be appended"
+    Assert.IsTrue InStr(1, fileName, "custom_value__literal_suffix", vbTextCompare) > 0, _
+                  "Filename should include resolved variable and literal chunks"
+    Assert.IsTrue fileName Like "*__vd0099-1234__*", "Version suffix should be appended - Actual finename: " & fileName
+    Assert.IsFalse Manager.HasCheckings, "Default template should not trigger checkings for literal chunks"
+End Sub
+
+'@TestMethod("LLExport")
+Public Sub TestExportFileNameHandlesSingleQuotedLiteral()
+    CustomTestSetTitles Assert, "LLExport", "TestExportFileNameHandlesSingleQuotedLiteral"
+
+    ExportSheet.ListObjects(1).DataBodyRange.Cells(1, ColumnIndexOf("file name")).Value = "choi_v1 + 'single literal'"
+
+    Dim fileName As String
+    fileName = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
+
+    Assert.IsTrue InStr(1, fileName, "custom_value__single_literal", vbTextCompare) > 0, _
+                  "Single-quoted literal chunks should be preserved"
+    Assert.IsFalse Manager.HasCheckings, "Single-quoted literal chunks should not trigger checkings"
+End Sub
+
+'@TestMethod("LLExport")
+Public Sub TestExportFileNameWithOnlyLiteralChunks()
+    CustomTestSetTitles Assert, "LLExport", "TestExportFileNameWithOnlyLiteralChunks"
+
+    ExportSheet.ListObjects(1).DataBodyRange.Cells(1, ColumnIndexOf("file name")).Value = """static chunk"" + ""second part"""
+
+    Dim fileName As String
+    fileName = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
+
+    Assert.IsTrue InStr(1, fileName, "static_chunk__second_part", vbTextCompare) > 0, _
+                  "All-literal templates should concatenate sanitized literals"
+    Assert.IsFalse Manager.HasCheckings, "All-literal templates should not trigger checkings"
 End Sub
 
 '@TestMethod("LLExport")
@@ -109,7 +138,7 @@ Public Sub TestExportAllOverridesScope()
     CustomTestSetTitles Assert, "LLExport", "TestExportAllOverridesScope"
     Dim name As String
     name = Manager.ExportFileName(1, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject, exportAll:=True)
-    Assert.IsTrue InStr(1, name, "export_all", vbTextCompare) > 0, "ExportAll should override scope"
+    Assert.IsTrue InStr(1, name, "export_all", vbTextCompare) > 0, "ExportAll should override scope - fileName : " & name
 End Sub
 
 '@TestMethod("LLExport")
@@ -203,7 +232,7 @@ Private Sub PrepareExportTable(ByVal targetSheet As Worksheet)
                     "header format", "export metadata sheets", _
                     "export analyses sheets")
 
-    dataRow = Array(1, "active", "Label", "xlsx", "choi_v1 + custom_value", "pwd", _
+    dataRow = Array(1, "active", "Label", "xlsx", "choi_v1 + ""literal suffix""", "pwd", _
                     "", "yes", "default", "no", "no")
 
     targetSheet.Range("A1").Resize(1, UBound(headers) + 1).Value = headers

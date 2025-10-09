@@ -22,9 +22,9 @@ Private dropTwo As IDropdownLists
 '===============================================================================
 
 Private Sub EnsureDropSheets()
-    EnsureWorksheet DROPOUTPUT
-    EnsureWorksheet DROPTESTONE
-    EnsureWorksheet DROPTESTTWO
+    EnsureWorksheet DROPOUTPUT, visibility:=xlSheetVeryhidden
+    EnsureWorksheet DROPTESTONE, visibility:=xlSheetVeryhidden
+    EnsureWorksheet DROPTESTTWO, visibility:=xlSheetVeryhidden
 End Sub
 
 Private Sub ClearDropSheets()

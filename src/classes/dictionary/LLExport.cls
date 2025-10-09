@@ -247,7 +247,7 @@ Public Function ExportFileName(ByVal exportNumber As Long, _
                                ByVal pass As IPasswords, _
                                Optional ByVal exportAll As Boolean = False) As String
 
-    Dim workbook As Workbook
+    Dim currWb As Workbook
     Dim template As String
     Dim sanitizedPath As String
     Dim suffix As String
@@ -257,10 +257,10 @@ Public Function ExportFileName(ByVal exportNumber As Long, _
     ValidatePasswords pass
     EnsureDictionaryReady dict
 
-    Set workbook = this.exportSheet.Parent
+    Set currWb = this.exportSheet.Parent
 
     If exportAll Then
-        ExportFileName = BuildExportAllName(workbook, pass)
+        ExportFileName = SanitizeChunk(WorkbookBaseName(currWb)) & "_export_all__" & BuildTimestamp
         Exit Function
     End If
 
@@ -503,6 +503,11 @@ Private Function ResolveTemplateChunk(ByVal rawChunk As String, _
         Exit Function
     End If
 
+    If IsLiteralTemplateChunk(chunk) Then
+        ResolveTemplateChunk = SanitizeChunk(StripLiteralChunk(chunk))
+        Exit Function
+    End If
+
     value = ResolveVariableChunk(chunk, workbook)
 
     If LenB(value) = 0 Then
@@ -511,6 +516,45 @@ Private Function ResolveTemplateChunk(ByVal rawChunk As String, _
     End If
 
     ResolveTemplateChunk = value
+End Function
+
+'@label:IsLiteralTemplateChunk
+'@prop-title Determine whether a chunk represents a literal string
+Private Function IsLiteralTemplateChunk(ByVal chunk As String) As Boolean
+    Dim firstChar As String
+    Dim lastChar As String
+
+    If Len(chunk) < 2 Then Exit Function
+
+    firstChar = Left$(chunk, 1)
+    lastChar = Right$(chunk, 1)
+
+    If firstChar = Chr$(34) And lastChar = Chr$(34) Then
+        IsLiteralTemplateChunk = True
+        Exit Function
+    End If
+
+    If firstChar = "'" And lastChar = "'" Then
+        IsLiteralTemplateChunk = True
+        Exit Function
+    End If
+End Function
+
+'@label:StripLiteralChunk
+'@prop-title Remove wrapping quotes from literal chunk values
+Private Function StripLiteralChunk(ByVal chunk As String) As String
+    Dim lengthValue As Long
+
+    lengthValue = Len(chunk)
+    If lengthValue >= 2 Then
+        If (Left$(chunk, 1) = Chr$(34) And Right$(chunk, 1) = Chr$(34)) _
+           Or (Left$(chunk, 1) = "'" And Right$(chunk, 1) = "'") Then
+            StripLiteralChunk = Mid$(chunk, 2, lengthValue - 2)
+            Exit Function
+        End If
+    End If
+
+    StripLiteralChunk = chunk
 End Function
 
 '@label:ResolveVariableChunk
@@ -638,21 +682,13 @@ Private Function DefaultTemplate(ByVal exportNumber As Long) As String
     DefaultTemplate = "export" & CStr(exportNumber)
 End Function
 
-'@label:BuildExportAllName
-'@prop-title Compose filename when exporting all outputs
-Private Function BuildExportAllName(ByVal workbook As Workbook, ByVal pass As IPasswords) As String
-    Dim baseName As String
-
-    baseName = SanitizeChunk(WorkbookBaseName(workbook)) & "_export_all"
-    BuildExportAllName = baseName & BuildVersionSuffix(pass) & "__" & BuildTimestamp
-End Function
 
 '@label:WorkbookBaseName
 '@prop-title Remove Excel extensions from workbook name
 Private Function WorkbookBaseName(ByVal workbook As Workbook) As String
     Dim cleaned As String
 
-    cleaned = workbook.Name
+    cleaned = LCase$(workbook.Name)
     cleaned = Replace(cleaned, ".xlsm", vbNullString)
     cleaned = Replace(cleaned, ".xlsb", vbNullString)
     cleaned = Replace(cleaned, ".xlsx", vbNullString)
@@ -663,9 +699,9 @@ End Function
 
 '@label:LogInfo
 '@prop-title Append informational diagnostics to the Checking log
-Private Sub LogInfo(ByVal label As String)
+Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checkingInfo)
     If this.checks Is Nothing Then Set this.checks = Checking.Create(CHECKING_CONTEXT)
-    this.checks.Add CStr(this.checkCounter), label
+    this.checks.Add CStr(this.checkCounter), label, scope
     this.checkCounter = this.checkCounter + 1
     this.hasChecks = True
 End Sub

@@ -529,13 +529,12 @@ Private Function InitialiseWorksheet() As Long
         If startingRow < FIRST_ROW_OUTPUT Then
             startingRow = FIRST_ROW_OUTPUT
             EnsureTitleStore True
+            EnsureFilterDropdown
         Else
             EnsureTitleStore False
             sh.Rows(startingRow).ClearContents
         End If
         ApplyHiddenColumnsFormatting sh
-        EnsureFilterDropdown
-
     End If
 
     InitialiseWorksheet = startingRow
