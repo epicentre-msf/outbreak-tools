@@ -140,7 +140,7 @@ End Function
 
 '@ModuleInitialize
 '@description Configure common test state and build the assertion helper.
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
     EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestLLFormat"
@@ -149,7 +149,7 @@ End Sub
 
 '@ModuleCleanup
 '@description Tear down shared resources and print accumulated results.
-Private Sub ModuleCleanup()
+Public Sub ModuleCleanup()
     On Error Resume Next
         LLFormatTestFixture.DeleteLLFormatFixture FORMAT_SHEET_NAME, FormatWorkbook
         LLFormatTestFixture.DeleteLLFormatFixture IMPORT_SHEET_NAME, FormatWorkbook
@@ -166,7 +166,7 @@ End Sub
 
 '@TestInitialize
 '@description Prepare a fresh LL format worksheet and system under test for each test.
-Private Sub TestInitialize()
+Public Sub TestInitialize()
     LLFormatTestFixture.DeleteLLFormatFixture FORMAT_SHEET_NAME, FormatWorkbook
     LLFormatTestFixture.DeleteLLFormatFixture IMPORT_SHEET_NAME, FormatWorkbook
 
@@ -178,7 +178,7 @@ End Sub
 
 '@TestCleanup
 '@description Flush assertions and remove any worksheets created during the test run.
-Private Sub TestCleanup()
+Public Sub TestCleanup()
     If Not Assert Is Nothing Then
         Assert.Flush
     End If

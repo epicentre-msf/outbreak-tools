@@ -17,15 +17,39 @@ Private Const CHOICESTRANSLATIONLANGUAGE As String = "Translated"
 Private Const CHOICESIMPORTSHEET As String = "LLChoicesImportSource"
 
 Private Assert As ICustomTest
-Private Fakes As Object
 Private Choices As ILLChoices
 
 '@section Helpers
 '===============================================================================
 
 Private Sub ResetChoices()
+    Dim previousEventState As Boolean
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+    Dim errHelpFile As String
+    Dim errHelpContext As Long
+
+    previousEventState = Application.EnableEvents
+    Application.EnableEvents = False
+    On Error GoTo CleanFail
+
     PrepareChoicesFixture CHOICESSHEET
     Set Choices = LLChoices.Create(ThisWorkbook.Worksheets(CHOICESSHEET), 1, 1)
+    Choices.Wksh.Visible = xlSheetVeryHidden 'Keep fixture sheet out of view during UI-bound tests
+
+CleanExit:
+    Application.EnableEvents = previousEventState
+    Exit Sub
+
+CleanFail:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    errHelpFile = Err.HelpFile
+    errHelpContext = Err.HelpContext
+    Application.EnableEvents = previousEventState
+    Err.Raise errNumber, errSource, errDescription, errHelpFile, errHelpContext
 End Sub
 
 Private Function TranslatorDataRows() As Variant
@@ -58,8 +82,7 @@ Private Function CreateChoicesTranslator() As ITranslationObject
     Dim dataMatrix As Variant
     Dim translationTable As ListObject
 
-    Set translationSheet = EnsureWorksheet(CHOICESTRANSLATIONSHEET)
-    ClearWorksheet translationSheet
+    Set translationSheet = EnsureWorksheet(CHOICESTRANSLATIONSHEET, visibility:= xlSheetVeryhidden)
 
     headerMatrix = RowsToMatrix(Array(Array("tag", "English", CHOICESTRANSLATIONLANGUAGE)))
     WriteMatrix translationSheet.Cells(1, 1), headerMatrix
@@ -80,8 +103,7 @@ Private Function CreateChoicesImportSheet() As Worksheet
     Dim headerMatrix As Variant
     Dim dataMatrix As Variant
 
-    Set importSheet = EnsureWorksheet(CHOICESIMPORTSHEET)
-    ClearWorksheet importSheet
+    Set importSheet = EnsureWorksheet(CHOICESIMPORTSHEET, visibility:=xlSheetVeryhidden)
 
     headerMatrix = RowsToMatrix(Array(ChoicesFixtureHeaders()))
     WriteMatrix importSheet.Cells(1, 1), headerMatrix
@@ -93,10 +115,12 @@ Private Function CreateChoicesImportSheet() As Worksheet
 End Function
 
 Private Sub CleanupChoicesTranslation()
+    BusyApp
     DeleteWorksheet CHOICESTRANSLATIONSHEET
 End Sub
 
 Private Sub CleanupChoicesImportSource()
+    BusyApp
     DeleteWorksheet CHOICESIMPORTSHEET
 End Sub
 
@@ -120,17 +144,15 @@ Private Sub ModuleCleanup()
     CleanupChoicesTranslation
     CleanupChoicesImportSource
     DeleteWorksheet CHOICESSHEET
+    RestoreApp
 
     Set Choices = Nothing
-    Set Fakes = Nothing
     Set Assert = Nothing
 End Sub
 
 '@TestInitialize
 Private Sub TestInitialize()
     BusyApp
-    CleanupChoicesTranslation
-    CleanupChoicesImportSource
     ResetChoices
 End Sub
 

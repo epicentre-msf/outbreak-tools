@@ -78,7 +78,9 @@ End Sub
 
 '@TestInitialize
 Private Sub TestInitialize()
+    BusyApp
     Set FixtureWorkbook = TestHelpers.NewWorkbook
+    BusyApp
     PasswordsTestFixture.PreparePasswordsFixture DEFAULTPASSWORDSHEET, FixtureWorkbook
     Set FixtureSheet = FixtureWorkbook.Worksheets(DEFAULTPASSWORDSHEET)
     Set ProtectedSheet = TestHelpers.EnsureWorksheet(PROTECTEDSHEETNAME, FixtureWorkbook)
@@ -97,6 +99,7 @@ Private Sub TestCleanup()
         End If
     On Error GoTo 0
 
+    BusyApp
     If Not FixtureWorkbook Is Nothing Then
         BusyApp
         TestHelpers.DeleteWorkbook FixtureWorkbook
