@@ -21,6 +21,7 @@ Private PasswordsSubject As IPasswords
 
 '@ModuleInitialize
 Public Sub ModuleInitialize()
+    EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestLLExport"
     PrepareTestSheets
@@ -171,23 +172,26 @@ End Sub
 '@section Helpers
 '===============================================================================
 Private Sub PrepareTestSheets()
-    PrepareDictionaryFixture DICT_SHEET
-    Set DictionarySheet = EnsureWorksheet(DICT_SHEET)
 
+    Set DictionarySheet = EnsureWorksheet(DICT_SHEET)
+    PrepareDictionaryFixture DICT_SHEET
+    
     Set ExportSheet = EnsureWorksheet(EXPORT_SHEET)
-    ClearWorksheet ExportSheet
     PrepareExportTable ExportSheet
 
     Set VListSheet = EnsureWorksheet(VLIST_SHEET)
-    ClearWorksheet VListSheet
+    
     VListSheet.Range("A1").Value = "custom value"
+    
     On Error Resume Next
     ThisWorkbook.Names("choi_v1").Delete
     On Error GoTo 0
+    
     ThisWorkbook.Names.Add Name:="choi_v1", RefersTo:=VListSheet.Range("A1")
-
+    
     PasswordsTestFixture.PreparePasswordsFixture PASSWORD_SHEET
     Set PasswordSheet = ThisWorkbook.Worksheets(PASSWORD_SHEET)
+
 End Sub
 
 Private Sub PrepareExportTable(ByVal targetSheet As Worksheet)

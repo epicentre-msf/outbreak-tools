@@ -24,7 +24,6 @@ Implements ILLExport
 Private Type TLLExport
     expData As IDataSheet
     exportSheet As Worksheet
-    columnCache As BetterArray
     variables As ILLVariables
     checks As IChecking
     hasChecks As Boolean
@@ -74,7 +73,7 @@ Public Function Create(ByVal exportSheet As Worksheet, _
         Set .InternalData = exportData
         Set .InternalWorksheet = exportSheet
         .ResetCaches
-        Set Create = .Self
+        Set Create = .Self()
     End With
 End Function
 
@@ -121,10 +120,12 @@ End Property
 '@return Total number of export definitions currently present.
 Public Property Get NumberOfExports() As Long
     Dim exportRange As Range
+    Dim fn As Object
 
     EnsureDataReady
 
     Set exportRange = this.expData.DataRange(includeHeaders:=False)
+    Set fn = Application.WorksheetFunction
 
     If exportRange Is Nothing Then
         NumberOfExports = 0
@@ -420,24 +421,7 @@ End Function
 Private Function ResolveColumnRange(ByVal columnName As String, _
                                     ByVal required As Boolean) As Range
 
-    Dim key As String
-    Dim idx As Long
-    Dim entry As Variant
     Dim resolved As Range
-
-    key = LCase$(Trim$(columnName))
-
-    If Not this.columnCache Is Nothing Then
-        For idx = this.columnCache.LowerBound To this.columnCache.UpperBound
-            entry = this.columnCache.Item(idx)
-            If IsArray(entry) Then
-                If StrComp(CStr(entry(0)), key, vbBinaryCompare) = 0 Then
-                    Set ResolveColumnRange = entry(1)
-                    Exit Function
-                End If
-            End If
-        Next idx
-    End If
 
     On Error GoTo ColumnMissing
         Set resolved = this.expData.DataRange(colName:=columnName, _
@@ -446,7 +430,6 @@ Private Function ResolveColumnRange(ByVal columnName As String, _
                                              matchCase:=False)
     On Error GoTo 0
 
-    CacheColumnRange key, resolved
     Set ResolveColumnRange = resolved
     Exit Function
 
@@ -458,22 +441,9 @@ ColumnMissing:
     End If
 End Function
 
-'@label:CacheColumnRange
-'@prop-title Cache a column range lookup
-Private Sub CacheColumnRange(ByVal key As String, ByVal rng As Range)
-    If rng Is Nothing Then Exit Sub
-    If this.columnCache Is Nothing Then
-        Set this.columnCache = New BetterArray
-        this.columnCache.LowerBound = 1
-    End If
-    this.columnCache.Push Array(key, rng)
-End Sub
-
 '@label:ResetCaches
 '@prop-title Reset cached references and diagnostics
-Private Sub ResetCaches()
-    Set this.columnCache = New BetterArray
-    this.columnCache.LowerBound = 1
+Public Sub ResetCaches()
     Set this.variables = Nothing
     this.hasChecks = False
     this.checkCounter = 0
@@ -575,7 +545,7 @@ Private Function ResolveVariableChunk(ByVal chunk As String, _
     Set namedRange = TryGetNamedRange(workbook, chunk, targetSheet)
 
     If namedRange Is Nothing Then
-        LogInfo "Named range for chunk '" & chunk & "' is missing"
+        LogInfo "Named range for chunk '" & chunk & "' is missing", checkingWarning
         Exit Function
     End If
 

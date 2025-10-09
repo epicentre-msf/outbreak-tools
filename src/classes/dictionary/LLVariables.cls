@@ -29,7 +29,7 @@ Private Type TVariable
 End Type
 
 Private this As TVariable
-Private Const VARIABLENAME As String = "variable name"
+Private Const VARIABLENAMECOLUMN As String = "variable name"
 Private Const INDEXHEADER  As String = "column index"
 Private Const CLASSNAME As String = "LLVariables"
 Private Const COL_SHEET_NAME As String = "sheet name"
@@ -48,9 +48,9 @@ Public Function Create(ByVal dict As ILLdictionary) As ILLVariables
                   "Dictionary instance does not expose an IDataSheet implementation"
     End If
 
-    If Not dict.ColumnExists(VARIABLENAME, matchCase:=False) Then
+    If Not dict.ColumnExists(VARIABLENAMECOLUMN) Then
         ThrowError ProjectError.ElementNotFound, _
-            "Unable to create LLVariables, required column '" & VARIABLENAME & "' is missing"
+            "Unable to create LLVariables, required column '" & VARIABLENAMECOLUMN & "' is missing"
     End If
 
     With New LLVariables
@@ -109,13 +109,13 @@ Private Sub RefreshVariableRange()
     Set this.varRng = Nothing
 
     On Error Resume Next
-        Set this.varRng = this.dict.DataRange(VARIABLENAME)
+        Set this.varRng = this.dict.DataRange(VARIABLENAMECOLUMN)
     On Error GoTo 0
 
     If this.varRng Is Nothing Then
         Dim headerRange As Range
         On Error Resume Next
-            Set headerRange = this.dict.DataRange(VARIABLENAME, includeHeaders:=True)
+            Set headerRange = this.dict.DataRange(VARIABLENAMECOLUMN, includeHeaders:=True)
         On Error GoTo 0
 
         If Not headerRange Is Nothing Then
@@ -126,7 +126,7 @@ Private Sub RefreshVariableRange()
             End If
         Else
             ThrowError ProjectError.ElementNotFound, _
-                       "Dictionary does not expose a usable '" & VARIABLENAME & "' column"
+                       "Dictionary does not expose a usable '" & VARIABLENAMECOLUMN & "' column"
         End If
     End If
 End Sub
@@ -155,8 +155,8 @@ Private Function TryGetCachedColumnIndex(ByVal cacheKey As String, ByRef cachedI
     For idx = this.columnCache.LowerBound To this.columnCache.UpperBound
         entry = this.columnCache.Item(idx)
         If IsArray(entry) Then
-            If StrComp(CStr(entry(0)), cacheKey, vbBinaryCompare) = 0 Then
-                cachedIndex = CLng(entry(1))
+            If StrComp(CStr(entry(1)), cacheKey, vbBinaryCompare) = 0 Then
+                cachedIndex = CLng(entry(2))
                 TryGetCachedColumnIndex = True
                 Exit Function
             End If
@@ -184,7 +184,7 @@ Private Sub RemoveCachedColumnIndex(ByVal cacheKey As String)
 
     For idx = this.columnCache.UpperBound To this.columnCache.LowerBound Step -1
         If IsArray(this.columnCache.Item(idx)) Then
-            If StrComp(CStr(this.columnCache.Item(idx)(0)), cacheKey, vbBinaryCompare) = 0 Then
+            If StrComp(CStr(this.columnCache.Item(idx)(1)), cacheKey, vbBinaryCompare) = 0 Then
                 this.columnCache.Remove idx
             End If
         End If
@@ -283,7 +283,7 @@ Private Function ResolveColumnIndex(ByVal colName As String, Optional ByVal requ
     End If
 
     On Error Resume Next
-        resolvedIndex = this.dict.Data.ColumnIndex(colName, shouldExist:=True)
+        resolvedIndex = this.dict.Data.ColumnIndex(colName, matchCase:=False, shouldExist:=True)
     On Error GoTo 0
 
     If resolvedIndex <= 0 Then
@@ -328,7 +328,8 @@ End Function
 '@label:LogInfo
 Private Sub LogInfo(ByVal label As String, _
                     Optional ByVal varName As String = vbNullString, _
-                    Optional ByVal colName As String = vbNullString)
+                    Optional ByVal colName As String = vbNullString, _ 
+                    Optional ByVal scope As Byte = checkingInfo)
 
     Dim checkName As String
     Dim message As String
@@ -339,7 +340,7 @@ Private Sub LogInfo(ByVal label As String, _
     If LenB(colName) > 0 Then message = message & " | Col=" & colName
 
     If this.internalChecks Is Nothing Then Set this.internalChecks = Checking.Create(checkName)
-    this.internalChecks.Add CStr(this.checkCounter), message
+    this.internalChecks.Add CStr(this.checkCounter), message, scope
     this.checkCounter = this.checkCounter + 1
 End Sub
 
@@ -409,10 +410,10 @@ Private Function CellRangeInternal(ByVal colName As String, ByVal varName As Str
     Set dict = Dictionary()
     Set Wksh = dict.Data.Wksh
     rowNum = RowIndex(varName, matchCase)
-    If rowNum <= 0 Then Exit Property
+    If rowNum <= 0 Then Exit Function
 
-    colNum = ResolveColumnIndex(colName, required:=True)
-    If colNum <= 0 Then Exit Property
+    colNum = ResolveColumnIndex(colName)
+    If colNum <= 0 Then Exit Function
 
     Set CellRangeInternal = Wksh.Cells(rowNum, colNum)
 End Function
@@ -453,7 +454,7 @@ Private Sub SetValue(ByVal varName As String, ByVal colName As String, ByVal new
     If Update Then
         Wksh.Cells(rowNum, colNum).Value = newValue
     Else
-        LogInfo "Skipped SetValue because target cell already contains data", varName, colName
+        LogInfo "Skipped SetValue because target cell already contains data", varName, colName, checkingWarning
     End If
 End Sub
 
@@ -470,7 +471,7 @@ End Function
 
 'Errors ------------------------------------------------------------------------------------------------------------------------------------
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
-    Err.Raise errNumb, CLASSNAME, errorMessage
+    Err.Raise errNumb, "LLVariables", errorMessage
 End Sub
 
 'Interface ---------------------------------------------------------------------------------------------------------------------------------

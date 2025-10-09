@@ -1,7 +1,9 @@
 Attribute VB_Name = "TestLLdictionary"
 
 Option Explicit
-Option Private Module
+
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+
 
 'Dictionary-focused tests rely on the shared fixture defined in
 '`DictionaryTestFixture`. The helper module mirrors the contents of
@@ -9,13 +11,12 @@ Option Private Module
 'etc.) exercises the same dataset without touching the filesystem.
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-'@TestModule
+'@Folder("CustomTests")
 '@Folder("Tests")
 
 Private Const DICT_SHEET As String = "LLDictTest"
 
-Private Assert As Object
-Private Fakes As Object
+Private Assert As ICustomTest
 Private Dictionary As ILLdictionary
 
 '@section Fixture lifecycle
@@ -30,20 +31,20 @@ End Sub
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
-    'Set up the Rubberduck helpers and seed the in-memory worksheet before the
-    'suite runs. Doing the reset here allows each test to assume the fixture
-    'sheet exists without repeating boilerplate.
-    Set Assert = CreateObject("Rubberduck.AssertClass")
-    Set Fakes = CreateObject("Rubberduck.FakesProvider")
+    EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestLLdictionary"
     ResetDictionarySheet
 End Sub
 
 '@ModuleCleanup
 Private Sub ModuleCleanup()
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
     'Release references captured during `ModuleInitialize`. Keeping things tidy
     'helps when the suite is executed repeatedly within the same Excel session.
     Set Assert = Nothing
-    Set Fakes = Nothing
     Set Dictionary = Nothing
     DeleteWorksheet DICT_SHEET
 
@@ -58,13 +59,17 @@ End Sub
 
 '@TestCleanup
 Private Sub TestCleanup()
+    If Not Assert Is Nothing Then
+        Assert.Flush
+    End If
     'Drop references to ensure subsequent tests cannot accidentally reuse
     'stateful resources from previous runs.
     Set Dictionary = Nothing
 End Sub
 
 '@TestMethod("LLdictionary")
-Private Sub TestCreateInitialisesData()
+Public Sub TestCreateInitialisesData()
+    CustomTestSetTitles Assert, "LLdictionary", "TestCreateInitialisesData"
     On Error GoTo Fail
     Assert.IsTrue (TypeOf Dictionary Is ILLdictionary), "Expected Create to yield an interface implementation"
     Assert.IsTrue (Dictionary.Data.DataStartRow = 1), "Start row should remain at 1"
@@ -73,12 +78,13 @@ Private Sub TestCreateInitialisesData()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestCreateInitialisesData"
+    CustomTestLogFailure Assert, "TestCreateInitialisesData", Err.Number, Err.Description
 End Sub
 
 
 '@TestMethod("LLdictionary")
-Private Sub TestColumnExistsAndValidity()
+Public Sub TestColumnExistsAndValidity()
+    CustomTestSetTitles Assert, "LLdictionary", "TestColumnExistsAndValidity"
     On Error GoTo Fail
     Assert.IsTrue Dictionary.ColumnExists("variable name"), "variable name column should exist"
     Assert.IsTrue (Not Dictionary.ColumnExists("random column for testing")), "Unexpected column reported as existing"
@@ -87,11 +93,12 @@ Private Sub TestColumnExistsAndValidity()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestColumnExistsAndValidity"
+    CustomTestLogFailure Assert, "TestColumnExistsAndValidity", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLdictionary")
-Private Sub TestVariableAndUniqueValues()
+Public Sub TestVariableAndUniqueValues()
+    CustomTestSetTitles Assert, "LLdictionary", "TestVariableAndUniqueValues"
     Dim sheetsList As BetterArray
     Dim expectedSheets As BetterArray
     Dim idx As Long
@@ -114,11 +121,12 @@ Private Sub TestVariableAndUniqueValues()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestVariableAndUniqueValues"
+    CustomTestLogFailure Assert, "TestVariableAndUniqueValues", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLdictionary")
-Private Sub TestSpecialVariableSelectors()
+Public Sub TestSpecialVariableSelectors()
+    CustomTestSetTitles Assert, "LLdictionary", "TestSpecialVariableSelectors"
     Dim choices As BetterArray
     Dim geos As BetterArray
     Dim times As BetterArray
@@ -155,11 +163,12 @@ Private Sub TestSpecialVariableSelectors()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestSpecialVariableSelectors"
+    CustomTestLogFailure Assert, "TestSpecialVariableSelectors", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLdictionary")
-Private Sub TestInsertAndRemoveColumn()
+Public Sub TestInsertAndRemoveColumn()
+    CustomTestSetTitles Assert, "LLdictionary", "TestInsertAndRemoveColumn"
 
     On Error GoTo Fail
 
@@ -175,11 +184,12 @@ Private Sub TestInsertAndRemoveColumn()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestInsertAndRemoveColumn"
+    CustomTestLogFailure Assert, "TestInsertAndRemoveColumn", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLdictionary")
-Private Sub TestCleanRemovesUnknownColumns()
+Public Sub TestCleanRemovesUnknownColumns()
+    CustomTestSetTitles Assert, "LLdictionary", "TestCleanRemovesUnknownColumns"
     Dim sh As Worksheet
     Dim endCol As Long
 
@@ -194,11 +204,12 @@ Private Sub TestCleanRemovesUnknownColumns()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestCleanRemovesUnknownColumns"
+    CustomTestLogFailure Assert, "TestCleanRemovesUnknownColumns", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLdictionary")
-Private Sub TestExportCreatesWorkbook()
+Public Sub TestExportCreatesWorkbook()
+    CustomTestSetTitles Assert, "LLdictionary", "TestExportCreatesWorkbook"
 
     Dim exportBook As Workbook
     Dim exportedSheet As Worksheet
@@ -226,5 +237,5 @@ Private Sub TestExportCreatesWorkbook()
 
 Fail:
     If Not exportBook Is Nothing Then DeleteWorkbook exportBook
-    FailUnexpectedError Assert, "TestExportCreatesWorkbook"
+    CustomTestLogFailure Assert, "TestExportCreatesWorkbook", Err.Number, Err.Description
 End Sub

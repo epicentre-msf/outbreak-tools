@@ -18,19 +18,6 @@ Attribute VB_Description = "Interface of exports"
 
 Option Explicit
 
-'@section Factory
-'===============================================================================
-'@label:Create
-'@prop-title Create a new export handler instance
-'@param exportSheet Worksheet hosting the export specification table.
-'@param startRow Optional start row of the specification table (defaults to 1).
-'@param startColumn Optional start column of the specification table (defaults to 1).
-'@return An instance implementing LL export coordination.
-Public Function Create(ByVal exportSheet As Worksheet, _
-                       Optional ByVal startRow As Long = 1, _
-                       Optional ByVal startColumn As Long = 1) As ILLExport
-End Function
-
 '@section Properties
 '===============================================================================
 '@label:Data
