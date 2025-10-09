@@ -64,7 +64,7 @@ End Sub
 Public Sub ModuleInitialize()
     BusyApp
     Set wb = ThisWorkbook
-    EnsureWorksheet DEFAULTOUTPUTSHEET
+    EnsureWorksheet DEFAULTOUTPUTSHEET, clearSheet:=False
     Set Assert = CustomTest.Create(wb, DEFAULTOUTPUTSHEET)
     ResetTranslator
 End Sub

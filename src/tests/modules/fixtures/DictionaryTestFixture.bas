@@ -43,7 +43,7 @@ Public Sub PrepareDictionaryFixture(ByVal sheetName As String, Optional ByVal ta
         Set wb = targetBook
     End If
 
-    Set sh = EnsureWorksheet(sheetName, wb)
+    Set sh = EnsureWorksheet(sheetName, wb, visibility:=xlSheetVeryhidden)
 
     headerMatrix = RowsToMatrix(Array(fixtureHeaders))
     WriteMatrix sh.Cells(1, 1), headerMatrix

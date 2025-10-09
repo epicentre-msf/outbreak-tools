@@ -165,7 +165,7 @@ Private Function Varlist(ByVal sheetName As String) As BetterArray
     Dim listData As BetterArray
 
     EnsureSheetExists sheetName
-    Set listData = this.dict.Data.FilterData(COL_SHEET_NAME, sheetName, COL_VARIABLE_NAME)
+    Set listData = this.dict.Data.FilterData(COL_SHEET_NAME, sheetName, COL_VARIABLE_NAME, matchCase:=False)
     Set Varlist = listData.Clone()
 End Function
 

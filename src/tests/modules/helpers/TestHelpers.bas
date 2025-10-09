@@ -70,12 +70,11 @@ End Sub
 '@return Worksheet ensured for use.
 Public Function EnsureWorksheet(ByVal sheetName As String, _
                                 Optional ByVal targetBook As workbook, _
-                                Optional ByVal clearSheet As Boolean = True) As Worksheet
+                                Optional ByVal clearSheet As Boolean = True, _
+                                Optional ByVal visibility As Long = xlSheetVisible) As Worksheet
 
     Dim wb As workbook
     Dim sh As Worksheet
-
-    BusyApp
 
     If (targetBook Is Nothing) Then
         Set wb = ThisWorkbook
@@ -88,10 +87,12 @@ Public Function EnsureWorksheet(ByVal sheetName As String, _
     On Error GoTo 0
 
     If sh Is Nothing Then
+        BusyApp
         Set sh = wb.Worksheets.Add
         sh.Name = sheetName
     End If
 
+    sh.Visible = visibility
     If clearSheet Then 
         ClearWorksheet sh
     End If
@@ -112,6 +113,7 @@ End Sub
 '@details Delete a worksheet if it exists.
 '@param sheetName String. Worksheet to delete.
 Public Sub DeleteWorksheet(ByVal sheetName As String)
+    Dim actsh As Worksheet
     On Error Resume Next
         BusyApp
         ThisWorkbook.Worksheets(sheetName).Delete

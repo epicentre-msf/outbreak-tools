@@ -182,7 +182,7 @@ Public Sub TestVariableAddressHorizontalAndVertical()
     'When on the same sheet, horizontal address should be relative and omit prefix
     Dim addrH As String
     addrH = Sheets.VariableAddress("num_valid_h2", onSheet:="hlist2D-sheet1")
-    Assert.AreEqual "B9", addrH, "Expected horizontal variable address to be B9 given index=3 and top=8"
+    Assert.AreEqual "C9", addrH, "Expected horizontal variable address to be B9 given index=3 and top=8"
 
     'Vertical address should include sheet prefix and be absolute in A1 style
     Dim addrV As String

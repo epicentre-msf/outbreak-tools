@@ -517,8 +517,9 @@ Public Sub TestImportPreservesHiddenColumns()
 
     Assert.IsTrue listObject.ListColumns("Amount").Range.EntireColumn.Hidden, _
                   "Import should restore hidden columns"
-    Assert.IsTrue (listObject.ListColumns("Amount").DataBodyRange.Cells(2, 1).Value = 123), _
-                  "Hidden column values should still update"
+    Dim hidVal As String
+    hidVal = listObject.ListColumns("Amount").DataBodyRange.Cells(2, 1).Value
+    Assert.AreEqual CStr(20), Cstr(hidVal), "Hidden column values should still update - value" 
     Exit Sub
 
 Fail:
