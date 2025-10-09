@@ -1,0 +1,27 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Docs: Generate Interface for Class",
+      "type": "shell",
+      "command": "Rscript",
+      "args": [
+        "automate/codes/create-docs.R",
+        "${input:className}"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
+    }
+  ],
+  "inputs": [
+    {
+      "id": "className",
+      "type": "promptString",
+      "description": "Enter class name (e.g., DataSheet)",
+      "default": "DataSheet"
+    }
+  ]
+}
+

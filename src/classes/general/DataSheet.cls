@@ -391,7 +391,8 @@ End Sub
 Private Function FilterData(ByVal varName As String, _
                             ByVal criteriaName As String, _
                             ByVal returnedColumnName As String, _
-                            Optional ByVal includeHeaders As Boolean = False) _
+                            Optional ByVal includeHeaders As Boolean = False, _
+                            Optional ByVal matchCase As Boolean = True) _
         As BetterArray
 
     Dim dataRng As Range
@@ -421,7 +422,7 @@ Private Function FilterData(ByVal varName As String, _
         startRetColIndex = DataStartColumn()
         endRetColIndex = endCol
     Else
-        startRetColIndex = ColumnIndex(returnedColumnName, shouldExist:=True) 'Which index to return, the startcolumn is returned if the returned colname is not found
+        startRetColIndex = ColumnIndex(returnedColumnName, inDataRange:=True, shouldExist:=True, matchCase:=matchCase) 'Which index to return, the startcolumn is returned if the returned colname is not found
         endRetColIndex = startRetColIndex
     End If
 
@@ -429,7 +430,7 @@ Private Function FilterData(ByVal varName As String, _
         If Not .AutoFilter Is Nothing Then .AutoFilter.ShowAllData
 
         With dataRng
-            .AutoFilter Field:=ColumnIndex(varName, inDataRange:=True, shouldExist:=True), Criteria1:=criteriaName
+            .AutoFilter Field:=ColumnIndex(varName, inDataRange:=True, shouldExist:=True, matchCase:=matchCase), Criteria1:=criteriaName
         End With
 
         On Error Resume Next
@@ -951,11 +952,13 @@ End Sub
 Private Function IDataSheet_FilterData(ByVal varName As String, _
                                       ByVal criteriaName As String, _
                                       ByVal returnedColumnName As String, _
-                                      Optional ByVal includeHeaders As Boolean = False) As BetterArray
+                                      Optional ByVal includeHeaders As Boolean = False, _
+                                      Optional ByVal matchCase As Boolean = True) As BetterArray
     Set IDataSheet_FilterData = FilterData(varName:=varName, _
                                            criteriaName:=criteriaName, _
                                            returnedColumnName:=returnedColumnName, _
-                                           includeHeaders:=includeHeaders)
+                                           includeHeaders:=includeHeaders, _ 
+                                           matchCase:=matchCase)
 End Function
 
 '@jump:filtersdata

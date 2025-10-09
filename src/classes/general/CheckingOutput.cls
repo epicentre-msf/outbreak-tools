@@ -500,12 +500,14 @@ Private Function InitialiseWorksheet() As Long
     Dim view As WorksheetView
 
     Set sh = Wksh()
-
+    sh.Rows.Hidden = False
+    
     If Not CustomPropertyExists(ROW_MARKER_NAME) Then
         sh.Cells.Clear
         sh.Cells.Font.Name = "Consolas"
         sh.rows(1).Font.Bold = True
         sh.rows(1).Font.Size = 14
+        
         EnsureTitleStore True
         EnsureWorksheetChangeHandler
         ApplyHiddenColumnsFormatting sh
@@ -533,6 +535,7 @@ Private Function InitialiseWorksheet() As Long
         End If
         ApplyHiddenColumnsFormatting sh
         EnsureFilterDropdown
+
     End If
 
     InitialiseWorksheet = startingRow

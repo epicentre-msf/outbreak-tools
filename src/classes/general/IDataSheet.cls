@@ -80,7 +80,8 @@ End Sub
 '@jump:filterdata
 Public Function FilterData(ByVal varName As String, ByVal criteriaName As String, _
                            ByVal returnedColumnName As String, _
-                           Optional ByVal includeHeaders As Boolean = False) As BetterArray
+                           Optional ByVal includeHeaders As Boolean = False, _
+                           Optional ByVal matchCase As Boolean = True) As BetterArray
 End Function
 
 '@jump:filtersdata

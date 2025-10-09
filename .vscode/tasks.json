@@ -37,9 +37,9 @@
             ],
             "windows": {
                 "command": "perl",
-                "args": [
-                    "automate\\codes\\harness_test_replacements.pl",
-                    "${file}"
+               "args": [
+                "automate/codes/harness_test_replacements.pl",
+                "${file}"
                 ]
             },
             "presentation": {

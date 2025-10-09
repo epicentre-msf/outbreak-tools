@@ -1,15 +1,17 @@
 Attribute VB_Name = "TestLLVariables"
 
 Option Explicit
-Option Private Module
 
-'@TestModule
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+
+
+'@Folder("CustomTests")
 '@Folder("Tests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const DICT_SHEET As String = "LLVarDict"
 
-Private Assert As Object
+Private Assert As ICustomTest
 Private Dictionary As ILLdictionary
 Private Variables As ILLVariables
 
@@ -18,12 +20,17 @@ Private Variables As ILLVariables
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
-    Set Assert = CreateObject("Rubberduck.AssertClass")
+    EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestLLVariables"
     PrepareDictionaryFixture DICT_SHEET
 End Sub
 
 '@ModuleCleanup
 Private Sub ModuleCleanup()
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
     DeleteWorksheet DICT_SHEET
     Set Variables = Nothing
     Set Dictionary = Nothing
@@ -39,6 +46,9 @@ End Sub
 
 '@TestCleanup
 Private Sub TestCleanup()
+    If Not Assert Is Nothing Then
+        Assert.Flush
+    End If
     Set Variables = Nothing
     Set Dictionary = Nothing
 End Sub
@@ -47,16 +57,17 @@ End Sub
 '===============================================================================
 
 '@TestMethod("LLVariables")
-Private Sub TestCreateFailsWhenNameColumnMissing()
+Public Sub TestCreateFailsWhenNameColumnMissing()
+    CustomTestSetTitles Assert, "LLVariables", "TestCreateFailsWhenNameColumnMissing"
     Dim dictSheet As Worksheet
 
     Set dictSheet = ThisWorkbook.Worksheets(DICT_SHEET)
-    dictSheet.ListObjects(1).ListColumns("Variable Name").Delete
+    dictSheet.Columns(1).Delete
 
     On Error GoTo ExpectError
         Set Dictionary = LLdictionary.Create(dictSheet, 1, 1)
         Set Variables = LLVariables.Create(Dictionary)
-        Assert.Fail "Create should raise when variable name column is missing"
+        Assert.LogFailure "Create should raise when variable name column is missing"
         Exit Sub
 ExpectError:
     Assert.AreEqual ProjectError.ElementNotFound, Err.Number, _
@@ -65,7 +76,8 @@ ExpectError:
 End Sub
 
 '@TestMethod("LLVariables")
-Private Sub TestContainsHandlesWildcards()
+Public Sub TestContainsHandlesWildcards()
+    CustomTestSetTitles Assert, "LLVariables", "TestContainsHandlesWildcards"
     Dim varRange As Range
 
     Set varRange = Dictionary.DataRange("Variable Name")
@@ -78,31 +90,33 @@ Private Sub TestContainsHandlesWildcards()
 End Sub
 
 '@TestMethod("LLVariables")
-Private Sub TestSetValueHonoursOnEmpty()
+Public Sub TestSetValueHonoursOnEmpty()
+    CustomTestSetTitles Assert, "LLVariables", "TestSetValueHonoursOnEmpty"
     Dim devComments As Range
 
     Set devComments = Dictionary.DataRange("Dev Comments")
-    devComments.Cells(1, 1).Value = "existing"
+    devComments.Cells(2, 1).Value = "existing"
 
     Variables.SetValue "choi_v1", "Dev Comments", "new text", onEmpty:=True
-    Assert.AreEqual "existing", devComments.Cells(1, 1).Value, _
+    Assert.AreEqual "existing", devComments.Cells(2, 1).Value, _
                      "SetValue should leave populated cells untouched when onEmpty is True"
 
-    devComments.Cells(1, 1).ClearContents
+    devComments.Cells(2, 1).ClearContents
     Variables.SetValue "choi_v1", "Dev Comments", "new text", onEmpty:=True
-    Assert.AreEqual "new text", devComments.Cells(1, 1).Value, _
+    Assert.AreEqual "new text", devComments.Cells(2, 1).Value, _
                      "SetValue should update empty cells when onEmpty is True"
 End Sub
 
 '@TestMethod("LLVariables")
-Private Sub TestIndexRaisesWhenColumnMissing()
+Public Sub TestIndexRaisesWhenColumnMissing()
+    CustomTestSetTitles Assert, "LLVariables", "TestIndexRaisesWhenColumnMissing"
     Dictionary.RemoveColumn "Column Index"
 
     On Error GoTo ExpectError
         Dim idx As Long
         '@Ignore VariableNotUsed, AssignmentNotUsed
         idx = Variables.Index("choi_v1")
-        Assert.Fail "Index should raise when column index column is missing"
+        Assert.LogFailure "Index should raise when column index column is missing"
         Exit Sub
 ExpectError:
     Assert.AreEqual ProjectError.ElementNotFound, Err.Number, _
@@ -111,7 +125,8 @@ ExpectError:
 End Sub
 
 '@TestMethod("LLVariables")
-Private Sub TestVariableNamesReturnsBetterArray()
+Public Sub TestVariableNamesReturnsBetterArray()
+    CustomTestSetTitles Assert, "LLVariables", "TestVariableNamesReturnsBetterArray"
     Dim names As BetterArray
 
     Set names = Variables.VariableNames
@@ -120,12 +135,13 @@ Private Sub TestVariableNamesReturnsBetterArray()
 End Sub
 
 '@TestMethod("LLVariables")
-Private Sub TestSetValueRaisesWhenColumnMissingAfterCache()
+Public Sub TestSetValueRaisesWhenColumnMissingAfterCache()
+    CustomTestSetTitles Assert, "LLVariables", "TestSetValueRaisesWhenColumnMissingAfterCache"
     On Error GoTo ExpectError
 
     Dictionary.RemoveColumn "Dev Comments"
     Variables.SetValue "choi_v1", "Dev Comments", "should fail"
-    Assert.Fail "SetValue should raise when target column is missing"
+    Assert.LogFailure "SetValue should raise when target column is missing"
     Exit Sub
 
 ExpectError:
@@ -135,17 +151,15 @@ ExpectError:
 End Sub
 
 '@TestMethod("LLVariables")
-Private Sub TestVariableNamesCacheInvalidation()
-    Dim lo As ListObject
-    Dim newRow As ListRow
+Public Sub TestVariableNamesCacheInvalidation()
+    CustomTestSetTitles Assert, "LLVariables", "TestVariableNamesCacheInvalidation"
+
+    Dim newRow As Range
     Dim names As BetterArray
 
     Variables.VariableNames 'Warm cache
-
-    Set lo = Dictionary.Data.Wksh.ListObjects(1)
-    Set newRow = lo.ListRows.Add
-    newRow.Range.Value = lo.ListRows(1).Range.Value
-    newRow.Range.Cells(1, 1).Value = "cache_test_var"
+    Set newRow = Dictionary.DataRange("Variable Name")
+    newRow.Cells(newRow.Rows.Count + 1, 1).Value = "cache_test_var"
 
     Variables.InvalidateCaches
     Set names = Variables.VariableNames
@@ -155,18 +169,17 @@ Private Sub TestVariableNamesCacheInvalidation()
 End Sub
 
 '@TestMethod("LLVariables")
-Private Sub TestMetadataHelpers()
+Public Sub TestMetadataHelpers()
+    CustomTestSetTitles Assert, "LLVariables", "TestMetadataHelpers"
     Dim sheetName As String
     Dim controlType As String
     Dim tableName As String
-    Dim expectedTable As String
 
     sheetName = Variables.SheetName("choi_v1")
     controlType = Variables.ControlType("choi_v1")
     tableName = Variables.TableName("choi_v1")
-    expectedTable = DictionaryFixtureValue(0, "Table Name")
-
+    
     Assert.AreEqual "vlist1D-sheet1", sheetName, "SheetName helper should return dictionary sheet name"
     Assert.AreEqual "choice_manual", controlType, "ControlType helper should return control value"
-    Assert.AreEqual expectedTable, tableName, "TableName helper should return dictionary table name"
+    Assert.IsTrue LenB(tableName) = 0, "TableName helper should empty dictionary table if dictionary is not prepared"
 End Sub

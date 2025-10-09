@@ -262,7 +262,7 @@ Private Function ContainsControl(ByVal sheetName As String, _
     EnsureSheetExists sheetName
     EnsureControlColumnExists colName
 
-    Set values = this.dict.Data.FilterData(COL_SHEET_NAME, sheetName, colName)
+    Set values = this.dict.Data.FilterData(COL_SHEET_NAME, sheetName, colName, matchCase:=False)
     ContainsControl = values.Includes(Control)
 End Function
 
@@ -484,7 +484,7 @@ End Function
 Private Function ColumnIndex(ByVal colName As String, ByVal allowMissing As Boolean) As Long
     Dim idx As Long
 
-    idx = this.dict.Data.ColumnIndex(colName, shouldExist:=Not allowMissing)
+    idx = this.dict.Data.ColumnIndex(colName, shouldExist:=Not allowMissing, matchCase:=False)
     If idx <= 0 And Not allowMissing Then
         ThrowError ProjectError.ElementNotFound, _
                    "Dictionary column '" & colName & "' is required for this operation"
