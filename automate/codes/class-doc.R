@@ -10,7 +10,7 @@ VBADocParser <- R6Class(
   public = list(
     initialize = function(
       folder,
-      output_folder = here(folder, "docs"),
+      output_folder = here("src", "docs"),
       proj_path = here()
     ) {
       private$folder <- path_abs(folder)
@@ -59,6 +59,112 @@ VBADocParser <- R6Class(
             "No valid documentation blocks found in {class_name}"
           ))
         }
+      }
+    },
+
+    parse_class = function(class_name, exclude_files = NULL) {
+      cls_files <- dir_ls(
+        self$init_folder(),
+        recurse = TRUE,
+        regexp = "\\.cls$"
+      )
+      cls_files <- setdiff(cls_files, exclude_files)
+
+      # Map class names to files
+      class_map <- setNames(
+        cls_files,
+        path_ext_remove(path_file(cls_files))
+      )
+
+      if (!(class_name %in% names(class_map))) {
+        cli::cli_abort(glue("Class '{class_name}' not found under {self$init_folder()}"))
+      }
+
+      target_file <- class_map[[class_name]]
+      private$class_names <- names(class_map)
+
+      cli::cli_inform(glue("Parsing single class: {class_name}"))
+      lines <- read_lines(target_file)
+      doc_info <- private$extract_doc_blocks(lines)
+
+      if (length(doc_info$internals) > 0 || length(doc_info$externals) > 0) {
+        md <- private$build_markdown(
+          class_name,
+          doc_info$externals,
+          doc_info$internals,
+          doc_info$tocs,
+          private$class_names,
+          interface_mode = FALSE
+        )
+        write_file(md, path(self$write_folder(), glue("{class_name}.md")))
+        cli::cli_inform(glue("Written: {class_name}.md"))
+      } else {
+        cli::cli_alert_warning(glue(
+          "No valid documentation blocks found in {class_name}"
+        ))
+      }
+    },
+
+    parse_interface_for_class = function(class_name, exclude_files = NULL) {
+      # List all .cls files in scope
+      cls_files <- dir_ls(
+        self$init_folder(),
+        recurse = TRUE,
+        regexp = "\\.cls$"
+      )
+      cls_files <- setdiff(cls_files, exclude_files)
+
+      # Build maps
+      all_names <- path_ext_remove(path_file(cls_files))
+      file_by_name <- setNames(cls_files, all_names)
+      private$class_names <- all_names
+
+      # Preferred interface naming convention
+      preferred_iface <- paste0("I", class_name)
+      iface_name <- NULL
+      if (preferred_iface %in% names(file_by_name)) {
+        iface_name <- preferred_iface
+      } else if (class_name %in% names(file_by_name)) {
+        # Fallback: read Implements lines from the class file
+        lines <- read_lines(file_by_name[[class_name]])
+        impl <- stringr::str_match(lines, "^\\s*Implements\\s+([A-Za-z0-9_]+)")
+        impl <- impl[!is.na(impl[, 2]), 2]
+        if (length(impl) > 0) {
+          # Pick the first declared interface available in files
+          impl <- impl[impl %in% names(file_by_name)]
+          if (length(impl) > 0) iface_name <- impl[[1]]
+        }
+      }
+
+      if (is.null(iface_name)) {
+        cli::cli_abort(glue("No interface found for class '{class_name}'. Expected '{preferred_iface}' or an Implements declaration."))
+      }
+
+      iface_file <- file_by_name[[iface_name]]
+      cli::cli_inform(glue("Parsing interface for class {class_name}: {iface_name}"))
+
+      lines <- read_lines(iface_file)
+      doc_info <- private$extract_doc_blocks(lines)
+
+      # Treat all documented members as external API for interfaces
+      docs_external <- c(doc_info$externals, doc_info$internals)
+      docs_internal <- list()
+
+      if (length(docs_external) > 0) {
+        md <- private$build_markdown(
+          iface_name,
+          docs_external,
+          docs_internal,
+          doc_info$tocs,
+          private$class_names,
+          interface_mode = TRUE
+        )
+        write_file(md, path(self$write_folder(), glue("{iface_name}.md")))
+        cli::cli_inform(glue("Written: {iface_name}.md"))
+      } else {
+        cli::cli_alert_warning(glue(
+          "No valid documentation blocks found in interface {iface_name}"
+        ))
       }
     },
 
@@ -153,6 +259,112 @@ VBADocParser <- R6Class(
 
       write_lines(out, path(self$write_folder(), "Enumerations.md"))
       cli::cli_inform("Written: Enumerations.md")
+    },
+
+    build_master_markdown = function(title = "Code Documentation") {
+      out_dir <- self$write_folder()
+      md_files <- dir_ls(out_dir, regexp = "\\.md$", type = "file")
+      md_files <- md_files[!basename(md_files) %in% c("CodeDocumentation.md")]
+      md_files <- md_files[order(tolower(basename(md_files)))]
+
+      header <- c(
+        "---",
+        glue("title: {title}"),
+        "format:",
+        "  html:",
+        "    toc: true",
+        "    theme: 'cosmo'",
+        "---",
+        "",
+        "# Class Index",
+        ""
+      )
+
+      index <- glue("- [{path_ext_remove(basename(f))}]({basename(f)})", f = md_files)
+
+      sections <- c()
+      for (f in md_files) {
+        sections <- c(
+          sections,
+          "",
+          glue("\n---\n# {path_ext_remove(basename(f))}\n"),
+          read_lines(f)
+        )
+      }
+
+      out <- c(header, index, sections)
+      write_lines(out, path(out_dir, "CodeDocumentation.md"))
+      cli::cli_inform("Written: CodeDocumentation.md")
+    },
+
+    build_site_index = function(title = "Code Documentation") {
+      out_dir <- self$write_folder()
+      md_files <- dir_ls(out_dir, regexp = "\\.md$", type = "file")
+      md_files <- md_files[order(tolower(basename(md_files)))]
+
+      items <- paste0(
+        '<li><a href="', basename(md_files), '">',
+        path_ext_remove(basename(md_files)),
+        '</a></li>'
+      )
+
+      html <- c(
+        '<!doctype html>',
+        '<html lang="en">',
+        '<head>',
+        '  <meta charset="utf-8"/>',
+        glue('  <title>{title}</title>'),
+        '  <meta name="viewport" content="width=device-width, initial-scale=1"/>',
+        '  <style>body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:2rem;max-width:960px} h1{margin-top:0} ul{line-height:1.8} .muted{color:#666;font-size:0.9em} .card{border:1px solid #eee;border-radius:8px;padding:1rem;margin:1rem 0} .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem} </style>',
+        '</head>',
+        '<body>',
+        glue('<h1>{title}</h1>'),
+        '<p class="muted">Static index linking to per-class Markdown docs.</p>',
+        '<div class="card">',
+        '<h2>Classes</h2>',
+        '<ul>',
+        items,
+        '</ul>',
+        '</div>',
+        '<div class="card">',
+        '<h2>Combined Documentation</h2>',
+        '<ul>',
+        '<li><a href="CodeDocumentation.md">CodeDocumentation.md</a></li>',
+        '</ul>',
+        '</div>',
+        '</body>',
+        '</html>'
+      )
+
+      write_lines(html, path(out_dir, "index.html"))
+      cli::cli_inform("Written: index.html")
+
+      # Also emit a very simple HTML wrapper for the combined markdown
+      combined_md <- path(out_dir, "CodeDocumentation.md")
+      if (file_exists(combined_md)) {
+        md_text <- paste(read_lines(combined_md), collapse = "\n")
+        # Render markdown as preformatted text for offline viewing
+        book_html <- c(
+          '<!doctype html>',
+          '<html lang="en">',
+          '<head>',
+          '  <meta charset="utf-8"/>',
+          glue('  <title>{title}</title>'),
+          '  <meta name="viewport" content="width=device-width, initial-scale=1"/>',
+          '  <style>body{font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:2rem;max-width:960px} pre{white-space:pre-wrap;word-wrap:break-word} .muted{color:#666}</style>',
+          '</head>',
+          '<body>',
+          glue('<h1>{title}</h1>'),
+          '<p class="muted">Combined markdown rendered as preformatted text. For rich rendering, open the .md in a markdown viewer or Quarto.</p>',
+          '<pre>',
+          md_text,
+          '</pre>',
+          '</body>',
+          '</html>'
+        )
+        write_lines(book_html, path(out_dir, "CodeDocumentation.html"))
+        cli::cli_inform("Written: CodeDocumentation.html")
+      }
     }
   ),
 
@@ -253,7 +465,8 @@ VBADocParser <- R6Class(
       externals,
       internals,
       tocs,
-      class_names
+      class_names,
+      interface_mode = FALSE
     ) {
       output <- c(
         "---",
@@ -266,21 +479,23 @@ VBADocParser <- R6Class(
         ""
       )
 
+      # Primary section
       output <- c(
         output,
-        "</details>",
-        "\n---\n",
         private$resolve_doc(externals, class_names),
         ""
       )
 
-      output <- c(
-        output,
-        "",
-        "::: {.callout-note collapse=\"true\" title=\"Additional not exported Subs \"}",
-        glue("{private$resolve_doc(internals, class_names)}"),
-        ":::"
-      )
+      # Interface mode: do not emit internals callout
+      if (!interface_mode) {
+        output <- c(
+          output,
+          "",
+          "::: {.callout-note collapse=\"true\" title=\"Additional not exported Subs \"}",
+          glue("{private$resolve_doc(internals, class_names)}"),
+          ":::"
+        )
+      }
       paste(output, collapse = "\n")
     },
 
