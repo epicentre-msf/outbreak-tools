@@ -46,6 +46,13 @@ End Property
 Public Property Get HasLiterals() As Boolean
 End Property
 
+'@label:IsGrouped
+'@jump:IsGrouped
+'@sub-title Indicate whether the parsed formula targets grouped evaluation
+'@return String "Yes" for grouped formulas, "No" otherwise.
+Public Property Get IsGrouped() As String
+End Property
+
 '@label:HasChecking
 '@jump:HasChecking
 '@sub-title Determine whether parsing recorded diagnostic messages

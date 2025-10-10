@@ -25,7 +25,8 @@ End Sub
 Private Function BuildCRFContext(ByVal controlType As String, _
                                  ByVal statusValue As String, _
                                  Optional ByVal crfChoices As String = "no", _
-                                 Optional  categories As Variant) As ILLVarContext
+                                 Optional ByVal categories As Variant, _
+                                 Optional ByVal shortCategories As Variant) As ILLVarContext
 
     Dim linelistStub As LLVarContextLinelistStub
     Dim variablesStub As LLVarContextVariablesStub
@@ -40,6 +41,9 @@ Private Function BuildCRFContext(ByVal controlType As String, _
     Set specsStub = New LLVarContextSpecsStub
     If Not IsMissing(categories) Then
         specsStub.SetCategories "crf_var", categories
+    End If
+    If Not IsMissing(shortCategories) Then
+        specsStub.SetCategories "crf_var", shortCategories, True
     End If
     linelistStub.UseSpecs specsStub
 
@@ -105,13 +109,21 @@ Private Sub TestCRFWriterAddsChoiceColumns()
     Dim context As ILLVarContext
     Dim sheet As Worksheet
 
-    Set context = BuildCRFContext("choice_manual", "active", "yes", Array("Yes", "No"))
+    Dim longCategories As Variant
+    Dim shortCategories As Variant
+
+    longCategories = Array("Long Yes", "Long No")
+    shortCategories = Array("Y", "N")
+
+    Set context = BuildCRFContext("choice_manual", "active", "yes", longCategories, shortCategories)
 
     WriteCRF context
 
     Set sheet = ThisWorkbook.Worksheets(CRF_SHEET)
-    Assert.AreEqual "Yes", sheet.Cells(4, 2).Value, _
-                     "Choice headers should be written two rows above the CRF line"
+    Assert.AreEqual "Y", sheet.Cells(4, 2).Value, _
+                     "Choice headers should use the short label variant two rows above the CRF line"
+    Assert.AreEqual "N", sheet.Cells(4, 4).Value, _
+                     "Choice headers should advance two columns per entry when crf choices = yes"
     Assert.AreEqual "", sheet.Cells(6, 2).Value, _
                      "Choice value column should start empty"
     Assert.AreEqual "", sheet.Cells(6, 4).Value, _

@@ -25,9 +25,9 @@ Private Type TFormulaData
     wksh As Worksheet
     functions As BetterArray
     characters As BetterArray
+    groupFunctions As BetterArray        'Registered grouped formula mappings
 End Type
 
-Private Const CLASSNAME As String = "FormulaData"
 Private Const FORMULAS_TABLE_NAME As String = "T_XlsFonctions"
 Private Const FORMULAS_COLUMN_NAME As String = "ENG"
 Private Const CHARACTERS_TABLE_NAME As String = "T_ascii"
@@ -130,7 +130,7 @@ End Function
 
 '@sub-title Perform one-time initialisation of the instance
 '@param formWksh Worksheet providing lookup sources.
-Private Sub Initialise(ByVal formWksh As Worksheet)
+Public Sub Initialise(ByVal formWksh As Worksheet)
     Set this.wksh = formWksh
     ResetCaches
     BuildCaches
@@ -205,12 +205,14 @@ End Function
 Private Sub ResetCaches()
     Set this.functions = Nothing
     Set this.characters = Nothing
+    Set this.groupFunctions = Nothing
 End Sub
 
 '@sub-title Build in-memory caches from the worksheet tables
 Private Sub BuildCaches()
     Set this.functions = BuildLookup(ResolveColumnRange(FORMULAS_TABLE_NAME, FORMULAS_COLUMN_NAME), True)
     Set this.characters = BuildLookup(ResolveColumnRange(CHARACTERS_TABLE_NAME, CHARACTERS_COLUMN_NAME), False)
+    InitialiseGroupFunctions
 End Sub
 
 '@sub-title Ensure the function lookup is initialised and return it
@@ -251,6 +253,183 @@ Private Function BuildLookup(ByVal sourceRange As Range, _
     Set BuildLookup = list
 End Function
 
+'@section GroupFunctions
+'===============================================================================
+'@details Maintains an in-memory registry of grouped formulas along with the
+'@details canonical Excel aggregation function each token maps to.
+
+'@label:InitialiseGroupFunctions
+'@sub-title Seed the grouped-formula registry with recognised mappings
+Private Sub InitialiseGroupFunctions()
+    Set this.groupFunctions = New BetterArray
+    this.groupFunctions.LowerBound = 0
+
+    RegisterGroupFunction "SUMIFS", "SUMIFS", True
+    RegisterGroupFunction "COUNTIFS", "COUNTIFS", True
+    RegisterGroupFunction "NIFS", "COUNTIFS", True
+    RegisterGroupFunction "MINIFS", "MIN", False
+    RegisterGroupFunction "MAXIFS", "MAX", False
+    RegisterGroupFunction "MEDIANIFS", "MEDIAN", False
+    RegisterGroupFunction "MEANIFS", "AVERAGE", False
+End Sub
+
+'@label:EnsureGroupRegistry
+'@sub-title Guarantee the grouped-formula registry exists and is seeded
+Private Sub EnsureGroupRegistry()
+    If this.groupFunctions Is Nothing Then InitialiseGroupFunctions
+End Sub
+
+'@label:RegisterGroupFunction
+'@sub-title Register a grouped formula token and its Excel aggregator
+'@param functionName String grouped token as it appears in setup formulas.
+'@param aggregatorName String canonical Excel aggregator to generate.
+Private Sub RegisterGroupFunction(ByVal functionName As String, _
+                                  ByVal aggregatorName As String, _
+                                  Optional ByVal useNative As Boolean = False)
+    Dim normalizedFunction As String
+    Dim normalizedAggregator As String
+    Dim mapping As Variant
+
+    normalizedFunction = UCase$(Trim$(functionName))
+    normalizedAggregator = UCase$(Trim$(aggregatorName))
+
+    If LenB(normalizedFunction) = 0 Then Exit Sub
+    If LenB(normalizedAggregator) = 0 Then Exit Sub
+
+    EnsureGroupRegistry
+    RemoveGroupFunctionMapping normalizedFunction
+
+    mapping = Array(normalizedFunction, normalizedAggregator, CBool(useNative))
+    this.groupFunctions.Push mapping
+
+    EnsureFunctionToken normalizedFunction
+    EnsureFunctionToken normalizedAggregator
+End Sub
+
+'@label:EnsureFunctionToken
+'@sub-title Insert a token into the Excel-function cache when absent
+'@param functionToken String token to guarantee in the lookup.
+Private Sub EnsureFunctionToken(ByVal functionToken As String)
+    Dim normalized As String
+
+    normalized = UCase$(Trim$(functionToken))
+    If LenB(normalized) = 0 Then Exit Sub
+
+    If this.functions Is Nothing Then
+        Set this.functions = New BetterArray
+        this.functions.LowerBound = 0
+    End If
+
+    If Not this.functions.Includes(normalized) Then
+        this.functions.Push normalized
+    End If
+End Sub
+
+'@label:RemoveGroupFunctionMapping
+'@sub-title Remove any existing mapping for the provided grouped token
+'@param functionName String grouped formula token to clear.
+Private Sub RemoveGroupFunctionMapping(ByVal functionName As String)
+    Dim idx As Long
+    Dim entry As Variant
+    Dim normalized As String
+
+    If this.groupFunctions Is Nothing Then Exit Sub
+    If this.groupFunctions.Length = 0 Then Exit Sub
+
+    normalized = UCase$(Trim$(functionName))
+    If LenB(normalized) = 0 Then Exit Sub
+
+    For idx = this.groupFunctions.UpperBound To this.groupFunctions.LowerBound Step -1
+        entry = this.groupFunctions.Item(idx)
+        If IsArray(entry) Then
+            If StrComp(CStr(entry(0)), normalized, vbBinaryCompare) = 0 Then
+                this.groupFunctions.Remove idx
+            End If
+        End If
+    Next idx
+End Sub
+
+'@label:GroupFunctionIncludes
+'@sub-title Determine whether a grouped function token is registered
+'@param functionName String grouped token to look up.
+'@return Boolean True when the token is known.
+Private Function GroupFunctionIncludes(ByVal functionName As String) As Boolean
+    Dim idx As Long
+    Dim entry As Variant
+    Dim normalized As String
+
+    normalized = UCase$(Trim$(functionName))
+    If LenB(normalized) = 0 Then Exit Function
+
+    EnsureGroupRegistry
+
+    If this.groupFunctions.Length = 0 Then Exit Function
+
+    For idx = this.groupFunctions.LowerBound To this.groupFunctions.UpperBound
+        entry = this.groupFunctions.Item(idx)
+        If IsArray(entry) Then
+            If StrComp(CStr(entry(0)), normalized, vbBinaryCompare) = 0 Then
+                GroupFunctionIncludes = True
+                Exit Function
+            End If
+        End If
+    Next idx
+End Function
+
+'@label:GroupAggregator
+'@sub-title Retrieve the Excel aggregator linked to a grouped formula token
+'@param functionName String grouped token to translate.
+'@return String aggregator name or vbNullString when unknown.
+Private Function GroupAggregator(ByVal functionName As String) As String
+    Dim idx As Long
+    Dim entry As Variant
+    Dim normalized As String
+
+    normalized = UCase$(Trim$(functionName))
+    If LenB(normalized) = 0 Then Exit Function
+
+    EnsureGroupRegistry
+
+    If this.groupFunctions.Length = 0 Then Exit Function
+
+    For idx = this.groupFunctions.LowerBound To this.groupFunctions.UpperBound
+        entry = this.groupFunctions.Item(idx)
+        If IsArray(entry) Then
+            If StrComp(CStr(entry(0)), normalized, vbBinaryCompare) = 0 Then
+                GroupAggregator = CStr(entry(1))
+                Exit Function
+            End If
+        End If
+    Next idx
+End Function
+
+'@label:GroupUsesNative
+'@sub-title Determine whether the grouped function should emit a native Excel *IFS aggregator
+'@param functionName String grouped token to inspect.
+'@return Boolean True when the output uses the corresponding *IFS function directly.
+Private Function GroupUsesNative(ByVal functionName As String) As Boolean
+    Dim idx As Long
+    Dim entry As Variant
+    Dim normalized As String
+
+    normalized = UCase$(Trim$(functionName))
+    If LenB(normalized) = 0 Then Exit Function
+
+    EnsureGroupRegistry
+
+    If this.groupFunctions.Length = 0 Then Exit Function
+
+    For idx = this.groupFunctions.LowerBound To this.groupFunctions.UpperBound
+        entry = this.groupFunctions.Item(idx)
+        If IsArray(entry) Then
+            If StrComp(CStr(entry(0)), normalized, vbBinaryCompare) = 0 Then
+                GroupUsesNative = CBool(entry(2))
+                Exit Function
+            End If
+        End If
+    Next idx
+End Function
+
 '@section ErrorHandling
 '===============================================================================
 
@@ -258,7 +437,7 @@ End Function
 '@param errNumb ProjectError describing the failure.
 '@param errorMessage String human-readable explanation.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
-    Err.Raise errNumb, CLASSNAME, "Error: " & errorMessage
+    Err.Raise errNumb, "FormulaData", "Error: " & errorMessage
 End Sub
 
 '@section Interface
@@ -272,3 +451,14 @@ Private Function IFormulaData_ExcelFormulasIncludes(ByVal ExcelFormula As String
     IFormulaData_ExcelFormulasIncludes = ExcelFormulasIncludes(ExcelFormula)
 End Function
 
+Private Function IFormulaData_IsGroupFunction(ByVal functionName As String) As Boolean
+    IFormulaData_IsGroupFunction = GroupFunctionIncludes(functionName)
+End Function
+
+Private Function IFormulaData_GroupAggregator(ByVal functionName As String) As String
+    IFormulaData_GroupAggregator = GroupAggregator(functionName)
+End Function
+
+Private Function IFormulaData_GroupUsesNativeFunction(ByVal functionName As String) As Boolean
+    IFormulaData_GroupUsesNativeFunction = GroupUsesNative(functionName)
+End Function

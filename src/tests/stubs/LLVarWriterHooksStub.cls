@@ -60,3 +60,10 @@ Private Sub ILLVarWriterHooks_AfterWrite(ByVal context As ILLVarContext, _
                                          ByVal layout As ILLVarLayout)
     'No-op for tests
 End Sub
+
+Private Sub ILLVarWriterHooks_ConfigureProtection(ByVal context As ILLVarContext, _
+                                                  ByVal layout As ILLVarLayout, _
+                                                  ByVal valueCell As Range, _
+                                                  ByVal metadataRange As Range)
+    'No-op for tests
+End Sub

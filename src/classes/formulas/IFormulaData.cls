@@ -40,3 +40,26 @@ End Function
 Public Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
 End Function
 
+'@label:IsGroupFunction
+'@jump:IsGroupFunction
+'@sub-title Determine whether a setup function is registered as grouped
+'@param functionName String grouped token to inspect.
+'@return Boolean True when the function is recognised for grouped parsing.
+Public Function IsGroupFunction(ByVal functionName As String) As Boolean
+End Function
+
+'@label:GroupAggregator
+'@jump:GroupAggregator
+'@sub-title Retrieve the Excel aggregator mapped to the grouped token
+'@param functionName String grouped token to translate.
+'@return String aggregator name or vbNullString when the token is unknown.
+Public Function GroupAggregator(ByVal functionName As String) As String
+End Function
+
+'@label:GroupUsesNativeFunction
+'@jump:GroupUsesNativeFunction
+'@sub-title Indicate whether the grouped token should emit a native Excel *IFS function
+'@param functionName String grouped token to inspect.
+'@return Boolean True when the grouped function maps directly to a native Excel *IFS function.
+Public Function GroupUsesNativeFunction(ByVal functionName As String) As Boolean
+End Function

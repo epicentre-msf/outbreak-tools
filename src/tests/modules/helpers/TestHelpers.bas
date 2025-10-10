@@ -274,6 +274,34 @@ Public Sub WriteColumn(ByVal target As Range, ParamArray values() As Variant)
     Next idx
 End Sub
 
+'@label SingleColumnRows
+'@fun-title Convert a 1-D array into an array of single-column rows.
+'@details Convert a 1-D array into an array where each element is wrapped in its own single-column row array.
+'@param values Variant. One-dimensional array to convert.
+'@return Variant array of row arrays or Empty when input is invalid.
+Public Function SingleColumnRows(values As Variant) As Variant
+    Dim result() As Variant
+    Dim idx As Long
+    Dim lower As Long
+    Dim upper As Long
+
+    If Not IsArray(values) Then Exit Function
+
+    lower = LBound(values)
+    upper = UBound(values)
+    If upper < lower Then
+        SingleColumnRows = Array()
+        Exit Function
+    End If
+    ReDim result(0 To upper - lower)
+
+    For idx = lower To upper
+        result(idx - lower) = Array(values(idx))
+    Next idx
+
+    SingleColumnRows = result
+End Function
+
 '@label RowsToMatrix
 '@fun-title Convert an array of row arrays into a 2D matrix.
 '@details Convert an array of row arrays into a 2D matrix.
@@ -320,6 +348,33 @@ End Sub
 
 '@section Data Builders
 '===============================================================================
+
+'@label CollectionToArray
+'@fun-title Copy the items from a collection into a zero-based variant array.
+'@details Copy the items from a collection into a zero-based variant array, returning an empty array when the input is Nothing or empty.
+'@param items Collection containing the values to copy.
+'@return Variant array containing the copied values.
+Public Function CollectionToArray(ByVal items As Collection) As Variant
+    Dim result() As Variant
+    Dim idx As Long
+
+    If items Is Nothing Then
+        CollectionToArray = Array()
+        Exit Function
+    End If
+
+    If items.Count = 0 Then
+        CollectionToArray = Array()
+        Exit Function
+    End If
+
+    ReDim result(0 To items.Count - 1)
+    For idx = 1 To items.Count
+        result(idx - 1) = items(idx)
+    Next idx
+
+    CollectionToArray = result
+End Function
 
 '@label BetterArrayFromList
 '@fun-title Create a BetterArray with the supplied items.

@@ -73,9 +73,9 @@ Private Function CreateStep(ByVal label As String, Optional ByVal shouldFail As 
     Set CreateStep = stub
 End Function
 
-Private Function CreateScopeStub() As ILinelistApplicationStateScope
-    Dim scopeStub As LinelistApplicationStateScopeStub
-    Set scopeStub = New LinelistApplicationStateScopeStub
+Private Function CreateScopeStub() As IApplicationState
+    Dim scopeStub As ApplicationStateStub
+    Set scopeStub = New ApplicationStateStub
     Set scopeStub.ApplicationObject = Application
     Set CreateScopeStub = scopeStub
 End Function
@@ -84,7 +84,7 @@ Private Function BuildPipeline(Optional ByVal failingStage As LinelistPreparatio
     Dim specs As ILinelistSpecs
     Dim dictionary As ILLdictionary
     Dim linelist As ILinelist
-    Dim scope As ILinelistApplicationStateScope
+    Dim scope As IApplicationState
     Dim tempStep As ILinelistPreparationStep
     Dim exportStep As ILinelistPreparationStep
     Dim analysisStep As ILinelistPreparationStep
@@ -132,7 +132,7 @@ Public Sub TestPrepareRestoresScopeWhenStepFails()
     CustomTestSetTitles Assert, "LinelistPreparationPipeline", "PrepareRestoresScopeWhenStepFails"
 
     Dim pipeline As ILinelistPreparationPipeline
-    Dim scopeStub As LinelistApplicationStateScopeStub
+    Dim scopeStub As ApplicationStateStub
 
     Set scopeStub = CreateScopeStub()
 
@@ -154,7 +154,7 @@ Public Sub TestPrepareRestoresScopeWhenStepFails()
     Set codeStep = CreateStep("TransferCodeModules", shouldFail:=True)
     Set formStep = CreateStep("TransferForms")
 
-    Dim scopeInterface As ILinelistApplicationStateScope
+    Dim scopeInterface As IApplicationState
     Set scopeInterface = scopeStub
 
     Set pipeline = LinelistPreparationPipeline.Create(linelist, specs, _

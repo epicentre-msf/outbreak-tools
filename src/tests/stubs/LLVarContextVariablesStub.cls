@@ -18,6 +18,7 @@ Implements ILLVariables
 
 Private Type TVariablesStub
     rows As BetterArray
+    rangeMap As Collection
 End Type
 
 Private this As TVariablesStub
@@ -29,12 +30,37 @@ Public Sub AddValue(ByVal varName As String, ByVal colName As String, ByVal valu
     this.rows.Push Array(Normalise(varName), Normalise(colName), value)
 End Sub
 
+Public Sub SetCellRange(ByVal varName As String, ByVal colName As String, ByVal target As Range)
+    Dim key As String
+
+    EnsureStore
+    key = BuildKey(varName, colName)
+
+    On Error Resume Next
+        this.rangeMap.Remove key
+    On Error GoTo 0
+
+    If target Is Nothing Then Exit Sub
+
+    On Error Resume Next
+        this.rangeMap.Add target, key
+    On Error GoTo 0
+End Sub
+
 Private Sub EnsureStore()
     If this.rows Is Nothing Then
         Set this.rows = New BetterArray
         this.rows.LowerBound = 1
     End If
+
+    If this.rangeMap Is Nothing Then
+        Set this.rangeMap = New Collection
+    End If
 End Sub
+
+Private Function BuildKey(ByVal varName As String, ByVal colName As String) As String
+    BuildKey = Normalise(varName) & "|" & Normalise(colName)
+End Function
 
 Private Function Normalise(ByVal textValue As String) As String
     Normalise = LCase$(Trim$(textValue))
@@ -63,6 +89,18 @@ Private Function FindEntry(ByVal varName As String, ByVal colName As String) As 
             End If
         End If
     Next idx
+End Function
+
+Private Function LookupRange(ByVal varName As String, ByVal colName As String) As Range
+    Dim key As String
+
+    If this.rangeMap Is Nothing Then Exit Function
+
+    key = BuildKey(varName, colName)
+
+    On Error Resume Next
+        Set LookupRange = this.rangeMap.Item(key)
+    On Error GoTo 0
 End Function
 
 Private Function AllVariableNames() As BetterArray
@@ -113,6 +151,17 @@ Private Function LookupValue(ByVal varName As String, ByVal colName As String) A
     End If
 End Function
 
+Private Function LookupIndex(ByVal varName As String) As Long
+    Dim indexValue As String
+
+    indexValue = LookupValue(varName, "column index")
+    If LenB(indexValue) = 0 Then Exit Function
+
+    On Error Resume Next
+        LookupIndex = CLng(indexValue)
+    On Error GoTo 0
+End Function
+
 Private Sub ThrowNotImplemented(ByVal memberName As String)
     Err.Raise vbObjectError + 513, "LLVarContextVariablesStub." & memberName, _
               "Member not implemented in stub"
@@ -129,7 +178,7 @@ Private Function ILLVariables_Value(ByVal colName As String, ByVal varName As St
 End Function
 
 Private Function ILLVariables_Index(ByVal varName As String) As Long
-    ThrowNotImplemented "Index"
+    ILLVariables_Index = LookupIndex(varName)
 End Function
 
 Private Function ILLVariables_Contains(ByVal varName As String, Optional ByVal matchCase As Boolean = True) As Boolean
@@ -161,7 +210,7 @@ Private Sub ILLVariables_SetValue(ByVal varName As String, ByVal colName As Stri
 End Sub
 
 Private Property Get ILLVariables_CellRange(ByVal colName As String, ByVal varName As String) As Range
-    ThrowNotImplemented "CellRange"
+    Set ILLVariables_CellRange = LookupRange(varName, colName)
 End Property
 
 Private Function ILLVariables_VariableNames() As BetterArray
