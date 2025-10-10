@@ -59,3 +59,10 @@ End Sub
 Public Sub AfterWrite(ByVal context As ILLVarContext, _
                       ByVal layout As ILLVarLayout)
 End Sub
+
+'@description Configure locking and hidden styling after core writing completes.
+Public Sub ConfigureProtection(ByVal context As ILLVarContext, _
+                               ByVal layout As ILLVarLayout, _
+                               ByVal valueCell As Range, _
+                               ByVal metadataRange As Range)
+End Sub

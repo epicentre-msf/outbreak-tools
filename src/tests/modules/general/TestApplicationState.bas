@@ -1,6 +1,9 @@
-Attribute VB_Name = "TestLinelistApplicationStateScope"
+Attribute VB_Name = "TestApplicationState"
 
 Option Explicit
+
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+
 
 Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 
@@ -20,8 +23,8 @@ Private animationsAvailable As Boolean
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
-    Set Assert = CustomTest.Create(ThisWorkbook, TESTOUTPUTSHEET)
-    Assert.SetModuleName "TestLinelistApplicationStateScope"
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestApplicationState"
     CaptureInitialState
 End Sub
 
@@ -84,12 +87,12 @@ End Function
 
 '@section Test cases
 '===============================================================================
-'@TestMethod("LinelistApplicationStateScope")
+'@TestMethod("ApplicationState")
 Public Sub TestApplyBusyStateSwitchesSettings()
-    CustomTestSetTitles Assert, "LinelistApplicationStateScope", "ApplyBusyStateSwitchesSettings"
+    CustomTestSetTitles Assert, "ApplicationState", "ApplyBusyStateSwitchesSettings"
 
-    Dim scope As ILinelistApplicationStateScope
-    Set scope = LinelistApplicationStateScope.Create(Application)
+    Dim scope As IApplicationState
+    Set scope = ApplicationState.Create(Application)
 
     scope.ApplyBusyState
 
@@ -105,12 +108,12 @@ Public Sub TestApplyBusyStateSwitchesSettings()
     scope.Restore
 End Sub
 
-'@TestMethod("LinelistApplicationStateScope")
+'@TestMethod("ApplicationState")
 Public Sub TestRestoreReturnsOriginalSettings()
-    CustomTestSetTitles Assert, "LinelistApplicationStateScope", "RestoreReturnsOriginalSettings"
+    CustomTestSetTitles Assert, "ApplicationState", "RestoreReturnsOriginalSettings"
 
-    Dim scope As ILinelistApplicationStateScope
-    Set scope = LinelistApplicationStateScope.Create(Application)
+    Dim scope As IApplicationState
+    Set scope = ApplicationState.Create(Application)
 
     scope.ApplyBusyState
     scope.Restore
@@ -128,12 +131,12 @@ Public Sub TestRestoreReturnsOriginalSettings()
     End If
 End Sub
 
-'@TestMethod("LinelistApplicationStateScope")
+'@TestMethod("ApplicationState")
 Public Sub TestScopeRestoresOnTerminate()
-    CustomTestSetTitles Assert, "LinelistApplicationStateScope", "ScopeRestoresOnTerminate"
+    CustomTestSetTitles Assert, "ApplicationState", "ScopeRestoresOnTerminate"
 
-    Dim scope As ILinelistApplicationStateScope
-    Set scope = LinelistApplicationStateScope.Create(Application)
+    Dim scope As IApplicationState
+    Set scope = ApplicationState.Create(Application)
 
     scope.ApplyBusyState
     Set scope = Nothing
@@ -151,18 +154,18 @@ Public Sub TestScopeRestoresOnTerminate()
     End If
 End Sub
 
-'@TestMethod("LinelistApplicationStateScope")
+'@TestMethod("ApplicationState")
 Public Sub TestRefreshSnapshotRequiresIdle()
-    CustomTestSetTitles Assert, "LinelistApplicationStateScope", "RefreshSnapshotRequiresIdle"
+    CustomTestSetTitles Assert, "ApplicationState", "RefreshSnapshotRequiresIdle"
 
-    Dim scope As ILinelistApplicationStateScope
-    Set scope = LinelistApplicationStateScope.Create(Application)
+    Dim scope As IApplicationState
+    Set scope = ApplicationState.Create(Application)
 
     scope.ApplyBusyState
 
     On Error GoTo ExpectError
         scope.RefreshSnapshot
-        Assert.Fail "RefreshSnapshot should raise when called while busy"
+        Assert.LogFailure "RefreshSnapshot should raise when called while busy"
         scope.Restore
         Exit Sub
 

@@ -9,8 +9,8 @@ Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 
 Private Assert As ICustomTest
 Private Lifecycle As ILinelistLifecycleManager
-Private TempServiceStub As LinelistTempFileServiceStub
-Private ScopeStub As LinelistApplicationStateScopeStub
+Private TempServiceStub As TemporaryReposStub
+Private ScopeStub As ApplicationStateStub
 Private AccessorStub As LinelistWorkbookAccessorStub
 Private DictionaryStub As DictionaryMinimalStub
 Private SpecsStub As LinelistSpecsWorkbookStub
@@ -37,8 +37,8 @@ End Sub
 
 '@TestInitialize
 Private Sub TestInitialize()
-    Set TempServiceStub = New LinelistTempFileServiceStub
-    Set ScopeStub = New LinelistApplicationStateScopeStub
+    Set TempServiceStub = New TemporaryReposStub
+    Set ScopeStub = New ApplicationStateStub
     Set ScopeStub.ApplicationObject = Application
 
     Set DictionaryStub = New DictionaryMinimalStub

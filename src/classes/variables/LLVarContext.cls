@@ -260,11 +260,24 @@ Private Function ILLVarContext_Translation() As ITranslationObject
     Set ILLVarContext_Translation = this.specs.TransObject
 End Function
 
-Private Function ILLVarContext_Categories(ByVal varName As String) As BetterArray
+Private Function ILLVarContext_Categories(ByVal varName As String, _
+                                          Optional ByVal useShortlabels As Boolean = False) As BetterArray
     Dim requestedName As String
     requestedName = NormaliseVariableName(IIf(LenB(varName) = 0, this.varName, varName))
     EnsureSpecs
-    Set ILLVarContext_Categories = this.specs.Categories(requestedName)
+    Set ILLVarContext_Categories = this.specs.Categories(requestedName, useShortlabels)
+End Function
+
+Private Function ILLVarContext_EditableLabelFlag() As String
+    ILLVarContext_EditableLabelFlag = LCase$(Trim$(ILLVarContext_ValueOf("editable label")))
+End Function
+
+Private Function ILLVarContext_RegisterBookDirective() As String
+    ILLVarContext_RegisterBookDirective = LCase$(Trim$(ILLVarContext_ValueOf("register book")))
+End Function
+
+Private Function ILLVarContext_FormattingConditionName() As String
+    ILLVarContext_FormattingConditionName = Trim$(ILLVarContext_ValueOf("formatting condition"))
 End Function
 
 Private Function ILLVarContext_Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists

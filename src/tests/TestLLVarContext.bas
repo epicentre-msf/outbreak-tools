@@ -95,3 +95,25 @@ Private Sub TestContextWorksheetResolvesUsingMetadata()
                      "Repeated worksheet lookups should return the cached reference"
 End Sub
 
+'@TestMethod("LLVarContext")
+Private Sub TestContextHelperAccessorsNormaliseMetadata()
+    Dim context As ILLVarContext
+    Dim variablesStub As LLVarContextVariablesStub
+
+    Set context = New LLVarContext
+    Set variablesStub = New LLVarContextVariablesStub
+
+    variablesStub.AddValue "var_helper", "sheet name", CONTEXT_SHEET
+    variablesStub.AddValue "var_helper", "editable label", " Yes "
+    variablesStub.AddValue "var_helper", "register book", " Print, Vertical Header "
+    variablesStub.AddValue "var_helper", "formatting condition", " Flag_Var "
+
+    context.Initialise LinelistStub, "var_helper", , variablesStub
+
+    Assert.AreEqual "yes", context.EditableLabelFlag(), _
+                     "EditableLabelFlag should trim and lower-case the dictionary value"
+    Assert.AreEqual "print, vertical header", context.RegisterBookDirective(), _
+                     "RegisterBookDirective should trim and lower-case the register book metadata"
+    Assert.AreEqual "Flag_Var", context.FormattingConditionName(), _
+                     "FormattingConditionName should return the trimmed label without altering case"
+End Sub

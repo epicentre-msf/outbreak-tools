@@ -191,7 +191,11 @@ Private Function Categories() As BetterArray
                 levelValue = QUOTE_CHAR & parsingTable.Item(counter) & QUOTE_CHAR
             End If
             If LenB(levelValue) > 0 Then categoriesTable.Push levelValue
-            counter = counter + 2
+            If (counter = (totalItems - 1)) Then
+                counter = counter + 1
+            Else
+                counter = counter + 2
+            End If
         Loop
     End If
 

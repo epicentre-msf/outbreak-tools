@@ -23,13 +23,7 @@ required VBA syntax.
 16. Always run unix2dos src once you are done with the files
 
 **Progress**
-
-- [DONE] Introduced `LinelistApplicationStateScope` and companion tests to guard Excel busy state transitions while leaving legacy code untouched.
-- [DONE] Added `LinelistSheetNameFormatter` with scoped enums and tests to replace Linelist sheet-name magic numbers and centralise formatting logic.
-- [DONE] Added `LinelistCodeTransferService` with VBIDE/fallback strategies, wired the preparation step and workbook accessor abstractions, and covered the new pipeline orchestration with targeted tests.
-- [DONE] Added `LinelistSheetNavigator` with translation caching and activation helpers to replace ad-hoc sheet selection logic, backed by focused tests.
-- [DONE] Built `LinelistSaveWorkflow` to consolidate admin/instruction activation, protection, and lifecycle disposal for saves, including a suite of workflow-focused tests.
-- [DONE] Added high-level integration tests exercising Linelist preparation and save workflows to guard sheet ordering, module transfers, and temp lifecycle expectations.
-- [DONE] Introduced `LinelistLifecycleManager` plus supporting interfaces to reset/Dispose output workbooks, ensuring temp folders reset and behaviour validated with dedicated tests.
-- [DONE] Added `LinelistTempFileService` with sanitised path helpers and tests to replace scattered temporary folder handling.
-- [DONE] Built `LinelistPreparationPipeline` with stage-specific steps, context, guards, and tests to break down the Prepare flow and validate dependencies.
+- [DONE] Baseline audit of `Formulas.cls` and `FormulaData.cls` to locate token checks, custom formula registrations, and Excel output builders ahead of grouped support.
+- [DONE] Extend metadata/contracts plus parsing pipeline to recognise grouped aggregations, including native SUMIFS/COUNTIFS mappings and aggregator metadata helpers.
+- [DONE] Implement grouped-function detection, validation, and grouped-output builders in `Formulas.cls`, covering native `SUMIFS`/`COUNTIFS`, array-based aggregators, and new tests.
+- [DONE] Update downstream writers to honour `IsGrouped` by selecting `.FormulaArray`, ensuring grouped formulas integrate with existing Excel output flows.

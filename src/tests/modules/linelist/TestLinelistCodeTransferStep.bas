@@ -12,7 +12,7 @@ Private ServiceStub As LinelistCodeTransferServiceStub
 Private PlanStub As LinelistCodeTransferPlanStub
 Private SpecsStub As LinelistSpecsWorkbookStub
 Private LinelistStub As LinelistWorkbookAccessorStub
-Private ScopeStub As LinelistApplicationStateScopeStub
+Private ScopeStub As ApplicationStateStub
 Private DictionaryStub As DictionaryMinimalStub
 Private SourceWorkbook As Workbook
 Private TargetWorkbook As Workbook
@@ -50,7 +50,7 @@ Private Sub TestInitialize()
 
     Set LinelistStub = New LinelistWorkbookAccessorStub
 
-    Set ScopeStub = New LinelistApplicationStateScopeStub
+    Set ScopeStub = New ApplicationStateStub
     Set ScopeStub.ApplicationObject = Application
 
     Set SourceWorkbook = TestHelpers.NewWorkbook

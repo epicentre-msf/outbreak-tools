@@ -63,8 +63,8 @@ Private Sub TestInitialize()
     Dim formatter As ILinelistSheetNameFormatter
     Set formatter = LinelistSheetNameFormatter.Create
 
-    Dim scopeStub As LinelistApplicationStateScopeStub
-    Set scopeStub = New LinelistApplicationStateScopeStub
+    Dim scopeStub As ApplicationStateStub
+    Set scopeStub = New ApplicationStateStub
     Set scopeStub.ApplicationObject = Application
 
     Set Context = LinelistPreparationContext.Create(LinelistStub, SpecsStub, DictionaryStub, formatter, scopeStub)

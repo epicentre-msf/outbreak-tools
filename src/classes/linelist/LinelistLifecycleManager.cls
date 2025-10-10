@@ -23,8 +23,8 @@ Implements ILinelistLifecycleManager
 Private Type TLifecycle
     accessor As ILinelistWorkbookAccessor
     releaser As ILinelistWorkbookReleaser
-    tempFiles As ILinelistTempFileService
-    stateScope As ILinelistApplicationStateScope
+    tempFiles As ITemporaryRepos
+    stateScope As IApplicationState
 End Type
 
 Private this As TLifecycle
@@ -34,8 +34,8 @@ Private Const CLASSNAME As String = "LinelistLifecycleManager"
 '@section Factory helpers
 '===============================================================================
 Public Function Create(ByVal accessor As ILinelistWorkbookAccessor, _
-                       ByVal tempFiles As ILinelistTempFileService, _
-                       Optional ByVal stateScope As ILinelistApplicationStateScope, _
+                       ByVal tempFiles As ITemporaryRepos, _
+                       Optional ByVal stateScope As IApplicationState, _
                        Optional ByVal releaser As ILinelistWorkbookReleaser) As ILinelistLifecycleManager
 
     Dim manager As LinelistLifecycleManager
@@ -45,8 +45,8 @@ Public Function Create(ByVal accessor As ILinelistWorkbookAccessor, _
 End Function
 
 Friend Sub Initialise(ByVal accessor As ILinelistWorkbookAccessor, _
-                      ByVal tempFiles As ILinelistTempFileService, _
-                      ByVal stateScope As ILinelistApplicationStateScope, _
+                      ByVal tempFiles As ITemporaryRepos, _
+                      ByVal stateScope As IApplicationState, _
                       ByVal releaser As ILinelistWorkbookReleaser)
 
     EnsureAccessor accessor
@@ -131,7 +131,7 @@ Private Sub EnsureAccessor(ByVal accessor As ILinelistWorkbookAccessor)
     End If
 End Sub
 
-Private Sub EnsureTempService(ByVal tempFiles As ILinelistTempFileService)
+Private Sub EnsureTempService(ByVal tempFiles As ITemporaryRepos)
     If tempFiles Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Temporary file service cannot be Nothing"
     End If

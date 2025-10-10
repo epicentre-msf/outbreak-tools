@@ -9,6 +9,9 @@ Option Explicit
 '@ModuleDescription("Shared dictionary fixture for tests")
 
 Public Const DICTIONARY_FIXTURE_LAST_COLOR As Long = 15773696 'light blue
+Private Const TABLE_NAME_HEADER As String = "Table Name"
+Private Const SHEET_NAME_HEADER As String = "Sheet Name"
+Private Const SHEET_TYPE_HEADER As String = "Sheet Type"
 
 '@section Fixture Cache
 '===============================================================================
@@ -19,6 +22,13 @@ Private fixtureRows As Variant
 Private Sub EnsureFixtureLoaded()
     If IsEmpty(fixtureHeaders) Then fixtureHeaders = FixtureHeadersArray()
     If IsEmpty(fixtureRows) Then fixtureRows = FixtureRowsArray()
+
+    If Not HeaderArrayContains(fixtureHeaders, TABLE_NAME_HEADER) Then
+        fixtureHeaders = InsertTableNameHeader(fixtureHeaders)
+        fixtureRows = AddTableNamesToRows(fixtureRows, fixtureHeaders)
+    ElseIf NeedsTableNameValues(fixtureRows, fixtureHeaders) Then
+        fixtureRows = AddTableNamesToRows(fixtureRows, fixtureHeaders)
+    End If
 End Sub
 
 '@section Worksheet Preparation
@@ -214,6 +224,123 @@ Private Function FixtureRowsArray() As Variant
         FixtureRowsChunk2(), _
         FixtureRowsChunk3(), _
         FixtureRowsChunk4())
+End Function
+
+Private Function HeaderArrayContains(ByVal headers As Variant, ByVal columnName As String) As Boolean
+    Dim idx As Long
+    For idx = LBound(headers) To UBound(headers)
+        If StrComp(CStr(headers(idx)), columnName, vbTextCompare) = 0 Then
+            HeaderArrayContains = True
+            Exit Function
+        End If
+    Next idx
+End Function
+
+Private Function InsertTableNameHeader(ByVal headers As Variant) As Variant
+    Dim lowerBound As Long
+    Dim upperBound As Long
+    Dim insertAt As Long
+    Dim idx As Long
+    Dim result() As Variant
+
+    lowerBound = LBound(headers)
+    upperBound = UBound(headers)
+    insertAt = HeaderIndexOf(headers, SHEET_TYPE_HEADER) + 1
+
+    ReDim result(lowerBound To upperBound + 1)
+
+    For idx = lowerBound To upperBound + 1
+        If idx = insertAt Then
+            result(idx) = TABLE_NAME_HEADER
+        ElseIf idx < insertAt Then
+            result(idx) = headers(idx)
+        Else
+            result(idx) = headers(idx - 1)
+        End If
+    Next idx
+
+    InsertTableNameHeader = result
+End Function
+
+Private Function AddTableNamesToRows(ByVal rows As Variant, ByVal headers As Variant) As Variant
+    Dim result() As Variant
+    Dim idx As Long
+    Dim sheetAssignments As Object
+    Dim sheetIndex As Long
+    Dim tableIndex As Long
+
+    sheetIndex = HeaderIndexOf(headers, SHEET_NAME_HEADER)
+    tableIndex = HeaderIndexOf(headers, TABLE_NAME_HEADER)
+
+    ReDim result(LBound(rows) To UBound(rows))
+
+    Set sheetAssignments = CreateObject("Scripting.Dictionary")
+    sheetAssignments.CompareMode = vbTextCompare
+
+    For idx = LBound(rows) To UBound(rows)
+        result(idx) = InsertTableNameValue(rows(idx), sheetIndex, tableIndex, sheetAssignments)
+    Next idx
+
+    AddTableNamesToRows = result
+End Function
+
+Private Function InsertTableNameValue( ByVal rowValues As Variant, _
+                                       ByVal sheetIndex As Long, _
+                                       ByVal tableIndex As Long, _
+                                       ByVal sheetAssignments As Object) As Variant
+    Dim newRow() As Variant
+    Dim lowerBound As Long
+    Dim upperBound As Long
+    Dim idx As Long
+    Dim tableName As String
+    Dim sheetName As String
+
+    lowerBound = LBound(rowValues)
+    upperBound = UBound(rowValues)
+    ReDim newRow(lowerBound To upperBound + 1)
+
+    sheetName = CStr(rowValues(sheetIndex))
+    tableName = ResolveTableName(sheetName, sheetAssignments)
+
+    For idx = lowerBound To upperBound + 1
+        If idx = tableIndex Then
+            newRow(idx) = tableName
+        ElseIf idx < tableIndex Then
+            newRow(idx) = rowValues(idx)
+        Else
+            newRow(idx) = rowValues(idx - 1)
+        End If
+    Next idx
+
+    InsertTableNameValue = newRow
+End Function
+
+Private Function ResolveTableName(ByVal sheetName As String, ByVal assignments As Object) As String
+    If Not assignments.Exists(sheetName) Then assignments.Add sheetName, "table" & CStr(assignments.Count + 1)
+    ResolveTableName = CStr(assignments(sheetName))
+End Function
+
+Private Function NeedsTableNameValues(ByVal rows As Variant, ByVal headers As Variant) As Boolean
+    Dim anyRow As Variant
+    If Not IsArray(rows) Then Exit Function
+    If UBound(rows) < LBound(rows) Then Exit Function
+    anyRow = rows(LBound(rows))
+    NeedsTableNameValues = ArrayLength(anyRow) <> ArrayLength(headers)
+End Function
+
+Private Function HeaderIndexOf(ByVal headers As Variant, ByVal columnName As String) As Long
+    Dim idx As Long
+    For idx = LBound(headers) To UBound(headers)
+        If StrComp(CStr(headers(idx)), columnName, vbTextCompare) = 0 Then
+            HeaderIndexOf = idx
+            Exit Function
+        End If
+    Next idx
+    Err.Raise vbObjectError + 2001, "DictionaryTestFixture", "Header not found during fixture augmentation: " & columnName
+End Function
+
+Private Function ArrayLength(ByVal values As Variant) As Long
+    ArrayLength = UBound(values) - LBound(values) + 1
 End Function
 
 Private Function CombineRowSets(ParamArray chunks() As Variant) As Variant

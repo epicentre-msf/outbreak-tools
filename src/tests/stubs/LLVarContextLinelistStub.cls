@@ -20,12 +20,16 @@ Private Type TLinelistStub
     hostWorkbook As Workbook
     specs As ILinelistSpecs
     dictionary As ILLdictionary
+    dropdownDefault As IDropdownLists
+    dropdownCustom As IDropdownLists
+    printedSheets As Collection
 End Type
 
 Private this As TLinelistStub
 
 Private Sub Class_Initialize()
     Set this.hostWorkbook = ThisWorkbook
+    Set this.printedSheets = New Collection
 End Sub
 
 Public Sub UseWorkbook(ByVal wb As Workbook)
@@ -38,6 +42,26 @@ End Sub
 
 Public Sub UseDictionary(ByVal dict As ILLdictionary)
     Set this.dictionary = dict
+End Sub
+
+Public Sub UseDropdowns(ByVal defaultDrop As IDropdownLists, _
+                        Optional ByVal customDrop As IDropdownLists = Nothing)
+    Set this.dropdownDefault = defaultDrop
+    Set this.dropdownCustom = customDrop
+End Sub
+
+Public Sub UsePrintedSheet(ByVal sheetName As String, ByVal printedSheet As Worksheet)
+    Dim key As String
+
+    key = LCase$(Trim$(sheetName))
+
+    On Error Resume Next
+        this.printedSheets.Remove key
+    On Error GoTo 0
+
+    On Error Resume Next
+        this.printedSheets.Add printedSheet, key
+    On Error GoTo 0
 End Sub
 
 Private Function ResolveSheet(ByVal sheetName As String) As Worksheet
@@ -71,7 +95,20 @@ Private Property Get ILinelist_Wksh(ByVal sheetName As String) As Worksheet
 End Property
 
 Private Property Get ILinelist_PrintWksh(ByVal sheetName As String) As Worksheet
-    Set ILinelist_PrintWksh = ResolveSheet(sheetName)
+    Dim key As String
+    Dim printed As Worksheet
+
+    key = LCase$(Trim$(sheetName))
+
+    On Error Resume Next
+        Set printed = this.printedSheets.Item(key)
+    On Error GoTo 0
+
+    If printed Is Nothing Then
+        Set printed = ResolveSheet(sheetName)
+    End If
+
+    Set ILinelist_PrintWksh = printed
 End Property
 
 Private Property Get ILinelist_CRFWksh(ByVal sheetName As String) As Worksheet
@@ -79,7 +116,16 @@ Private Property Get ILinelist_CRFWksh(ByVal sheetName As String) As Worksheet
 End Property
 
 Private Property Get ILinelist_Dropdown(Optional ByVal scope As Byte = 1) As IDropdownLists
-    ThrowNotImplemented "Dropdown"
+    Select Case scope
+    Case 1
+        Set ILinelist_Dropdown = this.dropdownDefault
+    Case Else
+        If Not this.dropdownCustom Is Nothing Then
+            Set ILinelist_Dropdown = this.dropdownCustom
+        Else
+            Set ILinelist_Dropdown = this.dropdownDefault
+        End If
+    End Select
 End Property
 
 Private Property Get ILinelist_Pivots() As ICustomPivotTables

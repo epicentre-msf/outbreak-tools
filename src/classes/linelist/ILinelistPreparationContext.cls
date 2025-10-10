@@ -30,5 +30,5 @@ End Property
 Public Property Get SheetFormatter() As ILinelistSheetNameFormatter
 End Property
 
-Public Property Get StateScope() As ILinelistApplicationStateScope
+Public Property Get StateScope() As IApplicationState
 End Property

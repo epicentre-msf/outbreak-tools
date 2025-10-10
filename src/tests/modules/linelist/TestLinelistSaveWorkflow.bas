@@ -10,7 +10,7 @@ Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 Private Assert As ICustomTest
 Private Navigator As ILinelistSheetNavigator
 Private Lifecycle As ILinelistLifecycleManager
-Private TempServiceStub As LinelistTempFileServiceStub
+Private TempServiceStub As TemporaryReposStub
 Private SaveWorkflow As ILinelistSaveWorkflow
 Private Context As ILinelistPreparationContext
 Private AccessorStub As LinelistRecordingAccessorStub
@@ -19,7 +19,7 @@ Private MainStub As LinelistMainStub
 Private PasswordStub As LinelistPasswordStub
 Private DictionaryStub As DictionaryMinimalStub
 Private TranslationStub As LinelistTranslationCounterStub
-Private ScopeStub As LinelistApplicationStateScopeStub
+Private ScopeStub As ApplicationStateStub
 Private WorkbookRef As Workbook
 Private SavedOutputPath As String
 
@@ -89,9 +89,9 @@ Private Sub TestInitialize()
     Set AccessorStub = New LinelistRecordingAccessorStub
     AccessorStub.Initialise DictionaryStub, SpecsStub, WorkbookRef
 
-    Set TempServiceStub = New LinelistTempFileServiceStub
+    Set TempServiceStub = New TemporaryReposStub
 
-    Set ScopeStub = New LinelistApplicationStateScopeStub
+    Set ScopeStub = New ApplicationStateStub
     Set ScopeStub.ApplicationObject = Application
 
     Set Navigator = LinelistSheetNavigator.Create(WorkbookRef, TranslationStub, formatter)

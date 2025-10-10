@@ -201,9 +201,12 @@ Private Sub WriteChoiceColumns(ByVal context As ILLVarContext, _
     controlType = LCase$(Trim$(context.ValueOf("control")))
     If controlType <> "choice_manual" Then Exit Sub
 
-    Set categories = context.Categories(context.VariableName)
+    Set categories = context.Categories(context.VariableName, True)
     If categories Is Nothing Then Exit Sub
     If categories.Length = 0 Then Exit Sub
+    On Error Resume Next
+        categories.LowerBound = 1
+    On Error GoTo 0
 
     choiceHeaderFlag = LCase$(Trim$(context.ValueOf("crf choices")))
     Set design = context.Design
@@ -301,4 +304,11 @@ End Sub
 Private Sub ILLVarWriterHooks_AfterWrite(ByVal context As ILLVarContext, _
                                          ByVal layout As ILLVarLayout)
     'No finalisation required for CRF variables.
+End Sub
+
+Private Sub ILLVarWriterHooks_ConfigureProtection(ByVal context As ILLVarContext, _
+                                                  ByVal layout As ILLVarLayout, _
+                                                  ByVal valueCell As Range, _
+                                                  ByVal metadataRange As Range)
+    'CRF hooks manage locking during dedicated write steps.
 End Sub

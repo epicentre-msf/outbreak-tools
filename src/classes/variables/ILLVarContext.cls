@@ -55,7 +55,17 @@ End Function
 Public Function Translation() As ITranslationObject
 End Function
 
-Public Function Categories(ByVal varName As String) As BetterArray
+Public Function Categories(ByVal varName As String, _
+                           Optional ByVal useShortlabels As Boolean = False) As BetterArray
+End Function
+
+Public Function EditableLabelFlag() As String
+End Function
+
+Public Function RegisterBookDirective() As String
+End Function
+
+Public Function FormattingConditionName() As String
 End Function
 
 '@section Collaborators
