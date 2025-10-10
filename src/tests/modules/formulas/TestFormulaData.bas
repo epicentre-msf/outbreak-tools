@@ -1,18 +1,19 @@
 Attribute VB_Name = "TestFormulaData"
 
 Option Explicit
-Option Private Module
+
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-'@TestModule
+'@Folder("CustomTests")
 '@Folder("Tests")
 
 Private Const FORMULA_SHEET As String = "FormulaDataFixture"
 Private Const FORMULAS_TABLE_NAME As String = "T_XlsFonctions"
 Private Const CHARACTERS_TABLE_NAME As String = "T_ascii"
 
-Private Assert As Object
-Private Fakes As Object
+Private Assert As ICustomTest
 Private FixtureSheet As Worksheet
 
 '@section Helpers
@@ -63,16 +64,19 @@ End Function
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
-    Set Assert = CreateObject("Rubberduck.AssertClass")
-    Set Fakes = CreateObject("Rubberduck.FakesProvider")
+    EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestFormulaData"
 End Sub
 
 '@ModuleCleanup
 Private Sub ModuleCleanup()
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
     DeleteWorksheet FORMULA_SHEET
     RestoreApp
     Set Assert = Nothing
-    Set Fakes = Nothing
     Set FixtureSheet = Nothing
 End Sub
 
@@ -84,6 +88,9 @@ End Sub
 
 '@TestCleanup
 Private Sub TestCleanup()
+    If Not Assert Is Nothing Then
+        Assert.Flush
+    End If
     Set FixtureSheet = Nothing
 End Sub
 
@@ -91,7 +98,8 @@ End Sub
 '===============================================================================
 
 '@TestMethod("FormulaData")
-Private Sub TestCreateCachesLookups()
+Public Sub TestCreateCachesLookups()
+    CustomTestSetTitles Assert, "FormulaData", "TestCreateCachesLookups"
     Dim formData As IFormulaData
 
     On Error GoTo Fail
@@ -108,11 +116,12 @@ Private Sub TestCreateCachesLookups()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestCreateCachesLookups"
+    CustomTestLogFailure Assert, "TestCreateCachesLookups", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("FormulaData")
-Private Sub TestCreateRequiresWorksheet()
+Public Sub TestCreateRequiresWorksheet()
+    CustomTestSetTitles Assert, "FormulaData", "TestCreateRequiresWorksheet"
     Dim raisedError As Boolean
     Dim formData As IFormulaData
 
@@ -128,7 +137,8 @@ Private Sub TestCreateRequiresWorksheet()
 End Sub
 
 '@TestMethod("FormulaData")
-Private Sub TestMissingTableRaises()
+Public Sub TestMissingTableRaises()
+    CustomTestSetTitles Assert, "FormulaData", "TestMissingTableRaises"
     Dim raisedError As Boolean
     Dim formData As IFormulaData
 
@@ -148,11 +158,12 @@ Private Sub TestMissingTableRaises()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestMissingTableRaises"
+    CustomTestLogFailure Assert, "TestMissingTableRaises", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("FormulaData")
-Private Sub TestCachesSurviveWorksheetChanges()
+Public Sub TestCachesSurviveWorksheetChanges()
+    CustomTestSetTitles Assert, "FormulaData", "TestCachesSurviveWorksheetChanges"
     Dim formData As IFormulaData
     Dim formulaTable As ListObject
 
@@ -168,6 +179,43 @@ Private Sub TestCachesSurviveWorksheetChanges()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestCachesSurviveWorksheetChanges"
+    CustomTestLogFailure Assert, "TestCachesSurviveWorksheetChanges", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("FormulaData")
+Public Sub TestGroupedFunctionMetadata()
+    CustomTestSetTitles Assert, "FormulaData", "TestGroupedFunctionMetadata"
+    Dim formData As IFormulaData
+
+    On Error GoTo Fail
+
+    Set formData = BuildFormulaData()
+
+    Assert.IsTrue formData.IsGroupFunction("SUMIFS"), "SUMIFS should be registered as grouped function"
+    Assert.IsTrue formData.IsGroupFunction("meanifs"), "MEANIFS lookup should be case insensitive"
+    Assert.IsTrue formData.IsGroupFunction("nifs"), "NIFS alias should be recognised"
+    Assert.IsTrue formData.IsGroupFunction("minifs"), "MINIFS should be registered"
+    Assert.AreEqual "SUMIFS", formData.GroupAggregator("SUMIFS"), "SUMIFS should map to SUMIFS"
+    Assert.AreEqual "AVERAGE", formData.GroupAggregator("meanifs"), "MEANIFS should map to AVERAGE"
+    Assert.AreEqual "COUNTIFS", formData.GroupAggregator("NIFS"), "NIFS should map to COUNTIFS"
+    Assert.AreEqual "MIN", formData.GroupAggregator("MINIFS"), "MINIFS should map to MIN aggregator"
+
+    Assert.IsTrue formData.GroupUsesNativeFunction("SUMIFS"), "SUMIFS should emit native SUMIFS"
+    Assert.IsTrue formData.GroupUsesNativeFunction("COUNTIFS"), "COUNTIFS should emit native COUNTIFS"
+    Assert.IsTrue formData.GroupUsesNativeFunction("NIFS"), "NIFS should emit native COUNTIFS"
+    Assert.IsFalse formData.GroupUsesNativeFunction("MEANIFS"), "MEANIFS should require IF wrapper"
+    Assert.IsFalse formData.GroupUsesNativeFunction("MINIFS"), "MINIFS should require IF wrapper"
+
+    Assert.IsFalse formData.IsGroupFunction("UNKNOWN_GROUP"), "Unknown tokens should not be registered"
+    Assert.AreEqual vbNullString, formData.GroupAggregator("UNKNOWN_GROUP"), "Unknown tokens should return empty aggregator"
+    Assert.IsFalse formData.GroupUsesNativeFunction("UNKNOWN_GROUP"), "Unknown tokens should not use native aggregator"
+
+    Assert.IsTrue formData.ExcelFormulasIncludes("SUMIFS"), "Grouped token should be available in Excel lookup"
+    Assert.IsTrue formData.ExcelFormulasIncludes("COUNTIFS"), "Aggregator tokens should be ensured in Excel lookup"
+    Assert.IsTrue formData.ExcelFormulasIncludes("MIN"), "Non-native aggregator tokens should be ensured in Excel lookup"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestGroupedFunctionMetadata", Err.Number, Err.Description
+End Sub

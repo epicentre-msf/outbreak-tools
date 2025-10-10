@@ -19,6 +19,7 @@ Private Const FORMULA_ANALYSIS_SINGLE_VAR_MESSAGE As String = "Analysis formula 
 Private Const FORMULA_UNKNOWN_TOKEN_TEMPLATE As String = "Unknown token '%1' encountered while parsing"
 Private Const FORMULA_PAREN_MISMATCH_MESSAGE As String = "The formula contains unmatched parentheses"
 Private Const FORMULA_NEGATIVE_PAREN_MESSAGE As String = "Closing parenthesis detected before opening one"
+Private Const FORMULA_GROUP_TABLE_MISMATCH_MESSAGE As String = "Grouped formulas require the first and third variables to belong to the same table."
 
 '@section Module State
 '===============================================================================
@@ -102,6 +103,174 @@ End Function
 '@return String reason message matching the Formulas implementation.
 Private Function UnknownTokenReason(ByVal token As String) As String
     UnknownTokenReason = Replace(FORMULA_UNKNOWN_TOKEN_TEMPLATE, "%1", token, 1, 1, vbTextCompare)
+End Function
+
+'@description Identify two variables sharing the same table and a third variable used as condition.
+Private Function SampleGroupedVariables(ByRef criteriaVar As String, _
+                                        ByRef conditionVar As String, _
+                                        ByRef resultVar As String, _
+                                        ByRef tableName As String) As Boolean
+    Dim rows As Variant
+    Dim rowData As Variant
+    Dim tableIndex As Long
+    Dim nameIndex As Long
+    Dim trackedTables As Collection
+    Dim trackedVariables As Collection
+    Dim idx As Long
+    Dim currentTable As String
+    Dim currentVar As String
+
+    rows = DictionaryFixtureRows()
+    tableIndex = DictionaryHeaderIndex("Table Name")
+    nameIndex = DictionaryHeaderIndex("Variable Name")
+
+    Set trackedTables = New Collection
+    Set trackedVariables = New Collection
+
+    On Error GoTo Cleanup
+
+    For Each rowData In rows
+        currentTable = RowValue(rowData, tableIndex)
+        currentVar = RowValue(rowData, nameIndex)
+
+        If LenB(currentTable) > 0 And LenB(currentVar) > 0 Then
+            For idx = 1 To trackedTables.Count
+                If StrComp(CStr(trackedTables(idx)), currentTable, vbTextCompare) = 0 Then
+                    criteriaVar = CStr(trackedVariables(idx))
+                    resultVar = currentVar
+                    tableName = currentTable
+                    SampleGroupedVariables = True
+                    Exit For
+                End If
+            Next idx
+
+            If SampleGroupedVariables Then Exit For
+
+            trackedTables.Add currentTable
+            trackedVariables.Add currentVar
+        End If
+    Next rowData
+
+    If Not SampleGroupedVariables Then GoTo Cleanup
+
+    For Each rowData In rows
+        currentVar = RowValue(rowData, nameIndex)
+        If LenB(currentVar) > 0 Then
+            If StrComp(currentVar, criteriaVar, vbTextCompare) <> 0 And _
+               StrComp(currentVar, resultVar, vbTextCompare) <> 0 Then
+                conditionVar = currentVar
+                Exit For
+            End If
+        End If
+    Next rowData
+
+    If LenB(conditionVar) = 0 Then conditionVar = criteriaVar
+
+Cleanup:
+    Set trackedTables = Nothing
+    Set trackedVariables = Nothing
+End Function
+
+'@description Retrieve a variable that belongs to a table different from the supplied one.
+Private Function VariableFromDifferentTable(ByVal excludedTable As String, _
+                                            ByRef variableName As String) As Boolean
+    Dim rows As Variant
+    Dim rowData As Variant
+    Dim tableIndex As Long
+    Dim nameIndex As Long
+    Dim currentTable As String
+    Dim currentVar As String
+
+    rows = DictionaryFixtureRows()
+    tableIndex = DictionaryHeaderIndex("Table Name")
+    nameIndex = DictionaryHeaderIndex("Variable Name")
+
+    For Each rowData In rows
+        currentTable = RowValue(rowData, tableIndex)
+        currentVar = RowValue(rowData, nameIndex)
+
+        If LenB(currentVar) > 0 And LenB(currentTable) > 0 Then
+            If StrComp(currentTable, excludedTable, vbTextCompare) <> 0 Then
+                variableName = currentVar
+                VariableFromDifferentTable = True
+                Exit For
+            End If
+        End If
+    Next rowData
+End Function
+
+'@description Build a grouped-reference string matching the production logic.
+Private Function GroupedRangeReferenceForTest(ByVal variableName As String, _
+                                              ByVal tableName As String, _
+                                              ByVal useTableName As Boolean, _
+                                              ByVal tablePrefix As String, _
+                                              ByVal sheets As ILLSheets) As String
+    If useTableName Then
+        GroupedRangeReferenceForTest = tablePrefix & tableName & "[" & variableName & "]"
+    Else
+        GroupedRangeReferenceForTest = sheets.VariableAddress(variableName)
+    End If
+End Function
+
+'@description Compose the expected SUMIFS formula for grouped parsing assertions.
+Private Function ExpectedSumIfsFormula(ByVal criteriaVar As String, _
+                                       ByVal conditionVar As String, _
+                                       ByVal resultVar As String, _
+                                       ByVal tableName As String, _
+                                       ByVal tablePrefix As String, _
+                                       ByVal useTableName As Boolean) As String
+    Dim sheets As ILLSheets
+    Dim criteriaRange As String
+    Dim resultRange As String
+    Dim conditionValue As String
+
+    Set sheets = LLSheets.Create(LinelistDictionary)
+    criteriaRange = GroupedRangeReferenceForTest(criteriaVar, tableName, useTableName, tablePrefix, sheets)
+    resultRange = GroupedRangeReferenceForTest(resultVar, tableName, useTableName, tablePrefix, sheets)
+    conditionValue = sheets.VariableAddress(conditionVar)
+
+    ExpectedSumIfsFormula = "SUMIFS(" & resultRange & ", " & criteriaRange & ", " & conditionValue & ")"
+End Function
+
+'@description Compose the expected COUNTIFS formula with a non-empty criterion on the value range.
+Private Function ExpectedCountIfsFormula(ByVal criteriaVar As String, _
+                                         ByVal conditionVar As String, _
+                                         ByVal resultVar As String, _
+                                         ByVal tableName As String, _
+                                         ByVal tablePrefix As String, _
+                                         ByVal useTableName As Boolean) As String
+    Dim sheets As ILLSheets
+    Dim criteriaRange As String
+    Dim resultRange As String
+    Dim conditionValue As String
+
+    Set sheets = LLSheets.Create(LinelistDictionary)
+    criteriaRange = GroupedRangeReferenceForTest(criteriaVar, tableName, useTableName, tablePrefix, sheets)
+    resultRange = GroupedRangeReferenceForTest(resultVar, tableName, useTableName, tablePrefix, sheets)
+    conditionValue = sheets.VariableAddress(conditionVar)
+
+    ExpectedCountIfsFormula = "COUNTIFS(" & criteriaRange & ", " & conditionValue & ", " & resultRange & ", " & Chr$(34) & "<>" & Chr$(34) & ")"
+End Function
+
+'@description Compose the expected array-style aggregator formula (e.g. AVERAGE(IF(...))).
+Private Function ExpectedArrayGroupedFormula(ByVal aggregator As String, _
+                                             ByVal criteriaVar As String, _
+                                             ByVal conditionVar As String, _
+                                             ByVal resultVar As String, _
+                                             ByVal tableName As String, _
+                                             ByVal tablePrefix As String, _
+                                             ByVal useTableName As Boolean) As String
+    Dim sheets As ILLSheets
+    Dim criteriaRange As String
+    Dim resultRange As String
+    Dim conditionValue As String
+
+    Set sheets = LLSheets.Create(LinelistDictionary)
+    criteriaRange = GroupedRangeReferenceForTest(criteriaVar, tableName, useTableName, tablePrefix, sheets)
+    resultRange = GroupedRangeReferenceForTest(resultVar, tableName, useTableName, tablePrefix, sheets)
+    conditionValue = sheets.VariableAddress(conditionVar)
+
+    ExpectedArrayGroupedFormula = aggregator & "(IF(" & criteriaRange & "=" & conditionValue & ", " & resultRange & "))"
 End Function
 
 '@section Module lifecycle
@@ -370,6 +539,147 @@ Private Sub TestDisallowedCharacterRejected()
     Assert.IsFalse formulaInstance.Valid("analysis"), "Disallowed characters should fail"
     Assert.AreEqual expectedReason, formulaInstance.Reason("analysis"), "Reason should reference the disallowed character"
     Assert.IsTrue formulaInstance.HasChecking, "Failure must be logged"
+End Sub
+
+'@TestMethod("Formulas")
+'@description Ensure grouped SUMIFS expressions emit the native SUMIFS function with structured references.
+Private Sub TestGroupedSumIfsUsesNativeFunction()
+    Const TABLE_PREFIX As String = "tbl_"
+    Dim criteriaVar As String
+    Dim conditionVar As String
+    Dim resultVar As String
+    Dim tableName As String
+    Dim expression As String
+    Dim formulaInstance As IFormulas
+    Dim expected As String
+
+    On Error GoTo Fail
+
+    If Not SampleGroupedVariables(criteriaVar, conditionVar, resultVar, tableName) Then
+        Assert.Fail "Unable to identify grouped variables for SUMIFS test"
+        Exit Sub
+    End If
+
+    expression = "SUMIFS(" & criteriaVar & ", " & conditionVar & ", " & resultVar & ")"
+    Set formulaInstance = BuildFormula(expression)
+
+    Assert.IsTrue formulaInstance.Valid("analysis"), "Grouped SUMIFS should be valid"
+    Assert.AreEqual "Yes", formulaInstance.IsGrouped, "Grouped SUMIFS should report grouped state"
+
+    expected = ExpectedSumIfsFormula(criteriaVar, conditionVar, resultVar, tableName, TABLE_PREFIX, True)
+    Assert.AreEqual expected, formulaInstance.ParsedLinelistFormula(useTableName:=True, tablePrefix:=TABLE_PREFIX), "Linelist SUMIFS output mismatch"
+    Assert.AreEqual expected, formulaInstance.ParsedAnalysisFormula(formCond:=Nothing, tablePrefix:=TABLE_PREFIX), "Analysis SUMIFS output mismatch"
+
+    Exit Sub
+Fail:
+    FailUnexpectedError Assert, "TestGroupedSumIfsUsesNativeFunction"
+End Sub
+
+'@TestMethod("Formulas")
+'@description Ensure grouped COUNTIFS appends a non-empty criterion for the aggregation range.
+Private Sub TestGroupedCountIfsAddsNotBlankCriteria()
+    Const TABLE_PREFIX As String = "tbl_"
+    Dim criteriaVar As String
+    Dim conditionVar As String
+    Dim resultVar As String
+    Dim tableName As String
+    Dim expression As String
+    Dim formulaInstance As IFormulas
+    Dim expected As String
+
+    On Error GoTo Fail
+
+    If Not SampleGroupedVariables(criteriaVar, conditionVar, resultVar, tableName) Then
+        Assert.Fail "Unable to identify grouped variables for COUNTIFS test"
+        Exit Sub
+    End If
+
+    expression = "COUNTIFS(" & criteriaVar & ", " & conditionVar & ", " & resultVar & ")"
+    Set formulaInstance = BuildFormula(expression)
+
+    Assert.IsTrue formulaInstance.Valid("analysis"), "Grouped COUNTIFS should be valid"
+    Assert.AreEqual "Yes", formulaInstance.IsGrouped, "Grouped COUNTIFS should report grouped state"
+
+    expected = ExpectedCountIfsFormula(criteriaVar, conditionVar, resultVar, tableName, TABLE_PREFIX, True)
+    Assert.AreEqual expected, formulaInstance.ParsedLinelistFormula(useTableName:=True, tablePrefix:=TABLE_PREFIX), "Linelist COUNTIFS output mismatch"
+    Assert.AreEqual expected, formulaInstance.ParsedAnalysisFormula(formCond:=Nothing, tablePrefix:=TABLE_PREFIX), "Analysis COUNTIFS output mismatch"
+
+    Exit Sub
+Fail:
+    FailUnexpectedError Assert, "TestGroupedCountIfsAddsNotBlankCriteria"
+End Sub
+
+'@TestMethod("Formulas")
+'@description Ensure grouped MEANIFS expressions create array-style AVERAGE(IF()) formulas.
+Private Sub TestGroupedMeanIfsBuildsArrayFormula()
+    Const TABLE_PREFIX As String = "tbl_"
+    Dim criteriaVar As String
+    Dim conditionVar As String
+    Dim resultVar As String
+    Dim tableName As String
+    Dim expression As String
+    Dim formulaInstance As IFormulas
+    Dim expectedLinelist As String
+    Dim expectedAnalysis As String
+
+    On Error GoTo Fail
+
+    If Not SampleGroupedVariables(criteriaVar, conditionVar, resultVar, tableName) Then
+        Assert.Fail "Unable to identify grouped variables for MEANIFS test"
+        Exit Sub
+    End If
+
+    expression = "MEANIFS(" & criteriaVar & ", " & conditionVar & ", " & resultVar & ")"
+    Set formulaInstance = BuildFormula(expression)
+
+    Assert.IsTrue formulaInstance.Valid("analysis"), "Grouped MEANIFS should be valid"
+    Assert.AreEqual "Yes", formulaInstance.IsGrouped, "Grouped MEANIFS should report grouped state"
+
+    expectedLinelist = ExpectedArrayGroupedFormula("AVERAGE", criteriaVar, conditionVar, resultVar, tableName, vbNullString, False)
+    expectedAnalysis = ExpectedArrayGroupedFormula("AVERAGE", criteriaVar, conditionVar, resultVar, tableName, TABLE_PREFIX, True)
+
+    Assert.AreEqual expectedLinelist, formulaInstance.ParsedLinelistFormula(), "Linelist MEANIFS output mismatch"
+    Assert.AreEqual expectedAnalysis, formulaInstance.ParsedAnalysisFormula(formCond:=Nothing, tablePrefix:=TABLE_PREFIX), "Analysis MEANIFS output mismatch"
+
+    Exit Sub
+Fail:
+    FailUnexpectedError Assert, "TestGroupedMeanIfsBuildsArrayFormula"
+End Sub
+
+'@TestMethod("Formulas")
+'@description Reject grouped formulas when the result variable does not share the criteria table.
+Private Sub TestGroupedTableMismatchRejected()
+    Dim criteriaVar As String
+    Dim conditionVar As String
+    Dim resultVar As String
+    Dim tableName As String
+    Dim mismatchedVar As String
+    Dim expression As String
+    Dim formulaInstance As IFormulas
+
+    On Error GoTo Fail
+
+    If Not SampleGroupedVariables(criteriaVar, conditionVar, resultVar, tableName) Then
+        Assert.Fail "Unable to identify grouped variables for mismatch test"
+        Exit Sub
+    End If
+
+    If Not VariableFromDifferentTable(tableName, mismatchedVar) Then
+        Assert.Fail "Unable to locate variable on a different table for mismatch validation"
+        Exit Sub
+    End If
+
+    expression = "SUMIFS(" & criteriaVar & ", " & conditionVar & ", " & mismatchedVar & ")"
+    Set formulaInstance = BuildFormula(expression)
+
+    Assert.IsFalse formulaInstance.Valid("analysis"), "Grouped formula with mismatched tables must be rejected"
+    Assert.AreEqual FORMULA_GROUP_TABLE_MISMATCH_MESSAGE, formulaInstance.Reason("analysis"), "Mismatch reason should explain table constraint"
+    Assert.AreEqual "No", formulaInstance.IsGrouped, "Invalid grouped formula should not report grouped state"
+    Assert.IsTrue formulaInstance.HasChecking, "Mismatch should register a checking entry"
+
+    Exit Sub
+Fail:
+    FailUnexpectedError Assert, "TestGroupedTableMismatchRejected"
 End Sub
 
 '@TestMethod("Formulas")

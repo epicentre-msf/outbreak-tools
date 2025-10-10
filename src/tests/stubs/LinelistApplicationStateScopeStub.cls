@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "LinelistApplicationStateScopeStub"
+Attribute VB_Name = "ApplicationStateStub"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = True
 Attribute VB_PredeclaredId = False
@@ -14,7 +14,7 @@ Attribute VB_Exposed = False
 
 Option Explicit
 
-Implements ILinelistApplicationStateScope
+Implements IApplicationState
 
 Private Type TScope
     applyCount As Long
@@ -55,32 +55,32 @@ Public Property Set ApplicationObject(ByVal value As Application)
     Set this.application = value
 End Property
 
-Private Sub ILinelistApplicationStateScope_ApplyBusyState()
+Private Sub IApplicationState_ApplyBusyState()
     If this.shouldFailApply Then
         Err.Raise vbObjectError + 321, "ApplyBusyState", "Apply failure"
     End If
     this.applyCount = this.applyCount + 1
 End Sub
 
-Private Sub ILinelistApplicationStateScope_Restore()
+Private Sub IApplicationState_Restore()
     If this.shouldFailRestore Then
         Err.Raise vbObjectError + 322, "Restore", "Restore failure"
     End If
     this.restoreCount = this.restoreCount + 1
 End Sub
 
-Private Sub ILinelistApplicationStateScope_RefreshSnapshot()
+Private Sub IApplicationState_RefreshSnapshot()
     this.refreshCount = this.refreshCount + 1
 End Sub
 
-Private Property Get ILinelistApplicationStateScope_ApplicationObject() As Application
-    Set ILinelistApplicationStateScope_ApplicationObject = this.application
+Private Property Get IApplicationState_ApplicationObject() As Application
+    Set IApplicationState_ApplicationObject = this.application
 End Property
 
-Private Property Get ILinelistApplicationStateScope_IsBusy() As Boolean
-    ILinelistApplicationStateScope_IsBusy = (this.applyCount > this.restoreCount)
+Private Property Get IApplicationState_IsBusy() As Boolean
+    IApplicationState_IsBusy = (this.applyCount > this.restoreCount)
 End Property
 
-Private Property Get ILinelistApplicationStateScope_HasSnapshot() As Boolean
-    ILinelistApplicationStateScope_HasSnapshot = True
+Private Property Get IApplicationState_HasSnapshot() As Boolean
+    IApplicationState_HasSnapshot = True
 End Property

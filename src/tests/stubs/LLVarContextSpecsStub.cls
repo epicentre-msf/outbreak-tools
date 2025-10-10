@@ -18,12 +18,17 @@ Implements ILinelistSpecs
 
 Private categoriesMap As Collection
 Private designFormat As ILLFormat
+Private dictionary As ILLdictionary
+Private formulaData As IFormulaData
+Private translationObject As ITranslationObject
+Private geoObject As ILLGeo
 
 Private Sub Class_Initialize()
     Set categoriesMap = New Collection
 End Sub
 
-Public Sub SetCategories(ByVal varName As String, values As Variant)
+Public Sub SetCategories(ByVal varName As String, values As Variant, _
+                         Optional ByVal useShortlabels As Boolean = False)
     Dim categoryList As BetterArray
     Dim idx As Long
     Dim key As String
@@ -40,7 +45,7 @@ Public Sub SetCategories(ByVal varName As String, values As Variant)
         categoryList.Push values
     End If
 
-    key = LCase$(Trim$(varName))
+    key = BuildCategoryKey(varName, useShortlabels)
 
     On Error Resume Next
         categoriesMap.Remove key
@@ -53,8 +58,24 @@ Public Sub SetDesignFormat(ByVal fmt As ILLFormat)
     Set designFormat = fmt
 End Sub
 
+Public Sub SetDictionary(ByVal dict As ILLdictionary)
+    Set dictionary = dict
+End Sub
+
+Public Sub SetFormulaData(ByVal data As IFormulaData)
+    Set formulaData = data
+End Sub
+
+Public Sub SetTranslation(ByVal translation As ITranslationObject)
+    Set translationObject = translation
+End Sub
+
+Public Sub SetGeo(ByVal geo As ILLGeo)
+    Set geoObject = geo
+End Sub
+
 Private Function ILinelistSpecs_Dictionary() As ILLdictionary
-    Set ILinelistSpecs_Dictionary = Nothing
+    Set ILinelistSpecs_Dictionary = dictionary
 End Function
 
 Private Function ILinelistSpecs_Choices() As ILLChoices
@@ -66,11 +87,11 @@ Private Function ILinelistSpecs_specswkb() As Workbook
 End Function
 
 Private Function ILinelistSpecs_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
-    Set ILinelistSpecs_TransObject = Nothing
+    Set ILinelistSpecs_TransObject = translationObject
 End Function
 
 Private Function ILinelistSpecs_FormulaDataObject() As IFormulaData
-    Set ILinelistSpecs_FormulaDataObject = Nothing
+    Set ILinelistSpecs_FormulaDataObject = formulaData
 End Function
 
 Private Function ILinelistSpecs_TemporarySheetName(ByVal scope As TemporarySheetTypes) As String
@@ -90,7 +111,7 @@ Private Function ILinelistSpecs_Password() As IPasswords
 End Function
 
 Private Function ILinelistSpecs_geoObject() As ILLGeo
-    Set ILinelistSpecs_geoObject = Nothing
+    Set ILinelistSpecs_geoObject = geoObject
 End Function
 
 Private Function ILinelistSpecs_Analysis() As ILLAnalysis
@@ -106,7 +127,7 @@ Private Function ILinelistSpecs_Categories(ByVal varName As String, Optional ByV
     Dim stored As Variant
     Dim emptyList As BetterArray
 
-    key = LCase$(Trim$(varName))
+    key = BuildCategoryKey(varName, useShortlabels)
 
     On Error Resume Next
         Set stored = categoriesMap.Item(key)
@@ -119,6 +140,10 @@ Private Function ILinelistSpecs_Categories(ByVal varName As String, Optional ByV
         emptyList.LowerBound = 1
         Set ILinelistSpecs_Categories = emptyList
     End If
+End Function
+
+Private Function BuildCategoryKey(ByVal varName As String, ByVal useShortlabels As Boolean) As String
+    BuildCategoryKey = LCase$(Trim$(varName)) & "|" & CStr(useShortlabels)
 End Function
 
 Private Sub ILinelistSpecs_Prepare()

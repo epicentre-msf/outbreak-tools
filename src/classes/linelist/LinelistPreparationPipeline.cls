@@ -50,7 +50,7 @@ Public Function Create(ByVal linelist As ILinelist, _
                        ByVal codeTransfer As ILinelistPreparationStep, _
                        ByVal formTransfer As ILinelistPreparationStep, _
                        Optional ByVal formatter As ILinelistSheetNameFormatter, _
-                       Optional ByVal stateScope As ILinelistApplicationStateScope) As ILinelistPreparationPipeline
+                       Optional ByVal stateScope As IApplicationState) As ILinelistPreparationPipeline
 
     Dim pipeline As LinelistPreparationPipeline
     Set pipeline = New LinelistPreparationPipeline
@@ -66,11 +66,11 @@ Friend Sub Initialise(ByVal linelist As ILinelist, _
                       ByVal codeTransfer As ILinelistPreparationStep, _
                       ByVal formTransfer As ILinelistPreparationStep, _
                       ByVal formatter As ILinelistSheetNameFormatter, _
-                      ByVal stateScope As ILinelistApplicationStateScope)
+                      ByVal stateScope As IApplicationState)
 
     Dim dictionary As ILLdictionary
     Dim actualFormatter As ILinelistSheetNameFormatter
-    Dim actualScope As ILinelistApplicationStateScope
+    Dim actualScope As IApplicationState
 
     EnsureLinelist linelist
     Set dictionary = ResolveDictionary(specs)
@@ -120,9 +120,9 @@ Private Function ResolveFormatter(ByVal formatter As ILinelistSheetNameFormatter
     End If
 End Function
 
-Private Function ResolveScope(ByVal scope As ILinelistApplicationStateScope) As ILinelistApplicationStateScope
+Private Function ResolveScope(ByVal scope As IApplicationState) As IApplicationState
     If scope Is Nothing Then
-        Set ResolveScope = LinelistApplicationStateScope.Create(Application)
+        Set ResolveScope = ApplicationState.Create(Application)
     Else
         Set ResolveScope = scope
     End If
@@ -179,7 +179,7 @@ End Sub
 '@section Interface implementation
 '===============================================================================
 Private Sub ILinelistPreparationPipeline_Prepare()
-    Dim scope As ILinelistApplicationStateScope
+    Dim scope As IApplicationState
     Dim stageIndex As Long
     Dim stageId As LinelistPreparationStage
     Dim stageName As String

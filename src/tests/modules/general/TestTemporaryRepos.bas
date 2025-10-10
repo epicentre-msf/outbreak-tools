@@ -1,4 +1,4 @@
-Attribute VB_Name = "TestLinelistTempFileService"
+Attribute VB_Name = "TestTemporaryRepos"
 
 Option Explicit
 
@@ -8,7 +8,7 @@ Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As ICustomTest
-Private Service As ILinelistTempFileService
+Private Service As ITemporaryRepos
 Private BaseFolder As String
 
 
@@ -18,11 +18,12 @@ Private BaseFolder As String
 Private Sub ModuleInitialize()
     BusyApp
     Set Assert = CustomTest.Create(ThisWorkbook, TESTOUTPUTSHEET)
-    Assert.SetModuleName "TestLinelistTempFileService"
+    Assert.SetModuleName "TestTemporaryRepos"
 End Sub
 
 '@ModuleCleanup
 Private Sub ModuleCleanup()
+    EnsureWorksheet TESTOUTPUTSHEET, clearSheet:=False
     If Not Assert Is Nothing Then
         Assert.PrintResults TESTOUTPUTSHEET
     End If
@@ -31,12 +32,15 @@ Private Sub ModuleCleanup()
 End Sub
 
 '@TestInitialize
+'@sub-title Prepare a fresh temporary repository before each test execution
 Private Sub TestInitialize()
-    BaseFolder = Application.DefaultFilePath & Application.PathSeparator & "LLTempTest_"
+    'Use the host workbook directory as the base to avoid dependency on environment defaults.
+    BaseFolder = ThisWorkbook.Path 
     ServiceReset
 End Sub
 
 '@TestCleanup
+'@sub-title Flush harness output and tear down repository assets
 Private Sub TestCleanup()
     If Not Assert Is Nothing Then
         Assert.Flush
@@ -44,10 +48,14 @@ Private Sub TestCleanup()
     ServiceReset True
 End Sub
 
+'@label:ServiceReset
+'@sub-title Helper that rebuilds the temporary repository for each test
+'@param removeFolder Boolean True to delete the folder after disposing of the service.
 Private Sub ServiceReset(Optional ByVal removeFolder As Boolean)
     Dim folderPath As String
 
-    Set Service = LinelistTempFileService.Create(BaseFolder)
+    'Initialise a fresh repository rooted under the workbook directory.
+    Set Service = TemporaryRepos.Create(BaseFolder)
     Service.EnsureReady
 
     folderPath = Service.RootPath
@@ -55,7 +63,7 @@ Private Sub ServiceReset(Optional ByVal removeFolder As Boolean)
     If removeFolder Then
         On Error Resume Next
             Service.DeleteAll
-            RmDir folderPath
+            RmDir folderPath 'Remove the root folder itself to guarantee isolation between tests
         On Error GoTo 0
     End If
 End Sub
@@ -63,24 +71,24 @@ End Sub
 
 '@section Tests
 '===============================================================================
-'@TestMethod("LinelistTempFileService")
+'@TestMethod("TemporaryRepos")
 Public Sub TestEnsureReadyCreatesFolder()
-    CustomTestSetTitles Assert, "LinelistTempFileService", "EnsureReadyCreatesFolder"
+    CustomTestSetTitles Assert, "TemporaryRepos", "EnsureReadyCreatesFolder"
 
     Dim folderPath As String
     folderPath = Service.RootPath
 
     On Error GoTo Missing
         GetAttr folderPath
-        Assert.Pass "Temporary folder exists"
+        Assert.LogSuccesses "Temporary folder exists"
         Exit Sub
 Missing:
-    Assert.Fail "EnsureReady should create the temporary folder"
+    Assert.LogFailure "EnsureReady should create the temporary folder"
 End Sub
 
-'@TestMethod("LinelistTempFileService")
+'@TestMethod("TemporaryRepos")
 Public Sub TestCreateFilePathSanitisesName()
-    CustomTestSetTitles Assert, "LinelistTempFileService", "CreateFilePathSanitisesName"
+    CustomTestSetTitles Assert, "TemporaryRepos", "CreateFilePathSanitisesName"
 
     Dim filePath As String
     filePath = Service.CreateFilePath("test:module?.bas")
@@ -89,9 +97,9 @@ Public Sub TestCreateFilePathSanitisesName()
     Assert.IsTrue InStr(1, filePath, "?", vbBinaryCompare) = 0, "Sanitised path should not contain question mark"
 End Sub
 
-'@TestMethod("LinelistTempFileService")
+'@TestMethod("TemporaryRepos")
 Public Sub TestDeleteAllRemovesFiles()
-    CustomTestSetTitles Assert, "LinelistTempFileService", "DeleteAllRemovesFiles"
+    CustomTestSetTitles Assert, "TemporaryRepos", "DeleteAllRemovesFiles"
 
     Dim filePath As String
     filePath = Service.CreateFilePath("sample.bas")
@@ -105,9 +113,9 @@ Public Sub TestDeleteAllRemovesFiles()
     On Error GoTo FileMissing
         Open filePath For Input As #1
         Close #1
-        Assert.Fail "DeleteAll should remove temporary files"
+        Assert.LogFailure "DeleteAll should remove temporary files"
         Exit Sub
 FileMissing:
     Err.Clear
+    Assert.LogSuccesses "DeleteAll removed temporary files"
 End Sub
-

@@ -25,7 +25,7 @@ Private Type TContext
     specs As ILinelistSpecs
     dictionary As ILLdictionary
     sheetFormatter As ILinelistSheetNameFormatter
-    stateScope As ILinelistApplicationStateScope
+    stateScope As IApplicationState
 End Type
 
 Private this As TContext
@@ -38,7 +38,7 @@ Public Function Create(ByVal linelist As ILinelist, _
                        ByVal specs As ILinelistSpecs, _
                        ByVal dictionary As ILLdictionary, _
                        ByVal formatter As ILinelistSheetNameFormatter, _
-                       ByVal scope As ILinelistApplicationStateScope) As ILinelistPreparationContext
+                       ByVal scope As IApplicationState) As ILinelistPreparationContext
 
     Dim context As LinelistPreparationContext
     Set context = New LinelistPreparationContext
@@ -50,7 +50,7 @@ Friend Sub Initialise(ByVal linelist As ILinelist, _
                       ByVal specs As ILinelistSpecs, _
                       ByVal dictionary As ILLdictionary, _
                       ByVal formatter As ILinelistSheetNameFormatter, _
-                      ByVal scope As ILinelistApplicationStateScope)
+                      ByVal scope As IApplicationState)
 
     ValidateLinelist linelist
     ValidateSpecs specs
@@ -92,7 +92,7 @@ Private Sub ValidateFormatter(ByVal formatter As ILinelistSheetNameFormatter)
     End If
 End Sub
 
-Private Sub ValidateScope(ByVal scope As ILinelistApplicationStateScope)
+Private Sub ValidateScope(ByVal scope As IApplicationState)
     If scope Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Application state scope cannot be Nothing"
     End If
@@ -121,7 +121,7 @@ Private Property Get ILinelistPreparationContext_SheetFormatter() As ILinelistSh
     Set ILinelistPreparationContext_SheetFormatter = this.sheetFormatter
 End Property
 
-Private Property Get ILinelistPreparationContext_StateScope() As ILinelistApplicationStateScope
+Private Property Get ILinelistPreparationContext_StateScope() As IApplicationState
     Set ILinelistPreparationContext_StateScope = this.stateScope
 End Property
 

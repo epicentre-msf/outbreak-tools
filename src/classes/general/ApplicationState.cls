@@ -2,7 +2,7 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "LinelistApplicationStateScope"
+Attribute VB_Name = "ApplicationState"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
@@ -17,7 +17,7 @@ Attribute VB_Description = "Guards Excel application settings while the linelist
 
 Option Explicit
 
-Implements ILinelistApplicationStateScope
+Implements IApplicationState
 
 '@section State and constants
 '===============================================================================
@@ -34,7 +34,7 @@ End Type
 Private this As TScopeState
 Private excelApp As Application
 
-Private Const CLASSNAME As String = "LinelistApplicationStateScope"
+Private Const CLASSNAME As String = "ApplicationState"
 
 
 '@section Factory helpers
@@ -43,11 +43,11 @@ Private Const CLASSNAME As String = "LinelistApplicationStateScope"
 '@details Captures the current application state immediately so callers can
 '@details switch to busy mode without an additional call.
 '@param excelApplication Optional target application. Defaults to Excel.Application
-'@return A ready-to-use ILinelistApplicationStateScope instance.
-Public Function Create(Optional ByVal excelApplication As Application) As ILinelistApplicationStateScope
-    Dim scope As LinelistApplicationStateScope
+'@return A ready-to-use IApplicationState instance.
+Public Function Create(Optional ByVal excelApplication As Application) As IApplicationState
+    Dim scope As ApplicationState
 
-    Set scope = New LinelistApplicationStateScope
+    Set scope = New ApplicationState
     scope.BindApplication excelApplication
     scope.CaptureSnapshot
 
@@ -55,7 +55,7 @@ Public Function Create(Optional ByVal excelApplication As Application) As ILinel
 End Function
 
 '@sub-title Self reference
-Public Property Get Self() As ILinelistApplicationStateScope
+Public Property Get Self() As IApplicationState
     Set Self = Me
 End Property
 
@@ -265,26 +265,26 @@ End Sub
 
 '@section Interface implementation
 '===============================================================================
-Private Sub ILinelistApplicationStateScope_ApplyBusyState()
+Private Sub IApplicationState_ApplyBusyState()
     ApplyBusyStateCore
 End Sub
 
-Private Sub ILinelistApplicationStateScope_Restore()
+Private Sub IApplicationState_Restore()
     RestoreInternal False
 End Sub
 
-Private Sub ILinelistApplicationStateScope_RefreshSnapshot()
+Private Sub IApplicationState_RefreshSnapshot()
     RefreshSnapshotCore
 End Sub
 
-Private Property Get ILinelistApplicationStateScope_ApplicationObject() As Application
-    Set ILinelistApplicationStateScope_ApplicationObject = TargetApplication
+Private Property Get IApplicationState_ApplicationObject() As Application
+    Set IApplicationState_ApplicationObject = TargetApplication
 End Property
 
-Private Property Get ILinelistApplicationStateScope_IsBusy() As Boolean
-    ILinelistApplicationStateScope_IsBusy = this.isBusy
+Private Property Get IApplicationState_IsBusy() As Boolean
+    IApplicationState_IsBusy = this.isBusy
 End Property
 
-Private Property Get ILinelistApplicationStateScope_HasSnapshot() As Boolean
-    ILinelistApplicationStateScope_HasSnapshot = this.snapshotCaptured
+Private Property Get IApplicationState_HasSnapshot() As Boolean
+    IApplicationState_HasSnapshot = this.snapshotCaptured
 End Property

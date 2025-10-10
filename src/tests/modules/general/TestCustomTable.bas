@@ -332,6 +332,44 @@ Fail:
 End Sub
 
 '@TestMethod("CustomTable")
+Public Sub TestSortOnFirstGroupsByFirstOccurrence()
+    CustomTestSetTitles Assert, "CustomTable", "TestSortOnFirstGroupsByFirstOccurrence"
+    On Error GoTo Fail
+
+    Dim headers As Variant
+    Dim rows As Variant
+    Dim tableObject As ICustomTable
+    Dim listObject As ListObject
+
+    headers = CustomTableHeaders()
+    rows = Array( _
+        Array("row 1", "Gamma", 1), _
+        Array("row 2", "Alpha", 2), _
+        Array("row 3", "Gamma", 3), _
+        Array("row 4", "Beta", 4))
+
+    Set tableObject = CreateCustomTableWithData(TABLESHEETNAME, TABLENAME, headers, rows)
+    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+
+    tableObject.Sort colName:="Name", directSort:=False
+
+    Assert.AreEqual "Gamma", listObject.ListColumns("Name").DataBodyRange.Cells(1, 1).Value, _
+                     "SortOnFirst should group rows starting with the first encountered value"
+    Assert.AreEqual "Gamma", listObject.ListColumns("Name").DataBodyRange.Cells(2, 1).Value, _
+                     "Duplicate values should remain adjacent after SortOnFirst"
+    Assert.AreEqual "Alpha", listObject.ListColumns("Name").DataBodyRange.Cells(3, 1).Value, _
+                     "Subsequent distinct values should follow in first-seen order"
+    Assert.AreEqual "Beta", listObject.ListColumns("Name").DataBodyRange.Cells(4, 1).Value, _
+                     "Later unique values should appear last"
+    Assert.AreEqual 3, listObject.ListColumns.Count, _
+                     "SortOnFirst should remove its helper column after sorting"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSortOnFirstGroupsByFirstOccurrence", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomTable")
 Public Sub TestImportWithMatchingHeaders()
     CustomTestSetTitles Assert, "CustomTable", "TestImportWithMatchingHeaders"
     On Error GoTo Fail
@@ -491,6 +529,43 @@ Fail:
 End Sub
 
 '@TestMethod("CustomTable")
+Public Sub TestImportPasteAtBottomAppendsData()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportPasteAtBottomAppendsData"
+    On Error GoTo Fail
+
+    Dim targetTable As ICustomTable
+    Dim sourceTable As ICustomTable
+    Dim listObject As ListObject
+    Dim headers As Variant
+    Dim rows As Variant
+
+    Set targetTable = BuildCustomTable
+    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+
+    headers = CustomTableHeaders()
+    rows = Array( _
+        Array("row 4", "Delta", 40), _
+        Array("row 5", "Epsilon", 50))
+
+    Set sourceTable = CreateCustomTableWithData(SOURCE_SHEETNAME, TABLENAME & "Append", headers, rows)
+
+    targetTable.Import sourceTable, pasteAtBottom:=True, keepSourceHeaders:=False
+
+    Assert.AreEqual 5, listObject.DataBodyRange.Rows.Count, _
+                     "Import with pasteAtBottom should append incoming rows"
+    Assert.AreEqual "Alpha", listObject.ListColumns("Name").DataBodyRange.Cells(1, 1).Value, _
+                     "Existing rows should remain at the top when appending"
+    Assert.AreEqual "Delta", listObject.ListColumns("Name").DataBodyRange.Cells(4, 1).Value, _
+                     "First imported row should follow existing data"
+    Assert.AreEqual "Epsilon", listObject.ListColumns("Name").DataBodyRange.Cells(5, 1).Value, _
+                     "Rows should append in source order"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestImportPasteAtBottomAppendsData", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomTable")
 Public Sub TestImportPreservesHiddenColumns()
     CustomTestSetTitles Assert, "CustomTable", "TestImportPreservesHiddenColumns"
     On Error GoTo Fail
@@ -519,11 +594,51 @@ Public Sub TestImportPreservesHiddenColumns()
                   "Import should restore hidden columns"
     Dim hidVal As String
     hidVal = listObject.ListColumns("Amount").DataBodyRange.Cells(2, 1).Value
-    Assert.AreEqual CStr(20), Cstr(hidVal), "Hidden column values should still update - value" 
+    Assert.AreEqual "123", CStr(hidVal), "Hidden column values should still update - value" 
     Exit Sub
 
 Fail:
     CustomTestLogFailure Assert, "TestImportPreservesHiddenColumns", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomTable")
+Public Sub TestImportStrictColumnSearchRequiresExactMatch()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportStrictColumnSearchRequiresExactMatch"
+    On Error GoTo Fail
+
+    Dim tableObject As ICustomTable
+    Dim listObject As ListObject
+    Dim headers As Variant
+    Dim rows As Variant
+    Dim dataSheetObj As IDataSheet
+    Dim missing As BetterArray
+    Dim nameValue As Variant
+
+    Set tableObject = BuildCustomTable
+    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+
+    headers = Array("ID", "name", "Amount")
+    rows = Array(Array(1, "Omega", 900))
+
+    Set dataSheetObj = CreateDataSheet(DATASHEETNAME, headers, rows)
+
+    tableObject.Import dataSheetObj, strictColumnSearch:=True
+
+    Assert.IsTrue tableObject.HasColumnsNotImported, _
+                  "Strict column search should flag case-mismatched headers"
+    Set missing = tableObject.ImportColumnsNotFound
+    Assert.AreEqual "name", CStr(missing.Item(missing.LowerBound)), _
+                     "Mismatched header should be reported exactly"
+
+    nameValue = listObject.ListColumns("Name").DataBodyRange.Cells(1, 1).Value
+    Assert.IsTrue (IsEmpty(nameValue) Or nameValue = vbNullString), _
+                  "Name column should remain blank when strict search cannot match header"
+    Assert.AreEqual "900", CStr(listObject.ListColumns("Amount").DataBodyRange.Cells(1, 1).Value), _
+                     "Matching headers should still import their data"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestImportStrictColumnSearchRequiresExactMatch", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
