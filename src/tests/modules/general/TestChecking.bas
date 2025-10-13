@@ -204,3 +204,59 @@ Public Sub TestCloneProducesIndependentCopy()
 Fail:
     FailUnexpectedError Assert, "TestCloneProducesIndependentCopy"
 End Sub
+
+'@TestMethod("Checkings")
+Public Sub TestAppendCopiesEntriesFromSource()
+    On Error GoTo Fail
+
+    Dim destination As IChecking
+    Dim source As IChecking
+
+    Set destination = checking.Create(CheckingTitle, CheckingSubTitle)
+    PopulateDefaultEntries destination
+
+    Set source = checking.Create("Source title", "Source subtitle")
+    source.Add "src-key-1", "Source key note", checkingNote
+    source.Add "src-key-2", "Source key error", checkingError
+
+    destination.Append source
+
+    Assert.IsTrue (6 = destination.Length), "Appending entries should increase destination length"
+    Assert.IsTrue (2 = source.Length), "Source length should remain unchanged after append"
+    Assert.IsTrue destination.KeyExists("src-key-1"), "Destination should contain appended key src-key-1"
+    Assert.IsTrue destination.KeyExists("src-key-2"), "Destination should contain appended key src-key-2"
+    Assert.AreEqual "Source key note", destination.ValueOf("src-key-1", checkingLabel), "Destination should copy the source label"
+    Assert.AreEqual "Note", NormaliseTypeLabel(destination.ValueOf("src-key-1", checkingType)), "Destination should preserve the source scope (Note)"
+    Assert.AreEqual "Error", NormaliseTypeLabel(destination.ValueOf("src-key-2", checkingType)), "Destination should preserve the source scope (Error)"
+
+    Exit Sub
+
+Fail:
+    FailUnexpectedError Assert, "TestAppendCopiesEntriesFromSource"
+End Sub
+
+'@TestMethod("Checkings")
+Public Sub TestAppendRaisesErrorWhenDuplicateKeyExists()
+    On Error GoTo HandleDuplicate
+
+    Dim destination As IChecking
+    Dim source As IChecking
+
+    Set destination = checking.Create(CheckingTitle, CheckingSubTitle)
+    PopulateDefaultEntries destination
+
+    Set source = checking.Create("Source title")
+    source.Add "key-1", "Duplicate entry", checkingWarning
+
+    destination.Append source
+    Assert.Fail "Expected Append to raise when encountering duplicate key"
+
+    Exit Sub
+
+HandleDuplicate:
+    If Err.Number = ProjectError.ElementShouldNotExists Then
+        Err.Clear
+        Exit Sub
+    End If
+    FailUnexpectedError Assert, "TestAppendRaisesErrorWhenDuplicateKeyExists"
+End Sub

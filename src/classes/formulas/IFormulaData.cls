@@ -7,24 +7,25 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
-Attribute VB_Description = "Interface of FormulaData"
+Attribute VB_Description = "Contract for cached formula metadata"
 
-'@Folder("Formula")
-'@ModuleDescription("Contract for cached formula metadata")
-'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
+'@Folder("Formulas")
 '@Interface
+'@ModuleDescription("Contract for cached formula metadata")
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 
+'@jump:Overview
 '@section Overview
 '===============================================================================
 '@details Exposes membership lookups for both allowed Excel functions and
 '@details permitted separator characters used by the Formulas parser.
 
+'@jump:Lookups
 '@section Lookups
 '===============================================================================
 
-'@label:SpecialCharacterIncludes
 '@jump:SpecialCharacterIncludes
 '@sub-title Test whether a character is part of the allowed separators list
 '@param specialChar String character to inspect.
@@ -32,7 +33,6 @@ Option Explicit
 Public Function SpecialCharacterIncludes(ByVal specialChar As String) As Boolean
 End Function
 
-'@label:ExcelFormulasIncludes
 '@jump:ExcelFormulasIncludes
 '@sub-title Test whether an Excel function is whitelisted
 '@param ExcelFormula String function name to inspect.
@@ -40,7 +40,6 @@ End Function
 Public Function ExcelFormulasIncludes(ByVal ExcelFormula As String) As Boolean
 End Function
 
-'@label:IsGroupFunction
 '@jump:IsGroupFunction
 '@sub-title Determine whether a setup function is registered as grouped
 '@param functionName String grouped token to inspect.
@@ -48,7 +47,6 @@ End Function
 Public Function IsGroupFunction(ByVal functionName As String) As Boolean
 End Function
 
-'@label:GroupAggregator
 '@jump:GroupAggregator
 '@sub-title Retrieve the Excel aggregator mapped to the grouped token
 '@param functionName String grouped token to translate.
@@ -56,7 +54,6 @@ End Function
 Public Function GroupAggregator(ByVal functionName As String) As String
 End Function
 
-'@label:GroupUsesNativeFunction
 '@jump:GroupUsesNativeFunction
 '@sub-title Indicate whether the grouped token should emit a native Excel *IFS function
 '@param functionName String grouped token to inspect.

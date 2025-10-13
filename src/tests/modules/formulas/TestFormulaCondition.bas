@@ -6,7 +6,6 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 
 '@Folder("CustomTests")
-'@Folder("Tests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const DICT_SHEET As String = "FormulaConditionDict"
@@ -64,6 +63,7 @@ Public Sub TestCreateRejectsMismatchedLengths()
 
     On Error GoTo ExpectError
         Dim form As IFormulaCondition
+        '@Ignored AssigmentNotUsed
         Set form = FormulaCondition.Create(vars, conds)
         Assert.LogFailure "Create should raise for mismatched inputs"
         Exit Sub

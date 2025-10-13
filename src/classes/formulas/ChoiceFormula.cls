@@ -143,6 +143,7 @@ Private Function Categories() As BetterArray
         Exit Function
     End If
 
+    '@Ignore AssignmentNotUsed
     Set categoriesTable = caseObj.Categories()
     Set Categories = categoriesTable.Clone()
 End Function
@@ -186,6 +187,7 @@ Private Function SanitisedFormula() As String
 
     If Right$(working, 1) <> ")" Then Exit Function
 
+    '@Ignore AssignmentNotUsed
     working = Left$(working, Len(working) - 1)
     SanitisedFormula = Trim$(working)
 End Function
@@ -239,6 +241,7 @@ Private Function ChoiceArguments() As BetterArray
         End Select
     Next position
 
+    '@Ignore AssignmentNotUsed
     segmentText = Trim$(Mid$(body, segmentStart, formulaLength - segmentStart + 1))
     If LenB(segmentText) > 0 Then arguments.Push segmentText
 
@@ -293,6 +296,7 @@ Private Function CaseWhenFormula() As String
         If idx < upper Then builder = builder & TOKEN_SEPARATOR & " "
     Next idx
 
+    '@Ignore AssignmentNotUsed
     builder = builder & ")"
     CaseWhenFormula = builder
 End Function

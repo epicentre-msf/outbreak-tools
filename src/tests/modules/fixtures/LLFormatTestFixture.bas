@@ -356,7 +356,9 @@ Private Sub EnsureDesignTypeName(ByVal targetSheet As Worksheet)
         End If
     End If
 
+    '@Ignored AssignmentNotUsed
     Set tableObj = FixtureTable(targetSheet)
+    '@Ignored AssignmentNotUsed
     defaultDesign = FirstDesignName(tableObj)
 
     Set targetCell = targetSheet.Cells(tableObj.HeaderRowRange.Row, _

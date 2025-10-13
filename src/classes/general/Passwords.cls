@@ -296,7 +296,7 @@ Public Sub EnsureDebugExitHandler(Optional ByVal targetWorkbook As Workbook)
 
     'Inject or refresh the guard procedures that revert debug mode automatically.
     InsertOrReplaceProcedure vbComp, "LeaveDebugModeOnClose", BuildLeaveDebugProcedure
-    InsertOrReplaceProcedure vbComp, "Workbook_BeforeClose", BuildBeforeCloseProcedure
+    EnsureWorkbookBeforeCloseHook vbComp
     Exit Sub
 
 NoProject:
@@ -1154,9 +1154,117 @@ Private Function BuildBeforeCloseProcedure() As String
     Dim code As String
     code = "Private Sub Workbook_BeforeClose(Cancel As Boolean)" & vbNewLine & _
            "    On Error Resume Next" & vbNewLine & _
-           "    LeaveDebugModeOnClose" & vbNewLine & _
+           "    If Not Cancel Then LeaveDebugModeOnClose" & vbNewLine & _
            "End Sub"
     BuildBeforeCloseProcedure = code
+End Function
+
+Private Sub EnsureWorkbookBeforeCloseHook(ByVal component As Object)
+    '@details Makes sure the Workbook_BeforeClose handler invokes the debug guard without clobbering user code.
+    Dim codeModule As Object
+    Dim procedureName As String
+    Dim procStart As Long
+    Dim procLines As Long
+    Dim bodyStart As Long
+    Dim insertLine As Long
+    Dim guardToken As String
+
+    procedureName = "Workbook_BeforeClose"
+    guardToken = "LeaveDebugModeOnClose"
+
+    Set codeModule = component.CodeModule
+    If codeModule Is Nothing Then
+        ThrowError ProjectError.ErrorUnexpectedState, _
+                   "Unable to access workbook module when installing Workbook_BeforeClose guard"
+    End If
+
+    On Error GoTo Handler
+
+    procStart = codeModule.ProcStartLine(procedureName, 0)
+
+    If procStart <= 0 Then
+        'Procedure missing: append a fresh stub without modifying the existing module surface.
+        AppendProcedure codeModule, BuildBeforeCloseProcedure
+        GoTo Success
+    End If
+
+    procLines = codeModule.ProcCountLines(procedureName, 0)
+
+    If ProcedureBlockContainsToken(codeModule, procStart, procLines, guardToken) Then GoTo Success
+
+    bodyStart = codeModule.ProcBodyLine(procedureName, 0)
+    insertLine = FindProcedureInsertLine(codeModule, bodyStart, procStart + procLines - 1)
+    If insertLine <= 0 Then insertLine = bodyStart
+
+    codeModule.InsertLines insertLine, "    If Not Cancel Then LeaveDebugModeOnClose"
+
+Success:
+    Exit Sub
+
+Handler:
+    ThrowError ProjectError.SomethingWentWrong, _
+              "Unable to ensure Workbook_BeforeClose invokes LeaveDebugModeOnClose: " & Err.Description
+End Sub
+
+Private Function ProcedureBlockContainsToken(ByVal codeModule As Object, _
+                                             ByVal startLine As Long, _
+                                             ByVal lineCount As Long, _
+                                             ByVal token As String) As Boolean
+    '@details Scans a procedure block for a specific token using case-insensitive comparison.
+    Dim blockText As String
+
+    If startLine <= 0 Or lineCount <= 0 Then Exit Function
+
+    blockText = codeModule.Lines(startLine, lineCount)
+    ProcedureBlockContainsToken = (InStr(1, blockText, token, vbTextCompare) > 0)
+End Function
+
+Private Sub AppendProcedure(ByVal codeModule As Object, ByVal procedureCode As String)
+    '@details Appends generated code to the end of the module, normalising line breaks when necessary.
+    Dim lineCount As Long
+
+    lineCount = codeModule.CountOfLines
+    If lineCount > 0 Then lineCount = lineCount + 1
+    codeModule.InsertLines lineCount + 1, procedureCode
+End Sub
+
+Private Function FindProcedureInsertLine(ByVal codeModule As Object, _
+                                         ByVal bodyStart As Long, _
+                                         ByVal bodyEnd As Long) As Long
+    '@details Determines the best insertion point after any On Error plumbing and leading comments.
+    Dim scanLine As Long
+    Dim trimmed As String
+
+    If bodyStart <= 0 Then
+        FindProcedureInsertLine = bodyEnd
+        Exit Function
+    End If
+
+    scanLine = bodyStart
+
+    Do While scanLine <= bodyEnd
+        trimmed = Trim$(codeModule.Lines(scanLine, 1))
+        If LenB(trimmed) = 0 Then
+            scanLine = scanLine + 1
+            GoTo ContinueLoop
+        End If
+
+        If Left$(LCase$(trimmed), 7) = "on error" Then
+            scanLine = scanLine + 1
+            GoTo ContinueLoop
+        End If
+
+        If Left$(trimmed, 1) = "'" Or LCase$(Left$(trimmed, 3)) = "rem" Then
+            scanLine = scanLine + 1
+            GoTo ContinueLoop
+        End If
+
+        Exit Do
+
+ContinueLoop:
+    Loop
+
+    FindProcedureInsertLine = scanLine
 End Function
 
 Private Sub InsertOrReplaceProcedure(ByVal component As Object, _

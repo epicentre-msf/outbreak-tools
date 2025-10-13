@@ -215,7 +215,7 @@ End Function
 '===============================================================================
 
 Private Function FixtureHeadersArray() As Variant
-    FixtureHeadersArray = Split("Variable Name|Main Label|Dev Comments|Editable Label|Sub Label|Note|Sheet Name|Sheet Type|Main Section|Sub Section|Status|Register Book|Personal Identifier|Variable Type|Variable Format|Control|Control Details|Unique|Export 1|Export 2|Export 3|Export 4|Export 5|Min|Max|Alert|Message|Formatting Condition|Formatting Values", "|")
+    FixtureHeadersArray = Split("Variable Name|Main Label|Dev Comments|Editable Label|Sub Label|Note|Sheet Name|Sheet Type|Main Section|Sub Section|Status|Register Book|Personal Identifier|Variable Type|Variable Format|Control|Control Details|Unique|Export 1|Export 2|Export 3|Export 4|Export 5|Min|Max|Alert|Message|Formatting Condition|Formatting Values|Lock Cells|Column Index", "|")
 End Function
 
 Private Function FixtureRowsArray() As Variant
@@ -223,7 +223,10 @@ Private Function FixtureRowsArray() As Variant
         FixtureRowsChunk1(), _
         FixtureRowsChunk2(), _
         FixtureRowsChunk3(), _
-        FixtureRowsChunk4())
+        FixtureRowsChunk4(), _
+        FixtureRowsChunk5(), _
+        FixtureRowsChunk6() _
+    )
 End Function
 
 Private Function HeaderArrayContains(ByVal headers As Variant, ByVal columnName As String) As Boolean
@@ -265,7 +268,7 @@ End Function
 Private Function AddTableNamesToRows(ByVal rows As Variant, ByVal headers As Variant) As Variant
     Dim result() As Variant
     Dim idx As Long
-    Dim sheetAssignments As Object
+    Dim sheetAssignments As Collection
     Dim sheetIndex As Long
     Dim tableIndex As Long
 
@@ -274,8 +277,7 @@ Private Function AddTableNamesToRows(ByVal rows As Variant, ByVal headers As Var
 
     ReDim result(LBound(rows) To UBound(rows))
 
-    Set sheetAssignments = CreateObject("Scripting.Dictionary")
-    sheetAssignments.CompareMode = vbTextCompare
+    Set sheetAssignments = New Collection
 
     For idx = LBound(rows) To UBound(rows)
         result(idx) = InsertTableNameValue(rows(idx), sheetIndex, tableIndex, sheetAssignments)
@@ -287,7 +289,7 @@ End Function
 Private Function InsertTableNameValue( ByVal rowValues As Variant, _
                                        ByVal sheetIndex As Long, _
                                        ByVal tableIndex As Long, _
-                                       ByVal sheetAssignments As Object) As Variant
+                                       ByVal sheetAssignments As Collection) As Variant
     Dim newRow() As Variant
     Dim lowerBound As Long
     Dim upperBound As Long
@@ -315,9 +317,28 @@ Private Function InsertTableNameValue( ByVal rowValues As Variant, _
     InsertTableNameValue = newRow
 End Function
 
-Private Function ResolveTableName(ByVal sheetName As String, ByVal assignments As Object) As String
-    If Not assignments.Exists(sheetName) Then assignments.Add sheetName, "table" & CStr(assignments.Count + 1)
-    ResolveTableName = CStr(assignments(sheetName))
+Private Function ResolveTableName(ByVal sheetName As String, ByVal assignments As Collection) As String
+    Dim sheetKey As String
+    Dim existing As Variant
+    Dim errNumber As Long
+    Dim tableName As String
+
+    sheetKey = LCase$(sheetName)
+    If Len(sheetKey) = 0 Then sheetKey = "<empty>"
+
+    On Error Resume Next
+    existing = assignments(sheetKey)
+    errNumber = Err.Number
+    On Error GoTo 0
+
+    If errNumber <> 0 Then
+        tableName = "table" & CStr(assignments.Count + 1)
+        assignments.Add tableName, sheetKey
+    Else
+        tableName = CStr(existing)
+    End If
+
+    ResolveTableName = tableName
 End Function
 
 Private Function NeedsTableNameValues(ByVal rows As Variant, ByVal headers As Variant) As Boolean
@@ -368,92 +389,124 @@ End Function
 
 Private Function FixtureRowsChunk1() As Variant
     FixtureRowsChunk1 = Array( _
-        Array("hid_beg_v1", "Hidden variable at the begining", "", "", "Should be hidden", "", "vlist1D-sheet1", "vlist1D", "Hidden Section", "", "hidden", "", "", "", "", "", "", "", "6", "", "1", "12", "yes", "", "", "", "", "", ""), _
-        Array("choi_v1", "Choices on vlist1D", "", "", "Values: A, B, C", "", "vlist1D-sheet1", "vlist1D", "Controls", "", "", "", "", "", "", "choice_manual", "list_correct_order", "", "7", "", "2", "22", "yes", "", "", "", "", "", ""), _
-        Array("choi_mult_v1", "Choice multiple on vlist1D", "", "", "Multiple values: A, B, C", "", "vlist1D-sheet1", "vlist1D", "Controls", "", "", "", "", "", "", "choice_multiple", "list_multiple", "", "8", "", "3", "2", "yes", "", "", "", "", "", ""), _
-        Array("choi_ord_v1", "Choice order on vlist1D", "", "", "Values: B, C, A", "", "vlist1D-sheet1", "vlist1D", "Controls", "", "", "", "", "", "", "choice_manual", "list_uncorrect_order", "", "9", "", "4", "66", "yes", "", "", "", "", "", ""), _
-        Array("choi_cust_v1", "Custom choices on vlist1D", "", "", "Random input by the user", "", "vlist1D-sheet1", "vlist1D", "Controls", "", "", "", "", "", "", "choice_custom", "", "", "10", "", "5", "87", "yes", "", "", "", "", "", ""), _
-        Array("form_v1", "Formula on vlist1D", "", "", "Formula", "", "vlist1D-sheet1", "vlist1D", "Controls", "", "", "", "", "", "", "formula", "IF(ISBLANK(choi_v1), """", choi_v1 & ""-OK"")", "", "11", "", "6", "10", "yes", "", "", "", "", "", ""), _
-        Array("brok_form_v1", "Broken formula on vlist1D", "", "", "This formula should fail", "", "vlist1D-sheet1", "vlist1D", "Controls", "", "", "", "", "", "", "formula", "IF(ISBLANK(choi_v2), """", choi_v2 & ""-OK"")", "", "12", "", "7", "59", "", "", "", "", "", "", ""), _
-        Array("hid_v1", "Hidden variable in the middle", "", "", "Should be hidden", "", "vlist1D-sheet1", "vlist1D", "Status", "", "hidden", "", "", "", "", "", "", "", "13", "", "8", "77", "yes", "", "", "", "", "", ""), _
-        Array("opt_hid_v1", "Optional hidden variable on vlist1D", "", "", "Should be hidden, the user can unhide", "", "vlist1D-sheet1", "vlist1D", "Status", "", "optional, hidden", "", "", "", "", "", "", "", "14", "", "9", "72", "yes", "", "", "", "", "", ""), _
-        Array("opt_vis_v1", "Optional visible variable on vlist1D", "", "", "Should be visible, the user can hide", "", "vlist1D-sheet1", "vlist1D", "Status", "", "optional, visible", "", "", "", "", "", "", "", "15", "", "10", "82", "yes", "", "", "", "", "", ""), _
-        Array("mand_v1", "Mandatory variable on vlist1D", "", "", "Mandatory", "", "vlist1D-sheet1", "vlist1D", "Status", "", "mandatory", "", "", "", "", "", "", "", "16", "", "11", "60", "yes", "", "", "", "", "", ""), _
-        Array("c_wh_v1", "Case when on vlist1D", "", "", "Case When formula", "", "vlist1D-sheet1", "vlist1D", "Controls", "", "", "", "", "", "", "case_when", "CASE_WHEN(choi_ord_v1 = ""A"", ""Choice order is A"", choi_ord_v1 = ""B"", ""Choice order is B"", ""Unknown choice order"")", "", "17", "", "12", "56", "yes", "", "", "", "", "", ""), _
-        Array("choi_form_v1", "Choice formula on vlist1D", "", "", "Choice Formula", "", "vlist1D-sheet1", "vlist1D", "Controls", "", "", "", "", "", "", "choice_formula", "CHOICE_FORMULA(list_multiple, choi_v1 = ""A"", ""choice 1"", choi_v1 = ""B"", ""choice 2"", choi_v1 = ""C"", c_wh_v1)", "", "18", "", "13", "80", "yes", "", "", "", "", "", ""), _
-        Array("no_sec_v1_1", "No section on vlist1D: var 1", "", "", "This variable has no section, no subsection", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "", "19", "", "14", "78", "yes", "", "", "", "", "", ""), _
-        Array("no_sec_v1_2", "No section on vlist1D: var 2", "", "", "This variable has no section, no subsection", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "", "20", "", "15", "60", "yes", "", "", "", "", "", ""), _
-        Array("only_sec_v1_1", "Only section on vlist1D: var1", "", "", "This variable has a section, no subsection", "", "vlist1D-sheet1", "vlist1D", "Section only", "", "", "", "", "", "", "", "", "", "21", "", "16", "50", "yes", "", "", "", "", "", ""), _
-        Array("only_sec_v1_2", "Only section on vlist1D: var2", "", "", "This variable has a section, no subsection", "", "vlist1D-sheet1", "vlist1D", "Section only", "", "", "", "", "", "", "", "", "", "22", "", "17", "66", "", "", "", "", "", "", ""), _
-        Array("only_subsec_v1_1", "Only subsection on vlist1D: var1", "", "", "This variable has subsection, no section", "", "vlist1D-sheet1", "vlist1D", "", "Subsection only", "", "", "", "", "", "", "", "", "23", "", "18", "96", "yes", "", "", "", "", "", ""), _
-        Array("only_subsec_v1_2", "Only subsection on vlist1D: var2", "", "", "This variable has a subsection, no section", "", "vlist1D-sheet1", "vlist1D", "", "Subsection only", "", "", "", "", "", "", "", "", "24", "", "19", "90", "yes", "", "", "", "", "", ""))
+        Array("hid_beg_v1","Hidden variable at the begining","","","Should be hidden","","vlist1D-sheet1","vlist1D","Hidden Section","","hidden","","","","","","","","6","","1","83","yes","","","","","","",""), _
+        Array("choi_v1","Choices on vlist1D","","","Values: A, B, C","","vlist1D-sheet1","vlist1D","Controls","","","","","","","choice_manual","list_correct_order","","7","","2","5","","","","","","","",""), _
+        Array("choi_mult_v1","Choice multiple on vlist1D","","","Multiple values: A, B, C","","vlist1D-sheet1","vlist1D","Controls","","","","","","","choice_multiple","list_multiple","","8","","3","36","","","","","","","",""), _
+        Array("choi_ord_v1","Choice order on vlist1D","","","Values: B, C, A","","vlist1D-sheet1","vlist1D","Controls","","","","","","","choice_manual","list_uncorrect_order","","9","","4","94","yes","","","","","","",""), _
+        Array("choi_cust_v1","Custom choices on vlist1D","","","Random input by the user","","vlist1D-sheet1","vlist1D","Controls","","","","","","","choice_custom","","","10","","5","57","yes","","","","","","",""), _
+        Array("form_v1","Formula on vlist1D","","","Formula","","vlist1D-sheet1","vlist1D","Controls","","","","","","","formula","IF(ISBLANK(choi_v1), """", choi_v1 & ""-OK"")","","11","","6","8","","","","","","","",""), _
+        Array("brok_form_v1","Broken formula on vlist1D","","","This formula should fail","","vlist1D-sheet1","vlist1D","Controls","","","","","","","formula","IF(ISBLANK(choi_v2), """", choi_v2 & ""-OK"")","","12","","7","94","yes","","","","","","",""), _
+        Array("hid_v1","Hidden variable in the middle","","","Should be hidden","","vlist1D-sheet1","vlist1D","Status","","hidden","","","","","","","","13","","8","36","yes","","","","","","",""), _
+        Array("opt_hid_v1","Optional hidden variable on vlist1D","","","Should be hidden, the user can unhide","","vlist1D-sheet1","vlist1D","Status","","optional, hidden","","","","","","","","14","","9","43","","","","","","","",""), _
+        Array("opt_vis_v1","Optional visible variable on vlist1D","","","Should be visible, the user can hide","","vlist1D-sheet1","vlist1D","Status","","optional, visible","","","","","","","","15","","10","80","yes","","","","","","",""), _
+        Array("mand_v1","Mandatory variable on vlist1D","","","Mandatory","","vlist1D-sheet1","vlist1D","Status","","mandatory","","","","","","","","16","","11","65","yes","","","","","","",""), _
+        Array("c_wh_v1","Case when on vlist1D","","","Case When formula","","vlist1D-sheet1","vlist1D","Controls","","","","","","","case_when","CASE_WHEN(choi_ord_v1 = ""A"", ""Choice order is A"", choi_ord_v1 = ""B"", ""Choice order is B"", ""Unknown choice order"")","","17","","12","22","yes","","","","","","",""), _
+        Array("choi_form_v1","Choice formula on vlist1D","","","Choice Formula","","vlist1D-sheet1","vlist1D","Controls","","","","","","","choice_formula","CHOICE_FORMULA(list_multiple, choi_v1 = ""A"", ""choice 1"", choi_v1 = ""B"", ""choice 2"", choi_v1 = ""C"", c_wh_v1)","","18","","13","60","yes","","","","","","",""), _
+        Array("no_sec_v1_1","No section on vlist1D: var 1","","","This variable has no section, no subsection","","vlist1D-sheet1","vlist1D","","","","","","","","","","","19","","14","48","yes","","","","","","",""), _
+        Array("no_sec_v1_2","No section on vlist1D: var 2","","","This variable has no section, no subsection","","vlist1D-sheet1","vlist1D","","","","","","","","","","","20","","15","83","","","","","","","","") _
+    )
 End Function
 
 Private Function FixtureRowsChunk2() As Variant
     FixtureRowsChunk2 = Array( _
-        Array("only_subsec_v1_3", "Only subsection on vlist1D: var3", "", "", "This variable has a subsection, no section", "", "vlist1D-sheet1", "vlist1D", "", "Subsection only", "", "", "", "", "", "", "", "", "25", "", "20", "90", "yes", "", "", "", "", "", ""), _
-        Array("classif_v1", "Classification", "", "", "Classification variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "", "26", "", "21", "75", "yes", "", "", "", "", "", ""), _
-        Array("regbook_v1", "Registered in book", "", "", "Registered", "", "vlist1D-sheet1", "vlist1D", "Register", "", "", "registered", "", "", "", "", "", "", "27", "", "22", "75", "yes", "", "", "", "", "", ""), _
-        Array("perid_v1", "Personal identifier", "", "", "Used as identifier", "", "vlist1D-sheet1", "vlist1D", "Register", "", "", "", "personal", "", "", "", "", "", "28", "", "23", "71", "yes", "", "", "", "", "", ""), _
-        Array("type_text_v1", "Type text", "", "", "Text variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "text", "", "", "", "", "", "29", "", "24", "71", "yes", "", "", "", "", "", ""), _
-        Array("type_int_v1", "Type integer", "", "", "Integer variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "integer", "", "", "", "", "", "30", "", "25", "42", "yes", "", "", "", "", "", ""), _
-        Array("type_dec_v1", "Type decimal", "", "", "Decimal variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "decimal", "", "", "", "", "", "31", "", "26", "32", "yes", "", "", "", "", "", ""), _
-        Array("type_bool_v1", "Type boolean", "", "", "Boolean variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "boolean", "", "", "", "", "", "32", "", "27", "36", "yes", "", "", "", "", "", ""), _
-        Array("type_date_v1", "Type date", "", "", "Date variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "date", "", "", "", "", "", "33", "", "28", "64", "yes", "", "", "", "", "", ""), _
-        Array("type_time_v1", "Type time", "", "", "Time variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "time", "", "", "", "", "", "34", "", "29", "69", "yes", "", "", "", "", "", ""), _
-        Array("type_datetime_v1", "Type datetime", "", "", "Datetime variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "datetime", "", "", "", "", "", "35", "", "30", "40", "yes", "", "", "", "", "", ""), _
-        Array("type_duration_v1", "Type duration", "", "", "Duration variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "duration", "", "", "", "", "", "36", "", "31", "32", "yes", "", "", "", "", "", ""), _
-        Array("type_percent_v1", "Type percentage", "", "", "Percentage variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "percentage", "", "", "", "", "", "37", "", "32", "60", "yes", "", "", "", "", "", ""), _
-        Array("type_currency_v1", "Type currency", "", "", "Currency variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "currency", "", "", "", "", "", "38", "", "33", "74", "yes", "", "", "", "", "", ""), _
-        Array("format_dec_v1", "Format decimal", "", "", "Format decimal variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "", "", "", "", "39", "", "34", "40", "yes", "", "", "", "", "", ""), _
-        Array("format_date_v1", "Format date", "", "", "Format date variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "d-mmm-yyyy", "", "", "", "40", "", "35", "26", "yes", "", "", "", "", "", ""), _
-        Array("format_time_v1", "Format time", "", "", "Format time variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "hh:mm", "", "", "", "41", "", "36", "26", "yes", "", "", "", "", "", ""), _
-        Array("format_datetime_v1", "Format datetime", "", "", "Format datetime variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "dd-mmm-yyyy hh:mm", "", "", "", "42", "", "37", "24", "yes", "", "", "", "", "", ""), _
-        Array("format_duration_v1", "Format duration", "", "", "Format duration variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "hh:mm", "", "", "", "43", "", "38", "94", "yes", "", "", "", "", "", ""), _
-        Array("format_text_v1", "Format text", "", "", "Format text variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "", "", "", "", "44", "", "39", "49", "yes", "", "", "", "", "", ""))
+        Array("only_sec_v1_1","Only section on vlist1D: var1","","","This variable has a section, no subsection","","vlist1D-sheet1","vlist1D","Section only","","","","","","","","","","21","","16","13","yes","","","","","","",""), _
+        Array("only_sec_v1_2","Only section on vlist1D: var2","","","This variable has a section, no subsection","","vlist1D-sheet1","vlist1D","Section only","","","","","","","","","","22","","17","42","","","","","","","",""), _
+        Array("only_subsec_v1_1","Only subsection on vlist1D: var1","","","This variable has subsection, no section","","vlist1D-sheet1","vlist1D","","Subsection only","","","","","","","","","23","","18","43","yes","","","","","","",""), _
+        Array("only_subsec_v1_2","Only subsection on vlist1D: var2","","","This variable has a subsection, no section","","vlist1D-sheet1","vlist1D","","Subsection only","","","","","","","","","24","","19","38","yes","","","","","","",""), _
+        Array("date_v1","Date on vlist1D","","","TODAY()-365 < Date < TODAY()","","vlist1D-sheet1","vlist1D","Validation","Date validation","","","","date","","","","","25","","20","3","yes","TODAY() - 365","TODAY()","error","TODAY() - 365 < Date < TODAY()","","",""), _
+        Array("int_v1","Integer on vlist1D","","","Value > 0","","vlist1D-sheet1","vlist1D","Validation","","","","","integer","","","","","26","","21","3","yes","0","","warning","Shoud be > 0","","",""), _
+        Array("dec2_v1","Decimal 2 digits on vlist1D","","","Value < 1","","vlist1D-sheet1","vlist1D","Validation","","","","","decimal","","","","","27","","22","73","","","1","info","Should be < 1","","",""), _
+        Array("date_vali_v1","Date validation on vlist1D","","","date_v1 < Date < TODAY() + 365","This is a test for a note","vlist1D-sheet1","vlist1D","Validation","Date validation","","","","date","","","","","28","","23","68","yes","date_v1","TODAY() + 365","warning","Date on vlist1D < Date < TODAY() + 365","","",""), _
+        Array("num_vali_v1","Numeric validation on vlist1D","","","Should be between [3, 10]","","vlist1D-sheet1","vlist1D","Validation","","","","","","","","","","29","","24","1","","3","10","error","Should be between [3, 10]","","",""), _
+        Array("exp_var_v1","Variable used in export vlist1D","","","Use for export name","","vlist1D-sheet1","vlist1D","","","","","","text","","","","","30","","25","32","yes","","","","","","",""), _
+        Array("perc_form_v1","Variable formated as percentage","","","Formated as %","","vlist1D-sheet1","vlist1D","Format","","","","","decimal","percentage2","","","","31","","26","13","yes","","","","","","",""), _
+        Array("num_form_v1","Variable can be rounded to 4 digits","","","Can be rounded to 4 digits","","vlist1D-sheet1","vlist1D","Format","","","","","decimal","round4","","","","32","","27","36","yes","","","","","","",""), _
+        Array("date_form_v1","Variable formated as date","","","Formated as dd-mmm-yyyy","","vlist1D-sheet1","vlist1D","Format","","","","","","d-mmm-yyyy","","","","33","","28","82","","","","","","","",""), _
+        Array("curr_form_v1","Variable formated as currency","","","Formated as currency $","","vlist1D-sheet1","vlist1D","Format","","","","","","dollars","","","","34","","29","8","","","","","","","",""), _
+        Array("ed_var_v1","Editable variable label vlist1D","","yes","You can change the label","","vlist1D-sheet1","vlist1D","","","","","","","","","","","35","","30","16","","","","","","","","") _
+    )
 End Function
 
 Private Function FixtureRowsChunk3() As Variant
     FixtureRowsChunk3 = Array( _
-        Array("format_currency_v1", "Format currency", "", "", "Format currency variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "€", "", "", "", "45", "", "40", "49", "yes", "", "", "", "", "", ""), _
-        Array("format_percentage_v1", "Format percentage", "", "", "Format percentage variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "percentage", "", "", "", "46", "", "41", "28", "yes", "", "", "", "", "", ""), _
-        Array("format_duration_v2", "Format duration v2", "", "", "Format duration variable v2", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "hh:mm:ss", "", "", "", "47", "", "42", "28", "yes", "", "", "", "", "", ""), _
-        Array("format_custom_v1", "Format custom", "", "", "Format custom variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "custom", "", "", "", "48", "", "43", "72", "yes", "", "", "", "", "", ""), _
-        Array("note_v1", "Note", "", "", "Note on variable", "The note", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "", "49", "", "44", "72", "yes", "", "", "", "", "", ""), _
-        Array("alert_v1", "Alert", "", "", "Alert variable", "Alert note", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "alert", "50", "", "45", "26", "yes", "", "", "", "", "", ""), _
-        Array("message_v1", "Message", "", "", "Message variable", "Message note", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "message", "51", "", "46", "46", "yes", "", "", "", "", "", ""), _
-        Array("format_condition_v1", "Format condition", "", "", "Format condition variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "format", "52", "", "47", "46", "yes", "", "", "", "", "", ""), _
-        Array("format_values_v1", "Format values", "", "", "Format values variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "format", "53", "", "48", "68", "yes", "", "", "", "", "", ""), _
-        Array("format_values_v2", "Format values v2", "", "", "Format values variable v2", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "format", "54", "", "49", "68", "yes", "", "", "", "", "", ""), _
-        Array("format_condition_v2", "Format condition v2", "", "", "Format condition variable v2", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "format", "55", "", "50", "68", "yes", "", "", "", "", "", ""), _
-        Array("format_values_v3", "Format values v3", "", "", "Format values variable v3", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "format", "56", "", "51", "68", "yes", "", "", "", "", "", ""), _
-        Array("format_condition_v3", "Format condition v3", "", "", "Format condition variable v3", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "format", "57", "", "52", "68", "yes", "", "", "", "", "", ""), _
-        Array("list_auto_v1", "List auto", "", "", "list_auto variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "list_auto", "list_correct_order", "", "58", "", "53", "71", "yes", "", "", "", "", "", ""), _
-        Array("formula_v1", "Formula", "", "", "Formula variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "formula", "IF(1=1, ""ok"", ""ko"")", "", "59", "", "54", "38", "yes", "", "", "", "", "", ""), _
-        Array("formula_v2", "Formula v2", "", "", "Formula variable v2", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "formula", "IF(1=2, ""ok"", ""ko"")", "", "60", "", "55", "38", "yes", "", "", "", "", "", ""), _
-        Array("formula_v3", "Formula v3", "", "", "Formula variable v3", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "formula", "IF(2=2, ""ok"", ""ko"")", "", "61", "", "56", "38", "yes", "", "", "", "", "", ""), _
-        Array("formula_v4", "Formula v4", "", "", "Formula variable v4", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "formula", "IF(3=2, ""ok"", ""ko"")", "", "62", "", "57", "38", "yes", "", "", "", "", "", ""), _
-        Array("geo_v1", "Geo variable", "", "", "Geo variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "", "63", "", "58", "69", "yes", "", "", "", "", "", ""), _
-        Array("hf_v1", "HF variable", "", "", "HF variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "", "", "", "", "", "", "64", "", "59", "69", "yes", "", "", "", "", "", ""))
+        Array("hid_end_v1","Hidden variable at the end","","","Should be hidden, personal identifier on v1","","vlist1D-sheet1","vlist1D","","","","","yes","","","","","","36","","31","95","yes","","","","","","",""), _
+        Array("hid_beg_h2","Hidden variable at the begining","","","Should be hidden","","hlist2D-sheet1","hlist2D","","","","","","","","","","","37","1","","82","","","","","","","",""), _
+        Array("pers_id_h2","Personal identifier variable","","","Personal identifier","","hlist2D-sheet1","hlist2D","","","","","","","","","","","38","2","","32","yes","","","","","","",""), _
+        Array("uni_h2","Unique variable","","","Unique variable, duplicates in red","","hlist2D-sheet1","hlist2D","","","","","","","","","","yes","39","3","","19","yes","","","","","","",""), _
+        Array("bad name h2","Bad variable name, shoud be renamed","","","Bad variable name which is corrected automatically","","hlist2D-sheet1","hlist2D","","","","","","","","","","","40","4","","35","yes","","","","","","",""), _
+        Array("date_h2","Date on hlist2D","","","","","hlist2D-sheet1","hlist2D","Var Type","","","","","date","","","","","41","5","","46","","","","","","","",""), _
+        Array("int_h2","Integer on hlist2D","","","","","hlist2D-sheet1","hlist2D","Var Type","","","","","integer","","","","","42","6","","83","yes","","","","","","",""), _
+        Array("text_h2","Random text variable","","yes","You can change the label","","hlist2D-sheet1","hlist2D","","","","","","","","","","","43","7","","45","yes","","","","","","",""), _
+        Array("dec2_h2","Decimal 2 digits on hlist2D","","","","This is a test for a note","hlist2D-sheet1","hlist2D","Format","","","","","decimal","round2","","","","44","8","","90","yes","","","","","","",""), _
+        Array("no_sec_h2_1","No section : var1","","","This variable has no section, no subsection","","hlist2D-sheet1","hlist2D","","","","","","","","","","","45","9","","30","yes","","","","","","",""), _
+        Array("no_sec_h2_2","No section: var2","","","This variable has no section, no subsection","","hlist2D-sheet1","hlist2D","","","","","","","","","","","46","10","","19","yes","","","","","","",""), _
+        Array("only_sec_h2_1","Only sec: var1","","","This variable has a section, no subsection","","hlist2D-sheet1","hlist2D","Section only","","","","","","","","","","47","11","","41","yes","","","","","","",""), _
+        Array("only_sec_h2_2","Only sec: var2","","","This variable has a section, no subsection","","hlist2D-sheet1","hlist2D","Section only","","","","","","","","","","48","12","","62","yes","","","","","","",""), _
+        Array("only_subsec_h2_1","Only subsec: var1","","","This variable has a subsection, no section","","hlist2D-sheet1","hlist2D","","Subsection only","","","","","","","","","49","13","","48","yes","","","","","","",""), _
+        Array("only_subsec_h2_2","Only subsec: var2","","","This variable has a subsection, no section","","hlist2D-sheet1","hlist2D","","Subsection only","","","","","","","","","50","14","","31","yes","","","","","","","") _
+    )
 End Function
 
 Private Function FixtureRowsChunk4() As Variant
     FixtureRowsChunk4 = Array( _
-        Array("date_entry_h2", "Date on hlist2D", "", "", "TODAY()-365 < Date < TODAY()", "", "hlist2D-sheet1", "hlist2D", "Validation", "", "", "", "", "date", "", "", "", "", "66", "30", "", "58", "yes", "TODAY() - 365", "TODAY()", "error", "TODAY() - 365 < Date < TODAY()", "", ""), _
-        Array("date_valid_h2_1", "Date validation on hlist2D: 1", "", "", "Date on hlist2D < Date < TODAY() + 365", "", "hlist2D-sheet1", "hlist2D", "Validation", "", "", "", "", "date", "", "", "", "", "67", "31", "", "61", "yes", "date_entry_h2", "TODAY() + 365", "warning", "Date on hlist2D < Date < TODAY() + 365", "", ""), _
-        Array("date_valid_h2_2", "Date validation on hlist2D: 2", "", "", "TODAY()-365 < Date < TODAY()", "", "hlist2D-sheet1", "hlist2D", "Validation", "", "", "", "", "date", "d-mmm-yyyy", "", "", "", "68", "32", "", "93", "yes", "TODAY() - 365", "TODAY()", "info", "TODAY() - 365 < Date < TODAY()", "", ""), _
-        Array("num_valid_h2", "Numeric validation on hlist2D", "", "", "Value > 0", "", "hlist2D-sheet1", "hlist2D", "Validation", "", "", "", "", "decimal", "", "", "", "", "69", "33", "", "58", "", "0", "", "info", "Value > 0", "", ""), _
-        Array("int_valid_h2", "Integer validation on hlist2D", "", "", "Value < 0", "", "hlist2D-sheet1", "hlist2D", "Validation", "", "", "", "", "integer", "", "", "", "", "70", "34", "", "60", "", "", "0", "info", "Value < 0", "", ""), _
-        Array("date_form_h2", "Variable formated as date", "", "", "Formated as dd-mmm-yyyy", "", "hlist2D-sheet1", "hlist2D", "Format", "", "", "", "", "date", "d-mmm-yyyy", "", "", "", "71", "35", "", "54", "yes", "", "", "", "", "", ""), _
-        Array("curr_form_h2", "Variable formated as currency", "", "", "Formated as currency €", "", "hlist2D-sheet1", "hlist2D", "Format", "", "", "", "", "decimal", "euros", "", "", "", "72", "36", "", "81", "yes", "", "", "", "", "", ""), _
-        Array("perc_form_h2", "Variable formated as percentage", "", "", "Formated as % ", "", "hlist2D-sheet1", "hlist2D", "Format", "", "", "", "", "decimal", "percentage3", "", "", "", "73", "37", "", "27", "yes", "", "", "", "", "", ""), _
-        Array("vis_hidd_reg_h2", "Visible, but hidden in the register", "", "", "Hidden in the register", "", "hlist2D-sheet1", "hlist2D", "Register", "", "", "hidden", "", "", "", "", "", "", "74", "38", "", "99", "yes", "", "", "", "", "", ""), _
-        Array("hid_end_h2", "Hidden variable at the end", "", "", "Should be hidden", "", "hlist2D-sheet1", "hlist2D", "", "", "hidden", "", "", "", "", "", "", "", "75", "39", "", "28", "yes", "", "", "", "", "", ""), _
-        Array("lauto_drop_h2", "List auto dropdown from another sheet", "", "", "Populated from another sheet, choi_h2", "", "hlist2D-sheet2", "hlist2D", "", "Value OF", "", "", "", "", "", "list_auto", "choi_h2", "", "76", "", "", "6", "yes", "", "", "", "", "", ""), _
-        Array("val_of_text_h2", "Value of a text variable", "", "", "Formula, match value of another sheet", "", "hlist2D-sheet2", "hlist2D", "", "Value OF", "", "", "", "", "", "formula", "VALUE_OF(lauto_drop_h2, choi_h2, text_h2)", "", "77", "", "", "2", "yes", "", "", "", "", "", ""), _
-        Array("val_of_int_h2", "Value of integer variable", "", "", "Formula, match value of another sheet", "", "hlist2D-sheet2", "hlist2D", "", "Value OF", "", "", "", "", "", "formula", "VALUE_OF(lauto_drop_h2, choi_h2, int_valid_h2)", "", "78", "", "", "55", "yes", "", "", "", "", "", ""), _
-        Array("val_of_dec_h2", "Value of decimal variable", "", "", "Formula, match value of another sheet", "", "hlist2D-sheet2", "hlist2D", "", "Value OF", "", "", "", "", "", "formula", "VALUE_OF(lauto_drop_h2, choi_h2, num_valid_h2)", "", "79", "", "", "21", "yes", "", "", "", "", "", ""), _
-        Array("val_of_date_h2", "Value of date variable", "", "", "Formula, match value of another sheet", "", "hlist2D-sheet2", "hlist2D", "", "Value OF", "", "", "", "", "", "formula", "VALUE_OF(lauto_drop_h2, choi_h2, date_form_h2)", "", "80", "", "", "58", "yes", "", "", "", "", "", ""), _
-        Array("cond_test_h1", "Test on conditonal formatting", "", "", "Formula, should be hidden", "", "hlist2D-sheet1", "hlist2D", "", "Conditonal Formatting", "hidden", "hidden", "", "", "", "formula", "IF(choi_h2 = ""A"", 1, 0)", "", "81", "45", "", "20", "yes", "", "", "", "", "", ""), _
-        Array("cond_val_h1", "Value on conditional formatting", "", "", "Test for conditonal formatting, should be in gray", "", "hlist2D-sheet1", "hlist2D", "", "Conditonal Formatting", "", "", "", "", "", "", "", "", "82", "46", "", "15", "yes", "", "", "", "", "cond_test_h1", ""))
+        Array("mand_h2","Mandatory variable on hlist2D","","","Mandatory","","hlist2D-sheet1","hlist2D","Status","","mandatory","","","","","","","","51","15","","58","","","","","","","",""), _
+        Array("hid_h2","Hidden variable in the middle","","","Should be hidden","","hlist2D-sheet1","hlist2D","Status","","hidden","","","","","","","","52","16","","1","yes","","","","","","",""), _
+        Array("opt_hid_h2","Optional hidden variable on hlist2D","","","Should be hidden, the user can unhide","","hlist2D-sheet1","hlist2D","Status","","optional, hidden","","","","","","","","53","17","","70","","","","","","","",""), _
+        Array("opt_vis_h2","Optional visible variable on hlist2D","","","Should be visible, the user can hide","","hlist2D-sheet1","hlist2D","","","optional, visible","","","","","","","","54","18","","46","","","","","","","",""), _
+        Array("choi_h2","Choice on hlist2D","","","Values: A, B, C","","hlist2D-sheet1","hlist2D","Controls","","","","","","","choice_manual","list_correct_order","","55","19","","10","yes","","","","","","",""), _
+        Array("choi_mult_h2","Choice multiple on hlist2D","","","Multiple values: A, B, C","","hlist2D-sheet1","hlist2D","Controls","","","","","","","choice_multiple","list_multiple","","56","20","","3","yes","","","","","","",""), _
+        Array("choi_cust_h2","Custom choices on hlist2D","","","Random input by the user","","hlist2D-sheet1","hlist2D","Controls","","","","","","","choice_custom","","","57","21","","69","","","","","","","",""), _
+        Array("form_h2","Formula on hlist2D","","","Formula","","hlist2D-sheet1","hlist2D","Controls","","","","","","","formula","IF(ISBLANK(choi_h2), """", choi_h2 & ""-OK"")","","58","22","","8","yes","","","","","","",""), _
+        Array("brok_form_h2","Broken formula on hlist2D","","","This formula should fail","","hlist2D-sheet1","hlist2D","Controls","","","","","","","formula","IF(ISBLANK(choi_h2), """", choi_h2 & + ""-OK"")","","59","23","","92","","","","","","","",""), _
+        Array("lauto_man_h2","List auto variable manual","","","List auto populated from ""Ramdom text variable""","","hlist2D-sheet1","hlist2D","Controls","","","","","","","list_auto","text_h2","","60","24","","35","yes","","","","","","",""), _
+        Array("choi_form_h2","Choice formula on hlist2D","","","Choice Formula","","hlist2D-sheet1","hlist2D","Controls","","","","","","","choice_formula","CHOICE_FORMULA(list_multiple, choi_h2 = ""A"", ""choice 1"", choi_h2 = ""B"", ""choice 2"", choi_h2 = ""C"", c_wh_h2)","","61","25","","50","yes","","","","","","",""), _
+        Array("c_wh_h2","Case when on hlist2D","","","Case When formula","","hlist2D-sheet1","hlist2D","Controls","","","","","","","case_when","CASE_WHEN(choi_ord_v1 = ""A"", ""Choice order is A"", choi_ord_v1 = ""B"", ""Choice order is B"", ""Unknown choice order"")","","62","26","","20","yes","","","","","","",""), _
+        Array("geo_h2","Geo on hlist2D","","","Residence","","hlist2D-sheet1","hlist2D","Controls","","","","","","","geo","","","63","27","","21","yes","","","","","","",""), _
+        Array("hf_h2","HF on hlist2D","","","Health facility","","hlist2D-sheet1","hlist2D","Controls","","","","","","","hf","","","64","28","","1","yes","","","","","","",""), _
+        Array("lauto_comp_h2","List auto variable from formula","","","List auto populated from ""Formula on hlist2D""","","hlist2D-sheet1","hlist2D","Controls","","","","","","","list_auto","form_h2","","65","29","","13","","","","","","","","") _
+    )
+End Function
+
+Private Function FixtureRowsChunk5() As Variant
+    FixtureRowsChunk5 = Array( _
+        Array("date_entry_h2","Date on hlist2D","","","TODAY()-365 < Date < TODAY()","","hlist2D-sheet1","hlist2D","Validation","","","","","date","","","","","66","30","","39","yes","TODAY() - 365","TODAY()","error","TODAY() - 365 < Date < TODAY()","","",""), _
+        Array("date_valid_h2_1","Date validation on hlist2D: 1","","","Date on hlist2D < Date < TODAY() + 365","","hlist2D-sheet1","hlist2D","Validation","","","","","date","","","","","67","31","","60","yes","date_entry_h2","TODAY() + 365","warning","Date on hlist2D < Date < TODAY() + 365","","",""), _
+        Array("date_valid_h2_2","Date validation on hlist2D: 2","","","TODAY()-365 < Date < TODAY()","","hlist2D-sheet1","hlist2D","Validation","","","","","date","d-mmm-yyyy","","","","68","32","","58","yes","TODAY() - 365","TODAY()","info","TODAY() - 365 < Date < TODAY()","","",""), _
+        Array("num_valid_h2","Numeric validation on hlist2D","","","Value > 0","","hlist2D-sheet1","hlist2D","Validation","","","","","decimal","","","","","69","33","","40","yes","0","","info","Value > 0","","",""), _
+        Array("int_valid_h2","Integer validation on hlist2D","","","Value < 0","","hlist2D-sheet1","hlist2D","Validation","","","","","integer","","","","","70","34","","53","yes","","0","info","Value < 0","","",""), _
+        Array("date_form_h2","Variable formated as date","","","Formated as dd-mmm-yyyy","","hlist2D-sheet1","hlist2D","Format","","","","","date","d-mmm-yyyy","","","","71","35","","71","","","","","","","",""), _
+        Array("curr_form_h2","Variable formated as currency","","","Formated as currency €","","hlist2D-sheet1","hlist2D","Format","","","","","decimal","euros","","","","72","36","","93","yes","","","","","","",""), _
+        Array("perc_form_h2","Variable formated as percentage","","","Formated as % ","","hlist2D-sheet1","hlist2D","Format","","","","","decimal","percentage3","","","","73","37","","76","yes","","","","","","",""), _
+        Array("vis_hidd_reg_h2","Visible, but hidden in the register","","","Hidden in the register","","hlist2D-sheet1","hlist2D","Register","","","hidden","","","","","","","74","38","","17","yes","","","","","","",""), _
+        Array("hid_end_h2","Hidden variable at the end","","","Should be hidden","","hlist2D-sheet1","hlist2D","","","hidden","","","","","","","","75","39","","81","","","","","","","",""), _
+        Array("lauto_drop_h2","List auto dropdown from another sheet","","","Populated from another sheet, choi_h2","","hlist2D-sheet2","hlist2D","","Value OF","","","","","","list_auto","choi_h2","","76","","","32","yes","","","","","","",""), _
+        Array("val_of_text_h2","Value of a text variable","","","Formula, match value of another sheet","","hlist2D-sheet2","hlist2D","","Value OF","","","","","","formula","VALUE_OF(lauto_drop_h2, choi_h2, text_h2)","","77","","","14","yes","","","","","","",""), _
+        Array("val_of_int_h2","Value of integer variable","","","Formula, match value of another sheet","","hlist2D-sheet2","hlist2D","","Value OF","","","","","","formula","VALUE_OF(lauto_drop_h2, choi_h2, int_valid_h2)","","78","","","72","yes","","","","","","",""), _
+        Array("val_of_dec_h2","Value of decimal variable","","","Formula, match value of another sheet","","hlist2D-sheet2","hlist2D","","Value OF","","","","","","formula","VALUE_OF(lauto_drop_h2, choi_h2, num_valid_h2)","","79","","","79","yes","","","","","","",""), _
+        Array("val_of_date_h2","Value of date variable","","","Formula, match value of another sheet","","hlist2D-sheet2","hlist2D","","Value OF","","","","","","formula","VALUE_OF(lauto_drop_h2, choi_h2, date_form_h2)","","80","","","42","yes","","","","","","","") _
+    )
+End Function
+
+Private Function FixtureRowsChunk6() As Variant
+    FixtureRowsChunk6 = Array( _ 
+        Array("type_bool_v1", "Type boolean", "", "", "Boolean variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "boolean", "", "", "", "", "", "32", "", "27", "36", "yes", "", "", "", "", "", "", "39"), _
+        Array("type_date_v1", "Type date", "", "", "Date variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "date", "", "", "", "", "", "33", "", "28", "64", "yes", "", "", "", "", "", "", "40"), _
+        Array("type_time_v1", "Type time", "", "", "Time variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "time", "", "", "", "", "", "34", "", "29", "69", "yes", "", "", "", "", "", "", "41"), _
+        Array("type_datetime_v1", "Type datetime", "", "", "Datetime variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "datetime", "", "", "", "", "", "35", "", "30", "40", "yes", "", "", "", "", "", "", "42"), _
+        Array("type_duration_v1", "Type duration", "", "", "Duration variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "duration", "", "", "", "", "", "36", "", "31", "32", "yes", "", "", "", "", "", "", "43"), _
+        Array("type_percent_v1", "Type percentage", "", "", "Percentage variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "percentage", "", "", "", "", "", "37", "", "32", "60", "yes", "", "", "", "", "", "", "44"), _
+        Array("type_currency_v1", "Type currency", "", "", "Currency variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "currency", "", "", "", "", "", "38", "", "33", "74", "yes", "", "", "", "", "", "", "45"), _
+        Array("format_dec_v1", "Format decimal", "", "", "Format decimal variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "", "", "", "", "39", "", "34", "40", "yes", "", "", "", "", "", "", "46"), _
+        Array("format_date_v1", "Format date", "", "", "Format date variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "d-mmm-yyyy", "", "", "", "40", "", "35", "26", "yes", "", "", "", "", "", "", "47"), _
+        Array("format_time_v1", "Format time", "", "", "Format time variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "hh:mm", "", "", "", "41", "", "36", "26", "yes", "", "", "", "", "", "", "48"), _
+        Array("format_datetime_v1", "Format datetime", "", "", "Format datetime variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "dd-mmm-yyyy hh:mm", "", "", "", "42", "", "37", "24", "yes", "", "", "", "", "", "", "49"), _
+        Array("format_duration_v1", "Format duration", "", "", "Format duration variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "hh:mm", "", "", "", "43", "", "38", "94", "yes", "", "", "", "", "", "", "50"), _
+        Array("format_text_v1", "Format text", "", "", "Format text variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "", "", "", "", "44", "", "39", "49", "yes", "", "", "", "", "", "", "51"), _
+        Array("format_currency_v1", "Format currency", "", "", "Format currency variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "€", "", "", "", "45", "", "40", "49", "yes", "", "", "", "", "", "", "52"), _
+        Array("format_percentage_v1", "Format percentage", "", "", "Format percentage variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "percentage", "", "", "", "46", "", "41", "28", "yes", "", "", "", "", "", "", "53"), _
+        Array("format_duration_v2", "Format duration v2", "", "", "Format duration variable v2", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "hh:mm:ss", "", "", "", "47", "", "42", "28", "yes", "", "", "", "", "", "", "54"), _
+        Array("format_custom_v1", "Format custom", "", "", "Format custom variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "custom", "", "", "", "48", "", "43", "72", "yes", "", "", "", "", "", "", "55"), _
+        Array("cond_test_h1","Test on conditonal formatting","","","Formula, should be hidden","","hlist2D-sheet1","hlist2D","","Conditonal Formatting","hidden","hidden","","","","formula","IF(choi_h2 = ""A"", 1, 0)","","81","45","","77","yes","","","","","","",""), _
+        Array("cond_val_h1","Value on conditional formatting","","","Test for conditonal formatting, should be in gray","","hlist2D-sheet1","hlist2D","","Conditonal Formatting","","","","","","","","","82","46","","30","yes","","","","","cond_test_h1","","") _
+    )
 End Function

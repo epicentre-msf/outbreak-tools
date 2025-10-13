@@ -596,9 +596,8 @@ End Property
 '- geoObject LLGeo instance required for geo expansions
 '- msgTrads ITranslationObject used during column creation
 '- tablePrefix Optional String prefix applied to generated table names
-Public Sub Prepare(ByVal PreservedSheetNames As BetterArray, _
-                   ByVal geoObject As Object, _
-                   ByVal msgTrads As ITranslationObject, _
+Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
+                   Optional ByVal geoObject As Object, _
                    Optional ByVal tablePrefix As String = "table")
 
     'Augment the user dictionary with all helper columns required by the
@@ -1300,11 +1299,10 @@ Private Property Get ILLdictionary_SpecialVars(ByVal firstCondition As String, _
 End Property
 
 '@jump:prepare
-Private Sub ILLdictionary_Prepare(ByVal PreservedSheetNames As BetterArray, _
-                                  ByVal geoObject As Object, _
-                                  ByVal msgTrads As ITranslationObject, _
+Private Sub ILLdictionary_Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
+                                  Optional ByVal geoObject As Object, _
                                   Optional ByVal tablePrefix As String = "table")
-    Prepare PreservedSheetNames, geoObject, msgTrads, tablePrefix
+    Prepare PreservedSheetNames, geoObject, tablePrefix
 End Sub
 
 '@jump:clean

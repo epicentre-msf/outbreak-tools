@@ -5,8 +5,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulNames
-'@TestModule
-'@Folder("Tests")
+'@Folder("CustomTests")
 
 Private Const DICTIONARYFIXTURESHEET As String = "LLDictTest"
 Private Const DICTOUTPUTSHEET As String = "DataOut"

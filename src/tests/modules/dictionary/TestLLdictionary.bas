@@ -12,7 +12,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("CustomTests")
-'@Folder("Tests")
+
 
 Private Const DICT_SHEET As String = "LLDictTest"
 
@@ -205,6 +205,50 @@ Public Sub TestCleanRemovesUnknownColumns()
 
 Fail:
     CustomTestLogFailure Assert, "TestCleanRemovesUnknownColumns", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLdictionary")
+Public Sub TestPrepareAddsHelperColumns()
+    CustomTestSetTitles Assert, "LLdictionary", "TestPrepareAddsHelperColumns"
+
+    On Error GoTo Fail
+
+    Dictionary.Prepare
+
+    Assert.IsTrue Dictionary.ColumnExists("column index"), "Prepare should append column index helper column"
+    Assert.IsTrue Dictionary.ColumnExists("visibility"), "Prepare should append visibility helper column"
+    Assert.IsTrue Dictionary.ColumnExists("crf index"), "Prepare should append CRF index helper column"
+    Assert.IsTrue Dictionary.ColumnExists("crf choices"), "Prepare should append CRF choices helper column"
+    Assert.IsTrue Dictionary.ColumnExists("crf status"), "Prepare should append CRF status helper column"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestPrepareAddsHelperColumns", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLdictionary")
+Public Sub TestPrepareRenamesPreservedSheetNames()
+    CustomTestSetTitles Assert, "LLdictionary", "TestPrepareRenamesPreservedSheetNames"
+
+    Dim preserved As BetterArray
+    Dim sheetNames As BetterArray
+
+    On Error GoTo Fail
+
+    Set preserved = BetterArrayFromList("vlist1D-sheet1", "hlist2D-sheet1")
+
+    Dictionary.Prepare PreservedSheetNames:=preserved
+
+    Set sheetNames = Dictionary.UniqueValues("sheet name")
+
+    Assert.IsTrue sheetNames.Includes("vlist1D-sheet1_"), "Prepare should suffix preserved vertical sheet with underscore"
+    Assert.IsTrue sheetNames.Includes("hlist2D-sheet1_"), "Prepare should suffix preserved horizontal sheet with underscore"
+    Assert.IsTrue (Not sheetNames.Includes("vlist1D-sheet1")), "Original vertical sheet name should be replaced after prepare"
+    Assert.IsTrue (Not sheetNames.Includes("hlist2D-sheet1")), "Original horizontal sheet name should be replaced after prepare"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestPrepareRenamesPreservedSheetNames", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLdictionary")

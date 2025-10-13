@@ -380,6 +380,8 @@ Public Sub TestEnsureDebugExitHandlerInjectsCode()
                   "Workbook module should expose LeaveDebugModeOnClose"
     Assert.IsTrue InStr(1, lines, "Workbook_BeforeClose", vbTextCompare) > 0, _
                   "Workbook module should expose Workbook_BeforeClose"
+    Assert.IsTrue InStr(1, lines, "If Not Cancel Then LeaveDebugModeOnClose", vbTextCompare) > 0, _
+                  "Workbook_BeforeClose should call LeaveDebugModeOnClose without overriding Cancel"
 
 InjectionCleanup:
     On Error Resume Next
@@ -398,6 +400,63 @@ InjectionAccessDenied:
         Assert.LogFailure "Unexpected failure during debug handler injection: " & Err.Number & " - " & Err.Description
     End If
     Resume InjectionCleanup
+End Sub
+
+'@TestMethod("Passwords")
+Public Sub TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode()
+    CustomTestSetTitles Assert, "Passwords", "TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode"
+
+    Dim tempWb As Workbook
+    Dim cloned As IPasswords
+    Dim codeModule As Object
+    Dim baseLines As String
+    Dim procStart As Long
+    Dim procLines As Long
+    Dim procText As String
+    Dim firstCall As Long
+
+    On Error GoTo InjectionAccessDenied
+        Set tempWb = Workbooks.Add
+        Set cloned = PasswordSubject.CloneToWorkbook(tempWb)
+
+        Set codeModule = tempWb.VBProject.VBComponents(tempWb.CodeName).CodeModule
+
+        baseLines = "Private Sub Workbook_BeforeClose(Cancel As Boolean)" & vbNewLine & _
+                    "    On Error GoTo Restore" & vbNewLine & _
+                    "    MsgBox ""Closing""" & vbNewLine & _
+                    "Restore:" & vbNewLine & _
+                    "End Sub"
+        codeModule.InsertLines 1, baseLines
+
+        cloned.EnsureDebugExitHandler tempWb
+        cloned.EnsureDebugExitHandler tempWb
+
+        procStart = codeModule.ProcStartLine("Workbook_BeforeClose", 0)
+        procLines = codeModule.ProcCountLines("Workbook_BeforeClose", 0)
+        procText = codeModule.Lines(procStart, procLines)
+
+        Assert.IsTrue InStr(1, procText, "If Not Cancel Then LeaveDebugModeOnClose", vbTextCompare) > 0, _
+                      "Existing Workbook_BeforeClose should call LeaveDebugModeOnClose"
+        Assert.IsTrue InStr(1, procText, "MsgBox ""Closing""", vbBinaryCompare) > 0, _
+                      "Existing Workbook_BeforeClose statements must remain intact"
+
+        firstCall = InStr(1, procText, "LeaveDebugModeOnClose", vbTextCompare)
+        Assert.IsTrue InStr(firstCall + 1, procText, "LeaveDebugModeOnClose", vbTextCompare) = 0, _
+                      "LeaveDebugModeOnClose should be injected only once"
+    GoTo InjectionCleanup
+
+InjectionAccessDenied:
+    If Err.Number = 1004 Or Err.Number = 91 Then
+        Assert.LogFailure "VBProject access is disabled; skipping existing handler merge test"
+    Else
+        Assert.LogFailure "Unexpected failure during existing handler merge test: " & Err.Number & " - " & Err.Description
+    End If
+    Resume InjectionCleanup
+
+InjectionCleanup:
+    On Error Resume Next
+        If Not tempWb Is Nothing Then tempWb.Close SaveChanges:=False
+    On Error GoTo 0
 End Sub
 
 '@TestMethod("Passwords")

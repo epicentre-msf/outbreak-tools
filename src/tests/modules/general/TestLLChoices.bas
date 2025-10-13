@@ -1,13 +1,11 @@
 Attribute VB_Name = "TestLLChoices"
-
+Attribute VB_Description = "Tests for LLChoices class"
 Option Explicit
 
 
-
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-
-'@TestModule
 '@Folder("CustomTests")
+'@ModuleDescription("Tests for LLChoices class")
 
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const CHOICESSHEET As String = "LLChoicesTest"

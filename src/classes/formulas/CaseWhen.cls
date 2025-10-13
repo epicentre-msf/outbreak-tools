@@ -11,7 +11,8 @@ Attribute VB_Description = "Handle CaseWhen custom function"
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation
 '@PredeclaredId
-'@Folder("Custom Functions")
+'@Folder("Formulas")
+
 '@ModuleDescription("Handle CaseWhen custom function")
 '@label:CaseWhen
 '@section Overview
@@ -267,6 +268,7 @@ Private Function SplitFormulaSegments(ByVal formulaBody As String) As BetterArra
     Next 
 
     'Push trailing segment after the final comma (or the lone element)
+    '@Ignore AssignmentNotUsed
     segmentText = Trim$(Mid$(formulaBody, segmentStart, Len(formulaBody) - segmentStart + 1))
     If LenB(segmentText) > 0 Then segments.Push segmentText
 

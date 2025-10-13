@@ -7,13 +7,14 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = "Conditons Used to create formulas for analysis"
+Attribute VB_Description = "Conditions used to create formulas for analysis"
 
 '@PredeclaredId
 '@Folder("Formulas")
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
+
 '@ModuleDescription("Conditions used to create formulas for analysis")
 '@depends Checking
-'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 '@section Overview
 '===============================================================================
 '@details Couples variables with their condition fragments, validates alignment, and produces structured Excel predicates for analysis formulas.
@@ -213,8 +214,9 @@ Public Function Valid(ByVal dict As ILLdictionary, Optional ByVal tablename As S
         Exit Function
     End If
 
+    Dim varName As String
     For idx = varList.LowerBound To varList.UpperBound
-        Dim varName As String
+        
         varName = CStr(varList.Item(idx))
 
         If Not vars.Contains(varName) Then
@@ -268,12 +270,12 @@ Public Function ConditionPredicate(ByVal tablename As String, Optional ByVal Con
     Dim counter As Long
     Dim parsed As String
 
-    If Variable.Length = 0 Or Condition.Length = 0 Then Exit Function
+    If LstVars.Length = 0 Or LstConditions.Length = 0 Then Exit Function
 
-    parsed = "(" & tablename & "[" & Variable.Item(Variable.LowerBound) & "]" & Condition.Item(Variable.LowerBound) & ")"
+    parsed = "(" & tablename & "[" & LstVars.Item(LstVars.LowerBound) & "]" & LstConditions.Item(LstVars.LowerBound) & ")"
 
-    For counter = Variable.LowerBound + 1 To Variable.UpperBound
-        parsed = parsed & Connector & "(" & tablename & "[" & Variable.Item(counter) & "]" & Condition.Item(counter) & ")"
+    For counter = LstVars.LowerBound + 1 To LstVars.UpperBound
+        parsed = parsed & Connector & "(" & tablename & "[" & LstVars.Item(counter) & "]" & LstConditions.Item(counter) & ")"
     Next
 
     ConditionPredicate = parsed
@@ -295,11 +297,11 @@ End Sub
 '===============================================================================
 '@details Explicit interface implementations delegating to the public members.
 Private Property Get IFormulaCondition_Variables() As BetterArray
-    Set IFormulaCondition_Variables = Variable
+    Set IFormulaCondition_Variables = LstVars.Clone()
 End Property
 
 Private Property Get IFormulaCondition_Conditions() As BetterArray
-    Set IFormulaCondition_Conditions = Condition
+    Set IFormulaCondition_Conditions = LstConditions.Clone()
 End Property
 
 Private Property Get IFormulaCondition_VariablesTable(ByVal dict As ILLdictionary) As String

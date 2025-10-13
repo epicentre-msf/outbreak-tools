@@ -7,7 +7,7 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = "Convert formulas from setup to excel"
+Attribute VB_Description = "Convert formulas from setup to Excel"
 
 '@PredeclaredId
 '@Folder("Formulas")
@@ -42,7 +42,7 @@ Private Type TFormulas
     setupForm As String             'Original pseudo-formula provided by setup
     tokens As BetterArray           'Tokenised representation of the parsed formula
     variables As BetterArray        'Ordered list of variables detected in the formula
-    hasLiterals As Boolean          'Indicates the presence of literals in the parsed expression
+    HasSetupVariables As Boolean          'Indicates the presence of literals in the parsed expression
     isValid As Boolean              'Flag capturing the latest validation outcome
     invalidReason As String         'Human-readable explanation when validation fails
     validityComputed As Boolean     'Marks whether EnsureEvaluation already processed a context
@@ -158,12 +158,11 @@ Public Property Let SetupFormula(ByVal setupForm As String)
     InvalidateCaches
 End Property
 
-'@label:HasLiterals
+'@label:HasSetupVariables
 '@sub-title Determine if the parsed formula contains literal values
 '@return Boolean True when numeric/text literals were encountered.
-Public Property Get HasLiterals() As Boolean
-    EnsureEvaluation "analysis"
-    HasLiterals = this.hasLiterals
+Public Property Get HasSetupVariables() As Boolean
+    HasSetupVariables = this.containsSetupVariables
 End Property
 
 '@label:IsGrouped
@@ -237,7 +236,6 @@ Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean
     Dim current As String
     Dim vars As ILLVariables
     Dim sheets As ILLSheets
-    Dim sheetName As String
 
     If Not EnsureEvaluation("simple") Then Exit Property
 
@@ -250,18 +248,18 @@ Public Property Get ParsedLinelistFormula(Optional ByVal useTableName As Boolean
     Set vars = Variables()
     Set sheets = SheetProvider()
 
-    sheetName = FormulaSheet()
-
     For idx = workingTokens.LowerBound To workingTokens.UpperBound
         current = CStr(workingTokens.Item(idx))
         If vars.Contains(current) Then
             If useTableName Then
                 workingTokens.Item(idx) = tablePrefix & vars.Value(colName:="table name", varName:=current) & "[" & current & "]"
             Else
-                workingTokens.Item(idx) = sheets.VariableAddress(current, sheetName)
+                workingTokens.Item(idx) = sheets.VariableAddress(current)
             End If
         ElseIf StrComp(current, "MEAN", vbTextCompare) = 0 Then
             workingTokens.Item(idx) = "AVERAGE"
+        ElseIf StrComp(current, "N", vbTextCompare) = 0 Then
+            workingTokens.Item(idx) = "COUNT"
         End If
     Next idx
 
@@ -287,6 +285,8 @@ Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
     Dim chunk As String
     Dim tableName As String
     Dim parsedCustom As String
+    Dim lowerBound As Long
+    Dim upperBound As Long
 
     If Not EnsureEvaluation("analysis") Then Exit Property
 
@@ -301,7 +301,11 @@ Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
     Set vars = Variables()
     Set dict = Dictionary()
 
-    For idx = tokensCopy.LowerBound To tokensCopy.UpperBound
+    lowerBound = tokensCopy.LowerBound
+    upperBound = tokensCopy.UpperBound
+    idx = lowerBound
+
+    Do While idx <= upperBound
         chunk = CStr(tokensCopy.Item(idx))
 
         If vars.Contains(chunk) Then
@@ -317,8 +321,11 @@ Public Property Get ParsedAnalysisFormula(ByVal formCond As IFormulaCondition, _
                                                tablePrefix:=tablePrefix)
             If parsedCustom = vbNullString Then Exit Property
             tokensCopy.Item(idx) = parsedCustom
+            RemoveEmptyInvocationTokens tokensCopy, idx
+            upperBound = tokensCopy.UpperBound
         End If
-    Next idx
+        idx = idx + 1
+    Loop
 
     ParsedAnalysisFormula = tokensCopy.ToString(Separator:=vbNullString, _
                                                 OpeningDelimiter:=vbNullString, _
@@ -335,7 +342,7 @@ End Property
 '@param dict ILLdictionary backing metadata lookups.
 '@param formData IFormulaData defining allowed tokens/operators.
 '@param setupForm String pseudo-formula to parse.
-Private Sub Initialise(ByVal dict As ILLdictionary, _
+Public Sub Initialise(ByVal dict As ILLdictionary, _
                        ByVal formData As IFormulaData, _
                        ByVal setupForm As String)
     Set this.dict = dict
@@ -385,7 +392,7 @@ End Sub
 Private Sub InvalidateCaches()
     Set this.tokens = Nothing
     Set this.variables = Nothing
-    this.hasLiterals = False
+    this.containsSetupVariables = False
     this.isValid = False
     this.invalidReason = vbNullString
     this.validityComputed = False
@@ -448,11 +455,12 @@ Private Sub EvaluateFormula(ByVal formulaType As String)
     Dim dataSource As IFormulaData
     Dim tokens As BetterArray
     Dim variableTokens As BetterArray
-    Dim hasLiterals As Boolean
+    Dim formulaHasSetupVariables As Boolean
     Dim reasonText As String
 
     InvalidateCaches
     this.lastFormulaType = formulaType
+
 
     converted = ConvertedSetupFormula()
     converted = CleanString(converted)
@@ -479,7 +487,7 @@ Private Sub EvaluateFormula(ByVal formulaType As String)
             variableTokens.LowerBound = 1
             variableTokens.Push converted
 
-            this.hasLiterals = True
+            this.containsSetupVariables = True 'has setup variables here means there are setup variables
             Set this.tokens = tokens
             Set this.variables = variableTokens
             this.isValid = True
@@ -496,25 +504,28 @@ Private Sub EvaluateFormula(ByVal formulaType As String)
         Set this.tokens = tokens
         Set this.variables = New BetterArray
         this.variables.LowerBound = 1
-        this.hasLiterals = True
+        this.containsSetupVariables = True
         this.isValid = True
         this.validityComputed = True
         Exit Sub
     End If
 
+    '@Ignore AssignmentNotUsed
     Set tokens = New BetterArray
     tokens.LowerBound = 1
+    '@Ignore AssignmentNotUsed
     Set variableTokens = New BetterArray
     variableTokens.LowerBound = 1
 
-    If Not TokeniseFormula(converted, formulaType, tokens, variableTokens, hasLiterals, reasonText) Then
+    If Not TokeniseFormula(converted, formulaType, tokens, variableTokens, formulaHasSetupVariables, reasonText) Then
         SetInvalid reasonText
         Exit Sub
     End If
 
     If Not CaptureGroupedContext(tokens, variableTokens, vars, dataSource) Then Exit Sub
 
-    this.hasLiterals = hasLiterals
+    '@Ignore UnassignedVariableUsage
+    this.containsSetupVariables = formulaHasSetupVariables
     Set this.tokens = tokens
     Set this.variables = variableTokens
     this.isValid = True
@@ -683,9 +694,7 @@ End Function
 '@return String grouped Excel formula ready for consumption.
 Private Function BuildGroupedFormula(ByVal useTableName As Boolean, _
                                      ByVal tablePrefix As String) As String
-    Dim vars As ILLVariables
     Dim sheets As ILLSheets
-    Dim sheetName As String
     Dim criteriaRange As String
     Dim conditionValue As String
     Dim resultRange As String
@@ -693,14 +702,12 @@ Private Function BuildGroupedFormula(ByVal useTableName As Boolean, _
 
     If Not this.group.Enabled Then Exit Function
 
-    Set vars = Variables()
     Set sheets = SheetProvider()
-    sheetName = FormulaSheet()
 
     aggregator = this.group.AggregatorName
-    resultRange = GroupedDataRange(this.group.ResultVariable, useTableName, tablePrefix, sheets, sheetName)
-    criteriaRange = GroupedDataRange(this.group.CriteriaVariable, useTableName, tablePrefix, sheets, sheetName)
-    conditionValue = sheets.VariableAddress(this.group.ConditionVariable, sheetName)
+    resultRange = GroupedDataRange(this.group.ResultVariable, useTableName, tablePrefix, sheets)
+    criteriaRange = GroupedDataRange(this.group.CriteriaVariable, useTableName, tablePrefix, sheets)
+    conditionValue = sheets.VariableAddress(this.group.ConditionVariable)
 
     If this.group.UsesNative Then
         Select Case aggregator
@@ -727,8 +734,7 @@ End Function
 Private Function GroupedDataRange(ByVal variableName As String, _
                                   ByVal useTableName As Boolean, _
                                   ByVal tablePrefix As String, _
-                                  ByVal sheets As ILLSheets, _
-                                  ByVal sheetName As String) As String
+                                  ByVal sheets As ILLSheets) As String
     Dim tableName As String
 
     tableName = this.group.TableName
@@ -736,7 +742,7 @@ Private Function GroupedDataRange(ByVal variableName As String, _
     If useTableName Then
         GroupedDataRange = tablePrefix & tableName & "[" & variableName & "]"
     Else
-        GroupedDataRange = sheets.VariableAddress(variableName, sheetName)
+        GroupedDataRange = sheets.VariableAddress(variableName)
     End If
 End Function
 
@@ -746,14 +752,14 @@ End Function
 '@param formulaType String context (analysis/simple).
 '@param tokens BetterArray recipient for all tokens.
 '@param variableTokens BetterArray recipient for variable-only tokens.
-'@param hasLiterals Boolean flag capturing literal presence.
+'@param HasSetupVariables Boolean flag capturing literal presence.
 '@param failureReason String explanation when tokenisation fails.
 '@return Boolean True when parsing succeeds.
 Private Function TokeniseFormula(ByVal formula As String, _
                                  ByVal formulaType As String, _
                                  ByVal tokens As BetterArray, _
                                  ByVal variableTokens As BetterArray, _
-                                 ByRef hasLiterals As Boolean, _
+                                 ByRef HasSetupVariables As Boolean, _
                                  ByRef failureReason As String) As Boolean
     Dim idx As Long
     Dim previousBreak As Long
@@ -788,14 +794,14 @@ Private Function TokeniseFormula(ByVal formula As String, _
 
         If Not quoted And dataSource.SpecialCharacterIncludes(currentChar) Then
             chunk = CleanString(Mid$(formula, previousBreak, idx - previousBreak))
-            If Not AppendToken(chunk, formulaType, tokens, variableTokens, vars, dataSource, hasLiterals, failureReason) Then Exit Function
+            If Not AppendToken(chunk, formulaType, tokens, variableTokens, vars, dataSource, HasSetupVariables, failureReason) Then Exit Function
             tokens.Push currentChar
             previousBreak = idx + 1
         End If
     Next idx
 
     chunk = CleanString(Mid$(formula, previousBreak, Len(formula) - previousBreak + 1))
-    If Not AppendToken(chunk, formulaType, tokens, variableTokens, vars, dataSource, hasLiterals, failureReason) Then Exit Function
+    If Not AppendToken(chunk, formulaType, tokens, variableTokens, vars, dataSource, HasSetupVariables, failureReason) Then Exit Function
 
     If parenthesisLevel <> 0 Then
         failureReason = FORMULA_PAREN_MISMATCH
@@ -813,7 +819,7 @@ End Function
 '@param variableTokens BetterArray recipient for variable-only tokens.
 '@param vars ILLVariables metadata provider.
 '@param dataSource IFormulaData formula metadata provider.
-'@param hasLiterals Boolean flag capturing literal presence.
+'@param HasSetupVariables Boolean flag capturing literal presence.
 '@param failureReason String explanation when parsing fails.
 '@return Boolean True when the chunk is accepted.
 Private Function AppendToken(ByVal chunk As String, _
@@ -822,7 +828,7 @@ Private Function AppendToken(ByVal chunk As String, _
                              ByVal variableTokens As BetterArray, _
                              ByVal vars As ILLVariables, _
                              ByVal dataSource As IFormulaData, _
-                             ByRef hasLiterals As Boolean, _
+                             ByRef HasSetupVariables As Boolean, _
                              ByRef failureReason As String) As Boolean
     Dim upperChunk As String
 
@@ -836,7 +842,7 @@ Private Function AppendToken(ByVal chunk As String, _
     If vars.Contains(chunk) Then
         variableTokens.Push chunk
         tokens.Push chunk
-        hasLiterals = True
+        HasSetupVariables = True
         AppendToken = True
         Exit Function
     End If
@@ -844,35 +850,35 @@ Private Function AppendToken(ByVal chunk As String, _
     If StrComp(upperChunk, "TRUE", vbTextCompare) = 0 Or _
        StrComp(upperChunk, "FALSE", vbTextCompare) = 0 Then
         tokens.Push upperChunk
-        hasLiterals = True
+        HasSetupVariables = True
         AppendToken = True
         Exit Function
     End If
 
     If dataSource.ExcelFormulasIncludes(upperChunk) Then
         tokens.Push upperChunk
-        hasLiterals = True
+        HasSetupVariables = True
         AppendToken = True
         Exit Function
     End If
 
     If StrComp(formulaType, "analysis", vbTextCompare) = 0 And deps.customFormulas.Includes(chunk) Then
         tokens.Push chunk
-        hasLiterals = True
+        HasSetupVariables = True
         AppendToken = True
         Exit Function
     End If
 
     If IsNumeric(chunk) Then
         tokens.Push chunk
-        hasLiterals = True
+        HasSetupVariables = True
         AppendToken = True
         Exit Function
     End If
 
     If IsQuotedString(chunk) Then
         tokens.Push chunk
-        hasLiterals = True
+        HasSetupVariables = True
         AppendToken = True
         Exit Function
     End If
@@ -899,20 +905,6 @@ Private Function CleanString(ByVal value As String) As String
     cleaned = Application.WorksheetFunction.Substitute(value, Chr$(160), " ")
     cleaned = Application.WorksheetFunction.Clean(cleaned)
     CleanString = Application.WorksheetFunction.Trim(cleaned)
-End Function
-
-'@label:FormulaSheet
-'@sub-title Resolve the linelist worksheet associated with the current formula
-'@return String worksheet name or empty string when unavailable.
-Private Function FormulaSheet() As String
-    Dim dictObj As ILLdictionary
-    Dim sheetList As BetterArray
-
-    Set dictObj = Dictionary()
-    FormulaSheet = vbNullString
-
-    Set sheetList = dictObj.Data.FilterData("control details", SetupFormula(), "sheet name")
-    If sheetList.Length = 1 Then FormulaSheet = CStr(sheetList.Item(sheetList.LowerBound))
 End Function
 
 '@label:ParsedCustomFormula
@@ -955,6 +947,36 @@ Private Function ParsedCustomFormula(ByVal customFunction As String, _
 
     ParsedCustomFormula = parsedFormula
 End Function
+
+'@label:RemoveEmptyInvocationTokens
+'@sub-title Strip trailing empty parentheses after replacing custom formulas
+'@param tokens BetterArray tokens list to mutate.
+'@param functionIndex Long index of the custom function token.
+Private Sub RemoveEmptyInvocationTokens(ByRef tokens As BetterArray, _
+                                        ByVal functionIndex As Long)
+    Dim openIndex As Long
+    Dim closeIndex As Long
+    Dim upperBound As Long
+    Dim openToken As String
+    Dim closeToken As String
+
+    If tokens Is Nothing Then Exit Sub
+
+    upperBound = tokens.UpperBound
+    openIndex = functionIndex + 1
+    closeIndex = functionIndex + 2
+
+    If openIndex > upperBound Then Exit Sub
+    openToken = CStr(tokens.Item(openIndex))
+    If StrComp(openToken, "(", vbBinaryCompare) <> 0 Then Exit Sub
+
+    If closeIndex > tokens.UpperBound Then Exit Sub
+    closeToken = CStr(tokens.Item(closeIndex))
+    If StrComp(closeToken, ")", vbBinaryCompare) <> 0 Then Exit Sub
+
+    Call tokens.Remove(closeIndex)
+    Call tokens.Remove(openIndex)
+End Sub
 
 '@label:ClearCountIf
 '@sub-title Remove equality fragments from COUNTIF-style conditions
@@ -1026,11 +1048,11 @@ End Sub
 '@param scope Optional Byte severity indicator.
 Private Sub LogCheck(ByVal label As String, _
                      Optional ByVal scope As Byte = checkingNote)
-    Dim checkName As String
-
-    checkName = "Formulas " & SetupFormula() & " informations"
-
-    If internalChecks Is Nothing Then Set internalChecks = Checking.Create(checkName)
+    
+    If internalChecks Is Nothing Then 
+        Set internalChecks = Checking.Create("Formulas")
+    End If
+    
     internalChecks.Add CStr(checkCounter), label, scope
     checkCounter = checkCounter + 1
     hasChecks = True
@@ -1093,8 +1115,8 @@ Private Property Get IFormulas_ParsedAnalysisFormula(ByVal formCond As IFormulaC
     IFormulas_ParsedAnalysisFormula = ParsedAnalysisFormula(formCond, tablePrefix, Connector)
 End Property
 
-Private Property Get IFormulas_HasLiterals() As Boolean
-    IFormulas_HasLiterals = HasLiterals()
+Private Property Get IFormulas_HasSetupVariables() As Boolean
+    IFormulas_HasSetupVariables = HasSetupVariables()
 End Property
 
 Private Property Get IFormulas_IsGrouped() As String

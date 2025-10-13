@@ -22,7 +22,8 @@ Option Explicit
 '@details Applies the busy settings (ScreenUpdating False, DisplayAlerts False,
 '@details Calculation Manual, EnableAnimations False when available) over the
 '@details captured application snapshot.
-Public Sub ApplyBusyState()
+'@param busyCursor Optional cursor to display while busy; defaults to xlNorthWestArrow.
+Public Sub ApplyBusyState(Optional ByVal suppressEvent As Boolean = False, Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow)
 End Sub
 
 '@sub-title Restore to original state

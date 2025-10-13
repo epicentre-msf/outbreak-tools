@@ -12,7 +12,7 @@ Attribute VB_Description = "Manages temporary files for Linelist preparation wit
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Manages temporary files for Linelist preparation with automatic cleanup")
-'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, ProcedureNotUsed
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 '@depends ProjectError
 
 Option Explicit
@@ -27,7 +27,6 @@ Private Type TTempService
 End Type
 
 Private this As TTempService
-Private Const CLASSNAME As String = "TemporaryRepos"
 Private Const DEFAULT_FOLDER_NAME As String = "OBTApp_"
 
 
