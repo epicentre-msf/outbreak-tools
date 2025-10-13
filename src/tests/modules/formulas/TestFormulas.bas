@@ -1,11 +1,13 @@
 Attribute VB_Name = "TestFormulas"
 
 Option Explicit
-Option Private Module
+
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-'@TestModule
-'@Folder("Tests")
+'@Folder("CustomTests")
+
 
 '@section Constants
 '===============================================================================
@@ -20,11 +22,14 @@ Private Const FORMULA_UNKNOWN_TOKEN_TEMPLATE As String = "Unknown token '%1' enc
 Private Const FORMULA_PAREN_MISMATCH_MESSAGE As String = "The formula contains unmatched parentheses"
 Private Const FORMULA_NEGATIVE_PAREN_MESSAGE As String = "Closing parenthesis detected before opening one"
 Private Const FORMULA_GROUP_TABLE_MISMATCH_MESSAGE As String = "Grouped formulas require the first and third variables to belong to the same table."
+Private Const FORMULA_EMPTY_MESSAGE As String = "The formula is empty. No formula were found"
+Private Const FORMULA_GROUP_INVALID_GENERIC_MESSAGE As String = "Grouped formula '%1' must specify a valid aggregator after the GROUP prefix."
+Private Const FORMULA_GROUP_UNKNOWN_AGGREGATOR_MESSAGE As String = "Grouped formula '%1' targets aggregator '%2', which is not allowed."
 
 '@section Module State
 '===============================================================================
 
-Private Assert As Object
+Private Assert As ICustomTest
 Private Fakes As Object
 Private FixtureSheet As Worksheet
 Private DictionarySheet As Worksheet
@@ -39,6 +44,7 @@ Private Sub PrepareDictionary()
     PrepareDictionaryFixture DICTIONARY_SHEET
     Set DictionarySheet = ThisWorkbook.Worksheets(DICTIONARY_SHEET)
     Set LinelistDictionary = LLdictionary.Create(DictionarySheet, 1, 1)
+    LinelistDictionary.Prepare
 End Sub
 
 '@description Build a Formulas instance backed by the shared dependencies.
@@ -273,18 +279,22 @@ Private Function ExpectedArrayGroupedFormula(ByVal aggregator As String, _
     ExpectedArrayGroupedFormula = aggregator & "(IF(" & criteriaRange & "=" & conditionValue & ", " & resultRange & "))"
 End Function
 
+
 '@section Module lifecycle
 '===============================================================================
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
-    Set Assert = CreateObject("Rubberduck.AssertClass")
-    Set Fakes = CreateObject("Rubberduck.FakesProvider")
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestFormulas"
 End Sub
 
 '@ModuleCleanup
 Private Sub ModuleCleanup()
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
     DeleteWorksheet FORMULA_SHEET
     DeleteWorksheet DICTIONARY_SHEET
     RestoreApp
@@ -306,6 +316,9 @@ End Sub
 
 '@TestCleanup
 Private Sub TestCleanup()
+    If Not Assert Is Nothing Then
+        Assert.Flush
+    End If
     Set FixtureSheet = Nothing
     Set DictionarySheet = Nothing
     Set FormulaDataSource = Nothing
@@ -317,7 +330,8 @@ End Sub
 
 '@TestMethod("Formulas")
 '@description Ensure a single variable is valid in the simple context and produces no diagnostics.
-Private Sub TestSimpleVariableValidForLinelist()
+Public Sub TestSimpleVariableValidForLinelist()
+    CustomTestSetTitles Assert, "Formulas", "TestSimpleVariableValidForLinelist"
     Dim variableName As String
     Dim formulaInstance As IFormulas
 
@@ -327,21 +341,24 @@ Private Sub TestSimpleVariableValidForLinelist()
     Set formulaInstance = BuildFormula(variableName)
 
     Assert.IsTrue formulaInstance.Valid("simple"), "Single variable should be valid for simple context"
-    Assert.IsTrue formulaInstance.HasLiterals, "HasLiterals should be true when variable detected"
+    Assert.IsTrue formulaInstance.HasSetupVariables, "HasSetupVariables should be true when variable detected"
     Assert.AreEqual FORMULA_SUCCESS_MESSAGE, formulaInstance.Reason("simple"), "Reason should default to success message"
     Assert.IsFalse formulaInstance.HasChecking, "No diagnostics expected for simple variable"
 
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestSimpleVariableValidForLinelist"
+    CustomTestLogFailure Assert, "TestSimpleVariableValidForLinelist", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Verify analysis context rejects formulas consisting solely of a variable and records diagnostics.
-Private Sub TestAnalysisSingleVariableRejected()
+Public Sub TestAnalysisSingleVariableRejected()
+    CustomTestSetTitles Assert, "Formulas", "TestAnalysisSingleVariableRejected"
     Dim variableName As String
     Dim formulaInstance As IFormulas
+
+    On Error GoTo Fail
 
     variableName = AnyVariableName()
     Set formulaInstance = BuildFormula(variableName)
@@ -349,13 +366,39 @@ Private Sub TestAnalysisSingleVariableRejected()
     Assert.IsFalse formulaInstance.Valid("analysis"), "Single variable should be rejected in analysis context"
     Assert.AreEqual FORMULA_ANALYSIS_SINGLE_VAR_MESSAGE, formulaInstance.Reason("analysis"), "Reason should explain aggregation requirement"
     Assert.IsTrue formulaInstance.HasChecking, "Rejection should record a checking entry"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestAnalysisSingleVariableRejected", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("Formulas")
+'@description Ensure empty expressions are rejected with the correct reason and diagnostics.
+Public Sub TestEmptyFormulaRejected()
+    CustomTestSetTitles Assert, "Formulas", "TestEmptyFormulaRejected"
+    Dim formulaInstance As IFormulas
+
+    On Error GoTo Fail
+
+    Set formulaInstance = BuildFormula(vbNullString)
+
+    Assert.IsFalse formulaInstance.Valid("analysis"), "Empty formula should be invalid"
+    Assert.AreEqual FORMULA_EMPTY_MESSAGE, formulaInstance.Reason("analysis"), "Empty formula reason should explain the absence of tokens"
+    Assert.IsTrue formulaInstance.HasChecking, "Empty formula should log a diagnostic entry"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestEmptyFormulaRejected", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Ensure unknown tokens trigger failure, include the offending token, and log a diagnostic entry.
-Private Sub TestUnknownTokenRecordsFailure()
+Public Sub TestUnknownTokenRecordsFailure()
+    CustomTestSetTitles Assert, "Formulas", "TestUnknownTokenRecordsFailure"
     Dim formulaInstance As IFormulas
     Dim expectedReason As String
+
+    On Error GoTo Fail
 
     Set formulaInstance = BuildFormula("UNKNOWN_TOKEN + 5")
     expectedReason = UnknownTokenReason("UNKNOWN_TOKEN")
@@ -363,16 +406,23 @@ Private Sub TestUnknownTokenRecordsFailure()
     Assert.IsFalse formulaInstance.Valid("simple"), "Unknown token should mark formula invalid"
     Assert.AreEqual expectedReason, formulaInstance.Reason("simple"), "Reason should include token name"
     Assert.IsTrue formulaInstance.HasChecking, "Failure should create checking log"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUnknownTokenRecordsFailure", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Confirm custom aggregators convert to Excel equivalents during analysis parsing.
-Private Sub TestCustomAggregatorTranslatesToAverage()
+Public Sub TestCustomAggregatorTranslatesToAverage()
+    CustomTestSetTitles Assert, "Formulas", "TestCustomAggregatorTranslatesToAverage"
     Dim formulaInstance As IFormulas
     Dim condition As IFormulaCondition
     Dim conditionVars As BetterArray
     Dim conditionConds As BetterArray
     Dim tableName As String
+
+    On Error GoTo Fail
 
     Set formulaInstance = BuildFormula("MEAN")
     Set conditionVars = BetterArrayFromList(AnyVariableName())
@@ -383,25 +433,66 @@ Private Sub TestCustomAggregatorTranslatesToAverage()
 
     Assert.IsTrue formulaInstance.Valid("analysis"), "Custom MEAN should be accepted for analysis"
     Assert.AreEqual "AVERAGE", formulaInstance.ParsedAnalysisFormula(condition), "MEAN should translate to AVERAGE in analysis context"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCustomAggregatorTranslatesToAverage", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Check that structured references are applied when requested for linelist formulas.
-Private Sub TestParsedLinelistStructuredReference()
+Public Sub TestParsedLinelistStructuredReference()
+    CustomTestSetTitles Assert, "Formulas", "TestParsedLinelistStructuredReference"
     Dim variableName As String
     Dim formulaInstance As IFormulas
     Dim parsed As String
+
+    On Error GoTo Fail
 
     variableName = AnyVariableName()
     Set formulaInstance = BuildFormula(variableName & " + 5")
 
     parsed = formulaInstance.ParsedLinelistFormula(useTableName:=True, tablePrefix:="tbl_")
     Assert.IsTrue InStr(1, parsed, "tbl_", vbTextCompare) > 0, "Structured reference should include table prefix"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestParsedLinelistStructuredReference", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("Formulas")
+'@description Ensure disabling structured references yields direct cell addresses in linelist formulas.
+Public Sub TestParsedLinelistUsesCellReferencesWhenOptedOut()
+    CustomTestSetTitles Assert, "Formulas", "TestParsedLinelistUsesCellReferencesWhenOptedOut"
+    Dim variableName As String
+    Dim formulaInstance As IFormulas
+    Dim parsed As String
+    Dim sheets As ILLSheets
+    Dim expectedAddress As String
+
+    On Error GoTo Fail
+
+    variableName = AnyVariableName()
+    Set formulaInstance = BuildFormula(variableName & " + 1")
+    parsed = formulaInstance.ParsedLinelistFormula(useTableName:=False)
+
+    LinelistDictionary.Prepare
+    Set sheets = LLSheets.Create(LinelistDictionary)
+    expectedAddress = sheets.VariableAddress(variableName)
+
+    Assert.IsTrue formulaInstance.Valid("simple"), "Expression should be valid in simple context"
+    Assert.IsTrue InStr(1, parsed, expectedAddress, vbTextCompare) > 0, "Parsed linelist formula should contain the direct cell address"
+    Assert.IsFalse InStr(1, parsed, "[", vbBinaryCompare) > 0, "Parsed linelist formula should not include structured reference brackets when disabled"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestParsedLinelistUsesCellReferencesWhenOptedOut", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Validate that every formula-like dictionary entry parses without warnings.
-Private Sub TestAllDictionaryFormulasParse()
+Public Sub TestAllDictionaryFormulasParse()
+    CustomTestSetTitles Assert, "Formulas", "TestAllDictionaryFormulasParse"
     Dim rows As Variant
     Dim rowData As Variant
     Dim controlIndex As Long
@@ -443,15 +534,18 @@ NextRow:
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestAllDictionaryFormulasParse"
+    CustomTestLogFailure Assert, "TestAllDictionaryFormulasParse", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Confirm nested parentheses and irregular whitespace are handled correctly.
-Private Sub TestNestedParenthesesAndWhitespace()
+Public Sub TestNestedParenthesesAndWhitespace()
+    CustomTestSetTitles Assert, "Formulas", "TestNestedParenthesesAndWhitespace"
     Dim variableName As String
     Dim expression As String
     Dim formulaInstance As IFormulas
+
+    On Error GoTo Fail
 
     variableName = FixtureVariableName(1)
     expression = "   SUM  (  (" & variableName & "  +  2 )  * ( IF(1 = 1 , 3 , 4 ) ) )  "
@@ -459,38 +553,59 @@ Private Sub TestNestedParenthesesAndWhitespace()
 
     Assert.IsTrue formulaInstance.Valid("analysis"), "Nested parentheses should parse"
     Assert.AreEqual FORMULA_SUCCESS_MESSAGE, formulaInstance.Reason("analysis"), "Nested formula should succeed"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestNestedParenthesesAndWhitespace", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Ensure escaped double-quotes inside string literals are recognised.
-Private Sub TestHandlesEscapedQuotesWithinLiterals()
+Public Sub TestHandlesEscapedQuotesWithinLiterals()
+    CustomTestSetTitles Assert, "Formulas", "TestHandlesEscapedQuotesWithinLiterals"
     Dim expression As String
     Dim formulaInstance As IFormulas
+
+    On Error GoTo Fail
 
     expression = "IF(" & Chr$(34) & "Alpha" & Chr$(34) & Chr$(34) & "Beta" & Chr$(34) & ", ""OK"", ""KO"")"
     Set formulaInstance = BuildFormula(expression)
 
     Assert.IsTrue formulaInstance.Valid("analysis"), "Escaped quotes should parse"
-    Assert.IsTrue formulaInstance.HasLiterals, "Literal strings should be detected"
+    Assert.IsTrue formulaInstance.HasSetupVariables, "Literal strings should be detected"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestHandlesEscapedQuotesWithinLiterals", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Verify boolean literals participate in expressions without causing failures.
-Private Sub TestBooleanLiteralsAccepted()
+Public Sub TestBooleanLiteralsAccepted()
+    CustomTestSetTitles Assert, "Formulas", "TestBooleanLiteralsAccepted"
     Dim formulaInstance As IFormulas
+
+    On Error GoTo Fail
 
     Set formulaInstance = BuildFormula("IF(TRUE, FALSE, TRUE)")
 
     Assert.IsTrue formulaInstance.Valid("analysis"), "Boolean literals should parse"
-    Assert.IsTrue formulaInstance.HasLiterals, "Boolean literals count as literals"
+    Assert.IsTrue formulaInstance.HasSetupVariables, "Boolean literals count as literals"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestBooleanLiteralsAccepted", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Ensure unknown functions trigger the standard unknown-token failure message.
-Private Sub TestInvalidFunctionRaisesChecking()
+Public Sub TestInvalidFunctionRaisesChecking()
+    CustomTestSetTitles Assert, "Formulas", "TestInvalidFunctionRaisesChecking"
     Dim formulaInstance As IFormulas
     Dim expectedReason As String
     Dim variableName As String
+
+    On Error GoTo Fail
 
     variableName = AnyVariableName()
     Set formulaInstance = BuildFormula("NOTAFUNCTION(" & variableName & ")")
@@ -499,13 +614,57 @@ Private Sub TestInvalidFunctionRaisesChecking()
     Assert.IsFalse formulaInstance.Valid("analysis"), "Invalid function should fail"
     Assert.AreEqual expectedReason, formulaInstance.Reason("analysis"), "Reason should explain invalid function"
     Assert.IsTrue formulaInstance.HasChecking, "Failure must be logged"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInvalidFunctionRaisesChecking", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("Formulas")
+'@description Ensure custom N aggregator translations do not leave empty parentheses in analysis output.
+Public Sub TestAnalysisCustomNRemovesEmptyInvocation()
+    CustomTestSetTitles Assert, "Formulas", "TestAnalysisCustomNRemovesEmptyInvocation"
+    Const TABLE_PREFIX As String = "f_"
+    Dim variableName As String
+    Dim tableName As String
+    Dim formulaInstance As IFormulas
+    Dim conditionVars As BetterArray
+    Dim conditionConds As BetterArray
+    Dim formCondition As IFormulaCondition
+    Dim parsed As String
+
+    On Error GoTo Fail
+
+    variableName = AnyVariableName()
+    tableName = DictionaryFixtureValue(0, "Table Name")
+
+    Set formulaInstance = BuildFormula("IF(N()>0, 1, 0)")
+    Set conditionVars = BetterArrayFromList(variableName)
+    Set conditionConds = BetterArrayFromList(">0")
+    Set formCondition = FormulaCondition.Create(conditionVars, conditionConds)
+
+    Assert.IsTrue formulaInstance.Valid("analysis"), "Expression using custom N should be valid in analysis context"
+
+    parsed = formulaInstance.ParsedAnalysisFormula(formCondition, tablePrefix:=TABLE_PREFIX)
+
+    Assert.IsTrue InStr(1, parsed, "COUNTIFS(", vbTextCompare) > 0, "Custom N should translate to COUNTIFS"
+    Assert.IsTrue InStr(1, parsed, TABLE_PREFIX & tableName & "[" & variableName & "]", vbTextCompare) > 0, "COUNTIFS should reference the structured table column"
+    Assert.AreEqual 0&, InStr(1, parsed, ")()", vbBinaryCompare), "COUNTIFS translation should not contain empty parentheses"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestAnalysisCustomNRemovesEmptyInvocation", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Detect formulas missing closing parentheses and report descriptive feedback.
-Private Sub TestUnmatchedParenthesesDetected()
+Public Sub TestUnmatchedParenthesesDetected()
+    CustomTestSetTitles Assert, "Formulas", "TestUnmatchedParenthesesDetected"
     Dim variableName As String
     Dim formulaInstance As IFormulas
+
+    On Error GoTo Fail
 
     variableName = FixtureVariableName(2)
     Set formulaInstance = BuildFormula("SUM((" & variableName & " + 1")
@@ -513,25 +672,39 @@ Private Sub TestUnmatchedParenthesesDetected()
     Assert.IsFalse formulaInstance.Valid("analysis"), "Unmatched parentheses should fail"
     Assert.AreEqual FORMULA_PAREN_MISMATCH_MESSAGE, formulaInstance.Reason("analysis"), "Reason should mention unmatched parentheses"
     Assert.IsTrue formulaInstance.HasChecking, "Failure must be logged"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUnmatchedParenthesesDetected", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Detect closing parentheses that appear before any opening parenthesis.
-Private Sub TestClosingParenthesisBeforeOpeningDetected()
+Public Sub TestClosingParenthesisBeforeOpeningDetected()
+    CustomTestSetTitles Assert, "Formulas", "TestClosingParenthesisBeforeOpeningDetected"
     Dim formulaInstance As IFormulas
+
+    On Error GoTo Fail
 
     Set formulaInstance = BuildFormula(")1")
 
     Assert.IsFalse formulaInstance.Valid("analysis"), "Leading closing parenthesis should fail"
     Assert.AreEqual FORMULA_NEGATIVE_PAREN_MESSAGE, formulaInstance.Reason("analysis"), "Reason should mention negative parentheses"
     Assert.IsTrue formulaInstance.HasChecking, "Failure must be logged"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestClosingParenthesisBeforeOpeningDetected", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Reject characters not present in the allowed special-character table.
-Private Sub TestDisallowedCharacterRejected()
+Public Sub TestDisallowedCharacterRejected()
+    CustomTestSetTitles Assert, "Formulas", "TestDisallowedCharacterRejected"
     Dim formulaInstance As IFormulas
     Dim expectedReason As String
+
+    On Error GoTo Fail
 
     Set formulaInstance = BuildFormula("é")
     expectedReason = UnknownTokenReason("é")
@@ -539,12 +712,17 @@ Private Sub TestDisallowedCharacterRejected()
     Assert.IsFalse formulaInstance.Valid("analysis"), "Disallowed characters should fail"
     Assert.AreEqual expectedReason, formulaInstance.Reason("analysis"), "Reason should reference the disallowed character"
     Assert.IsTrue formulaInstance.HasChecking, "Failure must be logged"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDisallowedCharacterRejected", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Ensure grouped SUMIFS expressions emit the native SUMIFS function with structured references.
-Private Sub TestGroupedSumIfsUsesNativeFunction()
-    Const TABLE_PREFIX As String = "tbl_"
+Public Sub TestGroupedSumIfsUsesNativeFunction()
+    CustomTestSetTitles Assert, "Formulas", "TestGroupedSumIfsUsesNativeFunction"
+    Const TABLE_PREFIX As String = "f_"
     Dim criteriaVar As String
     Dim conditionVar As String
     Dim resultVar As String
@@ -556,7 +734,7 @@ Private Sub TestGroupedSumIfsUsesNativeFunction()
     On Error GoTo Fail
 
     If Not SampleGroupedVariables(criteriaVar, conditionVar, resultVar, tableName) Then
-        Assert.Fail "Unable to identify grouped variables for SUMIFS test"
+        Assert.LogFailure "Unable to identify grouped variables for SUMIFS test"
         Exit Sub
     End If
 
@@ -572,13 +750,14 @@ Private Sub TestGroupedSumIfsUsesNativeFunction()
 
     Exit Sub
 Fail:
-    FailUnexpectedError Assert, "TestGroupedSumIfsUsesNativeFunction"
+    CustomTestLogFailure Assert, "TestGroupedSumIfsUsesNativeFunction", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Ensure grouped COUNTIFS appends a non-empty criterion for the aggregation range.
-Private Sub TestGroupedCountIfsAddsNotBlankCriteria()
-    Const TABLE_PREFIX As String = "tbl_"
+Public Sub TestGroupedCountIfsAddsNotBlankCriteria()
+    CustomTestSetTitles Assert, "Formulas", "TestGroupedCountIfsAddsNotBlankCriteria"
+    Const TABLE_PREFIX As String = "f_"
     Dim criteriaVar As String
     Dim conditionVar As String
     Dim resultVar As String
@@ -590,7 +769,7 @@ Private Sub TestGroupedCountIfsAddsNotBlankCriteria()
     On Error GoTo Fail
 
     If Not SampleGroupedVariables(criteriaVar, conditionVar, resultVar, tableName) Then
-        Assert.Fail "Unable to identify grouped variables for COUNTIFS test"
+        Assert.LogFailure "Unable to identify grouped variables for COUNTIFS test"
         Exit Sub
     End If
 
@@ -606,13 +785,14 @@ Private Sub TestGroupedCountIfsAddsNotBlankCriteria()
 
     Exit Sub
 Fail:
-    FailUnexpectedError Assert, "TestGroupedCountIfsAddsNotBlankCriteria"
+    CustomTestLogFailure Assert, "TestGroupedCountIfsAddsNotBlankCriteria", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Ensure grouped MEANIFS expressions create array-style AVERAGE(IF()) formulas.
-Private Sub TestGroupedMeanIfsBuildsArrayFormula()
-    Const TABLE_PREFIX As String = "tbl_"
+Public Sub TestGroupedMeanIfsBuildsArrayFormula()
+    CustomTestSetTitles Assert, "Formulas", "TestGroupedMeanIfsBuildsArrayFormula"
+    Const TABLE_PREFIX As String = "f_"
     Dim criteriaVar As String
     Dim conditionVar As String
     Dim resultVar As String
@@ -625,7 +805,7 @@ Private Sub TestGroupedMeanIfsBuildsArrayFormula()
     On Error GoTo Fail
 
     If Not SampleGroupedVariables(criteriaVar, conditionVar, resultVar, tableName) Then
-        Assert.Fail "Unable to identify grouped variables for MEANIFS test"
+        Assert.LogFailure "Unable to identify grouped variables for MEANIFS test"
         Exit Sub
     End If
 
@@ -643,12 +823,51 @@ Private Sub TestGroupedMeanIfsBuildsArrayFormula()
 
     Exit Sub
 Fail:
-    FailUnexpectedError Assert, "TestGroupedMeanIfsBuildsArrayFormula"
+    CustomTestLogFailure Assert, "TestGroupedMeanIfsBuildsArrayFormula", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("Formulas")
+'@description Validate that generic GROUP_SUM expressions produce SUM(IF()) style formulas.
+Public Sub TestGenericGroupSumBuildsArrayFormula()
+    CustomTestSetTitles Assert, "Formulas", "TestGenericGroupSumBuildsArrayFormula"
+    Const TABLE_PREFIX As String = "f_"
+    Dim criteriaVar As String
+    Dim conditionVar As String
+    Dim resultVar As String
+    Dim tableName As String
+    Dim expression As String
+    Dim formulaInstance As IFormulas
+    Dim expectedLinelist As String
+    Dim expectedAnalysis As String
+
+    On Error GoTo Fail
+
+    If Not SampleGroupedVariables(criteriaVar, conditionVar, resultVar, tableName) Then
+        Assert.LogFailure "Unable to identify grouped variables for GROUP_SUM test"
+        Exit Sub
+    End If
+
+    expression = "GROUP_SUM(" & criteriaVar & ", " & conditionVar & ", " & resultVar & ")"
+    Set formulaInstance = BuildFormula(expression)
+
+    Assert.IsTrue formulaInstance.Valid("analysis"), "GROUP_SUM should be valid"
+    Assert.AreEqual "Yes", formulaInstance.IsGrouped, "GROUP_SUM should report grouped state"
+
+    expectedLinelist = ExpectedArrayGroupedFormula("SUM", criteriaVar, conditionVar, resultVar, tableName, vbNullString, False)
+    expectedAnalysis = ExpectedArrayGroupedFormula("SUM", criteriaVar, conditionVar, resultVar, tableName, TABLE_PREFIX, True)
+
+    Assert.AreEqual expectedLinelist, formulaInstance.ParsedLinelistFormula(), "Linelist GROUP_SUM output mismatch"
+    Assert.AreEqual expectedAnalysis, formulaInstance.ParsedAnalysisFormula(formCond:=Nothing, tablePrefix:=TABLE_PREFIX), "Analysis GROUP_SUM output mismatch"
+
+    Exit Sub
+Fail:
+    CustomTestLogFailure Assert, "TestGenericGroupSumBuildsArrayFormula", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Reject grouped formulas when the result variable does not share the criteria table.
-Private Sub TestGroupedTableMismatchRejected()
+Public Sub TestGroupedTableMismatchRejected()
+    CustomTestSetTitles Assert, "Formulas", "TestGroupedTableMismatchRejected"
     Dim criteriaVar As String
     Dim conditionVar As String
     Dim resultVar As String
@@ -660,12 +879,12 @@ Private Sub TestGroupedTableMismatchRejected()
     On Error GoTo Fail
 
     If Not SampleGroupedVariables(criteriaVar, conditionVar, resultVar, tableName) Then
-        Assert.Fail "Unable to identify grouped variables for mismatch test"
+        Assert.LogFailure "Unable to identify grouped variables for mismatch test"
         Exit Sub
     End If
 
     If Not VariableFromDifferentTable(tableName, mismatchedVar) Then
-        Assert.Fail "Unable to locate variable on a different table for mismatch validation"
+        Assert.LogFailure "Unable to locate variable on a different table for mismatch validation"
         Exit Sub
     End If
 
@@ -679,12 +898,84 @@ Private Sub TestGroupedTableMismatchRejected()
 
     Exit Sub
 Fail:
-    FailUnexpectedError Assert, "TestGroupedTableMismatchRejected"
+    CustomTestLogFailure Assert, "TestGroupedTableMismatchRejected", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("Formulas")
+'@description Reject generic grouped formulas that omit an aggregator after the GROUP prefix.
+Public Sub TestGenericGroupMissingAggregatorRejected()
+    CustomTestSetTitles Assert, "Formulas", "TestGenericGroupMissingAggregatorRejected"
+    Dim criteriaVar As String
+    Dim conditionVar As String
+    Dim resultVar As String
+    Dim tableName As String
+    Dim expression As String
+    Dim formulaInstance As IFormulas
+    Dim expectedReason As String
+
+    On Error GoTo Fail
+
+    If Not SampleGroupedVariables(criteriaVar, conditionVar, resultVar, tableName) Then
+        Assert.LogFailure "Unable to identify grouped variables for missing aggregator test"
+        Exit Sub
+    End If
+
+    expression = "GROUP_(" & criteriaVar & ", " & conditionVar & ", " & resultVar & ")"
+    Set formulaInstance = BuildFormula(expression)
+
+    Assert.IsFalse formulaInstance.Valid("analysis"), "GROUP_ should be rejected when no aggregator is specified"
+
+    expectedReason = Replace(FORMULA_GROUP_INVALID_GENERIC_MESSAGE, "%1", "GROUP_", 1, 1, vbTextCompare)
+    Assert.AreEqual expectedReason, formulaInstance.Reason("analysis"), "Missing aggregator reason mismatch"
+    Assert.IsTrue formulaInstance.HasChecking, "Missing aggregator should log a diagnostic entry"
+    Assert.AreEqual "No", formulaInstance.IsGrouped, "Invalid grouped formula should not report grouped state"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestGenericGroupMissingAggregatorRejected", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("Formulas")
+'@description Reject generic grouped formulas targeting aggregators not present in the Excel catalog.
+Public Sub TestGenericGroupUnknownAggregatorRejected()
+    CustomTestSetTitles Assert, "Formulas", "TestGenericGroupUnknownAggregatorRejected"
+    Dim criteriaVar As String
+    Dim conditionVar As String
+    Dim resultVar As String
+    Dim tableName As String
+    Dim expression As String
+    Dim formulaInstance As IFormulas
+    Dim expectedReason As String
+
+    On Error GoTo Fail
+
+    If Not SampleGroupedVariables(criteriaVar, conditionVar, resultVar, tableName) Then
+        Assert.LogFailure "Unable to identify grouped variables for unknown aggregator test"
+        Exit Sub
+    End If
+
+    expression = "GROUP_UNKNOWNFUNC(" & criteriaVar & ", " & conditionVar & ", " & resultVar & ")"
+    Set formulaInstance = BuildFormula(expression)
+
+    Assert.IsFalse formulaInstance.Valid("analysis"), "GROUP_UNKNOWNFUNC should be rejected when aggregator is not registered"
+
+    expectedReason = Replace(FORMULA_GROUP_UNKNOWN_AGGREGATOR_MESSAGE, "%1", "GROUP_UNKNOWNFUNC", 1, 1, vbTextCompare)
+    expectedReason = Replace(expectedReason, "%2", "UNKNOWNFUNC", 1, 1, vbTextCompare)
+    Assert.AreEqual expectedReason, formulaInstance.Reason("analysis"), "Unknown aggregator reason mismatch"
+    Assert.IsTrue formulaInstance.HasChecking, "Unknown aggregator should log a diagnostic entry"
+    Assert.AreEqual "No", formulaInstance.IsGrouped, "Invalid grouped formula should not report grouped state"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestGenericGroupUnknownAggregatorRejected", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Confirm ParsedAnalysisFormula respects connectors provided by IFormulaCondition.
-Private Sub TestParsedAnalysisFormulaAppliesConnector()
+Public Sub TestParsedAnalysisFormulaAppliesConnector()
+    CustomTestSetTitles Assert, "Formulas", "TestParsedAnalysisFormulaAppliesConnector"
     Dim variableName As String
     Dim expression As String
     Dim formulaInstance As IFormulas
@@ -693,6 +984,8 @@ Private Sub TestParsedAnalysisFormulaAppliesConnector()
     Dim conditionConds As BetterArray
     Dim tableName As String
     Dim parsed As String
+
+    On Error GoTo Fail
 
     variableName = FixtureVariableName(3)
     expression = "SUM(" & variableName & ")"
@@ -707,15 +1000,22 @@ Private Sub TestParsedAnalysisFormulaAppliesConnector()
 
     Assert.IsTrue InStr(1, parsed, " + ", vbTextCompare) > 0, "Connector should be injected between conditions"
     Assert.IsTrue InStr(1, parsed, "IF", vbTextCompare) > 0, "Expression should include IF wrapper from FormulaCondition"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestParsedAnalysisFormulaAppliesConnector", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Formulas")
 '@description Stress the parser with a lengthy expression to ensure repeated tokenisation remains successful.
-Private Sub TestLargeFormulaParsesSuccessfully()
+Public Sub TestLargeFormulaParsesSuccessfully()
+    CustomTestSetTitles Assert, "Formulas", "TestLargeFormulaParsesSuccessfully"
     Dim variableName As String
     Dim idx As Long
     Dim builder As String
     Dim formulaInstance As IFormulas
+
+    On Error GoTo Fail
 
     variableName = FixtureVariableName(4)
 
@@ -728,4 +1028,8 @@ Private Sub TestLargeFormulaParsesSuccessfully()
 
     Assert.IsTrue formulaInstance.Valid("analysis"), "Large formula should parse successfully"
     Assert.AreEqual FORMULA_SUCCESS_MESSAGE, formulaInstance.Reason("analysis"), "Reason should indicate success"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestLargeFormulaParsesSuccessfully", Err.Number, Err.Description
 End Sub

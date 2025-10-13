@@ -7,7 +7,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 
 '@Folder("CustomTests")
-'@Folder("Tests")
+
 '@ModuleDescription("Tests for the LLSheets class")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 

@@ -6,7 +6,6 @@ Option Explicit
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 '@Folder("CustomTests")
-'@Folder("Tests")
 '@ModuleDescription("Additional tests for the LLVariables class")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
@@ -144,6 +143,7 @@ Public Sub TestResolveColumnIndexCacheInvalidation()
     Dim sh As Worksheet
 
     'Warm the cache for Dev Comments
+    '@Ignore AssignmentNotUsed
     first = Variables.Value("Dev Comments", "choi_v1")
 
     'Rename the header to invalidate the cached index

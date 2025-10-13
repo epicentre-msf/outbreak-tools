@@ -12,7 +12,7 @@ Attribute VB_Description = "Guards Excel application settings while the linelist
 '@PredeclaredId
 '@Folder("Linelist")
 '@ModuleDescription("Guards Excel application settings while the linelist runs heavy operations")
-'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 '@depends ProjectError
 
 Option Explicit
@@ -27,6 +27,8 @@ Private Type TScopeState
     calculationMode As XlCalculation            'Cached Calculation mode
     enableAnimations As Boolean                 'Cached EnableAnimations value
     supportsAnimations As Boolean               'Flag indicating whether EnableAnimations is available
+    supportsEvents As Boolean
+    cursor As XlMousePointer                    'Cached cursor value
     snapshotCaptured As Boolean                 'Flag indicating a snapshot is ready for restoration
     isBusy As Boolean                           'Flag indicating busy mode is currently applied
 End Type
@@ -65,8 +67,8 @@ End Property
 '@sub-title Apply busy settings
 '@details Switches the application into the optimised busy configuration while
 '@details remembering the captured snapshot for later restoration.
-Public Sub ApplyBusyState()
-    ApplyBusyStateCore
+Public Sub ApplyBusyState(Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow)
+    ApplyBusyStateCore False, busyCursor
 End Sub
 
 '@sub-title Restore original settings
@@ -124,7 +126,8 @@ End Sub
 
 '@section Core logic
 '===============================================================================
-Private Sub ApplyBusyStateCore()
+Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False, _
+                               Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow)
     Dim target As Application
 
     If this.isBusy Then Exit Sub
@@ -136,6 +139,8 @@ Private Sub ApplyBusyStateCore()
         target.ScreenUpdating = False
         target.DisplayAlerts = False
         target.Calculation = xlCalculationManual
+        target.EnableEvents = suppressEvents
+        target.Cursor = busyCursor
         If this.supportsAnimations Then
             SafeSetEnableAnimations target, False
         End If
@@ -159,6 +164,8 @@ Private Sub CaptureSnapshotCore()
     this.displayAlerts = target.DisplayAlerts
     this.calculationMode = target.Calculation
     this.supportsAnimations = TryReadEnableAnimations(target, this.enableAnimations)
+    this.supportsEvents = target.EnableEvents
+    this.cursor = target.Cursor
     this.snapshotCaptured = True
 End Sub
 
@@ -209,6 +216,8 @@ Private Sub RestoreInternal(ByVal silent As Boolean)
         target.ScreenUpdating = this.screenUpdating
         target.DisplayAlerts = this.displayAlerts
         target.Calculation = this.calculationMode
+        target.EnableEvents = this.supportsEvents
+        target.Cursor = this.cursor
         If this.supportsAnimations Then
             SafeSetEnableAnimations target, this.enableAnimations
         End If
@@ -252,7 +261,7 @@ Unavailable:
 End Function
 
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
-    Err.Raise errNumber, CLASSNAME, message
+    Err.Raise errNumber, "ApplicationState", message
 End Sub
 
 Private Sub Class_Terminate()
@@ -265,8 +274,9 @@ End Sub
 
 '@section Interface implementation
 '===============================================================================
-Private Sub IApplicationState_ApplyBusyState()
-    ApplyBusyStateCore
+Private Sub IApplicationState_ApplyBusyState(Optional ByVal suppressEvents, _
+                                             Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow)
+    ApplyBusyStateCore suppressEvents, busyCursor
 End Sub
 
 Private Sub IApplicationState_Restore()

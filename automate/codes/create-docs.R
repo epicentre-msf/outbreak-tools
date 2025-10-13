@@ -13,13 +13,51 @@ parser <- VBADocParser$new(
 args <- commandArgs(trailingOnly = TRUE)
 exclude_impl <- here("src/classes/implements/BetterArray.cls")
 
-if (length(args) > 0) {
-  # Generate documentation for the interface of a single class passed as first arg
-  target_class <- args[[1]]
-  parser$parse_interface_for_class(target_class, exclude_files = exclude_impl)
-} else {
-  # Generate documentation for all classes
+if (length(args) == 0) {
   parser$parse(exclude_files = exclude_impl)
+} else {
+  mode <- tolower(args[[1]])
+  parse_mode <- NULL
+  target <- NULL
+
+  extract_target <- function(flag, provided_args) {
+    if (length(provided_args) > 1) {
+      return(provided_args[[2]])
+    }
+    cli::cli_abort(sprintf("Missing class name after '%s'", flag))
+  }
+
+  if (startsWith(mode, "--class=")) {
+    parse_mode <- "class"
+    target <- sub("^--class=", "", args[[1]])
+  } else if (startsWith(mode, "--interface=")) {
+    parse_mode <- "interface"
+    target <- sub("^--interface=", "", args[[1]])
+  } else if (mode %in% c("--class", "-c", "class")) {
+    parse_mode <- "class"
+    target <- extract_target(args[[1]], args)
+  } else if (mode %in% c("--interface", "-i", "interface", "iface")) {
+    parse_mode <- "interface"
+    target <- extract_target(args[[1]], args)
+  } else if (mode %in% c("--all", "-a", "all")) {
+    parser$parse(exclude_files = exclude_impl)
+  } else {
+    # Backwards compatibility: single argument treated as interface name
+    parse_mode <- "interface"
+    target <- args[[1]]
+  }
+
+  if (!is.null(parse_mode)) {
+    if (!nzchar(target)) {
+      cli::cli_abort("Class name cannot be empty.")
+    }
+
+    if (parse_mode == "class") {
+      parser$parse_class(target, exclude_files = exclude_impl)
+    } else {
+      parser$parse_interface_for_class(target, exclude_files = exclude_impl)
+    }
+  }
 }
 
 # Optional extras

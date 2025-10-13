@@ -120,12 +120,10 @@ End Property
 '@return Total number of export definitions currently present.
 Public Property Get NumberOfExports() As Long
     Dim exportRange As Range
-    Dim fn As Object
 
     EnsureDataReady
 
     Set exportRange = this.expData.DataRange(includeHeaders:=False)
-    Set fn = Application.WorksheetFunction
 
     If exportRange Is Nothing Then
         NumberOfExports = 0

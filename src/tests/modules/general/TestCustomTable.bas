@@ -6,9 +6,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-
-'@TestModule
-'@Folder("Tests")
+'@Folder("CustomTests")
 
 Private Const TABLESHEETNAME As String = "CustomTableFixture"
 Private Const TABLENAME As String = "tblCustom"

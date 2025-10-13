@@ -11,7 +11,7 @@ Attribute VB_Description = "Parse VALUE_OF formulas and resolve lookup metadata"
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, ProcedureNotUsed, UseMeaningfulName, HungarianNotation
 '@PredeclaredId
-'@Folder("Custom Functions")
+'@Folder("Formulas")
 '@ModuleDescription("Parse VALUE_OF formulas and resolve lookup metadata")
 '@depends BetterArray, LLdictionary, LLVariables, LLSheets
 '@label:ValueOfFormula
@@ -104,8 +104,8 @@ Public Property Set Dictionary(ByVal dict As ILLdictionary)
                    "ValueOfFormula requires a valid dictionary reference"
     End If
     Set this.dict = dict
-    this.variables = Nothing
-    this.sheets = Nothing
+    Set this.variables = Nothing
+    Set this.sheets = Nothing
     ResetState
 End Property
 
@@ -315,8 +315,9 @@ Private Function ExtractArguments() As BetterArray
                     startPos = idx + 1
                 End If
         End Select
-    Next idx
+    Next
 
+    '@Ignore AssignmentNotUsed
     segment = Trim$(Mid$(body, startPos, Len(body) - startPos + 1))
     If LenB(segment) > 0 Then
         args.Push segment
@@ -348,6 +349,7 @@ Private Function SanitisedFormula() As String
 
     If Right$(working, 1) <> ")" Then Exit Function
 
+    '@Ignore AssignmentNotUsed
     working = Left$(working, Len(working) - 1)
     SanitisedFormula = Trim$(working)
 End Function
@@ -383,7 +385,7 @@ End Function
 
 '@label:Initialise
 '@sub-title Assign dependencies and prime the parser state
-Private Sub Initialise(ByVal formula As String, _
+Public Sub Initialise(ByVal formula As String, _
                        ByVal dict As ILLdictionary, _
                        ByVal variables As ILLVariables, _
                        ByVal sheets As ILLSheets)

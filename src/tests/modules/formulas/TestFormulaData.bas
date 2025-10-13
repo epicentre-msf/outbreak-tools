@@ -1,13 +1,14 @@
 Attribute VB_Name = "TestFormulaData"
+Attribute VB_Description = "Unit tests ensuring FormulaData caches metadata and guards missing fixtures"
 
 Option Explicit
-
-Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
-
+Option Private Module
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 '@Folder("CustomTests")
-'@Folder("Tests")
+'@ModuleDescription("Unit tests ensuring FormulaData caches metadata and guards missing fixtures")
+
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 Private Const FORMULA_SHEET As String = "FormulaDataFixture"
 Private Const FORMULAS_TABLE_NAME As String = "T_XlsFonctions"

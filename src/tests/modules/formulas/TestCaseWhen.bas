@@ -9,7 +9,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing
 
 '@Folder("CustomTests")
-'@Folder("Tests")
+
 '@ModuleDescription("Verifies the CaseWhen parser")
 
 Private Const VALID_FORMULA_DEFAULT As String = _

@@ -7,10 +7,10 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
-Attribute VB_Description = "Interface describing VALUE_OF formula converters"
+Attribute VB_Description = "Surface contract for VALUE_OF formula parsers"
 
 '@Interface
-'@Folder("Custom Functions")
+'@Folder("Formulas")
 '@ModuleDescription("Surface contract for VALUE_OF formula parsers")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, ProcedureNotUsed, UseMeaningfulName, HungarianNotation
 

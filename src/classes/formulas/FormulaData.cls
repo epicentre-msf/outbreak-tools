@@ -7,14 +7,14 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = "Data Used for the Formula Object"
+Attribute VB_Description = "Provides cached lookups of allowed excel functions for formula parsing"
 
 '@PredeclaredId
-'@Folder("Formula")
-'@ModuleDescription("Provides cached lookups for formula parsing")
-'@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
-'@depends BetterArray
+'@Folder("Formulas")
+'@ModuleDescription("Provides cached lookups of allowed excel functions for formula parsing")
 
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
+'@depends BetterArray
 Option Explicit
 Implements IFormulaData
 
@@ -261,8 +261,8 @@ End Function
 '@label:InitialiseGroupFunctions
 '@sub-title Seed the grouped-formula registry with recognised mappings
 Private Sub InitialiseGroupFunctions()
-    Set this.groupFunctions = New BetterArray
-    this.groupFunctions.LowerBound = 0
+
+    EnsureGroupRegistry
 
     RegisterGroupFunction "SUMIFS", "SUMIFS", True
     RegisterGroupFunction "COUNTIFS", "COUNTIFS", True
@@ -276,7 +276,10 @@ End Sub
 '@label:EnsureGroupRegistry
 '@sub-title Guarantee the grouped-formula registry exists and is seeded
 Private Sub EnsureGroupRegistry()
-    If this.groupFunctions Is Nothing Then InitialiseGroupFunctions
+    If this.groupFunctions Is Nothing Then
+        Set this.groupFunctions = New BetterArray
+        this.groupFunctions.LowerBound = 0
+    End If
 End Sub
 
 '@label:RegisterGroupFunction

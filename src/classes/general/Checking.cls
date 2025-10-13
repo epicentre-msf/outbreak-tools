@@ -269,20 +269,72 @@ Private Function Clone() As IChecking
     Exit Function
   End If
 
-  lowerBound = this.keysTable.lowerBound
-  upperBound = this.keysTable.upperBound
+  lowerBound = this.keysTable.LowerBound
+  upperBound = this.keysTable.UpperBound
 
   For idx = lowerBound To upperBound
     cloneInstance.Add CStr(this.keysTable.Item(idx)), _
                      CStr(this.labelsTable.Item(idx)), _
                      CByte(this.scopesTable.Item(idx))
-  Next idx
+  Next 
 
   Set Clone = cloneInstance.Self()
 End Function
 
+'@label:Append
+'@sub-title Append some checkings to the current one
+'@details
+' Add some checking entries to the current checking to extend its entries
+Private Sub Append(ByVal checks As IChecking)
+  Dim idx As Long
+  Dim keyTable As BetterArray
+  Dim keyName As String
+  Dim keyScope As Byte
+  Dim keyTypeLabel As String
 
-'Errors and checkings -----------------------------------------------------------
+  If (checks Is Nothing) Then Exit Sub
+  If checks.Length() <= 0 Then Exit Sub
+
+  Set keyTable = checks.ListOfKeys()
+
+  If (keyTable Is Nothing) Then Exit Sub
+
+  For idx = keyTable.LowerBound To keyTable.UpperBound
+    keyName = CStr(keyTable.Item(idx))
+    keyTypeLabel = checks.ValueOf(keyName, checkingType)
+    keyScope = ScopeFromTypeLabel(keyTypeLabel)
+
+    Add keyName, _
+      checks.ValueOf(keyName, checkingLabel), _
+      keyScope
+  Next idx
+End Sub
+
+Private Function ScopeFromTypeLabel(ByVal typeLabel As String) As Byte
+  Dim cleaned As String
+
+  cleaned = Trim$(typeLabel)
+
+  If cleaned = vbNullString Then
+    ScopeFromTypeLabel = checkingNote
+    Exit Function
+  End If
+
+  If InStr(1, cleaned, "Error", vbTextCompare) > 0 Then
+    ScopeFromTypeLabel = checkingError
+  ElseIf InStr(1, cleaned, "Warning", vbTextCompare) > 0 Then
+    ScopeFromTypeLabel = checkingWarning
+  ElseIf InStr(1, cleaned, "Info", vbTextCompare) > 0 Then
+    ScopeFromTypeLabel = checkingInfo
+  ElseIf InStr(1, cleaned, "Success", vbTextCompare) > 0 Then
+    ScopeFromTypeLabel = checkingSuccess
+  Else
+    ScopeFromTypeLabel = checkingNote
+  End If
+End Function
+
+
+'Errors and checkings ----------------------------------------------------------
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, "Error message : " & Chr(34) & errorMessage
 End Sub
@@ -343,3 +395,7 @@ End Property
 Private Function IChecking_Clone() As IChecking
   Set IChecking_Clone = Clone()
 End Function
+
+Private Sub IChecking_Append(ByVal checks As IChecking)
+  Append checks
+End Sub

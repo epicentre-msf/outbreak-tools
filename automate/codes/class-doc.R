@@ -378,85 +378,240 @@ VBADocParser <- R6Class(
       externals <- list()
       internals <- list()
       tocs <- list()
-      i <- 1L
       n <- length(lines)
+      current_section <- NULL
+      doc <- NULL
+      last_tag <- NULL
+      last_param_index <- NA_integer_
+      last_note_index <- NA_integer_
+      last_remark_index <- NA_integer_
+      last_throw_index <- NA_integer_
+      last_depend_index <- NA_integer_
+      i <- 1L
 
-      while (i <= n) {
-        line <- str_trim(lines[i])
+      reset_tracking <- function() {
+        last_tag <<- NULL
+        last_param_index <<- NA_integer_
+        last_note_index <<- NA_integer_
+        last_remark_index <<- NA_integer_
+        last_throw_index <<- NA_integer_
+        last_depend_index <<- NA_integer_
+      }
+      reset_tracking()
 
-        if (str_detect(line, "^'@label:")) {
-          doc <- list()
-          headers <- list()
-          doc$label <- str_remove(line, "^'@label:\\s*")
-          i <- i + 1L
+      finalize_doc <- function(entry, signature_lines) {
+        if (length(signature_lines) == 0) {
+          return()
+        }
 
-          while (i <= n && str_detect(lines[i], "^'")) {
-            l <- str_trim(lines[i])
-            tag_match <- str_match(l, "^'@([\\-a-z]+):?\\s*(.*)$")
-            if (!is.na(tag_match[1])) {
-              tag <- str_to_lower(tag_match[2])
-              content <- str_trim(tag_match[3])
-              if (tag == "details") {
-                desc <- content
-                i <- i + 1L
-                while (i <= n && str_detect(lines[i], "^'[^@]")) {
-                  desc <- paste0(desc, "\n", str_remove(lines[i], "^'"))
-                  i <- i + 1L
-                }
-                doc$details <- desc
-                next
-              } else if (tag == "param") {
-                if (is.null(doc$params)) doc$params <- list()
-                param_parts <- str_match(content, "(\\w+)(.*)$")
-                if (!is.na(param_parts[1])) {
-                  doc$params <- append(
-                    doc$params,
-                    list(list(
-                      name = param_parts[2],
-                      details = str_trim(param_parts[3])
-                    ))
-                  )
-                }
-              } else if (tag %in% c("section", "sub-title", "prop-title")) {
-                headers <- list(entry = content, tag = tag)
-                doc[[tag]] <- content
-              } else {
-                doc[[tag]] <- content
-              }
-            }
-            i <- i + 1L
+        entry$signature <- paste(signature_lines, collapse = "\n")
+        if (!private$has_text(entry$label)) {
+          inferred <- private$infer_label_from_signature(signature_lines[[1]])
+          if (private$has_text(inferred)) {
+            entry$label <- inferred
+          } else {
+            entry$label <- str_trim(signature_lines[[1]])
           }
+        }
 
-          if (
-            i <= n &&
-              str_detect(
-                str_trim(lines[i]),
-                "^(Public|Private)\\s+(Sub|Function|Property)"
-              )
-          ) {
-            signature <- lines[i]
-            while (!str_detect(lines[i], "\\)")) {
-              i <- i + 1L
-              signature <- glue("{signature}{lines[i]}")
-            }
-            doc$signature <- str_replace_all(
-              signature,
-              ",\\s*_\\s+",
-              ", _\n     "
-            )
+        if (!private$has_text(entry$section)) {
+          entry$section <- current_section
+        }
 
-            if (!is.null(doc$export)) {
-              tocs <- append(tocs, list(headers))
-              externals <- append(externals, list(doc))
-            } else {
-              internals <- append(internals, list(doc))
-            }
-            i <- i + 1L
-          }
+        target <- if (isTRUE(entry$export) && !isTRUE(entry$private)) "externals" else "internals"
+        if (target == "externals") {
+          externals <<- c(externals, list(entry))
         } else {
-          i <- i + 1L
+          internals <<- c(internals, list(entry))
         }
       }
+
+      while (i <= n) {
+        line <- lines[i]
+        trimmed <- str_trim(line)
+
+        if (str_detect(trimmed, "^'@")) {
+          tag_match <- str_match(trimmed, "^'@([\\-A-Za-z0-9_]+):?\\s*(.*)$")
+          if (is.na(tag_match[1])) {
+            i <- i + 1L
+            next
+          }
+
+          raw_tag <- tag_match[2]
+          content <- str_trim(tag_match[3])
+          tag <- str_to_lower(raw_tag)
+
+          if (tag == "pram") tag <- "param"
+          if (tag %in% c("params", "parameters")) tag <- "params"
+          if (tag %in% c("returns", "returned")) tag <- "return"
+
+          if (tag == "section") {
+            current_section <- if (private$has_text(content)) content else NULL
+            doc <- NULL
+            reset_tracking()
+            i <- i + 1L
+            next
+          }
+
+          module_level <- c(
+            "folder",
+            "moduledescription",
+            "interfacedescription",
+            "interface",
+            "ignoremodule",
+            "ignore",
+            "defaultmember",
+            "predeclaredid"
+          )
+          if (tag %in% module_level) {
+            i <- i + 1L
+            next
+          }
+
+          if (tag == "jump" && is.null(doc)) {
+            i <- i + 1L
+            next
+          }
+
+          if (is.null(doc)) {
+            doc <- list(section = current_section)
+          }
+
+          reset_tracking()
+
+          if (tag == "label") {
+            if (private$has_text(content)) {
+              doc$label <- content
+            }
+          } else if (tag == "method") {
+            if (private$has_text(content)) {
+              doc$label <- content
+            }
+          } else if (tag %in% c("sub-title", "fun-title", "prop-title")) {
+            doc[[tag]] <- content
+          } else if (tag %in% c("details", "description")) {
+            doc$details <- private$append_text(doc$details, content)
+            last_tag <- tag
+          } else if (tag == "note") {
+            doc$notes <- c(doc$notes, content)
+            last_tag <- "note"
+            last_note_index <- length(doc$notes)
+          } else if (tag == "remarks") {
+            doc$remarks <- c(doc$remarks, content)
+            last_tag <- "remarks"
+            last_remark_index <- length(doc$remarks)
+          } else if (tag == "throws") {
+            doc$throws <- c(doc$throws, content)
+            last_tag <- "throws"
+            last_throw_index <- length(doc$throws)
+          } else if (tag == "depends") {
+            deps <- if (private$has_text(content)) str_split(content, "\\s*,\\s*")[[1]] else ""
+            if (length(deps) == 0) deps <- ""
+            doc$depends <- c(doc$depends, deps)
+            last_tag <- "depends"
+            last_depend_index <- length(doc$depends)
+          } else if (tag == "export") {
+            doc$export <- TRUE
+          } else if (tag == "private") {
+            doc$private <- TRUE
+          } else if (tag == "param") {
+            param_info <- private$parse_param_line(content)
+            doc$params <- c(doc$params, list(param_info))
+            last_tag <- "param"
+            last_param_index <- length(doc$params)
+          } else if (tag == "params") {
+            last_tag <- "params"
+            if (private$has_text(content)) {
+              param_info <- private$parse_param_line(content)
+              doc$params <- c(doc$params, list(param_info))
+              last_param_index <- length(doc$params)
+            }
+          } else if (tag == "return") {
+            doc$return <- private$parse_return_line(content)
+            last_tag <- "return"
+          } else if (tag == "jump") {
+            doc$jump <- c(doc$jump, content)
+          } else {
+            if (str_detect(raw_tag, "^[A-Za-z0-9_]+$")) {
+              param_info <- private$parse_param_line(content, raw_tag)
+              doc$params <- c(doc$params, list(param_info))
+              last_tag <- "param"
+              last_param_index <- length(doc$params)
+            }
+          }
+
+          i <- i + 1L
+          next
+        }
+
+        if (str_detect(trimmed, "^'(?!@)")) {
+          if (!is.null(doc)) {
+            text <- str_trim(str_remove(trimmed, "^'"))
+            if (identical(last_tag, "details") || identical(last_tag, "description")) {
+              doc$details <- private$append_text(doc$details, text)
+            } else if (identical(last_tag, "note") && !is.na(last_note_index)) {
+              doc$notes[last_note_index] <- private$append_text(doc$notes[last_note_index], text)
+            } else if (identical(last_tag, "remarks") && !is.na(last_remark_index)) {
+              doc$remarks[last_remark_index] <- private$append_text(doc$remarks[last_remark_index], text)
+            } else if (identical(last_tag, "throws") && !is.na(last_throw_index)) {
+              doc$throws[last_throw_index] <- private$append_text(doc$throws[last_throw_index], text)
+            } else if (identical(last_tag, "depends") && !is.na(last_depend_index)) {
+              doc$depends[last_depend_index] <- private$append_text(doc$depends[last_depend_index], text)
+            } else if (identical(last_tag, "return") && !is.null(doc$return)) {
+              doc$return$details <- private$append_text(doc$return$details, text)
+            } else if (identical(last_tag, "param") && !is.na(last_param_index)) {
+              doc$params[[last_param_index]]$details <- private$append_text(doc$params[[last_param_index]]$details, text)
+            } else if (identical(last_tag, "params")) {
+              bullet <- str_remove(text, "^[-*]\\s*")
+              if (!private$has_text(bullet)) {
+                bullet <- text
+              }
+              if (private$has_text(bullet)) {
+                param_info <- private$parse_param_line(bullet)
+                doc$params <- c(doc$params, list(param_info))
+                last_param_index <- length(doc$params)
+              }
+            }
+          }
+          i <- i + 1L
+          next
+        }
+
+        if (!is.null(doc)) {
+          if (str_detect(trimmed, "^(Public|Private|Friend|Global|Static)\\s+(Sub|Function|Property|Let|Set|Get)")) {
+            signature_lines <- character()
+            repeat {
+              signature_lines <- c(signature_lines, lines[i])
+              if (str_detect(lines[i], "\\)") || i >= n) {
+                break
+              }
+              i <- i + 1L
+            }
+            finalize_doc(doc, signature_lines)
+            doc <- NULL
+            reset_tracking()
+            i <- i + 1L
+            next
+          }
+
+          if (!nzchar(trimmed)) {
+            i <- i + 1L
+            next
+          }
+
+          if (str_detect(trimmed, "^Attribute\\s")) {
+            i <- i + 1L
+            next
+          }
+
+          doc <- NULL
+          reset_tracking()
+          next
+        }
+
+        i <- i + 1L
+      }
+
       list(externals = externals, internals = internals, tocs = tocs)
     },
 
@@ -480,21 +635,23 @@ VBADocParser <- R6Class(
       )
 
       # Primary section
-      output <- c(
-        output,
-        private$resolve_doc(externals, class_names),
-        ""
-      )
+      external_md <- private$resolve_doc(externals, class_names)
+      if (private$has_text(external_md)) {
+        output <- c(output, external_md, "")
+      }
 
       # Interface mode: do not emit internals callout
       if (!interface_mode) {
-        output <- c(
-          output,
-          "",
-          "::: {.callout-note collapse=\"true\" title=\"Additional not exported Subs \"}",
-          glue("{private$resolve_doc(internals, class_names)}"),
-          ":::"
-        )
+        internal_md <- private$resolve_doc(internals, class_names)
+        if (private$has_text(internal_md)) {
+          output <- c(
+            output,
+            "",
+            "::: {.callout-note collapse=\"true\" title=\"Additional not exported Subs \"}",
+            internal_md,
+            ":::"
+          )
+        }
       }
       paste(output, collapse = "\n")
     },
@@ -507,60 +664,259 @@ VBADocParser <- R6Class(
     },
 
     resolve_doc = function(lst_doc, class_names) {
-      output <- ""
-      for (doc in lst_doc) {
-        label <- doc$label
-        sig <- doc$signature
-        desc <- doc$details
-
-        if (!is.null(doc[["prop-title"]])) {
-          anchor <- tolower(doc[["prop-title"]]) |>
-            trimws() |>
-            str_remove_all("[[:punct:]]") |>
-            str_replace_all("\\s+", "-")
-          title <- glue("`{label}` {{#sec-{anchor}}}")
-          desc <- glue("{doc[['prop-title']]}")
-        } else {
-          anchor <- tolower(doc[["sub-title"]]) |>
-            trimws() |>
-            str_remove_all("[[:punct:]]") |>
-            str_replace_all("\\s+", "-")
-          title <- glue("`{label}` {{#sec-{anchor}}}")
-          desc <- glue("{doc[['sub-title']]} ")
-        }
-
-        block <- c(
-          glue("\n### {title}"),
-          "",
-          glue("**{desc}**"),
-          "",
-          "**Signature:**",
-          "\n```vb",
-          sig,
-          "```",
-          ""
-        )
-
-        if (!is.null(doc$params)) {
-          block <- c(block, "**Parameters:**", "")
-          for (p in doc$params) {
-            block <- c(block, glue("  - `{p$name}`: {p$details}"))
-          }
-          block <- c(block, "")
-        }
-
-        if (!is.null(desc)) {
-          desc <- private$resolve_links(desc, class_names)
-          block <- c(block, glue("**Details:**\n\n{desc}"), "")
-        }
-
-        if (!is.null(doc$returned)) {
-          block <- c(block, glue("**Return: {doc$returned}**"))
-        }
-
-        output <- c(output, block, "\n---\n")
+      if (length(lst_doc) == 0) {
+        return("")
       }
+
+      output <- character()
+      current_section <- NULL
+
+      for (doc in lst_doc) {
+        section_title <- doc$section
+        if (private$has_text(section_title) && !identical(section_title, current_section)) {
+          current_section <- section_title
+          output <- c(output, glue("## {section_title}"), "")
+        }
+
+        label <- if (private$has_text(doc$label)) {
+          as.character(doc$label)[1]
+        } else {
+          "UnnamedMember"
+        }
+
+        summary <- NULL
+        if (private$has_text(doc[["prop-title"]])) {
+          summary <- doc[["prop-title"]]
+        } else if (private$has_text(doc[["sub-title"]])) {
+          summary <- doc[["sub-title"]]
+        } else if (private$has_text(doc[["fun-title"]])) {
+          summary <- doc[["fun-title"]]
+        }
+
+        anchor_source <- if (private$has_text(summary)) summary else label
+        anchor <- private$slugify_anchor(anchor_source)
+
+        header <- if (private$has_text(anchor)) {
+          glue("### `{label}` {{#sec-{anchor}}}")
+        } else {
+          glue("### `{label}`")
+        }
+
+        block <- c("", header)
+
+        if (private$has_text(summary)) {
+          block <- c(block, "", glue("**{summary}**"))
+        }
+
+        if (private$has_text(doc$signature)) {
+          block <- c(block, "", "**Signature:**", "```vb", doc$signature, "```")
+        }
+
+        if (private$has_text(doc$details)) {
+          block <- c(block, "", private$resolve_links(doc$details, class_names))
+        }
+
+        if (!is.null(doc$params) && length(doc$params) > 0) {
+          block <- c(block, "", "**Parameters:**")
+          for (param in doc$params) {
+            name <- if (private$has_text(param$name)) param$name else "param"
+            type_suffix <- ""
+            if (private$has_text(param$type)) {
+              type_suffix <- glue(" ({param$type})")
+            }
+            details_text <- ""
+            if (private$has_text(param$details)) {
+              details_text <- glue(": {private$resolve_links(param$details, class_names)}")
+            }
+            block <- c(block, glue("  - `{name}`{type_suffix}{details_text}"))
+          }
+        }
+
+        if (!is.null(doc$return) && (private$has_text(doc$return$type) || private$has_text(doc$return$details))) {
+          return_type <- if (private$has_text(doc$return$type)) glue("{doc$return$type} – ") else ""
+          return_details <- if (private$has_text(doc$return$details)) private$resolve_links(doc$return$details, class_names) else ""
+          block <- c(block, "", glue("**Returns:** {return_type}{return_details}"))
+        }
+
+        if (!is.null(doc$notes) && length(doc$notes) > 0) {
+          notes_block <- character()
+          for (note in doc$notes) {
+            if (private$has_text(note)) {
+              notes_block <- c(notes_block, glue("  - {private$resolve_links(note, class_names)}"))
+            }
+          }
+          if (length(notes_block) > 0) {
+            block <- c(block, "", "**Notes:**", notes_block)
+          }
+        }
+
+        if (!is.null(doc$remarks) && length(doc$remarks) > 0) {
+          remarks_block <- character()
+          for (remark in doc$remarks) {
+            if (private$has_text(remark)) {
+              remarks_block <- c(remarks_block, glue("  - {private$resolve_links(remark, class_names)}"))
+            }
+          }
+          if (length(remarks_block) > 0) {
+            block <- c(block, "", "**Remarks:**", remarks_block)
+          }
+        }
+
+        if (!is.null(doc$throws) && length(doc$throws) > 0) {
+          throws_block <- character()
+          for (throw_entry in doc$throws) {
+            if (private$has_text(throw_entry)) {
+              throws_block <- c(throws_block, glue("  - {private$resolve_links(throw_entry, class_names)}"))
+            }
+          }
+          if (length(throws_block) > 0) {
+            block <- c(block, "", "**Throws:**", throws_block)
+          }
+        }
+
+        if (!is.null(doc$depends) && length(doc$depends) > 0) {
+          depends_block <- character()
+          for (dep in doc$depends) {
+            if (private$has_text(dep)) {
+              depends_block <- c(depends_block, glue("  - {private$resolve_links(dep, class_names)}"))
+            }
+          }
+          if (length(depends_block) > 0) {
+            block <- c(block, "", "**Depends on:**", depends_block)
+          }
+        }
+
+        block <- c(block, "", "---")
+        output <- c(output, block)
+      }
+
       paste(output, collapse = "\n")
+    },
+
+    has_text = function(value) {
+      if (is.null(value) || length(value) == 0) {
+        return(FALSE)
+      }
+      text <- str_trim(as.character(value))
+      text <- text[!is.na(text)]
+      if (length(text) == 0) {
+        return(FALSE)
+      }
+      any(nzchar(text))
+    },
+
+    append_text = function(existing, addition) {
+      if (is.null(addition) || length(addition) == 0) {
+        return(existing)
+      }
+      addition <- as.character(addition)
+      addition <- addition[!is.na(addition)]
+      addition <- str_trim(addition)
+      addition <- addition[nzchar(addition)]
+      if (length(addition) == 0) {
+        return(existing)
+      }
+      addition_text <- paste(addition, collapse = "\n")
+      if (!private$has_text(existing)) {
+        return(addition_text)
+      }
+      existing_text <- str_trim(paste(as.character(existing), collapse = "\n"))
+      if (!nzchar(existing_text)) {
+        return(addition_text)
+      }
+      paste(existing_text, addition_text, sep = "\n")
+    },
+
+    parse_param_line = function(text, fallback_name = NULL) {
+      value <- ""
+      if (!is.null(text) && length(text) > 0) {
+        value <- str_trim(as.character(text)[1])
+      }
+
+      type <- NULL
+      name <- fallback_name
+      remainder <- value
+
+      if (private$has_text(remainder)) {
+        type_match <- str_match(remainder, "^\\{([^}]+)\\}\\s*(.*)$")
+        if (!is.na(type_match[1])) {
+          type <- str_trim(type_match[2])
+          remainder <- str_trim(type_match[3])
+        }
+
+        if (!private$has_text(name)) {
+          name_match <- str_match(remainder, "^([A-Za-z0-9_]+)\\s*(.*)$")
+          if (!is.na(name_match[1])) {
+            name <- name_match[2]
+            remainder <- str_trim(name_match[3])
+          }
+        } else {
+          remainder <- str_trim(remainder)
+        }
+
+        remainder <- str_remove(remainder, "^[-:\\s]+")
+      }
+
+      if (!private$has_text(name)) {
+        name <- if (private$has_text(fallback_name)) fallback_name else "param"
+      }
+
+      list(
+        name = name,
+        type = type,
+        details = remainder
+      )
+    },
+
+    parse_return_line = function(text) {
+      value <- ""
+      if (!is.null(text) && length(text) > 0) {
+        value <- str_trim(as.character(text)[1])
+      }
+
+      type <- NULL
+      remainder <- value
+
+      if (private$has_text(remainder)) {
+        type_match <- str_match(remainder, "^\\{([^}]+)\\}\\s*(.*)$")
+        if (!is.na(type_match[1])) {
+          type <- str_trim(type_match[2])
+          remainder <- str_trim(type_match[3])
+        }
+        remainder <- str_remove(remainder, "^[-:\\s]+")
+      }
+
+      list(
+        type = type,
+        details = remainder
+      )
+    },
+
+    infer_label_from_signature = function(signature_line) {
+      if (is.null(signature_line) || length(signature_line) == 0) {
+        return(NA_character_)
+      }
+      sig <- str_trim(as.character(signature_line)[1])
+      match <- str_match(
+        sig,
+        "^(?:Public|Private|Friend|Global|Static)\\s+(?:Property\\s+(?:Let|Set|Get)\\s+|Function\\s+|Sub\\s+)([A-Za-z0-9_]+)"
+      )
+      if (!is.na(match[1])) {
+        return(match[2])
+      }
+      NA_character_
+    },
+
+    slugify_anchor = function(text) {
+      if (!private$has_text(text)) {
+        return("")
+      }
+      slug <- tolower(str_trim(as.character(text)[1]))
+      slug <- str_replace_all(slug, "[^a-z0-9]+", "-")
+      slug <- str_replace_all(slug, "-+", "-")
+      slug <- str_replace(slug, "^-", "")
+      slug <- str_replace(slug, "-$", "")
+      slug
     }
   )
 )

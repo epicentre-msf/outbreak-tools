@@ -7,10 +7,10 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
-Attribute VB_Description = "Interface of FormulaCondition"
+Attribute VB_Description = "Contract for conditons Used to create formulas for analysis"
 
 '@Folder("Formulas")
-'@ModuleDescription("Conditons Used to create formulas for analysis")
+'@ModuleDescription("Contract for conditons Used to create formulas for analysis")
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit

@@ -6,7 +6,7 @@ Option Explicit
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 '@Folder("CustomTests")
-'@Folder("Tests")
+
 '@ModuleDescription("Additional tests for the LLSheets class")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
@@ -133,51 +133,23 @@ ExpectError:
     Err.Clear
 End Sub
 
-Private Sub EnsureDictionaryPrepared(ByVal dict As ILLdictionary)
-    Dim sh As Worksheet
-    Dim endRow As Long
-    Dim startCol As Long
 
-    'Ensure required helper columns exist
-    If Not dict.ColumnExists("table name") Then dict.AddColumn "table name"
-    If Not dict.ColumnExists("column index") Then dict.AddColumn "column index"
-    If Not dict.ColumnExists("visibility") Then dict.AddColumn "visibility"
-    If Not dict.ColumnExists("crf index") Then dict.AddColumn "crf index"
-    If Not dict.ColumnExists("crf choices") Then dict.AddColumn "crf choices"
-    If Not dict.ColumnExists("crf status") Then dict.AddColumn "crf status"
-
-    'Mark prepared flag (blue font at end-of-data marker)
-    Set sh = dict.Data.Wksh
-    endRow = dict.Data.DataEndRow
-    startCol = dict.Data.DataStartColumn
-    sh.Cells(endRow + 1, startCol).Font.Color = vbBlue
-End Sub
-
-Private Sub SetColumnIndexForVar(ByVal dict As ILLdictionary, ByVal varName As String, ByVal newIndex As Long)
-    Dim vr As Range
-    Dim ci As Long
-    Set vr = dict.DataRange("Variable Name")
-    If Not vr Is Nothing Then
-        Dim cell As Range
-        Set cell = vr.Find(What:=varName, lookat:=xlWhole, MatchCase:=True)
-        If Not cell Is Nothing Then
-            ci = dict.Data.ColumnIndex("column index", shouldExist:=True, matchCase:=False)
-            dict.Data.Wksh.Cells(cell.Row, ci).Value = newIndex
-        End If
-    End If
-End Sub
 
 '@TestMethod("LLSheetsExtra")
 Public Sub TestVariableAddressHorizontalAndVertical()
     CustomTestSetTitles Assert, "LLSheets", "TestVariableAddressHorizontalAndVertical"
+    
     On Error GoTo Fail
 
     'Prepare the dictionary minimally so Prepared() is True
-    EnsureDictionaryPrepared Dictionary
+    Dictionary.Prepare
 
     'Seed column index values for two representative variables
-    SetColumnIndexForVar Dictionary, "num_valid_h2", 3 'Horizontal sheet
-    SetColumnIndexForVar Dictionary, "choi_v1", 10     'Vertical sheet
+    Dim vars As ILLVariables
+    Set vars = LLVariables.Create(Dictionary)
+
+    vars.SetValue "num_valid_h2", "column index", 3 'Horizontal sheet
+    vars.SetValue  "choi_v1", "column index", 10     'Vertical sheet
 
     'When on the same sheet, horizontal address should be relative and omit prefix
     Dim addrH As String

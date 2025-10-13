@@ -6,7 +6,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 
 '@Folder("CustomTests")
-'@Folder("Tests")
+
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Const DICT_SHEET As String = "LLVarDict"
