@@ -11,7 +11,7 @@ Implement your improvements steps by steps, incrementally. Do not touch legacy c
 6. Do not forget to add sections and other parameter annotation tags to the class implementation.
 7. Clean, document, and comment also the interface.
 8. Write some tests associated to the class, leverage the TestHelpers if needed.
-10.Use TypeName instead of TypeOf for object type checking.
+10. Use TypeName instead of TypeOf for object type checking.
 11. Write new classes in src/classes and new tests in src/tests. Do not overwrite code in src/designer
 12. Add Comments to the current instructions.md file on what is done in the Progress section. There is no need to do everything at once, you can go progressively; but do not overwrite all of what is written in the current file. Add [DONE] or [NOTDONE] tags to instructions
 items once you are done with them, on the progress session.
@@ -23,7 +23,8 @@ required VBA syntax.
 16. Always run unix2dos src once you are done with the files
 
 **Progress**
-- [DONE] Baseline audit of `Formulas.cls` and `FormulaData.cls` to locate token checks, custom formula registrations, and Excel output builders ahead of grouped support.
-- [DONE] Extend metadata/contracts plus parsing pipeline to recognise grouped aggregations, including native SUMIFS/COUNTIFS mappings and aggregator metadata helpers.
-- [DONE] Implement grouped-function detection, validation, and grouped-output builders in `Formulas.cls`, covering native `SUMIFS`/`COUNTIFS`, array-based aggregators, and new tests.
-- [DONE] Update downstream writers to honour `IsGrouped` by selecting `.FormulaArray`, ensuring grouped formulas integrate with existing Excel output flows.
+
+- [DONE] Added `SetupImportService` and `ISetupImportService` in `src/classes/setup` with ApplicationState guard, workbook reset, hardened errors, and threaded comment cleaning.
+- [DONE] Created automated tests in `src/tests/TestSetupImportService.bas` covering validation, cleaning, and workbook lifecycle for the improved service.
+- [DONE] Refactored `CheckingOutput` worksheet event handling to inject a self-contained filtering handler and aligned rubric tests to prevent duplicate events.
+

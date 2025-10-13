@@ -189,6 +189,12 @@ Private Sub ICustomTest_LogFailure(ByVal message As String)
     LogFailure message
 End Sub
 
+'@label:ICustomTest_Fail
+'@prop-title Bridge interface for Fail, same as Logfailure, for compatibility purposes
+Private Sub ICustomTest_Fail(ByVal message As String)
+    LogFailure message
+End Sub
+
 '@label:ICustomTest_LogSuccesses
 '@prop-title Bridge interface LogSuccesses to public member
 Private Sub ICustomTest_LogSuccesses(ByVal message As String)

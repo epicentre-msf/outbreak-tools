@@ -153,6 +153,11 @@ End Sub
 Public Sub LogFailure(ByVal message As String)
 End Sub
 
+'@label:Fail
+'@prop-title Log a failure message to the current checking; for compatibility purposes
+Public Sub Fail(ByVal message As String)
+End Sub
+
 '@label:LogSuccesses
 '@prop-title Log a success message to the current checking
 '@param message Message describing the success

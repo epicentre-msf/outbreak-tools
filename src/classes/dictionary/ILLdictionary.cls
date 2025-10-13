@@ -136,9 +136,8 @@ End Property
 '@param geoObject ILLGeo implementation to enrich geographic variables.
 '@param msgTrads ITranslationObject providing translations.
 '@param tablePrefix Optional String prefix for generated table names. Defaults to "table".
-Public Sub Prepare(ByVal PreservedSheetNames As BetterArray, _
-                   ByVal geoObject As Object, _
-                   ByVal msgTrads As ITranslationObject, _
+Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
+                   Optional ByVal geoObject As Object, _
                    Optional ByVal tablePrefix As String = "table")
 End Sub
 

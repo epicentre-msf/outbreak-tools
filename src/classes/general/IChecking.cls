@@ -94,3 +94,8 @@ End Property
 'Return an independent copy of the current checking object
 Public Function Clone() As IChecking
 End Function
+
+'@jump:Append
+'Add new checking elements to the current checking
+Public Sub Append(ByVal checks As IChecking)
+End Sub

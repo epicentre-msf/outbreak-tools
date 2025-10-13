@@ -2,12 +2,13 @@ Attribute VB_Name = "TestValueOfFormula"
 Attribute VB_Description = "Verifies VALUE_OF formula conversion"
 
 Option Explicit
-Option Private Module
+
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, ProcedureNotUsed, UseMeaningfulName
-'@TestModule
-'@Folder("Tests")
-'@ModuleDescription("Ensures VALUE_OF formulas resolve sheet metadata and column indices correctly")
+'@Folder("CustomTests")
+'@ModuleDescription("Verifies VALUE_OF formula conversion")
 
 '@section Constants
 '===============================================================================
@@ -17,7 +18,7 @@ Private Const DICTIONARY_SHEET As String = "ValueOfDictionary"
 '@section Module State
 '===============================================================================
 
-Private Assert As Object
+Private Assert As ICustomTest
 Private dictionarySheet As Worksheet
 Private dictionary As ILLdictionary
 
@@ -66,11 +67,17 @@ End Function
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
-    Set Assert = CreateObject("Rubberduck.AssertClass")
+    EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestValueOfFormula"
 End Sub
 
 '@ModuleCleanup
 Private Sub ModuleCleanup()
+
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
     DeleteWorksheet DICTIONARY_SHEET
     Set Assert = Nothing
     Set dictionary = Nothing
@@ -86,6 +93,9 @@ End Sub
 
 '@TestCleanup
 Private Sub TestCleanup()
+    If Not Assert Is Nothing Then
+        Assert.Flush
+    End If
     Set dictionary = Nothing
     Set dictionarySheet = Nothing
 End Sub
@@ -95,7 +105,8 @@ End Sub
 
 '@TestMethod("ValueOfFormula")
 '@description Ensure VALUE_OF formulas convert to the new signature with indices and sheet name.
-Private Sub TestValueOfFormulaConvertsToNewSignature()
+Public Sub TestValueOfFormulaConvertsToNewSignature()
+    CustomTestSetTitles Assert, "ValueOfFormula", "TestValueOfFormulaConvertsToNewSignature"
     On Error GoTo Fail
 
     Dim parser As IValueOfFormula
@@ -123,12 +134,13 @@ Private Sub TestValueOfFormulaConvertsToNewSignature()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestValueOfFormulaConvertsToNewSignature"
+    CustomTestLogFailure Assert, "TestValueOfFormulaConvertsToNewSignature", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("ValueOfFormula")
 '@description Reject VALUE_OF formulas when lookup and value variables reside on different sheets.
-Private Sub TestValueOfFormulaRejectsCrossSheetArguments()
+Public Sub TestValueOfFormulaRejectsCrossSheetArguments()
+    CustomTestSetTitles Assert, "ValueOfFormula", "TestValueOfFormulaRejectsCrossSheetArguments"
     On Error GoTo Fail
 
     Dim mismatchedVar As String
@@ -151,5 +163,5 @@ Private Sub TestValueOfFormulaRejectsCrossSheetArguments()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestValueOfFormulaRejectsCrossSheetArguments"
+    CustomTestLogFailure Assert, "TestValueOfFormulaRejectsCrossSheetArguments", Err.Number, Err.Description
 End Sub

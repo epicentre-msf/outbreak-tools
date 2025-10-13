@@ -2,20 +2,20 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "Translations"
+Attribute VB_Name = "TranslationsTable"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
-Attribute VB_Description = "Manage translations of the current setup"
+Attribute VB_Description = "Manage Translations Table of the current setup"
 
 '@PredeclaredId
 '@Folder("Dictionary")
-'@ModuleDescription("Manage translations of the current setup")
+'@ModuleDescription("Manage TranslationsTable of the current setup")
 '@IgnoreModule UnrecognizedAnnotation, ImplicitActiveSheetReference : I will use Range method without referring to a worksheet.
 
 Option Explicit
-Implements ITranslations
+Implements ITranslationsTable
 
 Private Type TTrans
   sh As Worksheet
@@ -23,12 +23,12 @@ Private Type TTrans
 End Type
 
 Private this As TTrans
-Private Const CLASSNAME As String = "Translations"
+Private Const CLASSNAME As String = "TranslationsTable"
 
-Public Function Create(ByVal sh As Worksheet, loname As String) As ITranslations
+Public Function Create(ByVal sh As Worksheet, loname As String) As ITranslationsTable
   If sh Is Nothing Then ThrowError "Please provide a Worksheet for translation"
-  If loname = vbNullString Then ThrowError "Please provide a listobject name for translations"
-  With New Translations
+  If loname = vbNullString Then ThrowError "Please provide a listobject name for TranslationsTable"
+  With New TranslationsTable
     Set .Wksh = sh
     .TableName = loname
     Set Create = .Self()
@@ -59,7 +59,7 @@ Public Property Let TableName(ByVal txt As String)
     this.loname = txt
 End Property
 
-Public Property Get Self() As ITranslations
+Public Property Get Self() As ITranslationsTable
     Set Self = Me
 End Property
 
@@ -116,7 +116,7 @@ Private Sub AddChunk(ByVal lab As String, ByVal rngTag As String)
 
   'range Tag will have two elements
   'updated to know if the range have been updated and
-  'number of times to know the number of times in translations
+  'number of times to know the number of times in TranslationsTable
   If chunkExists(lab) Then
     Set insertRng = chunkRange(lab)
   Else
@@ -489,10 +489,10 @@ Private Function RangeExists(ByVal rngName As String) As Boolean
 End Function
 
 'Exposed methods
-Private Sub ITranslations_UpdateTrans(ByVal rngSh As Worksheet)
+Private Sub ITranslationsTable_UpdateTrans(ByVal rngSh As Worksheet)
   UpdateTrans rngSh
 End Sub
 
-Private Sub ITranslations_AddTransLang(ByVal langVal As String)
+Private Sub ITranslationsTable_AddTransLang(ByVal langVal As String)
   AddTransLang langVal
 End Sub

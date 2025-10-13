@@ -113,9 +113,9 @@ End Sub
 '@details Delete a worksheet if it exists.
 '@param sheetName String. Worksheet to delete.
 Public Sub DeleteWorksheet(ByVal sheetName As String)
-    Dim actsh As Worksheet
     On Error Resume Next
         BusyApp
+        ThisWorkbook.worksheets(sheetName).Visible = xlSheetVeryHidden
         ThisWorkbook.Worksheets(sheetName).Delete
     On Error GoTo 0
 End Sub
@@ -456,12 +456,25 @@ Public Sub CustomTestLogFailure(ByVal harness As ICustomTest, _
                                 Optional ByVal errNumber As Long = 0, _
                                 Optional ByVal errDescription As String = vbNullString)
     Dim message As String
+    Dim errorExplanation As String
 
     If harness Is Nothing Then Exit Sub
-
     message = routineName
+    
     If errNumber <> 0 Or LenB(errDescription) > 0 Then
-        message = message & ": " & errNumber & " - " & errDescription
+
+        Select Case errNumber
+        Case 1001: errorExplanation =  "Invalid argument" 
+        Case 1002: errorExplanation =  "Object not initialized" 
+        Case 1004: errorExplanation =  "Unexpected state" 
+        Case 1005: errorExplanation =  "Element should exists" 
+        Case 1006: errorExplanation =  "Element should not exists" 
+        Case 1007: errorExplanation =  "Element not found" 
+        Case 1008: errorExplanation =  "Something went wrong"
+        Case Else: errorExplanation = "Unkown error: (" & errNumber & ")" 
+        End Select
+
+        message = message & ": " & errorExplanation & " - " & errDescription
     End If
 
     harness.LogFailure message

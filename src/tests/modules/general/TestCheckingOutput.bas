@@ -511,13 +511,15 @@ Fail:
 End Sub
 
 '@TestMethod("CheckingOutput")
-Private Sub TestWorksheetChangeHandlerEmbedsResolvedConstants()
+Private Sub TestWorksheetChangeHandlerInjectsFilteringLogic()
     On Error GoTo Fail
 
     Dim checks As BetterArray
     Dim sh As Worksheet
     Dim moduleText As String
     Dim codeModule As Object
+    Dim handlerCount As Long
+    Dim handlerPosition As Long
 
     Set sh = OutputSheet()
     ResetWorksheetModule sh
@@ -530,17 +532,79 @@ Private Sub TestWorksheetChangeHandlerEmbedsResolvedConstants()
         moduleText = codeModule.Lines(1, codeModule.CountOfLines)
     End If
 
-    Assert.IsFalse (LenB(moduleText) = 0), "Worksheet module should contain injected handler"
-    Assert.IsTrue (InStr(1, moduleText, "Cells(Me.Rows.Count, " & FIRST_VISIBLE_COLUMN_INDEX & ")", vbTextCompare) > 0), _
-        "Handler should reference the resolved visible column index"
-    Assert.IsTrue (InStr(1, moduleText, "Cells(rowIndex, " & HIDDEN_TITLE_COLUMN_INDEX & ")", vbTextCompare) > 0), _
-        "Handler should reference the resolved hidden title column"
-    Assert.IsFalse (InStr(1, moduleText, "HIDDEN_TITLE_COLUMN", vbTextCompare) > 0), _
-        "Handler must not rely on class constant names"
-    Assert.IsFalse (InStr(1, moduleText, "FIRST_OUTPUT_COLUMN", vbTextCompare) > 0), _
-        "Handler must embed literal column indexes"
+    Assert.IsFalse (LenB(moduleText) = 0), "Worksheet module should contain an injected handler"
+    Assert.IsTrue (InStr(1, moduleText, "Private Sub Worksheet_Change", vbTextCompare) > 0), _
+        "Injected code should declare Worksheet_Change locally"
+    Assert.IsTrue (InStr(1, moduleText, "Private Sub FilterCheckingOutputRows", vbTextCompare) > 0), _
+        "Filtering helper should be embedded alongside the handler"
+    Assert.IsTrue (InStr(1, moduleText, "Private Function StripIcons", vbTextCompare) > 0), _
+        "Icon stripping helper must be injected for worksheet execution"
+    Assert.IsTrue (InStr(1, moduleText, "ResetUiState", vbTextCompare) > 0), _
+        "Worksheet handler should restore application state"
+    Assert.IsFalse (InStr(1, moduleText, "CheckingOutput.", vbTextCompare) > 0), _
+        "Injected worksheet code must not depend on CheckingOutput members"
+
+    handlerPosition = InStr(1, moduleText, "Private Sub Worksheet_Change", vbTextCompare)
+    Do While handlerPosition > 0
+        handlerCount = handlerCount + 1
+        handlerPosition = InStr(handlerPosition + 1, moduleText, "Private Sub Worksheet_Change", vbTextCompare)
+    Loop
+    Assert.AreEqual 1, handlerCount, "Exactly one Worksheet_Change should be injected"
+
+    ResetWorksheetModule sh
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestWorksheetChangeHandlerEmbedsResolvedConstants"
+    FailUnexpectedError Assert, "TestWorksheetChangeHandlerInjectsFilteringLogic"
+End Sub
+
+'@TestMethod("CheckingOutput")
+Private Sub TestEnsureWorksheetChangeHandlerReplacesExistingCode()
+    On Error GoTo Fail
+
+    Dim sh As Worksheet
+    Dim codeModule As Object
+    Dim procStart As Long
+    Dim procLines As Long
+    Dim procText As String
+    Dim firstCall As Long
+
+    Set sh = OutputSheet()
+    ResetWorksheetModule sh
+
+    Set codeModule = sh.Parent.VBProject.VBComponents(sh.CodeName).CodeModule
+    codeModule.InsertLines 1, "Private Sub Worksheet_Change(ByVal Target As Range)" & vbNewLine & _
+                              "    On Error GoTo Handler" & vbNewLine & _
+                              "    DummyChange Target" & vbNewLine & _
+                              "ExitSub:" & vbNewLine & _
+                              "    Exit Sub" & vbNewLine & _
+                              "Handler:" & vbNewLine & _
+                              "    Resume ExitSub" & vbNewLine & _
+                              "End Sub" & vbNewLine & _
+                              "Private Sub DummyChange(ByVal Target As Range)" & vbNewLine & _
+                              "End Sub"
+
+    OutputWriter.EnsureWorksheetChangeHandler
+    OutputWriter.EnsureWorksheetChangeHandler
+
+    procStart = codeModule.ProcStartLine("Worksheet_Change", 0)
+    procLines = codeModule.ProcCountLines("Worksheet_Change", 0)
+    procText = codeModule.Lines(procStart, procLines)
+
+    Assert.IsTrue InStr(1, procText, "FilterCheckingOutputRows", vbTextCompare) > 0, _
+        "Injected handler should call the embedded filtering routine"
+    Assert.IsFalse InStr(1, procText, "DummyChange", vbTextCompare) > 0, _
+        "Previous Worksheet_Change implementation must be replaced entirely"
+    Assert.IsFalse InStr(1, procText, "CheckingOutput.", vbTextCompare) > 0, _
+        "Injected worksheet code should not depend on CheckingOutput members"
+
+    firstCall = InStr(1, procText, "Worksheet_Change", vbTextCompare)
+    Assert.IsTrue InStr(firstCall + 1, procText, "Worksheet_Change", vbTextCompare) = 0, _
+        "Duplicate Worksheet_Change procedures should not be present"
+
+    ResetWorksheetModule sh
+    Exit Sub
+
+Fail:
+    FailUnexpectedError Assert, "TestEnsureWorksheetChangeHandlerReplacesExistingCode"
 End Sub
