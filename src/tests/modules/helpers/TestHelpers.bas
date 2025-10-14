@@ -115,8 +115,10 @@ End Sub
 Public Sub DeleteWorksheet(ByVal sheetName As String)
     On Error Resume Next
         BusyApp
-        ThisWorkbook.worksheets(sheetName).Visible = xlSheetVeryHidden
         ThisWorkbook.Worksheets(sheetName).Delete
+        ' If Err.Number <> 0 Then 
+        '     Debug.Print "Error when deleting " & sheetName & ":" Err.Number & " - " & Err.Description
+        ' End If
     On Error GoTo 0
 End Sub
 
@@ -460,7 +462,7 @@ Public Sub CustomTestLogFailure(ByVal harness As ICustomTest, _
 
     If harness Is Nothing Then Exit Sub
     message = routineName
-    
+
     If errNumber <> 0 Or LenB(errDescription) > 0 Then
 
         Select Case errNumber

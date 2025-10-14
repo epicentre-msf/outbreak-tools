@@ -274,7 +274,7 @@ End Sub
 
 '@section Interface implementation
 '===============================================================================
-Private Sub IApplicationState_ApplyBusyState(Optional ByVal suppressEvents, _
+Private Sub IApplicationState_ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
                                              Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow)
     ApplyBusyStateCore suppressEvents, busyCursor
 End Sub

@@ -57,6 +57,7 @@ Public Function Create(ByVal dict As ILLdictionary) As ILLVariables
         Set .Dictionary = dict
         Set Create = .Self
     End With
+
 End Function
 
 Public Property Get Self() As ILLVariables

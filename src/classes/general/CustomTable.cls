@@ -45,7 +45,7 @@ Private internalChecks As IChecking
 
 '@section StateManagement
 '===============================================================================
-'@method ResetCaches
+'@sub-title ResetCaches
 'Reset transient caches so column lookups remain accurate after structural changes.
 Private Sub ResetCaches()
   'Always rebuild the header index cache after structural changes to the table.
@@ -53,12 +53,34 @@ Private Sub ResetCaches()
   this.headerIndexCache.LowerBound = 1
 End Sub
 
-'@method CacheKeyForHeader
+'@sub-title ResetImportState
+'@details Reset the caches of import state so that imports start fresh
+Private Sub ResetImportState()
+  this.hasImport = False
+  this.hasHiddenList = False
+  If NOTIMPORTEDCOLUMNS Is Nothing Then Set NOTIMPORTEDCOLUMNS = New BetterArray
+  NOTIMPORTEDCOLUMNS.Clear
+  If HIDDENCOLUMNSLIST Is Nothing Then Set HIDDENCOLUMNSLIST = New BetterArray
+  HIDDENCOLUMNSLIST.Clear
+  ClearBackUp
+End Sub
+
+'@label:ClearBackup
+Private Sub ClearBackup()
+  'Release backup buffers once the operation completes successfully.
+  Set this.backupHeaders = Nothing
+  Set this.backupRows = Nothing
+  this.hasBackup = False
+End Sub
+
+
+
+'@sub-title CacheKeyForHeader
 '@description Generates a unique cache key for header lookups combining search settings
-'@param {String} colName - The column name to look up
-'@param {Boolean} strictSearch - Whether to use exact matching
-'@param {Boolean} matchCase - Whether to match case
-'@return {String} The generated cache key
+'@param String colName - The column name to look up
+'@param Boolean strictSearch - Whether to use exact matching
+'@param Boolean matchCase - Whether to match case
+'@return String The generated cache key
 '@private
 Private Function CacheKeyForHeader(ByVal colName As String, _
                                    ByVal strictSearch As Boolean, _
@@ -72,14 +94,14 @@ Private Function CacheKeyForHeader(ByVal colName As String, _
                       CStr(matchCase) & CACHE_SEPARATOR & headerToken
 End Function
 
-'@method TryGetCachedIndex
+'@sub-title TryGetCachedIndex
 '@description Attempts to retrieve a cached column index
-'@param {String} cacheKey - The cache key to look up
-'@param {Long} cachedValue - Output parameter for the found index
-'@return {Boolean} True if found in cache, False otherwise
+'@param String cacheKey - The cache key to look up
+'@param Long cachedValue - Output parameter for the found index
+'@return Boolean True if found in cache, False otherwise
 '@private
 Private Function TryGetCachedIndex(ByVal cacheKey As String, ByRef cachedValue As Long) As Boolean
-  'Search the lightweight cache implemented with BetterArray pairs {key, index}.
+  'Search the lightweight cache implemented with BetterArray pairs key, index.
   Dim idx As Long
   Dim entry As Variant
 
@@ -101,10 +123,10 @@ Private Function TryGetCachedIndex(ByVal cacheKey As String, ByRef cachedValue A
   Next idx
 End Function
 
-'@method StoreHeaderIndex
+'@sub-title StoreHeaderIndex
 '@description Stores a successful column lookup in the cache
-'@param {String} cacheKey - The cache key to store
-'@param {Long} columnIndexValue - The column index to cache
+'@param String cacheKey - The cache key to store
+'@param Long columnIndexValue - The column index to cache
 '@private
 Private Sub StoreHeaderIndex(ByVal cacheKey As String, ByVal columnIndexValue As Long)
 
@@ -119,10 +141,10 @@ Private Sub StoreHeaderIndex(ByVal cacheKey As String, ByVal columnIndexValue As
 End Sub
 
 '@label:SaveTableSnapshot
-'@method SaveTableSnapshot
+'@sub-title SaveTableSnapshot
 '@description Creates a backup of the current table state
 '@private
-Private Sub SaveTableSnapshot()
+Private Sub SaveTableSnapshot(Optional ByVal returnHidden As Boolean = True)
   'Capture the current table layout so we can restore it if an import fails.
   Dim lo As ListObject
 
@@ -142,7 +164,7 @@ Private Sub SaveTableSnapshot()
   End If
 
   this.hasBackup = True
-  ReturnBackHiddenColumns
+  If returnHidden Then ReturnBackHiddenColumns
 End Sub
 
 '@label:RestoreTableSnapshot
@@ -165,6 +187,7 @@ Private Sub RestoreTableSnapshot()
   headerRow = lo.HeaderRowRange.Row
   headerCol = lo.HeaderRowRange.Column
   totalCols = this.backupHeaders.Length
+
   UnhideHiddenColumns
 
   If (this.backupRows Is Nothing) Then
@@ -191,16 +214,10 @@ Private Sub RestoreTableSnapshot()
 
   ResetCaches
   ClearBackup
+
   ReturnBackHiddenColumns
 End Sub
 
-'@label:ClearBackup
-Private Sub ClearBackup()
-  'Release backup buffers once the operation completes successfully.
-  Set this.backupHeaders = Nothing
-  Set this.backupRows = Nothing
-  this.hasBackup = False
-End Sub
 
 '@label:EnsureTableInitialized
 Private Sub EnsureTableInitialized()
@@ -1081,17 +1098,43 @@ Private Sub Import(ByVal impTab As Object, _
                    Optional ByVal formatHeaders As Object = Nothing, _ 
                    Optional ByVal keepSourceHeaders As Boolean = False)
 
+  On Error GoTo RollbackImport
+  
+  If ((TypeName(impTab) <> "DataSheet") And (TypeName(impTab) <> "CustomTable")) Then
+    LogInfo "Import not done: imported elements are not tables or datasheet", checkingWarning
+    ShowDebug
+    Exit Sub
+  End If
+
+  ResetImportState
+  SaveTableSnapshot returnHidden:=False
+  UnhideHiddenColumns
+
   If keepSourceHeaders Then
+    Clean
     ImportAll impTab, insertShift:=insertShift
   Else
 
+    If Not pasteAtBottom Then Clean
     ImportObject impTab:=impTab, pasteAtBottom:=pasteAtBottom, _ 
                  strictColumnSearch:=strictColumnSearch, _
                  insertShift:=insertShift, _
                  formatHeaders:=formatHeaders
   End If
 
+  EnsureTableInitialized
+  this.hasImport = True
+  ReturnBackHiddenColumns
+  ResetCaches
   AddIds
+  Exit Sub
+
+RollbackImport:
+  RestoreTableSnapshot
+  LogInfo "Import aborted: " & Err.Description, checkingError
+  ReturnBackHiddenColumns
+  ResetCaches
+  Err.Raise Err.Number, Err.Source, Err.Description
 End Sub
 
 '@sub-title Import a DataSheet or a CustomTable
@@ -1119,28 +1162,8 @@ Private Sub ImportObject(ByVal impTab As Object, _
   Dim incomingRows As Long
   Dim targetRowCount As Long
 
-  On Error GoTo RollbackImport
-
-  If ((TypeName(impTab) <> "DataSheet") And (TypeName(impTab) <> "CustomTable")) Then
-     LogInfo "Import not done: imported elements are not tables or datasheet, or they are table of different names", _ 
-             checkingWarning
-      ShowDebug
-    Exit Sub
-  End If
-
-  SaveTableSnapshot
-
-  'Initialize and Clear the private variable NOTIMPORTEDCOLUMNS
-  If NOTIMPORTEDCOLUMNS Is Nothing Then Set NOTIMPORTEDCOLUMNS = New BetterArray
-  NOTIMPORTEDCOLUMNS.Clear
-
-  'Unhide hidden columns before import so Range.Find can locate every header.
-  UnhideHiddenColumns
 
   Set imphRng = impTab.HeaderRange()
-
-  If Not pasteAtBottom Then Clean
-
   existingRows = DataRowCount()
   incomingRows = SourceRowCount(impTab)
 
@@ -1190,23 +1213,8 @@ Private Sub ImportObject(ByVal impTab As Object, _
     End If
 ContinueImport:
   Next
-  
   DataRange.Calculate
-  this.hasImport = True
-
-  'Trim the table to the targetRowCount
-  TrimTableRows targetRowCount
-
-  ReturnBackHiddenColumns
-  ResetCaches
-  Exit Sub
-
-RollbackImport:
-  RestoreTableSnapshot
-  LogInfo "Import aborted: " & Err.Description, checkingError
-  ReturnBackHiddenColumns
-  ResetCaches
-  Err.Raise Err.Number, Err.Source, Err.Description
+  TrimTableRows targetRowCount 'Trim the table to the targetRowCount
 End Sub
 
 '@sub-title Import the formatting of a range into a currrent range
@@ -1290,20 +1298,6 @@ Private Sub ImportAll(ByVal impTab As Object, Optional ByVal insertShift As Bool
   Dim headerRow As Long
   Dim headerCol As Long
 
-  On Error GoTo RollbackImportAll
-
-  If ((TypeName(impTab) <> "DataSheet") And (TypeName(impTab) <> "CustomTable")) Then
-    Exit Sub
-  End If
-
-  SaveTableSnapshot
-
-  If NOTIMPORTEDCOLUMNS Is Nothing Then Set NOTIMPORTEDCOLUMNS = New BetterArray
-  NOTIMPORTEDCOLUMNS.Clear
-
-  UnhideHiddenColumns
-
-  Clean
   Set currLo = Table()
   Set currhRng = HeaderRange()
   Set imphRng = impTab.HeaderRange()
@@ -1326,20 +1320,6 @@ Private Sub ImportAll(ByVal impTab As Object, Optional ByVal insertShift As Bool
 
   Set bodyRng = sh.Range(bodyRng.Cells(0, 1), bodyRng.Cells(bodyRng.Rows.Count, bodyRng.Columns.Count))
   currLo.Resize bodyRng
-
-  EnsureTableInitialized
-
-  this.hasImport = True
-  ReturnBackHiddenColumns
-  ResetCaches
-  Exit Sub
-
-RollbackImportAll:
-  RestoreTableSnapshot
-  LogInfo "ImportAll aborted: " & Err.Description, checkingError
-  ReturnBackHiddenColumns
-  ResetCaches
-  Err.Raise Err.Number, Err.Source, Err.Description
 End Sub
 
 
@@ -1385,7 +1365,6 @@ Private Sub UnhideHiddenColumns()
   If Not this.hasHiddenList Then 
     Set HIDDENCOLUMNSLIST = New BetterArray
     HIDDENCOLUMNSLIST.Clear
-
     For counter = 1 To hRng.Columns.Count
       If hRng.Cells(1, counter).EntireColumn.HIDDEN Then
         On Error Resume Next
@@ -1413,8 +1392,10 @@ Private Sub ReturnBackHiddenColumns()
     For counter = HIDDENCOLUMNSLIST.LowerBound To HIDDENCOLUMNSLIST.UpperBound
       hRng.Cells(1, HIDDENCOLUMNSLIST.Item(counter)).EntireColumn.HIDDEN = True
     Next
+    HIDDENCOLUMNSLIST.Clear
   On Error GoTo 0
 
+  this.hasHiddenList = False
 End Sub
 
 '@label:Export

@@ -37,7 +37,8 @@ Private dictionaryAddedColumns As BetterArray
 Private Const SHEETTYPEVERTICAL As String = "vlist1D"
 Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
 Private Const DEFAULTNUMBEROFEXPORTS As Long = 20
-Private Const CLASSNAME As String = "LLdictionary"
+Private Const DEFAULTDICTIONARYCOLUMNS As String = "variable name|main label|dev comments|editable label|sub label|note|sheet name|sheet type|main section|sub section|status|register book|personal identifier|variable type|variable format|control|control details|unique|min|max|alert|message|formatting condition|formatting values|lock cells"
+Private Const DEFAULTCREATEDCOLUMNS As String = "table name|column index|visibility|crf index|crf choices|crf status|list auto"
 
 'Checking support
 Private checkCounter As Long
@@ -199,13 +200,8 @@ Private Sub EnsureColumnsInitialized()
     Set dictionaryColumns = New BetterArray
     Set dictionaryAddedColumns = New BetterArray
 
-    dictionaryColumns.Push "variable name", "main label", "dev comments", "editable label", _
-                           "sub label", "note", "sheet name", "sheet type", _
-                           "main section", "sub section", "status", "personal identifier", _
-                           "variable type", "variable format", "type", "format", _
-                           "control", "control details", "unique", "register book", _
-                           "formatting condition", "formatting values", "lock cells", _
-                           "min", "max", "alert", "message", "list auto"
+    dictionaryColumns.Items = Split(DEFAULTDICTIONARYCOLUMNS, "|")
+                           
 
     For counter = 1 To TotalNumberOfExports()
         dictionaryColumns.Push "export " & CStr(counter)
@@ -213,15 +209,13 @@ Private Sub EnsureColumnsInitialized()
 
     'Columns introduced during preparation (e.g. table name, CRF helpers) are
     'tracked separately so we can optionally strip them during cleaning.
-    dictionaryAddedColumns.Push "table name", "column index", "visibility", _
-                               "crf index", "crf choices", "crf status", "main section sort", _
-                               "main section index", "list auto"
+    dictionaryAddedColumns.Items = Split(DEFAULTCREATEDCOLUMNS, "|") 
 
     dictionaryColumns.Concat dictionaryAddedColumns.Items
 End Sub
 
 Private Sub EnsureFormatColumns()
-    this.dictDataSheet.AddFormatsColumns False, "formatting condition", "formatting values", "variable name", "control", "main label"
+    this.dictDataSheet.AddFormatsColumns False, "formatting condition", "formatting values", "variable name", "control", "main label", "lock cells", "dev comments"
 End Sub
 
 '@label:columnexists
@@ -239,6 +233,7 @@ Public Function ColumnExists(ByVal colName As String, Optional ByVal checkValidi
 
     'Dictionary headers are historically case-insensitive, so the underlying
     'datasheet lookup is forced to ignore casing differences.
+    colName = LCase$(colName)
     exists = Data.ColumnExists(colName, matchCase:=False)
 
     If exists And checkValidity Then
@@ -607,6 +602,7 @@ Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
     Dim controlRange As Range
 
     If Prepared Then Exit Sub
+    EnsureRequiredColumns
 
     If Not ColumnExists("table name") Then AppendNumberColumn "sheet name", tablePrefix, "table name"
     If Not ColumnExists("column index") Then AppendColumnIndex
@@ -629,11 +625,31 @@ Public Sub Prepare(Optional ByVal PreservedSheetNames As BetterArray, _
     If Not ColumnExists("visibility") Then AddVisibility
     If Not ColumnExists("crf index") Then AppendCRFLineIndex
 
-    Clean
+    Clean removeAddedColumns:=False
 
     With Wksh()
         .Cells(DictEndRow() + 1, StartColumn()).Font.color = vbBlue
     End With
+End Sub
+
+'@label:EnsureRequiredColumns
+'@sub-title Ensure required columns are present in the dictionary
+Private Sub EnsureRequiredColumns()
+    
+    Dim colName As String
+    Dim counter As Long
+    Dim requiredCols As BetterArray
+
+    Set requiredCols = New BetterArray
+    requiredCols.Items = Split(DEFAULTDICTIONARYCOLUMNS, "|")
+
+    For counter = requiredCols.LowerBound To requiredCols.UpperBound
+        colName = requiredCols.Item(counter)
+        'Check existence for all columns except exports
+        If Not ColumnExists(colName) Then
+            ThrowError ProjectError.ElementNotFound, "Column -" & colName &  "- not found in the dictionary"
+        End If
+    Next
 End Sub
 
 '@label:clean
@@ -661,7 +677,7 @@ Public Sub Clean(Optional ByVal removeAddedColumns As Boolean = False)
 
     For colIndex = usedCols To 1 Step -1
         columnName = hostSheet.Cells(StartRow(), colIndex).Value
-        removeAdded = removeAddedColumns And dictionaryAddedColumns.Includes(columnName)
+        removeAdded = removeAddedColumns And dictionaryAddedColumns.Includes(LCase$(columnName))
         If (Not ColumnExists(columnName, True)) Or removeAdded Then
             hostSheet.Columns(colIndex).EntireColumn.Delete
         End If
@@ -717,7 +733,7 @@ Private Sub UniqueVarNames()
         varName = Replace(varName, " ", "_")
 
         If Len(varName) < 4 Then
-            ThrowError "Variable names should be at least 4 characters. Please review variable at row " & rowIndex
+            ThrowError ProjectError.InvalidArgument, "Variable names should be at least 4 characters. Please review variable at row " & rowIndex
         End If
 
         If seen.Includes(varName) Then varName = varName & "_"
@@ -1180,7 +1196,7 @@ Private Sub LogInfo(ByVal label As String, Optional ByVal scope As Byte = checki
     'surface diagnostics to the user.
     Dim checkName As String
 
-    checkName = CLASSNAME & " " & Wksh().Name & " trace"
+    checkName = Wksh().Name
 
     If internalChecks Is Nothing Then Set internalChecks = Checking.Create(checkName)
     internalChecks.Add CStr(checkCounter), label, scope
@@ -1201,10 +1217,11 @@ End Property
 '@section Errors
 '===============================================================================
 
-Private Sub ThrowError(ByVal errorMessage As String)
+Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
     'Standardised error helper used across the class. Centralising the wording
     'keeps raised errors consistent with those emitted by other components.
-    Err.Raise VBA.vbObjectError + 516, CLASSNAME, "Execution Error : " & errorMessage
+    Err.Raise errNumber, "LLdictionary",   errorMessage
+    LogInfo errNumber & " - " & errorMessage, checkingError
 End Sub
 
 

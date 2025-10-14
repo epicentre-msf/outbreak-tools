@@ -117,6 +117,7 @@ Public Sub TestValueOfFormulaConvertsToNewSignature()
     Dim expected As String
 
     Set parser = BuildParser("VALUE_OF(lauto_drop_h2, choi_h2, text_h2)")
+    dictionary.Prepare
     Set vars = LLVariables.Create(dictionary)
 
     lookupSheet = vars.Value("sheet name", "choi_h2")

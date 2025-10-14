@@ -1178,9 +1178,9 @@ Private Sub EnsureWorkbookBeforeCloseHook(ByVal component As Object)
                    "Unable to access workbook module when installing Workbook_BeforeClose guard"
     End If
 
+    On Error Resume Next
+    procStart = codeModule.ProcStartLine(procedureName, 0) 
     On Error GoTo Handler
-
-    procStart = codeModule.ProcStartLine(procedureName, 0)
 
     If procStart <= 0 Then
         'Procedure missing: append a fresh stub without modifying the existing module surface.
@@ -1193,11 +1193,8 @@ Private Sub EnsureWorkbookBeforeCloseHook(ByVal component As Object)
     If ProcedureBlockContainsToken(codeModule, procStart, procLines, guardToken) Then GoTo Success
 
     bodyStart = codeModule.ProcBodyLine(procedureName, 0)
-    insertLine = FindProcedureInsertLine(codeModule, bodyStart, procStart + procLines - 1)
-    If insertLine <= 0 Then insertLine = bodyStart
-
-    codeModule.InsertLines insertLine, "    If Not Cancel Then LeaveDebugModeOnClose"
-
+    codeModule.InsertLines bodyStart + 1, "On Error Resume Next"
+    codeModule.InsertLines bodyStart + 2, "    If Not Cancel Then LeaveDebugModeOnClose"
 Success:
     Exit Sub
 
@@ -1228,44 +1225,6 @@ Private Sub AppendProcedure(ByVal codeModule As Object, ByVal procedureCode As S
     codeModule.InsertLines lineCount + 1, procedureCode
 End Sub
 
-Private Function FindProcedureInsertLine(ByVal codeModule As Object, _
-                                         ByVal bodyStart As Long, _
-                                         ByVal bodyEnd As Long) As Long
-    '@details Determines the best insertion point after any On Error plumbing and leading comments.
-    Dim scanLine As Long
-    Dim trimmed As String
-
-    If bodyStart <= 0 Then
-        FindProcedureInsertLine = bodyEnd
-        Exit Function
-    End If
-
-    scanLine = bodyStart
-
-    Do While scanLine <= bodyEnd
-        trimmed = Trim$(codeModule.Lines(scanLine, 1))
-        If LenB(trimmed) = 0 Then
-            scanLine = scanLine + 1
-            GoTo ContinueLoop
-        End If
-
-        If Left$(LCase$(trimmed), 7) = "on error" Then
-            scanLine = scanLine + 1
-            GoTo ContinueLoop
-        End If
-
-        If Left$(trimmed, 1) = "'" Or LCase$(Left$(trimmed, 3)) = "rem" Then
-            scanLine = scanLine + 1
-            GoTo ContinueLoop
-        End If
-
-        Exit Do
-
-ContinueLoop:
-    Loop
-
-    FindProcedureInsertLine = scanLine
-End Function
 
 Private Sub InsertOrReplaceProcedure(ByVal component As Object, _
                                      ByVal procedureName As String, _
