@@ -56,7 +56,7 @@ Public Sub TestInitialize()
     BusyApp
     ResetDataSheet
     On Error Resume Next
-        dataObject.AddFormatsColumns False, "formatting condition", "formatting values"
+        dataObject.AddFormatsColumns False, "formatting condition", "formatting values", "lock cells"
     On Error GoTo 0
 End Sub
 

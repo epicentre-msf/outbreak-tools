@@ -21,6 +21,7 @@ self contained and not rely on modules code outside the class.
 15. Pays extremely attention when working with quotes and mutiple quotes. Avoid syntax errors either by using Chr(34) or by escaping correctly double quotes using
 required VBA syntax.
 16. Always run unix2dos src once you are done with the files
+17. DO NOT EDIT DICTIONARYTESTFIXTURE.BAS!
 
 **Progress**
 

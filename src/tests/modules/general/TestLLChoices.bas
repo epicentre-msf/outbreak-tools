@@ -34,7 +34,7 @@ Private Sub ResetChoices()
 
     PrepareChoicesFixture CHOICESSHEET
     Set Choices = LLChoices.Create(ThisWorkbook.Worksheets(CHOICESSHEET), 1, 1)
-    Choices.Wksh.Visible = xlSheetVeryHidden 'Keep fixture sheet out of view during UI-bound tests
+    Choices.Wksh.Visible = xlSheetHidden 'Keep fixture sheet out of view during UI-bound tests
 
 CleanExit:
     Application.EnableEvents = previousEventState
@@ -80,7 +80,7 @@ Private Function CreateChoicesTranslator() As ITranslationObject
     Dim dataMatrix As Variant
     Dim translationTable As ListObject
 
-    Set translationSheet = EnsureWorksheet(CHOICESTRANSLATIONSHEET, visibility:= xlSheetVeryhidden)
+    Set translationSheet = EnsureWorksheet(CHOICESTRANSLATIONSHEET, visibility:= xlSheetHidden)
 
     headerMatrix = RowsToMatrix(Array(Array("tag", "English", CHOICESTRANSLATIONLANGUAGE)))
     WriteMatrix translationSheet.Cells(1, 1), headerMatrix
@@ -101,7 +101,7 @@ Private Function CreateChoicesImportSheet() As Worksheet
     Dim headerMatrix As Variant
     Dim dataMatrix As Variant
 
-    Set importSheet = EnsureWorksheet(CHOICESIMPORTSHEET, visibility:=xlSheetVeryhidden)
+    Set importSheet = EnsureWorksheet(CHOICESIMPORTSHEET, visibility:=xlSheetHidden)
 
     headerMatrix = RowsToMatrix(Array(ChoicesFixtureHeaders()))
     WriteMatrix importSheet.Cells(1, 1), headerMatrix

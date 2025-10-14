@@ -26,34 +26,34 @@ Implements IFormulas
 '@details Stores cached parsing results, lazily resolved dependencies, and evaluation diagnostics.
 
 Private Type TGroupContext
-    Enabled As Boolean              'Indicates whether the current formula targets grouped evaluation
-    FunctionName As String          'Root function detected in the setup expression
-    AggregatorName As String        'Excel aggregator applied during grouped evaluation
-    UsesNative As Boolean           'True when native *IFS function should be emitted
-    CriteriaVariable As String      'First argument (criteria range variable)
-    ConditionVariable As String     'Second argument (comparison variable)
-    ResultVariable As String        'Third argument (aggregation variable)
-    TableName As String             'Shared table name for the criteria and result variables
+    Enabled As Boolean                          'Indicates whether the current formula targets grouped evaluation
+    FunctionName As String                      'Root function detected in the setup expression
+    AggregatorName As String                    'Excel aggregator applied during grouped evaluation
+    UsesNative As Boolean                       'True when native *IFS function should be emitted
+    CriteriaVariable As String                  'First argument (criteria range variable)
+    ConditionVariable As String                 'Second argument (comparison variable)
+    ResultVariable As String                    'Third argument (aggregation variable)
+    TableName As String                         'Shared table name for the criteria and result variables
 End Type
 
 Private Type TFormulas
-    dict As ILLdictionary           'Dictionary describing available variables and metadata
-    data As IFormulaData            'Configuration of accepted Excel formulas and tokens
-    setupForm As String             'Original pseudo-formula provided by setup
-    tokens As BetterArray           'Tokenised representation of the parsed formula
-    variables As BetterArray        'Ordered list of variables detected in the formula
-    HasSetupVariables As Boolean          'Indicates the presence of literals in the parsed expression
-    isValid As Boolean              'Flag capturing the latest validation outcome
-    invalidReason As String         'Human-readable explanation when validation fails
-    validityComputed As Boolean     'Marks whether EnsureEvaluation already processed a context
-    lastFormulaType As String       'Context (analysis/simple) associated with the cached evaluation
-    group As TGroupContext          'Captured state describing grouped formula evaluation
+    dict As ILLdictionary                       'Dictionary describing available variables and metadata
+    data As IFormulaData                        'Configuration of accepted Excel formulas and tokens
+    setupForm As String                         'Original pseudo-formula provided by setup
+    tokens As BetterArray                       'Tokenised representation of the parsed formula
+    variables As BetterArray                    'Ordered list of variables detected in the formula
+    containsSetupVariables As Boolean           'Indicates the presence of literals in the parsed expression
+    isValid As Boolean                          'Flag capturing the latest validation outcome
+    invalidReason As String                     'Human-readable explanation when validation fails
+    validityComputed As Boolean                 'Marks whether EnsureEvaluation already processed a context
+    lastFormulaType As String                   'Context (analysis/simple) associated with the cached evaluation
+    group As TGroupContext                      'Captured state describing grouped formula evaluation
 End Type
 
 Private Type TDependencies
-    variables As ILLVariables       'Lazy wrapper resolving variable metadata
-    sheets As ILLSheets             'Lazy wrapper resolving worksheet addresses
-    customFormulas As BetterArray   'Registered custom formula identifiers
+    variables As ILLVariables                   'Lazy wrapper resolving variable metadata
+    sheets As ILLSheets                         'Lazy wrapper resolving worksheet addresses
+    customFormulas As BetterArray               'Registered custom formula identifiers
 End Type
 
 Private Const CLASSNAME As String = "Formulas"
@@ -169,16 +169,14 @@ End Property
 '@sub-title Indicate whether the parsed formula targets grouped evaluation
 '@return String "Yes" when grouped logic is applied, "No" otherwise.
 Public Property Get IsGrouped() As String
-    If Not EnsureEvaluation("analysis") Then
-        'Attempt simple context to capture grouped metadata for formulas rejected in analysis
-        Call EnsureEvaluation("simple")
-    End If
+    Call EnsureEvaluation("simple")
 
     If this.group.Enabled Then
         IsGrouped = "Yes"
     Else
         IsGrouped = "No"
     End If
+
 End Property
 
 '@label:Reason
@@ -517,12 +515,13 @@ Private Sub EvaluateFormula(ByVal formulaType As String)
     Set variableTokens = New BetterArray
     variableTokens.LowerBound = 1
 
+
     If Not TokeniseFormula(converted, formulaType, tokens, variableTokens, formulaHasSetupVariables, reasonText) Then
         SetInvalid reasonText
         Exit Sub
     End If
 
-    If Not CaptureGroupedContext(tokens, variableTokens, vars, dataSource) Then Exit Sub
+    If Not GroupContexExtractionSucceed(tokens, variableTokens, vars, dataSource) Then Exit Sub
 
     '@Ignore UnassignedVariableUsage
     this.containsSetupVariables = formulaHasSetupVariables
@@ -537,14 +536,14 @@ End Sub
 '@details Detects grouped formulas, validates arguments, and prepares metadata
 '@details for downstream builders.
 
-'@label:CaptureGroupedContext
+'@label:HasGroupContext
 '@sub-title Analyse the tokenised expression and record grouped metadata when relevant
 '@param tokens BetterArray containing the tokenised formula.
 '@param variableTokens BetterArray listing variable names in encounter order.
 '@param vars ILLVariables helper exposing dictionary metadata.
 '@param dataSource IFormulaData configuration describing grouped functions.
 '@return Boolean True when grouped context is captured or not required.
-Private Function CaptureGroupedContext(ByVal tokens As BetterArray, _
+Private Function GroupContexExtractionSucceed(ByVal tokens As BetterArray, _
                                        ByVal variableTokens As BetterArray, _
                                        ByVal vars As ILLVariables, _
                                        ByVal dataSource As IFormulaData) As Boolean
@@ -560,24 +559,24 @@ Private Function CaptureGroupedContext(ByVal tokens As BetterArray, _
     Dim lowerBound As Long
     Dim reasonText As String
 
-    CaptureGroupedContext = False
     ResetGroupContext
+    GroupContexExtractionSucceed = False
 
-    If tokens Is Nothing Then
-        CaptureGroupedContext = True
+    If tokens Is Nothing Then 
+        GroupContexExtractionSucceed = True
         Exit Function
     End If
 
     functionName = RootFunctionName(tokens)
     If LenB(functionName) = 0 Then
-        CaptureGroupedContext = True
+        GroupContexExtractionSucceed = True
         Exit Function
     End If
-
+  
     isGeneric = IsGenericGroupFunction(functionName)
 
-    If Not dataSource.IsGroupFunction(functionName) And Not isGeneric Then
-        CaptureGroupedContext = True
+    If Not dataSource.IsGroupFunction(functionName) And Not isGeneric Then 
+        GroupContexExtractionSucceed = True
         Exit Function
     End If
 
@@ -633,6 +632,7 @@ Private Function CaptureGroupedContext(ByVal tokens As BetterArray, _
         Exit Function
     End If
 
+    GroupContexExtractionSucceed = True
     With this.group
         .Enabled = True
         .FunctionName = functionName
@@ -643,8 +643,6 @@ Private Function CaptureGroupedContext(ByVal tokens As BetterArray, _
         .ResultVariable = var3
         .TableName = table1
     End With
-
-    CaptureGroupedContext = True
 End Function
 
 '@label:RootFunctionName
@@ -823,14 +821,15 @@ End Function
 '@param failureReason String explanation when parsing fails.
 '@return Boolean True when the chunk is accepted.
 Private Function AppendToken(ByVal chunk As String, _
-                             ByVal formulaType As String, _
-                             ByVal tokens As BetterArray, _
-                             ByVal variableTokens As BetterArray, _
-                             ByVal vars As ILLVariables, _
-                             ByVal dataSource As IFormulaData, _
+                             ByRef formulaType As String, _
+                             ByRef tokens As BetterArray, _
+                             ByRef variableTokens As BetterArray, _
+                             ByRef vars As ILLVariables, _
+                             ByRef dataSource As IFormulaData, _
                              ByRef HasSetupVariables As Boolean, _
                              ByRef failureReason As String) As Boolean
     Dim upperChunk As String
+    Dim functionName As String
 
     If LenB(chunk) = 0 Then
         AppendToken = True
@@ -838,6 +837,21 @@ Private Function AppendToken(ByVal chunk As String, _
     End If
 
     upperChunk = UCase$(chunk)
+
+    'Grouped formula
+    If (tokens.Length = 0) Then
+        If IsGenericGroupFunction(upperChunk) Then
+            tokens.Push chunk
+            AppendToken = True
+            Exit Function
+        End If
+
+        If dataSource.IsGroupFunction(upperChunk) Then
+            tokens.Push chunk
+            AppendToken = True
+            Exit Function
+        End If
+    End If
 
     If vars.Contains(chunk) Then
         variableTokens.Push chunk
@@ -850,35 +864,30 @@ Private Function AppendToken(ByVal chunk As String, _
     If StrComp(upperChunk, "TRUE", vbTextCompare) = 0 Or _
        StrComp(upperChunk, "FALSE", vbTextCompare) = 0 Then
         tokens.Push upperChunk
-        HasSetupVariables = True
         AppendToken = True
         Exit Function
     End If
 
     If dataSource.ExcelFormulasIncludes(upperChunk) Then
         tokens.Push upperChunk
-        HasSetupVariables = True
         AppendToken = True
         Exit Function
     End If
 
     If StrComp(formulaType, "analysis", vbTextCompare) = 0 And deps.customFormulas.Includes(chunk) Then
         tokens.Push chunk
-        HasSetupVariables = True
         AppendToken = True
         Exit Function
     End If
 
     If IsNumeric(chunk) Then
         tokens.Push chunk
-        HasSetupVariables = True
         AppendToken = True
         Exit Function
     End If
 
     If IsQuotedString(chunk) Then
         tokens.Push chunk
-        HasSetupVariables = True
         AppendToken = True
         Exit Function
     End If

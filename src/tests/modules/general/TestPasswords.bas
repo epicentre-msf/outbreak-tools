@@ -423,10 +423,10 @@ Public Sub TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode()
 
         baseLines = "Private Sub Workbook_BeforeClose(Cancel As Boolean)" & vbNewLine & _
                     "    On Error GoTo Restore" & vbNewLine & _
-                    "    MsgBox ""Closing""" & vbNewLine & _
+                    "    Debug.Print ""Closing""" & vbNewLine & _
                     "Restore:" & vbNewLine & _
                     "End Sub"
-        codeModule.InsertLines 1, baseLines
+        codeModule.InsertLines 3, baseLines
 
         cloned.EnsureDebugExitHandler tempWb
         cloned.EnsureDebugExitHandler tempWb
@@ -437,7 +437,7 @@ Public Sub TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode()
 
         Assert.IsTrue InStr(1, procText, "If Not Cancel Then LeaveDebugModeOnClose", vbTextCompare) > 0, _
                       "Existing Workbook_BeforeClose should call LeaveDebugModeOnClose"
-        Assert.IsTrue InStr(1, procText, "MsgBox ""Closing""", vbBinaryCompare) > 0, _
+        Assert.IsTrue InStr(1, procText, "Debug.Print ""Closing""", vbBinaryCompare) > 0, _
                       "Existing Workbook_BeforeClose statements must remain intact"
 
         firstCall = InStr(1, procText, "LeaveDebugModeOnClose", vbTextCompare)
@@ -455,6 +455,7 @@ InjectionAccessDenied:
 
 InjectionCleanup:
     On Error Resume Next
+        codeModule.DeleteLines 1, codeModule.CountOfLines
         If Not tempWb Is Nothing Then tempWb.Close SaveChanges:=False
     On Error GoTo 0
 End Sub
@@ -527,6 +528,7 @@ Cleanup:
             End If
             If Not tempWb Is Nothing Then tempWb.Close SaveChanges:=False
             TestHelpers.CleanupExportedFiles exportedFiles
+            Kill exportFolder
         On Error GoTo 0
         Exit Sub
 
