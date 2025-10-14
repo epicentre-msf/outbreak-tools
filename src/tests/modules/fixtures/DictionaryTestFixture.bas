@@ -4,13 +4,13 @@ Attribute VB_Description = "Shared dictionary fixture for tests"
 Option Explicit
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'THIS FILE IS FOR TESTS, IT IS SUPPOSED DONE. NEVER EVER EVER EDIT OR CHANGE IT.
 
-'@Folder("Tests")
+'@Folder("CustomTests")
 '@ModuleDescription("Shared dictionary fixture for tests")
 
 Public Const DICTIONARY_FIXTURE_LAST_COLOR As Long = 15773696 'light blue
-Private Const TABLE_NAME_HEADER As String = "Table Name"
-Private Const SHEET_NAME_HEADER As String = "Sheet Name"
+
 Private Const SHEET_TYPE_HEADER As String = "Sheet Type"
 
 '@section Fixture Cache
@@ -22,13 +22,6 @@ Private fixtureRows As Variant
 Private Sub EnsureFixtureLoaded()
     If IsEmpty(fixtureHeaders) Then fixtureHeaders = FixtureHeadersArray()
     If IsEmpty(fixtureRows) Then fixtureRows = FixtureRowsArray()
-
-    If Not HeaderArrayContains(fixtureHeaders, TABLE_NAME_HEADER) Then
-        fixtureHeaders = InsertTableNameHeader(fixtureHeaders)
-        fixtureRows = AddTableNamesToRows(fixtureRows, fixtureHeaders)
-    ElseIf NeedsTableNameValues(fixtureRows, fixtureHeaders) Then
-        fixtureRows = AddTableNamesToRows(fixtureRows, fixtureHeaders)
-    End If
 End Sub
 
 '@section Worksheet Preparation
@@ -53,7 +46,7 @@ Public Sub PrepareDictionaryFixture(ByVal sheetName As String, Optional ByVal ta
         Set wb = targetBook
     End If
 
-    Set sh = EnsureWorksheet(sheetName, wb, visibility:=xlSheetVeryhidden)
+    Set sh = EnsureWorksheet(sheetName, wb, visibility:=xlSheetHidden)
 
     headerMatrix = RowsToMatrix(Array(fixtureHeaders))
     WriteMatrix sh.Cells(1, 1), headerMatrix
@@ -153,7 +146,7 @@ End Function
 '@description Return variables whose control column matches supplied values.
 '@param controls Variant array of control values to match.
 '@return BetterArray of variable names.
-Public Function DictionaryControlMatches(controls As Variant) As BetterArray
+Public Function DictionaryControlMatches(controls As Variant, Optional ByVal controlName As String = "Control") As BetterArray
     Dim matches As BetterArray
     Dim rowData As Variant
     Dim controlValue As String
@@ -167,7 +160,7 @@ Public Function DictionaryControlMatches(controls As Variant) As BetterArray
 
     Set matches = BetterArrayFromList()
     nameIndex = DictionaryHeaderIndex("Variable Name")
-    controlIndex = DictionaryHeaderIndex("Control")
+    controlIndex = DictionaryHeaderIndex(controlName)
     typeIndex = DictionaryHeaderIndex("Sheet Type")
 
     For Each rowData In fixtureRows
@@ -215,7 +208,7 @@ End Function
 '===============================================================================
 
 Private Function FixtureHeadersArray() As Variant
-    FixtureHeadersArray = Split("Variable Name|Main Label|Dev Comments|Editable Label|Sub Label|Note|Sheet Name|Sheet Type|Main Section|Sub Section|Status|Register Book|Personal Identifier|Variable Type|Variable Format|Control|Control Details|Unique|Export 1|Export 2|Export 3|Export 4|Export 5|Min|Max|Alert|Message|Formatting Condition|Formatting Values|Lock Cells|Column Index", "|")
+    FixtureHeadersArray = Split("Variable Name|Main Label|Dev Comments|Editable Label|Sub Label|Note|Sheet Name|Sheet Type|Main Section|Sub Section|Status|Register Book|Personal Identifier|Variable Type|Variable Format|Control|Control Details|Unique|Export 1|Export 2|Export 3|Export 4|Export 5|Min|Max|Alert|Message|Formatting Condition|Formatting Values|Lock Cells", "|")
 End Function
 
 Private Function FixtureRowsArray() As Variant
@@ -239,115 +232,6 @@ Private Function HeaderArrayContains(ByVal headers As Variant, ByVal columnName 
     Next idx
 End Function
 
-Private Function InsertTableNameHeader(ByVal headers As Variant) As Variant
-    Dim lowerBound As Long
-    Dim upperBound As Long
-    Dim insertAt As Long
-    Dim idx As Long
-    Dim result() As Variant
-
-    lowerBound = LBound(headers)
-    upperBound = UBound(headers)
-    insertAt = HeaderIndexOf(headers, SHEET_TYPE_HEADER) + 1
-
-    ReDim result(lowerBound To upperBound + 1)
-
-    For idx = lowerBound To upperBound + 1
-        If idx = insertAt Then
-            result(idx) = TABLE_NAME_HEADER
-        ElseIf idx < insertAt Then
-            result(idx) = headers(idx)
-        Else
-            result(idx) = headers(idx - 1)
-        End If
-    Next idx
-
-    InsertTableNameHeader = result
-End Function
-
-Private Function AddTableNamesToRows(ByVal rows As Variant, ByVal headers As Variant) As Variant
-    Dim result() As Variant
-    Dim idx As Long
-    Dim sheetAssignments As Collection
-    Dim sheetIndex As Long
-    Dim tableIndex As Long
-
-    sheetIndex = HeaderIndexOf(headers, SHEET_NAME_HEADER)
-    tableIndex = HeaderIndexOf(headers, TABLE_NAME_HEADER)
-
-    ReDim result(LBound(rows) To UBound(rows))
-
-    Set sheetAssignments = New Collection
-
-    For idx = LBound(rows) To UBound(rows)
-        result(idx) = InsertTableNameValue(rows(idx), sheetIndex, tableIndex, sheetAssignments)
-    Next idx
-
-    AddTableNamesToRows = result
-End Function
-
-Private Function InsertTableNameValue( ByVal rowValues As Variant, _
-                                       ByVal sheetIndex As Long, _
-                                       ByVal tableIndex As Long, _
-                                       ByVal sheetAssignments As Collection) As Variant
-    Dim newRow() As Variant
-    Dim lowerBound As Long
-    Dim upperBound As Long
-    Dim idx As Long
-    Dim tableName As String
-    Dim sheetName As String
-
-    lowerBound = LBound(rowValues)
-    upperBound = UBound(rowValues)
-    ReDim newRow(lowerBound To upperBound + 1)
-
-    sheetName = CStr(rowValues(sheetIndex))
-    tableName = ResolveTableName(sheetName, sheetAssignments)
-
-    For idx = lowerBound To upperBound + 1
-        If idx = tableIndex Then
-            newRow(idx) = tableName
-        ElseIf idx < tableIndex Then
-            newRow(idx) = rowValues(idx)
-        Else
-            newRow(idx) = rowValues(idx - 1)
-        End If
-    Next idx
-
-    InsertTableNameValue = newRow
-End Function
-
-Private Function ResolveTableName(ByVal sheetName As String, ByVal assignments As Collection) As String
-    Dim sheetKey As String
-    Dim existing As Variant
-    Dim errNumber As Long
-    Dim tableName As String
-
-    sheetKey = LCase$(sheetName)
-    If Len(sheetKey) = 0 Then sheetKey = "<empty>"
-
-    On Error Resume Next
-    existing = assignments(sheetKey)
-    errNumber = Err.Number
-    On Error GoTo 0
-
-    If errNumber <> 0 Then
-        tableName = "table" & CStr(assignments.Count + 1)
-        assignments.Add tableName, sheetKey
-    Else
-        tableName = CStr(existing)
-    End If
-
-    ResolveTableName = tableName
-End Function
-
-Private Function NeedsTableNameValues(ByVal rows As Variant, ByVal headers As Variant) As Boolean
-    Dim anyRow As Variant
-    If Not IsArray(rows) Then Exit Function
-    If UBound(rows) < LBound(rows) Then Exit Function
-    anyRow = rows(LBound(rows))
-    NeedsTableNameValues = ArrayLength(anyRow) <> ArrayLength(headers)
-End Function
 
 Private Function HeaderIndexOf(ByVal headers As Variant, ByVal columnName As String) As Long
     Dim idx As Long
@@ -395,7 +279,7 @@ Private Function FixtureRowsChunk1() As Variant
         Array("choi_ord_v1","Choice order on vlist1D","","","Values: B, C, A","","vlist1D-sheet1","vlist1D","Controls","","","","","","","choice_manual","list_uncorrect_order","","9","","4","94","yes","","","","","","",""), _
         Array("choi_cust_v1","Custom choices on vlist1D","","","Random input by the user","","vlist1D-sheet1","vlist1D","Controls","","","","","","","choice_custom","","","10","","5","57","yes","","","","","","",""), _
         Array("form_v1","Formula on vlist1D","","","Formula","","vlist1D-sheet1","vlist1D","Controls","","","","","","","formula","IF(ISBLANK(choi_v1), """", choi_v1 & ""-OK"")","","11","","6","8","","","","","","","",""), _
-        Array("brok_form_v1","Broken formula on vlist1D","","","This formula should fail","","vlist1D-sheet1","vlist1D","Controls","","","","","","","formula","IF(ISBLANK(choi_v2), """", choi_v2 & ""-OK"")","","12","","7","94","yes","","","","","","",""), _
+        Array("brok_form_v1","Broken formula on vlist1D","","","This formula should fail","should fail","vlist1D-sheet1","vlist1D","Controls","","","","","","","formula","IF(ISBLANK(choi_v2), """", choi_v2 & ""-OK"")","","12","","7","94","yes","","","","","","",""), _
         Array("hid_v1","Hidden variable in the middle","","","Should be hidden","","vlist1D-sheet1","vlist1D","Status","","hidden","","","","","","","","13","","8","36","yes","","","","","","",""), _
         Array("opt_hid_v1","Optional hidden variable on vlist1D","","","Should be hidden, the user can unhide","","vlist1D-sheet1","vlist1D","Status","","optional, hidden","","","","","","","","14","","9","43","","","","","","","",""), _
         Array("opt_vis_v1","Optional visible variable on vlist1D","","","Should be visible, the user can hide","","vlist1D-sheet1","vlist1D","Status","","optional, visible","","","","","","","","15","","10","80","yes","","","","","","",""), _
@@ -457,7 +341,7 @@ Private Function FixtureRowsChunk4() As Variant
         Array("choi_mult_h2","Choice multiple on hlist2D","","","Multiple values: A, B, C","","hlist2D-sheet1","hlist2D","Controls","","","","","","","choice_multiple","list_multiple","","56","20","","3","yes","","","","","","",""), _
         Array("choi_cust_h2","Custom choices on hlist2D","","","Random input by the user","","hlist2D-sheet1","hlist2D","Controls","","","","","","","choice_custom","","","57","21","","69","","","","","","","",""), _
         Array("form_h2","Formula on hlist2D","","","Formula","","hlist2D-sheet1","hlist2D","Controls","","","","","","","formula","IF(ISBLANK(choi_h2), """", choi_h2 & ""-OK"")","","58","22","","8","yes","","","","","","",""), _
-        Array("brok_form_h2","Broken formula on hlist2D","","","This formula should fail","","hlist2D-sheet1","hlist2D","Controls","","","","","","","formula","IF(ISBLANK(choi_h2), """", choi_h2 & + ""-OK"")","","59","23","","92","","","","","","","",""), _
+        Array("brok_form_h2","Broken formula on hlist2D","","","This formula should parse, but fail in linelist","","hlist2D-sheet1","hlist2D","Controls","","","","","","","formula","IF(ISBLANK(choi_h2), """", choi_h2 & + ""-OK"")","","59","23","","92","","","","","","","",""), _
         Array("lauto_man_h2","List auto variable manual","","","List auto populated from ""Ramdom text variable""","","hlist2D-sheet1","hlist2D","Controls","","","","","","","list_auto","text_h2","","60","24","","35","yes","","","","","","",""), _
         Array("choi_form_h2","Choice formula on hlist2D","","","Choice Formula","","hlist2D-sheet1","hlist2D","Controls","","","","","","","choice_formula","CHOICE_FORMULA(list_multiple, choi_h2 = ""A"", ""choice 1"", choi_h2 = ""B"", ""choice 2"", choi_h2 = ""C"", c_wh_h2)","","61","25","","50","yes","","","","","","",""), _
         Array("c_wh_h2","Case when on hlist2D","","","Case When formula","","hlist2D-sheet1","hlist2D","Controls","","","","","","","case_when","CASE_WHEN(choi_ord_v1 = ""A"", ""Choice order is A"", choi_ord_v1 = ""B"", ""Choice order is B"", ""Unknown choice order"")","","62","26","","20","yes","","","","","","",""), _
@@ -485,27 +369,11 @@ Private Function FixtureRowsChunk5() As Variant
         Array("val_of_dec_h2","Value of decimal variable","","","Formula, match value of another sheet","","hlist2D-sheet2","hlist2D","","Value OF","","","","","","formula","VALUE_OF(lauto_drop_h2, choi_h2, num_valid_h2)","","79","","","79","yes","","","","","","",""), _
         Array("val_of_date_h2","Value of date variable","","","Formula, match value of another sheet","","hlist2D-sheet2","hlist2D","","Value OF","","","","","","formula","VALUE_OF(lauto_drop_h2, choi_h2, date_form_h2)","","80","","","42","yes","","","","","","","") _
     )
+
 End Function
 
 Private Function FixtureRowsChunk6() As Variant
-    FixtureRowsChunk6 = Array( _ 
-        Array("type_bool_v1", "Type boolean", "", "", "Boolean variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "boolean", "", "", "", "", "", "32", "", "27", "36", "yes", "", "", "", "", "", "", "39"), _
-        Array("type_date_v1", "Type date", "", "", "Date variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "date", "", "", "", "", "", "33", "", "28", "64", "yes", "", "", "", "", "", "", "40"), _
-        Array("type_time_v1", "Type time", "", "", "Time variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "time", "", "", "", "", "", "34", "", "29", "69", "yes", "", "", "", "", "", "", "41"), _
-        Array("type_datetime_v1", "Type datetime", "", "", "Datetime variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "datetime", "", "", "", "", "", "35", "", "30", "40", "yes", "", "", "", "", "", "", "42"), _
-        Array("type_duration_v1", "Type duration", "", "", "Duration variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "duration", "", "", "", "", "", "36", "", "31", "32", "yes", "", "", "", "", "", "", "43"), _
-        Array("type_percent_v1", "Type percentage", "", "", "Percentage variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "percentage", "", "", "", "", "", "37", "", "32", "60", "yes", "", "", "", "", "", "", "44"), _
-        Array("type_currency_v1", "Type currency", "", "", "Currency variable", "", "vlist1D-sheet1", "vlist1D", "", "", "", "", "currency", "", "", "", "", "", "38", "", "33", "74", "yes", "", "", "", "", "", "", "45"), _
-        Array("format_dec_v1", "Format decimal", "", "", "Format decimal variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "", "", "", "", "39", "", "34", "40", "yes", "", "", "", "", "", "", "46"), _
-        Array("format_date_v1", "Format date", "", "", "Format date variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "d-mmm-yyyy", "", "", "", "40", "", "35", "26", "yes", "", "", "", "", "", "", "47"), _
-        Array("format_time_v1", "Format time", "", "", "Format time variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "hh:mm", "", "", "", "41", "", "36", "26", "yes", "", "", "", "", "", "", "48"), _
-        Array("format_datetime_v1", "Format datetime", "", "", "Format datetime variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "dd-mmm-yyyy hh:mm", "", "", "", "42", "", "37", "24", "yes", "", "", "", "", "", "", "49"), _
-        Array("format_duration_v1", "Format duration", "", "", "Format duration variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "hh:mm", "", "", "", "43", "", "38", "94", "yes", "", "", "", "", "", "", "50"), _
-        Array("format_text_v1", "Format text", "", "", "Format text variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "", "", "", "", "44", "", "39", "49", "yes", "", "", "", "", "", "", "51"), _
-        Array("format_currency_v1", "Format currency", "", "", "Format currency variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "€", "", "", "", "45", "", "40", "49", "yes", "", "", "", "", "", "", "52"), _
-        Array("format_percentage_v1", "Format percentage", "", "", "Format percentage variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "percentage", "", "", "", "46", "", "41", "28", "yes", "", "", "", "", "", "", "53"), _
-        Array("format_duration_v2", "Format duration v2", "", "", "Format duration variable v2", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "hh:mm:ss", "", "", "", "47", "", "42", "28", "yes", "", "", "", "", "", "", "54"), _
-        Array("format_custom_v1", "Format custom", "", "", "Format custom variable", "", "vlist1D-sheet1", "vlist1D", "", "Format", "", "", "", "", "custom", "", "", "", "48", "", "43", "72", "yes", "", "", "", "", "", "", "55"), _
+    FixtureRowsChunk6 = Array( _
         Array("cond_test_h1","Test on conditonal formatting","","","Formula, should be hidden","","hlist2D-sheet1","hlist2D","","Conditonal Formatting","hidden","hidden","","","","formula","IF(choi_h2 = ""A"", 1, 0)","","81","45","","77","yes","","","","","","",""), _
         Array("cond_val_h1","Value on conditional formatting","","","Test for conditonal formatting, should be in gray","","hlist2D-sheet1","hlist2D","","Conditonal Formatting","","","","","","","","","82","46","","30","yes","","","","","cond_test_h1","","") _
     )

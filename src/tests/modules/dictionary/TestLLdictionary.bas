@@ -47,7 +47,6 @@ Private Sub ModuleCleanup()
     Set Assert = Nothing
     Set Dictionary = Nothing
     DeleteWorksheet DICT_SHEET
-
 End Sub
 
 '@TestInitialize
@@ -143,7 +142,7 @@ Public Sub TestSpecialVariableSelectors()
 
     Set expectedChoices = DictionaryControlMatches(Array("choice_manual", "choice_formula"))
     Set expectedGeos = DictionaryControlMatches(Array("geo", "hf"))
-    Set expectedTimes = DictionaryFieldEquals("Variable Type", "date")
+    Set expectedTimes = DictionaryControlMatches(Array("date"), "Variable Type")
 
     Assert.IsTrue (choices.Length = expectedChoices.Length), "ChoicesVars count mismatch"
     For idx = expectedChoices.LowerBound To expectedChoices.UpperBound

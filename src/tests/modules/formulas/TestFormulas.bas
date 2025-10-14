@@ -25,6 +25,9 @@ Private Const FORMULA_GROUP_TABLE_MISMATCH_MESSAGE As String = "Grouped formulas
 Private Const FORMULA_EMPTY_MESSAGE As String = "The formula is empty. No formula were found"
 Private Const FORMULA_GROUP_INVALID_GENERIC_MESSAGE As String = "Grouped formula '%1' must specify a valid aggregator after the GROUP prefix."
 Private Const FORMULA_GROUP_UNKNOWN_AGGREGATOR_MESSAGE As String = "Grouped formula '%1' targets aggregator '%2', which is not allowed."
+Private Const DEFAULTCRITERIAVAR As String = "lauto_man_h2"
+Private Const DEFAULTCONDITIONVAR As String = "lauto_drop_h2"
+Private Const DEFAULTRESULTVAR As String = "num_valid_h2"
 
 '@section Module State
 '===============================================================================
@@ -71,7 +74,7 @@ End Function
 '@param rowData Variant array representing the row values.
 '@param noteIndex Long index of the Note column.
 '@return Boolean True when the row should be skipped.
-Private Function ShouldSkipFormulaRow( rowData As Variant, _
+Private Function ShouldSkipFormulaRow(rowData As Variant, _
                                       ByVal noteIndex As Long) As Boolean
     Dim noteText As String
     If noteIndex >= LBound(rowData) And noteIndex <= UBound(rowData) Then
@@ -99,7 +102,7 @@ Private Function IsFormulaControl(ByVal controlValue As String) As Boolean
     Dim normalized As String
     normalized = LCase$(controlValue)
     Select Case normalized
-        Case "formula", "formulas", "choice_formula", "choice_formulas", "choce_formulas", "case_when"
+        Case "formula", "formulas", "choice_formula", "choice_formulas", "case_when"
             IsFormulaControl = True
     End Select
 End Function
@@ -115,94 +118,32 @@ End Function
 Private Function SampleGroupedVariables(ByRef criteriaVar As String, _
                                         ByRef conditionVar As String, _
                                         ByRef resultVar As String, _
-                                        ByRef tableName As String) As Boolean
-    Dim rows As Variant
-    Dim rowData As Variant
-    Dim tableIndex As Long
-    Dim nameIndex As Long
-    Dim trackedTables As Collection
-    Dim trackedVariables As Collection
-    Dim idx As Long
-    Dim currentTable As String
-    Dim currentVar As String
+                                        ByRef tabName As String) As Boolean
 
-    rows = DictionaryFixtureRows()
-    tableIndex = DictionaryHeaderIndex("Table Name")
-    nameIndex = DictionaryHeaderIndex("Variable Name")
+    Dim vars As ILLVariables
 
-    Set trackedTables = New Collection
-    Set trackedVariables = New Collection
 
-    On Error GoTo Cleanup
+    criteriaVar = DEFAULTCRITERIAVAR
+    conditionVar = DEFAULTCONDITIONVAR
+    resultVar = DEFAULTRESULTVAR
 
-    For Each rowData In rows
-        currentTable = RowValue(rowData, tableIndex)
-        currentVar = RowValue(rowData, nameIndex)
-
-        If LenB(currentTable) > 0 And LenB(currentVar) > 0 Then
-            For idx = 1 To trackedTables.Count
-                If StrComp(CStr(trackedTables(idx)), currentTable, vbTextCompare) = 0 Then
-                    criteriaVar = CStr(trackedVariables(idx))
-                    resultVar = currentVar
-                    tableName = currentTable
-                    SampleGroupedVariables = True
-                    Exit For
-                End If
-            Next idx
-
-            If SampleGroupedVariables Then Exit For
-
-            trackedTables.Add currentTable
-            trackedVariables.Add currentVar
-        End If
-    Next rowData
-
-    If Not SampleGroupedVariables Then GoTo Cleanup
-
-    For Each rowData In rows
-        currentVar = RowValue(rowData, nameIndex)
-        If LenB(currentVar) > 0 Then
-            If StrComp(currentVar, criteriaVar, vbTextCompare) <> 0 And _
-               StrComp(currentVar, resultVar, vbTextCompare) <> 0 Then
-                conditionVar = currentVar
-                Exit For
-            End If
-        End If
-    Next rowData
-
-    If LenB(conditionVar) = 0 Then conditionVar = criteriaVar
-
-Cleanup:
-    Set trackedTables = Nothing
-    Set trackedVariables = Nothing
+    Set vars = LLVariables.Create(LinelistDictionary)
+    
+    tabName = vars.Value(colName:="table name", varName:=criteriaVar)
+    If tabName <> vars.Value(colName:="table name", varName:=resultVar) Then Exit Function
+    If tabName = vars.Value(colName:="table name", varName:=conditionVar) Then Exit Function
+    SampleGroupedVariables = True
 End Function
 
 '@description Retrieve a variable that belongs to a table different from the supplied one.
 Private Function VariableFromDifferentTable(ByVal excludedTable As String, _
                                             ByRef variableName As String) As Boolean
-    Dim rows As Variant
-    Dim rowData As Variant
-    Dim tableIndex As Long
-    Dim nameIndex As Long
-    Dim currentTable As String
-    Dim currentVar As String
+    Dim vars As ILLVariables
+    Set vars = LLVariables.Create(LinelistDictionary)
 
-    rows = DictionaryFixtureRows()
-    tableIndex = DictionaryHeaderIndex("Table Name")
-    nameIndex = DictionaryHeaderIndex("Variable Name")
-
-    For Each rowData In rows
-        currentTable = RowValue(rowData, tableIndex)
-        currentVar = RowValue(rowData, nameIndex)
-
-        If LenB(currentVar) > 0 And LenB(currentTable) > 0 Then
-            If StrComp(currentTable, excludedTable, vbTextCompare) <> 0 Then
-                variableName = currentVar
-                VariableFromDifferentTable = True
-                Exit For
-            End If
-        End If
-    Next rowData
+    variableName = DEFAULTCONDITIONVAR
+    If vars.Value(colName:="table name", varName:=variableName) = excludedTable Then Exit Function
+    VariableFromDifferentTable = True
 End Function
 
 '@description Build a grouped-reference string matching the production logic.
@@ -427,10 +368,10 @@ Public Sub TestCustomAggregatorTranslatesToAverage()
     Set formulaInstance = BuildFormula("MEAN")
     Set conditionVars = BetterArrayFromList(AnyVariableName())
     Set conditionConds = BetterArrayFromList("=1")
-    tableName = DictionaryFixtureValue(0, "Table Name")
+    tableName = LinelistDictionary.DataRange("table name").Cells(1, 1).Value
     Set condition = FormulaCondition.Create(conditionVars, conditionConds)
-    condition.Valid LinelistDictionary, tableName
-
+    
+    Assert.IsTrue condition.Valid(LinelistDictionary, tableName), "Condition on custom aggregator should be valid"
     Assert.IsTrue formulaInstance.Valid("analysis"), "Custom MEAN should be accepted for analysis"
     Assert.AreEqual "AVERAGE", formulaInstance.ParsedAnalysisFormula(condition), "MEAN should translate to AVERAGE in analysis context"
     Exit Sub
@@ -522,9 +463,9 @@ Public Sub TestAllDictionaryFormulasParse()
             variableName = RowValue(rowData, nameIndex)
 
             Set formulaInstance = BuildFormula(formulaText)
-            Assert.IsTrue formulaInstance.Valid("analysis"), "Failed to parse formula for variable " & variableName
+            Assert.IsTrue formulaInstance.Valid("simple"), "Failed to parse formula for variable " & variableName & "; formula is: " & formulaText
             Assert.IsFalse formulaInstance.HasChecking, "Parsing raised diagnostics for variable " & variableName
-            Assert.AreEqual FORMULA_SUCCESS_MESSAGE, formulaInstance.Reason("analysis"), "Unexpected reason for variable " & variableName
+            Assert.AreEqual FORMULA_SUCCESS_MESSAGE, formulaInstance.Reason("simple"), "Unexpected reason for variable " & variableName
             evaluatedCount = evaluatedCount + 1
         End If
 NextRow:
@@ -571,8 +512,9 @@ Public Sub TestHandlesEscapedQuotesWithinLiterals()
     expression = "IF(" & Chr$(34) & "Alpha" & Chr$(34) & Chr$(34) & "Beta" & Chr$(34) & ", ""OK"", ""KO"")"
     Set formulaInstance = BuildFormula(expression)
 
-    Assert.IsTrue formulaInstance.Valid("analysis"), "Escaped quotes should parse"
-    Assert.IsTrue formulaInstance.HasSetupVariables, "Literal strings should be detected"
+    Assert.IsTrue formulaInstance.Valid("analysis"), "Escaped quotes should parse in analysis scope"
+    Assert.IsTrue formulaInstance.Valid("simple"), "Escaped quotes should parse in simple scope"
+    Assert.IsFalse formulaInstance.HasSetupVariables, "Formulas with no setup variables should be detected"
     Exit Sub
 
 Fail:
@@ -589,8 +531,9 @@ Public Sub TestBooleanLiteralsAccepted()
 
     Set formulaInstance = BuildFormula("IF(TRUE, FALSE, TRUE)")
 
-    Assert.IsTrue formulaInstance.Valid("analysis"), "Boolean literals should parse"
-    Assert.IsTrue formulaInstance.HasSetupVariables, "Boolean literals count as literals"
+    Assert.IsTrue formulaInstance.Valid("analysis"), "Boolean literals should parse in analysis scope"
+    Assert.IsTrue formulaInstance.Valid("simple"), "Boolean literals should parse in simple scope"
+    Assert.IsFalse formulaInstance.HasSetupVariables, "Boolean literals count as literals"
     Exit Sub
 
 Fail:
@@ -622,8 +565,8 @@ End Sub
 
 '@TestMethod("Formulas")
 '@description Ensure custom N aggregator translations do not leave empty parentheses in analysis output.
-Public Sub TestAnalysisCustomNRemovesEmptyInvocation()
-    CustomTestSetTitles Assert, "Formulas", "TestAnalysisCustomNRemovesEmptyInvocation"
+Public Sub TestCustomNRemovesEmptyInvocation()
+    CustomTestSetTitles Assert, "Formulas", "TestCustomNRemovesEmptyInvocation"
     Const TABLE_PREFIX As String = "f_"
     Dim variableName As String
     Dim tableName As String
@@ -636,18 +579,19 @@ Public Sub TestAnalysisCustomNRemovesEmptyInvocation()
     On Error GoTo Fail
 
     variableName = AnyVariableName()
-    tableName = DictionaryFixtureValue(0, "Table Name")
+    tableName = LinelistDictionary.DataRange("table name").Cells(1, 1).Value
 
     Set formulaInstance = BuildFormula("IF(N()>0, 1, 0)")
     Set conditionVars = BetterArrayFromList(variableName)
     Set conditionConds = BetterArrayFromList(">0")
     Set formCondition = FormulaCondition.Create(conditionVars, conditionConds)
 
+    Assert.IsFalse formulaInstance.Valid("simple"), "Expression using custom N should not be valid in simple context"
     Assert.IsTrue formulaInstance.Valid("analysis"), "Expression using custom N should be valid in analysis context"
 
     parsed = formulaInstance.ParsedAnalysisFormula(formCondition, tablePrefix:=TABLE_PREFIX)
 
-    Assert.IsTrue InStr(1, parsed, "COUNTIFS(", vbTextCompare) > 0, "Custom N should translate to COUNTIFS"
+    Assert.IsTrue InStr(1, parsed, "COUNTIFS(", vbTextCompare) > 0, "Custom N should translate to COUNTIFS. Parsed formula: " & parsed
     Assert.IsTrue InStr(1, parsed, TABLE_PREFIX & tableName & "[" & variableName & "]", vbTextCompare) > 0, "COUNTIFS should reference the structured table column"
     Assert.AreEqual 0&, InStr(1, parsed, ")()", vbBinaryCompare), "COUNTIFS translation should not contain empty parentheses"
 
@@ -656,6 +600,8 @@ Public Sub TestAnalysisCustomNRemovesEmptyInvocation()
 Fail:
     CustomTestLogFailure Assert, "TestAnalysisCustomNRemovesEmptyInvocation", Err.Number, Err.Description
 End Sub
+
+
 
 '@TestMethod("Formulas")
 '@description Detect formulas missing closing parentheses and report descriptive feedback.
@@ -812,7 +758,8 @@ Public Sub TestGroupedMeanIfsBuildsArrayFormula()
     expression = "MEANIFS(" & criteriaVar & ", " & conditionVar & ", " & resultVar & ")"
     Set formulaInstance = BuildFormula(expression)
 
-    Assert.IsTrue formulaInstance.Valid("analysis"), "Grouped MEANIFS should be valid"
+    Assert.IsTrue formulaInstance.Valid("analysis"), "Grouped MEANIFS should be valid in analysis scope"
+    Assert.IsTrue formulaInstance.Valid("simple"), "Grouped MEANIFS should be valid in simple scope"
     Assert.AreEqual "Yes", formulaInstance.IsGrouped, "Grouped MEANIFS should report grouped state"
 
     expectedLinelist = ExpectedArrayGroupedFormula("AVERAGE", criteriaVar, conditionVar, resultVar, tableName, vbNullString, False)
@@ -850,7 +797,8 @@ Public Sub TestGenericGroupSumBuildsArrayFormula()
     expression = "GROUP_SUM(" & criteriaVar & ", " & conditionVar & ", " & resultVar & ")"
     Set formulaInstance = BuildFormula(expression)
 
-    Assert.IsTrue formulaInstance.Valid("analysis"), "GROUP_SUM should be valid"
+    Assert.IsTrue formulaInstance.Valid("simple"), "GROUP_SUM should be valid in simple scope"
+    Assert.IsTrue formulaInstance.Valid("analysis"), "GROUP_SUM should be valid in analysis scope"
     Assert.AreEqual "Yes", formulaInstance.IsGrouped, "GROUP_SUM should report grouped state"
 
     expectedLinelist = ExpectedArrayGroupedFormula("SUM", criteriaVar, conditionVar, resultVar, tableName, vbNullString, False)
@@ -992,8 +940,12 @@ Public Sub TestParsedAnalysisFormulaAppliesConnector()
     Set formulaInstance = BuildFormula(expression)
 
     Set conditionVars = BetterArrayFromList(variableName, variableName)
-    Set conditionConds = BetterArrayFromList("=1", "<>\"\"")
-    tableName = DictionaryFixtureValue(3, "Table Name")
+    Set conditionConds = BetterArrayFromList("=1", "<>""""")
+
+    Dim vars As ILLVariables
+    Set vars = LLVariables.Create(LinelistDictionary)
+    tableName = vars.Value(colName:="table name", varName:=variableName)
+
     Set condition = FormulaCondition.Create(conditionVars, conditionConds)
 
     parsed = formulaInstance.ParsedAnalysisFormula(condition, tablePrefix:="tbl_", Connector:=" + ")

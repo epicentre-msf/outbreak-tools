@@ -38,7 +38,7 @@ Private Sub PrepareCustomTableWithFormula(ByVal sheetName As String, ByVal table
     Dim headers As Variant
     Dim dataRows As Variant
     Dim listRange As Range
-    Dim listObject As ListObject
+    Dim Lo As ListObject
     Dim rowIndex As Long
 
     headers = Array("ID", "Value", "Calc")
@@ -57,10 +57,10 @@ Private Sub PrepareCustomTableWithFormula(ByVal sheetName As String, ByVal table
     Next rowIndex
 
     Set listRange = hostSheet.Range("A1").Resize(UBound(dataRows) + 2, 3)
-    Set listObject = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=listRange, XlListObjectHasHeaders:=xlYes)
-    listObject.Name = tableName
+    Set Lo =  hostSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=listRange, XlListObjectHasHeaders:=xlYes)
+    Lo.Name = tableName
 
-    listObject.ListColumns("Calc").DataBodyRange.FormulaR1C1 = "=RC[-1]*2"
+    Lo.ListColumns("Calc").DataBodyRange.FormulaR1C1 = "=RC[-1]*2"
 End Sub
 
 Private Function CreateDataSheet(ByVal sheetName As String, headers As Variant, rows As Variant) As IDataSheet
@@ -90,7 +90,7 @@ Private Sub PrepareCustomTable(Optional ByVal includeData As Boolean = True, _
     Dim lastRow As Long
     Dim columnCount As Long
     Dim listRange As Range
-    Dim listObject As ListObject
+    Dim Lo As ListObject
 
     Set hostSheet = EnsureWorksheet(sheetName)
     ClearWorksheet hostSheet
@@ -109,8 +109,8 @@ Private Sub PrepareCustomTable(Optional ByVal includeData As Boolean = True, _
     columnCount = UBound(headerMatrix, 2)
     Set listRange = hostSheet.Range("A1").Resize(lastRow, columnCount)
 
-    Set listObject = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=listRange, XlListObjectHasHeaders:=xlYes)
-    listObject.Name = tableName
+    Set Lo =  hostSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=listRange, XlListObjectHasHeaders:=xlYes)
+    Lo.Name = tableName
 End Sub
 
 Private Function BuildCustomTable() As ICustomTable
@@ -127,7 +127,7 @@ Private Function CreateCustomTableWithData(ByVal sheetName As String, _
 
     Dim hostSheet As Worksheet
     Dim listRange As Range
-    Dim listObject As ListObject
+    Dim Lo As ListObject
     Dim columnCount As Long
     Dim rowIndex As Long
     Dim lastRow As Long
@@ -149,10 +149,10 @@ Private Function CreateCustomTableWithData(ByVal sheetName As String, _
     End If
 
     Set listRange = hostSheet.Range("A1").Resize(lastRow, columnCount)
-    Set listObject = hostSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=listRange, XlListObjectHasHeaders:=xlYes)
-    listObject.Name = tableName
+    Set Lo =  hostSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=listRange, XlListObjectHasHeaders:=xlYes)
+    Lo.Name = tableName
 
-    Set CreateCustomTableWithData = CustomTable.Create(listObject, idColumnName, idPrefix)
+    Set CreateCustomTableWithData = CustomTable.Create(Lo, idColumnName, idPrefix)
 End Function
 
 Private Function NewBetterArray(ParamArray values() As Variant) As BetterArray
@@ -270,18 +270,18 @@ Public Sub TestAddRowsAssignsIds()
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
-    Dim listObject As ListObject
+    Dim Lo As ListObject
 
     Set tableObject = BuildCustomTable
-    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
 
     tableObject.AddRows nbRows:=2
     tableObject.AddIds
 
-    Assert.IsTrue (listObject.DataBodyRange.Rows.Count = 5), "AddRows should append rows"
-    Assert.AreEqual "row 4", listObject.ListColumns("ID").DataBodyRange.Cells(4, 1).Value, _
+    Assert.IsTrue (Lo.DataBodyRange.Rows.Count = 5), "AddRows should append rows"
+    Assert.AreEqual "row 4", Lo.ListColumns("ID").DataBodyRange.Cells(4, 1).Value, _
                     "New blank rows should receive sequential IDs"
-    Assert.AreEqual "row 5", listObject.ListColumns("ID").DataBodyRange.Cells(5, 1).Value, "Ids should be sequential"
+    Assert.AreEqual "row 5", Lo.ListColumns("ID").DataBodyRange.Cells(5, 1).Value, "Ids should be sequential"
     Exit Sub
 
 Fail:
@@ -294,18 +294,18 @@ Public Sub TestRemoveRowsDeletesEmpty()
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
-    Dim listObject As ListObject
+    Dim Lo As ListObject
 
     Set tableObject = BuildCustomTable
-    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
 
-    listObject.ListColumns("Name").DataBodyRange.Cells(listObject.DataBodyRange.Rows.Count, 1).Value = ""
-    listObject.ListRows.Add
+    Lo.ListColumns("Name").DataBodyRange.Cells(Lo.DataBodyRange.Rows.Count, 1).Value = ""
+    Lo.ListRows.Add
     tableObject.RemoveRows totalCount:=0
 
-    Assert.IsTrue (listObject.DataBodyRange.Rows.Count = 3), "RemoveRows should delete trailing empty rows"
+    Assert.IsTrue (Lo.DataBodyRange.Rows.Count = 3), "RemoveRows should delete trailing empty rows"
     tableObject.RemoveRows totalCount:=2
-    Assert.IsTrue (listObject.DataBodyRange.Rows.Count = 2), "totalCount argument should trim the table to the requested size"
+    Assert.IsTrue (Lo.DataBodyRange.Rows.Count = 2), "totalCount argument should trim the table to the requested size"
     Exit Sub
 
 Fail:
@@ -337,7 +337,7 @@ Public Sub TestSortOnFirstGroupsByFirstOccurrence()
     Dim headers As Variant
     Dim rows As Variant
     Dim tableObject As ICustomTable
-    Dim listObject As ListObject
+    Dim Lo As ListObject
 
     headers = CustomTableHeaders()
     rows = Array( _
@@ -347,19 +347,19 @@ Public Sub TestSortOnFirstGroupsByFirstOccurrence()
         Array("row 4", "Beta", 4))
 
     Set tableObject = CreateCustomTableWithData(TABLESHEETNAME, TABLENAME, headers, rows)
-    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
 
     tableObject.Sort colName:="Name", directSort:=False
 
-    Assert.AreEqual "Gamma", listObject.ListColumns("Name").DataBodyRange.Cells(1, 1).Value, _
+    Assert.AreEqual "Gamma", Lo.ListColumns("Name").DataBodyRange.Cells(1, 1).Value, _
                      "SortOnFirst should group rows starting with the first encountered value"
-    Assert.AreEqual "Gamma", listObject.ListColumns("Name").DataBodyRange.Cells(2, 1).Value, _
+    Assert.AreEqual "Gamma", Lo.ListColumns("Name").DataBodyRange.Cells(2, 1).Value, _
                      "Duplicate values should remain adjacent after SortOnFirst"
-    Assert.AreEqual "Alpha", listObject.ListColumns("Name").DataBodyRange.Cells(3, 1).Value, _
+    Assert.AreEqual "Alpha", Lo.ListColumns("Name").DataBodyRange.Cells(3, 1).Value, _
                      "Subsequent distinct values should follow in first-seen order"
-    Assert.AreEqual "Beta", listObject.ListColumns("Name").DataBodyRange.Cells(4, 1).Value, _
+    Assert.AreEqual "Beta", Lo.ListColumns("Name").DataBodyRange.Cells(4, 1).Value, _
                      "Later unique values should appear last"
-    Assert.AreEqual 3, listObject.ListColumns.Count, _
+    Assert.AreEqual 3, Lo.ListColumns.Count, _
                      "SortOnFirst should remove its helper column after sorting"
     Exit Sub
 
@@ -374,7 +374,7 @@ Public Sub TestImportWithMatchingHeaders()
 
     Dim sourceTable As ICustomTable
     Dim targetTable As ICustomTable
-    Dim listObject As ListObject
+    Dim Lo As ListObject
 
     PrepareCustomTable includeData:=False
     Set targetTable = CustomTable.Create(ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME), "ID", "row")
@@ -383,10 +383,10 @@ Public Sub TestImportWithMatchingHeaders()
     Set sourceTable = CustomTable.Create(ThisWorkbook.Worksheets(SOURCE_SHEETNAME).ListObjects(TABLENAME & "Src"), "ID", "row")
 
     targetTable.Import sourceTable, keepSourceHeaders:=True
-    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
 
-    Assert.IsTrue (listObject.DataBodyRange.Rows.Count = 3), "Import should copy all rows"
-    Assert.AreEqual "Gamma", listObject.ListColumns("Name").DataBodyRange.Cells(3, 1).Value, "Imported values should match source"
+    Assert.IsTrue (Lo.DataBodyRange.Rows.Count = 3), "Import should copy all rows"
+    Assert.AreEqual "Gamma", Lo.ListColumns("Name").DataBodyRange.Cells(3, 1).Value, "Imported values should match source"
     Exit Sub
 
 Fail:
@@ -433,14 +433,14 @@ Public Sub TestImportFromDataSheetPreservesFormulas()
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
-    Dim listObject As ListObject
+    Dim Lo As ListObject
     Dim headers As Variant
     Dim rows As Variant
     Dim dataSheetObj As IDataSheet
 
     PrepareCustomTableWithFormula TABLESHEETNAME, TABLENAME
-    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
-    Set tableObject = CustomTable.Create(listObject, "ID", "row")
+    Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set tableObject = CustomTable.Create(Lo, "ID", "row")
 
     headers = Array("ID", "Value")
     rows = Array( _
@@ -451,12 +451,12 @@ Public Sub TestImportFromDataSheetPreservesFormulas()
 
     tableObject.Import dataSheetObj, keepSourceHeaders:=False
 
-    Assert.IsTrue (listObject.DataBodyRange.rows.count = 2), "Import from DataSheet should size table to source rows"
-    Assert.IsTrue listObject.ListColumns("Calc").DataBodyRange.Cells(1, 1).HasFormula, _
+    Assert.IsTrue (Lo.DataBodyRange.rows.count = 2), "Import from DataSheet should size table to source rows"
+    Assert.IsTrue Lo.ListColumns("Calc").DataBodyRange.Cells(1, 1).HasFormula, _
                   "Formula column should keep its formulas after import"
-    Assert.IsTrue listObject.ListColumns("Value").DataBodyRange.Cells(2, 1).Value = 200, _
+    Assert.IsTrue Lo.ListColumns("Value").DataBodyRange.Cells(2, 1).Value = 200, _
                   "Value column should reflect imported data"
-    Assert.IsTrue listObject.ListColumns("Calc").DataBodyRange.Cells(2, 1).Value = 400, _
+    Assert.IsTrue Lo.ListColumns("Calc").DataBodyRange.Cells(2, 1).Value = 400, _
                   "Formula column should recalculate against imported values"
     Exit Sub
 
@@ -500,10 +500,10 @@ Public Sub TestImportRecordsMissingColumns()
     Dim headers As Variant
     Dim rows As Variant
     Dim missing As BetterArray
-    Dim listObject As ListObject
+    Dim Lo As ListObject
 
     Set tableObject = BuildCustomTable
-    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
 
     headers = Array("ID", "Name", "NewValue")
     rows = Array( _
@@ -518,7 +518,7 @@ Public Sub TestImportRecordsMissingColumns()
     Set missing = tableObject.ImportColumnsNotFound
     Assert.IsTrue (missing.Length = 1), "Only the unexpected column should be reported"
     Assert.AreEqual "NewValue", CStr(missing.Item(missing.LowerBound)), "Reported column should match the missing header"
-    Assert.AreEqual "Beta", listObject.ListColumns("Name").DataBodyRange.Cells(2, 1).Value, _
+    Assert.AreEqual "Beta", Lo.ListColumns("Name").DataBodyRange.Cells(2, 1).Value, _
                      "Existing columns should still import their data"
     Exit Sub
 
@@ -533,12 +533,12 @@ Public Sub TestImportPasteAtBottomAppendsData()
 
     Dim targetTable As ICustomTable
     Dim sourceTable As ICustomTable
-    Dim listObject As ListObject
+    Dim Lo As ListObject
     Dim headers As Variant
     Dim rows As Variant
 
     Set targetTable = BuildCustomTable
-    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
 
     headers = CustomTableHeaders()
     rows = Array( _
@@ -549,13 +549,13 @@ Public Sub TestImportPasteAtBottomAppendsData()
 
     targetTable.Import sourceTable, pasteAtBottom:=True, keepSourceHeaders:=False
 
-    Assert.AreEqual 5, listObject.DataBodyRange.Rows.Count, _
+    Assert.AreEqual 5, Lo.DataBodyRange.Rows.Count, _
                      "Import with pasteAtBottom should append incoming rows"
-    Assert.AreEqual "Alpha", listObject.ListColumns("Name").DataBodyRange.Cells(1, 1).Value, _
+    Assert.AreEqual "Alpha", Lo.ListColumns("Name").DataBodyRange.Cells(1, 1).Value, _
                      "Existing rows should remain at the top when appending"
-    Assert.AreEqual "Delta", listObject.ListColumns("Name").DataBodyRange.Cells(4, 1).Value, _
+    Assert.AreEqual "Delta", Lo.ListColumns("Name").DataBodyRange.Cells(4, 1).Value, _
                      "First imported row should follow existing data"
-    Assert.AreEqual "Epsilon", listObject.ListColumns("Name").DataBodyRange.Cells(5, 1).Value, _
+    Assert.AreEqual "Epsilon", Lo.ListColumns("Name").DataBodyRange.Cells(5, 1).Value, _
                      "Rows should append in source order"
     Exit Sub
 
@@ -569,15 +569,15 @@ Public Sub TestImportPreservesHiddenColumns()
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
-    Dim listObject As ListObject
+    Dim Lo As ListObject
     Dim headers As Variant
     Dim rows As Variant
     Dim dataSheetObj As IDataSheet
 
     Set tableObject = BuildCustomTable
-    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
 
-    listObject.ListColumns("Amount").Range.EntireColumn.Hidden = True
+    Lo.ListColumns("Amount").Range.EntireColumn.Hidden = True
 
     headers = CustomTableHeaders()
     rows = Array( _
@@ -586,13 +586,25 @@ Public Sub TestImportPreservesHiddenColumns()
 
     Set dataSheetObj = CreateDataSheet(DATASHEETNAME, headers, rows)
 
-    tableObject.Import dataSheetObj, keepSourceHeaders:=False
+    'Import with source headers
+    tableObject.Import dataSheetObj, keepSourceHeaders:=True
 
-    Assert.IsTrue listObject.ListColumns("Amount").Range.EntireColumn.Hidden, _
+    Assert.IsTrue Lo.ListColumns("Amount").Range.EntireColumn.Hidden, _
                   "Import should restore hidden columns"
     Dim hidVal As String
-    hidVal = listObject.ListColumns("Amount").DataBodyRange.Cells(2, 1).Value
-    Assert.AreEqual "123", CStr(hidVal), "Hidden column values should still update - value" 
+    hidVal = Lo.ListColumns("Amount").DataBodyRange.Cells(2, 1).Value
+    Assert.AreEqual "123", CStr(hidVal), "Hidden column values should still update - value when keepSourceHeaders = yes"
+
+    'Import without keeping source headers
+    Set tableObject = BuildCustomTable()
+    Set Lo = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+
+    Lo.ListColumns("Amount").Range.EntireColumn.Hidden = True
+    tableObject.Import dataSheetObj, keepSourceHeaders:=False
+    hidVal = Lo.ListColumns("Amount").DataBodyRange.Cells(2, 1).Value
+    Assert.AreEqual "123", CStr(hidVal), "Hidden column values should still update - value when keepSourceHeaders = no"
+    Assert.IsTrue (Lo.ListColumns("Amount").DataBodyRange.Cells(3, 1).Value = vbNullString), "Hidden column values should be deleted - value when keepSourceHeaders = no"
+ 
     Exit Sub
 
 Fail:
@@ -605,7 +617,7 @@ Public Sub TestImportStrictColumnSearchRequiresExactMatch()
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
-    Dim listObject As ListObject
+    Dim Lo As ListObject
     Dim headers As Variant
     Dim rows As Variant
     Dim dataSheetObj As IDataSheet
@@ -613,7 +625,7 @@ Public Sub TestImportStrictColumnSearchRequiresExactMatch()
     Dim nameValue As Variant
 
     Set tableObject = BuildCustomTable
-    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
 
     headers = Array("ID", "name", "Amount")
     rows = Array(Array(1, "Omega", 900))
@@ -628,10 +640,10 @@ Public Sub TestImportStrictColumnSearchRequiresExactMatch()
     Assert.AreEqual "name", CStr(missing.Item(missing.LowerBound)), _
                      "Mismatched header should be reported exactly"
 
-    nameValue = listObject.ListColumns("Name").DataBodyRange.Cells(1, 1).Value
+    nameValue = Lo.ListColumns("Name").DataBodyRange.Cells(1, 1).Value
     Assert.IsTrue (IsEmpty(nameValue) Or nameValue = vbNullString), _
                   "Name column should remain blank when strict search cannot match header"
-    Assert.AreEqual "900", CStr(listObject.ListColumns("Amount").DataBodyRange.Cells(1, 1).Value), _
+    Assert.AreEqual "900", CStr(Lo.ListColumns("Amount").DataBodyRange.Cells(1, 1).Value), _
                      "Matching headers should still import their data"
     Exit Sub
 
@@ -647,10 +659,10 @@ Public Sub TestImportFailureRestoresSnapshot()
     Dim headers As Variant
     Dim rows As Variant
     Dim dataSheetObj As IDataSheet
-    Dim listObject As ListObject
+    Dim Lo As ListObject
 
     Set tableObject = BuildCustomTable
-    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
 
     headers = Array("ID", "name")
     rows = Array(Array(1, "Replacement"))
@@ -660,13 +672,13 @@ Public Sub TestImportFailureRestoresSnapshot()
     tableObject.Import dataSheetObj, strictColumnSearch:=True
     tableObject.RestoreTableSnapshot
 
-    Assert.AreEqual "Alpha", listObject.ListColumns("Name").DataBodyRange.Cells(1, 1).Value, _
+    Assert.AreEqual "Alpha", Lo.ListColumns("Name").DataBodyRange.Cells(1, 1).Value, _
                      "Failed import should restore original first row"
 
-    Assert.AreEqual "Gamma", listObject.ListColumns("Name").DataBodyRange.Cells(3, 1).Value, _
+    Assert.AreEqual "Gamma", Lo.ListColumns("Name").DataBodyRange.Cells(3, 1).Value, _
                      "Failed import should keep trailing rows intact"
 
-      Assert.IsTrue Not (listObject.ListColumns("Amount") Is Nothing), "failed to estore listcolumns"
+      Assert.IsTrue Not (Lo.ListColumns("Amount") Is Nothing), "failed to estore listcolumns"
 End Sub
 
 '@TestMethod("CustomTable")
@@ -844,20 +856,20 @@ Public Sub TestExportRestoresHiddenColumns()
     On Error GoTo Fail
 
     Dim tableObject As ICustomTable
-    Dim listObject As ListObject
+    Dim Lo As ListObject
     Dim exportSheet As Worksheet
 
     Set tableObject = BuildCustomTable
-    Set listObject = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+    Set Lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
 
-    listObject.ListColumns("Amount").Range.EntireColumn.Hidden = True
+    Lo.ListColumns("Amount").Range.EntireColumn.Hidden = True
 
     Set exportSheet = EnsureWorksheet(EXPORTSHEETNAME)
     ClearWorksheet exportSheet
 
     tableObject.Export exportSheet
 
-    Assert.IsTrue listObject.ListColumns("Amount").Range.EntireColumn.Hidden, _
+    Assert.IsTrue Lo.ListColumns("Amount").Range.EntireColumn.Hidden, _
                   "Export should restore hidden column state after writing"
     Assert.AreEqual "Amount", exportSheet.Cells(1, 3).Value, _
                   "Export should include hidden columns when headers are not restricted"

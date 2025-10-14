@@ -42,6 +42,7 @@ End Sub
 Private Sub TestInitialize()
     PrepareDictionaryFixture DICT_SHEET
     Set Dictionary = LLdictionary.Create(ThisWorkbook.Worksheets(DICT_SHEET), 1, 1)
+    Dictionary.Prepare
 End Sub
 
 '@TestCleanup
