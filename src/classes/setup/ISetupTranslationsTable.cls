@@ -1,0 +1,55 @@
+VERSION 1.0 CLASS
+BEGIN
+  MultiUse = -1  'True
+END
+Attribute VB_Name = "ISetupTranslationsTable"
+Attribute VB_GlobalNameSpace = False
+Attribute VB_Creatable = False
+Attribute VB_PredeclaredId = False
+Attribute VB_Exposed = False
+Attribute VB_Description = "Interface describing the improved translations table manager"
+
+'@Interface
+'@Folder("Setup")
+'@ModuleDescription("Interface describing the improved translations table manager with caching and guarded updates")
+'@depends IApplicationState
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+
+Option Explicit
+
+'@section Initialisation
+'===============================================================================
+'@sub-title Provide the translations table listobject and optional application scope.
+'@param translationTable ListObject representing the translations table.
+'@param stateScope Optional IApplicationState used to guard Excel settings.
+Public Sub Initialise(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState)
+End Sub
+
+'@section Configuration
+'===============================================================================
+'@sub-title Retrieve the worksheet hosting the translations table.
+Public Property Get HostWorksheet() As Worksheet
+End Property
+
+'@sub-title Retrieve the managed listobject name.
+Public Property Get TableName() As String
+End Property
+
+'@section Update pipeline
+'===============================================================================
+'@sub-title Ensure that language columns exist within the table.
+'@param languages Optional semicolon separated list of language headers to append.
+Public Sub EnsureLanguages(Optional ByVal languages As String = vbNullString)
+End Sub
+
+'@sub-title Synchronise translations against the supplied registry sheet.
+'@param registrySheet Worksheet hosting the registry listobjects with named ranges and statuses.
+'@param languages Optional semicolon separated set of languages to ensure before syncing.
+Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, Optional ByVal languages As String = vbNullString)
+End Sub
+
+'@section Identity
+'===============================================================================
+'@sub-title Retrieve the interface bound to the current instance.
+Public Property Get Self() As ISetupTranslationsTable
+End Property
