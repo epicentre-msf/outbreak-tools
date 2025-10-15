@@ -165,26 +165,6 @@ Public Sub UpdateDiseaseSheet(ByVal disSh As Worksheet, ByVal Target As Range)
         Next
     End If
 
-
-    'For core variables, update the visibility to always visible if possible
-    ' If Not (Intersect(Target, Lo.ListColumns(5).Range) Is Nothing) Then
-    '     For counter = 1 To Target.Rows.Count    
-    '         If Target.Cells(counter, 1).Value = ribTrads.TranslatedValue("coreVar") Then
-    '             On Error Resume Next
-    '                 Target.Cells(counter, 2).Value = ribTrads.TranslatedValue("alwaysVis")
-    '                 Target.Cells(counter, 2).Font.Color = RGB(59, 8, 145)
-    '                 Target.Cells(counter, 2).Font.Italic = True
-    '             On Error GoTo 0
-    '         Else
-    '             On Error Resume Next
-    '                 Target.Cells(counter, 2).ClearContents
-    '                 Target.Cells(counter, 2).Font.Color = vbBlack
-    '                 Target.Cells(counter, 2).Font.Italic = False
-    '             On Error GoTo 0
-    '         End If
-    '     Next
-    ' End If
-
     pass.Protect dissh
 End Sub
 
