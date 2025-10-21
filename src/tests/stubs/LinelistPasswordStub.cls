@@ -31,23 +31,28 @@ Public Property Get ProtectCount() As Long
     ProtectCount = this.protectCount
 End Property
 
-Private Sub RecordProtection(ByVal workbook As Workbook)
-    Set this.lastProtectedWorkbook = workbook
+Private Sub RecordProtection(ByVal target As Variant)
     this.protectCount = this.protectCount + 1
+
+    If IsObject(target) Then
+        Select Case TypeName(target)
+            Case "Workbook"
+                Set this.lastProtectedWorkbook = target
+            Case "Worksheet"
+                Set this.lastProtectedWorkbook = target.Parent
+        End Select
+    End If
 End Sub
 
-Private Sub IPasswords_Protect(ByVal workbook As Workbook)
-    RecordProtection workbook
+Private Sub IPasswords_Protect(Optional ByVal targetObject As Variant = "_active", _
+                               Optional ByVal allowShapes As Boolean = True, _
+                               Optional ByVal allowDeletingRows As Boolean = True, _
+                               Optional ByVal registerState As Boolean = True)
+    RecordProtection targetObject
 End Sub
 
-Private Sub IPasswords_ProtectWkb(ByVal workbook As Workbook)
-    RecordProtection workbook
-End Sub
-
-Private Sub IPasswords_Unprotect(ByVal workbook As Workbook)
-End Sub
-
-Private Sub IPasswords_UnprotectWkb(ByVal workbook As Workbook)
+Private Sub IPasswords_UnProtect(Optional targetObject As Variant = "_active")
+    'No-op for stub
 End Sub
 
 Private Function IPasswords_IsProtected(ByVal workbook As Workbook) As Boolean
