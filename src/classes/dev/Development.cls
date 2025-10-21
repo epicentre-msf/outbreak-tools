@@ -5,20 +5,20 @@ END
 Attribute VB_Name = "Development"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
+Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Workbook development helper orchestrating code tables, code transfers, and deployment"
 
 '@Folder("Dev")
 '@ModuleDescription("Workbook development helper orchestrating code tables, code transfers, and deployment")
-'@depends BetterArray, IPasswords
+'@depends BetterArray, Passwords, Checkings
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Option Explicit
 Implements IDevelopment
 
 Private Type TDevelopment
-    workbook As Workbook           'Host workbook containing development assets
+    hostwb As Workbook           'Host workbook containing development assets
     devSheet As Worksheet          'Development sheet carrying named ranges for code folders
     codeSheet As Worksheet         'Worksheet collecting classes/modules/forms/test tables
     hiddenSheets As BetterArray    'Sheets to hide during deployment
@@ -98,7 +98,7 @@ Public Sub Initialise(ByVal devSheet As Worksheet, Optional ByVal codeSheet As W
     End If
 
     Set this.devSheet = devSheet
-    Set this.workbook = devSheet.Parent
+    Set this.hostwb = devSheet.Parent
     this.displayPrompts = True
 
     EnsureCollections
@@ -223,7 +223,7 @@ Public Sub ImportAll()
     EnsureInitialised
     EnsureHostSheetsUnlocked
 
-    If Not RequestConfirmation("import code artefacts into workbook '" & this.workbook.Name & "'") Then Exit Sub
+    If Not RequestConfirmation("import code artefacts into workbook '" & this.hostwb.Name & "'") Then Exit Sub
 
     ProcessAllTables transferImport
     WriteInformation "Finished Imports At: " & Format$(Now(), "yyyy-mm-dd hh:mm:ss")
@@ -234,7 +234,7 @@ Public Sub ExportAll()
     EnsureInitialised
     EnsureHostSheetsUnlocked
 
-    If Not RequestConfirmation("export code artefacts from workbook '" & this.workbook.Name & "'") Then Exit Sub
+    If Not RequestConfirmation("export code artefacts from workbook '" & this.hostwb.Name & "'") Then Exit Sub
 
     ProcessAllTables transferExport
     WriteInformation "Finished Exports At: " & Format$(Now(), "yyyy-mm-dd hh:mm:ss")
@@ -306,7 +306,7 @@ Public Sub Deploy(ByVal passwords As IPasswords, Optional ByVal lockWorkbook As 
     End If
 
     If lockWorkbook Then
-        passwords.Protect this.workbook
+        passwords.Protect this.hostwb
     End If
 
     If Not this.codeSheet Is Nothing Then
@@ -324,7 +324,7 @@ Public Function InDeployment() As Boolean
 
     Dim definition As Name
     On Error Resume Next
-        Set definition = this.workbook.Names(WORKBOOK_DEPLOYMENT_FLAG)
+        Set definition = this.hostwb.Names(WORKBOOK_DEPLOYMENT_FLAG)
     On Error GoTo 0
 
     If definition Is Nothing Then Exit Function
@@ -394,7 +394,7 @@ Private Sub RestoreCodeWorksheet()
 
     Dim sheet As Worksheet
     On Error Resume Next
-        Set sheet = this.workbook.Worksheets(sheetName)
+        Set sheet = this.hostwb.Worksheets(sheetName)
     On Error GoTo 0
 
     If sheet Is Nothing Then Exit Sub
@@ -414,12 +414,12 @@ Private Function EnsureWorksheet(ByVal sheetName As String, ByVal purpose As Str
 
     Dim sheet As Worksheet
     On Error Resume Next
-        Set sheet = this.workbook.Worksheets(trimmedName)
+        Set sheet = this.hostwb.Worksheets(trimmedName)
     On Error GoTo 0
 
     If sheet Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
-                  "Worksheet '" & trimmedName & "' not found in workbook '" & this.workbook.Name & "'"
+                  "Worksheet '" & trimmedName & "' not found in workbook '" & this.hostwb.Name & "'"
     End If
 
     Set EnsureWorksheet = sheet
@@ -428,10 +428,10 @@ End Function
 Private Function TryResolveWorksheet(ByVal sheetName As String) As Worksheet
     Dim sheet As Worksheet
 
-    If this.workbook Is Nothing Then Exit Function
+    If this.hostwb Is Nothing Then Exit Function
 
     On Error Resume Next
-        Set sheet = this.workbook.Worksheets(sheetName)
+        Set sheet = this.hostwb.Worksheets(sheetName)
     On Error GoTo 0
 
     Set TryResolveWorksheet = sheet
@@ -772,7 +772,7 @@ Private Sub ImportComponent(ByVal componentName As String, ByVal filePath As Str
     Dim vbProj As Object
     Dim components As Object
 
-    Set vbProj = this.workbook.VBProject
+    Set vbProj = this.hostwb.VBProject
     Set components = vbProj.VBComponents
 
     On Error Resume Next
@@ -788,7 +788,7 @@ Private Sub ExportComponent(ByVal componentName As String, ByVal filePath As Str
     Dim vbProj As Object
     Dim component As Object
 
-    Set vbProj = this.workbook.VBProject
+    Set vbProj = this.hostwb.VBProject
 
     On Error Resume Next
         Set component = vbProj.VBComponents(componentName)
@@ -910,7 +910,7 @@ Private Sub CopyModuleCode(ByVal sourceName As String, ByVal targetName As Strin
     Dim sourceComponent As Object
     Dim targetComponent As Object
 
-    Set vbProj = this.workbook.VBProject
+    Set vbProj = this.hostwb.VBProject
 
     On Error Resume Next
         Set sourceComponent = vbProj.VBComponents(sourceName)
@@ -919,12 +919,12 @@ Private Sub CopyModuleCode(ByVal sourceName As String, ByVal targetName As Strin
 
     If sourceComponent Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
-                  "Source module '" & sourceName & "' not found in workbook '" & this.workbook.Name & "'"
+                  "Source module '" & sourceName & "' not found in workbook '" & this.hostwb.Name & "'"
     End If
 
     If targetComponent Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
-                  "Target module '" & targetName & "' not found in workbook '" & this.workbook.Name & "'"
+                  "Target module '" & targetName & "' not found in workbook '" & this.hostwb.Name & "'"
     End If
 
     Dim codeContent As String
@@ -968,7 +968,7 @@ Private Function CreateListObject(ByVal headers As Variant, _
     Dim tagCell As Range
     Dim headerStart As Range
     Dim headerRange As Range
-    Dim lo As ListObject
+    Dim Lo As ListObject
     Dim listName As String
 
     Set folderCell = anchor.Cells(1, 1)
@@ -980,20 +980,30 @@ Private Function CreateListObject(ByVal headers As Variant, _
     folderCell.Clear
     tagCell.Value = tagValue
 
-    Set lo = sheet.ListObjects.Add(xlSrcRange, headerRange, , xlYes)
+    Set Lo = sheet.ListObjects.Add(xlSrcRange, headerRange, , xlYes)
 
-    WriteHeaders lo, headers
-    lo.DataBodyRange.ClearContents
-
+    WriteHeaders Lo, headers
+    ApplyLoFormat Lo
     listName = NextListObjectName(sheet, prefix, counterName)
-    lo.Name = listName
+    Lo.Name = listName
 
     If addYesNoValidation Then
-        ApplyYesNoValidation lo
+        ApplyYesNoValidation Lo
     End If
 
-    Set CreateListObject = lo
+    Set CreateListObject = Lo
 End Function
+
+
+Private Sub ApplyLoFormat(ByVal Lo As Listobject)
+    Lo.DataBodyRange.ClearContents
+    Lo.TableStyle = ""
+    Lo.HeaderRowRange.Interior.Color = RGB(11, 48, 64)
+    Lo.HeaderRowRange.Cells(0, 1).Font.Color = RGB(188, 141, 116)
+    Lo.HeaderRowRange.Cells(-1, 1).Font.Color = RGB(188, 141, 116)
+    Lo.HeaderRowRange.Font.Color = vbWhite
+    Lo.HeaderRowRange.Font.Bold = True
+End Sub
 
 '@Description("Populate table header row with provided field names.")
 Private Sub WriteHeaders(ByVal lo As ListObject, ByVal headers As Variant)
@@ -1153,7 +1163,7 @@ Private Function TryNameDefinition(ByVal nameId As String) As Name
     End If
 
     On Error Resume Next
-        Set definition = this.workbook.Names(nameId)
+        Set definition = this.hostwb.Names(nameId)
     On Error GoTo 0
 
     Set TryNameDefinition = definition
@@ -1179,16 +1189,16 @@ End Sub
 '@Description("Create or replace a workbook-level name with the supplied formula.")
 Private Sub AssignWorkbookName(ByVal nameId As String, ByVal refersTo As String)
     RemoveWorkbookName nameId
-    this.workbook.Names.Add Name:=nameId, RefersTo:=refersTo
+    this.hostwb.Names.Add Name:=nameId, RefersTo:=refersTo
 End Sub
 
 '@Description("Delete a workbook-level name when present.")
 Private Sub RemoveWorkbookName(ByVal nameId As String)
     Dim idx As Long
 
-    For idx = this.workbook.Names.Count To 1 Step -1
-        If CompareWorkbookName(this.workbook.Names(idx), nameId) Then
-            this.workbook.Names(idx).Delete
+    For idx = this.hostwb.Names.Count To 1 Step -1
+        If CompareWorkbookName(this.hostwb.Names(idx), nameId) Then
+            this.hostwb.Names(idx).Delete
         End If
     Next idx
 End Sub

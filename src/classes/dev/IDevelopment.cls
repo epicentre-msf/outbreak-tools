@@ -105,9 +105,5 @@ End Sub
 Public Function InDeployment() As Boolean
 End Function
 
-'@section Identity
-'===============================================================================
-'@sub-title Retrieve the interface reference for the current instance.
-Public Property Get Self() As IDevelopment
-End Property
+
 

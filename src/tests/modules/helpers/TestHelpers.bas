@@ -482,15 +482,15 @@ Public Sub CustomTestLogFailure(ByVal harness As ICustomTest, _
     harness.LogFailure message
 End Sub
 
-'@section VBProject helpers
+'@section VBProject, and folders helpers
 '===============================================================================
 
-'@label ResolveExportFolder
+'@label BuildTempFolder
 '@fun-title Determine a writable folder for exported test artifacts.
 '@details Prefers the provided workbook path, falling back to ThisWorkbook or the current directory.
 '@param referenceWorkbook Optional Workbook used to resolve the path context.
 '@return String path guaranteed non-empty.
-Public Function ResolveExportFolder(Optional ByVal referenceWorkbook As Workbook, _
+Public Function BuildTempFolder(Optional ByVal referenceWorkbook As Workbook, _
                      Optional ByVal folderName As String = vbNullString) As String
 
     Dim folderPath As String
@@ -506,7 +506,7 @@ Public Function ResolveExportFolder(Optional ByVal referenceWorkbook As Workbook
     If LenB(folderPath) = 0 Then folderPath = CurDir$
     If LenB(folderName) <> 0 Then folderPath = folderPath & Application.PathSeparator & folderName
     If Dir$(folderPath, vbDirectory) = vbNullString Then Mkdir folderPath
-    ResolveExportFolder = folderPath
+    BuildTempFolder = folderPath
 End Function
 
 '@label BuildWorkbookPath
@@ -598,6 +598,70 @@ Public Sub CleanupExportedFiles(ByVal exportedFiles As Collection)
     On Error GoTo 0
 End Sub
 
+'@label:JoinPath
+'@fun-title Join path using OS separator
+'@return A String, the corresponding path
+Public Function JoinPath(ParamArray parts() As Variant) As String
+    Dim sep As String
+    sep = Application.PathSeparator
+
+    Dim idx As Long
+    Dim piece As String
+    Dim result As String
+
+    For idx = LBound(parts) To UBound(parts)
+        piece = Trim$(CStr(parts(idx)))
+        If LenB(piece) = 0 Then
+            ' Skip empty segments
+        ElseIf LenB(result) = 0 Then
+            result = piece
+        ElseIf Right$(result, 1) = sep Then
+            result = result & piece
+        Else
+            result = result & sep & piece
+        End If
+    Next idx
+
+    JoinPath = result
+End Function
+
+
+'@label:EnsureFolder
+'@sub-title Make sure folders exists, and create them if not
+Public Sub EnsureFolder(ByVal targetPath As String)
+    If LenB(targetPath) = 0 Then Exit Sub
+    If Dir$(targetPath, vbDirectory) <> vbNullString Then Exit Sub
+
+    Dim parentPath As String
+    parentPath = ParentFolder(targetPath)
+    If LenB(parentPath) > 0 And Dir$(parentPath, vbDirectory) = vbNullString Then
+        EnsureFolder parentPath
+    End If
+
+    MkDir targetPath
+End Sub
+
+'@label:ParentFolder
+'@fun-title Get the parent folder of a provided folder
+Public Function ParentFolder(ByVal targetPath As String) As String
+    Dim sep As String
+    sep = Application.PathSeparator
+
+    Dim position As Long
+    Dim sanitized As String
+
+    sanitized = targetPath
+    Do While Right$(sanitized, 1) = sep
+        sanitized = Left$(sanitized, Len(sanitized) - 1)
+    Loop
+
+    position = InStrRev(sanitized, sep)
+    If position > 0 Then
+        ParentFolder = Left$(sanitized, position - 1)
+    End If
+End Function
+
+
 Private Function ComponentExtensionName(ByVal componentType As Long) As String
     Select Case componentType
         Case VBEXT_CT_DOCUMENT, VBEXT_CT_CLASS_MODULE
@@ -608,3 +672,6 @@ Private Function ComponentExtensionName(ByVal componentType As Long) As String
             ComponentExtensionName = ".cls"
     End Select
 End Function
+
+
+

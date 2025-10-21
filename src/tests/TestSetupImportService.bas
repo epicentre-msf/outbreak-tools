@@ -111,7 +111,7 @@ Private Sub TestImportClosesWorkbookAfterRun()
     Set tempBook = TestHelpers.NewWorkbook
     tempBook.Worksheets(1).Name = "TempData"
 
-    exportFolder = TestHelpers.ResolveExportFolder(ThisWorkbook, "SetupImportTests")
+    exportFolder = TestHelpers.BuildTempFolder(ThisWorkbook, "SetupImportTests")
     workbookPath = TestHelpers.BuildWorkbookPath(exportFolder, "setup_import_source", ".xlsx")
     tempBook.SaveAs Filename:=workbookPath, FileFormat:=xlOpenXMLWorkbook
     tempBook.Close SaveChanges:=False
