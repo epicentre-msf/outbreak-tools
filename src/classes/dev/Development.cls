@@ -997,12 +997,14 @@ End Function
 
 Private Sub ApplyLoFormat(ByVal Lo As Listobject)
     Lo.DataBodyRange.ClearContents
-    Lo.TableStyle = ""
+    Lo.TableStyle = "TableStyleLight11"
     Lo.HeaderRowRange.Interior.Color = RGB(11, 48, 64)
     Lo.HeaderRowRange.Cells(0, 1).Font.Color = RGB(188, 141, 116)
     Lo.HeaderRowRange.Cells(-1, 1).Font.Color = RGB(188, 141, 116)
     Lo.HeaderRowRange.Font.Color = vbWhite
     Lo.HeaderRowRange.Font.Bold = True
+    Lo.HeaderRowRange.EntireColumn.AutoFit
+    Lo.HeaderRowRange.EntireRow.RowHeight = 20
 End Sub
 
 '@Description("Populate table header row with provided field names.")
