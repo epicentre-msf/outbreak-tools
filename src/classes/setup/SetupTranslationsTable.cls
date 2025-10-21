@@ -135,6 +135,165 @@ Private Sub EnsureLanguageColumn(ByVal languageName As String)
     End With
 End Sub
 
+'@sub-title Promote the requested language column to become the primary language.
+Public Sub SwitchDefaultLanguage(ByVal languageName As String)
+    Dim targetIndex As Long
+    Dim scope As IApplicationState
+
+    ValidateInitialised
+
+    languageName = Trim$(languageName)
+    If LenB(languageName) = 0 Then Exit Sub
+
+    targetIndex = LanguageColumnIndex(languageName)
+    If targetIndex = 0 Then
+        ThrowProjectError ProjectError.InvalidArgument, "Language '" & languageName & "' does not exist in the translations table."
+    End If
+
+    If targetIndex = 1 Then Exit Sub
+
+    Set scope = ResolveScope()
+    scope.ApplyBusyState True
+
+    On Error GoTo CleanFail
+
+    SwapLanguageColumns 1, targetIndex
+    ResetCache
+    EnsureCache
+    SortTranslations
+    ApplyFormatting
+
+    scope.Restore
+    Exit Sub
+
+CleanFail:
+    If Not scope Is Nothing Then scope.Restore
+    ThrowProjectError ProjectError.SomethingWentWrong, "Failed to switch default language: " & Err.Description
+End Sub
+
+'@sub-title Retrieve the available languages excluding the default column.
+Public Function SwitchableLanguages() As Collection
+    Dim languages As Collection
+    Dim columnIndex As Long
+
+    ValidateInitialised
+
+    Set languages = New Collection
+
+    For columnIndex = 2 To this.table.ListColumns.Count
+        languages.Add this.table.ListColumns(columnIndex).Name
+    Next columnIndex
+
+    Set SwitchableLanguages = languages
+End Function
+
+'@section Language utilities
+'===============================================================================
+'@sub-title Resolve the column index for a provided language header.
+Private Function LanguageColumnIndex(ByVal languageName As String) As Long
+    Dim trimmedName As String
+    Dim columnIndex As Long
+
+    trimmedName = Trim$(languageName)
+    If LenB(trimmedName) = 0 Then Exit Function
+
+    For columnIndex = 1 To this.table.ListColumns.Count
+        If StrComp(this.table.ListColumns(columnIndex).Name, trimmedName, vbTextCompare) = 0 Then
+            LanguageColumnIndex = columnIndex
+            Exit Function
+        End If
+    Next columnIndex
+End Function
+
+'@sub-title Swap the headers, data, and totals between two language columns.
+Private Sub SwapLanguageColumns(ByVal firstIndex As Long, ByVal secondIndex As Long)
+    Dim firstColumn As ListColumn
+    Dim secondColumn As ListColumn
+    Dim firstHeader As String
+    Dim secondHeader As String
+    Dim temporaryHeader As String
+    Dim firstRange As Range
+    Dim secondRange As Range
+    Dim rowIndex As Long
+    Dim rowCount As Long
+    Dim hasTotalsRow As Boolean
+    Dim firstTotalsCalc As XlTotalsCalculation
+    Dim secondTotalsCalc As XlTotalsCalculation
+    Dim firstTotalFormula As Variant
+    Dim secondTotalFormula As Variant
+
+    Set firstColumn = this.table.ListColumns(firstIndex)
+    Set secondColumn = this.table.ListColumns(secondIndex)
+
+    firstHeader = firstColumn.Name
+    secondHeader = secondColumn.Name
+
+    On Error Resume Next
+        Set firstRange = firstColumn.DataBodyRange
+        Set secondRange = secondColumn.DataBodyRange
+    On Error GoTo 0
+
+    hasTotalsRow = this.table.ShowTotals
+    If hasTotalsRow Then
+        firstTotalsCalc = firstColumn.TotalsCalculation
+        secondTotalsCalc = secondColumn.TotalsCalculation
+        firstTotalFormula = firstColumn.Total
+        secondTotalFormula = secondColumn.Total
+    End If
+
+    temporaryHeader = UniqueTemporaryHeader()
+    secondColumn.Name = temporaryHeader
+    firstColumn.Name = secondHeader
+    secondColumn.Name = firstHeader
+
+    If hasTotalsRow Then
+        firstColumn.TotalsCalculation = secondTotalsCalc
+        secondColumn.TotalsCalculation = firstTotalsCalc
+        secondColumn.Total = firstTotalFormula
+        firstColumn.Total = secondTotalFormula
+    End If
+
+    If firstRange Is Nothing Or secondRange Is Nothing Then Exit Sub
+
+    rowCount = firstRange.Rows.Count
+    If secondRange.Rows.Count < rowCount Then
+        rowCount = secondRange.Rows.Count
+    End If
+    If rowCount = 0 Then Exit Sub
+
+    For rowIndex = 1 To rowCount
+        SwapCellContents firstRange.Cells(rowIndex, 1), secondRange.Cells(rowIndex, 1)
+    Next rowIndex
+End Sub
+
+'@sub-title Generate a temporary header that does not collide with existing columns.
+Private Function UniqueTemporaryHeader() As String
+    Dim candidate As String
+    Dim attempt As Long
+
+    attempt = 0
+    Do
+        candidate = "__switch_tmp_" & CStr(attempt)
+        attempt = attempt + 1
+    Loop While LanguageColumnIndex(candidate) <> 0
+
+    UniqueTemporaryHeader = candidate
+End Function
+
+'@sub-title Swap the formula and number format between two cells.
+Private Sub SwapCellContents(ByVal leftCell As Range, ByVal rightCell As Range)
+    Dim tempFormula As Variant
+    Dim tempNumberFormat As String
+
+    tempFormula = leftCell.Formula
+    leftCell.Formula = rightCell.Formula
+    rightCell.Formula = tempFormula
+
+    tempNumberFormat = leftCell.NumberFormat
+    leftCell.NumberFormat = rightCell.NumberFormat
+    rightCell.NumberFormat = tempNumberFormat
+End Sub
+
 
 '@section Registry processing
 '===============================================================================
@@ -548,6 +707,14 @@ End Sub
 Private Sub ISetupTranslationsTable_EnsureLanguages(Optional ByVal languages As String = vbNullString)
     EnsureLanguages languages
 End Sub
+
+Private Sub ISetupTranslationsTable_SwitchDefaultLanguage(ByVal languageName As String)
+    SwitchDefaultLanguage languageName
+End Sub
+
+Private Function ISetupTranslationsTable_SwitchableLanguages() As Collection
+    Set ISetupTranslationsTable_SwitchableLanguages = SwitchableLanguages
+End Function
 
 Private Property Get ISetupTranslationsTable_HostWorksheet() As Worksheet
     Set ISetupTranslationsTable_HostWorksheet = HostWorksheet

@@ -42,6 +42,15 @@ End Property
 Public Sub EnsureLanguages(Optional ByVal languages As String = vbNullString)
 End Sub
 
+'@sub-title Promote an existing language column to become the default language.
+'@param languageName Name of the language column to promote.
+Public Sub SwitchDefaultLanguage(ByVal languageName As String)
+End Sub
+
+'@sub-title Retrieve languages that can be promoted to default.
+Public Function SwitchableLanguages() As Collection
+End Function
+
 '@sub-title Synchronise translations against the supplied registry sheet.
 '@param registrySheet Worksheet hosting the registry listobjects with named ranges and statuses.
 '@param languages Optional semicolon separated set of languages to ensure before syncing.
