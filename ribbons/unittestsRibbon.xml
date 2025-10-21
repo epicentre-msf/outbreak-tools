@@ -1,0 +1,15 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+    <ribbon startFromScratch="false">
+        <tabs>
+            <tab id="obtTab" label="OutbreakTools">
+                <group id="customGroupTabMan" label = "Dev">
+                    <button id="btnFolder" label="Codes Folder" image="folder" size="large" onAction="clickDevFolder"/>
+                    <button id="btnImp" label="Import Codes" image="dowload2" size="large" onAction="clickDevImport"/>
+                    <button id="btnExp" label="Export Codes" image="upload2" size="large" onAction="clickDevExport"/>
+                    <button id="btnVBEE" label="Open Editor" image="settings2" size="large" onAction="clickDevVBE"/>
+                    <button id="btnTests" label="Run Tests" image="tests" size="large" onAction="clickDevTests"/>
+                </group>    
+            </tab>
+        </tabs>
+    </ribbon>
+</customUI>

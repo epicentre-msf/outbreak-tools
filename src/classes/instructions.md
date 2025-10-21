@@ -25,17 +25,4 @@ required VBA syntax.
 17. DO NOT EDIT DICTIONARYTESTFIXTURE.BAS!
 
 **Progress**
-
-- [DONE] Implemented DiseaseApplicationState guard to capture BusyApp toggles and guarantee restoration.
-- [DONE] Added DiseaseWorksheetManager to remove sheets safely without legacy display alert loops.
-- [DONE] Delivered DiseaseReportManager to fix HasReport/RemoveReportStatus bugs with accurate row pruning.
-- [DONE] Built DiseaseImporter/DiseaseImportSummary to complete ImportElements merge logic with reporting data.
-- [DONE] Introduced DiseaseExportWorkbook so export sessions create, save, and release workbooks safely.
-- [DONE] Added DiseaseExporter with array-based dictionary/migration exports, plus translation cache for header lookups and dedicated tests.
-- [DONE] Introduced DiseaseSheetBuilder to construct new disease worksheets with translated headers, validations, and smoke tests.
-- [DONE] Added DiseaseLogger to capture import/export actions and wired logging into DiseaseImporter with accompanying tests.
-- [DONE] Added integration tests covering disease add/export/import/remove collaboration to validate end-to-end workflows.
-- [NOTDONE] Remaining tasks: wire collaborators into the legacy IDisease orchestrator when refactor begins.
-
-
-
+- [DONE] Evolved the `Development` workflow with horizontal table placement, workbook deployment flagging, string-based code sheet registration, ribbon automation, and refreshed tests (items 1,2,4,5,6,8,11,12,13,14).

@@ -240,8 +240,8 @@ Public Sub clickRibbonImport(ByRef Control As IRibbonControl)
     Dim devSh As Worksheet
     Dim Lo As ListObject
 
-    Set codesh = ThisWorkbook.Worksheets(CODESHEET)
     Set devSh = ThisWorkbook.Worksheets(DEVSHEETNAME)
+    Set codesh = ThisWorkbook.Worksheets(CODESHEET)
 
     If Not codesh.ProtectContents Then
         If MsgBox("Are you sure you want to import the codes ?", vbYesNo) = vbYes Then
@@ -284,7 +284,9 @@ Public Sub clickRibbonExport(ByRef Control As IRibbonControl)
 End Sub
 
 'Report Import or export
-Private Sub ReportSave(Optional ByVal path As String = vbNullString, Optional ByVal outputAs As Byte = 1, Optional ByVal scope As Byte = 1)
+Private Sub ReportSave(Optional ByVal path As String = vbNullString, _ 
+                       Optional ByVal outputAs As Byte = 1, _ 
+                       Optional ByVal scope As Byte = 1)
     Dim sh As Worksheet
     Dim cellRng As Range
     Dim saveName As String
@@ -307,3 +309,30 @@ Private Sub ReportSave(Optional ByVal path As String = vbNullString, Optional By
 End Sub
 
 
+'Add codes to some components
+'@EntryPoint
+Private Sub CopyCodes(ByVal importModName As String, ByVal exportCodeName As String)
+    Dim codeContent As String
+    Dim codeMod As Object
+    Dim vbProj As Object
+    Dim vbComp As Object
+
+    Set vbProj = ThisWorkbook.VBProject
+
+    'Extract the code from the actual vbProject
+    With vbProj
+        With .VBComponents(importModName).CodeModule
+            codeContent = .Lines(1, .CountOfLines)
+        End With
+    End With
+
+    'Export codeModule
+    Set vbComp = vbProj.VBComponents(exportCodeName)
+    Set codeMod = vbComp.CodeModule
+
+    'Adding to the export codeModule
+    With codeMod
+        .DeleteLines 1, .CountOfLines
+        .AddFromString codeContent
+    End With
+End Sub

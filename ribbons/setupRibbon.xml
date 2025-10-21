@@ -1,0 +1,36 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon startFromScratch="false">
+    <tabs>
+      <tab id="customTab" label="OutbreakTools">
+        <group id="customGroupManage">
+          <button id="btnAdd" label="Add rows to tables in current sheet" imageMso="QueryShowTable" size="large" onAction="clickAddRows"/>
+          <button id="btnRes" label="Resize tables in current sheet" imageMso="SheetRowsDelete" size="large" onAction="clickResize"/>
+          <button id="btnFilt" label="Remove all filters" imageMso="FilterClearAllFilters" size="large" onAction="clickFilters"/>
+          <button id="btnTransAdd" label="Update translation table" image="update" size="large" onAction="clickAddTrans"/>
+        </group>
+        <group id="customGroupTrans">
+          <editBox id="editLang" label="Add language" onChange="clickAddLang"/>
+          <button id="btnTransChange" label="Translate the setup" image="translation" size="normal" onAction="clickAddTrans"/>
+        </group>
+        <group id="customGroupImport">
+          <button id="btnImp" label="Import data from another setup" image="import" size="large" onAction="clickImport"/>
+          <button id="btnImpExp" label="Import from disease" image="importdisease" size="large" onAction="clickImportDisease"/>
+        </group>
+        <group id="customGroupAdvanced">
+          <button id="btnChk" label="Check current setup for errors" imageMso="ErrorChecking" size="large" onAction="clickCheck"/>
+          <button id="btnClear" label="Clear data in current setup" imageMso="ClearAll" size="large" onAction="clickClearSetup"/>
+          <button id="btnEditStyle" label="Edit formatter" image="format" size="large" onAction="clickEditStyle"/>
+        </group>
+        <group id="customGroupDev" label="Dev">
+          <button id="btnTransUp" label="Update columns tags" image="sell" size="large" onAction="clickDevUpdateTranslate"/>
+          <button id="btnInit" label="Initialize" image="initialise" size="large" onAction="clickDevInitialize"/>
+          <button id="btnFolder" label="Codes Folder" image="folder" size="large" onAction="clickDevFolder"/>
+          <button id="btnImpCodes" label="Import Codes" image="upload2" size="large" onAction="clickDevImport"/>
+          <button id="btnExpCodes" label="Export Codes" image="download2" size="large" onAction="clickDevExport"/>
+          <button id="btnVBEE" label="Open Editor" image="settings2" size="large" onAction="clickDevVBE"/>
+          <button id="btnDeploy" label="Deploy" image="rocketlaunch" size="large" onAction="clickDevDeploy"/>
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>
