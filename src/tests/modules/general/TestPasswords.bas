@@ -475,7 +475,7 @@ Public Sub TestDebugExitHandlerRoundtripPersistsProtections()
     Dim reopened As Workbook
     Dim debugFlagCell As Range
 
-    exportFolder = TestHelpers.ResolveExportFolder(ThisWorkbook, "PasswordTests")
+    exportFolder = TestHelpers.BuildTempFolder(ThisWorkbook, "PasswordTests")
     Set exportedFiles = New Collection
 
     previousEventState = Application.EnableEvents

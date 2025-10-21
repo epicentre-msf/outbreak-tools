@@ -60,6 +60,11 @@ Private Sub TestInitialize()
     PopulateDefaultEntries checkingUnderTest
 End Sub
 
+'@TestCleanUp
+Private Sub TestCleanUp()
+    Set checkingUnderTest = Nothing
+End Sub
+
 '@section Tests
 '===============================================================================
 

@@ -2,12 +2,13 @@ Attribute VB_Name = "TestDevelopment"
 
 Option Explicit
 
-Private Const DEV_SHEET_NAME As String = "Dev"
-Private Const CODE_SHEET_NAME As String = "Codes"
+Private Const DEV_SHEET_NAME As String = "TestDevelopmentDevs"
+Private Const CODE_SHEET_NAME As String = "TestDevelopmentCodes"
 Private Const NAMED_MODULES As String = "ModulesCodes"
 Private Const NAMED_CLASSES As String = "ClassesImplementation"
 Private Const NAMED_TESTS As String = "TestsCodes"
 Private Const GENERAL_FOLDER As String = "general"
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 '@Folder("CustomTests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
@@ -29,6 +30,7 @@ Private TestsPath As String
 '@ModuleInitialize
 Private Sub ModuleInitialize()
     BusyApp
+    EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     Set Assert = CustomTest.Create(ThisWorkbook, "testsOutputs")
     Assert.SetModuleName "TestDevelopment"
 End Sub
@@ -96,7 +98,7 @@ Public Sub TestAddClassTableIncrementsCounters()
 End Sub
 
 '@TestMethod("Development")
-Public Sub TestAddModuleTableCreatesTestTag()
+Public Sub TestAddTableCreatesTestTag()
     CustomTestSetTitles Assert, "Development", "AddModuleTableCreatesTestTag"
 
     Dim testModules As ListObject
@@ -104,6 +106,12 @@ Public Sub TestAddModuleTableCreatesTestTag()
 
     Assert.AreEqual "tests modules", LCase$(CStr(testModules.Range.Cells(0, 1).Value)), _
                      "Adding a test modules table should tag it as tests modules"
+
+    Dim classModules As ListObject
+    Set classModules = Manager.AddClassTable(True)
+    Assert.AreEqual "tests classes", LCase$(CStr(classModules.Range.Cells(0, 1).Value)), _ 
+                    "Adding a class table should tag it as test classes"
+
 End Sub
 
 '@TestMethod("Development")
@@ -213,7 +221,7 @@ Public Sub TestAddFormsCodesCopiesContent()
     sourceComponent.Name = "FormLogicSource"
     sourceComponent.CodeModule.AddFromString "Public Sub Execute()" & vbNewLine & "    Debug.Print ""source""" & vbNewLine & "End Sub"
 
-    Set targetComponent = TestBook.VBProject.VBComponents.Add(2)
+    Set targetComponent = TestBook.VBProject.VBComponents.Add(3)
     targetComponent.Name = "FormLogicTarget"
     targetComponent.CodeModule.AddFromString "Public Sub Execute()" & vbNewLine & "    Debug.Print ""target""" & vbNewLine & "End Sub"
 
@@ -274,13 +282,13 @@ Public Sub TestDeployHidesCodeSheetAndSetsFlag()
     Set sourceComponent = TestBook.VBProject.VBComponents.Add(1)
     sourceComponent.Name = "DeploySource"
     sourceComponent.CodeModule.AddFromString "Public Sub Execute()" & vbNewLine & _
-                                           "    Debug.Print \"deploy source\"" & vbNewLine & _
+                                           "    Debug.Print ""deploy source""" & vbNewLine & _
                                            "End Sub"
 
     Set targetComponent = TestBook.VBProject.VBComponents.Add(2)
     targetComponent.Name = "DeployTarget"
     targetComponent.CodeModule.AddFromString "Public Sub Execute()" & vbNewLine & _
-                                           "    Debug.Print \"deploy target\"" & vbNewLine & _
+                                           "    Debug.Print ""deploy target""" & vbNewLine & _
                                            "End Sub"
 
     Dim formsTable As ListObject
@@ -291,10 +299,10 @@ Public Sub TestDeployHidesCodeSheetAndSetsFlag()
 
     Manager.AddProtectedSheet DevSheet.Name
 
-    Dim passwords As IPasswords
-    Set passwords = New LinelistPasswordStub
+    Dim pass As IPasswords
+    Set pass = New LinelistPasswordStub
 
-    Manager.Deploy passwords
+    Manager.Deploy pass
 
     Dim expected As String
     expected = sourceComponent.CodeModule.Lines(1, sourceComponent.CodeModule.CountOfLines)
@@ -308,7 +316,7 @@ Public Sub TestDeployHidesCodeSheetAndSetsFlag()
 
     Dim deploymentName As Name
     Set deploymentName = TestBook.Names("inDeployment")
-    Assert.AreEqual "=\"Yes\"", deploymentName.RefersTo, _
+    Assert.AreEqual "=""Yes""", deploymentName.RefersTo, _
                      "Deploy should mark workbook as in deployment via name value"
     Assert.IsTrue Manager.InDeployment, "InDeployment helper should reflect workbook flag after deployment"
 End Sub
@@ -320,7 +328,7 @@ Public Sub TestInDeploymentFlag()
     RemoveWorkbookName "inDeployment"
     Assert.IsFalse Manager.InDeployment, "InDeployment should be False when workbook flag is absent"
 
-    TestBook.Names.Add Name:="inDeployment", RefersTo:="=\"Yes\""
+    TestBook.Names.Add Name:="inDeployment", RefersTo:="=""Yes"""
     Assert.IsTrue Manager.InDeployment, "InDeployment should detect workbook flag value"
 End Sub
 
@@ -328,15 +336,15 @@ End Sub
 '@section Helpers
 '===============================================================================
 Private Sub PrepareNamedRanges()
-    TempRoot = BuildTempRoot
+    TempRoot = TestHelpers.BuildTempFolder(ThisWorkbook, "DevelopmentTests")
 
     ModulesPath = JoinPath(TempRoot, "src", "modules")
     ClassesPath = JoinPath(TempRoot, "src", "classes")
     TestsPath = JoinPath(TempRoot, "src", "tests")
 
-    EnsureFolder ModulesPath
-    EnsureFolder ClassesPath
-    EnsureFolder TestsPath
+    TestHelpers.EnsureFolder ModulesPath
+    TestHelpers.EnsureFolder ClassesPath
+    TestHelpers.EnsureFolder TestsPath
 
     BindNamedRange DevSheet, NAMED_MODULES, DevSheet.Range("A1"), ModulesPath
     BindNamedRange DevSheet, NAMED_CLASSES, DevSheet.Range("A2"), ClassesPath
@@ -344,10 +352,10 @@ Private Sub PrepareNamedRanges()
 End Sub
 
 Private Sub PrepareGeneralFolders()
-    EnsureFolder JoinPath(ModulesPath, GENERAL_FOLDER)
-    EnsureFolder JoinPath(ClassesPath, GENERAL_FOLDER)
-    EnsureFolder JoinPath(TestsPath, "modules")
-    EnsureFolder JoinPath(TestsPath, "classes")
+    TestHelpers.EnsureFolder JoinPath(ModulesPath, GENERAL_FOLDER)
+    TestHelpers.EnsureFolder JoinPath(ClassesPath, GENERAL_FOLDER)
+    TestHelpers.EnsureFolder JoinPath(TestsPath, "modules")
+    TestHelpers.EnsureFolder JoinPath(TestsPath, "classes")
 End Sub
 
 Private Sub BindNamedRange(ByVal sheet As Worksheet, _
@@ -383,77 +391,10 @@ Private Sub RemoveWorkbookName(ByVal nameId As String)
     Next idx
 End Sub
 
-Private Function BuildTempRoot() As String
-    Dim sep As String
-    sep = Application.PathSeparator
-
-    Dim basePath As String
-    basePath = Environ$("TEMP")
-    If LenB(basePath) = 0 Then basePath = ThisWorkbook.Path
-
-    BuildTempRoot = JoinPath(basePath, "OutbreakTools_Dev_" & Format$(Now, "yyyymmdd_hhnnss") & "_" & Format$(Timer, "000000"))
-    EnsureFolder BuildTempRoot
-End Function
-
-Private Sub EnsureFolder(ByVal targetPath As String)
-    If LenB(targetPath) = 0 Then Exit Sub
-    If Dir$(targetPath, vbDirectory) <> vbNullString Then Exit Sub
-
-    Dim parentPath As String
-    parentPath = ParentFolder(targetPath)
-    If LenB(parentPath) > 0 And Dir$(parentPath, vbDirectory) = vbNullString Then
-        EnsureFolder parentPath
-    End If
-
-    MkDir targetPath
-End Sub
-
-Private Function ParentFolder(ByVal targetPath As String) As String
-    Dim sep As String
-    sep = Application.PathSeparator
-
-    Dim position As Long
-    Dim sanitized As String
-
-    sanitized = targetPath
-    Do While Right$(sanitized, 1) = sep
-        sanitized = Left$(sanitized, Len(sanitized) - 1)
-    Loop
-
-    position = InStrRev(sanitized, sep)
-    If position > 0 Then
-        ParentFolder = Left$(sanitized, position - 1)
-    End If
-End Function
-
-Private Function JoinPath(ParamArray parts() As Variant) As String
-    Dim sep As String
-    sep = Application.PathSeparator
-
-    Dim idx As Long
-    Dim piece As String
-    Dim result As String
-
-    For idx = LBound(parts) To UBound(parts)
-        piece = Trim$(CStr(parts(idx)))
-        If LenB(piece) = 0 Then
-            ' Skip empty segments
-        ElseIf LenB(result) = 0 Then
-            result = piece
-        ElseIf Right$(result, 1) = sep Then
-            result = result & piece
-        Else
-            result = result & sep & piece
-        End If
-    Next idx
-
-    JoinPath = result
-End Function
-
 Private Sub WriteTextFile(ByVal filePath As String, ByVal content As String)
     Dim fileNum As Integer
-    EnsureFolder ParentFolder(filePath)
-    fileNum = FreeFile
+    TestHelpers.EnsureFolder TestHelpers.ParentFolder(filePath)
+    fileNum = FreeFile()
     Open filePath For Output As #fileNum
         Print #fileNum, content
     Close #fileNum
@@ -540,7 +481,12 @@ Private Sub CleanupFolder(ByVal folderPath As String)
                 On Error GoTo 0
             End If
         End If
-        entry = Dir$
+
+        entry = vbNullString
+
+        On Error Resume Next
+            entry = Dir$()
+        On Error GoTo 0
     Loop
 
     On Error Resume Next
