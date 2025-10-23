@@ -1,12 +1,22 @@
-Perfect, there are still few things to fix:
- 
-- [done] When registrering, just register the worksheet name, you could use the .Includes method of BetterArray
-- [done] You removed the EnsureWorksheet; why?
 
-As a well skilled VBA developper, you are tasked with building the class.
-You should follow closely instructions.md, and respects any of the constraints in the
-file. You can plan your work and implement progressively, but you must
-add a [done] / [notdone] tag to the current list to update on where you are.
-You should right very efficient, compact and tightened code like in LinelistTranslation. No need to implement mutiple classes or add a lot of layers. Efficiency and compactness should be your leitmotiv. We aim to
-reach an output with as minimum as possible codes and create a tightened coherent class we can improve progressively. Always add annotations and comment.
+We still have few things missing for the SetupTranslation class.
+There is a SetupTranslationOld.cls file in temp/ folder that has the legacy code
+that we were trying to port. A few things are still missing; implement them and 
+add [done] tag once it is done.
 
+In SetupTranslationsTable:
+
+1-  [done] Use BetterArray instead of collections whenever it is necessary, for coherence in the overall project.
+
+2- [done] Expose a ResetSequence method that will set the target cell for sequence value to 0 (usually when you open the workbook).
+
+3- [done] After updating labels in the translation table, you should delete non existing labels in the translation table, those that have been removed in the corresponding table.
+
+4- [done] Expose a NumberOfMissing() that will print the number of missing labels for ALL the languages except the first language  (key language) in a msgbox. You can test it by using an internal displayPrompts boolean value.
+
+
+Correct the tests to take in account this new logics. Follow closely instructions.md, in particular,
+do not Edit any "TestDictionary" related file, especially DictionaryTestFixture. Never ever touch this file.
+Pay also extremely attention to namming convention when updating the class, and focus your update to only 
+those new features to avoid breaking stuff. Write compact and efficient code, aim for the smallest number of lines  that achieve
+the final desirable results.

@@ -16,7 +16,7 @@ Attribute VB_Description = "Manage linelist and setup exports"
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
 
 
-'@depends Checking, CustomTable, LLVariables
+'@depends Checking, DataSheet, LLVariables
 Option Explicit
 
 Implements ILLExport
@@ -24,6 +24,7 @@ Implements ILLExport
 Private Type TLLExport
     expData As IDataSheet
     exportSheet As Worksheet
+    dictInt As ILLdictionary
     variables As ILLVariables
     checks As IChecking
     hasChecks As Boolean
@@ -39,6 +40,7 @@ Private Const STATUS_ACTIVE As String = "active"
 Private Const DEFAULT_INCLUDE_IDS As String = "no"
 Private Const TIMESTAMP_FORMAT As String = "yyyymmdd-HhNn"
 Private Const CHECKING_CONTEXT As String = "LLExport checks"
+Private Const TOTAL_EXPORTS_NAME As String = "__ll_exports_total__"
 Private Const CLASSNAME As String = "LLExport"
 
 Private this As TLLExport
@@ -67,7 +69,7 @@ Public Function Create(ByVal exportSheet As Worksheet, _
         ThrowError ProjectError.ObjectNotInitialized, "Worksheet is required to create " & CLASSNAME
     End If
 
-    Set exportData = DataSheet.Create(exportSheet, startRow, startColumn)
+    Set exportData = DataSheet.Create(exportSheet, startRow, startColumn, True, "ExportsDataSheet")
 
     With New LLExport
         Set .InternalData = exportData
@@ -119,16 +121,12 @@ End Property
 '@details Counts rows within the specification table excluding headers.
 '@return Total number of export definitions currently present.
 Public Property Get NumberOfExports() As Long
-    Dim exportRange As Range
-
     EnsureDataReady
-
-    Set exportRange = this.expData.DataRange(includeHeaders:=False)
-
-    If exportRange Is Nothing Then
-        NumberOfExports = 0
-    Else
-        NumberOfExports = exportRange.Rows.Count
+    EnsureWorksheetReady
+    NumberOfExports = StoredTotalExports()
+    If NumberOfExports <= 0 Then
+        NumberOfExports = CountExportRows()
+        PersistTotalExports NumberOfExports
     End If
 End Property
 
@@ -147,50 +145,321 @@ Public Property Get CheckingValues() As IChecking
     End If
 End Property
 
-'@section SpecManagement
+'@section Row Management
 '===============================================================================
-'@label:AddRows
-'@prop-title Append export definition rows
-'@param rowCount Optional; number of rows to append (defaults to 1).
-'@throws ProjectError.InvalidArgument when the requested row count is below 1.
-Public Sub AddRows(Optional ByVal rowCount As Long = 1)
-    Dim tableObj As ICustomTable
-    Dim includeColumn As Range
-    Dim idx As Long
 
+'@label:ManageRows
+'@prop-title Align export rows and dictionary columns
+'@details
+'Handle the addition or removal of export rows while keeping the dictionary
+'columns aligned with the actual identifiers present in the worksheet. The
+'logic operates on identifiers rather than simple counts so arbitrary deletions
+'do not remove unrelated export columns.
+'@param dict Optional dictionary used to add/remove export columns.
+'@param del Optional flag switching to row removal mode.
+'@param rowCount Optional threshold for row removal; rows with non-empty cells at or below the threshold are trimmed (defaults to 0, removing empty rows).
+Private Sub ManageRows(Optional ByVal del As Boolean = False, _ 
+                       Optional ByVal dict As ILLdictionary, _
+                       Optional ByVal rowCount As Long = 2)
+
+    Dim tableObj As ICustomTable
+    Dim previousCount As Long
+    Dim newCount As Long
+    Dim exportNumbers As BetterArray
+    Dim dictionaryReady As Boolean
+    Dim dictRef As ILLdictionary
+
+    
     EnsureDataReady
     EnsureWorksheetReady
-
-    If rowCount < 1 Then
-        ThrowError ProjectError.InvalidArgument, "Row count must be greater than zero"
-    End If
-
+    EnsureDictionaryReady dict, Not dict Is Nothing, False
+    dictionaryReady = DictionaryIsAvailable()
+    If dictionaryReady Then Set dictRef = this.dictInt
+   
     Set tableObj = ExportTable()
-    tableObj.AddRows nbRows:=CLng(rowCount), includeIds:=False
+    previousCount = CountExportRows()
 
-    Set includeColumn = tableObj.DataRange(COL_INCLUDE_IDS)
-    If Not includeColumn Is Nothing Then
-        For idx = 1 To includeColumn.Rows.Count
-            If LenB(CStr(includeColumn.Cells(idx, 1).Value)) = 0 Then
-                includeColumn.Cells(idx, 1).Value = DEFAULT_INCLUDE_IDS
-            End If
-        Next idx
+    If del Then
+        'Allow rowCount = 0, no problem with that here, nothing is done
+        'rowcount default value is 2 because we have at least 2 values on one row (export id, and identifier)
+        If rowCount < 0 Then rowCount = 2
+        tableObj.RemoveRows totalCount:=rowCount, includeIds:=False
+    Else
+        tableObj.AddRows nbRows:=1, includeIds:=False
+        ApplyIncludeDefaults tableObj, previousCount + 1, CountExportRows()
     End If
 
-    InvalidateCaches
+    EnsureExportIdentifiers tableObj
+
+    newCount = CountExportRows()
+    PersistTotalExports newCount
+
+    Set exportNumbers = CollectExportNumbers(tableObj)
+    If dictionaryReady Then SyncDictionaryExportsCore exportNumbers, dictRef
+End Sub
+
+'@label:AddRows
+'@prop-title Append export definition rows
+'@param dict Optional dictionary to align export columns with.
+Public Sub AddRows(Optional ByVal dict As ILLdictionary)
+    ManageRows dict:=dict
 End Sub
 
 '@label:RemoveRows
 '@prop-title Remove empty export rows
-'@param totalCount Optional; number of rows to keep (0 trims trailing empty rows).
-Public Sub RemoveRows(Optional ByVal totalCount As Long = 0)
+'@param rowCount Optional threshold; rows with non-empty cell counts at or below this value are removed (defaults to 0).
+Public Sub RemoveRows(Optional ByVal dict As ILLdictionary, _ 
+                      Optional ByVal rowCount As Long = 2)
+    ManageRows del:=True, dict:=dict, rowCount:=rowCount
+End Sub
+
+'@label:SyncDictionaryExports
+'@prop-title Synchronise dictionary export columns
+Public Sub SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
     Dim tableObj As ICustomTable
+    Dim exportNumbers As BetterArray
+    Dim targetDict As ILLdictionary
 
     EnsureDataReady
+    EnsureWorksheetReady
+
     Set tableObj = ExportTable()
-    tableObj.RemoveRows totalCount:=totalCount, includeIds:=False
-    InvalidateCaches
+    Set exportNumbers = CollectExportNumbers(tableObj)
+
+    EnsureDictionaryReady dict, Not dict Is Nothing, False
+
+    If Not (this.dictInt Is Nothing) Then
+        Set targetDict = this.dictInt
+    Else
+        Set targetDict = dict
+    End If
+
+    SyncDictionaryExportsCore exportNumbers, targetDict
 End Sub
+
+'@section Row Coordination Helpers
+'===============================================================================
+
+Private Sub ApplyIncludeDefaults(ByVal tableObj As ICustomTable, _
+                                 ByVal startIndex As Long, _
+                                 ByVal endIndex As Long)
+    Dim includeColumn As Range
+    Dim idx As Long
+
+    If startIndex <= 0 Or endIndex < startIndex Then Exit Sub
+
+    Set includeColumn = tableObj.DataRange(COL_INCLUDE_IDS)
+    If includeColumn Is Nothing Then Exit Sub
+
+    For idx = startIndex To endIndex
+        If idx > includeColumn.Rows.Count Then Exit For
+        If LenB(CStr(includeColumn.Cells(idx, 1).Value)) = 0 Then
+            includeColumn.Cells(idx, 1).Value = DEFAULT_INCLUDE_IDS
+        End If
+    Next idx
+End Sub
+
+Private Sub EnsureExportIdentifiers(ByVal tableObj As ICustomTable)
+    Dim exportRange As Range
+    Dim usedNumbers As BetterArray
+    Dim pendingRows As BetterArray
+    Dim idx As Long
+    Dim parsed As Long
+    Dim maxNumber As Long
+    Dim rowIndex As Long
+
+    Set exportRange = tableObj.DataRange(COL_EXPORT_NUMBER)
+    If exportRange Is Nothing Then Exit Sub
+
+    Set usedNumbers = New BetterArray
+    usedNumbers.LowerBound = 1
+    Set pendingRows = New BetterArray
+    pendingRows.LowerBound = 1
+    maxNumber = 0
+
+    For idx = 1 To exportRange.Rows.Count
+        parsed = ParseExportIdentifier(exportRange.Cells(idx, 1).Value)
+        If parsed > 0 Then
+            If ContainsNumber(usedNumbers, parsed) Then
+                exportRange.Cells(idx, 1).Value = vbNullString
+                pendingRows.Push idx
+            Else
+                usedNumbers.Push parsed
+                exportRange.Cells(idx, 1).Value = "export " & CStr(parsed)
+                If parsed > maxNumber Then maxNumber = parsed
+            End If
+        Else
+            exportRange.Cells(idx, 1).Value = vbNullString
+            pendingRows.Push idx
+        End If
+    Next idx
+
+    If pendingRows.Length > 0 Then
+        For idx = pendingRows.LowerBound To pendingRows.UpperBound
+            rowIndex = CLng(pendingRows.Item(idx))
+            maxNumber = maxNumber + 1
+            exportRange.Cells(rowIndex, 1).Value = "export " & CStr(maxNumber)
+        Next idx
+    End If
+End Sub
+
+Private Function CollectExportNumbers(ByVal tableObj As ICustomTable) As BetterArray
+    Dim exportRange As Range
+    Dim result As BetterArray
+    Dim idx As Long
+    Dim parsed As Long
+
+    Set exportRange = tableObj.DataRange(COL_EXPORT_NUMBER)
+    If exportRange Is Nothing Then Exit Function
+
+    Set result = New BetterArray
+    result.LowerBound = 1
+
+    For idx = 1 To exportRange.Rows.Count
+        parsed = ParseExportIdentifier(exportRange.Cells(idx, 1).Value)
+        If parsed > 0 Then
+            If Not ContainsNumber(result, parsed) Then
+                result.Push parsed
+            End If
+        End If
+    Next idx
+
+    If result.Length = 0 Then
+        Set CollectExportNumbers = Nothing
+    Else
+        Set CollectExportNumbers = result
+    End If
+End Function
+
+Private Function EnumerateDictionaryExportNumbers(ByVal dict As ILLdictionary) As BetterArray
+    Dim headers As Range
+    Dim result As BetterArray
+    Dim idx As Long
+    Dim parsed As Long
+    If dict Is Nothing Then Exit Function
+
+    Set headers = dict.DataRange(includeHeaders:=True)
+    If headers Is Nothing Then Exit Function
+
+    Set result = New BetterArray
+    result.LowerBound = 1
+
+    For idx = 1 To headers.Columns.Count
+        parsed = ParseExportIdentifier(headers.Cells(1, idx).Value)
+        If parsed > 0 Then
+            If Not ContainsNumber(result, parsed) Then
+                result.Push parsed
+            End If
+        End If
+    Next idx
+
+    If result.Length = 0 Then
+        Set EnumerateDictionaryExportNumbers = Nothing
+    Else
+        Set EnumerateDictionaryExportNumbers = result
+    End If
+End Function
+
+Private Function ContainsNumber(ByVal numbers As BetterArray, ByVal target As Long) As Boolean
+    If numbers Is Nothing Then Exit Function
+    If numbers.Length = 0 Then Exit Function
+    ContainsNumber = numbers.Includes(target)
+End Function
+
+Private Function ParseExportIdentifier(ByVal rawValue As Variant) As Long
+    Dim text As String
+    Dim suffix As String
+
+    If IsEmpty(rawValue) Then Exit Function
+
+    text = LCase$(Trim$(CStr(rawValue)))
+    If LenB(text) = 0 Then Exit Function
+
+    If Left$(text, 6) <> "export" Then Exit Function
+
+    suffix = Trim$(Mid$(text, 7))
+    If LenB(suffix) = 0 Then Exit Function
+
+    On Error Resume Next
+        ParseExportIdentifier = CLng(suffix)
+    On Error GoTo 0
+End Function
+
+Private Sub SyncDictionaryExportsCore(ByVal exportNumbers As BetterArray, ByVal dict As ILLdictionary)
+    Dim existing As BetterArray
+    Dim idx As Long
+    Dim number As Long
+    Dim highest As Long
+
+    If dict Is Nothing Then Exit Sub
+
+    Set existing = EnumerateDictionaryExportNumbers(dict)
+
+    If Not exportNumbers Is Nothing Then
+        For idx = exportNumbers.LowerBound To exportNumbers.UpperBound
+            number = CLng(exportNumbers.Item(idx))
+            EnsureDictionaryExportColumn dict, number
+            If number > highest Then highest = number
+        Next idx
+    End If
+
+    If Not existing Is Nothing Then
+        For idx = existing.LowerBound To existing.UpperBound
+            number = CLng(existing.Item(idx))
+            If Not ContainsNumber(exportNumbers, number) Then
+                dict.RemoveColumn ExportColumnName(number)
+            ElseIf number > highest Then
+                highest = number
+            End If
+        Next idx
+    End If
+    dict.TotalNumberOfExports = highest
+End Sub
+
+Private Sub EnsureDictionaryExportColumn(ByVal dict As ILLdictionary, ByVal exportIndex As Long)
+    Dim columnName As String
+    Dim anchorName As String
+    Dim previousIdx As Long
+    Dim existing As BetterArray
+
+    If dict Is Nothing Then Exit Sub
+
+    columnName = ExportColumnName(exportIndex)
+    If dict.ColumnExists(columnName) Then Exit Sub
+
+    Set existing = EnumerateDictionaryExportNumbers(dict)
+
+    previousIdx = exportIndex - 1
+    Do While previousIdx >= 1
+        If ContainsNumber(existing, previousIdx) Then
+            anchorName = ExportColumnName(previousIdx)
+            Exit Do
+        End If
+        previousIdx = previousIdx - 1
+    Loop
+
+    If LenB(anchorName) = 0 Then
+        If dict.ColumnExists("unique") Then
+            anchorName = "unique"
+        Else
+            dict.AddColumn columnName
+            Exit Sub
+        End If
+    End If
+
+    If dict.ColumnExists(anchorName) Then
+        dict.InsertColumn columnName, anchorName
+    Else
+        dict.AddColumn columnName
+    End If
+End Sub
+
+Private Function ExportColumnName(ByVal exportIndex As Long) As String
+    ExportColumnName = "Export " & CStr(exportIndex)
+End Function
+
+'@section SpecManagement
+'===============================================================================
 
 '@label:ImportSpecs
 '@prop-title Import export specifications from another worksheet
@@ -206,7 +475,7 @@ Public Sub ImportSpecs(ByVal fromWksh As Worksheet, _
     If fromWksh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Source worksheet is missing"
 
     this.expData.Import fromWksh, fromStartRow, fromStartColumn
-    InvalidateCaches
+    ResetCaches
 End Sub
 
 '@label:ExportSpecs
@@ -223,11 +492,6 @@ Public Sub ExportSpecs(ByVal toWkb As Workbook, _
     this.expData.Export toWkb, Hide:=Hide
 End Sub
 
-'@label:InvalidateCaches
-'@prop-title Reset cached column lookups and variables
-Public Sub InvalidateCaches()
-    ResetCaches
-End Sub
 
 '@section FileName
 '===============================================================================
@@ -253,7 +517,7 @@ Public Function ExportFileName(ByVal exportNumber As Long, _
     EnsureDataReady
     EnsureWorksheetReady
     ValidatePasswords pass
-    EnsureDictionaryReady dict
+    EnsureDictionaryReady dict, True
 
     Set currWb = this.exportSheet.Parent
 
@@ -275,11 +539,97 @@ Public Function ExportFileName(ByVal exportNumber As Long, _
         template = DefaultTemplate(exportNumber)
     End If
 
-    sanitizedPath = ComposeTemplatePath(template, dict)
+    sanitizedPath = ComposeTemplatePath(template)
     suffix = BuildVersionSuffix(pass)
 
     ExportFileName = sanitizedPath & suffix & "__" & BuildTimestamp
 End Function
+
+'@section Export Count Tracking
+'===============================================================================
+
+Private Function CountExportRows() As Long
+    Dim exportRange As Range
+
+    If this.expData Is Nothing Then Exit Function
+
+    Set exportRange = this.expData.DataRange(includeHeaders:=False)
+    If Not exportRange Is Nothing Then
+        CountExportRows = exportRange.Rows.Count
+    End If
+End Function
+
+Private Function StoredTotalExports() As Long
+    Dim definition As Name
+    Dim evaluated As String
+
+    If this.exportSheet Is Nothing Then Exit Function
+
+    Set definition = TrySheetNameDefinition(this.exportSheet, TOTAL_EXPORTS_NAME)
+    If definition Is Nothing Then Exit Function
+
+     On Error Resume Next
+        evaluated = Trim$(Replace$(definition.Value, "=", vbNullString))
+    On Error GoTo 0
+
+    If LenB(evaluated) <> 0 Then
+        StoredTotalExports = CLng(evaluated)
+    End If
+End Function
+
+Private Sub PersistTotalExports(ByVal totalCount As Long)
+    If this.exportSheet Is Nothing Then Exit Sub
+
+    If totalCount < 0 Then totalCount = 0
+
+    RemoveSheetName this.exportSheet, TOTAL_EXPORTS_NAME
+    this.exportSheet.Names.Add Name:=TOTAL_EXPORTS_NAME, _
+                              RefersToR1C1:="=" & CStr(totalCount), _
+                              Visible:=False
+End Sub
+
+Private Sub EnsureStoredTotalExports()
+    If this.exportSheet Is Nothing Then Exit Sub
+    If this.expData Is Nothing Then Exit Sub
+    PersistTotalExports CountExportRows()
+End Sub
+
+Private Function TrySheetNameDefinition(ByVal sheet As Worksheet, ByVal nameId As String) As Name
+    Dim definition As Name
+
+    For Each definition In sheet.Names
+        If CompareName(definition, nameId) Then
+            Set TrySheetNameDefinition = definition
+            Exit Function
+        End If
+    Next definition
+End Function
+
+Private Sub RemoveSheetName(ByVal sheet As Worksheet, ByVal nameId As String)
+    Dim idx As Long
+
+    For idx = sheet.Names.Count To 1 Step -1
+        If CompareName(sheet.Names(idx), nameId) Then
+            sheet.Names(idx).Delete
+        End If
+    Next idx
+End Sub
+
+Private Function ExtractSimpleName(ByVal qualifiedName As String) As String
+    Dim exclPos As Long
+
+    exclPos = InStr(qualifiedName, "!")
+    If exclPos = 0 Then
+        ExtractSimpleName = qualifiedName
+    Else
+        ExtractSimpleName = Mid$(qualifiedName, exclPos + 1)
+    End If
+End Function
+
+Private Function CompareName(ByVal definition As Name, ByVal expected As String) As Boolean
+    CompareName = (StrComp(ExtractSimpleName(definition.Name), expected, vbTextCompare) = 0)
+End Function
+
 
 '@section Utilities
 '===============================================================================
@@ -323,6 +673,19 @@ Public Function ActiveExportNumbers() As BetterArray
     Set ActiveExportNumbers = result
 End Function
 
+'@label:Translate
+'@sub-title Translate the current LLExport
+Private Sub Translate(ByVal trads As ITranslationObject)
+    
+    If trads Is Nothing Then 
+        ThrowError ProjectError.ObjectNotInitialized, "Translations are not initialised"
+    End If
+
+    trads.TranslateRange Data.DataRange("label button")
+    trads.TranslateRange Data.DataRange("file name"), containsFormula:=True
+
+End Sub
+
 '@section Private Helpers
 '===============================================================================
 '@label:EnsureDataReady
@@ -343,11 +706,53 @@ End Sub
 
 '@label:EnsureDictionaryReady
 '@prop-title Validate dictionary dependency
-Private Sub EnsureDictionaryReady(ByVal dict As ILLdictionary)
-    If dict Is Nothing Then
-        ThrowError ProjectError.ObjectNotInitialized, "Dictionary is required for filename generation"
+Private Sub EnsureDictionaryReady(Optional ByVal dict As ILLdictionary, Optional ByVal resetInt As Boolean = False, Optional ByVal required As Boolean = True)
+    If resetInt Then Set this.dictInt = Nothing
+
+    If Not dict Is Nothing Then
+        Set this.dictInt = dict
+    End If
+
+    If required And (this.dictInt Is Nothing) Then
+        ThrowError ProjectError.ObjectNotInitialized, "LLExport Internal dictionary is required; none found"
     End If
 End Sub
+
+'@label:EnsureVariablesReady
+'@prop-title Lazily instantiate dictionary-backed variable helper
+Private Sub EnsureVariablesReady(Optional ByVal dict As ILLdictionary)
+    EnsureDictionaryReady dict
+
+    If Not DictionaryIsAvailable() Then Exit Sub
+
+    Dim currentDict As ILLdictionary
+    Set currentDict = InternalDictionary()
+
+    If this.variables Is Nothing Then
+        Set this.variables = LLVariables.Create(currentDict)
+    Else
+        Dim existingDict As ILLdictionary
+        Set existingDict = this.variables.Dictionary
+        If (existingDict Is Nothing) Or (Not (existingDict Is currentDict)) Then
+            Set this.variables = LLVariables.Create(currentDict)
+        End If
+    End If
+End Sub
+
+'@label:InternalDictionary
+Private Property Get InternalDictionary() As ILLdictionary
+    EnsureDictionaryReady
+    Set InternalDictionary = this.dictInt
+End Property
+
+'@label:InternalDictionary
+Private Property Set InternalDictionary(ByVal dict As ILLdictionary)
+    EnsureDictionaryReady dict
+End Property
+
+Private Function DictionaryIsAvailable() As Boolean
+    DictionaryIsAvailable = Not (this.dictInt Is Nothing)
+End Function
 
 '@label:ValidateExportNumber
 '@prop-title Validate export number bounds
@@ -359,7 +764,7 @@ Private Sub ValidateExportNumber(ByVal exportNumber As Long)
         ThrowError ProjectError.ElementNotFound, "No export specifications available"
     End If
 
-    If exportNumber < 1 Or exportNumber > total Then
+    If (exportNumber < 1 Or exportNumber > total) Then
         ThrowError ProjectError.InvalidArgument, _
                   "Export number " & CStr(exportNumber) & " is out of range"
     End If
@@ -442,34 +847,26 @@ End Function
 '@label:ResetCaches
 '@prop-title Reset cached references and diagnostics
 Public Sub ResetCaches()
+    Set this.dictInt = Nothing
     Set this.variables = Nothing
     this.hasChecks = False
     this.checkCounter = 0
     Set this.checks = Nothing
     this.sanitizeList = Empty
+    EnsureStoredTotalExports
 End Sub
 
-'@label:EnsureVariablesReady
-'@prop-title Lazily instantiate dictionary-backed variable helper
-Private Sub EnsureVariablesReady(ByVal dict As ILLdictionary)
-    EnsureDictionaryReady dict
-    If this.variables Is Nothing Then
-        Set this.variables = LLVariables.Create(dict)
-    End If
-End Sub
 
 '@label:ComposeTemplatePath
 '@prop-title Build the filename path from template chunks
-Private Function ComposeTemplatePath(ByVal template As String, _
-                                     ByVal dict As ILLdictionary) As String
+Private Function ComposeTemplatePath(ByVal template As String) As String
 
     Dim pathParts As BetterArray
     Dim chunks As Variant
     Dim idx As Long
     Dim resolved As String
     Dim workbook As Workbook
-
-    EnsureVariablesReady dict
+    
     Set workbook = this.exportSheet.Parent
 
     chunks = Split(template, "+")
@@ -567,6 +964,7 @@ Private Function ResolveVariableChunk(ByVal chunk As String, _
     Dim namedRange As Range
     Dim resolved As String
 
+    EnsureVariablesReady
     Set vars = this.variables
 
     If vars Is Nothing Then Exit Function
@@ -734,12 +1132,22 @@ Private Property Get ILLExport_CheckingValues() As IChecking
     Set ILLExport_CheckingValues = CheckingValues
 End Property
 
-Private Sub ILLExport_AddRows(Optional ByVal rowCount As Long = 1)
-    AddRows rowCount
+Private Sub ILLExport_AddRows(Optional ByVal dict As ILLdictionary)
+    AddRows dict
 End Sub
 
-Private Sub ILLExport_RemoveRows(Optional ByVal totalCount As Long = 0)
-    RemoveRows totalCount
+Private Sub ILLExport_RemoveRows(Optional ByVal dict As ILLdictionary, Optional ByVal rowCount As Long = 2)
+    RemoveRows dict, rowCount
+End Sub
+
+Private Sub ILLExport_ManageRows(Optional ByVal del As Boolean = False, _ 
+                                 Optional ByVal dict As ILLdictionary, _ 
+                                 Optional ByVal rowCount As Long = 2)
+    ManageRows del:=del, dict:=dict, rowCount:=rowCount
+End Sub
+
+Private Sub ILLExport_SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
+    SyncDictionaryExports dict
 End Sub
 
 Private Sub ILLExport_ImportSpecs(ByVal fromWksh As Worksheet, _
@@ -754,7 +1162,7 @@ Private Sub ILLExport_ExportSpecs(ByVal toWkb As Workbook, _
 End Sub
 
 Private Sub ILLExport_InvalidateCaches()
-    InvalidateCaches
+    ResetCaches
 End Sub
 
 Private Function ILLExport_ExportFileName(ByVal exportNumber As Long, _
@@ -775,3 +1183,14 @@ End Function
 Private Function ILLExport_ActiveExportNumbers() As BetterArray
     Set ILLExport_ActiveExportNumbers = ActiveExportNumbers
 End Function
+
+
+Private Sub ILLExport_Translate(ByVal trads As ITranslationObject)
+    Translate trads
+End Sub
+
+
+Private Sub ILLExport_ResetCaches()
+    ResetCaches
+End Sub
+

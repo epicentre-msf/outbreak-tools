@@ -3,18 +3,24 @@
     <tabs>
       <tab id="customTab" label="OutbreakTools">
         <group id="customGroupManage">
-          <button id="btnAdd" label="Add rows to tables in current sheet" imageMso="QueryShowTable" size="large" onAction="clickAddRows"/>
-          <button id="btnRes" label="Resize tables in current sheet" imageMso="SheetRowsDelete" size="large" onAction="clickResize"/>
+          <button id="btnAdd" label="Add rows to tables" imageMso="QueryShowTable" size="large" onAction="clickAddRows"/>
+          <button id="btnRes" label="Resize tables" imageMso="SheetRowsDelete" size="large" onAction="clickResize"/>
           <button id="btnFilt" label="Remove all filters" imageMso="FilterClearAllFilters" size="large" onAction="clickFilters"/>
-          <button id="btnTransAdd" label="Update translation table" image="update" size="large" onAction="clickAddTrans"/>
+          <button id="btnSort" label="Sort tables" image="sort" size="large" onAction="clickSortTables"/>
+          <button id="btnInserRow" label="Insert row" image="insertrow" size="large" onAction="clickInsertRow"/>
+          <button id="btnDelLoRow" label="Delete table row" image="dellorows" size="large" onAction="clickDelLoRows"/>
+          <button id="btnDelLoCol" label="Delete table column" image="dellocolumn" size="large" onAction="clickDelLoColumn"/>  
         </group>
         <group id="customGroupTrans">
+          <button id="btnTransAdd" label="Update translation table" image="update" size="large" onAction="clickAddTrans"/>
           <editBox id="editLang" label="Add language" onChange="clickAddLang"/>
           <button id="btnTransChange" label="Translate the setup" image="translation" size="normal" onAction="clickAddTrans"/>
+          <button id="btnTagUpdate" label="Reset translation tags" image="headertag" size="normal" onAction="clickResetTag"/>
         </group>
         <group id="customGroupImport">
           <button id="btnImp" label="Import data from another setup" image="import" size="large" onAction="clickImport"/>
           <button id="btnImpExp" label="Import from disease" image="importdisease" size="large" onAction="clickImportDisease"/>
+          <button id="btnExport"  label = "Export" image="download" size="large" onAction="clickExport"/>
         </group>
         <group id="customGroupAdvanced">
           <button id="btnChk" label="Check current setup for errors" imageMso="ErrorChecking" size="large" onAction="clickCheck"/>

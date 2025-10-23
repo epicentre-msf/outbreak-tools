@@ -503,7 +503,7 @@ Public Sub TestDebugExitHandlerRoundtripPersistsProtections()
         workbookPath = TestHelpers.BuildWorkbookPath(exportFolder, "passwords_debug_roundtrip")
         If Dir$(workbookPath) <> vbNullString Then Kill workbookPath
 
-        'cloned.LeaveDebugMode tempWb
+        cloned.LeaveDebugMode tempWb
 
         tempWb.SaveAs Filename:=workbookPath, FileFormat:=xlExcel12
         tempWb.Close SaveChanges:=True

@@ -70,13 +70,14 @@ Public Sub Translate(ByVal trads As ITranslationObject): End Sub
 
 '@jump:AddRows
 'Add Rows in the choice associated custom table
-Public Sub AddRows(Optional ByVal nbRows As Long = 5, _ 
-                   Optional ByVal insertShift As Boolean = False)
-End Sub
+Public Sub AddRows() : End Sub
 
 '@jump:RemoveRows
 'Remove Rows in the choice associated custom table
 Public Sub RemoveRows(): End Sub
+
+'@jump:ManageRows
+Public Sub ManageRows(Optional ByVal del As Boolean = False): End Sub
 
 '@jump:AllChoices
 'Get all the choices in a BetterArray

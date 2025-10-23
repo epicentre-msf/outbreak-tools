@@ -56,6 +56,7 @@ Private Sub TestInitialize()
     RegisterSourceRanges SourceSheet, FixtureWorkbook
 
     Set Subject = SetupTranslationsTable.Create(TranslationsTable)
+    Subject.SetDisplayPrompts False
 End Sub
 
 '@TestCleanup
@@ -145,6 +146,43 @@ Public Sub TestUpdateFromRegistryRejectsUnknownMode()
 ExpectError:
     Assert.AreEqual CLng(ProjectError.InvalidArgument), Err.Number, "Invalid translation mode must raise InvalidArgument"
     Err.Clear
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestResetSequenceSetsCounterToZero()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestResetSequenceSetsCounterToZero"
+
+    Subject.UpdateFromRegistry RegistrySheet
+    Subject.ResetSequence RegistrySheet
+
+    Assert.AreEqual CLng(0), FixtureWorkbook.Names(COUNTER_NAME).RefersToRange.Value, "ResetSequence should reset the workbook counter to zero"
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateFromRegistryDeletesMissingLabels()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistryDeletesMissingLabels"
+
+    Subject.UpdateFromRegistry RegistrySheet
+    SourceSheet.Range("A2").Value = vbNullString
+    SetRegistryStatus "yes", "yes", "yes"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual CLng(5), TranslationsTable.ListRows.Count, "Removing a label from a processed range should delete the corresponding translation row"
+    Assert.AreEqual vbNullString, TagForLabel("Good bye"), "Deleted labels should no longer be present in the translations table"
+    Assert.AreEqual "RNG_Greetings--2", TagForLabel("Hello"), "Existing labels must be retagged with the current update sequence"
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestNumberOfMissingReportsPerLanguage()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestNumberOfMissingReportsPerLanguage"
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+
+    Dim summary As String
+    summary = Subject.NumberOfMissing
+
+    Assert.AreEqual "Translation Updated!" & vbLf & "6 labels are missing for column French.", summary, "NumberOfMissing should report missing counts for each non default language"
 End Sub
 
 '@section Helpers
