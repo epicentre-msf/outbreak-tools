@@ -221,7 +221,7 @@ End Sub
 
 '@section Helpers
 '===============================================================================
-Private Function EnsureDevelopment() As IDevelopment
+Public Function EnsureDevelopment() As IDevelopment
     On Error GoTo Handler
 
     If devManager Is Nothing Then

@@ -20,66 +20,82 @@ Option Explicit
 
 '@section Properties
 '===============================================================================
-'@label:Data
+'@jump:Data
 '@prop-title Datasheet abstraction of the export table.
 Public Property Get Data() As IDataSheet
 End Property
 
-'@label:Worksheet
+'@jump:Worksheet
 '@prop-title Worksheet hosting the export table.
 Public Property Get Worksheet() As Worksheet
 End Property
 
-'@label:NumberOfExports
+'@jump:NumberOfExports
 '@prop-title Count of configured export rows.
 Public Property Get NumberOfExports() As Long
 End Property
 
-'@label:HasCheckings
+'@jump:HasCheckings
 '@prop-title Whether informational checkings are available.
 Public Property Get HasCheckings() As Boolean
 End Property
 
-'@label:CheckingValues
+'@jump:CheckingValues
 '@prop-title Collected informational diagnostics about export generation.
 Public Property Get CheckingValues() As IChecking
 End Property
 
+
+'@section Rows management
+'===============================================================================
+'@jump:AddRows
+'@prop-title Append export definition rows.
+'@param dict Optional dictionary to keep export columns aligned.
+Public Sub AddRows(Optional ByVal dict As ILLdictionary)
+End Sub
+
+'@jump:RemoveRows
+'@prop-title Remove trailing export rows.
+'@param rowCount Optional Long. Rows with non-empty cell counts at or below this value are removed.
+Public Sub RemoveRows(Optional ByVal dict As ILLdictionary, Optional ByVal rowCount As Long = 2)
+End Sub
+
+'@jump:ManageRows
+Public Sub ManageRows(Optional ByVal del As Boolean = False, _ 
+                      Optional ByVal dict As ILLdictionary, _ 
+                      Optional ByVal rowCount As Long = 2)
+End Sub
+
+'@jump:SyncDictionaryExports
+'@prop-title Synchronise dictionary export columns with current export definitions.
+'@param dict Optional dictionary reference to align. When omitted, the last cached dictionary is reused.
+Public Sub SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
+End Sub
+
 '@section SpecManagement
 '===============================================================================
-'@label:AddRows
-'@prop-title Append export definition rows.
-'@param rowCount Optional number of rows to add (defaults to 1).
-Public Sub AddRows(Optional ByVal rowCount As Long = 1)
-End Sub
 
-'@label:RemoveRows
-'@prop-title Remove trailing export rows.
-'@param totalCount Optional number of rows to keep; pass 0 to trim empty rows.
-Public Sub RemoveRows(Optional ByVal totalCount As Long = 0)
-End Sub
-
-'@label:ImportSpecs
+'@jump:ImportSpecs
 '@prop-title Import export specifications from another worksheet.
 Public Sub ImportSpecs(ByVal fromWksh As Worksheet, _
                        ByVal fromStartRow As Long, _
                        ByVal fromStartColumn As Long)
 End Sub
 
-'@label:ExportSpecs
+'@jump:ExportSpecs
 '@prop-title Export specifications into another workbook.
 Public Sub ExportSpecs(ByVal toWkb As Workbook, _
                        Optional ByVal Hide As Long = xlSheetHidden)
 End Sub
 
-'@label:InvalidateCaches
+'@jump:InvalidateCaches
 '@prop-title Reset cached column lookups and diagnostics.
 Public Sub InvalidateCaches()
 End Sub
 
 '@section FileName
 '===============================================================================
-'@label:ExportFileName
+'@jump:ExportFileName
 '@prop-title Build a filename for one export definition.
 '@param exportNumber Export definition identifier.
 '@param dict Dictionary supplying metadata for chunk substitution.
@@ -93,17 +109,23 @@ End Function
 
 '@section Utilities
 '===============================================================================
-'@label:IsActive
+'@jump:IsActive
 '@prop-title Determine if an export definition is marked active.
 Public Function IsActive(ByVal exportNumber As Long) As Boolean
 End Function
 
-'@label:ColumnValue
+'@jump:ColumnValue
 '@prop-title Retrieve a column value for a given export row.
 Public Function ColumnValue(ByVal exportNumber As Long, ByVal columnName As String) As String
 End Function
 
-'@label:ActiveExportNumbers
+'@jump:ActiveExportNumbers
 '@prop-title Enumerate export numbers that are currently active.
 Public Function ActiveExportNumbers() As BetterArray
 End Function
+
+'@jump:Translate
+Public Sub Translate(ByVal trads As ITranslationObject): End Sub
+
+'@jump:ResetCaches
+Public Sub ResetCaches(): End Sub

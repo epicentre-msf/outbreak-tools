@@ -601,7 +601,7 @@ Private Sub Import(ByVal importData As Object, Optional ByVal strictColumnSearch
     Next
     
     'importformats
-    ImportFormat importData:=importData
+    ImportFormat importData:=importData, matchColumnsCase:=strictColumnSearch
     this.hasImport = True
 End Sub
 
@@ -643,7 +643,7 @@ Private Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumns
 
         Debug.Print "Applying format for column " & colName
         
-        Set actRng = DataRange(colName)
+        Set actRng = DataRange(colName, matchCase:=matchColumnsCase)
 
         'The column might not exists in the exported DataBase
         If importData.ColumnExists(colName, strictSearch:=True, matchCase:=matchColumnsCase) Then
@@ -925,13 +925,15 @@ End Sub
 '@param ParamArray A list of Strings, separated with "," the column name where you want to import/export formatting
 '@param matchColumnsCase Optional, Boolean. Do case sensitive research. Default is True
 '@export
-Private Sub IDataSheet_AddFormatsColumns(ByVal matchColumnsCase As Boolean, ParamArray lsCols() As Variant)
+Private Sub IDataSheet_AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVal resetColumns As Boolean, ParamArray lsCols() As Variant)
     Dim nbEls As Long
     Dim colName As String
     Dim newColName As String
 
     If FORMATCOLUMNS Is Nothing Then
         Set FORMATCOLUMNS = New BetterArray
+    ElseIf resetColumns Then
+        FORMATCOLUMNS.Clear
     End If
 
     If UBound(lsCols) = -1 Then Exit Sub

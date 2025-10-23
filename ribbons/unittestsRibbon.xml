@@ -2,13 +2,20 @@
     <ribbon startFromScratch="false">
         <tabs>
             <tab id="obtTab" label="OutbreakTools">
-                <group id="customGroupTabMan" label = "Dev">
+                <group id="customGroupDev" label="Dev">
+                    <button id="btnInit" label="Initialize" image="initialise" size="large" onAction="clickDevInitialize"/>
                     <button id="btnFolder" label="Codes Folder" image="folder" size="large" onAction="clickDevFolder"/>
-                    <button id="btnImp" label="Import Codes" image="dowload2" size="large" onAction="clickDevImport"/>
-                    <button id="btnExp" label="Export Codes" image="upload2" size="large" onAction="clickDevExport"/>
+                    <button id="btnImpCodes" label="Import Codes" image="upload2" size="large" onAction="clickDevImport"/>
+                    <button id="btnExpCodes" label="Export Codes" image="download2" size="large" onAction="clickDevExport"/>
                     <button id="btnVBEE" label="Open Editor" image="settings2" size="large" onAction="clickDevVBE"/>
-                    <button id="btnTests" label="Run Tests" image="tests" size="large" onAction="clickDevTests"/>
-                </group>    
+                    <button id="btnDeploy" label="Deploy" image="rocketlaunch" size="large" onAction="clickDevDeploy"/>
+                    <button id="btnAddRowsDev" label="AddRows to tables" image="addrowsdev" size ="normal" onAction="clickDevAddRows"/>
+                    <button id="btnResDev" label="Resize tables" image = "resizedev" size = "normal" onAction="clicDevResize"/>
+                    <button id="btnAddFormsDev" label="Add forms codes" image = "addformscodedev" size="normal" onAction="clicDevAddFormTable"/>
+                    <button id="btnAddTabClass" label="Add class table" image ="addclassdev" size="normal" onAction="clickDevAddClassTable"/>
+                    <button id="btnAddTabForm" label="Add Form table" image="addformsdev" size="normal" onAction="clickDevAddFormTable"/>
+                    <button id="btnAddTabMods" label="Add Modules table" image="addmodsdev" size="normal" onAction="clickDevAddModulesTable"/>
+                </group>
             </tab>
         </tabs>
     </ribbon>

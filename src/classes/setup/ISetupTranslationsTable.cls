@@ -48,13 +48,22 @@ Public Sub SwitchDefaultLanguage(ByVal languageName As String)
 End Sub
 
 '@sub-title Retrieve languages that can be promoted to default.
-Public Function SwitchableLanguages() As Collection
+Public Function SwitchableLanguages() As BetterArray
 End Function
 
 '@sub-title Synchronise translations against the supplied registry sheet.
 '@param registrySheet Worksheet hosting the registry listobjects with named ranges and statuses.
 '@param languages Optional semicolon separated set of languages to ensure before syncing.
 Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, Optional ByVal languages As String = vbNullString)
+End Sub
+'@sub-title Reset the hidden update sequence counter.
+Public Sub ResetSequence(ByVal registrySheet As Worksheet)
+End Sub
+'@sub-title Summarise and optionally display missing translation counts.
+Public Function NumberOfMissing() As String
+End Function
+'@sub-title Enable or disable prompts when reporting missing translations.
+Public Sub SetDisplayPrompts(ByVal state As Boolean)
 End Sub
 
 '@section Identity

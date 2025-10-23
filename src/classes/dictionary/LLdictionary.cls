@@ -39,6 +39,7 @@ Private Const SHEETTYPEHORIZONTAL As String = "hlist2D"
 Private Const DEFAULTNUMBEROFEXPORTS As Long = 20
 Private Const DEFAULTDICTIONARYCOLUMNS As String = "variable name|main label|dev comments|editable label|sub label|note|sheet name|sheet type|main section|sub section|status|register book|personal identifier|variable type|variable format|control|control details|unique|min|max|alert|message|formatting condition|formatting values|lock cells"
 Private Const DEFAULTCREATEDCOLUMNS As String = "table name|column index|visibility|crf index|crf choices|crf status|list auto"
+Private Const TOTAL_EXPORTS_NAME As String = "__ll_exports_total__"
 
 'Checking support
 Private checkCounter As Long
@@ -71,10 +72,34 @@ Public Function Create(ByVal dictWksh As Worksheet, ByVal dictStartRow As Long, 
 
     With New LLdictionary
         Set .Data = customDataSheet
-        .TotalNumberOfExports = numberOfExports
+        .InitialiseTotalExports numberOfExports
         Set Create = .Self
     End With
 End Function
+
+'@label:init-exports
+'@sub-title Initialise total export counter
+'@details
+'Loads the stored number of export columns from the worksheet when available.
+'When no persisted value exists, the routine falls back to the requested input
+'and persists it so subsequent sessions pick up the same configuration.
+Public Sub InitialiseTotalExports(ByVal requestedTotal As Long)
+    Dim storedTotal As Long
+
+    storedTotal = StoredTotalExportsFromSheet(Wksh())
+
+    If requestedTotal > 0 Then
+        If (storedTotal = 0) Or (storedTotal <> requestedTotal) Then
+            ApplyTotalExports requestedTotal
+        Else
+            ApplyTotalExports storedTotal, persist:=False, suppressInvalidLog:=True
+        End If
+    ElseIf storedTotal > 0 Then
+        ApplyTotalExports storedTotal, persist:=False, suppressInvalidLog:=True
+    Else
+        ApplyTotalExports DEFAULTNUMBEROFEXPORTS
+    End If
+End Sub
 
 '@label:self
 '@prop-title Current object instance
@@ -113,6 +138,10 @@ End Property
 'columns ready for mapping.
 '@return Long
 Public Property Get TotalNumberOfExports() As Long
+    If this.numberOfExports <= 0 Then
+        ApplyTotalExports DEFAULTNUMBEROFEXPORTS, persist:=False, suppressInvalidLog:=True
+    End If
+
     TotalNumberOfExports = this.numberOfExports
 End Property
 
@@ -123,13 +152,133 @@ End Property
 '@params
 '- numberOfExports Long. Requested number of export columns.
 Public Property Let TotalNumberOfExports(ByVal numberOfExports As Long)
-    If numberOfExports <= 0 Then
-        this.numberOfExports = DEFAULTNUMBEROFEXPORTS
-        LogInfo "Number of exports requested was not valid. Falling back to default", checkingWarning
-    Else
-        this.numberOfExports = numberOfExports
-    End If
+    ApplyTotalExports numberOfExports
 End Property
+
+'@section ExportCounterManagement
+'===============================================================================
+
+'@label:apply-exports
+'@sub-title Normalise and persist export counters
+'@details
+'Centralises validation, caching and persistence of the export counter so every
+'entry point (creation, import, manual setter) behaves consistently. The helper
+'optionally suppresses warnings for legacy workbooks that do not yet store the
+'hidden counter.
+Private Sub ApplyTotalExports(ByVal requestedTotal As Long, _
+                              Optional ByVal persist As Boolean = True, _
+                              Optional ByVal suppressInvalidLog As Boolean = False)
+    Dim normalisedTotal As Long
+    Dim previousTotal As Long
+
+    previousTotal = this.numberOfExports
+    normalisedTotal = NormaliseTotalExports(requestedTotal, suppressInvalidLog)
+
+    this.numberOfExports = normalisedTotal
+
+    If normalisedTotal <> previousTotal Then ResetColumnCaches
+
+    If persist Then PersistTotalExports normalisedTotal
+End Sub
+
+'@label:normalise-exports
+Private Function NormaliseTotalExports(ByVal requestedTotal As Long, ByVal suppressInvalidLog As Boolean) As Long
+    If requestedTotal <= 0 Then
+        NormaliseTotalExports = DEFAULTNUMBEROFEXPORTS
+        If Not suppressInvalidLog Then
+            LogInfo "Number of exports requested was not valid. Falling back to default", checkingWarning
+        End If
+    Else
+        NormaliseTotalExports = requestedTotal
+    End If
+End Function
+
+'@label:reset-export-cache
+Private Sub ResetColumnCaches()
+    Set dictionaryColumns = Nothing
+    Set dictionaryAddedColumns = Nothing
+End Sub
+
+'@label:persist-exports
+Private Sub PersistTotalExports(ByVal totalCount As Long)
+    If this.dictDataSheet Is Nothing Then Exit Sub
+    PersistTotalExportsOnSheet Wksh(), totalCount
+End Sub
+
+'@label:persist-exports-sheet
+Private Sub PersistTotalExportsOnSheet(ByVal sheet As Worksheet, ByVal totalCount As Long)
+    If sheet Is Nothing Then Exit Sub
+
+    If totalCount < 0 Then totalCount = 0
+
+    RemoveSheetName sheet, TOTAL_EXPORTS_NAME
+    sheet.Names.Add Name:=TOTAL_EXPORTS_NAME, _
+                    RefersToR1C1:="=" & CStr(totalCount), _
+                    Visible:=False
+End Sub
+
+'@label:stored-exports
+Private Function StoredTotalExportsFromSheet(ByVal sheet As Worksheet) As Long
+    Dim definition As Name
+    Dim evaluated As String
+
+    If sheet Is Nothing Then Exit Function
+
+    Set definition = TrySheetNameDefinition(sheet, TOTAL_EXPORTS_NAME)
+    If definition Is Nothing Then Exit Function
+
+    On Error Resume Next
+        evaluated = Trim$(Replace$(definition.Value, "=", vbNullString))
+    On Error GoTo 0
+
+    If LenB(evaluated) <> 0 Then
+        StoredTotalExportsFromSheet = CLng(evaluated)
+    End If
+End Function
+
+'@label:try-sheet-name
+Private Function TrySheetNameDefinition(ByVal sheet As Worksheet, ByVal nameId As String) As Name
+    Dim definition As Name
+
+    If sheet Is Nothing Then Exit Function
+
+    For Each definition In sheet.Names
+        If CompareName(definition, nameId) Then
+            Set TrySheetNameDefinition = definition
+            Exit Function
+        End If
+    Next definition
+End Function
+
+'@label:remove-sheet-name
+Private Sub RemoveSheetName(ByVal sheet As Worksheet, ByVal nameId As String)
+    Dim idx As Long
+
+    If sheet Is Nothing Then Exit Sub
+
+    For idx = sheet.Names.Count To 1 Step -1
+        If CompareName(sheet.Names(idx), nameId) Then
+            sheet.Names(idx).Delete
+        End If
+    Next idx
+End Sub
+
+'@label:compare-name
+Private Function CompareName(ByVal definition As Name, ByVal expected As String) As Boolean
+    CompareName = (StrComp(ExtractSimpleName(definition.Name), expected, vbTextCompare) = 0)
+End Function
+
+'@label:extract-name
+Private Function ExtractSimpleName(ByVal qualifiedName As String) As String
+    Dim exclPos As Long
+
+    exclPos = InStr(qualifiedName, "!")
+    If exclPos = 0 Then
+        ExtractSimpleName = qualifiedName
+    Else
+        ExtractSimpleName = Mid$(qualifiedName, exclPos + 1)
+    End If
+End Function
 
 '@label:wksh
 '@prop-title Host worksheet
@@ -215,7 +364,7 @@ Private Sub EnsureColumnsInitialized()
 End Sub
 
 Private Sub EnsureFormatColumns()
-    this.dictDataSheet.AddFormatsColumns False, "formatting condition", "formatting values", "variable name", "control", "main label", "lock cells", "dev comments"
+    this.dictDataSheet.AddFormatsColumns False, True, "formatting condition", "formatting values", "variable name", "control", "main label", "lock cells", "dev comments"
 End Sub
 
 '@label:columnexists
@@ -1092,9 +1241,17 @@ Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal
     Dim targetData As IDataSheet
     Dim sourceData As IDataSheet
     Dim hostSheet As Worksheet
+    Dim importedTotal As Long
 
     Set sourceData = DataSheet.Create(fromWksh, fromStartRow, fromStartcol)
     Set hostSheet = Wksh()
+    importedTotal = StoredTotalExportsFromSheet(fromWksh)
+
+    If importedTotal > 0 Then
+        ApplyTotalExports importedTotal, persist:=True, suppressInvalidLog:=True
+    Else
+        ApplyTotalExports TotalNumberOfExports, persist:=True, suppressInvalidLog:=True
+    End If
 
     hostSheet.Cells.Clear
     EnsureColumnsInitialized
@@ -1143,6 +1300,8 @@ Public Sub Export(ByVal toWkb As Workbook, _
 
     sheetName = Wksh().Name
     Set targetSheet = toWkb.Worksheets(sheetName)
+
+    PersistTotalExportsOnSheet targetSheet, TotalNumberOfExports
 
     If addListObject Then
         Set exportRange = DataRange(includeHeaders:=True)
@@ -1291,6 +1450,10 @@ End Sub
 '@jump:removerows
 Private Sub ILLdictionary_RemoveRows()
     RemoveRows
+End Sub
+
+Private Sub ILLdictionary_ManageRows(Optional ByVal del As Boolean = False)
+    ManageRows del
 End Sub
 
 '@jump:choicesvars

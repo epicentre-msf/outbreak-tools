@@ -986,7 +986,6 @@ End Function
 
 '@sub-title Applies stored protection settings to each worksheet listed in the protected-sheets table.
 Private Sub ApplyProtectionMatrix(ByVal wb As Workbook)
-
     Dim Lo As ListObject
     Dim bodyRange As Range
     Dim rowIdx As Long
@@ -1026,7 +1025,7 @@ Private Sub ApplySheetProtection(ByVal targetSheet As Worksheet, _
         DrawingObjects:=(Not allowShapes), _
         Contents:=True, _
         Scenarios:=True, _
-        AllowInsertingRows:=True, _
+        AllowInsertingRows:=allowDeleting, _
         AllowSorting:=False, _
         AllowFiltering:=True, _
         AllowFormattingCells:=False, _

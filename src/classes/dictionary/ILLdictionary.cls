@@ -43,6 +43,11 @@ Public Property Get Prepared() As Boolean: End Property
 '@return A Long representing the configured number of export slots
 Public Property Get TotalNumberOfExports() As Long: End Property
 
+'@jump:exports-set
+'@prop-title Update total number of export columns
+'@param numberOfExports Long. Requested number of export slots to persist.
+Public Property Let TotalNumberOfExports(ByVal numberOfExports As Long): End Property
+
 
 '@section Column Operations
 '===============================================================================
@@ -95,6 +100,10 @@ Public Sub AddRows(): End Sub
 '@jump:removerows
 '@sub-title Remove rows from the dictionary listobject when available
 Public Sub RemoveRows(): End Sub
+
+'@jump:ManageRows
+'@sub-title Manage rows from the dictionary listobject when availabe
+Public Sub ManageRows(Optional ByVal del As Boolean = False): End Sub
 
 
 '@section Specialised Views

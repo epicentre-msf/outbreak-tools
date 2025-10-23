@@ -22,6 +22,7 @@ Private startRow As Long
 Private startColumn As Long
 Private endRow As Long
 Private endColumn As Long
+Private totalExports As Long
 
 Public Sub Configure(ByVal sheet As Worksheet, _
                      ByVal dataStartRowValue As Long, _
@@ -73,7 +74,11 @@ Private Property Get ILLdictionary_Prepared() As Boolean
 End Property
 
 Private Property Get ILLdictionary_TotalNumberOfExports() As Long
-    ILLdictionary_TotalNumberOfExports = 0
+    ILLdictionary_TotalNumberOfExports = totalExports
+End Property
+
+Private Property Let ILLdictionary_TotalNumberOfExports(ByVal numberOfExports As Long)
+    totalExports = numberOfExports
 End Property
 
 Private Function ILLdictionary_ColumnExists(ByVal colName As String, _

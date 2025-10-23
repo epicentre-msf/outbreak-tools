@@ -18,6 +18,7 @@ Implements ILLdictionary
 
 Private Type TDictionaryStubState
     variableNames As BetterArray
+    totalExports As Long
 End Type
 
 Private this As TDictionaryStubState
@@ -54,7 +55,11 @@ Private Property Get ILLdictionary_Prepared() As Boolean
 End Property
 
 Private Property Get ILLdictionary_TotalNumberOfExports() As Long
-    ILLdictionary_TotalNumberOfExports = 0
+    ILLdictionary_TotalNumberOfExports = this.totalExports
+End Property
+
+Private Property Let ILLdictionary_TotalNumberOfExports(ByVal numberOfExports As Long)
+    this.totalExports = numberOfExports
 End Property
 
 Private Function ILLdictionary_ColumnExists(ByVal colName As String, Optional ByVal checkValidity As Boolean) As Boolean

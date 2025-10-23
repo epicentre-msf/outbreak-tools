@@ -146,7 +146,7 @@ Private Sub IDataSheet_Clean()
     'Not required for stub
 End Sub
 
-Private Sub IDataSheet_AddFormatsColumns(ByVal matchColumnsCase As Boolean, ParamArray lsCols() As Variant)
+Private Sub IDataSheet_AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVal resetColumns As Boolean, ParamArray lsCols() As Variant)
     'Not required for stub
 End Sub
 

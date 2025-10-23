@@ -23,6 +23,11 @@ items once you are done with them, on the progress session.
 required VBA syntax.
 16. Always run unix2dos src once you are done with the files
 17. DO NOT EDIT DICTIONARYTESTFIXTURE.BAS!
+18. Avoid naming variables that are ambiguous such as "sheet", "workbook", etc. use sh for sheet, wb for workbook. And avoid using a name variable that can conflict with a function or sub. On example of non acceptable usage is something like "devSheet = DevSheet()". VBA is not that strict with case sensitive and will clash in case you have those type of variable namings.
+19. Use existing classes, do not reinvent the wheel.
 
 **Progress**
-- [DONE] Evolved the `Development` workflow with horizontal table placement, workbook deployment flagging, string-based code sheet registration, ribbon automation, and refreshed tests (items 1,2,4,5,6,8,11,12,13,14).
+- [DONE] Synced `LLdictionary` total export tracking with hidden sheet name storage and interface setter support.
+- [DONE] Added regression tests in `TestLLdictionary.bas` covering setter persistence, import, and export of the total export counter.
+- [DONE] Hardened `LLExport` dictionary coordination and caching, plus added regression coverage for dictionary-optional row management.
+- [DONE] Exposed `LLExport.SyncDictionaryExports` via `ILLExport` with regression tests for optional dictionary usage.

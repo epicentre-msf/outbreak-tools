@@ -24,7 +24,9 @@ Implements ISetupTranslationsTable
 Private Type TSetupTranslations
     table As ListObject               'Managed translations table
     tagHeader As Range                'Header cell immediately to the left storing translation tags
-    labelCache As Collection          'Cached label lookups for O(1) retrieval
+    labelCache As BetterArray         'Cached label lookups for label to row mappings
+    processedRanges As BetterArray    'Ranges processed during the current update cycle
+    displayPrompts As Boolean         'Toggle to avoid message prompts during automated tests
     stateScope As IApplicationState   'Optional application guard for busy sections
 End Type
 
@@ -60,10 +62,12 @@ Private Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal 
     With this
         Set .table = translationTable
         Set .stateScope = stateScope
+        .displayPrompts = True
     End With
 
     ConfigureTagColumn
     ResetCache
+    ResetProcessedRanges
 End Sub
 
 
@@ -85,6 +89,11 @@ End Property
 Public Property Get Self() As ISetupTranslationsTable
     Set Self = Me
 End Property
+
+'@sub-title Allow callers to toggle display prompts used during updates.
+Public Sub SetDisplayPrompts(ByVal state As Boolean)
+    this.displayPrompts = state
+End Sub
 
 '@sub-title Guarded access to the application scope.
 Private Function ResolveScope() As IApplicationState
@@ -172,16 +181,16 @@ CleanFail:
 End Sub
 
 '@sub-title Retrieve the available languages excluding the default column.
-Public Function SwitchableLanguages() As Collection
-    Dim languages As Collection
+Public Function SwitchableLanguages() As BetterArray
+    Dim languages As BetterArray
     Dim columnIndex As Long
 
     ValidateInitialised
 
-    Set languages = New Collection
+    Set languages = CreateBuffer()
 
     For columnIndex = 2 To this.table.ListColumns.Count
-        languages.Add this.table.ListColumns(columnIndex).Name
+        languages.Push this.table.ListColumns(columnIndex).Name
     Next columnIndex
 
     Set SwitchableLanguages = languages
@@ -297,6 +306,13 @@ End Sub
 
 '@section Registry processing
 '===============================================================================
+'@sub-title Reset the hidden update sequence counter to zero.
+Public Sub ResetSequence(ByVal registrySheet As Worksheet)
+    ValidateInitialised
+    ValidateRegistrySheet registrySheet
+    CounterCell(registrySheet).Value = 0
+End Sub
+
 '@sub-title Update the translations table using the supplied registry sheet.
 Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, Optional ByVal languages As String = vbNullString)
     Dim scope As IApplicationState
@@ -314,10 +330,14 @@ Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, Optional ByVal l
 
     updateSequence = NextUpdateSequence(registrySheet)
     ResetCache
+    ResetProcessedRanges
     EnsureCache
     ProcessRegistry registrySheet, updateSequence
+    RemoveObsoleteLabels updateSequence
+    ResetCache
     SortTranslations
     ApplyFormatting
+    NumberOfMissing
 
     scope.Restore
     Exit Sub
@@ -351,6 +371,7 @@ Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal update
         mode = Trim$(CStr(row.Range.Cells(1, 3).Value))
 
         If ShouldProcessRange(status, updateSequence) And LenB(rngName) > 0 Then
+            TrackProcessedRange rngName
             Set sourceRange = ResolveNamedRange(registryTable.Parent.Parent, rngName)
             If Not sourceRange Is Nothing Then
                 rngTag = rngName & "--" & CStr(updateSequence)
@@ -395,15 +416,17 @@ End Sub
 '@sub-title Extract quoted portions of formulas and add them as chunks.
 Private Sub ProcessFormulaRange(ByVal sourceRange As Range, ByVal rngTag As String)
     Dim cell As Range
-    Dim tokens As Variant
+    Dim tokens As BetterArray
     Dim counter As Long
+    Dim chunk As String
 
     For Each cell In sourceRange.Cells
-        tokens = ExtractFormulaChunks(CStr(cell.Formula))
-        If Not IsEmpty(tokens) Then
-            For counter = LBound(tokens) To UBound(tokens)
-                If LenB(tokens(counter)) > 0 Then
-                    AddChunk tokens(counter), rngTag
+        Set tokens = ExtractFormulaChunks(CStr(cell.Formula))
+        If Not tokens Is Nothing Then
+            For counter = tokens.LowerBound To tokens.UpperBound
+                chunk = Trim$(CStr(tokens.Item(counter)))
+                If LenB(chunk) > 0 Then
+                    AddChunk chunk, rngTag
                 End If
             Next counter
         End If
@@ -411,37 +434,29 @@ Private Sub ProcessFormulaRange(ByVal sourceRange As Range, ByVal rngTag As Stri
 End Sub
 
 '@sub-title Extract quoted text segments from a formula while handling escaped quotes.
-Private Function ExtractFormulaChunks(ByVal formulaText As String) As Variant
+Private Function ExtractFormulaChunks(ByVal formulaText As String) As BetterArray
     Dim cleaned As String
     Dim position As Long
     Dim chunkStart As Long
-    Dim buffer As Collection
-    Dim output() As String
-    Dim index As Long
+    Dim buffer As BetterArray
+    Dim token As String
 
     cleaned = Replace(formulaText, Chr$(34) & Chr$(34), vbNullString)
-    Set buffer = New Collection
 
     For position = 1 To Len(cleaned)
         If Mid$(cleaned, position, 1) = Chr$(34) Then
             If chunkStart = 0 Then
                 chunkStart = position + 1
             ElseIf position > chunkStart Then
-                buffer.Add Mid$(cleaned, chunkStart, position - chunkStart)
+                token = Mid$(cleaned, chunkStart, position - chunkStart)
+                If buffer Is Nothing Then Set buffer = CreateBuffer()
+                buffer.Push token
                 chunkStart = 0
             End If
         End If
     Next position
 
-    If buffer.Count = 0 Then
-        ExtractFormulaChunks = Array()
-    Else
-        ReDim output(0 To buffer.Count - 1) As String
-        For index = 1 To buffer.Count
-            output(index - 1) = CStr(buffer(index))
-        Next index
-        ExtractFormulaChunks = output
-    End If
+    Set ExtractFormulaChunks = buffer
 End Function
 
 
@@ -466,23 +481,44 @@ End Sub
 
 '@sub-title Retrieve cached row index when the label exists.
 Private Function CachedRowIndex(ByVal label As String) As Long
-    Dim cached As Variant
+    Dim cache As BetterArray
+    Dim idx As Long
+    Dim entry As Variant
 
     EnsureCache
-    On Error Resume Next
-        cached = this.labelCache(label)
-    On Error GoTo 0
+    Set cache = this.labelCache
+    If cache Is Nothing Then Exit Function
+    If cache.Length = 0 Then Exit Function
 
-    If Not IsEmpty(cached) Then
-        CachedRowIndex = CLng(cached)
-    End If
+    For idx = cache.LowerBound To cache.UpperBound
+        entry = cache.Item(idx)
+        If MatchLabel(CStr(entry(0)), label) Then
+            CachedRowIndex = CLng(entry(1))
+            Exit For
+        End If
+    Next idx
 End Function
 
 '@sub-title Persist the label inside the cache for future lookups.
 Private Sub AddToCache(ByVal label As String, ByVal rowIndex As Long)
-    On Error Resume Next
-        this.labelCache.Add rowIndex, label
-    On Error GoTo 0
+    Dim entry(0 To 1) As Variant
+    Dim existing As Variant
+    Dim idx As Long
+
+    If this.labelCache Is Nothing Then
+        Set this.labelCache = CreateBuffer()
+    End If
+
+    If this.labelCache.Length > 0 Then
+        For idx = this.labelCache.LowerBound To this.labelCache.UpperBound
+            existing = this.labelCache.Item(idx)
+            If MatchLabel(CStr(existing(0)), label) Then Exit Sub
+        Next idx
+    End If
+
+    entry(0) = label
+    entry(1) = rowIndex
+    this.labelCache.Push entry
 End Sub
 
 '@sub-title Append a new list row and populate the mandatory cells.
@@ -517,7 +553,7 @@ Private Sub EnsureCache()
 
     If Not this.labelCache Is Nothing Then Exit Sub
 
-    Set this.labelCache = New Collection
+    Set this.labelCache = CreateBuffer()
     Set data = LabelColumnData()
 
     If data Is Nothing Then Exit Sub
@@ -535,6 +571,181 @@ End Sub
 Private Sub ResetCache()
     Set this.labelCache = Nothing
 End Sub
+
+'@sub-title Helper to compare cached labels using trimmed case-insensitive comparison.
+Private Function MatchLabel(ByVal cachedLabel As String, ByVal candidate As String) As Boolean
+    MatchLabel = (StrComp(Trim$(cachedLabel), Trim$(candidate), vbTextCompare) = 0)
+End Function
+
+'@section Process tracking
+'===============================================================================
+'@sub-title Track the ranges processed during the current registry cycle.
+Private Sub TrackProcessedRange(ByVal rngName As String)
+    Dim trimmed As String
+    Dim idx As Long
+
+    trimmed = Trim$(rngName)
+    If LenB(trimmed) = 0 Then Exit Sub
+
+    If this.processedRanges Is Nothing Then
+        Set this.processedRanges = CreateBuffer()
+    End If
+
+    If this.processedRanges.Length = 0 Then
+        this.processedRanges.Push trimmed
+        Exit Sub
+    End If
+
+    For idx = this.processedRanges.LowerBound To this.processedRanges.UpperBound
+        If StrComp(CStr(this.processedRanges.Item(idx)), trimmed, vbTextCompare) = 0 Then
+            Exit Sub
+        End If
+    Next idx
+
+    this.processedRanges.Push trimmed
+End Sub
+
+'@sub-title Determine whether a registry range was processed during the active cycle.
+Private Function WasRangeProcessed(ByVal rngName As String) As Boolean
+    Dim trimmed As String
+    Dim idx As Long
+
+    If this.processedRanges Is Nothing Then Exit Function
+    If this.processedRanges.Length = 0 Then Exit Function
+
+    trimmed = Trim$(rngName)
+    For idx = this.processedRanges.LowerBound To this.processedRanges.UpperBound
+        If StrComp(CStr(this.processedRanges.Item(idx)), trimmed, vbTextCompare) = 0 Then
+            WasRangeProcessed = True
+            Exit Function
+        End If
+    Next idx
+End Function
+
+'@sub-title Reset processed ranges tracking.
+Private Sub ResetProcessedRanges()
+    Set this.processedRanges = Nothing
+End Sub
+
+'@sub-title Remove labels that no longer exist in processed ranges.
+Private Sub RemoveObsoleteLabels(ByVal updateSequence As Long)
+    Dim tagRange As Range
+    Dim rowIndex As Long
+    Dim tagText As String
+    Dim rangeName As String
+    Dim sequenceValue As Long
+    Dim shouldDelete As Boolean
+
+    Set tagRange = TagColumnDataRange()
+    If tagRange Is Nothing Then Exit Sub
+
+    For rowIndex = tagRange.Rows.Count To 1 Step -1
+        tagText = Trim$(CStr(tagRange.Cells(rowIndex, 1).Value))
+        shouldDelete = False
+
+        If LenB(tagText) = 0 Then
+            shouldDelete = True
+        ElseIf ParseTag(tagText, rangeName, sequenceValue) Then
+            If WasRangeProcessed(rangeName) And sequenceValue < updateSequence Then
+                shouldDelete = True
+            End If
+        End If
+
+        If shouldDelete Then
+            DeleteRowAt rowIndex
+        End If
+    Next rowIndex
+End Sub
+
+'@sub-title Delete a row within the translations table when the index is valid.
+Private Sub DeleteRowAt(ByVal rowIndex As Long)
+    If rowIndex < 1 Then Exit Sub
+    If rowIndex > this.table.ListRows.Count Then Exit Sub
+    this.table.ListRows(rowIndex).Delete
+End Sub
+
+'@sub-title Parse helper tag text into its components.
+Private Function ParseTag(ByVal tagText As String, ByRef rangeName As String, ByRef sequenceValue As Long) As Boolean
+    Dim parts() As String
+    Dim numberText As String
+
+    parts = Split(tagText, "--")
+    If UBound(parts) < 1 Then Exit Function
+
+    rangeName = Trim$(parts(0))
+    numberText = Trim$(parts(1))
+
+    If LenB(rangeName) = 0 Then Exit Function
+    If LenB(numberText) = 0 Then Exit Function
+    If Not IsNumeric(numberText) Then Exit Function
+
+    sequenceValue = CLng(numberText)
+    ParseTag = True
+End Function
+
+'@sub-title Create a BetterArray buffer with deterministic bounds.
+Private Function CreateBuffer() As BetterArray
+    Dim buffer As BetterArray
+    Set buffer = New BetterArray
+    buffer.LowerBound = 1
+    Set CreateBuffer = buffer
+End Function
+
+'@section Reporting
+'===============================================================================
+'@sub-title Summarise missing translations per language and optionally prompt the user.
+Public Function NumberOfMissing() As String
+    Dim columnIndex As Long
+    Dim dataRange As Range
+    Dim missingCount As Long
+    Dim messageLines As BetterArray
+    Dim summary As String
+
+    ValidateInitialised
+
+    Set messageLines = CreateBuffer()
+    messageLines.Push "Translation Updated!"
+
+    For columnIndex = 2 To this.table.ListColumns.Count
+        On Error Resume Next
+            Set dataRange = this.table.ListColumns(columnIndex).DataBodyRange
+        On Error GoTo 0
+
+        If Not dataRange Is Nothing Then
+            missingCount = Application.WorksheetFunction.CountBlank(dataRange)
+            If missingCount > 0 Then
+                messageLines.Push missingCount & " labels are missing for column " & this.table.ListColumns(columnIndex).Name & "."
+            End If
+        End If
+        Set dataRange = Nothing
+    Next columnIndex
+
+    summary = JoinLines(messageLines)
+    NumberOfMissing = summary
+
+    If this.displayPrompts Then
+        MsgBox summary, vbInformation + vbOKOnly, "Done!"
+    End If
+End Function
+
+'@sub-title Join BetterArray text lines using environment specific new lines.
+Private Function JoinLines(ByVal lines As BetterArray) As String
+    Dim idx As Long
+    Dim builder As String
+
+    If lines Is Nothing Then Exit Function
+    If lines.Length = 0 Then Exit Function
+
+    For idx = lines.LowerBound To lines.UpperBound
+        If Len(builder) = 0 Then
+            builder = CStr(lines.Item(idx))
+        Else
+            builder = builder & vbLf & CStr(lines.Item(idx))
+        End If
+    Next idx
+
+    JoinLines = builder
+End Function
 
 '@sub-title Access the label column data range.
 Private Function LabelColumnData() As Range
@@ -712,7 +923,7 @@ Private Sub ISetupTranslationsTable_SwitchDefaultLanguage(ByVal languageName As 
     SwitchDefaultLanguage languageName
 End Sub
 
-Private Function ISetupTranslationsTable_SwitchableLanguages() As Collection
+Private Function ISetupTranslationsTable_SwitchableLanguages() As BetterArray
     Set ISetupTranslationsTable_SwitchableLanguages = SwitchableLanguages
 End Function
 
@@ -735,4 +946,16 @@ End Property
 
 Private Sub ISetupTranslationsTable_UpdateFromRegistry(ByVal registrySheet As Worksheet, Optional ByVal languages As String = vbNullString)
     UpdateFromRegistry registrySheet, languages
+End Sub
+
+Private Sub ISetupTranslationsTable_ResetSequence(ByVal registrySheet As Worksheet)
+    ResetSequence registrySheet
+End Sub
+
+Private Function ISetupTranslationsTable_NumberOfMissing() As String
+    ISetupTranslationsTable_NumberOfMissing = NumberOfMissing
+End Function
+
+Private Sub ISetupTranslationsTable_SetDisplayPrompts(ByVal state As Boolean)
+    SetDisplayPrompts state
 End Sub
