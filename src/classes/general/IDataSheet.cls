@@ -74,7 +74,7 @@ End Property
 '@jump:clean
 Public Sub Clean() : End Sub
 
-Public Sub AddFormatsColumns(ByVal matchColumnsCase As Boolean, ParamArray lsCols() As Variant)
+Public Sub AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVal resetColumns As Boolean, ParamArray lsCols() As Variant)
 End Sub
 
 '@jump:filterdata

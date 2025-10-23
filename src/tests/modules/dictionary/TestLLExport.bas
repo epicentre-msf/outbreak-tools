@@ -10,6 +10,7 @@ Private Const EXPORT_SHEET As String = "LLExportSpec"
 Private Const DICT_SHEET As String = "LLExportDict"
 Private Const VLIST_SHEET As String = "vlist1D-sheet1"
 Private Const PASSWORD_SHEET As String = "LLExportPasswords"
+Private Const EXPORT_TOTAL_NAME As String = "__ll_exports_total__"
 
 Private Assert As ICustomTest
 Private DictionarySheet As Worksheet
@@ -63,24 +64,160 @@ Public Sub TestCreateInitialisesData()
     CustomTestSetTitles Assert, "LLExport", "TestCreateInitialisesData"
     Assert.IsTrue (Not Manager.Data Is Nothing), "Expected Data to be initialised"
     Assert.AreEqual 1, Manager.NumberOfExports, "Should report single export row"
+    Assert.AreEqual 1, StoredExportTotal(), "Hidden export counter should match initial export count"
 End Sub
 
 '@TestMethod("LLExport")
 Public Sub TestAddRowsAppliesDefaults()
     CustomTestSetTitles Assert, "LLExport", "TestAddRowsAppliesDefaults"
-    Manager.AddRows 1
+    Manager.AddRows
     Assert.AreEqual 2, Manager.NumberOfExports, "Row count should grow by one"
     Assert.AreEqual "no", Manager.ColumnValue(2, "include personal identifiers"), _
                      "Include personal identifiers should default to 'no'"
+    Dim exportIdx As Long
+    exportIdx = ColumnIndexOf("export number")
+    Assert.AreEqual "export 1", ExportSheet.ListObjects(1).DataBodyRange.Cells(1, exportIdx).Value, _
+                     "Existing export should be normalised to prefixed identifier"
+    Assert.AreEqual "export 2", ExportSheet.ListObjects(1).DataBodyRange.Cells(2, exportIdx).Value, _
+                     "Newly added export should receive the next identifier"
+End Sub
+
+'@TestMethod("LLExport")
+Public Sub TestAddRowsSynchronisesDictionaryColumns()
+    CustomTestSetTitles Assert, "LLExport", "TestAddRowsSynchronisesDictionaryColumns"
+
+    Dim dict As ILLdictionary
+    Dim idx As Long
+    Dim startTotal As Long
+
+    Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
+
+    For idx = 5 To 2 Step -1
+        dict.RemoveColumn "Export " & CStr(idx)
+    Next idx
+
+    startTotal = Manager.NumberOfExports
+    Assert.AreEqual startTotal, StoredExportTotal(), "Stored export counter should match current number before adding rows"
+
+    Manager.AddRows dict:=dict
+
+    Assert.AreEqual startTotal + 1, StoredExportTotal(), "Stored export counter should increment after adding rows"
+    Assert.AreEqual startTotal + 1, Manager.NumberOfExports, "NumberOfExports should report the updated total after adding rows"
+    Assert.IsTrue dict.ColumnExists("Export 2"), "Dictionary should expose Export 2 column after row addition"
+    Assert.AreEqual StoredExportTotal(), CLng(dict.TotalNumberOfExports), "Dictionary export total should mirror stored counter"
+End Sub
+
+'@TestMethod("LLExport")
+Public Sub TestAddRowsWithoutDictionaryAfterReset()
+    CustomTestSetTitles Assert, "LLExport", "TestAddRowsWithoutDictionaryAfterReset"
+
+    Manager.ResetCaches
+    Manager.AddRows
+
+    Assert.AreEqual 2, Manager.NumberOfExports, "Row count should grow when dictionary is not supplied"
+    Assert.AreEqual 2, StoredExportTotal(), "Hidden export counter should align with table rows even without dictionary"
+End Sub
+
+'@TestMethod("LLExport")
+Public Sub TestSyncDictionaryIgnoresNonExportPrefixedColumns()
+    CustomTestSetTitles Assert, "LLExport", "TestSyncDictionaryIgnoresNonExportPrefixedColumns"
+
+    Dim dict As ILLdictionary
+
+    Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
+
+    dict.RemoveColumn "Export 3"
+    dict.AddColumn "mainlab_3_backup"
+
+    Manager.AddRows dict:=dict
+
+    Assert.IsTrue dict.ColumnExists("mainlab_3_backup"), "Custom column should remain untouched"
+    Assert.AreEqual 2, StoredExportTotal(), "Stored export counter should reflect actual export rows"
+    Assert.AreEqual 2, CLng(dict.TotalNumberOfExports), "Dictionary total should ignore non-export-prefixed columns"
+End Sub
+
+'@TestMethod("LLExport")
+Public Sub TestPublicSyncDictionaryExportsWithAndWithoutParameter()
+    CustomTestSetTitles Assert, "LLExport", "TestPublicSyncDictionaryExportsWithAndWithoutParameter"
+
+    Dim dict As ILLdictionary
+
+    Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
+
+    Manager.AddRows dict:=dict
+
+    dict.RemoveColumn "Export 2"
+    Manager.SyncDictionaryExports dict
+    Assert.IsTrue dict.ColumnExists("Export 2"), "SyncDictionaryExports should restore export columns when dictionary provided"
+
+    dict.RemoveColumn "Export 2"
+    Manager.SyncDictionaryExports
+    Assert.IsTrue dict.ColumnExists("Export 2"), "SyncDictionaryExports should reuse cached dictionary when none supplied"
 End Sub
 
 '@TestMethod("LLExport")
 Public Sub TestRemoveRowsDeletesEmpty()
     CustomTestSetTitles Assert, "LLExport", "TestRemoveRowsDeletesEmpty"
-    Manager.AddRows 1
+    Manager.AddRows
     ExportSheet.ListObjects(1).DataBodyRange.Rows(2).ClearContents
-    Manager.RemoveRows totalCount:=0
+    Manager.RemoveRows
     Assert.AreEqual 1, Manager.NumberOfExports, "Removing rows should trim empty rows"
+    Assert.AreEqual "export 1", ExportSheet.ListObjects(1).DataBodyRange.Cells(1, ColumnIndexOf("export number")).Value, _
+                     "Remaining export should keep its prefixed identifier"
+End Sub
+
+'@TestMethod("LLExport")
+Public Sub TestRemoveRowsPrunesDictionaryColumns()
+    CustomTestSetTitles Assert, "LLExport", "TestRemoveRowsPrunesDictionaryColumns"
+
+    Dim dict As ILLdictionary
+    Dim idx As Long
+
+    Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
+
+    For idx = 5 To 4 Step -1
+        dict.RemoveColumn "Export " & CStr(idx)
+    Next idx
+
+    Manager.AddRows dict:=dict
+    Manager.AddRows dict:=dict
+    Assert.AreEqual 3, StoredExportTotal(), "Expected stored export counter to include added rows"
+
+    Manager.RemoveRows dict:=dict
+
+    Assert.AreEqual 1, StoredExportTotal(), "Stored export counter should reflect the trimmed rows"
+    Assert.AreEqual 1, Manager.NumberOfExports, "NumberOfExports should reflect the trimmed export rows"
+    Assert.IsFalse dict.ColumnExists("Export 2"), "Export 2 column should be removed when only one export remains"
+    Assert.IsFalse dict.ColumnExists("Export 3"), "Export 3 column should be removed when not present"
+    Assert.AreEqual 1, CLng(dict.TotalNumberOfExports), "Dictionary export count should match remaining exports"
+End Sub
+
+'@TestMethod("LLExport")
+Public Sub TestRemoveRowsKeepsColumnsForRemainingIdentifiers()
+    CustomTestSetTitles Assert, "LLExport", "TestRemoveRowsKeepsColumnsForRemainingIdentifiers"
+
+    Dim dict As ILLdictionary
+    Dim exportIdx As Long
+    Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
+
+    dict.RemoveColumn "Export 5"
+
+    Manager.AddRows dict:=dict
+    Manager.AddRows dict:=dict
+    Manager.AddRows dict:=dict
+
+    exportIdx = ColumnIndexOf("export number")
+    Assert.AreEqual "export 4", ExportSheet.ListObjects(1).DataBodyRange.Cells(4, exportIdx).Value, _
+                     "Fourth export should receive identifier export 4"
+
+    ExportSheet.ListObjects(1).ListRows(3).Delete
+
+    Manager.RemoveRows
+
+    Assert.AreEqual 1, Manager.NumberOfExports, "Row count should drop after deleting one export"
+    Assert.AreEqual 1, StoredExportTotal(), "Stored export counter should align with current export count"
+    Assert.IsFalse dict.ColumnExists("Export 4"), "Export column 4 should persist when its identifier still exists"
+    Assert.IsFalse dict.ColumnExists("Export 3"), "Export column 3 should be removed when identifier is missing"
 End Sub
 
 '@TestMethod("LLExport")
@@ -125,7 +262,7 @@ End Sub
 '@TestMethod("LLExport")
 Public Sub TestExportFileNameLogsWhenInactive()
     CustomTestSetTitles Assert, "LLExport", "TestExportFileNameLogsWhenInactive"
-    Manager.AddRows 1
+    Manager.AddRows
     ExportSheet.ListObjects(1).DataBodyRange.Cells(2, ColumnIndexOf("status")).Value = "inactive"
     Dim name As String
     name = Manager.ExportFileName(2, LLdictionary.Create(DictionarySheet, 1, 1), PasswordsSubject)
@@ -150,24 +287,22 @@ Public Sub TestIsActiveReflectsStatus()
 End Sub
 
 '@TestMethod("LLExport")
-Public Sub TestAddRowsRejectsInvalidCount()
-    CustomTestSetTitles Assert, "LLExport", "TestAddRowsRejectsInvalidCount"
-    On Error GoTo ExpectError
+Public Sub TestRemoveRowsHonoursThreshold()
+    CustomTestSetTitles Assert, "LLExport", "TestRemoveRowsHonoursThreshold"
 
-    Manager.AddRows 0
-    Assert.LogFailure "AddRows should reject counts smaller than one"
-    Exit Sub
+    Manager.AddRows
+    Manager.RemoveRows rowCount:=0
+    Assert.AreEqual 2, Manager.NumberOfExports, "Rows with data should remain when threshold is zero"
 
-ExpectError:
-    Assert.AreEqual ProjectError.InvalidArgument, Err.Number, _
-                     "Invalid row counts should raise InvalidArgument"
-    Err.Clear
+    Manager.RemoveRows rowCount:=2
+    Assert.AreEqual 1, Manager.NumberOfExports, "Rows at or below the threshold should be trimmed"
 End Sub
 
 '@TestMethod("LLExport")
 Public Sub TestActiveExportNumbersReturnsActiveRows()
     CustomTestSetTitles Assert, "LLExport", "TestActiveExportNumbersReturnsActiveRows"
-    Manager.AddRows 2
+    Manager.AddRows
+    Manager.AddRows
 
     Dim statusCol As Long
     statusCol = ColumnIndexOf("status")
@@ -243,4 +378,23 @@ End Sub
 
 Private Function ColumnIndexOf(ByVal headerName As String) As Long
     ColumnIndexOf = ExportSheet.ListObjects(1).ListColumns(headerName).Index
+End Function
+
+Private Function StoredExportTotal() As Long
+    Dim definition As Name
+    Dim evaluated As String
+
+    On Error Resume Next
+        Set definition = ExportSheet.Names(EXPORT_TOTAL_NAME)
+    On Error GoTo 0
+
+    If definition Is Nothing Then Exit Function
+
+    On Error Resume Next
+        evaluated = Trim$(Replace$(definition.Value, "=", vbNullString))
+    On Error GoTo 0
+
+    If LenB(evaluated) <> 0 Then
+        StoredExportTotal = CLng(evaluated)
+    End If
 End Function

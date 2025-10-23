@@ -30,7 +30,8 @@ Private Type TScopeState
     supportsEvents As Boolean
     cursor As XlMousePointer                    'Cached cursor value
     snapshotCaptured As Boolean                 'Flag indicating a snapshot is ready for restoration
-    isBusy As Boolean                           'Flag indicating busy mode is currently applied
+    isBusy As Boolean
+    calcBeforeSave As Boolean                    'Flag indicating busy mode is currently applied
 End Type
 
 Private this As TScopeState
@@ -60,30 +61,6 @@ End Function
 Public Property Get Self() As IApplicationState
     Set Self = Me
 End Property
-
-
-'@section Busy state orchestration
-'===============================================================================
-'@sub-title Apply busy settings
-'@details Switches the application into the optimised busy configuration while
-'@details remembering the captured snapshot for later restoration.
-Public Sub ApplyBusyState(Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow)
-    ApplyBusyStateCore False, busyCursor
-End Sub
-
-'@sub-title Restore original settings
-'@details Restores the cached values and leaves the application in its original
-'@details state.
-Public Sub Restore()
-    RestoreInternal False
-End Sub
-
-'@sub-title Refresh snapshot
-'@details Re-captures the current application configuration. This requires the
-'@details scope to be idle (Restore must have been called first).
-Public Sub RefreshSnapshot()
-    RefreshSnapshotCore
-End Sub
 
 
 '@section Introspection helpers
@@ -127,6 +104,7 @@ End Sub
 '@section Core logic
 '===============================================================================
 Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False, _
+                               Optional ByVal calculateOnSave As Boolean = True _
                                Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow)
     Dim target As Application
 
@@ -140,6 +118,7 @@ Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False,
         target.DisplayAlerts = False
         target.Calculation = xlCalculationManual
         target.EnableEvents = suppressEvents
+        target.CalculateBeforeSave = calculateOnSave
         target.Cursor = busyCursor
         If this.supportsAnimations Then
             SafeSetEnableAnimations target, False
@@ -165,6 +144,7 @@ Private Sub CaptureSnapshotCore()
     this.calculationMode = target.Calculation
     this.supportsAnimations = TryReadEnableAnimations(target, this.enableAnimations)
     this.supportsEvents = target.EnableEvents
+    this.calcBeforeSave = target.CalculateBeforeSave
     this.cursor = target.Cursor
     this.snapshotCaptured = True
 End Sub
@@ -194,7 +174,7 @@ Private Sub EnsureSnapshot(ByVal operationName As String)
 
     If Not this.snapshotCaptured Then
         ThrowError ProjectError.ErrorUnexpectedState, _
-                  operationName & " requires a captured snapshot"
+                  operationName & " requires a captured snapshot. Unexpected error"
     End If
 End Sub
 
@@ -275,8 +255,9 @@ End Sub
 '@section Interface implementation
 '===============================================================================
 Private Sub IApplicationState_ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
+                                             Optional ByVal calculateOnSave As Boolean = True, _
                                              Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow)
-    ApplyBusyStateCore suppressEvents, busyCursor
+    ApplyBusyStateCore suppressEvents, calculateOnSave, busyCursor
 End Sub
 
 Private Sub IApplicationState_Restore()

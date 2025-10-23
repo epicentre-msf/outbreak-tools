@@ -962,8 +962,7 @@ Private Sub Sort(Optional ByVal colName As String = vbNullString, _
   'Sort multiple column names (in a Betterarray)
   If (TypeName(colList) = "BetterArray") Then
     If (colList.Length > 0) Then
-      For counter = colList.LowerBound To colList.UpperBound
-
+      For counter = colList.UpperBound To colList.LowerBound
         cName = colList.Item(counter)
         SortHelper colName:=cName, directSort:=directSort
       Next

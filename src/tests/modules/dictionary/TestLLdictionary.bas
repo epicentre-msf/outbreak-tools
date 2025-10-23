@@ -15,6 +15,7 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 
 
 Private Const DICT_SHEET As String = "LLDictTest"
+Private Const EXPORT_TOTAL_NAME As String = "__ll_exports_total__"
 
 Private Assert As ICustomTest
 Private Dictionary As ILLdictionary
@@ -24,6 +25,7 @@ Private Dictionary As ILLdictionary
 
 Private Sub ResetDictionarySheet()
     PrepareDictionaryFixture DICT_SHEET
+    RemoveDictionaryExportName ThisWorkbook.Worksheets(DICT_SHEET)
 End Sub
 
 '@section Module lifecycle
@@ -61,6 +63,7 @@ Private Sub TestCleanup()
     If Not Assert Is Nothing Then
         Assert.Flush
     End If
+    RemoveDictionaryExportName ThisWorkbook.Worksheets(DICT_SHEET)
     'Drop references to ensure subsequent tests cannot accidentally reuse
     'stateful resources from previous runs.
     Set Dictionary = Nothing
@@ -282,3 +285,168 @@ Fail:
     If Not exportBook Is Nothing Then DeleteWorkbook exportBook
     CustomTestLogFailure Assert, "TestExportCreatesWorkbook", Err.Number, Err.Description
 End Sub
+
+'@TestMethod("LLdictionary")
+Public Sub TestSetTotalNumberOfExportsPersistsName()
+    CustomTestSetTitles Assert, "LLdictionary", "TestSetTotalNumberOfExportsPersistsName"
+
+    Dim definition As Name
+    Dim sheet As Worksheet
+
+    On Error GoTo Fail
+
+    Set sheet = ThisWorkbook.Worksheets(DICT_SHEET)
+    RemoveDictionaryExportName sheet
+
+    Dictionary.TotalNumberOfExports = 37
+
+    Set definition = SheetNameDefinition(sheet, EXPORT_TOTAL_NAME)
+    Assert.IsTrue (Not definition Is Nothing), "Expected hidden name to be created on the dictionary sheet"
+    Assert.AreEqual 37, NameNumericValue(definition), "Hidden export counter should match configured total"
+    Assert.IsFalse definition.Visible, "Hidden export counter must remain invisible"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSetTotalNumberOfExportsPersistsName", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLdictionary")
+Public Sub TestCreateOverridesStoredExportCounterWhenRequested()
+    CustomTestSetTitles Assert, "LLdictionary", "TestCreateOverridesStoredExportCounterWhenRequested"
+
+    Dim sheet As Worksheet
+    Dim definition As Name
+    Dim created As ILLdictionary
+
+    On Error GoTo Fail
+
+    Set sheet = ThisWorkbook.Worksheets(DICT_SHEET)
+    RemoveDictionaryExportName sheet
+    sheet.Names.Add Name:=EXPORT_TOTAL_NAME, RefersToR1C1:="=42", Visible:=False
+
+    Set created = LLdictionary.Create(sheet, 1, 1, 35)
+
+    Set definition = SheetNameDefinition(sheet, EXPORT_TOTAL_NAME)
+    Assert.IsTrue Not definition Is Nothing, "Hidden counter should remain defined after creation"
+    Assert.AreEqual 35, NameNumericValue(definition), "Create should persist the requested total number of exports"
+    Assert.AreEqual 35, CLng(created.TotalNumberOfExports), "Returned dictionary should expose the requested export total"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCreateOverridesStoredExportCounterWhenRequested", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLdictionary")
+Public Sub TestExportWritesExportCounter()
+    CustomTestSetTitles Assert, "LLdictionary", "TestExportWritesExportCounter"
+
+    Dim exportBook As Workbook
+    Dim exportedSheet As Worksheet
+    Dim definition As Name
+
+    On Error GoTo Fail
+
+    Dictionary.TotalNumberOfExports = 29
+    Set exportBook = NewWorkbook()
+
+    Dictionary.Export exportBook
+
+    Set exportedSheet = exportBook.Worksheets(DICT_SHEET)
+    Set definition = SheetNameDefinition(exportedSheet, EXPORT_TOTAL_NAME)
+
+    Assert.IsTrue Not definition Is Nothing, "Export should create hidden name in destination sheet"
+    Assert.AreEqual 29, NameNumericValue(definition), "Destination hidden counter should mirror dictionary total"
+    Assert.IsFalse definition.Visible, "Exported counter should remain hidden"
+
+    DeleteWorkbook exportBook
+    Exit Sub
+
+Fail:
+    If Not exportBook Is Nothing Then DeleteWorkbook exportBook
+    CustomTestLogFailure Assert, "TestExportWritesExportCounter", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLdictionary")
+Public Sub TestImportRestoresExportCounter()
+    CustomTestSetTitles Assert, "LLdictionary", "TestImportRestoresExportCounter"
+
+    Dim exportBook As Workbook
+    Dim importedSheet As Worksheet
+    Dim definition As Name
+
+    On Error GoTo Fail
+
+    Dictionary.TotalNumberOfExports = 23
+    Set exportBook = NewWorkbook()
+
+    Dictionary.Export exportBook
+
+    Set importedSheet = exportBook.Worksheets(DICT_SHEET)
+    RemoveDictionaryExportName importedSheet
+    importedSheet.Names.Add Name:=EXPORT_TOTAL_NAME, RefersToR1C1:="=11", Visible:=False
+
+    Dictionary.TotalNumberOfExports = 3
+    Dictionary.Import importedSheet, 1, 1
+
+    Assert.AreEqual 11, CLng(Dictionary.TotalNumberOfExports), "Import should adopt stored export totals"
+
+    Set definition = SheetNameDefinition(ThisWorkbook.Worksheets(DICT_SHEET), EXPORT_TOTAL_NAME)
+    Assert.IsTrue Not (definition Is Nothing), "Dictionary sheet should expose hidden counter after import"
+    Assert.AreEqual 11, NameNumericValue(definition), "Dictionary hidden counter should match imported value"
+
+    DeleteWorkbook exportBook
+    Exit Sub
+
+Fail:
+    If Not exportBook Is Nothing Then DeleteWorkbook exportBook
+    CustomTestLogFailure Assert, "TestImportRestoresExportCounter", Err.Number, Err.Description
+End Sub
+
+'@section Helpers
+'===============================================================================
+
+Private Function SheetNameDefinition(ByVal sheet As Worksheet, ByVal nameId As String) As Name
+    Dim definition As Name
+
+    If sheet Is Nothing Then Exit Function
+
+    For Each definition In sheet.Names
+        If StrComp(LocalName(definition.Name), nameId, vbTextCompare) = 0 Then
+            Set SheetNameDefinition = definition
+            Exit Function
+        End If
+    Next definition
+End Function
+
+Private Sub RemoveDictionaryExportName(ByVal sheet As Worksheet)
+    Dim definition As Name
+
+    If sheet Is Nothing Then Exit Sub
+
+    Set definition = SheetNameDefinition(sheet, EXPORT_TOTAL_NAME)
+    If Not definition Is Nothing Then definition.Delete
+End Sub
+
+Private Function LocalName(ByVal qualifiedName As String) As String
+    Dim exclPos As Long
+
+    exclPos = InStr(qualifiedName, "!")
+    If exclPos = 0 Then
+        LocalName = qualifiedName
+    Else
+        LocalName = Mid$(qualifiedName, exclPos + 1)
+    End If
+End Function
+
+Private Function NameNumericValue(ByVal definition As Name) As Long
+    Dim evaluated As String
+    Dim hostWorkbook As Workbook
+
+    If definition Is Nothing Then Exit Function
+
+    On Error Resume Next
+        evaluated = Trim$(Replace$(definition.Value, "=", vbNullString))
+    On Error GoTo 0
+
+    If LenB(evaluated) <> 0 Then NameNumericValue = CLng(evaluated)
+End Function

@@ -466,6 +466,10 @@ Private Sub IAnalysis_RemoveRows()
     RemoveRows
 End Sub
 
+Private Sub IAnalysis_ManageRows(Optional ByVal del As Boolean = False)
+    ManageRows del
+End Sub
+
 '@jump:Import
 Private Sub IAnalysis_Import(ByVal fromWksh As Worksheet)
     Import fromWksh

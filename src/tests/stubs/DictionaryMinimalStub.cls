@@ -16,6 +16,8 @@ Option Explicit
 
 Implements ILLdictionary
 
+Private currentTotalExports As Long
+
 Private Property Get ILLdictionary_Data() As IDataSheet
     Set ILLdictionary_Data = Nothing
 End Property
@@ -30,7 +32,11 @@ Private Property Get ILLdictionary_Prepared() As Boolean
 End Property
 
 Private Property Get ILLdictionary_TotalNumberOfExports() As Long
-    ILLdictionary_TotalNumberOfExports = 0
+    ILLdictionary_TotalNumberOfExports = currentTotalExports
+End Property
+
+Private Property Let ILLdictionary_TotalNumberOfExports(ByVal numberOfExports As Long)
+    currentTotalExports = numberOfExports
 End Property
 
 Private Function ILLdictionary_ColumnExists(ByVal colName As String, Optional ByVal checkValidity As Boolean) As Boolean

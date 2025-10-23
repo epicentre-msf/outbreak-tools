@@ -524,15 +524,13 @@ Private Sub Translate(ByVal trads As ITranslationObject)
     trads.TranslateRange lblRng
 End Sub
 
-
+'@label:ManageRows
 '@sub-title Resize the custom table in the worksheet
 '@param del Boolean. Delete or Add new rows
 '@param nbRows Long, number of rows to add. Default is 5
 '@param insertShift Boolean. Insert new lines when Adding new rows (Default is False)
 'Add / Remove Rows
-Private Sub Resize(Optional ByVal del As Boolean = False, _ 
-                   Optional ByVal nbRows As Long = 5, _ 
-                   Optional ByVal insertShift As Boolean = False)
+Private Sub ManageRows(Optional ByVal del As Boolean = False)
     Dim sh As Worksheet
     Dim Lo As ListObject
     Dim tabl As ICustomTable
@@ -548,7 +546,7 @@ Private Sub Resize(Optional ByVal del As Boolean = False, _
     If del Then
         tabl.RemoveRows
     Else
-        tabl.AddRows nbRows:=nbRows, insertShift:=insertShift
+        tabl.AddRows
     End If
 End Sub
 
@@ -558,16 +556,15 @@ End Sub
 '@param insertShift Optional, Boolean. Insert new lines when Adding new rows. 
 '       Default is False
 '@export
-Private Sub AddRows(Optional ByVal nbRows As Long = 5, _ 
-                    Optional ByVal insertShift As Boolean = False)
-    Resize del:=False, insertShift:=insertShift, nbRows:=nbRows
+Private Sub AddRows()
+    ManageRows del:=False
 End Sub
 
 '@label:RemoveRows
 '@sub-title Remove Rows in the choice associated custom table
 '@export
 Private Sub RemoveRows()
-    Resize del:=True
+    ManageRows del:=True
 End Sub
 
 '@label:AllChoices
@@ -924,9 +921,8 @@ End Sub
 
 '@jump:AddRows
 'Add Rows to the choice associated custom table
-Private Sub ILLChoices_AddRows(Optional ByVal nbRows As Long = 5, _ 
-                              Optional ByVal insertShift As Boolean = False)
-    AddRows nbRows:=nbRows, insertShift:=insertShift
+Private Sub ILLChoices_AddRows()
+    AddRows
 End Sub
 
 
@@ -934,6 +930,10 @@ End Sub
 'Remove Rows in the choice associated custom table
 Private Sub ILLChoices_RemoveRows()
    RemoveRows
+End Sub
+
+Private Sub ILLChoices_ManageRows(Optional ByVal del As Boolean = False)
+    ManageRows del
 End Sub
 
 '@jump:AllChoices

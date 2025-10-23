@@ -1,4 +1,4 @@
-Attribute VB_Name = "EventsRibbon"
+Attribute VB_Name = "EventsSetupRibbon"
 
 Option Explicit
 
