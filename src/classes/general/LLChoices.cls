@@ -92,7 +92,7 @@ Public Function Create(ByVal choiceWorksheet As Worksheet, _
     With New LLChoices
         Set .ChoiceData = customDataSheet
         If  (Not trads Is Nothing) Then
-            If TypeName(trads) = "Translation" Then
+            If TypeName(trads) = "TranslationObject" Then
                 'Set the translation object if required
                 .HasTranslation = True
                 Set .TradObject = trads
@@ -115,7 +115,8 @@ End Property
 
 '@prop-title Set translation property
 Public Property Let HasTranslation(ByVal hastrads As Boolean)
-    this.hasTrads = hastrads
+    this.hasTrads = hastrads And Not (this.trads Is Nothing)
+    If Not this.hasTrads Then Set this.trads = Nothing
 End Property
 
 
@@ -124,7 +125,7 @@ End Property
 '@return A Boolean
 '@export
 Public Property Get HasTranslation() As Boolean
-    HasTranslation = this.hasTrads
+    HasTranslation = this.hasTrads And Not (this.trads Is Nothing)
 End Property
 
 
@@ -138,6 +139,7 @@ End Property
 
 Public Property Set TradObject(ByVal trads As ITranslationObject)
     Set this.trads = trads
+    this.hasTrads = Not (trads Is Nothing)
 End Property
 
 
@@ -637,6 +639,7 @@ Public Property Get Categories(ByVal choiceName As String, _
                             criteriaName:=choiceName, _ 
                             returnedColumnName:=ChoiceLabel(), _
                             includeHeaders:=False)
+    If lngcat Is Nothing Then Set lngcat = New BetterArray
     'Only look for shortlabels in case there is a need
     If useShortlabels Then
         'Short Categories values
@@ -646,6 +649,7 @@ Public Property Get Categories(ByVal choiceName As String, _
             returnedColumnName:=LabelShort(), _
             includeHeaders:=False _
         )
+        If shrtcat Is Nothing Then Set shrtcat = New BetterArray
 
         'In case the long and short categories don't have the same 
         'length, return the long one, because of a probable error
@@ -661,7 +665,13 @@ Public Property Get Categories(ByVal choiceName As String, _
     End If
 
 ReturnLongCat:
-    Set Categories = lngcat.Clone()
+    If lngcat Is Nothing Then
+        Dim emptyResult As BetterArray
+        Set emptyResult = New BetterArray
+        Set Categories = emptyResult.Clone()
+    Else
+        Set Categories = lngcat.Clone()
+    End If
 End Property
 
 
@@ -692,10 +702,12 @@ Private Property Get ConcatenateCategories( _
 
     If lst.Length = 0 Then Exit Property
 
-    If (TypeName(trads) = "Translation") Then
-        For counter = lst.LowerBound To lst.UpperBound
-            lst.Item(counter) = trads.TranslatedValue(lst.Item(counter))
-        Next
+    If Not trads Is Nothing Then
+        If StrComp(TypeName(trads), "TranslationObject", vbTextCompare) = 0 Then
+            For counter = lst.LowerBound To lst.UpperBound
+                lst.Item(counter) = trads.TranslatedValue(lst.Item(counter))
+            Next
+        End If
     End If
 
     ConcatenateCategories = lst.ToString( _
@@ -853,6 +865,10 @@ End Property
 'Check if the choices have translation
 Private Property Get ILLChoices_HasTranslation() As Boolean
     ILLChoices_HasTranslation = HasTranslation()
+End Property
+
+Private Property Let ILLChoices_HasTranslation(ByVal hastrads As Boolean)
+    HasTranslation = hasTrads
 End Property
 
 '@jump:TradObject

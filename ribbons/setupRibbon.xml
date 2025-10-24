@@ -7,9 +7,9 @@
           <button id="btnRes" label="Resize tables" imageMso="SheetRowsDelete" size="large" onAction="clickResize"/>
           <button id="btnFilt" label="Remove all filters" imageMso="FilterClearAllFilters" size="large" onAction="clickFilters"/>
           <button id="btnSort" label="Sort tables" image="sort" size="large" onAction="clickSortTables"/>
-          <button id="btnInserRow" label="Insert row" image="insertrow" size="large" onAction="clickInsertRow"/>
-          <button id="btnDelLoRow" label="Delete table row" image="dellorows" size="large" onAction="clickDelLoRows"/>
-          <button id="btnDelLoCol" label="Delete table column" image="dellocolumn" size="large" onAction="clickDelLoColumn"/>  
+          <button id="btnInsertRow" label="Insert row" image="insertrow" size="large" onAction="clickInsertRow"/>
+          <button id="btnDelLoRow" label="Delete table row" image="dellorows" size="large" onAction="clickDelLoRows" getVisible="DelVisible"/>
+          <button id="btnDelLoCol" label="Delete table column" image="dellocolumn" size="large" onAction="clickDelLoColumn" getVisible="DelVisible"/>  
         </group>
         <group id="customGroupTrans">
           <button id="btnTransAdd" label="Update translation table" image="update" size="large" onAction="clickAddTrans"/>
@@ -27,7 +27,7 @@
           <button id="btnClear" label="Clear data in current setup" imageMso="ClearAll" size="large" onAction="clickClearSetup"/>
           <button id="btnEditStyle" label="Edit formatter" image="format" size="large" onAction="clickEditStyle"/>
         </group>
-        <group id="customGroupDev" label="Dev">
+        <group id="customGroupDev" label="Dev" getVisible="DevGroupVisible">
           <button id="btnInit" label="Initialize" image="initialise" size="large" onAction="clickDevInitialize"/>
           <button id="btnFolder" label="Codes Folder" image="folder" size="large" onAction="clickDevFolder"/>
           <button id="btnImpCodes" label="Import Codes" image="upload2" size="large" onAction="clickDevImport"/>

@@ -350,6 +350,38 @@ Fail:
 End Sub
 
 '@TestMethod("LLChoices")
+Public Sub TestCategoriesReturnEmptyForMissingChoice()
+    CustomTestSetTitles Assert, "LLChoices", "TestCategoriesReturnEmptyForMissingChoice"
+    On Error GoTo Fail
+
+    Dim categories As BetterArray
+    Set categories = Choices.Categories("missing_choice")
+
+    Assert.AreEqual 0, categories.Length, "Missing choice should return an empty BetterArray"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestCategoriesReturnEmptyForMissingChoice", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLChoices")
+Public Sub TestHasTranslationGuardedWhenNoTranslator()
+    CustomTestSetTitles Assert, "LLChoices", "TestHasTranslationGuardedWhenNoTranslator"
+    On Error GoTo Fail
+
+    Choices.HasTranslation = True
+
+    Assert.IsFalse Choices.HasTranslation, "HasTranslation should remain False when no translator is wired"
+    Assert.AreEqual "choice 1 | choice 2 | choice 3 | choice 4", _
+                    Choices.ConcatenateCategories("list_multiple"), _
+                    "ConcatenateCategories should still produce default text without translator"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestHasTranslationGuardedWhenNoTranslator", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLChoices")
 Public Sub TestImportReplacesChoices()
     CustomTestSetTitles Assert, "LLChoices", "TestImportReplacesChoices"
     On Error GoTo Fail

@@ -296,9 +296,9 @@ Private Sub Sort()
             True, "Section" _ 
         )
 
-        csTab.Sort colName, directSort:=True
-        If loName = TIMESERIES Then csTab.Sort "Table order", directSort:=False
-
+        If loName = TIMESERIES Then csTab.Sort "Table order", directSort:=True
+        csTab.Sort colName, directSort:=False
+       
         'Resize the listObject
         csTab.RemoveRows totalCount:=rowCount
     Next

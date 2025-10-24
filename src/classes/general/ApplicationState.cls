@@ -104,7 +104,7 @@ End Sub
 '@section Core logic
 '===============================================================================
 Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False, _
-                               Optional ByVal calculateOnSave As Boolean = True _
+                               Optional ByVal calculateOnSave As Boolean = True, _
                                Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow)
     Dim target As Application
 
@@ -117,7 +117,7 @@ Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False,
         target.ScreenUpdating = False
         target.DisplayAlerts = False
         target.Calculation = xlCalculationManual
-        target.EnableEvents = suppressEvents
+        target.EnableEvents = (Not suppressEvents)
         target.CalculateBeforeSave = calculateOnSave
         target.Cursor = busyCursor
         If this.supportsAnimations Then
@@ -197,6 +197,7 @@ Private Sub RestoreInternal(ByVal silent As Boolean)
         target.DisplayAlerts = this.displayAlerts
         target.Calculation = this.calculationMode
         target.EnableEvents = this.supportsEvents
+        target.CalculateBeforeSave = this.calcBeforeSave
         target.Cursor = this.cursor
         If this.supportsAnimations Then
             SafeSetEnableAnimations target, this.enableAnimations
@@ -243,14 +244,6 @@ End Function
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise errNumber, "ApplicationState", message
 End Sub
-
-Private Sub Class_Terminate()
-    On Error Resume Next
-        RestoreInternal True
-    On Error GoTo 0
-    Set excelApp = Nothing
-End Sub
-
 
 '@section Interface implementation
 '===============================================================================
