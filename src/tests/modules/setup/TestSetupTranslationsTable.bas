@@ -95,6 +95,7 @@ End Sub
 '@TestMethod("SetupTranslationsTable")
 Public Sub TestEnsureLanguagesAddsUniqueColumns()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestEnsureLanguagesAddsUniqueColumns"
+    On Error GoTo Fail
 
     Subject.EnsureLanguages "French;French;German;"
 
@@ -102,11 +103,16 @@ Public Sub TestEnsureLanguagesAddsUniqueColumns()
     Assert.IsTrue HasColumn("English"), "Existing base column should remain"
     Assert.IsTrue HasColumn("French"), "French column should be created"
     Assert.IsTrue HasColumn("German"), "German column should be created"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestEnsureLanguagesAddsUniqueColumns", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
 Public Sub TestUpdateFromRegistryAddsLabelsAndTags()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistryAddsLabelsAndTags"
+    On Error GoTo Fail
 
     Subject.UpdateFromRegistry RegistrySheet, "French"
 
@@ -115,13 +121,18 @@ Public Sub TestUpdateFromRegistryAddsLabelsAndTags()
     Assert.AreEqual "RNG_Greetings--1", TagForLabel("Good bye"), "Second entry from greetings range should be tagged accordingly"
     Assert.AreEqual "RNG_Farewell--1", TagForLabel("Farewell"), "Farewell range should be imported on first execution even with status no"
     Assert.AreEqual "RNG_Formula--1", TagForLabel("Morning"), "Formula text Morning should be extracted and tagged"
-    Assert.IsTrue WorkbookHasName(COUNTER_NAME), "Update sequence counter should be stored as a workbook name"
-    Assert.AreEqual CLng(1), FixtureWorkbook.Names(COUNTER_NAME).RefersToRange.Value, "Counter should be incremented to one after first update"
+    Assert.IsTrue WorkbookHasName(COUNTER_NAME), "Update sequence counter should be stored as a worksheet name"
+    Assert.AreEqual CLng(1), CounterValue(), "Counter should be incremented to one after first update"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateFromRegistryAddsLabelsAndTags", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
 Public Sub TestUpdateFromRegistrySkipsWhenStatusNo()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistrySkipsWhenStatusNo"
+    On Error GoTo Fail
 
     Subject.UpdateFromRegistry RegistrySheet
     SetRegistryStatus "yes", "no", "no"
@@ -130,7 +141,11 @@ Public Sub TestUpdateFromRegistrySkipsWhenStatusNo()
 
     Assert.AreEqual CLng(6), TranslationsTable.ListRows.Count, "No additional rows should be created when statuses are no"
     Assert.AreEqual "RNG_Greetings--2", TagForLabel("Hello"), "Existing label should update tag with the new sequence number"
-    Assert.AreEqual CLng(2), FixtureWorkbook.Names(COUNTER_NAME).RefersToRange.Value, "Counter must be incremented to two after the second update"
+    Assert.AreEqual CLng(2), CounterValue(), "Counter must be incremented to two after the second update"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateFromRegistrySkipsWhenStatusNo", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
@@ -149,18 +164,40 @@ ExpectError:
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateFromRegistryRequiresHelperColumn()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistryRequiresHelperColumn"
+    On Error GoTo ExpectError
+
+    TranslationsSheet.Columns(1).Delete
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.LogFailure "UpdateFromRegistry should raise when the helper column is missing"
+    Exit Sub
+
+ExpectError:
+    Assert.AreEqual CLng(ProjectError.ErrorUnexpectedState), Err.Number, "Missing helper column must raise ErrorUnexpectedState"
+    Err.Clear
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
 Public Sub TestResetSequenceSetsCounterToZero()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestResetSequenceSetsCounterToZero"
+    On Error GoTo Fail
 
     Subject.UpdateFromRegistry RegistrySheet
     Subject.ResetSequence RegistrySheet
 
-    Assert.AreEqual CLng(0), FixtureWorkbook.Names(COUNTER_NAME).RefersToRange.Value, "ResetSequence should reset the workbook counter to zero"
+    Assert.AreEqual CLng(0), CounterValue(), "ResetSequence should reset the workbook counter to zero"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestResetSequenceSetsCounterToZero", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
 Public Sub TestUpdateFromRegistryDeletesMissingLabels()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistryDeletesMissingLabels"
+    On Error GoTo Fail
 
     Subject.UpdateFromRegistry RegistrySheet
     SourceSheet.Range("A2").Value = vbNullString
@@ -171,11 +208,16 @@ Public Sub TestUpdateFromRegistryDeletesMissingLabels()
     Assert.AreEqual CLng(5), TranslationsTable.ListRows.Count, "Removing a label from a processed range should delete the corresponding translation row"
     Assert.AreEqual vbNullString, TagForLabel("Good bye"), "Deleted labels should no longer be present in the translations table"
     Assert.AreEqual "RNG_Greetings--2", TagForLabel("Hello"), "Existing labels must be retagged with the current update sequence"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateFromRegistryDeletesMissingLabels", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
 Public Sub TestNumberOfMissingReportsPerLanguage()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestNumberOfMissingReportsPerLanguage"
+    On Error GoTo Fail
 
     Subject.UpdateFromRegistry RegistrySheet, "French"
 
@@ -183,6 +225,10 @@ Public Sub TestNumberOfMissingReportsPerLanguage()
     summary = Subject.NumberOfMissing
 
     Assert.AreEqual "Translation Updated!" & vbLf & "6 labels are missing for column French.", summary, "NumberOfMissing should report missing counts for each non default language"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestNumberOfMissingReportsPerLanguage", Err.Number, Err.Description
 End Sub
 
 '@section Helpers
@@ -234,7 +280,7 @@ Private Sub RegisterSourceRanges(ByVal targetSheet As Worksheet, ByVal hostWorkb
     targetSheet.Range("A2").Value = "Good bye"
     targetSheet.Range("B1").Value = "Farewell"
     targetSheet.Range("B2").Value = "See you"
-    targetSheet.Range("C1").Formula = "=IF(A1="""", ""Morning"", ""Evening"")"
+    targetSheet.Range("C1").Formula = "IF(A1="""", ""Morning"", ""Evening"")"
 
     hostWorkbook.Names.Add Name:="RNG_Greetings", RefersTo:=targetSheet.Range("A1:A2")
     hostWorkbook.Names.Add Name:="RNG_Farewell", RefersTo:=targetSheet.Range("B1:B2")
@@ -269,9 +315,71 @@ Private Function HasColumn(ByVal columnName As String) As Boolean
 End Function
 
 Private Function WorkbookHasName(ByVal nameText As String) As Boolean
+    WorkbookHasName = Not (FindSheetName(RegistrySheet, nameText) Is Nothing)
+End Function
+
+Private Function CounterValue() As Long
     Dim definedName As Name
+    Dim numericText As String
+
+    Set definedName = FindSheetName(RegistrySheet, COUNTER_NAME)
+    If definedName Is Nothing Then Exit Function
+
+    numericText = ExtractNameNumericText(definedName)
+    If LenB(numericText) = 0 Then Exit Function
+    If Not IsNumeric(numericText) Then Exit Function
+
+    CounterValue = CLng(numericText)
+End Function
+
+Private Function FindSheetName(ByVal targetSheet As Worksheet, ByVal expected As String) As Name
+    Dim definition As Name
+
     On Error Resume Next
-        Set definedName = FixtureWorkbook.Names(nameText)
+        Set FindSheetName = targetSheet.Names(expected)
     On Error GoTo 0
-    WorkbookHasName = Not (definedName Is Nothing)
+
+    If Not FindSheetName Is Nothing Then Exit Function
+
+    For Each definition In targetSheet.Names
+        If StrComp(SimpleName(definition.Name), expected, vbTextCompare) = 0 Then
+            Set FindSheetName = definition
+            Exit Function
+        End If
+    Next definition
+End Function
+
+Private Function ExtractNameNumericText(ByVal definition As Name) As String
+    Dim refersTo As String
+
+    If definition Is Nothing Then Exit Function
+
+    On Error Resume Next
+        refersTo = Trim$(CStr(definition.RefersTo))
+    On Error GoTo 0
+
+    If LenB(refersTo) = 0 Then
+        On Error Resume Next
+            refersTo = Trim$(CStr(definition.Value))
+        On Error GoTo 0
+    End If
+
+    If LenB(refersTo) = 0 Then Exit Function
+
+    If Left$(refersTo, 1) = "=" Then
+        ExtractNameNumericText = Mid$(refersTo, 2)
+    Else
+        ExtractNameNumericText = refersTo
+    End If
+End Function
+
+Private Function SimpleName(ByVal qualifiedName As String) As String
+    Dim exclPos As Long
+
+    exclPos = InStr(qualifiedName, "!")
+    If exclPos = 0 Then
+        SimpleName = qualifiedName
+    Else
+        SimpleName = Mid$(qualifiedName, exclPos + 1)
+    End If
 End Function

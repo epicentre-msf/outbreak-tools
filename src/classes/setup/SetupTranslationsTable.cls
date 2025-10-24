@@ -58,7 +58,7 @@ Public Function Create(ByVal translationTable As ListObject, Optional ByVal stat
 End Function
 
 '@sub-title Store the supplied table and optional scope inside the current instance.
-Private Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing)
+Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal stateScope As IApplicationState = Nothing)
     With this
         Set .table = translationTable
         Set .stateScope = stateScope
@@ -310,7 +310,7 @@ End Sub
 Public Sub ResetSequence(ByVal registrySheet As Worksheet)
     ValidateInitialised
     ValidateRegistrySheet registrySheet
-    CounterCell(registrySheet).Value = 0
+    PersistCounterValue registrySheet, 0
 End Sub
 
 '@sub-title Update the translations table using the supplied registry sheet.
@@ -323,28 +323,40 @@ Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, Optional ByVal l
 
     EnsureLanguages languages
 
+    EnsureTagColumnReady
+
     Set scope = ResolveScope()
     scope.ApplyBusyState True
+
+    Debug.Print "Got the state scope"
 
     On Error GoTo CleanFail
 
     updateSequence = NextUpdateSequence(registrySheet)
+    Debug.Print "Update sequence"; updateSequence
     ResetCache
     ResetProcessedRanges
     EnsureCache
+    Debug.Print "Caches ensured"
     ProcessRegistry registrySheet, updateSequence
+    Debug.Print "Processed the registry"
     RemoveObsoleteLabels updateSequence
+    Debug.Print "Removed obsolete labels"
     ResetCache
     SortTranslations
+    Debug.Print "Sorted the translation"
     ApplyFormatting
+    Debug.Print "Formatted the translation"
     NumberOfMissing
+    Debug.Print "Reported number of missing"
 
     scope.Restore
     Exit Sub
 
 CleanFail:
-    scope.Restore
+    Debug.Print "Error:-"; Err.Description
     ThrowProjectError ProjectError.SomethingWentWrong, "Failed to update translations: " & Err.Description
+    scope.Restore
 End Sub
 
 '@sub-title Iterate all registry tables and process each watcher row.
@@ -755,8 +767,12 @@ End Function
 
 '@sub-title Retrieve the helper tag column data range.
 Private Function TagColumnDataRange() As Range
+    Dim helperHeader As Range
+
     If this.table.ListRows.Count = 0 Then Exit Function
-    Set TagColumnDataRange = this.tagHeader.Offset(1, 0).Resize(this.table.ListRows.Count, 1)
+
+    Set helperHeader = RequireTagHeader()
+    Set TagColumnDataRange = helperHeader.Offset(1, 0).Resize(this.table.ListRows.Count, 1)
 End Function
 
 '@sub-title Ensure the helper column header is located and configured.
@@ -775,6 +791,49 @@ Private Sub ConfigureTagColumn()
         this.tagHeader.Value = TAG_HEADER_TITLE
     End If
 End Sub
+
+Private Sub EnsureTagColumnReady()
+    Dim unused As Range
+    Set unused = RequireTagHeader()
+End Sub
+
+Private Function RequireTagHeader() As Range
+    If Not IsRangeValid(this.tagHeader) Then
+        AttachTagHeader
+    End If
+
+    If Not IsRangeValid(this.tagHeader) Then
+        ThrowProjectError ProjectError.ErrorUnexpectedState, _
+                          "Translations table requires a helper column titled '" & TAG_HEADER_TITLE & "' immediately to the left of the listobject."
+    End If
+
+    Set RequireTagHeader = this.tagHeader
+End Function
+
+Private Sub AttachTagHeader()
+    On Error GoTo Failed
+        ConfigureTagColumn
+        Exit Sub
+Failed:
+    Err.Clear
+    Set this.tagHeader = Nothing
+End Sub
+
+Private Function IsRangeValid(ByVal candidate As Range) As Boolean
+    Dim probe As Variant
+
+    If candidate Is Nothing Then Exit Function
+
+    On Error GoTo Invalid
+        probe = candidate.Value
+        IsRangeValid = True
+    On Error GoTo 0
+    Exit Function
+
+Invalid:
+    Err.Clear
+    IsRangeValid = False
+End Function
 
 
 '@section Sorting and formatting
@@ -832,41 +891,148 @@ End Sub
 '===============================================================================
 '@sub-title Retrieve and increment the registry update sequence.
 Private Function NextUpdateSequence(ByVal registrySheet As Worksheet) As Long
-    Dim counterCell As Range
+    Dim currentValue As Long
 
-    Set counterCell = CounterCell(registrySheet)
-    NextUpdateSequence = CLng(counterCell.Value) + 1
-    counterCell.Value = NextUpdateSequence
+    currentValue = CounterNumericValue(registrySheet)
+    If currentValue < 0 Then currentValue = 0
+
+    NextUpdateSequence = currentValue + 1
+    PersistCounterValue registrySheet, NextUpdateSequence
 End Function
 
-'@sub-title Resolve the hidden counter cell stored as a workbook name.
-Private Function CounterCell(ByVal registrySheet As Worksheet) As Range
-    Dim namedCounter As Name
-    Dim workbook As Workbook
-    Dim targetCell As Range
+'@sub-title Persist the counter value inside a hidden worksheet-level name.
+Private Sub PersistCounterValue(ByVal registrySheet As Worksheet, ByVal counterValue As Long)
+    Dim sheetDefinition As Name
+    Dim workbookDefinition As Name
+    Dim targetWorkbook As Workbook
 
-    Set workbook = registrySheet.Parent
+    If counterValue < 0 Then counterValue = 0
 
-    On Error Resume Next
-        Set namedCounter = workbook.Names(COUNTER_NAME)
-    On Error GoTo 0
+    Set targetWorkbook = registrySheet.Parent
+    Set sheetDefinition = CounterDefinition(registrySheet)
+    Set workbookDefinition = TryWorkbookCounterDefinition(targetWorkbook)
 
-    If namedCounter Is Nothing Then
-        Set targetCell = registrySheet.Cells(1, registrySheet.Columns.Count)
-        workbook.Names.Add Name:=COUNTER_NAME, RefersTo:=targetCell
-        targetCell.Value = 0
-    Else
-        On Error Resume Next
-            Set targetCell = namedCounter.RefersToRange
-        On Error GoTo 0
-        If targetCell Is Nothing Then
-            Set targetCell = registrySheet.Cells(1, registrySheet.Columns.Count)
-            namedCounter.RefersTo = targetCell
-            targetCell.Value = 0
-        End If
+    If Not workbookDefinition Is Nothing Then
+        workbookDefinition.Delete
     End If
 
-    Set CounterCell = targetCell
+    If sheetDefinition Is Nothing Then
+        registrySheet.Names.Add Name:=COUNTER_NAME, _
+                                RefersToR1C1:="=" & CStr(counterValue), _
+                                Visible:=False
+    Else
+        sheetDefinition.RefersToR1C1 = "=" & CStr(counterValue)
+    End If
+End Sub
+
+'@sub-title Retrieve the current counter value stored in worksheet names.
+Private Function CounterNumericValue(ByVal registrySheet As Worksheet) As Long
+    Dim sheetDefinition As Name
+    Dim workbookDefinition As Name
+    Dim rawValue As String
+
+    Set sheetDefinition = CounterDefinition(registrySheet)
+
+    If sheetDefinition Is Nothing Then
+        Set workbookDefinition = TryWorkbookCounterDefinition(registrySheet.Parent)
+        If Not workbookDefinition Is Nothing Then
+            rawValue = SafeNameContent(workbookDefinition)
+            workbookDefinition.Delete
+        Else
+            rawValue = vbNullString
+        End If
+
+        PersistCounterValue registrySheet, ParseCounterValue(rawValue)
+        CounterNumericValue = ParseCounterValue(rawValue)
+        Exit Function
+    End If
+
+    rawValue = SafeNameContent(sheetDefinition)
+    CounterNumericValue = ParseCounterValue(rawValue)
+End Function
+
+'@sub-title Convert raw name text into a numeric counter, defaulting to zero.
+Private Function ParseCounterValue(ByVal rawValue As String) As Long
+    Dim trimmedValue As String
+
+    trimmedValue = Trim$(rawValue)
+    If LenB(trimmedValue) = 0 Then Exit Function
+    If Not IsNumeric(trimmedValue) Then Exit Function
+
+    ParseCounterValue = CLng(trimmedValue)
+    If ParseCounterValue < 0 Then ParseCounterValue = 0
+End Function
+
+'@sub-title Fetch the sheet-scoped name definition storing the counter.
+Private Function CounterDefinition(ByVal registrySheet As Worksheet) As Name
+    Dim definition As Name
+
+    For Each definition In registrySheet.Names
+        If CompareNameDefinition(definition, COUNTER_NAME) Then
+            Set CounterDefinition = definition
+            Exit Function
+        End If
+    Next definition
+End Function
+
+'@sub-title Try resolving a leftover workbook-level counter definition.
+Private Function TryWorkbookCounterDefinition(ByVal targetWorkbook As Workbook) As Name
+    On Error Resume Next
+        Set TryWorkbookCounterDefinition = targetWorkbook.Names(COUNTER_NAME)
+    On Error GoTo 0
+End Function
+
+'@sub-title Extract the stored text from a defined name.
+Private Function SafeNameContent(ByVal definition As Name) As String
+    Dim refersTo As String
+    Dim targetRange As Range
+
+    If definition Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set targetRange = definition.RefersToRange
+    On Error GoTo 0
+
+    If Not targetRange Is Nothing Then
+        On Error Resume Next
+            SafeNameContent = Trim$(CStr(targetRange.Value))
+        On Error GoTo 0
+        If LenB(SafeNameContent) > 0 Then Exit Function
+    End If
+
+    On Error Resume Next
+        refersTo = Trim$(CStr(definition.RefersTo))
+    On Error GoTo 0
+
+    If LenB(refersTo) = 0 Then
+        On Error Resume Next
+            refersTo = Trim$(CStr(definition.Value))
+        On Error GoTo 0
+    End If
+
+    If LenB(refersTo) = 0 Then Exit Function
+    If Left$(refersTo, 1) = "=" Then
+        SafeNameContent = Mid$(refersTo, 2)
+    Else
+        SafeNameContent = refersTo
+    End If
+End Function
+
+'@sub-title Compare a defined name with the expected identifier.
+Private Function CompareNameDefinition(ByVal definition As Name, ByVal expected As String) As Boolean
+    CompareNameDefinition = (StrComp(ExtractSimpleName(definition.Name), expected, vbTextCompare) = 0)
+End Function
+
+'@sub-title Remove worksheet qualifications from name identifiers.
+Private Function ExtractSimpleName(ByVal qualifiedName As String) As String
+    Dim exclPos As Long
+
+    exclPos = InStr(qualifiedName, "!")
+    If exclPos = 0 Then
+        ExtractSimpleName = qualifiedName
+    Else
+        ExtractSimpleName = Mid$(qualifiedName, exclPos + 1)
+    End If
 End Function
 
 

@@ -12,6 +12,19 @@ Private Const CODE_SHEET_NAME As String = "Codes"
 Private Const PASS_SHEET_NAME As String = "__pass"
 Private Const PROMPT_TITLE As String = "Development"
 
+Dim gRibbon As IRibbonUI
+
+Public Sub OnRibbonLoad(ribbon As IRibbonUI)
+    Set gRibbon = ribbon
+End Sub
+
+Public Function ActualRibbon() As IRibbonUI
+    If Not gRibbon Is Nothing Then
+        Set ActualRibbon = gRibbon
+    End If
+End Function
+
+
 '@section Ribbon callbacks
 '===============================================================================
 '@EntryPoint
@@ -115,6 +128,7 @@ Public Sub clickDevDeploy(ByRef control As IRibbonControl)
 
     On Error GoTo Handler
     manager.Deploy pass
+    
     Exit Sub
 
 Handler:
@@ -216,6 +230,15 @@ Public Sub clickDevAddModulesTable(ByRef control As IRibbonControl)
 Handler:
     MsgBox "Unable to create modules table: " & Err.Description, vbCritical + vbOKOnly, PROMPT_TITLE
     Err.Clear
+End Sub
+
+Public Sub DevGroupVisible(control As IRibbonControl, ByRef returnedVal As Boolean)
+    If control.Id = "customGroupDev" Then
+        Dim manager As IDevelopment        
+        manager = EnsureDevelopment()
+        If manager Is Nothing Then Exit Sub
+        returnedVal = manager.InDeployment()
+    End If
 End Sub
 
 

@@ -16,7 +16,7 @@ Attribute VB_Description = "Manage linelist and setup exports"
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
 
 
-'@depends Checking, DataSheet, LLVariables
+'@depends Checking, DataSheet, LLVariables, HiddenNames
 Option Explicit
 
 Implements ILLExport
@@ -30,6 +30,7 @@ Private Type TLLExport
     hasChecks As Boolean
     checkCounter As Long
     sanitizeList As Variant
+    hiddenNames As IHiddenNames
 End Type
 
 Private Const COL_STATUS As String = "status"
@@ -89,6 +90,7 @@ End Property
 '@param exportSheet Worksheet that stores the export specification table.
 Public Property Set InternalWorksheet(ByVal exportSheet As Worksheet)
     Set this.exportSheet = exportSheet
+    Set this.hiddenNames = Nothing
 End Property
 
 '@label:Self
@@ -548,6 +550,17 @@ End Function
 '@section Export Count Tracking
 '===============================================================================
 
+'@sub-title Resolve worksheet name manager
+Private Function HiddenNameStore() As IHiddenNames
+    If this.exportSheet Is Nothing Then Exit Function
+
+    If this.hiddenNames Is Nothing Then
+        Set this.hiddenNames = HiddenNames.Create(this.exportSheet)
+    End If
+
+    Set HiddenNameStore = this.hiddenNames
+End Function
+
 Private Function CountExportRows() As Long
     Dim exportRange As Range
 
@@ -560,75 +573,41 @@ Private Function CountExportRows() As Long
 End Function
 
 Private Function StoredTotalExports() As Long
-    Dim definition As Name
-    Dim evaluated As String
+    Dim store As IHiddenNames
 
-    If this.exportSheet Is Nothing Then Exit Function
+    Set store = HiddenNameStore()
+    If store Is Nothing Then Exit Function
 
-    Set definition = TrySheetNameDefinition(this.exportSheet, TOTAL_EXPORTS_NAME)
-    If definition Is Nothing Then Exit Function
-
-     On Error Resume Next
-        evaluated = Trim$(Replace$(definition.Value, "=", vbNullString))
-    On Error GoTo 0
-
-    If LenB(evaluated) <> 0 Then
-        StoredTotalExports = CLng(evaluated)
-    End If
+    StoredTotalExports = store.ValueAsLong(TOTAL_EXPORTS_NAME, 0)
 End Function
 
 Private Sub PersistTotalExports(ByVal totalCount As Long)
-    If this.exportSheet Is Nothing Then Exit Sub
+    Dim store As IHiddenNames
 
     If totalCount < 0 Then totalCount = 0
 
-    RemoveSheetName this.exportSheet, TOTAL_EXPORTS_NAME
-    this.exportSheet.Names.Add Name:=TOTAL_EXPORTS_NAME, _
-                              RefersToR1C1:="=" & CStr(totalCount), _
-                              Visible:=False
+    Set store = HiddenNameStore()
+    If store Is Nothing Then Exit Sub
+
+    store.EnsureName TOTAL_EXPORTS_NAME, totalCount, HiddenNameTypeLong
+    store.SetValue TOTAL_EXPORTS_NAME, totalCount
 End Sub
 
 Private Sub EnsureStoredTotalExports()
+    Dim store As IHiddenNames
+    Dim total As Long
+
     If this.exportSheet Is Nothing Then Exit Sub
     If this.expData Is Nothing Then Exit Sub
-    PersistTotalExports CountExportRows()
+
+    total = CountExportRows()
+
+    Set store = HiddenNameStore()
+    If store Is Nothing Then Exit Sub
+
+    store.EnsureName TOTAL_EXPORTS_NAME, total, HiddenNameTypeLong
+    store.SetValue TOTAL_EXPORTS_NAME, total
 End Sub
-
-Private Function TrySheetNameDefinition(ByVal sheet As Worksheet, ByVal nameId As String) As Name
-    Dim definition As Name
-
-    For Each definition In sheet.Names
-        If CompareName(definition, nameId) Then
-            Set TrySheetNameDefinition = definition
-            Exit Function
-        End If
-    Next definition
-End Function
-
-Private Sub RemoveSheetName(ByVal sheet As Worksheet, ByVal nameId As String)
-    Dim idx As Long
-
-    For idx = sheet.Names.Count To 1 Step -1
-        If CompareName(sheet.Names(idx), nameId) Then
-            sheet.Names(idx).Delete
-        End If
-    Next idx
-End Sub
-
-Private Function ExtractSimpleName(ByVal qualifiedName As String) As String
-    Dim exclPos As Long
-
-    exclPos = InStr(qualifiedName, "!")
-    If exclPos = 0 Then
-        ExtractSimpleName = qualifiedName
-    Else
-        ExtractSimpleName = Mid$(qualifiedName, exclPos + 1)
-    End If
-End Function
-
-Private Function CompareName(ByVal definition As Name, ByVal expected As String) As Boolean
-    CompareName = (StrComp(ExtractSimpleName(definition.Name), expected, vbTextCompare) = 0)
-End Function
 
 
 '@section Utilities
@@ -853,6 +832,7 @@ Public Sub ResetCaches()
     this.checkCounter = 0
     Set this.checks = Nothing
     this.sanitizeList = Empty
+    Set this.hiddenNames = Nothing
     EnsureStoredTotalExports
 End Sub
 
