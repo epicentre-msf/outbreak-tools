@@ -24,6 +24,9 @@ Option Explicit
 'Check if the choices have translation of headers
 Public Property Get HasTranslation() As Boolean: End Property
 
+'@jump:HasTranslation
+Public Property Let HasTranslation(ByVal hasTrads As Boolean): End Property
+
 '@jump:TradObject
 'Translation object used for translating the headers
 Public Property Get TradObject() As ITranslationObject: End Property

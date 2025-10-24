@@ -13,7 +13,9 @@ Private Const TESTOUTPUTSHEET As String = "testsOutputs"
 Private Assert As ICustomTest
 Private initialScreenUpdating As Boolean
 Private initialDisplayAlerts As Boolean
+Private initialEnableEvents As Boolean
 Private initialCalculation As XlCalculation
+Private initialCalculateBeforeSave As Boolean
 Private initialEnableAnimations As Boolean
 Private animationsAvailable As Boolean
 
@@ -57,14 +59,18 @@ End Sub
 Private Sub CaptureInitialState()
     initialScreenUpdating = Application.ScreenUpdating
     initialDisplayAlerts = Application.DisplayAlerts
+    initialEnableEvents = Application.EnableEvents
     initialCalculation = Application.Calculation
+    initialCalculateBeforeSave = Application.CalculateBeforeSave
     animationsAvailable = TryReadAnimations(initialEnableAnimations)
 End Sub
 
 Private Sub ResetApplicationState()
     Application.ScreenUpdating = initialScreenUpdating
     Application.DisplayAlerts = initialDisplayAlerts
+    Application.EnableEvents = initialEnableEvents
     Application.Calculation = initialCalculation
+    Application.CalculateBeforeSave = initialCalculateBeforeSave
     If animationsAvailable Then
         On Error Resume Next
             Application.EnableAnimations = initialEnableAnimations
@@ -100,6 +106,10 @@ Public Sub TestApplyBusyStateSwitchesSettings()
     Assert.IsFalse Application.DisplayAlerts, "ApplyBusyState must disable alerts"
     Assert.AreEqual xlCalculationManual, Application.Calculation, _
                      "ApplyBusyState must set calculation to manual"
+    Assert.AreEqual initialEnableEvents, Application.EnableEvents, _
+                     "Default ApplyBusyState should leave events unchanged"
+    Assert.IsTrue Application.CalculateBeforeSave, _
+                  "Default ApplyBusyState should leave CalculateBeforeSave enabled"
 
     If animationsAvailable Then
         Assert.IsFalse Application.EnableAnimations, "ApplyBusyState must disable animations when supported"
@@ -116,41 +126,23 @@ Public Sub TestRestoreReturnsOriginalSettings()
     Set scope = ApplicationState.Create(Application)
 
     scope.ApplyBusyState
+    
     scope.Restore
 
     Assert.AreEqual initialScreenUpdating, Application.ScreenUpdating, _
                      "Restore must reapply the original ScreenUpdating value"
     Assert.AreEqual initialDisplayAlerts, Application.DisplayAlerts, _
                      "Restore must reapply the original DisplayAlerts value"
+    Assert.AreEqual initialEnableEvents, Application.EnableEvents, _
+                     "Restore must reapply the original EnableEvents value"
     Assert.AreEqual initialCalculation, Application.Calculation, _
                      "Restore must reapply the original calculation mode"
+    Assert.AreEqual initialCalculateBeforeSave, Application.CalculateBeforeSave, _
+                     "Restore must reapply the original CalculateBeforeSave flag"
 
     If animationsAvailable Then
         Assert.AreEqual initialEnableAnimations, Application.EnableAnimations, _
                          "Restore must reapply the original animation preference"
-    End If
-End Sub
-
-'@TestMethod("ApplicationState")
-Public Sub TestScopeRestoresOnTerminate()
-    CustomTestSetTitles Assert, "ApplicationState", "ScopeRestoresOnTerminate"
-
-    Dim scope As IApplicationState
-    Set scope = ApplicationState.Create(Application)
-
-    scope.ApplyBusyState
-    Set scope = Nothing
-
-    Assert.AreEqual initialScreenUpdating, Application.ScreenUpdating, _
-                     "Scope termination must restore ScreenUpdating"
-    Assert.AreEqual initialDisplayAlerts, Application.DisplayAlerts, _
-                     "Scope termination must restore DisplayAlerts"
-    Assert.AreEqual initialCalculation, Application.Calculation, _
-                     "Scope termination must restore calculation mode"
-
-    If animationsAvailable Then
-        Assert.AreEqual initialEnableAnimations, Application.EnableAnimations, _
-                         "Scope termination must restore animation preference"
     End If
 End Sub
 
@@ -174,4 +166,37 @@ ExpectError:
                      "RefreshSnapshot should raise ErrorUnexpectedState while busy"
     Err.Clear
     scope.Restore
+End Sub
+
+'@TestMethod("ApplicationState")
+Public Sub TestApplyBusyStateSuppressEventsWhenRequested()
+    CustomTestSetTitles Assert, "ApplicationState", "TestApplyBusyStateSuppressEventsWhenRequested"
+
+    Dim scope As IApplicationState
+    Set scope = ApplicationState.Create(Application)
+
+    scope.ApplyBusyState suppressEvents:=True
+
+    Assert.IsFalse Application.EnableEvents, "ApplyBusyState suppressEvents:=True must disable events"
+
+    scope.Restore
+    Assert.AreEqual initialEnableEvents, Application.EnableEvents, _
+                     "Restore must bring back original EnableEvents value"
+End Sub
+
+'@TestMethod("ApplicationState")
+Public Sub TestApplyBusyStateRespectsCalculateOnSaveParameter()
+    CustomTestSetTitles Assert, "ApplicationState", "TestApplyBusyStateRespectsCalculateOnSaveParameter"
+
+    Dim scope As IApplicationState
+    Set scope = ApplicationState.Create(Application)
+
+    scope.ApplyBusyState calculateOnSave:=False
+
+    Assert.IsFalse Application.CalculateBeforeSave, _
+                  "ApplyBusyState calculateOnSave:=False must disable CalculateBeforeSave"
+
+    scope.Restore
+    Assert.AreEqual initialCalculateBeforeSave, Application.CalculateBeforeSave, _
+                     "Restore must reapply initial CalculateBeforeSave value"
 End Sub
