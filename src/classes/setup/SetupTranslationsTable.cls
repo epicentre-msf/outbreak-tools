@@ -13,7 +13,7 @@ Attribute VB_Description = "Improved translations table manager leveraging cachi
 '@Folder("Setup")
 '@ModuleDescription("Improved translations table manager leveraging caching and guarded updates")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-'@depends ProjectError, ApplicationState, IApplicationState
+'@depends ProjectError, ApplicationState, IApplicationState, HiddenNames, IHiddenNames
 
 Option Explicit
 
@@ -28,6 +28,7 @@ Private Type TSetupTranslations
     processedRanges As BetterArray    'Ranges processed during the current update cycle
     displayPrompts As Boolean         'Toggle to avoid message prompts during automated tests
     stateScope As IApplicationState   'Optional application guard for busy sections
+    tagsIntegrated As Boolean         'Tracks whether the helper tag column is currently merged in the table
 End Type
 
 Private this As TSetupTranslations
@@ -37,7 +38,8 @@ Private Const COUNTER_NAME As String = "_SetupTranslationsCounter"
 Private Const STATUS_UPDATED As String = "yes"
 Private Const MODE_TEXT As String = "translate as text"
 Private Const MODE_FORMULA As String = "translate as formula"
-Private Const TAG_HEADER_TITLE As String = "TranslationTag"
+Private Const TAG_HEADER_TITLE As String = "__TagInternal__"
+Private Const TAG_SEPARATOR As String = "__"
 
 
 '@section Factory helpers
@@ -63,6 +65,7 @@ Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal s
         Set .table = translationTable
         Set .stateScope = stateScope
         .displayPrompts = True
+        .tagsIntegrated = False
     End With
 
     ConfigureTagColumn
@@ -159,7 +162,7 @@ Public Sub SwitchDefaultLanguage(ByVal languageName As String)
         ThrowProjectError ProjectError.InvalidArgument, "Language '" & languageName & "' does not exist in the translations table."
     End If
 
-    If targetIndex = 1 Then Exit Sub
+    If targetIndex = LabelColumnIndex() Then Exit Sub
 
     Set scope = ResolveScope()
     scope.ApplyBusyState True
@@ -184,12 +187,19 @@ End Sub
 Public Function SwitchableLanguages() As BetterArray
     Dim languages As BetterArray
     Dim columnIndex As Long
+    Dim startIndex As Long
 
     ValidateInitialised
 
     Set languages = CreateBuffer()
 
-    For columnIndex = 2 To this.table.ListColumns.Count
+    startIndex = LabelColumnIndex() + 1
+    If startIndex > this.table.ListColumns.Count Then
+        Set SwitchableLanguages = languages
+        Exit Function
+    End If
+
+    For columnIndex = startIndex To this.table.ListColumns.Count
         languages.Push this.table.ListColumns(columnIndex).Name
     Next columnIndex
 
@@ -202,11 +212,13 @@ End Function
 Private Function LanguageColumnIndex(ByVal languageName As String) As Long
     Dim trimmedName As String
     Dim columnIndex As Long
+    Dim startIndex As Long
 
     trimmedName = Trim$(languageName)
     If LenB(trimmedName) = 0 Then Exit Function
 
-    For columnIndex = 1 To this.table.ListColumns.Count
+    startIndex = LabelColumnIndex()
+    For columnIndex = startIndex To this.table.ListColumns.Count
         If StrComp(this.table.ListColumns(columnIndex).Name, trimmedName, vbTextCompare) = 0 Then
             LanguageColumnIndex = columnIndex
             Exit Function
@@ -325,38 +337,31 @@ Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, Optional ByVal l
 
     EnsureTagColumnReady
 
+    On Error GoTo CleanFail
+
+    BeginTagIntegration
     Set scope = ResolveScope()
     scope.ApplyBusyState True
 
-    Debug.Print "Got the state scope"
-
-    On Error GoTo CleanFail
-
     updateSequence = NextUpdateSequence(registrySheet)
-    Debug.Print "Update sequence"; updateSequence
     ResetCache
     ResetProcessedRanges
     EnsureCache
-    Debug.Print "Caches ensured"
     ProcessRegistry registrySheet, updateSequence
-    Debug.Print "Processed the registry"
     RemoveObsoleteLabels updateSequence
-    Debug.Print "Removed obsolete labels"
     ResetCache
     SortTranslations
-    Debug.Print "Sorted the translation"
     ApplyFormatting
-    Debug.Print "Formatted the translation"
     NumberOfMissing
-    Debug.Print "Reported number of missing"
 
+    EndTagIntegration
     scope.Restore
     Exit Sub
 
 CleanFail:
-    Debug.Print "Error:-"; Err.Description
+    EndTagIntegration
+    If Not scope Is Nothing Then scope.Restore
     ThrowProjectError ProjectError.SomethingWentWrong, "Failed to update translations: " & Err.Description
-    scope.Restore
 End Sub
 
 '@sub-title Iterate all registry tables and process each watcher row.
@@ -386,7 +391,7 @@ Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal update
             TrackProcessedRange rngName
             Set sourceRange = ResolveNamedRange(registryTable.Parent.Parent, rngName)
             If Not sourceRange Is Nothing Then
-                rngTag = rngName & "--" & CStr(updateSequence)
+                rngTag = rngName & TAG_SEPARATOR & CStr(updateSequence)
                 ProcessSourceRange sourceRange, rngTag, mode
             End If
         End If
@@ -538,7 +543,7 @@ Private Function AppendRow(ByVal label As String, ByVal rngTag As String) As Lon
     Dim newRow As ListRow
 
     Set newRow = this.table.ListRows.Add
-    newRow.Range.Cells(1, 1).Value = label
+    newRow.Range.Cells(1, LabelColumnIndex).Value = label
     SetTagForRow newRow.Index, rngTag
 
     AppendRow = newRow.Index
@@ -546,20 +551,18 @@ End Function
 
 '@sub-title Update the helper column with the latest tag for the given row.
 Private Sub SetTagForRow(ByVal rowIndex As Long, ByVal rngTag As String)
-    Dim tagRange As Range
+    Dim cell As Range
 
-    Set tagRange = TagColumnDataRange()
-    If tagRange Is Nothing Then Exit Sub
+    Set cell = TagDataCell(rowIndex)
+    If cell Is Nothing Then Exit Sub
 
-    If rowIndex >= 1 And rowIndex <= tagRange.Rows.Count Then
-        tagRange.Cells(rowIndex, 1).Value = rngTag
-    End If
+    cell.Value = rngTag
 End Sub
 
 '@sub-title Build or refresh the label cache from the current table state.
 Private Sub EnsureCache()
     Dim data As Range
-    Dim values As Variant
+    Dim values As BetterArray
     Dim rowIndex As Long
     Dim label As String
 
@@ -569,13 +572,21 @@ Private Sub EnsureCache()
     Set data = LabelColumnData()
 
     If data Is Nothing Then Exit Sub
+    Set values = New BetterArray
+    values.FromExcelRange data, DetectLastRow:=False, DetectLastColumn:=False
+    Debug.Print "Retrieved values"
+    Debug.Print "Values lowerbound"; values.LowerBound
+    Debug.Print "Values upperbound"; values.UpperBound
+    Debug.Print "First Item"; values.Item(values.LowerBound)
 
-    values = data.Value
-    For rowIndex = 1 To UBound(values, 1)
-        label = Trim$(CStr(values(rowIndex, 1)))
+    For rowIndex = values.LowerBound To values.UpperBound
+        Debug.Print "Row index: "; rowIndex
+        label = Trim$(CStr(values.Item(rowIndex)))
+        Debug.Print "Label: "; label
         If LenB(label) > 0 Then
             AddToCache label, rowIndex
         End If
+
     Next rowIndex
 End Sub
 
@@ -641,18 +652,16 @@ End Sub
 
 '@sub-title Remove labels that no longer exist in processed ranges.
 Private Sub RemoveObsoleteLabels(ByVal updateSequence As Long)
-    Dim tagRange As Range
     Dim rowIndex As Long
     Dim tagText As String
     Dim rangeName As String
     Dim sequenceValue As Long
     Dim shouldDelete As Boolean
 
-    Set tagRange = TagColumnDataRange()
-    If tagRange Is Nothing Then Exit Sub
+    If this.table.ListRows.Count = 0 Then Exit Sub
 
-    For rowIndex = tagRange.Rows.Count To 1 Step -1
-        tagText = Trim$(CStr(tagRange.Cells(rowIndex, 1).Value))
+    For rowIndex = this.table.ListRows.Count To 1 Step -1
+        tagText = TagValueAt(rowIndex)
         shouldDelete = False
 
         If LenB(tagText) = 0 Then
@@ -671,8 +680,20 @@ End Sub
 
 '@sub-title Delete a row within the translations table when the index is valid.
 Private Sub DeleteRowAt(ByVal rowIndex As Long)
+    Dim helperCell As Range
+
     If rowIndex < 1 Then Exit Sub
     If rowIndex > this.table.ListRows.Count Then Exit Sub
+
+    If Not this.tagsIntegrated Then
+        Set helperCell = TagDataCell(rowIndex)
+        If Not helperCell Is Nothing Then
+            On Error Resume Next
+                helperCell.Delete Shift:=xlShiftUp
+            On Error GoTo 0
+        End If
+    End If
+
     this.table.ListRows(rowIndex).Delete
 End Sub
 
@@ -681,7 +702,7 @@ Private Function ParseTag(ByVal tagText As String, ByRef rangeName As String, By
     Dim parts() As String
     Dim numberText As String
 
-    parts = Split(tagText, "--")
+    parts = Split(tagText, TAG_SEPARATOR)
     If UBound(parts) < 1 Then Exit Function
 
     rangeName = Trim$(parts(0))
@@ -699,7 +720,7 @@ End Function
 Private Function CreateBuffer() As BetterArray
     Dim buffer As BetterArray
     Set buffer = New BetterArray
-    buffer.LowerBound = 1
+    buffer.LowerBound = 0
     Set CreateBuffer = buffer
 End Function
 
@@ -712,13 +733,17 @@ Public Function NumberOfMissing() As String
     Dim missingCount As Long
     Dim messageLines As BetterArray
     Dim summary As String
+    Dim firstLanguageIndex As Long
 
     ValidateInitialised
 
     Set messageLines = CreateBuffer()
     messageLines.Push "Translation Updated!"
 
-    For columnIndex = 2 To this.table.ListColumns.Count
+    firstLanguageIndex = LabelColumnIndex() + 1
+    If firstLanguageIndex > this.table.ListColumns.Count Then GoTo BuildSummary
+
+    For columnIndex = firstLanguageIndex To this.table.ListColumns.Count
         On Error Resume Next
             Set dataRange = this.table.ListColumns(columnIndex).DataBodyRange
         On Error GoTo 0
@@ -732,6 +757,7 @@ Public Function NumberOfMissing() As String
         Set dataRange = Nothing
     Next columnIndex
 
+BuildSummary:
     summary = JoinLines(messageLines)
     NumberOfMissing = summary
 
@@ -762,7 +788,9 @@ End Function
 '@sub-title Access the label column data range.
 Private Function LabelColumnData() As Range
     If this.table.ListRows.Count = 0 Then Exit Function
-    Set LabelColumnData = this.table.ListColumns(1).DataBodyRange
+    On Error Resume Next
+        Set LabelColumnData = this.table.ListColumns(LabelColumnIndex).DataBodyRange
+    On Error GoTo 0
 End Function
 
 '@sub-title Retrieve the helper tag column data range.
@@ -771,8 +799,14 @@ Private Function TagColumnDataRange() As Range
 
     If this.table.ListRows.Count = 0 Then Exit Function
 
-    Set helperHeader = RequireTagHeader()
-    Set TagColumnDataRange = helperHeader.Offset(1, 0).Resize(this.table.ListRows.Count, 1)
+    If this.tagsIntegrated Then
+        On Error Resume Next
+            Set TagColumnDataRange = this.table.ListColumns(1).DataBodyRange
+        On Error GoTo 0
+    Else
+        Set helperHeader = RequireTagHeader()
+        Set TagColumnDataRange = helperHeader.Offset(1, 0).Resize(this.table.ListRows.Count, 1)
+    End If
 End Function
 
 '@sub-title Ensure the helper column header is located and configured.
@@ -787,9 +821,7 @@ Private Sub ConfigureTagColumn()
     End If
 
     Set this.tagHeader = header.Offset(0, -1)
-    If LenB(Trim$(CStr(this.tagHeader.Value))) = 0 Then
-        this.tagHeader.Value = TAG_HEADER_TITLE
-    End If
+    this.tagHeader.Value = TAG_HEADER_TITLE
 End Sub
 
 Private Sub EnsureTagColumnReady()
@@ -835,6 +867,87 @@ Invalid:
     IsRangeValid = False
 End Function
 
+'@section Tag integration helpers
+'===============================================================================
+'@sub-title Temporarily include the helper tag column inside the managed table.
+Private Sub BeginTagIntegration()
+    Dim helperHeader As Range
+    Dim expandedRange As Range
+
+    If this.tagsIntegrated Then Exit Sub
+
+    ValidateInitialised
+    Set helperHeader = RequireTagHeader()
+
+    Set expandedRange = helperHeader.Resize(this.table.Range.Rows.Count, this.table.Range.Columns.Count + 1)
+    this.table.Resize expandedRange
+    this.tagsIntegrated = True
+End Sub
+
+'@sub-title Restore the translations table to exclude the helper tag column.
+Private Sub EndTagIntegration()
+    Dim restoredStart As Range
+    Dim restoredRange As Range
+    Dim totalColumns As Long
+    Dim totalRows As Long
+
+    If Not this.tagsIntegrated Then Exit Sub
+
+    ValidateInitialised
+
+    totalColumns = this.table.Range.Columns.Count
+    totalRows = this.table.Range.Rows.Count
+
+    If totalColumns > 1 Then
+        Set restoredStart = this.table.HeaderRowRange.Cells(1, 2)
+        Set restoredRange = restoredStart.Resize(totalRows, totalColumns - 1)
+        this.table.Resize restoredRange
+    End If
+
+    this.tagsIntegrated = False
+End Sub
+
+'@sub-title Resolve the current column index storing translation labels.
+Private Function LabelColumnIndex() As Long
+    If this.tagsIntegrated Then
+        LabelColumnIndex = 2
+    Else
+        LabelColumnIndex = 1
+    End If
+End Function
+
+'@sub-title Resolve the current tag data cell for a provided row.
+Private Function TagDataCell(ByVal rowIndex As Long) As Range
+    Dim tagRange As Range
+    Dim tagColumn As ListColumn
+
+    If rowIndex < 1 Then Exit Function
+    If rowIndex > this.table.ListRows.Count Then Exit Function
+
+    If this.tagsIntegrated Then
+        Set tagColumn = this.table.ListColumns(1)
+        If tagColumn.DataBodyRange Is Nothing Then Exit Function
+        On Error Resume Next
+            Set TagDataCell = tagColumn.DataBodyRange.Cells(rowIndex, 1)
+        On Error GoTo 0
+    Else
+        Set tagRange = TagColumnDataRange()
+        If tagRange Is Nothing Then Exit Function
+        If rowIndex > tagRange.Rows.Count Then Exit Function
+        Set TagDataCell = tagRange.Cells(rowIndex, 1)
+    End If
+End Function
+
+'@sub-title Retrieve the stored tag text for the provided row index.
+Private Function TagValueAt(ByVal rowIndex As Long) As String
+    Dim cell As Range
+
+    Set cell = TagDataCell(rowIndex)
+    If cell Is Nothing Then Exit Function
+
+    TagValueAt = Trim$(CStr(cell.Value))
+End Function
+
 
 '@section Sorting and formatting
 '===============================================================================
@@ -843,7 +956,7 @@ Private Sub SortTranslations()
     On Error Resume Next
         With this.table.Sort
             .SortFields.Clear
-            .SortFields.Add Key:=this.table.ListColumns(1).Range, SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
+            .SortFields.Add Key:=this.table.ListColumns(LabelColumnIndex).Range, SortOn:=xlSortOnValues, Order:=xlAscending, DataOption:=xlSortNormal
             .Header = xlYes
             .Apply
         End With
@@ -854,18 +967,68 @@ End Sub
 Private Sub ApplyFormatting()
     Dim headerRange As Range
     Dim dataRange As Range
+    Dim tableRange As Range
     Dim columnRange As Range
+    Dim unlockRange As Range
+    Dim unlockOffset As Long
+    Dim unlockWidth As Long
+    Dim tagHeader As Range
+    Dim tagData As Range
 
     Set headerRange = this.table.HeaderRowRange
     Set dataRange = this.table.DataBodyRange
+    Set tableRange = this.table.Range
 
     On Error Resume Next
         this.table.TableStyle = vbNullString
-        this.table.Range.Interior.Color = vbWhite
-        this.table.Range.Font.Color = vbBlack
+        tableRange.Interior.Color = vbWhite
+        tableRange.Font.Color = vbBlack
+        tableRange.EntireRow.RowHeight = 30
+        tableRange.EntireColumn.ColumnWidth = 60
         headerRange.Font.Color = RGB(34, 96, 162)
         headerRange.Interior.Color = RGB(221, 235, 247)
         headerRange.Locked = False
+    On Error GoTo 0
+
+    Set tagHeader = RequireTagHeader()
+    tagHeader.Font.Color = vbWhite
+
+    Set tagData = TagColumnDataRange()
+    If Not tagData Is Nothing Then tagData.Font.Color = vbWhite
+
+    On Error Resume Next
+        With tableRange
+            With .Borders(xlEdgeTop)
+                .LineStyle = xlContinuous
+                .Weight = xlHairline
+                .Color = RGB(34, 96, 162)
+            End With
+            With .Borders(xlEdgeBottom)
+                .LineStyle = xlContinuous
+                .Weight = xlHairline
+                .Color = RGB(34, 96, 162)
+            End With
+            With .Borders(xlEdgeRight)
+                .LineStyle = xlContinuous
+                .Weight = xlHairline
+                .Color = RGB(34, 96, 162)
+            End With
+            With .Borders(xlEdgeLeft)
+                .LineStyle = xlContinuous
+                .Weight = xlHairline
+                .Color = RGB(34, 96, 162)
+            End With
+            With .Borders(xlInsideHorizontal)
+                .LineStyle = xlContinuous
+                .Weight = xlHairline
+                .Color = RGB(34, 96, 162)
+            End With
+            With .Borders(xlInsideVertical)
+                .LineStyle = xlContinuous
+                .Weight = xlHairline
+                .Color = RGB(34, 96, 162)
+            End With
+        End With
     On Error GoTo 0
 
     If dataRange Is Nothing Then Exit Sub
@@ -874,7 +1037,21 @@ Private Sub ApplyFormatting()
         dataRange.FormatConditions.Delete
     On Error GoTo 0
 
-    Set columnRange = dataRange.Columns(1)
+    unlockWidth = this.table.ListColumns.Count - LabelColumnIndex()
+    If unlockWidth > 0 Then
+        unlockOffset = LabelColumnIndex()
+        On Error Resume Next
+            Set unlockRange = dataRange.Offset(0, unlockOffset).Resize(dataRange.Rows.Count, unlockWidth)
+            If Not unlockRange Is Nothing Then unlockRange.Locked = False
+        On Error GoTo 0
+    End If
+
+    On Error Resume Next
+        Set columnRange = dataRange.Columns(LabelColumnIndex())
+    On Error GoTo 0
+
+    If columnRange Is Nothing Then Exit Sub
+
     Do While Not columnRange Is Nothing And Not Intersect(columnRange, dataRange) Is Nothing
         columnRange.FormatConditions.AddUniqueValues
         With columnRange.FormatConditions(columnRange.FormatConditions.Count)
@@ -902,137 +1079,37 @@ End Function
 
 '@sub-title Persist the counter value inside a hidden worksheet-level name.
 Private Sub PersistCounterValue(ByVal registrySheet As Worksheet, ByVal counterValue As Long)
-    Dim sheetDefinition As Name
-    Dim workbookDefinition As Name
-    Dim targetWorkbook As Workbook
+    Dim store As IHiddenNames
 
     If counterValue < 0 Then counterValue = 0
 
-    Set targetWorkbook = registrySheet.Parent
-    Set sheetDefinition = CounterDefinition(registrySheet)
-    Set workbookDefinition = TryWorkbookCounterDefinition(targetWorkbook)
+    Set store = HiddenNameStore(registrySheet)
+    If store Is Nothing Then Exit Sub
 
-    If Not workbookDefinition Is Nothing Then
-        workbookDefinition.Delete
-    End If
-
-    If sheetDefinition Is Nothing Then
-        registrySheet.Names.Add Name:=COUNTER_NAME, _
-                                RefersToR1C1:="=" & CStr(counterValue), _
-                                Visible:=False
-    Else
-        sheetDefinition.RefersToR1C1 = "=" & CStr(counterValue)
-    End If
+    store.EnsureName COUNTER_NAME, counterValue, HiddenNameTypeLong
+    store.SetValue COUNTER_NAME, counterValue
 End Sub
 
 '@sub-title Retrieve the current counter value stored in worksheet names.
 Private Function CounterNumericValue(ByVal registrySheet As Worksheet) As Long
-    Dim sheetDefinition As Name
-    Dim workbookDefinition As Name
-    Dim rawValue As String
+    Dim store As IHiddenNames
 
-    Set sheetDefinition = CounterDefinition(registrySheet)
+    Set store = HiddenNameStore(registrySheet)
+    If store Is Nothing Then Exit Function
 
-    If sheetDefinition Is Nothing Then
-        Set workbookDefinition = TryWorkbookCounterDefinition(registrySheet.Parent)
-        If Not workbookDefinition Is Nothing Then
-            rawValue = SafeNameContent(workbookDefinition)
-            workbookDefinition.Delete
-        Else
-            rawValue = vbNullString
-        End If
-
-        PersistCounterValue registrySheet, ParseCounterValue(rawValue)
-        CounterNumericValue = ParseCounterValue(rawValue)
-        Exit Function
+    If Not store.HasName(COUNTER_NAME) Then
+        store.EnsureName COUNTER_NAME, 0, HiddenNameTypeLong
+        store.SetValue COUNTER_NAME, 0
     End If
 
-    rawValue = SafeNameContent(sheetDefinition)
-    CounterNumericValue = ParseCounterValue(rawValue)
+    CounterNumericValue = store.ValueAsLong(COUNTER_NAME, 0)
 End Function
 
-'@sub-title Convert raw name text into a numeric counter, defaulting to zero.
-Private Function ParseCounterValue(ByVal rawValue As String) As Long
-    Dim trimmedValue As String
-
-    trimmedValue = Trim$(rawValue)
-    If LenB(trimmedValue) = 0 Then Exit Function
-    If Not IsNumeric(trimmedValue) Then Exit Function
-
-    ParseCounterValue = CLng(trimmedValue)
-    If ParseCounterValue < 0 Then ParseCounterValue = 0
-End Function
-
-'@sub-title Fetch the sheet-scoped name definition storing the counter.
-Private Function CounterDefinition(ByVal registrySheet As Worksheet) As Name
-    Dim definition As Name
-
-    For Each definition In registrySheet.Names
-        If CompareNameDefinition(definition, COUNTER_NAME) Then
-            Set CounterDefinition = definition
-            Exit Function
-        End If
-    Next definition
-End Function
-
-'@sub-title Try resolving a leftover workbook-level counter definition.
-Private Function TryWorkbookCounterDefinition(ByVal targetWorkbook As Workbook) As Name
+Private Function HiddenNameStore(ByVal registrySheet As Worksheet) As IHiddenNames
+    If registrySheet Is Nothing Then Exit Function
     On Error Resume Next
-        Set TryWorkbookCounterDefinition = targetWorkbook.Names(COUNTER_NAME)
+        Set HiddenNameStore = HiddenNames.Create(registrySheet)
     On Error GoTo 0
-End Function
-
-'@sub-title Extract the stored text from a defined name.
-Private Function SafeNameContent(ByVal definition As Name) As String
-    Dim refersTo As String
-    Dim targetRange As Range
-
-    If definition Is Nothing Then Exit Function
-
-    On Error Resume Next
-        Set targetRange = definition.RefersToRange
-    On Error GoTo 0
-
-    If Not targetRange Is Nothing Then
-        On Error Resume Next
-            SafeNameContent = Trim$(CStr(targetRange.Value))
-        On Error GoTo 0
-        If LenB(SafeNameContent) > 0 Then Exit Function
-    End If
-
-    On Error Resume Next
-        refersTo = Trim$(CStr(definition.RefersTo))
-    On Error GoTo 0
-
-    If LenB(refersTo) = 0 Then
-        On Error Resume Next
-            refersTo = Trim$(CStr(definition.Value))
-        On Error GoTo 0
-    End If
-
-    If LenB(refersTo) = 0 Then Exit Function
-    If Left$(refersTo, 1) = "=" Then
-        SafeNameContent = Mid$(refersTo, 2)
-    Else
-        SafeNameContent = refersTo
-    End If
-End Function
-
-'@sub-title Compare a defined name with the expected identifier.
-Private Function CompareNameDefinition(ByVal definition As Name, ByVal expected As String) As Boolean
-    CompareNameDefinition = (StrComp(ExtractSimpleName(definition.Name), expected, vbTextCompare) = 0)
-End Function
-
-'@sub-title Remove worksheet qualifications from name identifiers.
-Private Function ExtractSimpleName(ByVal qualifiedName As String) As String
-    Dim exclPos As Long
-
-    exclPos = InStr(qualifiedName, "!")
-    If exclPos = 0 Then
-        ExtractSimpleName = qualifiedName
-    Else
-        ExtractSimpleName = Mid$(qualifiedName, exclPos + 1)
-    End If
 End Function
 
 
