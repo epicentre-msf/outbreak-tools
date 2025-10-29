@@ -90,7 +90,8 @@ End Sub
 'Sort columns
 Public Sub Sort(Optional ByVal colName As String = vbNullString, _ 
                 Optional ByVal colList As Object = Nothing, _ 
-                Optional ByVal directSort As Boolean = True)
+                Optional ByVal directSort As Boolean = True, _ 
+                Optional ByVal strictSearch As Boolean = True)
 End Sub
 
 '@jump:Clean

@@ -610,6 +610,20 @@ Private Sub ImportFrom(ByVal source As IPasswords)
     ResetCaches
 End Sub
 
+Private Sub UpdateDebugingPassword(ByVal newValue As String)
+    Dim target As Range
+
+    EnsureSheetReady
+
+    On Error Resume Next
+        Set target = NamedRange(NAMEDEBUGPASSWORD)
+    On Error GoTo 0
+
+    If target Is Nothing Then Exit Sub
+
+    target.Value = newValue
+End Sub
+
 '@fun-title Clone the password worksheet into another sheet
 '@details Creates a structural copy of the password worksheet on another sheet and returns its handler.
 '@param targetSheet Worksheet that will receive a cloned password setup.
@@ -744,6 +758,10 @@ End Sub
 '@sub-title Import from pass impl.
 Private Sub IPasswords_ImportFrom(ByVal source As IPasswords)
     ImportFrom source
+End Sub
+
+Private Sub IPasswords_NewDebugingPassword(ByVal newValue As String)
+    UpdateDebugingPassword newValue
 End Sub
 
 '@fun-title Clone to worksheet impl.

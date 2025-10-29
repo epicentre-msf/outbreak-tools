@@ -130,3 +130,9 @@ End Function
 'and the new workbook has a debug mode exit handler.
 Public Function CloneToWorkbook(ByVal wb As Workbook) As IPasswords
 End Function
+
+'@section Utilities
+'===============================================================================
+'@sub-title Update the debugging password stored on the password worksheet.
+Public Sub NewDebugingPassword(ByVal newValue As String)
+End Sub

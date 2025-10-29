@@ -55,6 +55,50 @@ Private Const MESSAGE_KEY_COLUMN As String = "Key"
 
 Private Const GENERIC_FOLDER_NAME As String = "Checks"
 
+'@section List of errors to take in account
+'===============================================================================
+
+Private Const ANA_ADGR_FLIP As String               = "Analysis, line %1--There is no graph for this table, so ""flip coordinates"" will be ignored."
+Private Const ANA_EMPTY_TAB As String               = "Analysis, line %1--This line is completely empty, the table will be ignored in analysis."
+Private Const ANA_EMPTY_TITLE As String             = "Analysis, line %1--The table does not have a title."
+Private Const ANA_INCOR_FORM As String              = "Analysis, line %1--The formula specified for the table will eventually fail and not be parsed. %3"
+Private Const ANA_INV_TAB As String                 = "Analysis, line %1--The table is invalid. There is an error in specifications: %2"
+Private Const ANA_TS_NEWSEC As String               = "Analysis, line %1--This table is invalid and is a new section of time series. This will likely generate errors or impact all the time series sheet."
+Private Const ANA_UAFLIP_PERC As String             = "Analysis, line %1--The graph for this univariate table will not contain percentages because ""flip coordinates"" = yes."
+Private Const CHOI_EMPTYCHOI_LAB As String          = "Choices, line %1--There is no attached ""List Name"" value for Label ""%2""."
+Private Const CHOI_EMPTYCHOI_ORDER As String        = "Choices, line %1--There is no attached ""List Name"" value for Ordering list ""%2""."
+Private Const CHOI_EMPTY_ORDER As String            = "Choices, line %1--There is no value of ""Ordering list"" for choice ""%2""."
+Private Const CHOI_MIS_LAB As String                = "Choices, line %1--There is a missing Label for choice ""%2""."
+Private Const CHOI_UNFOUND_CHOI As String           = "Choices, ""List Name"" column -- Choice name ""%1"" is declared in choices sheet but never used."
+Private Const DICT_CAT_NOTFOUND As String           = "Dictionary, line %1--in CHOICE_FORMULA formula, category ""%2"" does not exists for choice ""%3"". Consider adding it to the choice sheet."
+Private Const DICT_CHOI_EMPTY As String             = "Dictionary, line %1--choice manual ""%2"" is not present in choices sheet, please add its categories in the Choices sheet."
+Private Const DICT_CHOIFORM_EMPTY As String         = "Dictionary, line %1--choice formula ""%2"" is not present in Choices sheet, please add its categories in the choice sheet."
+Private Const DICT_EMPTY_SHEET As String            = "Dictionary, line %1--Sheet names should not be empty, please provide a good sheet name for variable ""%2"" at line %1."
+Private Const DICT_EXPORT_NA As String              = "Dictionary, exports column--""Export %1"" column is filled in the dictionary, but ""Export Number"" %1 status is not active in the export sheet."
+Private Const DICT_FORMAT_CONTROL As String         = "Dictionary, line %1--Format requires the type of the variable, please consider adding the type for variable %2."
+Private Const DICT_INCOR_FORM As String             = "Dictionary, line %1--The formula for variable ""%2"" will eventually fail and not be parsed. %3."
+Private Const DICT_INCOR_MAX As String              = "Dictionary, line %1--The Max validation for variable ""%2"" will eventually fail and not be parsed. %3."
+Private Const DICT_INCOR_MIN As String              = "Dictionary, line %1--The Min validation for variable ""%2"" will eventually fail and not be parsed. %3."
+Private Const DICT_MAIN_LAB As String               = "Dictionary, line %1--The main label of variable ""%2"" is empty."
+Private Const DICT_UNIQUE_VAL As String             = "Dictionary, line %1--Duplicate values of variable %2 will be highlighted in red because Unique = ""yes""."
+Private Const DICT_UNKNOWN_CONTROL As String        = "Dictionary, line %1--The control ""%2"" of variable ""%3"" is unknown."
+Private Const DICT_VALID_CONTROL As String          = "Dictionary, line %1--Validation requires the type of the variable, please consider adding the type for variable %2."
+Private Const DICT_VAR_LENGTH As String             = "Dictionary, line %1--Variable ""%2"" length is less than 4. Variable should have length >= 4."
+Private Const DICT_VAR_UNIQUE As String             = "Dictionary, line %1--Variable ""%2"" is duplicate, variable names should be unique."
+Private Const EXP_ACT_EMPTY As String               = "Exports, line %1--The export is active, but the corresponding column is empty in the dictionary. You may end up with empty data in this export. Please correct the status of export %2."
+Private Const EXP_FILENAME_VARNOTVLIST As String    = "Exports, line %1--The Export Number %2 file name contains a variable named ""%3"" which is not a vlist1D variable, but a hlist2D. It will be considered as text in exports."
+Private Const EXP_FILENAME_VARUNFOUND As String     = "Exports, line %1--The Export Number %2 file name contains a variable named ""%3"" which does not exists. It will be considered as text in exports."
+Private Const EXP_ID_PASSWD As String               = "Exports, line %1--The Export Number %2 has no password, but keeps identifiers."
+Private Const EXP_MIS_FORM As String                = "Exports, line %1--The Export Number %2 is active, but there is no value for ""File Format"" (xlsx/xlsb) attached to it."
+Private Const EXP_MIS_HEAD As String                = "Exports, line %1--The Export Number %2 is active, but there is no value for ""Header format"" attached to it. It will default to ""variables names""."
+Private Const EXP_MIS_LAB As String                 = "Exports, line %1--The Export Number %2 is active, but there is no label attached to it."
+Private Const EXP_MIS_META As String                = "Exports, line %1--The Export Number %2 is active, but there is no value for ""Export Metadata"" (yes/no) attached to it."
+Private Const EXP_MIS_NAME As String                = "Exports, line %1--The Export Number %2 is active, but there is no value for ""File name"" attached to it."
+Private Const EXP_MIS_PASS As String                = "Exports, line %1--The Export Number %2 is active, but there is no value for ""Password"" (yes/no) attached to it."
+Private Const EXP_MIS_TRAD As String                = "Exports, line %1--The Export Number %2 is active, but there is no value for ""Export Translation"" (yes/no) attached to it."
+Private Const EXP_UNFOUND_DICTCOLUMN As String      = "Exports, line %1--The Export Number %2 is active, but the corresponding column in the dictionary is missing."
+
+
 '@section Factory
 '===============================================================================
 '@sub-title Create and initialise a setup checker instance.
@@ -1012,19 +1056,6 @@ Private Sub PrintReport()
     reportSheet.Cells.EntireRow.Hidden = False
 
     checkOutput.PrintOutput this.checkTables
-    dropdowns.SetValidation reportSheet.Range("RNG_CheckingFilter"), "__checking_types", "error"
-
-    With reportSheet
-        Set formatRange = .Range(.Cells(1, 2), .Cells(1, 3))
-        formatRange.Font.Color = RGB(21, 133, 255)
-        formatRange.Font.Bold = True
-
-        With .Range("RNG_CheckingFilter")
-            .Interior.Color = RGB(221, 235, 247)
-            .HorizontalAlignment = xlHAlignCenter
-            .Value = "All"
-        End With
-    End With
 End Sub
 
 '@section Message helpers

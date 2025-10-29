@@ -116,9 +116,6 @@ Public Sub DeleteWorksheet(ByVal sheetName As String)
     On Error Resume Next
         BusyApp
         ThisWorkbook.Worksheets(sheetName).Delete
-        ' If Err.Number <> 0 Then 
-        '     Debug.Print "Error when deleting " & sheetName & ":" Err.Number & " - " & Err.Description
-        ' End If
     On Error GoTo 0
 End Sub
 
@@ -505,7 +502,11 @@ Public Function BuildTempFolder(Optional ByVal referenceWorkbook As Workbook, _
 
     If LenB(folderPath) = 0 Then folderPath = CurDir$
     If LenB(folderName) <> 0 Then folderPath = folderPath & Application.PathSeparator & folderName
+    Debug.Print "Path separator "; Application.PathSeparator
+    On Error Resume Next
     If Dir$(folderPath, vbDirectory) = vbNullString Then Mkdir folderPath
+    On Error GoTo 0
+
     BuildTempFolder = folderPath
 End Function
 

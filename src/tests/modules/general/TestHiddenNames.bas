@@ -63,10 +63,8 @@ Private Sub ResetSheets()
 End Sub
 
 Private Sub RestoreSheets()
-    TestHelpers.ClearWorksheet testSh
-    TestHelpers.ClearWorksheet otherSh
-    Set testSh = Nothing
-    Set otherSh = Nothing
+    TestHelpers.DeleteWorksheet TEST_SHEET_NAME
+    TestHelpers.DeleteWorksheet OTHER_SHEET_NAME
 End Sub
 
 Private Sub ReleaseManager()

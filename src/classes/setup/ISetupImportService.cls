@@ -43,6 +43,16 @@ End Sub
 Public Sub Import(ByVal passwords As IPasswords, ByVal sheetsList As BetterArray)
 End Sub
 
+'@jump:ImportFromWorkbook
+'@sub-title Perform the setup import leveraging dedicated worksheet classes.
+'@param passwords IPasswords implementation handling worksheet protection.
+'@param sheetsList Optional BetterArray describing worksheets to import; defaults to Dictionary, Exports, Analysis and Translations.
+Public Sub ImportFromWorkbook(ByVal passwords As IPasswords, Optional ByVal sheetsList As BetterArray = Nothing)
+End Sub
+
+'@jump:ExportToWorkbook
+Public Sub Export():End Sub
+
 '@jump:Clean
 '@sub-title Clean target worksheets ahead of a fresh import.
 '@param passwords IPasswords implementation handling worksheet protection.

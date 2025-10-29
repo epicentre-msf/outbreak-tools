@@ -37,9 +37,36 @@
             ],
             "windows": {
                 "command": "perl",
-               "args": [
-                "automate/codes/harness_test_replacements.pl",
-                "${file}"
+                "args": [
+                    "automate/codes/harness_test_replacements.pl",
+                    "${file}"
+                ]
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "find private properties missing end",
+            "type": "process",
+            "command": "perl",
+            "args": [
+                "automate/codes/find_private_properties_missing_end.pl",
+                "--root",
+                "${workspaceFolder}",
+                "--output",
+                "temp/private_properties_missing_end.txt"
+            ],
+            "windows": {
+                "command": "perl",
+                "args": [
+                    "automate\\codes\\find_private_properties_missing_end.pl",
+                    "--root",
+                    "${workspaceFolder}",
+                    "--output",
+                    "temp\\private_properties_missing_end.txt"
                 ]
             },
             "presentation": {

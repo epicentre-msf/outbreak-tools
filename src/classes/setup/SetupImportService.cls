@@ -13,7 +13,7 @@ Attribute VB_Description = "Improved setup import service orchestrating workbook
 '@Folder("Setup")
 '@ModuleDescription("Improved setup import service orchestrating workbook synchronisation")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends ProjectError, ApplicationState, IApplicationState, BetterArray, CustomTable, ICustomTable, LLExport, ILLExport, LLdictionary, ILLdictionary, IPasswords
+'@depends ProjectError, ApplicationState, IApplicationState, BetterArray, CustomTable, ICustomTable, LLExport, ILLExport, LLdictionary, ILLdictionary, IPasswords, Analysis, IAnalysis, SetupTranslationsTable, ISetupTranslationsTable
 
 Option Explicit
 
@@ -25,13 +25,30 @@ Private Const CLASS_NAME As String = "SetupImportService"
 Private Const EXPORT_SHEET_NAME As String = "Exports"
 Private Const DICTIONARY_SHEET_NAME As String = "Dictionary"
 Private Const ANALYSIS_SHEET_NAME As String = "Analysis"
+Private Const CHOICES_SHEET_NAME As String = "Choices"
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
+Private Const REGISTRY_SHEET_NAME As String = "__updated"
+'Default host anchor positions for setup tables using domain objects
+Private Const DICTIONARY_HOST_START_ROW As Long = 5
+Private Const DICTIONARY_HOST_START_COLUMN As Long = 1
+Private Const CHOICES_HOST_START_ROW As Long = 4
+Private Const CHOICES_HOST_START_COLUMN As Long =1
+Private Const EXPORT_HOST_START_ROW As Long = 4
+Private Const EXPORT_HOST_START_COLUMN As Long = 1
+Private Const TRANSLATIONS_TABLE_NAME As String = "Tab_Translations"
+'Incoming workbooks default to top-left anchored data
+Private Const SOURCE_START_ROW As Long = 1
+Private Const SOURCE_START_COLUMN As Long = 1
 
 Private Type TSetupImportState
     importPath As String                    'Path to the source setup workbook
     progressDisplay As Object               'UI element displaying progress messages
     importWorkbook As Workbook              'Lazy loaded reference to the imported workbook
     appScope As IApplicationState           'Application state guard ensuring Excel settings are restored
+    hasCaption As Boolean
+    exportPath As String
+    exportWorkbook As Workbook
+    displayPrompt As Boolean
 End Type
 
 Private this As TSetupImportState
@@ -43,7 +60,7 @@ Private this As TSetupImportState
 '@param importPath String path to the source setup workbook.
 '@param progressDisplay Object receiving textual updates (must expose Caption).
 '@return ISetupImportService configured with the provided path and progress display.
-Public Function Create(ByVal importPath As String, ByVal progressDisplay As Object) As ISetupImportService
+Public Function Create(ByVal importPath As String, Optional ByVal progressDisplay As Object) As ISetupImportService
     Dim instance As SetupImportService
 
     ValidateProgressDisplay progressDisplay
@@ -301,6 +318,415 @@ ImportFailed:
     If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
 End Sub
 
+'@section Workbook-driven import
+'===============================================================================
+'@sub-title Execute the workbook-driven import relying on domain classes.
+Public Sub ImportFromWorkbook(ByVal pass As IPasswords, Optional ByVal sheetsList As BetterArray = Nothing)
+    Dim importBook As Workbook
+    Dim hostWorkbook As Workbook
+    Dim resolvedSheets As BetterArray
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    ValidatePasswords pass
+    Set resolvedSheets = ResolveImportSheets(sheetsList)
+
+    EnterBusyState
+    On Error GoTo ImportWorkbookFailed
+
+        Set importBook = EnsureImportWorkbook()
+        Set hostWorkbook = ThisWorkbook
+
+        If ShouldImportSheet(resolvedSheets, DICTIONARY_SHEET_NAME) Then
+            ImportDictionaryUsingClass pass, hostWorkbook, importBook
+        End If
+
+        If ShouldImportSheet(resolvedSheets, EXPORT_SHEET_NAME) Then
+            ImportExportUsingClass pass, hostWorkbook, importBook
+        End If
+
+        If ShouldImportSheet(resolvedSheets, CHOICES_SHEET_NAME) Then
+            ImportChoicesUsingClass pass, hostWorkbook, importBook
+        End If
+
+        If ShouldImportSheet(resolvedSheets, ANALYSIS_SHEET_NAME) Then
+            ImportAnalysisUsingClass pass, hostWorkbook, importBook
+        End If
+
+        If ShouldImportSheet(resolvedSheets, TRANSLATIONS_SHEET_NAME) Then
+            ImportTranslationsUsingClass pass, hostWorkbook, importBook
+        End If
+
+ImportWorkbookCleanup:
+        CloseImportWorkbook
+        LeaveBusyState
+        Exit Sub
+
+ImportWorkbookFailed:
+        errNumber = Err.Number
+        errSource = Err.Source
+        errDescription = Err.Description
+        On Error Resume Next
+            CloseImportWorkbook
+        On Error GoTo 0
+        LeaveBusyState True
+        If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+End Sub
+
+'@sub-title Import dictionary worksheet using LLdictionary.
+Private Sub ImportDictionaryUsingClass(ByVal pass As IPasswords, _
+                                       ByVal hostWorkbook As Workbook, _
+                                       ByVal importWorkbook As Workbook)
+
+    Dim hostSheet As Worksheet
+    Dim sourceSheet As Worksheet
+    Dim dictionaryManager As ILLdictionary
+    Dim sheetUnlocked As Boolean
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    If Not WorksheetExists(hostWorkbook, DICTIONARY_SHEET_NAME) Then Exit Sub
+    If Not WorksheetExists(importWorkbook, DICTIONARY_SHEET_NAME) Then Exit Sub
+
+    Set hostSheet = hostWorkbook.Worksheets(DICTIONARY_SHEET_NAME)
+    Set sourceSheet = importWorkbook.Worksheets(DICTIONARY_SHEET_NAME)
+
+    On Error GoTo ImportFailed
+        pass.UnProtect DICTIONARY_SHEET_NAME
+        sheetUnlocked = True
+
+        Set dictionaryManager = LLdictionary.Create(hostSheet, DICTIONARY_HOST_START_ROW, DICTIONARY_HOST_START_COLUMN)
+        dictionaryManager.Import sourceSheet, SOURCE_START_ROW, SOURCE_START_COLUMN
+
+ImportCleanup:
+        On Error Resume Next
+            If sheetUnlocked Then
+                ProtectWorksheet pass, DICTIONARY_SHEET_NAME
+                sheetUnlocked = False
+            End If
+        On Error GoTo 0
+        If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+        Exit Sub
+
+ImportFailed:
+        errNumber = Err.Number
+        errSource = Err.Source
+        errDescription = Err.Description
+        Resume ImportCleanup
+End Sub
+
+'@sub-title Import Choices using ILLChoices
+Private Sub ImportChoicesUsingClass(ByVal pass As IPasswords, ByVal hostworkbook As Workbook, ByVal importworkbook As Workbook)
+
+    Dim hostsheet As worksheet
+    Dim sourcesheet As Worksheet
+    Dim choicemanager As ILLChoices
+    Dim sheetUnlocked As Boolean
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    If Not WorksheetExists(hostWorkbook, CHOICES_SHEET_NAME) Then Exit Sub
+    If Not WorksheetExists(importWorkbook, CHOICES_SHEET_NAME) Then Exit Sub
+
+    Set hostSheet = hostWorkbook.Worksheets(CHOICES_SHEET_NAME)
+    Set sourceSheet = importWorkbook.Worksheets(CHOICES_SHEET_NAME)
+
+    On Error GoTo ImportFailed
+    pass.UnProtect CHOICES_SHEET_NAME
+    sheetUnlocked = True
+    Set choicemanager = LLChoices.Create(hostSheet, CHOICES_HOST_START_ROW, CHOICES_HOST_START_COLUMN)
+    choicemanager.Import sourceSheet, SOURCE_START_ROW, SOURCE_START_COLUMN
+
+ImportCleanup:
+        On Error Resume Next
+        If sheetUnlocked Then
+            ProtectWorksheet pass, CHOICES_SHEET_NAME
+            sheetUnlocked = False
+        End If
+    On Error GoTo 0
+    If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+    Exit Sub
+
+ImportFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume ImportCleanup
+End Sub
+
+'@sub-title Import export specifications via LLExport.
+Private Sub ImportExportUsingClass(ByVal pass As IPasswords, _
+                                   ByVal hostWorkbook As Workbook, _
+                                   ByVal importWorkbook As Workbook)
+
+    Dim hostSheet As Worksheet
+    Dim sourceSheet As Worksheet
+    Dim exportsManager As ILLExport
+    Dim sheetUnlocked As Boolean
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    If Not WorksheetExists(hostWorkbook, EXPORT_SHEET_NAME) Then Exit Sub
+    If Not WorksheetExists(importWorkbook, EXPORT_SHEET_NAME) Then Exit Sub
+
+    Set hostSheet = hostWorkbook.Worksheets(EXPORT_SHEET_NAME)
+    Set sourceSheet = importWorkbook.Worksheets(EXPORT_SHEET_NAME)
+
+    On Error GoTo ImportFailed
+        pass.UnProtect EXPORT_SHEET_NAME
+        sheetUnlocked = True
+
+        Set exportsManager = LLExport.Create(hostSheet, EXPORT_HOST_START_ROW, EXPORT_HOST_START_COLUMN)
+        exportsManager.ImportSpecs sourceSheet, SOURCE_START_ROW, SOURCE_START_COLUMN
+
+ImportCleanup:
+        On Error Resume Next
+            If sheetUnlocked Then
+                ProtectWorksheet pass, EXPORT_SHEET_NAME
+                sheetUnlocked = False
+            End If
+        On Error GoTo 0
+        If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+        Exit Sub
+
+ImportFailed:
+        errNumber = Err.Number
+        errSource = Err.Source
+        errDescription = Err.Description
+        Resume ImportCleanup
+End Sub
+
+
+
+'@sub-title Import analysis worksheet content via Analysis class.
+Private Sub ImportAnalysisUsingClass(ByVal pass As IPasswords, _
+                                     ByVal hostWorkbook As Workbook, _
+                                     ByVal importWorkbook As Workbook)
+
+    Dim hostSheet As Worksheet
+    Dim sourceSheet As Worksheet
+    Dim analysisManager As IAnalysis
+    Dim sheetUnlocked As Boolean
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    If Not WorksheetExists(hostWorkbook, ANALYSIS_SHEET_NAME) Then Exit Sub
+    If Not WorksheetExists(importWorkbook, ANALYSIS_SHEET_NAME) Then Exit Sub
+
+    Set hostSheet = hostWorkbook.Worksheets(ANALYSIS_SHEET_NAME)
+    Set sourceSheet = importWorkbook.Worksheets(ANALYSIS_SHEET_NAME)
+
+    On Error GoTo ImportFailed
+        pass.UnProtect ANALYSIS_SHEET_NAME
+        sheetUnlocked = True
+
+        Set analysisManager = Analysis.Create(hostSheet)
+        analysisManager.Import sourceSheet
+
+ImportCleanup:
+        On Error Resume Next
+            If sheetUnlocked Then
+                ProtectWorksheet pass, ANALYSIS_SHEET_NAME
+                sheetUnlocked = False
+            End If
+        On Error GoTo 0
+        If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+        Exit Sub
+
+ImportFailed:
+        errNumber = Err.Number
+        errSource = Err.Source
+        errDescription = Err.Description
+        Resume ImportCleanup
+End Sub
+
+'@sub-title Import translations worksheet using CustomTable and SetupTranslationsTable.
+Private Sub ImportTranslationsUsingClass(ByVal pass As IPasswords, _
+                                         ByVal hostWorkbook As Workbook, _
+                                         ByVal importWorkbook As Workbook)
+
+    Dim hostSheet As Worksheet
+    Dim sourceSheet As Worksheet
+    Dim hostTable As ListObject
+    Dim hostTableAdapter As ICustomTable
+    Dim sourceTableAdapter As IDataSheet
+    Dim sheetUnlocked As Boolean
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    If Not WorksheetExists(hostWorkbook, TRANSLATIONS_SHEET_NAME) Then Exit Sub
+    If Not WorksheetExists(importWorkbook, TRANSLATIONS_SHEET_NAME) Then Exit Sub
+
+    Set hostSheet = hostWorkbook.Worksheets(TRANSLATIONS_SHEET_NAME)
+    Set sourceSheet = importWorkbook.Worksheets(TRANSLATIONS_SHEET_NAME)
+
+    Set hostTable = ResolveTranslationsList(hostSheet)
+
+    If hostTable Is Nothing Then Exit Sub
+
+    On Error GoTo ImportFailed
+        pass.UnProtect TRANSLATIONS_SHEET_NAME
+        sheetUnlocked = True
+
+        Set hostTableAdapter = CustomTable.Create(hostTable)
+        Set sourceTableAdapter = DataSheet.Create(sourceSheet)
+        hostTableAdapter.Import sourceTableAdapter, keepImportHeaders:=True
+        ResetTranslationsRegistry hostWorkbook, hostTable
+
+ImportCleanup:
+        On Error Resume Next
+            If sheetUnlocked Then
+                ProtectWorksheet pass, TRANSLATIONS_SHEET_NAME
+                sheetUnlocked = False
+            End If
+        On Error GoTo 0
+        If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+        Exit Sub
+
+ImportFailed:
+        errNumber = Err.Number
+        errSource = Err.Source
+        errDescription = Err.Description
+        Resume ImportCleanup
+End Sub
+
+'@sub-title Refresh translations registry after a successful import.
+Private Sub ResetTranslationsRegistry(ByVal hostWorkbook As Workbook, ByVal hostTable As ListObject)
+    Dim registrySheet As Worksheet
+    Dim manager As ISetupTranslationsTable
+    Dim errDescription As String
+
+    Set registrySheet = ResolveRegistrySheet(hostWorkbook)
+    If registrySheet Is Nothing Then Exit Sub
+
+    On Error GoTo ResetFailed
+        Set manager = SetupTranslationsTable.Create(hostTable)
+        manager.ResetSequence registrySheet
+    On Error GoTo 0
+    Exit Sub
+
+ResetFailed:
+    errDescription = Err.Description
+    Err.Clear
+    ThrowError ProjectError.SomethingWentWrong, "Failed to refresh translations registry: " & errDescription
+End Sub
+
+'@sub-title Resolve the translations listobject from a worksheet.
+Private Function ResolveTranslationsList(ByVal sheetRef As Worksheet, Optional ByVal preferred As ListObject = Nothing) As ListObject
+    Dim candidate As ListObject
+
+    If sheetRef Is Nothing Then Exit Function
+
+    On Error Resume Next
+        If Not preferred Is Nothing Then
+            Set candidate = sheetRef.ListObjects(preferred.Name)
+        End If
+    On Error GoTo 0
+
+    If candidate Is Nothing Then
+        On Error Resume Next
+            Set candidate = sheetRef.ListObjects(TRANSLATIONS_TABLE_NAME)
+        On Error GoTo 0
+    End If
+
+    If candidate Is Nothing Then
+        On Error Resume Next
+            If sheetRef.ListObjects.Count > 0 Then
+                Set candidate = sheetRef.ListObjects(1)
+            End If
+        On Error GoTo 0
+    End If
+
+    Set ResolveTranslationsList = candidate
+End Function
+
+'@section Workbook driven Export
+'===============================================================================
+Private Sub Export()
+
+    Dim dictionaryManager As ILLdictionary
+    Dim translationManager As ICustomTable
+    Dim analysisManager As IAnalysis
+    Dim exportsManager As ILLExport
+    Dim choicesManager As ILLChoices
+    Dim exportworkbook As Workbook
+    Dim hostWorkbook As Workbook
+    Dim hostSheet As Worksheet
+    Dim exportSheet As Worksheet
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    Set exportworkbook = EnsureExportWorkbook()
+    If exportworkbook Is Nothing Then Exit Sub
+    Set hostWorkbook = ThisWorkbook
+    If hostworkbook Is Nothing Then Exit Sub
+    
+    EnterBusyState
+    On Error GoTo ExportFailed
+
+    'Export the dictionary
+    If WorksheetExists(hostWorkbook, DICTIONARY_SHEET_NAME) Then
+        Set hostSheet = hostWorkbook.Worksheets(DICTIONARY_SHEET_NAME)
+        Set dictionaryManager = LLdictionary.Create(hostSheet, DICTIONARY_HOST_START_ROW, DICTIONARY_HOST_START_COLUMN)
+        dictionaryManager.Export exportworkbook, Hide:=xlSheetVisible
+    End If
+
+    'Export the choices
+    If WorksheetExists(hostWorkbook, CHOICES_SHEET_NAME) Then
+        Set hostSheet = hostWorkbook.Worksheets(CHOICES_SHEET_NAME)
+        Set choicesManager = LLChoices.Create(hostSheet, CHOICES_HOST_START_ROW, CHOICES_HOST_START_COLUMN)
+        choicesManager.Export exportworkbook, Hide:=xlSheetVisible
+    End If
+
+    'Export the exports
+    If WorksheetExists(hostWorkbook, EXPORT_SHEET_NAME) Then
+        Set hostSheet = hostWorkbook.Worksheets(EXPORT_SHEET_NAME)
+        Set exportsManager = LLExport.Create(hostSheet, EXPORT_HOST_START_ROW, EXPORT_HOST_START_COLUMN)
+        exportsManager.Export exportworkbook, Hide:=xlSheetVisible
+    End If
+
+
+    'Export the analysis
+    If WorksheetExists(hostWorkbook, ANALYSIS_SHEET_NAME) Then
+        Set hostSheet = hostWorkbook.Worksheets(ANALYSIS_SHEET_NAME)
+        Set analysisManager = Analysis.Create(hostSheet)
+        analysisManager.Export exportworkbook, Hide:=xlSheetVisible
+    End If
+
+    'Export the translations
+    If WorksheetExists(hostWorkbook, TRANSLATIONS_SHEET_NAME) Then
+        Set hostSheet = hostWorkbook.Worksheets(TRANSLATIONS_SHEET_NAME)
+        Set exportSheet = exportworkbook.Worksheets.Add(After:=exportWorkbook.Worksheets(exportworkbook.Worksheets.Count))
+        exportSheet.Name = TRANSLATIONS_SHEET_NAME
+        Set translationManager = CustomTable.Create(hostSheet.ListObjects(TRANSLATIONS_TABLE_NAME))
+        translationManager.Export exportSheet
+    End If
+
+
+ExportCleanUp:
+    EnsureSavedExport
+    CloseExportWorkbook
+    LeaveBusyState
+    Exit Sub
+
+ExportFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    On Error Resume Next
+        CloseExportWorkbook
+    On Error GoTo 0
+    LeaveBusyState True
+    If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+End Sub
+
 
 '@section Preparation helpers
 '===============================================================================
@@ -333,8 +759,8 @@ Private Sub PrepareImport(ByVal pass As IPasswords, ByVal sheetsList As BetterAr
     If WorksheetExists(importBook, EXPORT_SHEET_NAME) And WorksheetExists(importBook, DICTIONARY_SHEET_NAME) Then
         Set currentExportsSheet = hostWorkbook.Worksheets(EXPORT_SHEET_NAME)
         Set importExportsSheet = importBook.Worksheets(EXPORT_SHEET_NAME)
-        Set currentExportObj = LLExport.Create(currentExportsSheet, 4, 1)
-        Set importExportObj = LLExport.Create(importExportsSheet, 4, 1)
+        Set currentExportObj = LLExport.Create(currentExportsSheet, EXPORT_HOST_START_ROW, EXPORT_HOST_START_COLUMN)
+        Set importExportObj = LLExport.Create(importExportsSheet, SOURCE_START_ROW, SOURCE_START_COLUMN)
 
         If currentExportObj.NumberOfExports < importExportObj.NumberOfExports Then
             pass.UnProtect DICTIONARY_SHEET_NAME
@@ -342,7 +768,7 @@ Private Sub PrepareImport(ByVal pass As IPasswords, ByVal sheetsList As BetterAr
             pass.UnProtect EXPORT_SHEET_NAME
             exportsUnlocked = True
 
-            Set currentDictionary = LLdictionary.Create(hostWorkbook.Worksheets(DICTIONARY_SHEET_NAME), 5, 1)
+            Set currentDictionary = LLdictionary.Create(hostWorkbook.Worksheets(DICTIONARY_SHEET_NAME), DICTIONARY_HOST_START_ROW, DICTIONARY_HOST_START_COLUMN)
 
             Do While currentExportObj.NumberOfExports < importExportObj.NumberOfExports
                 previousExports = currentExportObj.NumberOfExports
@@ -380,6 +806,45 @@ End Sub
 
 '@section Validation helpers
 '===============================================================================
+'@sub-title Resolve the requested sheets set, defaulting to core setup worksheets.
+Private Function ResolveImportSheets(ByVal sheetsList As BetterArray) As BetterArray
+    If sheetsList Is Nothing Then
+        Set ResolveImportSheets = DefaultImportSheets()
+    Else
+        Set ResolveImportSheets = EnsureSheetsList(sheetsList)
+    End If
+End Function
+
+'@sub-title Default sheet list covering the core setup worksheets.
+Private Function DefaultImportSheets() As BetterArray
+    Dim defaults As BetterArray
+
+    Set defaults = New BetterArray
+    defaults.LowerBound = 1
+    defaults.Push DICTIONARY_SHEET_NAME, CHOICES_SHEET_NAME, EXPORT_SHEET_NAME, ANALYSIS_SHEET_NAME, TRANSLATIONS_SHEET_NAME
+
+    Set DefaultImportSheets = defaults
+End Function
+
+'@sub-title Determine whether a sheet should participate in the import.
+Private Function ShouldImportSheet(ByVal sheetsList As BetterArray, ByVal sheetName As String) As Boolean
+    Dim idx As Long
+    Dim candidate As String
+
+    If sheetsList Is Nothing Then
+        ShouldImportSheet = True
+        Exit Function
+    End If
+
+    For idx = sheetsList.LowerBound To sheetsList.UpperBound
+        candidate = CStr(sheetsList.Item(idx))
+        If StrComp(candidate, sheetName, vbTextCompare) = 0 Then
+            ShouldImportSheet = True
+            Exit Function
+        End If
+    Next idx
+End Function
+
 '@sub-title Ensure at least one import option is selected.
 Private Sub EnsureImportSelection(ByVal importDictionary As Boolean, _
                                   ByVal importChoices As Boolean, _
@@ -437,18 +902,20 @@ End Sub
 
 '@sub-title Ensure the progress display object exposes a Caption property.
 Private Sub ValidateProgressDisplay(ByVal progressDisplay As Object)
-    If progressDisplay Is Nothing Then
-        ThrowError ProjectError.InvalidArgument, "Progress display object cannot be Nothing."
+    If Not progressDisplay Is Nothing Then
+        On Error GoTo InvalidDisplay
+            progressDisplay.Caption = "Test caption"
+            progressDisplay.Value = "Test value"
+        On Error GoTo 0
+        this.hasCaption = True
+        Exit Sub
+    Else
+        this.hasCaption = False
     End If
-
-    On Error GoTo InvalidDisplay
-        progressDisplay.Caption = progressDisplay.Caption
-    On Error GoTo 0
-    Exit Sub
 
 InvalidDisplay:
     Err.Clear
-    ThrowError ProjectError.InvalidArgument, "Progress display object must expose a Caption property."
+    ThrowError ProjectError.InvalidArgument, "Progress display object must expose a Caption or Value property."
 End Sub
 
 '@sub-title Ensure the import workbook file exists before opening.
@@ -490,11 +957,49 @@ Private Function EnsureImportWorkbook() As Workbook
     Set EnsureImportWorkbook = this.importWorkbook
 End Function
 
+Private Function EnsureExportWorkbook() As Workbook
+
+    Dim io As IOSFiles
+
+    If (this.exportWorkbook) Is Nothing Then
+        Set io = OSFiles.Create()
+        io.LoadFolder()
+
+        If io.HasValidFolder() Then this.exportPath = io.Folder()
+        Set this.exportWorkbook = Workbooks.Add
+    End If
+
+    Set EnsureExportWorkbook = this.exportWorkbook
+End Function
+
+
+Private Sub EnsureSavedExport()
+
+    Dim hostworkbook As Workbook
+    Dim exportworkbook As Workbook
+    Dim filePath As String
+
+    filePath = ThisWorkbook.Name & "_export_" & Format(Now(), "yyyymmdd") & ".xlsx"
+    Set exportworkbook = EnsureExportWorkbook()
+    filePath = this.exportPath  & Application.PathSeparator & filePath
+
+    exportWorkbook.SaveAs filePath, _
+    CreateBackup:=False, _
+    ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+End Sub
+
 '@sub-title Close and release the imported workbook.
 Private Sub CloseImportWorkbook()
     CloseWorkbook this.importWorkbook
     Set this.importWorkbook = Nothing
 End Sub
+
+Private Sub CloseExportWorkbook()
+    CloseWorkbook this.exportworkbook
+    Set this.exportworkbook = Nothing
+    this.exportPath = vbNullString
+End Sub
+
 
 '@sub-title Close workbook safely without raising errors.
 Private Sub CloseWorkbook(ByVal workbookRef As Workbook)
@@ -516,6 +1021,13 @@ Private Function WorksheetExists(ByVal workbookRef As Workbook, ByVal sheetName 
     On Error GoTo 0
 
     WorksheetExists = Not (sheetRef Is Nothing)
+End Function
+
+'@sub-title Resolve the registry worksheet if present.
+Private Function ResolveRegistrySheet(ByVal workbookRef As Workbook) As Worksheet
+    On Error Resume Next
+        Set ResolveRegistrySheet = workbookRef.Worksheets(REGISTRY_SHEET_NAME)
+    On Error GoTo 0
 End Function
 
 '@sub-title Detect whether a list object exists within a worksheet.
@@ -576,10 +1088,12 @@ End Sub
 '===============================================================================
 '@sub-title Display informational text through the progress object.
 Private Sub WriteInfo(ByVal message As String)
+    If Not this.hasCaption Then Exit Sub
     If this.progressDisplay Is Nothing Then Exit Sub
 
     On Error Resume Next
         this.progressDisplay.Caption = message
+        this.progressDisplay.Value = message
     On Error GoTo 0
 End Sub
 
@@ -653,6 +1167,14 @@ End Sub
 
 Private Sub ISetupImportService_Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
     Import pass, sheetsList
+End Sub
+
+Private Sub ISetupImportService_ImportFromWorkbook(ByVal pass As IPasswords, Optional ByVal sheetsList As BetterArray = Nothing)
+    ImportFromWorkbook pass, sheetsList
+End Sub
+
+Private Sub ISetupImportService_Export()
+    Export
 End Sub
 
 Private Property Get ISetupImportService_Path() As String

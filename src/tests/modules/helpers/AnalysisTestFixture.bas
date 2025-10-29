@@ -1,3 +1,5 @@
+
+
 Attribute VB_Name = "AnalysisTestFixture"
 Attribute VB_Description = "Shared helpers for Analysis tests"
 
@@ -10,19 +12,19 @@ Option Explicit
 '@section Constants
 '===============================================================================
 
-Public Const ANALYSISTESTSHEET As String = "AnalysisFixture"
-Public Const ANALYSISTRANSLATIONSHEET As String = "AnalysisTranslation"
-Public Const ANALYSISTRANSLATIONTABLE As String = "tblTranslation"
+Private Const ANALYSISTESTSHEET As String = "AnalysisFixture"
+Private Const ANALYSISTRANSLATIONSHEET As String = "AnalysisTranslation"
+Private Const ANALYSISTRANSLATIONTABLE As String = "tblTranslation"
 
-Public Const TAB_GLOBAL_SUMMARY As String = "Tab_global_summary"
-Public Const TAB_UNIVARIATE As String = "Tab_Univariate_Analysis"
-Public Const TAB_BIVARIATE As String = "Tab_Bivariate_Analysis"
-Public Const TAB_TIME_SERIES As String = "Tab_TimeSeries_Analysis"
-Public Const TAB_GRAPH_TIME_SERIES As String = "Tab_Graph_TimeSeries"
-Public Const TAB_GRAPH_TITLE As String = "Tab_Label_TSGraph"
-Public Const TAB_SPATIAL As String = "Tab_Spatial_Analysis"
-Public Const TAB_SPATIO_TEMPORAL As String = "Tab_SpatioTemporal_Analysis"
-Public Const TAB_SPATIO_TEMPORAL_SPECS As String = "Tab_SpatioTemporal_Specs"
+Private Const TAB_GLOBAL_SUMMARY As String = "Tab_global_summary"
+Private Const TAB_UNIVARIATE As String = "Tab_Univariate_Analysis"
+Private Const TAB_BIVARIATE As String = "Tab_Bivariate_Analysis"
+Private Const TAB_TIME_SERIES As String = "Tab_TimeSeries_Analysis"
+Private Const TAB_GRAPH_TIME_SERIES As String = "Tab_Graph_TimeSeries"
+Private Const TAB_GRAPH_TITLE As String = "Tab_Label_TSGraph"
+Private Const TAB_SPATIAL As String = "Tab_Spatial_Analysis"
+Private Const TAB_SPATIO_TEMPORAL As String = "Tab_SpatioTemporal_Analysis"
+Private Const TAB_SPATIO_TEMPORAL_SPECS As String = "Tab_SpatioTemporal_Specs"
 
 '@section Fixture Data
 '===============================================================================
@@ -32,7 +34,7 @@ Public Function AnalysisHeaders() As Variant
 End Function
 
 Public Function AnalysisRows(ByVal sectionValue As String) As Variant
-    AnalysisRows = Array(Array(sectionValue, "Goodbye", "=""Summary"""))
+    AnalysisRows = Array(Array(sectionValue, "Goodbye", "Summary"))
 End Function
 
 Private Function TranslationHeaders() As Variant
@@ -45,8 +47,14 @@ Private Function TranslationRows() As Variant
         Array("farewell", "Goodbye", "Au revoir"))
 End Function
 
+
 '@section Worksheet Builders
 '===============================================================================
+
+Public Sub ClearTestAnalysisSheets()
+    DeleteWorksheet ANALYSISTRANSLATIONSHEET
+    DeleteWorksheet ANALYSISTESTSHEET  
+End Sub
 
 Public Function BuildAnalysisTable(ByVal hostSheet As Worksheet, ByVal sectionValue As String) As ListObject
     Dim headerMatrix As Variant
@@ -76,45 +84,77 @@ Public Function BuildAnalysisTable(ByVal hostSheet As Worksheet, ByVal sectionVa
     Set BuildAnalysisTable = analysisTable
 End Function
 
-Public Sub PrepareAnalysisSheet(Optional ByVal sectionValue As String = "Initial Section")
-    Dim analysisSheet As Worksheet
+Public Function PrepareAnalysisSheet(Optional ByVal sectionValue As String = "Initial Section") As Worksheet
+    Dim hostSheet As Worksheet
+    Set hostSheet = EnsureWorksheet(ANALYSISTESTSHEET, clearSheet:=True, visibility:=xlSheetHidden)
 
-    Set analysisSheet = EnsureWorksheet(ANALYSISTESTSHEET)
-    ClearWorksheet analysisSheet
+    hostSheet.Cells(1, 1).Value = "Add or remove rows of Global Summary"
+    BuildAnalysisTable hostSheet, sectionValue
 
-    analysisSheet.Cells(1, 1).Value = "Add or remove rows of Global Summary"
-    BuildAnalysisTable analysisSheet, sectionValue
-End Sub
+    Set PrepareAnalysisSheet = hostSheet
+End Function
 
-Public Sub PrepareFullAnalysisWorksheet(Optional ByVal headerInstruction As String = "Add or remove rows of Global Summary")
+Public Function AnalysisTable(ByVal tag As String,  _
+                              Optional ByVal impSheet As Worksheet, _
+                              Optional ByVal headerInstruction As String = "Add or remove rows of Global Summary")  _ 
+                              As ListObject
 
-    Dim analysisSheet As Worksheet
+    Dim hostSheet As Worksheet
+    Dim loName As String
+
+    If impSheet Is Nothing Then
+        Set hostSheet = PrepareFullAnalysisWorksheet(headerInstruction)
+    Else
+        Set hostSheet = impSheet
+    End If
+
+    Select Case tag
+        Case "global summary": loName = TAB_GLOBAL_SUMMARY
+        Case "univariate analysis": loName = TAB_UNIVARIATE
+        Case "bivariate analysis": loName = TAB_BIVARIATE
+        Case "time series analysis": loName = TAB_TIME_SERIES
+        Case "labels for time series graphs": loName = TAB_GRAPH_TITLE
+        Case "graph on time series": loName = TAB_GRAPH_TIME_SERIES
+        Case "spatial analysis": loName = TAB_SPATIAL
+        Case "spatio-temporal specifications": loName = TAB_SPATIO_TEMPORAL_SPECS
+        Case "spatio-temporal analysis": loName = TAB_SPATIO_TEMPORAL
+        Case Else
+            loName = TAB_GLOBAL_SUMMARY
+    End Select
+
+    Set AnalysisTable = hostSheet.ListObjects(loName)
+End Function
+
+Public Function PrepareFullAnalysisWorksheet(Optional ByVal headerInstruction As String = "Add or remove rows of Global Summary") As Worksheet
+
+    Dim hostSheet As Worksheet
     Dim nextRow As Long
     Dim spatioTemporalRows As Variant
 
-    Set analysisSheet = EnsureWorksheet(ANALYSISSHEET)
-    ClearWorksheet analysisSheet
+    Set hostSheet = EnsureWorksheet(ANALYSISTESTSHEET)
+    ClearWorksheet hostSheet
 
-    analysisSheet.Cells(1, 1).Value = headerInstruction
+    hostSheet.Cells(1, 1).Value = headerInstruction
 
     nextRow = 3
-    nextRow = AddAnalysisTable(analysisSheet, nextRow, TAB_GLOBAL_SUMMARY, _
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_GLOBAL_SUMMARY, _
                                AnalysisHeaders(), AnalysisRows("Initial Section"))
-    nextRow = AddAnalysisTable(analysisSheet, nextRow, TAB_UNIVARIATE, _
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_UNIVARIATE, _
                                AnalysisHeaders(), Array(Array("Univariate Section", "Univariate Title", "Summary Uni")))
-    nextRow = AddAnalysisTable(analysisSheet, nextRow, TAB_BIVARIATE, _
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_BIVARIATE, _
                                AnalysisHeaders(), Array(Array("Bivariate Section", "Bivariate Title", "Summary Bi")))
-    nextRow = AddAnalysisTable(analysisSheet, nextRow, TAB_TIME_SERIES, _
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_TIME_SERIES, _
                                Array("Series ID", "Table order", "Label"), _
                                Array(Array("Series 1", 2, "Alpha")))
-    nextRow = AddAnalysisTable(analysisSheet, nextRow, TAB_GRAPH_TIME_SERIES, _
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_GRAPH_TIME_SERIES, _
                                Array("Graph ID", "Section", "Table Title", "Summary label", "Choices"), _
                                Array(Array("Graph 5", "Section B", "Title B", "Summary B", "Choice B"), _
-                                     Array("Graph 2", "Section A", "Title A", "Summary A", "Choice A")))
-    nextRow = AddAnalysisTable(analysisSheet, nextRow, TAB_GRAPH_TITLE, _
+                                     Array("Graph 2", "Section A", "Title A", "Summary A", "Choice A"), _ 
+                                     Array("Graph 3", "Section B", "Title C", "Summary C", "Choice C")))
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_GRAPH_TITLE, _
                                Array("Graph ID", "Graph Title"), _
                                Array(Array("Graph 5", "Graph Title B")))
-    nextRow = AddAnalysisTable(analysisSheet, nextRow, TAB_SPATIAL, _
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_SPATIAL, _
                                Array("Section", "Label", "Summary label", "Choices"), _
                                Array(Array("Spatial Section", "Spatial Label", "Spatial Summary", "Spatial Choice")))
 
@@ -122,16 +162,18 @@ Public Sub PrepareFullAnalysisWorksheet(Optional ByVal headerInstruction As Stri
         Array("Region A", "Label A", "Choice A", "Graph Title A"), _
         Array("Region B", "Label B", "Choice B", "Graph Title B"), _
         Array("Region C", "Label C", "Choice C", "Graph Title C"), _
-        Array(Empty, Empty, Empty, Empty), _
+        Array("Region A", "Label D", "Choice D", "Graph title D"), _
         Array(Empty, Empty, Empty, Empty))
 
-    nextRow = AddAnalysisTable(analysisSheet, nextRow, TAB_SPATIO_TEMPORAL, _
-                               Array("Section (select)", "Label", "Choices", "Graph Title"), _
+    nextRow = AddAnalysisTable(hostSheet, nextRow, TAB_SPATIO_TEMPORAL, _
+                               Array("Section", "Label", "Choices", "Graph Title"), _
                                spatioTemporalRows)
-    Call AddAnalysisTable(analysisSheet, nextRow, TAB_SPATIO_TEMPORAL_SPECS, _
+    Call AddAnalysisTable(hostSheet, nextRow, TAB_SPATIO_TEMPORAL_SPECS, _
                           Array("Section", "Label", "Summary label"), _
                           Array(Array("Specs Section", "Specs Label", "Specs Summary")))
-End Sub
+
+    Set PreparefullAnalysisWorksheet = hostSheet
+End Function
 
 Public Function CreateAnalysisTranslator(Optional ByVal language As String = "French") As ITranslationObject
     Dim translationSheet As Worksheet

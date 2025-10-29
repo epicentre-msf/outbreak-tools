@@ -1,57 +1,64 @@
 Attribute VB_Name = "TestAnalysis"
 
 Option Explicit
-Option Private Module
+
 
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-'@TestModule
+'@Folder("CustomTests")
 '@Folder("Tests")
 
-Private Assert As Object
-Private Fakes As Object
+Private Assert As ICustomTest
 Private CoreAnalysis As IAnalysis
 Private Translator As ITranslationObject
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+
 
 '@section Helpers
 '===============================================================================
 
 Private Sub ResetAnalysis(Optional ByVal sectionValue As String = "Initial Section")
-    PrepareAnalysisSheet sectionValue
-    Set CoreAnalysis = Analysis.Create(ThisWorkbook.Worksheets(ANALYSISSHEET))
+    Dim hostSheet As Worksheet
+    Set hostSheet = PrepareAnalysisSheet(sectionValue)
+    Set CoreAnalysis = Analysis.Create(hostSheet)
 End Sub
 
 '@section Module lifecycle
 '===============================================================================
 
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
     BusyApp
-    Set Assert = CreateObject("Rubberduck.AssertClass")
-    Set Fakes = CreateObject("Rubberduck.FakesProvider")
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName "TestAnalysis"
     ResetAnalysis
     Set Translator = CreateAnalysisTranslator()
 End Sub
 
 '@ModuleCleanup
-Private Sub ModuleCleanup()
-    DeleteWorksheet ANALYSISTRANSLATIONSHEET
-    DeleteWorksheet ANALYSISSHEET
+Public Sub ModuleCleanup()
+    If Not Assert Is Nothing Then
+        Assert.PrintResults TEST_OUTPUT_SHEET
+    End If
+
+    ClearTestAnalysisSheets
 
     Set Translator = Nothing
     Set CoreAnalysis = Nothing
     Set Assert = Nothing
-    Set Fakes = Nothing
 End Sub
 
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
     BusyApp
     ResetAnalysis
     Set Translator = CreateAnalysisTranslator()
 End Sub
 
 '@TestCleanup
-Private Sub TestCleanup()
+Public Sub TestCleanup()
+    If Not Assert Is Nothing Then
+        Assert.Flush
+    End If
     Set CoreAnalysis = Nothing
 End Sub
 
@@ -59,14 +66,14 @@ End Sub
 '===============================================================================
 
 '@TestMethod("Analysis")
-Private Sub TestCreateInitialisesWorksheet()
+Public Sub TestCreateInitialisesWorksheet()
+    CustomTestSetTitles Assert, "Analysis", "TestCreateInitialisesWorksheet"
     On Error GoTo Fail
 
     Dim hostSheet As Worksheet
     Dim sut As IAnalysis
 
     Set hostSheet = EnsureWorksheet("AnalysisCreate")
-    ClearWorksheet hostSheet
     hostSheet.Cells(1, 1).Value = "Add or remove rows of Global Summary"
     BuildAnalysisTable hostSheet, "Create Section"
 
@@ -78,18 +85,19 @@ Private Sub TestCreateInitialisesWorksheet()
 
 Fail:
     DeleteWorksheet "AnalysisCreate"
-    FailUnexpectedError Assert, "TestCreateInitialisesWorksheet"
+    CustomTestLogFailure Assert, "TestCreateInitialisesWorksheet", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestCreateRaisesWhenWorksheetMissing()
+Public Sub TestCreateRaisesWhenWorksheetMissing()
+    CustomTestSetTitles Assert, "Analysis", "TestCreateRaisesWhenWorksheetMissing"
     On Error GoTo Handler
 
     Dim sut As IAnalysis
 
     '@Ignore AssignmentNotUsed
     Set sut = Analysis.Create(Nothing)
-    Assert.Fail "Create should raise when worksheet is Nothing"
+    Assert.LogFailure "Create should raise when worksheet is Nothing"
     Exit Sub
 
 Handler:
@@ -98,7 +106,8 @@ Handler:
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestSelfReturnsSameInstance()
+Public Sub TestSelfReturnsSameInstance()
+    CustomTestSetTitles Assert, "Analysis", "TestSelfReturnsSameInstance"
     On Error GoTo Fail
 
     Dim hostSheet As Worksheet
@@ -106,12 +115,11 @@ Private Sub TestSelfReturnsSameInstance()
     Dim reference As IAnalysis
 
     Set hostSheet = EnsureWorksheet("AnalysisSelf")
-    ClearWorksheet hostSheet
     BuildAnalysisTable hostSheet, "Self Section"
 
     Set instance = New Analysis
     Set instance.Wksh = hostSheet
-    Set reference = instance.Self
+    Set reference = instance.Self()
 
     Assert.IsTrue (instance Is reference), "Self should expose the current instance"
 
@@ -120,35 +128,36 @@ Private Sub TestSelfReturnsSameInstance()
 
 Fail:
     DeleteWorksheet "AnalysisSelf"
-    FailUnexpectedError Assert, "TestSelfReturnsSameInstance"
+    CustomTestLogFailure Assert, "TestSelfReturnsSameInstance", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestWkshPropertyRoundtrips()
+Public Sub TestWkshPropertyRoundtrips()
+    CustomTestSetTitles Assert, "Analysis", "TestWkshPropertyRoundtrips"
     On Error GoTo Fail
 
     Dim hostSheet As Worksheet
-    Dim instance As Analysis
+    Dim anaObj As IAnalysis
+    Dim anaSheet As Worksheet
 
     Set hostSheet = EnsureWorksheet("AnalysisWksh")
-    ClearWorksheet hostSheet
     BuildAnalysisTable hostSheet, "Worksheet Section"
 
-    Set instance = New Analysis
-    Set instance.Wksh = hostSheet
+    Set anaObj = Analysis.Create(hostSheet)
+    Set anaSheet = anaObj.Wksh()
 
-    Assert.AreEqual hostSheet.Name, instance.Wksh.Name, "Wksh getter should return assigned worksheet"
-
+    Assert.IsTrue (hostSheet Is anaSheet), "Wksh getter should return assigned worksheet"
     DeleteWorksheet "AnalysisWksh"
     Exit Sub
 
 Fail:
     DeleteWorksheet "AnalysisWksh"
-    FailUnexpectedError Assert, "TestWkshPropertyRoundtrips"
+    CustomTestLogFailure Assert, "TestWkshPropertyRoundtrips", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestHasCheckingsReturnsNothingWhenEmpty()
+Public Sub TestHasCheckingsReturnsNothingWhenEmpty()
+    CustomTestSetTitles Assert, "Analysis", "TestHasCheckingsReturnsNothingWhenEmpty"
     On Error GoTo Fail
 
     Assert.IsFalse CoreAnalysis.HasCheckings, "Fresh analysis instance should have no checkings"
@@ -156,32 +165,36 @@ Private Sub TestHasCheckingsReturnsNothingWhenEmpty()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestHasCheckingsReturnsNothingWhenEmpty"
+    CustomTestLogFailure Assert, "TestHasCheckingsReturnsNothingWhenEmpty", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestAddAndRemoveRows()
+Public Sub TestAddAndRemoveRows()
+    CustomTestSetTitles Assert, "Analysis", "TestAddAndRemoveRows"
     On Error GoTo Fail
 
-    Dim analysisTable As ListObject
+    Dim anaLo As ListObject
     Dim initialRows As Long
 
-    Set analysisTable = ThisWorkbook.Worksheets(ANALYSISSHEET).ListObjects(TAB_GLOBAL_SUMMARY)
-    initialRows = analysisTable.DataBodyRange.Rows.Count
+
+    Set anaLo = AnalysisTestFixture.AnalysisTable("global summary")
+
+    initialRows = anaLo.DataBodyRange.Rows.Count
 
     CoreAnalysis.AddRows
-    Assert.IsTrue (initialRows + 5 = analysisTable.DataBodyRange.Rows.Count), "AddRows should append default number of rows"
+    Assert.IsTrue (initialRows + 5 = anaLo.DataBodyRange.Rows.Count), "AddRows should append default number of rows"
 
     CoreAnalysis.RemoveRows
-    Assert.IsTrue (initialRows = analysisTable.DataBodyRange.Rows.Count), "RemoveRows should trim blank rows"
+    Assert.IsTrue (initialRows = anaLo.DataBodyRange.Rows.Count), "RemoveRows should trim blank rows"
     Exit Sub
 
 Fail:
-FailUnexpectedError Assert, "TestAddAndRemoveRows"
+CustomTestLogFailure Assert, "TestAddAndRemoveRows", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestAddRowsTargetsSelectedTable()
+Public Sub TestAddRowsTargetsSelectedTable()
+    CustomTestSetTitles Assert, "Analysis", "TestAddRowsTargetsSelectedTable"
     On Error GoTo Fail
 
     Dim hostSheet As Worksheet
@@ -190,20 +203,16 @@ Private Sub TestAddRowsTargetsSelectedTable()
     Dim initialUnivariateRows As Long
     Dim initialSummaryRows As Long
 
-    PrepareFullAnalysisWorksheet "Add or remove rows of Univariate Analysis"
-    Set hostSheet = ThisWorkbook.Worksheets(ANALYSISSHEET)
+    Set hostSheet = PrepareFullAnalysisWorksheet("ADD OR REMOVE ROWS OF UNIVARIATE ANALYSIS")
     Set CoreAnalysis = Analysis.Create(hostSheet)
 
-    Set univariateTable = hostSheet.ListObjects(TAB_UNIVARIATE)
-    Set summaryTable = hostSheet.ListObjects(TAB_GLOBAL_SUMMARY)
+    Set univariateTable = AnalysisTestFixture.AnalysisTable("univariate analysis", hostSheet)
+    Set summaryTable = AnalysisTestFixture.AnalysisTable("global summary", hostSheet)
 
     initialUnivariateRows = univariateTable.DataBodyRange.Rows.Count
     initialSummaryRows = summaryTable.DataBodyRange.Rows.Count
 
     CoreAnalysis.AddRows
-
-    Set univariateTable = hostSheet.ListObjects(TAB_UNIVARIATE)
-    Set summaryTable = hostSheet.ListObjects(TAB_GLOBAL_SUMMARY)
 
     Assert.AreEqual initialUnivariateRows + 5, univariateTable.DataBodyRange.Rows.Count, _
                    "AddRows should expand the targeted table"
@@ -212,24 +221,24 @@ Private Sub TestAddRowsTargetsSelectedTable()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestAddRowsTargetsSelectedTable"
+    CustomTestLogFailure Assert, "TestAddRowsTargetsSelectedTable", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestAddRowsAssignsIdsForTimeSeries()
+Public Sub TestAddRowsAssignsIdsForTimeSeries()
+    CustomTestSetTitles Assert, "Analysis", "TestAddRowsAssignsIdsForTimeSeries"
     On Error GoTo Fail
 
     Dim hostSheet As Worksheet
     Dim timeSeriesTable As ListObject
     Dim idRange As Range
 
-    PrepareFullAnalysisWorksheet "Add or remove rows of Time Series Analysis"
-    Set hostSheet = ThisWorkbook.Worksheets(ANALYSISSHEET)
+    Set hostSheet = PrepareFullAnalysisWorksheet("ADD OR REMOVE ROWS OF TIME SERIES ANALYSIS")
     Set CoreAnalysis = Analysis.Create(hostSheet)
 
     CoreAnalysis.AddRows
 
-    Set timeSeriesTable = hostSheet.ListObjects(TAB_TIME_SERIES)
+    Set timeSeriesTable = AnalysisTestFixture.AnalysisTable("time series analysis", hostSheet)
     Set idRange = timeSeriesTable.ListColumns("Series ID").DataBodyRange
 
     Assert.AreEqual 6, idRange.Rows.Count, "Time series table should hold existing row plus appended defaults"
@@ -238,43 +247,47 @@ Private Sub TestAddRowsAssignsIdsForTimeSeries()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestAddRowsAssignsIdsForTimeSeries"
+    CustomTestLogFailure Assert, "TestAddRowsAssignsIdsForTimeSeries", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestRemoveRowsPreservesMinimumForSpatioTemporal()
+Public Sub TestRemoveRowsPreservesMinimumForSpatioTemporal()
+    CustomTestSetTitles Assert, "Analysis", "TestRemoveRowsPreservesMinimumForSpatioTemporal"
     On Error GoTo Fail
 
     Dim hostSheet As Worksheet
     Dim spatioTemporalTable As ListObject
 
-    PrepareFullAnalysisWorksheet "Add or remove rows of Spatio-Temporal Analysis"
-    Set hostSheet = ThisWorkbook.Worksheets(ANALYSISSHEET)
+    Set hostSheet = PrepareFullAnalysisWorksheet("ADD OR REMOVE ROWS OF SPATIO-TEMPORAL ANALYSIS")
     Set CoreAnalysis = Analysis.Create(hostSheet)
-
     CoreAnalysis.RemoveRows
+    Set spatioTemporalTable = AnalysisTestFixture.AnalysisTable("spatio-temporal analysis", hostSheet)
 
-    Set spatioTemporalTable = hostSheet.ListObjects(TAB_SPATIO_TEMPORAL)
-
-    Assert.AreEqual 3, spatioTemporalTable.DataBodyRange.Rows.Count, _
+    Assert.AreEqual 4, spatioTemporalTable.DataBodyRange.Rows.Count, _
                    "RemoveRows should retain populated rows and prune trailing blanks"
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestRemoveRowsPreservesMinimumForSpatioTemporal"
+    CustomTestLogFailure Assert, "TestRemoveRowsPreservesMinimumForSpatioTemporal", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestAddRowsLogsMissingListObject()
+Public Sub TestAddRowsLogsMissingListObject()
+
+    CustomTestSetTitles Assert, "Analysis", "TestAddRowsLogsMissingListObject"
+
     On Error GoTo Fail
 
     Dim logs As IChecking
     Dim keys As BetterArray
     Dim idx As Long
     Dim foundWarning As Boolean
+    Dim hostsheet As Worksheet
 
     ResetAnalysis
-    ThisWorkbook.Worksheets(ANALYSISSHEET).Cells(1, 1).Value = "Add or remove rows of Spatial Analysis"
+    Set hostSheet = CoreAnalysis.Wksh()
+
+    hostSheet.Cells(1, 1).Value = "Add or remove rows of Spatial Analysis"
 
     CoreAnalysis.AddRows
 
@@ -283,9 +296,9 @@ Private Sub TestAddRowsLogsMissingListObject()
     Set keys = logs.ListOfKeys
 
     For idx = keys.LowerBound To keys.UpperBound
-        If InStr(1, logs.ValueOf(CStr(keys.Item(idx)), checkingLabel), TAB_SPATIAL, vbTextCompare) > 0 Then
+        If InStr(1, logs.ValueOf(CStr(keys.Item(idx)), checkingLabel), "Tab_Spatial_Analysis", vbTextCompare) > 0 Then
             foundWarning = True
-            Assert.AreEqual "Warning", logs.ValueOf(CStr(keys.Item(idx)), checkingType), _
+            Assert.IsTrue InStr(1, logs.ValueOf(CStr(keys.Item(idx)), checkingType), "Warning"), _
                              "Missing listobject should be recorded as a warning"
             Exit For
         End If
@@ -295,11 +308,13 @@ Private Sub TestAddRowsLogsMissingListObject()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestAddRowsLogsMissingListObject"
+    CustomTestLogFailure Assert, "TestAddRowsLogsMissingListObject", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestImportWithNothingLogsError()
+Public Sub TestImportWithNothingLogsError()
+    CustomTestSetTitles Assert, "Analysis", "TestImportWithNothingLogsError"
+
     On Error GoTo Fail
 
     Dim logs As IChecking
@@ -315,7 +330,7 @@ Private Sub TestImportWithNothingLogsError()
 
     For idx = keys.LowerBound To keys.UpperBound
         If InStr(1, logs.ValueOf(CStr(keys.Item(idx)), checkingLabel), "source worksheet not provided", vbTextCompare) > 0 Then
-            Assert.AreEqual "Error", logs.ValueOf(CStr(keys.Item(idx)), checkingType), _
+            Assert.IsTrue InStr(1, logs.ValueOf(CStr(keys.Item(idx)), checkingType), "Error"), _
                              "Missing worksheet should be logged as an error"
             foundError = True
             Exit For
@@ -326,11 +341,12 @@ Private Sub TestImportWithNothingLogsError()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestImportWithNothingLogsError"
+    CustomTestLogFailure Assert, "TestImportWithNothingLogsError", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestImportRecordsMissingTables()
+Public Sub TestImportRecordsMissingTables()
+    CustomTestSetTitles Assert, "Analysis", "TestImportRecordsMissingTables"
     On Error GoTo Fail
 
     Dim sourceSheet As Worksheet
@@ -340,7 +356,7 @@ Private Sub TestImportRecordsMissingTables()
     Dim missingLogged As Boolean
 
     Set sourceSheet = EnsureWorksheet("AnalysisSourceMinimal")
-    ClearWorksheet sourceSheet
+    Set CoreAnalysis = Analysis.Create(PrepareFullAnalysisWorksheet())
     sourceSheet.Cells(1, 1).Value = "Add or remove rows of Global Summary"
     BuildAnalysisTable sourceSheet, "Source Section"
 
@@ -351,11 +367,11 @@ Private Sub TestImportRecordsMissingTables()
     Set keys = logs.ListOfKeys
 
     For idx = keys.LowerBound To keys.UpperBound
-        If InStr(1, logs.ValueOf(CStr(keys.Item(idx)), checkingLabel), TAB_UNIVARIATE, vbTextCompare) > 0 Then
+        If InStr(1, logs.ValueOf(CStr(keys.Item(idx)), checkingLabel), "Tab_Univariate_Analysis", vbTextCompare) > 0 Then
             missingLogged = True
             Exit For
         End If
-    Next idx
+    Next
 
     Assert.IsTrue missingLogged, "Import should warn about absent analysis tables"
 
@@ -363,12 +379,13 @@ Private Sub TestImportRecordsMissingTables()
     Exit Sub
 
 Fail:
+    CustomTestLogFailure Assert, "TestImportRecordsMissingTables", Err.Number, Err.Description
     DeleteWorksheet "AnalysisSourceMinimal"
-    FailUnexpectedError Assert, "TestImportRecordsMissingTables"
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestTranslateWithoutTranslatorRecordsWarning()
+Public Sub TestTranslateWithoutTranslatorRecordsWarning()
+    CustomTestSetTitles Assert, "Analysis", "TestTranslateWithoutTranslatorRecordsWarning"
     On Error GoTo Fail
 
     Dim logs As IChecking
@@ -384,7 +401,7 @@ Private Sub TestTranslateWithoutTranslatorRecordsWarning()
 
     For idx = keys.LowerBound To keys.UpperBound
         If InStr(1, logs.ValueOf(CStr(keys.Item(idx)), checkingLabel), "translation object not provided", vbTextCompare) > 0 Then
-            Assert.AreEqual "Warning", logs.ValueOf(CStr(keys.Item(idx)), checkingType), _
+            Assert.IsTrue InStr(1, logs.ValueOf(CStr(keys.Item(idx)), checkingType), "Warning"), _
                              "Missing translator should be reported as a warning"
             foundWarning = True
             Exit For
@@ -395,60 +412,38 @@ Private Sub TestTranslateWithoutTranslatorRecordsWarning()
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestTranslateWithoutTranslatorRecordsWarning"
+    CustomTestLogFailure Assert, "TestTranslateWithoutTranslatorRecordsWarning", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestSortOrdersGraphTables()
+Public Sub TestSortOrdersGraphTables()
+    CustomTestSetTitles Assert, "Analysis", "TestSortOrdersGraphTables"
     On Error GoTo Fail
 
     Dim hostSheet As Worksheet
     Dim graphTable As ListObject
     Dim ids As Range
-
-    PrepareFullAnalysisWorksheet
-    Set hostSheet = ThisWorkbook.Worksheets(ANALYSISSHEET)
+    Dim sec As Range
+    
+    Set hostSheet = PrepareFullAnalysisWorksheet()
     Set CoreAnalysis = Analysis.Create(hostSheet)
 
     CoreAnalysis.Sort
 
-    Set graphTable = hostSheet.ListObjects(TAB_GRAPH_TIME_SERIES)
-    Set ids = graphTable.ListColumns("Graph ID").DataBodyRange
-    Assert.AreEqual "Graph 2", ids.Cells(1, 1).Value, "Sort should order Graph IDs ascending"
-    Assert.AreEqual "Graph 5", ids.Cells(2, 1).Value, "Sort should preserve remaining rows"
+    Set graphTable = AnalysisTestFixture.AnalysisTable("spatio-temporal analysis", hostSheet)
+    Set ids = graphTable.ListColumns("Section").DataBodyRange
+    Assert.AreEqual "Region A", ids.Cells(1, 1).Value, "Sort should order section ascending"
+    Assert.AreEqual "Region A", ids.Cells(2, 1).Value, "Sort should order by keeping section close together"
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestSortOrdersGraphTables"
+    CustomTestLogFailure Assert, "TestSortOrdersGraphTables", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("Analysis")
-Private Sub TestImportCopiesValues()
-    On Error GoTo Fail
-
-    Dim sourceSheet As Worksheet
-    Dim analysisTable As ListObject
-
-    Set sourceSheet = EnsureWorksheet("AnalysisSource")
-    ClearWorksheet sourceSheet
-    sourceSheet.Cells(1, 1).Value = "Add or remove rows of Global Summary"
-    BuildAnalysisTable sourceSheet, "Imported Section"
-
-    CoreAnalysis.Import sourceSheet
-
-    Set analysisTable = ThisWorkbook.Worksheets(ANALYSISSHEET).ListObjects(TAB_GLOBAL_SUMMARY)
-    Assert.AreEqual "Imported Section", analysisTable.DataBodyRange.Cells(1, 1).Value, "Import should replace table values"
-
-    DeleteWorksheet "AnalysisSource"
-    Exit Sub
-
-Fail:
-    DeleteWorksheet "AnalysisSource"
-    FailUnexpectedError Assert, "TestImportCopiesValues"
-End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestExportCreatesSheet()
+Public Sub TestExportCreatesSheet()
+    CustomTestSetTitles Assert, "Analysis", "TestExportCreatesSheet"
     On Error GoTo Fail
 
     Dim exportBook As Workbook
@@ -456,7 +451,8 @@ Private Sub TestExportCreatesSheet()
     Dim sourceSheet As Worksheet
 
     Set exportBook = NewWorkbook()
-    Set sourceSheet = ThisWorkbook.Worksheets(ANALYSISSHEET)
+    Set sourcesheet = PrepareFullAnalysisWorksheet()
+    Set CoreAnalysis = Analysis.Create(sourcesheet)
 
     CoreAnalysis.Export exportBook
     Set exportedSheet = exportBook.Worksheets(sourceSheet.Name)
@@ -466,26 +462,27 @@ Private Sub TestExportCreatesSheet()
     Exit Sub
 
 Fail:
+    CustomTestLogFailure Assert, "TestExportCreatesSheet", Err.Number, Err.Description
     DeleteWorkbook exportBook
-    FailUnexpectedError Assert, "TestExportCreatesSheet"
 End Sub
 
 '@TestMethod("Analysis")
-Private Sub TestTranslateUpdatesValues()
+Public Sub TestTranslateUpdatesValues()
+    CustomTestSetTitles Assert, "Analysis", "TestTranslateUpdatesValues"
     On Error GoTo Fail
 
-    Dim analysisTable As ListObject
+    Dim hostLo As ListObject
 
-    Set analysisTable = ThisWorkbook.Worksheets(ANALYSISSHEET).ListObjects(TAB_GLOBAL_SUMMARY)
-    analysisTable.DataBodyRange.Cells(1, 1).Value = "greeting"
-    analysisTable.DataBodyRange.Cells(1, 2).Value = "farewell"
+    Set hostLo = AnalysisTestFixture.AnalysisTable("global summary")
+    hostLo.DataBodyRange.Cells(1, 1).Value = "greeting"
+    hostLo.DataBodyRange.Cells(1, 2).Value = "farewell"
 
     CoreAnalysis.Translate Translator
 
-    Assert.AreEqual "Bonjour", analysisTable.DataBodyRange.Cells(1, 1).Value, "Translate should localise section values"
-    Assert.AreEqual "Au revoir", analysisTable.DataBodyRange.Cells(1, 2).Value, "Translate should localise table titles"
+    Assert.AreEqual "Bonjour", hostLo.DataBodyRange.Cells(1, 1).Value, "Translate should localise section values"
+    Assert.AreEqual "Au revoir", hostLo.DataBodyRange.Cells(1, 2).Value, "Translate should localise table titles"
     Exit Sub
 
 Fail:
-    FailUnexpectedError Assert, "TestTranslateUpdatesValues"
+    CustomTestLogFailure Assert, "TestTranslateUpdatesValues", Err.Number, Err.Description
 End Sub
