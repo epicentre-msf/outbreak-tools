@@ -31,10 +31,12 @@ Private Type TCustomTable
   hasBackup As Boolean
   csName As String
   hasHiddenList As Boolean
+  hasShiftSetup As Boolean
 End Type
 
 Private this As TCustomTable
 Private Const CACHE_SEPARATOR As String = "|"
+Private Const TAG_INSERT_SHIFT_USED As String = "InsertShiftUsed"
 Private NOTIMPORTEDCOLUMNS As BetterArray
 Private HIDDENCOLUMNSLIST As BetterArray
 
@@ -51,6 +53,7 @@ Private Sub ResetCaches()
   'Always rebuild the header index cache after structural changes to the table.
   Set this.headerIndexCache = New BetterArray
   this.headerIndexCache.LowerBound = 1
+  this.hasShiftSetup = False
 End Sub
 
 '@sub-title ResetImportState
@@ -81,7 +84,6 @@ End Sub
 '@param Boolean strictSearch - Whether to use exact matching
 '@param Boolean matchCase - Whether to match case
 '@return String The generated cache key
-'@private
 Private Function CacheKeyForHeader(ByVal colName As String, _
                                    ByVal strictSearch As Boolean, _
                                    ByVal matchCase As Boolean) As String
@@ -99,7 +101,6 @@ End Function
 '@param String cacheKey - The cache key to look up
 '@param Long cachedValue - Output parameter for the found index
 '@return Boolean True if found in cache, False otherwise
-'@private
 Private Function TryGetCachedIndex(ByVal cacheKey As String, ByRef cachedValue As Long) As Boolean
   'Search the lightweight cache implemented with BetterArray pairs key, index.
   Dim idx As Long
@@ -143,7 +144,6 @@ End Sub
 '@label:SaveTableSnapshot
 '@sub-title SaveTableSnapshot
 '@description Creates a backup of the current table state
-'@private
 Private Sub SaveTableSnapshot(Optional ByVal returnHidden As Boolean = True)
   'Capture the current table layout so we can restore it if an import fails.
   Dim lo As ListObject
@@ -271,9 +271,8 @@ End Property
 
 '@label:elements
 
-'@section DataSheet Elements
-'===============================================================================
 '@section CustomTable elements
+'===============================================================================
 
 '@prop-title Worksheet of the listObject
 Private Property Get Wksh() As Worksheet
@@ -461,7 +460,6 @@ Private Property Get DataRange(Optional ByVal colName As String = "__all__", _
     Set targetColumn = ResolveListColumn(colName, strictSearch, matchCase)
     If targetColumn Is Nothing Then
       LogInfo "Unable to find the column name " & colName & " of " & Name()
-      ShowDebug
       Exit Property
     End If
 
@@ -574,6 +572,39 @@ End Property
 '@section Modify the table
 '===============================================================================
 
+'@label:InsertShiftTracker
+'@sub-title Shift tracker
+Private Sub AddShiftTracker(Optional ByVal value As String = "Yes")
+
+  Dim sh As Worksheet
+  Dim store As IHiddenNames
+
+  Set sh = Wksh()
+  Set store = HiddenNames.Create(sh)
+  If value = "Yes" Then this.hasShiftSetup = True
+
+  If Not store.HasName(TAG_INSERT_SHIFT_USED) Then
+    Call store.EnsureName(TAG_INSERT_SHIFT_USED, value, HiddenNameTypeString)
+  Else
+    store.SetValue TAG_INSERT_SHIFT_USED, value
+  End If
+
+End Sub
+
+
+Private Function HasShiftTracker() As Boolean
+
+  Dim store As IHiddenNames
+  
+  Set store = HiddenNames.Create(Wksh())
+
+  If Not this.hasShiftSetup Then
+    this.hasShiftSetup = (store.ValueAsString(TAG_INSERT_SHIFT_USED, "No") = "Yes")
+  End If
+
+  HasShiftTracker = this.hasShiftSetup
+
+End Function
 
 '@label:Resize
 '@sub-title Resize a CustomTable
@@ -620,14 +651,13 @@ Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal ins
   totalCols = lo.Range.Columns.Count
   totalRows = lo.Range.Rows.Count
 
-  If insertShift Then
+  If (insertShift) Then
     'Insert a block of rows below the current table to avoid overlapping adjacent tables.
     insertStart = headerRow + totalRows
-    Set newRange = sheet.Range(sheet.Cells(insertStart, headerCol), _
-                               sheet.Cells(insertStart + nbRows - 1, headerCol + totalCols - 1))
-    newRange.Insert Shift:=xlDown, CopyOrigin:=xlFormatFromLeftOrAbove
+    sheet.Rows(insertStart).Resize(nbRows).Insert Shift:=xlShiftDown, CopyOrigin:=xlFormatFromLeftOrAbove
     Set newRange = sheet.Range(sheet.Cells(headerRow, headerCol), _
                                sheet.Cells(insertStart + nbRows - 1, headerCol + totalCols - 1))
+    AddShiftTracker "Yes"                         
     lo.Resize newRange
   Else
     'Extend the listobject in a single resize call when overlapping is not a concern.
@@ -639,12 +669,39 @@ Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal ins
   ResetCaches
 End Sub
 
+Private Sub GetTotalFormulaColumns(ByRef rowCount As Long)
+  Dim rng As Range
+  Dim counter As Long
+
+  rowCount = 0
+  Set rng = Table.DataBodyRange()
+  If rng Is Nothing Then Exit Sub
+  For counter = 1 To rng.Columns.Count
+    If rng.Cells(1, counter).HasFormula Then
+      rowCount = rowCount + 1
+    End If
+  Next
+
+End Sub
+
+
 '@label:RemoveEmptyDataRows
-Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, ByVal totalRowCount As Long)
+Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, Optional ByVal totalRowCount As Long)
   'Scan from the bottom so deletions do not disturb subsequent indexes.
   Dim rowIndex As Long
   Dim targetRow As Range
   Dim tabRowCount As Long
+  Dim rowCount As Long
+  Dim sh As Worksheet
+  Dim hasTracker As Boolean
+
+  If totalRowCount = 0 Then
+    GetTotalFormulaColumns(rowCount)
+  Else
+    rowCount = totalRowCount
+  End If
+
+  hasTracker = HasShiftTracker()
 
   If lo.DataBodyRange Is Nothing Then Exit Sub
 
@@ -653,10 +710,19 @@ Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, ByVal totalRowCount As L
 
   For rowIndex = tabRowCount To 2 Step -1
     Set targetRow = lo.DataBodyRange.Rows(rowIndex)
-    If WorksheetFunction.CountA(targetRow) <= totalRowCount Then
-      lo.ListRows(rowIndex).Delete
+    If WorksheetFunction.CountA(targetRow) <= rowCount Then
+      If hasTracker Then
+        Set sh = Wksh()
+        'Delete the entire worksheet Row
+        sh.Rows(lo.ListRows(rowIndex).Range().Row).Delete
+      Else
+        'Either delele the entire worksheet row or the the listRow
+        lo.ListRows(rowIndex).Delete
+      End If
     End If
   Next rowIndex
+
+  AddShiftTracker "No"
 End Sub
 
 '@label:DataRowCount
@@ -946,7 +1012,8 @@ End Sub
 '@export
 Private Sub Sort(Optional ByVal colName As String = vbNullString, _ 
                  Optional ByVal colList As Object = Nothing, _
-                 Optional ByVal directSort As Boolean = True)
+                 Optional ByVal directSort As Boolean = True, _ 
+                 Optional ByVal strictSearch As Boolean = True)
   
   Dim counter As Long
   Dim cName As String
@@ -957,7 +1024,7 @@ Private Sub Sort(Optional ByVal colName As String = vbNullString, _
   If (colName = vbNullString) And (colList Is Nothing) Then Exit Sub
 
   'Sort only one colName
-  SortHelper colName:=colName, directSort:=directSort
+  SortHelper colName:=colName, directSort:=directSort, strictSearch:=strictSearch
 
   'Sort multiple column names (in a Betterarray)
   If (TypeName(colList) = "BetterArray") Then
@@ -974,12 +1041,14 @@ End Sub
 '@sub-title Helper for the sort sub
 '@colName String. The column to sort on
 '@directSort Boolean. Sort directly or on first element? Default is True.
-Private Sub SortHelper(ByVal colName As String, Optional ByVal directSort As Boolean = True)
+Private Sub SortHelper(ByVal colName As String, _ 
+                       Optional ByVal directSort As Boolean = True, _ 
+                      Optional ByVal strictSearch As Boolean = True)
   If (colName <> vbNullString) Then 
     If directSort Then 
-      SortSimple colName
+      SortSimple colName, strictSearch
     Else
-      SortOnFirst colName
+      SortOnFirst colName, strictSearch
     End If
   End If
 End Sub
@@ -987,7 +1056,7 @@ End Sub
 '@label:SortOnFirst
 '@sub-title Sort a column name by bringing together first values found
 '@param colName A String. The name of the column
-Private Sub SortOnFirst(ByVal colName As String)
+Private Sub SortOnFirst(ByVal colName As String, Optional ByVal strictSearch As Boolean = True)
 
   Dim numRng As Range 
   Dim colRng As Range 
@@ -1005,7 +1074,7 @@ Private Sub SortOnFirst(ByVal colName As String)
   'Sort on values only If there is data
   Set Lo = Table()
   Set LoRng = DataRange(includeHeaders:=False)
-  Set colRng = DataRange(colName, strictSearch:=True)
+  Set colRng = DataRange(colName, strictSearch:=strictSearch)
 
   'Exit if there is nothing
   If (LoRng Is Nothing) Or IsEmpty(LoRng) Or (colRng Is Nothing) Or _
@@ -1053,13 +1122,13 @@ Private Sub SortOnFirst(ByVal colName As String)
   Lo.ListColumns(hRng.Cells.Count + 1).Delete
 End Sub
 
-Private Sub SortSimple(ByVal colName As String)
+Private Sub SortSimple(ByVal colName As String, Optional ByVal strictSearch As Boolean = True)
 
   Dim colRng As Range
   Dim LoRng As Range
 
   Set LoRng = DataRange(includeHeaders:=True)
-  Set colRng = DataRange(colName, strictSearch:=True)
+  Set colRng = DataRange(colName, strictSearch:=strictSearch)
 
   If (LoRng Is Nothing) Or IsEmpty(LoRng) Or (colRng Is Nothing) Or _
       (IsEmpty(colRng)) Then Exit Sub
@@ -1623,8 +1692,9 @@ End Sub
 'Sort a CustomTable
 Private Sub ICustomTable_Sort(Optional ByVal colName As String = vbNullString, _ 
                               Optional ByVal colList As Object = Nothing, _ 
-                              Optional ByVal directSort As Boolean = True)
-  Sort colName:=colName, colList:=colList, directSort:=directSort
+                              Optional ByVal directSort As Boolean = True, _ 
+                              Optional ByVal strictSearch As Boolean = True)
+  Sort colName:=colName, colList:=colList, directSort:=directSort, strictSearch:=strictSearch
 End Sub
 
 

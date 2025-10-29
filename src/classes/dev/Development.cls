@@ -263,6 +263,8 @@ Public Sub Deploy(ByVal passwords As IPasswords, Optional ByVal lockWorkbook As 
     Dim candidate As Variant
     Dim sheet As Worksheet
 
+    ApplyDefaultPassword passwords
+
     SynchroniseFormsTables False
 
     If Not this.hiddenSheets Is Nothing Then
@@ -875,6 +877,27 @@ Private Sub SynchroniseFormsTables(ByVal requireConfirmation As Boolean)
             End If
         Next lo
     Next sheet
+End Sub
+
+Private Sub ApplyDefaultPassword(ByVal passwords As IPasswords)
+    Dim defaultCell As Range
+    Dim defaultValue As String
+
+    If passwords Is Nothing Then Exit Sub
+    If this.devSheet Is Nothing Then Exit Sub
+
+    On Error Resume Next
+        Set defaultCell = this.devSheet.Range("DefaultPassword")
+    On Error GoTo 0
+
+    If defaultCell Is Nothing Then Exit Sub
+
+    defaultValue = Trim$(CStr(defaultCell.Value))
+    If LenB(defaultValue) = 0 Then Exit Sub
+
+    On Error Resume Next
+        passwords.NewDebugingPassword defaultValue
+    On Error GoTo 0
 End Sub
 
 '@Description("Copy code for each module/form pair defined in the supplied ListObject.")

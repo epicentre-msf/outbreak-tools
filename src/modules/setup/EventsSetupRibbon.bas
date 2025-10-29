@@ -7,8 +7,6 @@ Option Explicit
 
 'Private constants for Ribbon Events
 Private Const TRADSHEETNAME As String = "Translations"
-Private Const TABTRANSLATION As String = "Tab_Translations"
-Private Const EXPORTSHEETNAME As String = "Exports"
 
 
 '@section Table Management: callbacks for group CustomGroupManage
@@ -275,11 +273,97 @@ Handler:
     MsgBox "An error occurred while updating translations.", vbCritical
     Resume Cleanup
 End Sub
+'@Description("Callback for btnTransChange onAction: translate the setup to a selected language")
+'@EntryPoint
+Public Sub clickTransSetup(ByRef control As IRibbonControl)
+    Dim translationsTable As ListObject
+    Dim manager As ISetupTranslationsTable
+    Dim languages As BetterArray
+    Dim selectedLanguage As String
+    Dim translator As ITranslationObject
+    Dim app As IApplicationState
+    Dim translationsUnlocked As Boolean
+    Dim success As Boolean
+
+    Set translationsTable = SetupHelpers.ResolveTranslationsTable
+    If translationsTable Is Nothing Then
+        MsgBox "Translations table was not found.", vbExclamation
+        Exit Sub
+    End If
+
+    Set manager = SetupTranslationsTable.Create(translationsTable)
+    Set languages = manager.Languages
+    If languages Is Nothing Or languages.Length = 0 Then
+        MsgBox "No translation languages were found. Add a language column first.", vbExclamation
+        Exit Sub
+    End If
+
+    selectedLanguage = PromptTranslationLanguage(languages)
+    If LenB(selectedLanguage) = 0 Then Exit Sub
+
+    On Error GoTo Handler
+
+    Set app = ApplicationState.Create(Application)
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+
+    SetupHelpers.UnProtectSetupSheet TRADSHEETNAME
+    translationsUnlocked = True
+
+    Set translator = TranslationObject.Create(translationsTable, selectedLanguage)
+    SetupHelpers.ApplySetupTranslation translator
+
+    manager.SwitchDefaultLanguage selectedLanguage
+
+    success = True
+
+Cleanup:
+    If translationsUnlocked Then SetupHelpers.ProtectSetupSheet TRADSHEETNAME
+    If Not app Is Nothing Then app.Restore
+    If success Then MsgBox "Done!", vbInformation
+    Exit Sub
+
+Handler:
+    Debug.Print "clickTransSetup: "; Err.Number; Err.Description
+    success = False
+    MsgBox "Failed to translate the setup: " & Err.Description, vbCritical
+    Resume Cleanup
+End Sub
+
+Private Function PromptTranslationLanguage(ByVal languages As BetterArray) As String
+    Dim prompt As String
+    Dim idx As Long
+    Dim response As Variant
+    Dim numericResponse As Double
+    Dim selection As Long
+
+    If languages Is Nothing Then Exit Function
+    If languages.Length = 0 Then Exit Function
+
+    prompt = "Select the language to translate the setup to:" & vbLf
+    For idx = languages.LowerBound To languages.UpperBound
+        prompt = prompt & CStr(idx - languages.LowerBound + 1) & ". " & CStr(languages.Item(idx)) & vbLf
+    Next idx
+
+    response = Application.InputBox(prompt, "Translate the setup", Type:=1)
+    If VarType(response) = vbBoolean Then Exit Function
+
+    numericResponse = CDbl(response)
+    If numericResponse <> Int(numericResponse) Then GoTo InvalidSelection
+    If numericResponse < 1 Or numericResponse > languages.Length Then GoTo InvalidSelection
+
+    selection = CLng(numericResponse)
+    PromptTranslationLanguage = Trim$(CStr(languages.Item(languages.LowerBound + selection - 1)))
+    Exit Function
+
+InvalidSelection:
+    MsgBox "Invalid selection.", vbExclamation
+End Function
+
 
 '@section Visibility of some buttons
 '===============================================================================
-Public Sub DelVisible(control As IRibbonControl, ByRef returnedVal As Boolean)
-    If (control.Id = "btnDelLoRow") Then
+Public Sub SetupButtonVisible(control As IRibbonControl, ByRef returnedVal As Boolean)
+    If (control.Id = "btnDelLoRow") Or (control.Id="btnSort") Then
         returnedVal = (ActiveSheet.Name <> TRADSHEETNAME)
     ElseIf (control.Id = "btnDelLoCol") Then
         returnedVal = (ActiveSheet.Name = TRADSHEETNAME)    

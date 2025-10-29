@@ -11,8 +11,7 @@ Private Const DEV_SHEET_NAME As String = "Dev"
 Private Const CODE_SHEET_NAME As String = "Codes"
 Private Const PASS_SHEET_NAME As String = "__pass"
 Private Const PROMPT_TITLE As String = "Development"
-
-Dim gRibbon As IRibbonUI
+Private gRibbon As IRibbonUI
 
 Public Sub OnRibbonLoad(ribbon As IRibbonUI)
     Set gRibbon = ribbon
@@ -72,6 +71,7 @@ End Sub
 '@Description("Import modules and classes declared on the Dev tables")
 Public Sub clickDevImport(ByRef control As IRibbonControl)
     Dim manager As IDevelopment
+
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
@@ -79,6 +79,7 @@ Public Sub clickDevImport(ByRef control As IRibbonControl)
 
     On Error GoTo Handler
     manager.ImportAll
+    MsgBox "Import Done!"
     Exit Sub
 
 Handler:
@@ -90,6 +91,7 @@ End Sub
 '@Description("Export modules and classes declared on the Dev tables")
 Public Sub clickDevExport(ByRef control As IRibbonControl)
     Dim manager As IDevelopment
+
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
@@ -97,6 +99,7 @@ Public Sub clickDevExport(ByRef control As IRibbonControl)
 
     On Error GoTo Handler
     manager.ExportAll
+    MsgBox "Export Done!"
     Exit Sub
 
 Handler:

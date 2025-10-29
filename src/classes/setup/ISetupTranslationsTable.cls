@@ -51,6 +51,10 @@ End Sub
 Public Function SwitchableLanguages() As BetterArray
 End Function
 
+'@sub-title Retrieve translation languages excluding the default column.
+Public Property Get Languages() As BetterArray
+End Property
+
 '@sub-title Synchronise translations against the supplied registry sheet.
 '@param registrySheet Worksheet hosting the registry listobjects with named ranges and statuses.
 '@param languages Optional semicolon separated set of languages to ensure before syncing.

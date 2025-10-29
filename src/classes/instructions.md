@@ -38,3 +38,11 @@ required VBA syntax.
 - [DONE] Hardened `LLChoices` edge handling (missing categories and translation guards) with regression coverage.
 - [DONE] Implemented setup ribbon manage group callbacks (filters, sorting, table row/column helpers).
 - [DONE] Introduced `HiddenNames` worksheet name manager with `LLExport` integration and regression tests in `TestHiddenNames.bas`.
+- [DONE] Integrated hidden tag column directly into `SetupTranslationsTable` update flow, keeping tag styling stealth and auto-resizing post-refresh.
+- [DONE] Optimised `SetupTranslationsTable` registry updates with binary-search label caching and bulk Variant processing for translation sources.
+- [DONE] Corrected `SetupTranslationsTable` label cache sort column handling to prevent subscript errors when BetterArray rebases stored entries.
+- [DONE] Added regression tests for `SetupTranslationsTable` covering cache rebuild sorting and single-cell registry processing.
+- [DONE] Implemented setup ribbon translation switcher with language picker and multi-sheet translation orchestration.
+- [DONE] Refactored `LLdictionary` export counter persistence to use `HiddenNames`, keeping export name definitions in sync.
+- [DONE] Added `Passwords.NewDebugingPassword` and default password propagation during deployment.
+- [DONE] Added workbook-driven import workflow in `SetupImportService` using domain classes with regression coverage.
