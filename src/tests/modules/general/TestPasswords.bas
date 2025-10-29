@@ -358,188 +358,6 @@ Public Sub TestCloneToWorkbookProducesHandler()
     tempWb.Close SaveChanges:=False
 End Sub
 
-'@TestMethod("Passwords")
-Public Sub TestEnsureDebugExitHandlerInjectsCode()
-    CustomTestSetTitles Assert, "Passwords", "TestEnsureDebugExitHandlerInjectsCode"
-    Dim tempWb As Workbook
-    Set tempWb = Workbooks.Add
-
-    On Error GoTo InjectionAccessDenied
-
-    Dim cloned As IPasswords
-    Set cloned = PasswordSubject.CloneToWorkbook(tempWb)
-    cloned.EnsureDebugExitHandler tempWb
-
-    Dim codeModule As Object
-    Set codeModule = tempWb.VBProject.VBComponents(tempWb.CodeName).CodeModule
-
-    Dim lines As String
-    lines = codeModule.Lines(1, codeModule.CountOfLines)
-
-    Assert.IsTrue InStr(1, lines, "LeaveDebugModeOnClose", vbTextCompare) > 0, _
-                  "Workbook module should expose LeaveDebugModeOnClose"
-    Assert.IsTrue InStr(1, lines, "Workbook_BeforeClose", vbTextCompare) > 0, _
-                  "Workbook module should expose Workbook_BeforeClose"
-    Assert.IsTrue InStr(1, lines, "If Not Cancel Then LeaveDebugModeOnClose", vbTextCompare) > 0, _
-                  "Workbook_BeforeClose should call LeaveDebugModeOnClose without overriding Cancel"
-
-InjectionCleanup:
-    On Error Resume Next
-        If Not codeModule Is Nothing Then
-            If codeModule.CountOfLines > 0 Then codeModule.DeleteLines 1, codeModule.CountOfLines
-        End If
-        If Not tempWb Is Nothing Then tempWb.Close SaveChanges:=False
-    Exit Sub
-
-InjectionAccessDenied:
-    If Err.Number = 1004 Or Err.Number = 91 Then
-        Debug.Print "VBProject access is disabled; skipping injection test"
-        Assert.LogFailure "VBProject access is disabled; skipping injection test"
-    Else
-        Debug.Print "Unexpected failure during debug handler injection: "
-        Assert.LogFailure "Unexpected failure during debug handler injection: " & Err.Number & " - " & Err.Description
-    End If
-    Resume InjectionCleanup
-End Sub
-
-'@TestMethod("Passwords")
-Public Sub TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode()
-    CustomTestSetTitles Assert, "Passwords", "TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode"
-
-    Dim tempWb As Workbook
-    Dim cloned As IPasswords
-    Dim codeModule As Object
-    Dim baseLines As String
-    Dim procStart As Long
-    Dim procLines As Long
-    Dim procText As String
-    Dim firstCall As Long
-
-    On Error GoTo InjectionAccessDenied
-        Set tempWb = Workbooks.Add
-        Set cloned = PasswordSubject.CloneToWorkbook(tempWb)
-
-        Set codeModule = tempWb.VBProject.VBComponents(tempWb.CodeName).CodeModule
-
-        baseLines = "Private Sub Workbook_BeforeClose(Cancel As Boolean)" & vbNewLine & _
-                    "    On Error GoTo Restore" & vbNewLine & _
-                    "    Debug.Print ""Closing""" & vbNewLine & _
-                    "Restore:" & vbNewLine & _
-                    "End Sub"
-        codeModule.InsertLines 3, baseLines
-
-        cloned.EnsureDebugExitHandler tempWb
-        cloned.EnsureDebugExitHandler tempWb
-
-        procStart = codeModule.ProcStartLine("Workbook_BeforeClose", 0)
-        procLines = codeModule.ProcCountLines("Workbook_BeforeClose", 0)
-        procText = codeModule.Lines(procStart, procLines)
-
-        Assert.IsTrue InStr(1, procText, "If Not Cancel Then LeaveDebugModeOnClose", vbTextCompare) > 0, _
-                      "Existing Workbook_BeforeClose should call LeaveDebugModeOnClose"
-        Assert.IsTrue InStr(1, procText, "Debug.Print ""Closing""", vbBinaryCompare) > 0, _
-                      "Existing Workbook_BeforeClose statements must remain intact"
-
-        firstCall = InStr(1, procText, "LeaveDebugModeOnClose", vbTextCompare)
-        Assert.IsTrue InStr(firstCall + 1, procText, "LeaveDebugModeOnClose", vbTextCompare) = 0, _
-                      "LeaveDebugModeOnClose should be injected only once"
-    GoTo InjectionCleanup
-
-InjectionAccessDenied:
-    If Err.Number = 1004 Or Err.Number = 91 Then
-        Assert.LogFailure "VBProject access is disabled; skipping existing handler merge test"
-    Else
-        Assert.LogFailure "Unexpected failure during existing handler merge test: " & Err.Number & " - " & Err.Description
-    End If
-    Resume InjectionCleanup
-
-InjectionCleanup:
-    On Error Resume Next
-        codeModule.DeleteLines 1, codeModule.CountOfLines
-        If Not tempWb Is Nothing Then tempWb.Close SaveChanges:=False
-    On Error GoTo 0
-End Sub
-
-'@TestMethod("Passwords")
-Public Sub TestDebugExitHandlerRoundtripPersistsProtections()
-    CustomTestSetTitles Assert, "Passwords", "TestDebugExitHandlerRoundtripPersistsProtections"
-
-    Dim tempWb As Workbook
-    Dim cloned As IPasswords
-    Dim guardSheet As Worksheet
-    Dim guardSheetName As String
-    Dim workbookPath As String
-    Dim exportFolder As String
-    Dim exportedFiles As Collection
-    Dim previousEventState As Boolean
-    Dim reopened As Workbook
-    Dim debugFlagCell As Range
-
-    exportFolder = TestHelpers.BuildTempFolder(ThisWorkbook, "PasswordTests")
-    Set exportedFiles = New Collection
-
-    previousEventState = Application.EnableEvents
-
-    On Error GoTo AccessDenied
-        Set tempWb = Workbooks.Add
-
-        Set cloned = PasswordSubject.CloneToWorkbook(tempWb)
-        cloned.EnsureDebugExitHandler tempWb
-
-        ImportPasswordsComponents tempWb, exportFolder, exportedFiles
-
-        Set guardSheet = FirstWorkbookSheet(tempWb, DEFAULTPASSWORDSHEET)
-        If guardSheet Is Nothing Then
-            Set guardSheet = tempWb.Worksheets.Add
-            guardSheet.Name = "PwdGuard" & Format$(Timer, "000")
-        End If
-        guardSheetName = guardSheet.Name
-
-        cloned.Protect guardSheetName, allowShapes:=False, allowDeletingRows:=False, registerState:=False
-        cloned.EnterDebugMode tempWb
-
-        Application.EnableEvents = True
-
-        workbookPath = TestHelpers.BuildWorkbookPath(exportFolder, "passwords_debug_roundtrip")
-        If Dir$(workbookPath) <> vbNullString Then Kill workbookPath
-
-        cloned.LeaveDebugMode tempWb
-
-        tempWb.SaveAs Filename:=workbookPath, FileFormat:=xlExcel12
-        tempWb.Close SaveChanges:=True
-
-        Set reopened = Workbooks.Open(Filename:=workbookPath)
-
-        Assert.IsTrue reopened.ProtectStructure, _
-                      "Workbook structure should be protected after reopening"
-        Assert.IsTrue reopened.Worksheets(guardSheetName).ProtectContents, _
-                      "Tracked worksheet should remain protected after debug handler runs"
-
-        Set debugFlagCell = reopened.Worksheets(DEFAULTPASSWORDSHEET).Range(NAMEDEBUGMODE)
-        Assert.AreEqual DEFAULTBOOLNO, CStr(debugFlagCell.Value), _
-                     "Debug mode flag should be cleared after workbook close handler runs"
-
-Cleanup:
-        On Error Resume Next
-            Application.EnableEvents = previousEventState
-            If Not reopened Is Nothing Then reopened.Close SaveChanges:=False
-            If LenB(workbookPath) > 0 Then
-                If Dir$(workbookPath) <> vbNullString Then Kill workbookPath
-            End If
-            If Not tempWb Is Nothing Then tempWb.Close SaveChanges:=False
-            TestHelpers.CleanupExportedFiles exportedFiles
-            Kill exportFolder
-        On Error GoTo 0
-        Exit Sub
-
-AccessDenied:
-        If Err.Number = ERR_VBPROJECT_ACCESS_DENIED Or Err.Number = ERR_VBPROJECT_NOT_SET Then
-            Assert.LogFailure "VBProject access is disabled; skipping workbook roundtrip test"
-        Else
-            Assert.LogFailure "Unexpected failure during workbook roundtrip test: " & Err.Number & " - " & Err.Description
-        End If
-        Resume Cleanup
-End Sub
 
 '@TestMethod("Passwords")
 Public Sub TestGenerateKeyWithoutTranslatorRaises()
@@ -658,6 +476,227 @@ Public Sub TestGenerateKeyUpdatesRanges()
                      "GenerateKey should capture the prompt title when prompts are suppressed"
 End Sub
 
+
+'@TestMethod("Passwords")
+Public Sub TestEnsureDebugExitHandlerInjectsCode()
+    CustomTestSetTitles Assert, "Passwords", "TestEnsureDebugExitHandlerInjectsCode"
+    Dim tempWb As Workbook
+    Set tempWb = Workbooks.Add
+
+    On Error GoTo InjectionAccessDenied
+
+    Dim cloned As IPasswords
+    Set cloned = PasswordSubject.CloneToWorkbook(tempWb)
+    cloned.EnsureDebugExitHandler tempWb
+
+    Dim codeModule As Object
+    Set codeModule = tempWb.VBProject.VBComponents(tempWb.CodeName).CodeModule
+
+    Dim lines As String
+    lines = codeModule.Lines(1, codeModule.CountOfLines)
+
+    Assert.IsTrue InStr(1, lines, "LeaveDebugModeOnClose", vbTextCompare) > 0, _
+                  "Workbook module should expose LeaveDebugModeOnClose"
+    Assert.IsTrue InStr(1, lines, "Workbook_BeforeClose", vbTextCompare) > 0, _
+                  "Workbook module should expose Workbook_BeforeClose"
+    Assert.IsTrue InStr(1, lines, "If Not Cancel Then LeaveDebugModeOnClose", vbTextCompare) > 0, _
+                  "Workbook_BeforeClose should call LeaveDebugModeOnClose without overriding Cancel"
+
+InjectionCleanup:
+    On Error Resume Next
+        If Not codeModule Is Nothing Then
+            If codeModule.CountOfLines > 0 Then codeModule.DeleteLines 1, codeModule.CountOfLines
+        End If
+        If Not tempWb Is Nothing Then tempWb.Close SaveChanges:=False
+    Exit Sub
+
+InjectionAccessDenied:
+    If Err.Number = 1004 Or Err.Number = 91 Then
+        Debug.Print "VBProject access is disabled; skipping injection test"
+        Assert.LogFailure "VBProject access is disabled; skipping injection test"
+    Else
+        Debug.Print "Unexpected failure during debug handler injection: "
+        Assert.LogFailure "Unexpected failure during debug handler injection: " & Err.Number & " - " & Err.Description
+    End If
+    Resume InjectionCleanup
+End Sub
+
+'@TestMethod("Passwords")
+Public Sub TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode()
+    CustomTestSetTitles Assert, "Passwords", "TestEnsureDebugExitHandlerPreservesExistingBeforeCloseCode"
+
+    Dim tempWb As Workbook
+    Dim cloned As IPasswords
+    Dim codeModule As Object
+    Dim baseLines As String
+    Dim procStart As Long
+    Dim procLines As Long
+    Dim procText As String
+    Dim firstCall As Long
+    Dim app As IApplicationState
+
+    On Error GoTo InjectionAccessDenied
+        Set app = ApplicationState.Create(Application)
+        app.ApplyBusyState suppressEvents:=True, calculateOnSave:=True
+
+        Set tempWb = Workbooks.Add
+        Set cloned = PasswordSubject.CloneToWorkbook(tempWb)
+
+        Set codeModule = tempWb.VBProject.VBComponents(tempWb.CodeName).CodeModule
+
+        baseLines = "Private Sub Workbook_BeforeClose(Cancel As Boolean)" & vbNewLine & _
+                    "    On Error GoTo Restore" & vbNewLine & _
+                    "    Debug.Print ""Closing""" & vbNewLine & _
+                    "Restore:" & vbNewLine & _
+                    "End Sub"
+        codeModule.InsertLines 3, baseLines
+        DoEvents
+
+        cloned.EnsureDebugExitHandler tempWb
+        DoEvents
+
+        cloned.EnsureDebugExitHandler tempWb
+        DoEvents
+
+        Debug.Print "Sent the two debug handlers"
+        
+        procStart = codeModule.ProcStartLine("Workbook_BeforeClose", 0)
+        DoEvents
+
+        procLines = codeModule.ProcCountLines("Workbook_BeforeClose", 0)
+        DoEvents
+        Debug.Print "Got the procLines"
+
+        procText = codeModule.Lines(procStart, procLines)
+        DoEvents
+        Debug.Print "Got the procText"
+
+        Assert.IsTrue InStr(1, procText, "If Not Cancel Then LeaveDebugModeOnClose", vbTextCompare) > 0, _
+                      "Existing Workbook_BeforeClose should call LeaveDebugModeOnClose"
+
+        Assert.IsTrue InStr(1, procText, "Debug.Print ""Closing""", vbBinaryCompare) > 0, _
+                      "Existing Workbook_BeforeClose statements must remain intact"
+
+        firstCall = InStr(1, procText, "LeaveDebugModeOnClose", vbTextCompare)
+        Assert.IsTrue InStr(firstCall + 1, procText, "LeaveDebugModeOnClose", vbTextCompare) = 0, _
+                      "LeaveDebugModeOnClose should be injected only once"
+    GoTo InjectionCleanup
+
+InjectionAccessDenied:
+    If Err.Number = 1004 Or Err.Number = 91 Then
+        Assert.LogFailure "VBProject access is disabled; skipping existing handler merge test"
+    Else
+        Assert.LogFailure "Unexpected failure during existing handler merge test: " & Err.Number & " - " & Err.Description
+    End If
+    Resume InjectionCleanup
+
+InjectionCleanup:
+    On Error Resume Next
+        SafeDeleteLines codeModule, 2, codeModule.CountOfLines
+        DoEvents
+        codeModule.InsertLines codeModule.CountOfLines + 1, vbCrLf & "' EOF pad (Mac)"
+        If Not (tempWb Is Nothing) Then 
+            tempWb.Close SaveChanges:=False
+        End If
+        app.Restore
+    On Error GoTo 0
+End Sub
+
+
+'@TestMethod("Passwords")
+Public Sub TestDebugExitHandlerRoundtripPersistsProtections()
+    CustomTestSetTitles Assert, "Passwords", "TestDebugExitHandlerRoundtripPersistsProtections"
+
+    Dim tempWb As Workbook
+    Dim cloned As IPasswords
+    Dim guardSheet As Worksheet
+    Dim guardSheetName As String
+    Dim workbookPath As String
+    Dim exportFolder As String
+    Dim exportedFiles As Collection
+    Dim previousEventState As Boolean
+    Dim reopened As Workbook
+    Dim debugFlagCell As Range
+
+    exportFolder = TestHelpers.BuildTempFolder(ThisWorkbook, "PasswordTests")
+    Set exportedFiles = New Collection
+
+    previousEventState = Application.EnableEvents
+
+    On Error GoTo AccessDenied
+        Set tempWb = Workbooks.Add
+
+        Set cloned = PasswordSubject.CloneToWorkbook(tempWb)
+        cloned.EnsureDebugExitHandler tempWb
+
+        ImportPasswordsComponents tempWb, exportFolder, exportedFiles
+
+        DoEvents
+
+        Set guardSheet = FirstWorkbookSheet(tempWb, DEFAULTPASSWORDSHEET)
+        If guardSheet Is Nothing Then
+            Set guardSheet = tempWb.Worksheets.Add
+            guardSheet.Name = "PwdGuard" & Format$(Timer, "000")
+        End If
+        guardSheetName = guardSheet.Name
+
+        cloned.Protect guardSheetName, allowShapes:=False, allowDeletingRows:=False, registerState:=False
+        cloned.EnterDebugMode tempWb
+        
+        DoEvents
+
+        Application.EnableEvents = True
+
+        workbookPath = TestHelpers.BuildWorkbookPath(exportFolder, "passwords_debug_roundtrip")
+        If Dir$(workbookPath) <> vbNullString Then Kill workbookPath
+
+        cloned.LeaveDebugMode tempWb
+
+        tempWb.SaveAs Filename:=workbookPath, FileFormat:=xlExcel12
+        
+        tempWb.Close SaveChanges:=True
+        
+        DoEvents
+
+        Set reopened = Workbooks.Open(Filename:=workbookPath)
+
+        DoEvents
+
+        Assert.IsTrue reopened.ProtectStructure, _
+                      "Workbook structure should be protected after reopening"
+        Assert.IsTrue reopened.Worksheets(guardSheetName).ProtectContents, _
+                      "Tracked worksheet should remain protected after debug handler runs"
+
+        Set debugFlagCell = reopened.Worksheets(DEFAULTPASSWORDSHEET).Range(NAMEDEBUGMODE)
+        
+        Assert.AreEqual DEFAULTBOOLNO, CStr(debugFlagCell.Value), _
+                     "Debug mode flag should be cleared after workbook close handler runs"
+
+Cleanup:
+        On Error Resume Next
+            Application.EnableEvents = previousEventState
+            If Not reopened Is Nothing Then reopened.Close SaveChanges:=False
+            If LenB(workbookPath) > 0 Then
+                If Dir$(workbookPath) <> vbNullString Then Kill workbookPath
+            End If
+            If Not tempWb Is Nothing Then tempWb.Close SaveChanges:=False
+            TestHelpers.CleanupExportedFiles exportedFiles
+            Kill exportFolder
+        On Error GoTo 0
+        Exit Sub
+
+AccessDenied:
+        If Err.Number = ERR_VBPROJECT_ACCESS_DENIED Or Err.Number = ERR_VBPROJECT_NOT_SET Then
+            Assert.LogFailure "VBProject access is disabled; skipping workbook roundtrip test"
+        Else
+            Assert.LogFailure "Unexpected failure during workbook roundtrip test: " & Err.Number & " - " & Err.Description
+        End If
+        Resume Cleanup
+End Sub
+
+'@section Helpers
+'===============================================================================
+
 Private Sub ImportPasswordsComponents(ByVal targetWorkbook As Workbook, _
                                       ByVal exportFolder As String, _
                                       ByVal exportedFiles As Collection)
@@ -685,3 +724,52 @@ Private Function FirstWorkbookSheet(ByVal wb As Workbook, ByVal excludedName As 
     Next sh
     Set FirstWorkbookSheet = Nothing
 End Function
+
+
+Private Sub SafeDeleteLines(cm As Object, ByVal startLine As Long, ByVal count As Long)
+    On Error GoTo Fail
+
+    If count < 1 Then Exit Sub
+    Dim total As Long: total = cm.CountOfLines
+
+    ' Clamp to valid range
+    If startLine < 1 Then startLine = 1
+    If startLine > total Then Exit Sub
+    If startLine + count - 1 > total Then count = total - startLine + 1
+    If count < 1 Then Exit Sub
+
+#If Mac Then
+    ' Make VBE visible helps on some Mac builds
+    On Error Resume Next
+    Application.VBE.MainWindow.Visible = True
+    DoEvents
+    On Error GoTo Fail
+#End If
+
+    ' Avoid deleting ATTRIBUTES/Option Explicit accidentally on Mac
+    Dim l As Long, firstReal As Long: firstReal = startLine
+    For l = startLine To startLine + count - 1
+        Dim t As String: t = LCase$(Trim$(cm.Lines(l, 1)))
+        If Left$(t, 9) <> "attribute" And Left$(t, 6) <> "option" Then
+            firstReal = l: Exit For
+        End If
+    Next l
+    If firstReal > startLine Then
+        count = count - (firstReal - startLine)
+        startLine = firstReal
+        If count < 1 Then Exit Sub
+    End If
+
+    ' Delete in small chunks to avoid sporadic failures
+    Const chunk As Long = 200
+    Do While count > 0
+        Dim n As Long: n = IIf(count > chunk, chunk, count)
+        cm.DeleteLines startLine, n
+        DoEvents
+        count = count - n
+        ' After deletion, subsequent lines shift up; keep same startLine
+    Loop
+    Exit Sub
+Fail:
+    Err.Raise Err.Number, "SafeDeleteLines", Err.Description
+End Sub

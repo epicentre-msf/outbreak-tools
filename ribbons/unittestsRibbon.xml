@@ -16,6 +16,9 @@
                     <button id="btnAddTabForm" label="Add Form table" image="addformsdev" size="normal" onAction="clickDevAddFormTable"/>
                     <button id="btnAddTabMods" label="Add Modules table" image="addmodsdev" size="normal" onAction="clickDevAddModulesTable"/>
                 </group>
+                <group id="CustomGroupTest" label="Tests">
+                    <button id="btnRunTests" label="Run Tests" image="" size="large" onAcation="ClickRibbonTests"/>
+                </group>
             </tab>
         </tabs>
     </ribbon>

@@ -28,6 +28,7 @@ Private Type TDictionary
     dictDataSheet As IDataSheet
     numberOfExports As Long
     hasChecks As Boolean
+    hiddenValues As IHiddenNames
 End Type
 
 Private this As TDictionary
@@ -128,6 +129,7 @@ End Property
 
 Public Property Set Data(ByVal customDataSheet As IDataSheet)
     Set this.dictDataSheet = customDataSheet
+    Set this.hiddenValues = Nothing
 End Property
 
 '@label:exports
@@ -201,38 +203,61 @@ End Sub
 
 '@label:persist-exports
 Private Sub PersistTotalExports(ByVal totalCount As Long)
-    If this.dictDataSheet Is Nothing Then Exit Sub
-    PersistTotalExportsOnSheet Wksh(), totalCount
+    Dim store As IHiddenNames
+
+    Set store = HiddenNameStore()
+    If store Is Nothing Then Exit Sub
+
+    If totalCount < 0 Then totalCount = 0
+
+    store.EnsureName TOTAL_EXPORTS_NAME, totalCount, HiddenNameTypeLong
+    store.SetValue TOTAL_EXPORTS_NAME, totalCount
 End Sub
 
 '@label:persist-exports-sheet
 Private Sub PersistTotalExportsOnSheet(ByVal sheet As Worksheet, ByVal totalCount As Long)
-    If sheet Is Nothing Then Exit Sub
+    Dim store As IHiddenNames
 
+    If sheet Is Nothing Then Exit Sub
     If totalCount < 0 Then totalCount = 0
 
-    RemoveSheetName sheet, TOTAL_EXPORTS_NAME
-    sheet.Names.Add Name:=TOTAL_EXPORTS_NAME, _
-                    RefersToR1C1:="=" & CStr(totalCount), _
-                    Visible:=False
+    Set store = HiddenNameStore(sheet)
+    If store Is Nothing Then Exit Sub
+
+    store.EnsureName TOTAL_EXPORTS_NAME, totalCount, HiddenNameTypeLong
+    store.SetValue TOTAL_EXPORTS_NAME, totalCount
 End Sub
 
 '@label:stored-exports
 Private Function StoredTotalExportsFromSheet(ByVal sheet As Worksheet) As Long
-    Dim definition As Name
-    Dim evaluated As String
+    Dim store As IHiddenNames
 
     If sheet Is Nothing Then Exit Function
 
-    Set definition = TrySheetNameDefinition(sheet, TOTAL_EXPORTS_NAME)
-    If definition Is Nothing Then Exit Function
+    Set store = HiddenNameStore(sheet)
+    If store Is Nothing Then Exit Function
 
-    On Error Resume Next
-        evaluated = Trim$(Replace$(definition.Value, "=", vbNullString))
-    On Error GoTo 0
+    StoredTotalExportsFromSheet = store.ValueAsLong(TOTAL_EXPORTS_NAME, 0)
+End Function
 
-    If LenB(evaluated) <> 0 Then
-        StoredTotalExportsFromSheet = CLng(evaluated)
+'@label:hidden-name-store
+Private Function HiddenNameStore(Optional ByVal sheet As Worksheet) As IHiddenNames
+    Dim target As Worksheet
+
+    If sheet Is Nothing Then
+        If this.dictDataSheet Is Nothing Then Exit Function
+        Set target = Wksh()
+        If target Is Nothing Then Exit Function
+
+        If this.hiddenValues Is Nothing Then
+            Set this.hiddenValues = HiddenNames.Create(target)
+        ElseIf Not this.hiddenValues.Sheet Is target Then
+            Set this.hiddenValues = HiddenNames.Create(target)
+        End If
+
+        Set HiddenNameStore = this.hiddenValues
+    Else
+        Set HiddenNameStore = HiddenNames.Create(sheet)
     End If
 End Function
 
@@ -243,29 +268,11 @@ Private Function TrySheetNameDefinition(ByVal sheet As Worksheet, ByVal nameId A
     If sheet Is Nothing Then Exit Function
 
     For Each definition In sheet.Names
-        If CompareName(definition, nameId) Then
+        If StrComp(ExtractSimpleName(definition.Name), nameId, vbTextCompare) = 0 Then
             Set TrySheetNameDefinition = definition
             Exit Function
         End If
     Next definition
-End Function
-
-'@label:remove-sheet-name
-Private Sub RemoveSheetName(ByVal sheet As Worksheet, ByVal nameId As String)
-    Dim idx As Long
-
-    If sheet Is Nothing Then Exit Sub
-
-    For idx = sheet.Names.Count To 1 Step -1
-        If CompareName(sheet.Names(idx), nameId) Then
-            sheet.Names(idx).Delete
-        End If
-    Next idx
-End Sub
-
-'@label:compare-name
-Private Function CompareName(ByVal definition As Name, ByVal expected As String) As Boolean
-    CompareName = (StrComp(ExtractSimpleName(definition.Name), expected, vbTextCompare) = 0)
 End Function
 
 '@label:extract-name
@@ -1305,10 +1312,16 @@ Public Sub Export(ByVal toWkb As Workbook, _
 
     If addListObject Then
         Set exportRange = DataRange(includeHeaders:=True)
-        Set exportRange = targetSheet.Range(exportRange.Address)
+
+        'Export is always on the first cell of the worksheet
+        With targetSheet
+            Set exportRange = .Range(.Cells(1, 1), .Cells(exportRange.Rows.Count, exportRange.Columns.Count))
+        End With
+
         targetSheet.ListObjects.Add(xlSrcRange, exportRange, , xlYes).Name = "o" & LCase$(sheetName)
         targetSheet.Cells(DictEndRow() + 1, StartColumn()).Font.color = vbBlue
         targetSheet.ListObjects("o" & LCase$(sheetName)).TableStyle = ""
+
     End If
 End Sub
 

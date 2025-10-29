@@ -6,7 +6,9 @@ Private Const PASSSHEETNAME As String = "__pass"
 Private Const TRADSHEETNAME As String = "Translations"
 Private Const ANALYSISSHEETNAME As String = "Analysis"
 Private Const DICTSHEETNAME As String = "Dictionary"
+Private Const CHOICESSHEETNAME As String = "Choices"
 Private Const UPDATEDSHEETNAME As String = "__updated"
+Private Const TABTRANSLATION As String = "Tab_Translations"
 
 
 'Start Rows and columns for dictionary, choices, and exports.
@@ -41,24 +43,25 @@ Public Sub ManageRows(ByVal sheetName As String, _
     '5 is the start line of the dictionary
     '4 is the start column of the dictionary
     Select Case LCase$(Trim$(sheetName))
-    Case "dictionary"
-        Set part = LLdictionary.Create(targetSheet START_ROW_DICTIONARY, START_COLUMN_DICTIONARY)
-    Case "choices"
-        Set part = LLChoices.Create(targetSheet START_ROW_CHOICES , START_COLUMN_CHOICES)
-    Case "analysis"
-        Set part = Analysis.Create(targetSheet)
-    Case "exports"
-        Set dictSheet = ThisWorkbook.Worksheets(DICTSHEETNAME)
-        Set part = LLExport.Create(targetSheet START_ROW_EXPORTS, START_COLUMN_EXPORTS)
-        Set dict = LLdictionary.Create(dictSheet, START_ROW_DICTIONARY, START_COLUMN_DICTIONARY)
-    Case Else
-        Exit Sub
+        Case "dictionary"
+            Set part = LLdictionary.Create(targetSheet, START_ROW_DICTIONARY, START_COLUMN_DICTIONARY)
+        Case "choices"
+            Set part = LLChoices.Create(targetSheet, START_ROW_CHOICES, START_COLUMN_CHOICES)
+        Case "analysis"
+            Set part = Analysis.Create(targetSheet)
+        Case "exports"
+            Set dictSheet = ThisWorkbook.Worksheets(DICTSHEETNAME)
+            Set part = LLExport.Create(targetSheet, START_ROW_EXPORTS, START_COLUMN_EXPORTS)
+            Set dict = LLdictionary.Create(dictSheet, START_ROW_DICTIONARY, START_COLUMN_DICTIONARY)
+        Case Else
+            Exit Sub
     End Select
 
     If Not (part Is Nothing) Then
-        app.ApplyBusyState(suppressEvents:=True, calculateOnSave:=False)
+        Set app = ApplicationState.Create(Application)
+        app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
         EnsureRowManagement sheetName, del, part, dict
-        app.Restore()
+        app.Restore
     End If
 
     Exit Sub
@@ -280,3 +283,74 @@ Public Sub ProtectSetupSheet(ByVal sheetName As String)
     Set pass = Passwords.Create(ThisWorkbook.Worksheets(PASSSHEETNAME))
     pass.Protect sheetName, allowDeleting:=delRow
 End Sub
+
+
+Public Sub ApplySetupTranslation(ByVal translator As ITranslationObject)
+    Dim dictSheet As Worksheet
+    Dim choicesSheet As Worksheet
+    Dim analysisSheet As Worksheet
+    Dim exportsSheet As Worksheet
+    Dim dictionary As ILLdictionary
+    Dim choices As ILLChoices
+    Dim analysis As IAnalysis
+    Dim exports As ILLExport
+    Dim unlockDict As Boolean
+    Dim unlockChoices As Boolean
+    Dim unlockAnalysis As Boolean
+    Dim unlockExports As Boolean
+
+    On Error GoTo Cleanup
+
+    Set dictSheet = ResolveSetupSheet(DICTSHEETNAME)
+    If Not dictSheet Is Nothing Then
+        UnProtectSetupSheet DICTSHEETNAME
+        unlockDict = True
+        Set dictionary = LLdictionary.Create(dictSheet, START_ROW_DICTIONARY, START_COLUMN_DICTIONARY)
+        dictionary.Translate translator
+        ProtectSetupSheet DICTSHEETNAME
+        unlockDict = False
+    End If
+
+    Set choicesSheet = ResolveSetupSheet(CHOICESSHEETNAME)
+    If Not choicesSheet Is Nothing Then
+        UnProtectSetupSheet CHOICESSHEETNAME
+        unlockChoices = True
+        Set choices = LLChoices.Create(choicesSheet, START_ROW_CHOICES, START_COLUMN_CHOICES)
+        choices.Translate translator
+        ProtectSetupSheet CHOICESSHEETNAME
+        unlockChoices = False
+    End If
+
+    Set analysisSheet = ResolveSetupSheet(ANALYSISSHEETNAME)
+    If Not analysisSheet Is Nothing Then
+        UnProtectSetupSheet ANALYSISSHEETNAME
+        unlockAnalysis = True
+        Set analysis = Analysis.Create(analysisSheet)
+        analysis.Translate translator
+        ProtectSetupSheet ANALYSISSHEETNAME
+        unlockAnalysis = False
+    End If
+
+    Set exportsSheet = ResolveSetupSheet(EXPORTSHEETNAME)
+    If Not exportsSheet Is Nothing Then
+        UnProtectSetupSheet EXPORTSHEETNAME
+        unlockExports = True
+        Set exports = LLExport.Create(exportsSheet, START_ROW_EXPORTS, START_COLUMN_EXPORTS)
+        exports.Translate translator
+        ProtectSetupSheet EXPORTSHEETNAME
+        unlockExports = False
+    End If
+
+Cleanup:
+    If unlockDict Then ProtectSetupSheet DICTSHEETNAME
+    If unlockChoices Then ProtectSetupSheet CHOICESSHEETNAME
+    If unlockAnalysis Then ProtectSetupSheet ANALYSISSHEETNAME
+    If unlockExports Then ProtectSetupSheet EXPORTSHEETNAME
+    If Err.Number <> 0 Then Err.Raise Err.Number, "SetupHelpers.ApplySetupTranslation", Err.Description
+End Sub
+
+Public Function ResolveSetupSheet(ByVal sheetName As String) As Worksheet
+    On Error Resume Next
+        Set ResolveSetupSheet = ThisWorkbook.Worksheets(sheetName)
+    On Error GoTo 0
+End Function

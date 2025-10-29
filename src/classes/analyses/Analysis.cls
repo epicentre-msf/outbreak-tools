@@ -19,7 +19,7 @@ Option Explicit
 Implements IAnalysis
 
 Private Type TAnalysis
-    sht As Worksheet
+    hostsheet As Worksheet
     hasChecks As Boolean
 End Type
 
@@ -28,6 +28,7 @@ Private this As TAnalysis
 'Checking support
 Private checkCounter As Long
 Private internalChecks As IChecking
+Private requiredTablesCaches As BetterArray
 
 'ListObject names used in analysis worksheets
 Private Const GLOBALSUMMARY As String = "Tab_global_summary"
@@ -49,18 +50,20 @@ Private Const CLASSNAME As String = "Analysis"
 '@details
 'Creates a predeclared analysis manager bound to the supplied worksheet so
 'callers can immediately work with the analysis without additional setup.
-'@param anaWksh Worksheet hosting the analysis tables
+'@param hostsheet Worksheet hosting the analysis tables
 '@return IAnalysis
 '@depends Checking, CustomTable
 '@export
-Public Function Create(ByVal anaWksh As Worksheet) As IAnalysis
-    If anaWksh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, _
+Public Function Create(ByVal hostsheet As Worksheet) As IAnalysis
+    If hostsheet Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, _
                                          "Worksheet object not defined"
-
+    'You can create analysis on a empty worksheet, without tables.
     With New Analysis
-        Set .Wksh = anaWksh
+        Set .Wksh = hostsheet
         Set Create = .Self
     End With
+
+    EnsureRequiredTables
 End Function
 
 '@prop-title Current object instance
@@ -76,15 +79,15 @@ End Property
 '@details
 'Return the worksheet that stores the analysis tables manipulated by this class.
 '@return Worksheet
-Public Property Get Wksh() As Worksheet
-    Set Wksh = this.sht
+Private Property Get Wksh() As Worksheet
+    Set Wksh = this.hostsheet
 End Property
 
 '@label:wksh-set
 '@sub-title Store the backing worksheet
-'@param anaWksh Worksheet used to drive analysis automation.
-Public Property Set Wksh(ByVal anaWksh As Worksheet)
-    Set this.sht = anaWksh
+'@param hostsheet Worksheet used to drive analysis automation.
+Public Property Set Wksh(ByVal hostsheet As Worksheet)
+    Set this.hostsheet = hostsheet
 End Property
 
 '@section RowManagement
@@ -95,7 +98,7 @@ End Property
 '@details
 'Delegates to the row manager to append the required rows to each target table.
 '@export
-Public Sub AddRows()
+Private Sub AddRows()
     ManageRows
 End Sub
 
@@ -104,7 +107,7 @@ End Sub
 '@details
 'Calls the row manager in deletion mode to trim each table to its required length.
 '@export
-Public Sub RemoveRows()
+Private Sub RemoveRows()
     ManageRows True
 End Sub
 
@@ -124,11 +127,17 @@ Private Sub ManageRows(Optional ByVal del As Boolean = False)
     Dim lo As ListObject
     Dim tabl As ICustomTable
     Dim idx As Long
+    Dim headerValue As Variant
 
     Set sh = Wksh()
     'Capture the user instruction displayed in the worksheet header.
-    selectionText = LCase$(Trim$(Replace(sh.Cells(1, 1).Value, "Add or remove rows of", vbNullString)))
-
+    headerValue = sh.Cells(1, 1).Value
+    If IsError(headerValue) Then
+        selectionText = vbNullString
+    Else
+        selectionText = LCase$(CStr(headerValue))
+        selectionText = Trim$(Replace(selectionText, "add or remove rows of", vbNullString))
+    End If
     Set listNames = New BetterArray
     Select Case selectionText
         Case "global summary": listNames.Push GLOBALSUMMARY
@@ -159,13 +168,16 @@ Private Sub ManageRows(Optional ByVal del As Boolean = False)
             GoTo NextTable
         End If
 
+
         Set tabl = CustomTable.Create(lo, idCol, prefName)
+
         If del Then
             tabl.RemoveRows totalCount:=requiredCount
         Else
-            tabl.AddRows
+            tabl.AddRows insertShift:=True
             If idCol <> vbNullString Then tabl.AddIds
         End If
+
 NextTable:
         Set lo = Nothing
         Set tabl = Nothing
@@ -206,53 +218,78 @@ End Sub
 '@section ImportExport
 '===============================================================================
 
+'@label:Clean
+'@sub-title Clean the analysis tables in the current worksheet
+Private Sub Clean() 
+    Dim hostLo As ListObject
+    Dim hostTab As ICustomTable
+    Dim hostSheet As Worksheet
+    Dim counter As Long
+    EnsureRequiredTables
+    Set hostSheet = Wksh()
+    For Each hostLo in hostSheet.ListObjects
+        Set hostTab = CustomTable.Create(hostLo)
+        hostTab.Clean
+    Next
+End Sub
+
+
 '@label:import
 '@sub-title Import analysis tables from an external worksheet
 '@details
 'Copies each listobject (and associated headers) from the source worksheet into
 'the managed worksheet, preserving cell formatting before validating the result.
-'@param fromWksh Worksheet providing the source analysis tables.
+'@param sourceSheet Worksheet providing the source analysis tables.
 '@export
-Public Sub Import(ByVal fromWksh As Worksheet)
-    Dim targetSh As Worksheet
-    Dim srcLo As ListObject
-    Dim targetLo As ListObject
-    Dim srcRng As Range
-    Dim targetRng As Range
+Private Sub Import(ByVal sourcesheet As Worksheet)
 
-    If fromWksh Is Nothing Then
+    Dim hostsheet As Worksheet
+    Dim srcLo As ListObject
+    Dim hostLo As ListObject
+    Dim srcTab As ICustomTable
+    Dim hostTab As ICustomTable
+    Dim counter As Long
+    Dim tabName As String
+
+    If sourcesheet Is Nothing Then
         LogInfo "Analysis imports aborted: source worksheet not provided", checkingError
         Exit Sub
     End If
 
-    Set targetSh = Wksh()
-    targetSh.Cells.Clear
+    
+    EnsureRequiredTables
+    
+    'Clean actual elements before imports
+    Clean
+    
+    Set hostsheet = Wksh()
 
-    For Each srcLo In fromWksh.ListObjects
-        Set srcRng = srcLo.Range
-        Set targetRng = targetSh.Range(srcRng.Address)
-        targetRng.Value = srcRng.Value
-        targetRng.Interior.Color = srcRng.Interior.Color
+    For Each srcLo In sourcesheet.ListObjects
 
-        targetRng.Cells(-1, 1).Value = srcRng.Cells(-1, 1).Value
-        targetRng.Cells(-1, 1).Font.Size = srcRng.Cells(-1, 1).Font.Size
-        targetRng.Cells(-1, 1).Font.color = srcRng.Cells(-1, 1).Font.color
-        targetRng.Cells(-1, 1).Font.Bold = True
+        If Not IsValidListObject(srcLo) Then  GoTo Continue
 
-        Set targetLo = targetSh.ListObjects.Add(xlSrcRange, source:=targetRng, _
-                                              XlListObjectHasHeaders:=xlYes)
-        targetLo.Name = srcLo.Name
-        targetLo.TableStyle = srcLo.TableStyle
+        Set srcTab = CustomTable.Create(srcLo)
+        Set hostLo = hostsheet.ListObjects(srcLo.Name)
+        Set hostTab = CustomTable.Create(hostLo)
+
+        hostTab.Import srcTab, insertShift:=True, strictColumnSearch:=True
+    Continue:
     Next
 
-    CheckTablesRequirements
+    'Look for unfound (missing listObject)
+    For counter = requiredTablesCaches.LowerBound To requiredTablesCaches.UpperBound
+        Set srcLo = Nothing
+        On Error Resume Next
+            tabName = requiredTablesCaches.Item(counter)
+            Set srcLo = sourcesheet.ListObjects(tabName)
+        On Error GoTo 0
 
-    LogInfo "Import completed", checkingNote
+        If srcLo Is Nothing Then
+            LogInfo "Table " & tabName & " not found in imported worksheet", checkingWarning
+        End If
+    Next
 
-    targetSh.Cells(2, 3).Value = "analysis imported - " & Format(Now(), "yyyy-mm-dd hh:nn:ss")
-    targetSh.Cells(2, 3).Font.Color = RGB(176, 196, 222)
-
-    'Sort the analysis worksheet
+    EnsureAnalysisTables
     Sort
 End Sub
 
@@ -268,42 +305,36 @@ Private Sub Sort()
     Dim Lo As listObject
     Dim csTab As ICustomTable
     Dim colName As String
-    Dim tabl As BetterArray 'Will contain the list of listObjects to sort
     Dim counter As Long
     Dim loName As String
     Dim rowCount As Long
 
-    Set tabl = New BetterArray
-    tabl.LowerBound = 1
-
-    tabl.Push UNIVARIATE, BIVARIATE, TIMESERIES, SPATIAL, GRAPHTIMESERIES, _ 
-               TITLEGRAPHTIMESERIES, SPATIOTEMPORAL, SPATIOTEMPSPECS
-
     Set sh = Wksh()
 
-    For counter = 1 To tabl.Length
+    EnsureAnalysisTables True
 
-        loName = tabl.Items(counter)
+
+    For counter = requiredTablesCaches.LowerBound To requiredTablesCaches.UpperBound
+        loName = requiredTablesCaches.Items(counter)
         Set Lo = sh.ListObjects(loName)
         Set csTab = CustomTable.Create(Lo)
 
         'Row count is the number of elements in the row that triggers deletion of the
         'entire row of the listObject
         rowCount = Switch(loName = TIMESERIES, 2, loName = GRAPHTIMESERIES, 4, True, 0)
-        colName = Switch( _ 
-            loName = GRAPHTIMESERIES Or loName = TITLEGRAPHTIMESERIES, "Graph ID", _ 
-            loName = SPATIOTEMPORAL, "Section (select)", _ 
-            True, "Section" _ 
-        )
 
-        If loName = TIMESERIES Then csTab.Sort "Table order", directSort:=True
+
+        colName = IIF(((loName = GRAPHTIMESERIES) Or (loName = TITLEGRAPHTIMESERIES)), "Graph ID", "Section")
+
         csTab.Sort colName, directSort:=False
+        If loName = TIMESERIES Then csTab.Sort "Table order", directSort:=True, strictSearch:=False
+        If loName = GRAPHTIMESERIES Then csTab.Sort "Graph order", directSort:=True, strictSearch:=False
        
         'Resize the listObject
         csTab.RemoveRows totalCount:=rowCount
     Next
+  
 End Sub
-
 
 
 '@label:export
@@ -311,22 +342,62 @@ End Sub
 '@details
 'Duplicates the managed worksheet into the provided workbook so external
 'processes can consume the analysis tables.
-'@param toWkb Workbook receiving the exported worksheet.
+'@param sourceWb Workbook receiving the exported worksheet.
 '@export
-Public Sub Export(ByVal toWkb As Workbook)
-    Dim targetSheet As Worksheet
-    Dim sourceSheet As Worksheet
+Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
 
-    If toWkb Is Nothing Then
+    Dim hostsheet As Worksheet
+    Dim hostLo As ListObject
+    Dim sourcesheet As Worksheet
+    Dim sourceRange As Range
+    Dim counter As Long
+    Dim sourceLo As ListObject
+   
+
+    If sourcewb Is Nothing Then
         LogInfo "Export aborted: destination workbook not provided", checkingWarning
         Exit Sub
     End If
 
-    Set sourceSheet = Wksh()
-    sourceSheet.Copy After:=toWkb.Worksheets(toWkb.Worksheets.Count)
-    Set targetSheet = toWkb.Worksheets(toWkb.Worksheets.Count)
-    targetSheet.Name = sourceSheet.Name
-    LogInfo "Export completed to workbook " & toWkb.Name, checkingNote
+
+    'Sort the actual analysis worksheet before exports
+    Sort
+   
+
+    Set hostsheet = Wksh()
+
+    On Error Resume Next
+    Set sourcesheet = sourceWb.Worksheets(hostsheet.Name)
+    On Error GoTo 0
+
+    If sourcesheet Is Nothing Then
+        Set sourcesheet = sourcewb.Worksheets.Add(after:=sourcewb.Worksheets(sourcewb.Worksheets.Count))
+        sourcesheet.Name = hostsheet.Name
+        sourcesheet.Visible = Hide
+    Else
+        LogInfo sourcesheet.Name & " already exists in the export workbook, will be cleared", checkingWarning
+        sourcesheet.Cells.Clear
+    End If
+
+
+    For Each hostLo In hostsheet.ListObjects
+
+        Set sourceRange = sourcesheet.Range(hostLo.Range.Address)
+        sourceRange.Value = hostLo.Range.Value
+        sourcesheet.ListObjects.Add(xlSrcRange, sourceRange, , xlYes).Name = hostLo.Name
+        Set sourceLo = sourcesheet.ListObjects(hostLo.Name)
+        sourceLo.TableStyle = hostLo.TableStyle
+        On Error Resume Next
+        For counter = 0 To 4
+            sourceLo.HeaderRange.Offset(-counter).Value = hostLo.HeaderRange.Offset(-counter).Value
+            sourceLo.HeaderRange.Offset(-counter).Interior.Color = hostLo.HeaderRange.Offset(-counter).Interior.Color
+            sourceLo.HeaderRange.Offset(-counter).Font.Color = hostLo.HeaderRange.Offset(-counter).Font.Color
+            sourceLo.HeaderRange.Offset(-counter).Font.size = hostLo.HeaderRange.Offset(-counter).Font.size
+        Next
+        On Error GoTo 0
+        
+    Next
+
 End Sub
 
 '@section Translation
@@ -339,7 +410,7 @@ End Sub
 'worksheet reflects the currently selected language.
 '@param TransObject ITranslationObject responsible for translating ranges.
 '@export
-Public Sub Translate(ByVal TransObject As ITranslationObject)
+Private Sub Translate(ByVal TransObject As ITranslationObject)
     Dim sh As Worksheet
     Dim lo As ListObject
     Dim csTab As ICustomTable
@@ -373,33 +444,10 @@ Public Sub Translate(ByVal TransObject As ITranslationObject)
     LogInfo "Translation completed", checkingNote
 End Sub
 
-'@section Validation
-'===============================================================================
 
-'@label:checktables
-'@details
-'Ensures all expected analysis tables exist and records warnings for any that
-'are missing so downstream processes can alert users.
-Private Sub CheckTablesRequirements()
-    Dim required As BetterArray
-    Dim idx As Long
-    Dim loName As String
-
-    Set required = New BetterArray
-    required.Push GLOBALSUMMARY, UNIVARIATE, BIVARIATE, TIMESERIES, GRAPHTIMESERIES, _
-                  TITLEGRAPHTIMESERIES, SPATIAL, SPATIOTEMPORAL, SPATIOTEMPSPECS
-
-    For idx = required.LowerBound To required.UpperBound
-        loName = CStr(required.Item(idx))
-        On Error Resume Next
-        'Log a warning when a required listobject is absent from the worksheet.
-        If Wksh().ListObjects(loName) Is Nothing Then LogInfo "Missing listobject " & loName, checkingWarning
-        On Error GoTo 0
-    Next idx
-End Sub
 
 '@label:checkings
-'@section Checkings
+'@section Checkings and Errors
 '===============================================================================
 
 '@label:loginfo
@@ -422,7 +470,7 @@ End Sub
 '@prop-title Whether trace entries were recorded
 '@details
 'Provides a quick way for callers to know if diagnostics are available.
-Public Property Get HasCheckings() As Boolean
+Private Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
@@ -430,13 +478,11 @@ End Property
 '@prop-title Retrieve collected trace entries
 '@details
 'Returns the underlying checking object when traces are available.
-Public Property Get CheckingValues() As Object
+Private Property Get CheckingValues() As Object
     If Not HasCheckings() Then Exit Property
     Set CheckingValues = internalChecks
 End Property
 
-'@section Errors
-'===============================================================================
 
 '@label:throwerror
 '@details
@@ -444,7 +490,7 @@ End Property
 '@param errNumber ProjectError enumeration value describing the failure.
 '@param errorMessage String detailing the problem context.
 Private Sub ThrowError(ByVal errNumber As Long, ByVal errorMessage As String)
-    Err.Raise errNumber, "Analysis", "Error message : " & Chr(34) & errorMessage
+    Err.Raise errNumber, CLASSNAME, "Error message : " & Chr$(34) & errorMessage & Chr$(34)
 End Sub
 
 '@section Interface
@@ -471,23 +517,32 @@ Private Sub IAnalysis_ManageRows(Optional ByVal del As Boolean = False)
 End Sub
 
 '@jump:Import
-Private Sub IAnalysis_Import(ByVal fromWksh As Worksheet)
-    Import fromWksh
+Private Sub IAnalysis_Import(ByVal sourcesheet As Worksheet)
+    Import sourcesheet
 End Sub
 
 '@jump:Export
-Private Sub IAnalysis_Export(ByVal toWkb As Workbook)
-    Export toWkb
+Private Sub IAnalysis_Export(ByVal sourcewb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
+    Export sourcewb, Hide
 End Sub
 
 '@jump:Translate
-Private Sub IAnalysis_Translate(ByVal TransObject As ITranslationObject)
-    Translate TransObject
+Private Sub IAnalysis_Translate(ByVal translator As ITranslationObject)
+    Translate translator
 End Sub
 
 '@jump:Sort
 Private Sub IAnalysis_Sort()
     Sort
+End Sub
+
+'@jump:Clean
+Private Sub IAnalysis_Clean()
+    Clean
+End Sub
+
+Private Sub IAnalysis_EnsureAnalysisTables()
+    EnsureAnalysisTables True
 End Sub
 
 '@jump:HasCheckings
@@ -499,3 +554,56 @@ End Property
 Private Property Get IAnalysis_CheckingValues() As Object
     Set IAnalysis_CheckingValues = CheckingValues()
 End Property
+
+'@section Helpers
+'===============================================================================
+
+Private Sub EnsureRequiredTables()
+    If requiredTablesCaches Is Nothing Then
+        Set requiredTablesCaches = New BetterArray
+        requiredTablesCaches.Push GLOBALSUMMARY, UNIVARIATE, BIVARIATE, TIMESERIES, GRAPHTIMESERIES, _
+                TITLEGRAPHTIMESERIES, SPATIAL, SPATIOTEMPORAL, SPATIOTEMPSPECS
+    End If
+End Sub
+
+'Check if a listObject is valid for the analysis
+Private Function IsValidListObject(ByVal Lo As ListObject) As Boolean
+
+    If Lo Is Nothing Then Exit Function
+    EnsureRequiredTables
+    If Not requiredTablesCaches.Includes(Lo.Name) Then Exit Function
+
+    Dim hostsheet As Worksheet
+    Set hostsheet = Wksh()
+    On Error Resume Next
+    IsValidListObject = Not (hostsheet.ListObjects(Lo.Name) Is Nothing)
+    On Error GoTo 0
+End Function
+
+'@label:checktables
+'@details
+'Ensures all expected analysis tables exist and records warnings for any that
+'are missing so downstream processes can alert users.
+Private Sub EnsureAnalysisTables(Optional ByVal raiseError As Boolean = False)
+    Dim idx As Long
+    Dim loName As String
+    Dim Lo As ListObject
+
+    EnsureRequiredTables
+
+    For idx = requiredTablesCaches.LowerBound To requiredTablesCaches.UpperBound
+        loName = CStr(requiredTablesCaches.Item(idx))
+        On Error Resume Next
+        Set Lo = Wksh().ListObjects(loName)
+        On Error GoTo 0
+        'Log a warning when a required listobject is absent from the worksheet.
+        If  Lo Is Nothing Then
+            If raiseError Then
+                ThrowError ProjectError.ElementNotFound, "Missing listobject " & loName & " in analysis"
+            Else
+                LogInfo "Missing listobject " & loName & " in analysis", checkingWarning
+            End If
+        End If
+        Set Lo = Nothing
+    Next idx
+End Sub

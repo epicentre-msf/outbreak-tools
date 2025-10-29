@@ -44,22 +44,30 @@ Public Sub RemoveRows(): End Sub
 '===============================================================================
 '@jump:Import
 '@sub-title Import analysis listobjects from another worksheet
-'@param fromWksh Worksheet providing the source analysis tables
-Public Sub Import(ByVal fromWksh As Worksheet): End Sub
+'@param sourchesheet Worksheet providing the source analysis tables
+Public Sub Import(ByVal sourchesheet As Worksheet): End Sub
 
 '@jump:Export
 '@sub-title Export analysis worksheet to another workbook
-'@param toWkb Workbook receiving the exported worksheet
-Public Sub Export(ByVal toWkb As Workbook): End Sub
+'@param sourcewb Workbook receiving the exported worksheet
+Public Sub Export(ByVal sourcewb As Workbook, Optional ByVal Hide As Long = xlSheetHidden): End Sub
 
 '@jump:Translate
 '@sub-title Translate analysis jumps using a translation object
 '@param TransObject ITranslationObject used for translation
-Public Sub Translate(ByVal TransObject As ITranslationObject): End Sub
+Public Sub Translate(ByVal translator As ITranslationObject): End Sub
 
 '@jump:Sort
 '@sub-title Sort the analysis worksheet
 Public Sub Sort(): End Sub
+
+'@jump:Clean
+'@sub-title Clean the analysis worksheet
+Public Sub Clean(): End Sub
+
+'@jump:EnsureAnalysisTables
+'@sub-title Make sure analysis tables are present; raise error if not
+Public Sub EnsureAnalysisTables(): End Sub
 
 '@jump:checkings
 '@section Checkings

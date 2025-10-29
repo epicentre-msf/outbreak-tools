@@ -6,15 +6,15 @@
           <button id="btnAdd" label="Add rows to tables" imageMso="QueryShowTable" size="large" onAction="clickAddRows"/>
           <button id="btnRes" label="Resize tables" imageMso="SheetRowsDelete" size="large" onAction="clickResize"/>
           <button id="btnFilt" label="Remove all filters" imageMso="FilterClearAllFilters" size="large" onAction="clickFilters"/>
-          <button id="btnSort" label="Sort tables" image="sort" size="large" onAction="clickSortTables"/>
+          <button id="btnSort" label="Sort tables" image="sort" size="large" onAction="clickSortTables" getVisible="SetupButtonVisible"/>
           <button id="btnInsertRow" label="Insert row" image="insertrow" size="large" onAction="clickInsertRow"/>
-          <button id="btnDelLoRow" label="Delete table row" image="dellorows" size="large" onAction="clickDelLoRows" getVisible="DelVisible"/>
-          <button id="btnDelLoCol" label="Delete table column" image="dellocolumn" size="large" onAction="clickDelLoColumn" getVisible="DelVisible"/>  
+          <button id="btnDelLoRow" label="Delete table row" image="dellorows" size="large" onAction="clickDelLoRows" getVisible="SetupButtonVisible"/>
+          <button id="btnDelLoCol" label="Delete table column" image="dellocolumn" size="large" onAction="clickDelLoColumn" getVisible="SetupButtonVisible"/>  
         </group>
         <group id="customGroupTrans">
           <button id="btnTransAdd" label="Update translation table" image="update" size="large" onAction="clickAddTrans"/>
           <editBox id="editLang" label="Add language" onChange="clickAddLang"/>
-          <button id="btnTransChange" label="Translate the setup" image="translation" size="normal" onAction="clickAddTrans"/>
+          <button id="btnTransChange" label="Translate the setup" image="translation" size="normal" onAction="clickTransSetup"/>
           <button id="btnTagUpdate" label="Reset translation tags" image="headertag" size="normal" onAction="clickResetTag"/>
         </group>
         <group id="customGroupImport">

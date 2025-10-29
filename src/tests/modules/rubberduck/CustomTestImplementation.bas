@@ -69,15 +69,18 @@ Public Sub ExecuteModule(ByVal modName As String)
 
     BusyApp
     SafeRun moduleName, "ModuleInitialize"
+    DoEvents
 
     Set tests = DiscoverTests(moduleName)
     If Not tests Is Nothing Then
         For index = tests.LowerBound To tests.UpperBound
             testInfo = tests.Item(index)
             RunSingleTest moduleName, testInfo
+            DoEvents
         Next index
     End If
 
+    DoEvents
     SafeRun moduleName, "ModuleCleanup"
 End Sub
 
@@ -101,7 +104,9 @@ Private Sub RunSingleTest(ByVal moduleName As String, _
     If LenB(routineName) = 0 Then Exit Sub
 
     SafeRun moduleName, "TestInitialize"
+    DoEvents
     SafeRun moduleName, routineName
+    DoEvents
     SafeRun moduleName, "TestCleanup"
 End Sub
 

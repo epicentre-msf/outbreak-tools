@@ -23,6 +23,7 @@ Private Const SOURCE_SHEET_NAME As String = "SourceData"
 Private Const TRANSLATIONS_TABLE_NAME As String = "Tab_Translations"
 Private Const REGISTRY_TABLE_NAME As String = "Tab_Registry"
 Private Const COUNTER_NAME As String = "_SetupTranslationsCounter"
+Private Const TAG_SEPARATOR As String = "__"
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
@@ -110,6 +111,25 @@ Fail:
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
+Public Sub TestLanguagesListsNonDefaultHeaders()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestLanguagesListsNonDefaultHeaders"
+    On Error GoTo Fail
+
+    Subject.EnsureLanguages "French;German"
+
+    Dim languages As BetterArray
+    Set languages = Subject.Languages
+
+    Assert.AreEqual CLng(2), languages.Length, "Languages should contain each non-default header"
+    Assert.AreEqual "French", CStr(languages.Item(languages.LowerBound)), "Languages should follow table column order"
+    Assert.AreEqual "German", CStr(languages.Item(languages.LowerBound + 1)), "Languages should include subsequent columns"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestLanguagesListsNonDefaultHeaders", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
 Public Sub TestUpdateFromRegistryAddsLabelsAndTags()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistryAddsLabelsAndTags"
     On Error GoTo Fail
@@ -117,11 +137,11 @@ Public Sub TestUpdateFromRegistryAddsLabelsAndTags()
     Subject.UpdateFromRegistry RegistrySheet, "French"
 
     Assert.AreEqual CLng(6), TranslationsTable.ListRows.Count, "Six unique labels expected after processing text and formula ranges"
-    Assert.AreEqual "RNG_Greetings--1", TagForLabel("Hello"), "Existing labels should reuse the helper column tag"
-    Assert.AreEqual "RNG_Greetings--1", TagForLabel("Good bye"), "Second entry from greetings range should be tagged accordingly"
-    Assert.AreEqual "RNG_Farewell--1", TagForLabel("Farewell"), "Farewell range should be imported on first execution even with status no"
-    Assert.AreEqual "RNG_Formula--1", TagForLabel("Morning"), "Formula text Morning should be extracted and tagged"
-    Assert.IsTrue WorkbookHasName(COUNTER_NAME), "Update sequence counter should be stored as a worksheet name"
+    Assert.AreEqual ExpectedTag("RNG_Greetings", 1), TagForLabel("Hello"), "Existing labels should reuse the helper column tag"
+    Assert.AreEqual ExpectedTag("RNG_Greetings", 1), TagForLabel("Good bye"), "Second entry from greetings range should be tagged accordingly"
+    Assert.AreEqual ExpectedTag("RNG_Farewell", 1), TagForLabel("Farewell"), "Farewell range should be imported on first execution even with status no"
+    Assert.AreEqual ExpectedTag("RNG_Formula", 1), TagForLabel("Morning"), "Formula text Morning should be extracted and tagged"
+    Assert.IsTrue HiddenCounterExists(), "Update sequence counter should be stored using the hidden names manager"
     Assert.AreEqual CLng(1), CounterValue(), "Counter should be incremented to one after first update"
     Exit Sub
 
@@ -140,7 +160,7 @@ Public Sub TestUpdateFromRegistrySkipsWhenStatusNo()
     Subject.UpdateFromRegistry RegistrySheet
 
     Assert.AreEqual CLng(6), TranslationsTable.ListRows.Count, "No additional rows should be created when statuses are no"
-    Assert.AreEqual "RNG_Greetings--2", TagForLabel("Hello"), "Existing label should update tag with the new sequence number"
+    Assert.AreEqual ExpectedTag("RNG_Greetings", 2), TagForLabel("Hello"), "Existing label should update tag with the new sequence number"
     Assert.AreEqual CLng(2), CounterValue(), "Counter must be incremented to two after the second update"
     Exit Sub
 
@@ -207,11 +227,67 @@ Public Sub TestUpdateFromRegistryDeletesMissingLabels()
 
     Assert.AreEqual CLng(5), TranslationsTable.ListRows.Count, "Removing a label from a processed range should delete the corresponding translation row"
     Assert.AreEqual vbNullString, TagForLabel("Good bye"), "Deleted labels should no longer be present in the translations table"
-    Assert.AreEqual "RNG_Greetings--2", TagForLabel("Hello"), "Existing labels must be retagged with the current update sequence"
+    Assert.AreEqual ExpectedTag("RNG_Greetings", 2), TagForLabel("Hello"), "Existing labels must be retagged with the current update sequence"
     Exit Sub
 
 Fail:
     CustomTestLogFailure Assert, "TestUpdateFromRegistryDeletesMissingLabels", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateFromRegistryMaintainsSortedOrderAfterCacheRebuild()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistryMaintainsSortedOrderAfterCacheRebuild"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet
+    SetRegistryStatus "yes", "yes", "yes"
+    SourceSheet.Range("A1").Value = "Apple"
+    SourceSheet.Range("B2").Value = "Zulu"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Dim labels As Variant
+    labels = TranslationsTable.ListColumns("English").DataBodyRange.Value
+
+    Assert.AreEqual CLng(6), TranslationsTable.ListRows.Count, "Cache rebuild should keep six translation rows populated"
+    Assert.AreEqual "Apple", CStr(labels(1, 1)), "First label should sort alphabetically after rebuild"
+    Assert.AreEqual "Evening", CStr(labels(2, 1)), "Formula tokens should remain in sorted order"
+    Assert.AreEqual "Farewell", CStr(labels(3, 1)), "Existing labels should remain sorted post-refresh"
+    Assert.AreEqual "Good bye", CStr(labels(4, 1)), "Greetings range should continue contributing labels"
+    Assert.AreEqual "Morning", CStr(labels(5, 1)), "Formula chunk order should be stable"
+    Assert.AreEqual "Zulu", CStr(labels(6, 1)), "Updated farewell range should sort to the bottom"
+    Assert.AreEqual ExpectedTag("RNG_Greetings", 2), TagForLabel("Apple"), "Updated greetings label should receive latest sequence tag"
+    Assert.AreEqual ExpectedTag("RNG_Farewell", 2), TagForLabel("Zulu"), "Farewell update should advance to the new sequence"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateFromRegistryMaintainsSortedOrderAfterCacheRebuild", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestUpdateFromRegistryProcessesSingleCellRegistryTable()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistryProcessesSingleCellRegistryTable"
+    On Error GoTo Fail
+
+    SourceSheet.Range("D1").Value = "Solo"
+    FixtureWorkbook.Names.Add Name:="RNG_Solo", RefersTo:=SourceSheet.Range("D1")
+
+    Dim singleMatrix As Variant
+    singleMatrix = TestHelpers.RowsToMatrix(Array(Array("rngname"), Array("RNG_Solo")))
+    TestHelpers.WriteMatrix RegistrySheet.Range("E1"), singleMatrix
+
+    Dim singleTable As ListObject
+    Set singleTable = RegistrySheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=RegistrySheet.Range("E1:E2"), XlListObjectHasHeaders:=xlYes)
+    singleTable.Name = "Tab_RegistrySingle"
+
+    Subject.UpdateFromRegistry RegistrySheet
+
+    Assert.AreEqual ExpectedTag("RNG_Solo", 1), TagForLabel("Solo"), "Single-cell registry watcher should process its named range"
+    Assert.AreEqual CLng(7), TranslationsTable.ListRows.Count, "New single-cell watcher should add an extra translation row"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestUpdateFromRegistryProcessesSingleCellRegistryTable", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
@@ -314,72 +390,30 @@ Private Function HasColumn(ByVal columnName As String) As Boolean
     Next column
 End Function
 
-Private Function WorkbookHasName(ByVal nameText As String) As Boolean
-    WorkbookHasName = Not (FindSheetName(RegistrySheet, nameText) Is Nothing)
+Private Function ExpectedTag(ByVal rangeName As String, ByVal sequenceNumber As Long) As String
+    ExpectedTag = rangeName & TAG_SEPARATOR & CStr(sequenceNumber)
 End Function
 
 Private Function CounterValue() As Long
-    Dim definedName As Name
-    Dim numericText As String
+    Dim store As IHiddenNames
 
-    Set definedName = FindSheetName(RegistrySheet, COUNTER_NAME)
-    If definedName Is Nothing Then Exit Function
+    Set store = HiddenCounterStore()
+    If store Is Nothing Then Exit Function
 
-    numericText = ExtractNameNumericText(definedName)
-    If LenB(numericText) = 0 Then Exit Function
-    If Not IsNumeric(numericText) Then Exit Function
-
-    CounterValue = CLng(numericText)
+    CounterValue = store.ValueAsLong(COUNTER_NAME, 0)
 End Function
 
-Private Function FindSheetName(ByVal targetSheet As Worksheet, ByVal expected As String) As Name
-    Dim definition As Name
+Private Function HiddenCounterExists() As Boolean
+    Dim store As IHiddenNames
 
+    Set store = HiddenCounterStore()
+    If store Is Nothing Then Exit Function
+
+    HiddenCounterExists = store.HasName(COUNTER_NAME)
+End Function
+
+Private Function HiddenCounterStore() As IHiddenNames
     On Error Resume Next
-        Set FindSheetName = targetSheet.Names(expected)
+        Set HiddenCounterStore = HiddenNames.Create(RegistrySheet)
     On Error GoTo 0
-
-    If Not FindSheetName Is Nothing Then Exit Function
-
-    For Each definition In targetSheet.Names
-        If StrComp(SimpleName(definition.Name), expected, vbTextCompare) = 0 Then
-            Set FindSheetName = definition
-            Exit Function
-        End If
-    Next definition
-End Function
-
-Private Function ExtractNameNumericText(ByVal definition As Name) As String
-    Dim refersTo As String
-
-    If definition Is Nothing Then Exit Function
-
-    On Error Resume Next
-        refersTo = Trim$(CStr(definition.RefersTo))
-    On Error GoTo 0
-
-    If LenB(refersTo) = 0 Then
-        On Error Resume Next
-            refersTo = Trim$(CStr(definition.Value))
-        On Error GoTo 0
-    End If
-
-    If LenB(refersTo) = 0 Then Exit Function
-
-    If Left$(refersTo, 1) = "=" Then
-        ExtractNameNumericText = Mid$(refersTo, 2)
-    Else
-        ExtractNameNumericText = refersTo
-    End If
-End Function
-
-Private Function SimpleName(ByVal qualifiedName As String) As String
-    Dim exclPos As Long
-
-    exclPos = InStr(qualifiedName, "!")
-    If exclPos = 0 Then
-        SimpleName = qualifiedName
-    Else
-        SimpleName = Mid$(qualifiedName, exclPos + 1)
-    End If
 End Function
