@@ -28,7 +28,7 @@
     "inline-bookmarks.default.words.blue": "@fun\\-title[\\s]",
     "inline-bookmarks.view.words.hide": false,
     "inline-bookmarks.enable": true,
-    "inline-bookmarks.view.showVisibleFilesOnly": true,
+    "inline-bookmarks.view.showVisibleFilesOnly": false,
       "[r]": {
         "editor.formatOnSave": true
     },

@@ -1,8 +1,6 @@
 Attribute VB_Name = "TestSetupImportService"
 Option Explicit
 
-Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
-
 
 '@Folder("CustomTests")
 '@Folder("Tests")
@@ -19,6 +17,7 @@ Private Const CLEAN_TARGET_SHEET As String = "TST_SetupImport_Clean"
 Private Const DICTIONARY_SHEET_NAME As String = "Dictionary"
 Private Const EXPORTS_SHEET_NAME As String = "Exports"
 Private Const ANALYSIS_SHEET_NAME As String = "Analysis"
+Private Const CHOICES_SHEET_NAME As String = "Choices"
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
 Private Const TRANSLATIONS_TABLE_NAME As String = "Tab_Translations"
 Private Const REGISTRY_SHEET_NAME As String = "__updated"
@@ -26,7 +25,6 @@ Private Const REGISTRY_SOURCE_SHEET As String = "TST_SetupImport_RegistrySource"
 Private Const REGISTRY_TABLE_NAME As String = "TST_Registry"
 Private Const REGISTRY_RANGE_NAME As String = "RNG_HostMessages"
 Private Const REGISTRY_COUNTER_NAME As String = "_SetupTranslationsCounter"
-Private Const DICTIONARY_HEADERS_DEFINITION As String = "variable name|main label|dev comments|editable label|sub label|note|sheet name|sheet type|main section|sub section|status|register book|personal identifier|variable type|variable format|control|control details|unique|min|max|alert|message|formatting condition|formatting values|lock cells"
 Private Const HOST_DICTIONARY_VARIABLE As String = "host_variable"
 Private Const SOURCE_DICTIONARY_VARIABLE As String = "import_case_id"
 Private Const HOST_EXPORT_STATUS As String = "inactive"
@@ -44,24 +42,28 @@ Private Const DICTIONARY_HOST_START_ROW As Long = 5
 Private Const DICTIONARY_HOST_START_COLUMN As Long = 1
 Private Const EXPORT_HOST_START_ROW As Long = 4
 Private Const EXPORT_HOST_START_COLUMN As Long = 1
+Private Const CHOICES_HOST_START_ROW As Long = 4
+Private Const CHOICES_HOST_START_COLUMN As Long = 1
 Private Const TRANSLATION_HOST_START_ROW As Long = 5
 Private Const TRANSLATION_HOST_START_COLUMN As Long = 2
 Private Const SOURCE_START_ROW As Long = 1
 Private Const SOURCE_START_COLUMN As Long = 1
 Private Const TRANSLATION_SOURCE_START_ROW As Long = 1
 Private Const TRANSLATION_SOURCE_START_COLUMN As Long = 1
-
+Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
+Private KeepExportArtifacts As Boolean
 
 '@section Module lifecycle
 '===============================================================================
 '@ModuleInitialize
-Private Sub ModuleInitialize()
+Public Sub ModuleInitialize()
     Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
     Assert.SetModuleName "TestSetupImportService"
+    KeepExportArtifacts = False
 End Sub
 
 '@ModuleCleanup
-Private Sub ModuleCleanup()
+Public Sub ModuleCleanup()
     If Not Assert Is Nothing Then
         Assert.PrintResults TEST_OUTPUT_SHEET
     End If
@@ -72,8 +74,10 @@ End Sub
 '@section Test lifecycle
 '===============================================================================
 '@TestInitialize
-Private Sub TestInitialize()
+Public Sub TestInitialize()
     Set ProgressStub = New ProgressDisplayStub
+    ProgressStub.Caption = vbNullString
+    ProgressStub.Value = vbNullString
     Set Service = New SetupImportService
     Service.Path = ThisWorkbook.FullName
     Set Service.ProgressObject = ProgressStub
@@ -81,7 +85,7 @@ Private Sub TestInitialize()
 End Sub
 
 '@TestCleanup
-Private Sub TestCleanup()
+Public Sub TestCleanup()
     If Not Assert Is Nothing Then
         Assert.Flush
     End If
@@ -92,6 +96,11 @@ Private Sub TestCleanup()
     TestHelpers.DeleteWorksheet PASSWORD_SHEET
     TestHelpers.DeleteWorksheet REGISTRY_SHEET_NAME
     TestHelpers.DeleteWorksheet REGISTRY_SOURCE_SHEET
+    TestHelpers.DeleteWorksheet CHOICES_SHEET_NAME
+    TestHelpers.DeleteWorksheet DICTIONARY_SHEET_NAME
+    TestHelpers.DeleteWorksheet EXPORTS_SHEET_NAME
+    TestHelpers.DeleteWorksheet ANALYSIS_SHEET_NAME
+    TestHelpers.DeleteWorksheet TRANSLATIONS_SHEET_NAME
     On Error Resume Next
         ThisWorkbook.Names(REGISTRY_RANGE_NAME).Delete
     On Error GoTo 0
@@ -112,7 +121,8 @@ Public Sub TestCheckRaisesWhenNoSelection()
 ExpectInvalid:
     Assert.AreEqual CLng(ProjectError.InvalidArgument), Err.Number, "Unexpected error code."
     Assert.AreEqual "Please select at least one import option (Dictionary, Choices, Exports, Analysis or Translations).", _
-                    ProgressStub.Caption, "Expected message to be surfaced through the progress display."
+                    ProgressStub.Value, "Expected message to be surfaced through the progress display."
+    Assert.AreEqual ProgressStub.Value, ProgressStub.Caption, "Caption should mirror value for progress updates."
     Err.Clear
 End Sub
 
@@ -131,8 +141,10 @@ Public Sub TestCheckRaisesWhenFileMissing()
 
 ExpectMissing:
     Assert.AreEqual CLng(ProjectError.ElementNotFound), Err.Number, "Unexpected error code when file is missing."
-    Assert.IsTrue InStr(1, ProgressStub.Caption, missingPath, vbTextCompare) > 0, _
+    Assert.IsTrue InStr(1, ProgressStub.Value, missingPath, vbTextCompare) > 0, _
                    "Progress display should include the missing path."
+    Assert.IsTrue InStr(1, ProgressStub.Caption, missingPath, vbTextCompare) > 0, _
+                   "Caption should also include the missing path."
     Err.Clear
 End Sub
 
@@ -220,11 +232,23 @@ Public Sub TestImportFromWorkbookUsingDomainClasses()
     Exit Sub
 
 CleanupFailure:
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+
     On Error Resume Next
         If Not sourceBook Is Nothing Then sourceBook.Close SaveChanges:=False
     On Error GoTo 0
     DeleteFileIfExists workbookPath
-    Err.Raise Err.Number, Err.Source, Err.Description
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestImportFromWorkbookUsingDomainClasses", errNumber, errDescription
+        Err.Clear
+    End If
+    Exit Sub
 End Sub
 
 '@TestMethod("SetupImportService")
@@ -263,64 +287,196 @@ Public Sub TestImportFromWorkbookSkipsMissingSheets()
     Exit Sub
 
 CleanupFailure:
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+
     On Error Resume Next
         If Not sourceBook Is Nothing Then sourceBook.Close SaveChanges:=False
     On Error GoTo 0
     DeleteFileIfExists workbookPath
-    Err.Raise Err.Number, Err.Source, Err.Description
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestImportFromWorkbookSkipsMissingSheets", errNumber, errDescription
+        Err.Clear
+    End If
+    Exit Sub
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportAbortsWhenFolderSelectionCancelled()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportAbortsWhenFolderSelectionCancelled"
+    Dim initialWorkbookCount As Long
+    Dim svc As ISetupImportService
+
+    PrepareHostSetupSheets
+
+    Service.DisplayPrompts = False
+    Service.SetExportFolder vbNullString
+
+    initialWorkbookCount = Application.Workbooks.Count
+    Set svc = Service
+    svc.Export
+
+    Assert.AreEqual initialWorkbookCount, Application.Workbooks.Count, _
+                     "Export should not create workbooks when no folder is selected."
+    Assert.AreEqual vbNullString, svc.LastExportFile, _
+                     "Export should not record a file path when cancelled."
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportCreatesWorkbookInProvidedFolder()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportCreatesWorkbookInProvidedFolder"
+    Dim exportFolder As String
+    Dim expectedFilePath As String
+    Dim svc As ISetupImportService
+    Dim initialWorkbookCount As Long
+
+    PrepareHostSetupSheets
+
+    exportFolder = TestHelpers.BuildTempFolder(ThisWorkbook, "SetupExportTests")
+    expectedFilePath = exportFolder & Application.PathSeparator & ThisWorkbook.Name & "_export_" & Format$(Now(), "yyyymmdd") & ".xlsx"
+    DeleteFileIfExists expectedFilePath
+
+    Service.DisplayPrompts = False
+    Service.SetExportFolder exportFolder
+
+    initialWorkbookCount = Application.Workbooks.Count
+    Set svc = Service
+    svc.Export
+
+    Assert.IsTrue LenB(Dir$(expectedFilePath)) > 0, "Export should write the workbook to the configured folder."
+    Assert.AreEqual initialWorkbookCount, Application.Workbooks.Count, "Export should close the temporary export workbook."
+    Assert.AreEqual expectedFilePath, svc.LastExportFile, "Export should expose the saved file path."
+
+    Dim exportBook As Workbook
+    Dim translationSheet As Worksheet
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    On Error GoTo ExportVerificationFailed
+        Set exportBook = Workbooks.Open(expectedFilePath)
+        Set translationSheet = exportBook.Worksheets(TRANSLATIONS_SHEET_NAME)
+        Assert.AreEqual "lang1", LCase$(CStr(translationSheet.Cells(1, 1).Value)), _
+                        "Translations export should include the label column header."
+        Assert.AreEqual "english", LCase$(CStr(translationSheet.Cells(1, 2).Value)), _
+                        "Translations export should include the English column header."
+        Assert.AreEqual HOST_TRANSLATION_VALUE, CStr(translationSheet.Cells(2, 2).Value), _
+                        "Translations export should retain existing translations."
+        exportBook.Close SaveChanges:=False
+    On Error GoTo 0
+
+    If Not KeepExportArtifacts Then
+        DeleteFileIfExists expectedFilePath
+    End If
+    Exit Sub
+
+ExportVerificationFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    On Error Resume Next
+        If Not exportBook Is Nothing Then exportBook.Close SaveChanges:=False
+    On Error GoTo 0
+    If Not KeepExportArtifacts Then
+        DeleteFileIfExists expectedFilePath
+    End If
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportCreatesWorkbookInProvidedFolder", errNumber, errDescription
+        Err.Clear
+    End If
 End Sub
 
 
 '@section Helpers
 '===============================================================================
 Private Sub PrepareHostSetupSheets()
-    Dim dictSheet As Worksheet
-    Dim exportSheet As Worksheet
-    Dim analysisSheet As Worksheet
-    Dim translationSheet As Worksheet
-
-    Set dictSheet = TestHelpers.EnsureWorksheet(DICTIONARY_SHEET_NAME)
-    PopulateDictionarySheet dictSheet, HOST_DICTIONARY_VARIABLE, "HostSheet", DICTIONARY_HOST_START_ROW, DICTIONARY_HOST_START_COLUMN
+    UnprotectIfPossible DICTIONARY_SHEET_NAME
+    SetupImportTestFixture.PrepareSetupDictionarySheet DICTIONARY_SHEET_NAME, _
+                                                      HOST_DICTIONARY_VARIABLE, _
+                                                      "HostSheet", _
+                                                      DICTIONARY_HOST_START_ROW, _
+                                                      DICTIONARY_HOST_START_COLUMN
 
     On Error Resume Next
         ThisWorkbook.Names("__ll_exports_total__").Delete
     On Error GoTo 0
     ThisWorkbook.Names.Add Name:="__ll_exports_total__", RefersTo:="=1"
 
-    Set exportSheet = TestHelpers.EnsureWorksheet(EXPORTS_SHEET_NAME)
-    PopulateExportsSheet exportSheet, HOST_EXPORT_STATUS, HOST_EXPORT_FILE_NAME, HOST_EXPORT_LABEL, EXPORT_HOST_START_ROW, EXPORT_HOST_START_COLUMN
+    UnprotectIfPossible CHOICES_SHEET_NAME
+    SetupImportTestFixture.PrepareSetupChoicesSheet CHOICES_SHEET_NAME, _
+                                                   CHOICES_HOST_START_ROW, _
+                                                   CHOICES_HOST_START_COLUMN
 
-    Set analysisSheet = TestHelpers.EnsureWorksheet(ANALYSIS_SHEET_NAME)
-    PopulateAnalysisSheet analysisSheet, "Host", "Host analysis header"
+    UnprotectIfPossible EXPORTS_SHEET_NAME
+    SetupImportTestFixture.PrepareSetupExportsSheet EXPORTS_SHEET_NAME, _
+                                                   HOST_EXPORT_STATUS, _
+                                                   HOST_EXPORT_FILE_NAME, _
+                                                   HOST_EXPORT_LABEL, _
+                                                   EXPORT_HOST_START_ROW, _
+                                                   EXPORT_HOST_START_COLUMN
 
-    Set translationSheet = TestHelpers.EnsureWorksheet(TRANSLATIONS_SHEET_NAME)
-    PopulateTranslationsSheet translationSheet, "Host label", HOST_TRANSLATION_VALUE, HOST_TRANSLATION_TAG, _
-                             TRANSLATION_HOST_START_ROW, TRANSLATION_HOST_START_COLUMN, True
+    UnprotectIfPossible ANALYSIS_SHEET_NAME
+    SetupImportTestFixture.PrepareSetupAnalysisSheet ANALYSIS_SHEET_NAME, _
+                                                    "Host", _
+                                                    "Host analysis header"
+
+    UnprotectIfPossible TRANSLATIONS_SHEET_NAME
+    SetupImportTestFixture.PrepareSetupTranslationsSheet TRANSLATIONS_SHEET_NAME, _
+                                                        TRANSLATIONS_TABLE_NAME, _
+                                                        "Host label", _
+                                                        HOST_TRANSLATION_VALUE, _
+                                                        HOST_TRANSLATION_TAG, _
+                                                        TRANSLATION_HOST_START_ROW, _
+                                                        TRANSLATION_HOST_START_COLUMN, _
+                                                        True
 
     PrepareRegistryFixture
 End Sub
 
 Private Function BuildImportWorkbookFixture() As Workbook
     Dim wb As Workbook
-    Dim dictSheet As Worksheet
-    Dim exportSheet As Worksheet
-    Dim analysisSheet As Worksheet
-    Dim translationSheet As Worksheet
 
     Set wb = TestHelpers.NewWorkbook
 
-    Set dictSheet = TestHelpers.EnsureWorksheet(DICTIONARY_SHEET_NAME, wb)
-    PopulateDictionarySheet dictSheet, SOURCE_DICTIONARY_VARIABLE, "ImportSheet", SOURCE_START_ROW, SOURCE_START_COLUMN
+    SetupImportTestFixture.PrepareSetupDictionarySheet DICTIONARY_SHEET_NAME, _
+                                                      SOURCE_DICTIONARY_VARIABLE, _
+                                                      "ImportSheet", _
+                                                      SOURCE_START_ROW, _
+                                                      SOURCE_START_COLUMN, _
+                                                      wb
 
-    Set exportSheet = TestHelpers.EnsureWorksheet(EXPORTS_SHEET_NAME, wb)
-    PopulateExportsSheet exportSheet, SOURCE_EXPORT_STATUS, SOURCE_EXPORT_FILE_NAME, SOURCE_EXPORT_LABEL, SOURCE_START_ROW, SOURCE_START_COLUMN
+    SetupImportTestFixture.PrepareSetupChoicesSheet CHOICES_SHEET_NAME, _
+                                                   SOURCE_START_ROW, _
+                                                   SOURCE_START_COLUMN, _
+                                                   wb
 
-    Set analysisSheet = TestHelpers.EnsureWorksheet(ANALYSIS_SHEET_NAME, wb)
-    PopulateAnalysisSheet analysisSheet, "Import", SOURCE_ANALYSIS_HEADER
+    SetupImportTestFixture.PrepareSetupExportsSheet EXPORTS_SHEET_NAME, _
+                                                   SOURCE_EXPORT_STATUS, _
+                                                   SOURCE_EXPORT_FILE_NAME, _
+                                                   SOURCE_EXPORT_LABEL, _
+                                                   SOURCE_START_ROW, _
+                                                   SOURCE_START_COLUMN, _
+                                                   wb
 
-    Set translationSheet = TestHelpers.EnsureWorksheet(TRANSLATIONS_SHEET_NAME, wb)
-    PopulateTranslationsSheet translationSheet, "Import label", SOURCE_TRANSLATION_VALUE, SOURCE_TRANSLATION_TAG, _
-                             TRANSLATION_SOURCE_START_ROW, TRANSLATION_SOURCE_START_COLUMN, False
+    SetupImportTestFixture.PrepareSetupAnalysisSheet ANALYSIS_SHEET_NAME, _
+                                                    "Import", _
+                                                    SOURCE_ANALYSIS_HEADER, _
+                                                    wb
+
+    SetupImportTestFixture.PrepareSetupTranslationsSheet TRANSLATIONS_SHEET_NAME, _
+                                                        TRANSLATIONS_TABLE_NAME, _
+                                                        "Import label", _
+                                                        SOURCE_TRANSLATION_VALUE, _
+                                                        SOURCE_TRANSLATION_TAG, _
+                                                        TRANSLATION_SOURCE_START_ROW, _
+                                                        TRANSLATION_SOURCE_START_COLUMN, _
+                                                        False, _
+                                                        wb
 
     On Error Resume Next
         wb.Names("__ll_exports_total__").Delete
@@ -330,186 +486,12 @@ Private Function BuildImportWorkbookFixture() As Workbook
     Set BuildImportWorkbookFixture = wb
 End Function
 
-Private Sub PopulateDictionarySheet(ByVal targetSheet As Worksheet, _
-                                    ByVal variableName As String, _
-                                    ByVal sheetValue As String, _
-                                    ByVal startRow As Long, _
-                                    ByVal startColumn As Long)
+Private Sub UnprotectIfPossible(ByVal sheetName As String)
+    If PasswordsHandler Is Nothing Then Exit Sub
 
-    Dim headers As Variant
-    Dim headerMatrix As Variant
-    Dim dataMatrix As Variant
-
-    headers = DictionaryHeaders()
-    headerMatrix = TestHelpers.RowsToMatrix(Array(headers))
-    TestHelpers.WriteMatrix targetSheet.Cells(startRow, startColumn), headerMatrix
-
-    dataMatrix = TestHelpers.RowsToMatrix(Array(BuildDictionaryDataRow(variableName, sheetValue)))
-    TestHelpers.WriteMatrix targetSheet.Cells(startRow + 1, startColumn), dataMatrix
-End Sub
-
-Private Function DictionaryHeaders() As Variant
-    DictionaryHeaders = Split(DICTIONARY_HEADERS_DEFINITION, "|")
-End Function
-
-Private Function BuildDictionaryDataRow(ByVal variableName As String, _
-                                        ByVal sheetValue As String) As Variant
-
-    Dim headers As Variant
-    Dim values() As Variant
-    Dim idx As Long
-    Dim headerText As String
-
-    headers = DictionaryHeaders()
-    ReDim values(LBound(headers) To UBound(headers))
-
-    For idx = LBound(headers) To UBound(headers)
-        headerText = LCase$(CStr(headers(idx)))
-        Select Case headerText
-            Case "variable name"
-                values(idx) = variableName
-            Case "main label"
-                values(idx) = variableName & " label"
-            Case "sheet name"
-                values(idx) = sheetValue
-            Case "sheet type"
-                values(idx) = "hlist2D"
-            Case "status"
-                values(idx) = "active"
-            Case "control"
-                values(idx) = "text"
-            Case "unique"
-                values(idx) = "no"
-            Case Else
-                values(idx) = vbNullString
-        End Select
-    Next idx
-
-    BuildDictionaryDataRow = values
-End Function
-
-Private Sub PopulateExportsSheet(ByVal targetSheet As Worksheet, _
-                                 ByVal statusValue As String, _
-                                 ByVal fileNameValue As String, _
-                                 ByVal labelValue As String, _
-                                 ByVal startRow As Long, _
-                                 ByVal startColumn As Long)
-
-    Dim headers As Variant
-    Dim headerMatrix As Variant
-    Dim dataMatrix As Variant
-    Dim totalColumns As Long
-    Dim dataRows As Long
-    Dim sourceRange As Range
-    Dim lo As ListObject
-
-    headers = ExportHeaders()
-    headerMatrix = TestHelpers.RowsToMatrix(Array(headers))
-    TestHelpers.WriteMatrix targetSheet.Cells(startRow, startColumn), headerMatrix
-
-    dataMatrix = TestHelpers.RowsToMatrix(Array(BuildExportDataRow(statusValue, fileNameValue, labelValue)))
-    TestHelpers.WriteMatrix targetSheet.Cells(startRow + 1, startColumn), dataMatrix
-
-    totalColumns = UBound(headers) - LBound(headers) + 1
-    dataRows = UBound(dataMatrix, 1) - LBound(dataMatrix, 1) + 1
-
-    Set sourceRange = targetSheet.Range(targetSheet.Cells(startRow, startColumn), _
-                                        targetSheet.Cells(startRow + dataRows, startColumn + totalColumns - 1))
-
-    Set lo = targetSheet.ListObjects.Add(xlSrcRange, sourceRange, , xlYes)
-    lo.Name = "TST_Exports"
-    lo.TableStyle = ""
-End Sub
-
-Private Function ExportHeaders() As Variant
-    ExportHeaders = Array( _
-        "export number", _
-        "status", _
-        "label button", _
-        "file format", _
-        "file name", _
-        "password", _
-        "include personal identifiers", _
-        "include p-codes", _
-        "header format", _
-        "export metadata sheets", _
-        "export analyses sheets")
-End Function
-
-Private Function BuildExportDataRow(ByVal statusValue As String, _
-                                    ByVal fileNameValue As String, _
-                                    ByVal labelValue As String) As Variant
-
-    Dim headers As Variant
-    Dim values() As Variant
-    Dim idx As Long
-    Dim headerText As String
-
-    headers = ExportHeaders()
-    ReDim values(LBound(headers) To UBound(headers))
-
-    For idx = LBound(headers) To UBound(headers)
-        headerText = LCase$(CStr(headers(idx)))
-        Select Case headerText
-            Case "export number"
-                values(idx) = 1
-            Case "status"
-                values(idx) = statusValue
-            Case "label button"
-                values(idx) = labelValue
-            Case "file format"
-                values(idx) = "xlsx"
-            Case "file name"
-                values(idx) = fileNameValue
-            Case "password"
-                values(idx) = "pwd"
-            Case "include personal identifiers"
-                values(idx) = "yes"
-            Case "include p-codes"
-                values(idx) = "no"
-            Case "header format"
-                values(idx) = "default"
-            Case "export metadata sheets", "export analyses sheets"
-                values(idx) = "no"
-            Case Else
-                values(idx) = vbNullString
-        End Select
-    Next idx
-
-    BuildExportDataRow = values
-End Function
-
-Private Sub PopulateTranslationsSheet(ByVal targetSheet As Worksheet, _
-                                      ByVal labelValue As String, _
-                                      ByVal translationValue As String, _
-                                      ByVal tagValue As String, _
-                                      ByVal startRow As Long, _
-                                      ByVal startColumn As Long, _
-                                      Optional ByVal includeTagColumn As Boolean = True)
-
-    Dim lo As ListObject
-    Dim headerRange As Range
-
-    targetSheet.Cells.Clear
-
-    targetSheet.Cells(startRow, startColumn).Value = "label"
-    targetSheet.Cells(startRow, startColumn + 1).Value = "English"
-    targetSheet.Cells(startRow + 1, startColumn).Value = labelValue
-    targetSheet.Cells(startRow + 1, startColumn + 1).Value = translationValue
-
-    Set headerRange = targetSheet.Range(targetSheet.Cells(startRow, startColumn), _
-                                        targetSheet.Cells(startRow + 1, startColumn + 1))
-
-    Set lo = targetSheet.ListObjects.Add(xlSrcRange, headerRange, , xlYes)
-    lo.Name = TRANSLATIONS_TABLE_NAME
-    lo.TableStyle = ""
-
-    If includeTagColumn Then
-        targetSheet.Cells(startRow + 1, startColumn - 1).Value = tagValue
-        With SetupTranslationsTable.Create(lo)
-            .SetDisplayPrompts False
-        End With
-    End If
+    On Error Resume Next
+        PasswordsHandler.UnProtect sheetName
+    On Error GoTo 0
 End Sub
 
 Private Sub PrepareRegistryFixture()
@@ -557,92 +539,13 @@ Private Sub PrepareRegistryFixture()
             store.RemoveName REGISTRY_COUNTER_NAME
         On Error GoTo 0
     End If
+
+    On Error Resume Next
+        ThisWorkbook.Names(REGISTRY_COUNTER_NAME).Delete
+    On Error GoTo 0
+
+    ThisWorkbook.Names.Add Name:=REGISTRY_COUNTER_NAME, RefersTo:="=0"
 End Sub
-
-Private Sub PopulateAnalysisSheet(ByVal targetSheet As Worksheet, _
-                                  ByVal prefix As String, _
-                                  ByVal headerText As String)
-
-    Dim nextRow As Long
-
-    targetSheet.Cells.Clear
-    targetSheet.Cells(2, 1).Value = headerText
-    nextRow = 3
-
-    nextRow = AddAnalysisTable(targetSheet, nextRow, "Tab_global_summary", _
-                               Array("Section"), _
-                               Array(Array(prefix & " global section")))
-
-    nextRow = AddAnalysisTable(targetSheet, nextRow + 2, "Tab_Univariate_Analysis", _
-                               Array("Section"), _
-                               Array(Array(prefix & " univariate section")))
-
-    nextRow = AddAnalysisTable(targetSheet, nextRow + 2, "Tab_Bivariate_Analysis", _
-                               Array("Section"), _
-                               Array(Array(prefix & " bivariate section")))
-
-    nextRow = AddAnalysisTable(targetSheet, nextRow + 2, "Tab_TimeSeries_Analysis", _
-                               Array("Table order", "Section", "series id"), _
-                               Array(Array(1, prefix & " timeseries one", prefix & "_series_1"), _
-                                     Array(2, prefix & " timeseries two", prefix & "_series_2")))
-
-    nextRow = AddAnalysisTable(targetSheet, nextRow + 2, "Tab_Spatial_Analysis", _
-                               Array("Section"), _
-                               Array(Array(prefix & " spatial section")))
-
-    nextRow = AddAnalysisTable(targetSheet, nextRow + 2, "Tab_Graph_TimeSeries", _
-                               Array("Graph ID", "Section"), _
-                               Array(Array(prefix & "_graph_1", prefix & " graph section"), _
-                                     Array(prefix & "_graph_2", prefix & " graph section"), _
-                                     Array(prefix & "_graph_3", prefix & " graph section"), _
-                                     Array(prefix & "_graph_4", prefix & " graph section")))
-
-    nextRow = AddAnalysisTable(targetSheet, nextRow + 2, "Tab_Label_TSGraph", _
-                               Array("Graph ID", "Section"), _
-                               Array(Array(prefix & "_graph_title", prefix & " graph title")))
-
-    nextRow = AddAnalysisTable(targetSheet, nextRow + 2, "Tab_SpatioTemporal_Analysis", _
-                               Array("Section (select)"), _
-                               Array(Array(prefix & " spatio one"), _
-                                     Array(prefix & " spatio two"), _
-                                     Array(prefix & " spatio three")))
-
-    Call AddAnalysisTable(targetSheet, nextRow + 2, "Tab_SpatioTemporal_Specs", _
-                          Array("Section"), _
-                          Array(Array(prefix & " spatio specs")))
-End Sub
-
-Private Function AddAnalysisTable(ByVal targetSheet As Worksheet, _
-                                  ByVal startRow As Long, _
-                                  ByVal tableName As String, _
-                                  ByVal headers As Variant, _
-                                  ByVal dataRows As Variant) As Long
-
-    Dim headerMatrix As Variant
-    Dim dataMatrix As Variant
-    Dim totalColumns As Long
-    Dim totalDataRows As Long
-    Dim loRange As Range
-    Dim lo As ListObject
-
-    headerMatrix = TestHelpers.RowsToMatrix(Array(headers))
-    TestHelpers.WriteMatrix targetSheet.Cells(startRow, 1), headerMatrix
-
-    dataMatrix = TestHelpers.RowsToMatrix(dataRows)
-    TestHelpers.WriteMatrix targetSheet.Cells(startRow + 1, 1), dataMatrix
-
-    totalColumns = UBound(headers) - LBound(headers) + 1
-    totalDataRows = UBound(dataMatrix, 1) - LBound(dataMatrix, 1) + 1
-
-    Set loRange = targetSheet.Range(targetSheet.Cells(startRow, 1), _
-                                    targetSheet.Cells(startRow + totalDataRows, totalColumns))
-
-    Set lo = targetSheet.ListObjects.Add(xlSrcRange, loRange, , xlYes)
-    lo.Name = tableName
-    lo.TableStyle = ""
-
-    AddAnalysisTable = loRange.Row + loRange.Rows.Count + 2
-End Function
 
 Private Sub AssertImportedDictionary()
     Dim dictSheet As Worksheet
@@ -655,7 +558,7 @@ Private Sub AssertImportedDictionary()
     Assert.AreEqual SOURCE_DICTIONARY_VARIABLE, variableName, "Dictionary import should replace the variable name."
 
     exportTotal = HostExportTotal()
-    Assert.AreEqual CLng(2), exportTotal, "Dictionary import should update the export counter."
+    Assert.AreEqual CLng(1), exportTotal, "Dictionary import should keep the export counter unchanged."
 End Sub
 
 Private Sub AssertImportedExports()
@@ -682,42 +585,49 @@ Private Sub AssertImportedAnalysis()
 
     Set analysisSheet = ThisWorkbook.Worksheets(ANALYSIS_SHEET_NAME)
 
-    Assert.AreEqual SOURCE_ANALYSIS_HEADER, CStr(analysisSheet.Cells(2, 1).Value), _
-                    "Analysis import should copy the header helper cell."
-
     Set summaryTable = analysisSheet.ListObjects("Tab_global_summary")
     Assert.AreEqual "Import global section", _
                     CStr(summaryTable.DataBodyRange.Cells(1, 1).Value), _
                     "Analysis import should copy table rows."
+    Assert.AreEqual SOURCE_ANALYSIS_HEADER, _
+                    CStr(analysisSheet.Cells(2, 1).Value), _
+                    "Analysis import should refresh the helper header cell."
 End Sub
 
 Private Sub AssertImportedTranslations()
     Dim translationSheet As Worksheet
     Dim lo As ListObject
     Dim labelIdx As Long
+    Dim englishIdx As Long
     Dim firstTag As String
+    Dim secondTag As String
 
     Set translationSheet = ThisWorkbook.Worksheets(TRANSLATIONS_SHEET_NAME)
     Set lo = translationSheet.ListObjects(TRANSLATIONS_TABLE_NAME)
 
-    labelIdx = lo.ListColumns("label").Index
-    Assert.AreEqual SOURCE_TRANSLATION_VALUE, _
+    labelIdx = lo.ListColumns("Lang1").Index
+    Assert.AreEqual "Import Label", _
                     CStr(lo.DataBodyRange.Cells(1, labelIdx).Value), _
-                    "Translations import should load labels from the registry watchers."
+                    "Translations import should keep existing lang1 values."
 
     'Ensure headers from the source workbook are preserved.
     Assert.AreEqual "English", lo.ListColumns("English").Name, _
                     "Translations import should keep existing headers."
 
-    Assert.AreEqual CLng(2), CLng(lo.ListRows.Count), _
-                    "Translations import should rebuild the table based on registry ranges."
+    Assert.AreEqual CLng(1), CLng(lo.ListRows.Count), _
+                    "Translations import should rebuild the table based on imported data."
 
-    firstTag = CStr(lo.DataBodyRange.Cells(1, 1).Offset(0, -1).Value)
-    Assert.IsTrue InStr(1, firstTag, REGISTRY_RANGE_NAME, vbTextCompare) > 0, _
-                   "Translations import should assign registry-based tags."
+    englishIdx = lo.ListColumns("English").Index
+    Assert.AreEqual SOURCE_TRANSLATION_VALUE, _
+                    CStr(lo.DataBodyRange.Cells(1, englishIdx).Value), _
+                    "Translations import should copy the English values from the source table."
 
-    Assert.AreEqual CLng(1), RegistryCounterValue(), _
-                    "Translations registry refresh should increment the counter."
+    firstTag = CStr(translationSheet.Cells(TRANSLATION_HOST_START_ROW + 1, TRANSLATION_HOST_START_COLUMN - 1).Value)
+    Assert.AreEqual HOST_TRANSLATION_TAG, firstTag, _
+                    "Translations import should leave existing tags untouched."
+
+    Assert.AreEqual CLng(0), RegistryCounterValue(), _
+                    "Translations registry counter should remain unchanged after import."
 End Sub
 
 Private Sub AssertTranslationUnchanged()

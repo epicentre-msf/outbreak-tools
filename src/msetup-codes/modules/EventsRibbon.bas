@@ -309,8 +309,6 @@ Attribute clickAddTrans.VB_Description = "Callback for btnTransAdd onAction: Imp
     tradchk.UpdateTrans upsh
     pass.Protect TRADSHEETNAME
 
-    'Set all updates to no (this sub is in the EventsGlobal module)
-    EventsGlobal.SetAllUpdatedTo "no"
     NotBusyApp
     Application.Cursor = xlDefault
     Exit Sub

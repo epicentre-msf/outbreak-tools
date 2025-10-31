@@ -30,19 +30,13 @@ required VBA syntax.
 22. ALWAYS add failure management for tests.
 
 **Progress**
-- [DONE] Synced `LLdictionary` total export tracking with hidden sheet name storage and interface setter support.
-- [DONE] Added regression tests in `TestLLdictionary.bas` covering setter persistence, import, and export of the total export counter.
-- [DONE] Hardened `LLExport` dictionary coordination and caching, plus added regression coverage for dictionary-optional row management.
-- [DONE] Exposed `LLExport.SyncDictionaryExports` via `ILLExport` with regression tests for optional dictionary usage.
-- [DONE] Expanded `ApplicationState` tests to cover event suppression and CalculateBeforeSave round-trips.
-- [DONE] Hardened `LLChoices` edge handling (missing categories and translation guards) with regression coverage.
-- [DONE] Implemented setup ribbon manage group callbacks (filters, sorting, table row/column helpers).
-- [DONE] Introduced `HiddenNames` worksheet name manager with `LLExport` integration and regression tests in `TestHiddenNames.bas`.
-- [DONE] Integrated hidden tag column directly into `SetupTranslationsTable` update flow, keeping tag styling stealth and auto-resizing post-refresh.
-- [DONE] Optimised `SetupTranslationsTable` registry updates with binary-search label caching and bulk Variant processing for translation sources.
-- [DONE] Corrected `SetupTranslationsTable` label cache sort column handling to prevent subscript errors when BetterArray rebases stored entries.
-- [DONE] Added regression tests for `SetupTranslationsTable` covering cache rebuild sorting and single-cell registry processing.
-- [DONE] Implemented setup ribbon translation switcher with language picker and multi-sheet translation orchestration.
-- [DONE] Refactored `LLdictionary` export counter persistence to use `HiddenNames`, keeping export name definitions in sync.
-- [DONE] Added `Passwords.NewDebugingPassword` and default password propagation during deployment.
-- [DONE] Added workbook-driven import workflow in `SetupImportService` using domain classes with regression coverage.
+- [DONE] Expanded SetupErrors tests to cover dictionary, choices, and exports error constants.
+- [DONE] Added SetupErrors test coverage for factory argument validation and busy state restoration on failure.
+- [DONE] Reworked SetupErrors tests to use worksheet fixtures and assert dictionary/choices inconsistencies end-to-end.
+- [DONE] Modernized UpdatedValues with optional identifiers, sheet-wide registration helpers, targeted removal, and refreshed tests.
+- [DONE] Restored UpdatedValues helper stack to initialise identifiers and registry names consistently.
+- [DONE] Reworked UpdatedValues to maintain per-table registries, prevent cross-table pruning, and expanded tests for multi-table coverage.
+- [DONE] Added structured failure logging to TestUpdatedValues to meet test failure management requirements.
+- [DONE] Simplified UpdatedValues registry naming to table+sheet keys, centralised name index tracking, introduced targeted CheckUpdate tags, and aligned tests with the new workflow.
+- [DONE] Extracted EventSetup workbook orchestration into a dedicated class/interface pair with supporting tests and workbook delegates.
+- [DONE] Consolidated EventSetup analysis caching and sheet unlock helpers to cut duplication and tighten Worksheet_Change execution paths.

@@ -82,6 +82,10 @@ Public Sub clickDevImport(ByRef control As IRibbonControl)
     MsgBox "Import Done!"
     Exit Sub
 
+    If Not gRibbon Is Nothing Then
+        gRibbon.InvalidateControl "DevGroupVisible"
+    End If
+
 Handler:
     MsgBox "Import failed: " & Err.Description, vbCritical + vbOKOnly, PROMPT_TITLE
     Err.Clear
@@ -117,6 +121,7 @@ End Sub
 '@Description("Deploy workbook protections and hide Dev artefacts")
 Public Sub clickDevDeploy(ByRef control As IRibbonControl)
     Dim manager As IDevelopment
+    
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
@@ -131,6 +136,7 @@ Public Sub clickDevDeploy(ByRef control As IRibbonControl)
 
     On Error GoTo Handler
     manager.Deploy pass
+    
     
     Exit Sub
 
@@ -362,6 +368,7 @@ Cleanup:
         Err.Clear
     End If
 End Sub
+
 
 
 Private Sub PrepareTheSetup()

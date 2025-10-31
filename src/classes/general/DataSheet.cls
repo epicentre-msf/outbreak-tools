@@ -640,8 +640,6 @@ Private Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumns
     For counter = FORMATCOLUMNS.LowerBound To FORMATCOLUMNS.UpperBound
         
         colName = FORMATCOLUMNS.Item(counter)
-
-        Debug.Print "Applying format for column " & colName
         
         Set actRng = DataRange(colName, matchCase:=matchColumnsCase)
 

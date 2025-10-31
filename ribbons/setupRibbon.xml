@@ -19,7 +19,7 @@
         </group>
         <group id="customGroupImport">
           <button id="btnImp" label="Import data from another setup" image="import" size="large" onAction="clickImport"/>
-          <button id="btnImpExp" label="Import from disease" image="importdisease" size="large" onAction="clickImportDisease"/>
+          <button id="btnImpExp" label="Import from migration" image="importdisease" size="large" onAction="clickImportFile"/>
           <button id="btnExport"  label = "Export" image="download" size="large" onAction="clickExport"/>
         </group>
         <group id="customGroupAdvanced">

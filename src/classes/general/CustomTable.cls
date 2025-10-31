@@ -584,7 +584,7 @@ Private Sub AddShiftTracker(Optional ByVal value As String = "Yes")
   If value = "Yes" Then this.hasShiftSetup = True
 
   If Not store.HasName(TAG_INSERT_SHIFT_USED) Then
-    Call store.EnsureName(TAG_INSERT_SHIFT_USED, value, HiddenNameTypeString)
+    store.EnsureName TAG_INSERT_SHIFT_USED, value, HiddenNameTypeString
   Else
     store.SetValue TAG_INSERT_SHIFT_USED, value
   End If
@@ -1628,6 +1628,12 @@ End Property
 Private Property Get ICustomTable_Value(ByVal colName As String, _ 
                                         ByVal keyName As String) As String
   ICustomTable_Value = Value(colName, keyName)
+End Property
+
+Private Property Get ICustomTable_ValueRange(ByVal colName As String, _ 
+                                             ByVal keyName As String) As Range
+
+    Set ICustomTable_ValueRange = ValueRange(colName, keyName)
 End Property
 
 '@jump:modify
