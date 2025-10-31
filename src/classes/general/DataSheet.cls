@@ -429,15 +429,13 @@ Private Function FilterData(ByVal varName As String, _
     With sh
         If Not .AutoFilter Is Nothing Then .AutoFilter.ShowAllData
 
-        With dataRng
-            .AutoFilter Field:=ColumnIndex(varName, inDataRange:=True, shouldExist:=True, matchCase:=matchCase), Criteria1:=criteriaName
-        End With
+        dataRng.AutoFilter Field:=ColumnIndex(varName, inDataRange:=True, shouldExist:=True, matchCase:=matchCase), Criteria1:=criteriaName
 
         On Error Resume Next
         Set returnedRng = .Range(.Cells(startRetRow, startRetColIndex), .Cells(EndRow, endRetColIndex)).SpecialCells(xlCellTypeVisible)
-        On Error GoTo 0
-
         .AutoFilter.ShowAllData
+        dataRng.AutoFilter.ShowAllData
+        On Error GoTo 0
 
         If Not returnedRng Is Nothing Then
             returnedRng.Copy .Cells(DataStartRow(), endCol + 2)
@@ -530,7 +528,10 @@ Private Function FiltersData(ByVal varData As BetterArray, _
             Col = Col + 1
         Next
 
+        On Error Resume Next
         .AutoFilter.ShowAllData
+        dataRng.AutoFilter.ShowAllData
+        On Error GoTo 0
 
         'end row and end columns of data to return
         retEndRow = .Cells(.Rows.Count, endCol + 2).End(xlUp).Row
