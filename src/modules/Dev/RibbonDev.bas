@@ -26,17 +26,6 @@ End Function
 
 '@section Ribbon callbacks
 '===============================================================================
-'@EntryPoint
-'@Description("Initialise development environment - logic provided by consuming workbook")
-Public Sub clickDevInitialize(ByRef control As IRibbonControl)
-    If InStr(1, ThisWorkbook.Name, "setup") = 1 Then
-        PrepareTheSetup
-    ElseIf InStr(1, ThisWorkbook.Name, "master") = 1  Then
-        PrepareTheMasterSetup
-    ElseIf InStr(1, ThisWorkbook.Name, "designer") = 1 Then
-        PrepareTheDesigner
-    End If
-End Sub
 
 '@EntryPoint
 '@Description("Select root code folder and populate Dev named ranges")
@@ -136,7 +125,6 @@ Public Sub clickDevDeploy(ByRef control As IRibbonControl)
 
     On Error GoTo Handler
     manager.Deploy pass
-    
     
     Exit Sub
 
@@ -241,12 +229,14 @@ Handler:
     Err.Clear
 End Sub
 
-Public Sub DevGroupVisible(control As IRibbonControl, ByRef returnedVal As Boolean)
-    If control.Id = "customGroupDev" Then
+Public Sub DevGroupVisible(control As IRibbonControl, ByRef returnedVal)
+    If (control.Id = "customGroupDev") Then
         Dim manager As IDevelopment        
-        manager = EnsureDevelopment()
+        Set manager = EnsureDevelopment()
         If manager Is Nothing Then Exit Sub
-        returnedVal = manager.InDeployment()
+        returnedVal = CBool(Not manager.InDeployment())
+    Else
+        returnedVal = True
     End If
 End Sub
 
@@ -367,18 +357,4 @@ Cleanup:
         MsgBox "Unable to update tables: " & Err.Description, vbCritical + vbOKOnly, PROMPT_TITLE
         Err.Clear
     End If
-End Sub
-
-
-
-Private Sub PrepareTheSetup()
-
-End Sub
-
-Private Sub PrepareTheDesigner()
-
-End Sub
-
-Private Sub PrepareTheMasterSetup()
-
 End Sub

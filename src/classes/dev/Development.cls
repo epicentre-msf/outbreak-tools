@@ -1022,8 +1022,10 @@ Private Sub ApplyLoFormat(ByVal Lo As Listobject)
     Lo.DataBodyRange.ClearContents
     Lo.TableStyle = "TableStyleLight11"
     Lo.HeaderRowRange.Interior.Color = RGB(11, 48, 64)
-    Lo.HeaderRowRange.Cells(0, 1).Font.Color = RGB(188, 141, 116)
-    Lo.HeaderRowRange.Cells(-1, 1).Font.Color = RGB(188, 141, 116)
+    Lo.HeaderRowRange.Cells(0, 1).Font.Color = RGB(56, 37, 35)
+    Lo.HeaderRowRange.Cells(-1, 1).Font.Color = RGB(56, 37, 35)
+     Lo.HeaderRowRange.Cells(0, 1).HorizontalAlignment = xlHAlignCenter
+    Lo.HeaderRowRange.Cells(-1, 1).HorizontalAlignment = xlHAlignCenter
     Lo.HeaderRowRange.Font.Color = vbWhite
     Lo.HeaderRowRange.Font.Bold = True
     Lo.HeaderRowRange.EntireColumn.AutoFit
@@ -1273,17 +1275,7 @@ End Function
 
 '@Description("Return the string value stored in a name definition.")
 Private Function NameStringValue(ByVal definition As Name) As String
-    Dim targetRange As Range
-
-    On Error Resume Next
-        Set targetRange = definition.RefersToRange
-    On Error GoTo 0
-
-    If Not targetRange Is Nothing Then
-        NameStringValue = CStr(targetRange.Value)
-    Else
-        NameStringValue = DecodeNameValue(definition.RefersTo)
-    End If
+    NameStringValue = DecodeNameValue(definition.Value)
 End Function
 
 '@Description("Encode plain text as a quoted formula suitable for Name.RefersTo.")
