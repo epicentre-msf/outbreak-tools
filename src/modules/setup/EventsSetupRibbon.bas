@@ -224,6 +224,7 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
     Dim app As IApplicationState
     Dim sheetUnlocked As Boolean
     Dim success As Boolean
+    Dim upVal As IUpdatedValues
 
     answer = MsgBox("Do you want to update the translation sheet?", vbYesNo + vbQuestion, "Confirm")
     If answer <> vbYes Then Exit Sub
@@ -258,7 +259,8 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
     SetupHelpers.ProtectSetupSheet TRADSHEETNAME
     sheetUnlocked = False
 
-    EventsGlobal.SetAllUpdatedTo "no"
+    Set upVal = SetupHelpers.ResolveUpdatedValues()
+    upVal.SwitchTagsToNo
     success = True
 
 Cleanup:
@@ -359,6 +361,119 @@ InvalidSelection:
     MsgBox "Invalid selection.", vbExclamation
 End Function
 
+
+'@section Import and Export management
+'===============================================================================
+
+'@Description("Callback for btnExport onAction: export the current setup to a workbook")
+'@EntryPoint
+Public Sub clickExport(ByRef control As IRibbonControl)
+    Dim service As ISetupImportService
+    Dim exportPath As String
+
+    On Error GoTo Handler
+
+    Set service = SetupImportService.Create(ThisWorkbook.FullName)
+    service.Export
+
+    exportPath = service.LastExportFile
+    If LenB(exportPath) > 0 Then
+        MsgBox "Setup exported to:" & vbCrLf & exportPath, vbInformation
+    End If
+    Exit Sub
+
+Handler:
+    Debug.Print "clickExport: "; Err.Number; Err.Description
+    MsgBox "Failed to export the setup: " & Err.Description, vbCritical
+End Sub
+
+'@Description("Callback for btnImp onAction: import setup content from another setup workbook")
+'@EntryPoint
+Public Sub clickImport(ByRef control As IRibbonControl)
+    SetupHelpers.PrepareImportsForm cleanSetup:=False
+    [Imports].Show
+End Sub
+
+
+'@Description("Callback for btnImp onAction: import setup content from another setup workbook")
+'@EntryPoint
+Public Sub clickClearSetup(ByRef control As IRibbonControl)
+    SetupHelpers.PrepareImportsForm cleanSetup:=True
+    [Imports].Show
+End Sub
+
+'@Description("Callback for btnImpExp onAction: import setup elements from a workbook using table mode")
+'@EntryPoint
+Public Sub clickImportFile(ByRef control As IRibbonControl)
+    Const SUCCESS_MESSAGE As String = "Workbook import completed."
+
+    Dim importPath As String
+    Dim service As ISetupImportService
+    Dim pass As IPasswords
+    Dim app As IApplicationState
+    Dim sheets As BetterArray
+    Dim success As Boolean
+
+    On Error GoTo Handler
+
+    importPath = SetupHelpers.SelectSetupImportPath("*.xlsx")
+    If LenB(importPath) = 0 Then Exit Sub
+
+    Set service = SetupImportService.Create(importPath)
+    Set pass = SetupHelpers.ResolveSetupPasswords()
+    Set sheets = SetupHelpers.DefaultSetupSheets()
+    Set app = ApplicationState.Create(Application)
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    service.Check True, True, True, True, True
+
+    service.ImportFromWorkbook pass, sheets
+    success = True
+
+Cleanup:
+    If Not app Is Nothing Then app.Restore
+    If success Then
+        SetupHelpers.PostImportMaintenance SUCCESS_MESSAGE
+    End If
+    Exit Sub
+
+Handler:
+    Debug.Print "clickImportFile: "; Err.Number; Err.Description
+    success = False
+    MsgBox "Failed to import workbook data: " & Err.Description, vbCritical
+    Resume Cleanup
+End Sub
+
+Public Sub clickCheck(ByRef control As IRibbonControl)
+    SetupHelpers.CheckTheSetup
+End Sub
+
+'@section Formatter
+'===============================================================================
+Public  Sub clickEditStyle(ByRef control As IRibbonControl)
+    Const FORMATSHEET As String = "__formatter"
+    Static opened As Boolean
+    Dim pass As IPasswords
+    Dim targetsheet As Worksheet
+    
+    On Error GoTo Handler
+
+    Set pass = SetupHelpers.ResolvePasswords()
+
+    pass.UnProtect ThisWorkbook
+    Set targetsheet = ThisWorkbook.Worksheets(FORMATSHEET)
+
+    If (Not opened) Then
+        ThisWorkbook.Worksheet(FORMATSHEET).Visible = xlSheetVisible
+        targetSheet.Activate
+    Else
+        targetSheet.Visible = xlSheetVeryHidden
+    End If
+    
+    opened = (Not opened)
+    pass.Protect ThisWorkbook
+
+Handler:
+End Sub
 
 '@section Visibility of some buttons
 '===============================================================================

@@ -54,6 +54,9 @@ Public Property Get CellRange(ByVal colName As String, ByVal lineNum As Long) As
 'Specific value of a customtable with ID column
 Public Property Get Value(ByVal colName As String, ByVal keyName As String) As String: End Property
 
+Public Property Get ValueRange(ByVal colName As String, ByVal keyName As String) As Range
+End Property
+
 '@section Modify the table
 
 '@jump:AddIds

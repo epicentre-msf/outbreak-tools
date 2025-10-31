@@ -34,11 +34,17 @@ Private Const HEADER_COLUMN_NAME As String = "colname"
 Private Const HEADER_RANGE_NAME As String = "rngname"
 Private Const HEADER_STATUS As String = "updated"
 Private Const HEADER_TAG As String = "headername"
+Private Const DEFAULT_REGISTRY_START_COLUMN As Long = 1
 Private Const TAG_TRANSLATE_TEXT As String = "translate as text"
 Private Const TAG_TRANSLATE_FORMULA As String = "translate as formula"
 Private Const TAG_WATCH_UPDATE As String = "watch for update"
 Private Const MAX_TAG_LOOKUP_DEPTH As Long = 3
 Private Const REGISTRY_COLUMN_COUNT As Long = 4
+Private Const NAMES_TABLE_NAME As String = "__UpLo__Names__"
+Private Const NAME_HEADER_SHEET As String = "sheet"
+Private Const NAME_HEADER_TABLE As String = "listobject"
+Private Const NAME_HEADER_REGISTRY As String = "registry"
+Private Const REGISTRY_NAME_SEPARATOR As String = "_"
 
 Private Enum RegistryColumnIndex
   RegistryColumnLabel = 1
@@ -47,11 +53,17 @@ Private Enum RegistryColumnIndex
   RegistryHeaderTag = 4
 End Enum
 
+Private Enum NameIndexColumn
+  NameIndexSheet = 1
+  NameIndexTable = 2
+  NameIndexRegistry = 3
+End Enum
+
 Private Type TUpValues
-  registryTable As ICustomTable   'Cached helper for interacting with the registry ListObject
-  registryLo As ListObject        'Cached ListObject that stores watched columns
-  sh As Worksheet                 'Worksheet hosting the registry table
-  idValue As String               'Identifier suffix used for registry naming (e.g., UpLo_dict)
+  sh As Worksheet                     'Worksheet hosting the registry tables
+  lastColumn As Long                  'Tracks the last column used by the registry
+  lastRegistryName As String          'Tracks the most recently accessed registry ListObject name
+  nameCache As Collection             'In-memory cache of registry names keyed by listobject name
 End Type
 
 Private this As TUpValues
@@ -59,19 +71,14 @@ Private this As TUpValues
 '@section Factory
 '===============================================================================
 '@method Create
-'@description Build a new watcher bound to the specified registry worksheet and identifier.
-Public Function Create(ByVal sh As Worksheet, ByVal upName As String) As IUpdatedValues
+'@description Build a new watcher bound to the specified registry worksheet.
+Public Function Create(ByVal sh As Worksheet, Optional ByVal ignoredId As String = vbNullString) As IUpdatedValues
   If sh Is Nothing Then
     ThrowError ProjectError.ObjectNotInitialized, "Worksheet reference is required to create UpdatedValues"
   End If
 
-  If NormalizeValue(upName) = vbNullString Then
-    ThrowError ProjectError.InvalidArgument, "Update identifier cannot be empty"
-  End If
-
   With New UpdatedValues
     Set .Wksh = sh
-    .ID = upName
     Set Create = .Self
   End With
 End Function
@@ -97,23 +104,7 @@ Public Property Set Wksh(ByVal sh As Worksheet)
 
   Set this.sh = sh
   ResetRegistryCache
-End Property
-
-'@property ID
-'@description Identifier suffix used for named ranges and registry ListObject.
-Public Property Get ID() As String
-  ID = this.idValue
-End Property
-
-Public Property Let ID(ByVal upName As String)
-  If NormalizeValue(upName) = vbNullString Then
-    ThrowError ProjectError.InvalidArgument, "Update identifier cannot be empty"
-  End If
-
-  If StrComp(this.idValue, upName, vbBinaryCompare) = 0 Then Exit Property
-
-  this.idValue = Trim$(upName)
-  ResetRegistryCache
+  EnsureNameIndexTable
 End Property
 
 '@section PrivateAccessors
@@ -127,72 +118,422 @@ Private Function EnsureWorksheet() As Worksheet
   Set EnsureWorksheet = this.sh
 End Function
 
-'@label:RegistryListObject
-'@description Lazily create or retrieve the ListObject storing watcher metadata.
-Private Property Get RegistryListObject() As ListObject
-  If this.registryLo Is Nothing Then
-    Set this.registryLo = FetchRegistryListObject(createWhenMissing:=True)
-  End If
-  Set RegistryListObject = this.registryLo
-End Property
-
-'@label:FetchRegistryListObject
-'@description Return the registry ListObject, optionally creating it when missing.
-'@param createWhenMissing Boolean instructing whether to create the ListObject.
-Private Function FetchRegistryListObject(ByVal createWhenMissing As Boolean) As ListObject
-  Dim sh As Worksheet
-  Dim loName As String
+'@label:RegistryListObjectForTable
+'@description Retrieve or create the registry ListObject that stores watchers for the supplied source table.
+Private Function RegistryListObjectForTable(ByVal tableName As String, _
+                                            ByVal createWhenMissing As Boolean) As ListObject
+  Dim registryName As String
   Dim lo As ListObject
+  Dim sh As Worksheet
 
-  Set sh = EnsureWorksheet()
-  loName = CurrentLoName(ID)
+  registryName = RegistryListNameForTable(tableName, createWhenMissing)
+  If NormalizeValue(registryName) = vbNullString Then Exit Function
 
-  On Error Resume Next
-    Set lo = sh.ListObjects(loName)
-  On Error GoTo 0
+  Set lo = RegistryListObjectByName(registryName)
 
   If lo Is Nothing Then
     If Not createWhenMissing Then Exit Function
-    Set lo = CreateRegistryListObject(sh, loName)
+    Set sh = EnsureWorksheet()
+    Set lo = CreateRegistryListObject(sh, registryName)
+    EnsureNameIndexEntry tableName, registryName
+    ResetRegistryNameCache
   Else
     EnsureRegistryHeaders lo
+    If createWhenMissing Then
+      EnsureNameIndexEntry tableName, registryName
+    End If
   End If
 
-  Set FetchRegistryListObject = lo
+  TrackLastRegistryName registryName
+  Set RegistryListObjectForTable = lo
+End Function
+
+'@label:RegistryListObjectByName
+'@description Locate a registry ListObject on the worksheet by its name.
+Private Function RegistryListObjectByName(ByVal listName As String) As ListObject
+  Dim sh As Worksheet
+  If NormalizeValue(listName) = vbNullString Then Exit Function
+
+  Set sh = EnsureWorksheet()
+  On Error Resume Next
+    Set RegistryListObjectByName = sh.ListObjects(listName)
+  On Error GoTo 0
 End Function
 
 '@label:RegistryTable
-'@description Cached CustomTable helper over the registry ListObject keyed by range name.
-Private Property Get RegistryTable() As ICustomTable
-  If this.registryTable Is Nothing Then
-    Set this.registryTable = CustomTable.Create(RegistryListObject, HEADER_RANGE_NAME)
-  End If
-  Set RegistryTable = this.registryTable
+'@description Return a CustomTable helper for the specified registry ListObject name or the last accessed one.
+Private Property Get RegistryTable(Optional ByVal tableName As String = vbNullString) As ICustomTable
+  Dim targetName As String
+  Dim lo As ListObject
+
+  targetName = ResolveRegistryListName(tableName)
+  If NormalizeValue(targetName) = vbNullString Then Exit Property
+
+  Set lo = RegistryListObjectByName(targetName)
+  If lo Is Nothing Then Exit Property
+
+  TrackLastRegistryName targetName
+  Set RegistryTable = CustomTable.Create(lo, HEADER_RANGE_NAME)
 End Property
 
 '@label:ResetRegistryCache
 '@description Clear cached references so subsequent calls rebuild registry helpers.
 Private Sub ResetRegistryCache()
-  Set this.registryLo = Nothing
-  Set this.registryTable = Nothing
+  this.lastColumn = 0
+  this.lastRegistryName = vbNullString
+  ResetRegistryNameCache
 End Sub
 
-'@label:InvalidateRegistryTable
-'@description Drop only the CustomTable cache when the underlying ListObject changes.
-Private Sub InvalidateRegistryTable()
-  Set this.registryTable = Nothing
+'@label:TrackLastRegistryName
+'@description Remember the most recently accessed registry ListObject name.
+Private Sub TrackLastRegistryName(ByVal listName As String)
+  If NormalizeValue(listName) = vbNullString Then Exit Sub
+  this.lastRegistryName = listName
 End Sub
 
-'@label:CurrentLoName
-'@description Compose the ListObject name for the supplied identifier.
-Private Function CurrentLoName(ByVal listName As String) As String
-  CurrentLoName = LISTOBJECT_PREFIX & NormalizeColumnKey(listName)
+'@label:ResolveRegistryListName
+'@description Determine the registry ListObject name to use for the provided identifier or the last accessed registry.
+Private Function ResolveRegistryListName(ByVal candidate As String) As String
+  Dim normalized As String
+
+  normalized = NormalizeValue(candidate)
+  If normalized <> vbNullString Then
+    If Left$(candidate, Len(LISTOBJECT_PREFIX)) = LISTOBJECT_PREFIX Then
+      ResolveRegistryListName = candidate
+    Else
+      ResolveRegistryListName = RegistryListNameForTable(candidate, False)
+    End If
+  ElseIf NormalizeValue(this.lastRegistryName) <> vbNullString Then
+    ResolveRegistryListName = this.lastRegistryName
+  Else
+    ResolveRegistryListName = LastRegistryListName()
+  End If
 End Function
 
-'@label:NormalizedId
-'@description Return the normalised identifier used for named range suffixes.
-Private Function NormalizedId() As String
-  NormalizedId = NormalizeColumnKey(this.idValue)
+'@label:LastRegistryListName
+'@description Retrieve the most recently added registry ListObject name on the worksheet.
+Private Function LastRegistryListName() As String
+  Dim registries As Collection
+  Dim registryName As Variant
+
+  Set registries = RegistryNameCache()
+  If registries Is Nothing Then Exit Function
+  If registries.Count = 0 Then Exit Function
+
+  registryName = registries(registries.Count)
+  LastRegistryListName = CStr(registryName)
+End Function
+
+'@label:RegistryListObjects
+'@description Enumerate every registry ListObject hosted on the watcher worksheet.
+Private Function RegistryListObjects(Optional ByVal preferredName As String = vbNullString) As Collection
+  Dim registries As Collection
+  Dim registryName As Variant
+  Dim lo As ListObject
+  Dim nameList As Collection
+
+  Set registries = New Collection
+
+  If NormalizeValue(preferredName) <> vbNullString Then
+    Set lo = RegistryListObjectByName(preferredName)
+    If Not lo Is Nothing Then
+      registries.Add lo
+    End If
+    Set RegistryListObjects = registries
+    Exit Function
+  End If
+
+  Set nameList = RegistryNameCache()
+  If nameList Is Nothing Then
+    Set RegistryListObjects = registries
+    Exit Function
+  End If
+
+  For Each registryName In nameList
+    Set lo = RegistryListObjectByName(CStr(registryName))
+    If Not lo Is Nothing Then
+      registries.Add lo
+    End If
+  Next registryName
+
+  Set RegistryListObjects = registries
+End Function
+
+'@section NameIndex
+'===============================================================================
+'@label:RegistryListNameForTable
+'@description Resolve the registry ListObject name for the supplied table, creating a new identifier when requested.
+Private Function RegistryListNameForTable(ByVal tableName As String, _
+                                          ByVal allowCreateEntry As Boolean) As String
+  Dim cachedName As String
+  Dim computedName As String
+
+  cachedName = LookupRegistryName(tableName)
+  If NormalizeValue(cachedName) <> vbNullString Then
+    RegistryListNameForTable = cachedName
+    Exit Function
+  End If
+
+  If Not allowCreateEntry Then Exit Function
+
+  computedName = BuildRegistryListName(tableName)
+  RegistryListNameForTable = computedName
+End Function
+
+'@label:BuildRegistryListName
+'@description Compose the registry ListObject name for the supplied table.
+Private Function BuildRegistryListName(ByVal tableName As String) As String
+  BuildRegistryListName = LISTOBJECT_PREFIX _
+                          & NormalizeIdentifier(tableName) _
+                          & REGISTRY_NAME_SEPARATOR _
+                          & NormalizeIdentifier(EnsureWorksheet().Name)
+End Function
+
+'@label:EnsureNameIndexTable
+'@description Guarantee the registry name index ListObject exists on the worksheet.
+Private Function EnsureNameIndexTable() As ListObject
+  Dim sh As Worksheet
+  Dim lo As ListObject
+  Dim headerStart As Range
+  Dim tableRange As Range
+  Dim startColumn As Long
+
+  Set sh = EnsureWorksheet()
+  On Error Resume Next
+    Set lo = sh.ListObjects(NAMES_TABLE_NAME)
+  On Error GoTo 0
+
+  If lo Is Nothing Then
+    startColumn = NextAvailableColumn()
+    Set headerStart = sh.Cells(1, startColumn)
+    headerStart.Value = NAME_HEADER_SHEET
+    headerStart.Offset(0, 1).Value = NAME_HEADER_TABLE
+    headerStart.Offset(0, 2).Value = NAME_HEADER_REGISTRY
+
+    Set tableRange = sh.Range(headerStart, headerStart.Offset(1, 2))
+    Set lo = sh.ListObjects.Add(xlSrcRange, tableRange, , xlYes)
+    lo.Name = NAMES_TABLE_NAME
+    EnsureNameIndexHeaders lo
+    lo.DataBodyRange.ClearContents
+    this.lastColumn = startColumn + lo.ListColumns.Count - 1
+  Else
+    EnsureNameIndexHeaders lo
+  End If
+
+  Set EnsureNameIndexTable = lo
+End Function
+
+'@label:EnsureNameIndexHeaders
+'@description Apply the expected headers to the name index ListObject.
+Private Sub EnsureNameIndexHeaders(ByVal lo As ListObject)
+  lo.ListColumns(NameIndexSheet).Name = NAME_HEADER_SHEET
+  lo.ListColumns(NameIndexTable).Name = NAME_HEADER_TABLE
+  lo.ListColumns(NameIndexRegistry).Name = NAME_HEADER_REGISTRY
+  lo.HeaderRowRange.Cells(1, NameIndexSheet).Value = NAME_HEADER_SHEET
+  lo.HeaderRowRange.Cells(1, NameIndexTable).Value = NAME_HEADER_TABLE
+  lo.HeaderRowRange.Cells(1, NameIndexRegistry).Value = NAME_HEADER_REGISTRY
+End Sub
+
+'@label:EnsureNameIndexEntry
+'@description Insert or refresh the name index entry for the supplied table.
+Private Sub EnsureNameIndexEntry(ByVal tableName As String, ByVal registryName As String)
+  Dim lo As ListObject
+  Dim listRow As ListRow
+  Dim rowSheet As String
+  Dim rowTable As String
+  Dim sheetName As String
+
+  sheetName = EnsureWorksheet().Name
+  Set lo = EnsureNameIndexTable()
+
+  For Each listRow In lo.ListRows
+    rowSheet = CStr(listRow.Range.Cells(1, NameIndexSheet).Value)
+    rowTable = CStr(listRow.Range.Cells(1, NameIndexTable).Value)
+    If StrComp(NormalizeValue(rowSheet), NormalizeValue(sheetName), vbBinaryCompare) = 0 _
+       And StrComp(NormalizeValue(rowTable), NormalizeValue(tableName), vbBinaryCompare) = 0 Then
+      listRow.Range.Cells(1, NameIndexRegistry).Value = registryName
+      ResetRegistryNameCache
+      Exit Sub
+    End If
+  Next listRow
+
+  Set listRow = lo.ListRows.Add
+  listRow.Range.Cells(1, NameIndexSheet).Value = sheetName
+  listRow.Range.Cells(1, NameIndexTable).Value = tableName
+  listRow.Range.Cells(1, NameIndexRegistry).Value = registryName
+  ResetRegistryNameCache
+End Sub
+
+'@label:RemoveNameIndexEntry
+'@description Remove the name index entry associated with the supplied registry.
+Private Sub RemoveNameIndexEntry(ByVal tableName As String, ByVal registryName As String)
+  Dim lo As ListObject
+  Dim listRow As ListRow
+  Dim sheetName As String
+
+  If NormalizeValue(registryName) = vbNullString Then Exit Sub
+
+  sheetName = EnsureWorksheet().Name
+  Set lo = EnsureNameIndexTable()
+
+  For Each listRow In lo.ListRows
+    If StrComp(NormalizeValue(CStr(listRow.Range.Cells(1, NameIndexSheet).Value)), NormalizeValue(sheetName), vbBinaryCompare) = 0 _
+       And StrComp(NormalizeValue(CStr(listRow.Range.Cells(1, NameIndexTable).Value)), NormalizeValue(tableName), vbBinaryCompare) = 0 _
+       And StrComp(NormalizeValue(CStr(listRow.Range.Cells(1, NameIndexRegistry).Value)), NormalizeValue(registryName), vbBinaryCompare) = 0 Then
+      listRow.Delete
+      Exit For
+    End If
+  Next listRow
+
+  ResetRegistryNameCache
+End Sub
+
+'@label:ResetRegistryNameCache
+'@description Clear the cached registry name lookup.
+Private Sub ResetRegistryNameCache()
+  Set this.nameCache = Nothing
+End Sub
+
+'@label:RegistryNameCache
+'@description Load or retrieve the cached registry names for the current worksheet.
+Private Function RegistryNameCache() As Collection
+  Dim lo As ListObject
+  Dim listRow As ListRow
+  Dim sheetName As String
+  Dim rowSheet As String
+  Dim tableKey As String
+  Dim registryName As String
+
+  sheetName = EnsureWorksheet().Name
+
+  If this.nameCache Is Nothing Then
+    Set this.nameCache = New Collection
+    Set lo = EnsureNameIndexTable()
+    For Each listRow In lo.ListRows
+      rowSheet = CStr(listRow.Range.Cells(1, NameIndexSheet).Value)
+      If StrComp(NormalizeValue(rowSheet), NormalizeValue(sheetName), vbBinaryCompare) = 0 Then
+        tableKey = NormalizeIdentifier(CStr(listRow.Range.Cells(1, NameIndexTable).Value))
+        registryName = CStr(listRow.Range.Cells(1, NameIndexRegistry).Value)
+        On Error Resume Next
+          this.nameCache.Add registryName, tableKey
+        On Error GoTo 0
+      End If
+    Next listRow
+  End If
+
+  Set RegistryNameCache = this.nameCache
+End Function
+
+'@label:LookupRegistryName
+'@description Retrieve the registry ListObject name associated with the supplied table.
+Private Function LookupRegistryName(ByVal tableName As String) As String
+  Dim cache As Collection
+  Dim key As String
+
+  key = NormalizeIdentifier(tableName)
+  Set cache = RegistryNameCache()
+
+  On Error Resume Next
+    LookupRegistryName = CStr(cache(key))
+  On Error GoTo 0
+End Function
+
+'@label:LookupTableNameFromRegistry
+'@description Attempt to determine the original table name from a registry ListObject.
+Private Function LookupTableNameFromRegistry(ByVal registryName As String) As String
+  Dim lo As ListObject
+  Dim listRow As ListRow
+
+  If NormalizeValue(registryName) = vbNullString Then Exit Function
+
+  Set lo = EnsureNameIndexTable()
+  For Each listRow In lo.ListRows
+    If StrComp(NormalizeValue(CStr(listRow.Range.Cells(1, NameIndexRegistry).Value)), NormalizeValue(registryName), vbBinaryCompare) = 0 Then
+      LookupTableNameFromRegistry = CStr(listRow.Range.Cells(1, NameIndexTable).Value)
+      Exit Function
+    End If
+  Next listRow
+End Function
+
+'@label:ClearNameIndexEntries
+'@description Remove every entry from the registry name index.
+Private Sub ClearNameIndexEntries()
+  Dim lo As ListObject
+
+  Set lo = EnsureNameIndexTable()
+  Do While lo.ListRows.Count > 0
+    lo.ListRows(lo.ListRows.Count).Delete
+  Loop
+  ResetRegistryNameCache
+End Sub
+
+'@label:ClampStartColumn
+'@description Ensure a proposed registry column start fits within the worksheet boundaries.
+Private Function ClampStartColumn(ByVal startColumn As Long, _
+                                  Optional ByVal targetSh As Worksheet) As Long
+  Dim effectiveSheet As Worksheet
+  Dim maxStart As Long
+
+  If targetSh Is Nothing Then
+    Set effectiveSheet = EnsureWorksheet()
+  Else
+    Set effectiveSheet = targetSh
+  End If
+
+  If startColumn < DEFAULT_REGISTRY_START_COLUMN Then
+    startColumn = DEFAULT_REGISTRY_START_COLUMN
+  End If
+
+  maxStart = effectiveSheet.Columns.Count - REGISTRY_COLUMN_COUNT + 1
+  If maxStart < DEFAULT_REGISTRY_START_COLUMN Then
+    maxStart = DEFAULT_REGISTRY_START_COLUMN
+  End If
+
+  If startColumn > maxStart Then
+    ClampStartColumn = maxStart
+  Else
+    ClampStartColumn = startColumn
+  End If
+End Function
+
+'@label:WorksheetLastUsedColumn
+'@description Determine the last used column on the registry worksheet using End(xlToLeft).
+Private Function WorksheetLastUsedColumn(ByVal sh As Worksheet) As Long
+  Dim lastCell As Range
+  Dim lastCol As Long
+
+  On Error Resume Next
+    Set lastCell = sh.Cells(1, sh.Columns.Count).End(xlToLeft)
+  On Error GoTo 0
+
+  If lastCell Is Nothing Then Exit Function
+
+  If lastCell.Column = 1 And LenB(CStr(lastCell.Value)) = 0 Then
+    WorksheetLastUsedColumn = 0
+  Else
+    WorksheetLastUsedColumn = lastCell.Column
+  End If
+End Function
+
+'@label:NextAvailableColumn
+'@description Determine the next column available for placing the registry table.
+Private Function NextAvailableColumn() As Long
+  Dim sh As Worksheet
+  Dim sheetLast As Long
+  Dim candidate As Long
+
+  Set sh = EnsureWorksheet()
+
+  sheetLast = WorksheetLastUsedColumn(sh)
+
+  If sheetLast <> this.lastColumn Then
+    this.lastColumn = sheetLast
+  End If
+
+  candidate = IIf(this.lastColumn = 1, 1, this.lastColumn + 2)
+  candidate = ClampStartColumn(candidate, sh)
+
+  NextAvailableColumn = candidate
 End Function
 
 '@label:CreateRegistryListObject
@@ -202,7 +543,7 @@ Private Function CreateRegistryListObject(ByVal sh As Worksheet, ByVal loName As
   Dim headerStart As Range
   Dim tableRange As Range
 
-  startColumn = NextAvailableColumn(sh)
+  startColumn = NextAvailableColumn()
   Set headerStart = sh.Cells(1, startColumn)
 
   headerStart.Value = HEADER_COLUMN_NAME
@@ -215,43 +556,27 @@ Private Function CreateRegistryListObject(ByVal sh As Worksheet, ByVal loName As
   Set CreateRegistryListObject = sh.ListObjects.Add(xlSrcRange, tableRange, , xlYes)
   CreateRegistryListObject.Name = loName
   EnsureRegistryHeaders CreateRegistryListObject
-
+  this.lastColumn = headerStart.Column + REGISTRY_COLUMN_COUNT - 1
 End Function
 
 '@label:EnsureRegistryHeaders
 '@description Guarantee the registry ListObject exposes the expected header names.
 Private Sub EnsureRegistryHeaders(ByVal lo As ListObject)
-  Dim expected() As String
+  Dim expected As BetterArray
   Dim idx As Long
 
-  expected = Array(HEADER_COLUMN_NAME, HEADER_RANGE_NAME, HEADER_STATUS, HEADER_TAG)
+  Set expected = New BetterArray
+  expected.Push HEADER_COLUMN_NAME, HEADER_RANGE_NAME, HEADER_STATUS, HEADER_TAG
 
   Do While lo.ListColumns.Count < REGISTRY_COLUMN_COUNT
     lo.ListColumns.Add
   Loop
 
-  For idx = LBound(expected) To UBound(expected)
+  For idx = expected.LowerBound To expected.UpperBound
     lo.ListColumns(idx + 1).Name = expected(idx)
-    lo.HeaderRowRange.Cells(1, idx + 1).Value = expected(idx)
+    lo.HeaderRowRange.Cells(1, idx + 1).Value = expected.Item(idx)
   Next idx
 End Sub
-
-'@label:NextAvailableColumn
-'@description Find the next column available to place the registry ListObject.
-Private Function NextAvailableColumn(ByVal sh As Worksheet) As Long
-  Dim lastUsed As Range
-
-  On Error Resume Next
-    Set lastUsed = sh.Cells.Find(What:="*", LookIn:=xlFormulas, LookAt:=xlPart, _
-                                 SearchOrder:=xlByColumns, SearchDirection:=xlPrevious)
-  On Error GoTo 0
-
-  If lastUsed Is Nothing Then
-    NextAvailableColumn = 1
-  Else
-    NextAvailableColumn = Application.WorksheetFunction.Min(lastUsed.Column + 2, sh.Columns.Count - REGISTRY_COLUMN_COUNT + 1)
-  End If
-End Function
 
 '@section ColumnRegistration
 '===============================================================================
@@ -264,10 +589,12 @@ Private Sub AddColumns(ByVal source As ListObject)
   Dim headerCell As Range
   Dim expected As BetterArray
   Dim registryIndex As BetterArray
+  Dim registry As ListObject
   Dim normalizedRange As String
   Dim columnLabel As String
   Dim tagValue As String
-  Dim rowRange As Range
+  Dim tableKey As String
+  Dim rowIndex As Long
   Dim isNew As Boolean
 
   If source Is Nothing Then
@@ -278,22 +605,66 @@ Private Sub AddColumns(ByVal source As ListObject)
 
   Set expected = New BetterArray
   expected.LowerBound = 1
-  Set registryIndex = BuildRegistryIndex()
+
+  tableKey = source.Name
+  Set registry = RegistryListObjectForTable(tableKey, createWhenMissing:=True)
+  If registry Is Nothing Then Exit Sub
+
+  Set registryIndex = BuildRegistryIndex(registry)
 
   For Each headerCell In source.HeaderRowRange.Cells
     tagValue = ColumnTag(headerCell)
     If ShouldWatchColumn(tagValue) Then
-      normalizedRange = BuildRangeName(NormalizeColumnKey(headerCell.Value))
+      normalizedRange = BuildRangeName(tableKey, NormalizeColumnKey(headerCell.Value))
       columnLabel = BuildColumnLabel(source.Name, headerCell.Value)
-      Set rowRange = EnsureRegistryRowFromIndex(registryIndex, normalizedRange, isNew)
-      PopulateRegistryRow rowRange, columnLabel, normalizedRange, tagValue, isNew
+      rowIndex = EnsureRegistryRowFromIndex(registry, registryIndex, normalizedRange, isNew)
+      PopulateRegistryRow registry, rowIndex, columnLabel, normalizedRange, tagValue, isNew
       EnsureNamedRange source, headerCell.Value, normalizedRange
       AddExpectedKey expected, normalizedRange
     End If
   Next headerCell
 
-  PruneObsoleteEntries expected
+  PruneObsoleteEntries registry, expected, tableKey
 End Sub
+
+'@label:AddSheet
+'@description Register tagged columns for every ListObject on the provided worksheet.
+Private Sub AddSheet(ByVal targetSheet As Worksheet)
+  Dim lo As ListObject
+
+  If targetSheet Is Nothing Then
+    ThrowError ProjectError.ObjectNotInitialized, "Worksheet reference is required when registering all updated values"
+  End If
+
+  If targetSheet.ListObjects.Count = 0 Then Exit Sub
+
+  For Each lo In targetSheet.ListObjects
+    AddColumns lo
+  Next lo
+End Sub
+
+'@label:RemoveListObject
+'@description Remove registry entries associated with the supplied ListObject.
+Private Sub RemoveListObject(ByVal target As ListObject)
+  Dim registry As ListObject
+
+  If target Is Nothing Then Exit Sub
+
+  Set registry = RegistryListObjectForTable(target.Name, createWhenMissing:=False)
+  If registry Is Nothing Then Exit Sub
+
+  RemoveRegistryTable registry, target.Name
+End Sub
+
+'@label:ColumnLabelMatchesTable
+'@description Determine whether a registry column label belongs to the provided ListObject name.
+Private Function ColumnLabelMatchesTable(ByVal columnLabel As String, _
+                                         ByVal tableName As String) As Boolean
+  Dim expectedPrefix As String
+
+  expectedPrefix = tableName & "-"
+  ColumnLabelMatchesTable = (StrComp(Left$(columnLabel, Len(expectedPrefix)), expectedPrefix, vbTextCompare) = 0)
+End Function
 
 '@label:ColumnTag
 '@description Read the metadata tag associated with a column header, searching above the header row.
@@ -329,9 +700,8 @@ End Function
 
 '@label:BuildRegistryIndex
 '@description Create a lightweight lookup of existing registry rows keyed by normalised range name.
-Private Function BuildRegistryIndex() As BetterArray
+Private Function BuildRegistryIndex(ByVal registry As ListObject) As BetterArray
   Dim index As BetterArray
-  Dim lo As ListObject
   Dim listRow As ListRow
   Dim rangeName As String
   Dim key As String
@@ -339,19 +709,18 @@ Private Function BuildRegistryIndex() As BetterArray
 
   Set index = New BetterArray
   index.LowerBound = 1
-  Set lo = FetchRegistryListObject(createWhenMissing:=False)
 
-  If lo Is Nothing Then
+  If registry Is Nothing Then
     Set BuildRegistryIndex = index
     Exit Function
   End If
 
-  For Each listRow In lo.ListRows
+  For Each listRow In registry.ListRows
     rangeName = CStr(listRow.Range.Cells(1, RegistryRangeName).Value)
     key = NormalizeValue(rangeName)
     If key <> vbNullString Then
-      If FindRegistryRowInIndex(index, key) Is Nothing Then
-        entry = Array(key, listRow.Range)
+      If FindRegistryRowInIndex(index, key) = 0 Then
+        entry = Array(key, listRow.Index)
         index.Push entry
       End If
     End If
@@ -366,36 +735,34 @@ End Function
 '- registryIndex BetterArray index built from existing entries.
 '- rangeName String normalised range identifier.
 '- isNew Boolean flag indicating whether a new row was added.
-Private Function EnsureRegistryRowFromIndex(ByVal registryIndex As BetterArray, _
+Private Function EnsureRegistryRowFromIndex(ByVal registry As ListObject, _
+                                            ByVal registryIndex As BetterArray, _
                                             ByVal rangeName As String, _
-                                            ByRef isNew As Boolean) As Range
+                                            ByRef isNew As Boolean) As Long
   Dim key As String
-  Dim existing As Range
-  Dim lo As ListObject
+  Dim existingRowIndex As Long
   Dim listRow As ListRow
   Dim entry As Variant
 
   key = NormalizeValue(rangeName)
-  Set existing = FindRegistryRowInIndex(registryIndex, key)
+  existingRowIndex = FindRegistryRowInIndex(registryIndex, key)
   isNew = False
 
-  If existing Is Nothing Then
-    Set lo = RegistryListObject
-    Set listRow = lo.ListRows.Add
-    Set EnsureRegistryRowFromIndex = listRow.Range
-    entry = Array(key, listRow.Range)
+  If existingRowIndex = 0 Then
+    Set listRow = registry.ListRows.Add
+    EnsureRegistryRowFromIndex = listRow.Index
+    entry = Array(key, listRow.Index)
     registryIndex.Push entry
     isNew = True
-    InvalidateRegistryTable
   Else
-    Set EnsureRegistryRowFromIndex = existing
+    EnsureRegistryRowFromIndex = existingRowIndex
   End If
 End Function
 
 '@label:FindRegistryRowInIndex
-'@description Locate a registry row range in the cached index by its normalised key.
+'@description Locate a registry row index in the cached index by its normalised key.
 Private Function FindRegistryRowInIndex(ByVal registryIndex As BetterArray, _
-                                        ByVal key As String) As Range
+                                        ByVal key As String) As Long
   Dim idx As Long
   Dim entry As Variant
 
@@ -406,7 +773,9 @@ Private Function FindRegistryRowInIndex(ByVal registryIndex As BetterArray, _
     entry = registryIndex.Item(idx)
     If IsArray(entry) Then
       If StrComp(CStr(entry(LBound(entry))), key, vbBinaryCompare) = 0 Then
-        Set FindRegistryRowInIndex = entry(UBound(entry))
+        If UBound(entry) >= 1 Then
+          FindRegistryRowInIndex = CLng(entry(UBound(entry)))
+        End If
         Exit Function
       End If
     End If
@@ -415,12 +784,19 @@ End Function
 
 '@label:PopulateRegistryRow
 '@description Write watcher metadata to the specified registry row and initialise status flags.
-Private Sub PopulateRegistryRow(ByVal rowRange As Range, _
+Private Sub PopulateRegistryRow(ByVal registry As ListObject, _
+                                ByVal rowIndex As Long, _
                                 ByVal columnLabel As String, _
                                 ByVal rangeName As String, _
                                 ByVal tagValue As String, _
                                 ByVal isNew As Boolean)
-  If rowRange Is Nothing Then Exit Sub
+  Dim rowRange As Range
+
+  If rowIndex <= 0 Then Exit Sub
+  If registry Is Nothing Then Exit Sub
+  If rowIndex < 1 Or rowIndex > registry.ListRows.Count Then Exit Sub
+
+  Set rowRange = registry.ListRows(rowIndex).Range
 
   rowRange.Cells(1, RegistryColumnLabel).Value = columnLabel
   rowRange.Cells(1, RegistryRangeName).Value = rangeName
@@ -488,51 +864,41 @@ End Function
 
 '@label:PruneObsoleteEntries
 '@description Remove registry rows and named ranges for columns no longer tagged for watching.
-Private Sub PruneObsoleteEntries(ByVal expected As BetterArray)
-  Dim lo As ListObject
+Private Sub PruneObsoleteEntries(ByVal registry As ListObject, _
+                                 ByVal expected As BetterArray, _
+                                 ByVal tableName As String)
   Dim rowIndex As Long
   Dim rangeName As String
-  Dim totalRows As Long
 
-  Set lo = RegistryListObject
-  totalRows = lo.ListRows.Count
+  If registry Is Nothing Then Exit Sub
 
   If expected Is Nothing Then
-    RemoveAllNamedRanges
-    DeleteAllRegistryRows lo
+    RemoveRegistryTable registry, tableName
     Exit Sub
   End If
 
   If expected.Length = 0 Then
-    RemoveAllNamedRanges
-    DeleteAllRegistryRows lo
+    RemoveRegistryTable registry, tableName
     Exit Sub
   End If
 
-  For rowIndex = totalRows To 1 Step -1
-    rangeName = CStr(lo.ListRows(rowIndex).Range.Cells(1, RegistryRangeName).Value)
+  For rowIndex = registry.ListRows.Count To 1 Step -1
+    rangeName = CStr(registry.ListRows(rowIndex).Range.Cells(1, RegistryRangeName).Value)
     If NormalizeValue(rangeName) = vbNullString Then
-      lo.ListRows(rowIndex).Delete
-      InvalidateRegistryTable
+      registry.ListRows(rowIndex).Delete
       GoTo ContinueLoop
     End If
 
     If Not ExpectedContains(expected, rangeName) Then
       RemoveNamedRange rangeName
-      lo.ListRows(rowIndex).Delete
-      InvalidateRegistryTable
+      registry.ListRows(rowIndex).Delete
     End If
 ContinueLoop:
   Next rowIndex
-End Sub
 
-'@label:DeleteAllRegistryRows
-'@description Remove each data row from the registry ListObject and reset caches.
-Private Sub DeleteAllRegistryRows(ByVal lo As ListObject)
-  Do While lo.ListRows.Count > 0
-    lo.ListRows(lo.ListRows.Count).Delete
-  Loop
-  InvalidateRegistryTable
+  If registry.ListRows.Count = 0 Then
+    RemoveRegistryTable registry, tableName
+  End If
 End Sub
 
 '@section StatusTracking
@@ -540,50 +906,140 @@ End Sub
 '@label:IsUpdated
 '@description Check the registry status flag for the supplied column name.
 Private Property Get IsUpdated(ByVal checkColName As String) As Boolean
-  Dim normalizedRange As String
+  Dim registries As Collection
+  Dim registry As ListObject
+  Dim rangeColumn As Range
+  Dim statusColumn As Range
+  Dim labelColumn As Range
+  Dim idx As Long
+  Dim targetKey As String
+  Dim columnLabel As String
+  Dim rangeName As String
   Dim statusValue As String
 
-  normalizedRange = BuildRangeName(NormalizeColumnKey(checkColName))
-  statusValue = RegistryTable.Value(HEADER_STATUS, normalizedRange)
-  IsUpdated = (NormalizeValue(statusValue) = STATUS_UPDATED)
+  targetKey = NormalizeValue(checkColName)
+  If targetKey = vbNullString Then Exit Property
+
+  Set registries = RegistryListObjects()
+  If registries Is Nothing Then Exit Property
+
+  For Each registry In registries
+    Set rangeColumn = RegistryColumnData(registry, HEADER_RANGE_NAME)
+    Set statusColumn = RegistryColumnData(registry, HEADER_STATUS)
+    Set labelColumn = RegistryColumnData(registry, HEADER_COLUMN_NAME)
+
+    If rangeColumn Is Nothing Then GoTo NextRegistry
+    If statusColumn Is Nothing Then GoTo NextRegistry
+    If labelColumn Is Nothing Then GoTo NextRegistry
+
+    For idx = 1 To rangeColumn.Rows.Count
+      rangeName = CStr(rangeColumn.Cells(idx, 1).Value)
+      columnLabel = CStr(labelColumn.Cells(idx, 1).Value)
+      statusValue = NormalizeValue(CStr(statusColumn.Cells(idx, 1).Value))
+
+      If ColumnMatchesIdentifier(columnLabel, rangeName, targetKey) Then
+        IsUpdated = (statusValue = STATUS_UPDATED)
+        Exit Property
+      End If
+    Next idx
+
+NextRegistry:
+  Next registry
 End Property
 
 '@label:CheckStatus
 '@description Compare the changed range with registered watch ranges and flag the first match as updated.
 '@params
-'- sh Worksheet hosting the change event.
+'- tagReference Identifier pointing to the ListObject registry to inspect (table name, registry name, or Worksheet for all registries).
 '- Target Range that triggered the change.
-Private Sub CheckStatus(ByVal sh As Worksheet, ByVal Target As Range)
+Private Sub CheckStatus(ByVal tagReference As Variant, ByVal Target As Range)
+  Dim registries As Collection
+  Dim registry As ListObject
   Dim rangeColumn As Range
-  Dim rangeCell As Range
-  Dim namedRange As Range
+  Dim statusColumn As Range
+  Dim idx As Long
   Dim rangeName As String
+  Dim statusCell As Range
+  Dim namedRange As Range
+  Dim registryName As String
+  Dim rowRemoved As Boolean
+  Dim newCount As Long
+  Dim registryTag As String
 
-  If sh Is Nothing Then Exit Sub
   If Target Is Nothing Then Exit Sub
 
-  Set rangeColumn = RegistryTable.DataRange(HEADER_RANGE_NAME, includeHeaders:=False, strictSearch:=True)
-  If rangeColumn Is Nothing Then Exit Sub
+  registryTag = RegistryTagFromVariant(tagReference)
+  If NormalizeValue(registryTag) <> vbNullString Then
+    registryName = ResolveRegistryListName(registryTag)
+  Else
+    registryName = vbNullString
+  End If
 
-  For Each rangeCell In rangeColumn.Cells
-    rangeName = CStr(rangeCell.Value)
-    If NormalizeValue(rangeName) = vbNullString Then
-      RemoveOutdatedEntry rangeCell
-      GoTo ContinueLoop
-    End If
+  Set registries = RegistryListObjects(registryName)
+  If registries Is Nothing Then Exit Sub
+  If registries.Count = 0 Then Exit Sub
 
-    Set namedRange = ResolveNamedRange(rangeName)
-    If namedRange Is Nothing Then
-      RemoveOutdatedEntry rangeCell
-      GoTo ContinueLoop
-    End If
+  For Each registry In registries
+    Set rangeColumn = RegistryColumnData(registry, HEADER_RANGE_NAME)
+    Set statusColumn = RegistryColumnData(registry, HEADER_STATUS)
 
-    If Not Intersect(Target, namedRange) Is Nothing Then
-      UpdateStatusForCell rangeCell, STATUS_UPDATED
+    If rangeColumn Is Nothing Then GoTo NextRegistry
+    If statusColumn Is Nothing Then GoTo NextRegistry
+
+    idx = RowCount(rangeColumn)
+
+    Do While idx >= 1
+      rangeName = CStr(rangeColumn.Cells(idx, 1).Value)
+      Set statusCell = statusColumn.Cells(idx, 1)
+      rowRemoved = False
+
+      If NormalizeValue(rangeName) = vbNullString Then
+        rowRemoved = True
+        If Not RemoveOutdatedEntry(registry, rangeColumn.Cells(idx, 1)) Then
+          Exit Do
+        End If
+        GoTo NextIteration
+      End If
+
+      If NormalizeValue(CStr(statusCell.Value)) = STATUS_UPDATED Then
+        GoTo NextIteration
+      End If
+
+      Set namedRange = ResolveNamedRange(rangeName)
+      If namedRange Is Nothing Then
+        rowRemoved = True
+        If Not RemoveOutdatedEntry(registry, rangeColumn.Cells(idx, 1)) Then
+          Exit Do
+        End If
+        GoTo NextIteration
+      End If
+
+      If Intersect(Target, namedRange) Is Nothing Then
+        GoTo NextIteration
+      End If
+
+      statusCell.Value = STATUS_UPDATED
+      TrackLastRegistryName registry.Name
       Exit Sub
-    End If
-ContinueLoop:
-  Next rangeCell
+
+NextIteration:
+      If Not rowRemoved Then
+        idx = idx - 1
+      Else
+        Set rangeColumn = RegistryColumnData(registry, HEADER_RANGE_NAME)
+        Set statusColumn = RegistryColumnData(registry, HEADER_STATUS)
+        newCount = RowCount(rangeColumn)
+        If newCount = 0 Then Exit Do
+        If idx - 1 > newCount Then
+          idx = newCount
+        Else
+          idx = idx - 1
+        End If
+      End If
+    Loop
+
+NextRegistry:
+  Next registry
 End Sub
 
 '@label:ResolveNamedRange
@@ -617,23 +1073,31 @@ End Sub
 
 '@label:RemoveOutdatedEntry
 '@description Clean registry rows that point to missing or invalid named ranges.
-Private Sub RemoveOutdatedEntry(ByVal rangeCell As Range)
-  Dim lo As ListObject
+Private Function RemoveOutdatedEntry(ByVal registry As ListObject, _
+                                     ByVal rangeCell As Range) As Boolean
   Dim rowIndex As Long
   Dim rangeName As String
+  Dim tableName As String
 
-  If rangeCell Is Nothing Then Exit Sub
+  If rangeCell Is Nothing Then Exit Function
+  If registry Is Nothing Then Exit Function
 
-  Set lo = RegistryListObject
-  rowIndex = rangeCell.Row - lo.HeaderRowRange.Row
+  rowIndex = rangeCell.Row - registry.HeaderRowRange.Row
 
-  If rowIndex < 1 Or rowIndex > lo.ListRows.Count Then Exit Sub
+  If rowIndex < 1 Or rowIndex > registry.ListRows.Count Then Exit Function
 
   rangeName = CStr(rangeCell.Value)
   RemoveNamedRange rangeName
-  lo.ListRows(rowIndex).Delete
-  InvalidateRegistryTable
-End Sub
+  registry.ListRows(rowIndex).Delete
+
+  If registry.ListRows.Count = 0 Then
+    tableName = LookupTableNameFromRegistry(registry.Name)
+    RemoveRegistryTable registry, tableName
+     Exit Function
+  End If
+
+  RemoveOutdatedEntry = True
+End Function
 
 '@label:ResetUpdateStatus
 '@label:ResetUpdateStatus
@@ -641,13 +1105,20 @@ End Sub
 Private Sub ResetUpdateStatus()
   Dim statusColumn As Range
   Dim cell As Range
+  Dim registries As Collection
+  Dim registry As ListObject
 
-  Set statusColumn = RegistryTable.DataRange(HEADER_STATUS, includeHeaders:=False, strictSearch:=True)
-  If statusColumn Is Nothing Then Exit Sub
+  Set registries = RegistryListObjects()
+  If registries Is Nothing Then Exit Sub
 
-  For Each cell In statusColumn.Cells
-    cell.Value = STATUS_DEFAULT
-  Next cell
+  For Each registry In registries
+    Set statusColumn = RegistryColumnData(registry, HEADER_STATUS)
+    If Not statusColumn Is Nothing Then
+      For Each cell In statusColumn.Cells
+        cell.Value = STATUS_DEFAULT
+      Next cell
+    End If
+  Next registry
 End Sub
 
 '@section CleanupHelpers
@@ -661,35 +1132,82 @@ End Sub
 '@label:DeleteUp
 '@description Remove the registry ListObject entirely and clean any associated named ranges.
 Private Sub DeleteUp()
-  Dim lo As ListObject
+  Dim registries As Collection
+  Dim registry As ListObject
+  Dim sheetLast As Long
+  Dim idx As Long
+
+  Set registries = RegistryListObjects()
+  If registries Is Nothing Then GoTo ResetPlacement
+
+  For idx = registries.Count To 1 Step -1
+    Set registry = registries(idx)
+    RemoveRegistryTable registry
+  Next idx
+
+  ClearNameIndexEntries
+
+ResetPlacement:
+  ResetRegistryCache
+  sheetLast = WorksheetLastUsedColumn(EnsureWorksheet())
+  this.lastColumn = sheetLast
+End Sub
+
+'@label:RemoveRegistryTable
+'@description Remove an entire registry ListObject and associated named ranges from the worksheet.
+Private Sub RemoveRegistryTable(ByVal registry As ListObject, _
+                                Optional ByVal tableName As String = vbNullString)
   Dim registryRange As Range
+  Dim rowIndex As Long
+  Dim rangeName As String
+  Dim registryName As String
+  Dim resolvedTable As String
 
-  Set lo = FetchRegistryListObject(createWhenMissing:=False)
-  If lo Is Nothing Then Exit Sub
+  If registry Is Nothing Then Exit Sub
 
-  RemoveAllNamedRanges
+  registryName = registry.Name
+  For rowIndex = registry.ListRows.Count To 1 Step -1
+    rangeName = CStr(registry.ListRows(rowIndex).Range.Cells(1, RegistryRangeName).Value)
+    RemoveNamedRange rangeName
+  Next rowIndex
 
-  Set registryRange = lo.Range
-  lo.Unlist
+  resolvedTable = tableName
+  If NormalizeValue(resolvedTable) = vbNullString Then
+    resolvedTable = LookupTableNameFromRegistry(registryName)
+  End If
+  If NormalizeValue(resolvedTable) <> vbNullString Then
+    RemoveNameIndexEntry resolvedTable, registryName
+  End If
+
+  Set registryRange = registry.Range
+  registry.Unlist
   registryRange.Cells.Clear
 
-  ResetRegistryCache
+  this.lastColumn = WorksheetLastUsedColumn(EnsureWorksheet())
+  If StrComp(this.lastRegistryName, registryName, vbBinaryCompare) = 0 Then
+    this.lastRegistryName = vbNullString
+  End If
 End Sub
 
 '@label:RemoveAllNamedRanges
 '@description Delete all workbook defined names created for watcher columns.
 Private Sub RemoveAllNamedRanges()
-  Dim lo As ListObject
+  Dim registries As Collection
+  Dim registry As ListObject
+  Dim idx As Long
   Dim rowIndex As Long
   Dim rangeName As String
 
-  Set lo = FetchRegistryListObject(createWhenMissing:=False)
-  If lo Is Nothing Then Exit Sub
+  Set registries = RegistryListObjects()
+  If registries Is Nothing Then Exit Sub
 
-  For rowIndex = 1 To lo.ListRows.Count
-    rangeName = CStr(lo.ListRows(rowIndex).Range.Cells(1, RegistryRangeName).Value)
-    RemoveNamedRange rangeName
-  Next rowIndex
+  For idx = 1 To registries.Count
+    Set registry = registries(idx)
+    For rowIndex = 1 To registry.ListRows.Count
+      rangeName = CStr(registry.ListRows(rowIndex).Range.Cells(1, RegistryRangeName).Value)
+      RemoveNamedRange rangeName
+    Next rowIndex
+  Next idx
 End Sub
 
 '@label:RemoveNamedRange
@@ -706,32 +1224,150 @@ Private Sub RemoveNamedRange(ByVal rangeName As String)
   On Error GoTo 0
 End Sub
 
+'@sub-title SwitchTagsToNo
+Private Sub SwitchTags(ByVal value As String)
+    Dim registries As Collection
+    Dim registry As ListObject
+    Dim rng As Range
+    Dim counter As Long
+
+    Set registries = RegistryListObjects()
+    If registries Is Nothing Then Exit Sub
+
+    For Each registry In registries
+      Set rng = RegistryColumnData(registry, HEADER_STATUS)
+      If Not rng Is Nothing Then
+        For counter = 1 To rng.Rows.Count
+          If NormalizeValue(CStr(rng.Cells(counter, 1).Value)) <> NormalizeValue(value) Then
+            rng.Cells(counter, 1).Value = value
+          End If
+        Next counter
+      End If
+    Next registry
+End Sub
+
 '@section Utilities
 '===============================================================================
+'@label:RegistryColumnData
+'@description Return the DataBodyRange for the specified registry column if available.
+Private Function RegistryColumnData(ByVal registry As ListObject, _
+                                    ByVal headerName As String) As Range
+  Dim listColumn As ListColumn
+
+  If registry Is Nothing Then Exit Function
+
+  On Error Resume Next
+    Set listColumn = registry.ListColumns(headerName)
+  On Error GoTo 0
+
+  If listColumn Is Nothing Then Exit Function
+  Set RegistryColumnData = listColumn.DataBodyRange
+End Function
+
+'@label:RegistryTagFromVariant
+'@description Normalise a tag reference into a registry identifier string.
+Private Function RegistryTagFromVariant(ByVal tagReference As Variant) As String
+  If IsObject(tagReference) Then
+    Select Case TypeName(tagReference)
+      Case "ListObject"
+        RegistryTagFromVariant = CStr(tagReference.Name)
+      Case "Worksheet"
+        RegistryTagFromVariant = vbNullString
+      Case Else
+        RegistryTagFromVariant = vbNullString
+    End Select
+  Else
+    On Error Resume Next
+      RegistryTagFromVariant = CStr(tagReference)
+    On Error GoTo 0
+  End If
+End Function
+
+'@label:RowCount
+'@description Return the number of rows contained in the supplied range.
+Private Function RowCount(ByVal target As Range) As Long
+  If target Is Nothing Then Exit Function
+  RowCount = target.Rows.Count
+End Function
+
+'@label:CurrentLoName
+'@description Compose the ListObject name used when storing the registry table.
+'@param tableName Source ListObject name associated with the registry.
+Private Function CurrentLoName(ByVal tableName As String) As String
+  CurrentLoName = BuildRegistryListName(tableName)
+End Function
+
 '@label:BuildColumnLabel
 '@description Compose the descriptive label stored in the registry for a watched column.
 Private Function BuildColumnLabel(ByVal tableName As String, ByVal columnName As String) As String
   BuildColumnLabel = tableName & "-" & columnName
 End Function
 
+'@label:ExtractColumnNameFromLabel
+'@description Retrieve the column portion from a table-column label.
+Private Function ExtractColumnNameFromLabel(ByVal columnLabel As String) As String
+  Dim separatorPos As Long
+  Dim extracted As String
+
+  separatorPos = InStr(columnLabel, "-")
+  If separatorPos = 0 Then
+    extracted = columnLabel
+  Else
+    extracted = Mid$(columnLabel, separatorPos + 1)
+  End If
+
+  ExtractColumnNameFromLabel = Trim$(extracted)
+End Function
+
+'@label:ColumnMatchesIdentifier
+'@description Determine whether the supplied registry label or range name matches the target identifier.
+Private Function ColumnMatchesIdentifier(ByVal columnLabel As String, _
+                                         ByVal rangeName As String, _
+                                         ByVal targetKey As String) As Boolean
+  Dim normalizedLabel As String
+  Dim normalizedColumn As String
+  Dim normalizedRange As String
+
+  normalizedLabel = NormalizeValue(columnLabel)
+  normalizedColumn = NormalizeValue(ExtractColumnNameFromLabel(columnLabel))
+  normalizedRange = NormalizeValue(rangeName)
+
+  ColumnMatchesIdentifier = (normalizedLabel = targetKey) _
+                            Or (normalizedColumn = targetKey) _
+                            Or (normalizedRange = targetKey)
+End Function
+
 '@label:BuildRangeName
-'@description Generate the workbook defined name for a watched column.
-Private Function BuildRangeName(ByVal normalizedColumnKey As String) As String
-  BuildRangeName = RANGE_PREFIX & normalizedColumnKey & "_" & NormalizedId
+'@description Generate the workbook defined name for a watched column, including table context.
+Private Function BuildRangeName(ByVal tableKey As String, ByVal normalizedColumnKey As String) As String
+  Dim normalizedTable As String
+  Dim normalizedSheet As String
+
+  normalizedTable = NormalizeColumnKey(tableKey)
+  If NormalizeValue(normalizedTable) = vbNullString Then
+    normalizedTable = "table"
+  End If
+  normalizedSheet = NormalizeIdentifier(EnsureWorksheet().Name)
+
+  BuildRangeName = RANGE_PREFIX & normalizedTable & "_" & normalizedColumnKey & "_" & normalizedSheet
 End Function
 
 '@label:NormalizeColumnKey
 '@description Produce a workbook-friendly identifier from a column header.
 Private Function NormalizeColumnKey(ByVal columnName As String) As String
+  NormalizeColumnKey = NormalizeIdentifier(columnName)
+End Function
+
+Private Function NormalizeIdentifier(ByVal valueText As String) As String
   Dim idx As Long
   Dim ch As String
   Dim buffer As String
 
-  columnName = Replace(columnName, Chr$(160), " ")
-  columnName = Trim$(columnName)
+  valueText = Replace(valueText, Chr$(160), " ")
+  valueText = Trim$(valueText)
 
-  For idx = 1 To Len(columnName)
-    ch = Mid$(columnName, idx, 1)
+  For idx = 1 To Len(valueText)
+    ch = Mid$(valueText, idx, 1)
 
     Select Case ch
       Case "A" To "Z", "a" To "z", "0" To "9"
@@ -748,7 +1384,7 @@ Private Function NormalizeColumnKey(ByVal columnName As String) As String
 
   If LenB(buffer) = 0 Then buffer = "field"
 
-  NormalizeColumnKey = buffer
+  NormalizeIdentifier = buffer
 End Function
 
 '@label:ReplaceRepeatedUnderscores
@@ -780,6 +1416,7 @@ Private Function NormalizeValue(ByVal valueText As String) As String
   NormalizeValue = LCase$(Trim$(valueText))
 End Function
 
+
 '@label:ThrowError
 '@description Raise a ProjectError aligned error from the current class.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
@@ -794,6 +1431,14 @@ Private Sub IUpdatedValues_AddColumns(ByVal Lo As ListObject)
   AddColumns Lo
 End Sub
 
+Private Sub IUpdatedValues_AddSheet(ByVal sh As Worksheet)
+  AddSheet sh
+End Sub
+
+Private Sub IUpdatedValues_RemoveLo(ByVal Lo As ListObject)
+  RemoveListObject Lo
+End Sub
+
 '@label:IUpdatedValues_IsUpdated
 '@description Interface proxy exposing the IsUpdated status flag.
 Private Property Get IUpdatedValues_IsUpdated(ByVal colName As String) As Boolean
@@ -802,8 +1447,8 @@ End Property
 
 '@label:IUpdatedValues_CheckUpdate
 '@description Interface proxy invoking the CheckStatus routine.
-Private Sub IUpdatedValues_CheckUpdate(ByVal sh As Worksheet, ByVal Target As Range)
-  CheckStatus sh, Target
+Private Sub IUpdatedValues_CheckUpdate(ByVal tagReference As Variant, ByVal Target As Range)
+  CheckStatus tagReference, Target
 End Sub
 
 '@label:IUpdatedValues_ClearUp
@@ -818,6 +1463,14 @@ Private Sub IUpdatedValues_DeleteUp()
   DeleteUp
 End Sub
 
+Private Sub IUpdatedValues_SwitchTagsToNo()
+  SwitchTags STATUS_DEFAULT
+End Sub
+
+Private Sub IUpdatedValues_SwitchTagsToYes()
+  SwitchTags STATUS_UPDATED
+End Sub
+
 '@label:Exists
 '@description Determine whether a registry ListObject already exists for the supplied identifier.
 Public Function Exists(ByVal listName As String) As Boolean
@@ -826,7 +1479,8 @@ Public Function Exists(ByVal listName As String) As Boolean
   Dim lo As ListObject
 
   Set sh = EnsureWorksheet()
-  loName = CurrentLoName(listName)
+  loName = ResolveRegistryListName(listName)
+  If NormalizeValue(loName) = vbNullString Then Exit Function
 
   On Error Resume Next
     Set lo = sh.ListObjects(loName)
