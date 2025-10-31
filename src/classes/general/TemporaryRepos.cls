@@ -267,7 +267,7 @@ Private Function SanitizeFileName(ByVal fileName As String) As String
         ThrowError ProjectError.InvalidArgument, "Temporary file name cannot be empty"
     End If
 
-    invalidChars = Array(":", "*", "?", "\", "/", "|", "<", ">", Chr$(34))
+    invalidChars = Array(":", "*", "?", "\", "/", "|", "<", ">", Chr$(34), ",")
     result = fileName
 
     For index = LBound(invalidChars) To UBound(invalidChars)

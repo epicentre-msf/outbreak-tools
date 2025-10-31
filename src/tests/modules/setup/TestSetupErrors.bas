@@ -100,9 +100,9 @@ Cleanup:
     Exit Sub
 
 Fail:
-    Set checker = Nothing
     CustomTestLogFailure Assert, "TestCheckingsInitialisedEmpty", Err.Number, Err.Description
     TestHelpers.DeleteWorkbook hostBook
+    Set checker = Nothing
 End Sub
 
 '@TestMethod("SetupErrors")
@@ -371,7 +371,7 @@ Private Function PrepareSetupWorkbook(Optional ByVal includeIssues As Boolean = 
 
     Set wb = TestHelpers.NewWorkbook
 
-    ConfigureFormulaSheet wb
+    FormulaTestFixture.PrepareFormulaFixtureSheet FORMULA_SHEET, outwb:=wb
     PasswordsTestFixture.PreparePasswordsFixture PASSWORD_SHEET, wb
     SetupImportTestFixture.PrepareSetupDictionarySheet DICTIONARY_SHEET, "dup_variable", "FixtureSheet", 5, 1, wb
     SetupImportTestFixture.PrepareSetupChoicesSheet CHOICES_SHEET, 4, 1, wb
@@ -392,63 +392,6 @@ Private Sub AssertContainsMessage(ByVal results As BetterArray, ByVal expectedTe
     Assert.IsTrue CheckingsContain(results, expectedText), context & " should include """ & expectedText & """"
 End Sub
 
-Private Sub ConfigureFormulaSheet(ByVal hostBook As Workbook)
-    Dim sh As Worksheet
-    Dim formulaHeader As Variant
-    Dim formulaRows As Variant
-    Dim charactersHeader As Variant
-    Dim charactersRows As Variant
-    Dim formulaHeaderMatrix As Variant
-    Dim formulaRowsMatrix As Variant
-    Dim characterHeaderMatrix As Variant
-    Dim characterRowsMatrix As Variant
-    Dim formulaTable As ListObject
-    Dim charactersTable As ListObject
-    Dim totalFormulaRows As Long
-    Dim totalCharacterRows As Long
-    Dim formulaCols As Long
-    Dim characterCols As Long
-    Dim formulaRange As Range
-    Dim charactersRange As Range
-
-    Set sh = TestHelpers.EnsureWorksheet(FORMULA_SHEET, hostBook, clearSheet:=True, visibility:=xlSheetHidden)
-
-    formulaHeader = FormulaTestFixture.FormulaFunctionsHeaderRow()
-    formulaRows = FormulaTestFixture.FormulaFunctionsRows()
-    formulaHeaderMatrix = TestHelpers.RowsToMatrix(Array(formulaHeader))
-    formulaRowsMatrix = TestHelpers.RowsToMatrix(formulaRows)
-    TestHelpers.WriteMatrix sh.Range("A1"), formulaHeaderMatrix
-    TestHelpers.WriteMatrix sh.Range("A2"), formulaRowsMatrix
-
-    formulaCols = UBound(formulaHeaderMatrix, 2) - LBound(formulaHeaderMatrix, 2) + 1
-    totalFormulaRows = (UBound(formulaHeaderMatrix, 1) - LBound(formulaHeaderMatrix, 1) + 1)
-    If Not IsEmpty(formulaRowsMatrix) Then
-        totalFormulaRows = totalFormulaRows + (UBound(formulaRowsMatrix, 1) - LBound(formulaRowsMatrix, 1) + 1)
-    End If
-    Set formulaRange = sh.Range("A1").Resize(totalFormulaRows, formulaCols)
-
-    charactersHeader = FormulaTestFixture.FormulaCharactersHeaderRow()
-    charactersRows = FormulaTestFixture.FormulaCharactersRows()
-    characterHeaderMatrix = TestHelpers.RowsToMatrix(Array(charactersHeader))
-    characterRowsMatrix = TestHelpers.RowsToMatrix(charactersRows)
-    TestHelpers.WriteMatrix sh.Range("C1"), characterHeaderMatrix
-    TestHelpers.WriteMatrix sh.Range("C2"), characterRowsMatrix
-
-    characterCols = UBound(characterHeaderMatrix, 2) - LBound(characterHeaderMatrix, 2) + 1
-    totalCharacterRows = (UBound(characterHeaderMatrix, 1) - LBound(characterHeaderMatrix, 1) + 1)
-    If Not IsEmpty(characterRowsMatrix) Then
-        totalCharacterRows = totalCharacterRows + (UBound(characterRowsMatrix, 1) - LBound(characterRowsMatrix, 1) + 1)
-    End If
-    Set charactersRange = sh.Range("C1").Resize(totalCharacterRows, characterCols)
-
-    Set formulaTable = sh.ListObjects.Add(SourceType:=xlSrcRange, Source:=formulaRange, XlListObjectHasHeaders:=xlYes)
-    formulaTable.Name = "T_XlsFonctions"
-    formulaTable.TableStyle = ""
-
-    Set charactersTable = sh.ListObjects.Add(SourceType:=xlSrcRange, Source:=charactersRange, XlListObjectHasHeaders:=xlYes)
-    charactersTable.Name = "T_ascii"
-    charactersTable.TableStyle = ""
-End Sub
 
 Private Sub ConfigureDictionarySheet(ByVal hostBook As Workbook, ByVal includeIssues As Boolean)
     Dim dictSheet As Worksheet
@@ -673,7 +616,7 @@ Private Sub ConfigureChoicesSheet(ByVal hostBook As Workbook, ByVal includeIssue
         choicesSheet.Cells(sixthDataRow, shortCol).Value = "Missing"
     End If
 
-    tableRange = choicesSheet.Range(choicesSheet.Cells(choicesTable.DataStartRow, choicesTable.DataStartColumn), _
+    Set tableRange = choicesSheet.Range(choicesSheet.Cells(choicesTable.DataStartRow, choicesTable.DataStartColumn), _
                                     choicesSheet.Cells(lastDataRow, choicesTable.DataStartColumn + totalColumns - 1))
     If choicesSheet.ListObjects.Count = 0 Then
         Set targetTable = choicesSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=tableRange, XlListObjectHasHeaders:=xlYes)
@@ -766,6 +709,7 @@ Private Function CheckingsContain(ByVal source As BetterArray, ByVal expectedTex
                 For keyIdx = keys.LowerBound To keys.UpperBound
                     keyName = CStr(keys.Item(keyIdx))
                     labelValue = check.ValueOf(keyName)
+                    Debug.Print keyName
                     If InStr(1, labelValue, expectedText, vbTextCompare) > 0 Then
                         CheckingsContain = True
                         Exit Function

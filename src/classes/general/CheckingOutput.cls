@@ -307,6 +307,8 @@ Private Sub WriteChecking(ByVal checking As IChecking, _
         WriteRow rowIndex:=currentRow, textValue:=fullLabel, formatTag:=keyColour, sep:=sep, parentTitle:=title
         currentRow = currentRow + 1
     Next keyIndex
+    
+    currentRow = currentRow + 2
 End Sub
 
 

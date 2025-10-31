@@ -107,7 +107,8 @@ End Function
 '@return Worksheet populated with both tables.
 Public Function PrepareFormulaFixtureSheet(ByVal sheetName As String, _
                                            Optional ByVal formulasTableName As String = "T_XlsFonctions", _
-                                           Optional ByVal charactersTableName As String = "T_ascii") As Worksheet
+                                           Optional ByVal charactersTableName As String = "T_ascii", _ 
+                                           Optional ByVal outwb As Workbook) As Worksheet
 
     Dim sh As Worksheet
     Dim formulaHeader As Variant
@@ -131,7 +132,11 @@ Public Function PrepareFormulaFixtureSheet(ByVal sheetName As String, _
     Dim characterHeaderRows As Long
     Dim characterDataRows As Long
 
-    Set sh = TestHelpers.EnsureWorksheet(sheetName, visibility:=xlSheetHidden)
+    If outwb Is Nothing Then
+        Set sh = TestHelpers.EnsureWorksheet(sheetName, visibility:=xlSheetHidden)
+    Else
+        Set sh = TestHelpers.EnsureWorksheet(sheetName, targetBook:=outwb)
+    End If
 
     formulaHeader = FormulaFunctionsHeaderRow()
     formulaRows = FormulaFunctionsRows()

@@ -375,7 +375,7 @@ Private Sub CheckDictionary()
     this.passwordService.UnProtect SHEET_DICTIONARY
     this.passwordService.UnProtect SHEET_EXPORTS
 
-    csTab.RemoveRows
+    csTab.RemoveRows includeIds:=False
     csTab.Sort "Sheet Name"
 
     Set varRng = csTab.DataRange("Variable Name")
@@ -395,14 +395,14 @@ Private Sub CheckDictionary()
             checkingCounter = checkingCounter + 1
             keyName = "dict-var-unique"
             infoMessage = FormatMessage(DICT_VAR_UNIQUE, cellRng.Row, varValue)
-            check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingError
+            check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingError
         End If
 
         If Len(varValue) < 4 Then
             checkingCounter = checkingCounter + 1
             keyName = "dict-var-length"
             infoMessage = FormatMessage(DICT_VAR_LENGTH, cellRng.Row, varValue)
-            check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingError
+            check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingError
         End If
 
         mainLabValue = shDictionary.Cells(cellRng.Row, mainVarRng.Column)
@@ -410,7 +410,7 @@ Private Sub CheckDictionary()
             checkingCounter = checkingCounter + 1
             keyName = "dict-main-lab"
             infoMessage = FormatMessage(DICT_MAIN_LAB, cellRng.Row, varValue)
-            check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingError
+            check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingError
         End If
 
         sheetValue = shDictionary.Cells(cellRng.Row, sheetRng.Column)
@@ -418,7 +418,7 @@ Private Sub CheckDictionary()
             checkingCounter = checkingCounter + 1
             keyName = "dict-empty-sheet"
             infoMessage = FormatMessage(DICT_EMPTY_SHEET, cellRng.Row, varValue)
-            check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingError
+            check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingError
         End If
 
         controlValue = csTab.Value("Control", varValue)
@@ -430,7 +430,7 @@ Private Sub CheckDictionary()
             checkingCounter = checkingCounter + 1
             keyName = "dict-unknown-control"
             infoMessage = FormatMessage(DICT_UNKNOWN_CONTROL, cellRng.Row, controlValue, varValue)
-            check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingError
+            check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingError
         End If
 
         If (controlValue = "choice_formula") And (InStr(1, controlDetailsValue, "CHOICE_FORMULA") = 1) Then
@@ -440,7 +440,7 @@ Private Sub CheckDictionary()
                 checkingCounter = checkingCounter + 1
                 keyName = "dict-choiform-empty"
                 infoMessage = FormatMessage(DICT_CHOIFORM_EMPTY, cellRng.Row, choiName)
-                check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingWarning
+                check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingWarning
             Else
                 keyName = "dict-cat-notfound"
                 Set choiCategories = this.choices.Categories(choiName)
@@ -451,7 +451,7 @@ Private Sub CheckDictionary()
                     If Not choiCategories.Includes(catValue) Then
                         checkingCounter = checkingCounter + 1
                         infoMessage = FormatMessage(DICT_CAT_NOTFOUND, cellRng.Row, catValue, choiName)
-                        check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingInfo
+                        check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingInfo
                     End If
                 Next tabCounter
             End If
@@ -462,7 +462,7 @@ Private Sub CheckDictionary()
             infoMessage = FormulaMessage(controlDetailsValue, DICT_INCOR_FORM, cellRng.Row, varValue)
             If infoMessage <> vbNullString Then
                 checkingCounter = checkingCounter + 1
-                check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingWarning
+                check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingWarning
             End If
         End If
 
@@ -473,7 +473,7 @@ Private Sub CheckDictionary()
                 checkingCounter = checkingCounter + 1
                 keyName = "dict-choi-empty"
                 infoMessage = FormatMessage(DICT_CHOI_EMPTY, cellRng.Row, controlDetailsValue)
-                check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingWarning
+                check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingWarning
             End If
         End If
 
@@ -485,7 +485,7 @@ Private Sub CheckDictionary()
             infoMessage = FormulaMessage(minValue, DICT_INCOR_MIN, cellRng.Row, varValue)
             If (infoMessage <> vbNullString) Then
                 checkingCounter = checkingCounter + 1
-                check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingWarning
+                check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingWarning
             End If
         End If
 
@@ -494,7 +494,7 @@ Private Sub CheckDictionary()
             infoMessage = FormulaMessage(maxValue, DICT_INCOR_MAX, cellRng.Row, varValue)
             If (infoMessage <> vbNullString) Then
                 checkingCounter = checkingCounter + 1
-                check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingWarning
+                check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingWarning
             End If
         End If
 
@@ -504,7 +504,7 @@ Private Sub CheckDictionary()
             infoMessage = FormatMessage(DICT_VALID_CONTROL, cellRng.Row, varValue)
             If (infoMessage <> vbNullString) Then
                 checkingCounter = checkingCounter + 1
-                check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingError
+                check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingError
             End If
         End If
 
@@ -514,7 +514,7 @@ Private Sub CheckDictionary()
             infoMessage = FormatMessage(DICT_FORMAT_CONTROL, cellRng.Row, varValue)
             If (infoMessage <> vbNullString) Then
                 checkingCounter = checkingCounter + 1
-                check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingWarning
+                check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingWarning
             End If
         End If
 
@@ -523,7 +523,7 @@ Private Sub CheckDictionary()
             checkingCounter = checkingCounter + 1
             keyName = "dict-unique-val"
             infoMessage = FormatMessage(DICT_UNIQUE_VAL, cellRng.Row, varValue)
-            check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingInfo
+            check.Add keyName & "-row-" & cellRng.Row & "-" & checkingCounter, infoMessage, checkingInfo
         End If
 
         Set cellRng = cellRng.Offset(-1)
@@ -531,7 +531,7 @@ Private Sub CheckDictionary()
 
     expTab.Sort "Export Number"
 
-    For expCounter = 1 To 5
+    For expCounter = 1 To this.dictionary.TotalNumberOfExports()
         Set expRng = csTab.DataRange("Export " & expCounter)
         Set expStatusRng = expTab.DataRange("Status")
 
@@ -540,7 +540,7 @@ Private Sub CheckDictionary()
                 checkingCounter = checkingCounter + 1
                 keyName = "dict-export-na"
                 infoMessage = FormatMessage(DICT_EXPORT_NA, CStr(expCounter))
-                check.Add keyName & cellRng.Row & "-" & checkingCounter, infoMessage, checkingNote
+                check.Add keyName & "-" & checkingCounter, infoMessage, checkingNote
             End If
         End If
     Next expCounter
@@ -731,7 +731,7 @@ Private Sub CheckExports()
     Set fileNameList = New BetterArray
     Set statusRng = expTab.DataRange("Status")
 
-    Set check = Checking.Create("Export incoherences", "type--Where?--Details")
+    Set check = Checking.Create("Export incoherences", "Type--Where?--Details")
     Set workFun = Application.WorksheetFunction
     Set vars = LLVariables.Create(this.dictionary)
 
@@ -828,7 +828,7 @@ Private Sub CheckTranslations()
     Set shTranslations = ResolveWorksheet(SHEET_TRANSLATIONS)
     Set translationsLo = shTranslations.ListObjects(1)
     Set headersRange = translationsLo.HeaderRowRange
-    Set check = Checking.Create("Translation incoherences", "--Where?--Details")
+    Set check = Checking.Create("Translations", "Incoherence--Where?--Details")
 
     If Not translationsLo.DataBodyRange Is Nothing Then
         For counter = 1 To headersRange.Columns.Count
