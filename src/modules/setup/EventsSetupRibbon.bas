@@ -477,10 +477,29 @@ End Sub
 
 '@section Visibility of some buttons
 '===============================================================================
-Public Sub SetupButtonVisible(control As IRibbonControl, ByRef returnedVal As Boolean)
+Public Sub SetupButtonVisible(control As IRibbonControl, ByRef returnedVal)
     If (control.Id = "btnDelLoRow") Or (control.Id="btnSort") Then
         returnedVal = (ActiveSheet.Name <> TRADSHEETNAME)
     ElseIf (control.Id = "btnDelLoCol") Then
-        returnedVal = (ActiveSheet.Name = TRADSHEETNAME)    
+        returnedVal = (ActiveSheet.Name = TRADSHEETNAME)
+    Else
+        returnedVal = True
     End If
+End Sub
+
+
+'@section Initializations 
+'===============================================================================
+'@EntryPoint
+'@Description("Initialise development environment - logic provided by consuming workbook")
+Public Sub clickDevInitialize(ByRef control As IRibbonControl)
+   Dim prep As ISetupPreparation
+   Set prep = SetupPreparation.Create(ThisWorkbook)
+   prep.Prepare RibbonDev.EnsureDevelopment()
+   'Protecting required worksheet
+   ProtectSetupSheet ResolveSetupSheet("dict")
+   ProtectSetupSheet ResolveSetupSheet("choi")
+   ProtectSetupSheet ResolveSetupSheet("ana")
+   ProtectSetupSheet ResolveSetupSheet("exp")
+   ProtectSetupSheet ResolveSetupSheet("trans")
 End Sub
