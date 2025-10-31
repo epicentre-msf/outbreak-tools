@@ -40,3 +40,5 @@ required VBA syntax.
 - [DONE] Simplified UpdatedValues registry naming to table+sheet keys, centralised name index tracking, introduced targeted CheckUpdate tags, and aligned tests with the new workflow.
 - [DONE] Extracted EventSetup workbook orchestration into a dedicated class/interface pair with supporting tests and workbook delegates.
 - [DONE] Consolidated EventSetup analysis caching and sheet unlock helpers to cut duplication and tighten Worksheet_Change execution paths.
+- [DONE] Added SetupPreparation class and interface to handle dropdown registration and updated values initialisation with accompanying unit tests.
+- [DONE] Ported setup table validation logic into SetupPreparation with comprehensive tests covering dictionary, exports, analysis, and checking sheets.
