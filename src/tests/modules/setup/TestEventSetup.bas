@@ -31,7 +31,6 @@ Private Const LIST_SPATIO_TEMPORAL_SPECS As String = "Tab_SpatioTemporal_Specs"
 '@ModuleInitialize
 Public Sub ModuleInitialize()
     TestHelpers.BusyApp
-    AssertSheetSetup
     Set Assert = CustomTest.Create(ThisWorkbook, OUTPUT_SHEET)
     Assert.SetModuleName "TestEventSetup"
 End Sub
@@ -75,6 +74,7 @@ Public Sub TestWorkbookOpenInitialisesHiddenCounter()
     On Error GoTo Fail
 
     Subject.OnWorkbookOpen
+ 
 
     Dim namesManager As IHiddenNames
     Set namesManager = HiddenNames.Create(FixtureWorkbook.Worksheets(SHEET_UPDATED))
@@ -83,7 +83,7 @@ Public Sub TestWorkbookOpenInitialisesHiddenCounter()
     Exit Sub
 
 Fail:
-    ReportTestFailure "TestWorkbookOpenInitialisesHiddenCounter"
+    CustomTestLogFailure Assert, "TestWorkbookOpenInitialisesHiddenCounter", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("EventSetup")
@@ -104,7 +104,7 @@ Public Sub TestUpdateAnalysisDropdownsBuildsGeoLists()
     Exit Sub
 
 Fail:
-    ReportTestFailure "TestUpdateAnalysisDropdownsBuildsGeoLists"
+    CustomTestLogFailure Assert, "TestUpdateAnalysisDropdownsBuildsGeoLists", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("EventSetup")
@@ -126,7 +126,7 @@ Public Sub TestResetCachesRebuildsGeoDropdowns()
     Exit Sub
 
 Fail:
-    ReportTestFailure "TestResetCachesRebuildsGeoDropdowns"
+    CustomTestLogFailure Assert, "TestResetCachesRebuildsGeoDropdowns", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("EventSetup")
@@ -142,7 +142,7 @@ Public Sub TestBuildTimeSeriesHeaderUsesDictionaryLabels()
     Exit Sub
 
 Fail:
-    ReportTestFailure "TestBuildTimeSeriesHeaderUsesDictionaryLabels"
+    CustomTestLogFailure Assert, "TestBuildTimeSeriesHeaderUsesDictionaryLabels", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("EventSetup")
@@ -157,7 +157,7 @@ Public Sub TestAnalysisGraphValueReturnsExpectedColumn()
     Exit Sub
 
 Fail:
-    ReportTestFailure "TestAnalysisGraphValueReturnsExpectedColumn"
+    CustomTestLogFailure Assert, "TestAnalysisGraphValueReturnsExpectedColumn", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("EventSetup")
@@ -172,13 +172,12 @@ Public Sub TestAnalysisTimeSeriesValueReturnsExpectedColumn()
     Exit Sub
 
 Fail:
-    ReportTestFailure "TestAnalysisTimeSeriesValueReturnsExpectedColumn"
+    CustomTestLogFailure Assert, "TestAnalysisTimeSeriesValueReturnsExpectedColumn", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("EventSetup")
 Public Sub TestSpatioTemporalSpecValueReturnsExpectedColumn()
     CustomTestSetTitles Assert, "EventSetup", "Retrieves values from spatio-temporal specs"
-    On Error GoTo Fail
 
     Dim result As String
     result = Subject.SpatioTemporalSpecValue("Section A", "N geo max")
@@ -187,7 +186,7 @@ Public Sub TestSpatioTemporalSpecValueReturnsExpectedColumn()
     Exit Sub
 
 Fail:
-    ReportTestFailure "TestSpatioTemporalSpecValueReturnsExpectedColumn"
+    CustomTestLogFailure Assert, "TestSpatioTemporalSpecValueReturnsExpectedColumn", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("EventSetup")
@@ -206,7 +205,7 @@ Public Sub TestResetTranslationCounterMethod()
     Exit Sub
 
 Fail:
-    ReportTestFailure "TestResetTranslationCounterMethod"
+    CustomTestLogFailure Assert, "TestResetTranslationCounterMethod", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("EventSetup")
@@ -231,7 +230,7 @@ Public Sub TestRecalculateAnalysisEvaluatesFormulas()
     Exit Sub
 
 Fail:
-    ReportTestFailure "TestRecalculateAnalysisEvaluatesFormulas"
+    CustomTestLogFailure Assert, "TestRecalculateAnalysisEvaluatesFormulas", Err.Number, Err.Description
 End Sub
 
 '@section Fixture builders
@@ -392,12 +391,3 @@ Private Sub AppendGeoVariable(ByVal variableName As String)
     newRow.Range.Cells(1, 6).Value = "text"
 End Sub
 
-'@section Utilities
-'===============================================================================
-Private Sub AssertSheetSetup()
-    If Assert Is Nothing Then Exit Sub
-End Sub
-
-Private Sub ReportTestFailure(ByVal testName As String)
-    Assert.ReportFailure testName
-End Sub

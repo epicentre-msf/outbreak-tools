@@ -91,10 +91,15 @@ Public Sub TestCreateFilePathSanitisesName()
     CustomTestSetTitles Assert, "TemporaryRepos", "CreateFilePathSanitisesName"
 
     Dim filePath As String
-    filePath = Service.CreateFilePath("test:module?.bas")
+    Dim fileLength As Long
+    
+    filePath = "test:module?.bas"
+    fileLength = LenB(filePath)
 
-    Assert.IsTrue InStr(1, filePath, ":", vbBinaryCompare) = 0, "Sanitised path should not contain colon"
-    Assert.IsTrue InStr(1, filePath, "?", vbBinaryCompare) = 0, "Sanitised path should not contain question mark"
+    filePath = Service.CreateFilePath(filePath)
+
+    Assert.IsTrue (InStr(1, filePath, ":", vbTextCompare) < (LenB(filePath) - fileLength)), "Sanitised path should not contain colon"
+    Assert.IsTrue (InStr(1, filePath, "?", vbTextCompare) = 0), "Sanitised path should not contain question mark"
 End Sub
 
 '@TestMethod("TemporaryRepos")

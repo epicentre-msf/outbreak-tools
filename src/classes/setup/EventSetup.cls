@@ -22,7 +22,7 @@ Implements IEventSetup
 Private Type TEventSetup
     hostBook        As Workbook          'Workbook owning the setup sheets
     updater         As IUpdatedValues    'Registry tracker for watched columns
-    dropdowns       As IDropdownLists    'Cached dropdown manager
+    drop            As IDropdownLists    'Cached dropdown manager
     ribbon          As IRibbonUI         'Cached ribbon instance when available
     tsTable         As ICustomTable      'Analysis time-series table wrapper
     graphTable      As ICustomTable      'Analysis graph table wrapper
@@ -72,13 +72,17 @@ End Property
 
 '@section IEventSetup implementation
 '===============================================================================
-Private Sub IEventSetup_Configure(ByVal hostBook As Workbook)
+Public Sub Configure(ByVal hostBook As Workbook)
     If (hostBook Is Nothing) Then
         ThrowError ProjectError.ObjectNotInitialized, "Host workbook is required to configure EventSetup"
     End If
 
     Set this.hostBook = hostBook
     ResetInternalCaches
+End Sub
+
+Private Sub IEventSetup_Configure(ByVal hostBook As Workbook)
+    Configure hostBook
 End Sub
 
 Private Sub IEventSetup_OnWorkbookOpen()
@@ -150,28 +154,24 @@ Private Sub IEventSetup_UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Bo
        this.updater.IsUpdated("control_details") Or _
        this.updater.IsUpdated("variable_name") Then
 
-        On Error Resume Next
-            this.drop.Update this.dictionary.GeoVars, "__geo_vars"
-            this.drop.Update this.dictionary.ChoicesVars, "__choice_vars"
-            this.drop.Update this.dictionary.SpecialVars("hf"), "__hfonly_vars"
-            this.drop.Update this.dictionary.SpecialVars("geo"), "__geoonly_vars"
-        On Error GoTo 0
+
+        AddOrUpdateDrop this.dictionary.GeoVars, "__geo_vars"
+        AddOrUpdateDrop this.dictionary.ChoicesVars, "__choice_vars"
+        AddOrUpdateDrop this.dictionary.SpecialVars("hf"), "__hfonly_vars"
+        AddOrUpdateDrop this.dictionary.SpecialVars("geo"), "__geoonly_vars"
+        
     End If
 
     If forceUpdate Or _
        this.updater.IsUpdated("variable_type") Or _
        this.updater.IsUpdated("variable_name") Then
-
-        On Error Resume Next
-            this.drop.Update this.dictionary.TimeVars, "__time_vars"
-        On Error GoTo 0
+        AddOrUpdateDrop this.dictionary.TimeVars, "__time_vars"
+        
     End If
 
     EnsureVars
     If Not this.variables Is Nothing Then
-        On Error Resume Next
-            this.variables.InvalidateCaches
-        On Error GoTo 0
+        this.variables.InvalidateCaches
     End If
 End Sub
 
@@ -222,12 +222,22 @@ Private Sub ResetInternalCaches()
     Set this.dictionary = Nothing
 End Sub
 
+Private Sub AddOrUpdateDrop(ByVal lst As BetterArray, ByVal dropName As String)
+    EnsureDropdownValues
+    If this.drop Is Nothing Then Exit Sub
+    
+    If Not this.drop.Exists(dropName) Then
+        this.drop.Add lst, dropName
+    Else
+        this.drop.Update lst, dropName
+    End If
+End Sub
+
 Private Sub EnsureUpdatedValues()
     If Not (this.updater Is Nothing) Then Exit Sub
 
     Dim registrySheet As Worksheet
 
-    registrySheet = Nothing
     Set registrySheet = SheetOrNothing(SHEET_UPDATED)
     If registrySheet Is Nothing Then Exit Sub
 
@@ -391,11 +401,12 @@ End Sub
 Private Function BuildTimeSeriesHeaderInternal(ByVal timeVar As String, _
                                                ByVal groupVar As String, _
                                                ByVal sumLabel As String) As String
-    Const SEP As String = " " & ChrW(9472) & " "
+    Dim SEP As String 
     Dim header As String
     Dim timeLabel As String
     Dim groupLabel As String
 
+    SEP = " " & ChrW(9472) & " "
     header = sumLabel
     timeLabel = VariableLabel(timeVar)
     If LenB(timeLabel) > 0 Then
@@ -642,4 +653,10 @@ Private Sub FormatLockCell(ByVal cellRng As Range, Optional ByVal locked As Bool
     cellRng.Font.Color = IIf(locked, RGB(51, 142, 202), vbBlack)
     cellRng.Font.Italic = locked
     cellRng.Locked = locked
+End Sub
+
+'@label:ThrowError
+'@description Raise a ProjectError aligned error from the current class.
+Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
+  Err.Raise CLng(errNumber), CLASS_NAME, "Error: " & errorMessage
 End Sub
