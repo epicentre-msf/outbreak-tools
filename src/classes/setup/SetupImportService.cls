@@ -49,9 +49,15 @@ Private Type TSetupImportState
     exportPath As String
     exportWorkbook As Workbook
     displayPrompt As Boolean
+    lastExportFile As String
 End Type
 
 Private this As TSetupImportState
+
+Private Sub Class_Initialize()
+    this.displayPrompt = True
+    this.lastExportFile = vbNullString
+End Sub
 
 
 '@section Factory helpers
@@ -101,6 +107,28 @@ End Property
 '@sub-title Self reference implementing the interface.
 Public Property Get Self() As ISetupImportService
     Set Self = Me
+End Property
+
+'@sub-title Allow callers to toggle export folder prompts (primarily for tests).
+Public Property Let DisplayPrompts(ByVal state As Boolean)
+    this.displayPrompt = state
+End Property
+
+Public Property Get DisplayPrompts() As Boolean
+    DisplayPrompts = this.displayPrompt
+End Property
+
+'@sub-title Configure the export folder when bypassing UI prompts.
+Public Sub SetExportFolder(ByVal folderPath As String)
+    this.exportPath = Trim$(folderPath)
+    If LenB(this.exportPath) = 0 Then
+        this.exportPath = vbNullString
+    End If
+End Sub
+
+'@sub-title Retrieve the last export file saved through this service.
+Public Property Get LastExportFile() As String
+    LastExportFile = this.lastExportFile
 End Property
 
 
@@ -198,7 +226,6 @@ Public Sub Clean(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
     Dim idx As Long
     Dim sheetName As String
     Dim targetSheet As Worksheet
-    Dim excludeNames As BetterArray
     Dim sheetUnlocked As Boolean
     Dim errNumber As Long
     Dim errSource As String
@@ -207,7 +234,6 @@ Public Sub Clean(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
     Set workbook = ThisWorkbook
     ValidatePasswords pass
     Set sheetsList = EnsureSheetsList(sheetsList)
-    Set excludeNames = New BetterArray
 
     EnterBusyState
     On Error GoTo CleanFailed
@@ -219,7 +245,7 @@ Public Sub Clean(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
         pass.UnProtect sheetName
         sheetUnlocked = True
 
-        CleanWorksheetTables targetSheet, excludeNames
+        CleanWorksheetTables targetSheet
         ClearWorksheetComments targetSheet
 
         ProtectWorksheet pass, sheetName
@@ -228,7 +254,6 @@ Public Sub Clean(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
 
 CleanCleanup:
     LeaveBusyState
-    Set excludeNames = Nothing
     Exit Sub
 
 CleanFailed:
@@ -289,7 +314,7 @@ Public Sub Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
                         Set hostList = hostSheet.ListObjects(importList.Name)
                         Set importTable = CustomTable.Create(importList)
                         Set hostTable = CustomTable.Create(hostList)
-                        hostTable.Import importTable, keepImportHeaders:=(sheetName = TRANSLATIONS_SHEET_NAME)
+                        hostTable.Import importTable, keepSourceHeaders:=(sheetName = TRANSLATIONS_SHEET_NAME)
                     End If
                 Next importList
 
@@ -527,6 +552,7 @@ Private Sub ImportAnalysisUsingClass(ByVal pass As IPasswords, _
 
         Set analysisManager = Analysis.Create(hostSheet)
         analysisManager.Import sourceSheet
+        CopyAnalysisHelperCells sourceSheet, hostSheet
 
 ImportCleanup:
         On Error Resume Next
@@ -575,9 +601,8 @@ Private Sub ImportTranslationsUsingClass(ByVal pass As IPasswords, _
         sheetUnlocked = True
 
         Set hostTableAdapter = CustomTable.Create(hostTable)
-        Set sourceTableAdapter = DataSheet.Create(sourceSheet)
-        hostTableAdapter.Import sourceTableAdapter, keepImportHeaders:=True
-        ResetTranslationsRegistry hostWorkbook, hostTable
+        Set sourceTableAdapter = DataSheet.Create(sourceSheet, 1, 1)
+        hostTableAdapter.Import sourceTableAdapter, keepSourceHeaders:=True
 
 ImportCleanup:
         On Error Resume Next
@@ -596,25 +621,11 @@ ImportFailed:
         Resume ImportCleanup
 End Sub
 
-'@sub-title Refresh translations registry after a successful import.
-Private Sub ResetTranslationsRegistry(ByVal hostWorkbook As Workbook, ByVal hostTable As ListObject)
-    Dim registrySheet As Worksheet
-    Dim manager As ISetupTranslationsTable
-    Dim errDescription As String
-
-    Set registrySheet = ResolveRegistrySheet(hostWorkbook)
-    If registrySheet Is Nothing Then Exit Sub
-
-    On Error GoTo ResetFailed
-        Set manager = SetupTranslationsTable.Create(hostTable)
-        manager.ResetSequence registrySheet
+Private Sub CopyAnalysisHelperCells(ByVal sourceSheet As Worksheet, ByVal hostSheet As Worksheet)
+    On Error Resume Next
+        hostSheet.Cells(1, 1).Value = sourceSheet.Cells(1, 1).Value
+        hostSheet.Cells(2, 1).Value = sourceSheet.Cells(2, 1).Value
     On Error GoTo 0
-    Exit Sub
-
-ResetFailed:
-    errDescription = Err.Description
-    Err.Clear
-    ThrowError ProjectError.SomethingWentWrong, "Failed to refresh translations registry: " & errDescription
 End Sub
 
 '@sub-title Resolve the translations listobject from a worksheet.
@@ -662,6 +673,7 @@ Private Sub Export()
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String
+    this.lastExportFile = vbNullString
 
     Set exportworkbook = EnsureExportWorkbook()
     If exportworkbook Is Nothing Then Exit Sub
@@ -689,7 +701,7 @@ Private Sub Export()
     If WorksheetExists(hostWorkbook, EXPORT_SHEET_NAME) Then
         Set hostSheet = hostWorkbook.Worksheets(EXPORT_SHEET_NAME)
         Set exportsManager = LLExport.Create(hostSheet, EXPORT_HOST_START_ROW, EXPORT_HOST_START_COLUMN)
-        exportsManager.Export exportworkbook, Hide:=xlSheetVisible
+        exportsManager.ExportSpecs exportworkbook, Hide:=xlSheetVisible
     End If
 
 
@@ -703,7 +715,7 @@ Private Sub Export()
     'Export the translations
     If WorksheetExists(hostWorkbook, TRANSLATIONS_SHEET_NAME) Then
         Set hostSheet = hostWorkbook.Worksheets(TRANSLATIONS_SHEET_NAME)
-        Set exportSheet = exportworkbook.Worksheets.Add(After:=exportWorkbook.Worksheets(exportworkbook.Worksheets.Count))
+        Set exportSheet = exportworkbook.Worksheets.Add(After:=exportworkbook.Worksheets(exportworkbook.Worksheets.Count))
         exportSheet.Name = TRANSLATIONS_SHEET_NAME
         Set translationManager = CustomTable.Create(hostSheet.ListObjects(TRANSLATIONS_TABLE_NAME))
         translationManager.Export exportSheet
@@ -961,11 +973,30 @@ Private Function EnsureExportWorkbook() As Workbook
 
     Dim io As IOSFiles
 
-    If (this.exportWorkbook) Is Nothing Then
-        Set io = OSFiles.Create()
-        io.LoadFolder()
+    If (this.exportWorkbook Is Nothing) Then
+        If LenB(this.exportPath) = 0 Then
+            If this.displayPrompt Then
+                Set io = OSFiles.Create()
 
-        If io.HasValidFolder() Then this.exportPath = io.Folder()
+                io.LoadFolder
+
+                If io.HasValidFolder() Then
+                    this.exportPath = io.Folder()
+                Else
+                    Set EnsureExportWorkbook = Nothing
+                    Exit Function
+                End If
+            Else
+                Set EnsureExportWorkbook = Nothing
+                Exit Function
+            End If
+        End If
+
+        If LenB(this.exportPath) = 0 Then
+            Set EnsureExportWorkbook = Nothing
+            Exit Function
+        End If
+
         Set this.exportWorkbook = Workbooks.Add
     End If
 
@@ -975,18 +1006,27 @@ End Function
 
 Private Sub EnsureSavedExport()
 
-    Dim hostworkbook As Workbook
     Dim exportworkbook As Workbook
     Dim filePath As String
 
-    filePath = ThisWorkbook.Name & "_export_" & Format(Now(), "yyyymmdd") & ".xlsx"
-    Set exportworkbook = EnsureExportWorkbook()
-    filePath = this.exportPath  & Application.PathSeparator & filePath
+    Set exportworkbook = this.exportWorkbook
+    If exportworkbook Is Nothing Then Exit Sub
+    If LenB(this.exportPath) = 0 Then Exit Sub
 
-    exportWorkbook.SaveAs filePath, _
+    filePath = BuildExportFilePath()
+
+    exportworkbook.SaveAs filePath, _
     CreateBackup:=False, _
     ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
+    this.lastExportFile = filePath
 End Sub
+
+Private Function BuildExportFilePath() As String
+    Dim filePath As String
+
+    filePath = ThisWorkbook.Name & "_export_" & Format(Now(), "yyyymmdd") & ".xlsx"
+    BuildExportFilePath = this.exportPath & Application.PathSeparator & filePath
+End Function
 
 '@sub-title Close and release the imported workbook.
 Private Sub CloseImportWorkbook()
@@ -1047,14 +1087,13 @@ End Function
 '@section Worksheet helpers
 '===============================================================================
 '@sub-title Clean all list objects within a worksheet.
-Private Sub CleanWorksheetTables(ByVal targetSheet As Worksheet, ByVal excludeNames As BetterArray)
+Private Sub CleanWorksheetTables(ByVal targetSheet As Worksheet)
     Dim listRef As ListObject
     Dim table As ICustomTable
 
     For Each listRef In targetSheet.ListObjects
         Set table = CustomTable.Create(listRef)
-        table.Clean excludeNames:=excludeNames
-        excludeNames.Clear
+        table.Clean
     Next listRef
 End Sub
 
@@ -1176,6 +1215,22 @@ End Sub
 Private Sub ISetupImportService_Export()
     Export
 End Sub
+
+Private Property Get ISetupImportService_DisplayPrompts() As Boolean
+    ISetupImportService_DisplayPrompts = DisplayPrompts
+End Property
+
+Private Property Let ISetupImportService_DisplayPrompts(ByVal state As Boolean)
+    DisplayPrompts = state
+End Property
+
+Private Sub ISetupImportService_SetExportFolder(ByVal folderPath As String)
+    SetExportFolder folderPath
+End Sub
+
+Private Property Get ISetupImportService_LastExportFile() As String
+    ISetupImportService_LastExportFile = LastExportFile
+End Property
 
 Private Property Get ISetupImportService_Path() As String
     ISetupImportService_Path = Path

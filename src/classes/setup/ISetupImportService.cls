@@ -80,9 +80,27 @@ End Property
 Public Property Set ProgressObject(ByVal value As Object)
 End Property
 
+'@jump:DisplayPrompts
+'@sub-title Toggle UI prompts displayed during operations (primarily for automated tests).
+Public Property Get DisplayPrompts() As Boolean
+End Property
+
+Public Property Let DisplayPrompts(ByVal value As Boolean)
+End Property
+
+'@jump:SetExportFolder
+'@sub-title Provide an explicit folder for exports, bypassing the folder picker.
+Public Sub SetExportFolder(ByVal folderPath As String)
+End Sub
+
 
 '@section Miscellaneous
 '===============================================================================
+
+'@jump:LastExportFile
+'@sub-title Path of the last export produced by the service (empty when no export occurred).
+Public Property Get LastExportFile() As String
+End Property
 
 '@jump:Self
 '@sub-title Retrieve the interface bound to the instance.

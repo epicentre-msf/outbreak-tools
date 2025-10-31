@@ -472,11 +472,14 @@ End Function
 Public Sub ImportSpecs(ByVal fromWksh As Worksheet, _
                        ByVal fromStartRow As Long, _
                        ByVal fromStartColumn As Long)
-
+    
+    Dim sourceData As IDataSheet
+    
     EnsureDataReady
     If fromWksh Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Source worksheet is missing"
-
-    this.expData.Import fromWksh, fromStartRow, fromStartColumn
+    Set sourceData = DataSheet.Create(fromWksh, fromStartRow, fromStartColumn)
+    
+    this.expData.Import sourceData
     ResetCaches
 End Sub
 

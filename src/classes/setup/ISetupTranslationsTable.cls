@@ -63,6 +63,7 @@ End Sub
 '@sub-title Reset the hidden update sequence counter.
 Public Sub ResetSequence(ByVal registrySheet As Worksheet)
 End Sub
+
 '@sub-title Summarise and optionally display missing translation counts.
 Public Function NumberOfMissing() As String
 End Function

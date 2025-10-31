@@ -25,14 +25,12 @@ Option Explicit
 '@param dictionary Optional dictionary wrapper providing data access.
 '@param choices Optional choices wrapper exposing list names and categories.
 '@param formulaStore Optional formula data handler used to validate expressions.
-'@param messageTable Optional custom table exposing error message templates.
 '@param stateScope Optional application state scope guarding Excel settings.
 Public Sub Initialise(ByVal hostBook As Workbook, _
                       Optional ByVal passwordService As IPasswords, _
                       Optional ByVal dictionary As ILLdictionary, _
                       Optional ByVal choices As ILLChoices, _
                       Optional ByVal formulaStore As IFormulaData, _
-                      Optional ByVal messageTable As ICustomTable, _
                       Optional ByVal stateScope As IApplicationState)
 End Sub
 
