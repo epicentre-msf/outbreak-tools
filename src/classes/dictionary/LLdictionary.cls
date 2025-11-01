@@ -506,6 +506,7 @@ Public Sub InsertColumn(ByVal colName As String, ByVal After As String)
     Dim anchorRange As Range
     Dim headerCell As Range
     Dim hostSheet As Worksheet
+    Dim app As IApplicationState
 
     If colName = vbNullString Then Exit Sub
 
@@ -518,10 +519,11 @@ Public Sub InsertColumn(ByVal colName As String, ByVal After As String)
         LogInfo "Skipping insert of column " & colName & " because it already exists", checkingNote
         Exit Sub
     End If
-
+    Set app = ApplicationState.Create(Application)
+    app.ApplyBusyState suppressEvents:=True
     Set anchorRange = DataRange(After, includeHeaders:=True)
     Set hostSheet = Wksh()
-
+    app.Restore
     anchorRange.Offset(, 1).EntireColumn.Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
     anchorRange.Offset(, 1).Cells(1, 1).Value = colName
 
