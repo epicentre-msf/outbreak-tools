@@ -47,6 +47,9 @@ Public Sub ManageRows(ByVal sheetName As String, _
     Dim dict As ILLdictionary
     Dim app As IApplicationState
 
+    Set app = ApplicationState.Create(Application)
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+
     On Error Resume Next
     Set targetSheet = ThisWorkbook.Worksheets(sheetName)
     On Error GoTo 0
@@ -78,17 +81,15 @@ Public Sub ManageRows(ByVal sheetName As String, _
     End Select
 
     If Not (part Is Nothing) Then
-        Set app = ApplicationState.Create(Application)
-        app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
         EnsureRowManagement sheetName, del, part, dict
-        app.Restore
     End If
 
+    If Not (app Is Nothing) Then app.Restore
     Exit Sub
     
 Handler:
     On Error Resume Next
-    If Not app Is Nothing Then app.Restore()
+    If Not (app Is Nothing) Then app.Restore
     ProtectSetupSheet sheetName
     If Err.Number <> 0 Then Debug.Print "Manage rows exited with an error: "; Err.Description; Err.Number 
 End Sub
@@ -97,14 +98,26 @@ End Sub
 '@sub-title Ensure Row Management
 Private Sub EnsureRowManagement(ByVal sheetName As String, ByVal del As Boolean, _ 
                                 ByVal part As Object, Optional ByVal dict As ILLdictionary)
-    
+
+    Dim app As IApplicationState
+    Set app = ApplicationState.Create(Application)
+
+    app.ApplyBusyState
     UnProtectSetupSheet sheetName
+
     If dict Is Nothing Then
         part.ManageRows del
     Else
+        app.ApplyBusyState
+        Debug.Print Application.ScreenUpdating
+        Debug.Print Application.EnableAnimations
+
+        UnProtectSetupSheet ResolveSetupSheetName("dict")
         part.ManageRows del, dict
+        ProtectSetupSheet ResolveSetupSheetName("dict")
     End If
     ProtectSetupSheet sheetName
+    app.Restore
 End Sub
 
 '@sub-title Insert a list row at the active cell position
@@ -128,14 +141,17 @@ Public Sub InsertListRowAt(ByVal sheetName As String, ByVal targetCell As Range)
 
     UnProtectSetupSheet sheetName
 
-    If lo.DataBodyRange Is Nothing Then
+    If (lo.DataBodyRange Is Nothing) Then
         lo.ListRows.Add
-    Else
+    ElseIf (sheetName = ResolveSetupSheetName("ana")) Then
+        targetSheet.Rows(targetCell.Row).Insert Shift:=xlShiftDown, CopyOrigin:=xlFormatFromLeftOrAbove
+    Else 
         position = targetCell.Row - lo.HeaderRowRange.Row
         If position < 1 Or position > lo.ListRows.Count Then
             lo.ListRows.Add
         Else
-            lo.ListRows.Add Position:=position
+            'InsertRow
+            lo.ListRows.Add Position:=position           
         End If
     End If
 
@@ -166,7 +182,11 @@ Public Sub DeleteListRowAt(ByVal sheetName As String, ByVal targetCell As Range)
     If position < 1 Or position > lo.ListRows.Count Then Exit Sub
 
     UnProtectSetupSheet sheetName
-        lo.ListRows(position).Delete
+        If sheetName <> ResolveSetupSheetName("ana") Then
+            lo.ListRows(position).Delete
+        Else
+            targetSheet.Rows(targetCell.Row).Delete
+        End If
     ProtectSetupSheet sheetName
 End Sub
 
@@ -232,7 +252,7 @@ Public Sub SortSetupTables(ByVal sheetName As String)
     Dim targetSheet As Worksheet
     Dim normalizedName As String
     Dim choices As ILLChoices
-    Dim analysis As IAnalysis
+    Dim ana As IAnalysis
     Dim lo As ListObject
     Dim tabl As ICustomTable
 
@@ -250,9 +270,9 @@ Public Sub SortSetupTables(ByVal sheetName As String)
                 choices.Sort
             ProtectSetupSheet sheetName
         Case "analysis"
-            Set analysis = Analysis.Create(targetSheet)
+            Set ana = Analysis.Create(targetSheet)
             UnProtectSetupSheet sheetName
-                analysis.Sort
+                ana.Sort
             ProtectSetupSheet sheetName
         Case "exports"
             On Error Resume Next
@@ -286,7 +306,7 @@ Public Sub ProtectSetupSheet(ByVal sheetName As String)
     delRow = Not ((sheetName = TRADSHEETNAME) Or (sheetName = ANALYSISSHEETNAME))
 
     Set pass = ResolveSetupPasswords()
-    pass.Protect sheetName, allowDeleting:=delRow
+    pass.Protect sheetName, allowDeletingRows:=delRow
 End Sub
 
 '@section Translations
@@ -357,7 +377,7 @@ Cleanup:
 End Sub
 
 
-Private Function ResolveSetupSheetName(ByVal sheetKey As String) As String
+Public Function ResolveSetupSheetName(ByVal sheetKey As String) As String
     Dim normalized As String
 
     normalized = LCase$(Trim$(sheetKey))
@@ -510,7 +530,7 @@ Public Sub ImportOrCleanSetup()
     Set pass = ResolveSetupPasswords()
     Set app = ApplicationState.Create(Application)
 
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     Set service = SetupImportService.Create(servicePath, progressLabel)
     service.Check importDict, importChoi, importExp, importAna, importTrans, cleanSetup:=isClean
@@ -528,9 +548,6 @@ Cleanup:
     If Not app Is Nothing Then app.Restore
 
     If completed Then
-        EventsAnalysis.EnterAnalysis forceUpdate:=True
-        EventsGlobal.OpenedWorkbook
-
         If conformityCheck And Not isClean Then
             formRef.Hide
             On Error Resume Next
@@ -733,7 +750,7 @@ End Function
 
 
 '@Description("Provide the password manager used for setup protections")
-Private Function ResolveSetupPasswords() As IPasswords
+Public Function ResolveSetupPasswords() As IPasswords
     Dim passSheet As Worksheet
     Set passSheet = ThisWorkbook.Worksheets(PASSSHEETNAME)
     Set ResolveSetupPasswords = Passwords.Create(passSheet)

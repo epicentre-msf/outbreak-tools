@@ -32,7 +32,7 @@ Public Sub WorkbookOpened()
     Dim scope As IApplicationState
 
     Set scope = ApplicationState.Create(Application)
-    scope.EnterBusyState suppressEvents:=True
+    scope.ApplyBusyState suppressEvents:=True
 
     On Error GoTo Cleanup
         Service.OnWorkbookOpen
@@ -46,7 +46,7 @@ Public Sub SheetActivated(ByVal sh As Worksheet)
     If sh Is Nothing Then Exit Sub
 
     Set scope = ApplicationState.Create(Application)
-    scope.EnterBusyState suppressEvents:=True
+    scope.ApplyBusyState suppressEvents:=True
 
     On Error GoTo Cleanup
         Service.OnSheetActivate sh
@@ -60,7 +60,7 @@ Public Sub SheetChanged(ByVal sh As Worksheet, ByVal target As Range)
     If (sh Is Nothing) Or (target Is Nothing) Then Exit Sub
 
     Set scope = ApplicationState.Create(Application)
-    scope.EnterBusyState suppressEvents:=True
+    scope.ApplyBusyState suppressEvents:=True
 
     On Error GoTo Cleanup
         Service.OnSheetChange sh, target

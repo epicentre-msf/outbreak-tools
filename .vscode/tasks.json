@@ -127,7 +127,7 @@
             "problemMatcher": []
         },
         {
-            "label": "update setup mock",
+            "label": "update setup dev",
             "type": "process",
             "command": "Rscript",
             "args": [
@@ -161,7 +161,7 @@
             "problemMatcher": []
         },
         {
-            "label": "update master setup mock",
+            "label": "update master setup dev",
             "type": "process",
             "command": "Rscript",
             "args": [

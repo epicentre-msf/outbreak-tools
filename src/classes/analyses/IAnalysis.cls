@@ -38,7 +38,7 @@ Public Sub AddRows(): End Sub
 '@sub-title Remove rows from analysis tables while preserving required rows
 Public Sub RemoveRows(): End Sub
 
-
+Public Sub ManageRows(Optional ByVal del As Boolean = False): End Sub
 '@jump:outside
 '@section Operate with outsilde world
 '===============================================================================

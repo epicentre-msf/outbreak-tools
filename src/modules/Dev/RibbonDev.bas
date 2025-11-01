@@ -71,10 +71,6 @@ Public Sub clickDevImport(ByRef control As IRibbonControl)
     MsgBox "Import Done!"
     Exit Sub
 
-    If Not gRibbon Is Nothing Then
-        gRibbon.InvalidateControl "DevGroupVisible"
-    End If
-
 Handler:
     MsgBox "Import failed: " & Err.Description, vbCritical + vbOKOnly, PROMPT_TITLE
     Err.Clear
@@ -88,7 +84,7 @@ Public Sub clickDevExport(ByRef control As IRibbonControl)
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
-    Call EnsureCodeSheet(manager)
+    EnsureCodeSheet manager
 
     On Error GoTo Handler
     manager.ExportAll
@@ -114,7 +110,7 @@ Public Sub clickDevDeploy(ByRef control As IRibbonControl)
     Set manager = EnsureDevelopment()
     If manager Is Nothing Then Exit Sub
 
-    Call EnsureCodeSheet(manager)
+    EnsureCodeSheet manager
 
     Dim pass As IPasswords
     Set pass = ResolvePasswords()
@@ -122,6 +118,8 @@ Public Sub clickDevDeploy(ByRef control As IRibbonControl)
         MsgBox "Passwords sheet '" & PASS_SHEET_NAME & "' not found. Cannot deploy.", vbExclamation + vbOKOnly, PROMPT_TITLE
         Exit Sub
     End If
+
+    If Not gRibbon Is Nothing Then gRibbon.InvalidateControl "DevGroupVisible"
 
     On Error GoTo Handler
     manager.Deploy pass
