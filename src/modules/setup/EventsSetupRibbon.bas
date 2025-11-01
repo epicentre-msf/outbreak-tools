@@ -14,7 +14,7 @@ Private Const TRADSHEETNAME As String = "Translations"
 '@Description("Resize the listObjects in the current sheet")
 '@EntryPoint
 Public Sub clickResize(ByRef control As IRibbonControl)
-    SetupHelpers.ManageRows sheetName:=ActiveSheet.Name del:=True
+    SetupHelpers.ManageRows sheetName:=ActiveSheet.Name, del:=True
 End Sub
 
 '@Description("add rows to listObject")
@@ -68,6 +68,7 @@ Public Sub clickSortTables(ByRef control As IRibbonControl)
 
 Cleanup:
     If Not app Is Nothing Then app.Restore
+    MsgBox "Done!", vbInformation
     Exit Sub
 
 Handler:
@@ -91,7 +92,7 @@ Public Sub clickInsertRow(ByRef control As IRibbonControl)
 
     Set app = ApplicationState.Create(Application)
     app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-
+    
     SetupHelpers.InsertListRowAt targetSheet.Name, targetCell
 
 Cleanup:
@@ -223,9 +224,8 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
     Dim manager As ISetupTranslationsTable
     Dim app As IApplicationState
     Dim sheetUnlocked As Boolean
-    Dim success As Boolean
     Dim upVal As IUpdatedValues
-
+   
     answer = MsgBox("Do you want to update the translation sheet?", vbYesNo + vbQuestion, "Confirm")
     If answer <> vbYes Then Exit Sub
 
@@ -261,17 +261,14 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
 
     Set upVal = SetupHelpers.ResolveUpdatedValues()
     upVal.SwitchTagsToNo
-    success = True
 
 Cleanup:
     If sheetUnlocked Then SetupHelpers.ProtectSetupSheet TRADSHEETNAME
     If Not app Is Nothing Then app.Restore
-    If success Then MsgBox "Done!", vbInformation
     Exit Sub
 
 Handler:
     Debug.Print "clickAddTrans: "; Err.Number; Err.Description
-    success = False
     MsgBox "An error occurred while updating translations.", vbCritical
     Resume Cleanup
 End Sub
@@ -355,6 +352,7 @@ Private Function PromptTranslationLanguage(ByVal languages As BetterArray) As St
 
     selection = CLng(numericResponse)
     PromptTranslationLanguage = Trim$(CStr(languages.Item(languages.LowerBound + selection - 1)))
+    MsgBox "Done!", vbInformation
     Exit Function
 
 InvalidSelection:
@@ -457,13 +455,13 @@ Public  Sub clickEditStyle(ByRef control As IRibbonControl)
     
     On Error GoTo Handler
 
-    Set pass = SetupHelpers.ResolvePasswords()
+    Set pass = SetupHelpers.ResolveSetupPasswords()
 
     pass.UnProtect ThisWorkbook
     Set targetsheet = ThisWorkbook.Worksheets(FORMATSHEET)
 
     If (Not opened) Then
-        ThisWorkbook.Worksheet(FORMATSHEET).Visible = xlSheetVisible
+        ThisWorkbook.Worksheets(FORMATSHEET).Visible = xlSheetVisible
         targetSheet.Activate
     Else
         targetSheet.Visible = xlSheetVeryHidden
@@ -479,9 +477,9 @@ End Sub
 '===============================================================================
 Public Sub SetupButtonVisible(control As IRibbonControl, ByRef returnedVal)
     If (control.Id = "btnDelLoRow") Or (control.Id="btnSort") Then
-        returnedVal = (ActiveSheet.Name <> TRADSHEETNAME)
+        returnedVal = CBool((ActiveSheet.Name <> TRADSHEETNAME))
     ElseIf (control.Id = "btnDelLoCol") Then
-        returnedVal = (ActiveSheet.Name = TRADSHEETNAME)
+        returnedVal = CBool((ActiveSheet.Name = TRADSHEETNAME))
     Else
         returnedVal = True
     End If
@@ -497,9 +495,10 @@ Public Sub clickDevInitialize(ByRef control As IRibbonControl)
    Set prep = SetupPreparation.Create(ThisWorkbook)
    prep.Prepare RibbonDev.EnsureDevelopment()
    'Protecting required worksheet
-   ProtectSetupSheet ResolveSetupSheet("dict")
-   ProtectSetupSheet ResolveSetupSheet("choi")
-   ProtectSetupSheet ResolveSetupSheet("ana")
-   ProtectSetupSheet ResolveSetupSheet("exp")
-   ProtectSetupSheet ResolveSetupSheet("trans")
+   ProtectSetupSheet ResolveSetupSheetName("dict")
+   ProtectSetupSheet ResolveSetupSheetName("choi")
+   ProtectSetupSheet ResolveSetupSheetName("ana")
+   ProtectSetupSheet ResolveSetupSheetName("exp")
+   ProtectSetupSheet ResolveSetupSheetName("trans")
+   MsgBox "Done!", vbInformation
 End Sub

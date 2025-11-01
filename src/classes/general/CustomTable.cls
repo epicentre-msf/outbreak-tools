@@ -721,8 +721,6 @@ Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, Optional ByVal totalRowC
       End If
     End If
   Next rowIndex
-
-  AddShiftTracker "No"
 End Sub
 
 '@label:DataRowCount

@@ -115,14 +115,15 @@ End Function
 '@section Language management
 '===============================================================================
 '@sub-title Ensure all provided languages exist as table headers.
-Public Sub EnsureLanguages(Optional ByVal languages As String = vbNullString)
+Private Sub EnsureLanguages(Optional ByVal lang As String = vbNullString)
     ValidateInitialised
 
     Dim languageList() As String
     Dim counter As Long
     Dim languageName As String
+    Dim languages
 
-    If LenB(Trim$(languages)) = 0 Then Exit Sub
+    If Not TryGetWrittenLanguages(languages, lang) Then Exit Sub
 
     languageList = Split(languages, ";")
     For counter = LBound(languageList) To UBound(languageList)
@@ -132,6 +133,29 @@ Public Sub EnsureLanguages(Optional ByVal languages As String = vbNullString)
         End If
     Next counter
 End Sub
+
+Private Function TryGetWrittenLanguages(ByRef languages As String, ByVal newLang As String) As Boolean
+
+    Dim cellRng As Range
+
+    Set cellRng = this.table.ListColumns(this.table.ListColumns.Count).Range.Offset(, 1).Cells(1, 1)
+
+    If (LenB(newLang) <> 0) Then (languages = newLang)
+    
+    Do While (LenB(cellRng.Value) <> 0)
+    
+        If (LenB(languages) <> 0) Then 
+            languages = languages & ";" & CStr(cellRng.Value)
+        Else
+            languages = CStr(cellRng.Value)
+        End If
+
+        cellRng.ClearContents
+        Set cellRng = cellRng.Offset(, 1)
+    Loop
+
+    TryGetWrittenLanguages = (LenB(languages) <> 0)
+End Function
 
 '@sub-title Create the language column when it does not exist.
 Private Sub EnsureLanguageColumn(ByVal languageName As String)
@@ -397,6 +421,7 @@ Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal update
     Dim values As Variant
     Dim rowIndex As Long
     Dim columnCount As Long
+    Dim columnLower As Long
 
     Set dataRange = registryTable.DataBodyRange
     If dataRange Is Nothing Then Exit Sub
@@ -418,11 +443,12 @@ Private Sub ProcessRegistryTable(ByVal registryTable As ListObject, ByVal update
     End If
 
     columnCount = UBound(values, 2)
+    columnLower = LBound(values, 2)
 
     For rowIndex = LBound(values, 1) To UBound(values, 1)
-        rngName = Trim$(CStr(values(rowIndex, 1)))
-        If columnCount >= 2 Then status = Trim$(CStr(values(rowIndex, 2))) Else status = vbNullString
-        If columnCount >= 3 Then mode = Trim$(CStr(values(rowIndex, 3))) Else mode = vbNullString
+        rngName = Trim$(CStr(values(rowIndex, columnLower + 1)))
+        If columnCount >= 3 Then status = Trim$(CStr(values(rowIndex, columnLower + 2))) Else status = vbNullString
+        If columnCount >= 4 Then mode = Trim$(CStr(values(rowIndex, columnLower + 3))) Else mode = vbNullString
 
         If ShouldProcessRange(status, updateSequence) And LenB(rngName) > 0 Then
             TrackProcessedRange rngName
@@ -449,10 +475,10 @@ Private Sub ProcessSourceRange(ByVal sourceRange As Range, ByVal rngTag As Strin
     Select Case LCase$(Trim$(mode))
         Case MODE_FORMULA
             ProcessFormulaRange sourceRange, rngTag
-        Case MODE_TEXT, vbNullString
+        Case MODE_TEXT
             ProcessTextRange sourceRange, rngTag
         Case Else
-            ThrowProjectError ProjectError.InvalidArgument, "Unknown translation mode '" & mode & "' for range '" & rngTag & "'."
+            'ThrowProjectError ProjectError.InvalidArgument, "Unknown translation mode '" & mode & "' for range '" & rngTag & "'."
     End Select
 End Sub
 
@@ -999,6 +1025,7 @@ Private Sub ApplyTagColumnFormatting()
         On Error Resume Next
             header.Value = TAG_HEADER_TITLE
             header.Font.Color = vbWhite
+            header.Interior.Color = vbWhite
         On Error GoTo 0
     End If
 
@@ -1006,8 +1033,95 @@ Private Sub ApplyTagColumnFormatting()
     If Not tagData Is Nothing Then
         On Error Resume Next
             tagData.Font.Color = vbWhite
+            With tagData
+                With .Borders(xlEdgeTop)
+                    .LineStyle = xlContinuous
+                    .Weight = xlHairline
+                    .Color = vbWhite
+                End With
+                With .Borders(xlEdgeBottom)
+                    .LineStyle = xlContinuous
+                    .Weight = xlHairline
+                    .Color = vbWhite
+                End With
+                With .Borders(xlEdgeRight)
+                    .LineStyle = xlContinuous
+                    .Weight = xlHairline
+                    .Color = vbWhite
+                End With
+                With .Borders(xlEdgeLeft)
+                    .LineStyle = xlContinuous
+                    .Weight = xlHairline
+                    .Color = vbWhite
+                End With
+                With .Borders(xlInsideHorizontal)
+                    .LineStyle = xlContinuous
+                    .Weight = xlHairline
+                    .Color = vbWhite
+                End With
+                With .Borders(xlInsideVertical)
+                    .LineStyle = xlContinuous
+                    .Weight = xlHairline
+                    .Color = vbWhite
+                End With
+        End With
         On Error GoTo 0
     End If
+End Sub
+
+'@sub-title ApplyLangColumnFormatting
+Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
+
+    Dim headerRange As Range
+
+    If langRng Is Nothing Then Exit Sub
+
+    Set headerRange = langRng.Cells(0, 1)
+
+    headerRange.Font.Color = RGB(34, 96, 162)
+    headerRange.Interior.Color = RGB(221, 235, 247)
+    headerRange.Locked = False
+
+    On Error Resume Next
+        With langRng
+            With .Borders(xlEdgeTop)
+                .LineStyle = xlContinuous
+                .Weight = xlHairline
+                .Color = RGB(34, 96, 162)
+            End With
+            With .Borders(xlEdgeBottom)
+                .LineStyle = xlContinuous
+                .Weight = xlHairline
+                .Color = RGB(34, 96, 162)
+            End With
+            With .Borders(xlEdgeRight)
+                .LineStyle = xlContinuous
+                .Weight = xlHairline
+                .Color = RGB(34, 96, 162)
+            End With
+            With .Borders(xlEdgeLeft)
+                .LineStyle = xlContinuous
+                .Weight = xlHairline
+                .Color = RGB(34, 96, 162)
+            End With
+            With .Borders(xlInsideHorizontal)
+                .LineStyle = xlContinuous
+                .Weight = xlHairline
+                .Color = RGB(34, 96, 162)
+            End With
+            With .Borders(xlInsideVertical)
+                .LineStyle = xlContinuous
+                .Weight = xlHairline
+                .Color = RGB(34, 96, 162)
+            End With
+        End With
+    On Error GoTo 0
+
+    langRng.FormatConditions.AddUniqueValues
+    With langRng.FormatConditions(langRng.FormatConditions.Count)
+        .DupeUnique = xlDuplicate
+        .Interior.Color = vbRed
+    End With
 End Sub
 
 '@sub-title Ensure the helper column header is located and configured.
@@ -1177,15 +1291,14 @@ End Sub
 
 '@sub-title Apply light formatting and duplicate highlighting once per update.
 Private Sub ApplyFormatting()
-    Dim headerRange As Range
     Dim dataRange As Range
     Dim tableRange As Range
     Dim columnRange As Range
     Dim unlockRange As Range
     Dim unlockOffset As Long
     Dim unlockWidth As Long
+    
 
-    Set headerRange = this.table.HeaderRowRange
     Set dataRange = this.table.DataBodyRange
     Set tableRange = this.table.Range
 
@@ -1195,46 +1308,6 @@ Private Sub ApplyFormatting()
         tableRange.Font.Color = vbBlack
         tableRange.EntireRow.RowHeight = 30
         tableRange.EntireColumn.ColumnWidth = 60
-        headerRange.Font.Color = RGB(34, 96, 162)
-        headerRange.Interior.Color = RGB(221, 235, 247)
-        headerRange.Locked = False
-    On Error GoTo 0
-
-    ApplyTagColumnFormatting
-
-    On Error Resume Next
-        With tableRange
-            With .Borders(xlEdgeTop)
-                .LineStyle = xlContinuous
-                .Weight = xlHairline
-                .Color = RGB(34, 96, 162)
-            End With
-            With .Borders(xlEdgeBottom)
-                .LineStyle = xlContinuous
-                .Weight = xlHairline
-                .Color = RGB(34, 96, 162)
-            End With
-            With .Borders(xlEdgeRight)
-                .LineStyle = xlContinuous
-                .Weight = xlHairline
-                .Color = RGB(34, 96, 162)
-            End With
-            With .Borders(xlEdgeLeft)
-                .LineStyle = xlContinuous
-                .Weight = xlHairline
-                .Color = RGB(34, 96, 162)
-            End With
-            With .Borders(xlInsideHorizontal)
-                .LineStyle = xlContinuous
-                .Weight = xlHairline
-                .Color = RGB(34, 96, 162)
-            End With
-            With .Borders(xlInsideVertical)
-                .LineStyle = xlContinuous
-                .Weight = xlHairline
-                .Color = RGB(34, 96, 162)
-            End With
-        End With
     On Error GoTo 0
 
     If dataRange Is Nothing Then Exit Sub
@@ -1259,14 +1332,12 @@ Private Sub ApplyFormatting()
     If columnRange Is Nothing Then Exit Sub
 
     Do While Not columnRange Is Nothing And Not Intersect(columnRange, dataRange) Is Nothing
-        columnRange.FormatConditions.AddUniqueValues
-        With columnRange.FormatConditions(columnRange.FormatConditions.Count)
-            .DupeUnique = xlDuplicate
-            .Interior.Color = vbRed
-        End With
+        ApplyLangColumnFormatting columnRange
         Set columnRange = columnRange.Offset(0, 1)
         If columnRange.Column > dataRange.Columns(dataRange.Columns.Count).Column Then Exit Do
     Loop
+
+    ApplyTagColumnFormatting
 End Sub
 
 

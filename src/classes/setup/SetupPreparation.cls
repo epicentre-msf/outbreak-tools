@@ -311,7 +311,7 @@ End Function
 '@Description("Reset registry statuses to the default value after registration.")
 Private Sub ResetRegistryStatuses()
     EnsureUpdatedValuesWatcher
-    this.updater.SwitchTagsToNo
+    this.updater.SwitchTagsToYes
 End Sub
 
 '@section Worksheet helpers

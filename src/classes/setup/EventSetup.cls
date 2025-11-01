@@ -101,7 +101,7 @@ Private Sub IEventSetup_OnWorkbookOpen()
 End Sub
 
 Private Sub IEventSetup_OnSheetActivate(ByVal sh As Worksheet)
-    If (sh Is Nothing Then) Exit Sub
+    If (sh Is Nothing) Then Exit Sub
 
     EnsureRibbon
     If Not (this.ribbon Is Nothing) Then
@@ -140,7 +140,8 @@ Private Sub IEventSetup_OnSheetChange(ByVal sh As Worksheet, ByVal target As Ran
     AddGeoDropdown target
 End Sub
 
-Private Sub IEventSetup_UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
+Private Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
+
     EnsureUpdatedValues
     If (this.updater Is Nothing) Then Exit Sub
 
@@ -173,6 +174,11 @@ Private Sub IEventSetup_UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Bo
     If Not this.variables Is Nothing Then
         this.variables.InvalidateCaches
     End If
+
+End Sub
+
+Private Sub IEventSetup_UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = False)
+    UpdateAnalysisDropdowns forceUpdate
 End Sub
 
 Private Sub IEventSetup_ResetCaches()
@@ -261,9 +267,9 @@ End Sub
 
 Private Sub EnsureRibbon()
     If Not (this.ribbon Is Nothing) Then Exit Sub
-    On Error Resume Next
+    'On Error Resume Next
         Set this.ribbon = RibbonDev.ActualRibbon()
-    On Error GoTo 0
+    'On Error GoTo 0
 End Sub
 
 Private Sub EnsureDictionary()
