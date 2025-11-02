@@ -458,7 +458,7 @@ Public Sub clickImportFile(ByRef control As IRibbonControl)
     service.Check True, True, True, True, True
 
     service.ImportFromWorkbook pass, sheets
-    SetupHelpers.PostMaintenanceAfterImport
+    SetupHelpers.PostImportMaintenance
     success = True
 
 Cleanup:

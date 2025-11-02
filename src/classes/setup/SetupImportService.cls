@@ -149,7 +149,7 @@ Private Sub EnterBusyState()
 
     Set scope = ApplicationScope()
     If Not scope.IsBusy Then
-        scope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
+        scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
     End If
 End Sub
 
@@ -320,7 +320,8 @@ Public Sub Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
                         Set hostTable = CustomTable.Create(hostList)
                         hostTable.Import importTable, _ 
                          keepSourceHeaders:=(sheetName = TRANSLATIONS_SHEET_NAME), _ 
-                            formatHeaders:=formatList
+                            formatHeaders:=formatList, _ 
+                            insertShift:=(sheetName = ANALYSIS_SHEET_NAME)
                     End If
                 Next importList
 
@@ -401,10 +402,10 @@ ImportWorkbookFailed:
         errNumber = Err.Number
         errSource = Err.Source
         errDescription = Err.Description
+        LeaveBusyState True
         On Error Resume Next
             CloseImportWorkbook
         On Error GoTo 0
-        LeaveBusyState True
         If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
 End Sub
 
@@ -726,19 +727,25 @@ Private Sub Export()
         Set hostSheet = hostWorkbook.Worksheets(TRANSLATIONS_SHEET_NAME)
         Set exportSheet = exportworkbook.Worksheets.Add(After:=exportworkbook.Worksheets(exportworkbook.Worksheets.Count))
         exportSheet.Name = TRANSLATIONS_SHEET_NAME
+        On Error Resume Next
         Set translationManager = CustomTable.Create(hostSheet.ListObjects(TRANSLATIONS_TABLE_NAME))
-        translationManager.Export exportSheet
-        With exportSheet
-            On Error Resume Next
-            .Rows(1).Interior.Color = RGB(240, 240, 244)
-            .Rows(1).Font.Bold = True
-            .Cells.Font.Name = "Consolas"
-            .Cells.HorizontalAlignment = xlHAlignLeft
-            .Cells.VerticalAlignment = xlVAlignCenter
-            .Cells.EntireRow.AutoFit
-            .Cells.EntireColumn.AutoFit
-            On Error GoTo 0
-        End With
+        On Error GoTo 0
+
+        'Make sure translations exists before exports
+        If Not (translationManager Is Nothing) Then
+            translationManager.Export exportSheet
+            With exportSheet
+                On Error Resume Next
+                .Rows(1).Interior.Color = RGB(240, 240, 244)
+                .Rows(1).Font.Bold = True
+                .Cells.Font.Name = "Consolas"
+                .Cells.HorizontalAlignment = xlHAlignLeft
+                .Cells.VerticalAlignment = xlVAlignCenter
+                .Cells.EntireRow.AutoFit
+                .Cells.EntireColumn.AutoFit
+                On Error GoTo 0
+            End With
+        End If
     End If
 
     On Error Resume Next

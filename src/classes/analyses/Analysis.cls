@@ -331,8 +331,8 @@ Private Sub Sort()
         If loName = TIMESERIES Then csTab.Sort "Table order", directSort:=True, strictSearch:=False
         If loName = GRAPHTIMESERIES Then csTab.Sort "Graph order", directSort:=True, strictSearch:=False
        
-        'Resize the listObject
-        csTab.RemoveRows totalCount:=rowCount
+        'Resize the listObject after sorting
+        csTab.RemoveRows totalCount:=rowCount, forceShift:=True
     Next
   
 End Sub
