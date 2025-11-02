@@ -614,6 +614,11 @@ Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _
         Exit Sub
     End If
 
+    If  (UpdateData.Length = 0) Then
+        LogInfo "Can not Update because updated data is empty"
+        Exit Sub
+    End If
+
     Set sh = Wksh()
     loName = CurrentLoName(listName)
     Set Lo = sh.ListObjects(loName)
