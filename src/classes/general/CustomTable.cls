@@ -1286,7 +1286,7 @@ Private Sub ImportObject(ByVal impTab As Object, _
 ContinueImport:
   Next
   DataRange.Calculate
-  TrimTableRows targetRowCount 'Trim the table to the targetRowCount
+  If (Not InsertShift) Then TrimTableRows targetRowCount 'Trim the table to the targetRowCount
 End Sub
 
 '@sub-title Import the formatting of a range into a currrent range
