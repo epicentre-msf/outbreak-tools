@@ -1072,9 +1072,9 @@ Private Function ResolveDictionaryFormat(ByVal sheetName As String) As BetterArr
                 "Control", "Main Label", "Lock Cells", "Dev Comments"
     End If
 
-    ResolveDictionaryFormat = lst.Clone()
+    Set ResolveDictionaryFormat = lst.Clone()
 
-End Sub
+End Function
 
 Private Function BuildExportFilePath() As String
     Dim filePath As String
