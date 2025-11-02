@@ -518,7 +518,7 @@ Public Sub InsertColumn(ByVal colName As String, ByVal After As String)
         LogInfo "Skipping insert of column " & colName & " because it already exists", checkingNote
         Exit Sub
     End If
-    Set app = ApplicationState.Create(Application)
+
     Set anchorRange = DataRange(After, includeHeaders:=True)
     Set hostSheet = Wksh()
     anchorRange.Offset(, 1).EntireColumn.Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
