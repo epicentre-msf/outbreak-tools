@@ -672,8 +672,15 @@ Private Sub ApplyFormat(ByVal actRng As Range, ByVal impRng As Range)
     Set actCellRng = actRng.Cells(1, 1)
 
     Do While (cellRng.Row <= impRng.Cells(impRng.Rows.Count, 1).Row)
-        If cellRng.Interior.Color <> vbWhite Then actCellRng.Interior.color = cellRng.Interior.color
-        If cellRng.Font.Color <> vbBlack Then actCellRng.Font.color = cellRng.Font.color
+
+        If (cellRng.Interior.Color <> vbWhite) Then 
+            actCellRng.Interior.color = cellRng.Interior.color
+        End If
+
+        If (cellRng.Font.Color <> vbBlack) Then 
+            actCellRng.Font.color = cellRng.Font.color
+        End If
+
         actCellRng.Font.Bold = cellRng.Font.Bold
         actCellRng.Font.Italic = cellRng.Font.Italic
 

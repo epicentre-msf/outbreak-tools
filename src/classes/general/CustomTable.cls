@@ -1275,8 +1275,10 @@ Private Sub ImportObject(ByVal impTab As Object, _
 
       If Not rng.Cells(1, 1).HasFormula Then rng.Value = impDataRng.Value
 
-      If TypeName(formatHeaders) = "BetterArray" Then
-        If formatHeaders.Includes(headerValue) Then ImportFormat impRng:=impDataRng, currRng:=rng
+      If (TypeName(formatHeaders) = "BetterArray") Then
+        If (formatHeaders.Length > 0) Then
+          If formatHeaders.Includes(headerValue) Then ImportFormat impRng:=impDataRng, currRng:=rng
+        End If
       End If
     Else
       NOTIMPORTEDCOLUMNS.Push headerValue
@@ -1338,7 +1340,7 @@ Private Sub ImportFormat(ByVal impRng As Range, ByVal currRng As Range)
     End If
         
     'Add Font color
-    If (impRng.Cells(formatCounter, 1) <> vbBlack) Then
+    If (impRng.Cells(formatCounter, 1).Font.Color <> vbBlack) Then
       currRng.Cells(formatCounter, 1).Font.color = impRng.Cells(formatCounter, 1).Font.color
     End If
     'Add Font weight and decoration
