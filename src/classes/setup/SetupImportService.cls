@@ -287,6 +287,7 @@ Public Sub Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String
+    Dim formatList As BetterArray
 
     ValidatePasswords pass
     Set sheetsList = EnsureSheetsList(sheetsList)
@@ -297,9 +298,12 @@ Public Sub Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
         PrepareImport pass, sheetsList
         Set importBook = EnsureImportWorkbook()
         Set hostWorkbook = ThisWorkbook
+        Set formatList = New BetterArray
+        
 
         For idx = sheetsList.LowerBound To sheetsList.UpperBound
             sheetName = CStr(sheetsList.Item(idx))
+            Set formatList = ResolveDictionaryFormat(sheetName)
 
             If WorksheetExists(importBook, sheetName) And WorksheetExists(hostWorkbook, sheetName) Then
                 pass.UnProtect sheetName
@@ -314,7 +318,9 @@ Public Sub Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
                         Set hostList = hostSheet.ListObjects(importList.Name)
                         Set importTable = CustomTable.Create(importList)
                         Set hostTable = CustomTable.Create(hostList)
-                        hostTable.Import importTable, keepSourceHeaders:=(sheetName = TRANSLATIONS_SHEET_NAME)
+                        hostTable.Import importTable, _ 
+                         keepSourceHeaders:=(sheetName = TRANSLATIONS_SHEET_NAME), _ 
+                            formatHeaders:=formatList
                     End If
                 Next importList
 
@@ -342,6 +348,7 @@ ImportFailed:
     LeaveBusyState True
     If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
 End Sub
+
 
 '@section Workbook-driven import
 '===============================================================================
@@ -1045,6 +1052,21 @@ Private Sub EnsureSavedExport()
     CreateBackup:=False, _
     ConflictResolution:=Excel.XlSaveConflictResolution.xlLocalSessionChanges
     this.lastExportFile = filePath
+End Sub
+
+Private Function ResolveDictionaryFormat(ByVal sheetName As String) As BetterArray
+
+    Dim lst As BetterArray
+    Set lst = New BetterArray
+    If sheetName = DICTIONARY_SHEET_NAME Then
+        lst.Push "Formatting Condition", _ 
+                "Formatting Values", _ 
+                "Variable Name", _ 
+                "Control", "Main Label", "Lock Cells", "Dev Comments"
+    End If
+
+    ResolveDictionaryFormat = lst.Clone()
+
 End Sub
 
 Private Function BuildExportFilePath() As String
