@@ -617,7 +617,8 @@ Private Sub Resize(Optional ByVal addRows As Boolean = False, _
                    Optional ByVal insertShift As Boolean = True, _
                    Optional ByVal totalRowCount As Long = 0, _
                    Optional ByVal nbRows As Long = 5, _
-                   Optional ByVal includeIds As Boolean = True)
+                   Optional ByVal includeIds As Boolean = True, _ 
+                   Optional ByVal forceShift As Boolean = False)
   Dim lo As ListObject
 
   EnsureTableInitialized
@@ -626,7 +627,7 @@ Private Sub Resize(Optional ByVal addRows As Boolean = False, _
   If addRows Then
     AddTableRows lo, nbRows, insertShift
   Else
-    RemoveEmptyDataRows lo, totalRowCount
+    RemoveEmptyDataRows lo, totalRowCount, forceShift
   End If
 
   If includeIds Then AddIds
@@ -686,7 +687,9 @@ End Sub
 
 
 '@label:RemoveEmptyDataRows
-Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, Optional ByVal totalRowCount As Long)
+Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _ 
+                                Optional ByVal totalRowCount As Long, _
+                                Optional ByVal forceShift As Boolean)
   'Scan from the bottom so deletions do not disturb subsequent indexes.
   Dim rowIndex As Long
   Dim targetRow As Range
@@ -711,7 +714,7 @@ Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, Optional ByVal totalRowC
   For rowIndex = tabRowCount To 2 Step -1
     Set targetRow = lo.DataBodyRange.Rows(rowIndex)
     If WorksheetFunction.CountA(targetRow) <= rowCount Then
-      If hasTracker Then
+      If hasTracker Or forceShift Then
         Set sh = Wksh()
         'Delete the entire worksheet Row
         sh.Rows(lo.ListRows(rowIndex).Range().Row).Delete
@@ -916,9 +919,10 @@ End Sub
 '
 '@export
 Private Sub RemoveRows(Optional ByVal totalCount As Long = 0, _ 
-                       Optional ByVal includeIds As Boolean = True)
+                       Optional ByVal includeIds As Boolean = True, _
+                       Optional ByVal forceShift As Boolean = False)
 
-  Resize AddRows:=False, totalRowCount:=totalCount, includeIds:=includeIds
+  Resize AddRows:=False, totalRowCount:=totalCount, includeIds:=includeIds, forceShift:=forceShift
 End Sub
 
 '@label:SetValidation
@@ -1658,8 +1662,9 @@ End Sub
 '@jump:RemoveRows
 'Remove rows to a CustomTable
 Private Sub ICustomTable_RemoveRows(Optional ByVal totalCount As Long = 0, _ 
-                                    Optional ByVal includeIds As Boolean = True)
-  RemoveRows totalCount:=totalCount, includeIds:=includeIds
+                                    Optional ByVal includeIds As Boolean = True, _ 
+                                    Optional ByVal forceShift As Boolean = False)
+  RemoveRows totalCount:=totalCount, includeIds:=includeIds, forceShift:=forceShift
 End Sub
 
 

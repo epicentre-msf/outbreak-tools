@@ -119,11 +119,10 @@ Public Sub clickDevDeploy(ByRef control As IRibbonControl)
         Exit Sub
     End If
 
-    If Not gRibbon Is Nothing Then gRibbon.InvalidateControl "DevGroupVisible"
-
     On Error GoTo Handler
-    manager.Deploy pass
+    manager.Deploy pass, lockWorkbook:=True
     
+    If Not gRibbon Is Nothing Then gRibbon.Invalidate
     Exit Sub
 
 Handler:

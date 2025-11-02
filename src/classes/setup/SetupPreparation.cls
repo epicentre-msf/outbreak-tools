@@ -40,9 +40,11 @@ Private Const SHEET_CHOICES As String = "Choices"
 Private Const SHEET_ANALYSIS As String = "Analysis"
 Private Const SHEET_EXPORTS As String = "Exports"
 Private Const SHEET_PASS As String = "__pass"
+Private Const SHEET_DEV As String = "Dev"
 Private Const SHEET_CHECKING As String = "__checkRep"
 Private Const DROPDOWN_PREFIX As String = "dropdown_"
 Private Const STATUS_DEFAULT As String = "no"
+Private Const SHEET_TRANSLATIONS As String = "Translations"
 
 Private Const TABLE_DICTIONARY As String = "Tab_Dictionary"
 Private Const TABLE_EXPORTS As String = "Tab_Export"
@@ -211,6 +213,21 @@ Private Sub EnsureHiddenSheets(ByRef manager As IDevelopment)
     manager.AddHiddenSheet SHEET_FORMATTER
     manager.AddHiddenSheet SHEET_PASS
     manager.AddHiddenSheet SHEET_FORMULA
+    manager.AddHiddenSheet SHEET_DEV
+End Sub
+
+Private Sub EnsureProtectedSheets(ByRef manager As IDevelopment)
+
+    If manager Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "Development manager reference is required"
+    End If
+
+    manager.AddProtectedSheet SHEET_DICTIONARY
+    manager.AddProtectedSheet SHEET_CHOICES
+    manager.AddProtectedSheet SHEET_ANALYSIS
+    manager.AddProtectedSheet SHEET_EXPORTS
+    manager.AddProtectedSheet SHEET_TRANSLATIONS
+
 End Sub
 
 
@@ -339,7 +356,7 @@ Private Function EnsureRegistrySheet() As Worksheet
 
     Dim sh As Worksheet
 
-    Set sh = ResolveOrCreateWorksheet(SHEET_UPDATED, xlSheetHidden)
+    Set sh = ResolveOrCreateWorksheet(SHEET_UPDATED, addVisibility:=False)
     Set this.registrySheet = sh
     Set EnsureRegistrySheet = sh
 End Function
@@ -368,7 +385,8 @@ End Function
 
 '@Description("Resolve a worksheet if it exists, otherwise create one with the supplied visibility state.")
 Private Function ResolveOrCreateWorksheet(ByVal sheetName As String, _
-                                          ByVal visibility As XlSheetVisibility) As Worksheet
+                                          Optional ByVal visibility As XlSheetVisibility, _ 
+                                          Optional ByVal addVisibility As Boolean = True) As Worksheet
     Dim sh As Worksheet
     Dim wb As Workbook
 
@@ -383,7 +401,7 @@ Private Function ResolveOrCreateWorksheet(ByVal sheetName As String, _
         sh.Name = sheetName
     End If
 
-    sh.Visible = visibility
+    If addVisibility Then sh.Visible = visibility
     Set ResolveOrCreateWorksheet = sh
 End Function
 

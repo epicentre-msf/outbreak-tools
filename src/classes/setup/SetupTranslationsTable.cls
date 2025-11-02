@@ -121,7 +121,7 @@ Private Sub EnsureLanguages(Optional ByVal lang As String = vbNullString)
     Dim languageList() As String
     Dim counter As Long
     Dim languageName As String
-    Dim languages
+    Dim languages As String
 
     If Not TryGetWrittenLanguages(languages, lang) Then Exit Sub
 
@@ -140,10 +140,10 @@ Private Function TryGetWrittenLanguages(ByRef languages As String, ByVal newLang
 
     Set cellRng = this.table.ListColumns(this.table.ListColumns.Count).Range.Offset(, 1).Cells(1, 1)
 
-    If (LenB(newLang) <> 0) Then (languages = newLang)
+    If (LenB(newLang) <> 0) Then languages = newLang
     
     Do While (LenB(cellRng.Value) <> 0)
-    
+
         If (LenB(languages) <> 0) Then 
             languages = languages & ";" & CStr(cellRng.Value)
         Else
@@ -193,7 +193,7 @@ Public Sub SwitchDefaultLanguage(ByVal languageName As String)
     If targetIndex = LabelColumnIndex() Then Exit Sub
 
     Set scope = ResolveScope()
-    scope.ApplyBusyState True
+    scope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
 
     On Error GoTo CleanFail
 
@@ -879,6 +879,35 @@ Private Sub RemoveObsoleteLabels(ByVal updateSequence As Long)
             DeleteRowAt rowIndex
         End If
     Next rowIndex
+
+    Dim firstLangIndex As Long
+    Dim seenLabels As BetterArray
+    Dim langValue As String
+    Dim duplicate As Boolean
+
+    firstLangIndex = LabelColumnIndex()
+    If firstLangIndex > this.table.ListColumns.Count Then Exit Sub
+
+    Set seenLabels = New BetterArray
+
+    rowIndex = 1
+    Do While rowIndex <= this.table.ListRows.Count
+        duplicate = False
+        langValue = Trim$(CStr(this.table.DataBodyRange.Cells(rowIndex, firstLangIndex).Value))
+
+        If LenB(langValue) > 0 Then
+            If seenLabels.Length > 0 And seenLabels.Includes(langValue) Then
+                DeleteRowAt rowIndex
+                duplicate = True
+            Else
+                seenLabels.Push langValue
+            End If
+        End If
+    
+        If Not duplicate Then
+            rowIndex = rowIndex + 1
+        End If
+    Loop
 End Sub
 
 '@sub-title Delete a row within the translations table when the index is valid.
