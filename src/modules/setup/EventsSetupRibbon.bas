@@ -171,7 +171,7 @@ Public Sub clickResetTag(ByRef control As IRibbonControl)
    On Error GoTo Handler
 
    Set app = ApplicationState.Create(Application)
-   app.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
+   app.ApplyBusyState suppressEvents:=True
 
    Set prep = SetupPreparation.Create(ThisWorkbook)
    prep.EnsureUpdatedRegistry
@@ -265,7 +265,7 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
     On Error GoTo Handler
 
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     SetupHelpers.UnProtectSetupSheet TRADSHEETNAME
     sheetUnlocked = True
@@ -324,7 +324,7 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
     On Error GoTo Handler
 
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     SetupHelpers.UnProtectSetupSheet TRADSHEETNAME
     translationsUnlocked = True
@@ -393,7 +393,7 @@ Public Sub clickExport(ByRef control As IRibbonControl)
     On Error GoTo Handler
 
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
+    app.ApplyBusyState suppressEvents:=True
     
     Set service = SetupImportService.Create(ThisWorkbook.FullName)
 
@@ -454,8 +454,7 @@ Public Sub clickImportFile(ByRef control As IRibbonControl)
     Set pass = SetupHelpers.ResolveSetupPasswords()
     Set sheets = SetupHelpers.DefaultSetupSheets()
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
-    service.Check True, True, True, True, True
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     service.ImportFromWorkbook pass, sheets
     SetupHelpers.PostImportMaintenance

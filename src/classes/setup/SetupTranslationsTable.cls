@@ -193,7 +193,7 @@ Public Sub SwitchDefaultLanguage(ByVal languageName As String)
     If targetIndex = LabelColumnIndex() Then Exit Sub
 
     Set scope = ResolveScope()
-    scope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
+    scope.ApplyBusyState suppressEvents:=True
 
     On Error GoTo CleanFail
 
@@ -629,10 +629,11 @@ End Function
 
 '@sub-title Persist the label inside the cache for future lookups.
 Private Sub RegisterLabelCacheEntry(ByVal cacheIndex As Long, ByVal label As String, ByVal rowIndex As Long, ByVal replaceExisting As Boolean)
-    Dim entry(0 To 1) As Variant
+    Dim entry As BetterArray
 
-    entry(0) = label
-    entry(1) = rowIndex
+    Set entry = New BetterArray
+
+    entry.Push label, rowIndex
 
     If this.labelCache Is Nothing Then
         Set this.labelCache = CreateBuffer()
@@ -667,14 +668,14 @@ End Function
 
 '@sub-title Retrieve the cached row index stored at a given cache position.
 Private Function CacheRowAt(ByVal cacheIndex As Long) As Long
-    Dim entry As Variant
+    Dim entry As BetterArray
 
     If this.labelCache Is Nothing Then Exit Function
     If cacheIndex < this.labelCache.LowerBound Then Exit Function
     If cacheIndex > this.labelCache.UpperBound Then Exit Function
 
-    entry = this.labelCache.Item(cacheIndex)
-    CacheRowAt = CLng(entry(1))
+    Set entry = this.labelCache.Item(cacheIndex)
+    CacheRowAt = CLng(entry.Item(1))
 End Function
 
 '@sub-title Locate the cache index for a label using binary search (also captures insertion index).
@@ -683,7 +684,7 @@ Private Function LocateLabelCacheIndex(ByVal label As String, ByRef found As Boo
     Dim high As Long
     Dim mid As Long
     Dim comparison As Long
-    Dim entry As Variant
+    Dim entry As BetterArray
     Dim normalized As String
 
     normalized = Trim$(label)
@@ -705,8 +706,8 @@ Private Function LocateLabelCacheIndex(ByVal label As String, ByRef found As Boo
 
     Do While low <= high
         mid = (low + high) \ 2
-        entry = this.labelCache.Item(mid)
-        comparison = StrComp(CStr(entry(0)), normalized, vbTextCompare)
+        Set entry = this.labelCache.Item(mid)
+        comparison = StrComp(CStr(entry.Item(0)), normalized, vbTextCompare)
         If comparison = 0 Then
             found = True
             this.lastLookupIndex = mid
@@ -739,7 +740,7 @@ Private Sub EnsureCache()
     Dim data As Range
     Dim rowIndex As Long
     Dim label As String
-    Dim entry(0 To 1) As Variant
+    Dim entry As BetterArray
     Dim rawValues As Variant
     Dim rowCount As Long
 
@@ -755,16 +756,15 @@ Private Sub EnsureCache()
         For rowIndex = 1 To rowCount
             label = Trim$(CStr(rawValues(rowIndex, 1)))
             If LenB(label) > 0 Then
-                entry(0) = label
-                entry(1) = rowIndex
+                Set entry = New BetterArray
+                entry.Push label, rowIndex
                 this.labelCache.Push entry
             End If
         Next rowIndex
     Else
         label = Trim$(CStr(rawValues))
         If LenB(label) > 0 Then
-            entry(0) = label
-            entry(1) = 1
+            entry.Push label, 1
             this.labelCache.Push entry
         End If
     End If

@@ -664,7 +664,7 @@ Private Function ResolveWorkbook(Optional ByVal hostBook As Workbook) As Workboo
     End If
 
     If hostBook Is Nothing Then
-        ThrowError ProjectError.ObjectNotInitialized, "Host workbook reference is required"
+        Err.Raise ProjectError.ObjectNotInitialized, "Host workbook reference is required"
     End If
 
     Set ResolveWorkbook = hostBook
