@@ -72,7 +72,9 @@ End Sub
 
 '@jump:RemoveRows
 'Remove rows to the custom table
-Public Sub RemoveRows(Optional ByVal totalCount As Long = 0, Optional ByVal includeIds As Boolean = True)
+Public Sub RemoveRows(Optional ByVal totalCount As Long = 0, _ 
+                      Optional ByVal includeIds As Boolean = True, _
+                      Optional ByVal forceShift As Boolean = False)
 End Sub
 
 '@jump:SetValidation

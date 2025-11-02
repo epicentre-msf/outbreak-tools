@@ -274,10 +274,10 @@ Private Property Get HasValidHeaders() As Boolean
     Dim dataObject As IDataSheet
     
     Set dataObject = ChoiceData()
-    HasValidHeaders = dataObject.ColumnExists(ListName()) And _ 
-                      dataObject.ColumnExists(ChoiceLabel()) And _
-                      dataObject.ColumnExists(LabelShort()) And _ 
-                      dataObject.ColumnExists(OrderingList())
+    HasValidHeaders = dataObject.ColumnExists(ListName(), matchCase:=False) And _ 
+                      dataObject.ColumnExists(ChoiceLabel(), matchCase:=False) And _
+                      dataObject.ColumnExists(LabelShort(), matchCase:=False) And _ 
+                      dataObject.ColumnExists(OrderingList(), matchCase:=False)
 
 End Property
 
@@ -357,9 +357,9 @@ Private Sub Sort()
 
     Set listRng = DataRange(ListName(), includeHeaders:=False)
     Set orderRng = DataRange(OrderingList(), includeHeaders:=False)
-    Set choiceRng = DataRange(includeHeaders:=False)
+    Set choiceRng = DataRange(includeHeaders:=True)
 
-    choiceRng.Sort key1:=listRng, Order1:=xlAscending, key2:=orderRng, order2:=xlAscending
+    choiceRng.Sort key1:=listRng, Order1:=xlAscending, key2:=orderRng, order2:=xlAscending, Header:=xlYes
 End Sub
 
 '@label:AddChoice
@@ -755,7 +755,8 @@ End Sub
 '@export
 Private Sub Import(ByVal fromWksh As Worksheet, _ 
                    ByVal fromStartRow As Long, _
-                   ByVal fromStartcol As Long)
+                   ByVal fromStartcol As Long, _ 
+                   Optional ByVal clearSheet As Boolean = False)
     
     Dim choiData As IDataSheet
     Dim impChoiData As IDataSheet
@@ -767,8 +768,10 @@ Private Sub Import(ByVal fromWksh As Worksheet, _
     Set choiData = ChoiceData()
 
     'clear the choices sheet before imports
-    sh.Cells.Clear
-    AddHeaders
+    If clearSheet Then 
+        sh.Cells.Clear
+        AddHeaders
+    End If
 
     'Import the data
     Set impChoiData = DataSheet.Create(fromWksh, fromStartRow, fromStartcol)
@@ -999,8 +1002,9 @@ End Sub
 'import the choice object
 Private Sub ILLChoices_Import(ByVal fromWksh As Worksheet, _ 
                               ByVal fromStartRow As Long, _ 
-                              ByVal fromStartcol As Long)
-    Import fromWksh, fromStartRow, fromStartcol
+                              ByVal fromStartcol As Long, _ 
+                              Optional ByVal clearSheet As Boolean = False)
+    Import fromWksh, fromStartRow, fromStartcol, clearSheet
 End Sub
 
 '@jump:ImportChoice

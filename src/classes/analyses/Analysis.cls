@@ -138,7 +138,9 @@ Private Sub ManageRows(Optional ByVal del As Boolean = False)
         selectionText = LCase$(CStr(headerValue))
         selectionText = Trim$(Replace(selectionText, "add or remove rows of", vbNullString))
     End If
+    
     Set listNames = New BetterArray
+
     Select Case selectionText
         Case "global summary": listNames.Push GLOBALSUMMARY
         Case "univariate analysis": listNames.Push UNIVARIATE
@@ -168,11 +170,10 @@ Private Sub ManageRows(Optional ByVal del As Boolean = False)
             GoTo NextTable
         End If
 
-
         Set tabl = CustomTable.Create(lo, idCol, prefName)
 
         If del Then
-            tabl.RemoveRows totalCount:=requiredCount
+            tabl.RemoveRows totalCount:=requiredCount, forceShift:=True
         Else
             tabl.AddRows insertShift:=True
             If idCol <> vbNullString Then tabl.AddIds
@@ -359,10 +360,8 @@ Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlS
         Exit Sub
     End If
 
-
     'Sort the actual analysis worksheet before exports
     Sort
-   
 
     Set hostsheet = Wksh()
 
@@ -388,15 +387,18 @@ Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlS
         Set sourceLo = sourcesheet.ListObjects(hostLo.Name)
         sourceLo.TableStyle = hostLo.TableStyle
         On Error Resume Next
-        For counter = 0 To 4
-            sourceLo.HeaderRange.Offset(-counter).Value = hostLo.HeaderRange.Offset(-counter).Value
-            sourceLo.HeaderRange.Offset(-counter).Interior.Color = hostLo.HeaderRange.Offset(-counter).Interior.Color
-            sourceLo.HeaderRange.Offset(-counter).Font.Color = hostLo.HeaderRange.Offset(-counter).Font.Color
-            sourceLo.HeaderRange.Offset(-counter).Font.size = hostLo.HeaderRange.Offset(-counter).Font.size
-        Next
+            For counter = 0 To 4
+                sourceLo.HeaderRowRange.Offset(-counter).Value = hostLo.HeaderRowRange.Offset(-counter).Value
+                sourceLo.HeaderRowRange.Offset(-counter).Interior.Color = hostLo.HeaderRowRange.Offset(-counter).Interior.Color
+                sourceLo.HeaderRowRange.Offset(-counter).Font.Color = hostLo.HeaderRowRange.Offset(-counter).Font.Color
+                sourceLo.HeaderRowRange.Offset(-counter).Font.Size = hostLo.HeaderRowRange.Offset(-counter).Font.Size
+                sourceLo.HeaderRowRange.Offset(-counter).Font.Name = hostLo.HeaderRowRange.Offset(-counter).Font.Name
+                sourceLo.HeaderRowRange.Offset(-counter).Font.Bold = hostLo.HeaderRowRange.Offset(-counter).Font.Bold
+            Next
+            sourceSheet.Cells.EntireColumn.AutoFit
         On Error GoTo 0
-        
     Next
+
 
 End Sub
 

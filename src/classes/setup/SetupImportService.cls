@@ -149,7 +149,7 @@ Private Sub EnterBusyState()
 
     Set scope = ApplicationScope()
     If Not scope.IsBusy Then
-        scope.ApplyBusyState
+        scope.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
     End If
 End Sub
 
@@ -355,9 +355,11 @@ Public Sub ImportFromWorkbook(ByVal pass As IPasswords, Optional ByVal sheetsLis
     Dim errDescription As String
 
     ValidatePasswords pass
+    PrepareImport pass, sheetsList, True
     Set resolvedSheets = ResolveImportSheets(sheetsList)
 
     EnterBusyState
+
     On Error GoTo ImportWorkbookFailed
 
         Set importBook = EnsureImportWorkbook()
@@ -719,8 +721,22 @@ Private Sub Export()
         exportSheet.Name = TRANSLATIONS_SHEET_NAME
         Set translationManager = CustomTable.Create(hostSheet.ListObjects(TRANSLATIONS_TABLE_NAME))
         translationManager.Export exportSheet
+        With exportSheet
+            On Error Resume Next
+            .Rows(1).Interior.Color = RGB(240, 240, 244)
+            .Rows(1).Font.Bold = True
+            .Cells.Font.Name = "Consolas"
+            .Cells.HorizontalAlignment = xlHAlignLeft
+            .Cells.VerticalAlignment = xlVAlignCenter
+            .Cells.EntireRow.AutoFit
+            .Cells.EntireColumn.AutoFit
+            On Error GoTo 0
+        End With
     End If
 
+    On Error Resume Next
+    exportWorkbook.Worksheets(1).Delete
+    On Error GoTo 0
 
 ExportCleanUp:
     EnsureSavedExport
@@ -743,7 +759,9 @@ End Sub
 '@section Preparation helpers
 '===============================================================================
 '@sub-title Ensure the exports and dictionary sheets are aligned prior to import.
-Private Sub PrepareImport(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
+Private Sub PrepareImport(ByVal pass As IPasswords, _
+                          Optional ByVal sheetsList As BetterArray, _ 
+                          Optional ByVal forceSync As Boolean = False)
     Dim importBook As Workbook
     Dim hostWorkbook As Workbook
     Dim currentExportsSheet As Worksheet
@@ -761,7 +779,7 @@ Private Sub PrepareImport(ByVal pass As IPasswords, ByVal sheetsList As BetterAr
     Dim errDescription As String
 
     If sheetsList Is Nothing Then Exit Sub
-    If Not sheetsList.Includes(EXPORT_SHEET_NAME) Then Exit Sub
+    If (Not sheetsList.Includes(EXPORT_SHEET_NAME)) And (Not forceSync) Then Exit Sub
 
     Set importBook = EnsureImportWorkbook()
     Set hostWorkbook = ThisWorkbook
@@ -781,15 +799,12 @@ Private Sub PrepareImport(ByVal pass As IPasswords, ByVal sheetsList As BetterAr
             exportsUnlocked = True
 
             Set currentDictionary = LLdictionary.Create(hostWorkbook.Worksheets(DICTIONARY_SHEET_NAME), DICTIONARY_HOST_START_ROW, DICTIONARY_HOST_START_COLUMN)
+            updatedExports = currentExportObj.NumberOfExports
 
-            Do While currentExportObj.NumberOfExports < importExportObj.NumberOfExports
+            Do While  updatedExports < importExportObj.NumberOfExports
                 previousExports = currentExportObj.NumberOfExports
-                currentExportObj.AddRows
+                currentExportObj.AddRows currentDictionary
                 updatedExports = currentExportObj.NumberOfExports
-
-                For counter = previousExports + 1 To updatedExports
-                    currentDictionary.InsertColumn "Export " & CStr(counter), After:="Export " & CStr(counter - 1)
-                Next counter
             Loop
         End If
     End If
@@ -914,21 +929,30 @@ End Sub
 
 '@sub-title Ensure the progress display object exposes a Caption property.
 Private Sub ValidateProgressDisplay(ByVal progressDisplay As Object)
-    If Not progressDisplay Is Nothing Then
-        On Error GoTo InvalidDisplay
-            progressDisplay.Caption = "Test caption"
-            progressDisplay.Value = "Test value"
-        On Error GoTo 0
-        this.hasCaption = True
-        Exit Sub
-    Else
-        this.hasCaption = False
+
+    If (Not progressDisplay Is Nothing) Then
+        If TestProperty(progressDisplay, this.hasCaption, "Caption") Then Exit Sub
+        If TestProperty(progressDisplay, this.hasCaption, "Value") Then Exit Sub
     End If
+Exit Sub
 
 InvalidDisplay:
     Err.Clear
     ThrowError ProjectError.InvalidArgument, "Progress display object must expose a Caption or Value property."
 End Sub
+
+Private Function TestProperty(ByVal Obj As Object, ByRef hasProp As Boolean, Optional ByVal propName As String = "Caption") As Boolean
+
+    On Error Resume Next
+        If propName = "Caption" Then
+            Obj.Caption = "Test Caption"
+        ElseIf propName = "Value" Then
+            Obj.Value = "Test Value"
+        End If
+        hasProp = (Err.Number = 0)
+        TestProperty = hasProp
+    On Error GoTo 0
+End Function
 
 '@sub-title Ensure the import workbook file exists before opening.
 Private Sub EnsureImportFileExists(ByVal filePath As String)
@@ -998,6 +1022,7 @@ Private Function EnsureExportWorkbook() As Workbook
         End If
 
         Set this.exportWorkbook = Workbooks.Add
+        ActiveWindow.WindowState = xlMinimized
     End If
 
     Set EnsureExportWorkbook = this.exportWorkbook
@@ -1024,7 +1049,7 @@ End Sub
 Private Function BuildExportFilePath() As String
     Dim filePath As String
 
-    filePath = ThisWorkbook.Name & "_export_" & Format(Now(), "yyyymmdd") & ".xlsx"
+    filePath = Replace(ThisWorkbook.Name, ".xlsb", vbNullString) & "_export_" & Format(Now(), "yyyymmdd") & ".xlsx"
     BuildExportFilePath = this.exportPath & Application.PathSeparator & filePath
 End Function
 

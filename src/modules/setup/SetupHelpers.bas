@@ -99,25 +99,17 @@ End Sub
 Private Sub EnsureRowManagement(ByVal sheetName As String, ByVal del As Boolean, _ 
                                 ByVal part As Object, Optional ByVal dict As ILLdictionary)
 
-    Dim app As IApplicationState
-    Set app = ApplicationState.Create(Application)
 
-    app.ApplyBusyState
     UnProtectSetupSheet sheetName
 
     If dict Is Nothing Then
         part.ManageRows del
     Else
-        app.ApplyBusyState
-        Debug.Print Application.ScreenUpdating
-        Debug.Print Application.EnableAnimations
-
         UnProtectSetupSheet ResolveSetupSheetName("dict")
         part.ManageRows del, dict
         ProtectSetupSheet ResolveSetupSheetName("dict")
     End If
     ProtectSetupSheet sheetName
-    app.Restore
 End Sub
 
 '@sub-title Insert a list row at the active cell position
@@ -255,6 +247,7 @@ Public Sub SortSetupTables(ByVal sheetName As String)
     Dim ana As IAnalysis
     Dim lo As ListObject
     Dim tabl As ICustomTable
+    Dim dict As ILLdictionary
 
     On Error Resume Next
         Set targetSheet = ThisWorkbook.Worksheets(sheetName)
@@ -283,8 +276,12 @@ Public Sub SortSetupTables(ByVal sheetName As String)
             UnProtectSetupSheet sheetName
                 tabl.Sort colName:="export number"
             ProtectSetupSheet sheetName
-        Case Else
-            'No action for other sheets yet
+        Case "dictionary"
+            Set dict = LLdictionary.Create(targetSheet, START_ROW_DICTIONARY, START_COLUMN_DICTIONARY)
+            UnProtectSetupSheet sheetName
+                dict.Sort
+
+            ProtectSetupSheet sheetName
     End Select
 End Sub
 
@@ -530,7 +527,7 @@ Public Sub ImportOrCleanSetup()
     Set pass = ResolveSetupPasswords()
     Set app = ApplicationState.Create(Application)
 
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
 
     Set service = SetupImportService.Create(servicePath, progressLabel)
     service.Check importDict, importChoi, importExp, importAna, importTrans, cleanSetup:=isClean
@@ -546,8 +543,7 @@ Public Sub ImportOrCleanSetup()
 
 Cleanup:
     If Not app Is Nothing Then app.Restore
-
-    If completed Then
+    If completed Then  
         If conformityCheck And Not isClean Then
             formRef.Hide
             On Error Resume Next
@@ -555,7 +551,6 @@ Cleanup:
             On Error GoTo 0
         End If
     End If
-
     Exit Sub
 
 Handler:
@@ -598,11 +593,12 @@ Private Function ExecuteImportOperation(ByVal service As ISetupImportService, _
                                         ByVal sheets As BetterArray, _
                                         ByVal runConformityCheck As Boolean, _
                                         ByVal successMessage As String) As String
+    
+    
     service.ImportFromWorkbook pass, sheets
+    If runConformityCheck Then CheckTheSetup
 
-    If runConformityCheck Then
-        CheckTheSetup
-    End If
+    PostMaintenanceAfterImport
 
     ExecuteImportOperation = successMessage
 End Function
@@ -642,6 +638,17 @@ Private Function ExecuteCleanOperation(ByVal service As ISetupImportService, _
 
     ExecuteCleanOperation = successMessage
 End Function
+
+Public Sub PostMaintenanceAfterImport()
+    Dim prep As ISetupPreparation
+    
+    Set prep = SetupPreparation.Create(ThisWorkbook)
+    prep.EnsureUpdatedRegistry
+
+    SetupEventsManager.ResetTranslationCounter
+    SetupEventsManager.RefreshAnalysisDropdowns forceUpdate:=True
+    SetupEventsManager.RecalculateAnalysis
+End Sub
 
 '@section Checkings
 '===============================================================================

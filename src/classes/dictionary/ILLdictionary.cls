@@ -154,6 +154,10 @@ End Sub
 '@sub-title Clean up dictionary columns
 Public Sub Clean(Optional ByVal removeAddedColumns As Boolean = False): End Sub
 
+'@jump:Sort
+'@sub-title Sort the dictionary on sheetname and main section
+Public Sub Sort(): End Sub
+
 
 '@section Data Exchange
 '===============================================================================
@@ -163,7 +167,10 @@ Public Sub Clean(Optional ByVal removeAddedColumns As Boolean = False): End Sub
 '@param fromWksh Worksheet source worksheet.
 '@param fromStartRow Long. Starting row of the source data.
 '@param fromStartcol Long. Starting column of the source data.
-Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
+Public Sub Import(ByVal fromWksh As Worksheet, _ 
+                  ByVal fromStartRow As Long, _ 
+                  ByVal fromStartcol As Long, _ 
+                  Optional ByVal clearSheet As Boolean = False)
 End Sub
 
 '@jump:export
