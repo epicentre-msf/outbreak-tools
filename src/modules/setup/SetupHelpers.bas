@@ -202,7 +202,7 @@ Public Sub DeleteListColumnAt(ByVal sheetName As String, ByVal targetCell As Ran
     If lo Is Nothing Then Exit Sub
 
     colIndex = targetCell.Column - lo.Range.Column + 1
-    If colIndex < 1 Or colIndex > lo.ListColumns.Count Then Exit Sub
+    If (colIndex <= 1) Or colIndex > lo.ListColumns.Count Then Exit Sub
 
     UnProtectSetupSheet sheetName
         lo.ListColumns(colIndex).Delete
@@ -595,10 +595,10 @@ Private Function ExecuteImportOperation(ByVal service As ISetupImportService, _
                                         ByVal successMessage As String) As String
     
     
-    service.ImportFromWorkbook pass, sheets
+    service.Import pass, sheets
     If runConformityCheck Then CheckTheSetup
 
-    PostMaintenanceAfterImport
+    PostImportMaintenance
 
     ExecuteImportOperation = successMessage
 End Function
@@ -639,7 +639,7 @@ Private Function ExecuteCleanOperation(ByVal service As ISetupImportService, _
     ExecuteCleanOperation = successMessage
 End Function
 
-Public Sub PostMaintenanceAfterImport()
+Public Sub PostImportMaintenance()
     Dim prep As ISetupPreparation
     
     Set prep = SetupPreparation.Create(ThisWorkbook)
