@@ -945,10 +945,11 @@ Private Function TestProperty(ByVal Obj As Object, ByRef hasProp As Boolean, Opt
 
     On Error Resume Next
         If propName = "Caption" Then
-            Obj.Caption = "Test Caption"
+            Obj.Caption = ""
         ElseIf propName = "Value" Then
-            Obj.Value = "Test Value"
+            Obj.Value = ""
         End If
+
         hasProp = (Err.Number = 0)
         TestProperty = hasProp
     On Error GoTo 0
