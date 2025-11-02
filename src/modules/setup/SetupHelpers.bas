@@ -527,7 +527,7 @@ Public Sub ImportOrCleanSetup()
     Set pass = ResolveSetupPasswords()
     Set app = ApplicationState.Create(Application)
 
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     Set service = SetupImportService.Create(servicePath, progressLabel)
     service.Check importDict, importChoi, importExp, importAna, importTrans, cleanSetup:=isClean
@@ -537,25 +537,25 @@ Public Sub ImportOrCleanSetup()
     Else
         infoText = ExecuteImportOperation(service, pass, sheets, conformityCheck, IMPORT_DONE)
     End If
-
-    formRef.LabProgress.Caption = infoText
     completed = True
 
 Cleanup:
     If Not app Is Nothing Then app.Restore
-    If completed Then  
+
+    If completed Then 
+        formRef.Hide
         If conformityCheck And Not isClean Then
-            formRef.Hide
             On Error Resume Next
                 ThisWorkbook.Worksheets(CHECKINGSHEETNAME).Activate
             On Error GoTo 0
         End If
+        MsgBox infoText
     End If
     Exit Sub
 
 Handler:
     Debug.Print "SetupHelpers.ImportOrCleanSetup: "; Err.Number; Err.Description
-    MsgBox "Failed to process the setup import: " & Err.Description, vbCritical
+    MsgBox "Failed to process the setup import/clean: " & Err.Description, vbCritical
     Resume Cleanup
 End Sub
 
