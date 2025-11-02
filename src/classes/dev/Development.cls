@@ -317,6 +317,7 @@ Public Sub Deploy(ByVal passwords As IPasswords, Optional ByVal lockWorkbook As 
         End If
     End If
 
+    pass.EnsureDebugExitHandler this.hostwb
     AssignWorkbookName WORKBOOK_DEPLOYMENT_FLAG, EncodeNameValue("Yes")
 End Sub
 
