@@ -164,6 +164,27 @@ End Sub
 '@section Translation Management: callbacks for group CustomGroupTrans
 '===============================================================================
 
+Public Sub clickResetTag(ByRef control As IRibbonControl)
+   Dim prep As ISetupPreparation
+   Dim app As IApplicationState
+
+   On Error GoTo Handler
+
+   Set app = ApplicationState.Create(Application)
+   app.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
+
+   Set prep = SetupPreparation.Create(ThisWorkbook)
+   prep.EnsureUpdatedRegistry
+
+   app.Restore
+   MsgBox "Done!", vbInformation
+
+   Exit Sub
+Handler:
+    Debug.Print "clickResetTag: "; Err.Number; Err.Description
+    If Not app Is Nothing Then app.Restore
+End Sub
+
 '@Description("Callback for editLang onChange: add translation language columns")
 '@EntryPoint
 Public Sub clickAddLang(ByRef control As IRibbonControl, ByRef text As String)
@@ -244,7 +265,7 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
     On Error GoTo Handler
 
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
 
     SetupHelpers.UnProtectSetupSheet TRADSHEETNAME
     sheetUnlocked = True
@@ -303,7 +324,7 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
     On Error GoTo Handler
 
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
 
     SetupHelpers.UnProtectSetupSheet TRADSHEETNAME
     translationsUnlocked = True
@@ -352,7 +373,6 @@ Private Function PromptTranslationLanguage(ByVal languages As BetterArray) As St
 
     selection = CLng(numericResponse)
     PromptTranslationLanguage = Trim$(CStr(languages.Item(languages.LowerBound + selection - 1)))
-    MsgBox "Done!", vbInformation
     Exit Function
 
 InvalidSelection:
@@ -368,19 +388,32 @@ End Function
 Public Sub clickExport(ByRef control As IRibbonControl)
     Dim service As ISetupImportService
     Dim exportPath As String
+    Dim app As IApplicationState
 
     On Error GoTo Handler
 
+    Set app = ApplicationState.Create(Application)
+    app.ApplyBusyState suppressEvents:=True, busyCursor:=xlWait
+    
     Set service = SetupImportService.Create(ThisWorkbook.FullName)
+
+    'UnProtect the analysis before proceeding
+    UnProtectSetupSheet ResolveSetupSheetName("ana")
     service.Export
+    ProtectSetupSheet ResolveSetupSheetName("ana")
 
     exportPath = service.LastExportFile
+
     If LenB(exportPath) > 0 Then
-        MsgBox "Setup exported to:" & vbCrLf & exportPath, vbInformation
+        MsgBox "Setup exported to: " & vbCrLf & exportPath, vbInformation
     End If
+
+    app.Restore
     Exit Sub
 
 Handler:
+    If Not app Is Nothing Then app.Restore
+    ProtectSetupSheet ResolveSetupSheetName("ana")
     Debug.Print "clickExport: "; Err.Number; Err.Description
     MsgBox "Failed to export the setup: " & Err.Description, vbCritical
 End Sub
@@ -421,17 +454,16 @@ Public Sub clickImportFile(ByRef control As IRibbonControl)
     Set pass = SetupHelpers.ResolveSetupPasswords()
     Set sheets = SetupHelpers.DefaultSetupSheets()
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
     service.Check True, True, True, True, True
 
     service.ImportFromWorkbook pass, sheets
+    SetupHelpers.PostMaintenanceAfterImport
     success = True
 
 Cleanup:
     If Not app Is Nothing Then app.Restore
-    If success Then
-        SetupHelpers.PostImportMaintenance SUCCESS_MESSAGE
-    End If
+    If success Then MsgBox "Import Done!"
     Exit Sub
 
 Handler:
@@ -492,13 +524,8 @@ End Sub
 '@Description("Initialise development environment - logic provided by consuming workbook")
 Public Sub clickDevInitialize(ByRef control As IRibbonControl)
    Dim prep As ISetupPreparation
+
    Set prep = SetupPreparation.Create(ThisWorkbook)
    prep.Prepare RibbonDev.EnsureDevelopment()
-   'Protecting required worksheet
-   ProtectSetupSheet ResolveSetupSheetName("dict")
-   ProtectSetupSheet ResolveSetupSheetName("choi")
-   ProtectSetupSheet ResolveSetupSheetName("ana")
-   ProtectSetupSheet ResolveSetupSheetName("exp")
-   ProtectSetupSheet ResolveSetupSheetName("trans")
    MsgBox "Done!", vbInformation
 End Sub

@@ -172,7 +172,7 @@ Public Property Get TableRange(Optional ByVal tableName As String = TABLEKEYS, _
             ThrowError ProjectError.ElementNotFound, _
                       "Unknown password table '" & tableName & "'"
     End Select
-
+ 
     If includeHeaders Then
         Set TableRange = Lo.Range
     Else
@@ -339,15 +339,17 @@ Private Sub ProtectSheet(sheetObject As Variant, _
 
     Set targetSheet = ResolveSheet(sheetObject)
 
-    allowDraw = allowShapes
-    allowDelete = allowDeletingRows
-
     If registerState Then
         'Reuse existing stored preferences to guarantee consistent application.
         Set record = ProtectionRecord(targetSheet.Name)
         allowDraw = ParseBoolean(record.Item(record.LowerBound + 1))
         allowDelete = ParseBoolean(record.Item(record.LowerBound + 2))
     End If
+
+    'If one of the two (registered or incoming is false, Set to false)
+    allowDraw = (allowShapes And allowDraw)
+    allDelete = (allowDeletingRows And AllowDelete)
+
 
     PersistProtectionSettings targetSheet.Name, allowDraw, allowDelete
     ApplySheetProtection targetSheet, allowDraw, allowDelete

@@ -105,7 +105,7 @@ Private Sub IEventSetup_OnSheetActivate(ByVal sh As Worksheet)
 
     EnsureRibbon
     If Not (this.ribbon Is Nothing) Then
-        this.ribbon.InvalidateControl "btnDelLoRows"
+        this.ribbon.InvalidateControl "btnDelLoRow"
         this.ribbon.InvalidateControl "btnDelLoCol"
         this.ribbon.InvalidateControl "btnSort"
     End If
@@ -560,7 +560,8 @@ Private Sub AddChoicesDropdown(ByVal target As Range)
         columnVariable = CStr(this.graphTable.Value("column", seriesValue))
     On Error GoTo 0
     If columnVariable = vbNullString Then Exit Sub
-    dropArray = GetCategories(columnVariable, seriesValue, choiceName)
+
+    Set dropArray = GetCategories(columnVariable, seriesValue, choiceName)
 
     If dropArray Is Nothing Then Exit Sub
     If dropArray.Length = 0 Then Exit Sub
@@ -580,7 +581,7 @@ Private Sub AddChoicesDropdown(ByVal target As Range)
     On Error GoTo Cleanup
         If Not choiceCell Is Nothing Then
             choiceCell.ClearContents
-            this.drop.SetValidation choiceCell, listName, ignoreBlank:=False
+            this.drop.SetValidation choiceCell, listName
             FormatLockCell choiceCell, False
         End If
 

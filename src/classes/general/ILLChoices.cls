@@ -116,8 +116,10 @@ End Sub
 
 '@jump:Import
 'Import a choice object to a new workbook
-Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, _ 
-                  ByVal fromStartcol As Long)
+Public Sub Import(ByVal fromWksh As Worksheet, _ 
+                  ByVal fromStartRow As Long, _ 
+                  ByVal fromStartcol As Long, _ 
+                  Optional ByVal clearSheet As Boolean = False)
 End Sub
 
 '@jump:ImportChoice

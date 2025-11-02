@@ -117,7 +117,7 @@ Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False,
         target.ScreenUpdating = False
         target.DisplayAlerts = False
         target.Calculation = xlCalculationManual
-        target.EnableEvents = (Not suppressEvents)
+        If suppressEvents Then target.EnableEvents = (Not suppressEvents)
         target.CalculateBeforeSave = calculateOnSave
         target.Cursor = busyCursor
         If this.supportsAnimations Then

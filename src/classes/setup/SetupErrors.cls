@@ -262,7 +262,7 @@ Private Sub EnterBusyState()
     Application.CalculateBeforeSave = False
 
     If Not scope.IsBusy Then
-        scope.ApplyBusyState
+        scope.ApplyBusyState, suppressEvent:=True
     End If
 End Sub
 

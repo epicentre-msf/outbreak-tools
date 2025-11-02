@@ -506,7 +506,6 @@ Public Sub InsertColumn(ByVal colName As String, ByVal After As String)
     Dim anchorRange As Range
     Dim headerCell As Range
     Dim hostSheet As Worksheet
-    Dim app As IApplicationState
 
     If colName = vbNullString Then Exit Sub
 
@@ -520,10 +519,8 @@ Public Sub InsertColumn(ByVal colName As String, ByVal After As String)
         Exit Sub
     End If
     Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True
     Set anchorRange = DataRange(After, includeHeaders:=True)
     Set hostSheet = Wksh()
-    app.Restore
     anchorRange.Offset(, 1).EntireColumn.Insert Shift:=xlToRight, CopyOrigin:=xlFormatFromLeftOrAbove
     anchorRange.Offset(, 1).Cells(1, 1).Value = colName
 
@@ -1084,8 +1081,8 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
         End If
     Next
 
-    Set sortRange = DataRange
-    sortRange.Sort key1:=DataRange("number_" & newColumn), Order1:=xlAscending
+    Set sortRange = DataRange(includeHeaders:=True)
+    sortRange.Sort key1:=DataRange("number_" & newColumn), Order1:=xlAscending, Header:=xlYes
 
     '@Ignore AssignmentNotUsed
     endCol = DictEndColumn()
@@ -1093,47 +1090,76 @@ Private Sub AppendNumberColumn(Optional ByVal onColName As String = "sheet name"
     hostSheet.Cells(StartRow() + 1, endCol + 1).Formula = "= " & Chr$(34) & tablePrefix & Chr$(34) & " " & Chr$(38) & " " & hostSheet.Cells(StartRow() + 1, endCol).Address(Rowabsolute:=False)
     Set sortRange = DataRange(newColumn)
     hostSheet.Cells(StartRow() + 1, endCol + 1).AutoFill sortRange, Type:=xlFillValues
-    hostSheet.Calculate
+    hostSheet.UsedRange.Calculate
     sortRange.Value = sortRange.Value
 End Sub
 
+Private Sub AddMainSectionSort()
+
+    Dim hostSheet As Worksheet
+    Dim sheetNameAddress As String
+    Dim mainSecAddress As String
+    Dim sortRange As Range
+    Dim mainSectionIdx As Long
+    Dim sheetNameIdx As Long 
+    Dim endCol As Long
+
+    Set hostSheet = Wksh()
+    mainSectionIdx = ColumnIndex("main section")
+    sheetNameIdx = ColumnIndex("sheet name")
+    endCol = DictEndColumn()
+
+    
+    hostSheet.Cells(StartRow(), endCol + 1).Value = "main section sort"
+    sheetNameAddress = hostSheet.Cells(StartRow() + 1, sheetNameIdx).Address(Rowabsolute:=False) & " "
+    mainSecAddress = hostSheet.Cells(StartRow() + 1, mainSectionIdx).Address(Rowabsolute:=False)
+    hostSheet.Cells(StartRow() + 1, endCol + 1).Formula = "= IF(" & mainSecAddress & "=" & Chr$(34) & Chr$(34) & _ 
+                                                          ", ROW(" & mainSecAddress & "), " & sheetNameAddress & _ 
+                                                           Chr$(38) & Chr$(34) & " - " & Chr$(34) & Chr$(38) & _ 
+                                                           mainSecAddress & ")"
+    Set sortRange = DataRange("main section sort")
+    hostSheet.Cells(StartRow() + 1, endCol + 1).AutoFill sortRange, Type:=xlFillValues
+    sortRange.Calculate
+    AppendNumberColumn "main section sort", "main section", "main section index"
+End Sub
+
+
+Private Sub Sort()
+    'Start by adding the Main section sort column
+    AddMainSectionSort
+
+    'Clean new columns
+    Clean True
+End Sub
+
+
 Private Sub AppendColumnIndex()
+    
     'Compute the final column order used by the designer when producing
     'workbooks. The routine ensures sheet-level grouping is respected while
     'inserting gaps for geo/hf variables that expand into multiple columns.
-    Dim hostSheet As Worksheet
-    Dim endCol As Long
+    Dim hostSheet As Worksheet 
     Dim lastRow As Long
     Dim sheetTypeIdx As Long
-    Dim sheetNameIdx As Long
-    Dim mainSectionIdx As Long
     Dim controlIdx As Long
     Dim sheetName As String
     Dim varOrder As Long
     Dim prevControl As String
     Dim rowIndex As Long
-    Dim sortRange As Range
-    Dim firstSheetCell As String
-    Dim firstSectionCell As String
+    Dim sheetNameIdx As Long 
+    Dim endCol As Long
 
+    AddMainSectionSort
+    
     Set hostSheet = Wksh()
-    endCol = DictEndColumn()
     lastRow = DictEndRow()
-    sheetTypeIdx = ColumnIndex("sheet type")
+    endCol = DictEndColumn()
+    
+
     sheetNameIdx = ColumnIndex("sheet name")
-    mainSectionIdx = ColumnIndex("main section")
+    sheetTypeIdx = ColumnIndex("sheet type")
     controlIdx = ColumnIndex("control")
 
-    hostSheet.Cells(StartRow(), endCol + 1).Value = "main section sort"
-    firstSheetCell = hostSheet.Cells(StartRow() + 1, sheetNameIdx).Address(Rowabsolute:=False) & " "
-    firstSectionCell = hostSheet.Cells(StartRow() + 1, mainSectionIdx).Address(Rowabsolute:=False)
-    hostSheet.Cells(StartRow() + 1, endCol + 1).Formula = "= IF(" & firstSectionCell & "=" & Chr$(34) & Chr$(34) & ", ROW(" & firstSectionCell & "), " & firstSheetCell & Chr$(38) & Chr$(34) & " - " & Chr$(34) & Chr$(38) & firstSectionCell & ")"
-    Set sortRange = DataRange("main section sort")
-    hostSheet.Cells(StartRow() + 1, endCol + 1).AutoFill sortRange, Type:=xlFillValues
-
-    AppendNumberColumn "main section sort", "main section", "main section index"
-
-    endCol = DictEndColumn()
     hostSheet.Cells(StartRow(), endCol + 1).Value = "column index"
     sheetName = vbNullString
     varOrder = 1
@@ -1243,7 +1269,10 @@ End Sub
 '- fromWksh Source worksheet
 '- fromStartRow Long. Start row of the source data
 '- fromStartcol Long. Start column of the source data
-Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
+Public Sub Import(ByVal fromWksh As Worksheet, _
+                  ByVal fromStartRow As Long, _
+                  ByVal fromStartcol As Long, _
+                  Optional ByVal clearSheet As Boolean = False)
     'Replace the current dictionary content with data imported from another
     'worksheet. Helper columns are initialised before the import so the
     'datasheet can drop unexpected headers and reapply formatting.
@@ -1262,11 +1291,14 @@ Public Sub Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal
         ApplyTotalExports TotalNumberOfExports, persist:=True, suppressInvalidLog:=True
     End If
 
-    hostSheet.Cells.Clear
     EnsureColumnsInitialized
-    dictionaryColumns.ToExcelRange hostSheet.Cells(StartRow(), StartColumn()), TransposeValues:=True
-
     EnsureFormatColumns
+
+    If clearSheet Then 
+        hostSheet.Cells.Clear
+        dictionaryColumns.ToExcelRange hostSheet.Cells(StartRow(), StartColumn()), TransposeValues:=True
+    End If
+
     Set targetData = Data()
     Clean removeAddedColumns:=True
     targetData.Import sourceData, False
@@ -1289,9 +1321,11 @@ Public Sub Export(ByVal toWkb As Workbook, _
                   Optional ByVal exportType As String = "__all__", _
                   Optional ByVal addListObject As Boolean = True, _
                   Optional ByVal Hide As Long = xlSheetHidden)
+
     'Copy the dictionary to another workbook, optionally filtering by export
     'type and adding a listobject for backwards compatibility with legacy
     'macros. Visual tweaks (fonts, colours) match the manual export workflow.
+
     Dim targetData As IDataSheet
     Dim exportRange As Range
     Dim targetSheet As Worksheet
@@ -1300,7 +1334,6 @@ Public Sub Export(ByVal toWkb As Workbook, _
     EnsureFormatColumns
     Set targetData = Data()
     
-
     If ColumnExists(exportType) Then
         targetData.Export toWkb, filteredVarName:=exportType, Hide:=Hide
     Else
@@ -1336,9 +1369,11 @@ End Sub
 '@params
 '- TransObject ITranslationObject responsible for translations
 Public Sub Translate(ByVal TransObject As ITranslationObject)
+    
     'Delegate translation of human-readable columns to the provided translation
     'object. Control details may contain formulas, so we pass the
     '`containsFormula` flag when appropriate to avoid breaking references.
+
     Dim transCols As BetterArray
     Dim idx As Long
     Dim targetRange As Range
@@ -1506,8 +1541,11 @@ Private Sub ILLdictionary_Clean(Optional ByVal removeAddedColumns As Boolean = F
 End Sub
 
 '@jump:import
-Private Sub ILLdictionary_Import(ByVal fromWksh As Worksheet, ByVal fromStartRow As Long, ByVal fromStartcol As Long)
-    Import fromWksh, fromStartRow, fromStartcol
+Private Sub ILLdictionary_Import(ByVal fromWksh As Worksheet, _ 
+                                 ByVal fromStartRow As Long, _
+                                 ByVal fromStartcol As Long, _ 
+                                 Optional ByVal clearSheet As Boolean = False)
+    Import fromWksh, fromStartRow, fromStartcol, clearSheet
 End Sub
 
 '@jump:export
@@ -1521,4 +1559,8 @@ End Sub
 '@jump:translate
 Private Sub ILLdictionary_Translate(ByVal TransObject As ITranslationObject)
     Translate TransObject
+End Sub
+
+Private Sub ILLdictionary_Sort()
+    Sort
 End Sub
