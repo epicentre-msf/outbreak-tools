@@ -1165,8 +1165,6 @@ Private Sub ClearWorksheetComments(ByVal targetSheet As Worksheet)
     On Error Resume Next
         usedCells.ClearComments
         Err.Clear
-        usedCells.ClearCommentsThreaded
-        Err.Clear
     On Error GoTo 0
 End Sub
 
