@@ -1235,7 +1235,7 @@ Attribute Splice.VB_Description = "changes the contents of the array by removing
         Next
     End If
     
-    InternalItems = LocalItems
+    Me.Items = LocalItems
     
     Splice = Result
 End Function
