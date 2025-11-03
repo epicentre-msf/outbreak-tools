@@ -784,7 +784,8 @@ Private Sub EnsureColumnCapacity(ByVal requiredColumns As Long)
   For counter = trimedColumns + 1 To currCols
     On Error Resume Next
     Lo.ListColumns(counter).DataRange.Cells.Clear
-    On Error GoTo
+    On Error GoTo 0
+    
     Lo.ListColumns(counter).Delete
   Next
 End Sub
