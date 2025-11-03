@@ -684,7 +684,15 @@ End Function
 '-------------------------------------------------------------------------------
 '@sub-title Backwards-compatible entry point matching the legacy module signature.
 Public Sub CheckTheSetup()
+    Dim checkSheet As Worksheet
+
+    Set checkSheet = ResolveSetupSheet("check")
+    checkSheet.Cells.Clear
     RunSetupChecks ThisWorkbook
+
+    On Error Resume Next
+    checkSheet.Activate
+    On Error GoTo 0
 End Sub
 
 '@sub-title Execute setup checks against the provided workbook.
