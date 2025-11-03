@@ -338,7 +338,7 @@ Public Sub TestExportCreatesWorkbookInProvidedFolder()
     PrepareHostSetupSheets
 
     exportFolder = TestHelpers.BuildTempFolder(ThisWorkbook, "SetupExportTests")
-    expectedFilePath = exportFolder & Application.PathSeparator & ThisWorkbook.Name & "_export_" & Format$(Now(), "yyyymmdd") & ".xlsx"
+    expectedFilePath = exportFolder & Application.PathSeparator & Replace(ThisWorkbook.Name, ".xlsb", "") & "_export_" & Format$(Now(), "yyyymmdd") & ".xlsx"
     DeleteFileIfExists expectedFilePath
 
     Service.DisplayPrompts = False
