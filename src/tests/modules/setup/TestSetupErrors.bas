@@ -709,7 +709,6 @@ Private Function CheckingsContain(ByVal source As BetterArray, ByVal expectedTex
                 For keyIdx = keys.LowerBound To keys.UpperBound
                     keyName = CStr(keys.Item(keyIdx))
                     labelValue = check.ValueOf(keyName)
-                    Debug.Print keyName
                     If InStr(1, labelValue, expectedText, vbTextCompare) > 0 Then
                         CheckingsContain = True
                         Exit Function
