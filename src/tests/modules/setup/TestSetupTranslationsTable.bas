@@ -172,7 +172,7 @@ End Sub
 Public Sub TestUpdateFromRegistryRejectsUnknownMode()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistryRejectsUnknownMode"
 
-    RegistryTable.ListRows(1).Range.Cells(1, 3).Value = "unsupported"
+    RegistryTable.ListRows(1).Range.Cells(1, 4).Value = "unsupported"
 
     On Error GoTo ExpectError
         Subject.UpdateFromRegistry RegistrySheet
@@ -273,11 +273,13 @@ Public Sub TestUpdateFromRegistryProcessesSingleCellRegistryTable()
     FixtureWorkbook.Names.Add Name:="RNG_Solo", RefersTo:=SourceSheet.Range("D1")
 
     Dim singleMatrix As Variant
-    singleMatrix = TestHelpers.RowsToMatrix(Array(Array("rngname"), Array("RNG_Solo")))
-    TestHelpers.WriteMatrix RegistrySheet.Range("E1"), singleMatrix
+    singleMatrix = TestHelpers.RowsToMatrix(Array( _ 
+                                                Array("tabname", "rngname", "status", "mode"), _ 
+                                                Array("table", "RNG_Solo", "yes", "translate as text")))
+    TestHelpers.WriteMatrix RegistrySheet.Range("F1"), singleMatrix
 
     Dim singleTable As ListObject
-    Set singleTable = RegistrySheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=RegistrySheet.Range("E1:E2"), XlListObjectHasHeaders:=xlYes)
+    Set singleTable = RegistrySheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=RegistrySheet.Range("F1:I2"), XlListObjectHasHeaders:=xlYes)
     singleTable.Name = "Tab_RegistrySingle"
 
     Subject.UpdateFromRegistry RegistrySheet
@@ -331,16 +333,16 @@ End Function
 Private Function BuildRegistryTable(ByVal targetSheet As Worksheet) As ListObject
     Dim matrix As Variant
     matrix = TestHelpers.RowsToMatrix(Array( _
-        Array("rngname", "status", "mode"), _
-        Array("RNG_Greetings", "yes", "translate as text"), _
-        Array("RNG_Farewell", "no", "translate as text"), _
-        Array("RNG_Formula", "yes", "translate as formula")))
+        Array("TableName", "rngname", "status", "mode"), _
+        Array("table", "RNG_Greetings", "yes", "translate as text"), _
+        Array("table", "RNG_Farewell", "no", "translate as text"), _
+        Array("table", "RNG_Formula", "yes", "translate as formula")))
 
     targetSheet.Cells.Clear
     TestHelpers.WriteMatrix targetSheet.Cells(1, 1), matrix
 
     Dim registryRange As Range
-    Set registryRange = targetSheet.Range("A1:C4")
+    Set registryRange = targetSheet.Range("A1:D4")
 
     Dim table As ListObject
     Set table = targetSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=registryRange, XlListObjectHasHeaders:=xlYes)
@@ -364,9 +366,9 @@ Private Sub RegisterSourceRanges(ByVal targetSheet As Worksheet, ByVal hostWorkb
 End Sub
 
 Private Sub SetRegistryStatus(ByVal firstStatus As String, ByVal secondStatus As String, ByVal thirdStatus As String)
-    RegistryTable.ListRows(1).Range.Cells(1, 2).Value = firstStatus
-    RegistryTable.ListRows(2).Range.Cells(1, 2).Value = secondStatus
-    RegistryTable.ListRows(3).Range.Cells(1, 2).Value = thirdStatus
+    RegistryTable.ListRows(1).Range.Cells(1, 3).Value = firstStatus
+    RegistryTable.ListRows(2).Range.Cells(1, 3).Value = secondStatus
+    RegistryTable.ListRows(3).Range.Cells(1, 3).Value = thirdStatus
 End Sub
 
 Private Function TagForLabel(ByVal label As String) As String
