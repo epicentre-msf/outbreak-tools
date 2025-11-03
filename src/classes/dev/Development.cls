@@ -251,11 +251,11 @@ End Sub
 '@section Deployment
 '===============================================================================
 '@Description("Protect worksheets, hide Dev assets, copy forms code, and set deployment marker.")
-Public Sub Deploy(ByVal passwords As IPasswords, Optional ByVal lockWorkbook As Boolean = False)
+Public Sub Deploy(ByVal pass As IPasswords, Optional ByVal lockWorkbook As Boolean = False)
     EnsureInitialised
     EnsureHostSheetsUnlocked
 
-    If passwords Is Nothing Then
+    If pass Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Passwords handler is required for deployment"
     End If
 
@@ -263,7 +263,7 @@ Public Sub Deploy(ByVal passwords As IPasswords, Optional ByVal lockWorkbook As 
     Dim candidate As Variant
     Dim sheet As Worksheet
 
-    ApplyDefaultPassword passwords
+    ApplyDefaultPassword pass
 
     SynchroniseFormsTables False
 
@@ -301,14 +301,14 @@ Public Sub Deploy(ByVal passwords As IPasswords, Optional ByVal lockWorkbook As 
                 End Select
 
                 If Not sheet Is Nothing Then
-                    passwords.Protect sheet
+                    pass.Protect sheet
                 End If
             Next idx
         End If
     End If
 
     If lockWorkbook Then
-        passwords.Protect this.hostwb
+        pass.Protect this.hostwb
     End If
 
     If Not this.codeSheet Is Nothing Then
