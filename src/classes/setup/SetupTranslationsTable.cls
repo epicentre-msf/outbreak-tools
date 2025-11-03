@@ -41,6 +41,7 @@ Private Const COUNTER_NAME As String = "_SetupTranslationsCounter"
 Private Const STATUS_UPDATED As String = "yes"
 Private Const MODE_TEXT As String = "translate as text"
 Private Const MODE_FORMULA As String = "translate as formula"
+Private Const MODE_WATCH As String = "watch for update"
 Private Const TAG_HEADER_TITLE As String = "__TagInternal__"
 Private Const TAG_SEPARATOR As String = "__"
 
@@ -478,7 +479,9 @@ Private Sub ProcessSourceRange(ByVal sourceRange As Range, ByVal rngTag As Strin
         Case MODE_TEXT
             ProcessTextRange sourceRange, rngTag
         Case Else
-            'ThrowProjectError ProjectError.InvalidArgument, "Unknown translation mode '" & mode & "' for range '" & rngTag & "'."
+            If (mode <> MODE_WATCH) Then 
+                ThrowProjectError ProjectError.InvalidArgument, "Unknown translation mode '" & mode & "' for range '" & rngTag & "'."
+            End If
     End Select
 End Sub
 
