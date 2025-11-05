@@ -6,7 +6,9 @@
                     <button id="btnAdd" getLabel="LangLabel" imageMso="QueryShowTable" size="large" onAction="clickAddRows"/>
                     <button id="btnRes" getLabel="LangLabel" imageMso="SheetRowsDelete" size="large" onAction="clickResize"/>
                     <button id="btnFilt" getLabel="LangLabel" imageMso="FilterClearAllFilters" size="large" onAction="clickFilters"/>
-                    <button id="btnSortTab" getLabel="LangLabel" image="sort" size="large" onAction="clickRibbonSortTable"/>
+                    <button id="btnSortTab" getLabel="LangLabel" image="sort" size="large" onAction="clickSortTable"/>
+                    <button id="btnInsertRow" getLabel="LangLabel" image="insertrow" size="large" onAction="clickInsertRow"/>
+                    <button id="btnDelLoRow" getLabel="LangLabel" image="dellorows" size="large" onAction="clickDelLoRows"/>
                 </group>
                 <group id="customGroupDisease" getLabel="LangLabel">
                     <button id="btnAddSheet" getLabel="LangLabel" image="addsheet" size="large" onAction="clickAddSheet"/>
@@ -17,8 +19,8 @@
                     <button id="btnTransAdd" image="translation" getLabel="LangLabel" size="large" onAction="clickAddTrans"/>
                     <editBox id="editLang" getLabel="LangLabel" imageMso="translationPane" onChange="clickAddLang"/>
                     <dropDown id = "langDrop" onAction="clickLangChange" getLabel = "LangLabel">
-                        <item id = "FRA" label = "Français" />
-                        <item id = "ENG" label = "English" />
+                        <item id = "FRA" label = "Français"/>
+                        <item id = "ENG" label = "English"/>
                         <item id = "ARA" label = "عربى"/>
                         <item id = "SPA" label = "Español"/>
                         <item id = "POR" label = "Portugués"/>
