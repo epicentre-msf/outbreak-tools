@@ -167,37 +167,3 @@ Public Sub UpdateDiseaseSheet(ByVal disSh As Worksheet, ByVal Target As Range)
 
     pass.Protect dissh
 End Sub
-
-
-'Filter the comparation report worksheet
-
-Public Sub ComparationSheet(ByVal Target As Range)
-    Dim wb As Workbook
-    Dim sh As Worksheet
-    Dim filterValue As String
-    Dim sheetRng As Range 'used range in the worksheet
-    Dim cellRng As Range 'corresponding cellRange
-    
-    On Error Resume Next
-
-    Set wb = ThisWorkbook
-    Set sh = wb.Worksheets("__compRep")
-    Set sheetRng = sh.UsedRange
-    If Intersect(Target, sh.Range("RNG_CheckingFilter")) Is Nothing Then Exit Sub
-    filterValue = Target.Value
-
-    If filterValue = vbNullString Then Exit Sub
-    sh.Cells.EntireRow.Hidden = False
-
-    If filterValue <> "All" Then
-        Set cellRng = sheetRng.Cells(sheetRng.Rows.Count, 1)
-        Do While cellRng.Row > sheetRng.Row
-            'Hide cells with values corresponding to those selected (keeping headers)
-            If (cellRng.Value <> filterValue) And (Not cellRng.Font.Size = 14) And (Not cellRng.Font.Size = 12) _
-             And (Not cellRng.Value = vbNullString) Then cellRng.EntireRow.Hidden = True
-            Set cellRng = cellRng.Offset(-1)
-        Loop
-    End If
-
-    On Error GoTo 0
-End Sub
