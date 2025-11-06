@@ -14,7 +14,7 @@ Private Const TRANSLATIONS_TABLE_NAME As String = "Tab_Translations"
 Private Const REGISTRY_SHEET_NAME As String = "__updated"
 Private Const PASSWORD_SHEET_NAME As String = "__pass"
 Private Const DEFAULT_REMOVE_ROW_TARGET As Long = 1
-Private Const DEFAULT_ADD_ROW_BATCH As Long = 5
+Private Const DEFAULT_ADD_ROW_BATCH As Long = 10
 
 Private prepService As IMasterSetupPreparation
 
@@ -23,76 +23,28 @@ Private prepService As IMasterSetupPreparation
 '@Description("Add default rows to tables on the active worksheet.")
 '@EntryPoint
 Public Sub clickAddRows(ByRef control As IRibbonControl)
-    Dim scope As IApplicationState
     Dim targetSheet As Worksheet
-
-    On Error GoTo Handler
-
-    Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
-
     Set targetSheet = ActiveSheet
     If Not targetSheet Is Nothing Then
-        MasterSetupHelpers.AdjustMasterTables targetSheet, True
+        MasterSetupHelpers.ManageRows targetSheet, True
     End If
-
-Cleanup:
-    If Not scope Is Nothing Then scope.Restore
-    Exit Sub
-
-Handler:
-    Debug.Print "clickAddRows: "; Err.Number; Err.Description
-    Resume Cleanup
 End Sub
 
 '@Description("Trim table rows on the active worksheet, preserving header rows.")
 '@EntryPoint
 Public Sub clickResize(ByRef control As IRibbonControl)
-    Dim scope As IApplicationState
     Dim targetSheet As Worksheet
-
-    On Error GoTo Handler
-
-    Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
-
     Set targetSheet = ActiveSheet
     If Not targetSheet Is Nothing Then
-        MasterSetupHelpers.AdjustMasterTables targetSheet, False, DEFAULT_ADD_ROW_BATCH, DEFAULT_REMOVE_ROW_TARGET
+        MasterSetupHelpers.ManageRows targetSheet, False
     End If
-
-Cleanup:
-    If Not scope Is Nothing Then scope.Restore
-    Exit Sub
-
-Handler:
-    Debug.Print "clickResize: "; Err.Number; Err.Description
-    Resume Cleanup
 End Sub
 
 '@Description("Clear all active filters applied to tables on the active worksheet.")
 '@EntryPoint
 Public Sub clickFilters(ByRef control As IRibbonControl)
-    Dim scope As IApplicationState
-    Dim targetSheet As Worksheet
-
-    On Error GoTo Handler
-
     Set targetSheet = ActiveSheet
-    If targetSheet Is Nothing Then Exit Sub
-
-    Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-
     MasterSetupHelpers.ClearMasterSheetFilters targetSheet
-
-Cleanup:
-    If Not scope Is Nothing Then scope.Restore
-    Exit Sub
-
-Handler:
-    Debug.Print "clickFilters: "; Err.Number; Err.Description
-    Resume Cleanup
 End Sub
 
 '@Description("Sort master setup tables on the active worksheet using default ordering.")
@@ -107,7 +59,7 @@ Public Sub clickRibbonSortTable(ByRef control As IRibbonControl)
     If targetSheet Is Nothing Then Exit Sub
 
     Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     MasterSetupHelpers.SortMasterVariablesTables targetSheet
 
@@ -163,7 +115,7 @@ Public Sub clickAddSheet(ByRef control As IRibbonControl)
     On Error GoTo Handler
 
     Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     Set passwords = MasterSetupHelpers.ResolveMasterPasswords()
     If passwords Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickAddSheet", "Passwords worksheet '" & PASSWORD_SHEET_NAME & "' was not found."
@@ -225,7 +177,7 @@ Public Sub clickRemSheet(ByRef control As IRibbonControl)
     On Error GoTo Handler
 
     Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     Set passwords = MasterSetupHelpers.ResolveMasterPasswords()
     If passwords Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickRemSheet", "Passwords worksheet '" & PASSWORD_SHEET_NAME & "' was not found."
@@ -353,7 +305,7 @@ Public Sub clickAddTrans(ByRef control As IRibbonControl)
     On Error GoTo Handler
 
     Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     Set passwords = MasterSetupHelpers.ResolveMasterPasswords()
     If passwords Is Nothing Then Err.Raise ProjectError.ElementNotFound, "clickAddTrans", "Passwords sheet '" & PASSWORD_SHEET_NAME & "' was not found."
@@ -423,7 +375,7 @@ Public Sub clickAddLang(ByRef control As IRibbonControl, ByRef text As String)
     On Error GoTo Handler
 
     Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     Set dropdowns = MasterSetupHelpers.ResolveMasterDropdowns()
     Set chunks = TranslationChunks.Create(translationsSheet, TRANSLATIONS_TABLE_NAME, dropdowns)
@@ -512,7 +464,7 @@ Public Sub clickExpSheet(ByRef control As IRibbonControl)
     On Error GoTo Handler
 
     Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     Exports.ExportToSetup
 
@@ -534,7 +486,7 @@ Public Sub clickExp(ByRef control As IRibbonControl)
     On Error GoTo Handler
 
     Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     Exports.ExportForMigration
 
@@ -556,7 +508,7 @@ Public Sub clickImp(ByRef control As IRibbonControl)
     On Error GoTo Handler
 
     Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, busyCursor:=xlWait
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     Exports.ImportFlatFile
 
