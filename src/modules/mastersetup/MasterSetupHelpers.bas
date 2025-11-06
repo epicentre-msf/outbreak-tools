@@ -225,61 +225,128 @@ Public Function ResolveMasterDevelopment(Optional ByVal devSheet As Worksheet, _
     End If
 End Function
 
-'@section Worksheet utilities
+'@section Tables Management utilities
 '===============================================================================
-Public Sub AdjustMasterTables(ByVal targetSheet As Worksheet, _
-                              ByVal addRows As Boolean, _
-                              Optional ByVal rowBatch As Long = DEFAULT_ROW_BATCH, _
-                              Optional ByVal targetRowCount As Long = DEFAULT_ROW_TARGET)
+Public Sub ManageRows(ByVal targetSheet As Worksheet, ByVal addRows As Boolean)
 
-    Dim passwords As IPasswords
-    Dim table As ListObject
+    Dim lo As ListObject
     Dim wrapper As ICustomTable
-    Dim effectiveBatch As Long
-    Dim effectiveTarget As Long
+    Dim store As IHiddenNames
+    Dim sheetTag As String
+    Dim rowCount As Long
+    Dim scope As IApplicationState
 
     If targetSheet Is Nothing Then Exit Sub
-    If Not ShouldManageMasterSheet(targetSheet.Name) Then Exit Sub
 
-    effectiveBatch = Application.WorksheetFunction.Max(1, rowBatch)
-    effectiveTarget = Application.WorksheetFunction.Max(0, targetRowCount)
+    Set store = HiddenNames.Create(targetSheet)
+    If Not store Is Nothing Then
+        sheetTag = store.ValueAsString("sheetTag")
+    End If
+
+    Select Case LCase$(Trim$(sheetTag))
+        Case "disease", "dis"
+            rowCount = IIf(addRows, 2, 10)
+        Case "choices", "choi"
+            rowCount = IIf(addRows, 0, 5)
+        Case "variables", "variable", "var"
+            rowCount = IIf(addRows, 1, 20)
+        Case Else
+            rowCount = IIf(addRows, 0, 10)
+    End Select
+
+    Set scope = ApplicationState.Create(Application)
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+
+    On Error GoTo Handler
+
+    UnProtectMasterSetupSheet targetSheet, sheetTag
+
+    For Each lo In targetSheet.ListObjects
+        Set wrapper = CustomTable.Create(lo)
+        If addRows Then
+            wrapper.AddRows nbRows:=rowCount
+        Else
+            wrapper.RemoveRows totalCount:=rowCount
+        End If
+    Next lo
+
+    ProtectMasterSetupSheet targetSheet, sheetTag
+
+Cleanup:
+    If Not scope Is Nothing Then scope.Restore
+    Exit Sub
+
+Handler:
+    Debug.Print "ManageRows - "; targetSheet.Name; " addRows: "; addRows; " error "; Err.Number; " "; Err.Description
+    Resume Cleanup
+End Sub
+
+Public Sub ClearMasterSheetFilters(ByVal targetSheet As Worksheet)
+
+    Dim lo As ListObject
+    Dim scope As IApplicationState
+
+    If targetSheet Is Nothing Then Exit Sub
+    
+    Set scope = ApplicationState.Create(Application)
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+
+
+    UnProtectMasterSetupSheet targetSheet, vbNullString
+
+    For Each lo In targetSheet.ListObjects
+        If Not lo.AutoFilter Is Nothing Then
+            On Error Resume Next
+                lo.AutoFilter.ShowAllData
+            On Error GoTo 0
+        End If
+    Next lo
+
+    If targetSheet.AutoFilterMode Then
+        targetSheet.AutoFilterMode = False
+    End If
+
+    ProtectMasterSetupSheet targetSheet, vbNullString
+
+Cleanup:
+    If Not scope Is Nothing Then scope.Restore
+    Exit Sub
+
+Handler:
+    Debug.Print "Clear filters - "; targetSheet.Name; " addRows: "; addRows; " error "; Err.Number; " "; Err.Description
+    Resume Cleanup
+End Sub
+
+Public Sub UnProtectMasterSetupSheet(ByVal targetSheet As Worksheet, ByVal sheetTag As String)
+    Dim passwords As IPasswords
+
+    If targetSheet Is Nothing Then Exit Sub
 
     Set passwords = ResolveMasterPasswords()
     If passwords Is Nothing Then Exit Sub
 
-    On Error GoTo Cleanup
-
     passwords.UnProtect targetSheet.Name
-
-    For Each table In targetSheet.ListObjects
-        Set wrapper = CustomTable.Create(table)
-        If addRows Then
-            wrapper.AddRows nbRows:=effectiveBatch
-        Else
-            wrapper.RemoveRows totalCount:=effectiveTarget
-        End If
-    Next table
-
-Cleanup:
-    If Not passwords Is Nothing Then
-        On Error Resume Next
-            passwords.Protect targetSheet.Name
-        On Error GoTo 0
-    End If
 End Sub
 
-Public Sub ClearMasterSheetFilters(ByVal targetSheet As Worksheet)
-    Dim table As ListObject
+Public Sub ProtectMasterSetupSheet(ByVal targetSheet As Worksheet, ByVal sheetTag As String)
+    Dim passwords As IPasswords
+    Dim allowDelete As Boolean
+    Dim normalized As String
 
     If targetSheet Is Nothing Then Exit Sub
 
-    For Each table In targetSheet.ListObjects
-        On Error Resume Next
-            If Not table.AutoFilter Is Nothing Then
-                table.AutoFilter.ShowAllData
-            End If
-        On Error GoTo 0
-    Next table
+    normalized = LCase$(Trim$(sheetTag))
+    Select Case normalized
+        Case "variable", "variables", "choices"
+            allowDelete = True
+        Case Else
+            allowDelete = False
+    End Select
+
+    Set passwords = ResolveMasterPasswords()
+    If passwords Is Nothing Then Exit Sub
+
+    passwords.Protect targetSheet.Name, allowDeletingRows:=allowDelete
 End Sub
 
 Public Sub SortMasterVariablesTables(ByVal targetSheet As Worksheet)

@@ -8,8 +8,8 @@
         "Rscripts/designer_prev.xlsb": true
     },
     "editor.lineNumbers": "on",
-    "editor.fontSize": 14,
-    "editor.fontFamily": "'Fira Code', Menlo, 'Courier New', monospace",
+    "editor.fontSize": 16,
+    "editor.fontFamily": "'Menlo', 'Fira Code', Menlo, 'Courier New', monospace",
     "editor.fontLigatures": true,
     "zenMode.hideStatusBar": false,
     "editor.minimap.scale": 1,
