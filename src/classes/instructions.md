@@ -46,3 +46,4 @@ required VBA syntax.
 - [DONE] Added MasterSetupPreparation workflow to register master dropdowns, initialise variables, and cover the behaviour with dedicated unit tests.
 - [DONE] Optimised TranslationObject with cached language resolution, robust formula translation, TypeName-based form handling, refreshed documentation, and a new unit test suite covering the translator behaviours.
 - [DONE] Extended EventSetup with cached row-management and sorting helpers covering dictionary, choices, exports, analysis, and translations plus supporting tests.
+- [DONE] Implemented CustomTable.InsertRowsAt/DeleteRowsAt with worksheet shift handling, BetterArray-backed selection tracking, and new TestCustomTable cases for multi-row insert/delete scenarios.
