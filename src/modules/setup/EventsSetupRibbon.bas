@@ -304,6 +304,7 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
     Dim app As IApplicationState
     Dim translationsUnlocked As Boolean
     Dim success As Boolean
+    Dim nbMissing As Long
 
     Set translationsTable = SetupHelpers.ResolveTranslationsTable
     If translationsTable Is Nothing Then
@@ -313,7 +314,7 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
 
     Set manager = SetupTranslationsTable.Create(translationsTable)
     Set languages = manager.Languages
-    If languages Is Nothing Or languages.Length = 0 Then
+    If (languages Is Nothing) Or (languages.Length = 0) Then
         MsgBox "No translation languages were found. Add a language column first.", vbExclamation
         Exit Sub
     End If
@@ -322,6 +323,15 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
     If LenB(selectedLanguage) = 0 Then Exit Sub
 
     On Error GoTo Handler
+
+    'Provide the number of Mission Labels of one specific language
+    nbMissing = manager.MissingLabels(selectedLanguage)
+    
+    If (nbMissing > 0) Then
+        MsgBox "Aborted translation of the setup: Language " & selectedLanguage & _ 
+               " has " & nbMissing & "missing labels. Please fill them before attempting translation", vbExclamation
+        Exit Sub
+    End If
 
     Set app = ApplicationState.Create(Application)
     app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
