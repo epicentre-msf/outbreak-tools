@@ -958,10 +958,37 @@ Private Function CreateBuffer() As BetterArray
     Set CreateBuffer = buffer
 End Function
 
+
 '@section Reporting
 '===============================================================================
+Private Function MissingLabels(ByVal lang As String) As Long
+    Dim trimmedLanguage As String
+    Dim columnIndex As Long
+    Dim dataRange As Range
+
+    ValidateInitialised
+
+    trimmedLanguage = Trim$(lang)
+    If LenB(trimmedLanguage) = 0 Then
+        ThrowProjectError ProjectError.InvalidArgument, "Please supply a language name."
+    End If
+
+    columnIndex = LanguageColumnIndex(trimmedLanguage)
+    If columnIndex = 0 Then
+        ThrowProjectError ProjectError.InvalidArgument, "Language '" & trimmedLanguage & "' does not exist in the translations table."
+    End If
+
+    On Error Resume Next
+        Set dataRange = this.table.ListColumns(columnIndex).DataBodyRange
+    On Error GoTo 0
+
+    If dataRange Is Nothing Then Exit Function
+
+    MissingLabels = Application.WorksheetFunction.CountBlank(dataRange)
+End Function
+
 '@sub-title Summarise missing translations per language and optionally prompt the user.
-Public Function NumberOfMissing() As String
+Private Function NumberOfMissing() As String
     Dim columnIndex As Long
     Dim dataRange As Range
     Dim missingCount As Long
@@ -1514,3 +1541,7 @@ End Function
 Private Sub ISetupTranslationsTable_SetDisplayPrompts(ByVal state As Boolean)
     SetDisplayPrompts state
 End Sub
+
+Private Function ISetupTranslationsTable_MissingLabels(ByVal lang As String) As Long
+    ISetupTranslationsTable_MissingLabels = MissingLabels(lang)
+End Function
