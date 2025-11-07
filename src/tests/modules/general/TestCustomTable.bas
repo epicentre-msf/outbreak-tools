@@ -491,6 +491,166 @@ Fail:
 End Sub
 
 '@TestMethod("CustomTable")
+Public Sub TestInsertRowsAtInsertsSelectionRowCount()
+    CustomTestSetTitles Assert, "CustomTable", "TestInsertRowsAtInsertsSelectionRowCount"
+    On Error GoTo Fail
+
+    Dim tableObject As ICustomTable
+    Dim lo As ListObject
+    Dim selectionRange As Range
+
+    Set tableObject = BuildCustomTable
+    Set lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+
+    Set selectionRange = lo.ListRows(2).Range
+    Set selectionRange = selectionRange.Resize(2, selectionRange.Columns.Count)
+
+    tableObject.InsertRowsAt selectionRange
+
+    Assert.AreEqual 5, lo.ListRows.Count, _
+                     "InsertRowsAt should add rows matching the selection height"
+    Assert.AreEqual vbNullString, CStr(lo.ListColumns("Name").DataBodyRange.Cells(2, 1).Value), _
+                     "A blank row should be inserted ahead of the first selection row"
+    Assert.AreEqual "Beta", lo.ListColumns("Name").DataBodyRange.Cells(3, 1).Value, _
+                     "Original second row should shift down by one position"
+    Assert.AreEqual vbNullString, CStr(lo.ListColumns("Name").DataBodyRange.Cells(4, 1).Value), _
+                     "A second blank row should be inserted ahead of the last selection row"
+    Assert.AreEqual "Gamma", lo.ListColumns("Name").DataBodyRange.Cells(5, 1).Value, _
+                     "Last row should slide under the second inserted row"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInsertRowsAtInsertsSelectionRowCount", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomTable")
+Public Sub TestDeleteRowsAtRemovesSelectedRows()
+    CustomTestSetTitles Assert, "CustomTable", "TestDeleteRowsAtRemovesSelectedRows"
+    On Error GoTo Fail
+
+    Dim tableObject As ICustomTable
+    Dim lo As ListObject
+    Dim selectionRange As Range
+
+    Set tableObject = BuildCustomTable
+    Set lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+
+    Set selectionRange = lo.ListRows(1).Range
+    Set selectionRange = selectionRange.Resize(2, selectionRange.Columns.Count)
+
+    tableObject.DeleteRowsAt selectionRange
+
+    Assert.AreEqual 1, lo.ListRows.Count, _
+                     "DeleteRowsAt should remove the selected rows"
+    Assert.AreEqual "Gamma", lo.ListColumns("Name").DataBodyRange.Cells(1, 1).Value, _
+                     "Remaining row should preserve the trailing record"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDeleteRowsAtRemovesSelectedRows", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomTable")
+Public Sub TestDeleteRowsAtKeepsTemplateRow()
+    CustomTestSetTitles Assert, "CustomTable", "TestDeleteRowsAtKeepsTemplateRow"
+    On Error GoTo Fail
+
+    Dim tableObject As ICustomTable
+    Dim lo As ListObject
+    Dim selectionRange As Range
+
+    Set tableObject = BuildCustomTable
+    Set lo =  ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+
+    lo.ListRows(3).Delete
+    lo.ListRows(2).Delete
+
+    Set selectionRange = lo.ListRows(1).Range
+
+    tableObject.DeleteRowsAt selectionRange
+
+    Assert.AreEqual 1, lo.ListRows.Count, _
+                     "DeleteRowsAt should always preserve at least one template row"
+    Assert.AreEqual vbNullString, CStr(lo.ListColumns("Name").DataBodyRange.Cells(1, 1).Value), _
+                     "Template row should be blank after deletion"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDeleteRowsAtKeepsTemplateRow", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomTable")
+Public Sub TestInsertRowsAtWithShiftMovesStackedTables()
+    CustomTestSetTitles Assert, "CustomTable", "TestInsertRowsAtWithShiftMovesStackedTables"
+    On Error GoTo Fail
+
+    Dim topLo As ListObject
+    Dim bottomLo As ListObject
+    Dim topTable As ICustomTable
+    Dim originalBottomHeaderRow As Long
+    Dim originalTopRowCount As Long
+    Dim insertSelection As Range
+    Dim removalSelection As Range
+
+    PrepareMultiTableFixture topLo, bottomLo
+    originalBottomHeaderRow = bottomLo.HeaderRowRange.Row
+    originalTopRowCount = topLo.ListRows.Count
+
+    Set topTable = CustomTable.Create(topLo, "ID", "row")
+
+    Set insertSelection = topLo.ListRows(1).Range
+    topTable.InsertRowsAt insertSelection, insertShift:=True
+
+    Assert.AreEqual originalBottomHeaderRow + 1, bottomLo.HeaderRowRange.Row, _
+                    "Worksheet insertion should push the following table down"
+    Assert.AreEqual originalTopRowCount + 1, topLo.ListRows.Count, _
+                    "Top table should gain one data row"
+
+    Set removalSelection = topLo.ListRows(1).Range
+    topTable.DeleteRowsAt removalSelection
+
+    Assert.AreEqual originalBottomHeaderRow, bottomLo.HeaderRowRange.Row, _
+                    "Deleting with the tracker should restore the stacked table position"
+    Assert.AreEqual originalTopRowCount, topLo.ListRows.Count, _
+                    "Top table should return to its original row count"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInsertRowsAtWithShiftMovesStackedTables", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomTable")
+Public Sub TestDeleteRowsAtForceShiftMovesStackedTables()
+    CustomTestSetTitles Assert, "CustomTable", "TestDeleteRowsAtForceShiftMovesStackedTables"
+    On Error GoTo Fail
+
+    Dim topLo As ListObject
+    Dim bottomLo As ListObject
+    Dim topTable As ICustomTable
+    Dim originalBottomHeaderRow As Long
+    Dim originalTopRowCount As Long
+    Dim removalSelection As Range
+
+    PrepareMultiTableFixture topLo, bottomLo
+    originalBottomHeaderRow = bottomLo.HeaderRowRange.Row
+    originalTopRowCount = topLo.ListRows.Count
+
+    Set topTable = CustomTable.Create(topLo, "ID", "row")
+
+    Set removalSelection = topLo.ListRows(topLo.ListRows.Count).Range
+    topTable.DeleteRowsAt removalSelection, forceShift:=True
+
+    Assert.AreEqual originalBottomHeaderRow - 1, bottomLo.HeaderRowRange.Row, _
+                    "ForceShift should pull the stacked table upward"
+    Assert.AreEqual originalTopRowCount - 1, topLo.ListRows.Count, _
+                    "Top table should lose the deleted row"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDeleteRowsAtForceShiftMovesStackedTables", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomTable")
 Public Sub TestImportRecordsMissingColumns()
     CustomTestSetTitles Assert, "CustomTable", "TestImportRecordsMissingColumns"
     On Error GoTo Fail

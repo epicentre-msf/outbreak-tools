@@ -670,9 +670,128 @@ Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal ins
   ResetCaches
 End Sub
 
-Private Sub InsertTableRowsAt(ByVal targetCell As Range)
+'@label:EnsureSelectionSheet
+'@sub-title Ensure the provided range belongs to the table worksheet
+Private Sub EnsureSelectionOnTableSheet(ByVal targetCell As Range)
+  Dim targetSheet As Worksheet
 
+  If targetCell Is Nothing Then
+    ThrowError ProjectError.InvalidArgument, _
+               "Target range cannot be empty when modifying table '" & Name() & "'"
+  End If
 
+  On Error Resume Next
+    Set targetSheet = targetCell.Worksheet
+  On Error GoTo 0
+
+  If targetSheet Is Nothing Then
+    ThrowError ProjectError.InvalidArgument, _
+               "Unable to resolve the worksheet hosting the supplied range"
+  End If
+
+  If Not targetSheet Is Wksh() Then
+    ThrowError ProjectError.InvalidArgument, _
+               "Target range must belong to worksheet '" & Wksh().Name & "'"
+  End If
+End Sub
+
+'@label:SelectionRowNumbers
+'@sub-title Resolve worksheet row indexes intersecting the table
+Private Function SelectionRowNumbers(ByVal targetCell As Range, _
+                                     ByVal restrictToDataRows As Boolean) As BetterArray
+  Dim lo As ListObject
+  Dim scopeRange As Range
+  Dim rowRange As Range
+  Dim intersectRange As Range
+  Dim rowsList As BetterArray
+
+  EnsureTableInitialized
+  Set lo = Table()
+
+  If targetCell Is Nothing Then Exit Function
+
+  If restrictToDataRows Then
+    Set scopeRange = lo.DataBodyRange
+  Else
+    Set scopeRange = lo.Range
+    If scopeRange Is Nothing Then
+      Set scopeRange = lo.HeaderRowRange
+    End If
+  End If
+
+  If scopeRange Is Nothing Then Exit Function
+  If Intersect(targetCell, scopeRange) Is Nothing Then Exit Function
+
+  Set rowsList = New BetterArray
+  rowsList.LowerBound = 1
+
+  For Each rowRange In targetCell.Rows
+    Set intersectRange = Intersect(rowRange, scopeRange)
+    If Not intersectRange Is Nothing Then rowsList.Push intersectRange.Row
+  Next rowRange
+
+  If rowsList.Length = 0 Then Exit Function
+
+  Set SelectionRowNumbers = rowsList
+End Function
+
+'@label:InsertRowsAt
+'@sub-title Insert rows matching the selection height
+'@details Inserts worksheet rows when insertShift is True, otherwise inserts ListRows at the selection anchor.
+'@param targetCell Range. Selection used to anchor the insertion.
+'@param insertShift Boolean. Insert worksheet rows when True to preserve stacked tables.
+'@param includeIds Boolean. Renumber the ID column after insertion when True.
+'@export
+Private Sub InsertRowsAt(ByVal targetCell As Range, _
+                         Optional ByVal insertShift As Boolean = False, _
+                         Optional ByVal includeIds As Boolean = True)
+  Dim lo As ListObject
+  Dim sheet As Worksheet
+  Dim rowNumbers As BetterArray
+  Dim rowCount As Long
+  Dim headerRow As Long
+  Dim idx As Long
+  Dim targetRow As Long
+  Dim relativePosition As Long
+
+  EnsureTableInitialized
+  EnsureSelectionOnTableSheet targetCell
+  Set lo = Table()
+  Set sheet = Wksh()
+
+  Set rowNumbers = SelectionRowNumbers(targetCell, restrictToDataRows:=False)
+  If rowNumbers Is Nothing Then Exit Sub
+  If rowNumbers.Length = 0 Then Exit Sub
+
+  rowCount = rowNumbers.Length
+  headerRow = lo.HeaderRowRange.Row
+
+  If lo.DataBodyRange Is Nothing Then
+    AddTableRows lo, rowCount, insertShift
+  ElseIf insertShift Then
+    AddShiftTracker "Yes"
+    For idx = rowNumbers.UpperBound To rowNumbers.LowerBound Step -1
+      targetRow = CLng(rowNumbers.Item(idx))
+      If targetRow <= headerRow Then targetRow = headerRow + 1
+      sheet.Rows(targetRow).Insert Shift:=xlShiftDown, CopyOrigin:=xlFormatFromLeftOrAbove
+    Next idx
+  Else
+    For idx = rowNumbers.UpperBound To rowNumbers.LowerBound Step -1
+      targetRow = CLng(rowNumbers.Item(idx))
+      If targetRow <= headerRow Then targetRow = headerRow + 1
+      relativePosition = targetRow - headerRow
+      If relativePosition < 1 Then relativePosition = 1
+
+      If relativePosition > lo.ListRows.Count Then
+        lo.ListRows.Add
+      Else
+        lo.ListRows.Add Position:=relativePosition
+      End If
+    Next idx
+  End If
+
+  ResetCaches
+  If includeIds Then AddIds
 End Sub
 
 
@@ -733,8 +852,64 @@ Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _
   Next rowIndex
 End Sub
 
-Private Sub DeleteTableRowsAt(ByVal targetCell As Range)
+'@label:DeleteRowsAt
+'@sub-title Delete rows intersecting the provided selection
+'@details Deletes worksheet rows when forceShift (or a stored shift tracker) is enabled, otherwise removes ListRows directly.
+'@param targetCell Range. Selection used to determine which rows to delete.
+'@param includeIds Boolean. Renumber ID column after deletion when True.
+'@param forceShift Boolean. Force worksheet row deletion even if shift tracker is not set.
+'@export
+Private Sub DeleteRowsAt(ByVal targetCell As Range, _
+                         Optional ByVal includeIds As Boolean = True, _
+                         Optional ByVal forceShift As Boolean = False)
+  Dim lo As ListObject
+  Dim rowNumbers As BetterArray
+  Dim counter As Long
+  Dim headerRow As Long
+  Dim relativeIndex As Long
+  Dim targetRow As Long
+  Dim shouldShift As Boolean
+  Dim sheet As Worksheet
+  Dim pendingRowCount As Long
 
+  EnsureTableInitialized
+  EnsureSelectionOnTableSheet targetCell
+  Set lo = Table()
+
+  If lo.DataBodyRange Is Nothing Then Exit Sub
+
+  Set rowNumbers = SelectionRowNumbers(targetCell, restrictToDataRows:=True)
+  If rowNumbers Is Nothing Then Exit Sub
+  If rowNumbers.Length = 0 Then Exit Sub
+
+  shouldShift = forceShift Or HasShiftTracker()
+  Set sheet = Wksh()
+  headerRow = lo.HeaderRowRange.Row
+  pendingRowCount = lo.ListRows.Count
+
+  If shouldShift Then
+    For counter = rowNumbers.UpperBound To rowNumbers.LowerBound Step -1
+      targetRow = CLng(rowNumbers.Item(counter))
+      sheet.Rows(targetRow).Delete
+      pendingRowCount = pendingRowCount - 1
+    Next counter
+  Else
+    For counter = rowNumbers.UpperBound To rowNumbers.LowerBound Step -1
+      targetRow = CLng(rowNumbers.Item(counter))
+      relativeIndex = targetRow - headerRow
+      If relativeIndex >= 1 And relativeIndex <= lo.ListRows.Count Then
+        lo.ListRows(relativeIndex).Delete
+        pendingRowCount = pendingRowCount - 1
+      End If
+    Next counter
+  End If
+
+  If pendingRowCount <= 0 Then
+    lo.ListRows.Add
+  End If
+
+  ResetCaches
+  If includeIds Then AddIds
 End Sub
 
 '@label:DataRowCount
@@ -1724,13 +1899,19 @@ End Sub
 
 
 Private Sub ICustomTable_InsertRowsAt(ByVal targetCell As Range, _ 
-                                      Optional ByVal insertShift As Boolean = False)
-
+                                      Optional ByVal insertShift As Boolean = False, _
+                                      Optional ByVal includeIds As Boolean = True)
+  InsertRowsAt targetCell:=targetCell, _
+               insertShift:=insertShift, _
+               includeIds:=includeIds
 End Sub
 
 Private Sub ICustomTable_DeleteRowsAt(ByVal targetCell As Range, _ 
+                                     Optional ByVal includeIds As Boolean = True, _
                                      Optional ByVal forceShift As Boolean = False)
-
+  DeleteRowsAt targetCell:=targetCell, _
+               includeIds:=includeIds, _
+               forceShift:=forceShift
 End Sub
 
 '@jump:ImportExport

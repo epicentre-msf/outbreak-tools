@@ -104,11 +104,13 @@ Public Sub Clean(): End Sub
 
 '@jump:InsertRowAt
 Public Sub InsertRowsAt(ByVal targetCell As Range, _ 
-                        Optional ByVal insertShift As Boolean = False)
+                        Optional ByVal insertShift As Boolean = False, _
+                        Optional ByVal includeIds As Boolean = True)
 End Sub
 
 '@jump:DeleteRowAt(ByVal targetCell As Range)
 Public Sub DeleteRowsAt(ByVal targetCell As Range, _ 
+                        Optional ByVal includeIds As Boolean = True, _
                         Optional ByVal forceShift As Boolean = False)
 End Sub
 
@@ -158,6 +160,7 @@ Public Sub Export(ByVal sh As Worksheet,  _
                   Optional ByVal headersTable As Object = Nothing, _ 
                   Optional ByVal startLine As Long = 1)
 End Sub
+
 
 '@section Checkings
 
