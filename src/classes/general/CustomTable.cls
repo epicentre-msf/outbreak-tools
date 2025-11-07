@@ -670,6 +670,13 @@ Private Sub AddTableRows(ByVal lo As ListObject, ByVal nbRows As Long, ByVal ins
   ResetCaches
 End Sub
 
+Private Sub InsertTableRowsAt(ByVal targetCell As Range)
+
+
+End Sub
+
+
+
 Private Sub GetTotalFormulaColumns(ByRef rowCount As Long)
   Dim rng As Range
   Dim counter As Long
@@ -724,6 +731,10 @@ Private Sub RemoveEmptyDataRows(ByVal lo As ListObject, _
       End If
     End If
   Next rowIndex
+End Sub
+
+Private Sub DeleteTableRowsAt(ByVal targetCell As Range)
+
 End Sub
 
 '@label:DataRowCount
@@ -1711,6 +1722,16 @@ Private Sub ICustomTable_Sort(Optional ByVal colName As String = vbNullString, _
   Sort colName:=colName, colList:=colList, directSort:=directSort, strictSearch:=strictSearch
 End Sub
 
+
+Private Sub ICustomTable_InsertRowsAt(ByVal targetCell As Range, _ 
+                                      Optional ByVal insertShift As Boolean = False)
+
+End Sub
+
+Private Sub ICustomTable_DeleteRowsAt(ByVal targetCell As Range, _ 
+                                     Optional ByVal forceShift As Boolean = False)
+
+End Sub
 
 '@jump:ImportExport
 'Import Export Functions -------------------------------------------------------

@@ -13,7 +13,7 @@ Option Explicit
 '@Folder("Setup")
 '@ModuleDescription("Encapsulates workbook level setup events and caches for high-frequency handlers")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends BetterArray, HiddenNames, Passwords, UpdatedValues, DropdownLists, LLdictionary, LLVariables, CustomTable, ChoiceFormula, RibbonDev, ProjectError
+'@depends BetterArray, HiddenNames, Passwords, UpdatedValues, DropdownLists, LLdictionary, LLVariables, LLChoices, LLExport, Analysis, SetupTranslationsTable, CustomTable, ChoiceFormula, RibbonDev, ProjectError, ApplicationState
 
 Implements IEventSetup
 
@@ -28,8 +28,13 @@ Private Type TEventSetup
     graphTable      As ICustomTable      'Analysis graph table wrapper
     spatioTable     As ICustomTable      'Analysis spatio-temporal table wrapper
     spatioSpecsTable As ICustomTable     'Spatio-temporal specification table wrapper
+    exportsTable    As ICustomTable      'Exports listobject wrapper
     variables       As ILLVariables      'Dictionary variable helper
     dictionary      As ILLdictionary     'Cached dictionary reference
+    choices         As ILLChoices        'Cached choices helper
+    analysis        As IAnalysis         'Cached analysis helper
+    exports         As ILLExport         'Cached exports manager
+    translations    As ISetupTranslationsTable 'Cached translations manager
 End Type
 
 Private this As TEventSetup
@@ -40,6 +45,8 @@ Private Const SHEET_UPDATED          As String = "__updated"
 Private Const SHEET_DICTIONARY       As String = "Dictionary"
 Private Const SHEET_CHOICES          As String = "Choices"
 Private Const SHEET_ANALYSIS         As String = "Analysis"
+Private Const SHEET_EXPORTS          As String = "Exports"
+Private Const SHEET_TRANSLATIONS     As String = "Translations"
 Private Const SHEET_DROPDOWN         As String = "__variables"
 Private Const SHEET_PASSWORDS        As String = "__pass"
 Private Const COUNTER_NAME           As String = "_SetupTranslationsCounter"
@@ -48,13 +55,24 @@ Private Const LIST_TS_DATA           As String = "Tab_TimeSeries_Analysis"
 Private Const LIST_GRAPH_TS          As String = "Tab_Graph_TimeSeries"
 Private Const LIST_SPATIO_TEMPORAL   As String = "Tab_SpatioTemporal_Analysis"
 Private Const LIST_SPATIO_TEMPORAL_SPECS As String = "Tab_SpatioTemporal_Specs"
+Private Const TABLE_TRANSLATIONS     As String = "Tab_Translations"
 
 Private Const DICT_START_ROW         As Long = 5
 Private Const DICT_START_COLUMN      As Long = 1
 Private Const CHOICES_START_ROW      As Long = 4
 Private Const CHOICES_START_COLUMN   As Long = 1
+Private Const EXPORT_START_ROW       As Long = 4
+Private Const EXPORT_START_COLUMN    As Long = 1
+
+Private Const KEY_DICTIONARY         As String = "dictionary"
+Private Const KEY_CHOICES            As String = "choices"
+Private Const KEY_ANALYSIS           As String = "analysis"
+Private Const KEY_EXPORTS            As String = "exports"
+Private Const KEY_TRANSLATIONS       As String = "translations"
+Private Const EXPORT_SORT_COLUMN     As String = "export number"
 
 Private Const DROPDOWN_PREFIX        As String = "dropdown_"
+Private Const CLASSNAME              As String = "EventSetup"
 
 '@section Factory helpers
 '===============================================================================
@@ -145,8 +163,7 @@ Private Sub UpdateAnalysisDropdowns(Optional ByVal forceUpdate As Boolean = Fals
     EnsureUpdatedValues
     If (this.updater Is Nothing) Then Exit Sub
 
-    EnsureDictionary
-    If this.dictionary Is Nothing Then Exit Sub
+    If Not EnsureDictionary() Then Exit Sub
 
     EnsureDropdownValues
     If this.drop Is Nothing Then Exit Sub
@@ -193,6 +210,14 @@ Private Sub IEventSetup_ResetTranslationCounter()
     ResetTranslationCounter
 End Sub
 
+Private Sub IEventSetup_ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
+    ManageRows sheetName, del
+End Sub
+
+Private Sub IEventSetup_SortTables(ByVal sheetName As String)
+    SortTables sheetName
+End Sub
+
 Private Function IEventSetup_BuildTimeSeriesHeader(ByVal timeVar As String, _
                                                    ByVal groupVar As String, _
                                                    ByVal sumLabel As String) As String
@@ -214,6 +239,145 @@ Private Function IEventSetup_SpatioTemporalSpecValue(ByVal sectionName As String
     IEventSetup_SpatioTemporalSpecValue = SpatioTemporalSpecValueInternal(sectionName, specColumn)
 End Function
 
+'@section Row management and sorting
+'===============================================================================
+Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
+    Dim normalized As String
+    Dim state As IApplicationState
+    Dim sheetPass As IPasswords
+    Dim dictPass As IPasswords
+    Dim unlockedSheet As String
+    Dim unlockedDict As String
+
+    normalized = NormalisedSheetName(sheetName)
+    If LenB(normalized) = 0 Then Exit Sub
+
+    Set state = ApplicationState.Create(Application)
+    If Not state Is Nothing Then
+        state.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    End If
+
+    On Error GoTo CleanFail
+
+    Select Case normalized
+        Case KEY_DICTIONARY
+            If Not EnsureDictionary() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_DICTIONARY)
+            unlockedSheet = SHEET_DICTIONARY
+            this.dictionary.ManageRows del
+        Case KEY_CHOICES
+            If Not EnsureChoices() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_CHOICES)
+            unlockedSheet = SHEET_CHOICES
+            this.choices.ManageRows del
+        Case KEY_ANALYSIS
+            If Not EnsureAnalysisManager() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_ANALYSIS)
+            unlockedSheet = SHEET_ANALYSIS
+            this.analysis.ManageRows del
+        Case KEY_EXPORTS
+            If Not EnsureExports() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_EXPORTS)
+            unlockedSheet = SHEET_EXPORTS
+            If EnsureDictionary() And Not this.dictionary Is Nothing Then
+                Set dictPass = BeginSheetUpdate(SHEET_DICTIONARY)
+                unlockedDict = SHEET_DICTIONARY
+            End If
+            this.exports.ManageRows del, this.dictionary
+        Case KEY_TRANSLATIONS
+            EnsureTranslationsManager
+        Case Else
+            GoTo CleanExit
+    End Select
+
+CleanExit:
+    If LenB(unlockedDict) > 0 Then
+        EndSheetUpdate dictPass, unlockedDict
+        Set dictPass = Nothing
+        unlockedDict = vbNullString
+    End If
+
+    If LenB(unlockedSheet) > 0 Then
+        EndSheetUpdate sheetPass, unlockedSheet
+        Set sheetPass = Nothing
+        unlockedSheet = vbNullString
+    End If
+
+    If Not state Is Nothing Then state.Restore
+    Exit Sub
+
+CleanFail:
+    On Error Resume Next
+        If LenB(unlockedDict) > 0 Then EndSheetUpdate dictPass, unlockedDict
+        If LenB(unlockedSheet) > 0 Then EndSheetUpdate sheetPass, unlockedSheet
+    On Error GoTo 0
+
+    ThrowError ProjectError.SomethingWentWrong, "Failed to manage rows on '" & sheetName & "': " & Err.Description
+    If Not state Is Nothing Then state.Restore
+End Sub
+
+Public Sub SortTables(ByVal sheetName As String)
+    Dim normalized As String
+    Dim state As IApplicationState
+    Dim sheetPass As IPasswords
+    Dim unlockedSheet As String
+
+    normalized = NormalisedSheetName(sheetName)
+    If LenB(normalized) = 0 Then Exit Sub
+
+    Set state = ApplicationState.Create(Application)
+    If Not state Is Nothing Then
+        state.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    End If
+
+    On Error GoTo CleanFail
+
+    Select Case normalized
+        Case KEY_DICTIONARY
+            If Not EnsureDictionary() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_DICTIONARY)
+            unlockedSheet = SHEET_DICTIONARY
+            this.dictionary.Sort
+        Case KEY_CHOICES
+            If Not EnsureChoices() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_CHOICES)
+            unlockedSheet = SHEET_CHOICES
+            this.choices.Sort
+        Case KEY_ANALYSIS
+            If Not EnsureAnalysisManager() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_ANALYSIS)
+            unlockedSheet = SHEET_ANALYSIS
+            this.analysis.Sort
+        Case KEY_EXPORTS
+            If Not EnsureExports() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_EXPORTS)
+            unlockedSheet = SHEET_EXPORTS
+            SortExportsTable
+        Case KEY_TRANSLATIONS
+            EnsureTranslationsManager
+        Case Else
+            GoTo CleanExit
+    End Select
+
+CleanExit:
+    If LenB(unlockedSheet) > 0 Then
+        EndSheetUpdate sheetPass, unlockedSheet
+        Set sheetPass = Nothing
+        unlockedSheet = vbNullString
+    End If
+
+    If Not state Is Nothing Then state.Restore
+    Exit Sub
+
+CleanFail:
+    On Error Resume Next
+        If LenB(unlockedSheet) > 0 Then EndSheetUpdate sheetPass, unlockedSheet
+    On Error GoTo 0
+
+    If Not state Is Nothing Then state.Restore
+    ThrowError ProjectError.SomethingWentWrong, "Failed to sort sheet '" & sheetName & "': " & Err.Description
+End Sub
+
 '@section Internal helpers
 '===============================================================================
 Private Sub ResetInternalCaches()
@@ -224,8 +388,13 @@ Private Sub ResetInternalCaches()
     Set this.graphTable = Nothing
     Set this.spatioTable = Nothing
     Set this.spatioSpecsTable = Nothing
+    Set this.exportsTable = Nothing
     Set this.variables = Nothing
     Set this.dictionary = Nothing
+    Set this.choices = Nothing
+    Set this.analysis = Nothing
+    Set this.exports = Nothing
+    Set this.translations = Nothing
 End Sub
 
 Private Sub AddOrUpdateDrop(ByVal lst As BetterArray, ByVal dropName As String)
@@ -272,29 +441,139 @@ Private Sub EnsureRibbon()
     'On Error GoTo 0
 End Sub
 
-Private Sub EnsureDictionary()
-    If Not (this.dictionary Is Nothing) Then Exit Sub
+Private Function EnsureDictionary() As Boolean
+    If Not (this.dictionary Is Nothing) Then
+        EnsureDictionary = True
+        Exit Function
+    End If
 
     Dim dictSheet As Worksheet
 
     Set dictSheet = SheetOrNothing(SHEET_DICTIONARY)
-    If dictSheet Is Nothing Then Exit Sub
+    If dictSheet Is Nothing Then Exit Function
 
     On Error Resume Next
         Set this.dictionary = LLdictionary.Create(dictSheet, DICT_START_ROW, DICT_START_COLUMN)
     On Error GoTo 0
-End Sub
+    EnsureDictionary = Not (this.dictionary Is Nothing)
+End Function
 
 Private Sub EnsureVars()
     If Not (this.variables Is Nothing) Then Exit Sub
 
-    EnsureDictionary
-    If this.dictionary Is Nothing Then Exit Sub
+    If Not EnsureDictionary() Then Exit Sub
 
     On Error Resume Next
         Set this.variables = LLVariables.Create(this.dictionary)
     On Error GoTo 0
 End Sub
+
+Private Function EnsureChoices() As Boolean
+    If Not (this.choices Is Nothing) Then
+        EnsureChoices = True
+        Exit Function
+    End If
+
+    Dim choiceSheet As Worksheet
+
+    Set choiceSheet = SheetOrNothing(SHEET_CHOICES)
+    If choiceSheet Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set this.choices = LLChoices.Create(choiceSheet, CHOICES_START_ROW, CHOICES_START_COLUMN)
+    On Error GoTo 0
+
+    EnsureChoices = Not (this.choices Is Nothing)
+End Function
+
+Private Function EnsureAnalysisManager() As Boolean
+    If Not (this.analysis Is Nothing) Then
+        EnsureAnalysisManager = True
+        Exit Function
+    End If
+
+    Dim analysisSheet As Worksheet
+
+    Set analysisSheet = SheetOrNothing(SHEET_ANALYSIS)
+    If analysisSheet Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set this.analysis = Analysis.Create(analysisSheet)
+    On Error GoTo 0
+
+    EnsureAnalysisManager = Not (this.analysis Is Nothing)
+End Function
+
+Private Function EnsureExports() As Boolean
+    If Not (this.exports Is Nothing) Then
+        EnsureExports = True
+        Exit Function
+    End If
+
+    Dim exportSheet As Worksheet
+
+    Set exportSheet = SheetOrNothing(SHEET_EXPORTS)
+    If exportSheet Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set this.exports = LLExport.Create(exportSheet, EXPORT_START_ROW, EXPORT_START_COLUMN)
+    On Error GoTo 0
+
+    EnsureExports = Not (this.exports Is Nothing)
+End Function
+
+Private Function EnsureExportsTable() As Boolean
+    If Not (this.exportsTable Is Nothing) Then
+        EnsureExportsTable = True
+        Exit Function
+    End If
+
+    Dim exportSheet As Worksheet
+    Dim lo As ListObject
+
+    Set exportSheet = SheetOrNothing(SHEET_EXPORTS)
+    If exportSheet Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set lo = exportSheet.ListObjects(1)
+    On Error GoTo 0
+    If lo Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set this.exportsTable = CustomTable.Create(lo)
+    On Error GoTo 0
+
+    EnsureExportsTable = Not (this.exportsTable Is Nothing)
+End Function
+
+Private Sub SortExportsTable()
+    If Not EnsureExportsTable() Then Exit Sub
+
+    On Error Resume Next
+        this.exportsTable.Sort colName:=EXPORT_SORT_COLUMN
+    On Error GoTo 0
+End Sub
+
+Private Function EnsureTranslationsManager() As Boolean
+    If Not (this.translations Is Nothing) Then
+        EnsureTranslationsManager = True
+        Exit Function
+    End If
+
+    Dim translationsTable As ListObject
+
+    Set translationsTable = TranslationsListObject()
+    If translationsTable Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set this.translations = SetupTranslationsTable.Create(translationsTable)
+        If Not this.translations Is Nothing Then
+            this.translations.SetDisplayPrompts False
+        End If
+    On Error GoTo 0
+
+    EnsureTranslationsManager = Not (this.translations Is Nothing)
+End Function
 
 'Ensure the cached analysis tables are created lazily and reused.
 Private Function EnsureAnalysisTable(ByRef tableRef As ICustomTable, _
@@ -341,6 +620,20 @@ Private Function AnalysisListObject(ByVal loName As String) As ListObject
     Set AnalysisListObject = lo
 End Function
 
+Private Function TranslationsListObject() As ListObject
+    Dim translationsSheet As Worksheet
+    Dim lo As ListObject
+
+    Set translationsSheet = SheetOrNothing(SHEET_TRANSLATIONS)
+    If translationsSheet Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set lo = translationsSheet.ListObjects(TABLE_TRANSLATIONS)
+    On Error GoTo 0
+
+    Set TranslationsListObject = lo
+End Function
+
 Private Function SheetOrNothing(ByVal sheetName As String) As Worksheet
     Dim sh As Worksheet
 
@@ -351,6 +644,10 @@ Private Function SheetOrNothing(ByVal sheetName As String) As Worksheet
     On Error GoTo 0
 
     Set SheetOrNothing = sh
+End Function
+
+Private Function NormalisedSheetName(ByVal sheetName As String) As String
+    NormalisedSheetName = LCase$(Trim$(sheetName))
 End Function
 
 Private Function PasswordManager() As IPasswords
@@ -632,25 +929,22 @@ ExitFunction:
 End Function
 
 Private Function ChoiceCategories(ByVal listName As String) As BetterArray
-    Dim choiceSheet As Worksheet
-    Dim choiceObj As ILLChoices
     Dim emptyList As BetterArray
 
     Set emptyList = New BetterArray
-    Set choiceSheet = SheetOrNothing(SHEET_CHOICES)
-    If choiceSheet Is Nothing Then
+    emptyList.LowerBound = 0
+
+    If Not EnsureChoices() Then
         Set ChoiceCategories = emptyList
         Exit Function
     End If
 
-    choiceObj = Nothing
     On Error Resume Next
-        Set choiceObj = LLChoices.Create(choiceSheet, CHOICES_START_ROW, CHOICES_START_COLUMN)
+        Set ChoiceCategories = this.choices.Categories(listName)
     On Error GoTo 0
-    If choiceObj Is Nothing Then
+
+    If ChoiceCategories Is Nothing Then
         Set ChoiceCategories = emptyList
-    Else
-        Set ChoiceCategories = choiceObj.Categories(listName)
     End If
 End Function
 
@@ -665,5 +959,5 @@ End Sub
 '@label:ThrowError
 '@description Raise a ProjectError aligned error from the current class.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
-  Err.Raise CLng(errNumber), CLASS_NAME, "Error: " & errorMessage
+  Err.Raise CLng(errNumber), CLASSNAME, "Error: " & errorMessage
 End Sub
