@@ -44,3 +44,4 @@ required VBA syntax.
 - [DONE] Ported setup table validation logic into SetupPreparation with comprehensive tests covering dictionary, exports, analysis, and checking sheets.
 - [DONE] Implemented MasterSetupVariables manager with metadata caching, dropdown validation, translation helpers, clone/import support, and unit tests exercising column creation, choice synchronisation, and export behaviour.
 - [DONE] Added MasterSetupPreparation workflow to register master dropdowns, initialise variables, and cover the behaviour with dedicated unit tests.
+- [DONE] Optimised TranslationObject with cached language resolution, robust formula translation, TypeName-based form handling, refreshed documentation, and a new unit test suite covering the translator behaviours.
