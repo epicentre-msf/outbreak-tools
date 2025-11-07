@@ -13,6 +13,7 @@ Attribute VB_Description = "Translate various objects from one language to anoth
 '@Folder("General")
 '@ModuleDescription("Translate various objects from one language to another")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
+'@depends BetterArray, Checking, IChecking, ProjectError
 
 
 Option Explicit
@@ -21,9 +22,10 @@ Implements ITranslationObject
 Private Const CLASSNAME As String = "TranslationObject"
 
 Private Type TTranslationObject
-    transLo As listObject
+    transLo As ListObject
     transLng As String
     hasChecks As Boolean
+    languageColumnIndex As Long
 End Type
 
 Private this As TTranslationObject
@@ -42,13 +44,13 @@ Private internalChecks As IChecking
 ' as is without any translation done.
 '@return A ITranslationObject
 '@export
-Public Function Create(ByVal translationLo As listObject, ByVal translationLang As String) As ITranslationObject
+Public Function Create(ByVal translationLo As ListObject, ByVal translationLang As String) As ITranslationObject
 
-    'Test if the listobject is empty
-    If translationLo Is Nothing Then ThrowErrorUnableInstanciate "Listobject is not defined"
+    ValidateListObject translationLo, "Create"
+
     With New TranslationObject
         Set .Table = translationLo
-        .Language = translationLang
+        .Language = Trim$(translationLang)
         Set Create = .Self
     End With
 End Function
@@ -60,12 +62,14 @@ Public Property Get Self() As ITranslationObject
     Set Self = Me
 End Property
 
-Public Property Get Table() As listObject
+Public Property Get Table() As ListObject
     Set Table = this.transLo
 End Property
 
-Public Property Set Table(ByVal Lo As listObject)
-    Set this.transLo = Lo
+Public Property Set Table(ByVal lo As ListObject)
+    ValidateListObject lo, "Table"
+    Set this.transLo = lo
+    ResetCaches
 End Property
 
 '@prop-title Translation language to translate elements
@@ -78,43 +82,54 @@ End Property
 
 
 Public Property Let Language(ByVal transLng As String)
-    this.transLng = transLng
+    this.transLng = Trim$(transLng)
+    ResetCaches
 End Property
 
 '@label:Name
 '@prop-title Name of the translation Object
 Private Property Get Name() As String
-    Name = "Table: " & Table.Name & " - Language: " & Language
+    If this.transLo Is Nothing Then
+        Name = CLASSNAME & " (uninitialised)"
+    Else
+        Name = "Table: " & this.transLo.Name & " - Language: " & Language
+    End If
 End Property
-
-'@prop-title Check if the provided language exists
-Private Property Get LanguageExists() As Boolean
-    Dim lng As String
-    Dim hRng As Range
-    lng = Language
-    Set hRng = Table.HeaderRowRange()
-    LanguageExists = (Not hRng.Find(What:=lng, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
-End Property
-
-
 
 '@prop-title where is the language column
 '@return A Long
 Private Function LanguageIndex() As Long
 
-    Dim lngIndex As Long
-    Dim hRng As Range
-    Dim lng As String
+    Dim headerRow As Range
+    Dim found As Range
+    Dim currentName As String
 
-    lng = Language
-    If LanguageExists() Then
-        Set hRng = Table.HeaderRowRange
-        lngIndex = hRng.Find(What:=lng, lookAt:=xlWhole, MatchCase:=True).Column -  hRng.Column + 1
-    Else
-        lngIndex = -1
+    If this.transLo Is Nothing Then Exit Function
+    If LenB(this.transLng) = 0 Then Exit Function
+
+    If this.languageColumnIndex > 0 Then
+        On Error Resume Next
+        currentName = this.transLo.ListColumns(this.languageColumnIndex).Name
+        On Error GoTo 0
+        If StrComp(currentName, this.transLng, vbBinaryCompare) <> 0 Then
+            this.languageColumnIndex = 0
+        End If
     End If
 
-    LanguageIndex = lngIndex
+    If this.languageColumnIndex <= 0 Then
+        this.languageColumnIndex = -1
+        Set headerRow = HeaderRowRange()
+        If headerRow Is Nothing Then
+            LanguageIndex = this.languageColumnIndex
+            Exit Function
+        End If
+        Set found = headerRow.Find(What:=this.transLng, LookAt:=xlWhole, MatchCase:=True)
+        If Not found Is Nothing Then
+            this.languageColumnIndex = found.Column - headerRow.Column + 1
+        End If
+    End If
+
+    LanguageIndex = this.languageColumnIndex
 End Function
 
 '@label:ValueExists
@@ -124,37 +139,19 @@ End Function
 '@return A Boolean
 '@export
 Private Function ValueExists(ByVal Text As String) As Boolean
-    Dim textExists As Boolean
-    Dim keyRng As Range
-    Dim Lo As listObject
-    textExists = False
-    
-    Set Lo = Table()
-    Set keyRng = Lo.ListColumns(1).Range
+    Dim translationCell As Range
+    Dim sanitized As String
 
-    If LanguageExists() Then
-        textExists = (Not keyRng.Find(What:=Text, lookAt:=xlWhole, MatchCase:=True) Is Nothing)
+    Set translationCell = ResolveTranslationCell(Text)
+
+    If translationCell Is Nothing Then
+        sanitized = SanitizeText(Text)
+        If StrComp(sanitized, Text, vbBinaryCompare) <> 0 Then
+            Set translationCell = ResolveTranslationCell(sanitized)
+        End If
     End If
 
-    ValueExists = textExists
-End Function
-
-'@prop-title Line of a value
-'@details
-'In case a value is present, return the line index relative to the worksheet
-'@return Long
-Private Function ValueIndex(ByVal Text As String) As Long
-    Dim Index As Long
-    Dim keyRng As Range
-
-    If ValueExists(Text) Then
-        Set keyRng = Table.ListColumns(1).Range
-        Index = keyRng.Find(What:=Text, lookAt:=xlWhole, MatchCase:=True).Row - keyRng.Row + 1
-    Else
-        Index = -1
-    End If
-
-    ValueIndex = Index
+    ValueExists = Not translationCell Is Nothing
 End Function
 
 '@label:TranslatedValue
@@ -166,63 +163,28 @@ End Function
 '@param containsFormula Optional, Boolean translate the text as as Formula. Default is False
 '@return A String
 '@export
-Private Function TranslatedValue(ByVal textTotranslate As String, _ 
+Private Function TranslatedValue(ByVal textToTranslate As String, _ 
                                  Optional ByVal containsFormula As Boolean = False) As String
-    
+
     Dim cleanedText As String
-    Dim transText As String
-    Dim formTransText As String
-    Dim formulaText As String
-    Dim lngCol As Long
-    Dim valIndex As Long
-    Dim LoRng As Range
-    Dim counter As Long
-    Dim quoteStart As Long
-    Dim chunkToTrans As String
-    Dim repLists As BetterArray
-    
-    'Replace all the non breaking spaces with empty character
-    cleanedText = Application.WorksheetFunction.SUBSTITUTE(textTotranslate, chr(160), " ")
-    cleanedText = Application.WorksheetFunction.CLEAN(cleanedText)
-    cleanedText = Application.WorksheetFunction.TRIM(cleanedText)
+    Dim translationCell As Range
+    Dim returnedValue As String
+
+    cleanedText = SanitizeText(textToTranslate)
 
     If containsFormula Then
-        
-        formTransText = cleanedText
-        formulaText = Replace(cleanedText, chr(34) & chr(34), vbNullString)
-        Set repLists = New BetterArray
+        TranslatedValue = TranslateFormulaText(cleanedText)
+        Exit Function
+    End If
 
-        'Remove empty characters from the formula.
-        If InStr(1, formulaText, chr(34)) > 0 Then
-            For counter = 1 To Len(formulaText)
-                If Mid(formulaText, counter, 1) = chr(34) Then
-                    If quoteStart = 0 Then
-                        quoteStart = counter + 1
-                    Else
-                        chunkToTrans = Mid(formulaText, quoteStart, counter - quoteStart)
-                        'Stock the list of elements already translated, and skip if it is translated already
-                        If Not (repLists.Includes(chunkToTrans)) Then
-                            transText = TranslatedValue(chunkToTrans)
-                            formTransText = Replace(formTransText, chr(34) & chunkToTrans & chr(34), chr(34) & transText & chr(34))
-                            repLists.Push chunkToTrans
-                        End If
-                        quoteStart = 0
-                    End If
-                End If
-            Next
-        End If
+    Set translationCell = ResolveTranslationCell(textToTranslate)
 
-        TranslatedValue = formTransText
+    If translationCell Is Nothing Then
+        TranslatedValue = cleanedText
     Else
-        If ValueExists(cleanedText) Then
-            Set LoRng = Table.Range
-            valIndex = ValueIndex(cleanedText)
-            lngCol = LanguageIndex()
-            transText = LoRng.Cells(valIndex, lngCol).Value
-            TranslatedValue = transText
-        Else
-            TranslatedValue = cleanedText
-        End If
+        returnedValue = SanitizeText(CStr(translationCell.Value))
+        'If returned value is an empty string, return the text to translate
+        TranslatedValue = IIF(LenB(returnedValue) = 0, cleanedText, returnedValue)
     End If
 End Function
 
@@ -235,14 +197,13 @@ End Function
 '@param containsFormula Optional, Boolean. Translate each values in the range as formula. Default is False
 '@export
 Private Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
-    Dim counter As Long
-    Dim EndRow As Long
-  
-    EndRow = colRng.Rows.Count
-    'The range should be a column range, not a row range.
-    For counter = 1 To EndRow
-        colRng.Cells(counter, 1).Value = TranslatedValue(colRng.Cells(counter, 1).Value, containsFormula:=containsFormula)
-    Next
+    Dim targetCell As Range
+
+    If colRng Is Nothing Then Exit Sub
+
+    For Each targetCell In colRng.Columns(1).Cells
+        targetCell.Value = TranslatedValue(targetCell.Value, containsFormula:=containsFormula)
+    Next targetCell
 End Sub
 
 '@label:TranslateForm
@@ -250,40 +211,26 @@ End Sub
 '@param UserFrm A Form Object
 '@export
 Private Sub TranslateForm(ByVal UserFrm As Object)
-    Dim counter As Integer
     Dim formControl As Control
+    Dim controlType As String
 
-    'Be sure the object is a userform
-    If Not (TypeOf UserFrm Is UserForm) Then
-        LogInfo "Attempt to translate an object that is not a form", checkingNote
-        ShowDebug
+    If Not SupportsUserFormContract(UserFrm) Then
+        LogInfo "Attempt to translate an object of type '" & TypeName(UserFrm) & "' that is not a form", checkingNote
         Exit Sub
     End If
 
     For Each formControl In UserFrm.Controls
-        If (TypeOf formControl Is MSForms.CommandButton) Or _
-                                                         (TypeOf formControl Is MSForms.LABEL) Or _
-                                                         (TypeOf formControl Is MSForms.OptionButton) Or _
-                                                         (TypeOf formControl Is MSForms.Page) Or _
-                                                         (TypeOf formControl Is MSForms.MultiPage) Or _
-                                                         (TypeOf formControl Is MSForms.Frame) Or _
-                                                         (TypeOf formControl Is MSForms.CheckBox) Then
-            If TypeOf formControl Is MSForms.MultiPage Then
-                For counter = 0 To formControl.Pages.Count - 1
-                    If formControl.Name = "MultiPage1" Then
-                        UserFrm.MultiPage1.Pages(counter).Caption = _
-                                                                  TranslatedValue(UserFrm.MultiPage1.Pages(counter).Name)
-                    End If
-                    If formControl.Name = "MultiPage2" Then
-                        UserFrm.MultiPage2.Pages(counter).Caption = _
-                                                                  TranslatedValue(UserFrm.MultiPage2.Pages(counter).Name)
-                    End If
-                Next
-            Else
-                If Trim(formControl.Caption) <> vbNullString Then formControl.Caption = TranslatedValue(formControl.Name)
+        controlType = TypeName(formControl)
+        If StrComp(controlType, "MultiPage", vbTextCompare) = 0 Then
+            TranslateMultiPageControl formControl
+        ElseIf ShouldTranslateControl(controlType) Then
+            If Trim$(CStr(formControl.Caption)) <> vbNullString Then
+                formControl.Caption = TranslatedValue(formControl.Name)
             End If
+        Else
+            LogInfo "Attempt to translate a control that is not supported :'" & controlType & "'", checkingNote
         End If
-    Next
+    Next formControl
 End Sub
 
 '@label:checkings
@@ -304,7 +251,7 @@ Private Sub LogInfo(ByVal label As String, _
     If internalChecks Is Nothing Then Set internalChecks = Checking.Create(checkName)
     
     'Add new informations to the checking object
-    internalChecks.Add Cstr(checkCounter), label, scope
+    internalChecks.Add CStr(checkCounter), label, scope
     checkCounter = checkCounter + 1
 
     If Not this.hasChecks Then this.hasChecks = True
@@ -332,9 +279,159 @@ Private Sub ShowDebug()
     Debug.Print "Check the informations of Translation object " & Name()
 End Sub
 
-'@sub-title Raise Error on instanciation
-Private Sub ThrowErrorUnableInstanciate(ByVal errorMessage As String)
-    Err.Raise VBA.vbObjectError + 515, CLASSNAME, "Unable to create an instance of the class : " & errorMessage
+'@label:helpers
+'@section Helpers
+
+Private Function SanitizeText(ByVal rawValue As String) As String
+    Dim cleaned As String
+
+    cleaned = Application.WorksheetFunction.SUBSTITUTE(rawValue, Chr$(60), " ")
+    cleaned = Application.WorksheetFunction.CLEAN(cleaned)
+    cleaned = Application.WorksheetFunction.TRIM(cleaned)
+
+    SanitizeText = cleaned
+End Function
+
+Private Function HeaderRowRange() As Range
+    On Error Resume Next
+    If Not this.transLo Is Nothing Then
+        Set HeaderRowRange = this.transLo.HeaderRowRange
+    End If
+    On Error GoTo 0
+End Function
+
+Private Function KeysDataRange() As Range
+    On Error Resume Next
+    If Not this.transLo Is Nothing Then
+        Set KeysDataRange = this.transLo.ListColumns(1).DataBodyRange
+    End If
+    On Error GoTo 0
+End Function
+
+Private Function ResolveTranslationCell(ByVal token As String) As Range
+    Dim keyRange As Range
+    Dim found As Range
+    Dim bodyRange As Range
+    Dim relativeRow As Long
+    Dim languageColumn As Long
+
+    If LenB(token) = 0 Then Exit Function
+    If this.transLo Is Nothing Then Exit Function
+
+    languageColumn = LanguageIndex()
+    If languageColumn <= 0 Then Exit Function
+
+    Set keyRange = KeysDataRange()
+    If keyRange Is Nothing Then Exit Function
+
+    Set found = keyRange.Find(What:=token, LookAt:=xlWhole, MatchCase:=True)
+    If found Is Nothing Then Exit Function
+
+    Set bodyRange = this.transLo.DataBodyRange
+    If bodyRange Is Nothing Then Exit Function
+
+    relativeRow = found.Row - keyRange.Row + 1
+    Set ResolveTranslationCell = bodyRange.Cells(relativeRow, languageColumn)
+End Function
+
+Private Function TranslateFormulaText(ByVal formulaText As String) As String
+    Dim strippedText As String
+    Dim workingText As String
+    Dim replacements As BetterArray
+    Dim quoteStart As Long
+    Dim idx As Long
+    Dim chunk As String
+    Dim translated As String
+    Dim DOUBLE_QUOTE As String 'A constant
+
+    DOUBLE_QUOTE = Chr$(34)
+
+    workingText = formulaText
+    strippedText = Replace(formulaText, DOUBLE_QUOTE & DOUBLE_QUOTE, vbNullString)
+
+    If InStr(1, strippedText, DOUBLE_QUOTE, vbBinaryCompare) = 0 Then
+        TranslateFormulaText = workingText
+        Exit Function
+    End If
+
+    Set replacements = New BetterArray
+
+    For idx = 1 To Len(strippedText)
+        If Mid$(strippedText, idx, 1) = DOUBLE_QUOTE Then
+            If quoteStart = 0 Then
+                quoteStart = idx + 1
+            Else
+                chunk = Mid$(strippedText, quoteStart, idx - quoteStart)
+                If LenB(chunk) > 0 Then
+                    If Not replacements.Includes(chunk) Then
+                        translated = TranslatedValue(chunk)
+                        workingText = Replace(workingText, DOUBLE_QUOTE & chunk & DOUBLE_QUOTE, DOUBLE_QUOTE & translated & DOUBLE_QUOTE)
+                        replacements.Push chunk
+                    End If
+                End If
+                quoteStart = 0
+            End If
+        End If
+    Next idx
+
+    TranslateFormulaText = workingText
+End Function
+
+Private Function SupportsUserFormContract(ByVal candidate As Object) As Boolean
+    Dim controls As Object
+
+    If candidate Is Nothing Then Exit Function
+
+    On Error Resume Next
+    Set controls = candidate.Controls
+    SupportsUserFormContract = (Err.Number = 0)
+    Err.Clear
+    On Error GoTo 0
+End Function
+
+Private Function ShouldTranslateControl(ByVal controlType As String) As Boolean
+    Select Case LCase$(controlType)
+        Case "commandbutton", "label", "optionbutton", "page", "frame", "checkbox"
+            ShouldTranslateControl = True
+    End Select
+End Function
+
+Private Sub TranslateMultiPageControl(ByVal multiPageControl As Object)
+    Dim pageIndex As Long
+    Dim controlName As String
+
+    If multiPageControl Is Nothing Then Exit Sub
+
+    controlName = CStr(multiPageControl.Name)
+
+    If controlName <> "MultiPage1" And controlName <> "MultiPage2" Then Exit Sub
+
+    For pageIndex = 0 To multiPageControl.Pages.Count - 1
+        multiPageControl.Pages(pageIndex).Caption = TranslatedValue(multiPageControl.Pages(pageIndex).Name)
+    Next pageIndex
+End Sub
+
+Private Sub ValidateListObject(ByVal source As ListObject, ByVal sourceMember As String)
+    If source Is Nothing Then
+        RaiseError ProjectError.ObjectNotInitialized, "ListObject is not defined.", sourceMember
+    End If
+End Sub
+
+Private Sub ResetCaches(Optional ByVal resetLanguageIndex As Boolean = True)
+    If resetLanguageIndex Then
+        this.languageColumnIndex = 0
+    End If
+End Sub
+
+Private Sub RaiseError(ByVal errNumber As ProjectError, ByVal message As String, Optional ByVal sourceMember As String = vbNullString)
+    Dim sourceName As String
+
+    sourceName = CLASSNAME
+    If LenB(sourceMember) > 0 Then
+        sourceName = sourceName & "." & sourceMember
+    End If
+
+    Err.Raise CLng(errNumber), sourceName, message
 End Sub
 
 '@section Interface
@@ -345,6 +442,11 @@ End Sub
 '@jump:Name
 Private Property Get ITranslationObject_Name() As String
     ITranslationObject_Name = Name()
+End Property
+
+'@jump:Language
+Private Property Get ITranslationObject_Language() As String
+    ITranslationObject_Language = Language
 End Property
 
 '@jump:ValueExists
