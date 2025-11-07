@@ -154,7 +154,9 @@ End Sub
 Public Sub DeleteListRowAt(ByVal sheetName As String, ByVal targetCell As Range)
     Dim targetSheet As Worksheet
     Dim lo As ListObject
+    Dim wrapper As ICustomTable
     Dim position As Long
+    Dim expObj As ILLExport
 
     If targetCell Is Nothing Then Exit Sub
 
@@ -179,6 +181,13 @@ Public Sub DeleteListRowAt(ByVal sheetName As String, ByVal targetCell As Range)
         Else
             targetSheet.Rows(targetCell.Row).Delete
         End If
+        Set wrapper = CustomTable.Create(lo)
+        
+        'Add Ids after deletion
+        wrapper.AddIds
+
+        
+
     ProtectSetupSheet sheetName
 End Sub
 

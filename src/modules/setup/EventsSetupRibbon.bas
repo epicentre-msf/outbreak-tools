@@ -329,7 +329,7 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
     
     If (nbMissing > 0) Then
         MsgBox "Aborted translation of the setup: Language " & selectedLanguage & _ 
-               " has " & nbMissing & "missing labels. Please fill them before attempting translation", vbExclamation
+               " has " & nbMissing & " missing labels. Please fill them before attempting a translation.", vbExclamation
         Exit Sub
     End If
 

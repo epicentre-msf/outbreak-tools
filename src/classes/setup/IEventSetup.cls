@@ -56,6 +56,20 @@ End Sub
 Public Sub ResetTranslationCounter()
 End Sub
 
+'@section Row operations
+'===============================================================================
+
+'@description Manage setup worksheet rows using cached helpers.
+'@param sheetName Worksheet name to process (Dictionary, Choices, Analysis, Exports, Translations).
+'@param del Optional Boolean. When True the action removes rows instead of adding them.
+Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
+End Sub
+
+'@description Sort setup worksheets leveraging cached managers.
+'@param sheetName Worksheet name to sort.
+Public Sub SortTables(ByVal sheetName As String)
+End Sub
+
 '@description Compose the time-series header displayed in analysis tables.
 Public Function BuildTimeSeriesHeader(ByVal timeVar As String, _
                                       ByVal groupVar As String, _

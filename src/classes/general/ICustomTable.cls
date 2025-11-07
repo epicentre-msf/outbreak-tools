@@ -102,6 +102,17 @@ End Sub
 '@jump:Clean
 Public Sub Clean(): End Sub
 
+'@jump:InsertRowAt
+Public Sub InsertRowsAt(ByVal targetCell As Range, _ 
+                        Optional ByVal insertShift As Boolean = False)
+End Sub
+
+'@jump:DeleteRowAt(ByVal targetCell As Range)
+Public Sub DeleteRowsAt(ByVal targetCell As Range, _ 
+                        Optional ByVal forceShift As Boolean = False)
+End Sub
+
+
 '@section Import Export
 
 '@jump:Import
