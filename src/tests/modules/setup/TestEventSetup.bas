@@ -18,6 +18,8 @@ Private Const SHEET_ANALYSIS As String = "Analysis"
 Private Const SHEET_UPDATED As String = "__updated"
 Private Const SHEET_DROPDOWN As String = "__variables"
 Private Const SHEET_PASSWORDS As String = "__pass"
+Private Const SHEET_EXPORTS As String = "Exports"
+Private Const SHEET_TRANSLATIONS As String = "Translations"
 Private Const COUNTER_NAME As String = "_SetupTranslationsCounter"
 Private Const DICT_START_ROW As Long = 5
 Private Const DICT_START_COLUMN As Long = 1
@@ -27,6 +29,7 @@ Private Const LIST_TS_DATA As String = "Tab_TimeSeries_Analysis"
 Private Const LIST_GRAPH_TS As String = "Tab_Graph_TimeSeries"
 Private Const LIST_SPATIO_TEMPORAL As String = "Tab_SpatioTemporal_Analysis"
 Private Const LIST_SPATIO_TEMPORAL_SPECS As String = "Tab_SpatioTemporal_Specs"
+Private Const TAB_TRANSLATIONS As String = "Tab_Translations"
 
 '@ModuleInitialize
 Public Sub ModuleInitialize()
@@ -233,6 +236,117 @@ Fail:
     CustomTestLogFailure Assert, "TestRecalculateAnalysisEvaluatesFormulas", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("EventSetup")
+Public Sub TestManageRowsAddsDictionaryRow()
+    CustomTestSetTitles Assert, "EventSetup", "ManageRows adds dictionary rows"
+    On Error GoTo Fail
+
+    Dim dictTable As ListObject
+    Set dictTable = FixtureWorkbook.Worksheets(SHEET_DICTIONARY).ListObjects("Tab_Dictionary")
+    Dim initialCount As Long
+    initialCount = dictTable.ListRows.Count
+
+    Subject.ManageRows SHEET_DICTIONARY
+
+    Assert.AreEqual initialCount + 5, dictTable.ListRows.Count, "ManageRows should append a new dictionary row when del is False"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestManageRowsAddsDictionaryRow", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
+Public Sub TestManageRowsDeletesDictionaryRow()
+    CustomTestSetTitles Assert, "EventSetup", "ManageRows deletes dictionary rows"
+    On Error GoTo Fail
+
+    Dim dictTable As ListObject
+    Set dictTable = FixtureWorkbook.Worksheets(SHEET_DICTIONARY).ListObjects("Tab_Dictionary")
+    Dim baseline As Long
+    baseline = dictTable.ListRows.Count
+
+    Subject.ManageRows SHEET_DICTIONARY
+    Assert.AreEqual baseline + 5, dictTable.ListRows.Count, "Precondition failed: dictionary row was not added"
+
+    Subject.ManageRows SHEET_DICTIONARY, True
+
+    Assert.AreEqual baseline, dictTable.ListRows.Count, "ManageRows with del True should remove the previously added dictionary row"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestManageRowsDeletesDictionaryRow", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
+Public Sub TestManageRowsAddsAnalysisRows()
+    CustomTestSetTitles Assert, "EventSetup", "ManageRows adds rows in analysis tables"
+    On Error GoTo Fail
+
+    Dim analysisSheet As Worksheet
+    Dim tsTable As ListObject
+    Dim initialCount As Long
+
+    Set analysisSheet = FixtureWorkbook.Worksheets(SHEET_ANALYSIS)
+    analysisSheet.Cells(1, 1).Value = "Add or remove rows of time series analysis"
+
+    Set tsTable = analysisSheet.ListObjects(LIST_TS_DATA)
+    initialCount = tsTable.ListRows.Count
+
+    Subject.ManageRows SHEET_ANALYSIS
+
+    Assert.IsTrue tsTable.ListRows.Count > initialCount, "ManageRows should append rows to the selected analysis table"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestManageRowsAddsAnalysisRows", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
+Public Sub TestSortTablesOrdersAnalysisGraphRows()
+    CustomTestSetTitles Assert, "EventSetup", "SortTables reorders analysis graph entries"
+    On Error GoTo Fail
+
+    Dim analysisSheet As Worksheet
+    Dim graphTable As ListObject
+    Dim orderColumn As Range
+
+    Set analysisSheet = FixtureWorkbook.Worksheets(SHEET_ANALYSIS)
+    Set graphTable = analysisSheet.ListObjects(LIST_GRAPH_TS)
+    
+    graphTable.ListRows.Add
+    graphTable.ListRows.Add
+    graphTable.ListRows.Add
+
+    With graphTable.ListRows(2).Range
+        .Cells(1, 1).Value = "Series B"
+        .Cells(1, 2).Value = "column_choice"
+        .Cells(1, 3).Value = "GRAPH_1"
+        .Cells(1, 4).Value = 8
+        .Cells(1, 5).Value = "test"
+    End With
+
+
+    With graphTable.ListRows(3).Range
+        .Cells(2, 1).Value = "Series C"
+        .Cells(2, 2).Value = "column_choice"
+        .Cells(2, 3).Value = "GRAPH_5"
+        .Cells(2, 4).Value = 1
+        .Cells(2, 5).Value = "test"
+    End With
+
+
+    Subject.SortTables SHEET_ANALYSIS
+
+    Set orderColumn = graphTable.ListColumns("Graph order").DataBodyRange
+
+    Assert.AreEqual CLng(1), CLng(orderColumn.Cells(1, 1).Value), "Graph order should be sorted ascending after SortTables"
+    Assert.AreEqual CLng(8), CLng(orderColumn.Cells(2, 1).Value), "Existing rows should follow ascending Graph order"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSortTablesOrdersAnalysisGraphRows", Err.Number, Err.Description
+End Sub
+
 '@section Fixture builders
 '===============================================================================
 Private Sub BuildFixtureWorkbook()
@@ -242,6 +356,8 @@ Private Sub BuildFixtureWorkbook()
     PrepareDictionarySheet
     PrepareChoicesSheet
     PrepareAnalysisSheet
+    PrepareExportsSheet
+    PrepareTranslationsSheet
 End Sub
 
 Private Sub PrepareUpdatedSheet()
@@ -270,12 +386,12 @@ Private Sub PrepareDictionarySheet()
     Dim rows As Variant
     Dim lo As ListObject
 
-    headers = Array("variable name", "Main Label", "control", "control details", "sheet type", "Variable Type")
+    headers = Array("Variable Name", "Main Label", "Control", "Control Details", "Sheet Type", "Sheet Name", "main section", "Variable Type")
     rows = Array( _
-        Array("geo_var", "Geo Label", "geo", "geo_list", "hlist2D", "text"), _
-        Array("hf_var", "HF Label", "hf", "hf_list", "hlist2D", "text"), _
-        Array("time_var", "Time Label", "manual", "time_list", "hlist2D", "date"), _
-        Array("column_choice", "Choice Column", "choice_manual", "choice_list", "hlist2D", "text") _
+        Array("geo_var", "Geo Label", "geo", "geo_list", "hlist2D", "SheetGeo", "Section Geo", "text"), _
+        Array("hf_var", "HF Label", "hf", "hf_list", "hlist2D", "SheetHF", "Section HF", "text"), _
+        Array("time_var", "Time Label", "manual", "time_list", "hlist2D", "SheetTime", "Section Time", "date"), _
+        Array("column_choice", "Choice Column", "choice_manual", "choice_list", "hlist2D", "SheetChoice", "Section Choice", "text") _
     )
 
     Set dictSheet = TestHelpers.EnsureWorksheet(SHEET_DICTIONARY, FixtureWorkbook)
@@ -332,6 +448,7 @@ Private Sub PrepareAnalysisSheet()
 
     Set analysis = TestHelpers.EnsureWorksheet(SHEET_ANALYSIS, FixtureWorkbook)
     analysis.Cells.Clear
+    analysis.Cells(1, 1).Value = "Add or remove rows of all tables"
 
     'Time series table
     WriteMatrix analysis.Range("A3"), RowsToMatrix(Array(Array("Title", "Series ID", "summary label", "add total")))
@@ -344,9 +461,9 @@ Private Sub PrepareAnalysisSheet()
     lo.Name = LIST_TS_DATA
 
     'Graph table
-    WriteMatrix analysis.Range("A6"), RowsToMatrix(Array(Array("series title", "column", "Graph ID", "choice", "values or percentages")))
-    WriteMatrix analysis.Range("A7"), RowsToMatrix(Array(Array("Series A", "column_choice", "GRAPH_5", vbNullString, vbNullString)))
-    Set graphRange = analysis.Range("A6:E7")
+    WriteMatrix analysis.Range("A6"), RowsToMatrix(Array(Array("series title", "column", "Graph ID", "Graph order", "choice", "values or percentages")))
+    WriteMatrix analysis.Range("A7"), RowsToMatrix(Array(Array("Series A", "column_choice", "GRAPH_5", 5, vbNullString, vbNullString)))
+    Set graphRange = analysis.Range("A6:F7")
     On Error Resume Next
         analysis.ListObjects(LIST_GRAPH_TS).Delete
     On Error GoTo 0
@@ -372,6 +489,53 @@ Private Sub PrepareAnalysisSheet()
     On Error GoTo 0
     Set lo = analysis.ListObjects.Add(SourceType:=xlSrcRange, Source:=spatioRange, XlListObjectHasHeaders:=xlYes)
     lo.Name = LIST_SPATIO_TEMPORAL_SPECS
+End Sub
+
+Private Sub PrepareExportsSheet()
+    Dim exportsSheet As Worksheet
+    Dim headerMatrix As Variant
+    Dim dataMatrix As Variant
+    Dim tableRange As Range
+    Dim lo As ListObject
+
+    headerMatrix = RowsToMatrix(Array(Array("export number", "export name")))
+    dataMatrix = RowsToMatrix(Array( _
+        Array(1, "Export Alpha"), _
+        Array(2, "Export Beta")))
+
+    Set exportsSheet = TestHelpers.EnsureWorksheet(SHEET_EXPORTS, FixtureWorkbook)
+    exportsSheet.Cells.Clear
+
+    WriteMatrix exportsSheet.Cells(4, 1), headerMatrix
+    WriteMatrix exportsSheet.Cells(5, 1), dataMatrix
+
+    Set tableRange = exportsSheet.Range("A4").Resize(UBound(dataMatrix, 1) - LBound(dataMatrix, 1) + 2, UBound(headerMatrix, 2))
+    On Error Resume Next
+        exportsSheet.ListObjects(1).Delete
+    On Error GoTo 0
+    Set lo = exportsSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=tableRange, XlListObjectHasHeaders:=xlYes)
+    lo.Name = "Tab_Exports"
+End Sub
+
+Private Sub PrepareTranslationsSheet()
+    Dim translationsSheet As Worksheet
+    Dim tableRange As Range
+    Dim lo As ListObject
+
+    Set translationsSheet = TestHelpers.EnsureWorksheet(SHEET_TRANSLATIONS, FixtureWorkbook)
+    translationsSheet.Cells.Clear
+
+    translationsSheet.Cells(1, 1).Value = "TranslationTag"
+    translationsSheet.Cells(1, 2).Value = "English"
+    translationsSheet.Cells(2, 1).Value = "RNG_Demo__1"
+    translationsSheet.Cells(2, 2).Value = "Hello"
+
+    Set tableRange = translationsSheet.Range("A1:B2")
+    On Error Resume Next
+        translationsSheet.ListObjects(TAB_TRANSLATIONS).Delete
+    On Error GoTo 0
+    Set lo = translationsSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=tableRange, XlListObjectHasHeaders:=xlYes)
+    lo.Name = TAB_TRANSLATIONS
 End Sub
 
 Private Sub AppendGeoVariable(ByVal variableName As String)

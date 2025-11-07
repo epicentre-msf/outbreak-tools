@@ -312,29 +312,36 @@ Private Sub Sort()
 
     Set sh = Wksh()
 
-    EnsureAnalysisTables True
+    EnsureAnalysisTables
 
 
     For counter = requiredTablesCaches.LowerBound To requiredTablesCaches.UpperBound
         loName = requiredTablesCaches.Items(counter)
+
+        On Error Resume Next
         Set Lo = sh.ListObjects(loName)
-        Set csTab = CustomTable.Create(Lo)
+        On Error GoTo 0
 
-        'Row count is the number of elements in the row that triggers deletion of the
-        'entire row of the listObject
-        rowCount = Switch(loName = TIMESERIES, 2, loName = GRAPHTIMESERIES, 4, True, 0)
+        If Not (Lo Is Nothing) Then
+            Set csTab = CustomTable.Create(Lo)
+
+            'Row count is the number of elements in the row that triggers deletion of the
+            'entire row of the listObject
+            rowCount = Switch(loName = TIMESERIES, 2, loName = GRAPHTIMESERIES, 4, True, 0)
 
 
-        colName = IIF(((loName = GRAPHTIMESERIES) Or (loName = TITLEGRAPHTIMESERIES)), "Graph ID", "Section")
+            colName = IIF(((loName = GRAPHTIMESERIES) Or (loName = TITLEGRAPHTIMESERIES)), "Graph ID", "Section")
 
-        csTab.Sort colName, directSort:=False
-        If loName = TIMESERIES Then csTab.Sort "Table order", directSort:=True, strictSearch:=False
-        If loName = GRAPHTIMESERIES Then csTab.Sort "Graph order", directSort:=True, strictSearch:=False
-       
-        'Resize the listObject after sorting
-        csTab.RemoveRows totalCount:=rowCount, forceShift:=True
+            csTab.Sort colName, directSort:=False
+            If loName = TIMESERIES Then csTab.Sort "Table order", directSort:=True, strictSearch:=False
+            If loName = GRAPHTIMESERIES Then csTab.Sort "Graph order", directSort:=True, strictSearch:=False
+        
+            'Resize the listObject after sorting
+            csTab.RemoveRows totalCount:=rowCount, forceShift:=True
+        End If
+
+        Set Lo = Nothing
     Next
-  
 End Sub
 
 
