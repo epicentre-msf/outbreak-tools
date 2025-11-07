@@ -29,11 +29,21 @@ Option Explicit
 Public Property Get Name() As String
 End Property
 
+'@jump:Language
+'@return Current language header associated with the translation table.
+Public Property Get Language() As String
+End Property
+
 '@jump:ValueExists
+'@param text String tag to search in the translation table.
+'@return True when the tag exists for the configured language.
 Public Property Get ValueExists(ByVal text As String) As Boolean
 End Property
 
 '@jump:TranslatedValue
+'@param Text String to translate.
+'@param containsFormula Optional flag; when True only quoted chunks inside the text are translated.
+'@return Either the translated value or the original text when no translation was found.
 Public Function TranslatedValue(ByVal Text As String, Optional ByVal containsFormula As Boolean = False) As String
 End Function
 
@@ -41,10 +51,13 @@ End Function
 '@section Outside
 
 '@jump:TranslateForm
+'@param UserFrm Any userform exposing a Controls collection whose captions need translation.
 Public Sub TranslateForm(ByVal UserFrm As Object)
 End Sub
 
 '@jump:TranslateRange
+'@param colRng Column range whose values should be translated.
+'@param containsFormula Optional flag to translate the range as formulas instead of plain text.
 Public Sub TranslateRange(ByVal colRng As Range, Optional ByVal containsFormula As Boolean = False)
 End Sub
 
@@ -52,9 +65,9 @@ End Sub
 '@section checkings
 
 '@jump:HasCheckings
-'Test if the object has checkings enable
+'Indicates whether the translator logged checking notes.
 Public Property Get HasCheckings() As Boolean: End Property
 
 '@jump:CheckingValues
-'Get the checking values
+'Returns the logged checking values for inspection.
 Public Property Get CheckingValues() As Object: End Property
