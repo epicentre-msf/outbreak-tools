@@ -71,6 +71,9 @@ End Function
 Public Sub SetDisplayPrompts(ByVal state As Boolean)
 End Sub
 
+Public Function MissingLabels(ByVal lang As String) As Long
+End Function
+
 '@section Identity
 '===============================================================================
 '@sub-title Retrieve the interface bound to the current instance.

@@ -309,6 +309,52 @@ Fail:
     CustomTestLogFailure Assert, "TestNumberOfMissingReportsPerLanguage", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestMissingLabelsCountsBlankCells()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestMissingLabelsCountsBlankCells"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+
+    Dim missing As Long
+    missing = Subject.MissingLabels("French")
+
+    Assert.AreEqual CLng(TranslationsTable.ListRows.Count), missing, "MissingLabels should count each blank entry in the target language column"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestMissingLabelsCountsBlankCells", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestMissingLabelsReturnsZeroWhenTranslationsPresent()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestMissingLabelsReturnsZeroWhenTranslationsPresent"
+    On Error GoTo Fail
+
+    Subject.UpdateFromRegistry RegistrySheet, "French"
+    TranslationsTable.ListColumns("French").DataBodyRange.Value = "french-text"
+
+    Assert.AreEqual CLng(0), Subject.MissingLabels("French"), "MissingLabels should return zero when the language column has no blanks"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestMissingLabelsReturnsZeroWhenTranslationsPresent", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestMissingLabelsRejectsUnknownLanguage()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestMissingLabelsRejectsUnknownLanguage"
+
+    On Error GoTo ExpectError
+        Subject.UpdateFromRegistry RegistrySheet
+        Subject.MissingLabels "Spanish"
+        Assert.LogFailure "MissingLabels should raise an error when the language does not exist"
+        Exit Sub
+ExpectError:
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), Err.Number, "MissingLabels must raise InvalidArgument for unknown languages"
+    Err.Clear
+End Sub
+
 '@section Helpers
 '===============================================================================
 Private Sub AssertSheetSetup()
