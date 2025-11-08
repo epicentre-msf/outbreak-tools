@@ -97,6 +97,14 @@ Public Sub RemoveColumn(ByVal colName As String): End Sub
 '@sub-title Add rows to the dictionary listobject when available
 Public Sub AddRows(): End Sub
 
+'@jump:InsertRows
+'@sub-title Insert rows relative to a target selection
+'@param targetCell Range anchor whose height dictates the number of rows inserted.
+'@param insertShift Optional Boolean. When True worksheet rows are inserted to preserve stacked tables.
+Public Sub InsertRows(ByVal targetCell As Range, _
+                      Optional ByVal insertShift As Boolean = False)
+End Sub
+
 '@jump:removerows
 '@sub-title Remove rows from the dictionary listobject when available
 Public Sub RemoveRows(): End Sub

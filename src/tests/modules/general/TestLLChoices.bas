@@ -50,6 +50,26 @@ CleanFail:
     Err.Raise errNumber, errSource, errDescription, errHelpFile, errHelpContext
 End Sub
 
+Private Function EnsureChoicesListObject() As ListObject
+    Dim choiceSheet As Worksheet
+    Dim dataRange As Range
+    Dim lo As ListObject
+
+    Set choiceSheet = Choices.Wksh
+
+    On Error Resume Next
+        choiceSheet.ListObjects(1).Delete
+    On Error GoTo 0
+
+    Set dataRange = choiceSheet.Range("A1").CurrentRegion
+    Set lo = choiceSheet.ListObjects.Add(SourceType:=xlSrcRange, _
+                                         Source:=dataRange, _
+                                         XlListObjectHasHeaders:=xlYes)
+    lo.Name = "tblLLChoices"
+
+    Set EnsureChoicesListObject = lo
+End Function
+
 Private Function TranslatorDataRows() As Variant
     TranslatorDataRows = Array( _
         Array("A", "A", "Alpha"), _
@@ -347,6 +367,37 @@ Public Sub TestRemoveChoiceDeletesRequestedList()
 
 Fail:
     CustomTestLogFailure Assert, "TestRemoveChoiceDeletesRequestedList", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLChoices")
+Public Sub TestInsertRowsMirrorsSelectionHeight()
+    CustomTestSetTitles Assert, "LLChoices", "TestInsertRowsMirrorsSelectionHeight"
+    On Error GoTo Fail
+
+    Dim lo As ListObject
+    Dim selectionRange As Range
+    Dim initialRows As Long
+    Dim preservedValue As String
+
+    Set lo = EnsureChoicesListObject()
+    preservedValue = CStr(lo.DataBodyRange.Cells(2, 1).Value)
+    initialRows = lo.ListRows.Count
+
+    Set selectionRange = lo.ListRows(2).Range
+    Set selectionRange = selectionRange.Resize(2, lo.ListColumns.Count)
+
+    Choices.InsertRows selectionRange
+
+    Assert.AreEqual initialRows + 2, lo.ListRows.Count, _
+        "InsertRows should add rows matching the selection height"
+    Assert.AreEqual vbNullString, CStr(lo.ListRows(2).Range.Cells(1, 1).Value), _
+        "First inserted row should be blank"
+    Assert.AreEqual preservedValue, CStr(lo.ListRows(3).Range.Cells(1, 1).Value), _
+        "Existing data should shift below inserted rows"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInsertRowsMirrorsSelectionHeight", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLChoices")

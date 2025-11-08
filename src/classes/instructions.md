@@ -47,3 +47,6 @@ required VBA syntax.
 - [DONE] Optimised TranslationObject with cached language resolution, robust formula translation, TypeName-based form handling, refreshed documentation, and a new unit test suite covering the translator behaviours.
 - [DONE] Extended EventSetup with cached row-management and sorting helpers covering dictionary, choices, exports, analysis, and translations plus supporting tests.
 - [DONE] Implemented CustomTable.InsertRowsAt/DeleteRowsAt with worksheet shift handling, BetterArray-backed selection tracking, and new TestCustomTable cases for multi-row insert/delete scenarios.
+- [DONE] Added InsertRows support to LLdictionary, LLChoices, and Analysis with shared selection validation plus dedicated regression tests for each class.
+- [DONE] Wired EventSetup.InsertRows to delegate to dictionary/choices/analysis helpers, added workbook-unlock safeguards, and expanded TestEventSetup to cover dictionary and analysis insertion flows.
+- [DONE] Simplified LLExport/EventSetup export insertion to assign monotonically increasing export numbers without shifting dictionary columns while keeping sync tests green.

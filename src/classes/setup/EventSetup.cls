@@ -214,6 +214,12 @@ Private Sub IEventSetup_ManageRows(ByVal sheetName As String, Optional ByVal del
     ManageRows sheetName, del
 End Sub
 
+Private Sub IEventSetup_InsertRows(ByVal sheetName As String, _
+                                   ByVal targetCell As Range, _
+                                   Optional ByVal insertShift As Boolean = False)
+    InsertRows sheetName, targetCell, insertShift
+End Sub
+
 Private Sub IEventSetup_SortTables(ByVal sheetName As String)
     SortTables sheetName
 End Sub
@@ -313,6 +319,84 @@ CleanFail:
     On Error GoTo 0
 
     ThrowError ProjectError.SomethingWentWrong, "Failed to manage rows on '" & sheetName & "': " & Err.Description
+    If Not state Is Nothing Then state.Restore
+End Sub
+
+Public Sub InsertRows(ByVal sheetName As String, _
+                      ByVal targetCell As Range, _
+                      Optional ByVal insertShift As Boolean = False)
+    Dim normalized As String
+    Dim state As IApplicationState
+    Dim sheetPass As IPasswords
+    Dim dictPass As IPasswords
+    Dim unlockedSheet As String
+    Dim unlockedDict As String
+    Dim effectiveShift As Boolean
+
+    normalized = NormalisedSheetName(sheetName)
+    If LenB(normalized) = 0 Then Exit Sub
+    If targetCell Is Nothing Then Exit Sub
+
+    Set state = ApplicationState.Create(Application)
+    If Not state Is Nothing Then
+        state.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    End If
+
+    On Error GoTo CleanFail
+
+    Select Case normalized
+        Case KEY_DICTIONARY
+            If Not EnsureDictionary() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_DICTIONARY)
+            unlockedSheet = SHEET_DICTIONARY
+            this.dictionary.InsertRows targetCell, insertShift
+        Case KEY_CHOICES
+            If Not EnsureChoices() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_CHOICES)
+            unlockedSheet = SHEET_CHOICES
+            this.choices.InsertRows targetCell, insertShift
+        Case KEY_ANALYSIS
+            If Not EnsureAnalysisManager() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_ANALYSIS)
+            unlockedSheet = SHEET_ANALYSIS
+            effectiveShift = True
+            this.analysis.InsertRows targetCell, effectiveShift
+        Case KEY_EXPORTS
+            If Not EnsureExports() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_EXPORTS)
+            unlockedSheet = SHEET_EXPORTS
+            If EnsureDictionary() And Not this.dictionary Is Nothing Then
+                Set dictPass = BeginSheetUpdate(SHEET_DICTIONARY)
+                unlockedDict = SHEET_DICTIONARY
+            End If
+            this.exports.InsertRows targetCell, this.dictionary, insertShift
+        Case Else
+            GoTo CleanExit
+    End Select
+
+CleanExit:
+    If LenB(unlockedDict) > 0 Then
+        EndSheetUpdate dictPass, unlockedDict
+        Set dictPass = Nothing
+        unlockedDict = vbNullString
+    End If
+
+    If LenB(unlockedSheet) > 0 Then
+        EndSheetUpdate sheetPass, unlockedSheet
+        Set sheetPass = Nothing
+        unlockedSheet = vbNullString
+    End If
+
+    If Not state Is Nothing Then state.Restore
+    Exit Sub
+
+CleanFail:
+    On Error Resume Next
+        If LenB(unlockedDict) > 0 Then EndSheetUpdate dictPass, unlockedDict
+        If LenB(unlockedSheet) > 0 Then EndSheetUpdate sheetPass, unlockedSheet
+    On Error GoTo 0
+
+    ThrowError ProjectError.SomethingWentWrong, "Failed to insert rows on '" & sheetName & "': " & Err.Description
     If Not state Is Nothing Then state.Restore
 End Sub
 
