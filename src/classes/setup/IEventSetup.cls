@@ -65,6 +65,15 @@ End Sub
 Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean = False)
 End Sub
 
+'@description Insert rows relative to a selection for supported setup sheets.
+'@param sheetName Worksheet name identifying which helper should process the insertion.
+'@param targetCell Range describing the worksheet selection to mirror.
+'@param insertShift Optional Boolean controlling whether worksheet rows should be inserted to preserve stacked tables.
+Public Sub InsertRows(ByVal sheetName As String, _
+                      ByVal targetCell As Range, _
+                      Optional ByVal insertShift As Boolean = False)
+End Sub
+
 '@description Sort setup worksheets leveraging cached managers.
 '@param sheetName Worksheet name to sort.
 Public Sub SortTables(ByVal sheetName As String)

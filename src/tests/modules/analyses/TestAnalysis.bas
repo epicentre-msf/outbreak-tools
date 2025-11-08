@@ -251,6 +251,45 @@ Fail:
 End Sub
 
 '@TestMethod("Analysis")
+Public Sub TestInsertRowsUsesSelectionHeight()
+    CustomTestSetTitles Assert, "Analysis", "TestInsertRowsUsesSelectionHeight"
+    On Error GoTo Fail
+
+    Dim hostSheet As Worksheet
+    Dim sut As IAnalysis
+    Dim summaryTable As ListObject
+    Dim univariateTable As ListObject
+    Dim selectionRange As Range
+    Dim initialRows As Long
+    Dim originalUnivariateHeader As Long
+
+    Set hostSheet = PrepareFullAnalysisWorksheet("Add or remove rows of Global Summary")
+    Set sut = Analysis.Create(hostSheet)
+
+    Set summaryTable = AnalysisTestFixture.AnalysisTable("global summary", hostSheet)
+    Set univariateTable = AnalysisTestFixture.AnalysisTable("univariate analysis", hostSheet)
+
+    initialRows = summaryTable.ListRows.Count
+    originalUnivariateHeader = univariateTable.HeaderRowRange.Row
+
+    Set selectionRange = summaryTable.ListRows(1).Range
+    Set selectionRange = selectionRange.Resize(2, summaryTable.ListColumns.Count)
+
+    sut.InsertRows selectionRange
+
+    Assert.AreEqual initialRows + 2, summaryTable.ListRows.Count, _
+        "InsertRows should add rows matching the selection height"
+    Assert.AreEqual originalUnivariateHeader + 2, univariateTable.HeaderRowRange.Row, _
+        "InsertRows should shift stacked tables when worksheet insertion is enabled"
+    Assert.AreEqual vbNullString, CStr(summaryTable.ListRows(1).Range.Cells(1, 1).Value), _
+        "Inserted rows should clear the cells at the anchor"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInsertRowsUsesSelectionHeight", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("Analysis")
 Public Sub TestRemoveRowsPreservesMinimumForSpatioTemporal()
     CustomTestSetTitles Assert, "Analysis", "TestRemoveRowsPreservesMinimumForSpatioTemporal"
     On Error GoTo Fail

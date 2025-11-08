@@ -119,6 +119,73 @@ Public Sub TestAddRowsWithoutDictionaryAfterReset()
 End Sub
 
 '@TestMethod("LLExport")
+Public Sub TestInsertRowsAppliesDefaultsAndSyncsDictionary()
+    CustomTestSetTitles Assert, "LLExport", "TestInsertRowsAppliesDefaultsAndSyncsDictionary"
+    On Error GoTo Fail
+
+    Dim dict As ILLdictionary
+    Dim selectionRange As Range
+    Dim dictSheet As Worksheet
+    Dim dictLo As ListObject
+
+    Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
+    Set dictSheet = DictionarySheet
+    Set dictLo = dictSheet.ListObjects("Tab_Dictionary")
+
+    EnsureExportColumn dictLo, "Export 1"
+    EnsureExportColumn dictLo, "Export 2"
+
+    dictLo.ListColumns("Export 1").DataBodyRange.Cells(1, 1).Value = "Alpha"
+    dictLo.ListColumns("Export 2").DataBodyRange.Cells(1, 1).Value = "Beta"
+
+    Manager.AddRows dict:=dict
+
+    Set selectionRange = ExportSheet.ListObjects(1).ListRows(2).Range
+
+    Manager.InsertRows selectionRange, dict:=dict
+
+    Assert.AreEqual 3, Manager.NumberOfExports, "InsertRows should increase export count"
+    Assert.AreEqual "no", Manager.ColumnValue(2, "include personal identifiers"), _
+                     "Inserted export rows should default include personal identifiers to 'no'"
+    Assert.AreEqual "Alpha", CStr(dictLo.ListColumns("Export 1").DataBodyRange.Cells(1, 1).Value), _
+                     "Existing export data should remain untouched"
+    Assert.AreEqual "Beta", CStr(dictLo.ListColumns("Export 2").DataBodyRange.Cells(1, 1).Value), _
+                     "Existing export columns should not be shifted"
+    Assert.IsTrue dictLo.ListColumns.Count >= 3, "Dictionary should expose the new export column"
+    Assert.AreEqual vbNullString, CStr(dictLo.ListColumns("Export 3").DataBodyRange.Cells(1, 1).Value), _
+                     "New export column should start blank"
+    Assert.AreEqual Manager.NumberOfExports, StoredExportTotal(), _
+                     "Hidden export counter should mirror the table row count"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInsertRowsAppliesDefaultsAndSyncsDictionary", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLExport")
+Public Sub TestInsertRowsIgnoresSelectionOutsideTable()
+    CustomTestSetTitles Assert, "LLExport", "InsertRows ignores selection outside the exports table"
+    On Error GoTo Fail
+
+    Dim initialCount As Long
+    Dim invalidSelection As Range
+
+    initialCount = Manager.NumberOfExports
+    Set invalidSelection = ExportSheet.Range("Z100")
+
+    Manager.InsertRows invalidSelection
+
+    Assert.AreEqual initialCount, Manager.NumberOfExports, _
+                     "InsertRows should leave the export count unchanged when the selection is invalid"
+    Assert.AreEqual initialCount, StoredExportTotal(), _
+                     "Stored export counter should remain aligned when no insertion occurs"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInsertRowsIgnoresSelectionOutsideTable", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLExport")
 Public Sub TestSyncDictionaryIgnoresNonExportPrefixedColumns()
     CustomTestSetTitles Assert, "LLExport", "TestSyncDictionaryIgnoresNonExportPrefixedColumns"
 
@@ -357,6 +424,21 @@ Private Sub PrepareTestSheets()
     Set PasswordSheet = ThisWorkbook.Worksheets(PASSWORD_SHEET)
 
 End Sub
+
+Private Sub EnsureExportColumn(ByVal dictLo As ListObject, ByVal columnName As String)
+    On Error Resume Next
+        dictLo.ListColumns(columnName).Name = columnName
+    On Error GoTo 0
+    If ColumnExists(dictLo, columnName) Then Exit Sub
+
+    dictLo.ListColumns.Add.Name = columnName
+End Sub
+
+Private Function ColumnExists(ByVal dictLo As ListObject, ByVal columnName As String) As Boolean
+    On Error Resume Next
+        ColumnExists = Not dictLo.ListColumns(columnName) Is Nothing
+    On Error GoTo 0
+End Function
 
 Private Sub PrepareExportTable(ByVal targetSheet As Worksheet)
     Dim headers As Variant

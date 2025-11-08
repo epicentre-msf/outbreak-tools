@@ -592,6 +592,26 @@ Public Sub AddRows()
     ManageRows
 End Sub
 
+'@label:InsertRows
+'@sub-title Insert rows relative to a target selection
+'@details
+'Uses the worksheet selection height to determine how many rows to insert in the
+'dictionary listobject. When the selection falls outside the table the request
+'is logged and ignored to keep the structure stable.
+'@param targetCell Range anchor describing the selection to mirror.
+'@param insertShift Optional Boolean. When True worksheet rows are inserted to protect stacked tables.
+Public Sub InsertRows(ByVal targetCell As Range, _
+                      Optional ByVal insertShift As Boolean = False)
+    Dim listObj As ListObject
+    Dim table As ICustomTable
+
+    Set listObj = ResolveRowTarget(targetCell, "insert")
+    If listObj Is Nothing Then Exit Sub
+
+    Set table = CustomTable.Create(listObj)
+    table.InsertRowsAt targetCell:=targetCell, insertShift:=insertShift
+End Sub
+
 '@label:removerows
 '@sub-title Remove rows via listobject
 '@details
@@ -600,6 +620,43 @@ End Sub
 Public Sub RemoveRows()
     ManageRows del:=True
 End Sub
+
+Private Function ResolveRowTarget(ByVal targetCell As Range, ByVal actionLabel As String) As ListObject
+    'Validate that the supplied selection belongs to the dictionary worksheet and lives inside a listobject.
+    Dim hostSheet As Worksheet
+    Dim selectionSheet As Worksheet
+    Dim normalizedAction As String
+
+    normalizedAction = LCase$(actionLabel)
+    Set hostSheet = Wksh()
+
+    If targetCell Is Nothing Then
+        LogInfo "Unable to " & normalizedAction & " rows because the target selection is missing", checkingWarning
+        Exit Function
+    End If
+
+    On Error Resume Next
+        Set selectionSheet = targetCell.Worksheet
+    On Error GoTo 0
+
+    If selectionSheet Is Nothing Then
+        LogInfo "Unable to " & normalizedAction & " rows because the selection worksheet could not be resolved", checkingWarning
+        Exit Function
+    End If
+
+    If Not (selectionSheet Is hostSheet) Then
+        LogInfo "Unable to " & normalizedAction & " rows because the selection belongs to " & selectionSheet.Name, checkingWarning
+        Exit Function
+    End If
+
+    On Error Resume Next
+        Set ResolveRowTarget = targetCell.ListObject
+    On Error GoTo 0
+
+    If ResolveRowTarget Is Nothing Then
+        LogInfo "Unable to " & normalizedAction & " rows because the selection is outside the dictionary listobject", checkingWarning
+    End If
+End Function
 
 
 '@section Specialised Views
@@ -1495,6 +1552,11 @@ End Sub
 '@jump:addrows
 Private Sub ILLdictionary_AddRows()
     AddRows
+End Sub
+
+Private Sub ILLdictionary_InsertRows(ByVal targetCell As Range, _
+                                     Optional ByVal insertShift As Boolean = False)
+    InsertRows targetCell, insertShift
 End Sub
 
 '@jump:removerows

@@ -54,6 +54,16 @@ End Property
 Public Sub AddRows(Optional ByVal dict As ILLdictionary)
 End Sub
 
+'@jump:InsertRows
+'@prop-title Insert export rows based on a target selection.
+'@param targetCell Range representing the rows to mirror.
+'@param dict Optional dictionary to keep export columns aligned.
+'@param insertShift Optional Boolean to insert worksheet rows when needed.
+Public Sub InsertRows(ByVal targetCell As Range, _
+                      Optional ByVal dict As ILLdictionary, _
+                      Optional ByVal insertShift As Boolean = False)
+End Sub
+
 '@jump:RemoveRows
 '@prop-title Remove trailing export rows.
 '@param rowCount Optional Long. Rows with non-empty cell counts at or below this value are removed.

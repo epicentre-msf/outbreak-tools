@@ -200,6 +200,64 @@ Private Sub ManageRows(Optional ByVal del As Boolean = False, _
     If dictionaryReady Then SyncDictionaryExportsCore exportNumbers, dictRef
 End Sub
 
+'@label:InsertRows
+'@prop-title Insert export rows and keep dictionary columns aligned
+'@param targetCell Range anchor representing where to mirror inserted rows.
+'@param dict Optional dictionary to shift export columns.
+'@param insertShift Optional Boolean to insert worksheet rows when necessary. Defaults to False.
+Public Sub InsertRows(ByVal targetCell As Range, _
+                      Optional ByVal dict As ILLdictionary, _
+                      Optional ByVal insertShift As Boolean = False)
+
+    Dim tableObj As ICustomTable
+    Dim exportNumbers As BetterArray
+    Dim dictionaryReady As Boolean
+    Dim dictRef As ILLdictionary
+    Dim insertIndex As Long
+    Dim insertCount As Long
+    Dim actualInserted As Long
+    Dim previousCount As Long
+    Dim newCount As Long
+
+    If (targetCell Is Nothing) Then Exit Sub
+
+    EnsureDataReady
+    EnsureWorksheetReady
+
+    EnsureDictionaryReady dict, (Not dict Is Nothing), False
+
+    dictionaryReady = DictionaryIsAvailable()
+
+    If (Not dictionaryReady) Then Exit Sub
+    If dictionaryReady Then Set dictRef = this.dictInt
+
+    Set tableObj = ExportTable()
+    insertCount = targetCell.Rows.Count
+    previousCount = CountExportRows()
+
+    insertIndex = ResolveSelectionRowIndex(tableObj, targetCell)
+    If insertIndex <= 0 Then insertIndex = previousCount + 1
+    If insertIndex > previousCount + 1 Then insertIndex = previousCount + 1
+
+    tableObj.InsertRowsAt targetCell:=targetCell, insertShift:=insertShift, includeIds:=False
+
+    newCount = CountExportRows()
+    actualInserted = newCount - previousCount
+
+    If actualInserted <= 0 Then
+        PersistTotalExports newCount
+        Exit Sub
+    End If
+
+    ApplyIncludeDefaults tableObj, insertIndex, Application.WorksheetFunction.Min(newCount, insertIndex + actualInserted - 1)
+    AssignExportNumbers tableObj, insertIndex, actualInserted
+
+    PersistTotalExports newCount
+
+    Set exportNumbers = CollectExportNumbers(tableObj)
+    If dictionaryReady Then SyncDictionaryExportsCore exportNumbers, dictRef
+End Sub
+
 '@label:AddRows
 '@prop-title Append export definition rows
 '@param dict Optional dictionary to align export columns with.
@@ -257,9 +315,75 @@ Private Sub ApplyIncludeDefaults(ByVal tableObj As ICustomTable, _
         If idx > includeColumn.Rows.Count Then Exit For
         If LenB(CStr(includeColumn.Cells(idx, 1).Value)) = 0 Then
             includeColumn.Cells(idx, 1).Value = DEFAULT_INCLUDE_IDS
+            includeColumn.Cells(idx, 1).Locked = False
         End If
     Next idx
 End Sub
+
+Private Function ResolveSelectionRowIndex(ByVal tableObj As ICustomTable, _
+                                          ByVal targetCell As Range) As Long
+
+    Dim exportRange As Range
+    Dim relativeRow As Long
+
+    Set exportRange = tableObj.DataRange(COL_EXPORT_NUMBER)
+    If exportRange Is Nothing Then Exit Function
+
+    relativeRow = targetCell.Row - exportRange.Row + 1
+    If relativeRow < 1 Then relativeRow = 1
+    If relativeRow > exportRange.Rows.Count Then relativeRow = exportRange.Rows.Count + 1
+
+    ResolveSelectionRowIndex = relativeRow
+End Function
+
+Private Sub AssignExportNumbers(ByVal tableObj As ICustomTable, _
+                                ByVal startIndex As Long, _
+                                ByVal insertCount As Long)
+
+    Dim exportRange As Range
+    Dim existing As BetterArray
+    Dim idx As Long
+    Dim nextNumber As Long
+
+    If insertCount <= 0 Then Exit Sub
+
+    Set exportRange = tableObj.DataRange(COL_EXPORT_NUMBER)
+    If exportRange Is Nothing Then Exit Sub
+
+    Set existing = CollectExportNumbers(tableObj)
+    For idx = 0 To insertCount - 1
+        nextNumber = NextAvailableExportNumber(existing)
+        exportRange.Cells(startIndex + idx, 1).Value = ExportColumnName(nextNumber)
+        If existing Is Nothing Then
+            Set existing = New BetterArray
+            existing.LowerBound = 1
+        End If
+        existing.Push nextNumber
+    Next idx
+End Sub
+
+Private Function NextAvailableExportNumber(ByVal existing As BetterArray) As Long
+    Dim candidate As Long
+
+    candidate = Application.WorksheetFunction.Max(StoredTotalExports(), HighestNumber(existing))
+
+    Do
+        candidate = candidate + 1
+    Loop While ContainsNumber(existing, candidate)
+
+    NextAvailableExportNumber = candidate
+End Function
+
+Private Function HighestNumber(ByVal numbers As BetterArray) As Long
+    Dim idx As Long
+    Dim current As Long
+
+    If numbers Is Nothing Then Exit Function
+    For idx = numbers.LowerBound To numbers.UpperBound
+        current = CLng(numbers.Item(idx))
+        If current > HighestNumber Then HighestNumber = current
+    Next idx
+End Function
 
 Private Sub EnsureExportIdentifiers(ByVal tableObj As ICustomTable)
     Dim exportRange As Range
@@ -1117,6 +1241,12 @@ End Property
 
 Private Sub ILLExport_AddRows(Optional ByVal dict As ILLdictionary)
     AddRows dict
+End Sub
+
+Private Sub ILLExport_InsertRows(ByVal targetCell As Range, _
+                                 Optional ByVal dict As ILLdictionary, _
+                                 Optional ByVal insertShift As Boolean = False)
+    InsertRows targetCell, dict, insertShift
 End Sub
 
 Private Sub ILLExport_RemoveRows(Optional ByVal dict As ILLdictionary, Optional ByVal rowCount As Long = 2)
