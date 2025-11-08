@@ -28,6 +28,26 @@ Private Sub ResetDictionarySheet()
     RemoveDictionaryExportName ThisWorkbook.Worksheets(DICT_SHEET)
 End Sub
 
+Private Function EnsureDictionaryListObject() As ListObject
+    Dim dictSheet As Worksheet
+    Dim dataRange As Range
+    Dim listObj As ListObject
+
+    Set dictSheet = ThisWorkbook.Worksheets(DICT_SHEET)
+
+    On Error Resume Next
+        dictSheet.ListObjects(1).Delete
+    On Error GoTo 0
+
+    Set dataRange = dictSheet.Range("A1").CurrentRegion
+    Set listObj = dictSheet.ListObjects.Add(SourceType:=xlSrcRange, _
+                                            Source:=dataRange, _
+                                            XlListObjectHasHeaders:=xlYes)
+    listObj.Name = "tblLLDictionary"
+
+    Set EnsureDictionaryListObject = listObj
+End Function
+
 '@section Module lifecycle
 '===============================================================================
 
@@ -207,6 +227,37 @@ Public Sub TestCleanRemovesUnknownColumns()
 
 Fail:
     CustomTestLogFailure Assert, "TestCleanRemovesUnknownColumns", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLdictionary")
+Public Sub TestInsertRowsMirrorsSelectionHeight()
+    CustomTestSetTitles Assert, "LLdictionary", "TestInsertRowsMirrorsSelectionHeight"
+    On Error GoTo Fail
+
+    Dim lo As ListObject
+    Dim selectionRange As Range
+    Dim initialRows As Long
+    Dim preservedValue As String
+
+    Set lo = EnsureDictionaryListObject()
+    preservedValue = CStr(lo.DataBodyRange.Cells(2, 1).Value)
+    initialRows = lo.ListRows.Count
+
+    Set selectionRange = lo.ListRows(2).Range
+    Set selectionRange = selectionRange.Resize(2, lo.ListColumns.Count)
+
+    Dictionary.InsertRows selectionRange
+
+    Assert.AreEqual initialRows + 2, lo.ListRows.Count, _
+        "InsertRows should add as many entries as rows selected"
+    Assert.AreEqual vbNullString, CStr(lo.ListRows(2).Range.Cells(1, 1).Value), _
+        "First inserted row should be blank"
+    Assert.AreEqual preservedValue, CStr(lo.ListRows(3).Range.Cells(1, 1).Value), _
+        "Existing data should shift below inserted rows"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInsertRowsMirrorsSelectionHeight", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLdictionary")

@@ -302,6 +302,112 @@ Fail:
 End Sub
 
 '@TestMethod("EventSetup")
+Public Sub TestInsertRowsAddsDictionaryEntries()
+    CustomTestSetTitles Assert, "EventSetup", "InsertRows mirrors dictionary selections"
+    On Error GoTo Fail
+
+    Dim dictSheet As Worksheet
+    Dim dictTable As ListObject
+    Dim selectionRange As Range
+    Dim baseline As Long
+
+    Set dictSheet = FixtureWorkbook.Worksheets(SHEET_DICTIONARY)
+    Set dictTable = dictSheet.ListObjects("Tab_Dictionary")
+
+    baseline = dictTable.ListRows.Count
+
+    Set selectionRange = dictTable.ListRows(2).Range
+    Set selectionRange = selectionRange.Resize(2, dictTable.ListColumns.Count)
+
+    Subject.InsertRows SHEET_DICTIONARY, selectionRange
+
+    Assert.AreEqual baseline + 2, dictTable.ListRows.Count, _
+        "InsertRows should add as many entries as selected rows"
+    Assert.AreEqual vbNullString, CStr(dictTable.ListRows(2).Range.Cells(1, 1).Value), _
+        "Inserted rows should start blank"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInsertRowsAddsDictionaryEntries", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
+Public Sub TestInsertRowsShiftsStackedAnalysisTables()
+    CustomTestSetTitles Assert, "EventSetup", "InsertRows shifts stacked analysis tables"
+    On Error GoTo Fail
+
+    Dim analysisSheet As Worksheet
+    Dim tsTable As ListObject
+    Dim graphTable As ListObject
+    Dim selectionRange As Range
+    Dim baseline As Long
+    Dim originalGraphHeader As Long
+
+    Set analysisSheet = FixtureWorkbook.Worksheets(SHEET_ANALYSIS)
+    Set tsTable = analysisSheet.ListObjects(LIST_TS_DATA)
+    Set graphTable = analysisSheet.ListObjects(LIST_GRAPH_TS)
+
+    baseline = tsTable.ListRows.Count
+    originalGraphHeader = graphTable.HeaderRowRange.Row
+
+    Set selectionRange = tsTable.ListRows(1).Range
+
+    Subject.InsertRows SHEET_ANALYSIS, selectionRange
+
+    Assert.AreEqual baseline + 1, tsTable.ListRows.Count, _
+        "InsertRows should append a row to the selected analysis table"
+    Assert.AreEqual originalGraphHeader + 1, graphTable.HeaderRowRange.Row, _
+        "Worksheet insertion should shift stacked tables down"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInsertRowsShiftsStackedAnalysisTables", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
+Public Sub TestInsertRowsAddsExportRowsAndSyncsDictionary()
+    CustomTestSetTitles Assert, "EventSetup", "InsertRows adds export rows and syncs dictionary"
+    On Error GoTo Fail
+
+    Dim exportSheet As Worksheet
+    Dim exportTable As ListObject
+    Dim selectionRange As Range
+    Dim baseline As Long
+    Dim dictSheet As Worksheet
+    Dim dictTable As ListObject
+
+    Set exportSheet = FixtureWorkbook.Worksheets(SHEET_EXPORTS)
+    Set exportTable = exportSheet.ListObjects("Tab_Exports")
+    Set dictSheet = FixtureWorkbook.Worksheets(SHEET_DICTIONARY)
+    Set dictTable = dictSheet.ListObjects("Tab_Dictionary")
+
+    EnsureDictionaryExportColumn dictTable, "Export 1"
+    EnsureDictionaryExportColumn dictTable, "Export 2"
+    dictTable.ListColumns("Export 1").DataBodyRange.Cells(1, 1).Value = "Alpha"
+    dictTable.ListColumns("Export 2").DataBodyRange.Cells(1, 1).Value = "Beta"
+
+    Subject.ResetCaches
+
+    baseline = exportTable.ListRows.Count
+    Set selectionRange = exportTable.ListRows(1).Range
+
+    Subject.InsertRows SHEET_EXPORTS, selectionRange
+
+    Assert.AreEqual baseline + 1, exportTable.ListRows.Count, _
+        "InsertRows should add a new export definition"
+    Assert.AreEqual "Alpha", CStr(dictTable.ListColumns("Export 1").DataBodyRange.Cells(1, 1).Value), _
+        "Export 1 column should keep its original data"
+    Assert.AreEqual "Beta", CStr(dictTable.ListColumns("Export 2").DataBodyRange.Cells(1, 1).Value), _
+        "Existing export columns should remain untouched"
+    Assert.AreEqual vbNullString, CStr(dictTable.ListColumns("Export 3").DataBodyRange.Cells(1, 1).Value), _
+        "New export column should be blank after insertion"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestInsertRowsAddsExportRowsAndSyncsDictionary", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("EventSetup")
 Public Sub TestSortTablesOrdersAnalysisGraphRows()
     CustomTestSetTitles Assert, "EventSetup", "SortTables reorders analysis graph entries"
     On Error GoTo Fail
@@ -411,6 +517,17 @@ Private Sub PrepareDictionarySheet()
     Set lo = dictSheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=tableRange, XlListObjectHasHeaders:=xlYes)
     lo.Name = "Tab_Dictionary"
 End Sub
+
+Private Sub EnsureDictionaryExportColumn(ByVal dictTable As ListObject, ByVal columnName As String)
+    If DictionaryColumnExists(dictTable, columnName) Then Exit Sub
+    dictTable.ListColumns.Add.Name = columnName
+End Sub
+
+Private Function DictionaryColumnExists(ByVal dictTable As ListObject, ByVal columnName As String) As Boolean
+    On Error Resume Next
+        DictionaryColumnExists = Not dictTable.ListColumns(columnName) Is Nothing
+    On Error GoTo 0
+End Function
 
 Private Sub PrepareChoicesSheet()
     Dim choicesSheet As Worksheet

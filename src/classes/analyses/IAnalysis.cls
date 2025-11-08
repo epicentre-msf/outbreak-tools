@@ -34,6 +34,14 @@ Public Property Get Wksh() As Worksheet: End Property
 '@sub-title Add rows to analysis tables based on the selection header
 Public Sub AddRows(): End Sub
 
+'@jump:InsertRows
+'@sub-title Insert rows based on a worksheet selection
+'@param targetCell Range anchor describing the rows to mirror.
+'@param insertShift Optional Boolean. When True worksheet rows are inserted to keep stacked tables aligned.
+Public Sub InsertRows(ByVal targetCell As Range, _
+                      Optional ByVal insertShift As Boolean = True)
+End Sub
+
 '@jump:RemoveRows
 '@sub-title Remove rows from analysis tables while preserving required rows
 Public Sub RemoveRows(): End Sub

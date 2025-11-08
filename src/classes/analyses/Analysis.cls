@@ -102,6 +102,35 @@ Private Sub AddRows()
     ManageRows
 End Sub
 
+'@label:insertrows
+'@sub-title Insert rows based on the supplied selection
+'@details
+'Determines which analysis table hosts the selection and mirrors the selection
+'height inside that table. Worksheet row insertion is enabled by default to
+'protect stacked listobjects.
+'@param targetCell Range describing the selection to mirror.
+'@param insertShift Optional Boolean. When True worksheet rows are inserted ahead of the resize.
+Private Sub InsertRows(ByVal targetCell As Range, _
+                       Optional ByVal insertShift As Boolean = True)
+    Dim targetList As ListObject
+    Dim targetTable As ICustomTable
+    Dim prefixName As String
+    Dim idColumn As String
+    Dim minimumCount As Long
+    Dim shouldIncludeIds As Boolean
+
+    Set targetList = ResolveSelectionTable(targetCell, "insert")
+    If targetList Is Nothing Then Exit Sub
+
+    GetTableSettings targetList.Name, prefixName, idColumn, minimumCount
+    shouldIncludeIds = (LenB(idColumn) <> 0)
+
+    Set targetTable = CustomTable.Create(targetList, idColumn, prefixName)
+    targetTable.InsertRowsAt targetCell:=targetCell, _
+                             insertShift:=insertShift, _
+                             includeIds:=shouldIncludeIds
+End Sub
+
 '@label:removerows
 '@sub-title Remove rows while preserving minimum entries
 '@details
@@ -184,6 +213,43 @@ NextTable:
         Set tabl = Nothing
     Next idx
 End Sub
+
+Private Function ResolveSelectionTable(ByVal targetCell As Range, ByVal actionLabel As String) As ListObject
+    'Ensure the provided selection belongs to the analysis worksheet and intersects a listobject.
+    Dim hostSheet As Worksheet
+    Dim selectionSheet As Worksheet
+    Dim normalizedAction As String
+
+    normalizedAction = LCase$(actionLabel)
+    Set hostSheet = Wksh()
+
+    If targetCell Is Nothing Then
+        LogInfo "Unable to " & normalizedAction & " rows because the target selection is missing", checkingWarning
+        Exit Function
+    End If
+
+    On Error Resume Next
+        Set selectionSheet = targetCell.Worksheet
+    On Error GoTo 0
+
+    If selectionSheet Is Nothing Then
+        LogInfo "Unable to " & normalizedAction & " rows because the worksheet could not be resolved", checkingWarning
+        Exit Function
+    End If
+
+    If Not (selectionSheet Is hostSheet) Then
+        LogInfo "Unable to " & normalizedAction & " rows because the selection belongs to " & selectionSheet.Name, checkingWarning
+        Exit Function
+    End If
+
+    On Error Resume Next
+        Set ResolveSelectionTable = targetCell.ListObject
+    On Error GoTo 0
+
+    If ResolveSelectionTable Is Nothing Then
+        LogInfo "Unable to " & normalizedAction & " rows because the selection is outside analysis tables", checkingWarning
+    End If
+End Function
 
 '@label:tablesettings
 '@details
@@ -514,6 +580,11 @@ End Property
 '@jump:AddRows
 Private Sub IAnalysis_AddRows()
     AddRows
+End Sub
+
+Private Sub IAnalysis_InsertRows(ByVal targetCell As Range, _
+                                 Optional ByVal insertShift As Boolean = True)
+    InsertRows targetCell, insertShift
 End Sub
 
 '@jump:RemoveRows

@@ -562,12 +562,69 @@ Private Sub AddRows()
     ManageRows del:=False
 End Sub
 
+'@label:InsertRows
+'@sub-title Insert rows using the supplied selection
+'@details
+'Mirrors the selection height inside the choices listobject so users can insert
+'rows exactly where required. When the selection is invalid the attempt is logged
+'and ignored.
+'@param targetCell Range describing the selection to mirror.
+'@param insertShift Optional Boolean to insert worksheet rows instead of resizing the table range.
+Private Sub InsertRows(ByVal targetCell As Range, _
+                       Optional ByVal insertShift As Boolean = False)
+    Dim lo As ListObject
+    Dim tabl As ICustomTable
+
+    Set lo = ResolveRowTarget(targetCell, "insert")
+    If lo Is Nothing Then Exit Sub
+
+    Set tabl = CustomTable.Create(lo)
+    tabl.InsertRowsAt targetCell:=targetCell, insertShift:=insertShift
+End Sub
+
 '@label:RemoveRows
 '@sub-title Remove Rows in the choice associated custom table
 '@export
 Private Sub RemoveRows()
     ManageRows del:=True
 End Sub
+
+Private Function ResolveRowTarget(ByVal targetCell As Range, ByVal actionLabel As String) As ListObject
+    'Validate that the provided selection belongs to the choices worksheet and intersects a listobject.
+    Dim hostSheet As Worksheet
+    Dim selectionSheet As Worksheet
+    Dim normalizedAction As String
+
+    normalizedAction = LCase$(actionLabel)
+    Set hostSheet = Wksh()
+
+    If targetCell Is Nothing Then
+        LogInfo "Unable to " & normalizedAction & " rows because the target selection is missing", checkingWarning
+        Exit Function
+    End If
+
+    On Error Resume Next
+        Set selectionSheet = targetCell.Worksheet
+    On Error GoTo 0
+
+    If selectionSheet Is Nothing Then
+        LogInfo "Unable to " & normalizedAction & " rows because the worksheet could not be resolved", checkingWarning
+        Exit Function
+    End If
+
+    If Not (selectionSheet Is hostSheet) Then
+        LogInfo "Unable to " & normalizedAction & " rows because the selection is on " & selectionSheet.Name, checkingWarning
+        Exit Function
+    End If
+
+    On Error Resume Next
+        Set ResolveRowTarget = targetCell.ListObject
+    On Error GoTo 0
+
+    If ResolveRowTarget Is Nothing Then
+        LogInfo "Unable to " & normalizedAction & " rows because the selection is outside the choices table", checkingWarning
+    End If
+End Function
 
 '@label:AllChoices
 '@prop-title Get all the choices in a BetterArray
@@ -942,6 +999,13 @@ End Sub
 'Add Rows to the choice associated custom table
 Private Sub ILLChoices_AddRows()
     AddRows
+End Sub
+
+'@jump:InsertRows
+'Insert rows in the choice associated custom table
+Private Sub ILLChoices_InsertRows(ByVal targetCell As Range, _
+                                  Optional ByVal insertShift As Boolean = False)
+    InsertRows targetCell, insertShift
 End Sub
 
 

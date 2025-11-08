@@ -75,6 +75,14 @@ Public Sub Translate(ByVal trads As ITranslationObject): End Sub
 'Add Rows in the choice associated custom table
 Public Sub AddRows() : End Sub
 
+'@jump:InsertRows
+'Insert rows based on a worksheet selection.
+'@param targetCell Range describing the selection to mirror.
+'@param insertShift Optional Boolean. When True worksheet rows are inserted to protect stacked tables.
+Public Sub InsertRows(ByVal targetCell As Range, _
+                      Optional ByVal insertShift As Boolean = False)
+End Sub
+
 '@jump:RemoveRows
 'Remove Rows in the choice associated custom table
 Public Sub RemoveRows(): End Sub
