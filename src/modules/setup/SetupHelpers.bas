@@ -41,154 +41,73 @@ Private Const START_COLUMN_EXPORTS As Long = 1
 Public Sub ManageRows(ByVal sheetName As String, _
                       Optional ByVal del As Boolean = False, _
                       Optional ByVal allAnalysis As Boolean = False)
-    Dim part As Object
+    Dim svc As IEventSetup
+    Dim scope As IApplicationState
+    Dim resolved As String
     Dim targetSheet As Worksheet
-    Dim dictSheet As Worksheet
-    Dim dict As ILLdictionary
-    Dim app As IApplicationState
 
-    Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    Set scope = ApplicationState.Create(Application)
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    On Error Resume Next
-    Set targetSheet = ThisWorkbook.Worksheets(sheetName)
-    On Error GoTo 0
+    On Error GoTo Cleanup
+        resolved = ResolveSetupSheetName(sheetName)
+        If LenB(resolved) = 0 Then resolved = sheetName
 
-    If (targetSheet Is Nothing) Then Exit Sub
-
-    On Error GoTo Handler
-
-    '5 is the start line of the dictionary
-    '4 is the start column of the dictionary
-    Select Case LCase$(Trim$(sheetName))
-        Case "dictionary"
-            Set part = ResolveDictionary(targetSheet)
-        Case "choices"
-            Set part = ResolveChoices(targetSheet)
-        Case "analysis"
-            If allAnalysis Then
-                On Error Resume Next
+        If allAnalysis Then
+            On Error Resume Next
+                Set targetSheet = ThisWorkbook.Worksheets(resolved)
+                If Not targetSheet Is Nothing Then
                     targetSheet.Range("RNG_SelectTable").Value = "Add or remove rows of all tables"
-                On Error GoTo 0
-            End If
-            Set part = ResolveAnalysis(targetSheet)
-        Case "exports"
-            Set dictSheet = ResolveSetupSheet("dict")
-            Set part = LLExport.Create(targetSheet, START_ROW_EXPORTS, START_COLUMN_EXPORTS)
-            Set dict = ResolveDictionary(dictSheet)
-        Case Else
-            Exit Sub
-    End Select
+                End If
+            On Error GoTo Cleanup
+        End If
 
-    If Not (part Is Nothing) Then
-        EnsureRowManagement sheetName, del, part, dict
-    End If
-
-    If Not (app Is Nothing) Then app.Restore
-    Exit Sub
-    
-Handler:
-    On Error Resume Next
-    If Not (app Is Nothing) Then app.Restore
-    ProtectSetupSheet sheetName
-    If Err.Number <> 0 Then Debug.Print "Manage rows exited with an error: "; Err.Description; Err.Number 
-End Sub
-
-
-'@sub-title Ensure Row Management
-Private Sub EnsureRowManagement(ByVal sheetName As String, ByVal del As Boolean, _ 
-                                ByVal part As Object, Optional ByVal dict As ILLdictionary)
-
-
-    UnProtectSetupSheet sheetName
-
-    If dict Is Nothing Then
-        part.ManageRows del
-    Else
-        UnProtectSetupSheet ResolveSetupSheetName("dict")
-        part.ManageRows del, dict
-        ProtectSetupSheet ResolveSetupSheetName("dict")
-    End If
-    ProtectSetupSheet sheetName
+        Set svc = SetupEventsManager.EventSetupService
+        svc.ManageRows resolved, del
+Cleanup:
+    If Not scope Is Nothing Then scope.Restore
 End Sub
 
 '@sub-title Insert a list row at the active cell position
 Public Sub InsertListRowAt(ByVal sheetName As String, ByVal targetCell As Range)
-    Dim targetSheet As Worksheet
-    Dim lo As ListObject
-    Dim position As Long
+    Dim scope As IApplicationState
+    Dim svc As IEventSetup
+    Dim resolved As String
 
     If targetCell Is Nothing Then Exit Sub
 
-    On Error Resume Next
-        Set targetSheet = ThisWorkbook.Worksheets(sheetName)
-    On Error GoTo 0
-    If targetSheet Is Nothing Then Exit Sub
-    If Not targetCell.Parent Is targetSheet Then Exit Sub
+    Set scope = ApplicationState.Create(Application)
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    On Error Resume Next
-        Set lo = targetCell.ListObject
-    On Error GoTo 0
-    If lo Is Nothing Then Exit Sub
+    On Error GoTo Cleanup
+        resolved = ResolveSetupSheetName(sheetName)
+        If LenB(resolved) = 0 Then resolved = sheetName
 
-    UnProtectSetupSheet sheetName
-
-    If (lo.DataBodyRange Is Nothing) Then
-        lo.ListRows.Add
-    ElseIf (sheetName = ResolveSetupSheetName("ana")) Then
-        targetSheet.Rows(targetCell.Row).Insert Shift:=xlShiftDown, CopyOrigin:=xlFormatFromLeftOrAbove
-    Else 
-        position = targetCell.Row - lo.HeaderRowRange.Row
-        If position < 1 Or position > lo.ListRows.Count Then
-            lo.ListRows.Add
-        Else
-            'InsertRow
-            lo.ListRows.Add Position:=position           
-        End If
-    End If
-
-    ProtectSetupSheet sheetName
+        Set svc = SetupEventsManager.EventSetupService
+        svc.InsertRows resolved, targetCell
+Cleanup:
+    If Not scope Is Nothing Then scope.Restore
 End Sub
 
 '@sub-title Delete the list row intersecting the active cell
 Public Sub DeleteListRowAt(ByVal sheetName As String, ByVal targetCell As Range)
-    Dim targetSheet As Worksheet
-    Dim lo As ListObject
-    Dim wrapper As ICustomTable
-    Dim position As Long
-    Dim expObj As ILLExport
+    Dim scope As IApplicationState
+    Dim svc As IEventSetup
+    Dim resolved As String
 
     If targetCell Is Nothing Then Exit Sub
 
-    On Error Resume Next
-        Set targetSheet = ThisWorkbook.Worksheets(sheetName)
-    On Error GoTo 0
-    If targetSheet Is Nothing Then Exit Sub
-    If Not targetCell.Parent Is targetSheet Then Exit Sub
+    Set scope = ApplicationState.Create(Application)
+    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    On Error Resume Next
-        Set lo = targetCell.ListObject
-    On Error GoTo 0
-    If lo Is Nothing Then Exit Sub
-    If lo.DataBodyRange Is Nothing Then Exit Sub
+    On Error GoTo Cleanup
+        resolved = ResolveSetupSheetName(sheetName)
+        If LenB(resolved) = 0 Then resolved = sheetName
 
-    position = targetCell.Row - lo.HeaderRowRange.Row
-    If position < 1 Or position > lo.ListRows.Count Then Exit Sub
-
-    UnProtectSetupSheet sheetName
-        If sheetName <> ResolveSetupSheetName("ana") Then
-            lo.ListRows(position).Delete
-        Else
-            targetSheet.Rows(targetCell.Row).Delete
-        End If
-        Set wrapper = CustomTable.Create(lo)
-        
-        'Add Ids after deletion
-        wrapper.AddIds
-
-        
-
-    ProtectSetupSheet sheetName
+        Set svc = SetupEventsManager.EventSetupService
+        svc.DeleteRows resolved, targetCell
+Cleanup:
+    If Not scope Is Nothing Then scope.Restore
 End Sub
 
 '@sub-title Delete the list column intersecting the active cell
@@ -197,6 +116,7 @@ Public Sub DeleteListColumnAt(ByVal sheetName As String, ByVal targetCell As Ran
     Dim lo As ListObject
     Dim colIndex As Long
 
+    If (sheetName <> ResoveSetupSheetName("trans")) Then Exit Sub
     If targetCell Is Nothing Then Exit Sub
 
     On Error Resume Next
@@ -220,33 +140,6 @@ End Sub
 
 '@section Filtering and Sorting tables
 '===============================================================================
-
-'@sub-title Clear filters on every listobject in the sheet
-Public Sub ClearSheetFilters(ByVal sheetName As String)
-    Dim targetSheet As Worksheet
-    Dim lo As ListObject
-
-    On Error Resume Next
-        Set targetSheet = ThisWorkbook.Worksheets(sheetName)
-    On Error GoTo 0
-    If targetSheet Is Nothing Then Exit Sub
-
-    UnProtectSetupSheet sheetName
-
-    For Each lo In targetSheet.ListObjects
-        If Not lo.AutoFilter Is Nothing Then
-            On Error Resume Next
-                lo.AutoFilter.ShowAllData
-            On Error GoTo 0
-        End If
-    Next lo
-
-    If targetSheet.AutoFilterMode Then
-        targetSheet.AutoFilterMode = False
-    End If
-
-    ProtectSetupSheet sheetName
-End Sub
 
 '@sub-title Sort setup tables based on the active worksheet
 Public Sub SortSetupTables(ByVal sheetName As String)
@@ -389,19 +282,19 @@ Public Function ResolveSetupSheetName(ByVal sheetKey As String) As String
     normalized = LCase$(Trim$(sheetKey))
 
     Select Case normalized
-        Case "dict"
+        Case "dict", "dictionary"
             ResolveSetupSheetName = DICTSHEETNAME
-        Case "choi"
+        Case "choi", "choice", "choices"
             ResolveSetupSheetName = CHOICESSHEETNAME
-        Case "ana"
+        Case "ana", "analysis"
             ResolveSetupSheetName = ANALYSISSHEETNAME
-        Case "trans"
+        Case "trans", "translation", "translations"
             ResolveSetupSheetName = TRANSLATIONSHEETNAME
-        Case "exp"
+        Case "exp", "exports", "export"
             ResolveSetupSheetName = EXPORTSHEETNAME
-        Case "drop"
+        Case "drop", "dropdowns", "dropdown"
             ResolveSetupSheetName = DROPDOWNSHEETNAME
-        Case "check"
+        Case "check", "checking", "checkings"
             ResolveSetupSheetName = CHECKINGSHEETNAME
     End Select
 End Function

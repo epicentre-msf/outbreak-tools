@@ -131,6 +131,30 @@ Private Sub InsertRows(ByVal targetCell As Range, _
                              includeIds:=shouldIncludeIds
 End Sub
 
+'@label:DeleteRows
+'@sub-title Delete rows intersecting the selection
+Private Sub DeleteRows(ByVal targetCell As Range, _
+                       Optional ByVal includeIds As Boolean = True, _
+                       Optional ByVal forceShift As Boolean = True)
+    Dim targetList As ListObject
+    Dim targetTable As ICustomTable
+    Dim prefixName As String
+    Dim idColumn As String
+    Dim minimumCount As Long
+    Dim shouldIncludeIds As Boolean
+
+    Set targetList = ResolveSelectionTable(targetCell, "delete")
+    If targetList Is Nothing Then Exit Sub
+
+    GetTableSettings targetList.Name, prefixName, idColumn, minimumCount
+    shouldIncludeIds = (LenB(idColumn) <> 0)
+
+    Set targetTable = CustomTable.Create(targetList, idColumn, prefixName)
+    targetTable.DeleteRowsAt targetCell:=targetCell, _
+                             includeIds:=shouldIncludeIds, _
+                             forceShift:=forceShift
+End Sub
+
 '@label:removerows
 '@sub-title Remove rows while preserving minimum entries
 '@details
@@ -585,6 +609,12 @@ End Sub
 Private Sub IAnalysis_InsertRows(ByVal targetCell As Range, _
                                  Optional ByVal insertShift As Boolean = True)
     InsertRows targetCell, insertShift
+End Sub
+
+Private Sub IAnalysis_DeleteRows(ByVal targetCell As Range, _
+                                 Optional ByVal includeIds As Boolean = True, _
+                                 Optional ByVal forceShift As Boolean = True)
+    DeleteRows targetCell, includeIds, forceShift
 End Sub
 
 '@jump:RemoveRows

@@ -29,15 +29,34 @@ Public Sub clickFilters(ByRef control As IRibbonControl)
 
     Dim app As IApplicationState
     Dim targetSheet As Worksheet
+    Dim lo As ListObject
+    Dim sheetName As String
 
     Set targetSheet = ActiveSheet
+    If targetSheet Is Nothing Then Exit Sub
+    
+    sheetName = targetSheet.Name
 
     On Error GoTo Handler
     
     Set app = ApplicationState.Create(Application)
     app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
-    SetupHelpers.ClearSheetFilters targetSheet.Name
+    UnProtectSetupSheet sheetName
+
+    For Each lo In targetSheet.ListObjects
+        If Not lo.AutoFilter Is Nothing Then
+            On Error Resume Next
+                lo.AutoFilter.ShowAllData
+            On Error GoTo 0
+        End If
+    Next lo
+
+    If targetSheet.AutoFilterMode Then
+        targetSheet.AutoFilterMode = False
+    End If
+
+    ProtectSetupSheet sheetName
 
 Cleanup:
     If Not app Is Nothing Then app.Restore
@@ -80,19 +99,12 @@ End Sub
 '@EntryPoint
 Public Sub clickInsertRow(ByRef control As IRibbonControl)
 
-    Dim app As IApplicationState
     Dim targetSheet As Worksheet
     Dim targetCell As Range
 
     Set targetSheet = ActiveSheet
-    If targetSheet Is Nothing Then Exit Sub
     Set targetCell = ActiveCell
 
-    On Error GoTo Handler
-
-    Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-    
     SetupHelpers.InsertListRowAt targetSheet.Name, targetCell
 
 Cleanup:
@@ -108,18 +120,13 @@ End Sub
 '@EntryPoint
 Public Sub clickDelLoRows(ByRef control As IRibbonControl)
 
-    Dim app As IApplicationState
     Dim targetSheet As Worksheet
     Dim targetCell As Range
 
     Set targetSheet = ActiveSheet
-    If targetSheet Is Nothing Then Exit Sub
     Set targetCell = ActiveCell
 
     On Error GoTo Handler
-
-    Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     SetupHelpers.DeleteListRowAt targetSheet.Name, targetCell
 

@@ -582,6 +582,22 @@ Private Sub InsertRows(ByVal targetCell As Range, _
     tabl.InsertRowsAt targetCell:=targetCell, insertShift:=insertShift
 End Sub
 
+'@label:DeleteRows
+Private Sub DeleteRows(ByVal targetCell As Range, _
+                       Optional ByVal includeIds As Boolean = True, _
+                       Optional ByVal forceShift As Boolean = False)
+    Dim lo As ListObject
+    Dim tabl As ICustomTable
+
+    Set lo = ResolveRowTarget(targetCell, "delete")
+    If lo Is Nothing Then Exit Sub
+
+    Set tabl = CustomTable.Create(lo)
+    tabl.DeleteRowsAt targetCell:=targetCell, _
+                      includeIds:=includeIds, _
+                      forceShift:=forceShift
+End Sub
+
 '@label:RemoveRows
 '@sub-title Remove Rows in the choice associated custom table
 '@export
@@ -1006,6 +1022,13 @@ End Sub
 Private Sub ILLChoices_InsertRows(ByVal targetCell As Range, _
                                   Optional ByVal insertShift As Boolean = False)
     InsertRows targetCell, insertShift
+End Sub
+
+'@jump:DeleteRows
+Private Sub ILLChoices_DeleteRows(ByVal targetCell As Range, _
+                                  Optional ByVal includeIds As Boolean = True, _
+                                  Optional ByVal forceShift As Boolean = False)
+    DeleteRows targetCell, includeIds, forceShift
 End Sub
 
 

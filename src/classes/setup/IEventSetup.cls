@@ -74,6 +74,15 @@ Public Sub InsertRows(ByVal sheetName As String, _
                       Optional ByVal insertShift As Boolean = False)
 End Sub
 
+'@description Delete rows relative to a selection for supported setup sheets.
+'@param sheetName Worksheet name identifying which helper should process the deletion.
+'@param targetCell Range describing the worksheet selection to remove.
+'@param forceShift Optional Boolean controlling whether worksheet rows should be deleted (Analysis always forces shift).
+Public Sub DeleteRows(ByVal sheetName As String, _
+                      ByVal targetCell As Range, _
+                      Optional ByVal forceShift As Boolean = False)
+End Sub
+
 '@description Sort setup worksheets leveraging cached managers.
 '@param sheetName Worksheet name to sort.
 Public Sub SortTables(ByVal sheetName As String)
