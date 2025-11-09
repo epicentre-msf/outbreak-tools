@@ -42,72 +42,50 @@ Public Sub ManageRows(ByVal sheetName As String, _
                       Optional ByVal del As Boolean = False, _
                       Optional ByVal allAnalysis As Boolean = False)
     Dim svc As IEventSetup
-    Dim scope As IApplicationState
     Dim resolved As String
     Dim targetSheet As Worksheet
 
-    Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    resolved = ResolveSetupSheetName(sheetName)
+    If LenB(resolved) = 0 Then resolved = sheetName
 
-    On Error GoTo Cleanup
-        resolved = ResolveSetupSheetName(sheetName)
-        If LenB(resolved) = 0 Then resolved = sheetName
+    If allAnalysis Then
+        On Error Resume Next
+            Set targetSheet = ThisWorkbook.Worksheets(resolved)
+            If Not targetSheet Is Nothing Then
+                targetSheet.Range("RNG_SelectTable").Value = "Add or remove rows of all tables"
+            End If
+        On Error GoTo 0
+    End If
 
-        If allAnalysis Then
-            On Error Resume Next
-                Set targetSheet = ThisWorkbook.Worksheets(resolved)
-                If Not targetSheet Is Nothing Then
-                    targetSheet.Range("RNG_SelectTable").Value = "Add or remove rows of all tables"
-                End If
-            On Error GoTo Cleanup
-        End If
-
-        Set svc = SetupEventsManager.EventSetupService
-        svc.ManageRows resolved, del
-Cleanup:
-    If Not scope Is Nothing Then scope.Restore
+    Set svc = SetupEventsManager.EventSetupService
+    svc.ManageRows resolved, del
 End Sub
 
 '@sub-title Insert a list row at the active cell position
 Public Sub InsertListRowAt(ByVal sheetName As String, ByVal targetCell As Range)
-    Dim scope As IApplicationState
+
     Dim svc As IEventSetup
     Dim resolved As String
 
-    If targetCell Is Nothing Then Exit Sub
+    resolved = ResolveSetupSheetName(sheetName)
+    If LenB(resolved) = 0 Then resolved = sheetName
 
-    Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    Set svc = SetupEventsManager.EventSetupService
+    svc.InsertRows resolved, targetCell
 
-    On Error GoTo Cleanup
-        resolved = ResolveSetupSheetName(sheetName)
-        If LenB(resolved) = 0 Then resolved = sheetName
-
-        Set svc = SetupEventsManager.EventSetupService
-        svc.InsertRows resolved, targetCell
-Cleanup:
-    If Not scope Is Nothing Then scope.Restore
 End Sub
 
 '@sub-title Delete the list row intersecting the active cell
 Public Sub DeleteListRowAt(ByVal sheetName As String, ByVal targetCell As Range)
-    Dim scope As IApplicationState
     Dim svc As IEventSetup
     Dim resolved As String
 
-    If targetCell Is Nothing Then Exit Sub
+    resolved = ResolveSetupSheetName(sheetName)
+    If LenB(resolved) = 0 Then resolved = sheetName
+    
+    Set svc = SetupEventsManager.EventSetupService
+    svc.DeleteRows resolved, targetCell
 
-    Set scope = ApplicationState.Create(Application)
-    scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-
-    On Error GoTo Cleanup
-        resolved = ResolveSetupSheetName(sheetName)
-        If LenB(resolved) = 0 Then resolved = sheetName
-
-        Set svc = SetupEventsManager.EventSetupService
-        svc.DeleteRows resolved, targetCell
-Cleanup:
-    If Not scope Is Nothing Then scope.Restore
 End Sub
 
 '@sub-title Delete the list column intersecting the active cell
@@ -116,7 +94,7 @@ Public Sub DeleteListColumnAt(ByVal sheetName As String, ByVal targetCell As Ran
     Dim lo As ListObject
     Dim colIndex As Long
 
-    If (sheetName <> ResoveSetupSheetName("trans")) Then Exit Sub
+    If (sheetName <> ResolveSetupSheetName("trans")) Then Exit Sub
     If targetCell Is Nothing Then Exit Sub
 
     On Error Resume Next
@@ -143,48 +121,14 @@ End Sub
 
 '@sub-title Sort setup tables based on the active worksheet
 Public Sub SortSetupTables(ByVal sheetName As String)
-    Dim targetSheet As Worksheet
-    Dim normalizedName As String
-    Dim choices As ILLChoices
-    Dim ana As IAnalysis
-    Dim lo As ListObject
-    Dim tabl As ICustomTable
-    Dim dict As ILLdictionary
+    Dim svc As IEventSetup
+    Dim resolved As String
 
-    On Error Resume Next
-        Set targetSheet = ThisWorkbook.Worksheets(sheetName)
-    On Error GoTo 0
-    If targetSheet Is Nothing Then Exit Sub
+    resolved = ResolveSetupSheetName(sheetName)
+    If LenB(resolved) = 0 Then resolved = sheetName
 
-    normalizedName = LCase$(Trim$(sheetName))
-
-    Select Case normalizedName
-        Case "choices"
-            Set choices = LLChoices.Create(targetSheet, START_ROW_CHOICES, START_COLUMN_CHOICES)
-            UnProtectSetupSheet sheetName
-                choices.Sort
-            ProtectSetupSheet sheetName
-        Case "analysis"
-            Set ana = Analysis.Create(targetSheet)
-            UnProtectSetupSheet sheetName
-                ana.Sort
-            ProtectSetupSheet sheetName
-        Case "exports"
-            On Error Resume Next
-                Set lo = targetSheet.ListObjects(1)
-            On Error GoTo 0
-            If lo Is Nothing Then Exit Sub
-            Set tabl = CustomTable.Create(lo)
-            UnProtectSetupSheet sheetName
-                tabl.Sort colName:="export number"
-            ProtectSetupSheet sheetName
-        Case "dictionary"
-            Set dict = LLdictionary.Create(targetSheet, START_ROW_DICTIONARY, START_COLUMN_DICTIONARY)
-            UnProtectSetupSheet sheetName
-                dict.Sort
-
-            ProtectSetupSheet sheetName
-    End Select
+    Set svc = SetupEventsManager.EventSetupService
+    svc.SortTables resolved
 End Sub
 
 '@section Protect / UnProtect
@@ -552,8 +496,7 @@ Public Sub PostImportMaintenance()
     SetupEventsManager.RecalculateAnalysis
 End Sub
 
-'@section Checkings
-'===============================================================================
+
 
 'Factory helpers
 '-------------------------------------------------------------------------------
@@ -572,41 +515,20 @@ Private Function ResolveWorkbook(Optional ByVal hostBook As Workbook) As Workboo
     Set ResolveWorkbook = hostBook
 End Function
 
-'@sub-title Instantiate a SetupErrors checker.
-'@param hostBook Workbook containing setup sheets to inspect.
-'@return ISetupErrors instance ready to execute.
-Private Function CreateChecker(Optional ByVal hostBook As Workbook) As ISetupErrors
-    Dim checker As ISetupErrors
-
-    Set checker = SetupErrors.Create(ResolveWorkbook(hostBook))
-    Set CreateChecker = checker
-End Function
-
-'@section Public API
-'-------------------------------------------------------------------------------
-'@sub-title Backwards-compatible entry point matching the legacy module signature.
-Public Sub CheckTheSetup()
-    Dim checkSheet As Worksheet
-
-    Set checkSheet = ResolveSetupSheet("check")
-    checkSheet.Cells.Clear
-    RunSetupChecks ThisWorkbook
-
-    On Error Resume Next
-    checkSheet.Activate
-    On Error GoTo 0
-End Sub
+'@section Checkings
+'===============================================================================
 
 '@sub-title Execute setup checks against the provided workbook.
 '@param hostBook Optional workbook. When omitted, ThisWorkbook is used.
-Public Sub RunSetupChecks(Optional ByVal hostBook As Workbook)
+Public Sub CheckTheSetup(Optional ByVal hostBook As Workbook)
+    
     Dim checker As ISetupErrors
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String
 
     On Error GoTo RunFailed
-        Set checker = CreateChecker(hostBook)
+        Set checker = SetupErrors.Create(ResolveWorkbook(hostBook))
         checker.Run
     Exit Sub
 
