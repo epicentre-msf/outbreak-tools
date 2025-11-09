@@ -72,27 +72,10 @@ End Sub
 '@EntryPoint
 Public Sub clickSortTables(ByRef control As IRibbonControl)
 
-    Dim app As IApplicationState
     Dim targetSheet As Worksheet
-
     Set targetSheet = ActiveSheet
-    If targetSheet Is Nothing Then Exit Sub
-
-    On Error GoTo Handler
-
-    Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 
     SetupHelpers.SortSetupTables targetSheet.Name
-
-Cleanup:
-    If Not app Is Nothing Then app.Restore
-    MsgBox "Done!", vbInformation
-    Exit Sub
-
-Handler:
-    Debug.Print "clickSortTables: "; Err.Number; Err.Description
-    Resume Cleanup
 End Sub
 
 '@Description("Insert a list row at the active position")
@@ -103,17 +86,17 @@ Public Sub clickInsertRow(ByRef control As IRibbonControl)
     Dim targetCell As Range
 
     Set targetSheet = ActiveSheet
-    Set targetCell = ActiveCell
+    If TypeName(Selection) <> "Range" Then Exit Sub
+    Set targetCell = Selection
+
+
+    On Error GoTo Handler
 
     SetupHelpers.InsertListRowAt targetSheet.Name, targetCell
-
-Cleanup:
-    If Not app Is Nothing Then app.Restore
     Exit Sub
 
 Handler:
     Debug.Print "clickInsertRow: "; Err.Number; Err.Description
-    Resume Cleanup
 End Sub
 
 '@Description("Delete the current list row when the active cell belongs to a table")
@@ -124,26 +107,24 @@ Public Sub clickDelLoRows(ByRef control As IRibbonControl)
     Dim targetCell As Range
 
     Set targetSheet = ActiveSheet
-    Set targetCell = ActiveCell
+    If TypeName(Selection) <> "Range" Then Exit Sub
+    Set targetCell = Selection
+
+    If MsgBox("Delete the selected rows?", vbQuestion + vbYesNo, "Delete Rows") <> vbYes Then Exit Sub
 
     On Error GoTo Handler
 
     SetupHelpers.DeleteListRowAt targetSheet.Name, targetCell
-
-Cleanup:
-    If Not app Is Nothing Then app.Restore
     Exit Sub
 
 Handler:
     Debug.Print "clickDelLoRows: "; Err.Number; Err.Description
-    Resume Cleanup
 End Sub
 
 '@Description("Delete the current list column when the active cell belongs to a table")
 '@EntryPoint
 Public Sub clickDelLoColumn(ByRef control As IRibbonControl)
 
-    Dim app As IApplicationState
     Dim targetSheet As Worksheet
     Dim targetCell As Range
 
@@ -153,18 +134,11 @@ Public Sub clickDelLoColumn(ByRef control As IRibbonControl)
 
     On Error GoTo Handler
 
-    Set app = ApplicationState.Create(Application)
-    app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-
     SetupHelpers.DeleteListColumnAt targetSheet.Name, targetCell
-
-Cleanup:
-    If Not app Is Nothing Then app.Restore
     Exit Sub
 
 Handler:
     Debug.Print "clickDelLoColumn: "; Err.Number; Err.Description
-    Resume Cleanup
 End Sub
 
 
