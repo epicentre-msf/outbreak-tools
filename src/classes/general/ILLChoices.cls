@@ -83,6 +83,12 @@ Public Sub InsertRows(ByVal targetCell As Range, _
                       Optional ByVal insertShift As Boolean = False)
 End Sub
 
+'@jump:DeleteRows
+Public Sub DeleteRows(ByVal targetCell As Range, _
+                      Optional ByVal includeIds As Boolean = True, _
+                      Optional ByVal forceShift As Boolean = False)
+End Sub
+
 '@jump:RemoveRows
 'Remove Rows in the choice associated custom table
 Public Sub RemoveRows(): End Sub

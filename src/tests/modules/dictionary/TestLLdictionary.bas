@@ -225,6 +225,26 @@ Fail:
 End Sub
 
 '@TestMethod("LLdictionary")
+Public Sub TestDeleteRowsRemovesSelection()
+    CustomTestSetTitles Assert, "LLdictionary", "TestDeleteRowsRemovesSelection"
+    On Error GoTo Fail
+
+    Dim lo As ListObject
+    Dim baseline As Long
+
+    Set lo = EnsureDictionaryListObject()
+    baseline = lo.ListRows.Count
+
+    Dictionary.DeleteRows lo.ListRows(2).Range
+
+    Assert.AreEqual baseline - 1, lo.ListRows.Count, "DeleteRows should remove the targeted row"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDeleteRowsRemovesSelection", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLdictionary")
 Public Sub TestCleanRemovesUnknownColumns()
     CustomTestSetTitles Assert, "LLdictionary", "TestCleanRemovesUnknownColumns"
     Dim sh As Worksheet

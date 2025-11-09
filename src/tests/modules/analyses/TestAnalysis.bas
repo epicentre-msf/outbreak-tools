@@ -290,6 +290,34 @@ Fail:
 End Sub
 
 '@TestMethod("Analysis")
+Public Sub TestDeleteRowsRemovesSelectedRows()
+    CustomTestSetTitles Assert, "Analysis", "TestDeleteRowsRemovesSelectedRows"
+    On Error GoTo Fail
+
+    Dim hostSheet As Worksheet
+    Dim sut As IAnalysis
+    Dim summaryTable As ListObject
+    Dim selectionRange As Range
+    Dim baseline As Long
+
+    Set hostSheet = PrepareFullAnalysisWorksheet("Add or remove rows of Global Summary")
+    Set sut = Analysis.Create(hostSheet)
+
+    Set summaryTable = AnalysisTestFixture.AnalysisTable("global summary", hostSheet)
+    baseline = summaryTable.ListRows.Count
+
+    Set selectionRange = summaryTable.ListRows(1).Range
+    sut.DeleteRows selectionRange
+
+    Assert.AreEqual baseline - 1, summaryTable.ListRows.Count, _
+                     "DeleteRows should remove the targeted analysis rows"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDeleteRowsRemovesSelectedRows", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("Analysis")
 Public Sub TestRemoveRowsPreservesMinimumForSpatioTemporal()
     CustomTestSetTitles Assert, "Analysis", "TestRemoveRowsPreservesMinimumForSpatioTemporal"
     On Error GoTo Fail

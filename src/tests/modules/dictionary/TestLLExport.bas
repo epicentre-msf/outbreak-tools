@@ -186,6 +186,29 @@ Fail:
 End Sub
 
 '@TestMethod("LLExport")
+Public Sub TestDeleteRowsShrinksExportsAndDictionary()
+    CustomTestSetTitles Assert, "LLExport", "TestDeleteRowsShrinksExportsAndDictionary"
+    On Error GoTo Fail
+
+    Dim dict As ILLdictionary
+    Dim selectionRange As Range
+
+    Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
+    Manager.AddRows dict:=dict
+
+    Set selectionRange = ExportSheet.ListObjects(1).ListRows(2).Range
+    Manager.DeleteRows selectionRange, dict:=dict
+
+    Assert.AreEqual 1, Manager.NumberOfExports, "DeleteRows should remove export entries"
+    Assert.AreEqual 1, StoredExportTotal(), "Hidden export counter should reflect the remaining rows"
+    Assert.IsFalse dict.ColumnExists("Export 2"), "Dictionary should drop columns for deleted exports"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDeleteRowsShrinksExportsAndDictionary", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLExport")
 Public Sub TestSortRenamesExportsSequentially()
     CustomTestSetTitles Assert, "LLExport", "TestSortRenamesExportsSequentially"
     On Error GoTo Fail

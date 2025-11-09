@@ -256,6 +256,48 @@ Public Sub InsertRows(ByVal targetCell As Range, _
     If dictionaryReady Then SyncDictionaryExportsCore exportNumbers, dictRef
 End Sub
 
+'@label:DeleteRows
+'@prop-title Delete export rows intersecting the supplied selection
+Public Sub DeleteRows(ByVal targetCell As Range, _
+                      Optional ByVal dict As ILLdictionary, _
+                      Optional ByVal forceShift As Boolean = False)
+
+    Dim tableObj As ICustomTable
+    Dim exportNumbers As BetterArray
+    Dim dictionaryReady As Boolean
+    Dim dictRef As ILLdictionary
+    Dim previousCount As Long
+    Dim newCount As Long
+
+    If targetCell Is Nothing Then Exit Sub
+
+    EnsureDataReady
+    EnsureWorksheetReady
+
+    EnsureDictionaryReady dict, Not dict Is Nothing, False
+    dictionaryReady = DictionaryIsAvailable()
+    If dictionaryReady Then Set dictRef = this.dictInt
+
+    Set tableObj = ExportTable()
+    previousCount = CountExportRows()
+
+    tableObj.DeleteRowsAt targetCell:=targetCell, _
+                          includeIds:=False, _
+                          forceShift:=forceShift
+
+    newCount = CountExportRows()
+    If newCount = previousCount Then
+        PersistTotalExports newCount
+        Exit Sub
+    End If
+
+    EnsureExportIdentifiers tableObj
+    PersistTotalExports newCount
+
+    Set exportNumbers = CollectExportNumbers(tableObj)
+    If dictionaryReady Then SyncDictionaryExportsCore exportNumbers, dictRef
+End Sub
+
 '@label:AddRows
 '@prop-title Append export definition rows
 '@param dict Optional dictionary to align export columns with.
@@ -1359,6 +1401,12 @@ Private Sub ILLExport_InsertRows(ByVal targetCell As Range, _
                                  Optional ByVal dict As ILLdictionary, _
                                  Optional ByVal insertShift As Boolean = False)
     InsertRows targetCell, dict, insertShift
+End Sub
+
+Private Sub ILLExport_DeleteRows(ByVal targetCell As Range, _
+                                 Optional ByVal dict As ILLdictionary, _
+                                 Optional ByVal forceShift As Boolean = False)
+    DeleteRows targetCell, dict, forceShift
 End Sub
 
 Private Sub ILLExport_RemoveRows(Optional ByVal dict As ILLdictionary, Optional ByVal rowCount As Long = 2)

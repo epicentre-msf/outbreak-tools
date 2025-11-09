@@ -20,21 +20,21 @@ Implements IEventSetup
 '@section State
 '===============================================================================
 Private Type TEventSetup
-    hostBook        As Workbook          'Workbook owning the setup sheets
-    updater         As IUpdatedValues    'Registry tracker for watched columns
-    drop            As IDropdownLists    'Cached dropdown manager
-    ribbon          As IRibbonUI         'Cached ribbon instance when available
-    tsTable         As ICustomTable      'Analysis time-series table wrapper
-    graphTable      As ICustomTable      'Analysis graph table wrapper
-    spatioTable     As ICustomTable      'Analysis spatio-temporal table wrapper
-    spatioSpecsTable As ICustomTable     'Spatio-temporal specification table wrapper
-    exportsTable    As ICustomTable      'Exports listobject wrapper
-    variables       As ILLVariables      'Dictionary variable helper
-    dictionary      As ILLdictionary     'Cached dictionary reference
-    choices         As ILLChoices        'Cached choices helper
-    analysis        As IAnalysis         'Cached analysis helper
-    exports         As ILLExport         'Cached exports manager
-    translations    As ISetupTranslationsTable 'Cached translations manager
+    hostBook            As Workbook          'Workbook owning the setup sheets
+    updater             As IUpdatedValues    'Registry tracker for watched columns
+    drop                As IDropdownLists    'Cached dropdown manager
+    ribbon              As IRibbonUI         'Cached ribbon instance when available
+    tsTable             As ICustomTable      'Analysis time-series table wrapper
+    graphTable          As ICustomTable      'Analysis graph table wrapper
+    spatioTable         As ICustomTable      'Analysis spatio-temporal table wrapper
+    spatioSpecsTable    As ICustomTable     'Spatio-temporal specification table wrapper
+    exportsTable        As ICustomTable      'Exports listobject wrapper
+    variables           As ILLVariables      'Dictionary variable helper
+    dictionary          As ILLdictionary     'Cached dictionary reference
+    choices             As ILLChoices        'Cached choices helper
+    ana                 As IAnalysis         'Cached analysis helper
+    exports             As ILLExport         'Cached exports manager
+    translations        As ISetupTranslationsTable 'Cached translations manager
 End Type
 
 Private this As TEventSetup
@@ -220,6 +220,12 @@ Private Sub IEventSetup_InsertRows(ByVal sheetName As String, _
     InsertRows sheetName, targetCell, insertShift
 End Sub
 
+Private Sub IEventSetup_DeleteRows(ByVal sheetName As String, _
+                                   ByVal targetCell As Range, _
+                                   Optional ByVal forceShift As Boolean = False)
+    DeleteRows sheetName, targetCell, forceShift
+End Sub
+
 Private Sub IEventSetup_SortTables(ByVal sheetName As String)
     SortTables sheetName
 End Sub
@@ -280,7 +286,7 @@ Public Sub ManageRows(ByVal sheetName As String, Optional ByVal del As Boolean =
             If Not EnsureAnalysisManager() Then GoTo CleanExit
             Set sheetPass = BeginSheetUpdate(SHEET_ANALYSIS)
             unlockedSheet = SHEET_ANALYSIS
-            this.analysis.ManageRows del
+            this.ana.ManageRows del
         Case KEY_EXPORTS
             If Not EnsureExports() Then GoTo CleanExit
             Set sheetPass = BeginSheetUpdate(SHEET_EXPORTS)
@@ -360,7 +366,7 @@ Public Sub InsertRows(ByVal sheetName As String, _
             Set sheetPass = BeginSheetUpdate(SHEET_ANALYSIS)
             unlockedSheet = SHEET_ANALYSIS
             effectiveShift = True
-            this.analysis.InsertRows targetCell, effectiveShift
+            this.ana.InsertRows targetCell, effectiveShift
         Case KEY_EXPORTS
             If Not EnsureExports() Then GoTo CleanExit
             Set sheetPass = BeginSheetUpdate(SHEET_EXPORTS)
@@ -400,6 +406,84 @@ CleanFail:
     If Not state Is Nothing Then state.Restore
 End Sub
 
+Public Sub DeleteRows(ByVal sheetName As String, _
+                      ByVal targetCell As Range, _
+                      Optional ByVal forceShift As Boolean = False)
+    Dim normalized As String
+    Dim state As IApplicationState
+    Dim sheetPass As IPasswords
+    Dim dictPass As IPasswords
+    Dim unlockedSheet As String
+    Dim unlockedDict As String
+
+    normalized = NormalisedSheetName(sheetName)
+    If LenB(normalized) = 0 Then Exit Sub
+    If targetCell Is Nothing Then Exit Sub
+
+    Set state = ApplicationState.Create(Application)
+    If Not state Is Nothing Then
+        state.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+    End If
+
+    On Error GoTo CleanFail
+
+    Select Case normalized
+        Case KEY_DICTIONARY
+            If Not EnsureDictionary() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_DICTIONARY)
+            unlockedSheet = SHEET_DICTIONARY
+            this.dictionary.DeleteRows targetCell
+        Case KEY_CHOICES
+            If Not EnsureChoices() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_CHOICES)
+            unlockedSheet = SHEET_CHOICES
+            this.choices.DeleteRows targetCell
+        Case KEY_ANALYSIS
+            If Not EnsureAnalysisManager() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_ANALYSIS)
+            unlockedSheet = SHEET_ANALYSIS
+            this.ana.DeleteRows targetCell, forceShift:=True
+        Case KEY_EXPORTS
+            If Not EnsureExports() Then GoTo CleanExit
+            Set sheetPass = BeginSheetUpdate(SHEET_EXPORTS)
+            unlockedSheet = SHEET_EXPORTS
+            Dim dictRef As ILLdictionary
+            If EnsureDictionary() And Not this.dictionary Is Nothing Then
+                Set dictPass = BeginSheetUpdate(SHEET_DICTIONARY)
+                unlockedDict = SHEET_DICTIONARY
+                Set dictRef = this.dictionary
+            End If
+            this.exports.DeleteRows targetCell, dictRef, forceShift
+        Case Else
+            GoTo CleanExit
+    End Select
+
+CleanExit:
+    If LenB(unlockedDict) > 0 Then
+        EndSheetUpdate dictPass, unlockedDict
+        Set dictPass = Nothing
+        unlockedDict = vbNullString
+    End If
+
+    If LenB(unlockedSheet) > 0 Then
+        EndSheetUpdate sheetPass, unlockedSheet
+        Set sheetPass = Nothing
+        unlockedSheet = vbNullString
+    End If
+
+    If Not state Is Nothing Then state.Restore
+    Exit Sub
+
+CleanFail:
+    On Error Resume Next
+        If LenB(unlockedDict) > 0 Then EndSheetUpdate dictPass, unlockedDict
+        If LenB(unlockedSheet) > 0 Then EndSheetUpdate sheetPass, unlockedSheet
+    On Error GoTo 0
+
+    ThrowError ProjectError.SomethingWentWrong, "Failed to delete rows on '" & sheetName & "': " & Err.Description
+    If Not state Is Nothing Then state.Restore
+End Sub
+
 Public Sub SortTables(ByVal sheetName As String)
     Dim normalized As String
     Dim state As IApplicationState
@@ -433,7 +517,7 @@ Public Sub SortTables(ByVal sheetName As String)
             If Not EnsureAnalysisManager() Then GoTo CleanExit
             Set sheetPass = BeginSheetUpdate(SHEET_ANALYSIS)
             unlockedSheet = SHEET_ANALYSIS
-            this.analysis.Sort
+            this.ana.Sort
         Case KEY_EXPORTS
             If Not EnsureExports() Then GoTo CleanExit
             Set sheetPass = BeginSheetUpdate(SHEET_EXPORTS)
@@ -491,7 +575,7 @@ Private Sub ResetInternalCaches()
     Set this.variables = Nothing
     Set this.dictionary = Nothing
     Set this.choices = Nothing
-    Set this.analysis = Nothing
+    Set this.ana = Nothing
     Set this.exports = Nothing
     Set this.translations = Nothing
 End Sub
@@ -586,7 +670,7 @@ Private Function EnsureChoices() As Boolean
 End Function
 
 Private Function EnsureAnalysisManager() As Boolean
-    If Not (this.analysis Is Nothing) Then
+    If Not (this.ana Is Nothing) Then
         EnsureAnalysisManager = True
         Exit Function
     End If
@@ -597,10 +681,10 @@ Private Function EnsureAnalysisManager() As Boolean
     If analysisSheet Is Nothing Then Exit Function
 
     On Error Resume Next
-        Set this.analysis = Analysis.Create(analysisSheet)
+        Set this.ana = Analysis.Create(analysisSheet)
     On Error GoTo 0
 
-    EnsureAnalysisManager = Not (this.analysis Is Nothing)
+    EnsureAnalysisManager = Not (this.ana Is Nothing)
 End Function
 
 Private Function EnsureExports() As Boolean
