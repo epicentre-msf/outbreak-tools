@@ -186,6 +186,58 @@ Fail:
 End Sub
 
 '@TestMethod("LLExport")
+Public Sub TestSortRenamesExportsSequentially()
+    CustomTestSetTitles Assert, "LLExport", "TestSortRenamesExportsSequentially"
+    On Error GoTo Fail
+
+    Dim dict As ILLdictionary
+    Dim dictLo As ListObject
+    Dim exportNumberIndex As Long
+    Dim lo As ListObject
+
+    Set dict = LLdictionary.Create(DictionarySheet, 1, 1)
+    Set dictLo = DictionarySheet.ListObjects("Tab_Dictionary")
+
+    EnsureExportColumn dictLo, "Export 1"
+    EnsureExportColumn dictLo, "Export 2"
+    EnsureExportColumn dictLo, "Export 3"
+
+    dictLo.ListColumns("Export 1").DataBodyRange.Cells(1, 1).Value = "One"
+    dictLo.ListColumns("Export 2").DataBodyRange.Cells(1, 1).Value = "Two"
+    dictLo.ListColumns("Export 3").DataBodyRange.Cells(1, 1).Value = "Three"
+
+    Manager.AddRows dict:=dict
+    Manager.AddRows dict:=dict
+
+    Set lo = ExportSheet.ListObjects(1)
+    exportNumberIndex = lo.ListColumns("export number").Index
+
+    lo.DataBodyRange.Cells(1, exportNumberIndex).Value = "export 3"
+    lo.DataBodyRange.Cells(2, exportNumberIndex).Value = "export 1"
+    lo.DataBodyRange.Cells(3, exportNumberIndex).Value = "export 2"
+
+    Manager.Sort dict
+
+    Assert.AreEqual "export 1", CStr(lo.DataBodyRange.Cells(1, exportNumberIndex).Value), _
+                     "First row should be renamed sequentially after sort"
+    Assert.AreEqual "export 2", CStr(lo.DataBodyRange.Cells(2, exportNumberIndex).Value), _
+                     "Second row should be renamed sequentially after sort"
+    Assert.AreEqual "export 3", CStr(lo.DataBodyRange.Cells(3, exportNumberIndex).Value), _
+                     "Third row should be renamed sequentially after sort"
+
+    Assert.AreEqual "Three", CStr(dictLo.ListColumns("Export 1").DataBodyRange.Cells(1, 1).Value), _
+                     "Dictionary column originally tied to Export 3 should now be Export 1"
+    Assert.AreEqual "One", CStr(dictLo.ListColumns("Export 2").DataBodyRange.Cells(1, 1).Value), _
+                     "Dictionary values should follow the new ordering"
+    Assert.AreEqual "Two", CStr(dictLo.ListColumns("Export 3").DataBodyRange.Cells(1, 1).Value), _
+                     "Dictionary values should follow the new ordering"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSortRenamesExportsSequentially", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLExport")
 Public Sub TestSyncDictionaryIgnoresNonExportPrefixedColumns()
     CustomTestSetTitles Assert, "LLExport", "TestSyncDictionaryIgnoresNonExportPrefixedColumns"
 

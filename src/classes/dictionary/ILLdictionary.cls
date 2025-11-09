@@ -58,7 +58,7 @@ Public Property Let TotalNumberOfExports(ByVal numberOfExports As Long): End Pro
 '@param checkValidity Optional Boolean. When True, the column is validated against the allowed list.
 '@return True when the column is present
 Public Function ColumnExists(ByVal colName As String, _
-                             Optional ByVal checkValidity As Boolean) As Boolean
+                             Optional ByVal checkValidity As Boolean = False) As Boolean
 End Function
 
 '@jump:uniquevalues
@@ -88,6 +88,14 @@ Public Sub InsertColumn(ByVal colName As String, ByVal After As String): End Sub
 '@sub-title Remove a column from the dictionary
 '@param colName String. Column header to delete.
 Public Sub RemoveColumn(ByVal colName As String): End Sub
+
+'@jump:renamecolumn
+'@sub-title Rename a column in the dictionary
+Public Sub RenameColumn(ByVal currentName As String, _
+                        ByVal newName As String, _
+                        Optional ByVal strictSearch As Boolean = True, _
+                        Optional ByVal matchCase As Boolean = False)
+End Sub
 
 
 '@section Row Operations

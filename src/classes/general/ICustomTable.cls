@@ -91,6 +91,14 @@ End Sub
 Public Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal newValue As String)
 End Sub
 
+'@jump:RenameColumn
+'Rename a column header.
+Public Sub RenameColumn(ByVal colName As String, _
+                        ByVal newName As String, _
+                        Optional ByVal strictSearch As Boolean = True, _
+                        Optional ByVal matchCase As Boolean = False)
+End Sub
+
 '@jump:sort
 'Sort columns
 Public Sub Sort(Optional ByVal colName As String = vbNullString, _ 

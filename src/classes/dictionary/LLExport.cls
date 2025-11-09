@@ -227,8 +227,6 @@ Public Sub InsertRows(ByVal targetCell As Range, _
     EnsureDictionaryReady dict, (Not dict Is Nothing), False
 
     dictionaryReady = DictionaryIsAvailable()
-
-    If (Not dictionaryReady) Then Exit Sub
     If dictionaryReady Then Set dictRef = this.dictInt
 
     Set tableObj = ExportTable()
@@ -297,6 +295,31 @@ Public Sub SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
     SyncDictionaryExportsCore exportNumbers, targetDict
 End Sub
 
+'@label:Sort
+'@sub-title Sort export definitions and normalize identifiers
+Public Sub Sort(Optional ByVal dict As ILLdictionary)
+    Dim tableObj As ICustomTable
+    Dim dictRef As ILLdictionary
+
+    EnsureDataReady
+    EnsureWorksheetReady
+
+    Set tableObj = ExportTable()
+
+    On Error Resume Next
+        tableObj.Sort colName:=COL_EXPORT_NUMBER
+    On Error GoTo 0
+
+    EnsureDictionaryReady dict, Not dict Is Nothing, False
+    If Not (this.dictInt Is Nothing) Then
+        Set dictRef = this.dictInt
+    Else
+        Set dictRef = dict
+    End If
+
+    SequentiallyRenameExports tableObj, dictRef
+End Sub
+
 '@section Row Coordination Helpers
 '===============================================================================
 
@@ -362,6 +385,82 @@ Private Sub AssignExportNumbers(ByVal tableObj As ICustomTable, _
     Next idx
 End Sub
 
+Private Sub SequentiallyRenameExports(ByVal tableObj As ICustomTable, _
+                                      Optional ByVal dict As ILLdictionary)
+
+    Dim exportRange As Range
+    Dim total As Long
+    Dim idx As Long
+    Dim previousNames() As String
+
+    Set exportRange = tableObj.DataRange(COL_EXPORT_NUMBER)
+    If exportRange Is Nothing Then Exit Sub
+
+    total = exportRange.Rows.Count
+    If total = 0 Then Exit Sub
+
+    ReDim previousNames(1 To total)
+    For idx = 1 To total
+        previousNames(idx) = CStr(exportRange.Cells(idx, 1).Value)
+        exportRange.Cells(idx, 1).Value = ExportColumnName(idx)
+    Next idx
+
+    PersistTotalExports total
+
+    If( Not dict Is Nothing) Then
+        RenameDictionaryExports dict, previousNames, total
+    End If
+End Sub
+
+Private Sub RenameDictionaryExports(ByVal dict As ILLdictionary, _
+                                    ByRef previousNames() As String, _
+                                    ByVal total As Long)
+
+    Dim idx As Long
+    Dim tempName As String
+    Dim normalized As String
+
+    If dict Is Nothing Then Exit Sub
+    If total <= 0 Then Exit Sub
+
+    'First pass: rename old export columns to temporary placeholders.
+    For idx = 1 To total
+        normalized = NormalizedExportHeader(previousNames(idx))
+        If LenB(normalized) = 0 Then
+            Continue For
+        End If
+        If dict.ColumnExists(normalized) Then
+            tempName = TemporaryExportColumn(idx)
+            dict.RenameColumn normalized, tempName, strictSearch:=True, matchCase:=False
+        End If
+    Next idx
+
+    'Second pass: rename placeholders to sequential export names or create columns when missing.
+    For idx = 1 To total
+        tempName = TemporaryExportColumn(idx)
+        If dict.ColumnExists(tempName) Then
+            dict.RenameColumn tempName, ExportColumnName(idx), strictSearch:=True, matchCase:=True
+        Else
+            EnsureDictionaryExportColumn dict, idx
+        End If
+    Next idx
+
+    'Remove extra export columns beyond the active count.
+    Dim existing As BetterArray
+    Dim pointer As Long
+
+    Set existing = EnumerateDictionaryExportNumbers(dict)
+    If Not existing Is Nothing Then
+        For pointer = existing.UpperBound To existing.LowerBound Step -1
+            If CLng(existing.Item(pointer)) > total Then
+                dict.RemoveColumn ExportColumnName(CLng(existing.Item(pointer)))
+            End If
+        Next pointer
+    End If
+
+    dict.TotalNumberOfExports = total
+End Sub
+
 Private Function NextAvailableExportNumber(ByVal existing As BetterArray) As Long
     Dim candidate As Long
 
@@ -383,6 +482,19 @@ Private Function HighestNumber(ByVal numbers As BetterArray) As Long
         current = CLng(numbers.Item(idx))
         If current > HighestNumber Then HighestNumber = current
     Next idx
+End Function
+
+Private Function TemporaryExportColumn(ByVal orderIndex As Long) As String
+    TemporaryExportColumn = "__exp_tmp_" & Format$(orderIndex, "0000")
+End Function
+
+Private Function NormalizedExportHeader(ByVal headerText As String) As String
+    Dim parsed As Long
+
+    parsed = ParseExportIdentifier(headerText)
+    If parsed <= 0 Then Exit Function
+
+    NormalizedExportHeader = ExportColumnName(parsed)
 End Function
 
 Private Sub EnsureExportIdentifiers(ByVal tableObj As ICustomTable)
@@ -1261,6 +1373,10 @@ End Sub
 
 Private Sub ILLExport_SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
     SyncDictionaryExports dict
+End Sub
+
+Private Sub ILLExport_Sort(Optional ByVal dict As ILLdictionary)
+    Sort dict
 End Sub
 
 Private Sub ILLExport_ImportSpecs(ByVal fromWksh As Worksheet, _

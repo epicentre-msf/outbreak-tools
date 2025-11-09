@@ -453,6 +453,54 @@ Fail:
     CustomTestLogFailure Assert, "TestSortTablesOrdersAnalysisGraphRows", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("EventSetup")
+Public Sub TestSortTablesRenamesExportColumns()
+    CustomTestSetTitles Assert, "EventSetup", "TestSortTablesRenamesExportColumns"
+    On Error GoTo Fail
+
+    Dim exportSheet As Worksheet
+    Dim exportTable As ListObject
+    Dim exportIdx As Long
+    Dim dictSheet As Worksheet
+    Dim dictTable As ListObject
+
+    Set exportSheet = FixtureWorkbook.Worksheets(SHEET_EXPORTS)
+    Set exportTable = exportSheet.ListObjects("Tab_Exports")
+    exportIdx = exportTable.ListColumns("export number").Index
+
+    Set dictSheet = FixtureWorkbook.Worksheets(SHEET_DICTIONARY)
+    Set dictTable = dictSheet.ListObjects("Tab_Dictionary")
+
+    EnsureDictionaryExportColumn dictTable, "Export 1"
+    EnsureDictionaryExportColumn dictTable, "Export 2"
+
+    dictTable.ListColumns("Export 1").DataBodyRange.Cells(1, 1).Value = "First"
+    dictTable.ListColumns("Export 2").DataBodyRange.Cells(1, 1).Value = "Second"
+
+    Subject.InsertRows SHEET_EXPORTS, exportTable.ListRows(1).Range
+    exportTable = exportSheet.ListObjects("Tab_Exports")
+    exportIdx = exportTable.ListColumns("export number").Index
+
+    exportTable.DataBodyRange.Cells(1, exportIdx).Value = "export 2"
+    exportTable.DataBodyRange.Cells(2, exportIdx).Value = "export 1"
+
+    Subject.SortTables SHEET_EXPORTS
+
+    Assert.AreEqual "export 1", CStr(exportTable.DataBodyRange.Cells(1, exportIdx).Value), _
+                     "SortTables should normalize export numbering"
+    Assert.AreEqual "export 2", CStr(exportTable.DataBodyRange.Cells(2, exportIdx).Value), _
+                     "SortTables should normalize export numbering"
+
+    Assert.AreEqual "Second", CStr(dictTable.ListColumns("Export 1").DataBodyRange.Cells(1, 1).Value), _
+                     "Dictionary column linked to export 2 should be renamed to Export 1"
+    Assert.AreEqual "First", CStr(dictTable.ListColumns("Export 2").DataBodyRange.Cells(1, 1).Value), _
+                     "Dictionary column linked to export 1 should be renamed to Export 2"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestSortTablesRenamesExportColumns", Err.Number, Err.Description
+End Sub
+
 '@section Fixture builders
 '===============================================================================
 Private Sub BuildFixtureWorkbook()

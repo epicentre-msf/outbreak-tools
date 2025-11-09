@@ -82,6 +82,10 @@ End Sub
 Public Sub SyncDictionaryExports(Optional ByVal dict As ILLdictionary)
 End Sub
 
+'@jump:Sort
+Public Sub Sort(Optional ByVal dict As ILLdictionary)
+End Sub
+
 '@section SpecManagement
 '===============================================================================
 
