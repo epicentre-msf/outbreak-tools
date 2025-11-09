@@ -67,6 +67,13 @@ Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
                               Optional ByVal matchCase As Boolean = True) As Range
 End Property
 
+'@jump:RenameColumn
+Public Sub RenameColumn(ByVal currentName As String, _
+                        ByVal newName As String, _
+                        Optional ByVal strictSearch As Boolean = True, _
+                        Optional ByVal matchCase As Boolean = False)
+End Sub
+
 '@jump:operate
 '@section Operate with Outside world
 '===============================================================================

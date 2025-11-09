@@ -50,3 +50,4 @@ required VBA syntax.
 - [DONE] Added InsertRows support to LLdictionary, LLChoices, and Analysis with shared selection validation plus dedicated regression tests for each class.
 - [DONE] Wired EventSetup.InsertRows to delegate to dictionary/choices/analysis helpers, added workbook-unlock safeguards, and expanded TestEventSetup to cover dictionary and analysis insertion flows.
 - [DONE] Simplified LLExport/EventSetup export insertion to assign monotonically increasing export numbers without shifting dictionary columns while keeping sync tests green.
+- [DONE] Introduced column rename helpers (DataSheet, CustomTable, LLdictionary) and taught LLExport.Sort/EventSetup.SortTables to normalize export/dictionary headers sequentially.

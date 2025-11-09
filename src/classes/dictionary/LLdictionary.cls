@@ -551,6 +551,21 @@ Public Sub RemoveColumn(ByVal colName As String)
     On Error GoTo 0
 End Sub
 
+'@label:RenameColumn
+'@sub-title Rename a dictionary column header
+Public Sub RenameColumn(ByVal currentName As String, _
+                        ByVal newName As String, _
+                        Optional ByVal strictSearch As Boolean = True, _
+                        Optional ByVal matchCase As Boolean = False)
+
+    If LenB(newName) = 0 Then
+        ThrowError ProjectError.InvalidArgument, "New column name cannot be empty"
+    End If
+
+    Data.RenameColumn currentName, newName, strictSearch, matchCase
+    ResetColumnCaches
+End Sub
+
 
 '@section Row Operations
 '===============================================================================
@@ -1520,7 +1535,8 @@ Private Property Let ILLdictionary_TotalNumberOfExports(ByVal numberOfExports As
 End Property
 
 '@jump:columnexists
-Private Function ILLdictionary_ColumnExists(ByVal colName As String, Optional ByVal checkValidity As Boolean) As Boolean
+Private Function ILLdictionary_ColumnExists(ByVal colName As String, _ 
+                                            Optional ByVal checkValidity As Boolean = False) As Boolean
     ILLdictionary_ColumnExists = ColumnExists(colName, checkValidity)
 End Function
 
@@ -1547,6 +1563,13 @@ End Sub
 '@jump:removecolumn
 Private Sub ILLdictionary_RemoveColumn(ByVal colName As String)
     RemoveColumn colName
+End Sub
+
+Private Sub ILLdictionary_RenameColumn(ByVal currentName As String, _
+                                       ByVal newName As String, _
+                                       Optional ByVal strictSearch As Boolean = True, _
+                                       Optional ByVal matchCase As Boolean = False)
+    RenameColumn currentName, newName, strictSearch, matchCase
 End Sub
 
 '@jump:addrows

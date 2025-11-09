@@ -404,7 +404,9 @@ Public Sub SortTables(ByVal sheetName As String)
     Dim normalized As String
     Dim state As IApplicationState
     Dim sheetPass As IPasswords
+    Dim dictPass As IPasswords
     Dim unlockedSheet As String
+    Dim unlockedDict As String
 
     normalized = NormalisedSheetName(sheetName)
     If LenB(normalized) = 0 Then Exit Sub
@@ -436,7 +438,13 @@ Public Sub SortTables(ByVal sheetName As String)
             If Not EnsureExports() Then GoTo CleanExit
             Set sheetPass = BeginSheetUpdate(SHEET_EXPORTS)
             unlockedSheet = SHEET_EXPORTS
-            SortExportsTable
+            Dim dictRef As ILLdictionary
+            If EnsureDictionary() And Not this.dictionary Is Nothing Then
+                Set dictPass = BeginSheetUpdate(SHEET_DICTIONARY)
+                unlockedDict = SHEET_DICTIONARY
+                Set dictRef = this.dictionary
+            End If
+            this.exports.Sort dictRef
         Case KEY_TRANSLATIONS
             EnsureTranslationsManager
         Case Else
@@ -444,6 +452,12 @@ Public Sub SortTables(ByVal sheetName As String)
     End Select
 
 CleanExit:
+    If LenB(unlockedDict) > 0 Then
+        EndSheetUpdate dictPass, unlockedDict
+        Set dictPass = Nothing
+        unlockedDict = vbNullString
+    End If
+
     If LenB(unlockedSheet) > 0 Then
         EndSheetUpdate sheetPass, unlockedSheet
         Set sheetPass = Nothing
@@ -455,6 +469,7 @@ CleanExit:
 
 CleanFail:
     On Error Resume Next
+        If LenB(unlockedDict) > 0 Then EndSheetUpdate dictPass, unlockedDict
         If LenB(unlockedSheet) > 0 Then EndSheetUpdate sheetPass, unlockedSheet
     On Error GoTo 0
 
@@ -605,38 +620,6 @@ Private Function EnsureExports() As Boolean
 
     EnsureExports = Not (this.exports Is Nothing)
 End Function
-
-Private Function EnsureExportsTable() As Boolean
-    If Not (this.exportsTable Is Nothing) Then
-        EnsureExportsTable = True
-        Exit Function
-    End If
-
-    Dim exportSheet As Worksheet
-    Dim lo As ListObject
-
-    Set exportSheet = SheetOrNothing(SHEET_EXPORTS)
-    If exportSheet Is Nothing Then Exit Function
-
-    On Error Resume Next
-        Set lo = exportSheet.ListObjects(1)
-    On Error GoTo 0
-    If lo Is Nothing Then Exit Function
-
-    On Error Resume Next
-        Set this.exportsTable = CustomTable.Create(lo)
-    On Error GoTo 0
-
-    EnsureExportsTable = Not (this.exportsTable Is Nothing)
-End Function
-
-Private Sub SortExportsTable()
-    If Not EnsureExportsTable() Then Exit Sub
-
-    On Error Resume Next
-        this.exportsTable.Sort colName:=EXPORT_SORT_COLUMN
-    On Error GoTo 0
-End Sub
 
 Private Function EnsureTranslationsManager() As Boolean
     If Not (this.translations Is Nothing) Then
