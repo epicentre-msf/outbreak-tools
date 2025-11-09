@@ -501,6 +501,29 @@ Fail:
     CustomTestLogFailure Assert, "TestSortTablesRenamesExportColumns", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("EventSetup")
+Public Sub TestDeleteRowsRemovesDictionarySelection()
+    CustomTestSetTitles Assert, "EventSetup", "TestDeleteRowsRemovesDictionarySelection"
+    On Error GoTo Fail
+
+    Dim dictSheet As Worksheet
+    Dim dictTable As ListObject
+    Dim baseline As Long
+
+    Set dictSheet = FixtureWorkbook.Worksheets(SHEET_DICTIONARY)
+    Set dictTable = dictSheet.ListObjects("Tab_Dictionary")
+
+    baseline = dictTable.ListRows.Count
+    Subject.DeleteRows SHEET_DICTIONARY, dictTable.ListRows(2).Range
+
+    Assert.AreEqual baseline - 1, dictTable.ListRows.Count, _
+                     "DeleteRows should remove dictionary rows via EventSetup"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDeleteRowsRemovesDictionarySelection", Err.Number, Err.Description
+End Sub
+
 '@section Fixture builders
 '===============================================================================
 Private Sub BuildFixtureWorkbook()

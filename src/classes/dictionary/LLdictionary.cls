@@ -627,6 +627,24 @@ Public Sub InsertRows(ByVal targetCell As Range, _
     table.InsertRowsAt targetCell:=targetCell, insertShift:=insertShift
 End Sub
 
+'@label:DeleteRows
+'@sub-title Delete rows intersecting the supplied selection
+Public Sub DeleteRows(ByVal targetCell As Range, _
+                      Optional ByVal includeIds As Boolean = True, _
+                      Optional ByVal forceShift As Boolean = False)
+
+    Dim listObj As ListObject
+    Dim table As ICustomTable
+
+    Set listObj = ResolveRowTarget(targetCell, "delete")
+    If listObj Is Nothing Then Exit Sub
+
+    Set table = CustomTable.Create(listObj)
+    table.DeleteRowsAt targetCell:=targetCell, _
+                        includeIds:=includeIds, _
+                        forceShift:=forceShift
+End Sub
+
 '@label:removerows
 '@sub-title Remove rows via listobject
 '@details
@@ -1580,6 +1598,12 @@ End Sub
 Private Sub ILLdictionary_InsertRows(ByVal targetCell As Range, _
                                      Optional ByVal insertShift As Boolean = False)
     InsertRows targetCell, insertShift
+End Sub
+
+Private Sub ILLdictionary_DeleteRows(ByVal targetCell As Range, _
+                                     Optional ByVal includeIds As Boolean = True, _
+                                     Optional ByVal forceShift As Boolean = False)
+    DeleteRows targetCell, includeIds, forceShift
 End Sub
 
 '@jump:removerows

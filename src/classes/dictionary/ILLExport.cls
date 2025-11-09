@@ -64,6 +64,12 @@ Public Sub InsertRows(ByVal targetCell As Range, _
                       Optional ByVal insertShift As Boolean = False)
 End Sub
 
+'@jump:DeleteRows
+Public Sub DeleteRows(ByVal targetCell As Range, _
+                      Optional ByVal dict As ILLdictionary, _
+                      Optional ByVal forceShift As Boolean = False)
+End Sub
+
 '@jump:RemoveRows
 '@prop-title Remove trailing export rows.
 '@param rowCount Optional Long. Rows with non-empty cell counts at or below this value are removed.

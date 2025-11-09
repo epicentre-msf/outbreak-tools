@@ -401,6 +401,29 @@ Fail:
 End Sub
 
 '@TestMethod("LLChoices")
+Public Sub TestDeleteRowsRemovesSelection()
+    CustomTestSetTitles Assert, "LLChoices", "TestDeleteRowsRemovesSelection"
+    On Error GoTo Fail
+
+    Dim lo As ListObject
+    Dim selectionRange As Range
+    Dim baseline As Long
+
+    Set lo = EnsureChoicesListObject()
+    baseline = lo.ListRows.Count
+
+    Set selectionRange = lo.ListRows(2).Range
+    Choices.DeleteRows selectionRange
+
+    Assert.AreEqual baseline - 1, lo.ListRows.Count, _
+                     "DeleteRows should remove the targeted choice rows"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDeleteRowsRemovesSelection", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLChoices")
 Public Sub TestCategoriesReturnEmptyForMissingChoice()
     CustomTestSetTitles Assert, "LLChoices", "TestCategoriesReturnEmptyForMissingChoice"
     On Error GoTo Fail

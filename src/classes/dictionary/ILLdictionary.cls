@@ -97,6 +97,12 @@ Public Sub RenameColumn(ByVal currentName As String, _
                         Optional ByVal matchCase As Boolean = False)
 End Sub
 
+'@jump:deleterows
+Public Sub DeleteRows(ByVal targetCell As Range, _
+                      Optional ByVal includeIds As Boolean = True, _
+                      Optional ByVal forceShift As Boolean = False)
+End Sub
+
 
 '@section Row Operations
 '===============================================================================
@@ -206,4 +212,3 @@ End Sub
 '@param TransObject ITranslationObject used to translate ranges.
 Public Sub Translate(ByVal TransObject As ITranslationObject)
 End Sub
-

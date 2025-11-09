@@ -42,6 +42,12 @@ Public Sub InsertRows(ByVal targetCell As Range, _
                       Optional ByVal insertShift As Boolean = True)
 End Sub
 
+'@jump:DeleteRows
+Public Sub DeleteRows(ByVal targetCell As Range, _
+                      Optional ByVal includeIds As Boolean = True, _
+                      Optional ByVal forceShift As Boolean = True)
+End Sub
+
 '@jump:RemoveRows
 '@sub-title Remove rows from analysis tables while preserving required rows
 Public Sub RemoveRows(): End Sub
