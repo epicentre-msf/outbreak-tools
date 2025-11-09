@@ -1165,6 +1165,26 @@ Private Sub SetValue(ByVal colName As String, ByVal keyName As String, ByVal new
   cellRetRng.Value = newValue
 End Sub
 
+'@label:RenameColumn
+'@sub-title Rename a column header within the table
+Private Sub RenameColumn(ByVal colName As String, _
+                         ByVal newName As String, _
+                         Optional ByVal strictSearch As Boolean = True, _
+                         Optional ByVal matchCase As Boolean = False)
+
+  Dim targetColumn As ListColumn
+
+  If LenB(newName) = 0 Then
+    ThrowError ProjectError.InvalidArgument, "New column name cannot be empty"
+  End If
+
+  Set targetColumn = ResolveListColumn(colName, strictSearch, matchCase)
+  If targetColumn Is Nothing Then Exit Sub
+
+  targetColumn.Name = newName
+  ResetCaches
+End Sub
+
 '@label:Clean
 '@sub-title Clean all the columns of the CustomTable except the key column
 '@export
@@ -1878,6 +1898,13 @@ Private Sub ICustomTable_SetValue(ByVal colName As String, _
         ByVal keyName As String, _ 
         ByVal newValue As String)
     SetValue colName, keyName, newValue
+End Sub
+
+Private Sub ICustomTable_RenameColumn(ByVal colName As String, _
+                                      ByVal newName As String, _
+                                      Optional ByVal strictSearch As Boolean = True, _
+                                      Optional ByVal matchCase As Boolean = False)
+    RenameColumn colName, newName, strictSearch, matchCase
 End Sub
 
 

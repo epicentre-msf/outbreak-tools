@@ -348,6 +348,36 @@ Private Function MatchedColumnName(ByVal colName As String, _
     End If
 End Function
 
+'@label:RenameColumn
+'@sub-title Rename a header in the datasheet
+'@param currentName String. Existing column header to rename.
+'@param newName String. Replacement header text.
+'@param strictSearch Optional Boolean. Perform strict header search. Default True.
+'@param matchCase Optional Boolean. Respect header case. Default False.
+Public Sub RenameColumn(ByVal currentName As String, _
+                        ByVal newName As String, _
+                        Optional ByVal strictSearch As Boolean = True, _
+                        Optional ByVal matchCase As Boolean = False)
+
+    Dim hRng As Range
+    Dim headerIndex As Long
+
+    If LenB(newName) = 0 Then
+        ThrowError ProjectError.InvalidArgument, "New column name cannot be empty"
+    End If
+
+    headerIndex = ColumnIndex(currentName, inDataRange:=False, _
+                              shouldExist:=True, _
+                              strictSearch:=strictSearch, _
+                              matchCase:=matchCase)
+
+    Set hRng = HeaderRange()
+    If hRng Is Nothing Then Exit Sub
+    If headerIndex <= 0 Or headerIndex > hRng.Columns.Count Then Exit Sub
+
+    hRng.Cells(1, headerIndex).Value = newName
+End Sub
+
 '@label:operate
 '@section Operate with Outside world
 '===============================================================================
@@ -983,6 +1013,14 @@ End Sub
 '@jump:importformat
 Private Sub IDataSheet_ImportFormat(ByVal importData As Object, Optional ByVal matchColumnsCase As Boolean = True)
     ImportFormat importData, matchColumnsCase
+End Sub
+
+'@jump:RenameColumn
+Private Sub IDataSheet_RenameColumn(ByVal currentName As String, _
+                                    ByVal newName As String, _
+                                    Optional ByVal strictSearch As Boolean = True, _
+                                    Optional ByVal matchCase As Boolean = False)
+    RenameColumn currentName, newName, strictSearch, matchCase
 End Sub
 
 '@jump:export
