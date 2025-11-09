@@ -469,12 +469,14 @@ Private Sub RenameDictionaryExports(ByVal dict As ILLdictionary, _
     For idx = 1 To total
         normalized = NormalizedExportHeader(previousNames(idx))
         If LenB(normalized) = 0 Then
-            Continue For
+            GoTo ContinueFor
         End If
         If dict.ColumnExists(normalized) Then
             tempName = TemporaryExportColumn(idx)
             dict.RenameColumn normalized, tempName, strictSearch:=True, matchCase:=False
         End If
+    
+ContinueFor:
     Next idx
 
     'Second pass: rename placeholders to sequential export names or create columns when missing.
@@ -565,7 +567,7 @@ Private Sub EnsureExportIdentifiers(ByVal tableObj As ICustomTable)
                 pendingRows.Push idx
             Else
                 usedNumbers.Push parsed
-                exportRange.Cells(idx, 1).Value = "export " & CStr(parsed)
+                exportRange.Cells(idx, 1).Value = ExportColumnName(parsed)
                 If parsed > maxNumber Then maxNumber = parsed
             End If
         Else
@@ -578,7 +580,7 @@ Private Sub EnsureExportIdentifiers(ByVal tableObj As ICustomTable)
         For idx = pendingRows.LowerBound To pendingRows.UpperBound
             rowIndex = CLng(pendingRows.Item(idx))
             maxNumber = maxNumber + 1
-            exportRange.Cells(rowIndex, 1).Value = "export " & CStr(maxNumber)
+            exportRange.Cells(rowIndex, 1).Value = ExportColumnName(maxNumber)
         Next idx
     End If
 End Sub

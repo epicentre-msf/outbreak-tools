@@ -183,7 +183,7 @@ End Property
 
 '@sub-title Ensure the checker has been initialised.
 Private Sub EnsureInitialised()
-    If this.hostBook Is Nothing Then
+    If (this.hostBook Is Nothing) Then
         ThrowError ProjectError.ObjectNotInitialized, "SetupErrors.Initialise must be called before usage."
     End If
 End Sub
@@ -1037,12 +1037,16 @@ Private Sub PrintReport()
     Dim formatRange As Range
 
     Set reportSheet = ResolveWorksheet(SHEET_CHECK_OUTPUT)
+    reportSheet.Cells.Clear
     Set checkOutput = CheckingOutput.Create(reportSheet)
     Set dropdowns = DropdownLists.Create(ResolveWorksheet(SHEET_DROPDOWN))
 
     reportSheet.Cells.EntireRow.Hidden = False
 
     checkOutput.PrintOutput this.checkTables
+    
+    On Error Resume Next
+    reportSheet.Activate
 End Sub
 
 '@section Message helpers
