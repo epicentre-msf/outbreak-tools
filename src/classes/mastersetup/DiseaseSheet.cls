@@ -2,19 +2,20 @@ VERSION 1.0 CLASS
 BEGIN
   MultiUse = -1  'True
 END
-Attribute VB_Name = "DiseaseSheetBuilder"
+Attribute VB_Name = "DiseaseSheet"
 Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
-Attribute VB_PredeclaredId = False
+Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Builds disease worksheets with translated headers, validations, and formatting"
 
+'@PredeclaredId
 '@Folder("Msetup")
 '@ModuleDescription("Builds disease worksheets with translated headers, validations, and formatting")
 '@IgnoreModule UnrecognizedAnnotation, ProcedureNotUsed, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
-Implements IDiseaseSheetBuilder
+Implements IDiseaseSheet
 
 '@section Constants
 '===============================================================================
@@ -44,10 +45,10 @@ Private Const MESSAGE_LANGUAGE_ERROR_KEY As String = "errLang"
 '===============================================================================
 
 Private Type TBuilderState
-    workbook As Workbook
+    hostwb As Workbook
     dropdowns As IDropdownLists
-    translations As ITranslationObject
-    cache As IDiseaseTranslationCache
+    trads As ITranslationObject
+    initialised As Boolean
 End Type
 
 Private Type TBuilderOptions
@@ -69,16 +70,16 @@ Private this As TBuilderState
 '@sub-title Instantiate a sheet builder with provided dependencies.
 Public Function Create(ByVal hostWorkbook As Workbook, _
                        ByVal dropdowns As IDropdownLists, _
-                       ByVal translations As ITranslationObject) As IDiseaseSheetBuilder
+                       ByVal translations As ITranslationObject) As IDiseaseSheet
 
-    With New DiseaseSheetBuilder
+    With New DiseaseSheet
         .Initialise hostWorkbook, dropdowns, translations
         Set Create = .Self
     End With
 End Function
 
 '@sub-title Return the current instance as its interface.
-Public Property Get Self() As IDiseaseSheetBuilder
+Public Property Get Self() As IDiseaseSheet
     Set Self = Me
 End Property
 
@@ -91,10 +92,10 @@ Public Sub Initialise(ByVal hostWorkbook As Workbook, _
 
     ValidateInitialise hostWorkbook, dropdowns
 
-    Set this.workbook = hostWorkbook
+    Set this.hostwb = hostWorkbook
     Set this.dropdowns = dropdowns
-    Set this.translations = translations
-    Set this.cache = DiseaseTranslationCache.Create(translations)
+    Set this.trads = translations
+    this.initialised = True
 End Sub
 
 '@section Worksheet Construction
@@ -129,16 +130,17 @@ End Function
 '===============================================================================
 
 Public Sub Reset()
-    Set this.workbook = Nothing
+    Set this.hostwb = Nothing
     Set this.dropdowns = Nothing
-    Set this.translations = Nothing
-    Set this.cache = Nothing
+    Set this.trads = Nothing
+    this.initalised = False
 End Sub
 
 '@section Internal Helpers
 '===============================================================================
 
 Private Sub ValidateInitialise(ByVal hostWorkbook As Workbook, ByVal dropdowns As IDropdownLists)
+
     If hostWorkbook Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Workbook reference cannot be Nothing"
     End If
@@ -149,16 +151,18 @@ Private Sub ValidateInitialise(ByVal hostWorkbook As Workbook, ByVal dropdowns A
 End Sub
 
 Private Sub ValidateBuildInputs(ByVal diseaseName As String, ByVal diseaseIndex As Long)
+
+    If Not this.initialised Then
+        ThrowError ProjectError.ObjectNotInitialized, "Builder has not been initialised"
+    End If
+
+
     If LenB(diseaseName) = 0 Then
         ThrowError ProjectError.InvalidArgument, "Disease name cannot be empty"
     End If
 
     If diseaseIndex <= 0 Then
         ThrowError ProjectError.InvalidArgument, "Disease index must be greater than zero"
-    End If
-
-    If this.workbook Is Nothing Or this.dropdowns Is Nothing Then
-        ThrowError ProjectError.ObjectNotInitialized, "Builder has not been initialised"
     End If
 End Sub
 
@@ -203,7 +207,7 @@ Private Function CreateDiseaseWorksheet(ByVal config As TBuilderOptions, ByVal d
     Dim anchor As Worksheet
     Dim workbook As Workbook
 
-    Set workbook = this.workbook
+    Set workbook = this.hostwb
     Set anchor = ResolveAnchorSheet(workbook, config.anchorSheetName)
 
     workbook.Worksheets.Add Before:=anchor
@@ -228,7 +232,7 @@ Private Sub WriteMetadata(ByVal sheet As Worksheet, _
 
     Dim workbook As Workbook
 
-    Set workbook = this.workbook
+    Set workbook = this.hostwb
 
     sheet.Cells(2, 2).Value = languageValue
     AssignName workbook, sheet.Cells(2, 2), config.languagePrefix & Format$(diseaseIndex, "0")
@@ -365,20 +369,20 @@ End Function
 '===============================================================================
 
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errMessage As String)
-    Err.Raise errNumber, "DiseaseSheetBuilder", errMessage
+    Err.Raise errNumber, "DiseaseSheet", errMessage
 End Sub
 
 '@section Interface
 '===============================================================================
 
-Private Sub IDiseaseSheetBuilder_Initialise(ByVal hostWorkbook As Workbook, ByVal dropdowns As IDropdownLists, ByVal translations As ITranslationObject)
+Private Sub IDiseaseSheet_Initialise(ByVal hostWorkbook As Workbook, ByVal dropdowns As IDropdownLists, ByVal translations As ITranslationObject)
     Initialise hostWorkbook, dropdowns, translations
 End Sub
 
-Private Function IDiseaseSheetBuilder_Build(ByVal diseaseName As String, ByVal diseaseIndex As Long, Optional ByVal languageTag As String = vbNullString, Optional ByVal options As BetterArray) As Worksheet
-    Set IDiseaseSheetBuilder_Build = Build(diseaseName, diseaseIndex, languageTag, options)
+Private Function IDiseaseSheet_Build(ByVal diseaseName As String, ByVal diseaseIndex As Long, Optional ByVal languageTag As String = vbNullString, Optional ByVal options As BetterArray) As Worksheet
+    Set IDiseaseSheet_Build = Build(diseaseName, diseaseIndex, languageTag, options)
 End Function
 
-Private Sub IDiseaseSheetBuilder_Reset()
+Private Sub IDiseaseSheet_Reset()
     Reset
 End Sub

@@ -20,6 +20,7 @@ Implements IHiddenNames
 
 Private Type THiddenNames
     hostSh As Worksheet
+    hostWb As Workbook
     metadata As BetterArray
 End Type
 
@@ -136,17 +137,15 @@ End Sub
 '@section Factory
 '===============================================================================
 '@sub-title Create a manager bound to a sheet
-'@param targetSh Worksheet that hosts the hidden names.
+'@param targetObj Worksheet Or workbook that hosts the hidden names.
 '@return Fully configured `IHiddenNames` instance.
-Public Function Create(ByVal targetSh As Worksheet) As IHiddenNames
+Public Function Create(ByVal targetObj As Object) As IHiddenNames
     Dim manager As HiddenNames
 
-    If targetSh Is Nothing Then
-        ThrowError ProjectError.ObjectNotInitialized, "Sheet is required to create " & CLASSNAME
-    End If
+    ValidateInput targetObj
 
     Set manager = New HiddenNames
-    manager.Initialise targetSh
+    manager.Initialise targetObj
     Set Create = manager.Self
 End Function
 
@@ -158,8 +157,17 @@ End Property
 
 '@section Initialisation
 '===============================================================================
-Public Sub Initialise(ByVal targetSh As Worksheet)
-    Set this.hostSh = targetSh
+Public Sub Initialise(ByVal targetObj As Object)
+    Set this.hostSh = Nothing
+    Set this.hostWb = Nothing
+
+    Select Case TypeName(targetObj)
+        Case "Worksheet"
+            Set this.hostSh = targetObj
+        Case "Workbook"
+            Set this.hostWb = targetObj
+    End Select
+
     Set this.metadata = Nothing
     LoadMetadataCache
 End Sub
@@ -172,11 +180,14 @@ Private Sub LoadMetadataCache()
     Dim store As BetterArray
     Dim nameId As String
 
-    If this.hostSh Is Nothing Then Exit Sub
+    Dim container As Object
+
+    Set container = NameOwner()
+    If container Is Nothing Then Exit Sub
 
     Set store = MetadataStore()
 
-    For Each definition In this.hostSh.Names
+    For Each definition In container.Names
         If ShouldTrack(definition) Then
             nameId = ExtractSimpleName(definition.Name)
             valueType = NameTypeFromComment(definition.Comment)
@@ -190,9 +201,39 @@ End Sub
 
 '@section Interface helpers
 '===============================================================================
+Private Sub ValidateInput(ByVal targetObj As Object)
+
+    If targetObj Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "worksheet/workbook required to create hidden names" & CLASSNAME
+    End If
+
+
+    If( TypeName(targetObj) <> "Worksheet") And (TypeName(targetObj) <> "Workbook")  Then
+        ThrowError ProjectError.InvalidArgument, "Hidden names needs an object of type worksheet or workbook"
+    End If
+End Sub
+
 Private Property Get SheetInternal() As Worksheet
     Set SheetInternal = this.hostSh
 End Property
+
+Private Function NameOwner() As Object
+    If Not this.hostSh Is Nothing Then
+        Set NameOwner = this.hostSh
+    ElseIf Not this.hostWb Is Nothing Then
+        Set NameOwner = this.hostWb
+    End If
+End Function
+
+Private Function ScopeLabel() As String
+    If Not this.hostSh Is Nothing Then
+        ScopeLabel = "sheet '" & this.hostSh.Name & "'"
+    ElseIf Not this.hostWb Is Nothing Then
+        ScopeLabel = "workbook '" & this.hostWb.Name & "'"
+    Else
+        ScopeLabel = "the configured scope"
+    End If
+End Function
 
 Private Function MetadataKey(ByVal nameId As String) As String
     MetadataKey = LCase$(Trim$(nameId))
@@ -277,33 +318,50 @@ End Sub
 Private Function ShouldTrack(ByVal definition As Name) As Boolean
     Dim parentSh As Worksheet
     Dim refersTo As String
+    Dim container As Object
+    Dim parentType As String
 
     If definition Is Nothing Then Exit Function
-    If this.hostSh Is Nothing Then Exit Function
     If definition.Visible Then Exit Function
 
-    If StrComp(TypeName(definition.Parent), "Worksheet", vbTextCompare) = 0 Then
-        Set parentSh = definition.Parent
-        ShouldTrack = (StrComp(parentSh.Name, this.hostSh.Name, vbTextCompare) = 0)
+    Set container = NameOwner()
+    If container Is Nothing Then Exit Function
+
+    parentType = TypeName(definition.Parent)
+
+    If TypeName(container) = "Worksheet" Then
+        If StrComp(parentType, "Worksheet", vbTextCompare) = 0 Then
+            Set parentSh = definition.Parent
+            ShouldTrack = (StrComp(parentSh.Name, container.Name, vbTextCompare) = 0)
+        Else
+            On Error Resume Next
+                refersTo = definition.RefersTo
+            On Error GoTo 0
+            If LenB(refersTo) = 0 Then Exit Function
+            ShouldTrack = (InStr(1, refersTo, "'" & container.Name & "'!", vbTextCompare) > 0)
+        End If
     Else
-        On Error Resume Next
-            refersTo = definition.RefersTo
-        On Error GoTo 0
-        If LenB(refersTo) = 0 Then Exit Function
-        ShouldTrack = (InStr(1, refersTo, "'" & this.hostSh.Name & "'!", vbTextCompare) > 0)
+        If StrComp(parentType, "Workbook", vbTextCompare) = 0 Then
+            ShouldTrack = (definition.Parent Is container)
+        End If
     End If
 End Function
 
 Private Function FindDefinition(ByVal nameId As String) As Name
     Dim definition As Name
 
-    If this.hostSh Is Nothing Then Exit Function
+    Dim container As Object
+
+    Set container = NameOwner()
+    If container Is Nothing Then Exit Function
     If LenB(Trim$(nameId)) = 0 Then Exit Function
 
-    For Each definition In this.hostSh.Names
-        If CompareName(definition, nameId) Then
-            Set FindDefinition = definition
-            Exit Function
+    For Each definition In container.Names
+        If ShouldTrack(definition) Then
+            If CompareName(definition, nameId) Then
+                Set FindDefinition = definition
+                Exit Function
+            End If
         End If
     Next definition
 End Function
@@ -482,12 +540,19 @@ Private Function EnsureDefinition(ByVal nameId As String, _
         ThrowError ProjectError.InvalidArgument, "Hidden name identifier cannot be empty"
     End If
 
+    Dim container As Object
+
+    Set container = NameOwner()
+    If container Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "HiddenNames requires a target worksheet or workbook."
+    End If
+
     Set definition = FindDefinition(sanitized)
     If definition Is Nothing Then
         nowStamp = Now
-        Set definition = this.hostSh.Names.Add(Name:=sanitized, _
-                                                  RefersTo:="=" & SerializeValue(initialValue, valueType), _
-                                                  Visible:=False)
+        Set definition = container.Names.Add(Name:=sanitized, _
+                                             RefersTo:="=" & SerializeValue(initialValue, valueType), _
+                                             Visible:=False)
         ApplyComment definition, valueType, nowStamp
     End If
 
@@ -555,9 +620,9 @@ Private Sub RemoveDefinition(ByVal nameId As String)
 End Sub
 
 Private Sub EnsureReady()
-    If this.hostSh Is Nothing Then
+    If NameOwner() Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, _
-                  "HiddenNames requires a sheet. Use Create before calling members."
+                  "HiddenNames requires a worksheet or workbook. Use Create before calling members."
     End If
 End Sub
 
@@ -600,7 +665,7 @@ Private Function ValueOf(ByVal nameId As String, _
     If idx = -1 Then
         If IsMissing(defaultValue) Then
             ThrowError ProjectError.ElementNotFound, _
-                      "Hidden name '" & nameId & "' is not defined on sheet " & this.hostSh.Name
+                      "Hidden name '" & nameId & "' is not defined on " & ScopeLabel()
         Else
             ValueOf = defaultValue
         End If
@@ -750,6 +815,46 @@ Private Sub ExportAll(ByVal targetSh As Worksheet, _
     Next idx
 End Sub
 
+Private Sub ExportAllToWorkbook(ByVal targetWb As Workbook, _
+                                Optional ByVal prefix As String = vbNullString)
+    Dim store As BetterArray
+    Dim idx As Long
+    Dim record As Variant
+    Dim prefixKey As String
+    Dim includeEntry As Boolean
+    Dim nameId As String
+    Dim valueType As Byte
+    Dim value As Variant
+    Dim destination As IHiddenNames
+
+    EnsureReady
+    If targetWb Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, "Target workbook is required for export."
+    End If
+
+    If this.metadata Is Nothing Then Exit Sub
+
+    prefixKey = MetadataKey(prefix)
+    Set store = MetadataStore()
+    If store.Length = 0 Then Exit Sub
+
+    Set destination = HiddenNames.Create(targetWb)
+
+    For idx = store.LowerBound To store.UpperBound
+        record = store.Item(idx)
+        nameId = MetadataName(record)
+        includeEntry = (LenB(prefixKey) = 0) Or _
+                       (Left$(MetadataKey(nameId), Len(prefixKey)) = prefixKey)
+
+        If includeEntry Then
+            valueType = MetadataType(record)
+            value = ValueOf(nameId)
+            destination.EnsureName nameId, value, valueType
+            destination.SetValue nameId, value
+        End If
+    Next idx
+End Sub
+
 Private Sub ImportAll(ByVal sourceSh As Worksheet, _
                       Optional ByVal prefix As String = vbNullString, _
                       Optional ByVal overwriteExisting As Boolean = True)
@@ -788,6 +893,94 @@ Private Sub ImportAll(ByVal sourceSh As Worksheet, _
     Next idx
 End Sub
 
+Private Sub ImportAllFromWorkbook(ByVal sourceWb As Workbook, _
+                                  Optional ByVal prefix As String = vbNullString, _
+                                  Optional ByVal overwriteExisting As Boolean = True)
+    Dim sourceManager As IHiddenNames
+    Dim names As BetterArray
+    Dim idx As Long
+    Dim record As Variant
+    Dim nameId As String
+    Dim entryType As Byte
+    Dim lastUpdated As Date
+    Dim value As Variant
+
+    EnsureReady
+    If sourceWb Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, "Source workbook is required for import."
+    End If
+
+    Set sourceManager = HiddenNames.Create(sourceWb)
+    Set names = sourceManager.ListNames(prefix)
+    If names Is Nothing Then Exit Sub
+    If names.Length = 0 Then Exit Sub
+
+    For idx = names.LowerBound To names.UpperBound
+        record = names.Item(idx)
+        nameId = CStr(record(0))
+        entryType = record(1)
+        lastUpdated = 0
+        If UBound(record) >= 2 Then lastUpdated = record(2)
+        value = sourceManager.Value(nameId)
+
+        Call Ensure(nameId, value, entryType)
+
+        If overwriteExisting Or Not HasName(nameId) Then
+            UpdateStoredValue nameId, value, entryType, lastUpdated
+        End If
+    Next idx
+End Sub
+
+Public Sub SetListObjectHeader(ByVal nameId As String, _
+                               ByVal Lo As ListObject, _
+                               ByVal headerName As String)
+    Dim sanitizedName As String
+    Dim sanitizedHeader As String
+    Dim targetWorkbook As Workbook
+    Dim headerColumn As ListColumn
+    Dim formulaText As String
+
+    sanitizedName = Trim$(nameId)
+    sanitizedHeader = Trim$(headerName)
+
+    If LenB(sanitizedName) = 0 Then
+        ThrowError ProjectError.InvalidArgument, "Hidden name identifier cannot be empty when linking to a ListObject header."
+    End If
+    If Lo Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, "ListObject reference is required when linking a header."
+    End If
+    If LenB(sanitizedHeader) = 0 Then
+        ThrowError ProjectError.InvalidArgument, "Header name cannot be empty when linking a ListObject column."
+    End If
+
+    On Error Resume Next
+        Set headerColumn = Lo.ListColumns(sanitizedHeader)
+    On Error GoTo 0
+    If headerColumn Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, _
+                  "ListObject column '" & sanitizedHeader & "' was not found."
+    End If
+
+    If Not this.hostWb Is Nothing Then
+        Set targetWorkbook = this.hostWb
+    ElseIf Not this.hostSh Is Nothing Then
+        Set targetWorkbook = this.hostSh.Parent
+    Else
+        Set targetWorkbook = Lo.Parent.Parent
+    End If
+
+    If targetWorkbook Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "Unable to resolve workbook scope for SetListObjectHeader."
+    End If
+
+    RemoveWorkbookName targetWorkbook, sanitizedName
+    formulaText = "=" & Lo.Name & "[" & headerColumn.Name & "]"
+
+    targetWorkbook.Names.Add Name:=sanitizedName, _
+                             RefersTo:=formulaText, _
+                             Visible:=False
+End Sub
+
 
 '@section Internal export helpers
 '===============================================================================
@@ -819,6 +1012,15 @@ Private Sub RemoveWorksheetName(ByVal targetSh As Worksheet, ByVal nameId As Str
         End If
     Next definition
 End Sub
+
+Private Sub RemoveWorkbookName(ByVal targetWb As Workbook, ByVal nameId As String)
+    If targetWb Is Nothing Then Exit Sub
+
+    On Error Resume Next
+        targetWb.Names(nameId).Delete
+    On Error GoTo 0
+End Sub
+
 
 Private Sub UpdateStoredValue(ByVal nameId As String, _
                               ByVal value As Variant, _
@@ -919,8 +1121,25 @@ Private Sub IHiddenNames_ExportNames(ByVal targetSh As Worksheet, _
     ExportAll targetSh, prefix
 End Sub
 
+Private Sub IHiddenNames_ExportNamesToWorkbook(ByVal targetWb As Workbook, _
+                                               Optional ByVal prefix As String = vbNullString)
+    ExportAllToWorkbook targetWb, prefix
+End Sub
+
 Private Sub IHiddenNames_ImportNames(ByVal sourceSh As Worksheet, _
                                      Optional ByVal prefix As String = vbNullString, _
                                      Optional ByVal overwriteExisting As Boolean = True)
     ImportAll sourceSh, prefix, overwriteExisting
+End Sub
+
+Private Sub IHiddenNames_ImportNamesFromWorkbook(ByVal sourceWb As Workbook, _
+                                                 Optional ByVal prefix As String = vbNullString, _
+                                                 Optional ByVal overwriteExisting As Boolean = True)
+    ImportAllFromWorkbook sourceWb, prefix, overwriteExisting
+End Sub
+
+Private Sub IHiddenNames_SetListObjectHeader(ByVal nameId As String, _
+                                             ByVal listObject As ListObject, _
+                                             ByVal headerName As String)
+    SetListObjectHeader nameId, listObject, headerName
 End Sub

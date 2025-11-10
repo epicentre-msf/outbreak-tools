@@ -18,6 +18,9 @@ Option Explicit
 
 '@section Dropdown Elements
 '===============================================================================
+'@jump:Wksh
+Public Property Get Wksh() As Worksheet
+End Property
 
 '@jump:Exists
 Public Property Get Exists(ByVal listName As String) As Boolean
@@ -37,6 +40,10 @@ End Property
 
 '@jump:Length
 Public Property Get Length() As Long
+End Property
+
+'@jump:AllDropdowns
+Public Property Get AllDropdowns() As BetterArray
 End Property
 
 '@section Modify the dropdown list

@@ -6,6 +6,8 @@ Option Explicit
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const TEST_SHEET_NAME As String = "hn_main"
 Private Const OTHER_SHEET_NAME As String = "hn_other"
+Private Const WORKBOOK_SCOPE_NAME As String = "__hn_workbook_scope__"
+Private Const WORKBOOK_HEADER_NAME As String = "__hn_table_header__"
 
 '@Folder("CustomTests")
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
@@ -71,6 +73,26 @@ Private Sub ReleaseManager()
     Set manager = Nothing
 End Sub
 
+Private Function NewTemporaryWorkbook() As Workbook
+    Set NewTemporaryWorkbook = TestHelpers.NewWorkbook
+End Function
+
+Private Sub CloseTemporaryWorkbook(ByRef wb As Workbook)
+    On Error Resume Next
+        TestHelpers.DeleteWorkbook wb
+    On Error GoTo 0
+    Set wb = Nothing
+End Sub
+
+Private Sub DeleteWorkbookName(ByVal nameId As String)
+    Dim wb As Workbook
+
+    Set wb = testSh.Parent
+    On Error Resume Next
+        wb.Names(nameId).Delete
+    On Error GoTo 0
+End Sub
+
 Private Function EnsureManager() As IHiddenNames
     If manager Is Nothing Then
         Set manager = HiddenNames.Create(testSh)
@@ -82,6 +104,26 @@ Private Function NameDefinition(ByVal sh As Worksheet, ByVal nameId As String) A
     On Error Resume Next
         Set NameDefinition = sh.Names(nameId)
     On Error GoTo 0
+End Function
+
+Private Function BuildTestListObject() As ListObject
+    Dim tableRange As Range
+    Dim lo As ListObject
+
+    testSh.Cells.Clear
+    testSh.Range("A1").Value = "alpha"
+    testSh.Range("B1").Value = "beta"
+    testSh.Range("A2").Value = "one"
+    testSh.Range("B2").Value = "two"
+    Set tableRange = testSh.Range("A1:B2")
+
+    On Error Resume Next
+        testSh.ListObjects("TST_HN_TABLE").Delete
+    On Error GoTo 0
+
+    Set lo = testSh.ListObjects.Add(xlSrcRange, tableRange, , xlYes)
+    lo.Name = "TST_HN_TABLE"
+    Set BuildTestListObject = lo
 End Function
 
 
@@ -101,6 +143,145 @@ ExpectError:
     Err.Clear
 TestExit:
     On Error GoTo 0
+End Sub
+
+'@TestMethod("HiddenNames")
+Public Sub TestWorkbookScopeStoresGlobalName()
+    CustomTestSetTitles Assert, "HiddenNames", "WorkbookScopeStoresGlobalName"
+
+    Dim names As IHiddenNames
+    Dim wb As Workbook
+    Dim definition As Name
+
+    On Error GoTo UnexpectedError
+
+    Set wb = testSh.Parent
+    Set names = HiddenNames.Create(wb)
+
+    names.EnsureName WORKBOOK_SCOPE_NAME, "wb-value", HiddenNameTypeString
+    names.SetValue WORKBOOK_SCOPE_NAME, "wb-updated"
+
+    Assert.AreEqual "wb-updated", names.ValueAsString(WORKBOOK_SCOPE_NAME), _
+                     "Workbook-scoped HiddenNames should persist values."
+
+    On Error Resume Next
+        Set definition = wb.Names(WORKBOOK_SCOPE_NAME)
+    On Error GoTo 0
+    Assert.IsTrue Not definition Is Nothing, "Workbook scope should create a global hidden name."
+    Assert.AreEqual False, definition.Visible, "Workbook-scoped names should remain hidden."
+
+    names.RemoveName WORKBOOK_SCOPE_NAME
+    DeleteWorkbookName WORKBOOK_SCOPE_NAME
+    On Error GoTo 0
+    Exit Sub
+
+UnexpectedError:
+    DeleteWorkbookName WORKBOOK_SCOPE_NAME
+    CustomTestLogFailure Assert, "TestWorkbookScopeStoresGlobalName", Err.Number, Err.Description
+    Err.Clear
+End Sub
+
+'@TestMethod("HiddenNames")
+Public Sub TestExportNamesToWorkbookCopiesValues()
+    CustomTestSetTitles Assert, "HiddenNames", "TestExportNamesToWorkbookCopiesValues"
+
+    Dim names As IHiddenNames
+    Dim targetWb As Workbook
+    Dim destination As IHiddenNames
+
+    On Error GoTo UnexpectedError
+
+    Set names = EnsureManager()
+    names.EnsureName "__hn_export__", "alpha", HiddenNameTypeString
+    names.SetValue "__hn_export__", "bravo"
+
+    Set targetWb = NewTemporaryWorkbook()
+    names.ExportNamesToWorkbook targetWb
+
+    Set destination = HiddenNames.Create(targetWb)
+    Assert.IsTrue destination.HasName("__hn_export__"), "ExportNamesToWorkbook should create the name on the destination workbook."
+    Assert.AreEqual "bravo", destination.ValueAsString("__hn_export__"), _
+                     "Exported workbook name should keep the stored value."
+
+    CloseTemporaryWorkbook targetWb
+    Exit Sub
+
+UnexpectedError:
+    CloseTemporaryWorkbook targetWb
+    CustomTestLogFailure Assert, "TestExportNamesToWorkbookCopiesValues", Err.Number, Err.Description
+    Err.Clear
+End Sub
+
+'@TestMethod("HiddenNames")
+Public Sub TestImportNamesFromWorkbookRespectsOverwrite()
+    CustomTestSetTitles Assert, "HiddenNames", "TestImportNamesFromWorkbookRespectsOverwrite"
+
+    Dim target As IHiddenNames
+    Dim sourceWb As Workbook
+    Dim sourceStore As IHiddenNames
+
+    On Error GoTo UnexpectedError
+
+    Set target = EnsureManager()
+    target.EnsureName "__hn_import__", 5, HiddenNameTypeLong
+
+    Set sourceWb = NewTemporaryWorkbook()
+    Set sourceStore = HiddenNames.Create(sourceWb)
+    sourceStore.EnsureName "__hn_import__", 42, HiddenNameTypeLong
+    sourceStore.SetValue "__hn_import__", 42
+
+    target.ImportNamesFromWorkbook sourceWb, overwriteExisting:=False
+    Assert.AreEqual 5, target.ValueAsLong("__hn_import__"), _
+                     "ImportNamesFromWorkbook should preserve values when overwriteExisting is False."
+
+    target.ImportNamesFromWorkbook sourceWb, overwriteExisting:=True
+    Assert.AreEqual 42, target.ValueAsLong("__hn_import__"), _
+                     "ImportNamesFromWorkbook should update values when overwriteExisting is True."
+
+    CloseTemporaryWorkbook sourceWb
+    Exit Sub
+
+UnexpectedError:
+    CloseTemporaryWorkbook sourceWb
+    CustomTestLogFailure Assert, "TestImportNamesFromWorkbookRespectsOverwrite", Err.Number, Err.Description
+    Err.Clear
+End Sub
+
+'@TestMethod("HiddenNames")
+Public Sub TestSetListObjectHeaderCreatesWorkbookName()
+    CustomTestSetTitles Assert, "HiddenNames", "TestSetListObjectHeaderCreatesWorkbookName"
+
+    Dim names As IHiddenNames
+    Dim lo As ListObject
+    Dim workbook As Workbook
+    Dim createdName As Name
+    Dim expectedRefersTo As String
+
+    On Error GoTo UnexpectedError
+
+    Set lo = BuildTestListObject()
+    Set names = HiddenNames.Create(testSh.Parent)
+    expectedRefersTo = "=" & lo.Name & "[alpha]"
+
+    names.SetListObjectHeader WORKBOOK_HEADER_NAME, lo, "alpha"
+
+    Set workbook = testSh.Parent
+    Set createdName = workbook.Names(WORKBOOK_HEADER_NAME)
+    Assert.IsTrue Not createdName Is Nothing, "Workbook name should exist after SetListObjectHeader."
+    Assert.AreEqual expectedRefersTo, createdName.RefersTo, "Workbook name should reference the table header."
+
+    names.SetListObjectHeader WORKBOOK_HEADER_NAME, lo, "beta"
+    expectedRefersTo = "=" & lo.Name & "[beta]"
+    Assert.AreEqual expectedRefersTo, workbook.Names(WORKBOOK_HEADER_NAME).RefersTo, _
+                     "SetListObjectHeader should overwrite existing workbook names."
+
+    DeleteWorkbookName WORKBOOK_HEADER_NAME
+    Exit Sub
+
+UnexpectedError:
+    DeleteWorkbookName WORKBOOK_HEADER_NAME
+    CustomTestLogFailure Assert, "TestSetListObjectHeaderCreatesWorkbookName", Err.Number, Err.Description
+    Err.Clear
 End Sub
 
 '@TestMethod("HiddenNames")
