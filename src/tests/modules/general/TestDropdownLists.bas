@@ -10,6 +10,8 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const DROPTESTONE As String = "DropTestList1"
 Private Const DROPTESTTWO As String = "DropTestList2"
 Private Const DROPOUTPUT As String = "DataOut"
+Private Const WORKBOOK_COUNTER_NAME As String = "__Var__WBDROPCOUNTER"
+Private Const WORKSHEET_COUNTER_NAME As String = "__Var__SHDROPCOUNTER"
 
 Private Assert As ICustomTest
 Private Fakes As Object
@@ -184,6 +186,55 @@ Fail:
     CustomTestLogFailure Assert, "TestRemove", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("DropdownLists")
+Public Sub TestCountersPersistThroughHiddenNames()
+    CustomTestSetTitles Assert, "DropdownLists", "TestCountersPersistThroughHiddenNames"
+
+    Dim valuesList As BetterArray
+    Dim wbStore As IHiddenNames
+    Dim shStore As IHiddenNames
+    Dim originalWb As Long
+    Dim originalSh As Long
+
+    On Error GoTo Fail
+
+    Set valuesList = BetterArrayFromList("alpha")
+    Set wbStore = HiddenNames.Create(ThisWorkbook)
+    Set shStore = HiddenNames.Create(dropOne.Wksh)
+
+    If Not wbStore.HasName(WORKBOOK_COUNTER_NAME) Then
+        wbStore.EnsureName WORKBOOK_COUNTER_NAME, 0, HiddenNameTypeLong
+    End If
+    If Not shStore.HasName(WORKSHEET_COUNTER_NAME) Then
+        shStore.EnsureName WORKSHEET_COUNTER_NAME, 0, HiddenNameTypeLong
+    End If
+
+    originalWb = wbStore.ValueAsLong(WORKBOOK_COUNTER_NAME, 0)
+    originalSh = shStore.ValueAsLong(WORKSHEET_COUNTER_NAME, 0)
+
+    dropOne.Add valuesList, "hnCounterList", addLabel:=False
+
+    Assert.AreEqual originalWb + 1, wbStore.ValueAsLong(WORKBOOK_COUNTER_NAME, -1), _
+                     "Workbook counter should increment through HiddenNames"
+    Assert.AreEqual originalSh + 1, shStore.ValueAsLong(WORKSHEET_COUNTER_NAME, -1), _
+                     "Worksheet counter should increment through HiddenNames"
+
+    dropOne.Remove "hnCounterList"
+    Assert.AreEqual originalSh, shStore.ValueAsLong(WORKSHEET_COUNTER_NAME, -1), _
+                     "Worksheet counter should revert after removal"
+
+    wbStore.SetValue WORKBOOK_COUNTER_NAME, originalWb
+    shStore.SetValue WORKSHEET_COUNTER_NAME, originalSh
+    Exit Sub
+
+Fail:
+    On Error Resume Next
+        If Not wbStore Is Nothing Then wbStore.SetValue WORKBOOK_COUNTER_NAME, originalWb
+        If Not shStore Is Nothing Then shStore.SetValue WORKSHEET_COUNTER_NAME, originalSh
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestCountersPersistThroughHiddenNames", Err.Number, Err.Description
+End Sub
+
 
 '@TestMethod("DropdownLists")
 Public Sub TestExists()
@@ -204,6 +255,34 @@ Public Sub TestExists()
 
 Fail:
     CustomTestLogFailure Assert, "TestExists", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DropdownLists")
+Public Sub TestAllDropdownsSkipsClearedEntries()
+    CustomTestSetTitles Assert, "DropdownLists", "TestAllDropdownsSkipsClearedEntries"
+
+    Dim valuesList As BetterArray
+    Dim listings As BetterArray
+
+    On Error GoTo Fail
+
+    Set valuesList = BetterArrayFromList("alpha", "beta")
+
+    dropOne.Add valuesList, "firstList", addLabel:=True
+    dropOne.Add valuesList, "secondList", addLabel:=True
+    dropOne.Remove "secondList"
+
+    Set listings = dropOne.AllDropdowns
+
+    Assert.IsFalse listings Is Nothing, "AllDropdowns should return a BetterArray"
+    Assert.AreEqual 1&, listings.Length, "AllDropdowns should exclude removed entries"
+    Assert.AreEqual "firstList", listings.Item(listings.LowerBound), _
+                     "AllDropdowns should preserve insertion order for remaining lists"
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestAllDropdownsSkipsClearedEntries", Err.Number, Err.Description
 End Sub
 
 

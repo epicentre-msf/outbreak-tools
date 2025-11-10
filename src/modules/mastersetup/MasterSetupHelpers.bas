@@ -13,6 +13,7 @@ Private Const REGISTRY_SHEETNAME As String = "__updated"
 Private Const PASSWORDS_SHEETNAME As String = "__pass"
 Private Const DEVELOPMENT_SHEETNAME As String = "Dev"
 Private Const CONFIG_SHEETS_LIST As String = "__configSheets"
+Private Const RIBBON_TRANSLATION As String = "__ribbonTranslation"
 
 Private Const START_ROW_VARIABLES As Long = 5
 Private Const START_COLUMN_VARIABLES As Long = 1
@@ -61,6 +62,8 @@ Public Function ResolveMasterSetupSheetName(ByVal sheetKey As String) As String
             ResolveMasterSetupSheetName = PASSWORDS_SHEETNAME
         Case "dev", "development"
             ResolveMasterSetupSheetName = DEVELOPMENT_SHEETNAME
+        Case "ribbontrads", "ribtrads", "ribtrad"
+            ResolveMasterSetupSheetName = RIBBON_TRANSLATION
         Case Else
             ResolveMasterSetupSheetName = sheetKey
     End Select
@@ -281,6 +284,7 @@ Handler:
     Resume Cleanup
 End Sub
 
+
 Public Sub ClearMasterSheetFilters(ByVal targetSheet As Worksheet)
 
     Dim lo As ListObject
@@ -362,6 +366,7 @@ Public Sub SortMasterVariablesTables(ByVal targetSheet As Worksheet)
         columns.LowerBound = 1
         columns.Push "Variable Section", "Variable Name"
         wrapper.Sort colName:="Variable Order", colList:=columns, directSort:=True, strictSearch:=False
+        wrapper.Sort colName:=""
     Next table
 End Sub
 

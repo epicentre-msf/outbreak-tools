@@ -50,6 +50,7 @@ Private Const NAME_COL_DEFAULT_CHOICE As String = NAME_PREFIX & "ColDefaultChoic
 Private Const NAME_COL_CHOICES As String = NAME_PREFIX & "ColChoices"
 Private Const NAME_COL_DEFAULT_STATUS As String = NAME_PREFIX & "ColDefaultStatus"
 Private Const NAME_COL_COMMENTS As String = NAME_PREFIX & "ColComments"
+Private Const NAME_SHEET_TAG As String = "sheetTag"
 
 Private Const HEADER_ORDER As String = "Variable Order"
 Private Const HEADER_SECTION As String = "Variable Section"
@@ -787,6 +788,8 @@ Private Sub PersistInitialisedFlag(ByVal state As Boolean)
 
     store.EnsureName NAME_INITIALISED, state, HiddenNameTypeBoolean
     store.SetValue NAME_INITIALISED, state
+    store.EnsureName NAME_SHEET_TAG, "variables", HiddenNameTypeString
+    store.SetValue NAME_SHEET_TAG, "variables"
     this.initialised = state
 End Sub
 
