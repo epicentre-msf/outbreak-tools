@@ -78,6 +78,11 @@ End Sub
 Public Sub Sort(ByVal listName As String, Optional ByVal sortOrder As Long = xlAscending)
 End Sub
 
+'@jump:Translate
+'Translate all the dropdowns in the worksheet
+Public Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = False)
+End Sub
+
 '@section Operate with the outside world
 '===============================================================================
 
