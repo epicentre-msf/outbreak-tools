@@ -51,3 +51,8 @@ required VBA syntax.
 - [DONE] Wired EventSetup.InsertRows to delegate to dictionary/choices/analysis helpers, added workbook-unlock safeguards, and expanded TestEventSetup to cover dictionary and analysis insertion flows.
 - [DONE] Simplified LLExport/EventSetup export insertion to assign monotonically increasing export numbers without shifting dictionary columns while keeping sync tests green.
 - [DONE] Introduced column rename helpers (DataSheet, CustomTable, LLdictionary) and taught LLExport.Sort/EventSetup.SortTables to normalize export/dictionary headers sequentially.
+- [DONE] Scaffolded EventMasterSetup with workbook-scoped dropdown, variables, choices, and translation caches plus a new TestEventMasterSetup suite covering lifecycle and refresh behaviours.
+- [DONE] Extended HiddenNames to accept workbook scopes alongside worksheets and added regression coverage for workbook-level hidden name storage.
+- [DONE] Migrated DropdownLists counters to HiddenNames for workbook/worksheet tracking and added regression coverage to keep dropdown naming stable.
+- [DONE] Tagged master setup variables and choices sheets with HiddenNames sheetTag values so downstream helpers can identify sheet purpose reliably.
+- [DONE] Added HiddenNames.SetListObjectHeader and workbook import/export helpers so names can flow between workbook scopes, with matching regression coverage.

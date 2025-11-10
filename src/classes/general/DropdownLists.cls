@@ -13,7 +13,7 @@ Attribute VB_Description = "A wrapper for dropdowns"
 '@Folder("General")
 '@ModuleDescription("A wrapper for dropdowns")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
-
+'@depends HiddenNames, BetterArray, Checking
 
 Option Explicit
 Implements IDropdownLists
@@ -22,12 +22,19 @@ Private Type TDropdownLists
     sh As Worksheet
     hprefix As String
     hasChecks As Boolean
+    initialised As Boolean
+    wbStored As IHiddenNames
+    shStored As IHiddenNames
 End Type
 
 Private this As TDropdownLists
 Private Const CLASSNAME As String = "DropdownLists"
 Private Const DEFAULTNAMEPREFIX As String = "choice_"
-Private Const COUNTERNAME As string = "__Var__DROPCOUNTER" 'General counter in the workbook
+Private Const WORKBOOKCOUNTERNAME As String = "__Var__WBDROPCOUNTER"  'Workbook-level dropdown counter
+Private Const WORKSHEETCOUNTERNAME As String = "__Var__SHDROPCOUNTER" 'Worksheet-level dropdown counter
+Private Const DROPDOWNINITIALSEDNAME As String = "__Var__DROPINIT"
+Private Const LISTNAMECOLUMNHEADER As String =  "__listName__"
+Private Const LONAMECOLUMNHEADER As String = "__loName__"
 
 'increment by default the counter on the number of dropdowns by 1. Everytime a
 'dropdown is added to the current worksheet. The counter is saved somewhere the
@@ -46,8 +53,6 @@ Private internalChecks As IChecking
 
 '@section Instanciation
 '===============================================================================
-
-
 '@label:Create
 '@prop-title Create a Dropdownlist Object
 '
@@ -64,9 +69,8 @@ Private internalChecks As IChecking
 '@returned A DropdowLists Object
 '@depends Checkings
 '@export
-Public Function Create(ByVal outsh As Worksheet, _
-    Optional ByVal hprefix As String = "dropdown_") _
-    As IDropdownLists
+Public Function Create(ByVal outsh As Worksheet, Optional ByVal hprefix As String = "dropdown_") As IDropdownLists
+
     If outsh Is Nothing Then
         ThrowError ProjectError.ElementNotFound, "Dropdown worksheet not found"
     End If
@@ -90,34 +94,69 @@ Public Property Get Wksh() As Worksheet
     Set Wksh = this.sh
 End Property
 
+
 '@prop-title Worksheet of the dropdown list
 Public Property Set Wksh(ByVal outsh As Worksheet)
+    
+    Dim store As IHiddenNames
+    Set store = HiddenNames.Create(outsh)
+    this.initialised = (store.ValueAsString(DROPDOWNINITIALSEDNAME) = "Yes")
 
+    If (Not this.initialised) Then
 
-    'Format the worksheet before creating dropdowns
-    RemoveGridLines outsh
-    outsh.Range("A:D").Font.Color = vbWhite
-    outsh.Range("A:D").Interior.Color = vbWhite
+       'Format the worksheet before creating dropdowns
+        RemoveGridLines outsh
 
-    outsh.Cells(DROPDOWNSTARTROW, 3).Value = "__listName__"
-    outsh.Cells(DROPDOWNSTARTROW, 4).Value = "__loName__"
+        outsh.Range("A:D").Font.Color = vbWhite
+        outsh.Range("A:D").Interior.Color = vbWhite
+
+        outsh.Cells(DROPDOWNSTARTROW, 3).Value = LISTNAMECOLUMNHEADER
+        outsh.Cells(DROPDOWNSTARTROW, 4).Value = LONAMECOLUMNHEADER
+
+        this.initialised = True
+        store.EnsureName DROPDOWNINITIALSEDNAME, "Yes", HiddenNameTypeString
+    End If
 
     Set this.sh = outsh
+    Set this.shStored = Nothing
+    Set this.wbStored = Nothing
 End Property
 
-'@prop-title Helper to remove Gridlines
-'@param sh A Worksheet Object.
-'@param DisplayZeros Optional, Boolean. Display zeros in the worksheet. Default is False
-Private Sub RemoveGridLines(ByVal sh As Worksheet, Optional DisplayZeros As Boolean = False)
-    Dim View As WorksheetView
-    For Each View In sh.Parent.Windows(1).SheetViews
-        If View.Sheet.Name = sh.Name Then
-            View.DisplayGridlines = False
-            View.DisplayZeros = DisplayZeros
-            Exit Sub
+
+Private Property Get AllDropdowns() As BetterArray
+    Dim sh As Worksheet
+    Dim temp As BetterArray
+    Dim headerCell As Range
+    Dim cursor As Range
+
+    Set temp = New BetterArray
+    temp.LowerBound = 1
+
+    Set sh = Wksh()
+    If sh Is Nothing Then
+        Set AllDropdowns = temp
+        Exit Property
+    End If
+
+    Set headerCell = sh.Cells(DROPDOWNSTARTROW, 3)
+    Set cursor = sh.Cells(sh.Rows.Count, 3).End(xlUp)
+
+    If cursor.Row <= headerCell.Row Then
+        Set AllDropdowns = temp
+        Exit Property
+    End If
+
+    Do While cursor.Row > headerCell.Row
+        If LenB(Trim$(CStr(cursor.Value))) > 0 Then
+            temp.Push CStr(cursor.Value)
         End If
-    Next
-End Sub
+        Set cursor = cursor.Offset(-1)
+    Loop
+
+    temp.Reverse
+    Set AllDropdowns = temp.Clone()
+End Property
+
 
 '@prop-title Header Prefix
 Public Property Get headerPrefix() As String
@@ -139,12 +178,156 @@ Private Property Get Name() As String
     Name = Wksh.Name
 End Property
 
+
+'@section Workbook counter management
+'===============================================================================
+Private Property Get InternalStore(Optional ByVal sheetLevel As Boolean = False) As IHiddenNames
+    Dim targetSheet As Worksheet
+    Dim targetWb As Workbook
+
+    If sheetLevel Then
+        If this.shStored Is Nothing Then
+            Set targetSheet = Wksh
+            If targetSheet Is Nothing Then
+                ThrowError ProjectError.ObjectNotInitialized, "DropdownLists requires a worksheet before accessing sheet storage."
+            End If
+            Set this.shStored = HiddenNames.Create(targetSheet)
+        End If
+        Set InternalStore = this.shStored
+    Else
+        If this.wbStored Is Nothing Then
+            Set targetSheet = Wksh
+            If targetSheet Is Nothing Then
+                ThrowError ProjectError.ObjectNotInitialized, "DropdownLists requires a worksheet before accessing workbook storage."
+            End If
+            Set targetWb = targetSheet.Parent
+            Set this.wbStored = HiddenNames.Create(targetWb)
+        End If
+        Set InternalStore = this.wbStored
+    End If
+End Property
+
+
+Private Sub EnsureWorkbookCounter()
+    Dim store As IHiddenNames
+
+    Set store = InternalStore(False)
+    If Not store.HasName(WORKBOOKCOUNTERNAME) Then
+        store.EnsureName WORKBOOKCOUNTERNAME, 1, HiddenNameTypeLong
+    End If
+End Sub
+
+Private Function WorkbookCounterValue() As Long
+    Dim store As IHiddenNames
+
+    EnsureWorkbookCounter
+    Set store = InternalStore(False)
+    WorkbookCounterValue = store.ValueAsLong(WORKBOOKCOUNTERNAME, 1)
+End Function
+
+Private Sub SetWorkbookCounter(ByVal newValue As Long)
+    Dim store As IHiddenNames
+
+    EnsureWorkbookCounter
+    Set store = InternalStore(False)
+    store.SetValue WORKBOOKCOUNTERNAME, newValue
+End Sub
+
+Private Sub IncrementWorkbookCounter()
+    Dim nextValue As Long
+    nextValue = WorkbookCounterValue() + DROPDOWNCOUNTERINCREMENT
+    SetWorkbookCounter nextValue
+End Sub
+
+Private Sub DecrementWorkbookCounter()
+     Dim nextValue As Long
+    nextValue = WorkbookCounterValue() - DROPDOWNCOUNTERINCREMENT
+    SetWorkbookCounter nextValue
+End Sub
+'@section Worksheet Counter
+'===============================================================================
+
+Private Sub EnsureWorksheetCounter()
+    Dim store As IHiddenNames
+
+    Set store = InternalStore(True)
+    If Not store.HasName(WORKSHEETCOUNTERNAME) Then
+        store.EnsureName WORKSHEETCOUNTERNAME, 0, HiddenNameTypeLong
+    End If
+End Sub
+
+
+Private Function SheetCounterValue() As Long
+    Dim store As IHiddenNames
+
+    EnsureWorksheetCounter
+    Set store = InternalStore(True)
+    SheetCounterValue = store.ValueAsLong(WORKSHEETCOUNTERNAME, 0)
+End Function
+
+Private Sub SetSheetCounter(ByVal newValue As Long)
+    Dim store As IHiddenNames
+
+    EnsureWorksheetCounter
+    If newValue < 0 Then newValue = 0
+
+    Set store = InternalStore(True)
+    store.SetValue WORKSHEETCOUNTERNAME, newValue
+End Sub
+
+Private Sub IncrementSheetCounter()
+    Dim nextValue As Long
+    nextValue = SheetCounterValue() + DROPDOWNCOUNTERINCREMENT
+    SetSheetCounter nextValue
+End Sub
+
+Private Sub DecrementSheetCounter()
+    Dim nextValue As Long
+    nextValue = SheetCounterValue() - DROPDOWNCOUNTERINCREMENT
+    SetSheetCounter nextValue
+End Sub
+
+
+'@prop-title Update the counters of the dropdown
+'@details
+'The counter on the number of dropdown in the current dropdown worksheet
+'is store in the first cell of the worksheet. The UpdateDropdownCounter sub
+'adds the default increment to the counter stored in the first cell of the
+'worksheet.
+Private Sub IncrementCounters()
+    IncrementSheetCounter
+    IncrementWorkbookCounter
+End Sub
+
+Private Sub DecrementCounters()
+    DecrementSheetCounter
+    DecrementWorkbookCounter
+End Sub
+
+'@section Private class Helpers
+'===============================================================================
+
+'@prop-title Helper to remove Gridlines
+'@param sh A Worksheet Object.
+'@param DisplayZeros Optional, Boolean. Display zeros in the worksheet. Default is False
+Private Sub RemoveGridLines(ByVal sh As Worksheet, Optional DisplayZeros As Boolean = False)
+    Dim View As WorksheetView
+    For Each View In sh.Parent.Windows(1).SheetViews
+        If View.Sheet.Name = sh.Name Then
+            View.DisplayGridlines = False
+            View.DisplayZeros = DisplayZeros
+            Exit Sub
+        End If
+    Next
+End Sub
+
+
 '@prop-title Find the lastColumn of the dropdown list
 '@details
 'The last column is the column where to start building new listObject. This 
 'is used when adding new dropdowns.
 '@returned A Long
-Private Property Get LastColumn() As Long
+Private Function LastColumn() As Long
     Dim sh As Worksheet
     Dim colIndex As Long
     Set sh = Wksh()
@@ -152,22 +335,24 @@ Private Property Get LastColumn() As Long
     With sh
         colIndex = .Cells(DROPDOWNSTARTROW, .Columns.Count).End(xlToLeft).Column
     End With
-    LastColumn = colIndex + 2
-End Property
 
-'@prop-title Name of a listobject related to one dropdown
+    LastColumn = colIndex + 2
+End Function
+
+
+'@fun-title Name of a listobject related to one dropdown
 '@param listName A String. The name of the dropdown
 '@returned A String
-Private Property Get CurrentListName(ByVal listName As String) As String
-    CurrentListName = Replace(Application.WorksheetFunction.Trim(listName), " ", "_")
-End Property
+Private Function SanitizedListName(ByVal listName As String) As String
+    SanitizedListName = Replace(Application.WorksheetFunction.Trim(listName), " ", "_")
+End Function
 
-'@prop-title Name of the first column of one specific dropdown
+'@fun-title Name of the first column of one specific dropdown
 '@param listName A String. The name of the dropdown
 '@returned As String
-Private Property Get CurrentHeaderName(ByVal listName As String) As String
-    CurrentHeaderName = headerPrefix() & CurrentListName(listName)
-End Property
+Private Function ListObjectHeaderName(ByVal listName As String) As String
+    ListObjectHeaderName = headerPrefix() & SanitizedListName(listName)
+End Function
 
 '@prop-title Name of the name of dropdown used in reference
 '
@@ -178,60 +363,34 @@ End Property
 '
 '@param listName A String. The name of the dropdown
 '@returned A String
-Private Property Get CurrentDropdownName(ByVal listName As String) As String
+Private Property Get CorrespondingWorkbookName(ByVal listName As String) As String
     Dim headerName As String
 
-    headerName = CurrentHeaderName(listName)
-    CurrentDropdownName = IIf(headerPrefix() = vbNullString, _
-        DEFAULTNAMEPREFIX & headerName, _
-        headerName)
+    headerName = ListObjectHeaderName(listName)
+    CorrespondingWorkbookName = IIf(LenB(headerPrefix()) = 0, DEFAULTNAMEPREFIX & headerName, headerName)
 End Property
-
-'@prop-title Get the counter of the dropdowns listObjects
-'@details
-'The General dropdown counter will store a counter on ALL dropdownlists
-'to avoid errors related to same listObject names on different dropdown worksheets
-'@return A Long
-Private Property Get GeneralDropCounter() As Long
-
-    Dim count As Long
-    Dim wb As Workbook
- 
-    Set wb = Wksh.Parent
-    On Error Resume Next
-    count = CLng(Replace(wb.Names(COUNTERNAME).Value, "=", ""))
-    On Error GoTo 0
-
-    If (count = 0) Then
-        wb.Names.Add Name:=COUNTERNAME, RefersToR1C1:="=1", Visible:=False
-        GeneralDropCounter = 1
-    Else
-        GeneralDropCounter = count
-    End If
-End Property
-
 
 '@prop-title Name of the listObject related to one dropdown
 '@param listName String. Dropdown name
 '@returned A String. Name of the corresponding listobject
-Private Property Get CurrentLoName(ByVal listName As String) As String
+Private Property Get ListObjectName(ByVal listName As String) As String
     Dim loName As String
 
     If Not Exists(listName) Then
-        loName = "list_" & CurrentListName(listName) & GeneralDropCounter()
+        loName = "list_" & SanitizedListName(listName) & WorkbookCounterValue()
         AddLoName listName, loName
     Else
         loName = RetrieveLoName(listName)
     End If
 
-    CurrentLoName = loName
+    ListObjectName = loName
 End Property
 
 'Add and Retrieve the listObject Name for a specific listName
 '@sub-title Add listObject Name
 '@param lst A String, the name of the dropdown
 '@param  lo A String, the name of the corresponding listObject
-Private Sub AddLoName(ByVal lst As String, ByVal lo As String)
+Private Sub AddLoName(ByVal listName As String, ByVal loName As String)
 
     Dim cellRng As Range
     Dim sh As Worksheet
@@ -239,12 +398,12 @@ Private Sub AddLoName(ByVal lst As String, ByVal lo As String)
     Set sh = Wksh()
     Set cellRng = sh.Cells(DROPDOWNSTARTROW, 3)
 
-    Do While (cellRng.Value <> "")
+    Do While (LenB(CStr(cellRng.Value)) <> 0)
         Set cellRng = cellRng.Offset(1)
     Loop
 
-    cellRng.Value = lst
-    cellRng.Offset(, 1).Value = lo
+    cellRng.Value = listName
+    cellRng.Offset(, 1).Value = loName
 End Sub
 
 
@@ -281,13 +440,8 @@ Private Sub RemoveLoName(ByVal lst As String)
         If cellRng.Value = lst Then
             cellRng.ClearContents
             cellRng.Offset(, 1).ClearContents
-            'Decreasing the Length of the dropdown
-            On Error Resume Next
-            sh.Cells(DROPDOWNSTARTROW, 1).Value = CLng(sh.Cells(DROPDOWNSTARTROW, 1).Value) - DROPDOWNCOUNTERINCREMENT
-            On Error GoTo 0
             Exit Sub
         End If
-
         Set cellRng = cellRng.Offset(1)
     Next
 End Sub
@@ -298,9 +452,7 @@ End Sub
 '@return
 '@export
 Private Property Get Length() As Long
-    On Error Resume Next
-    Length = CLng(Wksh.Cells(1, 1).Value)
-    On Error GoTo 0
+    Length = SheetCounterValue()
 End Property
 
 
@@ -312,13 +464,8 @@ End Property
 '@return String
 Private Function CurrentDropdownLabel(ByVal labelPrefix As String) As String
     Dim dropCounter As Long
-    Dim sh As Worksheet
 
-    Set sh = Wksh()
-
-    On Error Resume Next
-    dropCounter = CLng(sh.Cells(1, 1).Value)
-    On Error GoTo 0
+    dropCounter = SheetCounterValue()
     CurrentDropdownLabel = labelPrefix & " " & dropCounter
 End Function
 
@@ -358,7 +505,7 @@ Private Property Get LabelRange(ByVal listName As String) As Range
 
     If Not Exists(listName) Then Exit Property
     Set sh = Wksh()
-    loName = CurrentLoName(listName)
+    loName = ListObjectName(listName)
     'Top header of the range of the listObject
     Set LabelRange = sh.ListObjects(loName).Range.Cells(0, 1)
 End Property
@@ -385,7 +532,7 @@ Private Property Get Values(ByVal listName As String, Optional ByVal includeHead
         ShowDebug
     Else
         Set sh = Wksh()
-        loName = CurrentLoName(listName)
+        loName = ListObjectName(listName)
         Set Lo = sh.ListObjects(loName)
         Set rng = Lo.Range
 
@@ -403,41 +550,6 @@ End Property
 '@section Modify the dropdownlist
 '===============================================================================
 
-'@prop-title Update the counters of the dropdown
-'@details
-'The counter on the number of dropdown in the current dropdown worksheet
-'is store in the first cell of the worksheet. The UpdateDropdownCounter sub
-'adds the default increment to the counter stored in the first cell of the
-'worksheet.
-Private Sub UpdateDropdownCounter()
-    Dim sh As Worksheet
-    Dim dropCounter As Long
-    Dim counterRng As Range
-    Dim wb As Workbook
-
-    Set sh = Wksh()
-    Set counterRng = sh.Cells(1, 1)
-
-    On Error Resume Next
-    dropCounter = CLng(counterRng.Value)
-    On Error GoTo 0
-
-    dropCounter = dropCounter + DROPDOWNCOUNTERINCREMENT
-    counterRng.Value = dropCounter
-
-    'Updating the General counter
-    Set wb = sh.Parent
-    dropCounter = GeneralDropCounter()
-    dropCounter = dropCounter + DROPDOWNCOUNTERINCREMENT
-
-    'Update the name in the workbook
-    On Error Resume Next
-    wb.Names(COUNTERNAME).Delete
-    On Error GoTo 0
-
-    wb.Names.Add Name:=COUNTERNAME, RefersToR1C1:="=" & dropCounter, Visible:=False
-
-End Sub
 
 '@label:Add
 '@sub-title Add table values to the dropdown list
@@ -465,47 +577,39 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
     Dim headerName As String              'header Name
     Dim loName As String                  'List object name
     Dim rng As Range
-    Dim Wkb As Workbook
-    Dim dropdownName As String            'dropdown name (used in named ranges)
+    Dim store As IHiddenNames
+    Dim dropdownLo As ListObject
 
     'Do not add a new dropdown if there is already another one
     If Exists(listName) Then
         LogInfo "Dropdown " & listName & " already exits: not added"
-        ShowDebug
         Exit Sub
     End If
 
-    If (listName = "__listName__") Then
+    If (listName = LISTNAMECOLUMNHEADER) Then
         LogInfo "Dropdown " & listName & " is an invalid name already used for programming purposes, please change it."
-        ShowDebug
         Exit Sub
     End If
 
-    loName = CurrentLoName(listName)
-    headerName = CurrentHeaderName(listName)
-    dropdownName = CurrentDropdownName(listName)
+    loName = ListObjectName(listName)
+    headerName = ListObjectHeaderName(listName)
+
     colIndex = LastColumn()
     Set sh = Wksh()
+    
+    'Add an increment to the dropdown counter
+    IncrementCounters
+
 
     'dropdown startRow is where to add the ListObject
     With sh
         listValues.ToExcelRange .Cells(DROPDOWNSTARTROW + 1, colIndex)
         .Cells(DROPDOWNSTARTROW, colIndex).Value = headerName
-        Set rng = .Range(.Cells(DROPDOWNSTARTROW, colIndex), _
-            .Cells(DROPDOWNSTARTROW + listValues.Length, colIndex))
+        Set rng = .Range(.Cells(DROPDOWNSTARTROW, colIndex), .Cells(DROPDOWNSTARTROW + listValues.Length, colIndex))
 
         'Add A list object table
         '@Ignore ReadOnlyPropertyAssignment
         .ListObjects.Add(xlSrcRange, rng, , xlYes).Name = loName
-        'Add a style to the listObject
-        On Error Resume Next
-        .ListObjects(loName).TableStyle = tableStyle
-        On Error GoTo 0
-        Set Wkb = .Parent
-        Wkb.Names.Add Name:=dropdownName, RefersToR1C1:="=" & loName & "[" & headerName & "]", Visible:=False
-
-        'Add an increment to the dropdown counter
-        UpdateDropdownCounter
 
         'Add the label, with a prefix if needed
         If addLabel Then
@@ -515,10 +619,22 @@ Private Sub Add(ByVal listValues As BetterArray, ByVal listName As String, _
             .Cells(DROPDOWNSTARTROW - 1, colIndex).Font.Bold = True
             .Cells(DROPDOWNSTARTROW - 1, colIndex).Font.Italic = True
         End If
-
-        'Auto fit dropdown column, and increment the dropdown counter
-        rng.EntireColumn.AutoFit
+        
+        Set dropdownLo = .ListObjects(loName)
     End With
+
+    'Add a style to the listObject
+    On Error Resume Next
+    dropdownLo.TableStyle = tableStyle
+    On Error GoTo 0
+    
+
+    'Add the corresponding name at workbook level
+    Set store = InternalStore(False)
+    store.SetListObjectHeader CorrespondingWorkbookName(listName), dropdownLo, headerName
+
+    'Auto fit dropdown column, and increment the dropdown counter
+    rng.EntireColumn.AutoFit
 End Sub
 
 '@label:Remove
@@ -530,35 +646,34 @@ End Sub
 '@return
 Private Sub Remove(ByVal listName As String)
     Dim sh As Worksheet
-    Dim Wkb As Workbook
     Dim rng As Range
     Dim loName As String
-    Dim dropdownName As String
+    Dim store As IHiddenNames
 
     If Not Exists(listName) Then
         LogInfo "Can not delete a dropdown that does not exits: " & listName & "Not found"
-        ShowDebug
         Exit Sub
     End If
 
-    loName = CurrentLoName(listName)
-    dropdownName = CurrentDropdownName(listName)
 
+    Set store = InternalStore(False)
+    store.RemoveName CorrespondingWorkbookName(listName)
+
+    'Remove the listObject
+    loName = ListObjectName(listName)
     Set sh = Wksh()
     Set rng = sh.ListObjects(loName).Range
-    Set Wkb = sh.Parent
-
-    On Error Resume Next
-    Wkb.NAMES(dropdownName).Delete
-    On Error GoTo 0
 
     'Important to delete the range at the left before deleting the
     'range itself
     rng.Offset(, 1).EntireColumn.Delete
     rng.EntireColumn.Delete
 
+    'Remove the name from the stored name in the worksheet
     RemoveLoName listName
-
+    
+    'Decrement counters
+    DecrementCounters
 End Sub
 
 '@label:ClearList
@@ -579,7 +694,7 @@ Private Sub ClearList(ByVal listName As String)
         Exit Sub
     End If
 
-    loName = CurrentLoName(listName)
+    loName = ListObjectName(listName)
     Set sh = Wksh()
     On Error Resume Next
     sh.ListObjects(loName).DataBodyRange.Delete
@@ -620,7 +735,7 @@ Private Sub Update(ByVal UpdateData As BetterArray, ByVal listName As String, _
     End If
 
     Set sh = Wksh()
-    loName = CurrentLoName(listName)
+    loName = ListObjectName(listName)
     Set Lo = sh.ListObjects(loName)
     Set loRng = Lo.Range
 
@@ -667,7 +782,7 @@ Private Sub Sort(ByVal listName As String, _
         Exit Sub
     End If
 
-    loName = CurrentLoName(listName)
+    loName = ListObjectName(listName)
     Set sh = Wksh()
     Set rng = sh.ListObjects(loName).Range
 
@@ -715,7 +830,7 @@ Private Sub SetValidation(ByVal cellRng As Range, ByVal listName As String, _
     End If
 
     'dropdown names can change. I add the tag
-    dropdownName = "= " & CurrentDropdownName(listName)
+    dropdownName = "= " & CorrespondingWorkbookName(listName)
 
     With cellRng.validation
         .Delete
@@ -771,7 +886,7 @@ Private Sub AddLink(ByVal listName As String, ByVal targetRng As Range, _
         Exit Sub
     End If
 
-    loName = CurrentLoName(listName)
+    loName = ListObjectName(listName)
     Set headerRng = Wksh.ListObjects(loName).Range.Cells(0, 1)
 
     If returnLink Then
@@ -894,6 +1009,11 @@ End Sub
 '@jump:elements
 'DropdownList Elements ---------------------------------------------------------
 
+'@jump:Wksh
+Private Property Get IDropdownLists_Wksh() As Worksheet
+    Set IDropdownLists_Wksh = Wksh()
+End Property
+
 '@jump:exists
 'Test if a dropdown is present in the worksheet
 Private Property Get IDropdownLists_Exists(ByVal listName As String) As Boolean
@@ -918,6 +1038,10 @@ End Property
 '@jump:Length
 Private Property Get IDropdownLists_Length() As Long
     IDropdownLists_Length = Length()
+End Property
+
+Private Property Get IDropdownLists_AllDropdowns() As BetterArray
+    Set IDropdownLists_AllDropdowns = AllDropdowns
 End Property
 
 '@jump:modify

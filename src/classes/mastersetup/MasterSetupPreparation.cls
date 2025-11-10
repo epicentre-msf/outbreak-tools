@@ -12,7 +12,7 @@ Attribute VB_Description = "Implementation for Master Setup preparation and conf
 '@PredeclaredId
 '@Folder("MasterSetup")
 '@ModuleDescription("Implementation for Master Setup preparation and configuration")
-'@depends ApplicationState, IApplicationState, DropdownLists, IDropdownLists, BetterArray, MasterSetupVariables, IMasterSetupVariables, ProjectError
+'@depends ApplicationState, IApplicationState, DropdownLists, IDropdownLists, BetterArray, MasterSetupVariables, IMasterSetupVariables, ProjectError, HiddenNames, IHiddenNames
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -49,6 +49,7 @@ Private Const YESNO_DROPDOWN As String = "__yesno"
 Private Const STATUS_ACTIVE As String = "active"
 Private Const STATUS_INACTIVE As String = "inactive"
 Private Const VARIABLE_TABLE_STYLE As String = "TableStyleMedium2"
+Private Const SHEET_TAG_NAME As String = "sheetTag"
 
 
 '@section Factory helpers
@@ -132,6 +133,7 @@ Public Sub EnsureDropdowns()
     Next idx
 
     RefreshLanguageDropdowns drop
+    EnsureSheetTag ResolveWorksheet(CHOICES_SHEET_NAME), "choices"
 End Sub
 
 '@Description("Ensure the variables worksheet exposes an initialised manager with validations applied.")
@@ -229,6 +231,7 @@ Private Function EnsureVariablesSheet() As Worksheet
 
     Set wsVars = ResolveOrCreateWorksheet(VARIABLES_SHEET_NAME, xlSheetVisible)
     Set this.variablesSheet = wsVars
+    EnsureSheetTag wsVars, "variables"
     Set EnsureVariablesSheet = wsVars
 End Function
 
@@ -431,6 +434,18 @@ Private Sub EnsureDropdownHasValues(ByVal drop As IDropdownLists, _
     Else
         drop.Add values, listName
     End If
+End Sub
+
+Private Sub EnsureSheetTag(ByVal targetSheet As Worksheet, ByVal tagValue As String)
+    Dim store As IHiddenNames
+
+    If targetSheet Is Nothing Then Exit Sub
+    tagValue = Trim$(tagValue)
+    If LenB(tagValue) = 0 Then Exit Sub
+
+    Set store = HiddenNames.Create(targetSheet)
+    store.EnsureName SHEET_TAG_NAME, tagValue, HiddenNameTypeString
+    store.SetValue SHEET_TAG_NAME, tagValue
 End Sub
 
 '@Description("Resolve a worksheet by name without creating it.")

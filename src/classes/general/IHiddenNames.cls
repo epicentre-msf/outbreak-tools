@@ -112,3 +112,23 @@ Public Sub ImportNames(ByVal sourceSh As Worksheet, _
                        Optional ByVal prefix As String = vbNullString, _
                        Optional ByVal overwriteExisting As Boolean = True)
 End Sub
+
+'@sub-title Export tracked names into another workbook scope.
+Public Sub ExportNamesToWorkbook(ByVal targetWb As Workbook, _
+                                 Optional ByVal prefix As String = vbNullString)
+End Sub
+
+'@sub-title Import hidden names from another workbook scope.
+Public Sub ImportNamesFromWorkbook(ByVal sourceWb As Workbook, _
+                                   Optional ByVal prefix As String = vbNullString, _
+                                   Optional ByVal overwriteExisting As Boolean = True)
+End Sub
+
+'@sub-title Create a workbook-level hidden name referencing a ListObject header.
+'@param nameId Identifier of the workbook name to assign.
+'@param listObject Target ListObject hosting the header.
+'@param headerName Caption of the header column to reference.
+Public Sub SetListObjectHeader(ByVal nameId As String, _
+                               ByVal listObject As ListObject, _
+                               ByVal headerName As String)
+End Sub
