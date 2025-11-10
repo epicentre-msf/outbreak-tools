@@ -35,6 +35,7 @@ Private Const WORKSHEETCOUNTERNAME As String = "__Var__SHDROPCOUNTER" 'Worksheet
 Private Const DROPDOWNINITIALSEDNAME As String = "__Var__DROPINIT"
 Private Const LISTNAMECOLUMNHEADER As String =  "__listName__"
 Private Const LONAMECOLUMNHEADER As String = "__loName__"
+Private Const WORKSHEETLANGUAGENAME As String = "__Var__LANGNAME"
 
 'increment by default the counter on the number of dropdowns by 1. Everytime a
 'dropdown is added to the current worksheet. The counter is saved somewhere the
@@ -550,7 +551,6 @@ End Property
 '@section Modify the dropdownlist
 '===============================================================================
 
-
 '@label:Add
 '@sub-title Add table values to the dropdown list
 '@details
@@ -791,6 +791,54 @@ Private Sub Sort(ByVal listName As String, _
     On Error GoTo 0
 End Sub
 
+'@label:Translate
+Private Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = False)
+    Dim sh As Worksheet
+    Dim headerCell As Range
+    Dim cursor As Range
+    Dim loName As String
+    Dim lo As ListObject
+    Dim store As IHiddenNames
+
+    If trads Is Nothing Then Exit Sub
+    If TypeName(trads) <> "TranslationObject" Then Exit Sub
+
+    'check language before moving to translation
+    Set store = InternalStore()
+    
+    If (trads.Language = store.ValueAsString(WORKSHEETLANGUAGENAME)) And (Not force) Then
+        Exit Sub
+    End If
+
+    Set sh = Wksh()
+    If sh Is Nothing Then Exit Sub
+
+    Set headerCell = sh.Cells(DROPDOWNSTARTROW, 4)
+    Set cursor = sh.Cells(sh.Rows.Count, 4).End(xlUp)
+
+    If cursor.Row <= headerCell.Row Then
+        Debug.Print "Exited translations"
+        Exit Sub
+    End If
+
+    Do While cursor.Row > headerCell.Row
+        loName = CStr(cursor.Value) 
+        If LenB(loName) = 0 Then GoTo NextLo
+
+        On Error Resume Next
+            Set lo = sh.ListObjects(loName)
+        On Error GoTo 0 
+        
+        If Not (lo Is Nothing) Then trads.TranslateRange lo.DataBodyRange   
+NextLo:    
+        Set lo = Nothing
+        Set cursor = cursor.Offset(-1)
+    Loop
+
+
+    'update language value
+    store.EnsureName WORKSHEETLANGUAGENAME, trads.Language, HiddenNameTypeString
+End Sub
 
 '@label:operate
 '@section Operate with the outside world
@@ -1083,6 +1131,11 @@ End Sub
 Private Sub IDropdownLists_Sort(ByVal listName As String, _
     Optional ByVal sortOrder As Long = xlAscending)
     Sort listName, sortOrder
+End Sub
+
+'@jump:Translate
+Private Sub IDropdownLists_Translate(ByVal trads As Object, Optional ByVal force As Boolean = False)
+    Translate trads, force
 End Sub
 
 '@jump:operate

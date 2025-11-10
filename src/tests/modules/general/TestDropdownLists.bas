@@ -12,6 +12,7 @@ Private Const DROPTESTTWO As String = "DropTestList2"
 Private Const DROPOUTPUT As String = "DataOut"
 Private Const WORKBOOK_COUNTER_NAME As String = "__Var__WBDROPCOUNTER"
 Private Const WORKSHEET_COUNTER_NAME As String = "__Var__SHDROPCOUNTER"
+Private Const TEST_TRANSLATIONS_SHEET As String = "__dropTranslations"
 
 Private Assert As ICustomTest
 Private Fakes As Object
@@ -31,6 +32,9 @@ Private Sub ClearDropSheets()
     ClearWorksheet ThisWorkbook.Worksheets(DROPOUTPUT)
     ClearWorksheet ThisWorkbook.Worksheets(DROPTESTONE)
     ClearWorksheet ThisWorkbook.Worksheets(DROPTESTTWO)
+    On Error Resume Next
+        ClearWorksheet ThisWorkbook.Worksheets(TEST_TRANSLATIONS_SHEET)
+    On Error GoTo 0
 End Sub
 
 
@@ -285,7 +289,80 @@ Fail:
     CustomTestLogFailure Assert, "TestAllDropdownsSkipsClearedEntries", Err.Number, Err.Description
 End Sub
 
+'@TestMethod("DropdownLists")
+Public Sub TestTranslateAppliesTranslatorToAllLists()
+    CustomTestSetTitles Assert, "DropdownLists", "TestTranslateAppliesTranslatorToAllLists"
 
+    Dim valuesList As BetterArray
+    Dim translator As ITranslationObject
+    Dim transTable As ListObject
+    Dim sheet As Worksheet
+    Dim listOne As ListObject
+    Dim listTwo As ListObject
+
+    On Error GoTo Fail
+
+    Set valuesList = BetterArrayFromList("first", "second")
+    dropOne.Add valuesList, "firstList", addLabel:=False
+    dropOne.Add valuesList, "secondList", addLabel:=False
+
+    Set transTable = BuildTranslationTable()
+    Set translator = TranslationObject.Create(transTable, "translated")
+    dropOne.Translate translator, True
+
+    Set sheet = ThisWorkbook.Worksheets(DROPTESTONE)
+    Set listOne = FindListObjectFor(sheet, "firstList")
+    Set listTwo = FindListObjectFor(sheet, "secondList")
+
+    Assert.IsFalse listOne Is Nothing, "First dropdown listobject not found after translation"
+    Assert.IsFalse listTwo Is Nothing, "Second dropdown listobject not found after translation"
+    Assert.AreEqual "uno", CStr(listOne.DataBodyRange.Cells(1, 1).Value), "Translate should update first list values"
+    Assert.AreEqual "dos", CStr(listTwo.DataBodyRange.Cells(2, 1).Value), "Translate should update second list values"
+
+    DeleteWorksheets TEST_TRANSLATIONS_SHEET
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestTranslateAppliesTranslatorToAllLists", Err.Number, Err.Description
+End Sub
+
+Private Function BuildTranslationTable() As ListObject
+    Dim hostSheet As Worksheet
+    Dim lo As ListObject
+
+    Set hostSheet = EnsureWorksheet(TEST_TRANSLATIONS_SHEET)
+    hostSheet.Cells.Clear
+    hostSheet.Range("A1").Value = "key"
+    hostSheet.Range("B1").Value = "translated"
+    hostSheet.Range("A2").Value = "first"
+    hostSheet.Range("B2").Value = "uno"
+    hostSheet.Range("A3").Value = "second"
+    hostSheet.Range("B3").Value = "dos"
+
+    On Error Resume Next
+        hostSheet.ListObjects("__DropTranslations").Delete
+    On Error GoTo 0
+
+    Set lo = hostSheet.ListObjects.Add(xlSrcRange, hostSheet.Range("A1:B3"), , xlYes)
+    lo.Name = "__DropTranslations"
+    Set BuildTranslationTable = lo
+End Function
+
+Private Function FindListObjectFor(ByVal hostSheet As Worksheet, ByVal listName As String) As ListObject
+    Dim candidate As ListObject
+    Dim expectedHeader As String
+
+    expectedHeader = Replace(Trim$(listName), " ", "_")
+
+    For Each candidate In hostSheet.ListObjects
+        If Not candidate.HeaderRowRange Is Nothing Then
+            If StrComp(CStr(candidate.HeaderRowRange.Cells(1, 1).Value), expectedHeader, vbTextCompare) = 0 Then
+                Set FindListObjectFor = candidate
+                Exit Function
+            End If
+        End If
+    Next candidate
+End Function
 
 '@TestMethod("DropdownLists")
 Public Sub TestLabelRange()
