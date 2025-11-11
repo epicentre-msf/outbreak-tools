@@ -817,7 +817,6 @@ Private Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = F
     Set cursor = sh.Cells(sh.Rows.Count, 4).End(xlUp)
 
     If cursor.Row <= headerCell.Row Then
-        Debug.Print "Exited translations"
         Exit Sub
     End If
 
@@ -834,7 +833,6 @@ NextLo:
         Set lo = Nothing
         Set cursor = cursor.Offset(-1)
     Loop
-
 
     'update language value
     store.EnsureName WORKSHEETLANGUAGENAME, trads.Language, HiddenNameTypeString
