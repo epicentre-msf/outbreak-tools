@@ -20,8 +20,12 @@ Implements IDiseaseSheet
 '@section Constants
 '===============================================================================
 
+Private Const NAME_SHEET_TAG As String = "sheetTag"
+Private Const NAME_DISNAME As String = "__Var_DISNAME"
+Private Const NAME_DISLANG As String = "__Var_DISLANG"
+Private Const NAME_INDEX As String = "__Var_DISINDEX"
+
 Private Const DEFAULT_ANCHOR_SHEET As String = "Variables"
-Private Const DEFAULT_LANGUAGE_PREFIX As String = "disLang_"
 Private Const DEFAULT_TABLE_PREFIX As String = "disTab_"
 Private Const DEFAULT_LANGUAGE_LIST As String = "__languages"
 Private Const DEFAULT_STATUS_LIST As String = "__var_status"
@@ -41,6 +45,14 @@ Private Const HEADER_LANGUAGE_PROMPT_KEY As String = "infoSelectLang"
 Private Const MESSAGE_SELECT_VALUE_KEY As String = "selectValue"
 Private Const MESSAGE_LANGUAGE_ERROR_KEY As String = "errLang"
 
+
+Private Const DISEASES_DROPDOWN_PROHIBITED As String = "__prohibited_diseases_list"
+
+Private DEFAULTDISEASECOLUMNS As BetterArray
+
+Private Const ANCHORROW As Long = 2
+Private Const ANCHORCOLUMN As Long =2
+
 '@section State
 '===============================================================================
 
@@ -49,18 +61,11 @@ Private Type TBuilderState
     dropdowns As IDropdownLists
     trads As ITranslationObject
     initialised As Boolean
+    activeHostsheet As Worksheet
+    activeIndex As Long
+    activeTabwrapper As ICustomTable
 End Type
 
-Private Type TBuilderOptions
-    anchorSheetName As String
-    languagePrefix As String
-    tablePrefix As String
-    languageListName As String
-    statusListName As String
-    varNameListName As String
-    varChoiceListName As String
-    diseaseCode As String
-End Type
 
 Private this As TBuilderState
 
@@ -70,10 +75,10 @@ Private this As TBuilderState
 '@sub-title Instantiate a sheet builder with provided dependencies.
 Public Function Create(ByVal hostWorkbook As Workbook, _
                        ByVal dropdowns As IDropdownLists, _
-                       ByVal translations As ITranslationObject) As IDiseaseSheet
+                       ByVal translator As ITranslationObject) As IDiseaseSheet
 
     With New DiseaseSheet
-        .Initialise hostWorkbook, dropdowns, translations
+        .Initialise hostWorkbook, dropdowns, translator
         Set Create = .Self
     End With
 End Function
@@ -88,37 +93,27 @@ End Property
 
 Public Sub Initialise(ByVal hostWorkbook As Workbook, _
                       ByVal dropdowns As IDropdownLists, _
-                      ByVal translations As ITranslationObject)
+                      ByVal translator As ITranslationObject)
 
     ValidateInitialise hostWorkbook, dropdowns
 
     Set this.hostwb = hostWorkbook
     Set this.dropdowns = dropdowns
-    Set this.trads = translations
+    Set this.trads = translator
     this.initialised = True
 End Sub
 
 '@section Worksheet Construction
 '===============================================================================
 
-Public Function Build(ByVal diseaseName As String, _
-                      ByVal diseaseIndex As Long, _
-                      Optional ByVal languageTag As String = vbNullString, _
-                      Optional ByVal options As BetterArray) As Worksheet
+Private Function Build(ByVal diseaseName As String) As Worksheet
 
     Dim config As TBuilderOptions
-    Dim diseaseSheet As Worksheet
-    Dim messageSelectValue As String
-    Dim languagePrompt As String
 
-    ValidateBuildInputs diseaseName, diseaseIndex
-    config = ResolveOptions(options)
-
-    languagePrompt = Translate(HEADER_LANGUAGE_PROMPT_KEY, "Select language")
-    messageSelectValue = Translate(MESSAGE_SELECT_VALUE_KEY, "Select a value")
-
-    Set diseaseSheet = CreateDiseaseWorksheet(config, diseaseName)
-    WriteMetadata diseaseSheet, diseaseIndex, config, IIf(LenB(languageTag) = 0, languagePrompt, languageTag), messageSelectValue
+    ValidateBuildInputs diseaseName
+    CreateDiseaseWorksheet diseaseName
+    WriteMetadata
+    AddInternalStore
     ConfigureValidations diseaseSheet, config, messageSelectValue
     CreateDiseaseTable diseaseSheet, config, diseaseIndex
     FormatDiseaseSheet diseaseSheet
@@ -134,10 +129,29 @@ Public Sub Reset()
     Set this.dropdowns = Nothing
     Set this.trads = Nothing
     this.initalised = False
+    Set this.activeHostsheet = Nothing
 End Sub
 
 '@section Internal Helpers
 '===============================================================================
+Private Sub EnsureColumnsInitialized()
+
+    If DEFAULTDISEASECOLUMNS Is Nothing Then
+
+        Set DEFAULTDISEASECOLUMNS = New BetterArray
+        
+        DEFAULTDISEASECOLUMNS.LowerBound = 1
+        DEFAULTDISEASECOLUMNS.Push   Translate(HEADER_ORDER_KEY, "Variable Order"), _
+                    Translate(HEADER_NAME_KEY, "Variable Name"), _
+                    Translate(HEADER_SECTION_KEY, "Variable Section"), _
+                    Translate(HEADER_LABEL_KEY, "Main Label"), _
+                    Translate(HEADER_CHOICE_KEY, "Choice"), _
+                    Translate(HEADER_CHOICES_VALUE_KEY, "Choice Values"), _
+                    Translate(HEADER_STATUS_KEY, "Status")
+    End If
+End Sub
+
+
 
 Private Sub ValidateInitialise(ByVal hostWorkbook As Workbook, ByVal dropdowns As IDropdownLists)
 
@@ -150,8 +164,7 @@ Private Sub ValidateInitialise(ByVal hostWorkbook As Workbook, ByVal dropdowns A
     End If
 End Sub
 
-Private Sub ValidateBuildInputs(ByVal diseaseName As String, ByVal diseaseIndex As Long)
-
+Private Sub ValidateBuildInputs(ByVal diseaseName As String)
     If Not this.initialised Then
         ThrowError ProjectError.ObjectNotInitialized, "Builder has not been initialised"
     End If
@@ -161,95 +174,172 @@ Private Sub ValidateBuildInputs(ByVal diseaseName As String, ByVal diseaseIndex 
         ThrowError ProjectError.InvalidArgument, "Disease name cannot be empty"
     End If
 
-    If diseaseIndex <= 0 Then
-        ThrowError ProjectError.InvalidArgument, "Disease index must be greater than zero"
+    If (LenB(diseaseName) > 30) Then
+        ThrowError ProjectError.ObjectNotInitialized, "Disease name should be less than 30 characters long (including spaces)"
+    End If
+
+    'Testing if the name of the disease is correct
+    Dim temp As BetterArray
+    Set temp = this.dropdowns.Values(DISEASES_DROPDOWN_PROHIBITED)
+
+    If temp.Includes(diseaseName) Then
+        ThrowError ProjectError.InvalidArgument, _ 
+         "The name " & diseaseName & " is incorrect because it is reserved. Please use another name"
+    End If
+
+    Set temp = this.dropdowns.Values(DISEASES_DROPODWN)
+    
+    If temp.Includes(diseaseName) Then
+        ThrowError ProjectError.InvalidArgument, _ 
+         "The name " & diseaseName & " already exists, please choose another name."
     End If
 End Sub
 
-Private Function ResolveOptions(ByVal options As BetterArray) As TBuilderOptions
-    Dim result As TBuilderOptions
 
-    result.anchorSheetName = DEFAULT_ANCHOR_SHEET
-    result.languagePrefix = DEFAULT_LANGUAGE_PREFIX
-    result.tablePrefix = DEFAULT_TABLE_PREFIX
-    result.languageListName = DEFAULT_LANGUAGE_LIST
-    result.statusListName = DEFAULT_STATUS_LIST
-    result.varNameListName = DEFAULT_VAR_NAME_LIST
-    result.varChoiceListName = DEFAULT_VAR_CHOICE_LIST
-    result.diseaseCode = DEFAULT_DISEASE_CODE
-
-    If options Is Nothing Then
-        ResolveOptions = result
-        Exit Function
-    End If
-
-    Dim idx As Long
-    Dim key As String
-
-    For idx = options.LowerBound To options.UpperBound Step 2
-        key = LCase$(CStr(options.Item(idx)))
-        Select Case key
-            Case "anchorsheet": result.anchorSheetName = CStr(options.Item(idx + 1))
-            Case "languageprefix": result.languagePrefix = CStr(options.Item(idx + 1))
-            Case "tableprefix": result.tablePrefix = CStr(options.Item(idx + 1))
-            Case "languagelist": result.languageListName = CStr(options.Item(idx + 1))
-            Case "statuslist": result.statusListName = CStr(options.Item(idx + 1))
-            Case "varnamelist": result.varNameListName = CStr(options.Item(idx + 1))
-            Case "varchoicelist": result.varChoiceListName = CStr(options.Item(idx + 1))
-            Case "diseasecode": result.diseaseCode = CStr(options.Item(idx + 1))
-        End Select
-    Next idx
-
-    ResolveOptions = result
-End Function
-
-Private Function CreateDiseaseWorksheet(ByVal config As TBuilderOptions, ByVal diseaseName As String) As Worksheet
+Private Sub CreateDiseaseWorksheet(ByVal diseaseName As String)
     Dim anchor As Worksheet
-    Dim workbook As Workbook
+    Dim hostwb As Workbook
+    Dim hostsheet As Worksheet
+ 
+    Set hostwb = this.hostwb
 
-    Set workbook = this.hostwb
-    Set anchor = ResolveAnchorSheet(workbook, config.anchorSheetName)
+    On Error Resume Next
+    Set anchor = hostwb.Worksheets(DEFAULT_ANCHOR_SHEET)
+    On Error GoTo 0
 
-    workbook.Worksheets.Add Before:=anchor
-    workbook.ActiveSheet.Name = diseaseName
-
-    Set CreateDiseaseWorksheet = workbook.Worksheets(diseaseName)
-End Function
-
-Private Function ResolveAnchorSheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
-    Set ResolveAnchorSheet = FindWorksheet(workbook, sheetName)
-    If ResolveAnchorSheet Is Nothing Then
-        ThrowError ProjectError.ElementNotFound, _
-            "Anchor worksheet '" & sheetName & "' was not found in the workbook"
+    If (anchor Is Nothing) Then
+        ThrowError ProjectError.ObjectNotInitialized, _ 
+         "Anchor worksheet " & DEFAULT_ANCHOR_SHEET & "not found"
     End If
-End Function
 
-Private Sub WriteMetadata(ByVal sheet As Worksheet, _
-                          ByVal diseaseIndex As Long, _
-                          ByVal config As TBuilderOptions, _
+    Set hostsheet = hostwb.Worksheets.Add(Before:=anchor)
+    hostsheet.Name = diseaseName
+    UpdateInternalElements hostsheet
+End Sub
+
+Private Sub UpdateInternalElements(ByVal hostsheet As Worksheet)
+    
+    Dim temp As BetterArray
+    Dim store As IHiddenNames
+    Dim hostSh As Worksheet
+    Dim hostwb As Workbook
+
+    Set store = HiddenNames.Create(hostsheet)
+    Set temp = this.dropdowns.Values(DISEASES_DROPODWN)
+    temp.Push hosthseet.Name
+
+    this.dropdowns.Update temp, DISEASES_DROPODWN
+    this.activeIndex = temp.Length
+
+    Set this.activeHostSheet = hostsheet
+    'stock the index
+    store.EnsureName NAME_INDEX, this.activeIndex, HiddenNameTypeLong
+
+    'stock the language
+    store.EnsureName NAME_DISLANG, this.trads.Language, HiddenNameTypeString
+End Sub
+
+
+
+Private Sub WriteValues()
+    
+    Dim anchorRng As Range
+    Dim mainLabIndex As Long
+    Dim choiValIndex As Long
+    Dim varNameIndex As Long
+    Dim varNameAddress As String
+
+
+    If this.activeHostSheet Is Nothing Then Exit Sub
+    
+    Set anchorRng = this.activeHostSheet.Cells(ANCHORROW, ANCHORCOLUMN)
+
+    anchorRng.Value = Translate(HEADER_LANGUAGE_PROMPT_KEY, "<Select language>")
+    
+    EnsureColumnsInitialized
+    Set anchorRng = anchorRng.Offset(2)
+    DEFAULTDISEASECOLUMNS.ToExcelRange anchorRng, TransposeValues:=True
+
+      'Line on values
+    Set anchorRng = anchorRng.Offset(1)
+
+    mainLabIndex = DEFAULTDISEASECOLUMNS.IndexOf(Translate(HEADER_LABEL_KEY, "Main Label"))
+    choiValIndex = DEFAULTDISEASECOLUMNS.IndexOf(Translate(HEADER_CHOICES_VALUE_KEY, "Choice Values"))
+    varNameIndex = EFAULTDISEASECOLUMNS.IndexOf(Translate(HEADER_NAME_KEY, "Variable Name"))
+    varNameAddress = anchorRng.Cells(1, varNameIndex).Address(False, True)
+  
+
+    'Add formulas on specific columns
+    anchorRng.Cells(1, mainLabIndex).Formula = "=MainLabelValue(" & varNameAddress & ")"
+    anchorRng.Cells(1, choiValIndex).Formula = "=ChoiceValues(" & varNameAddress & ")"
+End Sub
+
+
+
+Private Sub CreateDiseaseTable()
+
+    Dim anchorRng As Range 
+    Dim tableRange As Range
+    Dim headerRow As Long
+    Dim lastRow As Long
+    Dim table As ListObject
+    Dim tableName As String
+
+    If this.activeHostSheet Is Nothing Then Exit Sub
+    
+    EnsureColumnsInitialized
+    Set anchorRng = this.activeHostSheet.Cells(ANCHORROW, ANCHORCOLUMN).Offset(2)
+    Set tableRange = sheet.Range(anchorRng, anchorRng.Offset(1, (DEFAULTDISEASECOLUMNS.Length - 1)))
+    Set table = sheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=tableRange, XlListObjectHasHeaders:=xlYes)
+    table.Name = DEFAULT_TABLE_PREFIX & Format$(this.activeIndex, "000")
+    Set this.activeTabwrapper = CustomTable.Create(table)
+End Sub
+
+
+'Add validations on the disease worksheet
+Private Sub AddValidations()
+
+    
+    'Add validation on variable Name
+
+
+    'Add validation on status
+
+
+End Sub
+
+
+Private Sub WriteMetadata(ByVal diseasesheet As Worksheet, _
+                          config As TBuilderOptions, _
                           ByVal languageValue As String, _
                           ByVal selectMessage As String)
 
-    Dim workbook As Workbook
+    WriteValues
+    CreateDiseaseTable
+    AddValidations
 
-    Set workbook = this.hostwb
-
-    sheet.Cells(2, 2).Value = languageValue
-    AssignName workbook, sheet.Cells(2, 2), config.languagePrefix & Format$(diseaseIndex, "0")
-
-    sheet.Cells(2, 3).Value = diseaseIndex
-    sheet.Cells(2, 4).Value = config.diseaseCode
-
-    sheet.Cells(4, 2).Value = Translate(HEADER_ORDER_KEY, "Variable Order")
-    sheet.Cells(4, 3).Value = Translate(HEADER_SECTION_KEY, "Variable Section")
-    sheet.Cells(4, 4).Value = Translate(HEADER_NAME_KEY, "Variable Name")
-    sheet.Cells(4, 5).Value = Translate(HEADER_LABEL_KEY, "Main Label")
-    sheet.Cells(4, 6).Value = Translate(HEADER_CHOICE_KEY, "Control")
-    sheet.Cells(4, 7).Value = Translate(HEADER_CHOICES_VALUE_KEY, "Choices")
-    sheet.Cells(4, 8).Value = Translate(HEADER_STATUS_KEY, "Status")
-
+    Set hostwb = this.hostwb
+    
     sheet.Cells(5, 4).Validation.Delete
     ConfigureValidation sheet.Cells(5, 4), config.varChoiceListName, selectMessage, False
+End Sub
+
+Private Sub AddInternalStore(ByVal hostsheet As Worksheet, config As TBuilderOptions)
+
+    Dim storesheet As IHiddenNames
+    Dim storebook As IHiddenNames
+
+    Set storesheet = HiddenNames.Create(hostsheet)
+    Set storesbook = HiddenNames.Create(hostsheet.Parent)
+
+    'Add the disease index
+    
+
+        sheet.Cells(2, 3).Value = diseaseIndex
+    sheet.Cells(2, 4).Value = config.diseaseCode
+
+
+
 End Sub
 
 Private Sub ConfigureValidations(ByVal sheet As Worksheet, _
@@ -266,46 +356,6 @@ Private Sub ConfigureValidations(ByVal sheet As Worksheet, _
     dropdowns.SetValidation sheet.Cells(5, 6), config.statusListName, "error", selectMessage
 
     ConfigureValidation sheet.Cells(5, 2), config.varNameListName, selectMessage, True
-End Sub
-
-Private Sub ConfigureValidation(ByVal target As Range, _
-                                ByVal listName As String, _
-                                ByVal errorMessage As String, _
-                                ByVal provideInput As Boolean)
-
-    With target.Validation
-        .Delete
-        .Add Type:=xlValidateList, AlertStyle:=xlValidAlertStop, _
-             Operator:=xlBetween, Formula1:="= " & listName
-        .IgnoreBlank = True
-        .InCellDropdown = True
-        .InputTitle = vbNullString
-        .ErrorTitle = vbNullString
-        .InputMessage = IIf(provideInput, errorMessage, vbNullString)
-        .ErrorMessage = errorMessage
-        .ShowInput = provideInput
-        .ShowError = True
-    End With
-End Sub
-
-Private Sub CreateDiseaseTable(ByVal sheet As Worksheet, _
-                               ByVal config As TBuilderOptions, _
-                               ByVal diseaseIndex As Long)
-
-    Dim tableRange As Range
-    Dim headerRow As Long
-    Dim lastRow As Long
-    Dim table As ListObject
-    Dim tableName As String
-
-    headerRow = 4
-    lastRow = headerRow + DEFAULT_TABLE_ROWS
-
-    Set tableRange = sheet.Range(sheet.Cells(headerRow, 2), sheet.Cells(lastRow, 8))
-
-    Set table = sheet.ListObjects.Add(SourceType:=xlSrcRange, Source:=tableRange, XlListObjectHasHeaders:=xlYes)
-    tableName = config.tablePrefix & Format$(diseaseIndex, "0")
-    table.Name = tableName
 End Sub
 
 Private Sub FormatDiseaseSheet(ByVal sheet As Worksheet)
@@ -330,15 +380,15 @@ Private Sub RemoveGridlines(ByVal sheet As Worksheet)
     Next view
 End Sub
 
-Private Function FindWorksheet(ByVal workbook As Workbook, ByVal sheetName As String) As Worksheet
-    Dim sheet As Worksheet
+Private Function FindWorksheet(ByVal wb As Workbook, ByVal sheetName As String) As Worksheet
+    Dim sh As Worksheet
 
-    For Each sheet In workbook.Worksheets
-        If StrComp(sheet.Name, sheetName, vbTextCompare) = 0 Then
-            Set FindWorksheet = sheet
+    For Each sh In workbook.Worksheets
+        If StrComp(sh.Name, sheetName, vbTextCompare) = 0 Then
+            Set FindWorksheet = sh
             Exit Function
         End If
-    Next sheet
+    Next
 End Function
 
 Private Sub EnsureNameDeleted(ByVal workbook As Workbook, ByVal nameValue As String)
@@ -358,11 +408,16 @@ Private Sub AssignName(ByVal workbook As Workbook, ByVal target As Range, ByVal 
 End Sub
 
 Private Function Translate(ByVal key As String, ByVal fallback As String) As String
-    If this.cache Is Nothing Then
-        Translate = fallback
+    Dim retVal As String
+
+    If( this.translator Is Nothing) Then
+        retVal = fallback
     Else
-        Translate = this.cache.Resolve(key, fallback)
+        retVal = this.translator.TranslatedValue(key)
+        retVal = IIf(retVal = key, fallback, retVal)
     End If
+
+    Translate = retVal
 End Function
 
 '@section ErrorHandling
