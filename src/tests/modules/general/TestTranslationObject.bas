@@ -165,6 +165,35 @@ Public Sub TestValueExistsReturnsFalseWhenLanguageMissing()
     Set missingLanguage = Nothing
 End Sub
 
+'@TestMethod("TranslationObject")
+Public Sub TestLanguagesListReturnsLanguageHeaders()
+    Dim languages As BetterArray
+
+    CustomTestSetTitles Assert, "TranslationObject", "TestLanguagesListReturnsLanguageHeaders"
+
+    Set languages = Translator.LanguagesList
+
+    Assert.AreEqual 2&, languages.Length, "LanguagesList should only include translation columns."
+    Assert.AreEqual "ENG", CStr(languages.Item(languages.LowerBound)), _
+                     "LanguagesList should preserve the header order."
+    Assert.AreEqual "FRA", CStr(languages.Item(languages.LowerBound + 1)), _
+                     "LanguagesList should capture subsequent language headers."
+End Sub
+
+'@TestMethod("TranslationObject")
+Public Sub TestLanguagesListReturnsEmptyWhenNoAdditionalColumns()
+    Dim languages As BetterArray
+
+    CustomTestSetTitles Assert, "TranslationObject", "TestLanguagesListReturnsEmptyWhenNoAdditionalColumns"
+
+    TranslationTable.ListColumns("FRA").Delete
+    TranslationTable.ListColumns("ENG").Delete
+
+    Set languages = Translator.LanguagesList
+
+    Assert.AreEqual 0&, languages.Length, "LanguagesList should be empty when only the helper column remains."
+End Sub
+
 
 '@section Helpers
 '===============================================================================

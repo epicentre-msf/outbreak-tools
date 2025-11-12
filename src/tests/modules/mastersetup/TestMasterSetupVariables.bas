@@ -18,6 +18,7 @@ Private Const TARGET_SHEET As String = "TST_MasterTarget"
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const VARIABLE_TABLE_NAME As String = "TST_MasterVariablesTable"
 Private Const STATUS_DROPDOWN_NAME As String = "ms_variables_default_status"
+Private Const VARIABLE_WORKBOOK_NAME As String = "__Col__Variables"
 
 
 '@section Module lifecycle
@@ -45,6 +46,7 @@ Public Sub TestInitialize()
 
     TestHelpers.DeleteWorksheets VARIABLES_SHEET, CHOICES_SHEET, DROPDOWNS_SHEET, SOURCE_SHEET, TARGET_SHEET
     Set FixtureSheet = TestHelpers.EnsureWorksheet(VARIABLES_SHEET)
+    RemoveWorkbookVariableName
 
     With FixtureSheet
         .Cells.Clear
@@ -69,6 +71,7 @@ Public Sub TestCleanup()
         Assert.Flush
     End If
     Set Manager = Nothing
+    RemoveWorkbookVariableName
     Set FixtureSheet = Nothing
     TestHelpers.DeleteWorksheets VARIABLES_SHEET, CHOICES_SHEET, DROPDOWNS_SHEET, SOURCE_SHEET, TARGET_SHEET
 End Sub
@@ -133,6 +136,71 @@ Public Sub TestInitialisePersistsMetadataAndValidation()
     Set hidden = HiddenNames.Create(FixtureSheet)
     Assert.IsTrue hidden.HasName("__MSV__ColName"), "Expected hidden name for Variable Name column."
     Assert.IsTrue Manager.Initialised, "Initialise should set the internal flag to True."
+End Sub
+
+'@TestMethod("MasterSetupVariables")
+Public Sub TestDataRangeExposesRequestedColumn()
+    Dim expectedData As Range
+    Dim expectedWithHeaders As Range
+    Dim result As Range
+    Dim headerResult As Range
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestDataRangeExposesRequestedColumn"
+
+    Set expectedData = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListColumns("Variable Name").DataBodyRange
+    Set expectedWithHeaders = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListColumns("Variable Name").Range
+
+    Set result = Manager.DataRange("Variable Name")
+    Assert.IsTrue result Is expectedData, "DataRange should proxy the data body range for the requested column."
+
+    Set headerResult = Manager.DataRange("Variable Name", True)
+    Assert.AreEqual expectedWithHeaders.Address(True, True, xlA1, True), _
+                     headerResult.Address(True, True, xlA1, True), _
+                     "Including headers should match the ListColumn range."
+
+    Assert.IsTrue Manager.DataRange("Unknown Header") Is Nothing, _
+                  "Unknown headers should return Nothing without raising errors."
+End Sub
+
+'@TestMethod("MasterSetupVariables")
+Public Sub TestSetVariableValidationAppliesWorkbookName()
+    Dim targetRange As Range
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestSetVariableValidationAppliesWorkbookName"
+
+    RegisterWorkbookVariableName
+    Set targetRange = FixtureSheet.Range("C2:C5")
+
+    Manager.SetVariableValidation targetRange
+
+    Assert.AreEqual xlValidateList, targetRange.Validation.Type, "Validation should be configured as a list."
+    Assert.AreEqual "=" & VARIABLE_WORKBOOK_NAME, targetRange.Validation.Formula1, _
+                     "Validation should point to the workbook-scoped variable range."
+End Sub
+
+'@TestMethod("MasterSetupVariables")
+Public Sub TestSetVariableValidationSkipsWhenNameMissing()
+    Dim targetRange As Range
+
+    CustomTestSetTitles Assert, "MasterSetupVariables", "TestSetVariableValidationSkipsWhenNameMissing"
+
+    RemoveWorkbookVariableName
+    Set targetRange = FixtureSheet.Range("D2:D4")
+
+    On Error Resume Next
+        targetRange.Validation.Delete
+    On Error GoTo 0
+
+    targetRange.Validation.Add Type:=xlValidateWholeNumber, _
+                               AlertStyle:=xlValidAlertStop, _
+                               Operator:=xlBetween, _
+                               Formula1:="1", _
+                               Formula2:="10"
+
+    Manager.SetVariableValidation targetRange
+
+    Assert.AreEqual xlValidateWholeNumber, targetRange.Validation.Type, _
+                     "Validation should stay unchanged when the workbook name is missing."
 End Sub
 
 '@TestMethod("MasterSetupVariables")
@@ -291,3 +359,36 @@ Private Sub AssertColumnOrder(ByVal lo As ListObject)
         Assert.AreEqual expected(idx), lo.ListColumns(idx + 1).Name, "Unexpected column order at position " & CStr(idx + 1)
     Next idx
 End Sub
+
+Private Sub RegisterWorkbookVariableName()
+    Dim store As IHiddenNames
+    Dim lo As ListObject
+    Dim wb As Workbook
+
+    If FixtureSheet Is Nothing Then Exit Sub
+    Set lo = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME)
+    If lo Is Nothing Then Exit Sub
+
+    Set wb = FixtureSheet.Parent
+    Set store = HiddenNames.Create(wb)
+    store.SetListObjectHeader VARIABLE_WORKBOOK_NAME, lo, "Variable Name"
+End Sub
+
+Private Sub RemoveWorkbookVariableName()
+    Dim wb As Workbook
+
+    Set wb = TargetWorkbook()
+    If wb Is Nothing Then Exit Sub
+
+    On Error Resume Next
+        wb.Names(VARIABLE_WORKBOOK_NAME).Delete
+    On Error GoTo 0
+End Sub
+
+Private Function TargetWorkbook() As Workbook
+    If Not FixtureSheet Is Nothing Then
+        Set TargetWorkbook = FixtureSheet.Parent
+    Else
+        Set TargetWorkbook = ThisWorkbook
+    End If
+End Function

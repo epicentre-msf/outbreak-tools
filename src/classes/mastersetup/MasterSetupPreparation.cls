@@ -34,22 +34,31 @@ Private this As TMasterSetupPreparation
 '@section Constants
 '===============================================================================
 Private Const CLASS_NAME As String = "MasterSetupPreparation"
+
 Private Const DROPDOWN_SHEET_NAME As String = "__dropdowns"
+
 Private Const VARIABLES_SHEET_NAME As String = "Variables"
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
 Private Const DEFAULT_VARIABLE_TABLE_NAME As String = "Tab_MasterVariables"
 Private Const DROPDOWN_PREFIX As String = "dropdown_"
-Private Const LANGUAGES_DROPDOWN As String = "__languages"
+Private Const LANGUAGES_DROPDOWN As String = "__data_languages"
 Private Const FILE_LANGUAGES_DROPDOWN As String = "__file_languages"
 Private Const DISEASES_DROPDOWN_PROHIBITED As String = "__prohibited_diseases_list"
 Private Const DISEASES_DROPODWN As String  = "__diseases_list"
 Private Const CONFIGS_DROPDOWN As String = "__configSheets"
 Private Const STATUS_DROPDOWN As String = "__var_status"
+Private Const CHOICES_DROPDOWN As String = "__lst_choices"
 Private Const YESNO_DROPDOWN As String = "__yesno"
 Private Const STATUS_ACTIVE As String = "active"
 Private Const STATUS_INACTIVE As String = "inactive"
+
+
 Private Const VARIABLE_TABLE_STYLE As String = "TableStyleMedium2"
+
 Private Const SHEET_TAG_NAME As String = "sheetTag"
+Private Const VARIABLE_COLUMN_NAME As String = "__Col__Variables"
+Private Const VARIABLE_NAME_HEADER As String = "Variable Name"
+
 
 
 '@section Factory helpers
@@ -146,6 +155,8 @@ Public Sub EnsureVariables()
     If Not manager.Initialised Then
         manager.Initialise Dropdowns
     End If
+
+    EnsureVariableNameColumnName manager
 End Sub
 
 '@Description("Expose the dropdown manager for callers needing direct access.")
@@ -346,15 +357,17 @@ Private Function DefaultDropdownDefinitions() As Variant
         Array(CONFIGS_DROPDOWN, DefaultConfigSheets()), _
         Array(DISEASES_DROPODWN, Array("", "")), _
         Array(FILE_LANGUAGES_DROPDOWN, Array(vbNullString)), _
-        Array(LANGUAGES_DROPDOWN, Array(vbNullString)) _
+        Array(LANGUAGES_DROPDOWN, Array(vbNullString)), _
+        Array(CHOICES_DROPDOWN, Array("", "")) _
     )
 End Function
 
 '@Description("Return the default list of worksheets excluded from disease dropdowns.")
 Private Function DefaultDiseaseExclusions() As Variant
     DefaultDiseaseExclusions = Array("Choices", "Variables", "Translations", "Dev", _
-                                     "__pass", "__updated", "__compRep", "__ribbonTranslation", _
-                                     "__dropdowns")
+                                     "__pass", "__updated", "__compRep", _ 
+                                    "__ribbonTranslation", _
+                                    "__dropdowns")
 End Function
 
 '@Description("Return the default configuration worksheets list.")
@@ -446,6 +459,24 @@ Private Sub EnsureSheetTag(ByVal targetSheet As Worksheet, ByVal tagValue As Str
     Set store = HiddenNames.Create(targetSheet)
     store.EnsureName SHEET_TAG_NAME, tagValue, HiddenNameTypeString
     store.SetValue SHEET_TAG_NAME, tagValue
+End Sub
+
+'@Description("Publish the Variable Name column range as a hidden workbook name for downstream formulas.")
+Private Sub EnsureVariableNameColumnName(ByVal manager As IMasterSetupVariables)
+    Dim nameRange As Range
+    Dim lo As ListObject
+    Dim workbookStore As IHiddenNames
+
+    If manager Is Nothing Then Exit Sub
+
+    Set nameRange = manager.DataRange(VARIABLE_NAME_HEADER)
+    If nameRange Is Nothing Then Exit Sub
+
+    Set lo = manager.Table
+    If lo Is Nothing Then Exit Sub
+
+    Set workbookStore = HiddenNames.Create(EnsureWorkbook)
+    workbookStore.SetListObjectHeader VARIABLE_COLUMN_NAME, lo, VARIABLE_NAME_HEADER
 End Sub
 
 '@Description("Resolve a worksheet by name without creating it.")

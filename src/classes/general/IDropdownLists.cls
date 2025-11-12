@@ -11,7 +11,7 @@ Attribute VB_Description = "Interface of dropdowns"
 
 '@Folder("GeneralInterface")
 '@ModuleDescription("Interface of dropdowns")
-'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing,  SuperfluousAnnotationArgument, MissingAnnotationArgument, UseMeaningfulName, HungarianNotation
 
 '@jump:Create
 Option Explicit
@@ -19,32 +19,27 @@ Option Explicit
 '@section Dropdown Elements
 '===============================================================================
 '@jump:Wksh
-Public Property Get Wksh() As Worksheet
-End Property
+Public Property Get Wksh() As Worksheet: End Property
 
 '@jump:Exists
-Public Property Get Exists(ByVal listName As String) As Boolean
-End Property
+Public Property Get Exists(ByVal listName As String) As Boolean: End Property
 
 '@jump:Name
-Public Property Get Name() As String
-End Property
+Public Property Get Name() As String: End Property
 
 '@jump:LabelRange
-Public Property Get LabelRange(ByVal listName As String) As Range
-End Property
+Public Property Get LabelRange(ByVal listName As String) As Range: End Property
 
 '@jump:Values
-Public Property Get Values(ByVal listName As String, Optional ByVal includeHeaders As Boolean = False) As BetterArray
+Public Property Get Values(ByVal listName As String, _ 
+               Optional ByVal includeHeaders As Boolean = False) As BetterArray
 End Property
 
 '@jump:Length
-Public Property Get Length() As Long
-End Property
+Public Property Get Length() As Long: End Property
 
 '@jump:AllDropdowns
-Public Property Get AllDropdowns() As BetterArray
-End Property
+Public Property Get AllDropdowns() As BetterArray: End Property
 
 '@section Modify the dropdown list
 '===============================================================================
@@ -80,7 +75,7 @@ End Sub
 
 '@jump:Translate
 'Translate all the dropdowns in the worksheet
-Public Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = False)
+Public Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = False, Optional ByVal exclude As String)
 End Sub
 
 '@section Operate with the outside world
