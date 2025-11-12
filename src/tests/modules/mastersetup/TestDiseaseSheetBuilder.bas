@@ -12,11 +12,23 @@ Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const ANCHOR_SHEET As String = "Variables"
 Private Const DROPDOWN_SHEET As String = "DropdownStubSheet"
 Private Const TRANSLATION_SHEET As String = "SheetBuilderTranslations"
+Private Const LANGUAGES_LIST As String = "__data_languages"
+Private Const STATUS_LIST As String = "__var_status"
+Private Const CHOICES_LIST As String = "__lst_choices"
+Private Const PROHIBITED_LIST As String = "__prohibited_diseases_list"
+Private Const DISEASES_LIST As String = "__diseases_list"
+Private Const VARIABLE_NAME_RANGE As String = "__Col__Variables"
+Private Const MARKER_NAME_PREFIX As String = "DISSHEET"
+Private Const SHEET_TAG_NAME As String = "sheetTag"
+Private Const NAME_DISNAME As String = "__Var_DISNAME"
+Private Const NAME_DISLANG As String = "__Var_DISLANG"
+Private Const NAME_INDEX As String = "__Var_DISINDEX"
 
 Private Assert As ICustomTest
-Private Builder As IDiseaseSheetBuilder
+Private Builder As IDiseaseSheet
 Private Dropdowns As IDropdownLists
 Private Translations As ITranslationObject
+Private VariablesManager As IMasterSetupVariables
 
 '@section Module lifecycle
 '===============================================================================
@@ -43,6 +55,7 @@ Private Sub ModuleCleanup()
     Set Builder = Nothing
     Set Dropdowns = Nothing
     Set Translations = Nothing
+    Set VariablesManager = Nothing
 End Sub
 
 '@TestInitialize
@@ -65,25 +78,60 @@ Public Sub TestBuildCreatesWorksheet()
     CustomTestSetTitles Assert, "DiseaseSheetBuilder", "TestBuildCreatesWorksheet"
 
     Dim diseaseSheet As Worksheet
-    Dim languagePrompt As String
     Dim table As ListObject
+    Dim sheetStore As IHiddenNames
+    Dim workbookStore As IHiddenNames
+    Dim diseases As BetterArray
+    Dim validationFormula As String
+    Dim labelHeader As String
+    Dim choiceHeader As String
+    Dim statusHeader As String
+    Dim choicesValueHeader As String
 
     On Error GoTo Fail
 
-    languagePrompt = Translations.TranslatedValue("infoSelectLang")
+    labelHeader = Translate("varLabel", "Main Label")
+    choiceHeader = Translate("varChoice", "Choice")
+    statusHeader = Translate("varStatus", "Status")
+    choicesValueHeader = Translate("choiceVal", "Choice Values")
 
-    Set diseaseSheet = Builder.Build("Zeta", 1)
+    Set diseaseSheet = Builder.Build("Zeta")
 
-    Assert.AreEqual languagePrompt, diseaseSheet.Cells(2, 2).Value, "Language prompt should be translated"
-    Assert.AreEqual 1, diseaseSheet.Cells(2, 3).Value, "Disease index should be recorded"
-    Assert.IsTrue NameExists("disLang_1"), "Language name should be created"
+    Assert.AreEqual "ENG", diseaseSheet.Cells(2, 2).Value, "Language cell should default to the first dropdown entry."
+    Assert.AreEqual MARKER_NAME_PREFIX, diseaseSheet.Cells(2, 4).Value, "Marker cell should identify disease worksheets."
+    Assert.IsTrue InStr(1, diseaseSheet.Cells(2, 2).Validation.Formula1, LANGUAGES_LIST, vbTextCompare) > 0, _
+                 "Language cell should use the languages dropdown."
 
-    Set table = diseaseSheet.ListObjects("disTab_1")
-    Assert.AreEqual "disTab_1", table.Name, "Table should use configured prefix"
-    Assert.AreEqual Translate("varLabel", "Main Label"), table.HeaderRowRange.Cells(1, 4).Value, "Headers should be translated"
+    Set table = diseaseSheet.ListObjects("disTab_001")
+    Assert.AreEqual labelHeader, table.HeaderRowRange.Cells(1, 4).Value, "Headers should be translated"
 
-    Assert.AreEqual "= PARAMVARNAME", diseaseSheet.Cells(5, 2).Validation.Formula1, "Variable list validation should be applied"
-    Assert.AreEqual "= PARAMCHOICESLIST", diseaseSheet.Cells(5, 4).Validation.Formula1, "Choice validation should be applied"
+    validationFormula = table.ListColumns("Variable Name").DataBodyRange.Validation.Formula1
+    Assert.IsTrue InStr(1, validationFormula, VARIABLE_NAME_RANGE, vbTextCompare) > 0, _
+                 "Variable column should reference the workbook variable list."
+
+    validationFormula = table.ListColumns(choiceHeader).DataBodyRange.Validation.Formula1
+    Assert.IsTrue InStr(1, validationFormula, CHOICES_LIST, vbTextCompare) > 0, _
+                 "Choice column should be validated against the choices dropdown."
+
+    validationFormula = table.ListColumns(statusHeader).DataBodyRange.Validation.Formula1
+    Assert.IsTrue InStr(1, validationFormula, STATUS_LIST, vbTextCompare) > 0, _
+                 "Status column should use the status dropdown."
+
+    Assert.IsTrue table.ListColumns(choicesValueHeader).DataBodyRange.Locked, "Choice values column should be locked."
+    Assert.IsTrue table.ListColumns(labelHeader).DataBodyRange.Locked, "Translated label column should be locked."
+
+    Set sheetStore = HiddenNames.Create(diseaseSheet)
+    Assert.AreEqual "disease", sheetStore.ValueAsString(SHEET_TAG_NAME), "Sheet tag metadata should be stored."
+    Assert.AreEqual "Zeta", sheetStore.ValueAsString(NAME_DISNAME), "Disease name metadata should match the worksheet name."
+    Assert.AreEqual "ENG", sheetStore.ValueAsString(NAME_DISLANG), "Language metadata should match the selected language."
+    Assert.AreEqual 1&, sheetStore.ValueAsLong(NAME_INDEX, 0), "Disease index should be persisted through hidden names."
+
+    Set workbookStore = HiddenNames.Create(ThisWorkbook)
+    Assert.AreEqual "Zeta", workbookStore.ValueAsString(MARKER_NAME_PREFIX & "001"), _
+                 "Workbook metadata should map marker names to worksheet names."
+
+    Set diseases = Dropdowns.Values(DISEASES_LIST)
+    Assert.IsTrue diseases.Includes("Zeta"), "Diseases dropdown should be updated with the new sheet name."
 
     Exit Sub
 
@@ -96,18 +144,59 @@ Public Sub TestBuildRespectsProvidedLanguage()
     CustomTestSetTitles Assert, "DiseaseSheetBuilder", "TestBuildRespectsProvidedLanguage"
 
     Dim diseaseSheet As Worksheet
+    Dim firstSheet As Worksheet
+    Dim workbookStore As IHiddenNames
+    Dim diseases As BetterArray
 
     On Error GoTo Fail
 
-    Set diseaseSheet = Builder.Build("Eta", 2, "FR")
+    Set firstSheet = Builder.Build("Alpha")
+    Set diseaseSheet = Builder.Build("Eta", "FRA")
 
-    Assert.AreEqual "FR", diseaseSheet.Cells(2, 2).Value, "Provided language should be preserved"
-    Assert.IsTrue NameExists("disLang_2"), "Custom index should create named range"
+    Assert.AreEqual "FRA", diseaseSheet.Cells(2, 2).Value, "Provided language should be preserved"
+    Assert.AreEqual "disTab_002", diseaseSheet.ListObjects(1).Name, "Sequential builds should increment the table suffix."
+
+    Set workbookStore = HiddenNames.Create(ThisWorkbook)
+    Assert.AreEqual "Eta", workbookStore.ValueAsString(MARKER_NAME_PREFIX & "002"), _
+                 "Workbook marker name should reference the latest worksheet."
+
+    Set diseases = Dropdowns.Values(DISEASES_LIST)
+    Assert.IsTrue diseases.Includes("Alpha"), "Existing disease names should remain in the dropdown."
+    Assert.IsTrue diseases.Includes("Eta"), "New disease names should be appended to the dropdown."
 
     Exit Sub
 
 Fail:
     CustomTestLogFailure Assert, "TestBuildRespectsProvidedLanguage", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DiseaseSheetBuilder")
+Public Sub TestBuildRejectsInvalidInputs()
+    CustomTestSetTitles Assert, "DiseaseSheetBuilder", "TestBuildRejectsInvalidInputs"
+
+    Dim diseaseSheet As Worksheet
+
+    On Error GoTo Fail
+
+    Assert.AreEqual ProjectError.InvalidArgument, BuildExpectingError(vbNullString), _
+                 "Empty disease names should raise invalid argument errors."
+
+    Assert.AreEqual ProjectError.InvalidArgument, BuildExpectingError("Variables"), _
+                 "Reserved disease names should be rejected."
+
+    Set diseaseSheet = Builder.Build("Beta")
+    Assert.IsTrue Not diseaseSheet Is Nothing, "Control build should succeed for unique names."
+
+    Assert.AreEqual ProjectError.InvalidArgument, BuildExpectingError("Beta"), _
+                 "Duplicate disease names should not be allowed."
+
+    Assert.AreEqual ProjectError.InvalidArgument, BuildExpectingError("Gamma", "DEU"), _
+                 "Providing an unknown language should be rejected."
+
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestBuildRejectsInvalidInputs", Err.Number, Err.Description
 End Sub
 
 '@section Helpers
@@ -117,27 +206,36 @@ Private Sub PrepareEnvironment()
     Dim dropdownSheet As Worksheet
     Dim translationSheet As Worksheet
     Dim data As Variant
+    Dim variablesSheet As Worksheet
+    Dim variableTable As ListObject
 
-    EnsureWorksheet ANCHOR_SHEET
+    Set variablesSheet = EnsureWorksheet(ANCHOR_SHEET)
+    ClearWorksheet variablesSheet
+
+    variablesSheet.Range("A1").Value = "Variable Name"
+    variablesSheet.Range("B1").Value = "Variable Label"
+    variablesSheet.Range("A2").Value = "var_age"
+    variablesSheet.Range("B2").Value = "Age"
+    variablesSheet.Range("A3").Value = "var_fever"
+    variablesSheet.Range("B3").Value = "Fever"
+
+    Set variableTable = variablesSheet.ListObjects.Add(xlSrcRange:=variablesSheet.Range("A1:B3"), _
+                                                       XlListObjectHasHeaders:=xlYes)
+    variableTable.Name = "TST_MasterVariables"
+
+    Set VariablesManager = MasterSetupVariables.Create(variableTable)
+    RegisterVariableName variableTable
 
     Set dropdownSheet = EnsureWorksheet(DROPDOWN_SHEET)
     ClearWorksheet dropdownSheet
 
-    dropdownSheet.Range("A1").Value = "Languages"
-    dropdownSheet.Range("A2:A3").Value = Application.WorksheetFunction.Transpose(Array("ENG", "FRA"))
-    dropdownSheet.Range("B1").Value = "Status"
-    dropdownSheet.Range("B2:B3").Value = Application.WorksheetFunction.Transpose(Array("core", "optional"))
-    dropdownSheet.Range("C1").Value = "VarNames"
-    dropdownSheet.Range("C2:C4").Value = Application.WorksheetFunction.Transpose(Array("var_age", "var_fever", "var_symptoms"))
-    dropdownSheet.Range("D1").Value = "Choices"
-    dropdownSheet.Range("D2:D4").Value = Application.WorksheetFunction.Transpose(Array("choice_age", "choice_fever", "choice_other"))
-
-    AddName "__languages", dropdownSheet.Range("A2:A3")
-    AddName "__var_status", dropdownSheet.Range("B2:B3")
-    AddName "PARAMVARNAME", dropdownSheet.Range("C2:C4")
-    AddName "PARAMCHOICESLIST", dropdownSheet.Range("D2:D4")
-
-    Set Dropdowns = New TestDropdownStub
+    Set Dropdowns = DropdownLists.Create(dropdownSheet)
+    AddDropdownList Dropdowns, LANGUAGES_LIST, Array("ENG", "FRA")
+    AddDropdownList Dropdowns, STATUS_LIST, Array("core", "optional")
+    AddDropdownList Dropdowns, CHOICES_LIST, Array("choice_age", "choice_fever", "choice_other")
+    AddDropdownList Dropdowns, PROHIBITED_LIST, Array("Variables", "Translations")
+    AddDropdownList Dropdowns, DISEASES_LIST, Array("placeholder")
+    Dropdowns.ClearList DISEASES_LIST
 
     Set translationSheet = EnsureWorksheet(TRANSLATION_SHEET)
     ClearWorksheet translationSheet
@@ -161,20 +259,34 @@ Private Sub PrepareEnvironment()
                                      XlListObjectHasHeaders:=xlYes
 
     Set Translations = TranslationObject.Create(translationSheet.ListObjects(1), "ENG")
-    Set Builder = DiseaseSheetBuilder.Create(ThisWorkbook, Dropdowns, Translations)
+    Set Builder = DiseaseSheet.Create(ThisWorkbook, Dropdowns, Translations, VariablesManager)
 End Sub
 
 Private Sub CleanupEnvironment()
     DeleteWorksheetSafe "Zeta"
     DeleteWorksheetSafe "Eta"
+    DeleteWorksheetSafe "Alpha"
+    DeleteWorksheetSafe "Beta"
+    DeleteWorksheetSafe "Gamma"
     DeleteWorksheetSafe DROPDOWN_SHEET
     DeleteWorksheetSafe TRANSLATION_SHEET
-    DeleteNameSafe "disLang_1"
-    DeleteNameSafe "disLang_2"
-    DeleteNameSafe "__languages"
-    DeleteNameSafe "__var_status"
-    DeleteNameSafe "PARAMVARNAME"
-    DeleteNameSafe "PARAMCHOICESLIST"
+    ClearWorksheetSafe ANCHOR_SHEET
+
+    DeleteNameSafe VARIABLE_NAME_RANGE
+    DeleteNameSafe MARKER_NAME_PREFIX & "001"
+    DeleteNameSafe MARKER_NAME_PREFIX & "002"
+    DeleteNameSafe MARKER_NAME_PREFIX & "003"
+
+    If Not Dropdowns Is Nothing Then
+        On Error Resume Next
+            Dropdowns.ClearList DISEASES_LIST
+        On Error GoTo 0
+    End If
+
+    Set Builder = Nothing
+    Set Dropdowns = Nothing
+    Set Translations = Nothing
+    Set VariablesManager = Nothing
 End Sub
 
 Private Sub DeleteWorksheetSafe(ByVal sheetName As String)
@@ -189,20 +301,64 @@ Private Sub DeleteNameSafe(ByVal nameValue As String)
     On Error GoTo 0
 End Sub
 
-Private Function NameExists(ByVal nameValue As String) As Boolean
-    On Error Resume Next
-        ThisWorkbook.Names(nameValue)
-        NameExists = (Err.Number = 0)
-        Err.Clear
-    On Error GoTo 0
-End Function
-
-Private Sub AddName(ByVal nameValue As String, ByVal refersToRange As Range)
-    DeleteNameSafe nameValue
-    ThisWorkbook.Names.Add Name:=nameValue, RefersTo:=refersToRange
-End Sub
-
 Private Function Translate(ByVal key As String, ByVal fallback As String) As String
     Translate = Translations.TranslatedValue(key)
     If LenB(Translate) = 0 Then Translate = fallback
+End Function
+
+Private Sub ClearWorksheetSafe(ByVal sheetName As String)
+    Dim sh As Worksheet
+
+    On Error Resume Next
+        Set sh = ThisWorkbook.Worksheets(sheetName)
+    On Error GoTo 0
+
+    If Not sh Is Nothing Then
+        ClearWorksheet sh
+    End If
+End Sub
+
+Private Sub RegisterVariableName(ByVal lo As ListObject)
+    Dim store As IHiddenNames
+
+    Set store = HiddenNames.Create(ThisWorkbook)
+    store.SetListObjectHeader VARIABLE_NAME_RANGE, lo, "Variable Name"
+End Sub
+
+Private Sub AddDropdownList(ByVal target As IDropdownLists, ByVal listName As String, ByVal values As Variant)
+    Dim listValues As BetterArray
+
+    Set listValues = BuildBetterArray(values)
+    If listValues Is Nothing Then Exit Sub
+
+    target.Add listValues, listName
+End Sub
+
+Private Function BuildBetterArray(ByVal values As Variant) As BetterArray
+    Dim arr As BetterArray
+    Dim idx As Long
+
+    If Not IsArray(values) Then Exit Function
+
+    Set arr = New BetterArray
+    arr.LowerBound = 1
+    For idx = LBound(values) To UBound(values)
+        arr.Push CStr(values(idx))
+    Next idx
+
+    Set BuildBetterArray = arr
+End Function
+
+Private Function BuildExpectingError(ByVal diseaseName As String, Optional ByVal languageTag As String = vbNullString) As Long
+    Dim unused As Worksheet
+
+    On Error Resume Next
+        Set unused = Builder.Build(diseaseName, languageTag)
+        BuildExpectingError = Err.Number
+        Err.Clear
+    On Error GoTo 0
+
+    If BuildExpectingError = 0 And Not unused Is Nothing Then
+        DeleteWorksheetSafe unused.Name
+    End If
 End Function

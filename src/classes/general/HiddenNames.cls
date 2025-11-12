@@ -977,7 +977,7 @@ Public Sub SetListObjectHeader(ByVal nameId As String, _
     formulaText = "=" & Lo.Name & "[" & headerColumn.Name & "]"
 
     targetWorkbook.Names.Add Name:=sanitizedName, _
-                             RefersTo:=formulaText, _
+                             RefersToR1C1:=formulaText, _
                              Visible:=False
 End Sub
 
