@@ -24,7 +24,6 @@ Private Const NAME_SHEET_TAG As String = "sheetTag"
 Private Const NAME_DISNAME As String = "__Var_DISNAME"
 Private Const NAME_DISLANG As String = "__Var_DISLANG"
 Private Const NAME_INDEX As String = "__Var_DISINDEX"
-Private Const VARIABLE_COLUMN_NAME As String = "__Col__Variables"
 
 
 Private Const DEFAULT_ANCHOR_SHEET As String = "Variables"
@@ -69,7 +68,8 @@ Private Type TBuilderState
     hostSheet As Worksheet
     hostIndex As Long
     hostTable As ICustomTable
-    hostVariables As IVariables
+    hostVariables As IMasterSetupVariables
+    hostLanguage As String
 End Type
 
 Private Type TCurrentHeaders
@@ -93,7 +93,7 @@ Private hostHeaders As TCurrentHeaders
 Public Function Create(ByVal hostWorkbook As Workbook, _
                        ByVal dropdowns As IDropdownLists, _
                        ByVal translator As ITranslationObject, _ 
-                       ByVal varObj As IVariables) As IDiseaseSheet
+                       ByVal varObj As IMasterSetupVariables) As IDiseaseSheet
 
     With New DiseaseSheet
         .Initialise hostWorkbook, dropdowns, translator, varObj
@@ -112,7 +112,7 @@ End Property
 Public Sub Initialise(ByVal hostWorkbook As Workbook, _
                       ByVal dropdowns As IDropdownLists, _
                       ByVal translator As ITranslationObject, _ 
-                      ByVal varObj As IVariables)
+                      ByVal varObj As IMasterSetupVariables)
 
     ValidateInitialise hostWorkbook, dropdowns
 
@@ -126,7 +126,7 @@ End Sub
 '@section Worksheet Construction
 '===============================================================================
 
-Private Function Build(ByVal diseaseName As String, Optional ByVal languageTag As String) As Worksheet
+Private Function Build(ByVal diseaseName As String, Optional ByVal languageTag As String = vbNullString) As Worksheet
 
     ValidateBuildInputs diseaseName, languageTag
 
@@ -134,7 +134,7 @@ Private Function Build(ByVal diseaseName As String, Optional ByVal languageTag A
     CreateDiseaseWorksheet diseaseName
 
     'Add the table, validations and metadata
-    WriteData languageTag
+    WriteData
     
     'Format the disease worksheet, add lockings
     FormatDiseaseSheet
@@ -196,7 +196,7 @@ Private Sub ValidateInitialise(ByVal hostWorkbook As Workbook, ByVal dropdowns A
     End If
 End Sub
 
-Private Sub ValidateBuildInputs(ByVal diseaseName As String, Optional ByVal languageTag As String)
+Private Sub ValidateBuildInputs(ByVal diseaseName As String, Optional ByVal languageTag As String = vbNullString)
     Dim langDrop As BetterArray
 
     If Not this.initialised Then
@@ -212,8 +212,12 @@ Private Sub ValidateBuildInputs(ByVal diseaseName As String, Optional ByVal lang
         
         If Not langDrop.Includes(languageTag) Then
             ThrowError ProjectError.InvalidArgument, "Language name " & languageTag & "is not present in the list of languages"
+        Else
+            this.hostLanguage = languageTag
         End If
 
+    Else
+        this.hostLanguage = this.dropdowns.Values.Item(this.dropdowns.LowerBound)
     End If
 
     If (Len(diseaseName) > 30) Then
@@ -292,7 +296,7 @@ Private Sub WriteValues()
     Set anchorRng = this.hostSheet.Cells(ANCHORROW, ANCHORCOLUMN)
     langAddress = anchorRng.Address(True, True)
 
-    anchorRng.Value = Translate(HEADER_LANGUAGE_PROMPT_KEY, "<Select language>")
+    anchorRng.Value = this.hostLanguage
     
     EnsureColumnsInitialized
     Set anchorRng = anchorRng.Offset(2)
@@ -305,7 +309,7 @@ Private Sub WriteValues()
     choiValIndex = ColumnIndexFor(HEADER_CHOICES_VALUE_KEY, "Choice Values")
     varNameIndex = ColumnIndexFor(HEADER_NAME_KEY, "Variable Name")
     If varNameIndex <= 0 Then Exit Sub
-    varNameAddress = anchorRng.Cells(1, varNameIndex).Address(False, True)
+    varNameAddress = anchorRng.Cells(1, varNameIndex).Address(RowAbsolute:=False)
   
     'Add formulas on specific columns
     If mainLabIndex > 0 Then
@@ -359,24 +363,22 @@ Private Sub AddValidations()
 End Sub
 
 
-Private Sub WriteData(Optional ByVal languageTag As String)
+Private Sub WriteData()
 
     WriteValues
     CreateDiseaseTable
     AddValidations
-    WriteMetadata languageTag
+    WriteMetadata
 
 End Sub
 
-Private Sub WriteMetadata(Optional ByVal languageTag As String)
+Private Sub WriteMetadata()
 
     Dim storeSheet As IHiddenNames
     Dim storeBook As IHiddenNames
     Dim diseaseCodeName As String
-    Dim langVal As String
 
     If this.hostSheet Is Nothing Then Exit Sub
-    langVal = languageTag
 
     Set storeSheet = HiddenNames.Create(this.hostSheet)
     Set storeBook = HiddenNames.Create(this.hostSheet.Parent)
@@ -387,14 +389,9 @@ Private Sub WriteMetadata(Optional ByVal languageTag As String)
     'Write the disease index
     storeSheet.EnsureName NAME_INDEX, this.hostIndex , HiddenNameTypeLong
 
-    If (LenB(languageTag) = 0) Then
-        Dim langDrop As BetterArray
-        Set langDrop = this.dropdowns.Values(LANGUAGES_DROPDOWN)
-        langVal = langDrop.Item(langDrop.LowerBound)
-    End If
 
     'Write the language of the disease
-    storeSheet.EnsureName NAME_DISLANG, langVal, HiddenNameTypeString
+    storeSheet.EnsureName NAME_DISLANG, this.hostLanguage, HiddenNameTypeString
 
     'Add the disease name to the worksheet
     storeSheet.EnsureName NAME_DISNAME, this.hostSheet.Name, HiddenNameTypeString
@@ -411,7 +408,7 @@ Private Sub FormatDiseaseSheet()
     RemoveGridlines this.hostSheet
     With this.hostSheet
         .Cells.Font.Name = "Calibri"
-        .Cells(ANCHORROW, ANCHORCOLUMN).Interior.Color = RGB()
+        .Cells(ANCHORROW, ANCHORCOLUMN).Interior.Color = RGB(0, 82, 155)
         .Cells(ANCHORROW, ANCHORCOLUMN).Font.Color = vbWhite
     End With
 
@@ -502,12 +499,15 @@ End Sub
 '@section Interface
 '===============================================================================
 
-Private Sub IDiseaseSheet_Initialise(ByVal hostWorkbook As Workbook, ByVal dropdowns As IDropdownLists, ByVal translations As ITranslationObject)
-    Initialise hostWorkbook, dropdowns, translations
+Private Sub IDiseaseSheet_Initialise(ByVal hostWorkbook As Workbook, _
+                                     ByVal dropdowns As IDropdownLists, _
+                                     ByVal translations As ITranslationObject, _
+                                     ByVal varObj As IMasterSetupVariables)
+    Initialise hostWorkbook, dropdowns, translations, varObj
 End Sub
 
-Private Function IDiseaseSheet_Build(ByVal diseaseName As String, ByVal diseaseIndex As Long, Optional ByVal languageTag As String = vbNullString, Optional ByVal options As BetterArray) As Worksheet
-    Set IDiseaseSheet_Build = Build(diseaseName, diseaseIndex, languageTag, options)
+Private Function IDiseaseSheet_Build(ByVal diseaseName As String, Optional ByVal languageTag As String = vbNullString) As Worksheet
+    Set IDiseaseSheet_Build = Build(diseaseName, languageTag)
 End Function
 
 Private Sub IDiseaseSheet_Reset()
