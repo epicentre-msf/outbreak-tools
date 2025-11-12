@@ -80,6 +80,37 @@ Public Property Get Language() As String
     Language = this.transLng
 End Property
 
+'@prop-title Translation list of Languages
+'@details Returns the language headers excluding the helper tag column.
+Public Property Get LanguagesList() As BetterArray
+    Dim headerRow As Range
+    Dim languages As BetterArray
+    Dim idx As Long
+    Dim valueText As String
+
+    Set languages = New BetterArray
+    languages.LowerBound = 1
+
+    Set headerRow = HeaderRowRange()
+    If headerRow Is Nothing Then
+        Set LanguagesList = languages
+        Exit Property
+    End If
+
+    languages.FromExcelRange headerRow, DetectLastRow:=False, DetectLastColumn:=False
+
+    For idx = languages.LowerBound To languages.UpperBound
+        valueText = Trim$(CStr(languages.Item(idx)))
+        languages.Item(idx) = valueText
+    Next idx
+
+    languages.Shift
+    languages.LowerBound = 1
+    languages.Filter vbNullString, Include:=False
+
+    Set LanguagesList = languages
+End Property
+
 
 Public Property Let Language(ByVal transLng As String)
     this.transLng = Trim$(transLng)
@@ -447,6 +478,10 @@ End Property
 '@jump:Language
 Private Property Get ITranslationObject_Language() As String
     ITranslationObject_Language = Language
+End Property
+
+Private Property Get ITranslationObject_LanguagesList() As BetterArray
+    Set ITranslationObject_LanguagesList = LanguagesList
 End Property
 
 '@jump:ValueExists

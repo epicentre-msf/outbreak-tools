@@ -366,7 +366,7 @@ Public Sub RenameColumn(ByVal currentName As String, _
         ThrowError ProjectError.InvalidArgument, "New column name cannot be empty"
     End If
 
-    headerIndex = ColumnIndex(currentName, inDataRange:=False, _
+    headerIndex = ColumnIndex(currentName, inDataRange:=True, _
                               shouldExist:=True, _
                               strictSearch:=strictSearch, _
                               matchCase:=matchCase)
@@ -672,10 +672,11 @@ Private Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumns
         
         colName = FORMATCOLUMNS.Item(counter)
         
-        Set actRng = DataRange(colName, matchCase:=matchColumnsCase)
 
         'The column might not exists in the exported DataBase
         If importData.ColumnExists(colName, strictSearch:=True, matchCase:=matchColumnsCase) Then
+
+            Set actRng = DataRange(colName, matchCase:=matchColumnsCase)
             Set impRng = importData.DataRange(colName, matchCase:=matchColumnsCase)
             
             If (impRng.Rows.Count <> actRng.Rows.Count) Then
@@ -686,6 +687,7 @@ Private Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumns
             'Start importing formats
             ApplyFormat actRng, impRng
         End If
+        
     Next
 End Sub
 

@@ -21,6 +21,7 @@ Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
 Private Const STATUS_DROPDOWN As String = "__var_status"
 Private Const YESNO_DROPDOWN As String = "__yesno"
 Private Const LANGUAGES_DROPDOWN As String = "__languages"
+Private Const VARIABLE_COLUMN_NAME As String = "__Col__Variables"
 
 
 '@section Module lifecycle
@@ -135,6 +136,41 @@ Public Sub TestPrepareInitialisesVariablesTable()
 
 Fail:
     ReportTestFailure "TestPrepareInitialisesVariablesTable"
+End Sub
+
+'@TestMethod("MasterSetupPreparation")
+Public Sub TestEnsureVariablesPublishesWorkbookRange()
+    Dim manager As IMasterSetupVariables
+    Dim definedName As Name
+    Dim expectedRange As Range
+    Dim actualRange As Range
+
+    CustomTestSetTitles Assert, "MasterSetupPreparation", "TestEnsureVariablesPublishesWorkbookRange"
+    On Error GoTo Fail
+
+    Subject.EnsureVariables
+
+    Set manager = Subject.Variables
+    Set expectedRange = manager.DataRange("Variable Name")
+
+    Assert.IsFalse expectedRange Is Nothing, "Variables manager should expose the Variable Name data range."
+
+    On Error Resume Next
+        Set definedName = FixtureWorkbook.Names(VARIABLE_COLUMN_NAME)
+    On Error GoTo 0
+    On Error GoTo Fail
+
+    Assert.IsFalse definedName Is Nothing, "Workbook hidden name should be created for the Variable Name column."
+
+    Set actualRange = definedName.RefersToRange
+    Assert.IsFalse actualRange Is Nothing, "Workbook hidden name should resolve to a valid range."
+    Assert.AreEqual expectedRange.Address(True, True, xlA1, True), _
+                     actualRange.Address(True, True, xlA1, True), _
+                     "Workbook name should target the same cells as the manager data range."
+    Exit Sub
+
+Fail:
+    ReportTestFailure "TestEnsureVariablesPublishesWorkbookRange"
 End Sub
 
 '@TestMethod("MasterSetupPreparation")

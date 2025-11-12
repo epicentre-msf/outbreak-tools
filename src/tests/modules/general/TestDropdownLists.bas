@@ -296,9 +296,8 @@ Public Sub TestTranslateAppliesTranslatorToAllLists()
     Dim valuesList As BetterArray
     Dim translator As ITranslationObject
     Dim transTable As ListObject
-    Dim sheet As Worksheet
-    Dim listOne As ListObject
-    Dim listTwo As ListObject
+    Dim firstValues As BetterArray
+    Dim secondValues As BetterArray
 
     On Error GoTo Fail
 
@@ -310,14 +309,11 @@ Public Sub TestTranslateAppliesTranslatorToAllLists()
     Set translator = TranslationObject.Create(transTable, "translated")
     dropOne.Translate translator, True
 
-    Set sheet = ThisWorkbook.Worksheets(DROPTESTONE)
-    Set listOne = FindListObjectFor(sheet, "firstList")
-    Set listTwo = FindListObjectFor(sheet, "secondList")
+    Set firstValues = dropOne.Values("firstList")
+    Set secondValues = dropOne.Values("secondList")
 
-    Assert.IsFalse listOne Is Nothing, "First dropdown listobject not found after translation"
-    Assert.IsFalse listTwo Is Nothing, "Second dropdown listobject not found after translation"
-    Assert.AreEqual "uno", CStr(listOne.DataBodyRange.Cells(1, 1).Value), "Translate should update first list values"
-    Assert.AreEqual "dos", CStr(listTwo.DataBodyRange.Cells(2, 1).Value), "Translate should update second list values"
+    Assert.AreEqual "uno", CStr(firstValues.Item(firstValues.LowerBound)), "Translate should update first list values"
+    Assert.AreEqual "dos", CStr(secondValues.Item(secondValues.LowerBound + 1)), "Translate should update second list values"
 
     DeleteWorksheets TEST_TRANSLATIONS_SHEET
     Exit Sub
@@ -346,22 +342,6 @@ Private Function BuildTranslationTable() As ListObject
     Set lo = hostSheet.ListObjects.Add(xlSrcRange, hostSheet.Range("A1:B3"), , xlYes)
     lo.Name = "__DropTranslations"
     Set BuildTranslationTable = lo
-End Function
-
-Private Function FindListObjectFor(ByVal hostSheet As Worksheet, ByVal listName As String) As ListObject
-    Dim candidate As ListObject
-    Dim expectedHeader As String
-
-    expectedHeader = Replace(Trim$(listName), " ", "_")
-
-    For Each candidate In hostSheet.ListObjects
-        If Not candidate.HeaderRowRange Is Nothing Then
-            If StrComp(CStr(candidate.HeaderRowRange.Cells(1, 1).Value), expectedHeader, vbTextCompare) = 0 Then
-                Set FindListObjectFor = candidate
-                Exit Function
-            End If
-        End If
-    Next candidate
 End Function
 
 '@TestMethod("DropdownLists")

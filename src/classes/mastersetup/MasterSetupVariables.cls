@@ -68,6 +68,7 @@ Private Const STATUS_HIDDEN As String = "optional, hidden"
 
 Private Const DUPLICATE_FILL_COLOR As Long = 12830708       'RGB(244, 199, 195)
 Private Const DUPLICATE_FONT_COLOR As Long = 393372         'RGB(156, 0, 6)
+Private Const VARIABLE_NAME_RANGE As String = "__Col__Variables"
 
 
 '@section Factory helpers
@@ -205,6 +206,20 @@ Public Sub TranslateAll(ByVal contentsTrads As ITranslationObject, Optional ByVa
     End If
 End Sub
 
+'@sub-title Apply workbook-scoped validation for variable names onto the supplied range.
+Public Sub SetVariableValidation(ByVal targetRange As Range)
+    Dim workbookStore As IHiddenNames
+
+    ValidateReady
+    If targetRange Is Nothing Then Exit Sub
+
+    Set workbookStore = WorkbookHiddenNameStore()
+    If workbookStore Is Nothing Then Exit Sub
+    If Not workbookStore.HasName(VARIABLE_NAME_RANGE) Then Exit Sub
+
+    ApplyVariableDropdownValidation targetRange, VARIABLE_NAME_RANGE
+End Sub
+
 '@sub-title Clone the managed table into another workbook.
 '@param targetWorkbook Workbook receiving the cloned table.
 '@param sheetName Optional sheet name; defaults to the source worksheet name.
@@ -335,6 +350,13 @@ End Property
 Public Property Get Initialised() As Boolean
     Initialised = this.initialised
 End Property
+
+'@sub-title Return the range for the supplied column header, optionally including headers.
+Public Function DataRange(ByVal headerName As String, _
+                          Optional ByVal includeHeaders As Boolean = False) As Range
+    ValidateReady
+    Set DataRange = ColumnRange(headerName, includeHeaders)
+End Function
 
 
 '@section Internal helpers
@@ -496,6 +518,26 @@ Private Function ColumnRange(ByVal headerName As String, Optional ByVal includeH
     End If
 End Function
 
+Private Sub ApplyVariableDropdownValidation(ByVal targetRange As Range, ByVal listName As String)
+    Dim formulaText As String
+
+    If targetRange Is Nothing Then Exit Sub
+    listName = Trim$(listName)
+    If LenB(listName) = 0 Then Exit Sub
+
+    formulaText = "=" & listName
+
+    On Error Resume Next
+        targetRange.Validation.Delete
+        targetRange.Validation.Add Type:=xlValidateList, _
+                                   AlertStyle:=xlValidAlertStop, _
+                                   Operator:=xlBetween, _
+                                   Formula1:=formulaText
+        targetRange.Validation.IgnoreBlank = True
+        targetRange.Validation.InCellDropdown = True
+    On Error GoTo 0
+End Sub
+
 Private Function ColumnIndex(ByVal headerName As String) As Long
     Dim cached As Long
     Dim store As IHiddenNames
@@ -625,6 +667,17 @@ Private Function HiddenNameStore() As IHiddenNames
     Set HiddenNameStore = this.hiddenNames
 End Function
 
+Private Function WorkbookHiddenNameStore() As IHiddenNames
+    Dim wb As Workbook
+
+    Set wb = HostWorkbook
+    If wb Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set WorkbookHiddenNameStore = HiddenNames.Create(wb)
+    On Error GoTo 0
+End Function
+
 Private Function TableWrapper() As ICustomTable
     If this.wrapper Is Nothing Then
         Set this.wrapper = CustomTable.Create(this.table)
@@ -635,6 +688,15 @@ End Function
 
 Private Function HostSheet() As Worksheet
     Set HostSheet = this.table.Parent
+End Function
+
+Private Function HostWorkbook() As Workbook
+    Dim sh As Worksheet
+
+    Set sh = HostSheet
+    If sh Is Nothing Then Exit Function
+
+    Set HostWorkbook = sh.Parent
 End Function
 
 Private Function TableRange(Optional ByVal includeHeaders As Boolean = False) As Range
