@@ -25,7 +25,8 @@ Option Explicit
 '@param translations ITranslationObject supplying translated labels.
 Public Sub Initialise(ByVal hostWorkbook As Workbook, _
                       ByVal dropdowns As IDropdownLists, _
-                      ByVal translations As ITranslationObject)
+                      ByVal translations As ITranslationObject, _
+                      ByVal varObj As IMasterSetupVariables)
 End Sub
 
 '@section Worksheet Construction
@@ -38,9 +39,7 @@ End Sub
 '@param options Optional Dictionary-like BetterArray containing overrides (languageList, statusList, etc.).
 '@return Worksheet freshly created and formatted.
 Public Function Build(ByVal diseaseName As String, _
-                      ByVal diseaseIndex As Long, _
-                      Optional ByVal languageTag As String = vbNullString, _
-                      Optional ByVal options As BetterArray) As Worksheet
+                      Optional ByVal languageTag As String = vbNullString) As Worksheet
 End Function
 
 '@section Maintenance
