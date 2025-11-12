@@ -55,7 +55,8 @@ Private Const LANGUAGES_DROPDOWN As String = "__data_languages"
 Private DEFAULTDISEASECOLUMNS As BetterArray
 
 Private Const ANCHORROW As Long = 2
-Private Const ANCHORCOLUMN As Long =2
+Private Const ANCHORCOLUMN As Long = 2
+Private Const DISEASE_MARKER_COLUMN As Long = 4
 
 '@section State
 '===============================================================================
@@ -114,12 +115,13 @@ Public Sub Initialise(ByVal hostWorkbook As Workbook, _
                       ByVal translator As ITranslationObject, _ 
                       ByVal varObj As IMasterSetupVariables)
 
-    ValidateInitialise hostWorkbook, dropdowns
+    ValidateInitialise hostWorkbook, dropdowns, varObj
 
     Set this.hostwb = hostWorkbook
     Set this.dropdowns = dropdowns
     Set this.trads = translator
-    set this.hostVariables = varObj
+    Set this.hostVariables = varObj
+    this.hostLanguage = vbNullString
     this.initialised = True
 End Sub
 
@@ -128,6 +130,7 @@ End Sub
 
 Private Function Build(ByVal diseaseName As String, Optional ByVal languageTag As String = vbNullString) As Worksheet
 
+    diseaseName = Trim$(diseaseName)
     ValidateBuildInputs diseaseName, languageTag
 
     'create the disease worksheet
@@ -152,6 +155,8 @@ Public Sub Reset()
     this.initialised = False
     Set this.hostSheet = Nothing
     Set this.hostTable = Nothing
+    Set this.hostVariables = Nothing
+    this.hostLanguage = vbNullString
     Set DEFAULTDISEASECOLUMNS = Nothing
 End Sub
 
@@ -185,7 +190,9 @@ Private Sub EnsureColumnsInitialized()
 End Sub
 
 
-Private Sub ValidateInitialise(ByVal hostWorkbook As Workbook, ByVal dropdowns As IDropdownLists)
+Private Sub ValidateInitialise(ByVal hostWorkbook As Workbook, _
+                               ByVal dropdowns As IDropdownLists, _
+                               ByVal varObj As IMasterSetupVariables)
 
     If hostWorkbook Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Workbook reference cannot be Nothing"
@@ -194,10 +201,16 @@ Private Sub ValidateInitialise(ByVal hostWorkbook As Workbook, ByVal dropdowns A
     If dropdowns Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Dropdown lists cannot be Nothing"
     End If
+
+    If varObj Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "Variables manager cannot be Nothing"
+    End If
 End Sub
 
 Private Sub ValidateBuildInputs(ByVal diseaseName As String, Optional ByVal languageTag As String = vbNullString)
     Dim langDrop As BetterArray
+    Dim temp As BetterArray
+    Dim defaultLanguage As Variant
 
     If Not this.initialised Then
         ThrowError ProjectError.ObjectNotInitialized, "Builder has not been initialised"
@@ -207,37 +220,41 @@ Private Sub ValidateBuildInputs(ByVal diseaseName As String, Optional ByVal lang
         ThrowError ProjectError.InvalidArgument, "Disease name cannot be empty"
     End If
 
-    If (LenB(languageTag) > 0) Then
-        Set langDrop = this.dropdowns.Values(LANGUAGES_DROPDOWN)
-        
+    If Len(diseaseName) > 30 Then
+        ThrowError ProjectError.InvalidArgument, "Disease name should be less than 30 characters long (including spaces)"
+    End If
+
+    Set langDrop = this.dropdowns.Values(LANGUAGES_DROPDOWN)
+    If langDrop Is Nothing Or langDrop.Length = 0 Then
+        ThrowError ProjectError.ElementNotFound, _
+                  "Language dropdown '" & LANGUAGES_DROPDOWN & "' has no available entries."
+    End If
+
+    If LenB(languageTag) > 0 Then
         If Not langDrop.Includes(languageTag) Then
-            ThrowError ProjectError.InvalidArgument, "Language name " & languageTag & "is not present in the list of languages"
-        Else
-            this.hostLanguage = languageTag
+            ThrowError ProjectError.InvalidArgument, _
+                      "Language '" & languageTag & "' is not present in the list of languages."
         End If
-
+        this.hostLanguage = languageTag
     Else
-        this.hostLanguage = this.dropdowns.Values.Item(this.dropdowns.LowerBound)
+        defaultLanguage = langDrop.Item(langDrop.LowerBound)
+        If LenB(CStr(defaultLanguage)) = 0 Then
+            ThrowError ProjectError.InvalidArgument, _
+                      "Language dropdown '" & LANGUAGES_DROPDOWN & "' does not contain a default value."
+        End If
+        this.hostLanguage = CStr(defaultLanguage)
     End If
 
-    If (Len(diseaseName) > 30) Then
-        ThrowError ProjectError.ObjectNotInitialized, "Disease name should be less than 30 characters long (including spaces)"
-    End If
-
-    'Testing if the name of the disease is correct
-    Dim temp As BetterArray
     Set temp = this.dropdowns.Values(DISEASES_DROPDOWN_PROHIBITED)
-
-    If temp.Includes(diseaseName) Then
-        ThrowError ProjectError.InvalidArgument, _ 
-         "The name " & diseaseName & " is incorrect because it is reserved. Please use another name"
+    If Not temp Is Nothing And temp.Includes(diseaseName) Then
+        ThrowError ProjectError.InvalidArgument, _
+                  "The name " & diseaseName & " is incorrect because it is reserved. Please use another name."
     End If
 
     Set temp = this.dropdowns.Values(DISEASES_DROPODWN)
-    
-    If temp.Includes(diseaseName) Then
-        ThrowError ProjectError.InvalidArgument, _ 
-         "The name " & diseaseName & " already exists, please choose another name."
+    If Not temp Is Nothing And temp.Includes(diseaseName) Then
+        ThrowError ProjectError.InvalidArgument, _
+                  "The name " & diseaseName & " already exists, please choose another name."
     End If
 End Sub
 
@@ -255,7 +272,7 @@ Private Sub CreateDiseaseWorksheet(ByVal diseaseName As String)
 
     If (anchor Is Nothing) Then
         ThrowError ProjectError.ObjectNotInitialized, _ 
-         "Anchor worksheet " & DEFAULT_ANCHOR_SHEET & "not found"
+         "Anchor worksheet " & DEFAULT_ANCHOR_SHEET & " not found"
     End If
 
     Set hostsheet = hostwb.Worksheets.Add(Before:=anchor)
@@ -297,6 +314,7 @@ Private Sub WriteValues()
     langAddress = anchorRng.Address(True, True)
 
     anchorRng.Value = this.hostLanguage
+    this.hostSheet.Cells(ANCHORROW, DISEASE_MARKER_COLUMN).Value = DEFAULT_DISEASE_CODE
     
     EnsureColumnsInitialized
     Set anchorRng = anchorRng.Offset(2)
@@ -483,7 +501,9 @@ Private Function Translate(ByVal key As String, ByVal fallback As String) As Str
         retVal = fallback
     Else
         retVal = this.trads.TranslatedValue(key)
-        retVal = IIf(retVal = key, fallback, retVal)
+        If LenB(retVal) = 0 Or retVal = key Then
+            retVal = fallback
+        End If
     End If
 
     Translate = retVal
