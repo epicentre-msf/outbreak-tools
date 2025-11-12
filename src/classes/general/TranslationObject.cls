@@ -97,15 +97,13 @@ Public Property Get LanguagesList() As BetterArray
         Exit Property
     End If
 
-    languages.FromExcelRange headerRow, DetectLastRow:=False, DetectLastColumn:=False
+    languages.FromExcelRange headerRow.Offset(, 1), DetectLastRow:=False, DetectLastColumn:=False
 
     For idx = languages.LowerBound To languages.UpperBound
         valueText = Trim$(CStr(languages.Item(idx)))
         languages.Item(idx) = valueText
     Next idx
 
-    languages.Shift
-    languages.LowerBound = 1
     languages.Filter vbNullString, Include:=False
 
     Set LanguagesList = languages
