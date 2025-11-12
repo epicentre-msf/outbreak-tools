@@ -34,6 +34,11 @@ End Property
 Public Property Get Language() As String
 End Property
 
+'@jump:LanguagesList
+'@return BetterArray containing each language header, excluding the helper/tag column.
+Public Property Get LanguagesList() As BetterArray
+End Property
+
 '@jump:ValueExists
 '@param text String tag to search in the translation table.
 '@return True when the tag exists for the configured language.

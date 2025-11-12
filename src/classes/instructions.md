@@ -56,3 +56,7 @@ required VBA syntax.
 - [DONE] Migrated DropdownLists counters to HiddenNames for workbook/worksheet tracking and added regression coverage to keep dropdown naming stable.
 - [DONE] Tagged master setup variables and choices sheets with HiddenNames sheetTag values so downstream helpers can identify sheet purpose reliably.
 - [DONE] Added HiddenNames.SetListObjectHeader and workbook import/export helpers so names can flow between workbook scopes, with matching regression coverage.
+- [DONE] Reworked DiseaseSheet to persist metadata via HiddenNames, build worksheets with translated headers/validations, and refreshed dropdown translation tests.
+- [DONE] Exposed MasterSetupVariables.DataRange plus unit tests and taught MasterSetupPreparation to publish the Variable Name data range as a hidden workbook name.
+- [DONE] Added MasterSetupVariables.SetVariableValidation to wire workbook-scoped variable lists into validations with comprehensive tests.
+- [DONE] Polished TranslationObject.LanguagesList, exposed it through the interface, and added regression tests covering header enumeration.

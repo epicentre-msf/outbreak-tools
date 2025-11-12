@@ -90,3 +90,14 @@ End Property
 Public Property Get Initialised() As Boolean
 End Property
 
+'@sub-title Return the underlying range for a specific column header.
+Public Function DataRange(ByVal headerName As String, _
+                          Optional ByVal includeHeaders As Boolean = False) As Range
+End Function
+
+'@section Validation
+'===============================================================================
+'@sub-title Apply workbook-scoped variable dropdown validation to a target range.
+Public Sub SetVariableValidation(ByVal targetRange As Range)
+End Sub
+

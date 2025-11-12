@@ -242,9 +242,8 @@ Public Sub ManageRows(ByVal targetSheet As Worksheet, ByVal addRows As Boolean)
     If targetSheet Is Nothing Then Exit Sub
 
     Set store = HiddenNames.Create(targetSheet)
-    If Not store Is Nothing Then
-        sheetTag = store.ValueAsString("sheetTag")
-    End If
+    sheetTag = store.ValueAsString("sheetTag")
+ 
 
     Select Case LCase$(Trim$(sheetTag))
         Case "disease", "dis"

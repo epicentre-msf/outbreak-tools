@@ -792,7 +792,7 @@ Private Sub Sort(ByVal listName As String, _
 End Sub
 
 '@label:Translate
-Private Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = False)
+Private Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = False, Optional ByVal exclude As String)
     Dim sh As Worksheet
     Dim headerCell As Range
     Dim cursor As Range
@@ -823,6 +823,9 @@ Private Sub Translate(ByVal trads As Object, Optional ByVal force As Boolean = F
     Do While cursor.Row > headerCell.Row
         loName = CStr(cursor.Value) 
         If LenB(loName) = 0 Then GoTo NextLo
+        If LenB(exclude) > 0 Then
+            If InStr(1, loName, exclude, vbTextCompare) > 0 Then GoTo NextLo
+        End If
 
         On Error Resume Next
             Set lo = sh.ListObjects(loName)
@@ -1132,7 +1135,7 @@ Private Sub IDropdownLists_Sort(ByVal listName As String, _
 End Sub
 
 '@jump:Translate
-Private Sub IDropdownLists_Translate(ByVal trads As Object, Optional ByVal force As Boolean = False)
+Private Sub IDropdownLists_Translate(ByVal trads As Object, Optional ByVal force As Boolean = False, Optional ByVal exclude As String)
     Translate trads, force
 End Sub
 
