@@ -12,7 +12,7 @@ Attribute VB_Description = "Lightweight manager for the Master Setup Variables t
 '@PredeclaredId
 '@Folder("MasterSetup")
 '@ModuleDescription("Lightweight manager for the Master Setup Variables table wrapping CustomTable interactions")
-'@depends CustomTable, ICustomTable, HiddenNames, IHiddenNames, BetterArray, ProjectError, IDropdownLists, ILLChoices, ITranslationObject, DataSheet, IDataSheet
+'@depends CustomTable, HiddenNames, BetterArray, Checking, LLChoices, DropdownLists, TranslationObject, DataSheet
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -111,6 +111,7 @@ End Sub
 Public Sub RefreshChoices(ByVal variableName As String, ByVal choices As ILLChoices)
     Dim rowIndex As Long
     Dim concatenated As String
+    Dim choiceValue As String
 
     ValidateReady
     variableName = Trim$(variableName)
@@ -126,8 +127,9 @@ Public Sub RefreshChoices(ByVal variableName As String, ByVal choices As ILLChoi
     End If
 
     concatenated = vbNullString
-    If choices.ChoiceExists(variableName) Then
-        concatenated = choices.ConcatenateCategories(variableName, " | ")
+    choiceValue = DefaultChoiceFor(variableName)
+    If choices.ChoiceExists(choiceValue) Then
+        concatenated = choices.ConcatenateCategories(choiceValue, " | ")
     End If
 
     WriteValue rowIndex, HEADER_CHOICES, concatenated
@@ -207,7 +209,7 @@ Public Sub TranslateAll(ByVal contentsTrads As ITranslationObject, Optional ByVa
 End Sub
 
 '@sub-title Apply workbook-scoped validation for variable names onto the supplied range.
-Public Sub SetVariableValidation(ByVal targetRange As Range)
+Private Sub SetVariableValidation(ByVal targetRange As Range)
     Dim workbookStore As IHiddenNames
 
     ValidateReady
@@ -319,11 +321,11 @@ Public Sub CopyToListObject(ByVal targetTable As ListObject)
     targetWrapper.Import TableWrapper, keepSourceHeaders:=True
 
     On Error Resume Next
-        targetWrapper.Table.Name = this.table.Name
-        targetWrapper.Table.TableStyle = this.table.TableStyle
+       targetTable.Name = this.table.Name
+        targetTable.TableStyle = this.table.TableStyle
     On Error GoTo 0
 
-    EnsureRequiredColumns targetWrapper.Table
+    EnsureRequiredColumns targetTable
 End Sub
 
 '@sub-title Export the hidden metadata required to resolve translated columns.
@@ -352,7 +354,7 @@ Public Property Get Initialised() As Boolean
 End Property
 
 '@sub-title Return the range for the supplied column header, optionally including headers.
-Public Function DataRange(ByVal headerName As String, _
+Private Function DataRange(ByVal headerName As String, _
                           Optional ByVal includeHeaders As Boolean = False) As Range
     ValidateReady
     Set DataRange = ColumnRange(headerName, includeHeaders)
@@ -410,14 +412,14 @@ End Sub
 Private Sub PersistColumnIndex(ByVal store As IHiddenNames, _
                                ByVal nameId As String, _
                                ByVal headerName As String)
-    Dim columnIndex As Long
+    Dim colIndex As Long
 
-    columnIndex = ColumnIndex(headerName)
-    If columnIndex <= 0 Then Exit Sub
+    colIndex = ColumnIndex(headerName)
+    If colIndex <= 0 Then Exit Sub
 
-    store.EnsureName nameId, columnIndex, HiddenNameTypeLong
-    store.SetValue nameId, columnIndex
-    CacheColumnIndex headerName, columnIndex
+    store.EnsureName nameId, colIndex, HiddenNameTypeLong
+    store.SetValue nameId, colIndex
+    CacheColumnIndex headerName, colIndex
 End Sub
 
 Private Function CopyIntoSheet(ByVal targetSheet As Worksheet) As ListObject
@@ -435,7 +437,7 @@ Private Function CopyIntoSheet(ByVal targetSheet As Worksheet) As ListObject
     On Error GoTo 0
     If exportRange Is Nothing Then Exit Function
 
-    Set exportedTable = targetSheet.ListObjects.Add(xlSrcRange:=exportRange, XlListObjectHasHeaders:=xlYes)
+    Set exportedTable = targetSheet.ListObjects.Add(xlSrcRange, exportRange, XlListObjectHasHeaders:=xlYes)
 
     On Error Resume Next
         exportedTable.Name = tableName
@@ -502,13 +504,13 @@ Private Sub ApplyDuplicateFormatting()
 End Sub
 
 Private Function ColumnRange(ByVal headerName As String, Optional ByVal includeHeaders As Boolean = False) As Range
-    Dim columnIndex As Long
+    Dim colIndex As Long
     Dim listColumn As ListColumn
 
-    columnIndex = ColumnIndex(headerName)
-    If columnIndex <= 0 Then Exit Function
+    colIndex = ColumnIndex(headerName)
+    If colIndex <= 0 Then Exit Function
 
-    Set listColumn = this.table.ListColumns(columnIndex)
+    Set listColumn = this.table.ListColumns(colIndex)
     If listColumn Is Nothing Then Exit Function
 
     If includeHeaders Then
@@ -577,26 +579,26 @@ Private Function ColumnIndex(ByVal headerName As String) As Long
     ColumnIndex = cached
 End Function
 
-Private Sub CacheColumnIndex(ByVal headerName As String, ByVal columnIndex As Long)
-    If columnIndex <= 0 Then Exit Sub
+Private Sub CacheColumnIndex(ByVal headerName As String, ByVal colInd As Long)
+    If colInd <= 0 Then Exit Sub
 
     Select Case headerName
         Case HEADER_ORDER
-            this.colOrder = columnIndex
+            this.colOrder = colInd
         Case HEADER_SECTION
-            this.colSection = columnIndex
+            this.colSection = colInd
         Case HEADER_NAME
-            this.colName = columnIndex
+            this.colName = colInd
         Case HEADER_LABEL
-            this.colLabel = columnIndex
+            this.colLabel = colInd
         Case HEADER_DEFAULT_CHOICE
-            this.colDefaultChoice = columnIndex
+            this.colDefaultChoice = colInd
         Case HEADER_CHOICES
-            this.colChoices = columnIndex
+            this.colChoices = colInd
         Case HEADER_DEFAULT_STATUS
-            this.colDefaultStatus = columnIndex
+            this.colDefaultStatus = colInd
         Case HEADER_COMMENTS
-            this.colComments = columnIndex
+            this.colComments = colInd
     End Select
 End Sub
 
@@ -767,8 +769,7 @@ Private Sub EnsureRequiredColumns(ByVal listObject As ListObject)
     Dim header As Variant
     Dim store As IHiddenNames
 
-    required = Array(HEADER_ORDER, HEADER_SECTION, HEADER_NAME, HEADER_LABEL, _
-                     HEADER_DEFAULT_CHOICE, HEADER_CHOICES, HEADER_DEFAULT_STATUS, HEADER_COMMENTS)
+    required = RequiredHeaders()
 
     If listObject Is Nothing Then Exit Sub
 
@@ -776,35 +777,83 @@ Private Sub EnsureRequiredColumns(ByVal listObject As ListObject)
         Set store = HiddenNameStore()
     End If
 
-    For Each header In required
-        If this.initialised And Not store Is Nothing Then
+    If this.initialised And Not store Is Nothing Then
+        For Each header In required
             EnsureColumnAtStoredIndex listObject, CStr(header), store
-        Else
-            EnsureColumnExistsSimple listObject, CStr(header)
-        End If
-    Next header
-End Sub
-
-Private Sub EnsureColumnExistsSimple(ByVal listObject As ListObject, ByVal headerName As String)
-    Dim column As ListColumn
-    Dim found As Boolean
-
-    For Each column In listObject.ListColumns
-        If StrComp(Trim$(column.Name), headerName, vbTextCompare) = 0 Then
-            If StrComp(column.Name, headerName, vbBinaryCompare) <> 0 Then
-                column.Name = headerName
-            End If
-            found = True
-            Exit For
-        End If
-    Next column
-
-    If Not found Then
-        With listObject.ListColumns.Add
-            .Name = headerName
-        End With
+        Next header
+    Else
+        EnsureColumnExistsSimple listObject, vbNullString
     End If
 End Sub
+
+Private Function RequiredHeaders() As Variant
+    RequiredHeaders = Array(HEADER_ORDER, HEADER_SECTION, HEADER_NAME, HEADER_LABEL, _
+                            HEADER_DEFAULT_CHOICE, HEADER_CHOICES, HEADER_DEFAULT_STATUS, HEADER_COMMENTS)
+End Function
+
+Private Sub EnsureColumnExistsSimple(ByVal listObject As ListObject, ByVal headerName As String)
+    Dim required As Variant
+    Dim desiredCount As Long
+    Dim currentCount As Long
+    Dim headerRow As Range
+    Dim idx As Long
+    Dim baseIndex As Long
+
+    If listObject Is Nothing Then Exit Sub
+
+    required = RequiredHeaders()
+    If Not IsArray(required) Then Exit Sub
+
+    desiredCount = UBound(required) - LBound(required) + 1
+
+    ' Remove any columns that are not part of the required schema.
+    For idx = listObject.ListColumns.Count To 1 Step -1
+        If Not IsRequiredHeader(listObject.ListColumns(idx).Name, required) Then
+            listObject.ListColumns(idx).Delete
+        End If
+    Next idx
+
+    currentCount = listObject.ListColumns.Count
+
+    ' Trim any excess columns (for example, duplicate required headers).
+    If currentCount > desiredCount Then
+        For idx = currentCount To desiredCount + 1 Step -1
+            listObject.ListColumns(idx).Delete
+        Next idx
+    End If
+
+    ' Add missing columns so the table matches the required count.
+    currentCount = listObject.ListColumns.Count
+    If currentCount < desiredCount Then
+        For idx = currentCount + 1 To desiredCount
+            listObject.ListColumns.Add
+        Next idx
+    End If
+
+    If Not listObject.ShowHeaders Then
+        listObject.ShowHeaders = True
+    End If
+
+    Set headerRow = listObject.HeaderRowRange
+    If headerRow Is Nothing Then Exit Sub
+
+    baseIndex = LBound(required)
+    For idx = 0 To desiredCount - 1
+        headerRow.Cells(1, idx + 1).Value = required(baseIndex + idx)
+    Next idx
+End Sub
+
+Private Function IsRequiredHeader(ByVal candidate As String, ByVal required As Variant) As Boolean
+    Dim header As Variant
+
+    candidate = Trim$(CStr(candidate))
+    For Each header In required
+        If StrComp(candidate, Trim$(CStr(header)), vbTextCompare) = 0 Then
+            IsRequiredHeader = True
+            Exit Function
+        End If
+    Next header
+End Function
 
 Private Sub EnsureColumnAtStoredIndex(ByVal listObject As ListObject, _
                                       ByVal headerName As String, _
@@ -906,6 +955,12 @@ Private Sub IMasterSetupVariables_AddRows(Optional ByVal count As Long = 5)
     AddRows count
 End Sub
 
+Private Function IMasterSetupVariables_DataRange(ByVal headerName As String, _
+                          Optional ByVal includeHeaders As Boolean = False) As Range
+
+   Set IMasterSetupVariables_DataRange = DataRange(headerName, includeHeaders)
+End Function
+
 Private Sub IMasterSetupVariables_RemoveRows(Optional ByVal count As Long = 1)
     RemoveRows count
 End Sub
@@ -955,3 +1010,9 @@ End Property
 Private Property Get IMasterSetupVariables_Initialised() As Boolean
     IMasterSetupVariables_Initialised = Initialised
 End Property
+
+
+'@sub-title Apply workbook-scoped variable dropdown validation to a target range.
+Private Sub IMasterSetupVariables_SetVariableValidation(ByVal targetRange As Range)
+    SetVariableValidation targetRange
+End Sub

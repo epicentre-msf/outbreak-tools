@@ -17,7 +17,7 @@ Private Const SOURCE_SHEET As String = "TST_MasterSource"
 Private Const TARGET_SHEET As String = "TST_MasterTarget"
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const VARIABLE_TABLE_NAME As String = "TST_MasterVariablesTable"
-Private Const STATUS_DROPDOWN_NAME As String = "ms_variables_default_status"
+Private Const STATUS_DROPDOWN_NAME As String = "__var_status"
 Private Const VARIABLE_WORKBOOK_NAME As String = "__Col__Variables"
 
 
@@ -52,15 +52,19 @@ Public Sub TestInitialize()
         .Cells.Clear
         .Range("A1").Value = "Variable Name"
         .Range("B1").Value = "Variable Label"
-        .Range("A2:B2").Value = vbNullString
-        Set lo = .ListObjects.Add(xlSrcRange, .Range("A1:B2"), , xlYes)
+        .Range("A2:E2").Value = vbNullString
+        Set lo = .ListObjects.Add(xlSrcRange, .Range("A1:E2"), , xlYes)
     End With
 
     lo.Name = VARIABLE_TABLE_NAME
-    lo.HeaderRowRange.Cells(1, 1).Value = "Variable Name"
-    lo.HeaderRowRange.Cells(1, 2).Value = "Variable Label"
-    lo.DataBodyRange.Cells(1, 1).Value = "patient_status"
-    lo.DataBodyRange.Cells(1, 2).Value = "Patient status"
+    lo.HeaderRowRange.Cells(1, 1).Value = "Variable Order"
+    lo.HeaderRowRange.Cells(1, 2).Value = "Variable Section"
+    lo.HeaderRowRange.Cells(1, 3).Value = "Variable Name"
+    lo.HeaderRowRange.Cells(1, 4).Value = "Variable Label"
+    lo.HeaderRowRange.Cells(1, 5).Value = "Default Choice"
+    lo.DataBodyRange.Cells(1, 3).Value = "patient_status"
+    lo.DataBodyRange.Cells(1, 4).Value = "Patient status"
+    lo.DataBodyRange.Cells(1, 5).Value = "Choice"
 
     Set Manager = MasterSetupVariables.Create(lo)
 End Sub
@@ -88,14 +92,14 @@ Public Sub TestCreateEnsuresAllColumns()
     Set lo = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME)
 
     Assert.AreEqual 8&, lo.ListColumns.Count, "Expected eight columns created by the manager."
-    Assert.AreEqual "Variable Order", lo.ListColumns(1).Name
-    Assert.AreEqual "Variable Section", lo.ListColumns(2).Name
-    Assert.AreEqual "Variable Name", lo.ListColumns(3).Name
-    Assert.AreEqual "Variable Label", lo.ListColumns(4).Name
-    Assert.AreEqual "Default Choice", lo.ListColumns(5).Name
-    Assert.AreEqual "Choices Values", lo.ListColumns(6).Name
-    Assert.AreEqual "Default Status", lo.ListColumns(7).Name
-    Assert.AreEqual "Comments", lo.ListColumns(8).Name
+    Assert.AreEqual "Variable Order", lo.ListColumns(1).Name, "Column name 'Variable Order' should be present"
+    Assert.AreEqual "Variable Section", lo.ListColumns(2).Name, "Column name 'Variable Section' should be present"
+    Assert.AreEqual "Variable Name", lo.ListColumns(3).Name, "Column name 'Variable Name' should be present"
+    Assert.AreEqual "Variable Label", lo.ListColumns(4).Name, "Column name 'Variable Label' should be present"
+    Assert.AreEqual "Default Choice", lo.ListColumns(5).Name, "Column name 'Default Choice' should be present"
+    Assert.AreEqual "Choices Values", lo.ListColumns(6).Name, "Column name 'Choices Values' should be present"
+    Assert.AreEqual "Default Status", lo.ListColumns(7).Name, "Column name 'Default Status' should be present"
+    Assert.AreEqual "Comments", lo.ListColumns(8).Name, "Column name 'Comments' should be present"
 End Sub
 
 '@TestMethod("MasterSetupVariables")
@@ -151,7 +155,7 @@ Public Sub TestDataRangeExposesRequestedColumn()
     Set expectedWithHeaders = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME).ListColumns("Variable Name").Range
 
     Set result = Manager.DataRange("Variable Name")
-    Assert.IsTrue result Is expectedData, "DataRange should proxy the data body range for the requested column."
+    Assert.IsTrue (result.Address = expectedData.Address), "DataRange should proxy the data body range for the requested column."
 
     Set headerResult = Manager.DataRange("Variable Name", True)
     Assert.AreEqual expectedWithHeaders.Address(True, True, xlA1, True), _
@@ -275,13 +279,13 @@ Public Sub TestImportFromWorksheetHandlesOffsetHeaders()
 
     Set table = FixtureSheet.ListObjects(VARIABLE_TABLE_NAME)
     Assert.AreEqual 1&, table.DataBodyRange.Rows.Count, "Import should overwrite the table with a single row."
-    Assert.AreEqual values(0), table.ListColumns("Variable Order").DataBodyRange.Cells(1, 1).Value
-    Assert.AreEqual values(1), table.ListColumns("Variable Section").DataBodyRange.Cells(1, 1).Value
-    Assert.AreEqual values(2), table.ListColumns("Variable Name").DataBodyRange.Cells(1, 1).Value
-    Assert.AreEqual values(4), table.ListColumns("Default Choice").DataBodyRange.Cells(1, 1).Value
-    Assert.AreEqual values(5), table.ListColumns("Choices Values").DataBodyRange.Cells(1, 1).Value
-    Assert.AreEqual values(6), table.ListColumns("Default Status").DataBodyRange.Cells(1, 1).Value
-    Assert.AreEqual values(7), table.ListColumns("Comments").DataBodyRange.Cells(1, 1).Value
+    Assert.AreEqual values(0), table.ListColumns("Variable Order").DataBodyRange.Cells(1, 1).Value, "header 'Variable Order' should be exported correctly"
+    Assert.AreEqual values(1), table.ListColumns("Variable Section").DataBodyRange.Cells(1, 1).Value, "header 'Variable Section' should be exported correctly"
+    Assert.AreEqual values(2), table.ListColumns("Variable Name").DataBodyRange.Cells(1, 1).Value, "header 'Variable Name' should be exported correctly"
+    Assert.AreEqual values(4), table.ListColumns("Default Choice").DataBodyRange.Cells(1, 1).Value, "header 'Default Choice' should be exported correctly"
+    Assert.AreEqual values(5), table.ListColumns("Choices Values").DataBodyRange.Cells(1, 1).Value, "header 'Choices Values' should be exported correctly"
+    Assert.AreEqual values(6), table.ListColumns("Default Status").DataBodyRange.Cells(1, 1).Value, "header 'Default Status' should be exported correctly"
+    Assert.AreEqual values(7), table.ListColumns("Comments").DataBodyRange.Cells(1, 1).Value, "header 'Comments' should be exported correctly"
 End Sub
 
 '@TestMethod("MasterSetupVariables")
@@ -304,7 +308,7 @@ Public Sub TestCopyToListObjectAppliesNameStyleAndOrder()
     targetSheet.Range("A1").Value = "Foo"
     targetSheet.Range("B1").Value = "Bar"
     targetSheet.Range("A2:B2").Value = vbNullString
-    Set targetTable = targetSheet.ListObjects.Add(xlSrcRange:=targetSheet.Range("A1:B2"), XlListObjectHasHeaders:=xlYes)
+    Set targetTable = targetSheet.ListObjects.Add(xlSrcRange, targetSheet.Range("A1:B2"), XlListObjectHasHeaders:=xlYes)
     targetTable.Name = "TempTable"
 
     Manager.CopyToListObject targetTable
@@ -331,9 +335,9 @@ Private Function BuildChoicesStub() As ILLChoices
     sh.Cells(4, 3).Value = "short label"
     sh.Cells(4, 4).Value = "ordering list"
 
-    sh.Cells(5, 1).Value = "patient_status"
+    sh.Cells(5, 1).Value = "Choice"
     sh.Cells(5, 2).Value = "Active"
-    sh.Cells(6, 1).Value = "patient_status"
+    sh.Cells(6, 1).Value = "Choice"
     sh.Cells(6, 2).Value = "Inactive"
 
     Set BuildChoicesStub = LLChoices.Create(sh, 4, 1)
@@ -371,6 +375,7 @@ Private Sub RegisterWorkbookVariableName()
 
     Set wb = FixtureSheet.Parent
     Set store = HiddenNames.Create(wb)
+
     store.SetListObjectHeader VARIABLE_WORKBOOK_NAME, lo, "Variable Name"
 End Sub
 
