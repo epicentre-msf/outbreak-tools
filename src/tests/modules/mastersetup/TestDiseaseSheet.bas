@@ -1,5 +1,5 @@
-Attribute VB_Name = "TestDiseaseSheetBuilder"
-Attribute VB_Description = "Tests ensuring DiseaseSheetBuilder creates worksheets with headers, validations, and tables"
+Attribute VB_Name = "TestDiseaseSheet"
+Attribute VB_Description = "Tests ensuring DiseaseSheet creates worksheets with headers, validations, and tables"
 
 Option Explicit
 Option Private Module
@@ -56,6 +56,7 @@ Private Sub ModuleCleanup()
     Set Dropdowns = Nothing
     Set Translations = Nothing
     Set VariablesManager = Nothing
+    DeleteWorksheet ANCHOR_SHEET
 End Sub
 
 '@TestInitialize
@@ -67,6 +68,7 @@ End Sub
 
 '@TestCleanup
 Private Sub TestCleanup()
+    Assert.Flush
     CleanupEnvironment
 End Sub
 
@@ -101,30 +103,44 @@ Public Sub TestBuildCreatesWorksheet()
     Assert.AreEqual MARKER_NAME_PREFIX, diseaseSheet.Cells(2, 4).Value, "Marker cell should identify disease worksheets."
     Assert.IsTrue InStr(1, diseaseSheet.Cells(2, 2).Validation.Formula1, LANGUAGES_LIST, vbTextCompare) > 0, _
                  "Language cell should use the languages dropdown."
-
+    
+   
     Set table = diseaseSheet.ListObjects("disTab_001")
+
+  
+    
     Assert.AreEqual labelHeader, table.HeaderRowRange.Cells(1, 4).Value, "Headers should be translated"
 
     validationFormula = table.ListColumns("Variable Name").DataBodyRange.Validation.Formula1
     Assert.IsTrue InStr(1, validationFormula, VARIABLE_NAME_RANGE, vbTextCompare) > 0, _
                  "Variable column should reference the workbook variable list."
 
+    
+
     validationFormula = table.ListColumns(choiceHeader).DataBodyRange.Validation.Formula1
     Assert.IsTrue InStr(1, validationFormula, CHOICES_LIST, vbTextCompare) > 0, _
                  "Choice column should be validated against the choices dropdown."
 
+    Debug.Print "anchor"
+   
+    
     validationFormula = table.ListColumns(statusHeader).DataBodyRange.Validation.Formula1
     Assert.IsTrue InStr(1, validationFormula, STATUS_LIST, vbTextCompare) > 0, _
                  "Status column should use the status dropdown."
 
+    
     Assert.IsTrue table.ListColumns(choicesValueHeader).DataBodyRange.Locked, "Choice values column should be locked."
     Assert.IsTrue table.ListColumns(labelHeader).DataBodyRange.Locked, "Translated label column should be locked."
+    
+    
 
     Set sheetStore = HiddenNames.Create(diseaseSheet)
     Assert.AreEqual "disease", sheetStore.ValueAsString(SHEET_TAG_NAME), "Sheet tag metadata should be stored."
     Assert.AreEqual "Zeta", sheetStore.ValueAsString(NAME_DISNAME), "Disease name metadata should match the worksheet name."
     Assert.AreEqual "ENG", sheetStore.ValueAsString(NAME_DISLANG), "Language metadata should match the selected language."
     Assert.AreEqual 1&, sheetStore.ValueAsLong(NAME_INDEX, 0), "Disease index should be persisted through hidden names."
+
+
 
     Set workbookStore = HiddenNames.Create(ThisWorkbook)
     Assert.AreEqual "Zeta", workbookStore.ValueAsString(MARKER_NAME_PREFIX & "001"), _
@@ -212,14 +228,15 @@ Private Sub PrepareEnvironment()
     Set variablesSheet = EnsureWorksheet(ANCHOR_SHEET)
     ClearWorksheet variablesSheet
 
-    variablesSheet.Range("A1").Value = "Variable Name"
-    variablesSheet.Range("B1").Value = "Variable Label"
-    variablesSheet.Range("A2").Value = "var_age"
+    variablesSheet.Range("A1").Value = "Variable Order"
+    variablesSheet.Range("B1").Value = "Variable Section"
+    variablesSheet.Range("C1").Value = "Variable Name"
+    variablesSheet.Range("C2").Value = "var_age"
     variablesSheet.Range("B2").Value = "Age"
-    variablesSheet.Range("A3").Value = "var_fever"
+    variablesSheet.Range("C3").Value = "var_fever"
     variablesSheet.Range("B3").Value = "Fever"
 
-    Set variableTable = variablesSheet.ListObjects.Add(xlSrcRange:=variablesSheet.Range("A1:B3"), _
+    Set variableTable = variablesSheet.ListObjects.Add(xlSrcRange, variablesSheet.Range("A1:C3"), _
                                                        XlListObjectHasHeaders:=xlYes)
     variableTable.Name = "TST_MasterVariables"
 
@@ -234,8 +251,7 @@ Private Sub PrepareEnvironment()
     AddDropdownList Dropdowns, STATUS_LIST, Array("core", "optional")
     AddDropdownList Dropdowns, CHOICES_LIST, Array("choice_age", "choice_fever", "choice_other")
     AddDropdownList Dropdowns, PROHIBITED_LIST, Array("Variables", "Translations")
-    AddDropdownList Dropdowns, DISEASES_LIST, Array("placeholder")
-    Dropdowns.ClearList DISEASES_LIST
+    AddDropdownList Dropdowns, DISEASES_LIST, Array("", "")
 
     Set translationSheet = EnsureWorksheet(TRANSLATION_SHEET)
     ClearWorksheet translationSheet
@@ -248,8 +264,8 @@ Private Sub PrepareEnvironment()
         Array("varSection", "Variable Section"), _
         Array("varName", "Variable Name"), _
         Array("varLabel", "Main Label"), _
-        Array("varChoice", "Control"), _
-        Array("choiceVal", "Choices"), _
+        Array("varChoice", "Choice"), _
+        Array("choiceVal", "Choice Values"), _
         Array("varStatus", "Status"), _
         Array("errLang", "Please select a language") _
     )
@@ -277,12 +293,6 @@ Private Sub CleanupEnvironment()
     DeleteNameSafe MARKER_NAME_PREFIX & "002"
     DeleteNameSafe MARKER_NAME_PREFIX & "003"
 
-    If Not Dropdowns Is Nothing Then
-        On Error Resume Next
-            Dropdowns.ClearList DISEASES_LIST
-        On Error GoTo 0
-    End If
-
     Set Builder = Nothing
     Set Dropdowns = Nothing
     Set Translations = Nothing
@@ -303,7 +313,7 @@ End Sub
 
 Private Function Translate(ByVal key As String, ByVal fallback As String) As String
     Translate = Translations.TranslatedValue(key)
-    If LenB(Translate) = 0 Then Translate = fallback
+    If LenB(Translate) = 0 Or (Translate = key) Then Translate = fallback
 End Function
 
 Private Sub ClearWorksheetSafe(ByVal sheetName As String)
