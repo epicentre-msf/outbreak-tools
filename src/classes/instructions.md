@@ -28,6 +28,8 @@ required VBA syntax.
 20. ALWAYS READ IMPLEMENTATION OR IMPROVEMENT FILE CORRECTLY BEFORE PROCEEDING.
 21. Use BetterArray instead of collections if necessary.
 22. ALWAYS add failure management for tests.
+23. You seem to regularly misuse the xlscRange argument of ListObject.Add. It is a CONSTANT!!!! not a parameter. The syntax
+for listObject add is expression.Add(SourceType, Source, LinkSource, XlListObjectHasHeaders, Destination). Avoid using xlsrcRange as a parameter.
 
 **Progress**
 - [DONE] Expanded SetupErrors tests to cover dictionary, choices, and exports error constants.

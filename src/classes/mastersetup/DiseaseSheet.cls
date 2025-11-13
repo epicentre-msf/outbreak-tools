@@ -132,12 +132,17 @@ Private Function Build(ByVal diseaseName As String, Optional ByVal languageTag A
 
     diseaseName = Trim$(diseaseName)
     ValidateBuildInputs diseaseName, languageTag
+    this.hostIndex = ResolveNextDiseaseIndex()
 
     'create the disease worksheet
     CreateDiseaseWorksheet diseaseName
 
+
+
     'Add the table, validations and metadata
     WriteData
+
+    
     
     'Format the disease worksheet, add lockings
     FormatDiseaseSheet
@@ -293,7 +298,6 @@ Private Sub UpdateInternalElements(ByVal hostsheet As Worksheet)
     temp.Push hostsheet.Name
 
     this.dropdowns.Update temp, DISEASES_DROPODWN
-    this.hostIndex = temp.Length
     Set this.hostSheet = hostsheet
 End Sub
 
@@ -314,6 +318,7 @@ Private Sub WriteValues()
     langAddress = anchorRng.Address(True, True)
 
     anchorRng.Value = this.hostLanguage
+    this.hostSheet.Cells(ANCHORROW, ANCHORCOLUMN + 1).Value = DiseaseCodeName()
     this.hostSheet.Cells(ANCHORROW, DISEASE_MARKER_COLUMN).Value = DEFAULT_DISEASE_CODE
     
     EnsureColumnsInitialized
@@ -355,6 +360,7 @@ Private Sub CreateDiseaseTable()
     Set tableRange = this.hostSheet.Range(anchorRng, dataEnd)
     Set table = this.hostSheet.ListObjects.Add(xlSrcRange, tableRange, , xlYes)
     table.Name = DEFAULT_TABLE_PREFIX & Format$(this.hostIndex, "000")
+    table.Style = ""
     Set this.hostTable = CustomTable.Create(table)
 
 End Sub
@@ -394,7 +400,6 @@ Private Sub WriteMetadata()
 
     Dim storeSheet As IHiddenNames
     Dim storeBook As IHiddenNames
-    Dim diseaseCodeName As String
 
     If this.hostSheet Is Nothing Then Exit Sub
 
@@ -414,20 +419,25 @@ Private Sub WriteMetadata()
     'Add the disease name to the worksheet
     storeSheet.EnsureName NAME_DISNAME, this.hostSheet.Name, HiddenNameTypeString
 
-    'Add the disease code name
-    diseaseCodeName = DEFAULT_DISEASE_CODE & Format$(this.hostIndex, "000")
 
     'Add the disease code name to the workbook
-    storeBook.EnsureName diseaseCodeName, this.hostSheet.Name, HiddenNameTypeString
+    storeBook.EnsureName DiseaseCodeName(), this.hostSheet.Name, HiddenNameTypeString
 End Sub
 
 
 Private Sub FormatDiseaseSheet()
+    Dim anchorRng As Range
+
+    Set anchorRng = this.hostSheet.Cells(ANCHORROW, ANCHORCOLUMN)
+    this.hostSheet.Cells.Font.Name = "Calibri"
+    this.hostSheet.ListObjects(1).T
+
     RemoveGridlines this.hostSheet
-    With this.hostSheet
+    With this.hostShee
         .Cells.Font.Name = "Calibri"
-        .Cells(ANCHORROW, ANCHORCOLUMN).Interior.Color = RGB(0, 82, 155)
+        .Interior.Color = RGB(0, 82, 155)
         .Cells(ANCHORROW, ANCHORCOLUMN).Font.Color = vbWhite
+
     End With
 
     'Format the table header Range. and interiror color
@@ -507,6 +517,69 @@ Private Function Translate(ByVal key As String, ByVal fallback As String) As Str
     End If
 
     Translate = retVal
+End Function
+
+Private Function ResolveNextDiseaseIndex() As Long
+    Dim highestIndex As Long
+    Dim fallbackCount As Long
+    Dim sh As Worksheet
+    Dim sheetIndex As Long
+
+    If this.hostwb Is Nothing Then Exit Function
+
+    For Each sh In this.hostwb.Worksheets
+        If WorksheetIsDisease(sh) Then
+            sheetIndex = DiseaseSheetIndex(sh)
+            If sheetIndex > 0 Then
+                If sheetIndex > highestIndex Then highestIndex = sheetIndex
+            Else
+                fallbackCount = fallbackCount + 1
+            End If
+        End If
+    Next sh
+
+    If highestIndex > 0 Then
+        ResolveNextDiseaseIndex = highestIndex + 1
+    Else
+        ResolveNextDiseaseIndex = fallbackCount + 1
+    End If
+End Function
+
+Private Function WorksheetIsDisease(ByVal targetSheet As Worksheet) As Boolean
+    Dim store As IHiddenNames
+    Dim tagValue As String
+
+    If targetSheet Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set store = HiddenNames.Create(targetSheet)
+    On Error GoTo 0
+
+    If Not store Is Nothing Then
+        tagValue = Trim$(store.ValueAsString(NAME_SHEET_TAG))
+        If LenB(tagValue) > 0 Then
+            WorksheetIsDisease = (StrComp(tagValue, "disease", vbTextCompare) = 0)
+            If WorksheetIsDisease Then Exit Function
+        End If
+    End If
+End Function
+
+Private Function DiseaseSheetIndex(ByVal targetSheet As Worksheet) As Long
+    Dim store As IHiddenNames
+
+    If targetSheet Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set store = HiddenNames.Create(targetSheet)
+    On Error GoTo 0
+
+    If store Is Nothing Then Exit Function
+
+    DiseaseSheetIndex = store.ValueAsLong(NAME_INDEX, 0)
+End Function
+
+Private Function DiseaseCodeName() As String
+    DiseaseCodeName = DEFAULT_DISEASE_CODE & Format$(this.hostIndex, "000")
 End Function
 
 '@section ErrorHandling
