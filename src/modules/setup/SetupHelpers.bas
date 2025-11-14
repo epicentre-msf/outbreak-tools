@@ -80,6 +80,10 @@ Public Sub DeleteListRowAt(ByVal sheetName As String, ByVal targetCell As Range)
     Dim svc As IEventSetup
     Dim resolved As String
 
+    
+    If MsgBox("Delete the selected rows?" & vbCrLf & "THIS OPERATION IS IRREVERSIBLE.", vbExclamation + vbYesNo, "Delete Rows") <> vbYes Then Exit Sub
+
+
     resolved = ResolveSetupSheetName(sheetName)
     If LenB(resolved) = 0 Then resolved = sheetName
     
@@ -95,7 +99,14 @@ Public Sub DeleteListColumnAt(ByVal sheetName As String, ByVal targetCell As Ran
     Dim colIndex As Long
 
     If (sheetName <> ResolveSetupSheetName("trans")) Then Exit Sub
+    
+    
+    If MsgBox("Delete the selected Column?" & vbCrLf & "THIS OPERATION IS IRREVERSIBLE.", vbExclamation + vbYesNo, "Delete Rows") <> vbYes Then Exit Sub
+
+    
     If targetCell Is Nothing Then Exit Sub
+
+
 
     On Error Resume Next
         Set targetSheet = ThisWorkbook.Worksheets(sheetName)

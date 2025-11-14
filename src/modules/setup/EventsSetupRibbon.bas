@@ -110,8 +110,6 @@ Public Sub clickDelLoRows(ByRef control As IRibbonControl)
     If TypeName(Selection) <> "Range" Then Exit Sub
     Set targetCell = Selection
 
-    If MsgBox("Delete the selected rows?", vbQuestion + vbYesNo, "Delete Rows") <> vbYes Then Exit Sub
-
     On Error GoTo Handler
 
     SetupHelpers.DeleteListRowAt targetSheet.Name, targetCell
