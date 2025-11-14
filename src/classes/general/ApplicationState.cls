@@ -32,6 +32,8 @@ Private Type TScopeState
     snapshotCaptured As Boolean                 'Flag indicating a snapshot is ready for restoration
     isBusy As Boolean
     calcBeforeSave As Boolean                    'Flag indicating busy mode is currently applied
+    automationSecurity As MsoAutomationSecurity  'Cached automation security level
+    securityBlocked As Boolean                   'Indicates whether automation security is currently blocked
 End Type
 
 Private this As TScopeState
@@ -105,7 +107,8 @@ End Sub
 '===============================================================================
 Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False, _
                                Optional ByVal calculateOnSave As Boolean = True, _
-                               Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow)
+                               Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow, _
+                               Optional ByVal blockSecurity As Boolean = False)
     Dim target As Application
 
     If this.isBusy Then Exit Sub
@@ -120,6 +123,11 @@ Private Sub ApplyBusyStateCore(Optional ByVal suppressEvents As Boolean = False,
         If suppressEvents Then target.EnableEvents = (Not suppressEvents)
         target.CalculateBeforeSave = calculateOnSave
         target.Cursor = busyCursor
+        If blockSecurity And Not this.securityBlocked Then
+            this.automationSecurity = target.AutomationSecurity
+            target.AutomationSecurity = msoAutomationSecurityForceDisable
+            this.securityBlocked = True
+        End If
         If this.supportsAnimations Then
             SafeSetEnableAnimations target, False
         End If
@@ -145,6 +153,7 @@ Private Sub CaptureSnapshotCore()
     this.supportsAnimations = TryReadEnableAnimations(target, this.enableAnimations)
     this.supportsEvents = target.EnableEvents
     this.calcBeforeSave = target.CalculateBeforeSave
+    this.automationSecurity = target.AutomationSecurity
     this.cursor = target.Cursor
     this.snapshotCaptured = True
 End Sub
@@ -198,6 +207,10 @@ Private Sub RestoreInternal(ByVal silent As Boolean)
         target.Calculation = this.calculationMode
         target.EnableEvents = this.supportsEvents
         target.CalculateBeforeSave = this.calcBeforeSave
+        If this.securityBlocked Then
+            target.AutomationSecurity = this.automationSecurity
+            this.securityBlocked = False
+        End If
         target.Cursor = this.cursor
         If this.supportsAnimations Then
             SafeSetEnableAnimations target, this.enableAnimations
@@ -249,8 +262,9 @@ End Sub
 '===============================================================================
 Private Sub IApplicationState_ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _
                                              Optional ByVal calculateOnSave As Boolean = True, _
-                                             Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow)
-    ApplyBusyStateCore suppressEvents, calculateOnSave, busyCursor
+                                             Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow, _
+                                             Optional ByVal blockSecurity As Boolean = False)
+    ApplyBusyStateCore suppressEvents, calculateOnSave, busyCursor, blockSecurity
 End Sub
 
 Private Sub IApplicationState_Restore()
