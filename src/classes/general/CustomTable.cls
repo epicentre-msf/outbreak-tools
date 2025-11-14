@@ -925,14 +925,8 @@ Private Function DataRowCount() As Long
 End Function
 
 Private Function DataColumnCount() As Long
-   Dim body As Range
-
   EnsureTableInitialized
-  Set body = Table().DataBodyRange
-  If body Is Nothing Then Exit Function
-
-  DataColumnCount = body.Columns.Count
-
+  DataColumnCount = Table.ListColumns.Count
 End Function
 
 '@label:EnsureRowCapacity
@@ -956,7 +950,6 @@ Private Sub EnsureColumnCapacity(ByVal requiredColumns As Long)
 
   Dim currCols As Long
   Dim Lo As ListObject
-  Dim counter As Long
   Dim trimedColumns As Long
 
   EnsureTableInitialized
@@ -964,16 +957,23 @@ Private Sub EnsureColumnCapacity(ByVal requiredColumns As Long)
   trimedColumns = Application.WorksheetFunction.Max(0, requiredColumns)
   currCols = Application.WorksheetFunction.Max(1, DataColumnCount())
 
-  If currCols <= trimedColumns Then Exit Sub
   Set Lo = Table()
 
-  For counter = trimedColumns + 1 To currCols
+  'Add the missing columns before copying incoming headers so we avoid
+  'Excel-provided defaults like "Column1".
+  Do While currCols < trimedColumns
+    Lo.ListColumns.Add
+    currCols = currCols + 1
+  Loop
+
+  'Trim excess columns using a descending loop so index shifts do not skip columns.
+  Do While currCols > trimedColumns
     On Error Resume Next
-    Lo.ListColumns(counter).DataBodyRange.Cells.Clear
+      Lo.ListColumns(currCols).DataBodyRange.Cells.Clear
     On Error GoTo 0
-    
-    Lo.ListColumns(counter).Delete
-  Next
+    Lo.ListColumns(currCols).Delete
+    currCols = currCols - 1
+  Loop
 End Sub
 
 '@label:TrimTableRows
@@ -1570,8 +1570,8 @@ End Sub
 '@export
 Private Sub ImportAll(ByVal impTab As Object, Optional ByVal insertShift As Boolean = False)
 
-  Dim currhRng As Range
   Dim imphRng As Range
+  Dim currhRng As Range
   Dim currLo As listObject
   Dim sh As Worksheet
   Dim bodyRng As Range
@@ -1580,7 +1580,6 @@ Private Sub ImportAll(ByVal impTab As Object, Optional ByVal insertShift As Bool
   Dim headerCol As Long
 
   Set currLo = Table()
-  Set currhRng = HeaderRange()
   Set imphRng = impTab.HeaderRange()
 
   Set sh = Wksh()
@@ -1590,6 +1589,7 @@ Private Sub ImportAll(ByVal impTab As Object, Optional ByVal insertShift As Bool
 
   TrimTableRows 1
   EnsureColumnCapacity imphRng.Columns.count
+  Set currhRng = HeaderRange()
 
   headerRow = currhRng.Row
   headerCol = currhRng.Column

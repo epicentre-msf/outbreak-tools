@@ -14,6 +14,10 @@ Private Const SOURCE_SHEETNAME As String = "CustomTableFixtureSource"
 Private Const DATASHEETNAME As String = "CustomTableData"
 Private Const MULTITABLESHEET As String = "CustomTableMulti"
 Private Const EXPORTSHEETNAME As String = "CustomTableExport"
+Private Const EXPAND_SHEETNAME As String = "CustomTableExpand"
+Private Const EXPAND_TABLE_NAME As String = "tblExpandTarget"
+Private Const TRIM_SHEETNAME As String = "CustomTableTrim"
+Private Const TRIM_TABLE_NAME As String = "tblTrimTarget"
 
 Private Assert As ICustomTest
 Private Fakes As Object
@@ -930,6 +934,74 @@ Public Sub TestImportAllDataSheetShiftsFollowingTables()
 
 Fail:
     CustomTestLogFailure Assert, "TestImportAllDataSheetShiftsFollowingTables", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomTable")
+Public Sub TestImportAllExpandsColumnsWithHeaders()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportAllExpandsColumnsWithHeaders"
+    On Error GoTo Fail
+
+    Dim targetTable As ICustomTable
+    Dim sourceTable As ICustomTable
+    Dim targetLo As ListObject
+    Dim targetHeaders As Variant
+    Dim targetRows As Variant
+    Dim sourceHeaders As Variant
+    Dim sourceRows As Variant
+
+    targetHeaders = Array("ID", "Name")
+    targetRows = Array(Array("row 1", "One"))
+    Set targetTable = CreateCustomTableWithData(EXPAND_SHEETNAME, EXPAND_TABLE_NAME, targetHeaders, targetRows)
+
+    sourceHeaders = Array("ID", "Name", "Amount", "Notes")
+    sourceRows = Array(Array("row 1", "Uno", 100, "Extra"))
+    Set sourceTable = CreateCustomTableWithData(SOURCE_SHEETNAME, "tblExpandSource", sourceHeaders, sourceRows)
+
+    targetTable.Import sourceTable, keepSourceHeaders:=True
+    Set targetLo = ThisWorkbook.Worksheets(EXPAND_SHEETNAME).ListObjects(EXPAND_TABLE_NAME)
+
+    Assert.AreEqual 4, targetLo.ListColumns.Count, "ImportAll should expand target columns to match source headers"
+    Assert.AreEqual "Notes", targetLo.ListColumns(4).Name, "New columns should copy the source header names"
+    Assert.AreEqual "Extra", targetLo.ListColumns("Notes").DataBodyRange.Cells(1, 1).Value, _
+                     "Imported data should populate the newly added column"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestImportAllExpandsColumnsWithHeaders", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomTable")
+Public Sub TestImportAllTrimsExtraColumns()
+    CustomTestSetTitles Assert, "CustomTable", "TestImportAllTrimsExtraColumns"
+    On Error GoTo Fail
+
+    Dim targetTable As ICustomTable
+    Dim sourceTable As ICustomTable
+    Dim targetLo As ListObject
+    Dim targetHeaders As Variant
+    Dim targetRows As Variant
+    Dim sourceHeaders As Variant
+    Dim sourceRows As Variant
+
+    targetHeaders = Array("ID", "Name", "Amount", "Notes")
+    targetRows = Array(Array("row 1", "One", 10, "keep"))
+    Set targetTable = CreateCustomTableWithData(TRIM_SHEETNAME, TRIM_TABLE_NAME, targetHeaders, targetRows)
+
+    sourceHeaders = Array("ID", "Name")
+    sourceRows = Array(Array("row 1", "Replace"))
+    Set sourceTable = CreateCustomTableWithData(SOURCE_SHEETNAME, "tblTrimSource", sourceHeaders, sourceRows)
+
+    targetTable.Import sourceTable, keepSourceHeaders:=True
+    Set targetLo = ThisWorkbook.Worksheets(TRIM_SHEETNAME).ListObjects(TRIM_TABLE_NAME)
+
+    Assert.AreEqual 2, targetLo.ListColumns.Count, "ImportAll should trim extra columns when source has fewer headers"
+    Assert.AreEqual "Name", targetLo.ListColumns(2).Name, "Remaining columns must match the source headers"
+    Assert.AreEqual "Replace", targetLo.ListColumns("Name").DataBodyRange.Cells(1, 1).Value, _
+                     "Imported data should fill the trimmed table correctly"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestImportAllTrimsExtraColumns", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("CustomTable")
