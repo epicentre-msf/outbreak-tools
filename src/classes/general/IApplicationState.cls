@@ -25,7 +25,8 @@ Option Explicit
 '@param busyCursor Optional cursor to display while busy; defaults to xlNorthWestArrow.
 Public Sub ApplyBusyState(Optional ByVal suppressEvents As Boolean = False, _ 
                           Optional ByVal calculateOnSave As Boolean = True, _
-                          Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow)
+                          Optional ByVal busyCursor As XlMousePointer = xlNorthWestArrow, _
+                          Optional ByVal blockSecurity As Boolean = False)
 End Sub
 
 '@sub-title Restore to original state

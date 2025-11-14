@@ -62,3 +62,5 @@ for listObject add is expression.Add(SourceType, Source, LinkSource, XlListObjec
 - [DONE] Exposed MasterSetupVariables.DataRange plus unit tests and taught MasterSetupPreparation to publish the Variable Name data range as a hidden workbook name.
 - [DONE] Added MasterSetupVariables.SetVariableValidation to wire workbook-scoped variable lists into validations with comprehensive tests.
 - [DONE] Polished TranslationObject.LanguagesList, exposed it through the interface, and added regression tests covering header enumeration.
+- [DONE] Simplified RibbonDev to capture the first ribbon instance only and documented via OnRibbonLoad static guard.
+- [DONE] Introduced optional automation-security blocking to ApplicationState scopes and taught SetupImportService to use it during imports.
