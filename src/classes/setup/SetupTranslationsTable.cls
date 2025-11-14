@@ -1130,56 +1130,29 @@ End Sub
 '@sub-title ApplyLangColumnFormatting
 Private Sub ApplyLangColumnFormatting(ByVal langRng As Range)
 
-    Dim headerRange As Range
-
     If langRng Is Nothing Then Exit Sub
 
-    Set headerRange = langRng.Cells(0, 1)
+    With langRng
+    
+        .Cells(0, 1).Locked = False 'Unlock the first cell for the language
+        .Cells.Font.Name = "Consolas"
+        .Cells.Font.Size = 16
+        .Cells(0, 1).Font.Size = 18
+        .Cells.WrapText = True
+        .Cells.EntireRow.AutoFit
+        .Cells.HorizontalAlignment = xlHAlignLeft
+        .Cells.VerticalAlignment = xlVAlignCenter
 
-    headerRange.Font.Color = RGB(34, 96, 162)
-    headerRange.Interior.Color = RGB(221, 235, 247)
-    headerRange.Locked = False
+    End With
 
-    On Error Resume Next
-        With langRng
-            With .Borders(xlEdgeTop)
-                .LineStyle = xlContinuous
-                .Weight = xlHairline
-                .Color = RGB(34, 96, 162)
-            End With
-            With .Borders(xlEdgeBottom)
-                .LineStyle = xlContinuous
-                .Weight = xlHairline
-                .Color = RGB(34, 96, 162)
-            End With
-            With .Borders(xlEdgeRight)
-                .LineStyle = xlContinuous
-                .Weight = xlHairline
-                .Color = RGB(34, 96, 162)
-            End With
-            With .Borders(xlEdgeLeft)
-                .LineStyle = xlContinuous
-                .Weight = xlHairline
-                .Color = RGB(34, 96, 162)
-            End With
-            With .Borders(xlInsideHorizontal)
-                .LineStyle = xlContinuous
-                .Weight = xlHairline
-                .Color = RGB(34, 96, 162)
-            End With
-            With .Borders(xlInsideVertical)
-                .LineStyle = xlContinuous
-                .Weight = xlHairline
-                .Color = RGB(34, 96, 162)
-            End With
-        End With
-    On Error GoTo 0
-
+    'Formatting conditions
     langRng.FormatConditions.AddUniqueValues
+
     With langRng.FormatConditions(langRng.FormatConditions.Count)
         .DupeUnique = xlDuplicate
         .Interior.Color = vbRed
     End With
+
 End Sub
 
 '@sub-title Ensure the helper column header is located and configured.
@@ -1361,11 +1334,9 @@ Private Sub ApplyFormatting()
     Set tableRange = this.table.Range
 
     On Error Resume Next
-        this.table.TableStyle = vbNullString
-        tableRange.Interior.Color = vbWhite
-        tableRange.Font.Color = vbBlack
-        tableRange.EntireRow.RowHeight = 30
+        this.table.TableStyle = "TableStyleLight11"
         tableRange.EntireColumn.ColumnWidth = 60
+        tableRange.Rows(1).Font.Color = vbWhite
     On Error GoTo 0
 
     If dataRange Is Nothing Then Exit Sub
