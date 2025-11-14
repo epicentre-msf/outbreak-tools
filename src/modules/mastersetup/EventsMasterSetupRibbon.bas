@@ -419,7 +419,7 @@ Public Sub clickLangChange(ByRef control As IRibbonControl, ByVal langId As Stri
 
     RefreshDropdownCaches
 
-    Set ribbon = RibbonDev.ActualRibbon
+    Set ribbon = RibbonDev.ActualRibbon()
     If Not ribbon Is Nothing Then ribbon.Invalidate
 
     On Error Resume Next

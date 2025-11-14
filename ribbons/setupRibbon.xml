@@ -1,13 +1,13 @@
 <customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="OnRibbonLoad">
   <ribbon startFromScratch="false">
     <tabs>
-      <tab id="customTab" label="OutbreakTools">
+      <tab id="customSetupTab" label="OutbreakTools">
         <group id="customGroupManage">
           <button id="btnAdd" label="Add rows to tables" imageMso="QueryShowTable" size="large" onAction="clickAddRows"/>
           <button id="btnRes" label="Resize tables" imageMso="SheetRowsDelete" size="large" onAction="clickResize"/>
+          <button id="btnInsertRow" label="Insert row" image="insertrow" size="large" onAction="clickInsertRow"/>
           <button id="btnDelLoRow" label="Delete table row" image="dellorows" size="large" onAction="clickDelLoRows" getVisible="SetupButtonVisible"/>
           <button id="btnDelLoCol" label="Delete table column" image="dellocolumn" size="large" onAction="clickDelLoColumn" getVisible="SetupButtonVisible"/>
-          <button id="btnInsertRow" label="Insert row" image="insertrow" size="large" onAction="clickInsertRow"/>
           <button id="btnSort" label="Sort tables" image="sort" size="large" onAction="clickSortTables" getVisible="SetupButtonVisible"/>
           <button id="btnFilt" label="Remove all filters" imageMso="FilterClearAllFilters" size="large" onAction="clickFilters"/>
         </group>
@@ -18,7 +18,7 @@
           <button id="btnTagUpdate" label="Reset translation tags" image="headertag" size="normal" onAction="clickResetTag"/>
         </group>
         <group id="customGroupImport">
-          <button id="btnImp" label="Import data from another setup" image="import" size="large" onAction="clickImport"/>
+          <button id="btnImp" label="Import from another setup" image="import" size="large" onAction="clickImport"/>
           <button id="btnImpExp" label="Import from migration" image="importdisease" size="large" onAction="clickImportFile"/>
           <button id="btnExport"  label = "Export for migration" image="download" size="large" onAction="clickExport"/>
         </group>

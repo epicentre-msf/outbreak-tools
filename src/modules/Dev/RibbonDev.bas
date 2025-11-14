@@ -13,8 +13,15 @@ Private Const PASS_SHEET_NAME As String = "__pass"
 Private Const PROMPT_TITLE As String = "Development"
 Private gRibbon As IRibbonUI
 
-Public Sub OnRibbonLoad(ribbon As IRibbonUI)
+'@section Ribbon management
+'===============================================================================
+
+Public Sub OnRibbonLoad(ByVal ribbon As IRibbonUI)
+    Static ribbonRegistered As Boolean
+
+    If ribbonRegistered Then Exit Sub
     Set gRibbon = ribbon
+    ribbonRegistered = True
 End Sub
 
 Public Function ActualRibbon() As IRibbonUI

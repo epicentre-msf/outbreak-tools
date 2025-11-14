@@ -293,15 +293,20 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
         Exit Sub
     End If
 
+    SetupHelpers.UnProtectSetupSheet TRADSHEETNAME
+    translationsUnlocked = True
+
     Set manager = SetupTranslationsTable.Create(translationsTable)
     Set languages = manager.Languages
     If (languages Is Nothing) Or (languages.Length = 0) Then
         MsgBox "No translation languages were found. Add a language column first.", vbExclamation
-        Exit Sub
+        GoTo CleanUp
     End If
 
     selectedLanguage = PromptTranslationLanguage(languages)
-    If LenB(selectedLanguage) = 0 Then Exit Sub
+    If LenB(selectedLanguage) = 0 Then 
+        GoTo CleanUp
+    End If
 
     On Error GoTo Handler
 
@@ -311,14 +316,11 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
     If (nbMissing > 0) Then
         MsgBox "Aborted translation of the setup: Language " & selectedLanguage & _ 
                " has " & nbMissing & " missing labels. Please fill them before attempting a translation.", vbExclamation
-        Exit Sub
+        GoTo CleanUp
     End If
 
     Set app = ApplicationState.Create(Application)
     app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
-
-    SetupHelpers.UnProtectSetupSheet TRADSHEETNAME
-    translationsUnlocked = True
 
     Set translator = TranslationObject.Create(translationsTable, selectedLanguage)
     SetupHelpers.ApplySetupTranslation translator

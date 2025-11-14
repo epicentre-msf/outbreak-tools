@@ -619,9 +619,7 @@ End Sub
 
 Private Sub EnsureRibbon()
     If Not (this.ribbon Is Nothing) Then Exit Sub
-    'On Error Resume Next
-        Set this.ribbon = RibbonDev.ActualRibbon()
-    'On Error GoTo 0
+    Set this.ribbon = RibbonDev.ActualRibbon()
 End Sub
 
 Private Function EnsureDictionary() As Boolean

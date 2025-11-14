@@ -424,7 +424,10 @@ Private Sub Sort()
 
             csTab.Sort colName, directSort:=False
             If loName = TIMESERIES Then csTab.Sort "Table order", directSort:=True, strictSearch:=False
-            If loName = GRAPHTIMESERIES Then csTab.Sort "Graph order", directSort:=True, strictSearch:=False
+            If ((loName = GRAPHTIMESERIES) Or (loName = TITLEGRAPHTIMESERIES)) Then 
+                csTab.Sort "Graph order", directSort:=True, strictSearch:=False
+            End If
+            
         
             'Resize the listObject after sorting
             csTab.RemoveRows totalCount:=rowCount, forceShift:=True

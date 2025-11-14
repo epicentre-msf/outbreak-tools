@@ -149,20 +149,27 @@ Private Sub EnterBusyState()
 
     Set scope = ApplicationScope()
     If Not scope.IsBusy Then
-        scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
+        scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False, blockSecurity:=True
     End If
 End Sub
 
 '@sub-title Restore Excel configuration when work completes.
 Private Sub LeaveBusyState(Optional ByVal silent As Boolean = False)
     If this.appScope Is Nothing Then Exit Sub
+    
+    If Not this.appScope.IsBusy Then
+        Set this.appScope = Nothing
+        Exit Sub
+    End If
 
     On Error GoTo RestoreFailed
         this.appScope.Restore
     On Error GoTo 0
+    Set this.appScope = Nothing
     Exit Sub
 
 RestoreFailed:
+    Set this.appScope = Nothing
     If Not silent Then
         Err.Raise Err.Number, CLASS_NAME, "Failed to restore application state: " & Err.Description
     Else
