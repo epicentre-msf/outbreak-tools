@@ -342,6 +342,99 @@ Fail:
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
+Public Sub TestDuplicateLabelsReturnsEmptyWhenAllLabelsUnique()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateLabelsReturnsEmptyWhenAllLabelsUnique"
+    On Error GoTo Fail
+
+    ResetTranslationsTableRows
+    AppendTranslationLabel "Alpha"
+    AppendTranslationLabel "Beta"
+    AppendTranslationLabel "Gamma"
+
+    Dim summary As String
+    Assert.IsFalse Subject.DuplicateLabels(summary), "DuplicateLabels should return False when no duplicates exist"
+    Assert.AreEqual vbNullString, summary, "DuplicateLabels should not populate the message when no duplicates exist"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDuplicateLabelsReturnsEmptyWhenAllLabelsUnique", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestDuplicateLabelsReportsFirstDuplicate()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateLabelsReportsFirstDuplicate"
+    On Error GoTo Fail
+
+    ResetTranslationsTableRows
+    AppendTranslationLabel "Hello"
+    AppendTranslationLabel "World"
+    AppendTranslationLabel "hello"
+    AppendTranslationLabel "World"
+
+    Dim summary As String
+    Dim duplicateMessage As String
+    Assert.IsTrue Subject.DuplicateLabels(duplicateMessage), "DuplicateLabels should return True when duplicates exist"
+    Assert.AreEqual "Duplicate labels detected in column English!" & vbLf & """Hello"" has 2 duplicates", duplicateMessage, "DuplicateLabels should list all duplicates for the label column"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDuplicateLabelsReportsFirstDuplicate", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestDuplicateLabelsHonoursLanguageParameter()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateLabelsHonoursLanguageParameter"
+    On Error GoTo Fail
+
+    ResetTranslationsTableRows
+    Subject.EnsureLanguages "French"
+
+    AppendTranslationLabel "Alpha"
+    AppendTranslationLabel "Beta"
+    AppendTranslationLabel "Gamma"
+
+    TranslationsTable.ListColumns("French").DataBodyRange.Cells(1, 1).Value = "Bonjour"
+    TranslationsTable.ListColumns("French").DataBodyRange.Cells(2, 1).Value = "Salut"
+    TranslationsTable.ListColumns("French").DataBodyRange.Cells(3, 1).Value = "bonjour"
+
+    Dim summary As String
+    Dim frenchSummary As String
+    Assert.IsTrue Subject.DuplicateLabels(frenchSummary, "French"), "DuplicateLabels should detect duplicates within the specified language column"
+    Assert.AreEqual "Duplicate labels detected in column French!" & vbLf & """Bonjour"" has 2 duplicates", frenchSummary, "DuplicateLabels should evaluate duplicates within the specified language column"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDuplicateLabelsHonoursLanguageParameter", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestDuplicateLabelsListsAllDuplicateValues()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateLabelsListsAllDuplicateValues"
+    On Error GoTo Fail
+
+    ResetTranslationsTableRows
+    AppendTranslationLabel "One"
+    AppendTranslationLabel "Two"
+    AppendTranslationLabel "one"
+    AppendTranslationLabel "Three"
+    AppendTranslationLabel "TWO"
+
+    Dim duplicateMessage As String
+    Assert.IsTrue Subject.DuplicateLabels(duplicateMessage), "DuplicateLabels should detect multiple duplicate values"
+
+    Dim expected As String
+    expected = "Duplicate labels detected in column English!" & vbLf & _
+               """One"" has 2 duplicates" & vbLf & _
+               """Two"" has 2 duplicates"
+
+    Assert.AreEqual expected, duplicateMessage, "DuplicateLabels should include each duplicated value in the summary"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestDuplicateLabelsListsAllDuplicateValues", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
 Public Sub TestMissingLabelsRejectsUnknownLanguage()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestMissingLabelsRejectsUnknownLanguage"
 
@@ -427,6 +520,20 @@ Private Function TagForLabel(ByVal label As String) As String
         End If
     Next row
 End Function
+
+Private Sub ResetTranslationsTableRows()
+    On Error Resume Next
+        Do While TranslationsTable.ListRows.Count > 0
+            TranslationsTable.ListRows(TranslationsTable.ListRows.Count).Delete
+        Loop
+    On Error GoTo 0
+End Sub
+
+Private Sub AppendTranslationLabel(ByVal label As String)
+    Dim newRow As ListRow
+    Set newRow = TranslationsTable.ListRows.Add
+    newRow.Range.Cells(1, 1).Value = label
+End Sub
 
 Private Function HasColumn(ByVal columnName As String) As Boolean
     Dim column As ListColumn
