@@ -64,3 +64,4 @@ for listObject add is expression.Add(SourceType, Source, LinkSource, XlListObjec
 - [DONE] Polished TranslationObject.LanguagesList, exposed it through the interface, and added regression tests covering header enumeration.
 - [DONE] Simplified RibbonDev to capture the first ribbon instance only and documented via OnRibbonLoad static guard.
 - [DONE] Introduced optional automation-security blocking to ApplicationState scopes and taught SetupImportService to use it during imports.
+- [DONE] Enhanced SetupTranslationsTable duplicate reporting to support per-language summaries, boolean results, and multi-label messaging with tests.

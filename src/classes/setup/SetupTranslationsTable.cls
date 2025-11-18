@@ -44,6 +44,10 @@ Private Const MODE_FORMULA As String = "translate as formula"
 Private Const MODE_WATCH As String = "watch for update"
 Private Const TAG_HEADER_TITLE As String = "__TagInternal__"
 Private Const TAG_SEPARATOR As String = "__"
+++ Private Type TDuplicateSummary
+    HasDuplicates As Boolean
+    Message As String
+End Type
 
 
 '@section Factory helpers
@@ -258,6 +262,21 @@ Private Function LanguageColumnIndex(ByVal languageName As String) As Long
             Exit Function
         End If
     Next columnIndex
+End Function
+
+'@sub-title Resolve the data body range for a given language column.
+Private Function ResolveLanguageColumn(ByVal languageName As String) As Range
+    Dim columnIndex As Long
+    Dim columnRange As Range
+
+    columnIndex = LanguageColumnIndex(languageName)
+    If columnIndex = 0 Then Exit Function
+
+    On Error Resume Next
+        Set columnRange = this.table.ListColumns(columnIndex).DataBodyRange
+    On Error GoTo 0
+
+    Set ResolveLanguageColumn = columnRange
 End Function
 
 '@sub-title Swap the headers, data, and totals between two language columns.
@@ -958,6 +977,10 @@ Private Function CreateBuffer() As BetterArray
     Set CreateBuffer = buffer
 End Function
 
+Private Function BuildDuplicateLine(ByVal labelValue As String, ByVal occurrenceCount As Long) As String
+    BuildDuplicateLine = """" & labelValue & """ has " & CStr(occurrenceCount) & " duplicates"
+End Function
+
 
 '@section Reporting
 '===============================================================================
@@ -1025,6 +1048,113 @@ BuildSummary:
     If this.displayPrompts Then
         MsgBox summary, vbInformation + vbOKOnly, "Done!"
     End If
+End Function
+
+'@sub-title Report duplicate translation labels when they exist.
+Private Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
+    Dim summary As TDuplicateSummary
+
+    summary = ComputeDuplicateSummary(languageName)
+    duplicateMessage = summary.Message
+    DuplicateLabels = summary.HasDuplicates
+
+    If summary.HasDuplicates And this.displayPrompts Then
+        MsgBox summary.Message, vbExclamation + vbOKOnly, "Duplicate label detected"
+    End If
+End Function
+
+Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDuplicateSummary
+    Dim labelRange As Range
+    Dim targetRange As Range
+    Dim seenLabels As BetterArray
+    Dim counts As BetterArray
+    Dim actualLabels As BetterArray
+    Dim rowIndex As Long
+    Dim currentLabel As String
+    Dim normalizedLabel As String
+    Dim bucketIndex As Long
+    Dim duplicateCount As Long
+    Dim summary As TDuplicateSummary
+    Dim columnTitle As String
+    Dim messageLines As BetterArray
+    Dim duplicatesFound As Boolean
+    Dim trimmedLanguage As String
+
+    ValidateInitialised
+    Set labelRange = LabelColumnData()
+    If labelRange Is Nothing Then GoTo Done
+
+    trimmedLanguage = Trim$(languageName)
+    If LenB(trimmedLanguage) = 0 Then
+        Set targetRange = labelRange
+        columnTitle = this.table.ListColumns(LabelColumnIndex).Name
+    Else
+        Set targetRange = ResolveLanguageColumn(trimmedLanguage)
+        If targetRange Is Nothing Then GoTo Done
+        columnTitle = trimmedLanguage
+    End If
+
+    Set seenLabels = New BetterArray
+    seenLabels.LowerBound = 1
+    Set counts = New BetterArray
+    counts.LowerBound = 1
+    Set actualLabels = New BetterArray
+    actualLabels.LowerBound = 1
+    Set messageLines = CreateBuffer()
+
+    For rowIndex = 1 To targetRange.Rows.Count
+        currentLabel = Trim$(CStr(targetRange.Cells(rowIndex, 1).Value))
+        If LenB(currentLabel) = 0 Then GoTo ContinueLoop
+
+        normalizedLabel = LCase$(currentLabel)
+        bucketIndex = FindLabelIndex(seenLabels, normalizedLabel)
+
+        If bucketIndex = 0 Then
+            seenLabels.Push normalizedLabel
+            counts.Push 1
+            actualLabels.Push currentLabel
+        Else
+            duplicateCount = CLng(counts.Item(bucketIndex)) + 1
+            counts.Item(bucketIndex) = duplicateCount
+        End If
+
+ContinueLoop:
+    Next rowIndex
+
+    For bucketIndex = seenLabels.LowerBound To seenLabels.UpperBound
+        If counts.Item(bucketIndex) > 1 Then
+            If Not duplicatesFound Then
+                messageLines.Push "Duplicate labels detected in column " & columnTitle & "!"
+                duplicatesFound = True
+            End If
+            messageLines.Push BuildDuplicateLine(CStr(actualLabels.Item(bucketIndex)), CLng(counts.Item(bucketIndex)))
+        End If
+    Next bucketIndex
+
+    If duplicatesFound Then
+        summary.HasDuplicates = True
+        summary.Message = JoinLines(messageLines)
+    Else
+        summary.HasDuplicates = False
+        summary.Message = vbNullString
+    End If
+
+Done:
+    ComputeDuplicateSummary = summary
+End Function
+
+Private Function FindLabelIndex(ByVal labels As BetterArray, ByVal normalizedLabel As String) As Long
+    Dim idx As Long
+
+    If labels Is Nothing Then Exit Function
+    If labels.Length = 0 Then Exit Function
+
+    For idx = labels.LowerBound To labels.UpperBound
+        If StrComp(CStr(labels.Item(idx)), normalizedLabel, vbBinaryCompare) = 0 Then
+            FindLabelIndex = idx
+            Exit Function
+        End If
+    Next idx
 End Function
 
 '@sub-title Join BetterArray text lines using environment specific new lines.
@@ -1515,4 +1645,8 @@ End Sub
 
 Private Function ISetupTranslationsTable_MissingLabels(ByVal lang As String) As Long
     ISetupTranslationsTable_MissingLabels = MissingLabels(lang)
+End Function
+
+Private Function ISetupTranslationsTable_DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
+    ISetupTranslationsTable_DuplicateLabels = DuplicateLabels(duplicateMessage, languageName)
 End Function
