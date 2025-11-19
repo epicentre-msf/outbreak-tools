@@ -284,6 +284,7 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
     Dim translationsUnlocked As Boolean
     Dim success As Boolean
     Dim nbMissing As Long
+    Dim dupLabels As String
 
     Set translationsTable = SetupHelpers.ResolveTranslationsTable
     If translationsTable Is Nothing Then
@@ -314,6 +315,11 @@ Public Sub clickTransSetup(ByRef control As IRibbonControl)
     If (nbMissing > 0) Then
         MsgBox "Aborted translation of the setup: Language " & selectedLanguage & _ 
                " has " & nbMissing & " missing labels. Please fill them before attempting a translation.", vbExclamation
+        GoTo CleanUp
+    End If
+
+    If manager.DuplicateLabels(dupLabels, selectedLanguage) Then
+        MsgBox "Aborted translation of the setup. " & dupLabels, vbExclamation
         GoTo CleanUp
     End If
 

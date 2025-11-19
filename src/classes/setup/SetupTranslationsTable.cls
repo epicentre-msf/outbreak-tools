@@ -1042,7 +1042,7 @@ Private Function NumberOfMissing() As String
     Next columnIndex
 
 BuildSummary:
-    summary = JoinLines(messageLines)
+    summary = messageLines.ToString(Separator:=vbLf, OpeningDelimiter:=vbNullString, ClosingDelimiter:=vbNullString)
     NumberOfMissing = summary
 
     If this.displayPrompts Then
@@ -1057,10 +1057,6 @@ Private Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVa
     summary = ComputeDuplicateSummary(languageName)
     duplicateMessage = summary.Message
     DuplicateLabels = summary.HasDuplicates
-
-    If summary.HasDuplicates And this.displayPrompts Then
-        MsgBox summary.Message, vbExclamation + vbOKOnly, "Duplicate label detected"
-    End If
 End Function
 
 Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDuplicateSummary
@@ -1133,7 +1129,7 @@ ContinueLoop:
 
     If duplicatesFound Then
         summary.HasDuplicates = True
-        summary.Message = JoinLines(messageLines)
+        summary.Message = messageLines.ToString(Separator:=vbLf, OpeningDelimiter:=vbNullString, ClosingDelimiter:=vbNullString)
     Else
         summary.HasDuplicates = False
         summary.Message = vbNullString
@@ -1155,25 +1151,6 @@ Private Function FindLabelIndex(ByVal labels As BetterArray, ByVal normalizedLab
             Exit Function
         End If
     Next idx
-End Function
-
-'@sub-title Join BetterArray text lines using environment specific new lines.
-Private Function JoinLines(ByVal lines As BetterArray) As String
-    Dim idx As Long
-    Dim builder As String
-
-    If lines Is Nothing Then Exit Function
-    If lines.Length = 0 Then Exit Function
-
-    For idx = lines.LowerBound To lines.UpperBound
-        If Len(builder) = 0 Then
-            builder = CStr(lines.Item(idx))
-        Else
-            builder = builder & vbLf & CStr(lines.Item(idx))
-        End If
-    Next idx
-
-    JoinLines = builder
 End Function
 
 '@sub-title Access the label column data range.
@@ -1573,10 +1550,10 @@ Private Sub ValidateRegistrySheet(ByVal registrySheet As Worksheet)
 End Sub
 
 '@sub-title Resolve a named range from the workbook, returning Nothing when missing.
-Private Function ResolveNamedRange(ByVal workbook As Workbook, ByVal rangeName As String) As Range
+Private Function ResolveNamedRange(ByVal hostwb As Workbook, ByVal rangeName As String) As Range
     Dim definedName As Name
     On Error Resume Next
-        Set definedName = workbook.Names(rangeName)
+        Set definedName = hostwb.Names(rangeName)
     On Error GoTo 0
 
     If definedName Is Nothing Then Exit Function
