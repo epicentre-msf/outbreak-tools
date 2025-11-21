@@ -44,7 +44,10 @@ Private Const MODE_FORMULA As String = "translate as formula"
 Private Const MODE_WATCH As String = "watch for update"
 Private Const TAG_HEADER_TITLE As String = "__TagInternal__"
 Private Const TAG_SEPARATOR As String = "__"
-++ Private Type TDuplicateSummary
+Private Const TAG_METADATA_PREFIX As String = "__SetupTranslationsTagMeta__"
+Private Const TAG_FORMAT_VERSION As Long = 1
+
+Private Type TDuplicateSummary
     HasDuplicates As Boolean
     Message As String
 End Type
@@ -77,7 +80,7 @@ Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal s
     End With
 
     ConfigureTagColumn
-    ApplyTagColumnFormatting
+    EnsureTagFormattingState
     ResetCache
     ResetProcessedRanges
 End Sub
@@ -982,6 +985,120 @@ Private Function BuildDuplicateLine(ByVal labelValue As String, ByVal occurrence
 End Function
 
 
+'@section Tag metadata caching
+'===============================================================================
+'@sub-title Ensure helper column formatting only runs when required.
+Private Sub EnsureTagFormattingState()
+    If ShouldRefreshTagFormatting() Then
+        ApplyTagColumnFormatting
+    ElseIf Not IsRangeValid(this.tagHeader) Then
+        EnsureTagColumnReady
+    End If
+End Sub
+
+'@sub-title Determine whether formatting must be refreshed.
+Private Function ShouldRefreshTagFormatting() As Boolean
+    If Not TagFormattingMetadataCurrent() Then
+        ShouldRefreshTagFormatting = True
+        Exit Function
+    End If
+
+    ShouldRefreshTagFormatting = Not TagHeaderHasStealthFormatting()
+End Function
+
+'@sub-title Simple guard verifying the helper header retains stealth formatting.
+Private Function TagHeaderHasStealthFormatting() As Boolean
+    Dim header As Range
+    Dim dataRange As Range
+
+    On Error Resume Next
+        Set header = RequireTagHeader()
+        TagHeaderHasStealthFormatting = Not header Is Nothing
+        If TagHeaderHasStealthFormatting Then
+            TagHeaderHasStealthFormatting = (header.Font.Color = vbWhite And header.Interior.Color = vbWhite)
+        End If
+        If TagHeaderHasStealthFormatting Then
+            Set dataRange = TagColumnDataRange()
+            If Not dataRange Is Nothing Then
+                TagHeaderHasStealthFormatting = (dataRange.Font.Color = vbWhite)
+            End If
+        End If
+    On Error GoTo 0
+End Function
+
+'@sub-title Validate whether metadata indicates formatting is current.
+Private Function TagFormattingMetadataCurrent() As Boolean
+    Dim store As IHiddenNames
+    Dim nameId As String
+
+    Set store = MetadataStore()
+    If store Is Nothing Then Exit Function
+
+    nameId = TagMetadataKey()
+    TagFormattingMetadataCurrent = (store.ValueAsLong(nameId, 0) = TAG_FORMAT_VERSION)
+End Function
+
+'@sub-title Persist the latest formatting version.
+Private Sub PersistTagFormattingVersion()
+    Dim store As IHiddenNames
+    Dim nameId As String
+
+    Set store = MetadataStore()
+    If store Is Nothing Then Exit Sub
+
+    nameId = TagMetadataKey()
+    store.EnsureName nameId, TAG_FORMAT_VERSION, HiddenNameTypeLong
+    store.SetValue nameId, TAG_FORMAT_VERSION
+End Sub
+
+'@sub-title Mark cached formatting metadata as stale.
+Private Sub InvalidateTagFormattingCache()
+    Dim store As IHiddenNames
+    Dim nameId As String
+
+    Set store = MetadataStore()
+    If store Is Nothing Then Exit Sub
+
+    nameId = TagMetadataKey()
+    store.EnsureName nameId, 0, HiddenNameTypeLong
+    store.SetValue nameId, 0
+End Sub
+
+'@sub-title Resolve the hidden name store hosting metadata.
+Private Function MetadataStore() As IHiddenNames
+    Dim hostSh As Worksheet
+
+    If this.table Is Nothing Then Exit Function
+    Set hostSh = this.table.Parent
+    If hostSh Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set MetadataStore = HiddenNames.Create(hostSh)
+    On Error GoTo 0
+End Function
+
+'@sub-title Build the cached formatting key using sheet/table names.
+Private Function TagMetadataKey() As String
+    Dim sheetName As String
+    Dim tableName As String
+
+    If this.table Is Nothing Then
+        TagMetadataKey = TAG_METADATA_PREFIX
+        Exit Function
+    End If
+
+    On Error Resume Next
+        tableName = this.table.Name
+        sheetName = this.table.Parent.Name
+    On Error GoTo 0
+
+    If LenB(sheetName) = 0 Then sheetName = "Translations"
+    If LenB(tableName) = 0 Then tableName = "Tab_Translations"
+
+    TagMetadataKey = TAG_METADATA_PREFIX & sheetName & "_" & tableName
+End Function
+
+
 '@section Reporting
 '===============================================================================
 Private Function MissingLabels(ByVal lang As String) As Long
@@ -1232,6 +1349,7 @@ Private Sub ApplyTagColumnFormatting()
         End With
         On Error GoTo 0
     End If
+    PersistTagFormattingVersion
 End Sub
 
 '@sub-title ApplyLangColumnFormatting
@@ -1265,6 +1383,8 @@ End Sub
 '@sub-title Ensure the helper column header is located and configured.
 Private Sub ConfigureTagColumn()
     Dim header As Range
+    Dim helperHeader As Range
+    Dim currentTitle As String
 
     ValidateInitialised
 
@@ -1273,12 +1393,17 @@ Private Sub ConfigureTagColumn()
         ThrowProjectError ProjectError.ErrorUnexpectedState, "Translations table requires a helper column immediately to the left."
     End If
 
-    Set this.tagHeader = header.Offset(0, -1)
-    this.tagHeader.Value = TAG_HEADER_TITLE
+    Set helperHeader = header.Offset(0, -1)
+    Set this.tagHeader = helperHeader
 
     On Error Resume Next
-        this.tagHeader.Font.Color = vbWhite
+        currentTitle = CStr(helperHeader.Value)
     On Error GoTo 0
+
+    If StrComp(currentTitle, TAG_HEADER_TITLE, vbBinaryCompare) <> 0 Then
+        helperHeader.Value = TAG_HEADER_TITLE
+        InvalidateTagFormattingCache
+    End If
 End Sub
 
 Private Sub EnsureTagColumnReady()
