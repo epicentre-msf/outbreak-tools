@@ -1690,7 +1690,8 @@ End Sub
 '@param startLine Optional, Long. The line where to start exporting in the worksheet. Default is 1.
 Private Sub Export(ByVal sh As Worksheet, _ 
            Optional ByVal headersTable As Object = Nothing, _ 
-           Optional ByVal startLine As Long = 1)
+           Optional ByVal startLine As Long = 1, _ 
+           Optional ByVal startColumn As Long = 1)
 
   Dim counter As Long
   Dim inpRng As Range
@@ -1710,12 +1711,13 @@ Private Sub Export(ByVal sh As Worksheet, _
     Set headersList = headersTable.Clone()
   Else
     LogInfo "Provided headersTable for export not found, all the headers are exported"
-    ShowDebug
     headersList.FromExcelRange HeaderRange(), DetectLastRow:=False, DetectLastColumn:=False
   End If
 
   sh.Cells.Clear
-  headerCounter = 1
+
+  'column where to start writing values
+  headerCounter = startColumn
 
   'This will unhide all hidden columns and keep track of them
   UnhideHiddenColumns
@@ -1967,8 +1969,9 @@ End Sub
 'Export to a worksheet
 Private Sub ICustomTable_Export(ByVal sh As Worksheet, _
                                Optional ByVal headersTable As Object = Nothing, _
-                               Optional ByVal startLine As Long = 1)
-  Export sh, headersTable, startLine
+                               Optional ByVal startLine As Long = 1, _ 
+                               Optional ByVal startColumn As Long = 1)
+  Export sh, headersTable, startLine, startColumn
 End Sub
 
 

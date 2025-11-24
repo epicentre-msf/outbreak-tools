@@ -755,6 +755,9 @@ Private Sub Export()
         End If
     End If
 
+    'Export hidden names in the workbook
+    
+
     On Error Resume Next
     exportWorkbook.Worksheets(1).Delete
     On Error GoTo 0
