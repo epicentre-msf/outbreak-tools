@@ -51,8 +51,8 @@ End Sub
 Public Function SwitchableLanguages() As BetterArray
 End Function
 
-'@sub-title Retrieve translation languages excluding the default column.
-Public Property Get Languages() As BetterArray
+'@sub-title Retrieve translation languages excluding the default column unless requested.
+Public Property Get Languages(Optional ByVal includeDefault As Boolean = False) As BetterArray
 End Property
 
 '@sub-title Synchronise translations against the supplied registry sheet.

@@ -24,6 +24,7 @@ Private Const TRANSLATIONS_TABLE_NAME As String = "Tab_Translations"
 Private Const REGISTRY_TABLE_NAME As String = "Tab_Registry"
 Private Const COUNTER_NAME As String = "_SetupTranslationsCounter"
 Private Const TAG_SEPARATOR As String = "__"
+Private Const LANGUAGES_NAME_ID As String = "__SetupTranslationsLanguages__"
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
@@ -127,6 +128,45 @@ Public Sub TestLanguagesListsNonDefaultHeaders()
 
 Fail:
     CustomTestLogFailure Assert, "TestLanguagesListsNonDefaultHeaders", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestEnsureLanguagesPersistsHiddenName()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestEnsureLanguagesPersistsHiddenName"
+    On Error GoTo Fail
+
+    Subject.EnsureLanguages "French;German"
+
+    Dim store As IHiddenNames
+    Dim storedValue As String
+    Set store = HiddenNames.Create(TranslationsSheet)
+    storedValue = store.ValueAsString(LANGUAGES_NAME_ID)
+
+    Assert.AreEqual "English;French;German", storedValue, "Hidden name should store every language including the default"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestEnsureLanguagesPersistsHiddenName", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
+Public Sub TestLanguagesCanIncludeDefaultHeader()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestLanguagesCanIncludeDefaultHeader"
+    On Error GoTo Fail
+
+    Subject.EnsureLanguages "French;German"
+
+    Dim languages As BetterArray
+    Set languages = Subject.Languages(True)
+
+    Assert.AreEqual CLng(3), languages.Length, "Languages should include the default column when requested"
+    Assert.AreEqual "English", CStr(languages.Item(languages.LowerBound)), "Default header should be listed first"
+    Assert.AreEqual "French", CStr(languages.Item(languages.LowerBound + 1)), "Non-default languages should follow in column order"
+    Assert.AreEqual "German", CStr(languages.Item(languages.LowerBound + 2)), "All remaining languages should be included"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestLanguagesCanIncludeDefaultHeader", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("SetupTranslationsTable")

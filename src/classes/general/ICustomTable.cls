@@ -166,7 +166,8 @@ End Property
 'Export the table values to the supplied worksheet, preserving requested headers order.
 Public Sub Export(ByVal sh As Worksheet,  _ 
                   Optional ByVal headersTable As Object = Nothing, _ 
-                  Optional ByVal startLine As Long = 1)
+                  Optional ByVal startLine As Long = 1, _ 
+                  Optional ByVal startColumn As Long = 1)
 End Sub
 
 
