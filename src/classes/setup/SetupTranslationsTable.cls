@@ -46,6 +46,7 @@ Private Const TAG_HEADER_TITLE As String = "__TagInternal__"
 Private Const TAG_SEPARATOR As String = "__"
 Private Const TAG_METADATA_PREFIX As String = "__SetupTranslationsTagMeta__"
 Private Const TAG_FORMAT_VERSION As Long = 1
+Private Const LANGUAGES_NAME_ID As String = "__SetupTranslationsLanguages__"
 
 Private Type TDuplicateSummary
     HasDuplicates As Boolean
@@ -83,6 +84,7 @@ Public Sub InitialiseCore(ByVal translationTable As ListObject, Optional ByVal s
     EnsureTagFormattingState
     ResetCache
     ResetProcessedRanges
+    PersistLanguageList
 End Sub
 
 
@@ -140,6 +142,8 @@ Private Sub EnsureLanguages(Optional ByVal lang As String = vbNullString)
             EnsureLanguageColumn languageName
         End If
     Next counter
+
+    PersistLanguageList
 End Sub
 
 Private Function TryGetWrittenLanguages(ByRef languages As String, ByVal newLang As String) As Boolean
@@ -183,6 +187,31 @@ Private Sub EnsureLanguageColumn(ByVal languageName As String)
     End With
 End Sub
 
+'@sub-title Persist the available languages into the worksheet hidden names.
+Private Sub PersistLanguageList()
+    Dim store As IHiddenNames
+    Dim buffer As BetterArray
+    Dim switchable As BetterArray
+    Dim idx As Long
+    Dim header As String
+
+    Set store = MetadataStore()
+    If store Is Nothing Then Exit Sub
+
+    Set buffer = CreateBuffer()
+
+    header = DefaultLanguageHeader()
+    If LenB(header) > 0 Then buffer.Push header
+
+    Set switchable = SwitchableLanguages
+    If Not switchable Is Nothing Then
+        buffer.Concat switchable.Items
+    End If
+
+    store.EnsureName LANGUAGES_NAME_ID, vbNullString, HiddenNameTypeString
+    store.SetValue LANGUAGES_NAME_ID, buffer.ToString(Separator:=";", OpeningDelimiter:=vbNullString, ClosingDelimiter:=vbNullString)
+End Sub
+
 '@sub-title Promote the requested language column to become the primary language.
 Public Sub SwitchDefaultLanguage(ByVal languageName As String)
     Dim targetIndex As Long
@@ -210,6 +239,7 @@ Public Sub SwitchDefaultLanguage(ByVal languageName As String)
     EnsureCache
     SortTranslations
     ApplyFormatting
+    PersistLanguageList
 
     scope.Restore
     Exit Sub
@@ -242,13 +272,48 @@ Public Function SwitchableLanguages() As BetterArray
     Set SwitchableLanguages = languages
 End Function
 
-'@sub-title Languages available for translation excluding the default column.
-Public Property Get Languages() As BetterArray
-    Set Languages = SwitchableLanguages
+'@sub-title Languages available for translation excluding the default column unless requested.
+Public Property Get Languages(Optional ByVal includeDefault As Boolean = False) As BetterArray
+    Dim allLanguages As BetterArray
+    Dim switchable As BetterArray
+    Dim defaultHeader As String
+    Dim idx As Long
+
+    Set switchable = SwitchableLanguages()
+    
+    If Not includeDefault Then
+        Set Languages = switchable
+        Exit Property
+    End If
+
+    Set allLanguages = CreateBuffer()
+    defaultHeader = DefaultLanguageHeader()
+    If LenB(defaultHeader) > 0 Then allLanguages.Push defaultHeader
+
+    If Not (switchable Is Nothing) Then
+        allLanguages.Concat switchable.Items
+    End If
+
+    Set Languages = allLanguages
 End Property
 
 '@section Language utilities
 '===============================================================================
+'@sub-title Resolve the current default language header.
+Private Function DefaultLanguageHeader() As String
+    Dim labelIndex As Long
+
+    ValidateInitialised
+
+    labelIndex = LabelColumnIndex()
+    If labelIndex < 1 Then Exit Function
+    If labelIndex > this.table.ListColumns.Count Then Exit Function
+
+    On Error Resume Next
+        DefaultLanguageHeader = CStr(this.table.ListColumns(labelIndex).Name)
+    On Error GoTo 0
+End Function
+
 '@sub-title Resolve the column index for a provided language header.
 Private Function LanguageColumnIndex(ByVal languageName As String) As Long
     Dim trimmedName As String
@@ -1708,8 +1773,8 @@ Private Function ISetupTranslationsTable_SwitchableLanguages() As BetterArray
     Set ISetupTranslationsTable_SwitchableLanguages = SwitchableLanguages
 End Function
 
-Private Property Get ISetupTranslationsTable_Languages() As BetterArray
-    Set ISetupTranslationsTable_Languages = Languages
+Private Property Get ISetupTranslationsTable_Languages(Optional ByVal includeDefault As Boolean = False) As BetterArray
+    Set ISetupTranslationsTable_Languages = Languages(includeDefault)
 End Property
 
 Private Property Get ISetupTranslationsTable_HostWorksheet() As Worksheet
