@@ -30,9 +30,9 @@ Private Type TLinelistSpecs
     formulaData As IFormulaData
     main As IMain
     variables As ILLVariables
-    translationCache As Collection
-    categoryCache As Collection
-    sheetCache As Collection
+    translationCache As BetterArray
+    categoryCache As BetterArray
+    sheetCache As BetterArray
 End Type
 
 Private this As TLinelistSpecs
@@ -43,6 +43,31 @@ Private Const DEFAULT_DICT_START_ROW As Long = 1
 Private Const DEFAULT_DICT_START_COLUMN As Long = 1
 Private Const DEFAULT_CHOICES_START_ROW As Long = 1
 Private Const DEFAULT_CHOICES_START_COLUMN As Long = 1
+
+'Linelist Spec constants
+Private Const LLSPEC_SHEET_DICTIONARY As String = "Dictionary"
+Private Const LLSPEC_SHEET_CHOICES As String = "Choices"
+Private Const LLSPEC_SHEET_GEO As String = "Geo"
+Private Const LLSPEC_SHEET_PASSWORDS As String = "__pass"
+Private Const LLSPEC_SHEET_FORMULAS As String = "__formula"
+Private Const LLSPEC_SHEET_DICT_TRANSLATIONS As String = "Translations"
+Private Const LLSPEC_SHEET_LL_TRANSLATIONS As String = "LinelistTranslation"
+Private Const LLSPEC_SHEET_ANALYSIS As String = "Analysis"
+Private Const LLSPEC_SHEET_EXPORTS As String = "Exports"
+Private Const LLSPEC_SHEET_FORMAT As String = "LinelistStyle"
+Private Const LLSPEC_SHEET_MAIN As String = "Main"
+Private Const LLSPEC_SHEET_DESIGNER_TRANSLATIONS As String = "DesignerTranslation"
+
+Private Const LLSPEC_RANGE_DESIGN_TYPE As String = "DESIGNTYPE"
+
+Private Const LLSPEC_TEMP_SHEET_ANALYSIS As Byte = 1
+Private Const LLSPEC_TEMP_SHEET_UPDATES As Byte = 2
+Private Const LLSPEC_TEMP_SHEET_METADATA As Byte = 3
+Private Const LLSPEC_TEMP_SHEET_LISTS As Byte = 4
+Private Const LLSPEC_TEMP_SHEET_IMPORT As Byte = 5
+Private Const LLSPEC_TEMP_SHEET_SINGLE As Byte = 6
+Private Const LLSPEC_TEMP_SHEET_SPATIAL As Byte = 7
+Private Const LLSPEC_TEMP_SHEET_SHOWHIDE As Byte = 8
 
 '@section Factory helpers
 '===============================================================================
@@ -63,9 +88,9 @@ Public Property Get Self() As ILinelistSpecs
 End Property
 
 '@description Primary workbook backing all specification queries.
-Public Property Get Workbook() As Workbook
+Public Property Get LLWorkbook() As Workbook
     EnsureWorkbook
-    Set Workbook = this.specsWkb
+    Set LLWorkbook = this.specsWkb
 End Property
 
 Public Property Set InternalWorkbook(ByVal specsWorkbook As Workbook)
@@ -118,15 +143,61 @@ Private Sub EnsureWorkbook()
 End Sub
 
 Private Sub EnsureSheetCache()
-    If this.sheetCache Is Nothing Then Set this.sheetCache = New Collection
+    If this.sheetCache Is Nothing Then
+        Set this.sheetCache = New BetterArray
+        this.sheetCache.LowerBound = 1
+    End If
 End Sub
 
 Private Sub EnsureTranslationCache()
-    If this.translationCache Is Nothing Then Set this.translationCache = New Collection
+    If this.translationCache Is Nothing Then
+        Set this.translationCache = New BetterArray
+        this.translationCache.LowerBound = 1
+    End If
 End Sub
 
 Private Sub EnsureCategoryCache()
-    If this.categoryCache Is Nothing Then Set this.categoryCache = New Collection
+    If this.categoryCache Is Nothing Then
+        Set this.categoryCache = New BetterArray
+        this.categoryCache.LowerBound = 1
+    End If
+End Sub
+
+Private Function CacheEntryMatches(ByVal entry As Variant, ByVal cacheKey As String) As Boolean
+    If IsArray(entry) Then
+        If LBound(entry) <= 0 And UBound(entry) >= 1 Then
+            CacheEntryMatches = (StrComp(CStr(entry(0)), cacheKey, vbBinaryCompare) = 0)
+        End If
+    End If
+End Function
+
+Private Function TryGetCacheValue(ByVal cache As BetterArray, ByVal cacheKey As String, ByRef cachedValue As Variant) As Boolean
+    Dim idx As Long
+    Dim entry As Variant
+
+    TryGetCacheValue = False
+    If cache Is Nothing Then Exit Function
+    If cache.Length = 0 Then Exit Function
+
+    For idx = cache.LowerBound To cache.UpperBound
+        entry = cache.Item(idx)
+        If CacheEntryMatches(entry, cacheKey) Then
+            cachedValue = entry(1)
+            TryGetCacheValue = True
+            Exit Function
+        End If
+    Next idx
+End Function
+
+Private Sub StoreCacheValue(ByVal cache As BetterArray, ByVal cacheKey As String, ByVal value As Variant)
+    Dim entry As Variant
+    Dim existing As Variant
+
+    If cache Is Nothing Then Exit Sub
+    If TryGetCacheValue(cache, cacheKey, existing) Then Exit Sub
+
+    entry = Array(cacheKey, value)
+    cache.Push entry
 End Sub
 
 '@section Worksheet resolution
@@ -144,6 +215,7 @@ Private Function ResolveSheet(ByVal sheetName As String, _
     Dim cachedSheet As Worksheet
     Dim target As Worksheet
     Dim normalisedName As String
+    Dim cacheEntry As Variant
 
     normalisedName = Trim$(sheetName)
     If LenB(normalisedName) = 0 Then
@@ -156,9 +228,9 @@ Private Function ResolveSheet(ByVal sheetName As String, _
 
     key = SheetCacheKey(normalisedName)
 
-    On Error Resume Next
-        Set cachedSheet = this.sheetCache.Item(key)
-    On Error GoTo 0
+    If TryGetCacheValue(this.sheetCache, key, cacheEntry) Then
+        If IsObject(cacheEntry) Then Set cachedSheet = cacheEntry
+    End If
 
     If Not (cachedSheet Is Nothing) Then
         Set ResolveSheet = cachedSheet
@@ -175,39 +247,39 @@ Private Function ResolveSheet(ByVal sheetName As String, _
                   "Worksheet '" & normalisedName & "' not found in specifications workbook '" & SafeWorkbookName(this.specsWkb) & "'"
     End If
 
-    On Error Resume Next
-        this.sheetCache.Add target, key
-    On Error GoTo 0
+    StoreCacheValue this.sheetCache, key, target
 
     Set ResolveSheet = target
 End Function
 
 '@section External workbook helpers
 '===============================================================================
-Private Sub EnterBusyState(ByRef busyStateApplied As Boolean)
-    If busyStateApplied Then Exit Sub
+Private Sub EnterBusyState(ByRef busyScope As IApplicationState)
+    If busyScope Is Nothing Then
+        Set busyScope = ApplicationState.Create(Application)
+    ElseIf Not busyScope.HasSnapshot Then
+        busyScope.RefreshSnapshot
+    End If
 
-    Application.ScreenUpdating = False
-    Application.DisplayAlerts = False
-    Application.Calculation = xlCalculationManual
-    Application.EnableAnimations = False
-
-    busyStateApplied = True
+    If Not busyScope.IsBusy Then
+        busyScope.ApplyBusyState _
+            suppressEvents:=False, _
+            calculateOnSave:=Application.CalculateBeforeSave, _
+            busyCursor:=Application.Cursor
+    End If
 End Sub
 
-Private Sub ExitBusyState(ByRef busyStateApplied As Boolean)
-    If Not busyStateApplied Then Exit Sub
+Private Sub ExitBusyState(ByRef busyScope As IApplicationState)
+    If busyScope Is Nothing Then Exit Sub
 
-    Application.ScreenUpdating = True
-    Application.DisplayAlerts = True
-    Application.Calculation = xlCalculationAutomatic
-    Application.EnableAnimations = True
-
-    busyStateApplied = False
+    On Error Resume Next
+        busyScope.Restore
+    On Error GoTo 0
+    Set busyScope = Nothing
 End Sub
 
 Private Function OpenWorkbookInternal(ByVal workbookPath As String, _
-                                      ByRef busyStateApplied As Boolean) As Workbook
+                                      ByRef busyScope As IApplicationState) As Workbook
     Dim target As Workbook
     Dim trimmedPath As String
 
@@ -222,7 +294,7 @@ Private Function OpenWorkbookInternal(ByVal workbookPath As String, _
                   "Workbook '" & trimmedPath & "' cannot be located"
     End If
 
-    EnterBusyState busyStateApplied
+    EnterBusyState busyScope
 
     On Error GoTo HandleOpen
         Set target = Workbooks.Open(trimmedPath)
@@ -263,11 +335,11 @@ Private Sub EnsureSetupWorkbookSheets(ByVal setupBook As Workbook)
     Dim idx As Long
 
     requiredSheets = Array( _
-        LinelistSpecConstants.SHEET_DICTIONARY, _
-        LinelistSpecConstants.SHEET_CHOICES, _
-        LinelistSpecConstants.SHEET_TRANSLATIONS_DICT, _
-        LinelistSpecConstants.SHEET_EXPORT, _
-        LinelistSpecConstants.SHEET_ANALYSIS)
+        SHEET_DICTIONARY, _
+        SHEET_CHOICES, _
+        SHEET_TRANSLATIONS_DICT, _
+        SHEET_EXPORT, _
+        SHEET_ANALYSIS)
 
     For idx = LBound(requiredSheets) To UBound(requiredSheets)
         EnsureExternalSheetExists setupBook, CStr(requiredSheets(idx))
@@ -301,22 +373,22 @@ Private Function BuildPreservedSheetNames(ByVal messageTranslations As ITranslat
     Set preserved = New BetterArray
     preserved.LowerBound = 1
 
-    preserved.Push LinelistSpecConstants.SHEET_DICTIONARY, _
-                   LinelistSpecConstants.SHEET_CHOICES, _
-                   LinelistSpecConstants.SHEET_GEO, _
-                   LinelistSpecConstants.SHEET_PASSWORDS, _
-                   LinelistSpecConstants.SHEET_FORMULAS, _
-                   LinelistSpecConstants.SHEET_TRANSLATIONS_DICT, _
-                   LinelistSpecConstants.SHEET_TRANSLATIONS_LL, _
-                   LinelistSpecConstants.SHEET_EXPORT, _
-                   TemporarySheetName(LinelistSpecConstants.TEMP_SHEET_SINGLE), _
-                   TemporarySheetName(LinelistSpecConstants.TEMP_SHEET_LIST), _
-                   TemporarySheetName(LinelistSpecConstants.TEMP_SHEET_UPDATES), _
-                   TemporarySheetName(LinelistSpecConstants.TEMP_SHEET_METADATA), _
-                   TemporarySheetName(LinelistSpecConstants.TEMP_SHEET_ANALYSIS), _
-                   TemporarySheetName(LinelistSpecConstants.TEMP_SHEET_IMPORT), _
-                   TemporarySheetName(LinelistSpecConstants.TEMP_SHEET_SPATIAL), _
-                   TemporarySheetName(LinelistSpecConstants.TEMP_SHEET_SHOWHIDE)
+    preserved.Push SHEET_DICTIONARY, _
+                   SHEET_CHOICES, _
+                   SHEET_GEO, _
+                   SHEET_PASSWORDS, _
+                   SHEET_FORMULAS, _
+                   SHEET_TRANSLATIONS_DICT, _
+                   SHEET_TRANSLATIONS_LL, _
+                   SHEET_EXPORT, _
+                   TemporarySheetName(TEMP_SHEET_SINGLE), _
+                   TemporarySheetName(TEMP_SHEET_LIST), _
+                   TemporarySheetName(TEMP_SHEET_UPDATES), _
+                   TemporarySheetName(TEMP_SHEET_METADATA), _
+                   TemporarySheetName(TEMP_SHEET_ANALYSIS), _
+                   TemporarySheetName(TEMP_SHEET_IMPORT), _
+                   TemporarySheetName(TEMP_SHEET_SPATIAL), _
+                   TemporarySheetName(TEMP_SHEET_SHOWHIDE)
 
     If Not messageTranslations Is Nothing Then
         preserved.Push SafeTranslatedValue(messageTranslations, "LLSHEET_Admin"), _
@@ -379,31 +451,31 @@ Private Sub ValidateWorkbookStructure(ByVal specsWorkbook As Workbook)
 
     Dim formatSheet As Worksheet
     On Error Resume Next
-        Set formatSheet = specsWorkbook.Worksheets(LinelistSpecConstants.SHEET_FORMAT)
+        Set formatSheet = specsWorkbook.Worksheets(SHEET_FORMAT)
     On Error GoTo 0
 
     If formatSheet Is Nothing Then Exit Sub
 
-    If Not RangeExistsInternal(formatSheet, LinelistSpecConstants.RANGE_DESIGN_TYPE) Then
+    If Not RangeExistsInternal(formatSheet, RANGE_DESIGN_TYPE) Then
         ThrowError ProjectError.ElementNotFound, _
-                  "Worksheet '" & LinelistSpecConstants.SHEET_FORMAT & "' must define the '" & LinelistSpecConstants.RANGE_DESIGN_TYPE & "' named range"
+                  "Worksheet '" & SHEET_FORMAT & "' must define the '" & RANGE_DESIGN_TYPE & "' named range"
     End If
 End Sub
 
 Private Function RequiredSheetNames() As Variant
     RequiredSheetNames = Array( _
-        LinelistSpecConstants.SHEET_DICTIONARY, _
-        LinelistSpecConstants.SHEET_CHOICES, _
-        LinelistSpecConstants.SHEET_GEO, _
-        LinelistSpecConstants.SHEET_PASSWORDS, _
-        LinelistSpecConstants.SHEET_FORMULAS, _
-        LinelistSpecConstants.SHEET_TRANSLATIONS_DICT, _
-        LinelistSpecConstants.SHEET_TRANSLATIONS_LL, _
-        LinelistSpecConstants.SHEET_ANALYSIS, _
-        LinelistSpecConstants.SHEET_EXPORT, _
-        LinelistSpecConstants.SHEET_FORMAT, _
-        LinelistSpecConstants.SHEET_MAIN, _
-        LinelistSpecConstants.SHEET_DESIGNER_TRANSLATION)
+        SHEET_DICTIONARY, _
+        SHEET_CHOICES, _
+        SHEET_GEO, _
+        SHEET_PASSWORDS, _
+        SHEET_FORMULAS, _
+        SHEET_TRANSLATIONS_DICT, _
+        SHEET_TRANSLATIONS_LL, _
+        SHEET_ANALYSIS, _
+        SHEET_EXPORT, _
+        SHEET_FORMAT, _
+        SHEET_MAIN, _
+        SHEET_DESIGNER_TRANSLATION)
 End Function
 
 Private Function WorksheetExistsInternal(ByVal specsWorkbook As Workbook, _
@@ -448,7 +520,7 @@ End Function
 Private Sub EnsureExports()
     If this.exports Is Nothing Then
         Dim exportSheet As Worksheet
-        Set exportSheet = ResolveSheet(LinelistSpecConstants.SHEET_EXPORT)
+        Set exportSheet = ResolveSheet(SHEET_EXPORT)
         Set this.exports = LLExport.Create(exportSheet)
     End If
 End Sub
@@ -457,7 +529,7 @@ Private Sub EnsureDictionary()
     If this.dictionary Is Nothing Then
         EnsureExports
         Dim dictSheet As Worksheet
-        Set dictSheet = ResolveSheet(LinelistSpecConstants.SHEET_DICTIONARY)
+        Set dictSheet = ResolveSheet(SHEET_DICTIONARY)
         Set this.dictionary = LLdictionary.Create(dictSheet, _
                                                   DEFAULT_DICT_START_ROW, _
                                                   DEFAULT_DICT_START_COLUMN, _
@@ -468,7 +540,7 @@ End Sub
 Private Sub EnsureChoices()
     If this.choices Is Nothing Then
         Dim choicesSheet As Worksheet
-        Set choicesSheet = ResolveSheet(LinelistSpecConstants.SHEET_CHOICES)
+        Set choicesSheet = ResolveSheet(SHEET_CHOICES)
         Set this.choices = LLChoices.Create(choicesSheet, _
                                             DEFAULT_CHOICES_START_ROW, _
                                             DEFAULT_CHOICES_START_COLUMN)
@@ -479,8 +551,8 @@ Private Sub EnsureTranslations()
     If this.translations Is Nothing Then
         Dim linelistTransSheet As Worksheet
         Dim dictTransSheet As Worksheet
-        Set linelistTransSheet = ResolveSheet(LinelistSpecConstants.SHEET_TRANSLATIONS_LL)
-        Set dictTransSheet = ResolveSheet(LinelistSpecConstants.SHEET_TRANSLATIONS_DICT)
+        Set linelistTransSheet = ResolveSheet(SHEET_TRANSLATIONS_LL)
+        Set dictTransSheet = ResolveSheet(SHEET_TRANSLATIONS_DICT)
         Set this.translations = LLTranslations.Create(linelistTransSheet, dictTransSheet)
     End If
 End Sub
@@ -488,7 +560,7 @@ End Sub
 Private Sub EnsureDesignerTranslations()
     If this.designerTranslations Is Nothing Then
         Dim designerSheet As Worksheet
-        Set designerSheet = ResolveSheet(LinelistSpecConstants.SHEET_DESIGNER_TRANSLATION)
+        Set designerSheet = ResolveSheet(SHEET_DESIGNER_TRANSLATION)
         Set this.designerTranslations = DesTranslation.Create(designerSheet)
     End If
 End Sub
@@ -496,7 +568,7 @@ End Sub
 Private Sub EnsureGeo()
     If this.geo Is Nothing Then
         Dim geoSheet As Worksheet
-        Set geoSheet = ResolveSheet(LinelistSpecConstants.SHEET_GEO)
+        Set geoSheet = ResolveSheet(SHEET_GEO)
         Set this.geo = LLGeo.Create(geoSheet)
     End If
 End Sub
@@ -504,7 +576,7 @@ End Sub
 Private Sub EnsureAnalysis()
     If this.analysis Is Nothing Then
         Dim analysisSheet As Worksheet
-        Set analysisSheet = ResolveSheet(LinelistSpecConstants.SHEET_ANALYSIS)
+        Set analysisSheet = ResolveSheet(SHEET_ANALYSIS)
         Set this.analysis = Analysis.Create(analysisSheet)
     End If
 End Sub
@@ -512,7 +584,7 @@ End Sub
 Private Sub EnsurePasswords()
     If this.passwords Is Nothing Then
         Dim passwordSheet As Worksheet
-        Set passwordSheet = ResolveSheet(LinelistSpecConstants.SHEET_PASSWORDS)
+        Set passwordSheet = ResolveSheet(SHEET_PASSWORDS)
         Set this.passwords = Passwords.Create(passwordSheet)
     End If
 End Sub
@@ -520,7 +592,7 @@ End Sub
 Private Sub EnsureFormulaData()
     If this.formulaData Is Nothing Then
         Dim formulaSheet As Worksheet
-        Set formulaSheet = ResolveSheet(LinelistSpecConstants.SHEET_FORMULAS)
+        Set formulaSheet = ResolveSheet(SHEET_FORMULAS)
         Set this.formulaData = FormulaData.Create(formulaSheet)
     End If
 End Sub
@@ -528,7 +600,7 @@ End Sub
 Private Sub EnsureMain()
     If this.main Is Nothing Then
         Dim mainSheet As Worksheet
-        Set mainSheet = ResolveSheet(LinelistSpecConstants.SHEET_MAIN)
+        Set mainSheet = ResolveSheet(SHEET_MAIN)
         Set this.main = Main.Create(mainSheet)
     End If
 End Sub
@@ -545,7 +617,7 @@ Private Sub EnsureFormat()
         Dim formatSheet As Worksheet
         Dim designName As String
 
-        Set formatSheet = ResolveSheet(LinelistSpecConstants.SHEET_FORMAT)
+        Set formatSheet = ResolveSheet(SHEET_FORMAT)
         designName = ResolveDesignName(formatSheet)
 
         Set this.format = LLFormat.Create(formatSheet, designName)
@@ -556,12 +628,12 @@ Private Function ResolveDesignName(ByVal formatSheet As Worksheet) As String
     Dim designRange As Range
 
     On Error Resume Next
-        Set designRange = formatSheet.Range(LinelistSpecConstants.RANGE_DESIGN_TYPE)
+        Set designRange = formatSheet.Range(RANGE_DESIGN_TYPE)
     On Error GoTo 0
 
     If designRange Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
-                  "Named range '" & LinelistSpecConstants.RANGE_DESIGN_TYPE & "' missing from format worksheet"
+                  "Named range '" & RANGE_DESIGN_TYPE & "' missing from format worksheet"
     End If
 
     ResolveDesignName = Trim$(CStr(designRange.Cells(1, 1).Value))
@@ -660,20 +732,19 @@ Public Function Categories(ByVal varName As String, Optional ByVal useShortlabel
     Dim cacheKey As String
     Dim cached As BetterArray
     Dim clone As BetterArray
+    Dim cacheEntry As Variant
 
     EnsureCategoryLookup
 
     cacheKey = BuildCategoryCacheKey(varName, useShortlabels)
 
-    On Error Resume Next
-        Set cached = this.categoryCache.Item(cacheKey)
-    On Error GoTo 0
+    If TryGetCacheValue(this.categoryCache, cacheKey, cacheEntry) Then
+        If IsObject(cacheEntry) Then Set cached = cacheEntry
+    End If
 
     If cached Is Nothing Then
         Set cached = ResolveCategoryList(varName, useShortlabels)
-        On Error Resume Next
-            this.categoryCache.Add cached, cacheKey
-        On Error GoTo 0
+        StoreCacheValue this.categoryCache, cacheKey, cached
     End If
 
     Set clone = cached.Clone
@@ -816,14 +887,15 @@ Public Property Get TransObject(Optional ByVal translationScope As Byte = Transl
     Dim cacheKey As String
     Dim cached As ITranslationObject
     Dim resolved As ITranslationObject
+    Dim cacheEntry As Variant
 
     EnsureTranslationObjectCache
 
     cacheKey = CStr(translationScope)
 
-    On Error Resume Next
-        Set cached = this.translationCache.Item(cacheKey)
-    On Error GoTo 0
+    If TryGetCacheValue(this.translationCache, cacheKey, cacheEntry) Then
+        If IsObject(cacheEntry) Then Set cached = cacheEntry
+    End If
 
     If cached Is Nothing Then
         Set resolved = this.translations.TransObject(translationScope)
@@ -831,9 +903,7 @@ Public Property Get TransObject(Optional ByVal translationScope As Byte = Transl
             ThrowError ProjectError.ElementNotFound, _
                       "Translation scope '" & CStr(translationScope) & "' is not available in the specifications workbook"
         End If
-        On Error Resume Next
-            this.translationCache.Add resolved, cacheKey
-        On Error GoTo 0
+        StoreCacheValue this.translationCache, cacheKey, resolved
         Set cached = resolved
     End If
 
@@ -842,21 +912,21 @@ End Property
 
 Public Property Get TemporarySheetName(ByVal scope As Byte) As String
     Select Case scope
-        Case LinelistSpecConstants.TEMP_SHEET_ANALYSIS
+        Case TEMP_SHEET_ANALYSIS
             TemporarySheetName = "ana_tabnames__"
-        Case LinelistSpecConstants.TEMP_SHEET_UPDATES
+        Case TEMP_SHEET_UPDATES
             TemporarySheetName = "updates__"
-        Case LinelistSpecConstants.TEMP_SHEET_METADATA
+        Case TEMP_SHEET_METADATA
             TemporarySheetName = "Metadata"
-        Case LinelistSpecConstants.TEMP_SHEET_LIST
+        Case TEMP_SHEET_LIST
             TemporarySheetName = "dropdown_lists__"
-        Case LinelistSpecConstants.TEMP_SHEET_IMPORT
+        Case TEMP_SHEET_IMPORT
             TemporarySheetName = "import_rep__"
-        Case LinelistSpecConstants.TEMP_SHEET_SINGLE
+        Case TEMP_SHEET_SINGLE
             TemporarySheetName = "temp__"
-        Case LinelistSpecConstants.TEMP_SHEET_SPATIAL
+        Case TEMP_SHEET_SPATIAL
             TemporarySheetName = "spatial_tables__"
-        Case LinelistSpecConstants.TEMP_SHEET_SHOWHIDE
+        Case TEMP_SHEET_SHOWHIDE
             TemporarySheetName = "show_hide__"
         Case Else
             ThrowError ProjectError.InvalidArgument, _
@@ -946,7 +1016,7 @@ Public Sub Prepare()
     Dim preservedNames As BetterArray
     Dim setupBook As Workbook
     Dim geoBook As Workbook
-    Dim busyStateApplied As Boolean
+    Dim busyScope As IApplicationState
     Dim prepared As Boolean
     Dim dictionarySheet As Worksheet
     Dim choicesSheet As Worksheet
@@ -975,27 +1045,27 @@ Public Sub Prepare()
     Set analysisObj = Analysis()
     Set geoObj = GeoObject()
 
-    Set setupBook = OpenWorkbookInternal(setupPath, busyStateApplied)
+    Set setupBook = OpenWorkbookInternal(setupPath, busyScope)
     EnsureSetupWorkbookSheets setupBook
 
-    exports.ImportSpecs setupBook.Worksheets(LinelistSpecConstants.SHEET_EXPORT), 4, 1
+    exports.ImportSpecs setupBook.Worksheets(SHEET_EXPORT), 4, 1
 
-    Set dictionarySheet = setupBook.Worksheets(LinelistSpecConstants.SHEET_DICTIONARY)
+    Set dictionarySheet = setupBook.Worksheets(SHEET_DICTIONARY)
     EnsureDictionaryNotEmpty dictionarySheet
     dict.Import dictionarySheet, fromStartRow:=5, fromStartcol:=1
 
-    Set choicesSheet = setupBook.Worksheets(LinelistSpecConstants.SHEET_CHOICES)
+    Set choicesSheet = setupBook.Worksheets(SHEET_CHOICES)
     choices.Import choicesSheet, fromStartRow:=4, fromStartcol:=1
 
     translations.ImportTranslation setupBook
 
-    Set analysisSheet = setupBook.Worksheets(LinelistSpecConstants.SHEET_ANALYSIS)
+    Set analysisSheet = setupBook.Worksheets(SHEET_ANALYSIS)
     analysisObj.Import analysisSheet
 
     CloseWorkbookQuiet setupBook
 
     If LenB(geoPath) > 0 Then
-        Set geoBook = OpenWorkbookInternal(geoPath, busyStateApplied)
+        Set geoBook = OpenWorkbookInternal(geoPath, busyScope)
         geoObj.Import geoBook
         CloseWorkbookQuiet geoBook
     End If
@@ -1021,7 +1091,7 @@ Public Sub Prepare()
 CleanExit:
     CloseWorkbookQuiet setupBook
     CloseWorkbookQuiet geoBook
-    ExitBusyState busyStateApplied
+    ExitBusyState busyScope
     If prepared Then ResetPostImportCaches
     Exit Sub
 
@@ -1034,7 +1104,7 @@ CleanFail:
 
     CloseWorkbookQuiet setupBook
     CloseWorkbookQuiet geoBook
-    ExitBusyState busyStateApplied
+    ExitBusyState busyScope
 
     If errNumber = 0 Then Exit Sub
 
