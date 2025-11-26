@@ -77,6 +77,14 @@ End Sub
 Public Function MissingLabels(ByVal lang As String) As Long
 End Function
 
+'@section Data exchange
+'===============================================================================
+'@sub-title Export translations into a destination workbook.
+'@param exportWorkbook Destination workbook receiving the translations sheet.
+'@param Hide Optional visibility flag applied to the exported sheet; defaults to visible.
+Public Sub Export(ByVal exportWorkbook As Workbook, Optional ByVal Hide As Long = xlSheetVisible)
+End Sub
+
 '@section Identity
 '===============================================================================
 '@sub-title Retrieve the interface bound to the current instance.

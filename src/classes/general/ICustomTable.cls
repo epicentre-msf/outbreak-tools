@@ -167,7 +167,8 @@ End Property
 Public Sub Export(ByVal sh As Worksheet,  _ 
                   Optional ByVal headersTable As Object = Nothing, _ 
                   Optional ByVal startLine As Long = 1, _ 
-                  Optional ByVal startColumn As Long = 1)
+                  Optional ByVal startColumn As Long = 1, _ 
+                  Optional ByVal addListObject As Boolean = False)
 End Sub
 
 

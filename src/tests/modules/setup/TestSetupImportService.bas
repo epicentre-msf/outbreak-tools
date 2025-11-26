@@ -361,12 +361,12 @@ Public Sub TestExportCreatesWorkbookInProvidedFolder()
     On Error GoTo ExportVerificationFailed
         Set exportBook = Workbooks.Open(expectedFilePath)
         Set translationSheet = exportBook.Worksheets(TRANSLATIONS_SHEET_NAME)
-        Assert.AreEqual "lang1", LCase$(CStr(translationSheet.Cells(1, 1).Value)), _
-                        "Translations export should include the label column header."
-        Assert.AreEqual "english", LCase$(CStr(translationSheet.Cells(1, 2).Value)), _
-                        "Translations export should include the English column header."
-        Assert.AreEqual HOST_TRANSLATION_VALUE, CStr(translationSheet.Cells(2, 2).Value), _
-                        "Translations export should retain existing translations."
+        Assert.AreEqual "lang1", LCase$(CStr(translationSheet.Cells(1, 2).Value)), _
+                        "Translations export should include the label column header starting on the second column."
+        Assert.AreEqual "english", LCase$(CStr(translationSheet.Cells(1, 3).Value)), _
+                        "Translations export should include the English column header offset by one column."
+        Assert.AreEqual HOST_TRANSLATION_VALUE, CStr(translationSheet.Cells(2, 3).Value), _
+                        "Translations export should retain existing translations when shifted to the second column."
         exportBook.Close SaveChanges:=False
     On Error GoTo 0
 

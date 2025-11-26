@@ -13,7 +13,7 @@ Attribute VB_Description = "Improved translations table manager leveraging cachi
 '@Folder("Setup")
 '@ModuleDescription("Improved translations table manager leveraging caching and guarded updates")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
-'@depends ProjectError, ApplicationState, IApplicationState, HiddenNames, IHiddenNames
+'@depends ProjectError, ApplicationState, IApplicationState, HiddenNames, IHiddenNames, CustomTable, ICustomTable
 
 Option Explicit
 
@@ -47,6 +47,7 @@ Private Const TAG_SEPARATOR As String = "__"
 Private Const TAG_METADATA_PREFIX As String = "__SetupTranslationsTagMeta__"
 Private Const TAG_FORMAT_VERSION As Long = 1
 Private Const LANGUAGES_NAME_ID As String = "__SetupTranslationsLanguages__"
+Private Const TRANSLATIONS_NAME_PREFIX As String = "__SetupTranslations"
 
 Private Type TDuplicateSummary
     HasDuplicates As Boolean
@@ -1667,6 +1668,46 @@ Private Sub ApplyFormatting()
 End Sub
 
 
+'@section Data exchange
+'===============================================================================
+'@sub-title Export translations into a destination workbook.
+Public Sub Export(ByVal exportWorkbook As Workbook, Optional ByVal Hide As Long = xlSheetVisible)
+    Dim exportSheet As Worksheet
+    Dim tableAdapter As ICustomTable
+    Dim hostSheet As Worksheet
+    Dim store As IHiddenNames
+
+    ValidateInitialised
+    If exportWorkbook Is Nothing Then
+        ThrowProjectError ProjectError.ObjectNotInitialized, "Target workbook is missing; cannot export translations."
+    End If
+
+    Set hostSheet = HostWorksheet
+
+    Set exportSheet = exportWorkbook.Worksheets.Add(After:=exportWorkbook.Worksheets(exportWorkbook.Worksheets.Count))
+    exportSheet.Name = hostSheet.Name
+
+    Set tableAdapter = CustomTable.Create(this.table)
+
+    'Start exporting at column two to preserve the helper tag column offset.
+    tableAdapter.Export exportSheet, startColumn:=2, startLine:=1, addListObject:=True
+
+    Set store = MetadataStore()
+    'Persist translation metadata (languages, formatting markers) alongside the exported table.
+    If Not store Is Nothing Then store.ExportNames exportSheet
+    
+    On Error Resume Next
+        exportSheet.Rows(1).Font.Bold = True
+        exportSheet.Cells.Font.Name = "Consolas"
+        exportSheet.Cells.HorizontalAlignment = xlHAlignLeft
+        exportSheet.Cells.VerticalAlignment = xlVAlignCenter
+        exportSheet.Cells.EntireRow.AutoFit
+        exportSheet.Cells.EntireColumn.AutoFit
+        exportSheet.Visible = Hide
+    On Error GoTo 0
+End Sub
+
+
 '@section Registry bookkeeping
 '===============================================================================
 '@sub-title Retrieve and increment the registry update sequence.
@@ -1793,6 +1834,10 @@ End Property
 Private Property Get ISetupTranslationsTable_TableName() As String
     ISetupTranslationsTable_TableName = TableName
 End Property
+
+Private Sub ISetupTranslationsTable_Export(ByVal exportWorkbook As Workbook, Optional ByVal Hide As Long = xlSheetVisible)
+    Export exportWorkbook, Hide
+End Sub
 
 Private Sub ISetupTranslationsTable_UpdateFromRegistry(ByVal registrySheet As Worksheet, Optional ByVal languages As String = vbNullString)
     UpdateFromRegistry registrySheet, languages
