@@ -68,6 +68,34 @@ Public Sub TestCreateInitialisesData()
 End Sub
 
 '@TestMethod("LLExport")
+Public Sub TestExportSpecsCopiesHiddenNames()
+    CustomTestSetTitles Assert, "LLExport", "TestExportSpecsCopiesHiddenNames"
+    Dim exportBook As Workbook
+    Dim exportedStore As IHiddenNames
+    Dim expectedTotal As Long
+
+    On Error GoTo Fail
+
+    expectedTotal = Manager.NumberOfExports
+
+    Set exportBook = TestHelpers.NewWorkbook
+    Manager.ExportSpecs exportBook, Hide:=xlSheetVisible
+
+    Set exportedStore = HiddenNames.Create(exportBook)
+    Assert.AreEqual expectedTotal, exportedStore.ValueAsLong(EXPORT_TOTAL_NAME, -1), _
+                    "ExportSpecs should replicate the hidden export counter into the destination workbook."
+
+    exportBook.Close SaveChanges:=False
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportSpecsCopiesHiddenNames", Err.Number, Err.Description
+    On Error Resume Next
+        If Not exportBook Is Nothing Then exportBook.Close SaveChanges:=False
+    On Error GoTo 0
+End Sub
+
+'@TestMethod("LLExport")
 Public Sub TestAddRowsAppliesDefaults()
     CustomTestSetTitles Assert, "LLExport", "TestAddRowsAppliesDefaults"
     Manager.AddRows

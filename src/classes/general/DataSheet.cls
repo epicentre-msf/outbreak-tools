@@ -13,6 +13,7 @@ Attribute VB_Description = "Data manipulation in a worksheet"
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Data manipulation in a worksheet")
+'@depends Checking, BetterArray, HiddenNames, IHiddenNames
 
 Option Explicit
 Implements IDataSheet
@@ -734,9 +735,12 @@ End Sub
 '@param filteredVarName Optional, string. Variable Name for filtering. By default no filtering is done
 '@param filteredCondition Optional, string. Condition for filtering. By default select all lines
 '@param Hide Optional, xlSheetVisibility. Visibility of the exported DataSheet worksheet. Default is xlSheetHidden
+'@param includeNames Optional Boolean indicating whether hidden names defined on the sheet should be exported alongside the data.
 '@export
 Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As String = "__all__", _
-                   Optional ByVal filteredCondition As String = "<>", Optional ByVal Hide As Long = xlSheetHidden)
+                   Optional ByVal filteredCondition As String = "<>", _ 
+                   Optional ByVal Hide As Long = xlSheetHidden, _ 
+                   Optional ByVal includeNames As Boolean = False)
 
     Dim dataExportData As BetterArray
     Dim sh As Worksheet
@@ -747,6 +751,7 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As Stri
     Dim impRng As Range
     Dim counter As Long
     Dim colIndex As Long
+    Dim store As IHiddenNames
 
     'Trace on errors on export
     If Wkb Is Nothing Then
@@ -812,6 +817,16 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As Stri
                 End With
                 ApplyFormat actRng, impRng
             Next
+        End If
+    End If
+
+    'Export HiddenNames
+    If includeNames Then
+        Set store = HiddenNames.Create(sh)
+        If Not store Is Nothing Then
+            On Error Resume Next
+                store.ExportNames dataExportWksh
+            On Error GoTo 0
         End If 
     End If
 End Sub
@@ -1029,8 +1044,9 @@ End Sub
 Private Sub IDataSheet_Export(ByVal toWkb As Workbook, _
                              Optional ByVal filteredVarName As String = "__all__", _
                              Optional ByVal filteredCondition As String = "<>", _
-                             Optional ByVal Hide As Long = xlSheetHidden)
-    Export toWkb, filteredVarName, filteredCondition, Hide
+                             Optional ByVal Hide As Long = xlSheetHidden, _
+                             Optional ByVal includeNames As Boolean = False)
+    Export toWkb, filteredVarName, filteredCondition, Hide, includeNames
 End Sub
 
 '@jump:checkings

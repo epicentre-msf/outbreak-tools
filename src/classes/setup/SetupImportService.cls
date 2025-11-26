@@ -569,7 +569,6 @@ Private Sub ImportAnalysisUsingClass(ByVal pass As IPasswords, _
 
         Set analysisManager = Analysis.Create(hostSheet)
         analysisManager.Import sourceSheet
-        CopyAnalysisHelperCells sourceSheet, hostSheet
 
 ImportCleanup:
         On Error Resume Next
@@ -638,12 +637,6 @@ ImportFailed:
         Resume ImportCleanup
 End Sub
 
-Private Sub CopyAnalysisHelperCells(ByVal sourceSheet As Worksheet, ByVal hostSheet As Worksheet)
-    On Error Resume Next
-        hostSheet.Cells(1, 1).Value = sourceSheet.Cells(1, 1).Value
-        hostSheet.Cells(2, 1).Value = sourceSheet.Cells(2, 1).Value
-    On Error GoTo 0
-End Sub
 
 '@sub-title Resolve the translations listobject from a worksheet.
 Private Function ResolveTranslationsList(ByVal sheetRef As Worksheet, Optional ByVal preferred As ListObject = Nothing) As ListObject
@@ -679,17 +672,20 @@ End Function
 Private Sub Export()
 
     Dim dictionaryManager As ILLdictionary
-    Dim translationManager As ICustomTable
+    Dim translationManager As ISetupTranslationsTable
+    Dim translationsTable As ListObject
     Dim analysisManager As IAnalysis
     Dim exportsManager As ILLExport
     Dim choicesManager As ILLChoices
     Dim exportworkbook As Workbook
     Dim hostWorkbook As Workbook
     Dim hostSheet As Worksheet
-    Dim exportSheet As Worksheet
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String
+    Dim store As IHiddenNames
+
+
     this.lastExportFile = vbNullString
 
     Set exportworkbook = EnsureExportWorkbook()
@@ -732,30 +728,17 @@ Private Sub Export()
     'Export the translations
     If WorksheetExists(hostWorkbook, TRANSLATIONS_SHEET_NAME) Then
         Set hostSheet = hostWorkbook.Worksheets(TRANSLATIONS_SHEET_NAME)
-        Set exportSheet = exportworkbook.Worksheets.Add(After:=exportworkbook.Worksheets(exportworkbook.Worksheets.Count))
-        exportSheet.Name = TRANSLATIONS_SHEET_NAME
-        On Error Resume Next
-        Set translationManager = CustomTable.Create(hostSheet.ListObjects(TRANSLATIONS_TABLE_NAME))
-        On Error GoTo 0
+        Set translationsTable = ResolveTranslationsList(hostSheet)
 
-        'Make sure translations exists before exports
-        If Not (translationManager Is Nothing) Then
-            translationManager.Export exportSheet
-            With exportSheet
-                On Error Resume Next
-                .Rows(1).Interior.Color = RGB(240, 240, 244)
-                .Rows(1).Font.Bold = True
-                .Cells.Font.Name = "Consolas"
-                .Cells.HorizontalAlignment = xlHAlignLeft
-                .Cells.VerticalAlignment = xlVAlignCenter
-                .Cells.EntireRow.AutoFit
-                .Cells.EntireColumn.AutoFit
-                On Error GoTo 0
-            End With
+        If Not translationsTable Is Nothing Then
+            Set translationManager = SetupTranslationsTable.Create(translationsTable)
+            translationManager.Export exportworkbook, Hide:=xlSheetVisible
         End If
     End If
 
     'Export hidden names in the workbook
+    Set store = HiddenNames.Create(hostWorkbook)
+    store.ExportNamesToWorkbook exportworkbook
     
 
     On Error Resume Next
@@ -785,7 +768,7 @@ End Sub
 '@sub-title Ensure the exports and dictionary sheets are aligned prior to import.
 Private Sub PrepareImport(ByVal pass As IPasswords, _
                           Optional ByVal sheetsList As BetterArray, _ 
-                          Optional ByVal forceSync As Boolean = False)
+                          Optional ByVal forceSync As Boolean = True)
     Dim importBook As Workbook
     Dim hostWorkbook As Workbook
     Dim currentExportsSheet As Worksheet

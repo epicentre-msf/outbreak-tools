@@ -66,3 +66,5 @@ for listObject add is expression.Add(SourceType, Source, LinkSource, XlListObjec
 - [DONE] Introduced optional automation-security blocking to ApplicationState scopes and taught SetupImportService to use it during imports.
 - [DONE] Enhanced SetupTranslationsTable duplicate reporting to support per-language summaries, boolean results, and multi-label messaging with tests.
 - [DONE] Persisted translations languages into worksheet hidden names with coverage to confirm updates stay in sync.
+- [DONE] Shifted translations export to start at column two and propagated hidden names into both translations and LLExport workbook exports.
+- [DONE] Taught DataSheet exports to optionally include worksheet hidden names via the new includeNames flag and covered the behaviour with tests.

@@ -241,6 +241,35 @@ Fail:
 End Sub
 
 '@TestMethod("DataSheet")
+Public Sub TestExportIncludesHiddenNamesWhenRequested()
+    CustomTestSetTitles Assert, "DataSheet", "TestExportIncludesHiddenNamesWhenRequested"
+    On Error GoTo Fail
+
+    Dim exportBook As Workbook
+    Dim sourceStore As IHiddenNames
+    Dim exportedStore As IHiddenNames
+    Const NAME_ID As String = "__DataSheetHidden__"
+
+    Set sourceStore = HiddenNames.Create(dataObject.Wksh)
+    sourceStore.EnsureName NAME_ID, 42, HiddenNameTypeLong
+    sourceStore.SetValue NAME_ID, 42
+
+    Set exportBook = NewWorkbook()
+    dataObject.Export exportBook, includeNames:=True
+
+    Set exportedStore = HiddenNames.Create(exportBook)
+    Assert.AreEqual 42, exportedStore.ValueAsLong(NAME_ID, -1), _
+                     "Export should replicate hidden names when includeNames is True."
+
+    DeleteWorkbook exportBook
+    Exit Sub
+
+Fail:
+    If Not exportBook Is Nothing Then DeleteWorkbook exportBook
+    CustomTestLogFailure Assert, "TestExportIncludesHiddenNamesWhenRequested", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("DataSheet")
 Public Sub TestImport()
     CustomTestSetTitles Assert, "DataSheet", "TestImport"
     On Error GoTo Fail

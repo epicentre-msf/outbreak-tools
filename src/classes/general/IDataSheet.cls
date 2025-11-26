@@ -107,10 +107,16 @@ End Sub
 
 '@jump:export
 'Import and Export Sub
+'@param toWkb Destination workbook.
+'@param filteredVarName Optional column used for filtering prior to export.
+'@param filteredCondition Optional condition applied to the filter column.
+'@param Hide Optional worksheet visibility after export.
+'@param includeNames Optional flag requesting hidden names to be exported alongside worksheet data.
 Public Sub Export(ByVal toWkb As Workbook, _
                   Optional ByVal filteredVarName As String = "__all__", _
                   Optional ByVal filteredCondition As String = "<>", _ 
-                  Optional ByVal Hide As Long = xlSheetHidden)
+                  Optional ByVal Hide As Long = xlSheetHidden, _
+                  Optional ByVal includeNames As Boolean = False)
 End Sub
 
 

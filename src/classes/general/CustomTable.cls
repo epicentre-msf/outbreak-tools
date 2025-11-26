@@ -1691,7 +1691,8 @@ End Sub
 Private Sub Export(ByVal sh As Worksheet, _ 
            Optional ByVal headersTable As Object = Nothing, _ 
            Optional ByVal startLine As Long = 1, _ 
-           Optional ByVal startColumn As Long = 1)
+           Optional ByVal startColumn As Long = 1, _ 
+           Optional ByVal addListObject As Boolean = False)
 
   Dim counter As Long
   Dim inpRng As Range
@@ -1699,6 +1700,7 @@ Private Sub Export(ByVal sh As Worksheet, _
   Dim headerName As String
   Dim headerCounter As Long
   Dim headersList As BetterArray
+  Dim lastLine As Long
 
   If sh Is Nothing Then 
     LogInfo "Unable to export CustomTable, sheet not initialized", checkingError
@@ -1718,6 +1720,7 @@ Private Sub Export(ByVal sh As Worksheet, _
 
   'column where to start writing values
   headerCounter = startColumn
+  lastLine = startLine + Table.ListColumns(1).Range.Rows.Count - 1
 
   'This will unhide all hidden columns and keep track of them
   UnhideHiddenColumns
@@ -1739,6 +1742,17 @@ Private Sub Export(ByVal sh As Worksheet, _
     End If
     
   Next
+
+  'Add Listobjec if required on the export
+  If addListObject Then
+    Dim outLo As ListObject
+    With sh
+      Set outrng = .Range(.Cells(startLine, startColumn), .Cells(lastLine, headerCounter - 1))
+      Set outLo = .ListObjects.Add(xlSrcRange, outrng, ,xlYes)
+      outLo.Name = Name()
+      outLo.TableStyle = Table.TableStyle
+    End with
+  End If
 
   'Return back the previously hidden columns
   ReturnBackHiddenColumns
@@ -1970,8 +1984,9 @@ End Sub
 Private Sub ICustomTable_Export(ByVal sh As Worksheet, _
                                Optional ByVal headersTable As Object = Nothing, _
                                Optional ByVal startLine As Long = 1, _ 
-                               Optional ByVal startColumn As Long = 1)
-  Export sh, headersTable, startLine, startColumn
+                               Optional ByVal startColumn As Long = 1, _ 
+                               Optional ByVal addListObject As Boolean = False)
+  Export sh, headersTable, startLine, startColumn, addListObject
 End Sub
 
 
