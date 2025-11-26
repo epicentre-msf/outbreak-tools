@@ -35,7 +35,7 @@ Private Type Tchoice
     labelShortValue As String
     orderValue As String
     hasTrads As Boolean
-    trads As ITranslationObject 
+    trads As ITranslationObject
     hasChecks As Boolean
     choiceName As String
 End Type
@@ -817,7 +817,7 @@ End Sub
 '@param Hide. Optional, Long. Sheet hidden attribute. Default is xlSheetHidden. 
 '@export
 Private Sub Export(ByVal Wkb As Workbook, Optional ByVal Hide As Long = xlSheetHidden)
-    ChoiceData.Export Wkb, Hide:=Hide
+    ChoiceData.Export Wkb, Hide:=Hide, includeNames:=True
 End Sub
 
 '@label:Import

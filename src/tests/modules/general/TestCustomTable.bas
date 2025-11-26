@@ -1112,6 +1112,35 @@ Fail:
 End Sub
 
 '@TestMethod("CustomTable")
+Public Sub TestExportAddsListObjectWhenRequested()
+    CustomTestSetTitles Assert, "CustomTable", "TestExportAddsListObjectWhenRequested"
+    On Error GoTo Fail
+
+    Dim tableObject As ICustomTable
+    Dim exportSheet As Worksheet
+    Dim outLo As ListObject
+    Dim sourceLo As ListObject
+
+    Set tableObject = BuildCustomTable
+    Set sourceLo = ThisWorkbook.Worksheets(TABLESHEETNAME).ListObjects(TABLENAME)
+
+    Set exportSheet = EnsureWorksheet(EXPORTSHEETNAME)
+    ClearWorksheet exportSheet
+
+    tableObject.Export exportSheet, addListObject:=True
+
+    Assert.AreEqual 1, exportSheet.ListObjects.Count, "Export should create a ListObject when requested"
+    Set outLo = exportSheet.ListObjects(1)
+    Assert.AreEqual tableObject.Name, outLo.Name, "Export should preserve table name on the created ListObject"
+    Assert.AreEqual sourceLo.TableStyle, outLo.TableStyle, "Export should copy table style to the created ListObject"
+    Assert.AreEqual sourceLo.ListRows.Count, outLo.ListRows.Count, "Exported ListObject should contain all data rows"
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportAddsListObjectWhenRequested", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("CustomTable")
 Public Sub TestCreateRejectsMissingListObject()
     CustomTestSetTitles Assert, "CustomTable", "TestCreateRejectsMissingListObject"
     On Error GoTo ExpectError

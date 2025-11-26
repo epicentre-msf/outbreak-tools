@@ -170,6 +170,42 @@ Fail:
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
+Public Sub TestExportStartsAtSecondColumnAndCopiesHiddenNames()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestExportStartsAtSecondColumnAndCopiesHiddenNames"
+    Dim exportBook As Workbook
+    Dim exportedSheet As Worksheet
+    Dim exportedStore As IHiddenNames
+    Dim expectedLanguages As String
+
+    On Error GoTo Fail
+
+    Subject.EnsureLanguages "French"
+    TranslationsTable.DataBodyRange.Cells(1, 1).Value = "Hello"
+
+    expectedLanguages = HiddenNames.Create(TranslationsSheet).ValueAsString(LANGUAGES_NAME_ID)
+
+    Set exportBook = TestHelpers.NewWorkbook
+    Subject.Export exportBook
+
+    Set exportedSheet = exportBook.Worksheets(TRANSLATIONS_SHEET_NAME)
+    Assert.AreEqual "english", LCase$(CStr(exportedSheet.Cells(1, 2).Value)), _
+                    "Export should write the first header starting on the second column."
+
+    Set exportedStore = HiddenNames.Create(exportBook)
+    Assert.AreEqual expectedLanguages, exportedStore.ValueAsString(LANGUAGES_NAME_ID), _
+                    "Export should copy translation hidden names into the destination workbook."
+
+    exportBook.Close SaveChanges:=False
+    Exit Sub
+
+Fail:
+    CustomTestLogFailure Assert, "TestExportStartsAtSecondColumnAndCopiesHiddenNames", Err.Number, Err.Description
+    On Error Resume Next
+        If Not exportBook Is Nothing Then exportBook.Close SaveChanges:=False
+    On Error GoTo 0
+End Sub
+
+'@TestMethod("SetupTranslationsTable")
 Public Sub TestUpdateFromRegistryAddsLabelsAndTags()
     CustomTestSetTitles Assert, "SetupTranslationsTable", "TestUpdateFromRegistryAddsLabelsAndTags"
     On Error GoTo Fail
