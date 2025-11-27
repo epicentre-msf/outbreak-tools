@@ -408,7 +408,7 @@ Private Sub ClearInputRanges(Optional ByVal clearValues As Boolean = False)
     mainsh.Range(RNGEDITION).Interior.color = vbWhite
     mainsh.Range(RNGTEMPPATH).Interior.color = vbWhite
 
-    If clearValues Then
+    If clearValues Then 
         mainsh.Range(RNGPATHGEO).Value = vbNullString
         mainsh.Range(RNGPATHDICO).Value = vbNullString
         mainsh.Range(RNGLLNAME).Value = vbNullString

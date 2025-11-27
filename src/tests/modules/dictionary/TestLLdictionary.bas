@@ -217,7 +217,7 @@ Public Sub TestRenameColumnUpdatesHeader()
     Dictionary.RenameColumn "main label", "main label renamed"
 
     Assert.IsTrue Dictionary.ColumnExists("main label renamed"), "RenameColumn should update the header"
-    Assert.IsFalse Dictionary.ColumnExists("main label", strictSearch:=True), "Old header should no longer be present"
+    Assert.IsFalse Dictionary.ColumnExists("main label"), "Old header should no longer be present"
     Exit Sub
 
 Fail:

@@ -48,7 +48,7 @@ Private Function CreatePasswordTranslator() As ITranslationObject
     TestHelpers.WriteMatrix translationSheet.Cells(1, 1), headerMatrix
 
     dataMatrix = TestHelpers.RowsToMatrix(Array( _
-        Array("MSG_Password", "Password: "), _
+        Array("MSG_Password", "Password:"), _
         Array("MSG_Title", "Credentials")))
     TestHelpers.WriteMatrix translationSheet.Cells(2, 1), dataMatrix
 
@@ -399,7 +399,7 @@ Public Sub TestDisplayPrivateKeySilentModeCapturesPrompt()
     PasswordSubject.DisplayPrompts = False
     PasswordSubject.DisplayPrivateKey translator
 
-    expectedPrompt = "Password: " & PasswordSubject.Value("privatekey")
+    expectedPrompt = "Password:" & PasswordSubject.Value("privatekey")
     expectedTitle = "Credentials"
 
     Assert.AreEqual expectedPrompt, PasswordSubject.LastPrivatePrompt, _
@@ -469,7 +469,7 @@ Public Sub TestGenerateKeyUpdatesRanges()
     Assert.IsTrue idx <= allowedPairs.Count, _
                   "GenerateKey should select one of the configured key pairs"
 
-    expectedPrompt = "Password: " & updatedPrivate
+    expectedPrompt = "Password:" & updatedPrivate
     Assert.AreEqual expectedPrompt, PasswordSubject.LastPrivatePrompt, _
                      "GenerateKey should prepare the private key prompt when prompts are suppressed"
     Assert.AreEqual "Credentials", PasswordSubject.LastPrivatePromptTitle, _
