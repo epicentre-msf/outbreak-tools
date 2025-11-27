@@ -191,7 +191,7 @@ Public Sub TestExportStartsAtSecondColumnAndCopiesHiddenNames()
     Assert.AreEqual "english", LCase$(CStr(exportedSheet.Cells(1, 2).Value)), _
                     "Export should write the first header starting on the second column."
 
-    Set exportedStore = HiddenNames.Create(exportBook)
+    Set exportedStore = HiddenNames.Create(exportedSheet)
     Assert.AreEqual expectedLanguages, exportedStore.ValueAsString(LANGUAGES_NAME_ID), _
                     "Export should copy translation hidden names into the destination workbook."
 
@@ -437,20 +437,21 @@ Fail:
 End Sub
 
 '@TestMethod("SetupTranslationsTable")
-Public Sub TestDuplicateLabelsReportsFirstDuplicate()
-    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateLabelsReportsFirstDuplicate"
+Public Sub TestDuplicateLabelsReportsAllDuplicate()
+    CustomTestSetTitles Assert, "SetupTranslationsTable", "TestDuplicateLabelsReportsAllDuplicate"
     On Error GoTo Fail
 
     ResetTranslationsTableRows
     AppendTranslationLabel "Hello"
     AppendTranslationLabel "World"
-    AppendTranslationLabel "hello"
+    AppendTranslationLabel "Hello"
     AppendTranslationLabel "World"
 
     Dim summary As String
     Dim duplicateMessage As String
     Assert.IsTrue Subject.DuplicateLabels(duplicateMessage), "DuplicateLabels should return True when duplicates exist"
-    Assert.AreEqual "Duplicate labels detected in column English!" & vbLf & """Hello"" has 2 duplicates", duplicateMessage, "DuplicateLabels should list all duplicates for the label column"
+    Assert.AreEqual "Duplicate labels detected in column English!" & vbLf & """Hello"" has 2 duplicates"  & vbLf & """World"" has 2 duplicates",  _ 
+    duplicateMessage, "DuplicateLabels should list all duplicates for the label column"
     Exit Sub
 
 Fail:
@@ -471,7 +472,7 @@ Public Sub TestDuplicateLabelsHonoursLanguageParameter()
 
     TranslationsTable.ListColumns("French").DataBodyRange.Cells(1, 1).Value = "Bonjour"
     TranslationsTable.ListColumns("French").DataBodyRange.Cells(2, 1).Value = "Salut"
-    TranslationsTable.ListColumns("French").DataBodyRange.Cells(3, 1).Value = "bonjour"
+    TranslationsTable.ListColumns("French").DataBodyRange.Cells(3, 1).Value = "Bonjour"
 
     Dim summary As String
     Dim frenchSummary As String
@@ -491,9 +492,9 @@ Public Sub TestDuplicateLabelsListsAllDuplicateValues()
     ResetTranslationsTableRows
     AppendTranslationLabel "One"
     AppendTranslationLabel "Two"
-    AppendTranslationLabel "one"
+    AppendTranslationLabel "One"
     AppendTranslationLabel "Three"
-    AppendTranslationLabel "TWO"
+    AppendTranslationLabel "Two"
 
     Dim duplicateMessage As String
     Assert.IsTrue Subject.DuplicateLabels(duplicateMessage), "DuplicateLabels should detect multiple duplicate values"

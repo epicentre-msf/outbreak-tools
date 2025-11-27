@@ -478,7 +478,6 @@ Public Sub TestSortTablesRenamesExportColumns()
     dictTable.ListColumns("Export 2").DataBodyRange.Cells(1, 1).Value = "Second"
 
     Subject.InsertRows SHEET_EXPORTS, exportTable.ListRows(1).Range
-    exportTable = exportSheet.ListObjects("Tab_Exports")
     exportIdx = exportTable.ListColumns("export number").Index
 
     exportTable.DataBodyRange.Cells(1, exportIdx).Value = "export 2"

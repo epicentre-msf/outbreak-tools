@@ -461,7 +461,7 @@ Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlS
     End If
 
     'Sort the actual analysis worksheet before exports
-    Sort
+    'Sort
 
     Set hostsheet = Wksh()
 

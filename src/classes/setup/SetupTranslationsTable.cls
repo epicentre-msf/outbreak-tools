@@ -1250,7 +1250,6 @@ Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDupli
     Dim actualLabels As BetterArray
     Dim rowIndex As Long
     Dim currentLabel As String
-    Dim normalizedLabel As String
     Dim bucketIndex As Long
     Dim duplicateCount As Long
     Dim summary As TDuplicateSummary
@@ -1285,11 +1284,10 @@ Private Function ComputeDuplicateSummary(ByVal languageName As String) As TDupli
         currentLabel = Trim$(CStr(targetRange.Cells(rowIndex, 1).Value))
         If LenB(currentLabel) = 0 Then GoTo ContinueLoop
 
-        normalizedLabel = LCase$(currentLabel)
-        bucketIndex = FindLabelIndex(seenLabels, normalizedLabel)
+        bucketIndex = FindLabelIndex(seenLabels, currentLabel)
 
         If bucketIndex = 0 Then
-            seenLabels.Push normalizedLabel
+            seenLabels.Push currentLabel
             counts.Push 1
             actualLabels.Push currentLabel
         Else
