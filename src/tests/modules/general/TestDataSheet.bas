@@ -257,7 +257,7 @@ Public Sub TestExportIncludesHiddenNamesWhenRequested()
     Set exportBook = NewWorkbook()
     dataObject.Export exportBook, includeNames:=True
 
-    Set exportedStore = HiddenNames.Create(exportBook)
+    Set exportedStore = HiddenNames.Create(exportBook.Worksheets(dataObject.Name))
     Assert.AreEqual 42, exportedStore.ValueAsLong(NAME_ID, -1), _
                      "Export should replicate hidden names when includeNames is True."
 

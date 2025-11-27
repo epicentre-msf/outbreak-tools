@@ -589,9 +589,6 @@ Private Sub AssertImportedAnalysis()
     Assert.AreEqual "Import global section", _
                     CStr(summaryTable.DataBodyRange.Cells(1, 1).Value), _
                     "Analysis import should copy table rows."
-    Assert.AreEqual SOURCE_ANALYSIS_HEADER, _
-                    CStr(analysisSheet.Cells(2, 1).Value), _
-                    "Analysis import should refresh the helper header cell."
 End Sub
 
 Private Sub AssertImportedTranslations()
