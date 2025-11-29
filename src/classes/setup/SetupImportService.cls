@@ -370,7 +370,8 @@ Public Sub ImportFromWorkbook(ByVal pass As IPasswords, Optional ByVal sheetsLis
     Dim errDescription As String
 
     ValidatePasswords pass
-    PrepareImport pass, sheetsList, True
+    'Here the exports coming from export for migration are on row 1, column 1
+    PrepareImport pass, sheetsList, True, SOURCE_START_ROW, SOURCE_START_COLUMN
     Set resolvedSheets = ResolveImportSheets(sheetsList)
 
     EnterBusyState
@@ -768,7 +769,10 @@ End Sub
 '@sub-title Ensure the exports and dictionary sheets are aligned prior to import.
 Private Sub PrepareImport(ByVal pass As IPasswords, _
                           Optional ByVal sheetsList As BetterArray, _ 
-                          Optional ByVal forceSync As Boolean = True)
+                          Optional ByVal forceSync As Boolean = True,
+                          Optional ByVal impStartRow As Long = EXPORT_HOST_START_ROW,
+                          Optional ByVal impStartColumn As Long = EXPORT_HOST_START_COLUMN)
+
     Dim importBook As Workbook
     Dim hostWorkbook As Workbook
     Dim currentExportsSheet As Worksheet
@@ -797,7 +801,7 @@ Private Sub PrepareImport(ByVal pass As IPasswords, _
         Set currentExportsSheet = hostWorkbook.Worksheets(EXPORT_SHEET_NAME)
         Set importExportsSheet = importBook.Worksheets(EXPORT_SHEET_NAME)
         Set currentExportObj = LLExport.Create(currentExportsSheet, EXPORT_HOST_START_ROW, EXPORT_HOST_START_COLUMN)
-        Set importExportObj = LLExport.Create(importExportsSheet, SOURCE_START_ROW, SOURCE_START_COLUMN)
+        Set importExportObj = LLExport.Create(importExportsSheet, impStartRow, impStartColumn)
 
         If currentExportObj.NumberOfExports < importExportObj.NumberOfExports Then
             pass.UnProtect DICTIONARY_SHEET_NAME

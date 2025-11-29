@@ -14,6 +14,8 @@ Attribute VB_Description = "main interface to linelist specifications paths"
 '@ModuleDescription("main interface to linelist specifications paths")
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
+'@depends Checking
+
 Option Explicit
 Implements IMain
 
