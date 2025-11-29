@@ -4,7 +4,7 @@ Attribute VB_Description = "Imports form logics"
 '@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString
 Option Explicit
 Private NumberOfClicks As Long
-Private Const LimitOfClicks As Long = 15
+Private Const LimitOfClicks As Long = 10
 
 
 Private Sub DictionaryCheck_Click()
