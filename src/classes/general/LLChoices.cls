@@ -30,12 +30,6 @@ Implements ILLChoices
 
 Private Type Tchoice
     choiceDataSheet As IDataSheet
-    listNameValue As String
-    labelValue As String
-    labelShortValue As String
-    orderValue As String
-    hasTrads As Boolean
-    trads As ITranslationObject
     hasChecks As Boolean
     choiceName As String
 End Type
@@ -43,6 +37,7 @@ End Type
 
 Private this As Tchoice
 Private Const LISTNAMECODE As String = "list name"
+Private Const TRANSLABELCODE As String = "translated label"
 Private Const LABELCODE   As String = "label"
 Private Const LABELSHORTCODE As String = "short label"
 Private Const ORDERINLISTCODE   As String = "ordering list"
@@ -81,122 +76,36 @@ Private internalChecks As IChecking
 Public Function Create(ByVal choiceWorksheet As Worksheet, _ 
                        ByVal choiceStartRow As Long, _
                        ByVal choiceStartColumn As Long, _ 
-                       Optional ByVal trads As Object = Nothing, _
                        Optional ByVal choiceName As String = vbNullString) As _ 
                        ILLChoices
 
     Dim customDataSheet As IDataSheet
+    Dim instance As LLChoices
 
     Set customDataSheet = DataSheet.Create(choiceWorksheet, choiceStartRow, choiceStartColumn)
-    
-    With New LLChoices
-        Set .ChoiceData = customDataSheet
-        If  (Not trads Is Nothing) Then
-            If TypeName(trads) = "TranslationObject" Then
-                'Set the translation object if required
-                .HasTranslation = True
-                Set .TradObject = trads
-            End If
-        End If
-        .Name = choiceName
-        Set Create = .Self
-    End With
+    Set instance = New LLChoices
+
+    Set instance.ChoiceData = customDataSheet
+    instance.Name = choiceName
+    Set Create = instance
 End Function
 
 
-'Self
-Public Property Get Self() As ILLChoices
-    Set Self = Me
-End Property
+'Choice Label extraction
 
-'@section Translations of headers
-'===============================================================================
-'Header name resolution and translation support.
+Private Property Get ChoiceLabel(Optional ByVal keepDefault As Boolean = True) As String
 
-'@prop-title Set translation property
-Public Property Let HasTranslation(ByVal hastrads As Boolean)
-    this.hasTrads = hastrads And Not (this.trads Is Nothing)
-    If Not this.hasTrads Then Set this.trads = Nothing
-End Property
-
-
-'@label:HasTranslation
-'@prop-title Check if the choices have a translation
-'@return A Boolean
-'@export
-Public Property Get HasTranslation() As Boolean
-    HasTranslation = this.hasTrads And Not (this.trads Is Nothing)
-End Property
-
-
-'@label:TradObject
-'@prop-title Translation object used for translating the headers
-'@return Translation Object for the headers. Could be Nothing if no translation available.
-'@export
-Public Property Get TradObject() As ITranslationObject
-    Set TradObject = this.trads
-End Property
-
-Public Property Set TradObject(ByVal trads As ITranslationObject)
-    Set this.trads = trads
-    this.hasTrads = Not (trads Is Nothing)
-End Property
-
-
-'@note Sub/properties for Getting the headers ---
-
-'Depending on whether there is a translation or NOT attached to the choice object
-'Get the label, the list name, the short label and other values
-Private Property Get ListName() As String
-    Dim trads As ITranslationObject
-
-    If Not HasTranslation() Then this.listNameValue = LISTNAMECODE
-
-    If this.listNameValue = vbNullString Then
-        Set trads = TradObject()
-        this.listNameValue = trads.TranslatedValue(LISTNAMECODE)
+    If (Not keepDefault) Then
+        Dim dataObject As IDataSheet
+        
+        Set dataObject = ChoiceData()
+        If dataObject.ColumnExists(TRANSLABELCODE, matchCase:=False) Then
+            ChoiceLabel = TRANSLABELCODE
+            Exit Property
+        End If
     End If
-
-    ListName = this.listNameValue
-End Property
-
-Private Property Get ChoiceLabel() As String
-    Dim trads As ITranslationObject
-
-    If Not HasTranslation() Then this.labelValue = LABELCODE
-
-    If this.labelValue = vbNullString Then
-        Set trads = TradObject()
-        this.labelValue = trads.TranslatedValue(LABELCODE)
-    End If
-    
-    ChoiceLabel = this.labelValue
-End Property
-
-Private Property Get LabelShort() As String
-    Dim trads As ITranslationObject
-
-    If Not HasTranslation() Then this.labelShortValue = LABELSHORTCODE
-
-    If this.labelShortValue = vbNullString Then
-        Set trads = TradObject()
-        this.labelShortValue = trads.TranslatedValue(LABELSHORTCODE)
-    End If
-
-    LabelShort = this.labelShortValue
-End Property
-
-Private Property Get OrderingList() As String
-    Dim trads As ITranslationObject
-
-    If Not HasTranslation() Then this.orderValue = ORDERINLISTCODE
-
-    If this.orderValue = vbNullString Then
-        Set trads = TradObject()
-        this.orderValue = trads.TranslatedValue(ORDERINLISTCODE)
-    End If
-
-    OrderingList = this.orderValue
+       
+    ChoiceLabel = LABELCODE
 End Property
 
 '@section Associated DataSheet Object properties
@@ -274,17 +183,11 @@ Private Property Get HasValidHeaders() As Boolean
     Dim dataObject As IDataSheet
     
     Set dataObject = ChoiceData()
-    HasValidHeaders = dataObject.ColumnExists(ListName(), matchCase:=False) And _ 
+    HasValidHeaders = dataObject.ColumnExists(LISTNAMECODE, matchCase:=False) And _ 
                       dataObject.ColumnExists(ChoiceLabel(), matchCase:=False) And _
-                      dataObject.ColumnExists(LabelShort(), matchCase:=False) And _ 
-                      dataObject.ColumnExists(OrderingList(), matchCase:=False)
+                      dataObject.ColumnExists(LABELSHORTCODE, matchCase:=False) And _ 
+                      dataObject.ColumnExists(ORDERINLISTCODE, matchCase:=False)
 
-End Property
-
-'@label:HeadersExists
-'@prop-title Backward-compatible header check alias
-Private Property Get HeadersExists() As Boolean
-    HeadersExists = HasValidHeaders()
 End Property
 
 '@section Working with Choices
@@ -297,7 +200,7 @@ End Property
 '@export
 Public Property Get Name() As String
 
-    If this.choiceName = vbNullString Then
+    If LenB(this.choiceName) = 0 Then
         On Error Resume Next
             this.choiceName = "LLCHOICE"
             this.choiceName = Wksh.Name
@@ -324,12 +227,12 @@ Private Property Get ChoiceExists(ByVal choiceName As String) As Boolean
     Set dataObject = ChoiceData()
     
     'If the column listName() is not found, return false
-    If Not dataObject.ColumnExists(listName()) Then GoTo ReturnExist
+    If Not dataObject.ColumnExists(LISTNAMECODE, matchCase:=False) Then GoTo ReturnExist
 
     'Empty choicename should return a False
-    If choiceName = vbNullString Then GoTo ReturnExist
+    If LenB(choiceName) = 0 Then GoTo ReturnExist
     
-    Set listRng = DataRange(listName(), includeHeaders:=False)
+    Set listRng = DataRange(LISTNAMECODE, includeHeaders:=False)
     Exist = Not ( _ 
     listRng.Find( _ 
         What:=choiceName, _ 
@@ -355,8 +258,8 @@ Private Sub Sort()
     'If the columns listName and Orders are not found, exit
     If Not HasValidHeaders() Then  Exit Sub
 
-    Set listRng = DataRange(ListName(), includeHeaders:=False)
-    Set orderRng = DataRange(OrderingList(), includeHeaders:=False)
+    Set listRng = DataRange(LISTNAMECODE, includeHeaders:=False)
+    Set orderRng = DataRange(ORDERINLISTCODE, includeHeaders:=False)
     Set choiceRng = DataRange(includeHeaders:=True)
 
     choiceRng.Sort key1:=listRng, Order1:=xlAscending, key2:=orderRng, order2:=xlAscending, Header:=xlYes
@@ -407,17 +310,17 @@ Private Sub AddChoice(ByVal choiceName As String, _
     End If
 
     'Test if the headers (converted or not exists)
-    If Not HeadersExists() Then 
+    If Not HasValidHeaders() Then 
         LogInfo "Some Headers of the choice " & Name() & " Object are missing", _ 
                 scope:=checkingWarning
         Exit Sub
     End If
 
     'Get the ranges of the 
-    Set listRng = DataRange(ListName())
-    Set labelRng = DataRange(ChoiceLabel())
-    Set orderRng = DataRange(OrderingList())
-    Set shortLabelRng = DataRange(LabelShort())
+    Set listRng = DataRange(LISTNAMECODE)
+    Set labelRng = DataRange(ChoiceLabel(False))
+    Set orderRng = DataRange(ORDERINLISTCODE)
+    Set shortLabelRng = DataRange(LABELSHORTCODE)
     Set choicewksh = Wksh()
 
     EndRow = StartRow + listRng.Rows.Count
@@ -451,7 +354,7 @@ Private Sub RemoveOneChoice(ByVal choiceName As String)
         Exit Sub
     End If
 
-    If Not HeadersExists() Then
+    If Not HasValidHeaders() Then
         LogInfo "Choice " & choiceName & " can not be deleted, some headers are missing", _ 
                  scope:=checkingWarning
         ShowDebug
@@ -462,7 +365,7 @@ Private Sub RemoveOneChoice(ByVal choiceName As String)
     'Sort the actual choice object before going through
     Sort
 
-    Set listRng = DataRange(ListName(), includeHeaders:=False)
+    Set listRng = DataRange(LISTNAMECODE, includeHeaders:=False)
 
     'I am sure here that the choice exists, so cellRng Is not Nothing
     Set cellRng = listRng.Find( _ 
@@ -512,17 +415,17 @@ Private Sub Translate(ByVal trads As ITranslationObject)
 
     Dim lblRng As Range
 
-    If Not HeadersExists() Then
+    If Not HasValidHeaders() Then
         LogInfo "Some Headers of the choice Object are missing, translation not done"
         Exit Sub
     End If
 
     'Translate the label
-    Set lblRng = DataRange(ChoiceLabel())
+    Set lblRng = DataRange(ChoiceLabel(False))
     trads.TranslateRange lblRng
 
     'Translate the short label
-    Set lblRng = DataRange(LabelShort())
+    Set lblRng = DataRange(LABELSHORTCODE)
     trads.TranslateRange lblRng
 End Sub
 
@@ -546,7 +449,7 @@ Private Sub ManageRows(Optional ByVal del As Boolean = False)
 
     Set tabl = CustomTable.Create(Lo)
     If del Then
-        tabl.RemoveRows
+        tabl.RemoveRows totalCount:=1
     Else
         tabl.AddRows
     End If
@@ -660,7 +563,7 @@ Private Property Get AllChoices() As BetterArray
         Exit Property
     End If
 
-    Set lstRng = DataRange(ListName(), includeHeaders:=False)
+    Set lstRng = DataRange(LISTNAMECODE, includeHeaders:=False)
     For counter = 1 To lstRng.Rows.Count
         If Not lstChoi.Includes(lstRng.Cells(counter, 1).Value) Then
             lstChoi.Push lstRng.Cells(counter, 1).Value
@@ -708,7 +611,7 @@ Public Property Get Categories(ByVal choiceName As String, _
 
     'Filter the datasheet to get the choices
     Set lngcat = dataObject.FilterData( _ 
-                            varName:=listName(), _
+                            varName:=LISTNAMECODE, _
                             criteriaName:=choiceName, _ 
                             returnedColumnName:=ChoiceLabel(), _
                             includeHeaders:=False)
@@ -717,9 +620,9 @@ Public Property Get Categories(ByVal choiceName As String, _
     If useShortlabels Then
         'Short Categories values
         Set shrtcat = dataObject.FilterData( _ 
-            varName:=listName(), _
+            varName:=LISTNAMECODE, _
             criteriaName:=choiceName, _
-            returnedColumnName:=LabelShort(), _
+            returnedColumnName:=LABELSHORTCODE, _
             includeHeaders:=False _
         )
         If shrtcat Is Nothing Then Set shrtcat = New BetterArray
@@ -805,10 +708,10 @@ Private Sub AddHeaders()
     Set sh = Wksh()
     Set cellRng = sh.Cells(StartRow(), StartColumn())
 
-    cellRng.Value = ListName()
-    cellRng.Offset(, 1).Value = OrderingList()
+    cellRng.Value = LISTNAMECODE
+    cellRng.Offset(, 1).Value = ORDERINLISTCODE
     cellRng.Offset(, 2).Value = ChoiceLabel()
-    cellRng.Offset(, 3).Value = LabelShort()
+    cellRng.Offset(, 3).Value = LABELSHORTCODE
 End Sub
 
 '@label:Export
@@ -934,24 +837,6 @@ End Property
 '@section Interfaces
 '===============================================================================
 'Interface delegation wiring.
-
-'Translations of headers -------------------------------------------------------
-
-'@jump:HasTranslation
-'Check if the choices have translation
-Private Property Get ILLChoices_HasTranslation() As Boolean
-    ILLChoices_HasTranslation = HasTranslation()
-End Property
-
-Private Property Let ILLChoices_HasTranslation(ByVal hastrads As Boolean)
-    HasTranslation = hasTrads
-End Property
-
-'@jump:TradObject
-'Translation object used for translating the headers
-Private Property Get ILLChoices_TradObject() As ITranslationObject
-    Set ILLChoices_TradObject = TradObject()
-End Property
 
 'Associated DataSheet Object properties ----------------------------------------
 

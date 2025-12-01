@@ -99,7 +99,7 @@ Public Sub RenameColumn(ByVal colName As String, _
                         Optional ByVal matchCase As Boolean = False)
 End Sub
 
-'@jump:sort
+'@jump:sorte
 'Sort columns
 Public Sub Sort(Optional ByVal colName As String = vbNullString, _ 
                 Optional ByVal colList As Object = Nothing, _ 
