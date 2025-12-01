@@ -621,7 +621,7 @@ Private Sub ImportTranslationsUsingClass(ByVal pass As IPasswords, _
         sheetUnlocked = True
 
         Set hostTableAdapter = CustomTable.Create(hostTable)
-        Set sourceTableAdapter = DataSheet.Create(sourceSheet, 1, 1)
+        Set sourceTableAdapter = DataSheet.Create(sourceSheet, 1, 2)
         hostTableAdapter.Import sourceTableAdapter, keepSourceHeaders:=True
 
 ImportCleanup:
@@ -643,7 +643,8 @@ End Sub
 
 
 '@sub-title Resolve the translations listobject from a worksheet.
-Private Function ResolveTranslationsList(ByVal sheetRef As Worksheet, Optional ByVal preferred As ListObject = Nothing) As ListObject
+Private Function ResolveTranslationsList(ByVal sheetRef As Worksheet, _ 
+                                         Optional ByVal preferred As ListObject = Nothing) As ListObject
     Dim candidate As ListObject
 
     If sheetRef Is Nothing Then Exit Function
