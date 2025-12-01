@@ -435,6 +435,7 @@ Private Function FilterData(ByVal varName As String, _
     Dim sh As Worksheet
     Dim endCol As Long
     Dim outRng As Range
+    Dim endRow As Long
 
     Set returnedData = New BetterArray
     returnedData.LowerBound = 1
@@ -442,7 +443,7 @@ Private Function FilterData(ByVal varName As String, _
     Set dataRng = DataRange(includeHeaders:=True) 'Plage of the dictionary data
     Set sh = Wksh()
     endCol = DataEndColumn()                     'End column and rows of the dictionary
-    EndRow = DataEndRow()
+    endRow = DataEndRow()
 
     
     startRetRow = DataStartRow() + 1 
@@ -462,7 +463,7 @@ Private Function FilterData(ByVal varName As String, _
         dataRng.AutoFilter Field:=ColumnIndex(varName, inDataRange:=True, shouldExist:=True, matchCase:=matchCase), Criteria1:=criteriaName
 
         On Error Resume Next
-        Set returnedRng = .Range(.Cells(startRetRow, startRetColIndex), .Cells(EndRow, endRetColIndex)).SpecialCells(xlCellTypeVisible)
+        Set returnedRng = .Range(.Cells(startRetRow, startRetColIndex), .Cells(endRow, endRetColIndex)).SpecialCells(xlCellTypeVisible)
         .AutoFilter.ShowAllData
         dataRng.AutoFilter.ShowAllData
         On Error GoTo 0
@@ -512,6 +513,7 @@ Private Function FiltersData(ByVal varData As BetterArray, _
     Dim endCol As Long
     Dim retEndRow As Long
     Dim retEndCol As Long
+    Dim outRng As Range
 
     Set returnedData = New BetterArray
     returnedData.LowerBound = 1
@@ -549,7 +551,11 @@ Private Function FiltersData(ByVal varData As BetterArray, _
             Set returnedRng = .Range(.Cells(DataStartRow() + 1, returnedColumnIndex), .Cells(EndRow, returnedColumnIndex)).SpecialCells(xlCellTypeVisible)
             On Error GoTo 0
 
-            If Not returnedRng Is Nothing Then returnedRng.Copy .Cells(DataStartRow(), endCol + Col)
+            If Not returnedRng Is Nothing Then
+                Set outRng = .Cells(DataStartRow(), endCol + Col).Resize(returnedRng.Rows.Count, 1)
+                returnedRng.Copy
+                outRng.PasteSpecial xlPasteValues
+            End If
             Col = Col + 1
         Next
 

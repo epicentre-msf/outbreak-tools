@@ -624,6 +624,7 @@ Public Property Get Categories(ByVal choiceName As String, _
             varName:=LISTNAMECODE, _
             criteriaName:=choiceName, _
             returnedColumnName:=LABELSHORTCODE, _
+            matchCase:=False, _
             includeHeaders:=False _
         )
         If shrtcat Is Nothing Then Set shrtcat = New BetterArray
