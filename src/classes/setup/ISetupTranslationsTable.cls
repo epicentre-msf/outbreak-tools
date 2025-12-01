@@ -67,6 +67,7 @@ End Sub
 '@sub-title Summarise and optionally display missing translation counts.
 Public Function NumberOfMissing() As String
 End Function
+
 '@sub-title Summarise duplicate labels for the specified language or across all languages.
 Public Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
 End Function
