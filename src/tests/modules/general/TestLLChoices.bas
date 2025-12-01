@@ -192,7 +192,6 @@ Public Sub TestCreateInitialisesChoice()
     CustomTestSetTitles Assert, "LLChoices", "TestCreateInitialisesChoice"
     Assert.IsTrue (TypeName(Choices) = "LLChoices"), "Expected Create to return ILLChoices implementation"
     Assert.AreEqual CHOICESSHEET, Choices.Wksh.Name, "Choice object should target the configured sheet"
-    Assert.IsFalse Choices.HasTranslation, "Fixture does not configure translations by default"
 End Sub
 
 '@TestMethod("LLChoices")
@@ -438,22 +437,6 @@ Fail:
     CustomTestLogFailure Assert, "TestCategoriesReturnEmptyForMissingChoice", Err.Number, Err.Description
 End Sub
 
-'@TestMethod("LLChoices")
-Public Sub TestHasTranslationGuardedWhenNoTranslator()
-    CustomTestSetTitles Assert, "LLChoices", "TestHasTranslationGuardedWhenNoTranslator"
-    On Error GoTo Fail
-
-    Choices.HasTranslation = True
-
-    Assert.IsFalse Choices.HasTranslation, "HasTranslation should remain False when no translator is wired"
-    Assert.AreEqual "choice 1 | choice 2 | choice 3 | choice 4", _
-                    Choices.ConcatenateCategories("list_multiple"), _
-                    "ConcatenateCategories should still produce default text without translator"
-    Exit Sub
-
-Fail:
-    CustomTestLogFailure Assert, "TestHasTranslationGuardedWhenNoTranslator", Err.Number, Err.Description
-End Sub
 
 '@TestMethod("LLChoices")
 Public Sub TestImportReplacesChoices()

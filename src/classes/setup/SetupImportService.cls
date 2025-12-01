@@ -302,7 +302,7 @@ Public Sub Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
     EnterBusyState
     On Error GoTo ImportFailed
 
-        PrepareImport pass, sheetsList
+        PrepareImport pass, sheetsList, renameChoices:=True
         Set importBook = EnsureImportWorkbook()
         Set hostWorkbook = ThisWorkbook
         Set formatList = New BetterArray
@@ -328,7 +328,8 @@ Public Sub Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
                         hostTable.Import importTable, _ 
                          keepSourceHeaders:=(sheetName = TRANSLATIONS_SHEET_NAME), _ 
                             formatHeaders:=formatList, _ 
-                            insertShift:=(sheetName = ANALYSIS_SHEET_NAME)
+                            insertShift:=(sheetName = ANALYSIS_SHEET_NAME), _ 
+                            strictColumnSearch:=True
                     End If
                 Next importList
 
@@ -338,6 +339,7 @@ Public Sub Import(ByVal pass As IPasswords, ByVal sheetsList As BetterArray)
         Next idx
 
 ImportCleanup:
+    PostImport pass, sheetsList
     CloseImportWorkbook
     LeaveBusyState
     Exit Sub
@@ -351,6 +353,7 @@ ImportFailed:
             ProtectWorksheet pass, lastSheetName
             sheetUnlocked = False
         End If
+        PostImport pass, sheetsList
         CloseImportWorkbook
     On Error GoTo 0
     LeaveBusyState True
@@ -769,9 +772,10 @@ End Sub
 '@sub-title Ensure the exports and dictionary sheets are aligned prior to import.
 Private Sub PrepareImport(ByVal pass As IPasswords, _
                           Optional ByVal sheetsList As BetterArray, _ 
-                          Optional ByVal forceSync As Boolean = True,
-                          Optional ByVal impStartRow As Long = EXPORT_HOST_START_ROW,
-                          Optional ByVal impStartColumn As Long = EXPORT_HOST_START_COLUMN)
+                          Optional ByVal forceSync As Boolean = True, _
+                          Optional ByVal impStartRow As Long = EXPORT_HOST_START_ROW, _
+                          Optional ByVal impStartColumn As Long = EXPORT_HOST_START_COLUMN, _ 
+                          Optional ByVal renameChoices As Boolean = False)
 
     Dim importBook As Workbook
     Dim hostWorkbook As Workbook
@@ -785,38 +789,55 @@ Private Sub PrepareImport(ByVal pass As IPasswords, _
     Dim counter As Long
     Dim dictUnlocked As Boolean
     Dim exportsUnlocked As Boolean
+    Dim choiUnlocked As Boolean
+    Dim currentChoiceData As ICustomTable
     Dim errNumber As Long
     Dim errSource As String
     Dim errDescription As String
 
     If sheetsList Is Nothing Then Exit Sub
-    If (Not sheetsList.Includes(EXPORT_SHEET_NAME)) And (Not forceSync) Then Exit Sub
+
+
+    If (Not sheetsList.Includes(EXPORT_SHEET_NAME)) And (Not forceSync) And (Not sheetsList.Includes(CHOICES_SHEET_NAME)) Then Exit Sub
+
 
     Set importBook = EnsureImportWorkbook()
     Set hostWorkbook = ThisWorkbook
 
     On Error GoTo PrepareFailed
 
-    If WorksheetExists(importBook, EXPORT_SHEET_NAME) And WorksheetExists(importBook, DICTIONARY_SHEET_NAME) Then
-        Set currentExportsSheet = hostWorkbook.Worksheets(EXPORT_SHEET_NAME)
-        Set importExportsSheet = importBook.Worksheets(EXPORT_SHEET_NAME)
-        Set currentExportObj = LLExport.Create(currentExportsSheet, EXPORT_HOST_START_ROW, EXPORT_HOST_START_COLUMN)
-        Set importExportObj = LLExport.Create(importExportsSheet, impStartRow, impStartColumn)
+    If sheetsList.Includes(EXPORT_SHEET_NAME) Or forceSync Then
+        If WorksheetExists(importBook, EXPORT_SHEET_NAME) And WorksheetExists(importBook, DICTIONARY_SHEET_NAME) Then
+            Set currentExportsSheet = hostWorkbook.Worksheets(EXPORT_SHEET_NAME)
+            Set importExportsSheet = importBook.Worksheets(EXPORT_SHEET_NAME)
+            Set currentExportObj = LLExport.Create(currentExportsSheet, EXPORT_HOST_START_ROW, EXPORT_HOST_START_COLUMN)
+            Set importExportObj = LLExport.Create(importExportsSheet, impStartRow, impStartColumn)
 
-        If currentExportObj.NumberOfExports < importExportObj.NumberOfExports Then
-            pass.UnProtect DICTIONARY_SHEET_NAME
-            dictUnlocked = True
-            pass.UnProtect EXPORT_SHEET_NAME
-            exportsUnlocked = True
+            If currentExportObj.NumberOfExports < importExportObj.NumberOfExports Then
+                pass.UnProtect DICTIONARY_SHEET_NAME
+                dictUnlocked = True
+                pass.UnProtect EXPORT_SHEET_NAME
+                exportsUnlocked = True
 
-            Set currentDictionary = LLdictionary.Create(hostWorkbook.Worksheets(DICTIONARY_SHEET_NAME), DICTIONARY_HOST_START_ROW, DICTIONARY_HOST_START_COLUMN)
-            updatedExports = currentExportObj.NumberOfExports
-
-            Do While  updatedExports < importExportObj.NumberOfExports
-                previousExports = currentExportObj.NumberOfExports
-                currentExportObj.AddRows currentDictionary
+                Set currentDictionary = LLdictionary.Create(hostWorkbook.Worksheets(DICTIONARY_SHEET_NAME), DICTIONARY_HOST_START_ROW, DICTIONARY_HOST_START_COLUMN)
                 updatedExports = currentExportObj.NumberOfExports
-            Loop
+
+                Do While  updatedExports < importExportObj.NumberOfExports
+                    previousExports = currentExportObj.NumberOfExports
+                    currentExportObj.AddRows currentDictionary
+                    updatedExports = currentExportObj.NumberOfExports
+                Loop
+            End If
+        End If
+    End If
+
+    If sheetsList.Includes(CHOICES_SHEET_NAME) And renameChoices Then
+        If WorksheetExists(importBook, CHOICES_SHEET_NAME) And sheetsList.Includes(CHOICES_SHEET_NAME) Then
+            pass.UnProtect CHOICES_SHEET_NAME
+            choiUnlocked = True
+            Set currentChoiceData = CustomTable.Create(hostworkbook.Worksheets(CHOICES_SHEET_NAME).ListObjects(1))
+            currentChoiceData.RenameColumn "Label", "Formula Label", matchCase:=False
+            currentChoiceData.RenameColumn "Translated Label", "Label", matchCase:=False
         End If
     End If
 
@@ -830,6 +851,11 @@ PrepareCleanup:
             pass.Protect EXPORT_SHEET_NAME
             exportsUnlocked = False
         End If
+        If choiUnlocked Then
+            pass.Protect CHOICES_SHEET_NAME
+            choiUnlocked = False
+        End If
+
     On Error GoTo 0
     If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
     Exit Sub
@@ -841,6 +867,50 @@ PrepareFailed:
     Resume PrepareCleanup
 End Sub
 
+
+Private Sub PostImport(ByVal pass As IPasswords, _
+                        Optional ByVal sheetsList As BetterArray)
+
+    If sheetsList Is Nothing Then Exit Sub
+    If Not sheetsList.Includes(CHOICES_SHEET_NAME) Then Exit Sub
+
+    Dim importBook As Workbook
+    Dim hostworkbook As Workbook
+    Dim choiUnlocked As Boolean
+    Dim currentChoiceData As ICustomTable
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
+
+    On Error GoTo PostFailed
+
+    Set importBook = EnsureImportWorkbook()
+    Set hostworkbook = ThisWorkbook
+
+    If WorksheetExists(importBook, CHOICES_SHEET_NAME) Then
+        pass.UnProtect CHOICES_SHEET_NAME
+        choiUnlocked = True
+        Set currentChoiceData = CustomTable.Create(hostworkbook.Worksheets(CHOICES_SHEET_NAME).ListObjects(1))
+        currentChoiceData.RenameColumn "Label", "Translated Label", matchCase:=False
+        currentChoiceData.RenameColumn "Formula Label", "Label", matchCase:=False
+    End If
+
+PostCleanUp:
+    On Error Resume Next
+        If choiUnlocked Then
+            pass.Protect CHOICES_SHEET_NAME
+            choiUnlocked = False
+        End If
+    On Error GoTo 0
+    If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
+    Exit Sub
+
+PostFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    Resume PostCleanUp
+End Sub
 
 '@section Validation helpers
 '===============================================================================
