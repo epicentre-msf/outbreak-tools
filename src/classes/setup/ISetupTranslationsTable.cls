@@ -71,6 +71,15 @@ End Function
 '@sub-title Summarise duplicate labels for the specified language or across all languages.
 Public Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
 End Function
+
+'@sub-title Retrieve the cached missing summary across languages.
+Public Property Get InternalMissingSummary() As BetterArray
+End Property
+
+'@sub-title Retrieve the cached duplicate summary across languages.
+Public Property Get InternalDuplicatesSummary() As BetterArray
+End Property
+
 '@sub-title Enable or disable prompts when reporting missing translations.
 Public Sub SetDisplayPrompts(ByVal state As Boolean)
 End Sub

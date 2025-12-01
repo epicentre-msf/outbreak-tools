@@ -479,6 +479,7 @@ Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, Optional ByVal l
     SortTranslations
     ApplyFormatting
     NumberOfMissing
+    UpdateDuplicatesSummary
 
     EndTagIntegration
     scope.Restore
@@ -1228,7 +1229,7 @@ Private Function NumberOfMissing() As String
 
 BuildSummary:
     summary = messageLines.ToString(Separator:=vbLf, OpeningDelimiter:=vbNullString, ClosingDelimiter:=vbNullString)
-    UpdateMissingSummary summary
+    UpdateMissingSummary messageLines
     NumberOfMissing = summary
 
     If this.displayPrompts Then
@@ -1240,28 +1241,56 @@ End Function
 Private Sub UpdateMissingSummary(ByVal summary As BetterArray)
 
     If this.missingSummary Is Nothing Then
-        Set this.missingSummary = New BetterArray
+        Set this.missingSummary = CreateBuffer()
     End If
-
+    
     Set this.missingSummary = summary.Clone()
 End Sub
 
 Private Property Get InternalMissingSummary() As BetterArray
     If this.missingSummary Is Nothing Then
-        Set this.missingSummary = New BetterArray
+        Set this.missingSummary = CreateBuffer()
     End If
-    Set InternalMissingSummary = this.missingSummary
+    Set InternalMissingSummary = this.missingSummary.Clone()
 End Property
 
-'@sub-title Update internal duplicate summary
+'@sub-title Build duplicate summary for every language column.
 Private Sub UpdateDuplicatesSummary()
+    Dim langs As BetterArray
+    Dim langIdx As Long
+    Dim targetLang As String
+    Dim summary As BetterArray
+    Dim duplicateReport As TDuplicateSummary
 
+    If this.duplicatesSummary Is Nothing Then
+        Set this.duplicatesSummary = CreateBuffer()
+    End If
 
+    Set summary = CreateBuffer()
+    Set langs = Languages(True)
+
+    If Not (langs Is Nothing) Then
+        For langIdx = langs.LowerBound To langs.UpperBound
+            targetLang = Trim$(CStr(langs.Item(langIdx)))
+            If LenB(targetLang) > 0 Then
+                duplicateReport = ComputeDuplicateSummary(targetLang)
+                If duplicateReport.HasDuplicates Then
+                    summary.Push duplicateReport.Message
+                End If
+            End If
+        Next langIdx
+    End If
+
+    Set this.duplicatesSummary = summary.Clone()
 End Sub
 
+
 Private Property Get InternalDuplicatesSummary() As BetterArray
+    If this.duplicatesSummary Is Nothing Then
+        Set this.duplicatesSummary = CreateBuffer()
+    End If
 
-
+    Set InternalDuplicatesSummary = this.duplicatesSummary.Clone()
 End Property
 
 
@@ -1894,3 +1923,11 @@ End Function
 Private Function ISetupTranslationsTable_DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
     ISetupTranslationsTable_DuplicateLabels = DuplicateLabels(duplicateMessage, languageName)
 End Function
+
+Private Property Get ISetupTranslationsTable_InternalMissingSummary() As BetterArray
+    Set ISetupTranslationsTable_InternalMissingSummary = InternalMissingSummary
+End Property
+
+Private Property Get ISetupTranslationsTable_InternalDuplicatesSummary() As BetterArray
+    Set ISetupTranslationsTable_InternalDuplicatesSummary = InternalDuplicatesSummary
+End Property
