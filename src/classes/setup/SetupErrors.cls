@@ -261,7 +261,7 @@ Private Sub EnterBusyState()
     Set scope = ApplicationScope()
 
     If Not scope.IsBusy Then
-        scope.ApplyBusyState, suppressEvents:=True, calculateOnSave:=False
+        scope.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
     End If
 End Sub
 
@@ -598,7 +598,7 @@ Private Sub CheckChoice()
     Set dictTab = CustomTable.Create(shDictionary.ListObjects(1))
 
     Set choiList = this.choices.AllChoices()
-    Set choiNameRng = choiTab.DataRange("List Name")
+    Set choiNameRng = choiTab.DataRange("List Name", matchCase:=False)
     Set controlRng = dictTab.DataRange("Control")
     Set controlDetailsRng = dictTab.DataRange("Control Details")
 
@@ -819,7 +819,7 @@ Private Sub CheckTranslations()
     Dim errDescription As String
 
 
-    On Error GoTo TranslationFailed
+    On Error GoTo TranslationsFailed
 
 
     Set shRegistry = ResolveWorksheet(SHEET_REGISTRY)
