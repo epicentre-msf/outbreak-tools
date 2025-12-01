@@ -56,6 +56,7 @@ Private Const LIST_GRAPH_TS          As String = "Tab_Graph_TimeSeries"
 Private Const LIST_SPATIO_TEMPORAL   As String = "Tab_SpatioTemporal_Analysis"
 Private Const LIST_SPATIO_TEMPORAL_SPECS As String = "Tab_SpatioTemporal_Specs"
 Private Const TABLE_TRANSLATIONS     As String = "Tab_Translations"
+Private Const TABLE_CHOICES          As String = "Tab_Choices"
 
 Private Const DICT_START_ROW         As Long = 5
 Private Const DICT_START_COLUMN      As Long = 1
@@ -139,6 +140,11 @@ Private Sub IEventSetup_OnSheetChange(ByVal sh As Worksheet, ByVal target As Ran
     EnsureUpdatedValues
     If Not (this.updater Is Nothing) Then
         this.updater.CheckUpdate sh, target
+    End If
+
+    If StrComp(sh.Name, SHEET_CHOICES, vbTextCompare) = 0 Then
+        HandleChoicesChange target
+        Exit Sub
     End If
 
     If StrComp(sh.Name, SHEET_ANALYSIS, vbTextCompare) <> 0 Then Exit Sub
@@ -834,6 +840,30 @@ Private Sub CalculateAnalysis()
     EnsureTableCalculated this.graphTable, LIST_GRAPH_TS, "series title"
     EnsureTableCalculated this.spatioTable, LIST_SPATIO_TEMPORAL, "section"
     EnsureTableCalculated this.spatioSpecsTable, LIST_SPATIO_TEMPORAL_SPECS, "section"
+End Sub
+
+Private Sub HandleChoicesChange(ByVal target As Range)
+    Dim choiceList As ListObject
+    Dim choiceTable As ICustomTable
+    Dim translatedRange As Range
+    Dim labelRange As Range
+
+    If target.ListObject Is Nothing Then Exit Sub
+
+    Set choiceList = target.ListObject
+    If StrComp(choiceList.Name, TABLE_CHOICES, vbTextCompare) <> 0 Then Exit Sub
+
+    Set choiceTable = CustomTable.Create(choiceList)
+    Set translatedRange = choiceTable.DataRange(colName:="translated label", includeHeaders:=False, strictSearch:=True, matchCase:=False)
+    If translatedRange Is Nothing Then Exit Sub
+    If Intersect(target, translatedRange) Is Nothing Then Exit Sub
+
+    Set labelRange = choiceTable.DataRange(colName:="label", includeHeaders:=False, strictSearch:=True, matchCase:=False)
+    If labelRange Is Nothing Then Exit Sub
+
+    On Error Resume Next
+        labelRange.Calculate
+    On Error GoTo 0
 End Sub
 
 Private Sub ResetTranslationCounter()
