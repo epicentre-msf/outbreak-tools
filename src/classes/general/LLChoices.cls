@@ -614,6 +614,7 @@ Public Property Get Categories(ByVal choiceName As String, _
                             varName:=LISTNAMECODE, _
                             criteriaName:=choiceName, _ 
                             returnedColumnName:=ChoiceLabel(), _
+                            matchCase:=False, _
                             includeHeaders:=False)
     If lngcat Is Nothing Then Set lngcat = New BetterArray
     'Only look for shortlabels in case there is a need

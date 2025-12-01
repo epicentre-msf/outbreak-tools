@@ -434,8 +434,7 @@ Private Function FilterData(ByVal varName As String, _
     Dim returnedData As BetterArray
     Dim sh As Worksheet
     Dim endCol As Long
-    Dim EndRow As Long
-    Dim retEndCol As Long
+    Dim outRng As Range
 
     Set returnedData = New BetterArray
     returnedData.LowerBound = 1
@@ -469,19 +468,14 @@ Private Function FilterData(ByVal varName As String, _
         On Error GoTo 0
 
         If Not returnedRng Is Nothing Then
-            returnedRng.Copy .Cells(DataStartRow(), endCol + 2)
+            Set outRng = .Cells(DataStartRow(), endCol + 2)
+            Set outRng = outRng.Resize(returnedRng.Rows.Count, returnedRng.Columns.Count)
+            returnedRng.Copy
+            outRng.PasteSpecial xlPasteValues
 
-            'end row of data to return
-            EndRow = DataStartRow() + returnedRng.Cells.Count - 1 'cells.Count gives the number of cells, even in non contiguous ranges
-
-            retEndCol = endCol + 2 + returnedRng.Columns.Count - 1
-
-            'return column should be greather than endCol + 2. If it is not the case, there are empty lines causing that
-            Set returnedRng = .Range(.Cells(DataStartRow(), endCol + 2), .Cells(EndRow, retEndCol))
-
-            returnedData.FromExcelRange returnedRng, DetectLastRow:=False, _
+            returnedData.FromExcelRange outRng, DetectLastRow:=False, _
                                         DetectLastColumn:=False
-            returnedRng.Cells.Clear
+            outRng.Cells.Clear
         End If
     End With
 
