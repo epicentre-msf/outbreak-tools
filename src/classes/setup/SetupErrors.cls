@@ -47,6 +47,7 @@ Private Const SHEET_CHOICES As String = "Choices"
 Private Const SHEET_EXPORTS As String = "Exports"
 Private Const SHEET_ANALYSIS As String = "Analysis"
 Private Const SHEET_TRANSLATIONS As String = "Translations"
+Private Const SHEET_REGISTRY As String = "__updated"
 
 '@section List of errors to take in account
 '===============================================================================
@@ -817,33 +818,59 @@ End Sub
 Private Sub CheckTranslations()
     Dim translationsLo As ListObject
     Dim shTranslations As Worksheet
-    Dim headersRange As Range
+    Dim languageName As String
     Dim missingMessage As String
     Dim missingCount As Long
-    Dim languageName As String
+    Dim languageList As BetterArray
     Dim check As IChecking
     Dim counter As Long
     Dim columnRange As Range
+    Dim transManager As ISetupTranslationsTable
+    Dim shRegistry As Worksheet
 
+
+    On Error GoTo TranslationFailed
+
+    
     Set shTranslations = ResolveWorksheet(SHEET_TRANSLATIONS)
+    Set shRegistry = ResolveWorksheet(SHEET_REGISTRY)
     Set translationsLo = shTranslations.ListObjects(1)
-    Set headersRange = translationsLo.HeaderRowRange
+    Set transManager = SetupTranslationsTable.Create(translationsLo)
     Set check = Checking.Create("Translations", "Incoherence--Where?--Details")
 
-    If Not translationsLo.DataBodyRange Is Nothing Then
-        For counter = 1 To headersRange.Columns.Count
-            languageName = headersRange.Cells(1, counter).Value
-            Set columnRange = translationsLo.ListColumns(languageName).DataBodyRange
-            missingCount = Application.WorksheetFunction.CountBlank(columnRange)
-            If missingCount > 0 Then
-                missingMessage = "Translations Sheet--" & missingCount & _
-                                 " labels are missing for column " & languageName & "."
-                check.Add "trads-mis-labs-" & counter, missingMessage, checkingInfo
-            End If
-        Next counter
-    End If
+
+    '
+    this.passwordService.UnProtect SHEET_TRANSLATIONS
+    transManager.SetDisplayPrompts False
+
+    
+    'Update the registry after passwords updates
+    transManager.UpdateFromRegistry shRegistry
+    
+
+    ' If Not translationsLo.DataBodyRange Is Nothing Then
+    '     For counter = 1 To headersRange.Columns.Count
+    '         languageName = headersRange.Cells(1, counter).Value
+    '         Set columnRange = translationsLo.ListColumns(languageName).DataBodyRange
+    '         missingCount = Application.WorksheetFunction.CountBlank(columnRange)
+    '         If missingCount > 0 Then
+    '             missingMessage = "Translations Sheet--" & missingCount & _
+    '                              " labels are missing for column " & languageName & "."
+    '             check.Add "trads-mis-labs-" & counter, missingMessage, checkingInfo
+    '         End If
+    '     Next counter
+    ' End If
 
     this.checkTables.Push check
+
+TranslationsFailed:
+    errNumber = Err.Number
+    errSource = Err.Source
+    errDescription = Err.Description
+    On Error Resume Next
+        this.passwordService.Protect SHEET_TRANSLATIONS
+    On Error GoTo 0
+    If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
 End Sub
 
 '@sub-title Run analysis table checks across all sections.
