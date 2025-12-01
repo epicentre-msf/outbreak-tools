@@ -631,6 +631,9 @@ Private Sub Import(ByVal importData As Object, Optional ByVal strictColumnSearch
             End If
         End If
     Next
+
+    'Calculate current DataRange after import
+    DataRange.Calculate
     
     'importformats
     ImportFormat importData:=importData, matchColumnsCase:=strictColumnSearch
