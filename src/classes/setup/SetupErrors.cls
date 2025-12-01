@@ -30,8 +30,7 @@ Private Type TSetupErrorsState
     formulaStore As IFormulaData      'Formula data repository used for validation
     checkTables As BetterArray        'Collection of generated checkings
     appScope As IApplicationState     'Application state guard ensuring UI stays responsive
-    calcBeforeSave As Boolean         'Original CalculateBeforeSave value to restore
-    calcBeforeSaveCaptured As Boolean 'Flag indicating CalculateBeforeSave snapshot is stored
+    transManager As ISetupTranslationsTable 'translation table accessor for setup data
 End Type
 
 Private this As TSetupErrorsState
@@ -103,11 +102,12 @@ Public Function Create(ByVal hostBook As Workbook, _
                        Optional ByVal dictionary As ILLdictionary, _
                        Optional ByVal choices As ILLChoices, _
                        Optional ByVal formulaStore As IFormulaData, _
+                       Optional ByVal transManager As ISetupTranslationsTable, _
                        Optional ByVal stateScope As IApplicationState) As ISetupErrors
     Dim instance As SetupErrors
 
     Set instance = New SetupErrors
-    instance.Initialise hostBook, passwordService, dictionary, choices, formulaStore, stateScope
+    instance.Initialise hostBook, passwordService, dictionary, choices, formulaStore, transManager, stateScope
 
     Set Create = instance.Self
 End Function
@@ -120,6 +120,7 @@ Public Sub Initialise(ByVal hostBook As Workbook, _
                       Optional ByVal dictionary As ILLdictionary, _
                       Optional ByVal choices As ILLChoices, _
                       Optional ByVal formulaStore As IFormulaData, _
+                      Optional Byval transManager As ISetupTranslationsTable, _
                       Optional ByVal stateScope As IApplicationState)
 
     ValidateWorkbook hostBook
@@ -129,6 +130,7 @@ Public Sub Initialise(ByVal hostBook As Workbook, _
     Set this.dictionary = dictionary
     Set this.choices = choices
     Set this.formulaStore = formulaStore
+    Set this.transManager = transManager
     Set this.appScope = stateScope
 
     ConfigureDependencies
@@ -220,6 +222,9 @@ Private Sub ConfigureDependencies()
         Set this.formulaStore = FormulaData.Create(formulaSheet)
     End If
 
+    If this.transManager Is Nothing Then
+        Set this.transManager = SetupTranslationsTable.Create(ResolveWorksheet(SHEET_TRANSLATIONS).ListObjects(1))
+    End If
 End Sub
 
 '@sub-title Ensure the internal container for checkings exists.
@@ -255,15 +260,8 @@ Private Sub EnterBusyState()
 
     Set scope = ApplicationScope()
 
-    If Not this.calcBeforeSaveCaptured Then
-        this.calcBeforeSave = Application.CalculateBeforeSave
-        this.calcBeforeSaveCaptured = True
-    End If
-
-    Application.CalculateBeforeSave = False
-
     If Not scope.IsBusy Then
-        scope.ApplyBusyState, True
+        scope.ApplyBusyState, suppressEvents:=True, calculateOnSave:=False
     End If
 End Sub
 
@@ -271,19 +269,13 @@ End Sub
 Private Sub LeaveBusyState(Optional ByVal silent As Boolean = False)
     Dim scope As IApplicationState
 
-    If this.calcBeforeSaveCaptured Then
-        On Error Resume Next
-            Application.CalculateBeforeSave = this.calcBeforeSave
-        On Error GoTo 0
-        this.calcBeforeSaveCaptured = False
-    End If
-
     Set scope = this.appScope
     If scope Is Nothing Then Exit Sub
 
     On Error GoTo RestoreFailed
         scope.Restore
     On Error GoTo 0
+
     Exit Sub
 
 RestoreFailed:
@@ -816,52 +808,47 @@ End Sub
 
 '@sub-title Review translations table for missing labels.
 Private Sub CheckTranslations()
-    Dim translationsLo As ListObject
-    Dim shTranslations As Worksheet
-    Dim languageName As String
-    Dim missingMessage As String
-    Dim missingCount As Long
-    Dim languageList As BetterArray
+
     Dim check As IChecking
     Dim counter As Long
-    Dim columnRange As Range
-    Dim transManager As ISetupTranslationsTable
+    Dim summary As BetterArray
     Dim shRegistry As Worksheet
+
+    Dim errNumber As Long
+    Dim errSource As String
+    Dim errDescription As String
 
 
     On Error GoTo TranslationFailed
 
-    
-    Set shTranslations = ResolveWorksheet(SHEET_TRANSLATIONS)
+
     Set shRegistry = ResolveWorksheet(SHEET_REGISTRY)
-    Set translationsLo = shTranslations.ListObjects(1)
-    Set transManager = SetupTranslationsTable.Create(translationsLo)
     Set check = Checking.Create("Translations", "Incoherence--Where?--Details")
 
-
-    '
+    'unlock the translation worksheet before updating
     this.passwordService.UnProtect SHEET_TRANSLATIONS
-    transManager.SetDisplayPrompts False
+    this.transManager.SetDisplayPrompts False
+    this.transManager.UpdateFromRegistry shRegistry
 
+    'Missing labels count
+    Set summary = this.transManager.InternalMissingSummary()
+
+    For counter = summary.LowerBound To summary.UpperBound
+        check.Add "trads-mis-labs-" & counter, summary.Item(counter), checkingInfo
+    Next
+
+    summary.Clear
+    'Duplicate labels count
+    Set summary = this.transManager.InternalDuplicatesSummary()
     
-    'Update the registry after passwords updates
-    transManager.UpdateFromRegistry shRegistry
-    
-
-    ' If Not translationsLo.DataBodyRange Is Nothing Then
-    '     For counter = 1 To headersRange.Columns.Count
-    '         languageName = headersRange.Cells(1, counter).Value
-    '         Set columnRange = translationsLo.ListColumns(languageName).DataBodyRange
-    '         missingCount = Application.WorksheetFunction.CountBlank(columnRange)
-    '         If missingCount > 0 Then
-    '             missingMessage = "Translations Sheet--" & missingCount & _
-    '                              " labels are missing for column " & languageName & "."
-    '             check.Add "trads-mis-labs-" & counter, missingMessage, checkingInfo
-    '         End If
-    '     Next counter
-    ' End If
-
+    For counter = summary.LowerBound To summary.UpperBound
+        check.Add "trads-dup-labs-" & counter, summary.Item(counter), checkingWarning
+    Next
     this.checkTables.Push check
+
+    this.passwordService.Protect SHEET_TRANSLATIONS
+    this.transManager.SetDisplayPrompts True
+    Exit Sub
 
 TranslationsFailed:
     errNumber = Err.Number
@@ -869,6 +856,7 @@ TranslationsFailed:
     errDescription = Err.Description
     On Error Resume Next
         this.passwordService.Protect SHEET_TRANSLATIONS
+        this.transManager.SetDisplayPrompts True
     On Error GoTo 0
     If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
 End Sub
