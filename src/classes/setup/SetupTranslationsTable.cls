@@ -32,6 +32,8 @@ Private Type TSetupTranslations
     lastLookupLabel As String         'Last label queried when resolving cached rows
     lastLookupIndex As Long           'Insertion index captured during the last cache lookup
     lastLookupFound As Boolean        'Tracks whether the last cache lookup found an existing label
+    missingSummary As BetterArray     'Keep missing summary on non default languages
+    duplicatesSummary As BetterArray  'keep duplicate summary on all the languages
 End Type
 
 Private this As TSetupTranslations
@@ -1226,12 +1228,42 @@ Private Function NumberOfMissing() As String
 
 BuildSummary:
     summary = messageLines.ToString(Separator:=vbLf, OpeningDelimiter:=vbNullString, ClosingDelimiter:=vbNullString)
+    UpdateMissingSummary summary
     NumberOfMissing = summary
 
     If this.displayPrompts Then
         MsgBox summary, vbInformation + vbOKOnly, "Done!"
     End If
 End Function
+
+'@sub-title Update internal missing summary
+Private Sub UpdateMissingSummary(ByVal summary As BetterArray)
+
+    If this.missingSummary Is Nothing Then
+        Set this.missingSummary = New BetterArray
+    End If
+
+    Set this.missingSummary = summary.Clone()
+End Sub
+
+Private Property Get InternalMissingSummary() As BetterArray
+    If this.missingSummary Is Nothing Then
+        Set this.missingSummary = New BetterArray
+    End If
+    Set InternalMissingSummary = this.missingSummary
+End Property
+
+'@sub-title Update internal duplicate summary
+Private Sub UpdateDuplicatesSummary()
+
+
+End Sub
+
+Private Property Get InternalDuplicatesSummary() As BetterArray
+
+
+End Property
+
 
 '@sub-title Report duplicate translation labels when they exist.
 Private Function DuplicateLabels(ByRef duplicateMessage As String, Optional ByVal languageName As String = vbNullString) As Boolean
@@ -1465,7 +1497,9 @@ Private Sub ConfigureTagColumn()
     On Error GoTo 0
 
     If StrComp(currentTitle, TAG_HEADER_TITLE, vbBinaryCompare) <> 0 Then
+        On Error Resume Next
         helperHeader.Value = TAG_HEADER_TITLE
+        On Error GoTo 0
         InvalidateTagFormattingCache
     End If
 End Sub
