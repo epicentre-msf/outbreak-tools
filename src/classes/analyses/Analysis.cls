@@ -487,9 +487,8 @@ Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlS
         Set sourceLo = sourcesheet.ListObjects(hostLo.Name)
         sourceLo.TableStyle = hostLo.TableStyle
         On Error Resume Next
-            For counter = 0 To 4
+            For counter = 0 To 3
                 sourceLo.HeaderRowRange.Offset(-counter).Value = hostLo.HeaderRowRange.Offset(-counter).Value
-                sourceLo.HeaderRowRange.Offset(-counter).Interior.Color = hostLo.HeaderRowRange.Offset(-counter).Interior.Color
                 sourceLo.HeaderRowRange.Offset(-counter).Font.Color = hostLo.HeaderRowRange.Offset(-counter).Font.Color
                 sourceLo.HeaderRowRange.Offset(-counter).Font.Size = hostLo.HeaderRowRange.Offset(-counter).Font.Size
                 sourceLo.HeaderRowRange.Offset(-counter).Font.Name = hostLo.HeaderRowRange.Offset(-counter).Font.Name
