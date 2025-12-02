@@ -117,6 +117,8 @@ Private Sub IEventSetup_OnWorkbookOpen()
     On Error Resume Next
         Application.FormatStaleValues = False
     On Error GoTo 0
+
+    PasswordManager.ApplyProtectionMatrix this.hostBook
 End Sub
 
 Private Sub IEventSetup_OnSheetActivate(ByVal sh As Worksheet)

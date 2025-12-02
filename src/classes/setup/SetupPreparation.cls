@@ -123,6 +123,7 @@ Public Sub Prepare(ByRef manager As IDevelopment)
     EnsureUpdatedRegistry
     ApplyValidationsAndUpdates
     EnsureHiddenSheets manager
+    EnsureProtectedSheets manager
 End Sub
 
 '@Description("Ensure the dropdown manager has registered all default dropdown lists.")
