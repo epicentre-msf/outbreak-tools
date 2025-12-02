@@ -100,6 +100,9 @@ End Sub
 Public Sub EnsureProtectedSheetsName(Optional ByVal targetWorkbook As Workbook)
 End Sub
 
+Public Sub ApplyProtectionMatrix(ByVal wb As Workbook)
+End Sub
+
 
 '@section Keys
 '===============================================================================

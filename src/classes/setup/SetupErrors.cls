@@ -367,6 +367,7 @@ Private Sub CheckDictionary()
 
     this.passwordService.UnProtect SHEET_DICTIONARY
     this.passwordService.UnProtect SHEET_EXPORTS
+    this.passwordService.UnProtect SHEET_CHOICES
 
     csTab.RemoveRows includeIds:=False
     csTab.Sort "Sheet Name"
@@ -541,6 +542,7 @@ Private Sub CheckDictionary()
     this.checkTables.Push check
     this.passwordService.Protect SHEET_DICTIONARY
     this.passwordService.Protect SHEET_EXPORTS
+    this.passwordService.Protect SHEET_CHOICES
     On Error GoTo 0
     Exit Sub
 
@@ -551,6 +553,7 @@ DictionaryFailed:
     On Error Resume Next
         this.passwordService.Protect SHEET_DICTIONARY
         this.passwordService.Protect SHEET_EXPORTS
+        this.passwordService.Protect SHEET_CHOICES
     On Error GoTo 0
     If errNumber <> 0 Then Err.Raise errNumber, errSource, errDescription
 End Sub
