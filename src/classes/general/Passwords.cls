@@ -782,6 +782,11 @@ Private Sub IPasswords_EnsureProtectedSheetsName(Optional ByVal targetWorkbook A
     EnsureProtectedSheetsName targetWorkbook
 End Sub
 
+'@sub-title Apply the protection matrix to the password workbook
+Private Sub IPasswords_ApplyProtectionMatrix(ByVal wb As Workbook)
+    ApplyProtectionMatrix wb
+End Sub
+
 '@section Private helpers - Validation & ensuring state
 '===============================================================================
 
@@ -1051,7 +1056,8 @@ Private Sub ApplySheetProtection(ByVal targetSheet As Worksheet, _
         AllowFormattingCells:=False, _
         AllowDeletingRows:=allowDeleting, _
         AllowFormattingColumns:=True, _
-        AllowFormattingRows:=True
+        AllowFormattingRows:=True, _ 
+        UserInterfaceOnly:=True
 
 End Sub
 
