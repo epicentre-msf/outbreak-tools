@@ -449,7 +449,7 @@ Public Sub clickImportFile(ByRef control As IRibbonControl)
 
     Set service = SetupImportService.Create(importPath)
     Set pass = SetupHelpers.ResolveSetupPasswords()
-    Set sheets = SetupHelpers.DefaultSetupSheets()
+    Set sheets = SetupHelpers.BuildSelectedSheets(True, True, True, True, True)
     Set app = ApplicationState.Create(Application)
     app.ApplyBusyState suppressEvents:=True, calculateOnSave:=False
 

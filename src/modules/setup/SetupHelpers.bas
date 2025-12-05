@@ -555,18 +555,6 @@ End Sub
 '@section Helpers
 '===============================================================================
 
-'@Description("Build the default sheet list consumed by table-driven imports")
-Public Function DefaultSetupSheets() As BetterArray
-    Dim sheets As BetterArray
-
-    Set sheets = New BetterArray
-    sheets.LowerBound = 1
-    sheets.Push DICTSHEETNAME, CHOICESSHEETNAME, EXPORTSHEETNAME, _
-                 ANALYSISSHEETNAME, TRANSLATIONSHEETNAME
-
-    Set DefaultSetupSheets = sheets
-End Function
-
 '@Description("Prompt user to pick an import workbook and return its path")
 Public Function SelectSetupImportPath(ByVal filters As String) As String
     Dim io As IOSFiles
@@ -624,34 +612,6 @@ Public Function ResolveDictionary(Optional ByVal hostSheet As Worksheet) As ILLd
     Set ResolveDictionary = LLdictionary.Create(targetSheet, START_ROW_DICTIONARY, START_COLUMN_DICTIONARY)
 End Function
 
-Public Function ResolveChoices(Optional ByVal hostSheet As Worksheet) As ILLChoices
-    Dim targetSheet As Worksheet
-
-    If hostSheet Is Nothing Then
-        Set targetSheet = ResolveSetupSheet("choi")
-    Else
-        Set targetSheet = hostSheet
-    End If
-
-    If targetSheet Is Nothing Then Exit Function
-
-    Set ResolveChoices = LLChoices.Create(targetSheet, START_ROW_CHOICES, START_COLUMN_CHOICES)
-End Function
-
-Public Function ResolveAnalysis(Optional ByVal hostSheet As Worksheet) As IAnalysis
-    Dim targetSheet As Worksheet
-
-    If hostSheet Is Nothing Then
-        Set targetSheet = ResolveSetupSheet("ana")
-    Else
-        Set targetSheet = hostSheet
-    End If
-
-    If targetSheet Is Nothing Then Exit Function
-
-    Set ResolveAnalysis = Analysis.Create(targetSheet)
-End Function
-
 Public Function ResolveVariables(Optional ByVal dictionary As ILLdictionary, _
                                  Optional ByVal hostSheet As Worksheet) As ILLVariables
     Dim dict As ILLdictionary
@@ -667,79 +627,3 @@ Public Function ResolveVariables(Optional ByVal dictionary As ILLdictionary, _
     Set ResolveVariables = LLVariables.Create(dict)
 End Function
 
-Public Function ResolveDropdowns(Optional ByVal hostSheet As Worksheet, _
-                                 Optional ByVal headerPrefix As String = "dropdown_") As IDropdownLists
-    Dim targetSheet As Worksheet
-
-    If hostSheet Is Nothing Then
-        Set targetSheet = ResolveSetupSheet("drop")
-    Else
-        Set targetSheet = hostSheet
-    End If
-
-    If targetSheet Is Nothing Then Exit Function
-
-    Set ResolveDropdowns = DropdownLists.Create(targetSheet, headerPrefix)
-End Function
-
-Public Function ResolveAnalysisTableName(ByVal tableKey As String) As String
-    Dim normalized As String
-
-    normalized = LCase$(Trim$(tableKey))
-
-    Select Case normalized
-        Case "global", "global_summary", "summary", "analysis_summary"
-            ResolveAnalysisTableName = ANALYSIS_TABLE_GLOBAL_SUMMARY
-        Case "univariate", "uni", "univariate_analysis"
-            ResolveAnalysisTableName = ANALYSIS_TABLE_UNIVARIATE
-        Case "bivariate", "bi", "bivariate_analysis"
-            ResolveAnalysisTableName = ANALYSIS_TABLE_BIVARIATE
-        Case "ts", "timeseries", "time_series", "time-series", "ts_table", _
-             "ts_data", "analysis_ts", "timeseries_analysis"
-            ResolveAnalysisTableName = ANALYSIS_TABLE_TS_DATA
-        Case "ts_graph", "graph_ts", "graph", "chart", "time_series_graph", _
-             "timeseries_graph", "analysis_graph"
-            ResolveAnalysisTableName = ANALYSIS_TABLE_TS_GRAPH
-        Case "ts_labels", "graph_labels", "labels", "ts_graph_labels", _
-             "graph_titles", "ts_titles", "analysis_graph_labels"
-            ResolveAnalysisTableName = ANALYSIS_TABLE_TS_LABELS
-        Case "spatial", "spatial_analysis", "geo_spatial", "geospatial", "spatial_table"
-            ResolveAnalysisTableName = ANALYSIS_TABLE_SPATIAL
-        Case "spatiotemporal", "spatio-temporal", "spatiotemporal_analysis", _
-             "spatio", "spatiotemp", "spatio_temp", "st"
-            ResolveAnalysisTableName = ANALYSIS_TABLE_SPATIOTEMP
-        Case "spatiotemporal_specs", "spatio-temporal_specs", "spatiotemp_specs", _
-             "spatial_specs", "spatial_specifications", "analysis_specs", "spatial_tables_specs"
-            ResolveAnalysisTableName = ANALYSIS_TABLE_SPATIOTEMP_SPECS
-        Case Else
-            ResolveAnalysisTableName = tableKey
-    End Select
-End Function
-
-Public Function ResolveAnalysisTable(ByVal tableKey As String, _
-                                     Optional ByVal hostSheet As Worksheet, _
-                                     Optional ByVal idColumn As String = vbNullString, _
-                                     Optional ByVal idPrefix As String = vbNullString) As ICustomTable
-    Dim targetSheet As Worksheet
-    Dim lo As ListObject
-    Dim tableName As String
-
-    If LenB(tableKey) = 0 Then Exit Function
-
-    If hostSheet Is Nothing Then
-        Set targetSheet = ResolveSetupSheet("ana")
-    Else
-        Set targetSheet = hostSheet
-    End If
-
-    If targetSheet Is Nothing Then Exit Function
-
-    tableName = ResolveAnalysisTableName(tableKey)
-
-    On Error Resume Next
-        Set lo = targetSheet.ListObjects(tableName)
-    On Error GoTo 0
-    If lo Is Nothing Then Exit Function
-
-    Set ResolveAnalysisTable = CustomTable.Create(lo, idColumn, idPrefix)
-End Function
