@@ -223,11 +223,11 @@ Private Sub EnsureProtectedSheets(ByRef manager As IDevelopment)
         ThrowError ProjectError.ObjectNotInitialized, "Development manager reference is required"
     End If
 
-    manager.AddProtectedSheet SHEET_DICTIONARY
-    manager.AddProtectedSheet SHEET_CHOICES
-    manager.AddProtectedSheet SHEET_ANALYSIS
-    manager.AddProtectedSheet SHEET_EXPORTS
-    manager.AddProtectedSheet SHEET_TRANSLATIONS
+    manager.AddProtectedSheet SHEET_DICTIONARY, True, True
+    manager.AddProtectedSheet SHEET_CHOICES, True, True
+    manager.AddProtectedSheet SHEET_ANALYSIS, True, False
+    manager.AddProtectedSheet SHEET_EXPORTS, True, False
+    manager.AddProtectedSheet SHEET_TRANSLATIONS, False, False
 
 End Sub
 
