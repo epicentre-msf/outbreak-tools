@@ -77,7 +77,9 @@ End Sub
 
 '@sub-title Register a worksheet that should be protected during deployment.
 '@param sheetName Name of the worksheet to protect during deployment.
-Public Sub AddProtectedSheet(ByVal sheetName As String)
+Public Sub AddProtectedSheet(ByVal sheetName As String, _ 
+                             Optional ByVal allowShapes As Boolean = True, _ 
+                             Optional ByVal allowDeletingRows As Boolean = True)
 End Sub
 
 '@sub-title Import all code artefacts from configured folders.
@@ -104,6 +106,3 @@ End Sub
 '@return True when deployment flag equals "Yes".
 Public Function InDeployment() As Boolean
 End Function
-
-
-

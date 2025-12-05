@@ -18,7 +18,7 @@ Option Explicit
 Implements IDevelopment
 
 Private Type TDevelopment
-    hostwb As Workbook           'Host workbook containing development assets
+    hostwb As Workbook             'Host workbook containing development assets
     devSheet As Worksheet          'Development sheet carrying named ranges for code folders
     codeSheet As Worksheet         'Worksheet collecting classes/modules/forms/test tables
     hiddenSheets As BetterArray    'Sheets to hide during deployment
@@ -201,18 +201,20 @@ Public Sub AddHiddenSheet(ByVal sheetName As String)
     Dim sheet As Worksheet
     Set sheet = EnsureWorksheet(sheetName, "hidden")
 
-    RegisterSheet this.hiddenSheets, sheet.Name
+    this.hiddenSheets.Push sheet.Name
 End Sub
 
 '@Description("Track a worksheet that needs to be protected during deployment.")
-Public Sub AddProtectedSheet(ByVal sheetName As String)
+Public Sub AddProtectedSheet(ByVal sheetName As String,  _ 
+                          Optional ByVal allowShapes As Boolean = True, _ 
+                          Optional ByVal allowDeletingRows As Boolean = True)
     EnsureInitialised
     EnsureCollections
 
     Dim sheet As Worksheet
     Set sheet = EnsureWorksheet(sheetName, "protected")
 
-    RegisterSheet this.protectedSheets, sheet.Name
+    RegisterSheet this.protectedSheets, sheet.Name, allowShapes, allowDeletingRows
 End Sub
 
 
@@ -290,18 +292,18 @@ Public Sub Deploy(ByVal pass As IPasswords, Optional ByVal lockWorkbook As Boole
     If Not this.protectedSheets Is Nothing Then
         If this.protectedSheets.Length > 0 Then
             For idx = this.protectedSheets.LowerBound To this.protectedSheets.UpperBound
-                candidate = this.protectedSheets.Item(idx)
+                Set candidate = this.protectedSheets.Item(idx)
                 Set sheet = Nothing
 
-                Select Case TypeName(candidate)
+                Select Case TypeName(candidate.Item(1))
                     Case "Worksheet"
-                        Set sheet = candidate
+                        Set sheet = candidate.Item(1)
                     Case Else
-                        Set sheet = TryResolveWorksheet(CStr(candidate))
+                        Set sheet = TryResolveWorksheet(CStr(candidate.Item(1)))
                 End Select
 
                 If Not sheet Is Nothing Then
-                    pass.Protect sheet
+                    pass.Protect sheet, candidate.Item(2), candidate.Item(3)
                 End If
             Next idx
         End If
@@ -1306,17 +1308,25 @@ End Function
 '@section Registration helpers
 '===============================================================================
 '@Description("Register a worksheet name in the provided BetterArray if not already tracked.")
-Private Sub RegisterSheet(ByVal registry As BetterArray, ByVal sheetName As String)
+Private Sub RegisterSheet(ByVal registry As BetterArray, ByVal sheetName As String, _ 
+                          Optional ByVal allowShape As Boolean = True, _ 
+                          Optional ByVal allowDeletingRows As Boolean = True)
+
     If registry Is Nothing Then Exit Sub
+    
+    Dim sheetInfo As BetterArray
     Dim trimmed As String
+
     trimmed = Trim$(sheetName)
     If LenB(trimmed) = 0 Then Exit Sub
 
-    If registry.Length > 0 Then
-        If registry.Includes(trimmed) Then Exit Sub
-    End If
+    Set sheetInfo = New BetterArray
+    sheetInfo.LowerBound = 1
+    sheetInfo.Push sheetName, allowShape, allowDeletingRows
 
-    registry.Push trimmed
+    'Adding the sheet informations into the registry    
+    registry.Push sheetInfo
+
 End Sub
 
 
@@ -1390,8 +1400,12 @@ Private Sub IDevelopment_AddHiddenSheet(ByVal sheetName As String)
     AddHiddenSheet sheetName
 End Sub
 
-Private Sub IDevelopment_AddProtectedSheet(ByVal sheetName As String)
-    AddProtectedSheet sheetName
+Private Sub IDevelopment_AddProtectedSheet(ByVal sheetName As String, _
+                                           Optional ByVal allowShapes As Boolean = True, _ 
+                                           Optional ByVal allowDeletingRows As Boolean = True)
+
+    AddProtectedSheet sheetName, allowShapes, allowDeletingRows
+
 End Sub
 
 Private Sub IDevelopment_ImportAll()
