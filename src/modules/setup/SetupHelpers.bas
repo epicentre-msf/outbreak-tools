@@ -417,7 +417,7 @@ Handler:
 End Sub
 
 '@Description("Build the sheet list based on selected options")
-Private Function BuildSelectedSheets(ByVal importDict As Boolean, _
+Public Function BuildSelectedSheets(ByVal importDict As Boolean, _
                                      ByVal importChoi As Boolean, _
                                      ByVal importExp As Boolean, _
                                      ByVal importAna As Boolean, _
@@ -506,7 +506,6 @@ Public Sub PostImportMaintenance()
     SetupEventsManager.RefreshAnalysisDropdowns forceUpdate:=True
     SetupEventsManager.RecalculateAnalysis
 End Sub
-
 
 
 'Factory helpers
@@ -612,6 +611,35 @@ Public Function ResolveDictionary(Optional ByVal hostSheet As Worksheet) As ILLd
     Set ResolveDictionary = LLdictionary.Create(targetSheet, START_ROW_DICTIONARY, START_COLUMN_DICTIONARY)
 End Function
 
+Public Function ResolveChoices(Optional ByVal hostSheet As Worksheet) As ILLChoices
+
+    Dim targetSheet As Worksheet
+
+    If hostSheet Is Nothing Then
+        Set targetSheet = ResolveSetupSheet("choi")
+    Else
+        Set targetSheet = hostSheet
+    End If
+
+    If targetSheet Is Nothing Then Exit Function
+
+    Set ResolveChoices = LLChoices.Create(targetSheet, START_ROW_CHOICES, START_COLUMN_CHOICES)
+End Function
+
+Public Function ResolveAnalysis(Optional ByVal hostSheet As Worksheet) As IAnalysis
+    Dim targetSheet As Worksheet
+
+    If hostSheet Is Nothing Then
+        Set targetSheet = ResolveSetupSheet("ana")
+    Else
+        Set targetSheet = hostSheet
+    End If
+
+    If targetSheet Is Nothing Then Exit Function
+
+    Set ResolveAnalysis = Analysis.Create(targetSheet)
+End Function
+
 Public Function ResolveVariables(Optional ByVal dictionary As ILLdictionary, _
                                  Optional ByVal hostSheet As Worksheet) As ILLVariables
     Dim dict As ILLdictionary
@@ -626,4 +654,3 @@ Public Function ResolveVariables(Optional ByVal dictionary As ILLdictionary, _
 
     Set ResolveVariables = LLVariables.Create(dict)
 End Function
-

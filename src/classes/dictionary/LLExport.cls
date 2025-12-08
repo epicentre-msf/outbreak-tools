@@ -30,7 +30,7 @@ Private Type TLLExport
     hasChecks As Boolean
     checkCounter As Long
     sanitizeList As Variant
-    hiddenNames As IHiddenNames
+    store As IHiddenNames
 End Type
 
 Private Const COL_STATUS As String = "status"
@@ -90,7 +90,7 @@ End Property
 '@param exportSheet Worksheet that stores the export specification table.
 Public Property Set InternalWorksheet(ByVal exportSheet As Worksheet)
     Set this.exportSheet = exportSheet
-    Set this.hiddenNames = Nothing
+    Set this.store = Nothing
 End Property
 
 '@label:Self
@@ -840,11 +840,11 @@ End Function
 Private Function HiddenNameStore() As IHiddenNames
     If this.exportSheet Is Nothing Then Exit Function
 
-    If this.hiddenNames Is Nothing Then
-        Set this.hiddenNames = HiddenNames.Create(this.exportSheet)
+    If this.store Is Nothing Then
+        Set this.store = HiddenNames.Create(this.exportSheet)
     End If
 
-    Set HiddenNameStore = this.hiddenNames
+    Set HiddenNameStore = this.store
 End Function
 
 Private Function CountExportRows() As Long
@@ -1114,11 +1114,10 @@ End Function
 Public Sub ResetCaches()
     Set this.dictInt = Nothing
     Set this.variables = Nothing
-    this.hasChecks = False
     this.checkCounter = 0
     Set this.checks = Nothing
     this.sanitizeList = Empty
-    Set this.hiddenNames = Nothing
+    Set this.store = Nothing
     EnsureStoredTotalExports
 End Sub
 
