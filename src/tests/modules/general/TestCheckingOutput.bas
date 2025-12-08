@@ -14,6 +14,7 @@ Private Const DEFAULTTITLEFILTERCELL As String = "E1"
 Private Const DEFAULTTITLEDEFAULT As String = "All Titles"
 Private Const DEFAULTTITLERANGE As String = "CheckingOutputTitles"
 Private Const DEFAULTEVENTMAKER As String = "CheckingOutputEventInstalled"
+Private Const DEFAULTROWMARKER As String = "CheckingOutputStartingRow"
 Private Const HIDDEN_TITLE_COLUMN_INDEX As Long = 2
 Private Const FIRST_VISIBLE_COLUMN_INDEX As Long = 3
 Private Const FIRST_OUTPUT_ROW_INDEX As Long = 4
@@ -64,15 +65,10 @@ Private Function CountOccurrences(ByVal sh As Worksheet, ByVal textValue As Stri
     On Error GoTo 0
 End Function
 
-Private Function GetCustomPropertyValue(ByVal sh As Worksheet, ByVal propertyName As String) As String
-    Dim prop As CustomProperty
-
-    For Each prop In sh.CustomProperties
-        If StrComp(prop.Name, propertyName, vbTextCompare) = 0 Then
-            GetCustomPropertyValue = prop.value
-            Exit Function
-        End If
-    Next prop
+Private Function GetHiddenNameValue(ByVal sh As Worksheet, ByVal nameId As String) As String
+    Dim store As IHiddenNames
+    Set store = HiddenNames.Create(sh)
+    GetHiddenNameValue = store.ValueAsString(nameId)
 End Function
 
 Private Function NormaliseTypeLabel(ByVal typeLabel As String) As String
@@ -113,6 +109,7 @@ End Function
 Private Sub ResetWorksheetModule(ByVal sh As Worksheet)
     Dim idx As Long
     Dim codeModule As Object
+    Dim store As IHiddenNames
 
     On Error Resume Next
         For idx = sh.CustomProperties.Count To 1 Step -1
@@ -121,6 +118,9 @@ Private Sub ResetWorksheetModule(ByVal sh As Worksheet)
                 Exit For
             End If
         Next idx
+        Set store = HiddenNames.Create(sh)
+        store.RemoveName DEFAULTEVENTMAKER
+        store.RemoveName DEFAULTROWMARKER
     On Error GoTo 0
 
     Set codeModule = sh.Parent.VBProject.VBComponents(sh.CodeName).CodeModule
@@ -181,6 +181,7 @@ Private Sub TestPrintOutputWritesRows()
     Dim titleName As Name
 
     Set checks = BetterArrayFromList(PrimaryCheck, SecondaryCheck)
+    OutputWriter.EnsureWorksheetChangeHandler
     OutputWriter.PrintOutput checks
 
     Set sh = OutputWriter.Wksh()
@@ -191,7 +192,7 @@ Private Sub TestPrintOutputWritesRows()
     Assert.AreEqual DEFAULTTITLEDEFAULT, sh.Range(DEFAULTTITLEFILTERCELL).value, "Title filter should default to All Titles"
     Assert.AreEqual xlValidateList, sh.Range(DEFAULTFILTERCELL).Validation.Type, "Status cell should contain list validation"
     Assert.AreEqual xlValidateList, sh.Range(DEFAULTTITLEFILTERCELL).Validation.Type, "Title cell should contain list validation"
-    Assert.AreEqual "True", GetCustomPropertyValue(sh, DEFAULTEVENTMAKER), "Worksheet change handler marker should be stored"
+    Assert.IsTrue (GetHiddenNameValue(sh, DEFAULTEVENTMAKER) = "True"), "Worksheet change handler marker should be stored"
     Assert.IsTrue (CountOccurrences(sh, "Data Validation Summary") = 1), "Title should be written only once"
     Assert.AreEqual "Core checks", sh.Cells(7, FIRST_VISIBLE_COLUMN_INDEX).value, "Subtitle should follow the title"
     Assert.AreEqual "Error", NormaliseTypeLabel(sh.Cells(9, FIRST_VISIBLE_COLUMN_INDEX).value), "First data row should include type caption"
@@ -238,6 +239,7 @@ Private Sub TestFilterDropdownHidesRows()
     Dim sh As Worksheet
 
     Set checks = BetterArrayFromList(PrimaryCheck, SecondaryCheck)
+    OutputWriter.EnsureWorksheetChangeHandler
     OutputWriter.PrintOutput checks
 
    Set sh = OutputWriter.Wksh()
@@ -435,6 +437,7 @@ Private Sub TestWorksheetChangeSyncsStatusWhenTitleChanges()
                                      Array("key-q2", "Reminder", checkingInfo))
 
     Set checks = BetterArrayFromList(PrimaryCheck, qualityCheck)
+    OutputWriter.EnsureWorksheetChangeHandler
     OutputWriter.PrintOutput checks
 
     Set sh = OutputWriter.Wksh()
@@ -526,6 +529,7 @@ Private Sub TestWorksheetChangeHandlerInjectsFilteringLogic()
 
     Set checks = BetterArrayFromList(PrimaryCheck)
     OutputWriter.PrintOutput checks
+    OutputWriter.EnsureWorksheetChangeHandler
 
     Set codeModule = sh.Parent.VBProject.VBComponents(sh.CodeName).CodeModule
     If codeModule.CountOfLines > 0 Then

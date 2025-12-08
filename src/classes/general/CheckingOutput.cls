@@ -12,6 +12,7 @@ Attribute VB_Description = "Writes checking results to a worksheet"
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Writes checking results to a worksheet")
+'@depends BetterArray, Checking, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 
@@ -38,6 +39,7 @@ Private Type TFormatting
 End Type
 
 Private this As TState
+Private hiddenStore As IHiddenNames
 
 Private Const HIDDEN_TITLE_COLUMN As Long = 2 'Column B (hidden titles)
 Private Const FIRST_OUTPUT_COLUMN As Long = 3 'Column C (visible data)
@@ -501,22 +503,23 @@ Private Function InitialiseWorksheet() As Long
     Dim sh As Worksheet
     Dim startingRow As Long
     Dim view As WorksheetView
+    Dim store As IHiddenNames
 
     Set sh = Wksh()
     sh.Rows.Hidden = False
+    Set store = HiddenStore()
     
-    If Not CustomPropertyExists(ROW_MARKER_NAME) Then
+    If Not store.HasName(ROW_MARKER_NAME) Then
         sh.Cells.Clear
         sh.Cells.Font.Name = "Consolas"
         sh.rows(1).Font.Bold = True
         sh.rows(1).Font.Size = 14
         
         EnsureTitleStore True
-        EnsureWorksheetChangeHandler
         ApplyHiddenColumnsFormatting sh
         EnsureFilterDropdown
         startingRow = FIRST_ROW_OUTPUT
-        StoreCustomProperty ROW_MARKER_NAME, CStr(FIRST_ROW_OUTPUT)
+        store.EnsureName ROW_MARKER_NAME, FIRST_ROW_OUTPUT, HiddenNameTypeLong
 
         'Remove gridlines of the worksheet
         For Each view In sh.Parent.Windows(1).SheetViews
@@ -527,7 +530,6 @@ Private Function InitialiseWorksheet() As Long
             End If
         Next view
     Else
-        EnsureWorksheetChangeHandler
         startingRow = sh.Cells(sh.Rows.Count, FIRST_OUTPUT_COLUMN).End(xlUp).Row
         If startingRow < FIRST_ROW_OUTPUT Then
             startingRow = FIRST_ROW_OUTPUT
@@ -625,10 +627,13 @@ Private Sub EnsureWorksheetChangeHandler()
     Dim codeModule As Object
     Dim injectionCode As String
     Dim moduleLines As Long
+    Dim store As IHiddenNames
 
     On Error GoTo Handler
 
     If Wksh() Is Nothing Then Exit Sub
+    Set store = HiddenStore()
+    If store.HasName(EVENT_MARKER_NAME) Then Exit Sub
 
     Set codeModule = Wksh.Parent.VBProject.VBComponents(Wksh.CodeName).CodeModule
 
@@ -643,7 +648,7 @@ Private Sub EnsureWorksheetChangeHandler()
         codeModule.InsertLines 1, injectionCode
     End If
 
-    StoreCustomProperty EVENT_MARKER_NAME, "True"
+    store.EnsureName EVENT_MARKER_NAME, True, HiddenNameTypeBoolean
     Exit Sub
 
 Handler:
@@ -971,6 +976,7 @@ Private Sub ICheckingOutput_PrintOutput(ByVal checkTable As BetterArray)
     Dim writtenTitles As Collection
     Dim index As Long
     Dim previousEventState As Boolean
+    Dim store As IHiddenNames
 
     If checkTable Is Nothing Then
         ThrowError ProjectError.ElementNotFound, "PrintOutput requires a BetterArray of IChecking instances"
@@ -979,6 +985,7 @@ Private Sub ICheckingOutput_PrintOutput(ByVal checkTable As BetterArray)
     previousEventState = Application.EnableEvents
     Application.EnableEvents = False
     ValidateCheckTable checkTable
+    Set store = HiddenStore()
     
     On Error GoTo CleanExit
     
@@ -992,9 +999,7 @@ Private Sub ICheckingOutput_PrintOutput(ByVal checkTable As BetterArray)
     '@Ignore AssignmentNotUsed
     currentRow = currentRow + 4
     WriteRow currentRow, formatTag:="level 4", textValue:="End of checkings " & Name(), parentTitle:=END_TAG
-    StoreCustomProperty ROW_MARKER_NAME, CStr(currentRow)
-
-    EnsureWorksheetChangeHandler
+    store.SetValue ROW_MARKER_NAME, currentRow
 
 CleanExit:
     Application.EnableEvents = previousEventState
@@ -1061,30 +1066,27 @@ End Function
 '@fun-title Check whether a custom property exists
 '@return A Boolean
 Private Function CustomPropertyExists(ByVal propName As String) As Boolean
-    Dim prop As CustomProperty
-    Dim sh As Worksheet
-    Set sh = Wksh()
-
-    For Each prop In sh.CustomProperties
-        If StrComp(prop.Name, propName, vbTextCompare) = 0 Then
-            CustomPropertyExists = True
-            Exit Function
-        End If
-    Next
+    Dim store As IHiddenNames
+    Set store = HiddenStore()
+    CustomPropertyExists = store.HasName(propName)
 End Function
 
 '@sub-title Stores a custom property.
 Private Sub StoreCustomProperty(propName As String, propValue As String)
-    Dim prop As CustomProperty
-    Dim sh As Worksheet
-    Set sh = Wksh()
-    For Each prop In sh.CustomProperties
-        If prop.Name = propName Then
-            prop.Value = propValue
-            Exit Sub
+    Dim store As IHiddenNames
+    Set store = HiddenStore()
+    store.EnsureName propName, propValue, HiddenNameTypeString
+    store.SetValue propName, propValue
+End Sub
+
+Private Function HiddenStore() As IHiddenNames
+    If hiddenStore Is Nothing Then
+        If Wksh() Is Nothing Then
+            ThrowError ProjectError.ObjectNotInitialized, "CheckingOutput requires a worksheet before accessing hidden storage."
         End If
-    Next
-    sh.CustomProperties.Add propName, propValue
+        Set hiddenStore = HiddenNames.Create(Wksh())
+    End If
+    Set HiddenStore = hiddenStore
 End Sub
 
 '@label:ModuleContainsProcedure
