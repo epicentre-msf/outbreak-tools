@@ -36,7 +36,7 @@ Public Sub clickFilters(ByRef control As IRibbonControl)
     If targetSheet Is Nothing Then Exit Sub
     
     sheetName = targetSheet.Name
-
+    
     On Error GoTo Handler
     
     Set app = ApplicationState.Create(Application)
