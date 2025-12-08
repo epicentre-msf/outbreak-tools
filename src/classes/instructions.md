@@ -69,3 +69,4 @@ for listObject add is expression.Add(SourceType, Source, LinkSource, XlListObjec
 - [DONE] Shifted translations export to start at column two and propagated hidden names into both translations and LLExport workbook exports.
 - [DONE] Taught DataSheet exports to optionally include worksheet hidden names via the new includeNames flag and covered the behaviour with tests.
 - [DONE] Captured missing/duplicate translation summaries within SetupTranslationsTable and exposed internal summaries through the interface.
+- [DONE] Migrated CheckingOutput event/row markers to HiddenNames, guarded worksheet handler injection to run once, and left handler invocation to caller control.
