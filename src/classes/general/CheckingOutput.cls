@@ -697,7 +697,7 @@ Private Function BuildWorksheetChangeHandlerCode() As String
     handler = handler & "    ShouldFilterByTitle = LenB(trimmedTitle) > 0 And StrComp(trimmedTitle, " & dq & TITLE_FILTER_DEFAULT & dq & ", vbTextCompare) <> 0" & vbNewLine
     handler = handler & "End Function" & vbNewLine & vbNewLine
 
-    handler = handler & "Private Sub ResetUiState(ByVal previousEvents As Boolean, ByVal previousUpdating As Boolean, ByVal previousCalculation As XlCalculation)" & vbNewLine
+    handler = handler & "Private Sub RestoreState(ByVal previousEvents As Boolean, ByVal previousUpdating As Boolean, ByVal previousCalculation As XlCalculation)" & vbNewLine
     handler = handler & "    Application.EnableEvents = previousEvents" & vbNewLine
     handler = handler & "    Application.ScreenUpdating = previousUpdating" & vbNewLine
     handler = handler & "    Application.Calculation = previousCalculation" & vbNewLine
@@ -740,7 +740,7 @@ Private Function BuildWorksheetChangeHandlerCode() As String
     handler = handler & vbNewLine
     handler = handler & "ExitHandler:" & vbNewLine
     handler = handler & "    If managedState Then" & vbNewLine
-    handler = handler & "        ResetUiState previousEvents, previousUpdating, previousCalculation" & vbNewLine
+    handler = handler & "        RestoreState previousEvents, previousUpdating, previousCalculation" & vbNewLine
     handler = handler & "    End If" & vbNewLine
     handler = handler & "    If errorNumber <> 0 Then" & vbNewLine
     handler = handler & "        Err.Raise errorNumber, " & dq & "CheckingOutputWorksheet" & dq & ", errorDescription" & vbNewLine
@@ -812,7 +812,7 @@ Private Sub RemoveManagedWorksheetProcedures(ByVal codeModule As Object)
     DeleteProcedureIfExists codeModule, "StripIcons"
     DeleteProcedureIfExists codeModule, "ResolveMatchType"
     DeleteProcedureIfExists codeModule, "ShouldFilterByTitle"
-    DeleteProcedureIfExists codeModule, "ResetUiState"
+    DeleteProcedureIfExists codeModule, "RestoreState"
     DeleteProcedureIfExists codeModule, "FilterCheckingOutputRows"
 End Sub
 
