@@ -476,7 +476,7 @@ Private Function FilterData(ByVal varName As String, _
 
             returnedData.FromExcelRange outRng, DetectLastRow:=False, _
                                         DetectLastColumn:=False
-            outRng.Cells.Clear
+            outRng.Cells.ClearContents
         End If
     End With
 

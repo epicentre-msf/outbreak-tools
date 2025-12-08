@@ -968,6 +968,11 @@ Private Sub CopyModuleCode(ByVal sourceName As String, ByVal targetName As Strin
             .AddFromString codeContent
         End If
     End With
+
+    On Error Resume Next
+        vbProj.VBComponents.Remove sourceComponent
+    On Error GoTo 0
+
 End Sub
 
 
