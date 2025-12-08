@@ -156,6 +156,8 @@ End Sub
 Public Sub ProtectSetupSheet(ByVal sheetName As String)
     Dim pass As IPasswords
     Dim delRow As Boolean
+    
+    If sheetName = "__checkRep" Then Exit Sub
 
     delRow = Not ((sheetName = TRADSHEETNAME) Or (sheetName = ANALYSISSHEETNAME))
 
