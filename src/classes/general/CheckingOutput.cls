@@ -28,6 +28,7 @@ Implements ICheckingOutput
 Private Type TState
     targetSheet As Worksheet
     nm As String
+    store As IHiddenNames
 End Type
 
 Private Type TFormatting
@@ -39,7 +40,7 @@ Private Type TFormatting
 End Type
 
 Private this As TState
-Private hiddenStore As IHiddenNames
+
 
 Private Const HIDDEN_TITLE_COLUMN As Long = 2 'Column B (hidden titles)
 Private Const FIRST_OUTPUT_COLUMN As Long = 3 'Column C (visible data)
@@ -1080,14 +1081,15 @@ Private Sub StoreCustomProperty(propName As String, propValue As String)
 End Sub
 
 Private Function HiddenStore() As IHiddenNames
-    If hiddenStore Is Nothing Then
+    If this.store Is Nothing Then
         If Wksh() Is Nothing Then
-            ThrowError ProjectError.ObjectNotInitialized, "CheckingOutput requires a worksheet before accessing hidden storage."
+            ThrowError ProjectError.ObjectNotInitialized, _ 
+             "CheckingOutput requires a worksheet before accessing hidden storage."
         End If
-        Set hiddenStore = HiddenNames.Create(Wksh())
+        Set this.store = HiddenNames.Create(Wksh())
     End If
-    Set HiddenStore = hiddenStore
-End Sub
+    Set HiddenStore = this.store
+End Function
 
 '@label:ModuleContainsProcedure
 '@sub-title Determine whether the module text already declares the target procedure
