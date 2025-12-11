@@ -337,6 +337,7 @@ Public Sub PrintResults(Optional ByVal outputSheetName As String = vbNullString)
     Set targetSheet = PrintOutputWorksheet(this.targetWorkbook, sheetName)
     Set writer = CheckingOutput.Create(targetSheet, this.moduleName)
     writer.PrintOutput this.Results
+    writer.EnsureWorksheetChangeHandler
 End Sub
 
 '@label:AreEqual
