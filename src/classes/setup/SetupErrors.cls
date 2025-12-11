@@ -1062,6 +1062,7 @@ Private Sub PrintReport()
     reportSheet.Cells.EntireRow.Hidden = False
 
     checkOutput.PrintOutput this.checkTables
+    checkOutput.EnsureWorksheetChangeHandler
     
     On Error Resume Next
     reportSheet.Activate
