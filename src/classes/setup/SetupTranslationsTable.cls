@@ -450,7 +450,8 @@ Public Sub ResetSequence(ByVal registrySheet As Worksheet)
 End Sub
 
 '@sub-title Update the translations table using the supplied registry sheet.
-Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, Optional ByVal languages As String = vbNullString)
+Public Sub UpdateFromRegistry(ByVal registrySheet As Worksheet, _ 
+                             Optional ByVal languages As String = vbNullString)
     Dim scope As IApplicationState
     Dim updateSequence As Long
     Dim errNumb As Long
