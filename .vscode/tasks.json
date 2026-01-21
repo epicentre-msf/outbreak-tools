@@ -93,12 +93,12 @@
             "problemMatcher": []
         },
         {
-            "label": "update designer mock",
+            "label": "update designer dev",
             "type": "process",
             "command": "Rscript",
             "args": [
                 "-e",
-                "source('automate/codes/update_files.R'); update_designer('mock')"
+                "source('automate/codes/update_files.R'); update_designer('dev')"
             ],
             "windows": {
                 "command": "${env:RPATH}\\bin\\Rscript.exe"

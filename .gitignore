@@ -26,6 +26,9 @@ config.json
 demo
 local
 debug
+instructions.md
+agents.md
+tracking.md
 
 
 .DS_Store
