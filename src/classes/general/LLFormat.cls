@@ -25,6 +25,7 @@ Private Const CLASSNAME As String = "LLFormat"
 
 Private Const DEFAULT_DESIGN As String = "design 1"
 Private Const COLUMN_LABEL As String = "Label"
+Private Const DESIGN_TWO As String = "design 2"
 Private Const DESIGN_USER_DEFINED As String = "user defined"
 Private Const FALLBACK_COLOR As Long = vbBlack
 Private Const FALLBACK_VALUE As Long = 0
@@ -272,12 +273,12 @@ End Property
 
 '@prop-title Name of the active design column
 '@return String design name.
-Public Property Get designName() As String
-    designName = this.design
+Public Property Get DesignName() As String
+    DesignName = this.design
 End Property
 
 '@description Change the active design column and reset cached lookups
-Public Property Let designName(ByVal design As String)
+Public Property Let DesignName(ByVal design As String)
     this.design = design
     ResetCaches
 End Property
@@ -1275,37 +1276,26 @@ Private Sub Import(ByVal inpsh As Worksheet)
     Set targetTable = FormatTable()
     Set inputTable = inpsh.ListObjects(1)
 
-    Set targetTab = CustomTable.Create(targetTable)
-    Set inputTab = CustomTable.Create(inputTable)
-    targetTab.Import inputTab, strictColumnSearch:=True
+   
 
+    'Import the design names
     targetSheet.Range("DESIGNTYPE").Value = inpsh.Range("DESIGNTYPE").Value
-    Me.designName = CStr(targetSheet.Range("DESIGNTYPE").Value)
+    DesignName = CStr(targetSheet.Range("DESIGNTYPE").Value)
 
+    'Import the different formats
     Set designList = New BetterArray
     designList.LowerBound = 1
-    designList.Push DEFAULT_DESIGN, "design 2", DESIGN_USER_DEFINED
+    designList.Push DEFAULT_DESIGN, DESIGN_TWO, DESIGN_USER_DEFINED
+    Set targetTab = CustomTable.Create(targetTable)
+    Set inputTab = CustomTable.Create(inputTable)
 
-    For rowIndex = designList.LowerBound To designList.UpperBound
-        designName = CStr(designList.Item(rowIndex))
-        If ColumnExists(HeaderRange(), designName) And ColumnExists(inputTable.HeaderRowRange, designName) Then
-            Set targetRange = targetTab.DataRange(designName)
-            Set sourceRange = inputTab.DataRange(designName)
-            CopyDesignFormatting targetRange, sourceRange
-        End If
-    Next rowIndex
+
+    targetTab.Import inputTab, strictColumnSearch:=True, formatHeaders:=designList
+
 
     ResetCaches
 End Sub
 
-Private Sub CopyDesignFormatting(ByVal targetRange As Range, ByVal sourceRange As Range)
-    Dim idx As Long
-    If targetRange Is Nothing Or sourceRange Is Nothing Then Exit Sub
-    For idx = 1 To targetRange.Rows.Count
-        targetRange.Cells(idx, 1).Interior.Color = sourceRange.Cells(idx, 1).Interior.Color
-        targetRange.Cells(idx, 1).Font.Color = sourceRange.Cells(idx, 1).Font.Color
-    Next idx
-End Sub
 
 Private Function HasNamedRange(ByVal sh As Worksheet, ByVal rngName As String) As Boolean
     Dim rng As Range
