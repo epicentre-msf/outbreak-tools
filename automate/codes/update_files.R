@@ -4,14 +4,14 @@
 pacman::p_load(fs, cli, glue, here)
 
 # update the designer
-update_designer <- function(tag = "mock") {
+update_designer <- function(tag = "dev") {
   # move previous version of my designer
   # replace the dev designer
   switch(
     tag,
 
     # update the actual mock file
-    mock = {
+    dev = {
       file_copy(
         here(".mock", "designer_mock.xlsb"),
         here("src", "bin", "designer", "designer_dev.xlsb"),
