@@ -1297,6 +1297,170 @@ Private Sub Import(ByVal inpsh As Worksheet)
 End Sub
 
 
+'@section Export
+'===============================================================================
+'@details Export the LL format worksheet into another workbook. If a worksheet
+'with the same name already exists in the destination workbook, skip the export
+'and import from that worksheet instead.
+'@param toWkb Workbook that will receive the exported LL format sheet.
+Private Sub Export(ByVal toWkb As Workbook)
+
+    Dim targetWorkbook As Workbook
+    Dim sourceSheet As Worksheet
+    Dim sourceTable As ListObject
+    Dim targetSheet As Worksheet
+    Dim targetTable As ListObject
+    Dim exportTable As ICustomTable
+    Dim sheetName As String
+
+    If toWkb Is Nothing Then
+        ThrowError ProjectError.InvalidArgument, "Export workbook is required"
+    End If
+
+    EnsureFormatReady
+    Set sourceSheet = Wksh()
+    sheetName = sourceSheet.Name
+    Set targetWorkbook = toWkb
+
+    Set targetSheet = ResolveWorksheet(targetWorkbook, sheetName)
+    If Not targetSheet Is Nothing Then
+        Import targetSheet
+        Exit Sub
+    End If
+
+    Set targetSheet = targetWorkbook.Worksheets.Add(After:=targetWorkbook.Worksheets(targetWorkbook.Worksheets.Count))
+    targetSheet.Name = sheetName
+
+    Set sourceTable = FormatTable()
+    Set exportTable = CustomTable.Create(sourceTable)
+    exportTable.Export targetSheet, addListObject:=True
+
+    Set targetTable = ResolveFormatTable(targetSheet, sourceTable.Name)
+    If targetTable Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, "Exported format table is missing on the destination worksheet"
+    End If
+
+    CopyFormatTableStyles sourceTable, targetTable
+    EnsureDesignTypeRange sourceSheet, targetSheet, targetTable
+End Sub
+
+Private Function ResolveWorksheet(ByVal targetWorkbook As Workbook, ByVal sheetName As String) As Worksheet
+    Dim candidate As Worksheet
+
+    'Probe for the worksheet without raising errors when it is missing.
+    On Error Resume Next
+        Set candidate = targetWorkbook.Worksheets(sheetName)
+    On Error GoTo 0
+
+    Set ResolveWorksheet = candidate
+End Function
+
+Private Function ResolveFormatTable(ByVal targetSheet As Worksheet, ByVal preferredName As String) As ListObject
+    Dim candidate As ListObject
+
+    If targetSheet Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set candidate = targetSheet.ListObjects(preferredName)
+    On Error GoTo 0
+
+    If candidate Is Nothing Then
+        On Error Resume Next
+            If targetSheet.ListObjects.Count > 0 Then
+                Set candidate = targetSheet.ListObjects(1)
+            End If
+        On Error GoTo 0
+    End If
+
+    Set ResolveFormatTable = candidate
+End Function
+
+Private Sub CopyFormatTableStyles(ByVal sourceTable As ListObject, ByVal targetTable As ListObject)
+    Dim sourceRange As Range
+    Dim targetRange As Range
+    Dim rowIndex As Long
+    Dim columnIndex As Long
+    Dim sourceCell As Range
+    Dim targetCell As Range
+
+    If sourceTable Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "Source format table is required for export"
+    End If
+
+    If targetTable Is Nothing Then
+        ThrowError ProjectError.ElementNotFound, "Target format table is required for export"
+    End If
+
+    Set sourceRange = sourceTable.Range
+    Set targetRange = targetTable.Range
+
+    If sourceRange.Rows.Count <> targetRange.Rows.Count Or _
+       sourceRange.Columns.Count <> targetRange.Columns.Count Then
+        ThrowError ProjectError.ErrorUnexpectedState, "Export format table dimensions do not match the source"
+    End If
+
+    For rowIndex = 1 To sourceRange.Rows.Count
+        For columnIndex = 1 To sourceRange.Columns.Count
+            Set sourceCell = sourceRange.Cells(rowIndex, columnIndex)
+            Set targetCell = targetRange.Cells(rowIndex, columnIndex)
+
+            targetCell.Interior.Pattern = sourceCell.Interior.Pattern
+            targetCell.Interior.color = sourceCell.Interior.color
+            targetCell.Font.color = sourceCell.Font.color
+            targetCell.Font.Bold = sourceCell.Font.Bold
+            targetCell.Font.Italic = sourceCell.Font.Italic
+            targetCell.Font.Size = sourceCell.Font.Size
+        Next columnIndex
+    Next rowIndex
+End Sub
+
+Private Sub EnsureDesignTypeRange(ByVal sourceSheet As Worksheet, _ 
+                                  ByVal targetSheet As Worksheet, _ 
+                                  ByVal targetTable As ListObject)
+
+    Dim sourceDesignRange As Range
+    Dim targetDesignRange As Range
+    Dim designValue As String
+    Dim headerRow As Long
+    Dim headerColumn As Long
+    Dim targetColumn As Long
+
+    If sourceSheet Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "Source worksheet is required for design export"
+    End If
+
+    If targetSheet Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "Target worksheet is required for design export"
+    End If
+
+    If targetTable Is Nothing Then
+        ThrowError ProjectError.ObjectNotInitialized, "Target format table is required for design export"
+    End If
+
+    If HasNamedRange(sourceSheet, "DESIGNTYPE") Then
+        Set sourceDesignRange = sourceSheet.Range("DESIGNTYPE")
+        designValue = CStr(sourceDesignRange.Value)
+        If LenB(designValue) = 0 Then designValue = DEFAULT_DESIGN
+        Set targetDesignRange = targetSheet.Cells(sourceDesignRange.Row, sourceDesignRange.Column)
+    Else
+        designValue = DesignName()
+        If LenB(designValue) = 0 Then designValue = DEFAULT_DESIGN
+
+        headerRow = targetTable.HeaderRowRange.Row
+        headerColumn = targetTable.Range.Column
+        targetColumn = headerColumn + targetTable.ListColumns.Count + 2
+
+        Set targetDesignRange = targetSheet.Cells(headerRow, targetColumn)
+    End If
+
+    targetDesignRange.Value = designValue
+
+    On Error Resume Next
+        targetSheet.Names("DESIGNTYPE").Delete
+    On Error GoTo 0
+    targetSheet.Names.Add Name:="DESIGNTYPE", RefersTo:=targetDesignRange, Visible:=False
+End Sub
+
 Private Function HasNamedRange(ByVal sh As Worksheet, ByVal rngName As String) As Boolean
     Dim rng As Range
     On Error Resume Next
@@ -1318,6 +1482,10 @@ End Sub
 
 Private Sub ILLFormat_Import(ByVal inpsh As Worksheet)
     Import inpsh
+End Sub
+
+Private Sub ILLFormat_Export(ByVal toWkb As Workbook)
+    Export toWkb
 End Sub
 
 Private Function ILLFormat_DesignValue(ByVal labelName As String, _ 

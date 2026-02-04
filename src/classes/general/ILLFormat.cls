@@ -104,6 +104,9 @@ End Function
 Public Sub Import(ByVal inpsh As Worksheet)
 End Sub
 
+Public Sub Export(ByVal toWkb As Workbook)
+End Sub
+
 Public Property Get HasCheckings() As Boolean
 End Property
 
