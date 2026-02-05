@@ -1,0 +1,35 @@
+{
+  "name": "obt",
+  "version": "1.0.0",
+  "description": "Specialized VBA development assistant for the OutbreakTools project with comprehensive coding standards and workflow automation",
+  "author": "Yves Amevoin",
+  "created": "2026-02-04",
+  "triggers": [
+    "VBA",
+    "OutbreakTools",
+    "class",
+    "module",
+    "refactor",
+    "src/classes",
+    "src/tests",
+    ".cls",
+    ".bas",
+    "ReportBuilder",
+    "LLFormat",
+    "ProjectError"
+  ],
+  "files": [
+    "SKILL.md",
+    "project-rules.md",
+    "README.md",
+    "ARCHITECTURE-OVERVIEW.md",
+    "MIGRATION-GUIDE.md",
+    "UPDATES.md"
+  ],
+  "dependencies": [],
+  "workspace_files": [
+    ".obt/implementations.md",
+    ".obt/tracking.md"
+  ],
+  "entry_point": "SKILL.md"
+}
