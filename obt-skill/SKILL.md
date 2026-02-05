@@ -60,14 +60,22 @@ Read: <workspace_root>/.obt/tracking.md
 ```
 <workspace_root>/
 ├── src/
-│   ├── classes/     ← VBA .cls files live here
-│   └── tests/       ← Test files live here
+│   ├── classes/             ← VBA .cls files (organized in subfolders by topic)
+│   │   ├── topic1/          ← Classes for specific topic
+│   │   ├── topic2/          ← Classes for specific topic
+│   │   └── stale/           ← Classes needing work/deletion (CHECK BEFORE USE)
+│   ├── modules/             ← VBA .bas orchestration modules (same subfolder structure)
+│   │   ├── topic1/          ← Modules for specific topic
+│   │   ├── topic2/          ← Modules for specific topic
+│   │   └── stale/           ← Modules needing work/deletion (CHECK BEFORE USE)
+│   ├── tests/               ← Test files
+│   └── [legacy folders]     ← DO NOT TOUCH - User will handle these
 ├── .obt/
-│   ├── tracking.md         ← Current progress tracking
-│   └── implementations.md  ← Current task specification
+│   ├── tracking.md          ← Current progress tracking
+│   └── implementations.md   ← Current task specification
 └── obt-skill/
-    ├── SKILL.md            ← This file
-    └── project-rules.md    ← Coding standards (READ FIRST)
+    ├── SKILL.md             ← This file
+    └── project-rules.md     ← Coding standards (READ FIRST)
 ```
 
 ---
@@ -80,12 +88,24 @@ Read: <workspace_root>/.obt/tracking.md
 - Does this align with `implementations.md`?
 - What's the current state in `tracking.md`?
 
-**Step 2.2 - Check Constraints:**
+**Step 2.2 - Check for Stale Classes/Modules (CRITICAL):**
+⚠️ **BEFORE working on ANY class or module, check its location:**
+
+If the file is in a `stale/` subfolder:
+1. **STOP immediately**
+2. **ASK the user:** "The file [filename] is in the stale folder. Is this class/module ready to use, or is it in stale mode (needs deletion/refactoring)?"
+3. **WAIT for user response** before proceeding
+4. Only proceed if user confirms it's ready to use
+
+**Why:** Stale folders contain classes/modules that may need deletion, major refactoring, or are incomplete. Never assume they're production-ready.
+
+**Step 2.3 - Check Constraints:**
 - Review project-rules.md Section 2.4 for files that MUST NOT be modified
 - Verify the change fits within existing architecture (Section 4 of project-rules.md)
 - Ensure no circular dependencies will be created
+- **NEVER modify files in legacy folders** (only user can handle these)
 
-**Step 2.3 - Update Tracking Plan:**
+**Step 2.4 - Update Tracking Plan:**
 If this is a new task or significant change:
 - Update `.obt/tracking.md` with new task bullets
 - Mark current task as `in_progress`
@@ -113,9 +133,16 @@ If this is a new task or significant change:
 
 **Step 3.3 - File Creation:**
 When creating NEW classes:
-- Save to: `<workspace_root>/src/classes/`
+- **Ask user which topic subfolder** to use (e.g., `src/classes/reporting/`, `src/classes/validation/`)
+- If user doesn't specify, ask: "Which subfolder should I create this class in? (e.g., reporting, validation, etc.)"
+- Save to: `<workspace_root>/src/classes/<topic>/ClassName.cls`
 - Include interface if making class immutable
 - Add corresponding test file in `<workspace_root>/src/tests/`
+- Update tracking.md with new files created
+
+When creating NEW modules:
+- **Ask user which topic subfolder** to use (same structure as classes)
+- Save to: `<workspace_root>/src/modules/<topic>/ModuleName.bas`
 - Update tracking.md with new files created
 
 **Step 3.4 - Testing:**
@@ -217,7 +244,10 @@ If an instruction is ambiguous:
 ```
 
 **File locations:**
-- Source classes: `src/classes/*.cls`
+- Source classes: `src/classes/<topic>/*.cls` (organized by topic in subfolders)
+- Source modules: `src/modules/<topic>/*.bas` (organized by topic in subfolders)
+- Stale classes: `src/classes/stale/*.cls` (CHECK before using)
+- Stale modules: `src/modules/stale/*.bas` (CHECK before using)
 - Test files: `src/tests/*TestFixture.bas`
 - Task specs: `.obt/implementations.md`
 - Progress tracking: `.obt/tracking.md`
