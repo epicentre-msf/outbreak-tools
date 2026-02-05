@@ -1276,8 +1276,6 @@ Private Sub Import(ByVal inpsh As Worksheet)
     Set targetTable = FormatTable()
     Set inputTable = inpsh.ListObjects(1)
 
-   
-
     'Import the design names
     targetSheet.Range("DESIGNTYPE").Value = inpsh.Range("DESIGNTYPE").Value
     DesignName = CStr(targetSheet.Range("DESIGNTYPE").Value)
@@ -1289,9 +1287,7 @@ Private Sub Import(ByVal inpsh As Worksheet)
     Set targetTab = CustomTable.Create(targetTable)
     Set inputTab = CustomTable.Create(inputTable)
 
-
     targetTab.Import inputTab, strictColumnSearch:=True, formatHeaders:=designList
-
 
     ResetCaches
 End Sub
