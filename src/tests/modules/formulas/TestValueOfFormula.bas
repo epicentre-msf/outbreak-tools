@@ -126,6 +126,8 @@ Public Sub TestValueOfFormulaConvertsToNewSignature()
 
     expected = "VALUE_OF(lauto_drop_h2, " & QuoteSheet(lookupSheet) & ", " & CStr(lookupIndex) & ", " & CStr(valueIndex) & ")"
 
+    Debug.print expected
+    
     Assert.IsTrue parser.Valid, "Expected VALUE_OF parser to accept valid arguments"
     Assert.AreEqual expected, parser.ConvertedFormula, "Converted VALUE_OF formula should include sheet name and column indices"
     Assert.AreEqual lookupSheet, parser.LookupSheetName, "Lookup sheet should match dictionary metadata"
