@@ -126,32 +126,80 @@ Option Explicit
 
 ```
 src/
-├── classes/          ← Business logic (.cls files)
-└── tests/            ← Test fixtures and test helpers
+├── classes/                    ← Business logic (.cls files)
+│   ├── <topic1>/              ← Classes organized by topic/feature
+│   ├── <topic2>/              ← Classes organized by topic/feature
+│   ├── stale/                 ← Classes needing work/deletion (CHECK BEFORE USE)
+│   └── ...
+│
+├── modules/                    ← Orchestration modules (.bas files)
+│   ├── <topic1>/              ← Modules organized by topic/feature (mirrors classes structure)
+│   ├── <topic2>/              ← Modules organized by topic/feature
+│   ├── stale/                 ← Modules needing work/deletion (CHECK BEFORE USE)
+│   └── ...
+│
+├── tests/                      ← Test fixtures and test helpers
+│   └── *TestFixture.bas       ← Test files
+│
+└── [legacy folders]/           ← DO NOT TOUCH - User manages these
 ```
 
 **File Types:**
-- `.cls` files: Business logic classes
-- `.bas` files: Orchestration modules and helpers
+- `.cls` files: Business logic classes (in `src/classes/<topic>/`)
+- `.bas` files: Orchestration modules (in `src/modules/<topic>/`) and test helpers
 - Interfaces: Named with `I` prefix (e.g., `IFoo`)
 
-### 4.2 Architectural Principles
+**Folder Organization:**
+- Classes and modules are organized in subfolders by topic/feature area
+- Each topic subfolder contains related classes or modules
+- `stale/` subfolders contain files that may need deletion, major refactoring, or are incomplete
+- Legacy folders in `src/` are managed by user only - NEVER modify these
+
+### 4.2 Stale Mode Checking (CRITICAL)
+
+⚠️ **BEFORE working on ANY file in a `stale/` subfolder:**
+
+1. **STOP and ASK the user:** "The file [filename] is in the stale folder. Is this class/module ready to use, or is it in stale mode (needs deletion/refactoring)?"
+2. **WAIT for explicit user confirmation** before proceeding
+3. Only proceed if user confirms the file is ready to use
+
+**Why:** Stale folders contain classes/modules that may:
+- Need to be deleted entirely
+- Require major refactoring
+- Be incomplete or non-functional
+- Be outdated and no longer used
+
+**Never assume stale files are production-ready.**
+
+### 4.3 Architectural Principles
 
 **You MUST:**
 - ✅ Respect existing class responsibilities
 - ✅ Avoid circular dependencies
 - ✅ Avoid moving logic across layers without instruction
-- ✅ Ensure new classes fit in overall project structure (`src/classes`)
-- ✅ Add new classes in `src/classes/`
+- ✅ Ensure new classes fit in overall project structure (`src/classes/<topic>/`)
+- ✅ **Ask user which topic subfolder** to use when creating new classes/modules
+- ✅ Add new classes in `src/classes/<topic>/`
+- ✅ Add new modules in `src/modules/<topic>/`
 - ✅ Add new tests in `src/tests/`
 - ✅ Always add tests for newly created classes
 - ✅ Use TestHelpers.bas in tests to reduce redundancy
 - ✅ Use existing classes if required - don't reinvent the wheel
 - ✅ Aim for efficiency - code should execute fast
 
+**You MUST NOT:**
+- ❌ **NEVER modify files in legacy folders within `src/`** (only user manages these)
+- ❌ Never delete legacy folders or their contents
+- ❌ Never move files into or out of legacy folders
+- ❌ Never assume files in `stale/` subfolders are ready for use
+
 **Class Design:**
 - Most classes have a dedicated interface for immutability
 - Always keep interface implementation at the END of class code
+
+**Module Design:**
+- Modules orchestrate classes and provide helper functions
+- Modules mirror the same topic structure as classes
 
 ---
 
@@ -516,9 +564,13 @@ Correctness beats cleverness. Always.
 ## Section 15: Quick Reference
 
 ### File Locations
-- **Source classes:** `src/classes/*.cls`
+- **Source classes:** `src/classes/<topic>/*.cls` (organized in subfolders by topic)
+- **Source modules:** `src/modules/<topic>/*.bas` (organized in subfolders by topic)
+- **Stale classes:** `src/classes/stale/*.cls` (⚠️ CHECK with user before using)
+- **Stale modules:** `src/modules/stale/*.bas` (⚠️ CHECK with user before using)
 - **Tests:** `src/tests/*TestFixture.bas`; `src/tests/*/TestLLChoices.bas`
 - **Test helpers:** `src/tests/TestHelpers.bas`
+- **Legacy folders:** `src/[legacy folders]/` (❌ DO NOT MODIFY - user manages)
 - **Tracking:** `.obt/tracking.md`
 - **Specifications:** `.obt/implementations.md`
 
