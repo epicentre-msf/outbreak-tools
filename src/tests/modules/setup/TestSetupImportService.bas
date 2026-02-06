@@ -107,7 +107,7 @@ Public Sub TestCleanup()
 End Sub
 
 
-'@section Tests
+'@section Tests - Check and Clean
 '===============================================================================
 '@TestMethod("SetupImportService")
 Public Sub TestCheckRaisesWhenNoSelection()
@@ -163,6 +163,9 @@ Public Sub TestCleanRemovesWorksheetComments()
     Assert.IsTrue targetSheet.Cells(1, 1).Comment Is Nothing, "Clean should remove classic comments."
 End Sub
 
+
+'@section Tests - Import
+'===============================================================================
 '@TestMethod("SetupImportService")
 Public Sub TestImportClosesWorkbookAfterRun()
     CustomTestSetTitles Assert, "SetupImportService", "TestImportClosesWorkbookAfterRun"
@@ -306,6 +309,9 @@ CleanupFailure:
     Exit Sub
 End Sub
 
+
+'@section Tests - Export cancellation and file creation
+'===============================================================================
 '@TestMethod("SetupImportService")
 Public Sub TestExportAbortsWhenFolderSelectionCancelled()
     CustomTestSetTitles Assert, "SetupImportService", "TestExportAbortsWhenFolderSelectionCancelled"
@@ -387,6 +393,740 @@ ExportVerificationFailed:
     End If
     If errNumber <> 0 Then
         CustomTestLogFailure Assert, "TestExportCreatesWorkbookInProvidedFolder", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+
+'@section Tests - Export component verification
+'===============================================================================
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportContainsDictionarySheet()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportContainsDictionarySheet"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+    Dim exportedSheet As Worksheet
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should produce a valid workbook."
+    Assert.IsTrue ExportWorksheetExists(exportBook, DICTIONARY_SHEET_NAME), _
+                  "Export workbook should contain a Dictionary worksheet."
+
+    Set exportedSheet = exportBook.Worksheets(DICTIONARY_SHEET_NAME)
+
+    'Exported dictionary starts at row 1 with headers
+    Assert.AreEqual "variable name", LCase$(CStr(exportedSheet.Cells(1, 1).Value)), _
+                    "Dictionary export should place Variable Name as the first header."
+
+    'Verify host variable data is present in the first data row
+    Assert.AreEqual HOST_DICTIONARY_VARIABLE, CStr(exportedSheet.Cells(2, 1).Value), _
+                    "Dictionary export should include the host variable name in the first data row."
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportContainsDictionarySheet", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportContainsChoicesSheet()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportContainsChoicesSheet"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+    Dim exportedSheet As Worksheet
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should produce a valid workbook."
+    Assert.IsTrue ExportWorksheetExists(exportBook, CHOICES_SHEET_NAME), _
+                  "Export workbook should contain a Choices worksheet."
+
+    Set exportedSheet = exportBook.Worksheets(CHOICES_SHEET_NAME)
+
+    'Verify choices headers are present at row 1
+    Assert.AreEqual "list name", LCase$(CStr(exportedSheet.Cells(1, 1).Value)), _
+                    "Choices export should place list name as the first header."
+
+    'Verify choices data is present (list_primary from the fixture)
+    Assert.AreEqual "list_primary", CStr(exportedSheet.Cells(2, 1).Value), _
+                    "Choices export should include the first choice list name in the data."
+    Assert.AreEqual "Choice A", CStr(exportedSheet.Cells(2, 3).Value), _
+                    "Choices export should include the label column data."
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportContainsChoicesSheet", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportContainsExportSpecsSheet()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportContainsExportSpecsSheet"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+    Dim exportedSheet As Worksheet
+    Dim lastColumn As Long
+    Dim colIdx As Long
+    Dim statusColumn As Long
+    Dim fileNameColumn As Long
+    Dim headerValue As String
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should produce a valid workbook."
+    Assert.IsTrue ExportWorksheetExists(exportBook, EXPORTS_SHEET_NAME), _
+                  "Export workbook should contain an Exports worksheet."
+
+    Set exportedSheet = exportBook.Worksheets(EXPORTS_SHEET_NAME)
+
+    'Find the status and file name columns by scanning headers
+    lastColumn = exportedSheet.Cells(1, exportedSheet.Columns.Count).End(xlToLeft).Column
+    statusColumn = 0
+    fileNameColumn = 0
+
+    For colIdx = 1 To lastColumn
+        headerValue = LCase$(CStr(exportedSheet.Cells(1, colIdx).Value))
+        If headerValue = "status" Then statusColumn = colIdx
+        If headerValue = "file name" Then fileNameColumn = colIdx
+    Next colIdx
+
+    Assert.IsTrue statusColumn > 0, _
+                  "Exports export should contain a status column header."
+    Assert.IsTrue fileNameColumn > 0, _
+                  "Exports export should contain a file name column header."
+
+    'Verify data values match the host fixture
+    If statusColumn > 0 Then
+        Assert.AreEqual HOST_EXPORT_STATUS, CStr(exportedSheet.Cells(2, statusColumn).Value), _
+                        "Exports export should carry the host export status value."
+    End If
+    If fileNameColumn > 0 Then
+        Assert.AreEqual HOST_EXPORT_FILE_NAME, CStr(exportedSheet.Cells(2, fileNameColumn).Value), _
+                        "Exports export should carry the host export file name."
+    End If
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportContainsExportSpecsSheet", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportContainsAnalysisSheet()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportContainsAnalysisSheet"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+    Dim exportedSheet As Worksheet
+    Dim summaryTable As ListObject
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should produce a valid workbook."
+    Assert.IsTrue ExportWorksheetExists(exportBook, ANALYSIS_SHEET_NAME), _
+                  "Export workbook should contain an Analysis worksheet."
+
+    Set exportedSheet = exportBook.Worksheets(ANALYSIS_SHEET_NAME)
+
+    'Verify at least one analysis table was exported
+    Assert.IsTrue exportedSheet.ListObjects.Count > 0, _
+                  "Analysis export should contain at least one ListObject."
+
+    'Verify the global summary table exists with correct data
+    On Error Resume Next
+        Set summaryTable = exportedSheet.ListObjects("Tab_global_summary")
+    On Error GoTo 0
+
+    Assert.IsTrue Not (summaryTable Is Nothing), _
+                  "Analysis export should contain the Tab_global_summary table."
+    If Not summaryTable Is Nothing Then
+        Assert.AreEqual "Host global section", _
+                        CStr(summaryTable.DataBodyRange.Cells(1, 1).Value), _
+                        "Analysis export should preserve the global summary data."
+    End If
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportContainsAnalysisSheet", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportContainsMultipleAnalysisTables()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportContainsMultipleAnalysisTables"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+    Dim exportedSheet As Worksheet
+    Dim univariateTable As ListObject
+    Dim timeseriesTable As ListObject
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should produce a valid workbook."
+
+    Set exportedSheet = exportBook.Worksheets(ANALYSIS_SHEET_NAME)
+
+    'Verify multiple analysis tables are exported (not just the first one)
+    On Error Resume Next
+        Set univariateTable = exportedSheet.ListObjects("Tab_Univariate_Analysis")
+        Set timeseriesTable = exportedSheet.ListObjects("Tab_TimeSeries_Analysis")
+    On Error GoTo 0
+
+    Assert.IsTrue Not (univariateTable Is Nothing), _
+                  "Analysis export should include the Univariate Analysis table."
+    Assert.IsTrue Not (timeseriesTable Is Nothing), _
+                  "Analysis export should include the TimeSeries Analysis table."
+
+    If Not timeseriesTable Is Nothing Then
+        Assert.IsTrue timeseriesTable.ListRows.Count >= 2, _
+                      "TimeSeries table should contain at least two data rows."
+    End If
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportContainsMultipleAnalysisTables", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+
+'@section Tests - Export structural checks
+'===============================================================================
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportRemovesDefaultWorksheet()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportRemovesDefaultWorksheet"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should produce a valid workbook."
+
+    'The default Sheet1 from Workbooks.Add should have been removed
+    Assert.IsFalse ExportWorksheetExists(exportBook, "Sheet1"), _
+                   "Export should remove the default Sheet1 worksheet."
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportRemovesDefaultWorksheet", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportMainSheetsAreVisible()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportMainSheetsAreVisible"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should produce a valid workbook."
+
+    'All main setup sheets should be visible (Hide:=xlSheetVisible is passed in Export)
+    If ExportWorksheetExists(exportBook, DICTIONARY_SHEET_NAME) Then
+        Assert.AreEqual CLng(xlSheetVisible), CLng(exportBook.Worksheets(DICTIONARY_SHEET_NAME).Visible), _
+                        "Dictionary worksheet should be visible in the export."
+    End If
+
+    If ExportWorksheetExists(exportBook, CHOICES_SHEET_NAME) Then
+        Assert.AreEqual CLng(xlSheetVisible), CLng(exportBook.Worksheets(CHOICES_SHEET_NAME).Visible), _
+                        "Choices worksheet should be visible in the export."
+    End If
+
+    If ExportWorksheetExists(exportBook, EXPORTS_SHEET_NAME) Then
+        Assert.AreEqual CLng(xlSheetVisible), CLng(exportBook.Worksheets(EXPORTS_SHEET_NAME).Visible), _
+                        "Exports worksheet should be visible in the export."
+    End If
+
+    If ExportWorksheetExists(exportBook, ANALYSIS_SHEET_NAME) Then
+        Assert.AreEqual CLng(xlSheetVisible), CLng(exportBook.Worksheets(ANALYSIS_SHEET_NAME).Visible), _
+                        "Analysis worksheet should be visible in the export."
+    End If
+
+    If ExportWorksheetExists(exportBook, TRANSLATIONS_SHEET_NAME) Then
+        Assert.AreEqual CLng(xlSheetVisible), CLng(exportBook.Worksheets(TRANSLATIONS_SHEET_NAME).Visible), _
+                        "Translations worksheet should be visible in the export."
+    End If
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportMainSheetsAreVisible", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportClosesWorkbookAfterCompletion()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportClosesWorkbookAfterCompletion"
+    Dim exportFilePath As String
+    Dim initialCount As Long
+    Dim svc As ISetupImportService
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+
+    exportFilePath = BuildExportFilePath()
+    DeleteFileIfExists exportFilePath
+
+    Service.DisplayPrompts = False
+    Service.SetExportFolder TestHelpers.BuildTempFolder(ThisWorkbook, "SetupExportTests")
+
+    initialCount = Application.Workbooks.Count
+    Set svc = Service
+    svc.Export
+
+    Assert.AreEqual initialCount, Application.Workbooks.Count, _
+                     "Export should not leave any open workbooks behind."
+
+    If Not KeepExportArtifacts Then
+        DeleteFileIfExists exportFilePath
+    End If
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    If Not KeepExportArtifacts Then
+        DeleteFileIfExists exportFilePath
+    End If
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportClosesWorkbookAfterCompletion", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+
+'@section Tests - Export edge cases
+'===============================================================================
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportSkipsMissingHostDictionarySheet()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportSkipsMissingHostDictionarySheet"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+
+    'Remove the Dictionary sheet from the host before exporting
+    TestHelpers.DeleteWorksheet DICTIONARY_SHEET_NAME
+
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should succeed even when Dictionary sheet is missing from host."
+
+    'Dictionary should not appear in the export since it was removed from host
+    Assert.IsFalse ExportWorksheetExists(exportBook, DICTIONARY_SHEET_NAME), _
+                   "Export should not create a Dictionary sheet when the host does not have one."
+
+    'Other sheets should still be exported
+    Assert.IsTrue ExportWorksheetExists(exportBook, CHOICES_SHEET_NAME), _
+                  "Choices should still be exported when Dictionary is missing."
+    Assert.IsTrue ExportWorksheetExists(exportBook, EXPORTS_SHEET_NAME), _
+                  "Exports should still be exported when Dictionary is missing."
+    Assert.IsTrue ExportWorksheetExists(exportBook, ANALYSIS_SHEET_NAME), _
+                  "Analysis should still be exported when Dictionary is missing."
+    Assert.IsTrue ExportWorksheetExists(exportBook, TRANSLATIONS_SHEET_NAME), _
+                  "Translations should still be exported when Dictionary is missing."
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportSkipsMissingHostDictionarySheet", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportSkipsMissingHostAnalysisSheet()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportSkipsMissingHostAnalysisSheet"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+
+    'Remove the Analysis sheet from the host before exporting
+    TestHelpers.DeleteWorksheet ANALYSIS_SHEET_NAME
+
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should succeed even when Analysis sheet is missing from host."
+
+    'Analysis should not appear in the export
+    Assert.IsFalse ExportWorksheetExists(exportBook, ANALYSIS_SHEET_NAME), _
+                   "Export should not create an Analysis sheet when the host does not have one."
+
+    'Other sheets should still be present
+    Assert.IsTrue ExportWorksheetExists(exportBook, DICTIONARY_SHEET_NAME), _
+                  "Dictionary should still be exported when Analysis is missing."
+    Assert.IsTrue ExportWorksheetExists(exportBook, CHOICES_SHEET_NAME), _
+                  "Choices should still be exported when Analysis is missing."
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportSkipsMissingHostAnalysisSheet", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportSkipsMissingHostChoicesSheet()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportSkipsMissingHostChoicesSheet"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+
+    'Remove the Choices sheet from the host before exporting
+    TestHelpers.DeleteWorksheet CHOICES_SHEET_NAME
+
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should succeed even when Choices sheet is missing from host."
+
+    Assert.IsFalse ExportWorksheetExists(exportBook, CHOICES_SHEET_NAME), _
+                   "Export should not create a Choices sheet when the host does not have one."
+
+    'Other sheets should still be present
+    Assert.IsTrue ExportWorksheetExists(exportBook, DICTIONARY_SHEET_NAME), _
+                  "Dictionary should still be exported when Choices is missing."
+    Assert.IsTrue ExportWorksheetExists(exportBook, EXPORTS_SHEET_NAME), _
+                  "Exports should still be exported when Choices is missing."
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportSkipsMissingHostChoicesSheet", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportDictionaryContainsListObject()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportDictionaryContainsListObject"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+    Dim exportedSheet As Worksheet
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should produce a valid workbook."
+
+    Set exportedSheet = exportBook.Worksheets(DICTIONARY_SHEET_NAME)
+
+    'LLdictionary.Export creates a ListObject in the exported sheet
+    Assert.IsTrue exportedSheet.ListObjects.Count > 0, _
+                  "Dictionary export should contain a ListObject wrapping the data."
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportDictionaryContainsListObject", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportDictionaryPreservesMultipleHeaders()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportDictionaryPreservesMultipleHeaders"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+    Dim exportedSheet As Worksheet
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should produce a valid workbook."
+
+    Set exportedSheet = exportBook.Worksheets(DICTIONARY_SHEET_NAME)
+
+    'Verify several key dictionary headers are present in the export
+    Assert.AreEqual "main label", LCase$(CStr(exportedSheet.Cells(1, 2).Value)), _
+                    "Dictionary export should include Main Label as the second header."
+    Assert.AreEqual "status", LCase$(CStr(exportedSheet.Cells(1, 11).Value)), _
+                    "Dictionary export should include Status header."
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportDictionaryPreservesMultipleHeaders", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportChoicesPreservesAllDataRows()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportChoicesPreservesAllDataRows"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+    Dim exportedSheet As Worksheet
+    Dim lastDataRow As Long
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should produce a valid workbook."
+
+    Set exportedSheet = exportBook.Worksheets(CHOICES_SHEET_NAME)
+
+    'The fixture creates 4 choice rows (2 for list_primary, 2 for list_secondary)
+    lastDataRow = exportedSheet.Cells(exportedSheet.Rows.Count, 1).End(xlUp).Row
+
+    'Row 1 = headers, rows 2-5 = data (4 rows)
+    Assert.IsTrue lastDataRow >= 5, _
+                  "Choices export should contain all fixture data rows (at least 4 data rows)."
+
+    'Verify the second list is also present
+    Dim foundSecondary As Boolean
+    Dim rowIdx As Long
+
+    foundSecondary = False
+    For rowIdx = 2 To lastDataRow
+        If CStr(exportedSheet.Cells(rowIdx, 1).Value) = "list_secondary" Then
+            foundSecondary = True
+            Exit For
+        End If
+    Next rowIdx
+
+    Assert.IsTrue foundSecondary, _
+                  "Choices export should include all choice lists from the host."
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportChoicesPreservesAllDataRows", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportExportsHiddenNames()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportExportsHiddenNames"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+    Dim exportedName As Name
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should produce a valid workbook."
+
+    'HiddenNames.ExportNamesToWorkbook should copy named ranges to the export workbook
+    'The host has __ll_exports_total__ set to 1
+    On Error Resume Next
+        Set exportedName = exportBook.Names("__ll_exports_total__")
+    On Error GoTo 0
+
+    Assert.IsTrue Not (exportedName Is Nothing), _
+                  "Export should include the __ll_exports_total__ hidden name in the workbook."
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportExportsHiddenNames", errNumber, errDescription
+        Err.Clear
+    End If
+End Sub
+
+'@TestMethod("SetupImportService")
+Public Sub TestExportTranslationsStartsAtColumnTwo()
+    CustomTestSetTitles Assert, "SetupImportService", "TestExportTranslationsStartsAtColumnTwo"
+    Dim exportBook As Workbook
+    Dim exportFilePath As String
+    Dim exportedSheet As Worksheet
+
+    On Error GoTo CleanupFailure
+
+    PrepareHostSetupSheets
+    Set exportBook = PerformExportAndOpen(exportFilePath)
+
+    Assert.IsTrue Not (exportBook Is Nothing), _
+                  "Export should produce a valid workbook."
+
+    Set exportedSheet = exportBook.Worksheets(TRANSLATIONS_SHEET_NAME)
+
+    'Translations are exported starting at column 2 to preserve the tag offset
+    Assert.AreEqual vbNullString, Trim$(CStr(exportedSheet.Cells(1, 1).Value)), _
+                    "Translations export column 1 should be empty (tag offset preserved)."
+    Assert.AreEqual "lang1", LCase$(CStr(exportedSheet.Cells(1, 2).Value)), _
+                    "Translations export should start headers at column 2."
+
+    CleanupExportResult exportBook, exportFilePath
+    Exit Sub
+
+CleanupFailure:
+    Dim errNumber As Long
+    Dim errDescription As String
+    errNumber = Err.Number
+    errDescription = Err.Description
+    CleanupExportResult exportBook, exportFilePath
+    If errNumber <> 0 Then
+        CustomTestLogFailure Assert, "TestExportTranslationsStartsAtColumnTwo", errNumber, errDescription
         Err.Clear
     End If
 End Sub
@@ -547,6 +1287,9 @@ Private Sub PrepareRegistryFixture()
     ThisWorkbook.Names.Add Name:=REGISTRY_COUNTER_NAME, RefersTo:="=0"
 End Sub
 
+
+'@section Import assertion helpers
+'===============================================================================
 Private Sub AssertImportedDictionary()
     Dim dictSheet As Worksheet
     Dim variableName As String
@@ -649,6 +1392,77 @@ Private Sub AssertTranslationUnchanged()
                     "Registry counter should remain unchanged when no translation import occurs."
 End Sub
 
+
+'@section Export helpers
+'===============================================================================
+
+'@description Execute the full export workflow and open the resulting workbook for verification.
+'@param exportFilePath ByRef String receiving the path to the exported file.
+'@return Workbook opened from the exported file, or Nothing if export did not produce a file.
+Private Function PerformExportAndOpen(ByRef exportFilePath As String) As Workbook
+    Dim exportFolder As String
+    Dim svc As ISetupImportService
+
+    exportFolder = TestHelpers.BuildTempFolder(ThisWorkbook, "SetupExportTests")
+    exportFilePath = BuildExportFilePath(exportFolder)
+    DeleteFileIfExists exportFilePath
+
+    Service.DisplayPrompts = False
+    Service.SetExportFolder exportFolder
+
+    Set svc = Service
+    svc.Export
+
+    If LenB(Dir$(exportFilePath)) = 0 Then Exit Function
+
+    Set PerformExportAndOpen = Workbooks.Open(exportFilePath)
+End Function
+
+'@description Close an export workbook and delete the file if artifacts are not kept.
+'@param exportBook ByRef Workbook reference to close and release.
+'@param exportFilePath String path to the exported file to delete.
+Private Sub CleanupExportResult(ByRef exportBook As Workbook, ByVal exportFilePath As String)
+    On Error Resume Next
+        If Not exportBook Is Nothing Then exportBook.Close SaveChanges:=False
+    On Error GoTo 0
+    Set exportBook = Nothing
+    If Not KeepExportArtifacts Then
+        DeleteFileIfExists exportFilePath
+    End If
+End Sub
+
+'@description Check if a worksheet exists in a given workbook.
+'@param wb Workbook to search.
+'@param sheetName String name of the worksheet.
+'@return Boolean True when the worksheet is present.
+Private Function ExportWorksheetExists(ByVal wb As Workbook, ByVal sheetName As String) As Boolean
+    Dim sh As Worksheet
+
+    If wb Is Nothing Then Exit Function
+
+    On Error Resume Next
+        Set sh = wb.Worksheets(sheetName)
+    On Error GoTo 0
+
+    ExportWorksheetExists = Not (sh Is Nothing)
+End Function
+
+'@description Build the expected export file path for the given folder.
+'@param exportFolder Optional String folder path. When empty, uses the standard test folder.
+'@return String fully qualified path to the expected export file.
+Private Function BuildExportFilePath(Optional ByVal exportFolder As String = vbNullString) As String
+    If LenB(exportFolder) = 0 Then
+        exportFolder = TestHelpers.BuildTempFolder(ThisWorkbook, "SetupExportTests")
+    End If
+
+    BuildExportFilePath = exportFolder & Application.PathSeparator & _
+                          Replace(ThisWorkbook.Name, ".xlsb", "") & _
+                          "_export_" & Format$(Now(), "yyyymmdd") & ".xlsx"
+End Function
+
+
+'@section Utility helpers
+'===============================================================================
 Private Function HostExportTotal() As Long
     Dim definition As Name
     Dim evaluated As String

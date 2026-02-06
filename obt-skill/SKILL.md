@@ -133,12 +133,19 @@ If this is a new task or significant change:
 
 **Step 3.3 - File Creation:**
 When creating NEW classes:
+- **REMEMBER:** A "class" typically means TWO files (interface + implementation)
+- **Default behavior:** Create both `IClassName.cls` (interface) and `ClassName.cls` (implementation)
 - **Ask user which topic subfolder** to use (e.g., `src/classes/reporting/`, `src/classes/validation/`)
 - If user doesn't specify, ask: "Which subfolder should I create this class in? (e.g., reporting, validation, etc.)"
-- Save to: `<workspace_root>/src/classes/<topic>/ClassName.cls`
-- Include interface if making class immutable
-- Add corresponding test file in `<workspace_root>/src/tests/`
+- Save to: `<workspace_root>/src/classes/<topic>/IClassName.cls` AND `<workspace_root>/src/classes/<topic>/ClassName.cls`
+- **Exception:** Only skip interface creation if it adds no value (simple data holder, internal helper)
+- **If skipping interface:** Inform user with brief justification (e.g., "Creating DataHolder.cls without interface - simple data container")
+- Add corresponding test file in `<workspace_root>/src/tests/` (test the implementation class)
 - Update tracking.md with new files created
+
+**Examples:**
+- Request: "Create Validator class" → Creates `IValidator.cls` + `Validator.cls` (+ test)
+- Request: "Split Processor into Parser and Writer" → Creates 4 files: `IParser.cls`, `Parser.cls`, `IWriter.cls`, `Writer.cls` (+ tests)
 
 When creating NEW modules:
 - **Ask user which topic subfolder** to use (same structure as classes)
@@ -164,8 +171,9 @@ Run this for EVERY file you modify or create.
 **Step 4.2 - Update Tracking:**
 Update `.obt/tracking.md`:
 - Add `[DONE]` to completed task bullets
-- Update State section with what was accomplished
-- Document what's remaining if task is incomplete
+- Update State section with timestamp (YYYY-MM-DD HH:MM format)
+- Document what was accomplished and what remains
+- Include hour and minute in all timestamps
 
 **Step 4.3 - Document Progress:**
 If you stop mid-implementation:

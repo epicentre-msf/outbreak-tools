@@ -229,6 +229,23 @@
             "problemMatcher": []
         },
         {
+            "label": "create vba module",
+            "type": "process",
+            "command": "Rscript",
+            "args": [
+                "-e",
+                "source('automate/codes/create_vba_modules.R'); create_modules('${input:className}')"
+            ],
+            "windows": {
+                "command": "${env:RPATH}\\bin\\Rscript.exe"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
             "label": "remove const underscores (file)",
             "type": "process",
             "command": "perl",
