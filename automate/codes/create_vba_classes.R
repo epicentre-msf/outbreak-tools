@@ -1,8 +1,10 @@
 # create en empty file for creating an interface for each of the class
 pacman::p_load(here, glue)
 
+# @section Headers
+# ===============================================================================
 class_header <- function(
-  class_name,
+  class__name,
   module_description = "",
   interface = FALSE
 ) {
@@ -29,39 +31,35 @@ Attribute VB_Description = \"{module_description}\"
 '@IgnoreModule UnrecognizedAnnotation
 
 Option Explicit
-
-'Exposed methods
 "
   )
-}
-
-write_crlf <- function(path, contents) {
-  normalised <- gsub("\r?\n", "\n", contents, perl = TRUE)
-  crlf_text <- gsub("\n", "\r\n", normalised, fixed = TRUE)
-  con <- file(path, open = "wb")
-  on.exit(close(con))
-  writeBin(charToRaw(crlf_text), con)
 }
 
 test_header <- function(class_name) {
   glue::glue(
     "
 Attribute VB_Name = \"Test{class_name}\"
+Attribute VB_Description = \"Tests for {class_name} class \"
 
 Option Explicit
-Option Private Module
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
+'@Folder(\"CustomTests\")
+'@ModuleDescription(\"Tests for {class_name} class \")
 
-'@TestModule
-'@Folder(\"Tests\")
-
-Private Assert As Object
-Private Fakes As Object
+Private Const TEST_OUTPUT_SHEET As String = \"testsOutputs\"
+'add other private constants if required
+  
+Private Assert As ICustomTest
 
 '@ModuleInitialize
 Private Sub ModuleInitialize()
+    BusyApp
+    EnsureWorksheet TEST_OUTPUT_SHEET, clearSheet:=False
     'this method runs once per module.
-    Set Assert = CreateObject(\"Rubberduck.AssertClass\")
-    Set Fakes = CreateObject(\"Rubberduck.FakesProvider\")
+    Set Assert = CustomTest.Create(ThisWorkbook, TEST_OUTPUT_SHEET)
+    Assert.SetModuleName = \"Test{class_name}\"
+
+    'Add other importants initialization logic
 End Sub
 
 '@ModuleCleanup
@@ -81,11 +79,21 @@ End Sub
   )
 }
 
+write_crlf <- function(path, contents) {
+  normalised <- gsub("\r?\n", "\n", contents, perl = TRUE)
+  crlf_text <- gsub("\n", "\r\n", normalised, fixed = TRUE)
+  con <- file(path, open = "wb")
+  on.exit(close(con))
+  writeBin(charToRaw(crlf_text), con)
+}
+
+
 create_class <- function(
-  class_name,
-  description = "",
-  module_description = ""
+  class_path,
+  description = ""
 ) {
+  class_name <- class_path |> basename() |> xfun::sans_ext()
+  folder_name <- class_path |> dirname() |> basename()
   # nolint
 
   class_name_header <- class_header(

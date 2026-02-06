@@ -15,8 +15,6 @@ Option Explicit
 
 '@Folder(\"{foldername}\")
 '@IgnoreModule UnrecognizedAnnotation, SheetAccessedUsingString, ParameterCanBeByVal, ParameterNotUsed : some parameters of controls are not used
-
-'Private constants for Ribbon Events
     "
   )
 }

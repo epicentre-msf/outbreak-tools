@@ -949,54 +949,6 @@ Public Property Get Value(ByVal tagName As String) As String
     End Select
 End Property
 
-'@section Writer factories
-'===============================================================================
-Public Function CreateSectionContext(ByVal linelist As ILinelist, ByVal startRow As Long) As ILLSectionContext
-    If linelist Is Nothing Then
-        ThrowError ProjectError.ObjectNotInitialized, "Linelist reference is required to build a section context"
-    End If
-    If startRow <= 0 Then
-        ThrowError ProjectError.InvalidArgument, "Section context start row must be greater than zero"
-    End If
-
-    Dim context As ILLSectionContext
-    Set context = New LLSectionContext
-    context.Initialise linelist, startRow
-    Set CreateSectionContext = context
-End Function
-
-Public Function CreateSectionWriter() As ILLSectionWriter
-    Dim writer As ILLSectionWriter
-    Set writer = New LLSectionWriterBase
-    Set CreateSectionWriter = writer
-End Function
-
-Public Function CreateSubSectionWriter() As ILLSubSectionWriter
-    Dim writer As ILLSubSectionWriter
-    Set writer = New LLSubSectionWriterBase
-    Set CreateSubSectionWriter = writer
-End Function
-
-Public Function CreateVarContext(ByVal linelist As ILinelist, ByVal variableName As String) As ILLVarContext
-    Dim trimmedName As String
-
-    If linelist Is Nothing Then
-        ThrowError ProjectError.ObjectNotInitialized, "Linelist reference is required to build a variable context"
-    End If
-
-    trimmedName = Trim$(variableName)
-    If LenB(trimmedName) = 0 Then
-        ThrowError ProjectError.InvalidArgument, "Variable name is required to create a variable context"
-    End If
-
-    Set CreateVarContext = LLVarContext.Create(linelist, trimmedName)
-End Function
-
-Public Function CreateVarWriter() As ILLVarWriter
-    Dim writer As ILLVarWriter
-    Set writer = New LLVarWriterBase
-    Set CreateVarWriter = writer
-End Function
 
 '@section Workbook orchestration
 '===============================================================================
@@ -1277,23 +1229,4 @@ Private Sub ILinelistSpecs_ErrorManage(Optional ByVal textMessage As String = vb
     ErrorManage textMessage
 End Sub
 
-Private Function ILinelistSpecs_CreateSectionContext(ByVal linelist As ILinelist, ByVal startRow As Long) As ILLSectionContext
-    Set ILinelistSpecs_CreateSectionContext = CreateSectionContext(linelist, startRow)
-End Function
-
-Private Function ILinelistSpecs_CreateSectionWriter() As ILLSectionWriter
-    Set ILinelistSpecs_CreateSectionWriter = CreateSectionWriter()
-End Function
-
-Private Function ILinelistSpecs_CreateSubSectionWriter() As ILLSubSectionWriter
-    Set ILinelistSpecs_CreateSubSectionWriter = CreateSubSectionWriter()
-End Function
-
-Private Function ILinelistSpecs_CreateVarContext(ByVal linelist As ILinelist, ByVal variableName As String) As ILLVarContext
-    Set ILinelistSpecs_CreateVarContext = CreateVarContext(linelist, variableName)
-End Function
-
-Private Function ILinelistSpecs_CreateVarWriter() As ILLVarWriter
-    Set ILinelistSpecs_CreateVarWriter = CreateVarWriter()
-End Function
 
