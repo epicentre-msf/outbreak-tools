@@ -394,6 +394,23 @@ Preserve existing formatting style in files you're not changing.
 - ✅ Follow naming convention: `*TestFixture.bas`
 - ✅ Test files should have same architecture as in other tests, based on CustomTest. Read `TestLLChoices` for inspirations and learning on overall test implementations
 
+### 9.2 Test Failure Logging (CRITICAL)
+
+**MANDATORY RULE:**
+- ✅ **ALWAYS use `CustomTestLogFailure`** in test method failure handlers
+- ❌ **NEVER use `Err.Raise`** in test methods
+
+**Correct Pattern:**
+```vba
+TestFail:
+    CustomTestLogFailure Assert, "TestMethodName", Err.Number, Err.Description
+End Sub
+```
+
+**Why:** `CustomTestLogFailure` properly logs failures to the test framework, while `Err.Raise` breaks test execution.
+
+**Reference Implementation:** See `TestLLdictionary.bas` for correct usage throughout all test methods.
+
 **Test Structure Example:**
 ```vba
 
@@ -416,9 +433,31 @@ Public Sub TestMethodNameScenarioExpectedResult()
 
     Exit Sub
 TestFail:
+    CustomTestLogFailure Assert, "TestMethodName", Err.Number, Err.Description
+End Sub
+```
+
+### 9.3 Examples: Correct vs Incorrect Test Failure Handling
+
+**❌ INCORRECT:**
+```vba
+TestFail:
     Err.Raise Err.Number, "TestMethodName", Err.Description
 End Sub
 ```
+**Problem:** This breaks the test suite execution and doesn't log to the test framework.
+
+**✅ CORRECT (like in TestLLdictionary):**
+```vba
+TestFail:
+    CustomTestLogFailure Assert, "TestMethodName", Err.Number, Err.Description
+End Sub
+```
+**Result:** Properly logs failure, test suite continues, all failures are captured in test output.
+
+**Reference Files:**
+- ✅ **FOLLOW:** `TestLLdictionary.bas` - All test methods use `CustomTestLogFailure`
+- ❌ **DON'T FOLLOW:** `TestLLFormat.bas` - Uses `Err.Raise` (needs fixing)
 
 ---
 
@@ -480,6 +519,7 @@ Before delivering code:
 - [ ] unix2dos executed
 - [ ] tracking.md updated with progress
 - [ ] Tests added for new classes
+- [ ] Test failures use `CustomTestLogFailure` (NOT `Err.Raise`)
 - [ ] All naming conventions followed
 - [ ] Error handling implemented
 - [ ] Documentation tags present
