@@ -6,7 +6,7 @@ Option Explicit
 
 '@Folder("CustomTests")
 '@ModuleDescription("Behavioural tests for LLFormat")
-'@details Exercises LLFormat creation, value lookups, formatting scopes, and import behaviour.
+'@details Exercises LLFormat creation, value lookups, formatting scopes, import and export behaviour.
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName
 
 Private Assert As ICustomTest
@@ -17,6 +17,7 @@ Private FormatUnderTest As ILLFormat
 Private Const TEST_OUTPUT_SHEET As String = "testsOutputs"
 Private Const FORMAT_SHEET_NAME As String = "LLFormatFixture_Test"
 Private Const IMPORT_SHEET_NAME As String = "LLFormatImport_Test"
+Private Const EXPORT_SHEET_NAME As String = "LLFormatExport_Test"
 Private Const LABEL_ANALYSIS_BASE_FONT_SIZE As String = "analysis base font size"
 Private Const LABEL_MISSING_FONT_COLOR As String = "missing font color"
 
@@ -138,6 +139,26 @@ ConversionError:
     RequireNumericDouble = 0#
 End Function
 
+Private Sub VerifyTableStructureMatches(ByVal sourceTable As ListObject, _
+                                       ByVal targetTable As ListObject, _
+                                       ByVal context As String)
+    Assert.AreEqual sourceTable.ListColumns.Count, targetTable.ListColumns.Count, _
+                     context & ": Column count should match between source and target"
+    Assert.AreEqual sourceTable.DataBodyRange.Rows.Count, targetTable.DataBodyRange.Rows.Count, _
+                     context & ": Row count should match between source and target"
+End Sub
+
+Private Sub VerifyCellFormatting(ByVal sourceCell As Range, _
+                                ByVal targetCell As Range, _
+                                ByVal labelName As String)
+    Assert.AreEqual CLng(sourceCell.Font.Color), CLng(targetCell.Font.Color), _
+                     "Font color for '" & labelName & "' should match between source and target"
+    Assert.AreEqual CLng(sourceCell.Interior.Color), CLng(targetCell.Interior.Color), _
+                     "Interior color for '" & labelName & "' should match between source and target"
+    Assert.AreEqual sourceCell.Font.Bold, targetCell.Font.Bold, _
+                     "Bold formatting for '" & labelName & "' should match between source and target"
+End Sub
+
 '@ModuleInitialize
 '@description Configure common test state and build the assertion helper.
 Public Sub ModuleInitialize()
@@ -197,6 +218,8 @@ End Sub
 '@description Creating with an unknown design should use the default design values.
 Public Sub TestCreateFallsBackToDefaultDesign()
     CustomTestSetTitles Assert, "LLFormat", "TestCreateFallsBackToDefaultDesign"
+    On Error GoTo TestFail
+
     Dim sut As ILLFormat
 
     Set sut = LLFormat.Create(FormatSheet, designType:="unknown design")
@@ -220,12 +243,19 @@ Public Sub TestCreateFallsBackToDefaultDesign()
 
     Assert.AreEqual expectedLong, fallbackLong, _
                      "Fallback design should still produce values"
+
+    Exit Sub
+
+TestFail:
+    CustomTestLogFailure Assert, "TestCreateFallsBackToDefaultDesign", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLFormat")
 '@description DesignValue should return the configured colour for the default design.
 Public Sub TestDesignValueReturnsConfiguredColour()
     CustomTestSetTitles Assert, "LLFormat", "TestDesignValueReturnsConfiguredColour"
+    On Error GoTo TestFail
+
     Dim colorValue As Long
 
     colorValue = RequireNumericLong(FormatUnderTest.DesignValue(LABEL_MISSING_FONT_COLOR), _
@@ -233,12 +263,19 @@ Public Sub TestDesignValueReturnsConfiguredColour()
 
     Assert.AreEqual ExpectedDesignColour(LABEL_MISSING_FONT_COLOR), colorValue, _
                      "DesignValue should return configured color for the default design"
+
+    Exit Sub
+
+TestFail:
+    CustomTestLogFailure Assert, "TestDesignValueReturnsConfiguredColour", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLFormat")
 '@description DesignValue should expose the stored numeric value when colour is not requested.
 Public Sub TestDesignValueReturnsCellValue()
     CustomTestSetTitles Assert, "LLFormat", "TestDesignValueReturnsCellValue"
+    On Error GoTo TestFail
+
     Dim expectedLong As Long
     Dim actualLong As Long
 
@@ -249,12 +286,19 @@ Public Sub TestDesignValueReturnsCellValue()
 
     Assert.AreEqual expectedLong, actualLong, _
                      "DesignValue should return the configured numeric value when returnColor is False"
+
+    Exit Sub
+
+TestFail:
+    CustomTestLogFailure Assert, "TestDesignValueReturnsCellValue", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLFormat")
 '@description Missing labels should return fallback values and log a checking entry.
 Public Sub TestDesignValueMissingLabelFallsBackAndLogs()
     CustomTestSetTitles Assert, "LLFormat", "TestDesignValueMissingLabelFallsBackAndLogs"
+    On Error GoTo TestFail
+
     Dim colourValue As Long
     Dim numericValue As Long
     Dim keys As BetterArray
@@ -282,12 +326,19 @@ Public Sub TestDesignValueMissingLabelFallsBackAndLogs()
     firstKey = CStr(keys.Item(keys.LowerBound))
     Assert.IsTrue InStr(1, logEntry.ValueOf(firstKey, checkingLabel), "missing label", vbTextCompare) > 0, _
                   "Checking log should reference the missing label"
+
+    Exit Sub
+
+TestFail:
+    CustomTestLogFailure Assert, "TestDesignValueMissingLabelFallsBackAndLogs", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLFormat")
 '@description Applying the analysis section scope should honour design-driven styling.
 Public Sub TestApplyFormatAnalysisSectionUsesDesignSettings()
     CustomTestSetTitles Assert, "LLFormat", "TestApplyFormatAnalysisSectionUsesDesignSettings"
+    On Error GoTo TestFail
+
     Dim target As Range
     Dim applied As Range
     Dim expectedFontColour As Long
@@ -310,12 +361,19 @@ Public Sub TestApplyFormatAnalysisSectionUsesDesignSettings()
     Assert.IsTrue applied.Font.Bold, "Section text should be bold"
     Assert.AreEqual CLng(expectedFontSize), CLng(appliedFontSize), "Section font size should add the section boost"
     Assert.IsTrue applied.Cells(1, 1).WrapText, "Section header should enable wrapping"
+
+    Exit Sub
+
+TestFail:
+    CustomTestLogFailure Assert, "TestApplyFormatAnalysisSectionUsesDesignSettings", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLFormat")
 '@description Applying the analysis one-cell scope should apply missing-value formatting.
 Public Sub TestApplyFormatAnalysisOneCellAppliesMissingColours()
     CustomTestSetTitles Assert, "LLFormat", "TestApplyFormatAnalysisOneCellAppliesMissingColours"
+    On Error GoTo TestFail
+
     Dim target As Range
 
     Set target = FormatSheet.Range("H15")
@@ -328,12 +386,19 @@ Public Sub TestApplyFormatAnalysisOneCellAppliesMissingColours()
     Assert.AreEqual ExpectedDesignColour("missing interior color"), CLng(target.Interior.Color), _
                      "Missing cell interior colour should come from the design"
     Assert.IsTrue target.Font.Bold, "Missing cell should be bold"
+
+    Exit Sub
+
+TestFail:
+    CustomTestLogFailure Assert, "TestApplyFormatAnalysisOneCellAppliesMissingColours", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLFormat")
 '@description Applying the all-analysis scope should set worksheet font and dimensions.
 Public Sub TestApplyFormatAllAnalysisSheetUsesDesignDimensions()
     CustomTestSetTitles Assert, "LLFormat", "TestApplyFormatAllAnalysisSheetUsesDesignDimensions"
+    On Error GoTo TestFail
+
     Dim tempSheet As Worksheet
     Dim expectedFontSize As Double
     Dim expectedColumnWidth As Double
@@ -360,12 +425,22 @@ Public Sub TestApplyFormatAllAnalysisSheetUsesDesignDimensions()
     Assert.AreEqual 25, tempSheet.Rows(2).RowHeight, "Row height for row 2 should match specification"
 
     TestHelpers.DeleteWorksheet "LLFormat_AllAnalysis_Test"
+
+    Exit Sub
+
+TestFail:
+    On Error Resume Next
+    TestHelpers.DeleteWorksheet "LLFormat_AllAnalysis_Test"
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestApplyFormatAllAnalysisSheetUsesDesignDimensions", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLFormat")
 '@description Preparing a fixture should define the DESIGNTYPE named range with the default.
 Public Sub TestPrepareFixtureDefinesDesignTypeRange()
     CustomTestSetTitles Assert, "LLFormat", "TestPrepareFixtureDefinesDesignTypeRange"
+    On Error GoTo TestFail
+
     Dim sheetName As String
     Dim fixtureSheet As Worksheet
     Dim designValue As String
@@ -373,7 +448,7 @@ Public Sub TestPrepareFixtureDefinesDesignTypeRange()
     sheetName = "LLFormatFixture_DesignRange"
     On Error Resume Next
         LLFormatTestFixture.DeleteLLFormatFixture sheetName, FormatWorkbook
-    On Error GoTo 0
+    On Error GoTo TestFail
 
     Set fixtureSheet = LLFormatTestFixture.PrepareLLFormatFixture(sheetName, FormatWorkbook)
     designValue = CStr(fixtureSheet.Range("DESIGNTYPE").Value)
@@ -382,11 +457,22 @@ Public Sub TestPrepareFixtureDefinesDesignTypeRange()
                      "Prepared fixture should seed the design type named range"
 
     LLFormatTestFixture.DeleteLLFormatFixture sheetName, FormatWorkbook
+
+    Exit Sub
+
+TestFail:
+    On Error Resume Next
+    LLFormatTestFixture.DeleteLLFormatFixture "LLFormatFixture_DesignRange", FormatWorkbook
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestPrepareFixtureDefinesDesignTypeRange", Err.Number, Err.Description
 End Sub
+
 '@TestMethod("LLFormat")
 '@description Percent scope formatting should enforce a two-decimal percent number format.
 Public Sub TestApplyFormatPercentSetsNumberFormat()
     CustomTestSetTitles Assert, "LLFormat", "TestApplyFormatPercentSetsNumberFormat"
+    On Error GoTo TestFail
+
     Dim target As Range
 
     Set target = FormatSheet.Range("H1")
@@ -397,12 +483,19 @@ Public Sub TestApplyFormatPercentSetsNumberFormat()
 
     Assert.AreEqual "0.00%", target.NumberFormat, _
                      "Percent scope should enforce 2 decimal percent format"
+
+    Exit Sub
+
+TestFail:
+    CustomTestLogFailure Assert, "TestApplyFormatPercentSetsNumberFormat", Err.Number, Err.Description
 End Sub
 
 '@TestMethod("LLFormat")
 '@description Importing from another sheet should copy font and interior colours for designs.
 Public Sub TestImportCopiesDesignColours()
     CustomTestSetTitles Assert, "LLFormat", "TestImportCopiesDesignColours"
+    On Error GoTo TestFail
+
     Dim importSheet As Worksheet
     Dim colorValue As Long
 
@@ -429,5 +522,278 @@ Public Sub TestImportCopiesDesignColours()
                      "Import should copy font colours for alternate designs"
     Assert.AreEqual secondaryDesign, CStr(FormatSheet.Range("DESIGNTYPE").Value), _
                      "Design type cell should update to imported design"
+
+    Exit Sub
+
+TestFail:
+    CustomTestLogFailure Assert, "TestImportCopiesDesignColours", Err.Number, Err.Description
 End Sub
 
+'@section Export Tests
+'===============================================================================
+
+'@TestMethod("LLFormat")
+'@description Export should create a new worksheet in the target workbook when it does not exist.
+Public Sub TestExportCreatesNewSheetInTargetWorkbook()
+    CustomTestSetTitles Assert, "LLFormat", "TestExportCreatesNewSheetInTargetWorkbook"
+    On Error GoTo TestFail
+
+    Dim targetWkb As Workbook
+    Dim sourceSheetName As String
+
+    Set targetWkb = TestHelpers.NewWorkbook()
+    sourceSheetName = FormatSheet.Name
+
+    FormatUnderTest.Export targetWkb
+
+    Assert.IsTrue TestHelpers.WorksheetExists(sourceSheetName, targetWkb), _
+                 "Export should create worksheet in target workbook"
+    Assert.AreEqual sourceSheetName, targetWkb.Worksheets(targetWkb.Worksheets.Count).Name, _
+                     "Export should add worksheet at the end of the workbook"
+
+    TestHelpers.DeleteWorkbook targetWkb
+
+    Exit Sub
+
+TestFail:
+    On Error Resume Next
+    TestHelpers.DeleteWorkbook targetWkb
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestExportCreatesNewSheetInTargetWorkbook", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLFormat")
+'@description Export should copy all table data to the target workbook.
+Public Sub TestExportCopiesTableDataToNewWorkbook()
+    CustomTestSetTitles Assert, "LLFormat", "TestExportCopiesTableDataToNewWorkbook"
+    On Error GoTo TestFail
+
+    Dim targetWkb As Workbook
+    Dim sourceTable As ListObject
+    Dim targetSheet As Worksheet
+    Dim targetTable As ListObject
+
+    Set targetWkb = TestHelpers.NewWorkbook()
+    Set sourceTable = FormatSheet.ListObjects(1)
+
+    FormatUnderTest.Export targetWkb
+
+    Set targetSheet = targetWkb.Worksheets(FormatSheet.Name)
+    Set targetTable = targetSheet.ListObjects(1)
+
+    Call VerifyTableStructureMatches(sourceTable, targetTable, "Export")
+
+    TestHelpers.DeleteWorkbook targetWkb
+
+    Exit Sub
+
+TestFail:
+    On Error Resume Next
+    TestHelpers.DeleteWorkbook targetWkb
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestExportCopiesTableDataToNewWorkbook", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLFormat")
+'@description Export should copy cell formatting including font and interior colors.
+Public Sub TestExportCopiesFormatTableStyles()
+    CustomTestSetTitles Assert, "LLFormat", "TestExportCopiesFormatTableStyles"
+    On Error GoTo TestFail
+
+    Dim targetWkb As Workbook
+    Dim sourceCell As Range
+    Dim targetSheet As Worksheet
+    Dim targetCell As Range
+    Dim defaultDesign As String
+
+    defaultDesign = FixtureDefaultDesign()
+
+    Set sourceCell = LLFormatTestFixture.FixtureCell(FormatSheet, LABEL_MISSING_FONT_COLOR, defaultDesign)
+    sourceCell.Font.Color = RGB(255, 0, 0)
+    sourceCell.Interior.Color = RGB(0, 255, 0)
+
+    Set targetWkb = TestHelpers.NewWorkbook()
+
+    FormatUnderTest.Export targetWkb
+
+    Set targetSheet = targetWkb.Worksheets(FormatSheet.Name)
+    Set targetCell = LLFormatTestFixture.FixtureCell(targetSheet, LABEL_MISSING_FONT_COLOR, defaultDesign)
+
+    Assert.AreEqual CLng(RGB(255, 0, 0)), CLng(targetCell.Font.Color), _
+                     "Font color should be copied to target"
+    Assert.AreEqual CLng(RGB(0, 255, 0)), CLng(targetCell.Interior.Color), _
+                     "Interior color should be copied to target"
+
+    TestHelpers.DeleteWorkbook targetWkb
+
+    Exit Sub
+
+TestFail:
+    On Error Resume Next
+    TestHelpers.DeleteWorkbook targetWkb
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestExportCopiesFormatTableStyles", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLFormat")
+'@description Export should create a ListObject in the target worksheet.
+Public Sub TestExportCreatesListObjectInTarget()
+    CustomTestSetTitles Assert, "LLFormat", "TestExportCreatesListObjectInTarget"
+    On Error GoTo TestFail
+
+    Dim targetWkb As Workbook
+    Dim targetSheet As Worksheet
+    Dim targetTable As ListObject
+
+    Set targetWkb = TestHelpers.NewWorkbook()
+
+    FormatUnderTest.Export targetWkb
+
+    Set targetSheet = targetWkb.Worksheets(FormatSheet.Name)
+
+    Assert.IsTrue targetSheet.ListObjects.Count > 0, _
+                 "Export should create at least one ListObject in target"
+
+    Set targetTable = targetSheet.ListObjects(1)
+    Assert.ObjectExists targetTable, "ListObject", "Export should create a valid ListObject"
+
+    TestHelpers.DeleteWorkbook targetWkb
+
+    Exit Sub
+
+TestFail:
+    On Error Resume Next
+    TestHelpers.DeleteWorkbook targetWkb
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestExportCreatesListObjectInTarget", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLFormat")
+'@description Export should create a DESIGNTYPE named range in the target worksheet.
+Public Sub TestExportCreatesDesignTypeNamedRange()
+    CustomTestSetTitles Assert, "LLFormat", "TestExportCreatesDesignTypeNamedRange"
+    On Error GoTo TestFail
+
+    Dim targetWkb As Workbook
+    Dim targetSheet As Worksheet
+    Dim designRange As Range
+
+    Set targetWkb = TestHelpers.NewWorkbook()
+
+    FormatUnderTest.Export targetWkb
+
+    Set targetSheet = targetWkb.Worksheets(FormatSheet.Name)
+
+    On Error Resume Next
+    Set designRange = targetSheet.Range("DESIGNTYPE")
+    On Error GoTo TestFail
+
+    Assert.ObjectExists designRange, "Range", _
+                        "Export should create DESIGNTYPE named range in target"
+
+    TestHelpers.DeleteWorkbook targetWkb
+
+    Exit Sub
+
+TestFail:
+    On Error Resume Next
+    TestHelpers.DeleteWorkbook targetWkb
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestExportCreatesDesignTypeNamedRange", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLFormat")
+'@description Export should preserve the design type value in the target worksheet.
+Public Sub TestExportPreservesDesignTypeValue()
+    CustomTestSetTitles Assert, "LLFormat", "TestExportPreservesDesignTypeValue"
+    On Error GoTo TestFail
+
+    Dim targetWkb As Workbook
+    Dim targetSheet As Worksheet
+    Dim sourceDesign As String
+    Dim targetDesign As String
+
+    sourceDesign = CStr(FormatSheet.Range("DESIGNTYPE").Value)
+    Set targetWkb = TestHelpers.NewWorkbook()
+
+    FormatUnderTest.Export targetWkb
+
+    Set targetSheet = targetWkb.Worksheets(FormatSheet.Name)
+    targetDesign = CStr(targetSheet.Range("DESIGNTYPE").Value)
+
+    Assert.AreEqual sourceDesign, targetDesign, _
+                     "Export should preserve DESIGNTYPE value in target"
+
+    TestHelpers.DeleteWorkbook targetWkb
+
+    Exit Sub
+
+TestFail:
+    On Error Resume Next
+    TestHelpers.DeleteWorkbook targetWkb
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestExportPreservesDesignTypeValue", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLFormat")
+'@description Export should call Import when target worksheet already exists.
+Public Sub TestExportWithExistingSheetCallsImport()
+    CustomTestSetTitles Assert, "LLFormat", "TestExportWithExistingSheetCallsImport"
+    On Error GoTo TestFail
+
+    Dim targetWkb As Workbook
+    Dim targetSheet As Worksheet
+    Dim defaultDesign As String
+    Dim colorValue As Long
+
+    defaultDesign = FixtureDefaultDesign()
+    Set targetWkb = TestHelpers.NewWorkbook()
+    Set targetSheet = LLFormatTestFixture.PrepareLLFormatFixture(FormatSheet.Name, targetWkb)
+
+    With LLFormatTestFixture.FixtureCell(targetSheet, LABEL_MISSING_FONT_COLOR, defaultDesign)
+        .Interior.Color = RGB(100, 100, 100)
+    End With
+
+    FormatUnderTest.Export targetWkb
+
+    colorValue = RequireNumericLong(FormatUnderTest.DesignValue(LABEL_MISSING_FONT_COLOR), _
+                                    "Imported colour value from existing target sheet")
+    Assert.AreEqual RGB(100, 100, 100), colorValue, _
+                     "Export with existing sheet should Import instead of overwriting"
+
+    TestHelpers.DeleteWorkbook targetWkb
+
+    Exit Sub
+
+TestFail:
+    On Error Resume Next
+    TestHelpers.DeleteWorkbook targetWkb
+    On Error GoTo 0
+    CustomTestLogFailure Assert, "TestExportWithExistingSheetCallsImport", Err.Number, Err.Description
+End Sub
+
+'@TestMethod("LLFormat")
+'@description Export should throw InvalidArgument error when workbook is Nothing.
+Public Sub TestExportThrowsInvalidArgumentWhenWorkbookIsNothing()
+    CustomTestSetTitles Assert, "LLFormat", "TestExportThrowsInvalidArgumentWhenWorkbookIsNothing"
+    On Error GoTo TestFail
+
+    On Error Resume Next
+    FormatUnderTest.Export Nothing
+
+    Dim errNum As Long
+    Dim errDesc As String
+    errNum = Err.Number
+    errDesc = Err.Description
+    On Error GoTo TestFail
+
+    Assert.AreEqual CLng(ProjectError.InvalidArgument), errNum, _
+                     "Export should throw InvalidArgument when workbook is Nothing"
+    Assert.IsTrue InStr(1, errDesc, "workbook", vbTextCompare) > 0, _
+                 "Error description should mention workbook"
+
+    Exit Sub
+
+TestFail:
+    CustomTestLogFailure Assert, "TestExportThrowsInvalidArgumentWhenWorkbookIsNothing", Err.Number, Err.Description
+End Sub

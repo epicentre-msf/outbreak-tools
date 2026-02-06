@@ -1746,8 +1746,17 @@ Public Sub Export(ByVal exportWorkbook As Workbook, Optional ByVal Hide As Long 
 
     Set hostSheet = HostWorksheet
 
-    Set exportSheet = exportWorkbook.Worksheets.Add(After:=exportWorkbook.Worksheets(exportWorkbook.Worksheets.Count))
-    exportSheet.Name = hostSheet.Name
+    'Test if the export workbook has the translation sheet name
+    On Error Resume Next
+        Set exportSheet = exportWorkbook.Worksheets(hostSheet.Name)
+    On Error GoTo 0
+
+    If (exportSheet Is Nothing) Then
+        Set exportSheet = exportWorkbook.Worksheets.Add(After:=exportWorkbook.Worksheets(exportWorkbook.Worksheets.Count))
+        exportSheet.Name = hostSheet.Name
+    Else
+       exportSheet.Cells.Clear
+    End If
 
     Set tableAdapter = CustomTable.Create(this.table)
 

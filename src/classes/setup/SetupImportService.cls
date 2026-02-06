@@ -404,6 +404,7 @@ Public Sub ImportFromWorkbook(ByVal pass As IPasswords, Optional ByVal sheetsLis
             ImportTranslationsUsingClass pass, hostWorkbook, importBook
         End If
 
+
 ImportWorkbookCleanup:
         CloseImportWorkbook
         LeaveBusyState
@@ -674,7 +675,7 @@ End Function
 
 '@section Workbook driven Export
 '===============================================================================
-Private Sub Export()
+Private Sub Export(Optional Byval outwb As Workbook)
 
     Dim dictionaryManager As ILLdictionary
     Dim translationManager As ISetupTranslationsTable
@@ -693,7 +694,12 @@ Private Sub Export()
 
     this.lastExportFile = vbNullString
 
-    Set exportworkbook = EnsureExportWorkbook()
+    If outwb Is Nothing Then
+        Set exportworkbook = EnsureExportWorkbook()
+    Else
+        Set exportworkbook = outwb
+    End If
+
     If exportworkbook Is Nothing Then Exit Sub
     Set hostWorkbook = ThisWorkbook
     If hostworkbook Is Nothing Then Exit Sub
@@ -744,6 +750,8 @@ Private Sub Export()
     'Export hidden names in the workbook
     Set store = HiddenNames.Create(hostWorkbook)
     store.ExportNamesToWorkbook exportworkbook
+
+    'Export the 
     
 
     On Error Resume Next

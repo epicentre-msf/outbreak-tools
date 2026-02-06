@@ -771,14 +771,11 @@ End Sub
 Public Sub ExportSpecs(ByVal toWkb As Workbook, _
                        Optional ByVal Hide As Long = xlSheetHidden)
 
-    Dim sourceData As IDataSheet
-    
     EnsureDataReady
     
     If toWkb Is Nothing Then ThrowError ProjectError.ObjectNotInitialized, "Target workbook is missing"
     this.expData.Export toWkb, Hide:=Hide, includeNames:=True
 End Sub
-
 
 
 '@section FileName
