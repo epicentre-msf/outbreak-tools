@@ -110,22 +110,3 @@ End Sub
 Private Sub ILinelistSpecs_ErrorManage(Optional ByVal textMessage As String = vbNullString)
 End Sub
 
-Private Function ILinelistSpecs_CreateSectionContext(ByVal linelist As ILinelist, ByVal startRow As Long) As ILLSectionContext
-    Set ILinelistSpecs_CreateSectionContext = Nothing
-End Function
-
-Private Function ILinelistSpecs_CreateSectionWriter() As ILLSectionWriter
-    Set ILinelistSpecs_CreateSectionWriter = Nothing
-End Function
-
-Private Function ILinelistSpecs_CreateSubSectionWriter() As ILLSubSectionWriter
-    Set ILinelistSpecs_CreateSubSectionWriter = Nothing
-End Function
-
-Private Function ILinelistSpecs_CreateVarContext(ByVal linelist As ILinelist, ByVal variableName As String) As ILLVarContext
-    Set ILinelistSpecs_CreateVarContext = Nothing
-End Function
-
-Private Function ILinelistSpecs_CreateVarWriter() As ILLVarWriter
-    Set ILinelistSpecs_CreateVarWriter = Nothing
-End Function
