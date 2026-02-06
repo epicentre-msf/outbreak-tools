@@ -751,7 +751,7 @@ Private Sub Export(Optional Byval outwb As Workbook)
     Set store = HiddenNames.Create(hostWorkbook)
     store.ExportNamesToWorkbook exportworkbook
 
-    'Export the 
+    'Export the LLFormat
     
 
     On Error Resume Next
