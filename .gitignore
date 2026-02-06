@@ -26,10 +26,7 @@ config.json
 demo
 local
 debug
-instructions.md
-agents.md
-tracking.md
-implementations.md
+
 
 
 .DS_Store
@@ -46,3 +43,4 @@ docs/
 .Renviron
 **/~$*.xlsb
 **/.todo
+/.obt

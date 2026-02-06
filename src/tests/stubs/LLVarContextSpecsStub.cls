@@ -9,8 +9,8 @@ Attribute VB_PredeclaredId = False
 Attribute VB_Exposed = False
 
 
-'@Folder("Tests")
-'@ModuleDescription("Minimal ILinelistSpecs implementation for LLVar tests")
+'@Folder("Tests.Stubs")
+'@ModuleDescription("Minimal ILinelistSpecs implementation for sections and variable writer tests")
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation
 
 Option Explicit
@@ -74,53 +74,72 @@ Public Sub SetGeo(ByVal geo As ILLGeo)
     Set geoObject = geo
 End Sub
 
-Private Function ILinelistSpecs_Dictionary() As ILLdictionary
+'@section ILinelistSpecs implementation
+'===============================================================================
+
+Private Sub ILinelistSpecs_ResetCaches()
+    'No-op
+End Sub
+
+Private Property Get ILinelistSpecs_Workbook() As Workbook
+    Set ILinelistSpecs_Workbook = Nothing
+End Property
+
+Private Property Get ILinelistSpecs_Dictionary() As ILLdictionary
     Set ILinelistSpecs_Dictionary = dictionary
-End Function
+End Property
 
-Private Function ILinelistSpecs_Choices() As ILLChoices
+Private Property Get ILinelistSpecs_Choices() As ILLChoices
     Set ILinelistSpecs_Choices = Nothing
-End Function
+End Property
 
-Private Function ILinelistSpecs_specswkb() As Workbook
-    Set ILinelistSpecs_specswkb = Nothing
-End Function
-
-Private Function ILinelistSpecs_TransObject(Optional ByVal trans As Byte = TranslationOfMessages) As ITranslationObject
-    Set ILinelistSpecs_TransObject = translationObject
-End Function
-
-Private Function ILinelistSpecs_FormulaDataObject() As IFormulaData
-    Set ILinelistSpecs_FormulaDataObject = formulaData
-End Function
-
-Private Function ILinelistSpecs_TemporarySheetName(ByVal scope As TemporarySheetTypes) As String
-    ILinelistSpecs_TemporarySheetName = vbNullString
-End Function
-
-Private Function ILinelistSpecs_DesignFormat() As ILLFormat
+Private Property Get ILinelistSpecs_DesignFormat() As ILLFormat
     Set ILinelistSpecs_DesignFormat = designFormat
-End Function
+End Property
 
-Private Function ILinelistSpecs_MainObject() As IMain
-    Set ILinelistSpecs_MainObject = Nothing
-End Function
-
-Private Function ILinelistSpecs_Password() As IPasswords
-    Set ILinelistSpecs_Password = Nothing
-End Function
-
-Private Function ILinelistSpecs_geoObject() As ILLGeo
-    Set ILinelistSpecs_geoObject = geoObject
-End Function
-
-Private Function ILinelistSpecs_Analysis() As ILLAnalysis
+Private Property Get ILinelistSpecs_Analysis() As ILLAnalysis
     Set ILinelistSpecs_Analysis = Nothing
-End Function
+End Property
 
-Private Function ILinelistSpecs_Value(ByVal tagName As String) As String
+Private Property Get ILinelistSpecs_ExportObject() As ILLExport
+    Set ILinelistSpecs_ExportObject = Nothing
+End Property
+
+Private Property Get ILinelistSpecs_Password() As IPasswords
+    Set ILinelistSpecs_Password = Nothing
+End Property
+
+Private Property Get ILinelistSpecs_GeoObject() As ILLGeo
+    Set ILinelistSpecs_GeoObject = geoObject
+End Property
+
+Private Property Get ILinelistSpecs_FormulaDataObject() As IFormulaData
+    Set ILinelistSpecs_FormulaDataObject = formulaData
+End Property
+
+Private Property Get ILinelistSpecs_MainObject() As IMain
+    Set ILinelistSpecs_MainObject = Nothing
+End Property
+
+Private Property Get ILinelistSpecs_Translations() As ILLTranslations
+    Set ILinelistSpecs_Translations = Nothing
+End Property
+
+Private Property Get ILinelistSpecs_DesignerTranslations() As IDesTranslation
+    Set ILinelistSpecs_DesignerTranslations = Nothing
+End Property
+
+Private Property Get ILinelistSpecs_TransObject(Optional ByVal translationScope As Byte = TranslationOfMessages) As ITranslationObject
+    Set ILinelistSpecs_TransObject = translationObject
+End Property
+
+Private Property Get ILinelistSpecs_TemporarySheetName(ByVal scope As Byte) As String
+    ILinelistSpecs_TemporarySheetName = vbNullString
+End Property
+
+Private Property Get ILinelistSpecs_Value(ByVal tagName As String) As String
     ILinelistSpecs_Value = vbNullString
-End Function
+End Property
 
 Private Function ILinelistSpecs_Categories(ByVal varName As String, Optional ByVal useShortlabels As Boolean = False) As BetterArray
     Dim key As String
@@ -157,3 +176,4 @@ End Sub
 Private Sub ILinelistSpecs_ErrorManage(Optional ByVal textMessage As String = vbNullString)
     'Not required for tests
 End Sub
+

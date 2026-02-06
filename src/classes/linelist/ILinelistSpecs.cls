@@ -86,20 +86,3 @@ End Sub
 Public Sub ErrorManage(Optional ByVal textMessage As String = vbNullString)
 End Sub
 
-'@section Writer Factories
-'===============================================================================
-Public Function CreateSectionContext(ByVal linelist As ILinelist, ByVal startRow As Long) As ILLSectionContext
-End Function
-
-Public Function CreateSectionWriter() As ILLSectionWriter
-End Function
-
-Public Function CreateSubSectionWriter() As ILLSubSectionWriter
-End Function
-
-Public Function CreateVarContext(ByVal linelist As ILinelist, ByVal variableName As String) As ILLVarContext
-End Function
-
-Public Function CreateVarWriter() As ILLVarWriter
-End Function
-
