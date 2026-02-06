@@ -461,7 +461,6 @@ Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlS
     End If
 
     'Sort the actual analysis worksheet before exports
-    'Sort
 
     Set hostsheet = Wksh()
 
@@ -497,8 +496,6 @@ Private Sub Export(ByVal sourceWb As Workbook, Optional ByVal Hide As Long = xlS
             sourceSheet.Cells.EntireColumn.AutoFit
         On Error GoTo 0
     Next
-
-
 End Sub
 
 '@section Translation

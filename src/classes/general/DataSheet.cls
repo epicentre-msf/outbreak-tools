@@ -772,15 +772,15 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As Stri
 
     'Trace on errors on exports
     If sheetDataExist Then 
-        LogInfo "Export can not be done, there is already a worksheet of the same name in the workbook", checkingError
-        ShowDebug
-        Exit Sub
+        LogInfo "There is already a worksheet of the same name in the workbook, the worksheet will be cleared completely", checkingWarning
+        dataExportWksh.Cells.Clear
+    Else
+        Wkb.Worksheets.Add(after:=Wkb.Worksheets(Wkb.Worksheets.Count)).Name = sh.Name
+        Set dataExportWksh = Wkb.Worksheets(sh.Name)
     End If
 
-    Wkb.Worksheets.Add(after:=Wkb.Worksheets(Wkb.Worksheets.Count)).Name = sh.Name
     Set dataExportData = New BetterArray
-    Set dataExportWksh = Wkb.Worksheets(sh.Name)
-
+    
     If filteredVarName = "__all__" Then
         dataExportData.FromExcelRange DataRange(colName:="__all__", includeHeaders:=True)
     Else
