@@ -59,12 +59,13 @@ Tasks
 - [Bullet point for sub-task 3]
 
 State
-- Latest update (YYYY-MM-DD): [What was accomplished, what remains]
+- Latest update (YYYY-MM-DD HH:MM): [What was accomplished, what remains]
 ```
 
 **Tracking Rules:**
 - For each big task, draft planned implementations as bullets in tracking.md
 - ALWAYS track progress by adding `[DONE]` to completed task bullets
+- ALWAYS include hour and minute in timestamps (YYYY-MM-DD HH:MM format)
 - NEVER leave tasks in unfinished/stale state without documenting exactly what's next
 - ALWAYS read tracking.md entirely before implementing new changes
 - If you stop mid-implementation, provide detailed information in State section
@@ -117,6 +118,53 @@ Option Explicit
 - All variables MUST be explicitly declared
 - Avoid implicit `Variant` usage unless intentional and documented
 - Declare types explicitly for clarity
+
+### 3.3 Enum Handling (CRITICAL for macOS Compatibility)
+
+**The Problem:**
+Using enum type names in function/sub parameters can cause clashes on macOS, leading to runtime errors or unexpected behavior.
+
+**❌ INCORRECT (causes macOS issues):**
+```vba
+Public Enum CustomLayer
+    CustomLayerVertical = 1
+    CustomLayerHorizontal = 2
+End Enum
+
+Private Sub Foo(ByVal inputLayer As CustomLayer)  ' ❌ BAD - macOS clash
+    ' ...
+End Sub
+```
+
+**✅ CORRECT (cross-platform compatible):**
+```vba
+Public Enum CustomLayer
+    CustomLayerVertical = 1
+    CustomLayerHorizontal = 2
+End Enum
+
+Private Sub Foo(ByVal inputLayer As Byte)  ' ✅ GOOD - Use Byte or Integer
+    ' ...
+End Sub
+
+' Or with default value:
+Private Sub Bar(Optional ByVal inputLayer As Byte = CustomLayerVertical)
+    ' ...
+End Sub
+```
+
+**Rules:**
+- ✅ **ALWAYS use `Byte` or `Integer`** for enum parameters (NOT the enum type name)
+- ✅ Choose `Byte` for small enums (values 0-255)
+- ✅ Choose `Integer` for larger enums (values beyond Byte range)
+- ✅ You can still use enum values as defaults (e.g., `= CustomLayerVertical`)
+- ✅ Enums themselves are fine to define - just don't use them as parameter types
+
+**Why Byte/Integer:**
+- Maintains type safety through enum value constants
+- Avoids macOS type resolution conflicts
+- Works identically on both Windows and macOS
+- No runtime overhead or behavior change
 
 ---
 
@@ -193,13 +241,54 @@ src/
 - ❌ Never move files into or out of legacy folders
 - ❌ Never assume files in `stale/` subfolders are ready for use
 
-**Class Design:**
-- Most classes have a dedicated interface for immutability
-- Always keep interface implementation at the END of class code
-
 **Module Design:**
 - Modules orchestrate classes and provide helper functions
 - Modules mirror the same topic structure as classes
+
+### 4.4 Class and Interface Creation (CRITICAL)
+
+**FUNDAMENTAL RULE:**
+In OutbreakTools, a "class" typically means **TWO files**:
+1. **Interface file**: `IClassName.cls` (defines the contract)
+2. **Implementation file**: `ClassName.cls` (implements the interface)
+
+**Default Behavior:**
+When asked to create a class called `Foo`, you should automatically create:
+- ✅ `IFoo.cls` (interface)
+- ✅ `Foo.cls` (implementation that implements IFoo)
+
+**Examples:**
+
+**Request:** "Create a class called DataValidator"
+**Expected Output:** 2 files
+- `IDataValidator.cls` (interface with method signatures)
+- `DataValidator.cls` (implementation)
+
+**Request:** "Split the ReportBuilder class into ReportBuilder and DataExporter"
+**Expected Output:** 4 files
+- `IReportBuilder.cls` + `ReportBuilder.cls`
+- `IDataExporter.cls` + `DataExporter.cls`
+
+**Request:** "Refactor Foo class"
+**Understanding:** Both `IFoo.cls` and `Foo.cls` exist and may need changes
+
+**Exceptions (Use Judgment):**
+You may skip creating an interface when:
+- The class is a pure data structure (DTO/value object)
+- The class is internal/private helper with no polymorphic use
+- The class is extremely simple with no behavior
+- Creating an interface would add no value
+
+**When skipping interface creation:**
+- ✅ **INFORM the user** with brief justification
+- ✅ Example: "Creating DataHolder.cls without interface - it's a simple data container with no polymorphic behavior"
+
+**Implementation Details:**
+- Interface goes in same topic folder as implementation
+- Interface defines the public contract (properties, methods, functions)
+- Implementation file implements Implements IClassName
+- Keep interface implementation code at the END of the class file
+- Always create tests for the implementation class
 
 ---
 
@@ -520,6 +609,8 @@ Before delivering code:
 - [ ] tracking.md updated with progress
 - [ ] Tests added for new classes
 - [ ] Test failures use `CustomTestLogFailure` (NOT `Err.Raise`)
+- [ ] Interface created for new classes (IClassName.cls + ClassName.cls)
+- [ ] Enum parameters use `Byte`/`Integer` (NOT enum type names)
 - [ ] All naming conventions followed
 - [ ] Error handling implemented
 - [ ] Documentation tags present
@@ -553,7 +644,26 @@ Dim items As Dictionary
 Set items = New Dictionary
 ```
 
-### 13.3 ListObject Creation
+### 13.3 Enum Parameters (macOS Compatibility)
+
+**CRITICAL - Never use enum type names in parameters:**
+```vba
+Public Enum CustomLayer
+    CustomLayerVertical = 1
+    CustomLayerHorizontal = 2
+End Enum
+
+' ❌ BAD - macOS clash
+Private Sub Foo(ByVal inputLayer As CustomLayer)
+
+' ✅ GOOD - Use Byte or Integer instead
+Private Sub Foo(ByVal inputLayer As Byte)
+Private Sub Bar(Optional ByVal inputLayer As Byte = CustomLayerVertical)
+```
+
+**See Section 3.3 for full details.**
+
+### 13.4 ListObject Creation
 
 **Correct Syntax:**
 ```vba

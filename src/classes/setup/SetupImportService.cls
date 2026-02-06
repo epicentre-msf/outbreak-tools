@@ -13,7 +13,7 @@ Attribute VB_Description = "Improved setup import service orchestrating workbook
 '@Folder("Setup")
 '@ModuleDescription("Improved setup import service orchestrating workbook synchronisation")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-'@depends ProjectError, ApplicationState, IApplicationState, BetterArray, CustomTable, ICustomTable, LLExport, ILLExport, LLdictionary, ILLdictionary, IPasswords, Analysis, IAnalysis, SetupTranslationsTable, ISetupTranslationsTable
+'@depends ProjectError, ApplicationState, IApplicationState, BetterArray, CustomTable, ICustomTable, LLExport, ILLExport, LLdictionary, ILLdictionary, LLFormat, ILLFormat, IPasswords, Analysis, IAnalysis, SetupTranslationsTable, ISetupTranslationsTable
 
 Option Explicit
 
@@ -28,6 +28,7 @@ Private Const ANALYSIS_SHEET_NAME As String = "Analysis"
 Private Const CHOICES_SHEET_NAME As String = "Choices"
 Private Const TRANSLATIONS_SHEET_NAME As String = "Translations"
 Private Const REGISTRY_SHEET_NAME As String = "__updated"
+Private Const FORMATTER_SHEET_NAME As String = "__formatter"
 'Default host anchor positions for setup tables using domain objects
 Private Const DICTIONARY_HOST_START_ROW As Long = 5
 Private Const DICTIONARY_HOST_START_COLUMN As Long = 1
@@ -683,6 +684,7 @@ Private Sub Export(Optional Byval outwb As Workbook)
     Dim analysisManager As IAnalysis
     Dim exportsManager As ILLExport
     Dim choicesManager As ILLChoices
+    Dim formatManager As ILLFormat
     Dim exportworkbook As Workbook
     Dim hostWorkbook As Workbook
     Dim hostSheet As Worksheet
@@ -752,7 +754,16 @@ Private Sub Export(Optional Byval outwb As Workbook)
     store.ExportNamesToWorkbook exportworkbook
 
     'Export the LLFormat
-    
+    If WorksheetExists(hostWorkbook, FORMATTER_SHEET_NAME) Then
+        Set hostSheet = hostWorkbook.Worksheets(FORMATTER_SHEET_NAME)
+        Set formatManager = LLFormat.Create(hostSheet)
+        formatManager.Export exportworkbook
+
+        'Set the exported worksheet to hidden (not very hidden)
+        If WorksheetExists(exportworkbook, FORMATTER_SHEET_NAME) Then
+            exportworkbook.Worksheets(FORMATTER_SHEET_NAME).Visible = xlSheetHidden
+        End If
+    End If
 
     On Error Resume Next
     exportWorkbook.Worksheets(1).Delete

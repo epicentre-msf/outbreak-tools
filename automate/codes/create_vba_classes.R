@@ -3,7 +3,6 @@ pacman::p_load(here, glue)
 
 class_header <- function(
   class_name,
-  description = "",
   module_description = "",
   interface = FALSE
 ) {
@@ -23,11 +22,11 @@ Attribute VB_GlobalNameSpace = False
 Attribute VB_Creatable = False
 Attribute VB_PredeclaredId = {predeclare_id}
 Attribute VB_Exposed = False
-Attribute VB_Description = \"{description}\"
+Attribute VB_Description = \"{module_description}\"
 
 '@Folder(\"Dictionary\")
 '@ModuleDescription(\"{module_description}\")
-'@IgnoreModule UnrecognizedAnnotation,
+'@IgnoreModule UnrecognizedAnnotation
 
 Option Explicit
 
