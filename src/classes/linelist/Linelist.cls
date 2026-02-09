@@ -546,8 +546,7 @@ Private Sub TransferAllCode(ByVal codeTransfer As ICodeTransfer, _
     'Transfer modules (6 modules)
     codesList.Clear
     codesList.Push "LinelistCustomFunctions", _
-                   "LinelistGeo", "LinelistEvents", _
-                   "EventsSpatialAnalysis", _
+                   "GeoModule", "LinelistEvents", _
                    "EventsLinelistButtons", "EventsGlobalAnalysis", _
                    "LLChange"
 
