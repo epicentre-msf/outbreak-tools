@@ -9,20 +9,29 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Handle CaseWhen custom function"
 
-'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("Formulas")
-
 '@ModuleDescription("Handle CaseWhen custom function")
-'@label:CaseWhen
-'@section Overview
-'@details Parses CASE_WHEN formulas and rewrites them as nested IF statements while exposing helper metadata.
+'@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 
 Option Explicit
 Implements ICaseWhen
 
+'@class CaseWhen
+'@description
+'Parses CASE_WHEN custom formulas written in setup expressions and rewrites
+'them as nested Excel IF statements. The class splits the formula body into
+'alternating condition/result pairs while respecting quoted segments and
+'nested parentheses, then builds the equivalent nested IF expression. It
+'also extracts textual category labels for downstream analysis consumers.
+'@depends BetterArray
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
+
+
 '@section State
 '===============================================================================
+'@description Backing UDT, constants, and cached parsing table.
 
 Private Type TCaseWhen
     formula As String
@@ -38,11 +47,16 @@ Private Const QUOTE_CHAR As String = """"
 '@section Factory
 '===============================================================================
 
-'@label:Create
+'@label:create
 '@sub-title Instantiate a CaseWhen parser bound to a formula
-'@details Trims the incoming formula and returns an interface reference for fluent consumption.
-'@param formula String containing the CASE_WHEN expression.
-'@return ICaseWhen ready to be queried.
+'@details
+'Trims the incoming formula, stores it in a new instance, and returns
+'the ICaseWhen interface reference for fluent downstream consumption.
+'No eager parsing occurs; the formula is parsed lazily on first access
+'to Valid, ParsedFormula, or Categories.
+'@param formula String. The CASE_WHEN expression to parse.
+'@return ICaseWhen. A ready-to-query parser instance.
+'@export
 Public Function Create(ByVal formula As String) As ICaseWhen
     With New CaseWhen
         .casewhenFormula = formula
@@ -52,23 +66,34 @@ End Function
 
 '@section PublicAccessors
 '===============================================================================
+'@description Properties that expose the internal state and interface pointer.
 
-'@label:Self
-'@sub-title Expose the current instance through its interface
-'@return ICaseWhen reference to Me.
+'@label:self
+'@prop-title Current object instance
+'@details
+'Returns the current instance cast to its interface. Used internally
+'by the factory method to return an ICaseWhen reference.
+'@return ICaseWhen. Reference to the current object.
 Public Property Get Self() As ICaseWhen
     Set Self = Me
 End Property
 
-'@label:Formula
-'@sub-title Retrieve the raw CASE_WHEN formula
-'@return String original formula text.
+'@label:formula
+'@prop-title Retrieve the raw CASE_WHEN formula
+'@details
+'Returns the original formula text as stored after trimming during
+'assignment. This is the full CASE_WHEN(...) expression.
+'@return String. Original formula text.
 Public Property Get casewhenFormula() As String
     casewhenFormula = this.formula
 End Property
 
-'@sub-title Store the CASE_WHEN formula and reset cached data
-'@param formula String expression to analyse.
+'@label:formula-set
+'@prop-title Store the CASE_WHEN formula and reset cached data
+'@details
+'Trims the incoming formula and stores it, then invalidates the
+'cached parsing table so subsequent reads trigger a fresh parse.
+'@param formula String. Expression to analyse.
 Public Property Let casewhenFormula(ByVal formula As String)
     this.formula = Trim$(formula)
     ResetCache
@@ -76,11 +101,15 @@ End Property
 
 '@section Validation
 '===============================================================================
+'@description Checks whether the stored formula matches the CASE_WHEN pattern.
 
-'@label:Valid
-'@sub-title Determine whether the stored formula is a CASE_WHEN
-'@details Accepts formulas that begin with the CASE_WHEN token (case-insensitive) and contain content.
-'@return Boolean True when the formula is parseable.
+'@label:valid
+'@prop-title Determine whether the stored formula is a CASE_WHEN
+'@details
+'Accepts formulas that begin with the CASE_WHEN( token
+'(case-insensitive) and contain content beyond the header. Returns
+'False for empty strings or formulas that do not match the token.
+'@return Boolean. True when the formula is parseable.
 Private Property Get Valid() As Boolean
     Dim formula As String
     formula = Trim$(casewhenFormula)
@@ -90,11 +119,16 @@ End Property
 
 '@section ParsingInfrastructure
 '===============================================================================
+'@description Lazily computed and cached argument table.
 
-'@label:CaseWhenTable
-'@sub-title Retrieve the cached list of CASE_WHEN arguments
-'@details Splits the formula into alternating condition/result entries while respecting quoted segments and nested parentheses.
-'@return BetterArray containing the ordered CASE_WHEN arguments.
+'@label:case-when-table
+'@prop-title Retrieve the cached list of CASE_WHEN arguments
+'@details
+'Splits the formula into alternating condition/result entries while
+'respecting quoted segments and nested parentheses. The result is
+'cached so subsequent accesses avoid reparsing the string. Returns
+'a clone to prevent callers from mutating the cache.
+'@return BetterArray. The ordered CASE_WHEN arguments.
 Private Property Get CaseWhenTable() As BetterArray
     Dim parsingTable As BetterArray
     Dim cleanedFormula As String
@@ -121,11 +155,17 @@ End Property
 
 '@section Parsing
 '===============================================================================
+'@description Core conversion and category extraction logic.
 
-'@label:ParsedFormula
+'@label:parsed-formula
 '@sub-title Convert CASE_WHEN into nested IF statements
-'@details Builds the Excel-compatible nested IF structure, preserving the optional default clause.
-'@return String expression ready for worksheet consumption.
+'@details
+'Iterates through the argument table in pairs (condition, result) and
+'builds Excel-compatible nested IF fragments. When the argument count
+'is odd the final entry becomes the default branch; when even an empty
+'string literal is appended as the fallback. Excel supports up to 64
+'nested IF calls.
+'@return String. Nested IF expression ready for worksheet consumption.
 Private Function parsedFormula() As String
 
     Dim counter As Long
@@ -163,10 +203,14 @@ Private Function parsedFormula() As String
     parsedFormula = formula
 End Function
 
-'@label:Categories
+'@label:categories
 '@sub-title Extract textual result labels from the CASE_WHEN arguments
-'@details Evaluates each result expression and returns the literal values that will appear to end-users.
-'@return BetterArray containing quoted category labels.
+'@details
+'Evaluates each result expression (even-indexed entries in the argument
+'table) and returns the literal values that will appear to end-users.
+'Quoted entries are stripped of their quotes; non-quoted entries are
+'wrapped in quotes for consistent downstream handling.
+'@return BetterArray. Collection containing quoted category labels.
 Private Function Categories() As BetterArray
     Dim categoriesTable As BetterArray
     Dim counter As Long
@@ -205,14 +249,23 @@ End Function
 
 '@section PrivateHelpers
 '===============================================================================
+'@description Internal utilities for cache management and formula segmentation.
 
+'@label:reset-cache
 '@sub-title Reset cached artefacts when the source formula changes
+'@details
+'Sets the cached parsing table to Nothing so the next access to
+'CaseWhenTable triggers a fresh parse from the stored formula.
 Private Sub ResetCache()
     Set this.parsingTable = Nothing
 End Sub
 
+'@label:sanitised-formula
 '@sub-title Remove the CASE_WHEN header and closing parenthesis
-'@return String inner content of the CASE_WHEN call.
+'@details
+'Strips the leading CASE_WHEN( token and the trailing closing
+'parenthesis to expose the raw comma-delimited argument body.
+'@return String. Inner content of the CASE_WHEN call.
 Private Function SanitisedFormula() As String
     Dim trimmedFormula As String
     trimmedFormula = Trim$(casewhenFormula)
@@ -227,9 +280,14 @@ Private Function SanitisedFormula() As String
     SanitisedFormula = Trim$(trimmedFormula)
 End Function
 
+'@label:split-formula-segments
 '@sub-title Split the CASE_WHEN body into trimmed argument segments
-'@param formulaBody The text between CASE_WHEN( and the final )
-'@return BetterArray listing alternating condition and result expressions.
+'@details
+'Walks the formula body character by character, tracking quotation
+'state and parenthesis depth. Splits on top-level commas only,
+'preserving nested expressions and quoted strings intact.
+'@param formulaBody String. The text between CASE_WHEN( and the final ).
+'@return BetterArray. Alternating condition and result expressions.
 Private Function SplitFormulaSegments(ByVal formulaBody As String) As BetterArray
     Dim segments As BetterArray
     Dim segmentStart As Long
@@ -265,7 +323,7 @@ Private Function SplitFormulaSegments(ByVal formulaBody As String) As BetterArra
                     segmentStart = position + 1
                 End If
         End Select
-    Next 
+    Next
 
     'Push trailing segment after the final comma (or the lone element)
     '@Ignore AssignmentNotUsed
@@ -277,6 +335,7 @@ End Function
 
 '@section Interface
 '===============================================================================
+'@description Delegated members satisfying the ICaseWhen contract.
 
 Private Property Get ICaseWhen_Valid() As Boolean
     ICaseWhen_Valid = Valid()
