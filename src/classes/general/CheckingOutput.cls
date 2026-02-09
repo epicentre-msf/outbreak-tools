@@ -12,18 +12,27 @@ Attribute VB_Description = "Writes checking results to a worksheet"
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Writes checking results to a worksheet")
-'@depends BetterArray, Checking, HiddenNames
 '@IgnoreModule UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
-
-
-'@section Overview
-'@details Provides facilities to print checking results and filter them directly within the worksheet context.
+'@depends BetterArray, Checking, HiddenNames
 
 Option Explicit
 Implements ICheckingOutput
 
+'@class CheckingOutput
+'@description
+'Renders IChecking diagnostic entries to a worksheet with formatted rows,
+'severity-based colour coding, and interactive drop-down filters for
+'status and title. The class manages hidden helper columns, a title
+'store for filter validation lists, and optional worksheet event
+'injection so that filter selections trigger row visibility changes
+'automatically.
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
+
+
 '@section State
 '===============================================================================
+'@description Backing UDT, formatting structure, and constants.
 
 Private Type TState
     targetSheet As Worksheet
@@ -61,12 +70,19 @@ Private Const VBIDE_PROC_KIND As Long = 0 'Matches vbext_pk_Proc to avoid VBIDE 
 
 '@section Factory
 '===============================================================================
+'@description Entry point for creating CheckingOutput instances.
 
-'@label:Create
+'@label:create
 '@sub-title Create an output writer bound to a worksheet
-'@details Instantiates a new writer and associates it with the supplied worksheet.
-'@param sh Worksheet that will receive the checking output.
-'@return ICheckingOutput fully initialised instance.
+'@details
+'Instantiates a new writer and associates it with the supplied
+'worksheet. Optionally assigns a title used for the end-of-checkings
+'marker.
+'@param sh Worksheet. Target worksheet that will receive the checking output.
+'@param title Optional String. Label for the output session. Defaults to vbNullString.
+'@return ICheckingOutput. Fully initialised instance.
+'@throws ProjectError.ElementNotFound When sh is Nothing.
+'@export
 Public Function Create(ByVal sh As Worksheet, Optional ByVal title As String = vbNullString) As ICheckingOutput
     If sh Is Nothing Then
         ThrowError ProjectError.ElementNotFound, _
@@ -80,44 +96,63 @@ Public Function Create(ByVal sh As Worksheet, Optional ByVal title As String = v
     End With
 End Function
 
-'@section WorksheetBinding
+'@section PublicAccessors
 '===============================================================================
+'@description Properties that expose internal state and the interface pointer.
 
-'@label:Wksh
+'@label:wksh
 '@prop-title Retrieve the worksheet backing this output writer
-'@return Worksheet reference.
+'@details
+'Returns the worksheet previously supplied during Create or the setter.
+'@return Worksheet. Reference to the target worksheet.
 Public Property Get Wksh() As Worksheet
     Set Wksh = this.targetSheet
 End Property
 
+'@label:wksh-set
 '@prop-title Define the worksheet that will receive the output
-'@param sh Worksheet to use.
+'@param sh Worksheet. Target worksheet to use.
 Public Property Set Wksh(ByVal sh As Worksheet)
     Set this.targetSheet = sh
 End Property
 
-'@prop-title Convenience accessor so callers can chain Create().Self
-'@return ICheckingOutput reference to Me.
+'@label:self
+'@prop-title Current object instance
+'@details
+'Returns the current instance cast to its interface. Used internally
+'by the factory method to return an ICheckingOutput reference.
+'@return ICheckingOutput. Reference to the current object.
 Public Property Get Self() As ICheckingOutput
     Set Self = Me
 End Property
 
+'@label:name
+'@prop-title Name of the output session
+'@details
+'Returns the label assigned during creation or via the setter.
+'@return String. Output session label.
 Public Property Get Name() As String
     Name = this.nm
 End Property
 
+'@label:name-set
+'@prop-title Assign the output session name
+'@param nm String. Label to assign.
 Public Property Let Name(ByVal nm As String)
     this.nm = nm
 End Property
 
 '@section FormattingHelpers
 '===============================================================================
+'@description Colour resolution, text decoration, and border styling.
 
-
-'@fun-title Resolve formatting attributes for a given level and colour name
-'@details Create formatting base on level
-'@param tag String colour or level type token (blue, red, orange, grey, green, "title", "subtitle")
-'@return TFormatting structure with font, fill, and border properties
+'@label:resolve-formatting
+'@sub-title Resolve formatting attributes for a given level and colour name
+'@details
+'Maps a tag string (colour name or heading level) to font, fill, and
+'border properties returned in a TFormatting structure.
+'@param tag Optional String. Colour or level type token (e.g. "red", "level 1").
+'@return TFormatting. Structure with font, fill, and border properties.
 Private Function ResolveFormatting(Optional ByVal tag As String) As TFormatting
     Dim formatInfo As TFormatting
 
@@ -165,23 +200,26 @@ Private Function ResolveFormatting(Optional ByVal tag As String) As TFormatting
             formatInfo.fontSize = 10
             formatInfo.fontColour = RGB(0, 0, 128)           ' Greenish font
             formatInfo.fillColour = vbWhite                  ' Light green fill
-            formatInfo.borderColour = RGB(0, 0, 64)   
+            formatInfo.borderColour = RGB(0, 0, 64)
         Case Else
             'Default formatting
             formatInfo.fontSize = 9
             formatInfo.fontColour = RGB(0, 0, 128)           ' Navy font
             formatInfo.fillColour = RGB(230, 235, 245)       ' Light navy fill
-            formatInfo.borderColour = RGB(0, 0, 64) 
+            formatInfo.borderColour = RGB(0, 0, 64)
     End Select
 
     ResolveFormatting = formatInfo
 End Function
 
 
+'@label:apply-text-decorations
 '@sub-title Apply typography styling based on formatting
-'@details Decorates text with bold/underline emphasis for primary headings.
-'@param target Range receiving the formatting
-'@param formatting TFormatting structure containing font and fill attributes
+'@details
+'Decorates the target range with font size, colour, fill, and bold
+'emphasis from the supplied formatting structure.
+'@param formatting TFormatting. Structure containing font and fill attributes.
+'@param target Range. Range receiving the formatting.
 Private Sub ApplyTextDecorations(formatting As TFormatting, ByVal target As Range)
 
     With target
@@ -193,10 +231,12 @@ Private Sub ApplyTextDecorations(formatting As TFormatting, ByVal target As Rang
 End Sub
 
 
+'@label:apply-borders
 '@sub-title Apply border styling to a range
-'@details Applies dashed borders around and within the target range block.
-'@param targetRange Range receiving the border formatting
-'@param borderColour Long colour code for the border
+'@details
+'Applies a dashed bottom border to the target range block.
+'@param targetRange Range. Range receiving the border formatting.
+'@param borderColour Long. Colour code for the border.
 Private Sub ApplyBorders(ByVal targetRange As Range, ByVal borderColour As Long)
     With targetRange.Borders(xlEdgeBottom)
         .LineStyle = xlDashDotDot
@@ -206,11 +246,17 @@ Private Sub ApplyBorders(ByVal targetRange As Range, ByVal borderColour As Long)
 End Sub
 
 
-'@sub-title Formats and writes a single row
-'@depends Use the supplied text fragments. Text fragments are splitted by --
-'@param rowIndex Row where to apply the formatting, Long.
-'@param textValue A String, what to write on the row
-'@param formatTag, sep Strings; resp. Tag for formatting and split separator.
+'@label:write-row
+'@sub-title Format and write a single row of checking output
+'@details
+'Splits the text value by the separator and writes the fragments
+'across the output columns. Applies formatting based on the format
+'tag and records the parent title in the hidden column for filtering.
+'@param rowIndex Long. Row where to write.
+'@param textValue String. Content to write, split by sep.
+'@param formatTag Optional String. Tag for formatting resolution.
+'@param sep Optional String. Split separator. Defaults to "--".
+'@param parentTitle Optional String. Title written to the hidden column.
 Private Sub WriteRow(ByVal rowIndex As Long, ByVal textValue As String, _
                      Optional ByVal formatTag As String, _
                      Optional ByVal sep As String = DEFAULT_SEPARATOR, _
@@ -248,12 +294,14 @@ Private Sub WriteRow(ByVal rowIndex As Long, ByVal textValue As String, _
     ApplyBorders target, formatting.borderColour
 End Sub
 
-'@label:ValueOrEmpty
-'@fun-title Auto-generated title for ValueOrEmpty.
+'@label:value-or-empty
+'@sub-title Safely retrieve an element from a split array
 '@details
-'@param items Auto-generated parameter documentation.
-'@param index Auto-generated parameter documentation.
-'@return Auto-generated return documentation.
+'Returns the element at the specified index when it exists, or
+'vbNullString when the index exceeds the array bounds.
+'@param items String(). Split array.
+'@param index Long. Zero-based index to retrieve.
+'@return String. Element value or vbNullString.
 Private Function ValueOrEmpty(items() As String, ByVal index As Long) As String
     If index > UBound(items) Then
         ValueOrEmpty = vbNullString
@@ -264,10 +312,18 @@ End Function
 
 '@section CheckingWriters
 '===============================================================================
+'@description Outputs headings and detail entries for individual checking bundles.
 
-'@label WriteChecking
-'@sub-title Auto-generated title for WriteChecking.
-'@details Auto-generated documentation for WriteChecking.
+'@label:write-checking
+'@sub-title Write a single IChecking bundle to the worksheet
+'@details
+'Outputs the title heading (once per unique title), optional subtitle,
+'and all keyed entries with their severity colour coding. Advances the
+'current row counter and tracks written titles to avoid duplicates.
+'@param checking IChecking. Bundle to render.
+'@param currentRow Long. ByRef row counter advanced during writing.
+'@param writtenTitles Collection. ByRef collection tracking emitted titles.
+'@param sep Optional String. Separator for text fragments. Defaults to "--".
 Private Sub WriteChecking(ByVal checking As IChecking, _
                           ByRef currentRow As Long, _
                           ByRef writtenTitles As Collection, _
@@ -310,15 +366,19 @@ Private Sub WriteChecking(ByVal checking As IChecking, _
         WriteRow rowIndex:=currentRow, textValue:=fullLabel, formatTag:=keyColour, sep:=sep, parentTitle:=title
         currentRow = currentRow + 1
     Next keyIndex
-    
+
     currentRow = currentRow + 2
 End Sub
 
 
-'@fun-title Whether a title exists
-'@param title String, Title to look for
-'@param writtenTitles Collection of titles
-'@return Boolean
+'@label:title-already-written
+'@sub-title Test whether a title has already been emitted
+'@details
+'Checks the writtenTitles collection for the specified title.
+'Uses On Error Resume Next to handle missing keys.
+'@param title String. Title to look for.
+'@param writtenTitles Collection. Collection of previously emitted titles.
+'@return Boolean. True when the title was already written.
 Private Function TitleAlreadyWritten(ByVal title As String, ByRef writtenTitles As Collection) As Boolean
     On Error Resume Next
         TitleAlreadyWritten = Not IsEmpty(writtenTitles.Item(title))
@@ -327,7 +387,15 @@ End Function
 
 '@section TitleStoreManagement
 '===============================================================================
+'@description Manages the hidden title store used for the title filter validation list.
 
+'@label:ensure-title-store
+'@sub-title Initialise or refresh the hidden title store
+'@details
+'When resetStore is True, clears all stored titles and re-creates
+'the anchor cell. Otherwise ensures the anchor exists and the named
+'range is defined.
+'@param resetStore Optional Boolean. When True, clears the store. Defaults to False.
 Private Sub EnsureTitleStore(Optional ByVal resetStore As Boolean = False)
     Dim sh As Worksheet
 
@@ -347,6 +415,9 @@ Private Sub EnsureTitleStore(Optional ByVal resetStore As Boolean = False)
 
 End Sub
 
+'@label:reset-title-store
+'@sub-title Clear all stored titles and re-create the anchor
+'@param sh Worksheet. Target worksheet.
 Private Sub ResetTitleStore(ByVal sh As Worksheet)
     Dim anchor As Range
     Dim clearRange As Range
@@ -367,6 +438,9 @@ Private Sub ResetTitleStore(ByVal sh As Worksheet)
     RefreshTitleNamedRange sh
 End Sub
 
+'@label:ensure-title-store-anchor
+'@sub-title Ensure the title store anchor cell is initialised
+'@param sh Worksheet. Target worksheet.
 Private Sub EnsureTitleStoreAnchor(ByVal sh As Worksheet)
     Dim anchor As Range
 
@@ -380,6 +454,9 @@ Private Sub EnsureTitleStoreAnchor(ByVal sh As Worksheet)
     anchor.Font.Color = vbWhite
 End Sub
 
+'@label:append-title-to-store
+'@sub-title Add a title to the hidden store if not already present
+'@param titleValue String. Title text to store.
 Private Sub AppendTitleToStore(ByVal titleValue As String)
     Dim sh As Worksheet
     Dim anchor As Range
@@ -408,6 +485,11 @@ Private Sub AppendTitleToStore(ByVal titleValue As String)
     RefreshTitleNamedRange sh
 End Sub
 
+'@label:title-store-contains
+'@sub-title Check whether the title store already includes a value
+'@param sh Worksheet. Target worksheet.
+'@param titleValue String. Title text to search for.
+'@return Boolean. True when the title is already stored.
 Private Function TitleStoreContains(ByVal sh As Worksheet, ByVal titleValue As String) As Boolean
     Dim anchor As Range
     Dim lastRow As Long
@@ -425,6 +507,9 @@ Private Function TitleStoreContains(ByVal sh As Worksheet, ByVal titleValue As S
     On Error GoTo 0
 End Function
 
+'@label:refresh-title-named-range
+'@sub-title Update the named range covering all stored titles
+'@param sh Worksheet. Target worksheet.
 Private Sub RefreshTitleNamedRange(ByVal sh As Worksheet)
     Dim anchor As Range
     Dim lastRow As Long
@@ -444,6 +529,11 @@ Private Sub RefreshTitleNamedRange(ByVal sh As Worksheet)
     sh.Names.Add Name:=TITLE_RANGE_NAME, RefersTo:=titleRange
 End Sub
 
+'@label:next-title-store-row
+'@sub-title Determine the next available row in the title store
+'@param sh Worksheet. Target worksheet.
+'@param anchor Range. Anchor cell of the title store.
+'@return Long. Next available row index.
 Private Function NextTitleStoreRow(ByVal sh As Worksheet, ByVal anchor As Range) As Long
     Dim lastRow As Long
 
@@ -455,6 +545,11 @@ Private Function NextTitleStoreRow(ByVal sh As Worksheet, ByVal anchor As Range)
     End If
 End Function
 
+'@label:worksheet-has-named-range
+'@sub-title Check whether a named range exists on a worksheet
+'@param targetSheet Worksheet. Worksheet to inspect.
+'@param rangeName String. Name to look for.
+'@return Boolean. True when the named range exists.
 Private Function WorksheetHasNamedRange(ByVal targetSheet As Worksheet, ByVal rangeName As String) As Boolean
     Dim nm As Name
 
@@ -464,13 +559,20 @@ Private Function WorksheetHasNamedRange(ByVal targetSheet As Worksheet, ByVal ra
     On Error GoTo 0
 End Function
 
+'@label:worksheet-name-for-formula
+'@sub-title Escape the worksheet name for use in formulas
+'@param targetSheet Worksheet. Worksheet whose name to escape.
+'@return String. Escaped worksheet name.
 Private Function WorksheetNameForFormula(ByVal targetSheet As Worksheet) As String
     WorksheetNameForFormula = Replace(targetSheet.Name, "'", "''")
 End Function
 
+'@label:apply-hidden-columns-formatting
 '@sub-title Mask hidden helper columns so metadata remains invisible
-'@details Ensures the parent-title column and backing title store columns keep a white font and hidden presentation.
-'@param sh Worksheet to format
+'@details
+'Ensures the parent-title column and backing title store column
+'keep a white font and hidden presentation.
+'@param sh Worksheet. Target worksheet to format.
 Private Sub ApplyHiddenColumnsFormatting(ByVal sh As Worksheet)
     Dim storeColumn As Long
 
@@ -494,12 +596,16 @@ End Sub
 
 '@section WorksheetPreparation
 '===============================================================================
+'@description Resets and initialises the worksheet before rendering.
 
-'Resets the worksheet before re-rendering the checking output.
-'@label InitialiseWorksheet
-'@fun-title Auto-generated title for InitialiseWorksheet.
-'@details Auto-generated documentation for InitialiseWorksheet.
-'@param startingRow Auto-generated parameter documentation.
+'@label:initialise-worksheet
+'@sub-title Reset the worksheet before re-rendering checking output
+'@details
+'On first render, clears all cells, sets the Consolas font, creates
+'the title store, installs filter dropdowns, removes gridlines, and
+'records the starting row marker. On subsequent renders, resumes from
+'the last written row.
+'@return Long. Starting row for the next output block.
 Private Function InitialiseWorksheet() As Long
     Dim sh As Worksheet
     Dim startingRow As Long
@@ -509,13 +615,13 @@ Private Function InitialiseWorksheet() As Long
     Set sh = Wksh()
     sh.Rows.Hidden = False
     Set store = HiddenStore()
-    
+
     If Not store.HasName(ROW_MARKER_NAME) Then
         sh.Cells.Clear
         sh.Cells.Font.Name = "Consolas"
         sh.rows(1).Font.Bold = True
         sh.rows(1).Font.Size = 14
-        
+
         EnsureTitleStore True
         ApplyHiddenColumnsFormatting sh
         EnsureFilterDropdown
@@ -551,12 +657,14 @@ End Function
 
 '@section Filtering
 '===============================================================================
+'@description Drop-down filter management and row-visibility algorithms.
 
-'Keeps the filter drop-down present and styled on the worksheet header.
-'@sub-title Auto-generated title for EnsureFilterDropdown.
-'@label EnsureFilterDropdown
-'@details Utilities that manage the drop-down UI and filtering algorithm
-'@details Auto-generated documentation for EnsureFilterDropdown.
+'@label:ensure-filter-dropdown
+'@sub-title Install and style the filter drop-downs on the worksheet header
+'@details
+'Creates validation drop-downs for both status (severity) and title
+'filtering. Ensures the title store named range is available for the
+'title validation list.
 Private Sub EnsureFilterDropdown()
     Dim sh As Worksheet
     Dim statusCell As Range
@@ -596,7 +704,7 @@ Private Sub EnsureFilterDropdown()
 
     Set titleCell = sh.Range(TITLE_FILTER_CELL_ADDRESS)
     ApplyTextDecorations ResolveFormatting("dropdown"), titleCell
-    
+
     On Error Resume Next
         sh.Names(TITLE_FILTER_NAME).Delete
     On Error GoTo 0
@@ -617,13 +725,130 @@ Private Sub EnsureFilterDropdown()
     If LenB(Trim$(CStr(titleCell.value))) = 0 Then titleCell.value = TITLE_FILTER_DEFAULT
 End Sub
 
+'@label:filter-worksheet
+'@sub-title Apply filtering logic using the backing worksheet
+'@details
+'Public entry point that allows consumers to reapply the worksheet
+'filtering logic without relying on events. Delegates to
+'ApplyWorksheetFilter.
+'@param statusSelection Optional String. Manual filter selection overriding the drop-down value.
+'@param titleSelection Optional String. Title filter overriding the worksheet selection.
+'@export
+Public Sub FilterWorksheet(Optional ByVal statusSelection As String = vbNullString, _
+                          Optional ByVal titleSelection As String = vbNullString)
+    If Wksh() Is Nothing Then Exit Sub
+    ApplyWorksheetFilter Wksh, statusSelection, titleSelection
+End Sub
+
+'@label:apply-worksheet-filter
+'@sub-title Internal helper that performs row-visibility filtering
+'@details
+'Centralises the filtering algorithm so both the public API and
+'worksheet events reuse the same logic. Hides rows that do not match
+'the selected severity and/or title criteria.
+'@param targetSheet Worksheet. Worksheet hosting the checking output data.
+'@param statusSelection Optional String. Desired severity filter; blank uses the worksheet cell.
+'@param titleSelection Optional String. Title token overriding the drop-down when provided.
+Private Sub ApplyWorksheetFilter(ByVal targetSheet As Worksheet, _
+                                 Optional ByVal statusSelection As String = vbNullString, _
+                                 Optional ByVal titleSelection As String = vbNullString)
+    Dim statusValue As String
+    Dim titleValue As String
+    Dim matchMode As String
+    Dim lastRow As Long
+    Dim rowIndex As Long
+    Dim rowType As String
+    Dim hasLabel As Boolean
+    Dim rowTitle As String
+    Dim filterByTitle As Boolean
+    Dim explicitStatusOverride As Boolean
+
+    If targetSheet Is Nothing Then Exit Sub
+
+    statusValue = Trim$(statusSelection)
+    explicitStatusOverride = LenB(statusValue) > 0
+    If LenB(statusValue) = 0 Then
+        statusValue = Trim$(CStr(targetSheet.Range(FILTER_CELL_ADDRESS).value))
+    End If
+
+    titleValue = Trim$(titleSelection)
+    If LenB(titleValue) = 0 Then
+        titleValue = Trim$(CStr(targetSheet.Range(TITLE_FILTER_CELL_ADDRESS).value))
+    End If
+
+    filterByTitle = LenB(titleValue) > 0 And _
+                    StrComp(titleValue, TITLE_FILTER_DEFAULT, vbTextCompare) <> 0
+
+    Select Case UCase$(statusValue)
+        Case "", "ALL"
+            matchMode = "ALL"
+        Case "ERROR", "ERRORS"
+            matchMode = "ERROR"
+        Case "WARNING", "WARNINGS"
+            matchMode = "WARNING"
+        Case "NOTE", "NOTES"
+            matchMode = "NOTE"
+        Case "INFO", "INFOS"
+            matchMode = "INFO"
+        Case "SUCCESS", "SUCCESSES"
+            matchMode = "SUCCESS"
+        Case "WITHOUT SUCCESS", "WITHOUT SUCCESSES"
+            matchMode = "WITHOUT_SUCCESS"
+        Case Else
+            matchMode = "ALL"
+    End Select
+
+    If filterByTitle And Not explicitStatusOverride Then
+        'Grant the title filter precedence when no status override is explicitly supplied
+        matchMode = "ALL"
+    End If
+
+    lastRow = targetSheet.Cells(targetSheet.rows.Count, FIRST_OUTPUT_COLUMN).End(xlUp).row
+    If lastRow < FIRST_ROW_OUTPUT Then Exit Sub
+
+    For rowIndex = FIRST_ROW_OUTPUT To lastRow
+        targetSheet.rows(rowIndex).Hidden = False
+        rowTitle = Trim$(CStr(targetSheet.Cells(rowIndex, HIDDEN_TITLE_COLUMN).value))
+
+        If filterByTitle Then
+            If StrComp(rowTitle, titleValue, vbTextCompare) <> 0 Then
+                targetSheet.rows(rowIndex).Hidden = True
+                GoTo ContinueLoop
+            End If
+        End If
+
+        hasLabel = LenB(CStr(targetSheet.Cells(rowIndex, FIRST_OUTPUT_COLUMN + 1).value)) > 0
+
+        If hasLabel Then
+            rowType = NormaliseTypeLabel(CStr(targetSheet.Cells(rowIndex, FIRST_OUTPUT_COLUMN).value))
+            Select Case matchMode
+                Case "ALL"
+                    ' no filtering
+                Case "SUCCESS"
+                    If StrComp(rowType, "Success", vbTextCompare) <> 0 Then targetSheet.rows(rowIndex).Hidden = True
+                Case "WITHOUT_SUCCESS"
+                    If StrComp(rowType, "Success", vbTextCompare) = 0 Then targetSheet.rows(rowIndex).Hidden = True
+                Case Else
+                    If StrComp(rowType, matchMode, vbTextCompare) <> 0 Then targetSheet.rows(rowIndex).Hidden = True
+            End Select
+        End If
+
+ContinueLoop:
+    Next rowIndex
+End Sub
+
 '@section WorksheetEvents
 '===============================================================================
+'@description Injection and generation of the Worksheet_Change handler for interactive filtering.
 
-'Injects the Worksheet_Change handler and helper into the target module when absent.
-'@label EnsureWorksheetChangeHandler
-'@sub-title Auto-generated title for EnsureWorksheetChangeHandler.
-'@details Auto-generated documentation for EnsureWorksheetChangeHandler.
+'@label:ensure-worksheet-change-handler
+'@sub-title Inject the Worksheet_Change handler into the target module
+'@details
+'Injects the filtering VBA code into the worksheet's code module so
+'filter drop-down changes trigger row visibility updates automatically.
+'Skips injection when the event marker hidden name is already present.
+'@throws ProjectError.SomethingWentWrong When code injection fails.
+'@export
 Private Sub EnsureWorksheetChangeHandler()
     Dim codeModule As Object
     Dim injectionCode As String
@@ -657,9 +882,14 @@ Handler:
         "Unable to install worksheet change handler: " & Err.Description
 End Sub
 
-'@label BuildWorksheetChangeHandlerCode
-'@sub-title Compose the worksheet filtering logic
-'@details Generates the VBA code injected in the worksheet module so it can filter rows without depending on this class.
+'@label:build-worksheet-change-handler-code
+'@sub-title Compose the VBA code for the worksheet filtering logic
+'@details
+'Generates the complete VBA source code that is injected into the
+'worksheet module. Includes StripIcons, ResolveMatchType,
+'ShouldFilterByTitle, RestoreState, Worksheet_Change, and
+'FilterCheckingOutputRows procedures.
+'@return String. VBA source code for the handler.
 Private Function BuildWorksheetChangeHandlerCode() As String
     Dim handler As String
     Dim dq As String
@@ -807,12 +1037,17 @@ Private Function BuildWorksheetChangeHandlerCode() As String
 
     BuildWorksheetChangeHandlerCode = handler
 End Function
+
 '@section WorksheetEventHelpers
 '===============================================================================
+'@description Utilities for managing injected worksheet procedures.
 
-'@label RemoveManagedWorksheetProcedures
+'@label:remove-managed-worksheet-procedures
 '@sub-title Strip previously injected worksheet routines
-'@details Removes any instance of the managed procedures so a single fresh handler can be written.
+'@details
+'Removes any instance of the managed procedures so a single fresh
+'handler can be written without duplication.
+'@param codeModule Object. Worksheet code module reference.
 Private Sub RemoveManagedWorksheetProcedures(ByVal codeModule As Object)
     DeleteProcedureIfExists codeModule, "Worksheet_Change"
     DeleteProcedureIfExists codeModule, "StripIcons"
@@ -822,11 +1057,13 @@ Private Sub RemoveManagedWorksheetProcedures(ByVal codeModule As Object)
     DeleteProcedureIfExists codeModule, "FilterCheckingOutputRows"
 End Sub
 
-'@label DeleteProcedureIfExists
+'@label:delete-procedure-if-exists
 '@sub-title Safely remove a procedure from a worksheet module
-'@details Deletes the target procedure when present. Ignores missing procedures silently.
-'@param codeModule Worksheet code module reference.
-'@param procedureName Name of the procedure to delete.
+'@details
+'Deletes the target procedure when present. Silently exits when the
+'procedure is not found.
+'@param codeModule Object. Worksheet code module reference.
+'@param procedureName String. Name of the procedure to delete.
 Private Sub DeleteProcedureIfExists(ByVal codeModule As Object, ByVal procedureName As String)
     Dim startLine As Long
     Dim lineCount As Long
@@ -842,122 +1079,131 @@ Private Sub DeleteProcedureIfExists(ByVal codeModule As Object, ByVal procedureN
     On Error GoTo 0
 End Sub
 
-'@label:FilterWorksheet
-'@sub-title Apply filtering logic using the backing worksheet
-'@details Allows consumers to reapply the worksheet filtering logic without relying on events.
-'@param statusSelection Optional manual filter selection that overrides the worksheet drop-down value.
-'@param titleSelection Optional title filter that overrides the worksheet selection when provided.
-'@return Nothing
-'Reapplies filtering logic using either the supplied values or the worksheet selections.
-Public Sub FilterWorksheet(Optional ByVal statusSelection As String = vbNullString, _
-                          Optional ByVal titleSelection As String = vbNullString)
-    If Wksh() Is Nothing Then Exit Sub
-    ApplyWorksheetFilter Wksh, statusSelection, titleSelection
-End Sub
-
-'@label:ApplyWorksheetFilter
-'@sub-title Internal helper that performs filtering
-'@details Centralises the filtering algorithm so both the public API and worksheet events reuse the same logic.
-'@param targetSheet Worksheet hosting the checking output data.
-'@param statusSelection String representing the desired severity filter; blank values use the worksheet cell.
-'@param titleSelection Optional title token overriding the worksheet drop-down when provided.
-'@return Nothing
-'Executes the row-hiding algorithm based on the provided worksheet and selection.
-Private Sub ApplyWorksheetFilter(ByVal targetSheet As Worksheet, _
-                                 Optional ByVal statusSelection As String = vbNullString, _
-                                 Optional ByVal titleSelection As String = vbNullString)
-    Dim statusValue As String
-    Dim titleValue As String
-    Dim matchMode As String
-    Dim lastRow As Long
-    Dim rowIndex As Long
-    Dim rowType As String
-    Dim hasLabel As Boolean
-    Dim rowTitle As String
-    Dim filterByTitle As Boolean
-    Dim explicitStatusOverride As Boolean
-
-    If targetSheet Is Nothing Then Exit Sub
-
-    statusValue = Trim$(statusSelection)
-    explicitStatusOverride = LenB(statusValue) > 0
-    If LenB(statusValue) = 0 Then
-        statusValue = Trim$(CStr(targetSheet.Range(FILTER_CELL_ADDRESS).value))
-    End If
-
-    titleValue = Trim$(titleSelection)
-    If LenB(titleValue) = 0 Then
-        titleValue = Trim$(CStr(targetSheet.Range(TITLE_FILTER_CELL_ADDRESS).value))
-    End If
-
-    filterByTitle = LenB(titleValue) > 0 And _
-                    StrComp(titleValue, TITLE_FILTER_DEFAULT, vbTextCompare) <> 0
-
-    Select Case UCase$(statusValue)
-        Case "", "ALL"
-            matchMode = "ALL"
-        Case "ERROR", "ERRORS"
-            matchMode = "ERROR"
-        Case "WARNING", "WARNINGS"
-            matchMode = "WARNING"
-        Case "NOTE", "NOTES"
-            matchMode = "NOTE"
-        Case "INFO", "INFOS"
-            matchMode = "INFO"
-        Case "SUCCESS", "SUCCESSES"
-            matchMode = "SUCCESS"
-        Case "WITHOUT SUCCESS", "WITHOUT SUCCESSES"
-            matchMode = "WITHOUT_SUCCESS"
-        Case Else
-            matchMode = "ALL"
-    End Select
-
-    If filterByTitle And Not explicitStatusOverride Then
-        'Grant the title filter precedence when no status override is explicitly supplied
-        matchMode = "ALL"
-    End If
-
-    lastRow = targetSheet.Cells(targetSheet.rows.Count, FIRST_OUTPUT_COLUMN).End(xlUp).row
-    If lastRow < FIRST_ROW_OUTPUT Then Exit Sub
-
-    For rowIndex = FIRST_ROW_OUTPUT To lastRow
-        targetSheet.rows(rowIndex).Hidden = False
-        rowTitle = Trim$(CStr(targetSheet.Cells(rowIndex, HIDDEN_TITLE_COLUMN).value))
-
-        If filterByTitle Then
-            If StrComp(rowTitle, titleValue, vbTextCompare) <> 0 Then
-                targetSheet.rows(rowIndex).Hidden = True
-                GoTo ContinueLoop
-            End If
-        End If
-
-        hasLabel = LenB(CStr(targetSheet.Cells(rowIndex, FIRST_OUTPUT_COLUMN + 1).value)) > 0
-
-        If hasLabel Then
-            rowType = NormaliseTypeLabel(CStr(targetSheet.Cells(rowIndex, FIRST_OUTPUT_COLUMN).value))
-            Select Case matchMode
-                Case "ALL"
-                    ' no filtering
-                Case "SUCCESS"
-                    If StrComp(rowType, "Success", vbTextCompare) <> 0 Then targetSheet.rows(rowIndex).Hidden = True
-                Case "WITHOUT_SUCCESS"
-                    If StrComp(rowType, "Success", vbTextCompare) = 0 Then targetSheet.rows(rowIndex).Hidden = True
-                Case Else
-                    If StrComp(rowType, matchMode, vbTextCompare) <> 0 Then targetSheet.rows(rowIndex).Hidden = True
-            End Select
-        End If
-
-ContinueLoop:
-    Next rowIndex
-End Sub
-
-
-
-'@section ICheckingOutput
+'@section Helpers
 '===============================================================================
-'@label Get
-'@prop-title Worksheet of the checking output
-'@return A Worksheet Object
+'@description Private utility methods for validation, normalisation, and storage.
+
+'@label:validate-check-table
+'@sub-title Verify that the BetterArray contains only IChecking entries
+'@details
+'Iterates the array and raises an error for any item that does not
+'implement IChecking.
+'@param checkTable BetterArray. Table of checking entries to validate.
+'@throws ProjectError.InvalidArgument When an item does not implement IChecking.
+Private Sub ValidateCheckTable(ByVal checkTable As BetterArray)
+    Dim index As Long
+    For index = checkTable.lowerBound To checkTable.upperBound
+        If Not TypeOf checkTable.Item(index) Is IChecking Then
+           ThrowError ProjectError.InvalidArgument, _
+            "Items in PrintOutput must implement IChecking. Item " & CStr(index) & " does not."
+        End If
+    Next index
+End Sub
+
+
+'@label:normalise-type-label
+'@sub-title Strip icon characters from a checking type label
+'@details
+'Removes Unicode icon characters used for visual decoration to obtain
+'the plain-text type label for filtering comparisons.
+'@param typeLabel String. Label to clean.
+'@return String. Cleaned label.
+Private Function NormaliseTypeLabel(ByVal typeLabel As String) As String
+    Dim cleaned As String
+
+    cleaned = typeLabel
+    cleaned = Replace(cleaned, ChrW(10060), vbNullString)
+    cleaned = Replace(cleaned, ChrW(9888), vbNullString)
+    cleaned = Replace(cleaned, ChrW(8505), vbNullString)
+    cleaned = Replace(cleaned, ChrW(9998), vbNullString)
+    cleaned = Replace(cleaned, ChrW(10004), vbNullString)
+
+    NormaliseTypeLabel = Trim$(cleaned)
+End Function
+
+'@label:custom-property-exists
+'@sub-title Check whether a custom property exists in the hidden store
+'@param propName String. Property name to check.
+'@return Boolean. True when the property exists.
+Private Function CustomPropertyExists(ByVal propName As String) As Boolean
+    Dim store As IHiddenNames
+    Set store = HiddenStore()
+    CustomPropertyExists = store.HasName(propName)
+End Function
+
+'@label:store-custom-property
+'@sub-title Store a custom property in the hidden name store
+'@param propName String. Property name to store.
+'@param propValue String. Value to persist.
+Private Sub StoreCustomProperty(propName As String, propValue As String)
+    Dim store As IHiddenNames
+    Set store = HiddenStore()
+    store.EnsureName propName, propValue, HiddenNameTypeString
+    store.SetValue propName, propValue
+End Sub
+
+'@label:hidden-store
+'@sub-title Lazily create and return the IHiddenNames store
+'@details
+'Creates the HiddenNames wrapper bound to the target worksheet on
+'first access. Raises an error when no worksheet is assigned.
+'@return IHiddenNames. Hidden name store.
+'@throws ProjectError.ObjectNotInitialized When the worksheet is Nothing.
+Private Function HiddenStore() As IHiddenNames
+    If this.store Is Nothing Then
+        If Wksh() Is Nothing Then
+            ThrowError ProjectError.ObjectNotInitialized, _
+             "CheckingOutput requires a worksheet before accessing hidden storage."
+        End If
+        Set this.store = HiddenNames.Create(Wksh())
+    End If
+    Set HiddenStore = this.store
+End Function
+
+'@label:module-contains-procedure
+'@sub-title Determine whether the module text declares a target procedure
+'@details
+'Searches for Sub or Function signatures matching the procedure name.
+'@param moduleText String. VBA module contents.
+'@param procedureName String. Name of the procedure to search for.
+'@return Boolean. True when the procedure exists.
+Private Function ModuleContainsProcedure(ByVal moduleText As String, _
+                                         ByVal procedureName As String) As Boolean
+    Dim subSignature As String
+    Dim functionSignature As String
+
+    If LenB(moduleText) = 0 Then Exit Function
+
+    subSignature = "Sub " & procedureName & "("
+    If InStr(1, moduleText, subSignature, vbTextCompare) > 0 Then
+        ModuleContainsProcedure = True
+        Exit Function
+    End If
+
+    functionSignature = "Function " & procedureName & "("
+    ModuleContainsProcedure = (InStr(1, moduleText, functionSignature, vbTextCompare) > 0)
+End Function
+
+'@section ErrorHandling
+'===============================================================================
+'@description Centralised error-raising pattern.
+
+'@label:throw-error
+'@sub-title Raise a ProjectError-coded runtime error
+'@details
+'Wrapper around Err.Raise that standardises the source to
+'"CheckingOutput" for consistent stack traces.
+'@param errNumb Long. ProjectError enumeration value.
+'@param errorMessage String. Human-readable description.
+'@throws ProjectError.<varies> Always raises the specified error.
+Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
+    Err.Raise errNumb, "CheckingOutput", errorMessage
+End Sub
+
+'@section Interface
+'===============================================================================
+'@description Delegated members satisfying the ICheckingOutput contract.
+
 Private Property Get ICheckingOutput_Wksh() As Worksheet
     Set ICheckingOutput_Wksh = Wksh()
 End Property
@@ -966,12 +1212,15 @@ Private Property Get ICheckingOutput_Name() As String
     ICheckingOutput_Name = Name()
 End Property
 
-'@details Interface members exposed to external callers.
-
-'Coordinates the end-to-end rendering when invoked through the interface.
-'@label ICheckingOutput_PrintOutput
-'@sub-title Auto-generated title for ICheckingOutput_PrintOutput.
-'@param checkTable A BetterArray of checkings to print out
+'@label:print-output
+'@sub-title Write checking values to a worksheet
+'@details
+'Coordinates the end-to-end rendering: validates the input array,
+'initialises the worksheet, writes each checking bundle, appends the
+'end marker, and records the final row position.
+'@param checkTable BetterArray. Collection of IChecking instances to print.
+'@throws ProjectError.ElementNotFound When checkTable is Nothing.
+'@export
 Private Sub ICheckingOutput_PrintOutput(ByVal checkTable As BetterArray)
     Dim currentRow As Long
     Dim writtenTitles As Collection
@@ -987,9 +1236,9 @@ Private Sub ICheckingOutput_PrintOutput(ByVal checkTable As BetterArray)
     Application.EnableEvents = False
     ValidateCheckTable checkTable
     Set store = HiddenStore()
-    
+
     On Error GoTo CleanExit
-    
+
     currentRow = InitialiseWorksheet()
     Set writtenTitles = New Collection
 
@@ -1007,108 +1256,11 @@ CleanExit:
     If Err.Number <> 0 Then ThrowError Err.Number, Err.description
 End Sub
 
-
-'@jump:FilterWorksheetInterface
-'@sub-title Interface shim delegating to FilterWorksheet
-'@details Bridges the interface call to the public filtering routine so callers can filter without casting.
-'Routes filter requests from the interface to the public method.
-'@param selectionValue Optional String token matching the desired filter.
 Private Sub ICheckingOutput_FilterWorksheet(Optional ByVal selectionValue As String = vbNullString, _
                                             Optional ByVal titleSelection As String = vbNullString)
     FilterWorksheet selectionValue, titleSelection
 End Sub
 
-'Ensure worksheet handler
 Private Sub ICheckingOutput_EnsureWorksheetChangeHandler()
     EnsureWorksheetChangeHandler
 End Sub
-
-'@section Class private helpers
-'===============================================================================
-
-'@sub-title The BetterArray contains only IChecking entries
-'@param checkTable BetterArray table of Checking
-Private Sub ValidateCheckTable(ByVal checkTable As BetterArray)
-    Dim index As Long
-    For index = checkTable.lowerBound To checkTable.upperBound
-        If Not TypeOf checkTable.Item(index) Is IChecking Then
-           ThrowError ProjectError.InvalidArgument, _
-            "Items in PrintOutput must implement IChecking. Item " & CStr(index) & " does not."
-        End If
-    Next index
-End Sub
-
-
-'@label:ThrowError
-'@sub-title Raise a ProjectError-coded runtime error
-'@param errNumb ProjectError enumeration value.
-'@param errorMessage String human readable description.
-Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
-    Err.Raise errNumb, "CheckingOutput", errorMessage
-End Sub
-
-
-'@fun-title Clean output checking label
-'@param typeLabel A String, label to clean on a worksheet
-'@return A String, cleaned label
-Private Function NormaliseTypeLabel(ByVal typeLabel As String) As String
-    Dim cleaned As String
-
-    cleaned = typeLabel
-    cleaned = Replace(cleaned, ChrW(10060), vbNullString)
-    cleaned = Replace(cleaned, ChrW(9888), vbNullString)
-    cleaned = Replace(cleaned, ChrW(8505), vbNullString)
-    cleaned = Replace(cleaned, ChrW(9998), vbNullString)
-    cleaned = Replace(cleaned, ChrW(10004), vbNullString)
-
-    NormaliseTypeLabel = Trim$(cleaned)
-End Function
-
-'@fun-title Check whether a custom property exists
-'@return A Boolean
-Private Function CustomPropertyExists(ByVal propName As String) As Boolean
-    Dim store As IHiddenNames
-    Set store = HiddenStore()
-    CustomPropertyExists = store.HasName(propName)
-End Function
-
-'@sub-title Stores a custom property.
-Private Sub StoreCustomProperty(propName As String, propValue As String)
-    Dim store As IHiddenNames
-    Set store = HiddenStore()
-    store.EnsureName propName, propValue, HiddenNameTypeString
-    store.SetValue propName, propValue
-End Sub
-
-Private Function HiddenStore() As IHiddenNames
-    If this.store Is Nothing Then
-        If Wksh() Is Nothing Then
-            ThrowError ProjectError.ObjectNotInitialized, _ 
-             "CheckingOutput requires a worksheet before accessing hidden storage."
-        End If
-        Set this.store = HiddenNames.Create(Wksh())
-    End If
-    Set HiddenStore = this.store
-End Function
-
-'@label:ModuleContainsProcedure
-'@sub-title Determine whether the module text already declares the target procedure
-'@param moduleText VBA module contents
-'@param procedureName Name of the procedure to search for
-'@return Boolean indicating whether the procedure exists
-Private Function ModuleContainsProcedure(ByVal moduleText As String, _
-                                         ByVal procedureName As String) As Boolean
-    Dim subSignature As String
-    Dim functionSignature As String
-
-    If LenB(moduleText) = 0 Then Exit Function
-
-    subSignature = "Sub " & procedureName & "("
-    If InStr(1, moduleText, subSignature, vbTextCompare) > 0 Then
-        ModuleContainsProcedure = True
-        Exit Function
-    End If
-
-    functionSignature = "Function " & procedureName & "("
-    ModuleContainsProcedure = (InStr(1, moduleText, functionSignature, vbTextCompare) > 0)
-End Function

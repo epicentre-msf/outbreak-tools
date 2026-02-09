@@ -10,7 +10,7 @@ Attribute VB_Exposed = False
 Attribute VB_Description = "Manages temporary files for Linelist preparation with automatic cleanup"
 
 '@PredeclaredId
-'@Folder("Linelist")
+'@Folder("General")
 '@ModuleDescription("Manages temporary files for Linelist preparation with automatic cleanup")
 '@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 '@depends ProjectError
@@ -18,6 +18,15 @@ Attribute VB_Description = "Manages temporary files for Linelist preparation wit
 Option Explicit
 
 Implements ITemporaryRepos
+
+'@class TemporaryRepos
+'@description
+'Manages a temporary folder on disk for linelist preparation artefacts.
+'Creates, sanitises, and cleans up files within a dedicated repository
+'directory. Automatically deletes all content on termination.
+'@depends ProjectError
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
 
 '@section State and constants
 '===============================================================================
@@ -32,10 +41,11 @@ Private Const DEFAULT_FOLDER_NAME As String = "OBTApp_"
 
 '@section Factory helpers
 '===============================================================================
-'@label:Create
+'@label:create
 '@sub-title Build and initialise a temporary repository service
-'@param baseDirectory Optional String pointing to a custom root location.
-'@return ITemporaryRepos ready for use.
+'@param baseDirectory String. Optional custom root location.
+'@return ITemporaryRepos. Ready for use.
+'@export
 Public Function Create(Optional ByVal baseDirectory As String) As ITemporaryRepos
     Dim service As TemporaryRepos
     Set service = New TemporaryRepos
@@ -43,6 +53,9 @@ Public Function Create(Optional ByVal baseDirectory As String) As ITemporaryRepo
     Set Create = service
 End Function
 
+'@label:initialise
+'@sub-title Set the root path and mark the repository as not ready
+'@param baseDirectory String. Optional custom root location.
 Friend Sub Initialise(Optional ByVal baseDirectory As String)
     this.rootPath = ResolveRootPath(baseDirectory)
     this.isReady = False
@@ -51,8 +64,9 @@ End Sub
 
 '@section Lifecycle
 '===============================================================================
-'@label:EnsureReady
+'@label:ensure-ready
 '@sub-title Prepare the repository root if it has not already been created
+'@export
 Public Sub EnsureReady()
     If this.isReady Then Exit Sub
 
@@ -60,8 +74,9 @@ Public Sub EnsureReady()
     this.isReady = True
 End Sub
 
-'@label:Reset
+'@label:reset
 '@sub-title Remove all temporary artefacts and mark repository as uninitialised
+'@export
 Public Sub Reset()
     DeleteAllInternal
     this.isReady = False
@@ -70,16 +85,19 @@ End Sub
 
 '@section Paths
 '===============================================================================
-'@label:RootPath
-'@sub-title Expose the fully-qualified repository root
+'@label:root-path
+'@prop-title Fully-qualified repository root
+'@return String. Absolute path ending with a path separator.
+'@export
 Public Property Get RootPath() As String
     RootPath = this.rootPath
 End Property
 
-'@label:CreateFilePath
+'@label:create-file-path
 '@sub-title Generate a safe path for a new temporary file within the repository
-'@param fileName Requested file name (sanitised when required).
-'@return String absolute path ready for file creation.
+'@param fileName String. Requested file name (sanitised when required).
+'@return String. Absolute path ready for file creation.
+'@export
 Public Function CreateFilePath(ByVal fileName As String) As String
     EnsureReady
     CreateFilePath = this.rootPath & SanitizeFileName(fileName)
@@ -88,8 +106,10 @@ End Function
 
 '@section File operations
 '===============================================================================
-'@label:DeleteFile
+'@label:delete-file
 '@sub-title Delete a single file; silently ignore missing paths
+'@param path String. Absolute file path.
+'@export
 Public Sub DeleteFile(ByVal path As String)
     If LenB(path) = 0 Then Exit Sub
     On Error Resume Next
@@ -97,8 +117,9 @@ Public Sub DeleteFile(ByVal path As String)
     On Error GoTo 0
 End Sub
 
-'@label:DeleteAll
+'@label:delete-all
 '@sub-title Remove every file within the repository, then recreate the root folder
+'@export
 Public Sub DeleteAll()
     EnsureReady
     DeleteAllInternal
@@ -108,10 +129,10 @@ End Sub
 
 '@section Internal helpers
 '===============================================================================
-'@label:ResolveRootPath
+'@label:resolve-root-path
 '@sub-title Determine the root directory used for temporary storage
-'@param baseDirectory Optional String supplied by the caller.
-'@return String fully-qualified path that ends with the repository folder.
+'@param baseDirectory String. Optional path supplied by the caller.
+'@return String. Fully-qualified path ending with the repository folder.
 Private Function ResolveRootPath(ByVal baseDirectory As String) As String
     Dim root As String
 
@@ -133,9 +154,9 @@ Private Function ResolveRootPath(ByVal baseDirectory As String) As String
     ResolveRootPath = root & DEFAULT_FOLDER_NAME & Application.PathSeparator
 End Function
 
-'@label:EnsureDirectoryExists
+'@label:ensure-directory-exists
 '@sub-title Create the supplied folder when missing and validate existing paths
-'@param folderPath String path that should represent a directory.
+'@param folderPath String. Path that should represent a directory.
 Private Sub EnsureDirectoryExists(ByVal folderPath As String)
     Dim attr As Long
 
@@ -155,9 +176,9 @@ Private Sub EnsureDirectoryExists(ByVal folderPath As String)
     CreateDirectoryTree folderPath
 End Sub
 
-'@label:CreateDirectoryTree
+'@label:create-directory-tree
 '@sub-title Create a directory and all missing parents
-'@param folderPath String fully-qualified target folder.
+'@param folderPath String. Fully-qualified target folder.
 Private Sub CreateDirectoryTree(ByVal folderPath As String)
     'Creates all missing parents. Treat "already exists" as success.
     Dim i As Long
@@ -227,8 +248,10 @@ NextPart:
 End Sub
 
 
-'@label:IsDirectory
+'@label:is-directory
 '@sub-title Determine whether the supplied path points to a folder
+'@param path String. Path to test.
+'@return Boolean. True when the path is an existing directory.
 Private Function IsDirectory(ByVal path As String) As Boolean
     Dim a As Long
     On Error Resume Next
@@ -242,8 +265,11 @@ Private Function IsDirectory(ByVal path As String) As Boolean
 End Function
 
 
-'@label:NormalizePath
+'@label:normalize-path
 '@sub-title Remove trailing separators and normalise the supplied path string
+'@param path String. Raw path.
+'@param sep String. Platform path separator.
+'@return String. Cleaned path.
 Private Function NormalizePath(ByVal path As String, ByVal sep As String) As String
     ' Trim whitespace and remove trailing separators (except root)
     Dim p As String: p = Trim$(path)
@@ -254,10 +280,10 @@ Private Function NormalizePath(ByVal path As String, ByVal sep As String) As Str
 End Function
 
 
-'@label:SanitizeFileName
+'@label:sanitize-file-name
 '@sub-title Replace characters that are invalid on common file systems
-'@param fileName Candidate file name.
-'@return String safe to append to the repository root.
+'@param fileName String. Candidate file name.
+'@return String. Safe to append to the repository root.
 Private Function SanitizeFileName(ByVal fileName As String) As String
     Dim invalidChars As Variant
     Dim result As String
@@ -277,9 +303,8 @@ Private Function SanitizeFileName(ByVal fileName As String) As String
     SanitizeFileName = result
 End Function
 
-'@label:DeleteAllInternal
+'@label:delete-all-internal
 '@sub-title Wipe every file inside the repository without recreating the folder
-'@remarks Used by Reset and class termination paths.
 Private Sub DeleteAllInternal()
     Dim filePath As String
 
@@ -294,19 +319,27 @@ Private Sub DeleteAllInternal()
     On Error GoTo 0
 End Sub
 
+'@label:class-terminate
+'@sub-title Clean up temporary files when the instance is destroyed
 Private Sub Class_Terminate()
     On Error Resume Next
         DeleteAllInternal
     On Error GoTo 0
 End Sub
 
+'@label:throw-error
+'@sub-title Raise a typed project error
+'@param errNumber ProjectError. The error code.
+'@param message String. Descriptive error message.
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal message As String)
     Err.Raise errNumber, "TemporaryRepos", message
 End Sub
 
 
-'@section Interface implementation
+'@section Interface
 '===============================================================================
+'ITemporaryRepos delegation wiring.
+
 Private Sub ITemporaryRepos_EnsureReady()
     EnsureReady
 End Sub

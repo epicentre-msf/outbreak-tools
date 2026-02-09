@@ -15,12 +15,18 @@ Attribute VB_Description = "Buttons of the linelist"
 '@Folder("General")
 '@ModuleDescription("Buttons of the linelist")
 '@depends Checking
-'@label:Buttons
-'@section Overview
-'@details Provides a light wrapper around worksheet shapes so linelist buttons can be created, positioned, and formatted consistently.
 
 Option Explicit
 Implements IButtons
+
+'@class Buttons
+'@description
+'Light wrapper around worksheet shapes for creating, positioning,
+'and formatting linelist buttons. Supports large, small, and geo
+'button scopes with automatic placement offset calculations.
+'@depends Checking, ILLFormat, ProjectError
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
 
 '@section State
 '===============================================================================
@@ -56,15 +62,14 @@ Private internalChecks As IChecking
 
 '@section Factory
 '===============================================================================
+'Initialisation and self-reference.
 
-'@label:Create
-'@jump:Create
-'@sub-title Instantiate a button helper bound to an output range
-'@details Validates the target range before initialising the internal state so callers receive a ready-to-use instance.
-'@param outrng Range identifying the anchor cell for the button.
-'@param codeName String name assigned to the shape in the worksheet.
-'@param scope ButtonScope controlling the button size and formatting category.
-'@return IButtons fully initialised helper.
+'@label:create
+'@sub-title Factory returning an initialised interface
+'@param outrng Range. Anchor cell for the button.
+'@param codeName String. Name assigned to the shape.
+'@param scope Byte. ButtonScope controlling size and format.
+'@return IButtons. Ready to use.
 '@export
 Public Function Create(ByVal outrng As Range, ByVal codeName As String, _
                        ByVal scope As Byte) As IButtons
@@ -83,48 +88,52 @@ Public Function Create(ByVal outrng As Range, ByVal codeName As String, _
     End With
 End Function
 
-'@section PublicAccessors
+'@section Properties
 '===============================================================================
+'State accessors.
 
-'@label:Self
-'@jump:Self
-'@sub-title Return the current helper through its interface
-'@return IButtons reference to this instance.
+'@label:self
+'@prop-title Self-reference as IButtons
+'@return IButtons. Self-reference.
 Public Property Get Self() As IButtons
     Set Self = Me
 End Property
 
-'@label:OutputRange
-'@sub-title Retrieve the anchor range used for placement
-'@return Range providing the top-left anchor cell.
+'@label:output-range
+'@prop-title Anchor range used for placement
+'@return Range. Top-left anchor cell.
+'@export
 Public Property Get OutputRange() As Range
     Set OutputRange = this.rng
 End Property
 
-'@sub-title Update the anchor range used for placement
-'@param rng Range providing the top-left anchor cell.
+'@label:output-range-set
+'@prop-title Update the anchor range used for placement
+'@param rng Range. Providing the top-left anchor cell.
+'@export
 Public Property Set OutputRange(ByVal rng As Range)
     Set this.rng = rng
 End Property
 
-'@label:Name
-'@jump:Name
-'@sub-title Retrieve the shape name assigned in the worksheet
-'@return String shape identifier.
+'@label:name
+'@prop-title Shape name assigned in the worksheet
+'@return String. Shape identifier.
+'@export
 Public Property Get Name() As String
     Name = this.shapeName
 End Property
 
-'@sub-title Store the shape name assigned in the worksheet
-'@param nm String identifier for the shape.
+'@label:name-set
+'@prop-title Store the shape name assigned in the worksheet
+'@param nm String. Identifier for the shape.
 Public Property Let Name(ByVal nm As String)
     this.shapeName = nm
 End Property
 
-'@label:ShapeScope
-'@jump:ShapeScope
-'@sub-title Retrieve the formatting scope applied to the button
-'@return ButtonScope value describing the button flavour.
+'@label:shape-scope
+'@prop-title Formatting scope applied to the button
+'@return Byte. ButtonScope value.
+'@export
 Public Property Get ShapeScope() As Byte
     If this.scope = 0 Then
         LogCheck "Shape scope not initialised; defaulting to small", checkingWarning
@@ -133,8 +142,9 @@ Public Property Get ShapeScope() As Byte
     ShapeScope = this.scope
 End Property
 
-'@sub-title Store the formatting scope applied to the button
-'@param scope ButtonScope describing the button flavour.
+'@label:shape-scope-set
+'@prop-title Store the formatting scope applied to the button
+'@param scope Byte. ButtonScope value.
 Public Property Let ShapeScope(ByVal scope As Byte)
     Select Case scope
         Case ButtonScopeLarge, ButtonScopeSmall, ButtonScopeGeo
@@ -145,11 +155,13 @@ Public Property Let ShapeScope(ByVal scope As Byte)
     End Select
 End Property
 
-'@section ShapeQueries
+'@section Shape Queries
 '===============================================================================
+'Shape existence and retrieval.
 
-'@sub-title Determine whether the button shape already exists on the worksheet
-'@return Boolean True when the named shape is present.
+'@label:shape-exists
+'@prop-title Whether the button shape already exists on the worksheet
+'@return Boolean. True when the named shape is present.
 Private Property Get ShapeExists() As Boolean
     Dim targetShape As Shape
     Dim targetSheet As Worksheet
@@ -163,8 +175,9 @@ Private Property Get ShapeExists() As Boolean
     ShapeExists = Not targetShape Is Nothing
 End Property
 
-'@sub-title Retrieve the underlying shape or raise when absent
-'@return Shape object representing the button.
+'@label:shape-object
+'@prop-title Retrieve the underlying shape or raise when absent
+'@return Shape. Object representing the button.
 Private Property Get ShapeObject() As Shape
     Dim sheet As Worksheet
     Dim shapeName As String
@@ -181,15 +194,15 @@ Private Property Get ShapeObject() As Shape
     Set ShapeObject = sheet.Shapes(shapeName)
 End Property
 
-'@section ButtonOperations
+'@section Operations
 '===============================================================================
+'Button creation and formatting.
 
-'@label:Add
-'@jump:Add
+'@label:add
 '@sub-title Create the worksheet shape at the configured location
-'@details Respects the scope when determining size, applies spacing offsets, and optionally wires up a macro command.
-'@param actionCommand Optional String macro to invoke when the button is clicked.
-'@param shapeLabel Optional String label displayed on the button; defaults to the shape name.
+'@param actionCommand String. Macro to invoke on click. Defaults to vbNullString.
+'@param shapeLabel String. Label displayed on the button. Defaults to vbNullString.
+'@export
 Public Sub Add(Optional ByVal actionCommand As String = vbNullString, _
                Optional ByVal shapeLabel As String = vbNullString)
 
@@ -227,12 +240,10 @@ Public Sub Add(Optional ByVal actionCommand As String = vbNullString, _
 
 End Sub
 
-'@label:Format
-'@jump:Format
+'@label:format
 '@sub-title Apply the appropriate visual design to the button
-'@details Delegates to an `ILLFormat` provider while mapping the internal ButtonScope to the expected format scope.
-'@param design ILLFormat formatter responsible for styling the shape.
-'@depends ILLFormat
+'@param design ILLFormat. Formatter responsible for styling the shape.
+'@export
 Public Sub Format(ByVal design As ILLFormat)
     Dim shp As Shape
     Dim formatToken As Variant
@@ -263,11 +274,12 @@ End Sub
 
 '@section Checkings
 '===============================================================================
+'Diagnostic logging.
 
-'@label:LogCheck
+'@label:log-check
 '@sub-title Append a diagnostic entry to the internal checking log
-'@param label String message describing the issue or action.
-'@param scope Byte severity scope for the log entry.
+'@param label String. Message describing the issue or action.
+'@param scope Byte. Severity scope for the log entry.
 Private Sub LogCheck(ByVal label As String, _
                      Optional ByVal scope As Byte = checkingNote)
 
@@ -282,38 +294,41 @@ Private Sub LogCheck(ByVal label As String, _
     this.hasChecks = True
 End Sub
 
-'@label:HasCheckings
-'@prop-title Determine whether any checks have been recorded
-'@return Boolean True when entries exist.
+'@label:has-checkings
+'@prop-title Whether diagnostic entries have been recorded
+'@return Boolean. True when at least one entry exists.
 '@export
 Private Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-'@label:CheckingValues
-'@prop-title Retrieve the internal checking log
-'@return Object IChecking instance containing accumulated entries.
+'@label:checking-values
+'@prop-title Retrieve the diagnostic log entries
+'@return Object. The checking instance, or Nothing.
 '@export
 Private Property Get CheckingValues() As Object
     If Not HasCheckings Then Exit Property
     Set CheckingValues = internalChecks
 End Property
 
-'@section ErrorHandling
+'@section Error Handling
 '===============================================================================
 
-'@sub-title Raise a class-specific error message
-'@param errNumb ProjectError enumeration describing the failure.
-'@param errorMessage String describing the failure.
+'@label:throw-error
+'@sub-title Raise a typed project error
+'@param errNumb Long. ProjectError error code.
+'@param errorMessage String. Descriptive error message.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, CLASSNAME, "Error: " & errorMessage
 End Sub
 
-'@section PrivateHelpers
+'@section Helpers
 '===============================================================================
+'Internal utilities.
 
+'@label:target-range
 '@sub-title Ensure the internal anchor range is available
-'@return Range anchor used for calculations.
+'@return Range. Anchor used for calculations.
 Private Function TargetRange() As Range
     If this.rng Is Nothing Then
         LogCheck "Button anchor range has not been configured", checkingError
@@ -323,15 +338,17 @@ Private Function TargetRange() As Range
     Set TargetRange = this.rng
 End Function
 
+'@label:target-worksheet
 '@sub-title Retrieve the worksheet hosting the button
-'@return Worksheet containing the anchor range.
+'@return Worksheet. Containing the anchor range.
 Private Function TargetWorksheet() As Worksheet
     Set TargetWorksheet = TargetRange().Parent
 End Function
 
+'@label:resolve-dimensions
 '@sub-title Resolve button dimensions from the scope definition
-'@param scope ButtonScope describing the button flavour.
-'@return TDimensions with width and height in points.
+'@param scope Byte. ButtonScope value.
+'@return TDimensions. Width and height in points.
 Private Function ResolveDimensions(ByVal scope As Byte) As TDimensions
     Dim dims As TDimensions
 
@@ -351,9 +368,10 @@ Private Function ResolveDimensions(ByVal scope As Byte) As TDimensions
     ResolveDimensions = dims
 End Function
 
+'@label:resolve-position
 '@sub-title Compute the top-left coordinates for the button
-'@param anchor Range used as the positional reference.
-'@return TPosition containing left/top offsets.
+'@param anchor Range. Positional reference.
+'@return TPosition. Left and top offsets.
 Private Function ResolvePosition(ByVal anchor As Range) As TPosition
     Dim position As TPosition
 
@@ -363,10 +381,11 @@ Private Function ResolvePosition(ByVal anchor As Range) As TPosition
     ResolvePosition = position
 End Function
 
+'@label:effective-label
 '@sub-title Determine the label displayed on the button
-'@param providedLabel Optional caller-provided label.
-'@param fallbackName String used when the label is blank.
-'@return String label text.
+'@param providedLabel String. Caller-provided label.
+'@param fallbackName String. Fallback when the label is blank.
+'@return String. Label text.
 Private Function EffectiveLabel(ByVal providedLabel As String, ByVal fallbackName As String) As String
     If LenB(providedLabel) = 0 Then
         EffectiveLabel = fallbackName
@@ -377,6 +396,7 @@ End Function
 
 '@section Interface
 '===============================================================================
+'IButtons delegation wiring.
 
 Private Sub IButtons_Add(Optional ByVal actionCommand As String = vbNullString, _
                          Optional ByVal shapeLabel As String = vbNullString)

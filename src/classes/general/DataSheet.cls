@@ -9,16 +9,27 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 Attribute VB_Description = "Data manipulation in a worksheet"
 
-'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument,   ExcelMemberMayReturnNothing,  IIfSideEffect, ExcelMemberMayReturnNothing, UseMeaningfulName, HungarianNotation
 '@PredeclaredId
 '@Folder("General")
 '@ModuleDescription("Data manipulation in a worksheet")
-'@depends Checking, BetterArray, HiddenNames, IHiddenNames
+'@IgnoreModule ProcedureNotUsed, UnrecognizedAnnotation, SuperfluousAnnotationArgument, ExcelMemberMayReturnNothing, IIfSideEffect, UseMeaningfulName, HungarianNotation
 
 Option Explicit
+
 Implements IDataSheet
 
-'Types of the class
+'@class DataSheet
+'@description
+'Provides low-level data manipulation on a worksheet with a table-like
+'structure identified by a starting row and column. Unlike CustomTable,
+'DataSheet does not require a ListObject — it works directly with cell
+'ranges. Supports column lookup, filtering (single and multi-column),
+'import/export to other DataSheets or CustomTables, and formatting
+'transfer for designated columns. Consumers interact through the
+'IDataSheet interface.
+'@depends Checking, BetterArray, HiddenNames
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
 Private Type TDataSheet
     sh As Worksheet                        'Worksheet of the data
     startLn As Long                              'The line where the data starts
@@ -38,26 +49,26 @@ Private FORMATCOLUMNS As BetterArray
 Private checkCounter As Long
 Private internalChecks As IChecking
 
-'@section Instanciation
+'@section Factory
 '===============================================================================
+'@description Entry point for creating DataSheet instances.
 
-'@label:Create
-'@prop-title Create a DataSheet Object
-'
+'@label:create
+'@sub-title Create a DataSheet wrapper around a worksheet
 '@details
-'A datasheet object is a worksheet with table like data structure in it. This class
-'deals with basic data manipulation properties to the table-like structure in the 
-'worksheet. It does not assume any prior structure in the worksheet, hence
-'it is more low level than its CustomTable analog which relies on listObjects.
-'DataSheets are identified by the start row and start columns. The class will 
-'look for end rows and end columns dynamically.
-'
-'@param sh A worksheet
-'@param startLn A Long, the starting line for the datasheet
-'@param startCl A Long, the starting column for the datasheet
-'@param forceEndRow Optional, Boolean. Whether to look for end rows on all the columns or Not. Default is False.
-'@param objName Optional, As String, The name of the datasheet object. If empty, will default to the name of the worksheet. Default is empty.
-'@return A DataSheet Object
+'Wraps the supplied worksheet with convenience methods for column
+'lookup, filtering, import/export, and formatting transfer. The data
+'structure is identified by a starting row and column; end row and
+'column are computed dynamically. Unlike CustomTable, no ListObject
+'is required.
+'@param sh Worksheet. The worksheet hosting the data.
+'@param startLn Long. The 1-based header row index.
+'@param startCl Long. The 1-based starting column index.
+'@param forceEndRow Optional Boolean. When True, scans all columns to find the last row. Defaults to False.
+'@param objName Optional String. Object name. Defaults to the worksheet name.
+'@return IDataSheet. A fully initialised DataSheet instance.
+'@throws ProjectError.ObjectNotInitialized When sh is Nothing.
+'@throws ProjectError.InvalidArgument When startLn or startCl is less than 1.
 '@depends Checking, BetterArray
 '@export
 Public Function Create(ByVal sh As Worksheet, ByVal startLn As Long, _
@@ -81,71 +92,92 @@ Public Function Create(ByVal sh As Worksheet, ByVal startLn As Long, _
     End With
 End Function
 
-'instanciate elements of the datasheet object
+'@label:self
+'@prop-title Current object instance
+'@return IDataSheet. Reference to the current object.
 Public Property Get Self() As IDataSheet
     Set Self = Me
 End Property
 
+'@label:wksh-set
+'@prop-title Assign the worksheet reference
+'@param sh Worksheet. The worksheet to assign.
 Public Property Set Wksh(ByVal sh As Worksheet)
     Set this.sh = sh
 End Property
 
+'@label:data-start-row-set
+'@prop-title Assign the header row index
+'@param startLn Long. The 1-based header row index.
 Public Property Let DataStartRow(ByVal startLn As Long)
     this.startLn = startLn
 End Property
 
+'@label:data-start-column-set
+'@prop-title Assign the starting column index
+'@param startCl Long. The 1-based starting column index.
 Public Property Let DataStartColumn(ByVal startCl As Long)
     this.startCl = startCl
 End Property
 
+'@label:strict-end-set
+'@prop-title Assign the strict end row flag
+'@param forceEnd Boolean. When True, scans all columns for the last row.
 Public Property Let StrictEnd(ByVal forceEnd As Boolean)
     this.forceEnd = forceEnd
 End Property
 
+'@label:name-set
+'@prop-title Assign the DataSheet name
+'@param objName String. The name to assign.
 Public Property Let Name(ByVal objName As String)
     this.objName = objName
 End Property
 
 
-'@label:elements
-'@section DataSheet Elements
+'@section Elements
 '===============================================================================
+'@description Properties that expose the worksheet layout and column access.
 
 '@label:wksh
-'@prop-title Worksheet of the DataSheet Object
-'@return A Worksheet Object
+'@prop-title Worksheet backing the DataSheet
+'@details
+'Returns the worksheet that hosts the table-like data.
+'@return Worksheet. The host worksheet.
 '@export
 Public Property Get Wksh() As Worksheet
     Set Wksh = this.sh
 End Property
 
-'@label:startrow
-'@prop-title Start Row of the datasheet
-'@return A Long
+'@label:data-start-row
+'@prop-title First row of data (header row)
+'@return Long. The 1-based header row index.
 '@export
 Public Property Get DataStartRow() As Long
     DataStartRow = this.startLn
 End Property
 
-'@label:startcol
-'@prop-title Start Column of the datasheet
-'@return A Long
+'@label:data-start-column
+'@prop-title First column of data
+'@return Long. The 1-based starting column index.
 '@export
 Public Property Get DataStartColumn() As Long
     DataStartColumn = this.startCl
 End Property
 
-'@label:strictend
-'@prop-title Check start row by looking on all the columns
-'@return A Long
-'@export
+'@label:strict-end
+'@prop-title Whether to scan all columns for the last row
+'@return Boolean. True when all columns are scanned.
 Public Property Get StrictEnd() As Boolean
     StrictEnd = this.forceEnd
 End Property
 
 '@label:name
-'@prop-title Name of the Object
-'@return A String, the name of the worksheet of the datasheet
+'@prop-title Name of the DataSheet
+'@details
+'Returns the assigned object name. When no name was provided during
+'creation, defaults to the worksheet name.
+'@return String. The DataSheet name.
 '@export
 Private Property Get Name() As String
     
@@ -156,9 +188,13 @@ Private Property Get Name() As String
     Name = this.objName
 End Property
 
-'@label:endrow
-'@prop-title End Row of the DataSheet
-'@return A Long
+'@label:data-end-row
+'@prop-title Last row containing data
+'@details
+'Dynamically computes the last occupied row. When StrictEnd is True,
+'scans all non-formula columns for the furthest row. Guarantees at
+'least one data row below the header.
+'@return Long. The 1-based last data row index.
 '@export
 Private Property Get DataEndRow() As Long
 
@@ -197,9 +233,9 @@ Private Property Get DataEndRow() As Long
     End If
 End Property
 
-'@label:endcol
-'@prop-title End Column of the DataSheet
-'@return A Long
+'@label:data-end-column
+'@prop-title Last column containing data
+'@return Long. The 1-based last column index.
 '@export
 Private Property Get DataEndColumn() As Long
     With Wksh
@@ -207,9 +243,12 @@ Private Property Get DataEndColumn() As Long
     End With
 End Property
 
-'@label:headerrange
-'@prop-title DataSheet header range
-'@return A Long
+'@label:header-range
+'@prop-title Header row Range
+'@details
+'Returns the Range spanning from the start column to the end column
+'on the header row.
+'@return Range. The header row range.
 '@export
 Public Property Get HeaderRange() As Range
     'updating the header range
@@ -219,12 +258,15 @@ Public Property Get HeaderRange() As Range
 End Property
 
 
-'@label:columnexists
-'@prop-title Check if a column name exists
-'@param colName A String, the column name where you want to check existence
-'@param strictSearch Optional, Boolean. Whether to match the whole string in a cell or not. Default is True
-'@param matchCase Optional, Boolean. Do case sensitive research. Default is True
-'@return A Boolean
+'@label:column-exists
+'@sub-title Check whether a column exists in the DataSheet
+'@details
+'Searches the header row for the specified column name using Range.Find.
+'Returns False for empty column names.
+'@param colName String. Column header to search for.
+'@param strictSearch Optional Boolean. When True, uses exact whole-string matching. Defaults to True.
+'@param matchCase Optional Boolean. When True, matching is case-sensitive. Defaults to True.
+'@return Boolean. True when the column is found.
 '@export
 Private Function ColumnExists(ByVal colName As String, _ 
                               Optional ByVal strictSearch As Boolean = True, _
@@ -243,13 +285,19 @@ Private Function ColumnExists(ByVal colName As String, _
 End Function
 
 
-'@label:columnindex
-'@prop-title Check if a column name exists
-'@param colName A String, the column name where you want to check existence
-'@param inDataRange Optional, Boolean. Return column index w.r. to the data range instead of the worksheet. Default is False.
-'@param strictSearch Optional, Boolean. Whether to match the whole string in a cell or not. Default is True
-'@param matchCase Optional, Boolean. Do case sensitive research. Default is True
-'@return A Long
+'@label:column-index
+'@sub-title Resolve the column index for a header name
+'@details
+'Returns the worksheet column index, or the data-range-relative index
+'when inDataRange is True. Returns -1 when the column is not found and
+'shouldExist is False; raises an error when shouldExist is True.
+'@param colName String. Column header to look up.
+'@param inDataRange Optional Boolean. When True, returns the index relative to the data range. Defaults to False.
+'@param shouldExist Optional Boolean. When True, raises an error if not found. Defaults to False.
+'@param strictSearch Optional Boolean. When True, uses exact whole-string matching. Defaults to True.
+'@param matchCase Optional Boolean. When True, matching is case-sensitive. Defaults to True.
+'@return Long. The column index, or -1 when not found.
+'@throws ProjectError.ElementNotFound When the column is not found and shouldExist is True.
 '@export
 Private Function ColumnIndex(ByVal colName As String, _
                              Optional ByVal inDataRange As Boolean = False, _
@@ -280,22 +328,17 @@ Private Function ColumnIndex(ByVal colName As String, _
 End Function
 
 
-'@label:datarange
-'@prop-title Range of a column
-'
+'@label:data-range
+'@prop-title Range of a column or the entire data body
 '@details
-'Return a Data Range given a column name. When strictSearch is false, the 
-'search for the column name is done using partial match. The first partial match
-'found is the returned column. If the column names of the DataSheet are quite
-'unique, the partial match returns unique values. In case some colunm names share
-'some text, make sure to use strictSearch = True to avoid unexpected output.
-'
-'
-'@param colName String, the name of the column to look for
-'@param includeHeaders Optional, Boolean. Whether to return the colunmn plus the headers, default is False
-'@param strictSearch Optional, Boolean. Look for partial values when searching the column name,
-'@param matchCase Optional, Boolean. Do case sensitive search. Default is True.
-'@return A Range object
+'Returns a data Range for the specified column, or the entire data body
+'when colName is "__all__". When strictSearch is False, partial matching
+'is used. Use strictSearch when column names share common text.
+'@param colName Optional String. Column header to retrieve. Defaults to "__all__".
+'@param includeHeaders Optional Boolean. When True, includes the header row. Defaults to False.
+'@param strictSearch Optional Boolean. When True, uses exact matching. Defaults to True.
+'@param matchCase Optional Boolean. When True, matching is case-sensitive. Defaults to True.
+'@return Range. The requested data range.
 '@export
 Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
                               Optional ByVal includeHeaders As Boolean = False, _ 
@@ -322,11 +365,15 @@ Public Property Get DataRange(Optional ByVal colName As String = "__all__", _
 End Property
 
 
-'@prop-title For a given column name, return the corresponding column name match
-'@param colName A String, the column name where you want to check existence
-'@param strictSearch Optional, Boolean. Whether to match the whole string in a cell or not. Default is True
-'@param matchCase Optional, Boolean. Do case sensitive research. Default is True
-'@return A String
+'@label:matched-column-name
+'@sub-title Return the actual header text for a column name match
+'@details
+'Searches the header row and returns the exact text of the matched
+'cell. Returns vbNullString when no match is found.
+'@param colName String. Column name to search for.
+'@param strictSearch Optional Boolean. When True, uses exact matching. Defaults to True.
+'@param matchCase Optional Boolean. When True, matching is case-sensitive. Defaults to True.
+'@return String. The matched header text, or vbNullString.
 Private Function MatchedColumnName(ByVal colName As String, _
                                 Optional ByVal strictSearch As Boolean = True, _
                                 Optional ByVal matchCase As Boolean = True) As String
@@ -349,12 +396,18 @@ Private Function MatchedColumnName(ByVal colName As String, _
     End If
 End Function
 
-'@label:RenameColumn
-'@sub-title Rename a header in the datasheet
-'@param currentName String. Existing column header to rename.
-'@param newName String. Replacement header text.
-'@param strictSearch Optional Boolean. Perform strict header search. Default True.
-'@param matchCase Optional Boolean. Respect header case. Default False.
+'@label:rename-column
+'@sub-title Rename a header in the DataSheet
+'@details
+'Replaces the header text of the matched column with newName. Raises
+'an error when newName is empty or the column is not found.
+'@param currentName String. Current column header to find.
+'@param newName String. New header text to assign.
+'@param strictSearch Optional Boolean. When True, uses exact matching. Defaults to True.
+'@param matchCase Optional Boolean. When True, matching is case-sensitive. Defaults to False.
+'@throws ProjectError.InvalidArgument When newName is empty.
+'@throws ProjectError.ElementNotFound When the column is not found.
+'@export
 Public Sub RenameColumn(ByVal currentName As String, _
                         ByVal newName As String, _
                         Optional ByVal strictSearch As Boolean = True, _
@@ -379,12 +432,15 @@ Public Sub RenameColumn(ByVal currentName As String, _
     hRng.Cells(1, headerIndex).Value = newName
 End Sub
 
-'@label:operate
-'@section Operate with Outside world
+'@section Operations
 '===============================================================================
+'@description Filtering, cleaning, import, and export operations.
 
 '@label:clean
-'@sub-title Clean all the columns of the DataSheet except the formulas columns
+'@sub-title Clear all non-formula columns
+'@details
+'Iterates every column in the header row and clears the contents of
+'those that do not contain formulas in their first data cell.
 '@export
 Private Sub Clean()
   Dim rng As Range
@@ -405,19 +461,19 @@ Private Sub Clean()
 End Sub
 
 
-'@label:filterdata
-'@prop-title Filter some data using criteria on a column
+'@label:filter-data
+'@sub-title Filter data on a single column and return the result
 '@details
-'
-'The function will filter the dictionary using basic excel filtering properties
-'and return a BetterArray containing the results of the filtering process. It 
-'will remove the filter once the operation is complete, keeping the datasheet untouched.
-'
-'@param varName A String, column where check condition
-'@param criteriaName A String, the condition  to apply on the column
-'@param returnedColumnName A String, column with values  to return
-'@param includeHeaders Optional, Boolean. Whether to return values with headers. Default is False
-'@return A BetterArray
+'Applies an AutoFilter on varName with criteriaName, extracts the
+'visible rows from returnedColumnName into a temporary output area,
+'reads them into a BetterArray, then cleans up. The filter is removed
+'after the operation, leaving the DataSheet untouched.
+'@param varName String. Column to filter on.
+'@param criteriaName String. Filter criteria to apply.
+'@param returnedColumnName String. Column whose values to return ("__all__" for all columns).
+'@param includeHeaders Optional Boolean. When True, includes the header row. Defaults to False.
+'@param matchCase Optional Boolean. When True, column lookup is case-sensitive. Defaults to True.
+'@return BetterArray. The filtered values.
 '@export
 Private Function FilterData(ByVal varName As String, _
                             ByVal criteriaName As String, _
@@ -484,19 +540,17 @@ Private Function FilterData(ByVal varName As String, _
 End Function
 
 
-'@label:filtersdata
-'@prop-title Filter some data using criteria on a column on multiple conditions
+'@label:filters-data
+'@sub-title Filter data on multiple columns and return the result
 '@details
-'
-'The function will filter the dictionary using basic excel filtering properties
-'and return a BetterArray containing the results of the filtering process. It 
-'will remove the filter once the operation is complete, keeping the datasheet untouched.
-'All the column names search are done in a case sensitive way.
-'
-'@param varData A BetterArray of String, columns where to select values based on conditions
-'@param crieteriaData A BetterArray of String, the conditions
-'@param returnedColumnsData A BetterArray, columns which values you want to return
-'@return A two dimension BetterArray
+'Applies multiple AutoFilters (one per entry in varData/criteriaData)
+'and returns the visible values from each column in returnedColumnsData
+'as a two-dimensional BetterArray. Exits when varData and criteriaData
+'have different lengths.
+'@param varData BetterArray. Column names to filter on.
+'@param criteriaData BetterArray. Criteria corresponding to each column.
+'@param returnedColumnsData BetterArray. Columns whose values to return.
+'@return BetterArray. A two-dimensional array of filtered values.
 '@export
 Private Function FiltersData(ByVal varData As BetterArray, _
                              ByVal criteriaData As BetterArray, _
@@ -582,9 +636,13 @@ End Function
 
 
 '@label:import
-'@sub-title Import a custom table or a data sheet into the current datasheet
-'@param imporData A CustomTable or DataSheet Object to import
-'@param strictColumnSearch Optional, Boolean. When importing the object, do case sensitive column search. Default is true
+'@sub-title Import data from another DataSheet or CustomTable
+'@details
+'Cleans this DataSheet, then iterates the source headers and copies
+'matching column data. Formula columns are preserved. Applies format
+'import for registered formatting columns after the data copy.
+'@param importData Object. A DataSheet or CustomTable to import from.
+'@param strictColumnSearch Optional Boolean. When True, uses case-sensitive column matching. Defaults to True.
 '@export
 Private Sub Import(ByVal importData As Object, Optional ByVal strictColumnSearch As Boolean = True)
 
@@ -640,10 +698,14 @@ Private Sub Import(ByVal importData As Object, Optional ByVal strictColumnSearch
     this.hasImport = True
 End Sub
 
-'@label:importformat
-'@sub-title Import columns format into the current Datasheet
-'@param imporData A CustomTable or DataSheet Object to import
-'@param matchColumnsCase Optional, Boolean. When importing the object, do case sensitive column search. Default is true
+'@label:import-format
+'@sub-title Import column formatting from a source object
+'@details
+'Copies visual formatting (colours, font weight, italic) from the
+'source for all columns registered via AddFormatsColumns. Logs a
+'warning when the source and destination row counts differ.
+'@param importData Object. A DataSheet or CustomTable to copy formatting from.
+'@param matchColumnsCase Optional Boolean. When True, uses case-sensitive column matching. Defaults to True.
 '@export
 Private Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumnsCase As Boolean = True)
   
@@ -695,9 +757,13 @@ Private Sub ImportFormat(ByVal importData As Object, Optional ByVal matchColumns
     Next
 End Sub
 
-'@sub-title Apply one Range format to another
-'@param actRng A Range, where to apply the format
-'@param impRng A Range, where to look for the format
+'@label:apply-format
+'@sub-title Copy formatting from one Range to another
+'@details
+'Transfers interior colour, font colour, bold, and italic from each
+'cell in impRng to the corresponding cell in actRng.
+'@param actRng Range. Destination range to format.
+'@param impRng Range. Source range with formatting to copy.
 Private Sub ApplyFormat(ByVal actRng As Range, ByVal impRng As Range)
 
     Dim cellRng As Range
@@ -727,18 +793,18 @@ Private Sub ApplyFormat(ByVal actRng As Range, ByVal impRng As Range)
 End Sub
 
 '@label:export
-'@sub-title Export the current datasheet to a workbook
+'@sub-title Export the DataSheet to a workbook
 '@details
-'DataSheets are exported on a new worksheet with the same name as the one of the
-'current DataSheet. If the worksheet already exists, nothing is done and a warning is raised.
-'The exported datasheet always has startrow = 1 and startcolumn = 1, as it is exported on an empty worksheet.
-'A Subset of the data sheet could be exported using filtering on one single column. By default all the rows are exported.
-
-'@param Wkb A workbook, where to export the DataSheet
-'@param filteredVarName Optional, string. Variable Name for filtering. By default no filtering is done
-'@param filteredCondition Optional, string. Condition for filtering. By default select all lines
-'@param Hide Optional, xlSheetVisibility. Visibility of the exported DataSheet worksheet. Default is xlSheetHidden
-'@param includeNames Optional Boolean indicating whether hidden names defined on the sheet should be exported alongside the data.
+'Creates (or clears) a worksheet in the target workbook with the same
+'name as this DataSheet, then writes all data. Optionally filters rows
+'on a single column before export. The exported sheet is hidden by
+'default. Applies formatting for registered columns and optionally
+'exports hidden names.
+'@param Wkb Workbook. Destination workbook.
+'@param filteredVarName Optional String. Column used for filtering. Defaults to "__all__" (no filter).
+'@param filteredCondition Optional String. Filter criteria. Defaults to "<>".
+'@param Hide Optional Long. Worksheet visibility after export. Defaults to xlSheetHidden.
+'@param includeNames Optional Boolean. When True, exports hidden names alongside data. Defaults to False.
 '@export
 Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As String = "__all__", _
                    Optional ByVal filteredCondition As String = "<>", _ 
@@ -834,14 +900,17 @@ Private Sub Export(ByVal Wkb As Workbook, Optional ByVal filteredVarName As Stri
     End If
 End Sub
 
-'@label:checkings
 '@section Checkings
 '===============================================================================
+'@description Diagnostic logging and error handling.
 
-'@sub-title Add elements to the checking object for future notes
-'@param Label String, the message to add.
-'@param scope Byte. The scope of the checking object.
-'@export
+'@label:log-info
+'@sub-title Log a diagnostic message
+'@details
+'Adds a message to the internal IChecking object, creating it on first
+'use. The checkCounter provides a unique key for each entry.
+'@param label String. The message to record.
+'@param scope Optional Byte. Severity level from CheckingScope. Defaults to checkingNote.
 Private Sub LogInfo(ByVal label As String, _ 
                     Optional ByVal scope As Byte = checkingNote)
 
@@ -857,15 +926,17 @@ Private Sub LogInfo(ByVal label As String, _
     If Not this.hasChecks Then this.hasChecks = True
 End Sub
 
-'@label:hascheckings
-'@prop-title Check if the object has checkings
+'@label:has-checkings
+'@prop-title Whether the DataSheet has logged diagnostic messages
+'@return Boolean. True when diagnostic entries exist.
 '@export
 Private Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-'@label:checkingvalues
-'@prop-title Get the cheking values
+'@label:checking-values
+'@prop-title Retrieve the diagnostic log entries
+'@return Object. An IChecking instance, or Nothing.
 '@export
 Private Property Get CheckingValues() As Object
     'If there is no checking, exit the property
@@ -874,20 +945,35 @@ Private Property Get CheckingValues() As Object
 End Property
 
 
+'@label:show-debug
+'@sub-title Print a debug trace to the Immediate window
 Private Sub ShowDebug()
     Debug.Print "Check the informations of choice object " & Name()
 End Sub
 
+'@label:throw-error
+'@sub-title Raise a ProjectError-based exception
+'@param errNumb Long. ProjectError code.
+'@param errorMessage String. Descriptive message.
+'@throws ProjectError.<varies> Always raises the specified error.
 Private Sub ThrowError(ByVal errNumb As Long, ByVal errorMessage As String)
     Err.Raise errNumb, "DataSheet", "Error : " & Chr(34) & errorMessage
 End Sub
 
+'@label:throw-error-empty-sheet
+'@sub-title Raise an error for a Nothing worksheet
+'@throws ProjectError.ObjectNotInitialized Always.
 Private Sub ThrowErrorEmptySheetGiven()
     ThrowError  ProjectError.ObjectNotInitialized, _
                 "Unable to create an instance of DataSheet class. " & _
                 "Given Worksheet object does not exists"
 End Sub
 
+'@label:throw-error-start-number
+'@sub-title Raise an error for an invalid start row or column
+'@param startNumber Optional Long. The invalid value. Defaults to -1.
+'@param startLabel Optional String. Label identifying the parameter. Defaults to "start row".
+'@throws ProjectError.InvalidArgument Always.
 Private Sub ThrowErrorStartNumber(Optional ByVal startNumber As Long = -1, _
                                   Optional ByVal startLabel As String = "start row")
     ThrowError  ProjectError.InvalidArgument, _
@@ -895,54 +981,47 @@ Private Sub ThrowErrorStartNumber(Optional ByVal startNumber As Long = -1, _
                 " The " & startLabel & " should be >= 1. " & "Actual value : " & startNumber
 End Sub
 
+'@label:throw-error-unfound-column
+'@sub-title Raise an error for a missing column
+'@param colName String. The column name that was not found.
+'@throws ProjectError.ElementNotFound Always.
 Private Sub ThrowErrorUnFoundColumn(ByVal colName As String)
     ThrowError  ProjectError.ElementNotFound, _
                "Column " & colName & " does not exists" & " in DataSheet " & Name()
 End Sub
 
-'@jump:Create
 '@section Interface
 '===============================================================================
+'@description Delegated members satisfying the IDataSheet contract.
 
-'@jump:elements
-'DataSheet Elements ------------------------------------------------------------
-
-'@jump:wksh
 Private Property Get IDataSheet_Wksh() As Worksheet
     Set IDataSheet_Wksh = Wksh()
 End Property
 
-'@jump:startrow
 Private Property Get IDataSheet_DataStartRow() As Long
     IDataSheet_DataStartRow = DataStartRow()
 End Property
 
-'@jump:startcol
 Private Property Get IDataSheet_DataStartColumn() As Long
     IDataSheet_DataStartColumn = DataStartColumn()
 End Property
 
-'@jump:name
 Private Property Get IDataSheet_Name() As String
     IDataSheet_Name = Name()
 End Property
 
-'@jump:endrow
 Private Property Get IDataSheet_DataEndRow() As Long
     IDataSheet_DataEndRow = DataEndRow()
 End Property
 
-'@jump:endcol
 Private Property Get IDataSheet_DataEndColumn() As Long
     IDataSheet_DataEndColumn = DataEndColumn()
 End Property
 
-'@jump:headerrange
 Private Property Get IDataSheet_HeaderRange() As Range
     Set IDataSheet_HeaderRange = HeaderRange()
 End Property
 
-'@jump:columnindex
 Private Function IDataSheet_ColumnIndex(ByVal colName As String, _
                                        Optional ByVal inDataRange As Boolean = False, _
                                        Optional shouldExist As Boolean = False, _ 
@@ -951,7 +1030,6 @@ Private Function IDataSheet_ColumnIndex(ByVal colName As String, _
     IDataSheet_ColumnIndex = ColumnIndex(colName, inDataRange, shouldExist, strictSearch, matchCase)
 End Function
 
-'@jump:columnexists
 Private Function IDataSheet_ColumnExists(ByVal colName As String, _ 
                                          Optional ByVal strictSearch As Boolean = True, _ 
                                          Optional ByVal matchCase As Boolean = True) As Boolean
@@ -960,7 +1038,6 @@ Private Function IDataSheet_ColumnExists(ByVal colName As String, _
 End Function
 
 
-'@jump:datarange
 Private Property Get IDataSheet_DataRange(Optional ByVal colName As String = "__all__", _
                                          Optional ByVal includeHeaders As Boolean = False, _ 
                                          Optional ByVal strictSearch As Boolean = True, _ 
@@ -968,19 +1045,19 @@ Private Property Get IDataSheet_DataRange(Optional ByVal colName As String = "__
     Set IDataSheet_DataRange = DataRange(colName, includeHeaders, strictSearch, matchCase)
 End Property
 
-'@jump:operate
-'Oprerate with outside world---------------------------------------------------
-
-'@jump:clean
 Private Sub IDataSheet_Clean()
     Clean
 End Sub
 
-'@label:addformatscolumns
-'@sub-title Add Some columns for formatting import / export
-'@param ParamArray A list of Strings, separated with "," the column name where you want to import/export formatting
-'@param matchColumnsCase Optional, Boolean. Do case sensitive research. Default is True
-'@export
+'@label:add-formats-columns
+'@sub-title Register columns for formatting import/export
+'@details
+'Adds the specified column names to the internal formatting list so that
+'Import and Export preserve their visual formatting. Validates each
+'column exists before registering it.
+'@param matchColumnsCase Boolean. When True, uses case-sensitive column matching.
+'@param resetColumns Boolean. When True, clears the existing list before adding.
+'@param lsCols ParamArray Variant. Column names to register for formatting.
 Private Sub IDataSheet_AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVal resetColumns As Boolean, ParamArray lsCols() As Variant)
     Dim nbEls As Long
     Dim colName As String
@@ -1006,7 +1083,6 @@ Private Sub IDataSheet_AddFormatsColumns(ByVal matchColumnsCase As Boolean, ByVa
 End Sub
 
 
-'@jump:filterdata
 Private Function IDataSheet_FilterData(ByVal varName As String, _
                                       ByVal criteriaName As String, _
                                       ByVal returnedColumnName As String, _
@@ -1019,23 +1095,19 @@ Private Function IDataSheet_FilterData(ByVal varName As String, _
                                            matchCase:=matchCase)
 End Function
 
-'@jump:filtersdata
 Private Function IDataSheet_FiltersData(ByVal varData As BetterArray, ByVal criteriaData As BetterArray, _ 
                                         ByVal returnedColumnsData As BetterArray) As BetterArray
     Set IDataSheet_FiltersData = FiltersData(varData, criteriaData, returnedColumnsData)
 End Function
 
-'@jump:import
 Private Sub IDataSheet_Import(ByVal importedData As Object, Optional ByVal strictColumnSearch As Boolean = True)
     Import importedData, strictColumnSearch
 End Sub
 
-'@jump:importformat
 Private Sub IDataSheet_ImportFormat(ByVal importData As Object, Optional ByVal matchColumnsCase As Boolean = True)
     ImportFormat importData, matchColumnsCase
 End Sub
 
-'@jump:RenameColumn
 Private Sub IDataSheet_RenameColumn(ByVal currentName As String, _
                                     ByVal newName As String, _
                                     Optional ByVal strictSearch As Boolean = True, _
@@ -1043,7 +1115,6 @@ Private Sub IDataSheet_RenameColumn(ByVal currentName As String, _
     RenameColumn currentName, newName, strictSearch, matchCase
 End Sub
 
-'@jump:export
 Private Sub IDataSheet_Export(ByVal toWkb As Workbook, _
                              Optional ByVal filteredVarName As String = "__all__", _
                              Optional ByVal filteredCondition As String = "<>", _
@@ -1052,15 +1123,10 @@ Private Sub IDataSheet_Export(ByVal toWkb As Workbook, _
     Export toWkb, filteredVarName, filteredCondition, Hide, includeNames
 End Sub
 
-'@jump:checkings
-'Errors and checkings----------------------------------------------------------
-
-'@jump:hascheckings
 Private Property Get IDataSheet_HasCheckings() As Boolean
     IDataSheet_HasCheckings = HasCheckings()
 End Property
 
-'@jump:checkingvalues
 Private Property Get IDataSheet_CheckingValues() As Object
      Set IDataSheet_CheckingValues = CheckingValues()
 End Property

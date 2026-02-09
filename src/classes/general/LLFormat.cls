@@ -10,18 +10,24 @@ Attribute VB_PredeclaredId = True
 Attribute VB_Exposed = False
 
 '@PredeclaredId
-'@Folder("Linelist")
+'@Folder("General")
 '@ModuleDescription("Formatting the linelist")
-'@details Applies LL format table metadata to Worksheets, ranges, and shapes.
-
 '@IgnoreModule UnrecognizedAnnotation, UseMeaningfulName, HungarianNotation, ProcedureNotUsed, SuperfluousAnnotationArgument
-
-'@section Overview
-'@details LLFormat reads design information from the LL format table and exposes helpers to apply those styles while caching lookups for performance.
 
 Option Explicit
 Implements ILLFormat
 Private Const CLASSNAME As String = "LLFormat"
+
+'@class LLFormat
+'@description
+'Reads design information from the LL format table and exposes helpers
+'to apply those styles while caching lookups for performance. Supports
+'import/export of format definitions across workbooks. Each FormatScope
+'constant maps to a specific visual pattern applied to Worksheets,
+'Ranges, Shapes, ListObjects, or Characters.
+'@depends CustomTable, Checking, BetterArray, ProjectError
+'@version 1.0 (2026-02-09)
+'@author OutbreakTools
 
 Private Const DEFAULT_DESIGN As String = "design 1"
 Private Const COLUMN_LABEL As String = "Label"
@@ -53,12 +59,18 @@ Private this As TLLFormat
 
 '@section Cache Management
 '===============================================================================
+'Lazy-init and invalidation of internal lookup caches.
+
+'@label:reset-caches
+'@sub-title Invalidate all cached references
 Private Sub ResetCaches()
     Set this.formatTable = Nothing
     Set this.designColumnCache = Nothing
     Set this.labelRowCache = Nothing
 End Sub
 
+'@label:ensure-format-ready
+'@sub-title Ensure caches are initialised and the worksheet is set
 Private Sub EnsureFormatReady()
     If this.sheet Is Nothing Then
         ThrowError ProjectError.ObjectNotInitialized, "Format worksheet reference is missing"
@@ -73,6 +85,10 @@ Private Sub EnsureFormatReady()
     End If
 End Sub
 
+'@label:ensure-format-sheet-ready
+'@sub-title Validate a worksheet as a valid format source
+'@param sh Worksheet. The worksheet to validate.
+'@param resolvedDesign String (ByRef). Falls back to DEFAULT_DESIGN when the requested design column is absent.
 Private Sub EnsureFormatSheetReady(ByVal sh As Worksheet, ByRef resolvedDesign As String)
     
     Dim Lo As ListObject
@@ -117,7 +133,9 @@ Private Sub EnsureFormatSheetReady(ByVal sh As Worksheet, ByRef resolvedDesign A
     End If
 End Sub
 
-'Log informations in the checking object
+'@label:log-info
+'@sub-title Append a diagnostic entry to the internal checking object
+'@param label String. The message to record.
 Private Sub LogInfo(ByVal label As String)
     If this.checks Is Nothing Then
         Set this.checks = Checking.Create("LLFormat trace")
@@ -127,6 +145,9 @@ Private Sub LogInfo(ByVal label As String)
     this.hasChecks = True
 End Sub
 
+'@label:format-table
+'@sub-title Retrieve the first ListObject on the format worksheet
+'@return ListObject. The format table.
 Private Function FormatTable() As ListObject
     EnsureFormatReady
     If this.formatTable Is Nothing Then
@@ -138,6 +159,9 @@ Private Function FormatTable() As ListObject
     Set FormatTable = this.formatTable
 End Function
 
+'@label:header-range
+'@sub-title Retrieve the header row range of the format table
+'@return Range. The header row.
 Private Function HeaderRange() As Range
     Dim lo As ListObject
     Set lo = FormatTable()
@@ -149,6 +173,8 @@ Private Function HeaderRange() As Range
     End If
 End Function
 
+'@label:ensure-label-column
+'@sub-title Cache the column index of the Label column
 Private Sub EnsureLabelColumn()
     Dim header As Range
     If this.labelColumnIndex > 0 Then Exit Sub
@@ -156,6 +182,11 @@ Private Sub EnsureLabelColumn()
     this.labelColumnIndex = ResolveColumnIndex(header, COLUMN_LABEL)
 End Sub
 
+'@label:resolve-column-index
+'@sub-title Find the column index of a named header
+'@param header Range. The header row to search.
+'@param columnName String. Column caption to locate.
+'@return Long. The 1-based column index.
 Private Function ResolveColumnIndex(ByVal header As Range, ByVal columnName As String) As Long
     Dim matchCell As Range
     On Error Resume Next
@@ -167,6 +198,10 @@ Private Function ResolveColumnIndex(ByVal header As Range, ByVal columnName As S
     ResolveColumnIndex = matchCell.Column
 End Function
 
+'@label:design-column-index
+'@sub-title Resolve and cache the column index for a design name
+'@param designName String. Name of the design column.
+'@return Long. The 1-based column index.
 Private Function DesignColumnIndex(ByVal designName As String) As Long
     Dim idx As Long
     Dim entry As Variant
@@ -189,6 +224,10 @@ Private Function DesignColumnIndex(ByVal designName As String) As Long
     this.designColumnCache.Push Array(designName, DesignColumnIndex)
 End Function
 
+'@label:label-row-index
+'@sub-title Resolve and cache the row index for a format label
+'@param labelName String. Label text to locate in the Label column.
+'@return Long. The 1-based row index, or 0 when not found.
 Private Function LabelRowIndex(ByVal labelName As String) As Long
     Dim idx As Long
     Dim entry As Variant
@@ -222,10 +261,17 @@ End Function
 
 '@section Factory
 '===============================================================================
-'@fun-title Instantiate an LL format engine for a worksheet
-'@param formatSh Worksheet containing the format specification table.
-'@param designType Optional design column to use; defaults to "design 1".
-'@return A fully initialised LLFormat instance.
+'PredeclaredId factory method.
+
+'@label:create
+'@sub-title Instantiate an LL format engine for a worksheet
+'@details
+'Validates the format worksheet, resolves the design column, and
+'returns a fully initialised LLFormat instance.
+'@param formatSh Worksheet. Worksheet containing the format specification table.
+'@param designType String. Design column to use. Defaults to DEFAULT_DESIGN.
+'@return ILLFormat. A fully initialised LLFormat instance.
+'@export
 Public Function Create(ByVal formatSh As Worksheet, _
                        Optional ByVal designType As String = DEFAULT_DESIGN) As ILLFormat
 
@@ -243,6 +289,11 @@ Public Function Create(ByVal formatSh As Worksheet, _
 
 End Function
 
+'@label:column-exists
+'@sub-title Test whether a named column exists in a header range
+'@param header Range. The header row to search.
+'@param columnName String. Column caption to test.
+'@return Boolean. True when the column is found.
 Private Function ColumnExists(ByVal header As Range, ByVal columnName As String) As Boolean
     Dim found As Range
     On Error Resume Next
@@ -253,44 +304,57 @@ End Function
 
 '@section Public Interface
 '===============================================================================
+'Public properties exposed by the factory and the interface.
+
+'@label:self
 '@prop-title Retrieve this formatter as an interface
-'@return ILLFormat reference.
+'@return ILLFormat. Self-reference.
 Public Property Get Self() As ILLFormat
     Set Self = Me
 End Property
 
+'@label:wksh
 '@prop-title Retrieve the worksheet hosting the format table
-'@return Worksheet reference.
+'@return Worksheet. The host worksheet.
 Public Property Get Wksh() As Worksheet
     Set Wksh = this.sheet
 End Property
 
-'@description Assign the worksheet backing this formatter and clear caches
+'@label:wksh-set
+'@prop-title Assign the worksheet backing this formatter
+'@details Clears all caches when the worksheet changes.
+'@param sh Worksheet. The new host worksheet.
 Public Property Set Wksh(ByVal sh As Worksheet)
     Set this.sheet = sh
     ResetCaches
 End Property
 
+'@label:design-name
 '@prop-title Name of the active design column
-'@return String design name.
+'@return String. The active design name.
 Public Property Get DesignName() As String
     DesignName = this.design
 End Property
 
-'@description Change the active design column and reset cached lookups
+'@label:design-name-set
+'@prop-title Change the active design column
+'@details Resets cached lookups when the design changes.
+'@param design String. The new design column name.
 Public Property Let DesignName(ByVal design As String)
     this.design = design
     ResetCaches
 End Property
 
-'@prop-title Determine whether any checking entries were recorded
-'@return True when checking entries exist.
+'@label:has-checkings
+'@prop-title Whether the format object has logged diagnostic messages
+'@return Boolean. True when diagnostic entries exist.
 Public Property Get HasCheckings() As Boolean
     HasCheckings = this.hasChecks
 End Property
 
-'@prop-title Retrieve the recorded checking entries for missing labels
-'@return IChecking instance or Nothing.
+'@label:checking-values
+'@prop-title Retrieve the diagnostic log entries
+'@return IChecking. The checking instance, or Nothing.
 Public Property Get CheckingValues() As IChecking
     If this.hasChecks Then
         Set CheckingValues = this.checks
@@ -299,11 +363,18 @@ End Property
 
 '@section Design Lookups
 '===============================================================================
-'@fun-title Look up a design value or colour
-'@details Retrieve either the fill color or value associated with a format label.
-'@param labelName Label text stored in the format table.
-'@param returnColor When True (default) returns Interior.Color; otherwise returns the raw cell value.
-'@return Variant containing the colour (Long) or cell value.
+'Retrieve raw style values from the format table.
+
+'@label:design-value
+'@sub-title Look up a design value or colour from the format table
+'@details
+'Retrieves either the fill colour (Interior.Color) or the raw cell
+'value for the specified label row under the active design column.
+'Returns a fallback when the label is not found and logs a diagnostic.
+'@param labelName String. Label text stored in the format table.
+'@param returnColor Boolean. When True returns Interior.Color; otherwise the raw value. Defaults to True.
+'@return Variant. The colour (Long) or cell value.
+'@export
 Private Function DesignValue(ByVal labelName As String, _
                              Optional ByVal returnColor As Boolean = True) As Variant
 
@@ -335,9 +406,13 @@ Private Function DesignValue(ByVal labelName As String, _
     DesignValue = resultValue
 End Function
 
-'Format a range, add lines, or format borders
-
-'Draw lines arround borders
+'@label:draw-lines
+'@sub-title Draw border lines around a range
+'@param rng Range. Target range.
+'@param At String. Edge selector (All, AvoidLeft, AvoidRight, etc.). Defaults to "All".
+'@param weight Integer. Line weight constant. Defaults to xlHairline.
+'@param line Integer. Line style constant. Defaults to xlContinuous.
+'@param color Variant. Border colour. Defaults to vbBlack.
 Private Sub DrawLines(ByVal rng As Range, _
                       Optional At As String = "All", _
                       Optional weight As Integer = xlHairline, _
@@ -383,8 +458,14 @@ Private Sub DrawLines(ByVal rng As Range, _
     End With
 End Sub
 
-Private Sub DrawBorder(ByVal rng As Range, Optional weight As Integer = xlThin, _ 
-                       Optional color As Variant = vbBlack, _ 
+'@label:draw-border
+'@sub-title Draw a rectangular border around a range
+'@param rng Range. Target range to border.
+'@param weight Optional Integer. Line weight constant. Defaults to xlThin.
+'@param color Optional Variant. Border colour. Defaults to vbBlack.
+'@param line Optional Long. Line style constant. Defaults to xlContinuous.
+Private Sub DrawBorder(ByVal rng As Range, Optional weight As Integer = xlThin, _
+                       Optional color As Variant = vbBlack, _
                        Optional line As Long = xlContinuous)
 
     Dim counter As Integer
@@ -398,6 +479,18 @@ Private Sub DrawBorder(ByVal rng As Range, Optional weight As Integer = xlThin, 
     Next
 End Sub
 
+'@label:format-range
+'@sub-title Apply fill, font, alignment, and number format to a range
+'@param rng Range. Target range.
+'@param fillValue Optional String. Cell value to write. Defaults to "".
+'@param interiorColor Optional Variant. Interior fill colour. Defaults to "".
+'@param fontColor Optional Variant. Font colour. Defaults to "".
+'@param isBold Optional Boolean. Bold font. Defaults to False.
+'@param Horiz Optional Integer. Horizontal alignment. Defaults to xlHAlignCenter.
+'@param Verti Optional Integer. Vertical alignment. Defaults to xlVAlignCenter.
+'@param FontSize Optional Double. Font size in points. Defaults to 0 (unchanged).
+'@param NumFormat Optional String. Number format string. Defaults to "".
+'@param wrap Optional String. When "wrap", enables text wrapping. Defaults to vbNullString.
 Private Sub FormatRange(ByVal rng As Range, _
                         Optional ByVal fillValue As String = "", _
                         Optional ByVal interiorColor As Variant = "", _
@@ -422,6 +515,12 @@ Private Sub FormatRange(ByVal rng As Range, _
     End With
 End Sub
 
+'@label:format-characters
+'@sub-title Apply font styling to a Characters object
+'@param Char Characters. The Characters object to style.
+'@param fontColor Optional Variant. Font colour. Defaults to "".
+'@param isBold Optional Boolean. Bold font. Defaults to False.
+'@param FontSize Optional Double. Font size in points. Defaults to 0 (unchanged).
 Private Sub FormatCharacters(ByVal Char As Characters, _
                              Optional ByVal fontColor As Variant = "", _
                              Optional ByVal isBold As Boolean = False, _
@@ -434,6 +533,13 @@ Private Sub FormatCharacters(ByVal Char As Characters, _
     End With
 End Sub
 
+'@label:format-shape
+'@sub-title Apply fill and font styling to a Shape object
+'@param shp Shape. The Shape to style.
+'@param fontColor Optional Variant. Text colour. Defaults to vbNullString.
+'@param interiorColor Optional Variant. Fill colour. Defaults to vbNullString.
+'@param isBold Optional Boolean. Bold font. Defaults to False.
+'@param FontSize Optional Double. Font size in points. Defaults to 0 (unchanged).
 Private Sub FormatShape(ByVal shp As Shape, _
                         Optional ByVal fontColor As Variant = vbNullString, _
                         Optional ByVal interiorColor As Variant = vbNullString, _
@@ -464,7 +570,10 @@ Private Sub FormatShape(ByVal shp As Shape, _
     End With
 End Sub
 
-'Remove GridLines of a worksheet
+'@label:remove-gridlines
+'@sub-title Hide gridlines on a worksheet
+'@param sh Worksheet. Target worksheet.
+'@param DisplayZeros Optional Boolean. When True, shows zero values. Defaults to False.
 Private Sub RemoveGridLines(ByVal sh As Worksheet, Optional DisplayZeros As Boolean = False)
     Dim View As WorksheetView
     For Each View In sh.Parent.Windows(1).SheetViews
@@ -476,6 +585,9 @@ Private Sub RemoveGridLines(ByVal sh As Worksheet, Optional DisplayZeros As Bool
     Next
 End Sub
 
+'@label:prepare-print-sheet
+'@sub-title Configure page setup for printing a worksheet
+'@param sh Worksheet. Target worksheet to configure.
 Private Sub PreparePrintSheet(ByVal sh As Worksheet)
     Application.PrintCommunication = False
     'Avoid printing rows and column number'
@@ -518,10 +630,17 @@ End Sub
 
 '@section Formatting
 '===============================================================================
-'@details Apply a specific formatting pattern depending on the scope constant provided.
-'@param formattingObject Variant that will receive formatting (Worksheet, Range, Shape, etc.).
-'@param scope Byte constant describing the formatting scenario.
-'@param nbDecimals Optional decimal count for numeric formatting.
+'Core formatting dispatcher.
+
+'@label:apply-format
+'@sub-title Apply a design-driven format to an Excel object
+'@details
+'Reads style metadata from the format table and applies it to the
+'supplied object according to the given FormatScope constant.
+'@param formattingObject Variant. The Excel object to format.
+'@param scope Byte. FormatScope constant selecting the visual pattern.
+'@param nbDecimals Integer. Decimal count for numeric formatting. Defaults to 0.
+'@export
 Private Sub ApplyFormat(ByVal formattingObject As Variant, _
                         ByVal scope As Byte, _
                         Optional ByVal nbDecimals As Integer = 0)
@@ -1242,10 +1361,18 @@ Private Sub ApplyFormat(ByVal formattingObject As Variant, _
 
 End Sub
 
- '@section Import
+'@section Import
 '===============================================================================
-'@details Import formatting definitions from another worksheet and copy color metadata.
-'@param inpsh Worksheet containing the external format table.
+'Import formatting definitions from another worksheet.
+
+'@label:import
+'@sub-title Import formatting definitions from another worksheet
+'@details
+'Reads design columns from the source worksheet and merges them into
+'the current format table via CustomTable.Import. Updates the active
+'design name from the source DESIGNTYPE named range.
+'@param inpsh Worksheet. Source worksheet containing the format table.
+'@export
 Private Sub Import(ByVal inpsh As Worksheet)
 
     Dim targetSheet As Worksheet
@@ -1295,10 +1422,16 @@ End Sub
 
 '@section Export
 '===============================================================================
-'@details Export the LL format worksheet into another workbook. If a worksheet
-'with the same name already exists in the destination workbook, skip the export
-'and import from that worksheet instead.
-'@param toWkb Workbook that will receive the exported LL format sheet.
+'Export the LL format worksheet into another workbook.
+
+'@label:export
+'@sub-title Export the format table to another workbook
+'@details
+'Copies the format table and cell styles to a new worksheet in the
+'destination workbook. When a worksheet with the same name already
+'exists, imports from it instead of exporting.
+'@param toWkb Workbook. Destination workbook.
+'@export
 Private Sub Export(ByVal toWkb As Workbook)
 
     Dim targetWorkbook As Workbook
@@ -1340,6 +1473,9 @@ Private Sub Export(ByVal toWkb As Workbook)
     EnsureDesignTypeRange sourceSheet, targetSheet, targetTable
 End Sub
 
+'@label:resolve-worksheet
+'@sub-title Look up a worksheet by name without raising errors
+'@return Worksheet. The found worksheet, or Nothing.
 Private Function ResolveWorksheet(ByVal targetWorkbook As Workbook, ByVal sheetName As String) As Worksheet
     Dim candidate As Worksheet
 
@@ -1351,6 +1487,9 @@ Private Function ResolveWorksheet(ByVal targetWorkbook As Workbook, ByVal sheetN
     Set ResolveWorksheet = candidate
 End Function
 
+'@label:resolve-format-table
+'@sub-title Locate a ListObject on the target sheet by name or index
+'@return ListObject. The found table, or Nothing.
 Private Function ResolveFormatTable(ByVal targetSheet As Worksheet, ByVal preferredName As String) As ListObject
     Dim candidate As ListObject
 
@@ -1371,6 +1510,8 @@ Private Function ResolveFormatTable(ByVal targetSheet As Worksheet, ByVal prefer
     Set ResolveFormatTable = candidate
 End Function
 
+'@label:copy-format-table-styles
+'@sub-title Copy cell-level styles between two format tables
 Private Sub CopyFormatTableStyles(ByVal sourceTable As ListObject, ByVal targetTable As ListObject)
     Dim sourceRange As Range
     Dim targetRange As Range
@@ -1410,7 +1551,9 @@ Private Sub CopyFormatTableStyles(ByVal sourceTable As ListObject, ByVal targetT
     Next rowIndex
 End Sub
 
-Private Sub EnsureDesignTypeRange(ByVal sourceSheet As Worksheet, _ 
+'@label:ensure-design-type-range
+'@sub-title Create the DESIGNTYPE named range on the target sheet
+Private Sub EnsureDesignTypeRange(ByVal sourceSheet As Worksheet, _
                                   ByVal targetSheet As Worksheet, _ 
                                   ByVal targetTable As ListObject)
 
@@ -1457,6 +1600,9 @@ Private Sub EnsureDesignTypeRange(ByVal sourceSheet As Worksheet, _
     targetSheet.Names.Add Name:="DESIGNTYPE", RefersTo:=targetDesignRange, Visible:=False
 End Sub
 
+'@label:has-named-range
+'@sub-title Test whether a worksheet-scoped named range exists
+'@return Boolean. True when the named range is found.
 Private Function HasNamedRange(ByVal sh As Worksheet, ByVal rngName As String) As Boolean
     Dim rng As Range
     On Error Resume Next
@@ -1465,13 +1611,17 @@ Private Function HasNamedRange(ByVal sh As Worksheet, ByVal rngName As String) A
     HasNamedRange = Not (rng Is Nothing)
 End Function
 
-'Throw Errors
+'@label:throw-error
+'@sub-title Raise a typed project error
 Private Sub ThrowError(ByVal errNumber As ProjectError, ByVal errorMessage As String)
     Err.Raise errNumber, CLASSNAME, errorMessage
 End Sub
 
-'Exposed methods---------------------------------------------------------------------
-Private Sub ILLFormat_ApplyFormat(formattingObject As Variant, ByVal scope As Byte, _ 
+'@section Interface
+'===============================================================================
+'ILLFormat delegation wiring.
+
+Private Sub ILLFormat_ApplyFormat(formattingObject As Variant, ByVal scope As Byte, _
                                   Optional ByVal nbDecimals As Integer = 0)
     ApplyFormat formattingObject:=formattingObject, scope:=scope, nbDecimals:=nbDecimals
 End Sub
